@@ -10,6 +10,7 @@ import type {
 import { PlusIcon, TrashIcon, FilterIcon } from 'lucide-react';
 import { useState } from 'react';
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
+import { PropertiesCombobox } from '@/components/report/sidebar/PropertiesCombobox';
 import { ColorSquare } from '@/components/color-square';
 
 interface CustomEventBuilderProps {
@@ -130,7 +131,51 @@ function EventCriteriaItem({
     criteria.filters && criteria.filters.length > 0,
   );
 
-  const selectedEvent = eventNames.find((e) => e.value === criteria.name);
+  const addFilter = (propertyName: string) => {
+    onChange({
+      ...criteria,
+      filters: [
+        ...criteria.filters,
+        {
+          id: Math.random().toString(36).substring(7),
+          name: propertyName,
+          operator: 'is',
+          value: [],
+        },
+      ],
+    });
+  };
+
+  const removeFilter = (filter: IChartEventFilter) => {
+    onChange({
+      ...criteria,
+      filters: criteria.filters.filter((f) => f.id !== filter.id),
+    });
+  };
+
+  const updateFilterValue = (
+    value: Array<string | number>,
+    filter: IChartEventFilter,
+  ) => {
+    onChange({
+      ...criteria,
+      filters: criteria.filters.map((f) =>
+        f.id === filter.id ? { ...f, value } : f,
+      ),
+    });
+  };
+
+  const updateFilterOperator = (
+    operator: IChartEventFilter['operator'],
+    filter: IChartEventFilter,
+  ) => {
+    onChange({
+      ...criteria,
+      filters: criteria.filters.map((f) =>
+        f.id === filter.id ? { ...f, operator, value: f.value.slice(0, 1) } : f,
+      ),
+    });
+  };
 
   return (
     <div className="rounded-md border p-4">
@@ -161,7 +206,7 @@ function EventCriteriaItem({
           variant="ghost"
           size="icon"
           onClick={() => setShowFilters(!showFilters)}
-          title="Add filters"
+          title="Toggle filters"
         >
           <FilterIcon size={16} />
         </Button>
@@ -179,56 +224,43 @@ function EventCriteriaItem({
 
       {showFilters && (
         <div className="mt-4 space-y-2">
-          <div className="text-sm font-medium text-muted-foreground">
-            Event property filters (optional)
-          </div>
-
           {criteria.filters && criteria.filters.length > 0 && (
             <div className="space-y-2">
-              {criteria.filters.map((filter, index) => (
+              <label className="text-sm font-medium">Event Filters</label>
+              {criteria.filters.map((filter) => (
                 <PureFilterItem
-                  key={filter.id || index}
-                  data={filter}
+                  key={filter.id}
                   eventName={criteria.name}
-                  onRemove={() => {
-                    onChange({
-                      ...criteria,
-                      filters: criteria.filters?.filter((_, i) => i !== index),
-                    });
-                  }}
-                  onChange={(updatedFilter) => {
-                    onChange({
-                      ...criteria,
-                      filters: criteria.filters?.map((f, i) =>
-                        i === index ? updatedFilter : f,
-                      ),
-                    });
-                  }}
+                  filter={filter}
+                  onRemove={removeFilter}
+                  onChangeValue={updateFilterValue}
+                  onChangeOperator={updateFilterOperator}
+                  className="rounded border p-2"
                 />
               ))}
             </div>
           )}
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const newFilter: IChartEventFilter = {
-                id: `filter-${Date.now()}`,
-                name: '',
-                operator: 'is',
-                value: [],
-              };
-              onChange({
-                ...criteria,
-                filters: [...(criteria.filters || []), newFilter],
-              });
+          <PropertiesCombobox
+            event={{ name: criteria.name, id: 'custom-event' } as any}
+            onSelect={(action) => {
+              addFilter(action.value);
             }}
-            icon={PlusIcon}
+            mode="events"
           >
-            Add filter
-          </Button>
+            {(setOpen) => (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setOpen(true)}
+                icon={PlusIcon}
+                disabled={!criteria.name}
+              >
+                Add filter
+              </Button>
+            )}
+          </PropertiesCombobox>
         </div>
       )}
     </div>
