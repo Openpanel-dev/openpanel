@@ -97,9 +97,6 @@ function Component() {
               <div className="flex flex-col p-4">
                 <div className="col gap-2">
                   <div className="flex items-center gap-2">
-                    {customEvent.icon && (
-                      <span className="text-xl">{customEvent.icon}</span>
-                    )}
                     <div className="font-medium">{customEvent.name}</div>
                   </div>
                   {customEvent.description && (

@@ -54,8 +54,6 @@ export const zCustomEventInput = z.object({
   description: z.string().max(1000).optional(),
   projectId: z.string(),
   definition: zCustomEventDefinition,
-  icon: z.string().optional(),
-  color: z.string().optional(),
   conversion: z.boolean().default(false),
 });
 
@@ -66,8 +64,6 @@ export const zCustomEventUpdate = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(1000).optional().nullable(),
   definition: zCustomEventDefinition.optional(),
-  icon: z.string().optional(),
-  color: z.string().optional(),
   conversion: z.boolean().optional(),
 });
 

@@ -21,8 +21,6 @@ const validator = z.object({
   description: z.string().optional(),
   definition: z.any(), // ICustomEventDefinition validation happens in backend
   conversion: z.boolean().default(false),
-  icon: z.string().optional(),
-  color: z.string().optional(),
 });
 
 type IForm = z.infer<typeof validator>;
@@ -42,8 +40,6 @@ export default function AddCustomEvent() {
         events: [],
       },
       conversion: false,
-      icon: '',
-      color: '',
     },
   });
 
@@ -93,22 +89,6 @@ export default function AddCustomEvent() {
           placeholder="Optional description"
           {...register('description')}
         />
-
-        <div className="flex items-center gap-4">
-          <InputWithLabel
-            label="Icon (emoji)"
-            placeholder="✨"
-            className="w-24"
-            {...register('icon')}
-          />
-
-          <InputWithLabel
-            label="Color"
-            type="color"
-            className="w-24"
-            {...register('color')}
-          />
-        </div>
 
         <div className="flex items-center gap-2">
           <Switch id="conversion" {...register('conversion')} />

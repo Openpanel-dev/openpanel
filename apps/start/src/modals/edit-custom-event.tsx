@@ -22,8 +22,6 @@ const validator = z.object({
   description: z.string().optional(),
   definition: z.any(), // ICustomEventDefinition validation happens in backend
   conversion: z.boolean().default(false),
-  icon: z.string().optional(),
-  color: z.string().optional(),
 });
 
 type IForm = z.infer<typeof validator>;
@@ -34,8 +32,6 @@ interface Props {
   description?: string | null;
   definition: ICustomEventDefinition;
   conversion: boolean;
-  icon?: string | null;
-  color?: string | null;
 }
 
 export default function EditCustomEvent(props: Props) {
@@ -50,8 +46,6 @@ export default function EditCustomEvent(props: Props) {
       description: props.description ?? '',
       definition: props.definition,
       conversion: props.conversion,
-      icon: props.icon ?? '',
-      color: props.color ?? '',
     },
   });
 

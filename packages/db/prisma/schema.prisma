@@ -398,9 +398,7 @@ model CustomEvent {
   /// [IPrismaCustomEventDefinition]
   definition Json
 
-  // Optional metadata (for UI/analytics)
-  icon       String?
-  color      String?
+  // Mark as conversion event for filtering
   conversion Boolean @default(false)
 
   createdAt DateTime @default(now())

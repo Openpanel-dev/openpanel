@@ -98,8 +98,6 @@ export const customEventRouter = createTRPCRouter({
           description: input.description,
           projectId: input.projectId,
           definition: input.definition as any,
-          icon: input.icon,
-          color: input.color,
           conversion: input.conversion,
         },
       });

@@ -157,7 +157,7 @@ export const chartRouter = createTRPCRouter({
         getEventMetasCached(projectId),
         db.customEvent.findMany({
           where: { projectId },
-          select: { name: true, icon: true, color: true, conversion: true },
+          select: { name: true, conversion: true },
         }),
       ]);
 
@@ -173,8 +173,6 @@ export const chartRouter = createTRPCRouter({
         count: 0, // Custom events don't have pre-computed counts
         meta: {
           name: ce.name,
-          icon: ce.icon,
-          color: ce.color,
           conversion: ce.conversion,
         },
         isCustom: true,
