@@ -29,14 +29,14 @@ export async function up() {
     name: 'events_daily_stats',
     tableName: 'events',
     orderBy: ['project_id', 'name', 'date'],
-    partitionBy: 'toYYYYMMDD(date)',
+    partitionBy: 'toYYYYMM(date)',
     query: `SELECT
       project_id,
       name,
       toDate(created_at) as date,
       uniqState(profile_id) as unique_profiles_state,
       uniqState(session_id) as unique_sessions_state,
-      count() as event_count
+      countState() as event_count
     FROM {events}
     GROUP BY project_id, name, date`,
     distributionHash: 'cityHash64(project_id, name, date)',
@@ -99,7 +99,7 @@ export async function up() {
         toDate(created_at) as date,
         uniqState(profile_id) as unique_profiles_state,
         uniqState(session_id) as unique_sessions_state,
-        count() as event_count
+        countState() as event_count
       FROM events
       WHERE toDate(created_at) = '${dateStr}'
       GROUP BY project_id, name, date`;

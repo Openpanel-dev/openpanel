@@ -115,7 +115,7 @@ function getChartSqlFromMaterializedView({
   } else if (event.segment === 'session') {
     sb.select.count = 'uniqMerge(t.unique_sessions_state) as count';
   } else {
-    sb.select.count = 'sum(t.event_count) as count';
+    sb.select.count = 'countMerge(t.event_count) as count';
   }
 
   // Date aggregation based on interval (use table alias)
