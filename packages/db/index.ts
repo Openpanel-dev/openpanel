@@ -31,3 +31,4 @@ export * from './src/services/overview.service';
 export * from './src/session-context';
 export * from './src/services/materialize-columns.service';
 export * from './src/services/cohort.service';
+export * from './src/services/custom-event.service';

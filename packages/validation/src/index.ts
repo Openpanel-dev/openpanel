@@ -571,3 +571,6 @@ export type ICreateImport = z.infer<typeof zCreateImport>;
 
 // Export cohort validation schemas
 export * from './cohort.validation';
+
+// Export custom event validation schemas
+export * from './custom-event.validation';

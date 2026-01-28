@@ -7,10 +7,15 @@ import type {
   IChartInput,
   IChartRange,
   IGetChartDataInput,
+  ICustomEventDefinition,
 } from '@openpanel/validation';
 
 import { TABLE_NAMES, formatClickhouseDate } from '../clickhouse/client';
 import { createSqlBuilder } from '../sql-builder';
+import {
+  getCustomEventByName,
+  expandCustomEventToSQL,
+} from './custom-event.service';
 
 export function transformPropertyKey(property: string) {
   const propertyPatterns = ['properties', 'profile.properties'];
@@ -184,9 +189,14 @@ export function getChartSql({
   limit,
   timezone,
   chartType,
-}: IGetChartDataInput & { timezone: string }) {
+  customEvent,
+}: IGetChartDataInput & {
+  timezone: string;
+  customEvent?: { name: string; definition: ICustomEventDefinition };
+}) {
   // Check if we can use materialized view for fast queries
-  if (canUseMaterializedView(event, breakdowns, interval)) {
+  // Custom events cannot use materialized views (for now)
+  if (!customEvent && canUseMaterializedView(event, breakdowns, interval)) {
     return getChartSqlFromMaterializedView({
       event,
       interval,
@@ -211,14 +221,19 @@ export function getChartSql({
     with: addCte,
   } = createSqlBuilder();
 
+  // Common setup
   sb.where = getEventFiltersWhereClause(event.filters, projectId);
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
+  sb.select.label_0 =
+    event.name !== '*'
+      ? `${sqlstring.escape(event.name)} as label_0`
+      : `'*' as label_0`;
 
-  if (event.name !== '*') {
-    sb.select.label_0 = `${sqlstring.escape(event.name)} as label_0`;
+  // Setup data source: custom event CTE or regular events table
+  if (customEvent) {
+    setupCustomEventCTE(sb, addCte, customEvent, projectId, startDate, endDate);
+  } else if (event.name !== '*') {
     sb.where.eventName = `name = ${sqlstring.escape(event.name)}`;
-  } else {
-    sb.select.label_0 = `'*' as label_0`;
   }
 
   const anyFilterOnProfile = event.filters.some((filter) =>
@@ -478,6 +493,35 @@ export function getChartSql({
 function isNumericColumn(columnName: string): boolean {
   const numericColumns = ['duration', 'revenue', 'longitude', 'latitude'];
   return numericColumns.includes(columnName);
+}
+
+/**
+ * Setup CTE for custom event expansion
+ * Modifies the sql builder to use custom event data instead of events table
+ */
+function setupCustomEventCTE(
+  sb: any,
+  addCte: (name: string, query: string) => void,
+  customEvent: { name: string; definition: ICustomEventDefinition },
+  projectId: string,
+  startDate: string,
+  endDate: string,
+) {
+  const baseWhere: string[] = [];
+  if (startDate) {
+    baseWhere.push(`created_at >= toDateTime('${formatClickhouseDate(startDate)}')`);
+  }
+  if (endDate) {
+    baseWhere.push(`created_at <= toDateTime('${formatClickhouseDate(endDate)}')`);
+  }
+
+  const customEventSQL = expandCustomEventToSQL(
+    { ...customEvent, projectId },
+    baseWhere,
+  );
+
+  addCte('custom_event_data', customEventSQL);
+  sb.from = 'custom_event_data';
 }
 
 export function getEventFiltersWhereClause(

@@ -197,6 +197,7 @@ model Project {
   notifications     Notification[]
   imports           Import[]
   cohorts           Cohort[]
+  customEvents      CustomEvent[]
 
   // When deleteAt > now(), the project will be deleted
   deleteAt DateTime?
@@ -384,6 +385,29 @@ model EventMeta {
 
   @@unique([name, projectId])
   @@map("event_meta")
+}
+
+model CustomEvent {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  description String?
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Custom event definition (JSON structure)
+  /// [IPrismaCustomEventDefinition]
+  definition Json
+
+  // Optional metadata (for UI/analytics)
+  icon       String?
+  color      String?
+  conversion Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([name, projectId])
+  @@map("custom_events")
 }
 
 model Reference {

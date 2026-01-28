@@ -3,6 +3,7 @@ import { chartRouter } from './routers/chart';
 import { chatRouter } from './routers/chat';
 import { clientRouter } from './routers/client';
 import { cohortRouter } from './routers/cohort';
+import { customEventRouter } from './routers/custom-event';
 import { dashboardRouter } from './routers/dashboard';
 import { eventRouter } from './routers/event';
 import { importRouter } from './routers/import';
@@ -35,6 +36,7 @@ export const appRouter = createTRPCRouter({
   project: projectRouter,
   client: clientRouter,
   cohort: cohortRouter,
+  customEvent: customEventRouter,
   event: eventRouter,
   profile: profileRouter,
   session: sessionRouter,

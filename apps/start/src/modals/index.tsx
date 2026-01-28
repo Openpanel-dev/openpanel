@@ -6,6 +6,7 @@ import { op } from '@/utils/op';
 import Instructions from './Instructions';
 import AddClient from './add-client';
 import AddCohort from './add-cohort';
+import AddCustomEvent from './add-custom-event';
 import AddDashboard from './add-dashboard';
 import AddImport from './add-import';
 import AddIntegration from './add-integration';
@@ -20,6 +21,7 @@ import DateRangerPicker from './date-ranger-picker';
 import DateTimePicker from './date-time-picker';
 import EditClient from './edit-client';
 import EditCohort from './edit-cohort';
+import EditCustomEvent from './edit-custom-event';
 import EditDashboard from './edit-dashboard';
 import EditEvent from './edit-event';
 import EditMember from './edit-member';
@@ -47,6 +49,8 @@ const modals = {
   AddClient: AddClient,
   AddCohort: AddCohort,
   EditCohort: EditCohort,
+  AddCustomEvent: AddCustomEvent,
+  EditCustomEvent: EditCustomEvent,
   AddImport: AddImport,
   Confirm: Confirm,
   SaveReport: SaveReport,
