@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/react-native",
-  "version": "1.0.5-local",
+  "version": "1.0.6-local",
   "module": "index.ts",
   "config": {
     "docPath": "apps/public/content/docs/(tracking)/sdks/react-native.mdx"
