@@ -191,6 +191,12 @@ export const ch = new Proxy(originalCh, {
             http_headers_progress_interval_ms: '50000',
             // Ensure server holds the connection until the query is finished
             wait_end_of_query: 1,
+            // Remove concurrent query limit for INSERT operations to prevent blocking
+            // when multiple buffers flush simultaneously
+            max_concurrent_queries_for_user: Number.parseInt(
+              process.env.CLICKHOUSE_INSERT_QUERY_LIMIT || '50',
+              10
+            ),
             ...args[0].clickhouse_settings,
           };
           return value.apply(target, args);
