@@ -4,6 +4,7 @@ import { alphabetIds } from '@openpanel/constants';
 import type { IGetChartDataInput } from '@openpanel/validation';
 import { chQuery } from '../clickhouse/client';
 import { getChartSql } from '../services/chart.service';
+import { getCustomEventByName } from '../services/custom-event.service';
 import type { ConcreteSeries, Plan } from './types';
 
 /**
@@ -33,6 +34,12 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
       continue;
     }
 
+    // Check if this is a custom event
+    const customEvent = await getCustomEventByName(
+      event.name,
+      plan.input.projectId,
+    );
+
     // Build query input
     const queryInput: IGetChartDataInput = {
       event: {
@@ -58,9 +65,18 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
       funnelWindow: plan.input.funnelWindow,
     };
 
-    // Execute query
+    // Execute query with custom event if applicable
     let queryResult = await chQuery<ISerieDataItem>(
-      getChartSql({ ...queryInput, timezone: plan.timezone }),
+      getChartSql({
+        ...queryInput,
+        timezone: plan.timezone,
+        customEvent: customEvent
+          ? {
+              name: customEvent.name,
+              definition: customEvent.definition as any,
+            }
+          : undefined,
+      }),
       {
         session_timezone: plan.timezone,
       },
@@ -73,6 +89,12 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
           ...queryInput,
           breakdowns: [],
           timezone: plan.timezone,
+          customEvent: customEvent
+            ? {
+                name: customEvent.name,
+                definition: customEvent.definition as any,
+              }
+            : undefined,
         }),
         {
           session_timezone: plan.timezone,
