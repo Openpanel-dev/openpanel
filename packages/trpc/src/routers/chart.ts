@@ -992,7 +992,6 @@ export const chartRouter = createTRPCRouter({
         showDropoffs = false,
         funnelWindow,
         funnelGroup,
-        breakdowns = [],
       } = input;
 
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
@@ -1009,31 +1008,21 @@ export const chartRouter = createTRPCRouter({
       const funnelWindowSeconds = (funnelWindow || 24) * 3600;
       const funnelWindowMilliseconds = funnelWindowSeconds * 1000;
 
-      // Use funnel service methods
+      // Get the grouping strategy (profile_id or session_id)
       const group = funnelService.getFunnelGroup(funnelGroup);
 
-      // Create sessions CTE if needed
-      const sessionsCte =
-        group[0] !== 'session_id'
-          ? funnelService.buildSessionsCte({
-              projectId,
-              startDate,
-              endDate,
-              timezone,
-            })
-          : null;
-
       // Create funnel CTE using funnel service
+      // Note: buildFunnelCte always computes windowFunnel per session_id and extracts
+      // profile_id via argMax to handle identity changes mid-session correctly.
       const funnelCte = funnelService.buildFunnelCte({
         projectId,
         startDate,
         endDate,
         eventSeries: eventSeries as IChartEvent[],
         funnelWindowMilliseconds,
-        group,
         timezone,
-        additionalSelects: ['profile_id'],
-        additionalGroupBy: ['profile_id'],
+        // No need to add profile_id to additionalSelects/additionalGroupBy
+        // since buildFunnelCte already extracts it via argMax(profile_id, created_at)
       });
 
       // Check for profile filters and add profile join if needed
@@ -1052,13 +1041,19 @@ export const chartRouter = createTRPCRouter({
 
       // Build main query
       const query = clix(ch, timezone);
+      query.with('session_funnel', funnelCte);
 
-      if (sessionsCte) {
-        funnelCte.leftJoin('sessions s', 's.sid = events.session_id');
-        query.with('sessions', sessionsCte);
+      if (group === 'profile_id') {
+        // For profile grouping: re-aggregate by profile_id, taking MAX level per profile.
+        // This ensures a user who completed the funnel with identity change is counted correctly.
+        query.with(
+          'funnel',
+          'SELECT profile_id, max(level) AS level FROM session_funnel WHERE level != 0 GROUP BY profile_id',
+        );
+      } else {
+        // For session grouping: use session_funnel directly
+        query.with('funnel', 'SELECT * FROM session_funnel');
       }
-
-      query.with('funnel', funnelCte);
 
       // Get distinct profile IDs
       query
