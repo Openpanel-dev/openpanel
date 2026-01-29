@@ -202,7 +202,7 @@ export class ConversionService {
         (${withClause}SELECT
           ${group},
           any(${clix.toStartOf('created_at', interval)}) as event_day,
-          ${breakdownGroupBy.length ? `${breakdownGroupBy.map(b => `any(${b}) as ${b}`).join(', ')},` : ''}
+          ${breakdownColumns.length ? `${breakdownColumns.join(', ')},` : ''}
           windowFunnel(${funnelWindowSeconds})(
             toDateTime(created_at),
             ${conditionA},
