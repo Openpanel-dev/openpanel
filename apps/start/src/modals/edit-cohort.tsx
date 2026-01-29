@@ -28,21 +28,26 @@ const validator = z.object({
 type IForm = z.infer<typeof validator>;
 
 interface EditCohortProps {
-  cohort: Cohort;
+  id: string;
+  name: string;
+  description?: string | null;
+  definition: CohortDefinition | any;
+  isStatic: boolean;
+  computeOnDemand: boolean;
 }
 
-export default function EditCohort({ cohort }: EditCohortProps) {
+export default function EditCohort(props: EditCohortProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
   const { register, handleSubmit, formState, control, watch } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
-      name: cohort.name,
-      description: cohort.description || '',
-      definition: cohort.definition as CohortDefinition,
-      isStatic: cohort.isStatic,
-      computeOnDemand: cohort.computeOnDemand,
+      name: props.name,
+      description: props.description || '',
+      definition: props.definition as CohortDefinition,
+      isStatic: props.isStatic,
+      computeOnDemand: props.computeOnDemand,
     },
   });
 
@@ -68,7 +73,7 @@ export default function EditCohort({ cohort }: EditCohortProps) {
         className="flex flex-col gap-4"
         onSubmit={handleSubmit((data) => {
           mutation.mutate({
-            id: cohort.id,
+            id: props.id,
             ...data,
           });
         })}
