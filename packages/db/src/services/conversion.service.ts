@@ -1,6 +1,7 @@
 import { NOT_SET_VALUE } from '@openpanel/constants';
-import type { IChartEvent, IChartBreakdown, IReportInput } from '@openpanel/validation';
+import type { IReportInput } from '@openpanel/validation';
 import { omit } from 'ramda';
+import sqlstring from 'sqlstring';
 import { TABLE_NAMES, ch } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import {
@@ -29,10 +30,44 @@ export class ConversionService {
     const funnelGroup = funnelOptions?.funnelGroup;
     const funnelWindow = funnelOptions?.funnelWindow ?? 24;
     const group = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
-    const breakdownColumns = breakdowns.map(
-      (b: IChartBreakdown, index: number) => `${getSelectPropertyKey(b.name)} as b_${index}`,
+    const breakdownExpressions = breakdowns.map(
+      (b) => getSelectPropertyKey(b.name),
     );
-    const breakdownGroupBy = breakdowns.map((b: IChartBreakdown, index: number) => `b_${index}`);
+    const breakdownSelects = breakdownExpressions.map(
+      (expr, index) => `${expr} as b_${index}`,
+    );
+    const breakdownGroupBy = breakdowns.map((_, index) => `b_${index}`);
+
+    // Check if any breakdown uses profile fields and build profile JOIN if needed
+    const profileBreakdowns = breakdowns.filter((b) =>
+      b.name.startsWith('profile.'),
+    );
+    const needsProfileJoin = profileBreakdowns.length > 0;
+
+    // Build profile JOIN clause if needed
+    let profileJoin = '';
+    if (needsProfileJoin) {
+      const profileFields = new Set<string>();
+      profileFields.add('id');
+
+      for (const b of profileBreakdowns) {
+        const fieldName = b.name.replace('profile.', '').split('.')[0];
+        if (fieldName === 'properties') {
+          profileFields.add('properties');
+        } else if (['email', 'first_name', 'last_name'].includes(fieldName!)) {
+          profileFields.add(fieldName!);
+        }
+      }
+
+      // Use simple column names (not aliased) so profile.properties works directly
+      const selectFields = Array.from(profileFields);
+
+      profileJoin = `LEFT ANY JOIN (
+        SELECT ${selectFields.join(', ')}
+        FROM ${TABLE_NAMES.profiles} FINAL
+        WHERE project_id = ${sqlstring.escape(projectId)}
+      ) as profile ON profile.id = profile_id`;
+    }
 
     const events = onlyReportEvents(series);
 
@@ -53,63 +88,51 @@ export class ConversionService {
       getEventFiltersWhereClause(eventB.filters),
     ).join(' AND ');
 
-    const eventACte = clix(this.client, timezone)
-      .select([
-        `DISTINCT ${group}`,
-        'created_at AS a_time',
-        `${clix.toStartOf('created_at', interval)} AS event_day`,
-        ...breakdownColumns,
-      ])
-      .from(TABLE_NAMES.events)
-      .where('project_id', '=', projectId)
-      .where('name', '=', eventA.name)
-      .rawWhere(whereA)
-      .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate, 'toDateTime'),
-        clix.datetime(endDate, 'toDateTime'),
-      ]);
+    const funnelWindowSeconds = funnelWindow * 3600;
 
-    const eventBCte = clix(this.client, timezone)
-      .select([group, 'created_at AS b_time'])
-      .from(TABLE_NAMES.events)
-      .where('project_id', '=', projectId)
-      .where('name', '=', eventB.name)
-      .rawWhere(whereB)
-      .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate, 'toDateTime'),
-        clix.datetime(endDate, 'toDateTime'),
-      ]);
+    // Build funnel conditions
+    const conditionA = whereA
+      ? `(name = '${eventA.name}' AND ${whereA})`
+      : `name = '${eventA.name}'`;
+    const conditionB = whereB
+      ? `(name = '${eventB.name}' AND ${whereB})`
+      : `name = '${eventB.name}'`;
 
+    // Use windowFunnel approach - single scan, no JOIN
     const query = clix(this.client, timezone)
-      .with('event_a', eventACte)
-      .with('event_b', eventBCte)
       .select<{
         event_day: string;
         total_first: number;
         conversions: number;
         conversion_rate_percentage: number;
-        [key: string]: string | number; // For breakdown columns
+        [key: string]: string | number;
       }>([
         'event_day',
         ...breakdownGroupBy,
-        'count(*) AS total_first',
-        'sum(if(conversion_time IS NOT NULL, 1, 0)) AS conversions',
-        'round(100.0 * sum(if(conversion_time IS NOT NULL, 1, 0)) / count(*), 2) AS conversion_rate_percentage',
+        `uniqExact(${group}) AS total_first`,
+        'countIf(steps >= 2) AS conversions',
+        `round(100.0 * countIf(steps >= 2) / uniqExact(${group}), 2) AS conversion_rate_percentage`,
       ])
       .from(
         clix.exp(`
-        (SELECT 
-          a.${group},
-          a.a_time,
-          a.event_day,
-          ${breakdownGroupBy.length ? `${breakdownGroupBy.join(', ')},` : ''}
-          nullIf(min(b.b_time), '1970-01-01 00:00:00.000') AS conversion_time
-        FROM event_a AS a
-        LEFT JOIN event_b AS b ON a.${group} = b.${group}
-          AND b.b_time BETWEEN a.a_time AND a.a_time + INTERVAL ${funnelWindow} HOUR
-        GROUP BY a.${group}, a.a_time, a.event_day${breakdownGroupBy.length ? `, ${breakdownGroupBy.join(', ')}` : ''})
+        (SELECT
+          ${group},
+          any(${clix.toStartOf('created_at', interval)}) as event_day,
+          ${breakdownSelects.length ? `${breakdownSelects.join(', ')},` : ''}
+          windowFunnel(${funnelWindowSeconds})(
+            toDateTime(created_at),
+            ${conditionA},
+            ${conditionB}
+          ) as steps
+        FROM ${TABLE_NAMES.events}
+        ${profileJoin}
+        WHERE project_id = '${projectId}'
+          AND name IN ('${eventA.name}', '${eventB.name}')
+          AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')
+        GROUP BY ${group}${breakdownExpressions.length ? `, ${breakdownExpressions.join(', ')}` : ''})
       `),
       )
+      .where('steps', '>', 0)
       .groupBy(['event_day', ...breakdownGroupBy]);
 
     for (const order of ['event_day', ...breakdownGroupBy]) {
