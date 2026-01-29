@@ -157,8 +157,7 @@ export function ReportEvents() {
   const showAddFilter = !['retention'].includes(chartType);
   const showDisplayNameInput = !['retention'].includes(chartType);
   const isAddEventDisabled =
-    (chartType === 'retention' || chartType === 'conversion') &&
-    selectedEvents.length >= 2;
+    chartType === 'retention' && selectedEvents.length >= 2;
   const dispatchChangeEvent = useDebounceFn((event: IChartEventItem) => {
     dispatch(changeEvent(event));
   });

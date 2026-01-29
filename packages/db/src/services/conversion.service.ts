@@ -16,10 +16,10 @@ export class ConversionService {
   /**
    * Build events source for conversion query
    * Handles both regular events and custom events
+   * Supports N events (not just 2)
    */
   private async buildEventsSource(
-    eventA: IChartEvent,
-    eventB: IChartEvent,
+    events: IChartEvent[],
     projectId: string,
     startDate: string,
     endDate: string,
@@ -28,14 +28,13 @@ export class ConversionService {
     ctes: string[];
     needsDateFilter: boolean;
   }> {
-    // Check if either event is a custom event
-    const [customEventA, customEventB] = await Promise.all([
-      getCustomEventByName(eventA.name, projectId),
-      getCustomEventByName(eventB.name, projectId),
-    ]);
+    // Check if any events are custom events
+    const customEvents = await Promise.all(
+      events.map(event => getCustomEventByName(event.name, projectId))
+    );
 
     // If no custom events, use regular events table
-    if (!customEventA && !customEventB) {
+    if (customEvents.every(ce => !ce)) {
       return {
         fromClause: TABLE_NAMES.events,
         ctes: [],
@@ -50,56 +49,36 @@ export class ConversionService {
       `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`,
     ];
 
-    // Build CTE for event A (custom or regular)
-    if (customEventA) {
-      const sql = expandCustomEventToSQL(
-        {
-          name: customEventA.name,
-          projectId,
-          definition: customEventA.definition as any,
-        },
-        baseWhere,
-      );
-      ctes.push(`custom_event_a AS (${sql})`);
-    }
-
-    // Build CTE for event B (custom or regular)
-    if (customEventB) {
-      const sql = expandCustomEventToSQL(
-        {
-          name: customEventB.name,
-          projectId,
-          definition: customEventB.definition as any,
-        },
-        baseWhere,
-      );
-      ctes.push(`custom_event_b AS (${sql})`);
-    }
+    // Build CTE for each custom event
+    customEvents.forEach((customEvent, index) => {
+      if (customEvent) {
+        const sql = expandCustomEventToSQL(
+          {
+            name: customEvent.name,
+            projectId,
+            definition: customEvent.definition as any,
+          },
+          baseWhere,
+        );
+        ctes.push(`custom_event_${index} AS (${sql})`);
+      }
+    });
 
     // Build union of custom and regular events
     const unionParts: string[] = [];
 
-    if (customEventA) {
-      unionParts.push('SELECT * FROM custom_event_a');
-    } else {
-      unionParts.push(`
-        SELECT * FROM ${TABLE_NAMES.events}
-        WHERE project_id = '${projectId}'
-          AND name = '${eventA.name}'
-          AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')
-      `);
-    }
-
-    if (customEventB) {
-      unionParts.push('SELECT * FROM custom_event_b');
-    } else {
-      unionParts.push(`
-        SELECT * FROM ${TABLE_NAMES.events}
-        WHERE project_id = '${projectId}'
-          AND name = '${eventB.name}'
-          AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')
-      `);
-    }
+    events.forEach((event, index) => {
+      if (customEvents[index]) {
+        unionParts.push(`SELECT * FROM custom_event_${index}`);
+      } else {
+        unionParts.push(`
+          SELECT * FROM ${TABLE_NAMES.events}
+          WHERE project_id = '${projectId}'
+            AND name = '${event.name}'
+            AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')
+        `);
+      }
+    });
 
     ctes.push(`combined_events AS (${unionParts.join(' UNION ALL ')})`);
 
@@ -132,43 +111,34 @@ export class ConversionService {
 
     const events = onlyReportEvents(series);
 
-    if (events.length !== 2) {
-      throw new Error('events must be an array of two events');
+    if (events.length < 2) {
+      throw new Error('events must be at least 2 events');
     }
 
     if (!startDate || !endDate) {
       throw new Error('startDate and endDate are required');
     }
 
-    const eventA = events[0]!;
-    const eventB = events[1]!;
-
-    // Build event filters
-    const whereA = Object.values(
-      getEventFiltersWhereClause(eventA.filters),
-    ).join(' AND ');
-    const whereB = Object.values(
-      getEventFiltersWhereClause(eventB.filters),
-    ).join(' AND ');
-
     const funnelWindowSeconds = funnelWindow * 3600;
 
     // Get events source (handles custom events)
     const { fromClause, ctes, needsDateFilter } = await this.buildEventsSource(
-      eventA,
-      eventB,
+      events,
       projectId,
       startDate,
       endDate,
     );
 
-    // Build funnel conditions
-    const conditionA = whereA
-      ? `(name = '${eventA.name}' AND ${whereA})`
-      : `name = '${eventA.name}'`;
-    const conditionB = whereB
-      ? `(name = '${eventB.name}' AND ${whereB})`
-      : `name = '${eventB.name}'`;
+    // Build funnel conditions for all events
+    const conditions = events.map(event => {
+      const where = Object.values(
+        getEventFiltersWhereClause(event.filters),
+      ).join(' AND ');
+
+      return where
+        ? `(name = '${event.name}' AND ${where})`
+        : `name = '${event.name}'`;
+    });
 
     // Build WHERE clause
     const whereClauses = [`project_id = '${projectId}'`];
@@ -176,11 +146,15 @@ export class ConversionService {
       whereClauses.push(
         `created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')`,
       );
-      whereClauses.push(`name IN ('${eventA.name}', '${eventB.name}')`);
+      const eventNames = events.map(e => `'${e.name}'`).join(', ');
+      whereClauses.push(`name IN (${eventNames})`);
     }
 
     // Build WITH clause if CTEs exist
     const withClause = ctes.length > 0 ? `WITH ${ctes.join(', ')} ` : '';
+
+    // Final step is the total number of events
+    const finalStep = events.length;
 
     // Build windowFunnel query
     const query = clix(this.client, timezone)
@@ -194,8 +168,8 @@ export class ConversionService {
         'event_day',
         ...breakdownGroupBy,
         `uniqExact(${group}) AS total_first`,
-        `countIf(steps >= 2) AS conversions`,
-        `round(100.0 * countIf(steps >= 2) / uniqExact(${group}), 2) AS conversion_rate_percentage`,
+        `countIf(steps >= ${finalStep}) AS conversions`,
+        `round(100.0 * countIf(steps >= ${finalStep}) / uniqExact(${group}), 2) AS conversion_rate_percentage`,
       ])
       .from(
         clix.exp(`
@@ -205,8 +179,7 @@ export class ConversionService {
           ${breakdownColumns.length ? `${breakdownColumns.join(', ')},` : ''}
           windowFunnel(${funnelWindowSeconds})(
             toDateTime(created_at),
-            ${conditionA},
-            ${conditionB}
+            ${conditions.join(',\n            ')}
           ) as steps
         FROM ${fromClause}
         WHERE ${whereClauses.join(' AND ')}
