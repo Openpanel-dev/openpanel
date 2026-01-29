@@ -52,6 +52,7 @@ export default function SidebarProjectMenu({
       <SidebarLink icon={UsersIcon} label="Sessions" href={'/sessions'} />
       <SidebarLink icon={UsersIcon} label="Profiles" href={'/profiles'} />
       <SidebarLink icon={UsersIcon} label="Cohorts" href={'/cohorts'} />
+      <SidebarLink icon={SparklesIcon} label="Custom Events" href={'/custom-events'} />
       <div className="mt-4 mb-2 font-medium text-muted-foreground">Manage</div>
       <SidebarLink
         exact={false}

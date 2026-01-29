@@ -88,22 +88,6 @@ export default function EditCustomEvent(props: Props) {
           {...register('description')}
         />
 
-        <div className="flex items-center gap-4">
-          <InputWithLabel
-            label="Icon (emoji)"
-            placeholder="✨"
-            className="w-24"
-            {...register('icon')}
-          />
-
-          <InputWithLabel
-            label="Color"
-            type="color"
-            className="w-24"
-            {...register('color')}
-          />
-        </div>
-
         <div className="flex items-center gap-2">
           <Switch id="conversion" {...register('conversion')} />
           <Label htmlFor="conversion" className="text-sm cursor-pointer">
