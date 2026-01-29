@@ -1,7 +1,6 @@
 import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
-import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
@@ -11,33 +10,14 @@ import { Chart } from './chart';
 import CohortTable from './table';
 
 export function ReportRetentionChart() {
-  const {
-    report: {
-      id,
-      series,
-      range,
-      projectId,
-      options,
-      startDate,
-      endDate,
-      interval,
-    },
-    isLazyLoading,
-    shareId,
-  } = useReportChartContext();
-  const {
-    range: overviewRange,
-    startDate: overviewStartDate,
-    endDate: overviewEndDate,
-    interval: overviewInterval,
-  } = useOverviewOptions();
-  const eventSeries = series.filter((item) => item.type === 'event');
+  const { isLazyLoading, report, shareId } = useReportChartContext();
+  const eventSeries = report.series.filter((item) => item.type === 'event');
   const firstEvent = (eventSeries[0]?.filters?.[0]?.value ?? []).map(String);
   const secondEvent = (eventSeries[1]?.filters?.[0]?.value ?? []).map(String);
   const isEnabled =
     firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
 
-  const retentionOptions = options?.type === 'retention' ? options : undefined;
+  const retentionOptions = report.options?.type === 'retention' ? report.options : undefined;
   const criteria = retentionOptions?.criteria ?? 'on_or_after';
 
   const trpc = useTRPC();
@@ -46,14 +26,14 @@ export function ReportRetentionChart() {
       {
         firstEvent,
         secondEvent,
-        projectId,
-        range: overviewRange ?? range,
-        startDate: overviewStartDate ?? startDate,
-        endDate: overviewEndDate ?? endDate,
+        projectId: report.projectId,
+        range: report.range,
+        startDate: report.startDate,
+        endDate: report.endDate,
         criteria,
-        interval: overviewInterval ?? interval,
+        interval: report.interval,
         shareId,
-        id,
+        id: 'id' in report ? report.id : undefined,
       },
       {
         placeholderData: keepPreviousData,
