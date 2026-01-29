@@ -1,16 +1,114 @@
 import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
 import { omit } from 'ramda';
-import { TABLE_NAMES, ch } from '../clickhouse/client';
+import { TABLE_NAMES, ch, formatClickhouseDate } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import {
   getEventFiltersWhereClause,
   getSelectPropertyKey,
 } from './chart.service';
 import { onlyReportEvents } from './reports.service';
+import { getCustomEventByName, expandCustomEventToSQL } from './custom-event.service';
 
 export class ConversionService {
   constructor(private client: typeof ch) {}
+
+  /**
+   * Build events source for conversion query
+   * Handles both regular events and custom events
+   */
+  private async buildEventsSource(
+    eventA: IChartEvent,
+    eventB: IChartEvent,
+    projectId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<{
+    fromClause: string;
+    ctes: string[];
+    needsDateFilter: boolean;
+  }> {
+    // Check if either event is a custom event
+    const [customEventA, customEventB] = await Promise.all([
+      getCustomEventByName(eventA.name, projectId),
+      getCustomEventByName(eventB.name, projectId),
+    ]);
+
+    // If no custom events, use regular events table
+    if (!customEventA && !customEventB) {
+      return {
+        fromClause: TABLE_NAMES.events,
+        ctes: [],
+        needsDateFilter: true,
+      };
+    }
+
+    // Build CTEs for custom events
+    const ctes: string[] = [];
+    const baseWhere = [
+      `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`,
+      `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`,
+    ];
+
+    // Build CTE for event A (custom or regular)
+    if (customEventA) {
+      const sql = expandCustomEventToSQL(
+        {
+          name: customEventA.name,
+          projectId,
+          definition: customEventA.definition as any,
+        },
+        baseWhere,
+      );
+      ctes.push(`custom_event_a AS (${sql})`);
+    }
+
+    // Build CTE for event B (custom or regular)
+    if (customEventB) {
+      const sql = expandCustomEventToSQL(
+        {
+          name: customEventB.name,
+          projectId,
+          definition: customEventB.definition as any,
+        },
+        baseWhere,
+      );
+      ctes.push(`custom_event_b AS (${sql})`);
+    }
+
+    // Build union of custom and regular events
+    const unionParts: string[] = [];
+
+    if (customEventA) {
+      unionParts.push('SELECT * FROM custom_event_a');
+    } else {
+      unionParts.push(`
+        SELECT * FROM ${TABLE_NAMES.events}
+        WHERE project_id = '${projectId}'
+          AND name = '${eventA.name}'
+          AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')
+      `);
+    }
+
+    if (customEventB) {
+      unionParts.push('SELECT * FROM custom_event_b');
+    } else {
+      unionParts.push(`
+        SELECT * FROM ${TABLE_NAMES.events}
+        WHERE project_id = '${projectId}'
+          AND name = '${eventB.name}'
+          AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')
+      `);
+    }
+
+    ctes.push(`combined_events AS (${unionParts.join(' UNION ALL ')})`);
+
+    return {
+      fromClause: 'combined_events',
+      ctes,
+      needsDateFilter: false, // Already filtered in CTEs
+    };
+  }
 
   async getConversion({
     projectId,
@@ -44,6 +142,8 @@ export class ConversionService {
 
     const eventA = events[0]!;
     const eventB = events[1]!;
+
+    // Build event filters
     const whereA = Object.values(
       getEventFiltersWhereClause(eventA.filters),
     ).join(' AND ');
@@ -53,11 +153,36 @@ export class ConversionService {
 
     const funnelWindowSeconds = funnelWindow * 3600;
 
-    // Build funnel conditions
-    const conditionA = whereA ? `(name = '${eventA.name}' AND ${whereA})` : `name = '${eventA.name}'`;
-    const conditionB = whereB ? `(name = '${eventB.name}' AND ${whereB})` : `name = '${eventB.name}'`;
+    // Get events source (handles custom events)
+    const { fromClause, ctes, needsDateFilter } = await this.buildEventsSource(
+      eventA,
+      eventB,
+      projectId,
+      startDate,
+      endDate,
+    );
 
-    // Use windowFunnel approach - single scan, no JOIN
+    // Build funnel conditions
+    const conditionA = whereA
+      ? `(name = '${eventA.name}' AND ${whereA})`
+      : `name = '${eventA.name}'`;
+    const conditionB = whereB
+      ? `(name = '${eventB.name}' AND ${whereB})`
+      : `name = '${eventB.name}'`;
+
+    // Build WHERE clause
+    const whereClauses = [`project_id = '${projectId}'`];
+    if (needsDateFilter) {
+      whereClauses.push(
+        `created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')`,
+      );
+      whereClauses.push(`name IN ('${eventA.name}', '${eventB.name}')`);
+    }
+
+    // Build WITH clause if CTEs exist
+    const withClause = ctes.length > 0 ? `WITH ${ctes.join(', ')} ` : '';
+
+    // Build windowFunnel query
     const query = clix(this.client, timezone)
       .select<{
         event_day: string;
@@ -74,7 +199,7 @@ export class ConversionService {
       ])
       .from(
         clix.exp(`
-        (SELECT
+        (${withClause}SELECT
           ${group},
           any(${clix.toStartOf('created_at', interval)}) as event_day,
           ${breakdownGroupBy.length ? `${breakdownGroupBy.map(b => `any(${b}) as ${b}`).join(', ')},` : ''}
@@ -83,10 +208,8 @@ export class ConversionService {
             ${conditionA},
             ${conditionB}
           ) as steps
-        FROM ${TABLE_NAMES.events}
-        WHERE project_id = '${projectId}'
-          AND name IN ('${eventA.name}', '${eventB.name}')
-          AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')
+        FROM ${fromClause}
+        WHERE ${whereClauses.join(' AND ')}
         GROUP BY ${group}${breakdownGroupBy.length ? `, ${breakdownGroupBy.join(', ')}` : ''})
       `),
       )

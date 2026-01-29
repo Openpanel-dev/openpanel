@@ -6,7 +6,7 @@ import type {
 } from '@openpanel/validation';
 import { last, reverse, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
-import { ch } from '../clickhouse/client';
+import { ch, formatClickhouseDate } from '../clickhouse/client';
 import { TABLE_NAMES } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import { createSqlBuilder } from '../sql-builder';
@@ -15,9 +15,99 @@ import {
   getSelectPropertyKey,
 } from './chart.service';
 import { onlyReportEvents } from './reports.service';
+import {
+  getCustomEventByName,
+  expandCustomEventToSQL,
+} from './custom-event.service';
 
 export class FunnelService {
   constructor(private client: typeof ch) {}
+
+  /**
+   * Build events source for funnel query
+   * Handles both regular events and custom events
+   */
+  private async buildEventsSource(
+    events: IChartEvent[],
+    projectId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<{
+    fromClause: string;
+    withClauses: Array<{ name: string; query: any }>;
+    needsNameFilter: boolean;
+  }> {
+    // Check which events are custom events
+    const customEventsChecks = await Promise.all(
+      events.map((event) => getCustomEventByName(event.name, projectId)),
+    );
+
+    const hasCustomEvents = customEventsChecks.some((ce) => ce !== null);
+
+    // If no custom events, use regular events table
+    if (!hasCustomEvents) {
+      return {
+        fromClause: TABLE_NAMES.events,
+        withClauses: [],
+        needsNameFilter: true,
+      };
+    }
+
+    // Build CTEs for custom events
+    const withClauses: Array<{ name: string; query: any }> = [];
+    const baseWhere = [
+      `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`,
+      `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`,
+    ];
+
+    // Build union parts - one for each event (custom or regular)
+    const unionParts: string[] = [];
+
+    for (let i = 0; i < events.length; i++) {
+      const event = events[i]!;
+      const customEvent = customEventsChecks[i];
+
+      if (customEvent) {
+        // Custom event - create CTE and reference it
+        const cteName = `custom_event_${i}`;
+        const sql = expandCustomEventToSQL(
+          {
+            name: customEvent.name,
+            projectId,
+            definition: customEvent.definition as any,
+          },
+          baseWhere,
+        );
+
+        withClauses.push({
+          name: cteName,
+          query: clix.raw(sql),
+        });
+
+        unionParts.push(`SELECT * FROM ${cteName}`);
+      } else {
+        // Regular event - select directly
+        unionParts.push(`
+          SELECT * FROM ${TABLE_NAMES.events}
+          WHERE project_id = '${projectId}'
+            AND name = '${event.name}'
+            AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')
+        `);
+      }
+    }
+
+    // Create combined_events CTE
+    withClauses.push({
+      name: 'combined_events',
+      query: clix.raw(unionParts.join(' UNION ALL ')),
+    });
+
+    return {
+      fromClause: 'combined_events',
+      withClauses,
+      needsNameFilter: false, // Already filtered in CTEs
+    };
+  }
 
   getFunnelGroup(group?: string): [string, string] {
     return group === 'profile_id'
@@ -44,6 +134,8 @@ export class FunnelService {
     timezone,
     additionalSelects = [],
     additionalGroupBy = [],
+    fromClause,
+    needsNameFilter,
   }: {
     projectId: string;
     startDate: string;
@@ -54,27 +146,36 @@ export class FunnelService {
     timezone: string;
     additionalSelects?: string[];
     additionalGroupBy?: string[];
+    fromClause: string;
+    needsNameFilter: boolean;
   }) {
     const funnels = this.getFunnelConditions(eventSeries);
 
-    return clix(this.client, timezone)
+    const query = clix(this.client, timezone)
       .select([
         `${group[0]} AS ${group[1]}`,
         ...additionalSelects,
         `windowFunnel(${funnelWindowMilliseconds}, 'strict_increase')(toUInt64(toUnixTimestamp64Milli(created_at)), ${funnels.join(', ')}) AS level`,
       ])
-      .from(TABLE_NAMES.events, false)
+      .from(fromClause, false)
       .where('project_id', '=', projectId)
-      .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate, 'toDateTime'),
-        clix.datetime(endDate, 'toDateTime'),
-      ])
-      .where(
-        'name',
-        'IN',
-        eventSeries.map((e) => e.name),
-      )
       .groupBy([group[1], ...additionalGroupBy]);
+
+    // Add date and name filters only for regular events
+    if (needsNameFilter) {
+      query
+        .where('created_at', 'BETWEEN', [
+          clix.datetime(startDate, 'toDateTime'),
+          clix.datetime(endDate, 'toDateTime'),
+        ])
+        .where(
+          'name',
+          'IN',
+          eventSeries.map((e) => e.name),
+        );
+    }
+
+    return query;
   }
 
   buildSessionsCte({
@@ -210,6 +311,10 @@ export class FunnelService {
       b.name.startsWith('profile.'),
     );
 
+    // Get events source (handles custom events)
+    const { fromClause, withClauses, needsNameFilter } =
+      await this.buildEventsSource(eventSeries, projectId, startDate, endDate);
+
     // Create the funnel CTE
     const breakdownSelects = breakdowns.map(
       (b, index) => `${getSelectPropertyKey(b.name)} as b_${index}`,
@@ -226,6 +331,8 @@ export class FunnelService {
       timezone,
       additionalSelects: breakdownSelects,
       additionalGroupBy: breakdownGroupBy,
+      fromClause,
+      needsNameFilter,
     });
 
     if (anyFilterOnProfile || anyBreakdownOnProfile) {
@@ -249,6 +356,11 @@ export class FunnelService {
 
     // Base funnel query with CTEs
     const funnelQuery = clix(this.client, timezone);
+
+    // Add custom event CTEs first (if any)
+    for (const withClause of withClauses) {
+      funnelQuery.with(withClause.name, withClause.query);
+    }
 
     if (sessionsCte) {
       funnelCte.leftJoin('sessions s', 's.sid = events.session_id');
