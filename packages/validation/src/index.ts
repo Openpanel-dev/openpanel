@@ -88,6 +88,7 @@ export const zChartEventItem = z.discriminatedUnion('type', [
 export const zChartBreakdown = z.object({
   id: z.string().optional(),
   name: z.string(),
+  cohortId: z.string().optional(),
 });
 
 // Support both old format (array of events without type) and new format (array of event/formula items)

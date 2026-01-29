@@ -24,6 +24,7 @@ interface PropertiesComboboxProps {
     value: string;
     label: string;
     description: string;
+    cohortId?: string;
   }) => void;
   exclude?: string[];
   mode?: 'events' | 'profile';
@@ -122,6 +123,7 @@ export function PropertiesCombobox({
     value: string;
     label: string;
     description: string;
+    cohortId?: string;
   }) => {
     setOpen(false);
     onSelect(action);
@@ -156,11 +158,7 @@ export function PropertiesCombobox({
           className="group justify-between gap-2"
           onClick={(e) => {
             e.preventDefault();
-            handleSelect({
-              value: 'cohort',
-              label: 'Cohort',
-              description: 'Filter by user cohort',
-            });
+            handleStateChange('cohort');
           }}
         >
           Cohorts
@@ -251,27 +249,45 @@ export function PropertiesCombobox({
   };
 
   const renderCohort = () => {
-    // Just return a single action to create a cohort filter
-    // The actual cohort selection happens in CohortFilterItem
-    const cohortAction = {
-      value: 'cohort',
-      label: 'Cohort',
-      description: 'Filter by user cohort',
-    };
+    const filteredCohorts = cohorts.filter(cohort =>
+      cohort.name.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const cohortActions = filteredCohorts.map(cohort => ({
+      value: `cohort:${cohort.id}`,
+      label: cohort.name,
+      description: cohort.description || `${cohort.profileCount || 0} users`,
+      cohortId: cohort.id,
+    }));
 
     return (
-      <div className="flex flex-col">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-2 hover:bg-accent cursor-pointer rounded-md col gap-px"
-          onClick={() => handleSelect(cohortAction)}
+      <div className="col">
+        <SearchHeader
+          onBack={() => handleStateChange('index')}
+          onSearch={setSearch}
+          value={search}
+        />
+        <DropdownMenuSeparator />
+        <VirtualList
+          height={300}
+          data={cohortActions}
+          itemHeight={40}
+          itemKey="value"
         >
-          <div className="font-medium">{cohortAction.label}</div>
-          <div className="text-sm text-muted-foreground line-clamp-1">
-            {cohortAction.description}
-          </div>
-        </motion.div>
+          {(action) => (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-2 hover:bg-accent cursor-pointer rounded-md col gap-px"
+              onClick={() => handleSelect(action)}
+            >
+              <div className="font-medium">{action.label}</div>
+              <div className="text-sm text-muted-foreground">
+                {action.description}
+              </div>
+            </motion.div>
+          )}
+        </VirtualList>
       </div>
     );
   };

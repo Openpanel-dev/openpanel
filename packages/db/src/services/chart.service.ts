@@ -38,7 +38,24 @@ export function transformPropertyKey(property: string) {
   return `${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
 }
 
-export function getSelectPropertyKey(property: string) {
+export function getSelectPropertyKey(property: string, projectId?: string) {
+  // Handle cohort breakdown
+  if (property.startsWith('cohort:')) {
+    const cohortId = property.split(':')[1];
+    const projectFilter = projectId
+      ? `AND project_id = ${sqlstring.escape(projectId)}`
+      : '';
+    return `if(
+      profile_id IN (
+        SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL
+        WHERE cohort_id = ${sqlstring.escape(cohortId)}
+        ${projectFilter}
+      ),
+      'In Cohort',
+      'Not In Cohort'
+    )`;
+  }
+
   if (property === 'has_profile') {
     return `if(profile_id != device_id, 'true', 'false')`;
   }
@@ -167,8 +184,14 @@ function canUseMaterializedView(
   // 2. No breakdowns OR single breakdown with no filters
   // 3. Segment is 'user' or 'session' or 'event'
   // 4. No complex property filters
+  // 5. No cohort breakdowns
   const validIntervals = ['day', 'week', 'month'];
   const validSegments = ['user', 'session', 'event'];
+
+  const hasCohortBreakdown = breakdowns.some(b => b.name.startsWith('cohort:'));
+  if (hasCohortBreakdown) {
+    return false;
+  }
 
   return (
     validIntervals.includes(interval) &&
@@ -363,7 +386,7 @@ export function getChartSql({
   // Use CTE to define top breakdown values once, then reference in WHERE clause
   if (breakdowns.length > 0 && limit) {
     const breakdownSelects = breakdowns
-      .map((b) => getSelectPropertyKey(b.name))
+      .map((b) => getSelectPropertyKey(b.name, projectId))
       .join(', ');
 
     // Add top_breakdowns CTE using the builder
@@ -378,13 +401,13 @@ export function getChartSql({
     );
 
     // Filter main query to only include top breakdown values
-    sb.where.bar = `(${breakdowns.map((b) => getSelectPropertyKey(b.name)).join(',')}) IN (SELECT * FROM top_breakdowns)`;
+    sb.where.bar = `(${breakdowns.map((b) => getSelectPropertyKey(b.name, projectId)).join(',')}) IN (SELECT * FROM top_breakdowns)`;
   }
 
   breakdowns.forEach((breakdown, index) => {
     // Breakdowns start at label_1 (label_0 is reserved for event name)
     const key = `label_${index + 1}`;
-    sb.select[key] = `${getSelectPropertyKey(breakdown.name)} as ${key}`;
+    sb.select[key] = `${getSelectPropertyKey(breakdown.name, projectId)} as ${key}`;
     sb.groupBy[key] = `${key}`;
   });
 
@@ -409,7 +432,7 @@ export function getChartSql({
   }[event.segment as string];
 
   if (mathFunction && event.property) {
-    const propertyKey = getSelectPropertyKey(event.property);
+    const propertyKey = getSelectPropertyKey(event.property, projectId);
 
     if (isNumericColumn(event.property)) {
       sb.select.count = `${mathFunction}(${propertyKey}) as count`;
@@ -440,7 +463,7 @@ export function getChartSql({
   if (breakdowns.length > 0) {
     const breakdownSelects = breakdowns
       .map((b, index) => {
-        const propertyKey = getSelectPropertyKey(b.name);
+        const propertyKey = getSelectPropertyKey(b.name, projectId);
         return `${propertyKey} as breakdown_${index + 1}`;
       })
       .join(', ');
@@ -463,7 +486,7 @@ export function getChartSql({
 
     const joinConditions = breakdowns
       .map((b, index) => {
-        const propertyKey = getSelectPropertyKey(b.name);
+        const propertyKey = getSelectPropertyKey(b.name, projectId);
         return `breakdown_totals.breakdown_${index + 1} = ${propertyKey}`;
       })
       .join(' AND ');
@@ -575,9 +598,9 @@ export function getEventFiltersWhereClause(
       name.startsWith('properties.') ||
       name.startsWith('profile.properties.')
     ) {
-      const propertyKey = getSelectPropertyKey(name);
+      const propertyKey = getSelectPropertyKey(name, projectId);
       const isWildcard = propertyKey.includes('%');
-      const whereFrom = getSelectPropertyKey(name);
+      const whereFrom = getSelectPropertyKey(name, projectId);
 
       switch (operator) {
         case 'is': {
