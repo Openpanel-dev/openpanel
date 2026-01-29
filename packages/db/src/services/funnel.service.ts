@@ -81,7 +81,7 @@ export class FunnelService {
 
         withClauses.push({
           name: cteName,
-          query: clix.raw(sql),
+          query: sql,
         });
 
         unionParts.push(`SELECT * FROM ${cteName}`);
@@ -99,7 +99,7 @@ export class FunnelService {
     // Create combined_events CTE
     withClauses.push({
       name: 'combined_events',
-      query: clix.raw(unionParts.join(' UNION ALL ')),
+      query: unionParts.join(' UNION ALL '),
     });
 
     return {
