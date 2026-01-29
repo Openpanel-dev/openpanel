@@ -126,7 +126,7 @@ export class ConversionService {
   }) {
     const group = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
     const breakdownColumns = breakdowns.map(
-      (b, index) => `${getSelectPropertyKey(b.name)} as b_${index}`,
+      (b, index) => `${getSelectPropertyKey(b.name, projectId)} as b_${index}`,
     );
     const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
 

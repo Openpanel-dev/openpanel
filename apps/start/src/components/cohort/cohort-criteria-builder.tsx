@@ -329,71 +329,130 @@ function EventCriteriaItem({
       {/* Timeframe */}
       <div className="mb-3">
         <label className="mb-1 block text-sm font-medium">Timeframe</label>
-        <div className="flex gap-2">
-          <DropdownMenuComposed
-            onChange={(type) => {
-              if (type === 'relative') {
-                onChange({
-                  ...criteria,
-                  timeframe: { type: 'relative', value: '30d' },
-                });
-              } else {
-                onChange({
-                  ...criteria,
-                  timeframe: {
-                    type: 'absolute',
-                    start: new Date().toISOString().split('T')[0],
-                  },
-                });
-              }
-            }}
-            items={[
-              { value: 'relative', label: 'Last' },
-              { value: 'absolute', label: 'Since' },
-            ]}
-            label="Type"
-          >
-            <Button variant="outline" size="sm">
-              {criteria.timeframe.type === 'relative' ? 'Last' : 'Since'}
-            </Button>
-          </DropdownMenuComposed>
-          {criteria.timeframe.type === 'relative' ? (
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
             <DropdownMenuComposed
-              onChange={(value) =>
-                onChange({
-                  ...criteria,
-                  timeframe: { type: 'relative', value },
-                })
-              }
+              onChange={(type) => {
+                if (type === 'relative') {
+                  onChange({
+                    ...criteria,
+                    timeframe: { type: 'relative', value: '30d' },
+                  });
+                } else if (type === 'since') {
+                  onChange({
+                    ...criteria,
+                    timeframe: {
+                      type: 'absolute',
+                      start: new Date().toISOString().split('T')[0],
+                    },
+                  });
+                } else {
+                  // between
+                  const today = new Date().toISOString().split('T')[0];
+                  const thirtyDaysAgo = new Date(
+                    Date.now() - 30 * 24 * 60 * 60 * 1000,
+                  )
+                    .toISOString()
+                    .split('T')[0];
+                  onChange({
+                    ...criteria,
+                    timeframe: {
+                      type: 'absolute',
+                      start: thirtyDaysAgo,
+                      end: today,
+                    },
+                  });
+                }
+              }}
               items={[
-                { value: '7d', label: '7 days' },
-                { value: '30d', label: '30 days' },
-                { value: '90d', label: '90 days' },
-                { value: '180d', label: '180 days' },
-                { value: '365d', label: '365 days' },
+                { value: 'relative', label: 'Last' },
+                { value: 'since', label: 'Since' },
+                { value: 'between', label: 'Between' },
               ]}
-              label="Period"
+              label="Type"
             >
               <Button variant="outline" size="sm">
-                {criteria.timeframe.value === '7d' && '7 days'}
-                {criteria.timeframe.value === '30d' && '30 days'}
-                {criteria.timeframe.value === '90d' && '90 days'}
-                {criteria.timeframe.value === '180d' && '180 days'}
-                {criteria.timeframe.value === '365d' && '365 days'}
+                {criteria.timeframe.type === 'relative'
+                  ? 'Last'
+                  : criteria.timeframe.type === 'absolute' &&
+                      !criteria.timeframe.end
+                    ? 'Since'
+                    : 'Between'}
               </Button>
             </DropdownMenuComposed>
-          ) : (
-            <input
-              type="date"
-              value={criteria.timeframe.start}
-              onChange={(e) =>
-                onChange({
-                  ...criteria,
-                  timeframe: { type: 'absolute', start: e.target.value },
-                })
-              }
-              className="rounded border px-2 py-1 text-sm"
-            />
+            {criteria.timeframe.type === 'relative' ? (
+              <DropdownMenuComposed
+                onChange={(value) =>
+                  onChange({
+                    ...criteria,
+                    timeframe: { type: 'relative', value },
+                  })
+                }
+                items={[
+                  { value: '7d', label: '7 days' },
+                  { value: '30d', label: '30 days' },
+                  { value: '90d', label: '90 days' },
+                  { value: '180d', label: '180 days' },
+                  { value: '365d', label: '365 days' },
+                ]}
+                label="Period"
+              >
+                <Button variant="outline" size="sm">
+                  {criteria.timeframe.value === '7d' && '7 days'}
+                  {criteria.timeframe.value === '30d' && '30 days'}
+                  {criteria.timeframe.value === '90d' && '90 days'}
+                  {criteria.timeframe.value === '180d' && '180 days'}
+                  {criteria.timeframe.value === '365d' && '365 days'}
+                </Button>
+              </DropdownMenuComposed>
+            ) : !criteria.timeframe.end ? (
+              <input
+                type="date"
+                value={criteria.timeframe.start}
+                onChange={(e) =>
+                  onChange({
+                    ...criteria,
+                    timeframe: { type: 'absolute', start: e.target.value },
+                  })
+                }
+                className="rounded border px-2 py-1 text-sm"
+              />
+            ) : null}
+          </div>
+          {criteria.timeframe.type === 'absolute' && criteria.timeframe.end && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={criteria.timeframe.start}
+                onChange={(e) =>
+                  onChange({
+                    ...criteria,
+                    timeframe: {
+                      type: 'absolute',
+                      start: e.target.value,
+                      end: criteria.timeframe.end,
+                    },
+                  })
+                }
+                className="flex-1 rounded border px-2 py-1 text-sm"
+              />
+              <span className="text-sm text-muted-foreground">to</span>
+              <input
+                type="date"
+                value={criteria.timeframe.end}
+                onChange={(e) =>
+                  onChange({
+                    ...criteria,
+                    timeframe: {
+                      type: 'absolute',
+                      start: criteria.timeframe.start,
+                      end: e.target.value,
+                    },
+                  })
+                }
+                className="flex-1 rounded border px-2 py-1 text-sm"
+              />
+            </div>
           )}
         </div>
       </div>

@@ -312,7 +312,7 @@ export const chartRouter = createTRPCRouter({
       } else {
         const query = clix(ch)
           .select<{ values: string[] }>([
-            `distinct ${getSelectPropertyKey(property)} as values`,
+            `distinct ${getSelectPropertyKey(property, projectId)} as values`,
           ])
           .from(TABLE_NAMES.events)
           .where('project_id', '=', projectId)
@@ -622,7 +622,7 @@ export const chartRouter = createTRPCRouter({
       if (input.breakdowns) {
         Object.entries(input.breakdowns).forEach(([key, value]) => {
           // Transform property keys (e.g., properties.method -> properties['method'])
-          const propertyKey = getSelectPropertyKey(key);
+          const propertyKey = getSelectPropertyKey(key, projectId);
           sb.where[`breakdown_${key}`] =
             `${propertyKey} = ${sqlstring.escape(value)}`;
         });
