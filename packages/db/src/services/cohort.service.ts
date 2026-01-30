@@ -76,8 +76,12 @@ function buildEventCriteriaQuery(
     ? `AND ${filterClauses.join(' AND ')}`
     : '';
 
-  // Use materialized view for frequency checks (faster)
-  if (frequency) {
+  // Check if there are any property filters
+  // Materialized view doesn't have property columns, only events table has them
+  const hasPropertyFilters = filters.length > 0;
+
+  // Use materialized view for frequency checks ONLY if no property filters
+  if (frequency && !hasPropertyFilters) {
     const frequencyOp = getFrequencyOperator(frequency);
 
     return `
@@ -86,9 +90,25 @@ function buildEventCriteriaQuery(
       WHERE project_id = ${sqlstring.escape(projectId)}
         AND name = ${sqlstring.escape(name)}
         AND ${timeConstraint.replace('created_at', 'event_date')}
-        ${filterClause}
       GROUP BY profile_id
       HAVING countMerge(event_count) ${frequencyOp}
+    `;
+  }
+
+  // For queries with property filters and frequency, use events table with GROUP BY
+  if (frequency) {
+    const frequencyOp = getFrequencyOperator(frequency);
+
+    return `
+      SELECT profile_id
+      FROM ${TABLE_NAMES.events}
+      WHERE project_id = ${sqlstring.escape(projectId)}
+        AND name = ${sqlstring.escape(name)}
+        AND profile_id != device_id
+        AND ${timeConstraint}
+        ${filterClause}
+      GROUP BY profile_id
+      HAVING count(*) ${frequencyOp}
     `;
   }
 
