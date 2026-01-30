@@ -2,6 +2,7 @@ import { type ILogger, createLogger } from '@openpanel/logger';
 import { ch } from '../clickhouse/client';
 import { chMigrationClient } from '../clickhouse/migration';
 import { db } from '../../index';
+import { refreshMaterializedColumnsCache } from './chart.service';
 
 interface PropertyUsageStats {
   property: string; // Full path: "properties.utm_source"
@@ -500,6 +501,9 @@ export class MaterializeColumnsService {
           materializedAt: new Date(),
         },
       });
+
+      // Refresh chart service cache so new column is used immediately
+      await refreshMaterializedColumnsCache();
 
       this.logger.info(`Successfully materialized: ${candidate.columnName}`);
     } catch (error) {

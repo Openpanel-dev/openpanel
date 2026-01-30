@@ -16,6 +16,65 @@ import {
   getCustomEventByName,
   expandCustomEventToSQL,
 } from './custom-event.service';
+import { db } from '../../index';
+
+// Cache for materialized columns mapping
+let materializedColumnsCache: Record<string, string> | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+/**
+ * Get materialized columns from database with caching
+ */
+async function getMaterializedColumns(): Promise<Record<string, string>> {
+  const now = Date.now();
+
+  // Return cached value if still valid
+  if (materializedColumnsCache && (now - cacheTimestamp) < CACHE_TTL) {
+    return materializedColumnsCache;
+  }
+
+  try {
+    const columns = await db.materializedColumn.findMany({
+      where: { status: 'active' },
+      select: { propertyKey: true, columnName: true },
+    });
+
+    const mapping: Record<string, string> = {};
+    for (const col of columns) {
+      mapping[`properties.${col.propertyKey}`] = col.columnName;
+    }
+
+    materializedColumnsCache = mapping;
+    cacheTimestamp = now;
+    return mapping;
+  } catch (error) {
+    // If database query fails, return empty mapping (fallback to properties['key'])
+    console.warn('Failed to load materialized columns:', error);
+    return {};
+  }
+}
+
+/**
+ * Initialize materialized columns cache (call at startup)
+ */
+export async function initMaterializedColumnsCache(): Promise<void> {
+  await getMaterializedColumns();
+}
+
+/**
+ * Refresh materialized columns cache (call after adding new columns)
+ */
+export async function refreshMaterializedColumnsCache(): Promise<void> {
+  materializedColumnsCache = null;
+  cacheTimestamp = 0;
+  await getMaterializedColumns();
+}
+
+// Initialize cache on module load (lazy)
+getMaterializedColumns().catch(() => {
+  // Ignore errors on initial load
+});
 
 export function transformPropertyKey(property: string) {
   const propertyPatterns = ['properties', 'profile.properties'];
@@ -72,19 +131,9 @@ export function getSelectPropertyKey(property: string, projectId?: string) {
   );
   if (!match) return property;
 
-  // Use materialized columns instead of Map access for better performance
-  // These columns have indexes and are 10-50x faster than properties['key']
-  const materializedColumns: Record<string, string> = {
-    'properties.action': 'action',
-    'properties.isExplore': 'isExplore',
-    'properties.searchType': 'searchType',
-    'properties.showName': 'showName',
-    'properties.source': 'source',
-    'properties.sourceShowName': 'sourceShowName',
-  };
-
-  if (materializedColumns[property]) {
-    return materializedColumns[property]!;
+  // Use materialized columns from cache if available
+  if (materializedColumnsCache && materializedColumnsCache[property]) {
+    return materializedColumnsCache[property]!;
   }
 
   if (property.includes('*')) {
