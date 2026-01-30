@@ -36,7 +36,7 @@ const createImageIcon = (url: string) => {
     return (
       <img
         alt="serie icon"
-        className="max-h-4 rounded-[2px] object-contain"
+        className="w-full max-h-4 rounded-[2px] object-contain"
         src={context.apiUrl?.replace(/\/$/, '') + url}
         loading="lazy"
         decoding="async"

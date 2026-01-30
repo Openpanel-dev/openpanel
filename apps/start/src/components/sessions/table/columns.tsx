@@ -4,6 +4,7 @@ import { formatDateTime, formatTimeAgoOrDateTime } from '@/utils/date';
 import type { ColumnDef } from '@tanstack/react-table';
 
 import { ColumnCreatedAt } from '@/components/column-created-at';
+import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { getProfileName } from '@/utils/getters';
 import { round } from '@openpanel/common';
 import type { IServiceSession } from '@openpanel/db';
@@ -63,8 +64,9 @@ export function useColumns() {
           return (
             <ProjectLink
               href={`/profiles/${encodeURIComponent(session.profile.id)}`}
-              className="font-medium"
+              className="font-medium row gap-2 items-center"
             >
+              <ProfileAvatar size="sm" {...session.profile} />
               {getProfileName(session.profile)}
             </ProjectLink>
           );

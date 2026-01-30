@@ -7,6 +7,7 @@ import { getProfileName } from '@/utils/getters';
 import type { ColumnDef } from '@tanstack/react-table';
 
 import { ColumnCreatedAt } from '@/components/column-created-at';
+import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import type { IServiceEvent } from '@openpanel/db';
 
@@ -107,8 +108,9 @@ export function useColumns() {
           return (
             <ProjectLink
               href={`/profiles/${encodeURIComponent(profile.id)}`}
-              className="whitespace-nowrap font-medium hover:underline"
+              className="group whitespace-nowrap font-medium hover:underline row items-center gap-2"
             >
+              <ProfileAvatar size="sm" {...profile} />
               {getProfileName(profile)}
             </ProjectLink>
           );

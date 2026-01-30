@@ -1,0 +1,1 @@
+based on https://www.facehash.dev/ but the npm package broke everything so just added the source here.

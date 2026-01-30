@@ -1,10 +1,8 @@
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/facehash';
 import { cn } from '@/utils/cn';
-import { AvatarImage } from '@radix-ui/react-avatar';
+import { type GetProfileNameProps, getProfileName } from '@/utils/getters';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
-
-import { type GetProfileNameProps, getProfileName } from '@/utils/getters';
-import { Avatar, AvatarFallback } from '../ui/avatar';
 
 interface ProfileAvatarProps
   extends VariantProps<typeof variants>,
@@ -33,27 +31,17 @@ export function ProfileAvatar({
   size,
   ...profile
 }: ProfileAvatarProps) {
-  const name = getProfileName(profile);
+  const name = getProfileName({ ...profile, isExternal: true });
   const isValidAvatar = avatar?.startsWith('http');
 
   return (
     <Avatar className={cn(variants({ className, size }), className)}>
       {isValidAvatar && <AvatarImage src={avatar} className="rounded-full" />}
       <AvatarFallback
-        className={cn(
-          'rounded-full',
-          size === 'lg'
-            ? 'text-lg'
-            : size === 'sm'
-              ? 'text-sm'
-              : size === 'xs'
-                ? 'text-[8px]'
-                : 'text-base',
-          'bg-def-200 text-muted-foreground',
-        )}
-      >
-        {name?.at(0)?.toUpperCase() ?? '🧔‍♂️'}
-      </AvatarFallback>
+        name={name ?? 'Unknown'}
+        facehash
+        className="rounded-full"
+      />
     </Avatar>
   );
 }

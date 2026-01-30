@@ -1,5 +1,6 @@
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { Tooltiper } from '@/components/ui/tooltip';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { formatTimeAgoOrDateTime } from '@/utils/date';
@@ -115,7 +116,7 @@ export const EventItem = memo<EventItemProps>(
             )}
             {viewOptions.profileId !== false && (
               <Pill
-                className="@max-xl:ml-auto @max-lg:[&>span]:inline mx-4"
+                className="@max-xl:ml-auto @max-lg:[&>span]:inline"
                 icon={<ProfileAvatar size="xs" {...event.profile} />}
               >
                 {getProfileName(event.profile)}
@@ -164,7 +165,8 @@ function Pill({
   className,
 }: { children: React.ReactNode; icon?: React.ReactNode; className?: string }) {
   return (
-    <div
+    <Tooltiper
+      content={children}
       className={cn(
         'shrink-0 whitespace-nowrap inline-flex gap-2 items-center rounded-full @3xl:text-muted-foreground h-6 text-xs font-mono',
         className,
@@ -172,6 +174,6 @@ function Pill({
     >
       {icon && <div className="size-4 center-center">{icon}</div>}
       <div className="hidden @3xl:inline">{children}</div>
-    </div>
+    </Tooltiper>
   );
 }

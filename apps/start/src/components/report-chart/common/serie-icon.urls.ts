@@ -3,7 +3,8 @@
 const data = {
   amazon: 'https://upload.wikimedia.org/wikipedia/commons/4/4a/Amazon_icon.svg',
   'chromium os': 'https://upload.wikimedia.org/wikipedia/commons/2/28/Chromium_Logo.svg',
-  'mac os': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/MacOS_logo.svg/1200px-MacOS_logo.svg.png',
+  'mac os': 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg',
+  'macos': 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg',
   apple: 'https://sladesportfolio.wordpress.com/wp-content/uploads/2015/08/apple_logo_black-svg.png',
   huawei: 'https://upload.wikimedia.org/wikipedia/en/0/04/Huawei_Standard_logo.svg',
   xiaomi: 'https://upload.wikimedia.org/wikipedia/commons/2/29/Xiaomi_logo.svg',
@@ -46,7 +47,7 @@ const data = {
   google: 'https://google.com',
   gsa: 'https://google.com', // Google Search App
   instagram: 'https://instagram.com',
-  ios: 'https://cdn0.iconfinder.com/data/icons/flat-round-system/512/apple-1024.png',
+  ios: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/IOS_logo.svg',
   linkedin: 'https://linkedin.com',
   linux: 'https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg',
   ubuntu: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo-ubuntu_cof-orange-hex.svg',
