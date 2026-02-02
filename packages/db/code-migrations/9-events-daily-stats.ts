@@ -49,46 +49,10 @@ export async function up() {
   const targetTable = isClustered ? 'events_daily_stats_replicated' : 'events_daily_stats';
 
   // Step 1: Delete existing data in batches (optional)
+  // Only delete dates in the backfill range, not everything up to delete-till date
   if (!skipDelete && deleteDateArg) {
-    console.log(`🗑️  Preparing to delete data up to ${deleteDateArg} (day-by-day)`);
-
-    // Query to get the date range that needs to be deleted
-    const deleteRangeQuery = await chMigrationClient.query({
-      query: `
-        SELECT
-          min(date) as min_date,
-          max(date) as max_date
-        FROM ${targetTable}
-        WHERE date <= toDate('${deleteDateArg}')
-      `,
-      format: 'JSONEachRow',
-    });
-
-    const deleteRange = await deleteRangeQuery.json<{
-      min_date: string;
-      max_date: string;
-    }>();
-
-    if (deleteRange[0]?.min_date && deleteRange[0]?.max_date) {
-      const deleteStartDate = new Date(deleteRange[0].min_date);
-      const deleteEndDate = new Date(deleteRange[0].max_date);
-      const deleteDays = Math.ceil((deleteEndDate.getTime() - deleteStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-      console.log(`   Found data from ${deleteRange[0].min_date} to ${deleteRange[0].max_date} (${deleteDays} days)`);
-      console.log('');
-
-      // Generate day-by-day DELETE statements
-      let currentDeleteDate = new Date(deleteStartDate);
-      while (currentDeleteDate <= deleteEndDate) {
-        const dateStr = currentDeleteDate.toISOString().split('T')[0];
-        const deleteSql = `ALTER TABLE ${targetTable} DELETE WHERE date = toDate('${dateStr}')`;
-        sqls.push(deleteSql);
-        currentDeleteDate.setDate(currentDeleteDate.getDate() + 1);
-      }
-    } else {
-      console.log(`   No data found to delete up to ${deleteDateArg}`);
-      console.log('');
-    }
+    console.log(`🗑️  Preparing to delete data for backfill range (day-by-day)`);
+    console.log('');
   }
 
   // Step 2: Create MV without POPULATE (so it starts capturing new data immediately)
@@ -141,26 +105,44 @@ export async function up() {
     let endDate: Date;
 
     if (startDateArg) {
-      startDate = new Date(startDateArg);
+      startDate = new Date(startDateArg + 'T00:00:00Z'); // Use UTC
     } else {
-      startDate = new Date(dataRange[0].min_date);
+      startDate = new Date(dataRange[0].min_date + 'T00:00:00Z');
     }
 
     if (endDateArg) {
-      endDate = new Date(endDateArg);
+      endDate = new Date(endDateArg + 'T00:00:00Z'); // Use UTC
     } else {
       // If no end date specified, use max date from events table
       // But typically you'd want yesterday to avoid conflicts with MV
-      endDate = new Date(dataRange[0].max_date);
+      endDate = new Date(dataRange[0].max_date + 'T00:00:00Z');
+    }
+
+    // Validate date range
+    if (startDate > endDate) {
+      console.error('❌ Error: Start date must be before or equal to end date');
+      console.error(`   Start: ${startDate.toISOString().split('T')[0]}`);
+      console.error(`   End:   ${endDate.toISOString().split('T')[0]}`);
+      process.exit(1);
     }
 
     const totalEvents = Number(dataRange[0].total_events);
     const backfillDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    // Count delete operations
-    const deleteOps = sqls.filter(sql => sql.includes('DELETE')).length;
-    const mvOps = sqls.filter(sql => sql.includes('CREATE') || sql.includes('MATERIALIZED VIEW')).length;
+    // Generate DELETE statements for the backfill range (if delete not skipped)
+    const deleteStartIndex = sqls.length; // Track where deletes start
+    if (!skipDelete && deleteDateArg) {
+      let currentDeleteDate = new Date(startDate);
+      while (currentDeleteDate <= endDate) {
+        const dateStr = currentDeleteDate.toISOString().split('T')[0];
+        const deleteSql = `ALTER TABLE ${targetTable} DELETE WHERE date = toDate('${dateStr}')`;
+        sqls.push(deleteSql);
+        currentDeleteDate.setDate(currentDeleteDate.getDate() + 1);
+      }
+    }
+    const deleteOps = sqls.length - deleteStartIndex;
 
+    // Show the plan AFTER generating deletes
     console.log('========================================');
     console.log('📊 Backfill Plan:');
     console.log(`   Target Table:   ${targetTable}`);
@@ -203,7 +185,7 @@ export async function up() {
   }
 
   // Write SQL to file for review
-  const sqlFilePath = path.join(__filename.replace('.ts', '.sql'));
+  const sqlFilePath = path.join(__filename.replace('.ts', '.sql').replace('.js', '.sql'));
   fs.writeFileSync(
     sqlFilePath,
     sqls
@@ -242,8 +224,12 @@ export async function up() {
       await runClickhouseMigrationCommands([sql]);
       completed++;
 
-      // Show progress every 10 queries or on last query
-      if (completed % 10 === 0 || completed === total) {
+      // Show progress every 100 queries, every 10% or on last query
+      const shouldLog = completed % 100 === 0 ||
+                        completed === total ||
+                        Math.floor((completed / total) * 10) > Math.floor(((completed - 1) / total) * 10);
+
+      if (shouldLog) {
         const percentage = ((completed / total) * 100).toFixed(1);
         console.log(`Progress: ${completed}/${total} (${percentage}%)`);
       }
