@@ -151,11 +151,14 @@ export async function up() {
     console.log(`   Backfill Start: ${startDate.toISOString().split('T')[0]}`);
     console.log(`   Backfill End:   ${endDate.toISOString().split('T')[0]} (inclusive)`);
     console.log(`   Backfill Days:  ${backfillDays} days`);
+    console.log(`   Chunking:       Hourly (24 chunks per day)`);
+    console.log(`   Total Chunks:   ${backfillDays * 24} hourly inserts`);
     console.log(`   Total Events:   ${totalEvents.toLocaleString()} in events table`);
     console.log('========================================');
     console.log('');
 
-    // Generate day-by-day INSERT statements with proper GROUP BY
+    // Generate INSERT statements chunked by hour to reduce memory usage
+    // Process each day in 24 hourly chunks to avoid ClickHouse memory limits
     const backfillSqls: string[] = [];
 
     let currentDate = new Date(startDate); // Start from startDate (go forward)
@@ -163,23 +166,37 @@ export async function up() {
     while (currentDate <= endDate) {
       const dateStr = currentDate.toISOString().split('T')[0];
 
-      const sql = `INSERT INTO ${targetTable}
-      SELECT
-        project_id,
-        name,
-        toDate(created_at) as date,
-        uniqState(profile_id) as unique_profiles_state,
-        uniqState(session_id) as unique_sessions_state,
-        countState() as event_count
-      FROM events
-      WHERE toDate(created_at) = '${dateStr}'
-      GROUP BY project_id, name, date`;
+      // Process each day in 24 hourly chunks
+      for (let hour = 0; hour < 24; hour++) {
+        const hourStart = `${dateStr} ${String(hour).padStart(2, '0')}:00:00`;
+        const hourEnd = `${dateStr} ${String(hour).padStart(2, '0')}:59:59`;
 
-      backfillSqls.push(sql);
+        const sql = `INSERT INTO ${targetTable}
+        SELECT
+          project_id,
+          name,
+          toDate(created_at) as date,
+          uniqState(profile_id) as unique_profiles_state,
+          uniqState(session_id) as unique_sessions_state,
+          countState() as event_count
+        FROM events
+        WHERE created_at >= toDateTime('${hourStart}')
+          AND created_at <= toDateTime('${hourEnd}')
+        GROUP BY project_id, name, date`;
+
+        backfillSqls.push(sql);
+      }
+
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
     sqls.push(...backfillSqls);
+
+    // Add OPTIMIZE TABLE to merge hourly chunks into daily aggregates
+    const optimizeSql = `OPTIMIZE TABLE ${targetTable} FINAL`;
+    sqls.push(optimizeSql);
+    console.log('Added OPTIMIZE TABLE command to merge hourly chunks');
+    console.log('');
   } else {
     console.log('No data found in the specified date range, skipping backfill');
   }
@@ -204,10 +221,13 @@ export async function up() {
   const mvOpsTotal = sqls.filter(sql => sql.includes('CREATE') || sql.includes('MATERIALIZED VIEW')).length;
   const insertOpsTotal = sqls.filter(sql => sql.includes('INSERT')).length;
 
+  const optimizeOpsTotal = sqls.filter(sql => sql.includes('OPTIMIZE')).length;
+
   console.log(`Generated ${sqls.length} SQL statements:`);
   console.log(`  - ${deleteOpsTotal} DELETE operations (day-by-day)`);
   console.log(`  - ${mvOpsTotal} MV creation operations`);
-  console.log(`  - ${insertOpsTotal} INSERT operations (day-by-day)`);
+  console.log(`  - ${insertOpsTotal} INSERT operations (hourly chunks)`);
+  console.log(`  - ${optimizeOpsTotal} OPTIMIZE operations (merge chunks)`);
   console.log(`SQL written to: ${sqlFilePath}`);
   console.log('');
 
