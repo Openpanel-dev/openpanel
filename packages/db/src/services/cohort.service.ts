@@ -76,12 +76,68 @@ function buildEventCriteriaQuery(
     ? `AND ${filterClauses.join(' AND ')}`
     : '';
 
-  // Check if there are any property filters
-  // Materialized view doesn't have property columns, only events table has them
-  const hasPropertyFilters = filters.length > 0;
+  // Check if there are event property filters
+  const hasEventPropertyFilters = filters.some(
+    (f) => f.name.startsWith('properties.') && !f.name.startsWith('profile.properties.')
+  );
 
-  // Use materialized view for frequency checks ONLY if no property filters
-  if (frequency && !hasPropertyFilters) {
+  // Use property-aware MV for event property filters
+  if (hasEventPropertyFilters) {
+    const propertyFilters = filters.filter(
+      (f) => f.name.startsWith('properties.')
+    );
+
+    // Build WHERE conditions for property filters
+    const propertyConditions = propertyFilters.map((filter) => {
+      const propertyKey = filter.name.replace('properties.', '');
+      const { value, operator } = filter;
+
+      switch (operator) {
+        case 'is':
+          if (value.length === 1) {
+            return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value = ${sqlstring.escape(String(value[0]).trim())})`;
+          }
+          return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value IN (${value.map((val) => sqlstring.escape(String(val).trim())).join(', ')}))`;
+        case 'isNot':
+          if (value.length === 1) {
+            return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value != ${sqlstring.escape(String(value[0]).trim())})`;
+          }
+          return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value NOT IN (${value.map((val) => sqlstring.escape(String(val).trim())).join(', ')}))`;
+        case 'contains':
+          return `(property_key = ${sqlstring.escape(propertyKey)} AND (${value.map((val) => `property_value LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`).join(' OR ')}))`;
+        case 'doesNotContain':
+          return `(property_key = ${sqlstring.escape(propertyKey)} AND (${value.map((val) => `property_value NOT LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`).join(' AND ')}))`;
+        default:
+          return `(property_key = ${sqlstring.escape(propertyKey)} AND property_value IN (${value.map((val) => sqlstring.escape(String(val).trim())).join(', ')}))`;
+      }
+    }).join(' OR ');
+
+    if (frequency) {
+      const frequencyOp = getFrequencyOperator(frequency);
+      return `
+        SELECT profile_id
+        FROM ${TABLE_NAMES.profile_event_property_summary_mv}
+        WHERE project_id = ${sqlstring.escape(projectId)}
+          AND name = ${sqlstring.escape(name)}
+          AND ${timeConstraint.replace('created_at', 'event_date')}
+          AND (${propertyConditions})
+        GROUP BY profile_id
+        HAVING countMerge(event_count) ${frequencyOp}
+      `;
+    }
+
+    return `
+      SELECT DISTINCT profile_id
+      FROM ${TABLE_NAMES.profile_event_property_summary_mv}
+      WHERE project_id = ${sqlstring.escape(projectId)}
+        AND name = ${sqlstring.escape(name)}
+        AND ${timeConstraint.replace('created_at', 'event_date')}
+        AND (${propertyConditions})
+    `;
+  }
+
+  // Use standard MV for queries without property filters
+  if (frequency) {
     const frequencyOp = getFrequencyOperator(frequency);
 
     return `
@@ -95,32 +151,13 @@ function buildEventCriteriaQuery(
     `;
   }
 
-  // For queries with property filters and frequency, use events table with GROUP BY
-  if (frequency) {
-    const frequencyOp = getFrequencyOperator(frequency);
-
-    return `
-      SELECT profile_id
-      FROM ${TABLE_NAMES.events}
-      WHERE project_id = ${sqlstring.escape(projectId)}
-        AND name = ${sqlstring.escape(name)}
-        AND profile_id != device_id
-        AND ${timeConstraint}
-        ${filterClause}
-      GROUP BY profile_id
-      HAVING count(*) ${frequencyOp}
-    `;
-  }
-
-  // For simple "did event" queries, use events table
+  // For simple "did event" queries
   return `
     SELECT DISTINCT profile_id
-    FROM ${TABLE_NAMES.events}
+    FROM ${TABLE_NAMES.profile_event_summary_mv}
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND name = ${sqlstring.escape(name)}
-      AND profile_id != device_id
-      AND ${timeConstraint}
-      ${filterClause}
+      AND ${timeConstraint.replace('created_at', 'event_date')}
   `;
 }
 
