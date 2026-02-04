@@ -164,10 +164,12 @@ function buildEventCriteriaQuery(
 /**
  * Compute event-based cohort membership
  * Returns array of profile IDs that match the criteria
+ * @param limit - Optional limit on number of profiles (default: no limit)
  */
 export async function computeEventBasedCohort(
   projectId: string,
   definition: EventBasedCohortDefinition,
+  limit?: number,
 ): Promise<string[]> {
   const { events, operator } = definition.criteria;
 
@@ -181,8 +183,37 @@ export async function computeEventBasedCohort(
       ? queries.join(' INTERSECT ')
       : queries.join(' UNION DISTINCT ');
 
-  const results = await chQuery<{ profile_id: string }>(combinedQuery);
+  // Apply limit in SQL query itself to prevent loading too much into memory
+  const finalQuery = limit ? `${combinedQuery} LIMIT ${limit}` : combinedQuery;
+
+  const results = await chQuery<{ profile_id: string }>(finalQuery);
   return results.map((r) => r.profile_id);
+}
+
+/**
+ * Count cohort members without loading into memory
+ * Used for dynamic cohorts and previews
+ */
+export async function countEventBasedCohort(
+  projectId: string,
+  definition: EventBasedCohortDefinition,
+): Promise<number> {
+  const { events, operator } = definition.criteria;
+
+  const queries = events.map((eventCriteria) => {
+    return buildEventCriteriaQuery(projectId, eventCriteria);
+  });
+
+  // Combine queries based on AND/OR operator
+  const combinedQuery =
+    operator === 'and'
+      ? queries.join(' INTERSECT ')
+      : queries.join(' UNION DISTINCT ');
+
+  // Use COUNT instead of loading all IDs - prevents OOM
+  const countQuery = `SELECT count() as count FROM (${combinedQuery})`;
+  const results = await chQuery<{ count: number }>(countQuery);
+  return results[0]?.count ?? 0;
 }
 
 /**
@@ -309,6 +340,7 @@ function getProfileFiltersWhereClause(
 export async function computePropertyBasedCohort(
   projectId: string,
   definition: PropertyBasedCohortDefinition,
+  limit?: number,
 ): Promise<string[]> {
   const { properties, operator } = definition.criteria;
 
@@ -329,10 +361,43 @@ export async function computePropertyBasedCohort(
     FROM ${TABLE_NAMES.profiles} FINAL
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND (${filterClause})
+    ${limit ? `LIMIT ${limit}` : ''}
   `;
 
   const results = await chQuery<{ profile_id: string }>(query);
   return results.map((r) => r.profile_id);
+}
+
+/**
+ * Count property-based cohort members without loading into memory
+ */
+export async function countPropertyBasedCohort(
+  projectId: string,
+  definition: PropertyBasedCohortDefinition,
+): Promise<number> {
+  const { properties, operator } = definition.criteria;
+
+  // Build property filters
+  const filterWhere = getProfileFiltersWhereClause(properties);
+  const filterClauses = Object.values(filterWhere);
+
+  if (filterClauses.length === 0) {
+    return 0;
+  }
+
+  const filterClause = filterClauses.join(
+    operator === 'and' ? ' AND ' : ' OR ',
+  );
+
+  const query = `
+    SELECT count() as count
+    FROM ${TABLE_NAMES.profiles} FINAL
+    WHERE project_id = ${sqlstring.escape(projectId)}
+      AND (${filterClause})
+  `;
+
+  const results = await chQuery<{ count: number }>(query);
+  return results[0]?.count ?? 0;
 }
 
 /**
@@ -474,13 +539,30 @@ export async function getCohortCount(
 export async function computeCohort(
   projectId: string,
   definition: CohortDefinition,
+  limit?: number,
 ): Promise<string[]> {
   if (definition.type === 'event') {
-    return computeEventBasedCohort(projectId, definition);
+    return computeEventBasedCohort(projectId, definition, limit);
   } else if (definition.type === 'property') {
-    return computePropertyBasedCohort(projectId, definition);
+    return computePropertyBasedCohort(projectId, definition, limit);
   }
   return [];
+}
+
+/**
+ * Count cohort members without loading into memory
+ * Works for both event and property-based cohorts
+ */
+export async function countCohort(
+  projectId: string,
+  definition: CohortDefinition,
+): Promise<number> {
+  if (definition.type === 'event') {
+    return countEventBasedCohort(projectId, definition);
+  } else if (definition.type === 'property') {
+    return countPropertyBasedCohort(projectId, definition);
+  }
+  return 0;
 }
 
 /**
@@ -496,7 +578,8 @@ export async function updateCohortMembership(
   }
 
   const definition = cohort.definition as CohortDefinition;
-  const profileIds = await computeCohort(cohort.projectId, definition);
+  // Limit static cohorts to 100K profiles to prevent OOM
+  const profileIds = await computeCohort(cohort.projectId, definition, 100000);
 
   // Increment version for ReplacingMergeTree
   const version = Date.now();

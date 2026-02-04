@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   chQuery,
   computeCohort,
+  countCohort,
   db,
   getCohortCount,
   getCohortMembers,
@@ -329,14 +330,17 @@ export const cohortRouter = createTRPCRouter({
         throw TRPCAccessError('You do not have access to this project');
       }
 
-      const profileIds = await computeCohort(
-        input.projectId,
-        input.definition as CohortDefinition,
-      );
+      const definition = input.definition as CohortDefinition;
+
+      // Use COUNT to get total without loading all profiles into memory
+      const count = await countCohort(input.projectId, definition);
+
+      // Get just 10 sample profiles
+      const sampleProfiles = await computeCohort(input.projectId, definition, 10);
 
       return {
-        count: profileIds.length,
-        sampleProfiles: profileIds.slice(0, 10),
+        count,
+        sampleProfiles,
       };
     }),
 
