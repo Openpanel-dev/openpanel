@@ -103,7 +103,7 @@ export async function generateSessionIds(
     importId,
     from,
     settings: {
-      mutations_sync: '0',
+      mutations_sync: '1',
       wait_end_of_query: 0,
     },
   });
@@ -140,7 +140,7 @@ export async function generateSessionIds(
       query_params: { importId, from },
       clickhouse_settings: {
         wait_end_of_query: 0,
-        mutations_sync: '0',
+        mutations_sync: '1',
         send_progress_in_http_headers: 1,
         http_headers_progress_interval_ms: '50000',
       },
