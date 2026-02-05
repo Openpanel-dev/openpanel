@@ -42,6 +42,37 @@ const cacher = cacheMiddleware((input, opts) => {
   }
 });
 
+const overviewProcedure = publicProcedure.use(
+  async ({ ctx, next, getRawInput }) => {
+    const rawInput = (await getRawInput()) as {
+      projectId: string;
+      shareId?: string;
+    };
+
+    if (rawInput.shareId) {
+      await validateOverviewShareAccess(rawInput.shareId, rawInput.projectId, {
+        cookies: ctx.cookies,
+        session: ctx.session?.userId
+          ? { userId: ctx.session.userId }
+          : undefined,
+      });
+    } else {
+      if (!ctx.session?.userId) {
+        throw TRPCAccessError('Authentication required');
+      }
+      const access = await getProjectAccess({
+        projectId: rawInput.projectId,
+        userId: ctx.session.userId,
+      });
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+    }
+
+    return next();
+  },
+);
+
 function getCurrentAndPrevious<
   T extends {
     startDate?: string | null;
@@ -93,59 +124,16 @@ function getCurrentAndPrevious<
 }
 
 export const overviewRouter = createTRPCRouter({
-  liveVisitors: publicProcedure
+  liveVisitors: overviewProcedure
     .input(z.object({ projectId: z.string(), shareId: z.string().optional() }))
-    .query(async ({ input, ctx }) => {
-      // Validate share access if shareId provided
-      if (input.shareId) {
-        await validateOverviewShareAccess(input.shareId, input.projectId, {
-          cookies: ctx.cookies,
-          session: ctx.session?.userId
-            ? { userId: ctx.session.userId }
-            : undefined,
-        });
-      } else {
-        // Regular member access check
-        if (!ctx.session?.userId) {
-          throw TRPCAccessError('Authentication required');
-        }
-        const access = await getProjectAccess({
-          projectId: input.projectId,
-          userId: ctx.session.userId,
-        });
-        if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
-        }
-      }
-
+    .query(async ({ input }) => {
       return eventBuffer.getActiveVisitorCount(input.projectId);
     }),
 
-  liveData: publicProcedure
+  liveData: overviewProcedure
     .input(z.object({ projectId: z.string(), shareId: z.string().optional() }))
     .use(cacher)
-    .query(async ({ input, ctx }) => {
-      // Validate share access if shareId provided
-      if (input.shareId) {
-        await validateOverviewShareAccess(input.shareId, input.projectId, {
-          cookies: ctx.cookies,
-          session: ctx.session?.userId
-            ? { userId: ctx.session.userId }
-            : undefined,
-        });
-      } else {
-        // Regular member access check
-        if (!ctx.session?.userId) {
-          throw TRPCAccessError('Authentication required');
-        }
-        const access = await getProjectAccess({
-          projectId: input.projectId,
-          userId: ctx.session.userId,
-        });
-        if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
-        }
-      }
+    .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
 
       // Get total unique sessions in the last 30 minutes
@@ -256,7 +244,7 @@ export const overviewRouter = createTRPCRouter({
         })),
       };
     }),
-  stats: publicProcedure
+  stats: overviewProcedure
     .input(
       zGetMetricsInput.omit({ startDate: true, endDate: true }).extend({
         startDate: z.string().nullish(),
@@ -266,28 +254,7 @@ export const overviewRouter = createTRPCRouter({
       }),
     )
     .use(cacher)
-    .query(async ({ ctx, input }) => {
-      // Validate share access if shareId provided
-      if (input.shareId) {
-        await validateOverviewShareAccess(input.shareId, input.projectId, {
-          cookies: ctx.cookies,
-          session: ctx.session?.userId
-            ? { userId: ctx.session.userId }
-            : undefined,
-        });
-      } else {
-        // Regular member access check
-        if (!ctx.session?.userId) {
-          throw TRPCAccessError('Authentication required');
-        }
-        const access = await getProjectAccess({
-          projectId: input.projectId,
-          userId: ctx.session.userId,
-        });
-        if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
-        }
-      }
+    .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current, previous } = await getCurrentAndPrevious(
         { ...input, timezone },
@@ -323,7 +290,7 @@ export const overviewRouter = createTRPCRouter({
       };
     }),
 
-  topPages: publicProcedure
+  topPages: overviewProcedure
     .input(
       zGetTopPagesInput.omit({ startDate: true, endDate: true }).extend({
         startDate: z.string().nullish(),
@@ -334,28 +301,7 @@ export const overviewRouter = createTRPCRouter({
       }),
     )
     .use(cacher)
-    .query(async ({ input, ctx }) => {
-      // Validate share access if shareId provided
-      if (input.shareId) {
-        await validateOverviewShareAccess(input.shareId, input.projectId, {
-          cookies: ctx.cookies,
-          session: ctx.session?.userId
-            ? { userId: ctx.session.userId }
-            : undefined,
-        });
-      } else {
-        // Regular member access check
-        if (!ctx.session?.userId) {
-          throw TRPCAccessError('Authentication required');
-        }
-        const access = await getProjectAccess({
-          projectId: input.projectId,
-          userId: ctx.session.userId,
-        });
-        if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
-        }
-      }
+    .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input },
@@ -380,7 +326,7 @@ export const overviewRouter = createTRPCRouter({
       return current;
     }),
 
-  topGeneric: publicProcedure
+  topGeneric: overviewProcedure
     .input(
       zGetTopGenericInput.omit({ startDate: true, endDate: true }).extend({
         startDate: z.string().nullish(),
@@ -390,30 +336,9 @@ export const overviewRouter = createTRPCRouter({
       }),
     )
     .use(cacher)
-    .query(async ({ input, ctx }) => {
+    .query(async ({ input }) => {
       console.log('input', input);
 
-      // Validate share access if shareId provided
-      if (input.shareId) {
-        await validateOverviewShareAccess(input.shareId, input.projectId, {
-          cookies: ctx.cookies,
-          session: ctx.session?.userId
-            ? { userId: ctx.session.userId }
-            : undefined,
-        });
-      } else {
-        // Regular member access check
-        if (!ctx.session?.userId) {
-          throw TRPCAccessError('Authentication required');
-        }
-        const access = await getProjectAccess({
-          projectId: input.projectId,
-          userId: ctx.session.userId,
-        });
-        if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
-        }
-      }
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
@@ -424,7 +349,7 @@ export const overviewRouter = createTRPCRouter({
       return current;
     }),
 
-  topGenericSeries: publicProcedure
+  topGenericSeries: overviewProcedure
     .input(
       zGetTopGenericSeriesInput
         .omit({ startDate: true, endDate: true })
@@ -436,28 +361,7 @@ export const overviewRouter = createTRPCRouter({
         }),
     )
     .use(cacher)
-    .query(async ({ input, ctx }) => {
-      // Validate share access if shareId provided
-      if (input.shareId) {
-        await validateOverviewShareAccess(input.shareId, input.projectId, {
-          cookies: ctx.cookies,
-          session: ctx.session?.userId
-            ? { userId: ctx.session.userId }
-            : undefined,
-        });
-      } else {
-        // Regular member access check
-        if (!ctx.session?.userId) {
-          throw TRPCAccessError('Authentication required');
-        }
-        const access = await getProjectAccess({
-          projectId: input.projectId,
-          userId: ctx.session.userId,
-        });
-        if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
-        }
-      }
+    .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
@@ -468,7 +372,7 @@ export const overviewRouter = createTRPCRouter({
       return current;
     }),
 
-  userJourney: publicProcedure
+  userJourney: overviewProcedure
     .input(
       zGetUserJourneyInput.omit({ startDate: true, endDate: true }).extend({
         startDate: z.string().nullish(),
@@ -479,28 +383,7 @@ export const overviewRouter = createTRPCRouter({
       }),
     )
     .use(cacher)
-    .query(async ({ input, ctx }) => {
-      // Validate share access if shareId provided
-      if (input.shareId) {
-        await validateOverviewShareAccess(input.shareId, input.projectId, {
-          cookies: ctx.cookies,
-          session: ctx.session?.userId
-            ? { userId: ctx.session.userId }
-            : undefined,
-        });
-      } else {
-        // Regular member access check
-        if (!ctx.session?.userId) {
-          throw TRPCAccessError('Authentication required');
-        }
-        const access = await getProjectAccess({
-          projectId: input.projectId,
-          userId: ctx.session.userId,
-        });
-        if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
-        }
-      }
+    .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
@@ -517,7 +400,7 @@ export const overviewRouter = createTRPCRouter({
       return current;
     }),
 
-  topEvents: publicProcedure
+  topEvents: overviewProcedure
     .input(
       zGetTopEventsInput.omit({ startDate: true, endDate: true }).extend({
         startDate: z.string().nullish(),
@@ -527,29 +410,7 @@ export const overviewRouter = createTRPCRouter({
       }),
     )
     .use(cacher)
-    .query(async ({ input, ctx }) => {
-      // Validate share access if shareId provided
-      if (input.shareId) {
-        await validateOverviewShareAccess(input.shareId, input.projectId, {
-          cookies: ctx.cookies,
-          session: ctx.session?.userId
-            ? { userId: ctx.session.userId }
-            : undefined,
-        });
-      } else {
-        // Regular member access check
-        if (!ctx.session?.userId) {
-          throw TRPCAccessError('Authentication required');
-        }
-        const access = await getProjectAccess({
-          projectId: input.projectId,
-          userId: ctx.session.userId,
-        });
-        if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
-        }
-      }
-
+    .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
@@ -560,40 +421,18 @@ export const overviewRouter = createTRPCRouter({
       return current;
     }),
 
-  topConversions: publicProcedure
+  topConversions: overviewProcedure
     .input(
       z.object({
         projectId: z.string(),
         shareId: z.string().optional(),
       }),
     )
-    .query(async ({ input, ctx }) => {
-      // Validate share access if shareId provided
-      if (input.shareId) {
-        await validateOverviewShareAccess(input.shareId, input.projectId, {
-          cookies: ctx.cookies,
-          session: ctx.session?.userId
-            ? { userId: ctx.session.userId }
-            : undefined,
-        });
-      } else {
-        // Regular member access check
-        if (!ctx.session?.userId) {
-          throw TRPCAccessError('Authentication required');
-        }
-        const access = await getProjectAccess({
-          projectId: input.projectId,
-          userId: ctx.session.userId,
-        });
-        if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
-        }
-      }
-
+    .query(async ({ input }) => {
       return getConversionEventNames(input.projectId);
     }),
 
-  topLinkOut: publicProcedure
+  topLinkOut: overviewProcedure
     .input(
       zGetTopLinkOutInput.omit({ startDate: true, endDate: true }).extend({
         startDate: z.string().nullish(),
@@ -603,29 +442,7 @@ export const overviewRouter = createTRPCRouter({
       }),
     )
     .use(cacher)
-    .query(async ({ input, ctx }) => {
-      // Validate share access if shareId provided
-      if (input.shareId) {
-        await validateOverviewShareAccess(input.shareId, input.projectId, {
-          cookies: ctx.cookies,
-          session: ctx.session?.userId
-            ? { userId: ctx.session.userId }
-            : undefined,
-        });
-      } else {
-        // Regular member access check
-        if (!ctx.session?.userId) {
-          throw TRPCAccessError('Authentication required');
-        }
-        const access = await getProjectAccess({
-          projectId: input.projectId,
-          userId: ctx.session.userId,
-        });
-        if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
-        }
-      }
-
+    .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
@@ -636,7 +453,7 @@ export const overviewRouter = createTRPCRouter({
       return current;
     }),
 
-  map: publicProcedure
+  map: overviewProcedure
     .input(
       zGetMapDataInput.omit({ startDate: true, endDate: true }).extend({
         startDate: z.string().nullish(),
@@ -646,29 +463,7 @@ export const overviewRouter = createTRPCRouter({
       }),
     )
     .use(cacher)
-    .query(async ({ input, ctx }) => {
-      // Validate share access if shareId provided
-      if (input.shareId) {
-        await validateOverviewShareAccess(input.shareId, input.projectId, {
-          cookies: ctx.cookies,
-          session: ctx.session?.userId
-            ? { userId: ctx.session.userId }
-            : undefined,
-        });
-      } else {
-        // Regular member access check
-        if (!ctx.session?.userId) {
-          throw TRPCAccessError('Authentication required');
-        }
-        const access = await getProjectAccess({
-          projectId: input.projectId,
-          userId: ctx.session.userId,
-        });
-        if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
-        }
-      }
-
+    .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
