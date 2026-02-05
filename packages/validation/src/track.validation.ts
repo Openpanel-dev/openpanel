@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { RESERVED_EVENT_NAMES } from '@openpanel/constants';
 
+import { isBlockedEventName } from './event-blocklist';
+
 export const zTrackPayload = z
   .object({
     name: z.string().min(1),
@@ -10,6 +12,10 @@ export const zTrackPayload = z
   })
   .refine((data) => !RESERVED_EVENT_NAMES.includes(data.name as any), {
     message: `Event name cannot be one of the reserved names: ${RESERVED_EVENT_NAMES.join(', ')}`,
+    path: ['name'],
+  })
+  .refine((data) => !isBlockedEventName(data.name), {
+    message: 'Event name contains blocked content',
     path: ['name'],
   })
   .refine(
