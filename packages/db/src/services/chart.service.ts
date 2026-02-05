@@ -379,15 +379,6 @@ export async function getChartSql({
     }
   });
 
-  // Extract cohort IDs from chart type filters
-  chartType?.forEach((chart) => {
-    chart.filters?.forEach((filter) => {
-      if (filter.cohortId) {
-        cohortIdsSet.add(filter.cohortId);
-      }
-    });
-  });
-
   const cohortIds = Array.from(cohortIdsSet);
 
   // Fetch cohort metadata from Postgres (always fresh, no cache)
