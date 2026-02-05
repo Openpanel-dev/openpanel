@@ -578,8 +578,8 @@ export async function updateCohortMembership(
   }
 
   const definition = cohort.definition as CohortDefinition;
-  // Limit static cohorts to 100K profiles to prevent OOM
-  const profileIds = await computeCohort(cohort.projectId, definition, 100000);
+  // Limit static cohorts to 10K profiles to prevent OOM
+  const profileIds = await computeCohort(cohort.projectId, definition, 10000);
 
   // Increment version for ReplacingMergeTree
   const version = Date.now();
