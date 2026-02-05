@@ -20,6 +20,7 @@ export interface ExtendedRedis extends Redis {
 }
 
 const createRedisClient = (
+  name: string,
   url: string,
   overrides: RedisOptions = {},
 ): ExtendedRedis => {
@@ -29,7 +30,7 @@ const createRedisClient = (
   }) as ExtendedRedis;
 
   client.on('error', (error) => {
-    console.error('Redis Client Error:', error);
+    console.error(`[${name}] Redis Client Error:`, error);
   });
 
   client.getJson = async <T = any>(key: string): Promise<T | null> => {
@@ -65,7 +66,7 @@ const createRedisClient = (
 let redisCache: ExtendedRedis;
 export function getRedisCache() {
   if (!redisCache) {
-    redisCache = createRedisClient(REDIS_URL, options);
+    redisCache = createRedisClient('redis-cache', REDIS_URL, options);
   }
 
   return redisCache;
@@ -74,7 +75,12 @@ export function getRedisCache() {
 let redisSub: ExtendedRedis;
 export function getRedisSub() {
   if (!redisSub) {
-    redisSub = createRedisClient(REDIS_URL, options);
+    redisSub = createRedisClient('redis-sub', REDIS_URL, {
+      ...options,
+      // Disable ready check for subscription client since it uses INFO command
+      // which is not allowed once the client enters subscription mode
+      enableReadyCheck: false,
+    });
   }
 
   return redisSub;
@@ -83,7 +89,7 @@ export function getRedisSub() {
 let redisPub: ExtendedRedis;
 export function getRedisPub() {
   if (!redisPub) {
-    redisPub = createRedisClient(REDIS_URL, options);
+    redisPub = createRedisClient('redis-pub', REDIS_URL, options);
   }
 
   return redisPub;
@@ -93,7 +99,7 @@ let redisQueue: ExtendedRedis;
 export function getRedisQueue() {
   if (!redisQueue) {
     // Use different redis for queues (self-hosting will re-use the same redis instance)
-    redisQueue = createRedisClient(REDIS_URL, {
+    redisQueue = createRedisClient('redis-queue', REDIS_URL, {
       ...options,
       enableReadyCheck: false,
       maxRetriesPerRequest: null,
@@ -108,7 +114,7 @@ let redisGroupQueue: ExtendedRedis;
 export function getRedisGroupQueue() {
   if (!redisGroupQueue) {
     // Dedicated Redis connection for GroupWorker to avoid blocking BullMQ
-    redisGroupQueue = createRedisClient(REDIS_URL, {
+    redisGroupQueue = createRedisClient('redis-group-queue', REDIS_URL, {
       ...options,
       enableReadyCheck: false,
       maxRetriesPerRequest: null,
