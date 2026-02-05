@@ -166,50 +166,6 @@ function getCohortMembershipSubquery(cohortId: string): string {
   return `SELECT profile_id FROM ${getCohortCteName(cohortId)}`;
 }
 
-/**
- * Generate cohort membership subquery - handles both dynamic and pre-computed cohorts
- */
-async function getCohortMembershipSubquery(
-  cohortId: string,
-  projectId: string,
-): Promise<string> {
-  const cohort = await db.cohort.findUnique({
-    where: { id: cohortId },
-    select: { computeOnDemand: true, definition: true, id: true },
-  });
-
-  if (!cohort) {
-    throw new Error(`Cohort not found: ${cohortId}`);
-  }
-
-  // Pre-computed cohorts: read from stored membership
-  if (!cohort.computeOnDemand) {
-    return `
-      SELECT profile_id
-      FROM ${TABLE_NAMES.cohort_members} FINAL
-      WHERE cohort_id = ${sqlstring.escape(cohortId)}
-        AND project_id = ${sqlstring.escape(projectId)}
-    `;
-  }
-
-  // Dynamic cohorts: compute membership inline
-  const definition = cohort.definition as CohortDefinition;
-
-  if (definition.type === 'event') {
-    const { events, operator } = definition.criteria;
-    const queries = events.map((eventCriteria) =>
-      buildEventCriteriaQuery(projectId, eventCriteria),
-    );
-
-    return operator === 'and'
-      ? queries.join(' INTERSECT ')
-      : queries.join(' UNION DISTINCT ');
-  } else if (definition.type === 'property') {
-    return buildPropertyBasedCohortQuery(projectId, definition);
-  }
-
-  throw new Error(`Unknown cohort type: ${definition.type}`);
-}
 
 export function transformPropertyKey(property: string) {
   const propertyPatterns = ['properties', 'profile.properties'];
