@@ -66,6 +66,7 @@ export const ProfilesTable = memo(
             : updaterOrValue;
         setPage(nextPagination.pageIndex + 1);
       },
+      getRowId: (row, index) => row.id ?? `loading-${index}`,
     });
 
     return (

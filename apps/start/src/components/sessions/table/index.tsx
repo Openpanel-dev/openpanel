@@ -95,7 +95,6 @@ const VirtualRow = memo(
   }: VirtualRowProps) {
     return (
       <div
-        key={virtualRow.key}
         data-index={virtualRow.index}
         ref={virtualRow.measureElement}
         className="absolute top-0 left-0 w-full border-b hover:bg-muted/50 transition-colors group/row"
@@ -225,7 +224,7 @@ const VirtualizedSessionsTable = ({
 
           return (
             <VirtualRow
-              key={virtualRow.key}
+              key={row.id}
               row={row}
               virtualRow={{
                 ...virtualRow,
@@ -275,6 +274,7 @@ export const SessionsTable = ({ query }: Props) => {
       columnVisibility,
     },
     onColumnVisibilityChange: setColumnVisibility,
+    getRowId: (row, index) => row.id ?? `loading-${index}`,
   });
 
   const inViewportRef = useRef<HTMLDivElement>(null);
