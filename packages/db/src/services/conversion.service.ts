@@ -6,6 +6,9 @@ import { clix } from '../clickhouse/query-builder';
 import {
   getEventFiltersWhereClause,
   getSelectPropertyKey,
+  fetchCohortsMetadata,
+  getCohortCteName,
+  buildCohortMembershipQuery,
 } from './chart.service';
 import { onlyReportEvents } from './reports.service';
 import { getCustomEventByName, expandCustomEventToSQL } from './custom-event.service';
@@ -103,12 +106,6 @@ export class ConversionService {
   }: Omit<IChartInput, 'range' | 'previous' | 'metric' | 'chartType'> & {
     timezone: string;
   }) {
-    const group = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
-    const breakdownColumns = breakdowns.map(
-      (b, index) => `${getSelectPropertyKey(b.name, projectId)} as b_${index}`,
-    );
-    const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
-
     const events = onlyReportEvents(series);
 
     if (events.length < 2) {
@@ -118,6 +115,34 @@ export class ConversionService {
     if (!startDate || !endDate) {
       throw new Error('startDate and endDate are required');
     }
+
+    // Extract cohort IDs from breakdowns and event filters (deduplicated)
+    const cohortIdsSet = new Set<string>();
+    breakdowns?.forEach((b) => {
+      if (b.cohortId) {
+        cohortIdsSet.add(b.cohortId);
+      } else if (b.name.startsWith('cohort:')) {
+        cohortIdsSet.add(b.name.split(':')[1]!);
+      }
+    });
+    events.forEach((event) => {
+      event.filters?.forEach((filter) => {
+        if (filter.cohortId) {
+          cohortIdsSet.add(filter.cohortId);
+        }
+      });
+    });
+
+    const cohortIds = Array.from(cohortIdsSet);
+
+    // Fetch cohort metadata from Postgres (always fresh, no cache)
+    const cohortMetadata = await fetchCohortsMetadata(cohortIds);
+
+    const group = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
+    const breakdownColumns = breakdowns.map(
+      (b, index) => `${getSelectPropertyKey(b.name, projectId)} as b_${index}`,
+    );
+    const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
 
     const funnelWindowSeconds = funnelWindow * 3600;
 
@@ -149,6 +174,13 @@ export class ConversionService {
       const eventNames = events.map(e => `'${e.name}'`).join(', ');
       whereClauses.push(`name IN (${eventNames})`);
     }
+
+    // Add cohort CTEs (computed once per query, not per row)
+    cohortIds.forEach((cohortId) => {
+      const cohortMeta = cohortMetadata.get(cohortId);
+      const cohortQuery = buildCohortMembershipQuery(cohortId, projectId, cohortMeta);
+      ctes.push(`${getCohortCteName(cohortId)} AS (${cohortQuery})`);
+    });
 
     // Build WITH clause if CTEs exist
     const withClause = ctes.length > 0 ? `WITH ${ctes.join(', ')} ` : '';

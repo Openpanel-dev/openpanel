@@ -58,7 +58,7 @@ function getFrequencyOperator(frequency: Frequency): string {
 /**
  * Build ClickHouse query for a single event criteria
  */
-function buildEventCriteriaQuery(
+export function buildEventCriteriaQuery(
   projectId: string,
   criteria: EventCriteria,
 ): string {
@@ -158,6 +158,36 @@ function buildEventCriteriaQuery(
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND name = ${sqlstring.escape(name)}
       AND ${timeConstraint.replace('created_at', 'event_date')}
+  `;
+}
+
+/**
+ * Build ClickHouse query for property-based cohort
+ * Returns a SELECT query string that can be embedded as a subquery
+ */
+export function buildPropertyBasedCohortQuery(
+  projectId: string,
+  definition: PropertyBasedCohortDefinition,
+): string {
+  const { properties, operator } = definition.criteria;
+
+  // Build property filters
+  const filterWhere = getProfileFiltersWhereClause(properties);
+  const filterClauses = Object.values(filterWhere);
+
+  if (filterClauses.length === 0) {
+    return `SELECT id as profile_id FROM ${TABLE_NAMES.profiles} FINAL WHERE 1=0`; // Empty result
+  }
+
+  const filterClause = filterClauses.join(
+    operator === 'and' ? ' AND ' : ' OR ',
+  );
+
+  return `
+    SELECT id as profile_id
+    FROM ${TABLE_NAMES.profiles} FINAL
+    WHERE project_id = ${sqlstring.escape(projectId)}
+      AND (${filterClause})
   `;
 }
 

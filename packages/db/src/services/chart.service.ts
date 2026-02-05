@@ -8,6 +8,7 @@ import type {
   IChartRange,
   IGetChartDataInput,
   ICustomEventDefinition,
+  CohortDefinition,
 } from '@openpanel/validation';
 
 import { TABLE_NAMES, formatClickhouseDate } from '../clickhouse/client';
@@ -17,6 +18,7 @@ import {
   expandCustomEventToSQL,
 } from './custom-event.service';
 import { db } from '../../index';
+import { buildEventCriteriaQuery, buildPropertyBasedCohortQuery } from './cohort.service';
 
 // Cache for materialized columns mapping
 let materializedColumnsCache: Record<string, string> | null = null;
@@ -76,6 +78,139 @@ getMaterializedColumns().catch(() => {
   // Ignore errors on initial load
 });
 
+// Cohort metadata type
+type CohortMetadata = {
+  id: string;
+  computeOnDemand: boolean;
+  definition: CohortDefinition;
+};
+
+/**
+ * Fetch metadata for multiple cohorts from Postgres (no cache - always fresh)
+ */
+export async function fetchCohortsMetadata(
+  cohortIds: string[],
+): Promise<Map<string, CohortMetadata>> {
+  if (cohortIds.length === 0) {
+    return new Map();
+  }
+
+  // Fetch all cohorts in one query
+  const cohorts = await db.cohort.findMany({
+    where: { id: { in: cohortIds } },
+    select: { id: true, computeOnDemand: true, definition: true },
+  });
+
+  return new Map(
+    cohorts.map((c) => [
+      c.id,
+      {
+        id: c.id,
+        computeOnDemand: c.computeOnDemand,
+        definition: c.definition as CohortDefinition,
+      },
+    ]),
+  );
+}
+
+/**
+ * Generate cohort membership query for CTE
+ * Returns the full SELECT query
+ */
+export function buildCohortMembershipQuery(
+  cohortId: string,
+  projectId: string,
+  cohortMeta?: CohortMetadata,
+): string {
+  // Pre-computed cohorts or missing metadata: read from stored membership
+  if (!cohortMeta || !cohortMeta.computeOnDemand) {
+    return `
+      SELECT profile_id
+      FROM ${TABLE_NAMES.cohort_members} FINAL
+      WHERE cohort_id = ${sqlstring.escape(cohortId)}
+        AND project_id = ${sqlstring.escape(projectId)}
+    `;
+  }
+
+  // Dynamic cohorts: build query from definition
+  const definition = cohortMeta.definition;
+
+  if (definition.type === 'event') {
+    const { events, operator } = definition.criteria;
+    const queries = events.map((eventCriteria) =>
+      buildEventCriteriaQuery(projectId, eventCriteria),
+    );
+
+    return operator === 'and'
+      ? queries.join(' INTERSECT ')
+      : queries.join(' UNION DISTINCT ');
+  } else if (definition.type === 'property') {
+    return buildPropertyBasedCohortQuery(projectId, definition);
+  }
+
+  throw new Error(`Unknown cohort type: ${(definition as any).type}`);
+}
+
+/**
+ * Get CTE name for a cohort (quoted with backticks)
+ */
+export function getCohortCteName(cohortId: string): string {
+  return `\`cohort-${cohortId}\``;
+}
+
+/**
+ * Reference to cohort membership from CTE
+ * This is used in IN clauses and JOINs
+ */
+function getCohortMembershipSubquery(cohortId: string): string {
+  return `SELECT profile_id FROM ${getCohortCteName(cohortId)}`;
+}
+
+/**
+ * Generate cohort membership subquery - handles both dynamic and pre-computed cohorts
+ */
+async function getCohortMembershipSubquery(
+  cohortId: string,
+  projectId: string,
+): Promise<string> {
+  const cohort = await db.cohort.findUnique({
+    where: { id: cohortId },
+    select: { computeOnDemand: true, definition: true, id: true },
+  });
+
+  if (!cohort) {
+    throw new Error(`Cohort not found: ${cohortId}`);
+  }
+
+  // Pre-computed cohorts: read from stored membership
+  if (!cohort.computeOnDemand) {
+    return `
+      SELECT profile_id
+      FROM ${TABLE_NAMES.cohort_members} FINAL
+      WHERE cohort_id = ${sqlstring.escape(cohortId)}
+        AND project_id = ${sqlstring.escape(projectId)}
+    `;
+  }
+
+  // Dynamic cohorts: compute membership inline
+  const definition = cohort.definition as CohortDefinition;
+
+  if (definition.type === 'event') {
+    const { events, operator } = definition.criteria;
+    const queries = events.map((eventCriteria) =>
+      buildEventCriteriaQuery(projectId, eventCriteria),
+    );
+
+    return operator === 'and'
+      ? queries.join(' INTERSECT ')
+      : queries.join(' UNION DISTINCT ');
+  } else if (definition.type === 'property') {
+    return buildPropertyBasedCohortQuery(projectId, definition);
+  }
+
+  throw new Error(`Unknown cohort type: ${definition.type}`);
+}
+
 export function transformPropertyKey(property: string) {
   const propertyPatterns = ['properties', 'profile.properties'];
   const match = propertyPatterns.find((pattern) =>
@@ -97,18 +232,21 @@ export function transformPropertyKey(property: string) {
   return `${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
 }
 
-export function getSelectPropertyKey(property: string, projectId?: string) {
+export function getSelectPropertyKey(
+  property: string,
+  projectId?: string,
+  cohortId?: string,
+) {
   // Handle cohort breakdown
-  if (property.startsWith('cohort:')) {
-    const cohortId = property.split(':')[1];
-    const projectFilter = projectId
-      ? `AND project_id = ${sqlstring.escape(projectId)}`
-      : '';
+  // Use cohortId parameter if provided, otherwise parse from property name (backwards compatibility)
+  const extractedCohortId = cohortId || (property.startsWith('cohort:') ? property.split(':')[1] : null);
+
+  if (extractedCohortId && projectId) {
+    const subquery = getCohortMembershipSubquery(extractedCohortId);
+
     return `if(
       profile_id IN (
-        SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL
-        WHERE cohort_id = ${sqlstring.escape(cohortId)}
-        ${projectFilter}
+        ${subquery}
       ),
       'In Cohort',
       'Not In Cohort'
@@ -251,7 +389,7 @@ function canUseMaterializedView(
   );
 }
 
-export function getChartSql({
+export async function getChartSql({
   event,
   breakdowns,
   interval,
@@ -266,6 +404,39 @@ export function getChartSql({
   timezone: string;
   customEvent?: { name: string; definition: ICustomEventDefinition };
 }) {
+  // Pre-fetch cohort metadata for all cohorts used in this query (deduplicated)
+  const cohortIdsSet = new Set<string>();
+
+  // Extract cohort IDs from breakdowns
+  breakdowns?.forEach((b) => {
+    if (b.cohortId) {
+      cohortIdsSet.add(b.cohortId);
+    } else if (b.name.startsWith('cohort:')) {
+      cohortIdsSet.add(b.name.split(':')[1]!);
+    }
+  });
+
+  // Extract cohort IDs from event filters
+  event.filters?.forEach((filter) => {
+    if (filter.cohortId) {
+      cohortIdsSet.add(filter.cohortId);
+    }
+  });
+
+  // Extract cohort IDs from chart type filters
+  chartType?.forEach((chart) => {
+    chart.filters?.forEach((filter) => {
+      if (filter.cohortId) {
+        cohortIdsSet.add(filter.cohortId);
+      }
+    });
+  });
+
+  const cohortIds = Array.from(cohortIdsSet);
+
+  // Fetch cohort metadata from Postgres (always fresh, no cache)
+  const cohortMetadata = await fetchCohortsMetadata(cohortIds);
+
   // Check if we can use materialized view for fast queries
   // Custom events cannot use materialized views (for now)
   if (!customEvent && canUseMaterializedView(event, breakdowns, interval)) {
@@ -292,6 +463,13 @@ export function getChartSql({
     getWith,
     with: addCte,
   } = createSqlBuilder();
+
+  // Create CTEs for all cohorts (computed once per query, not per row)
+  cohortIds.forEach((cohortId) => {
+    const cohortMeta = cohortMetadata.get(cohortId);
+    const cohortQuery = buildCohortMembershipQuery(cohortId, projectId, cohortMeta);
+    addCte(getCohortCteName(cohortId), cohortQuery);
+  });
 
   // Common setup
   sb.where = getEventFiltersWhereClause(event.filters, projectId);
@@ -435,7 +613,7 @@ export function getChartSql({
   // Use CTE to define top breakdown values once, then reference in WHERE clause
   if (breakdowns.length > 0 && limit) {
     const breakdownSelects = breakdowns
-      .map((b) => getSelectPropertyKey(b.name, projectId))
+      .map((b) => getSelectPropertyKey(b.name, projectId, b.cohortId))
       .join(', ');
 
     // Add top_breakdowns CTE using the builder
@@ -450,13 +628,13 @@ export function getChartSql({
     );
 
     // Filter main query to only include top breakdown values
-    sb.where.bar = `(${breakdowns.map((b) => getSelectPropertyKey(b.name, projectId)).join(',')}) IN (SELECT * FROM top_breakdowns)`;
+    sb.where.bar = `(${breakdowns.map((b) => getSelectPropertyKey(b.name, projectId, b.cohortId)).join(',')}) IN (SELECT * FROM top_breakdowns)`;
   }
 
   breakdowns.forEach((breakdown, index) => {
     // Breakdowns start at label_1 (label_0 is reserved for event name)
     const key = `label_${index + 1}`;
-    sb.select[key] = `${getSelectPropertyKey(breakdown.name, projectId)} as ${key}`;
+    sb.select[key] = `${getSelectPropertyKey(breakdown.name, projectId, breakdown.cohortId)} as ${key}`;
     sb.groupBy[key] = `${key}`;
   });
 
@@ -512,7 +690,7 @@ export function getChartSql({
   if (breakdowns.length > 0) {
     const breakdownSelects = breakdowns
       .map((b, index) => {
-        const propertyKey = getSelectPropertyKey(b.name, projectId);
+        const propertyKey = getSelectPropertyKey(b.name, projectId, b.cohortId);
         return `${propertyKey} as breakdown_${index + 1}`;
       })
       .join(', ');
@@ -535,7 +713,7 @@ export function getChartSql({
 
     const joinConditions = breakdowns
       .map((b, index) => {
-        const propertyKey = getSelectPropertyKey(b.name, projectId);
+        const propertyKey = getSelectPropertyKey(b.name, projectId, b.cohortId);
         return `breakdown_totals.breakdown_${index + 1} = ${propertyKey}`;
       })
       .join(' AND ');
@@ -607,22 +785,14 @@ export function getEventFiltersWhereClause(
 
     // Handle cohort operators
     if (operator === 'inCohort' && cohortId && projectId) {
-      where[id] = `profile_id IN (
-        SELECT profile_id
-        FROM ${TABLE_NAMES.cohort_members} FINAL
-        WHERE cohort_id = ${sqlstring.escape(cohortId)}
-          AND project_id = ${sqlstring.escape(projectId)}
-      )`;
+      const subquery = getCohortMembershipSubquery(cohortId);
+      where[id] = `profile_id IN (${subquery})`;
       return;
     }
 
     if (operator === 'notInCohort' && cohortId && projectId) {
-      where[id] = `profile_id NOT IN (
-        SELECT profile_id
-        FROM ${TABLE_NAMES.cohort_members} FINAL
-        WHERE cohort_id = ${sqlstring.escape(cohortId)}
-          AND project_id = ${sqlstring.escape(projectId)}
-      )`;
+      const subquery = getCohortMembershipSubquery(cohortId);
+      where[id] = `profile_id NOT IN (${subquery})`;
       return;
     }
 
@@ -1022,12 +1192,7 @@ export function getGlobalCohortFiltersWhereClause(
   }
 
   const conditions = cohortFilters.map((filter) => {
-    const subquery = `
-      SELECT profile_id
-      FROM ${TABLE_NAMES.cohort_members} FINAL
-      WHERE cohort_id = ${sqlstring.escape(filter.cohortId)}
-        AND project_id = ${sqlstring.escape(projectId)}
-    `;
+    const subquery = getCohortMembershipSubquery(filter.cohortId);
 
     return filter.operator === 'inCohort'
       ? `profile_id IN (${subquery})`
