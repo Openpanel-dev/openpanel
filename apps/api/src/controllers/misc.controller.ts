@@ -71,7 +71,7 @@ async function fetchImage(
   url: URL,
 ): Promise<{ buffer: Buffer; contentType: string; status: number }> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+  const timeout = setTimeout(() => controller.abort(), 1000); // 10s timeout
 
   try {
     const response = await fetch(url.toString(), {
@@ -175,18 +175,8 @@ async function processImage(
       bufferSize: buffer.length,
     });
 
-    // If Sharp fails, try to create a simple fallback image
-    return createFallbackImage();
+    throw error;
   }
-}
-
-// Create a simple transparent fallback image when Sharp can't process the original
-function createFallbackImage(): Buffer {
-  // 1x1 transparent PNG
-  return Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-    'base64',
-  );
 }
 
 // Process OG image with Sharp (resize to 300px width)
@@ -220,8 +210,7 @@ async function processOgImage(
       bufferSize: buffer.length,
     });
 
-    // If Sharp fails, try to create a simple fallback image
-    return createFallbackImage();
+    throw error;
   }
 }
 
@@ -241,11 +230,15 @@ export async function getFavicon(
   reply: FastifyReply,
 ) {
   try {
+    logger.info('getFavicon', {
+      url: request.query.url,
+    });
     const url = validateUrl(request.query.url);
     if (!url) {
-      reply.header('Content-Type', 'image/png');
-      reply.header('Cache-Control', 'public, max-age=3600');
-      return reply.send(createFallbackImage());
+      return reply
+        .status(404)
+        .header('Content-Type', 'text/plain')
+        .send('Not found');
     }
 
     const cacheKey = createCacheKey(url.toString());
@@ -259,11 +252,13 @@ export async function getFavicon(
     }
 
     let imageUrl: URL;
-
     // If it's a direct image URL, use it directly
     if (isDirectImage(url)) {
       imageUrl = url;
     } else {
+      logger.info('before parseUrlMeta', {
+        url: url.toString(),
+      });
       // For website URLs, extract favicon from HTML
       const meta = await parseUrlMeta(url.toString());
       logger.info('parseUrlMeta result', {
@@ -323,9 +318,10 @@ export async function getFavicon(
 
     // Accept any response as long as we have valid image data
     if (buffer.length === 0) {
-      reply.header('Content-Type', 'image/png');
-      reply.header('Cache-Control', 'public, max-age=3600');
-      return reply.send(createFallbackImage());
+      return reply
+        .status(404)
+        .header('Content-Type', 'text/plain')
+        .send('Not found');
     }
 
     // Process the image (resize to 30x30 PNG, or serve ICO as-is)

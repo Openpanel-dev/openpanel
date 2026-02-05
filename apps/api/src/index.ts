@@ -1,3 +1,5 @@
+process.env.TZ = 'UTC';
+
 import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import cors, { type FastifyCorsOptions } from '@fastify/cors';
@@ -12,7 +14,7 @@ import {
   type IServiceClientWithProject,
   runWithAlsSession,
 } from '@openpanel/db';
-import { getCache, getRedisPub } from '@openpanel/redis';
+import { getRedisPub } from '@openpanel/redis';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';
 
@@ -49,8 +51,6 @@ import { shutdown } from './utils/graceful-shutdown';
 import { logger } from './utils/logger';
 
 sourceMapSupport.install();
-
-process.env.TZ = 'UTC';
 
 declare module 'fastify' {
   interface FastifyRequest {

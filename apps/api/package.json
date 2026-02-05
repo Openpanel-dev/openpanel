@@ -47,7 +47,7 @@
     "sqlstring": "^2.3.3",
     "superjson": "^1.13.3",
     "svix": "^1.24.0",
-    "url-metadata": "^4.1.1",
+    "url-metadata": "^5.4.1",
     "uuid": "^9.0.1",
     "zod": "catalog:"
   },

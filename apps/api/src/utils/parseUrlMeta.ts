@@ -72,7 +72,9 @@ interface UrlMetaData {
 
 export async function parseUrlMeta(url: string) {
   try {
-    const metadata = (await urlMetadata(url)) as UrlMetaData;
+    const metadata = (await urlMetadata(url, {
+      timeout: 500,
+    })) as UrlMetaData;
     const data = transform(metadata, url);
     return data;
   } catch (err) {
