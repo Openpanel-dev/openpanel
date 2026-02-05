@@ -527,10 +527,9 @@ export async function getCohortCount(
     return result[0]?.count || 0;
   }
 
-  // Compute on-demand
+  // Compute on-demand using COUNT query - don't load all profile IDs into memory
   const definition = cohort.definition as CohortDefinition;
-  const profileIds = await computeCohort(projectId, definition);
-  return profileIds.length;
+  return await countCohort(projectId, definition);
 }
 
 /**

@@ -45,13 +45,11 @@ export const cohortRouter = createTRPCRouter({
       });
 
       if (input.includeCount) {
-        // Enrich with current counts
-        return Promise.all(
-          cohorts.map(async (cohort) => ({
-            ...cohort,
-            currentCount: await getCohortCount(cohort.id, cohort.projectId),
-          })),
-        );
+        // Return cached counts from Postgres - don't trigger expensive ClickHouse queries on list load
+        return cohorts.map((cohort) => ({
+          ...cohort,
+          currentCount: cohort.profileCount ?? 0,
+        }));
       }
 
       return cohorts;
@@ -110,11 +108,26 @@ export const cohortRouter = createTRPCRouter({
         },
       });
 
-      // Trigger initial computation if not on-demand
-      if (!cohort.computeOnDemand) {
-        // Run in background - don't await
+      // Compute initial count/membership in background
+      if (cohort.computeOnDemand) {
+        // Dynamic cohorts: just compute and cache the count
+        countCohort(cohort.projectId, input.definition as CohortDefinition)
+          .then((count) => {
+            return db.cohort.update({
+              where: { id: cohort.id },
+              data: {
+                profileCount: count,
+                lastComputedAt: new Date(),
+              },
+            });
+          })
+          .catch((err) => {
+            console.error('Failed to compute cohort count on creation:', err);
+          });
+      } else {
+        // Pre-computed cohorts: compute and store membership
         updateCohortMembership(cohort.id).catch((err) => {
-          console.error('Failed to compute cohort on creation:', err);
+          console.error('Failed to compute cohort membership on creation:', err);
         });
       }
 
@@ -367,7 +380,28 @@ export const cohortRouter = createTRPCRouter({
         throw TRPCAccessError('You do not have access to this cohort');
       }
 
-      await updateCohortMembership(input.cohortId);
+      // Static cohorts are snapshots - don't update
+      if (cohort.isStatic) {
+        throw new Error('Cannot refresh static cohorts - they are one-time snapshots');
+      }
+
+      // For dynamic cohorts, just update the cached count (don't store membership)
+      if (cohort.computeOnDemand) {
+        const definition = cohort.definition as CohortDefinition;
+        const count = await countCohort(cohort.projectId, definition);
+
+        await db.cohort.update({
+          where: { id: input.cohortId },
+          data: {
+            profileCount: count,
+            lastComputedAt: new Date(),
+          },
+        });
+      } else {
+        // Pre-computed cohorts: compute and store membership
+        await updateCohortMembership(input.cohortId);
+      }
+
       return { success: true };
     }),
 });
