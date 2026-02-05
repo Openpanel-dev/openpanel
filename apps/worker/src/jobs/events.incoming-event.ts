@@ -113,7 +113,7 @@ export async function incomingEvent(
     path,
     origin,
     referrer: referrer?.url || '',
-    referrerName: utmReferrer?.name || referrer?.name || '',
+    referrerName: utmReferrer?.name || referrer?.name || referrer?.url,
     referrerType: referrer?.type || utmReferrer?.type || '',
     os: uaInfo.os,
     osVersion: uaInfo.osVersion,
