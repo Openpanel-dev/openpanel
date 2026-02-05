@@ -744,6 +744,27 @@ Port for the API service to listen on.
 API_PORT=3000
 ```
 
+### API_HOST
+
+**Type**: `string`  
+**Required**: No  
+**Default**: `0.0.0.0` (production) / `localhost` (development)
+
+Host address for the API service to bind to. Set to `::` to enable IPv6 support (useful for platforms like Railway that use IPv6 for internal networking).
+
+**Example**:
+```bash
+# Default IPv4 only
+API_HOST=0.0.0.0
+
+# IPv6 (dual-stack, accepts both IPv4 and IPv6)
+API_HOST=::
+```
+
+<Callout>
+Use `API_HOST=::` when deploying on platforms like Railway where private networking requires IPv6. The `::` address enables dual-stack mode, accepting both IPv4 and IPv6 connections on most systems.
+</Callout>
+
 ## Logging
 
 ### LOG_LEVEL

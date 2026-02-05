@@ -63,6 +63,9 @@ declare module 'fastify' {
 }
 
 const port = Number.parseInt(process.env.API_PORT || '3000', 10);
+const host =
+  process.env.API_HOST ||
+  (process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost');
 
 const startServer = async () => {
   logger.info('Starting server');
@@ -263,10 +266,7 @@ const startServer = async () => {
       });
     }
 
-    await fastify.listen({
-      host: process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost',
-      port,
-    });
+    await fastify.listen({ host, port });
 
     try {
       // Notify when keys expires
