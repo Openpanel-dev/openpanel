@@ -22,7 +22,7 @@ const validator = z.object({
   description: z.string().optional(),
   definition: z.any(), // CohortDefinition validation happens in backend
   isStatic: z.boolean().default(false),
-  computeOnDemand: z.boolean().default(false),
+  computeOnDemand: z.boolean().default(true),
 });
 
 type IForm = z.infer<typeof validator>;
@@ -40,7 +40,7 @@ export default function EditCohort(props: EditCohortProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const { register, handleSubmit, formState, control, watch } = useForm<IForm>({
+  const { register, handleSubmit, formState, control } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
       name: props.name,
@@ -64,8 +64,6 @@ export default function EditCohort(props: EditCohortProps) {
     }),
   );
 
-  const isStatic = watch('isStatic');
-
   return (
     <ModalContent className="max-w-3xl">
       <ModalHeader title="Edit cohort" />
@@ -75,6 +73,9 @@ export default function EditCohort(props: EditCohortProps) {
           mutation.mutate({
             id: props.id,
             ...data,
+            // Static cohorts are stored (computeOnDemand=false)
+            // Dynamic cohorts are computed on-demand (computeOnDemand=true)
+            computeOnDemand: !data.isStatic,
           });
         })}
       >
@@ -90,25 +91,21 @@ export default function EditCohort(props: EditCohortProps) {
           {...register('description')}
         />
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Switch id="isStatic" {...register('isStatic')} />
-            <Label htmlFor="isStatic" className="text-sm cursor-pointer">
-              Static cohort (doesn't auto-update)
-            </Label>
-          </div>
-
-          {!isStatic && (
-            <div className="flex items-center gap-2">
-              <Switch id="computeOnDemand" {...register('computeOnDemand')} />
-              <Label
-                htmlFor="computeOnDemand"
-                className="text-sm cursor-pointer"
-              >
-                Compute on-demand
-              </Label>
-            </div>
-          )}
+        <div className="flex items-center gap-2">
+          <Controller
+            name="isStatic"
+            control={control}
+            render={({ field }) => (
+              <Switch
+                id="isStatic"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
+          />
+          <Label htmlFor="isStatic" className="text-sm cursor-pointer">
+            Static cohort (one-time snapshot)
+          </Label>
         </div>
 
         <div>

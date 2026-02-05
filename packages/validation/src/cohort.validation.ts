@@ -129,7 +129,7 @@ export const zCohortInput = z.object({
     .describe('Whether this is a static cohort (one-time snapshot)'),
   computeOnDemand: z
     .boolean()
-    .default(false)
+    .default(true)
     .describe('Whether to compute on-demand instead of storing'),
 });
 
