@@ -18,16 +18,18 @@ import {
 import { SerieIcon } from '../report-chart/common/serie-icon';
 interface OverviewLiveHistogramProps {
   projectId: string;
+  shareId?: string;
 }
 
 export function OverviewLiveHistogram({
   projectId,
+  shareId,
 }: OverviewLiveHistogramProps) {
   const trpc = useTRPC();
 
   // Use the new liveData endpoint instead of chart props
   const { data: liveData, isLoading } = useQuery(
-    trpc.overview.liveData.queryOptions({ projectId }),
+    trpc.overview.liveData.queryOptions({ projectId, shareId }),
   );
 
   const totalSessions = liveData?.totalSessions ?? 0;

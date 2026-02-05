@@ -213,3 +213,67 @@ export async function validateShareAccess(
 
   throw new Error('Share not found');
 }
+
+// Validation for overview share access
+export async function validateOverviewShareAccess(
+  shareId: string | undefined,
+  projectId: string,
+  ctx: {
+    cookies: Record<string, string | undefined>;
+    session?: { userId?: string | null };
+  },
+): Promise<{ isValid: boolean }> {
+  // If shareId is provided, validate share access
+  if (shareId) {
+    const share = await db.shareOverview.findUnique({
+      where: { id: shareId },
+    });
+
+    if (!share || !share.public) {
+      throw new Error('Share not found or not public');
+    }
+
+    // Verify the share is for the correct project
+    if (share.projectId !== projectId) {
+      throw new Error('Project ID mismatch');
+    }
+
+    // If no password is set, share is public and accessible
+    if (!share.password) {
+      return {
+        isValid: true,
+      };
+    }
+
+    // If password is set, require cookie OR member access
+    const hasCookie = !!ctx.cookies[`shared-overview-${shareId}`];
+    const hasMemberAccess =
+      ctx.session?.userId &&
+      (await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+      }));
+
+    return {
+      isValid: hasCookie || !!hasMemberAccess,
+    };
+  }
+
+  // If no shareId, require authenticated user with project access
+  if (!ctx.session?.userId) {
+    throw new Error('Authentication required');
+  }
+
+  const access = await getProjectAccess({
+    userId: ctx.session.userId,
+    projectId,
+  });
+
+  if (!access) {
+    throw new Error('You do not have access to this project');
+  }
+
+  return {
+    isValid: true,
+  };
+}

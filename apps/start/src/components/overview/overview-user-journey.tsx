@@ -29,6 +29,7 @@ import { useOverviewOptions } from './useOverviewOptions';
 
 interface OverviewUserJourneyProps {
   projectId: string;
+  shareId?: string;
 }
 
 type PortalTooltipPosition = { left: number; top: number; ready: boolean };
@@ -159,6 +160,7 @@ function SankeyPortalTooltip({
 
 export default function OverviewUserJourney({
   projectId,
+  shareId,
 }: OverviewUserJourneyProps) {
   const { range, startDate, endDate } = useOverviewOptions();
   const [filters] = useEventQueryFilters();
@@ -177,6 +179,7 @@ export default function OverviewUserJourney({
       endDate,
       range,
       steps: steps ?? 5,
+      shareId,
     }),
   );
 

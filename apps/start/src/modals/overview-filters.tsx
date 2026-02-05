@@ -38,7 +38,7 @@ export default function OverviewFilters({
   const { projectId } = useAppParams();
   const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
   const [event, setEvent] = useEventQueryNamesFilter(nuqsOptions);
-  const eventNames = useEventNames({ projectId });
+  const eventNames = useEventNames({ projectId, anyEvents: false });
   const selectedFilters = filters.filter((filter) => filter.value[0] !== null);
   return (
     <SheetContent className="[&>button.absolute]:hidden">

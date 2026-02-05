@@ -10,11 +10,12 @@ import { AnimatedNumber } from '../animated-number';
 
 export interface LiveCounterProps {
   projectId: string;
+  shareId?: string;
 }
 
 const FIFTEEN_SECONDS = 1000 * 30;
 
-export function LiveCounter({ projectId }: LiveCounterProps) {
+export function LiveCounter({ projectId, shareId }: LiveCounterProps) {
   const trpc = useTRPC();
   const client = useQueryClient();
   const counter = useDebounceState(0, 1000);
@@ -22,6 +23,7 @@ export function LiveCounter({ projectId }: LiveCounterProps) {
   const query = useQuery(
     trpc.overview.liveVisitors.queryOptions({
       projectId,
+      shareId,
     }),
   );
 

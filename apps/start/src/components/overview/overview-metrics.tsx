@@ -36,6 +36,7 @@ import { OverviewMetricCard } from './overview-metric-card';
 
 interface OverviewMetricsProps {
   projectId: string;
+  shareId?: string;
 }
 
 const TITLES = [
@@ -83,7 +84,10 @@ const TITLES = [
   },
 ] as const;
 
-export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
+export default function OverviewMetrics({
+  projectId,
+  shareId,
+}: OverviewMetricsProps) {
   const { range, interval, metric, setMetric, startDate, endDate } =
     useOverviewOptions();
   const [filters] = useEventQueryFilters();
@@ -93,6 +97,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
   const overviewQuery = useQuery(
     trpc.overview.stats.queryOptions({
       projectId,
+      shareId,
       range,
       interval,
       filters,
@@ -138,7 +143,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
               'col-span-4 min-h-16 flex-1 p-4 pb-0 shadow-[0_0_0_0.5px] shadow-border max-md:row-start-1 md:col-span-1',
             )}
           >
-            <OverviewLiveHistogram projectId={projectId} />
+            <OverviewLiveHistogram projectId={projectId} shareId={shareId} />
           </div>
         </div>
 
@@ -344,7 +349,7 @@ function Chart({
               onAnimationEnd={handleAnimationEnd}
             />
             <Tooltip />
-            <YAxis {...yAxisProps} domain={[0, 'dataMax']} width={25} />
+            <YAxis {...yAxisProps} width={25} />
             <XAxis {...xAxisProps} />
             <CartesianGrid
               strokeDasharray="3 3"
@@ -471,7 +476,12 @@ function Chart({
           <Tooltip />
           <YAxis
             {...yAxisProps}
-            domain={[0, activeMetric.key === 'bounce_rate' ? 100 : 'dataMax']}
+            domain={[
+              0,
+              activeMetric.key === 'bounce_rate'
+                ? 100
+                : (dataMax: number) => Math.max(dataMax, 1),
+            ]}
             width={25}
           />
           <YAxis
@@ -480,14 +490,18 @@ function Chart({
             orientation="right"
             domain={[
               0,
-              data.reduce(
-                (max, item) => Math.max(max, item.total_revenue ?? 0),
-                0,
-              ) * 2,
+              Math.max(
+                data.reduce(
+                  (max, item) => Math.max(max, item.total_revenue ?? 0),
+                  0,
+                ) * 1.2,
+                1,
+              ),
             ]}
             width={30}
+            allowDataOverflow={false}
           />
-          <XAxis {...xAxisProps} />
+          <XAxis {...xAxisProps} padding={{ left: 10, right: 10 }} />
 
           <CartesianGrid
             strokeDasharray="3 3"
@@ -523,19 +537,11 @@ function Chart({
             stroke={'oklch(from var(--foreground) l c h / 0.1)'}
             strokeWidth={2}
             isAnimationActive={false}
-            dot={
-              data.length > 90
-                ? false
-                : {
-                    stroke: 'oklch(from var(--foreground) l c h / 0.1)',
-                    fill: 'transparent',
-                    strokeWidth: 1.5,
-                    r: 2,
-                  }
-            }
+            dot={false}
             activeDot={{
               stroke: 'oklch(from var(--foreground) l c h / 0.2)',
-              fill: 'transparent',
+              fill: 'var(--def-100)',
+              fillOpacity: 1,
               strokeWidth: 1.5,
               r: 3,
             }}
@@ -581,7 +587,8 @@ function Chart({
                 ? false
                 : {
                     stroke: getChartColor(0),
-                    fill: 'transparent',
+                    fill: 'var(--def-100)',
+                    fillOpacity: 1,
                     strokeWidth: 1.5,
                     r: 3,
                   }

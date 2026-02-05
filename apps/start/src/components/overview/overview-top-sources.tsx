@@ -24,9 +24,11 @@ import { useOverviewWidgetV2 } from './useOverviewWidget';
 
 interface OverviewTopSourcesProps {
   projectId: string;
+  shareId?: string;
 }
 export default function OverviewTopSources({
   projectId,
+  shareId,
 }: OverviewTopSourcesProps) {
   const { interval, range, startDate, endDate } = useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
@@ -71,6 +73,7 @@ export default function OverviewTopSources({
   const query = useQuery(
     trpc.overview.topGeneric.queryOptions({
       projectId,
+      shareId,
       range,
       filters,
       column: widget.key,
@@ -83,6 +86,7 @@ export default function OverviewTopSources({
     trpc.overview.topGenericSeries.queryOptions(
       {
         projectId,
+        shareId,
         range,
         filters,
         column: widget.key,

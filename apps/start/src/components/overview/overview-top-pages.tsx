@@ -20,9 +20,13 @@ import { useOverviewWidgetV2 } from './useOverviewWidget';
 
 interface OverviewTopPagesProps {
   projectId: string;
+  shareId?: string;
 }
 
-export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
+export default function OverviewTopPages({
+  projectId,
+  shareId,
+}: OverviewTopPagesProps) {
   const { interval, range, startDate, endDate } = useOverviewOptions();
   const [filters] = useEventQueryFilters();
   const [domain, setDomain] = useQueryState('d', parseAsBoolean);
@@ -56,6 +60,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
   const query = useQuery(
     trpc.overview.topPages.queryOptions({
       projectId,
+      shareId,
       filters,
       startDate,
       endDate,

@@ -26,9 +26,11 @@ import { useOverviewWidget } from './useOverviewWidget';
 
 interface OverviewTopDevicesProps {
   projectId: string;
+  shareId?: string;
 }
 export default function OverviewTopDevices({
   projectId,
+  shareId,
 }: OverviewTopDevicesProps) {
   const { interval, range, previous, startDate, endDate } =
     useOverviewOptions();
@@ -325,6 +327,7 @@ export default function OverviewTopDevices({
   const query = useQuery(
     trpc.overview.topGeneric.queryOptions({
       projectId,
+      shareId,
       range,
       filters,
       column: widget.key,
@@ -337,6 +340,7 @@ export default function OverviewTopDevices({
     trpc.overview.topGenericSeries.queryOptions(
       {
         projectId,
+        shareId,
         range,
         filters,
         column: widget.key,

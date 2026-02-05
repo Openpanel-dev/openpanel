@@ -3,10 +3,11 @@ import { chartColors } from '@openpanel/constants';
 import { getCache } from '@openpanel/redis';
 import { type IChartEventFilter, zTimeInterval } from '@openpanel/validation';
 import { omit } from 'ramda';
+import sqlstring from 'sqlstring';
 import { z } from 'zod';
 import { TABLE_NAMES, ch } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
-import { getEventFiltersWhereClause } from './chart.service';
+import { getEventFiltersWhereClause, getSelectPropertyKey } from './chart.service';
 
 // Constants
 const ROLLUP_DATE_PREFIX = '1970-01-01';
@@ -127,12 +128,53 @@ export type IGetUserJourneyInput = z.infer<typeof zGetUserJourneyInput> & {
   timezone: string;
 };
 
+export const zGetTopEventsInput = z.object({
+  projectId: z.string(),
+  filters: z.array(z.any()),
+  startDate: z.string(),
+  endDate: z.string(),
+  excludeEvents: z.array(z.string()).optional(),
+});
+
+export type IGetTopEventsInput = z.infer<typeof zGetTopEventsInput> & {
+  timezone: string;
+};
+
+export const zGetTopLinkOutInput = z.object({
+  projectId: z.string(),
+  filters: z.array(z.any()),
+  startDate: z.string(),
+  endDate: z.string(),
+});
+
+export type IGetTopLinkOutInput = z.infer<typeof zGetTopLinkOutInput> & {
+  timezone: string;
+};
+
+export const zGetMapDataInput = z.object({
+  projectId: z.string(),
+  filters: z.array(z.any()),
+  startDate: z.string(),
+  endDate: z.string(),
+});
+
+export type IGetMapDataInput = z.infer<typeof zGetMapDataInput> & {
+  timezone: string;
+};
+
 export class OverviewService {
   constructor(private client: typeof ch) {}
 
   // Helper methods
   private isRollupRow(date: string): boolean {
-    return date.startsWith(ROLLUP_DATE_PREFIX);
+    // The rollup row has date 1970-01-01 00:00:00 (epoch) from ClickHouse.
+    // After transform with `new Date().toISOString()`, this becomes an ISO string.
+    // Due to timezone handling in JavaScript's Date constructor (which interprets
+    // the input as local time), the UTC date might become:
+    // - 1969-12-31T... for positive UTC offsets (e.g., UTC+8)
+    // - 1970-01-01T... for UTC or negative offsets
+    // We check for both year prefixes to handle all server timezones.
+    return date.startsWith(ROLLUP_DATE_PREFIX) || date.startsWith('1969-12-31');
   }
 
   private getFillConfig(interval: string, startDate: string, endDate: string) {
@@ -1222,6 +1264,150 @@ export class OverviewService {
       nodes: finalNodes,
       links: filteredLinks,
     };
+  }
+
+  async getTopEvents({
+    projectId,
+    filters,
+    startDate,
+    endDate,
+    timezone,
+    excludeEvents = ['session_start', 'session_end', 'screen_view'],
+  }: {
+    projectId: string;
+    filters: IChartEventFilter[];
+    startDate: string;
+    endDate: string;
+    timezone: string;
+    excludeEvents?: string[];
+  }): Promise<Array<{ name: string; count: number }>> {
+    const where = this.getRawWhereClause('events', filters);
+    const excludeWhere =
+      excludeEvents.length > 0
+        ? `name NOT IN (${excludeEvents.map((e) => sqlstring.escape(e)).join(',')})`
+        : '';
+
+    const query = clix(this.client, timezone)
+      .select<{ name: string; count: number }>([
+        'name',
+        'count() as count',
+      ])
+      .from(TABLE_NAMES.events, false)
+      .where('project_id', '=', projectId)
+      .where('created_at', 'BETWEEN', [
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
+      ])
+      .rawWhere(where)
+      .rawWhere(excludeWhere)
+      .groupBy(['name'])
+      .orderBy('count', 'DESC')
+      .limit(MAX_RECORDS_LIMIT);
+
+    return query.execute();
+  }
+
+  async getTopLinkOut({
+    projectId,
+    filters,
+    startDate,
+    endDate,
+    timezone,
+  }: {
+    projectId: string;
+    filters: IChartEventFilter[];
+    startDate: string;
+    endDate: string;
+    timezone: string;
+  }): Promise<Array<{ href: string; count: number }>> {
+    const where = this.getRawWhereClause('events', filters);
+    const hrefKey = getSelectPropertyKey('properties.href');
+
+    const query = clix(this.client, timezone)
+      .select<{ href: string; count: number }>([
+        `${hrefKey} as href`,
+        'count() as count',
+      ])
+      .from(TABLE_NAMES.events, false)
+      .where('project_id', '=', projectId)
+      .where('name', '=', 'link_out')
+      .where('created_at', 'BETWEEN', [
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
+      ])
+      .rawWhere(where)
+      .rawWhere(`${hrefKey} IS NOT NULL AND ${hrefKey} != ''`)
+      .groupBy(['href'])
+      .orderBy('count', 'DESC')
+      .limit(MAX_RECORDS_LIMIT);
+
+    return query.execute();
+  }
+
+  async getMapData({
+    projectId,
+    filters,
+    startDate,
+    endDate,
+    timezone,
+  }: {
+    projectId: string;
+    filters: IChartEventFilter[];
+    startDate: string;
+    endDate: string;
+    timezone: string;
+  }): Promise<
+    Array<{
+      country: string;
+      region?: string;
+      city?: string;
+      lat: number;
+      lng: number;
+      count: number;
+    }>
+  > {
+    const where = this.getRawWhereClause('events', filters);
+
+    // Note: ClickHouse doesn't have built-in lat/lng for countries/regions
+    // This would typically require a lookup table or external service
+    // For now, we'll return the data structure but lat/lng would need to be
+    // resolved on the frontend or via a separate lookup
+    const query = clix(this.client, timezone)
+      .select<{
+        country: string;
+        region: string | null;
+        city: string | null;
+        count: number;
+      }>([
+        'nullIf(country, \'\') as country',
+        'nullIf(region, \'\') as region',
+        'nullIf(city, \'\') as city',
+        'uniq(session_id) as count',
+      ])
+      .from(TABLE_NAMES.events, false)
+      .where('project_id', '=', projectId)
+      .where('created_at', 'BETWEEN', [
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
+      ])
+      .rawWhere(where)
+      .rawWhere('country IS NOT NULL AND country != \'\'')
+      .groupBy(['country', 'region', 'city'])
+      .orderBy('count', 'DESC')
+      .limit(MAX_RECORDS_LIMIT);
+
+    const results = await query.execute();
+
+    // Return with placeholder lat/lng - these should be resolved via geocoding
+    // or a lookup table on the frontend/backend
+    return results.map((row) => ({
+      country: row.country,
+      region: row.region ?? undefined,
+      city: row.city ?? undefined,
+      lat: 0, // Placeholder - needs geocoding
+      lng: 0, // Placeholder - needs geocoding
+      count: row.count,
+    }));
   }
 }
 

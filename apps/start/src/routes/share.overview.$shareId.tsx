@@ -1,6 +1,7 @@
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import { LazyComponent } from '@/components/lazy-component';
 import { LoginNavbar } from '@/components/login-navbar';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { LiveCounter } from '@/components/overview/live-counter';
@@ -11,6 +12,7 @@ import OverviewTopEvents from '@/components/overview/overview-top-events';
 import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
+import OverviewUserJourney from '@/components/overview/overview-user-journey';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
@@ -110,19 +112,22 @@ function RouteComponent() {
               <OverviewRange />
             </div>
             <div className="flex gap-2">
-              <LiveCounter projectId={projectId} />
+              <LiveCounter projectId={projectId} shareId={shareId} />
             </div>
           </div>
           <OverviewFiltersButtons />
         </div>
       </div>
       <div className="mx-auto grid max-w-7xl grid-cols-6 gap-4 p-4">
-        <OverviewMetrics projectId={projectId} />
-        <OverviewTopSources projectId={projectId} />
-        <OverviewTopPages projectId={projectId} />
-        <OverviewTopDevices projectId={projectId} />
-        <OverviewTopEvents projectId={projectId} />
-        <OverviewTopGeo projectId={projectId} />
+        <OverviewMetrics projectId={projectId} shareId={shareId} />
+        <OverviewTopSources projectId={projectId} shareId={shareId} />
+        <OverviewTopPages projectId={projectId} shareId={shareId} />
+        <OverviewTopDevices projectId={projectId} shareId={shareId} />
+        <OverviewTopEvents projectId={projectId} shareId={shareId} />
+        <OverviewTopGeo projectId={projectId} shareId={shareId} />
+        <LazyComponent className="col-span-6">
+          <OverviewUserJourney projectId={projectId} shareId={shareId} />
+        </LazyComponent>
       </div>
     </div>
   );

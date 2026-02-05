@@ -1,8 +1,6 @@
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useMemo, useState } from 'react';
 
-import type { IReportInput } from '@openpanel/validation';
-
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { Widget, WidgetBody } from '../widget';
@@ -17,17 +15,18 @@ import { useOverviewWidgetV2 } from './useOverviewWidget';
 
 export interface OverviewTopEventsProps {
   projectId: string;
+  shareId?: string;
 }
 
 export default function OverviewTopEvents({
   projectId,
+  shareId,
 }: OverviewTopEventsProps) {
-  const { interval, range, previous, startDate, endDate } =
-    useOverviewOptions();
+  const { range, startDate, endDate } = useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
   const trpc = useTRPC();
   const { data: conversions } = useQuery(
-    trpc.event.conversionNames.queryOptions({ projectId }),
+    trpc.overview.topConversions.queryOptions({ projectId, shareId }),
   );
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -36,15 +35,7 @@ export default function OverviewTopEvents({
       title: 'Events',
       btn: 'Events',
       meta: {
-        filters: [
-          {
-            id: 'ex_session',
-            name: 'name',
-            operator: 'isNot',
-            value: ['session_start', 'session_end', 'screen_view'],
-          },
-        ],
-        eventName: '*',
+        type: 'events' as const,
       },
     },
     conversions: {
@@ -52,69 +43,84 @@ export default function OverviewTopEvents({
       btn: 'Conversions',
       hide: !conversions || conversions.length === 0,
       meta: {
-        filters: [
-          {
-            id: 'conversion',
-            name: 'name',
-            operator: 'is',
-            value: conversions?.map((c) => c.name) ?? [],
-          },
-        ],
-        eventName: '*',
+        type: 'conversions' as const,
       },
     },
     link_out: {
       title: 'Link out',
       btn: 'Link out',
       meta: {
-        filters: [],
-        eventName: 'link_out',
-        breakdownProperty: 'properties.href',
+        type: 'linkOut' as const,
       },
     },
   });
 
-  const report: IReportInput = useMemo(
-    () => ({
-      limit: 1000,
+  // Use different endpoints based on widget type
+  const eventsQuery = useQuery(
+    trpc.overview.topEvents.queryOptions({
       projectId,
+      shareId,
+      range,
       startDate,
       endDate,
-      series: [
-        {
-          type: 'event' as const,
-          segment: 'event' as const,
-          filters: [...filters, ...(widget.meta?.filters ?? [])],
-          id: 'A',
-          name: widget.meta?.eventName ?? '*',
-        },
-      ],
-      breakdowns: [
-        {
-          id: 'A',
-          name: widget.meta?.breakdownProperty ?? 'name',
-        },
-      ],
-      chartType: 'bar' as const,
-      interval,
-      range,
-      previous,
-      metric: 'sum' as const,
+      filters,
+      excludeEvents:
+        widget.meta?.type === 'events'
+          ? ['session_start', 'session_end', 'screen_view']
+          : undefined,
     }),
-    [projectId, startDate, endDate, filters, widget, interval, range, previous],
   );
 
-  const query = useQuery(trpc.chart.aggregate.queryOptions(report));
+  const linkOutQuery = useQuery(
+    trpc.overview.topLinkOut.queryOptions({
+      projectId,
+      shareId,
+      range,
+      startDate,
+      endDate,
+      filters,
+    }),
+  );
 
   const tableData: EventTableItem[] = useMemo(() => {
-    if (!query.data?.series) return [];
+    // For link out, use href as name
+    if (widget.meta?.type === 'linkOut') {
+      if (!linkOutQuery.data) return [];
+      return linkOutQuery.data.map((item) => ({
+        id: item.href,
+        name: item.href,
+        count: item.count,
+      }));
+    }
 
-    return query.data.series.map((serie) => ({
-      id: serie.id,
-      name: serie.names[serie.names.length - 1] ?? serie.names[0] ?? '',
-      count: serie.metrics.sum,
+    // For events and conversions
+    if (!eventsQuery.data) return [];
+
+    // For conversions, filter events by conversion names (client-side filtering)
+    if (widget.meta?.type === 'conversions' && conversions) {
+      const conversionNames = new Set(conversions.map((c) => c.name));
+      return eventsQuery.data
+        .filter((item) => conversionNames.has(item.name))
+        .map((item) => ({
+          id: item.name,
+          name: item.name,
+          count: item.count,
+        }));
+    }
+
+    // For regular events
+    return eventsQuery.data.map((item) => ({
+      id: item.name,
+      name: item.name,
+      count: item.count,
     }));
-  }, [query.data]);
+  }, [eventsQuery.data, linkOutQuery.data, widget.meta?.type, conversions]);
+
+  // Determine which query's loading state to use
+  const isLoading =
+    widget.meta?.type === 'linkOut'
+      ? linkOutQuery.isLoading
+      : eventsQuery.isLoading;
 
   const filteredData = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -150,14 +156,14 @@ export default function OverviewTopEvents({
           className="border-b-0 pb-2"
         />
         <WidgetBody className="p-0">
-          {query.isLoading ? (
+          {isLoading ? (
             <OverviewWidgetTableLoading />
           ) : (
             <OverviewWidgetTableEvents
               data={filteredData}
               onItemClick={(name) => {
-                if (widget.meta?.breakdownProperty) {
-                  setFilter(widget.meta.breakdownProperty, name);
+                if (widget.meta?.type === 'linkOut') {
+                  setFilter('properties.href', name);
                 } else {
                   setFilter('name', name);
                 }
