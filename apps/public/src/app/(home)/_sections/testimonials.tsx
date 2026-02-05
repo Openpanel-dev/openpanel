@@ -82,6 +82,20 @@ const testimonials = [
     retweets: 68,
     likes: 648,
   },
+  {
+    verified: true,
+    avatarUrl: '/twitter-thomas.jpg',
+    name: 'Thomas Sanlis',
+    handle: 'T_Zahil',
+    content: [
+      `We're now sponsoring @OpenPanelDev with Uneed 🥳`,
+      `If you're looking for open source analytics, OpenPanel is BY FAR the best I've ever seen`,
+      'Bonus: 1-click install on Coolify 🥰',
+    ],
+    replies: 8,
+    retweets: 3,
+    likes: 23,
+  },
 ];
 
 export function Testimonials() {
