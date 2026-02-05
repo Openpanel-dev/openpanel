@@ -8,6 +8,7 @@ import {
   getSelectPropertyKey,
   fetchCohortsMetadata,
   getCohortCteName,
+  getCohortAlias,
   buildCohortMembershipQuery,
 } from './chart.service';
 import { onlyReportEvents } from './reports.service';
@@ -185,6 +186,13 @@ export class ConversionService {
     // Build WITH clause if CTEs exist
     const withClause = ctes.length > 0 ? `WITH ${ctes.join(', ')} ` : '';
 
+    // Build LEFT JOINs for all cohorts (much faster than IN subqueries)
+    const cohortJoins = cohortIds.map((cohortId) => {
+      const cohortAlias = getCohortAlias(cohortId);
+      const cohortCte = getCohortCteName(cohortId);
+      return `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = ${fromClause}.profile_id`;
+    }).join('\n        ');
+
     // Final step is the total number of events
     const finalStep = events.length;
 
@@ -214,6 +222,7 @@ export class ConversionService {
             ${conditions.join(',\n            ')}
           ) as steps
         FROM ${fromClause}
+        ${cohortJoins}
         WHERE ${whereClauses.join(' AND ')}
         GROUP BY ${group}${breakdownGroupBy.length ? `, ${breakdownGroupBy.join(', ')}` : ''})
       `),

@@ -15,6 +15,7 @@ import {
   getSelectPropertyKey,
   fetchCohortsMetadata,
   getCohortCteName,
+  getCohortAlias,
   buildCohortMembershipQuery,
 } from './chart.service';
 import { onlyReportEvents } from './reports.service';
@@ -367,6 +368,16 @@ export class FunnelService {
         'profile.id = events.profile_id',
       );
     }
+
+    // Add LEFT JOINs for all cohorts (much faster than IN subqueries)
+    cohortIds.forEach((cohortId) => {
+      const cohortAlias = getCohortAlias(cohortId);
+      const cohortCte = getCohortCteName(cohortId);
+      funnelCte.leftJoin(
+        `${cohortCte} AS ${cohortAlias}`,
+        `${cohortAlias}.profile_id = events.profile_id`,
+      );
+    });
 
     // Create the sessions CTE if needed
     const sessionsCte =

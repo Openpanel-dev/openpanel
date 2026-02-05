@@ -159,11 +159,10 @@ export function getCohortCteName(cohortId: string): string {
 }
 
 /**
- * Reference to cohort membership from CTE
- * This is used in IN clauses and JOINs
+ * Get table alias for a cohort (used in JOINs)
  */
-function getCohortMembershipSubquery(cohortId: string): string {
-  return `SELECT profile_id FROM ${getCohortCteName(cohortId)}`;
+export function getCohortAlias(cohortId: string): string {
+  return `cohort_${cohortId.replace(/-/g, '_')}`;
 }
 
 
@@ -198,12 +197,10 @@ export function getSelectPropertyKey(
   const extractedCohortId = cohortId || (property.startsWith('cohort:') ? property.split(':')[1] : null);
 
   if (extractedCohortId && projectId) {
-    const subquery = getCohortMembershipSubquery(extractedCohortId);
-
+    // Use JOIN-based approach instead of IN subquery for better performance
+    const cohortAlias = getCohortAlias(extractedCohortId);
     return `if(
-      profile_id IN (
-        ${subquery}
-      ),
+      ${cohortAlias}.profile_id IS NOT NULL,
       'In Cohort',
       'Not In Cohort'
     )`;
@@ -518,6 +515,13 @@ export async function getChartSql({
     sb.joins.profiles = profilesJoinRef;
   }
 
+  // Add LEFT JOINs for all cohorts (much faster than IN subqueries)
+  cohortIds.forEach((cohortId) => {
+    const cohortAlias = getCohortAlias(cohortId);
+    const cohortCte = getCohortCteName(cohortId);
+    sb.joins[`cohort_${cohortId}`] = `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = e.profile_id`;
+  });
+
   sb.select.count = 'count(*) as count';
   switch (interval) {
     case 'minute': {
@@ -730,16 +734,16 @@ export function getEventFiltersWhereClause(
     const id = `f${index}`;
     const { name, value, operator, cohortId } = filter;
 
-    // Handle cohort operators
+    // Handle cohort operators - use JOIN-based approach
     if (operator === 'inCohort' && cohortId && projectId) {
-      const subquery = getCohortMembershipSubquery(cohortId);
-      where[id] = `profile_id IN (${subquery})`;
+      const cohortAlias = getCohortAlias(cohortId);
+      where[id] = `${cohortAlias}.profile_id IS NOT NULL`;
       return;
     }
 
     if (operator === 'notInCohort' && cohortId && projectId) {
-      const subquery = getCohortMembershipSubquery(cohortId);
-      where[id] = `profile_id NOT IN (${subquery})`;
+      const cohortAlias = getCohortAlias(cohortId);
+      where[id] = `${cohortAlias}.profile_id IS NULL`;
       return;
     }
 
