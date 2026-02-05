@@ -5,9 +5,16 @@ import { type IChartEventFilter, zTimeInterval } from '@openpanel/validation';
 import { omit } from 'ramda';
 import sqlstring from 'sqlstring';
 import { z } from 'zod';
-import { TABLE_NAMES, ch } from '../clickhouse/client';
+import {
+  TABLE_NAMES,
+  ch,
+  convertClickhouseDateToJs,
+} from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
-import { getEventFiltersWhereClause, getSelectPropertyKey } from './chart.service';
+import {
+  getEventFiltersWhereClause,
+  getSelectPropertyKey,
+} from './chart.service';
 
 // Constants
 const ROLLUP_DATE_PREFIX = '1970-01-01';
@@ -221,7 +228,7 @@ export class OverviewService {
       .groupBy(['date'])
       .rollup()
       .transform({
-        date: (item) => new Date(item.date).toISOString(),
+        date: (item) => convertClickhouseDateToJs(item.date).toISOString(),
       });
   }
 
@@ -1288,10 +1295,7 @@ export class OverviewService {
         : '';
 
     const query = clix(this.client, timezone)
-      .select<{ name: string; count: number }>([
-        'name',
-        'count() as count',
-      ])
+      .select<{ name: string; count: number }>(['name', 'count() as count'])
       .from(TABLE_NAMES.events, false)
       .where('project_id', '=', projectId)
       .where('created_at', 'BETWEEN', [
@@ -1379,9 +1383,9 @@ export class OverviewService {
         city: string | null;
         count: number;
       }>([
-        'nullIf(country, \'\') as country',
-        'nullIf(region, \'\') as region',
-        'nullIf(city, \'\') as city',
+        "nullIf(country, '') as country",
+        "nullIf(region, '') as region",
+        "nullIf(city, '') as city",
         'uniq(session_id) as count',
       ])
       .from(TABLE_NAMES.events, false)
@@ -1391,7 +1395,7 @@ export class OverviewService {
         clix.datetime(endDate, 'toDateTime'),
       ])
       .rawWhere(where)
-      .rawWhere('country IS NOT NULL AND country != \'\'')
+      .rawWhere("country IS NOT NULL AND country != ''")
       .groupBy(['country', 'region', 'city'])
       .orderBy('count', 'DESC')
       .limit(MAX_RECORDS_LIMIT);
