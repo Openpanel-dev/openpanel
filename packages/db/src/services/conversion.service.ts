@@ -141,7 +141,7 @@ export class ConversionService {
 
     const group = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
     const breakdownColumns = breakdowns.map(
-      (b, index) => `${getSelectPropertyKey(b.name, projectId)} as b_${index}`,
+      (b, index) => `${getSelectPropertyKey(b.name, projectId, b.cohortId)} as b_${index}`,
     );
     const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
 
@@ -187,11 +187,12 @@ export class ConversionService {
     const withClause = ctes.length > 0 ? `WITH ${ctes.join(', ')} ` : '';
 
     // Build LEFT JOINs for all cohorts (much faster than IN subqueries)
-    const cohortJoins = cohortIds.map((cohortId) => {
+    const cohortJoins = cohortIds.length > 0 ? '\n        ' + cohortIds.map((cohortId) => {
       const cohortAlias = getCohortAlias(cohortId);
       const cohortCte = getCohortCteName(cohortId);
-      return `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = ${fromClause}.profile_id`;
-    }).join('\n        ');
+      // Reference profile_id directly from the source table (no alias needed for FROM clause)
+      return `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = profile_id`;
+    }).join('\n        ') : '';
 
     // Final step is the total number of events
     const finalStep = events.length;
