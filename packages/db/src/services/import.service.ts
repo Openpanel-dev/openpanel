@@ -259,146 +259,181 @@ export async function createSessionsStartEndEvents(
 
   console.log('[Phase 3] Found sessions:', sessionData.length);
 
-  // Create session_start and session_end events
-  const sessionEvents: IClickhouseEvent[] = [];
+  // Process sessions in batches to avoid memory issues with large imports
+  const BATCH_SIZE = 50000; // Process 50K sessions at a time (creates 100K events per batch)
+  const totalBatches = Math.ceil(sessionData.length / BATCH_SIZE);
+  let totalEventsCreated = 0;
 
-  for (const session of sessionData) {
-    // Destructure first event tuple (all fields)
-    const [
-      // firstId,
-      // firstName,
-      firstPath,
-      firstOrigin,
-      firstReferrer,
-      firstReferrerName,
-      firstReferrerType,
-      // firstDuration,
-      firstProperties,
-      firstCreatedAt,
-      firstCountry,
-      firstCity,
-      firstRegion,
-      firstLongitude,
-      firstLatitude,
-      firstOs,
-      firstOsVersion,
-      firstBrowser,
-      firstBrowserVersion,
-      firstDevice,
-      firstBrand,
-      firstModel,
-      // firstSdkName,
-      // firstSdkVersion,
-      // firstImportedAt,
-    ] = session.first_event;
-
-    // Destructure last event fields (only the changing ones)
-    const [lastPath, lastOrigin, lastProperties, lastCreatedAt] =
-      session.last_event_fields;
-
-    // Calculate duration in milliseconds
-    // Parse timestamps as Date objects to calculate duration
-    const firstTime = new Date(session.first_timestamp).getTime();
-    const lastTime = new Date(session.last_timestamp).getTime();
-    const durationMs = Math.max(0, lastTime - firstTime); // Ensure non-negative duration
-
-    // Helper function to adjust timestamp by milliseconds without timezone conversion
-    const adjustTimestamp = (timestamp: string, offsetMs: number): string => {
-      // Parse the timestamp, adjust it, and format back to ClickHouse format
-      const date = convertClickhouseDateToJs(timestamp);
-      date.setTime(date.getTime() + offsetMs);
-      return formatClickhouseDate(date);
-    };
-
-    // Create session_start event - inherit everything from first event but change name
-    // Set created_at to 1 second before the first event
-    sessionEvents.push({
-      id: crypto.randomUUID(),
-      name: 'session_start',
-      device_id: session.device_id,
-      profile_id: session.profile_id,
-      project_id: session.project_id,
-      session_id: session.session_id,
-      path: firstPath,
-      origin: firstOrigin,
-      referrer: firstReferrer,
-      referrer_name: firstReferrerName,
-      referrer_type: firstReferrerType,
-      duration: 0, // session_start always has 0 duration
-      properties: firstProperties as Record<
-        string,
-        string | number | boolean | null | undefined
-      >,
-      created_at: adjustTimestamp(session.first_timestamp, -1000), // 1 second before first event
-      country: firstCountry,
-      city: firstCity,
-      region: firstRegion,
-      longitude: firstLongitude,
-      latitude: firstLatitude,
-      os: firstOs,
-      os_version: firstOsVersion,
-      browser: firstBrowser,
-      browser_version: firstBrowserVersion,
-      device: firstDevice,
-      brand: firstBrand,
-      model: firstModel,
-      imported_at: new Date().toISOString(),
-      sdk_name: 'import-session-reconstruction',
-      sdk_version: '1.0.0',
-    });
-
-    // Create session_end event - inherit most from session_start, but use last event's path, origin, properties
-    // Set created_at to 1 second after the last event
-    sessionEvents.push({
-      id: crypto.randomUUID(),
-      name: 'session_end',
-      device_id: session.device_id,
-      profile_id: session.profile_id,
-      project_id: session.project_id,
-      session_id: session.session_id,
-      path: lastPath, // From last event
-      origin: lastOrigin, // From last event
-      referrer: firstReferrer, // Same as session_start
-      referrer_name: firstReferrerName, // Same as session_start
-      referrer_type: firstReferrerType, // Same as session_start
-      duration: durationMs,
-      properties: lastProperties as Record<
-        string,
-        string | number | boolean | null | undefined
-      >, // From last event
-      created_at: adjustTimestamp(session.last_timestamp, 500), // 1 second after last event
-      country: firstCountry, // Same as session_start
-      city: firstCity, // Same as session_start
-      region: firstRegion, // Same as session_start
-      longitude: firstLongitude, // Same as session_start
-      latitude: firstLatitude, // Same as session_start
-      os: firstOs, // Same as session_start
-      os_version: firstOsVersion, // Same as session_start
-      browser: firstBrowser, // Same as session_start
-      browser_version: firstBrowserVersion, // Same as session_start
-      device: firstDevice, // Same as session_start
-      brand: firstBrand, // Same as session_start
-      model: firstModel, // Same as session_start
-      imported_at: new Date().toISOString(),
-      sdk_name: 'import-session-reconstruction',
-      sdk_version: '1.0.0',
-    });
-  }
-
-  console.log('[Phase 3] Created session events:', {
-    total: sessionEvents.length,
-    sessionStarts: sessionEvents.filter(e => e.name === 'session_start').length,
-    sessionEnds: sessionEvents.filter(e => e.name === 'session_end').length,
+  console.log('[Phase 3] Processing in batches:', {
+    totalSessions: sessionData.length,
+    batchSize: BATCH_SIZE,
+    totalBatches,
   });
 
-  // Insert session events into imports table
-  if (sessionEvents.length > 0) {
-    console.log('[Phase 3] Inserting session events...');
-    await insertImportBatch(sessionEvents, importId);
-    console.log('[Phase 3] Session events inserted successfully');
-  } else {
-    console.log('[Phase 3] No session events to insert');
+  for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+    const startIdx = batchIndex * BATCH_SIZE;
+    const endIdx = Math.min(startIdx + BATCH_SIZE, sessionData.length);
+    const batchSessions = sessionData.slice(startIdx, endIdx);
+
+    console.log(`[Phase 3] Processing batch ${batchIndex + 1}/${totalBatches}`, {
+      sessions: batchSessions.length,
+      from: startIdx,
+      to: endIdx,
+    });
+
+    // Create session_start and session_end events for this batch
+    const sessionEvents: IClickhouseEvent[] = [];
+
+    for (const session of batchSessions) {
+      // Destructure first event tuple (all fields)
+      const [
+        // firstId,
+        // firstName,
+        firstPath,
+        firstOrigin,
+        firstReferrer,
+        firstReferrerName,
+        firstReferrerType,
+        // firstDuration,
+        firstProperties,
+        firstCreatedAt,
+        firstCountry,
+        firstCity,
+        firstRegion,
+        firstLongitude,
+        firstLatitude,
+        firstOs,
+        firstOsVersion,
+        firstBrowser,
+        firstBrowserVersion,
+        firstDevice,
+        firstBrand,
+        firstModel,
+        // firstSdkName,
+        // firstSdkVersion,
+        // firstImportedAt,
+      ] = session.first_event;
+
+      // Destructure last event fields (only the changing ones)
+      const [lastPath, lastOrigin, lastProperties, lastCreatedAt] =
+        session.last_event_fields;
+
+      // Calculate duration in milliseconds
+      // Parse timestamps as Date objects to calculate duration
+      const firstTime = new Date(session.first_timestamp).getTime();
+      const lastTime = new Date(session.last_timestamp).getTime();
+      const durationMs = Math.max(0, lastTime - firstTime); // Ensure non-negative duration
+
+      // Helper function to adjust timestamp by milliseconds without timezone conversion
+      const adjustTimestamp = (timestamp: string, offsetMs: number): string => {
+        // Parse the timestamp, adjust it, and format back to ClickHouse format
+        const date = convertClickhouseDateToJs(timestamp);
+        date.setTime(date.getTime() + offsetMs);
+        return formatClickhouseDate(date);
+      };
+
+      // Create session_start event - inherit everything from first event but change name
+      // Set created_at to 1 second before the first event
+      sessionEvents.push({
+        id: crypto.randomUUID(),
+        name: 'session_start',
+        device_id: session.device_id,
+        profile_id: session.profile_id,
+        project_id: session.project_id,
+        session_id: session.session_id,
+        path: firstPath,
+        origin: firstOrigin,
+        referrer: firstReferrer,
+        referrer_name: firstReferrerName,
+        referrer_type: firstReferrerType,
+        duration: 0, // session_start always has 0 duration
+        properties: firstProperties as Record<
+          string,
+          string | number | boolean | null | undefined
+        >,
+        created_at: adjustTimestamp(session.first_timestamp, -1000), // 1 second before first event
+        country: firstCountry,
+        city: firstCity,
+        region: firstRegion,
+        longitude: firstLongitude,
+        latitude: firstLatitude,
+        os: firstOs,
+        os_version: firstOsVersion,
+        browser: firstBrowser,
+        browser_version: firstBrowserVersion,
+        device: firstDevice,
+        brand: firstBrand,
+        model: firstModel,
+        imported_at: new Date().toISOString(),
+        sdk_name: 'import-session-reconstruction',
+        sdk_version: '1.0.0',
+      });
+
+      // Create session_end event - inherit most from session_start, but use last event's path, origin, properties
+      // Set created_at to 1 second after the last event
+      sessionEvents.push({
+        id: crypto.randomUUID(),
+        name: 'session_end',
+        device_id: session.device_id,
+        profile_id: session.profile_id,
+        project_id: session.project_id,
+        session_id: session.session_id,
+        path: lastPath, // From last event
+        origin: lastOrigin, // From last event
+        referrer: firstReferrer, // Same as session_start
+        referrer_name: firstReferrerName, // Same as session_start
+        referrer_type: firstReferrerType, // Same as session_start
+        duration: durationMs,
+        properties: lastProperties as Record<
+          string,
+          string | number | boolean | null | undefined
+        >, // From last event
+        created_at: adjustTimestamp(session.last_timestamp, 500), // 1 second after last event
+        country: firstCountry, // Same as session_start
+        city: firstCity, // Same as session_start
+        region: firstRegion, // Same as session_start
+        longitude: firstLongitude, // Same as session_start
+        latitude: firstLatitude, // Same as session_start
+        os: firstOs, // Same as session_start
+        os_version: firstOsVersion, // Same as session_start
+        browser: firstBrowser, // Same as session_start
+        browser_version: firstBrowserVersion, // Same as session_start
+        device: firstDevice, // Same as session_start
+        brand: firstBrand, // Same as session_start
+        model: firstModel, // Same as session_start
+        imported_at: new Date().toISOString(),
+        sdk_name: 'import-session-reconstruction',
+        sdk_version: '1.0.0',
+      });
+    }
+
+    console.log(`[Phase 3] Batch ${batchIndex + 1}/${totalBatches} created events:`, {
+      total: sessionEvents.length,
+      sessionStarts: sessionEvents.filter((e) => e.name === 'session_start')
+        .length,
+      sessionEnds: sessionEvents.filter((e) => e.name === 'session_end').length,
+    });
+
+    // Insert this batch of session events
+    if (sessionEvents.length > 0) {
+      console.log(`[Phase 3] Inserting batch ${batchIndex + 1}/${totalBatches}...`);
+      await insertImportBatch(sessionEvents, importId);
+      totalEventsCreated += sessionEvents.length;
+      console.log(
+        `[Phase 3] Batch ${batchIndex + 1}/${totalBatches} inserted successfully`,
+        {
+          batchEvents: sessionEvents.length,
+          totalEventsCreated,
+          progress: `${((batchIndex + 1) / totalBatches * 100).toFixed(1)}%`,
+        }
+      );
+    }
   }
+
+  console.log('[Phase 3] All session events inserted:', {
+    totalSessions: sessionData.length,
+    totalEventsCreated,
+  });
 
   console.log('[Phase 3] Completed createSessionsStartEndEvents');
 }
