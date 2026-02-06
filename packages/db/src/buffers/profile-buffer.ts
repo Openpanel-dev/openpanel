@@ -4,6 +4,7 @@ import type { ILogger } from '@openpanel/logger';
 import { type Redis, getRedisCache } from '@openpanel/redis';
 import shallowEqual from 'fast-deep-equal';
 import { omit } from 'ramda';
+import sqlstring from 'sqlstring';
 import { TABLE_NAMES, ch, chQuery } from '../clickhouse/client';
 import type { IClickhouseProfile } from '../services/profile.service';
 import { BaseBuffer } from './base-buffer';
@@ -152,11 +153,6 @@ export class ProfileBuffer extends BaseBuffer {
     profile: IClickhouseProfile,
     logger: ILogger,
   ): Promise<IClickhouseProfile | null> {
-    const cacheKey = this.getProfileCacheKey({
-      profileId: profile.id,
-      projectId: profile.project_id,
-    });
-
     const existingProfile = await this.fetchFromCache(
       profile.id,
       profile.project_id,
@@ -190,19 +186,29 @@ export class ProfileBuffer extends BaseBuffer {
   ): Promise<IClickhouseProfile | null> {
     logger.debug('Fetching profile from Clickhouse');
     const result = await chQuery<IClickhouseProfile>(
-      `SELECT *
-       FROM ${TABLE_NAMES.profiles}
-       WHERE project_id = '${profile.project_id}'
-         AND id = '${profile.id}'
-         ${
-           profile.is_external === false
-             ? 'AND created_at > now() - INTERVAL 2 DAY'
-             : ''
-         }
-       ORDER BY created_at DESC
-       LIMIT 1`,
+      `SELECT 
+        id, 
+        project_id,
+        last_value(nullIf(first_name, '')) as first_name, 
+        last_value(nullIf(last_name, '')) as last_name, 
+        last_value(nullIf(email, '')) as email, 
+        last_value(nullIf(avatar, '')) as avatar, 
+        last_value(is_external) as is_external, 
+        last_value(properties) as properties, 
+        last_value(created_at) as created_at
+      FROM ${TABLE_NAMES.profiles} 
+      WHERE 
+        id = ${sqlstring.escape(String(profile.id))} AND 
+        project_id = ${sqlstring.escape(profile.project_id)}
+        ${
+          profile.is_external === false
+            ? ' AND profiles.created_at > now() - INTERVAL 2 DAY'
+            : ''
+        }
+      GROUP BY id, project_id 
+      ORDER BY created_at DESC 
+      LIMIT 1`,
     );
-
     logger.debug('Clickhouse fetch result', {
       found: !!result[0],
     });
