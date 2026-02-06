@@ -198,6 +198,8 @@ export class ConversionService {
     const finalStep = events.length;
 
     // Build windowFunnel query
+    // Inner query uses table-qualified column (e.g., events.profile_id)
+    // Outer query references the aliased column from subquery (group_id)
     const query = clix(this.client, timezone)
       .select<{
         event_day: string;
@@ -208,14 +210,14 @@ export class ConversionService {
       }>([
         'event_day',
         ...breakdownGroupBy,
-        `uniqExact(${group}) AS total_first`,
+        `uniqExact(group_id) AS total_first`,
         `countIf(steps >= ${finalStep}) AS conversions`,
-        `round(100.0 * countIf(steps >= ${finalStep}) / uniqExact(${group}), 2) AS conversion_rate_percentage`,
+        `round(100.0 * countIf(steps >= ${finalStep}) / uniqExact(group_id), 2) AS conversion_rate_percentage`,
       ])
       .from(
         clix.exp(`
         (${withClause}SELECT
-          ${group},
+          ${group} AS group_id,
           any(${clix.toStartOf('created_at', interval)}) as event_day,
           ${breakdownColumns.length ? `${breakdownColumns.join(', ')},` : ''}
           windowFunnel(${funnelWindowSeconds})(

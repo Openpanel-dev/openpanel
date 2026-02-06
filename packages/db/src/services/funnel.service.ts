@@ -113,12 +113,6 @@ export class FunnelService {
     };
   }
 
-  getFunnelGroup(group?: string): [string, string] {
-    return group === 'profile_id'
-      ? [`COALESCE(nullIf(s.pid, ''), events.profile_id)`, 'profile_id']
-      : ['events.session_id', 'session_id'];
-  }
-
   getFunnelConditions(events: IChartEvent[] = []): string[] {
     return events.map((event) => {
       const { sb, getWhere } = createSqlBuilder();
@@ -330,7 +324,6 @@ export class FunnelService {
 
     const funnelWindowSeconds = funnelWindow * 3600;
     const funnelWindowMilliseconds = funnelWindowSeconds * 1000;
-    const group = this.getFunnelGroup(funnelGroup);
     const profileFilters = this.getProfileFilters(eventSeries);
     const anyFilterOnProfile = profileFilters.length > 0;
     const anyBreakdownOnProfile = breakdowns.some((b) =>
@@ -340,6 +333,11 @@ export class FunnelService {
     // Get events source (handles custom events)
     const { fromClause, withClauses, needsNameFilter } =
       await this.buildEventsSource(eventSeries, projectId, startDate, endDate);
+
+    // Determine group column using the actual fromClause (not hardcoded table name)
+    const group = funnelGroup === 'profile_id'
+      ? [`COALESCE(nullIf(s.pid, ''), ${fromClause}.profile_id)`, 'profile_id'] as [string, string]
+      : [`${fromClause}.session_id`, 'session_id'] as [string, string];
 
     // Create the funnel CTE
     const breakdownSelects = breakdowns.map(
@@ -365,7 +363,7 @@ export class FunnelService {
       funnelCte.leftJoin(
         `(SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0]))} FROM ${TABLE_NAMES.profiles} FINAL
           WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
-        'profile.id = events.profile_id',
+        `profile.id = ${fromClause}.profile_id`,
       );
     }
 
@@ -375,7 +373,7 @@ export class FunnelService {
       const cohortCte = getCohortCteName(cohortId);
       funnelCte.leftJoin(
         `${cohortCte} AS ${cohortAlias}`,
-        `${cohortAlias}.profile_id = events.profile_id`,
+        `${cohortAlias}.profile_id = ${fromClause}.profile_id`,
       );
     });
 
@@ -406,7 +404,7 @@ export class FunnelService {
     });
 
     if (sessionsCte) {
-      funnelCte.leftJoin('sessions s', 's.sid = events.session_id');
+      funnelCte.leftJoin('sessions s', `s.sid = ${fromClause}.session_id`);
       funnelQuery.with('sessions', sessionsCte);
     }
 

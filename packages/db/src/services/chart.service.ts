@@ -492,7 +492,13 @@ export async function getChartSql({
   // Only select the fields that are actually used
   const profilesJoinRef =
     anyFilterOnProfile || anyBreakdownOnProfile
-      ? 'LEFT ANY JOIN profile ON profile.id = profile_id'
+      ? 'LEFT ANY JOIN profile ON profile.id = e.profile_id'
+      : '';
+
+  // Profile JOIN for CTEs that don't use 'e' alias (use table name directly)
+  const profilesJoinRefForCTE =
+    anyFilterOnProfile || anyBreakdownOnProfile
+      ? `LEFT ANY JOIN profile ON profile.id = ${TABLE_NAMES.events}.profile_id`
       : '';
 
   if (anyFilterOnProfile || anyBreakdownOnProfile) {
@@ -672,7 +678,7 @@ export async function getChartSql({
         ${breakdownSelects},
         uniq(${TABLE_NAMES.events}.profile_id) as total_count
        FROM ${TABLE_NAMES.events}
-       ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${cohortJoinsForBreakdown ? `${cohortJoinsForBreakdown} ` : ''}${totalCountWhere}
+       ${profilesJoinRefForCTE ? `${profilesJoinRefForCTE} ` : ''}${cohortJoinsForBreakdown ? `${cohortJoinsForBreakdown} ` : ''}${totalCountWhere}
        GROUP BY ${breakdownGroupBy}`,
     );
 
@@ -688,11 +694,18 @@ export async function getChartSql({
   } else {
     const totalCountWhere = getWhereWithoutBar();
 
+    // Build cohort JOINs for total_unique CTE (same as breakdown_totals)
+    const cohortJoinsForTotal = cohortIds.map((cohortId) => {
+      const cohortAlias = getCohortAlias(cohortId);
+      const cohortCte = getCohortCteName(cohortId);
+      return `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = ${TABLE_NAMES.events}.profile_id`;
+    }).join(' ');
+
     addCte(
       'total_unique',
       `SELECT uniq(${TABLE_NAMES.events}.profile_id) as total_count
        FROM ${TABLE_NAMES.events}
-       ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${totalCountWhere}`,
+       ${profilesJoinRefForCTE ? `${profilesJoinRefForCTE} ` : ''}${cohortJoinsForTotal ? `${cohortJoinsForTotal} ` : ''}${totalCountWhere}`,
     );
 
     sb.select.total_unique_count = `(SELECT total_count FROM total_unique) as total_count`;
