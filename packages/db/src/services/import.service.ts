@@ -210,8 +210,8 @@ export async function createSessionsStartEndEvents(
     query_params: { importId, from },
     format: 'JSONEachRow',
     clickhouse_settings: {
-      max_memory_usage: 10000000000, // 10 GB - increased for large import GROUP BY queries
-      max_bytes_before_external_group_by: 5000000000, // 5 GB
+      max_memory_usage: 40000000000, // 40 GB - increased for large import GROUP BY queries
+      max_bytes_before_external_group_by: 20000000000, // 20 GB
     },
   });
 
