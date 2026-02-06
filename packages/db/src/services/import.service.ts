@@ -209,6 +209,10 @@ export async function createSessionsStartEndEvents(
     query: sessionEventsQuery,
     query_params: { importId, from },
     format: 'JSONEachRow',
+    clickhouse_settings: {
+      max_memory_usage: 10000000000, // 10 GB - increased for large import GROUP BY queries
+      max_bytes_before_external_group_by: 5000000000, // 5 GB
+    },
   });
 
   const sessionData = (await sessionEventsResult.json()) as Array<{
