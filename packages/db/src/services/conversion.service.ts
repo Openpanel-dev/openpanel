@@ -139,12 +139,6 @@ export class ConversionService {
     // Fetch cohort metadata from Postgres (always fresh, no cache)
     const cohortMetadata = await fetchCohortsMetadata(cohortIds);
 
-    const group = funnelGroup === 'profile_id' ? `${fromClause}.profile_id` : `${fromClause}.session_id`;
-    const breakdownColumns = breakdowns.map(
-      (b, index) => `${getSelectPropertyKey(b.name, projectId, b.cohortId)} as b_${index}`,
-    );
-    const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
-
     const funnelWindowSeconds = funnelWindow * 3600;
 
     // Get events source (handles custom events)
@@ -154,6 +148,13 @@ export class ConversionService {
       startDate,
       endDate,
     );
+
+    // Define group and breakdowns after fromClause is available
+    const group = funnelGroup === 'profile_id' ? `${fromClause}.profile_id` : `${fromClause}.session_id`;
+    const breakdownColumns = breakdowns.map(
+      (b, index) => `${getSelectPropertyKey(b.name, projectId, b.cohortId)} as b_${index}`,
+    );
+    const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
 
     // Build funnel conditions for all events
     const conditions = events.map(event => {

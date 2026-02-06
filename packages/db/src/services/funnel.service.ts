@@ -343,7 +343,7 @@ export class FunnelService {
 
     // Create the funnel CTE
     const breakdownSelects = breakdowns.map(
-      (b, index) => `${getSelectPropertyKey(b.name, projectId)} as b_${index}`,
+      (b, index) => `${getSelectPropertyKey(b.name, projectId, b.cohortId)} as b_${index}`,
     );
     const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
 

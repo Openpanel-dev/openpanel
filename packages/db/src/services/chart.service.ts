@@ -567,12 +567,19 @@ export async function getChartSql({
       .map((b) => getSelectPropertyKey(b.name, projectId, b.cohortId))
       .join(', ');
 
+    // Build cohort JOINs for top_breakdowns CTE
+    const cohortJoinsForTop = cohortIds.map((cohortId) => {
+      const cohortAlias = getCohortAlias(cohortId);
+      const cohortCte = getCohortCteName(cohortId);
+      return `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = e.profile_id`;
+    }).join(' ');
+
     // Add top_breakdowns CTE using the builder
     addCte(
       'top_breakdowns',
       `SELECT ${breakdownSelects}
       FROM ${TABLE_NAMES.events} e
-      ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${getWhereWithoutBar()}
+      ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${cohortJoinsForTop ? `${cohortJoinsForTop} ` : ''}${getWhereWithoutBar()}
       GROUP BY ${breakdownSelects}
       ORDER BY count(*) DESC
       LIMIT ${limit}`,
