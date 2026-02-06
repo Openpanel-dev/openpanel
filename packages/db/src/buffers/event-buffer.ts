@@ -278,8 +278,6 @@ return added
       if (!_multi) {
         await multi.exec();
       }
-
-      await publishEvent('events', 'received', transformEvent(event));
     } catch (error) {
       this.logger.error('Failed to add event to Redis buffer', { error });
     }
