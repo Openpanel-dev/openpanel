@@ -207,7 +207,7 @@ export function getSelectPropertyKey(
   }
 
   if (property === 'has_profile') {
-    return `if(profile_id != device_id, 'true', 'false')`;
+    return `if(e.profile_id != e.device_id, 'true', 'false')`;
   }
 
   // Handle profile.created_at - it's stored as created_at in the profiles table
@@ -590,16 +590,16 @@ export async function getChartSql({
   });
 
   if (event.segment === 'user') {
-    sb.select.count = 'uniq(profile_id) as count';
+    sb.select.count = 'uniq(e.profile_id) as count';
   }
 
   if (event.segment === 'session') {
-    sb.select.count = 'uniq(session_id) as count';
+    sb.select.count = 'uniq(e.session_id) as count';
   }
 
   if (event.segment === 'user_average') {
     sb.select.count =
-      'COUNT(*)::float / COUNT(DISTINCT profile_id)::float as count';
+      'COUNT(*)::float / COUNT(DISTINCT e.profile_id)::float as count';
   }
 
   const mathFunction = {
@@ -652,13 +652,20 @@ export async function getChartSql({
 
     const totalCountWhere = getWhereWithoutBar();
 
+    // Build cohort JOINs for breakdown_totals CTE
+    const cohortJoinsForBreakdown = cohortIds.map((cohortId) => {
+      const cohortAlias = getCohortAlias(cohortId);
+      const cohortCte = getCohortCteName(cohortId);
+      return `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = ${TABLE_NAMES.events}.profile_id`;
+    }).join(' ');
+
     addCte(
       'breakdown_totals',
       `SELECT
         ${breakdownSelects},
-        uniq(profile_id) as total_count
+        uniq(${TABLE_NAMES.events}.profile_id) as total_count
        FROM ${TABLE_NAMES.events}
-       ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${totalCountWhere}
+       ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${cohortJoinsForBreakdown ? `${cohortJoinsForBreakdown} ` : ''}${totalCountWhere}
        GROUP BY ${breakdownGroupBy}`,
     );
 
@@ -676,7 +683,7 @@ export async function getChartSql({
 
     addCte(
       'total_unique',
-      `SELECT uniq(profile_id) as total_count
+      `SELECT uniq(${TABLE_NAMES.events}.profile_id) as total_count
        FROM ${TABLE_NAMES.events}
        ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${totalCountWhere}`,
     );
@@ -757,9 +764,9 @@ export function getEventFiltersWhereClause(
 
     if (name === 'has_profile') {
       if (value.includes('true')) {
-        where[id] = 'profile_id != device_id';
+        where[id] = 'e.profile_id != e.device_id';
       } else {
-        where[id] = 'profile_id = device_id';
+        where[id] = 'e.profile_id = e.device_id';
       }
       return;
     }

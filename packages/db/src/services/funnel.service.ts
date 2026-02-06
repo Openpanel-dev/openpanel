@@ -115,8 +115,8 @@ export class FunnelService {
 
   getFunnelGroup(group?: string): [string, string] {
     return group === 'profile_id'
-      ? [`COALESCE(nullIf(s.pid, ''), profile_id)`, 'profile_id']
-      : ['session_id', 'session_id'];
+      ? [`COALESCE(nullIf(s.pid, ''), events.profile_id)`, 'profile_id']
+      : ['events.session_id', 'session_id'];
   }
 
   getFunnelConditions(events: IChartEvent[] = []): string[] {
