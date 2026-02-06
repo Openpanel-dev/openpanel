@@ -542,6 +542,10 @@ export async function moveImportsToProduction(
     query: migrationQuery,
     query_params: { importId, from },
     clickhouse_settings: {
+      // Increase memory limits for large INSERT with ORDER BY (257M events)
+      max_memory_usage: 40000000000, // 40 GB
+      max_bytes_before_external_sort: 20000000000, // 20 GB - force external sort if needed
+      max_bytes_before_external_group_by: 20000000000, // 20 GB
       wait_end_of_query: 1,
       // Ask ClickHouse to periodically send query execution progress in HTTP headers, creating some activity in the connection.
       send_progress_in_http_headers: 1,
