@@ -106,7 +106,7 @@ function getClickhouseSettings(): ClickHouseSettings {
 
 export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   max_open_connections: 30,
-  request_timeout: 300000,
+  request_timeout: parseInt(process.env.CLICKHOUSE_REQUEST_TIMEOUT || '3600000', 10),
   keep_alive: {
     enabled: true,
     idle_socket_ttl: 60000,
