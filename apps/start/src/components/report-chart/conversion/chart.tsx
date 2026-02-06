@@ -2,7 +2,7 @@ import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   CartesianGrid,
   Legend,
@@ -62,8 +62,27 @@ export function Chart({ data }: Props) {
   );
 
   const xAxisProps = useXAxisProps({ interval, hide: hideXAxis });
+  const number = useNumber();
+  
+  // Calculate dynamic Y-axis domain based on max rate
+  const yAxisDomain = useMemo(() => {
+    if (!series.length) return [0, 100];
+    
+    const maxRate = Math.max(
+      ...series.flatMap((serie) => serie.data.map((item) => item.rate))
+    );
+    
+    if (maxRate <= 5) return [0, 10];
+    if (maxRate <= 20) return [0, 30];
+    if (maxRate <= 50) return [0, 60];
+    return [0, 100];
+  }, [series]);
+
   const yAxisProps = useYAxisProps({
     hide: hideYAxis,
+    tickFormatter: (value: number) => {
+      return `${number.short(value)}%`;
+    },
   });
 
   const averageConversionRate = average(
@@ -71,6 +90,9 @@ export function Chart({ data }: Props) {
       return average(serie.data.map((item) => item.rate));
     }, 0),
   );
+
+  // Show dots when we have 30 or fewer data points
+  const showDots = rechartData.length <= 30;
 
   const handleChartClick = useCallback((e: any) => {
     if (e?.activePayload?.[0]) {
@@ -137,7 +159,7 @@ export function Chart({ data }: Props) {
                 fontSize={10}
               />
             ))}
-            <YAxis {...yAxisProps} domain={[0, 100]} />
+            <YAxis {...yAxisProps} domain={yAxisDomain} />
             <XAxis {...xAxisProps} allowDuplicatedCategory={false} />
             {series.length > 1 && <Legend content={<CustomLegend />} />}
             <Tooltip />
@@ -166,6 +188,8 @@ export function Chart({ data }: Props) {
                   type={lineType}
                   isAnimationActive={false}
                   strokeWidth={2}
+                  dot={showDots ? { r: 3, strokeWidth: 2, fill: 'white' } : false}
+                  activeDot={showDots ? { r: 5, strokeWidth: 2 } : { r: 4 }}
                 />
               );
             })}
@@ -176,13 +200,14 @@ export function Chart({ data }: Props) {
                   stroke={getChartColor(series.length)}
                   strokeWidth={2}
                   strokeDasharray="3 3"
-                  strokeOpacity={0.5}
+                  strokeOpacity={0.6}
                   strokeLinecap="round"
                   label={{
-                    value: `Average (${round(averageConversionRate, 2)} %)`,
+                    value: `Average (${round(averageConversionRate, 2)}%)`,
                     fill: getChartColor(series.length),
                     position: 'insideBottomRight',
-                    fontSize: 12,
+                    fontSize: 13,
+                    fontWeight: 500,
                   }}
                 />
               )}

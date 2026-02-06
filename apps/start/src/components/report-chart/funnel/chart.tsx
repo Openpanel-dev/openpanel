@@ -12,19 +12,24 @@ import { BarShapeBlue, BarShapeProps } from '@/components/charts/common-bar';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { WidgetTable } from '@/components/widget-table';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import type { IVisibleFunnelBreakdowns } from '@/hooks/use-visible-funnel-breakdowns';
 import { getChartColor, getChartTranslucentColor } from '@/utils/theme';
 import { getPreviousMetric } from '@openpanel/common';
+import { useCallback } from 'react';
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
+  Legend,
   ResponsiveContainer,
   XAxis,
   YAxis,
 } from 'recharts';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
+import { SerieIcon } from '../common/serie-icon';
+import { SerieName } from '../common/serie-name';
 import { useReportChartContext } from '../context';
 
 type Props = {
@@ -54,7 +59,11 @@ export const Metric = ({
   </div>
 );
 
-export function Summary({ data }: { data: RouterOutputs['chart']['funnel'] }) {
+export function Summary({
+  data,
+}: {
+  data: RouterOutputs['chart']['funnel'];
+}) {
   const number = useNumber();
   const highestConversion = data.current
     .slice(0)
@@ -144,23 +153,23 @@ export function Tables({
 
     // For funnels, we need to pass the step index so the modal can query
     // users who completed at least that step in the funnel sequence
-      pushModal('ViewChartUsers', {
-        type: 'funnel',
-        report: {
-          projectId,
-          series: reportSeries,
-          breakdowns: reportBreakdowns || [],
-          interval: interval || 'day',
-          startDate,
-          endDate,
-          range,
-          previous,
-          chartType: 'funnel',
-          metric: 'sum',
-          options: funnelOptions,
-        },
-        stepIndex, // Pass the step index for funnel queries
-      });
+    pushModal('ViewChartUsers', {
+      type: 'funnel',
+      report: {
+        projectId,
+        series: reportSeries,
+        breakdowns: reportBreakdowns || [],
+        interval: interval || 'day',
+        startDate,
+        endDate,
+        range,
+        previous,
+        chartType: 'funnel',
+        metric: 'sum',
+        options: funnelOptions,
+      },
+      stepIndex, // Pass the step index for funnel queries
+    });
   };
   return (
     <div className={cn('col @container divide-y divide-border card')}>
@@ -330,25 +339,46 @@ type RechartData = {
 const useRechartData = ({
   current,
   previous,
-}: RouterOutputs['chart']['funnel']): RechartData[] => {
+  visibleBreakdowns,
+}: RouterOutputs['chart']['funnel'] & {
+  visibleBreakdowns: RouterOutputs['chart']['funnel']['current'];
+}): RechartData[] => {
   const firstFunnel = current[0];
+  // Create a map of original index to visible index
+  const visibleBreakdownIds = new Set(visibleBreakdowns.map((b) => b.id));
+  const originalToVisibleIndex = new Map<number, number>();
+  let visibleIndex = 0;
+  current.forEach((item, originalIndex) => {
+    if (visibleBreakdownIds.has(item.id)) {
+      originalToVisibleIndex.set(originalIndex, visibleIndex);
+      visibleIndex++;
+    }
+  });
+
   return (
     firstFunnel?.steps.map((step, stepIndex) => {
       return {
         id: step?.event.id ?? '',
         name: step?.event.displayName ?? '',
-        ...current.reduce((acc, item, index) => {
-          const diff = previous?.[index];
+        ...visibleBreakdowns.reduce((acc, visibleItem, visibleIdx) => {
+          // Find the original index for this visible breakdown
+          const originalIndex = current.findIndex(
+            (item) => item.id === visibleItem.id,
+          );
+          if (originalIndex === -1) return acc;
+
+          const diff = previous?.[originalIndex];
           return {
             ...acc,
-            [`step:percent:${index}`]: item.steps[stepIndex]?.percent ?? null,
-            [`step:data:${index}`]: {
-              ...item,
-              step: item.steps[stepIndex],
+            [`step:percent:${visibleIdx}`]:
+              visibleItem.steps[stepIndex]?.percent ?? null,
+            [`step:data:${visibleIdx}`]: {
+              ...visibleItem,
+              step: visibleItem.steps[stepIndex],
             },
-            [`prev_step:percent:${index}`]:
+            [`prev_step:percent:${visibleIdx}`]:
               diff?.steps[stepIndex]?.percent ?? null,
-            [`prev_step:data:${index}`]: diff
+            [`prev_step:data:${visibleIdx}`]: diff
               ? {
                   ...diff,
                   step: diff?.steps?.[stepIndex],
@@ -361,14 +391,51 @@ const useRechartData = ({
   );
 };
 
-export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
-  const rechartData = useRechartData(data);
+export function Chart({
+  data,
+  visibleBreakdowns,
+}: {
+  data: RouterOutputs['chart']['funnel'];
+  visibleBreakdowns: RouterOutputs['chart']['funnel']['current'];
+}) {
+  const rechartData = useRechartData({ ...data, visibleBreakdowns });
   const xAxisProps = useXAxisProps();
   const yAxisProps = useYAxisProps();
   const hasBreakdowns = data.current.length > 1;
+  const hasVisibleBreakdowns = visibleBreakdowns.length > 1;
+
+  const CustomLegend = useCallback(() => {
+    if (!hasVisibleBreakdowns) return null;
+    return (
+      <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs mt-4 -mb-2">
+        {visibleBreakdowns.map((breakdown, idx) => (
+          <div
+            className="flex items-center gap-1"
+            key={breakdown.id}
+            style={{
+              color: getChartColor(idx),
+            }}
+          >
+            <SerieIcon name={breakdown.breakdowns ?? []} />
+            <SerieName
+              name={
+                breakdown.breakdowns && breakdown.breakdowns.length > 0
+                  ? breakdown.breakdowns
+                  : ['Funnel']
+              }
+              className="font-semibold"
+            />
+          </div>
+        ))}
+      </div>
+    );
+  }, [visibleBreakdowns, hasVisibleBreakdowns]);
 
   return (
-    <TooltipProvider data={data.current}>
+    <TooltipProvider
+      data={data.current}
+      visibleBreakdownIds={new Set(visibleBreakdowns.map((b) => b.id))}
+    >
       <div className="aspect-video max-h-[250px] w-full p-4 card pb-1">
         <ResponsiveContainer>
           <BarChart data={rechartData}>
@@ -395,7 +462,7 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
             />
             <YAxis {...yAxisProps} />
             {hasBreakdowns ? (
-              data.current.map((item, breakdownIndex) => (
+              visibleBreakdowns.map((item, breakdownIndex) => (
                 <Bar
                   key={`step:percent:${item.id}`}
                   dataKey={`step:percent:${breakdownIndex}`}
@@ -425,6 +492,7 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
                 ))}
               </Bar>
             )}
+            {hasVisibleBreakdowns && <Legend content={<CustomLegend />} />}
             <Tooltip />
           </BarChart>
         </ResponsiveContainer>
@@ -437,6 +505,7 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
   RechartData,
   {
     data: RouterOutputs['chart']['funnel']['current'];
+    visibleBreakdownIds: Set<string>;
   }
 >(({ data: dataArray, context, ...props }) => {
   const data = dataArray[0]!;
@@ -449,24 +518,37 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
     (step) => step.event.id === (data as any).id,
   );
 
+  // Filter variants to only show visible breakdowns
+  // The variant object contains the full breakdown item, so we can check its ID directly
+  const visibleVariants = variants.filter((key) => {
+    const variant = data[key];
+    if (!variant) return false;
+    // The variant is the breakdown item itself (with step added), so it has an id property
+    return context.visibleBreakdownIds.has(variant.id);
+  });
+
   return (
     <>
       <div className="flex justify-between gap-8 text-muted-foreground">
         <div>{data.name}</div>
       </div>
-      {variants.map((key, breakdownIndex) => {
+      {visibleVariants.map((key, visibleIndex) => {
         const variant = data[key];
         const prevVariant = data[`prev_${key}`];
         if (!variant?.step) {
           return null;
         }
+        // Find the original breakdown index for color
+        const originalBreakdownIndex = context.data.findIndex(
+          (b) => b.id === variant.id,
+        );
         return (
           <div className="row gap-2" key={key}>
             <div
               className="w-[3px] rounded-full"
               style={{
                 background: getChartColor(
-                  variants.length > 1 ? breakdownIndex : index,
+                  visibleVariants.length > 1 ? visibleIndex : index,
                 ),
               }}
             />

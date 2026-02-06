@@ -236,8 +236,22 @@ export class FunnelService {
     });
 
     if (anyFilterOnProfile || anyBreakdownOnProfile) {
+      // Collect profile columns needed for filters and breakdowns (same as conversion.service)
+      const profileFields = new Set<string>(['id']);
+      for (const f of profileFilters) {
+        profileFields.add(f.split('.')[0]!);
+      }
+      for (const b of breakdowns.filter((x) => x.name.startsWith('profile.'))) {
+        const fieldName = b.name.replace('profile.', '').split('.')[0];
+        if (fieldName === 'properties') {
+          profileFields.add('properties');
+        } else if (['email', 'first_name', 'last_name'].includes(fieldName!)) {
+          profileFields.add(fieldName!);
+        }
+      }
+      const profileSelectColumns = Array.from(profileFields).join(', ');
       funnelCte.leftJoin(
-        `(SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0]))} FROM ${TABLE_NAMES.profiles} FINAL
+        `(SELECT ${profileSelectColumns} FROM ${TABLE_NAMES.profiles} FINAL
           WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
         'profile.id = events.profile_id',
       );

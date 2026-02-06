@@ -7,7 +7,9 @@ import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
 import { useReportChartContext } from '../context';
-import { Chart, Summary, Tables } from './chart';
+import { useVisibleFunnelBreakdowns } from '@/hooks/use-visible-funnel-breakdowns';
+import { Chart, Summary } from './chart';
+import { BreakdownList } from './breakdown-list';
 
 export function ReportFunnelChart() {
   const { isLazyLoading, report, shareId } = useReportChartContext();
@@ -24,6 +26,10 @@ export function ReportFunnelChart() {
     ),
   );
 
+  // Hook for limiting which breakdowns are shown in the chart only
+  const { breakdowns: visibleBreakdowns, setVisibleSeries } =
+    useVisibleFunnelBreakdowns(res.data?.current ?? [], 10);
+
   if (isLazyLoading || res.isLoading) {
     return <Loading />;
   }
@@ -36,19 +42,17 @@ export function ReportFunnelChart() {
     return <Empty />;
   }
 
+  const hasBreakdowns = res.data.current.length > 1;
+
   return (
     <div className="col gap-4">
-      {res.data.current.length > 1 && <Summary data={res.data} />}
-      <Chart data={res.data} />
-      {res.data.current.map((item, index) => (
-        <Tables
-          key={item.id}
-          data={{
-            current: item,
-            previous: res.data.previous?.[index] ?? null,
-          }}
-        />
-      ))}
+      {hasBreakdowns && <Summary data={res.data} />}
+      <Chart data={res.data} visibleBreakdowns={visibleBreakdowns} />
+      <BreakdownList
+        data={res.data}
+        visibleSeriesIds={visibleBreakdowns.map((b) => b.id)}
+        setVisibleSeries={setVisibleSeries}
+      />
     </div>
   );
 }

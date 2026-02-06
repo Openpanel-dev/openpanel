@@ -286,6 +286,7 @@ export const chartRouter = createTRPCRouter({
       }
 
       properties.push(
+        'duration',
         'revenue',
         'has_profile',
         'path',

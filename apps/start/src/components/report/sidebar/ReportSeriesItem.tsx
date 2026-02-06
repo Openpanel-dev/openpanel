@@ -3,10 +3,9 @@ import { useDispatch } from '@/redux';
 import { shortId } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
 import type { IChartEvent, IChartEventItem } from '@openpanel/validation';
-import { FilterIcon } from 'lucide-react';
+import { DatabaseIcon, FilterIcon, type LucideIcon } from 'lucide-react';
 import { ReportSegment } from '../ReportSegment';
 import { changeEvent } from '../reportSlice';
-import { EventPropertiesCombobox } from './EventPropertiesCombobox';
 import { PropertiesCombobox } from './PropertiesCombobox';
 import { FiltersList } from './filters/FiltersList';
 
@@ -90,19 +89,40 @@ export function ReportSeriesItem({
               }}
             >
               {(setOpen) => (
-                <button
+                <SmallButton
                   onClick={() => setOpen((p) => !p)}
-                  type="button"
-                  className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none"
+                  icon={FilterIcon}
                 >
-                  <FilterIcon size={12} /> Add filter
-                </button>
+                  Add filter
+                </SmallButton>
               )}
             </PropertiesCombobox>
           )}
 
           {showSegment && chartEvent.segment.startsWith('property_') && (
-            <EventPropertiesCombobox event={chartEvent} />
+            <PropertiesCombobox
+              event={chartEvent}
+              onSelect={(item) => {
+                dispatch(
+                  changeEvent({
+                    ...chartEvent,
+                    property: item.value,
+                    type: 'event',
+                  }),
+                );
+              }}
+            >
+              {(setOpen) => (
+                <SmallButton
+                  icon={DatabaseIcon}
+                  onClick={() => setOpen((p) => !p)}
+                >
+                  {chartEvent.property
+                    ? `Property: ${chartEvent.property}`
+                    : 'Select property'}
+                </SmallButton>
+              )}
+            </PropertiesCombobox>
           )}
         </div>
       )}
@@ -110,5 +130,25 @@ export function ReportSeriesItem({
       {/* Filters - only for events */}
       {chartEvent && !isSelectManyEvents && <FiltersList event={chartEvent} />}
     </div>
+  );
+}
+
+function SmallButton({
+  children,
+  icon: Icon,
+  ...props
+}: {
+  children: React.ReactNode;
+  icon: LucideIcon;
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none text-left min-w-0"
+      {...props}
+    >
+      <Icon size={12} className="shrink-0" />
+      <span className="truncate">{children}</span>
+    </button>
   );
 }
