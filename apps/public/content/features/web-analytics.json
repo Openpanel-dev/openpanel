@@ -1,0 +1,181 @@
+{
+  "slug": "web-analytics",
+  "short_name": "Web analytics",
+  "seo": {
+    "title": "Web Analytics That Work Out of the Box",
+    "description": "Get a complete web analytics dashboard out of the box. Track visitors, sessions, pageviews, referrers, UTM campaigns, geo, devices, and more - with just one script tag.",
+    "keywords": [
+      "web analytics",
+      "website analytics",
+      "privacy-first analytics",
+      "google analytics alternative",
+      "website traffic analytics",
+      "utm tracking",
+      "referrer tracking",
+      "pageview analytics"
+    ]
+  },
+  "hero": {
+    "heading": "Web analytics: One script. Full dashboard.",
+    "subheading": "Add one script tag and get visitors, sessions, bounce rate, referrers, UTM campaigns, geo with maps, devices, and popular pages. No configuration needed.",
+    "badges": [
+      "Zero-config setup",
+      "Click any value to filter",
+      "UTM & referrer tracking",
+      "Geo details with map"
+    ]
+  },
+  "definition": {
+    "title": "What is OpenPanel web analytics?",
+    "text": "OpenPanel web analytics gives you a **complete website analytics dashboard** the moment you add our tracking script. No goals to configure, no views to set up, no filters to define - everything works out of the box.\n\nHere's what you get immediately:\n\n- **Key metrics at a glance** - unique visitors, sessions, pageviews, pages per session, bounce rate, and session duration. Each metric has a sparkline showing the trend and percentage change vs. the previous period\n- **Traffic sources** - see where your visitors come from. Top referrers, search engines, social networks, and direct traffic are broken down automatically\n- **UTM campaign tracking** - every UTM parameter (source, medium, campaign, term, content) gets its own breakdown so you can measure marketing campaigns without any extra setup\n- **Popular pages, entries, and exits** - know which pages get the most views, which pages visitors land on first, and which pages they leave from\n- **Device breakdown** - browser, browser version, OS, OS version, device brand, and device model. See exactly what your visitors use\n- **Geographic details** - a country table with flags and visitor counts alongside an interactive map. Drill into regions and cities\n- **User journey** - follow the path visitors take through your site, from landing page through navigation to exit\n- **Insights** - AI-powered highlights that surface the biggest changes and anomalies in your traffic so you can act on what matters\n\nThe most powerful part: **every value in the dashboard is clickable**. See a referrer you want to investigate? Click it to filter the entire dashboard by that referrer. Curious about mobile traffic from Germany? Click the country, click the device - the whole view updates instantly. No query builder, no SQL, no waiting.\n\nOpenPanel is **privacy-first**. We don't use third-party cookies, we don't sell your data, and we don't slow down your site. You can self-host or use our cloud - your data stays yours."
+  },
+  "capabilities_section": {
+    "title": "Everything you get out of the box",
+    "intro": "Add the tracking script once. Everything below is available immediately - no configuration required."
+  },
+  "capabilities": [
+    {
+      "title": "Visitors, sessions & pageviews",
+      "description": "Track unique visitors, total sessions, and pageviews with trend sparklines and period-over-period comparisons. See bounce rate, session duration, and pages per session at a glance."
+    },
+    {
+      "title": "Click-to-filter everything",
+      "description": "Every value in the dashboard is interactive. Click a referrer, country, browser, or page to instantly filter the entire view. Stack multiple filters to drill into any segment without writing queries."
+    },
+    {
+      "title": "UTM & referrer tracking",
+      "description": "Automatic breakdown by UTM source, medium, campaign, term, and content. See top referrers, search engines, and social networks - all without any tag configuration."
+    },
+    {
+      "title": "Popular pages, entries & exits",
+      "description": "Know which pages get the most traffic, which pages visitors land on, and which pages they leave from. Sort by views or sessions to find your best and worst performing content."
+    },
+    {
+      "title": "Device details",
+      "description": "Break down traffic by browser, browser version, operating system, OS version, device brand, and device model. Understand exactly what your visitors use and optimize accordingly."
+    },
+    {
+      "title": "Geographic breakdown with map",
+      "description": "See visitor counts by country with flags, and visualize traffic distribution on an interactive world map. Drill into regions and cities for local insights."
+    },
+    {
+      "title": "User journey",
+      "description": "Follow the path visitors take through your site. See the most common navigation flows from landing page to exit, and identify where users go after each page."
+    },
+    {
+      "title": "Insights for big changes",
+      "description": "Automated insights surface the most significant changes in your traffic - spikes, drops, new referrers, and trending pages. Know what changed without manually comparing time periods."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-overview-main.webp",
+      "alt": "OpenPanel web analytics overview dashboard showing visitors, sessions, sources, and geographic data",
+      "caption": "The full web analytics overview - key metrics, traffic sources, pages, devices, and geo - all from a single script tag."
+    }
+  ],
+  "how_it_works": {
+    "title": "How it works",
+    "intro": "From zero to full web analytics in under two minutes.",
+    "steps": [
+      {
+        "title": "Add the tracking script",
+        "description": "Paste a single script tag into your website's HTML. That's the only setup - no goals, no views, no filters to configure."
+      },
+      {
+        "title": "Traffic flows in automatically",
+        "description": "Page views, sessions, referrers, UTM parameters, device info, and geo data are captured automatically. No events to define, no properties to map."
+      },
+      {
+        "title": "Explore by clicking",
+        "description": "Open your dashboard and start clicking. Every value is a filter - click a country to see only that country's traffic, click a referrer to isolate that source. Stack filters to answer any question."
+      },
+      {
+        "title": "Get insights without looking",
+        "description": "OpenPanel's insights engine monitors your traffic and highlights the biggest changes automatically. You'll know about spikes, drops, and new trends without having to check manually."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "Who uses web analytics",
+    "intro": "Anyone with a website who wants to understand their traffic without the complexity of enterprise tools.",
+    "items": [
+      {
+        "title": "Marketing teams",
+        "description": "Track campaign performance with automatic UTM breakdowns. See which sources, mediums, and campaigns drive the most traffic and engagement - without configuring goals or conversions."
+      },
+      {
+        "title": "Content creators and bloggers",
+        "description": "See which pages get the most traffic, where visitors come from, and which content keeps people on your site. Popular pages, entries, and exits tell the full story."
+      },
+      {
+        "title": "Developers and indie hackers",
+        "description": "Add one script tag and forget about it. No complex setup, no tag managers, no consent banners (OpenPanel is privacy-first). Just clean, useful data about your site's traffic."
+      },
+      {
+        "title": "Agencies managing multiple sites",
+        "description": "Give each client a clear, beautiful dashboard they can understand. Click-to-filter makes it easy for non-technical stakeholders to explore their own data."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "event-tracking",
+      "title": "Event tracking",
+      "description": "Go beyond page views - track clicks, signups, purchases, and any custom action to build funnels and retention reports."
+    },
+    {
+      "slug": "session-tracking",
+      "title": "Session tracking",
+      "description": "Understand how users navigate your site within a session. See entry pages, exit pages, and the full session timeline."
+    },
+    {
+      "slug": "funnels",
+      "title": "Funnels",
+      "description": "Define multi-step flows and see where visitors drop off. Combine web analytics data with custom events for full-picture conversion analysis."
+    },
+    {
+      "slug": "data-visualization",
+      "title": "Data visualization",
+      "description": "Build custom charts and dashboards from any metric in your web analytics data."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about OpenPanel web analytics.",
+    "items": [
+      {
+        "question": "What do I need to set up?",
+        "answer": "Just add our tracking script to your website. That's it. Page views, sessions, referrers, UTMs, device data, and geo are all captured automatically. There are no goals to configure, no views to create, and no filters to define."
+      },
+      {
+        "question": "How is this different from Google Analytics?",
+        "answer": "Google Analytics requires significant configuration - goals, views, filters, consent banners, and a steep learning curve. OpenPanel gives you a complete, beautiful dashboard from a single script tag. Everything is clickable, privacy-first, and works without cookies. You can self-host it or use our cloud."
+      },
+      {
+        "question": "Do I need a cookie consent banner?",
+        "answer": "No. OpenPanel is designed to be privacy-first. We don't use third-party cookies and we don't track personal data. Many teams run OpenPanel without any consent banner at all. Check your local regulations, but in most cases you're covered."
+      },
+      {
+        "question": "Can I filter by multiple properties at once?",
+        "answer": "Yes. Click any value to filter the dashboard - then click another value to add a second filter. You can stack as many filters as you want. For example, click a country, then a browser, then a referrer to see exactly that slice of traffic."
+      },
+      {
+        "question": "What UTM parameters are supported?",
+        "answer": "All five standard UTM parameters: source, medium, campaign, term, and content. They're captured automatically from the URL - no extra configuration needed. Each parameter gets its own breakdown in the dashboard."
+      },
+      {
+        "question": "Does the tracking script slow down my site?",
+        "answer": "No. The OpenPanel script is lightweight (under 5 KB) and loads asynchronously. It won't block rendering or affect your Core Web Vitals scores."
+      },
+      {
+        "question": "What geographic data is available?",
+        "answer": "You get country-level breakdown with flags, an interactive world map, and the ability to drill into regions and cities. All geo data is derived from the visitor's IP at ingestion time - nothing is stored or sent to third parties."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Add analytics in 2 minutes",
+    "href": "/onboarding"
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "slug": "event-tracking",
+  "short_name": "Event tracking",
+  "seo": {
+    "title": "Event Tracking - The Foundation of Product Analytics",
+    "description": "Track product events without Google Analytics. Simple, privacy-first event tracking that powers funnels, retention, and user profiles. Get started in minutes.",
+    "keywords": [
+      "event tracking software",
+      "product event tracking",
+      "custom event tracking"
+    ]
+  },
+  "hero": {
+    "heading": "Simple events tracking",
+    "subheading": "Track clicks, views, and conversions with a simple API. No cookies, no bloat - just the events you need to understand how users behave.",
+    "badges": [
+      "Track any user action",
+      "Custom properties",
+      "Real-time ingestion",
+      "One API for all reports"
+    ]
+  },
+  "definition": {
+    "title": "What is event tracking?",
+    "text": "Event tracking is the **foundation of product analytics**. Instead of relying on page-view counts or session timers, you capture discrete actions-clicks, page views, signups, purchases-as structured events with properties.\n\nEvery meaningful interaction becomes a data point you can query, filter, and visualize. This is how modern product teams answer questions like:\n\n- **How many users completed onboarding this week?**\n- **Which features do paying customers use most?**\n- **Where in the signup flow do users drop off?**\n\nTraditional analytics tools (like Google Analytics) are built around sessions and page views. That works for marketing, but it falls short when you need to understand **product behavior**: what users do *inside* your app, how they progress through flows, and what correlates with retention.\n\nOpenPanel takes a different approach. You send events from your app or website using a lightweight SDK or API. Each event has a name (e.g. `signup_completed`, `feature_used`) and optional properties (e.g. `plan: pro`, `source: google`). OpenPanel stores these events and lets you build **funnels**, **retention charts**, and **user profiles** on top of them-without the complexity of enterprise analytics tools.\n\nBecause OpenPanel is **privacy-first**, you can run it without cookies and without sending personal data to third parties. Self-host it or use our cloud-your data stays yours."
+  },
+  "capabilities_section": {
+    "title": "What you can track",
+    "intro": "From basic page views to custom conversion events, you get full visibility into user actions."
+  },
+  "capabilities": [
+    {
+      "title": "Page views and screen views",
+      "description": "Track which pages or screens users visit, with automatic properties like URL, referrer, and device."
+    },
+    {
+      "title": "Clicks and interactions",
+      "description": "Capture button clicks, form submissions, and any custom interactions with a single line of code."
+    },
+    {
+      "title": "Custom events and conversions",
+      "description": "Define your own events (e.g. signup, purchase, feature_used) and attach properties for filtering and analysis."
+    },
+    {
+      "title": "User and session context",
+      "description": "Events are tied to anonymous or identified users and sessions, so you can analyze behavior over time."
+    },
+    {
+      "title": "Real-time ingestion",
+      "description": "Events appear in your dashboard within seconds. No batching delays or overnight processing."
+    },
+    {
+      "title": "Funnels, retention, and profiles",
+      "description": "Use the same events to build conversion funnels, retention cohorts, and per-user activity timelines."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-events-list.webp",
+      "alt": "Event list showing tracked user actions in OpenPanel",
+      "caption": "Browse every event your product sends. Filter by name, user, or properties."
+    },
+    {
+      "src": "/features/feature-events-stats.webp",
+      "alt": "Event statistics and trends over time",
+      "caption": "See event volume and trends at a glance. Spot anomalies before they become problems."
+    },
+    {
+      "src": "/features/feature-events-details.webp",
+      "alt": "Detailed view of a single event with properties",
+      "caption": "Drill into any event to see its full context: user, session, properties, and timestamp."
+    }
+  ],
+  "how_it_works": {
+    "title": "How event tracking works",
+    "intro": "Three steps to go from zero to full product visibility.",
+    "steps": [
+      {
+        "title": "Install the SDK or use the API",
+        "description": "Add our lightweight script to your site or use our SDK for React, Next.js, or other frameworks. Self-hosted or cloud-your choice."
+      },
+      {
+        "title": "Send events from your product",
+        "description": "Track page views automatically and call our API for custom events (signup, purchase, feature_used) with optional properties."
+      },
+      {
+        "title": "Analyze in dashboards, funnels, and retention",
+        "description": "Events flow into funnels, retention charts, and user profiles. No extra setup-one tracking layer powers everything."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "Who uses event tracking",
+    "intro": "Product and growth teams use events to answer concrete questions.",
+    "items": [
+      {
+        "title": "Product managers",
+        "description": "Understand which features are used, where users drop off, and how behavior differs between segments."
+      },
+      {
+        "title": "Growth and marketing",
+        "description": "Measure conversion from signup to activation and from visit to purchase. Optimize campaigns based on real events."
+      },
+      {
+        "title": "Support and success",
+        "description": "View a user's event timeline before a call or ticket. No need to ask \"what did you click?\"-you can see it."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "funnels",
+      "title": "Funnels",
+      "description": "See where users drop off in signup, activation, and conversion flows."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about event tracking with OpenPanel.",
+    "items": [
+      {
+        "question": "Do I need cookies for event tracking?",
+        "answer": "No. OpenPanel can run without cookies. We use a first-party cookie only if you enable it for better session continuity. Many teams run fully cookie-less and still get accurate funnels and retention."
+      },
+      {
+        "question": "How is this different from Google Analytics?",
+        "answer": "Google Analytics is built for marketing and traffic analysis, with a complex data model. OpenPanel is built for product and conversion: simple events that map directly to user actions. You get funnels, retention, and user profiles without the GA learning curve."
+      },
+      {
+        "question": "Can I track custom events?",
+        "answer": "Yes. You can send any event name and attach optional properties (e.g. plan, value, feature_name). Custom events work in funnels, retention, and user profiles the same way as built-in events."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Track events in minutes",
+    "href": "/onboarding"
+  }
+}

@@ -2,6 +2,7 @@ import { url } from '@/lib/layout.shared';
 import {
   articleSource,
   compareSource,
+  featureSource,
   guideSource,
   pageSource,
   source,
@@ -45,6 +46,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     },
     {
+      url: url('/features'),
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: url('/supporter'),
       lastModified: new Date(),
       changeFrequency: 'monthly',
@@ -73,6 +80,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.3,
     })),
     ...compareSource.map((item) => ({
+      url: url(item.url),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
+    ...featureSource.map((item) => ({
       url: url(item.url),
       changeFrequency: 'monthly' as const,
       priority: 0.8,

@@ -1,11 +1,12 @@
 import { FeatureCard } from '@/components/feature-card';
-import { Section, SectionHeader, SectionLabel } from '@/components/section';
+import { Section, SectionHeader } from '@/components/section';
 import {
   BarChart3Icon,
+  ChevronRightIcon,
   DollarSignIcon,
   GlobeIcon,
-  ZapIcon,
 } from 'lucide-react';
+import Link from 'next/link';
 import { ProductAnalyticsIllustration } from './illustrations/product-analytics';
 import { WebAnalyticsIllustration } from './illustrations/web-analytics';
 
@@ -15,18 +16,30 @@ const features = [
     description:
       'Track revenue from your payments and get insights into your revenue sources.',
     icon: DollarSignIcon,
+    link: {
+      href: '/features/revenue-tracking',
+      children: 'More about revenue',
+    },
   },
   {
     title: 'Profiles & Sessions',
     description:
       'Track individual users and their complete journey across your platform.',
     icon: GlobeIcon,
+    link: {
+      href: '/features/identify-users',
+      children: 'Identify your users',
+    },
   },
   {
     title: 'Event Tracking',
     description:
       'Capture every important interaction with flexible event tracking.',
     icon: BarChart3Icon,
+    link: {
+      href: '/features/event-tracking',
+      children: 'All about tracking',
+    },
   },
 ];
 
@@ -62,9 +75,19 @@ export function AnalyticsInsights() {
             title={feature.title}
             description={feature.description}
             icon={feature.icon}
+            link={feature.link}
           />
         ))}
       </div>
+      <p className="mt-8 text-center">
+        <Link
+          href="/features"
+          className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
+        >
+          Explore all features
+          <ChevronRightIcon className="size-3.5" />
+        </Link>
+      </p>
     </Section>
   );
 }

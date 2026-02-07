@@ -4,6 +4,7 @@ description: "Switch from Google Analytics to OpenPanel in under an hour. Learn 
 difficulty: intermediate
 timeToComplete: 45
 date: 2025-12-15
+updated: 2026-02-07
 cover: /content/cover-default.jpg
 team: OpenPanel Team
 steps:
@@ -58,7 +59,7 @@ For projects using a build system, you can also install the npm package with `np
 
 ## Map your GA4 events [#map-events]
 
-OpenPanel uses a `track()` API that closely mirrors GA4's event structure. Most of your existing event tracking can be migrated with minimal changes.
+OpenPanel uses a `track()` API that closely mirrors GA4's event structure. Most of your existing [event tracking](/features/event-tracking) can be migrated with minimal changes.
 
 ### Page views
 
@@ -95,7 +96,7 @@ The event name and properties carry over directly. OpenPanel doesn't have the re
 
 ### User identification
 
-GA4 uses `set user_properties` for user identification, while OpenPanel uses a dedicated `identify` method. This gives you richer user profiles and session history.
+GA4 uses `set user_properties` for [user identification](/features/identify-users), while OpenPanel uses a dedicated `identify` method. This gives you richer user profiles and session history.
 
 ```js
 window.op('identify', {
@@ -199,7 +200,7 @@ Since OpenPanel doesn't use cookies by default, you may be able to remove your c
 
 Moving from GA4 to OpenPanel means gaining some things and losing others. You'll get privacy-first tracking without cookies, full ownership of your data (especially if you [self-host](/articles/how-to-self-host-openpanel)), and a simpler interface for day-to-day analytics.
 
-On the other hand, you won't be able to import historical data from GA4 since Google doesn't provide an easy export mechanism. If you rely heavily on Google Ads conversion tracking, you'll need to either keep GA4 running for that specific use case or use Google Ads' standalone conversion tracking pixel.
+On the other hand, you won't be able to import historical data from GA4 since Google doesn't provide an easy export mechanism. If you rely heavily on Google Ads [conversion tracking](/features/conversion), you'll need to either keep GA4 running for that specific use case or use Google Ads' standalone conversion tracking pixel.
 
 GA4's attribution modeling is more sophisticated than OpenPanel's, so if you depend on multi-touch attribution for ad spend optimization, consider your requirements carefully before fully migrating.
 

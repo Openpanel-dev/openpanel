@@ -1,0 +1,147 @@
+{
+  "slug": "session-tracking",
+  "short_name": "Session tracking",
+  "seo": {
+    "title": "Session Tracking Without Replays - Privacy-First",
+    "description": "Understand user sessions from entry to exit-without recordings or privacy risk. See pages visited, events fired, and session duration with privacy-first analytics.",
+    "keywords": [
+      "session tracking analytics",
+      "user session tracking",
+      "session analysis without replay"
+    ]
+  },
+  "hero": {
+    "heading": "What happened in the session",
+    "subheading": "Pages visited, events fired, time spent. No recordings, no privacy risk. You still get the full picture.",
+    "badges": [
+      "No session recordings",
+      "Privacy-first by design",
+      "Entry-to-exit visibility",
+      "Sessions linked to events"
+    ]
+  },
+  "definition": {
+    "title": "What is session tracking?",
+    "text": "A session is the **window of activity** between a user arriving on your site and leaving. It starts with an entry page, includes every page view and event along the way, and ends when the user goes idle or closes the tab.\n\nMost analytics tools either give you **too little** (aggregated page-view counts with no sense of flow) or **too much** (full session recordings that raise privacy concerns and take hours to review). OpenPanel sits in the middle: you get a **structured timeline** of what happened in each session, without recording a single pixel of the user's screen.\n\nFor every session, OpenPanel captures:\n\n- **Entry page and exit page** - where the user started and where they left\n- **Pages visited in order** - the path through your site or app\n- **Events fired** - signups, clicks, feature usage, or any custom event\n- **Session duration** - how long the session lasted\n- **Referrer and UTM parameters** - how the user got there\n- **Device, browser, and location** - context without fingerprinting\n\nThis means you can answer questions like:\n\n- **What pages do users visit before signing up?**\n- **Do users from organic search behave differently than paid traffic?**\n- **How long are sessions for users who convert vs. those who don't?**\n\nUnlike session replay tools (Hotjar, FullStory, LogRocket), there are **no recordings to watch**, **no PII captured on screen**, and **no consent banners** needed for video replay. You get the analytical value of sessions without the privacy overhead.\n\nSessions in OpenPanel connect directly to **events and user profiles**. Every event belongs to a session, and every session belongs to a user. This means funnels, retention, and user timelines all have session context built in."
+  },
+  "capabilities_section": {
+    "title": "What you get with session tracking",
+    "intro": "Structured session data that answers real questions-without the privacy cost of recordings."
+  },
+  "capabilities": [
+    {
+      "title": "Entry and exit pages",
+      "description": "See where users land and where they leave. Identify your strongest entry points and the pages that lose visitors."
+    },
+    {
+      "title": "Page flow per session",
+      "description": "View the ordered sequence of pages a user visited in a session. Understand navigation patterns without watching a recording."
+    },
+    {
+      "title": "Events within a session",
+      "description": "Every event (signup, click, purchase) is tied to a session. See exactly what a user did and in what order."
+    },
+    {
+      "title": "Session duration and engagement",
+      "description": "Measure how long sessions last and how many pages or events they include. Spot high-engagement and bounce sessions."
+    },
+    {
+      "title": "Referrer and UTM attribution",
+      "description": "Know how users arrived-organic search, paid campaign, direct link-and compare session quality across sources."
+    },
+    {
+      "title": "Device and location context",
+      "description": "Capture browser, OS, and approximate location for each session. No fingerprinting-just standard request headers."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-sessions.webp",
+      "alt": "Session overview showing user sessions with entry pages and duration",
+      "caption": "See session activity at a glance-entry pages, duration, and event counts."
+    },
+    {
+      "src": "/features/feature-sessions-details.webp",
+      "alt": "Session events timeline showing user actions in order",
+      "caption": "Every event tied to its session. Understand user journeys without replay tools."
+    }
+  ],
+  "how_it_works": {
+    "title": "How session tracking works",
+    "intro": "Sessions are created automatically from the events you already send.",
+    "steps": [
+      {
+        "title": "Events create sessions",
+        "description": "When a user triggers their first event (page view, click, etc.), OpenPanel starts a session. No extra tracking code needed-sessions are derived from your events."
+      },
+      {
+        "title": "Activity is grouped automatically",
+        "description": "Subsequent events from the same user are grouped into the active session. If the user goes idle (30 minutes by default), the session ends and a new one begins on the next interaction."
+      },
+      {
+        "title": "Sessions connect to everything",
+        "description": "Each session links to the user profile, the events fired, and the pages visited. This means funnels, retention, and user timelines all include session context."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "Who uses session tracking",
+    "intro": "Teams that need to understand user journeys without the overhead of session replays.",
+    "items": [
+      {
+        "title": "Product teams",
+        "description": "Understand how users navigate your product. See the page flow and events in a session to identify friction points-without watching hours of recordings."
+      },
+      {
+        "title": "Support and success teams",
+        "description": "When a user reports an issue, pull up their recent sessions to see what pages they visited and what events they triggered. Context without asking \"can you describe what you did?\""
+      },
+      {
+        "title": "Privacy-conscious teams",
+        "description": "Get session-level insights without recording user screens. No PII in screenshots, no video consent banners, no GDPR headaches from replay data."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "event-tracking",
+      "title": "Event tracking",
+      "description": "Events are the building blocks of sessions. Track user actions that feed into session timelines."
+    },
+    {
+      "slug": "funnels",
+      "title": "Funnels",
+      "description": "Combine session data with funnel analysis to see where users drop off in multi-step flows."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about session tracking with OpenPanel.",
+    "items": [
+      {
+        "question": "How is this different from session replay tools like Hotjar or FullStory?",
+        "answer": "Session replay tools record a video of the user's screen. OpenPanel doesn't record anything visual-it tracks structured data: which pages were visited, which events were triggered, and how long the session lasted. You get the analytical answers without the privacy cost or the hours spent watching recordings."
+      },
+      {
+        "question": "Do I need to set up session tracking separately?",
+        "answer": "No. Sessions are created automatically from the events and page views you already send. There's no separate session SDK or configuration step."
+      },
+      {
+        "question": "How does OpenPanel define a session?",
+        "answer": "A session starts when a user triggers their first event and ends after 30 minutes of inactivity. If the user returns after the timeout, a new session begins. This is consistent with how most analytics tools define sessions."
+      },
+      {
+        "question": "Can I see individual user sessions?",
+        "answer": "Yes. You can view a user's session history, including the pages they visited and events they triggered in each session. This is available in the user profile view."
+      },
+      {
+        "question": "Does session tracking require cookies?",
+        "answer": "No. OpenPanel can run without cookies. Sessions can be tracked using a lightweight session identifier that doesn't require cookie consent. If you enable first-party cookies, session continuity improves but it's not required."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Start tracking sessions",
+    "href": "/onboarding"
+  }
+}

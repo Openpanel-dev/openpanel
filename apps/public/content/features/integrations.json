@@ -1,0 +1,168 @@
+{
+  "slug": "integrations",
+  "short_name": "Integrations",
+  "seo": {
+    "title": "Integrations - Slack, Webhooks & More",
+    "description": "Connect OpenPanel to Slack, Discord, webhooks, and more. Trigger actions based on user behavior-send alerts, sync to Zapier, or export events to S3 and BigQuery.",
+    "keywords": [
+      "analytics integrations",
+      "webhook analytics",
+      "slack notifications analytics",
+      "zapier analytics integration",
+      "event-driven webhooks",
+      "export events to s3",
+      "analytics to bigquery"
+    ]
+  },
+  "hero": {
+    "heading": "Integrations: Connect to any webhook",
+    "subheading": "Push data out of OpenPanel and into Slack, Discord, or any webhook. Trigger on the events that matter - no polling, no glue code.",
+    "badges": [
+      "Slack, Discord & webhooks",
+      "Trigger on any event",
+      "Custom payloads with JavaScript",
+      "S3 & GCS export coming soon"
+    ]
+  },
+  "definition": {
+    "title": "What are integrations?",
+    "text": "Integrations are the bridge between OpenPanel and everything else. They let you **get data out** of OpenPanel and into the tools and workflows your team already relies on.\n\nThe idea is simple: you create an **integration** (a connection to an external service), then attach it to a **[notification rule](/features/notifications)** that fires whenever the conditions you define are met. That's it - OpenPanel handles the rest.\n\nHere's an example: you want to be notified in Slack whenever a new user signs up from a specific country. You create a Slack integration, set up a notification rule that triggers on `signup` events, and use a template like *\"New user from {{country}}\"*. Every time someone signs up, the message lands in your Slack channel - no polling, no cron jobs, no glue code.\n\nBut it goes further than alerts. With **webhooks**, you can push event data to any URL - including **Zapier**, **Make**, or your own backend. That means you can trigger custom workflows based on real user behavior: send a welcome email when someone completes onboarding, notify sales when a user hits a usage milestone, or log high-value events to an external system.\n\nYou can even trigger integrations when a user completes a **funnel** - combining OpenPanel's funnel analysis with real-time action.\n\nToday, OpenPanel supports:\n\n- **Slack** - post messages to any channel when events fire\n- **Discord** - same as Slack, but for Discord servers\n- **Webhooks** - send event payloads to any URL with custom headers and a JavaScript transform for full control over the payload shape\n\nComing soon:\n\n- **S3-compatible storage** - automatically export events to Amazon S3, MinIO, Cloudflare R2, or any S3-compatible store\n- **Google Cloud Storage** - export to GCS for easy import into **BigQuery**, **Redshift**, or your data warehouse\n\nThese storage integrations will make importing your OpenPanel events into your data warehouse straightforward and easy - no custom ETL pipelines needed."
+  },
+  "capabilities_section": {
+    "title": "What you can do with integrations",
+    "intro": "From real-time Slack alerts to warehouse exports - integrations connect OpenPanel to your stack."
+  },
+  "capabilities": [
+    {
+      "title": "Slack & Discord notifications",
+      "description": "Connect your Slack workspace or Discord server and receive messages whenever notification rules fire. Great for staying on top of signups, errors, or milestone events without leaving your chat tool."
+    },
+    {
+      "title": "Webhooks to any URL",
+      "description": "Send event data to any HTTP endpoint - your own API, Zapier, Make, or any automation platform. Define custom headers and use a JavaScript transform to shape the payload exactly how the receiving service expects it."
+    },
+    {
+      "title": "JavaScript payload transforms",
+      "description": "Webhook integrations include a built-in JavaScript editor. Write a transform function that receives the raw payload and returns whatever shape you need - rename fields, filter data, or enrich the payload before it's sent."
+    },
+    {
+      "title": "Pair with notification rules",
+      "description": "Integrations don't fire on their own - you attach them to notification rules. A single rule can trigger multiple integrations at once, and a single integration can be used by many rules."
+    },
+    {
+      "title": "Trigger on funnels and events",
+      "description": "Notification rules can fire on specific events with property filters, or when a user completes an entire funnel. That means you can trigger a webhook when someone finishes onboarding, not just when they view a single page."
+    },
+    {
+      "title": "S3 & GCS export (coming soon)",
+      "description": "Automatically export your events to S3-compatible storage or Google Cloud Storage. From there, import into BigQuery, Redshift, or any data warehouse - no custom ETL required."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-integrations.webp",
+      "alt": "Available integrations showing Slack, Discord, and Webhook options",
+      "caption": "Browse available integrations. Connect Slack, Discord, or set up a custom webhook in seconds."
+    },
+    {
+      "src": "/features/feature-integrations-create.webp",
+      "alt": "Creating a webhook integration with URL, headers, and JavaScript transform",
+      "caption": "Create a webhook integration with a custom URL, headers, and a JavaScript transform to shape the payload exactly how you need it."
+    }
+  ],
+  "how_it_works": {
+    "title": "How integrations work",
+    "intro": "Set up an integration in minutes, then let notification rules handle the rest.",
+    "steps": [
+      {
+        "title": "Pick an integration type",
+        "description": "Choose from Slack, Discord, or Webhook. Each type has its own setup - OAuth for Slack and Discord, URL + headers for webhooks."
+      },
+      {
+        "title": "Configure the connection",
+        "description": "For Slack/Discord, connect your workspace or server. For webhooks, enter the target URL, add any custom headers, and optionally write a JavaScript transform to control the payload shape."
+      },
+      {
+        "title": "Create a notification rule",
+        "description": "In the Notifications section, create a rule that defines when the integration should fire - e.g. when a screen_view event has a path starting with /onboarding. Attach one or more integrations to the rule."
+      },
+      {
+        "title": "Events trigger actions automatically",
+        "description": "When an event matches a rule, OpenPanel sends the data to every attached integration in real time. No polling, no delays."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "How teams use integrations",
+    "intro": "From team alerts to full automation pipelines - integrations turn analytics into action.",
+    "items": [
+      {
+        "title": "Real-time team alerts",
+        "description": "Post to Slack or Discord when a new user signs up, a high-value purchase happens, or a critical error fires. Keep the whole team aware without anyone needing to check a dashboard."
+      },
+      {
+        "title": "Zapier and automation workflows",
+        "description": "Send webhook payloads to Zapier or Make to trigger downstream actions - send a welcome email, update a CRM, add a row to a spreadsheet, or kick off an onboarding drip campaign. All driven by real user behavior."
+      },
+      {
+        "title": "Custom backend actions",
+        "description": "Point a webhook at your own API to run custom logic when specific events fire. Credit a referral, flag a suspicious session, or sync analytics data to an internal tool."
+      },
+      {
+        "title": "Data warehouse export",
+        "description": "With the upcoming S3 and GCS integrations, export events directly to your data warehouse. Load into BigQuery or Redshift for advanced SQL analysis, cross-referencing with other datasets, or long-term storage."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "notifications",
+      "title": "Notifications",
+      "description": "Notification rules control when integrations fire. Define events, filters, and templates - then attach integrations to act on them."
+    },
+    {
+      "slug": "event-tracking",
+      "title": "Event tracking",
+      "description": "Integrations are powered by the events you track. The richer your event data, the more precise your triggers can be."
+    },
+    {
+      "slug": "funnels",
+      "title": "Funnels",
+      "description": "Trigger integrations when a user completes an entire funnel - not just a single event."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about OpenPanel integrations.",
+    "items": [
+      {
+        "question": "How do integrations and notifications work together?",
+        "answer": "Integrations are the destinations (Slack channel, webhook URL, Discord server). Notification rules are the triggers (when event X happens with filter Y). You create both, then attach integrations to rules. When a rule fires, all attached integrations receive the data."
+      },
+      {
+        "question": "Can I use webhooks with Zapier?",
+        "answer": "Yes. Create a webhook integration pointing to your Zapier webhook URL. You can use the JavaScript transform to shape the payload into whatever format your Zap expects. This lets you trigger any Zapier workflow based on real user events in OpenPanel."
+      },
+      {
+        "question": "What does the JavaScript transform do?",
+        "answer": "The JavaScript transform is a function that receives the raw event payload and returns a modified version. You can rename fields, filter out properties, add computed values, or completely restructure the data. It runs before the payload is sent to the webhook URL."
+      },
+      {
+        "question": "When will S3 and GCS integrations be available?",
+        "answer": "S3-compatible storage and Google Cloud Storage integrations are on the near-term roadmap. These will let you automatically export events for import into BigQuery, Redshift, or any data warehouse without building custom ETL pipelines."
+      },
+      {
+        "question": "Can one integration be used by multiple notification rules?",
+        "answer": "Yes. An integration is just a connection to a service. You can attach it to as many notification rules as you want. For example, a single Slack integration can be triggered by rules for signups, purchases, and errors - each with its own template and filters."
+      },
+      {
+        "question": "Is there a limit to how many integrations I can create?",
+        "answer": "There's no hard limit. Create as many integrations and notification rules as you need to cover your workflows."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Set up your first integration",
+    "href": "/onboarding"
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "slug": "retention",
+  "short_name": "Retention",
+  "seo": {
+    "title": "Retention & Cohort Analysis",
+    "description": "User retention analytics and cohort analysis that show who comes back. See product stickiness at a glance-no sampling, no guesswork. Built on your events.",
+    "keywords": [
+      "user retention analytics",
+      "cohort analysis"
+    ]
+  },
+  "hero": {
+    "heading": "Retention: Who comes back?",
+    "subheading": "See who returns after signup, activation, or any key action. Cohort-based retention that shows real stickiness - not vanity metrics.",
+    "badges": [
+      "Cohort-based retention",
+      "Any start and return event",
+      "No sampling",
+      "Compare segments"
+    ]
+  },
+  "definition": {
+    "title": "What retention means",
+    "text": "**Retention** is the share of users who come back after doing something once. It answers: *Of the people who did X in a given week, how many did Y later?*\n\nThat’s it. No session thresholds, no arbitrary “active” definitions-just a clear picture of **who sticks** and who doesn’t.\n\nWhy does it matter? Because retention is **product truth**. Traffic and signups can look great while the product fails to stick. Retention cuts through that. It tells you:\n\n- **Whether your product is habit-forming** - Do users return after the first use?\n- **When churn happens** - Do they leave after day 1, week 1, or month 1?\n- **Which segments stick** - Do certain cohorts (e.g. by plan, source, or feature) retain better?\n\nIn OpenPanel, retention is built on your **events**. You choose an initial event (e.g. `signup_completed`, `first_purchase`) and a return event (e.g. `feature_used`, `session_started`). OpenPanel groups users into cohorts by when they did the initial event and shows what percentage did the return event in subsequent periods. No extra instrumentation-the same events that power funnels and user profiles power retention."
+  },
+  "capabilities_section": {
+    "title": "What you can do with retention",
+    "intro": "From weekly cohorts to segment comparison, retention gives you the stickiness signal."
+  },
+  "capabilities": [
+    {
+      "title": "Cohort-based retention",
+      "description": "Group users by when they did an initial event (e.g. signup week). See what percentage return in week 1, 2, 3, and beyond."
+    },
+    {
+      "title": "Any start and return event",
+      "description": "Define retention your way: signup → login, first purchase → repeat purchase, feature_used → feature_used again. No fixed definitions."
+    },
+    {
+      "title": "Read the grid at a glance",
+      "description": "Retention grids show cohorts in rows and time periods in columns. High numbers = stickiness; drop-off patterns show where to focus."
+    },
+    {
+      "title": "Compare segments",
+      "description": "Filter or segment by plan, source, or custom properties. See which cohorts retain better and why."
+    },
+    {
+      "title": "No sampling",
+      "description": "Retention is computed over every event. No sampling or estimates-you see real stickiness."
+    },
+    {
+      "title": "Dashboards and sharing",
+      "description": "Add retention charts to dashboards next to funnels and other reports. Share with PMs and founders."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-retention.webp",
+      "alt": "Retention cohort grid showing stickiness over time",
+      "caption": "Cohort retention at a glance. Rows = cohorts, columns = time periods. See who comes back."
+    },
+    {
+      "src": "/features/feature-retention.webp",
+      "alt": "Choosing initial and return events for retention",
+      "caption": "Pick the start and return events that define retention for your product."
+    }
+  ],
+  "how_it_works": {
+    "title": "How to read a retention chart",
+    "intro": "Retention charts are simple once you know what to look for.",
+    "steps": [
+      {
+        "title": "Pick your initial and return events",
+        "description": "The initial event defines the cohort (e.g. signup_completed). The return event defines “came back” (e.g. session_started or feature_used). Every user who did the initial event in a given period is one cohort."
+      },
+      {
+        "title": "Read the grid",
+        "description": "Rows are cohorts (e.g. “Week of Jan 6”). Columns are time periods after the initial event (e.g. Week 1, Week 2). Each cell is the percentage of that cohort that did the return event in that period. Higher = stickier."
+      },
+      {
+        "title": "Spot patterns",
+        "description": "Look for cohorts that retain well vs. those that drop off fast. Compare segments (e.g. by plan or source) to see which users stick and use that to prioritize product and growth work."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "How teams use retention",
+    "intro": "PMs and founders use retention to separate signal from noise.",
+    "items": [
+      {
+        "title": "Product managers",
+        "description": "See which features and flows lead to repeat use. Prioritize work that improves retention, not just signups. Compare cohorts to learn what separates sticky users from churned ones."
+      },
+      {
+        "title": "Founders",
+        "description": "Retention is the truth about product-market fit. One number-e.g. week-2 or week-4 retention-often tells you more than top-line growth. Use it in board updates and strategy."
+      },
+      {
+        "title": "Growth and analytics",
+        "description": "Measure impact of onboarding or activation changes on retention. Segment by acquisition source or plan to invest in the channels and segments that retain best."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "event-tracking",
+      "title": "Event tracking",
+      "description": "Retention is built on events. Track signups, sessions, and feature use first."
+    },
+    {
+      "slug": "funnels",
+      "title": "Funnels",
+      "description": "See where users drop off before they can retain. Funnels and retention go hand in hand."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about retention analytics with OpenPanel.",
+    "items": [
+      {
+        "question": "What’s the difference between retention and funnel analysis?",
+        "answer": "Funnels answer “where do users drop off in a sequence?” Retention answers “of the users who did X, how many came back to do Y?” Both use the same events; retention focuses on repeat behavior over time, funnels on one-time flows."
+      },
+      {
+        "question": "Can I use any events for retention?",
+        "answer": "Yes. You choose an initial event (e.g. signup_completed, first_purchase) and a return event (e.g. session_started, feature_used). OpenPanel cohorts users by when they did the initial event and shows what percentage did the return event in later periods."
+      },
+      {
+        "question": "How do I know if my retention is good?",
+        "answer": "There’s no universal benchmark-it depends on your product and cohort. What matters is trend and segment comparison: improving over time and understanding which cohorts retain better. Retention gives you the numbers; you decide what “good” is for your product."
+      }
+    ]
+  },
+  "cta": {
+    "label": "See your retention in minutes",
+    "href": "/onboarding"
+  }
+}

@@ -4,6 +4,7 @@ description: "Switch from Mixpanel to OpenPanel in under 2 hours with this step-
 difficulty: intermediate
 timeToComplete: 90
 date: 2025-12-15
+updated: 2026-02-07
 cover: /content/cover-default.jpg
 team: OpenPanel Team
 steps:
@@ -73,7 +74,7 @@ If you're using Next.js, there's a dedicated package that handles both client an
 
 OpenPanel's API follows similar patterns to Mixpanel, with a few naming convention differences. Mixpanel uses Title Case for events and properties, while OpenPanel uses snake_case.
 
-Here's how basic event tracking translates. In Mixpanel, you might track a button click like this:
+Here's how basic [event tracking](/features/event-tracking) translates. In Mixpanel, you might track a button click like this:
 
 ```js
 mixpanel.track('Button Clicked', {
@@ -91,7 +92,7 @@ op.track('button_clicked', {
 });
 ```
 
-User identification works similarly, but OpenPanel uses a structured object instead of separate method calls. Mixpanel's pattern splits identify and people.set:
+[User identification](/features/identify-users) works similarly, but OpenPanel uses a structured object instead of separate method calls. Mixpanel's pattern splits identify and people.set:
 
 ```js
 mixpanel.identify('user_123');
@@ -198,7 +199,7 @@ function trackEvent(eventName, properties) {
 trackEvent('button_clicked', { button_name: 'Sign Up' });
 ```
 
-After a week, compare Mixpanel's Live View with OpenPanel's real-time dashboard. Check that event counts are close (they won't be exact due to timing differences), user profiles are being created correctly, and any funnels you've set up show similar conversion rates.
+After a week, compare Mixpanel's Live View with OpenPanel's real-time dashboard. Check that event counts are close (they won't be exact due to timing differences), user profiles are being created correctly, and any [funnels](/features/funnels) you've set up show similar [conversion rates](/features/conversion).
 
 ## Remove Mixpanel [#remove]
 

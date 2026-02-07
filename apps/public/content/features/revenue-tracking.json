@@ -1,0 +1,157 @@
+{
+  "slug": "revenue-tracking",
+  "short_name": "Revenue tracking",
+  "seo": {
+    "title": "Revenue Tracking - Tie Every Dollar to Events",
+    "description": "Track revenue as events, not spreadsheets. Tie every dollar to a user, session, and conversion flow. Privacy-first product revenue analytics with OpenPanel.",
+    "keywords": [
+      "revenue analytics",
+      "track revenue events",
+      "product revenue tracking"
+    ]
+  },
+  "hero": {
+    "heading": "Revenue tracking",
+    "subheading": "Attach a dollar value to any action - purchase, upgrade, renewal - and see exactly how money flows through your product. No spreadsheets, no stitching.",
+    "badges": [
+      "Revenue as events",
+      "Tie revenue to users",
+      "Real-time metrics",
+      "No spreadsheets needed"
+    ]
+  },
+  "definition": {
+    "title": "What is event-based revenue tracking?",
+    "text": "Most teams track revenue in spreadsheets or payment dashboards that live completely separate from product analytics. You know *how much* you made, but not *why*.\n\nEvent-based revenue tracking flips this. Every revenue moment-a purchase, a plan upgrade, a subscription renewal-is captured as a **structured event** with a dollar amount, a user, and a session. That means you can answer questions like:\n\n- **Which signup source drives the most revenue?**\n- **How long after onboarding do users make their first purchase?**\n- **What features do high-LTV customers use that churning ones don't?**\n\nWith OpenPanel, you send a revenue event the same way you send any other event-just include an amount property. From there, revenue flows into **funnels**, **retention charts**, and **user profiles** alongside every other action.\n\nNo CSV exports. No stitching Stripe data to analytics data in a spreadsheet. Revenue becomes a first-class dimension of your product analytics, queryable and filterable like everything else.\n\nBecause OpenPanel is **privacy-first**, revenue data stays in your infrastructure (self-hosted) or in our cloud with no third-party sharing. You get the insights without the data-privacy trade-offs."
+  },
+  "capabilities_section": {
+    "title": "What you can measure",
+    "intro": "From single purchases to recurring subscriptions, every revenue signal becomes a queryable event."
+  },
+  "capabilities": [
+    {
+      "title": "Revenue events with custom amounts",
+      "description": "Attach a monetary value to any event. Track purchases, upgrades, add-ons, and refunds as structured data."
+    },
+    {
+      "title": "Revenue per user and session",
+      "description": "Every revenue event is linked to a user and session, so you can see lifetime value, average order value, and revenue per visit."
+    },
+    {
+      "title": "Revenue in funnels",
+      "description": "Add revenue events as funnel steps. See how much money flows through each stage-and how much you lose at every drop-off."
+    },
+    {
+      "title": "Revenue over time",
+      "description": "Chart daily, weekly, or monthly revenue trends. Break down by plan, source, country, or any event property."
+    },
+    {
+      "title": "Segment by properties",
+      "description": "Filter revenue by plan tier, payment method, campaign source, or any custom property you attach to your events."
+    },
+    {
+      "title": "Real-time ingestion",
+      "description": "Revenue events appear in dashboards within seconds-no overnight processing or batch imports."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-revenue-1.webp",
+      "alt": "OpenPanel dashboard overview with key metrics",
+      "caption": "See revenue alongside engagement metrics in a single dashboard."
+    },
+    {
+      "src": "/features/feature-revenue-2.webp",
+      "alt": "Funnel analysis showing conversion and revenue flow",
+      "caption": "Trace the path from first visit to purchase and measure revenue at every step."
+    },
+    {
+      "src": "/features/feature-revenue-2.webp",
+      "alt": "Retention chart for revenue cohorts",
+      "caption": "Understand how revenue retention changes across weekly cohorts."
+    }
+  ],
+  "how_it_works": {
+    "title": "How revenue events work",
+    "intro": "Three steps to go from payment callbacks to full revenue analytics.",
+    "steps": [
+      {
+        "title": "Send revenue events from your backend",
+        "description": "When a purchase, upgrade, or renewal happens, fire an event with the amount and any relevant properties (plan, currency, item)."
+      },
+      {
+        "title": "Revenue ties to the user and session",
+        "description": "OpenPanel links the revenue event to the user who triggered it and the session they were in. No manual joins-context is automatic."
+      },
+      {
+        "title": "Analyze in dashboards, funnels, and profiles",
+        "description": "Revenue shows up everywhere: aggregate charts, conversion funnels, user timelines. Filter and break down by any property."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "Who uses revenue tracking",
+    "intro": "Teams that want to connect product behavior to business outcomes.",
+    "items": [
+      {
+        "title": "SaaS product teams",
+        "description": "Tie MRR and expansion revenue back to feature usage. Understand which product changes move the revenue needle."
+      },
+      {
+        "title": "E-commerce and marketplaces",
+        "description": "Track order value per session, revenue by traffic source, and purchase funnels without a separate BI tool."
+      },
+      {
+        "title": "Growth and marketing",
+        "description": "Measure campaign ROI by linking ad spend to actual revenue events. See which channels produce paying users, not just signups."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "event-tracking",
+      "title": "Event tracking",
+      "description": "Revenue events are built on the same event model. Learn how events work in OpenPanel."
+    },
+    {
+      "slug": "funnels",
+      "title": "Funnels",
+      "description": "Add revenue steps to conversion funnels and see where money drops off."
+    },
+    {
+      "slug": "session-tracking",
+      "title": "Session tracking",
+      "description": "Link revenue to the session that produced it-see the full journey from landing page to purchase."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about tracking revenue with OpenPanel.",
+    "items": [
+      {
+        "question": "How do I send a revenue event?",
+        "answer": "Send a regular event (e.g. 'purchase_completed') with a numeric property for the amount. You can include additional properties like currency, plan, or item name. The same SDK or API you use for any other event works for revenue."
+      },
+      {
+        "question": "Can I track recurring subscription revenue?",
+        "answer": "Yes. Fire a revenue event on each renewal or billing cycle. Over time you can chart MRR trends, retention by cohort, and expansion revenue-all from events."
+      },
+      {
+        "question": "Do I need to integrate my payment provider?",
+        "answer": "No direct integration is needed. You send revenue events from your backend whenever a payment is confirmed (e.g. in a Stripe webhook handler). OpenPanel doesn't talk to Stripe-it just receives the event you send."
+      },
+      {
+        "question": "Can I track refunds?",
+        "answer": "Yes. Send a refund event with a negative amount or a separate event name (e.g. 'refund_issued'). You can then subtract refunds from gross revenue in your dashboards."
+      },
+      {
+        "question": "Is revenue data shared with third parties?",
+        "answer": "No. OpenPanel is privacy-first. Self-host to keep revenue data entirely in your infrastructure, or use our cloud where data is never shared with third parties."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Start tracking revenue",
+    "href": "/onboarding"
+  }
+}

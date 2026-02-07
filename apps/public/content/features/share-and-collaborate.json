@@ -1,0 +1,168 @@
+{
+  "slug": "share-and-collaborate",
+  "short_name": "Share & Collaborate",
+  "seo": {
+    "title": "Share & Collaborate - Unlimited Members",
+    "description": "Invite unlimited team members with org-wide or project-level access. Share full dashboards or individual reports - publicly or behind a password. OpenPanel makes it easy to align everyone on the same data.",
+    "keywords": [
+      "analytics team collaboration",
+      "share dashboards",
+      "analytics access control",
+      "password-protected reports",
+      "unlimited team members analytics",
+      "project-level permissions analytics"
+    ]
+  },
+  "hero": {
+    "heading": "Invite the team. Share the numbers.",
+    "subheading": "Unlimited members, org-wide or project-level access. Share full dashboards or single reports - publicly or behind a password.",
+    "badges": [
+      "Unlimited members",
+      "Org-wide or project-level access",
+      "Share dashboards and reports",
+      "Public or password-protected links"
+    ]
+  },
+  "definition": {
+    "title": "What is share and collaborate?",
+    "text": "Share and collaborate in OpenPanel is how you **get the right data to the right people** without opening the door to everything.\n\n**Unlimited members** - There’s no cap on how many people you can invite. Add your whole team, contractors, or stakeholders and manage them from a single members view.\n\n**Flexible access** - Each member can have:\n\n- **Organization-wide access** - full visibility across all projects, ideal for admins and core team\n- **Fine-grained access** - access only to specific projects you choose, so stakeholders see only what’s relevant\n\n**What you can share** - You’re not limited to \"all or nothing\" views:\n\n- **Complete dashboards** - share an entire dashboard so others see the same layout and reports you use\n- **Individual reports** - share a single report (e.g. one funnel or one retention chart) for focused updates\n\n**How you share** - Every shared dashboard or report can be:\n\n- **Publicly available** - anyone with the link can view it (handy for status pages, exec summaries, or embedded views)\n- **Password-protected** - only people with the password can open the link, so you keep sensitive data under control\n\nInviting is straightforward: add members by email, assign access (org or specific projects), and optionally share dashboards or reports with public or password-protected links. Your team stays aligned on the same numbers without compromising security or clarity."
+  },
+  "capabilities_section": {
+    "title": "What you can do with share and collaborate",
+    "intro": "From inviting your first teammate to sharing a report with a client - everything is built in."
+  },
+  "capabilities": [
+    {
+      "title": "Unlimited members",
+      "description": "Invite as many team members as you need. No per-seat limits - add admins, analysts, and stakeholders and manage them from one place."
+    },
+    {
+      "title": "Organization-wide or project-level access",
+      "description": "Give members access to the entire organization or restrict them to specific projects. Fine-grained control keeps each person seeing only what they need."
+    },
+    {
+      "title": "Share full dashboards",
+      "description": "Share a complete dashboard so others see the same layout and reports. Perfect for weekly reviews, exec summaries, or keeping a team on the same page."
+    },
+    {
+      "title": "Share individual reports",
+      "description": "Share a single report - one funnel, one retention chart, or one breakdown - so you send exactly the view that matters without exposing the rest."
+    },
+    {
+      "title": "Public or password-protected links",
+      "description": "Shared dashboards and reports can be publicly viewable (anyone with the link) or protected with a password for sensitive or internal-only use."
+    },
+    {
+      "title": "Invite and manage in one place",
+      "description": "Invite by email, assign access, and see all members and their permissions in a clear members view. Update access or remove members anytime."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-members.webp",
+      "alt": "Members list showing team members and their access levels",
+      "caption": "Manage unlimited members and their access - org-wide or per project - from one place."
+    },
+    {
+      "src": "/features/feature-dashboard-share.webp",
+      "alt": "Sharing a dashboard with public or password-protected options",
+      "caption": "Share full dashboards or individual reports. Choose public links or protect them with a password."
+    },
+    {
+      "src": "/features/feature-invite-user.webp",
+      "alt": "Invite a new member by email and set project access",
+      "caption": "Invite new members by email and assign organization or project-level access in a few clicks."
+    }
+  ],
+  "how_it_works": {
+    "title": "How sharing and collaboration works",
+    "intro": "Invite members, set access, then share dashboards or reports as needed.",
+    "steps": [
+      {
+        "title": "Invite members",
+        "description": "Add team members by email from the members area. They receive an invite and can sign in to OpenPanel with the access you’ve assigned."
+      },
+      {
+        "title": "Set access level",
+        "description": "Give each member organization-wide access (all projects) or fine-grained access to specific projects only. You can change this anytime."
+      },
+      {
+        "title": "Share dashboards or reports",
+        "description": "From any dashboard or report, use Share to generate a link. You can share a full dashboard or a single report."
+      },
+      {
+        "title": "Choose public or password-protected",
+        "description": "Make the link public (anyone with the link can view) or set a password so only people who have it can open the shared view."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "How teams use share and collaborate",
+    "intro": "From internal alignment to client-facing reports - sharing and access control fit many workflows.",
+    "items": [
+      {
+        "title": "Internal team alignment",
+        "description": "Invite product, growth, and support with access to the projects they need. Share a main dashboard so everyone looks at the same KPIs in meetings."
+      },
+      {
+        "title": "Stakeholder and exec updates",
+        "description": "Give execs or stakeholders limited access to specific projects and share a single report or dashboard. No need to give them the full product - just the view that matters."
+      },
+      {
+        "title": "Client and partner reports",
+        "description": "Share a dashboard or report with a client or partner via link. Use a password when the data is sensitive so only authorized people can view it."
+      },
+      {
+        "title": "Public status or metrics pages",
+        "description": "Share a dashboard publicly and embed or link it from your status page, docs, or marketing site so visitors see live metrics without signing in."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "data-visualization",
+      "title": "Data visualization",
+      "description": "Build the dashboards and reports you’ll share - charts, breakdowns, and custom views that stay up to date when you share them."
+    },
+    {
+      "slug": "notifications",
+      "title": "Notifications",
+      "description": "Keep the team in the loop with alerts when key events happen. Complements sharing by pushing updates instead of requiring people to open a link."
+    },
+    {
+      "slug": "integrations",
+      "title": "Integrations",
+      "description": "Send data to Slack, Discord, or webhooks. Use integrations for real-time alerts alongside shared dashboards for deeper exploration."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about sharing and collaboration in OpenPanel.",
+    "items": [
+      {
+        "question": "Is there a limit on how many members I can invite?",
+        "answer": "No. You can invite an unlimited number of members. Each can have organization-wide access or access only to specific projects you choose."
+      },
+      {
+        "question": "What’s the difference between org-wide and project-level access?",
+        "answer": "Org-wide access lets a member see and work with all projects in the organization. Project-level access restricts them to only the projects you assign - useful for clients, partners, or teams that only need a subset of your data."
+      },
+      {
+        "question": "Can I share just one report instead of a whole dashboard?",
+        "answer": "Yes. You can share a complete dashboard or a single report (e.g. one funnel or one chart). The shared link shows only what you chose to share."
+      },
+      {
+        "question": "Can shared links be password-protected?",
+        "answer": "Yes. When you create a share link for a dashboard or report, you can leave it public (anyone with the link can view) or set a password so only people with the password can open it."
+      },
+      {
+        "question": "Can I change a member’s access after they’ve joined?",
+        "answer": "Yes. You can update a member’s access (add or remove projects, or switch to org-wide) or remove them from the organization at any time from the members area."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Invite your team and share your first dashboard",
+    "href": "/onboarding"
+  }
+}

@@ -1,7 +1,12 @@
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
+import Link from 'next/link';
 
 interface FeatureCardProps {
+  link?: {
+    href: string;
+    children: React.ReactNode;
+  };
   illustration?: React.ReactNode;
   title: string;
   description: string;
@@ -50,6 +55,7 @@ export function FeatureCard({
   icon: Icon,
   children,
   className,
+  link,
 }: FeatureCardProps) {
   if (illustration) {
     return (
@@ -60,6 +66,14 @@ export function FeatureCard({
           <p className="text-muted-foreground">{description}</p>
         </div>
         {children}
+        {link && (
+          <Link
+            className="mx-6 text-sm text-muted-foreground hover:text-primary transition-colors"
+            href={link.href}
+          >
+            {link.children}
+          </Link>
+        )}
       </FeatureCardContainer>
     );
   }
@@ -72,6 +86,14 @@ export function FeatureCard({
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
       {children}
+      {link && (
+        <Link
+          className="text-sm text-muted-foreground hover:text-primary transition-colors"
+          href={link.href}
+        >
+          {link.children}
+        </Link>
+      )}
     </FeatureCardContainer>
   );
 }

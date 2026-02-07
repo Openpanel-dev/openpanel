@@ -33,7 +33,7 @@ export function WindowImage({
   return (
     <FeatureCardContainer
       className={cn([
-        'overflow-hidden rounded-lg border border-border bg-background shadow-lg/5 relative z-10 [@media(min-width:1100px)]:-mx-16 p-4 md:p-16',
+        'overflow-hidden rounded-lg border border-border bg-foreground/10 shadow-lg/5 relative z-10 [@media(min-width:1100px)]:-mx-16 p-4 md:p-16',
         className,
       ])}
     >

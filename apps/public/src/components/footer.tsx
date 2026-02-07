@@ -1,6 +1,5 @@
 import { TOOLS } from '@/app/tools/tools';
-import { baseOptions } from '@/lib/layout.shared';
-import { articleSource, compareSource } from '@/lib/source';
+import { articleSource, compareSource, featureSource } from '@/lib/source';
 import { MailIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from './logo';
@@ -29,6 +28,17 @@ export async function Footer() {
                   title: 'Free analytics for open source projects',
                   url: '/open-source',
                 },
+              ]}
+            />
+            <div className="h-5" />
+            <h3 className="font-medium">Features</h3>
+            <Links
+              data={[
+                { title: 'All features', url: '/features' },
+                ...featureSource.map((item) => ({
+                  title: item.short_name,
+                  url: item.url,
+                })),
               ]}
             />
           </div>

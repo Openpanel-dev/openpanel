@@ -1,0 +1,167 @@
+{
+  "slug": "notifications",
+  "short_name": "Notifications",
+  "seo": {
+    "title": "Notifications - Act When Events Happen",
+    "description": "Set up notification rules that trigger when specific events happen. Filter by event properties, use templates with variables, and route alerts to Slack, Discord, or any webhook.",
+    "keywords": [
+      "analytics notifications",
+      "event-based alerts",
+      "real-time user alerts",
+      "notification rules analytics",
+      "event filtering notifications",
+      "custom alert templates"
+    ]
+  },
+  "hero": {
+    "heading": "When it happens, act on it",
+    "subheading": "Define rules that watch for specific events and fire automatically. Filter by properties, use templates with variables, and route to Slack, Discord, or any webhook.",
+    "badges": [
+      "Event-based rules",
+      "Property filters",
+      "Template variables",
+      "Multi-integration routing"
+    ]
+  },
+  "definition": {
+    "title": "What are notification rules?",
+    "text": "Notification rules are the **trigger layer** in OpenPanel. They define *when* something should happen - and **[integrations](/features/integrations)** define *where* it goes.\n\nA notification rule has three parts:\n\n1. **Events** - which events to watch for (e.g. `screen_view`, `purchase`, `signup`)\n2. **Filters** - optional property conditions that narrow the match (e.g. path starts with `/onboarding` and ends with `/verify`)\n3. **Integrations** - which connected services should receive the notification when the rule fires\n\nYou can also write a **template** using variables like `{{country}}`, `{{browser}}`, or any event property. The template is rendered with real values when the notification fires, so your Slack message or webhook payload contains the exact context you need.\n\nHere's a concrete example: you want to know when new users visit your onboarding verification page. You create a rule that:\n\n- Watches for `screen_view` events\n- Filters where **path** starts with `/onboarding` and ends with `/verify`\n- Uses the template *\"New user with their first event from {{country}}\"*\n- Routes to your Slack workspace and a webhook integration\n\nNow every time someone hits that page, your team sees a message in Slack with the user's country, and your webhook fires for any downstream automation.\n\nThe notifications page in OpenPanel shows a feed of every notification that fired - searchable, sortable by date, and showing the integration, country, OS, browser, and profile for each one. You can see exactly what happened and when.\n\nNotification rules are the glue between **events you track** and **actions you take**. Combined with integrations, they turn OpenPanel from a passive analytics tool into an active part of your workflow."
+  },
+  "capabilities_section": {
+    "title": "What you can do with notifications",
+    "intro": "From simple alerts to complex event-driven workflows - rules give you full control."
+  },
+  "capabilities": [
+    {
+      "title": "Event-based triggers",
+      "description": "Choose which events a rule watches for - screen_view, purchase, signup, or any custom event. A single rule can watch for one event type and fire on every match."
+    },
+    {
+      "title": "Property filters",
+      "description": "Narrow rules with property conditions. Filter by path, country, device, or any event property using operators like 'starts with', 'ends with', 'equals', and more. Stack multiple filters to match exactly the events you care about."
+    },
+    {
+      "title": "Template variables",
+      "description": "Write notification templates with {{variable}} syntax. Use any event property - {{country}}, {{path}}, {{browser}}, {{os}}, or custom properties. Templates are rendered with real values when the notification fires."
+    },
+    {
+      "title": "Multi-integration routing",
+      "description": "Attach multiple integrations to a single rule. Fire a Slack message and a webhook at the same time. Mix and match integrations across rules however you want."
+    },
+    {
+      "title": "Notification feed",
+      "description": "Every fired notification is logged in a searchable feed. See the title, integration, country, OS, browser, and profile for each notification. Filter and sort to find exactly what you need."
+    },
+    {
+      "title": "Rules management",
+      "description": "Create, edit, and delete rules from a dedicated Rules tab. See at a glance which events each rule watches, what filters are applied, and which integrations are attached."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-notifications.webp",
+      "alt": "Notification feed showing fired notifications with country, OS, browser, and profile details",
+      "caption": "Every notification that fires is logged in a searchable feed. See the country, OS, browser, and profile for each event - sortable and searchable."
+    },
+    {
+      "src": "/features/feature-notifications-rule.webp",
+      "alt": "Editing a notification rule with event type, property filters, template, and integrations",
+      "caption": "Create rules with event filters, template variables, and multi-integration routing. This rule fires on screen_view events where the path matches an onboarding verification flow."
+    }
+  ],
+  "how_it_works": {
+    "title": "How notification rules work",
+    "intro": "Rules are simple: define the trigger, write the message, pick the destinations.",
+    "steps": [
+      {
+        "title": "Choose the event type",
+        "description": "Select which event the rule should watch - screen_view, purchase, signup, or any custom event you track. The rule will evaluate every incoming event of that type."
+      },
+      {
+        "title": "Add property filters",
+        "description": "Optionally narrow the rule with property conditions. For example, filter where path starts with /onboarding and ends with /verify. Only events matching all filters will trigger the rule."
+      },
+      {
+        "title": "Write a template",
+        "description": "Write the notification message using {{variable}} placeholders. When the rule fires, variables are replaced with real values from the event - e.g. \"New user with their first event from {{country}}\" becomes \"New user with their first event from US\"."
+      },
+      {
+        "title": "Attach integrations",
+        "description": "Select one or more integrations to receive the notification - Slack, Discord, webhook, or any combination. Each integration will be triggered simultaneously when a matching event arrives."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "How teams use notifications",
+    "intro": "From simple team alerts to event-driven automation - notifications make analytics actionable.",
+    "items": [
+      {
+        "title": "New user alerts",
+        "description": "Get notified in Slack whenever a new user signs up. Include their country, source, or any property in the message. The whole team sees new signups in real time without checking a dashboard."
+      },
+      {
+        "title": "Onboarding monitoring",
+        "description": "Set up rules that fire when users hit key onboarding milestones - account creation, first feature use, verification. Know immediately when someone gets stuck or completes the flow."
+      },
+      {
+        "title": "Revenue and purchase alerts",
+        "description": "Fire a notification on every purchase event. Include the amount, plan, or product in the template. Route to Slack for celebration and to a webhook for CRM updates or fulfillment triggers."
+      },
+      {
+        "title": "Error and regression detection",
+        "description": "Watch for error events or unexpected patterns. Get alerted when error rates spike for a specific page or feature, so you can respond before users complain."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "integrations",
+      "title": "Integrations",
+      "description": "Integrations are the destinations for notifications. Connect Slack, Discord, or webhooks, then attach them to rules."
+    },
+    {
+      "slug": "event-tracking",
+      "title": "Event tracking",
+      "description": "Notification rules are built on the events you track. The more events you send, the more precise your rules can be."
+    },
+    {
+      "slug": "funnels",
+      "title": "Funnels",
+      "description": "Trigger notifications when users complete a funnel - combining step-by-step analysis with real-time action."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about notification rules in OpenPanel.",
+    "items": [
+      {
+        "question": "What's the difference between notifications and integrations?",
+        "answer": "Integrations are connections to external services (Slack, Discord, webhooks). Notifications are rules that define when those integrations should fire. You create an integration once, then attach it to as many notification rules as you want."
+      },
+      {
+        "question": "What template variables can I use?",
+        "answer": "You can use any event property as a template variable with the {{property}} syntax. Common ones include {{country}}, {{city}}, {{browser}}, {{os}}, {{path}}, and any custom properties you send with your events."
+      },
+      {
+        "question": "Can I have multiple filters on a single rule?",
+        "answer": "Yes. You can stack multiple property filters on a rule. All filters must match for the rule to fire - they work as AND conditions. For example, path starts with /onboarding AND path ends with /verify."
+      },
+      {
+        "question": "Can I send to multiple integrations from one rule?",
+        "answer": "Yes. Attach as many integrations as you want to a single rule. When the rule fires, all attached integrations are triggered simultaneously. For example, send to both Slack and a webhook at the same time."
+      },
+      {
+        "question": "Is there a delay between the event and the notification?",
+        "answer": "No. Notifications fire in real time as events arrive. There's no batching or delay - when an event matches a rule, the attached integrations are triggered immediately."
+      },
+      {
+        "question": "Can I see past notifications?",
+        "answer": "Yes. The Notifications tab shows a feed of every notification that fired. You can search, sort by date, and see details like the integration used, country, OS, browser, and profile for each notification."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Set up your first notification rule",
+    "href": "/onboarding"
+  }
+}

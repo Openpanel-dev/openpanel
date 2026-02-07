@@ -1,0 +1,175 @@
+{
+  "slug": "data-visualization",
+  "short_name": "Data visualization",
+  "seo": {
+    "title": "Dashboards & Data Visualization",
+    "description": "Turn raw product events into actionable charts. Funnels, retention, time series, Sankey diagrams, histograms, maps, and more-all in real time.",
+    "keywords": [
+      "analytics dashboards",
+      "product analytics charts",
+      "visualize event data",
+      "funnel chart",
+      "retention chart",
+      "conversion chart",
+      "sankey diagram analytics",
+      "time series analytics",
+      "histogram analytics",
+      "data visualization tool"
+    ]
+  },
+  "hero": {
+    "heading": "From events to charts - in real time",
+    "subheading": "Build dashboards with funnels, retention curves, time series, Sankey diagrams, and maps. No SQL, no data team required.",
+    "badges": [
+      "7+ chart types",
+      "Real-time dashboards",
+      "No SQL required",
+      "Export & share"
+    ]
+  },
+  "definition": {
+    "title": "Why data visualization matters",
+    "text": "Tracking events is step one. **Turning those events into charts and dashboards** is where decisions happen.\n\nProduct analytics dashboards let you see trends, spot problems, and measure experiments at a glance. Without visualization, you're staring at raw event logs. With it, you can answer questions like:\n\n- **Is signup conversion improving this month?** → Check the **funnel** chart\n- **Are users coming back after week one?** → Check the **retention** curve\n- **Where do users go after the pricing page?** → Check the **Sankey** diagram\n- **How are page load times distributed?** → Check the **histogram**\n- **Where are my users located?** → Check the **map** chart\n- **How does daily active usage trend?** → Check the **time series** chart\n\nOpenPanel gives you all of these chart types out of the box. Every chart is powered by the same events you already track-no extra instrumentation, no data pipelines, no SQL.\n\n### Chart types in OpenPanel\n\n- **Funnels** - Visualize step-by-step conversion. See exactly where users drop off in signup, onboarding, or purchase flows.\n- **Retention** - Measure how many users come back after day 1, week 1, month 1. Understand whether your product is sticky.\n- **Conversion** - Track goal completion rates over time. Compare conversion across segments, campaigns, or product changes.\n- **Sankey diagrams** - Map user journeys visually. See every path users take through your product and where they branch or exit.\n- **Maps** - See where your users are, geographically. Understand regional adoption and plan localization.\n- **Time series** - Plot any metric over time. Track daily active users, event volume, revenue, or any custom metric with flexible date ranges.\n- **Histograms** - Understand distributions. How long do sessions last? How many actions do users take? See the full shape of your data.\n\nYou can combine these charts into **dashboards** that update in real time. Pin the reports that matter, share them with your team, and check them daily-no waiting for a weekly report email."
+  },
+  "capabilities_section": {
+    "title": "Charts and dashboards built for product teams",
+    "intro": "Every chart type is designed to answer a specific product question. Pick the right one and get answers in seconds."
+  },
+  "capabilities": [
+    {
+      "title": "Funnels",
+      "description": "Visualize multi-step conversion flows. See drop-off at each step, compare segments, and find where users abandon signup, onboarding, or purchase."
+    },
+    {
+      "title": "Retention curves",
+      "description": "Measure user stickiness over days, weeks, or months. See cohort-level return rates and understand long-term engagement."
+    },
+    {
+      "title": "Conversion charts",
+      "description": "Track goal completion rates over time. Compare conversion across campaigns, plans, or product versions."
+    },
+    {
+      "title": "Sankey diagrams",
+      "description": "Map user journeys as flow diagrams. See every path through your product-where users go, where they branch, and where they exit."
+    },
+    {
+      "title": "Maps",
+      "description": "Visualize user geography on an interactive map. Understand where your users are and how behavior varies by region."
+    },
+    {
+      "title": "Time series",
+      "description": "Plot any event or metric over time with flexible intervals. Track trends, spot anomalies, and compare date ranges."
+    },
+    {
+      "title": "Histograms",
+      "description": "See distributions of session length, event counts, load times, or any numeric property. Understand the shape of your data, not just the average."
+    },
+    {
+      "title": "Real-time dashboards",
+      "description": "Combine any chart types into dashboards that update as events arrive. Pin the reports your team checks daily."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-data-vis-line.webp",
+      "alt": "Analytics report with time series chart in OpenPanel",
+      "caption": "Build reports with time series, funnels, retention, and more-all from the same event data."
+    },
+    {
+      "src": "/features/feature-data-vis-dashboard.webp",
+      "alt": "Product analytics dashboard with multiple chart types",
+      "caption": "Pin charts to dashboards and monitor key metrics in real time."
+    },
+    {
+      "src": "/features/feature-data-vis-bar.webp",
+      "alt": "Overview dashboard showing event trends and key metrics",
+      "caption": "Get a high-level view of product health: active users, event volume, and conversion at a glance."
+    }
+  ],
+  "how_it_works": {
+    "title": "How data visualization works",
+    "intro": "From raw events to shareable dashboards in three steps.",
+    "steps": [
+      {
+        "title": "Track events from your product",
+        "description": "Send events with our SDK or API. Page views, signups, purchases, feature usage-every event becomes a data point you can chart."
+      },
+      {
+        "title": "Pick a chart type and build a report",
+        "description": "Choose funnels, retention, time series, Sankey, maps, histograms, or conversion charts. Select your events, add filters, and see results instantly."
+      },
+      {
+        "title": "Pin to dashboards and share",
+        "description": "Save reports to dashboards your team can access. Charts update in real time as new events arrive-no manual refresh or export needed."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "Who uses analytics dashboards",
+    "intro": "Anyone who needs to turn product data into action.",
+    "items": [
+      {
+        "title": "Product managers",
+        "description": "Build dashboards with funnels, retention, and conversion charts to track feature launches and measure whether product changes move the needle."
+      },
+      {
+        "title": "Growth teams",
+        "description": "Use Sankey diagrams to map user journeys, funnels to optimize conversion, and time series to measure campaign impact over time."
+      },
+      {
+        "title": "Founders and operators",
+        "description": "Get a single dashboard with the metrics that matter: active users, conversion, retention, and revenue trends. Check it once a day instead of running ad-hoc queries."
+      },
+      {
+        "title": "Engineers",
+        "description": "Use histograms and time series to monitor event volume, track performance distributions, and spot anomalies without setting up a separate observability stack."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "event-tracking",
+      "title": "Event tracking",
+      "description": "Events are the data behind every chart. Track user actions to power your dashboards."
+    },
+    {
+      "slug": "funnels",
+      "title": "Funnels",
+      "description": "Dive deeper into conversion analysis with step-by-step funnel reports."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about data visualization and analytics dashboards in OpenPanel.",
+    "items": [
+      {
+        "question": "What chart types does OpenPanel support?",
+        "answer": "OpenPanel supports funnels, retention curves, conversion charts, Sankey diagrams, geographic maps, time series, and histograms. All chart types are available on every plan."
+      },
+      {
+        "question": "Do I need to write SQL to build charts?",
+        "answer": "No. You build reports by selecting events, filters, and chart type from the UI. No SQL, no data pipelines-just pick your events and see results."
+      },
+      {
+        "question": "Can I share dashboards with my team?",
+        "answer": "Yes. Dashboards are accessible to your team members. Pin charts, arrange them however you like, and everyone sees the same real-time data."
+      },
+      {
+        "question": "How often do charts update?",
+        "answer": "Charts update in real time as new events arrive. There's no overnight processing or batch delay-data appears within seconds of being tracked."
+      },
+      {
+        "question": "What is a Sankey diagram?",
+        "answer": "A Sankey diagram is a flow visualization that shows how users move through your product. Each path is drawn as a flow between steps, so you can see common journeys, unexpected branches, and exit points at a glance."
+      },
+      {
+        "question": "Can I use retention and funnel charts together?",
+        "answer": "Yes. You can build funnels to find where users drop off and retention charts to see if the users who do convert come back. Combining both gives you a complete picture of activation and engagement."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Start visualizing your data",
+    "href": "/onboarding"
+  }
+}

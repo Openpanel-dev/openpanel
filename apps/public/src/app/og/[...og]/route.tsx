@@ -1,4 +1,5 @@
 import { getAllCompareSlugs, getCompareData } from '@/lib/compare';
+import { getFeatureData } from '@/lib/features';
 import { url as baseUrl } from '@/lib/layout.shared';
 import { articleSource, guideSource, pageSource, source } from '@/lib/source';
 import { ImageResponse } from 'next/og';
@@ -81,6 +82,22 @@ async function getOgData(
       return {
         title: 'Implementation Guides',
         description: 'Step-by-step tutorials for adding analytics to your app',
+      };
+    }
+    case 'features': {
+      const slug = segments[1];
+      if (!slug) {
+        return {
+          title: 'Product analytics features',
+          description:
+            'Explore OpenPanel features: event tracking, funnels, retention, user profiles, and more.',
+        };
+      }
+      const featureData = await getFeatureData(slug);
+      return {
+        title: featureData?.seo.title ?? 'Feature Not Found',
+        description:
+          featureData?.seo.description ?? featureData?.hero.subheading,
       };
     }
     case 'docs': {

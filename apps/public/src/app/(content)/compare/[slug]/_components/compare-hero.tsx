@@ -34,7 +34,13 @@ export function CompareHero({ hero, tocItems = [] }: CompareHeroProps) {
           <div className="row gap-4">
             <GetStartedButton />
             <Button size="lg" variant="outline" asChild>
-              <Link href={'https://demo.openpanel.dev'}>See live demo</Link>
+              <Link
+                href={'https://demo.openpanel.dev'}
+                target="_blank"
+                rel="noreferrer noopener nofollow"
+              >
+                See live demo
+              </Link>
             </Button>
           </div>
           <Perks

@@ -1,0 +1,167 @@
+{
+  "slug": "conversion",
+  "short_name": "Conversion",
+  "seo": {
+    "title": "Conversion Tracking - Trends Over Time",
+    "description": "Track conversion rates over time, spot trends, and break down by segments. Like funnels but built for monitoring how conversion evolves-perfect for A/B testing and growth.",
+    "keywords": [
+      "conversion tracking",
+      "conversion rate trends",
+      "a/b testing analytics",
+      "conversion breakdown",
+      "conversion over time"
+    ]
+  },
+  "hero": {
+    "heading": "Is conversion going up or down?",
+    "subheading": "See how your conversion rates change over days, weeks, and months. Break down by any property to compare variants or campaigns - and catch regressions before they cost you.",
+    "badges": [
+      "Conversion over time",
+      "Breakdown by any property",
+      "A/B test comparison",
+      "AI-powered insights"
+    ]
+  },
+  "definition": {
+    "title": "What is conversion tracking?",
+    "text": "Conversion tracking measures the rate at which users complete a desired action-like going from `session_start` to `save_recipe`, or from `signup` to `purchase`. You define a **flow** (a start event and an end event), and OpenPanel calculates the conversion rate for every time period you choose.\n\nIf you're familiar with [funnels](/features/funnels), conversions will feel similar. Both measure whether users complete a sequence. The difference is **perspective**:\n\n- **Funnels** are great for understanding *where* users drop off in a multi-step flow. They answer: \"which step loses the most users?\"\n- **Conversions** are great for understanding *trends*. They answer: \"is our conversion getting better or worse over time?\"\n\nWith conversion tracking, you get:\n\n- **Conversion rate over time** - see how your rate trends week over week or day by day. Spot improvements from product changes or regressions from bugs\n- **Average, best, and worst rates** - instantly see your overall average and the specific time periods where conversion peaked or dipped\n- **Breakdowns** - split conversion by any property (device, country, variant, campaign) to compare segments side by side. This is especially powerful for **A/B testing**: break down by experiment variant and see which one converts better, with per-period granularity\n- **Total conversions** - not just rates but absolute numbers, so you understand volume alongside percentage\n\nConversion reports in OpenPanel are built on the same events you already track. Define a flow once, and you get a live, updating chart that shows whether your product is converting more or fewer users over time.\n\nNo sampling, no delayed processing. Every event counts, and results update in real time."
+  },
+  "capabilities_section": {
+    "title": "What you can do with conversions",
+    "intro": "Monitor, compare, and optimize your most important flows."
+  },
+  "capabilities": [
+    {
+      "title": "Conversion trends over time",
+      "description": "See your conversion rate plotted over days, weeks, or months. Identify trends, seasonal patterns, and the impact of product changes at a glance."
+    },
+    {
+      "title": "Breakdowns for A/B testing",
+      "description": "Split conversion by any property-experiment variant, device, country, or traffic source. Compare lines on the same chart to see which segment converts best."
+    },
+    {
+      "title": "Smart insights",
+      "description": "OpenPanel highlights your best and worst performing periods and breakdowns automatically. See which variant had the highest average rate and when the lowest dip occurred."
+    },
+    {
+      "title": "Flexible flow definition",
+      "description": "Define a conversion as any two events: a start (e.g. session_start) and a goal (e.g. purchase). Change events or time windows without re-instrumenting."
+    },
+    {
+      "title": "Per-period detail table",
+      "description": "Below the chart, a table shows conversion rate for every period (week, day, month) for each segment. Sort and search to find exactly the data point you need."
+    },
+    {
+      "title": "Save and share reports",
+      "description": "Save conversion reports with their configuration and add them to dashboards. Share with your team so everyone monitors the same metrics."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-conversion.webp",
+      "alt": "Conversion report showing rate over time with average, best, and worst metrics",
+      "caption": "Track conversion trends over time. See average rate, total conversions, and identify your best and worst performing periods."
+    },
+    {
+      "src": "/features/feature-conversion-breakdown.webp",
+      "alt": "Conversion report with breakdown by platform showing Android vs iOS",
+      "caption": "Break down conversion by any property. Compare segments side by side-perfect for A/B tests, platform comparisons, and campaign analysis."
+    }
+  ],
+  "how_it_works": {
+    "title": "How conversion tracking works",
+    "intro": "Set up a conversion report in seconds using events you already track.",
+    "steps": [
+      {
+        "title": "Pick your events",
+        "description": "Choose a start event (e.g. session_start) and a goal event (e.g. save_recipe, purchase). These are events you already send-no extra instrumentation."
+      },
+      {
+        "title": "Choose your time range and granularity",
+        "description": "Select a date range and whether to view conversion by day, week, or month. OpenPanel calculates the rate for each period."
+      },
+      {
+        "title": "Add breakdowns (optional)",
+        "description": "Break down by device, country, experiment variant, or any event property. Each breakdown value gets its own line on the chart and row in the table."
+      },
+      {
+        "title": "Monitor trends and act",
+        "description": "Watch your conversion rate over time. Spot regressions early, validate that product changes improve conversion, and compare A/B test variants with real data."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "Who uses conversion tracking",
+    "intro": "Teams that need to monitor and improve conversion over time.",
+    "items": [
+      {
+        "title": "Growth and product teams",
+        "description": "Monitor signup-to-activation or trial-to-paid conversion week over week. Validate that product changes actually move the needle-not just in aggregate, but period by period."
+      },
+      {
+        "title": "A/B testing and experimentation",
+        "description": "Break down conversion by experiment variant to see which version wins. Unlike simple A/B tools, you get per-period granularity so you can spot if a variant's advantage changes over time."
+      },
+      {
+        "title": "Marketing and campaigns",
+        "description": "Compare conversion rates across traffic sources, campaigns, or landing pages. Find out which channels convert best and whether performance is improving or declining."
+      },
+      {
+        "title": "Mobile and cross-platform teams",
+        "description": "Break down by platform (iOS vs Android), app version, or device type. Catch platform-specific regressions and prioritize fixes where conversion is lowest."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "funnels",
+      "title": "Funnels",
+      "description": "See where users drop off step by step. Funnels show you which step loses users-conversions show you how rates trend over time."
+    },
+    {
+      "slug": "event-tracking",
+      "title": "Event tracking",
+      "description": "Conversions are built on the events you track. Send events once and use them for conversions, funnels, retention, and more."
+    },
+    {
+      "slug": "retention",
+      "title": "Retention",
+      "description": "Conversion measures if users complete an action. Retention measures if they keep coming back."
+    },
+    {
+      "slug": "data-visualization",
+      "title": "Data visualization",
+      "description": "Conversion charts are one of many ways to visualize your data in OpenPanel."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about conversion tracking in OpenPanel.",
+    "items": [
+      {
+        "question": "How is this different from funnels?",
+        "answer": "Funnels show you a multi-step sequence and where users drop off at each step. Conversions focus on a single flow (start → goal) and show you how the conversion rate changes over time. Use funnels to diagnose where users get stuck; use conversions to monitor whether things are getting better or worse."
+      },
+      {
+        "question": "Can I use conversions for A/B testing?",
+        "answer": "Yes. Add a breakdown by your experiment variant property, and you'll see each variant's conversion rate plotted over time with per-period detail. This gives you richer insight than a single aggregate number-you can see if one variant's advantage holds consistently or fluctuates."
+      },
+      {
+        "question": "What events can I use?",
+        "answer": "Any events you already track. A conversion is defined by two events: a start event and a goal event. Common examples include session_start → signup, signup → purchase, or page_view → add_to_cart."
+      },
+      {
+        "question": "Is the data sampled?",
+        "answer": "No. OpenPanel processes every event with no sampling. Your conversion rates are calculated from complete data, so you can trust the numbers even for small segments."
+      },
+      {
+        "question": "Can I see absolute numbers alongside rates?",
+        "answer": "Yes. Every conversion report shows both the conversion rate and the total number of conversions. The detail table below the chart includes totals and per-period counts for each segment."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Track your first conversion",
+    "href": "/onboarding"
+  }
+}

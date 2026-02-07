@@ -1,0 +1,158 @@
+{
+  "slug": "identify-users",
+  "short_name": "Identify users",
+  "seo": {
+    "title": "User Profiles & Identification",
+    "description": "Track individual users across sessions with privacy-first user profiles. See first seen, last seen, activity timelines, and custom properties-without invasive tracking.",
+    "keywords": [
+      "user profiles analytics",
+      "track individual users",
+      "user activity timeline",
+      "identify users analytics",
+      "user tracking software"
+    ]
+  },
+  "hero": {
+    "heading": "User tracking",
+    "subheading": "See who they are, when they first appeared, and what they did - with full respect for privacy. No fingerprinting, no surveillance.",
+    "badges": [
+      "First seen / last seen",
+      "Activity timeline per user",
+      "Custom user properties",
+      "Privacy-first identification"
+    ]
+  },
+  "definition": {
+    "title": "What is user identification?",
+    "text": "User identification connects anonymous activity to a **known user profile**. Instead of treating every visit as a nameless session, you link events, page views, and sessions to a real person-someone you can look up, follow over time, and understand in context.\n\nWith OpenPanel, identification works like this:\n\n1. A visitor arrives and generates anonymous events\n2. When they sign up or log in, you call `identify()` with an ID and optional properties\n3. OpenPanel merges their anonymous history with the identified profile\n\nFrom that point on, you have a **complete picture**: when they first appeared, when they were last active, every event they triggered, and any properties you attached (plan, company, role, etc.).\n\nThis is how modern product teams answer questions like:\n\n- **When did this user first show up, and what led them to sign up?**\n- **What did they do in the last 7 days?**\n- **Which features does this account actually use?**\n- **Is this user at risk of churning?**\n\nUnlike traditional analytics that reduce users to anonymous metrics, OpenPanel gives you **individual-level visibility** without compromising privacy. You control what data you send. No third-party cookies, no fingerprinting, no data sold to advertisers. You get user profiles that help your support, sales, and product teams-without the surveillance."
+  },
+  "capabilities_section": {
+    "title": "What you get with user profiles",
+    "intro": "From basic identity to full activity history, user profiles give you the context your team needs."
+  },
+  "capabilities": [
+    {
+      "title": "First seen and last seen",
+      "description": "Know exactly when each user first appeared and when they were last active. Spot dormant accounts before they churn."
+    },
+    {
+      "title": "Full activity timeline",
+      "description": "See every event a user triggered in chronological order-page views, clicks, conversions, custom events-all on one screen."
+    },
+    {
+      "title": "Custom user properties",
+      "description": "Attach properties like plan, company, role, or lifetime value. Filter and segment users by any property you set."
+    },
+    {
+      "title": "Anonymous-to-identified merge",
+      "description": "Pre-signup activity is automatically merged with the identified profile, so you never lose the full journey."
+    },
+    {
+      "title": "Session history",
+      "description": "See how many sessions a user has had, how long they lasted, and what happened in each one."
+    },
+    {
+      "title": "Privacy-first by design",
+      "description": "You choose what to send. No fingerprinting, no third-party cookies, no hidden data collection. Self-host for full control."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-profiles-details.webp",
+      "alt": "User profile showing activity timeline and properties in OpenPanel",
+      "caption": "See a user's full history: first seen, last seen, events, sessions, and custom properties."
+    },
+    {
+      "src": "/features/feature-profiles-events.webp",
+      "alt": "Event stream for an identified user",
+      "caption": "Drill into any user's event stream to understand exactly what they did and when."
+    }
+  ],
+  "how_it_works": {
+    "title": "How user identification works",
+    "intro": "Three steps to go from anonymous visitors to rich user profiles.",
+    "steps": [
+      {
+        "title": "Track events as usual",
+        "description": "Install the SDK and send events. Before identification, all activity is stored under an anonymous profile."
+      },
+      {
+        "title": "Call identify() on login or signup",
+        "description": "Pass a user ID and optional properties (email, plan, company). OpenPanel merges the anonymous history with the new profile."
+      },
+      {
+        "title": "Browse profiles and timelines",
+        "description": "Open any user profile to see their full journey: first seen, last seen, every event, session history, and attached properties."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "Who uses user profiles",
+    "intro": "User identification powers workflows across support, sales, and product teams.",
+    "items": [
+      {
+        "title": "Support teams",
+        "description": "Pull up a user's activity timeline before responding to a ticket. See what they clicked, where they got stuck, and whether the issue is reproducible-without asking them to describe every step."
+      },
+      {
+        "title": "Sales teams",
+        "description": "See which features a prospect has explored, how often they return, and when they were last active. Reach out with context instead of cold guesses."
+      },
+      {
+        "title": "Product managers",
+        "description": "Identify power users and understand what makes them different. Compare activity patterns between retained and churned users to prioritize the right features."
+      },
+      {
+        "title": "Customer success",
+        "description": "Monitor user engagement over time. Spot accounts going quiet before they cancel and intervene with the right message at the right time."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "event-tracking",
+      "title": "Event tracking",
+      "description": "Track the actions that make up each user's activity timeline."
+    },
+    {
+      "slug": "session-tracking",
+      "title": "Session tracking",
+      "description": "See how users move through your product session by session."
+    },
+    {
+      "slug": "funnels",
+      "title": "Funnels",
+      "description": "Analyze where identified users drop off in conversion flows."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about user identification in OpenPanel.",
+    "items": [
+      {
+        "question": "What happens before a user is identified?",
+        "answer": "Events are stored under an anonymous profile. When you call identify(), the anonymous history is merged with the identified profile, so you get the complete journey from first visit to current session."
+      },
+      {
+        "question": "Is this GDPR-compliant?",
+        "answer": "Yes. You control exactly what data you send. OpenPanel doesn't add tracking pixels, fingerprinting, or third-party cookies. If you self-host, no data ever leaves your infrastructure. You can also delete a user's data at any time to comply with erasure requests."
+      },
+      {
+        "question": "How is this different from Google Analytics user tracking?",
+        "answer": "Google Analytics relies on anonymous client IDs and has limited support for individual-level profiles. OpenPanel gives you a dedicated profile page per user with a full event timeline, session history, and custom properties-without sending data to Google."
+      },
+      {
+        "question": "Can I attach custom properties to users?",
+        "answer": "Yes. Pass any key-value pairs when you call identify()-plan, company, role, revenue, or anything else. These properties are searchable and can be used to filter and segment users across all reports."
+      },
+      {
+        "question": "Do I need to identify every user?",
+        "answer": "No. Identification is optional. Anonymous users still generate events and sessions. You identify users when you want to link their activity to a known person-typically after login or signup."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Start identifying users today",
+    "href": "/onboarding"
+  }
+}

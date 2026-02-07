@@ -1,0 +1,139 @@
+{
+  "slug": "funnels",
+  "short_name": "Funnels",
+  "seo": {
+    "title": "Funnel Analysis - See Where Users Drop Off",
+    "description": "See where users drop off in signup, activation, and conversion funnels. Build funnel reports from your events in minutes-no complex setup.",
+    "keywords": [
+      "funnel analysis",
+      "conversion funnels",
+      "signup funnel analytics"
+    ]
+  },
+  "hero": {
+    "heading": "Funnels: Where do users drop off?",
+    "subheading": "Build funnels from your events and see conversion and drop-off at every step. No complex setup - just pick the events and go.",
+    "badges": [
+      "Find drop-off points",
+      "No sampling",
+      "Segment by any property",
+      "Real-time conversion rates"
+    ]
+  },
+  "definition": {
+    "title": "What is funnel analysis?",
+    "text": "A funnel is a **sequence of steps** you expect users to complete-for example: *visited homepage → signed up → verified email → created first project*. Funnel analysis shows you how many users complete each step and, critically, **where they leave**.\n\nThis matters because most products lose the majority of their users somewhere in the journey. Without funnel analysis, you're guessing where. With it, you can see:\n\n- **Step-by-step conversion rates** - what percentage of users move from one step to the next\n- **Biggest drop-off points** - where the most users abandon the flow\n- **Time between steps** - how long users take, and where they get stuck\n- **Segment differences** - whether users from organic search convert differently than paid traffic\n\nUnlike traditional analytics tools that require complex configuration, OpenPanel funnels are built **directly on your events**. If you're already tracking `signup_started`, `signup_completed`, and `first_action`, you can create a funnel from those events in seconds-no extra instrumentation needed.\n\nFunnels in OpenPanel use **every event** (no sampling) and update in real time. You can add filters, compare segments, and save funnels to dashboards alongside retention charts and other reports.\n\nThe result: you stop guessing and start **fixing the steps that actually lose users**."
+  },
+  "capabilities_section": {
+    "title": "What you can do with funnels",
+    "intro": "From signup to revenue, funnels help you find and fix friction."
+  },
+  "capabilities": [
+    {
+      "title": "Signup and onboarding funnels",
+      "description": "Track visit → signup → email verified → first action. See where prospects drop and optimize the path."
+    },
+    {
+      "title": "Activation funnels",
+      "description": "Define activation as a sequence of events (e.g. created project → invited teammate → first export). Measure time to activate."
+    },
+    {
+      "title": "Conversion and revenue funnels",
+      "description": "From trial started to paid conversion, or from add to cart to purchase. Tie steps to revenue events."
+    },
+    {
+      "title": "Flexible step definition",
+      "description": "Each step can be a single event or a group of events. Filter by properties (e.g. plan, source) to compare segments."
+    },
+    {
+      "title": "Conversion and drop-off rates",
+      "description": "See percentage completing each step and overall conversion. No sampling-every event counts."
+    },
+    {
+      "title": "Time between steps",
+      "description": "Understand how long users take between steps. Identify slow or stuck segments."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-funnel-report.webp",
+      "alt": "Funnel report showing conversion and drop-off at each step",
+      "caption": "See exactly where users drop off. Each step shows conversion rate and volume."
+    },
+    {
+      "src": "/features/feature-funnel-pick-events.webp",
+      "alt": "Selecting events to define funnel steps",
+      "caption": "Build funnels by picking the events that represent each step. No code changes needed."
+    },
+    {
+      "src": "/features/feature-funnel-completed.webp",
+      "alt": "Completed funnel analysis with conversion metrics",
+      "caption": "A finished funnel report with step-by-step conversion, drop-off, and time between steps."
+    }
+  ],
+  "how_it_works": {
+    "title": "How funnel analysis works",
+    "intro": "Funnels in OpenPanel are defined by the events you already track.",
+    "steps": [
+      {
+        "title": "Track the right events",
+        "description": "Ensure the events that represent each step (e.g. signup_completed, project_created) are sent from your product. No funnel-specific tracking needed."
+      },
+      {
+        "title": "Create a funnel report",
+        "description": "In OpenPanel, create a funnel and add steps: each step is one or more events. Optionally add filters (e.g. by plan or campaign)."
+      },
+      {
+        "title": "Read conversion and drop-off",
+        "description": "See how many users completed each step, the conversion rate between steps, and where the biggest drop-off happens. Use this to prioritize fixes."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "Who uses funnel analysis",
+    "intro": "Teams use funnels to make decisions about product and growth.",
+    "items": [
+      {
+        "title": "Product and growth teams",
+        "description": "Find the biggest drop-off in signup or activation and run experiments to improve conversion. Measure impact with the same funnel."
+      },
+      {
+        "title": "Marketing",
+        "description": "Compare funnel conversion by traffic source or campaign. Double down on channels that convert and fix landing pages that don't."
+      },
+      {
+        "title": "Founders and operators",
+        "description": "Get a single view of the journey from visitor to paying customer. No spreadsheets-just events and funnel reports."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "event-tracking",
+      "title": "Event tracking",
+      "description": "Events are the foundation. Track the steps that feed your funnels."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about funnel analysis with OpenPanel.",
+    "items": [
+      {
+        "question": "Do I need to set up funnels separately from events?",
+        "answer": "No. You track events once (page views, signups, purchases, etc.). Funnels are just a way to arrange those events into steps. Create or change a funnel anytime without changing your tracking code."
+      },
+      {
+        "question": "Can I filter funnels by user property or segment?",
+        "answer": "Yes. You can add filters to funnel steps (e.g. only users from a specific campaign or on a specific plan). This lets you compare conversion across segments."
+      },
+      {
+        "question": "How is funnel data calculated?",
+        "answer": "We count unique users who completed each step in order within your selected time window. There's no sampling-every event is included. Results update as new events arrive."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Build your first funnel",
+    "href": "/onboarding"
+  }
+}
