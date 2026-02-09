@@ -24,6 +24,15 @@
     "founded": 2013,
     "headquarters": "London, UK"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over Countly?",
+    "paragraphs": [
+      "Countly positions itself as an all-in-one product analytics platform with built-in push notifications, crash reporting, remote configuration, and surveys. It's a feature-rich platform that appeals to teams wanting everything under one roof. But that breadth comes with significant costs — MAU-based pricing that can reach $132,000 or more per year, a complex self-hosted setup requiring MongoDB, Node.js, and Nginx, and a restrictive AGPL license for the free tier that limits commercial use.",
+      "OpenPanel takes a focused approach to analytics with simpler pricing and deployment. Instead of bundling push notifications and crash reporting (which most teams already have through dedicated tools), OpenPanel focuses on what matters most: understanding user behavior through events, funnels, retention analysis, and cohort breakdowns. All features are included at every tier, with no premium add-ons or feature gating.",
+      "The licensing and pricing differences are substantial. Countly's free Lite tier uses AGPL licensing that prohibits commercial use, and paid plans start at $80 per month for just 2,000 MAUs. OpenPanel uses the permissive MIT license for unlimited commercial use, and its event-based pricing starts at $2.50 per month — or is completely free when self-hosted with no restrictions.",
+      "For teams that want straightforward product analytics without the complexity and cost of an all-in-one platform, OpenPanel delivers the analytics essentials with a dramatically simpler setup, lower cost, and more permissive licensing."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs Countly: Which is right for you?",
     "intro": "Both offer product analytics with self-hosting. Countly is an all-in-one platform with many features. OpenPanel focuses on analytics with simpler pricing.",

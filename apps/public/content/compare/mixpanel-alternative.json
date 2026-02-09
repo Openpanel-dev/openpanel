@@ -24,6 +24,15 @@
     "founded": 2009,
     "headquarters": "San Francisco, CA"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over Mixpanel?",
+    "paragraphs": [
+      "Mixpanel is one of the most established product analytics platforms, used by product teams worldwide to track user behavior, build funnels, and analyze retention. It's powerful, but that power comes with increasingly complex pricing, a cloud-only architecture, and cookie-based tracking that creates friction for privacy-conscious teams.",
+      "OpenPanel provides the core product analytics features most teams actually use — events, funnels, retention, cohorts, and user profiles — in a simpler package with transparent, predictable pricing. Starting at just $2.50 per month, or completely free when self-hosted, OpenPanel is dramatically more affordable than Mixpanel's pricing which can scale to thousands per month as your event volume grows.",
+      "Privacy is where the two platforms diverge most sharply. Mixpanel uses cookies by default and stores data on US servers, which means GDPR consent banners and data transfer concerns for European users. OpenPanel is cookie-free by default with EU-only hosting, making compliance straightforward. You can also self-host OpenPanel on your own infrastructure for complete data sovereignty — something Mixpanel simply doesn't offer.",
+      "For teams that want Mixpanel-style product analytics without the enterprise pricing, vendor lock-in, or privacy trade-offs, OpenPanel is a compelling open-source alternative that gives you full ownership of your analytics data."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs Mixpanel: Which is right for you?",
     "intro": "Both platforms help you understand how users interact with your product. The key differences are pricing structure, data privacy approach, and complexity level.",

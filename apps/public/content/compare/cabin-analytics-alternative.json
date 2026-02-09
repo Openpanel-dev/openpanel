@@ -24,6 +24,15 @@
     "founded": 2020,
     "headquarters": "London, UK"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over Cabin Analytics?",
+    "paragraphs": [
+      "Cabin Analytics stands out with its unique carbon-conscious approach to web analytics — measuring not just your traffic, but the environmental impact of your website. Combined with privacy-first tracking and an ultra-lightweight script, it's an appealing choice for environmentally conscious teams. But Cabin is a web-only, cloud-only platform with no self-hosting option, no user identification, and no product analytics capabilities.",
+      "OpenPanel provides the same lightweight, privacy-first foundation while adding the depth that growing products need. User identification lets you connect anonymous visits to real accounts, funnels help you optimize conversion flows, and retention analysis shows whether your product keeps users coming back. These features transform analytics from simple traffic counting into actionable product insights.",
+      "Self-hosting is a major differentiator. Cabin Analytics is cloud-only, which means your data lives on their servers with no alternative. OpenPanel gives you the choice — use the managed cloud with a free tier, or deploy on your own infrastructure via Docker for complete data ownership. And with native SDKs for iOS, Android, and React Native, OpenPanel works for mobile apps too, not just websites.",
+      "If you love Cabin's lightweight and privacy-first approach but need analytics that go deeper than pageviews — especially for SaaS products, mobile apps, or any product where understanding user behavior matters — OpenPanel provides that depth without compromising on simplicity."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs Cabin: Which is right for you?",
     "intro": "Both platforms prioritize privacy and lightweight tracking. The key differences are depth of analytics, self-hosting capabilities, and platform support.",

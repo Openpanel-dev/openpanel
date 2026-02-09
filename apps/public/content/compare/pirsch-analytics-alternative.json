@@ -24,6 +24,15 @@
     "founded": 2020,
     "headquarters": "Rheda-Wiedenbruck, Germany"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over Pirsch Analytics?",
+    "paragraphs": [
+      "Pirsch Analytics is a privacy-focused web analytics tool built in Germany with strong server-side tracking, excellent white-label capabilities, and developer-friendly features. It's particularly popular with agencies and developers who need affordable, GDPR-compliant analytics with good backend integration. But Pirsch is primarily a web analytics tool — it tracks pageviews and basic funnels without deeper product analytics capabilities.",
+      "OpenPanel extends beyond web analytics into full product analytics territory. While Pirsch gives you traffic sources, pageviews, and simple conversion goals, OpenPanel adds user identification, multi-step funnels, retention analysis, cohort breakdowns, and detailed user profiles. These features let you understand not just how much traffic you get, but how users engage with your product over time.",
+      "Self-hosting is where OpenPanel offers a major advantage. Pirsch requires an enterprise license for self-hosting, making it inaccessible for most teams. OpenPanel provides free, unlimited self-hosting with a simple Docker deployment — no enterprise contract needed. The free cloud tier also includes 10,000 events per month with full data retention, while Pirsch has no free tier at all.",
+      "If you've been using Pirsch for privacy-friendly web analytics and now need to understand user behavior at a deeper level — especially for SaaS products or mobile apps — OpenPanel provides that upgrade path while keeping the same privacy-first principles."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs Pirsch: Which is right for you?",
     "intro": "Both are privacy-focused analytics tools. Pirsch focuses on affordable web analytics with agency features. OpenPanel adds product analytics with user identification.",

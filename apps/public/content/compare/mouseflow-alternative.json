@@ -24,6 +24,15 @@
     "founded": 2009,
     "headquarters": "Copenhagen, Denmark"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over Mouseflow?",
+    "paragraphs": [
+      "Mouseflow is a behavior analytics platform that excels at visual website optimization with seven types of heatmaps, session replay, friction detection, and form analytics. It's a solid tool for understanding how visitors interact with specific pages on your website. But Mouseflow is web-only, proprietary, cloud-only, and focused on session-based observation rather than event-based product analytics.",
+      "OpenPanel takes a fundamentally different approach with event-based analytics designed for product teams. Instead of watching session recordings to spot issues, you define the events and funnels that matter to your business and measure them quantitatively. Retention analysis shows whether users come back, cohort breakdowns reveal behavioral patterns, and user profiles connect the dots across multiple sessions.",
+      "The platform support gap is significant. Mouseflow works only on websites, while OpenPanel provides native SDKs for iOS, Android, React Native, and Flutter alongside its web SDKs. For teams building multi-platform products, this means a single analytics tool for all surfaces instead of piecing together separate solutions.",
+      "OpenPanel also offers what Mouseflow can't: full data ownership through self-hosting and open-source transparency under the MIT license. If you need to move beyond visual website optimization and measure product outcomes across web and mobile, OpenPanel provides the analytics foundation to do it."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs Mouseflow: Which is right for you?",
     "intro": "Mouseflow excels at visual website optimization with heatmaps and session replay. OpenPanel focuses on product analytics with mobile support.",

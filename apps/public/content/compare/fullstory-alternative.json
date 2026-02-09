@@ -24,6 +24,15 @@
     "founded": 2014,
     "headquarters": "Atlanta, GA"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over FullStory?",
+    "paragraphs": [
+      "FullStory is a premium Digital Experience Intelligence platform known for its pixel-perfect session replay and frustration signal detection. It's a powerful tool for UX teams debugging user issues and optimizing conversion flows. But with enterprise pricing reportedly starting at $12,000 to $50,000 or more per year and no public pricing page, FullStory is out of reach for most teams.",
+      "OpenPanel focuses on product analytics rather than session replay, giving you event tracking, funnels, retention analysis, cohort breakdowns, and user profiles at a fraction of the cost. Starting at $2.50 per month — or completely free when self-hosted — OpenPanel makes product analytics accessible to teams of any size, with pricing that's transparent and predictable.",
+      "The open-source advantage is significant here. FullStory is entirely proprietary and cloud-only, which means you have no visibility into how your data is processed and no option to run it on your own infrastructure. OpenPanel is MIT-licensed with full self-hosting support, giving you complete data sovereignty and the ability to audit every line of code.",
+      "If session replay is your primary need, FullStory remains strong in that niche. But if you need product analytics — understanding how users flow through funnels, measuring retention, and tracking user behavior — OpenPanel delivers those capabilities without requiring an enterprise budget or sales conversation."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs FullStory: Which is right for you?",
     "intro": "Both platforms provide analytics and session replay, but FullStory focuses on visual debugging while OpenPanel emphasizes product analytics.",

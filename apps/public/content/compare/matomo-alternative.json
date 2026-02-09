@@ -24,6 +24,15 @@
     "founded": 2007,
     "headquarters": "Wellington, New Zealand"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over Matomo?",
+    "paragraphs": [
+      "Matomo is one of the most established open-source analytics platforms, used by over 1.4 million websites worldwide. It offers both self-hosted and cloud options with a strong focus on privacy and data ownership. However, Matomo's age shows in its interface, and many essential features like funnels, A/B testing, and heatmaps are locked behind premium plugins that cost $229 per year each.",
+      "OpenPanel is a modern, open-source alternative that includes all features at every tier — no premium plugins, no upsells. Funnels, cohorts, retention analysis, A/B testing, and user profiles are all available whether you're on the free tier or self-hosting. The interface is clean and modern, designed for today's product teams rather than as a legacy dashboard.",
+      "A critical difference is cookie-free tracking. While Matomo can be configured for cookieless mode, it uses cookies by default and still requires a consent banner in most GDPR scenarios. OpenPanel is truly cookie-free from the start, with no configuration needed. Self-hosting is also dramatically simpler — a single Docker container versus Matomo's PHP, MySQL, and web server stack.",
+      "For teams who value Matomo's open-source philosophy but want a modern experience with all features included, lighter tracking (2.3 KB vs 20 KB), and simpler deployment — OpenPanel delivers what Matomo promises, without the hidden costs."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs Matomo: Which is right for you?",
     "intro": "Both platforms are open-source and privacy-focused. The key differences are modern UI, true cookie-free tracking, SDK size, and feature bundling vs premium plugins.",

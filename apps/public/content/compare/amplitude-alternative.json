@@ -24,6 +24,15 @@
     "founded": 2012,
     "headquarters": "San Francisco, CA"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over Amplitude?",
+    "paragraphs": [
+      "Amplitude is one of the leading enterprise product analytics platforms, trusted by large companies for behavioral analytics, experimentation, and customer data management. But its power comes with significant complexity — a steep learning curve, enterprise-level pricing that can scale to six figures annually, and a cloud-only architecture that gives you no option to self-host your data.",
+      "OpenPanel offers a simpler, more affordable approach to product analytics without sacrificing the features that matter most. You get event tracking, funnels, retention analysis, cohort breakdowns, and user profiles — all in a clean interface that doesn't require a dedicated analytics team to operate. And because OpenPanel is open source, you can inspect the code, self-host on your own infrastructure, and avoid vendor lock-in entirely.",
+      "One of the biggest differences is privacy. Amplitude uses cookies and stores data on US servers by default, which means consent banners and GDPR complexity for European users. OpenPanel is cookie-free by default with EU-only data storage, so you can track user behavior without privacy trade-offs. The SDK is also dramatically smaller — 2.3 KB compared to Amplitude's 36-96 KB — which directly impacts your page performance and Core Web Vitals.",
+      "For startups and growing teams who need solid product analytics without the enterprise overhead, OpenPanel delivers the insights you need at a price point that makes sense from day one."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs Amplitude: Which is right for you?",
     "intro": "Both platforms help product teams understand user behavior. The key differences are pricing model, complexity, privacy approach, and deployment options.",

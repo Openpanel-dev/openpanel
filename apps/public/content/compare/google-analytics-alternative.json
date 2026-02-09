@@ -24,6 +24,15 @@
     "founded": 2005,
     "headquarters": "Mountain View, CA"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over Google Analytics?",
+    "paragraphs": [
+      "Google Analytics has been the default analytics tool for over a decade, powering millions of websites with detailed traffic and conversion data. However, the shift to GA4 has left many teams frustrated with its steep learning curve, complex event model, and reduced data retention. Add to that growing privacy concerns around sending visitor data to Google's US servers, and it's no surprise that more teams are looking for a Google Analytics alternative.",
+      "OpenPanel is a privacy-first, open-source analytics platform that combines web analytics and product analytics in a single tool. Unlike Google Analytics, OpenPanel tracks visitors without cookies, which means no consent banners and full GDPR compliance out of the box. Your data stays on EU servers, or you can self-host on your own infrastructure for complete control.",
+      "Where Google Analytics excels in its deep integration with the Google Ads ecosystem, OpenPanel focuses on giving you clean, actionable insights without the complexity. You get real-time dashboards, funnels, retention analysis, cohorts, and user profiles — features that typically require GA4 360 or a separate product analytics tool. And at just 2.3 KB, the OpenPanel SDK is over 10x lighter than Google's gtag script, which means faster page loads and better Core Web Vitals.",
+      "If your team doesn't rely heavily on Google Ads attribution, OpenPanel gives you everything you need at a fraction of the cost and complexity — with the added benefit of owning your data completely."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs Google Analytics: Which is right for you?",
     "intro": "Both platforms help you understand website traffic and user behavior. The key differences are privacy approach, data ownership, and simplicity vs ecosystem integration.",

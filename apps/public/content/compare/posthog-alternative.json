@@ -24,6 +24,15 @@
     "founded": 2020,
     "headquarters": "San Francisco, California, USA"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over PostHog?",
+    "paragraphs": [
+      "PostHog has built an impressive all-in-one platform with product analytics, feature flags, session replay, surveys, A/B testing, and more — over 10 products under one roof. It's a popular choice among developer-led teams who want everything in a single tool. But that breadth comes with trade-offs: a 52+ KB SDK, complex multi-product pricing, and a self-hosted setup that requires ClickHouse, Kafka, Redis, and PostgreSQL.",
+      "OpenPanel takes a focused approach. Instead of trying to be everything, it delivers excellent analytics — events, funnels, retention, cohorts, user profiles, and web analytics — with a dramatically smaller footprint. The SDK is just 2.3 KB (over 20x lighter than PostHog), which directly translates to faster page loads and better Core Web Vitals for your users.",
+      "Cookie-free tracking is another key difference. PostHog uses cookies by default and requires configuration to go cookieless, while OpenPanel is cookie-free out of the box — no consent banners needed. Self-hosting is also far simpler: OpenPanel runs in a single Docker container compared to PostHog's multi-service architecture.",
+      "If you need focused analytics without the feature bloat, want a lighter SDK that doesn't impact performance, and prefer simple event-based pricing over multi-product metering — OpenPanel gives you exactly what you need without the overhead."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs PostHog: Which is right for you?",
     "intro": "Both are open-source analytics platforms. PostHog is an all-in-one platform with many products. OpenPanel focuses on analytics with simplicity.",

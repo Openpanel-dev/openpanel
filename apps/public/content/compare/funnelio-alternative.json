@@ -24,6 +24,15 @@
     "founded": 2014,
     "headquarters": "Stockholm, Sweden"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over Funnel.io?",
+    "paragraphs": [
+      "Funnel.io is a marketing data integration platform designed to aggregate data from over 500 advertising platforms and marketing tools into unified reports. It's used by marketing teams at large organizations to bring together campaign performance data from Google Ads, Facebook, LinkedIn, and hundreds of other sources. But Funnel.io doesn't track user behavior at all — it aggregates data that already exists in external platforms.",
+      "OpenPanel and Funnel.io serve fundamentally different purposes. Funnel.io answers the question 'how are my marketing campaigns performing across platforms?' while OpenPanel answers 'what are users doing inside my product?' If you need to track events, build funnels, analyze retention, and understand user behavior, that's product analytics — and that's what OpenPanel does.",
+      "The cost difference reflects these different markets. Funnel.io starts at $399 per month with no free tier, targeting enterprise marketing teams with large budgets. OpenPanel starts at $2.50 per month with a free tier of 10,000 events, or can be self-hosted for free. For product teams and startups, OpenPanel delivers actionable analytics without the enterprise price tag.",
+      "If you're evaluating analytics tools and Funnel.io appeared in your search, you likely need product analytics rather than marketing data aggregation. OpenPanel gives you the user behavior insights, funnel analysis, and retention tracking that help you build better products — with open-source transparency and the option to self-host."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs Funnel.io: Which is right for you?",
     "intro": "Funnel.io and OpenPanel serve fundamentally different purposes. Funnel.io aggregates marketing spend and campaign data from external platforms (Google Ads, Facebook Ads, etc.). OpenPanel tracks user behavior within your product.",

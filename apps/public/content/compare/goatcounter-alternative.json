@@ -24,6 +24,15 @@
     "founded": 2019,
     "headquarters": "Netherlands"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over GoatCounter?",
+    "paragraphs": [
+      "GoatCounter is a charming, minimalist web analytics tool created and maintained by solo developer Martin Tournoij. It's completely free for public sites, privacy-friendly, and refreshingly simple. For personal blogs and small projects that just need basic pageview counts, it's hard to beat. But its minimal feature set and solo-developer maintenance model mean it's not built for teams with growing analytics needs.",
+      "OpenPanel shares GoatCounter's open-source spirit and privacy focus but adds the product analytics capabilities that growing teams require. User identification lets you track logged-in users across sessions, funnels help you understand conversion flows, and retention analysis shows whether users come back. These are features GoatCounter intentionally doesn't offer as part of its minimalist philosophy.",
+      "The technical architecture also differs significantly. GoatCounter stores data in SQLite or PostgreSQL, which works for small sites but isn't optimized for analytical queries at scale. OpenPanel uses ClickHouse — a column-oriented database purpose-built for analytics workloads — which means fast queries even as your data grows to millions of events.",
+      "If you've outgrown GoatCounter's simple pageview counting and need mobile app analytics via native SDKs, funnel analysis, or user-level insights, OpenPanel provides that depth while remaining open source and privacy-friendly."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs GoatCounter: Which is right for you?",
     "intro": "Both are privacy-focused open source analytics tools. GoatCounter is ultra-minimal for simple web stats. OpenPanel adds product analytics for user behavior tracking.",

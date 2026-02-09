@@ -24,6 +24,15 @@
     "founded": 2016,
     "headquarters": "Brno, Czech Republic"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over Smartlook?",
+    "paragraphs": [
+      "Smartlook combines product analytics with visual insights — session recordings, heatmaps, and event tracking in one platform. Since its acquisition by Cisco in 2023, it has positioned itself as an enterprise-ready analytics and observation tool. But enterprise ownership often means enterprise pricing, proprietary lock-in, and cloud-only infrastructure with no option for self-hosting.",
+      "OpenPanel focuses purely on product analytics without the session replay overhead, delivering event tracking, funnels, retention analysis, and cohort breakdowns with a cleaner, more focused experience. The result is a lighter tool that does analytics well rather than trying to be everything — and at a dramatically lower cost with transparent, event-based pricing starting at $2.50 per month.",
+      "Being open source under the MIT license gives OpenPanel advantages that Smartlook's proprietary, Cisco-owned platform can't match. You can self-host on your own infrastructure for complete data sovereignty, audit the source code for security compliance, and avoid the vendor lock-in risk that comes with acquisition-prone platforms. Self-hosting also means unlimited data retention, compared to Smartlook's plan-based limits.",
+      "If you need session replay specifically, Smartlook has the edge in that area. But for teams that want focused, cost-effective product analytics with open-source transparency and the freedom to self-host, OpenPanel delivers more value without the enterprise complexity."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs Smartlook: Which is right for you?",
     "intro": "Both platforms offer product analytics, but Smartlook adds visual behavior tools (session replay, heatmaps) while OpenPanel focuses on event-based analytics with self-hosting.",

@@ -24,6 +24,15 @@
     "founded": 2011,
     "headquarters": "San Francisco, CA"
   },
+  "overview": {
+    "title": "Why consider OpenPanel over AppsFlyer?",
+    "paragraphs": [
+      "AppsFlyer is the leading Mobile Measurement Partner (MMP), used by major brands to attribute app installs to advertising campaigns. With integrations to over 5,000 ad networks and sophisticated fraud protection, it's the gold standard for mobile attribution. But AppsFlyer's focus is narrowly on ad attribution — it tells you which campaign drove an install, not what users actually do inside your product.",
+      "OpenPanel serves a fundamentally different purpose: product analytics. While AppsFlyer tracks the marketing funnel (which ad, which campaign, which network), OpenPanel tracks the product funnel (which features users adopt, where they get stuck, and whether they retain). For teams that need to understand user behavior rather than ad performance, OpenPanel provides funnels, retention analysis, cohort breakdowns, and user profiles.",
+      "The pricing models couldn't be more different. AppsFlyer charges per conversion with enterprise contracts that typically run $3,000 to $100,000 or more annually. OpenPanel starts at $2.50 per month, or is completely free when self-hosted. For startups and growing companies, that difference in cost is significant — especially when you need analytics from day one but can't justify enterprise contracts.",
+      "Many teams use both tools for different purposes: AppsFlyer for marketing attribution and OpenPanel for in-product analytics. But if you're primarily interested in understanding what users do after they arrive — not which ad brought them — OpenPanel gives you those insights at a fraction of the cost."
+    ]
+  },
   "summary_comparison": {
     "title": "OpenPanel vs AppsFlyer: Which is right for you?",
     "intro": "These tools serve different primary purposes. AppsFlyer focuses on mobile attribution (which ad drove an install); OpenPanel focuses on product analytics (what users do in your app).",

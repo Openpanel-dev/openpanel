@@ -13,6 +13,7 @@ import Script from 'next/script';
 import { BenefitsSection } from './_components/benefits-section';
 import { CompareFaq } from './_components/compare-faq';
 import { CompareHero } from './_components/compare-hero';
+import { CompareOverview } from './_components/compare-overview';
 import { ComparisonTable } from './_components/comparison-table';
 import { FeaturesShowcase } from './_components/features-showcase';
 import { MigrationSection } from './_components/migration-section';
@@ -82,6 +83,9 @@ export default async function ComparePage({
 
   // Build ToC items
   const tocItems = [
+    ...(data.overview
+      ? [{ id: 'overview', label: data.overview.title }]
+      : []),
     { id: 'who-should-choose', label: data.summary_comparison.title },
     { id: 'comparison', label: data.highlights.title },
     { id: 'features', label: data.feature_comparison.title },
@@ -117,6 +121,12 @@ export default async function ComparePage({
           caption="This is our web analytics dashboard, its an out-of-the-box experience so you can start understanding your traffic and engagement right away."
         />
       </div>
+
+      {data.overview && (
+        <div id="overview">
+          <CompareOverview overview={data.overview} />
+        </div>
+      )}
 
       <div id="who-should-choose">
         <WhoShouldChoose
@@ -190,25 +200,26 @@ export default async function ComparePage({
       </div>
 
       {data.benefits_section && (
-        <div id="benefits">
-          <BenefitsSection
-            label={data.benefits_section.label}
-            title={data.benefits_section.title}
-            description={data.benefits_section.description}
-            cta={data.benefits_section.cta}
-            benefits={data.benefits_section.benefits}
-          />
-        </div>
+        <>
+          <div id="benefits">
+            <BenefitsSection
+              label={data.benefits_section.label}
+              title={data.benefits_section.title}
+              description={data.benefits_section.description}
+              cta={data.benefits_section.cta}
+              benefits={data.benefits_section.benefits}
+            />
+          </div>
+          <div className="container my-16">
+            <WindowImage
+              srcDark="/screenshots/profile-dark.webp"
+              srcLight="/screenshots/profile-light.webp"
+              alt="OpenPanel User Profiles"
+              caption="Deep dive into individual user profiles with complete event history and behavior tracking."
+            />
+          </div>
+        </>
       )}
-
-      <div className="container my-16">
-        <WindowImage
-          srcDark="/screenshots/profile-dark.webp"
-          srcLight="/screenshots/profile-light.webp"
-          alt="OpenPanel User Profiles"
-          caption="Deep dive into individual user profiles with complete event history and behavior tracking."
-        />
-      </div>
 
       <div id="faq">
         <CompareFaq faqs={data.faqs} pageUrl={pageUrl} />
