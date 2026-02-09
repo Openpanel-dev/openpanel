@@ -140,7 +140,7 @@ function Component() {
               </div>
 
               <CardActions>
-                {!cohort.isStatic && !cohort.computeOnDemand && (
+                {!cohort.isStatic && (
                   <CardActionsItem className="w-full" asChild>
                     <button
                       type="button"
