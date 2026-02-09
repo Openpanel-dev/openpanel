@@ -261,6 +261,9 @@ const publishPackages = (
       execSync(
         `cp ${workspacePath('packages/sdks/web/dist/src/tracker.global.js')} ${workspacePath('./apps/public/public/op1.js')}`,
       );
+      execSync(
+        `cp ${workspacePath('packages/sdks/web/dist/src/replay.global.js')} ${workspacePath('./apps/public/public/op1-replay.js')}`,
+      );
     }
   }
 };

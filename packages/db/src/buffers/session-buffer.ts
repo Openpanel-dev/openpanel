@@ -163,8 +163,44 @@ export class SessionBuffer extends BaseBuffer {
           : '',
         sign: 1,
         version: 1,
+        has_replay: false,
       },
     ];
+  }
+
+  async markHasReplay(sessionId: string): Promise<void> {
+    console.log('markHasReplay', sessionId);
+    const existingSession = await this.getExistingSession({ sessionId });
+    if (!existingSession) {
+      console.log('no existing session or has replay', existingSession);
+      return;
+    }
+
+    if (existingSession.has_replay) {
+      return;
+    }
+
+    const oldSession = assocPath(['sign'], -1, clone(existingSession));
+    const newSession = assocPath(['sign'], 1, clone(existingSession));
+    newSession.version = existingSession.version + 1;
+    newSession.has_replay = true;
+
+    const multi = this.redis.multi();
+    multi.set(
+      `session:${sessionId}`,
+      JSON.stringify(newSession),
+      'EX',
+      60 * 60,
+    );
+    multi.rpush(this.redisKey, JSON.stringify(newSession));
+    multi.rpush(this.redisKey, JSON.stringify(oldSession));
+    multi.incrby(this.bufferCounterKey, 2);
+    await multi.exec();
+
+    const bufferLength = await this.getBufferSize();
+    if (bufferLength >= this.batchSize) {
+      await this.tryFlush();
+    }
   }
 
   async add(event: IClickhouseEvent) {

@@ -116,6 +116,7 @@
     "pushmodal": "^1.0.3",
     "ramda": "^0.29.1",
     "random-animal-name": "^0.1.1",
+    "rrweb-player": "2.0.0-alpha.20",
     "rc-virtual-list": "^3.14.5",
     "react": "catalog:",
     "react-animate-height": "^3.2.3",

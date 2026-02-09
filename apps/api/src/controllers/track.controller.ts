@@ -3,8 +3,19 @@ import { assocPath, pathOr, pick } from 'ramda';
 
 import { HttpError } from '@/utils/errors';
 import { generateId, slug } from '@openpanel/common';
-import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
-import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
+import {
+  generateDeviceId,
+  generateSecureId,
+  parseUserAgent,
+} from '@openpanel/common/server';
+import {
+  TABLE_NAMES,
+  ch,
+  getProfileById,
+  getSalts,
+  sessionBuffer,
+  upsertProfile,
+} from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { getEventsGroupQueueShard } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
@@ -13,10 +24,89 @@ import {
   type IDecrementPayload,
   type IIdentifyPayload,
   type IIncrementPayload,
+  type IReplayPayload,
   type ITrackHandlerPayload,
   type ITrackPayload,
   zTrackHandlerPayload,
 } from '@openpanel/validation';
+
+async function getDeviceId({
+  projectId,
+  ip,
+  ua,
+  salts,
+  overrideDeviceId,
+}: {
+  projectId: string;
+  ip: string;
+  ua: string | undefined;
+  salts: { current: string; previous: string };
+  overrideDeviceId?: string;
+}) {
+  if (overrideDeviceId) {
+    return { deviceId: overrideDeviceId, sessionId: undefined };
+  }
+
+  if (!ua) {
+    return { deviceId: '', sessionId: undefined };
+  }
+
+  const currentDeviceId = generateDeviceId({
+    salt: salts.current,
+    origin: projectId,
+    ip,
+    ua,
+  });
+  const previousDeviceId = generateDeviceId({
+    salt: salts.previous,
+    origin: projectId,
+    ip,
+    ua,
+  });
+
+  return await getDeviceIdFromSession({
+    projectId,
+    currentDeviceId,
+    previousDeviceId,
+  });
+}
+
+async function getDeviceIdFromSession({
+  projectId,
+  currentDeviceId,
+  previousDeviceId,
+}: {
+  projectId: string;
+  currentDeviceId: string;
+  previousDeviceId: string;
+}) {
+  try {
+    const multi = getRedisCache().multi();
+    multi.hget(
+      `bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`,
+      'data',
+    );
+    multi.hget(
+      `bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`,
+      'data',
+    );
+    const res = await multi.exec();
+    if (res?.[0]?.[1]) {
+      const data = JSON.parse(res?.[0]?.[1] as string);
+      const sessionId = data.payload.sessionId;
+      return { deviceId: currentDeviceId, sessionId };
+    }
+    if (res?.[1]?.[1]) {
+      const data = JSON.parse(res?.[1]?.[1] as string);
+      const sessionId = data.payload.sessionId;
+      return { deviceId: previousDeviceId, sessionId };
+    }
+  } catch (error) {
+    console.error('Error getting session end GET /track/device-id', error);
+  }
+
+  return { deviceId: currentDeviceId, sessionId: generateSecureId('se') };
+}
 
 export function getStringHeaders(headers: FastifyRequest['headers']) {
   return Object.entries(
@@ -45,14 +135,15 @@ function getIdentity(body: ITrackHandlerPayload): IIdentifyPayload | undefined {
       | IIdentifyPayload
       | undefined;
 
-    return (
-      identity ||
-      (body.payload.profileId
-        ? {
-            profileId: String(body.payload.profileId),
-          }
-        : undefined)
-    );
+    if (identity) {
+      return identity;
+    }
+
+    return body.payload.profileId
+      ? {
+          profileId: String(body.payload.profileId),
+        }
+      : undefined;
   }
 
   return undefined;
@@ -104,8 +195,8 @@ interface TrackContext {
   headers: Record<string, string | undefined>;
   timestamp: { value: number; isFromPast: boolean };
   identity?: IIdentifyPayload;
-  currentDeviceId?: string;
-  previousDeviceId?: string;
+  deviceId: string;
+  sessionId: string;
   geo: GeoLocation;
 }
 
@@ -128,49 +219,27 @@ async function buildContext(
   const ua = request.headers['user-agent'] ?? 'unknown/1.0';
 
   const headers = getStringHeaders(request.headers);
-
   const identity = getIdentity(validatedBody);
   const profileId = identity?.profileId;
 
-  // We might get a profileId from the alias table
-  // If we do, we should use that instead of the one from the payload
   if (profileId && validatedBody.type === 'track') {
     validatedBody.payload.profileId = profileId;
   }
 
   // Get geo location (needed for track and identify)
-  const geo = await getGeoLocation(ip);
+  const [geo, salts] = await Promise.all([getGeoLocation(ip), getSalts()]);
 
-  // Generate device IDs if needed (for track)
-  let currentDeviceId: string | undefined;
-  let previousDeviceId: string | undefined;
-
-  if (validatedBody.type === 'track') {
-    const overrideDeviceId =
-      typeof validatedBody.payload.properties?.__deviceId === 'string'
-        ? validatedBody.payload.properties.__deviceId
-        : undefined;
-
-    const salts = await getSalts();
-    currentDeviceId =
-      overrideDeviceId ||
-      (ua
-        ? generateDeviceId({
-            salt: salts.current,
-            origin: projectId,
-            ip,
-            ua,
-          })
-        : '');
-    previousDeviceId = ua
-      ? generateDeviceId({
-          salt: salts.previous,
-          origin: projectId,
-          ip,
-          ua,
-        })
-      : '';
-  }
+  const { deviceId, sessionId } = await getDeviceId({
+    projectId,
+    ip,
+    ua,
+    salts,
+    overrideDeviceId:
+      validatedBody.type === 'track' &&
+      typeof validatedBody.payload?.properties?.__deviceId === 'string'
+        ? validatedBody.payload?.properties.__deviceId
+        : undefined,
+  });
 
   return {
     projectId,
@@ -182,8 +251,8 @@ async function buildContext(
       isFromPast: timestamp.isTimestampFromThePast,
     },
     identity,
-    currentDeviceId,
-    previousDeviceId,
+    deviceId,
+    sessionId,
     geo,
   };
 }
@@ -192,30 +261,19 @@ async function handleTrack(
   payload: ITrackPayload,
   context: TrackContext,
 ): Promise<void> {
-  const {
-    projectId,
-    currentDeviceId,
-    previousDeviceId,
-    geo,
-    headers,
-    timestamp,
-  } = context;
-
-  if (!currentDeviceId || !previousDeviceId) {
-    throw new HttpError('Device ID generation failed', { status: 500 });
-  }
+  const { projectId, deviceId, geo, headers, timestamp, sessionId } = context;
 
   const uaInfo = parseUserAgent(headers['user-agent'], payload.properties);
   const groupId = uaInfo.isServer
     ? payload.profileId
       ? `${projectId}:${payload.profileId}`
       : `${projectId}:${generateId()}`
-    : currentDeviceId;
+    : deviceId;
   const jobId = [
     slug(payload.name),
     timestamp.value,
     projectId,
-    currentDeviceId,
+    deviceId,
     groupId,
   ]
     .filter(Boolean)
@@ -242,8 +300,10 @@ async function handleTrack(
         },
         uaInfo,
         geo,
-        currentDeviceId,
-        previousDeviceId,
+        deviceId,
+        sessionId,
+        currentDeviceId: '', // TODO: Remove
+        previousDeviceId: '', // TODO: Remove
       },
       groupId,
       jobId,
@@ -330,6 +390,33 @@ async function handleDecrement(
   await adjustProfileProperty(payload, context.projectId, -1);
 }
 
+async function handleReplay(
+  payload: IReplayPayload,
+  context: TrackContext,
+): Promise<void> {
+  if (!context.sessionId) {
+    throw new HttpError('Session ID is required for replay', { status: 400 });
+  }
+
+  const row = {
+    project_id: context.projectId,
+    session_id: context.sessionId,
+    profile_id: '', // TODO: remove
+    chunk_index: payload.chunk_index,
+    started_at: payload.started_at,
+    ended_at: payload.ended_at,
+    events_count: payload.events_count,
+    is_full_snapshot: payload.is_full_snapshot,
+    payload: payload.payload,
+  };
+  await ch.insert({
+    table: TABLE_NAMES.session_replay_chunks,
+    values: [row],
+    format: 'JSONEachRow',
+  });
+  await sessionBuffer.markHasReplay(row.session_id);
+}
+
 export async function handler(
   request: FastifyRequest<{
     Body: ITrackHandlerPayload;
@@ -375,6 +462,9 @@ export async function handler(
     case 'decrement':
       await handleDecrement(validatedBody.payload, context);
       break;
+    case 'replay':
+      await handleReplay(validatedBody.payload, context);
+      break;
     default:
       return reply.status(400).send({
         status: 400,
@@ -383,7 +473,10 @@ export async function handler(
       });
   }
 
-  reply.status(200).send();
+  reply.status(200).send({
+    deviceId: context.deviceId,
+    sessionId: context.sessionId,
+  });
 }
 
 export async function fetchDeviceId(
@@ -421,20 +514,31 @@ export async function fetchDeviceId(
 
   try {
     const multi = getRedisCache().multi();
-    multi.exists(`bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`);
-    multi.exists(`bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`);
+    multi.hget(
+      `bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`,
+      'data',
+    );
+    multi.hget(
+      `bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`,
+      'data',
+    );
     const res = await multi.exec();
-
     if (res?.[0]?.[1]) {
+      const data = JSON.parse(res?.[0]?.[1] as string);
+      const sessionId = data.payload.sessionId;
       return reply.status(200).send({
-        deviceId: currentDeviceId,
+        deviceId: sessionId,
+        sessionId,
         message: 'current session exists for this device id',
       });
     }
 
     if (res?.[1]?.[1]) {
+      const data = JSON.parse(res?.[1]?.[1] as string);
+      const sessionId = data.payload.sessionId;
       return reply.status(200).send({
-        deviceId: previousDeviceId,
+        deviceId: sessionId,
+        sessionId,
         message: 'previous session exists for this device id',
       });
     }
@@ -444,6 +548,7 @@ export async function fetchDeviceId(
 
   return reply.status(200).send({
     deviceId: currentDeviceId,
+    sessionId: '',
     message: 'No session exists for this device id',
   });
 }

@@ -37,6 +37,8 @@ export type OpenPanelOptions = {
 export class OpenPanel {
   api: Api;
   profileId?: string;
+  deviceId?: string;
+  sessionId?: string;
   global?: Record<string, unknown>;
   queue: TrackHandlerPayload[] = [];
 
@@ -69,6 +71,16 @@ export class OpenPanel {
     this.flush();
   }
 
+  private shouldQueue(payload: TrackHandlerPayload): boolean {
+    if (payload.type === 'replay' && !this.sessionId) {
+      return true;
+    }
+    if (this.options.waitForProfile && !this.profileId) {
+      return true;
+    }
+    return false;
+  }
+
   async send(payload: TrackHandlerPayload) {
     if (this.options.disabled) {
       return Promise.resolve();
@@ -78,11 +90,25 @@ export class OpenPanel {
       return Promise.resolve();
     }
 
-    if (this.options.waitForProfile && !this.profileId) {
+    if (this.shouldQueue(payload)) {
       this.queue.push(payload);
       return Promise.resolve();
     }
-    return this.api.fetch('/track', payload);
+
+    const result = await this.api.fetch<
+      TrackHandlerPayload,
+      { deviceId: string; sessionId: string }
+    >('/track', payload);
+    this.deviceId = result?.deviceId;
+    const hadSession = !!this.sessionId;
+    this.sessionId = result?.sessionId;
+
+    // Flush queued items (e.g. replay chunks) when sessionId first arrives
+    if (!hadSession && this.sessionId) {
+      this.flush();
+    }
+
+    return result;
   }
 
   setGlobalProperties(properties: Record<string, unknown>) {
@@ -160,33 +186,44 @@ export class OpenPanel {
     });
   }
 
+  getDeviceId(): string {
+    return this.deviceId ?? '';
+  }
+
+  getSessionId(): string {
+    return this.sessionId ?? '';
+  }
+
   async fetchDeviceId(): Promise<string> {
-    const result = await this.api.fetch<undefined, { deviceId: string }>(
-      '/track/device-id',
-      undefined,
-      { method: 'GET', keepalive: false },
-    );
-    return result?.deviceId ?? '';
+    return Promise.resolve(this.deviceId ?? '');
   }
 
   clear() {
     this.profileId = undefined;
-    // should we force a session end here?
+    this.deviceId = undefined;
+    this.sessionId = undefined;
   }
 
   flush() {
-    this.queue.forEach((item) => {
-      this.send({
-        ...item,
-        // Not sure why ts-expect-error is needed here
-        // @ts-expect-error
-        payload: {
-          ...item.payload,
-          profileId: item.payload.profileId ?? this.profileId,
-        },
-      });
-    });
-    this.queue = [];
+    const remaining: TrackHandlerPayload[] = [];
+    for (const item of this.queue) {
+      if (this.shouldQueue(item)) {
+        remaining.push(item);
+        continue;
+      }
+      const payload =
+        item.type === 'replay'
+          ? item.payload
+          : {
+              ...item.payload,
+              profileId:
+                'profileId' in item.payload
+                  ? (item.payload.profileId ?? this.profileId)
+                  : this.profileId,
+            };
+      this.send({ ...item, payload } as TrackHandlerPayload);
+    }
+    this.queue = remaining;
   }
 
   log(...args: any[]) {

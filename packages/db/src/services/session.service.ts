@@ -52,6 +52,7 @@ export type IClickhouseSession = {
   revenue: number;
   sign: 1 | 0;
   version: number;
+  has_replay?: boolean;
 };
 
 export interface IServiceSession {
@@ -90,6 +91,7 @@ export interface IServiceSession {
   utmContent: string;
   utmTerm: string;
   revenue: number;
+  hasReplay: boolean;
   profile?: IServiceProfile;
 }
 
@@ -141,6 +143,7 @@ export function transformSession(session: IClickhouseSession): IServiceSession {
     utmContent: session.utm_content,
     utmTerm: session.utm_term,
     revenue: session.revenue,
+    hasReplay: session.has_replay ?? false,
     profile: undefined,
   };
 }
@@ -229,6 +232,7 @@ export async function getSessionList({
     'screen_view_count',
     'event_count',
     'revenue',
+    'has_replay',
   ];
 
   columns.forEach((column) => {
@@ -320,6 +324,41 @@ export async function getSessionsCount({
 }
 
 export const getSessionsCountCached = cacheable(getSessionsCount, 60 * 10);
+
+export async function getSessionReplayEvents(
+  sessionId: string,
+  projectId: string,
+): Promise<{ events: unknown[] }> {
+  const chunks = await clix(ch)
+    .select<{ chunk_index: number; payload: string }>(['chunk_index', 'payload'])
+    .from(TABLE_NAMES.session_replay_chunks)
+    .where('session_id', '=', sessionId)
+    .where('project_id', '=', projectId)
+    .orderBy('chunk_index', 'ASC')
+    .execute();
+
+  const allEvents = chunks.flatMap((chunk) =>
+    JSON.parse(chunk.payload) as unknown[],
+  );
+
+  // rrweb event types: 2 = FullSnapshot, 4 = Meta
+  // Incremental snapshots (type 3) before the first FullSnapshot are orphaned
+  // and cause the player to fast-forward through empty time. Strip them but
+  // keep Meta events (type 4) since rrweb needs them for viewport dimensions.
+  const firstFullSnapshotIdx = allEvents.findIndex(
+    (e: any) => e.type === 2,
+  );
+
+  let events = allEvents;
+  if (firstFullSnapshotIdx > 0) {
+    const metaEvents = allEvents
+      .slice(0, firstFullSnapshotIdx)
+      .filter((e: any) => e.type === 4);
+    events = [...metaEvents, ...allEvents.slice(firstFullSnapshotIdx)];
+  }
+
+  return { events };
+}
 
 class SessionService {
   constructor(private client: typeof ch) {}

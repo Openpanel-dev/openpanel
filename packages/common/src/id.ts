@@ -4,6 +4,6 @@ export function shortId() {
   return nanoid(4);
 }
 
-export function generateId() {
-  return nanoid(8);
+export function generateId(prefix?: string, length?: number) {
+  return prefix ? `${prefix}_${nanoid(length ?? 8)}` : nanoid(length ?? 8);
 }

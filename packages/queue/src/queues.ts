@@ -65,8 +65,10 @@ export interface EventsQueuePayloadIncomingEvent {
       latitude: number | undefined;
     };
     headers: Record<string, string | undefined>;
-    currentDeviceId: string;
-    previousDeviceId: string;
+    currentDeviceId: string; // TODO: Remove
+    previousDeviceId: string; // TODO: Remove
+    deviceId: string;
+    sessionId: string;
   };
 }
 export interface EventsQueuePayloadCreateEvent {

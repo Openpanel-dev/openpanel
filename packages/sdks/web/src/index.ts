@@ -7,11 +7,36 @@ import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
 export type * from '@openpanel/sdk';
 export { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
 
+export type SessionReplayOptions = {
+  enabled: boolean;
+  sampleRate?: number;
+  maskAllInputs?: boolean;
+  maskTextSelector?: string;
+  blockSelector?: string;
+  blockClass?: string;
+  ignoreSelector?: string;
+  flushIntervalMs?: number;
+  maxEventsPerChunk?: number;
+  maxPayloadBytes?: number;
+  /**
+   * URL to the replay recorder script.
+   * Only used when loading the SDK via a script tag (IIFE / op1.js).
+   * When using the npm package with a bundler this option is ignored
+   * because the bundler resolves the replay module from the package.
+   */
+  scriptUrl?: string;
+};
+
+// Injected at build time only in the IIFE (tracker) build.
+// In the library build this is `undefined`.
+declare const __OPENPANEL_REPLAY_URL__: string | undefined;
+
 export type OpenPanelOptions = OpenPanelBaseOptions & {
   trackOutgoingLinks?: boolean;
   trackScreenViews?: boolean;
   trackAttributes?: boolean;
   trackHashChanges?: boolean;
+  sessionReplay?: SessionReplayOptions;
 };
 
 function toCamelCase(str: string) {
@@ -66,6 +91,76 @@ export class OpenPanel extends OpenPanelBase {
       if (this.options.trackAttributes) {
         this.trackAttributes();
       }
+
+      if (this.options.sessionReplay?.enabled) {
+        const sampleRate = this.options.sessionReplay.sampleRate ?? 1;
+        const sampled = Math.random() < sampleRate;
+        if (sampled) {
+          this.loadReplayModule().then((mod) => {
+            if (!mod) return;
+            mod.startReplayRecorder(this.options.sessionReplay!, (chunk) => {
+              this.send({
+                type: 'replay',
+                payload: {
+                  ...chunk,
+                },
+              });
+            });
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Load the replay recorder module.
+   *
+   * - **IIFE build (op1.js)**: `__OPENPANEL_REPLAY_URL__` is replaced at
+   *   build time with a CDN URL (e.g. `https://openpanel.dev/op1-replay.js`).
+   *   The user can also override it via `sessionReplay.scriptUrl`.
+   *   We load the IIFE replay script via a classic `<script>` tag which
+   *   avoids CORS issues (dynamic `import(url)` uses `cors` mode).
+   *   The IIFE exposes its exports on `window.__openpanel_replay`.
+   *
+   * - **Library build (npm)**: `__OPENPANEL_REPLAY_URL__` is `undefined`
+   *   (never replaced). We use `import('./replay')` which the host app's
+   *   bundler resolves and code-splits from the package source.
+   */
+  private async loadReplayModule(): Promise<typeof import('./replay') | null> {
+    try {
+      // typeof check avoids a ReferenceError when the constant is not
+      // defined (library build). tsup replaces the constant with a
+      // string literal only in the IIFE build, so this branch is
+      // dead-code-eliminated in the library build.
+      if (typeof __OPENPANEL_REPLAY_URL__ !== 'undefined') {
+        // IIFE / script-tag context — load from CDN (or user override)
+        const url =
+          this.options.sessionReplay?.scriptUrl ?? __OPENPANEL_REPLAY_URL__;
+
+        // Already loaded (e.g. user included the script manually)
+        if ((window as any).__openpanel_replay) {
+          return (window as any).__openpanel_replay;
+        }
+
+        // Load via classic <script> tag — no CORS restrictions
+        return new Promise((resolve) => {
+          const script = document.createElement('script');
+          script.src = url;
+          script.onload = () => {
+            resolve((window as any).__openpanel_replay ?? null);
+          };
+          script.onerror = () => {
+            console.warn('[OpenPanel] Failed to load replay script from', url);
+            resolve(null);
+          };
+          document.head.appendChild(script);
+        });
+      }
+      // Library / bundler context — resolved by the bundler
+      return await import('./replay');
+    } catch (e) {
+      console.warn('[OpenPanel] Failed to load replay module', e);
+      return null;
     }
   }
 

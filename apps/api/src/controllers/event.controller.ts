@@ -76,6 +76,7 @@ export async function postEvent(
       geo,
       currentDeviceId,
       previousDeviceId,
+      deviceId: '',
     },
     groupId,
     jobId,

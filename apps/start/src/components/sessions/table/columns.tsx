@@ -2,6 +2,7 @@ import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { formatDateTime, formatTimeAgoOrDateTime } from '@/utils/date';
 import type { ColumnDef } from '@tanstack/react-table';
+import { Video } from 'lucide-react';
 
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
@@ -44,13 +45,25 @@ export function useColumns() {
       cell: ({ row }) => {
         const session = row.original;
         return (
-          <ProjectLink
-            href={`/sessions/${session.id}`}
-            className="font-medium"
-            title={session.id}
-          >
-            {session.id.slice(0, 8)}...
-          </ProjectLink>
+          <div className="row gap-2 items-center">
+            <ProjectLink
+              href={`/sessions/${session.id}`}
+              className="font-medium"
+              title={session.id}
+            >
+              {session.id.slice(0, 8)}...
+            </ProjectLink>
+            {session.hasReplay && (
+              <ProjectLink
+                href={`/sessions/${session.id}#replay`}
+                className="text-muted-foreground hover:text-foreground"
+                title="View replay"
+                aria-label="View replay"
+              >
+                <Video className="size-4" />
+              </ProjectLink>
+            )}
+          </div>
         );
       },
     },

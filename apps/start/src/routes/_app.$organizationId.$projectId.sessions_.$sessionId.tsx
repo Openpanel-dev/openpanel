@@ -3,6 +3,7 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { ReplayShell } from '@/components/sessions/replay';
 import { useReadColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
 import {
   useEventQueryFilters,
@@ -117,6 +118,9 @@ function Component() {
           )}
         </div>
       </PageHeader>
+      <div className="mb-6">
+        <ReplayShell sessionId={sessionId} projectId={projectId} />
+      </div>
       <EventsTable query={query} />
     </PageContainer>
   );

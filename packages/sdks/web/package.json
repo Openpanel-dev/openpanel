@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@openpanel/sdk": "workspace:1.0.4-local"
+    "@rrweb/types": "2.0.0-alpha.20",
+    "rrweb": "2.0.0-alpha.20"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
