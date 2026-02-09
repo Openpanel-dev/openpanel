@@ -125,7 +125,8 @@ async function buildContext(
     validatedBody.type === 'track' && validatedBody.payload.properties?.__ip
       ? (validatedBody.payload.properties.__ip as string)
       : request.clientIp;
-  const ua = request.headers['user-agent'];
+  const ua = request.headers['user-agent'] ?? 'unknown/1.0';
+
   const headers = getStringHeaders(request.headers);
 
   const identity = getIdentity(validatedBody);
