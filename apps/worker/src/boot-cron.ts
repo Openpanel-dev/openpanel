@@ -51,7 +51,7 @@ export async function bootCron() {
     {
       name: 'flush',
       type: 'flushProfiles',
-      pattern: 1000 * 60,
+      pattern: 1000 * 10,
     },
     {
       name: 'flush',
