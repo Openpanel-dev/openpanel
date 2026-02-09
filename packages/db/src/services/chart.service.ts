@@ -165,6 +165,21 @@ export function getCohortAlias(cohortId: string): string {
   return `cohort_${cohortId.replace(/-/g, '_')}`;
 }
 
+/**
+ * Build inline cohort JOIN clause with subquery
+ * Used in CTEs where CTE references are not allowed by ClickHouse
+ */
+function buildInlineCohortJoin(
+  cohortId: string,
+  projectId: string,
+  tableAlias: string,
+  cohortMeta?: CohortMetadata,
+): string {
+  const cohortAlias = getCohortAlias(cohortId);
+  const cohortQuery = buildCohortMembershipQuery(cohortId, projectId, cohortMeta);
+  return `LEFT ANY JOIN (${cohortQuery}) AS ${cohortAlias} ON ${cohortAlias}.profile_id = ${tableAlias}.profile_id`;
+}
+
 
 export function transformPropertyKey(property: string) {
   const propertyPatterns = ['properties', 'profile.properties'];
@@ -199,8 +214,11 @@ export function getSelectPropertyKey(
   if (extractedCohortId && projectId) {
     // Use JOIN-based approach instead of IN subquery for better performance
     const cohortAlias = getCohortAlias(extractedCohortId);
+    // Use notEmpty() to handle both join_use_nulls=0 (returns '') and join_use_nulls=1 (returns NULL)
+    // When join_use_nulls=0, ClickHouse returns empty string for unmatched LEFT JOIN rows instead of NULL
+    // notEmpty() correctly identifies both cases as "Not In Cohort"
     return `if(
-      ${cohortAlias}.profile_id IS NOT NULL,
+      notEmpty(${cohortAlias}.profile_id),
       'In Cohort',
       'Not In Cohort'
     )`;
@@ -408,7 +426,9 @@ export async function getChartSql({
     with: addCte,
   } = createSqlBuilder();
 
-  // Create CTEs for all cohorts (computed once per query, not per row)
+  // Create CTEs for all cohorts (used by main query only)
+  // NOTE: ClickHouse allows CTEs to be referenced in the main query's JOINs,
+  // but NOT in other CTEs' JOINs. For CTEs that need cohort data, we inline subqueries.
   cohortIds.forEach((cohortId) => {
     const cohortMeta = cohortMetadata.get(cohortId);
     const cohortQuery = buildCohortMembershipQuery(cohortId, projectId, cohortMeta);
@@ -574,10 +594,10 @@ export async function getChartSql({
       .join(', ');
 
     // Build cohort JOINs for top_breakdowns CTE
+    // NOTE: ClickHouse CTEs cannot reference other CTEs in JOINs, so we inline the subquery
     const cohortJoinsForTop = cohortIds.map((cohortId) => {
-      const cohortAlias = getCohortAlias(cohortId);
-      const cohortCte = getCohortCteName(cohortId);
-      return `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = e.profile_id`;
+      const cohortMeta = cohortMetadata.get(cohortId);
+      return buildInlineCohortJoin(cohortId, projectId, 'e', cohortMeta);
     }).join(' ');
 
     // Add top_breakdowns CTE using the builder
@@ -666,10 +686,10 @@ export async function getChartSql({
     const totalCountWhere = getWhereWithoutBar();
 
     // Build cohort JOINs for breakdown_totals CTE
+    // NOTE: ClickHouse CTEs cannot reference other CTEs in JOINs, so we inline the subquery
     const cohortJoinsForBreakdown = cohortIds.map((cohortId) => {
-      const cohortAlias = getCohortAlias(cohortId);
-      const cohortCte = getCohortCteName(cohortId);
-      return `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = ${TABLE_NAMES.events}.profile_id`;
+      const cohortMeta = cohortMetadata.get(cohortId);
+      return buildInlineCohortJoin(cohortId, projectId, TABLE_NAMES.events, cohortMeta);
     }).join(' ');
 
     addCte(
@@ -694,11 +714,11 @@ export async function getChartSql({
   } else {
     const totalCountWhere = getWhereWithoutBar();
 
-    // Build cohort JOINs for total_unique CTE (same as breakdown_totals)
+    // Build cohort JOINs for total_unique CTE
+    // NOTE: ClickHouse CTEs cannot reference other CTEs in JOINs, so we inline the subquery
     const cohortJoinsForTotal = cohortIds.map((cohortId) => {
-      const cohortAlias = getCohortAlias(cohortId);
-      const cohortCte = getCohortCteName(cohortId);
-      return `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = ${TABLE_NAMES.events}.profile_id`;
+      const cohortMeta = cohortMetadata.get(cohortId);
+      return buildInlineCohortJoin(cohortId, projectId, TABLE_NAMES.events, cohortMeta);
     }).join(' ');
 
     addCte(
