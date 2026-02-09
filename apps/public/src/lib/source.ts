@@ -10,6 +10,7 @@ import {
 import { type InferPageType, loader } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { toFumadocsSource } from 'fumadocs-mdx/runtime/server';
+import { OPENPANEL_BASE_URL } from './openpanel-brand';
 import type { CompareData } from './compare';
 import type { FeatureData } from './features';
 import { loadFeatureSourceSync } from './features';
@@ -49,8 +50,11 @@ export function getPageImage(page: InferPageType<typeof source>) {
 
 export async function getLLMText(page: InferPageType<typeof source>) {
   const processed = await page.data.getText('processed');
+  const canonical = `${OPENPANEL_BASE_URL}${page.url}`;
 
-  return `# ${page.data.title}
+  return `---
+## ${page.data.title}
+URL: ${canonical}
 
 ${processed}`;
 }

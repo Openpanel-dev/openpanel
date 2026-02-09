@@ -1,4 +1,8 @@
 User-Agent: *
 Allow: /
 Allow: /og*
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /*.md
+
 Sitemap: https://openpanel.dev/sitemap.xml

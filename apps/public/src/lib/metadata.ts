@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
+import { OPENPANEL_DESCRIPTION, OPENPANEL_NAME } from './openpanel-brand';
 import { url as baseUrl } from './layout.shared';
 
-const siteName = 'OpenPanel';
-const defaultDescription =
-  'OpenPanel is a simple, affordable open-source alternative to Mixpanel for web and product analytics. Get powerful insights without the complexity.';
+const siteName = OPENPANEL_NAME;
+const defaultDescription = OPENPANEL_DESCRIPTION;
 const defaultImage = baseUrl('/ogimage.png');
 
 export function getOgImageUrl(url: string): string {
