@@ -194,13 +194,11 @@ export async function getSessionList({
   const dateIntervalInDays =
     organization?.subscriptionPeriodEventsLimit &&
     organization?.subscriptionPeriodEventsLimit > 1_000_000
-      ? 1
+      ? 2
       : 360;
 
   if (cursor) {
     const cAt = sqlstring.escape(cursor.createdAt);
-    // TODO: remove id from cursor
-    const cId = sqlstring.escape(cursor.id);
     sb.where.cursor = `created_at < toDateTime64(${cAt}, 3)`;
     sb.where.cursorWindow = `created_at >= toDateTime64(${cAt}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
     sb.orderBy.created_at = 'created_at DESC';
@@ -330,24 +328,25 @@ export async function getSessionReplayEvents(
   projectId: string,
 ): Promise<{ events: unknown[] }> {
   const chunks = await clix(ch)
-    .select<{ chunk_index: number; payload: string }>(['chunk_index', 'payload'])
+    .select<{ chunk_index: number; payload: string }>([
+      'chunk_index',
+      'payload',
+    ])
     .from(TABLE_NAMES.session_replay_chunks)
     .where('session_id', '=', sessionId)
     .where('project_id', '=', projectId)
     .orderBy('chunk_index', 'ASC')
     .execute();
 
-  const allEvents = chunks.flatMap((chunk) =>
-    JSON.parse(chunk.payload) as unknown[],
+  const allEvents = chunks.flatMap(
+    (chunk) => JSON.parse(chunk.payload) as unknown[],
   );
 
   // rrweb event types: 2 = FullSnapshot, 4 = Meta
   // Incremental snapshots (type 3) before the first FullSnapshot are orphaned
   // and cause the player to fast-forward through empty time. Strip them but
   // keep Meta events (type 4) since rrweb needs them for viewport dimensions.
-  const firstFullSnapshotIdx = allEvents.findIndex(
-    (e: any) => e.type === 2,
-  );
+  const firstFullSnapshotIdx = allEvents.findIndex((e: any) => e.type === 2);
 
   let events = allEvents;
   if (firstFullSnapshotIdx > 0) {

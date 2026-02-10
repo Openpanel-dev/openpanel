@@ -3,11 +3,7 @@ import { assocPath, pathOr, pick } from 'ramda';
 
 import { HttpError } from '@/utils/errors';
 import { generateId, slug } from '@openpanel/common';
-import {
-  generateDeviceId,
-  generateSecureId,
-  parseUserAgent,
-} from '@openpanel/common/server';
+import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import {
   TABLE_NAMES,
   ch,
@@ -20,6 +16,7 @@ import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { getEventsGroupQueueShard } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 
+import { getDeviceId } from '@/utils/ids';
 import {
   type IDecrementPayload,
   type IIdentifyPayload,
@@ -29,84 +26,6 @@ import {
   type ITrackPayload,
   zTrackHandlerPayload,
 } from '@openpanel/validation';
-
-async function getDeviceId({
-  projectId,
-  ip,
-  ua,
-  salts,
-  overrideDeviceId,
-}: {
-  projectId: string;
-  ip: string;
-  ua: string | undefined;
-  salts: { current: string; previous: string };
-  overrideDeviceId?: string;
-}) {
-  if (overrideDeviceId) {
-    return { deviceId: overrideDeviceId, sessionId: undefined };
-  }
-
-  if (!ua) {
-    return { deviceId: '', sessionId: undefined };
-  }
-
-  const currentDeviceId = generateDeviceId({
-    salt: salts.current,
-    origin: projectId,
-    ip,
-    ua,
-  });
-  const previousDeviceId = generateDeviceId({
-    salt: salts.previous,
-    origin: projectId,
-    ip,
-    ua,
-  });
-
-  return await getDeviceIdFromSession({
-    projectId,
-    currentDeviceId,
-    previousDeviceId,
-  });
-}
-
-async function getDeviceIdFromSession({
-  projectId,
-  currentDeviceId,
-  previousDeviceId,
-}: {
-  projectId: string;
-  currentDeviceId: string;
-  previousDeviceId: string;
-}) {
-  try {
-    const multi = getRedisCache().multi();
-    multi.hget(
-      `bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`,
-      'data',
-    );
-    multi.hget(
-      `bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`,
-      'data',
-    );
-    const res = await multi.exec();
-    if (res?.[0]?.[1]) {
-      const data = JSON.parse(res?.[0]?.[1] as string);
-      const sessionId = data.payload.sessionId;
-      return { deviceId: currentDeviceId, sessionId };
-    }
-    if (res?.[1]?.[1]) {
-      const data = JSON.parse(res?.[1]?.[1] as string);
-      const sessionId = data.payload.sessionId;
-      return { deviceId: previousDeviceId, sessionId };
-    }
-  } catch (error) {
-    console.error('Error getting session end GET /track/device-id', error);
-  }
-
-  return { deviceId: currentDeviceId, sessionId: generateSecureId('se') };
-}
 
 export function getStringHeaders(headers: FastifyRequest['headers']) {
   return Object.entries(
