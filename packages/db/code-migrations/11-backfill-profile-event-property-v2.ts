@@ -75,22 +75,11 @@ export async function up() {
   console.log('='.repeat(60));
   console.log('');
 
-  // Step 1: Analyze data to backfill
-  const analysis = await analyzeDataRange(options.startDate, options.endDate);
-
-  if (!analysis.hasData) {
-    console.log('⚠️  No data found in date range');
-    return;
-  }
-
-  console.log('📊 Data Analysis:');
-  console.log(`   Events:              ${analysis.totalEvents.toLocaleString()}`);
-  console.log(`   Profiles:            ${analysis.totalProfiles.toLocaleString()}`);
-  console.log(`   Avg Props/Event:     ${analysis.avgProperties.toFixed(1)}`);
-  console.log(`   Est. MV Rows:        ${Math.round(analysis.totalEvents * analysis.avgProperties).toLocaleString()}`);
+  // Skip analysis (too memory intensive for large datasets)
+  console.log('⏩ Skipping analysis - will process all data in date range');
   console.log('');
 
-  // Step 2: Generate hourly batches
+  // Generate hourly batches
   const batches = generateHourlyBatches(
     options.startDate,
     options.endDate,
