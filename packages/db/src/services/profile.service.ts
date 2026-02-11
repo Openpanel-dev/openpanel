@@ -128,6 +128,8 @@ export async function getProfileById(id: string, projectId: string) {
       last_value(properties) as properties,
       last_value(created_at) as created_at
     FROM ${TABLE_NAMES.profiles} FINAL WHERE id = ${sqlstring.escape(String(id))} AND project_id = ${sqlstring.escape(projectId)} GROUP BY id, project_id ORDER BY created_at DESC LIMIT 1`,
+    undefined,
+    true,
   );
 
   if (!profile) {
@@ -170,6 +172,8 @@ export async function getProfiles(ids: string[], projectId: string) {
       id IN (${filteredIds.map((id) => sqlstring.escape(id)).join(',')})
     GROUP BY id, project_id
     `,
+    undefined,
+    true,
   );
 
   return data.map(transformProfile);
@@ -197,7 +201,7 @@ export async function getProfileList({
   if (isExternal !== undefined) {
     sb.where.external = `is_external = ${isExternal ? 'true' : 'false'}`;
   }
-  const data = await chQuery<IClickhouseProfile>(getSql());
+  const data = await chQuery<IClickhouseProfile>(getSql(), undefined, true);
   return data.map(transformProfile);
 }
 
@@ -217,7 +221,7 @@ export async function getProfileListCount({
   if (isExternal !== undefined) {
     sb.where.external = `is_external = ${isExternal ? 'true' : 'false'}`;
   }
-  const data = await chQuery<{ count: number }>(getSql());
+  const data = await chQuery<{ count: number }>(getSql(), undefined, true);
   return data[0]?.count ?? 0;
 }
 
