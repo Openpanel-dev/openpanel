@@ -22,7 +22,7 @@ export async function bootCron() {
     {
       name: 'flush',
       type: 'flushEvents',
-      pattern: 1000 * 10,
+      pattern: 1000 * 5,
     },
     {
       name: 'flush',
