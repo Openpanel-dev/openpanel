@@ -168,10 +168,11 @@ function generateHourlyBatches(
   const end = new Date(endDate + 'T23:59:59Z');
   let current = new Date(start);
 
-  while (current <= end) {
+  while (current < end) {
     const batchEnd = new Date(current);
     batchEnd.setHours(current.getHours() + batchSizeHours);
 
+    // Ensure we don't go past the end date
     if (batchEnd > end) {
       batchEnd.setTime(end.getTime());
     }
@@ -209,7 +210,14 @@ SETTINGS
   max_threads = 8`;
 
     batches.push({ startTime: startStr, endTime: endStr, sql });
+
+    // Advance to next batch start
     current = new Date(batchEnd);
+
+    // Break if we've reached or passed the end (prevent infinite loop)
+    if (current >= end) {
+      break;
+    }
   }
 
   return batches;
