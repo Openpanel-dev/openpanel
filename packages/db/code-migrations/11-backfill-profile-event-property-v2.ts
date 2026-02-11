@@ -249,41 +249,24 @@ async function executeBatches(
   targetTable: string
 ) {
   console.log('🚀 Starting execution...');
-  console.log('💡 Progress is auto-saved (can Ctrl+C and resume)');
+  console.log('💡 AggregatingMergeTree will merge any duplicate data');
   console.log('');
 
   let completed = 0;
-  let skipped = 0;
   const total = batches.length;
   const startTime = Date.now();
 
   for (const batch of batches) {
     try {
-      const checkDate = batch.startTime.split(' ')[0];
-
-      // Check if data already exists (for resumption)
-      const checkQuery = `SELECT count() as c FROM ${targetTable} WHERE event_date = '${checkDate}' LIMIT 1`;
-      const checkResult = await chMigrationClient.query({ query: checkQuery, format: 'JSONEachRow' });
-      const checkData = await checkResult.json<{ c: string }>();
-
-      if (checkData[0] && Number(checkData[0].c) > 1000) {
-        skipped++;
-        completed++;
-        if (completed % 50 === 0) {
-          logProgress(completed, total, skipped, startTime);
-        }
-        continue;
-      }
-
-      // Execute INSERT
+      // Execute INSERT (no skip - reprocess all data, AggregatingMergeTree will merge)
       const execStart = Date.now();
       await runClickhouseMigrationCommands([batch.sql]);
       const execTime = Date.now() - execStart;
 
       completed++;
 
-      if (completed % 50 === 0 || execTime > 60000) {
-        logProgress(completed, total, skipped, startTime, `${batch.startTime} to ${batch.endTime}`, execTime);
+      if (completed % 50 === 0 || execTime > 60000 || completed === total) {
+        logProgress(completed, total, startTime, `${batch.startTime} to ${batch.endTime}`, execTime);
       }
 
     } catch (error: any) {
@@ -297,15 +280,14 @@ async function executeBatches(
   console.log('');
   console.log('✅ Backfill complete!');
   console.log(`   Time:      ${formatTime(Math.round(totalTime / 1000))}`);
-  console.log(`   Processed: ${completed - skipped}`);
-  console.log(`   Skipped:   ${skipped}`);
+  console.log(`   Processed: ${completed}/${total} batches`);
+  console.log(`   Avg/batch: ${Math.round(totalTime / completed / 1000)}s`);
   console.log('');
 }
 
 function logProgress(
   completed: number,
   total: number,
-  skipped: number,
   startTime: number,
   label?: string,
   execTime?: number
@@ -315,7 +297,6 @@ function logProgress(
   const remaining = ((total - completed) / completed) * elapsed;
 
   let msg = `   [${pct}%] ${completed}/${total} | ETA: ${formatTime(Math.round(remaining))}`;
-  if (skipped > 0) msg += ` | Skipped: ${skipped}`;
   if (label && execTime) msg += `\n   Last: ${label} (${Math.round(execTime / 1000)}s)`;
 
   console.log(msg);
