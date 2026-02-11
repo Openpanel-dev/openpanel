@@ -200,9 +200,30 @@ PREWHERE
   created_at >= toDateTime64('${startStr}', 3)
   AND created_at < toDateTime64('${endStr}', 3)
   AND profile_id != device_id
+  AND name IN (
+    'userFlags',
+    'appsflyerInstallWebhook',
+    '_firstSeen',
+    'screenVisible',
+    'trialScreenOpen',
+    'trialStarted',
+    'subscriptionPurchased',
+    'trialConverted',
+    'supportChatOpened',
+    'showOpen',
+    'reelOpen'
+  )
 WHERE
   property_key != ''
   AND property_value != ''
+  AND property_key IN (
+    'subscription-v3-enabled',
+    'af_adset_id',
+    'screenName',
+    'starter-shows',
+    'reels-entry-point-experiment',
+    'playlist'
+  )
 GROUP BY project_id, profile_id, name, property_key, property_value, event_date
 SETTINGS
   max_memory_usage = 10000000000,
