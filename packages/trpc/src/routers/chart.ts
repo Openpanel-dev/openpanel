@@ -246,18 +246,16 @@ export const chartRouter = createTRPCRouter({
         .from(TABLE_NAMES.profiles)
         .where('project_id', '=', projectId)
         .where('is_external', '=', true)
-        .orderBy('created_at', 'DESC')
-        .limit(10000)
+        .limit(10_000)
         .execute();
 
-      const profileProperties: string[] = [];
-      for (const p of profiles) {
-        for (const property of Object.keys(p.properties)) {
-          if (!profileProperties.includes(`profile.properties.${property}`)) {
-            profileProperties.push(`profile.properties.${property}`);
-          }
-        }
-      }
+      const profileProperties = [
+        ...new Set(
+          profiles.flatMap((p) =>
+            Object.keys(p.properties).map((k) => `profile.properties.${k}`),
+          ),
+        ),
+      ];
 
       const query = clix(ch)
         .select<{ property_key: string; created_at: string }>([
@@ -267,7 +265,9 @@ export const chartRouter = createTRPCRouter({
         .from(TABLE_NAMES.event_property_values_mv)
         .where('project_id', '=', projectId)
         .groupBy(['property_key'])
-        .orderBy('created_at', 'DESC');
+        .orderBy('length(property_key)', 'ASC')
+        .orderBy('created_at', 'DESC')
+        .limit(10_000);
 
       if (event && event !== '*') {
         query.where('name', '=', event);
@@ -275,17 +275,14 @@ export const chartRouter = createTRPCRouter({
 
       const res = await query.execute();
 
-      const properties = res
-        .map((item) => item.property_key)
-        .map((item) => item.replace(/\.([0-9]+)\./g, '.*.'))
-        .map((item) => item.replace(/\.([0-9]+)/g, '[*]'))
-        .map((item) => `properties.${item}`);
+      const eventProperties = res.map((item) => {
+        const key = item.property_key
+          .replace(/\.([0-9]+)\./g, '.*.')
+          .replace(/\.([0-9]+)/g, '[*]');
+        return `properties.${key}`;
+      });
 
-      if (event === '*' || !event) {
-        properties.push('name');
-      }
-
-      properties.push(
+      const fixedProperties = [
         'duration',
         'revenue',
         'has_profile',
@@ -308,8 +305,14 @@ export const chartRouter = createTRPCRouter({
         'profile.first_name',
         'profile.last_name',
         'profile.email',
+      ];
+
+      const properties = [
+        ...eventProperties,
+        ...(event === '*' || !event ? ['name'] : []),
+        ...fixedProperties,
         ...profileProperties,
-      );
+      ];
 
       return pipe(
         sort<string>((a, b) => a.length - b.length),
