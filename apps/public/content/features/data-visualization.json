@@ -170,6 +170,6 @@
   },
   "cta": {
     "label": "Start visualizing your data",
-    "href": "/onboarding"
+    "href": "https://dashboard.openpanel.dev/onboarding"
   }
 }

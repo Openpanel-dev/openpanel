@@ -163,6 +163,6 @@
   },
   "cta": {
     "label": "Invite your team and share your first dashboard",
-    "href": "/onboarding"
+    "href": "https://dashboard.openpanel.dev/onboarding"
   }
 }

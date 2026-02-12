@@ -142,6 +142,6 @@
   },
   "cta": {
     "label": "Start tracking sessions",
-    "href": "/onboarding"
+    "href": "https://dashboard.openpanel.dev/onboarding"
   }
 }

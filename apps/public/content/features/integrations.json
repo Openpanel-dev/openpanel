@@ -163,6 +163,6 @@
   },
   "cta": {
     "label": "Set up your first integration",
-    "href": "/onboarding"
+    "href": "https://dashboard.openpanel.dev/onboarding"
   }
 }

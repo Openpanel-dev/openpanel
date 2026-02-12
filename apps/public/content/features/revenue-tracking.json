@@ -152,6 +152,6 @@
   },
   "cta": {
     "label": "Start tracking revenue",
-    "href": "/onboarding"
+    "href": "https://dashboard.openpanel.dev/onboarding"
   }
 }

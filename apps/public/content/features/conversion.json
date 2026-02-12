@@ -162,6 +162,6 @@
   },
   "cta": {
     "label": "Track your first conversion",
-    "href": "/onboarding"
+    "href": "https://dashboard.openpanel.dev/onboarding"
   }
 }

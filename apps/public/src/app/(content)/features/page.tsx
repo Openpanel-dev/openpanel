@@ -1,5 +1,5 @@
-import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
 import { FeatureHero } from '@/app/(content)/features/[slug]/_components/feature-hero';
+import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
 import { Section, SectionHeader } from '@/components/section';
 import { WindowImage } from '@/components/window-image';
 import { url } from '@/lib/layout.shared';
@@ -61,7 +61,7 @@ export default async function FeaturesIndexPage() {
         title="Ready to get started?"
         description="Join thousands of teams using OpenPanel for their analytics needs."
         ctaText="Get Started Free"
-        ctaLink="/onboarding"
+        ctaLink="https://dashboard.openpanel.dev/onboarding"
       />
     </div>
   );

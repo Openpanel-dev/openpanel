@@ -66,7 +66,7 @@ export default async function CompareIndexPage() {
         title="Ready to get started?"
         description="Join thousands of teams using OpenPanel for their analytics needs."
         ctaText="Get Started Free"
-        ctaLink="/onboarding"
+        ctaLink="https://dashboard.openpanel.dev/onboarding"
       />
     </div>
   );

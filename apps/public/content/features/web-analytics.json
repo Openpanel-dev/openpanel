@@ -176,6 +176,6 @@
   },
   "cta": {
     "label": "Add analytics in 2 minutes",
-    "href": "/onboarding"
+    "href": "https://dashboard.openpanel.dev/onboarding"
   }
 }

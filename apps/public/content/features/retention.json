@@ -133,6 +133,6 @@
   },
   "cta": {
     "label": "See your retention in minutes",
-    "href": "/onboarding"
+    "href": "https://dashboard.openpanel.dev/onboarding"
   }
 }
