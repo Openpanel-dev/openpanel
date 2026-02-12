@@ -830,9 +830,15 @@ export const chartRouter = createTRPCRouter({
         return [];
       }
 
-      // Fetch profile details
+      // Fetch profile details in batches to avoid exceeding ClickHouse max_query_size
       const ids = profileIds.map((p) => p.profile_id).filter(Boolean);
-      const profiles = await getProfilesCached(ids, projectId);
+      const BATCH_SIZE = 200;
+      const profiles = [];
+      for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+        const batch = ids.slice(i, i + BATCH_SIZE);
+        const batchProfiles = await getProfilesCached(batch, projectId);
+        profiles.push(...batchProfiles);
+      }
 
       return profiles;
     }),
@@ -921,20 +927,20 @@ export const chartRouter = createTRPCRouter({
       if (group === 'profile_id') {
         // For profile grouping: re-aggregate by profile_id, taking MAX level per profile.
         // This ensures a user who completed the funnel with identity change is counted correctly.
+        // NOTE: Wrap in subquery to avoid ClickHouse resolving `level` in WHERE to the
+        // `max(level) AS level` alias (ILLEGAL_AGGREGATION error).
         query.with(
           'funnel',
-          'SELECT profile_id, max(level) AS level FROM session_funnel WHERE level != 0 GROUP BY profile_id',
+          'SELECT profile_id, max(level) AS level FROM (SELECT * FROM session_funnel WHERE level != 0) GROUP BY profile_id',
         );
       } else {
-        // For session grouping: use session_funnel directly
-        query.with('funnel', 'SELECT * FROM session_funnel');
+        // For session grouping: filter out level = 0 inside the CTE
+        query.with('funnel', 'SELECT * FROM session_funnel WHERE level != 0');
       }
 
       // Get distinct profile IDs
-      query
-        .select(['DISTINCT profile_id'])
-        .from('funnel')
-        .where('level', '!=', 0);
+      // NOTE: level != 0 is already filtered inside the funnel CTE above
+      query.select(['DISTINCT profile_id']).from('funnel');
 
       if (showDropoffs) {
         // Show users who dropped off at this step (completed this step but not the next)
@@ -944,6 +950,10 @@ export const chartRouter = createTRPCRouter({
         query.where('level', '>=', targetLevel);
       }
 
+      // Cap the number of profiles to avoid exceeding ClickHouse max_query_size
+      // when passing IDs to the next query
+      query.limit(1000);
+
       const profileIdsResult = (await query.execute()) as {
         profile_id: string;
       }[];
@@ -952,9 +962,16 @@ export const chartRouter = createTRPCRouter({
         return [];
       }
 
-      // Fetch profile details
+      // Fetch profile details in batches to avoid exceeding ClickHouse max_query_size
+      // when there are many profile IDs to pass in the IN(...) clause
       const ids = profileIdsResult.map((p) => p.profile_id).filter(Boolean);
-      const profiles = await getProfilesCached(ids, projectId);
+      const BATCH_SIZE = 500;
+      const profiles = [];
+      for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+        const batch = ids.slice(i, i + BATCH_SIZE);
+        const batchProfiles = await getProfilesCached(batch, projectId);
+        profiles.push(...batchProfiles);
+      }
 
       return profiles;
     }),

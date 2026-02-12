@@ -271,11 +271,14 @@ export class FunnelService {
           : '';
       funnelQuery.with(
         'funnel',
-        `SELECT profile_id, max(level) AS level${breakdownAggregates} FROM session_funnel WHERE level != 0 GROUP BY profile_id`,
+        `SELECT profile_id, max(level) AS level${breakdownAggregates} FROM (SELECT * FROM session_funnel WHERE level != 0) GROUP BY profile_id`,
       );
     } else {
-      // For session grouping: use session_funnel directly
-      funnelQuery.with('funnel', 'SELECT * FROM session_funnel');
+      // For session grouping: filter out level = 0 inside the CTE
+      funnelQuery.with(
+        'funnel',
+        'SELECT * FROM session_funnel WHERE level != 0',
+      );
     }
 
     funnelQuery
@@ -289,7 +292,6 @@ export class FunnelService {
         'count() as count',
       ])
       .from('funnel')
-      .where('level', '!=', 0)
       .groupBy(['level', ...breakdowns.map((b, index) => `b_${index}`)])
       .orderBy('level', 'DESC');
 
