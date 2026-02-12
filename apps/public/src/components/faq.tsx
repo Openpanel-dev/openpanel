@@ -8,13 +8,15 @@ import {
 } from './ui/accordion';
 
 export const Faqs = ({ children }: { children: React.ReactNode }) => (
-  <Accordion
-    type="single"
-    collapsible
-    className="w-full max-w-screen-md self-center border rounded-3xl [&_button]:px-4 bg-background-dark [&_div.answer]:bg-background-light"
-  >
-    {children}
-  </Accordion>
+  <div itemScope itemType="https://schema.org/FAQPage">
+    <Accordion
+      type="single"
+      collapsible
+      className="w-full max-w-screen-md self-center border rounded-3xl [&_button]:px-4 bg-background-dark [&_div.answer]:bg-background-light"
+    >
+      {children}
+    </Accordion>
+  </div>
 );
 
 export const FaqItem = ({
