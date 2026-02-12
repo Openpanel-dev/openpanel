@@ -69,6 +69,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.3,
     },
+    {
+      url: url('/tools/ip-lookup'),
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: url('/tools/url-checker'),
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
     ...articles.map((item) => ({
       url: url(item.url),
       lastModified: item.data.date,
@@ -77,7 +89,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     ...guides.map((item) => ({
       url: url(item.url),
-      lastModified: item.data.date,
+      lastModified: item.data.updated ?? item.data.date,
       changeFrequency: 'monthly' as const,
       priority: 0.5,
     })),
