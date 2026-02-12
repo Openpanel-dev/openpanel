@@ -15,6 +15,16 @@ const config = {
       destination: '/articles/open-source-web-analytics',
       permanent: true,
     },
+    {
+      source: '/articles/alternatives-to-mixpanel',
+      destination: '/articles/mixpanel-alternatives',
+      permanent: true,
+    },
+    {
+      source: '/articles/vs-mixpanel',
+      destination: '/compare/mixpanel-alternative',
+      permanent: true,
+    },
   ],
 };
 
