@@ -113,10 +113,10 @@ export class FunnelService {
     };
   }
 
-  getFunnelConditions(events: IChartEvent[] = []): string[] {
+  getFunnelConditions(events: IChartEvent[] = [], projectId?: string): string[] {
     return events.map((event) => {
       const { sb, getWhere } = createSqlBuilder();
-      sb.where = getEventFiltersWhereClause(event.filters);
+      sb.where = getEventFiltersWhereClause(event.filters, projectId);
       sb.where.name = `name = ${sqlstring.escape(event.name)}`;
       return getWhere().replace('WHERE ', '');
     });
@@ -147,7 +147,7 @@ export class FunnelService {
     fromClause: string;
     needsNameFilter: boolean;
   }) {
-    const funnels = this.getFunnelConditions(eventSeries);
+    const funnels = this.getFunnelConditions(eventSeries, projectId);
 
     const query = clix(this.client, timezone)
       .select([

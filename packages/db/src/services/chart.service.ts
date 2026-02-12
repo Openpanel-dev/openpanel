@@ -600,11 +600,14 @@ export async function getChartSql({
       return buildInlineCohortJoin(cohortId, projectId, 'e', cohortMeta);
     }).join(' ');
 
+    // Determine data source: use custom event CTE if present, otherwise events table
+    const dataSource = customEvent ? 'custom_event_data' : TABLE_NAMES.events;
+
     // Add top_breakdowns CTE using the builder
     addCte(
       'top_breakdowns',
       `SELECT ${breakdownSelects}
-      FROM ${TABLE_NAMES.events} e
+      FROM ${dataSource} AS e
       ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${cohortJoinsForTop ? `${cohortJoinsForTop} ` : ''}${getWhereWithoutBar()}
       GROUP BY ${breakdownSelects}
       ORDER BY count(*) DESC
@@ -685,19 +688,22 @@ export async function getChartSql({
 
     const totalCountWhere = getWhereWithoutBar();
 
+    // Determine data source: use custom event CTE if present, otherwise events table
+    const dataSourceForBreakdown = customEvent ? 'custom_event_data' : TABLE_NAMES.events;
+
     // Build cohort JOINs for breakdown_totals CTE
     // NOTE: ClickHouse CTEs cannot reference other CTEs in JOINs, so we inline the subquery
     const cohortJoinsForBreakdown = cohortIds.map((cohortId) => {
       const cohortMeta = cohortMetadata.get(cohortId);
-      return buildInlineCohortJoin(cohortId, projectId, TABLE_NAMES.events, cohortMeta);
+      return buildInlineCohortJoin(cohortId, projectId, dataSourceForBreakdown, cohortMeta);
     }).join(' ');
 
     addCte(
       'breakdown_totals',
       `SELECT
         ${breakdownSelects},
-        uniq(${TABLE_NAMES.events}.profile_id) as total_count
-       FROM ${TABLE_NAMES.events}
+        uniq(${dataSourceForBreakdown}.profile_id) as total_count
+       FROM ${dataSourceForBreakdown}
        ${profilesJoinRefForCTE ? `${profilesJoinRefForCTE} ` : ''}${cohortJoinsForBreakdown ? `${cohortJoinsForBreakdown} ` : ''}${totalCountWhere}
        GROUP BY ${breakdownGroupBy}`,
     );
@@ -714,17 +720,20 @@ export async function getChartSql({
   } else {
     const totalCountWhere = getWhereWithoutBar();
 
+    // Determine data source: use custom event CTE if present, otherwise events table
+    const dataSourceForTotal = customEvent ? 'custom_event_data' : TABLE_NAMES.events;
+
     // Build cohort JOINs for total_unique CTE
     // NOTE: ClickHouse CTEs cannot reference other CTEs in JOINs, so we inline the subquery
     const cohortJoinsForTotal = cohortIds.map((cohortId) => {
       const cohortMeta = cohortMetadata.get(cohortId);
-      return buildInlineCohortJoin(cohortId, projectId, TABLE_NAMES.events, cohortMeta);
+      return buildInlineCohortJoin(cohortId, projectId, dataSourceForTotal, cohortMeta);
     }).join(' ');
 
     addCte(
       'total_unique',
-      `SELECT uniq(${TABLE_NAMES.events}.profile_id) as total_count
-       FROM ${TABLE_NAMES.events}
+      `SELECT uniq(${dataSourceForTotal}.profile_id) as total_count
+       FROM ${dataSourceForTotal}
        ${profilesJoinRefForCTE ? `${profilesJoinRefForCTE} ` : ''}${cohortJoinsForTotal ? `${cohortJoinsForTotal} ` : ''}${totalCountWhere}`,
     );
 

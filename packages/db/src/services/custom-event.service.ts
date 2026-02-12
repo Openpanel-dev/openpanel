@@ -64,8 +64,17 @@ function buildCustomEventSourceQuery(
 }
 
 /**
- * Expand a custom event into SQL UNION of source events
- * This creates a CTE that can be used in place of the events table
+ * Expand a custom event into SQL query
+ *
+ * PERFORMANCE OPTIMIZATION:
+ * When all source events have no filters, we use a single SELECT with IN clause
+ * instead of UNION ALL. This reduces N table scans to 1 table scan.
+ *
+ * Example:
+ * - Before: 20 separate SELECTs with UNION ALL (20 table scans)
+ * - After: 1 SELECT with IN ('event1', 'event2', ..., 'event20') (1 table scan)
+ *
+ * For events with filters, we fall back to UNION ALL to ensure correct filtering.
  *
  * @param customEvent - The custom event definition
  * @param baseWhere - Base WHERE conditions to apply to all source events (date ranges, etc)
@@ -81,6 +90,33 @@ export function expandCustomEventToSQL(
 ): string {
   const definition = customEvent.definition;
 
+  // Check if we can use the optimized path
+  // Optimization is only safe when all events have no filters
+  const canOptimize = definition.events.every(
+    (event) => !event.filters || event.filters.length === 0
+  );
+
+  if (canOptimize && definition.events.length > 0) {
+    // OPTIMIZED PATH: Single SELECT with IN clause
+    // This reduces N table scans to 1 table scan, dramatically improving performance
+    const eventNames = definition.events.map((e) => sqlstring.escape(e.name));
+
+    const whereClauses = [
+      `project_id = ${sqlstring.escape(customEvent.projectId)}`,
+      `name IN (${eventNames.join(', ')})`,
+      ...baseWhere,
+    ];
+
+    return `
+      SELECT * REPLACE(${sqlstring.escape(customEvent.name)} AS name)
+      FROM ${TABLE_NAMES.events}
+      WHERE ${whereClauses.join(' AND ')}
+    `;
+  }
+
+  // FALLBACK PATH: UNION ALL for events with filters
+  // When events have filters, each event may need different WHERE conditions,
+  // so we must use UNION ALL to apply filters correctly per event
   const sourceQueries = definition.events.map((sourceEvent) =>
     buildCustomEventSourceQuery(
       customEvent.projectId,
@@ -90,6 +126,5 @@ export function expandCustomEventToSQL(
     ),
   );
 
-  // UNION ALL for OR logic (match any source event)
   return sourceQueries.join(' UNION ALL ');
 }

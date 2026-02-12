@@ -159,7 +159,7 @@ export class ConversionService {
     // Build funnel conditions for all events
     const conditions = events.map(event => {
       const where = Object.values(
-        getEventFiltersWhereClause(event.filters),
+        getEventFiltersWhereClause(event.filters, projectId),
       ).join(' AND ');
 
       return where
