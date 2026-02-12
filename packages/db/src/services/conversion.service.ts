@@ -54,19 +54,24 @@ export class ConversionService {
     ];
 
     // Build CTE for each custom event
-    customEvents.forEach((customEvent, index) => {
-      if (customEvent) {
-        const sql = expandCustomEventToSQL(
-          {
-            name: customEvent.name,
-            projectId,
-            definition: customEvent.definition as any,
-          },
-          baseWhere,
-        );
-        ctes.push(`custom_event_${index} AS (${sql})`);
-      }
-    });
+    const customEventQueries = await Promise.all(
+      customEvents.map(async (customEvent, index) => {
+        if (customEvent) {
+          const sql = await expandCustomEventToSQL(
+            {
+              name: customEvent.name,
+              projectId,
+              definition: customEvent.definition as any,
+            },
+            baseWhere,
+          );
+          return `custom_event_${index} AS (${sql})`;
+        }
+        return null;
+      })
+    );
+
+    ctes.push(...customEventQueries.filter((q): q is string => q !== null));
 
     // Build union of custom and regular events
     const unionParts: string[] = [];

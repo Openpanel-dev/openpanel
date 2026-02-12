@@ -2,7 +2,7 @@ import sqlstring from 'sqlstring';
 import type { ICustomEventDefinition } from '@openpanel/validation';
 import { TABLE_NAMES } from '../clickhouse/client';
 import { db } from '../prisma-client';
-import { getEventFiltersWhereClause } from './chart.service';
+import { getEventFiltersWhereClause, getMaterializedColumns } from './chart.service';
 
 /**
  * Check if an event name is a custom event
@@ -39,6 +39,7 @@ function buildCustomEventSourceQuery(
   customEventName: string,
   sourceEvent: { name: string; filters?: any[] },
   baseWhere: string[], // Additional WHERE conditions from outer query
+  materializedColumnsSelect: string, // Materialized columns to include
 ): string {
   const whereClauses = [
     `project_id = ${sqlstring.escape(projectId)}`,
@@ -56,8 +57,9 @@ function buildCustomEventSourceQuery(
   }
 
   // Use ClickHouse REPLACE to replace the name column with custom event name
+  // Include materialized columns explicitly since SELECT * doesn't include them
   return `
-    SELECT * REPLACE(${sqlstring.escape(customEventName)} AS name)
+    SELECT *${materializedColumnsSelect} REPLACE(${sqlstring.escape(customEventName)} AS name)
     FROM ${TABLE_NAMES.events}
     WHERE ${whereClauses.join(' AND ')}
   `;
@@ -70,6 +72,10 @@ function buildCustomEventSourceQuery(
  * When all source events have no filters, we use a single SELECT with IN clause
  * instead of UNION ALL. This reduces N table scans to 1 table scan.
  *
+ * MATERIALIZED COLUMNS:
+ * SELECT * REPLACE(...) does not include materialized columns in CTEs.
+ * We explicitly include them so they're available for breakdowns/filters.
+ *
  * Example:
  * - Before: 20 separate SELECTs with UNION ALL (20 table scans)
  * - After: 1 SELECT with IN ('event1', 'event2', ..., 'event20') (1 table scan)
@@ -80,15 +86,23 @@ function buildCustomEventSourceQuery(
  * @param baseWhere - Base WHERE conditions to apply to all source events (date ranges, etc)
  * @returns SQL query string that selects from all source events
  */
-export function expandCustomEventToSQL(
+export async function expandCustomEventToSQL(
   customEvent: {
     name: string;
     projectId: string;
     definition: ICustomEventDefinition;
   },
   baseWhere: string[] = [],
-): string {
+): Promise<string> {
   const definition = customEvent.definition;
+
+  // Get materialized column names to explicitly include in SELECT
+  // (SELECT * doesn't include materialized columns in CTEs)
+  const materializedColumns = await getMaterializedColumns();
+  const materializedColumnNames = Object.values(materializedColumns);
+  const materializedColumnsSelect = materializedColumnNames.length > 0
+    ? `, ${materializedColumnNames.join(', ')}`
+    : '';
 
   // Check if we can use the optimized path
   // Optimization is only safe when all events have no filters
@@ -108,7 +122,7 @@ export function expandCustomEventToSQL(
     ];
 
     return `
-      SELECT * REPLACE(${sqlstring.escape(customEvent.name)} AS name)
+      SELECT *${materializedColumnsSelect} REPLACE(${sqlstring.escape(customEvent.name)} AS name)
       FROM ${TABLE_NAMES.events}
       WHERE ${whereClauses.join(' AND ')}
     `;
@@ -123,6 +137,7 @@ export function expandCustomEventToSQL(
       customEvent.name,
       sourceEvent,
       baseWhere,
+      materializedColumnsSelect,
     ),
   );
 

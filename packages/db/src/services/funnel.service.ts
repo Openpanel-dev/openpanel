@@ -74,7 +74,7 @@ export class FunnelService {
       if (customEvent) {
         // Custom event - create CTE and reference it
         const cteName = `custom_event_${i}`;
-        const sql = expandCustomEventToSQL(
+        const sql = await expandCustomEventToSQL(
           {
             name: customEvent.name,
             projectId,

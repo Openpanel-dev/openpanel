@@ -28,7 +28,7 @@ const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 /**
  * Get materialized columns from database with caching
  */
-async function getMaterializedColumns(): Promise<Record<string, string>> {
+export async function getMaterializedColumns(): Promise<Record<string, string>> {
   const now = Date.now();
 
   // Return cached value if still valid
@@ -445,7 +445,7 @@ export async function getChartSql({
 
   // Setup data source: custom event CTE or regular events table
   if (customEvent) {
-    setupCustomEventCTE(sb, addCte, customEvent, projectId, startDate, endDate);
+    await setupCustomEventCTE(sb, addCte, customEvent, projectId, startDate, endDate);
   } else if (event.name !== '*') {
     sb.where.eventName = `name = ${sqlstring.escape(event.name)}`;
   }
@@ -756,7 +756,7 @@ function isNumericColumn(columnName: string): boolean {
  * Setup CTE for custom event expansion
  * Modifies the sql builder to use custom event data instead of events table
  */
-function setupCustomEventCTE(
+async function setupCustomEventCTE(
   sb: any,
   addCte: (name: string, query: string) => void,
   customEvent: { name: string; definition: ICustomEventDefinition },
@@ -772,7 +772,7 @@ function setupCustomEventCTE(
     baseWhere.push(`created_at <= toDateTime('${formatClickhouseDate(endDate)}')`);
   }
 
-  const customEventSQL = expandCustomEventToSQL(
+  const customEventSQL = await expandCustomEventToSQL(
     { ...customEvent, projectId },
     baseWhere,
   );
