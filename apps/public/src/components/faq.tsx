@@ -22,7 +22,10 @@ export const Faqs = ({ children }: { children: React.ReactNode }) => (
 export const FaqItem = ({
   question,
   children,
-}: { question: string; children: string | React.ReactNode }) => (
+}: {
+  question: string;
+  children: string | React.ReactNode;
+}) => (
   <AccordionItem
     value={question}
     itemScope
@@ -39,11 +42,13 @@ export const FaqItem = ({
       itemType="https://schema.org/Answer"
       className="prose"
     >
-      {typeof children === 'string' ? (
-        <Markdown>{children}</Markdown>
-      ) : (
-        children
-      )}
+      <div itemProp="text">
+        {typeof children === 'string' ? (
+          <Markdown>{children}</Markdown>
+        ) : (
+          children
+        )}
+      </div>
     </AccordionContent>
   </AccordionItem>
 );
