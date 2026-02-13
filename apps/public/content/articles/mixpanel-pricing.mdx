@@ -1,55 +1,90 @@
 ---
-title: "Mixpanel Pricing 2026: Plans, Costs & Free Tier Breakdown"
-description: "Complete breakdown of Mixpanel's 2026 pricing. Free tier limits, Growth plan costs ($0.00028/event), Enterprise pricing, and hidden fees. See how it compares."
+title: "Mixpanel Pricing 2026: Free Plan, Growth Costs & Full Breakdown"
+description: "Complete guide to Mixpanel pricing in 2026. Free plan (1M events), Growth plan ($0.00028/event), Enterprise, hidden add-on costs, and how it compares to OpenPanel."
 tag: Guide
 team: OpenPanel Team
 date: 2025-12-08
-updated: 2026-02-12
+updated: 2026-02-13
 cover: /content/mixpanel-pricing-cover.jpg
 ---
 
-Mixpanel is one of the most popular product analytics tools out there. It's powerful, well-designed, and used by thousands of companies. But before you commit, you probably want to understand exactly what you'll be paying.
+Mixpanel pricing starts with a free plan capped at **1 million monthly events**. The Growth plan charges **$0.00028 per event** ($0.28 per 1,000 events) after 1M free events, with costs reaching ~$2,520/month at 10 million events. Enterprise pricing requires contacting sales and typically starts around $25,000/year.
 
-Mixpanel's pricing has gone through several changes over the years. They've made it more transparent recently, which is great. But there are still some things that aren't immediately obvious when you're looking at their pricing page.
+Here's the quick overview:
 
-In this guide, we'll break down exactly how Mixpanel pricing works, what you get at each tier, and some things to watch out for as your usage grows.
+| Plan | Monthly Events | Price | Best For |
+|------|---------------|-------|----------|
+| **Free** | Up to 1M | $0 | Small projects, MVPs |
+| **Growth** | 1M free, up to 20M | From $0 (scales with usage) | Growing companies |
+| **Enterprise** | Unlimited | Custom (from ~$25K/year) | Large organizations |
+
+Now let's break down exactly what you get at each tier, what the hidden costs are, and whether Mixpanel is worth the price for your use case.
 
 ## How Mixpanel Pricing Works
 
-Mixpanel uses event-based pricing. This means you pay based on the number of events you track, not the number of users on your team or the number of projects you have.
+Mixpanel uses **event-based pricing**. You pay based on the number of events you track, not the number of users on your team or the number of projects you have.
 
-An "event" is any user action you decide to track. A button click, a page view, a purchase, a sign-up. Each one counts as an event. If you track 10 different actions and have 10,000 monthly active users, you could easily be looking at millions of events per month.
+An "event" is any user action you decide to track: a button click, a page view, a purchase, a sign-up. Each one counts as one event. If you track 10 different actions and have 10,000 monthly active users, you could easily be looking at millions of events per month.
 
-Mixpanel offers three main plans: Free, Growth, and Enterprise.
+This model means your costs scale directly with your product's usage. The more successful your product becomes, the more you pay.
 
 ## Mixpanel Free Plan
 
-The free plan is genuinely generous for getting started. You get up to 20 million events per month, which sounds like a lot. For many small projects and early-stage startups, this is plenty.
+Does Mixpanel have a free tier? **Yes.** The Mixpanel free plan includes up to **1 million monthly events** with core analytics features. It's a decent starting point for small projects and early-stage startups.
 
 Here's what's included in the free plan:
 
-The core analytics features work well. You get access to Insights, [Funnels](/features/funnels), Flows, and [Retention](/features/retention) reports. You can create unlimited reports and dashboards. The data is real-time, and you can segment by any property you're tracking.
+- **1M monthly events** — once you hit the cap, you'll need to upgrade
+- **Core analytics** — Insights, [Funnels](/features/funnels), Flows, and [Retention](/features/retention) reports
+- **5 saved reports per seat** — enough to start, but teams feel this limit quickly
+- **10K monthly session replays** — see exactly how users interact with your product
+- **30 Spark AI queries per month** — Mixpanel's AI-powered query builder
+- **Unlimited seats** — no per-user charges
 
-However, there are limitations. You don't get access to some of the more advanced features like behavioral cohorts, saved metrics, or custom properties beyond the basics. The free plan also doesn't include Group Analytics, which is pretty much essential if you're building a B2B product and want to analyze data at the company level rather than just individual users.
+However, the free plan has significant limitations:
 
-There's also no data export on the free plan. If you want to pull your data into a warehouse or analyze it elsewhere, you'll need to upgrade.
+- **No Group Analytics** — essential for B2B products that need account-level analysis
+- **No data export** — you can't pull data into a warehouse
+- **Limited behavioral cohorts** — advanced segmentation requires Growth
+- **No formulas or saved metrics** — basic reporting only
+- **No anomaly detection or root cause analysis**
+- **No multi-touch attribution**
+- **Limited custom properties and borrowed properties**
+- **5 monitoring alerts per project** (Growth gets unlimited)
+
+The free plan works well for validating a product idea or running basic analytics on a small project. But once you need collaboration features, advanced analysis, or your events exceed 1 million per month, you'll need to upgrade.
 
 ## Mixpanel Growth Plan
 
-The Growth plan is where most paying customers land. As of early 2025, Mixpanel made the Growth plan more accessible by including the first 1 million events free each month when you add a credit card.
+The Growth plan is where most paying customers land. It includes the first **1 million events free** each month. After that, you pay approximately **$0.00028 per event** ($0.28 per 1,000 events), with volume discounts available at higher tiers.
 
-After that first million, you pay based on your event volume. The pricing scales something like this:
+Here's how Mixpanel Growth plan pricing scales with event volume:
 
-- 1.5 million events: around $140/month
-- 5 million events: around $612.5/month  
-- 10 million events: around $1,176/month
-- 20 million events: around $2,289/month
+| Monthly Events | Estimated Monthly Cost | Cost per 1K Events |
+|---------------|----------------------|-------------------|
+| 1M | $0 (free) | $0.00 |
+| 2M | ~$280 | ~$0.28 |
+| 5M | ~$1,120 | ~$0.28 |
+| 10M | ~$2,520 | ~$0.28 |
+| 20M | ~$5,320 | ~$0.28 |
+| 20M+ | Contact sales | Volume discounts |
 
-These are approximate figures since Mixpanel's pricing page uses a slider and the exact numbers depend on your specific configuration.
+*Prices are approximate based on Mixpanel's pricing calculator. Annual billing typically offers 10-15% discounts.*
 
-The Growth plan adds several important features over Free. You get full access to advanced analysis tools including multi-touch attribution, formulas, saved metrics, and behavioral cohorts. Custom properties become more flexible. You also get access to experiment analysis and more detailed reporting.
+The Growth plan adds several important features over Free:
 
-One thing to note: these prices are for the core analytics. Add-ons cost extra.
+- **Unlimited saved reports** — no more caps on collaborative analytics
+- **Full behavioral cohorts** — segment users based on actions
+- **20K monthly session replays** (customizable up to 500K)
+- **60 Spark AI queries per month** (double the free plan)
+- **Formulas & saved metrics** — build advanced calculations
+- **Multi-touch attribution** — understand which channels drive conversions
+- **Impact & statistical significance** — measure feature impact
+- **Anomaly detection & root cause analysis** — catch issues early
+- **Unlimited monitoring alerts**
+- **Custom properties and borrowed properties** — full flexibility
+
+One thing to note: these prices are for core analytics only. Several features that many teams consider essential are **paid add-ons** on top of the Growth plan.
 
 <Figure
   src="/content/mixpanel-pricing.png"
@@ -58,7 +93,7 @@ One thing to note: these prices are for the core analytics. Add-ons cost extra.
 
 ## Free vs Growth Plan: What's the Difference?
 
-If you're trying to decide whether to stay on Free or upgrade to Growth, here's a detailed breakdown of what you get with each plan:
+If you're trying to decide whether to stay on Free or upgrade to Growth, here's a detailed breakdown:
 
 | Feature | Free Plan | Growth Plan |
 |---------|-----------|-------------|
@@ -68,72 +103,105 @@ If you're trying to decide whether to stay on Free or upgrade to Growth, here's 
 | **Spark AI queries** | 30/month | 60/month |
 | **Behavioral cohorts** | Limited | Full access |
 | **Custom properties** | Limited | Full access |
-| **Formulas & saved metrics** | ❌ | ✅ |
-| **Impact & statistical significance** | ❌ | ✅ |
-| **Multi-touch attribution** | ❌ | ✅ |
+| **Formulas & saved metrics** | Limited | Full access |
+| **Impact & statistical significance** | No | Yes |
+| **Multi-touch attribution** | No | Yes |
 | **Monitoring alerts** | 5 per project | Unlimited |
-| **Anomaly detection** | ❌ | ✅ |
-| **Root cause analysis** | ❌ | ✅ |
-| **Experiment reporting** | ❌ | Add-on |
-| **Feature flags** | ❌ | Add-on |
-| **Account-level analytics** | ❌ | Add-on |
-| **Data pipelines** | ❌ | Add-on |
+| **Anomaly detection** | No | Yes |
+| **Root cause analysis** | No | Yes |
+| **Cart analysis** | No | Yes |
+| **Campaign reporting** | No | Yes |
+| **Experiment reporting** | No | Add-on |
+| **Feature flags** | No | Add-on |
+| **Account-level analytics** | No | Add-on |
+| **Data pipelines** | No | Add-on |
+| **Metric Trees** | No | Add-on |
 | **Lookup tables** | Limited | Full access |
 | **Support** | Email (standard) | Email (24/5) |
 
-The key takeaway: Free is genuinely useful for basic analytics, but once you need advanced features like formulas, cohort analysis, or more than 5 saved reports per person, you'll need to upgrade. And even on Growth, several important features like account-level analytics and data pipelines are still add-ons.
+The bottom line: Free works for basic analytics and small projects. Once you need advanced features like formulas, cohort analysis, unlimited saved reports, or more than 1M monthly events, you'll need Growth. And even on Growth, several important features are still add-ons that cost extra.
 
 ## Mixpanel Enterprise Plan
 
-Enterprise pricing isn't published. You need to contact sales, and pricing depends on your specific needs, event volume, and how good you are at negotiating.
+Enterprise pricing isn't published. You need to contact sales, and the final price depends on your event volume, feature requirements, and negotiation.
 
-Based on publicly available information from sites that track B2B pricing, Enterprise plans typically start around $20,000 per year for MTU-based pricing (monthly tracked users) or around $27,000 per year for 300 million events on event-based pricing.
+Based on publicly available data, **Mixpanel Enterprise plans typically start around $25,000-$30,000 per year** and can go well over $100,000/year for large-scale deployments.
 
-Enterprise adds features like SSO, advanced permissions and data governance, dedicated support, custom contracts, and access to some exclusive reports like Signal and Impact.
+Enterprise adds features that larger organizations need:
 
-If you're a larger organization with compliance requirements or need specific security features, Enterprise is likely where you'll end up.
+- **Unlimited monthly events** — custom volume with no caps
+- **Up to 1 trillion events** capacity
+- **SAML-based SSO & SCIM provisioning** — critical for security-conscious orgs
+- **Advanced data governance** — sensitive data classification & protection
+- **Compartmentalized data access** — granular permissions at the report level
+- **HIPAA compliance tools** — for healthcare companies
+- **Customizable data retention policy** — keep data longer than standard limits
+- **300 Spark AI queries per month**
+- **24/7 support** with faster response SLAs
+- **Slack shared channel support** (add-on)
+- **Dedicated account manager**
+- **Professional services** available
+- **Signal correlation analysis** — advanced analytics
+- **Cross-product analytics** — analyze across multiple products
+- **Data quality monitoring** and verified data
+- **Custom pricing & terms**
+
+If you're a larger organization with compliance requirements, need SSO, or require specific security features, Enterprise is where you'll end up.
 
 ## The Add-Ons That Add Up
 
-Here's where Mixpanel pricing gets a bit tricky. Several features that you might consider core functionality are actually paid add-ons, even on Growth plans.
+Here's where Mixpanel pricing gets tricky. Several features that you might consider core functionality are **paid add-ons**, even on Growth plans:
 
-**Group Analytics** is the big one. If you're building a B2B product, you almost certainly need this. It lets you analyze data at the account or company level, not just individual users. Without it, you can't answer basic questions like "which companies are most engaged?" or "what's our retention by account?" Group Analytics is a separate line item on your bill.
+**Account-Level Behavioral Analytics (Group Analytics)** is the big one. If you're building a B2B product, you almost certainly need this. It lets you analyze data at the account or company level, not just individual users. Without it, you can't answer basic questions like "which companies are most engaged?" or "what's our retention by account?" This is a separate line item on your bill, even on Growth and Enterprise.
 
-**Data Pipelines** is another common add-on. This lets you export your Mixpanel data to a data warehouse like BigQuery, Snowflake, or Redshift. Based on publicly available pricing data, this can add around $19,000+ annually for larger implementations. If you need your analytics data in your warehouse for broader analysis or reporting, this cost adds up.
+**Data Pipelines** is another common add-on. This lets you export your Mixpanel data to a data warehouse like BigQuery, Snowflake, or Redshift. If you need your analytics data in your warehouse for broader analysis, this cost adds up — estimates suggest $19,000+ annually for larger implementations.
 
-**Session Replay** lets you watch recordings of user sessions. It's useful for understanding the context behind your quantitative data, but it's another add-on with its own pricing.
+**Session Replay** beyond the included free tier. Growth includes 20K monthly replays, but if you need more (up to 500K), that's extra.
 
-**Warehouse Connectors** allow you to import data from your warehouse into Mixpanel. Again, separate pricing.
+**Warehouse Connectors** allow you to import data from your warehouse into Mixpanel. Separate pricing.
+
+**Feature Flags** for controlling feature rollouts. Add-on on Growth.
+
+**Experiment Reporting** for A/B testing analysis. Add-on on Growth.
+
+**Metric Trees** for visualizing metric dependencies. Add-on on Growth.
 
 When budgeting for Mixpanel, make sure you factor in which add-ons you'll actually need. The base plan price can be misleading if you end up needing two or three add-ons to do what you want.
 
 ## Mixpanel Startup Program
 
-If you're an early-stage startup, Mixpanel offers a pretty solid deal. Their startup program gives you access to a "Startup Plan" free for one year.
+If you're an early-stage startup, Mixpanel offers a solid deal. Their startup program gives you access to a "Startup Plan" **free for one year**.
 
-To qualify, your company needs to be founded less than 5 years ago, have less than $8 million in total funding, and not have previously redeemed similar offers.
+To qualify:
+- Founded less than **5 years ago**
+- Less than **$8 million** in total funding
+- Haven't redeemed similar offers before
 
 The Startup Plan includes advanced features, Group Analytics, Data Pipelines, Warehouse Connectors, and Session Replay. You get up to 1 billion events over the year and 500,000 session replay recordings.
 
-There's a catch though: you need to start sending data within 90 days of acceptance, or you get removed from the program. And after the year is up, you'll need to move to a paid plan or downgrade to Free.
+There's a catch: you need to start sending data within **90 days** of acceptance, or you get removed. And after the year is up, you'll need to move to a paid plan or downgrade to Free.
 
-It's a good deal if you qualify, but plan ahead for what happens when that first year ends.
+It's a good deal if you qualify, but plan ahead for what happens when that first year ends. Many startups get locked into Mixpanel during this free year and face a significant bill when it expires.
 
 ## When Mixpanel Gets Expensive
 
-Mixpanel's event-based pricing means your costs are directly tied to your growth. The more successful your product becomes, the more you pay. This makes sense from Mixpanel's perspective, but it can create some challenges for growing companies.
+Mixpanel's event-based pricing means your costs are directly tied to your product's growth. Here's a realistic scenario:
 
-Here's a scenario. Let's say you're tracking 15 different events per user. Your product has 50,000 monthly active users, each doing an average of 20 tracked actions per session, with 3 sessions per month. That's 15 × 50,000 × 20 × 3 = 45 million events per month. You've already blown past the free tier and are looking at significant monthly costs.
+Let's say you're tracking 15 different events per user. Your product has 50,000 monthly active users, each doing an average of 20 tracked actions per session, with 3 sessions per month. That's:
+
+**15 × 50,000 × 20 × 3 = 45 million events per month**
+
+At that volume, you're well past the Growth plan's 20M cap and into Enterprise territory — likely looking at $40,000+ per year minimum.
 
 Now imagine you launch a marketing campaign that doubles your user base. Your analytics bill just doubled too.
 
-Some teams respond to this by tracking fewer events or being very selective about what they measure. That's not ideal. You want your analytics to grow with your product, not become a constraint on what you can learn about your users.
+Some teams respond by tracking fewer events or being selective about what they measure. That's not ideal. You want your analytics to grow with your product, not become a constraint on what you can learn about your users.
 
-The other thing that catches people off guard is the gap between the free tier and paid pricing. 20 million events is free. But once you hit 20,000,001 events, you're on a paid plan. The jump can feel steep if you weren't expecting it.
+The other thing that catches people off guard is the cost of add-ons stacking up. Base plan + Group Analytics + Data Pipelines + extra Session Replays can easily 2-3x your expected bill.
 
 ## What Users Say About Mixpanel Pricing
 
-Looking at reviews on G2, Capterra, and similar sites, pricing is one of the most common complaints about Mixpanel. Here are some themes that come up repeatedly:
+Looking at reviews on G2, Capterra, and similar sites, pricing is one of the most common complaints about Mixpanel:
 
 > "The jump from free to paid can be steep." Many users start on the generous free tier, get comfortable with the tool, and then face a significant cost when they outgrow it.
 
@@ -143,104 +211,122 @@ Looking at reviews on G2, Capterra, and similar sites, pricing is one of the mos
 
 > "Pricing forced us to track less." Some users report deliberately limiting their tracking to stay within budget, which defeats the purpose of having comprehensive analytics.
 
-To be fair, there are also plenty of users who think Mixpanel provides good value, especially compared to building custom analytics infrastructure. The complaints tend to come from teams that have scaled beyond the free tier and are comparing costs to alternatives.
+To be fair, many users think Mixpanel provides good value, especially compared to building custom analytics infrastructure. The complaints tend to come from teams that have scaled beyond the free tier and are comparing costs to alternatives.
 
-## Mixpanel vs OpenPanel: A Direct Comparison
+## Mixpanel vs OpenPanel: Pricing Comparison
 
-Since you're reading this on the OpenPanel blog, let's be upfront about how we compare. We built [OpenPanel](/articles/introduction-to-openpanel) specifically as a more affordable alternative to Mixpanel, so we think the comparison is worth making.
+Since you're reading this on the OpenPanel blog, let's be upfront about how we compare. We built [OpenPanel](/articles/introduction-to-openpanel) specifically as a more affordable alternative to Mixpanel.
 
-Here's how the pricing stacks up at different event volumes:
+Here's how pricing stacks up at different event volumes:
 
-| Monthly Events | Mixpanel Growth | OpenPanel Cloud |
-|---------------|-----------------|-----------------|
-| 100K | ~$28* | $20 |
-| 500K | ~$70* | $50 |
-| 1M | Free (with card) | $90 |
-| 1.5M | ~$140 | $180 |
-| 5M | ~$612 | $250 |
-| 10M | ~$1,176 | $350 |
-| 20M | ~$2,289 | $530 |
-| 50M | Contact sales | $900 |
+| Monthly Events | Mixpanel Growth | OpenPanel Cloud | Savings |
+|---------------|-----------------|-----------------|---------|
+| 100K | ~$0 (free tier)* | $20 | — |
+| 500K | ~$0 (free tier)* | $50 | — |
+| 1M | $0 (free tier) | $90 | — |
+| 2.5M | ~$420 | $180 | 57% cheaper |
+| 5M | ~$1,120 | $250 | 78% cheaper |
+| 10M | ~$2,520 | $350 | 86% cheaper |
+| 20M | ~$5,320 | $530 | 90% cheaper |
+| 30M | Contact sales | $680 | — |
+| 50M | Contact sales | $900 | — |
 
-*Mixpanel's free tier covers up to 20M events, but with limited features
+*Mixpanel's free tier covers up to 1M events but with limited features (5 saved reports per seat, no Group Analytics, no data export, limited cohorts).
 
-At 20 million events, OpenPanel is about 77% cheaper than Mixpanel's Growth plan. But the pricing difference is only part of the story.
+At 10 million events, **OpenPanel is ~86% cheaper** than Mixpanel's Growth plan. But the pricing difference is only part of the story.
 
-**What's included matters.** With [OpenPanel pricing](/pricing), everything is included. Unlimited websites, unlimited users, unlimited dashboards. There are no tiers within tiers, no add-ons, no "contact sales for this feature." You pick your event volume and that's your price.
+**Everything is included.** With [OpenPanel pricing](/pricing), all features are included at every tier. Unlimited websites, unlimited users, unlimited dashboards. No tiers within tiers, no add-ons, no "contact sales for this feature." Pick your event volume and that's your price.
 
-**Self-hosting is an option.** If you want to go even further on cost savings, you can [self-host OpenPanel](/articles/how-to-self-host-openpanel) for free. Your only cost is the infrastructure itself, which can be surprisingly affordable. A decent VPS can handle millions of events and costs maybe $20-50/month.
+**Self-hosting is free.** If you want maximum cost control, you can [self-host OpenPanel](/articles/how-to-self-host-openpanel) for free. Your only cost is infrastructure — a decent VPS can handle millions of events for $20-50/month.
 
-**Privacy by default.** OpenPanel uses [cookieless tracking](/articles/cookieless-analytics) out of the box. No cookie consent banners needed. This isn't just about compliance, it means you get more accurate data because you're not losing users who decline cookies.
+**Privacy by default.** OpenPanel uses [cookieless tracking](/articles/cookieless-analytics) out of the box. No cookie consent banners needed. This means more accurate data because you're not losing users who decline cookies.
 
-Obviously, we're biased here. Mixpanel has been around longer, has more integrations, and has a larger team building features. If you need very specific capabilities that only Mixpanel offers, it might be worth the premium. But for most teams doing product analytics, OpenPanel covers the core use cases at a fraction of the cost.
+**No hidden costs.** Mixpanel's Growth plan price is just the starting point once you factor in Group Analytics, Data Pipelines, extra Session Replays, and other add-ons. OpenPanel's price is the full price.
 
-You can see a more detailed comparison on our [Mixpanel alternative](/compare/mixpanel-alternative) page.
+Obviously, we're biased here. Mixpanel has been around longer, has more integrations, and has a larger team. If you need very specific capabilities that only Mixpanel offers, it might be worth the premium. But for most teams doing product analytics, OpenPanel covers the core use cases at a fraction of the cost.
+
+See our full [Mixpanel vs OpenPanel comparison](/compare/mixpanel-alternative) for a feature-by-feature breakdown.
 
 ## Tips for Managing Mixpanel Costs
 
-If you decide Mixpanel is the right tool for you, here are some ways to keep costs under control:
+If you decide Mixpanel is the right tool for you, here are ways to keep costs under control:
 
-**Be intentional about what you track.** Don't track everything just because you can. Define your key metrics and the events that feed into them. You can always add more tracking later if you need it.
+**Be intentional about what you track.** Don't track everything just because you can. Define your key metrics and the events that feed into them. You can always add more tracking later.
 
-**Use the startup program if you qualify.** That free year gives you runway to grow before you need to worry about analytics costs.
+**Use the startup program if you qualify.** That free year gives you runway to grow before analytics costs hit.
 
 **Consider annual billing.** Mixpanel typically offers 10-15% discounts for annual commitments. If you're confident you'll stick with the tool, this is easy savings.
 
-**Audit your tracking regularly.** Over time, teams tend to accumulate tracking that's no longer used. Old features get deprecated, experiments end, but the events keep flowing. A quarterly audit can help you trim unnecessary events.
+**Audit your tracking regularly.** Over time, teams accumulate tracking that's no longer used. Old features get deprecated, experiments end, but the events keep flowing. A quarterly audit can trim unnecessary events.
 
-**Negotiate at renewal.** B2B SaaS pricing is often negotiable, especially at higher volumes. Don't just accept the renewal quote, ask what flexibility exists.
+**Negotiate at renewal.** B2B SaaS pricing is often negotiable, especially at higher volumes. Don't just accept the renewal quote — ask what flexibility exists.
+
+**Evaluate add-on necessity.** Before committing to Group Analytics or Data Pipelines, assess whether you truly need them or if there are workarounds.
 
 ## Making the Decision
 
-Mixpanel is a good product. The analytics are powerful, the UI is well-designed, and there's a reason it's one of the most popular tools in the category.
+Mixpanel is a solid product. The analytics are powerful, the UI is well-designed, and there's a reason it's one of the most popular tools in the category.
 
-But pricing matters. If you're a growing startup watching your runway, or a bootstrapped company keeping costs lean, or an enterprise trying to justify spend to finance, you need to factor in the true cost of your analytics stack.
+But pricing matters. If you're a growing startup watching your runway, a bootstrapped company keeping costs lean, or an enterprise trying to justify spend to finance — you need to understand the true cost of your analytics stack.
 
 The questions to ask yourself:
 
 1. How many events will you realistically track as you grow?
 2. Do you need Group Analytics for B2B analysis?
 3. Do you need data export to a warehouse?
-4. What happens to your budget when your user base doubles?
+4. What's your total cost including add-ons, not just the base plan?
+5. What happens to your budget when your user base doubles?
 
-If the answers to those questions make you nervous about Mixpanel's pricing trajectory, it might be worth looking at alternatives before you're locked in.
+If the answers make you nervous about Mixpanel's pricing trajectory, it's worth looking at alternatives before you're locked in.
 
-[OpenPanel](/) offers a 30-day free trial with no credit card required. You can try it alongside Mixpanel and see which fits better for your needs and budget. And if you want maximum control over costs and data, [self-hosting](/docs/self-hosting/self-hosting) is always an option.
+[OpenPanel](/) offers a 30-day free trial with no credit card required. You can try it alongside Mixpanel and see which fits your needs and budget. And if you want maximum control over costs and data, [self-hosting](/docs/self-hosting/self-hosting) is always an option.
 
 <Faqs>
-<FaqItem question="How much does Mixpanel cost?">
-Mixpanel's cost depends on your event volume. The free plan covers up to 20 million events with limited features. The Growth plan starts with 1 million free events (with credit card), then scales from around $28/month for additional events up to $2,289/month for 20 million events. Enterprise pricing requires contacting sales but typically starts around $20,000/year.
+<FaqItem question="How much does Mixpanel cost in 2026?">
+Mixpanel offers three plans in 2026: a Free plan with up to 1M monthly events and limited features, a Growth plan starting at $0 with 1M free events then $0.00028 per event ($0.28 per 1,000 events) scaling up to ~$5,320/month for 20M events, and an Enterprise plan with custom pricing typically starting around $25,000/year. Add-ons like Group Analytics, Data Pipelines, and extra Session Replays cost extra on top of the base plan.
 </FaqItem>
 
 <FaqItem question="Does Mixpanel have a free tier?">
-Yes, Mixpanel has a free tier that includes up to 20 million events per month. However, it comes with feature limitations. You don't get Group Analytics, data export, advanced cohorts, or some other features. For basic product analytics on smaller projects, the free tier can work well.
+Yes. Mixpanel's free tier includes up to 1 million monthly events, 5 saved reports per seat, 10,000 monthly session replays, and 30 Spark AI queries per month. Core analytics features like Insights, Funnels, Flows, and Retention reports are included. However, you don't get Group Analytics, data export, advanced cohorts, formulas, multi-touch attribution, or anomaly detection on the free plan.
 </FaqItem>
 
-<FaqItem question="What is Mixpanel pricing in 2026?">
-As of 2026, Mixpanel offers a Free plan (up to 20M events with limited features), a Growth plan (starting at ~$28/month after 1M free events, scaling up to ~$2,289/month for 20M events), and an Enterprise plan (starting around $20,000/year). Growth plan pricing works out to roughly $0.00028 per event. Note that add-ons like Group Analytics, Data Pipelines, and Session Replay cost extra on top of the base plan.
+<FaqItem question="What are the Mixpanel free plan limits?">
+The Mixpanel free plan is limited to 1M monthly events, 5 saved reports per seat, 10K session replays per month, 30 Spark AI queries per month, and 5 monitoring alerts per project. Advanced features like behavioral cohorts, custom properties, formulas, and saved metrics are limited or unavailable. Group Analytics, Data Pipelines, and data export are not included.
+</FaqItem>
+
+<FaqItem question="How much does Mixpanel cost per event?">
+On the Mixpanel Growth plan, you pay approximately $0.00028 per event ($0.28 per 1,000 events) after the first 1 million free monthly events. Volume discounts may be available at higher tiers. Enterprise plans have custom per-event pricing negotiated directly with Mixpanel's sales team.
 </FaqItem>
 
 <FaqItem question="What counts as an event in Mixpanel?">
-An event is any user action you choose to track. This includes button clicks, page views, sign-ups, purchases, form submissions, feature usage, or any custom action you define. Each occurrence counts as one event toward your monthly total.
+An event is any user action you choose to track. This includes button clicks, page views, sign-ups, purchases, form submissions, feature usage, or any custom action you define. Each occurrence counts as one event toward your monthly total. Mixpanel also supports autocapture which automatically tracks events without manual instrumentation.
 </FaqItem>
 
 <FaqItem question="Is Mixpanel worth the price?">
-It depends on your needs and budget. Mixpanel is a powerful tool with excellent analytics capabilities. For well-funded companies that need its specific features, it can be worth it. For cost-conscious teams, the pricing can escalate quickly as you grow. Alternatives like OpenPanel offer similar core functionality at significantly lower prices.
+It depends on your needs and budget. Mixpanel excels at deep product analytics — funnels, retention, cohort analysis, and experimentation. For well-funded companies that need its specific features and can afford the add-ons, it delivers value. For cost-conscious teams or those who need simpler analytics, the pricing can escalate quickly as you grow. Alternatives like OpenPanel offer similar core functionality at significantly lower prices with all features included.
 </FaqItem>
 
 <FaqItem question="Does Mixpanel charge for Group Analytics?">
-Yes. Group Analytics is a paid add-on, even on Growth plans. This feature is essential for B2B products that need to analyze data at the company or account level rather than just individual users. The additional cost isn't prominently displayed on the main pricing page.
+Yes. Group Analytics (account-level behavioral analytics) is a paid add-on on both Growth and Enterprise plans. This feature is essential for B2B products that need to analyze data at the company or account level rather than just individual users. The extra cost is not included in the base plan price shown on Mixpanel's pricing page.
 </FaqItem>
 
 <FaqItem question="How does Mixpanel pricing compare to OpenPanel?">
-OpenPanel is significantly cheaper at most event volumes. At 20 million events, OpenPanel costs $530/month compared to Mixpanel's approximately $2,289/month. OpenPanel also includes all features in every plan with no add-ons, and offers a free self-hosting option.
+OpenPanel is significantly cheaper at most event volumes and includes all features at every tier. At 10 million events, OpenPanel costs $350/month compared to Mixpanel's approximately $2,520/month — about 86% cheaper. OpenPanel also has no add-ons or hidden costs, and offers a free self-hosting option for maximum cost control.
 </FaqItem>
 
 <FaqItem question="Can startups get Mixpanel for free?">
-Yes. Mixpanel's Startup Program offers eligible startups their first year free on the Startup Plan. To qualify, your company must be founded less than 5 years ago and have less than $8 million in total funding. The plan includes advanced features and up to 1 billion events over the year.
+Yes. Mixpanel's Startup Program offers eligible startups their first year free on the Startup Plan. To qualify, your company must be founded less than 5 years ago, have less than $8 million in total funding, and not have redeemed similar offers. The plan includes advanced features and up to 1 billion events over the year. You must start sending data within 90 days of acceptance.
 </FaqItem>
 
 <FaqItem question="What happens if I go over my Mixpanel event limit?">
-On the Growth plan, you'll be charged for additional events at your plan's overage rate. Mixpanel states they don't apply punitive overcharges, you just pay the regular per-event rate. They also have a "forgiveness policy" for events tracked by mistake. On the free plan, exceeding limits may require upgrading to a paid plan.
+On the Growth plan, you'll be charged for additional events at your plan's overage rate. Mixpanel states they don't apply punitive overcharges — you pay the regular per-event rate. They also have a "forgiveness policy" for events tracked by mistake. On the free plan, exceeding the 1M event limit requires upgrading to a paid plan.
+</FaqItem>
+
+<FaqItem question="How many Spark AI queries does Mixpanel include?">
+The Free plan includes 30 Spark AI queries per month. The Growth plan doubles this to 60 queries per month. Enterprise plans include 300 Spark AI queries per month. Spark is Mixpanel's AI-powered query builder that lets you ask questions about your data in natural language.
+</FaqItem>
+
+<FaqItem question="What are Mixpanel's pricing alternatives for startups on a budget?">
+For startups looking for affordable product analytics, OpenPanel is a strong alternative starting at $2.50/month for 5,000 events and $90/month for 1M events with all features included. OpenPanel also offers free self-hosting. Other alternatives include PostHog (open source with a free tier) and Amplitude (limited free plan). Unlike Mixpanel, OpenPanel has no add-on costs for features like group analytics or data export.
 </FaqItem>
 </Faqs>
