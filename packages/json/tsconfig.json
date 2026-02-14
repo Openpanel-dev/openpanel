@@ -6,7 +6,8 @@
       "@/*": ["./src/*"],
       "@/server/*": ["./src/server/*"]
     },
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
+    "strictNullChecks": true
   },
   "include": ["."],
   "exclude": ["node_modules"]

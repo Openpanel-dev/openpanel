@@ -11,7 +11,8 @@
     "types": [
       "@types/node",
       "@nuxt/types"
-    ]
+    ],
+    "strictNullChecks": true
   },
   "exclude": ["dist"]
 }

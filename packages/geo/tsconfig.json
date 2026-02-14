@@ -5,7 +5,8 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
+    "strictNullChecks": true
   },
   "include": [".", "*.mmdb"],
   "exclude": ["node_modules"]

@@ -5,7 +5,10 @@
     "rootDir": "src",
     "target": "ES2022",
     "lib": ["ES2022"],
-    "types": ["node"]
+    "types": [
+      "node"
+    ],
+    "strictNullChecks": true
   },
   "include": ["src"]
 }

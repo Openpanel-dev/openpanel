@@ -20,13 +20,11 @@
     "migrate:deploy": "pnpm -r --filter db run migrate:deploy",
     "dev": "pnpm -r --parallel testing",
     "dev:public": "pnpm -r --filter public dev",
-    "format": "biome format .",
-    "format:fix": "biome format --write .",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "lint:workspace": "pnpm dlx sherif@latest",
     "typecheck": "pnpm -r --no-bail typecheck",
-    "update-simple-git-hooks": "npx simple-git-hooks"
+    "update-simple-git-hooks": "npx simple-git-hooks",
+    "check:workspace": "pnpm dlx sherif@latest",
+    "check": "ultracite check",
+    "fix": "ultracite fix"
   },
   "simple-git-hooks": {
     "pre-push": "[ -n \"$SKIP_HOOKS\" ] || (pnpm typecheck && pnpm test)"
@@ -51,9 +49,10 @@
     "sharp"
   ],
   "devDependencies": {
-    "@biomejs/biome": "1.9.1",
+    "@biomejs/biome": "2.3.15",
     "depcheck": "^1.4.7",
     "simple-git-hooks": "^2.12.1",
+    "ultracite": "7.2.0",
     "vitest": "^3.0.4"
   },
   "pnpm": {
