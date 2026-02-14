@@ -94,7 +94,7 @@ export function Hero() {
               TRUSTED BY 1,000+ COMPANIES • 4.7K GITHUB STARS
             </div> */}
           <h1 className="text-4xl md:text-5xl font-semibold leading-[1.1]">
-            An open-source alternative to <Competition />
+            OpenPanel - The open-source alternative to <Competition />
           </h1>
           <p className="text-lg text-muted-foreground">
             An open-source web and product analytics platform that combines the

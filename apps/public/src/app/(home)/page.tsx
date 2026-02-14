@@ -23,7 +23,9 @@ const jsonLd = {
       url: OPENPANEL_BASE_URL,
       sameAs: ['https://github.com/Openpanel-dev/openpanel'],
       description: OPENPANEL_DESCRIPTION,
+      keywords: 'openpanel, product analytics, web analytics, mixpanel alternative, open source analytics',
     },
+
     {
       '@type': 'SoftwareApplication',
       name: OPENPANEL_NAME,
