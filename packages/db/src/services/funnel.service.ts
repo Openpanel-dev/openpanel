@@ -17,6 +17,7 @@ import {
   getCohortCteName,
   getCohortAlias,
   buildCohortMembershipQuery,
+  getMaterializedColumns,
 } from './chart.service';
 import { onlyReportEvents } from './reports.service';
 import {
@@ -57,6 +58,13 @@ export class FunnelService {
       };
     }
 
+    // Get materialized columns to ensure UNION compatibility
+    const materializedColumns = await getMaterializedColumns();
+    const materializedColumnNames = Object.values(materializedColumns);
+    const materializedColumnsSelect = materializedColumnNames.length > 0
+      ? `, ${materializedColumnNames.join(', ')}`
+      : '';
+
     // Build CTEs for custom events
     const withClauses: Array<{ name: string; query: any }> = [];
     const baseWhere = [
@@ -90,9 +98,9 @@ export class FunnelService {
 
         unionParts.push(`SELECT * FROM ${cteName}`);
       } else {
-        // Regular event - select directly
+        // Regular event - include materialized columns to match custom events
         unionParts.push(`
-          SELECT * FROM ${TABLE_NAMES.events}
+          SELECT *${materializedColumnsSelect} FROM ${TABLE_NAMES.events}
           WHERE project_id = '${projectId}'
             AND name = '${event.name}'
             AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')
