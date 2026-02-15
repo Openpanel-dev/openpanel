@@ -58,8 +58,9 @@ function buildCustomEventSourceQuery(
 
   // Use ClickHouse REPLACE to replace the name column with custom event name
   // Include materialized columns explicitly since SELECT * doesn't include them
+  // IMPORTANT: REPLACE must come immediately after *, then additional columns
   return `
-    SELECT *${materializedColumnsSelect} REPLACE(${sqlstring.escape(customEventName)} AS name)
+    SELECT * REPLACE(${sqlstring.escape(customEventName)} AS name)${materializedColumnsSelect}
     FROM ${TABLE_NAMES.events}
     WHERE ${whereClauses.join(' AND ')}
   `;
@@ -122,7 +123,7 @@ export async function expandCustomEventToSQL(
     ];
 
     return `
-      SELECT *${materializedColumnsSelect} REPLACE(${sqlstring.escape(customEvent.name)} AS name)
+      SELECT * REPLACE(${sqlstring.escape(customEvent.name)} AS name)${materializedColumnsSelect}
       FROM ${TABLE_NAMES.events}
       WHERE ${whereClauses.join(' AND ')}
     `;
