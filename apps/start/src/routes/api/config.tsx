@@ -1,7 +1,13 @@
-import { Sidebar } from '@/components/sidebar';
+import { createFileRoute } from '@tanstack/react-router';
 import { getServerEnvs } from '@/server/get-envs';
-import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 
+export interface ConfigResonse {
+  apiUrl: string;
+  dashboardUrl: string;
+  isSelfHosted: boolean;
+  isMaintenance: boolean;
+  isDemo: boolean;
+}
 // Nothing sensitive here, its client environment variables which is good for debugging
 export const Route = createFileRoute('/api/config')({
   server: {

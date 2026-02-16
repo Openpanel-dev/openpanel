@@ -1,26 +1,22 @@
 'use client';
-import { Competition } from '@/components/competition';
-import { GetStartedButton } from '@/components/get-started-button';
-import { Perks } from '@/components/perks';
-import { Tag } from '@/components/tag';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import {
   ArrowRightIcon,
   CalendarIcon,
-  ChevronRightIcon,
   CookieIcon,
   CreditCardIcon,
   DatabaseIcon,
-  FlaskRoundIcon,
   GithubIcon,
   ServerIcon,
-  StarIcon,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
+import { Competition } from '@/components/competition';
+import { GetStartedButton } from '@/components/get-started-button';
+import { Perks } from '@/components/perks';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 const perks = [
   { text: 'Free trial 30 days', icon: CalendarIcon },
@@ -40,46 +36,46 @@ function HeroImage({ className }: { className?: string }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9, x: 0 }}
       animate={
         isLoaded
           ? { opacity: 0.5, scale: 1, x: 0 }
           : { opacity: 0, scale: 0.9, x: 0 }
       }
-      transition={{
-        duration: 2,
-      }}
       className={cn('absolute', className)}
+      initial={{ opacity: 0, scale: 0.9, x: 0 }}
       style={{
         left: `calc(50% - ${width / 2}px - 50px)`,
         top: -270,
       }}
+      transition={{
+        duration: 2,
+      }}
     >
       <Image
-        src="/hero-dark.webp"
         alt="Hero"
-        width={width}
-        height={height}
         className="hidden dark:block"
+        height={height}
+        onLoad={() => setIsLoaded(true)}
+        src="/hero-dark.webp"
         style={{
           width,
           minWidth: width,
           height,
         }}
-        onLoad={() => setIsLoaded(true)}
+        width={width}
       />
       <Image
-        src="/hero-light.webp"
         alt="Hero"
-        width={width}
-        height={height}
         className="dark:hidden"
+        height={height}
+        onLoad={() => setIsLoaded(true)}
+        src="/hero-light.webp"
         style={{
           width,
           minWidth: width,
           height,
         }}
-        onLoad={() => setIsLoaded(true)}
+        width={width}
       />
     </motion.div>
   );
@@ -88,12 +84,12 @@ function HeroImage({ className }: { className?: string }) {
 export function Hero() {
   return (
     <HeroContainer className="-mb-32 max-sm:**:data-children:pb-0">
-      <div className="col gap-8 w-full sm:w-1/2 sm:pr-12">
+      <div className="col w-full gap-8 sm:w-1/2 sm:pr-12">
         <div className="col gap-4">
-          {/* <div className="font-mono text-sm text-muted-foreground">
-              TRUSTED BY 1,000+ COMPANIES • 4.7K GITHUB STARS
-            </div> */}
-          <h1 className="text-4xl md:text-5xl font-semibold leading-[1.1]">
+          <div className="font-mono text-muted-foreground text-sm">
+            TRUSTED BY 1,000+ PROJECTS
+          </div>
+          <h1 className="font-semibold text-4xl leading-[1.1] md:text-5xl">
             OpenPanel - The open-source alternative to <Competition />
           </h1>
           <p className="text-lg text-muted-foreground">
@@ -104,7 +100,7 @@ export function Hero() {
         </div>
         <div className="row gap-4">
           <GetStartedButton />
-          <Button size="lg" variant="outline" asChild className="px-6">
+          <Button asChild className="px-6" size="lg" variant="outline">
             <Link
               href="https://demo.openpanel.dev/demo/shoey"
               rel="noreferrer noopener nofollow"
@@ -118,39 +114,39 @@ export function Hero() {
         <Perks perks={perks} />
       </div>
 
-      <div className="col sm:w-1/2 relative group max-sm:px-4">
+      <div className="col group relative max-sm:px-4 sm:w-1/2">
         <div
           className={cn([
             'overflow-hidden rounded-lg border border-border bg-background shadow-lg',
-            'sm:absolute sm:left-0 sm:-top-12 sm:w-[800px] sm:-bottom-64',
-            'max-sm:h-[800px] max-sm:-mx-4 max-sm:mt-12 relative',
+            'sm:absolute sm:-top-12 sm:-bottom-64 sm:left-0 sm:w-[800px]',
+            'relative max-sm:-mx-4 max-sm:mt-12 max-sm:h-[800px]',
           ])}
         >
           {/* Window controls */}
-          <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-muted/50 h-12">
+          <div className="flex h-12 items-center gap-2 border-border border-b bg-muted/50 px-4 py-2">
             <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500" />
-              <div className="w-3 h-3 rounded-full bg-green-500" />
+              <div className="h-3 w-3 rounded-full bg-red-500" />
+              <div className="h-3 w-3 rounded-full bg-yellow-500" />
+              <div className="h-3 w-3 rounded-full bg-green-500" />
             </div>
             {/* URL bar */}
             <a
-              target="_blank"
-              rel="noreferrer noopener nofollow"
+              className="group mx-4 flex flex-1 items-center gap-2 rounded-md border border-border bg-background/20 px-3 py-1 text-sm"
               href="https://demo.openpanel.dev/demo/shoey"
-              className="group flex-1 mx-4 px-3 py-1 text-sm bg-background/20 rounded-md border border-border flex items-center gap-2"
+              rel="noreferrer noopener nofollow"
+              target="_blank"
             >
-              <span className="text-muted-foreground flex-1">
+              <span className="flex-1 text-muted-foreground">
                 https://demo.openpanel.dev
               </span>
-              <ArrowRightIcon className="size-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <ArrowRightIcon className="size-4 opacity-0 transition-opacity group-hover:opacity-100" />
             </a>
           </div>
           <iframe
-            src={'https://demo.openpanel.dev/demo/shoey?range=lastHour'}
-            className="w-full h-full"
-            title="Live preview"
+            className="h-full w-full"
             scrolling="no"
+            src={'https://demo.openpanel.dev/demo/shoey?range=lastHour'}
+            title="Live preview"
           />
         </div>
       </div>
@@ -175,13 +171,13 @@ export function HeroContainer({
         <HeroImage />
       </div>
       <div
-        className="container relative col sm:row py-44 max-sm:pt-32"
+        className="col sm:row container relative py-44 max-sm:pt-32"
         data-children
       >
         {children}
       </div>
       {divider && (
-        <div className="absolute bottom-0 left-0 right-0 h-20 border-t border-border rounded-t-[3rem] md:rounded-t-[6rem] bg-background shadow-[0_0_100px_var(--background)]" />
+        <div className="absolute right-0 bottom-0 left-0 h-20 rounded-t-[3rem] border-border border-t bg-background shadow-[0_0_100px_var(--background)] md:rounded-t-[6rem]" />
       )}
     </section>
   );

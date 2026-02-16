@@ -1,5 +1,3 @@
-import { FeatureCard } from '@/components/feature-card';
-import { Section, SectionHeader } from '@/components/section';
 import {
   BarChart3Icon,
   ChevronRightIcon,
@@ -7,8 +5,10 @@ import {
   GlobeIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import { ProductAnalyticsIllustration } from './illustrations/product-analytics';
-import { WebAnalyticsIllustration } from './illustrations/web-analytics';
+import { FeatureCard } from '@/components/feature-card';
+import { ProductAnalyticsIllustration } from '@/components/illustrations/product-analytics';
+import { WebAnalyticsIllustration } from '@/components/illustrations/web-analytics';
+import { Section, SectionHeader } from '@/components/section';
 
 const features = [
   {
@@ -47,42 +47,42 @@ export function AnalyticsInsights() {
   return (
     <Section className="container">
       <SectionHeader
+        className="mb-16"
+        description="Combine web and product analytics in one platform. Track visitors, events, revenue, and user journeys, all with privacy-first tracking."
         label="ANALYTICS & INSIGHTS"
         title="See the full picture of your users and product performance"
-        description="Combine web and product analytics in one platform. Track visitors, events, revenue, and user journeys, all with privacy-first tracking."
-        className="mb-16"
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <FeatureCard
-          variant="large"
-          title="Web Analytics"
+          className="px-0 **:data-content:px-6"
           description="Understand your website performance with privacy-first analytics and clear, actionable insights."
           illustration={<WebAnalyticsIllustration />}
-          className="px-0 **:data-content:px-6"
+          title="Web Analytics"
+          variant="large"
         />
         <FeatureCard
-          variant="large"
-          title="Product Analytics"
+          className="px-0 **:data-content:px-6"
           description="Turn raw data into clarity with real-time visualization of performance, behavior, and trends."
           illustration={<ProductAnalyticsIllustration />}
-          className="px-0 **:data-content:px-6"
+          title="Product Analytics"
+          variant="large"
         />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {features.map((feature) => (
           <FeatureCard
-            key={feature.title}
-            title={feature.title}
             description={feature.description}
             icon={feature.icon}
+            key={feature.title}
             link={feature.link}
+            title={feature.title}
           />
         ))}
       </div>
       <p className="mt-8 text-center">
         <Link
+          className="inline-flex items-center gap-1 text-muted-foreground text-sm transition-colors hover:text-foreground"
           href="/features"
-          className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
         >
           Explore all features
           <ChevronRightIcon className="size-3.5" />

@@ -1,3 +1,4 @@
+import type { MetadataRoute } from 'next';
 import { url } from '@/lib/layout.shared';
 import {
   articleSource,
@@ -7,7 +8,6 @@ import {
   pageSource,
   source,
 } from '@/lib/source';
-import type { MetadataRoute } from 'next';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articles = await articleSource.getPages();
@@ -44,6 +44,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.5,
+    },
+    {
+      url: url('/open-source-analytics'),
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
     },
     {
       url: url('/features'),

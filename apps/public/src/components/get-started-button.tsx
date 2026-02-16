@@ -1,7 +1,7 @@
-import { cn } from '@/lib/utils';
 import { ChevronRightIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './ui/button';
+import { cn } from '@/lib/utils';
 
 export function GetStartedButton({
   text,
@@ -13,10 +13,10 @@ export function GetStartedButton({
   href?: string;
 }) {
   return (
-    <Button size="lg" asChild className={cn('group', className)}>
+    <Button asChild className={cn('group', className)} size="lg">
       <Link href={href}>
-        {text ?? 'Get started now'}
-        <ChevronRightIcon className="size-4 group-hover:translate-x-1 transition-transform group-hover:scale-125" />
+        {text ?? 'Start free trial'}
+        <ChevronRightIcon className="size-4 transition-transform group-hover:translate-x-1 group-hover:scale-125" />
       </Link>
     </Button>
   );

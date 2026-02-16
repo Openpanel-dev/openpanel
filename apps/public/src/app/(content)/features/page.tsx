@@ -1,3 +1,20 @@
+import type { LucideIcon } from 'lucide-react';
+import {
+  BellIcon,
+  ConeIcon,
+  DollarSignIcon,
+  FilterIcon,
+  GlobeIcon,
+  MonitorIcon,
+  MousePointerClickIcon,
+  PieChartIcon,
+  RefreshCwIcon,
+  ShareIcon,
+  UserIcon,
+  WorkflowIcon,
+} from 'lucide-react';
+import type { Metadata } from 'next';
+import { FeatureCardLink } from './_components/feature-card';
 import { FeatureHero } from '@/app/(content)/features/[slug]/_components/feature-hero';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
 import { Section, SectionHeader } from '@/components/section';
@@ -5,8 +22,21 @@ import { WindowImage } from '@/components/window-image';
 import { url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { featureSource } from '@/lib/source';
-import type { Metadata } from 'next';
-import { FeatureCardLink } from './_components/feature-card';
+
+const featureIcons: Record<string, LucideIcon> = {
+  conversion: FilterIcon,
+  'data-visualization': PieChartIcon,
+  'event-tracking': MousePointerClickIcon,
+  funnels: ConeIcon,
+  'identify-users': UserIcon,
+  integrations: WorkflowIcon,
+  notifications: BellIcon,
+  retention: RefreshCwIcon,
+  'revenue-tracking': DollarSignIcon,
+  'session-tracking': MonitorIcon,
+  'share-and-collaborate': ShareIcon,
+  'web-analytics': GlobeIcon,
+};
 
 export const metadata: Metadata = getPageMetadata({
   title: 'Product analytics features',
@@ -32,36 +62,37 @@ export default async function FeaturesIndexPage() {
 
       <div className="container my-16">
         <WindowImage
-          srcDark="/screenshots/overview-dark.webp"
-          srcLight="/screenshots/overview-light.webp"
           alt="OpenPanel Dashboard Overview"
           caption="Get a clear view of your product analytics with real-time insights and customizable dashboards."
+          srcDark="/screenshots/overview-dark.webp"
+          srcLight="/screenshots/overview-light.webp"
         />
       </div>
 
       <Section className="container">
         <SectionHeader
-          title="All features"
           description="Browse our capabilities. Each feature is designed to answer specific questions about your product and users."
+          title="All features"
           variant="sm"
         />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-12">
+        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
           {features.map((feature) => (
             <FeatureCardLink
-              key={feature.slug}
-              url={feature.url}
-              title={feature.hero.heading}
               description={feature.hero.subheading}
+              icon={featureIcons[feature.slug]}
+              key={feature.slug}
+              title={feature.hero.heading}
+              url={feature.url}
             />
           ))}
         </div>
       </Section>
 
       <CtaBanner
-        title="Ready to get started?"
-        description="Join thousands of teams using OpenPanel for their analytics needs."
-        ctaText="Get Started Free"
         ctaLink="https://dashboard.openpanel.dev/onboarding"
+        ctaText="Get Started Free"
+        description="Join thousands of teams using OpenPanel for their analytics needs."
+        title="Ready to get started?"
       />
     </div>
   );

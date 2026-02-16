@@ -21,10 +21,10 @@ const LINKS = [
     text: 'Pricing',
     url: '/pricing',
   },
-  {
-    text: 'Supporter',
-    url: '/supporter',
-  },
+  // {
+  //   text: 'Supporter',
+  //   url: '/supporter',
+  // },
   {
     text: 'Docs',
     url: '/docs',
