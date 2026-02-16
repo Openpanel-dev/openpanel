@@ -1,96 +1,405 @@
 ---
-title: Self-hosted web analytics
-description: Self-host your web analytics on your own infrastructure.
-tag: Hosting
+title: "Best Self-Hosted Web Analytics Tools in 2026 (Compared)"
+description: "Compare the best self-hosted web analytics tools in 2026. Detailed breakdown of OpenPanel, Plausible, Matomo, Umami, GoatCounter, and more — with pricing, features, deployment, and honest pros/cons."
+tag: Comparison
 team: OpenPanel Team
 date: 2024-11-14
-updated: 2026-02-07
+updated: 2026-02-16
 cover: /content/self-hosted-analytics.jpg
 ---
+import { Faqs, FaqItem } from '@/components/faq';
 
-In the digital age, understanding website traffic is crucial for any online presence. However, traditional analytics tools often come with privacy concerns and complex interfaces.
+Self-hosted web analytics gives you something cloud-only tools can't: **complete ownership of your data**. No third-party servers. No vendor lock-in. No surprise pricing changes. Your analytics data lives on your infrastructure, under your control.
 
-Self-hosted [web analytics](/features/web-analytics) empowers you to maintain control over your data while gaining valuable insights into your website's performance. By hosting your own analytics platform, you can ensure data privacy and tailor the tool to your specific needs.
+But which self-hosted analytics tool should you actually use? There are over a dozen options, and they vary wildly in features, deployment complexity, and what they're good at.
 
-## Why Choose Self-Hosted Web Analytics?
+We tested and compared the most popular self-hosted web analytics tools so you don't have to. Here's what we found.
 
-You own your data - completely. No more worrying about what third-party services are doing with your information.
+## Quick Comparison
 
-Think about it: with your own analytics setup, you're in the driver's seat. You can:
-- Keep your data private and GDPR-compliant
-- Customize everything to work exactly how you want
-- Skip paying for expensive services (but keep in mind that you'll have to pay for your own server and maintenance)
+| Tool | Type | License | Deployment | Cloud Option | Best For |
+|------|------|---------|------------|-------------|----------|
+| [**OpenPanel**](#openpanel) | Web + Product | AGPL-3.0 | Docker Compose | From $2.50/mo | Teams needing web and product analytics |
+| [**Plausible**](#plausible) | Web | AGPL-3.0 | Docker Compose | From $9/mo | Simple, privacy-first pageview tracking |
+| [**Matomo**](#matomo) | Web | GPL-3.0 | PHP + MySQL | From €29/mo | Full Google Analytics replacement |
+| [**Umami**](#umami) | Web | MIT | Docker Compose | Free tier | Lightweight self-hosted analytics |
+| [**GoatCounter**](#goatcounter) | Web | EUPL | Single binary | Free tier | Minimalist analytics for small sites |
+| [**PostHog**](#posthog) | Product + Web | MIT | Docker/K8s | Free tier | Developer teams needing analytics + flags |
+| [**Ackee**](#ackee) | Web | MIT | Docker + MongoDB | None | Privacy-focused minimalist tracking |
 
-If you've been using tools like Mixpanel or Google Analytics, you might be surprised by how liberating it feels to have full control over your analytics.
+## How to Choose the Right Self-Hosted Analytics Tool
 
-## Self-Hosted Analytics as an Alternative to Mixpanel and Google Analytics
+Before picking a tool, think about what you actually need:
 
-While Google Analytics and Mixpanel are powerful tools, they come with their own set of limitations, particularly regarding data privacy and customization. Here’s how self-hosted analytics can serve as a viable alternative:
+**Web analytics vs product analytics.** If you only need pageviews, traffic sources, and referrals, a simple web analytics tool like Plausible or Umami will do. If you also need [funnels](/features/funnels), [retention analysis](/features/retention), user identification, and [event tracking](/features/event-tracking), you need a tool with product analytics capabilities.
 
-- **Google Analytics Alternatives**: Google Analytics is a comprehensive tool, but it often involves data sharing with Google itself. Self-hosted solutions eliminate this concern, providing similar functionalities without compromising privacy.
+**Deployment complexity.** Some tools deploy in under 5 minutes with a single Docker Compose command. Others need Kubernetes clusters, multiple databases, or PHP environments. Be honest about your ops capacity.
 
-- [**Mixpanel Alternatives**](/articles/alternatives-to-mixpanel): Mixpanel is known for its in-depth user analytics but can be costly and complex. Self-hosted alternatives offer a more cost-effective solution with the ability to customize and scale based on your unique requirements.
+**Maintenance burden.** Self-hosting means you handle updates, backups, and scaling. Simpler tools like GoatCounter or Umami need minimal maintenance. Feature-rich tools like Matomo or PostHog require more attention.
 
-## Simple analytics is key
+**Privacy and compliance.** All self-hosted tools keep data on your servers. But some go further with cookieless tracking (no consent banners needed), while others still use cookies by default.
 
-Most of the analytics tools out there are complex, feature packed and have a steep learning curve.
+**Cost at scale.** Self-hosting isn't free — you pay for server infrastructure. A $5/month VPS handles most small-to-medium sites, but high-traffic sites need more resources.
 
-**Look at Google Analytics**, for example. It's a powerful tool, but most often people don't even use a fraction of what it offers.
+---
 
-It's because they have made a tool that is so complex that it's hard to know where to start.
+## OpenPanel
 
-**Mixpanel has done it right**, but with their constant pricing changes, you never know what you're paying for.
+**Best for: Teams that need both web analytics and product analytics in one self-hosted tool**
 
-Open-source tools tend to be simpler and easier to understand, since they don't have to deal with the complexity of a big company with lots of stakeholders.
+[OpenPanel](/) combines [web analytics](/features/web-analytics) and product analytics in a single platform. You get pageviews and traffic sources alongside funnels, retention, user journeys, and event tracking. It uses cookieless tracking by default, which means no consent banners.
 
-## Privacy and security
+![OpenPanel Dashboard](/content/tools/openpanel.png)
 
-With growing concerns about data privacy, using a self-hosted solution ensures that your website's data is stored securely on your own servers. This approach minimizes the risk of data breaches and unauthorized access, providing peace of mind to both you and your website visitors. 
+### Deployment
 
-By removing the need for cookie consent banners, you create a smoother user experience while still adhering to privacy standards. This level of control makes self-hosted solutions attractive for those prioritizing privacy.
+OpenPanel is one of the easiest tools to self-host. Four commands and you're running:
 
-## Setting Up Your Self-Hosted Analytics
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+./start
+```
 
-Transitioning to a self-hosted analytics solution may seem daunting, but it can be straightforward with the right approach:
+The setup wizard handles Docker, database configuration, and SSL. It runs on a single VPS with Docker Compose. A mid-range VPS (4 vCPU, 8 GB RAM) handles millions of events per month.
 
-### 1. Pick a server provider
+For detailed instructions, see the [self-hosting guide](/docs/self-hosting/self-hosting).
 
-Picking a server provider not an easy task. There are many things to consider, such as cost, performance, and security. We would advice you to do your own research and choose a provider that fits your needs.
+### Key Features
+- Real-time web analytics dashboard with traffic, referrals, pages, and devices
+- Product analytics: funnels, retention, user identification, custom events
+- Cookieless tracking — GDPR/CCPA compliant without consent banners
+- Multiple SDKs (JavaScript, React, Next.js, Vue, and more)
+- Self-hosted version is identical to the cloud version — no feature gating
 
-Here is a list of some providers that differ in both price and complexity:
+### Pricing
+Self-hosting is free. Cloud plans start at $2.50/month for up to 5,000 events, scaling to $90/month for 1 million events. All features included at every tier.
 
-- **AWS** - Complex but you can do almost anything
-- **Google Cloud** - Complex but you can do almost anything
-- **DigitalOcean** - Easy to use but limited, great price
-- **Hetzner** - Easy to use but limited, best price!
-- **Vultr** - Easy to use but limited, great price
+### Pros
+- Only self-hosted tool that combines web and product analytics at this price point
+- Simple Docker Compose deployment with guided setup
+- Cookieless by default — no cookie banners needed
+- Open source (AGPL-3.0) with no feature differences between cloud and self-hosted
 
-### 2. Pick a open-source analytics platform
+### Cons
+- Newer project with a smaller community than Matomo or PostHog
+- No built-in session replay or heatmaps (yet)
+- Self-hosting still requires server maintenance
 
-We're of course biased, but we think OpenPanel is the best self-hosted analytics platform out there since it has both product and web analytics. Most of the self-hosted analytics tools out there is just for web analytics.
+---
 
-So depending on your needs you might consider what you choose.
+## Plausible
 
-- **Plausible** - Simple and privacy focused ([compare with OpenPanel](/compare/plausible-alternative))
-- **Simple Analytics** - Simple and privacy focused
-- **Fathom** - Simple and privacy focused ([compare with OpenPanel](/compare/fathom-alternative))
-- **OpenPanel** - Best of both worlds, easy to use and privacy focused
-- **Umami** - Lightweight and privacy focused ([compare with OpenPanel](/compare/umami-alternative))
+**Best for: Simple, privacy-first pageview analytics with minimal setup**
 
-For a detailed comparison of all options, see our guide on the [best open source web analytics tools](/articles/open-source-web-analytics).
+[Plausible](https://plausible.io/self-hosted-web-analytics) is the go-to choice if you want clean, simple web analytics without complexity. It tracks pageviews, referrals, and goals without cookies. The dashboard fits on a single screen — no training required.
 
-Each of these platforms has guides how to set up on your own server, here is ours: [How to install OpenPanel on your own server](/docs/self-hosting/self-hosting)
+![Plausible Dashboard](/content/tools/plausible.png)
 
-### 3. Secure your server
+### Deployment
 
-Before you start installning your analytics platform, you should secure your server.
+Plausible self-hosts with Docker Compose. The setup involves cloning their hosting repo, configuring a `plausible-conf.env` file, and running `docker compose up`.
 
-Read our guide on [how to secure your server](/articles/how-to-secure-ubuntu-server) for more information.
+Requirements: A server with Docker, at least 2 GB RAM. Uses PostgreSQL and ClickHouse under the hood.
 
-### 4. Install your analytics platform
+### Key Features
+- Single-screen dashboard with real-time data
+- Cookieless tracking — no consent banners
+- Goal tracking and custom events
+- Google Search Console integration
+- Lightweight script (~1 KB)
 
-Each of the platforms has guides how to install on your own server. Usually this information is available on the project's website or GitHub repository.
+### Pricing
+Self-hosting is free under AGPL-3.0. Cloud plans start at $9/month for 10,000 pageviews.
 
-## Conclusion
+### Pros
+- The simplest analytics dashboard available — anyone can use it
+- Very lightweight tracking script that won't slow your site
+- Active open source community
+- Clean Docker Compose deployment
 
-Self-hosted web analytics is a strategic move for anyone looking to prioritize privacy and control over their website data. By opting for a solution that aligns with your values and needs, you can gain valuable insights without compromising on security. For those exploring [Mixpanel alternatives](/articles/alternatives-to-mixpanel) or Google Analytics alternatives, self-hosted platforms provide a robust and private solution. Take the leap into self-hosting today and experience the benefits of a more private and streamlined analytics process.
+### Cons
+- No product analytics (no funnels, retention, or user-level tracking)
+- No session replay or heatmaps
+- Self-hosted version requires manual updates
+- AGPL license requires source disclosure if you modify and distribute
+
+Compare with OpenPanel: [Plausible vs OpenPanel](/compare/plausible-alternative)
+
+---
+
+## Matomo
+
+**Best for: Organizations that need a full Google Analytics replacement**
+
+[Matomo](https://matomo.org/) (formerly Piwik) has been around since 2007 and is the most feature-rich self-hosted web analytics tool available. If you're migrating from Google Analytics and want a similar experience under your own control, Matomo is the closest match.
+
+![Matomo Dashboard](/content/tools/matomo.png)
+
+### Deployment
+
+Matomo runs on PHP + MySQL/MariaDB. You can deploy it on any LAMP stack or use their Docker images. The setup is more involved than Docker-only tools — you'll need PHP, a web server (Apache/Nginx), and a database.
+
+Requirements: PHP 8.1+, MySQL 8+ or MariaDB 10.4+, at least 2 GB RAM. For high traffic (1M+ pageviews/month), separate app and database servers are recommended.
+
+### Key Features
+- Full web analytics suite (traffic, referrals, campaigns, goals, ecommerce)
+- Heatmaps and session recordings (paid plugins)
+- A/B testing (paid plugin)
+- Google Analytics data import
+- Large plugin ecosystem
+
+### Pricing
+Self-hosting the core platform is free under GPL-3.0. However, advanced features like heatmaps, session recordings, and A/B testing require paid plugin subscriptions even on self-hosted instances. Cloud starts at €29/month.
+
+### Pros
+- Most mature and feature-rich self-hosted analytics tool
+- Closest replacement for Google Analytics
+- Huge plugin ecosystem
+- Strong compliance track record (used by governments and enterprises)
+
+### Cons
+- PHP stack is more complex to deploy and maintain than Docker-only tools
+- Premium plugins add cost even on self-hosted
+- UI feels dated compared to newer tools
+- Resource-heavy at scale
+
+Compare with OpenPanel: [Matomo vs OpenPanel](/compare/matomo-alternative)
+
+---
+
+## Umami
+
+**Best for: Developers who want a lightweight, MIT-licensed analytics tool**
+
+[Umami](https://umami.is/) is a lightweight, privacy-focused web analytics tool. It's one of the simplest tools to self-host and maintain. If you want basic web analytics with minimal overhead, Umami delivers.
+
+![Umami Dashboard](/content/tools/umami.png)
+
+### Deployment
+
+Umami self-hosts with Docker Compose or directly with Node.js. Clone the repo, configure your database connection, and start. It supports PostgreSQL and MySQL.
+
+Requirements: Node 18+ with PostgreSQL 12+ or MySQL 8+. Very lightweight — runs comfortably on a $5/month VPS for small to medium sites.
+
+### Key Features
+- Clean dashboard with real-time data
+- Pageviews, referrals, devices, and basic events
+- Cookieless tracking
+- Multiple website support
+- API access for custom integrations
+
+### Pricing
+Self-hosting is completely free under MIT license. Umami Cloud offers a free tier with 1 million events/month, then $0.00002 per additional event.
+
+### Pros
+- MIT license — the most permissive license among comparable tools
+- Very lightweight and easy to maintain
+- Simple deployment with Docker Compose
+- Free cloud tier for those who want to try before self-hosting
+
+### Cons
+- Limited to basic web metrics
+- No funnels, retention, or product analytics
+- Fewer features than Plausible (no Google Search Console integration)
+- No session replay or heatmaps
+
+Compare with OpenPanel: [Umami vs OpenPanel](/compare/umami-alternative)
+
+---
+
+## GoatCounter
+
+**Best for: Minimalist analytics for personal sites and blogs**
+
+[GoatCounter](https://goatcounter.com/) takes minimalism to the extreme. It's a single Go binary that tracks pageviews without cookies. No Docker, no complex setup — just download and run.
+
+### Deployment
+
+GoatCounter ships as a single binary. Download it, run it, point your domain at it. You can also run it with SQLite (default) or PostgreSQL. No Docker required, though Docker images are available.
+
+Requirements: Minimal. Runs on the smallest VPS you can find. SQLite mode needs almost no resources.
+
+### Key Features
+- Pageview tracking without cookies or JavaScript (optional)
+- Single binary deployment
+- SQLite or PostgreSQL backend
+- Basic referral and browser tracking
+- Public dashboard option
+
+### Pricing
+Self-hosting is free under EUPL license. The hosted service is free for non-commercial use, with paid plans starting at €5/month.
+
+### Pros
+- Simplest deployment of any analytics tool — single binary
+- Runs on minimal resources
+- Can work without JavaScript (server-side counting)
+- Free hosted tier for personal sites
+
+### Cons
+- Very basic feature set — pageviews and referrals only
+- No event tracking or custom properties
+- No product analytics features
+- Small development team (mostly one person)
+
+---
+
+## PostHog
+
+**Best for: Developer teams that need analytics, feature flags, and experiments in one platform**
+
+[PostHog](https://posthog.com/) is an all-in-one product analytics platform with web analytics, session replay, feature flags, A/B testing, and surveys. It's the most feature-rich option here, but also the most complex to self-host.
+
+![PostHog Dashboard](/content/tools/posthog.png)
+
+### Deployment
+
+PostHog self-hosting uses Docker Compose for small deployments or Kubernetes via Helm charts for production. The setup requires PostgreSQL, Redis, ClickHouse, and Kafka. It's significantly more complex than other tools on this list.
+
+Requirements: Minimum 4 vCPU, 16 GB RAM, 30 GB+ storage. The team recommends self-hosting only for up to ~300K events/month; beyond that, PostHog Cloud handles scaling better.
+
+### Key Features
+- Product analytics with funnels, retention, and cohorts
+- Web analytics dashboard
+- Session replay
+- Feature flags and A/B testing
+- Surveys and error tracking
+
+### Pricing
+Self-hosting is free under MIT license. Cloud has a generous free tier (1M analytics events, 5K session recordings/month), then usage-based pricing.
+
+### Pros
+- Most comprehensive feature set — replaces multiple tools
+- MIT license
+- Generous cloud free tier
+- Active community and rapid development
+
+### Cons
+- Complex self-hosting setup with multiple infrastructure dependencies
+- Resource-heavy — needs significantly more server power
+- Self-hosted vs cloud is not feature-equivalent
+- Overkill if you just need web analytics
+
+Compare with OpenPanel: [PostHog vs OpenPanel](/compare/posthog-alternative)
+
+---
+
+## Ackee
+
+**Best for: Privacy-focused minimalist tracking on small projects**
+
+[Ackee](https://github.com/electerious/Ackee) is a self-hosted analytics tool that focuses on privacy and minimalism. It tracks pageviews and basic events with a clean, minimal interface.
+
+### Deployment
+
+Ackee runs on Node.js with MongoDB. Deploy with Docker Compose or directly on a server with Node and MongoDB installed.
+
+Requirements: Node 18+, MongoDB 7+. Lightweight on resources.
+
+### Key Features
+- Pageview and event tracking
+- Cookieless, anonymized tracking
+- GraphQL API for custom integrations
+- Multiple domain support
+- Minimal, clean UI
+
+### Pricing
+Completely free to self-host under MIT license. No cloud offering from the team.
+
+### Pros
+- Fully free with MIT license
+- Privacy-first with anonymized data
+- GraphQL API for flexible querying
+- Very simple and focused
+
+### Cons
+- Requires MongoDB (adds complexity vs PostgreSQL-based tools)
+- Minimal feature set
+- No cloud option
+- Development has slowed in recent years
+
+Compare with OpenPanel: [Ackee vs OpenPanel](/compare/ackee-alternative)
+
+---
+
+## Self-Hosted vs Cloud Analytics: When to Self-Host
+
+Self-hosting isn't always the right choice. Here's when it makes sense — and when it doesn't.
+
+### Self-host when:
+
+- **You need data sovereignty.** Regulations like GDPR, HIPAA, or industry-specific rules require data to stay on your infrastructure. Self-hosting eliminates third-party data transfers entirely. Read more in our [compliance guide](/articles/better-compliance-self-hosted-analytics).
+- **You want predictable costs.** Cloud analytics pricing scales with events or pageviews. Self-hosting costs are your server costs, which are more predictable and often cheaper at scale.
+- **You have ops capacity.** Someone on your team can manage Docker, handle updates, and monitor uptime.
+- **You want full control.** Custom retention policies, direct database access, integration with internal systems.
+
+### Use cloud when:
+
+- **You want zero maintenance.** No server management, no updates, no uptime monitoring.
+- **You're just getting started.** Cloud gets you analytics in minutes. Self-hosting takes longer to set up.
+- **Your team is small.** If nobody on the team is comfortable managing infrastructure, cloud is safer.
+- **You need guaranteed uptime.** Cloud providers handle redundancy and failover.
+
+Most self-hosted analytics tools also offer cloud versions. With [OpenPanel](/pricing), you can start with Cloud and migrate to self-hosting later — or vice versa — since the features are identical.
+
+## How to Get Started with Self-Hosted Analytics
+
+### 1. Pick a server
+
+You need a VPS. For most self-hosted analytics tools, a server with 2-4 vCPU, 4-8 GB RAM, and 40 GB SSD is enough to start.
+
+Recommended providers:
+- **[Hetzner](https://hetzner.cloud/?ref=7Hq0H5mQh7tM)** — Best price-to-performance. A CX31 (4 vCPU, 8 GB RAM) costs around €8.50/month.
+- **DigitalOcean** — Easy to use, good documentation. Droplets from $6/month.
+- **Vultr** — Similar to DigitalOcean with competitive pricing.
+- **AWS/GCP** — More complex, but useful if you're already in their ecosystem.
+
+### 2. Secure your server
+
+Before installing anything, lock down your server. At minimum: disable root login, set up SSH keys, configure a firewall. We have a full guide on [how to secure your Ubuntu server](/articles/how-to-secure-ubuntu-server).
+
+### 3. Install your analytics tool
+
+Each tool has its own installation process. For OpenPanel, it's four commands:
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+./start
+```
+
+The setup wizard handles everything — Docker, databases, SSL certificates. Full walkthrough: [How to self-host OpenPanel](/articles/how-to-self-host-openpanel).
+
+### 4. Add tracking to your site
+
+Install the tracking script on your website. With OpenPanel, you add a small JavaScript snippet or use one of the framework-specific SDKs (React, Next.js, Vue, and more). Check the [SDK documentation](/docs/get-started/install-openpanel) for your stack.
+
+---
+
+<Faqs>
+<FaqItem question="What is the best self-hosted web analytics tool?">
+It depends on your needs. For combined web and product analytics, OpenPanel offers the best value. For simple pageview tracking, Plausible is the most popular. For a full Google Analytics replacement, Matomo has the most features. For the lightest option, GoatCounter or Umami work well.
+</FaqItem>
+
+<FaqItem question="Is self-hosted analytics free?">
+The software is free for most tools (OpenPanel, Plausible, Matomo, Umami, GoatCounter, PostHog, and Ackee all offer free self-hosting). Your cost is the server infrastructure — typically $5-50/month for a VPS depending on your traffic volume.
+</FaqItem>
+
+<FaqItem question="Do I need a cookie banner with self-hosted analytics?">
+Not if your tool uses cookieless tracking. OpenPanel, Plausible, Umami, GoatCounter, and Ackee all track without cookies, so no cookie consent banner is needed for basic analytics. Matomo uses cookies by default but offers a cookieless mode.
+</FaqItem>
+
+<FaqItem question="Can I self-host analytics and be GDPR compliant?">
+Yes. Self-hosting is one of the strongest approaches for GDPR compliance because your data never leaves your infrastructure. There are no third-party data transfers to worry about, and you have full control over data retention and deletion. Tools like OpenPanel and Plausible add cookieless tracking on top, making compliance even simpler.
+</FaqItem>
+
+<FaqItem question="How much server resources do I need for self-hosted analytics?">
+For most tools: 2-4 vCPU, 4-8 GB RAM, and 40 GB SSD handles up to a few hundred thousand events per month. PostHog needs more (16 GB RAM minimum). GoatCounter and Ackee run on minimal resources. Scale up as your traffic grows.
+</FaqItem>
+
+<FaqItem question="What is the difference between self-hosted web analytics and product analytics?">
+Web analytics tracks website traffic — pageviews, referrals, devices, and geographic data. Product analytics tracks user behavior within your product — events, funnels, retention, and user journeys. Some tools like OpenPanel and PostHog offer both. Most self-hosted tools (Plausible, Umami, GoatCounter) focus on web analytics only. See our guide on [self-hosted product analytics](/articles/self-hosted-product-analytics) for tools that cover the product side.
+</FaqItem>
+
+<FaqItem question="Can I migrate from Google Analytics to a self-hosted tool?">
+Yes. Matomo offers direct Google Analytics data import. Other tools like OpenPanel and Plausible let you start fresh with their tracking. You can run both in parallel during the transition to make sure you're comfortable with the new tool before removing GA.
+</FaqItem>
+</Faqs>
