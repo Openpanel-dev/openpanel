@@ -1,41 +1,19 @@
 import { FaqItem, Faqs } from '@/components/faq';
 import { Section, SectionHeader } from '@/components/section';
-import { CompareFaqs } from '@/lib/compare';
-import Script from 'next/script';
-import { url } from '@/lib/layout.shared';
+import type { CompareFaqs } from '@/lib/compare';
 
 interface CompareFaqProps {
   faqs: CompareFaqs;
-  pageUrl: string;
 }
 
-export function CompareFaq({ faqs, pageUrl }: CompareFaqProps) {
-  const faqJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqs.items.map((q) => ({
-      '@type': 'Question',
-      name: q.question,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: q.answer,
-      },
-    })),
-  };
-
+export function CompareFaq({ faqs }: CompareFaqProps) {
   return (
     <Section className="container">
-      <Script
-        strategy="beforeInteractive"
-        id="compare-faq-schema"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <SectionHeader
           className="mb-16"
-          title={faqs.title}
           description={faqs.intro}
+          title={faqs.title}
           variant="sm"
         />
         <Faqs>
@@ -49,4 +27,3 @@ export function CompareFaq({ faqs, pageUrl }: CompareFaqProps) {
     </Section>
   );
 }
-

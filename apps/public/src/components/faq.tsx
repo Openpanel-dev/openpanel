@@ -1,4 +1,3 @@
-import Script from 'next/script';
 import Markdown from 'react-markdown';
 import {
   Accordion,
@@ -7,12 +6,22 @@ import {
   AccordionTrigger,
 } from './ui/accordion';
 
-export const Faqs = ({ children }: { children: React.ReactNode }) => (
-  <div itemScope itemType="https://schema.org/FAQPage">
+export const Faqs = ({
+  children,
+  schema = true,
+}: {
+  children: React.ReactNode;
+  schema?: boolean;
+}) => (
+  <div
+    {...(schema
+      ? { itemScope: true, itemType: 'https://schema.org/FAQPage' }
+      : {})}
+  >
     <Accordion
-      type="single"
+      className="w-full max-w-screen-md self-center rounded-3xl border bg-background-dark [&_button]:px-4 [&_div.answer]:bg-background-light"
       collapsible
-      className="w-full max-w-screen-md self-center border rounded-3xl [&_button]:px-4 bg-background-dark [&_div.answer]:bg-background-light"
+      type="single"
     >
       {children}
     </Accordion>
@@ -27,20 +36,20 @@ export const FaqItem = ({
   children: string | React.ReactNode;
 }) => (
   <AccordionItem
-    value={question}
-    itemScope
-    itemProp="mainEntity"
-    itemType="https://schema.org/Question"
     className="[&_[role=region]]:px-4"
+    itemProp="mainEntity"
+    itemScope
+    itemType="https://schema.org/Question"
+    value={question}
   >
     <AccordionTrigger className="text-left" itemProp="name">
       {question}
     </AccordionTrigger>
     <AccordionContent
+      className="prose"
       itemProp="acceptedAnswer"
       itemScope
       itemType="https://schema.org/Answer"
-      className="prose"
     >
       <div itemProp="text">
         {typeof children === 'string' ? (

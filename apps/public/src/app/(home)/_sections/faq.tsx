@@ -1,6 +1,5 @@
 import { FaqItem, Faqs } from '@/components/faq';
 import { Section, SectionHeader } from '@/components/section';
-import Script from 'next/script';
 
 const faqData = [
   {
@@ -61,33 +60,13 @@ const faqData = [
 ];
 
 export function Faq() {
-  const faqJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqData.map((q) => ({
-      '@type': 'Question',
-      name: q.question,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: q.answer,
-      },
-    })),
-  };
-
   return (
     <Section className="container">
-      <Script
-        strategy="beforeInteractive"
-        id="faq-schema"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <SectionHeader
           className="mb-16"
-          title="FAQ"
           description="Some of the most common questions we get asked."
+          title="FAQ"
         />
         <Faqs>
           {faqData.map((faq) => (
