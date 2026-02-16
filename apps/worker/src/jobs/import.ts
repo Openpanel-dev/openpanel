@@ -139,6 +139,10 @@ export async function importJob(job: Job<ImportQueuePayload>) {
 
     // Phase 1: Fetch & Transform - Process events in batches
     if (shouldRunStep('loading')) {
+      // Track insert_ids to detect duplicates from Mixpanel
+      const seenInsertIds: Record<string, number> = {};
+      let totalDuplicatesDetected = 0;
+
       let eventBatch: any = [];
       for await (const rawEvent of providerInstance.parseSource(
         resumeLoadingFrom,
@@ -158,9 +162,26 @@ export async function importJob(job: Job<ImportQueuePayload>) {
 
         // Process batch when it reaches the batch size
         if (eventBatch.length >= BATCH_SIZE) {
+          // Check for duplicate insert_ids in this batch
+          let batchDuplicates = 0;
+          for (const rawEvent of eventBatch) {
+            const insertId = rawEvent.properties?.$insert_id;
+            if (insertId) {
+              const count = seenInsertIds[insertId] || 0;
+              if (count > 0) {
+                batchDuplicates++;
+                totalDuplicatesDetected++;
+                console.log(`🔄 Duplicate insert_id detected from Mixpanel: ${insertId} (occurrence: ${count + 1}, event: ${rawEvent.event})`);
+              }
+              seenInsertIds[insertId] = count + 1;
+            }
+          }
+
           const memUsage = process.memoryUsage();
           jobLogger.info('Processing batch', {
             batchSize: eventBatch.length,
+            duplicatesInBatch: batchDuplicates,
+            totalDuplicates: totalDuplicatesDetected,
             heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
             heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
             externalMB: Math.round(memUsage.external / 1024 / 1024),
@@ -196,9 +217,26 @@ export async function importJob(job: Job<ImportQueuePayload>) {
 
       // Process remaining events in the last batch
       if (eventBatch.length > 0) {
+        // Check for duplicate insert_ids in final batch
+        let batchDuplicates = 0;
+        for (const rawEvent of eventBatch) {
+          const insertId = rawEvent.properties?.$insert_id;
+          if (insertId) {
+            const count = seenInsertIds[insertId] || 0;
+            if (count > 0) {
+              batchDuplicates++;
+              totalDuplicatesDetected++;
+              console.log(`🔄 Duplicate insert_id detected from Mixpanel: ${insertId} (occurrence: ${count + 1}, event: ${rawEvent.event})`);
+            }
+            seenInsertIds[insertId] = count + 1;
+          }
+        }
+
         const memUsage = process.memoryUsage();
         jobLogger.info('Processing final batch', {
           batchSize: eventBatch.length,
+          duplicatesInBatch: batchDuplicates,
+          totalDuplicates: totalDuplicatesDetected,
           heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
           heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
           externalMB: Math.round(memUsage.external / 1024 / 1024),
@@ -229,6 +267,20 @@ export async function importJob(job: Job<ImportQueuePayload>) {
 
         // Yield control back to event loop after processing final batch
         await yieldToEventLoop();
+      }
+
+      // Log summary of duplicate detection
+      const uniqueInsertIds = Object.keys(seenInsertIds).length;
+      console.log('\n📊 Phase 1 Import Summary:');
+      console.log(`   Total events processed: ${processedEvents}`);
+      console.log(`   Unique insert_ids: ${uniqueInsertIds}`);
+      console.log(`   Duplicates detected: ${totalDuplicatesDetected}`);
+      if (totalDuplicatesDetected > 0) {
+        const duplicatePercentage = ((totalDuplicatesDetected / processedEvents) * 100).toFixed(2);
+        console.log(`   Duplication rate: ${duplicatePercentage}%`);
+        console.log(`\n⚠️  Mixpanel sent ${totalDuplicatesDetected} duplicate events (same $insert_id multiple times)`);
+      } else {
+        console.log(`\n✅ No duplicates detected from Mixpanel`);
       }
     }
 
