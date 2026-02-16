@@ -1,15 +1,16 @@
 'use client';
-import { baseOptions } from '@/lib/layout.shared';
-import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MenuIcon, MoonIcon, SunIcon, XIcon } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import Link from 'next/link';
+import { useTheme } from 'next-themes';
 import { useEffect, useRef, useState } from 'react';
 import { FeatureCardContainer } from './feature-card';
 import { GithubButton } from './github-button';
 import { Logo } from './logo';
+import { SignUpButton } from './sign-up-button';
 import { Button } from './ui/button';
+import { baseOptions } from '@/lib/layout.shared';
+import { cn } from '@/lib/utils';
 
 const LINKS = [
   {
@@ -61,18 +62,18 @@ const Navbar = () => {
   return (
     <nav
       className={cn(
-        'fixed top-0 z-50 w-full py-4 border-b transition-colors duration-500',
+        'fixed top-0 z-50 w-full border-b py-4 transition-colors duration-500',
         isScrolled
-          ? 'bg-background border-border'
-          : 'bg-background/0 border-border/0',
+          ? 'border-border bg-background'
+          : 'border-border/0 bg-background/0'
       )}
       ref={navbarRef}
     >
       <div className="container">
-        <div className={cn('flex justify-between items-center')}>
+        <div className={cn('flex items-center justify-between')}>
           {/* Logo */}
           <div className="shrink-0">
-            <Link href="/" className="row items-center font-medium">
+            <Link className="row items-center font-medium" href="/">
               <Logo className="h-6" />
               <span className="hidden [@media(min-width:850px)]:block">
                 {baseOptions().nav?.title}
@@ -82,13 +83,13 @@ const Navbar = () => {
 
           <div className="row items-center gap-8">
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8 text-sm">
+            <div className="hidden items-center space-x-8 text-sm md:flex">
               {LINKS?.map((link) => {
                 return (
                   <Link
-                    key={link.url}
+                    className="font-medium text-foreground/80 hover:text-foreground"
                     href={link.url!}
-                    className="text-foreground/80 hover:text-foreground font-medium"
+                    key={link.url}
                   >
                     {link.text}
                   </Link>
@@ -100,24 +101,17 @@ const Navbar = () => {
             <div className="flex items-center gap-2">
               <GithubButton />
               {/* Sign in button */}
-              <Button asChild>
-                <Link
-                  className="hidden md:flex"
-                  href="https://dashboard.openpanel.dev/onboarding"
-                >
-                  Sign up
-                </Link>
-              </Button>
+              <SignUpButton />
               <ThemeToggle />
               <Button
-                className="md:hidden -my-2"
-                size="icon"
-                variant="ghost"
+                className="-my-2 md:hidden"
                 onClick={() => {
                   setIsMobileMenuOpen((p) => !p);
                 }}
+                size="icon"
+                variant="ghost"
               >
-                <MenuIcon className="w-4 h-4" />
+                <MenuIcon className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -126,26 +120,26 @@ const Navbar = () => {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              ref={mobileMenuRef}
-              initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
+              className="fixed inset-0 overflow-hidden bg-background/20 p-4 backdrop-blur-lg md:hidden"
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden bg-background/20 md:hidden backdrop-blur-lg fixed inset-0 p-4"
+              initial={{ height: 0, opacity: 0 }}
               onClick={(e) => {
                 const target = e.target as HTMLElement;
                 if (target === mobileMenuRef.current) {
                   setIsMobileMenuOpen(false);
                 }
               }}
+              ref={mobileMenuRef}
+              transition={{ duration: 0.2 }}
             >
-              <FeatureCardContainer className="col text-sm divide-y divide-foreground/10 gap-0 mt-12 py-4">
+              <FeatureCardContainer className="col mt-12 gap-0 divide-y divide-foreground/10 py-4 text-sm">
                 {LINKS?.map((link) => {
                   return (
                     <Link
-                      key={link.url}
+                      className="p-4 px-0 font-semibold text-foreground/80 text-lg hover:text-foreground"
                       href={link.url!}
-                      className="text-foreground/80 hover:text-foreground text-lg font-semibold p-4 px-0"
+                      key={link.url}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       {link.text}
@@ -153,12 +147,12 @@ const Navbar = () => {
                   );
                 })}
               </FeatureCardContainer>
-              <div className="row gap-2 absolute top-3 right-4 items-center">
+              <div className="row absolute top-3 right-4 items-center gap-2">
                 <ThemeToggle className="flex!" />
                 <Button
+                  onClick={() => setIsMobileMenuOpen(false)}
                   size="icon"
                   variant="outline"
-                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <XIcon className="size-4" />
                 </Button>
@@ -177,33 +171,33 @@ function ThemeToggle({ className }: { className?: string }) {
   const theme = useTheme();
   return (
     <Button
-      size="icon"
-      variant="naked"
-      onClick={() => theme.setTheme(theme.theme === 'dark' ? 'light' : 'dark')}
       className={cn(
-        'relative overflow-hidden size-8 cursor-pointer hidden md:inline',
-        className,
+        'relative hidden size-8 cursor-pointer overflow-hidden md:inline',
+        className
       )}
+      onClick={() => theme.setTheme(theme.theme === 'dark' ? 'light' : 'dark')}
+      size="icon"
       suppressHydrationWarning
+      variant="naked"
     >
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence initial={false} mode="wait">
         {theme.theme === 'dark' ||
         (!theme.theme && theme.resolvedTheme === 'dark') ? (
           <motion.div
-            key="moon"
-            initial={{ rotate: -90, opacity: 0 }}
             animate={{ rotate: 0, opacity: 1 }}
             exit={{ rotate: 90, opacity: 0 }}
+            initial={{ rotate: -90, opacity: 0 }}
+            key="moon"
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
             <MoonIcon className="size-4" suppressHydrationWarning />
           </motion.div>
         ) : (
           <motion.div
-            key="sun"
-            initial={{ rotate: 90, opacity: 0 }}
             animate={{ rotate: 0, opacity: 1 }}
             exit={{ rotate: -90, opacity: 0 }}
+            initial={{ rotate: 90, opacity: 0 }}
+            key="sun"
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
             <SunIcon className="size-4" suppressHydrationWarning />
