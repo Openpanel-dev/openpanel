@@ -8,7 +8,8 @@ export function SignUpButton() {
   useEffect(() => {
     const check = async () => {
       const response = await fetch(
-        'https://api.openpanel.dev/trpc/auth.session'
+        'https://api.openpanel.dev/trpc/auth.session',
+        { credentials: 'include', mode: 'cors' }
       );
       const data = await response.json();
       const session = data?.result?.data?.json?.session;
