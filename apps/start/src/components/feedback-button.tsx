@@ -1,15 +1,12 @@
-import { op } from '@/utils/op';
 import { useRouteContext } from '@tanstack/react-router';
-import { SparklesIcon } from 'lucide-react';
-import { Button } from './ui/button';
+import { cn } from '@/lib/utils';
+import { op } from '@/utils/op';
 
-export function FeedbackButton() {
+export function FeedbackButton({ className }: { className?: string }) {
   const context = useRouteContext({ strict: false });
   return (
-    <Button
-      variant={'outline'}
-      className="text-left justify-start text-[13px]"
-      icon={SparklesIcon}
+    <button
+      className={cn('justify-start text-left text-[13px]', className)}
       onClick={() => {
         op.track('feedback_button_clicked');
         if ('uj' in window && window.uj !== undefined) {
@@ -23,8 +20,9 @@ export function FeedbackButton() {
           }, 10);
         }
       }}
+      type="button"
     >
       Give feedback
-    </Button>
+    </button>
   );
 }

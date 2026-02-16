@@ -1,4 +1,5 @@
-import { Button } from '@/components/ui/button';
+import { CheckIcon, UserIcon } from 'lucide-react';
+import { themeConfig } from './theme-provider';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,11 +11,9 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useTheme } from '@/hooks/use-theme';
-import { CheckIcon, UserIcon } from 'lucide-react';
-
 import { useLogout } from '@/hooks/use-logout';
-import { themeConfig } from './theme-provider';
+import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/utils';
 
 interface Props {
   className?: string;
@@ -27,10 +26,13 @@ export function ProfileToggle({ className }: Props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className={className}>
+        <button
+          className={cn(className, 'center-center outline-0')}
+          type="button"
+        >
           <UserIcon className="size-4" />
           <span className="sr-only">Profile</span>
-        </Button>
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="w-56">
         <DropdownMenuSub>
@@ -44,9 +46,9 @@ export function ProfileToggle({ className }: Props) {
           <DropdownMenuSubContent className="p-0">
             {themes.map((themeOption) => (
               <DropdownMenuItem
+                className="capitalize"
                 key={themeOption.key}
                 onClick={() => setTheme(themeOption.key)}
-                className="capitalize"
               >
                 <span className="mr-2">{themeOption.icon}</span>
                 {themeOption.label}

@@ -1,3 +1,5 @@
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LogoSquare } from '@/components/logo';
 import { PageHeader } from '@/components/page-header';
@@ -6,11 +8,9 @@ import { useLogout } from '@/hooks/use-logout';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createTitle } from '@/utils/title';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/')({
-  beforeLoad: async ({ context }) => {
+  beforeLoad: ({ context }) => {
     if (!context.session.session) {
       throw redirect({ to: '/login' });
     }
@@ -28,7 +28,7 @@ export const Route = createFileRoute('/')({
         context.trpc.organization.list.queryOptions(undefined, {
           staleTime: 0,
           gcTime: 0,
-        }),
+        })
       )
       .catch(() => []);
 
@@ -50,28 +50,28 @@ function LandingPage() {
   const trpc = useTRPC();
   const logout = useLogout();
   const { data: organizations } = useSuspenseQuery(
-    trpc.organization.list.queryOptions(),
+    trpc.organization.list.queryOptions()
   );
   const number = useNumber();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <div className="max-w-2xl mx-auto px-4 col gap-12">
+    <div className="flex min-h-screen flex-col items-center justify-center">
+      <div className="col mx-auto max-w-2xl gap-12 px-4 py-8">
         <div className="col gap-4">
-          <LogoSquare className="w-full max-w-24" />
+          <LogoSquare className="w-full max-w-14 md:max-w-24" />
           <PageHeader
-            title="Welcome to OpenPanel.dev"
             description="The best web and product analytics tool out there (our honest opinion)."
+            title="Welcome to OpenPanel.dev"
           />
         </div>
 
         <div className="col gap-2">
           {organizations?.map((org) => (
             <Link
+              className="row items-center justify-between rounded-lg border bg-card p-3 transition-all hover:translate-x-1 hover:border-primary hover:shadow-md"
               key={org.id}
-              to={'/$organizationId'}
               params={{ organizationId: org.id }}
-              className="row justify-between items-center p-3 rounded-lg border bg-card hover:border-primary hover:shadow-md transition-all hover:translate-x-1"
+              to={'/$organizationId'}
             >
               <div className="col gap-2">
                 <span className="font-medium text-lg">{org.name}</span>
@@ -89,7 +89,7 @@ function LandingPage() {
         </div>
 
         <div className="row gap-4">
-          <Button onClick={() => logout.mutate()} loading={logout.isPending}>
+          <Button loading={logout.isPending} onClick={() => logout.mutate()}>
             Log out
           </Button>
         </div>

@@ -1,5 +1,3 @@
-import { Button } from '@/components/ui/button';
-import { pushModal } from '@/modals';
 import type { IServiceDashboards } from '@openpanel/db';
 import { useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -30,6 +28,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { pushModal } from '@/modals';
 
 interface SidebarProjectMenuProps {
   dashboards: IServiceDashboards;
@@ -40,38 +40,42 @@ export default function SidebarProjectMenu({
 }: SidebarProjectMenuProps) {
   return (
     <>
-      <div className="mb-2 font-medium text-muted-foreground">Analytics</div>
-      <SidebarLink icon={WallpaperIcon} label="Overview" href={'/'} />
+      <div className="mb-2 font-medium text-muted-foreground text-sm">
+        Analytics
+      </div>
+      <SidebarLink href={'/'} icon={WallpaperIcon} label="Overview" />
       <SidebarLink
+        href={'/dashboards'}
         icon={LayoutPanelTopIcon}
         label="Dashboards"
-        href={'/dashboards'}
       />
       <SidebarLink
+        href={'/insights'}
         icon={TrendingUpDownIcon}
         label="Insights"
-        href={'/insights'}
       />
-      <SidebarLink icon={LayersIcon} label="Pages" href={'/pages'} />
-      <SidebarLink icon={Globe2Icon} label="Realtime" href={'/realtime'} />
-      <SidebarLink icon={GanttChartIcon} label="Events" href={'/events'} />
-      <SidebarLink icon={UsersIcon} label="Sessions" href={'/sessions'} />
-      <SidebarLink icon={UsersIcon} label="Profiles" href={'/profiles'} />
-      <div className="mt-4 mb-2 font-medium text-muted-foreground">Manage</div>
+      <SidebarLink href={'/pages'} icon={LayersIcon} label="Pages" />
+      <SidebarLink href={'/realtime'} icon={Globe2Icon} label="Realtime" />
+      <SidebarLink href={'/events'} icon={GanttChartIcon} label="Events" />
+      <SidebarLink href={'/sessions'} icon={UsersIcon} label="Sessions" />
+      <SidebarLink href={'/profiles'} icon={UsersIcon} label="Profiles" />
+      <div className="mt-4 mb-2 font-medium text-muted-foreground text-sm">
+        Manage
+      </div>
       <SidebarLink
         exact={false}
+        href={'/settings'}
         icon={CogIcon}
         label="Settings"
-        href={'/settings'}
       />
-      <SidebarLink icon={GridIcon} label="References" href={'/references'} />
+      <SidebarLink href={'/references'} icon={GridIcon} label="References" />
       <SidebarLink
         exact={false}
+        href={'/notifications'}
         icon={BellIcon}
         label="Notifications"
-        href={'/notifications'}
       />
-      <SidebarLink icon={UndoDotIcon} label="Back to workspace" href={'..'} />
+      <SidebarLink href={'..'} icon={UndoDotIcon} label="Back to workspace" />
     </>
   );
 }
@@ -143,20 +147,20 @@ export function ActionCTAButton() {
           <Button className="w-full justify-between" size="default">
             <div className="flex items-center gap-2">
               <PlusIcon size={16} />
-              <div className="relative h-5 flex items-center">
+              <div className="relative flex h-5 items-center">
                 <AnimatePresence mode="popLayout">
                   <motion.span
-                    key={currentActionIndex}
-                    initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
+                    className="absolute whitespace-nowrap"
                     exit={{ y: -20, opacity: 0 }}
+                    initial={{ y: 20, opacity: 0 }}
+                    key={currentActionIndex}
                     transition={{
                       type: 'spring',
                       stiffness: 300,
                       damping: 25,
                       duration: 0.3,
                     }}
-                    className="absolute whitespace-nowrap"
                   >
                     {ACTIONS[currentActionIndex].label}
                   </motion.span>
@@ -166,12 +170,12 @@ export function ActionCTAButton() {
             <ChevronDownIcon size={16} />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="start">
+        <DropdownMenuContent align="start" className="w-56">
           {ACTIONS.map((action) => (
             <DropdownMenuItem
-              onClick={action.onClick}
               className="cursor-pointer"
               key={action.label}
+              onClick={action.onClick}
             >
               <action.icon className="mr-2 h-4 w-4" />
               {action.label}
