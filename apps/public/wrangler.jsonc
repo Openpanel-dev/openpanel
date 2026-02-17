@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "openpanel-public",
+  "account_id": "ff15074258b1981316524df0b09047df",
+  "compatibility_date": "2026-02-16",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "keep_names": false,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  }
+}
