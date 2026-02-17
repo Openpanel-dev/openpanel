@@ -302,6 +302,10 @@ export class ConversionService {
     // Build WITH clause
     const withClause = ctes.length > 0 ? `WITH ${ctes.join(', ')} ` : '';
 
+    // Grace period for events that fire very close together (like Mixpanel)
+    // Allows end event to happen up to 2 seconds before start event
+    const gracePeriodSeconds = 2;
+
     // Build self-join query
     const query = clix(this.client, timezone)
       .select<{
@@ -326,7 +330,7 @@ export class ConversionService {
         FROM start_events se
         LEFT JOIN end_events ee ON
           ee.${groupCol} = se.${groupCol}
-          AND ee.created_at > se.created_at
+          AND ee.created_at >= se.created_at - INTERVAL ${gracePeriodSeconds} SECOND
           AND ee.created_at <= se.created_at + INTERVAL ${funnelWindowSeconds} SECOND
         ${cohortJoins})
       `),
