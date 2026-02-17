@@ -1,6 +1,5 @@
 import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
-import { DateTime } from '@openpanel/common';
 import { omit } from 'ramda';
 import { TABLE_NAMES, ch, formatClickhouseDate } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
@@ -249,9 +248,9 @@ export class ConversionService {
     const lastEvent = events[events.length - 1]!;
 
     // Calculate extended end date for conversion events (add funnel window)
-    const extendedEndDate = DateTime.fromISO(endDate)
-      .plus({ seconds: funnelWindowSeconds })
-      .toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDateObj = new Date(endDate);
+    const extendedEndDateObj = new Date(endDateObj.getTime() + funnelWindowSeconds * 1000);
+    const extendedEndDate = formatClickhouseDate(extendedEndDateObj);
 
     // Build CTEs for start and end events
     const ctes: string[] = [];
