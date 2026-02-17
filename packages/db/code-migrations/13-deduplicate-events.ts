@@ -103,10 +103,9 @@ export async function up() {
      SELECT * FROM events
      WHERE toYYYYMM(created_at) = ${partition}
        AND toDate(created_at) = '${date}'
-     ORDER BY imported_at ASC
      LIMIT 1 BY ${DEDUP_KEY}
      SETTINGS
-       max_memory_usage = 15000000000,
+       max_memory_usage = 40000000000,
        max_execution_time = 18000`,
   ]);
 
