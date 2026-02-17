@@ -1,7 +1,3 @@
-import { PromptCard } from '@/components/organization/prompt-card';
-import { LinkButton } from '@/components/ui/button';
-import { useAppContext } from '@/hooks/use-app-context';
-import { useCookieStore } from '@/hooks/use-cookie-store';
 import {
   AwardIcon,
   HeartIcon,
@@ -11,6 +7,10 @@ import {
   SparklesIcon,
   ZapIcon,
 } from 'lucide-react';
+import { PromptCard } from '@/components/organization/prompt-card';
+import { LinkButton } from '@/components/ui/button';
+import { useAppContext } from '@/hooks/use-app-context';
+import { useCookieStore } from '@/hooks/use-cookie-store';
 
 const PERKS = [
   {
@@ -55,42 +55,42 @@ function PerkPoint({
   description: string;
 }) {
   return (
-    <div className="row gap-4 items-center">
+    <div className="row items-center gap-4">
       <Icon className="size-4" />
-      <div className="flex-1 min-w-0 col gap-1.5">
+      <div className="col min-w-0 flex-1 gap-1.5">
         <h3 className="font-medium text-sm">{text}</h3>
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className="text-muted-foreground text-xs">{description}</p>
       </div>
     </div>
   );
 }
 
 export default function SupporterPrompt() {
-  const { isSelfHosted } = useAppContext();
+  const { isSelfHosted, isDemo } = useAppContext();
   const [supporterPromptClosed, setSupporterPromptClosed] = useCookieStore(
     'supporter-prompt-closed',
-    false,
+    false
   );
 
-  if (!isSelfHosted) {
+  if (!isSelfHosted || isDemo) {
     return null;
   }
 
   return (
     <PromptCard
-      title="Support OpenPanel"
-      subtitle="Help us build the future of open analytics"
+      gradientColor="rgb(16 185 129)"
       onClose={() => setSupporterPromptClosed(true)}
       show={!supporterPromptClosed}
-      gradientColor="rgb(16 185 129)"
+      subtitle="Help us build the future of open analytics"
+      title="Support OpenPanel"
     >
       <div className="col gap-3 px-6">
         {PERKS.map((perk) => (
           <PerkPoint
-            key={perk.text}
-            icon={perk.icon}
-            text={perk.text}
             description={perk.description}
+            icon={perk.icon}
+            key={perk.text}
+            text={perk.text}
           />
         ))}
       </div>
@@ -102,13 +102,13 @@ export default function SupporterPrompt() {
         >
           Become a Supporter
         </LinkButton>
-        <p className="text-xs text-muted-foreground text-center mt-4">
+        <p className="mt-4 text-center text-muted-foreground text-xs">
           Starting at $20/month • Cancel anytime •{' '}
           <a
-            href="https://openpanel.dev/supporter"
-            target="_blank"
-            rel="noreferrer"
             className="text-primary underline-offset-4 hover:underline"
+            href="https://openpanel.dev/supporter"
+            rel="noreferrer"
+            target="_blank"
           >
             Learn more
           </a>

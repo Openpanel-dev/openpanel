@@ -6,8 +6,7 @@ export function useAppContext() {
   });
 
   if (
-    !params.apiUrl ||
-    !params.dashboardUrl ||
+    !(params.apiUrl && params.dashboardUrl) ||
     typeof params.isSelfHosted === 'undefined'
   ) {
     throw new Error('API URL or dashboard URL is not set');
@@ -18,5 +17,6 @@ export function useAppContext() {
     dashboardUrl: params.dashboardUrl,
     isSelfHosted: params.isSelfHosted,
     isMaintenance: params.isMaintenance ?? false,
+    isDemo: params.isDemo ?? false,
   };
 }

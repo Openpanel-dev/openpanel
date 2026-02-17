@@ -1,23 +1,26 @@
+import { useEffect, useMemo } from 'react';
 import { PromptCard } from '@/components/organization/prompt-card';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useCookieStore } from '@/hooks/use-cookie-store';
 import { op } from '@/utils/op';
-import { MessageSquareIcon } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
 
 const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 
 export default function FeedbackPrompt() {
-  const { isSelfHosted } = useAppContext();
+  const { isSelfHosted, isDemo } = useAppContext();
   const [feedbackPromptSeen, setFeedbackPromptSeen] = useCookieStore(
     'feedback-prompt-seen',
     '',
-    { maxAge: THIRTY_DAYS_IN_SECONDS },
+    { maxAge: THIRTY_DAYS_IN_SECONDS }
   );
 
   const shouldShow = useMemo(() => {
     if (isSelfHosted) {
+      return false;
+    }
+
+    if (isDemo) {
       return false;
     }
 
@@ -36,7 +39,7 @@ export default function FeedbackPrompt() {
       // If date parsing fails, show the prompt
       return true;
     }
-  }, [isSelfHosted, feedbackPromptSeen]);
+  }, [isDemo, isSelfHosted, feedbackPromptSeen]);
 
   const handleGiveFeedback = () => {
     // Open userjot widget
@@ -61,14 +64,14 @@ export default function FeedbackPrompt() {
 
   return (
     <PromptCard
-      title="Share Your Feedback"
-      subtitle="Help us improve OpenPanel with your insights"
+      gradientColor="rgb(59 130 246)"
       onClose={handleClose}
       show={shouldShow}
-      gradientColor="rgb(59 130 246)"
+      subtitle="Help us improve OpenPanel with your insights"
+      title="Share Your Feedback"
     >
-      <div className="px-6 col gap-4">
-        <p className="text-sm text-foreground leading-normal">
+      <div className="col gap-4 px-6">
+        <p className="text-foreground text-sm leading-normal">
           Your feedback helps us build features you actually need. Share your
           thoughts, report bugs, or suggest improvements
         </p>
