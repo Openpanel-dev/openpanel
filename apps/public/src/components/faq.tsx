@@ -8,7 +8,7 @@ import {
 
 export const Faqs = ({
   children,
-  schema = true,
+  schema = false,
 }: {
   children: React.ReactNode;
   schema?: boolean;
