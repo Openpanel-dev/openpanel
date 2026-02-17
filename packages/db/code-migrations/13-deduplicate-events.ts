@@ -79,7 +79,7 @@ export async function up() {
   console.log('  ' + '─'.repeat(65));
   for (const row of beforeData) {
     console.log(
-      `  ${row.name.padEnd(25)} ${Number(row.total).toLocaleString().padStart(10)} ${Number(row.unique_events).toLocaleString().padStart(10)} ${Number(row.duplicates).toLocaleString().padStart(10)} ${row.dup_pct.padStart(5)}%`,
+      `  ${row.name.padEnd(25)} ${Number(row.total).toLocaleString().padStart(10)} ${Number(row.unique_events).toLocaleString().padStart(10)} ${Number(row.duplicates).toLocaleString().padStart(10)} ${String(row.dup_pct).padStart(5)}%`,
     );
   }
 
