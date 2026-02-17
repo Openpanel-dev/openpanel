@@ -22,6 +22,7 @@ type OpenPanelComponentProps = Omit<OpenPanelOptions, 'filter'> & {
   cdnUrl?: string;
   filter?: string;
   globalProperties?: Record<string, unknown>;
+  strategy?: 'beforeInteractive' | 'afterInteractive' | 'lazyOnload' | 'worker';
 };
 
 const stringify = (obj: unknown) => {
@@ -42,6 +43,7 @@ export function OpenPanelComponent({
   profileId,
   cdnUrl,
   globalProperties,
+  strategy = 'afterInteractive',
   ...options
 }: OpenPanelComponentProps) {
   const methods: { name: OpenPanelMethodNames; value: unknown }[] = [
@@ -80,7 +82,8 @@ export function OpenPanelComponent({
     <>
       <Script src={appendVersion(cdnUrl || CDN_URL)} async defer />
       <Script
-        strategy="beforeInteractive"
+        id="openpanel-init"
+        strategy={strategy}
         dangerouslySetInnerHTML={{
           __html: `${getInitSnippet()}
           ${methods
