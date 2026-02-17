@@ -1,23 +1,21 @@
-import { path, assocPath, last, mergeDeepRight, uniq } from 'ramda';
-import sqlstring from 'sqlstring';
-import { v4 as uuid } from 'uuid';
-
 import { DateTime, toDots } from '@openpanel/common';
 import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
-
+import { assocPath, last, mergeDeepRight, path, uniq } from 'ramda';
+import sqlstring from 'sqlstring';
+import { v4 as uuid } from 'uuid';
 import { botBuffer, eventBuffer, sessionBuffer } from '../buffers';
 import {
-  TABLE_NAMES,
   ch,
   chQuery,
   convertClickhouseDateToJs,
   formatClickhouseDate,
+  TABLE_NAMES,
 } from '../clickhouse/client';
-import { type Query, clix } from '../clickhouse/query-builder';
+import { clix, type Query } from '../clickhouse/query-builder';
 import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
-import { type SqlBuilderObject, createSqlBuilder } from '../sql-builder';
+import { createSqlBuilder, type SqlBuilderObject } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
 import type { IServiceProfile, IServiceUpsertProfile } from './profile.service';
 import {
@@ -101,7 +99,7 @@ export interface IClickhouseEvent {
 }
 
 export function transformSessionToEvent(
-  session: IClickhouseSession,
+  session: IClickhouseSession
 ): IServiceEvent {
   return {
     id: '', // Not used
@@ -272,7 +270,7 @@ function maskString(str: string, mask = '*') {
 }
 
 export function transformMinimalEvent(
-  event: IServiceEvent,
+  event: IServiceEvent
 ): IServiceEventMinimal {
   return {
     id: event.id,
@@ -308,7 +306,7 @@ export const getEventMetasCached = cacheable(getEventMetas, 60 * 5);
 
 export async function getEvents(
   sql: string,
-  options: GetEventsOptions = {},
+  options: GetEventsOptions = {}
 ): Promise<IServiceEvent[]> {
   const events = await chQuery<IClickhouseEvent>(sql);
   const projectId = events[0]?.project_id;
@@ -469,14 +467,14 @@ export async function getEventList(options: GetEventListOptions) {
   // Cap the date interval to prevent infinity
   const safeDateIntervalInDays = Math.min(
     dateIntervalInDays,
-    MAX_DATE_INTERVAL_IN_DAYS,
+    MAX_DATE_INTERVAL_IN_DAYS
   );
 
   if (typeof cursor === 'number') {
     sb.offset = Math.max(0, (cursor ?? 0) * take);
   } else if (cursor instanceof Date) {
     sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(cursor))}, 3) - INTERVAL ${safeDateIntervalInDays} DAY`;
-    sb.where.cursor = `created_at <= ${sqlstring.escape(formatClickhouseDate(cursor))}`;
+    sb.where.cursor = `created_at < ${sqlstring.escape(formatClickhouseDate(cursor))}`;
   }
 
   if (!cursor) {
@@ -501,7 +499,7 @@ export async function getEventList(options: GetEventListOptions) {
       os: true,
       browser: true,
     },
-    incomingSelect ?? {},
+    incomingSelect ?? {}
   );
 
   sb.select.createdAt = 'created_at';
@@ -610,7 +608,7 @@ export async function getEventList(options: GetEventListOptions) {
   if (events && events.length > 0) {
     sb.where.events = `name IN (${join(
       events.map((event) => sqlstring.escape(event)),
-      ',',
+      ','
     )})`;
   }
 
@@ -678,7 +676,7 @@ export async function getEventsCount({
   if (events && events.length > 0) {
     sb.where.events = `name IN (${join(
       events.map((event) => sqlstring.escape(event)),
-      ',',
+      ','
     )})`;
   }
 
@@ -699,7 +697,7 @@ export async function getEventsCount({
   }
 
   const res = await chQuery<{ count: number }>(
-    getSql().replace('*', 'count(*) as count'),
+    getSql().replace('*', 'count(*) as count')
   );
 
   return res[0]?.count ?? 0;
@@ -744,14 +742,14 @@ export async function getTopPages({
 }) {
   const res = await chQuery<IServicePage>(`
     SELECT path, count(*) as count, project_id, first_value(created_at) as first_seen, last_value(properties['__title']) as title, origin
-    FROM ${TABLE_NAMES.events} 
-    WHERE name = 'screen_view' 
-    AND  project_id = ${sqlstring.escape(projectId)} 
-    AND created_at > now() - INTERVAL 30 DAY 
+    FROM ${TABLE_NAMES.events}
+    WHERE name = 'screen_view'
+    AND  project_id = ${sqlstring.escape(projectId)}
+    AND created_at > now() - INTERVAL 30 DAY
     ${search ? `AND path ILIKE '%${search}%'` : ''}
     GROUP BY path, project_id, origin
-    ORDER BY count desc 
-    LIMIT ${take} 
+    ORDER BY count desc
+    LIMIT ${take}
     OFFSET ${Math.max(0, (cursor ?? 0) * take)}
   `);
 
@@ -829,7 +827,7 @@ class EventService {
       .when(profileFilters.length > 0, (q) => {
         q.leftJoin(
           `(SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0])).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
-          'profile.id = e.profile_id',
+          'profile.id = e.profile_id'
         );
       })
       .when(!!where?.event, where?.event)
@@ -870,12 +868,12 @@ class EventService {
                   .select(['profile_id'])
                   .from('cte_sessions')
                   .union(
-                    clix(this.client).select(['profile_id']).from('cte_events'),
-                  ),
-              ),
+                    clix(this.client).select(['profile_id']).from('cte_events')
+                  )
+              )
             )
-            .groupBy(['profile_id']),
-        ),
+            .groupBy(['profile_id'])
+        )
       )
       .groupBy(['id', 'project_id'])
       .when(!!where?.profile, where?.profile);
@@ -922,7 +920,7 @@ class EventService {
       .leftJoin('cte_sessions s', 'e.session_id = s.session_id')
       .leftJoin(
         'cte_profiles p',
-        's.profile_id = p.id AND p.is_external = true',
+        's.profile_id = p.id AND p.is_external = true'
       )
       .when(!!profileId, (q) => {
         q.where('s.profile_id', '=', profileId);
@@ -935,10 +933,8 @@ class EventService {
       .map((item) => {
         return Object.entries(item).reduce(
           (acc, [prop, val]) => {
-            if (prop === 'event_profile_id' && val) {
-              if (!item.profile_id) {
-                return assocPath(['profile', 'id'], val, acc);
-              }
+            if (prop === 'event_profile_id' && val && !item.profile_id) {
+              return assocPath(['profile', 'id'], val, acc);
             }
 
             if (
@@ -948,14 +944,14 @@ class EventService {
               return assocPath(
                 ['profile', prop.replace('profile_', '')],
                 val,
-                acc,
+                acc
               );
             }
             return assocPath([prop], val, acc);
           },
           {
             profile: {},
-          } as IClickhouseEvent,
+          } as IClickhouseEvent
         );
       })
       .map(transformEvent);
@@ -1065,7 +1061,7 @@ class EventService {
           }
           if (filters) {
             q.rawWhere(
-              Object.values(getEventFiltersWhereClause(filters)).join(' AND '),
+              Object.values(getEventFiltersWhereClause(filters)).join(' AND ')
             );
           }
         },
@@ -1095,7 +1091,7 @@ class EventService {
     return {
       items: this.transformFromQuery(items).map((item) => ({
         ...item,
-        projectId: projectId,
+        projectId,
       })),
       meta: {
         next: hasNext ? last(items)?.created_at : null,
