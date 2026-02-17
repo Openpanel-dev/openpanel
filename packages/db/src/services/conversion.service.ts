@@ -340,10 +340,10 @@ export class ConversionService {
     const results = await query.execute();
 
     // Sort series by average conversion rate (descending) when there are breakdowns
-    const series = this.toSeries(results, breakdowns, limit);
+    const resultSeries = this.toSeries(results, breakdowns, limit);
 
     if (breakdowns.length > 0) {
-      series.sort((a, b) => {
+      resultSeries.sort((a, b) => {
         const avgRateA = a.data.reduce((sum, d) => sum + d.rate, 0) / (a.data.length || 1);
         const avgRateB = b.data.reduce((sum, d) => sum + d.rate, 0) / (b.data.length || 1);
         return avgRateB - avgRateA; // Descending order
@@ -351,7 +351,7 @@ export class ConversionService {
     }
 
     // Apply limit after sorting
-    const limitedSeries = limit && breakdowns.length > 0 ? series.slice(0, limit) : series;
+    const limitedSeries = limit && breakdowns.length > 0 ? resultSeries.slice(0, limit) : resultSeries;
 
     return limitedSeries.map((serie, serieIndex) => {
       return {
