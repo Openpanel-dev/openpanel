@@ -73,7 +73,7 @@ export async function validateSdkRequest(
       clientId,
     )
   ) {
-    throw createError('Ingestion: Clean ID must be a valid UUIDv4');
+    throw createError('Ingestion: Client ID must be a valid UUIDv4');
   }
 
   const client = await getClientByIdCached(clientId);
