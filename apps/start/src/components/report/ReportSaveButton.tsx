@@ -34,10 +34,17 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
         toast('Success', {
           description: 'Report updated.',
         });
+        // Invalidate the report list
         queryClient.invalidateQueries(
           trpc.report.list.queryFilter({
             dashboardId: res.dashboardId,
             projectId: res.projectId,
+          }),
+        );
+        // Invalidate the individual report query to refetch fresh data
+        queryClient.invalidateQueries(
+          trpc.report.byId.queryFilter({
+            reportId: res.id,
           }),
         );
       },
