@@ -4,6 +4,7 @@ import {
   getProfileById,
   getSalts,
   replayBuffer,
+  upsertGroup,
   upsertProfile,
 } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
@@ -14,6 +15,7 @@ import {
 import { getRedisCache } from '@openpanel/redis';
 import {
   type IDecrementPayload,
+  type IGroupPayload,
   type IIdentifyPayload,
   type IIncrementPayload,
   type IReplayPayload,
@@ -218,6 +220,7 @@ async function handleTrack(
         headers,
         event: {
           ...payload,
+          groups: payload.groups ?? [],
           timestamp: timestamp.value,
           isTimestampFromThePast: timestamp.isFromPast,
         },
@@ -333,6 +336,20 @@ async function handleReplay(
   await replayBuffer.add(row);
 }
 
+async function handleGroup(
+  payload: IGroupPayload,
+  context: TrackContext
+): Promise<void> {
+  const { id, type, name, properties = {} } = payload;
+  await upsertGroup({
+    id,
+    projectId: context.projectId,
+    type,
+    name,
+    properties,
+  });
+}
+
 export async function handler(
   request: FastifyRequest<{
     Body: ITrackHandlerPayload;
@@ -380,6 +397,9 @@ export async function handler(
       break;
     case 'replay':
       await handleReplay(validatedBody.payload, context);
+      break;
+    case 'group':
+      await handleGroup(validatedBody.payload, context);
       break;
     default:
       return reply.status(400).send({

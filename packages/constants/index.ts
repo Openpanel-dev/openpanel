@@ -113,6 +113,7 @@ export const chartSegments = {
   event: 'All events',
   user: 'Unique users',
   session: 'Unique sessions',
+  group: 'Unique groups',
   user_average: 'Average users',
   one_event_per_user: 'One event per user',
   property_sum: 'Sum of property',
@@ -195,7 +196,7 @@ export const metrics = {
 } as const;
 
 export function isMinuteIntervalEnabledByRange(
-  range: keyof typeof timeWindows,
+  range: keyof typeof timeWindows
 ) {
   return range === '30min' || range === 'lastHour';
 }
@@ -210,7 +211,7 @@ export function isHourIntervalEnabledByRange(range: keyof typeof timeWindows) {
 }
 
 export function getDefaultIntervalByRange(
-  range: keyof typeof timeWindows,
+  range: keyof typeof timeWindows
 ): keyof typeof intervals {
   if (range === '30min' || range === 'lastHour') {
     return 'minute';
@@ -231,7 +232,7 @@ export function getDefaultIntervalByRange(
 
 export function getDefaultIntervalByDates(
   startDate: string | null,
-  endDate: string | null,
+  endDate: string | null
 ): null | keyof typeof intervals {
   if (startDate && endDate) {
     if (isSameDay(startDate, endDate)) {

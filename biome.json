@@ -63,7 +63,8 @@
       },
       "performance": {
         "noDelete": "off",
-        "noAccumulatingSpread": "off"
+        "noAccumulatingSpread": "off",
+        "noBarrelFile": "off"
       },
       "suspicious": {
         "noExplicitAny": "off",

@@ -61,6 +61,7 @@ export const TABLE_NAMES = {
   gsc_daily: 'gsc_daily',
   gsc_pages_daily: 'gsc_pages_daily',
   gsc_queries_daily: 'gsc_queries_daily',
+  groups: 'groups',
 };
 
 /**
