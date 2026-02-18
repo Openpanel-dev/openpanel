@@ -1,3 +1,4 @@
+import { createFileRoute } from '@tanstack/react-router';
 import { LazyComponent } from '@/components/lazy-component';
 import {
   OverviewFilterButton,
@@ -15,8 +16,8 @@ import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 import OverviewUserJourney from '@/components/overview/overview-user-journey';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
-import { createFileRoute } from '@tanstack/react-router';
+import OverviewWeeklyTrends from '@/components/overview/overview-weekly-trends';
+import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_app/$organizationId/$projectId/')({
   component: ProjectDashboard,
@@ -59,6 +60,9 @@ function ProjectDashboard() {
         <OverviewTopDevices projectId={projectId} />
         <OverviewTopEvents projectId={projectId} />
         <OverviewTopGeo projectId={projectId} />
+        <LazyComponent className="col-span-6">
+          <OverviewWeeklyTrends projectId={projectId} />
+        </LazyComponent>
         <LazyComponent className="col-span-6">
           <OverviewUserJourney projectId={projectId} />
         </LazyComponent>

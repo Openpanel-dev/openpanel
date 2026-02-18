@@ -13,6 +13,7 @@ import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 import OverviewUserJourney from '@/components/overview/overview-user-journey';
+import OverviewWeeklyTrends from '@/components/overview/overview-weekly-trends';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
@@ -125,6 +126,9 @@ function RouteComponent() {
         <OverviewTopDevices projectId={projectId} shareId={shareId} />
         <OverviewTopEvents projectId={projectId} shareId={shareId} />
         <OverviewTopGeo projectId={projectId} shareId={shareId} />
+        <LazyComponent className="col-span-6">
+          <OverviewWeeklyTrends projectId={projectId} shareId={shareId} />
+        </LazyComponent>
         <LazyComponent className="col-span-6">
           <OverviewUserJourney projectId={projectId} shareId={shareId} />
         </LazyComponent>
