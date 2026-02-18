@@ -136,6 +136,7 @@ export async function incomingEvent(
       __hash: hash,
       __query: query,
     }),
+    groups: body.groups ?? [],
     createdAt,
     duration: 0,
     sdkName,
