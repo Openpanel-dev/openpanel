@@ -1,7 +1,5 @@
-import { z } from 'zod';
-
 import { RESERVED_EVENT_NAMES } from '@openpanel/constants';
-
+import { z } from 'zod';
 import { isBlockedEventName } from './event-blocklist';
 
 export const zTrackPayload = z
@@ -20,15 +18,23 @@ export const zTrackPayload = z
   })
   .refine(
     (data) => {
-      if (data.name !== 'revenue') return true;
+      if (data.name !== 'revenue') {
+        return true;
+      }
       const revenue = data.properties?.__revenue;
-      if (revenue === undefined) return true;
-      return Number.isInteger(revenue);
+      if (revenue === undefined || revenue === null) {
+        return true;
+      }
+      const isInt = Number.isInteger(revenue);
+      if (isInt && Number(revenue) < 0) {
+        return false;
+      }
+      return isInt;
     },
     {
       message: '__revenue must be an integer (no floats or strings)',
       path: ['properties', '__revenue'],
-    },
+    }
   );
 
 export const zIdentifyPayload = z.object({
