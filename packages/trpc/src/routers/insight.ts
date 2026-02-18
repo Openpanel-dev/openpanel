@@ -27,9 +27,6 @@ export const insightRouter = createTRPCRouter({
         where: {
           projectId,
           state: 'active',
-          moduleKey: {
-            notIn: ['page-trends', 'entry-pages'],
-          },
         },
         orderBy: {
           impactScore: 'desc',
