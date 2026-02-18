@@ -67,6 +67,10 @@ export const TABLE_NAMES = {
  * Non-clustered mode = self-hosted environments
  */
 export function isClickhouseClustered(): boolean {
+  if (process.env.CLICKHOUSE_CLUSTER === 'true' || process.env.CLICKHOUSE_CLUSTER === '1') {
+    return true
+  }
+
   return !(
     process.env.SELF_HOSTED === 'true' || process.env.SELF_HOSTED === '1'
   );

@@ -119,11 +119,16 @@ export type CronQueuePayloadOnboarding = {
   type: 'onboarding';
   payload: undefined;
 };
+export type CronQueuePayloadFlushProfileBackfill = {
+  type: 'flushProfileBackfill';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
   | CronQueuePayloadFlushSessions
   | CronQueuePayloadFlushProfiles
+  | CronQueuePayloadFlushProfileBackfill
   | CronQueuePayloadPing
   | CronQueuePayloadProject
   | CronQueuePayloadInsightsDaily

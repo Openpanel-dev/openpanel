@@ -14,6 +14,7 @@ import {
   getEvents,
   getHasFunnelRules,
   getNotificationRulesByProjectId,
+  profileBackfillBuffer,
   sessionBuffer,
   transformSessionToEvent,
 } from '@openpanel/db';
@@ -34,9 +35,9 @@ async function getSessionEvents({
   endAt: Date;
 }): Promise<IServiceEvent[]> {
   const sql = `
-    SELECT * FROM ${TABLE_NAMES.events} 
-    WHERE 
-      session_id = '${sessionId}' 
+    SELECT * FROM ${TABLE_NAMES.events}
+    WHERE
+      session_id = '${sessionId}'
       AND project_id = '${projectId}'
       AND created_at BETWEEN '${formatClickhouseDate(startAt)}' AND '${formatClickhouseDate(endAt)}'
     ORDER BY created_at DESC LIMIT ${MAX_SESSION_EVENTS};
@@ -91,6 +92,22 @@ export async function createSessionEnd(
     });
   }
 
+  const profileId = session.profile_id || payload.profileId
+
+  if (
+    profileId !== session.device_id
+    && process.env.EXPERIMENTAL_PROFILE_BACKFILL === '1'
+  ) {
+    const runOnProjects = process.env.EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS?.split(',').filter(Boolean) ?? []
+    if(runOnProjects.length === 0 || runOnProjects.includes(payload.projectId)) {
+      await profileBackfillBuffer.add({
+        projectId: payload.projectId,
+        sessionId: payload.sessionId,
+        profileId: profileId,
+      });
+    }
+  }
+
   // Create session end event
   return createEvent({
     ...payload,
@@ -104,7 +121,7 @@ export async function createSessionEnd(
     createdAt: new Date(
       convertClickhouseDateToJs(session.ended_at).getTime() + 1000,
     ),
-    profileId: session.profile_id || payload.profileId,
+    profileId: profileId,
   });
 }
 

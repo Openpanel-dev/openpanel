@@ -59,6 +59,11 @@ export async function bootCron() {
       pattern: 1000 * 10,
     },
     {
+      name: 'flush',
+      type: 'flushProfileBackfill',
+      pattern: 1000 * 30,
+    },
+    {
       name: 'insightsDaily',
       type: 'insightsDaily',
       pattern: '0 2 * * *',
