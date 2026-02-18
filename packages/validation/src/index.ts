@@ -465,9 +465,15 @@ export const zProjectFilterProfileId = z.object({
 });
 export type IProjectFilterProfileId = z.infer<typeof zProjectFilterProfileId>;
 
+export const zProjectFilterEvent = zChartEvent.extend({
+  type: z.literal('event'),
+});
+export type IProjectFilterEvent = z.infer<typeof zProjectFilterEvent>;
+
 export const zProjectFilters = z.discriminatedUnion('type', [
   zProjectFilterIp,
   zProjectFilterProfileId,
+  zProjectFilterEvent,
 ]);
 export type IProjectFilters = z.infer<typeof zProjectFilters>;
 

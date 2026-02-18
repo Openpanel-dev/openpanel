@@ -35,6 +35,7 @@ interface PureFilterProps {
     filter: IChartEventFilter,
   ) => void;
   className?: string;
+  immediateInput?: boolean;
 }
 
 export function FilterItem({ filter, event }: FilterProps) {
@@ -113,6 +114,7 @@ export function PureFilterItem({
   onChangeValue,
   onChangeOperator,
   className,
+  immediateInput,
 }: PureFilterProps) {
   const { projectId } = useAppParams();
 
@@ -170,6 +172,7 @@ export function PureFilterItem({
           <InputEnter
             value={filter.value[0] ? String(filter.value[0]) : ''}
             onChangeValue={(value) => changeFilterValue([value])}
+            immediate={immediateInput}
           />
         )}
       </div>

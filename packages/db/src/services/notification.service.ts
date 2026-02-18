@@ -186,8 +186,26 @@ function matchEventFilters(
       case 'regex': {
         return value
           .map((val) => stripLeadingAndTrailingSlashes(String(val)))
-          .some((val) => new RegExp(val).test(propertyValue));
+          .some((val) => {
+            try {
+              return new RegExp(val).test(propertyValue);
+            } catch {
+              return false;
+            }
+          });
       }
+      case 'isNull':
+        return propertyValue === '';
+      case 'isNotNull':
+        return propertyValue !== '';
+      case 'gt':
+        return value.some((val) => Number(propertyValue) > Number(val));
+      case 'lt':
+        return value.some((val) => Number(propertyValue) < Number(val));
+      case 'gte':
+        return value.some((val) => Number(propertyValue) >= Number(val));
+      case 'lte':
+        return value.some((val) => Number(propertyValue) <= Number(val));
       default:
         return false;
     }

@@ -10,6 +10,8 @@ import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
 import {
   checkNotificationRulesForEvent,
   createEvent,
+  getProjectByIdCached,
+  matchEvent,
   sessionBuffer,
 } from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';
@@ -28,7 +30,26 @@ const merge = <A, B>(a: Partial<A>, b: Partial<B>): A & B =>
 async function createEventAndNotify(
   payload: IServiceCreateEventPayload,
   logger: ILogger,
+  projectId: string,
 ) {
+  // Check project-level event exclude filters
+  const project = await getProjectByIdCached(projectId);
+  const eventExcludeFilters = (project?.filters ?? []).filter(
+    (f) => f.type === 'event',
+  );
+  if (eventExcludeFilters.length > 0) {
+    const isExcluded = eventExcludeFilters.some((filter) =>
+      matchEvent(payload, filter),
+    );
+    if (isExcluded) {
+      logger.info('Event excluded by project filter', {
+        event: payload.name,
+        projectId,
+      });
+      return null
+    }
+  }
+
   logger.info('Creating event', { event: payload });
   const [event] = await Promise.all([
     createEvent(payload),
@@ -160,7 +181,7 @@ export async function incomingEvent(
       latitude: session?.latitude ?? baseEvent.latitude,
     };
 
-    return createEventAndNotify(payload as IServiceEvent, logger);
+    return createEventAndNotify(payload as IServiceEvent, logger, projectId);
   }
 
   const sessionEnd = await getSessionEnd({
@@ -196,13 +217,19 @@ export async function incomingEvent(
         createdAt: new Date(getTime(payload.createdAt) - 100),
       },
       logger,
+      projectId
     ).catch((error) => {
       logger.error('Error creating session start event', { event: payload });
       throw error;
     });
   }
 
-  const event = await createEventAndNotify(payload, logger);
+  const event = await createEventAndNotify(payload, logger, projectId);
+
+  if (!event) {
+    // Skip creating session end when event was excluded
+    return null
+  }
 
   if (!sessionEnd) {
     logger.info('Creating session end job', { event: payload });
