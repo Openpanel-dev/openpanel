@@ -61,7 +61,7 @@
         "notes": "OpenPanel's SDK is over 20x smaller than PostHog's core library, resulting in faster page loads and better Core Web Vitals."
       },
       {
-        "label": "Cookie-Free by Default",
+        "label": "Cookie-Free",
         "openpanel": "Yes",
         "competitor": "Requires Configuration",
         "notes": "OpenPanel is truly cookie-free out of the box. PostHog requires specific configuration for cookieless tracking with reduced functionality."
