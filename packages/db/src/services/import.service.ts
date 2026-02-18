@@ -456,14 +456,14 @@ export async function moveImportsToProduction(
 
   if (from) {
     whereClause += ` AND (
-      (toDate(created_at) = {from:String}) OR
+      (toDate(addHours(created_at, 5.5)) = {from:String}) OR
       (
         name IN ('session_start', 'session_end') AND
         session_id IN (
           SELECT DISTINCT session_id
           FROM ${TABLE_NAMES.events_imports}
           WHERE import_id = {importId:String}
-            AND toDate(created_at) = {from:String}
+            AND toDate(addHours(created_at, 5.5)) = {from:String}
             AND name NOT IN ('session_start', 'session_end')
         )
       )
@@ -473,7 +473,7 @@ export async function moveImportsToProduction(
   console.log('[Phase 4] WHERE clause:', whereClause);
 
   const migrationQuery = `
-    INSERT INTO ${TABLE_NAMES.events} (
+    INSERT INTO events_tmp (
       id,
       name,
       sdk_name,
