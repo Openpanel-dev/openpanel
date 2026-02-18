@@ -2,11 +2,19 @@ import { RESERVED_EVENT_NAMES } from '@openpanel/constants';
 import { z } from 'zod';
 import { isBlockedEventName } from './event-blocklist';
 
+export const zGroupPayload = z.object({
+  id: z.string().min(1),
+  type: z.string().min(1),
+  name: z.string().min(1),
+  properties: z.record(z.unknown()).optional(),
+});
+
 export const zTrackPayload = z
   .object({
     name: z.string().min(1),
     properties: z.record(z.string(), z.unknown()).optional(),
     profileId: z.string().or(z.number()).optional(),
+    groups: z.array(z.string()).optional(),
   })
   .refine((data) => !RESERVED_EVENT_NAMES.includes(data.name as any), {
     message: `Event name cannot be one of the reserved names: ${RESERVED_EVENT_NAMES.join(', ')}`,
@@ -97,6 +105,10 @@ export const zTrackHandlerPayload = z.discriminatedUnion('type', [
     type: z.literal('replay'),
     payload: zReplayPayload,
   }),
+  z.object({
+    type: z.literal('group'),
+    payload: zGroupPayload,
+  }),
 ]);
 
 export type ITrackPayload = z.infer<typeof zTrackPayload>;
@@ -105,6 +117,7 @@ export type IIncrementPayload = z.infer<typeof zIncrementPayload>;
 export type IDecrementPayload = z.infer<typeof zDecrementPayload>;
 export type IAliasPayload = z.infer<typeof zAliasPayload>;
 export type IReplayPayload = z.infer<typeof zReplayPayload>;
+export type IGroupPayload = z.infer<typeof zGroupPayload>;
 export type ITrackHandlerPayload = z.infer<typeof zTrackHandlerPayload>;
 
 // Deprecated types for beta version of the SDKs

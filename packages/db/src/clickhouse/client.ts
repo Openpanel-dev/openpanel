@@ -58,6 +58,8 @@ export const TABLE_NAMES = {
   sessions: 'sessions',
   events_imports: 'events_imports',
   session_replay_chunks: 'session_replay_chunks',
+  groups: 'groups',
+  groups_dict: 'groups_dict',
 };
 
 /**
