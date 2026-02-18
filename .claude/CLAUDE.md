@@ -1,3 +1,85 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Openpanel is an open-source web/product analytics platform (Mixpanel alternative). It's a **pnpm monorepo** with apps, packages, tooling, and SDKs.
+
+## Common Commands
+
+```bash
+# Development
+pnpm dev                    # Run all services (api, worker, dashboard) in parallel
+pnpm dev:public             # Run public/docs site only
+pnpm dock:up / dock:down    # Start/stop Docker (PostgreSQL, Redis, ClickHouse)
+
+# Code quality
+pnpm check                  # Lint check (Biome via Ultracite)
+pnpm fix                    # Auto-fix lint/format issues
+pnpm typecheck              # Typecheck all packages
+
+# Testing
+pnpm test                   # Run all tests (vitest)
+pnpm vitest run <path>      # Run a single test file
+# Workspace: packages/* and apps/* (excluding apps/start)
+
+# Database
+pnpm codegen                # Generate Prisma types + geo data
+pnpm migrate                # Run Prisma migrations (dev)
+pnpm migrate:deploy         # Deploy migrations (production - never run this)
+
+# Docker utilities
+pnpm dock:ch                # ClickHouse CLI
+pnpm dock:redis             # Redis CLI
+```
+
+## Architecture
+
+### Apps
+
+| App | Stack | Port | Purpose |
+|-----|-------|------|---------|
+| `apps/api` | Fastify + tRPC | 3333 | REST/RPC API server |
+| `apps/start` | TanStack Start (Vite + React 19) | 3000 | Dashboard SPA |
+| `apps/public` | Next.js 16 + Fumadocs | - | Marketing/docs site |
+| `apps/worker` | Express + BullMQ | 9999 | Background job processor |
+
+### Key Packages
+
+| Package | Purpose |
+|---------|---------|
+| `packages/db` | Prisma ORM (PostgreSQL) + ClickHouse client |
+| `packages/trpc` | tRPC router definitions, context, middleware |
+| `packages/auth` | Authentication (Arctic OAuth, Oslo sessions, argon2) |
+| `packages/queue` | BullMQ + GroupMQ job queue definitions |
+| `packages/redis` | Redis client + LRU caching |
+| `packages/validation` | Zod schemas shared across apps |
+| `packages/common` | Shared utilities (date-fns, ua-parser, nanoid) |
+| `packages/email` | React Email templates via Resend |
+| `packages/sdks/*` | Client SDKs (web, react, next, express, react-native, etc.) |
+
+### Data Flow
+
+1. **Event ingestion**: Client SDKs → `apps/api` (track routes) → Redis queue
+2. **Processing**: `apps/worker` picks up jobs from BullMQ, batches events into ClickHouse
+3. **Dashboard queries**: `apps/start` → tRPC → `apps/api` → ClickHouse (analytics) / PostgreSQL (config)
+4. **Real-time**: WebSocket via Fastify, pub/sub via Redis
+
+### Three-Database Strategy
+
+- **PostgreSQL**: Relational data (users, orgs, projects, dashboards). Managed by Prisma.
+- **ClickHouse**: Analytics event storage (OLAP). High-volume reads/writes.
+- **Redis**: Caching, job queues (BullMQ), rate limiting, pub/sub.
+
+### Dashboard (apps/start)
+
+Uses TanStack Router with file-based routing (`src/routes/`). State management via Redux Toolkit. UI built on Radix primitives + Tailwind v4. Charts via Recharts. Modals in `src/modals/`.
+
+### API (apps/api)
+
+Fastify server with tRPC integration. Route files in `src/routes/`. Hooks for IP extraction, request logging, timestamps. Built with `tsdown`.
+
 # Ultracite Code Standards
 
 This project uses **Ultracite**, a zero-config preset that enforces strict code quality standards through automated formatting and linting.
