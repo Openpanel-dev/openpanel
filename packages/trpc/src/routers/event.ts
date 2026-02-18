@@ -351,6 +351,6 @@ export const eventRouter = createTRPCRouter({
         )} AND origin IS NOT NULL AND origin != '' AND toDate(created_at) > now() - INTERVAL 30 DAY GROUP BY origin ORDER BY count DESC LIMIT 3`,
       );
 
-      return res;
+      return res.filter((item) => item.origin && !item.origin.includes('localhost:'));
     }),
 });

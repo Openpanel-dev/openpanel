@@ -1,13 +1,11 @@
 import { Badge } from '@/components/ui/badge';
 import { Command, CommandInput, CommandItem } from '@/components/ui/command';
-import { cn } from '@/utils/cn';
 import { ChevronsUpDownIcon } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
-import { useOnClickOutside } from 'usehooks-ts';
 
 import { Button, type ButtonProps } from './button';
-import { Checkbox, DumpCheckbox } from './checkbox';
+import { DumpCheckbox } from './checkbox';
 import {
   Popover,
   PopoverContent,
@@ -30,9 +28,10 @@ interface ComboboxAdvancedProps {
   value: IValue[];
   onChange: (value: IValue[]) => void;
   items: IItem[];
-  placeholder: string;
+  placeholder?: string;
   className?: string;
   size?: ButtonProps['size'];
+  children?: React.ReactNode;
 }
 
 export function ComboboxAdvanced({
@@ -42,11 +41,10 @@ export function ComboboxAdvanced({
   placeholder,
   className,
   size,
+  children,
 }: ComboboxAdvancedProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState('');
-  const ref = React.useRef<HTMLDivElement>(null);
-  useOnClickOutside(ref as React.RefObject<HTMLElement>, () => setOpen(false));
 
   const selectables = items
     .filter((item) => !value.find((s) => s === item.value))
@@ -96,42 +94,32 @@ export function ComboboxAdvanced({
       ...value.map((val) => {
         const item = items.find((item) => item.value === val);
         return item
-          ? {
-              value: val,
-              label: item.label,
-            }
-          : {
-              value: val,
-              label: val,
-            };
+          ? { value: val, label: item.label }
+          : { value: val, label: val };
       }),
       ...selectables,
     ].filter((item) => item.value);
   }, [inputValue, selectables, items]);
 
+  const trigger = children ?? (
+    <Button variant={'outline'} className={className} size={size} autoHeight>
+      <div className="flex w-full flex-wrap gap-1">
+        {value.length === 0 && placeholder}
+        {value.map((val) => {
+          const item = items.find((item) => item.value === val) ?? {
+            value: val,
+            label: val,
+          };
+          return <Badge key={String(item.value)}>{item.label}</Badge>;
+        })}
+      </div>
+      <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+    </Button>
+  );
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant={'outline'}
-          onClick={() => setOpen((prev) => !prev)}
-          className={className}
-          size={size}
-          autoHeight
-        >
-          <div className="flex w-full flex-wrap gap-1">
-            {value.length === 0 && placeholder}
-            {value.map((value) => {
-              const item = items.find((item) => item.value === value) ?? {
-                value,
-                label: value,
-              };
-              return <Badge key={String(item.value)}>{item.label}</Badge>;
-            })}
-          </div>
-          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverPortal>
         <PopoverContent className="w-full max-w-md p-0" align="start">
           <Command shouldFilter={false}>

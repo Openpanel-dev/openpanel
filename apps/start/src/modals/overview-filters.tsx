@@ -8,7 +8,7 @@ import {
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
 import { useProfileValues } from '@/hooks/use-profile-values';
-import { FilterIcon, XIcon } from 'lucide-react';
+import { FilterIcon, GanttChartIcon, GlobeIcon, LucideIcon, SlidersHorizontal, XIcon } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
 
 import type {
@@ -30,6 +30,16 @@ export interface OverviewFiltersProps {
   mode?: 'events' | 'profile';
 }
 
+const Seperator = () => <div className="h-px bg-border -mx-6" />
+const Heading = ({ title, icon: Icon }: { title: string, icon: LucideIcon }) => (
+  <div className="row items-center gap-2">
+    <Icon className="size-4" />
+    <h2 className="text-sm font-medium">
+      {title}
+    </h2>
+  </div>
+);
+
 export default function OverviewFilters({
   nuqsOptions,
   enableEventsFilter,
@@ -44,8 +54,12 @@ export default function OverviewFilters({
     <SheetContent className="[&>button.absolute]:hidden">
       <ModalHeader title="Filters" />
       <div className="flex flex-col gap-4">
+        <Heading icon={GlobeIcon} title="Origins" />
         <OriginFilter />
+        <Seperator />
         {enableEventsFilter && (
+          <>
+        <Heading icon={GanttChartIcon} title="Events" />
           <ComboboxEvents
             size="lg"
             className="w-full"
@@ -56,16 +70,23 @@ export default function OverviewFilters({
             placeholder="Select event"
             maxDisplayItems={2}
             searchable
-          />
+            />
+            <Seperator />
+          </>
         )}
       </div>
+        <Heading icon={SlidersHorizontal} title="Filters" />
       <div className="flex flex-col gap-2">
         <div
           className={cn(
-            'bg-def-200 rounded-lg border',
-            selectedFilters.length === 0 && 'hidden',
+            'bg-card rounded-lg border',
           )}
         >
+          {selectedFilters.length === 0 && (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              No filters selected
+            </div>
+          )}
           {selectedFilters.map((filter) => {
             return (
               <PureFilterItem
