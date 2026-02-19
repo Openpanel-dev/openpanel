@@ -1,21 +1,17 @@
-'use client';
-
 import { EventIcon } from '@/components/events/event-icon';
 import { cn } from '@/lib/utils';
 import type { IServiceEvent } from '@openpanel/db';
 
-function formatOffset(ms: number): string {
-  const sign = ms < 0 ? '-' : '+';
-  const abs = Math.abs(ms);
-  const totalSeconds = Math.floor(abs / 1000);
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${sign}${m}:${s.toString().padStart(2, '0')}`;
+function formatTime(date: Date | string): string {
+  const d = date instanceof Date ? date : new Date(date);
+  const h = d.getHours().toString().padStart(2, '0');
+  const m = d.getMinutes().toString().padStart(2, '0');
+  const s = d.getSeconds().toString().padStart(2, '0');
+  return `${h}:${m}:${s}`;
 }
 
 export function ReplayEventItem({
   event,
-  offsetMs,
   isCurrent,
   onClick,
 }: {
@@ -48,7 +44,7 @@ export function ReplayEventItem({
           </div>
         </div>
         <span className="flex-shrink-0 text-xs tabular-nums text-muted-foreground">
-          {formatOffset(offsetMs)}
+          {formatTime(event.createdAt)}
         </span>
       </div>
     </button>

@@ -465,6 +465,9 @@ importers:
       '@openpanel/payments':
         specifier: workspace:*
         version: link:../../packages/payments
+      '@openpanel/sdk':
+        specifier: ^1.0.8
+        version: 1.0.8
       '@openpanel/sdk-info':
         specifier: workspace:^
         version: link:../../packages/sdks/_info
@@ -472,8 +475,8 @@ importers:
         specifier: workspace:^
         version: link:../../packages/validation
       '@openpanel/web':
-        specifier: ^1.0.1
-        version: 1.0.1
+        specifier: ^1.0.12
+        version: 1.0.12
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -1481,7 +1484,7 @@ importers:
   packages/sdks/astro:
     dependencies:
       '@openpanel/web':
-        specifier: workspace:1.0.7-local
+        specifier: workspace:1.0.12-local
         version: link:../web
     devDependencies:
       astro:
@@ -1494,7 +1497,7 @@ importers:
         specifier: workspace:*
         version: link:../../common
       '@openpanel/sdk':
-        specifier: workspace:1.0.4-local
+        specifier: workspace:1.0.8-local
         version: link:../sdk
       express:
         specifier: ^4.17.0 || ^5.0.0
@@ -1519,7 +1522,7 @@ importers:
   packages/sdks/nextjs:
     dependencies:
       '@openpanel/web':
-        specifier: workspace:1.0.7-local
+        specifier: workspace:1.0.12-local
         version: link:../web
       next:
         specifier: ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
@@ -1547,7 +1550,7 @@ importers:
   packages/sdks/nuxt:
     dependencies:
       '@openpanel/web':
-        specifier: workspace:1.0.7-local
+        specifier: workspace:1.0.12-local
         version: link:../web
       h3:
         specifier: ^1.0.0
@@ -1584,7 +1587,7 @@ importers:
   packages/sdks/react-native:
     dependencies:
       '@openpanel/sdk':
-        specifier: workspace:1.0.4-local
+        specifier: workspace:1.0.8-local
         version: link:../sdk
       expo-application:
         specifier: 5 - 7
@@ -1630,7 +1633,7 @@ importers:
   packages/sdks/web:
     dependencies:
       '@openpanel/sdk':
-        specifier: workspace:1.0.4-local
+        specifier: workspace:1.0.8-local
         version: link:../sdk
       '@rrweb/types':
         specifier: 2.0.0-alpha.20
@@ -5873,14 +5876,14 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  '@openpanel/sdk@1.0.0':
-    resolution: {integrity: sha512-FNmmfjdXoC/VHEjA+WkrQ4lyM5lxEmV7xDd57uj4E+lIS0sU3DLG2mV/dpS8AscnZbUvuMn3kPhiLCqYzuv/gg==}
-
   '@openpanel/sdk@1.0.2':
     resolution: {integrity: sha512-WvVWCBcJvJhM5MYKO5Hxjo4G/E0tnK5XK2UC+hKDHtoF+iKvtUWa5bz18pFAPQprq0u/Ev2YqirPsrMQJy5g2g==}
 
-  '@openpanel/web@1.0.1':
-    resolution: {integrity: sha512-cVZ7Kr9SicczJ/RDIfEtZs8+1iGDzwkabVA/j3NqSl8VSucsC8m1+LVbjmCDzCJNnK4yVn6tEcc9PJRi2rtllw==}
+  '@openpanel/sdk@1.0.8':
+    resolution: {integrity: sha512-mr7HOZ/vqrJaATDFxcv3yyLjXcUXgsfboa0o0GlhiAYUh2B1Q0kgsm5qkfbtZhTqYP4BmNCWRkfRlpFp4pfpPQ==}
+
+  '@openpanel/web@1.0.12':
+    resolution: {integrity: sha512-39oL19HYrw4qAzlxbtFP/rfLOaciWJXCxPwL6bk+u4SUcrrOrwmjSg0CwQYyrd2p3wp1QnsCiyv2n0EtEpjQMA==}
 
   '@openpanel/web@1.0.5':
     resolution: {integrity: sha512-n/A9fKiHWcDTH2N6N8MM214ET7aoNJjgpLux0GRW+CD0KDEwI8UosQvvz3UOGHZ3jWqMMsUNdU2B7eYk2W87mg==}
@@ -25010,13 +25013,15 @@ snapshots:
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
 
-  '@openpanel/sdk@1.0.0': {}
-
   '@openpanel/sdk@1.0.2': {}
 
-  '@openpanel/web@1.0.1':
+  '@openpanel/sdk@1.0.8': {}
+
+  '@openpanel/web@1.0.12':
     dependencies:
-      '@openpanel/sdk': 1.0.0
+      '@openpanel/sdk': 1.0.8
+      '@rrweb/types': 2.0.0-alpha.20
+      rrweb: 2.0.0-alpha.20
 
   '@openpanel/web@1.0.5':
     dependencies:

@@ -5,11 +5,9 @@ import { HttpError } from '@/utils/errors';
 import { generateId, slug } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import {
-  TABLE_NAMES,
-  ch,
   getProfileById,
   getSalts,
-  sessionBuffer,
+  replayBuffer,
   upsertProfile,
 } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
@@ -328,12 +326,7 @@ async function handleReplay(
     is_full_snapshot: payload.is_full_snapshot,
     payload: payload.payload,
   };
-  await ch.insert({
-    table: TABLE_NAMES.session_replay_chunks,
-    values: [row],
-    format: 'JSONEachRow',
-  });
-  await sessionBuffer.markHasReplay(row.session_id);
+  await replayBuffer.add(row);
 }
 
 export async function handler(

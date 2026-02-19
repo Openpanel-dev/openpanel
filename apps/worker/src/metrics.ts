@@ -4,6 +4,7 @@ import {
   botBuffer,
   eventBuffer,
   profileBuffer,
+  replayBuffer,
   sessionBuffer,
 } from '@openpanel/db';
 import { cronQueue, eventsGroupQueues, sessionsQueue } from '@openpanel/queue';
@@ -120,6 +121,17 @@ register.registerMetric(
     help: 'Number of unprocessed sessions',
     async collect() {
       const metric = await sessionBuffer.getBufferSize();
+      this.set(metric);
+    },
+  }),
+);
+
+register.registerMetric(
+  new client.Gauge({
+    name: `buffer_${replayBuffer.name}_count`,
+    help: 'Number of unprocessed replay chunks',
+    async collect() {
+      const metric = await replayBuffer.getBufferSize();
       this.set(metric);
     },
   }),

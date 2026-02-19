@@ -42,14 +42,28 @@ export function startReplayRecorder(
   function flush(isFullSnapshot: boolean): void {
     if (buffer.length === 0) return;
 
-    const startedAt = buffer[0]!.timestamp;
-    const endedAt = buffer[buffer.length - 1]!.timestamp;
     const payloadJson = JSON.stringify(buffer);
 
     if (payloadJson.length > maxPayloadBytes) {
-      // If over size limit, split by taking only up to maxPayloadBytes (simplified: flush as-is and log or truncate)
-      // For MVP we still send; server will reject if over 1MB
+      if (buffer.length > 1) {
+        const mid = Math.floor(buffer.length / 2);
+        const firstHalf = buffer.slice(0, mid);
+        const secondHalf = buffer.slice(mid);
+        const firstHasFullSnapshot =
+          isFullSnapshot && firstHalf.some((e) => e.type === 2);
+        buffer = firstHalf;
+        flush(firstHasFullSnapshot);
+        buffer = secondHalf;
+        flush(false);
+        return;
+      }
+      // Single event exceeds limit — drop it to avoid server rejection
+      buffer = [];
+      return;
     }
+
+    const startedAt = buffer[0]!.timestamp;
+    const endedAt = buffer[buffer.length - 1]!.timestamp;
 
     sendChunk({
       chunk_index: chunkIndex,

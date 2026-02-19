@@ -1,0 +1,337 @@
+(() => {
+  var u = class {
+      constructor(e) {
+        (this.baseUrl = e.baseUrl),
+          (this.headers = {
+            'Content-Type': 'application/json',
+            ...e.defaultHeaders,
+          }),
+          (this.maxRetries = e.maxRetries ?? 3),
+          (this.initialRetryDelay = e.initialRetryDelay ?? 500);
+      }
+      async resolveHeaders() {
+        const e = {};
+        for (const [i, t] of Object.entries(this.headers)) {
+          const s = await t;
+          s !== null && (e[i] = s);
+        }
+        return e;
+      }
+      addHeader(e, i) {
+        this.headers[e] = i;
+      }
+      async post(e, i, t, s) {
+        try {
+          const n = await fetch(e, {
+            method: 'POST',
+            headers: await this.resolveHeaders(),
+            body: i ? JSON.stringify(i ?? {}) : void 0,
+            keepalive: !0,
+            ...t,
+          });
+          if (n.status === 401) {
+            return null;
+          }
+          if (n.status !== 200 && n.status !== 202) {
+            throw new Error(`HTTP error! status: ${n.status}`);
+          }
+          const r = await n.text();
+          return r ? JSON.parse(r) : null;
+        } catch (n) {
+          if (s < this.maxRetries) {
+            const r = this.initialRetryDelay * 2 ** s;
+            return (
+              await new Promise((a) => setTimeout(a, r)),
+              this.post(e, i, t, s + 1)
+            );
+          }
+          return console.error('Max retries reached:', n), null;
+        }
+      }
+      async fetch(e, i, t = {}) {
+        const s = `${this.baseUrl}${e}`;
+        return this.post(s, i, t, 0);
+      }
+    },
+    l = class {
+      constructor(e) {
+        (this.options = e), (this.queue = []);
+        const i = { 'openpanel-client-id': e.clientId };
+        e.clientSecret && (i['openpanel-client-secret'] = e.clientSecret),
+          (i['openpanel-sdk-name'] = e.sdk || 'node'),
+          (i['openpanel-sdk-version'] = e.sdkVersion || '1.0.3'),
+          (this.api = new u({
+            baseUrl: e.apiUrl || 'https://api.openpanel.dev',
+            defaultHeaders: i,
+          }));
+      }
+      init() {}
+      ready() {
+        (this.options.waitForProfile = !1), this.flush();
+      }
+      async send(e) {
+        return this.options.disabled ||
+          (this.options.filter && !this.options.filter(e))
+          ? Promise.resolve()
+          : this.options.waitForProfile && !this.profileId
+            ? (this.queue.push(e), Promise.resolve())
+            : this.api.fetch('/track', e);
+      }
+      setGlobalProperties(e) {
+        this.global = { ...this.global, ...e };
+      }
+      async track(e, i) {
+        return (
+          this.log('track event', e, i),
+          this.send({
+            type: 'track',
+            payload: {
+              name: e,
+              profileId: i?.profileId ?? this.profileId,
+              properties: { ...(this.global ?? {}), ...(i ?? {}) },
+            },
+          })
+        );
+      }
+      async identify(e) {
+        if (
+          (this.log('identify user', e),
+          e.profileId && ((this.profileId = e.profileId), this.flush()),
+          Object.keys(e).length > 1)
+        ) {
+          return this.send({
+            type: 'identify',
+            payload: { ...e, properties: { ...this.global, ...e.properties } },
+          });
+        }
+      }
+      async alias(e) {}
+      async increment(e) {
+        return this.send({ type: 'increment', payload: e });
+      }
+      async decrement(e) {
+        return this.send({ type: 'decrement', payload: e });
+      }
+      async revenue(e, i) {
+        const t = i?.deviceId;
+        return (
+          delete i?.deviceId,
+          this.track('revenue', {
+            ...(i ?? {}),
+            ...(t ? { __deviceId: t } : {}),
+            __revenue: e,
+          })
+        );
+      }
+      async fetchDeviceId() {
+        return (
+          (
+            await this.api.fetch('/track/device-id', void 0, {
+              method: 'GET',
+              keepalive: !1,
+            })
+          )?.deviceId ?? ''
+        );
+      }
+      clear() {
+        this.profileId = void 0;
+      }
+      flush() {
+        this.queue.forEach((e) => {
+          this.send({
+            ...e,
+            payload: {
+              ...e.payload,
+              profileId: e.payload.profileId ?? this.profileId,
+            },
+          });
+        }),
+          (this.queue = []);
+      }
+      log(...e) {
+        this.options.debug && console.log('[OpenPanel.dev]', ...e);
+      }
+    };
+  function h(e) {
+    return e.replace(/([-_][a-z])/gi, (i) =>
+      i.toUpperCase().replace('-', '').replace('_', '')
+    );
+  }
+  var p = class extends l {
+    constructor(t) {
+      super({ sdk: 'web', sdkVersion: '1.0.6', ...t });
+      this.options = t;
+      this.lastPath = '';
+      this.pendingRevenues = [];
+      if (!this.isServer()) {
+        try {
+          const s = sessionStorage.getItem('openpanel-pending-revenues');
+          if (s) {
+            const n = JSON.parse(s);
+            Array.isArray(n) && (this.pendingRevenues = n);
+          }
+        } catch {
+          this.pendingRevenues = [];
+        }
+        this.setGlobalProperties({ __referrer: document.referrer }),
+          this.options.trackScreenViews &&
+            (this.trackScreenViews(), setTimeout(() => this.screenView(), 0)),
+          this.options.trackOutgoingLinks && this.trackOutgoingLinks(),
+          this.options.trackAttributes && this.trackAttributes();
+      }
+    }
+    debounce(t, s) {
+      clearTimeout(this.debounceTimer), (this.debounceTimer = setTimeout(t, s));
+    }
+    isServer() {
+      return typeof document > 'u';
+    }
+    trackOutgoingLinks() {
+      this.isServer() ||
+        document.addEventListener('click', (t) => {
+          const s = t.target,
+            n = s.closest('a');
+          if (n && s) {
+            const r = n.getAttribute('href');
+            if (r?.startsWith('http')) {
+              try {
+                const a = new URL(r),
+                  o = window.location.hostname;
+                a.hostname !== o &&
+                  super.track('link_out', {
+                    href: r,
+                    text:
+                      n.innerText ||
+                      n.getAttribute('title') ||
+                      s.getAttribute('alt') ||
+                      s.getAttribute('title'),
+                  });
+              } catch {}
+            }
+          }
+        });
+    }
+    trackScreenViews() {
+      if (this.isServer()) {
+        return;
+      }
+      const t = history.pushState;
+      history.pushState = function (...a) {
+        const o = t.apply(this, a);
+        return (
+          window.dispatchEvent(new Event('pushstate')),
+          window.dispatchEvent(new Event('locationchange')),
+          o
+        );
+      };
+      const s = history.replaceState;
+      (history.replaceState = function (...a) {
+        const o = s.apply(this, a);
+        return (
+          window.dispatchEvent(new Event('replacestate')),
+          window.dispatchEvent(new Event('locationchange')),
+          o
+        );
+      }),
+        window.addEventListener('popstate', () => {
+          window.dispatchEvent(new Event('locationchange'));
+        });
+      const n = () => this.debounce(() => this.screenView(), 50);
+      this.options.trackHashChanges
+        ? window.addEventListener('hashchange', n)
+        : window.addEventListener('locationchange', n);
+    }
+    trackAttributes() {
+      this.isServer() ||
+        document.addEventListener('click', (t) => {
+          const s = t.target,
+            n = s.closest('button'),
+            r = s.closest('a'),
+            a = n?.getAttribute('data-track')
+              ? n
+              : r?.getAttribute('data-track')
+                ? r
+                : null;
+          if (a) {
+            const o = {};
+            for (const c of a.attributes) {
+              c.name.startsWith('data-') &&
+                c.name !== 'data-track' &&
+                (o[h(c.name.replace(/^data-/, ''))] = c.value);
+            }
+            const d = a.getAttribute('data-track');
+            d && super.track(d, o);
+          }
+        });
+    }
+    screenView(t, s) {
+      if (this.isServer()) {
+        return;
+      }
+      let n, r;
+      typeof t == 'string'
+        ? ((n = t), (r = s))
+        : ((n = window.location.href), (r = t)),
+        this.lastPath !== n &&
+          ((this.lastPath = n),
+          super.track('screen_view', {
+            ...(r ?? {}),
+            __path: n,
+            __title: document.title,
+          }));
+    }
+    async flushRevenue() {
+      const t = this.pendingRevenues.map((s) =>
+        super.revenue(s.amount, s.properties)
+      );
+      await Promise.all(t), this.clearRevenue();
+    }
+    clearRevenue() {
+      if (((this.pendingRevenues = []), !this.isServer())) {
+        try {
+          sessionStorage.removeItem('openpanel-pending-revenues');
+        } catch {}
+      }
+    }
+    pendingRevenue(t, s) {
+      if (
+        (this.pendingRevenues.push({ amount: t, properties: s }),
+        !this.isServer())
+      ) {
+        try {
+          sessionStorage.setItem(
+            'openpanel-pending-revenues',
+            JSON.stringify(this.pendingRevenues)
+          );
+        } catch {}
+      }
+    }
+  };
+  ((e) => {
+    if (e.op) {
+      const i = e.op.q || [],
+        t = new p(i.shift()[1]);
+      i.forEach((n) => {
+        n[0] in t && t[n[0]](...n.slice(1));
+      });
+      const s = new Proxy(
+        (n, ...r) => {
+          const a = t[n] ? t[n].bind(t) : void 0;
+          typeof a == 'function'
+            ? a(...r)
+            : console.warn(`OpenPanel: ${n} is not a function`);
+        },
+        {
+          get(n, r) {
+            if (r === 'q') {
+              return;
+            }
+            const a = t[r];
+            return typeof a == 'function' ? a.bind(t) : a;
+          },
+        }
+      );
+      (e.op = s), (e.openpanel = t);
+    }
+  })(window);
+})();

@@ -95,10 +95,11 @@ export class OpenPanel {
       return Promise.resolve();
     }
 
+    // Disable keepalive for replay since it has a hard body limit and breaks the request
     const result = await this.api.fetch<
       TrackHandlerPayload,
       { deviceId: string; sessionId: string }
-    >('/track', payload);
+    >('/track', payload, { keepalive: payload.type !== 'replay' });
     this.deviceId = result?.deviceId;
     const hadSession = !!this.sessionId;
     this.sessionId = result?.sessionId;

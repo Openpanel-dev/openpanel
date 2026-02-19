@@ -125,12 +125,17 @@ export type CronQueuePayloadFlushProfileBackfill = {
   type: 'flushProfileBackfill';
   payload: undefined;
 };
+export type CronQueuePayloadFlushReplay = {
+  type: 'flushReplay';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
   | CronQueuePayloadFlushSessions
   | CronQueuePayloadFlushProfiles
   | CronQueuePayloadFlushProfileBackfill
+  | CronQueuePayloadFlushReplay
   | CronQueuePayloadPing
   | CronQueuePayloadProject
   | CronQueuePayloadInsightsDaily

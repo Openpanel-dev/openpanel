@@ -3,12 +3,12 @@ process.env.TZ = 'UTC';
 import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import cors, { type FastifyCorsOptions } from '@fastify/cors';
-import type { FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
-import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
-import type { FastifyBaseLogger, FastifyRequest } from 'fastify';
-import Fastify from 'fastify';
-import metricsPlugin from 'fastify-metrics';
-
+import {
+  decodeSessionToken,
+  EMPTY_SESSION,
+  type SessionValidationResult,
+  validateSessionToken,
+} from '@openpanel/auth';
 import { generateId } from '@openpanel/common';
 import {
   type IServiceClientWithProject,
@@ -17,13 +17,11 @@ import {
 import { getRedisPub } from '@openpanel/redis';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';
-
-import {
-  EMPTY_SESSION,
-  type SessionValidationResult,
-  decodeSessionToken,
-  validateSessionToken,
-} from '@openpanel/auth';
+import type { FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
+import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
+import type { FastifyBaseLogger, FastifyRequest } from 'fastify';
+import Fastify from 'fastify';
+import metricsPlugin from 'fastify-metrics';
 import sourceMapSupport from 'source-map-support';
 import {
   healthcheck,
@@ -72,7 +70,7 @@ const startServer = async () => {
   try {
     const fastify = Fastify({
       maxParamLength: 15_000,
-      bodyLimit: 1048576 * 500, // 500MB
+      bodyLimit: 1_048_576 * 500, // 500MB
       loggerInstance: logger as unknown as FastifyBaseLogger,
       disableRequestLogging: true,
       genReqId: (req) =>
@@ -84,7 +82,7 @@ const startServer = async () => {
     fastify.register(cors, () => {
       return (
         req: FastifyRequest,
-        callback: (error: Error | null, options: FastifyCorsOptions) => void,
+        callback: (error: Error | null, options: FastifyCorsOptions) => void
       ) => {
         // TODO: set prefix on dashboard routes
         const corsPaths = [
@@ -97,7 +95,7 @@ const startServer = async () => {
         ];
 
         const isPrivatePath = corsPaths.some((path) =>
-          req.url.startsWith(path),
+          req.url.startsWith(path)
         );
 
         if (isPrivatePath) {
@@ -118,6 +116,7 @@ const startServer = async () => {
 
         return callback(null, {
           origin: '*',
+          maxAge: 86_400 * 7, // cache preflight for 24h
         });
       };
     });
@@ -126,6 +125,11 @@ const startServer = async () => {
       global: false,
     });
 
+    fastify.addHook('onRequest', async (req) => {
+      if (req.method === 'POST') {
+        console.log('Incoming req', req.method, req.url);
+      }
+    });
     fastify.addHook('onRequest', requestIdHook);
     fastify.addHook('onRequest', timestampHook);
     fastify.addHook('onRequest', ipHook);
@@ -149,7 +153,7 @@ const startServer = async () => {
           try {
             const sessionId = decodeSessionToken(req.cookies?.session);
             const session = await runWithAlsSession(sessionId, () =>
-              validateSessionToken(req.cookies.session),
+              validateSessionToken(req.cookies.session)
             );
             req.session = session;
           } catch (e) {
@@ -158,7 +162,7 @@ const startServer = async () => {
         } else if (process.env.DEMO_USER_ID) {
           try {
             const session = await runWithAlsSession('1', () =>
-              validateSessionToken(null),
+              validateSessionToken(null)
             );
             req.session = session;
           } catch (e) {
@@ -173,7 +177,7 @@ const startServer = async () => {
         prefix: '/trpc',
         trpcOptions: {
           router: appRouter,
-          createContext: createContext,
+          createContext,
           onError(ctx) {
             if (
               ctx.error.code === 'UNAUTHORIZED' &&
@@ -217,7 +221,7 @@ const startServer = async () => {
         reply.send({
           status: 'ok',
           message: 'Successfully running OpenPanel.dev API',
-        }),
+        })
       );
     });
 
@@ -274,7 +278,7 @@ const startServer = async () => {
     } catch (error) {
       logger.warn('Failed to set redis notify-keyspace-events', error);
       logger.warn(
-        'If you use a managed Redis service, you may need to set this manually.',
+        'If you use a managed Redis service, you may need to set this manually.'
       );
       logger.warn('Otherwise some functions may not work as expected.');
     }

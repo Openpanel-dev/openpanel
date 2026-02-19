@@ -69,11 +69,11 @@ export function ReplayEventFeed({ events }: { events: IServiceEvent[] }) {
       className="h-full"
     >
       <ScrollArea className="flex-1 min-h-0" ref={viewportRef}>
-        <div className="flex flex-col">
+        <div className="flex w-full flex-col">
           {visibleEvents.map(({ event, offsetMs }) => (
             <div
               key={event.id}
-              className="animate-in fade-in-0 slide-in-from-bottom-3 duration-300 fill-mode-both"
+              className="animate-in fade-in-0 slide-in-from-bottom-3 min-w-0 duration-300 fill-mode-both"
             >
               <ReplayEventItem
                 event={event}

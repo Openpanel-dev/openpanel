@@ -5,6 +5,7 @@ import {
   TABLE_NAMES,
   ch,
   chQuery,
+  convertClickhouseDateToJs,
   formatClickhouseDate,
 } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
@@ -52,7 +53,7 @@ export type IClickhouseSession = {
   revenue: number;
   sign: 1 | 0;
   version: number;
-  has_replay?: boolean;
+  has_replay: boolean;
 };
 
 export interface IServiceSession {
@@ -116,8 +117,8 @@ export function transformSession(session: IClickhouseSession): IServiceSession {
     entryOrigin: session.entry_origin,
     exitPath: session.exit_path,
     exitOrigin: session.exit_origin,
-    createdAt: new Date(session.created_at),
-    endedAt: new Date(session.ended_at),
+    createdAt: convertClickhouseDateToJs(session.created_at),
+    endedAt: convertClickhouseDateToJs(session.ended_at),
     referrer: session.referrer,
     referrerName: session.referrer_name,
     referrerType: session.referrer_type,
@@ -143,7 +144,7 @@ export function transformSession(session: IClickhouseSession): IServiceSession {
     utmContent: session.utm_content,
     utmTerm: session.utm_term,
     revenue: session.revenue,
-    hasReplay: session.has_replay ?? false,
+    hasReplay: session.has_replay,
     profile: undefined,
   };
 }
@@ -230,12 +231,13 @@ export async function getSessionList({
     'screen_view_count',
     'event_count',
     'revenue',
-    'has_replay',
   ];
 
   columns.forEach((column) => {
     sb.select[column] = column;
   });
+
+  sb.select.has_replay = `exists(SELECT 1 FROM ${TABLE_NAMES.session_replay_chunks} WHERE session_id = id AND project_id = ${sqlstring.escape(projectId)}) as has_replay`;
 
   const sql = getSql();
   const data = await chQuery<

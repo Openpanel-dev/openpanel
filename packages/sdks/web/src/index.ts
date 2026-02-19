@@ -133,9 +133,8 @@ export class OpenPanel extends OpenPanelBase {
       // string literal only in the IIFE build, so this branch is
       // dead-code-eliminated in the library build.
       if (typeof __OPENPANEL_REPLAY_URL__ !== 'undefined') {
-        // IIFE / script-tag context — load from CDN (or user override)
-        const url =
-          this.options.sessionReplay?.scriptUrl ?? __OPENPANEL_REPLAY_URL__;
+        const scriptEl = document.currentScript as HTMLScriptElement | null;
+        const url = this.options.sessionReplay?.scriptUrl || scriptEl?.src?.replace('.js', '-replay.js') || 'https://openpanel.dev/op1-replay.js';
 
         // Already loaded (e.g. user included the script manually)
         if ((window as any).__openpanel_replay) {

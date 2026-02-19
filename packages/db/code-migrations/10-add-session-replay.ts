@@ -34,11 +34,6 @@ export async function up() {
       replicatedVersion: '1',
       isClustered,
     }),
-    ...addColumns(
-      TABLE_NAMES.sessions,
-      ['`has_replay` Bool DEFAULT 0'],
-      isClustered,
-    ),
     modifyTTL({
       tableName: TABLE_NAMES.session_replay_chunks,
       isClustered,
