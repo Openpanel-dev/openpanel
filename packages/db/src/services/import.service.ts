@@ -456,14 +456,14 @@ export async function moveImportsToProduction(
 
   if (from) {
     whereClause += ` AND (
-      (toDate(addHours(created_at, 5.5)) = {from:String}) OR
+      (toDate(created_at) = {from:String}) OR
       (
         name IN ('session_start', 'session_end') AND
         session_id IN (
           SELECT DISTINCT session_id
           FROM ${TABLE_NAMES.events_imports}
           WHERE import_id = {importId:String}
-            AND toDate(addHours(created_at, 5.5)) = {from:String}
+            AND toDate(created_at) = {from:String}
             AND name NOT IN ('session_start', 'session_end')
         )
       )
