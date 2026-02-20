@@ -32,11 +32,6 @@ const COLUMNS = `id, name, sdk_name, sdk_version, device_id, profile_id, project
   duration, created_at, country, city, region, longitude, latitude,
   os, os_version, browser, browser_version, device, brand, model, imported_at`;
 
-const COLUMNS = `id, name, sdk_name, sdk_version, device_id, profile_id, project_id,
-  session_id, path, origin, referrer, referrer_name, referrer_type,
-  duration, created_at, country, city, region, longitude, latitude,
-  os, os_version, browser, browser_version, device, brand, model, imported_at`;
-
 function parseArgs() {
   const args = process.argv;
   const dateArg = args.find((a: string) => a.startsWith('--date='));
