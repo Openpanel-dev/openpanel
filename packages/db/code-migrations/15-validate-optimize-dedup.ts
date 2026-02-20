@@ -44,8 +44,8 @@ export async function up() {
       SELECT
         toDate(created_at) as date,
         count() as total,
-        uniq(${DEDUP_KEY}) as unique_events,
-        count() - uniq(${DEDUP_KEY}) as duplicates
+        uniqExact(${DEDUP_KEY}) as unique_events,
+        count() - uniqExact(${DEDUP_KEY}) as duplicates
       FROM ${TMP_TABLE}
       WHERE toYYYYMM(created_at) = 202601
       GROUP BY date
@@ -95,8 +95,8 @@ export async function up() {
       SELECT
         if(toDate(created_at) <= '2026-01-15', 'Jan 01-15', 'Jan 16-31') as date_range,
         count() as total,
-        uniq(${DEDUP_KEY}) as unique_events,
-        count() - uniq(${DEDUP_KEY}) as duplicates
+        uniqExact(${DEDUP_KEY}) as unique_events,
+        count() - uniqExact(${DEDUP_KEY}) as duplicates
       FROM ${TMP_TABLE}
       WHERE toYYYYMM(created_at) = 202601
       GROUP BY date_range
@@ -165,8 +165,8 @@ export async function up() {
       SELECT
         if(toDate(created_at) <= '2026-01-15', 'Jan 01-15', 'Jan 16-31') as date_range,
         count() as total,
-        uniq(${DEDUP_KEY}) as unique_events,
-        count() - uniq(${DEDUP_KEY}) as duplicates
+        uniqExact(${DEDUP_KEY}) as unique_events,
+        count() - uniqExact(${DEDUP_KEY}) as duplicates
       FROM ${TMP_TABLE}
       WHERE toYYYYMM(created_at) = 202601
       GROUP BY date_range
