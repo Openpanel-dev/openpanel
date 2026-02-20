@@ -32,7 +32,9 @@ npx expo install expo-application expo-constants
 On native we use a clientSecret to authenticate the app.
 
 ```typescript
-const op = new Openpanel({
+import { OpenPanel } from '@openpanel/react-native';
+
+const op = new OpenPanel({
   clientId: '{YOUR_CLIENT_ID}',
   clientSecret: '{YOUR_CLIENT_SECRET}',
 });
