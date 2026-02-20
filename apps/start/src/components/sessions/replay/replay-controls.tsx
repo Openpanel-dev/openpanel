@@ -1,37 +1,21 @@
-'use client';
-
-import {
-  SPEED_OPTIONS,
-  useReplayContext,
-} from '@/components/sessions/replay/replay-context';
+import { useCurrentTime, useReplayContext } from '@/components/sessions/replay/replay-context';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ChevronDown, Pause, Play, SkipBack, SkipForward } from 'lucide-react';
-
-function formatTime(ms: number): string {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
+import { Pause, Play } from 'lucide-react';
+import { formatDuration } from './replay-utils';
 
 export function ReplayTime() {
-  const { currentTime, duration } = useReplayContext();
+  const { duration } = useReplayContext();
+  const currentTime = useCurrentTime(250);
 
   return (
     <span className="text-sm tabular-nums text-muted-foreground font-mono">
-      {formatTime(currentTime)} / {formatTime(duration)}
+      {formatDuration(currentTime)} / {formatDuration(duration)}
     </span>
   );
 }
 
 export function ReplayPlayPauseButton() {
-  const { isPlaying, isReady, toggle, seek } = useReplayContext();
+  const { isPlaying, isReady, toggle } = useReplayContext();
 
   if (!isReady) return null;
 
@@ -47,23 +31,3 @@ export function ReplayPlayPauseButton() {
     </Button>
   );
 }
-
-//  {/* <DropdownMenu>
-//         <DropdownMenuTrigger asChild>
-//           <Button variant="outline" size="sm" className="h-8 gap-1">
-//             {speed}x
-//             <ChevronDown className="h-3.5 w-3.5" />
-//           </Button>
-//         </DropdownMenuTrigger>
-//         <DropdownMenuContent align="end">
-//           {SPEED_OPTIONS.map((s) => (
-//             <DropdownMenuItem
-//               key={s}
-//               onClick={() => setSpeed(s)}
-//               className={speed === s ? 'bg-accent' : ''}
-//             >
-//               {s}x
-//             </DropdownMenuItem>
-//           ))}
-//         </DropdownMenuContent>
-//       </DropdownMenu> */}

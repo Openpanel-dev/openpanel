@@ -92,7 +92,7 @@ async function getDeviceIdFromSession({
  * Deterministic session id for (projectId, deviceId) within a time window,
  * with a grace period at the *start* of each window to avoid boundary splits.
  *
- * - windowMs: 5 minutes by default
+ * - windowMs: 30 minutes by default
  * - graceMs: 1 minute by default (events in first minute of a bucket map to previous bucket)
  * - Output: base64url, 128-bit (16 bytes) truncated from SHA-256
  */

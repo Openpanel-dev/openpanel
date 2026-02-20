@@ -1,5 +1,3 @@
-'use client';
-
 import {
   type ReactNode,
   createContext,
@@ -18,23 +16,40 @@ export interface ReplayPlayerInstance {
   setSpeed: (speed: number) => void;
   getMetaData: () => { startTime: number; endTime: number; totalTime: number };
   getReplayer: () => { getCurrentTime: () => number };
+  addEvent: (event: { type: number; data: unknown; timestamp: number }) => void;
+  addEventListener: (event: string, handler: (e: { payload: unknown }) => void) => void;
+  $set?: (props: Record<string, unknown>) => void;
   $destroy?: () => void;
 }
 
+type CurrentTimeListener = (t: number) => void;
+
 interface ReplayContextValue {
-  currentTime: number;
+  // High-frequency value — read via ref, not state. Use subscribeToCurrentTime
+  // or useCurrentTime() to get updates without causing 60fps re-renders.
+  currentTimeRef: React.MutableRefObject<number>;
+  subscribeToCurrentTime: (fn: CurrentTimeListener) => () => void;
+  // Low-frequency state (safe to consume directly)
   isPlaying: boolean;
-  speed: number;
   duration: number;
   startTime: number | null;
   isReady: boolean;
+  // Playback controls
   play: () => void;
   pause: () => void;
   toggle: () => void;
-  seek: (timeOffset: number, play?: boolean) => void;
+  seek: (timeMs: number) => void;
   setSpeed: (speed: number) => void;
-  registerPlayer: (player: ReplayPlayerInstance) => void;
-  unregisterPlayer: () => void;
+  // Lazy chunk loading
+  addEvent: (event: { type: number; data: unknown; timestamp: number }) => void;
+  refreshDuration: () => void;
+  // Called by ReplayPlayer to register/unregister the rrweb instance
+  onPlayerReady: (player: ReplayPlayerInstance, playerStartTime: number) => void;
+  onPlayerDestroy: () => void;
+  // State setters exposed so ReplayPlayer can wire rrweb event listeners
+  setCurrentTime: (t: number) => void;
+  setIsPlaying: (p: boolean) => void;
+  setDuration: (d: number) => void;
 }
 
 const ReplayContext = createContext<ReplayContextValue | null>(null);
@@ -49,147 +64,122 @@ export function useReplayContext() {
   return ctx;
 }
 
+/**
+ * Subscribe to currentTime updates at a throttled rate.
+ * intervalMs=0 means every tick (use for the progress bar DOM writes).
+ * intervalMs=250 means 4 updates/second (use for text displays).
+ */
+export function useCurrentTime(intervalMs = 0): number {
+  const { currentTimeRef, subscribeToCurrentTime } = useReplayContext();
+  const [time, setTime] = useState(currentTimeRef.current);
+  const lastUpdateRef = useRef(0);
+
+  useEffect(() => {
+    return subscribeToCurrentTime((t) => {
+      if (intervalMs === 0) {
+        setTime(t);
+        return;
+      }
+      const now = performance.now();
+      if (now - lastUpdateRef.current >= intervalMs) {
+        lastUpdateRef.current = now;
+        setTime(t);
+      }
+    });
+  }, [subscribeToCurrentTime, intervalMs]);
+
+  return time;
+}
+
 export function ReplayProvider({ children }: { children: ReactNode }) {
   const playerRef = useRef<ReplayPlayerInstance | null>(null);
-  const [currentTime, setCurrentTime] = useState(0);
+  const isPlayingRef = useRef(false);
+  const currentTimeRef = useRef(0);
+  const listenersRef = useRef<Set<CurrentTimeListener>>(new Set());
+
   const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeedState] = useState(1);
   const [duration, setDuration] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [isReady, setIsReady] = useState(false);
-  const rafIdRef = useRef<number | null>(null);
-  const lastUpdateRef = useRef(0);
-  // Refs so stable callbacks can read latest values
-  const isPlayingRef = useRef(false);
-  const durationRef = useRef(0);
-  const currentTimeRef = useRef(0);
 
-  const registerPlayer = useCallback((player: ReplayPlayerInstance) => {
-    playerRef.current = player;
-    try {
-      const meta = player.getMetaData();
-      durationRef.current = meta.totalTime;
-      setDuration(meta.totalTime);
-      setStartTime(meta.startTime);
-      setCurrentTime(0);
-      currentTimeRef.current = 0;
-      setIsReady(true);
-    } catch {
-      setIsReady(false);
+  const setIsPlayingWithRef = useCallback((playing: boolean) => {
+    isPlayingRef.current = playing;
+    setIsPlaying(playing);
+  }, []);
+
+  const subscribeToCurrentTime = useCallback((fn: CurrentTimeListener) => {
+    listenersRef.current.add(fn);
+    return () => {
+      listenersRef.current.delete(fn);
+    };
+  }, []);
+
+  // Called by ReplayPlayer on every ui-update-current-time tick.
+  // Updates the ref and notifies subscribers — no React state update here.
+  const setCurrentTime = useCallback((t: number) => {
+    currentTimeRef.current = t;
+    for (const fn of listenersRef.current) {
+      fn(t);
     }
   }, []);
 
-  const unregisterPlayer = useCallback(() => {
-    if (rafIdRef.current != null) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
+  const onPlayerReady = useCallback(
+    (player: ReplayPlayerInstance, playerStartTime: number) => {
+      playerRef.current = player;
+      setStartTime(playerStartTime);
+      currentTimeRef.current = 0;
+      setIsPlayingWithRef(false);
+      setIsReady(true);
+    },
+    [setIsPlayingWithRef],
+  );
+
+  const onPlayerDestroy = useCallback(() => {
     playerRef.current = null;
     setIsReady(false);
-    setCurrentTime(0);
     currentTimeRef.current = 0;
     setDuration(0);
-    durationRef.current = 0;
     setStartTime(null);
-    setIsPlaying(false);
-    isPlayingRef.current = false;
-  }, []);
+    setIsPlayingWithRef(false);
+  }, [setIsPlayingWithRef]);
 
   const play = useCallback(() => {
     playerRef.current?.play();
-    setIsPlaying(true);
-    isPlayingRef.current = true;
   }, []);
 
   const pause = useCallback(() => {
     playerRef.current?.pause();
-    setIsPlaying(false);
-    isPlayingRef.current = false;
   }, []);
 
   const toggle = useCallback(() => {
-    const player = playerRef.current;
-    if (!player) return;
-
-    // If at the end, reset to start and play
-    const atEnd = currentTimeRef.current >= durationRef.current - 100;
-    if (atEnd && !isPlayingRef.current) {
-      player.goto(0, true);
-      setCurrentTime(0);
-      currentTimeRef.current = 0;
-      setIsPlaying(true);
-      isPlayingRef.current = true;
-      return;
-    }
-
-    player.toggle();
-    const next = !isPlayingRef.current;
-    setIsPlaying(next);
-    isPlayingRef.current = next;
+    playerRef.current?.toggle();
   }, []);
 
-  const seek = useCallback((timeOffset: number, play?: boolean) => {
-    const player = playerRef.current;
-    if (!player) return;
-    const shouldPlay = play ?? isPlayingRef.current;
-    player.goto(timeOffset, shouldPlay);
-    setCurrentTime(timeOffset);
-    currentTimeRef.current = timeOffset;
-    setIsPlaying(shouldPlay);
-    isPlayingRef.current = shouldPlay;
+  const seek = useCallback((timeMs: number) => {
+    playerRef.current?.goto(timeMs, isPlayingRef.current);
   }, []);
 
   const setSpeed = useCallback((s: number) => {
     if (!SPEED_OPTIONS.includes(s as (typeof SPEED_OPTIONS)[number])) return;
     playerRef.current?.setSpeed(s);
-    setSpeedState(s);
   }, []);
 
-  useEffect(() => {
-    if (!isReady || !playerRef.current) return;
+  const addEvent = useCallback(
+    (event: { type: number; data: unknown; timestamp: number }) => {
+      playerRef.current?.addEvent(event);
+    },
+    [],
+  );
 
-    const tick = () => {
-      const player = playerRef.current;
-      if (!player) return;
-      try {
-        const replayer = player.getReplayer();
-        const now = replayer.getCurrentTime();
-        // Throttle state updates to ~10fps (every 100ms) to avoid excessive re-renders
-        const t = Math.floor(now / 100);
-        if (t !== lastUpdateRef.current) {
-          lastUpdateRef.current = t;
-          setCurrentTime(now);
-          currentTimeRef.current = now;
-        }
-
-        // Detect end of replay
-        if (
-          now >= durationRef.current - 50 &&
-          durationRef.current > 0 &&
-          isPlayingRef.current
-        ) {
-          setIsPlaying(false);
-          isPlayingRef.current = false;
-        }
-      } catch {
-        // Player may be destroyed
-      }
-      rafIdRef.current = requestAnimationFrame(tick);
-    };
-
-    rafIdRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafIdRef.current != null) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
-    };
-  }, [isReady]);
+  const refreshDuration = useCallback(() => {
+    const total = playerRef.current?.getMetaData().totalTime ?? 0;
+    if (total > 0) setDuration(total);
+  }, []);
 
   const value: ReplayContextValue = {
-    currentTime,
+    currentTimeRef,
+    subscribeToCurrentTime,
     isPlaying,
-    speed,
     duration,
     startTime,
     isReady,
@@ -198,8 +188,13 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
     toggle,
     seek,
     setSpeed,
-    registerPlayer,
-    unregisterPlayer,
+    addEvent,
+    refreshDuration,
+    onPlayerReady,
+    onPlayerDestroy,
+    setCurrentTime,
+    setIsPlaying: setIsPlayingWithRef,
+    setDuration,
   };
 
   return (

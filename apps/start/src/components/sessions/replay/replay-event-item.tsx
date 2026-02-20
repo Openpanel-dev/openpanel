@@ -16,7 +16,6 @@ export function ReplayEventItem({
   onClick,
 }: {
   event: IServiceEvent;
-  offsetMs: number;
   isCurrent: boolean;
   onClick: () => void;
 }) {
@@ -30,7 +29,7 @@ export function ReplayEventItem({
       type="button"
       onClick={onClick}
       className={cn(
-        'col w-full gap-3 border-b px-3 py-2 text-left transition-colors hover:bg-accent bg-card',
+        'col w-full gap-3 border-b px-3 py-2 text-left transition-colors hover:bg-accent',
         isCurrent ? 'bg-accent/10' : 'bg-card',
       )}
     >

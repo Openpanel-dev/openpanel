@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import {
   getSessionList,
-  getSessionReplayEvents,
+  getSessionReplayChunksFrom,
   sessionService,
 } from '@openpanel/db';
 import { zChartEventFilter } from '@openpanel/validation';
@@ -66,9 +66,15 @@ export const sessionRouter = createTRPCRouter({
       return sessionService.byId(sessionId, projectId);
     }),
 
-  replay: protectedProcedure
-    .input(z.object({ sessionId: z.string(), projectId: z.string() }))
-    .query(async ({ input: { sessionId, projectId } }) => {
-      return getSessionReplayEvents(sessionId, projectId);
+  replayChunksFrom: protectedProcedure
+    .input(
+      z.object({
+        sessionId: z.string(),
+        projectId: z.string(),
+        fromIndex: z.number().int().min(0).default(0),
+      }),
+    )
+    .query(async ({ input: { sessionId, projectId, fromIndex } }) => {
+      return getSessionReplayChunksFrom(sessionId, projectId, fromIndex);
     }),
 });

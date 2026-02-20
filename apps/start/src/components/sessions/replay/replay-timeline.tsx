@@ -1,6 +1,4 @@
-'use client';
-
-import { useReplayContext } from '@/components/sessions/replay/replay-context';
+import { useCurrentTime, useReplayContext } from '@/components/sessions/replay/replay-context';
 import {
   Tooltip,
   TooltipContent,
@@ -9,36 +7,50 @@ import {
 } from '@/components/ui/tooltip';
 import type { IServiceEvent } from '@openpanel/db';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { EventIcon } from '@/components/events/event-icon';
 import { cn } from '@/lib/utils';
 import { ReplayPlayPauseButton } from './replay-controls';
-
-function formatTime(ms: number): string {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-function getEventOffsetMs(event: IServiceEvent, startTime: number): number {
-  const t =
-    typeof event.createdAt === 'object' && event.createdAt instanceof Date
-      ? event.createdAt.getTime()
-      : new Date(event.createdAt).getTime();
-  return t - startTime;
-}
+import { formatDuration, getEventOffsetMs } from './replay-utils';
 
 export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
-  const { currentTime, duration, startTime, isReady, seek } =
+  const { currentTimeRef, duration, startTime, isReady, seek, subscribeToCurrentTime } =
     useReplayContext();
+  // currentTime as React state is only needed for keyboard seeks (low frequency).
+  // The progress bar and thumb are updated directly via DOM refs to avoid re-renders.
+  const currentTime = useCurrentTime(250);
   const trackRef = useRef<HTMLDivElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const thumbRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [hoverInfo, setHoverInfo] = useState<{
     pct: number;
     timeMs: number;
   } | null>(null);
+  const dragCleanupRef = useRef<(() => void) | null>(null);
+  const rafDragRef = useRef<number | null>(null);
+
+  // Clean up any in-progress drag listeners when the component unmounts
+  useEffect(() => {
+    return () => {
+      dragCleanupRef.current?.();
+    };
+  }, []);
+
+  // Update progress bar and thumb directly via DOM on every tick — no React re-render.
+  useEffect(() => {
+    if (duration <= 0) return;
+    return subscribeToCurrentTime((t) => {
+      const pct = Math.max(0, Math.min(100, (t / duration) * 100));
+      if (progressBarRef.current) {
+        progressBarRef.current.style.width = `${pct}%`;
+      }
+      if (thumbRef.current) {
+        thumbRef.current.style.left = `calc(${pct}% - 8px)`;
+      }
+    });
+  }, [subscribeToCurrentTime, duration]);
 
   const getTimeFromClientX = useCallback(
     (clientX: number) => {
@@ -67,14 +79,6 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
     if (!isDragging) setHoverInfo(null);
   }, [isDragging]);
 
-  const seekToPosition = useCallback(
-    (clientX: number) => {
-      const info = getTimeFromClientX(clientX);
-      if (info) seek(info.timeMs);
-    },
-    [getTimeFromClientX, seek],
-  );
-
   const handleTrackMouseDown = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       // Only handle direct clicks on the track, not on child elements like the thumb
@@ -83,46 +87,57 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
         !(e.target as HTMLElement).closest('.replay-track-bg')
       )
         return;
-      seekToPosition(e.clientX);
+      const info = getTimeFromClientX(e.clientX);
+      if (info) seek(info.timeMs);
     },
-    [seekToPosition],
+    [getTimeFromClientX, seek],
   );
 
-  const handleThumbMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(true);
-      const onMouseMove = (moveEvent: MouseEvent) => {
-        seekToPosition(moveEvent.clientX);
-        const info = getTimeFromClientX(moveEvent.clientX);
-        if (info) setHoverInfo(info);
-      };
-      const onMouseUp = () => {
-        setIsDragging(false);
-        setHoverInfo(null);
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-      };
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    },
-    [seekToPosition, getTimeFromClientX],
+  const eventsWithOffset = useMemo(
+    () =>
+      events
+        .map((ev) => ({
+          event: ev,
+          offsetMs: startTime != null ? getEventOffsetMs(ev, startTime) : 0,
+        }))
+        .filter(({ offsetMs }) => offsetMs >= 0 && offsetMs <= duration),
+    [events, startTime, duration],
   );
+
+  // Group events that are within 24px of each other on the track.
+  // We need the track width for pixel math — use a stable ref-based calculation.
+  const groupedEvents = useMemo(() => {
+    if (!eventsWithOffset.length || duration <= 0) return [];
+
+    // Sort by offsetMs so we sweep left-to-right
+    const sorted = [...eventsWithOffset].sort((a, b) => a.offsetMs - b.offsetMs);
+
+    // 24px in ms — recalculated from container width; fall back to 2% of duration
+    const trackWidth = trackRef.current?.offsetWidth ?? 600;
+    const thresholdMs = (24 / trackWidth) * duration;
+
+    const groups: { items: typeof sorted; pct: number }[] = [];
+    for (const item of sorted) {
+      const last = groups[groups.length - 1];
+      const lastPct = last ? (last.items[last.items.length - 1]!.offsetMs / duration) * 100 : -Infinity;
+      const thisPct = (item.offsetMs / duration) * 100;
+
+      if (last && item.offsetMs - last.items[last.items.length - 1]!.offsetMs <= thresholdMs) {
+        last.items.push(item);
+        // Anchor the group at its first item's position
+      } else {
+        groups.push({ items: [item], pct: thisPct });
+      }
+      // keep pct pointing at the first item (already set on push)
+      void lastPct;
+    }
+
+    return groups;
+  }, [eventsWithOffset, duration]);
 
   if (!isReady || duration <= 0) return null;
 
-  const progressPct =
-    duration > 0
-      ? Math.max(0, Math.min(100, (currentTime / duration) * 100))
-      : 0;
-
-  const eventsWithOffset = events
-    .map((ev) => ({
-      event: ev,
-      offsetMs: startTime != null ? getEventOffsetMs(ev, startTime) : 0,
-    }))
-    .filter(({ offsetMs }) => offsetMs >= 0 && offsetMs <= duration);
+  const progressPct = Math.max(0, Math.min(100, (currentTimeRef.current / duration) * 100));
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -136,7 +151,7 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
             aria-valuemax={duration}
             aria-valuenow={currentTime}
             tabIndex={0}
-            className="relative flex h-8 cursor-pointer items-center"
+            className="relative flex h-8 cursor-pointer items-center outline-0"
             onMouseDown={handleTrackMouseDown}
             onMouseMove={handleTrackMouseMove}
             onMouseLeave={handleTrackMouseLeave}
@@ -153,14 +168,15 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
           >
             <div className="replay-track-bg bg-muted h-1.5 w-full overflow-hidden rounded-full">
               <div
-                className="bg-primary h-full rounded-full transition-[width] duration-75"
+                ref={progressBarRef}
+                className="bg-primary h-full rounded-full"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
             <div
-              className="absolute left-0 top-1/2 z-10 h-4 w-4 -translate-y-1/2 cursor-grab rounded-full border-2 border-primary bg-background shadow-sm transition-[left] duration-75 active:cursor-grabbing"
+              ref={thumbRef}
+              className="absolute left-0 top-1/2 z-10 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-primary bg-background shadow-sm"
               style={{ left: `calc(${progressPct}% - 8px)` }}
-              onMouseDown={handleThumbMouseDown}
               aria-hidden
             />
             {/* Hover timestamp tooltip */}
@@ -188,40 +204,48 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
                     exit={{ opacity: 0, y: 16, scale: 0.5 }}
                     transition={{ duration: 0.2 }}
                   >
-                    {formatTime(hoverInfo.timeMs)}
+                    {formatDuration(hoverInfo.timeMs)}
                   </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
-            {eventsWithOffset.map(({ event: ev, offsetMs }) => {
-              const pct = (offsetMs / duration) * 100;
+            {groupedEvents.map((group) => {
+              const first = group.items[0]!;
+              const isGroup = group.items.length > 1;
               return (
-                <Tooltip key={ev.id}>
+                <Tooltip key={first.event.id}>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
                       data-timeline-event
-                      className={cn(
-                        'absolute top-1/2 z-[5] flex h-6 w-6 -translate-y-1/2 items-center justify-center transition-transform hover:scale-125',
-                      )}
-                      style={{ left: `${pct}%`, marginLeft: -12 }}
+                      className="absolute top-1/2 z-[5] flex h-6 w-6 -translate-y-1/2 items-center justify-center transition-transform hover:scale-105"
+                      style={{ left: `${group.pct}%`, marginLeft: -12 }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        seek(offsetMs);
+                        seek(first.offsetMs);
                       }}
-                      aria-label={`${ev.name} at ${formatTime(offsetMs)}`}
+                      aria-label={isGroup ? `${group.items.length} events at ${formatDuration(first.offsetMs)}` : `${first.event.name} at ${formatDuration(first.offsetMs)}`}
                     >
-                      <EventIcon name={ev.name} meta={ev.meta} size="sm" />
+                      <EventIcon name={first.event.name} meta={first.event.meta} size="sm" />
+                      {isGroup && (
+                        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[9px] font-bold leading-none text-background">
+                          {group.items.length}
+                        </span>
+                      )}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="col gap-2">
-                    <div className="font-medium row items-center gap-2">
-                      <EventIcon name={ev.name} meta={ev.meta} size="sm" />
-                      {ev.name === 'screen_view' ? ev.path : ev.name}
-                    </div>
-                    <div className="text-muted-foreground">
-                      {formatTime(offsetMs)}
-                    </div>
+                  <TooltipContent side="top" className="col gap-1.5">
+                    {group.items.map(({ event: ev, offsetMs }) => (
+                      <div key={ev.id} className="row items-center gap-2">
+                        <EventIcon name={ev.name} meta={ev.meta} size="sm" />
+                        <span className="font-medium">
+                          {ev.name === 'screen_view' ? ev.path : ev.name}
+                        </span>
+                        <span className="text-muted-foreground tabular-nums">
+                          {formatDuration(offsetMs)}
+                        </span>
+                      </div>
+                    ))}
                   </TooltipContent>
                 </Tooltip>
               );

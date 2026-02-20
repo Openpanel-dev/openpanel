@@ -1,49 +1,47 @@
-'use client';
-
-import { useReplayContext } from '@/components/sessions/replay/replay-context';
+import { useCurrentTime, useReplayContext } from '@/components/sessions/replay/replay-context';
 import { ReplayEventItem } from '@/components/sessions/replay/replay-event-item';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { IServiceEvent } from '@openpanel/db';
 import { useEffect, useMemo, useRef } from 'react';
 import { BrowserChrome } from './browser-chrome';
+import { getEventOffsetMs } from './replay-utils';
 
-function getEventOffsetMs(event: IServiceEvent, startTime: number): number {
-  const t =
-    typeof event.createdAt === 'object' && event.createdAt instanceof Date
-      ? event.createdAt.getTime()
-      : new Date(event.createdAt).getTime();
-  return t - startTime;
-}
+type EventWithOffset = { event: IServiceEvent; offsetMs: number };
 
-export function ReplayEventFeed({ events }: { events: IServiceEvent[] }) {
-  const { currentTime, startTime, isReady, seek } = useReplayContext();
+export function ReplayEventFeed({ events, replayLoading }: { events: IServiceEvent[]; replayLoading: boolean }) {
+  const { startTime, isReady, seek } = useReplayContext();
+  const currentTime = useCurrentTime(100);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const prevCountRef = useRef(0);
 
-  const { visibleEvents, currentEventId } = useMemo(() => {
-    if (startTime == null || !isReady) {
-      return { visibleEvents: [], currentEventId: null as string | null };
-    }
-    const withOffset = events
-      .map((ev) => ({
-        event: ev,
-        offsetMs: getEventOffsetMs(ev, startTime),
-      }))
-      // Include events up to 10s before recording started (e.g. screen views)
-      .filter(({ offsetMs }) => offsetMs >= -10_000 && offsetMs <= currentTime)
+  // Pre-sort events by offset once when events/startTime changes.
+  // This is the expensive part — done once, not on every tick.
+  const sortedEvents = useMemo<EventWithOffset[]>(() => {
+    if (startTime == null || !isReady) return [];
+    return events
+      .map((ev) => ({ event: ev, offsetMs: getEventOffsetMs(ev, startTime) }))
+      .filter(({ offsetMs }) => offsetMs >= -10_000)
       .sort((a, b) => a.offsetMs - b.offsetMs);
+  }, [events, startTime, isReady]);
 
-    const visibleEvents = withOffset.map(({ event, offsetMs }) => ({
-      event,
-      offsetMs,
-    }));
+  // Binary search to find how many events are visible at currentTime.
+  // O(log n) instead of O(n) filter on every tick.
+  const visibleCount = useMemo(() => {
+    let lo = 0;
+    let hi = sortedEvents.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if ((sortedEvents[mid]?.offsetMs ?? 0) <= currentTime) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    return lo;
+  }, [sortedEvents, currentTime]);
 
-    const current =
-      visibleEvents.length > 0 ? visibleEvents[visibleEvents.length - 1] : null;
-    const currentEventId = current?.event.id ?? null;
-
-    return { visibleEvents, currentEventId };
-  }, [events, startTime, isReady, currentTime]);
+  const visibleEvents = sortedEvents.slice(0, visibleCount);
+  const currentEventId = visibleEvents[visibleCount - 1]?.event.id ?? null;
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -60,8 +58,6 @@ export function ReplayEventFeed({ events }: { events: IServiceEvent[] }) {
     });
   }, [visibleEvents.length]);
 
-  if (!isReady) return null;
-
   return (
     <BrowserChrome
       url={false}
@@ -77,17 +73,33 @@ export function ReplayEventFeed({ events }: { events: IServiceEvent[] }) {
             >
               <ReplayEventItem
                 event={event}
-                offsetMs={offsetMs}
                 isCurrent={event.id === currentEventId}
                 onClick={() => seek(Math.max(0, offsetMs))}
               />
             </div>
           ))}
-          {visibleEvents.length === 0 && (
+          {!replayLoading && visibleEvents.length === 0 && (
             <div className="py-8 text-center text-sm text-muted-foreground">
               Events will appear as the replay plays.
             </div>
           )}
+          {replayLoading &&
+            Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2 border-b px-3 py-2"
+              >
+                <div className="h-6 w-6 shrink-0 animate-pulse rounded-full bg-muted" />
+                <div className="flex-1 space-y-1.5">
+                  <div
+                    className="h-3 animate-pulse rounded bg-muted"
+                    style={{ width: `${50 + (i % 4) * 12}%` }}
+                  />
+                </div>
+                <div className="h-3 w-10 shrink-0 animate-pulse rounded bg-muted" />
+              </div>
+            ))}
+
         </div>
       </ScrollArea>
     </BrowserChrome>

@@ -6,6 +6,8 @@ declare module 'rrweb-player' {
     autoPlay?: boolean;
     showController?: boolean;
     speedOption?: number[];
+    UNSAFE_replayCanvas?: boolean;
+    skipInactive?: boolean;
   }
 
   interface RrwebPlayerOptions {
@@ -31,10 +33,12 @@ declare module 'rrweb-player' {
     setSpeed: (speed: number) => void;
     getMetaData: () => RrwebPlayerMetaData;
     getReplayer: () => RrwebReplayer;
+    addEvent: (event: { type: number; data: unknown; timestamp: number }) => void;
     addEventListener?: (
       event: string,
       handler: (...args: unknown[]) => void,
     ) => void;
+    $set?: (props: Partial<RrwebPlayerProps>) => void;
     $destroy?: () => void;
   }
 

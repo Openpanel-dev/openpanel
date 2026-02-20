@@ -61,9 +61,9 @@ export class ReplayBuffer extends BaseBuffer {
         return;
       }
 
-      const chunks = items.map((item) =>
-        getSafeJson<IClickhouseSessionReplayChunk>(item),
-      );
+      const chunks = items
+        .map((item) => getSafeJson<IClickhouseSessionReplayChunk>(item))
+        .filter((item): item is IClickhouseSessionReplayChunk => item != null);
 
       for (const chunk of this.chunks(chunks, this.chunkSize)) {
         await ch.insert({

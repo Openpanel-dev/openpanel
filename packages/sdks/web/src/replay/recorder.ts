@@ -31,6 +31,11 @@ export function startReplayRecorder(
     return;
   }
 
+  // Stop any existing recorder before starting a new one to avoid leaks
+  if (stopRecording) {
+    stopRecording();
+  }
+
   const maxEventsPerChunk = config.maxEventsPerChunk ?? 200;
   const flushIntervalMs = config.flushIntervalMs ?? 10_000;
   const maxPayloadBytes = config.maxPayloadBytes ?? 1_048_576; // 1MB

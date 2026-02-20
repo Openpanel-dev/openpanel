@@ -1,8 +1,6 @@
-'use client';
-
 import { useReplayContext } from '@/components/sessions/replay/replay-context';
 import type { ReplayPlayerInstance } from '@/components/sessions/replay/replay-context';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import 'rrweb-player/dist/style.css';
 
@@ -24,6 +22,16 @@ function getRecordedDimensions(
   return null;
 }
 
+function calcDimensions(
+  containerWidth: number,
+  aspectRatio: number,
+): { width: number; height: number } {
+  const maxHeight = window.innerHeight * 0.7;
+  const height = Math.min(Math.round(containerWidth / aspectRatio), maxHeight);
+  const width = Math.min(containerWidth, Math.round(height * aspectRatio));
+  return { width, height };
+}
+
 export function ReplayPlayer({
   events,
 }: {
@@ -31,7 +39,14 @@ export function ReplayPlayer({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<ReplayPlayerInstance | null>(null);
-  const { registerPlayer, unregisterPlayer } = useReplayContext();
+  const {
+    onPlayerReady,
+    onPlayerDestroy,
+    setCurrentTime,
+    setIsPlaying,
+    setDuration,
+  } = useReplayContext();
+  const [importError, setImportError] = useState(false);
 
   const recordedDimensions = useMemo(
     () => getRecordedDimensions(events),
@@ -41,51 +56,115 @@ export function ReplayPlayer({
   useEffect(() => {
     if (!events.length || !containerRef.current) return;
 
+    // Clear any previous player DOM
+    containerRef.current.innerHTML = '';
+
     let mounted = true;
+    let player: ReplayPlayerInstance | null = null;
+    let handleVisibilityChange: (() => void) | null = null;
 
-    import('rrweb-player').then((module) => {
-      const PlayerConstructor = module.default;
-      if (!containerRef.current || !mounted) return;
-      containerRef.current.innerHTML = '';
+    const aspectRatio = recordedDimensions
+      ? recordedDimensions.width / recordedDimensions.height
+      : 16 / 9;
 
-      const maxHeight = window.innerHeight * 0.7;
-      const containerWidth = containerRef.current.offsetWidth;
-      const aspectRatio = recordedDimensions
-        ? recordedDimensions.width / recordedDimensions.height
-        : 16 / 9;
-      const height = Math.min(
-        Math.round(containerWidth / aspectRatio),
-        maxHeight,
+    const { width, height } = calcDimensions(
+      containerRef.current.offsetWidth,
+      aspectRatio,
+    );
+
+    import('rrweb-player')
+      .then((module) => {
+        if (!containerRef.current || !mounted) return;
+
+        const PlayerConstructor = module.default;
+        player = new PlayerConstructor({
+          target: containerRef.current,
+          props: {
+            events,
+            width,
+            height,
+            autoPlay: false,
+            showController: false,
+            speedOption: [0.5, 1, 2, 4, 8],
+            UNSAFE_replayCanvas: true,
+            skipInactive: false,
+          },
+        }) as ReplayPlayerInstance;
+
+        playerRef.current = player;
+
+        // Wire rrweb's built-in event emitter — no RAF loop needed.
+        // Note: rrweb-player does NOT emit ui-update-duration; duration is
+        // read from getMetaData() on init and after each addEvent batch.
+        player.addEventListener('ui-update-current-time', (e) => {
+          const t = e.payload as number;
+          setCurrentTime(t);
+        });
+
+        player.addEventListener('ui-update-player-state', (e) => {
+          setIsPlaying(e.payload === 'playing');
+        });
+
+        // Pause on tab hide; resume on show (prevents timer drift)
+        let wasPlaying = false;
+        handleVisibilityChange = () => {
+          if (!player) return;
+          if (document.hidden) {
+            const meta = player.getMetaData() as { isPlaying?: boolean };
+            wasPlaying = meta.isPlaying ?? false;
+            if (wasPlaying) player.pause();
+          } else {
+            if (wasPlaying) {
+              player.play();
+              wasPlaying = false;
+            }
+          }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // Notify context — marks isReady = true and sets initial duration
+        const meta = player.getMetaData();
+        if (meta.totalTime > 0) setDuration(meta.totalTime);
+        onPlayerReady(player, meta.startTime);
+      })
+      .catch(() => {
+        if (mounted) setImportError(true);
+      });
+
+    const onWindowResize = () => {
+      if (!containerRef.current || !mounted || !playerRef.current?.$set) return;
+      const { width: w, height: h } = calcDimensions(
+        containerRef.current.offsetWidth,
+        aspectRatio,
       );
-      const width = Math.min(
-        containerWidth,
-        Math.round(height * aspectRatio),
-      );
-
-      const player = new PlayerConstructor({
-        target: containerRef.current,
-        props: {
-          events,
-          width,
-          height,
-          autoPlay: false,
-          showController: false,
-          speedOption: [0.5, 1, 2, 4, 8],
-        },
-      }) as ReplayPlayerInstance;
-      playerRef.current = player;
-      registerPlayer(player);
-    });
+      playerRef.current.$set({ width: w, height: h });
+    };
+    window.addEventListener('resize', onWindowResize);
 
     return () => {
       mounted = false;
-      unregisterPlayer();
-      if (playerRef.current?.$destroy) {
-        playerRef.current.$destroy();
-        playerRef.current = null;
+      window.removeEventListener('resize', onWindowResize);
+      if (handleVisibilityChange) {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
       }
+      if (player) {
+        player.pause();
+      }
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
+      playerRef.current = null;
+      onPlayerDestroy();
     };
-  }, [events, registerPlayer, unregisterPlayer, recordedDimensions]);
+  }, [events, recordedDimensions, onPlayerReady, onPlayerDestroy, setCurrentTime, setIsPlaying, setDuration]);
+
+  if (importError) {
+    return (
+      <div className="flex h-[320px] items-center justify-center bg-black text-sm text-muted-foreground">
+        Failed to load replay player.
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex w-full justify-center overflow-hidden">
