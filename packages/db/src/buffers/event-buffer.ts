@@ -194,6 +194,7 @@ return added
       onFlush: async () => {
         await this.processBuffer();
       },
+      enableParallelProcessing: true,
     });
     // Load Lua scripts into Redis on startup
     this.loadScripts();
@@ -488,17 +489,16 @@ return added
     const redis = getRedisCache();
 
     try {
-      // Fetch events from queue
-      const queueEvents = await redis.lrange(
-        this.queueKey,
-        0,
-        this.batchSize - 1,
-      );
+      // Atomically pop events off the queue — no two workers can get the same events
+      const queueEvents = await redis.lpop(this.queueKey, this.batchSize);
 
-      if (queueEvents.length === 0) {
+      if (!queueEvents || queueEvents.length === 0) {
         this.logger.debug('No events to process');
         return;
       }
+
+      // Decrement counter immediately after popping
+      await redis.decrby(this.bufferCounterKey, queueEvents.length);
 
       // Parse events
       const eventsToClickhouse: IClickhouseEvent[] = [];
@@ -521,19 +521,21 @@ return added
           new Date(b.created_at || 0).getTime(),
       );
 
-      // Insert events into ClickHouse in chunks
+      // Insert events into ClickHouse in parallel chunks
       this.logger.info('Inserting events into ClickHouse', {
         totalEvents: eventsToClickhouse.length,
         chunks: Math.ceil(eventsToClickhouse.length / this.chunkSize),
       });
 
-      for (const chunk of this.chunks(eventsToClickhouse, this.chunkSize)) {
-        await ch.insert({
-          table: 'events',
-          values: chunk,
-          format: 'JSONEachRow',
-        });
-      }
+      await Promise.all(
+        this.chunks(eventsToClickhouse, this.chunkSize).map((chunk) =>
+          ch.insert({
+            table: 'events',
+            values: chunk,
+            format: 'JSONEachRow',
+          })
+        )
+      );
 
       // Publish "saved" events
       const pubMulti = getRedisPub().multi();
@@ -541,13 +543,6 @@ return added
         await publishEvent('events', 'saved', transformEvent(event), pubMulti);
       }
       await pubMulti.exec();
-
-      // Clean up processed events from queue
-      await redis
-        .multi()
-        .ltrim(this.queueKey, queueEvents.length, -1)
-        .decrby(this.bufferCounterKey, queueEvents.length)
-        .exec();
 
       this.logger.info('Processed events from Redis buffer', {
         batchSize: this.batchSize,
