@@ -299,6 +299,16 @@ export class ConversionService {
       return `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = se.profile_id`;
     }).join('\n      ') : '';
 
+    // Build LEFT JOIN for profile table if any breakdown uses profile.*
+    const profileBreakdowns = breakdowns.filter(b => b.name.startsWith('profile.'));
+    let profileJoin = '';
+    if (profileBreakdowns.length > 0) {
+      const profileColumns = [...new Set(
+        profileBreakdowns.map(b => b.name.replace('profile.', '').split('.')[0])
+      )];
+      profileJoin = `\n      LEFT JOIN (SELECT id, ${profileColumns.join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = '${projectId}') AS profile ON profile.id = se.profile_id`;
+    }
+
     // Build WITH clause
     const withClause = ctes.length > 0 ? `WITH ${ctes.join(', ')} ` : '';
 
@@ -327,7 +337,7 @@ export class ConversionService {
           ${clix.toStartOf('se.created_at', interval)} as event_day,
           se.${groupCol},
           ee.${groupCol} as conversion_${groupCol}${breakdownColumns.length ? ',\n          ' + breakdownColumns.join(',\n          ') : ''}
-        FROM start_events se
+        FROM start_events se${profileJoin}
         LEFT JOIN end_events ee ON
           ee.${groupCol} = se.${groupCol}
           AND ee.created_at >= se.created_at - INTERVAL ${gracePeriodSeconds} SECOND
