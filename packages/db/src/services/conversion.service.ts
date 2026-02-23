@@ -335,7 +335,7 @@ export class ConversionService {
         clix.exp(`
         (${withClause}SELECT
           ${clix.toStartOf('se.created_at', interval)} as event_day,
-          se.${groupCol},
+          se.${groupCol} AS ${groupCol},
           ee.${groupCol} as conversion_${groupCol}${breakdownColumns.length ? ',\n          ' + breakdownColumns.join(',\n          ') : ''}
         FROM start_events se${profileJoin}
         LEFT JOIN end_events ee ON
