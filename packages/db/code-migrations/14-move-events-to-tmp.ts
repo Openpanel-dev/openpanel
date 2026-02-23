@@ -5,10 +5,10 @@ import {
 import { getIsCluster } from './helpers';
 
 /**
- * Move events to events_tmp for a given date
+ * Move events to events_tmp2 for a given date
  *
- * Copies data as-is from events to events_tmp (no dedup).
- * Used to bring Jan 16-31 data into events_tmp before partition swap.
+ * Copies data as-is from events to events_tmp2 (no dedup).
+ * Used to bring Jan 16-31 data into events_tmp2.
  *
  * Usage:
  *   Dry run:
@@ -18,7 +18,7 @@ import { getIsCluster } from './helpers';
  *     pnpm migrate:deploy:code -- 14 --cluster --date=2026-01-16 --no-record
  */
 
-const TMP_TABLE = 'events_tmp';
+const TMP_TABLE = 'events_tmp2';
 const EVENTS_TABLE = 'events';
 
 function parseArgs() {
@@ -44,7 +44,7 @@ export async function up() {
   const { date, isDry } = parseArgs();
 
   console.log('='.repeat(60));
-  console.log('  MOVE EVENTS TO EVENTS_TMP');
+  console.log('  MOVE EVENTS TO EVENTS_TMP2');
   console.log(`  Date:    ${date}`);
   console.log(`  Mode:    ${isDry ? 'DRY RUN' : 'EXECUTE'}`);
   console.log('='.repeat(60));
@@ -102,7 +102,7 @@ export async function up() {
   ]);
 
   // Step 2: Verify
-  console.log(`\n[Step 2] Verifying events_tmp count for ${date}:`);
+  console.log(`\n[Step 2] Verifying events_tmp2 count for ${date}:`);
   const dstResult = await chMigrationClient.query({
     query: `
       SELECT count() as total
@@ -114,7 +114,7 @@ export async function up() {
   const dstTotal = Number(dstData[0]?.total ?? 0);
 
   console.log(`\n  events:     ${srcTotal.toLocaleString()}`);
-  console.log(`  events_tmp: ${dstTotal.toLocaleString()}`);
+  console.log(`  events_tmp2: ${dstTotal.toLocaleString()}`);
 
   console.log('\n' + '='.repeat(60));
   console.log('  COPY COMPLETE');
