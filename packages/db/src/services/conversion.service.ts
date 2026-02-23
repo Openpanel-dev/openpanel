@@ -309,63 +309,89 @@ export class ConversionService {
       profileJoin = `\n      LEFT JOIN (SELECT id, ${profileColumns.join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = '${projectId}') AS profile ON profile.id = se.profile_id`;
     }
 
-    // Build WITH clause
-    const withClause = ctes.length > 0 ? `WITH ${ctes.join(', ')} ` : '';
-
     // Grace period for events that fire very close together (like Mixpanel)
     // Allows end event to happen up to 2 seconds before start event
     const gracePeriodSeconds = 2;
 
-    // Build self-join query
-    const query = clix(this.client, timezone)
-      .select<{
+    const toStartOf = clix.toStartOf('se.created_at', interval);
+    const breakdownGroupByStr = breakdownGroupBy.join(', ');
+
+    // Inner SELECT: raw per-event rows from the self-join (no aggregation yet)
+    const innerSQL = `
+      SELECT
+        ${toStartOf} AS event_day,
+        se.${groupCol} AS ${groupCol},
+        ee.${groupCol} AS conversion_${groupCol}${breakdownColumns.length ? ',\n        ' + breakdownColumns.join(',\n        ') : ''}
+      FROM start_events se${profileJoin}
+      LEFT JOIN end_events ee ON
+        ee.${groupCol} = se.${groupCol}
+        AND ee.created_at >= se.created_at - INTERVAL ${gracePeriodSeconds} SECOND
+        AND ee.created_at <= se.created_at + INTERVAL ${funnelWindowSeconds} SECOND
+      ${cohortJoins}`;
+
+    // agg CTE: aggregate inner rows into (event_day, breakdowns) buckets
+    const aggCte = `agg AS (
+      SELECT
+        event_day,
+        ${breakdownGroupBy.length ? breakdownGroupByStr + ',\n        ' : ''}uniqExact(${groupCol}) AS total_first,
+        uniqExact(conversion_${groupCol}) AS conversions,
+        round(100.0 * uniqExact(conversion_${groupCol}) / uniqExact(${groupCol}), 2) AS conversion_rate_percentage
+      FROM (${innerSQL})
+      GROUP BY event_day${breakdownGroupBy.length ? ', ' + breakdownGroupByStr : ''}
+    )`;
+
+    let finalSql: string;
+
+    if (breakdownGroupBy.length > 0) {
+      // top_breakdowns CTE: rank breakdowns by avg conversion rate, take top N
+      const topBreakdownsCte = `top_breakdowns AS (
+        SELECT ${breakdownGroupByStr}, avg(conversion_rate_percentage) AS avg_rate
+        FROM agg
+        GROUP BY ${breakdownGroupByStr}
+        ORDER BY avg_rate DESC
+        LIMIT ${limit ?? 50}
+      )`;
+
+      const joinConditions = breakdownGroupBy
+        .map(b => `agg.${b} = top_breakdowns.${b}`)
+        .join(' AND ');
+
+      finalSql = `
+        WITH ${[...ctes, aggCte, topBreakdownsCte].join(',\n')}
+        SELECT
+          agg.event_day,
+          ${breakdownGroupBy.map(b => `agg.${b}`).join(',\n          ')},
+          agg.total_first,
+          agg.conversions,
+          agg.conversion_rate_percentage
+        FROM agg
+        INNER JOIN top_breakdowns ON ${joinConditions}
+        ORDER BY top_breakdowns.avg_rate DESC, agg.event_day ASC`;
+    } else {
+      finalSql = `
+        WITH ${[...ctes, aggCte].join(',\n')}
+        SELECT event_day, total_first, conversions, conversion_rate_percentage
+        FROM agg
+        ORDER BY event_day ASC`;
+    }
+
+    const rawResult = await this.client.query({
+      query: finalSql,
+      clickhouse_settings: { session_timezone: timezone },
+    });
+    const json = await rawResult.json() as {
+      data: {
         event_day: string;
         total_first: number;
         conversions: number;
         conversion_rate_percentage: number;
         [key: string]: string | number;
-      }>([
-        'event_day',
-        ...breakdownGroupBy,
-        `uniqExact(${groupCol}) AS total_first`,
-        `uniqExact(conversion_${groupCol}) AS conversions`,
-        `round(100.0 * uniqExact(conversion_${groupCol}) / uniqExact(${groupCol}), 2) AS conversion_rate_percentage`,
-      ])
-      .from(
-        clix.exp(`
-        (${withClause}SELECT
-          ${clix.toStartOf('se.created_at', interval)} as event_day,
-          se.${groupCol} AS ${groupCol},
-          ee.${groupCol} as conversion_${groupCol}${breakdownColumns.length ? ',\n          ' + breakdownColumns.join(',\n          ') : ''}
-        FROM start_events se${profileJoin}
-        LEFT JOIN end_events ee ON
-          ee.${groupCol} = se.${groupCol}
-          AND ee.created_at >= se.created_at - INTERVAL ${gracePeriodSeconds} SECOND
-          AND ee.created_at <= se.created_at + INTERVAL ${funnelWindowSeconds} SECOND
-        ${cohortJoins})
-      `),
-      )
-      .groupBy(['event_day', ...breakdownGroupBy]);
+      }[];
+    };
+    const results = json.data;
 
-    for (const order of ['event_day', ...breakdownGroupBy]) {
-      query.orderBy(order);
-    }
-
-    const results = await query.execute();
-
-    // Sort series by average conversion rate (descending) when there are breakdowns
-    const resultSeries = this.toSeries(results, breakdowns, limit);
-
-    if (breakdowns.length > 0) {
-      resultSeries.sort((a, b) => {
-        const avgRateA = a.data.reduce((sum, d) => sum + d.rate, 0) / (a.data.length || 1);
-        const avgRateB = b.data.reduce((sum, d) => sum + d.rate, 0) / (b.data.length || 1);
-        return avgRateB - avgRateA; // Descending order
-      });
-    }
-
-    // Apply limit after sorting
-    const limitedSeries = limit && breakdowns.length > 0 ? resultSeries.slice(0, limit) : resultSeries;
+    const resultSeries = this.toSeries(results, breakdowns);
+    const limitedSeries = resultSeries;
 
     return limitedSeries.map((serie, serieIndex) => {
       return {
@@ -390,7 +416,6 @@ export class ConversionService {
       [key: string]: string | number;
     }[],
     breakdowns: { name: string }[] = [],
-    limit: number | undefined = undefined,
   ) {
     if (!breakdowns.length) {
       return [
@@ -410,10 +435,6 @@ export class ConversionService {
     // Group by breakdown values
     const series = data.reduce(
       (acc, d) => {
-        if (limit && Object.keys(acc).length >= limit) {
-          return acc;
-        }
-
         const key =
           breakdowns.map((b, index) => d[`b_${index}`]).join('|') ||
           NOT_SET_VALUE;
