@@ -90,13 +90,26 @@ export class ConversionService {
       return `${cteName} AS (${sql})`;
     } else {
       // Regular event - apply filters if present
-      const filterWhere = event.filters && event.filters.length > 0
-        ? ' AND ' + Object.values(getEventFiltersWhereClause(event.filters, projectId)).join(' AND ')
+      const filterClauses = event.filters && event.filters.length > 0
+        ? Object.values(getEventFiltersWhereClause(event.filters, projectId))
+        : [];
+      const filterWhere = filterClauses.length > 0
+        ? ' AND ' + filterClauses.join(' AND ')
         : '';
+
+      // If any filter references profile.*, join the profiles table inside the CTE
+      const profileFilters = (event.filters || []).filter(f => f.name.startsWith('profile.'));
+      let profileJoinClause = '';
+      if (profileFilters.length > 0) {
+        const profileColumns = [...new Set(
+          profileFilters.map(f => f.name.replace('profile.', '').split('.')[0])
+        )];
+        profileJoinClause = `\n        LEFT JOIN (SELECT id, ${profileColumns.join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = '${projectId}') AS profile ON profile.id = profile_id`;
+      }
 
       return `${cteName} AS (
         SELECT *${materializedColumnsSelect}
-        FROM ${TABLE_NAMES.events}
+        FROM ${TABLE_NAMES.events}${profileJoinClause}
         WHERE project_id = '${projectId}'
           AND name = '${event.name}'
           AND created_at >= toDateTime('${formatClickhouseDate(startDate)}')
