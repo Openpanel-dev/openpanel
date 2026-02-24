@@ -437,9 +437,9 @@ export class ConversionService {
           breakdowns: [],
           data: data.map((d) => ({
             date: d.event_day,
-            total: d.total_first,
-            conversions: d.conversions,
-            rate: d.conversion_rate_percentage,
+            total: Number(d.total_first),
+            conversions: Number(d.conversions),
+            rate: Number(d.conversion_rate_percentage),
           })),
         },
       ];
@@ -462,9 +462,9 @@ export class ConversionService {
         }
         acc[key]!.data.push({
           date: d.event_day,
-          total: d.total_first,
-          conversions: d.conversions,
-          rate: d.conversion_rate_percentage,
+          total: Number(d.total_first),
+          conversions: Number(d.conversions),
+          rate: Number(d.conversion_rate_percentage),
         });
         return acc;
       },
