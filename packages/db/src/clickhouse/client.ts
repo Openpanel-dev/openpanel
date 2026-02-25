@@ -204,6 +204,13 @@ export const ch = new Proxy(originalCh, {
         });
     }
 
+    if (property === 'query') {
+      return (...args: any[]) =>
+        withRetry(() => {
+          return value.apply(target, args);
+        });
+    }
+
     if (property === 'command') {
       return (...args: any[]) =>
         withRetry(() => {

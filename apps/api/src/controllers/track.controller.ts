@@ -334,7 +334,14 @@ async function increment({
   projectId: string;
 }) {
   const { profileId, property, value } = payload;
-  const profile = await getProfileById(profileId, projectId);
+  let profile;
+  try {
+    profile = await getProfileById(profileId, projectId);
+  } catch (error) {
+    throw new HttpError('Failed to fetch profile for increment', {
+      status: 500,
+    });
+  }
   if (!profile) {
     throw new Error('Not found');
   }
@@ -370,7 +377,14 @@ async function decrement({
   projectId: string;
 }) {
   const { profileId, property, value } = payload;
-  const profile = await getProfileById(profileId, projectId);
+  let profile;
+  try {
+    profile = await getProfileById(profileId, projectId);
+  } catch (error) {
+    throw new HttpError('Failed to fetch profile for decrement', {
+      status: 500,
+    });
+  }
   if (!profile) {
     throw new Error('Not found');
   }

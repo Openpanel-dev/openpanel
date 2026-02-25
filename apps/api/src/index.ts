@@ -248,7 +248,6 @@ const startServer = async () => {
       });
       process.on('unhandledRejection', async (reason, promise) => {
         logger.error('Unhandled rejection', { reason, promise });
-        await shutdown(fastify, 'unhandledRejection', 1);
       });
     }
 
