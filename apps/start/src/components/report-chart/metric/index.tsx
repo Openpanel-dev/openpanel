@@ -1,6 +1,7 @@
 import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
+import { ChartDownloadButton } from '../common/chart-download-button';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
 
@@ -31,7 +32,12 @@ export function ReportMetricChart() {
     return <Empty />;
   }
 
-  return <Chart data={res.data} />;
+  return (
+    <div className="relative group/chart">
+      <Chart data={res.data} />
+      <ChartDownloadButton type="standard" data={res.data} />
+    </div>
+  );
 }
 
 export function Loading() {

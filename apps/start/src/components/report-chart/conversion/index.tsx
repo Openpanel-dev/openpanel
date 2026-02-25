@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { cn } from '@/utils/cn';
 import { AspectContainer } from '../aspect-container';
+import { ChartDownloadButton } from '../common/chart-download-button';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
@@ -38,7 +39,8 @@ export function ReportConversionChart() {
   }
 
   return (
-    <div>
+    <div className="relative group/chart">
+      <ChartDownloadButton type="conversion" data={res.data} />
       <Summary data={res.data} />
       <AspectContainer>
         <Chart data={res.data} />

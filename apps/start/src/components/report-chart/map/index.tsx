@@ -2,6 +2,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { AspectContainer } from '../aspect-container';
+import { ChartDownloadButton } from '../common/chart-download-button';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
@@ -35,7 +36,12 @@ export function ReportMapChart() {
     return <Empty />;
   }
 
-  return <Chart data={res.data} />;
+  return (
+    <div className="relative group/chart">
+      <Chart data={res.data} />
+      <ChartDownloadButton type="standard" data={res.data} />
+    </div>
+  );
 }
 
 function Loading() {

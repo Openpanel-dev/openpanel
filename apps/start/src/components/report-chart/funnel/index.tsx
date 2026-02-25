@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { IChartInput } from '@openpanel/validation';
 
 import { AspectContainer } from '../aspect-container';
+import { ChartDownloadButton } from '../common/chart-download-button';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
@@ -62,7 +63,8 @@ export function ReportFunnelChart() {
   }
 
   return (
-    <div className="col gap-4">
+    <div className="col gap-4 relative group/chart">
+      <ChartDownloadButton type="funnel" data={res.data} />
       {res.data.current.length > 1 && <Summary data={res.data} />}
       <Chart data={res.data} />
       {res.data.current.map((item, index) => (
