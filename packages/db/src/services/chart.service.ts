@@ -299,28 +299,32 @@ function getChartSqlFromMaterializedView({
   }
 
   // Date aggregation based on interval (use table alias)
+  // Use DateTime format to match the regular query output (toStartOfDay returns DateTime).
+  // This prevents date-format mismatches when mixing MV series with non-MV series
+  // (e.g. one series has filters → regular query returns "2026-02-24 00:00:00",
+  //  another has no filters → MV query previously returned bare "2026-02-24").
   if (interval === 'day') {
-    sb.select.date = 't.date';
-    sb.groupBy.date = 't.date';
-    sb.orderBy.date = 't.date ASC';
+    sb.select.date = 'toStartOfDay(toDateTime(t.date)) as date';
+    sb.groupBy.date = 'toStartOfDay(toDateTime(t.date))';
+    sb.orderBy.date = 'toStartOfDay(toDateTime(t.date)) ASC';
   } else if (interval === 'week') {
-    sb.select.date = 'toStartOfWeek(t.date, 1) as date';
-    sb.groupBy.date = 'toStartOfWeek(t.date, 1)';
-    sb.orderBy.date = 'toStartOfWeek(t.date, 1) ASC';
+    sb.select.date = 'toDateTime(toStartOfWeek(t.date, 1)) as date';
+    sb.groupBy.date = 'toDateTime(toStartOfWeek(t.date, 1))';
+    sb.orderBy.date = 'toDateTime(toStartOfWeek(t.date, 1)) ASC';
   } else if (interval === 'month') {
-    sb.select.date = 'toStartOfMonth(t.date) as date';
-    sb.groupBy.date = 'toStartOfMonth(t.date)';
-    sb.orderBy.date = 'toStartOfMonth(t.date) ASC';
+    sb.select.date = 'toDateTime(toStartOfMonth(t.date)) as date';
+    sb.groupBy.date = 'toDateTime(toStartOfMonth(t.date))';
+    sb.orderBy.date = 'toDateTime(toStartOfMonth(t.date)) ASC';
   }
 
-  // Build WITH FILL for date gaps
+  // Build WITH FILL for date gaps — use DateTime to match the regular query fill format
   let fillClause = '';
   if (interval === 'day') {
-    fillClause = `WITH FILL FROM toDate(${sqlstring.escape(startDate)}) TO toDate(${sqlstring.escape(endDate)}) STEP toIntervalDay(1)`;
+    fillClause = `WITH FILL FROM toStartOfDay(toDateTime(${sqlstring.escape(startDate)})) TO toStartOfDay(toDateTime(${sqlstring.escape(endDate)})) STEP toIntervalDay(1)`;
   } else if (interval === 'week') {
-    fillClause = `WITH FILL FROM toStartOfWeek(toDate(${sqlstring.escape(startDate)}), 1) TO toStartOfWeek(toDate(${sqlstring.escape(endDate)}), 1) STEP toIntervalWeek(1)`;
+    fillClause = `WITH FILL FROM toDateTime(toStartOfWeek(toDate(${sqlstring.escape(startDate)}), 1)) TO toDateTime(toStartOfWeek(toDate(${sqlstring.escape(endDate)}), 1)) STEP toIntervalWeek(1)`;
   } else if (interval === 'month') {
-    fillClause = `WITH FILL FROM toStartOfMonth(toDate(${sqlstring.escape(startDate)})) TO toStartOfMonth(toDate(${sqlstring.escape(endDate)})) STEP toIntervalMonth(1)`;
+    fillClause = `WITH FILL FROM toDateTime(toStartOfMonth(toDate(${sqlstring.escape(startDate)}))) TO toDateTime(toStartOfMonth(toDate(${sqlstring.escape(endDate)}))) STEP toIntervalMonth(1)`;
   }
 
   const sql = `${getSelect()} FROM ${sb.from} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${fillClause}`;
