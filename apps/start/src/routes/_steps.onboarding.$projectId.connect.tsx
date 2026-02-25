@@ -1,3 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
+import { createFileRoute, redirect } from '@tanstack/react-router';
+import { LockIcon, XIcon } from 'lucide-react';
 import { ButtonContainer } from '@/components/button-container';
 import CopyInput from '@/components/forms/copy-input';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
@@ -8,10 +11,7 @@ import ConnectWeb from '@/components/onboarding/connect-web';
 import { LinkButton } from '@/components/ui/button';
 import { useClientSecret } from '@/hooks/use-client-secret';
 import { useTRPC } from '@/integrations/trpc/react';
-import { PAGE_TITLES, createEntityTitle } from '@/utils/title';
-import { useQuery } from '@tanstack/react-query';
-import { createFileRoute, redirect } from '@tanstack/react-router';
-import { LockIcon, XIcon } from 'lucide-react';
+import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
   head: () => ({
@@ -20,7 +20,7 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
     ],
   }),
   beforeLoad: async ({ context }) => {
-    if (!context.session.session) {
+    if (!context.session?.session) {
       throw redirect({ to: '/onboarding' });
     }
   },
@@ -29,7 +29,7 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
     await context.queryClient.prefetchQuery(
       context.trpc.project.getProjectWithClients.queryOptions({
         projectId: params.projectId,
-      }),
+      })
     );
   },
   pendingComponent: FullPageLoadingState,
@@ -39,7 +39,7 @@ function Component() {
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const { data: project } = useQuery(
-    trpc.project.getProjectWithClients.queryOptions({ projectId }),
+    trpc.project.getProjectWithClients.queryOptions({ projectId })
   );
   const client = project?.clients[0];
   const [secret] = useClientSecret();
@@ -47,24 +47,24 @@ function Component() {
   if (!client) {
     return (
       <FullPageEmptyState
-        title="No project found"
         description="The project you are looking for does not exist. Please reload the page."
         icon={XIcon}
+        title="No project found"
       />
     );
   }
 
   return (
-    <div className="p-4 col gap-8">
+    <div className="col gap-8 p-4">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 text-xl font-bold capitalize">
+        <div className="flex items-center gap-2 font-bold text-xl capitalize">
           <LockIcon className="size-4" />
           Credentials
         </div>
         <CopyInput label="Client ID" value={client.id} />
         <CopyInput label="Secret" value={secret} />
       </div>
-      <div className="h-px bg-muted -mx-4" />
+      <div className="-mx-4 h-px bg-muted" />
       {project?.types?.map((type) => {
         const Component = {
           website: ConnectWeb,
@@ -72,15 +72,15 @@ function Component() {
           backend: ConnectBackend,
         }[type];
 
-        return <Component key={type} client={{ ...client, secret }} />;
+        return <Component client={{ ...client, secret }} key={type} />;
       })}
       <ButtonContainer>
         <div />
         <LinkButton
+          className="min-w-28 self-start"
           href={'/onboarding/$projectId/verify'}
           params={{ projectId }}
           size="lg"
-          className="min-w-28 self-start"
         >
           Next
         </LinkButton>

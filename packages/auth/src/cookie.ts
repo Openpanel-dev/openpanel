@@ -4,10 +4,10 @@ import { COOKIE_OPTIONS } from '../constants';
 export function setSessionTokenCookie(
   setCookie: ISetCookie,
   token: string,
-  expiresAt: Date,
+  expiresAt: Date
 ): void {
   setCookie('session', token, {
-    maxAge: expiresAt.getTime() - new Date().getTime(),
+    maxAge: Math.floor((expiresAt.getTime() - new Date().getTime()) / 1000),
     ...COOKIE_OPTIONS,
   });
 }

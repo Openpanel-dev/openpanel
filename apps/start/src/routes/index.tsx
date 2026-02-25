@@ -11,7 +11,7 @@ import { createTitle } from '@/utils/title';
 
 export const Route = createFileRoute('/')({
   beforeLoad: ({ context }) => {
-    if (!context.session.session) {
+    if (!context.session?.session) {
       throw redirect({ to: '/login' });
     }
   },

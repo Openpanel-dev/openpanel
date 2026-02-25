@@ -1,14 +1,3 @@
-import AnimateHeight from '@/components/animate-height';
-import { ButtonContainer } from '@/components/button-container';
-import { CheckboxItem } from '@/components/forms/checkbox-item';
-import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
-import TagInput from '@/components/forms/tag-input';
-import FullPageLoadingState from '@/components/full-page-loading-state';
-import { Button } from '@/components/ui/button';
-import { Combobox } from '@/components/ui/combobox';
-import { Label } from '@/components/ui/label';
-import { useClientSecret } from '@/hooks/use-client-secret';
-import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zOnboardingProject } from '@openpanel/validation';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -27,6 +16,17 @@ import {
   useWatch,
 } from 'react-hook-form';
 import { z } from 'zod';
+import AnimateHeight from '@/components/animate-height';
+import { ButtonContainer } from '@/components/button-container';
+import { CheckboxItem } from '@/components/forms/checkbox-item';
+import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
+import TagInput from '@/components/forms/tag-input';
+import FullPageLoadingState from '@/components/full-page-loading-state';
+import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
+import { Label } from '@/components/ui/label';
+import { useClientSecret } from '@/hooks/use-client-secret';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validateSearch = z.object({
   inviteId: z.string().optional(),
@@ -35,7 +35,7 @@ export const Route = createFileRoute('/_steps/onboarding/project')({
   component: Component,
   validateSearch,
   beforeLoad: async ({ context }) => {
-    if (!context.session.session) {
+    if (!context.session?.session) {
       throw redirect({ to: '/onboarding' });
     }
   },
@@ -45,7 +45,7 @@ export const Route = createFileRoute('/_steps/onboarding/project')({
       await context.queryClient.prefetchQuery(
         context.trpc.organization.getInvite.queryOptions({
           inviteId: search.data.inviteId,
-        }),
+        })
       );
     }
   },
@@ -57,7 +57,7 @@ type IForm = z.infer<typeof zOnboardingProject>;
 function Component() {
   const trpc = useTRPC();
   const { data: organizations } = useQuery(
-    trpc.organization.list.queryOptions(undefined, { initialData: [] }),
+    trpc.organization.list.queryOptions(undefined, { initialData: [] })
   );
   const [, setSecret] = useClientSecret();
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ function Component() {
           },
         });
       },
-    }),
+    })
   );
 
   const form = useForm<IForm>({
@@ -134,10 +134,8 @@ function Component() {
                     <Label>Workspace</Label>
                     <Combobox
                       className="w-full"
-                      placeholder="Select workspace"
-                      icon={BuildingIcon}
                       error={formState.errors.organizationId?.message}
-                      value={field.value}
+                      icon={BuildingIcon}
                       items={
                         organizations
                           .filter((item) => item.id)
@@ -147,6 +145,8 @@ function Component() {
                           })) ?? []
                       }
                       onChange={field.onChange}
+                      placeholder="Select workspace"
+                      value={field.value}
                     />
                   </div>
                 );
@@ -155,26 +155,26 @@ function Component() {
           ) : (
             <>
               <InputWithLabel
-                label="Workspace name"
-                info="This is the name of your workspace. It can be anything you like."
-                placeholder="Eg. The Music Company"
                 error={form.formState.errors.organization?.message}
+                info="This is the name of your workspace. It can be anything you like."
+                label="Workspace name"
+                placeholder="Eg. The Music Company"
                 {...form.register('organization')}
               />
               <Controller
-                name="timezone"
                 control={form.control}
+                name="timezone"
                 render={({ field }) => (
                   <WithLabel label="Timezone">
                     <Combobox
-                      placeholder="Select timezone"
+                      className="w-full"
                       items={Intl.supportedValuesOf('timeZone').map((item) => ({
                         value: item,
                         label: item,
                       }))}
-                      value={field.value}
                       onChange={field.onChange}
-                      className="w-full"
+                      placeholder="Select timezone"
+                      value={field.value}
                     />
                   </WithLabel>
                 )}
@@ -182,24 +182,24 @@ function Component() {
             </>
           )}
           <InputWithLabel
+            error={form.formState.errors.project?.message}
             label="Project name"
             placeholder="Eg. The Music App"
-            error={form.formState.errors.project?.message}
             {...form.register('project')}
             className="col-span-2"
           />
         </div>
-        <div className="flex flex-col divide-y mt-4">
+        <div className="mt-4 flex flex-col divide-y">
           <Controller
-            name="website"
             control={form.control}
+            name="website"
             render={({ field }) => (
               <CheckboxItem
+                description="Track events and conversion for your website"
+                disabled={isApp}
                 error={form.formState.errors.website?.message}
                 Icon={MonitorIcon}
                 label="Website"
-                disabled={isApp}
-                description="Track events and conversion for your website"
                 {...field}
               >
                 <AnimateHeight open={isWebsite && !isApp}>
@@ -223,20 +223,13 @@ function Component() {
                     />
 
                     <Controller
-                      name="cors"
                       control={form.control}
+                      name="cors"
                       render={({ field }) => (
                         <WithLabel label="Allowed domains">
                           <TagInput
                             {...field}
                             error={form.formState.errors.cors?.message}
-                            placeholder="Accept events from these domains"
-                            value={field.value ?? []}
-                            renderTag={(tag) =>
-                              tag === '*'
-                                ? 'Accept events from any domains'
-                                : tag
-                            }
                             onChange={(newValue) => {
                               field.onChange(
                                 newValue.map((item) => {
@@ -249,9 +242,16 @@ function Component() {
                                     return trimmed;
                                   }
                                   return `https://${trimmed}`;
-                                }),
+                                })
                               );
                             }}
+                            placeholder="Accept events from these domains"
+                            renderTag={(tag) =>
+                              tag === '*'
+                                ? 'Accept events from any domains'
+                                : tag
+                            }
+                            value={field.value ?? []}
                           />
                         </WithLabel>
                       )}
@@ -262,28 +262,28 @@ function Component() {
             )}
           />
           <Controller
-            name="app"
             control={form.control}
+            name="app"
             render={({ field }) => (
               <CheckboxItem
-                error={form.formState.errors.app?.message}
+                description="Track events and conversion for your app"
                 disabled={isWebsite}
+                error={form.formState.errors.app?.message}
                 Icon={SmartphoneIcon}
                 label="App"
-                description="Track events and conversion for your app"
                 {...field}
               />
             )}
           />
           <Controller
-            name="backend"
             control={form.control}
+            name="backend"
             render={({ field }) => (
               <CheckboxItem
+                description="Track events and conversion for your backend / API"
                 error={form.formState.errors.backend?.message}
                 Icon={ServerIcon}
                 label="Backend / API"
-                description="Track events and conversion for your backend / API"
                 {...field}
               />
             )}
@@ -291,13 +291,13 @@ function Component() {
         </div>
       </div>
 
-      <ButtonContainer className="p-4 border-t">
+      <ButtonContainer className="border-t p-4">
         <div />
         <Button
-          type="submit"
-          size="lg"
           className="min-w-28 self-start"
           loading={mutation.isPending}
+          size="lg"
+          type="submit"
         >
           Next
         </Button>

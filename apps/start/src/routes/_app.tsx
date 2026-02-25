@@ -1,14 +1,14 @@
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import { ConstructionIcon } from 'lucide-react';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Sidebar } from '@/components/sidebar';
-import { Button, LinkButton, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
 import { cn } from '@/utils/cn';
-import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
-import { ConstructionIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/_app')({
   beforeLoad: async ({ context }) => {
-    if (!context.session.session) {
+    if (!context.session?.session) {
       throw redirect({ to: '/login' });
     }
   },
@@ -21,16 +21,16 @@ function AppLayout() {
   if (isMaintenance) {
     return (
       <FullPageEmptyState
-        icon={ConstructionIcon}
         className="min-h-screen"
-        title="Maintenance mode"
         description="We are currently performing maintenance on the system. Please check back later."
+        icon={ConstructionIcon}
+        title="Maintenance mode"
       >
         <a
-          href="https://status.openpanel.dev/"
           className={cn(buttonVariants())}
-          target="_blank"
+          href="https://status.openpanel.dev/"
           rel="noopener noreferrer"
+          target="_blank"
         >
           Check out our status page
         </a>
@@ -41,9 +41,9 @@ function AppLayout() {
   return (
     <div className="flex h-screen w-full">
       <Sidebar />
-      <div className="lg:pl-72 w-full">
-        <div className="block lg:hidden bg-background h-16 w-full fixed top-0 z-10 border-b" />
-        <div className="block lg:hidden h-16" />
+      <div className="w-full lg:pl-72">
+        <div className="fixed top-0 z-10 block h-16 w-full border-b bg-background lg:hidden" />
+        <div className="block h-16 lg:hidden" />
         <Outlet />
       </div>
     </div>
