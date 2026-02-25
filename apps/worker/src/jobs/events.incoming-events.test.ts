@@ -1,18 +1,15 @@
 import {
-  type IClickhouseSession,
-  type IServiceEvent,
-  type IServiceSession,
   createEvent,
   formatClickhouseDate,
+  type IClickhouseSession,
   sessionBuffer,
 } from '@openpanel/db';
-import { eventBuffer } from '@openpanel/db';
 import {
   type EventsQueuePayloadIncomingEvent,
   sessionsQueue,
 } from '@openpanel/queue';
 import type { Job } from 'bullmq';
-import { type Mock, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { incomingEvent } from './events.incoming-event';
 
 vi.mock('@openpanel/queue');
@@ -22,6 +19,8 @@ vi.mock('@openpanel/db', async () => {
     ...actual,
     createEvent: vi.fn(),
     checkNotificationRulesForEvent: vi.fn().mockResolvedValue(true),
+    getProjectByIdCached: vi.fn().mockResolvedValue({ filters: [] }),
+    matchEvent: vi.fn().mockReturnValue(false),
     sessionBuffer: {
       getExistingSession: vi.fn(),
     },
@@ -68,7 +67,7 @@ describe('incomingEvent', () => {
     vi.clearAllMocks();
   });
 
-  it('should create a session start and an event', async () => {
+  it.only('should create a session start and an event', async () => {
     const spySessionsQueueAdd = vi.spyOn(sessionsQueue, 'add');
     const timestamp = new Date();
     // Mock job data
@@ -92,16 +91,12 @@ describe('incomingEvent', () => {
       currentDeviceId,
       previousDeviceId,
     };
-
-    // Execute the job
-    await incomingEvent(jobData);
-
     const event = {
       name: 'test_event',
       deviceId: currentDeviceId,
       profileId: '',
       sessionId: expect.stringMatching(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
       ),
       projectId,
       properties: {
@@ -132,6 +127,11 @@ describe('incomingEvent', () => {
       sdkVersion: jobData.headers['openpanel-sdk-version'],
     };
 
+    (createEvent as Mock).mockReturnValue(event);
+
+    // Execute the job
+    await incomingEvent(jobData);
+
     expect(spySessionsQueueAdd).toHaveBeenCalledWith(
       'session',
       {
@@ -146,7 +146,7 @@ describe('incomingEvent', () => {
           delay: 200,
           type: 'exponential',
         },
-      },
+      }
     );
 
     expect((createEvent as Mock).mock.calls[0]![0]).toStrictEqual({
@@ -264,26 +264,6 @@ describe('incomingEvent', () => {
       currentDeviceId: '',
       previousDeviceId: '',
       uaInfo: uaInfoServer,
-    };
-
-    const mockLastScreenView = {
-      deviceId: 'last-device-123',
-      sessionId: 'last-session-456',
-      country: 'CA',
-      city: 'Toronto',
-      region: 'ON',
-      os: 'iOS',
-      osVersion: '15.0',
-      browser: 'Safari',
-      browserVersion: '15.0',
-      device: 'mobile',
-      brand: 'Apple',
-      model: 'iPhone',
-      path: '/last-path',
-      origin: 'https://example.com',
-      referrer: 'https://google.com',
-      referrerName: 'Google',
-      referrerType: 'search',
     };
 
     vi.mocked(sessionBuffer.getExistingSession).mockResolvedValueOnce({

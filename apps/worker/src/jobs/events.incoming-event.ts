@@ -1,5 +1,3 @@
-import { logger as baseLogger } from '@/utils/logger';
-import { createSessionEndJob, getSessionEnd } from '@/utils/session-handler';
 import { getTime, isSameDomain, parsePath } from '@openpanel/common';
 import {
   getReferrerWithQuery,
@@ -18,6 +16,8 @@ import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
 import * as R from 'ramda';
 import { v4 as uuid } from 'uuid';
+import { logger as baseLogger } from '@/utils/logger';
+import { createSessionEndJob, getSessionEnd } from '@/utils/session-handler';
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp', '__revenue'];
 
@@ -30,23 +30,23 @@ const merge = <A, B>(a: Partial<A>, b: Partial<B>): A & B =>
 async function createEventAndNotify(
   payload: IServiceCreateEventPayload,
   logger: ILogger,
-  projectId: string,
+  projectId: string
 ) {
   // Check project-level event exclude filters
   const project = await getProjectByIdCached(projectId);
   const eventExcludeFilters = (project?.filters ?? []).filter(
-    (f) => f.type === 'event',
+    (f) => f.type === 'event'
   );
   if (eventExcludeFilters.length > 0) {
     const isExcluded = eventExcludeFilters.some((filter) =>
-      matchEvent(payload, filter),
+      matchEvent(payload, filter)
     );
     if (isExcluded) {
       logger.info('Event excluded by project filter', {
         event: payload.name,
         projectId,
       });
-      return null
+      return null;
     }
   }
 
@@ -55,22 +55,30 @@ async function createEventAndNotify(
     createEvent(payload),
     checkNotificationRulesForEvent(payload).catch(() => {}),
   ]);
+
+  console.log('Event created:', event);
   return event;
 }
 
 const parseRevenue = (revenue: unknown): number | undefined => {
-  if (!revenue) return undefined;
-  if (typeof revenue === 'number') return revenue;
+  if (!revenue) {
+    return undefined;
+  }
+  if (typeof revenue === 'number') {
+    return revenue;
+  }
   if (typeof revenue === 'string') {
     const parsed = Number.parseFloat(revenue);
-    if (Number.isNaN(parsed)) return undefined;
+    if (Number.isNaN(parsed)) {
+      return undefined;
+    }
     return parsed;
   }
   return undefined;
 };
 
 export async function incomingEvent(
-  jobPayload: EventsQueuePayloadIncomingEvent['payload'],
+  jobPayload: EventsQueuePayloadIncomingEvent['payload']
 ) {
   const {
     geo,
@@ -149,6 +157,7 @@ export async function incomingEvent(
         : undefined,
   } as const;
 
+  console.log('HERE?');
   // if timestamp is from the past we dont want to create a new session
   if (uaInfo.isServer || isTimestampFromThePast) {
     const session = profileId
@@ -157,6 +166,8 @@ export async function incomingEvent(
           projectId,
         })
       : null;
+
+    console.log('Server?');
 
     const payload = {
       ...baseEvent,
@@ -183,14 +194,14 @@ export async function incomingEvent(
 
     return createEventAndNotify(payload as IServiceEvent, logger, projectId);
   }
-
+  console.log('not?');
   const sessionEnd = await getSessionEnd({
     projectId,
     currentDeviceId,
     previousDeviceId,
     profileId,
   });
-
+  console.log('Server?');
   const lastScreenView = sessionEnd
     ? await sessionBuffer.getExistingSession({
         sessionId: sessionEnd.sessionId,
@@ -207,7 +218,7 @@ export async function incomingEvent(
     path: baseEvent.path || lastScreenView?.exit_path || '',
     origin: baseEvent.origin || lastScreenView?.exit_origin || '',
   } as Partial<IServiceCreateEventPayload>) as IServiceCreateEventPayload;
-
+  console.log('SessionEnd?', sessionEnd);
   if (!sessionEnd) {
     logger.info('Creating session start event', { event: payload });
     await createEventAndNotify(
@@ -228,7 +239,7 @@ export async function incomingEvent(
 
   if (!event) {
     // Skip creating session end when event was excluded
-    return null
+    return null;
   }
 
   if (!sessionEnd) {
