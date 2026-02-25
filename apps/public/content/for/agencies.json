@@ -1,0 +1,177 @@
+{
+  "slug": "agencies",
+  "audience": "agencies",
+  "seo": {
+    "title": "Analytics for Agencies — Manage All Client Sites in One Place",
+    "description": "OpenPanel helps agencies manage analytics for all client websites from one account. Privacy-first, no cookie banners, unlimited projects, and affordable per-client pricing from $2.50/mo.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Analytics for Agencies",
+    "subheading": "Manage web and product analytics for every client from one account. No cookie consent banners to configure, no per-seat pricing, and transparent costs that make sense for agency billing. From $2.50/month per project.",
+    "badges": [
+      "Unlimited projects",
+      "No per-seat fees",
+      "No cookie banners needed",
+      "Open source"
+    ]
+  },
+  "problem": {
+    "title": "Why analytics is painful for agencies",
+    "intro": "Managing analytics across dozens of client sites creates problems that most tools weren't designed to solve.",
+    "items": [
+      {
+        "title": "Google Analytics access management is a nightmare",
+        "description": "Creating GA4 properties, managing user permissions, switching between accounts, and dealing with Google's constantly changing interface. Multiply this by 20+ clients and it's a full-time job."
+      },
+      {
+        "title": "Cookie consent for every single client",
+        "description": "Every client site needs its own cookie consent banner configured correctly. Different jurisdictions, different requirements, different implementations — and one mistake can mean a GDPR fine."
+      },
+      {
+        "title": "Per-seat pricing kills agency margins",
+        "description": "Most analytics tools charge per user. When your team of 10 needs access to analytics for client reporting, the cost adds up fast. Then the client wants access too."
+      },
+      {
+        "title": "No easy way to show clients their data",
+        "description": "Clients want to see their analytics without logging into your tools. Exporting PDFs is tedious, sharing login credentials is insecure, and building custom dashboards takes time you don't have."
+      }
+    ]
+  },
+  "features": {
+    "title": "Analytics built for multi-client workflows",
+    "intro": "OpenPanel is designed to work the way agencies do — multiple projects, multiple team members, one simple interface.",
+    "items": [
+      {
+        "title": "Unlimited projects per account",
+        "description": "Add every client as a separate project under one account. No extra cost per project — just one monthly bill based on total event volume."
+      },
+      {
+        "title": "No per-seat pricing",
+        "description": "Invite your entire team at no extra cost. Account managers, developers, strategists — everyone gets access. No reason to share logins or limit who can see data."
+      },
+      {
+        "title": "No cookie consent required",
+        "description": "OpenPanel uses cookieless tracking by default. No consent banners to set up for any client, regardless of their location or audience. Saves hours of implementation per client."
+      },
+      {
+        "title": "Simple, instant dashboards",
+        "description": "Every project gets a complete analytics dashboard out of the box. No custom report building needed — clients get useful data from day one."
+      },
+      {
+        "title": "Privacy compliance built in",
+        "description": "GDPR and CCPA compliant by design. No cookies, EU data hosting, and data minimization mean you can confidently deploy analytics for clients in any market."
+      },
+      {
+        "title": "Web + product analytics combined",
+        "description": "Pageviews, referrers, and campaigns alongside events, funnels, and user profiles. One tool replaces both Google Analytics and Mixpanel for clients who need deeper insights."
+      },
+      {
+        "title": "Quick setup for new clients",
+        "description": "Add a script tag or install an SDK. Page views start tracking automatically. Most client setups take under 15 minutes including custom event configuration."
+      },
+      {
+        "title": "Self-hosting for full control",
+        "description": "Agencies handling sensitive industries can self-host OpenPanel on their own infrastructure. Complete data sovereignty for clients who require it."
+      },
+      {
+        "title": "Export and API access",
+        "description": "Pull data via the REST API for custom client reports. Export events for clients who want their own data. Integrate with your existing reporting stack."
+      }
+    ]
+  },
+  "benefits": {
+    "title": "Why agencies choose OpenPanel",
+    "intro": "Simpler analytics management means more time for the work clients actually pay you for.",
+    "items": [
+      {
+        "title": "One account for all clients",
+        "description": "Switch between client projects in one click. No separate logins, no Google account juggling, no access management headaches."
+      },
+      {
+        "title": "Predictable costs for easy billing",
+        "description": "Flat tiers based on total event volume. Pass the cost through to clients or absorb it in your retainer — the pricing is simple enough to do either."
+      },
+      {
+        "title": "Ship cookie-free analytics for every client",
+        "description": "Stop spending hours configuring consent banners. OpenPanel works without cookies, so there's nothing to configure for GDPR or CCPA."
+      },
+      {
+        "title": "Impress clients with real-time data",
+        "description": "Show clients their live analytics in real time during calls. Events, pageviews, and conversions updating as you speak."
+      },
+      {
+        "title": "Open source trust factor",
+        "description": "Clients in regulated industries appreciate that the analytics code is fully auditable. Open source means transparency about exactly what's being tracked."
+      },
+      {
+        "title": "Affordable at scale",
+        "description": "At $20/month for 100K events across all projects, OpenPanel is dramatically cheaper than running separate Mixpanel or GA4 properties per client."
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions from agencies evaluating OpenPanel.",
+    "items": [
+      {
+        "question": "How does pricing work with multiple client projects?",
+        "answer": "You pay based on total event volume across all projects, not per project. For example, if you have 20 client sites generating a combined 100K events/month, you pay $20/month total. All projects share the same plan."
+      },
+      {
+        "question": "Can clients see their own analytics without a login?",
+        "answer": "OpenPanel supports team invitations so clients can be added to their specific project. They'll only see their own data. You can also use the API to build custom dashboards or export reports for client presentations."
+      },
+      {
+        "question": "Do I need cookie consent banners for client sites?",
+        "answer": "No. OpenPanel uses cookieless tracking by default, which doesn't require consent under GDPR, CCPA, or PECR. This eliminates one of the most common compliance headaches for agency deployments."
+      },
+      {
+        "question": "How do I set up tracking for a new client?",
+        "answer": "Create a new project in your OpenPanel dashboard, copy the script tag, and add it to the client's website. Page views start tracking immediately. Custom events are one line of JavaScript each. Most setups take under 15 minutes."
+      },
+      {
+        "question": "Can I self-host for agency use?",
+        "answer": "Yes. Self-hosting is free and has no project or event limits. Run OpenPanel on your own server to keep all client data under your control. Docker Compose deployment takes about 10 minutes."
+      },
+      {
+        "question": "How does OpenPanel compare to Google Analytics for agencies?",
+        "answer": "OpenPanel is simpler to manage across multiple clients (one account, no Google permissions), privacy-compliant without cookies, and includes product analytics features that GA4 lacks. GA4 has more advanced attribution modeling and integrates with Google Ads. For most agency use cases, OpenPanel saves significant time on setup and compliance."
+      },
+      {
+        "question": "Is there an API for building custom reports?",
+        "answer": "Yes. OpenPanel has a REST API for querying analytics data, managing projects, and exporting events. You can use it to build custom client dashboards, integrate with your reporting tools, or automate monthly reports."
+      },
+      {
+        "question": "Can I white-label the analytics dashboard?",
+        "answer": "White-labeling is not currently available as a built-in feature. However, since OpenPanel is open source, agencies who self-host can customize the dashboard appearance, including branding. Cloud users can use the API to build branded dashboards."
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "Script tag SDK setup", "url": "/docs/sdks/script" },
+      { "title": "Migrate from Google Analytics", "url": "/guides/migrate-from-google-analytics" }
+    ],
+    "articles": [
+      { "title": "Cookieless analytics explained", "url": "/articles/cookieless-analytics" },
+      { "title": "How to self-host OpenPanel", "url": "/articles/how-to-self-host-openpanel" },
+      { "title": "Best open source analytics tools", "url": "/articles/open-source-web-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },
+      { "title": "OpenPanel vs Plausible", "url": "/compare/plausible-alternative" },
+      { "title": "OpenPanel vs Matomo", "url": "/compare/matomo-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Try OpenPanel Free",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "View Source on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

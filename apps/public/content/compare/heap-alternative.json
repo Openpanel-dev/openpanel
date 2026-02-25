@@ -8,7 +8,7 @@
   },
   "hero": {
     "heading": "Best Heap Alternative",
-    "subheading": "Looking for Heap's product analytics without the black-box pricing and vendor lock-in? OpenPanel offers transparent event-based pricing, full self-hosting, and MIT-licensed open source code—giving you control over your analytics.",
+    "subheading": "Looking for Heap's product analytics without the black-box pricing and vendor lock-in? OpenPanel offers transparent event-based pricing, full self-hosting, and MIT-licensed open source code\u2014giving you control over your analytics.",
     "badges": [
       "Open-source",
       "Transparent pricing",
@@ -27,10 +27,10 @@
   "overview": {
     "title": "Why consider OpenPanel over Heap?",
     "paragraphs": [
-      "Heap made its name with autocapture — the ability to automatically record every user interaction and analyze it retroactively. It's a compelling feature for teams that want to ask questions about user behavior without planning instrumentation in advance. But Heap's acquisition by Contentsquare, opaque enterprise pricing, and cloud-only architecture have many teams looking for alternatives.",
-      "OpenPanel takes a different approach with explicit event tracking, giving you precise control over what you measure and how. While you lose Heap's retroactive analysis capability, you gain transparency — both in your data collection and your costs. OpenPanel's pricing is publicly listed and event-based, starting at just $2.50 per month, compared to Heap's sales-required pricing that reportedly starts at $3,600 per year.",
-      "For teams that value data sovereignty, OpenPanel offers full self-hosting via a simple Docker deployment — something Heap doesn't provide at all. Being open source under the MIT license means you can inspect every line of code, contribute improvements, and avoid the vendor lock-in risk that comes with Heap's proprietary, now-Contentsquare-owned platform.",
-      "If you prefer intentional, controlled analytics over autocapture-everything, want transparent pricing without sales calls, and need the option to self-host — OpenPanel gives you solid product analytics with full ownership of your data."
+      "Heap made its name with autocapture \u2014 the ability to automatically record every user interaction and analyze it retroactively. It's a compelling feature for teams that want to ask questions about user behavior without planning instrumentation in advance. But Heap's acquisition by Contentsquare, opaque enterprise pricing, and cloud-only architecture have many teams looking for alternatives.",
+      "OpenPanel takes a different approach with explicit event tracking, giving you precise control over what you measure and how. While you lose Heap's retroactive analysis capability, you gain transparency \u2014 both in your data collection and your costs. OpenPanel's pricing is publicly listed and event-based, starting at just $2.50 per month, compared to Heap's sales-required pricing that reportedly starts at $3,600 per year.",
+      "For teams that value data sovereignty, OpenPanel offers full self-hosting via a simple Docker deployment \u2014 something Heap doesn't provide at all. Being open source under the MIT license means you can inspect every line of code, contribute improvements, and avoid the vendor lock-in risk that comes with Heap's proprietary, now-Contentsquare-owned platform.",
+      "If you prefer intentional, controlled analytics over autocapture-everything, want transparent pricing without sales calls, and need the option to self-host \u2014 OpenPanel gives you solid product analytics with full ownership of your data."
     ]
   },
   "summary_comparison": {
@@ -427,6 +427,20 @@
     ]
   },
   "related_links": {
+    "guides": [
+      {
+        "title": "Track custom events",
+        "url": "/guides/track-custom-events"
+      },
+      {
+        "title": "React analytics setup",
+        "url": "/guides/react-analytics"
+      },
+      {
+        "title": "Next.js analytics setup",
+        "url": "/guides/nextjs-analytics"
+      }
+    ],
     "articles": [
       {
         "title": "Find an alternative to Mixpanel",

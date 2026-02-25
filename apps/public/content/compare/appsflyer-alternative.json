@@ -8,7 +8,7 @@
   },
   "hero": {
     "heading": "Best AppsFlyer Alternative",
-    "subheading": "Need to understand user behavior, not just ad attribution? OpenPanel provides product analytics—funnels, retention, cohorts, and user profiles—at a fraction of AppsFlyer's cost, without complex enterprise contracts.",
+    "subheading": "Need to understand user behavior, not just ad attribution? OpenPanel provides product analytics\u2014funnels, retention, cohorts, and user profiles\u2014at a fraction of AppsFlyer's cost, without complex enterprise contracts.",
     "badges": [
       "Product analytics",
       "Self-hostable",
@@ -27,10 +27,10 @@
   "overview": {
     "title": "Why consider OpenPanel over AppsFlyer?",
     "paragraphs": [
-      "AppsFlyer is the leading Mobile Measurement Partner (MMP), used by major brands to attribute app installs to advertising campaigns. With integrations to over 5,000 ad networks and sophisticated fraud protection, it's the gold standard for mobile attribution. But AppsFlyer's focus is narrowly on ad attribution — it tells you which campaign drove an install, not what users actually do inside your product.",
+      "AppsFlyer is the leading Mobile Measurement Partner (MMP), used by major brands to attribute app installs to advertising campaigns. With integrations to over 5,000 ad networks and sophisticated fraud protection, it's the gold standard for mobile attribution. But AppsFlyer's focus is narrowly on ad attribution \u2014 it tells you which campaign drove an install, not what users actually do inside your product.",
       "OpenPanel serves a fundamentally different purpose: product analytics. While AppsFlyer tracks the marketing funnel (which ad, which campaign, which network), OpenPanel tracks the product funnel (which features users adopt, where they get stuck, and whether they retain). For teams that need to understand user behavior rather than ad performance, OpenPanel provides funnels, retention analysis, cohort breakdowns, and user profiles.",
-      "The pricing models couldn't be more different. AppsFlyer charges per conversion with enterprise contracts that typically run $3,000 to $100,000 or more annually. OpenPanel starts at $2.50 per month, or is completely free when self-hosted. For startups and growing companies, that difference in cost is significant — especially when you need analytics from day one but can't justify enterprise contracts.",
-      "Many teams use both tools for different purposes: AppsFlyer for marketing attribution and OpenPanel for in-product analytics. But if you're primarily interested in understanding what users do after they arrive — not which ad brought them — OpenPanel gives you those insights at a fraction of the cost."
+      "The pricing models couldn't be more different. AppsFlyer charges per conversion with enterprise contracts that typically run $3,000 to $100,000 or more annually. OpenPanel starts at $2.50 per month, or is completely free when self-hosted. For startups and growing companies, that difference in cost is significant \u2014 especially when you need analytics from day one but can't justify enterprise contracts.",
+      "Many teams use both tools for different purposes: AppsFlyer for marketing attribution and OpenPanel for in-product analytics. But if you're primarily interested in understanding what users do after they arrive \u2014 not which ad brought them \u2014 OpenPanel gives you those insights at a fraction of the cost."
     ]
   },
   "summary_comparison": {
@@ -85,7 +85,7 @@
   },
   "feature_comparison": {
     "title": "Feature comparison",
-    "intro": "OpenPanel and AppsFlyer serve different primary needs—product analytics vs mobile attribution.",
+    "intro": "OpenPanel and AppsFlyer serve different primary needs\u2014product analytics vs mobile attribution.",
     "groups": [
       {
         "group": "Product analytics",
@@ -345,7 +345,7 @@
       },
       {
         "title": "Configure product analytics",
-        "description": "Set up funnels, retention charts, and dashboards in OpenPanel—features not available in AppsFlyer."
+        "description": "Set up funnels, retention charts, and dashboards in OpenPanel\u2014features not available in AppsFlyer."
       }
     ],
     "sdk_compatibility": {
@@ -363,7 +363,7 @@
     "items": [
       {
         "title": "Product teams needing behavior analytics",
-        "description": "AppsFlyer tells you which ad brought a user. OpenPanel tells you what that user does in your product—funnels, feature usage, retention patterns.",
+        "description": "AppsFlyer tells you which ad brought a user. OpenPanel tells you what that user does in your product\u2014funnels, feature usage, retention patterns.",
         "icon": "chart"
       },
       {
@@ -406,7 +406,7 @@
       },
       {
         "question": "Does OpenPanel have fraud protection like AppsFlyer?",
-        "answer": "No. Fraud protection is specific to mobile attribution—detecting fake installs and click fraud. Since OpenPanel focuses on product analytics rather than attribution, fraud protection isn't applicable."
+        "answer": "No. Fraud protection is specific to mobile attribution\u2014detecting fake installs and click fraud. Since OpenPanel focuses on product analytics rather than attribution, fraud protection isn't applicable."
       },
       {
         "question": "Can OpenPanel do deep linking like AppsFlyer?",
@@ -423,6 +423,20 @@
     ]
   },
   "related_links": {
+    "guides": [
+      {
+        "title": "React Native analytics setup",
+        "url": "/guides/react-native-analytics"
+      },
+      {
+        "title": "Swift/iOS analytics setup",
+        "url": "/guides/swift-analytics"
+      },
+      {
+        "title": "Kotlin/Android analytics setup",
+        "url": "/guides/kotlin-analytics"
+      }
+    ],
     "articles": [
       {
         "title": "Find an alternative to Mixpanel",

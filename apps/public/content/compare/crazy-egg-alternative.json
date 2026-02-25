@@ -8,7 +8,7 @@
   },
   "hero": {
     "heading": "Best Crazy Egg Alternative",
-    "subheading": "Get full product analytics capabilities beyond heatmaps. OpenPanel delivers funnel analysis, retention tracking, mobile SDKs, and user identification—fully open source and self-hostable.",
+    "subheading": "Get full product analytics capabilities beyond heatmaps. OpenPanel delivers funnel analysis, retention tracking, mobile SDKs, and user identification\u2014fully open source and self-hostable.",
     "badges": [
       "Open-source",
       "Self-hostable",
@@ -27,9 +27,9 @@
   "overview": {
     "title": "Why consider OpenPanel over Crazy Egg?",
     "paragraphs": [
-      "Crazy Egg, founded by Neil Patel and Hiten Shah in 2005, pioneered website heatmaps and has since expanded into A/B testing, session recordings, and surveys. It's a well-known tool for visual website optimization — understanding where visitors click, how far they scroll, and which page elements drive engagement. But Crazy Egg is web-only, proprietary, and focused on visual optimization rather than product analytics.",
+      "Crazy Egg, founded by Neil Patel and Hiten Shah in 2005, pioneered website heatmaps and has since expanded into A/B testing, session recordings, and surveys. It's a well-known tool for visual website optimization \u2014 understanding where visitors click, how far they scroll, and which page elements drive engagement. But Crazy Egg is web-only, proprietary, and focused on visual optimization rather than product analytics.",
       "OpenPanel serves a different but complementary need. Where Crazy Egg helps you optimize individual pages through visual feedback, OpenPanel helps you understand the entire user journey through event-based product analytics. Funnels show you where users drop off in multi-step flows, retention analysis reveals whether they come back, and user profiles let you track individual behavior across sessions.",
-      "The technical differences are significant for growing teams. Crazy Egg is cloud-only with no self-hosting option and charges based on pageviews. OpenPanel is open source under the MIT license, offers full self-hosting via Docker, and supports mobile apps through native SDKs for iOS, Android, and React Native — capabilities Crazy Egg doesn't provide.",
+      "The technical differences are significant for growing teams. Crazy Egg is cloud-only with no self-hosting option and charges based on pageviews. OpenPanel is open source under the MIT license, offers full self-hosting via Docker, and supports mobile apps through native SDKs for iOS, Android, and React Native \u2014 capabilities Crazy Egg doesn't provide.",
       "If you need to go beyond heatmaps and understand how users actually flow through your product, especially across both web and mobile platforms, OpenPanel provides the event-based analytics foundation that visual optimization tools like Crazy Egg can't match."
     ]
   },
@@ -307,7 +307,7 @@
   },
   "pricing": {
     "title": "Pricing comparison",
-    "intro": "Both offer generous free tiers with different pricing models—event-based vs pageview-based.",
+    "intro": "Both offer generous free tiers with different pricing models\u2014event-based vs pageview-based.",
     "openpanel": {
       "model": "Event-based, transparent",
       "description": "Start at $2.50/month for 5,000 events. Self-host for free with unlimited events. All features included at every tier."
@@ -392,7 +392,7 @@
     "items": [
       {
         "question": "What will I lose switching from Crazy Egg to OpenPanel?",
-        "answer": "Crazy Egg's core features are heatmaps, A/B testing, on-site surveys, and popup CTAs. OpenPanel does not offer these features—it focuses on product analytics instead."
+        "answer": "Crazy Egg's core features are heatmaps, A/B testing, on-site surveys, and popup CTAs. OpenPanel does not offer these features\u2014it focuses on product analytics instead."
       },
       {
         "question": "Does OpenPanel have heatmaps like Crazy Egg?",
@@ -417,6 +417,20 @@
     ]
   },
   "related_links": {
+    "guides": [
+      {
+        "title": "Website analytics setup",
+        "url": "/guides/website-analytics-setup"
+      },
+      {
+        "title": "Track custom events",
+        "url": "/guides/track-custom-events"
+      },
+      {
+        "title": "Ecommerce event tracking",
+        "url": "/guides/ecommerce-tracking"
+      }
+    ],
     "articles": [
       {
         "title": "9 best open source web analytics tools",

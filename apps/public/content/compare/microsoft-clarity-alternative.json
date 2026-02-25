@@ -27,10 +27,10 @@
   "overview": {
     "title": "Why consider OpenPanel over Microsoft Clarity?",
     "paragraphs": [
-      "Microsoft Clarity is a completely free behavioral analytics tool that offers unlimited session recordings, heatmaps, and insights powered by AI. The price — free forever with no limits — is hard to argue with, and it's become a popular complement to Google Analytics. But Clarity is designed for observing behavior, not measuring outcomes. There's no event tracking, no funnels, no retention analysis, and no cohort breakdowns.",
+      "Microsoft Clarity is a completely free behavioral analytics tool that offers unlimited session recordings, heatmaps, and insights powered by AI. The price \u2014 free forever with no limits \u2014 is hard to argue with, and it's become a popular complement to Google Analytics. But Clarity is designed for observing behavior, not measuring outcomes. There's no event tracking, no funnels, no retention analysis, and no cohort breakdowns.",
       "OpenPanel fills the gap that Clarity leaves. While Clarity shows you recordings of individual sessions and aggregate heatmaps, OpenPanel gives you the structured analytics to understand patterns: which features drive retention, where users drop off in conversion flows, and how different cohorts of users behave over time. These are the insights that drive product decisions.",
       "Self-hosting and data ownership are important distinctions. Clarity runs entirely on Microsoft's Azure cloud with no alternative, and your session recording data lives on their servers. OpenPanel can be self-hosted on your own infrastructure for complete data sovereignty, and its open-source MIT license means you can audit every line of code processing your users' data.",
-      "Many teams find that Clarity and OpenPanel work well together — Clarity for visual session recordings and OpenPanel for structured product analytics. But if you're choosing one tool to understand and improve your product, OpenPanel provides the actionable metrics that behavioral observation alone can't deliver."
+      "Many teams find that Clarity and OpenPanel work well together \u2014 Clarity for visual session recordings and OpenPanel for structured product analytics. But if you're choosing one tool to understand and improve your product, OpenPanel provides the actionable metrics that behavioral observation alone can't deliver."
     ]
   },
   "summary_comparison": {
@@ -492,6 +492,20 @@
     ]
   },
   "related_links": {
+    "guides": [
+      {
+        "title": "Website analytics setup",
+        "url": "/guides/website-analytics-setup"
+      },
+      {
+        "title": "Migrate from Google Analytics",
+        "url": "/guides/migrate-from-google-analytics"
+      },
+      {
+        "title": "Track custom events",
+        "url": "/guides/track-custom-events"
+      }
+    ],
     "articles": [
       {
         "title": "9 best open source web analytics tools",

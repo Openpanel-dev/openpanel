@@ -3,12 +3,12 @@
   "page_type": "alternative",
   "seo": {
     "title": "Best FullStory Alternative 2026 - Open Source & Free",
-    "description": "Looking for a FullStory alternative? OpenPanel offers product analytics with transparent pricing, self-hosting, and privacy-first tracking — no expensive session replay costs. Free to start.",
+    "description": "Looking for a FullStory alternative? OpenPanel offers product analytics with transparent pricing, self-hosting, and privacy-first tracking \u2014 no expensive session replay costs. Free to start.",
     "noindex": false
   },
   "hero": {
     "heading": "Best FullStory Alternative",
-    "subheading": "Get powerful product analytics without FullStory's enterprise pricing. OpenPanel delivers funnel analysis, retention tracking, and user identification—fully open source and self-hostable with transparent pricing.",
+    "subheading": "Get powerful product analytics without FullStory's enterprise pricing. OpenPanel delivers funnel analysis, retention tracking, and user identification\u2014fully open source and self-hostable with transparent pricing.",
     "badges": [
       "Open-source",
       "Self-hostable",
@@ -28,9 +28,9 @@
     "title": "Why consider OpenPanel over FullStory?",
     "paragraphs": [
       "FullStory is a premium Digital Experience Intelligence platform known for its pixel-perfect session replay and frustration signal detection. It's a powerful tool for UX teams debugging user issues and optimizing conversion flows. But with enterprise pricing reportedly starting at $12,000 to $50,000 or more per year and no public pricing page, FullStory is out of reach for most teams.",
-      "OpenPanel focuses on product analytics rather than session replay, giving you event tracking, funnels, retention analysis, cohort breakdowns, and user profiles at a fraction of the cost. Starting at $2.50 per month — or completely free when self-hosted — OpenPanel makes product analytics accessible to teams of any size, with pricing that's transparent and predictable.",
+      "OpenPanel focuses on product analytics rather than session replay, giving you event tracking, funnels, retention analysis, cohort breakdowns, and user profiles at a fraction of the cost. Starting at $2.50 per month \u2014 or completely free when self-hosted \u2014 OpenPanel makes product analytics accessible to teams of any size, with pricing that's transparent and predictable.",
       "The open-source advantage is significant here. FullStory is entirely proprietary and cloud-only, which means you have no visibility into how your data is processed and no option to run it on your own infrastructure. OpenPanel is MIT-licensed with full self-hosting support, giving you complete data sovereignty and the ability to audit every line of code.",
-      "If session replay is your primary need, FullStory remains strong in that niche. But if you need product analytics — understanding how users flow through funnels, measuring retention, and tracking user behavior — OpenPanel delivers those capabilities without requiring an enterprise budget or sales conversation."
+      "If session replay is your primary need, FullStory remains strong in that niche. But if you need product analytics \u2014 understanding how users flow through funnels, measuring retention, and tracking user behavior \u2014 OpenPanel delivers those capabilities without requiring an enterprise budget or sales conversation."
     ]
   },
   "summary_comparison": {
@@ -386,7 +386,7 @@
       },
       {
         "title": "Product analytics focus",
-        "description": "If your primary need is product analytics—funnels, retention, cohorts—rather than visual debugging, OpenPanel provides these at a fraction of the cost.",
+        "description": "If your primary need is product analytics\u2014funnels, retention, cohorts\u2014rather than visual debugging, OpenPanel provides these at a fraction of the cost.",
         "icon": "chart"
       },
       {
@@ -427,6 +427,20 @@
     ]
   },
   "related_links": {
+    "guides": [
+      {
+        "title": "Track custom events",
+        "url": "/guides/track-custom-events"
+      },
+      {
+        "title": "React analytics setup",
+        "url": "/guides/react-analytics"
+      },
+      {
+        "title": "Website analytics setup",
+        "url": "/guides/website-analytics-setup"
+      }
+    ],
     "articles": [
       {
         "title": "9 best open source web analytics tools",

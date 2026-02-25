@@ -165,6 +165,7 @@ export interface RelatedLink {
 }
 
 export interface RelatedLinks {
+  guides?: RelatedLink[];
   articles?: RelatedLink[];
   alternatives?: RelatedLink[];
 }

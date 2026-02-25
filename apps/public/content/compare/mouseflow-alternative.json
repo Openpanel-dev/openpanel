@@ -3,12 +3,12 @@
   "page_type": "alternative",
   "seo": {
     "title": "Best Mouseflow Alternative 2026 - Open Source & Free",
-    "description": "Looking for a Mouseflow alternative? OpenPanel offers product analytics with funnels, mobile SDKs, and self-hosting — beyond just visual behavior tracking. Open source and free to start.",
+    "description": "Looking for a Mouseflow alternative? OpenPanel offers product analytics with funnels, mobile SDKs, and self-hosting \u2014 beyond just visual behavior tracking. Open source and free to start.",
     "noindex": false
   },
   "hero": {
     "heading": "Best Mouseflow Alternative",
-    "subheading": "Need product analytics beyond heatmaps? OpenPanel provides event-based analytics, mobile SDKs, and self-hosting—fully open source with transparent pricing.",
+    "subheading": "Need product analytics beyond heatmaps? OpenPanel provides event-based analytics, mobile SDKs, and self-hosting\u2014fully open source with transparent pricing.",
     "badges": [
       "Open-source",
       "Self-hostable",
@@ -423,6 +423,20 @@
     ]
   },
   "related_links": {
+    "guides": [
+      {
+        "title": "Website analytics setup",
+        "url": "/guides/website-analytics-setup"
+      },
+      {
+        "title": "Track custom events",
+        "url": "/guides/track-custom-events"
+      },
+      {
+        "title": "Ecommerce event tracking",
+        "url": "/guides/ecommerce-tracking"
+      }
+    ],
     "articles": [
       {
         "title": "9 best open source web analytics tools",

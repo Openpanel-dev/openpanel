@@ -3,12 +3,12 @@
   "page_type": "alternative",
   "seo": {
     "title": "Best Mixpanel Alternative 2026 - Open Source & Free",
-    "description": "Looking for a Mixpanel alternative? OpenPanel offers powerful product analytics at a fraction of the cost — with EU-only hosting, self-hosting, and full data ownership. Try free today.",
+    "description": "Looking for a Mixpanel alternative? OpenPanel offers powerful product analytics at a fraction of the cost \u2014 with EU-only hosting, self-hosting, and full data ownership. Try free today.",
     "noindex": false
   },
   "hero": {
     "heading": "Best Mixpanel Alternative",
-    "subheading": "OpenPanel is an open-source, privacy-first alternative to Mixpanel. Get powerful product analytics—events, funnels, retention, and user profiles—without event-based pricing that scales to thousands per month or sending your data to US servers.",
+    "subheading": "OpenPanel is an open-source, privacy-first alternative to Mixpanel. Get powerful product analytics\u2014events, funnels, retention, and user profiles\u2014without event-based pricing that scales to thousands per month or sending your data to US servers.",
     "badges": [
       "Open-source",
       "EU-only hosting",
@@ -28,8 +28,8 @@
     "title": "Why consider OpenPanel over Mixpanel?",
     "paragraphs": [
       "Mixpanel is one of the most established product analytics platforms, used by product teams worldwide to track user behavior, build funnels, and analyze retention. It's powerful, but that power comes with increasingly complex pricing, a cloud-only architecture, and cookie-based tracking that creates friction for privacy-conscious teams.",
-      "OpenPanel provides the core product analytics features most teams actually use — events, funnels, retention, cohorts, and user profiles — in a simpler package with transparent, predictable pricing. Starting at just $2.50 per month, or completely free when self-hosted, OpenPanel is dramatically more affordable than Mixpanel's pricing which can scale to thousands per month as your event volume grows.",
-      "Privacy is where the two platforms diverge most sharply. Mixpanel uses cookies by default and stores data on US servers, which means GDPR consent banners and data transfer concerns for European users. OpenPanel is cookie-free by default with EU-only hosting, making compliance straightforward. You can also self-host OpenPanel on your own infrastructure for complete data sovereignty — something Mixpanel simply doesn't offer.",
+      "OpenPanel provides the core product analytics features most teams actually use \u2014 events, funnels, retention, cohorts, and user profiles \u2014 in a simpler package with transparent, predictable pricing. Starting at just $2.50 per month, or completely free when self-hosted, OpenPanel is dramatically more affordable than Mixpanel's pricing which can scale to thousands per month as your event volume grows.",
+      "Privacy is where the two platforms diverge most sharply. Mixpanel uses cookies by default and stores data on US servers, which means GDPR consent banners and data transfer concerns for European users. OpenPanel is cookie-free by default with EU-only hosting, making compliance straightforward. You can also self-host OpenPanel on your own infrastructure for complete data sovereignty \u2014 something Mixpanel simply doesn't offer.",
       "For teams that want Mixpanel-style product analytics without the enterprise pricing, vendor lock-in, or privacy trade-offs, OpenPanel is a compelling open-source alternative that gives you full ownership of your analytics data."
     ]
   },
@@ -384,7 +384,7 @@
       },
       {
         "title": "Install the OpenPanel SDK",
-        "description": "Replace the Mixpanel SDK with OpenPanel's lightweight tracker. The API is similar—track(), identify(), and setGlobalProperties() work the same way."
+        "description": "Replace the Mixpanel SDK with OpenPanel's lightweight tracker. The API is similar\u2014track(), identify(), and setGlobalProperties() work the same way."
       },
       {
         "title": "Update your event calls",
@@ -470,6 +470,20 @@
     ]
   },
   "related_links": {
+    "guides": [
+      {
+        "title": "Migrate from Mixpanel",
+        "url": "/guides/migrate-from-mixpanel"
+      },
+      {
+        "title": "Track custom events",
+        "url": "/guides/track-custom-events"
+      },
+      {
+        "title": "Ecommerce event tracking",
+        "url": "/guides/ecommerce-tracking"
+      }
+    ],
     "articles": [
       {
         "title": "Find an alternative to Mixpanel",

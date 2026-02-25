@@ -1,6 +1,6 @@
 {
-  "name": "OpenPanel",
-  "short_name": "OP",
+  "name": "OpenPanel Analytics",
+  "short_name": "OpenPanel",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",

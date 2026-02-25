@@ -1,0 +1,178 @@
+{
+  "slug": "startups",
+  "audience": "startups",
+  "seo": {
+    "title": "Analytics for Startups — Open Source & Affordable",
+    "description": "OpenPanel gives startups product analytics without enterprise pricing. Track events, funnels, retention, and user behavior from $2.50/mo or self-host free. No cookies, GDPR compliant.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Analytics for Startups",
+    "subheading": "Get the product analytics you need to grow — without the enterprise price tag. OpenPanel gives you events, funnels, retention, and user profiles from $2.50/month. Self-host for free when budgets are tight.",
+    "badges": [
+      "From $2.50/month",
+      "Self-host free",
+      "No cookies needed",
+      "Open source"
+    ]
+  },
+  "problem": {
+    "title": "Why most analytics tools fail startups",
+    "intro": "The tools that have the features you need are priced for enterprises. The affordable ones lack the depth to drive real product decisions.",
+    "items": [
+      {
+        "title": "Mixpanel and Amplitude get expensive fast",
+        "description": "Event-based pricing sounds fine at 10K events, but startups grow. At 1M events you're looking at $300–800/month — money better spent on product development."
+      },
+      {
+        "title": "Google Analytics doesn't show you user behavior",
+        "description": "GA4 tracks pageviews and sessions, but can't tell you which users completed onboarding, where they dropped off in your funnel, or why retention is falling."
+      },
+      {
+        "title": "Privacy compliance is a headache",
+        "description": "Cookie consent banners hurt conversion rates. GDPR fines can be existential for early-stage companies. Most analytics tools make compliance your problem, not theirs."
+      },
+      {
+        "title": "Vendor lock-in limits your options",
+        "description": "Closed-source tools own your data. Migrating away means losing historical analytics. With no export path, you're stuck paying whatever they charge."
+      }
+    ]
+  },
+  "features": {
+    "title": "Everything you need to understand your users",
+    "intro": "OpenPanel combines web analytics and product analytics in one tool. No need to pay for two separate platforms.",
+    "items": [
+      {
+        "title": "Event tracking",
+        "description": "Track any user action with a simple API call. Button clicks, signups, purchases — one line of code per event."
+      },
+      {
+        "title": "Funnel analysis",
+        "description": "See where users drop off in your signup flow, onboarding, or checkout. Identify the step costing you the most conversions."
+      },
+      {
+        "title": "Retention analysis",
+        "description": "Measure how many users come back after day 1, week 1, and month 1. Spot retention problems before they tank your growth."
+      },
+      {
+        "title": "User profiles",
+        "description": "See every event a specific user triggered, their full session history, and their properties. Debug issues by walking through their experience."
+      },
+      {
+        "title": "Real-time dashboard",
+        "description": "See events as they happen. Launch a feature and immediately see adoption. Run a campaign and watch conversions in real time."
+      },
+      {
+        "title": "Web analytics",
+        "description": "Pageviews, referrers, UTM campaigns, devices, countries — the standard web analytics you expect, included out of the box."
+      },
+      {
+        "title": "Revenue tracking",
+        "description": "Send monetary values with events to track revenue per user, per campaign, or per feature. Know what's actually making money."
+      },
+      {
+        "title": "Cookieless tracking",
+        "description": "No cookies means no consent banners. Better conversion rates, cleaner data, and automatic GDPR/CCPA compliance."
+      },
+      {
+        "title": "Self-hosting option",
+        "description": "Run OpenPanel on a $20/month VPS when cloud costs matter. Full feature parity with the hosted version, no artificial limits."
+      }
+    ]
+  },
+  "benefits": {
+    "title": "Why startups choose OpenPanel",
+    "intro": "Built for teams that need answers from their data without burning through their runway.",
+    "items": [
+      {
+        "title": "Predictable pricing that grows with you",
+        "description": "Flat tiers from $2.50 to $900/month. No per-seat fees, no surprise overages. Know exactly what you'll pay as you scale."
+      },
+      {
+        "title": "All features included at every tier",
+        "description": "Funnels, retention, user profiles, real-time — everything is available from day one. No upsells, no feature gates."
+      },
+      {
+        "title": "Self-host to cut costs to near zero",
+        "description": "The self-hosted version is identical to cloud. Run it on your own infrastructure when you need to minimize spend."
+      },
+      {
+        "title": "Open source means no lock-in",
+        "description": "AGPL-3.0 licensed. Your data is yours. Fork it, extend it, or migrate away — you're never stuck."
+      },
+      {
+        "title": "Set up in under 10 minutes",
+        "description": "Add a script tag or install an SDK. Automatic page view tracking starts immediately. Ship analytics and get back to building product."
+      },
+      {
+        "title": "Privacy-first by default",
+        "description": "Cookieless tracking and EU-only hosting mean you don't need a lawyer to figure out GDPR compliance."
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions from startup teams evaluating OpenPanel.",
+    "items": [
+      {
+        "question": "How much does OpenPanel cost for a typical startup?",
+        "answer": "Most early-stage startups fall in the $2.50–$20/month range. At 100K events/month (a common level for seed-stage), you pay $20/month. Self-hosting is completely free — your only cost is the server."
+      },
+      {
+        "question": "Can I switch from Mixpanel or Amplitude?",
+        "answer": "Yes. OpenPanel uses a similar event-based tracking model. The API is nearly identical — in most cases, migrating is a find-and-replace from gtag() or mixpanel.track() to window.op('track'). We have migration guides for the most common platforms."
+      },
+      {
+        "question": "What happens when I outgrow the free self-hosted version?",
+        "answer": "Nothing — the self-hosted version has no usage limits. As your traffic grows, you may need to scale your server, but OpenPanel itself doesn't charge anything for self-hosting regardless of volume."
+      },
+      {
+        "question": "Is OpenPanel GDPR compliant?",
+        "answer": "Yes. OpenPanel uses cookieless tracking by default, which means you don't need cookie consent banners under GDPR. Cloud data is stored in the EU. Self-hosting gives you complete control over data location."
+      },
+      {
+        "question": "How does OpenPanel compare to PostHog?",
+        "answer": "PostHog offers more features (feature flags, experiments, error tracking) but is more complex and expensive at scale. OpenPanel focuses on core analytics — events, funnels, retention, and user profiles — at a fraction of the cost. If you need a Swiss Army knife, choose PostHog. If you need focused product analytics, choose OpenPanel."
+      },
+      {
+        "question": "Do I need both Google Analytics and OpenPanel?",
+        "answer": "No. OpenPanel includes web analytics (pageviews, referrers, UTM campaigns, devices, countries) alongside product analytics. For most startups, OpenPanel replaces both GA4 and a product analytics tool like Mixpanel."
+      },
+      {
+        "question": "What SDKs are available?",
+        "answer": "OpenPanel has SDKs for JavaScript, React, Next.js, Vue, Nuxt, Astro, Express, React Native, Python, Ruby, Rust, Kotlin, and Swift. There's also a script tag for zero-build setups and a REST API for anything else."
+      },
+      {
+        "question": "Can I track mobile apps?",
+        "answer": "Yes. OpenPanel has native SDKs for React Native, Kotlin (Android), and Swift (iOS). The same events, funnels, and user profiles work across web and mobile."
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "Next.js analytics setup", "url": "/guides/nextjs-analytics" },
+      { "title": "React analytics setup", "url": "/guides/react-analytics" },
+      { "title": "Migrate from Google Analytics", "url": "/guides/migrate-from-google-analytics" }
+    ],
+    "articles": [
+      { "title": "Best open source analytics tools", "url": "/articles/open-source-web-analytics" },
+      { "title": "How to create a funnel", "url": "/articles/how-to-create-a-funnel" },
+      { "title": "Cookieless analytics guide", "url": "/articles/cookieless-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel vs Mixpanel", "url": "/compare/mixpanel-alternative" },
+      { "title": "OpenPanel vs PostHog", "url": "/compare/posthog-alternative" },
+      { "title": "OpenPanel vs Amplitude", "url": "/compare/amplitude-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Try OpenPanel Free",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "View Source on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

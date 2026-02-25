@@ -1,24 +1,26 @@
 import { ArrowRightIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Section, SectionHeader } from '@/components/section';
-import type { RelatedLinks } from '@/lib/compare';
+import type { ForRelatedLinks } from '@/lib/for';
 
-interface RelatedLinksProps {
-  relatedLinks?: RelatedLinks;
+interface ForRelatedLinksProps {
+  relatedLinks: ForRelatedLinks;
 }
 
-export function RelatedLinksSection({ relatedLinks }: RelatedLinksProps) {
-  if (
-    !relatedLinks ||
-    (!relatedLinks.guides?.length && !relatedLinks.articles?.length && !relatedLinks.alternatives?.length)
-  ) {
+export function ForRelatedLinksSection({ relatedLinks }: ForRelatedLinksProps) {
+  const hasLinks =
+    relatedLinks.articles?.length ||
+    relatedLinks.guides?.length ||
+    relatedLinks.comparisons?.length;
+
+  if (!hasLinks) {
     return null;
   }
 
   return (
     <Section className="container">
       <SectionHeader
-        description="Explore more comparisons and guides to help you choose the right analytics tool."
+        description="Learn more about OpenPanel and how it can help you."
         title="Related resources"
         variant="sm"
       />
@@ -28,14 +30,14 @@ export function RelatedLinksSection({ relatedLinks }: RelatedLinksProps) {
             <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wider">
               Guides
             </h3>
-            {relatedLinks.guides.map((guide) => (
+            {relatedLinks.guides.map((link) => (
               <Link
                 className="row items-center gap-2 text-sm transition-colors hover:text-primary"
-                href={guide.url}
-                key={guide.url}
+                href={link.url}
+                key={link.url}
               >
                 <ArrowRightIcon className="size-4 shrink-0" />
-                {guide.title}
+                {link.title}
               </Link>
             ))}
           </div>
@@ -45,31 +47,31 @@ export function RelatedLinksSection({ relatedLinks }: RelatedLinksProps) {
             <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wider">
               Articles
             </h3>
-            {relatedLinks.articles.map((article) => (
+            {relatedLinks.articles.map((link) => (
               <Link
                 className="row items-center gap-2 text-sm transition-colors hover:text-primary"
-                href={article.url}
-                key={article.url}
+                href={link.url}
+                key={link.url}
               >
                 <ArrowRightIcon className="size-4 shrink-0" />
-                {article.title}
+                {link.title}
               </Link>
             ))}
           </div>
         )}
-        {relatedLinks.alternatives && relatedLinks.alternatives.length > 0 && (
+        {relatedLinks.comparisons && relatedLinks.comparisons.length > 0 && (
           <div className="col gap-4">
             <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wider">
               Comparisons
             </h3>
-            {relatedLinks.alternatives.map((alternative) => (
+            {relatedLinks.comparisons.map((link) => (
               <Link
                 className="row items-center gap-2 text-sm transition-colors hover:text-primary"
-                href={alternative.url}
-                key={alternative.url}
+                href={link.url}
+                key={link.url}
               >
                 <ArrowRightIcon className="size-4 shrink-0" />
-                {alternative.name} alternative
+                {link.title}
               </Link>
             ))}
           </div>

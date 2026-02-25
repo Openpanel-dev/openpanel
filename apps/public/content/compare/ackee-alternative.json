@@ -3,7 +3,7 @@
   "page_type": "alternative",
   "seo": {
     "title": "Best Ackee Alternative 2026 - Open Source & Free",
-    "description": "Looking for an Ackee alternative? OpenPanel offers deeper product analytics with funnels, retention, and user identification — plus cloud and self-hosting options. Open source and free to start.",
+    "description": "Looking for an Ackee alternative? OpenPanel offers deeper product analytics with funnels, retention, and user identification \u2014 plus cloud and self-hosting options. Open source and free to start.",
     "noindex": false
   },
   "hero": {
@@ -28,8 +28,8 @@
     "title": "Why consider OpenPanel over Ackee?",
     "paragraphs": [
       "Ackee is an ultra-minimal, self-hosted analytics tool that prioritizes anonymous tracking and a clean interface. Built on MongoDB, it's a solid choice for developers who want basic web metrics on their own server without any third-party data sharing. But its intentional minimalism means no user identification, no product analytics, and no cloud-hosted option.",
-      "OpenPanel provides everything Ackee offers — privacy-focused, open-source, and self-hostable — while adding the product analytics capabilities that help you actually grow your product. Funnels let you understand where users drop off, retention analysis shows whether they come back, and user identification connects anonymous visits to real accounts once users sign in.",
-      "The database architecture is a fundamental difference. Ackee uses MongoDB, which works for small sites but isn't designed for analytical queries. OpenPanel uses ClickHouse, a column-oriented database purpose-built for analytics, which means fast queries even with millions of events. And if you don't want to manage servers, OpenPanel offers a cloud option with a free tier — something Ackee doesn't provide.",
+      "OpenPanel provides everything Ackee offers \u2014 privacy-focused, open-source, and self-hostable \u2014 while adding the product analytics capabilities that help you actually grow your product. Funnels let you understand where users drop off, retention analysis shows whether they come back, and user identification connects anonymous visits to real accounts once users sign in.",
+      "The database architecture is a fundamental difference. Ackee uses MongoDB, which works for small sites but isn't designed for analytical queries. OpenPanel uses ClickHouse, a column-oriented database purpose-built for analytics, which means fast queries even with millions of events. And if you don't want to manage servers, OpenPanel offers a cloud option with a free tier \u2014 something Ackee doesn't provide.",
       "If you appreciate Ackee's self-hosted simplicity but need mobile app analytics through native SDKs, deeper insights into user behavior, or the option to use a managed cloud service, OpenPanel is the natural upgrade path."
     ]
   },
@@ -504,6 +504,20 @@
     ]
   },
   "related_links": {
+    "guides": [
+      {
+        "title": "Website analytics setup",
+        "url": "/guides/website-analytics-setup"
+      },
+      {
+        "title": "Node.js analytics setup",
+        "url": "/guides/nodejs-analytics"
+      },
+      {
+        "title": "Migrate from Google Analytics",
+        "url": "/guides/migrate-from-google-analytics"
+      }
+    ],
     "articles": [
       {
         "title": "9 best open source web analytics tools",

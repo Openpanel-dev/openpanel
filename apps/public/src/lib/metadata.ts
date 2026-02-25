@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
-import { OPENPANEL_DESCRIPTION, OPENPANEL_NAME } from './openpanel-brand';
+import {
+  OPENPANEL_DESCRIPTION,
+  OPENPANEL_SITE_NAME,
+} from './openpanel-brand';
 import { url as baseUrl } from './layout.shared';
 
-const siteName = OPENPANEL_NAME;
+const siteName = OPENPANEL_SITE_NAME;
 const defaultDescription = OPENPANEL_DESCRIPTION;
 const defaultImage = baseUrl('/ogimage.png');
 

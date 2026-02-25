@@ -3,12 +3,12 @@
   "page_type": "alternative",
   "seo": {
     "title": "Best Smartlook Alternative 2026 - Open Source & Free",
-    "description": "Looking for a Smartlook alternative? OpenPanel offers product analytics with self-hosting, transparent pricing, and mobile SDKs — without session replay costs. Open source and free to start.",
+    "description": "Looking for a Smartlook alternative? OpenPanel offers product analytics with self-hosting, transparent pricing, and mobile SDKs \u2014 without session replay costs. Open source and free to start.",
     "noindex": false
   },
   "hero": {
     "heading": "Best Smartlook Alternative",
-    "subheading": "Need product analytics without requiring session replay? OpenPanel is an open-source alternative to Smartlook that focuses on event-based analytics, funnels, and retention—with self-hosting and transparent pricing.",
+    "subheading": "Need product analytics without requiring session replay? OpenPanel is an open-source alternative to Smartlook that focuses on event-based analytics, funnels, and retention\u2014with self-hosting and transparent pricing.",
     "badges": [
       "Open-source",
       "Self-hostable",
@@ -27,8 +27,8 @@
   "overview": {
     "title": "Why consider OpenPanel over Smartlook?",
     "paragraphs": [
-      "Smartlook combines product analytics with visual insights — session recordings, heatmaps, and event tracking in one platform. Since its acquisition by Cisco in 2023, it has positioned itself as an enterprise-ready analytics and observation tool. But enterprise ownership often means enterprise pricing, proprietary lock-in, and cloud-only infrastructure with no option for self-hosting.",
-      "OpenPanel focuses purely on product analytics without the session replay overhead, delivering event tracking, funnels, retention analysis, and cohort breakdowns with a cleaner, more focused experience. The result is a lighter tool that does analytics well rather than trying to be everything — and at a dramatically lower cost with transparent, event-based pricing starting at $2.50 per month.",
+      "Smartlook combines product analytics with visual insights \u2014 session recordings, heatmaps, and event tracking in one platform. Since its acquisition by Cisco in 2023, it has positioned itself as an enterprise-ready analytics and observation tool. But enterprise ownership often means enterprise pricing, proprietary lock-in, and cloud-only infrastructure with no option for self-hosting.",
+      "OpenPanel focuses purely on product analytics without the session replay overhead, delivering event tracking, funnels, retention analysis, and cohort breakdowns with a cleaner, more focused experience. The result is a lighter tool that does analytics well rather than trying to be everything \u2014 and at a dramatically lower cost with transparent, event-based pricing starting at $2.50 per month.",
       "Being open source under the MIT license gives OpenPanel advantages that Smartlook's proprietary, Cisco-owned platform can't match. You can self-host on your own infrastructure for complete data sovereignty, audit the source code for security compliance, and avoid the vendor lock-in risk that comes with acquisition-prone platforms. Self-hosting also means unlimited data retention, compared to Smartlook's plan-based limits.",
       "If you need session replay specifically, Smartlook has the edge in that area. But for teams that want focused, cost-effective product analytics with open-source transparency and the freedom to self-host, OpenPanel delivers more value without the enterprise complexity."
     ]
@@ -407,6 +407,20 @@
     ]
   },
   "related_links": {
+    "guides": [
+      {
+        "title": "Track custom events",
+        "url": "/guides/track-custom-events"
+      },
+      {
+        "title": "React Native analytics setup",
+        "url": "/guides/react-native-analytics"
+      },
+      {
+        "title": "Swift/iOS analytics setup",
+        "url": "/guides/swift-analytics"
+      }
+    ],
     "articles": [
       {
         "title": "9 best open source web analytics tools",

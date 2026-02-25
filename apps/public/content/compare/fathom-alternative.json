@@ -27,9 +27,9 @@
   "overview": {
     "title": "Why consider OpenPanel over Fathom Analytics?",
     "paragraphs": [
-      "Fathom Analytics is a well-respected privacy-first analytics tool known for its clean interface and cookie-free tracking. It's a solid choice for websites that need simple traffic metrics without the complexity of Google Analytics. But Fathom is intentionally limited to web analytics — there's no user identification, no funnels, no retention analysis, and no self-hosting option.",
+      "Fathom Analytics is a well-respected privacy-first analytics tool known for its clean interface and cookie-free tracking. It's a solid choice for websites that need simple traffic metrics without the complexity of Google Analytics. But Fathom is intentionally limited to web analytics \u2014 there's no user identification, no funnels, no retention analysis, and no self-hosting option.",
       "OpenPanel shares Fathom's commitment to privacy and simplicity but extends far beyond basic web metrics. You get full product analytics capabilities including funnel analysis, retention tracking, cohort breakdowns, and individual user profiles. This means you can track not just how many visitors you get, but how they convert, where they drop off, and whether they come back.",
-      "Pricing is another significant difference. Fathom has no free tier — plans start at $15 per month with no way to try the product beyond a brief trial. OpenPanel offers 10,000 free events per month on its cloud tier, and unlimited events when self-hosted. Self-hosting is available as a simple Docker deployment, giving teams full data ownership that Fathom's cloud-only model can't provide.",
+      "Pricing is another significant difference. Fathom has no free tier \u2014 plans start at $15 per month with no way to try the product beyond a brief trial. OpenPanel offers 10,000 free events per month on its cloud tier, and unlimited events when self-hosted. Self-hosting is available as a simple Docker deployment, giving teams full data ownership that Fathom's cloud-only model can't provide.",
       "If you love Fathom's privacy-first approach but need deeper analytics to understand user behavior and grow your product, OpenPanel gives you that depth while keeping things simple and affordable."
     ]
   },
@@ -468,6 +468,20 @@
     ]
   },
   "related_links": {
+    "guides": [
+      {
+        "title": "Website analytics setup",
+        "url": "/guides/website-analytics-setup"
+      },
+      {
+        "title": "Migrate from Google Analytics",
+        "url": "/guides/migrate-from-google-analytics"
+      },
+      {
+        "title": "Astro analytics setup",
+        "url": "/guides/astro-analytics"
+      }
+    ],
     "articles": [
       {
         "title": "9 best open source web analytics tools",
