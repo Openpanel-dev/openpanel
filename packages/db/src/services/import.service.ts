@@ -473,7 +473,7 @@ export async function moveImportsToProduction(
   console.log('[Phase 4] WHERE clause:', whereClause);
 
   const migrationQuery = `
-    INSERT INTO events_tmp (
+    INSERT INTO events (
       id,
       name,
       sdk_name,
