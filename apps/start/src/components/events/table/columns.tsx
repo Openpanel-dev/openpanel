@@ -89,7 +89,7 @@ export function useColumns() {
                     projectId: row.original.projectId,
                   });
                 }}
-                className="font-medium"
+                className="font-medium hover:underline"
               >
                 {renderName()}
               </button>
@@ -144,9 +144,20 @@ export function useColumns() {
     {
       accessorKey: 'sessionId',
       header: 'Session ID',
-      size: 320,
+      size: 100,
       meta: {
         hidden: true,
+      },
+      cell({ row }) {
+        const { sessionId } = row.original;
+        return (
+          <ProjectLink
+            href={`/sessions/${encodeURIComponent(sessionId)}`}
+            className="whitespace-nowrap font-medium hover:underline"
+          >
+            {sessionId.slice(0,6)}
+          </ProjectLink>
+        );
       },
     },
     {

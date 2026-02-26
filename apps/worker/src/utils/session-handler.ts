@@ -39,17 +39,20 @@ export async function getSessionEnd({
   projectId,
   currentDeviceId,
   previousDeviceId,
+  deviceId,
   profileId,
 }: {
   projectId: string;
   currentDeviceId: string;
   previousDeviceId: string;
+  deviceId: string;
   profileId: string;
 }) {
   const sessionEnd = await getSessionEndJob({
     projectId,
     currentDeviceId,
     previousDeviceId,
+    deviceId,
   });
 
   if (sessionEnd) {
@@ -81,6 +84,7 @@ export async function getSessionEndJob(args: {
   projectId: string;
   currentDeviceId: string;
   previousDeviceId: string;
+  deviceId: string;
   retryCount?: number;
 }): Promise<{
   deviceId: string;
@@ -130,20 +134,31 @@ export async function getSessionEndJob(args: {
     return null;
   }
 
-  // Check current device job
-  const currentJob = await sessionsQueue.getJob(
-    getSessionEndJobId(args.projectId, args.currentDeviceId),
-  );
-  if (currentJob) {
-    return await handleJobStates(currentJob, args.currentDeviceId);
+  // TODO: Remove this when migrated to deviceId
+  if (args.currentDeviceId && args.previousDeviceId) {
+    // Check current device job
+    const currentJob = await sessionsQueue.getJob(
+      getSessionEndJobId(args.projectId, args.currentDeviceId),
+    );
+    if (currentJob) {
+      return await handleJobStates(currentJob, args.currentDeviceId);
+    }
+
+    // Check previous device job
+    const previousJob = await sessionsQueue.getJob(
+      getSessionEndJobId(args.projectId, args.previousDeviceId),
+    );
+    if (previousJob) {
+      return await handleJobStates(previousJob, args.previousDeviceId);
+    }
   }
 
-  // Check previous device job
-  const previousJob = await sessionsQueue.getJob(
-    getSessionEndJobId(args.projectId, args.previousDeviceId),
+  // Check current device job
+  const currentJob = await sessionsQueue.getJob(
+    getSessionEndJobId(args.projectId, args.deviceId),
   );
-  if (previousJob) {
-    return await handleJobStates(previousJob, args.previousDeviceId);
+  if (currentJob) {
+    return await handleJobStates(currentJob, args.deviceId);
   }
 
   // Create session

@@ -19,12 +19,19 @@ async function migrate() {
   const migration = args.filter((arg) => !arg.startsWith('--'))[0];
 
   const migrationsDir = path.join(__dirname, '..', 'code-migrations');
-  const migrations = fs.readdirSync(migrationsDir).filter((file) => {
-    const version = file.split('-')[0];
-    return (
-      !Number.isNaN(Number.parseInt(version ?? '')) && file.endsWith('.ts')
-    );
-  });
+  const migrations = fs
+    .readdirSync(migrationsDir)
+    .filter((file) => {
+      const version = file.split('-')[0];
+      return (
+        !Number.isNaN(Number.parseInt(version ?? '')) && file.endsWith('.ts')
+      );
+    })
+    .sort((a, b) => {
+      const aVersion = Number.parseInt(a.split('-')[0]!);
+      const bVersion = Number.parseInt(b.split('-')[0]!);
+      return aVersion - bVersion;
+    });
 
   const finishedMigrations = await db.codeMigration.findMany();
 

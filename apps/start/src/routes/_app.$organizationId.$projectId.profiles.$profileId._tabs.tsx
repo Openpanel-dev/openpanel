@@ -43,6 +43,7 @@ function Component() {
       label: 'Overview',
     },
     { id: 'events', label: 'Events' },
+    { id: 'sessions', label: 'Sessions' },
   ]);
 
   const handleTabChange = (tabId: string) => {

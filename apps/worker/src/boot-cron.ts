@@ -64,6 +64,11 @@ export async function bootCron() {
       pattern: 1000 * 30,
     },
     {
+      name: 'flush',
+      type: 'flushReplay',
+      pattern: 1000 * 10,
+    },
+    {
       name: 'insightsDaily',
       type: 'insightsDaily',
       pattern: '0 2 * * *',

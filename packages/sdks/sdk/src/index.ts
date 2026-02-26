@@ -37,6 +37,8 @@ export type OpenPanelOptions = {
 export class OpenPanel {
   api: Api;
   profileId?: string;
+  deviceId?: string;
+  sessionId?: string;
   global?: Record<string, unknown>;
   queue: TrackHandlerPayload[] = [];
 
@@ -69,6 +71,16 @@ export class OpenPanel {
     this.flush();
   }
 
+  private shouldQueue(payload: TrackHandlerPayload): boolean {
+    if (payload.type === 'replay' && !this.sessionId) {
+      return true;
+    }
+    if (this.options.waitForProfile && !this.profileId) {
+      return true;
+    }
+    return false;
+  }
+
   async send(payload: TrackHandlerPayload) {
     if (this.options.disabled) {
       return Promise.resolve();
@@ -78,11 +90,26 @@ export class OpenPanel {
       return Promise.resolve();
     }
 
-    if (this.options.waitForProfile && !this.profileId) {
+    if (this.shouldQueue(payload)) {
       this.queue.push(payload);
       return Promise.resolve();
     }
-    return this.api.fetch('/track', payload);
+
+    // Disable keepalive for replay since it has a hard body limit and breaks the request
+    const result = await this.api.fetch<
+      TrackHandlerPayload,
+      { deviceId: string; sessionId: string }
+    >('/track', payload, { keepalive: payload.type !== 'replay' });
+    this.deviceId = result?.deviceId;
+    const hadSession = !!this.sessionId;
+    this.sessionId = result?.sessionId;
+
+    // Flush queued items (e.g. replay chunks) when sessionId first arrives
+    if (!hadSession && this.sessionId) {
+      this.flush();
+    }
+
+    return result;
   }
 
   setGlobalProperties(properties: Record<string, unknown>) {
@@ -149,7 +176,7 @@ export class OpenPanel {
 
   async revenue(
     amount: number,
-    properties?: TrackProperties & { deviceId?: string },
+    properties?: TrackProperties & { deviceId?: string }
   ) {
     const deviceId = properties?.deviceId;
     delete properties?.deviceId;
@@ -160,33 +187,47 @@ export class OpenPanel {
     });
   }
 
-  async fetchDeviceId(): Promise<string> {
-    const result = await this.api.fetch<undefined, { deviceId: string }>(
-      '/track/device-id',
-      undefined,
-      { method: 'GET', keepalive: false },
-    );
-    return result?.deviceId ?? '';
+  getDeviceId(): string {
+    return this.deviceId ?? '';
+  }
+
+  getSessionId(): string {
+    return this.sessionId ?? '';
+  }
+
+  /**
+   * @deprecated Use `getDeviceId()` instead. This async method is no longer needed.
+   */
+  fetchDeviceId(): Promise<string> {
+    return Promise.resolve(this.deviceId ?? '');
   }
 
   clear() {
     this.profileId = undefined;
-    // should we force a session end here?
+    this.deviceId = undefined;
+    this.sessionId = undefined;
   }
 
   flush() {
-    this.queue.forEach((item) => {
-      this.send({
-        ...item,
-        // Not sure why ts-expect-error is needed here
-        // @ts-expect-error
-        payload: {
-          ...item.payload,
-          profileId: item.payload.profileId ?? this.profileId,
-        },
-      });
-    });
-    this.queue = [];
+    const remaining: TrackHandlerPayload[] = [];
+    for (const item of this.queue) {
+      if (this.shouldQueue(item)) {
+        remaining.push(item);
+        continue;
+      }
+      const payload =
+        item.type === 'replay'
+          ? item.payload
+          : {
+              ...item.payload,
+              profileId:
+                'profileId' in item.payload
+                  ? (item.payload.profileId ?? this.profileId)
+                  : this.profileId,
+            };
+      this.send({ ...item, payload } as TrackHandlerPayload);
+    }
+    this.queue = remaining;
   }
 
   log(...args: any[]) {

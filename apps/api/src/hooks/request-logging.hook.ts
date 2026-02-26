@@ -1,4 +1,3 @@
-import { DEFAULT_IP_HEADER_ORDER } from '@openpanel/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, pick } from 'ramda';
 
@@ -6,7 +5,7 @@ const ignoreLog = ['/healthcheck', '/healthz', '/metrics', '/misc'];
 const ignoreMethods = ['OPTIONS'];
 
 const getTrpcInput = (
-  request: FastifyRequest,
+  request: FastifyRequest
 ): Record<string, unknown> | undefined => {
   const input = path<any>(['query', 'input'], request);
   try {
@@ -18,7 +17,7 @@ const getTrpcInput = (
 
 export async function requestLoggingHook(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   if (ignoreMethods.includes(request.method)) {
     return;
@@ -40,9 +39,8 @@ export async function requestLoggingHook(
       elapsed: reply.elapsedTime,
       headers: pick(
         ['openpanel-client-id', 'openpanel-sdk-name', 'openpanel-sdk-version'],
-        request.headers,
+        request.headers
       ),
-      body: request.body,
     });
   }
 }

@@ -15,7 +15,6 @@ import {
 import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
 import * as R from 'ramda';
-import { v4 as uuid } from 'uuid';
 import { logger as baseLogger } from '@/utils/logger';
 import { createSessionEndJob, getSessionEnd } from '@/utils/session-handler';
 
@@ -53,10 +52,9 @@ async function createEventAndNotify(
   logger.info('Creating event', { event: payload });
   const [event] = await Promise.all([
     createEvent(payload),
-    checkNotificationRulesForEvent(payload).catch(() => {}),
+    checkNotificationRulesForEvent(payload).catch(() => null),
   ]);
 
-  console.log('Event created:', event);
   return event;
 }
 
@@ -87,6 +85,8 @@ export async function incomingEvent(
     projectId,
     currentDeviceId,
     previousDeviceId,
+    deviceId,
+    sessionId,
     uaInfo: _uaInfo,
   } = jobPayload;
   const properties = body.properties ?? {};
@@ -157,7 +157,6 @@ export async function incomingEvent(
         : undefined,
   } as const;
 
-  console.log('HERE?');
   // if timestamp is from the past we dont want to create a new session
   if (uaInfo.isServer || isTimestampFromThePast) {
     const session = profileId
@@ -166,8 +165,6 @@ export async function incomingEvent(
           projectId,
         })
       : null;
-
-    console.log('Server?');
 
     const payload = {
       ...baseEvent,
@@ -194,31 +191,31 @@ export async function incomingEvent(
 
     return createEventAndNotify(payload as IServiceEvent, logger, projectId);
   }
-  console.log('not?');
+
   const sessionEnd = await getSessionEnd({
     projectId,
     currentDeviceId,
     previousDeviceId,
+    deviceId,
     profileId,
   });
-  console.log('Server?');
-  const lastScreenView = sessionEnd
+  const activeSession = sessionEnd
     ? await sessionBuffer.getExistingSession({
         sessionId: sessionEnd.sessionId,
       })
     : null;
 
   const payload: IServiceCreateEventPayload = merge(baseEvent, {
-    deviceId: sessionEnd?.deviceId ?? currentDeviceId,
-    sessionId: sessionEnd?.sessionId ?? uuid(),
+    deviceId: sessionEnd?.deviceId ?? deviceId,
+    sessionId: sessionEnd?.sessionId ?? sessionId,
     referrer: sessionEnd?.referrer ?? baseEvent.referrer,
     referrerName: sessionEnd?.referrerName ?? baseEvent.referrerName,
     referrerType: sessionEnd?.referrerType ?? baseEvent.referrerType,
     // if the path is not set, use the last screen view path
-    path: baseEvent.path || lastScreenView?.exit_path || '',
-    origin: baseEvent.origin || lastScreenView?.exit_origin || '',
+    path: baseEvent.path || activeSession?.exit_path || '',
+    origin: baseEvent.origin || activeSession?.exit_origin || '',
   } as Partial<IServiceCreateEventPayload>) as IServiceCreateEventPayload;
-  console.log('SessionEnd?', sessionEnd);
+
   if (!sessionEnd) {
     logger.info('Creating session start event', { event: payload });
     await createEventAndNotify(

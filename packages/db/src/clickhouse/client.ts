@@ -59,6 +59,7 @@ export const TABLE_NAMES = {
   cohort_events_mv: 'cohort_events_mv',
   sessions: 'sessions',
   events_imports: 'events_imports',
+  session_replay_chunks: 'session_replay_chunks',
 };
 
 /**

@@ -63,6 +63,15 @@ export const zAliasPayload = z.object({
   alias: z.string().min(1),
 });
 
+export const zReplayPayload = z.object({
+  chunk_index: z.number().int().min(0).max(65_535),
+  events_count: z.number().int().min(1),
+  is_full_snapshot: z.boolean(),
+  started_at: z.string().datetime(),
+  ended_at: z.string().datetime(),
+  payload: z.string().max(1_048_576 * 2), // 2MB max
+});
+
 export const zTrackHandlerPayload = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('track'),
@@ -84,6 +93,10 @@ export const zTrackHandlerPayload = z.discriminatedUnion('type', [
     type: z.literal('alias'),
     payload: zAliasPayload,
   }),
+  z.object({
+    type: z.literal('replay'),
+    payload: zReplayPayload,
+  }),
 ]);
 
 export type ITrackPayload = z.infer<typeof zTrackPayload>;
@@ -91,6 +104,7 @@ export type IIdentifyPayload = z.infer<typeof zIdentifyPayload>;
 export type IIncrementPayload = z.infer<typeof zIncrementPayload>;
 export type IDecrementPayload = z.infer<typeof zDecrementPayload>;
 export type IAliasPayload = z.infer<typeof zAliasPayload>;
+export type IReplayPayload = z.infer<typeof zReplayPayload>;
 export type ITrackHandlerPayload = z.infer<typeof zTrackHandlerPayload>;
 
 // Deprecated types for beta version of the SDKs

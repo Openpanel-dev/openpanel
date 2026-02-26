@@ -465,6 +465,9 @@ importers:
       '@openpanel/payments':
         specifier: workspace:*
         version: link:../../packages/payments
+      '@openpanel/sdk':
+        specifier: ^1.0.8
+        version: 1.0.8
       '@openpanel/sdk-info':
         specifier: workspace:^
         version: link:../../packages/sdks/_info
@@ -472,8 +475,8 @@ importers:
         specifier: workspace:^
         version: link:../../packages/validation
       '@openpanel/web':
-        specifier: ^1.0.1
-        version: 1.0.1
+        specifier: ^1.0.12
+        version: 1.0.12
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -774,6 +777,9 @@ importers:
       remark-rehype:
         specifier: ^11.1.2
         version: 11.1.2
+      rrweb-player:
+        specifier: 2.0.0-alpha.20
+        version: 2.0.0-alpha.20
       short-unique-id:
         specifier: ^5.0.3
         version: 5.0.3
@@ -1478,7 +1484,7 @@ importers:
   packages/sdks/astro:
     dependencies:
       '@openpanel/web':
-        specifier: workspace:1.0.7-local
+        specifier: workspace:1.0.12-local
         version: link:../web
     devDependencies:
       astro:
@@ -1491,7 +1497,7 @@ importers:
         specifier: workspace:*
         version: link:../../common
       '@openpanel/sdk':
-        specifier: workspace:1.0.4-local
+        specifier: workspace:1.0.8-local
         version: link:../sdk
       express:
         specifier: ^4.17.0 || ^5.0.0
@@ -1516,7 +1522,7 @@ importers:
   packages/sdks/nextjs:
     dependencies:
       '@openpanel/web':
-        specifier: workspace:1.0.7-local
+        specifier: workspace:1.0.12-local
         version: link:../web
       next:
         specifier: ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
@@ -1544,7 +1550,7 @@ importers:
   packages/sdks/nuxt:
     dependencies:
       '@openpanel/web':
-        specifier: workspace:1.0.7-local
+        specifier: workspace:1.0.12-local
         version: link:../web
       h3:
         specifier: ^1.0.0
@@ -1581,7 +1587,7 @@ importers:
   packages/sdks/react-native:
     dependencies:
       '@openpanel/sdk':
-        specifier: workspace:1.0.4-local
+        specifier: workspace:1.0.8-local
         version: link:../sdk
       expo-application:
         specifier: 5 - 7
@@ -1627,8 +1633,14 @@ importers:
   packages/sdks/web:
     dependencies:
       '@openpanel/sdk':
-        specifier: workspace:1.0.4-local
+        specifier: workspace:1.0.8-local
         version: link:../sdk
+      '@rrweb/types':
+        specifier: 2.0.0-alpha.20
+        version: 2.0.0-alpha.20
+      rrweb:
+        specifier: 2.0.0-alpha.20
+        version: 2.0.0-alpha.20
     devDependencies:
       '@openpanel/tsconfig':
         specifier: workspace:*
@@ -5864,14 +5876,14 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  '@openpanel/sdk@1.0.0':
-    resolution: {integrity: sha512-FNmmfjdXoC/VHEjA+WkrQ4lyM5lxEmV7xDd57uj4E+lIS0sU3DLG2mV/dpS8AscnZbUvuMn3kPhiLCqYzuv/gg==}
-
   '@openpanel/sdk@1.0.2':
     resolution: {integrity: sha512-WvVWCBcJvJhM5MYKO5Hxjo4G/E0tnK5XK2UC+hKDHtoF+iKvtUWa5bz18pFAPQprq0u/Ev2YqirPsrMQJy5g2g==}
 
-  '@openpanel/web@1.0.1':
-    resolution: {integrity: sha512-cVZ7Kr9SicczJ/RDIfEtZs8+1iGDzwkabVA/j3NqSl8VSucsC8m1+LVbjmCDzCJNnK4yVn6tEcc9PJRi2rtllw==}
+  '@openpanel/sdk@1.0.8':
+    resolution: {integrity: sha512-mr7HOZ/vqrJaATDFxcv3yyLjXcUXgsfboa0o0GlhiAYUh2B1Q0kgsm5qkfbtZhTqYP4BmNCWRkfRlpFp4pfpPQ==}
+
+  '@openpanel/web@1.0.12':
+    resolution: {integrity: sha512-39oL19HYrw4qAzlxbtFP/rfLOaciWJXCxPwL6bk+u4SUcrrOrwmjSg0CwQYyrd2p3wp1QnsCiyv2n0EtEpjQMA==}
 
   '@openpanel/web@1.0.5':
     resolution: {integrity: sha512-n/A9fKiHWcDTH2N6N8MM214ET7aoNJjgpLux0GRW+CD0KDEwI8UosQvvz3UOGHZ3jWqMMsUNdU2B7eYk2W87mg==}
@@ -8705,6 +8717,18 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@rrweb/packer@2.0.0-alpha.20':
+    resolution: {integrity: sha512-GsByg2olGZ2n3To6keFG604QAboipuXZvjYxO2wITSwARBf/sZdy6cbUEjF0RS+QnuTM5GaVXeQapNMLmpKbrA==}
+
+  '@rrweb/replay@2.0.0-alpha.20':
+    resolution: {integrity: sha512-VodsLb+C2bYNNVbb0U14tKLa9ctzUxYIlt9VnxPATWvfyXHLTku8BhRWptuW/iIjVjmG49LBoR1ilxw/HMiJ1w==}
+
+  '@rrweb/types@2.0.0-alpha.20':
+    resolution: {integrity: sha512-RbnDgKxA/odwB1R4gF7eUUj+rdSrq6ROQJsnMw7MIsGzlbSYvJeZN8YY4XqU0G6sKJvXI6bSzk7w/G94jNwzhw==}
+
+  '@rrweb/utils@2.0.0-alpha.20':
+    resolution: {integrity: sha512-MTQOmhPRe39C0fYaCnnVYOufQsyGzwNXpUStKiyFSfGLUJrzuwhbRoUAKR5w6W2j5XuA0bIz3ZDIBztkquOhLw==}
+
   '@segment/loosely-validate-event@2.0.0':
     resolution: {integrity: sha512-ZMCSfztDBqwotkl848ODgVcAmN4OItEWDCkshcKz0/W6gGSQayuuCtWV/MlodFivAZD793d6UgANd6wCXUfrIw==}
 
@@ -9656,6 +9680,9 @@ packages:
   '@tsconfig/node18@1.0.3':
     resolution: {integrity: sha512-RbwvSJQsuN9TB04AQbGULYfOGE/RnSFk/FLQ5b0NmDf5Kx2q/lABZbHQPKCO1vZ6Fiwkplu+yb9pGdLy1iGseQ==}
 
+  '@tsconfig/svelte@1.0.13':
+    resolution: {integrity: sha512-5lYJP45Xllo4yE/RUBccBT32eBlRDbqN8r1/MIvQbKxW3aFqaYPCNgm8D5V20X4ShHcwvYWNlKg3liDh1MlBoA==}
+
   '@turf/boolean-point-in-polygon@6.5.0':
     resolution: {integrity: sha512-DtSuVFB26SI+hj0SjrvXowGTUCHlgevPAIsukssW6BG5MlNSBQAo70wpICBNJL6RjukXg8d2eXaAWuD/CqL00A==}
 
@@ -9721,6 +9748,9 @@ packages:
 
   '@types/cors@2.8.17':
     resolution: {integrity: sha512-8CGDvrBj1zgo2qE+oS3pOCyYNqCPryMWY2bGfwA0dcfopWGgxs+78df0Rs3rc9THP4JkOhLsAa+15VdpAqkcUA==}
+
+  '@types/css-font-loading-module@0.0.7':
+    resolution: {integrity: sha512-nl09VhutdjINdWyXxHWN/w9zlNCfr60JUqJbd24YXUuCwgeL0TpFSdElCwb6cxfB6ybE19Gjj4g0jsgkXxKv1Q==}
 
   '@types/d3-array@3.2.1':
     resolution: {integrity: sha512-Y2Jn2idRrLzUfAKV2LyRImR+y4oa2AntrgID95SHJxuMUrkNXmanDSed71sRNZysveJVt1hLLemQZIady0FpEg==}
@@ -10391,6 +10421,9 @@ packages:
     resolution: {integrity: sha512-2WALfTl4xo2SkGCYRt6rDTFfk9R1czmBvUQy12gK2KuRKIpWEhcbbzy8EZXtz/jkRqHX8bFEc6FC1HjX4TUWYw==}
     engines: {node: '>=10.0.0'}
 
+  '@xstate/fsm@1.6.5':
+    resolution: {integrity: sha512-b5o1I6aLNeYlU/3CPlj/Z91ybk1gUsKT+5NAJI+2W4UjvS5KLG28K9v5UvNoFVjHV8PajVZ00RH3vnjyQO7ZAw==}
+
   abbrev@2.0.0:
     resolution: {integrity: sha512-6/mh1E2u2YgEsCHdY0Yx5oW+61gZU+1vXaoiHHrpKeuRNNgFvS+/jrwHiQhB5apAf5oB7UB7E19ol2R2LKH8hQ==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
@@ -10781,6 +10814,10 @@ packages:
 
   base-64@1.0.0:
     resolution: {integrity: sha512-kwDPIFCGx0NZHog36dj+tHiwP4QMzsZ3AgMViUBKI0+V5n4U0ufTCUMhnQ04diaRI8EX/QcPfql7zlhZ7j4zgg==}
+
+  base64-arraybuffer@1.0.2:
+    resolution: {integrity: sha512-I3yl4r9QB5ZRY3XuJVEPfc2XhZO6YweFPI+UovAzn+8/hb3oJ6lnysaFcjVpkCPfVWFUDvoZ8kmVDP7WyRtYtQ==}
+    engines: {node: '>= 0.6.0'}
 
   base64-js@0.0.2:
     resolution: {integrity: sha512-Pj9L87dCdGcKlSqPVUjD+q96pbIx1zQQLb2CUiWURfjiBELv84YX+0nGnKmyT/9KkC7PQk7UN1w+Al8bBozaxQ==}
@@ -12678,6 +12715,9 @@ packages:
 
   fetchdts@0.1.7:
     resolution: {integrity: sha512-YoZjBdafyLIop9lSxXVI33oLD5kN31q4Td+CasofLLYeLXRFeOsuOw0Uo+XNRi9PZlbfdlN2GmRtm4tCEQ9/KA==}
+
+  fflate@0.4.8:
+    resolution: {integrity: sha512-FJqqoDBR00Mdj9ppamLa/Y7vxm+PRmNWA67N846RvsoYVMKB4q3y/de5PA7gUmRMYK/8CMz2GDZQmCRN1wBcWA==}
 
   fifo@2.4.1:
     resolution: {integrity: sha512-XTbUCNmo54Jav0hcL6VxDuY4x1eCQH61HEF80C2Oww283pfjQ2C8avZeyq4v43sW2S2403kmzssE9j4lbF66Sg==}
@@ -16943,8 +16983,20 @@ packages:
     resolution: {integrity: sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==}
     engines: {node: '>= 18'}
 
+  rrdom@2.0.0-alpha.20:
+    resolution: {integrity: sha512-hoqjS4662LtBp82qEz9GrqU36UpEmCvTA2Hns3qdF7cklLFFy3G+0Th8hLytJENleHHWxsB5nWJ3eXz5mSRxdQ==}
+
   rrweb-cssom@0.8.0:
     resolution: {integrity: sha512-guoltQEx+9aMf2gDZ0s62EcV8lsXR+0w8915TC3ITdn2YueuNjdAYh/levpU9nFaoChh9RUS5ZdQMrKfVEN9tw==}
+
+  rrweb-player@2.0.0-alpha.20:
+    resolution: {integrity: sha512-3ZCv1ksUxuIOn3Vn/eWrwWs9Xy+4KVjISD+q26ZLfisZ3hZ0CPgYG3iC22pmmycIeMS2svOfvf7gPh7jExwpUA==}
+
+  rrweb-snapshot@2.0.0-alpha.20:
+    resolution: {integrity: sha512-YTNf9YVeaGRo/jxY3FKBge2c/Ojd/KTHmuWloUSB+oyPXuY73ZeeG873qMMmhIpqEn7hn7aBF1eWEQmP7wjf8A==}
+
+  rrweb@2.0.0-alpha.20:
+    resolution: {integrity: sha512-CZKDlm+j1VA50Ko3gnMbpvguCAleljsTNXPnVk9aeNP8o6T6kolRbISHyDZpqZ4G+bdDLlQOignPP3jEsXs8Gg==}
 
   run-applescript@7.1.0:
     resolution: {integrity: sha512-DPe5pVFaAsinSaV6QjQ6gdiedWDcRCbUuiQfQa2wmWV7+xC9bGulGI8+TdRmoFkAPaBXk8CrAbnlY2ISniJ47Q==}
@@ -24961,13 +25013,15 @@ snapshots:
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
 
-  '@openpanel/sdk@1.0.0': {}
-
   '@openpanel/sdk@1.0.2': {}
 
-  '@openpanel/web@1.0.1':
+  '@openpanel/sdk@1.0.8': {}
+
+  '@openpanel/web@1.0.12':
     dependencies:
-      '@openpanel/sdk': 1.0.0
+      '@openpanel/sdk': 1.0.8
+      '@rrweb/types': 2.0.0-alpha.20
+      rrweb: 2.0.0-alpha.20
 
   '@openpanel/web@1.0.5':
     dependencies:
@@ -28030,6 +28084,20 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.52.5':
     optional: true
 
+  '@rrweb/packer@2.0.0-alpha.20':
+    dependencies:
+      '@rrweb/types': 2.0.0-alpha.20
+      fflate: 0.4.8
+
+  '@rrweb/replay@2.0.0-alpha.20':
+    dependencies:
+      '@rrweb/types': 2.0.0-alpha.20
+      rrweb: 2.0.0-alpha.20
+
+  '@rrweb/types@2.0.0-alpha.20': {}
+
+  '@rrweb/utils@2.0.0-alpha.20': {}
+
   '@segment/loosely-validate-event@2.0.0':
     dependencies:
       component-type: 1.2.2
@@ -29384,6 +29452,8 @@ snapshots:
 
   '@tsconfig/node18@1.0.3': {}
 
+  '@tsconfig/svelte@1.0.13': {}
+
   '@turf/boolean-point-in-polygon@6.5.0':
     dependencies:
       '@turf/helpers': 6.5.0
@@ -29473,6 +29543,8 @@ snapshots:
   '@types/cors@2.8.17':
     dependencies:
       '@types/node': 20.19.24
+
+  '@types/css-font-loading-module@0.0.7': {}
 
   '@types/d3-array@3.2.1': {}
 
@@ -30364,6 +30436,8 @@ snapshots:
 
   '@xmldom/xmldom@0.8.10': {}
 
+  '@xstate/fsm@1.6.5': {}
+
   abbrev@2.0.0: {}
 
   abbrev@3.0.1: {}
@@ -30908,6 +30982,8 @@ snapshots:
   bare-events@2.8.0: {}
 
   base-64@1.0.0: {}
+
+  base64-arraybuffer@1.0.2: {}
 
   base64-js@0.0.2: {}
 
@@ -33465,6 +33541,8 @@ snapshots:
   fetch-retry@4.1.1: {}
 
   fetchdts@0.1.7: {}
+
+  fflate@0.4.8: {}
 
   fifo@2.4.1: {}
 
@@ -39012,7 +39090,32 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  rrdom@2.0.0-alpha.20:
+    dependencies:
+      rrweb-snapshot: 2.0.0-alpha.20
+
   rrweb-cssom@0.8.0: {}
+
+  rrweb-player@2.0.0-alpha.20:
+    dependencies:
+      '@rrweb/packer': 2.0.0-alpha.20
+      '@rrweb/replay': 2.0.0-alpha.20
+      '@tsconfig/svelte': 1.0.13
+
+  rrweb-snapshot@2.0.0-alpha.20:
+    dependencies:
+      postcss: 8.5.6
+
+  rrweb@2.0.0-alpha.20:
+    dependencies:
+      '@rrweb/types': 2.0.0-alpha.20
+      '@rrweb/utils': 2.0.0-alpha.20
+      '@types/css-font-loading-module': 0.0.7
+      '@xstate/fsm': 1.6.5
+      base64-arraybuffer: 1.0.2
+      mitt: 3.0.1
+      rrdom: 2.0.0-alpha.20
+      rrweb-snapshot: 2.0.0-alpha.20
 
   run-applescript@7.1.0: {}
 

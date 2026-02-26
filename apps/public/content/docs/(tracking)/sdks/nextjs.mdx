@@ -62,7 +62,8 @@ export default function RootLayout({ children }) {
 ##### NextJS options
 
 - `profileId` - If you have a user id, you can pass it here to identify the user
-- `cdnUrl` - The url to the OpenPanel SDK (default: `https://openpanel.dev/op1.js`)
+- `cdnUrl` (deprecated) - The url to the OpenPanel SDK (default: `https://openpanel.dev/op1.js`)
+- `scriptUrl` - The url to the OpenPanel SDK (default: `https://openpanel.dev/op1.js`)
 - `filter` - This is a function that will be called before tracking an event. If it returns false the event will not be tracked. [Read more](#filter)
 - `globalProperties` - This is an object of properties that will be sent with every event.
 
@@ -286,12 +287,12 @@ import { createRouteHandler } from '@openpanel/nextjs/server';
 export const { GET, POST } = createRouteHandler();
 ```
 
-Remember to change the `apiUrl` and `cdnUrl` in the `OpenPanelComponent` to your own server. 
+Remember to change the `apiUrl` and `scriptUrl` in the `OpenPanelComponent` to your own server. 
 
 ```tsx
 <OpenPanelComponent
   apiUrl="/api/op" // [!code highlight]
-  cdnUrl="/api/op/op1.js" // [!code highlight]
+  scriptUrl="/api/op/op1.js" // [!code highlight]
   clientId="your-client-id"
   trackScreenViews={true}
 />

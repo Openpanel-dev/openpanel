@@ -1,9 +1,9 @@
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { getRootMetadata } from '@/lib/metadata';
-import { cn } from '@/lib/utils';
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { getRootMetadata } from '@/lib/metadata';
+import { cn } from '@/lib/utils';
 import './global.css';
 import { OpenPanelComponent } from '@openpanel/nextjs';
 
@@ -31,22 +31,20 @@ export const metadata: Metadata = getRootMetadata();
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html
-      lang="en"
       className={cn(font.className, mono.variable)}
+      lang="en"
       suppressHydrationWarning
     >
-      <body className="flex flex-col min-h-screen bg-background">
+      <body className="flex min-h-screen flex-col bg-background">
         <RootProvider>
           <TooltipProvider>{children}</TooltipProvider>
         </RootProvider>
         {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
           <OpenPanelComponent
-            apiUrl="/api/op"
-            cdnUrl="/api/op/op1.js"
             clientId={process.env.NEXT_PUBLIC_OP_CLIENT_ID}
             trackAttributes
-            trackScreenViews
             trackOutgoingLinks
+            trackScreenViews
           />
         )}
       </body>

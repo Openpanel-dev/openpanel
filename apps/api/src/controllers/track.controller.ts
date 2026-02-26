@@ -1,22 +1,27 @@
-import type { FastifyReply, FastifyRequest } from 'fastify';
-import { assocPath, pathOr, pick } from 'ramda';
-
-import { HttpError } from '@/utils/errors';
 import { generateId, slug } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
-import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
+import {
+  getProfileById,
+  getSalts,
+  replayBuffer,
+  upsertProfile,
+} from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { getEventsGroupQueueShard } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
-
 import {
   type IDecrementPayload,
   type IIdentifyPayload,
   type IIncrementPayload,
+  type IReplayPayload,
   type ITrackHandlerPayload,
   type ITrackPayload,
   zTrackHandlerPayload,
 } from '@openpanel/validation';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { assocPath, pathOr, pick } from 'ramda';
+import { HttpError } from '@/utils/errors';
+import { getDeviceId } from '@/utils/ids';
 
 export function getStringHeaders(headers: FastifyRequest['headers']) {
   return Object.entries(
@@ -28,14 +33,14 @@ export function getStringHeaders(headers: FastifyRequest['headers']) {
         'openpanel-client-id',
         'request-id',
       ],
-      headers,
-    ),
+      headers
+    )
   ).reduce(
     (acc, [key, value]) => ({
       ...acc,
       [key]: value ? String(value) : undefined,
     }),
-    {},
+    {}
   );
 }
 
@@ -45,14 +50,15 @@ function getIdentity(body: ITrackHandlerPayload): IIdentifyPayload | undefined {
       | IIdentifyPayload
       | undefined;
 
-    return (
-      identity ||
-      (body.payload.profileId
-        ? {
-            profileId: String(body.payload.profileId),
-          }
-        : undefined)
-    );
+    if (identity) {
+      return identity;
+    }
+
+    return body.payload.profileId
+      ? {
+          profileId: String(body.payload.profileId),
+        }
+      : undefined;
   }
 
   return undefined;
@@ -60,7 +66,7 @@ function getIdentity(body: ITrackHandlerPayload): IIdentifyPayload | undefined {
 
 export function getTimestamp(
   timestamp: FastifyRequest['timestamp'],
-  payload: ITrackHandlerPayload['payload'],
+  payload: ITrackHandlerPayload['payload']
 ) {
   const safeTimestamp = timestamp || Date.now();
   const userDefinedTimestamp =
@@ -104,8 +110,8 @@ interface TrackContext {
   headers: Record<string, string | undefined>;
   timestamp: { value: number; isFromPast: boolean };
   identity?: IIdentifyPayload;
-  currentDeviceId?: string;
-  previousDeviceId?: string;
+  deviceId: string;
+  sessionId: string;
   geo: GeoLocation;
 }
 
@@ -113,7 +119,7 @@ async function buildContext(
   request: FastifyRequest<{
     Body: ITrackHandlerPayload;
   }>,
-  validatedBody: ITrackHandlerPayload,
+  validatedBody: ITrackHandlerPayload
 ): Promise<TrackContext> {
   const projectId = request.client?.projectId;
   if (!projectId) {
@@ -128,49 +134,27 @@ async function buildContext(
   const ua = request.headers['user-agent'] ?? 'unknown/1.0';
 
   const headers = getStringHeaders(request.headers);
-
   const identity = getIdentity(validatedBody);
   const profileId = identity?.profileId;
 
-  // We might get a profileId from the alias table
-  // If we do, we should use that instead of the one from the payload
   if (profileId && validatedBody.type === 'track') {
     validatedBody.payload.profileId = profileId;
   }
 
   // Get geo location (needed for track and identify)
-  const geo = await getGeoLocation(ip);
+  const [geo, salts] = await Promise.all([getGeoLocation(ip), getSalts()]);
 
-  // Generate device IDs if needed (for track)
-  let currentDeviceId: string | undefined;
-  let previousDeviceId: string | undefined;
-
-  if (validatedBody.type === 'track') {
-    const overrideDeviceId =
-      typeof validatedBody.payload.properties?.__deviceId === 'string'
-        ? validatedBody.payload.properties.__deviceId
-        : undefined;
-
-    const salts = await getSalts();
-    currentDeviceId =
-      overrideDeviceId ||
-      (ua
-        ? generateDeviceId({
-            salt: salts.current,
-            origin: projectId,
-            ip,
-            ua,
-          })
-        : '');
-    previousDeviceId = ua
-      ? generateDeviceId({
-          salt: salts.previous,
-          origin: projectId,
-          ip,
-          ua,
-        })
-      : '';
-  }
+  const { deviceId, sessionId } = await getDeviceId({
+    projectId,
+    ip,
+    ua,
+    salts,
+    overrideDeviceId:
+      validatedBody.type === 'track' &&
+      typeof validatedBody.payload?.properties?.__deviceId === 'string'
+        ? validatedBody.payload?.properties.__deviceId
+        : undefined,
+  });
 
   return {
     projectId,
@@ -182,46 +166,35 @@ async function buildContext(
       isFromPast: timestamp.isTimestampFromThePast,
     },
     identity,
-    currentDeviceId,
-    previousDeviceId,
+    deviceId,
+    sessionId,
     geo,
   };
 }
 
 async function handleTrack(
   payload: ITrackPayload,
-  context: TrackContext,
+  context: TrackContext
 ): Promise<void> {
-  const {
-    projectId,
-    currentDeviceId,
-    previousDeviceId,
-    geo,
-    headers,
-    timestamp,
-  } = context;
-
-  if (!currentDeviceId || !previousDeviceId) {
-    throw new HttpError('Device ID generation failed', { status: 500 });
-  }
+  const { projectId, deviceId, geo, headers, timestamp, sessionId } = context;
 
   const uaInfo = parseUserAgent(headers['user-agent'], payload.properties);
   const groupId = uaInfo.isServer
     ? payload.profileId
       ? `${projectId}:${payload.profileId}`
       : `${projectId}:${generateId()}`
-    : currentDeviceId;
+    : deviceId;
   const jobId = [
     slug(payload.name),
     timestamp.value,
     projectId,
-    currentDeviceId,
+    deviceId,
     groupId,
   ]
     .filter(Boolean)
     .join('-');
 
-  const promises = [];
+  const promises: Promise<unknown>[] = [];
 
   // If we have more than one property in the identity object, we should identify the user
   // Otherwise its only a profileId and we should not identify the user
@@ -242,12 +215,14 @@ async function handleTrack(
         },
         uaInfo,
         geo,
-        currentDeviceId,
-        previousDeviceId,
+        deviceId,
+        sessionId,
+        currentDeviceId: '', // TODO: Remove
+        previousDeviceId: '', // TODO: Remove
       },
       groupId,
       jobId,
-    }),
+    })
   );
 
   await Promise.all(promises);
@@ -255,7 +230,7 @@ async function handleTrack(
 
 async function handleIdentify(
   payload: IIdentifyPayload,
-  context: TrackContext,
+  context: TrackContext
 ): Promise<void> {
   const { projectId, geo, ua } = context;
   const uaInfo = parseUserAgent(ua, payload.properties);
@@ -285,7 +260,7 @@ async function handleIdentify(
 async function adjustProfileProperty(
   payload: IIncrementPayload | IDecrementPayload,
   projectId: string,
-  direction: 1 | -1,
+  direction: 1 | -1
 ): Promise<void> {
   const { profileId, property, value } = payload;
   const profile = await getProfileById(profileId, projectId);
@@ -295,7 +270,7 @@ async function adjustProfileProperty(
 
   const parsed = Number.parseInt(
     pathOr<string>('0', property.split('.'), profile.properties),
-    10,
+    10
   );
 
   if (Number.isNaN(parsed)) {
@@ -305,7 +280,7 @@ async function adjustProfileProperty(
   profile.properties = assocPath(
     property.split('.'),
     parsed + direction * (value || 1),
-    profile.properties,
+    profile.properties
   );
 
   await upsertProfile({
@@ -318,23 +293,44 @@ async function adjustProfileProperty(
 
 async function handleIncrement(
   payload: IIncrementPayload,
-  context: TrackContext,
+  context: TrackContext
 ): Promise<void> {
   await adjustProfileProperty(payload, context.projectId, 1);
 }
 
 async function handleDecrement(
   payload: IDecrementPayload,
-  context: TrackContext,
+  context: TrackContext
 ): Promise<void> {
   await adjustProfileProperty(payload, context.projectId, -1);
+}
+
+async function handleReplay(
+  payload: IReplayPayload,
+  context: TrackContext
+): Promise<void> {
+  if (!context.sessionId) {
+    throw new HttpError('Session ID is required for replay', { status: 400 });
+  }
+
+  const row = {
+    project_id: context.projectId,
+    session_id: context.sessionId,
+    chunk_index: payload.chunk_index,
+    started_at: payload.started_at,
+    ended_at: payload.ended_at,
+    events_count: payload.events_count,
+    is_full_snapshot: payload.is_full_snapshot,
+    payload: payload.payload,
+  };
+  await replayBuffer.add(row);
 }
 
 export async function handler(
   request: FastifyRequest<{
     Body: ITrackHandlerPayload;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   // Validate request body with Zod
   const validationResult = zTrackHandlerPayload.safeParse(request.body);
@@ -375,6 +371,9 @@ export async function handler(
     case 'decrement':
       await handleDecrement(validatedBody.payload, context);
       break;
+    case 'replay':
+      await handleReplay(validatedBody.payload, context);
+      break;
     default:
       return reply.status(400).send({
         status: 400,
@@ -383,12 +382,15 @@ export async function handler(
       });
   }
 
-  reply.status(200).send();
+  reply.status(200).send({
+    deviceId: context.deviceId,
+    sessionId: context.sessionId,
+  });
 }
 
 export async function fetchDeviceId(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const salts = await getSalts();
   const projectId = request.client?.projectId;
@@ -421,20 +423,31 @@ export async function fetchDeviceId(
 
   try {
     const multi = getRedisCache().multi();
-    multi.exists(`bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`);
-    multi.exists(`bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`);
+    multi.hget(
+      `bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`,
+      'data'
+    );
+    multi.hget(
+      `bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`,
+      'data'
+    );
     const res = await multi.exec();
-
     if (res?.[0]?.[1]) {
+      const data = JSON.parse(res?.[0]?.[1] as string);
+      const sessionId = data.payload.sessionId;
       return reply.status(200).send({
         deviceId: currentDeviceId,
+        sessionId,
         message: 'current session exists for this device id',
       });
     }
 
     if (res?.[1]?.[1]) {
+      const data = JSON.parse(res?.[1]?.[1] as string);
+      const sessionId = data.payload.sessionId;
       return reply.status(200).send({
         deviceId: previousDeviceId,
+        sessionId,
         message: 'previous session exists for this device id',
       });
     }
@@ -444,6 +457,7 @@ export async function fetchDeviceId(
 
   return reply.status(200).send({
     deviceId: currentDeviceId,
+    sessionId: '',
     message: 'No session exists for this device id',
   });
 }

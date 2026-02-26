@@ -1,20 +1,21 @@
-import { isDuplicatedEvent } from '@/utils/deduplicate';
 import type {
   DeprecatedPostEventPayload,
   ITrackHandlerPayload,
 } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { isDuplicatedEvent } from '@/utils/deduplicate';
 
 export async function duplicateHook(
   req: FastifyRequest<{
     Body: ITrackHandlerPayload | DeprecatedPostEventPayload;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const ip = req.clientIp;
   const origin = req.headers.origin;
   const clientId = req.headers['openpanel-client-id'];
-  const shouldCheck = ip && origin && clientId;
+  const isReplay = 'type' in req.body && req.body.type === 'replay';
+  const shouldCheck = ip && origin && clientId && !isReplay;
 
   const isDuplicate = shouldCheck
     ? await isDuplicatedEvent({

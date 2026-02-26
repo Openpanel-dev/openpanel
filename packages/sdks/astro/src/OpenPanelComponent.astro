@@ -4,12 +4,14 @@ import { getInitSnippet } from '@openpanel/web';
 
 type Props = Omit<OpenPanelOptions, 'filter'> & {
   profileId?: string;
+  /** @deprecated Use `scriptUrl` instead. */
   cdnUrl?: string;
+  scriptUrl?: string;
   filter?: string;
   globalProperties?: Record<string, unknown>;
 };
 
-const { profileId, cdnUrl, globalProperties, ...options } = Astro.props;
+const { profileId, cdnUrl, scriptUrl, globalProperties, ...options } = Astro.props;
 
 const CDN_URL = 'https://openpanel.dev/op1.js';
 
@@ -60,5 +62,5 @@ ${methods
   .join('\n')}`;
 ---
 
-<script src={cdnUrl ?? CDN_URL} async defer />
+<script src={scriptUrl ?? cdnUrl ?? CDN_URL} async defer />
 <script is:inline set:html={scriptContent} />

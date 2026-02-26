@@ -1,8 +1,3 @@
-// adding .js next/script import fixes an issues
-// with esm and nextjs (when using pages dir)
-import Script from 'next/script.js';
-import React from 'react';
-
 import type {
   DecrementPayload,
   IdentifyPayload,
@@ -12,6 +7,11 @@ import type {
   TrackProperties,
 } from '@openpanel/web';
 import { getInitSnippet } from '@openpanel/web';
+// adding .js next/script import fixes an issues
+// with esm and nextjs (when using pages dir)
+import Script from 'next/script.js';
+// biome-ignore lint/correctness/noUnusedImports: nextjs requires this
+import React from 'react';
 
 export * from '@openpanel/web';
 
@@ -19,7 +19,9 @@ const CDN_URL = 'https://openpanel.dev/op1.js';
 
 type OpenPanelComponentProps = Omit<OpenPanelOptions, 'filter'> & {
   profileId?: string;
+  /** @deprecated Use `scriptUrl` instead. */
   cdnUrl?: string;
+  scriptUrl?: string;
   filter?: string;
   globalProperties?: Record<string, unknown>;
   strategy?: 'beforeInteractive' | 'afterInteractive' | 'lazyOnload' | 'worker';
@@ -42,6 +44,7 @@ const stringify = (obj: unknown) => {
 export function OpenPanelComponent({
   profileId,
   cdnUrl,
+  scriptUrl,
   globalProperties,
   strategy = 'afterInteractive',
   ...options
@@ -80,10 +83,8 @@ export function OpenPanelComponent({
 
   return (
     <>
-      <Script src={appendVersion(cdnUrl || CDN_URL)} async defer />
+      <Script async defer src={appendVersion(scriptUrl || cdnUrl || CDN_URL)} />
       <Script
-        id="openpanel-init"
-        strategy={strategy}
         dangerouslySetInnerHTML={{
           __html: `${getInitSnippet()}
           ${methods
@@ -92,6 +93,8 @@ export function OpenPanelComponent({
             })
             .join('\n')}`,
         }}
+        id="openpanel-init"
+        strategy={strategy}
       />
     </>
   );
@@ -101,25 +104,21 @@ type IdentifyComponentProps = IdentifyPayload;
 
 export function IdentifyComponent(props: IdentifyComponentProps) {
   return (
-    <>
-      <Script
-        dangerouslySetInnerHTML={{
-          __html: `window.op('identify', ${JSON.stringify(props)});`,
-        }}
-      />
-    </>
+    <Script
+      dangerouslySetInnerHTML={{
+        __html: `window.op('identify', ${JSON.stringify(props)});`,
+      }}
+    />
   );
 }
 
 export function SetGlobalPropertiesComponent(props: Record<string, unknown>) {
   return (
-    <>
-      <Script
-        dangerouslySetInnerHTML={{
-          __html: `window.op('setGlobalProperties', ${JSON.stringify(props)});`,
-        }}
-      />
-    </>
+    <Script
+      dangerouslySetInnerHTML={{
+        __html: `window.op('setGlobalProperties', ${JSON.stringify(props)});`,
+      }}
+    />
   );
 }
 
@@ -137,6 +136,7 @@ export function useOpenPanel() {
     clearRevenue,
     pendingRevenue,
     fetchDeviceId,
+    getDeviceId,
   };
 }
 
@@ -152,7 +152,7 @@ function screenView(properties?: TrackProperties): void;
 function screenView(path: string, properties?: TrackProperties): void;
 function screenView(
   pathOrProperties?: string | TrackProperties,
-  propertiesOrUndefined?: TrackProperties,
+  propertiesOrUndefined?: TrackProperties
 ) {
   window.op?.('screenView', pathOrProperties, propertiesOrUndefined);
 }
@@ -171,6 +171,9 @@ function decrement(payload: DecrementPayload) {
 
 function fetchDeviceId() {
   return window.op.fetchDeviceId();
+}
+function getDeviceId() {
+  return window.op.getDeviceId();
 }
 function clearRevenue() {
   window.op.clearRevenue();
