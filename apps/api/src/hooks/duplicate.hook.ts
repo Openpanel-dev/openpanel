@@ -14,7 +14,8 @@ export async function duplicateHook(
   const ip = req.clientIp;
   const origin = req.headers.origin;
   const clientId = req.headers['openpanel-client-id'];
-  const shouldCheck = ip && origin && clientId && req.body.type !== 'replay';
+  const isReplay = 'type' in req.body && req.body.type === 'replay';
+  const shouldCheck = ip && origin && clientId && !isReplay;
 
   const isDuplicate = shouldCheck
     ? await isDuplicatedEvent({
@@ -25,7 +26,6 @@ export async function duplicateHook(
       })
     : false;
 
-  console.log('Duplicate event', isDuplicate);
   if (isDuplicate) {
     return reply.status(200).send('Duplicate event');
   }

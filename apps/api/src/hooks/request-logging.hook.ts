@@ -41,7 +41,6 @@ export async function requestLoggingHook(
         ['openpanel-client-id', 'openpanel-sdk-name', 'openpanel-sdk-version'],
         request.headers
       ),
-      // body: request.body,
     });
   }
 }

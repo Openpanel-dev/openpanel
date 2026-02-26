@@ -1,22 +1,3 @@
-import { ReportChartShortcut } from '@/components/report-chart/shortcut';
-import {
-  useEventQueryFilters,
-  useEventQueryNamesFilter,
-} from '@/hooks/use-event-query-filters';
-
-import { ProjectLink } from '@/components/links';
-import {
-  WidgetButtons,
-  WidgetHead,
-} from '@/components/overview/overview-widget';
-import { SerieIcon } from '@/components/report-chart/common/serie-icon';
-import { Button } from '@/components/ui/button';
-import { FieldValue, KeyValueGrid } from '@/components/ui/key-value-grid';
-import { Widget, WidgetBody } from '@/components/widget';
-import { fancyMinutes } from '@/hooks/use-numer-formatter';
-import { useTRPC } from '@/integrations/trpc/react';
-import { cn } from '@/utils/cn';
-import { getProfileName } from '@/utils/getters';
 import type { IClickhouseEvent, IServiceEvent } from '@openpanel/db';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { FilterIcon, XIcon } from 'lucide-react';
@@ -24,6 +5,24 @@ import { omit } from 'ramda';
 import { Suspense, useState } from 'react';
 import { popModal } from '.';
 import { ModalContent } from './Modal/Container';
+import { ProjectLink } from '@/components/links';
+import {
+  WidgetButtons,
+  WidgetHead,
+} from '@/components/overview/overview-widget';
+import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { ReportChartShortcut } from '@/components/report-chart/shortcut';
+import { Button } from '@/components/ui/button';
+import { FieldValue, KeyValueGrid } from '@/components/ui/key-value-grid';
+import { Widget, WidgetBody } from '@/components/widget';
+import {
+  useEventQueryFilters,
+  useEventQueryNamesFilter,
+} from '@/hooks/use-event-query-filters';
+import { fancyMinutes } from '@/hooks/use-numer-formatter';
+import { useTRPC } from '@/integrations/trpc/react';
+import { cn } from '@/utils/cn';
+import { getProfileName } from '@/utils/getters';
 
 interface Props {
   id: string;
@@ -55,7 +54,7 @@ const filterable: Partial<Record<keyof IServiceEvent, keyof IClickhouseEvent>> =
 export default function EventDetails(props: Props) {
   return (
     <ModalContent className="!p-0">
-      <Widget className="bg-transparent border-0 min-w-0">
+      <Widget className="min-w-0 border-0 bg-transparent">
         <Suspense fallback={<EventDetailsSkeleton />}>
           <EventDetailsContent {...props} />
         </Suspense>
@@ -84,7 +83,7 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
       id,
       projectId,
       createdAt,
-    }),
+    })
   );
 
   const { event, session } = query.data;
@@ -158,7 +157,7 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
               event,
             });
           }
-        },
+        }
       );
     }
 
@@ -209,7 +208,7 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
               >
                 <ArrowRightIcon className="size-4" />
               </Button> */}
-            <Button size="icon" variant={'ghost'} onClick={() => popModal()}>
+            <Button onClick={() => popModal()} size="icon" variant={'ghost'}>
               <XIcon className="size-4" />
             </Button>
           </div>
@@ -218,10 +217,10 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
         <WidgetButtons>
           {Object.entries(TABS).map(([, tab]) => (
             <button
-              key={tab.id}
-              type="button"
-              onClick={() => setWidget(tab)}
               className={cn(tab.id === widget.id && 'active')}
+              key={tab.id}
+              onClick={() => setWidget(tab)}
+              type="button"
             >
               {tab.title}
             </button>
@@ -231,29 +230,29 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
       <WidgetBody className="col gap-4 bg-def-100">
         {profile && (
           <ProjectLink
-            onClick={() => popModal()}
+            className="card col gap-2 p-4 py-2 hover:bg-def-100"
             href={`/profiles/${encodeURIComponent(profile.id)}`}
-            className="card p-4 py-2 col gap-2 hover:bg-def-100"
+            onClick={() => popModal()}
           >
-            <div className="row items-center gap-2 justify-between">
-              <div className="row items-center gap-2 min-w-0">
+            <div className="row items-center justify-between gap-2">
+              <div className="row min-w-0 items-center gap-2">
                 {profile.avatar && (
                   <img
-                    className="size-4 bg-border rounded-full"
+                    className="size-4 rounded-full bg-border"
                     src={profile.avatar}
                   />
                 )}
-                <div className="font-medium truncate">
+                <div className="truncate font-medium">
                   {getProfileName(profile, false)}
                 </div>
               </div>
-              <div className="row items-center gap-2 shrink-0">
-                <div className="row gap-1 items-center">
+              <div className="row shrink-0 items-center gap-2">
+                <div className="row items-center gap-1">
                   <SerieIcon name={event.country} />
                   <SerieIcon name={event.os} />
                   <SerieIcon name={event.browser} />
                 </div>
-                <div className="text-muted-foreground truncate max-w-40">
+                <div className="max-w-40 truncate text-muted-foreground">
                   {event.referrerName || event.referrer}
                 </div>
               </div>
@@ -276,16 +275,16 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
             <KeyValueGrid
               columns={1}
               data={properties}
+              onItemClick={(item) => {
+                popModal();
+                setFilter(`properties.${item.name}`, item.value as any);
+              }}
               renderValue={(item) => (
                 <div className="flex items-center gap-2">
                   <span className="font-mono">{String(item.value)}</span>
                   <FilterIcon className="size-3 shrink-0" />
                 </div>
               )}
-              onItemClick={(item) => {
-                popModal();
-                setFilter(`properties.${item.name}`, item.value as any);
-              }}
             />
           </section>
         )}
@@ -296,25 +295,6 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
           <KeyValueGrid
             columns={1}
             data={data}
-            renderValue={(item) => {
-              const isFilterable = item.value && (filterable as any)[item.name];
-              if (isFilterable) {
-                return (
-                  <div className="flex items-center gap-2">
-                    <FieldValue
-                      name={item.name}
-                      value={item.value}
-                      event={event}
-                    />
-                    <FilterIcon className="size-3 shrink-0" />
-                  </div>
-                );
-              }
-
-              return (
-                <FieldValue name={item.name} value={item.value} event={event} />
-              );
-            }}
             onItemClick={(item) => {
               const isFilterable = item.value && (filterable as any)[item.name];
               if (isFilterable) {
@@ -322,26 +302,45 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
                 setFilter(item.name as keyof IServiceEvent, item.value);
               }
             }}
+            renderValue={(item) => {
+              const isFilterable = item.value && (filterable as any)[item.name];
+              if (isFilterable) {
+                return (
+                  <div className="flex items-center gap-2">
+                    <FieldValue
+                      event={event}
+                      name={item.name}
+                      value={item.value}
+                    />
+                    <FilterIcon className="size-3 shrink-0" />
+                  </div>
+                );
+              }
+
+              return (
+                <FieldValue event={event} name={item.name} value={item.value} />
+              );
+            }}
           />
         </section>
         <section>
           <div className="mb-2 flex justify-between font-medium">
             <div>All events for {event.name}</div>
             <button
-              type="button"
               className="text-muted-foreground hover:underline"
               onClick={() => {
                 setEvents([event.name]);
                 popModal();
               }}
+              type="button"
             >
               Show all
             </button>
           </div>
           <div className="card p-4">
             <ReportChartShortcut
-              projectId={event.projectId}
               chartType="linear"
+              projectId={event.projectId}
               series={[
                 {
                   id: 'A',
@@ -365,52 +364,52 @@ function EventDetailsSkeleton() {
     <>
       <WidgetHead>
         <div className="row items-center justify-between">
-          <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+          <div className="h-6 w-32 animate-pulse rounded bg-muted" />
           <div className="row items-center gap-2 pr-2">
-            <div className="h-8 w-8 bg-muted animate-pulse rounded" />
-            <div className="h-8 w-8 bg-muted animate-pulse rounded" />
-            <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+            <div className="h-8 w-8 animate-pulse rounded bg-muted" />
+            <div className="h-8 w-8 animate-pulse rounded bg-muted" />
+            <div className="h-8 w-8 animate-pulse rounded bg-muted" />
           </div>
         </div>
 
         <WidgetButtons>
-          <div className="h-8 w-20 bg-muted animate-pulse rounded" />
-          <div className="h-8 w-20 bg-muted animate-pulse rounded" />
+          <div className="h-8 w-20 animate-pulse rounded bg-muted" />
+          <div className="h-8 w-20 animate-pulse rounded bg-muted" />
         </WidgetButtons>
       </WidgetHead>
       <WidgetBody className="col gap-4 bg-def-100">
         {/* Profile skeleton */}
-        <div className="card p-4 py-2 col gap-2">
-          <div className="row items-center gap-2 justify-between">
-            <div className="row items-center gap-2 min-w-0">
-              <div className="size-4 bg-muted animate-pulse rounded-full" />
-              <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+        <div className="card col gap-2 p-4 py-2">
+          <div className="row items-center justify-between gap-2">
+            <div className="row min-w-0 items-center gap-2">
+              <div className="size-4 animate-pulse rounded-full bg-muted" />
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
             </div>
-            <div className="row items-center gap-2 shrink-0">
-              <div className="row gap-1 items-center">
-                <div className="size-4 bg-muted animate-pulse rounded" />
-                <div className="size-4 bg-muted animate-pulse rounded" />
-                <div className="size-4 bg-muted animate-pulse rounded" />
+            <div className="row shrink-0 items-center gap-2">
+              <div className="row items-center gap-1">
+                <div className="size-4 animate-pulse rounded bg-muted" />
+                <div className="size-4 animate-pulse rounded bg-muted" />
+                <div className="size-4 animate-pulse rounded bg-muted" />
               </div>
-              <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-32 animate-pulse rounded bg-muted" />
             </div>
           </div>
-          <div className="h-4 w-64 bg-muted animate-pulse rounded" />
+          <div className="h-4 w-64 animate-pulse rounded bg-muted" />
         </div>
 
         {/* Properties skeleton */}
         <section>
           <div className="mb-2 flex justify-between font-medium">
-            <div className="h-5 w-20 bg-muted animate-pulse rounded" />
+            <div className="h-5 w-20 animate-pulse rounded bg-muted" />
           </div>
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
               <div
+                className="flex items-center justify-between rounded bg-muted/50 p-3"
                 key={i.toString()}
-                className="flex items-center justify-between p-3 bg-muted/50 rounded"
               >
-                <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-                <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+                <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-32 animate-pulse rounded bg-muted" />
               </div>
             ))}
           </div>
@@ -419,16 +418,16 @@ function EventDetailsSkeleton() {
         {/* Information skeleton */}
         <section>
           <div className="mb-2 flex justify-between font-medium">
-            <div className="h-5 w-24 bg-muted animate-pulse rounded" />
+            <div className="h-5 w-24 animate-pulse rounded bg-muted" />
           </div>
           <div className="space-y-2">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
+                className="flex items-center justify-between rounded bg-muted/50 p-3"
                 key={i.toString()}
-                className="flex items-center justify-between p-3 bg-muted/50 rounded"
               >
-                <div className="h-4 w-20 bg-muted animate-pulse rounded" />
-                <div className="h-4 w-28 bg-muted animate-pulse rounded" />
+                <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-28 animate-pulse rounded bg-muted" />
               </div>
             ))}
           </div>
@@ -437,11 +436,11 @@ function EventDetailsSkeleton() {
         {/* Chart skeleton */}
         <section>
           <div className="mb-2 flex justify-between font-medium">
-            <div className="h-5 w-40 bg-muted animate-pulse rounded" />
-            <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+            <div className="h-5 w-40 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-16 animate-pulse rounded bg-muted" />
           </div>
           <div className="card p-4">
-            <div className="h-32 w-full bg-muted animate-pulse rounded" />
+            <div className="h-32 w-full animate-pulse rounded bg-muted" />
           </div>
         </section>
       </WidgetBody>

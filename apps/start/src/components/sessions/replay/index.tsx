@@ -4,6 +4,7 @@ import { Maximize2, Minimize2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BrowserChrome } from './browser-chrome';
 import { ReplayTime } from './replay-controls';
+import { ReplayTimeline } from './replay-timeline';
 import { getEventOffsetMs } from './replay-utils';
 import {
   ReplayProvider,
@@ -12,7 +13,6 @@ import {
 } from '@/components/sessions/replay/replay-context';
 import { ReplayEventFeed } from '@/components/sessions/replay/replay-event-feed';
 import { ReplayPlayer } from '@/components/sessions/replay/replay-player';
-import { ReplayTimeline } from '@/components/sessions/replay/replay-timeline';
 import { useTRPC } from '@/integrations/trpc/react';
 
 function BrowserUrlBar({ events }: { events: IServiceEvent[] }) {
@@ -32,7 +32,7 @@ function BrowserUrlBar({ events }: { events: IServiceEvent[] }) {
       .filter(({ offsetMs }) => offsetMs >= -10_000 && offsetMs <= currentTime)
       .sort((a, b) => a.offsetMs - b.offsetMs);
 
-    const latest = withOffset[withOffset.length - 1];
+    const latest = withOffset.at(-1);
     if (!latest) {
       return '';
     }
@@ -74,7 +74,7 @@ function ReplayChunkLoader({
         )
         .then((res) => {
           res.data.forEach((row) => {
-            row.events.forEach((event) => {
+            row?.events?.forEach((event) => {
               addEvent(event);
             });
           });
@@ -82,6 +82,9 @@ function ReplayChunkLoader({
           if (res.hasMore) {
             recursive(fromIndex + res.data.length);
           }
+        })
+        .catch(() => {
+          // chunk loading failed — replay may be incomplete
         });
     }
 
@@ -160,9 +163,29 @@ function ReplayContent({
   );
 
   const events = eventsData?.data ?? [];
-  const playerEvents = firstBatch?.data.flatMap((row) => row.events) ?? [];
+  const playerEvents =
+    firstBatch?.data.flatMap((row) => row?.events ?? []) ?? [];
   const hasMore = firstBatch?.hasMore ?? false;
   const hasReplay = playerEvents.length !== 0;
+
+  function renderReplay() {
+    if (replayLoading) {
+      return (
+        <div className="col h-[320px] items-center justify-center gap-4 bg-background">
+          <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
+          <div>Loading session replay</div>
+        </div>
+      );
+    }
+    if (hasReplay) {
+      return <ReplayPlayer events={playerEvents} />;
+    }
+    return (
+      <div className="flex h-[320px] items-center justify-center bg-background text-muted-foreground text-sm">
+        No replay data available for this session.
+      </div>
+    );
+  }
 
   return (
     <ReplayProvider>
@@ -187,18 +210,7 @@ function ReplayContent({
               )
             }
           >
-            {replayLoading ? (
-              <div className="col h-[320px] items-center justify-center gap-4 bg-background">
-                <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
-                <div>Loading session replay</div>
-              </div>
-            ) : hasReplay ? (
-              <ReplayPlayer events={playerEvents} />
-            ) : (
-              <div className="flex h-[320px] items-center justify-center bg-background text-muted-foreground text-sm">
-                No replay data available for this session.
-              </div>
-            )}
+            {renderReplay()}
             {hasReplay && <ReplayTimeline events={events} />}
           </BrowserChrome>
         </div>

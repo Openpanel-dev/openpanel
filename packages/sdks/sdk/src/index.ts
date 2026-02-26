@@ -176,7 +176,7 @@ export class OpenPanel {
 
   async revenue(
     amount: number,
-    properties?: TrackProperties & { deviceId?: string },
+    properties?: TrackProperties & { deviceId?: string }
   ) {
     const deviceId = properties?.deviceId;
     delete properties?.deviceId;
@@ -195,7 +195,10 @@ export class OpenPanel {
     return this.sessionId ?? '';
   }
 
-  async fetchDeviceId(): Promise<string> {
+  /**
+   * @deprecated Use `getDeviceId()` instead. This async method is no longer needed.
+   */
+  fetchDeviceId(): Promise<string> {
     return Promise.resolve(this.deviceId ?? '');
   }
 

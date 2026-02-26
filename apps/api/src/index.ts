@@ -116,7 +116,7 @@ const startServer = async () => {
 
         return callback(null, {
           origin: '*',
-          maxAge: 86_400 * 7, // cache preflight for 24h
+          maxAge: 86_400 * 7, // cache preflight for 7 days
         });
       };
     });
@@ -125,11 +125,6 @@ const startServer = async () => {
       global: false,
     });
 
-    fastify.addHook('onRequest', async (req) => {
-      if (req.method === 'POST') {
-        console.log('Incoming req', req.method, req.url);
-      }
-    });
     fastify.addHook('onRequest', requestIdHook);
     fastify.addHook('onRequest', timestampHook);
     fastify.addHook('onRequest', ipHook);

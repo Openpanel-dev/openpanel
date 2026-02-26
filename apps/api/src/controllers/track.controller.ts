@@ -1,7 +1,3 @@
-import type { FastifyReply, FastifyRequest } from 'fastify';
-import { assocPath, pathOr, pick } from 'ramda';
-
-import { HttpError } from '@/utils/errors';
 import { generateId, slug } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import {
@@ -13,8 +9,6 @@ import {
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { getEventsGroupQueueShard } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
-
-import { getDeviceId } from '@/utils/ids';
 import {
   type IDecrementPayload,
   type IIdentifyPayload,
@@ -24,6 +18,10 @@ import {
   type ITrackPayload,
   zTrackHandlerPayload,
 } from '@openpanel/validation';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { assocPath, pathOr, pick } from 'ramda';
+import { HttpError } from '@/utils/errors';
+import { getDeviceId } from '@/utils/ids';
 
 export function getStringHeaders(headers: FastifyRequest['headers']) {
   return Object.entries(
@@ -35,14 +33,14 @@ export function getStringHeaders(headers: FastifyRequest['headers']) {
         'openpanel-client-id',
         'request-id',
       ],
-      headers,
-    ),
+      headers
+    )
   ).reduce(
     (acc, [key, value]) => ({
       ...acc,
       [key]: value ? String(value) : undefined,
     }),
-    {},
+    {}
   );
 }
 
@@ -68,7 +66,7 @@ function getIdentity(body: ITrackHandlerPayload): IIdentifyPayload | undefined {
 
 export function getTimestamp(
   timestamp: FastifyRequest['timestamp'],
-  payload: ITrackHandlerPayload['payload'],
+  payload: ITrackHandlerPayload['payload']
 ) {
   const safeTimestamp = timestamp || Date.now();
   const userDefinedTimestamp =
@@ -121,7 +119,7 @@ async function buildContext(
   request: FastifyRequest<{
     Body: ITrackHandlerPayload;
   }>,
-  validatedBody: ITrackHandlerPayload,
+  validatedBody: ITrackHandlerPayload
 ): Promise<TrackContext> {
   const projectId = request.client?.projectId;
   if (!projectId) {
@@ -176,7 +174,7 @@ async function buildContext(
 
 async function handleTrack(
   payload: ITrackPayload,
-  context: TrackContext,
+  context: TrackContext
 ): Promise<void> {
   const { projectId, deviceId, geo, headers, timestamp, sessionId } = context;
 
@@ -224,7 +222,7 @@ async function handleTrack(
       },
       groupId,
       jobId,
-    }),
+    })
   );
 
   await Promise.all(promises);
@@ -232,7 +230,7 @@ async function handleTrack(
 
 async function handleIdentify(
   payload: IIdentifyPayload,
-  context: TrackContext,
+  context: TrackContext
 ): Promise<void> {
   const { projectId, geo, ua } = context;
   const uaInfo = parseUserAgent(ua, payload.properties);
@@ -262,7 +260,7 @@ async function handleIdentify(
 async function adjustProfileProperty(
   payload: IIncrementPayload | IDecrementPayload,
   projectId: string,
-  direction: 1 | -1,
+  direction: 1 | -1
 ): Promise<void> {
   const { profileId, property, value } = payload;
   const profile = await getProfileById(profileId, projectId);
@@ -272,7 +270,7 @@ async function adjustProfileProperty(
 
   const parsed = Number.parseInt(
     pathOr<string>('0', property.split('.'), profile.properties),
-    10,
+    10
   );
 
   if (Number.isNaN(parsed)) {
@@ -282,7 +280,7 @@ async function adjustProfileProperty(
   profile.properties = assocPath(
     property.split('.'),
     parsed + direction * (value || 1),
-    profile.properties,
+    profile.properties
   );
 
   await upsertProfile({
@@ -295,21 +293,21 @@ async function adjustProfileProperty(
 
 async function handleIncrement(
   payload: IIncrementPayload,
-  context: TrackContext,
+  context: TrackContext
 ): Promise<void> {
   await adjustProfileProperty(payload, context.projectId, 1);
 }
 
 async function handleDecrement(
   payload: IDecrementPayload,
-  context: TrackContext,
+  context: TrackContext
 ): Promise<void> {
   await adjustProfileProperty(payload, context.projectId, -1);
 }
 
 async function handleReplay(
   payload: IReplayPayload,
-  context: TrackContext,
+  context: TrackContext
 ): Promise<void> {
   if (!context.sessionId) {
     throw new HttpError('Session ID is required for replay', { status: 400 });
@@ -318,7 +316,6 @@ async function handleReplay(
   const row = {
     project_id: context.projectId,
     session_id: context.sessionId,
-    profile_id: '', // TODO: remove
     chunk_index: payload.chunk_index,
     started_at: payload.started_at,
     ended_at: payload.ended_at,
@@ -333,7 +330,7 @@ export async function handler(
   request: FastifyRequest<{
     Body: ITrackHandlerPayload;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   // Validate request body with Zod
   const validationResult = zTrackHandlerPayload.safeParse(request.body);
@@ -393,7 +390,7 @@ export async function handler(
 
 export async function fetchDeviceId(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const salts = await getSalts();
   const projectId = request.client?.projectId;
@@ -428,11 +425,11 @@ export async function fetchDeviceId(
     const multi = getRedisCache().multi();
     multi.hget(
       `bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`,
-      'data',
+      'data'
     );
     multi.hget(
       `bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`,
-      'data',
+      'data'
     );
     const res = await multi.exec();
     if (res?.[0]?.[1]) {

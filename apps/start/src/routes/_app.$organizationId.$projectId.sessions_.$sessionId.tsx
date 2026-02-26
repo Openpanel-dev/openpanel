@@ -1,3 +1,6 @@
+import type { IServiceEvent, IServiceSession } from '@openpanel/db';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { EventIcon } from '@/components/events/event-icon';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
@@ -6,18 +9,20 @@ import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { ReplayShell } from '@/components/sessions/replay';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
-import { Widget, WidgetBody, WidgetHead, WidgetTitle } from '@/components/widget';
+import {
+  Widget,
+  WidgetBody,
+  WidgetHead,
+  WidgetTitle,
+} from '@/components/widget';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { formatDateTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
-import { useNumber } from '@/hooks/use-numer-formatter';
 import { createProjectTitle } from '@/utils/title';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { Link, createFileRoute } from '@tanstack/react-router';
-import type { IServiceEvent, IServiceSession } from '@openpanel/db';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/sessions_/$sessionId',
+  '/_app/$organizationId/$projectId/sessions_/$sessionId'
 )({
   component: Component,
   loader: async ({ context, params }) => {
@@ -26,7 +31,7 @@ export const Route = createFileRoute(
         context.trpc.session.byId.queryOptions({
           sessionId: params.sessionId,
           projectId: params.projectId,
-        }),
+        })
       ),
       context.queryClient.prefetchQuery(
         context.trpc.event.events.queryOptions({
@@ -34,7 +39,7 @@ export const Route = createFileRoute(
           sessionId: params.sessionId,
           filters: [],
           columnVisibility: {},
-        }),
+        })
       ),
     ]);
   },
@@ -45,7 +50,19 @@ export const Route = createFileRoute(
 });
 
 function sessionToFakeEvent(session: IServiceSession): IServiceEvent {
-  return session as unknown as IServiceEvent;
+  return {
+    ...session,
+    name: 'screen_view',
+    sessionId: session.id,
+    properties: {},
+    path: session.exitPath,
+    origin: session.exitOrigin,
+    importedAt: undefined,
+    meta: undefined,
+    sdkName: undefined,
+    sdkVersion: undefined,
+    profile: undefined,
+  };
 }
 
 function VisitedRoutes({ paths }: { paths: string[] }) {
@@ -56,7 +73,9 @@ function VisitedRoutes({ paths }: { paths: string[] }) {
   const sorted = Object.entries(counted).sort((a, b) => b[1] - a[1]);
   const max = sorted[0]?.[1] ?? 1;
 
-  if (sorted.length === 0) return null;
+  if (sorted.length === 0) {
+    return null;
+  }
 
   return (
     <Widget className="w-full">
@@ -65,14 +84,14 @@ function VisitedRoutes({ paths }: { paths: string[] }) {
       </WidgetHead>
       <div className="flex flex-col gap-1 p-1">
         {sorted.map(([path, count]) => (
-          <div key={path} className="relative px-3 py-2 group">
+          <div className="group relative px-3 py-2" key={path}>
             <div
-              className="absolute bottom-0 left-0 top-0 rounded bg-def-200 group-hover:bg-def-300"
+              className="absolute top-0 bottom-0 left-0 rounded bg-def-200 group-hover:bg-def-300"
               style={{ width: `${(count / max) * 100}%` }}
             />
-            <div className="relative flex justify-between gap-2 min-w-0">
+            <div className="relative flex min-w-0 justify-between gap-2">
               <span className="truncate text-sm">{path}</span>
-              <span className="shrink-0 text-sm font-medium">{count}</span>
+              <span className="shrink-0 font-medium text-sm">{count}</span>
             </div>
           </div>
         ))}
@@ -89,7 +108,9 @@ function EventDistribution({ events }: { events: IServiceEvent[] }) {
   const sorted = Object.entries(counted).sort((a, b) => b[1] - a[1]);
   const max = sorted[0]?.[1] ?? 1;
 
-  if (sorted.length === 0) return null;
+  if (sorted.length === 0) {
+    return null;
+  }
 
   return (
     <Widget className="w-full">
@@ -98,14 +119,14 @@ function EventDistribution({ events }: { events: IServiceEvent[] }) {
       </WidgetHead>
       <div className="flex flex-col gap-1 p-1">
         {sorted.map(([name, count]) => (
-          <div key={name} className="relative px-3 py-2 group">
+          <div className="group relative px-3 py-2" key={name}>
             <div
-            className="absolute bottom-0 left-0 top-0 rounded bg-def-200 group-hover:bg-def-300"
+              className="absolute top-0 bottom-0 left-0 rounded bg-def-200 group-hover:bg-def-300"
               style={{ width: `${(count / max) * 100}%` }}
             />
             <div className="relative flex justify-between gap-2">
               <span className="text-sm">{name.replace(/_/g, ' ')}</span>
-              <span className="shrink-0 text-sm font-medium">{count}</span>
+              <span className="shrink-0 font-medium text-sm">{count}</span>
             </div>
           </div>
         ))}
@@ -117,10 +138,10 @@ function EventDistribution({ events }: { events: IServiceEvent[] }) {
 function Component() {
   const { projectId, sessionId, organizationId } = Route.useParams();
   const trpc = useTRPC();
-  const number = useNumber()
+  const number = useNumber();
 
   const { data: session } = useSuspenseQuery(
-    trpc.session.byId.queryOptions({ sessionId, projectId }),
+    trpc.session.byId.queryOptions({ sessionId, projectId })
   );
 
   const { data: eventsData } = useSuspenseQuery(
@@ -129,7 +150,7 @@ function Component() {
       sessionId,
       filters: [],
       columnVisibility: {},
-    }),
+    })
   );
 
   const events = eventsData?.data ?? [];
@@ -141,83 +162,54 @@ function Component() {
     trpc.profile.byId.queryOptions({
       profileId: session.profileId,
       projectId,
-    }),
+    })
   );
 
   const fakeEvent = sessionToFakeEvent(session);
 
   return (
     <PageContainer className="col gap-8">
-      <PageHeader
-        title={`Session: ${session.id}`}
-      >
-        <div className="row gap-4 mb-6">
-                  {session.country && (
-                    <div className="row gap-2 items-center">
-                      <SerieIcon name={session.country} />
-                      <span>
-                        {session.country}
-                        {session.city && ` / ${session.city}`}
-
-                              </span>
-                    </div>
-                            )}
-                  {session.device && (
-                    <div className="row gap-2 items-center">
-                      <SerieIcon name={session.device} />
-                      <span className="capitalize">{session.device}</span>
-                          </div>
-
-
-
-                  )}
-                  {session.os && (
-                    <div className="row gap-2 items-center">
-                      <SerieIcon name={session.os} />
-                      <span>{session.os}</span>
-
-
-
-
-
-
-                </div>
-                  )}
-                  {session.model && (
-                    <div className="row gap-2 items-center">
-                      <SerieIcon name={session.model} />
-                      <span>{session.model}</span>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                          </div>
-                  )}
-          {session.browser && (
-            <div className="row gap-2 items-center">
-              <SerieIcon name={session.browser} />
-              <span>{session.browser}</span>
-
-
-
+      <PageHeader title={`Session: ${session.id}`}>
+        <div className="row mb-6 gap-4">
+          {session.country && (
+            <div className="row items-center gap-2">
+              <SerieIcon name={session.country} />
+              <span>
+                {session.country}
+                {session.city && ` / ${session.city}`}
+              </span>
             </div>
           )}
+          {session.device && (
+            <div className="row items-center gap-2">
+              <SerieIcon name={session.device} />
+              <span className="capitalize">{session.device}</span>
             </div>
+          )}
+          {session.os && (
+            <div className="row items-center gap-2">
+              <SerieIcon name={session.os} />
+              <span>{session.os}</span>
+            </div>
+          )}
+          {session.model && (
+            <div className="row items-center gap-2">
+              <SerieIcon name={session.model} />
+              <span>{session.model}</span>
+            </div>
+          )}
+          {session.browser && (
+            <div className="row items-center gap-2">
+              <SerieIcon name={session.browser} />
+              <span>{session.browser}</span>
+            </div>
+          )}
+        </div>
       </PageHeader>
 
-      {session.hasReplay && <ReplayShell sessionId={sessionId} projectId={projectId} />}
+      {session.hasReplay && (
+        <ReplayShell projectId={projectId} sessionId={sessionId} />
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
         {/* Left column */}
@@ -232,7 +224,10 @@ function Component() {
               columns={1}
               copyable
               data={[
-                { name: 'duration', value: number.formatWithUnit(session.duration/1000, 'min') },
+                {
+                  name: 'duration',
+                  value: number.formatWithUnit(session.duration / 1000, 'min'),
+                },
                 { name: 'createdAt', value: session.createdAt },
                 { name: 'endedAt', value: session.endedAt },
                 { name: 'screenViews', value: session.screenViewCount },
@@ -305,13 +300,13 @@ function Component() {
               </WidgetHead>
               <WidgetBody className="p-0">
                 <Link
-                  to="/$organizationId/$projectId/profiles/$profileId"
+                  className="row items-center gap-3 p-4 transition-colors hover:bg-accent"
                   params={{
                     organizationId,
                     projectId,
                     profileId: session.profileId,
                   }}
-                  className="row items-center gap-3 p-4 transition-colors hover:bg-accent"
+                  to="/$organizationId/$projectId/profiles/$profileId"
                 >
                   <ProfileAvatar {...profile} size="lg" />
                   <div className="col min-w-0 gap-0.5">
@@ -319,7 +314,7 @@ function Component() {
                       {getProfileName(profile, false) ?? session.profileId}
                     </span>
                     {profile.email && (
-                      <span className="truncate text-sm text-muted-foreground">
+                      <span className="truncate text-muted-foreground text-sm">
                         {profile.email}
                       </span>
                     )}
@@ -350,24 +345,24 @@ function Component() {
             <div className="divide-y">
               {events.map((event) => (
                 <div
-                  key={event.id}
                   className="row items-center gap-3 px-4 py-2"
+                  key={event.id}
                 >
-                  <EventIcon name={event.name} meta={event.meta} size="sm" />
+                  <EventIcon meta={event.meta} name={event.name} size="sm" />
                   <div className="col min-w-0 flex-1">
-                    <span className="truncate text-sm font-medium">
+                    <span className="truncate font-medium text-sm">
                       {event.name === 'screen_view' && event.path
                         ? event.path
                         : event.name.replace(/_/g, ' ')}
                     </span>
                   </div>
-                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                  <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
                     {formatDateTime(event.createdAt)}
                   </span>
                 </div>
               ))}
               {events.length === 0 && (
-                <div className="py-8 text-center text-sm text-muted-foreground">
+                <div className="py-8 text-center text-muted-foreground text-sm">
                   No events found
                 </div>
               )}

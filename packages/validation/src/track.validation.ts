@@ -67,9 +67,9 @@ export const zReplayPayload = z.object({
   chunk_index: z.number().int().min(0).max(65_535),
   events_count: z.number().int().min(1),
   is_full_snapshot: z.boolean(),
-  started_at: z.string(),
-  ended_at: z.string(),
-  payload: z.string().max(1_048_576 * 2), // 1MB max
+  started_at: z.string().datetime(),
+  ended_at: z.string().datetime(),
+  payload: z.string().max(1_048_576 * 2), // 2MB max
 });
 
 export const zTrackHandlerPayload = z.discriminatedUnion('type', [

@@ -1,3 +1,4 @@
+import { getSafeJson } from '@openpanel/json';
 import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
@@ -14,7 +15,7 @@ import { getEventFiltersWhereClause } from './chart.service';
 import { getOrganizationByProjectIdCached } from './organization.service';
 import { getProfilesCached, type IServiceProfile } from './profile.service';
 
-export type IClickhouseSession = {
+export interface IClickhouseSession {
   id: string;
   profile_id: string;
   event_count: number;
@@ -53,8 +54,9 @@ export type IClickhouseSession = {
   revenue: number;
   sign: 1 | 0;
   version: number;
-  has_replay: boolean;
-};
+  // Dynamically added
+  has_replay?: boolean;
+}
 
 export interface IServiceSession {
   id: string;
@@ -92,8 +94,8 @@ export interface IServiceSession {
   utmContent: string;
   utmTerm: string;
   revenue: number;
-  hasReplay: boolean;
   profile?: IServiceProfile;
+  hasReplay?: boolean;
 }
 
 export interface GetSessionListOptions {
@@ -144,21 +146,19 @@ export function transformSession(session: IClickhouseSession): IServiceSession {
     utmContent: session.utm_content,
     utmTerm: session.utm_term,
     revenue: session.revenue,
-    hasReplay: session.has_replay,
     profile: undefined,
+    hasReplay: session.has_replay,
   };
 }
 
-type Direction = 'initial' | 'next' | 'prev';
-
-type PageInfo = {
+interface PageInfo {
   next?: Cursor; // use last row
-};
+}
 
-type Cursor = {
+interface Cursor {
   createdAt: string; // ISO 8601 with ms
   id: string;
-};
+}
 
 export async function getSessionList({
   cursor,
@@ -238,13 +238,14 @@ export async function getSessionList({
     sb.select[column] = column;
   });
 
-  sb.select.has_replay = `toBool(src.session_id != '') as has_replay`;
+  sb.select.has_replay = `toBool(src.session_id != '') as hasReplay`;
   sb.joins.has_replay = `LEFT JOIN (SELECT DISTINCT session_id FROM ${TABLE_NAMES.session_replay_chunks} WHERE project_id = ${sqlstring.escape(projectId)} AND started_at > now() - INTERVAL ${dateIntervalInDays} DAY) AS src ON src.session_id = id`;
 
   const sql = getSql();
   const data = await chQuery<
     IClickhouseSession & {
       latestCreatedAt: string;
+      hasReplay: boolean;
     }
   >(sql);
 
@@ -347,20 +348,24 @@ export async function getSessionReplayChunksFrom(
      FROM ${TABLE_NAMES.session_replay_chunks}
      WHERE session_id = ${sqlstring.escape(sessionId)}
        AND project_id = ${sqlstring.escape(projectId)}
-     ORDER BY started_at, ended_at
+     ORDER BY started_at, ended_at, chunk_index
      LIMIT ${REPLAY_CHUNKS_PAGE_SIZE + 1}
      OFFSET ${fromIndex}`
   );
 
   return {
-    data: rows.slice(0, REPLAY_CHUNKS_PAGE_SIZE).map((row, index) => ({
-      chunkIndex: index + fromIndex,
-      events: JSON.parse(row.payload) as {
-        type: number;
-        data: unknown;
-        timestamp: number;
-      }[],
-    })),
+    data: rows
+      .slice(0, REPLAY_CHUNKS_PAGE_SIZE)
+      .map((row, index) => {
+        const events = getSafeJson<
+          { type: number; data: unknown; timestamp: number }[]
+        >(row.payload);
+        if (!events) {
+          return null;
+        }
+        return { chunkIndex: index + fromIndex, events };
+      })
+      .filter(Boolean),
     hasMore: rows.length > REPLAY_CHUNKS_PAGE_SIZE,
   };
 }
@@ -369,19 +374,33 @@ class SessionService {
   constructor(private client: typeof ch) {}
 
   async byId(sessionId: string, projectId: string) {
-    const result = await clix(this.client)
-      .select<IClickhouseSession>(['*'])
-      .from(TABLE_NAMES.sessions)
-      .where('id', '=', sessionId)
-      .where('project_id', '=', projectId)
-      .where('sign', '=', 1)
-      .execute();
+    const [sessionRows, hasReplayRows] = await Promise.all([
+      clix(this.client)
+        .select<IClickhouseSession>(['*'])
+        .from(TABLE_NAMES.sessions, true)
+        .where('id', '=', sessionId)
+        .where('project_id', '=', projectId)
+        .where('sign', '=', 1)
+        .execute(),
+      chQuery<{ n: number }>(
+        `SELECT 1 AS n
+         FROM ${TABLE_NAMES.session_replay_chunks}
+         WHERE session_id = ${sqlstring.escape(sessionId)}
+           AND project_id = ${sqlstring.escape(projectId)}
+         LIMIT 1`
+      ),
+    ]);
 
-    if (!result[0]) {
+    if (!sessionRows[0]) {
       throw new Error('Session not found');
     }
 
-    return transformSession(result[0]);
+    const session = transformSession(sessionRows[0]);
+
+    return {
+      ...session,
+      hasReplay: hasReplayRows.length > 0,
+    };
   }
 }
 

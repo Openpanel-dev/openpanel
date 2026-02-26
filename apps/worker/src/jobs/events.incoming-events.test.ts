@@ -32,6 +32,8 @@ const SESSION_TIMEOUT = 30 * 60 * 1000;
 const projectId = 'test-project';
 const currentDeviceId = 'device-123';
 const previousDeviceId = 'device-456';
+// Valid UUID used when creating a new session in tests
+const newSessionId = 'a1b2c3d4-e5f6-4789-a012-345678901234';
 const geo = {
   country: 'US',
   city: 'New York',
@@ -67,7 +69,7 @@ describe('incomingEvent', () => {
     vi.clearAllMocks();
   });
 
-  it.only('should create a session start and an event', async () => {
+  it('should create a session start and an event', async () => {
     const spySessionsQueueAdd = vi.spyOn(sessionsQueue, 'add');
     const timestamp = new Date();
     // Mock job data
@@ -90,12 +92,15 @@ describe('incomingEvent', () => {
       projectId,
       currentDeviceId,
       previousDeviceId,
+      deviceId: currentDeviceId,
+      sessionId: newSessionId,
     };
     const event = {
       name: 'test_event',
       deviceId: currentDeviceId,
       profileId: '',
       sessionId: expect.stringMatching(
+        // biome-ignore lint/performance/useTopLevelRegex: test
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
       ),
       projectId,
@@ -182,6 +187,8 @@ describe('incomingEvent', () => {
       projectId,
       currentDeviceId,
       previousDeviceId,
+      deviceId: currentDeviceId,
+      sessionId: 'session-123',
     };
 
     const changeDelay = vi.fn();
@@ -263,6 +270,8 @@ describe('incomingEvent', () => {
       projectId,
       currentDeviceId: '',
       previousDeviceId: '',
+      deviceId: '',
+      sessionId: '',
       uaInfo: uaInfoServer,
     };
 
@@ -367,6 +376,8 @@ describe('incomingEvent', () => {
       projectId,
       currentDeviceId: '',
       previousDeviceId: '',
+      deviceId: '',
+      sessionId: '',
       uaInfo: uaInfoServer,
     };
 

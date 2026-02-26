@@ -52,7 +52,7 @@ async function createEventAndNotify(
   logger.info('Creating event', { event: payload });
   const [event] = await Promise.all([
     createEvent(payload),
-    checkNotificationRulesForEvent(payload).catch(() => {}),
+    checkNotificationRulesForEvent(payload).catch(() => null),
   ]);
 
   return event;

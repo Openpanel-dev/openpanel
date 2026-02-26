@@ -1,14 +1,12 @@
-import { ProjectLink } from '@/components/links';
-import { SerieIcon } from '@/components/report-chart/common/serie-icon';
-import { formatDateTime, formatTimeAgoOrDateTime } from '@/utils/date';
-import type { ColumnDef } from '@tanstack/react-table';
-import { Video } from 'lucide-react';
-
-import { ColumnCreatedAt } from '@/components/column-created-at';
-import { ProfileAvatar } from '@/components/profiles/profile-avatar';
-import { getProfileName } from '@/utils/getters';
 import { round } from '@openpanel/common';
 import type { IServiceSession } from '@openpanel/db';
+import type { ColumnDef } from '@tanstack/react-table';
+import { Video } from 'lucide-react';
+import { ColumnCreatedAt } from '@/components/column-created-at';
+import { ProjectLink } from '@/components/links';
+import { ProfileAvatar } from '@/components/profiles/profile-avatar';
+import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { getProfileName } from '@/utils/getters';
 
 function formatDuration(milliseconds: number): string {
   const seconds = milliseconds / 1000;
@@ -45,20 +43,20 @@ export function useColumns() {
       cell: ({ row }) => {
         const session = row.original;
         return (
-          <div className="row gap-2 items-center">
+          <div className="row items-center gap-2">
             <ProjectLink
-              href={`/sessions/${session.id}`}
               className="font-medium"
+              href={`/sessions/${session.id}`}
               title={session.id}
             >
               {session.id.slice(0, 8)}...
             </ProjectLink>
             {session.hasReplay && (
               <ProjectLink
-                href={`/sessions/${session.id}#replay`}
-                className="text-muted-foreground hover:text-foreground"
-                title="View replay"
                 aria-label="View replay"
+                className="text-muted-foreground hover:text-foreground"
+                href={`/sessions/${session.id}#replay`}
+                title="View replay"
               >
                 <Video className="size-4" />
               </ProjectLink>
@@ -76,8 +74,8 @@ export function useColumns() {
         if (session.profile) {
           return (
             <ProjectLink
+              className="row items-center gap-2 font-medium"
               href={`/profiles/${encodeURIComponent(session.profile.id)}`}
-              className="font-medium row gap-2 items-center"
             >
               <ProfileAvatar size="sm" {...session.profile} />
               {getProfileName(session.profile)}
@@ -86,8 +84,8 @@ export function useColumns() {
         }
         return (
           <ProjectLink
+            className="font-medium font-mono"
             href={`/profiles/${encodeURIComponent(session.profileId)}`}
-            className="font-mono font-medium"
           >
             {session.profileId}
           </ProjectLink>

@@ -1,8 +1,7 @@
-import { type Redis, getRedisCache } from '@openpanel/redis';
-
 import { getSafeJson } from '@openpanel/json';
+import { getRedisCache, type Redis } from '@openpanel/redis';
 import { assocPath, clone } from 'ramda';
-import { TABLE_NAMES, ch } from '../clickhouse/client';
+import { ch, TABLE_NAMES } from '../clickhouse/client';
 import type { IClickhouseEvent } from '../services/event.service';
 import type { IClickhouseSession } from '../services/session.service';
 import { BaseBuffer } from './base-buffer';
@@ -35,14 +34,14 @@ export class SessionBuffer extends BaseBuffer {
       | {
           projectId: string;
           profileId: string;
-        },
+        }
   ) {
     let hit: string | null = null;
     if ('sessionId' in options) {
       hit = await this.redis.get(`session:${options.sessionId}`);
     } else {
       hit = await this.redis.get(
-        `session:${options.projectId}:${options.profileId}`,
+        `session:${options.projectId}:${options.profileId}`
       );
     }
 
@@ -54,7 +53,7 @@ export class SessionBuffer extends BaseBuffer {
   }
 
   async getSession(
-    event: IClickhouseEvent,
+    event: IClickhouseEvent
   ): Promise<[IClickhouseSession] | [IClickhouseSession, IClickhouseSession]> {
     const existingSession = await this.getExistingSession({
       sessionId: event.session_id,
@@ -186,14 +185,14 @@ export class SessionBuffer extends BaseBuffer {
         `session:${newSession.id}`,
         JSON.stringify(newSession),
         'EX',
-        60 * 60,
+        60 * 60
       );
       if (newSession.profile_id) {
         multi.set(
           `session:${newSession.project_id}:${newSession.profile_id}`,
           JSON.stringify(newSession),
           'EX',
-          60 * 60,
+          60 * 60
         );
       }
       for (const session of sessions) {
@@ -220,10 +219,12 @@ export class SessionBuffer extends BaseBuffer {
       const events = await this.redis.lrange(
         this.redisKey,
         0,
-        this.batchSize - 1,
+        this.batchSize - 1
       );
 
-      if (events.length === 0) return;
+      if (events.length === 0) {
+        return;
+      }
 
       const sessions = events
         .map((e) => getSafeJson<IClickhouseSession>(e))
@@ -258,7 +259,7 @@ export class SessionBuffer extends BaseBuffer {
     }
   }
 
-  async getBufferSize() {
+  getBufferSize() {
     return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
   }
 }

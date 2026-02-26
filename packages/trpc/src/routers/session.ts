@@ -1,12 +1,10 @@
-import { z } from 'zod';
-
 import {
   getSessionList,
   getSessionReplayChunksFrom,
   sessionService,
 } from '@openpanel/db';
 import { zChartEventFilter } from '@openpanel/validation';
-
+import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export function encodeCursor(cursor: {
@@ -18,7 +16,7 @@ export function encodeCursor(cursor: {
 }
 
 export function decodeCursor(
-  encoded: string,
+  encoded: string
 ): { createdAt: string; id: string } | null {
   try {
     const json = Buffer.from(encoded, 'base64url').toString('utf8');
@@ -44,7 +42,7 @@ export const sessionRouter = createTRPCRouter({
         endDate: z.date().optional(),
         search: z.string().optional(),
         take: z.number().default(50),
-      }),
+      })
     )
     .query(async ({ input }) => {
       const cursor = input.cursor ? decodeCursor(input.cursor) : null;
@@ -62,7 +60,7 @@ export const sessionRouter = createTRPCRouter({
 
   byId: protectedProcedure
     .input(z.object({ sessionId: z.string(), projectId: z.string() }))
-    .query(async ({ input: { sessionId, projectId } }) => {
+    .query(({ input: { sessionId, projectId } }) => {
       return sessionService.byId(sessionId, projectId);
     }),
 
@@ -72,9 +70,9 @@ export const sessionRouter = createTRPCRouter({
         sessionId: z.string(),
         projectId: z.string(),
         fromIndex: z.number().int().min(0).default(0),
-      }),
+      })
     )
-    .query(async ({ input: { sessionId, projectId, fromIndex } }) => {
+    .query(({ input: { sessionId, projectId, fromIndex } }) => {
       return getSessionReplayChunksFrom(sessionId, projectId, fromIndex);
     }),
 });
