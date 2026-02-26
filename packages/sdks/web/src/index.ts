@@ -31,6 +31,13 @@ export type SessionReplayOptions = {
 // In the library build this is `undefined`.
 declare const __OPENPANEL_REPLAY_URL__: string | undefined;
 
+// Capture script element synchronously; currentScript is only set during sync execution.
+// Used by loadReplayModule() to derive the replay script URL in the IIFE build.
+const _replayScriptRef: HTMLScriptElement | null =
+  typeof document !== 'undefined'
+    ? (document.currentScript as HTMLScriptElement | null)
+    : null;
+
 export type OpenPanelOptions = OpenPanelBaseOptions & {
   trackOutgoingLinks?: boolean;
   trackScreenViews?: boolean;
@@ -133,7 +140,7 @@ export class OpenPanel extends OpenPanelBase {
       // string literal only in the IIFE build, so this branch is
       // dead-code-eliminated in the library build.
       if (typeof __OPENPANEL_REPLAY_URL__ !== 'undefined') {
-        const scriptEl = document.currentScript as HTMLScriptElement | null;
+        const scriptEl = _replayScriptRef;
         const url = this.options.sessionReplay?.scriptUrl || scriptEl?.src?.replace('.js', '-replay.js') || 'https://openpanel.dev/op1-replay.js';
 
         // Already loaded (e.g. user included the script manually)
