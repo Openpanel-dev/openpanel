@@ -3,55 +3,37 @@ name: Docker Build and Push
 on:
   workflow_dispatch:
   push:
-    # branches: [ "main" ]
-    paths:
-      - "apps/api/**"
-      - "apps/worker/**"
+    paths-ignore:
+      # README and docs
+      - "**/README*"
+      - "**/readme*"
+      - "**/*.md"
+      - "**/docs/**"
+      - "**/CHANGELOG*"
+      - "**/LICENSE*"
+      # Test files
+      - "**/*.test.*"
+      - "**/*.spec.*"
+      - "**/__tests__/**"
+      - "**/tests/**"
+      # SDKs (published separately)
+      - "packages/sdks/**"
+      # Public app (docs/marketing, not part of Docker deploy)
       - "apps/public/**"
-      - "apps/start/**"
-      - "packages/**"
-      - "!packages/sdks/**"
-      - "**Dockerfile"
-      - ".github/workflows/**"
+      # Dev / tooling
+      - "**/.vscode/**"
+      - "**/.cursor/**"
+      - "**/.env.example"
+      - "**/.env.*.example"
+      - "**/.gitignore"
+      - "**/.eslintignore"
+      - "**/.prettierignore"
 
 env:
   repo_owner: "openpanel-dev"
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      api: ${{ steps.filter.outputs.api }}
-      worker: ${{ steps.filter.outputs.worker }}
-      public: ${{ steps.filter.outputs.public }}
-      dashboard: ${{ steps.filter.outputs.dashboard }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v2
-        id: filter
-        with:
-          base: "main"
-          filters: |
-            api:
-              - 'apps/api/**'
-              - 'packages/**'
-              - '.github/workflows/**'
-            worker:
-              - 'apps/worker/**'
-              - 'packages/**'
-              - '.github/workflows/**'
-            public:
-              - 'apps/public/**'
-              - 'packages/**'
-              - '.github/workflows/**'
-            dashboard:
-              - 'apps/start/**'
-              - 'packages/**'
-              - '.github/workflows/**'
-
   lint-and-test:
-    needs: changes
-    if: ${{ needs.changes.outputs.api == 'true' || needs.changes.outputs.worker == 'true' || needs.changes.outputs.public == 'true' || needs.changes.outputs.dashboard == 'true' }}
     runs-on: ubuntu-latest
     services:
       redis:
@@ -106,8 +88,7 @@ jobs:
     permissions:
       packages: write
       contents: write
-    needs: [changes, lint-and-test]
-    if: ${{ needs.changes.outputs.api == 'true' }}
+    needs: lint-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -167,8 +148,7 @@ jobs:
     permissions:
       packages: write
       contents: write
-    needs: [changes, lint-and-test]
-    if: ${{ needs.changes.outputs.worker == 'true' }}
+    needs: lint-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -228,8 +208,7 @@ jobs:
     permissions:
       packages: write
       contents: write
-    needs: [changes, lint-and-test]
-    if: ${{ needs.changes.outputs.dashboard == 'true' }}
+    needs: lint-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
