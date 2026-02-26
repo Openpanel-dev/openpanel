@@ -1,0 +1,82 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "simple",
+  "include-component-in-tag": false,
+  "packages": {
+    ".": {
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "apps/api/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "apps/dashboard/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "apps/docs/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "apps/public/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "apps/worker/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "self-hosting/package.json",
+          "jsonpath": "version"
+        }
+      ]
+    }
+  },
+  "changelog-sections": [
+    {
+      "type": "feat",
+      "section": "Features"
+    },
+    {
+      "type": "fix",
+      "section": "Fixes"
+    },
+    {
+      "type": "docs",
+      "section": "Documentation"
+    },
+    {
+      "type": "style",
+      "section": "Styling"
+    },
+    {
+      "type": "refactor",
+      "section": "Code Refactoring"
+    },
+    {
+      "type": "perf",
+      "section": "Performance Improvements"
+    },
+    {
+      "type": "test",
+      "section": "Tests",
+      "hidden": true
+    },
+    {
+      "type": "build",
+      "section": "Build System",
+      "hidden": true
+    },
+    {
+      "type": "ci",
+      "section": "Continuous Integration",
+      "hidden": true
+    }
+  ]
+}
