@@ -1481,7 +1481,7 @@ importers:
   packages/sdks/astro:
     dependencies:
       '@openpanel/web':
-        specifier: workspace:1.0.7-local
+        specifier: workspace:1.1.0-local
         version: link:../web
     devDependencies:
       astro:
@@ -1494,7 +1494,7 @@ importers:
         specifier: workspace:*
         version: link:../../common
       '@openpanel/sdk':
-        specifier: workspace:1.0.4-local
+        specifier: workspace:1.1.0-local
         version: link:../sdk
       express:
         specifier: ^4.17.0 || ^5.0.0
@@ -1519,7 +1519,7 @@ importers:
   packages/sdks/nextjs:
     dependencies:
       '@openpanel/web':
-        specifier: workspace:1.0.7-local
+        specifier: workspace:1.1.0-local
         version: link:../web
       next:
         specifier: ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
@@ -1547,7 +1547,7 @@ importers:
   packages/sdks/nuxt:
     dependencies:
       '@openpanel/web':
-        specifier: workspace:1.0.7-local
+        specifier: workspace:1.1.0-local
         version: link:../web
       h3:
         specifier: ^1.0.0
@@ -1584,7 +1584,7 @@ importers:
   packages/sdks/react-native:
     dependencies:
       '@openpanel/sdk':
-        specifier: workspace:1.0.4-local
+        specifier: workspace:1.1.0-local
         version: link:../sdk
       expo-application:
         specifier: 5 - 7
@@ -1630,7 +1630,7 @@ importers:
   packages/sdks/web:
     dependencies:
       '@openpanel/sdk':
-        specifier: workspace:1.0.4-local
+        specifier: workspace:1.1.0-local
         version: link:../sdk
       '@rrweb/types':
         specifier: 2.0.0-alpha.20
