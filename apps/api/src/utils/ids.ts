@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { generateDeviceId } from '@openpanel/common/server';
+import { getSafeJson } from '@openpanel/json';
 import { getRedisCache } from '@openpanel/redis';
 
 export async function getDeviceId({
@@ -16,11 +17,11 @@ export async function getDeviceId({
   overrideDeviceId?: string;
 }) {
   if (overrideDeviceId) {
-    return { deviceId: overrideDeviceId, sessionId: undefined };
+    return { deviceId: overrideDeviceId, sessionId: '' };
   }
 
   if (!ua) {
-    return { deviceId: '', sessionId: undefined };
+    return { deviceId: '', sessionId: '' };
   }
 
   const currentDeviceId = generateDeviceId({
@@ -56,22 +57,30 @@ async function getDeviceIdFromSession({
     const multi = getRedisCache().multi();
     multi.hget(
       `bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`,
-      'data',
+      'data'
     );
     multi.hget(
       `bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`,
-      'data',
+      'data'
     );
     const res = await multi.exec();
     if (res?.[0]?.[1]) {
-      const data = JSON.parse(res?.[0]?.[1] as string);
-      const sessionId = data.payload.sessionId;
-      return { deviceId: currentDeviceId, sessionId };
+      const data = getSafeJson<{ payload: { sessionId: string } }>(
+        (res?.[0]?.[1] as string) ?? ''
+      );
+      if (data) {
+        const sessionId = data.payload.sessionId;
+        return { deviceId: currentDeviceId, sessionId };
+      }
     }
     if (res?.[1]?.[1]) {
-      const data = JSON.parse(res?.[1]?.[1] as string);
-      const sessionId = data.payload.sessionId;
-      return { deviceId: previousDeviceId, sessionId };
+      const data = getSafeJson<{ payload: { sessionId: string } }>(
+        (res?.[1]?.[1] as string) ?? ''
+      );
+      if (data) {
+        const sessionId = data.payload.sessionId;
+        return { deviceId: previousDeviceId, sessionId };
+      }
     }
   } catch (error) {
     console.error('Error getting session end GET /track/device-id', error);
@@ -113,13 +122,21 @@ function getSessionId(params: {
     bytes = 16,
   } = params;
 
-  if (!projectId) throw new Error('projectId is required');
-  if (!deviceId) throw new Error('deviceId is required');
-  if (windowMs <= 0) throw new Error('windowMs must be > 0');
-  if (graceMs < 0 || graceMs >= windowMs)
+  if (!projectId) {
+    throw new Error('projectId is required');
+  }
+  if (!deviceId) {
+    throw new Error('deviceId is required');
+  }
+  if (windowMs <= 0) {
+    throw new Error('windowMs must be > 0');
+  }
+  if (graceMs < 0 || graceMs >= windowMs) {
     throw new Error('graceMs must be >= 0 and < windowMs');
-  if (bytes < 8 || bytes > 32)
+  }
+  if (bytes < 8 || bytes > 32) {
     throw new Error('bytes must be between 8 and 32');
+  }
 
   const bucket = Math.floor(eventMs / windowMs);
   const offset = eventMs - bucket * windowMs;

@@ -48,8 +48,9 @@ export function startReplayRecorder(
     if (buffer.length === 0) return;
 
     const payloadJson = JSON.stringify(buffer);
+    const payloadBytes = new TextEncoder().encode(payloadJson).length;
 
-    if (payloadJson.length > maxPayloadBytes) {
+    if (payloadBytes > maxPayloadBytes) {
       if (buffer.length > 1) {
         const mid = Math.floor(buffer.length / 2);
         const firstHalf = buffer.slice(0, mid);
@@ -70,17 +71,21 @@ export function startReplayRecorder(
     const startedAt = buffer[0]!.timestamp;
     const endedAt = buffer[buffer.length - 1]!.timestamp;
 
-    sendChunk({
-      chunk_index: chunkIndex,
-      events_count: buffer.length,
-      is_full_snapshot: isFullSnapshot,
-      started_at: new Date(startedAt).toISOString(),
-      ended_at: new Date(endedAt).toISOString(),
-      payload: payloadJson,
-    });
-
-    chunkIndex += 1;
-    buffer = [];
+    try {
+      sendChunk({
+        chunk_index: chunkIndex,
+        events_count: buffer.length,
+        is_full_snapshot: isFullSnapshot,
+        started_at: new Date(startedAt).toISOString(),
+        ended_at: new Date(endedAt).toISOString(),
+        payload: payloadJson,
+      });
+      chunkIndex += 1;
+      buffer = [];
+    } catch (err) {
+      console.error('[ReplayRecorder] sendChunk failed', err);
+      throw err;
+    }
   }
 
   function flushIfNeeded(isCheckout: boolean): void {
@@ -132,6 +137,11 @@ export function startReplayRecorder(
   window.addEventListener('pagehide', onPageHide);
 
   stopRecording = () => {
+    // Flush any buffered events before tearing down (same logic as flushTimer)
+    if (buffer.length > 0) {
+      const hasFullSnapshot = buffer.some((e) => e.type === 2);
+      flush(hasFullSnapshot);
+    }
     if (flushTimer) {
       clearInterval(flushTimer);
       flushTimer = null;

@@ -93,6 +93,9 @@ export function ReplayPlayer({
 
         playerRef.current = player;
 
+        // Track play state from replayer (getMetaData() does not expose isPlaying)
+        let playingState = false;
+
         // Wire rrweb's built-in event emitter — no RAF loop needed.
         // Note: rrweb-player does NOT emit ui-update-duration; duration is
         // read from getMetaData() on init and after each addEvent batch.
@@ -102,16 +105,19 @@ export function ReplayPlayer({
         });
 
         player.addEventListener('ui-update-player-state', (e) => {
-          setIsPlaying(e.payload === 'playing');
+          const playing = e.payload === 'playing';
+          playingState = playing;
+          setIsPlaying(playing);
         });
 
-        // Pause on tab hide; resume on show (prevents timer drift)
+        // Pause on tab hide; resume on show (prevents timer drift).
+        // getMetaData() does not expose isPlaying, so we use playingState
+        // kept in sync by ui-update-player-state above.
         let wasPlaying = false;
         handleVisibilityChange = () => {
           if (!player) return;
           if (document.hidden) {
-            const meta = player.getMetaData() as { isPlaying?: boolean };
-            wasPlaying = meta.isPlaying ?? false;
+            wasPlaying = playingState;
             if (wasPlaying) player.pause();
           } else {
             if (wasPlaying) {

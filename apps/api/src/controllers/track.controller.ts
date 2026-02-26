@@ -194,7 +194,7 @@ async function handleTrack(
     .filter(Boolean)
     .join('-');
 
-  const promises = [];
+  const promises: Promise<unknown>[] = [];
 
   // If we have more than one property in the identity object, we should identify the user
   // Otherwise its only a profileId and we should not identify the user
@@ -436,7 +436,7 @@ export async function fetchDeviceId(
       const data = JSON.parse(res?.[0]?.[1] as string);
       const sessionId = data.payload.sessionId;
       return reply.status(200).send({
-        deviceId: sessionId,
+        deviceId: currentDeviceId,
         sessionId,
         message: 'current session exists for this device id',
       });
@@ -446,7 +446,7 @@ export async function fetchDeviceId(
       const data = JSON.parse(res?.[1]?.[1] as string);
       const sessionId = data.payload.sessionId;
       return reply.status(200).send({
-        deviceId: sessionId,
+        deviceId: previousDeviceId,
         sessionId,
         message: 'previous session exists for this device id',
       });

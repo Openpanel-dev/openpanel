@@ -56,6 +56,9 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
     (clientX: number) => {
       if (!trackRef.current || duration <= 0) return null;
       const rect = trackRef.current.getBoundingClientRect();
+      if (rect.width <= 0 || !Number.isFinite(rect.width)) {
+        return null;
+      }
       const x = clientX - rect.left;
       const pct = Math.max(0, Math.min(1, x / rect.width));
       return { pct, timeMs: pct * duration };

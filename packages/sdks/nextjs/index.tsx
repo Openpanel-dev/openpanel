@@ -136,6 +136,7 @@ export function useOpenPanel() {
     clearRevenue,
     pendingRevenue,
     fetchDeviceId,
+    getDeviceId,
   };
 }
 
@@ -170,6 +171,9 @@ function decrement(payload: DecrementPayload) {
 
 function fetchDeviceId() {
   return window.op.fetchDeviceId();
+}
+function getDeviceId() {
+  return window.op.getDeviceId();
 }
 function clearRevenue() {
   window.op.clearRevenue();
