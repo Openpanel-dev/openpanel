@@ -102,7 +102,18 @@ export function KeyValueGrid({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                clipboard(item.value);
+                if (typeof item.value === 'object') {
+                  try {
+                    const value = JSON.stringify(item.value);
+                    clipboard(value);
+                  }
+                  catch {
+                    clipboard(item.value);
+                  }
+                }
+                else {
+                  clipboard(item.value);
+                }
               }}
               type="button"
               className="absolute left-2 top-1/2 -translate-y-1/2 -translate-x-full opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out bg-background border border-border rounded p-1 shadow-sm z-10"
