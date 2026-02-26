@@ -14,14 +14,15 @@ export async function duplicateHook(
   const ip = req.clientIp;
   const origin = req.headers.origin;
   const clientId = req.headers['openpanel-client-id'];
-  const isReplay = 'type' in req.body && req.body.type === 'replay';
+  const body = req?.body;
+  const isTrackPayload = getIsTrackPayload(req);
+  const isReplay = isTrackPayload && req.body.type === 'replay';
   const shouldCheck = ip && origin && clientId && !isReplay;
-
   const isDuplicate = shouldCheck
     ? await isDuplicatedEvent({
         ip,
         origin,
-        payload: req.body,
+        payload: body,
         projectId: clientId as string,
       })
     : false;
@@ -29,4 +30,26 @@ export async function duplicateHook(
   if (isDuplicate) {
     return reply.status(200).send('Duplicate event');
   }
+}
+
+function getIsTrackPayload(
+  req: FastifyRequest<{
+    Body: ITrackHandlerPayload | DeprecatedPostEventPayload;
+  }>
+): req is FastifyRequest<{
+  Body: ITrackHandlerPayload;
+}> {
+  if (req.method !== 'POST') {
+    return false;
+  }
+
+  if (!req.body) {
+    return false;
+  }
+
+  if (typeof req.body !== 'object' || Array.isArray(req.body)) {
+    return false;
+  }
+
+  return 'type' in req.body;
 }
