@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { TABLE_NAMES } from '../src/clickhouse/client';
 import {
-  addColumns,
   createTable,
   modifyTTL,
   runClickhouseMigrationCommands,
@@ -25,8 +24,8 @@ export async function up() {
         '`is_full_snapshot` Bool',
         '`payload` String CODEC(ZSTD(6))',
       ],
-      orderBy: ['project_id', 'session_id', 'chunk_index'],
-      partitionBy: 'toYYYYMM(started_at)',
+      orderBy: ['project_id', 'session_id', 'started_at', 'chunk_index'],
+      partitionBy: 'toYYYYMMDD(started_at)',
       settings: {
         index_granularity: 8192,
       },
@@ -42,16 +41,16 @@ export async function up() {
   ];
 
   fs.writeFileSync(
-    path.join(__filename.replace('.ts', '.sql')),
+    path.join(import.meta.filename.replace('.ts', '.sql')),
     sqls
       .map((sql) =>
         sql
           .trim()
           .replace(/;$/, '')
           .replace(/\n{2,}/g, '\n')
-          .concat(';'),
+          .concat(';')
       )
-      .join('\n\n---\n\n'),
+      .join('\n\n---\n\n')
   );
 
   if (!process.argv.includes('--dry')) {
