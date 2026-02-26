@@ -20,7 +20,7 @@
     "@opennextjs/cloudflare": "^1.16.5",
     "@openpanel/common": "workspace:*",
     "@openpanel/geo": "workspace:*",
-    "@openpanel/nextjs": "^1.1.1",
+    "@openpanel/nextjs": "^1.2.0",
     "@openpanel/payments": "workspace:^",
     "@openpanel/sdk-info": "workspace:^",
     "@openstatus/react": "0.0.3",

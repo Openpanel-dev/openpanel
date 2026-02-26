@@ -42,6 +42,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
           <OpenPanelComponent
             clientId={process.env.NEXT_PUBLIC_OP_CLIENT_ID}
+            sessionReplay={{
+              enabled: true,
+            }}
             trackAttributes
             trackOutgoingLinks
             trackScreenViews
