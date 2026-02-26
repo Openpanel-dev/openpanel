@@ -1,6 +1,8 @@
+
 import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { FeatureCardHoverTrack } from '@/components/feature-card-hover-track';
 
 interface FeatureCardProps {
   link?: {
@@ -64,41 +66,45 @@ export function FeatureCard({
 }: FeatureCardProps) {
   if (illustration) {
     return (
+      <FeatureCardHoverTrack title={title}>
+        <FeatureCardContainer className={className}>
+          {illustration}
+          <div className="col gap-2" data-content>
+            <h3 className="font-semibold text-xl">{title}</h3>
+            <p className="text-muted-foreground">{description}</p>
+          </div>
+          {children}
+          {link && (
+            <Link
+              className="mx-6 text-muted-foreground text-sm transition-colors hover:text-primary"
+              href={link.href}
+            >
+              {link.children}
+            </Link>
+          )}
+        </FeatureCardContainer>
+      </FeatureCardHoverTrack>
+    );
+  }
+
+  return (
+    <FeatureCardHoverTrack title={title}>
       <FeatureCardContainer className={className}>
-        {illustration}
-        <div className="col gap-2" data-content>
-          <h3 className="font-semibold text-xl">{title}</h3>
-          <p className="text-muted-foreground">{description}</p>
+        {Icon && <Icon className="size-6" />}
+        <div className="col gap-2">
+          <h3 className="font-semibold text-lg">{title}</h3>
+          <p className="text-muted-foreground text-sm">{description}</p>
         </div>
         {children}
         {link && (
           <Link
-            className="mx-6 text-muted-foreground text-sm transition-colors hover:text-primary"
+            className="text-muted-foreground text-sm transition-colors hover:text-primary"
             href={link.href}
           >
             {link.children}
           </Link>
         )}
       </FeatureCardContainer>
-    );
-  }
-
-  return (
-    <FeatureCardContainer className={className}>
-      {Icon && <Icon className="size-6" />}
-      <div className="col gap-2">
-        <h3 className="font-semibold text-lg">{title}</h3>
-        <p className="text-muted-foreground text-sm">{description}</p>
-      </div>
-      {children}
-      {link && (
-        <Link
-          className="text-muted-foreground text-sm transition-colors hover:text-primary"
-          href={link.href}
-        >
-          {link.children}
-        </Link>
-      )}
-    </FeatureCardContainer>
+    </FeatureCardHoverTrack>
   );
 }
