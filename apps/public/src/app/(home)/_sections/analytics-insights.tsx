@@ -3,6 +3,7 @@ import {
   ChevronRightIcon,
   DollarSignIcon,
   GlobeIcon,
+  PlayCircleIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { FeatureCard } from '@/components/feature-card';
@@ -41,6 +42,16 @@ const features = [
       children: 'All about tracking',
     },
   },
+  {
+    title: 'Session Replay',
+    description:
+      'Watch real user sessions to see exactly what happened. Privacy controls built in, loads async.',
+    icon: PlayCircleIcon,
+    link: {
+      href: '/features/session-replay',
+      children: 'See session replay',
+    },
+  },
 ];
 
 export function AnalyticsInsights() {
@@ -68,7 +79,7 @@ export function AnalyticsInsights() {
           variant="large"
         />
       </div>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {features.map((feature) => (
           <FeatureCard
             description={feature.description}

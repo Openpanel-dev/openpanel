@@ -3,4 +3,15 @@
 - `trackScreenViews` - If true, the library will automatically track screen views (default: false)
 - `trackOutgoingLinks` - If true, the library will automatically track outgoing links (default: false)
 - `trackAttributes` - If true, you can trigger events by using html attributes (`<button type="button" data-track="your_event" />`) (default: false)
+- `sessionReplay` - Session replay configuration object (default: disabled). See [session replay docs](/docs/session-replay) for full options.
+  - `enabled` - Enable session replay recording (default: false)
+  - `maskAllInputs` - Mask all input field values (default: true)
+  - `maskTextSelector` - CSS selector for text elements to mask (default: `[data-openpanel-replay-mask]`)
+  - `blockSelector` - CSS selector for elements to replace with a placeholder (default: `[data-openpanel-replay-block]`)
+  - `blockClass` - Class name that blocks elements from being recorded
+  - `ignoreSelector` - CSS selector for elements excluded from interaction tracking
+  - `flushIntervalMs` - How often (ms) recorded events are sent to the server (default: 10000)
+  - `maxEventsPerChunk` - Maximum events per payload chunk (default: 200)
+  - `maxPayloadBytes` - Maximum payload size in bytes (default: 1048576)
+  - `scriptUrl` - Custom URL for the replay script (script-tag builds only)
 

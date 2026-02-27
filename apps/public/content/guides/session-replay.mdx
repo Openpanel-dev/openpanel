@@ -1,0 +1,245 @@
+---
+title: "How to add session replay to your website"
+description: "Add privacy-first session replay to any site in minutes using OpenPanel. See exactly what users do without recording sensitive data."
+difficulty: beginner
+timeToComplete: 10
+date: 2026-02-27
+updated: 2026-02-27
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Install OpenPanel"
+    anchor: "install"
+  - name: "Enable session replay"
+    anchor: "enable"
+  - name: "Configure privacy controls"
+    anchor: "privacy"
+  - name: "View replays in the dashboard"
+    anchor: "view"
+---
+
+# How to add session replay to your website
+
+This guide walks you through enabling [session replay](/features/session-replay) with OpenPanel. By the end, you'll be recording real user sessions you can play back in the dashboard to understand exactly what your users did.
+
+Session replay captures clicks, scrolls, and interactions as structured data—not video. Privacy controls are built in, and the replay module loads asynchronously so it never slows down your main analytics.
+
+## Prerequisites
+
+- An OpenPanel account
+- Your Client ID from the [OpenPanel dashboard](https://dashboard.openpanel.dev/onboarding)
+- Either the `@openpanel/web` npm package installed, or access to add a script tag to your site
+
+## Install OpenPanel [#install]
+
+If you're starting fresh, add the OpenPanel script tag to your page. If you already have OpenPanel installed, skip to the next step.
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+Or with npm:
+
+```bash
+npm install @openpanel/web
+```
+
+See the [Web SDK docs](/docs/sdks/web) or [Script tag docs](/docs/sdks/script) for a full install guide.
+
+## Enable session replay [#enable]
+
+Session replay is **off by default**. Enable it by adding `sessionReplay: { enabled: true }` to your init config.
+
+### Script tag
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    sessionReplay: {
+      enabled: true,
+    },
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+The replay script (`op1-replay.js`) is fetched automatically alongside the main script. Because it loads asynchronously, it doesn't affect page load time or the size of your main analytics bundle.
+
+### NPM package
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  sessionReplay: {
+    enabled: true,
+  },
+});
+```
+
+With the npm package, the replay module is a dynamic import resolved by your bundler. It is automatically code-split from your main bundle—if you don't enable replay, the module is never included.
+
+### Next.js
+
+For Next.js, enable replay in your `OpenPanelComponent`:
+
+```tsx title="app/layout.tsx"
+import { OpenPanelComponent } from '@openpanel/nextjs';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <OpenPanelComponent
+          clientId="YOUR_CLIENT_ID"
+          trackScreenViews={true}
+          sessionReplay={{
+            enabled: true,
+          }}
+        />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+## Configure privacy controls [#privacy]
+
+Session replay captures real user behavior, so it's important to control what gets recorded. OpenPanel gives you several layers of control.
+
+### Input masking (enabled by default)
+
+All form input values are masked by default. The recorder sees that a user typed something, but not what they typed. You never need to add special attributes to password or credit card fields—they're masked automatically.
+
+If you need to disable masking for a specific use case:
+
+```ts
+sessionReplay: {
+  enabled: true,
+  maskAllInputs: false,
+}
+```
+
+### Block sensitive elements
+
+Elements with `data-openpanel-replay-block` are replaced with a grey placeholder in the replay. The element and all its children are completely excluded from recording.
+
+```html
+<!-- This section will appear as a placeholder in replays -->
+<div data-openpanel-replay-block>
+  <img src="user-avatar.jpg" alt="Profile photo" />
+  <p>Private user content</p>
+</div>
+```
+
+You can also configure a CSS selector or class to block without adding data attributes to every element:
+
+```ts
+sessionReplay: {
+  enabled: true,
+  blockSelector: '.payment-form, .user-profile-card',
+  blockClass: 'no-replay',
+}
+```
+
+### Mask specific text
+
+To mask text within an element without blocking its layout from the replay, use `data-openpanel-replay-mask`:
+
+```html
+<p>
+  Account balance:
+  <span data-openpanel-replay-mask>$1,234.56</span>
+</p>
+```
+
+The span's text appears as `***` in the replay while the surrounding layout remains visible.
+
+Configure a custom selector to avoid adding attributes to every element:
+
+```ts
+sessionReplay: {
+  enabled: true,
+  maskTextSelector: '.balance, .account-number, [data-pii]',
+}
+```
+
+### Ignore interactions
+
+Use `ignoreSelector` to prevent interactions with specific elements from being captured. The element is still visible in the replay, but clicks and input events on it are not recorded.
+
+```ts
+sessionReplay: {
+  enabled: true,
+  ignoreSelector: '.internal-debug-toolbar',
+}
+```
+
+## View replays in the dashboard [#view]
+
+Navigate to your [OpenPanel dashboard](https://dashboard.openpanel.dev) and open the Sessions view. Any recorded session will show a replay button. Click it to play back the session from the beginning.
+
+The replay timeline shows all events alongside the recording, so you can jump directly to a click, form submission, or page navigation.
+
+Replays are also accessible from user profiles. Open any user's profile, find a session in their history, and click through to the replay.
+
+## Performance considerations
+
+The replay recorder buffers events locally and sends them to OpenPanel in chunks every 10 seconds (configurable via `flushIntervalMs`). On tab close or page hide, any remaining buffered events are flushed immediately.
+
+The default chunk size limits are:
+- **200 events per chunk** (`maxEventsPerChunk`)
+- **1 MB per payload** (`maxPayloadBytes`)
+
+These defaults work well for most sites. If you have pages with heavy DOM activity, you can lower `maxEventsPerChunk` to send smaller, more frequent chunks:
+
+```ts
+sessionReplay: {
+  enabled: true,
+  flushIntervalMs: 5000,
+  maxEventsPerChunk: 100,
+}
+```
+
+## Next steps
+
+- Read the [session replay docs](/docs/session-replay) for a full option reference
+- Learn about [session tracking](/features/session-tracking) to understand what session data is available without replay
+- See how [funnels](/features/funnels) and session replay work together to diagnose drop-offs
+
+<Faqs>
+<FaqItem question="Does session replay affect my page load speed?">
+No. The replay module (`op1-replay.js`) loads as a separate async script after the page and the main analytics script. It does not block rendering or inflate your main bundle.
+</FaqItem>
+
+<FaqItem question="Is session replay enabled for all users?">
+Yes, when enabled, all sessions are recorded by default. You can use the `sampleRate` option to record only a percentage of sessions if needed.
+</FaqItem>
+
+<FaqItem question="Are passwords and credit card numbers recorded?">
+No. All input field values are masked by default (`maskAllInputs: true`). The recorder captures that a user typed something, but not the actual characters. Disable this only with a specific reason.
+</FaqItem>
+
+<FaqItem question="How long are replays kept?">
+Replays are retained for 30 days. There is no limit on the number of sessions recorded.
+</FaqItem>
+
+<FaqItem question="Can I use session replay with self-hosted OpenPanel?">
+Yes. The replay script is served from your self-hosted instance automatically. You can also use the `scriptUrl` option to load it from a custom CDN.
+</FaqItem>
+</Faqs>

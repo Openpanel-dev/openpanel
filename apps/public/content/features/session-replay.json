@@ -1,0 +1,166 @@
+{
+  "slug": "session-replay",
+  "short_name": "Session replay",
+  "seo": {
+    "title": "Session Replay - Watch Real User Sessions | OpenPanel",
+    "description": "Replay real user sessions to understand exactly what happened. Privacy-first session replay with masking controls, unlimited recordings, and 30-day retention.",
+    "keywords": [
+      "session replay",
+      "session recording",
+      "user session replay",
+      "hotjar alternative",
+      "privacy-first session replay"
+    ]
+  },
+  "hero": {
+    "heading": "See exactly what your users did",
+    "subheading": "Replay any user session to see clicks, scrolls, and interactions. Privacy controls built in. Loaded async so it never slows down your site.",
+    "badges": [
+      "Unlimited replays",
+      "30-day retention",
+      "Privacy controls built in",
+      "Async—zero bundle bloat"
+    ]
+  },
+  "definition": {
+    "title": "What is session replay?",
+    "text": "Session replay lets you watch a structured recording of what a real user did during a visit to your site or app. You see every click, scroll, form interaction, and page navigation—played back in order.\n\nMost analytics tools tell you **what happened in aggregate**: 40% of users dropped off at step 2. Session replay shows you **why**: you can watch someone struggle with a confusing form label, miss a button, or hit an error state you didn't know existed.\n\nOpenPanel session replay is built on [rrweb](https://www.rrweb.io/), an open-source recording library. It captures DOM mutations and user interactions as structured data—not video. This matters because:\n\n- **Privacy is easier to manage** — you control exactly what gets recorded with CSS selectors, not hoping a video blur is accurate\n- **Storage is efficient** — structured data compresses far better than video\n- **Playback is instant** — no buffering or waiting for video to load\n\nSession replay in OpenPanel is **opt-in and off by default**. When disabled, the replay script is never loaded and adds zero bytes to your page. When enabled, the recorder is fetched asynchronously as a separate script, so your main analytics bundle stays lean regardless.\n\nPrivacy controls are first-class:\n\n- **All inputs masked by default** — form field values are never recorded\n- **Block any element** with a data attribute or CSS selector\n- **Mask specific text** without blocking the surrounding layout\n- **Ignore interactions** on sensitive elements\n\nReplays are linked to sessions, events, and user profiles. When a user reports a bug, you can pull up their session in seconds and see exactly what happened—no need to ask them to reproduce it."
+  },
+  "capabilities_section": {
+    "title": "What you get with session replay",
+    "intro": "Everything you need to understand real user behavior, with privacy controls built in from the start."
+  },
+  "capabilities": [
+    {
+      "title": "Full session playback",
+      "description": "Replay any recorded session from start to finish. See clicks, scrolls, form interactions, and navigation in the exact order they happened."
+    },
+    {
+      "title": "Linked to events and profiles",
+      "description": "Replays are tied to the user's session, event timeline, and profile. Jump from a funnel drop-off directly to the replay for context."
+    },
+    {
+      "title": "Input masking by default",
+      "description": "All form field values are masked out of the box. You see that a user typed something—not what they typed. Disable per-field if needed."
+    },
+    {
+      "title": "Block and mask controls",
+      "description": "Block entire elements from recording with a data attribute or CSS selector. Mask specific text. Ignore interactions on sensitive areas."
+    },
+    {
+      "title": "Async loading—zero bundle impact",
+      "description": "The replay module loads as a separate async script. When replay is disabled it's never fetched. When enabled it doesn't block your main bundle."
+    },
+    {
+      "title": "Unlimited replays, 30-day retention",
+      "description": "No cap on the number of sessions recorded. Every replay is stored for 30 days and available for playback at any time."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-sessions.webp",
+      "alt": "Session overview showing user sessions with entry pages and duration",
+      "caption": "Browse all sessions. Click any one to open the replay."
+    },
+    {
+      "src": "/features/feature-sessions-details.webp",
+      "alt": "Session detail view showing events in order",
+      "caption": "The session timeline shows every event alongside the replay."
+    }
+  ],
+  "how_it_works": {
+    "title": "How session replay works",
+    "intro": "Enable it once and every qualifying session is recorded automatically.",
+    "steps": [
+      {
+        "title": "Enable replay in your init config",
+        "description": "Set `sessionReplay: { enabled: true }` in your OpenPanel init options. That's all the configuration required to start recording."
+      },
+      {
+        "title": "The replay script loads asynchronously",
+        "description": "When a session starts, OpenPanel fetches the replay module (`op1-replay.js`) as a separate async script. It doesn't block page load or inflate your main bundle."
+      },
+      {
+        "title": "Interactions are captured and sent in chunks",
+        "description": "The recorder captures DOM changes and user interactions and sends them to OpenPanel in small chunks every 10 seconds and on page unload."
+      },
+      {
+        "title": "Replay any session from the dashboard",
+        "description": "Open any session in the dashboard and hit play. The replay reconstructs the user's exact experience. Jump to specific events from the timeline."
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "Who uses session replay",
+    "intro": "Teams that need to understand real user behavior beyond what metrics alone can show.",
+    "items": [
+      {
+        "title": "Product teams",
+        "description": "When the data says users drop off at a specific step, session replay shows you exactly why. See confusion, missed CTAs, and error states you didn't know existed."
+      },
+      {
+        "title": "Support and success teams",
+        "description": "When a user reports a bug or a confusing experience, pull up their session replay in seconds. You see what they saw—no need to ask them to reproduce it."
+      },
+      {
+        "title": "Privacy-conscious teams",
+        "description": "Input masking is on by default. Block sensitive UI with a data attribute. You get the behavioral insight without recording personal data."
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "session-tracking",
+      "title": "Session tracking",
+      "description": "Structured session data—entry pages, event timelines, duration—without requiring replay."
+    },
+    {
+      "slug": "event-tracking",
+      "title": "Event tracking",
+      "description": "Custom events appear alongside replays in the session timeline."
+    },
+    {
+      "slug": "funnels",
+      "title": "Funnels",
+      "description": "Jump from a funnel drop-off step directly to the session replay to understand why."
+    }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about session replay with OpenPanel.",
+    "items": [
+      {
+        "question": "Is session replay enabled by default?",
+        "answer": "No. Session replay is opt-in. You enable it by setting `sessionReplay: { enabled: true }` in your init config. When disabled, the replay script is never fetched and adds zero overhead to your page."
+      },
+      {
+        "question": "Does enabling session replay slow down my site?",
+        "answer": "No. The replay module loads as a separate async script (`op1-replay.js`), independent of the main tracking bundle (`op1.js`). It's fetched after the page loads and does not block rendering or the main analytics script."
+      },
+      {
+        "question": "How is this different from Hotjar or FullStory?",
+        "answer": "Hotjar and FullStory record video-like streams. OpenPanel captures structured DOM events using rrweb. The result looks similar in the viewer, but structured data gives you finer-grained privacy controls (CSS-selector masking, element blocking) and is more storage-efficient. OpenPanel is also open-source and can be self-hosted."
+      },
+      {
+        "question": "Are form inputs recorded?",
+        "answer": "No. All input field values are masked by default (`maskAllInputs: true`). You see that a user interacted with a field, but not what they typed. You can disable this on a per-field basis if needed."
+      },
+      {
+        "question": "How long are replays stored?",
+        "answer": "Replays are retained for 30 days. There is no limit on the number of sessions recorded."
+      },
+      {
+        "question": "Can I block specific parts of my UI from being recorded?",
+        "answer": "Yes. Add `data-openpanel-replay-block` to any element to replace it with a placeholder in the replay. Use `data-openpanel-replay-mask` to mask specific text. Both the attribute names and the CSS selectors they target are configurable."
+      },
+      {
+        "question": "Does session replay work with self-hosted OpenPanel?",
+        "answer": "Yes. When self-hosting, the replay script is served from your instance automatically. You can also override the script URL with the `scriptUrl` option if you host it on a CDN."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Start recording sessions",
+    "href": "https://dashboard.openpanel.dev/onboarding"
+  }
+}

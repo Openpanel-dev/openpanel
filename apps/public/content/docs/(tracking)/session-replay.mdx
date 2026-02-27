@@ -1,0 +1,152 @@
+---
+title: Session Replay
+description: Record and replay user sessions to understand exactly what users did. Loaded asynchronously so it never bloats your analytics bundle.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Session replay captures a structured recording of what users do in your app or website. You can replay any session to see which elements were clicked, how forms were filled, and where users ran into friction—without guessing.
+
+<Callout type="info">
+Session replay is **not enabled by default**. You explicitly opt in per-project. When disabled, the replay script is never downloaded, keeping your analytics bundle lean.
+</Callout>
+
+## How it works
+
+OpenPanel session replay is built on [rrweb](https://www.rrweb.io/), an open-source library for recording and replaying web sessions. It captures DOM mutations, mouse movements, scroll positions, and interactions as structured data—not video.
+
+The replay module is loaded **asynchronously** as a separate script (`op1-replay.js`). This means:
+
+- Your main tracking script (`op1.js`) stays lightweight even when replay is disabled
+- The replay module is only downloaded for sessions that are actually recorded
+- No impact on page load performance when replay is turned off
+
+## Limits & retention
+
+- **Unlimited replays** — no cap on the number of sessions recorded
+- **30-day retention** — replays are stored and accessible for 30 days
+
+## Setup
+
+### Script tag
+
+Add `sessionReplay` to your `init` call. The replay script loads automatically from the same CDN as the main script.
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    sessionReplay: {
+      enabled: true,
+    },
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+### NPM package
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  sessionReplay: {
+    enabled: true,
+  },
+});
+```
+
+With the npm package, the replay module is a dynamic import code-split by your bundler. It is never included in your main bundle when session replay is disabled.
+
+## Options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | `boolean` | `false` | Enable session replay recording |
+| `maskAllInputs` | `boolean` | `true` | Mask all input field values with `*` |
+| `maskTextSelector` | `string` | `[data-openpanel-replay-mask]` | CSS selector for text elements to mask |
+| `blockSelector` | `string` | `[data-openpanel-replay-block]` | CSS selector for elements to replace with a placeholder |
+| `blockClass` | `string` | — | Class name that blocks elements from being recorded |
+| `ignoreSelector` | `string` | — | CSS selector for elements excluded from interaction tracking |
+| `flushIntervalMs` | `number` | `10000` | How often (ms) recorded events are sent to the server |
+| `maxEventsPerChunk` | `number` | `200` | Maximum number of events per payload chunk |
+| `maxPayloadBytes` | `number` | `1048576` | Maximum payload size in bytes (1 MB) |
+| `scriptUrl` | `string` | — | Custom URL for the replay script (script-tag builds only) |
+
+## Privacy controls
+
+Session replay captures user interactions. These options protect sensitive content before it ever leaves the browser.
+
+### Masking inputs
+
+All input fields are masked by default (`maskAllInputs: true`). Recorded values appear as `***` in the replay. Disable this only if you have a specific reason—form field contents are almost always personal data.
+
+### Masking specific text
+
+Add `data-openpanel-replay-mask` to any element to replace its text with `***` in replays:
+
+```html
+<p data-openpanel-replay-mask>Sensitive text here</p>
+```
+
+Or use a custom selector:
+
+```ts
+sessionReplay: {
+  enabled: true,
+  maskTextSelector: '.pii, [data-sensitive]',
+}
+```
+
+### Blocking elements
+
+Elements matched by `blockSelector` or `blockClass` are replaced with a same-size grey placeholder in the replay. The element and all its children are never recorded.
+
+```html
+<div data-openpanel-replay-block>
+  This section won't appear in replays
+</div>
+```
+
+Or with a custom selector and class:
+
+```ts
+sessionReplay: {
+  enabled: true,
+  blockSelector: '.payment-form, .user-avatar',
+  blockClass: 'no-replay',
+}
+```
+
+### Ignoring interactions
+
+Use `ignoreSelector` to exclude specific elements from interaction tracking. The element remains visible in the replay but clicks and input events on it are not recorded.
+
+```ts
+sessionReplay: {
+  enabled: true,
+  ignoreSelector: '.debug-panel',
+}
+```
+
+## Self-hosting
+
+If you self-host OpenPanel, the replay script is served from your instance automatically. You can also override the script URL if you host it separately:
+
+```ts
+sessionReplay: {
+  enabled: true,
+  scriptUrl: 'https://your-cdn.example.com/op1-replay.js',
+}
+```
+
+## Related
+
+- [Session tracking](/features/session-tracking) — understand sessions without full replay
+- [Session replay feature overview](/features/session-replay) — what you get with session replay
+- [Web SDK](/docs/sdks/web) — full web SDK reference
+- [Script tag](/docs/sdks/script) — using OpenPanel via a script tag
