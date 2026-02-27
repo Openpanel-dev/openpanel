@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/useAwait: fastify need async or done callbacks */
 process.env.TZ = 'UTC';
 
 import compress from '@fastify/compress';
@@ -151,7 +152,7 @@ const startServer = async () => {
               validateSessionToken(req.cookies.session)
             );
             req.session = session;
-          } catch (e) {
+          } catch {
             req.session = EMPTY_SESSION;
           }
         } else if (process.env.DEMO_USER_ID) {
@@ -160,7 +161,7 @@ const startServer = async () => {
               validateSessionToken(null)
             );
             req.session = session;
-          } catch (e) {
+          } catch {
             req.session = EMPTY_SESSION;
           }
         } else {
@@ -220,35 +221,46 @@ const startServer = async () => {
       );
     });
 
+    const SKIP_LOG_ERRORS = ['UNAUTHORIZED', 'FST_ERR_CTP_INVALID_MEDIA_TYPE'];
     fastify.setErrorHandler((error, request, reply) => {
-      if (error instanceof HttpError) {
-        request.log.error(`${error.message}`, error);
-        if (process.env.NODE_ENV === 'production' && error.status === 500) {
-          request.log.error('request error', { error });
-          reply.status(500).send('Internal server error');
-        } else {
-          reply.status(error.status).send({
-            status: error.status,
-            error: error.error,
-            message: error.message,
-          });
-        }
-      } else if (error.statusCode === 429) {
-        reply.status(429).send({
+      if (error.statusCode === 429) {
+        return reply.status(429).send({
           status: 429,
           error: 'Too Many Requests',
           message: 'You have exceeded the rate limit for this endpoint.',
         });
-      } else if (error.statusCode === 400) {
-        reply.status(400).send({
-          status: 400,
-          error,
-          message: 'The request was invalid.',
-        });
-      } else {
-        request.log.error('request error', { error });
-        reply.status(500).send('Internal server error');
       }
+
+      if (error instanceof HttpError) {
+        if (!SKIP_LOG_ERRORS.includes(error.code)) {
+          request.log.error('internal server error', { error });
+        }
+
+        if (process.env.NODE_ENV === 'production' && error.status === 500) {
+          return reply.status(500).send('Internal server error');
+        }
+
+        return reply.status(error.status).send({
+          status: error.status,
+          error: error.error,
+          message: error.message,
+        });
+      }
+
+      if (!SKIP_LOG_ERRORS.includes(error.code)) {
+        request.log.error('request error', { error });
+      }
+
+      const status = error?.statusCode ?? 500;
+      if (process.env.NODE_ENV === 'production' && status === 500) {
+        return reply.status(500).send('Internal server error');
+      }
+
+      return reply.status(status).send({
+        status,
+        error,
+        message: error.message,
+      });
     });
 
     if (process.env.NODE_ENV === 'production') {
