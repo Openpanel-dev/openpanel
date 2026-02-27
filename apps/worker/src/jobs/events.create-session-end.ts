@@ -12,6 +12,7 @@ import {
   profileBackfillBuffer,
   sessionBuffer,
   TABLE_NAMES,
+  transformEvent,
   transformSessionToEvent,
 } from '@openpanel/db';
 import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue';
@@ -79,17 +80,6 @@ export async function createSessionEnd(
     throw new Error('Session not found');
   }
 
-  try {
-    await handleSessionEndNotifications({
-      session,
-      payload,
-    });
-  } catch (error) {
-    logger.error('Creating notificatios for session end failed', {
-      error,
-    });
-  }
-
   const profileId = session.profile_id || payload.profileId;
 
   if (
@@ -113,7 +103,7 @@ export async function createSessionEnd(
   }
 
   // Create session end event
-  return createEvent({
+  const { document: sessionEndEvent } = await createEvent({
     ...payload,
     properties: {
       ...payload.properties,
@@ -127,14 +117,30 @@ export async function createSessionEnd(
     ),
     profileId,
   });
+
+  try {
+    await handleSessionEndNotifications({
+      session,
+      payload,
+      sessionEndEvent: transformEvent(sessionEndEvent),
+    });
+  } catch (error) {
+    logger.error('Creating notificatios for session end failed', {
+      error,
+    });
+  }
+
+  return sessionEndEvent;
 }
 
 async function handleSessionEndNotifications({
   session,
   payload,
+  sessionEndEvent,
 }: {
   session: IClickhouseSession;
   payload: IServiceCreateEventPayload;
+  sessionEndEvent: IServiceEvent;
 }) {
   const notificationRules = await getNotificationRulesByProjectId(
     payload.projectId
@@ -152,7 +158,7 @@ async function handleSessionEndNotifications({
     });
 
     if (events.length > 0) {
-      await checkNotificationRulesForSessionEnd(events);
+      await checkNotificationRulesForSessionEnd([...events, sessionEndEvent]);
     }
   }
 }

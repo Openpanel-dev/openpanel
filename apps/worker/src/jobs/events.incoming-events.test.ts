@@ -69,7 +69,9 @@ describe('incomingEvent', () => {
   });
 
   it('should create a session start and an event', async () => {
-    const spySessionsQueueAdd = vi.spyOn(sessionsQueue, 'add');
+    const spySessionsQueueAdd = vi
+      .spyOn(sessionsQueue, 'add')
+      .mockResolvedValue({} as Job);
     const timestamp = new Date();
     // Mock job data
     const jobData: EventsQueuePayloadIncomingEvent['payload'] = {
