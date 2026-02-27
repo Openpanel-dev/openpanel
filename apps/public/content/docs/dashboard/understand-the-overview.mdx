@@ -1,0 +1,193 @@
+---
+title: "Understand the overview"
+description: "The overview is the main page of every OpenPanel project. It gives you a real-time picture of how your site or app is performing right now and over any time range you choose. This page explains every section and every number so you know exactly what you're looking at."
+date: 2026-02-27
+---
+
+## Top stats
+
+The row of metric cards at the top of the page is the fastest way to understand the health of your project. Each card shows the value for the selected time range and a comparison to the previous period of the same length.
+
+### Unique Visitors
+
+The number of distinct profile IDs recorded in the selected period. How accurate this is depends on whether you use [identify](/docs/get-started/identify-users):
+
+- **Without identify**: OpenPanel generates an anonymous profile ID that rotates every 24 hours. A visitor returning on 10 different days will be counted as 10 unique visitors, because each day produces a new ID.
+- **With identify**: The profile ID is tied to the user's real identity. The same person visiting on 10 different days is counted as 1 unique visitor across the entire period.
+
+If cross-day deduplication matters to your analysis, set up [user identification](/docs/get-started/identify-users).
+
+### Sessions
+
+The total number of sessions in the selected period. A session begins when someone arrives on your site and ends after 30 minutes of inactivity or when they close the tab. One visitor can have many sessions across a day.
+
+### Pageviews
+
+The total number of page views (`screen_view` events) recorded across all sessions. Every time a visitor loads a page—including navigating between pages in a single session—it counts as one pageview.
+
+### Pages per Session
+
+The average number of pages viewed within a single session, calculated as `total pageviews / total sessions`. A higher number means visitors are exploring more of your site before leaving.
+
+### Bounce Rate
+
+The percentage of sessions where a visitor viewed only a single page and left. Calculated as `single-page sessions / total sessions × 100`. Lower is generally better—it means more visitors are engaging beyond the first page.
+
+> A session is counted as a bounce if the visitor triggered exactly one `screen_view` event before the session ended. Sessions where visitors read one article deeply and leave still count as bounces.
+
+### Session Duration
+
+The average length of a session in seconds, calculated only from sessions where the visitor did something after the first page load (duration > 0). Sessions where a visitor immediately left are excluded from the average to avoid skewing the number.
+
+### Revenue
+
+The total monetary value tracked via `revenue` events in the selected period, displayed in your account currency. Revenue is only shown if you are tracking revenue events. See the [revenue tracking docs](/features/revenue-tracking) for setup instructions.
+
+---
+
+## The time-series chart
+
+Directly below the stat cards is a line chart that shows how the selected metric changes over time. Click any stat card to switch the chart to that metric.
+
+The chart uses the **interval** you select (hour, day, week, or month) to group data points. A faint dashed line shows the equivalent period from the previous comparison window, so you can spot trends at a glance.
+
+When any metric other than Revenue is active, the chart also overlays revenue as green bars on a secondary Y-axis—this lets you correlate traffic patterns with revenue without switching cards.
+
+The trailing edge of the line (the current, incomplete interval) is shown as a dashed segment to remind you that the period is still accumulating data.
+
+---
+
+## Insights
+
+If you have configured [Insights](/features/insights) for your project, a scrollable row of insight cards appears below the chart. Each card shows a pre-configured metric with its current value and trend. Clicking a card applies that insight's filter to the entire overview page. Insights are optional—this section is hidden when none have been configured.
+
+---
+
+## Sources
+
+The Sources widget shows where your visitors came from. Switch between tabs to see different dimensions:
+
+| Tab | What it shows |
+|-----|---------------|
+| **Refs** | Grouped referrer names (e.g., "Google", "Twitter", "Hacker News") |
+| **Urls** | Raw referrer URLs |
+| **Types** | Referrer categories: `search`, `social`, `email`, `unknown` |
+| **Source** | `utm_source` query parameter values |
+| **Medium** | `utm_medium` query parameter values |
+| **Campaign** | `utm_campaign` query parameter values |
+| **Term** | `utm_term` query parameter values |
+| **Content** | `utm_content` query parameter values |
+
+Referrer names and types are resolved automatically from the raw referrer URL using a built-in lookup table. Direct traffic (no referrer) appears as `(not set)`.
+
+Each row shows sessions and pageviews. Clicking a row filters the entire overview page to only show data from that source.
+
+---
+
+## Pages
+
+The Pages widget shows which URLs your visitors are landing on, exiting from, and spending time on.
+
+| Tab | What it shows |
+|-----|---------------|
+| **Top pages** | Pages ranked by unique sessions. Each row is a `origin + path` combination. |
+| **Entry pages** | The first page of each session—the page where visitors arrived. |
+| **Exit pages** | The last page of each session—the page where visitors left. |
+
+High exit rates on a page are not always bad—they can reflect a page that successfully answers a question. High bounce on an entry page is more diagnostic. Compare entry and exit distributions to understand the shape of your user journeys.
+
+Clicking a page row filters the whole overview to sessions that included that page.
+
+---
+
+## Devices
+
+The Devices widget breaks down your audience by hardware and software. Switch between tabs:
+
+| Tab | What it shows |
+|-----|---------------|
+| **Device** | Device type: Desktop, Mobile, Tablet |
+| **Brand** | Hardware brand (Apple, Samsung, etc.) |
+| **Model** | Specific device model |
+| **Browser** | Browser name (Chrome, Safari, Firefox, etc.) |
+| **Browser ver.** | Browser version number |
+| **OS** | Operating system (macOS, Windows, iOS, Android, etc.) |
+| **OS ver.** | Operating system version |
+
+Each row shows sessions and pageviews. Use this widget to prioritize which browsers and operating systems to test and optimize for.
+
+---
+
+## Events
+
+The Events widget shows the most frequent custom events fired in the selected period, ranked by count. System events (`session_start`, `session_end`, `screen_view`) are excluded—only the events you instrument yourself appear here.
+
+Click any event to filter the overview to sessions where that event was fired.
+
+---
+
+## Geo
+
+The Geo widget shows the geographic distribution of your visitors. Switch between tabs:
+
+| Tab | What it shows |
+|-----|---------------|
+| **Country** | Visitor country, derived from IP geolocation |
+| **Region** | State or province |
+| **City** | City level |
+
+Below the table, a world map plots the same data as a heatmap—darker areas represent more sessions. This gives you a quick visual of where your audience is concentrated.
+
+Clicking a country, region, or city filters the whole overview to that location.
+
+---
+
+## Activity heatmap
+
+The activity heatmap at the bottom of the page shows when your visitors are most active, broken down by day of the week (Monday through Sunday) and hour of the day (00:00–23:00). Each cell shows the **average** of the selected metric at that day-and-hour combination, averaged across all weeks in the selected period.
+
+Darker cells indicate higher average values. Hover any cell to see the exact average.
+
+You can switch the metric being visualized using the tabs above the heatmap:
+
+- **Unique Visitors**
+- **Sessions**
+- **Pageviews**
+- **Bounce Rate**
+- **Pages / Session**
+- **Session Duration**
+
+Use the heatmap to identify peak traffic windows, plan campaigns, and schedule maintenance during quiet periods.
+
+---
+
+## User Journey
+
+The User Journey (Sankey) diagram at the very bottom visualizes how visitors flow through your site within a session. It answers the question: after landing on page A, where do visitors go next?
+
+**How it works:**
+
+1. OpenPanel identifies the top 3 most common entry pages in the selected period.
+2. From each entry page, it finds the top 3 most frequent next pages (step 2), then the top 3 from those (step 3), and so on up to the configured number of steps (default 5, adjustable to a maximum of 10).
+3. Paths that represent less than 0.25% of total sessions are filtered out to reduce visual noise.
+4. Consecutive duplicate pages within a session are collapsed into one step (e.g., if someone refreshed a page, it only counts once in the journey).
+
+Each node shows the page URL. The width of the connecting flows is proportional to the number of sessions that followed that path.
+
+Use the User Journey to find drop-off points, discover unexpected popular paths, and understand whether visitors are reaching your key conversion pages.
+
+---
+
+## Filters and time controls
+
+Every widget on the overview page responds to the same set of global filters and time controls at the top of the page.
+
+**Range**: choose a preset (Today, Last 7 days, Last 30 days, etc.) or a custom date range.
+
+**Interval**: controls how data is grouped in the time-series chart (hour, day, week, month).
+
+**Event filter**: narrow the entire overview to sessions that include a specific event—useful for analyzing the behavior of users who completed a particular action.
+
+**Dimension filters**: clicking any row in any widget (a country, a source, a page) applies that value as a filter. Active filters are shown as chips below the time controls. Remove a filter by clicking the × on its chip.
+
+**Live counter**: a green badge in the top-right corner shows the number of active visitors (visitors who fired an event in the last 5 minutes). Click it for a 30-minute session histogram.

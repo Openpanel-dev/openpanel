@@ -1,0 +1,138 @@
+---
+title: "How to set up notifications and integrations"
+description: "Get notified in Slack, Discord, or via webhook when users complete events or funnels. Learn how to connect integrations and configure notification rules in OpenPanel."
+difficulty: beginner
+timeToComplete: 10
+date: 2026-02-27
+updated: 2026-02-27
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Create an integration"
+    anchor: "create-integration"
+  - name: "Create a notification rule"
+    anchor: "create-rule"
+  - name: "Event rules"
+    anchor: "event-rules"
+  - name: "Funnel rules"
+    anchor: "funnel-rules"
+  - name: "View notifications"
+    anchor: "view-notifications"
+---
+
+## How it works
+
+There are two separate concepts to understand before you start:
+
+- **Integrations** are connections to external services like Slack, Discord, or a custom webhook. They live at the workspace/organization level and can be reused across all your projects.
+- **Notification rules** are the conditions that trigger a notification. Rules live inside individual projects and reference one or more integrations. A rule does nothing until it has an integration attached—and an integration does nothing until a rule uses it.
+- **Notifications** are the messages that are sent when a rule is triggered. A notification can be sent as a json object or a template with variables.
+
+## Step 1: Create an integration [#create-integration]
+
+Go to your workspace settings and open the **Integrations** section. Click **Add integration** and choose the service you want to connect.
+
+OpenPanel currently supports:
+
+- **Slack** — authenticate via OAuth and pick a channel
+- **Discord** — paste a Discord webhook URL for a channel
+- **Webhook** — send an HTTP POST to any URL you control
+
+Fill in the required details and save. The integration is now available to all projects in your workspace.
+
+<Figure
+  src="/screenshots/integrations-create.webp"
+  caption="Create a new integration for Slack, Discord, or a custom webhook."
+/>
+
+<Callout>Soon we have integrations for S3 and GCS to export your events to your own storage.</Callout>
+
+## Step 2: Go to your project's notification rules [#create-rule]
+
+Integrations alone don't do anything. To start receiving alerts, open the project you want to monitor, click **Notifications** in the left sidebar, and switch to the **Rules** tab.
+
+Click **Add Rule** to open the rule editor on the right side of the screen.
+
+Give your rule a name, then choose a **Type**. There are two types:
+
+| Type | When it triggers |
+|------|-----------------|
+| **Event** | Immediately when a matching event is received |
+| **Funnel** | After a session ends and all funnel steps have been completed in order |
+
+## Event rules [#event-rules]
+
+Event rules fire in real time. The moment OpenPanel receives an event that matches your filters, the notification is sent.
+
+<Figure
+  src="/screenshots/notifications-event-rule.webp"
+  caption="An event rule called 'Onboarding user' that fires when a screen_view event occurs with path filters matching the onboarding flow."
+/>
+
+In the rule editor:
+
+1. Set **Type** to **Events**
+2. Add one or more events from the **Events** list. You can filter each event by its properties (for example, only trigger when `path` starts with `/onboarding`)
+3. Write a **Template** for the notification message. Use `{{property_name}}` to insert event properties dynamically—for example, `New user with their first event from {{country}}`.
+4. Under **Integrations**, select which integration(s) should receive the notification
+
+Click **Update** to save the rule.
+
+<Callout>Templates will not be used if you have Javascript transformer in your integration.</Callout>
+
+## Funnel rules [#funnel-rules]
+
+Funnel rules let you track multi-step flows and notify you only when a user completes every step in the correct sequence—for example, `session_start` → `subscription_checkout` → `subscription_created`.
+
+<Figure
+  src="/screenshots/notifications-funnel-rule.webp"
+  caption="A funnel rule called 'Subscribe funnel' that notifies when a session completes all three steps in order."
+/>
+
+In the rule editor:
+
+1. Set **Type** to **Funnel**
+2. Add each event in the funnel, in the order they must occur. You can optionally add property filters to each step
+3. Write a **Template** for the notification message
+4. Select your **Integration(s)**
+
+Click **Update** to save.
+
+<Callout type="warning">**Important:** Funnel rule notifications are sent after the session ends, not immediately when the last step fires. OpenPanel waits until the session is complete before evaluating the funnel sequence.</Callout>
+<Callout>Templates will not be used if you have Javascript transformer in your integration.</Callout>
+
+## View notifications [#view-notifications]
+
+Switch to the **Notifications** tab (the default view) to see every notification that has been triggered for your project. Each row shows the notification title alongside the country, OS, browser, and profile of the user who triggered it.
+
+<Figure
+  src="/screenshots/notifications-list.webp"
+  caption="The Notifications tab shows a live feed of every triggered notification, with user context like country, OS, and browser."
+/>
+
+You can filter the list by creation date or search by title to find specific events.
+
+
+## Frequently asked questions
+
+<Faqs>
+<FaqItem question="Can I use the same integration across multiple projects?">
+Yes. Integrations are created at the workspace level, so any project in your organization can reference them in its notification rules.
+</FaqItem>
+
+<FaqItem question="Why haven't I received any funnel notifications?">
+Funnel rules trigger after the session ends, not when the last event fires. If the user's session is still active, the notification is queued until the session closes. Make sure the full funnel sequence was completed within a single session.
+</FaqItem>
+
+<FaqItem question="Can I filter event rules to only fire for specific users or properties?">
+Yes. For each event in the rule, click the filter icon to add property conditions—for example, only trigger when `plan` equals `enterprise` or `country` equals `US`.
+</FaqItem>
+
+<FaqItem question="What integrations are supported?">
+Currently Slack, Discord, and custom webhooks. More integrations are coming soon.
+</FaqItem>
+
+<FaqItem question="Can I have multiple integrations on one rule?">
+Yes. The integrations selector on each rule allows you to pick multiple destinations. A single triggered rule will send a notification to all selected integrations simultaneously.
+</FaqItem>
+</Faqs>
