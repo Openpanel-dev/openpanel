@@ -61,8 +61,6 @@ export async function postEvent(
       },
       uaInfo,
       geo,
-      currentDeviceId: '',
-      previousDeviceId: '',
       deviceId,
       sessionId: sessionId ?? '',
     },

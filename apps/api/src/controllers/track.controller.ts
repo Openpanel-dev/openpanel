@@ -217,8 +217,6 @@ async function handleTrack(
         geo,
         deviceId,
         sessionId,
-        currentDeviceId: '', // TODO: Remove
-        previousDeviceId: '', // TODO: Remove
       },
       groupId,
       jobId,

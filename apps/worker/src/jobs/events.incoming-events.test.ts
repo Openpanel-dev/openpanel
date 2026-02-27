@@ -30,8 +30,7 @@ vi.mock('@openpanel/db', async () => {
 // 30 minutes
 const SESSION_TIMEOUT = 30 * 60 * 1000;
 const projectId = 'test-project';
-const currentDeviceId = 'device-123';
-const previousDeviceId = 'device-456';
+const deviceId = 'device-123';
 // Valid UUID used when creating a new session in tests
 const newSessionId = 'a1b2c3d4-e5f6-4789-a012-345678901234';
 const geo = {
@@ -90,14 +89,12 @@ describe('incomingEvent', () => {
         'openpanel-sdk-version': '1.0.0',
       },
       projectId,
-      currentDeviceId,
-      previousDeviceId,
-      deviceId: currentDeviceId,
+      deviceId,
       sessionId: newSessionId,
     };
     const event = {
       name: 'test_event',
-      deviceId: currentDeviceId,
+      deviceId,
       profileId: '',
       sessionId: expect.stringMatching(
         // biome-ignore lint/performance/useTopLevelRegex: test
@@ -145,7 +142,7 @@ describe('incomingEvent', () => {
       },
       {
         delay: SESSION_TIMEOUT,
-        jobId: `sessionEnd:${projectId}:${currentDeviceId}`,
+        jobId: `sessionEnd:${projectId}:${deviceId}`,
         attempts: 3,
         backoff: {
           delay: 200,
@@ -185,9 +182,7 @@ describe('incomingEvent', () => {
       },
       uaInfo,
       projectId,
-      currentDeviceId,
-      previousDeviceId,
-      deviceId: currentDeviceId,
+      deviceId,
       sessionId: 'session-123',
     };
 
@@ -201,9 +196,7 @@ describe('incomingEvent', () => {
         type: 'createSessionEnd',
         payload: {
           sessionId: 'session-123',
-          deviceId: currentDeviceId,
-          profileId: currentDeviceId,
-          projectId,
+          deviceId,
         },
       },
     } as Partial<Job> as Job);
@@ -212,7 +205,7 @@ describe('incomingEvent', () => {
 
     const event = {
       name: 'test_event',
-      deviceId: currentDeviceId,
+      deviceId,
       profileId: '',
       sessionId: 'session-123',
       projectId,
@@ -268,8 +261,6 @@ describe('incomingEvent', () => {
         'request-id': '123',
       },
       projectId,
-      currentDeviceId: '',
-      previousDeviceId: '',
       deviceId: '',
       sessionId: '',
       uaInfo: uaInfoServer,
@@ -374,8 +365,6 @@ describe('incomingEvent', () => {
         'request-id': '123',
       },
       projectId,
-      currentDeviceId: '',
-      previousDeviceId: '',
       deviceId: '',
       sessionId: '',
       uaInfo: uaInfoServer,

@@ -14,7 +14,8 @@ import {
 } from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
-import * as R from 'ramda';
+import { getLock } from '@openpanel/redis';
+import { anyPass, isEmpty, isNil, mergeDeepRight, omit, reject } from 'ramda';
 import { logger as baseLogger } from '@/utils/logger';
 import { createSessionEndJob, getSessionEnd } from '@/utils/session-handler';
 
@@ -24,7 +25,22 @@ const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp', '__revenue'];
 // First it will strip '' and undefined/null from B
 // Then it will merge the two objects with a standard ramda merge function
 const merge = <A, B>(a: Partial<A>, b: Partial<B>): A & B =>
-  R.mergeDeepRight(a, R.reject(R.anyPass([R.isEmpty, R.isNil]))(b)) as A & B;
+  mergeDeepRight(a, reject(anyPass([isEmpty, isNil]))(b)) as A & B;
+
+/** Check if payload matches project-level event exclude filters */
+async function isEventExcludedByProjectFilter(
+  payload: IServiceCreateEventPayload,
+  projectId: string
+): Promise<boolean> {
+  const project = await getProjectByIdCached(projectId);
+  const eventExcludeFilters = (project?.filters ?? []).filter(
+    (f) => f.type === 'event'
+  );
+  if (eventExcludeFilters.length === 0) {
+    return false;
+  }
+  return eventExcludeFilters.some((filter) => matchEvent(payload, filter));
+}
 
 async function createEventAndNotify(
   payload: IServiceCreateEventPayload,
@@ -32,21 +48,13 @@ async function createEventAndNotify(
   projectId: string
 ) {
   // Check project-level event exclude filters
-  const project = await getProjectByIdCached(projectId);
-  const eventExcludeFilters = (project?.filters ?? []).filter(
-    (f) => f.type === 'event'
-  );
-  if (eventExcludeFilters.length > 0) {
-    const isExcluded = eventExcludeFilters.some((filter) =>
-      matchEvent(payload, filter)
-    );
-    if (isExcluded) {
-      logger.info('Event excluded by project filter', {
-        event: payload.name,
-        projectId,
-      });
-      return null;
-    }
+  const isExcluded = await isEventExcludedByProjectFilter(payload, projectId);
+  if (isExcluded) {
+    logger.info('Event excluded by project filter', {
+      event: payload.name,
+      projectId,
+    });
+    return null;
   }
 
   logger.info('Creating event', { event: payload });
@@ -83,8 +91,6 @@ export async function incomingEvent(
     event: body,
     headers,
     projectId,
-    currentDeviceId,
-    previousDeviceId,
     deviceId,
     sessionId,
     uaInfo: _uaInfo,
@@ -125,7 +131,7 @@ export async function incomingEvent(
     name: body.name,
     profileId,
     projectId,
-    properties: R.omit(GLOBAL_PROPERTIES, {
+    properties: omit(GLOBAL_PROPERTIES, {
       ...properties,
       __hash: hash,
       __query: query,
@@ -194,8 +200,6 @@ export async function incomingEvent(
 
   const sessionEnd = await getSessionEnd({
     projectId,
-    currentDeviceId,
-    previousDeviceId,
     deviceId,
     profileId,
   });
@@ -216,20 +220,44 @@ export async function incomingEvent(
     origin: baseEvent.origin || activeSession?.exit_origin || '',
   } as Partial<IServiceCreateEventPayload>) as IServiceCreateEventPayload;
 
-  if (!sessionEnd) {
-    logger.info('Creating session start event', { event: payload });
-    await createEventAndNotify(
+  // If the triggering event is filtered, do not create session_start or the event (issue #2)
+  const isExcluded = await isEventExcludedByProjectFilter(payload, projectId);
+  if (isExcluded) {
+    logger.info(
+      'Skipping session_start and event (excluded by project filter)',
       {
-        ...payload,
-        name: 'session_start',
-        createdAt: new Date(getTime(payload.createdAt) - 100),
-      },
-      logger,
-      projectId
-    ).catch((error) => {
-      logger.error('Error creating session start event', { event: payload });
-      throw error;
-    });
+        event: payload.name,
+        projectId,
+      }
+    );
+    return null;
+  }
+
+  if (!sessionEnd) {
+    const locked = await getLock(
+      `session_start:${projectId}:${sessionId}`,
+      '1',
+      1000
+    );
+    if (locked) {
+      logger.info('Creating session start event', { event: payload });
+      await createEventAndNotify(
+        {
+          ...payload,
+          name: 'session_start',
+          createdAt: new Date(getTime(payload.createdAt) - 100),
+        },
+        logger,
+        projectId
+      ).catch((error) => {
+        logger.error('Error creating session start event', { event: payload });
+        throw error;
+      });
+    } else {
+      logger.info('Session start already claimed by another worker', {
+        event: payload,
+      });
+    }
   }
 
   const event = await createEventAndNotify(payload, logger, projectId);

@@ -1,5 +1,4 @@
-import { getTime } from '@openpanel/common';
-import { type IServiceCreateEventPayload, createEvent } from '@openpanel/db';
+import type { IServiceCreateEventPayload } from '@openpanel/db';
 import {
   type EventsQueuePayloadCreateSessionEnd,
   sessionsQueue,
@@ -12,7 +11,7 @@ export const SESSION_TIMEOUT = 1000 * 60 * 30;
 const getSessionEndJobId = (projectId: string, deviceId: string) =>
   `sessionEnd:${projectId}:${deviceId}`;
 
-export async function createSessionEndJob({
+export function createSessionEndJob({
   payload,
 }: {
   payload: IServiceCreateEventPayload;
@@ -31,27 +30,21 @@ export async function createSessionEndJob({
         type: 'exponential',
         delay: 200,
       },
-    },
+    }
   );
 }
 
 export async function getSessionEnd({
   projectId,
-  currentDeviceId,
-  previousDeviceId,
   deviceId,
   profileId,
 }: {
   projectId: string;
-  currentDeviceId: string;
-  previousDeviceId: string;
   deviceId: string;
   profileId: string;
 }) {
   const sessionEnd = await getSessionEndJob({
     projectId,
-    currentDeviceId,
-    previousDeviceId,
     deviceId,
   });
 
@@ -82,8 +75,6 @@ export async function getSessionEnd({
 
 export async function getSessionEndJob(args: {
   projectId: string;
-  currentDeviceId: string;
-  previousDeviceId: string;
   deviceId: string;
   retryCount?: number;
 }): Promise<{
@@ -98,7 +89,7 @@ export async function getSessionEndJob(args: {
 
   async function handleJobStates(
     job: Job<EventsQueuePayloadCreateSessionEnd>,
-    deviceId: string,
+    deviceId: string
   ): Promise<{
     deviceId: string;
     job: Job<EventsQueuePayloadCreateSessionEnd>;
@@ -134,28 +125,9 @@ export async function getSessionEndJob(args: {
     return null;
   }
 
-  // TODO: Remove this when migrated to deviceId
-  if (args.currentDeviceId && args.previousDeviceId) {
-    // Check current device job
-    const currentJob = await sessionsQueue.getJob(
-      getSessionEndJobId(args.projectId, args.currentDeviceId),
-    );
-    if (currentJob) {
-      return await handleJobStates(currentJob, args.currentDeviceId);
-    }
-
-    // Check previous device job
-    const previousJob = await sessionsQueue.getJob(
-      getSessionEndJobId(args.projectId, args.previousDeviceId),
-    );
-    if (previousJob) {
-      return await handleJobStates(previousJob, args.previousDeviceId);
-    }
-  }
-
   // Check current device job
   const currentJob = await sessionsQueue.getJob(
-    getSessionEndJobId(args.projectId, args.deviceId),
+    getSessionEndJobId(args.projectId, args.deviceId)
   );
   if (currentJob) {
     return await handleJobStates(currentJob, args.deviceId);
