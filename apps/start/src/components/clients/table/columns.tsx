@@ -1,7 +1,7 @@
-import { formatDateTime, formatTime } from '@/utils/date';
+import { DropdownMenuSeparator } from '@radix-ui/react-dropdown-menu';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
-import { isToday } from 'date-fns';
-
+import { toast } from 'sonner';
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import CopyInput from '@/components/forms/copy-input';
 import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
@@ -10,9 +10,6 @@ import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { clipboard } from '@/utils/clipboard';
-import { DropdownMenuSeparator } from '@radix-ui/react-dropdown-menu';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 
 export function useColumns() {
   const columns: ColumnDef<RouterOutputs['client']['list'][number]>[] = [
@@ -51,7 +48,7 @@ export function useColumns() {
             queryClient.invalidateQueries(trpc.client.list.pathFilter());
           },
           onError: handleError,
-        }),
+        })
       );
       return (
         <>
@@ -67,7 +64,6 @@ export function useColumns() {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            variant="destructive"
             onClick={() => {
               showConfirm({
                 title: 'Revoke client',
@@ -79,6 +75,7 @@ export function useColumns() {
                 },
               });
             }}
+            variant="destructive"
           >
             Revoke
           </DropdownMenuItem>
