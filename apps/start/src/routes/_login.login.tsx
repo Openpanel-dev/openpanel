@@ -1,13 +1,13 @@
+import { createFileRoute } from '@tanstack/react-router';
+import { AlertCircle } from 'lucide-react';
+import { z } from 'zod';
 import { Or } from '@/components/auth/or';
 import { SignInEmailForm } from '@/components/auth/sign-in-email-form';
 import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
-import { LogoSquare } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { PAGE_TITLES, createTitle } from '@/utils/title';
-import { createFileRoute, redirect } from '@tanstack/react-router';
-import { AlertCircle } from 'lucide-react';
-import { z } from 'zod';
+import { useCookieStore } from '@/hooks/use-cookie-store';
+import { createTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_login/login')({
   component: LoginPage,
@@ -25,16 +25,20 @@ export const Route = createFileRoute('/_login/login')({
 
 function LoginPage() {
   const { error, correlationId } = Route.useSearch();
+  const [lastProvider] = useCookieStore<null | string>(
+    'last-auth-provider',
+    null
+  );
 
   return (
-    <div className="col gap-8 w-full text-left">
+    <div className="col w-full gap-8 text-left">
       <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">Sign in</h1>
+        <h1 className="mb-2 font-bold text-3xl text-foreground">Sign in</h1>
         <p className="text-muted-foreground">
           Don't have an account?{' '}
           <a
+            className="font-medium text-foreground underline"
             href="/onboarding"
-            className="underline font-medium text-foreground"
           >
             Create one today
           </a>
@@ -42,8 +46,8 @@ function LoginPage() {
       </div>
       {error && (
         <Alert
+          className="mb-6 border-destructive/20 bg-destructive/10 text-left"
           variant="destructive"
-          className="text-left bg-destructive/10 border-destructive/20 mb-6"
         >
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
@@ -55,7 +59,7 @@ function LoginPage() {
                 <p className="mt-2">
                   Contact us if you have any issues.{' '}
                   <a
-                    className="underline font-medium"
+                    className="font-medium underline"
                     href={`mailto:hello@openpanel.dev?subject=Login%20Issue%20-%20Correlation%20ID%3A%20${correlationId}`}
                   >
                     hello[at]openpanel.dev
@@ -68,11 +72,11 @@ function LoginPage() {
       )}
 
       <div className="space-y-4">
-        <SignInGoogle type="sign-in" />
-        <SignInGithub type="sign-in" />
+        <SignInGoogle isLastUsed={lastProvider === 'google'} type="sign-in" />
+        <SignInGithub isLastUsed={lastProvider === 'github'} type="sign-in" />
       </div>
       <Or />
-      <SignInEmailForm />
+      <SignInEmailForm isLastUsed={lastProvider === 'email'} />
     </div>
   );
 }

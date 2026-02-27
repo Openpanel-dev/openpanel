@@ -1,9 +1,4 @@
 import { createPushModal } from 'pushmodal';
-
-import OverviewTopGenericModal from '@/components/overview/overview-top-generic-modal';
-import OverviewTopPagesModal from '@/components/overview/overview-top-pages-modal';
-import { op } from '@/utils/op';
-import Instructions from './Instructions';
 import AddClient from './add-client';
 import AddDashboard from './add-dashboard';
 import AddImport from './add-import';
@@ -12,8 +7,8 @@ import AddNotificationRule from './add-notification-rule';
 import AddProject from './add-project';
 import AddReference from './add-reference';
 import BillingSuccess from './billing-success';
-import Confirm from './confirm';
 import type { ConfirmProps } from './confirm';
+import Confirm from './confirm';
 import CreateInvite from './create-invite';
 import DateRangerPicker from './date-ranger-picker';
 import DateTimePicker from './date-time-picker';
@@ -24,7 +19,7 @@ import EditMember from './edit-member';
 import EditReference from './edit-reference';
 import EditReport from './edit-report';
 import EventDetails from './event-details';
-import OnboardingTroubleshoot from './onboarding-troubleshoot';
+import Instructions from './Instructions';
 import OverviewChartDetails from './overview-chart-details';
 import OverviewFilters from './overview-filters';
 import RequestPasswordReset from './request-reset-password';
@@ -34,40 +29,42 @@ import ShareDashboardModal from './share-dashboard-modal';
 import ShareOverviewModal from './share-overview-modal';
 import ShareReportModal from './share-report-modal';
 import ViewChartUsers from './view-chart-users';
+import OverviewTopGenericModal from '@/components/overview/overview-top-generic-modal';
+import OverviewTopPagesModal from '@/components/overview/overview-top-pages-modal';
+import { op } from '@/utils/op';
 
 const modals = {
-  OverviewTopPagesModal: OverviewTopPagesModal,
-  OverviewTopGenericModal: OverviewTopGenericModal,
-  RequestPasswordReset: RequestPasswordReset,
-  EditEvent: EditEvent,
-  EditMember: EditMember,
-  EventDetails: EventDetails,
-  EditClient: EditClient,
-  AddProject: AddProject,
-  AddClient: AddClient,
-  AddImport: AddImport,
-  Confirm: Confirm,
-  SaveReport: SaveReport,
-  AddDashboard: AddDashboard,
-  EditDashboard: EditDashboard,
-  EditReport: EditReport,
-  EditReference: EditReference,
-  ShareOverviewModal: ShareOverviewModal,
-  ShareDashboardModal: ShareDashboardModal,
-  ShareReportModal: ShareReportModal,
-  AddReference: AddReference,
-  ViewChartUsers: ViewChartUsers,
-  Instructions: Instructions,
-  OnboardingTroubleshoot: OnboardingTroubleshoot,
-  DateRangerPicker: DateRangerPicker,
-  DateTimePicker: DateTimePicker,
-  OverviewChartDetails: OverviewChartDetails,
-  AddIntegration: AddIntegration,
-  AddNotificationRule: AddNotificationRule,
-  OverviewFilters: OverviewFilters,
-  CreateInvite: CreateInvite,
-  SelectBillingPlan: SelectBillingPlan,
-  BillingSuccess: BillingSuccess,
+  OverviewTopPagesModal,
+  OverviewTopGenericModal,
+  RequestPasswordReset,
+  EditEvent,
+  EditMember,
+  EventDetails,
+  EditClient,
+  AddProject,
+  AddClient,
+  AddImport,
+  Confirm,
+  SaveReport,
+  AddDashboard,
+  EditDashboard,
+  EditReport,
+  EditReference,
+  ShareOverviewModal,
+  ShareDashboardModal,
+  ShareReportModal,
+  AddReference,
+  ViewChartUsers,
+  Instructions,
+  DateRangerPicker,
+  DateTimePicker,
+  OverviewChartDetails,
+  AddIntegration,
+  AddNotificationRule,
+  OverviewFilters,
+  CreateInvite,
+  SelectBillingPlan,
+  BillingSuccess,
 };
 
 export const {
@@ -83,7 +80,9 @@ export const {
 });
 
 onPushModal('*', (open, props, name) => {
-  op.screenView(`modal:${name}`, props as Record<string, unknown>);
+  if (open) {
+    op.screenView(`modal:${name}`, props as Record<string, unknown>);
+  }
 });
 
 export const showConfirm = (props: ConfirmProps) => pushModal('Confirm', props);

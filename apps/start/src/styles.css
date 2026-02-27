@@ -277,6 +277,30 @@ button {
   display: none;
 }
 
+/* Thin scrollbar, visible on hover - "the small little nice thingy" */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scrollbar-thin:hover {
+  scrollbar-color: var(--color-border) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 9999px;
+  transition: background 0.15s ease;
+}
+.scrollbar-thin:hover::-webkit-scrollbar-thumb,
+.scrollbar-thin:active::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+}
+
 /* Hide scrollbar for IE, Edge and Firefox */
 .hide-scrollbar {
   -ms-overflow-style: none; /* IE and Edge */

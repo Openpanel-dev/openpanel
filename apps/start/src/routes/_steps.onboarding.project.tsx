@@ -8,7 +8,7 @@ import {
   ServerIcon,
   SmartphoneIcon,
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Controller,
   type SubmitHandler,
@@ -18,7 +18,6 @@ import {
 import { z } from 'zod';
 import AnimateHeight from '@/components/animate-height';
 import { ButtonContainer } from '@/components/button-container';
-import { CheckboxItem } from '@/components/forms/checkbox-item';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
 import FullPageLoadingState from '@/components/full-page-loading-state';
@@ -27,6 +26,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
 import { useClientSecret } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
+import { cn } from '@/utils/cn';
 
 const validateSearch = z.object({
   inviteId: z.string().optional(),
@@ -34,7 +34,7 @@ const validateSearch = z.object({
 export const Route = createFileRoute('/_steps/onboarding/project')({
   component: Component,
   validateSearch,
-  beforeLoad: async ({ context }) => {
+  beforeLoad: ({ context }) => {
     if (!context.session?.session) {
       throw redirect({ to: '/onboarding' });
     }
@@ -105,10 +105,18 @@ function Component() {
     control: form.control,
   });
 
+  const domain = useWatch({
+    name: 'domain',
+    control: form.control,
+  });
+
+  const [showCorsInput, setShowCorsInput] = useState(false);
+
   useEffect(() => {
     if (!isWebsite) {
       form.setValue('domain', null);
       form.setValue('cors', []);
+      setShowCorsInput(false);
     }
   }, [isWebsite, form]);
 
@@ -121,8 +129,11 @@ function Component() {
   }, [isWebsite, isApp, isBackend]);
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      <div className="p-4">
+    <form
+      className="flex min-h-0 flex-1 flex-col"
+      onSubmit={form.handleSubmit(onSubmit)}
+    >
+      <div className="scrollbar-thin flex-1 overflow-y-auto p-4">
         <div className="grid gap-4 md:grid-cols-2">
           {organizations.length > 0 ? (
             <Controller
@@ -174,6 +185,7 @@ function Component() {
                       }))}
                       onChange={field.onChange}
                       placeholder="Select timezone"
+                      searchable
                       value={field.value}
                     />
                   </WithLabel>
@@ -183,115 +195,142 @@ function Component() {
           )}
           <InputWithLabel
             error={form.formState.errors.project?.message}
-            label="Project name"
+            label="Your first project name"
             placeholder="Eg. The Music App"
             {...form.register('project')}
             className="col-span-2"
           />
         </div>
-        <div className="mt-4 flex flex-col divide-y">
-          <Controller
-            control={form.control}
-            name="website"
-            render={({ field }) => (
-              <CheckboxItem
-                description="Track events and conversion for your website"
-                disabled={isApp}
-                error={form.formState.errors.website?.message}
-                Icon={MonitorIcon}
-                label="Website"
-                {...field}
+        <div className="mt-4">
+          <Label className="mb-2">What are you tracking?</Label>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              {
+                key: 'website' as const,
+                label: 'Website',
+                Icon: MonitorIcon,
+                active: isWebsite,
+              },
+              {
+                key: 'app' as const,
+                label: 'App',
+                Icon: SmartphoneIcon,
+                active: isApp,
+              },
+              {
+                key: 'backend' as const,
+                label: 'Backend / API',
+                Icon: ServerIcon,
+                active: isBackend,
+              },
+            ].map(({ key, label, Icon, active }) => (
+              <button
+                className={cn(
+                  'flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors',
+                  active
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-border text-muted-foreground hover:border-primary/40'
+                )}
+                key={key}
+                onClick={() => {
+                  form.setValue(key, !active, { shouldValidate: true });
+                }}
+                type="button"
               >
-                <AnimateHeight open={isWebsite && !isApp}>
-                  <div className="p-4 pl-14">
-                    <InputWithLabel
-                      label="Domain"
-                      placeholder="Your website address"
-                      {...form.register('domain')}
-                      className="mb-4"
-                      error={form.formState.errors.domain?.message}
-                      onBlur={(e) => {
-                        const value = e.target.value.trim();
-                        if (
-                          value.includes('.') &&
-                          form.getValues().cors.length === 0 &&
-                          !form.formState.errors.domain
-                        ) {
-                          form.setValue('cors', [value]);
-                        }
-                      }}
-                    />
+                <Icon size={24} />
+                <span className="font-medium text-sm">{label}</span>
+              </button>
+            ))}
+          </div>
+          {(form.formState.errors.website?.message ||
+            form.formState.errors.app?.message ||
+            form.formState.errors.backend?.message) && (
+            <p className="mt-2 text-destructive text-sm">
+              At least one type must be selected
+            </p>
+          )}
+          <AnimateHeight open={isWebsite}>
+            <div className="mt-4">
+              <InputWithLabel
+                label="Domain"
+                placeholder="example.com"
+                {...form.register('domain')}
+                error={form.formState.errors.domain?.message}
+                onBlur={(e) => {
+                  const raw = e.target.value.trim();
+                  if (!raw) {
+                    return;
+                  }
 
-                    <Controller
-                      control={form.control}
-                      name="cors"
-                      render={({ field }) => (
-                        <WithLabel label="Allowed domains">
-                          <TagInput
-                            {...field}
-                            error={form.formState.errors.cors?.message}
-                            onChange={(newValue) => {
-                              field.onChange(
-                                newValue.map((item) => {
-                                  const trimmed = item.trim();
-                                  if (
-                                    trimmed.startsWith('http://') ||
-                                    trimmed.startsWith('https://') ||
-                                    trimmed === '*'
-                                  ) {
-                                    return trimmed;
-                                  }
-                                  return `https://${trimmed}`;
-                                })
-                              );
-                            }}
-                            placeholder="Accept events from these domains"
-                            renderTag={(tag) =>
-                              tag === '*'
-                                ? 'Accept events from any domains'
-                                : tag
-                            }
-                            value={field.value ?? []}
-                          />
-                        </WithLabel>
-                      )}
-                    />
-                  </div>
-                </AnimateHeight>
-              </CheckboxItem>
-            )}
-          />
-          <Controller
-            control={form.control}
-            name="app"
-            render={({ field }) => (
-              <CheckboxItem
-                description="Track events and conversion for your app"
-                disabled={isWebsite}
-                error={form.formState.errors.app?.message}
-                Icon={SmartphoneIcon}
-                label="App"
-                {...field}
+                  const hasProtocol =
+                    raw.startsWith('http://') || raw.startsWith('https://');
+                  const value = hasProtocol ? raw : `https://${raw}`;
+
+                  form.setValue('domain', value, { shouldValidate: true });
+                  if (form.getValues().cors.length === 0) {
+                    form.setValue('cors', [value]);
+                  }
+                }}
               />
-            )}
-          />
-          <Controller
-            control={form.control}
-            name="backend"
-            render={({ field }) => (
-              <CheckboxItem
-                description="Track events and conversion for your backend / API"
-                error={form.formState.errors.backend?.message}
-                Icon={ServerIcon}
-                label="Backend / API"
-                {...field}
-              />
-            )}
-          />
+              {domain && (
+                <>
+                  <button
+                    className="mt-2 text-muted-foreground text-sm hover:text-foreground"
+                    onClick={() => setShowCorsInput((open) => !open)}
+                    type="button"
+                  >
+                    All events from{' '}
+                    <span className="font-medium text-foreground">
+                      {domain}
+                    </span>{' '}
+                    will be allowed. Do you want to allow any other?
+                  </button>
+                  <AnimateHeight open={showCorsInput}>
+                    <div className="mt-3">
+                      <Controller
+                        control={form.control}
+                        name="cors"
+                        render={({ field }) => (
+                          <WithLabel label="Allowed domains">
+                            <TagInput
+                              {...field}
+                              error={form.formState.errors.cors?.message}
+                              onChange={(newValue: string[]) => {
+                                field.onChange(
+                                  newValue.map((item: string) => {
+                                    const trimmed = item.trim();
+                                    if (
+                                      trimmed.startsWith('http://') ||
+                                      trimmed.startsWith('https://') ||
+                                      trimmed === '*'
+                                    ) {
+                                      return trimmed;
+                                    }
+                                    return `https://${trimmed}`;
+                                  })
+                                );
+                              }}
+                              placeholder="Accept events from these domains"
+                              renderTag={(tag: string) =>
+                                tag === '*'
+                                  ? 'Accept events from any domains'
+                                  : tag
+                              }
+                              value={field.value ?? []}
+                            />
+                          </WithLabel>
+                        )}
+                      />
+                    </div>
+                  </AnimateHeight>
+                </>
+              )}
+            </div>
+          </AnimateHeight>
         </div>
       </div>
 
-      <ButtonContainer className="border-t p-4">
+      <ButtonContainer className="mt-0 flex-shrink-0 border-t bg-background p-4">
         <div />
         <Button
           className="min-w-28 self-start"

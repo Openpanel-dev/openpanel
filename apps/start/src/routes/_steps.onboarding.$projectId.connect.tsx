@@ -1,16 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { LockIcon, XIcon } from 'lucide-react';
+import { CopyIcon, DownloadIcon, LockIcon, XIcon } from 'lucide-react';
 import { ButtonContainer } from '@/components/button-container';
-import CopyInput from '@/components/forms/copy-input';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
-import ConnectApp from '@/components/onboarding/connect-app';
-import ConnectBackend from '@/components/onboarding/connect-backend';
 import ConnectWeb from '@/components/onboarding/connect-web';
-import { LinkButton } from '@/components/ui/button';
+import Syntax from '@/components/syntax';
+import { Button, LinkButton } from '@/components/ui/button';
 import { useClientSecret } from '@/hooks/use-client-secret';
 import { useTRPC } from '@/integrations/trpc/react';
+import { clipboard } from '@/utils/clipboard';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
@@ -19,7 +18,7 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
       { title: createEntityTitle('Connect data', PAGE_TITLES.ONBOARDING) },
     ],
   }),
-  beforeLoad: async ({ context }) => {
+  beforeLoad: ({ context }) => {
     if (!context.session?.session) {
       throw redirect({ to: '/onboarding' });
     }
@@ -54,27 +53,55 @@ function Component() {
     );
   }
 
-  return (
-    <div className="col gap-8 p-4">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 font-bold text-xl capitalize">
-          <LockIcon className="size-4" />
-          Credentials
-        </div>
-        <CopyInput label="Client ID" value={client.id} />
-        <CopyInput label="Secret" value={secret} />
-      </div>
-      <div className="-mx-4 h-px bg-muted" />
-      {project?.types?.map((type) => {
-        const Component = {
-          website: ConnectWeb,
-          app: ConnectApp,
-          backend: ConnectBackend,
-        }[type];
+  const credentials = `CLIENT_ID=${client.id}\nCLIENT_SECRET=${secret}`;
+  const download = () => {
+    const blob = new Blob([credentials], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'credentials.txt';
+    a.click();
+  };
 
-        return <Component client={{ ...client, secret }} key={type} />;
-      })}
-      <ButtonContainer>
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="scrollbar-thin flex-1 overflow-y-auto">
+        <div className="col gap-4 p-4">
+          <div className="col gap-2">
+            <div className="row items-center justify-between gap-4">
+              <div className="flex items-center gap-2 font-bold text-xl capitalize">
+                <LockIcon className="size-4" />
+                Client credentials
+              </div>
+              <div className="row gap-2">
+                <Button
+                  icon={CopyIcon}
+                  onClick={() => clipboard(credentials)}
+                  variant="outline"
+                >
+                  Copy
+                </Button>
+                <Button
+                  icon={DownloadIcon}
+                  onClick={() => download()}
+                  variant="outline"
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+            <Syntax
+              className="border"
+              code={`CLIENT_ID=${client.id}\nCLIENT_SECRET=${secret}`}
+              copyable={false}
+              language="bash"
+            />
+          </div>
+          <div className="-mx-4 h-px bg-muted" />
+          <ConnectWeb client={{ ...client, secret }} />
+        </div>
+      </div>
+      <ButtonContainer className="mt-0 flex-shrink-0 border-t bg-background p-4">
         <div />
         <LinkButton
           className="min-w-28 self-start"

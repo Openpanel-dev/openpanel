@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import { ButtonContainer } from '@/components/button-container';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
-import { CurlPreview } from '@/components/onboarding/curl-preview';
 import VerifyListener from '@/components/onboarding/onboarding-verify-listener';
+import { VerifyFaq } from '@/components/onboarding/verify-faq';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/lib/utils';
@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/verify')({
   head: () => ({
     meta: [{ title: createEntityTitle('Verify', PAGE_TITLES.ONBOARDING) }],
   }),
-  beforeLoad: async ({ context }) => {
+  beforeLoad: ({ context }) => {
     if (!context.session?.session) {
       throw redirect({ to: '/onboarding' });
     }
@@ -61,20 +61,23 @@ function Component() {
   }
 
   return (
-    <div className="col gap-8 p-4">
-      <VerifyListener
-        client={client}
-        events={events?.data ?? []}
-        onVerified={() => {
-          refetch();
-          setIsVerified(true);
-        }}
-        project={project}
-      />
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="scrollbar-thin flex-1 overflow-y-auto">
+        <div className="col gap-8 p-4">
+          <VerifyListener
+            client={client}
+            events={events?.data ?? []}
+            onVerified={() => {
+              refetch();
+              setIsVerified(true);
+            }}
+            project={project}
+          />
 
-      <CurlPreview project={project} />
-
-      <ButtonContainer>
+          <VerifyFaq project={project} />
+        </div>
+      </div>
+      <ButtonContainer className="mt-0 flex-shrink-0 border-t bg-background p-4">
         <LinkButton
           className="min-w-28 self-start"
           href={`/onboarding/${project.id}/connect`}

@@ -1,5 +1,5 @@
 import { useRouteContext } from '@tanstack/react-router';
-import { createServerFn, createServerOnlyFn } from '@tanstack/react-start';
+import { createServerFn } from '@tanstack/react-start';
 import { getCookies, setCookie } from '@tanstack/react-start/server';
 import { pick } from 'ramda';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -11,6 +11,7 @@ const VALID_COOKIES = [
   'range',
   'supporter-prompt-closed',
   'feedback-prompt-seen',
+  'last-auth-provider',
 ] as const;
 const COOKIE_EVENT_NAME = '__cookie-change';
 
@@ -20,7 +21,7 @@ const setCookieFn = createServerFn({ method: 'POST' })
       key: z.enum(VALID_COOKIES),
       value: z.string(),
       maxAge: z.number().optional(),
-    }),
+    })
   )
   .handler(({ data: { key, value, maxAge } }) => {
     if (!VALID_COOKIES.includes(key)) {
@@ -37,13 +38,13 @@ const setCookieFn = createServerFn({ method: 'POST' })
 // Called in __root.tsx beforeLoad hook to get cookies from the server
 // And received with useRouteContext in the client
 export const getCookiesFn = createServerFn({ method: 'GET' }).handler(() =>
-  pick(VALID_COOKIES, getCookies()),
+  pick(VALID_COOKIES, getCookies())
 );
 
 export function useCookieStore<T>(
   key: (typeof VALID_COOKIES)[number],
   defaultValue: T,
-  options?: { maxAge?: number },
+  options?: { maxAge?: number }
 ) {
   const { cookies } = useRouteContext({ strict: false });
   const [value, setValue] = useState<T>((cookies?.[key] ?? defaultValue) as T);
@@ -51,7 +52,7 @@ export function useCookieStore<T>(
 
   useEffect(() => {
     const handleCookieChange = (
-      event: CustomEvent<{ key: string; value: T; from: string }>,
+      event: CustomEvent<{ key: string; value: T; from: string }>
     ) => {
       if (event.detail.key === key && event.detail.from !== ref.current) {
         setValue(event.detail.value);
@@ -60,12 +61,12 @@ export function useCookieStore<T>(
 
     window.addEventListener(
       COOKIE_EVENT_NAME,
-      handleCookieChange as EventListener,
+      handleCookieChange as EventListener
     );
     return () => {
       window.removeEventListener(
         COOKIE_EVENT_NAME,
-        handleCookieChange as EventListener,
+        handleCookieChange as EventListener
       );
     };
   }, [key]);
@@ -82,10 +83,10 @@ export function useCookieStore<T>(
           window.dispatchEvent(
             new CustomEvent(COOKIE_EVENT_NAME, {
               detail: { key, value: newValue, from: ref.current },
-            }),
+            })
           );
         },
       ] as const,
-    [value, key, options?.maxAge],
+    [value, key, options?.maxAge]
   );
 }

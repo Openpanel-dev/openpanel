@@ -13,7 +13,7 @@ import { Button } from '../ui/button';
 const validator = zSignInEmail;
 type IForm = z.infer<typeof validator>;
 
-export function SignInEmailForm() {
+export function SignInEmailForm({ isLastUsed }: { isLastUsed?: boolean }) {
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInEmail.mutationOptions({
@@ -54,9 +54,16 @@ export function SignInEmailForm() {
         type="password"
         className="bg-def-100/50 border-def-300 focus:border-highlight focus:ring-highlight/20"
       />
-      <Button type="submit" size="lg">
-        Sign in
-      </Button>
+      <div className="relative">
+        <Button type="submit" size="lg" className="w-full">
+          Sign in
+        </Button>
+        {isLastUsed && (
+          <span className="absolute -top-2 right-3 text-[10px] font-medium bg-highlight text-white px-1.5 py-0.5 rounded-full leading-none">
+            Used last time
+          </span>
+        )}
+      </div>
       <button
         type="button"
         onClick={() =>
