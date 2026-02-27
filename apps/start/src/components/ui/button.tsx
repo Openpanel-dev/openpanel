@@ -1,4 +1,3 @@
-import { cn } from '@/utils/cn';
 import { Slot } from '@radix-ui/react-slot';
 import { Link, type LinkComponentProps } from '@tanstack/react-router';
 import type { VariantProps } from 'class-variance-authority';
@@ -6,9 +5,10 @@ import { cva } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
 import * as React from 'react';
 import { Spinner, type SpinnerProps } from './spinner';
+import { cn } from '@/utils/cn';
 
 const buttonVariants = cva(
-  'inline-flex flex-shrink-0 select-none items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:translate-y-[-0.5px] transition-all',
+  'inline-flex flex-shrink-0 select-none items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-all hover:translate-y-[-0.5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -33,7 +33,7 @@ const buttonVariants = cva(
       variant: 'default',
       size: 'sm',
     },
-  },
+  }
 );
 
 export interface ButtonProps
@@ -52,7 +52,10 @@ export interface ButtonProps
 function fixHeight({
   autoHeight,
   size,
-}: { autoHeight?: boolean; size: ButtonProps['size'] }) {
+}: {
+  autoHeight?: boolean;
+  size: ButtonProps['size'];
+}) {
   if (autoHeight) {
     switch (size) {
       case 'lg':
@@ -84,9 +87,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       responsive,
       autoHeight,
       loadingAbsolute,
+      type = 'button',
       ...props
     },
-    ref,
+    ref
   ) => {
     const Comp = asChild ? Slot : 'button';
     const Icon = loading ? null : (icon ?? null);
@@ -99,31 +103,32 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           buttonVariants({ variant, size, className }),
           fixHeight({ autoHeight, size }),
-          loadingAbsolute && 'relative',
+          loadingAbsolute && 'relative'
         )}
-        ref={ref}
         disabled={loading || disabled}
+        ref={ref}
+        type={type}
         {...props}
       >
         {loading && (
           <div
             className={cn(
               loadingAbsolute &&
-                'absolute top-0 left-0 right-0 bottom-0 center-center backdrop-blur bg-background/10',
+                'center-center absolute top-0 right-0 bottom-0 left-0 bg-background/10 backdrop-blur'
             )}
           >
             <Spinner
-              type={loadingType}
-              size={spinnerSize}
-              speed={loadingSpeed}
-              variant={
-                variant === 'default' || variant === 'cta' ? 'white' : 'default'
-              }
               className={cn(
                 'flex-shrink-0',
                 size !== 'icon' && responsive && 'mr-0 sm:mr-2',
-                size !== 'icon' && !responsive && 'mr-2',
+                size !== 'icon' && !responsive && 'mr-2'
               )}
+              size={spinnerSize}
+              speed={loadingSpeed}
+              type={loadingType}
+              variant={
+                variant === 'default' || variant === 'cta' ? 'white' : 'default'
+              }
             />
           </div>
         )}
@@ -132,7 +137,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             className={cn(
               'h-4 w-4 flex-shrink-0',
               size !== 'icon' && responsive && 'mr-0 sm:mr-2',
-              size !== 'icon' && !responsive && 'mr-2',
+              size !== 'icon' && !responsive && 'mr-2'
             )}
           />
         )}
@@ -143,7 +148,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
       </Comp>
     );
-  },
+  }
 );
 Button.displayName = 'Button';
 
@@ -180,24 +185,24 @@ const LinkButton = ({
         <>
           {loading && (
             <Spinner
-              type={loadingType}
-              size={spinnerSize}
-              speed={loadingSpeed}
-              variant={
-                variant === 'default' || variant === 'cta' ? 'white' : 'default'
-              }
               className={cn(
                 'flex-shrink-0',
                 responsive && 'mr-0 sm:mr-2',
-                !responsive && 'mr-2',
+                !responsive && 'mr-2'
               )}
+              size={spinnerSize}
+              speed={loadingSpeed}
+              type={loadingType}
+              variant={
+                variant === 'default' || variant === 'cta' ? 'white' : 'default'
+              }
             />
           )}
           {Icon && (
             <Icon
               className={cn(
                 'mr-2 h-4 w-4 flex-shrink-0',
-                responsive && 'mr-0 sm:mr-2',
+                responsive && 'mr-0 sm:mr-2'
               )}
             />
           )}
