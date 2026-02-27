@@ -5,6 +5,7 @@ import {
   github,
   google,
   type OAuth2Tokens,
+  setLastAuthProviderCookie,
   setSessionTokenCookie,
 } from '@openpanel/auth';
 import { type Account, connectUserToOrganization, db } from '@openpanel/db';
@@ -76,11 +77,10 @@ async function handleExistingUser({
     sessionToken,
     session.expiresAt
   );
-  reply.setCookie('last-auth-provider', providerName, {
-    maxAge: 60 * 60 * 24 * 365,
-    path: '/',
-    sameSite: 'lax',
-  });
+  setLastAuthProviderCookie(
+    (...args) => reply.setCookie(...args),
+    providerName
+  );
   return reply.redirect(
     process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!
   );
@@ -145,11 +145,10 @@ async function handleNewUser({
     sessionToken,
     session.expiresAt
   );
-  reply.setCookie('last-auth-provider', providerName, {
-    maxAge: 60 * 60 * 24 * 365,
-    path: '/',
-    sameSite: 'lax',
-  });
+  setLastAuthProviderCookie(
+    (...args) => reply.setCookie(...args),
+    providerName
+  );
   return reply.redirect(
     process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!
   );

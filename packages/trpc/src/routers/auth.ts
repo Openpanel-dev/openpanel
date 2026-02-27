@@ -8,6 +8,7 @@ import {
   google,
   hashPassword,
   invalidateSession,
+  setLastAuthProviderCookie,
   setSessionTokenCookie,
   validateSessionToken,
   verifyPasswordHash,
@@ -225,11 +226,7 @@ export const authRouter = createTRPCRouter({
       const token = generateSessionToken();
       const session = await createSession(token, user.id);
       setSessionTokenCookie(ctx.setCookie, token, session.expiresAt);
-      ctx.setCookie('last-auth-provider', 'email', {
-        maxAge: 60 * 60 * 24 * 365,
-        path: '/',
-        sameSite: 'lax',
-      });
+      setLastAuthProviderCookie(ctx.setCookie, 'email');
       return {
         type: 'email',
       };
