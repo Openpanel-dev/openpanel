@@ -29,7 +29,7 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
@@ -58,6 +58,7 @@ export const Route = createFileRoute(
 function Component() {
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const query = useQuery(
     trpc.dashboard.list.queryOptions({
       projectId,
@@ -80,6 +81,7 @@ function Component() {
         })(error);
       },
       onSuccess() {
+        queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
         query.refetch();
         toast('Success', {
           description: 'Dashboard deleted.',

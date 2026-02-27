@@ -35,7 +35,7 @@ import {
 } from '@/components/report/report-item';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -85,6 +85,7 @@ function Component() {
   const router = useRouter();
   const { organizationId, dashboardId, projectId } = Route.useParams();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const { range, startDate, endDate, interval } = useOverviewOptions();
 
   const dashboardQuery = useQuery(
@@ -105,6 +106,7 @@ function Component() {
     trpc.dashboard.delete.mutationOptions({
       onError: handleErrorToastOptions({}),
       onSuccess() {
+        queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
         toast('Dashboard deleted');
         router.navigate({
           to: '/$organizationId/$projectId/dashboards',
@@ -139,6 +141,7 @@ function Component() {
     trpc.report.delete.mutationOptions({
       onError: handleErrorToastOptions({}),
       onSuccess() {
+        queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
         reportsQuery.refetch();
         toast('Report deleted');
       },
@@ -149,6 +152,7 @@ function Component() {
     trpc.report.duplicate.mutationOptions({
       onError: handleErrorToastOptions({}),
       onSuccess() {
+        queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
         reportsQuery.refetch();
         toast('Report duplicated');
       },

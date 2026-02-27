@@ -47,7 +47,7 @@ export default function AddDashboard() {
         toast('Success', {
           description: 'Dashboard created.',
         });
-        queryClient.invalidateQueries(trpc.dashboard.pathFilter());
+        queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
         popModal();
       },
       onError: handleError,
