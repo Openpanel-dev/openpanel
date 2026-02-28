@@ -1,4 +1,4 @@
-name: Docker Build Dated
+name: WASL Docker Build
 
 on:
   workflow_dispatch:
