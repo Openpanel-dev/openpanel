@@ -1,0 +1,132 @@
+name: Docker Build Dated
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "App to build (api, worker, dashboard, all)"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - api
+          - worker
+          - dashboard
+
+env:
+  registry: "me-riyadh-1.ocir.io/axlo4g31gl45"
+  username: ${{ secrets.OCIR_USERNAME }}
+  password: ${{ secrets.OCIR_PASSWORD }}
+
+jobs:
+  generate-tag:
+    runs-on: [ arc-amd64 ]
+    outputs:
+      image_tag: ${{ steps.tag.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate dated tag
+        id: tag
+        run: |
+          DATE_TAG=$(date +'%Y%m%d')
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-6)
+          echo "image_tag=${DATE_TAG}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "Image tag: ${DATE_TAG}-${SHORT_SHA}"
+
+  build-api:
+    needs: generate-tag
+    if: ${{ github.event.inputs.app == 'all' || github.event.inputs.app == 'api' }}
+    permissions:
+      packages: write
+    runs-on: [ arc-amd64 ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to OCIR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.registry }}
+          username: ${{ env.username }}
+          password: ${{ env.password }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.registry }}/wasl-op/op-api:${{ needs.generate-tag.outputs.image_tag }}
+          build-args: |
+            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+
+  # build-worker:
+  #   needs: generate-tag
+  #   if: ${{ github.event.inputs.app == 'all' || github.event.inputs.app == 'worker' }}
+  #   permissions:
+  #     packages: write
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+
+  #     - name: Log in to OCIR
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ${{ env.registry }}
+  #         username: ${{ env.username }}
+  #         password: ${{ env.password }}
+
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         context: .
+  #         file: apps/worker/Dockerfile
+  #         push: true
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max
+  #         tags: |
+  #           ${{ env.registry }}/wasl-op/op-worker:${{ needs.generate-tag.outputs.image_tag }}
+  #         build-args: |
+  #           DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+
+  # build-dashboard:
+  #   needs: generate-tag
+  #   if: ${{ github.event.inputs.app == 'all' || github.event.inputs.app == 'dashboard' }}
+  #   permissions:
+  #     packages: write
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+
+  #     - name: Log in to OCIR
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ${{ env.registry }}
+  #         username: ${{ env.username }}
+  #         password: ${{ env.password }}
+
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         context: .
+  #         file: apps/start/Dockerfile
+  #         push: true
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max
+  #         tags: |
+  #           ${{ env.registry }}/wasl-op/op-dashboard:${{ needs.generate-tag.outputs.image_tag }}
+  #         build-args: |
+  #           NO_CLOUDFLARE=1
