@@ -1,11 +1,9 @@
-import { Readable } from 'node:stream';
 import type { ClickHouseSettings, ResponseJSON } from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
-import sqlstring from 'sqlstring';
-
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
 import { createLogger } from '@openpanel/logger';
 import type { IInterval } from '@openpanel/validation';
+import sqlstring from 'sqlstring';
 
 export { createClient };
 
@@ -68,8 +66,11 @@ export const TABLE_NAMES = {
  * Non-clustered mode = self-hosted environments
  */
 export function isClickhouseClustered(): boolean {
-  if (process.env.CLICKHOUSE_CLUSTER === 'true' || process.env.CLICKHOUSE_CLUSTER === '1') {
-    return true
+  if (
+    process.env.CLICKHOUSE_CLUSTER === 'true' ||
+    process.env.CLICKHOUSE_CLUSTER === '1'
+  ) {
+    return true;
   }
 
   return !(
@@ -97,21 +98,21 @@ function getClickhouseSettings(): ClickHouseSettings {
   return {
     distributed_product_mode: 'allow',
     date_time_input_format: 'best_effort',
-    ...(!process.env.CLICKHOUSE_SETTINGS_REMOVE_CONVERT_ANY_JOIN
-      ? {
+    ...(process.env.CLICKHOUSE_SETTINGS_REMOVE_CONVERT_ANY_JOIN
+      ? {}
+      : {
           query_plan_convert_any_join_to_semi_or_anti_join: 0,
-        }
-      : {}),
+        }),
     ...additionalSettings,
   };
 }
 
 export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   max_open_connections: 30,
-  request_timeout: 300000,
+  request_timeout: 300_000,
   keep_alive: {
     enabled: true,
-    idle_socket_ttl: 60000,
+    idle_socket_ttl: 60_000,
   },
   compression: {
     request: true,
@@ -138,7 +139,7 @@ const cleanQuery = (query?: string) =>
 export async function withRetry<T>(
   operation: () => Promise<T>,
   maxRetries = 3,
-  baseDelay = 500,
+  baseDelay = 500
 ): Promise<T> {
   let lastError: Error | undefined;
 
@@ -162,7 +163,7 @@ export async function withRetry<T>(
           `Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${delay}ms`,
           {
             error: error.message,
-          },
+          }
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
@@ -213,7 +214,7 @@ export const ch = new Proxy(originalCh, {
 
 export async function chQueryWithMeta<T extends Record<string, any>>(
   query: string,
-  clickhouseSettings?: ClickHouseSettings,
+  clickhouseSettings?: ClickHouseSettings
 ): Promise<ResponseJSON<T>> {
   const start = Date.now();
   const res = await ch.query({
@@ -249,44 +250,16 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
   return response;
 }
 
-export async function chInsertCSV(tableName: string, rows: string[]) {
-  try {
-    const now = performance.now();
-    // Create a readable stream in binary mode for CSV (similar to EventBuffer)
-    const csvStream = Readable.from(rows.join('\n'), {
-      objectMode: false,
-    });
-
-    await ch.insert({
-      table: tableName,
-      values: csvStream,
-      format: 'CSV',
-      clickhouse_settings: {
-        format_csv_allow_double_quotes: 1,
-        format_csv_allow_single_quotes: 0,
-      },
-    });
-
-    logger.info('CSV Insert successful', {
-      elapsed: performance.now() - now,
-      rows: rows.length,
-    });
-  } catch (error) {
-    logger.error('CSV Insert failed:', error);
-    throw error;
-  }
-}
-
 export async function chQuery<T extends Record<string, any>>(
   query: string,
-  clickhouseSettings?: ClickHouseSettings,
+  clickhouseSettings?: ClickHouseSettings
 ): Promise<T[]> {
   return (await chQueryWithMeta<T>(query, clickhouseSettings)).data;
 }
 
 export function formatClickhouseDate(
   date: Date | string,
-  skipTime = false,
+  skipTime = false
 ): string {
   if (skipTime) {
     return new Date(date).toISOString().split('T')[0]!;

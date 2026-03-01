@@ -39,7 +39,7 @@ describe('mixpanel', () => {
     const rawEvent = {
       event: '$mp_web_page_view',
       properties: {
-        time: 1746097970,
+        time: 1_746_097_970,
         distinct_id: '$device:123',
         $browser: 'Chrome',
         $browser_version: 135,
@@ -53,7 +53,7 @@ describe('mixpanel', () => {
         $insert_id: 'source_id',
         $lib_version: '2.60.0',
         $mp_api_endpoint: 'api-js.mixpanel.com',
-        $mp_api_timestamp_ms: 1746078175363,
+        $mp_api_timestamp_ms: 1_746_078_175_363,
         $mp_autocapture: true,
         $os: 'Android',
         $referrer: 'https://google.com/',
@@ -71,7 +71,7 @@ describe('mixpanel', () => {
         gclid: 'oqneoqow',
         mp_country_code: 'IN',
         mp_lib: 'web',
-        mp_processing_time_ms: 1746078175546,
+        mp_processing_time_ms: 1_746_078_175_546,
         mp_sent_by_lib_version: '2.60.0',
         utm_medium: 'cpc',
         utm_source: 'google',
@@ -101,7 +101,7 @@ describe('mixpanel', () => {
         __title:
           'Landeed: Satbara Utara, 7/12 Extract, Property Card & Index 2',
       },
-      created_at: '2025-05-01T11:12:50.000Z',
+      created_at: '2025-05-01 11:12:50',
       country: 'IN',
       city: 'Mumbai',
       region: 'Maharashtra',
@@ -110,7 +110,7 @@ describe('mixpanel', () => {
       os: 'Android',
       os_version: undefined,
       browser: 'Chrome',
-      browser_version: '',
+      browser_version: '135',
       device: 'mobile',
       brand: '',
       model: '',
@@ -141,7 +141,7 @@ describe('mixpanel', () => {
     const rawEvent = {
       event: 'custom_event',
       properties: {
-        time: 1746097970,
+        time: 1_746_097_970,
         distinct_id: '$device:123',
         $device_id: '123',
         $user_id: 'user123',
@@ -192,7 +192,7 @@ describe('mixpanel', () => {
     const rawEvent = {
       event: 'ec_search_error',
       properties: {
-        time: 1759947367,
+        time: 1_759_947_367,
         distinct_id: '3385916',
         $browser: 'Mobile Safari',
         $browser_version: null,
@@ -207,7 +207,7 @@ describe('mixpanel', () => {
         $insert_id: 'bclkaepeqcfuzt4v',
         $lib_version: '2.60.0',
         $mp_api_endpoint: 'api-js.mixpanel.com',
-        $mp_api_timestamp_ms: 1759927570699,
+        $mp_api_timestamp_ms: 1_759_927_570_699,
         $os: 'iOS',
         $region: 'Karnataka',
         $screen_height: 852,
@@ -225,7 +225,7 @@ describe('mixpanel', () => {
         language: 'english',
         mp_country_code: 'IN',
         mp_lib: 'web',
-        mp_processing_time_ms: 1759927592421,
+        mp_processing_time_ms: 1_759_927_592_421,
         mp_sent_by_lib_version: '2.60.0',
         os: 'web',
         osVersion:
@@ -249,15 +249,15 @@ describe('mixpanel', () => {
 
     expect(res.id.length).toBeGreaterThan(30);
     expect(res.imported_at).toMatch(
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
     );
     expect(omit(['id', 'imported_at'], res)).toEqual({
       brand: 'Apple',
       browser: 'GSA',
-      browser_version: 'null',
+      browser_version: '388.0.811331708',
       city: 'Bengaluru',
       country: 'IN',
-      created_at: '2025-10-08T18:16:07.000Z',
+      created_at: '2025-10-08 18:16:07',
       device: 'mobile',
       device_id: '199b498af1036c-0e943279a1292e-5c0f4368-51bf4-199b498af1036c',
       duration: 0,

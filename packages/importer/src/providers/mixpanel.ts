@@ -1,8 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { isSameDomain, parsePath, toDots } from '@openpanel/common';
-import { type UserAgentInfo, parseUserAgent } from '@openpanel/common/server';
-import { getReferrerWithQuery, parseReferrer } from '@openpanel/common/server';
-import type { IClickhouseEvent } from '@openpanel/db';
+import {
+  getReferrerWithQuery,
+  parseReferrer,
+  parseUserAgent,
+  type UserAgentInfo,
+} from '@openpanel/common/server';
+import { formatClickhouseDate, type IClickhouseEvent } from '@openpanel/db';
+import type { IClickhouseProfile } from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';
 import type { IMixpanelImportConfig } from '@openpanel/validation';
 import { z } from 'zod';
@@ -15,22 +20,88 @@ export const zMixpanelRawEvent = z.object({
 
 export type MixpanelRawEvent = z.infer<typeof zMixpanelRawEvent>;
 
+/** Engage API profile: https://docs.mixpanel.com/docs/export-methods#exporting-profiles */
+export const zMixpanelRawProfile = z.object({
+  $distinct_id: z.union([z.string(), z.number()]),
+  $properties: z.record(z.unknown()).optional().default({}),
+});
+export type MixpanelRawProfile = z.infer<typeof zMixpanelRawProfile>;
+
+class MixpanelRateLimitError extends Error {
+  readonly retryAfterMs?: number;
+
+  constructor(message: string, retryAfterMs?: number) {
+    super(message);
+    this.name = 'MixpanelRateLimitError';
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
 export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
   provider = 'mixpanel';
   version = '1.0.0';
 
+  private static readonly MAX_REQUESTS_PER_HOUR = 100;
+  private static readonly MIN_REQUEST_INTERVAL_MS = 334; // 3 QPS limit
+  private requestTimestamps: number[] = [];
+  private lastRequestTime = 0;
+
   constructor(
     private readonly projectId: string,
     private readonly config: IMixpanelImportConfig,
-    private readonly logger?: ILogger,
+    private readonly logger?: ILogger
   ) {
     super();
   }
 
-  async getTotalEventsCount(): Promise<number> {
+  private async waitForRateLimit(): Promise<void> {
+    const now = Date.now();
+    const oneHourAgo = now - 60 * 60 * 1000;
+
+    // Prune timestamps older than 1 hour
+    this.requestTimestamps = this.requestTimestamps.filter(
+      (t) => t > oneHourAgo
+    );
+
+    // Enforce per-second limit (3 QPS → min 334ms gap)
+    const timeSinceLast = now - this.lastRequestTime;
+    if (timeSinceLast < MixpanelProvider.MIN_REQUEST_INTERVAL_MS) {
+      const delay = MixpanelProvider.MIN_REQUEST_INTERVAL_MS - timeSinceLast;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
+    // Enforce hourly limit
+    if (
+      this.requestTimestamps.length >= MixpanelProvider.MAX_REQUESTS_PER_HOUR
+    ) {
+      const oldestInWindow = this.requestTimestamps[0]!;
+      const waitUntil = oldestInWindow + 60 * 60 * 1000;
+      const waitMs = waitUntil - Date.now() + 1000; // +1s buffer
+
+      if (waitMs > 0) {
+        this.logger?.info(
+          `Rate limit: ${this.requestTimestamps.length} requests in the last hour, waiting ${Math.ceil(waitMs / 1000)}s`,
+          {
+            requestsInWindow: this.requestTimestamps.length,
+            waitMs,
+          }
+        );
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+        // Prune again after waiting
+        this.requestTimestamps = this.requestTimestamps.filter(
+          (t) => t > Date.now() - 60 * 60 * 1000
+        );
+      }
+    }
+
+    this.lastRequestTime = Date.now();
+    this.requestTimestamps.push(Date.now());
+  }
+
+  getTotalEventsCount(): Promise<number> {
     // Mixpanel sucks and dont provide a good way to extract total event count within a period
     // jql would work but not accurate and will be deprecated end of 2025
-    return -1;
+    return Promise.resolve(-1);
   }
 
   /**
@@ -42,13 +113,13 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
   }
 
   async *parseSource(
-    overrideFrom?: string,
+    overrideFrom?: string
   ): AsyncGenerator<MixpanelRawEvent, void, unknown> {
     yield* this.fetchEventsFromMixpanel(overrideFrom);
   }
 
   private async *fetchEventsFromMixpanel(
-    overrideFrom?: string,
+    overrideFrom?: string
   ): AsyncGenerator<MixpanelRawEvent, void, unknown> {
     const { serviceAccount, serviceSecret, projectId, from, to } = this.config;
 
@@ -58,20 +129,24 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
     for (const [chunkFrom, chunkTo] of dateChunks) {
       let retries = 0;
-      const maxRetries = 3;
+      const maxRetries = 6;
 
       while (retries <= maxRetries) {
         try {
+          await this.waitForRateLimit();
           yield* this.fetchEventsForDateRange(
             serviceAccount,
             serviceSecret,
             projectId,
             chunkFrom,
-            chunkTo,
+            chunkTo
           );
           break; // Success, move to next chunk
         } catch (error) {
           retries++;
+          const isRateLimit =
+            error instanceof MixpanelRateLimitError ||
+            (error instanceof Error && error.message.includes('429'));
           const isLastRetry = retries > maxRetries;
 
           this.logger?.warn('Failed to fetch events for date range', {
@@ -80,22 +155,31 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
             attempt: retries,
             maxRetries,
             error: (error as Error).message,
+            isRateLimit,
             willRetry: !isLastRetry,
           });
 
           if (isLastRetry) {
-            // Final attempt failed, re-throw
             throw new Error(
-              `Failed to fetch Mixpanel events for ${chunkFrom} to ${chunkTo} after ${maxRetries} retries: ${(error as Error).message}`,
+              `Failed to fetch Mixpanel events for ${chunkFrom} to ${chunkTo} after ${maxRetries} retries: ${(error as Error).message}`
             );
           }
 
-          // Exponential backoff: wait before retrying
-          const delay = Math.min(1000 * 2 ** (retries - 1), 60_000); // Cap at 1 minute
+          let delay: number;
+          if (error instanceof MixpanelRateLimitError && error.retryAfterMs) {
+            delay = error.retryAfterMs;
+          } else if (isRateLimit) {
+            // 5min → 10min → 15min → 15min → 15min = 60min total
+            delay = Math.min(300_000 * 2 ** (retries - 1), 900_000);
+          } else {
+            delay = Math.min(1000 * 2 ** (retries - 1), 60_000);
+          }
+
           this.logger?.info('Retrying after delay', {
             delayMs: delay,
             chunkFrom,
             chunkTo,
+            isRateLimit,
           });
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
@@ -108,7 +192,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     serviceSecret: string,
     projectId: string,
     from: string,
-    to: string,
+    to: string
   ): AsyncGenerator<MixpanelRawEvent, void, unknown> {
     const url = 'https://data.mixpanel.com/api/2.0/export';
 
@@ -134,9 +218,18 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       },
     });
 
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('Retry-After');
+      const retryAfterMs = retryAfter ? Number(retryAfter) * 1000 : undefined;
+      throw new MixpanelRateLimitError(
+        'Mixpanel rate limit exceeded (429)',
+        retryAfterMs
+      );
+    }
+
     if (!response.ok) {
       throw new Error(
-        `Failed to fetch events from Mixpanel: ${response.status} ${response.statusText}`,
+        `Failed to fetch events from Mixpanel: ${response.status} ${response.statusText}`
       );
     }
 
@@ -153,7 +246,9 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       while (true) {
         const { done, value } = await reader.read();
 
-        if (done) break;
+        if (done) {
+          break;
+        }
 
         buffer += decoder.decode(value, { stream: true });
 
@@ -187,13 +282,121 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
             {
               line: buffer.substring(0, 100),
               error,
-            },
+            }
           );
         }
       }
     } finally {
       reader.releaseLock();
     }
+  }
+
+  /**
+   * Stream user profiles from Mixpanel Engage API.
+   * Paginates with page/page_size (5k per page) and yields each profile.
+   */
+  async *streamProfiles(): AsyncGenerator<MixpanelRawProfile, void, unknown> {
+    const { serviceAccount, serviceSecret, projectId } = this.config;
+    const pageSize = 5000;
+    let page = 0;
+
+    while (true) {
+      await this.waitForRateLimit();
+
+      const url = `https://mixpanel.com/api/query/engage?project_id=${encodeURIComponent(projectId)}`;
+      const body = new URLSearchParams({
+        page: String(page),
+        page_size: String(pageSize),
+      });
+
+      this.logger?.info('Fetching profiles from Mixpanel Engage', {
+        page,
+        page_size: pageSize,
+        projectId,
+      });
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${serviceAccount}:${serviceSecret}`).toString('base64')}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: body.toString(),
+      });
+
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        const retryAfterMs = retryAfter ? Number(retryAfter) * 1000 : undefined;
+        throw new MixpanelRateLimitError(
+          'Mixpanel rate limit exceeded (429)',
+          retryAfterMs
+        );
+      }
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(
+          `Failed to fetch profiles from Mixpanel: ${response.status} ${response.statusText} - ${text}`
+        );
+      }
+
+      const data = (await response.json()) as {
+        results?: Array<{ $distinct_id: string | number; $properties?: Record<string, unknown> }>;
+        page?: number;
+        total?: number;
+      };
+
+      const results = data.results ?? [];
+      for (const row of results) {
+        const parsed = zMixpanelRawProfile.safeParse(row);
+        if (parsed.success) {
+          yield parsed.data;
+        } else {
+          this.logger?.warn('Skipping invalid Mixpanel profile', {
+            row: JSON.stringify(row).slice(0, 200),
+          });
+        }
+      }
+
+      if (results.length < pageSize) {
+        break;
+      }
+      page++;
+    }
+  }
+
+  /**
+   * Map Mixpanel Engage profile to OpenPanel IClickhouseProfile.
+   */
+  transformProfile(raw: MixpanelRawProfile): IClickhouseProfile {
+    const parsed = zMixpanelRawProfile.parse(raw);
+    const props = (parsed.$properties || {}) as Record<string, unknown>;
+
+    const id = String(parsed.$distinct_id).replace(/^\$device:/, '');
+    const createdAt = props.$created
+      ? formatClickhouseDate(new Date(String(props.$created)))
+      : formatClickhouseDate(new Date());
+
+    const properties: Record<string, string> = {};
+    const stripPrefix = /^\$/;
+    for (const [key, value] of Object.entries(props)) {
+      if (stripPrefix.test(key)) continue;
+      if (value == null) continue;
+      properties[key] = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    }
+
+    return {
+      id,
+      project_id: this.projectId,
+      first_name: String(props.$first_name ?? ''),
+      last_name: String(props.$last_name ?? ''),
+      email: String(props.$email ?? ''),
+      avatar: String(props.$avatar ?? props.$image ?? ''),
+      properties,
+      created_at: createdAt,
+      is_external: true,
+    };
   }
 
   validate(rawEvent: MixpanelRawEvent): boolean {
@@ -208,7 +411,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     const deviceId = props.$device_id;
     const profileId = String(props.$user_id || props.distinct_id).replace(
       /^\$device:/,
-      '',
+      ''
     );
 
     // Build full URL from current_url and current_url_search (web only)
@@ -309,7 +512,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       project_id: projectId,
       session_id: '', // Will be generated in SQL after import
       properties: toDots(properties), // Flatten nested objects/arrays to Map(String, String)
-      created_at: new Date(props.time * 1000).toISOString(),
+      created_at: formatClickhouseDate(new Date(props.time * 1000)),
       country,
       city,
       region,
@@ -318,10 +521,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       os: uaInfo.os || props.$os,
       os_version: uaInfo.osVersion || props.$osVersion,
       browser: uaInfo.browser || props.$browser,
-      browser_version:
-        uaInfo.browserVersion || props.$browserVersion
-          ? String(props.$browser_version)
-          : '',
+      browser_version: uaInfo.browserVersion || String(props.$browser_version ?? ''),
       device: this.getDeviceType(props.mp_lib, uaInfo, props),
       brand: uaInfo.brand || '',
       model: uaInfo.model || '',
@@ -337,14 +537,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         : this.provider,
       sdk_version: this.version,
     };
-
-    // TODO: Remove this
-    // Temporary fix for a client
-    const isMightBeScreenView = this.getMightBeScreenView(rawEvent);
-    if (isMightBeScreenView && event.name === 'Loaded a Screen') {
-      event.name = 'screen_view';
-      event.path = isMightBeScreenView;
-    }
 
     // TODO: Remove this
     // This is a hack to get utm tags (not sure if this is just the testing project or all mixpanel projects)
@@ -371,13 +563,13 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
   private getDeviceType(
     mp_lib: string,
     uaInfo: UserAgentInfo,
-    props: Record<string, any>,
+    props: Record<string, any>
   ) {
     // Normalize lib/os/browser data
     const lib = (mp_lib || '').toLowerCase();
     const os = String(props.$os || uaInfo.os || '').toLowerCase();
     const browser = String(
-      props.$browser || uaInfo.browser || '',
+      props.$browser || uaInfo.browser || ''
     ).toLowerCase();
 
     const isTabletOs = os === 'ipados' || os === 'ipad os' || os === 'ipad';
@@ -431,11 +623,6 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     return !this.isWebEvent(mp_lib);
   }
 
-  private getMightBeScreenView(rawEvent: MixpanelRawEvent) {
-    const props = rawEvent.properties as Record<string, any>;
-    return Object.keys(props).find((key) => key.match(/^[A-Z1-9_]+$/));
-  }
-
   private parseServerDeviceInfo(props: Record<string, any>): UserAgentInfo {
     // For mobile events, extract device information from Mixpanel properties
     const os = props.$os || props.os || '';
@@ -446,19 +633,19 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
     return {
       isServer: true,
-      os: os,
-      osVersion: osVersion,
+      os,
+      osVersion,
       browser: '',
       browserVersion: '',
-      device: device,
-      brand: brand,
-      model: model,
+      device,
+      brand,
+      model,
     };
   }
 
   private stripMixpanelProperties(
     properties: Record<string, any>,
-    searchParams: Record<string, string>,
+    searchParams: Record<string, string>
   ): Record<string, any> {
     const strip = [
       'time',
@@ -472,8 +659,8 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     ];
     const filtered = Object.fromEntries(
       Object.entries(properties).filter(
-        ([key]) => !key.match(/^(\$|mp_|utm_)/) && !strip.includes(key),
-      ),
+        ([key]) => !(key.match(/^(\$|mp_|utm_)/) || strip.includes(key))
+      )
     );
 
     // Parse JSON strings back to objects/arrays so toDots() can flatten them
