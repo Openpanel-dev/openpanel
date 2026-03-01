@@ -31,7 +31,7 @@ function Component() {
   const query = useQuery(
     trpc.profile.list.queryOptions(
       {
-        cursor: (page - 1) * 50,
+        cursor: page - 1,
         projectId,
         take: 50,
         search: debouncedSearch,

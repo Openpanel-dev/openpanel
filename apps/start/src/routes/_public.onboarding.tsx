@@ -57,11 +57,11 @@ function Component() {
     <div className="col w-full gap-8 text-left">
       <div>
         <h1 className="mb-2 font-bold text-3xl text-foreground">
-          Create an account
+          Start tracking in minutes
         </h1>
         <p className="text-muted-foreground">
-          Let's start with creating your account. By creating an account you
-          accept the{' '}
+          Join 1,000+ projects already using OpenPanel. By creating an account
+          you accept the{' '}
           <a
             className="underline transition-colors hover:text-foreground"
             href="https://openpanel.dev/terms"
@@ -111,6 +111,9 @@ function Component() {
           <SignInGithub inviteId={inviteId} type="sign-up" />
           <SignInGoogle inviteId={inviteId} type="sign-up" />
         </div>
+        <p className="text-center text-muted-foreground text-xs">
+          No credit card required · Free 30-day trial · Cancel anytime
+        </p>
 
         <Or className="my-6" />
 

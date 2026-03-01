@@ -1,3 +1,15 @@
+import { IMPORT_PROVIDERS } from '@openpanel/importer/providers';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
+import { formatDistanceToNow } from 'date-fns';
+import {
+  CheckCircleIcon,
+  Download,
+  InfoIcon,
+  Loader2Icon,
+  XCircleIcon,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import {
   IntegrationCard,
@@ -19,21 +31,9 @@ import { Tooltiper } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
-import { IMPORT_PROVIDERS } from '@openpanel/importer/providers';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { formatDistanceToNow } from 'date-fns';
-import {
-  CheckCircleIcon,
-  Download,
-  InfoIcon,
-  Loader2Icon,
-  XCircleIcon,
-} from 'lucide-react';
-import { toast } from 'sonner';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/settings/_tabs/imports',
+  '/_app/$organizationId/$projectId/settings/_tabs/imports'
 )({
   component: ImportsSettings,
 });
@@ -48,8 +48,8 @@ function ImportsSettings() {
       { projectId },
       {
         refetchInterval: 5000,
-      },
-    ),
+      }
+    )
   );
   const imports = importsQuery.data ?? [];
 
@@ -61,7 +61,7 @@ function ImportsSettings() {
         });
         queryClient.invalidateQueries(trpc.import.list.pathFilter());
       },
-    }),
+    })
   );
 
   const retryImport = useMutation(
@@ -72,11 +72,11 @@ function ImportsSettings() {
         });
         queryClient.invalidateQueries(trpc.import.list.pathFilter());
       },
-    }),
+    })
   );
 
   const handleProviderSelect = (
-    provider: (typeof IMPORT_PROVIDERS)[number],
+    provider: (typeof IMPORT_PROVIDERS)[number]
   ) => {
     pushModal('AddImport', {
       provider: provider.id,
@@ -93,10 +93,10 @@ function ImportsSettings() {
       failed: 'destructive',
     };
     const icons: Record<string, React.ReactNode> = {
-      pending: <Loader2Icon className="w-4 h-4 animate-spin" />,
-      processing: <Loader2Icon className="w-4 h-4 animate-spin" />,
-      completed: <CheckCircleIcon className="w-4 h-4" />,
-      failed: <XCircleIcon className="w-4 h-4" />,
+      pending: <Loader2Icon className="h-4 w-4 animate-spin" />,
+      processing: <Loader2Icon className="h-4 w-4 animate-spin" />,
+      completed: <CheckCircleIcon className="h-4 w-4" />,
+      failed: <XCircleIcon className="h-4 w-4" />,
     };
 
     if (status === 'failed') {
@@ -105,7 +105,7 @@ function ImportsSettings() {
           content={errorMessage}
           tooltipClassName="max-w-xs break-words"
         >
-          <Badge variant={variants[status] || 'default'} className="capitalize">
+          <Badge className="capitalize" variant={variants[status] || 'default'}>
             {icons[status] || null}
             {status}
           </Badge>
@@ -114,7 +114,7 @@ function ImportsSettings() {
     }
 
     return (
-      <Badge variant={variants[status] || 'default'} className="capitalize">
+      <Badge className="capitalize" variant={variants[status] || 'default'}>
         {icons[status] || null}
         {status}
       </Badge>
@@ -124,26 +124,26 @@ function ImportsSettings() {
   return (
     <div className="space-y-8">
       <div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {IMPORT_PROVIDERS.map((provider) => (
             <IntegrationCard
-              key={provider.id}
+              description={provider.description}
               icon={
                 <IntegrationCardLogoImage
-                  src={provider.logo}
                   backgroundColor={provider.backgroundColor}
                   className="p-4"
+                  src={provider.logo}
                 />
               }
+              key={provider.id}
               name={provider.name}
-              description={provider.description}
             >
               <IntegrationCardFooter className="row justify-end">
                 <Button
-                  variant="ghost"
                   onClick={() => handleProviderSelect(provider)}
+                  variant="ghost"
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <Download className="mr-2 h-4 w-4" />
                   Import Data
                 </Button>
               </IntegrationCardFooter>
@@ -153,9 +153,9 @@ function ImportsSettings() {
       </div>
 
       <div>
-        <h3 className="text-lg font-medium mb-4">Import History</h3>
+        <h3 className="mb-4 font-medium text-lg">Import History</h3>
 
-        <div className="border rounded-lg">
+        <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -172,8 +172,8 @@ function ImportsSettings() {
                 <TableRow>
                   <TableCell colSpan={6}>
                     <FullPageEmptyState
-                      title="No imports yet"
                       description="Your import history will appear here."
+                      title="No imports yet"
                     />
                   </TableCell>
                 </TableRow>
@@ -196,7 +196,7 @@ function ImportsSettings() {
                     <TableCell>
                       <Skeleton className="h-4 w-3/5" />
                     </TableCell>
-                    <TableCell className="text-right justify-end row">
+                    <TableCell className="row justify-end text-right">
                       <Skeleton className="h-4 w-3/5" />
                     </TableCell>
                   </TableRow>
@@ -204,9 +204,9 @@ function ImportsSettings() {
               {imports.map((imp) => (
                 <TableRow key={imp.id}>
                   <TableCell className="font-medium capitalize">
-                    <div className="row gap-2 items-center">
+                    <div className="row items-center gap-2">
                       <div>{imp.config.provider}</div>
-                      <Badge variant="outline" className="uppercase">
+                      <Badge className="uppercase" variant="outline">
                         {imp.config.type}
                       </Badge>
                     </div>
@@ -220,7 +220,7 @@ function ImportsSettings() {
                     <div className="space-y-1">
                       {getStatusBadge(imp.status, imp.errorMessage)}
                       {imp.statusMessage && (
-                        <div className="text-xs text-muted-foreground truncate">
+                        <div className="truncate text-muted-foreground text-xs">
                           {imp.statusMessage}
                         </div>
                       )}
@@ -237,13 +237,13 @@ function ImportsSettings() {
                             tooltipClassName="max-w-xs"
                           >
                             {imp.totalEvents.toLocaleString()}{' '}
-                            <InfoIcon className="w-4 h-4 inline-block relative -top-px" />
+                            <InfoIcon className="relative -top-px inline-block h-4 w-4" />
                           </Tooltiper>
                         </div>
                         {imp.status === 'processing' && (
-                          <div className="w-full bg-secondary rounded-full h-1.5">
+                          <div className="h-1.5 w-full rounded-full bg-secondary">
                             <div
-                              className="bg-primary h-1.5 rounded-full transition-all"
+                              className="h-1.5 rounded-full bg-primary transition-all"
                               style={{
                                 width: `${Math.min(Math.round((imp.processedEvents / imp.totalEvents) * 100), 100)}%`,
                               }}
@@ -265,7 +265,7 @@ function ImportsSettings() {
                   <TableCell>
                     <Tooltiper
                       content={
-                        <pre className="font-mono text-sm leading-normal whitespace-pre-wrap break-words">
+                        <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-normal">
                           {JSON.stringify(imp.config, null, 2)}
                         </pre>
                       }
@@ -274,20 +274,20 @@ function ImportsSettings() {
                       <Badge>Config</Badge>
                     </Tooltiper>
                   </TableCell>
-                  <TableCell className="text-right space-x-2">
+                  <TableCell className="space-x-2 text-right">
                     {imp.status === 'failed' && (
                       <Button
-                        variant="outline"
-                        size="sm"
                         onClick={() => retryImport.mutate({ id: imp.id })}
+                        size="sm"
+                        variant="outline"
                       >
                         Retry
                       </Button>
                     )}
                     <Button
-                      variant="ghost"
-                      size="sm"
                       onClick={() => deleteImport.mutate({ id: imp.id })}
+                      size="sm"
+                      variant="ghost"
                     >
                       Delete
                     </Button>

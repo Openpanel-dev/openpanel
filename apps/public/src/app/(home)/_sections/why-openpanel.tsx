@@ -1,13 +1,11 @@
 'use client';
 
-import { FeatureCardBackground } from '@/components/feature-card';
-import { Section, SectionHeader, SectionLabel } from '@/components/section';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { QuoteIcon } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
 import Markdown from 'react-markdown';
+import { FeatureCardBackground } from '@/components/feature-card';
+import { Section, SectionHeader, SectionLabel } from '@/components/section';
+import { cn } from '@/lib/utils';
 
 const images = [
   {
@@ -65,55 +63,54 @@ const quotes: {
 ];
 
 export function WhyOpenPanel() {
-  const [showMore, setShowMore] = useState(false);
   return (
     <Section className="container gap-16">
       <SectionHeader label="Trusted by founders" title="Who uses OpenPanel?" />
       <div className="col overflow-hidden">
-        <SectionLabel className="text-muted-foreground bg-background -mb-2 z-5 self-start pr-4">
+        <SectionLabel className="z-5 -mb-2 self-start bg-background pr-4 text-muted-foreground">
           USED BY
         </SectionLabel>
-        <div className="grid grid-cols-3 md:grid-cols-6 -mx-4 border-y py-4">
+        <div className="-mx-4 grid grid-cols-3 border-y py-4 md:grid-cols-6">
           {images.map((image) => (
-            <div key={image.logo} className="px-4 border-r last:border-r-0 ">
+            <div className="border-r px-4 last:border-r-0" key={image.logo}>
               <a
+                className={cn('group center-center relative aspect-square')}
                 href={image.url}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
                 key={image.logo}
-                className={cn('relative group center-center aspect-square')}
+                rel="noopener noreferrer nofollow"
+                target="_blank"
                 title={image.name}
               >
                 <FeatureCardBackground />
                 <Image
-                  src={image.logo}
                   alt={image.name}
-                  width={64}
-                  height={64}
                   className={cn('size-16 object-contain dark:invert')}
+                  height={64}
+                  src={image.logo}
+                  width={64}
                 />
               </a>
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 -mx-4 border-y py-4">
-          {quotes.slice(0, showMore ? quotes.length : 2).map((quote) => (
+        <div className="-mx-4 grid grid-cols-1 border-y py-4 md:grid-cols-2">
+          {quotes.map((quote) => (
             <figure
+              className="group px-4 py-4 md:odd:border-r"
               key={quote.author}
-              className="px-4 py-4 md:odd:border-r group"
             >
-              <QuoteIcon className="size-10 text-muted-foreground/50 stroke-1 mb-2 group-hover:text-foreground group-hover:rotate-6 transition-all" />
-              <blockquote className="text-xl prose">
+              <QuoteIcon className="mb-2 size-10 stroke-1 text-muted-foreground/50 transition-all group-hover:rotate-6 group-hover:text-foreground" />
+              <blockquote className="prose text-xl">
                 <Markdown>{quote.quote}</Markdown>
               </blockquote>
-              <figcaption className="row justify-between text-muted-foreground text-sm mt-4">
+              <figcaption className="row mt-4 justify-between text-muted-foreground text-sm">
                 <span>{quote.author}</span>
                 {quote.site && (
                   <cite className="not-italic">
                     <a
                       href={quote.site}
-                      target="_blank"
                       rel="noopener noreferrer"
+                      target="_blank"
                     >
                       {quote.site.replace('https://', '')}
                     </a>
@@ -123,14 +120,6 @@ export function WhyOpenPanel() {
             </figure>
           ))}
         </div>
-        <Button
-          onClick={() => setShowMore((p) => !p)}
-          type="button"
-          variant="outline"
-          className="self-end mt-4"
-        >
-          {showMore ? 'Show less' : 'View more reviews'}
-        </Button>
       </div>
     </Section>
   );

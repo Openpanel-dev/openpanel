@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
-import { LoginLeftPanel } from '@/components/login-left-panel';
 import { LoginNavbar } from '@/components/login-navbar';
+import { OnboardingLeftPanel } from '@/components/onboarding-left-panel';
 
 export const Route = createFileRoute('/_login')({
   beforeLoad: async ({ context }) => {
@@ -16,7 +16,7 @@ function AuthLayout() {
     <div className="relative grid min-h-screen md:grid-cols-2">
       <LoginNavbar />
       <div className="hidden md:block">
-        <LoginLeftPanel />
+        <OnboardingLeftPanel />
       </div>
       <div className="center-center mx-auto w-full max-w-md px-4">
         <Outlet />

@@ -23,11 +23,11 @@ export const Route = createFileRoute(
 function Component() {
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
-  const { page } = useDataTablePagination();
+  const { page } = useDataTablePagination(50);
   const query = useQuery(
     trpc.profile.powerUsers.queryOptions(
       {
-        cursor: (page - 1) * 50,
+        cursor: page - 1,
         projectId,
         take: 50,
       },

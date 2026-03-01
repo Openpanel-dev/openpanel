@@ -18,19 +18,22 @@ import type { PaginationState, Table, Updater } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { memo } from 'react';
 
+const PAGE_SIZE = 50;
+
 type Props = {
   query: UseQueryResult<RouterOutputs['profile']['list'], unknown>;
   type: 'profiles' | 'power-users';
+  pageSize?: number;
 };
 
 const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceProfile[];
 
 export const ProfilesTable = memo(
-  ({ type, query }: Props) => {
+  ({ type, query, pageSize = PAGE_SIZE }: Props) => {
     const { data, isLoading } = query;
     const columns = useColumns(type);
 
-    const { setPage, state: pagination } = useDataTablePagination();
+    const { setPage, state: pagination } = useDataTablePagination(pageSize);
     const {
       columnVisibility,
       setColumnVisibility,
@@ -83,7 +86,7 @@ export const ProfilesTable = memo(
       </>
     );
   },
-  arePropsEqual(['query.isLoading', 'query.data', 'type']),
+  arePropsEqual(['query.isLoading', 'query.data', 'type', 'pageSize']),
 );
 
 function ProfileTableToolbar({ table }: { table: Table<IServiceProfile> }) {
