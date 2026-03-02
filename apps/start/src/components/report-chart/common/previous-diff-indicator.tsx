@@ -97,7 +97,7 @@ interface PreviousDiffIndicatorPureProps {
   diff?: number | null | undefined;
   state?: string | null | undefined;
   inverted?: boolean;
-  size?: 'sm' | 'lg' | 'md';
+  size?: 'xs' | 'sm' | 'lg' | 'md';
   className?: string;
   showPrevious?: boolean;
 }

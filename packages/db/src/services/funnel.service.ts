@@ -12,6 +12,17 @@ import {
 } from './chart.service';
 import { onlyReportEvents } from './reports.service';
 
+/** Display label for null/empty breakdown values (e.g. property not set). */
+export const EMPTY_BREAKDOWN_LABEL = 'Not set';
+
+function normalizeBreakdownValue(value: unknown): string {
+  if (value == null || value === '') {
+    return EMPTY_BREAKDOWN_LABEL;
+  }
+  const s = String(value).trim();
+  return s === '' ? EMPTY_BREAKDOWN_LABEL : s;
+}
+
 export class FunnelService {
   constructor(private client: typeof ch) {}
 
@@ -144,20 +155,24 @@ export class FunnelService {
       ];
     }
 
-    // Group by breakdown values
+    // Group by breakdown values (normalize empty/null to "Not set")
     const series = funnel.reduce(
       (acc, f) => {
         if (limit && Object.keys(acc).length >= limit) {
           return acc;
         }
 
-        const key = breakdowns.map((b, index) => f[`b_${index}`]).join('|');
+        const key = breakdowns
+          .map((b, index) => normalizeBreakdownValue(f[`b_${index}`]))
+          .join('|');
         if (!acc[key]) {
           acc[key] = [];
         }
         acc[key]!.push({
           id: key,
-          breakdowns: breakdowns.map((b, index) => f[`b_${index}`]),
+          breakdowns: breakdowns.map((b, index) =>
+            normalizeBreakdownValue(f[`b_${index}`]),
+          ),
           level: f.level,
           count: f.count,
         });
