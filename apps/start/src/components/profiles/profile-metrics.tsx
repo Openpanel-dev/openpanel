@@ -1,6 +1,5 @@
-import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
-
 import type { IProfileMetrics } from '@openpanel/db';
+import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
 
 type Props = {
   data: IProfileMetrics;
@@ -102,7 +101,7 @@ const PROFILE_METRICS = [
 
 export const ProfileMetrics = ({ data }: Props) => {
   return (
-    <div className="relative col-span-6 -m-4 mb-0 mt-0 md:m-0">
+    <div className="relative col-span-6 -m-4 mt-0 mb-0 md:m-0">
       <div className="card grid grid-cols-2 overflow-hidden rounded-md md:grid-cols-4 lg:grid-cols-6">
         {PROFILE_METRICS.filter((metric) => {
           if (metric.hideOnZero && data[metric.key] === 0) {
@@ -111,20 +110,20 @@ export const ProfileMetrics = ({ data }: Props) => {
           return true;
         }).map((metric) => (
           <OverviewMetricCard
-            key={metric.key}
+            data={[]}
             id={metric.key}
+            inverted={metric.inverted}
+            isLoading={false}
+            key={metric.key}
             label={metric.title}
             metric={{
               current:
-                metric.unit === 'timeAgo'
-                  ? new Date(data[metric.key]).getTime()
+                metric.unit === 'timeAgo' && data[metric.key]
+                  ? new Date(data[metric.key]!).getTime()
                   : (data[metric.key] as number) || 0,
               previous: null,
             }}
             unit={metric.unit}
-            data={[]}
-            inverted={metric.inverted}
-            isLoading={false}
           />
         ))}
       </div>

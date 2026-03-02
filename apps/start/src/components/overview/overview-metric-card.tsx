@@ -1,23 +1,16 @@
-import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
-import { cn } from '@/utils/cn';
-import AutoSizer from 'react-virtualized-auto-sizer';
-import { Area, AreaChart, Bar, BarChart, Tooltip } from 'recharts';
-
-import { formatDate, timeAgo } from '@/utils/date';
-import { getChartColor } from '@/utils/theme';
 import { getPreviousMetric } from '@openpanel/common';
 import { useEffect, useRef, useState } from 'react';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import { Bar, BarChart, Tooltip } from 'recharts';
 import {
-  ChartTooltipContainer,
-  ChartTooltipHeader,
-  ChartTooltipItem,
-} from '../charts/chart-tooltip';
-import {
-  PreviousDiffIndicatorPure,
   getDiffIndicator,
+  PreviousDiffIndicatorPure,
 } from '../report-chart/common/previous-diff-indicator';
 import { Skeleton } from '../skeleton';
 import { Tooltiper } from '../ui/tooltip';
+import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
+import { cn } from '@/utils/cn';
+import { formatDate, timeAgo } from '@/utils/date';
 
 interface MetricCardProps {
   id: string;
@@ -78,6 +71,9 @@ export function OverviewMetricCard({
     }
 
     if (unit === 'timeAgo') {
+      if (!value) {
+        return <>{'N/A'}</>;
+      }
       return <>{timeAgo(new Date(value))}</>;
     }
 
@@ -103,7 +99,7 @@ export function OverviewMetricCard({
     getPreviousMetric(current, previous)?.state,
     '#6ee7b7', // green
     '#fda4af', // red
-    '#93c5fd', // blue
+    '#93c5fd' // blue
   );
 
   const renderTooltip = () => {
@@ -115,7 +111,7 @@ export function OverviewMetricCard({
             {renderValue(
               data[currentIndex].current,
               'ml-1 font-light text-xl',
-              false,
+              false
             )}
           </span>
         </span>
@@ -132,60 +128,60 @@ export function OverviewMetricCard({
     );
   };
   return (
-    <Tooltiper content={renderTooltip()} asChild sideOffset={-20}>
+    <Tooltiper asChild content={renderTooltip()} sideOffset={-20}>
       <button
-        type="button"
         className={cn(
           'col-span-2 flex-1 shadow-[0_0_0_0.5px] shadow-border md:col-span-1',
-          active && 'bg-def-100',
+          active && 'bg-def-100'
         )}
         onClick={onClick}
+        type="button"
       >
         <div className={cn('group relative p-4')}>
           <div
             className={cn(
-              'absolute left-4 right-4 bottom-0 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100',
+              'absolute right-4 bottom-0 left-4 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100'
             )}
           >
             <AutoSizer style={{ height: 20 }}>
               {({ width }) => (
                 <BarChart
-                  width={width}
-                  height={20}
                   data={data}
-                  style={{
-                    background: 'transparent',
-                  }}
+                  height={20}
+                  margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
                   onMouseMove={(event) => {
                     setCurrentIndex(event.activeTooltipIndex ?? null);
                   }}
-                  margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                  style={{
+                    background: 'transparent',
+                  }}
+                  width={width}
                 >
                   <Tooltip content={() => null} cursor={false} />
                   <Bar
                     dataKey={'current'}
-                    type="step"
                     fill={graphColors}
                     fillOpacity={1}
-                    strokeWidth={0}
                     isAnimationActive={false}
+                    strokeWidth={0}
+                    type="step"
                   />
                 </BarChart>
               )}
             </AutoSizer>
           </div>
           <OverviewMetricCardNumber
-            label={label}
-            value={renderValue(current, 'ml-1 font-light text-xl')}
             enhancer={
               <PreviousDiffIndicatorPure
                 className="text-sm"
-                size="sm"
                 inverted={inverted}
+                size="sm"
                 {...getPreviousMetric(current, previous)}
               />
             }
             isLoading={isLoading}
+            label={label}
+            value={renderValue(current, 'ml-1 font-light text-xl')}
           />
         </div>
       </button>
@@ -207,9 +203,9 @@ export function OverviewMetricCardNumber({
   isLoading?: boolean;
 }) {
   return (
-    <div className={cn('min-w-0 col gap-2', className)}>
+    <div className={cn('col min-w-0 gap-2', className)}>
       <div className="flex min-w-0 items-center gap-2 text-left">
-        <span className="truncate text-sm font-medium text-muted-foreground leading-[1.1]">
+        <span className="truncate font-medium text-muted-foreground text-sm leading-[1.1]">
           {label}
         </span>
       </div>
@@ -219,11 +215,11 @@ export function OverviewMetricCardNumber({
           <Skeleton className="h-6 w-12" />
         </div>
       ) : (
-        <div className="truncate font-mono text-3xl leading-[1.1] font-bold w-full text-left">
+        <div className="w-full truncate text-left font-bold font-mono text-3xl leading-[1.1]">
           {value}
         </div>
       )}
-      <div className="absolute right-0 top-0 bottom-0 center justify-center col pr-4">
+      <div className="center col absolute top-0 right-0 bottom-0 justify-center pr-4">
         {enhancer}
       </div>
     </div>

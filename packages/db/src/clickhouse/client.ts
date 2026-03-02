@@ -290,3 +290,8 @@ export function toDate(str: string, interval?: IInterval) {
 export function convertClickhouseDateToJs(date: string) {
   return new Date(`${date.replace(' ', 'T')}Z`);
 }
+
+const ROLLUP_DATE_PREFIX = '1970-01-01';
+export function isClickhouseDefaultMinDate(date: string): boolean {
+  return date.startsWith(ROLLUP_DATE_PREFIX) || date.startsWith('1969-12-31');
+}

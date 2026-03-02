@@ -1,14 +1,13 @@
 import { average, sum } from '@openpanel/common';
 import { chartColors } from '@openpanel/constants';
-import { getCache } from '@openpanel/redis';
 import { type IChartEventFilter, zTimeInterval } from '@openpanel/validation';
-import { omit } from 'ramda';
 import sqlstring from 'sqlstring';
 import { z } from 'zod';
 import {
-  TABLE_NAMES,
   ch,
   convertClickhouseDateToJs,
+  isClickhouseDefaultMinDate,
+  TABLE_NAMES,
 } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import {
@@ -172,24 +171,12 @@ export type IGetMapDataInput = z.infer<typeof zGetMapDataInput> & {
 export class OverviewService {
   constructor(private client: typeof ch) {}
 
-  // Helper methods
-  private isRollupRow(date: string): boolean {
-    // The rollup row has date 1970-01-01 00:00:00 (epoch) from ClickHouse.
-    // After transform with `new Date().toISOString()`, this becomes an ISO string.
-    // Due to timezone handling in JavaScript's Date constructor (which interprets
-    // the input as local time), the UTC date might become:
-    // - 1969-12-31T... for positive UTC offsets (e.g., UTC+8)
-    // - 1970-01-01T... for UTC or negative offsets
-    // We check for both year prefixes to handle all server timezones.
-    return date.startsWith(ROLLUP_DATE_PREFIX) || date.startsWith('1969-12-31');
-  }
-
   private getFillConfig(interval: string, startDate: string, endDate: string) {
     const useDateOnly = ['month', 'week'].includes(interval);
     return {
       from: clix.toStartOf(
         clix.datetime(startDate, useDateOnly ? 'toDate' : 'toDateTime'),
-        interval as any,
+        interval as any
       ),
       to: clix.datetime(endDate, useDateOnly ? 'toDate' : 'toDateTime'),
       step: clix.toInterval('1', interval as any),
@@ -234,12 +221,12 @@ export class OverviewService {
 
   private mergeRevenueIntoSeries<T extends { date: string }>(
     series: T[],
-    revenueData: { date: string; total_revenue: number }[],
+    revenueData: { date: string; total_revenue: number }[]
   ): (T & { total_revenue: number })[] {
     const revenueByDate = new Map(
       revenueData
-        .filter((r) => !this.isRollupRow(r.date))
-        .map((r) => [r.date, r.total_revenue]),
+        .filter((r) => !isClickhouseDefaultMinDate(r.date))
+        .map((r) => [r.date, r.total_revenue])
     );
     return series.map((row) => ({
       ...row,
@@ -248,10 +235,11 @@ export class OverviewService {
   }
 
   private getOverallRevenue(
-    revenueData: { date: string; total_revenue: number }[],
+    revenueData: { date: string; total_revenue: number }[]
   ): number {
     return (
-      revenueData.find((r) => this.isRollupRow(r.date))?.total_revenue ?? 0
+      revenueData.find((r) => isClickhouseDefaultMinDate(r.date))
+        ?.total_revenue ?? 0
     );
   }
 
@@ -263,7 +251,7 @@ export class OverviewService {
       startDate: string;
       endDate: string;
       timezone: string;
-    },
+    }
   ): ReturnType<typeof clix> {
     if (!this.isPageFilter(params.filters)) {
       query.rawWhere(this.getRawWhereClause('sessions', params.filters));
@@ -276,7 +264,7 @@ export class OverviewService {
       .where(
         'id',
         'IN',
-        clix.exp('(SELECT session_id FROM distinct_sessions)'),
+        clix.exp('(SELECT session_id FROM distinct_sessions)')
       );
   }
 
@@ -475,14 +463,14 @@ export class OverviewService {
         clix(this.client, timezone)
           .select(['bounce_rate'])
           .from('session_agg')
-          .where('date', '=', rollupDate),
+          .where('date', '=', rollupDate)
       )
       .with(
         'daily_session_stats',
         clix(this.client, timezone)
           .select(['date', 'bounce_rate'])
           .from('session_agg')
-          .where('date', '!=', rollupDate),
+          .where('date', '!=', rollupDate)
       )
       .with('overall_unique_visitors', overallUniqueVisitorsQuery)
       .select<{
@@ -512,7 +500,7 @@ export class OverviewService {
       .from(`${TABLE_NAMES.events} AS e`)
       .leftJoin(
         'daily_session_stats AS dss',
-        `${clix.toStartOf('e.created_at', interval as any)} = dss.date`,
+        `${clix.toStartOf('e.created_at', interval as any)} = dss.date`
       )
       .where('e.project_id', '=', projectId)
       .where('e.name', '=', 'screen_view')
@@ -551,7 +539,7 @@ export class OverviewService {
       (item) =>
         item.overall_bounce_rate !== null ||
         item.overall_total_sessions !== null ||
-        item.overall_unique_visitors !== null,
+        item.overall_unique_visitors !== null
     );
 
     return {
@@ -560,11 +548,11 @@ export class OverviewService {
         unique_visitors: anyRowWithData?.overall_unique_visitors ?? 0,
         total_sessions: anyRowWithData?.overall_total_sessions ?? 0,
         avg_session_duration: average(
-          mainRes.map((item) => item.avg_session_duration),
+          mainRes.map((item) => item.avg_session_duration)
         ),
         total_screen_views: sum(mainRes.map((item) => item.total_screen_views)),
         views_per_session: average(
-          mainRes.map((item) => item.views_per_session),
+          mainRes.map((item) => item.views_per_session)
         ),
         total_revenue: overallRevenue,
       },
@@ -591,7 +579,7 @@ export class OverviewService {
           return item;
         }
         return item;
-      }),
+      })
     );
 
     return Object.values(where).join(' AND ');
@@ -879,7 +867,7 @@ export class OverviewService {
         startDate,
         endDate,
         timezone,
-      },
+      }
     );
 
     const timeSeriesData = await mainTimeSeriesQuery.execute();
@@ -1066,7 +1054,7 @@ export class OverviewService {
           .from('paths_deduped_cte')
           .having('length(paths)', '>=', 2)
           // ONLY sessions starting with top entry pages
-          .having('paths[1]', 'IN', topEntryPages),
+          .having('paths[1]', 'IN', topEntryPages)
       )
       .select<{
         source: string;
@@ -1081,8 +1069,8 @@ export class OverviewService {
       ])
       .from(
         clix.exp(
-          '(SELECT arrayJoin(arrayMap(i -> (paths[i], paths[i + 1], i), range(1, length(paths)))) as pair FROM session_paths WHERE length(paths) >= 2)',
-        ),
+          '(SELECT arrayJoin(arrayMap(i -> (paths[i], paths[i + 1], i), range(1, length(paths)))) as pair FROM session_paths WHERE length(paths) >= 2)'
+        )
       )
       .groupBy(['source', 'target', 'step'])
       .orderBy('step', 'ASC')
@@ -1143,7 +1131,9 @@ export class OverviewService {
 
         for (const t of fromSource) {
           // Skip self-loops
-          if (t.source === t.target) continue;
+          if (t.source === t.target) {
+            continue;
+          }
 
           const targetNodeId = getNodeId(t.target, step + 1);
 
@@ -1180,7 +1170,9 @@ export class OverviewService {
       }
 
       // Stop if no more nodes to process
-      if (activeNodes.size === 0) break;
+      if (activeNodes.size === 0) {
+        break;
+      }
     }
 
     // Step 5: Filter links by threshold (0.25% of total sessions)
@@ -1235,22 +1227,24 @@ export class OverviewService {
       })
       .sort((a, b) => {
         // Sort by step first, then by value descending
-        if (a.step !== b.step) return a.step - b.step;
+        if (a.step !== b.step) {
+          return a.step - b.step;
+        }
         return b.value - a.value;
       });
 
     // Sanity check: Ensure all link endpoints exist in nodes
     const nodeIds = new Set(finalNodes.map((n) => n.id));
     const invalidLinks = filteredLinks.filter(
-      (link) => !nodeIds.has(link.source) || !nodeIds.has(link.target),
+      (link) => !(nodeIds.has(link.source) && nodeIds.has(link.target))
     );
     if (invalidLinks.length > 0) {
       console.warn(
-        `UserJourney: Found ${invalidLinks.length} links with missing nodes`,
+        `UserJourney: Found ${invalidLinks.length} links with missing nodes`
       );
       // Remove invalid links
       const validLinks = filteredLinks.filter(
-        (link) => nodeIds.has(link.source) && nodeIds.has(link.target),
+        (link) => nodeIds.has(link.source) && nodeIds.has(link.target)
       );
       return {
         nodes: finalNodes,
@@ -1260,7 +1254,9 @@ export class OverviewService {
 
     // Sanity check: Ensure steps are monotonic (should always be true, but verify)
     const stepsValid = finalNodes.every((node, idx, arr) => {
-      if (idx === 0) return true;
+      if (idx === 0) {
+        return true;
+      }
       return node.step! >= arr[idx - 1]!.step!;
     });
     if (!stepsValid) {
