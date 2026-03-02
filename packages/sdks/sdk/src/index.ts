@@ -95,13 +95,24 @@ export class OpenPanel {
     return false;
   }
 
+  addQueue(payload: TrackHandlerPayload) {
+    if (payload.type === 'track') {
+      payload.payload.properties = {
+        ...(payload.payload.properties ?? {}),
+        __timestamp: new Date().toISOString(),
+      };
+    }
+
+    this.queue.push(payload);
+  }
+
   async send(payload: TrackHandlerPayload) {
     if (this.options.filter && !this.options.filter(payload)) {
       return Promise.resolve();
     }
 
     if (this.shouldQueue(payload)) {
-      this.queue.push(payload);
+      this.addQueue(payload);
       return Promise.resolve();
     }
 
