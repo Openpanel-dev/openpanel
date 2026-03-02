@@ -23,7 +23,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { shortId } from '@openpanel/common';
 import { zCreateNotificationRule } from '@openpanel/validation';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { FilterIcon, PlusIcon, SaveIcon, TrashIcon } from 'lucide-react';
+import {
+  AlertTriangleIcon,
+  FilterIcon,
+  PlusIcon,
+  SaveIcon,
+  TrashIcon,
+} from 'lucide-react';
 import {
   Controller,
   type SubmitHandler,
@@ -36,13 +42,43 @@ import type { z } from 'zod';
 
 interface Props {
   rule?: RouterOutputs['notification']['rules'][number];
+  reportId?: string;
+  projectId?: string;
 }
 
 type IForm = z.infer<typeof zCreateNotificationRule>;
 
-export default function AddNotificationRule({ rule }: Props) {
+export default function AddNotificationRule({
+  rule,
+  reportId: initialReportId,
+}: Props) {
   const client = useQueryClient();
   const { organizationId, projectId } = useAppParams();
+  const trpc = useTRPC();
+
+  const getDefaultConfig = (): IForm['config'] => {
+    if (rule?.config) return rule.config;
+    if (initialReportId) {
+      return {
+        type: 'threshold',
+        reportId: initialReportId,
+        operator: 'above',
+        value: 0,
+        frequency: 'day',
+      };
+    }
+    return {
+      type: 'events',
+      events: [
+        {
+          name: '',
+          segment: 'event',
+          filters: [],
+        },
+      ],
+    };
+  };
+
   const form = useForm<IForm>({
     resolver: zodResolver(zCreateNotificationRule),
     defaultValues: {
@@ -54,19 +90,12 @@ export default function AddNotificationRule({ rule }: Props) {
         rule?.integrations.map((integration) => integration.id) ?? [],
       projectId,
       template: rule?.template ?? '',
-      config: rule?.config ?? {
-        type: 'events',
-        events: [
-          {
-            name: '',
-            segment: 'event',
-            filters: [],
-          },
-        ],
-      },
+      config: getDefaultConfig(),
     },
   });
-  const trpc = useTRPC();
+
+  const configType = useWatch({ control: form.control, name: 'config.type' });
+
   const mutation = useMutation(
     trpc.notification.createOrUpdateRule.mutationOptions({
       onSuccess() {
@@ -88,13 +117,22 @@ export default function AddNotificationRule({ rule }: Props) {
     }),
   );
 
+  const reportsQuery = useQuery(
+    trpc.report.listByProject.queryOptions({
+      projectId,
+    }),
+  );
+
   const eventsArray = useFieldArray({
     control: form.control,
     name: 'config.events',
   });
 
   const onSubmit: SubmitHandler<IForm> = (data) => {
-    if (!data.config.events[0]?.name) {
+    if (
+      (data.config.type === 'events' || data.config.type === 'funnel') &&
+      !data.config.events[0]?.name
+    ) {
       toast.error('At least one event is required');
       return;
     }
@@ -102,6 +140,9 @@ export default function AddNotificationRule({ rule }: Props) {
   };
 
   const integrations = integrationsQuery.data ?? [];
+  const reports = (reportsQuery.data ?? []) as { id: string; name: string }[];
+
+  const isAlertType = configType === 'threshold' || configType === 'anomaly';
 
   return (
     <SheetContent className="[&>button.absolute]:hidden">
@@ -125,107 +166,157 @@ export default function AddNotificationRule({ rule }: Props) {
             render={({ field }) => (
               <Combobox
                 {...field}
+                onChange={(value) => {
+                  field.onChange(value);
+                  // Reset config when type changes
+                  if (value === 'threshold') {
+                    form.setValue('config', {
+                      type: 'threshold',
+                      reportId: initialReportId ?? '',
+                      operator: 'above',
+                      value: 0,
+                      frequency: 'day',
+                    });
+                  } else if (value === 'anomaly') {
+                    form.setValue('config', {
+                      type: 'anomaly',
+                      reportId: initialReportId ?? '',
+                      confidence: '95',
+                      frequency: 'day',
+                    });
+                  } else if (value === 'events') {
+                    form.setValue('config', {
+                      type: 'events',
+                      events: [{ name: '', segment: 'event', filters: [] }],
+                    });
+                  } else if (value === 'funnel') {
+                    form.setValue('config', {
+                      type: 'funnel',
+                      events: [{ name: '', segment: 'event', filters: [] }],
+                    });
+                  }
+                }}
                 className="w-full"
                 placeholder="Select type"
                 // @ts-expect-error
                 error={form.formState.errors.config?.type.message}
                 items={[
-                  {
-                    label: 'Events',
-                    value: 'events',
-                  },
-                  {
-                    label: 'Funnel',
-                    value: 'funnel',
-                  },
+                  { label: 'Events', value: 'events' },
+                  { label: 'Funnel', value: 'funnel' },
+                  { label: 'Threshold', value: 'threshold' },
+                  { label: 'Anomaly', value: 'anomaly' },
                 ]}
               />
             )}
           />
         </WithLabel>
-        <WithLabel label="Events">
-          <div className="col gap-2">
-            {eventsArray.fields.map((field, index) => {
-              return (
-                <EventField
-                  key={field.id}
-                  form={form}
-                  index={index}
-                  remove={() => eventsArray.remove(index)}
-                />
-              );
-            })}
-            <Button
-              className="self-start"
-              variant={'outline'}
-              icon={PlusIcon}
-              onClick={() =>
-                eventsArray.append({
-                  name: '',
-                  filters: [],
-                  segment: 'event',
-                })
+
+        {/* Events/Funnel fields */}
+        {(configType === 'events' || configType === 'funnel') && (
+          <>
+            <WithLabel label="Events">
+              <div className="col gap-2">
+                {eventsArray.fields.map((field, index) => {
+                  return (
+                    <EventField
+                      key={field.id}
+                      form={form}
+                      index={index}
+                      remove={() => eventsArray.remove(index)}
+                    />
+                  );
+                })}
+                <Button
+                  className="self-start"
+                  variant={'outline'}
+                  icon={PlusIcon}
+                  onClick={() =>
+                    eventsArray.append({
+                      name: '',
+                      filters: [],
+                      segment: 'event',
+                    })
+                  }
+                >
+                  Add event
+                </Button>
+              </div>
+            </WithLabel>
+
+            <WithLabel
+              label="Template"
+              info={
+                <div className="prose dark:prose-invert">
+                  <p>
+                    Customize your notification message. You can grab any
+                    property from your event.
+                  </p>
+
+                  <ul>
+                    <li>
+                      <code>{'{{name}}'}</code> - The name of the event
+                    </li>
+                    <li>
+                      <code>{'{{rule_name}}'}</code> - The name of the rule
+                    </li>
+                    <li>
+                      <code>{'{{properties.your.property}}'}</code> - Get the
+                      value of a custom property
+                    </li>
+                    <li>
+                      <code>{'{{profile.firstName}}'}</code> - Get the value of
+                      a profile property
+                    </li>
+                    <li>
+                      <div className="flex gap-x-2 flex-wrap">
+                        And many more...
+                        <code>profileId</code>
+                        <code>createdAt</code>
+                        <code>country</code>
+                        <code>city</code>
+                        <code>os</code>
+                        <code>osVersion</code>
+                        <code>browser</code>
+                        <code>browserVersion</code>
+                        <code>device</code>
+                        <code>brand</code>
+                        <code>model</code>
+                        <code>path</code>
+                        <code>origin</code>
+                        <code>referrer</code>
+                        <code>referrerName</code>
+                        <code>referrerType</code>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
               }
             >
-              Add event
-            </Button>
-          </div>
-        </WithLabel>
+              <Textarea
+                {...form.register('template')}
+                placeholder="You received a new '$EVENT_NAME' event"
+              />
+            </WithLabel>
+          </>
+        )}
 
-        <WithLabel
-          label="Template"
-          info={
-            <div className="prose dark:prose-invert">
-              <p>
-                Customize your notification message. You can grab any property
-                from your event.
-              </p>
-
-              <ul>
-                <li>
-                  <code>{'{{name}}'}</code> - The name of the event
-                </li>
-                <li>
-                  <code>{'{{rule_name}}'}</code> - The name of the rule
-                </li>
-                <li>
-                  <code>{'{{properties.your.property}}'}</code> - Get the value
-                  of a custom property
-                </li>
-                <li>
-                  <code>{'{{profile.firstName}}'}</code> - Get the value of a
-                  profile property
-                </li>
-                <li>
-                  <div className="flex gap-x-2 flex-wrap">
-                    And many more...
-                    <code>profileId</code>
-                    <code>createdAt</code>
-                    <code>country</code>
-                    <code>city</code>
-                    <code>os</code>
-                    <code>osVersion</code>
-                    <code>browser</code>
-                    <code>browserVersion</code>
-                    <code>device</code>
-                    <code>brand</code>
-                    <code>model</code>
-                    <code>path</code>
-                    <code>origin</code>
-                    <code>referrer</code>
-                    <code>referrerName</code>
-                    <code>referrerType</code>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          }
-        >
-          <Textarea
-            {...form.register('template')}
-            placeholder="You received a new '$EVENT_NAME' event"
+        {/* Threshold fields */}
+        {configType === 'threshold' && (
+          <ThresholdFields
+            form={form}
+            reports={reports}
+            lockedReportId={initialReportId}
           />
-        </WithLabel>
+        )}
+
+        {/* Anomaly fields */}
+        {configType === 'anomaly' && (
+          <AnomalyFields
+            form={form}
+            reports={reports}
+            lockedReportId={initialReportId}
+          />
+        )}
 
         <Controller
           control={form.control}
@@ -251,6 +342,177 @@ export default function AddNotificationRule({ rule }: Props) {
         </Button>
       </form>
     </SheetContent>
+  );
+}
+
+function ThresholdFields({
+  form,
+  reports,
+  lockedReportId,
+}: {
+  form: UseFormReturn<IForm>;
+  reports: { id: string; name: string }[];
+  lockedReportId?: string;
+}) {
+  return (
+    <>
+      <Controller
+        control={form.control}
+        name="config.reportId"
+        render={({ field }) => (
+          <WithLabel label="Report">
+            <Combobox
+              {...field}
+              value={field.value as string}
+              onChange={field.onChange}
+              className="w-full"
+              searchable
+              placeholder="Select report"
+              disabled={!!lockedReportId}
+              items={reports.map((r) => ({ label: r.name, value: r.id }))}
+            />
+          </WithLabel>
+        )}
+      />
+      <Controller
+        control={form.control}
+        name="config.operator"
+        render={({ field }) => (
+          <WithLabel label="Condition">
+            <Combobox
+              {...field}
+              value={field.value as string}
+              onChange={field.onChange}
+              className="w-full"
+              placeholder="Select condition"
+              items={[
+                { label: 'Above', value: 'above' },
+                { label: 'Below', value: 'below' },
+              ]}
+            />
+          </WithLabel>
+        )}
+      />
+      <Controller
+        control={form.control}
+        name="config.value"
+        render={({ field }) => (
+          <InputWithLabel
+            label="Threshold value"
+            type="number"
+            placeholder="Enter a number"
+            value={field.value as number}
+            onChange={(e) => field.onChange(Number(e.target.value))}
+          />
+        )}
+      />
+      <Controller
+        control={form.control}
+        name="config.frequency"
+        render={({ field }) => (
+          <WithLabel label="Check frequency">
+            <Combobox
+              {...field}
+              value={field.value as string}
+              onChange={field.onChange}
+              className="w-full"
+              placeholder="Select frequency"
+              items={[
+                { label: 'Every hour', value: 'hour' },
+                { label: 'Every day', value: 'day' },
+                { label: 'Every week', value: 'week' },
+                { label: 'Every month', value: 'month' },
+              ]}
+            />
+          </WithLabel>
+        )}
+      />
+    </>
+  );
+}
+
+function AnomalyFields({
+  form,
+  reports,
+  lockedReportId,
+}: {
+  form: UseFormReturn<IForm>;
+  reports: { id: string; name: string }[];
+  lockedReportId?: string;
+}) {
+  const frequency = useWatch({
+    control: form.control,
+    name: 'config.frequency',
+  });
+
+  return (
+    <>
+      <Controller
+        control={form.control}
+        name="config.reportId"
+        render={({ field }) => (
+          <WithLabel label="Report">
+            <Combobox
+              {...field}
+              value={field.value as string}
+              onChange={field.onChange}
+              className="w-full"
+              searchable
+              placeholder="Select report"
+              disabled={!!lockedReportId}
+              items={reports.map((r) => ({ label: r.name, value: r.id }))}
+            />
+          </WithLabel>
+        )}
+      />
+      <Controller
+        control={form.control}
+        name="config.confidence"
+        render={({ field }) => (
+          <WithLabel label="Confidence level">
+            <Combobox
+              {...field}
+              value={field.value as string}
+              onChange={field.onChange}
+              className="w-full"
+              placeholder="Select confidence"
+              items={[
+                { label: '95%', value: '95' },
+                { label: '98%', value: '98' },
+                { label: '99%', value: '99' },
+              ]}
+            />
+          </WithLabel>
+        )}
+      />
+      <Controller
+        control={form.control}
+        name="config.frequency"
+        render={({ field }) => (
+          <WithLabel label="Check frequency">
+            <Combobox
+              {...field}
+              value={field.value as string}
+              onChange={field.onChange}
+              className="w-full"
+              placeholder="Select frequency"
+              items={[
+                { label: 'Every hour', value: 'hour' },
+                { label: 'Every day', value: 'day' },
+                { label: 'Every week', value: 'week' },
+                { label: 'Every month', value: 'month' },
+              ]}
+            />
+          </WithLabel>
+        )}
+      />
+      {frequency === 'hour' && (
+        <div className="flex items-center gap-2 rounded border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
+          <AlertTriangleIcon className="size-4 shrink-0" />
+          Hourly checks may result in more false positives
+        </div>
+      )}
+    </>
   );
 }
 

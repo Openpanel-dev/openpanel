@@ -18,6 +18,26 @@ export const reportRouter = createTRPCRouter({
     .query(async ({ input: { dashboardId, projectId }, ctx }) => {
       return getReportsByDashboardId(dashboardId);
     }),
+  listByProject: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+      }),
+    )
+    .query(async ({ input: { projectId }, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+      });
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+      return db.report.findMany({
+        where: { projectId },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      });
+    }),
   create: protectedProcedure
     .input(
       z.object({

@@ -36,6 +36,7 @@ export async function customAlerts() {
       project: {
         select: {
           name: true,
+          organizationId: true,
         },
       },
     },
@@ -120,11 +121,37 @@ export async function customAlerts() {
 
       triggered++;
 
-      // Send notifications to all integrations
+      // Build dashboard link
+      const dashboardUrl =
+        process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL;
+      const organizationId = rule.project?.organizationId;
+      const reportLink =
+        dashboardUrl && organizationId
+          ? `${dashboardUrl}/${organizationId}/${rule.projectId}/reports/${config.reportId}`
+          : '';
+
+      // Build rich notification message
       const projectName = rule.project?.name || '';
-      const fullMessage = projectName
-        ? `${message}\nProject: ${projectName}`
-        : message;
+      const now = new Date();
+      const timeStr = now.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short',
+      });
+
+      const lines = [message];
+      if (reportLink) {
+        lines.push(`Report: ${reportLink}`);
+      }
+      lines.push(`Time: ${timeStr}`);
+      if (projectName) {
+        lines.push(`Project: ${projectName}`);
+      }
+      const fullMessage = lines.join('\n');
 
       const integrationCount = rule.integrations.length + (rule.sendToApp ? 1 : 0);
       logger.info(
