@@ -1,0 +1,76 @@
+---
+title: Consent management
+description: Queue all tracking until the user gives consent, then flush everything with a single call.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Some jurisdictions require explicit user consent before you can track events or record sessions. OpenPanel has built-in support for this: initialise with `disabled: true` and nothing is sent until you call `ready()`.
+
+## How it works
+
+When `disabled: true` is set, all calls to `track`, `identify`, `screenView`, and session replay chunks are held in an in-memory queue instead of being sent to the API. Once the user consents, call `ready()` and the entire queue is flushed immediately.
+
+```ts
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  disabled: true, // nothing sent until ready() is called
+});
+
+// Later, when the user accepts your consent banner:
+op.ready();
+```
+
+If the user declines, simply don't call `ready()`. The queue is discarded when the page unloads.
+
+## With session replay
+
+Session replay chunks are also queued while `disabled: true`. Once `ready()` is called, buffered replay chunks flush along with any queued events.
+
+```ts
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  disabled: true,
+  trackScreenViews: true,
+  sessionReplay: { enabled: true },
+});
+
+// User accepts consent:
+op.ready();
+```
+
+<Callout type="info">
+The replay recorder starts as soon as the page loads (so no interactions are missed), but no data is sent until `ready()` is called.
+</Callout>
+
+## Waiting for a user profile
+
+If you want to hold events until you know who the user is rather than waiting for explicit consent, use `waitForProfile` instead. Events are queued until `identify()` is called with a `profileId`.
+
+```ts
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  waitForProfile: true,
+});
+
+// Events queue here...
+op.track('page_view');
+
+// Queue is flushed once a profileId is set:
+op.identify({ profileId: 'user_123' });
+```
+
+If the user never authenticates, the queue is never flushed automatically — no events will be sent. To handle anonymous users or guest flows, call `ready()` explicitly when you know the user won't identify:
+
+```ts
+// User skipped login — flush queued events without a profileId
+op.ready();
+```
+
+`ready()` always releases the queue regardless of whether `waitForProfile` or `disabled` is set.
+
+## Related
+
+- [Consent management guide](/guides/consent-management) — full walkthrough with a cookie banner example
+- [Session replay](/docs/session-replay) — privacy controls for replay recordings
+- [Identify users](/docs/get-started/identify-users) — link events to a user profile

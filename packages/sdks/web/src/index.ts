@@ -106,6 +106,8 @@ export class OpenPanel extends OpenPanelBase {
           this.loadReplayModule().then((mod) => {
             if (!mod) return;
             mod.startReplayRecorder(this.options.sessionReplay!, (chunk) => {
+              // Replay chunks go through send() and are queued when disabled or waitForProfile
+              // until ready() is called (base SDK also queues replay until sessionId is set).
               this.send({
                 type: 'replay',
                 payload: {

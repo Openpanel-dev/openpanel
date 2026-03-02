@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/style/noExportedImports: lazy */
+
 import type {
   IAliasPayload as AliasPayload,
   IDecrementPayload as DecrementPayload,
@@ -17,32 +19,40 @@ export type {
   TrackPayload,
 };
 
-export type TrackProperties = {
+export interface TrackProperties {
   [key: string]: unknown;
   profileId?: string;
-};
+}
 
-export type OpenPanelOptions = {
+export interface OpenPanelOptions {
   clientId: string;
   clientSecret?: string;
   apiUrl?: string;
   sdk?: string;
   sdkVersion?: string;
+  /**
+   * @deprecated Queue events until `identify()` is called with a profileId.
+   * For manual queue control use `disabled: true` + `ready()` instead.
+   */
   waitForProfile?: boolean;
   filter?: (payload: TrackHandlerPayload) => boolean;
+  /** When true, events are queued until `ready()` is called (same as waitForProfile). */
   disabled?: boolean;
   debug?: boolean;
-};
+}
 
 export class OpenPanel {
   api: Api;
+  options: OpenPanelOptions;
   profileId?: string;
   deviceId?: string;
   sessionId?: string;
   global?: Record<string, unknown>;
   queue: TrackHandlerPayload[] = [];
 
-  constructor(public options: OpenPanelOptions) {
+  constructor(options: OpenPanelOptions) {
+    this.options = options;
+
     const defaultHeaders: Record<string, string> = {
       'openpanel-client-id': options.clientId,
     };
@@ -67,25 +77,25 @@ export class OpenPanel {
   }
 
   ready() {
+    this.options.disabled = false;
     this.options.waitForProfile = false;
     this.flush();
   }
 
   private shouldQueue(payload: TrackHandlerPayload): boolean {
-    if (payload.type === 'replay' && !this.sessionId) {
+    if (this.options.disabled) {
       return true;
     }
     if (this.options.waitForProfile && !this.profileId) {
+      return true;
+    }
+    if (payload.type === 'replay' && !this.sessionId) {
       return true;
     }
     return false;
   }
 
   async send(payload: TrackHandlerPayload) {
-    if (this.options.disabled) {
-      return Promise.resolve();
-    }
-
     if (this.options.filter && !this.options.filter(payload)) {
       return Promise.resolve();
     }
@@ -119,7 +129,7 @@ export class OpenPanel {
     };
   }
 
-  async track(name: string, properties?: TrackProperties) {
+  track(name: string, properties?: TrackProperties) {
     this.log('track event', name, properties);
     return this.send({
       type: 'track',
@@ -134,7 +144,7 @@ export class OpenPanel {
     });
   }
 
-  async identify(payload: IdentifyPayload) {
+  identify(payload: IdentifyPayload) {
     this.log('identify user', payload);
     if (payload.profileId) {
       this.profileId = payload.profileId;
@@ -158,23 +168,25 @@ export class OpenPanel {
   /**
    * @deprecated This method is deprecated and will be removed in a future version.
    */
-  async alias(payload: AliasPayload) {}
+  alias(_payload: AliasPayload) {
+    // noop
+  }
 
-  async increment(payload: IncrementPayload) {
+  increment(payload: IncrementPayload) {
     return this.send({
       type: 'increment',
       payload,
     });
   }
 
-  async decrement(payload: DecrementPayload) {
+  decrement(payload: DecrementPayload) {
     return this.send({
       type: 'decrement',
       payload,
     });
   }
 
-  async revenue(
+  revenue(
     amount: number,
     properties?: TrackProperties & { deviceId?: string }
   ) {

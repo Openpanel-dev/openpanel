@@ -1,0 +1,233 @@
+---
+title: "Consent management with OpenPanel"
+description: "Learn how to queue analytics events and session replays until the user gives consent, then flush everything at once with a single call."
+difficulty: beginner
+timeToComplete: 15
+date: 2026-03-02
+updated: 2026-03-02
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Initialise with disabled: true"
+    anchor: "disable"
+  - name: "Build a consent banner"
+    anchor: "banner"
+  - name: "Call ready() on consent"
+    anchor: "ready"
+  - name: "Handle decline"
+    anchor: "decline"
+  - name: "Persist consent across page loads"
+    anchor: "persist"
+---
+
+# Consent management with OpenPanel
+
+Privacy regulations like GDPR and CCPA require that you obtain explicit user consent before tracking behaviour or recording sessions. This guide shows how to use OpenPanel's built-in queue to hold all tracking until the user makes a choice, then flush everything at once—or discard it silently on decline.
+
+## Prerequisites
+
+- OpenPanel installed via the `@openpanel/web` npm package or the script tag
+- Your Client ID from the [OpenPanel dashboard](https://dashboard.openpanel.dev/onboarding)
+
+## Initialise with `disabled: true` [#disable]
+
+Pass `disabled: true` when creating the OpenPanel instance. All tracking calls (`track`, `identify`, `screenView`, session replay chunks) are held in an in-memory queue instead of being sent to the API.
+
+### Script tag
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    disabled: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+### NPM package
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  disabled: true,
+});
+```
+
+From this point on, any `op.track(...)` calls elsewhere in your app are safely queued and not transmitted.
+
+## Build a consent banner [#banner]
+
+How you build the UI is up to you. The key is to call `op.ready()` when the user accepts, and do nothing (or call `op.clear()`) when they decline.
+
+```tsx title="ConsentBanner.tsx"
+import { op } from './op';
+
+export function ConsentBanner() {
+  function handleAccept() {
+    localStorage.setItem('consent', 'granted');
+    op.ready(); // flushes the queue and enables all future tracking
+    hideBanner();
+  }
+
+  function handleDecline() {
+    localStorage.setItem('consent', 'denied');
+    hideBanner(); // queue is discarded on page unload
+  }
+
+  return (
+    <div role="dialog" aria-label="Cookie consent">
+      <p>
+        We use analytics to improve our product. Do you consent to anonymous
+        usage tracking?
+      </p>
+      <button type="button" onClick={handleAccept}>Accept</button>
+      <button type="button" onClick={handleDecline}>Decline</button>
+    </div>
+  );
+}
+```
+
+## Call `ready()` on consent [#ready]
+
+`op.ready()` does two things:
+
+1. Clears the `disabled` flag so all future events are sent immediately
+2. Flushes the entire queue — every event and session replay chunk buffered since page load is sent at once
+
+This means you don't lose any events that happened before the user made their choice. The screen view for the page they landed on, any clicks they made while the banner was visible—all of it is captured and sent the moment they consent.
+
+## Handle session replay [#replay]
+
+If you have session replay enabled, the recorder starts capturing DOM changes as soon as the page loads (so no interactions are missed), but no data leaves the browser until `ready()` is called.
+
+```ts title="op.ts"
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  disabled: true,
+  sessionReplay: {
+    enabled: true,
+  },
+});
+```
+
+On `op.ready()`, buffered replay chunks flush along with the queued events. The full session from the start of the page load is preserved.
+
+## Handle decline [#decline]
+
+If the user declines, don't call `ready()`. The queue lives only in memory and is automatically discarded when the tab closes or the page navigates away. No data is ever sent.
+
+If you want to be explicit, you can clear the queue immediately:
+
+```ts
+function handleDecline() {
+  localStorage.setItem('consent', 'denied');
+  // op stays disabled — nothing will be sent
+  // The in-memory queue will be garbage collected
+}
+```
+
+## Persist consent across page loads [#persist]
+
+The `disabled` flag resets on every page load. You need to check the stored consent choice on initialisation and skip `disabled: true` if consent was already granted.
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+const hasConsent = localStorage.getItem('consent') === 'granted';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  disabled: !hasConsent,
+});
+```
+
+And in your banner component, only show it when no choice has been stored:
+
+```tsx title="ConsentBanner.tsx"
+export function ConsentBanner() {
+  const stored = localStorage.getItem('consent');
+  if (stored) return null; // already decided, don't show
+
+  // ... render banner
+}
+```
+
+## Full example
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+const hasConsent = localStorage.getItem('consent') === 'granted';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  disabled: !hasConsent,
+  sessionReplay: {
+    enabled: true,
+  },
+});
+```
+
+```tsx title="ConsentBanner.tsx"
+import { op } from './op';
+
+export function ConsentBanner() {
+  if (localStorage.getItem('consent')) return null;
+
+  return (
+    <div role="dialog" aria-label="Cookie consent">
+      <p>We use analytics to improve our product. Do you consent?</p>
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.setItem('consent', 'granted');
+          op.ready();
+        }}
+      >
+        Accept
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.setItem('consent', 'denied');
+        }}
+      >
+        Decline
+      </button>
+    </div>
+  );
+}
+```
+
+## Related
+
+- [Consent management docs](/docs/consent-management) — quick reference for `disabled` and `waitForProfile`
+- [Session replay](/docs/session-replay) — privacy controls for what gets recorded
+- [Identify users](/docs/get-started/identify-users) — link events to a user profile
+
+<Faqs>
+<FaqItem question="Are events lost if the user declines?">
+No events are sent if the user declines and you never call `ready()`. The queue lives in memory and is discarded when the page unloads.
+</FaqItem>
+
+<FaqItem question="What happens to events tracked before the banner appears?">
+They sit in the queue. If the user later accepts, they are all flushed. If the user declines, they are discarded.
+</FaqItem>
+
+<FaqItem question="Does session replay start before consent?">
+The recorder starts capturing DOM changes immediately so the full session can be reconstructed, but nothing is transmitted until `ready()` is called.
+</FaqItem>
+
+<FaqItem question="Do I need to handle this differently for the script tag vs npm?">
+No. The `disabled` option and `ready()` method work the same in both.
+</FaqItem>
+</Faqs>
