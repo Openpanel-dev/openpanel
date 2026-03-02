@@ -399,10 +399,14 @@ function ThresholdFields({
         render={({ field }) => (
           <InputWithLabel
             label="Threshold value"
-            type="number"
-            placeholder="Enter a number"
+            type="text"
+            inputMode="numeric"
+            placeholder="e.g. 5000"
             value={field.value as number}
-            onChange={(e) => field.onChange(Number(e.target.value))}
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^0-9]/g, '');
+              field.onChange(val === '' ? 0 : Number(val));
+            }}
           />
         )}
       />
