@@ -418,9 +418,37 @@ export type INotificationRuleFunnelConfig = z.infer<
   typeof zNotificationRuleFunnelConfig
 >;
 
+export const zAlertFrequency = z.enum(['hour', 'day', 'week', 'month']);
+export type IAlertFrequency = z.infer<typeof zAlertFrequency>;
+
+export const zNotificationRuleThresholdConfig = z.object({
+  type: z.literal('threshold'),
+  reportId: z.string().uuid(),
+  operator: z.enum(['above', 'below']),
+  value: z.number(),
+  frequency: zAlertFrequency,
+});
+
+export type INotificationRuleThresholdConfig = z.infer<
+  typeof zNotificationRuleThresholdConfig
+>;
+
+export const zNotificationRuleAnomalyConfig = z.object({
+  type: z.literal('anomaly'),
+  reportId: z.string().uuid(),
+  confidence: z.enum(['95', '98', '99']),
+  frequency: zAlertFrequency,
+});
+
+export type INotificationRuleAnomalyConfig = z.infer<
+  typeof zNotificationRuleAnomalyConfig
+>;
+
 export const zNotificationRuleConfig = z.discriminatedUnion('type', [
   zNotificationRuleEventConfig,
   zNotificationRuleFunnelConfig,
+  zNotificationRuleThresholdConfig,
+  zNotificationRuleAnomalyConfig,
 ]);
 
 export type INotificationRuleConfig = z.infer<typeof zNotificationRuleConfig>;

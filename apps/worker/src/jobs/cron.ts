@@ -3,6 +3,7 @@ import type { Job } from 'bullmq';
 import { eventBuffer, profileBuffer, sessionBuffer } from '@openpanel/db';
 import type { CronQueuePayload } from '@openpanel/queue';
 
+import { customAlerts } from './cron.custom-alerts';
 import { jobdeleteProjects } from './cron.delete-projects';
 import { materializeColumns } from './cron.materialize-columns';
 import { ping } from './cron.ping';
@@ -33,6 +34,9 @@ export async function cronJob(job: Job<CronQueuePayload>) {
         dryRun: job.data.dryRun ?? false,
         threshold: job.data.threshold ?? 150,
       });
+    }
+    case 'customAlerts': {
+      return await customAlerts();
     }
   }
 }

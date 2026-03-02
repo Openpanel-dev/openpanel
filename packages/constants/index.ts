@@ -247,3 +247,62 @@ export function getDefaultIntervalByDates(
 
   return null;
 }
+
+// ── Custom Alerts ───────────────────────────────────────────────────
+
+export type AlertFrequency = 'hour' | 'day' | 'week' | 'month';
+
+/**
+ * Maps alert frequency to the range used for historical data (anomaly detection)
+ */
+export const ALERT_FREQUENCY_TO_RANGE: Record<AlertFrequency, string> = {
+  hour: 'lastHour',
+  day: '30d',
+  week: '30d',
+  month: '180d',
+};
+
+/**
+ * Maps alert frequency to the range used for current period evaluation (threshold)
+ */
+export const ALERT_FREQUENCY_TO_CURRENT_RANGE: Record<AlertFrequency, string> =
+  {
+    hour: 'lastHour',
+    day: 'today',
+    week: '7d',
+    month: '30d',
+  };
+
+/**
+ * Maps alert frequency to the ChartEngine interval
+ */
+export const ALERT_FREQUENCY_TO_INTERVAL: Record<AlertFrequency, string> = {
+  hour: 'hour',
+  day: 'day',
+  week: 'week',
+  month: 'month',
+};
+
+/**
+ * How many historical data points to use for anomaly detection
+ */
+export const ANOMALY_HISTORY_COUNT = 30;
+
+/**
+ * Z-scores for confidence levels used in anomaly detection
+ */
+export const CONFIDENCE_Z_SCORES: Record<string, number> = {
+  '95': 1.96,
+  '98': 2.326,
+  '99': 2.576,
+};
+
+/**
+ * Frequency duration in milliseconds — used for rate limiting notifications
+ */
+export const ALERT_FREQUENCY_MS: Record<AlertFrequency, number> = {
+  hour: 60 * 60 * 1000,
+  day: 24 * 60 * 60 * 1000,
+  week: 7 * 24 * 60 * 60 * 1000,
+  month: 30 * 24 * 60 * 60 * 1000,
+};

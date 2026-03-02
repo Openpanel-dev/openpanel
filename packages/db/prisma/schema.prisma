@@ -437,11 +437,12 @@ model NotificationRule {
   sendToApp     Boolean        @default(false)
   sendToEmail   Boolean        @default(false)
   /// [IPrismaNotificationRuleConfig]
-  config        Json
-  template      String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @default(now()) @updatedAt
-  notifications Notification[]
+  config         Json
+  template       String?
+  lastNotifiedAt DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @default(now()) @updatedAt
+  notifications  Notification[]
 
   @@map("notification_rules")
 }
