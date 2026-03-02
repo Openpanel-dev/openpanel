@@ -14,6 +14,7 @@
     "@bull-board/api": "6.14.0",
     "@bull-board/express": "6.14.0",
     "@openpanel/common": "workspace:*",
+    "@openpanel/constants": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/email": "workspace:*",
     "@openpanel/integrations": "workspace:^",
