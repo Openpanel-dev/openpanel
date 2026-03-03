@@ -8,8 +8,8 @@ import {
   TABLE_NAMES,
 } from '../clickhouse/client';
 import { db, type Prisma } from '../prisma-client';
-import type { IClickhouseProfile } from './profile.service';
 import type { IClickhouseEvent } from './event.service';
+import type { IClickhouseProfile } from './profile.service';
 
 export interface ImportStageResult {
   importId: string;
@@ -172,38 +172,6 @@ export async function insertProfilesBatch(
   return { inserted: normalized.length };
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * Delete all staging data for an import. Used to get a clean slate on retry
  * when the failure happened before moving data to production.
@@ -212,6 +180,22 @@ export async function cleanupStagingData(importId: string): Promise<void> {
   const mutationTableName = getReplicatedTableName(TABLE_NAMES.events_imports);
   await ch.command({
     query: `ALTER TABLE ${mutationTableName} DELETE WHERE import_id = {importId:String}`,
+    query_params: { importId },
+    clickhouse_settings: {
+      wait_end_of_query: 1,
+      mutations_sync: '2',
+      send_progress_in_http_headers: 1,
+      http_headers_progress_interval_ms: '50000',
+    },
+  });
+}
+
+export async function cleanupSessionStartEndEvents(
+  importId: string
+): Promise<void> {
+  const mutationTableName = getReplicatedTableName(TABLE_NAMES.events_imports);
+  await ch.command({
+    query: `ALTER TABLE ${mutationTableName} DELETE WHERE import_id = {importId:String} AND name IN ('session_start', 'session_end')`,
     query_params: { importId },
     clickhouse_settings: {
       wait_end_of_query: 1,
@@ -242,27 +226,16 @@ export async function createSessionsStartEndEvents(
     "name NOT IN ('session_start', 'session_end')",
   ].join(' AND ');
 
+  const sessionBatchSubquery = `
+    (SELECT DISTINCT session_id
+     FROM ${TABLE_NAMES.events_imports}
+     WHERE ${baseWhere}
+       AND session_id > {lastSessionId:String}
+     ORDER BY session_id
+     LIMIT {limit:UInt32})
+  `;
+
   while (true) {
-    const idsResult = await ch.query({
-      query: `
-        SELECT DISTINCT session_id
-        FROM ${TABLE_NAMES.events_imports}
-        WHERE ${baseWhere}
-          AND session_id > {lastSessionId:String}
-        ORDER BY session_id
-        LIMIT {limit:UInt32}
-      `,
-      query_params: { importId, lastSessionId, limit: SESSION_BATCH_SIZE },
-      format: 'JSONEachRow',
-    });
-
-    const idRows = (await idsResult.json()) as Array<{ session_id: string }>;
-    if (idRows.length === 0) {
-      break;
-    }
-
-    const sessionIds = idRows.map((r) => r.session_id);
-
     const sessionEventsQuery = `
       SELECT
         device_id,
@@ -279,13 +252,13 @@ export async function createSessionsStartEndEvents(
         max(created_at) AS last_timestamp
       FROM ${TABLE_NAMES.events_imports}
       WHERE ${baseWhere}
-        AND session_id IN ({sessionIds:Array(String)})
+        AND session_id IN ${sessionBatchSubquery}
       GROUP BY session_id, device_id, project_id
     `;
 
     const sessionEventsResult = await ch.query({
       query: sessionEventsQuery,
-      query_params: { importId, sessionIds },
+      query_params: { importId, lastSessionId, limit: SESSION_BATCH_SIZE },
       format: 'JSONEachRow',
     });
 
@@ -438,8 +411,11 @@ export async function createSessionsStartEndEvents(
       await insertImportBatch(sessionEvents, importId);
     }
 
-    lastSessionId = idRows[idRows.length - 1]!.session_id;
-    if (idRows.length < SESSION_BATCH_SIZE) {
+    if (sessionData.length === 0) {
+      break;
+    }
+    lastSessionId = sessionData.at(-1)!.session_id;
+    if (sessionData.length < SESSION_BATCH_SIZE) {
       break;
     }
   }
@@ -500,6 +476,15 @@ export async function backfillSessionsToProduction(
   const SESSION_BATCH_SIZE = 5000;
   let lastSessionId = '';
 
+  const baseWhere = 'import_id = {importId:String} AND session_id > {lastSessionId:String}';
+  const sessionBatchSubquery = `
+    (SELECT DISTINCT session_id
+     FROM ${TABLE_NAMES.events_imports}
+     WHERE ${baseWhere}
+     ORDER BY session_id
+     LIMIT {limit:UInt32})
+  `;
+
   while (true) {
     const idsResult = await ch.query({
       query: `
@@ -518,8 +503,6 @@ export async function backfillSessionsToProduction(
     if (idRows.length === 0) {
       break;
     }
-
-    const sessionIds = idRows.map((r) => r.session_id);
 
     const sessionsInsertQuery = `
       INSERT INTO ${TABLE_NAMES.sessions} (
@@ -577,13 +560,13 @@ export async function backfillSessionsToProduction(
       FROM ${TABLE_NAMES.events_imports} e
       WHERE 
         e.import_id = {importId:String}
-        AND e.session_id IN ({sessionIds:Array(String)})
+        AND e.session_id IN ${sessionBatchSubquery}
       GROUP BY e.session_id
     `;
 
     await ch.command({
       query: sessionsInsertQuery,
-      query_params: { importId, sessionIds },
+      query_params: { importId, lastSessionId, limit: SESSION_BATCH_SIZE },
       clickhouse_settings: {
         wait_end_of_query: 1,
         send_progress_in_http_headers: 1,
@@ -591,7 +574,7 @@ export async function backfillSessionsToProduction(
       },
     });
 
-    lastSessionId = idRows[idRows.length - 1]!.session_id;
+    lastSessionId = idRows.at(-1)!.session_id;
     if (idRows.length < SESSION_BATCH_SIZE) {
       break;
     }

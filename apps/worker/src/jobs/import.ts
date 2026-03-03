@@ -1,5 +1,6 @@
 import {
   backfillSessionsToProduction,
+  cleanupSessionStartEndEvents,
   cleanupStagingData,
   createSessionsStartEndEvents,
   db,
@@ -27,7 +28,7 @@ function yieldToEventLoop(): Promise<void> {
   });
 }
 
-const PRODUCTION_STEPS = ['moving', 'backfilling_sessions'];
+const RESUMABLE_STEPS = ['creating_sessions', 'moving', 'backfilling_sessions'];
 
 export async function importJob(job: Job<ImportQueuePayload>) {
   const { importId } = job.data.payload;
@@ -45,16 +46,16 @@ export async function importJob(job: Job<ImportQueuePayload>) {
 
   try {
     const isRetry = record.currentStep !== null;
-    const hasReachedProduction =
-      isRetry && PRODUCTION_STEPS.includes(record.currentStep as string);
+    const canResume =
+      isRetry && RESUMABLE_STEPS.includes(record.currentStep as string);
 
     // -------------------------------------------------------
     // STAGING PHASE: clean slate on failure, run from scratch
     // -------------------------------------------------------
-    if (!hasReachedProduction) {
+    if (!canResume) {
       if (isRetry) {
         jobLogger.info(
-          'Retry detected before production phase — cleaning staging data'
+          'Retry detected before resumable phase — cleaning staging data'
         );
         await cleanupStagingData(importId);
       }
@@ -183,8 +184,22 @@ export async function importJob(job: Job<ImportQueuePayload>) {
         await yieldToEventLoop();
         jobLogger.info('Session ID generation complete');
       }
+    }
 
-      // Phase 3: Create session_start / session_end events
+    // -------------------------------------------------------
+    // SESSION CREATION PHASE: resumable by cleaning session_start/end
+    // -------------------------------------------------------
+    const skipSessionCreation =
+      canResume && record.currentStep !== 'creating_sessions';
+
+    if (!skipSessionCreation) {
+      if (canResume && record.currentStep === 'creating_sessions') {
+        jobLogger.info(
+          'Retry at creating_sessions — cleaning existing session_start/end events'
+        );
+        await cleanupSessionStartEndEvents(importId);
+      }
+
       await updateImportStatus(jobLogger, job, importId, {
         step: 'creating_sessions',
         batch: 'all sessions',
@@ -201,13 +216,15 @@ export async function importJob(job: Job<ImportQueuePayload>) {
 
     // Phase 3: Move staging events to production (per-day)
     const resumeMovingFrom =
-      hasReachedProduction && record.currentStep === 'moving'
+      canResume && record.currentStep === 'moving'
         ? (record.currentBatch ?? undefined)
         : undefined;
 
     // currentBatch is the last successfully completed day — resume from the next day to avoid re-inserting it
     const moveFromDate = (() => {
-      if (!resumeMovingFrom) return undefined;
+      if (!resumeMovingFrom) {
+        return undefined;
+      }
       const next = new Date(`${resumeMovingFrom}T12:00:00Z`);
       next.setUTCDate(next.getUTCDate() + 1);
       return next.toISOString().split('T')[0]!;
