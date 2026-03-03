@@ -477,7 +477,7 @@ export async function getEventList(options: GetEventListOptions) {
     sb.where.cursor = `created_at < ${sqlstring.escape(formatClickhouseDate(cursor))}`;
   }
 
-  if (!cursor) {
+  if (!cursor && !(startDate && endDate)) {
     sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(new Date()))}, 3) - INTERVAL ${safeDateIntervalInDays} DAY`;
   }
 
@@ -628,7 +628,7 @@ export async function getEventList(options: GetEventListOptions) {
     }
   }
 
-  sb.orderBy.created_at = 'created_at DESC';
+  sb.orderBy.created_at = 'created_at DESC, id ASC';
 
   if (custom) {
     custom(sb);
