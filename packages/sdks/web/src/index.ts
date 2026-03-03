@@ -11,7 +11,17 @@ export type SessionReplayOptions = {
   enabled: boolean;
   sampleRate?: number;
   maskAllInputs?: boolean;
-  maskTextSelector?: string;
+  /**
+   * Mask all text content in the recording. Defaults to true.
+   * When true, all text is replaced with asterisks.
+   */
+  maskAllText?: boolean;
+  /**
+   * CSS selector for elements whose text should NOT be masked,
+   * even when maskAllText is true.
+   * Example: '[data-openpanel-unmask]'
+   */
+  unmaskTextSelector?: string;
   blockSelector?: string;
   blockClass?: string;
   ignoreSelector?: string;

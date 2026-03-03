@@ -3,7 +3,8 @@ import { record } from 'rrweb';
 
 export type ReplayRecorderConfig = {
   maskAllInputs?: boolean;
-  maskTextSelector?: string;
+  maskAllText?: boolean;
+  unmaskTextSelector?: string;
   blockSelector?: string;
   blockClass?: string;
   ignoreSelector?: string;
@@ -99,6 +100,9 @@ export function startReplayRecorder(
     }
   }
 
+  const maskAllText = config.maskAllText !== false;
+  const unmaskTextSelector = config.unmaskTextSelector;
+
   const stopFn = record({
     emit(event: eventWithTime, isCheckout?: boolean) {
       buffer.push(event);
@@ -106,7 +110,13 @@ export function startReplayRecorder(
     },
     checkoutEveryNms: flushIntervalMs,
     maskAllInputs: config.maskAllInputs ?? true,
-    maskTextSelector: config.maskTextSelector ?? '[data-openpanel-replay-mask]',
+    maskTextSelector: maskAllText ? '*' : '[data-openpanel-replay-mask]',
+    maskTextFn: maskAllText && unmaskTextSelector
+      ? (text, element) => {
+          if (element?.closest(unmaskTextSelector)) return text;
+          return text.replace(/\S/g, '*');
+        }
+      : undefined,
     blockSelector: config.blockSelector ?? '[data-openpanel-replay-block]',
     blockClass: config.blockClass,
     ignoreSelector: config.ignoreSelector,

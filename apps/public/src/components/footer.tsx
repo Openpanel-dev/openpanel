@@ -124,6 +124,7 @@ export async function Footer() {
               <Link href="/sitemap.xml">Sitemap</Link>
               <Link href="/privacy">Privacy Policy</Link>
               <Link href="/terms">Terms of Service</Link>
+              <Link href="/dpa">DPA</Link>
               <Link href="/cookies">Cookie Policy (just kidding)</Link>
             </div>
           </div>

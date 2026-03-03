@@ -1,0 +1,132 @@
+---
+title: Data Processing Agreement
+description: OpenPanel's Data Processing Agreement (DPA) under Art. 28 GDPR for cloud customers who use OpenPanel to collect analytics on their websites and applications.
+---
+
+_Last updated: March 3, 2026_
+
+This Data Processing Agreement ("DPA") is incorporated into and forms part of the OpenPanel Terms of Service between OpenPanel AB ("OpenPanel", "we", "us") and the customer ("Controller", "you"). It applies where OpenPanel processes personal data on your behalf as part of the OpenPanel Cloud service.
+
+## 1. Definitions
+
+- **GDPR** means Regulation (EU) 2016/679 of the European Parliament and of the Council.
+- **Controller** means you, the customer, who determines the purposes and means of processing.
+- **Processor** means OpenPanel, who processes data on your behalf.
+- **Personal Data**, **Processing**, **Data Subject**, and **Supervisory Authority** have the meanings given in the GDPR.
+- **Sub-processor** means any third party engaged by OpenPanel to process Personal Data in connection with the service.
+
+## 2. Our approach to privacy
+
+OpenPanel is built to minimize personal data collection by design. We do not use cookies for analytics tracking. We do not store IP addresses. Instead, we generate a daily-rotating anonymous identifier using a one-way hash of the visitor's IP address, user agent, and project ID combined with a salt that is replaced every 24 hours. The raw IP address is discarded immediately and the identifier becomes irreversible once the salt is rotated.
+
+The data we store per event is:
+
+- Page URL and referrer
+- Browser name and version
+- Operating system name and version
+- Device type, brand, and model
+- City, country, and region (derived from IP at the time of the request; IP is then discarded)
+- Custom event properties you choose to send
+
+No persistent identifiers, no cookies, no cross-site tracking.
+
+Because of this approach, the analytics data OpenPanel collects in standard website tracking mode does not constitute personal data under GDPR Art. 4(1). However, we provide this DPA for customers who require it for their own compliance documentation and records of processing activities.
+
+**Session replay (optional feature)**
+
+OpenPanel optionally supports session replay, which must be explicitly enabled by the Controller. When enabled, session replay records DOM snapshots and user interactions (mouse movements, clicks, scrolls) on the Controller's website using rrweb. This data is stored against the session identifier and may incidentally capture personal data visible in the page (for example, a logged-in user's name displayed in the UI). All text content and form inputs are masked by default. The Controller is responsible for ensuring their use of session replay complies with applicable privacy law, including providing appropriate notice to end users. Additional masking options are available via the SDK configuration.
+
+## 3. Scope and roles
+
+OpenPanel acts as a **Processor** when processing data on behalf of the Controller. You act as the **Controller** for the analytics data collected from visitors to your websites and applications.
+
+## 4. Processor obligations
+
+OpenPanel commits to the following:
+
+- Process Personal Data only on your documented instructions and for no other purpose.
+- Ensure that all personnel with access to Personal Data are bound by appropriate confidentiality obligations.
+- Implement and maintain technical and organizational measures in accordance with Section 7 of this DPA.
+- Not engage a Sub-processor without your prior general or specific written authorization and flow down equivalent data protection obligations to any Sub-processor.
+- Assist you, where reasonably possible, in responding to Data Subject requests to exercise their rights under GDPR.
+- Notify you without undue delay (and no later than 48 hours) upon becoming aware of a Personal Data breach.
+- Make available all information necessary to demonstrate compliance with this DPA and cooperate with audits conducted by you or your designated auditor, subject to reasonable notice and confidentiality obligations.
+- At your choice, delete or return all Personal Data upon termination of the service.
+
+## 5. Your obligations as Controller
+
+You confirm that:
+
+- You have a lawful basis for the processing described in this DPA.
+- You have provided appropriate privacy notices to your end users.
+- You are responsible for the accuracy and lawfulness of the data you instruct OpenPanel to process.
+
+## 6. Sub-processors
+
+OpenPanel uses the following sub-processors to deliver the service. All sub-processors are located within the European Economic Area or provide adequate safeguards under GDPR Chapter V.
+
+| Sub-processor | Purpose | Location |
+|---|---|---|
+| Hetzner Online GmbH | Cloud infrastructure and data storage | Germany (EU) |
+| Cloudflare R2 | Backup storage | EU |
+
+We will inform you of any intended changes to this list (additions or replacements) with reasonable notice, giving you the opportunity to object.
+
+## 7. Technical and organizational measures
+
+OpenPanel implements the following measures under GDPR Art. 32:
+
+**Data minimization and anonymization**
+- IP addresses are never stored. They are used only to derive geolocation and generate an anonymous daily identifier, then discarded.
+- Daily-rotating cryptographic salts ensure visitor identifiers cannot be reversed or linked to individuals after 24 hours.
+- No cookies or persistent cross-device identifiers are used.
+
+**Access control**
+- Dashboard access is protected by authentication and role-based access control.
+- Production systems are accessible only to authorized personnel.
+
+**Encryption and transport security**
+- All data is transmitted over HTTPS (TLS).
+
+**Infrastructure and availability**
+- All data is hosted on Hetzner servers located in Germany within the EU.
+- Regular backups are performed.
+- No data leaves the EEA in the course of normal operations.
+
+**Incident response**
+- We maintain procedures for detecting, reporting, and investigating Personal Data breaches.
+- In the event of a breach affecting your data, we will notify you within 48 hours of becoming aware.
+
+**Open source**
+- The OpenPanel codebase is publicly available on GitHub, allowing independent review of our data handling practices.
+
+## 8. International data transfers
+
+OpenPanel stores and processes all analytics data on Hetzner infrastructure located in Germany. No Personal Data is transferred to countries outside the EEA in the course of delivering the service.
+
+## 9. Data retention and deletion
+
+**Analytics events** are retained for as long as your account is active. We do not currently enforce a maximum retention period on analytics event data. If we introduce a retention limit in the future, we will notify all customers in advance.
+
+**Session replays** are retained for 30 days and then permanently deleted.
+
+You can delete individual projects, all associated data, or your entire account at any time from within the dashboard. Upon account termination we will delete your data within 30 days unless we are required by law to retain it longer.
+
+## 10. Governing law
+
+This DPA is governed by the laws of Sweden and is interpreted in accordance with the GDPR.
+
+## 11. How to execute this DPA
+
+Using OpenPanel Cloud constitutes acceptance of this DPA as part of our Terms of Service.
+
+If your organization requires a signed copy for your records of processing activities, you can download a pre-signed version below. Fill in your company details and countersign — no need to send it back to us.
+
+[Download pre-signed DPA](/dpa/download)
+
+## Contact
+
+For questions about this DPA or data protection at OpenPanel:
+
+- Email: [hello@openpanel.dev](mailto:hello@openpanel.dev)
+- Company: OpenPanel AB, Sankt Eriksgatan 100, 113 31 Stockholm, Sweden

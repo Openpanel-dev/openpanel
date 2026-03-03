@@ -67,8 +67,9 @@ With the npm package, the replay module is a dynamic import code-split by your b
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `enabled` | `boolean` | `false` | Enable session replay recording |
-| `maskAllInputs` | `boolean` | `true` | Mask all input field values with `*` |
-| `maskTextSelector` | `string` | `[data-openpanel-replay-mask]` | CSS selector for text elements to mask |
+| `maskAllInputs` | `boolean` | `true` | Mask all input field values |
+| `maskAllText` | `boolean` | `true` | Mask all text content in the recording |
+| `unmaskTextSelector` | `string` | — | CSS selector for elements whose text should NOT be masked when `maskAllText` is true |
 | `blockSelector` | `string` | `[data-openpanel-replay-block]` | CSS selector for elements to replace with a placeholder |
 | `blockClass` | `string` | — | Class name that blocks elements from being recorded |
 | `ignoreSelector` | `string` | — | CSS selector for elements excluded from interaction tracking |
@@ -79,28 +80,60 @@ With the npm package, the replay module is a dynamic import code-split by your b
 
 ## Privacy controls
 
-Session replay captures user interactions. These options protect sensitive content before it ever leaves the browser.
+Session replay captures user interactions. All text and inputs are masked by default — sensitive content is replaced with `***` before it ever leaves the browser.
 
-### Masking inputs
+### Text masking (default on)
 
-All input fields are masked by default (`maskAllInputs: true`). Recorded values appear as `***` in the replay. Disable this only if you have a specific reason—form field contents are almost always personal data.
+All text content is masked by default (`maskAllText: true`). This means visible page text, labels, and content are replaced with `***` in replays, in addition to input fields.
 
-### Masking specific text
+This is the safest default for GDPR compliance since replays cannot incidentally capture names, emails, or other personal data visible on the page.
 
-Add `data-openpanel-replay-mask` to any element to replace its text with `***` in replays:
+### Selectively unmasking text
 
-```html
-<p data-openpanel-replay-mask>Sensitive text here</p>
-```
-
-Or use a custom selector:
+If your pages display non-sensitive content you want visible in replays, use `unmaskTextSelector` to opt specific elements out of masking:
 
 ```ts
 sessionReplay: {
   enabled: true,
-  maskTextSelector: '.pii, [data-sensitive]',
+  unmaskTextSelector: '[data-openpanel-unmask]',
 }
 ```
+
+```html
+<h1 data-openpanel-unmask>Product Analytics</h1>
+<p data-openpanel-unmask>Welcome to the dashboard</p>
+<!-- This stays masked: -->
+<p>John Doe · john@example.com</p>
+```
+
+You can also use any CSS selector to target elements by class, tag, or attribute:
+
+```ts
+sessionReplay: {
+  enabled: true,
+  unmaskTextSelector: '.replay-safe, nav, footer',
+}
+```
+
+### Disabling full text masking
+
+If you want to disable full text masking and return to selector-based masking, set `maskAllText: false`. In this mode only elements with `data-openpanel-replay-mask` are masked:
+
+```ts
+sessionReplay: {
+  enabled: true,
+  maskAllText: false,
+}
+```
+
+```html
+<p data-openpanel-replay-mask>This will be masked</p>
+<p>This will be visible in replays</p>
+```
+
+<Callout type="warn">
+Only disable `maskAllText` if you are confident your pages do not display personal data, or if you are masking all sensitive elements individually. You are responsible for ensuring your use of session replay complies with applicable privacy law.
+</Callout>
 
 ### Blocking elements
 
@@ -108,11 +141,11 @@ Elements matched by `blockSelector` or `blockClass` are replaced with a same-siz
 
 ```html
 <div data-openpanel-replay-block>
-  This section won't appear in replays
+  This section won't appear in replays at all
 </div>
 ```
 
-Or with a custom selector and class:
+Or with a custom selector:
 
 ```ts
 sessionReplay: {
