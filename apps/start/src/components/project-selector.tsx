@@ -1,3 +1,12 @@
+import type { IServiceOrganization } from '@openpanel/db';
+import { Link, useRouter } from '@tanstack/react-router';
+import {
+  Building2Icon,
+  CheckIcon,
+  ChevronsUpDownIcon,
+  PlusIcon,
+} from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,18 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAppParams } from '@/hooks/use-app-params';
-import { useRouter } from '@tanstack/react-router';
-import { Link } from '@tanstack/react-router';
-import {
-  Building2Icon,
-  CheckIcon,
-  ChevronsUpDownIcon,
-  PlusIcon,
-} from 'lucide-react';
-import { useState } from 'react';
-
 import { pushModal } from '@/modals';
-import type { IServiceOrganization } from '@openpanel/db';
 
 interface ProjectSelectorProps {
   projects: Array<{ id: string; name: string; organizationId: string }>;
@@ -69,16 +67,16 @@ export default function ProjectSelector({
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu onOpenChange={setOpen} open={open}>
       <DropdownMenuTrigger asChild>
         <Button
-          size={'sm'}
-          variant="outline"
-          role="combobox"
           aria-expanded={open}
           className="flex min-w-0 flex-1 items-center justify-start"
+          role="combobox"
+          size={'sm'}
+          variant="outline"
         >
-          <Building2Icon size={16} className="shrink-0" />
+          <Building2Icon className="shrink-0" size={16} />
           <span className="mx-2 truncate">
             {projectId
               ? projects.find((p) => p.id === projectId)?.name
@@ -108,10 +106,10 @@ export default function ProjectSelector({
           {projects.length > 10 && (
             <DropdownMenuItem asChild>
               <Link
-                to={'/$organizationId'}
                 params={{
                   organizationId,
                 }}
+                to={'/$organizationId'}
               >
                 All projects
               </Link>
@@ -148,11 +146,13 @@ export default function ProjectSelector({
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled>
-                New organization
-                <DropdownMenuShortcut>
-                  <PlusIcon size={16} />
-                </DropdownMenuShortcut>
+              <DropdownMenuItem asChild>
+                <Link to={'/onboarding/project'}>
+                  New organization
+                  <DropdownMenuShortcut>
+                    <PlusIcon size={16} />
+                  </DropdownMenuShortcut>
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </>

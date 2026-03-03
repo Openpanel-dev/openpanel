@@ -6,7 +6,7 @@
     "dev": "pnpm with-env vite dev --port 3000",
     "start_deprecated": "pnpm with-env node .output/server/index.mjs",
     "preview": "vite preview",
-    "deploy": "npx wrangler deploy",
+    "deploy": "pnpm build && npx wrangler deploy",
     "cf-typegen": "wrangler types",
     "build": "pnpm with-env vite build",
     "serve": "vite preview",
