@@ -316,8 +316,19 @@ export class ConversionService {
     const profileBreakdowns = breakdowns.filter(b => b.name.startsWith('profile.'));
     let profileJoin = '';
     if (profileBreakdowns.length > 0) {
+      const matCols = await getMaterializedColumns();
       const profileColumns = [...new Set(
-        profileBreakdowns.map(b => b.name.replace('profile.', '').split('.')[0])
+        profileBreakdowns.map(b => {
+          if (b.name.startsWith('profile.properties.')) {
+            const cached = matCols[b.name];
+            if (cached) {
+              // cached = "profile.campaign" -> select "campaign" (the materialized column)
+              return cached.replace('profile.', '');
+            }
+          }
+          // Fall back to the top-level field name (e.g., "properties", "email")
+          return b.name.replace('profile.', '').split('.')[0];
+        })
       )];
       profileJoin = `\n      LEFT JOIN (SELECT id, ${profileColumns.join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = '${projectId}') AS profile ON profile.id = se.profile_id`;
     }

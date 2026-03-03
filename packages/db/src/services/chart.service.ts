@@ -39,12 +39,18 @@ export async function getMaterializedColumns(): Promise<Record<string, string>> 
   try {
     const columns = await db.materializedColumn.findMany({
       where: { status: 'active' },
-      select: { propertyKey: true, columnName: true },
+      select: { propertyKey: true, columnName: true, targetTable: true },
     });
 
     const mapping: Record<string, string> = {};
     for (const col of columns) {
-      mapping[`properties.${col.propertyKey}`] = col.columnName;
+      if (col.targetTable === 'profiles') {
+        // e.g. "profile.properties.campaign" -> "profile.campaign"
+        mapping[`profile.properties.${col.propertyKey}`] = `profile.${col.columnName}`;
+      } else {
+        // e.g. "properties.utm_source" -> "utm_source"
+        mapping[`properties.${col.propertyKey}`] = col.columnName;
+      }
     }
 
     materializedColumnsCache = mapping;
@@ -473,41 +479,41 @@ export async function getChartSql({
 
   // Collect all profile fields used in filters and breakdowns
   // Extract top-level field names (e.g., 'properties' from 'profile.properties.os')
+  // When a profile.properties.* key has a materialized column, select that column
+  // directly instead of the whole properties map.
   const getProfileFields = () => {
     const fields = new Set<string>();
 
     // Always need id for the join
     fields.add('id');
 
-    // Collect from filters
-    event.filters
-      .filter((f) => f.name.startsWith('profile.'))
-      .forEach((f) => {
-        const fieldName = f.name.replace('profile.', '').split('.')[0];
-        if (fieldName && fieldName === 'properties') {
-          fields.add('properties');
-        } else if (
-          fieldName &&
-          ['email', 'first_name', 'last_name', 'created_at'].includes(fieldName)
-        ) {
-          fields.add(fieldName);
-        }
-      });
+    const allProfileNames = [
+      ...event.filters.filter((f) => f.name.startsWith('profile.')).map((f) => f.name),
+      ...breakdowns.filter((b) => b.name.startsWith('profile.')).map((b) => b.name),
+    ];
 
-    // Collect from breakdowns
-    breakdowns
-      .filter((b) => b.name.startsWith('profile.'))
-      .forEach((b) => {
-        const fieldName = b.name.replace('profile.', '').split('.')[0];
-        if (fieldName && fieldName === 'properties') {
+    for (const propName of allProfileNames) {
+      if (propName.startsWith('profile.properties.')) {
+        // Check if there's a materialized column in the cache
+        if (materializedColumnsCache && materializedColumnsCache[propName]) {
+          // e.g. cache value is "profile.campaign" -> select "campaign"
+          const colName = materializedColumnsCache[propName]!.replace('profile.', '');
+          fields.add(colName);
+        } else {
+          // No materialized column: select the whole properties map
           fields.add('properties');
-        } else if (
+        }
+      } else {
+        // Direct profile field (email, first_name, etc.)
+        const fieldName = propName.replace('profile.', '').split('.')[0];
+        if (
           fieldName &&
           ['email', 'first_name', 'last_name', 'created_at'].includes(fieldName)
         ) {
           fields.add(fieldName);
         }
-      });
+      }
+    }
 
     return Array.from(fields);
   };

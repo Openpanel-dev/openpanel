@@ -368,8 +368,46 @@ export class FunnelService {
     });
 
     if (anyFilterOnProfile || anyBreakdownOnProfile) {
+      const matCols = await getMaterializedColumns();
+
+      // Collect fields needed from profile table (from both filters and breakdowns)
+      const profileFieldsSet = new Set<string>(['id']);
+
+      // From event filters
+      for (const f of profileFilters) {
+        // f is like "properties.campaign" or "email" (already has "profile." stripped)
+        if (f.startsWith('properties.')) {
+          const fullKey = `profile.${f}`; // "profile.properties.campaign"
+          const cached = matCols[fullKey];
+          if (cached) {
+            profileFieldsSet.add(cached.replace('profile.', ''));
+          } else {
+            profileFieldsSet.add('properties');
+          }
+        } else {
+          profileFieldsSet.add(f.split('.')[0]!);
+        }
+      }
+
+      // From profile breakdowns
+      for (const b of breakdowns.filter((b) => b.name.startsWith('profile.'))) {
+        if (b.name.startsWith('profile.properties.')) {
+          const cached = matCols[b.name];
+          if (cached) {
+            profileFieldsSet.add(cached.replace('profile.', ''));
+          } else {
+            profileFieldsSet.add('properties');
+          }
+        } else {
+          const fieldName = b.name.replace('profile.', '').split('.')[0];
+          if (fieldName) {
+            profileFieldsSet.add(fieldName);
+          }
+        }
+      }
+
       funnelCte.leftJoin(
-        `(SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0]))} FROM ${TABLE_NAMES.profiles} FINAL
+        `(SELECT ${Array.from(profileFieldsSet).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL
           WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
         `profile.id = ${fromClause}.profile_id`,
       );
