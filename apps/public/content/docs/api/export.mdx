@@ -53,14 +53,32 @@ GET /export/events
 | `end` | string | End date for the event range (ISO format) | `2024-04-18` |
 | `page` | number | Page number for pagination (default: 1) | `2` |
 | `limit` | number | Number of events per page (default: 50, max: 1000) | `100` |
-| `includes` | string or string[] | Additional fields to include in the response | `profile` or `["profile","meta"]` |
+| `includes` | string or string[] | Additional fields to include in the response. Pass multiple as comma-separated (`profile,meta`) or repeated params (`includes=profile&includes=meta`). | `profile` or `profile,meta` |
 
 #### Include Options
 
-The `includes` parameter allows you to fetch additional related data:
+The `includes` parameter allows you to fetch additional related data. When using query parameters, you can pass multiple values in either of these ways:
 
-- `profile`: Include user profile information
-- `meta`: Include event metadata and configuration
+- **Comma-separated**: `?includes=profile,meta` (include both profile and meta in the response)
+- **Repeated parameter**: `?includes=profile&includes=meta` (same result; useful when building URLs programmatically)
+
+Supported values (any of these can be combined; names match the response keys):
+
+**Related data** (adds nested objects or extra lookups):
+
+- `profile` — User profile for the event (id, email, firstName, lastName, etc.)
+- `meta` — Event metadata from project config (name, description, conversion flag)
+
+**Event fields** (optional columns; these are in addition to the default fields):
+
+- `properties` — Custom event properties
+- `region`, `longitude`, `latitude` — Extra geo (default already has `city`, `country`)
+- `osVersion`, `browserVersion`, `device`, `brand`, `model` — Extra device (default already has `os`, `browser`)
+- `origin`, `referrer`, `referrerName`, `referrerType` — Referrer/navigation
+- `revenue` — Revenue amount
+- `importedAt`, `sdkName`, `sdkVersion` — Import/SDK info
+
+The response always includes: `id`, `name`, `deviceId`, `profileId`, `sessionId`, `projectId`, `createdAt`, `path`, `duration`, `city`, `country`, `os`, `browser`. Use `includes` to add any of the values above.
 
 #### Example Request
 
@@ -129,12 +147,15 @@ Retrieve aggregated chart data for analytics and visualization. This endpoint pr
 GET /export/charts
 ```
 
+**Note:** The endpoint accepts either `series` or `events` for the event configuration; `series` is the preferred parameter name. Both use the same structure.
+
 #### Query Parameters
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
 | `projectId` | string | The ID of the project to fetch chart data from | `abc123` |
-| `events` | object[] | Array of event configurations to analyze | `[{"name":"screen_view","filters":[]}]` |
+| `series` | object[] | Array of event/series configurations to analyze (preferred over `events`) | `[{"name":"screen_view","filters":[]}]` |
+| `events` | object[] | Array of event configurations (deprecated in favor of `series`) | `[{"name":"screen_view","filters":[]}]` |
 | `breakdowns` | object[] | Array of breakdown dimensions | `[{"name":"country"}]` |
 | `interval` | string | Time interval for data points | `day` |
 | `range` | string | Predefined date range | `7d` |
@@ -144,7 +165,7 @@ GET /export/charts
 
 #### Event Configuration
 
-Each event in the `events` array supports the following properties:
+Each item in the `series` or `events` array supports the following properties:
 
 | Property | Type | Description | Required | Default |
 |----------|------|-------------|----------|---------|
@@ -228,10 +249,12 @@ Common breakdown dimensions include:
 #### Example Request
 
 ```bash
-curl 'https://api.openpanel.dev/export/charts?projectId=abc123&events=[{"name":"screen_view","segment":"user"}]&breakdowns=[{"name":"country"}]&interval=day&range=30d&previous=true' \
+curl 'https://api.openpanel.dev/export/charts?projectId=abc123&series=[{"name":"screen_view","segment":"user"}]&breakdowns=[{"name":"country"}]&interval=day&range=30d&previous=true' \
   -H 'openpanel-client-id: YOUR_CLIENT_ID' \
   -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
 ```
+
+You can use `events` instead of `series` in the query for backward compatibility; both accept the same structure.
 
 #### Example Advanced Request
 
@@ -241,7 +264,7 @@ curl 'https://api.openpanel.dev/export/charts' \
   -H 'openpanel-client-secret: YOUR_CLIENT_SECRET' \
   -G \
   --data-urlencode 'projectId=abc123' \
-  --data-urlencode 'events=[{"name":"purchase","segment":"property_sum","property":"properties.total","filters":[{"name":"properties.total","operator":"isNotNull","value":[]}]}]' \
+  --data-urlencode 'series=[{"name":"purchase","segment":"property_sum","property":"properties.total","filters":[{"name":"properties.total","operator":"isNotNull","value":[]}]}]' \
   --data-urlencode 'breakdowns=[{"name":"country"}]' \
   --data-urlencode 'interval=day' \
   --data-urlencode 'range=30d'

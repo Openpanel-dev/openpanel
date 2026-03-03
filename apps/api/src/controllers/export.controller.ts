@@ -1,20 +1,18 @@
-import { parseQueryString } from '@/utils/parse-zod-query-string';
-import type { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
-
-import { HttpError } from '@/utils/errors';
 import { DateTime } from '@openpanel/common';
 import type { GetEventListOptions } from '@openpanel/db';
 import {
+  ChartEngine,
   ClientType,
   db,
   getEventList,
-  getEventsCountCached,
+  getEventsCount,
   getSettingsForProject,
 } from '@openpanel/db';
-import { ChartEngine } from '@openpanel/db';
 import { zChartEvent, zReport } from '@openpanel/validation';
-import { omit } from 'ramda';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { z } from 'zod';
+import { HttpError } from '@/utils/errors';
+import { parseQueryString } from '@/utils/parse-zod-query-string';
 
 async function getProjectId(
   request: FastifyRequest<{
@@ -22,8 +20,7 @@ async function getProjectId(
       project_id?: string;
       projectId?: string;
     };
-  }>,
-  reply: FastifyReply,
+  }>
 ) {
   let projectId = request.query.projectId || request.query.project_id;
 
@@ -75,8 +72,20 @@ const eventsScheme = z.object({
   limit: z.coerce.number().optional().default(50),
   includes: z
     .preprocess(
-      (arg) => (typeof arg === 'string' ? [arg] : arg),
-      z.array(z.string()),
+      (arg) => {
+        if (arg == null) {
+          return undefined;
+        }
+        if (Array.isArray(arg)) {
+          return arg;
+        }
+        if (typeof arg === 'string') {
+          const parts = arg.split(',').map((s) => s.trim()).filter(Boolean);
+          return parts;
+        }
+        return arg;
+      },
+      z.array(z.string())
     )
     .optional(),
 });
@@ -85,7 +94,7 @@ export async function events(
   request: FastifyRequest<{
     Querystring: z.infer<typeof eventsScheme>;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const query = eventsScheme.safeParse(request.query);
 
@@ -97,7 +106,7 @@ export async function events(
     });
   }
 
-  const projectId = await getProjectId(request, reply);
+  const projectId = await getProjectId(request);
   const limit = query.data.limit;
   const page = Math.max(query.data.page, 1);
   const take = Math.max(Math.min(limit, 1000), 1);
@@ -118,20 +127,20 @@ export async function events(
       meta: false,
       ...query.data.includes?.reduce(
         (acc, key) => ({ ...acc, [key]: true }),
-        {},
+        {}
       ),
     },
   };
 
   const [data, totalCount] = await Promise.all([
     getEventList(options),
-    getEventsCountCached(omit(['cursor', 'take'], options)),
+    getEventsCount(options),
   ]);
 
   reply.send({
     meta: {
       count: data.length,
-      totalCount: totalCount,
+      totalCount,
       pages: Math.ceil(totalCount / options.take),
       current: cursor + 1,
     },
@@ -158,7 +167,7 @@ const chartSchemeFull = zReport
           filters: zChartEvent.shape.filters.optional(),
           segment: zChartEvent.shape.segment.optional(),
           property: zChartEvent.shape.property.optional(),
-        }),
+        })
       )
       .optional(),
     // Backward compatibility - events will be migrated to series via preprocessing
@@ -169,7 +178,7 @@ const chartSchemeFull = zReport
           filters: zChartEvent.shape.filters.optional(),
           segment: zChartEvent.shape.segment.optional(),
           property: zChartEvent.shape.property.optional(),
-        }),
+        })
       )
       .optional(),
   });
@@ -178,7 +187,7 @@ export async function charts(
   request: FastifyRequest<{
     Querystring: Record<string, string>;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const query = chartSchemeFull.safeParse(parseQueryString(request.query));
 
@@ -190,7 +199,7 @@ export async function charts(
     });
   }
 
-  const projectId = await getProjectId(request, reply);
+  const projectId = await getProjectId(request);
   const { timezone } = await getSettingsForProject(projectId);
   const { events, series, ...rest } = query.data;
 

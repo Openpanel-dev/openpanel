@@ -654,7 +654,6 @@ export async function getEventList(options: GetEventListOptions) {
   return data;
 }
 
-export const getEventsCountCached = cacheable(getEventsCount, 60 * 10);
 export async function getEventsCount({
   projectId,
   profileId,
