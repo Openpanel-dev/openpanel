@@ -93,7 +93,7 @@ export function createLogger({ name }: { name: string }): ILogger {
       winston.format.printf((info) => {
         const { level, message, service, ...meta } = info;
         const metaStr =
-          Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
+          Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta, (_, v) => typeof v === 'bigint' ? v.toString() : v)}` : '';
         return `${level} ${message}${metaStr}`;
       }),
     );
