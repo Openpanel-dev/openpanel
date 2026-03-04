@@ -44,8 +44,10 @@ const getPrismaClient = () => {
           ) {
             logger.info('Prisma operation', {
               operation,
-              args,
               model,
+              args: JSON.parse(JSON.stringify(args, (_, v) =>
+                typeof v === 'bigint' ? v.toString() : v
+              )),
             });
           }
           return query(args);

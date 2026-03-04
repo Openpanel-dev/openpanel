@@ -509,10 +509,11 @@ export class MaterializeColumnsService {
 
     try {
       // Execute ALTER TABLE on the target table
+      // Backtick-quote the column name to support keys with hyphens or other special chars
       await chMigrationClient.command({
         query: `
           ALTER TABLE ${table}
-          ADD COLUMN IF NOT EXISTS ${candidate.columnName} String
+          ADD COLUMN IF NOT EXISTS \`${candidate.columnName}\` String
           MATERIALIZED properties['${candidate.propertyKey}']
         `,
       });
