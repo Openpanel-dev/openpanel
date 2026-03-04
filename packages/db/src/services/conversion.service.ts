@@ -60,14 +60,8 @@ export class ConversionService {
     projectId: string,
     startDate: string,
     endDate: string,
+    extraColumns: string[] = [],
   ): Promise<string> {
-    // Get materialized columns to ensure compatibility (events table only)
-    const materializedColumns = await getMaterializedColumns('events');
-    const materializedColumnNames = Object.values(materializedColumns);
-    const materializedColumnsSelect = materializedColumnNames.length > 0
-      ? `, ${materializedColumnNames.join(', ')}`
-      : '';
-
     // Check if this is a custom event
     const customEvent = await getCustomEventByName(event.name, projectId);
 
@@ -107,8 +101,13 @@ export class ConversionService {
         profileJoinClause = `\n        LEFT JOIN (SELECT id, ${profileColumns.join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = '${projectId}') AS profile ON profile.id = profile_id`;
       }
 
+      // Minimal SELECT: only the columns actually needed downstream
+      const baseColumns = ['profile_id', 'session_id', 'created_at'];
+      const selectColumns = [...new Set([...baseColumns, ...extraColumns])];
+      const selectList = selectColumns.map(col => `\`${col}\``).join(', ');
+
       return `${cteName} AS (
-        SELECT *${materializedColumnsSelect}
+        SELECT ${selectList}
         FROM ${TABLE_NAMES.events}${profileJoinClause}
         WHERE project_id = '${projectId}'
           AND name = '${event.name}'
@@ -152,7 +151,7 @@ export class ConversionService {
     const materializedColumns = await getMaterializedColumns('events');
     const materializedColumnNames = Object.values(materializedColumns);
     const materializedColumnsSelect = materializedColumnNames.length > 0
-      ? `, ${materializedColumnNames.join(', ')}`
+      ? `, ${materializedColumnNames.map(col => `\`${col}\``).join(', ')}`
       : '';
 
     // Build CTEs for custom events
@@ -265,20 +264,38 @@ export class ConversionService {
     const extendedEndDateObj = new Date(endDateObj.getTime() + funnelWindowSeconds * 1000);
     const extendedEndDate = formatClickhouseDate(extendedEndDateObj);
 
+    // Ensure materialized columns cache is warm so getSelectPropertyKey works synchronously
+    await getMaterializedColumns('events');
+
+    // Determine which event-property columns are needed from start_events
+    // (profile.* and cohort breakdowns are handled separately via JOINs)
+    const startExtraCols = [...new Set(
+      breakdowns
+        .filter(b => !b.name.startsWith('profile.') && !b.cohortId && !b.name.startsWith('cohort:'))
+        .flatMap(b => {
+          const col = getSelectPropertyKey(b.name, projectId, undefined);
+          if (col.startsWith('profile.') || col.startsWith('if(')) return [];
+          // Map access (not materialized) — need the whole properties map
+          if (col.startsWith('properties[')) return ['properties'];
+          return [col];
+        })
+    )];
+
     // Build CTEs for start and end events
     const ctes: string[] = [];
 
-    // Start events CTE (first event in funnel)
+    // Start events CTE — includes only columns needed for breakdowns
     const startEventCte = await this.buildSingleEventCte(
       firstEvent,
       'start_events',
       projectId,
       startDate,
       endDate,
+      startExtraCols,
     );
     ctes.push(startEventCte);
 
-    // End events CTE (last event in funnel) - with extended date range
+    // End events CTE — only needs profile_id/session_id + created_at for the funnel JOIN
     const endEventCte = await this.buildSingleEventCte(
       lastEvent,
       'end_events',
