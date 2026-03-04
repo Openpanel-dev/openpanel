@@ -61,8 +61,8 @@ export class ConversionService {
     startDate: string,
     endDate: string,
   ): Promise<string> {
-    // Get materialized columns to ensure compatibility
-    const materializedColumns = await getMaterializedColumns();
+    // Get materialized columns to ensure compatibility (events table only)
+    const materializedColumns = await getMaterializedColumns('events');
     const materializedColumnNames = Object.values(materializedColumns);
     const materializedColumnsSelect = materializedColumnNames.length > 0
       ? `, ${materializedColumnNames.join(', ')}`
@@ -148,8 +148,8 @@ export class ConversionService {
       };
     }
 
-    // Get materialized columns to ensure UNION compatibility
-    const materializedColumns = await getMaterializedColumns();
+    // Get materialized columns to ensure UNION compatibility (events table only)
+    const materializedColumns = await getMaterializedColumns('events');
     const materializedColumnNames = Object.values(materializedColumns);
     const materializedColumnsSelect = materializedColumnNames.length > 0
       ? `, ${materializedColumnNames.join(', ')}`
@@ -316,7 +316,7 @@ export class ConversionService {
     const profileBreakdowns = breakdowns.filter(b => b.name.startsWith('profile.'));
     let profileJoin = '';
     if (profileBreakdowns.length > 0) {
-      const matCols = await getMaterializedColumns();
+      const matCols = await getMaterializedColumns('profiles');
       const profileColumns = [...new Set(
         profileBreakdowns.map(b => {
           if (b.name.startsWith('profile.properties.')) {

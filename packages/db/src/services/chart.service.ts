@@ -25,15 +25,33 @@ let materializedColumnsCache: Record<string, string> | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
+function filterByTargetTable(
+  cache: Record<string, string>,
+  targetTable?: 'events' | 'profiles',
+): Record<string, string> {
+  if (!targetTable) return cache;
+  return Object.fromEntries(
+    Object.entries(cache).filter(([key]) =>
+      targetTable === 'profiles'
+        ? key.startsWith('profile.properties.')
+        : key.startsWith('properties.'),
+    ),
+  );
+}
+
 /**
- * Get materialized columns from database with caching
+ * Get materialized columns from database with caching.
+ * Pass targetTable to get only columns for that table:
+ *   'events'   → keys starting with "properties.*"
+ *   'profiles' → keys starting with "profile.properties.*"
+ *   (omit)     → all columns (used by getSelectPropertyKey)
  */
-export async function getMaterializedColumns(): Promise<Record<string, string>> {
+export async function getMaterializedColumns(targetTable?: 'events' | 'profiles'): Promise<Record<string, string>> {
   const now = Date.now();
 
   // Return cached value if still valid
   if (materializedColumnsCache && (now - cacheTimestamp) < CACHE_TTL) {
-    return materializedColumnsCache;
+    return filterByTargetTable(materializedColumnsCache, targetTable);
   }
 
   try {
@@ -55,7 +73,7 @@ export async function getMaterializedColumns(): Promise<Record<string, string>> 
 
     materializedColumnsCache = mapping;
     cacheTimestamp = now;
-    return mapping;
+    return filterByTargetTable(mapping, targetTable);
   } catch (error) {
     // If database query fails, return empty mapping (fallback to properties['key'])
     console.warn('Failed to load materialized columns:', error);

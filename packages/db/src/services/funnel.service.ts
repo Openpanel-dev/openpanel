@@ -58,8 +58,8 @@ export class FunnelService {
       };
     }
 
-    // Get materialized columns to ensure UNION compatibility
-    const materializedColumns = await getMaterializedColumns();
+    // Get materialized columns to ensure UNION compatibility (events table only)
+    const materializedColumns = await getMaterializedColumns('events');
     const materializedColumnNames = Object.values(materializedColumns);
     const materializedColumnsSelect = materializedColumnNames.length > 0
       ? `, ${materializedColumnNames.join(', ')}`
@@ -368,7 +368,7 @@ export class FunnelService {
     });
 
     if (anyFilterOnProfile || anyBreakdownOnProfile) {
-      const matCols = await getMaterializedColumns();
+      const matCols = await getMaterializedColumns('profiles');
 
       // Collect fields needed from profile table (from both filters and breakdowns)
       const profileFieldsSet = new Set<string>(['id']);
