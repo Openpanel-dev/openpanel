@@ -3,6 +3,7 @@ import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { useSelector } from '@/redux';
 
 import { ReportBreakdowns } from './ReportBreakdowns';
+import { ReportGlobalFilters } from './ReportGlobalFilters';
 import { ReportSeries } from './ReportSeries';
 import { ReportSettings } from './ReportSettings';
 
@@ -13,6 +14,7 @@ export function ReportSidebar() {
     <>
       <div className="flex flex-col gap-8">
         <ReportSeries />
+        <ReportGlobalFilters />
         {showBreakdown && <ReportBreakdowns />}
         <ReportSettings />
       </div>
