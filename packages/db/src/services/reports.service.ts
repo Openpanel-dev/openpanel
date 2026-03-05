@@ -88,6 +88,7 @@ export function transformReport(
     funnelGroup: report.funnelGroup ?? undefined,
     funnelWindow: report.funnelWindow ?? undefined,
     globalFilters: ((report.globalFilters as IChartEventFilter[]) ?? []).map(transformFilter),
+    holdProperties: (report.holdProperties as string[]) ?? [],
     limit: 50,
     cohortFilters: [],
     layout: report.layout ?? undefined,

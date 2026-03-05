@@ -221,6 +221,11 @@ export const zChartInputBase = z.object({
     .optional()
     .default([])
     .describe('Global filters applied to all events in the chart'),
+  holdProperties: z
+    .array(z.string())
+    .optional()
+    .default([])
+    .describe('Properties to hold constant across all funnel steps'),
 });
 
 export const zChartInput = z.preprocess((val) => {

@@ -295,6 +295,7 @@ export class FunnelService {
     funnelWindow = 24,
     funnelGroup,
     breakdowns = [],
+    holdProperties = [],
     limit,
     timezone = 'UTC',
   }: IChartInput & { timezone: string; events?: IChartEvent[] }) {
@@ -353,6 +354,14 @@ export class FunnelService {
     );
     const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
 
+    // Hold property constant: add to inner CTE GROUP BY so windowFunnel()
+    // evaluates per (profile_id, property_value), but NOT to outer query
+    // so results aggregate into a single funnel.
+    const holdPropertySelects = holdProperties.map(
+      (prop, i) => `${getSelectPropertyKey(prop, projectId)} as hp_${i}`,
+    );
+    const holdPropertyGroupBy = holdProperties.map((_, i) => `hp_${i}`);
+
     const funnelCte = this.buildFunnelCte({
       projectId,
       startDate,
@@ -361,8 +370,8 @@ export class FunnelService {
       funnelWindowMilliseconds,
       group,
       timezone,
-      additionalSelects: breakdownSelects,
-      additionalGroupBy: breakdownGroupBy,
+      additionalSelects: [...breakdownSelects, ...holdPropertySelects],
+      additionalGroupBy: [...breakdownGroupBy, ...holdPropertyGroupBy],
       fromClause,
       needsNameFilter,
     });

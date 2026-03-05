@@ -4,6 +4,7 @@ import { useSelector } from '@/redux';
 
 import { ReportBreakdowns } from './ReportBreakdowns';
 import { ReportGlobalFilters } from './ReportGlobalFilters';
+import { ReportHoldProperties } from './ReportHoldProperties';
 import { ReportSeries } from './ReportSeries';
 import { ReportSettings } from './ReportSettings';
 
@@ -15,6 +16,7 @@ export function ReportSidebar() {
       <div className="flex flex-col gap-8">
         <ReportSeries />
         <ReportGlobalFilters />
+        {chartType === 'funnel' && <ReportHoldProperties />}
         {showBreakdown && <ReportBreakdowns />}
         <ReportSettings />
       </div>

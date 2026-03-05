@@ -324,6 +324,7 @@ model Report {
   funnelGroup  String?
   funnelWindow    Float?
   globalFilters   Json      @default("[]")
+  holdProperties  Json      @default("[]")
 
   dashboardId String
   dashboard   Dashboard     @relation(fields: [dashboardId], references: [id], onDelete: Cascade)

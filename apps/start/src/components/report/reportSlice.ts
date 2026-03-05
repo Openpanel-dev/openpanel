@@ -55,6 +55,7 @@ const initialState: InitialState = {
   funnelGroup: undefined,
   funnelWindow: undefined,
   globalFilters: [],
+  holdProperties: [],
   cohortFilters: [],
 };
 
@@ -316,6 +317,20 @@ export const reportSlice = createSlice({
         state.series.splice(toIndex, 0, movedEvent);
       }
     },
+
+    // Hold Properties (funnel)
+    addHoldProperty: (state, action: PayloadAction<string>) => {
+      state.dirty = true;
+      if (!state.holdProperties.includes(action.payload)) {
+        state.holdProperties.push(action.payload);
+      }
+    },
+    removeHoldProperty: (state, action: PayloadAction<string>) => {
+      state.dirty = true;
+      state.holdProperties = state.holdProperties.filter(
+        (prop) => prop !== action.payload,
+      );
+    },
   },
 });
 
@@ -349,6 +364,8 @@ export const {
   removeGlobalFilter,
   changeGlobalFilter,
   reorderEvents,
+  addHoldProperty,
+  removeHoldProperty,
 } = reportSlice.actions;
 
 export default reportSlice.reducer;
