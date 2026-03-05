@@ -24,6 +24,8 @@ export function ReportFunnelChart() {
       endDate,
       previous,
       breakdowns,
+      holdProperties,
+      globalFilters,
     },
     isLazyLoading,
   } = useReportChartContext();
@@ -42,6 +44,8 @@ export function ReportFunnelChart() {
     startDate,
     endDate,
     limit: 20,
+    holdProperties,
+    globalFilters,
   };
   const trpc = useTRPC();
   const res = useQuery(
