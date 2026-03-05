@@ -216,6 +216,11 @@ export const zChartInputBase = z.object({
     .optional()
     .default([])
     .describe('Global cohort filters applied to the entire chart'),
+  globalFilters: z
+    .array(zChartEventFilter)
+    .optional()
+    .default([])
+    .describe('Global filters applied to all events in the chart'),
 });
 
 export const zChartInput = z.preprocess((val) => {

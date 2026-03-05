@@ -322,7 +322,8 @@ model Report {
   previous     Boolean   @default(false)
   criteria     String?
   funnelGroup  String?
-  funnelWindow Float?
+  funnelWindow    Float?
+  globalFilters   Json      @default("[]")
 
   dashboardId String
   dashboard   Dashboard     @relation(fields: [dashboardId], references: [id], onDelete: Cascade)

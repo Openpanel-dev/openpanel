@@ -40,13 +40,14 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
       plan.input.projectId,
     );
 
-    // Build query input
+    // Build query input — merge global filters into per-event filters
+    const globalFilters = plan.input.globalFilters ?? [];
     const queryInput: IGetChartDataInput = {
       event: {
         id: event.id,
         name: event.name,
         segment: event.segment,
-        filters: event.filters,
+        filters: [...event.filters, ...globalFilters],
         displayName: event.displayName,
         property: event.property,
       },
@@ -63,6 +64,8 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
       criteria: plan.input.criteria,
       funnelGroup: plan.input.funnelGroup,
       funnelWindow: plan.input.funnelWindow,
+      cohortFilters: plan.input.cohortFilters ?? [],
+      globalFilters: plan.input.globalFilters ?? [],
     };
 
     // Execute query with custom event if applicable

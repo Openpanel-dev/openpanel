@@ -11,6 +11,7 @@ import {
 } from '@openpanel/constants';
 import type {
   IChartBreakdown,
+  IChartEventFilter,
   IChartEventItem,
   IChartFormula,
   IChartLineType,
@@ -53,6 +54,8 @@ const initialState: InitialState = {
   criteria: 'on_or_after',
   funnelGroup: undefined,
   funnelWindow: undefined,
+  globalFilters: [],
+  cohortFilters: [],
 };
 
 export const reportSlice = createSlice({
@@ -272,6 +275,36 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.funnelWindow = action.payload || undefined;
     },
+    // Global Filters
+    addGlobalFilter: (
+      state,
+      action: PayloadAction<Omit<IChartEventFilter, 'id'>>,
+    ) => {
+      state.dirty = true;
+      state.globalFilters.push({
+        id: shortId(),
+        ...action.payload,
+      });
+    },
+    removeGlobalFilter: (
+      state,
+      action: PayloadAction<{ id: string }>,
+    ) => {
+      state.dirty = true;
+      state.globalFilters = state.globalFilters.filter(
+        (f) => f.id !== action.payload.id,
+      );
+    },
+    changeGlobalFilter: (
+      state,
+      action: PayloadAction<IChartEventFilter>,
+    ) => {
+      state.dirty = true;
+      state.globalFilters = state.globalFilters.map((f) =>
+        f.id === action.payload.id ? action.payload : f,
+      );
+    },
+
     reorderEvents(
       state,
       action: PayloadAction<{ fromIndex: number; toIndex: number }>,
@@ -312,6 +345,9 @@ export const {
   changeUnit,
   changeFunnelGroup,
   changeFunnelWindow,
+  addGlobalFilter,
+  removeGlobalFilter,
+  changeGlobalFilter,
   reorderEvents,
 } = reportSlice.actions;
 
