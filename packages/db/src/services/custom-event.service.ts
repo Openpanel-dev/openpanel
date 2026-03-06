@@ -99,7 +99,9 @@ export async function expandCustomEventToSQL(
 
   // Get materialized column names to explicitly include in SELECT
   // (SELECT * doesn't include materialized columns in CTEs)
-  const materializedColumns = await getMaterializedColumns();
+  // Use 'events' target to exclude profile.* materialized columns — those require a profiles JOIN
+  // and must not be referenced in a bare SELECT from the events table.
+  const materializedColumns = await getMaterializedColumns('events');
   const materializedColumnNames = Object.values(materializedColumns);
   const materializedColumnsSelect = materializedColumnNames.length > 0
     ? `, ${materializedColumnNames.join(', ')}`
