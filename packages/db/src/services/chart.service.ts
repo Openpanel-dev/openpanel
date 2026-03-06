@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/style/useDefaultSwitchClause: <explanation> */
+/** biome-ignore-all lint/style/useDefaultSwitchClause: switch cases are exhaustive by design */
 import { DateTime, stripLeadingAndTrailingSlashes } from '@openpanel/common';
 import type {
   IChartEventFilter,

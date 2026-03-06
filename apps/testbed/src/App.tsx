@@ -41,7 +41,6 @@ export default function App() {
     op.setGroups(u.groupIds);
     for (const id of u.groupIds) {
       const meta = PRESET_GROUPS.find((g) => g.id === id);
-      console.log('meta', meta);
       if (meta) {
         op.setGroup(id, meta);
       }

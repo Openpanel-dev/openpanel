@@ -485,7 +485,7 @@ export async function getEventList(options: GetEventListOptions) {
     sb.where.cursor = `created_at < ${sqlstring.escape(formatClickhouseDate(cursor))}`;
   }
 
-  // biome-ignore lint/complexity/useSimplifiedLogicExpression: <explanation>
+  // biome-ignore lint/complexity/useSimplifiedLogicExpression: intentional double negation for clarity
   if (!cursor && !(startDate && endDate)) {
     sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(new Date()))}, 3) - INTERVAL ${safeDateIntervalInDays} DAY`;
   }
@@ -674,8 +674,6 @@ export async function getEventList(options: GetEventListOptions) {
       dateIntervalInDays: dateIntervalInDays * 2,
     });
   }
-
-  console.log('getSql', getSql());
 
   return data;
 }
