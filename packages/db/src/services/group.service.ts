@@ -102,6 +102,7 @@ export async function getGroupById(
     FROM ${TABLE_NAMES.groups} FINAL
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND id = ${sqlstring.escape(id)}
+      AND deleted = 0
   `);
   return rows[0] ? transformGroup(rows[0]) : null;
 }
@@ -121,6 +122,7 @@ export async function getGroupList({
 }): Promise<IServiceGroup[]> {
   const conditions = [
     `project_id = ${sqlstring.escape(projectId)}`,
+    'deleted = 0',
     ...(type ? [`type = ${sqlstring.escape(type)}`] : []),
     ...(search
       ? [
@@ -151,6 +153,7 @@ export async function getGroupListCount({
 }): Promise<number> {
   const conditions = [
     `project_id = ${sqlstring.escape(projectId)}`,
+    'deleted = 0',
     ...(type ? [`type = ${sqlstring.escape(type)}`] : []),
     ...(search
       ? [
@@ -172,6 +175,7 @@ export async function getGroupTypes(projectId: string): Promise<string[]> {
     SELECT DISTINCT type
     FROM ${TABLE_NAMES.groups} FINAL
     WHERE project_id = ${sqlstring.escape(projectId)}
+      AND deleted = 0
   `);
   return rows.map((r) => r.type);
 }
@@ -239,6 +243,7 @@ export async function getGroupPropertyKeys(
     SELECT DISTINCT arrayJoin(mapKeys(properties)) as key
     FROM ${TABLE_NAMES.groups} FINAL
     WHERE project_id = ${sqlstring.escape(projectId)}
+      AND deleted = 0
   `);
   return rows.map((r) => r.key).sort();
 }
@@ -274,7 +279,7 @@ export async function getGroupMemberProfiles({
   take: number;
   search?: string;
 }): Promise<{ data: IServiceProfile[]; count: number }> {
-  const offset = Math.max(0, (cursor ?? 0) * take);
+  const offset = Math.max(0, cursor ?? 0);
   const searchCondition = search?.trim()
     ? `AND (email ILIKE ${sqlstring.escape(`%${search.trim()}%`)} OR first_name ILIKE ${sqlstring.escape(`%${search.trim()}%`)} OR last_name ILIKE ${sqlstring.escape(`%${search.trim()}%`)})`
     : '';
