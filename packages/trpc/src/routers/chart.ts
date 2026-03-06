@@ -374,6 +374,7 @@ export const chartRouter = createTRPCRouter({
           .select<{ values: string }>([`distinct ${selectExpr} as values`])
           .from(TABLE_NAMES.groups, true)
           .where('project_id', '=', projectId)
+          .where('deleted', '=', 0)
           .where(selectExpr, '!=', '')
           .where(selectExpr, 'IS NOT NULL', null)
           .orderBy('created_at', 'DESC')

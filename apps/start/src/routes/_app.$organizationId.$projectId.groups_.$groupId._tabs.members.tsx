@@ -25,7 +25,7 @@ function Component() {
     ...trpc.group.listProfiles.queryOptions({
       projectId,
       groupId,
-      cursor: page - 1,
+      cursor: (page - 1) * 50,
       take: 50,
       search: debouncedSearch || undefined,
     }),
