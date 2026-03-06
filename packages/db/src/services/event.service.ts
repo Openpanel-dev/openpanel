@@ -670,8 +670,6 @@ export async function getEventList(options: GetEventListOptions) {
     });
   }
 
-  console.log('getSql', getSql());
-
   return data;
 }
 
