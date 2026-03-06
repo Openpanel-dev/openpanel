@@ -314,6 +314,7 @@ describe('mixpanel', () => {
       sdk_name: 'mixpanel (web)',
       sdk_version: '1.0.0',
       session_id: '',
+      groups: [],
     });
   });
 });

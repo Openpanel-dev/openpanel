@@ -129,6 +129,7 @@ describe('incomingEvent', () => {
       referrerType: '',
       sdkName: jobData.headers['openpanel-sdk-name'],
       sdkVersion: jobData.headers['openpanel-sdk-version'],
+      groups: [],
     };
 
     (createEvent as Mock).mockReturnValue(event);
@@ -242,6 +243,7 @@ describe('incomingEvent', () => {
       referrerType: '',
       sdkName: jobData.headers['openpanel-sdk-name'],
       sdkVersion: jobData.headers['openpanel-sdk-version'],
+      groups: [],
     };
 
     expect(spySessionsQueueAdd).toHaveBeenCalledTimes(0);
@@ -350,6 +352,7 @@ describe('incomingEvent', () => {
       sdkName: 'server',
       sdkVersion: '1.0.0',
       revenue: undefined,
+      groups: [],
     });
 
     expect(sessionsQueue.add).not.toHaveBeenCalled();
@@ -413,6 +416,7 @@ describe('incomingEvent', () => {
       referrerType: undefined,
       sdkName: 'server',
       sdkVersion: '1.0.0',
+      groups: [],
     });
 
     expect(sessionsQueue.add).not.toHaveBeenCalled();
