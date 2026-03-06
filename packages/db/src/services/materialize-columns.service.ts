@@ -32,7 +32,7 @@ export class MaterializeColumnsService {
 
   // Thresholds for materialization decisions
   private readonly MIN_USAGE_COUNT = 1; // Must be used in at least 1 report
-  private readonly MAX_CARDINALITY = 5000; // Don't materialize if >5000 unique values
+  private readonly MAX_CARDINALITY = 1000; // Don't materialize if >1000 unique values
   private readonly MIN_BENEFIT_SCORE = 20; // Minimum benefit score to justify materialization
   private readonly MAX_DAILY_MATERIALIZATIONS = 3; // Rate limit: max 3 new columns per day (total across both tables)
 
