@@ -3,8 +3,8 @@ import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import {
   getProfileById,
   getSalts,
+  groupBuffer,
   replayBuffer,
-  upsertGroup,
   upsertProfile,
 } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
@@ -344,7 +344,7 @@ async function handleGroup(
   const profileId = payload.profileId ?? context.deviceId;
 
   await Promise.all([
-    upsertGroup({
+    groupBuffer.add({
       id,
       projectId: context.projectId,
       type,
