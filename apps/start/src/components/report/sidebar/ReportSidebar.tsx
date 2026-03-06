@@ -16,7 +16,7 @@ export function ReportSidebar() {
       <div className="flex flex-col gap-8">
         <ReportSeries />
         <ReportGlobalFilters />
-        {chartType === 'funnel' && <ReportHoldProperties />}
+        {(chartType === 'funnel' || chartType === 'conversion') && <ReportHoldProperties />}
         {showBreakdown && <ReportBreakdowns />}
         <ReportSettings />
       </div>

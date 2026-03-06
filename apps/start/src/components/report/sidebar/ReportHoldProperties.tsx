@@ -6,11 +6,7 @@ import { PropertiesCombobox } from './PropertiesCombobox';
 
 export function ReportHoldProperties() {
   const holdProperties = useSelector((state) => state.report.holdProperties);
-  const series = useSelector((state) => state.report.series);
   const dispatch = useDispatch();
-
-  // Scope property list to first funnel event (properties are typically shared across events)
-  const firstEvent = series[0];
 
   return (
     <div>
@@ -36,7 +32,6 @@ export function ReportHoldProperties() {
         ))}
 
         <PropertiesCombobox
-          event={firstEvent}
           onSelect={(action) => {
             dispatch(addHoldProperty(action.value));
           }}

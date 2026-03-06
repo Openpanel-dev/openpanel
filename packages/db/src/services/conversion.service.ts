@@ -215,6 +215,7 @@ export class ConversionService {
     funnelWindow = 24,
     series,
     breakdowns = [],
+    holdProperties = [],
     limit,
     interval,
     timezone,
@@ -269,22 +270,30 @@ export class ConversionService {
 
     // Determine which event-property columns are needed from start_events
     // (profile.* and cohort breakdowns are handled separately via JOINs)
-    const startExtraCols = [...new Set(
-      breakdowns
-        .filter(b => !b.name.startsWith('profile.') && !b.cohortId && !b.name.startsWith('cohort:'))
-        .flatMap(b => {
-          const col = getSelectPropertyKey(b.name, projectId, undefined);
-          if (col.startsWith('profile.') || col.startsWith('if(')) return [];
-          // Map access (not materialized) — need the whole properties map
-          if (col.startsWith('properties[')) return ['properties'];
-          return [col];
-        })
-    )];
+    const breakdownExtraCols = breakdowns
+      .filter(b => !b.name.startsWith('profile.') && !b.cohortId && !b.name.startsWith('cohort:'))
+      .flatMap(b => {
+        const col = getSelectPropertyKey(b.name, projectId, undefined);
+        if (col.startsWith('profile.') || col.startsWith('if(')) return [];
+        // Map access (not materialized) — need the whole properties map
+        if (col.startsWith('properties[')) return ['properties'];
+        return [col];
+      });
+
+    // Hold property constant: columns needed in both CTEs for the JOIN condition
+    const holdExtraCols = holdProperties.flatMap(prop => {
+      const col = getSelectPropertyKey(prop, projectId, undefined);
+      if (col.startsWith('properties[')) return ['properties'];
+      return [col];
+    });
+
+    const startExtraCols = [...new Set([...breakdownExtraCols, ...holdExtraCols])];
+    const endExtraCols = [...new Set(holdExtraCols)];
 
     // Build CTEs for start and end events
     const ctes: string[] = [];
 
-    // Start events CTE — includes only columns needed for breakdowns
+    // Start events CTE — includes columns needed for breakdowns + hold properties
     const startEventCte = await this.buildSingleEventCte(
       firstEvent,
       'start_events',
@@ -295,13 +304,14 @@ export class ConversionService {
     );
     ctes.push(startEventCte);
 
-    // End events CTE — only needs profile_id/session_id + created_at for the funnel JOIN
+    // End events CTE — needs hold property columns for the JOIN condition
     const endEventCte = await this.buildSingleEventCte(
       lastEvent,
       'end_events',
       projectId,
       startDate,
       extendedEndDate,
+      endExtraCols,
     );
     ctes.push(endEventCte);
 
@@ -354,6 +364,12 @@ export class ConversionService {
     // Allows end event to happen up to 2 seconds before start event
     const gracePeriodSeconds = 2;
 
+    // Hold property constant: require same property value in start and end events
+    const holdJoinConditions = holdProperties.map(prop => {
+      const col = getSelectPropertyKey(prop, projectId, undefined);
+      return `AND se.${col} = ee.${col}`;
+    }).join('\n        ');
+
     const toStartOf = clix.toStartOf('se.created_at', interval);
     const breakdownGroupByStr = breakdownGroupBy.join(', ');
 
@@ -368,6 +384,7 @@ export class ConversionService {
         ee.${groupCol} = se.${groupCol}
         AND ee.created_at >= se.created_at - INTERVAL ${gracePeriodSeconds} SECOND
         AND ee.created_at <= se.created_at + INTERVAL ${funnelWindowSeconds} SECOND
+        ${holdJoinConditions}
       ${cohortJoins}`;
 
     // agg CTE: aggregate inner rows into (event_day, breakdowns) buckets
