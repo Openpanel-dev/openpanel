@@ -296,6 +296,7 @@ export class FunnelService {
     funnelGroup,
     breakdowns = [],
     holdProperties = [],
+    globalFilters = [],
     limit,
     timezone = 'UTC',
   }: IChartInput & { timezone: string; events?: IChartEvent[] }) {
@@ -303,7 +304,11 @@ export class FunnelService {
       throw new Error('startDate and endDate are required');
     }
 
-    const eventSeries = onlyReportEvents(series);
+    // Merge global filters into each event's filters (same as fetch.ts does for regular charts)
+    const eventSeries = onlyReportEvents(series).map(event => ({
+      ...event,
+      filters: [...(event.filters ?? []), ...globalFilters],
+    }));
 
     if (eventSeries.length === 0) {
       throw new Error('events are required');

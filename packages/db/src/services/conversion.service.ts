@@ -216,13 +216,18 @@ export class ConversionService {
     series,
     breakdowns = [],
     holdProperties = [],
+    globalFilters = [],
     limit,
     interval,
     timezone,
   }: Omit<IChartInput, 'range' | 'previous' | 'metric' | 'chartType'> & {
     timezone: string;
   }) {
-    const events = onlyReportEvents(series);
+    // Merge global filters into each event's filters (same as fetch.ts does for regular charts)
+    const events = onlyReportEvents(series).map(event => ({
+      ...event,
+      filters: [...(event.filters ?? []), ...globalFilters],
+    }));
 
     if (events.length < 2) {
       throw new Error('events must be at least 2 events');
