@@ -126,6 +126,10 @@ export type CronQueuePayloadFlushReplay = {
   type: 'flushReplay';
   payload: undefined;
 };
+export type CronQueuePayloadGscSync = {
+  type: 'gscSync';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
@@ -136,7 +140,8 @@ export type CronQueuePayload =
   | CronQueuePayloadPing
   | CronQueuePayloadProject
   | CronQueuePayloadInsightsDaily
-  | CronQueuePayloadOnboarding;
+  | CronQueuePayloadOnboarding
+  | CronQueuePayloadGscSync;
 
 export type MiscQueuePayloadTrialEndingSoon = {
   type: 'trialEndingSoon';
@@ -268,3 +273,21 @@ export const insightsQueue = new Queue<InsightsQueuePayloadProject>(
     },
   }
 );
+
+export type GscQueuePayloadSync = {
+  type: 'gscProjectSync';
+  payload: { projectId: string };
+};
+export type GscQueuePayloadBackfill = {
+  type: 'gscProjectBackfill';
+  payload: { projectId: string };
+};
+export type GscQueuePayload = GscQueuePayloadSync | GscQueuePayloadBackfill;
+
+export const gscQueue = new Queue<GscQueuePayload>(getQueueName('gsc'), {
+  connection: getRedisQueue(),
+  defaultJobOptions: {
+    removeOnComplete: 50,
+    removeOnFail: 100,
+  },
+});

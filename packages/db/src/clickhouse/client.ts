@@ -58,6 +58,9 @@ export const TABLE_NAMES = {
   sessions: 'sessions',
   events_imports: 'events_imports',
   session_replay_chunks: 'session_replay_chunks',
+  gsc_daily: 'gsc_daily',
+  gsc_pages_daily: 'gsc_pages_daily',
+  gsc_queries_daily: 'gsc_queries_daily',
 };
 
 /**

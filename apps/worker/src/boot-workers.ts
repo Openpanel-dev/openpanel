@@ -6,6 +6,7 @@ import {
   type EventsQueuePayloadIncomingEvent,
   cronQueue,
   eventsGroupQueues,
+  gscQueue,
   importQueue,
   insightsQueue,
   miscQueue,
@@ -20,6 +21,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { Worker as GroupWorker } from 'groupmq';
 
 import { cronJob } from './jobs/cron';
+import { gscJob } from './jobs/gsc';
 import { incomingEvent } from './jobs/events.incoming-event';
 import { importJob } from './jobs/import';
 import { insightsProjectJob } from './jobs/insights';
@@ -59,6 +61,7 @@ function getEnabledQueues(): QueueName[] {
       'misc',
       'import',
       'insights',
+      'gsc',
     ];
   }
 
@@ -206,6 +209,17 @@ export async function bootWorkers() {
     });
     workers.push(insightsWorker);
     logger.info('Started worker for insights', { concurrency });
+  }
+
+  // Start gsc worker
+  if (enabledQueues.includes('gsc')) {
+    const concurrency = getConcurrencyFor('gsc', 5);
+    const gscWorker = new Worker(gscQueue.name, gscJob, {
+      ...workerOptions,
+      concurrency,
+    });
+    workers.push(gscWorker);
+    logger.info('Started worker for gsc', { concurrency });
   }
 
   if (workers.length === 0) {

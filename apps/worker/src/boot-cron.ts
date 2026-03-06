@@ -78,6 +78,11 @@ export async function bootCron() {
       type: 'onboarding',
       pattern: '0 * * * *',
     },
+    {
+      name: 'gscSync',
+      type: 'gscSync',
+      pattern: '0 3 * * *',
+    },
   ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {

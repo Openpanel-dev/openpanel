@@ -16,3 +16,9 @@ export const google = new Arctic.Google(
   process.env.GOOGLE_CLIENT_SECRET ?? '',
   process.env.GOOGLE_REDIRECT_URI ?? '',
 );
+
+export const googleGsc = new Arctic.Google(
+  process.env.GOOGLE_CLIENT_ID ?? '',
+  process.env.GOOGLE_CLIENT_SECRET ?? '',
+  process.env.GSC_GOOGLE_REDIRECT_URI ?? '',
+);

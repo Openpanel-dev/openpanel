@@ -42,6 +42,7 @@ import liveRouter from './routes/live.router';
 import manageRouter from './routes/manage.router';
 import miscRouter from './routes/misc.router';
 import oauthRouter from './routes/oauth-callback.router';
+import gscCallbackRouter from './routes/gsc-callback.router';
 import profileRouter from './routes/profile.router';
 import trackRouter from './routes/track.router';
 import webhookRouter from './routes/webhook.router';
@@ -194,6 +195,7 @@ const startServer = async () => {
       instance.register(liveRouter, { prefix: '/live' });
       instance.register(webhookRouter, { prefix: '/webhook' });
       instance.register(oauthRouter, { prefix: '/oauth' });
+      instance.register(gscCallbackRouter, { prefix: '/gsc' });
       instance.register(miscRouter, { prefix: '/misc' });
       instance.register(aiRouter, { prefix: '/ai' });
     });
