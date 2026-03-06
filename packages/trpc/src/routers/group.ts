@@ -1,12 +1,16 @@
 import {
   chQuery,
-  db,
+  createGroup,
   deleteGroup,
   getGroupById,
   getGroupList,
   getGroupListCount,
+  getGroupMemberProfiles,
+  getGroupPropertyKeys,
+  getGroupsByIds,
   getGroupTypes,
   TABLE_NAMES,
+  updateGroup,
 } from '@openpanel/db';
 import sqlstring from 'sqlstring';
 import { z } from 'zod';
@@ -35,6 +39,34 @@ export const groupRouter = createTRPCRouter({
     .input(z.object({ id: z.string(), projectId: z.string() }))
     .query(async ({ input: { id, projectId } }) => {
       return getGroupById(id, projectId);
+    }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().min(1),
+        projectId: z.string(),
+        type: z.string().min(1),
+        name: z.string().min(1),
+        properties: z.record(z.string()).default({}),
+      })
+    )
+    .mutation(async ({ input }) => {
+      return createGroup(input);
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().min(1),
+        projectId: z.string(),
+        type: z.string().min(1).optional(),
+        name: z.string().min(1).optional(),
+        properties: z.record(z.string()).optional(),
+      })
+    )
+    .mutation(async ({ input: { id, projectId, ...data } }) => {
+      return updateGroup(id, projectId, data);
     }),
 
   delete: protectedProcedure
@@ -84,7 +116,7 @@ export const groupRouter = createTRPCRouter({
 
   members: protectedProcedure
     .input(z.object({ id: z.string(), projectId: z.string() }))
-    .query(async ({ input: { id, projectId } }) => {
+    .query(({ input: { id, projectId } }) => {
       return chQuery<{
         profileId: string;
         lastSeen: string;
@@ -99,27 +131,44 @@ export const groupRouter = createTRPCRouter({
           AND has(groups, ${sqlstring.escape(id)})
           AND profile_id != device_id
         GROUP BY profile_id
-        ORDER BY lastSeen DESC
-        LIMIT 100
+        ORDER BY lastSeen DESC, eventCount DESC
+        LIMIT 50
       `);
+    }),
+
+  listProfiles: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        groupId: z.string(),
+        cursor: z.number().optional(),
+        take: z.number().default(50),
+        search: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const { data, count } = await getGroupMemberProfiles({
+        projectId: input.projectId,
+        groupId: input.groupId,
+        cursor: input.cursor,
+        take: input.take,
+        search: input.search,
+      });
+      return {
+        data,
+        meta: { count, pageCount: input.take },
+      };
     }),
 
   properties: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId } }) => {
-      // Returns distinct property keys across all groups for this project
-      // Used by breakdown/filter pickers in the chart builder
-      const groups = await db.group.findMany({
-        where: { projectId },
-        select: { properties: true },
-      });
-      const keys = new Set<string>();
-      for (const group of groups) {
-        const props = group.properties as Record<string, unknown>;
-        for (const key of Object.keys(props)) {
-          keys.add(key);
-        }
-      }
-      return Array.from(keys).sort();
+      return getGroupPropertyKeys(projectId);
+    }),
+
+  listByIds: protectedProcedure
+    .input(z.object({ projectId: z.string(), ids: z.array(z.string()) }))
+    .query(async ({ input: { projectId, ids } }) => {
+      return getGroupsByIds(projectId, ids);
     }),
 });

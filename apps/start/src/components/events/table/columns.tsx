@@ -1,15 +1,14 @@
+import type { IServiceEvent } from '@openpanel/db';
+import type { ColumnDef } from '@tanstack/react-table';
+import { ColumnCreatedAt } from '@/components/column-created-at';
 import { EventIcon } from '@/components/events/event-icon';
 import { ProjectLink } from '@/components/links';
+import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { pushModal } from '@/modals';
 import { getProfileName } from '@/utils/getters';
-import type { ColumnDef } from '@tanstack/react-table';
-
-import { ColumnCreatedAt } from '@/components/column-created-at';
-import { ProfileAvatar } from '@/components/profiles/profile-avatar';
-import { KeyValueGrid } from '@/components/ui/key-value-grid';
-import type { IServiceEvent } from '@openpanel/db';
 
 export function useColumns() {
   const number = useNumber();
@@ -65,23 +64,23 @@ export function useColumns() {
         return (
           <div className="flex items-center gap-2">
             <button
-              type="button"
               className="transition-transform hover:scale-105"
               onClick={() => {
                 pushModal('EditEvent', {
                   id: row.original.id,
                 });
               }}
+              type="button"
             >
               <EventIcon
-                size="sm"
-                name={row.original.name}
                 meta={row.original.meta}
+                name={row.original.name}
+                size="sm"
               />
             </button>
             <span className="flex gap-2">
               <button
-                type="button"
+                className="font-medium hover:underline"
                 onClick={() => {
                   pushModal('EventDetails', {
                     id: row.original.id,
@@ -89,7 +88,7 @@ export function useColumns() {
                     projectId: row.original.projectId,
                   });
                 }}
-                className="font-medium hover:underline"
+                type="button"
               >
                 {renderName()}
               </button>
@@ -107,8 +106,8 @@ export function useColumns() {
         if (profile) {
           return (
             <ProjectLink
+              className="group row items-center gap-2 whitespace-nowrap font-medium hover:underline"
               href={`/profiles/${encodeURIComponent(profile.id)}`}
-              className="group whitespace-nowrap font-medium hover:underline row items-center gap-2"
             >
               <ProfileAvatar size="sm" {...profile} />
               {getProfileName(profile)}
@@ -119,8 +118,8 @@ export function useColumns() {
         if (profileId && profileId !== deviceId) {
           return (
             <ProjectLink
-              href={`/profiles/${encodeURIComponent(profileId)}`}
               className="whitespace-nowrap font-medium hover:underline"
+              href={`/profiles/${encodeURIComponent(profileId)}`}
             >
               Unknown
             </ProjectLink>
@@ -130,8 +129,8 @@ export function useColumns() {
         if (deviceId) {
           return (
             <ProjectLink
-              href={`/profiles/${encodeURIComponent(deviceId)}`}
               className="whitespace-nowrap font-medium hover:underline"
+              href={`/profiles/${encodeURIComponent(deviceId)}`}
             >
               Anonymous
             </ProjectLink>
@@ -152,10 +151,10 @@ export function useColumns() {
         const { sessionId } = row.original;
         return (
           <ProjectLink
-            href={`/sessions/${encodeURIComponent(sessionId)}`}
             className="whitespace-nowrap font-medium hover:underline"
+            href={`/sessions/${encodeURIComponent(sessionId)}`}
           >
-            {sessionId.slice(0,6)}
+            {sessionId.slice(0, 6)}
           </ProjectLink>
         );
       },
@@ -175,7 +174,7 @@ export function useColumns() {
       cell({ row }) {
         const { country, city } = row.original;
         return (
-          <div className="row items-center gap-2 min-w-0">
+          <div className="row min-w-0 items-center gap-2">
             <SerieIcon name={country} />
             <span className="truncate">{city}</span>
           </div>
@@ -189,7 +188,7 @@ export function useColumns() {
       cell({ row }) {
         const { os } = row.original;
         return (
-          <div className="row items-center gap-2 min-w-0">
+          <div className="row min-w-0 items-center gap-2">
             <SerieIcon name={os} />
             <span className="truncate">{os}</span>
           </div>
@@ -203,9 +202,35 @@ export function useColumns() {
       cell({ row }) {
         const { browser } = row.original;
         return (
-          <div className="row items-center gap-2 min-w-0">
+          <div className="row min-w-0 items-center gap-2">
             <SerieIcon name={browser} />
             <span className="truncate">{browser}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'groups',
+      header: 'Groups',
+      size: 200,
+      meta: {
+        hidden: true,
+      },
+      cell({ row }) {
+        const { groups } = row.original;
+        if (!groups?.length) {
+          return null;
+        }
+        return (
+          <div className="flex flex-wrap gap-1">
+            {groups.map((g) => (
+              <span
+                className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
+                key={g}
+              >
+                {g}
+              </span>
+            ))}
           </div>
         );
       },
@@ -221,14 +246,14 @@ export function useColumns() {
         const { properties } = row.original;
         const filteredProperties = Object.fromEntries(
           Object.entries(properties || {}).filter(
-            ([key]) => !key.startsWith('__'),
-          ),
+            ([key]) => !key.startsWith('__')
+          )
         );
         const items = Object.entries(filteredProperties);
         const limit = 2;
         const data = items.slice(0, limit).map(([key, value]) => ({
           name: key,
-          value: value,
+          value,
         }));
         if (items.length > limit) {
           data.push({

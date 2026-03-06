@@ -66,7 +66,9 @@ export function createLogger({ name }: { name: string }): ILogger {
 
   const redactSensitiveInfo = winston.format((info) => {
     const redactObject = (obj: any): any => {
-      if (!obj || typeof obj !== 'object') return obj;
+      if (!obj || typeof obj !== 'object') {
+        return obj;
+      }
 
       return Object.keys(obj).reduce((acc, key) => {
         const lowerKey = key.toLowerCase();
@@ -85,7 +87,7 @@ export function createLogger({ name }: { name: string }): ILogger {
       }, {} as any);
     };
 
-    return Object.assign({}, info, redactObject(info));
+    return { ...info, ...redactObject(info) };
   });
 
   const transports: winston.transport[] = [];
@@ -96,12 +98,12 @@ export function createLogger({ name }: { name: string }): ILogger {
       HyperDX.getWinstonTransport(logLevel, {
         detectResources: true,
         service,
-      }),
+      })
     );
     format = winston.format.combine(
       errorFormatter(),
       redactSensitiveInfo(),
-      winston.format.json(),
+      winston.format.json()
     );
   } else {
     transports.push(new winston.transports.Console());
@@ -116,7 +118,7 @@ export function createLogger({ name }: { name: string }): ILogger {
         const metaStr =
           Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
         return `${level} ${message}${metaStr}`;
-      }),
+      })
     );
   }
 
@@ -126,7 +128,7 @@ export function createLogger({ name }: { name: string }): ILogger {
     format,
     transports,
     silent,
-    levels: Object.assign({}, customLevels, winston.config.syslog.levels),
+    levels: { ...customLevels, ...winston.config.syslog.levels },
   });
 
   return logger;

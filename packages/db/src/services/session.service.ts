@@ -56,6 +56,7 @@ export interface IClickhouseSession {
   version: number;
   // Dynamically added
   has_replay?: boolean;
+  groups: string[];
 }
 
 export interface IServiceSession {
@@ -96,6 +97,7 @@ export interface IServiceSession {
   revenue: number;
   profile?: IServiceProfile;
   hasReplay?: boolean;
+  groups: string[];
 }
 
 export interface GetSessionListOptions {
@@ -148,6 +150,7 @@ export function transformSession(session: IClickhouseSession): IServiceSession {
     revenue: session.revenue,
     profile: undefined,
     hasReplay: session.has_replay,
+    groups: session.groups,
   };
 }
 
@@ -232,6 +235,7 @@ export async function getSessionList({
     'screen_view_count',
     'event_count',
     'revenue',
+    'groups',
   ];
 
   columns.forEach((column) => {
@@ -280,6 +284,7 @@ export async function getSessionList({
       projectId,
       isExternal: false,
       properties: {},
+      groups: [],
     },
   }));
 

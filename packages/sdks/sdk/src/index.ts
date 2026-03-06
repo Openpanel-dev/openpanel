@@ -203,6 +203,7 @@ export class OpenPanel {
         payload: {
           id: groupId,
           ...metadata,
+          profileId: this.profileId,
         },
       });
     }
@@ -296,6 +297,12 @@ export class OpenPanel {
             : (this.profileId ?? '')
         ),
       } as TrackHandlerPayload['payload'];
+    }
+    if (item.type === 'group') {
+      return {
+        ...item.payload,
+        profileId: item.payload.profileId ?? this.profileId,
+      };
     }
     return item.payload;
   }
