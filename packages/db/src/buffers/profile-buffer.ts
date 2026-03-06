@@ -65,8 +65,8 @@ export class ProfileBuffer extends BaseBuffer {
   ): Promise<T> {
     const lockKey = `profile-lock:${projectId}:${profileId}`;
     const lockId = generateSecureId('lock');
-    const maxRetries = 10;
-    const retryDelayMs = 25;
+    const maxRetries = 20;
+    const retryDelayMs = 50;
 
     for (let i = 0; i < maxRetries; i++) {
       const acquired = await this.redis.set(lockKey, lockId, 'EX', 5, 'NX');
