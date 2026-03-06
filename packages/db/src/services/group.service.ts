@@ -181,16 +181,8 @@ export async function getGroupTypes(projectId: string): Promise<string[]> {
 }
 
 export async function createGroup(input: IServiceUpsertGroup) {
-  const { id, projectId, type, name, properties = {} } = input;
-  await writeGroupToCh({
-    id,
-    projectId,
-    type,
-    name,
-    properties: properties as Record<string, string>,
-    createdAt: new Date(),
-  });
-  return getGroupById(id, projectId);
+  await upsertGroup(input);
+  return getGroupById(input.id, input.projectId);
 }
 
 export async function updateGroup(
@@ -248,6 +240,49 @@ export async function getGroupPropertyKeys(
   return rows.map((r) => r.key).sort();
 }
 
+export type IServiceGroupStats = {
+  groupId: string;
+  memberCount: number;
+  lastActiveAt: Date | null;
+};
+
+export async function getGroupStats(
+  projectId: string,
+  groupIds: string[]
+): Promise<Map<string, IServiceGroupStats>> {
+  if (groupIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await chQuery<{
+    group_id: string;
+    member_count: number;
+    last_active_at: string;
+  }>(`
+    SELECT
+      g AS group_id,
+      uniqExact(profile_id) AS member_count,
+      max(created_at) AS last_active_at
+    FROM ${TABLE_NAMES.events}
+    ARRAY JOIN groups AS g
+    WHERE project_id = ${sqlstring.escape(projectId)}
+      AND g IN (${groupIds.map((id) => sqlstring.escape(id)).join(',')})
+      AND profile_id != device_id
+    GROUP BY g
+  `);
+
+  return new Map(
+    rows.map((r) => [
+      r.group_id,
+      {
+        groupId: r.group_id,
+        memberCount: r.member_count,
+        lastActiveAt: r.last_active_at ? new Date(r.last_active_at) : null,
+      },
+    ])
+  );
+}
+
 export async function getGroupsByIds(
   projectId: string,
   ids: string[]
@@ -284,26 +319,12 @@ export async function getGroupMemberProfiles({
     ? `AND (email ILIKE ${sqlstring.escape(`%${search.trim()}%`)} OR first_name ILIKE ${sqlstring.escape(`%${search.trim()}%`)} OR last_name ILIKE ${sqlstring.escape(`%${search.trim()}%`)})`
     : '';
 
-  const countResult = await chQuery<{ count: number }>(`
-    SELECT count() AS count
-    FROM (
-      SELECT profile_id
-      FROM ${TABLE_NAMES.events}
-      WHERE project_id = ${sqlstring.escape(projectId)}
-        AND has(groups, ${sqlstring.escape(groupId)})
-        AND profile_id != device_id
-      GROUP BY profile_id
-    ) gm
-    INNER JOIN (
-      SELECT id FROM ${TABLE_NAMES.profiles} FINAL
-      WHERE project_id = ${sqlstring.escape(projectId)}
-      ${searchCondition}
-    ) p ON p.id = gm.profile_id
-  `);
-  const count = countResult[0]?.count ?? 0;
-
-  const idRows = await chQuery<{ profile_id: string }>(`
-    SELECT gm.profile_id
+  // count() OVER () is evaluated after JOINs/WHERE but before LIMIT,
+  // so we get the total match count and the paginated IDs in one query.
+  const rows = await chQuery<{ profile_id: string; total_count: number }>(`
+    SELECT
+      gm.profile_id,
+      count() OVER () AS total_count
     FROM (
       SELECT profile_id, max(created_at) AS last_seen
       FROM ${TABLE_NAMES.events}
@@ -311,7 +332,6 @@ export async function getGroupMemberProfiles({
         AND has(groups, ${sqlstring.escape(groupId)})
         AND profile_id != device_id
       GROUP BY profile_id
-      ORDER BY last_seen DESC
     ) gm
     INNER JOIN (
       SELECT id FROM ${TABLE_NAMES.profiles} FINAL
@@ -322,10 +342,14 @@ export async function getGroupMemberProfiles({
     LIMIT ${take}
     OFFSET ${offset}
   `);
-  const profileIds = idRows.map((r) => r.profile_id);
+
+  const count = rows[0]?.total_count ?? 0;
+  const profileIds = rows.map((r) => r.profile_id);
+
   if (profileIds.length === 0) {
     return { data: [], count };
   }
+
   const profiles = await getProfiles(profileIds, projectId);
   const byId = new Map(profiles.map((p) => [p.id, p]));
   const data = profileIds
