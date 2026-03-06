@@ -167,8 +167,12 @@ export function getChartSql({
   const anyBreakdownOnGroup = breakdowns.some((breakdown) =>
     breakdown.name.startsWith('group.')
   );
+  const anyMetricOnGroup = !!event.property?.startsWith('group.');
   const needsGroupArrayJoin =
-    anyFilterOnGroup || anyBreakdownOnGroup || event.segment === 'group';
+    anyFilterOnGroup ||
+    anyBreakdownOnGroup ||
+    anyMetricOnGroup ||
+    event.segment === 'group';
 
   if (needsGroupArrayJoin) {
     addCte(
@@ -453,8 +457,12 @@ export function getAggregateChartSql({
   const anyBreakdownOnGroup = breakdowns.some((breakdown) =>
     breakdown.name.startsWith('group.')
   );
+  const anyMetricOnGroup = !!event.property?.startsWith('group.');
   const needsGroupArrayJoin =
-    anyFilterOnGroup || anyBreakdownOnGroup || event.segment === 'group';
+    anyFilterOnGroup ||
+    anyBreakdownOnGroup ||
+    anyMetricOnGroup ||
+    event.segment === 'group';
 
   if (needsGroupArrayJoin) {
     addCte(

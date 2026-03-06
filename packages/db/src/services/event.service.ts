@@ -681,6 +681,7 @@ export async function getEventList(options: GetEventListOptions) {
 export async function getEventsCount({
   projectId,
   profileId,
+  groupId,
   events,
   filters,
   startDate,
@@ -690,6 +691,10 @@ export async function getEventsCount({
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
   if (profileId) {
     sb.where.profileId = `profile_id = ${sqlstring.escape(profileId)}`;
+  }
+
+  if (groupId) {
+    sb.where.groupId = `has(groups, ${sqlstring.escape(groupId)})`;
   }
 
   if (startDate && endDate) {
