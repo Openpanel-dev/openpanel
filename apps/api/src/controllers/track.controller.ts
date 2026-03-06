@@ -334,21 +334,29 @@ async function handleGroup(
   const { id, type, name, properties = {} } = payload;
   const profileId = payload.profileId ?? context.deviceId;
 
-  await Promise.all([
+  const promises: Promise<unknown>[] = [];
+  promises.push(
     groupBuffer.add({
       id,
       projectId: context.projectId,
       type,
       name,
       properties,
-    }),
-    upsertProfile({
-      id: profileId,
-      projectId: context.projectId,
-      isExternal: !!(payload.profileId ?? context.identity?.profileId),
-      groups: [id],
-    }),
-  ]);
+    })
+  );
+
+  if (profileId) {
+    promises.push(
+      upsertProfile({
+        id: String(profileId),
+        projectId: context.projectId,
+        isExternal: !!(payload.profileId ?? context.identity?.profileId),
+        groups: [id],
+      })
+    );
+  }
+
+  await Promise.all(promises);
 }
 
 export async function handler(
