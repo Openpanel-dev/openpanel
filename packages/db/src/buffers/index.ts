@@ -1,5 +1,6 @@
 import { BotBuffer as BotBufferRedis } from './bot-buffer';
 import { EventBuffer as EventBufferRedis } from './event-buffer';
+import { GroupBuffer } from './group-buffer';
 import { ProfileBackfillBuffer } from './profile-backfill-buffer';
 import { ProfileBuffer as ProfileBufferRedis } from './profile-buffer';
 import { ReplayBuffer } from './replay-buffer';
@@ -11,6 +12,7 @@ export const botBuffer = new BotBufferRedis();
 export const sessionBuffer = new SessionBuffer();
 export const profileBackfillBuffer = new ProfileBackfillBuffer();
 export const replayBuffer = new ReplayBuffer();
+export const groupBuffer = new GroupBuffer();
 
 export type { ProfileBackfillEntry } from './profile-backfill-buffer';
 export type { IClickhouseSessionReplayChunk } from './replay-buffer';

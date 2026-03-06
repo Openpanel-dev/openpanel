@@ -59,7 +59,16 @@ The trailing edge of the line (the current, incomplete interval) is shown as a d
 
 ## Insights
 
-If you have configured [Insights](/features/insights) for your project, a scrollable row of insight cards appears below the chart. Each card shows a pre-configured metric with its current value and trend. Clicking a card applies that insight's filter to the entire overview page. Insights are optional—this section is hidden when none have been configured.
+A scrollable row of insight cards appears below the chart once your project has at least 30 days of data. OpenPanel automatically detects significant trends across pageviews, entry pages, referrers, and countries—no configuration needed.
+
+Each card shows:
+- **Share**: The percentage of total traffic that property represents (e.g., "United States: 42% of all sessions")
+- **Absolute change**: The raw increase or decrease in sessions compared to the previous period
+- **Percentage change**: How much that property grew or declined relative to its own previous value
+
+For example, if the US had 1,000 sessions last week and 1,200 this week, the card shows "+200 sessions (+20%)".
+
+Clicking any insight card filters the entire overview page to show only data matching that property—letting you drill into what's driving the trend.
 
 ---
 

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   BellIcon,
   BookOpenIcon,
+  Building2Icon,
   ChartLineIcon,
   ChevronDownIcon,
   CogIcon,
@@ -59,6 +60,7 @@ export default function SidebarProjectMenu({
       <SidebarLink href={'/events'} icon={GanttChartIcon} label="Events" />
       <SidebarLink href={'/sessions'} icon={UsersIcon} label="Sessions" />
       <SidebarLink href={'/profiles'} icon={UsersIcon} label="Profiles" />
+      <SidebarLink href={'/groups'} icon={Building2Icon} label="Groups" />
       <div className="mt-4 mb-2 font-medium text-muted-foreground text-sm">
         Manage
       </div>

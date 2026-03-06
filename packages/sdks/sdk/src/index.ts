@@ -3,6 +3,7 @@
 import type {
   IAliasPayload as AliasPayload,
   IDecrementPayload as DecrementPayload,
+  IGroupPayload as GroupPayload,
   IIdentifyPayload as IdentifyPayload,
   IIncrementPayload as IncrementPayload,
   ITrackHandlerPayload as TrackHandlerPayload,
@@ -13,6 +14,7 @@ import { Api } from './api';
 export type {
   AliasPayload,
   DecrementPayload,
+  GroupPayload,
   IdentifyPayload,
   IncrementPayload,
   TrackHandlerPayload,
@@ -22,7 +24,10 @@ export type {
 export interface TrackProperties {
   [key: string]: unknown;
   profileId?: string;
+  groups?: string[];
 }
+
+export type GroupMetadata = Omit<GroupPayload, 'id'>;
 
 export interface OpenPanelOptions {
   clientId: string;
@@ -45,6 +50,7 @@ export class OpenPanel {
   api: Api;
   options: OpenPanelOptions;
   profileId?: string;
+  groups: string[] = [];
   deviceId?: string;
   sessionId?: string;
   global?: Record<string, unknown>;
@@ -142,14 +148,19 @@ export class OpenPanel {
 
   track(name: string, properties?: TrackProperties) {
     this.log('track event', name, properties);
+    const { groups: groupsOverride, profileId, ...rest } = properties ?? {};
+    const mergedGroups = [
+      ...new Set([...this.groups, ...(groupsOverride ?? [])]),
+    ];
     return this.send({
       type: 'track',
       payload: {
         name,
-        profileId: properties?.profileId ?? this.profileId,
+        profileId: profileId ?? this.profileId,
+        groups: mergedGroups.length > 0 ? mergedGroups : undefined,
         properties: {
           ...(this.global ?? {}),
-          ...(properties ?? {}),
+          ...rest,
         },
       },
     });
@@ -171,6 +182,28 @@ export class OpenPanel {
             ...this.global,
             ...payload.properties,
           },
+        },
+      });
+    }
+  }
+
+  setGroups(groupIds: string[]) {
+    this.log('set groups', groupIds);
+    this.groups = groupIds;
+  }
+
+  setGroup(groupId: string, metadata?: GroupMetadata) {
+    this.log('set group', groupId, metadata);
+    if (!this.groups.includes(groupId)) {
+      this.groups = [...this.groups, groupId];
+    }
+    if (metadata) {
+      return this.send({
+        type: 'group',
+        payload: {
+          id: groupId,
+          ...metadata,
+          profileId: this.profileId,
         },
       });
     }
@@ -227,8 +260,44 @@ export class OpenPanel {
 
   clear() {
     this.profileId = undefined;
+    this.groups = [];
     this.deviceId = undefined;
     this.sessionId = undefined;
+  }
+
+  private buildFlushPayload(
+    item: TrackHandlerPayload
+  ): TrackHandlerPayload['payload'] {
+    if (item.type === 'replay') {
+      return item.payload;
+    }
+    if (item.type === 'track') {
+      const queuedGroups =
+        'groups' in item.payload ? (item.payload.groups ?? []) : [];
+      const mergedGroups = [...new Set([...this.groups, ...queuedGroups])];
+      return {
+        ...item.payload,
+        profileId: item.payload.profileId ?? this.profileId,
+        groups: mergedGroups.length > 0 ? mergedGroups : undefined,
+      };
+    }
+    if (
+      item.type === 'identify' ||
+      item.type === 'increment' ||
+      item.type === 'decrement'
+    ) {
+      return {
+        ...item.payload,
+        profileId: item.payload.profileId ?? this.profileId,
+      } as TrackHandlerPayload['payload'];
+    }
+    if (item.type === 'group') {
+      return {
+        ...item.payload,
+        profileId: item.payload.profileId ?? this.profileId,
+      };
+    }
+    return item.payload;
   }
 
   flush() {
@@ -238,16 +307,7 @@ export class OpenPanel {
         remaining.push(item);
         continue;
       }
-      const payload =
-        item.type === 'replay'
-          ? item.payload
-          : {
-              ...item.payload,
-              profileId:
-                'profileId' in item.payload
-                  ? (item.payload.profileId ?? this.profileId)
-                  : this.profileId,
-            };
+      const payload = this.buildFlushPayload(item);
       this.send({ ...item, payload } as TrackHandlerPayload);
     }
     this.queue = remaining;

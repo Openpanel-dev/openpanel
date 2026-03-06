@@ -199,7 +199,6 @@ model Project {
   meta            EventMeta[]
   references      Reference[]
   access          ProjectAccess[]
-
   notificationRules NotificationRule[]
   notifications     Notification[]
   imports           Import[]
@@ -213,6 +212,7 @@ model Project {
 
   @@map("projects")
 }
+
 
 enum AccessLevel {
   read

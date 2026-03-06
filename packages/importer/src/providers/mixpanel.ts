@@ -396,6 +396,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       properties,
       created_at: createdAt,
       is_external: true,
+      groups: [],
     };
   }
 
@@ -536,6 +537,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         ? `${this.provider} (${props.mp_lib})`
         : this.provider,
       sdk_version: this.version,
+      groups: [],
     };
 
     // TODO: Remove this

@@ -10,7 +10,7 @@ const BASE_TITLE = 'OpenPanel.dev';
 export function createTitle(
   pageTitle: string,
   section?: string,
-  baseTitle = BASE_TITLE,
+  baseTitle = BASE_TITLE
 ): string {
   const parts = [pageTitle];
   if (section) {
@@ -25,7 +25,7 @@ export function createTitle(
  */
 export function createOrganizationTitle(
   pageTitle: string,
-  organizationName?: string,
+  organizationName?: string
 ): string {
   if (organizationName) {
     return createTitle(pageTitle, organizationName);
@@ -39,7 +39,7 @@ export function createOrganizationTitle(
 export function createProjectTitle(
   pageTitle: string,
   projectName?: string,
-  organizationName?: string,
+  organizationName?: string
 ): string {
   const parts = [pageTitle];
   if (projectName) {
@@ -59,7 +59,7 @@ export function createEntityTitle(
   entityName: string,
   entityType: string,
   projectName?: string,
-  organizationName?: string,
+  organizationName?: string
 ): string {
   const parts = [entityName, entityType];
   if (projectName) {
@@ -95,6 +95,9 @@ export const PAGE_TITLES = {
   PROFILES: 'Profiles',
   PROFILE_EVENTS: 'Profile events',
   PROFILE_DETAILS: 'Profile details',
+  // Groups
+  GROUPS: 'Groups',
+  GROUP_DETAILS: 'Group details',
 
   // Sub-sections
   CONVERSIONS: 'Conversions',

@@ -1,9 +1,9 @@
 import { getSafeJson } from '@openpanel/json';
 import {
-  type Redis,
   getRedisCache,
   getRedisPub,
   publishEvent,
+  type Redis,
 } from '@openpanel/redis';
 import { ch } from '../clickhouse/client';
 import {
@@ -218,14 +218,14 @@ return added
         const profileKey = event.profile_id
           ? this.getLastScreenViewKeyByProfile(
               event.project_id,
-              event.profile_id,
+              event.profile_id
             )
           : '';
         const timestamp = new Date(event.created_at || Date.now()).getTime();
 
         // Combine event and timestamp into single JSON for atomic operations
         const eventWithTimestamp = JSON.stringify({
-          event: event,
+          event,
           ts: timestamp,
         });
 
@@ -239,7 +239,7 @@ return added
           this.queueKey,
           this.bufferCounterKey,
           eventWithTimestamp,
-          '3600', // 1 hour TTL
+          '3600' // 1 hour TTL
         );
       } else if (event.session_id && event.name === 'session_end') {
         // Handle session_end
@@ -247,7 +247,7 @@ return added
         const profileKey = event.profile_id
           ? this.getLastScreenViewKeyByProfile(
               event.project_id,
-              event.profile_id,
+              event.profile_id
             )
           : '';
 
@@ -260,7 +260,7 @@ return added
           profileKey,
           this.queueKey,
           this.bufferCounterKey,
-          eventJson,
+          eventJson
         );
       } else {
         // All other events go directly to queue
@@ -271,7 +271,7 @@ return added
         this.incrementActiveVisitorCount(
           multi,
           event.project_id,
-          event.profile_id,
+          event.profile_id
         );
       }
 
@@ -328,7 +328,7 @@ return added
       const queueEvents = await redis.lrange(
         this.queueKey,
         0,
-        this.batchSize - 1,
+        this.batchSize - 1
       );
 
       if (queueEvents.length === 0) {
@@ -341,6 +341,9 @@ return added
       for (const eventStr of queueEvents) {
         const event = getSafeJson<IClickhouseEvent>(eventStr);
         if (event) {
+          if (!Array.isArray(event.groups)) {
+            event.groups = [];
+          }
           eventsToClickhouse.push(event);
         }
       }
@@ -354,7 +357,7 @@ return added
       eventsToClickhouse.sort(
         (a, b) =>
           new Date(a.created_at || 0).getTime() -
-          new Date(b.created_at || 0).getTime(),
+          new Date(b.created_at || 0).getTime()
       );
 
       // Insert events into ClickHouse in chunks
@@ -405,7 +408,7 @@ return added
       | {
           projectId: string;
           profileId: string;
-        },
+        }
   ): Promise<IServiceEvent | null> {
     const redis = getRedisCache();
 
@@ -415,7 +418,7 @@ return added
     } else {
       lastScreenViewKey = this.getLastScreenViewKeyByProfile(
         params.projectId,
-        params.profileId,
+        params.profileId
       );
     }
 
@@ -423,7 +426,7 @@ return added
 
     if (eventDataStr) {
       const eventData = getSafeJson<{ event: IClickhouseEvent; ts: number }>(
-        eventDataStr,
+        eventDataStr
       );
       if (eventData?.event) {
         return transformEvent(eventData.event);
@@ -443,7 +446,7 @@ return added
   private async incrementActiveVisitorCount(
     multi: ReturnType<Redis['multi']>,
     projectId: string,
-    profileId: string,
+    profileId: string
   ) {
     // Track active visitors and emit expiry events when inactive for TTL
     const now = Date.now();

@@ -32,14 +32,14 @@ export type IImportedEvent = Omit<
   properties: Record<string, unknown>;
 };
 
-export type IServicePage = {
+export interface IServicePage {
   path: string;
   count: number;
   project_id: string;
   first_seen: string;
   title: string;
   origin: string;
-};
+}
 
 export interface IClickhouseBotEvent {
   id: string;
@@ -92,6 +92,7 @@ export interface IClickhouseEvent {
   sdk_name: string;
   sdk_version: string;
   revenue?: number;
+  groups: string[];
 
   // They do not exist here. Just make ts happy for now
   profile?: IServiceProfile;
@@ -143,6 +144,7 @@ export function transformSessionToEvent(
     importedAt: undefined,
     sdkName: undefined,
     sdkVersion: undefined,
+    groups: [],
   };
 }
 
@@ -180,6 +182,7 @@ export function transformEvent(event: IClickhouseEvent): IServiceEvent {
     sdkVersion: event.sdk_version,
     profile: event.profile,
     revenue: event.revenue,
+    groups: event.groups ?? [],
   };
 }
 
@@ -228,6 +231,7 @@ export interface IServiceEvent {
   sdkName: string | undefined;
   sdkVersion: string | undefined;
   revenue?: number;
+  groups: string[];
 }
 
 type SelectHelper<T> = {
@@ -332,6 +336,7 @@ export async function getEvents(
         projectId,
         isExternal: false,
         properties: {},
+        groups: [],
       };
     }
   }
@@ -387,6 +392,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     sdk_name: payload.sdkName ?? '',
     sdk_version: payload.sdkVersion ?? '',
     revenue: payload.revenue,
+    groups: payload.groups ?? [],
   };
 
   const promises = [sessionBuffer.add(event), eventBuffer.add(event)];
@@ -435,6 +441,7 @@ export interface GetEventListOptions {
   projectId: string;
   profileId?: string;
   sessionId?: string;
+  groupId?: string;
   take: number;
   cursor?: number | Date;
   events?: string[] | null;
@@ -453,6 +460,7 @@ export async function getEventList(options: GetEventListOptions) {
     projectId,
     profileId,
     sessionId,
+    groupId,
     events,
     filters,
     startDate,
@@ -477,6 +485,7 @@ export async function getEventList(options: GetEventListOptions) {
     sb.where.cursor = `created_at < ${sqlstring.escape(formatClickhouseDate(cursor))}`;
   }
 
+  // biome-ignore lint/complexity/useSimplifiedLogicExpression: intentional double negation for clarity
   if (!cursor && !(startDate && endDate)) {
     sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(new Date()))}, 3) - INTERVAL ${safeDateIntervalInDays} DAY`;
   }
@@ -593,12 +602,20 @@ export async function getEventList(options: GetEventListOptions) {
     sb.select.revenue = 'revenue';
   }
 
+  if (select.groups) {
+    sb.select.groups = 'groups';
+  }
+
   if (profileId) {
     sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND device_id != '' AND profile_id = ${sqlstring.escape(profileId)} group by did) OR profile_id = ${sqlstring.escape(profileId)})`;
   }
 
   if (sessionId) {
     sb.where.sessionId = `session_id = ${sqlstring.escape(sessionId)}`;
+  }
+
+  if (groupId) {
+    sb.where.groupId = `has(groups, ${sqlstring.escape(groupId)})`;
   }
 
   if (startDate && endDate) {
@@ -615,7 +632,7 @@ export async function getEventList(options: GetEventListOptions) {
   if (filters) {
     sb.where = {
       ...sb.where,
-      ...getEventFiltersWhereClause(filters),
+      ...getEventFiltersWhereClause(filters, projectId),
     };
 
     // Join profiles table if any filter uses profile fields
@@ -625,6 +642,13 @@ export async function getEventList(options: GetEventListOptions) {
 
     if (profileFilters.length > 0) {
       sb.joins.profiles = `LEFT ANY JOIN (SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0])).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
+    }
+
+    // Join groups table if any filter uses group fields
+    const groupFilters = filters.filter((f) => f.name.startsWith('group.'));
+    if (groupFilters.length > 0) {
+      sb.joins.groups = 'ARRAY JOIN groups AS _group_id';
+      sb.joins.groups_cte = `LEFT ANY JOIN (SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) AS _g ON _g.id = _group_id`;
     }
   }
 
@@ -657,6 +681,7 @@ export async function getEventList(options: GetEventListOptions) {
 export async function getEventsCount({
   projectId,
   profileId,
+  groupId,
   events,
   filters,
   startDate,
@@ -666,6 +691,10 @@ export async function getEventsCount({
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
   if (profileId) {
     sb.where.profileId = `profile_id = ${sqlstring.escape(profileId)}`;
+  }
+
+  if (groupId) {
+    sb.where.groupId = `has(groups, ${sqlstring.escape(groupId)})`;
   }
 
   if (startDate && endDate) {
@@ -682,7 +711,7 @@ export async function getEventsCount({
   if (filters) {
     sb.where = {
       ...sb.where,
-      ...getEventFiltersWhereClause(filters),
+      ...getEventFiltersWhereClause(filters, projectId),
     };
 
     // Join profiles table if any filter uses profile fields
@@ -692,6 +721,13 @@ export async function getEventsCount({
 
     if (profileFilters.length > 0) {
       sb.joins.profiles = `LEFT ANY JOIN (SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0])).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
+    }
+
+    // Join groups table if any filter uses group fields
+    const groupFilters = filters.filter((f) => f.name.startsWith('group.'));
+    if (groupFilters.length > 0) {
+      sb.joins.groups = 'ARRAY JOIN groups AS _group_id';
+      sb.joins.groups_cte = `LEFT ANY JOIN (SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) AS _g ON _g.id = _group_id`;
     }
   }
 
@@ -1060,8 +1096,19 @@ class EventService {
           }
           if (filters) {
             q.rawWhere(
-              Object.values(getEventFiltersWhereClause(filters)).join(' AND ')
+              Object.values(
+                getEventFiltersWhereClause(filters, projectId)
+              ).join(' AND ')
             );
+            const groupFilters = filters.filter((f) =>
+              f.name.startsWith('group.')
+            );
+            if (groupFilters.length > 0) {
+              q.rawJoin('ARRAY JOIN groups AS _group_id');
+              q.rawJoin(
+                `LEFT ANY JOIN (SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) AS _g ON _g.id = _group_id`
+              );
+            }
           }
         },
         session: (q) => {
