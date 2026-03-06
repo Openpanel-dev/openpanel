@@ -1,5 +1,5 @@
 import type { IServiceEvent, IServiceSession } from '@openpanel/db';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { EventIcon } from '@/components/events/event-icon';
 import FullPageLoadingState from '@/components/full-page-loading-state';
@@ -165,6 +165,14 @@ function Component() {
     })
   );
 
+  const { data: sessionGroups } = useQuery({
+    ...trpc.group.listByIds.queryOptions({
+      projectId,
+      ids: session.groups ?? [],
+    }),
+    enabled: (session.groups?.length ?? 0) > 0,
+  });
+
   const fakeEvent = sessionToFakeEvent(session);
 
   return (
@@ -320,6 +328,35 @@ function Component() {
                     )}
                   </div>
                 </Link>
+              </WidgetBody>
+            </Widget>
+          )}
+
+          {/* Group cards */}
+          {sessionGroups && sessionGroups.length > 0 && (
+            <Widget className="w-full">
+              <WidgetHead>
+                <WidgetTitle>Groups</WidgetTitle>
+              </WidgetHead>
+              <WidgetBody className="p-0">
+                {sessionGroups.map((group) => (
+                  <Link
+                    key={group.id}
+                    className="row items-center gap-3 p-4 transition-colors hover:bg-accent"
+                    params={{ organizationId, projectId, groupId: group.id }}
+                    to="/$organizationId/$projectId/groups/$groupId"
+                  >
+                    <div className="col min-w-0 flex-1 gap-0.5">
+                      <span className="truncate font-medium">{group.name}</span>
+                      <span className="truncate text-muted-foreground text-sm font-mono">
+                        {group.id}
+                      </span>
+                    </div>
+                    <span className="shrink-0 rounded border px-1.5 py-0.5 text-muted-foreground text-xs">
+                      {group.type}
+                    </span>
+                  </Link>
+                ))}
               </WidgetBody>
             </Widget>
           )}

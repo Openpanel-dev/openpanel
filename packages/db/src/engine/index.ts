@@ -1,5 +1,5 @@
-import { getPreviousMetric, groupByLabels } from '@openpanel/common';
 import type { ISerieDataItem } from '@openpanel/common';
+import { groupByLabels } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
 import type {
   FinalChart,
@@ -33,7 +33,7 @@ export async function executeChart(input: IReportInput): Promise<FinalChart> {
   // Handle subscription end date limit
   const endDate = await getOrganizationSubscriptionChartEndDate(
     input.projectId,
-    normalized.endDate,
+    normalized.endDate
   );
   if (endDate) {
     normalized.endDate = endDate;
@@ -73,6 +73,7 @@ export async function executeChart(input: IReportInput): Promise<FinalChart> {
     executionPlan.definitions,
     includeAlphaIds,
     previousSeries,
+    normalized.limit
   );
 
   return response;
@@ -83,7 +84,7 @@ export async function executeChart(input: IReportInput): Promise<FinalChart> {
  * Executes a simplified pipeline: normalize -> fetch aggregate -> format
  */
 export async function executeAggregateChart(
-  input: IReportInput,
+  input: IReportInput
 ): Promise<FinalChart> {
   // Stage 1: Normalize input
   const normalized = await normalize(input);
@@ -91,7 +92,7 @@ export async function executeAggregateChart(
   // Handle subscription end date limit
   const endDate = await getOrganizationSubscriptionChartEndDate(
     input.projectId,
-    normalized.endDate,
+    normalized.endDate
   );
   if (endDate) {
     normalized.endDate = endDate;
@@ -137,7 +138,7 @@ export async function executeAggregateChart(
       getAggregateChartSql(queryInput),
       {
         session_timezone: timezone,
-      },
+      }
     );
 
     // Fallback: if no results with breakdowns, try without breakdowns
@@ -149,7 +150,7 @@ export async function executeAggregateChart(
         }),
         {
           session_timezone: timezone,
-        },
+        }
       );
     }
 
@@ -262,7 +263,7 @@ export async function executeAggregateChart(
         getAggregateChartSql(queryInput),
         {
           session_timezone: timezone,
-        },
+        }
       );
 
       if (queryResult.length === 0 && normalized.breakdowns.length > 0) {
@@ -273,7 +274,7 @@ export async function executeAggregateChart(
           }),
           {
             session_timezone: timezone,
-          },
+          }
         );
       }
 
@@ -344,7 +345,7 @@ export async function executeAggregateChart(
     normalized.series,
     includeAlphaIds,
     previousSeries,
-    normalized.limit,
+    normalized.limit
   );
 
   return response;

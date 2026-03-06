@@ -104,20 +104,16 @@ function Component() {
           <ProfileMetrics data={metrics.data} />
         </div>
         {/* Profile properties - full width */}
-        <div className="col-span-1 md:col-span-2">
+        <div className="col-span-1 flex flex-col gap-3 md:col-span-2">
           <ProfileProperties profile={profile.data!} />
-        </div>
-
-        {/* Groups - full width, only if profile belongs to groups */}
-        {profile.data?.groups?.length ? (
-          <div className="col-span-1 md:col-span-2">
+          {profile.data?.groups?.length ? (
             <ProfileGroups
               profileId={profileId}
               projectId={projectId}
               groups={profile.data.groups}
             />
-          </div>
-        ) : null}
+          ) : null}
+        </div>
 
         {/* Heatmap / Activity */}
         <div className="col-span-1">
