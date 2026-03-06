@@ -1,15 +1,10 @@
+import type { IServiceProfile } from '@openpanel/db';
+import type { ColumnDef } from '@tanstack/react-table';
+import { ProfileAvatar } from '../profile-avatar';
+import { ColumnCreatedAt } from '@/components/column-created-at';
 import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
-import { Tooltiper } from '@/components/ui/tooltip';
-import { formatDateTime, formatTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
-import type { ColumnDef } from '@tanstack/react-table';
-import { isToday } from 'date-fns';
-
-import type { IServiceProfile } from '@openpanel/db';
-
-import { ColumnCreatedAt } from '@/components/column-created-at';
-import { ProfileAvatar } from '../profile-avatar';
 
 export function useColumns(type: 'profiles' | 'power-users') {
   const columns: ColumnDef<IServiceProfile>[] = [
@@ -20,8 +15,8 @@ export function useColumns(type: 'profiles' | 'power-users') {
         const profile = row.original;
         return (
           <ProjectLink
-            href={`/profiles/${encodeURIComponent(profile.id)}`}
             className="flex items-center gap-2 font-medium"
+            href={`/profiles/${encodeURIComponent(profile.id)}`}
             title={getProfileName(profile, false)}
           >
             <ProfileAvatar size="sm" {...profile} />
@@ -100,11 +95,38 @@ export function useColumns(type: 'profiles' | 'power-users') {
     },
     {
       accessorKey: 'createdAt',
-      header: 'Last seen',
+      header: 'First seen',
       size: ColumnCreatedAt.size,
       cell: ({ row }) => {
         const item = row.original;
         return <ColumnCreatedAt>{item.createdAt}</ColumnCreatedAt>;
+      },
+    },
+    {
+      accessorKey: 'groups',
+      header: 'Groups',
+      size: 200,
+      meta: {
+        hidden: true,
+      },
+      cell({ row }) {
+        const { groups } = row.original;
+        if (!groups?.length) {
+          return null;
+        }
+        return (
+          <div className="flex flex-wrap gap-1">
+            {groups.map((g) => (
+              <ProjectLink
+                className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs hover:underline"
+                href={`/groups/${encodeURIComponent(g)}`}
+                key={g}
+              >
+                {g}
+              </ProjectLink>
+            ))}
+          </div>
+        );
       },
     },
   ];

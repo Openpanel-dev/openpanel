@@ -109,6 +109,12 @@ export class SessionBuffer extends BaseBuffer {
         newSession.profile_id = event.profile_id;
       }
 
+      if (event.groups) {
+        newSession.groups = [
+          ...new Set([...newSession.groups, ...event.groups]),
+        ];
+      }
+
       return [newSession, oldSession];
     }
 
@@ -119,6 +125,7 @@ export class SessionBuffer extends BaseBuffer {
         profile_id: event.profile_id,
         project_id: event.project_id,
         device_id: event.device_id,
+        groups: event.groups,
         created_at: event.created_at,
         ended_at: event.created_at,
         event_count: event.name === 'screen_view' ? 0 : 1,

@@ -332,13 +332,23 @@ async function handleGroup(
   context: TrackContext
 ): Promise<void> {
   const { id, type, name, properties = {} } = payload;
-  await upsertGroup({
-    id,
-    projectId: context.projectId,
-    type,
-    name,
-    properties,
-  });
+  const profileId = payload.profileId ?? context.deviceId;
+
+  await Promise.all([
+    upsertGroup({
+      id,
+      projectId: context.projectId,
+      type,
+      name,
+      properties,
+    }),
+    upsertProfile({
+      id: profileId,
+      projectId: context.projectId,
+      isExternal: !!(payload.profileId ?? context.identity?.profileId),
+      groups: [id],
+    }),
+  ]);
 }
 
 export async function handler(

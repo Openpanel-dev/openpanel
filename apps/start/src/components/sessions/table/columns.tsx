@@ -270,6 +270,27 @@ export function useColumns() {
       header: 'Device ID',
       size: 120,
     },
+    {
+      accessorKey: 'groups',
+      header: 'Groups',
+      size: 200,
+      cell: ({ row }) => {
+        const { groups } = row.original;
+        if (!groups?.length) return null;
+        return (
+          <div className="flex flex-wrap gap-1">
+            {groups.map((g) => (
+              <span
+                key={g}
+                className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
+              >
+                {g}
+              </span>
+            ))}
+          </div>
+        );
+      },
+    },
   ];
 
   return columns;

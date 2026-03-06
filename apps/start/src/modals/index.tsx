@@ -1,5 +1,7 @@
 import { createPushModal } from 'pushmodal';
 import AddClient from './add-client';
+import AddGroup from './add-group';
+import EditGroup from './edit-group';
 import AddDashboard from './add-dashboard';
 import AddImport from './add-import';
 import AddIntegration from './add-integration';
@@ -34,6 +36,8 @@ import OverviewTopPagesModal from '@/components/overview/overview-top-pages-moda
 import { op } from '@/utils/op';
 
 const modals = {
+  AddGroup,
+  EditGroup,
   OverviewTopPagesModal,
   OverviewTopGenericModal,
   RequestPasswordReset,

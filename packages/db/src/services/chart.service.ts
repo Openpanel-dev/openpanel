@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/useDefaultSwitchClause: <explanation> */
 import { DateTime, stripLeadingAndTrailingSlashes } from '@openpanel/common';
 import type {
   IChartEventFilter,
@@ -30,25 +31,67 @@ export function transformPropertyKey(property: string) {
   return `${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
 }
 
-// Returns a SQL expression for a group property using dictGet
+// Returns a SQL expression for a group property via the _g JOIN alias
 // property format: "group.name", "group.type", "group.properties.plan"
-export function getGroupPropertySql(
-  property: string,
-  projectId: string
-): string {
+export function getGroupPropertySql(property: string): string {
   const withoutPrefix = property.replace(/^group\./, '');
   if (withoutPrefix === 'name') {
-    return `dictGet('${TABLE_NAMES.groups_dict}', 'name', tuple(_group_id, ${sqlstring.escape(projectId)}))`;
+    return '_g.name';
   }
   if (withoutPrefix === 'type') {
-    return `dictGet('${TABLE_NAMES.groups_dict}', 'type', tuple(_group_id, ${sqlstring.escape(projectId)}))`;
+    return '_g.type';
   }
   if (withoutPrefix.startsWith('properties.')) {
     const propKey = withoutPrefix.replace(/^properties\./, '');
-    // properties is stored as JSON string in dict; use JSONExtractString
-    return `JSONExtractString(dictGet('${TABLE_NAMES.groups_dict}', 'properties', tuple(_group_id, ${sqlstring.escape(projectId)})), ${sqlstring.escape(propKey)})`;
+    return `_g.properties[${sqlstring.escape(propKey)}]`;
   }
   return '_group_id';
+}
+
+// Returns the SELECT expression when querying the groups table directly (no join alias).
+// Use for fetching distinct values for group.* properties.
+export function getGroupPropertySelect(property: string): string {
+  const withoutPrefix = property.replace(/^group\./, '');
+  if (withoutPrefix === 'name') {
+    return 'name';
+  }
+  if (withoutPrefix === 'type') {
+    return 'type';
+  }
+  if (withoutPrefix === 'id') {
+    return 'id';
+  }
+  if (withoutPrefix.startsWith('properties.')) {
+    const propKey = withoutPrefix.replace(/^properties\./, '');
+    return `properties[${sqlstring.escape(propKey)}]`;
+  }
+  return 'id';
+}
+
+// Returns the SELECT expression when querying the profiles table directly (no join alias).
+// Use for fetching distinct values for profile.* properties.
+export function getProfilePropertySelect(property: string): string {
+  const withoutPrefix = property.replace(/^profile\./, '');
+  if (withoutPrefix === 'id') {
+    return 'id';
+  }
+  if (withoutPrefix === 'first_name') {
+    return 'first_name';
+  }
+  if (withoutPrefix === 'last_name') {
+    return 'last_name';
+  }
+  if (withoutPrefix === 'email') {
+    return 'email';
+  }
+  if (withoutPrefix === 'avatar') {
+    return 'avatar';
+  }
+  if (withoutPrefix.startsWith('properties.')) {
+    const propKey = withoutPrefix.replace(/^properties\./, '');
+    return `properties[${sqlstring.escape(propKey)}]`;
+  }
+  return 'id';
 }
 
 export function getSelectPropertyKey(property: string, projectId?: string) {
@@ -56,9 +99,9 @@ export function getSelectPropertyKey(property: string, projectId?: string) {
     return `if(profile_id != device_id, 'true', 'false')`;
   }
 
-  // Handle group properties — requires ARRAY JOIN to be present in query
+  // Handle group properties — requires ARRAY JOIN + _g JOIN to be present in query
   if (property.startsWith('group.') && projectId) {
-    return getGroupPropertySql(property, projectId);
+    return getGroupPropertySql(property);
   }
 
   const propertyPatterns = ['properties', 'profile.properties'];
@@ -86,9 +129,7 @@ export function getChartSql({
   startDate,
   endDate,
   projectId,
-  limit,
   timezone,
-  chartType,
 }: IGetChartDataInput & { timezone: string }) {
   const {
     sb,
@@ -130,7 +171,12 @@ export function getChartSql({
     anyFilterOnGroup || anyBreakdownOnGroup || event.segment === 'group';
 
   if (needsGroupArrayJoin) {
+    addCte(
+      '_g',
+      `SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}`
+    );
     sb.joins.groups = 'ARRAY JOIN groups AS _group_id';
+    sb.joins.groups_table = 'LEFT ANY JOIN _g ON _g.id = _group_id';
   }
 
   // Build WHERE clause without the bar filter (for use in subqueries and CTEs)
@@ -263,31 +309,6 @@ export function getChartSql({
     sb.where.endDate = `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
   }
 
-  // Use CTE to define top breakdown values once, then reference in WHERE clause
-  if (breakdowns.length > 0 && limit) {
-    const breakdownSelects = breakdowns
-      .map((b) => getSelectPropertyKey(b.name, projectId))
-      .join(', ');
-
-    const groupArrayJoinClause = needsGroupArrayJoin
-      ? 'ARRAY JOIN groups AS _group_id'
-      : '';
-
-    // Add top_breakdowns CTE using the builder
-    addCte(
-      'top_breakdowns',
-      `SELECT ${breakdownSelects}
-      FROM ${TABLE_NAMES.events} e
-      ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${groupArrayJoinClause ? `${groupArrayJoinClause} ` : ''}${getWhereWithoutBar()}
-      GROUP BY ${breakdownSelects}
-      ORDER BY count(*) DESC
-      LIMIT ${limit}`
-    );
-
-    // Filter main query to only include top breakdown values
-    sb.where.bar = `(${breakdowns.map((b) => getSelectPropertyKey(b.name, projectId)).join(',')}) IN (SELECT * FROM top_breakdowns)`;
-  }
-
   breakdowns.forEach((breakdown, index) => {
     // Breakdowns start at label_1 (label_0 is reserved for event name)
     const key = `label_${index + 1}`;
@@ -350,6 +371,10 @@ export function getChartSql({
   }
 
   // Note: The profile CTE (if it exists) is available in subqueries, so we can reference it directly
+  const subqueryGroupJoins = needsGroupArrayJoin
+    ? 'ARRAY JOIN groups AS _group_id LEFT ANY JOIN _g ON _g.id = _group_id '
+    : '';
+
   if (breakdowns.length > 0) {
     // Match breakdown properties in subquery with outer query's grouped values
     // Since outer query groups by label_X, we reference those in the correlation
@@ -370,7 +395,7 @@ export function getChartSql({
     sb.select.total_unique_count = `(
         SELECT uniq(profile_id)
         FROM ${TABLE_NAMES.events} e2
-        ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${subqueryWhere}
+        ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${subqueryWhere}
         AND ${breakdownMatches}
       ) as total_count`;
   } else {
@@ -383,7 +408,7 @@ export function getChartSql({
     sb.select.total_unique_count = `(
         SELECT uniq(profile_id)
         FROM ${TABLE_NAMES.events} e2
-        ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${subqueryWhere}
+        ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${subqueryWhere}
       ) as total_count`;
   }
 
@@ -432,17 +457,13 @@ export function getAggregateChartSql({
     anyFilterOnGroup || anyBreakdownOnGroup || event.segment === 'group';
 
   if (needsGroupArrayJoin) {
+    addCte(
+      '_g',
+      `SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}`
+    );
     sb.joins.groups = 'ARRAY JOIN groups AS _group_id';
+    sb.joins.groups_table = 'LEFT ANY JOIN _g ON _g.id = _group_id';
   }
-
-  // Build WHERE clause without the bar filter (for use in subqueries and CTEs)
-  const getWhereWithoutBar = () => {
-    const whereWithoutBar = { ...sb.where };
-    delete whereWithoutBar.bar;
-    return Object.keys(whereWithoutBar).length
-      ? `WHERE ${join(whereWithoutBar, ' AND ')}`
-      : '';
-  };
 
   // Collect all profile fields used in filters and breakdowns
   const getProfileFields = () => {
@@ -533,30 +554,6 @@ export function getAggregateChartSql({
   // Add a constant date field for aggregate charts (groupByLabels expects it)
   // Use startDate as the date value since we're aggregating across the entire range
   sb.select.date = `${sqlstring.escape(startDate)} as date`;
-
-  // Use CTE to define top breakdown values once, then reference in WHERE clause
-  if (breakdowns.length > 0 && limit) {
-    const breakdownSelects = breakdowns
-      .map((b) => getSelectPropertyKey(b.name, projectId))
-      .join(', ');
-
-    const groupArrayJoinClause = needsGroupArrayJoin
-      ? 'ARRAY JOIN groups AS _group_id'
-      : '';
-
-    addCte(
-      'top_breakdowns',
-      `SELECT ${breakdownSelects}
-      FROM ${TABLE_NAMES.events} e
-      ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${groupArrayJoinClause ? `${groupArrayJoinClause} ` : ''}${getWhereWithoutBar()}
-      GROUP BY ${breakdownSelects}
-      ORDER BY count(*) DESC
-      LIMIT ${limit}`
-    );
-
-    // Filter main query to only include top breakdown values
-    sb.where.bar = `(${breakdowns.map((b) => getSelectPropertyKey(b.name, projectId)).join(',')}) IN (SELECT * FROM top_breakdowns)`;
-  }
 
   // Add breakdowns to SELECT and GROUP BY
   breakdowns.forEach((breakdown, index) => {
@@ -673,9 +670,9 @@ export function getEventFiltersWhereClause(
       return;
     }
 
-    // Handle group. prefixed filters using dictGet (requires ARRAY JOIN in query)
+    // Handle group. prefixed filters (requires ARRAY JOIN + _g JOIN in query)
     if (name.startsWith('group.') && projectId) {
-      const whereFrom = getGroupPropertySql(name, projectId);
+      const whereFrom = getGroupPropertySql(name);
       switch (operator) {
         case 'is': {
           if (value.length === 1) {

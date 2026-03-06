@@ -7,6 +7,7 @@ export const zGroupPayload = z.object({
   type: z.string().min(1),
   name: z.string().min(1),
   properties: z.record(z.unknown()).optional(),
+  profileId: z.string().optional(),
 });
 
 export const zTrackPayload = z

@@ -166,7 +166,8 @@ export function Tables({
         metric: 'sum',
         options: funnelOptions,
       },
-      stepIndex, // Pass the step index for funnel queries
+      stepIndex,
+      breakdownValues: breakdowns,
     });
   };
   return (

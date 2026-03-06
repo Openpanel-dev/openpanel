@@ -307,6 +307,7 @@ describe('incomingEvent', () => {
       screen_views: [],
       sign: 1,
       version: 1,
+      groups: [],
     } satisfies IClickhouseSession);
 
     await incomingEvent(jobData);

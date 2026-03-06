@@ -281,9 +281,10 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
 interface FunnelUsersViewProps {
   report: IReportInput;
   stepIndex: number;
+  breakdownValues?: string[];
 }
 
-function FunnelUsersView({ report, stepIndex }: FunnelUsersViewProps) {
+function FunnelUsersView({ report, stepIndex, breakdownValues }: FunnelUsersViewProps) {
   const trpc = useTRPC();
   const [showDropoffs, setShowDropoffs] = useState(false);
 
@@ -306,6 +307,7 @@ function FunnelUsersView({ report, stepIndex }: FunnelUsersViewProps) {
             ? report.options.funnelGroup
             : undefined,
         breakdowns: report.breakdowns,
+        breakdownValues: breakdownValues,
       },
       {
         enabled: stepIndex !== undefined,
@@ -384,13 +386,14 @@ type ViewChartUsersProps =
       type: 'funnel';
       report: IReportInput;
       stepIndex: number;
+      breakdownValues?: string[];
     };
 
 // Main component that routes to the appropriate view
 export default function ViewChartUsers(props: ViewChartUsersProps) {
   if (props.type === 'funnel') {
     return (
-      <FunnelUsersView report={props.report} stepIndex={props.stepIndex} />
+      <FunnelUsersView report={props.report} stepIndex={props.stepIndex} breakdownValues={props.breakdownValues} />
     );
   }
 
