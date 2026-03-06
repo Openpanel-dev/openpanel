@@ -76,7 +76,6 @@ export function useColumns() {
             <span className="flex min-w-0 flex-1 gap-2">
               <button
                 className="min-w-0 max-w-full truncate text-left font-medium hover:underline"
-                title={fullTitle}
                 onClick={() => {
                   pushModal('EventDetails', {
                     id: row.original.id,
@@ -84,6 +83,7 @@ export function useColumns() {
                     projectId: row.original.projectId,
                   });
                 }}
+                title={fullTitle}
                 type="button"
               >
                 <span className="block truncate">{renderName()}</span>
@@ -200,6 +200,32 @@ export function useColumns() {
           <div className="row min-w-0 items-center gap-2">
             <SerieIcon name={browser} />
             <span className="truncate">{browser}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'groups',
+      header: 'Groups',
+      size: 200,
+      meta: {
+        hidden: true,
+      },
+      cell({ row }) {
+        const { groups } = row.original;
+        if (!groups?.length) {
+          return null;
+        }
+        return (
+          <div className="flex flex-wrap gap-1">
+            {groups.map((g) => (
+              <span
+                className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
+                key={g}
+              >
+                {g}
+              </span>
+            ))}
           </div>
         );
       },

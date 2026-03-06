@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { TABLE_NAMES } from '../src/clickhouse/client';
 import {
   addColumns,
+  createTable,
   runClickhouseMigrationCommands,
 } from '../src/clickhouse/migration';
 import { getIsCluster } from './helpers';
@@ -9,45 +11,40 @@ import { getIsCluster } from './helpers';
 export async function up() {
   const isClustered = getIsCluster();
 
-  const databaseUrl = process.env.DATABASE_URL ?? '';
-  // Parse postgres connection string: postgresql://user:password@host:port/dbname
-  const match = databaseUrl.match(
-    /postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+?)(\?.*)?$/
-  );
-
-  if (!match) {
-    throw new Error(`Could not parse DATABASE_URL: ${databaseUrl}`);
-  }
-
-  const [, pgUser, pgPassword, pgHost, pgPort, pgDb] = match;
-
-  const dictSql = `CREATE DICTIONARY IF NOT EXISTS groups_dict
-(
-  id         String,
-  project_id String,
-  type       String,
-  name       String,
-  properties String
-)
-PRIMARY KEY id, project_id
-SOURCE(POSTGRESQL(
-  host '${pgHost}'
-  port ${pgPort}
-  user '${pgUser}'
-  password '${pgPassword}'
-  db '${pgDb}'
-  table 'groups'
-))
-LIFETIME(MIN 300 MAX 600)
-LAYOUT(COMPLEX_KEY_HASHED())`;
-
   const sqls: string[] = [
     ...addColumns(
       'events',
-      ['`groups` Array(String) DEFAULT [] CODEC(ZSTD(3))'],
+      ['`groups` Array(String) DEFAULT [] CODEC(ZSTD(3)) AFTER session_id'],
       isClustered
     ),
-    dictSql,
+    ...addColumns(
+      'sessions',
+      ['`groups` Array(String) DEFAULT [] CODEC(ZSTD(3)) AFTER device_id'],
+      isClustered
+    ),
+    ...addColumns(
+      'profiles',
+      ['`groups` Array(String) DEFAULT [] CODEC(ZSTD(3)) AFTER project_id'],
+      isClustered
+    ),
+    ...createTable({
+      name: TABLE_NAMES.groups,
+      columns: [
+        '`id` String',
+        '`project_id` String',
+        '`type` String',
+        '`name` String',
+        '`properties` Map(String, String)',
+        '`created_at` DateTime',
+        '`version` UInt64',
+        '`deleted` UInt8 DEFAULT 0',
+      ],
+      engine: 'ReplacingMergeTree(version, deleted)',
+      orderBy: ['project_id', 'id'],
+      distributionHash: 'cityHash64(project_id, id)',
+      replicatedVersion: '1',
+      isClustered,
+    }),
   ];
 
   fs.writeFileSync(

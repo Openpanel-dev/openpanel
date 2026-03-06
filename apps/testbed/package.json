@@ -1,0 +1,24 @@
+{
+  "name": "@openpanel/testbed",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3100",
+    "build": "tsc && vite build",
+    "postinstall": "node scripts/copy-op1.mjs"
+  },
+  "dependencies": {
+    "@openpanel/web": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.13.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "catalog:",
+    "vite": "^6.0.0"
+  }
+}

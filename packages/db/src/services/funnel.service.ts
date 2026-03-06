@@ -34,10 +34,10 @@ export class FunnelService {
     return group === 'profile_id' ? 'profile_id' : 'session_id';
   }
 
-  getFunnelConditions(events: IChartEvent[] = []): string[] {
+  getFunnelConditions(events: IChartEvent[] = [], projectId?: string): string[] {
     return events.map((event) => {
       const { sb, getWhere } = createSqlBuilder();
-      sb.where = getEventFiltersWhereClause(event.filters);
+      sb.where = getEventFiltersWhereClause(event.filters, projectId);
       sb.where.name = `name = ${sqlstring.escape(event.name)}`;
       return getWhere().replace('WHERE ', '');
     });
@@ -71,7 +71,7 @@ export class FunnelService {
     additionalGroupBy?: string[];
     group?: 'session_id' | 'profile_id';
   }) {
-    const funnels = this.getFunnelConditions(eventSeries);
+    const funnels = this.getFunnelConditions(eventSeries, projectId);
     const primaryKey = group === 'profile_id' ? 'profile_id' : 'session_id';
 
     return clix(this.client, timezone)
@@ -236,10 +236,18 @@ export class FunnelService {
     const anyBreakdownOnProfile = breakdowns.some((b) =>
       b.name.startsWith('profile.'),
     );
+    const anyFilterOnGroup = eventSeries.some((e) =>
+      e.filters?.some((f) => f.name.startsWith('group.')),
+    );
+    const anyBreakdownOnGroup = breakdowns.some((b) =>
+      b.name.startsWith('group.'),
+    );
+    const needsGroupArrayJoin =
+      anyFilterOnGroup || anyBreakdownOnGroup || funnelGroup === 'group';
 
     // Create the funnel CTE (session-level)
     const breakdownSelects = breakdowns.map(
-      (b, index) => `${getSelectPropertyKey(b.name)} as b_${index}`,
+      (b, index) => `${getSelectPropertyKey(b.name, projectId)} as b_${index}`,
     );
     const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
 
@@ -277,8 +285,21 @@ export class FunnelService {
       );
     }
 
+    if (needsGroupArrayJoin) {
+      funnelCte.rawJoin('ARRAY JOIN groups AS _group_id');
+      funnelCte.rawJoin('LEFT ANY JOIN _g ON _g.id = _group_id');
+    }
+
     // Base funnel query with CTEs
     const funnelQuery = clix(this.client, timezone);
+
+    if (needsGroupArrayJoin) {
+      funnelQuery.with(
+        '_g',
+        `SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}`,
+      );
+    }
+
     funnelQuery.with('session_funnel', funnelCte);
 
     // windowFunnel is computed per the primary key (profile_id or session_id),

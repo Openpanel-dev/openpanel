@@ -1,9 +1,10 @@
 import { deepMergeObjects } from '@openpanel/common';
+import { generateSecureId } from '@openpanel/common/server';
 import { getSafeJson } from '@openpanel/json';
 import type { ILogger } from '@openpanel/logger';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import shallowEqual from 'fast-deep-equal';
-import { omit } from 'ramda';
+import { omit, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import { ch, chQuery, TABLE_NAMES } from '../clickhouse/client';
 import type { IClickhouseProfile } from '../services/profile.service';
@@ -24,6 +25,15 @@ export class ProfileBuffer extends BaseBuffer {
   private readonly redisProfilePrefix = 'profile-cache:';
 
   private redis: Redis;
+  private releaseLockSha: string | null = null;
+
+  private readonly releaseLockScript = `
+    if redis.call("get", KEYS[1]) == ARGV[1] then
+      return redis.call("del", KEYS[1])
+    else
+      return 0
+    end
+  `;
 
   constructor() {
     super({
@@ -33,6 +43,9 @@ export class ProfileBuffer extends BaseBuffer {
       },
     });
     this.redis = getRedisCache();
+    this.redis.script('LOAD', this.releaseLockScript).then((sha) => {
+      this.releaseLockSha = sha as string;
+    });
   }
 
   private getProfileCacheKey({
@@ -43,6 +56,42 @@ export class ProfileBuffer extends BaseBuffer {
     projectId: string;
   }) {
     return `${this.redisProfilePrefix}${projectId}:${profileId}`;
+  }
+
+  private async withProfileLock<T>(
+    profileId: string,
+    projectId: string,
+    fn: () => Promise<T>
+  ): Promise<T> {
+    const lockKey = `profile-lock:${projectId}:${profileId}`;
+    const lockId = generateSecureId('lock');
+    const maxRetries = 10;
+    const retryDelayMs = 25;
+
+    for (let i = 0; i < maxRetries; i++) {
+      const acquired = await this.redis.set(lockKey, lockId, 'EX', 5, 'NX');
+      if (acquired === 'OK') {
+        try {
+          return await fn();
+        } finally {
+          if (this.releaseLockSha) {
+            await this.redis.evalsha(this.releaseLockSha, 1, lockKey, lockId);
+          } else {
+            await this.redis.eval(this.releaseLockScript, 1, lockKey, lockId);
+          }
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+
+    this.logger.error(
+      'Failed to acquire profile lock, proceeding without lock',
+      {
+        profileId,
+        projectId,
+      }
+    );
+    return fn();
   }
 
   async alreadyExists(profile: IClickhouseProfile) {
@@ -67,83 +116,94 @@ export class ProfileBuffer extends BaseBuffer {
         return;
       }
 
-      const existingProfile = await this.fetchProfile(profile, logger);
+      await this.withProfileLock(profile.id, profile.project_id, async () => {
+        const existingProfile = await this.fetchProfile(profile, logger);
 
-      // Delete any properties that are not server related if we have a non-server profile
-      if (
-        existingProfile?.properties.device !== 'server' &&
-        profile.properties.device === 'server'
-      ) {
-        profile.properties = omit(
-          [
-            'city',
-            'country',
-            'region',
-            'longitude',
-            'latitude',
-            'os',
-            'osVersion',
-            'browser',
-            'device',
-            'isServer',
-            'os_version',
-            'browser_version',
-          ],
-          profile.properties
-        );
-      }
+        // Delete any properties that are not server related if we have a non-server profile
+        if (
+          existingProfile?.properties.device !== 'server' &&
+          profile.properties.device === 'server'
+        ) {
+          profile.properties = omit(
+            [
+              'city',
+              'country',
+              'region',
+              'longitude',
+              'latitude',
+              'os',
+              'osVersion',
+              'browser',
+              'device',
+              'isServer',
+              'os_version',
+              'browser_version',
+            ],
+            profile.properties
+          );
+        }
 
-      const mergedProfile: IClickhouseProfile = existingProfile
-        ? deepMergeObjects(existingProfile, omit(['created_at'], profile))
-        : profile;
+        const mergedProfile: IClickhouseProfile = existingProfile
+          ? {
+              ...deepMergeObjects(
+                existingProfile,
+                omit(['created_at', 'groups'], profile)
+              ),
+              groups: uniq([
+                ...(existingProfile.groups ?? []),
+                ...(profile.groups ?? []),
+              ]),
+            }
+          : profile;
 
-      if (
-        profile &&
-        existingProfile &&
-        shallowEqual(
-          omit(['created_at'], existingProfile),
-          omit(['created_at'], mergedProfile)
-        )
-      ) {
-        this.logger.debug('Profile not changed, skipping');
-        return;
-      }
+        if (
+          profile &&
+          existingProfile &&
+          shallowEqual(
+            omit(['created_at'], existingProfile),
+            omit(['created_at'], mergedProfile)
+          )
+        ) {
+          this.logger.debug('Profile not changed, skipping');
+          return;
+        }
 
-      this.logger.debug('Merged profile will be inserted', {
-        mergedProfile,
-        existingProfile,
-        profile,
-      });
-
-      const cacheKey = this.getProfileCacheKey({
-        profileId: profile.id,
-        projectId: profile.project_id,
-      });
-
-      const result = await this.redis
-        .multi()
-        .set(cacheKey, JSON.stringify(mergedProfile), 'EX', this.ttlInSeconds)
-        .rpush(this.redisKey, JSON.stringify(mergedProfile))
-        .incr(this.bufferCounterKey)
-        .llen(this.redisKey)
-        .exec();
-
-      if (!result) {
-        this.logger.error('Failed to add profile to Redis', {
+        this.logger.debug('Merged profile will be inserted', {
+          mergedProfile,
+          existingProfile,
           profile,
-          cacheKey,
         });
-        return;
-      }
-      const bufferLength = (result?.[3]?.[1] as number) ?? 0;
 
-      this.logger.debug('Current buffer length', {
-        bufferLength,
-        batchSize: this.batchSize,
+        const cacheKey = this.getProfileCacheKey({
+          profileId: profile.id,
+          projectId: profile.project_id,
+        });
+
+        const result = await this.redis
+          .multi()
+          .set(cacheKey, JSON.stringify(mergedProfile), 'EX', this.ttlInSeconds)
+          .rpush(this.redisKey, JSON.stringify(mergedProfile))
+          .incr(this.bufferCounterKey)
+          .llen(this.redisKey)
+          .exec();
+
+        if (!result) {
+          this.logger.error('Failed to add profile to Redis', {
+            profile,
+            cacheKey,
+          });
+          return;
+        }
+        const bufferLength = (result?.[3]?.[1] as number) ?? 0;
+
+        this.logger.debug('Current buffer length', {
+          bufferLength,
+          batchSize: this.batchSize,
+        });
+        if (bufferLength >= this.batchSize) {
+          await this.tryFlush();
+        }
       });
-      if (bufferLength >= this.batchSize) {
-        await this.tryFlush();
-      }
     } catch (error) {
       this.logger.error('Failed to add profile', { error, profile });
     }

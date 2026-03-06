@@ -199,8 +199,6 @@ model Project {
   meta            EventMeta[]
   references      Reference[]
   access          ProjectAccess[]
-  groups          Group[]
-
   notificationRules NotificationRule[]
   notifications     Notification[]
   imports           Import[]
@@ -216,19 +214,6 @@ model Project {
   @@map("projects")
 }
 
-model Group {
-  id          String   @default("")
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  type        String
-  name        String
-  properties  Json     @default("{}")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
-
-  @@id([projectId, id])
-  @@map("groups")
-}
 
 enum AccessLevel {
   read

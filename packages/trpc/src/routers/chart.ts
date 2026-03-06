@@ -13,11 +13,12 @@ import {
   getChartStartEndDate,
   getEventFiltersWhereClause,
   getEventMetasCached,
+  getGroupPropertySelect,
+  getProfilePropertySelect,
   getProfilesCached,
   getReportById,
   getSelectPropertyKey,
   getSettingsForProject,
-  type IClickhouseProfile,
   type IServiceProfile,
   onlyReportEvents,
   sankeyService,
@@ -354,6 +355,32 @@ export const chartRouter = createTRPCRouter({
         const res = await query.execute();
 
         values.push(...res.map((e) => e.property_value));
+      } else if (property.startsWith('profile.')) {
+        const selectExpr = getProfilePropertySelect(property);
+        const query = clix(ch)
+          .select<{ values: string }>([`distinct ${selectExpr} as values`])
+          .from(TABLE_NAMES.profiles, true)
+          .where('project_id', '=', projectId)
+          .where(selectExpr, '!=', '')
+          .where(selectExpr, 'IS NOT NULL', null)
+          .orderBy('created_at', 'DESC')
+          .limit(100_000);
+
+        const res = await query.execute();
+        values.push(...res.map((r) => String(r.values)).filter(Boolean));
+      } else if (property.startsWith('group.')) {
+        const selectExpr = getGroupPropertySelect(property);
+        const query = clix(ch)
+          .select<{ values: string }>([`distinct ${selectExpr} as values`])
+          .from(TABLE_NAMES.groups, true)
+          .where('project_id', '=', projectId)
+          .where(selectExpr, '!=', '')
+          .where(selectExpr, 'IS NOT NULL', null)
+          .orderBy('created_at', 'DESC')
+          .limit(100_000);
+
+        const res = await query.execute();
+        values.push(...res.map((r) => String(r.values)).filter(Boolean));
       } else {
         const query = clix(ch)
           .select<{ values: string[] }>([
@@ -367,17 +394,6 @@ export const chartRouter = createTRPCRouter({
 
         if (event !== '*') {
           query.where('name', '=', event);
-        }
-
-        if (property.startsWith('profile.')) {
-          query.leftAnyJoin(
-            clix(ch)
-              .select<IClickhouseProfile>([])
-              .from(TABLE_NAMES.profiles)
-              .where('project_id', '=', projectId),
-            'profile.id = profile_id',
-            'profile'
-          );
         }
 
         const events = await query.execute();
@@ -785,7 +801,7 @@ export const chartRouter = createTRPCRouter({
       const { sb, getSql } = createSqlBuilder();
 
       sb.select.profile_id = 'DISTINCT profile_id';
-      sb.where = getEventFiltersWhereClause(serie.filters);
+      sb.where = getEventFiltersWhereClause(serie.filters, projectId);
       sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
       sb.where.dateRange = `${clix.toStartOf('created_at', input.interval)} = ${clix.toDate(sqlstring.escape(formatClickhouseDate(dateObj)), input.interval)}`;
       if (serie.name !== '*') {
@@ -812,10 +828,22 @@ export const chartRouter = createTRPCRouter({
         sb.joins.profiles = `LEFT ANY JOIN (SELECT id, ${fieldsToSelect} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
       }
 
+      // Check for group filters/breakdowns and add ARRAY JOIN if needed
+      const anyFilterOnGroup = serie.filters.some((f) =>
+        f.name.startsWith('group.')
+      );
+      const anyBreakdownOnGroup = input.breakdowns
+        ? Object.keys(input.breakdowns).some((key) => key.startsWith('group.'))
+        : false;
+      if (anyFilterOnGroup || anyBreakdownOnGroup) {
+        sb.joins.groups = 'ARRAY JOIN groups AS _group_id';
+        sb.joins.groups_cte = `LEFT ANY JOIN (SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) AS _g ON _g.id = _group_id`;
+      }
+
       if (input.breakdowns) {
         Object.entries(input.breakdowns).forEach(([key, value]) => {
           // Transform property keys (e.g., properties.method -> properties['method'])
-          const propertyKey = getSelectPropertyKey(key);
+          const propertyKey = getSelectPropertyKey(key, projectId);
           sb.where[`breakdown_${key}`] =
             `${propertyKey} = ${sqlstring.escape(value)}`;
         });
@@ -858,6 +886,7 @@ export const chartRouter = createTRPCRouter({
         funnelWindow: z.number().optional(),
         funnelGroup: z.string().optional(),
         breakdowns: z.array(z.object({ name: z.string() })).optional(),
+        breakdownValues: z.array(z.string()).optional(),
         range: zRange,
       })
     )
@@ -870,6 +899,8 @@ export const chartRouter = createTRPCRouter({
         showDropoffs = false,
         funnelWindow,
         funnelGroup,
+        breakdowns = [],
+        breakdownValues = [],
       } = input;
 
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
@@ -889,9 +920,21 @@ export const chartRouter = createTRPCRouter({
       // Get the grouping strategy (profile_id or session_id)
       const group = funnelService.getFunnelGroup(funnelGroup);
 
+      const anyFilterOnGroup = (eventSeries as IChartEvent[]).some((e) =>
+        e.filters?.some((f) => f.name.startsWith('group.'))
+      );
+      const anyBreakdownOnGroup = breakdowns.some((b) =>
+        b.name.startsWith('group.')
+      );
+      const needsGroupArrayJoin = anyFilterOnGroup || anyBreakdownOnGroup;
+
+      // Breakdown selects/groupBy so we can filter by specific breakdown values
+      const breakdownSelects = breakdowns.map(
+        (b, index) => `${getSelectPropertyKey(b.name, projectId)} as b_${index}`
+      );
+      const breakdownGroupBy = breakdowns.map((_, index) => `b_${index}`);
+
       // Create funnel CTE using funnel service
-      // Note: buildFunnelCte always computes windowFunnel per session_id and extracts
-      // profile_id via argMax to handle identity changes mid-session correctly.
       const funnelCte = funnelService.buildFunnelCte({
         projectId,
         startDate,
@@ -899,8 +942,8 @@ export const chartRouter = createTRPCRouter({
         eventSeries: eventSeries as IChartEvent[],
         funnelWindowMilliseconds,
         timezone,
-        // No need to add profile_id to additionalSelects/additionalGroupBy
-        // since buildFunnelCte already extracts it via argMax(profile_id, created_at)
+        additionalSelects: breakdownSelects,
+        additionalGroupBy: breakdownGroupBy,
       });
 
       // Check for profile filters and add profile join if needed
@@ -917,35 +960,49 @@ export const chartRouter = createTRPCRouter({
         );
       }
 
+      if (needsGroupArrayJoin) {
+        funnelCte.rawJoin('ARRAY JOIN groups AS _group_id');
+        funnelCte.rawJoin('LEFT ANY JOIN _g ON _g.id = _group_id');
+      }
+
       // Build main query
       const query = clix(ch, timezone);
+      if (needsGroupArrayJoin) {
+        query.with(
+          '_g',
+          `SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}`
+        );
+      }
       query.with('session_funnel', funnelCte);
 
       if (group === 'profile_id') {
-        // For profile grouping: re-aggregate by profile_id, taking MAX level per profile.
-        // This ensures a user who completed the funnel with identity change is counted correctly.
-        // NOTE: Wrap in subquery to avoid ClickHouse resolving `level` in WHERE to the
-        // `max(level) AS level` alias (ILLEGAL_AGGREGATION error).
+        const breakdownAggregates =
+          breakdowns.length > 0
+            ? `, ${breakdowns.map((_, index) => `any(b_${index}) AS b_${index}`).join(', ')}`
+            : '';
         query.with(
           'funnel',
-          'SELECT profile_id, max(level) AS level FROM (SELECT * FROM session_funnel WHERE level != 0) GROUP BY profile_id'
+          `SELECT profile_id, max(level) AS level${breakdownAggregates} FROM (SELECT * FROM session_funnel WHERE level != 0) GROUP BY profile_id`
         );
       } else {
-        // For session grouping: filter out level = 0 inside the CTE
         query.with('funnel', 'SELECT * FROM session_funnel WHERE level != 0');
       }
 
-      // Get distinct profile IDs
-      // NOTE: level != 0 is already filtered inside the funnel CTE above
       query.select(['DISTINCT profile_id']).from('funnel');
 
       if (showDropoffs) {
-        // Show users who dropped off at this step (completed this step but not the next)
         query.where('level', '=', targetLevel);
       } else {
-        // Show users who completed at least this step
         query.where('level', '>=', targetLevel);
       }
+
+      // Filter by specific breakdown values when a breakdown row was clicked
+      breakdowns.forEach((_, index) => {
+        const value = breakdownValues[index];
+        if (value !== undefined) {
+          query.where(`b_${index}`, '=', value);
+        }
+      });
 
       // Cap the number of profiles to avoid exceeding ClickHouse max_query_size
       // when passing IDs to the next query

@@ -31,14 +31,14 @@ export class ConversionService {
     const funnelWindow = funnelOptions?.funnelWindow ?? 24;
     const group = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
     const breakdownExpressions = breakdowns.map(
-      (b) => getSelectPropertyKey(b.name),
+      (b) => getSelectPropertyKey(b.name, projectId),
     );
     const breakdownSelects = breakdownExpressions.map(
       (expr, index) => `${expr} as b_${index}`,
     );
     const breakdownGroupBy = breakdowns.map((_, index) => `b_${index}`);
 
-    // Check if any breakdown uses profile fields and build profile JOIN if needed
+    // Check if any breakdown or filter uses profile fields
     const profileBreakdowns = breakdowns.filter((b) =>
       b.name.startsWith('profile.'),
     );
@@ -71,6 +71,15 @@ export class ConversionService {
 
     const events = onlyReportEvents(series);
 
+    // Check if any breakdown or filter uses group fields
+    const anyBreakdownOnGroup = breakdowns.some((b) =>
+      b.name.startsWith('group.'),
+    );
+    const anyFilterOnGroup = events.some((e) =>
+      e.filters?.some((f) => f.name.startsWith('group.')),
+    );
+    const needsGroupArrayJoin = anyBreakdownOnGroup || anyFilterOnGroup;
+
     if (events.length !== 2) {
       throw new Error('events must be an array of two events');
     }
@@ -82,10 +91,10 @@ export class ConversionService {
     const eventA = events[0]!;
     const eventB = events[1]!;
     const whereA = Object.values(
-      getEventFiltersWhereClause(eventA.filters),
+      getEventFiltersWhereClause(eventA.filters, projectId),
     ).join(' AND ');
     const whereB = Object.values(
-      getEventFiltersWhereClause(eventB.filters),
+      getEventFiltersWhereClause(eventB.filters, projectId),
     ).join(' AND ');
 
     const funnelWindowSeconds = funnelWindow * 3600;
@@ -97,6 +106,10 @@ export class ConversionService {
     const conditionB = whereB
       ? `(name = '${eventB.name}' AND ${whereB})`
       : `name = '${eventB.name}'`;
+
+    const groupJoin = needsGroupArrayJoin
+      ? `ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) AS _g ON _g.id = _group_id`
+      : '';
 
     // Use windowFunnel approach - single scan, no JOIN
     const query = clix(this.client, timezone)
@@ -126,6 +139,7 @@ export class ConversionService {
           ) as steps
         FROM ${TABLE_NAMES.events}
         ${profileJoin}
+        ${groupJoin}
         WHERE project_id = '${projectId}'
           AND name IN ('${eventA.name}', '${eventB.name}')
           AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')
