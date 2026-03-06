@@ -2,8 +2,11 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { UsersIcon } from 'lucide-react';
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import { GroupMemberGrowth } from '@/components/groups/group-member-growth';
 import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
 import { WidgetHead, WidgetTitle } from '@/components/overview/overview-widget';
+import { MostEvents } from '@/components/profiles/most-events';
+import { PopularRoutes } from '@/components/profiles/popular-routes';
 import { ProfileActivity } from '@/components/profiles/profile-activity';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import { Widget, WidgetBody } from '@/components/widget';
@@ -49,6 +52,15 @@ function Component() {
   );
   const members = useSuspenseQuery(
     trpc.group.members.queryOptions({ id: groupId, projectId })
+  );
+  const mostEvents = useSuspenseQuery(
+    trpc.group.mostEvents.queryOptions({ id: groupId, projectId })
+  );
+  const popularRoutes = useSuspenseQuery(
+    trpc.group.popularRoutes.queryOptions({ id: groupId, projectId })
+  );
+  const memberGrowth = useSuspenseQuery(
+    trpc.group.memberGrowth.queryOptions({ id: groupId, projectId })
   );
 
   const g = group.data;
@@ -142,8 +154,23 @@ function Component() {
         <ProfileActivity data={activity.data} />
       </div>
 
-      {/* Members preview */}
+      {/* Member growth */}
       <div className="col-span-1">
+        <GroupMemberGrowth data={memberGrowth.data} />
+      </div>
+
+      {/* Top events */}
+      <div className="col-span-1">
+        <MostEvents data={mostEvents.data} />
+      </div>
+
+      {/* Popular routes */}
+      <div className="col-span-1">
+        <PopularRoutes data={popularRoutes.data} />
+      </div>
+
+      {/* Members preview */}
+      <div className="col-span-1 md:col-span-2">
         <Widget className="w-full">
           <WidgetHead>
             <WidgetTitle icon={UsersIcon}>Members</WidgetTitle>

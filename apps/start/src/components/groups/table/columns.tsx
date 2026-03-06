@@ -5,7 +5,12 @@ import { Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { IServiceGroup } from '@openpanel/db';
 
-export function useGroupColumns(): ColumnDef<IServiceGroup>[] {
+type IServiceGroupWithStats = IServiceGroup & {
+  memberCount: number;
+  lastActiveAt: Date | null;
+};
+
+export function useGroupColumns(): ColumnDef<IServiceGroupWithStats>[] {
   const { organizationId, projectId } = useAppParams();
 
   return [
@@ -40,6 +45,24 @@ export function useGroupColumns(): ColumnDef<IServiceGroup>[] {
       cell: ({ row }) => (
         <Badge variant="outline">{row.original.type}</Badge>
       ),
+    },
+    {
+      accessorKey: 'memberCount',
+      header: 'Members',
+      cell: ({ row }) => (
+        <span className="tabular-nums">{row.original.memberCount}</span>
+      ),
+    },
+    {
+      accessorKey: 'lastActiveAt',
+      header: 'Last active',
+      size: ColumnCreatedAt.size,
+      cell: ({ row }) =>
+        row.original.lastActiveAt ? (
+          <ColumnCreatedAt>{row.original.lastActiveAt}</ColumnCreatedAt>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
     },
     {
       accessorKey: 'createdAt',
