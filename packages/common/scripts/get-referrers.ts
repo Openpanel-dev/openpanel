@@ -74,7 +74,6 @@ const extraReferrers = {
   'rytr.me': { type: 'ai', name: 'Rytr' },
   'notion.ai': { type: 'ai', name: 'Notion AI' },
   'grammarly.com': { type: 'ai', name: 'Grammarly' },
-  'bing.com': { type: 'ai', name: 'Bing AI' },
   'grok.com': { type: 'ai', name: 'Grok' },
   'x.ai': { type: 'ai', name: 'xAI' },
   'aistudio.google.com': { type: 'ai', name: 'Google AI Studio' },

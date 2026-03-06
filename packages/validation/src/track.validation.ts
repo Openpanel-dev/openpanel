@@ -7,15 +7,15 @@ export const zGroupPayload = z.object({
   type: z.string().min(1),
   name: z.string().min(1),
   properties: z.record(z.unknown()).optional(),
-  profileId: z.string().optional(),
+  profileId: z.union([z.string().min(1), z.number()]).optional(),
 });
 
 export const zTrackPayload = z
   .object({
     name: z.string().min(1),
     properties: z.record(z.string(), z.unknown()).optional(),
-    profileId: z.string().or(z.number()).optional(),
-    groups: z.array(z.string()).optional(),
+    profileId: z.union([z.string().min(1), z.number()]).optional(),
+    groups: z.array(z.string().min(1)).optional(),
   })
   .refine((data) => !RESERVED_EVENT_NAMES.includes(data.name as any), {
     message: `Event name cannot be one of the reserved names: ${RESERVED_EVENT_NAMES.join(', ')}`,
