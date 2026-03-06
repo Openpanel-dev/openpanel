@@ -130,6 +130,10 @@ export type CronQueuePayloadGscSync = {
   type: 'gscSync';
   payload: undefined;
 };
+export type CronQueuePayloadFlushGroups = {
+  type: 'flushGroups';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
@@ -137,6 +141,7 @@ export type CronQueuePayload =
   | CronQueuePayloadFlushProfiles
   | CronQueuePayloadFlushProfileBackfill
   | CronQueuePayloadFlushReplay
+  | CronQueuePayloadFlushGroups
   | CronQueuePayloadPing
   | CronQueuePayloadProject
   | CronQueuePayloadInsightsDaily
