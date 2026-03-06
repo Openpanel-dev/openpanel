@@ -3,7 +3,7 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import type { PaginationState, Table, Updater } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { memo } from 'react';
-import { useGroupColumns } from './columns';
+import { type IServiceGroupWithStats, useGroupColumns } from './columns';
 import { DataTable } from '@/components/ui/data-table/data-table';
 import {
   useDataTableColumnVisibility,
@@ -26,7 +26,7 @@ interface Props {
   toolbarLeft?: React.ReactNode;
 }
 
-const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceGroup[];
+const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceGroupWithStats[];
 
 export const GroupsTable = memo(
   ({ query, pageSize = PAGE_SIZE, toolbarLeft }: Props) => {
@@ -69,7 +69,7 @@ export const GroupsTable = memo(
             : updaterOrValue;
         setPage(nextPagination.pageIndex + 1);
       },
-      getRowId: (row, index) => (row as IServiceGroup).id ?? `loading-${index}`,
+      getRowId: (row, index) => row.id ?? `loading-${index}`,
     });
 
     return (
@@ -94,7 +94,7 @@ function GroupsTableToolbar({
   table,
   toolbarLeft,
 }: {
-  table: Table<IServiceGroup>;
+  table: Table<IServiceGroupWithStats>;
   toolbarLeft?: React.ReactNode;
 }) {
   const { search, setSearch } = useSearchQueryState();
