@@ -5,7 +5,7 @@ import { Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { IServiceGroup } from '@openpanel/db';
 
-type IServiceGroupWithStats = IServiceGroup & {
+export type IServiceGroupWithStats = IServiceGroup & {
   memberCount: number;
   lastActiveAt: Date | null;
 };
