@@ -137,7 +137,7 @@ export async function getGroupList({
     WHERE ${conditions.join(' AND ')}
     ORDER BY created_at DESC
     LIMIT ${take}
-    OFFSET ${cursor ?? 0}
+    OFFSET ${Math.max(0, (cursor ?? 0) * take)}
   `);
   return rows.map(transformGroup);
 }
@@ -194,15 +194,19 @@ export async function updateGroup(
   if (!existing) {
     throw new Error(`Group ${id} not found`);
   }
+  const mergedProperties = {
+    ...(existing.properties ?? {}),
+    ...(data.properties ?? {}),
+  };
+  const normalizedProperties = toDots(
+    mergedProperties as Record<string, unknown>
+  );
   const updated = {
     id,
     projectId,
     type: data.type ?? existing.type,
     name: data.name ?? existing.name,
-    properties: (data.properties ?? existing.properties) as Record<
-      string,
-      string
-    >,
+    properties: normalizedProperties,
     createdAt: existing.createdAt,
   };
   await writeGroupToCh(updated);
@@ -314,7 +318,7 @@ export async function getGroupMemberProfiles({
   take: number;
   search?: string;
 }): Promise<{ data: IServiceProfile[]; count: number }> {
-  const offset = Math.max(0, cursor ?? 0);
+  const offset = Math.max(0, (cursor ?? 0) * take);
   const searchCondition = search?.trim()
     ? `AND (email ILIKE ${sqlstring.escape(`%${search.trim()}%`)} OR first_name ILIKE ${sqlstring.escape(`%${search.trim()}%`)} OR last_name ILIKE ${sqlstring.escape(`%${search.trim()}%`)})`
     : '';
