@@ -92,7 +92,7 @@ export const gscRouter = createTRPCRouter({
       url.searchParams.set('access_type', 'offline');
       url.searchParams.set('prompt', 'consent');
 
-      const cookieOpts = { maxAge: 60 * 10 };
+      const cookieOpts = { maxAge: 60 * 10, signed: true };
       ctx.setCookie('gsc_oauth_state', state, cookieOpts);
       ctx.setCookie('gsc_code_verifier', codeVerifier, cookieOpts);
       ctx.setCookie('gsc_project_id', input.projectId, cookieOpts);

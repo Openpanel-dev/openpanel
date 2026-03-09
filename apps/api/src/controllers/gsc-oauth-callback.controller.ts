@@ -39,23 +39,51 @@ export async function gscGoogleCallback(
     }
 
     const { code, state } = query.data;
-    const storedState = req.cookies.gsc_oauth_state ?? null;
-    const codeVerifier = req.cookies.gsc_code_verifier ?? null;
-    const projectId = req.cookies.gsc_project_id ?? null;
 
-    const hasStoredState = storedState !== null;
-    const hasCodeVerifier = codeVerifier !== null;
-    const hasProjectId = projectId !== null;
-    const hasAllCookies = hasStoredState && hasCodeVerifier && hasProjectId;
-    if (!hasAllCookies) {
+    const rawStoredState = req.cookies.gsc_oauth_state ?? null;
+    const rawCodeVerifier = req.cookies.gsc_code_verifier ?? null;
+    const rawProjectId = req.cookies.gsc_project_id ?? null;
+
+    const storedStateResult =
+      rawStoredState !== null ? req.unsignCookie(rawStoredState) : null;
+    const codeVerifierResult =
+      rawCodeVerifier !== null ? req.unsignCookie(rawCodeVerifier) : null;
+    const projectIdResult =
+      rawProjectId !== null ? req.unsignCookie(rawProjectId) : null;
+
+    if (
+      !(
+        storedStateResult?.value &&
+        codeVerifierResult?.value &&
+        projectIdResult?.value
+      )
+    ) {
       throw new LogError('Missing GSC OAuth cookies', {
-        storedState: !hasStoredState,
-        codeVerifier: !hasCodeVerifier,
-        projectId: !hasProjectId,
+        storedState: !storedStateResult?.value,
+        codeVerifier: !codeVerifierResult?.value,
+        projectId: !projectIdResult?.value,
       });
     }
 
-    if (state !== storedState) {
+    if (
+      !(
+        storedStateResult?.valid &&
+        codeVerifierResult?.valid &&
+        projectIdResult?.valid
+      )
+    ) {
+      throw new LogError('Invalid GSC OAuth cookies', {
+        storedState: !storedStateResult?.value,
+        codeVerifier: !codeVerifierResult?.value,
+        projectId: !projectIdResult?.value,
+      });
+    }
+
+    const stateStr = storedStateResult?.value;
+    const codeVerifierStr = codeVerifierResult?.value;
+    const projectIdStr = projectIdResult?.value;
+
+    if (state !== stateStr) {
       throw new LogError('GSC OAuth state mismatch', {
         hasState: true,
         hasStoredState: true,
@@ -65,7 +93,7 @@ export async function gscGoogleCallback(
 
     const tokens = await googleGsc.validateAuthorizationCode(
       code,
-      codeVerifier
+      codeVerifierStr
     );
 
     const accessToken = tokens.accessToken();
@@ -79,18 +107,20 @@ export async function gscGoogleCallback(
     }
 
     const project = await db.project.findUnique({
-      where: { id: projectId },
+      where: { id: projectIdStr },
       select: { id: true, organizationId: true },
     });
 
     if (!project) {
-      throw new LogError('Project not found for GSC connection', { projectId });
+      throw new LogError('Project not found for GSC connection', {
+        projectId: projectIdStr,
+      });
     }
 
     await db.gscConnection.upsert({
-      where: { projectId },
+      where: { projectId: projectIdStr },
       create: {
-        projectId,
+        projectId: projectIdStr,
         accessToken: encrypt(accessToken),
         refreshToken: encrypt(refreshToken),
         accessTokenExpiresAt,
@@ -111,7 +141,7 @@ export async function gscGoogleCallback(
 
     const dashboardUrl =
       process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!;
-    const redirectUrl = `${dashboardUrl}/${project.organizationId}/${projectId}/settings/gsc`;
+    const redirectUrl = `${dashboardUrl}/${project.organizationId}/${projectIdStr}/settings/gsc`;
     return reply.redirect(redirectUrl);
   } catch (error) {
     req.log.error(error);
