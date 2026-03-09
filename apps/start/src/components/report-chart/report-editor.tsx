@@ -1,4 +1,7 @@
-import { ReportChart } from '@/components/report-chart';
+import type { IServiceReport } from '@openpanel/db';
+import { GanttChartSquareIcon, ShareIcon } from 'lucide-react';
+import { useEffect } from 'react';
+import EditReportName from '../report/edit-report-name';
 import { ReportChartType } from '@/components/report/ReportChartType';
 import { ReportInterval } from '@/components/report/ReportInterval';
 import { ReportLineType } from '@/components/report/ReportLineType';
@@ -14,18 +17,13 @@ import {
   setReport,
 } from '@/components/report/reportSlice';
 import { ReportSidebar } from '@/components/report/sidebar/ReportSidebar';
+import { ReportChart } from '@/components/report-chart';
 import { TimeWindowPicker } from '@/components/time-window-picker';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/use-app-params';
 import { pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
-import { bind } from 'bind-event-listener';
-import { GanttChartSquareIcon, ShareIcon } from 'lucide-react';
-import { useEffect } from 'react';
-
-import type { IServiceReport } from '@openpanel/db';
-import EditReportName from '../report/edit-report-name';
 
 interface ReportEditorProps {
   report: IServiceReport | null;
@@ -54,15 +52,15 @@ export default function ReportEditor({
   return (
     <Sheet>
       <div>
-        <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center justify-between p-4">
           <EditReportName />
           {initialReport?.id && (
             <Button
-              variant="outline"
               icon={ShareIcon}
               onClick={() =>
                 pushModal('ShareReportModal', { reportId: initialReport.id })
               }
+              variant="outline"
             >
               Share
             </Button>
@@ -71,9 +69,9 @@ export default function ReportEditor({
         <div className="grid grid-cols-2 gap-2 p-4 pt-0 md:grid-cols-6">
           <SheetTrigger asChild>
             <Button
+              className="self-start"
               icon={GanttChartSquareIcon}
               variant="cta"
-              className="self-start"
             >
               Pick events
             </Button>
@@ -88,23 +86,26 @@ export default function ReportEditor({
             />
             <TimeWindowPicker
               className="min-w-0 flex-1"
+              endDate={report.endDate}
               onChange={(value) => {
                 dispatch(changeDateRanges(value));
               }}
-              value={report.range}
-              onStartDateChange={(date) => dispatch(changeStartDate(date))}
               onEndDateChange={(date) => dispatch(changeEndDate(date))}
-              endDate={report.endDate}
+              onIntervalChange={(interval) =>
+                dispatch(changeInterval(interval))
+              }
+              onStartDateChange={(date) => dispatch(changeStartDate(date))}
               startDate={report.startDate}
+              value={report.range}
             />
             <ReportInterval
+              chartType={report.chartType}
               className="min-w-0 flex-1"
+              endDate={report.endDate}
               interval={report.interval}
               onChange={(newInterval) => dispatch(changeInterval(newInterval))}
               range={report.range}
-              chartType={report.chartType}
               startDate={report.startDate}
-              endDate={report.endDate}
             />
             <ReportLineType className="min-w-0 flex-1" />
           </div>
@@ -114,7 +115,7 @@ export default function ReportEditor({
         </div>
         <div className="flex flex-col gap-4 p-4" id="report-editor">
           {report.ready && (
-            <ReportChart report={{ ...report, projectId }} isEditMode />
+            <ReportChart isEditMode report={{ ...report, projectId }} />
           )}
         </div>
       </div>

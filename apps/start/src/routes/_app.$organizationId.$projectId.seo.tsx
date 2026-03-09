@@ -1,13 +1,6 @@
-import {
-  getDefaultIntervalByRange,
-  intervals,
-  timeWindows,
-} from '@openpanel/constants';
-import type { IChartRange, IInterval } from '@openpanel/validation';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { SearchIcon } from 'lucide-react';
-import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
 import {
   CartesianGrid,
@@ -23,8 +16,11 @@ import {
   createChartTooltip,
 } from '@/components/charts/chart-tooltip';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
+import { OverviewRange } from '@/components/overview/overview-range';
 import { OverviewWidgetTable } from '@/components/overview/overview-widget-table';
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { GscCannibalization } from '@/components/page/gsc-cannibalization';
 import { GscCtrBenchmark } from '@/components/page/gsc-ctr-benchmark';
 import { GscPositionChart } from '@/components/page/gsc-position-chart';
@@ -32,14 +28,12 @@ import { PagesInsights } from '@/components/page/pages-insights';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
-import { ReportInterval } from '@/components/report/ReportInterval';
 import {
   useYAxisProps,
   X_AXIS_STYLE_PROPS,
 } from '@/components/report-chart/common/axis';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { Skeleton } from '@/components/skeleton';
-import { TimeWindowPicker } from '@/components/time-window-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
@@ -94,27 +88,13 @@ function SeoPage() {
   const { projectId, organizationId } = useAppParams();
   const trpc = useTRPC();
   const navigate = useNavigate();
-
-  const [range, setRange] = useQueryState(
-    'range',
-    parseAsStringEnum(Object.keys(timeWindows) as IChartRange[]).withDefault(
-      '30d' as IChartRange
-    )
-  );
-  const [startDate, setStartDate] = useQueryState('start', parseAsString);
-  const [endDate, setEndDate] = useQueryState('end', parseAsString);
-  const [interval, setInterval] = useQueryState(
-    'interval',
-    parseAsStringEnum(Object.keys(intervals) as IInterval[]).withDefault(
-      (getDefaultIntervalByRange(range) ?? 'day') as IInterval
-    )
-  );
+  const { range, startDate, endDate, interval } = useOverviewOptions();
 
   const dateInput = {
     range,
     interval,
-    startDate: startDate ?? undefined,
-    endDate: endDate ?? undefined,
+    startDate,
+    endDate,
   };
 
   const connectionQuery = useQuery(
@@ -265,31 +245,8 @@ function SeoPage() {
       <PageHeader
         actions={
           <>
-            <ReportInterval
-              chartType="linear"
-              endDate={endDate}
-              interval={interval ?? 'day'}
-              onChange={(v) => setInterval(v)}
-              range={range}
-              startDate={startDate}
-            />
-            <TimeWindowPicker
-              endDate={endDate}
-              onChange={(v) => {
-                if (v !== 'custom') {
-                  setStartDate(null);
-                  setEndDate(null);
-                }
-                setInterval(
-                  (getDefaultIntervalByRange(v) ?? 'day') as IInterval
-                );
-                setRange(v);
-              }}
-              onEndDateChange={setEndDate}
-              onStartDateChange={setStartDate}
-              startDate={startDate}
-              value={range}
-            />
+            <OverviewRange />
+            <OverviewInterval />
           </>
         }
         description={`Search performance for ${connection.siteUrl}`}

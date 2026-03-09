@@ -27,7 +27,7 @@ type GscChartData = { date: string; clicks: number; impressions: number };
 
 const { TooltipProvider, Tooltip: GscTooltip } = createChartTooltip<
   GscChartData,
-  Record<string, never>
+  Record<string, unknown>
 >(({ data }) => {
   const item = data[0];
   if (!item) {
@@ -267,7 +267,7 @@ function GscViewsChart({
   const yAxisProps = useYAxisProps();
 
   return (
-    <TooltipProvider data={[]}>
+    <TooltipProvider>
       <ResponsiveContainer height={160} width="100%">
         <ComposedChart data={data}>
           <defs>
@@ -328,7 +328,7 @@ function GscTimeseriesChart({
   const yAxisProps = useYAxisProps();
 
   return (
-    <TooltipProvider data={data}>
+    <TooltipProvider>
       <ResponsiveContainer height={160} width="100%">
         <ComposedChart data={data}>
           <defs>

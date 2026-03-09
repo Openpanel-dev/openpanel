@@ -24,11 +24,13 @@ const zGscDateInput = z.object({
   projectId: z.string(),
   range: zRange,
   interval: zTimeInterval.optional().default('day'),
+  startDate: z.string().nullish(),
+  endDate: z.string().nullish(),
 });
 
 async function resolveDates(
   projectId: string,
-  input: { range: string; startDate?: string; endDate?: string }
+  input: { range: string; startDate?: string | null; endDate?: string | null }
 ) {
   const { timezone } = await getSettingsForProject(projectId);
   const { startDate, endDate } = getChartStartEndDate(
