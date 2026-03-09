@@ -31,3 +31,5 @@ export * from './src/services/overview.service';
 export * from './src/services/pages.service';
 export * from './src/services/insights';
 export * from './src/session-context';
+export * from './src/gsc';
+export * from './src/encryption';

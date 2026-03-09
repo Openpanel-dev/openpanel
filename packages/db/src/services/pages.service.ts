@@ -1,4 +1,5 @@
-import { TABLE_NAMES, ch } from '../clickhouse/client';
+import type { IInterval } from '@openpanel/validation';
+import { ch, TABLE_NAMES } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 
 export interface IGetPagesInput {
@@ -7,6 +8,15 @@ export interface IGetPagesInput {
   endDate: string;
   timezone: string;
   search?: string;
+  limit?: number;
+}
+
+export interface IPageTimeseriesRow {
+  origin: string;
+  path: string;
+  date: string;
+  pageviews: number;
+  sessions: number;
 }
 
 export interface ITopPage {
@@ -28,6 +38,7 @@ export class PagesService {
     endDate,
     timezone,
     search,
+    limit,
   }: IGetPagesInput): Promise<ITopPage[]> {
     // CTE: Get titles from the last 30 days for faster retrieval
     const titlesCte = clix(this.client, timezone)
@@ -72,7 +83,7 @@ export class PagesService {
       .leftJoin(
         sessionsSubquery,
         'e.session_id = s.id AND e.project_id = s.project_id',
-        's',
+        's'
       )
       .leftJoin('page_titles pt', 'concat(e.origin, e.path) = pt.page_key')
       .where('e.project_id', '=', projectId)
@@ -83,13 +94,68 @@ export class PagesService {
         clix.datetime(endDate, 'toDateTime'),
       ])
       .when(!!search, (q) => {
-        q.where('e.path', 'LIKE', `%${search}%`);
+        const term = `%${search}%`;
+        q.whereGroup()
+          .where('e.path', 'LIKE', term)
+          .orWhere('e.origin', 'LIKE', term)
+          .orWhere('pt.title', 'LIKE', term)
+          .end();
       })
       .groupBy(['e.origin', 'e.path', 'pt.title'])
-      .orderBy('sessions', 'DESC')
-      .limit(1000);
-
+      .orderBy('sessions', 'DESC');
+    if (limit !== undefined) {
+      query.limit(limit);
+    }
     return query.execute();
+  }
+
+  async getPageTimeseries({
+    projectId,
+    startDate,
+    endDate,
+    timezone,
+    interval,
+    filterOrigin,
+    filterPath,
+  }: IGetPagesInput & {
+    interval: IInterval;
+    filterOrigin?: string;
+    filterPath?: string;
+  }): Promise<IPageTimeseriesRow[]> {
+    const dateExpr = clix.toStartOf('e.created_at', interval, timezone);
+    const useDateOnly = interval === 'month' || interval === 'week';
+    const fillFrom = clix.toStartOf(
+      clix.datetime(startDate, useDateOnly ? 'toDate' : 'toDateTime'),
+      interval
+    );
+    const fillTo = clix.datetime(
+      endDate,
+      useDateOnly ? 'toDate' : 'toDateTime'
+    );
+    const fillStep = clix.toInterval('1', interval);
+
+    return clix(this.client, timezone)
+      .select<IPageTimeseriesRow>([
+        'e.origin as origin',
+        'e.path as path',
+        `${dateExpr} AS date`,
+        'count() as pageviews',
+        'uniq(e.session_id) as sessions',
+      ])
+      .from(`${TABLE_NAMES.events} e`, false)
+      .where('e.project_id', '=', projectId)
+      .where('e.name', '=', 'screen_view')
+      .where('e.path', '!=', '')
+      .where('e.created_at', 'BETWEEN', [
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
+      ])
+      .when(!!filterOrigin, (q) => q.where('e.origin', '=', filterOrigin!))
+      .when(!!filterPath, (q) => q.where('e.path', '=', filterPath!))
+      .groupBy(['e.origin', 'e.path', 'date'])
+      .orderBy('date', 'ASC')
+      .fill(fillFrom, fillTo, fillStep)
+      .execute();
   }
 }
 

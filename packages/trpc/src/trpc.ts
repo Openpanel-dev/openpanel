@@ -37,6 +37,7 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
     // @ts-ignore
     res.setCookie(key, value, {
       maxAge: options.maxAge,
+      signed: options.signed,
       ...COOKIE_OPTIONS,
     });
   };

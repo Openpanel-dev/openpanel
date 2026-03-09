@@ -4,6 +4,7 @@ import { eventBuffer, profileBackfillBuffer, profileBuffer, replayBuffer, sessio
 import type { CronQueuePayload } from '@openpanel/queue';
 
 import { jobdeleteProjects } from './cron.delete-projects';
+import { gscSyncAllJob } from './gsc';
 import { onboardingJob } from './cron.onboarding';
 import { ping } from './cron.ping';
 import { salt } from './cron.salt';
@@ -40,6 +41,9 @@ export async function cronJob(job: Job<CronQueuePayload>) {
     }
     case 'onboarding': {
       return await onboardingJob(job);
+    }
+    case 'gscSync': {
+      return await gscSyncAllJob();
     }
   }
 }

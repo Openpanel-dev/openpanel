@@ -112,5 +112,6 @@ export type ISetCookie = (
     sameSite?: 'lax' | 'strict' | 'none';
     secure?: boolean;
     httpOnly?: boolean;
+    signed?: boolean;
   },
 ) => void;

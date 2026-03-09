@@ -45,6 +45,7 @@ function ProjectDashboard() {
     { id: 'tracking', label: 'Tracking script' },
     { id: 'widgets', label: 'Widgets' },
     { id: 'imports', label: 'Imports' },
+    { id: 'gsc', label: 'Google Search' },
   ];
 
   const handleTabChange = (tabId: string) => {

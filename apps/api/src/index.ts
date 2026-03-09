@@ -36,6 +36,7 @@ import { timestampHook } from './hooks/timestamp.hook';
 import aiRouter from './routes/ai.router';
 import eventRouter from './routes/event.router';
 import exportRouter from './routes/export.router';
+import gscCallbackRouter from './routes/gsc-callback.router';
 import importRouter from './routes/import.router';
 import insightsRouter from './routes/insights.router';
 import liveRouter from './routes/live.router';
@@ -194,6 +195,7 @@ const startServer = async () => {
       instance.register(liveRouter, { prefix: '/live' });
       instance.register(webhookRouter, { prefix: '/webhook' });
       instance.register(oauthRouter, { prefix: '/oauth' });
+      instance.register(gscCallbackRouter, { prefix: '/gsc' });
       instance.register(miscRouter, { prefix: '/misc' });
       instance.register(aiRouter, { prefix: '/ai' });
     });

@@ -144,6 +144,7 @@ const data = {
   "dropbox": "https://www.dropbox.com",
   "openai": "https://openai.com",
   "chatgpt.com": "https://chatgpt.com",
+  "copilot.com": "https://www.copilot.com",
   "mailchimp": "https://mailchimp.com",
   "activecampaign": "https://www.activecampaign.com",
   "customer.io": "https://customer.io",

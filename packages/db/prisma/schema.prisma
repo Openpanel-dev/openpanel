@@ -203,6 +203,7 @@ model Project {
   notificationRules NotificationRule[]
   notifications     Notification[]
   imports           Import[]
+  gscConnection     GscConnection?
 
   // When deleteAt > now(), the project will be deleted
   deleteAt DateTime?
@@ -610,6 +611,24 @@ model InsightEvent {
 
   @@index([insightId, createdAt])
   @@map("insight_events")
+}
+
+model GscConnection {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId            String    @unique
+  project              Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  siteUrl              String    @default("")
+  accessToken          String
+  refreshToken         String
+  accessTokenExpiresAt DateTime?
+  lastSyncedAt         DateTime?
+  lastSyncStatus       String?
+  lastSyncError        String?
+  backfillStatus       String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @default(now()) @updatedAt
+
+  @@map("gsc_connections")
 }
 
 model EmailUnsubscribe {

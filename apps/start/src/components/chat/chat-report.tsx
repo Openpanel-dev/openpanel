@@ -1,24 +1,27 @@
-import { pushModal } from '@/modals';
 import type {
-  IReport,
   IChartRange,
   IChartType,
   IInterval,
+  IReport,
 } from '@openpanel/validation';
 import { SaveIcon } from 'lucide-react';
 import { useState } from 'react';
-import { ReportChart } from '../report-chart';
 import { ReportChartType } from '../report/ReportChartType';
 import { ReportInterval } from '../report/ReportInterval';
+import { ReportChart } from '../report-chart';
 import { TimeWindowPicker } from '../time-window-picker';
 import { Button } from '../ui/button';
+import { pushModal } from '@/modals';
 
 export function ChatReport({
   lazy,
   ...props
-}: { report: IReport & { startDate: string; endDate: string }; lazy: boolean }) {
+}: {
+  report: IReport & { startDate: string; endDate: string };
+  lazy: boolean;
+}) {
   const [chartType, setChartType] = useState<IChartType>(
-    props.report.chartType,
+    props.report.chartType
   );
   const [startDate, setStartDate] = useState<string>(props.report.startDate);
   const [endDate, setEndDate] = useState<string>(props.report.endDate);
@@ -35,47 +38,48 @@ export function ChatReport({
   };
   return (
     <div className="card">
-      <div className="text-center text-sm font-mono font-medium pt-4">
+      <div className="pt-4 text-center font-medium font-mono text-sm">
         {props.report.name}
       </div>
       <div className="p-4">
         <ReportChart lazy={lazy} report={report} />
       </div>
-      <div className="row justify-between gap-1 border-t border-border p-2">
+      <div className="row justify-between gap-1 border-border border-t p-2">
         <div className="col md:row gap-1">
           <TimeWindowPicker
             className="min-w-0"
-            onChange={setRange}
-            value={report.range}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
             endDate={report.endDate}
+            onChange={setRange}
+            onEndDateChange={setEndDate}
+            onIntervalChange={setInterval}
+            onStartDateChange={setStartDate}
             startDate={report.startDate}
+            value={report.range}
           />
           <ReportInterval
+            chartType={chartType}
             className="min-w-0"
             interval={interval}
-            range={range}
-            chartType={chartType}
             onChange={setInterval}
+            range={range}
           />
           <ReportChartType
-            value={chartType}
             onChange={(type) => {
               setChartType(type);
             }}
+            value={chartType}
           />
         </div>
         <Button
           icon={SaveIcon}
-          variant="outline"
-          size="sm"
           onClick={() => {
             pushModal('SaveReport', {
               report,
               disableRedirect: true,
             });
           }}
+          size="sm"
+          variant="outline"
         >
           Save report
         </Button>

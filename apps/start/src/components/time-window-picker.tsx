@@ -1,3 +1,9 @@
+import { timeWindows } from '@openpanel/constants';
+import type { IChartRange, IInterval } from '@openpanel/validation';
+import { bind } from 'bind-event-listener';
+import { endOfDay, format, startOfDay } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,24 +17,18 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { pushModal, useOnPushModal } from '@/modals';
 import { cn } from '@/utils/cn';
-import { bind } from 'bind-event-listener';
-import { CalendarIcon } from 'lucide-react';
-import { useCallback, useEffect, useRef } from 'react';
-
 import { shouldIgnoreKeypress } from '@/utils/should-ignore-keypress';
-import { timeWindows } from '@openpanel/constants';
-import type { IChartRange } from '@openpanel/validation';
-import { endOfDay, format, startOfDay } from 'date-fns';
 
-type Props = {
+interface Props {
   value: IChartRange;
   onChange: (value: IChartRange) => void;
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
+  onIntervalChange: (interval: IInterval) => void;
   endDate: string | null;
   startDate: string | null;
   className?: string;
-};
+}
 export function TimeWindowPicker({
   value,
   onChange,
@@ -36,6 +36,7 @@ export function TimeWindowPicker({
   onStartDateChange,
   endDate,
   onEndDateChange,
+  onIntervalChange,
   className,
 }: Props) {
   const isDateRangerPickerOpen = useRef(false);
@@ -46,10 +47,11 @@ export function TimeWindowPicker({
 
   const handleCustom = useCallback(() => {
     pushModal('DateRangerPicker', {
-      onChange: ({ startDate, endDate }) => {
+      onChange: ({ startDate, endDate, interval }) => {
         onStartDateChange(format(startOfDay(startDate), 'yyyy-MM-dd HH:mm:ss'));
         onEndDateChange(format(endOfDay(endDate), 'yyyy-MM-dd HH:mm:ss'));
         onChange('custom');
+        onIntervalChange(interval);
       },
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
@@ -69,7 +71,7 @@ export function TimeWindowPicker({
         }
 
         const match = Object.values(timeWindows).find(
-          (tw) => event.key === tw.shortcut.toLowerCase(),
+          (tw) => event.key === tw.shortcut.toLowerCase()
         );
         if (match?.key === 'custom') {
           handleCustom();
@@ -84,9 +86,9 @@ export function TimeWindowPicker({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
-          icon={CalendarIcon}
           className={cn('justify-start', className)}
+          icon={CalendarIcon}
+          variant="outline"
         >
           {timeWindow?.label}
         </Button>
