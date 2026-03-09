@@ -411,8 +411,6 @@ export const gscRouter = createTRPCRouter({
         throw TRPCAccessError('You do not have access to this project');
       }
       const { startDate, endDate } = await resolveDates(input.projectId, input);
-      // Clear stale cache so hash-stripping fix applies immediately
-      await getGscCannibalization.clear(input.projectId, startDate, endDate);
       return getGscCannibalization(input.projectId, startDate, endDate);
     }),
 });

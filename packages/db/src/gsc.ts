@@ -405,11 +405,15 @@ export const getGscCannibalization = cacheable(
       // Merge into existing page entry if already seen (from a different hash variant)
       const existing = entry.pages.find((p) => p.page === page);
       if (existing) {
+        const totalImpressions = existing.impressions + row.impressions;
+        if (totalImpressions > 0) {
+          existing.position =
+            (existing.position * existing.impressions + row.position * row.impressions) / totalImpressions;
+        }
         existing.clicks += row.clicks;
         existing.impressions += row.impressions;
         existing.ctr =
           existing.impressions > 0 ? existing.clicks / existing.impressions : 0;
-        existing.position = Math.min(existing.position, row.position);
       } else {
         entry.pages.push({
           page,
