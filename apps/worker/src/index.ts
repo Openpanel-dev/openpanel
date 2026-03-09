@@ -5,6 +5,7 @@ import { createInitialSalts } from '@openpanel/db';
 import {
   cronQueue,
   eventsGroupQueues,
+  gscQueue,
   importQueue,
   insightsQueue,
   miscQueue,
@@ -12,9 +13,8 @@ import {
   sessionsQueue,
 } from '@openpanel/queue';
 import express from 'express';
-import client from 'prom-client';
-
 import { BullBoardGroupMQAdapter } from 'groupmq';
+import client from 'prom-client';
 import sourceMapSupport from 'source-map-support';
 import { bootCron } from './boot-cron';
 import { bootWorkers } from './boot-workers';
@@ -39,7 +39,7 @@ async function start() {
     createBullBoard({
       queues: [
         ...eventsGroupQueues.map(
-          (queue) => new BullBoardGroupMQAdapter(queue) as any,
+          (queue) => new BullBoardGroupMQAdapter(queue) as any
         ),
         new BullMQAdapter(sessionsQueue),
         new BullMQAdapter(cronQueue),
@@ -47,8 +47,9 @@ async function start() {
         new BullMQAdapter(miscQueue),
         new BullMQAdapter(importQueue),
         new BullMQAdapter(insightsQueue),
+        new BullMQAdapter(gscQueue),
       ],
-      serverAdapter: serverAdapter,
+      serverAdapter,
     });
 
     app.use('/', serverAdapter.getRouter());

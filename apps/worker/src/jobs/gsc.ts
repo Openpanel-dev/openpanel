@@ -1,18 +1,20 @@
 import { db, syncGscData } from '@openpanel/db';
-import { gscQueue } from '@openpanel/queue';
 import type { GscQueuePayload } from '@openpanel/queue';
+import { gscQueue } from '@openpanel/queue';
 import type { Job } from 'bullmq';
 import { logger } from '../utils/logger';
 
 const BACKFILL_MONTHS = 6;
 const CHUNK_DAYS = 14;
 
-export async function gscJob(job: Job<GscQueuePayload>) {
+export function gscJob(job: Job<GscQueuePayload>) {
   switch (job.data.type) {
     case 'gscProjectSync':
       return gscProjectSyncJob(job.data.payload.projectId);
     case 'gscProjectBackfill':
       return gscProjectBackfillJob(job.data.payload.projectId);
+    default:
+      throw new Error('Unknown GSC job type');
   }
 }
 
@@ -59,7 +61,9 @@ async function gscProjectSyncJob(projectId: string) {
 async function gscProjectBackfillJob(projectId: string) {
   const conn = await db.gscConnection.findUnique({ where: { projectId } });
   if (!conn?.siteUrl) {
-    logger.warn('GSC backfill skipped: no connection or siteUrl', { projectId });
+    logger.warn('GSC backfill skipped: no connection or siteUrl', {
+      projectId,
+    });
     return;
   }
 
