@@ -1,3 +1,4 @@
+import PageDetails from './page-details';
 import { createPushModal } from 'pushmodal';
 import AddClient from './add-client';
 import AddDashboard from './add-dashboard';
@@ -34,6 +35,7 @@ import OverviewTopPagesModal from '@/components/overview/overview-top-pages-moda
 import { op } from '@/utils/op';
 
 const modals = {
+  PageDetails,
   OverviewTopPagesModal,
   OverviewTopGenericModal,
   RequestPasswordReset,

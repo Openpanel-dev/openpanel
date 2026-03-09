@@ -1,30 +1,8 @@
-import { COOKIE_OPTIONS, googleGsc } from '@openpanel/auth';
-import { db } from '@openpanel/db';
+import { googleGsc } from '@openpanel/auth';
+import { db, encrypt } from '@openpanel/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { LogError } from '@/utils/errors';
-
-export async function gscInitiate(req: FastifyRequest, reply: FastifyReply) {
-  const schema = z.object({
-    state: z.string(),
-    code_verifier: z.string(),
-    project_id: z.string(),
-    redirect: z.string().url(),
-  });
-
-  const query = schema.safeParse(req.query);
-  if (!query.success) {
-    return reply.status(400).send({ error: 'Invalid parameters' });
-  }
-
-  const { state, code_verifier, project_id, redirect } = query.data;
-
-  reply.setCookie('gsc_oauth_state', state, { maxAge: 60 * 10, ...COOKIE_OPTIONS });
-  reply.setCookie('gsc_code_verifier', code_verifier, { maxAge: 60 * 10, ...COOKIE_OPTIONS });
-  reply.setCookie('gsc_project_id', project_id, { maxAge: 60 * 10, ...COOKIE_OPTIONS });
-
-  return reply.redirect(redirect);
-}
 
 export async function gscGoogleCallback(
   req: FastifyRequest,
@@ -89,14 +67,14 @@ export async function gscGoogleCallback(
       where: { projectId },
       create: {
         projectId,
-        accessToken,
-        refreshToken,
+        accessToken: encrypt(accessToken),
+        refreshToken: encrypt(refreshToken),
         accessTokenExpiresAt,
         siteUrl: '',
       },
       update: {
-        accessToken,
-        refreshToken,
+        accessToken: encrypt(accessToken),
+        refreshToken: encrypt(refreshToken),
         accessTokenExpiresAt,
         lastSyncStatus: null,
         lastSyncError: null,

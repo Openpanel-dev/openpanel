@@ -338,6 +338,79 @@ export const eventRouter = createTRPCRouter({
       });
     }),
 
+  pagesTimeseries: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        range: zRange,
+        interval: zTimeInterval,
+      }),
+    )
+    .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
+      return pagesService.getPageTimeseries({
+        projectId: input.projectId,
+        startDate,
+        endDate,
+        timezone,
+        interval: input.interval,
+      });
+    }),
+
+  previousPages: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        range: zRange,
+        interval: zTimeInterval,
+      }),
+    )
+    .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
+
+      const startMs = new Date(startDate).getTime();
+      const endMs = new Date(endDate).getTime();
+      const duration = endMs - startMs;
+
+      const prevEnd = new Date(startMs - 1);
+      const prevStart = new Date(prevEnd.getTime() - duration);
+      const fmt = (d: Date) =>
+        d.toISOString().slice(0, 19).replace('T', ' ');
+
+      return pagesService.getTopPages({
+        projectId: input.projectId,
+        startDate: fmt(prevStart),
+        endDate: fmt(prevEnd),
+        timezone,
+      });
+    }),
+
+  pageTimeseries: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        range: zRange,
+        interval: zTimeInterval,
+        origin: z.string(),
+        path: z.string(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
+      return pagesService.getPageTimeseries({
+        projectId: input.projectId,
+        startDate,
+        endDate,
+        timezone,
+        interval: input.interval,
+        filterOrigin: input.origin,
+        filterPath: input.path,
+      });
+    }),
+
   origin: protectedProcedure
     .input(
       z.object({

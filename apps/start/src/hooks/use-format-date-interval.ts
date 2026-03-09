@@ -1,3 +1,5 @@
+import { getISOWeek } from 'date-fns';
+
 import type { IInterval } from '@openpanel/validation';
 
 export function formatDateInterval(options: {
@@ -8,15 +10,19 @@ export function formatDateInterval(options: {
   const { interval, date, short } = options;
   try {
     if (interval === 'hour' || interval === 'minute') {
+      if (short) {
+        return new Intl.DateTimeFormat('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        }).format(date);
+      }
       return new Intl.DateTimeFormat('en-GB', {
-        ...(!short
-          ? {
-              month: '2-digit',
-              day: '2-digit',
-            }
-          : {}),
+        month: '2-digit',
+        day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
+        hour12: false,
       }).format(date);
     }
 
@@ -25,6 +31,9 @@ export function formatDateInterval(options: {
     }
 
     if (interval === 'week') {
+      if (short) {
+        return `W${getISOWeek(date)}`;
+      }
       return new Intl.DateTimeFormat('en-GB', {
         weekday: 'short',
         day: '2-digit',
@@ -33,6 +42,12 @@ export function formatDateInterval(options: {
     }
 
     if (interval === 'day') {
+      if (short) {
+        return new Intl.DateTimeFormat('en-GB', {
+          day: 'numeric',
+          month: 'short',
+        }).format(date);
+      }
       return new Intl.DateTimeFormat('en-GB', {
         weekday: 'short',
         day: '2-digit',
@@ -41,7 +56,7 @@ export function formatDateInterval(options: {
     }
 
     return date.toISOString();
-  } catch (e) {
+  } catch {
     return '';
   }
 }

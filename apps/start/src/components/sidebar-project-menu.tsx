@@ -18,6 +18,7 @@ import {
   SparklesIcon,
   TrendingUpDownIcon,
   UndoDotIcon,
+  UserCircleIcon,
   UsersIcon,
   WallpaperIcon,
 } from 'lucide-react';
@@ -56,11 +57,11 @@ export default function SidebarProjectMenu({
         label="Insights"
       />
       <SidebarLink href={'/pages'} icon={LayersIcon} label="Pages" />
+      <SidebarLink href={'/seo'} icon={SearchIcon} label="SEO" />
       <SidebarLink href={'/realtime'} icon={Globe2Icon} label="Realtime" />
       <SidebarLink href={'/events'} icon={GanttChartIcon} label="Events" />
       <SidebarLink href={'/sessions'} icon={UsersIcon} label="Sessions" />
-      <SidebarLink href={'/profiles'} icon={UsersIcon} label="Profiles" />
-      <SidebarLink href={'/seo'} icon={SearchIcon} label="SEO" />
+      <SidebarLink href={'/profiles'} icon={UserCircleIcon} label="Profiles" />
       <div className="mt-4 mb-2 font-medium text-muted-foreground text-sm">
         Manage
       </div>

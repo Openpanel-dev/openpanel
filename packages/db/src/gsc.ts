@@ -1,4 +1,6 @@
+import { cacheable } from '@openpanel/redis';
 import { originalCh } from './clickhouse/client';
+import { decrypt, encrypt } from './encryption';
 import { db } from './prisma-client';
 
 export interface GscSite {
@@ -44,20 +46,36 @@ export async function getGscAccessToken(projectId: string): Promise<string> {
     conn.accessTokenExpiresAt &&
     conn.accessTokenExpiresAt.getTime() > Date.now() + 60_000
   ) {
-    return conn.accessToken;
+    return decrypt(conn.accessToken);
   }
 
-  const { accessToken, expiresAt } = await refreshGscToken(conn.refreshToken);
-  await db.gscConnection.update({
-    where: { projectId },
-    data: { accessToken, accessTokenExpiresAt: expiresAt },
-  });
-  return accessToken;
+  try {
+    const { accessToken, expiresAt } = await refreshGscToken(
+      decrypt(conn.refreshToken)
+    );
+    await db.gscConnection.update({
+      where: { projectId },
+      data: { accessToken: encrypt(accessToken), accessTokenExpiresAt: expiresAt },
+    });
+    return accessToken;
+  } catch (error) {
+    await db.gscConnection.update({
+      where: { projectId },
+      data: {
+        lastSyncStatus: 'token_expired',
+        lastSyncError:
+          error instanceof Error ? error.message : 'Failed to refresh token',
+      },
+    });
+    throw new Error(
+      'GSC token has expired or been revoked. Please reconnect Google Search Console.'
+    );
+  }
 }
 
 export async function listGscSites(projectId: string): Promise<GscSite[]> {
   const accessToken = await getGscAccessToken(projectId);
-  const res = await fetch('https://www.googleapis.com/webmaster/v3/sites', {
+  const res = await fetch('https://www.googleapis.com/webmasters/v3/sites', {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
@@ -80,15 +98,26 @@ interface GscApiRow {
   position: number;
 }
 
+interface GscDimensionFilter {
+  dimension: string;
+  operator: string;
+  expression: string;
+}
+
+interface GscFilterGroup {
+  filters: GscDimensionFilter[];
+}
+
 async function queryGscSearchAnalytics(
   accessToken: string,
   siteUrl: string,
   startDate: string,
   endDate: string,
-  dimensions: string[]
+  dimensions: string[],
+  dimensionFilterGroups?: GscFilterGroup[]
 ): Promise<GscApiRow[]> {
   const encodedSiteUrl = encodeURIComponent(siteUrl);
-  const url = `https://www.googleapis.com/webmaster/v3/sites/${encodedSiteUrl}/searchAnalytics/query`;
+  const url = `https://www.googleapis.com/webmasters/v3/sites/${encodedSiteUrl}/searchAnalytics/query`;
 
   const allRows: GscApiRow[] = [];
   let startRow = 0;
@@ -108,6 +137,7 @@ async function queryGscSearchAnalytics(
         rowLimit,
         startRow,
         dataState: 'all',
+        ...(dimensionFilterGroups && { dimensionFilterGroups }),
       }),
     });
 
@@ -234,7 +264,8 @@ export async function syncGscData(
 export async function getGscOverview(
   projectId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  interval: 'day' | 'week' | 'month' = 'day'
 ): Promise<
   Array<{
     date: string;
@@ -244,10 +275,17 @@ export async function getGscOverview(
     position: number;
   }>
 > {
+  const dateExpr =
+    interval === 'month'
+      ? 'toStartOfMonth(date)'
+      : interval === 'week'
+        ? 'toStartOfWeek(date)'
+        : 'date';
+
   const result = await originalCh.query({
     query: `
       SELECT
-        date,
+        ${dateExpr} as date,
         sum(clicks) as clicks,
         sum(impressions) as impressions,
         avg(ctr) as ctr,
@@ -301,6 +339,176 @@ export async function getGscPages(
     format: 'JSONEachRow',
   });
   return result.json();
+}
+
+export interface GscCannibalizedQuery {
+  query: string;
+  totalImpressions: number;
+  totalClicks: number;
+  pages: Array<{
+    page: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }>;
+}
+
+export const getGscCannibalization = cacheable(
+  async (
+    projectId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<GscCannibalizedQuery[]> => {
+    const conn = await db.gscConnection.findUniqueOrThrow({
+      where: { projectId },
+    });
+    const accessToken = await getGscAccessToken(projectId);
+
+    const rows = await queryGscSearchAnalytics(
+      accessToken,
+      conn.siteUrl,
+      startDate,
+      endDate,
+      ['query', 'page']
+    );
+
+    const map = new Map<
+      string,
+      {
+        totalImpressions: number;
+        totalClicks: number;
+        pages: GscCannibalizedQuery['pages'];
+      }
+    >();
+
+    for (const row of rows) {
+      const query = row.keys[0] ?? '';
+      // Strip hash fragments — GSC records heading anchors (e.g. /page#section)
+      // as separate URLs but Google treats them as the same page
+      let page = row.keys[1] ?? '';
+      try {
+        const u = new URL(page);
+        u.hash = '';
+        page = u.toString();
+      } catch {
+        page = page.split('#')[0] ?? page;
+      }
+
+      const entry = map.get(query) ?? {
+        totalImpressions: 0,
+        totalClicks: 0,
+        pages: [],
+      };
+      entry.totalImpressions += row.impressions;
+      entry.totalClicks += row.clicks;
+      // Merge into existing page entry if already seen (from a different hash variant)
+      const existing = entry.pages.find((p) => p.page === page);
+      if (existing) {
+        existing.clicks += row.clicks;
+        existing.impressions += row.impressions;
+        existing.ctr = (existing.ctr + row.ctr) / 2;
+        existing.position = Math.min(existing.position, row.position);
+      } else {
+        entry.pages.push({
+          page,
+          clicks: row.clicks,
+          impressions: row.impressions,
+          ctr: row.ctr,
+          position: row.position,
+        });
+      }
+      map.set(query, entry);
+    }
+
+    return [...map.entries()]
+      .filter(([, v]) => v.pages.length >= 2 && v.totalImpressions >= 100)
+      .sort(([, a], [, b]) => b.totalImpressions - a.totalImpressions)
+      .slice(0, 50)
+      .map(([query, v]) => ({
+        query,
+        totalImpressions: v.totalImpressions,
+        totalClicks: v.totalClicks,
+        pages: v.pages.sort((a, b) =>
+          a.position !== b.position
+            ? a.position - b.position
+            : b.impressions - a.impressions
+        ),
+      }));
+  },
+  60 * 60 * 4
+);
+
+export async function getGscPageDetails(
+  projectId: string,
+  page: string,
+  startDate: string,
+  endDate: string
+): Promise<{
+  timeseries: Array<{ date: string; clicks: number; impressions: number; ctr: number; position: number }>;
+  queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }>;
+}> {
+  const conn = await db.gscConnection.findUniqueOrThrow({ where: { projectId } });
+  const accessToken = await getGscAccessToken(projectId);
+  const filterGroups: GscFilterGroup[] = [{ filters: [{ dimension: 'page', operator: 'equals', expression: page }] }];
+
+  const [timeseriesRows, queryRows] = await Promise.all([
+    queryGscSearchAnalytics(accessToken, conn.siteUrl, startDate, endDate, ['date'], filterGroups),
+    queryGscSearchAnalytics(accessToken, conn.siteUrl, startDate, endDate, ['query'], filterGroups),
+  ]);
+
+  return {
+    timeseries: timeseriesRows.map((row) => ({
+      date: row.keys[0] ?? '',
+      clicks: row.clicks,
+      impressions: row.impressions,
+      ctr: row.ctr,
+      position: row.position,
+    })),
+    queries: queryRows.map((row) => ({
+      query: row.keys[0] ?? '',
+      clicks: row.clicks,
+      impressions: row.impressions,
+      ctr: row.ctr,
+      position: row.position,
+    })),
+  };
+}
+
+export async function getGscQueryDetails(
+  projectId: string,
+  query: string,
+  startDate: string,
+  endDate: string
+): Promise<{
+  timeseries: Array<{ date: string; clicks: number; impressions: number; ctr: number; position: number }>;
+  pages: Array<{ page: string; clicks: number; impressions: number; ctr: number; position: number }>;
+}> {
+  const conn = await db.gscConnection.findUniqueOrThrow({ where: { projectId } });
+  const accessToken = await getGscAccessToken(projectId);
+  const filterGroups: GscFilterGroup[] = [{ filters: [{ dimension: 'query', operator: 'equals', expression: query }] }];
+
+  const [timeseriesRows, pageRows] = await Promise.all([
+    queryGscSearchAnalytics(accessToken, conn.siteUrl, startDate, endDate, ['date'], filterGroups),
+    queryGscSearchAnalytics(accessToken, conn.siteUrl, startDate, endDate, ['page'], filterGroups),
+  ]);
+
+  return {
+    timeseries: timeseriesRows.map((row) => ({
+      date: row.keys[0] ?? '',
+      clicks: row.clicks,
+      impressions: row.impressions,
+      ctr: row.ctr,
+      position: row.position,
+    })),
+    pages: pageRows.map((row) => ({
+      page: row.keys[0] ?? '',
+      clicks: row.clicks,
+      impressions: row.impressions,
+      ctr: row.ctr,
+      position: row.position,
+    })),
+  };
 }
 
 export async function getGscQueries(

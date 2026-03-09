@@ -1,3 +1,9 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
+import { formatDistanceToNow } from 'date-fns';
+import { CheckCircleIcon, Loader2Icon, XCircleIcon } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { Skeleton } from '@/components/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,12 +16,6 @@ import {
 } from '@/components/ui/select';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { formatDistanceToNow } from 'date-fns';
-import { CheckCircleIcon, Loader2Icon, XCircleIcon } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/settings/_tabs/gsc'
@@ -46,14 +46,7 @@ function GscSettings() {
   const initiateOAuth = useMutation(
     trpc.gsc.initiateOAuth.mutationOptions({
       onSuccess: (data) => {
-        // Route through the API /gsc/initiate endpoint which sets cookies then redirects to Google
-        const apiUrl = (import.meta.env.VITE_API_URL as string) ?? '';
-        const initiateUrl = new URL(`${apiUrl}/gsc/initiate`);
-        initiateUrl.searchParams.set('state', data.state);
-        initiateUrl.searchParams.set('code_verifier', data.codeVerifier);
-        initiateUrl.searchParams.set('project_id', data.projectId);
-        initiateUrl.searchParams.set('redirect', data.url);
-        window.location.href = initiateUrl.toString();
+        window.location.href = data.url;
       },
       onError: () => {
         toast.error('Failed to initiate Google Search Console connection');
@@ -102,19 +95,21 @@ function GscSettings() {
     return (
       <div className="space-y-6">
         <div>
-          <h3 className="text-lg font-medium">Google Search Console</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Connect your Google Search Console property to import search performance data.
+          <h3 className="font-medium text-lg">Google Search Console</h3>
+          <p className="mt-1 text-muted-foreground text-sm">
+            Connect your Google Search Console property to import search
+            performance data.
           </p>
         </div>
-        <div className="rounded-lg border p-6 flex flex-col gap-4">
-          <p className="text-sm text-muted-foreground">
-            You will be redirected to Google to authorize access. Only read-only access to Search Console data is requested.
+        <div className="flex flex-col gap-4 rounded-lg border p-6">
+          <p className="text-muted-foreground text-sm">
+            You will be redirected to Google to authorize access. Only read-only
+            access to Search Console data is requested.
           </p>
           <Button
             className="w-fit"
-            onClick={() => initiateOAuth.mutate({ projectId })}
             disabled={initiateOAuth.isPending}
+            onClick={() => initiateOAuth.mutate({ projectId })}
           >
             {initiateOAuth.isPending && (
               <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
@@ -132,21 +127,22 @@ function GscSettings() {
     return (
       <div className="space-y-6">
         <div>
-          <h3 className="text-lg font-medium">Select a property</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Choose which Google Search Console property to connect to this project.
+          <h3 className="font-medium text-lg">Select a property</h3>
+          <p className="mt-1 text-muted-foreground text-sm">
+            Choose which Google Search Console property to connect to this
+            project.
           </p>
         </div>
-        <div className="rounded-lg border p-6 space-y-4">
+        <div className="space-y-4 rounded-lg border p-6">
           {sitesQuery.isLoading ? (
             <Skeleton className="h-10 w-full" />
           ) : sites.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               No Search Console properties found for this Google account.
             </p>
           ) : (
             <>
-              <Select value={selectedSite} onValueChange={setSelectedSite}>
+              <Select onValueChange={setSelectedSite} value={selectedSite}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a property..." />
                 </SelectTrigger>
@@ -160,7 +156,9 @@ function GscSettings() {
               </Select>
               <Button
                 disabled={!selectedSite || selectSite.isPending}
-                onClick={() => selectSite.mutate({ projectId, siteUrl: selectedSite })}
+                onClick={() =>
+                  selectSite.mutate({ projectId, siteUrl: selectedSite })
+                }
               >
                 {selectSite.isPending && (
                   <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
@@ -171,11 +169,61 @@ function GscSettings() {
           )}
         </div>
         <Button
-          variant="ghost"
-          size="sm"
           onClick={() => disconnect.mutate({ projectId })}
+          size="sm"
+          variant="ghost"
         >
           Cancel
+        </Button>
+      </div>
+    );
+  }
+
+  // Token expired — show reconnect prompt
+  if (connection.lastSyncStatus === 'token_expired') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="font-medium text-lg">Google Search Console</h3>
+          <p className="mt-1 text-muted-foreground text-sm">
+            Connected to Google Search Console.
+          </p>
+        </div>
+        <div className="flex flex-col gap-4 rounded-lg border border-destructive/50 bg-destructive/5 p-6">
+          <div className="flex items-center gap-2 text-destructive">
+            <XCircleIcon className="h-4 w-4" />
+            <span className="font-medium text-sm">Authorization expired</span>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Your Google Search Console authorization has expired or been
+            revoked. Please reconnect to continue syncing data.
+          </p>
+          {connection.lastSyncError && (
+            <p className="break-words font-mono text-muted-foreground text-xs">
+              {connection.lastSyncError}
+            </p>
+          )}
+          <Button
+            className="w-fit"
+            disabled={initiateOAuth.isPending}
+            onClick={() => initiateOAuth.mutate({ projectId })}
+          >
+            {initiateOAuth.isPending && (
+              <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            Reconnect Google Search Console
+          </Button>
+        </div>
+        <Button
+          disabled={disconnect.isPending}
+          onClick={() => disconnect.mutate({ projectId })}
+          size="sm"
+          variant="ghost"
+        >
+          {disconnect.isPending && (
+            <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+          )}
+          Disconnect
         </Button>
       </div>
     );
@@ -199,28 +247,35 @@ function GscSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium">Google Search Console</h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h3 className="font-medium text-lg">Google Search Console</h3>
+        <p className="mt-1 text-muted-foreground text-sm">
           Connected to Google Search Console.
         </p>
       </div>
 
-      <div className="rounded-lg border divide-y">
-        <div className="p-4 flex items-center justify-between">
-          <div className="text-sm font-medium">Property</div>
-          <div className="font-mono text-sm text-muted-foreground">
+      <div className="divide-y rounded-lg border">
+        <div className="flex items-center justify-between p-4">
+          <div className="font-medium text-sm">Property</div>
+          <div className="font-mono text-muted-foreground text-sm">
             {connection.siteUrl}
           </div>
         </div>
 
         {connection.backfillStatus && (
-          <div className="p-4 flex items-center justify-between">
-            <div className="text-sm font-medium">Backfill</div>
-            <Badge className="capitalize" variant={
-              connection.backfillStatus === 'completed' ? 'success' :
-              connection.backfillStatus === 'failed' ? 'destructive' :
-              connection.backfillStatus === 'running' ? 'default' : 'secondary'
-            }>
+          <div className="flex items-center justify-between p-4">
+            <div className="font-medium text-sm">Backfill</div>
+            <Badge
+              className="capitalize"
+              variant={
+                connection.backfillStatus === 'completed'
+                  ? 'success'
+                  : connection.backfillStatus === 'failed'
+                    ? 'destructive'
+                    : connection.backfillStatus === 'running'
+                      ? 'default'
+                      : 'secondary'
+              }
+            >
               {connection.backfillStatus === 'running' && (
                 <Loader2Icon className="mr-1 h-3 w-3 animate-spin" />
               )}
@@ -230,16 +285,19 @@ function GscSettings() {
         )}
 
         {connection.lastSyncedAt && (
-          <div className="p-4 flex items-center justify-between">
-            <div className="text-sm font-medium">Last synced</div>
+          <div className="flex items-center justify-between p-4">
+            <div className="font-medium text-sm">Last synced</div>
             <div className="flex items-center gap-2">
               {connection.lastSyncStatus && (
-                <Badge className="capitalize" variant={syncStatusVariant as any}>
+                <Badge
+                  className="capitalize"
+                  variant={syncStatusVariant as any}
+                >
                   {syncStatusIcon}
                   {connection.lastSyncStatus}
                 </Badge>
               )}
-              <span className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 {formatDistanceToNow(new Date(connection.lastSyncedAt), {
                   addSuffix: true,
                 })}
@@ -250,8 +308,10 @@ function GscSettings() {
 
         {connection.lastSyncError && (
           <div className="p-4">
-            <div className="text-sm font-medium text-destructive">Last error</div>
-            <div className="mt-1 text-sm text-muted-foreground font-mono break-words">
+            <div className="font-medium text-destructive text-sm">
+              Last error
+            </div>
+            <div className="mt-1 break-words font-mono text-muted-foreground text-sm">
               {connection.lastSyncError}
             </div>
           </div>
@@ -259,10 +319,10 @@ function GscSettings() {
       </div>
 
       <Button
-        variant="destructive"
-        size="sm"
-        onClick={() => disconnect.mutate({ projectId })}
         disabled={disconnect.isPending}
+        onClick={() => disconnect.mutate({ projectId })}
+        size="sm"
+        variant="destructive"
       >
         {disconnect.isPending && (
           <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
