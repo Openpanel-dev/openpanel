@@ -1,6 +1,7 @@
+import type { IChartRange, IInterval } from '@openpanel/validation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { AlertCircleIcon, ChevronsUpDownIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pagination } from '@/components/pagination';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -9,8 +10,8 @@ import { cn } from '@/utils/cn';
 
 interface GscCannibalizationProps {
   projectId: string;
-  range: string;
-  interval: string;
+  range: IChartRange;
+  interval: IInterval;
   startDate?: string;
   endDate?: string;
 }
@@ -30,7 +31,13 @@ export function GscCannibalization({
 
   const query = useQuery(
     trpc.gsc.getCannibalization.queryOptions(
-      { projectId, range: range as any, interval: interval as any },
+      {
+        projectId,
+        range,
+        interval,
+        startDate,
+        endDate,
+      },
       { placeholderData: keepPreviousData }
     )
   );
@@ -50,6 +57,9 @@ export function GscCannibalization({
   const items = query.data ?? [];
 
   const pageCount = Math.ceil(items.length / pageSize) || 1;
+  useEffect(() => {
+    setPage((p) => Math.max(0, Math.min(p, pageCount - 1)));
+  }, [items, pageSize, pageCount]);
   const paginatedItems = useMemo(
     () => items.slice(page * pageSize, (page + 1) * pageSize),
     [items, page, pageSize]
@@ -99,7 +109,6 @@ export function GscCannibalization({
           ))}
         {paginatedItems.map((item) => {
           const isOpen = expanded.has(item.query);
-          const winner = item.pages[0];
           const avgCtr =
             item.pages.reduce((s, p) => s + p.ctr, 0) / item.pages.length;
 

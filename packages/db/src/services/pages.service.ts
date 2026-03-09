@@ -8,6 +8,7 @@ export interface IGetPagesInput {
   endDate: string;
   timezone: string;
   search?: string;
+  limit?: number;
 }
 
 export interface IPageTimeseriesRow {
@@ -37,6 +38,7 @@ export class PagesService {
     endDate,
     timezone,
     search,
+    limit,
   }: IGetPagesInput): Promise<ITopPage[]> {
     // CTE: Get titles from the last 30 days for faster retrieval
     const titlesCte = clix(this.client, timezone)
@@ -92,12 +94,18 @@ export class PagesService {
         clix.datetime(endDate, 'toDateTime'),
       ])
       .when(!!search, (q) => {
-        q.where('e.path', 'LIKE', `%${search}%`);
+        const term = `%${search}%`;
+        q.whereGroup()
+          .where('e.path', 'LIKE', term)
+          .orWhere('e.origin', 'LIKE', term)
+          .orWhere('pt.title', 'LIKE', term)
+          .end();
       })
       .groupBy(['e.origin', 'e.path', 'pt.title'])
-      .orderBy('sessions', 'DESC')
-      .limit(1000);
-
+      .orderBy('sessions', 'DESC');
+    if (limit !== undefined) {
+      query.limit(limit);
+    }
     return query.execute();
   }
 

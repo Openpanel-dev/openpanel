@@ -103,6 +103,16 @@ export function useColumns({
           if (prev == null) {
             return <span className="text-muted-foreground">—</span>;
           }
+          if (prev === 0) {
+            return (
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm tabular-nums">
+                  {number.short(row.original.sessions)}
+                </span>
+                <span className="text-muted-foreground">new</span>
+              </div>
+            );
+          }
 
           const pct = ((row.original.sessions - prev) / prev) * 100;
           const isPos = pct >= 0;
@@ -112,15 +122,12 @@ export function useColumns({
               <span className="font-mono text-sm tabular-nums">
                 {number.short(row.original.sessions)}
               </span>
-              {prev === 0 && <span className="text-muted-foreground">new</span>}
-              {prev > 0 && (
-                <span
-                  className={`font-mono text-sm tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
-                >
-                  {isPos ? '+' : ''}
-                  {pct.toFixed(1)}%
-                </span>
-              )}
+              <span
+                className={`font-mono text-sm tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
+              >
+                {isPos ? '+' : ''}
+                {pct.toFixed(1)}%
+              </span>
             </div>
           );
         },

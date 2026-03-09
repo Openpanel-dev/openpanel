@@ -4,6 +4,22 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { LogError } from '@/utils/errors';
 
+const OAUTH_SENSITIVE_KEYS = ['code', 'state'];
+
+function sanitizeOAuthQuery(
+  query: Record<string, unknown> | null | undefined
+): Record<string, string> {
+  if (!query || typeof query !== 'object') {
+    return {};
+  }
+  return Object.fromEntries(
+    Object.entries(query).map(([k, v]) => [
+      k,
+      OAUTH_SENSITIVE_KEYS.includes(k) ? '<redacted>' : String(v),
+    ])
+  );
+}
+
 export async function gscGoogleCallback(
   req: FastifyRequest,
   reply: FastifyReply
@@ -16,10 +32,10 @@ export async function gscGoogleCallback(
 
     const query = schema.safeParse(req.query);
     if (!query.success) {
-      throw new LogError('Invalid GSC callback query params', {
-        error: query.error,
-        query: req.query,
-      });
+      throw new LogError(
+        'Invalid GSC callback query params',
+        sanitizeOAuthQuery(req.query as Record<string, unknown>)
+      );
     }
 
     const { code, state } = query.data;
@@ -27,16 +43,24 @@ export async function gscGoogleCallback(
     const codeVerifier = req.cookies.gsc_code_verifier ?? null;
     const projectId = req.cookies.gsc_project_id ?? null;
 
-    if (!storedState || !codeVerifier || !projectId) {
+    const hasStoredState = storedState !== null;
+    const hasCodeVerifier = codeVerifier !== null;
+    const hasProjectId = projectId !== null;
+    const hasAllCookies = hasStoredState && hasCodeVerifier && hasProjectId;
+    if (!hasAllCookies) {
       throw new LogError('Missing GSC OAuth cookies', {
-        storedState: storedState === null,
-        codeVerifier: codeVerifier === null,
-        projectId: projectId === null,
+        storedState: !hasStoredState,
+        codeVerifier: !hasCodeVerifier,
+        projectId: !hasProjectId,
       });
     }
 
     if (state !== storedState) {
-      throw new LogError('GSC OAuth state mismatch', { state, storedState });
+      throw new LogError('GSC OAuth state mismatch', {
+        hasState: true,
+        hasStoredState: true,
+        stateMismatch: true,
+      });
     }
 
     const tokens = await googleGsc.validateAuthorizationCode(
@@ -91,6 +115,9 @@ export async function gscGoogleCallback(
     return reply.redirect(redirectUrl);
   } catch (error) {
     req.log.error(error);
+    reply.clearCookie('gsc_oauth_state');
+    reply.clearCookie('gsc_code_verifier');
+    reply.clearCookie('gsc_project_id');
     return redirectWithError(reply, error);
   }
 }

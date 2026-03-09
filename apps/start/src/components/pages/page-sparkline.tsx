@@ -8,7 +8,7 @@ interface SparklineBarsProps {
   data: { date: string; pageviews: number }[];
 }
 
-const gap = 1;
+const defaultGap = 1;
 const height = 24;
 const width = 100;
 
@@ -38,7 +38,16 @@ function SparklineBars({ data }: SparklineBarsProps) {
   }
   const max = Math.max(...data.map((d) => d.pageviews), 1);
   const total = data.length;
-  const barW = Math.max(2, Math.floor((width - gap * (total - 1)) / total));
+  // Compute bar width to fit SVG width; reduce gap if needed so barW >= 1 when possible
+  let gap = defaultGap;
+  let barW = Math.floor((width - gap * (total - 1)) / total);
+  if (barW < 1 && total > 1) {
+    gap = 0;
+    barW = Math.floor((width - gap * (total - 1)) / total);
+  }
+  if (barW < 1) {
+    barW = 1;
+  }
   const trend = getTrendDirection(data);
   const trendColor =
     trend === '↑'
@@ -71,9 +80,9 @@ function SparklineBars({ data }: SparklineBarsProps) {
       <Tooltiper
         content={
           trend === '↑'
-            ? 'Upgoing trend'
+            ? 'Upward trend'
             : trend === '↓'
-              ? 'Downgoing trend'
+              ? 'Downward trend'
               : 'Stable trend'
         }
       >

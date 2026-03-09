@@ -185,7 +185,7 @@ export const gscRouter = createTRPCRouter({
   getPages: protectedProcedure
     .input(
       zGscDateInput.extend({
-        limit: z.number().min(1).max(1000).optional().default(100),
+        limit: z.number().min(1).max(10_000).optional().default(100),
       })
     )
     .query(async ({ input, ctx }) => {

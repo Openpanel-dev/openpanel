@@ -21,14 +21,17 @@ export default function PageDetails({ type, projectId, value }: Props) {
       <div className="col gap-6">
         {type === 'page' &&
           (() => {
-            let origin = value;
-            let path = '/';
+            let origin: string;
+            let path: string;
             try {
               const url = new URL(value);
               origin = url.origin;
               path = url.pathname + url.search;
             } catch {
-              // value might already be just a path
+              // value is path-only (e.g. "/docs/foo")
+              origin =
+                typeof window !== 'undefined' ? window.location.origin : '';
+              path = value;
             }
             return (
               <PageViewsChart

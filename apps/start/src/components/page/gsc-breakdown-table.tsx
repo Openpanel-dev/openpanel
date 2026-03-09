@@ -43,6 +43,7 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
 
   const breakdownKey = type === 'page' ? 'query' : 'page';
   const breakdownLabel = type === 'page' ? 'Query' : 'Page';
+  const pluralLabel = type === 'page' ? 'queries' : 'pages';
 
   const maxClicks = Math.max(
     ...(breakdownRows as { clicks: number }[]).map((r) => r.clicks),
@@ -52,7 +53,7 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
   return (
     <div className="card overflow-hidden">
       <div className="border-b p-4">
-        <h3 className="font-medium text-sm">Top {breakdownLabel.toLowerCase()}s</h3>
+        <h3 className="font-medium text-sm">Top {pluralLabel}</h3>
       </div>
       {isLoading ? (
         <OverviewWidgetTable

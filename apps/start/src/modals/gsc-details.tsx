@@ -23,33 +23,65 @@ import { SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getChartColor } from '@/utils/theme';
 
-type GscChartData = { date: string; clicks: number; impressions: number };
+interface GscChartData {
+  date: string;
+  clicks: number;
+  impressions: number;
+}
+interface GscViewsChartData {
+  date: string;
+  views: number;
+}
 
 const { TooltipProvider, Tooltip: GscTooltip } = createChartTooltip<
-  GscChartData,
+  GscChartData | GscViewsChartData,
   Record<string, unknown>
 >(({ data }) => {
   const item = data[0];
   if (!item) {
     return null;
   }
+  if (!('date' in item)) {
+    return null;
+  }
+  if ('views' in item && item.views != null) {
+    return (
+      <>
+        <ChartTooltipHeader>
+          <div>{item.date}</div>
+        </ChartTooltipHeader>
+        <ChartTooltipItem color={getChartColor(0)}>
+          <div className="flex justify-between gap-8 font-medium font-mono">
+            <span>Views</span>
+            <span>{item.views.toLocaleString()}</span>
+          </div>
+        </ChartTooltipItem>
+      </>
+    );
+  }
+  const clicks = 'clicks' in item ? item.clicks : undefined;
+  const impressions = 'impressions' in item ? item.impressions : undefined;
   return (
     <>
       <ChartTooltipHeader>
         <div>{item.date}</div>
       </ChartTooltipHeader>
-      <ChartTooltipItem color={getChartColor(0)}>
-        <div className="flex justify-between gap-8 font-medium font-mono">
-          <span>Clicks</span>
-          <span>{item.clicks.toLocaleString()}</span>
-        </div>
-      </ChartTooltipItem>
-      <ChartTooltipItem color={getChartColor(1)}>
-        <div className="flex justify-between gap-8 font-medium font-mono">
-          <span>Impressions</span>
-          <span>{item.impressions.toLocaleString()}</span>
-        </div>
-      </ChartTooltipItem>
+      {clicks != null && (
+        <ChartTooltipItem color={getChartColor(0)}>
+          <div className="flex justify-between gap-8 font-medium font-mono">
+            <span>Clicks</span>
+            <span>{clicks.toLocaleString()}</span>
+          </div>
+        </ChartTooltipItem>
+      )}
+      {impressions != null && (
+        <ChartTooltipItem color={getChartColor(1)}>
+          <div className="flex justify-between gap-8 font-medium font-mono">
+            <span>Impressions</span>
+            <span>{impressions.toLocaleString()}</span>
+          </div>
+        </ChartTooltipItem>
+      )}
     </>
   );
 });
@@ -93,10 +125,25 @@ export default function GscDetails(props: Props) {
     )
   );
 
-  const pagesTimeseriesQuery = useQuery(
-    trpc.event.pagesTimeseries.queryOptions(
-      { projectId, ...dateInput },
-      { enabled: type === 'page' }
+  const { origin: pageOrigin, path: pagePath } =
+    type === 'page'
+      ? (() => {
+          try {
+            const url = new URL(value);
+            return { origin: url.origin, path: url.pathname + url.search };
+          } catch {
+            return {
+              origin: typeof window !== 'undefined' ? window.location.origin : '',
+              path: value,
+            };
+          }
+        })()
+      : { origin: '', path: '' };
+
+  const pageTimeseriesQuery = useQuery(
+    trpc.event.pageTimeseries.queryOptions(
+      { projectId, ...dateInput, origin: pageOrigin, path: pagePath },
+      { enabled: type === 'page' && !!pagePath }
     )
   );
 
@@ -105,7 +152,7 @@ export default function GscDetails(props: Props) {
     type === 'page' ? pageQuery.isLoading : queryQuery.isLoading;
 
   const timeseries = data?.timeseries ?? [];
-  const pagesTimeseries = pagesTimeseriesQuery.data ?? [];
+  const pageTimeseries = pageTimeseriesQuery.data ?? [];
   const breakdownRows =
     type === 'page'
       ? ((data as { queries?: unknown[] } | undefined)?.queries ?? [])
@@ -131,13 +178,14 @@ export default function GscDetails(props: Props) {
         {type === 'page' && (
           <div className="card p-4">
             <h3 className="mb-4 font-medium text-sm">Views & Sessions</h3>
-            {isLoading ? (
+            {isLoading || pageTimeseriesQuery.isLoading ? (
               <Skeleton className="h-40 w-full" />
             ) : (
               <GscViewsChart
-                data={pagesTimeseries
-                  .filter((r) => r.origin + r.path === value)
-                  .map((r) => ({ date: r.date, views: r.pageviews }))}
+                data={pageTimeseries.map((r) => ({
+                  date: r.date,
+                  views: r.pageviews,
+                }))}
               />
             )}
           </div>

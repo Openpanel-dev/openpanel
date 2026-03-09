@@ -320,7 +320,7 @@ export const eventRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         cursor: z.number().optional(),
-        take: z.number().default(20),
+        take: z.number().min(1).optional(),
         search: z.string().optional(),
         range: zRange,
         interval: zTimeInterval,
@@ -335,6 +335,7 @@ export const eventRouter = createTRPCRouter({
         endDate,
         timezone,
         search: input.search,
+        limit: input.take,
       });
     }),
 

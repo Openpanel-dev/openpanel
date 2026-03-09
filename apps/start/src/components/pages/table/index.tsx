@@ -26,7 +26,12 @@ export function PagesTable({ projectId }: PagesTableProps) {
 
   const pagesQuery = useQuery(
     trpc.event.pages.queryOptions(
-      { projectId, cursor: 1, take: 1000, search: undefined, range, interval },
+      {
+        projectId,
+        search: debouncedSearch ?? undefined,
+        range,
+        interval,
+      },
       { placeholderData: keepPreviousData },
     ),
   );
@@ -44,7 +49,7 @@ export function PagesTable({ projectId }: PagesTableProps) {
         range,
         startDate: startDate ?? undefined,
         endDate: endDate ?? undefined,
-        limit: 1000,
+        limit: 10_000,
       },
       { enabled: isGscConnected },
     ),
@@ -88,22 +93,11 @@ export function PagesTable({ projectId }: PagesTableProps) {
     }));
   }, [pagesQuery.data, gscMap]);
 
-  const filteredData = useMemo(() => {
-    if (!debouncedSearch) return rawData;
-    const q = debouncedSearch.toLowerCase();
-    return rawData.filter(
-      (p) =>
-        p.path.toLowerCase().includes(q) ||
-        p.origin.toLowerCase().includes(q) ||
-        (p.title ?? '').toLowerCase().includes(q),
-    );
-  }, [rawData, debouncedSearch]);
-
   const columns = useColumns({ projectId, isGscConnected, previousMap });
 
   const { table } = useTable({
     columns,
-    data: filteredData,
+    data: rawData,
     loading: pagesQuery.isLoading,
     pageSize: 50,
     name: 'pages',
@@ -133,7 +127,9 @@ export function PagesTable({ projectId }: PagesTableProps) {
             : 'Integrate our web SDK to your site to get pages here.',
         }}
         onRowClick={(row) => {
-          if (!isGscConnected) return;
+          if (!isGscConnected) {
+            return;
+          }
           const page = row.original;
           pushModal('PageDetails', {
             type: 'page',

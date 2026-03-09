@@ -407,7 +407,8 @@ export const getGscCannibalization = cacheable(
       if (existing) {
         existing.clicks += row.clicks;
         existing.impressions += row.impressions;
-        existing.ctr = (existing.ctr + row.ctr) / 2;
+        existing.ctr =
+          existing.impressions > 0 ? existing.clicks / existing.impressions : 0;
         existing.position = Math.min(existing.position, row.position);
       } else {
         entry.pages.push({
