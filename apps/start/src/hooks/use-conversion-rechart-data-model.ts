@@ -34,6 +34,9 @@ export function useConversionRechartDataModel(
           dataPoint[`${serie.id}:previousRate`] = item.previousRate;
           dataPoint[`${serie.id}:total`] = item.total;
           dataPoint[`${serie.id}:conversions`] = item.conversions;
+          if (item.ttc) {
+            dataPoint[`${serie.id}:ttc`] = item.ttc;
+          }
         }
       });
 

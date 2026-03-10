@@ -9,6 +9,7 @@ import {
   changeCriteria,
   changeFunnelGroup,
   changeFunnelWindow,
+  changeMeasuring,
   changePrevious,
   changeUnit,
 } from '../reportSlice';
@@ -20,6 +21,7 @@ export function ReportSettings() {
   const unit = useSelector((state) => state.report.unit);
   const funnelGroup = useSelector((state) => state.report.funnelGroup);
   const funnelWindow = useSelector((state) => state.report.funnelWindow);
+  const measuring = useSelector((state) => state.report.measuring);
 
   const dispatch = useDispatch();
 
@@ -36,6 +38,7 @@ export function ReportSettings() {
     }
 
     if (chartType === 'funnel' || chartType === 'conversion') {
+      fields.push('measuring');
       fields.push('funnelGroup');
       fields.push('funnelWindow');
     }
@@ -101,6 +104,33 @@ export function ReportSettings() {
                 {
                   label: '%',
                   value: '%',
+                },
+              ]}
+            />
+          </div>
+        )}
+        {fields.includes('measuring') && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="whitespace-nowrap font-medium">Measuring</span>
+            <Combobox
+              align="end"
+              placeholder="Conversion Rate"
+              value={measuring || 'conversion_rate'}
+              onChange={(val) => {
+                dispatch(
+                  changeMeasuring(
+                    val as 'conversion_rate' | 'time_to_convert',
+                  ),
+                );
+              }}
+              items={[
+                {
+                  label: 'Conversion Rate',
+                  value: 'conversion_rate',
+                },
+                {
+                  label: 'Time to Convert',
+                  value: 'time_to_convert',
                 },
               ]}
             />

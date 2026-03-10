@@ -2,7 +2,7 @@ import type { RouterOutputs } from '@/trpc/client';
 import React, { useMemo } from 'react';
 
 import { Stats, StatsCard } from '@/components/stats';
-import { useNumber } from '@/hooks/use-numer-formatter';
+import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import { formatDate } from '@/utils/date';
 import { average, getPreviousMetric, sum } from '@openpanel/common';
 import { ChevronRightIcon } from 'lucide-react';
@@ -16,6 +16,11 @@ interface Props {
 export function Summary({ data }: Props) {
   const number = useNumber();
   const { report } = useReportChartContext();
+  const isTtc = report.measuring === 'time_to_convert';
+
+  if (isTtc) {
+    return <TtcSummary data={data} />;
+  }
 
   const bestConversionRateMatch = useMemo(() => {
     return data.current.reduce(
@@ -222,6 +227,66 @@ export function Summary({ data }: Props) {
         <StatsCard
           title="Worst conversion rate"
           value={getConversionRateNode(worstConversionRate)}
+        />
+      )}
+    </Stats>
+  );
+}
+
+function TtcSummary({ data }: Props) {
+  const { report } = useReportChartContext();
+
+  const avgTtcValues = data.current.flatMap((serie) =>
+    serie.data.filter((d) => d.ttc).map((d) => d.ttc!.avg),
+  );
+  const overallAvg =
+    avgTtcValues.length > 0
+      ? avgTtcValues.reduce((a, b) => a + b, 0) / avgTtcValues.length
+      : 0;
+
+  const allTtcValues = data.current.flatMap((serie) =>
+    serie.data.filter((d) => d.ttc).map((d) => d.ttc!),
+  );
+  const fastest = allTtcValues.reduce(
+    (min, ttc) => (ttc.min < min ? ttc.min : min),
+    Number.POSITIVE_INFINITY,
+  );
+  const slowest = allTtcValues.reduce(
+    (max, ttc) => (ttc.max > max ? ttc.max : max),
+    0,
+  );
+
+  return (
+    <Stats className="my-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <StatsCard
+        title="Flow"
+        value={
+          <div className="row flex-wrap gap-1">
+            {report.series
+              .filter((item) => item.type === 'event')
+              .map((event, index) => (
+                <div key={event.id} className="row items-center gap-2">
+                  {index !== 0 && <ChevronRightIcon className="size-3" />}
+                  <span>{event.name}</span>
+                </div>
+              ))}
+          </div>
+        }
+      />
+      <StatsCard
+        title="Average time to convert"
+        value={fancyMinutes(overallAvg)}
+      />
+      {fastest !== Number.POSITIVE_INFINITY && (
+        <StatsCard
+          title="Fastest conversion"
+          value={fancyMinutes(fastest)}
+        />
+      )}
+      {slowest > 0 && (
+        <StatsCard
+          title="Slowest conversion"
+          value={fancyMinutes(slowest)}
         />
       )}
     </Stats>

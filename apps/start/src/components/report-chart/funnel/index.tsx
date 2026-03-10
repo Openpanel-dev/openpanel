@@ -11,6 +11,7 @@ import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
 import { useReportChartContext } from '../context';
 import { Chart, Summary, Tables } from './chart';
+import { FunnelTtcChart } from './ttc-chart';
 
 export function ReportFunnelChart() {
   const {
@@ -26,6 +27,8 @@ export function ReportFunnelChart() {
       breakdowns,
       holdProperties,
       globalFilters,
+      measuring,
+      cohortFilters,
     },
     isLazyLoading,
   } = useReportChartContext();
@@ -46,6 +49,8 @@ export function ReportFunnelChart() {
     limit: 20,
     holdProperties,
     globalFilters,
+    measuring,
+    cohortFilters,
   };
   const trpc = useTRPC();
   const res = useQuery(
@@ -66,11 +71,17 @@ export function ReportFunnelChart() {
     return <Empty />;
   }
 
+  const isTtc = measuring === 'time_to_convert';
+
   return (
     <div className="col gap-4 relative group/chart">
       <ChartDownloadButton type="funnel" data={res.data} />
-      {res.data.current.length > 1 && <Summary data={res.data} />}
-      <Chart data={res.data} />
+      {!isTtc && res.data.current.length > 1 && <Summary data={res.data} />}
+      {isTtc ? (
+        <FunnelTtcChart data={res.data as any} />
+      ) : (
+        <Chart data={res.data} />
+      )}
       {res.data.current.map((item, index) => (
         <Tables
           key={item.id}

@@ -2,7 +2,7 @@ import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   CartesianGrid,
   Legend,
@@ -19,9 +19,10 @@ import {
   ChartTooltipItem,
   createChartTooltip,
 } from '@/components/charts/chart-tooltip';
+import { Combobox } from '@/components/ui/combobox';
 import { useConversionRechartDataModel } from '@/hooks/use-conversion-rechart-data-model';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
-import { useNumber } from '@/hooks/use-numer-formatter';
+import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import { useVisibleConversionSeries } from '@/hooks/use-visible-conversion-series';
 import { useTRPC } from '@/integrations/trpc/react';
 import { average, getPreviousMetric, round } from '@openpanel/common';
@@ -34,16 +35,47 @@ import { SerieName } from '../common/serie-name';
 import { useReportChartContext } from '../context';
 import { ConversionTable } from './conversion-table';
 
+type TtcAggregation =
+  | 'avg'
+  | 'median'
+  | 'min'
+  | 'max'
+  | 'p25'
+  | 'p75'
+  | 'p90'
+  | 'p99';
+
+const TTC_AGGREGATION_ITEMS = [
+  { label: 'Average', value: 'avg' as const },
+  { label: 'Median', value: 'median' as const },
+  { label: 'Min', value: 'min' as const },
+  { label: 'Max', value: 'max' as const },
+  { label: 'P25', value: 'p25' as const },
+  { label: 'P75', value: 'p75' as const },
+  { label: 'P90', value: 'p90' as const },
+  { label: 'P99', value: 'p99' as const },
+];
+
 interface Props {
   data: RouterOutputs['chart']['conversion'];
 }
 
 export function Chart({ data }: Props) {
   const {
-    report: { interval, projectId, startDate, endDate, range, lineType },
+    report: {
+      interval,
+      projectId,
+      startDate,
+      endDate,
+      range,
+      lineType,
+      measuring,
+    },
     isEditMode,
     options: { hideXAxis, hideYAxis, maxDomain },
   } = useReportChartContext();
+  const isTtc = measuring === 'time_to_convert';
+  const [ttcAggregation, setTtcAggregation] = useState<TtcAggregation>('avg');
   const { series, setVisibleSeries } = useVisibleConversionSeries(data, 5);
   const rechartData = useConversionRechartDataModel(series);
   const trpc = useTRPC();
@@ -58,6 +90,23 @@ export function Chart({ data }: Props) {
       {},
     ),
   );
+
+  // For TTC mode, transform rechart data to include the selected aggregation value
+  const ttcRechartData = useMemo(() => {
+    if (!isTtc) return rechartData;
+    return rechartData.map((point) => {
+      const newPoint = { ...point };
+      series.forEach((serie) => {
+        const ttc = point[`${serie.id}:ttc`] as
+          | Record<string, number>
+          | undefined;
+        if (ttc) {
+          newPoint[`${serie.id}:ttcValue`] = ttc[ttcAggregation] ?? null;
+        }
+      });
+      return newPoint;
+    });
+  }, [rechartData, isTtc, ttcAggregation, series]);
 
   const xAxisProps = useXAxisProps({ interval, hide: hideXAxis });
   const yAxisProps = useYAxisProps({
@@ -105,15 +154,30 @@ export function Chart({ data }: Props) {
     );
   }, [series]);
 
+  const chartData = isTtc ? ttcRechartData : rechartData;
+
   return (
     <TooltipProvider
       conversion={data}
       interval={interval}
       visibleSeries={series}
+      isTtc={isTtc}
+      ttcAggregation={ttcAggregation}
     >
+      {isTtc && (
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <span className="text-sm text-muted-foreground">Aggregation:</span>
+          <Combobox
+            placeholder="Select aggregation"
+            value={ttcAggregation}
+            onChange={(val) => setTtcAggregation(val as TtcAggregation)}
+            items={TTC_AGGREGATION_ITEMS}
+          />
+        </div>
+      )}
       <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
         <ResponsiveContainer>
-          <LineChart data={rechartData} onClick={handleChartClick}>
+          <LineChart data={chartData} onClick={handleChartClick}>
             <CartesianGrid
               strokeDasharray="3 3"
               horizontal={true}
@@ -135,39 +199,52 @@ export function Chart({ data }: Props) {
                 fontSize={10}
               />
             ))}
-            <YAxis {...yAxisProps} domain={[0, 100]} />
+            {isTtc ? (
+              <YAxis
+                {...yAxisProps}
+                tickFormatter={(value: number) => fancyMinutes(value)}
+              />
+            ) : (
+              <YAxis {...yAxisProps} domain={[0, 100]} />
+            )}
             <XAxis {...xAxisProps} allowDuplicatedCategory={false} />
             {series.length > 1 && <Legend content={<CustomLegend />} />}
             <Tooltip />
+            {!isTtc &&
+              series.map((serie) => {
+                const color = getChartColor(serie.index);
+                return (
+                  <Line
+                    key={`${serie.id}:previousRate`}
+                    dot={false}
+                    dataKey={`${serie.id}:previousRate`}
+                    stroke={color}
+                    type={lineType}
+                    isAnimationActive={false}
+                    strokeWidth={1}
+                    strokeOpacity={0.3}
+                  />
+                );
+              })}
             {series.map((serie) => {
               const color = getChartColor(serie.index);
+              const dataKey = isTtc
+                ? `${serie.id}:ttcValue`
+                : `${serie.id}:rate`;
               return (
                 <Line
-                  key={`${serie.id}:previousRate`}
-                  dot={false}
-                  dataKey={`${serie.id}:previousRate`}
-                  stroke={color}
-                  type={lineType}
-                  isAnimationActive={false}
-                  strokeWidth={1}
-                  strokeOpacity={0.3}
-                />
-              );
-            })}
-            {series.map((serie) => {
-              const color = getChartColor(serie.index);
-              return (
-                <Line
-                  key={`${serie.id}:rate`}
-                  dataKey={`${serie.id}:rate`}
+                  key={dataKey}
+                  dataKey={dataKey}
                   stroke={color}
                   type={lineType}
                   isAnimationActive={false}
                   strokeWidth={2}
+                  connectNulls
                 />
               );
             })}
-            {typeof averageConversionRate === 'number' &&
+            {!isTtc &&
+              typeof averageConversionRate === 'number' &&
               averageConversionRate && (
                 <ReferenceLine
                   y={averageConversionRate}
@@ -202,6 +279,8 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
     conversion: RouterOutputs['chart']['conversion'];
     interval: IInterval;
     visibleSeries: RouterOutputs['chart']['conversion']['current'];
+    isTtc: boolean;
+    ttcAggregation: TtcAggregation;
   }
 >(({ data, context }) => {
   if (!data || !data[0]) {
@@ -219,6 +298,45 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
   return (
     <>
       {context.visibleSeries.map((serie, index) => {
+        if (context.isTtc) {
+          const ttc = payload[`${serie.id}:ttc`] as
+            | Record<string, number>
+            | undefined;
+          if (!ttc) return null;
+          const value = ttc[context.ttcAggregation];
+
+          return (
+            <React.Fragment key={serie.id}>
+              {index === 0 && (
+                <ChartTooltipHeader>
+                  <div>{formatDate(date)}</div>
+                </ChartTooltipHeader>
+              )}
+              <ChartTooltipItem color={getChartColor(index)}>
+                <div className="flex items-center gap-1">
+                  <SerieIcon
+                    name={
+                      serie.breakdowns.length > 0
+                        ? serie.breakdowns
+                        : ['Conversion']
+                    }
+                  />
+                  <SerieName
+                    name={
+                      serie.breakdowns.length > 0
+                        ? serie.breakdowns
+                        : ['Conversion']
+                    }
+                  />
+                </div>
+                <div className="font-mono font-medium">
+                  {value != null ? fancyMinutes(value) : 'N/A'}
+                </div>
+              </ChartTooltipItem>
+            </React.Fragment>
+          );
+        }
+
         const rate = payload[`${serie.id}:rate`];
         const total = payload[`${serie.id}:total`];
         const previousRate = payload[`${serie.id}:previousRate`];

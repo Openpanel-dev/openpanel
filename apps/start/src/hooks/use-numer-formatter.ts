@@ -3,6 +3,11 @@ import { isNil } from 'ramda';
 
 export function fancyMinutes(time: number) {
   const minutes = Math.floor(time / 60);
+  if (minutes > 1440) {
+    const days = Math.floor(minutes / 1440);
+    const remainingHours = Math.floor((minutes % 1440) / 60);
+    return `${days}d ${remainingHours}h`;
+  }
   if (minutes > 60) {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
