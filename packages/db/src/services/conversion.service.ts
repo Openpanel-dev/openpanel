@@ -217,6 +217,7 @@ export class ConversionService {
     breakdowns = [],
     holdProperties = [],
     globalFilters = [],
+    measuring = 'conversion_rate',
     limit,
     interval,
     timezone,
@@ -378,12 +379,17 @@ export class ConversionService {
     const toStartOf = clix.toStartOf('se.created_at', interval);
     const breakdownGroupByStr = breakdownGroupBy.join(', ');
 
+    // Time diff column for time-to-convert measuring
+    const timeDiffCol = measuring === 'time_to_convert'
+      ? `,\n        dateDiff('second', se.created_at, ee.created_at) AS time_diff_seconds`
+      : '';
+
     // Inner SELECT: raw per-event rows from the self-join (no aggregation yet)
     const innerSQL = `
       SELECT
         ${toStartOf} AS event_day,
         se.${groupCol} AS ${groupCol},
-        ee.${groupCol} AS conversion_${groupCol}${breakdownColumns.length ? ',\n        ' + breakdownColumns.join(',\n        ') : ''}
+        ee.${groupCol} AS conversion_${groupCol}${breakdownColumns.length ? ',\n        ' + breakdownColumns.join(',\n        ') : ''}${timeDiffCol}
       FROM start_events se${profileJoin}
       LEFT JOIN end_events ee ON
         ee.${groupCol} = se.${groupCol}
@@ -392,32 +398,63 @@ export class ConversionService {
         ${holdJoinConditions}
       ${cohortJoins}`;
 
+    // TTC aggregation columns (all computed in single scan, negligible extra cost)
+    const ttcAggColumns = measuring === 'time_to_convert'
+      ? `,
+        round(avgIf(time_diff_seconds, time_diff_seconds IS NOT NULL)) AS ttc_avg,
+        round(quantileIf(0.5)(time_diff_seconds, time_diff_seconds IS NOT NULL)) AS ttc_median,
+        minIf(time_diff_seconds, time_diff_seconds IS NOT NULL) AS ttc_min,
+        maxIf(time_diff_seconds, time_diff_seconds IS NOT NULL) AS ttc_max,
+        round(quantileIf(0.25)(time_diff_seconds, time_diff_seconds IS NOT NULL)) AS ttc_p25,
+        round(quantileIf(0.75)(time_diff_seconds, time_diff_seconds IS NOT NULL)) AS ttc_p75,
+        round(quantileIf(0.9)(time_diff_seconds, time_diff_seconds IS NOT NULL)) AS ttc_p90,
+        round(quantileIf(0.99)(time_diff_seconds, time_diff_seconds IS NOT NULL)) AS ttc_p99`
+      : '';
+
     // agg CTE: aggregate inner rows into (event_day, breakdowns) buckets
     const aggCte = `agg AS (
       SELECT
         event_day,
         ${breakdownGroupBy.length ? breakdownGroupByStr + ',\n        ' : ''}uniqExact(${groupCol}) AS total_first,
         uniqExact(conversion_${groupCol}) AS conversions,
-        round(100.0 * uniqExact(conversion_${groupCol}) / uniqExact(${groupCol}), 2) AS conversion_rate_percentage
+        round(100.0 * uniqExact(conversion_${groupCol}) / uniqExact(${groupCol}), 2) AS conversion_rate_percentage${ttcAggColumns}
       FROM (${innerSQL})
       GROUP BY event_day${breakdownGroupBy.length ? ', ' + breakdownGroupByStr : ''}
     )`;
 
+    // TTC columns for final SELECT
+    const ttcSelectColumns = measuring === 'time_to_convert'
+      ? ', ttc_avg, ttc_median, ttc_min, ttc_max, ttc_p25, ttc_p75, ttc_p90, ttc_p99'
+      : '';
+    const ttcSelectColumnsWithPrefix = measuring === 'time_to_convert'
+      ? ',\n          agg.ttc_avg, agg.ttc_median, agg.ttc_min, agg.ttc_max, agg.ttc_p25, agg.ttc_p75, agg.ttc_p90, agg.ttc_p99'
+      : '';
+
     let finalSql: string;
 
     if (breakdownGroupBy.length > 0) {
-      // top_breakdowns CTE: rank breakdowns by avg conversion rate, take top N
+      // top_breakdowns CTE: rank breakdowns — by fastest TTC when measuring time, else by rate
+      const ttcTopBreakdownCol = measuring === 'time_to_convert'
+        ? ', avg(ttc_avg) AS avg_ttc'
+        : '';
+      const topBreakdownsOrderBy = measuring === 'time_to_convert'
+        ? 'avg_ttc ASC'
+        : 'avg_rate DESC';
       const topBreakdownsCte = `top_breakdowns AS (
-        SELECT ${breakdownGroupByStr}, avg(conversion_rate_percentage) AS avg_rate
+        SELECT ${breakdownGroupByStr}, avg(conversion_rate_percentage) AS avg_rate${ttcTopBreakdownCol}
         FROM agg
         GROUP BY ${breakdownGroupByStr}
-        ORDER BY avg_rate DESC
+        ORDER BY ${topBreakdownsOrderBy}
         LIMIT ${limit ?? 50}
       )`;
 
       const joinConditions = breakdownGroupBy
         .map(b => `agg.${b} = top_breakdowns.${b}`)
         .join(' AND ');
+
+      const orderBy = measuring === 'time_to_convert'
+        ? 'top_breakdowns.avg_ttc ASC, agg.event_day ASC'
+        : 'top_breakdowns.avg_rate DESC, agg.event_day ASC';
 
       finalSql = `
         WITH ${[...ctes, aggCte, topBreakdownsCte].join(',\n')}
@@ -426,14 +463,14 @@ export class ConversionService {
           ${breakdownGroupBy.map(b => `agg.${b}`).join(',\n          ')},
           agg.total_first,
           agg.conversions,
-          agg.conversion_rate_percentage
+          agg.conversion_rate_percentage${ttcSelectColumnsWithPrefix}
         FROM agg
         INNER JOIN top_breakdowns ON ${joinConditions}
-        ORDER BY top_breakdowns.avg_rate DESC, agg.event_day ASC`;
+        ORDER BY ${orderBy}`;
     } else {
       finalSql = `
         WITH ${[...ctes, aggCte].join(',\n')}
-        SELECT event_day, total_first, conversions, conversion_rate_percentage
+        SELECT event_day, total_first, conversions, conversion_rate_percentage${ttcSelectColumns}
         FROM agg
         ORDER BY event_day ASC`;
     }
@@ -470,6 +507,32 @@ export class ConversionService {
     });
   }
 
+  private mapDataPoint(d: { [key: string]: string | number }) {
+    const base = {
+      date: d.event_day as string,
+      total: Number(d.total_first),
+      conversions: Number(d.conversions),
+      rate: Number(d.conversion_rate_percentage),
+    };
+    // Include TTC aggregations when present
+    if (d.ttc_avg != null) {
+      return {
+        ...base,
+        ttc: {
+          avg: Number(d.ttc_avg),
+          median: Number(d.ttc_median),
+          min: Number(d.ttc_min),
+          max: Number(d.ttc_max),
+          p25: Number(d.ttc_p25),
+          p75: Number(d.ttc_p75),
+          p90: Number(d.ttc_p90),
+          p99: Number(d.ttc_p99),
+        },
+      };
+    }
+    return base;
+  }
+
   private toSeries(
     data: {
       event_day: string;
@@ -485,12 +548,7 @@ export class ConversionService {
         {
           id: 'conversion',
           breakdowns: [],
-          data: data.map((d) => ({
-            date: d.event_day,
-            total: Number(d.total_first),
-            conversions: Number(d.conversions),
-            rate: Number(d.conversion_rate_percentage),
-          })),
+          data: data.map((d) => this.mapDataPoint(d)),
         },
       ];
     }
@@ -510,12 +568,7 @@ export class ConversionService {
             data: [],
           };
         }
-        acc[key]!.data.push({
-          date: d.event_day,
-          total: Number(d.total_first),
-          conversions: Number(d.conversions),
-          rate: Number(d.conversion_rate_percentage),
-        });
+        acc[key]!.data.push(this.mapDataPoint(d));
         return acc;
       },
       {} as Record<
@@ -523,12 +576,7 @@ export class ConversionService {
         {
           id: string;
           breakdowns: string[];
-          data: {
-            date: string;
-            total: number;
-            conversions: number;
-            rate: number;
-          }[];
+          data: any[];
         }
       >,
     );

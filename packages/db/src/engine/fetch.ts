@@ -66,6 +66,8 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
       funnelWindow: plan.input.funnelWindow,
       cohortFilters: plan.input.cohortFilters ?? [],
       globalFilters: plan.input.globalFilters ?? [],
+      holdProperties: plan.input.holdProperties ?? [],
+      measuring: plan.input.measuring ?? 'conversion_rate',
     };
 
     // Execute query with custom event if applicable

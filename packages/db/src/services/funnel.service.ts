@@ -292,11 +292,13 @@ export class FunnelService {
     startDate,
     endDate,
     series,
+    interval,
     funnelWindow = 24,
     funnelGroup,
     breakdowns = [],
     holdProperties = [],
     globalFilters = [],
+    measuring = 'conversion_rate',
     limit,
     timezone = 'UTC',
   }: IChartInput & { timezone: string; events?: IChartEvent[] }) {
@@ -488,7 +490,7 @@ export class FunnelService {
     const funnelData = await funnelQuery.execute();
     const funnelSeries = this.toSeries(funnelData, breakdowns, limit);
 
-    return funnelSeries
+    const funnelResult = funnelSeries
       .map((data) => {
         const maxLevel = eventSeries.length;
         const filledFunnelRes = this.fillFunnel(
@@ -570,6 +572,111 @@ export class FunnelService {
         const bTotal = b.steps.reduce((acc, step) => acc + step.count, 0);
         return bTotal - aTotal;
       });
+
+    // Compute time-to-convert if requested
+    if (measuring === 'time_to_convert' && eventSeries.length >= 2) {
+      const endDateObj = new Date(endDate);
+      const extendedEndDateObj = new Date(endDateObj.getTime() + funnelWindowSeconds * 1000);
+      const extendedEndDate = formatClickhouseDate(extendedEndDateObj);
+
+      const firstEvent = eventSeries[0]!;
+      const lastEventItem = eventSeries[eventSeries.length - 1]!;
+
+      const firstEventFilters = firstEvent.filters && firstEvent.filters.length > 0
+        ? ' AND ' + Object.values(getEventFiltersWhereClause(firstEvent.filters, projectId)).join(' AND ')
+        : '';
+      const lastEventFilters = lastEventItem.filters && lastEventItem.filters.length > 0
+        ? ' AND ' + Object.values(getEventFiltersWhereClause(lastEventItem.filters, projectId)).join(' AND ')
+        : '';
+
+      const toStartOf = clix.toStartOf('fs.first_ts', interval || 'day');
+
+      const ttcQuery = `
+        WITH
+        first_step_events AS (
+          SELECT profile_id, min(created_at) AS first_ts
+          FROM ${TABLE_NAMES.events}
+          WHERE project_id = ${sqlstring.escape(projectId)}
+            AND name = ${sqlstring.escape(firstEvent.name)}
+            AND created_at >= toDateTime('${formatClickhouseDate(startDate)}')
+            AND created_at <= toDateTime('${formatClickhouseDate(endDate)}')${firstEventFilters}
+          GROUP BY profile_id
+        ),
+        last_step_events AS (
+          SELECT profile_id, min(created_at) AS last_ts
+          FROM ${TABLE_NAMES.events}
+          WHERE project_id = ${sqlstring.escape(projectId)}
+            AND name = ${sqlstring.escape(lastEventItem.name)}
+            AND created_at >= toDateTime('${formatClickhouseDate(startDate)}')
+            AND created_at <= toDateTime('${extendedEndDate}')${lastEventFilters}
+          GROUP BY profile_id
+        ),
+        matched AS (
+          SELECT
+            ${toStartOf} AS event_day,
+            dateDiff('second', fs.first_ts, ls.last_ts) AS time_diff_seconds
+          FROM first_step_events fs
+          JOIN last_step_events ls ON ls.profile_id = fs.profile_id
+            AND ls.last_ts >= fs.first_ts
+            AND ls.last_ts <= fs.first_ts + INTERVAL ${funnelWindowSeconds} SECOND
+        )
+        SELECT
+          event_day,
+          count() AS completed_count,
+          round(avg(time_diff_seconds)) AS ttc_avg,
+          round(quantile(0.5)(time_diff_seconds)) AS ttc_median,
+          min(time_diff_seconds) AS ttc_min,
+          max(time_diff_seconds) AS ttc_max,
+          round(quantile(0.25)(time_diff_seconds)) AS ttc_p25,
+          round(quantile(0.75)(time_diff_seconds)) AS ttc_p75,
+          round(quantile(0.9)(time_diff_seconds)) AS ttc_p90,
+          round(quantile(0.99)(time_diff_seconds)) AS ttc_p99
+        FROM matched
+        GROUP BY event_day
+        ORDER BY event_day ASC
+      `;
+
+      const ttcResult = await this.client.query({
+        query: ttcQuery,
+        clickhouse_settings: { session_timezone: timezone },
+      });
+      const ttcJson = await ttcResult.json() as {
+        data: {
+          event_day: string;
+          completed_count: number;
+          ttc_avg: number;
+          ttc_median: number;
+          ttc_min: number;
+          ttc_max: number;
+          ttc_p25: number;
+          ttc_p75: number;
+          ttc_p90: number;
+          ttc_p99: number;
+        }[];
+      };
+
+      const timeToConvert = ttcJson.data.map(d => ({
+        date: d.event_day,
+        completedCount: Number(d.completed_count),
+        ttc: {
+          avg: Number(d.ttc_avg),
+          median: Number(d.ttc_median),
+          min: Number(d.ttc_min),
+          max: Number(d.ttc_max),
+          p25: Number(d.ttc_p25),
+          p75: Number(d.ttc_p75),
+          p90: Number(d.ttc_p90),
+          p99: Number(d.ttc_p99),
+        },
+      }));
+
+      return funnelResult.map(item => ({
+        ...item,
+        timeToConvert,
+      }));
+    }
+
+    return funnelResult;
   }
 }
 

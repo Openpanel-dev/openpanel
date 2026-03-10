@@ -226,6 +226,11 @@ export const zChartInputBase = z.object({
     .optional()
     .default([])
     .describe('Properties to hold constant across all funnel steps'),
+  measuring: z
+    .enum(['conversion_rate', 'time_to_convert'])
+    .optional()
+    .default('conversion_rate')
+    .describe('What to measure: conversion rate or time to convert'),
 });
 
 export const zChartInput = z.preprocess((val) => {
