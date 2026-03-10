@@ -244,20 +244,8 @@ function TtcSummary({ data }: Props) {
       ? avgTtcValues.reduce((a, b) => a + b, 0) / avgTtcValues.length
       : 0;
 
-  const allTtcValues = data.current.flatMap((serie) =>
-    serie.data.filter((d) => d.ttc).map((d) => d.ttc!),
-  );
-  const fastest = allTtcValues.reduce(
-    (min, ttc) => (ttc.min < min ? ttc.min : min),
-    Number.POSITIVE_INFINITY,
-  );
-  const slowest = allTtcValues.reduce(
-    (max, ttc) => (ttc.max > max ? ttc.max : max),
-    0,
-  );
-
   return (
-    <Stats className="my-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+    <Stats className="my-4 grid grid-cols-1 md:grid-cols-2">
       <StatsCard
         title="Flow"
         value={
@@ -277,18 +265,6 @@ function TtcSummary({ data }: Props) {
         title="Average time to convert"
         value={fancyMinutes(overallAvg)}
       />
-      {fastest !== Number.POSITIVE_INFINITY && (
-        <StatsCard
-          title="Fastest conversion"
-          value={fancyMinutes(fastest)}
-        />
-      )}
-      {slowest > 0 && (
-        <StatsCard
-          title="Slowest conversion"
-          value={fancyMinutes(slowest)}
-        />
-      )}
     </Stats>
   );
 }
