@@ -318,6 +318,11 @@ export const reportSlice = createSlice({
       }
     },
 
+    changeLimit(state, action: PayloadAction<number>) {
+      state.dirty = true;
+      state.limit = action.payload;
+    },
+
     // Hold Properties (funnel)
     addHoldProperty: (state, action: PayloadAction<string>) => {
       state.dirty = true;
@@ -366,6 +371,7 @@ export const {
   reorderEvents,
   addHoldProperty,
   removeHoldProperty,
+  changeLimit,
 } = reportSlice.actions;
 
 export default reportSlice.reducer;

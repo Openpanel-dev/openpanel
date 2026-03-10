@@ -33,24 +33,21 @@ export function downloadCSV(content: string, filename: string): void {
 export function chartDataToCSV(data: IChartData): string {
   if (!data.series.length) return '';
 
-  const headers = [
-    'Date',
-    ...data.series.map((s) => s.names.join(' / ') || s.event.name),
-  ];
-
   const allDates = [
     ...new Set(data.series.flatMap((s) => s.data.map((d) => d.date))),
   ].sort();
 
-  const rows = allDates.map((date) => {
-    const values = data.series.map((serie) => {
+  // Rows = series, columns = dates
+  const rows = data.series.map((serie) => {
+    const label = serie.names.join(' / ') || serie.event.name;
+    const values = allDates.map((date) => {
       const point = serie.data.find((d) => d.date === date);
       return point?.count ?? '';
     });
-    return [date, ...values];
+    return [label, ...values];
   });
 
-  return buildCSV([headers, ...rows]);
+  return buildCSV([['Series', ...allDates], ...rows]);
 }
 
 export function funnelDataToCSV(data: FunnelData): string {
@@ -59,90 +56,78 @@ export function funnelDataToCSV(data: FunnelData): string {
   const hasBreakdowns = data.current.length > 1;
 
   if (hasBreakdowns) {
-    const headers = [
-      'Breakdown',
-      'Step',
-      'Count',
-      'Conversion %',
-      'Dropped After',
-      'Dropoff %',
-    ];
+    // Columns = steps, rows = breakdown × metric
+    const steps = data.current[0]!.steps.map((s) => s.event.displayName);
+    const header = ['Breakdown / Metric', ...steps];
     const rows: (string | number | null | undefined)[][] = [];
 
     for (const variant of data.current) {
-      const breakdownLabel = variant.breakdowns.join(' / ') || '(all)';
-      for (const step of variant.steps) {
-        rows.push([
-          breakdownLabel,
-          step.event.displayName,
-          step.count,
-          step.percent,
-          step.dropoffCount,
-          step.dropoffPercent,
-        ]);
-      }
+      const label = variant.breakdowns.join(' / ') || '(all)';
+      rows.push([`${label} (Count)`, ...variant.steps.map((s) => s.count)]);
+      rows.push([`${label} (Conversion %)`, ...variant.steps.map((s) => s.percent)]);
+      rows.push([`${label} (Dropped After)`, ...variant.steps.map((s) => s.dropoffCount)]);
+      rows.push([`${label} (Dropoff %)`, ...variant.steps.map((s) => s.dropoffPercent)]);
     }
 
-    return buildCSV([headers, ...rows]);
+    return buildCSV([header, ...rows]);
   }
 
+  // Columns = steps, rows = metrics
   const funnel = data.current[0]!;
-  const headers = [
-    'Step',
-    'Count',
-    'Conversion %',
-    'Dropped After',
-    'Dropoff %',
+  const steps = funnel.steps.map((s) => s.event.displayName);
+  const header = ['Metric', ...steps];
+  const rows = [
+    ['Count', ...funnel.steps.map((s) => s.count)],
+    ['Conversion %', ...funnel.steps.map((s) => s.percent)],
+    ['Dropped After', ...funnel.steps.map((s) => s.dropoffCount)],
+    ['Dropoff %', ...funnel.steps.map((s) => s.dropoffPercent)],
   ];
-  const rows = funnel.steps.map((step) => [
-    step.event.displayName,
-    step.count,
-    step.percent,
-    step.dropoffCount,
-    step.dropoffPercent,
-  ]);
 
-  return buildCSV([headers, ...rows]);
+  return buildCSV([header, ...rows]);
 }
 
 export function cohortDataToCSV(data: CohortData): string {
   if (!data.length) return '';
 
+  const cohortDates = data.map((row) => row.cohort_interval);
   const maxPeriods = data[0]?.values.length ?? 0;
-  const periodHeaders = Array.from({ length: maxPeriods }, (_, i) =>
-    i === 0 ? 'Period <1' : `Period ${i}`,
-  );
 
-  const headers = ['Cohort Date', 'Total Profiles', ...periodHeaders];
-  const rows = data.map((row) => [row.cohort_interval, row.sum, ...row.values]);
+  // Rows = periods, columns = cohort dates
+  const totalRow: (string | number | null | undefined)[] = [
+    'Total Profiles',
+    ...data.map((row) => row.sum),
+  ];
 
-  return buildCSV([headers, ...rows]);
+  const periodRows = Array.from({ length: maxPeriods }, (_, i) => {
+    const label = i === 0 ? 'Period <1' : `Period ${i}`;
+    return [label, ...data.map((row) => row.values[i] ?? '')];
+  });
+
+  return buildCSV([['Cohort Date', ...cohortDates], totalRow, ...periodRows]);
 }
 
 export function conversionDataToCSV(data: ConversionData): string {
   if (!data.current.length) return '';
 
-  const headers = [
-    'Date',
-    ...data.current.flatMap((serie) => {
-      const label = serie.breakdowns.join(' / ') || serie.id;
-      return [
-        `${label} (Rate %)`,
-        `${label} (Conversions)`,
-        `${label} (Total)`,
-      ];
-    }),
-  ];
-
   const allDates = data.current[0]?.data.map((d) => d.date) ?? [];
 
-  const rows = allDates.map((date) => {
-    const values = data.current.flatMap((serie) => {
-      const point = serie.data.find((d) => d.date === date);
-      return [point?.rate ?? '', point?.conversions ?? '', point?.total ?? ''];
-    });
-    return [date, ...values];
+  // Rows = series × metric, columns = dates
+  const rows = data.current.flatMap((serie) => {
+    const label = serie.breakdowns.join(' / ') || serie.id;
+    const rateRow = [
+      `${label} (Rate %)`,
+      ...allDates.map((date) => serie.data.find((d) => d.date === date)?.rate ?? ''),
+    ];
+    const convRow = [
+      `${label} (Conversions)`,
+      ...allDates.map((date) => serie.data.find((d) => d.date === date)?.conversions ?? ''),
+    ];
+    const totalRow = [
+      `${label} (Total)`,
+      ...allDates.map((date) => serie.data.find((d) => d.date === date)?.total ?? ''),
+    ];
+    return [rateRow, convRow, totalRow];
   });
 
-  return buildCSV([headers, ...rows]);
+  return buildCSV([['Series', ...allDates], ...rows]);
 }

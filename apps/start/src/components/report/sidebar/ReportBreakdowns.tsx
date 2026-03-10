@@ -9,7 +9,8 @@ import { ChevronsUpDownIcon, SplitIcon, UsersIcon } from 'lucide-react';
 import type { IChartBreakdown } from '@openpanel/validation';
 
 import { Button } from '@/components/ui/button';
-import { addBreakdown, changeBreakdown, removeBreakdown } from '../reportSlice';
+import { InputEnter } from '@/components/ui/input-enter';
+import { addBreakdown, changeBreakdown, changeLimit, removeBreakdown } from '../reportSlice';
 import { PropertiesCombobox } from './PropertiesCombobox';
 import { ReportBreakdownMore } from './ReportBreakdownMore';
 import type { ReportEventMoreProps } from './ReportEventMore';
@@ -17,6 +18,7 @@ import type { ReportEventMoreProps } from './ReportEventMore';
 export function ReportBreakdowns() {
   const { projectId } = useAppParams();
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
+  const limit = useSelector((state) => state.report.limit);
   const cohorts = useCohorts({ projectId, includeCount: false });
   const dispatch = useDispatch();
 
@@ -83,6 +85,23 @@ export function ReportBreakdowns() {
             </div>
           );
         })}
+
+        {selectedBreakdowns.length > 0 && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="whitespace-nowrap font-medium text-sm">Limit</span>
+            <InputEnter
+              type="number"
+              value={String(limit)}
+              placeholder="Default: 50"
+              onChangeValue={(value) => {
+                const parsed = Number.parseInt(value, 10);
+                if (!Number.isNaN(parsed) && parsed > 0) {
+                  dispatch(changeLimit(parsed));
+                }
+              }}
+            />
+          </div>
+        )}
 
         <PropertiesCombobox
           onSelect={(action) => {
