@@ -381,7 +381,7 @@ export class ConversionService {
 
     // Time diff column for time-to-convert measuring
     const timeDiffCol = measuring === 'time_to_convert'
-      ? `,\n        dateDiff('second', se.created_at, ee.created_at) AS time_diff_seconds`
+      ? `,\n        IF(ee.${groupCol} IS NOT NULL, dateDiff('second', se.created_at, ee.created_at), NULL) AS time_diff_seconds`
       : '';
 
     // Inner SELECT: raw per-event rows from the self-join (no aggregation yet)
