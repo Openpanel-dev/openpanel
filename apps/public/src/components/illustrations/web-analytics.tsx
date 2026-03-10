@@ -1,188 +1,165 @@
 'use client';
-import { SimpleChart } from '@/components/simple-chart';
-import { cn } from '@/lib/utils';
+
 import NumberFlow from '@number-flow/react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUpIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
-const TRAFFIC_SOURCES = [
+const VISITOR_DATA = [1840, 2100, 1950, 2400, 2250, 2650, 2980];
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const STATS = [
+  { label: 'Visitors', value: 4128, formatted: null, change: 12, up: true },
+  { label: 'Page views', value: 12438, formatted: '12.4k', change: 8, up: true },
+  { label: 'Bounce rate', value: null, formatted: '42%', change: 3, up: false },
+  { label: 'Avg. session', value: null, formatted: '3m 23s', change: 5, up: true },
+];
+
+const SOURCES = [
   {
     icon: 'https://api.openpanel.dev/misc/favicon?url=https%3A%2F%2Fgoogle.com',
-    name: 'Google',
-    percentage: 49,
-    value: 2039,
-  },
-  {
-    icon: 'https://api.openpanel.dev/misc/favicon?url=https%3A%2F%2Finstagram.com',
-    name: 'Instagram',
-    percentage: 23,
-    value: 920,
-  },
-  {
-    icon: 'https://api.openpanel.dev/misc/favicon?url=https%3A%2F%2Ffacebook.com',
-    name: 'Facebook',
-    percentage: 18,
-    value: 750,
+    name: 'google.com',
+    pct: 49,
   },
   {
     icon: 'https://api.openpanel.dev/misc/favicon?url=https%3A%2F%2Ftwitter.com',
-    name: 'Twitter',
-    percentage: 10,
-    value: 412,
+    name: 'twitter.com',
+    pct: 21,
+  },
+  {
+    icon: 'https://api.openpanel.dev/misc/favicon?url=https%3A%2F%2Fgithub.com',
+    name: 'github.com',
+    pct: 14,
   },
 ];
 
-const COUNTRIES = [
-  { icon: '🇺🇸', name: 'United States', percentage: 37, value: 1842 },
-  { icon: '🇩🇪', name: 'Germany', percentage: 28, value: 1391 },
-  { icon: '🇬🇧', name: 'United Kingdom', percentage: 20, value: 982 },
-  { icon: '🇯🇵', name: 'Japan', percentage: 15, value: 751 },
-];
+function AreaChart({ data }: { data: number[] }) {
+  const max = Math.max(...data);
+  const w = 400;
+  const h = 64;
+  const xStep = w / (data.length - 1);
+  const pts = data.map((v, i) => ({ x: i * xStep, y: h - (v / max) * h }));
+  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ');
+  const area = `${line} L ${w},${h} L 0,${h} Z`;
+  const last = pts[pts.length - 1];
+
+  return (
+    <svg className="w-full" viewBox={`0 0 ${w} ${h + 4}`}>
+      <defs>
+        <linearGradient id="wa-fill" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="rgb(59 130 246)" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="rgb(59 130 246)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill="url(#wa-fill)" />
+      <path
+        d={line}
+        fill="none"
+        stroke="rgb(59 130 246)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <circle cx={last.x} cy={last.y} fill="rgb(59 130 246)" r="3" />
+      <circle
+        cx={last.x}
+        cy={last.y}
+        fill="none"
+        r="6"
+        stroke="rgb(59 130 246)"
+        strokeOpacity="0.3"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
 
 export function WebAnalyticsIllustration() {
-  const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
+  const [liveVisitors, setLiveVisitors] = useState(47);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSourceIndex((prev) => (prev + 1) % TRAFFIC_SOURCES.length);
-    }, 3000);
-
-    return () => clearInterval(interval);
+    const values = [47, 51, 44, 53, 49, 56];
+    let i = 0;
+    const id = setInterval(() => {
+      i = (i + 1) % values.length;
+      setLiveVisitors(values[i]);
+    }, 2500);
+    return () => clearInterval(id);
   }, []);
 
   return (
-    <div className="px-12 group aspect-video">
-      <div className="relative h-full col">
-        <MetricCard
-          title="Session duration"
-          value="3m 23s"
-          change="3%"
-          chartPoints={[40, 10, 20, 43, 20, 40, 30, 37, 40, 34, 50, 31]}
-          color="var(--foreground)"
-          className="absolute w-full rotate-0 top-2 left-2 group-hover:-translate-y-1 group-hover:-rotate-2 transition-all duration-300"
-        />
-        <MetricCard
-          title="Bounce rate"
-          value="46%"
-          change="3%"
-          chartPoints={[10, 46, 20, 43, 20, 40, 30, 37, 40, 34, 50, 31]}
-          color="var(--foreground)"
-          className="absolute w-full -rotate-2 -left-2 top-12 group-hover:-translate-y-1 group-hover:rotate-0 transition-all duration-300"
-        />
-        <div className="col gap-4 w-[80%] md:w-[70%] ml-auto mt-auto">
-          <BarCell
-            {...TRAFFIC_SOURCES[currentSourceIndex]}
-            className="group-hover:scale-105 transition-all duration-300"
-          />
-          <BarCell
-            {...TRAFFIC_SOURCES[
-              (currentSourceIndex + 1) % TRAFFIC_SOURCES.length
-            ]}
-            className="group-hover:scale-105 transition-all duration-300"
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MetricCard({
-  title,
-  value,
-  change,
-  chartPoints,
-  color,
-  className,
-}: {
-  title: string;
-  value: string;
-  change: string;
-  chartPoints: number[];
-  color: string;
-  className?: string;
-}) {
-  return (
-    <div className={cn('col bg-card rounded-lg p-4 pb-6 border', className)}>
-      <div className="row items-end justify-between">
-        <div>
-          <div className="text-muted-foreground text-sm">{title}</div>
-          <div className="text-2xl font-semibold font-mono">{value}</div>
-        </div>
-        <div className="row gap-2 items-center font-mono font-medium">
-          <ArrowUpIcon className="size-3" strokeWidth={3} />
-          <div>{change}</div>
-        </div>
-      </div>
-      <SimpleChart
-        width={400}
-        height={30}
-        points={chartPoints}
-        strokeColor={color}
-        className="mt-4"
-      />
-    </div>
-  );
-}
-
-function BarCell({
-  icon,
-  name,
-  percentage,
-  value,
-  className,
-}: {
-  icon: string;
-  name: string;
-  percentage: number;
-  value: number;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        'relative p-4 py-2 bg-card rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.3)] border',
-        className,
-      )}
-    >
-      <div
-        className="absolute bg-background bottom-0 top-0 left-0 rounded-lg transition-all duration-500"
-        style={{
-          width: `${percentage}%`,
-        }}
-      />
-      <div className="relative row justify-between ">
-        <div className="row gap-2 items-center font-medium text-sm">
-          {icon.startsWith('http') ? (
-            <Image
-              alt="serie icon"
-              className="max-h-4 rounded-[2px] object-contain"
-              src={icon}
-              width={16}
-              height={16}
-            />
-          ) : (
-            <div className="text-2xl">{icon}</div>
-          )}
-          <AnimatePresence mode="popLayout">
-            <motion.div
-              key={name}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.3 }}
-            >
-              {name}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-        <div className="row gap-3 font-mono text-sm">
-          <span className="text-muted-foreground">
-            <NumberFlow value={percentage} />%
+    <div className="aspect-video col gap-2.5 p-5">
+      {/* Header */}
+      <div className="row items-center justify-between">
+        <div className="row items-center gap-1.5">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
           </span>
-          <NumberFlow value={value} locales={'en-US'} />
+          <span className="text-[10px] font-medium text-muted-foreground">
+            <NumberFlow value={liveVisitors} /> online now
+          </span>
         </div>
+        <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">
+          Last 7 days
+        </span>
+      </div>
+
+      {/* KPI tiles */}
+      <div className="grid grid-cols-4 gap-1.5">
+        {STATS.map((stat) => (
+          <div
+            className="col gap-0.5 rounded-lg border bg-card px-2 py-1.5"
+            key={stat.label}
+          >
+            <span className="text-[8px] text-muted-foreground">{stat.label}</span>
+            <span className="font-mono font-semibold text-xs leading-tight">
+              {stat.formatted ??
+                (stat.value !== null ? (
+                  <NumberFlow locales="en-US" value={stat.value} />
+                ) : null)}
+            </span>
+            <span
+              className={`text-[8px] ${stat.up ? 'text-emerald-500' : 'text-red-400'}`}
+            >
+              {stat.up ? '↑' : '↓'} {stat.change}%
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Area chart */}
+      <div className="flex-1 col gap-1 overflow-hidden rounded-xl border bg-card px-3 pt-2 pb-1">
+        <span className="text-[8px] text-muted-foreground">Unique visitors</span>
+        <AreaChart data={VISITOR_DATA} />
+        <div className="row justify-between px-0.5">
+          {DAYS.map((d) => (
+            <span className="text-[7px] text-muted-foreground" key={d}>
+              {d}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Traffic sources */}
+      <div className="row gap-1.5">
+        {SOURCES.map((src) => (
+          <div
+            className="row flex-1 items-center gap-1.5 overflow-hidden rounded-lg border bg-card px-2 py-1.5"
+            key={src.name}
+          >
+            <Image
+              alt={src.name}
+              className="rounded-[2px] object-contain"
+              height={10}
+              src={src.icon}
+              width={10}
+            />
+            <span className="flex-1 truncate text-[9px]">{src.name}</span>
+            <span className="font-mono text-[9px] text-muted-foreground">
+              {src.pct}%
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

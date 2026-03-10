@@ -55,6 +55,9 @@ export function Pricing() {
           <div className="col mt-8 w-full items-baseline md:mt-auto">
             {selected ? (
               <>
+                <span className="mb-2 rounded-full bg-primary/10 px-2.5 py-0.5 font-medium text-primary text-xs">
+                  30-day free trial
+                </span>
                 <div className="row items-end gap-3">
                   <NumberFlow
                     className="font-bold text-5xl"
@@ -67,9 +70,6 @@ export function Pricing() {
                     locales={'en-US'}
                     value={selected.price}
                   />
-                  <span className="mb-2 rounded-full bg-primary/10 px-2.5 py-0.5 font-medium text-primary text-xs">
-                    30-day free trial
-                  </span>
                 </div>
                 <div className="row w-full justify-between">
                   <span className="-mt-2 text-muted-foreground/80 text-sm">

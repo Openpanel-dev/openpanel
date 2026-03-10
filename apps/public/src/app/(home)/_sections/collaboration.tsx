@@ -15,23 +15,23 @@ import { CollaborationChart } from './collaboration-chart';
 
 const features = [
   {
-    title: 'Visualize your data',
+    title: 'Flexible data visualization',
     description:
-      'See your data in a visual way. You can create advanced reports and more to understand',
+      'Build line charts, bar charts, sankey flows, and custom dashboards. Combine metrics from any event into a single view.',
     icon: ChartBarIcon,
     slug: 'data-visualization',
   },
   {
     title: 'Share & Collaborate',
     description:
-      'Invite unlimited members with org-wide or project-level access. Share full dashboards or individual reports—publicly or behind a password.',
+      'Invite unlimited team members with org-wide or project-level access. Share dashboards publicly or lock them behind a password.',
     icon: LayoutDashboardIcon,
     slug: 'share-and-collaborate',
   },
   {
-    title: 'Integrations',
+    title: 'Integrations & Webhooks',
     description:
-      'Get notified when new events are created, or forward specific events to your own systems with our easy-to-use integrations.',
+      'Forward events to your own systems or third-party tools. Connect OpenPanel to Slack, your data warehouse, or any webhook endpoint.',
     icon: WorkflowIcon,
     slug: 'integrations',
   },

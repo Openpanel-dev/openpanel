@@ -5,14 +5,14 @@ import {
   CalendarIcon,
   CookieIcon,
   CreditCardIcon,
-  DatabaseIcon,
   GithubIcon,
-  ServerIcon,
+  ShieldCheckIcon,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Competition } from '@/components/competition';
+import { EuFlag } from '@/components/eu-flag';
 import { GetStartedButton } from '@/components/get-started-button';
 import { Perks } from '@/components/perks';
 import { Button } from '@/components/ui/button';
@@ -21,10 +21,10 @@ import { cn } from '@/lib/utils';
 const perks = [
   { text: 'Free trial 30 days', icon: CalendarIcon },
   { text: 'No credit card required', icon: CreditCardIcon },
+  { text: 'GDPR compliant', icon: ShieldCheckIcon },
+  { text: 'EU hosted', icon: EuFlag },
   { text: 'Cookie-less tracking', icon: CookieIcon },
   { text: 'Open-source', icon: GithubIcon },
-  { text: 'Your data, your rules', icon: DatabaseIcon },
-  { text: 'Self-hostable', icon: ServerIcon },
 ];
 
 const aspectRatio = 2946 / 1329;
@@ -90,7 +90,7 @@ export function Hero() {
             TRUSTED BY 1,000+ PROJECTS
           </div>
           <h1 className="font-semibold text-4xl leading-[1.1] md:text-5xl">
-            OpenPanel - The open-source alternative to <Competition />
+            The open-source alternative to <Competition />
           </h1>
           <p className="text-lg text-muted-foreground">
             An open-source web and product analytics platform that combines the

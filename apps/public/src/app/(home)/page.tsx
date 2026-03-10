@@ -1,5 +1,6 @@
 import { AnalyticsInsights } from './_sections/analytics-insights';
 import { Collaboration } from './_sections/collaboration';
+import { FeatureSpotlight } from './_sections/feature-spotlight';
 import { CtaBanner } from './_sections/cta-banner';
 import { DataPrivacy } from './_sections/data-privacy';
 import { Faq } from './_sections/faq';
@@ -57,6 +58,7 @@ export default function HomePage() {
       <Hero />
       <WhyOpenPanel />
       <AnalyticsInsights />
+      <FeatureSpotlight />
       <Collaboration />
       <Testimonials />
       <Pricing />

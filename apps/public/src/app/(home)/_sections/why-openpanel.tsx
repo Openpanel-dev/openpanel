@@ -1,6 +1,6 @@
 'use client';
 
-import { QuoteIcon } from 'lucide-react';
+import { QuoteIcon, StarIcon } from 'lucide-react';
 import Image from 'next/image';
 import Markdown from 'react-markdown';
 import { FeatureCardBackground } from '@/components/feature-card';
@@ -94,13 +94,22 @@ export function WhyOpenPanel() {
           ))}
         </div>
         <div className="-mx-4 grid grid-cols-1 border-y py-4 md:grid-cols-2">
-          {quotes.map((quote) => (
+          {quotes.slice(0, 2).map((quote) => (
             <figure
               className="group px-4 py-4 md:odd:border-r"
               key={quote.author}
             >
-              <QuoteIcon className="mb-2 size-10 stroke-1 text-muted-foreground/50 transition-all group-hover:rotate-6 group-hover:text-foreground" />
-              <blockquote className="prose text-xl">
+              <div className="row items-center justify-between">
+                <QuoteIcon className="mb-2 size-10 stroke-1 text-muted-foreground/50 transition-all group-hover:rotate-6 group-hover:text-foreground" />
+                <div className="row gap-1">
+                  <StarIcon className="size-4 fill-yellow-500 stroke-0 text-yellow-500" />
+                  <StarIcon className="size-4 fill-yellow-500 stroke-0 text-yellow-500" />
+                  <StarIcon className="size-4 fill-yellow-500 stroke-0 text-yellow-500" />
+                  <StarIcon className="size-4 fill-yellow-500 stroke-0 text-yellow-500" />
+                  <StarIcon className="size-4 fill-yellow-500 stroke-0 text-yellow-500" />
+                </div>
+              </div>
+              <blockquote className="prose text-justify text-xl">
                 <Markdown>{quote.quote}</Markdown>
               </blockquote>
               <figcaption className="row mt-4 justify-between text-muted-foreground text-sm">
