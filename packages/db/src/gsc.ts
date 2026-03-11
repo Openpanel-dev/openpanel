@@ -14,9 +14,15 @@ export interface GscSite {
 async function refreshGscToken(
   refreshToken: string
 ): Promise<{ accessToken: string; expiresAt: Date }> {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    throw new Error(
+      'GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not set in this environment'
+    );
+  }
+
   const params = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID ?? '',
-    client_secret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    client_secret: process.env.GOOGLE_CLIENT_SECRET,
     refresh_token: refreshToken,
     grant_type: 'refresh_token',
   });
