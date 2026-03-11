@@ -1,12 +1,12 @@
-import { isShuttingDown } from '@/utils/graceful-shutdown';
 import { chQuery, db } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { isShuttingDown } from '@/utils/graceful-shutdown';
 
 // For docker compose healthcheck
 export async function healthcheck(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   try {
     const redisRes = await getRedisCache().ping();
@@ -21,6 +21,7 @@ export async function healthcheck(
       ch: chRes && chRes.length > 0,
     });
   } catch (error) {
+    request.log.warn('healthcheck failed', { error });
     return reply.status(503).send({
       ready: false,
       reason: 'dependencies not ready',
@@ -41,18 +42,22 @@ export async function readiness(request: FastifyRequest, reply: FastifyReply) {
 
   // Perform lightweight dependency checks for readiness
   const redisRes = await getRedisCache().ping();
-  const dbRes = await db.project.findFirst();
+  const dbRes = await db.$executeRaw`SELECT 1`;
   const chRes = await chQuery('SELECT 1');
 
-  const isReady = redisRes && dbRes && chRes;
+  const isReady = redisRes;
 
   if (!isReady) {
-    return reply.status(503).send({
-      ready: false,
-      reason: 'dependencies not ready',
+    const res = {
       redis: redisRes === 'PONG',
       db: !!dbRes,
       ch: chRes && chRes.length > 0,
+    };
+    request.log.warn('dependencies not ready', res);
+    return reply.status(503).send({
+      ready: false,
+      reason: 'dependencies not ready',
+      ...res,
     });
   }
 
