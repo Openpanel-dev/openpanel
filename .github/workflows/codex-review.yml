@@ -1,0 +1,18 @@
+name: Codex Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: codex-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  codex-review:
+    uses: Dashverse/infra/.github/workflows/codex-review.yml@main
+    secrets:
+      openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+      app_id: ${{ secrets.APP_ID }}
+      app_private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
