@@ -3,11 +3,13 @@ import {
   AlertTriangleIcon,
   EyeIcon,
   MousePointerClickIcon,
+  SearchIcon,
   TrendingUpIcon,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Pagination } from '@/components/pagination';
+import { Input } from '@/components/ui/input';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
@@ -69,6 +71,7 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
   const { range, interval, startDate, endDate } = useOverviewOptions();
   const { apiUrl } = useAppContext();
   const [page, setPage] = useState(0);
+  const [search, setSearch] = useState('');
   const pageSize = 8;
 
   const dateInput = {
@@ -217,45 +220,71 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
 
   const isLoading = gscPagesQuery.isLoading || analyticsQuery.isLoading;
 
-  const pageCount = Math.ceil(insights.length / pageSize) || 1;
-  const paginatedInsights = useMemo(
-    () => insights.slice(page * pageSize, (page + 1) * pageSize),
-    [insights, page, pageSize]
-  );
-  const rangeStart = insights.length ? page * pageSize + 1 : 0;
-  const rangeEnd = Math.min((page + 1) * pageSize, insights.length);
+  const filteredInsights = useMemo(() => {
+    if (!search.trim()) {
+      return insights;
+    }
+    const q = search.toLowerCase();
+    return insights.filter(
+      (i) =>
+        i.path.toLowerCase().includes(q) || i.page.toLowerCase().includes(q)
+    );
+  }, [insights, search]);
 
-  if (!isLoading && !insights.length) {
+  const pageCount = Math.ceil(filteredInsights.length / pageSize) || 1;
+  const paginatedInsights = useMemo(
+    () => filteredInsights.slice(page * pageSize, (page + 1) * pageSize),
+    [filteredInsights, page, pageSize]
+  );
+  const rangeStart = filteredInsights.length ? page * pageSize + 1 : 0;
+  const rangeEnd = Math.min((page + 1) * pageSize, filteredInsights.length);
+
+  if (!(isLoading || insights.length)) {
     return null;
   }
 
   return (
-    <div className="card overflow-hidden">
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <h3 className="font-medium text-sm">Opportunities</h3>
-          {insights.length > 0 && (
-            <span className="rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground text-xs">
-              {insights.length}
-            </span>
+    <div className="card">
+      <div className="border-b">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-sm">Opportunities</h3>
+            {filteredInsights.length > 0 && (
+              <span className="rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground text-xs">
+                {filteredInsights.length}
+              </span>
+            )}
+          </div>
+          {filteredInsights.length > 0 && (
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="whitespace-nowrap text-muted-foreground text-xs">
+                {filteredInsights.length === 0
+                  ? '0 results'
+                  : `${rangeStart}-${rangeEnd} of ${filteredInsights.length}`}
+              </span>
+              <Pagination
+                canNextPage={page < pageCount - 1}
+                canPreviousPage={page > 0}
+                nextPage={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                pageIndex={page}
+                previousPage={() => setPage((p) => Math.max(0, p - 1))}
+              />
+            </div>
           )}
         </div>
-        {insights.length > 0 && (
-          <div className="flex shrink-0 items-center gap-2">
-            <span className="whitespace-nowrap text-muted-foreground text-xs">
-              {insights.length === 0
-                ? '0 results'
-                : `${rangeStart}-${rangeEnd} of ${insights.length}`}
-            </span>
-            <Pagination
-              canNextPage={page < pageCount - 1}
-              canPreviousPage={page > 0}
-              nextPage={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              pageIndex={page}
-              previousPage={() => setPage((p) => Math.max(0, p - 1))}
-            />
-          </div>
-        )}
+        <div className="relative">
+          <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="rounded-none border-0 border-t bg-transparent pl-9 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
+            placeholder="Search pages"
+            type="search"
+            value={search}
+          />
+        </div>
       </div>
       <div className="divide-y">
         {isLoading &&
@@ -287,6 +316,16 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
               type="button"
             >
               <div className="col min-w-0 flex-1 gap-2">
+                <span
+                  className={cn(
+                    'row shrink-0 items-center gap-1 self-start rounded-md px-1 py-0.5 font-medium text-xs',
+                    config.color,
+                    config.bg
+                  )}
+                >
+                  <Icon className="size-3" />
+                  {config.label}
+                </span>
                 <div className="flex items-center gap-2">
                   <img
                     alt=""
@@ -301,15 +340,8 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
                     {insight.path || insight.page}
                   </span>
 
-                  <span
-                    className={cn(
-                      'row shrink-0 items-center gap-1 rounded-md px-1 py-0.5 font-medium text-xs',
-                      config.color,
-                      config.bg
-                    )}
-                  >
-                    <Icon className="size-3" />
-                    {config.label}
+                  <span className="ml-auto shrink-0 whitespace-nowrap font-mono text-muted-foreground text-xs">
+                    {insight.metrics}
                   </span>
                 </div>
                 <p className="text-muted-foreground text-xs leading-relaxed">
@@ -319,10 +351,6 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
                   {insight.suggestion}
                 </p>
               </div>
-
-              <span className="shrink-0 whitespace-nowrap font-mono text-muted-foreground text-xs">
-                {insight.metrics}
-              </span>
             </button>
           );
         })}

@@ -1,8 +1,9 @@
 import type { IChartRange, IInterval } from '@openpanel/validation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { AlertCircleIcon, ChevronsUpDownIcon } from 'lucide-react';
+import { AlertCircleIcon, ChevronsUpDownIcon, SearchIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Pagination } from '@/components/pagination';
+import { Input } from '@/components/ui/input';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
@@ -27,6 +28,7 @@ export function GscCannibalization({
   const { apiUrl } = useAppContext();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(0);
+  const [search, setSearch] = useState('');
   const pageSize = 15;
 
   const query = useQuery(
@@ -54,7 +56,19 @@ export function GscCannibalization({
     });
   };
 
-  const items = query.data ?? [];
+  const allItems = query.data ?? [];
+
+  const items = useMemo(() => {
+    if (!search.trim()) {
+      return allItems;
+    }
+    const q = search.toLowerCase();
+    return allItems.filter(
+      (item) =>
+        item.query.toLowerCase().includes(q) ||
+        item.pages.some((p) => p.page.toLowerCase().includes(q))
+    );
+  }, [allItems, search]);
 
   const pageCount = Math.ceil(items.length / pageSize) || 1;
   useEffect(() => {
@@ -67,37 +81,52 @@ export function GscCannibalization({
   const rangeStart = items.length ? page * pageSize + 1 : 0;
   const rangeEnd = Math.min((page + 1) * pageSize, items.length);
 
-  if (!(query.isLoading || items.length)) {
+  if (!(query.isLoading || allItems.length)) {
     return null;
   }
 
   return (
-    <div className="card overflow-hidden">
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <h3 className="font-medium text-sm">Keyword Cannibalization</h3>
+    <div className="card">
+      <div className="border-b">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-sm">Keyword Cannibalization</h3>
+            {items.length > 0 && (
+              <span className="rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground text-xs">
+                {items.length}
+              </span>
+            )}
+          </div>
           {items.length > 0 && (
-            <span className="rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground text-xs">
-              {items.length}
-            </span>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="whitespace-nowrap text-muted-foreground text-xs">
+                {items.length === 0
+                  ? '0 results'
+                  : `${rangeStart}-${rangeEnd} of ${items.length}`}
+              </span>
+              <Pagination
+                canNextPage={page < pageCount - 1}
+                canPreviousPage={page > 0}
+                nextPage={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                pageIndex={page}
+                previousPage={() => setPage((p) => Math.max(0, p - 1))}
+              />
+            </div>
           )}
         </div>
-        {items.length > 0 && (
-          <div className="flex shrink-0 items-center gap-2">
-            <span className="whitespace-nowrap text-muted-foreground text-xs">
-              {items.length === 0
-                ? '0 results'
-                : `${rangeStart}-${rangeEnd} of ${items.length}`}
-            </span>
-            <Pagination
-              canNextPage={page < pageCount - 1}
-              canPreviousPage={page > 0}
-              nextPage={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              pageIndex={page}
-              previousPage={() => setPage((p) => Math.max(0, p - 1))}
-            />
-          </div>
-        )}
+        <div className="relative">
+          <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="rounded-none border-0 border-t bg-transparent pl-9 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
+            placeholder="Search keywords"
+            type="search"
+            value={search}
+          />
+        </div>
       </div>
       <div className="divide-y">
         {query.isLoading &&
