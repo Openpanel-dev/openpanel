@@ -9,7 +9,7 @@ import { MostEvents } from '@/components/profiles/most-events';
 import { PopularRoutes } from '@/components/profiles/popular-routes';
 import { ProfileActivity } from '@/components/profiles/profile-activity';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
-import { Widget, WidgetBody } from '@/components/widget';
+import { Widget, WidgetBody, WidgetEmptyState } from '@/components/widget';
 import { WidgetTable } from '@/components/widget-table';
 import { useTRPC } from '@/integrations/trpc/react';
 import { formatDateTime, formatTimeAgoOrDateTime } from '@/utils/date';
@@ -64,7 +64,7 @@ function Component() {
   );
 
   const g = group.data;
-  const m = metrics.data?.[0];
+  const m = metrics.data;
 
   if (!g) {
     return null;
@@ -177,9 +177,7 @@ function Component() {
           </WidgetHead>
           <WidgetBody className="p-0">
             {members.data.length === 0 ? (
-              <p className="py-4 text-center text-muted-foreground text-sm">
-                No members found
-              </p>
+              <WidgetEmptyState icon={UsersIcon} text="No members yet" />
             ) : (
               <WidgetTable
                 columnClassName="px-2"

@@ -1,11 +1,3 @@
-import {
-  useXAxisProps,
-  useYAxisProps,
-} from '@/components/report-chart/common/axis';
-import { Widget, WidgetBody } from '@/components/widget';
-import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
-import { useNumber } from '@/hooks/use-numer-formatter';
-import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { TrendingUpIcon } from 'lucide-react';
 import {
   Area,
@@ -16,6 +8,14 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
+import {
+  useXAxisProps,
+  useYAxisProps,
+} from '@/components/report-chart/common/axis';
+import { Widget, WidgetBody } from '@/components/widget';
+import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { getChartColor } from '@/utils/theme';
 
 type Props = {
@@ -37,10 +37,16 @@ function Tooltip(props: any) {
         {formatDate(new Date(payload.timestamp))}
       </div>
       <div className="flex items-center gap-2">
-        <div className="h-10 w-1 rounded-full" style={{ background: getChartColor(0) }} />
+        <div
+          className="h-10 w-1 rounded-full"
+          style={{ background: getChartColor(0) }}
+        />
         <div className="col gap-1">
           <div className="text-muted-foreground text-sm">Total members</div>
-          <div className="font-semibold text-lg" style={{ color: getChartColor(0) }}>
+          <div
+            className="font-semibold text-lg"
+            style={{ color: getChartColor(0) }}
+          >
             {number.format(payload.cumulative)}
           </div>
         </div>
@@ -87,7 +93,7 @@ export function GroupMemberGrowth({ data }: Props) {
             <ResponsiveContainer>
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
                     <stop offset="5%" stopColor={color} stopOpacity={0.3} />
                     <stop offset="95%" stopColor={color} stopOpacity={0.02} />
                   </linearGradient>
@@ -97,17 +103,18 @@ export function GroupMemberGrowth({ data }: Props) {
                   cursor={{ stroke: color, strokeOpacity: 0.3 }}
                 />
                 <Area
-                  type="monotone"
                   dataKey="cumulative"
+                  dot={false}
+                  fill={`url(#${gradientId})`}
+                  isAnimationActive={false}
                   stroke={color}
                   strokeWidth={2}
-                  fill={`url(#${gradientId})`}
-                  dot={false}
-                  isAnimationActive={false}
+                  type="monotone"
                 />
                 <XAxis {...xAxisProps} />
-                <YAxis {...yAxisProps} domain={[0, 'dataMax']} />
+                <YAxis {...yAxisProps} />
                 <CartesianGrid
+                  className="stroke-border"
                   horizontal={true}
                   strokeDasharray="3 3"
                   strokeOpacity={0.5}

@@ -42,7 +42,7 @@ export default function App() {
     for (const id of u.groupIds) {
       const meta = PRESET_GROUPS.find((g) => g.id === id);
       if (meta) {
-        op.setGroup(id, meta);
+        op.upsertGroup({ id, ...meta });
       }
     }
   }

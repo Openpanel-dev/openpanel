@@ -1,4 +1,5 @@
-import { Widget } from '@/components/widget';
+import { RouteIcon } from 'lucide-react';
+import { Widget, WidgetEmptyState } from '@/components/widget';
 import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
 
 type Props = {
@@ -6,28 +7,32 @@ type Props = {
 };
 
 export const PopularRoutes = ({ data }: Props) => {
-  const max = Math.max(...data.map((item) => item.count));
+  const max = data.length > 0 ? Math.max(...data.map((item) => item.count)) : 0;
   return (
     <Widget className="w-full">
       <WidgetHead>
         <WidgetTitle>Most visted pages</WidgetTitle>
       </WidgetHead>
-      <div className="flex flex-col gap-1 p-1">
-        {data.slice(0, 5).map((item) => (
-          <div key={item.path} className="relative px-3 py-2">
-            <div
-              className="absolute bottom-0 left-0 top-0 rounded bg-def-200"
-              style={{
-                width: `${(item.count / max) * 100}%`,
-              }}
-            />
-            <div className="relative flex justify-between ">
-              <div>{item.path}</div>
-              <div>{item.count}</div>
+      {data.length === 0 ? (
+        <WidgetEmptyState icon={RouteIcon} text="No pages visited yet" />
+      ) : (
+        <div className="flex flex-col gap-1 p-1">
+          {data.slice(0, 5).map((item) => (
+            <div key={item.path} className="relative px-3 py-2">
+              <div
+                className="absolute bottom-0 left-0 top-0 rounded bg-def-200"
+                style={{
+                  width: `${(item.count / max) * 100}%`,
+                }}
+              />
+              <div className="relative flex justify-between ">
+                <div>{item.path}</div>
+                <div>{item.count}</div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </Widget>
   );
 };

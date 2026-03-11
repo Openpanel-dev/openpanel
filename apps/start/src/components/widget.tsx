@@ -54,6 +54,19 @@ export function WidgetBody({ children, className }: WidgetBodyProps) {
   return <div className={cn('p-4', className)}>{children}</div>;
 }
 
+export interface WidgetEmptyStateProps {
+  icon: LucideIcon;
+  text: string;
+}
+export function WidgetEmptyState({ icon: Icon, text }: WidgetEmptyStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
+      <Icon size={28} strokeWidth={1.5} />
+      <p className="text-sm">{text}</p>
+    </div>
+  );
+}
+
 export interface WidgetProps {
   children: React.ReactNode;
   className?: string;

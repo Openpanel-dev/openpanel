@@ -11,6 +11,7 @@ import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { getEventsGroupQueueShard } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import {
+  type IAssignGroupPayload,
   type IDecrementPayload,
   type IGroupPayload,
   type IIdentifyPayload,
@@ -332,31 +333,29 @@ async function handleGroup(
   context: TrackContext
 ): Promise<void> {
   const { id, type, name, properties = {} } = payload;
+  await groupBuffer.add({
+    id,
+    projectId: context.projectId,
+    type,
+    name,
+    properties,
+  });
+}
+
+async function handleAssignGroup(
+  payload: IAssignGroupPayload,
+  context: TrackContext
+): Promise<void> {
   const profileId = payload.profileId ?? context.deviceId;
-
-  const promises: Promise<unknown>[] = [];
-  promises.push(
-    groupBuffer.add({
-      id,
-      projectId: context.projectId,
-      type,
-      name,
-      properties,
-    })
-  );
-
-  if (profileId) {
-    promises.push(
-      upsertProfile({
-        id: String(profileId),
-        projectId: context.projectId,
-        isExternal: !!(payload.profileId ?? context.identity?.profileId),
-        groups: [id],
-      })
-    );
+  if (!profileId) {
+    return;
   }
-
-  await Promise.all(promises);
+  await upsertProfile({
+    id: String(profileId),
+    projectId: context.projectId,
+    isExternal: !!payload.profileId,
+    groups: payload.groupIds,
+  });
 }
 
 export async function handler(
@@ -409,6 +408,9 @@ export async function handler(
       break;
     case 'group':
       await handleGroup(validatedBody.payload, context);
+      break;
+    case 'assign_group':
+      await handleAssignGroup(validatedBody.payload, context);
       break;
     default:
       return reply.status(400).send({
