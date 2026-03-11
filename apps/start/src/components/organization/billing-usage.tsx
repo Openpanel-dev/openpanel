@@ -242,6 +242,7 @@ export default function BillingUsage({ organization }: Props) {
               <XAxis {...xAxisProps} dataKey="date" />
               <YAxis {...yAxisProps} domain={[0, 'dataMax']} />
               <CartesianGrid
+                className="stroke-border"
                 horizontal={true}
                 strokeDasharray="3 3"
                 strokeOpacity={0.5}

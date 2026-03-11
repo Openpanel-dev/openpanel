@@ -337,6 +337,7 @@ export class UmamiProvider extends BaseImportProvider<UmamiRawEvent> {
       imported_at: new Date().toISOString(),
       sdk_name: this.provider,
       sdk_version: this.version,
+      groups: [],
     };
   }
 

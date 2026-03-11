@@ -165,7 +165,8 @@ export async function getProfiles(ids: string[], projectId: string) {
       any(nullIf(avatar, '')) as avatar, 
       last_value(is_external) as is_external, 
       any(properties) as properties, 
-      any(created_at) as created_at
+      any(created_at) as created_at,
+      any(groups) as groups
     FROM ${TABLE_NAMES.profiles}
     WHERE 
       project_id = ${sqlstring.escape(projectId)} AND
@@ -232,6 +233,7 @@ export interface IServiceProfile {
   createdAt: Date;
   isExternal: boolean;
   projectId: string;
+  groups: string[];
   properties: Record<string, unknown> & {
     region?: string;
     country?: string;
@@ -259,6 +261,7 @@ export interface IClickhouseProfile {
   project_id: string;
   is_external: boolean;
   created_at: string;
+  groups: string[];
 }
 
 export interface IServiceUpsertProfile {
@@ -270,6 +273,7 @@ export interface IServiceUpsertProfile {
   avatar?: string;
   properties?: Record<string, unknown>;
   isExternal: boolean;
+  groups?: string[];
 }
 
 export function transformProfile({
@@ -288,6 +292,7 @@ export function transformProfile({
     id: profile.id,
     email: profile.email,
     avatar: profile.avatar,
+    groups: profile.groups ?? [],
   };
 }
 
@@ -301,6 +306,7 @@ export function upsertProfile(
     properties,
     projectId,
     isExternal,
+    groups,
   }: IServiceUpsertProfile,
   isFromEvent = false
 ) {
@@ -314,6 +320,7 @@ export function upsertProfile(
     project_id: projectId,
     created_at: formatClickhouseDate(new Date()),
     is_external: isExternal,
+    groups: groups ?? [],
   };
 
   return profileBuffer.add(profile, isFromEvent);

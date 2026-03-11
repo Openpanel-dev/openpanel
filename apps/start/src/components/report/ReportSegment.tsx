@@ -1,5 +1,8 @@
+import { chartSegments } from '@openpanel/constants';
+import { type IChartEventSegment, mapKeys } from '@openpanel/validation';
 import {
   ActivityIcon,
+  Building2Icon,
   ClockIcon,
   EqualApproximatelyIcon,
   type LucideIcon,
@@ -10,10 +13,7 @@ import {
   UserCheckIcon,
   UsersIcon,
 } from 'lucide-react';
-
-import { chartSegments } from '@openpanel/constants';
-import { type IChartEventSegment, mapKeys } from '@openpanel/validation';
-
+import { Button } from '../ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +25,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/cn';
-import { Button } from '../ui/button';
 
 interface ReportChartTypeProps {
   className?: string;
@@ -46,6 +45,7 @@ export function ReportSegment({
     event: ActivityIcon,
     user: UsersIcon,
     session: ClockIcon,
+    group: Building2Icon,
     user_average: UserCheck2Icon,
     one_event_per_user: UserCheckIcon,
     property_sum: SigmaIcon,
@@ -58,9 +58,9 @@ export function ReportSegment({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
-          icon={Icons[value]}
           className={cn('justify-start text-sm', className)}
+          icon={Icons[value]}
+          variant="outline"
         >
           {items.find((item) => item.value === value)?.label}
         </Button>
@@ -74,13 +74,13 @@ export function ReportSegment({
             const Icon = Icons[item.value];
             return (
               <DropdownMenuItem
+                className="group"
                 key={item.value}
                 onClick={() => onChange(item.value)}
-                className="group"
               >
                 {item.label}
                 <DropdownMenuShortcut>
-                  <Icon className="size-4 group-hover:text-blue-500 group-hover:scale-125 transition-all group-hover:rotate-12" />
+                  <Icon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
             );

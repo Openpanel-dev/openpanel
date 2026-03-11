@@ -3,6 +3,7 @@ import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import {
   getProfileById,
   getSalts,
+  groupBuffer,
   replayBuffer,
   upsertProfile,
 } from '@openpanel/db';
@@ -10,7 +11,9 @@ import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { getEventsGroupQueueShard } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import {
+  type IAssignGroupPayload,
   type IDecrementPayload,
+  type IGroupPayload,
   type IIdentifyPayload,
   type IIncrementPayload,
   type IReplayPayload,
@@ -210,6 +213,7 @@ async function handleTrack(
         headers,
         event: {
           ...payload,
+          groups: payload.groups ?? [],
           timestamp: timestamp.value,
           isTimestampFromThePast: timestamp.isFromPast,
         },
@@ -324,6 +328,36 @@ async function handleReplay(
   await replayBuffer.add(row);
 }
 
+async function handleGroup(
+  payload: IGroupPayload,
+  context: TrackContext
+): Promise<void> {
+  const { id, type, name, properties = {} } = payload;
+  await groupBuffer.add({
+    id,
+    projectId: context.projectId,
+    type,
+    name,
+    properties,
+  });
+}
+
+async function handleAssignGroup(
+  payload: IAssignGroupPayload,
+  context: TrackContext
+): Promise<void> {
+  const profileId = payload.profileId ?? context.deviceId;
+  if (!profileId) {
+    return;
+  }
+  await upsertProfile({
+    id: String(profileId),
+    projectId: context.projectId,
+    isExternal: !!payload.profileId,
+    groups: payload.groupIds,
+  });
+}
+
 export async function handler(
   request: FastifyRequest<{
     Body: ITrackHandlerPayload;
@@ -371,6 +405,12 @@ export async function handler(
       break;
     case 'replay':
       await handleReplay(validatedBody.payload, context);
+      break;
+    case 'group':
+      await handleGroup(validatedBody.payload, context);
+      break;
+    case 'assign_group':
+      await handleAssignGroup(validatedBody.payload, context);
       break;
     default:
       return reply.status(400).send({

@@ -1,7 +1,7 @@
-import PageDetails from './page-details';
 import { createPushModal } from 'pushmodal';
 import AddClient from './add-client';
 import AddDashboard from './add-dashboard';
+import AddGroup from './add-group';
 import AddImport from './add-import';
 import AddIntegration from './add-integration';
 import AddNotificationRule from './add-notification-rule';
@@ -16,6 +16,7 @@ import DateTimePicker from './date-time-picker';
 import EditClient from './edit-client';
 import EditDashboard from './edit-dashboard';
 import EditEvent from './edit-event';
+import EditGroup from './edit-group';
 import EditMember from './edit-member';
 import EditReference from './edit-reference';
 import EditReport from './edit-report';
@@ -23,6 +24,7 @@ import EventDetails from './event-details';
 import Instructions from './Instructions';
 import OverviewChartDetails from './overview-chart-details';
 import OverviewFilters from './overview-filters';
+import PageDetails from './page-details';
 import RequestPasswordReset from './request-reset-password';
 import SaveReport from './save-report';
 import SelectBillingPlan from './select-billing-plan';
@@ -36,6 +38,8 @@ import { op } from '@/utils/op';
 
 const modals = {
   PageDetails,
+  AddGroup,
+  EditGroup,
   OverviewTopPagesModal,
   OverviewTopGenericModal,
   RequestPasswordReset,
