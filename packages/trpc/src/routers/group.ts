@@ -11,6 +11,7 @@ import {
   getGroupsByIds,
   getGroupTypes,
   TABLE_NAMES,
+  toNullIfDefaultMinDate,
   updateGroup,
 } from '@openpanel/db';
 import sqlstring from 'sqlstring';
@@ -49,7 +50,7 @@ export const groupRouter = createTRPCRouter({
 
   byId: protectedProcedure
     .input(z.object({ id: z.string(), projectId: z.string() }))
-    .query(async ({ input: { id, projectId } }) => {
+    .query(({ input: { id, projectId } }) => {
       return getGroupById(id, projectId);
     }),
 
@@ -63,7 +64,7 @@ export const groupRouter = createTRPCRouter({
         properties: z.record(z.string()).default({}),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(({ input }) => {
       return createGroup(input);
     }),
 
@@ -77,26 +78,26 @@ export const groupRouter = createTRPCRouter({
         properties: z.record(z.string()).optional(),
       })
     )
-    .mutation(async ({ input: { id, projectId, ...data } }) => {
+    .mutation(({ input: { id, projectId, ...data } }) => {
       return updateGroup(id, projectId, data);
     }),
 
   delete: protectedProcedure
     .input(z.object({ id: z.string(), projectId: z.string() }))
-    .mutation(async ({ input: { id, projectId } }) => {
+    .mutation(({ input: { id, projectId } }) => {
       return deleteGroup(id, projectId);
     }),
 
   types: protectedProcedure
     .input(z.object({ projectId: z.string() }))
-    .query(async ({ input: { projectId } }) => {
+    .query(({ input: { projectId } }) => {
       return getGroupTypes(projectId);
     }),
 
   metrics: protectedProcedure
     .input(z.object({ id: z.string(), projectId: z.string() }))
     .query(async ({ input: { id, projectId } }) => {
-      return chQuery<{
+      const data = await chQuery<{
         totalEvents: number;
         uniqueProfiles: number;
         firstSeen: string;
@@ -111,11 +112,18 @@ export const groupRouter = createTRPCRouter({
         WHERE project_id = ${sqlstring.escape(projectId)}
           AND has(groups, ${sqlstring.escape(id)})
       `);
+
+      return {
+        totalEvents: data[0]?.totalEvents ?? 0,
+        uniqueProfiles: data[0]?.uniqueProfiles ?? 0,
+        firstSeen: toNullIfDefaultMinDate(data[0]?.firstSeen),
+        lastSeen: toNullIfDefaultMinDate(data[0]?.lastSeen),
+      };
     }),
 
   activity: protectedProcedure
     .input(z.object({ id: z.string(), projectId: z.string() }))
-    .query(async ({ input: { id, projectId } }) => {
+    .query(({ input: { id, projectId } }) => {
       return chQuery<{ count: number; date: string }>(`
         SELECT count() AS count, toStartOfDay(created_at) AS date
         FROM ${TABLE_NAMES.events}
@@ -174,7 +182,7 @@ export const groupRouter = createTRPCRouter({
 
   mostEvents: protectedProcedure
     .input(z.object({ id: z.string(), projectId: z.string() }))
-    .query(async ({ input: { id, projectId } }) => {
+    .query(({ input: { id, projectId } }) => {
       return chQuery<{ count: number; name: string }>(`
         SELECT count() as count, name
         FROM ${TABLE_NAMES.events}
@@ -189,7 +197,7 @@ export const groupRouter = createTRPCRouter({
 
   popularRoutes: protectedProcedure
     .input(z.object({ id: z.string(), projectId: z.string() }))
-    .query(async ({ input: { id, projectId } }) => {
+    .query(({ input: { id, projectId } }) => {
       return chQuery<{ count: number; path: string }>(`
         SELECT count() as count, path
         FROM ${TABLE_NAMES.events}
@@ -204,7 +212,7 @@ export const groupRouter = createTRPCRouter({
 
   memberGrowth: protectedProcedure
     .input(z.object({ id: z.string(), projectId: z.string() }))
-    .query(async ({ input: { id, projectId } }) => {
+    .query(({ input: { id, projectId } }) => {
       return chQuery<{ date: string; count: number }>(`
         SELECT
           toDate(toStartOfDay(min_date)) AS date,
@@ -228,13 +236,13 @@ export const groupRouter = createTRPCRouter({
 
   properties: protectedProcedure
     .input(z.object({ projectId: z.string() }))
-    .query(async ({ input: { projectId } }) => {
+    .query(({ input: { projectId } }) => {
       return getGroupPropertyKeys(projectId);
     }),
 
   listByIds: protectedProcedure
     .input(z.object({ projectId: z.string(), ids: z.array(z.string()) }))
-    .query(async ({ input: { projectId, ids } }) => {
+    .query(({ input: { projectId, ids } }) => {
       return getGroupsByIds(projectId, ids);
     }),
 });

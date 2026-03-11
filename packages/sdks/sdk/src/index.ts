@@ -2,6 +2,7 @@
 
 import type {
   IAliasPayload as AliasPayload,
+  IAssignGroupPayload as AssignGroupPayload,
   IDecrementPayload as DecrementPayload,
   IGroupPayload as GroupPayload,
   IIdentifyPayload as IdentifyPayload,
@@ -13,6 +14,7 @@ import { Api } from './api';
 
 export type {
   AliasPayload,
+  AssignGroupPayload,
   DecrementPayload,
   GroupPayload,
   IdentifyPayload,
@@ -27,7 +29,7 @@ export interface TrackProperties {
   groups?: string[];
 }
 
-export type GroupMetadata = Omit<GroupPayload, 'id'>;
+export type UpsertGroupPayload = GroupPayload;
 
 export interface OpenPanelOptions {
   clientId: string;
@@ -187,26 +189,38 @@ export class OpenPanel {
     }
   }
 
-  setGroups(groupIds: string[]) {
-    this.log('set groups', groupIds);
-    this.groups = groupIds;
+  upsertGroup(payload: UpsertGroupPayload) {
+    this.log('upsert group', payload);
+    return this.send({
+      type: 'group',
+      payload,
+    });
   }
 
-  setGroup(groupId: string, metadata?: GroupMetadata) {
-    this.log('set group', groupId, metadata);
+  setGroup(groupId: string) {
+    this.log('set group', groupId);
     if (!this.groups.includes(groupId)) {
       this.groups = [...this.groups, groupId];
     }
-    if (metadata) {
-      return this.send({
-        type: 'group',
-        payload: {
-          id: groupId,
-          ...metadata,
-          profileId: this.profileId,
-        },
-      });
-    }
+    return this.send({
+      type: 'assign_group',
+      payload: {
+        groupIds: [groupId],
+        profileId: this.profileId,
+      },
+    });
+  }
+
+  setGroups(groupIds: string[]) {
+    this.log('set groups', groupIds);
+    this.groups = [...new Set([...this.groups, ...groupIds])];
+    return this.send({
+      type: 'assign_group',
+      payload: {
+        groupIds,
+        profileId: this.profileId,
+      },
+    });
   }
 
   /**
@@ -291,7 +305,7 @@ export class OpenPanel {
         profileId: item.payload.profileId ?? this.profileId,
       } as TrackHandlerPayload['payload'];
     }
-    if (item.type === 'group') {
+    if (item.type === 'assign_group') {
       return {
         ...item.payload,
         profileId: item.payload.profileId ?? this.profileId,

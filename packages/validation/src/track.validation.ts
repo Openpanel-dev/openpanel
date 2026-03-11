@@ -7,6 +7,10 @@ export const zGroupPayload = z.object({
   type: z.string().min(1),
   name: z.string().min(1),
   properties: z.record(z.unknown()).optional(),
+});
+
+export const zAssignGroupPayload = z.object({
+  groupIds: z.array(z.string().min(1)),
   profileId: z.union([z.string().min(1), z.number()]).optional(),
 });
 
@@ -110,6 +114,10 @@ export const zTrackHandlerPayload = z.discriminatedUnion('type', [
     type: z.literal('group'),
     payload: zGroupPayload,
   }),
+  z.object({
+    type: z.literal('assign_group'),
+    payload: zAssignGroupPayload,
+  }),
 ]);
 
 export type ITrackPayload = z.infer<typeof zTrackPayload>;
@@ -119,6 +127,7 @@ export type IDecrementPayload = z.infer<typeof zDecrementPayload>;
 export type IAliasPayload = z.infer<typeof zAliasPayload>;
 export type IReplayPayload = z.infer<typeof zReplayPayload>;
 export type IGroupPayload = z.infer<typeof zGroupPayload>;
+export type IAssignGroupPayload = z.infer<typeof zAssignGroupPayload>;
 export type ITrackHandlerPayload = z.infer<typeof zTrackHandlerPayload>;
 
 // Deprecated types for beta version of the SDKs
