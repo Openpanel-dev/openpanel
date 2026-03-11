@@ -1,7 +1,10 @@
 import { cacheable } from '@openpanel/redis';
 import { originalCh } from './clickhouse/client';
 import { decrypt, encrypt } from './encryption';
+import { createLogger } from '@openpanel/logger';
 import { db } from './prisma-client';
+
+const logger = createLogger({ name: 'db:gsc' });
 
 export interface GscSite {
   siteUrl: string;
@@ -46,8 +49,18 @@ export async function getGscAccessToken(projectId: string): Promise<string> {
     conn.accessTokenExpiresAt &&
     conn.accessTokenExpiresAt.getTime() > Date.now() + 60_000
   ) {
+    logger.info('GSC using cached access token', {
+      projectId,
+      expiresAt: conn.accessTokenExpiresAt,
+    });
     return decrypt(conn.accessToken);
   }
+
+  logger.info('GSC access token expired, attempting refresh', {
+    projectId,
+    expiresAt: conn.accessTokenExpiresAt,
+    hasRefreshToken: !!conn.refreshToken,
+  });
 
   try {
     const { accessToken, expiresAt } = await refreshGscToken(
@@ -57,18 +70,21 @@ export async function getGscAccessToken(projectId: string): Promise<string> {
       where: { projectId },
       data: { accessToken: encrypt(accessToken), accessTokenExpiresAt: expiresAt },
     });
+    logger.info('GSC token refreshed successfully', { projectId, expiresAt });
     return accessToken;
   } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Failed to refresh token';
+    logger.error('GSC token refresh failed', { projectId, error: errorMessage });
     await db.gscConnection.update({
       where: { projectId },
       data: {
         lastSyncStatus: 'token_expired',
-        lastSyncError:
-          error instanceof Error ? error.message : 'Failed to refresh token',
+        lastSyncError: errorMessage,
       },
     });
     throw new Error(
-      'GSC token has expired or been revoked. Please reconnect Google Search Console.'
+      `GSC token refresh failed for project ${projectId}: ${errorMessage}`
     );
   }
 }
