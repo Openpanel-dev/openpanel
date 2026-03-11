@@ -42,5 +42,5 @@ function Component() {
     ),
   );
 
-  return <EventsTable query={query} />;
+  return <EventsTable query={query} showEventListener />;
 }

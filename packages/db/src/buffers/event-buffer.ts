@@ -2,7 +2,6 @@ import { getSafeJson } from '@openpanel/json';
 import {
   type Redis,
   getRedisCache,
-  getRedisPub,
   publishEvent,
 } from '@openpanel/redis';
 import { ch } from '../clickhouse/client';
@@ -53,14 +52,10 @@ export class EventBuffer extends BaseBuffer {
   /** Tracks consecutive flush failures for observability; reset on success. */
   private flushRetryCount = 0;
 
-  private publishThrottleMs = process.env.EVENT_BUFFER_PUBLISH_THROTTLE_MS
-    ? Number.parseInt(process.env.EVENT_BUFFER_PUBLISH_THROTTLE_MS, 10)
-    : 1000;
-  private lastPublishTime = 0;
-  private pendingPublishEvent: IClickhouseEvent | null = null;
-  private publishTimer: ReturnType<typeof setTimeout> | null = null;
-
   private activeVisitorsExpiration = 60 * 5; // 5 minutes
+  /** How often (ms) we refresh the heartbeat key + zadd per visitor. */
+  private heartbeatRefreshMs = 60_000; // 1 minute
+  private lastHeartbeat = new Map<string, number>();
   private queueKey = 'event_buffer:queue';
   protected bufferCounterKey = 'event_buffer:total_count';
 
@@ -194,7 +189,7 @@ return added
     }
   }
 
-  add(event: IClickhouseEvent, _multi?: ReturnType<Redis['multi']>) {
+  add(event: IClickhouseEvent) {
     const eventJson = JSON.stringify(event);
 
     let type: PendingEvent['type'] = 'regular';
@@ -217,11 +212,6 @@ return added
       eventWithTimestamp,
       type,
     };
-
-    if (_multi) {
-      this.addToMulti(_multi, pendingEvent);
-      return;
-    }
 
     this.pendingEvents.push(pendingEvent);
 
@@ -318,11 +308,7 @@ return added
       await multi.exec();
 
       this.flushRetryCount = 0;
-
-      const lastEvent = eventsToFlush[eventsToFlush.length - 1];
-      if (lastEvent) {
-        this.scheduleThrottledPublish(lastEvent.event);
-      }
+      this.pruneHeartbeatMap();
     } catch (error) {
       // Re-queue failed events at the front to preserve order and avoid data loss
       this.pendingEvents = eventsToFlush.concat(this.pendingEvents);
@@ -335,41 +321,13 @@ return added
       });
     } finally {
       this.isFlushing = false;
-    }
-  }
-
-  private scheduleThrottledPublish(event: IClickhouseEvent) {
-    this.pendingPublishEvent = event;
-
-    const now = Date.now();
-    const timeSinceLastPublish = now - this.lastPublishTime;
-
-    if (timeSinceLastPublish >= this.publishThrottleMs) {
-      this.executeThrottledPublish();
-      return;
-    }
-
-    if (!this.publishTimer) {
-      const delay = this.publishThrottleMs - timeSinceLastPublish;
-      this.publishTimer = setTimeout(() => {
-        this.publishTimer = null;
-        this.executeThrottledPublish();
-      }, delay);
-    }
-  }
-
-  private executeThrottledPublish() {
-    if (!this.pendingPublishEvent) {
-      return;
-    }
-
-    const event = this.pendingPublishEvent;
-    this.pendingPublishEvent = null;
-    this.lastPublishTime = Date.now();
-
-    const result = publishEvent('events', 'received', transformEvent(event));
-    if (result instanceof Promise) {
-      result.catch(() => {});
+      // Events may have accumulated while we were flushing; schedule another flush if needed
+      if (this.pendingEvents.length > 0 && !this.flushTimer) {
+        this.flushTimer = setTimeout(() => {
+          this.flushTimer = null;
+          this.flushLocalBuffer();
+        }, this.microBatchIntervalMs);
+      }
     }
   }
 
@@ -438,11 +396,13 @@ return added
         });
       }
 
-      const pubMulti = getRedisPub().multi();
+      const countByProject = new Map<string, number>();
       for (const event of eventsToClickhouse) {
-        await publishEvent('events', 'saved', transformEvent(event), pubMulti);
+        countByProject.set(event.project_id, (countByProject.get(event.project_id) ?? 0) + 1);
       }
-      await pubMulti.exec();
+      for (const [projectId, count] of countByProject) {
+        publishEvent('events', 'batch', { projectId, count });
+      }
 
       await redis
         .multi()
@@ -502,14 +462,34 @@ return added
     });
   }
 
+  private pruneHeartbeatMap() {
+    const cutoff = Date.now() - this.activeVisitorsExpiration * 1000;
+    for (const [key, ts] of this.lastHeartbeat) {
+      if (ts < cutoff) {
+        this.lastHeartbeat.delete(key);
+      }
+    }
+  }
+
   private incrementActiveVisitorCount(
     multi: ReturnType<Redis['multi']>,
     projectId: string,
     profileId: string,
   ) {
+    const key = `${projectId}:${profileId}`;
     const now = Date.now();
+    const last = this.lastHeartbeat.get(key) ?? 0;
+
+    if (now - last < this.heartbeatRefreshMs) {
+      return;
+    }
+
+    this.lastHeartbeat.set(key, now);
     const zsetKey = `live:visitors:${projectId}`;
-    return multi.zadd(zsetKey, now, profileId);
+    const heartbeatKey = `live:visitor:${projectId}:${profileId}`;
+    multi
+      .zadd(zsetKey, now, profileId)
+      .set(heartbeatKey, '1', 'EX', this.activeVisitorsExpiration);
   }
 
   public async getActiveVisitorCount(projectId: string): Promise<number> {
