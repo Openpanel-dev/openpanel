@@ -31,10 +31,10 @@ function buildTimeConstraint(timeframe: Timeframe): string {
     const end = timeframe.end || 'now()';
 
     if (timeframe.end) {
-      return `created_at BETWEEN toDateTime('${start}') AND toDateTime('${end}')`;
+      return `created_at BETWEEN toDate('${start}') AND toDate('${end}')`;
     } else {
       // "Since date" - no end date
-      return `created_at >= toDateTime('${start}')`;
+      return `created_at >= toDate('${start}')`;
     }
   }
 }
