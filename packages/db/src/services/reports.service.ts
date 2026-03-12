@@ -87,6 +87,7 @@ export function transformReport(
     criteria: (report.criteria as ICriteria) ?? undefined,
     funnelGroup: report.funnelGroup ?? undefined,
     funnelWindow: report.funnelWindow ?? undefined,
+    measuring: (report.measuring as 'conversion_rate' | 'time_to_convert') ?? undefined,
     globalFilters: ((report.globalFilters as IChartEventFilter[]) ?? []).map(transformFilter),
     holdProperties: (report.holdProperties as string[]) ?? [],
     limit: 50,
