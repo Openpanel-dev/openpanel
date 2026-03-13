@@ -123,6 +123,7 @@ export async function events(
     take,
     profileId: query.data.profileId,
     select: {
+      properties: true,
       profile: false,
       meta: false,
       ...query.data.includes?.reduce(
