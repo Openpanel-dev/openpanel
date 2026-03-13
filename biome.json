@@ -42,6 +42,7 @@
         "useSemanticElements": "off"
       },
       "style": {
+        "noNestedTernary": "off",
         "noNonNullAssertion": "off",
         "noParameterAssign": "error",
         "useAsConstAssertion": "error",

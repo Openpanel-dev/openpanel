@@ -58,7 +58,7 @@ export type OpenPanelOptions = OpenPanelBaseOptions & {
 
 function toCamelCase(str: string) {
   return str.replace(/([-_][a-z])/gi, ($1) =>
-    $1.toUpperCase().replace('-', '').replace('_', ''),
+    $1.toUpperCase().replace('-', '').replace('_', '')
   );
 }
 
@@ -114,7 +114,9 @@ export class OpenPanel extends OpenPanelBase {
         const sampled = Math.random() < sampleRate;
         if (sampled) {
           this.loadReplayModule().then((mod) => {
-            if (!mod) return;
+            if (!mod) {
+              return;
+            }
             mod.startReplayRecorder(this.options.sessionReplay!, (chunk) => {
               // Replay chunks go through send() and are queued when disabled or waitForProfile
               // until ready() is called (base SDK also queues replay until sessionId is set).
@@ -153,7 +155,10 @@ export class OpenPanel extends OpenPanelBase {
       // dead-code-eliminated in the library build.
       if (typeof __OPENPANEL_REPLAY_URL__ !== 'undefined') {
         const scriptEl = _replayScriptRef;
-        const url = this.options.sessionReplay?.scriptUrl || scriptEl?.src?.replace('.js', '-replay.js') || 'https://openpanel.dev/op1-replay.js';
+        const url =
+          this.options.sessionReplay?.scriptUrl ||
+          scriptEl?.src?.replace('.js', '-replay.js') ||
+          'https://openpanel.dev/op1-replay.js';
 
         // Already loaded (e.g. user included the script manually)
         if ((window as any).__openpanel_replay) {
@@ -287,11 +292,15 @@ export class OpenPanel extends OpenPanelBase {
     });
   }
 
+  track(name: string, properties?: TrackProperties) {
+    return super.track(name, { ...properties, __path: this.lastPath });
+  }
+
   screenView(properties?: TrackProperties): void;
   screenView(path: string, properties?: TrackProperties): void;
   screenView(
     pathOrProperties?: string | TrackProperties,
-    propertiesOrUndefined?: TrackProperties,
+    propertiesOrUndefined?: TrackProperties
   ): void {
     if (this.isServer()) {
       return;
@@ -322,7 +331,7 @@ export class OpenPanel extends OpenPanelBase {
 
   async flushRevenue() {
     const promises = this.pendingRevenues.map((pending) =>
-      super.revenue(pending.amount, pending.properties),
+      super.revenue(pending.amount, pending.properties)
     );
     await Promise.all(promises);
     this.clearRevenue();
@@ -343,7 +352,7 @@ export class OpenPanel extends OpenPanelBase {
       try {
         sessionStorage.setItem(
           'openpanel-pending-revenues',
-          JSON.stringify(this.pendingRevenues),
+          JSON.stringify(this.pendingRevenues)
         );
       } catch {}
     }

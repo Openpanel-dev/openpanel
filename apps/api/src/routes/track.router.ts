@@ -1,6 +1,5 @@
-import { fetchDeviceId, handler } from '@/controllers/track.controller';
 import type { FastifyPluginCallback } from 'fastify';
-
+import { fetchDeviceId, handler } from '@/controllers/track.controller';
 import { clientHook } from '@/hooks/client.hook';
 import { duplicateHook } from '@/hooks/duplicate.hook';
 import { isBotHook } from '@/hooks/is-bot.hook';
@@ -13,7 +12,7 @@ const trackRouter: FastifyPluginCallback = async (fastify) => {
   fastify.route({
     method: 'POST',
     url: '/',
-    handler: handler,
+    handler,
   });
 
   fastify.route({

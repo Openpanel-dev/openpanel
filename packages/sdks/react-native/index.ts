@@ -1,13 +1,13 @@
+import type { OpenPanelOptions, TrackProperties } from '@openpanel/sdk';
+import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { AppState, Platform } from 'react-native';
 
-import type { OpenPanelOptions, TrackProperties } from '@openpanel/sdk';
-import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
-
 export * from '@openpanel/sdk';
 
 export class OpenPanel extends OpenPanelBase {
+  private lastPath = '';
   constructor(public options: OpenPanelOptions) {
     super({
       ...options,
@@ -37,7 +37,12 @@ export class OpenPanel extends OpenPanelBase {
     });
   }
 
-  public screenView(route: string, properties?: TrackProperties): void {
+  track(name: string, properties?: TrackProperties) {
+    return super.track(name, { ...properties, __path: this.lastPath });
+  }
+
+  screenView(route: string, properties?: TrackProperties): void {
+    this.lastPath = route;
     super.track('screen_view', {
       ...properties,
       __path: route,

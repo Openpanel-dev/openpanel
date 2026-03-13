@@ -19,9 +19,14 @@ export function wsVisitors(
 ) {
   const { params } = req;
   const sendCount = () => {
-    eventBuffer.getActiveVisitorCount(params.projectId).then((count) => {
-      socket.send(String(count));
-    });
+    eventBuffer
+      .getActiveVisitorCount(params.projectId)
+      .then((count) => {
+        socket.send(String(count));
+      })
+      .catch(() => {
+        socket.send('0');
+      });
   };
 
   const unsubscribe = subscribeToPublishedEvent(
