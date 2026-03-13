@@ -62,12 +62,13 @@ export async function getMaterializedColumns(targetTable?: 'events' | 'profiles'
 
     const mapping: Record<string, string> = {};
     for (const col of columns) {
+      const quotedColName = `\`${col.columnName}\``;
       if (col.targetTable === 'profiles') {
-        // e.g. "profile.properties.campaign" -> "profile.campaign"
-        mapping[`profile.properties.${col.propertyKey}`] = `profile.${col.columnName}`;
+        // e.g. "profile.properties.campaign" -> "profile.`campaign`"
+        mapping[`profile.properties.${col.propertyKey}`] = `profile.${quotedColName}`;
       } else {
-        // e.g. "properties.utm_source" -> "utm_source"
-        mapping[`properties.${col.propertyKey}`] = col.columnName;
+        // e.g. "properties.utm_source" -> "`utm_source`"
+        mapping[`properties.${col.propertyKey}`] = quotedColName;
       }
     }
 
