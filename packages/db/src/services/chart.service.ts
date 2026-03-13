@@ -822,13 +822,13 @@ export function getEventFiltersWhereClause(
     // Handle cohort operators - use JOIN-based approach
     if (operator === 'inCohort' && cohortId && projectId) {
       const cohortAlias = getCohortAlias(cohortId);
-      where[id] = `${cohortAlias}.profile_id IS NOT NULL`;
+      where[id] = `notEmpty(${cohortAlias}.profile_id)`;
       return;
     }
 
     if (operator === 'notInCohort' && cohortId && projectId) {
       const cohortAlias = getCohortAlias(cohortId);
-      where[id] = `${cohortAlias}.profile_id IS NULL`;
+      where[id] = `empty(${cohortAlias}.profile_id)`;
       return;
     }
 

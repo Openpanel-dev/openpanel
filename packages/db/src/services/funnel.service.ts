@@ -439,6 +439,19 @@ export class FunnelService {
       );
     });
 
+    // Apply cohort global filter WHERE clauses (inCohort / notInCohort)
+    eventSeries.forEach((event) => {
+      (event.filters ?? []).forEach((filter) => {
+        if (filter.operator === 'inCohort' && filter.cohortId) {
+          const alias = getCohortAlias(filter.cohortId);
+          funnelCte.where(`${alias}.profile_id`, '!=', '');
+        } else if (filter.operator === 'notInCohort' && filter.cohortId) {
+          const alias = getCohortAlias(filter.cohortId);
+          funnelCte.where(`${alias}.profile_id`, '=', '');
+        }
+      });
+    });
+
     // Create the sessions CTE if needed
     const sessionsCte =
       group[0] !== 'session_id'

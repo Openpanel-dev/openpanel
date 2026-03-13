@@ -84,8 +84,12 @@ export class ConversionService {
       return `${cteName} AS (${sql})`;
     } else {
       // Regular event - apply filters if present
-      const filterClauses = event.filters && event.filters.length > 0
-        ? Object.values(getEventFiltersWhereClause(event.filters, projectId))
+      // Exclude cohort filters — they're handled via JOINs in the outer query
+      const nonCohortFilters = (event.filters ?? []).filter(
+        f => f.operator !== 'inCohort' && f.operator !== 'notInCohort'
+      );
+      const filterClauses = nonCohortFilters.length > 0
+        ? Object.values(getEventFiltersWhereClause(nonCohortFilters, projectId))
         : [];
       const filterWhere = filterClauses.length > 0
         ? ' AND ' + filterClauses.join(' AND ')
@@ -384,6 +388,23 @@ export class ConversionService {
       ? `,\n        IF(ee.${groupCol} != '' AND ee.${groupCol} IS NOT NULL, dateDiff('second', se.created_at, ee.created_at), NULL) AS time_diff_seconds`
       : '';
 
+    // Build WHERE clause for cohort global filters (inCohort / notInCohort)
+    const cohortFilterClauses = events.flatMap(event =>
+      (event.filters ?? [])
+        .filter(f => (f.operator === 'inCohort' || f.operator === 'notInCohort') && f.cohortId)
+        .map(f => {
+          const alias = getCohortAlias(f.cohortId!);
+          return f.operator === 'inCohort'
+            ? `notEmpty(${alias}.profile_id)`
+            : `empty(${alias}.profile_id)`;
+        })
+    );
+    // Deduplicate (same filter merged into multiple events)
+    const uniqueCohortFilterClauses = [...new Set(cohortFilterClauses)];
+    const cohortFilterWhere = uniqueCohortFilterClauses.length > 0
+      ? '\n      WHERE ' + uniqueCohortFilterClauses.join(' AND ')
+      : '';
+
     // Inner SELECT: raw per-event rows from the self-join (no aggregation yet)
     const innerSQL = `
       SELECT
@@ -396,7 +417,7 @@ export class ConversionService {
         AND ee.created_at >= se.created_at - INTERVAL ${gracePeriodSeconds} SECOND
         AND ee.created_at <= se.created_at + INTERVAL ${funnelWindowSeconds} SECOND
         ${holdJoinConditions}
-      ${cohortJoins}`;
+      ${cohortJoins}${cohortFilterWhere}`;
 
     // TTC aggregation columns (all computed in single scan, negligible extra cost)
     const ttcAggColumns = measuring === 'time_to_convert'

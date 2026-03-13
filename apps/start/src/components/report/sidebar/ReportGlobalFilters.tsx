@@ -14,6 +14,7 @@ import {
 } from '../reportSlice';
 import { PropertiesCombobox } from './PropertiesCombobox';
 import { PureFilterItem } from './filters/FilterItem';
+import { PureCohortFilterItem } from './filters/CohortFilterItem';
 
 export function ReportGlobalFilters() {
   const globalFilters = useSelector((state) => state.report.globalFilters);
@@ -43,32 +44,66 @@ export function ReportGlobalFilters() {
     );
   };
 
+  const onChangeCohort = (cohortId: string, filter: IChartEventFilter) => {
+    dispatch(changeGlobalFilter({ ...filter, cohortId }));
+  };
+
   return (
     <div>
       <h3 className="mb-2 font-medium">Global Filters</h3>
       <div className="flex flex-col gap-2">
-        {globalFilters.map((filter) => (
-          <div key={filter.id} className="rounded-lg border bg-def-100">
-            <PureFilterItem
-              filter={filter}
-              eventName="*"
-              onRemove={onRemove}
-              onChangeValue={onChangeValue}
-              onChangeOperator={onChangeOperator}
-              className="p-2 px-4"
-            />
-          </div>
-        ))}
+        {globalFilters.map((filter) => {
+          const isCohortFilter =
+            filter.operator === 'inCohort' || filter.operator === 'notInCohort';
+
+          if (isCohortFilter) {
+            return (
+              <div key={filter.id} className="rounded-lg border bg-def-100">
+                <PureCohortFilterItem
+                  filter={filter}
+                  onRemove={onRemove}
+                  onChangeOperator={onChangeOperator}
+                  onChangeCohort={onChangeCohort}
+                  className="p-2 px-4"
+                />
+              </div>
+            );
+          }
+
+          return (
+            <div key={filter.id} className="rounded-lg border bg-def-100">
+              <PureFilterItem
+                filter={filter}
+                eventName="*"
+                onRemove={onRemove}
+                onChangeValue={onChangeValue}
+                onChangeOperator={onChangeOperator}
+                className="p-2 px-4"
+              />
+            </div>
+          );
+        })}
 
         <PropertiesCombobox
           onSelect={(action) => {
-            dispatch(
-              addGlobalFilter({
-                name: action.value,
-                operator: 'is',
-                value: [],
-              }),
-            );
+            if (action.cohortId) {
+              dispatch(
+                addGlobalFilter({
+                  name: action.value,
+                  operator: 'inCohort',
+                  value: [],
+                  cohortId: action.cohortId,
+                }),
+              );
+            } else {
+              dispatch(
+                addGlobalFilter({
+                  name: action.value,
+                  operator: 'is',
+                  value: [],
+                }),
+              );
+            }
           }}
         >
           {(setOpen) => (
