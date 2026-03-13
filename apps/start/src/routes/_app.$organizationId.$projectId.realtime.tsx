@@ -1,3 +1,5 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 import { Fullscreen, FullscreenClose } from '@/components/fullscreen-toggle';
 import RealtimeMap from '@/components/realtime/map';
 import { RealtimeActiveSessions } from '@/components/realtime/realtime-active-sessions';
@@ -7,12 +9,10 @@ import { RealtimePaths } from '@/components/realtime/realtime-paths';
 import { RealtimeReferrals } from '@/components/realtime/realtime-referrals';
 import RealtimeReloader from '@/components/realtime/realtime-reloader';
 import { useTRPC } from '@/integrations/trpc/react';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/realtime',
+  '/_app/$organizationId/$projectId/realtime'
 )({
   component: Component,
   head: () => {
@@ -36,8 +36,8 @@ function Component() {
       },
       {
         placeholderData: keepPreviousData,
-      },
-    ),
+      }
+    )
   );
 
   return (
@@ -47,7 +47,7 @@ function Component() {
         <RealtimeReloader projectId={projectId} />
 
         <div className="row relative">
-          <div className="overflow-hidden aspect-[4/2] w-full">
+          <div className="aspect-[4/2] w-full overflow-hidden">
             <RealtimeMap
               markers={coordinatesQuery.data ?? []}
               sidebarConfig={{
@@ -56,18 +56,17 @@ function Component() {
               }}
             />
           </div>
-          <div className="absolute top-8 left-8 bottom-0 col gap-4">
-            <div className="card p-4 w-72 bg-background/90">
+          <div className="col absolute top-8 bottom-4 left-8 gap-4">
+            <div className="card w-72 bg-background/90 p-4">
               <RealtimeLiveHistogram projectId={projectId} />
             </div>
-            <div className="w-72 flex-1 min-h-0 relative">
+            <div className="relative min-h-0 w-72 flex-1">
               <RealtimeActiveSessions projectId={projectId} />
-              <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-def-100 to-transparent" />
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4 pt-4 md:p-8 md:pt-0">
+        <div className="grid grid-cols-1 gap-4 p-4 pt-4 md:grid-cols-2 md:p-8 md:pt-0 xl:grid-cols-3">
           <div>
             <RealtimeGeo projectId={projectId} />
           </div>

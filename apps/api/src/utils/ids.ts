@@ -1,7 +1,12 @@
 import crypto from 'node:crypto';
 import { generateDeviceId } from '@openpanel/common/server';
 import { getSafeJson } from '@openpanel/json';
+import type {
+  EventsQueuePayloadCreateSessionEnd,
+  EventsQueuePayloadIncomingEvent,
+} from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
+import { pick } from 'ramda';
 
 export async function getDeviceId({
   projectId,
@@ -37,14 +42,20 @@ export async function getDeviceId({
     ua,
   });
 
-  return await getDeviceIdFromSession({
+  return await getInfoFromSession({
     projectId,
     currentDeviceId,
     previousDeviceId,
   });
 }
 
-async function getDeviceIdFromSession({
+interface DeviceIdResult {
+  deviceId: string;
+  sessionId: string;
+  session?: EventsQueuePayloadIncomingEvent['payload']['session'];
+}
+
+async function getInfoFromSession({
   projectId,
   currentDeviceId,
   previousDeviceId,
@@ -52,7 +63,7 @@ async function getDeviceIdFromSession({
   projectId: string;
   currentDeviceId: string;
   previousDeviceId: string;
-}) {
+}): Promise<DeviceIdResult> {
   try {
     const multi = getRedisCache().multi();
     multi.hget(
@@ -65,21 +76,33 @@ async function getDeviceIdFromSession({
     );
     const res = await multi.exec();
     if (res?.[0]?.[1]) {
-      const data = getSafeJson<{ payload: { sessionId: string } }>(
+      const data = getSafeJson<EventsQueuePayloadCreateSessionEnd>(
         (res?.[0]?.[1] as string) ?? ''
       );
       if (data) {
-        const sessionId = data.payload.sessionId;
-        return { deviceId: currentDeviceId, sessionId };
+        return {
+          deviceId: currentDeviceId,
+          sessionId: data.payload.sessionId,
+          session: pick(
+            ['referrer', 'referrerName', 'referrerType'],
+            data.payload
+          ),
+        };
       }
     }
     if (res?.[1]?.[1]) {
-      const data = getSafeJson<{ payload: { sessionId: string } }>(
+      const data = getSafeJson<EventsQueuePayloadCreateSessionEnd>(
         (res?.[1]?.[1] as string) ?? ''
       );
       if (data) {
-        const sessionId = data.payload.sessionId;
-        return { deviceId: previousDeviceId, sessionId };
+        return {
+          deviceId: previousDeviceId,
+          sessionId: data.payload.sessionId,
+          session: pick(
+            ['referrer', 'referrerName', 'referrerType'],
+            data.payload
+          ),
+        };
       }
     }
   } catch (error) {

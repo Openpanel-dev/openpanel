@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { BoxSelectIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { ButtonContainer } from '@/components/button-container';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
@@ -33,21 +32,20 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/verify')({
 });
 
 function Component() {
-  const [isVerified, setIsVerified] = useState(false);
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
-  const { data: events, refetch } = useQuery(
-    trpc.event.events.queryOptions({ projectId })
+  const { data: events } = useQuery(
+    trpc.event.events.queryOptions(
+      { projectId },
+      {
+        refetchInterval: 2500,
+      }
+    )
   );
+  const isVerified = events?.data && events.data.length > 0;
   const { data: project } = useQuery(
     trpc.project.getProjectWithClients.queryOptions({ projectId })
   );
-
-  useEffect(() => {
-    if (events && events.data.length > 0) {
-      setIsVerified(true);
-    }
-  }, [events]);
 
   if (!project) {
     return (
@@ -64,15 +62,7 @@ function Component() {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="scrollbar-thin flex-1 overflow-y-auto">
         <div className="col gap-8 p-4">
-          <VerifyListener
-            client={client}
-            events={events?.data ?? []}
-            onVerified={() => {
-              refetch();
-              setIsVerified(true);
-            }}
-            project={project}
-          />
+          <VerifyListener events={events?.data ?? []} />
 
           <VerifyFaq project={project} />
         </div>

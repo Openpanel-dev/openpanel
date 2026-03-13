@@ -1,4 +1,4 @@
-import { cacheable, cacheableLru } from '@openpanel/redis';
+import { cacheable } from '@openpanel/redis';
 import bots from './bots';
 
 // Pre-compile regex patterns at module load time
@@ -15,7 +15,7 @@ const compiledBots = bots.map((bot) => {
 const regexBots = compiledBots.filter((bot) => 'compiledRegex' in bot);
 const includesBots = compiledBots.filter((bot) => 'includes' in bot);
 
-export const isBot = cacheableLru(
+export const isBot = cacheable(
   'is-bot',
   (ua: string) => {
     // Check simple string patterns first (fast)
@@ -40,8 +40,5 @@ export const isBot = cacheableLru(
 
     return null;
   },
-  {
-    maxSize: 1000,
-    ttl: 60 * 5,
-  },
+  60 * 5
 );

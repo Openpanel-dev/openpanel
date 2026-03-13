@@ -35,6 +35,7 @@ type Props = {
     >,
     unknown
   >;
+  showEventListener?: boolean;
 };
 
 const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceEvent[];
@@ -215,7 +216,7 @@ const VirtualizedEventsTable = ({
   );
 };
 
-export const EventsTable = ({ query }: Props) => {
+export const EventsTable = ({ query, showEventListener = false }: Props) => {
   const { isLoading } = query;
   const columns = useColumns();
 
@@ -272,7 +273,7 @@ export const EventsTable = ({ query }: Props) => {
 
   return (
     <>
-      <EventsTableToolbar query={query} table={table} />
+      <EventsTableToolbar query={query} table={table} showEventListener={showEventListener} />
       <VirtualizedEventsTable table={table} data={data} isLoading={isLoading} />
       <div className="w-full h-10 center-center pt-4" ref={inViewportRef}>
         <div
@@ -291,9 +292,11 @@ export const EventsTable = ({ query }: Props) => {
 function EventsTableToolbar({
   query,
   table,
+  showEventListener,
 }: {
   query: Props['query'];
   table: Table<IServiceEvent>;
+  showEventListener: boolean;
 }) {
   const { projectId } = useAppParams();
   const [startDate, setStartDate] = useQueryState(
@@ -305,7 +308,7 @@ function EventsTableToolbar({
   return (
     <DataTableToolbarContainer>
       <div className="flex flex-1 flex-wrap items-center gap-2">
-        <EventListener onRefresh={() => query.refetch()} />
+        {showEventListener && <EventListener onRefresh={() => query.refetch()} />}
         <Button
           variant="outline"
           size="sm"

@@ -1,12 +1,38 @@
 import type { IServiceCreateEventPayload } from '@openpanel/db';
-import {
-  type EventsQueuePayloadCreateSessionEnd,
-  sessionsQueue,
-} from '@openpanel/queue';
-import type { Job } from 'bullmq';
-import { logger } from './logger';
+import { sessionsQueue } from '@openpanel/queue';
 
 export const SESSION_TIMEOUT = 1000 * 60 * 30;
+
+const CHANGE_DELAY_THROTTLE_MS = process.env.CHANGE_DELAY_THROTTLE_MS
+  ? Number.parseInt(process.env.CHANGE_DELAY_THROTTLE_MS, 10)
+  : 60_000; // 1 minute
+
+const CHANGE_DELAY_THROTTLE_MAP = new Map<string, number>();
+
+export async function extendSessionEndJob({
+  projectId,
+  deviceId,
+}: {
+  projectId: string;
+  deviceId: string;
+}) {
+  const last = CHANGE_DELAY_THROTTLE_MAP.get(`${projectId}:${deviceId}`) ?? 0;
+  const isThrottled = Date.now() - last < CHANGE_DELAY_THROTTLE_MS;
+
+  if (isThrottled) {
+    return;
+  }
+
+  const jobId = getSessionEndJobId(projectId, deviceId);
+  const job = await sessionsQueue.getJob(jobId);
+
+  if (!job) {
+    return;
+  }
+
+  await job.changeDelay(SESSION_TIMEOUT);
+  CHANGE_DELAY_THROTTLE_MAP.set(`${projectId}:${deviceId}`, Date.now());
+}
 
 const getSessionEndJobId = (projectId: string, deviceId: string) =>
   `sessionEnd:${projectId}:${deviceId}`;
@@ -32,107 +58,4 @@ export function createSessionEndJob({
       },
     }
   );
-}
-
-export async function getSessionEnd({
-  projectId,
-  deviceId,
-  profileId,
-}: {
-  projectId: string;
-  deviceId: string;
-  profileId: string;
-}) {
-  const sessionEnd = await getSessionEndJob({
-    projectId,
-    deviceId,
-  });
-
-  if (sessionEnd) {
-    const existingSessionIsAnonymous =
-      sessionEnd.job.data.payload.profileId ===
-      sessionEnd.job.data.payload.deviceId;
-
-    const eventIsIdentified =
-      profileId && sessionEnd.job.data.payload.profileId !== profileId;
-
-    if (existingSessionIsAnonymous && eventIsIdentified) {
-      await sessionEnd.job.updateData({
-        ...sessionEnd.job.data,
-        payload: {
-          ...sessionEnd.job.data.payload,
-          profileId,
-        },
-      });
-    }
-
-    await sessionEnd.job.changeDelay(SESSION_TIMEOUT);
-    return sessionEnd.job.data.payload;
-  }
-
-  return null;
-}
-
-export async function getSessionEndJob(args: {
-  projectId: string;
-  deviceId: string;
-  retryCount?: number;
-}): Promise<{
-  deviceId: string;
-  job: Job<EventsQueuePayloadCreateSessionEnd>;
-} | null> {
-  const { retryCount = 0 } = args;
-
-  if (retryCount >= 6) {
-    throw new Error('Failed to get session end');
-  }
-
-  async function handleJobStates(
-    job: Job<EventsQueuePayloadCreateSessionEnd>,
-    deviceId: string
-  ): Promise<{
-    deviceId: string;
-    job: Job<EventsQueuePayloadCreateSessionEnd>;
-  } | null> {
-    const state = await job.getState();
-    if (state !== 'delayed') {
-      logger.debug(`[session-handler] Session end job is in "${state}" state`, {
-        state,
-        retryCount,
-        jobTimestamp: new Date(job.timestamp).toISOString(),
-        jobDelta: Date.now() - job.timestamp,
-        jobId: job.id,
-        payload: job.data.payload,
-      });
-    }
-
-    if (state === 'delayed' || state === 'waiting') {
-      return { deviceId, job };
-    }
-
-    if (state === 'active') {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      return getSessionEndJob({
-        ...args,
-        retryCount: retryCount + 1,
-      });
-    }
-
-    if (state === 'completed') {
-      await job.remove();
-    }
-
-    return null;
-  }
-
-  // Check current device job
-  const currentJob = await sessionsQueue.getJob(
-    getSessionEndJobId(args.projectId, args.deviceId)
-  );
-  if (currentJob) {
-    return await handleJobStates(currentJob, args.deviceId);
-  }
-
-  // Create session
-  return null;
 }

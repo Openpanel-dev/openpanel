@@ -186,6 +186,11 @@ describe('incomingEvent', () => {
       projectId,
       deviceId,
       sessionId: 'session-123',
+      session: {
+        referrer: '',
+        referrerName: '',
+        referrerType: '',
+      },
     };
 
     const changeDelay = vi.fn();
