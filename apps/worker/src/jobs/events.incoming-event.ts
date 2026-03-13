@@ -11,11 +11,7 @@ import {
   parseUserAgent,
 } from '@openpanel/common/server';
 import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
-import {
-  checkNotificationRulesForEvent,
-  createEvent,
-  sessionBuffer,
-} from '@openpanel/db';
+import { createEvent, sessionBuffer } from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
 import * as R from 'ramda';
@@ -34,11 +30,7 @@ async function createEventAndNotify(
   logger: ILogger,
 ) {
   logger.info('Creating event', { event: payload });
-  const [event] = await Promise.all([
-    createEvent(payload),
-    checkNotificationRulesForEvent(payload).catch(() => {}),
-  ]);
-  return event;
+  return createEvent(payload);
 }
 
 const parseRevenue = (revenue: unknown): number | undefined => {

@@ -21,7 +21,6 @@ vi.mock('@openpanel/db', async () => {
   return {
     ...actual,
     createEvent: vi.fn(),
-    checkNotificationRulesForEvent: vi.fn().mockResolvedValue(true),
     sessionBuffer: {
       getExistingSession: vi.fn(),
     },

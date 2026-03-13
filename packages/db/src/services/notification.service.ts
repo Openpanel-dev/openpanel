@@ -13,7 +13,6 @@ import type {
   IServiceCreateEventPayload,
   IServiceEvent,
 } from './event.service';
-import { getProfileById } from './profile.service';
 import { getProjectByIdCached } from './project.service';
 
 type ICreateNotification = Pick<
@@ -209,35 +208,6 @@ export function matchEvent(
   return true;
 }
 
-function notificationTemplateEvent({
-  payload,
-  rule,
-}: {
-  payload: IServiceCreateEventPayload;
-  rule: INotificationRuleCached;
-}) {
-  if (!rule.template) return `You received a new "${payload.name}" event`;
-  let template = rule.template
-    .replaceAll('$EVENT_NAME', payload.name)
-    .replaceAll('$RULE_NAME', rule.name)
-    .replaceAll('{{rule_name}}', rule.name);
-
-  // Replace all {{xxx}} placeholders with their values
-  const placeholderMatches = template.match(/{{[^}]+}}/g) || [];
-  for (const match of placeholderMatches) {
-    const path = match.slice(2, -2); // Remove {{ and }}
-    const value = pathOr('', path.split('.'), payload);
-
-    if (value) {
-      template = template.replaceAll(
-        match,
-        typeof value === 'object' ? JSON.stringify(value) : value,
-      );
-    }
-  }
-
-  return template;
-}
 
 function notificationTemplateFunnel({
   events,
@@ -252,81 +222,6 @@ function notificationTemplateFunnel({
     .replaceAll('$RULE_NAME', rule.name);
 }
 
-export async function checkNotificationRulesForEvent(
-  payload: IServiceCreateEventPayload,
-) {
-  const project = await getProjectByIdCached(payload.projectId);
-  const rules = await getNotificationRulesByProjectId(payload.projectId);
-
-  // If profile is present in the template, add it to the payload (event)
-  // so we can use it in the template
-  if (
-    payload.profileId &&
-    rules.some((rule) => rule.template?.match(/{{profile\.[^}]*}}/))
-  ) {
-    const profile = await getProfileById(payload.profileId, payload.projectId);
-    if (profile) {
-      (payload as any).profile = profile;
-    }
-  }
-
-  await Promise.all(
-    rules.flatMap((rule) => {
-      if (rule.config.type === 'events') {
-        const match = rule.config.events.find((event) => {
-          return matchEvent(payload, event);
-        });
-
-        if (!match) {
-          return [];
-        }
-
-        const notification = {
-          title: notificationTemplateEvent({
-            payload,
-            rule,
-          }),
-          message: project?.name ? `Project: ${project?.name}` : '',
-          projectId: payload.projectId,
-          payload: {
-            type: 'event',
-            event: payload,
-          },
-        } as const;
-
-        const promises = rule.integrations.map((integration) =>
-          createNotification({
-            ...notification,
-            integrationId: integration.id,
-            notificationRuleId: rule.id,
-          }),
-        );
-
-        if (rule.sendToApp) {
-          promises.push(
-            createNotification({
-              ...notification,
-              integrationId: APP_NOTIFICATION_INTEGRATION_ID,
-              notificationRuleId: rule.id,
-            }),
-          );
-        }
-
-        if (rule.sendToEmail) {
-          promises.push(
-            createNotification({
-              ...notification,
-              integrationId: EMAIL_NOTIFICATION_INTEGRATION_ID,
-              notificationRuleId: rule.id,
-            }),
-          );
-        }
-
-        return promises;
-      }
-    }),
-  );
-}
 
 const isFunnelRule = (rule: INotificationRuleCached) =>
   rule.config.type === 'funnel';
