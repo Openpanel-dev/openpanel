@@ -416,6 +416,30 @@ export class OverviewService {
     const where = this.getRawWhereClause('sessions', filters);
     const fillConfig = this.getFillConfig(interval, startDate, endDate);
 
+    // CTE: per-event screen_view durations via window function
+    const rawScreenViewDurationsQuery = clix(this.client, timezone)
+      .select([
+        `${clix.toStartOf('created_at', interval as any, timezone)} AS date`,
+        `dateDiff('millisecond', created_at, lead(created_at, 1, created_at) OVER (PARTITION BY session_id ORDER BY created_at)) AS duration`,
+      ])
+      .from(TABLE_NAMES.events)
+      .where('project_id', '=', projectId)
+      .where('name', '=', 'screen_view')
+      .where('created_at', 'BETWEEN', [
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
+      ])
+      .rawWhere(this.getRawWhereClause('events', filters));
+
+    // CTE: avg duration per date bucket
+    const avgDurationByDateQuery = clix(this.client, timezone)
+      .select([
+        'date',
+        'round(avgIf(duration, duration > 0), 2) / 1000 AS avg_session_duration',
+      ])
+      .from('raw_screen_view_durations')
+      .groupBy(['date']);
+
     // Session aggregation with bounce rates
     const sessionAggQuery = clix(this.client, timezone)
       .select([
@@ -473,6 +497,8 @@ export class OverviewService {
           .where('date', '!=', rollupDate)
       )
       .with('overall_unique_visitors', overallUniqueVisitorsQuery)
+      .with('raw_screen_view_durations', rawScreenViewDurationsQuery)
+      .with('avg_duration_by_date', avgDurationByDateQuery)
       .select<{
         date: string;
         bounce_rate: number;
@@ -489,8 +515,7 @@ export class OverviewService {
         'dss.bounce_rate as bounce_rate',
         'uniq(e.profile_id) AS unique_visitors',
         'uniq(e.session_id) AS total_sessions',
-        'round(avgIf(duration, duration > 0), 2) / 1000 AS _avg_session_duration',
-        'if(isNaN(_avg_session_duration), 0, _avg_session_duration) AS avg_session_duration',
+        'coalesce(dur.avg_session_duration, 0) AS avg_session_duration',
         'count(*) AS total_screen_views',
         'round((count(*) * 1.) / uniq(e.session_id), 2) AS views_per_session',
         '(SELECT unique_visitors FROM overall_unique_visitors) AS overall_unique_visitors',
@@ -502,6 +527,10 @@ export class OverviewService {
         'daily_session_stats AS dss',
         `${clix.toStartOf('e.created_at', interval as any)} = dss.date`
       )
+      .leftJoin(
+        'avg_duration_by_date AS dur',
+        `${clix.toStartOf('e.created_at', interval as any)} = dur.date`
+      )
       .where('e.project_id', '=', projectId)
       .where('e.name', '=', 'screen_view')
       .where('e.created_at', 'BETWEEN', [
@@ -509,7 +538,7 @@ export class OverviewService {
         clix.datetime(endDate, 'toDateTime'),
       ])
       .rawWhere(this.getRawWhereClause('events', filters))
-      .groupBy(['date', 'dss.bounce_rate'])
+      .groupBy(['date', 'dss.bounce_rate', 'dur.avg_session_duration'])
       .orderBy('date', 'ASC')
       .fill(fillConfig.from, fillConfig.to, fillConfig.step)
       .transform({

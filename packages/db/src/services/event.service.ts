@@ -168,7 +168,6 @@ export function transformEvent(event: IClickhouseEvent): IServiceEvent {
     device: event.device,
     brand: event.brand,
     model: event.model,
-    duration: event.duration,
     path: event.path,
     origin: event.origin,
     referrer: event.referrer,
@@ -216,7 +215,7 @@ export interface IServiceEvent {
   device?: string | undefined;
   brand?: string | undefined;
   model?: string | undefined;
-  duration: number;
+  duration?: number;
   path: string;
   origin: string;
   referrer: string | undefined;
@@ -247,7 +246,7 @@ export interface IServiceEventMinimal {
   browser?: string | undefined;
   device?: string | undefined;
   brand?: string | undefined;
-  duration: number;
+  duration?: number;
   path: string;
   origin: string;
   referrer: string | undefined;
@@ -379,7 +378,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     device: payload.device ?? '',
     brand: payload.brand ?? '',
     model: payload.model ?? '',
-    duration: payload.duration,
+    duration: payload.duration ?? 0,
     referrer: payload.referrer ?? '',
     referrer_name: payload.referrerName ?? '',
     referrer_type: payload.referrerType ?? '',
@@ -477,7 +476,7 @@ export async function getEventList(options: GetEventListOptions) {
     sb.where.cursor = `created_at < ${sqlstring.escape(formatClickhouseDate(cursor))}`;
   }
 
-  if (!cursor && !(startDate && endDate)) {
+  if (!(cursor || (startDate && endDate))) {
     sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(new Date()))}, 3) - INTERVAL ${safeDateIntervalInDays} DAY`;
   }
 
@@ -561,9 +560,6 @@ export async function getEventList(options: GetEventListOptions) {
   }
   if (select.model) {
     sb.select.model = 'model';
-  }
-  if (select.duration) {
-    sb.select.duration = 'duration';
   }
   if (select.path) {
     sb.select.path = 'path';
@@ -771,7 +767,6 @@ class EventService {
     where,
     select,
     limit,
-    orderBy,
     filters,
   }: {
     projectId: string;
@@ -811,7 +806,6 @@ class EventService {
         select.event.deviceId && 'e.device_id as device_id',
         select.event.name && 'e.name as name',
         select.event.path && 'e.path as path',
-        select.event.duration && 'e.duration as duration',
         select.event.country && 'e.country as country',
         select.event.city && 'e.city as city',
         select.event.os && 'e.os as os',
@@ -896,7 +890,6 @@ class EventService {
         select.event.deviceId && 'e.device_id as device_id',
         select.event.name && 'e.name as name',
         select.event.path && 'e.path as path',
-        select.event.duration && 'e.duration as duration',
         select.event.country && 'e.country as country',
         select.event.city && 'e.city as city',
         select.event.os && 'e.os as os',
@@ -1032,7 +1025,6 @@ class EventService {
           id: true,
           name: true,
           createdAt: true,
-          duration: true,
           country: true,
           city: true,
           os: true,
