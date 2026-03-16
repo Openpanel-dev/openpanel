@@ -1,4 +1,4 @@
-import { cacheable, cacheableLru } from '@openpanel/redis';
+import { cacheable } from '@openpanel/redis';
 import type { Client, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 
@@ -34,7 +34,4 @@ export async function getClientById(
   });
 }
 
-export const getClientByIdCached = cacheableLru(getClientById, {
-  maxSize: 1000,
-  ttl: 60 * 5,
-});
+export const getClientByIdCached = cacheable(getClientById, 60 * 5);

@@ -6,7 +6,7 @@ import type {
 } from '@openpanel/db';
 import { createLogger } from '@openpanel/logger';
 import { getRedisGroupQueue, getRedisQueue } from '@openpanel/redis';
-import { Queue, QueueEvents } from 'bullmq';
+import { Queue } from 'bullmq';
 import { Queue as GroupQueue } from 'groupmq';
 import type { ITrackPayload } from '../../validation';
 
@@ -66,6 +66,10 @@ export interface EventsQueuePayloadIncomingEvent {
     headers: Record<string, string | undefined>;
     deviceId: string;
     sessionId: string;
+    session?: Pick<
+      IServiceCreateEventPayload,
+      'referrer' | 'referrerName' | 'referrerType'
+    >;
   };
 }
 export interface EventsQueuePayloadCreateEvent {
@@ -206,9 +210,6 @@ export const sessionsQueue = new Queue<SessionsQueuePayload>(
     },
   }
 );
-export const sessionsQueueEvents = new QueueEvents(getQueueName('sessions'), {
-  connection: getRedisQueue(),
-});
 
 export const cronQueue = new Queue<CronQueuePayload>(getQueueName('cron'), {
   connection: getRedisQueue(),

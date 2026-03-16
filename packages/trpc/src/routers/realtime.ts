@@ -1,18 +1,15 @@
-import { z } from 'zod';
-
 import {
-  type EventMeta,
-  TABLE_NAMES,
   ch,
   chQuery,
   clix,
-  db,
   formatClickhouseDate,
-  getEventList,
+  type IClickhouseEvent,
+  TABLE_NAMES,
+  transformEvent,
 } from '@openpanel/db';
-
 import { subMinutes } from 'date-fns';
 import sqlstring from 'sqlstring';
+import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const realtimeRouter = createTRPCRouter({
@@ -25,7 +22,7 @@ export const realtimeRouter = createTRPCRouter({
         long: number;
         lat: number;
       }>(
-        `SELECT DISTINCT country, city, longitude as long, latitude as lat FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(input.projectId)} AND created_at >= '${formatClickhouseDate(subMinutes(new Date(), 30))}' ORDER BY created_at DESC`,
+        `SELECT DISTINCT country, city, longitude as long, latitude as lat FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(input.projectId)} AND created_at >= '${formatClickhouseDate(subMinutes(new Date(), 30))}' ORDER BY created_at DESC`
       );
 
       return res;
@@ -33,25 +30,18 @@ export const realtimeRouter = createTRPCRouter({
   activeSessions: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input }) => {
-      return getEventList({
-        projectId: input.projectId,
-        take: 30,
-        select: {
-          name: true,
-          path: true,
-          origin: true,
-          referrer: true,
-          referrerName: true,
-          referrerType: true,
-          country: true,
-          device: true,
-          os: true,
-          browser: true,
-          createdAt: true,
-          profile: true,
-          meta: true,
-        },
-      });
+      const rows = await chQuery<IClickhouseEvent>(
+        `SELECT
+          name, session_id, created_at, path, origin, referrer, referrer_name,
+          country, city, region, os, os_version, browser, browser_version,
+          device
+        FROM ${TABLE_NAMES.events}
+        WHERE project_id = ${sqlstring.escape(input.projectId)}
+          AND created_at >= '${formatClickhouseDate(subMinutes(new Date(), 30))}'
+        ORDER BY created_at DESC
+        LIMIT 50`
+      );
+      return rows.map(transformEvent);
     }),
   paths: protectedProcedure
     .input(z.object({ projectId: z.string() }))
@@ -76,7 +66,7 @@ export const realtimeRouter = createTRPCRouter({
         .where(
           'created_at',
           '>=',
-          formatClickhouseDate(subMinutes(new Date(), 30)),
+          formatClickhouseDate(subMinutes(new Date(), 30))
         )
         .groupBy(['path', 'origin'])
         .orderBy('count', 'DESC')
@@ -106,7 +96,7 @@ export const realtimeRouter = createTRPCRouter({
         .where(
           'created_at',
           '>=',
-          formatClickhouseDate(subMinutes(new Date(), 30)),
+          formatClickhouseDate(subMinutes(new Date(), 30))
         )
         .groupBy(['referrer_name'])
         .orderBy('count', 'DESC')
@@ -137,7 +127,7 @@ export const realtimeRouter = createTRPCRouter({
         .where(
           'created_at',
           '>=',
-          formatClickhouseDate(subMinutes(new Date(), 30)),
+          formatClickhouseDate(subMinutes(new Date(), 30))
         )
         .groupBy(['country', 'city'])
         .orderBy('count', 'DESC')

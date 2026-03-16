@@ -52,6 +52,24 @@ export class PagesService {
       .where('created_at', '>=', clix.exp('now() - INTERVAL 30 DAY'))
       .groupBy(['origin', 'path']);
 
+    // CTE: compute screen_view durations via window function (leadInFrame gives next event's timestamp)
+    const screenViewDurationsCte = clix(this.client, timezone)
+      .select([
+        'project_id',
+        'session_id',
+        'path',
+        'origin',
+        `dateDiff('millisecond', created_at, lead(created_at, 1, created_at) OVER (PARTITION BY session_id ORDER BY created_at)) AS duration`,
+      ])
+      .from(TABLE_NAMES.events, false)
+      .where('project_id', '=', projectId)
+      .where('name', '=', 'screen_view')
+      .where('path', '!=', '')
+      .where('created_at', 'BETWEEN', [
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
+      ]);
+
     // Pre-filtered sessions subquery for better performance
     const sessionsSubquery = clix(this.client, timezone)
       .select(['id', 'project_id', 'is_bounce'])
@@ -66,6 +84,7 @@ export class PagesService {
     // Main query: aggregate events and calculate bounce rate from pre-filtered sessions
     const query = clix(this.client, timezone)
       .with('page_titles', titlesCte)
+      .with('screen_view_durations', screenViewDurationsCte)
       .select<ITopPage>([
         'e.origin as origin',
         'e.path as path',
@@ -74,25 +93,18 @@ export class PagesService {
         'count() as pageviews',
         'round(avg(e.duration) / 1000 / 60, 2) as avg_duration',
         `round(
-          (uniqIf(e.session_id, s.is_bounce = 1) * 100.0) / 
-          nullIf(uniq(e.session_id), 0), 
+          (uniqIf(e.session_id, s.is_bounce = 1) * 100.0) /
+          nullIf(uniq(e.session_id), 0),
           2
         ) as bounce_rate`,
       ])
-      .from(`${TABLE_NAMES.events} e`, false)
+      .from('screen_view_durations e', false)
       .leftJoin(
         sessionsSubquery,
         'e.session_id = s.id AND e.project_id = s.project_id',
         's'
       )
       .leftJoin('page_titles pt', 'concat(e.origin, e.path) = pt.page_key')
-      .where('e.project_id', '=', projectId)
-      .where('e.name', '=', 'screen_view')
-      .where('e.path', '!=', '')
-      .where('e.created_at', 'BETWEEN', [
-        clix.datetime(startDate, 'toDateTime'),
-        clix.datetime(endDate, 'toDateTime'),
-      ])
       .when(!!search, (q) => {
         const term = `%${search}%`;
         q.whereGroup()

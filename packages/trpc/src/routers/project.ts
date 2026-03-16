@@ -96,9 +96,7 @@ export const projectRouter = createTRPCRouter({
       });
       await Promise.all([
         getProjectByIdCached.clear(input.id),
-        res.clients.map((client) => {
-          getClientByIdCached.clear(client.id);
-        }),
+        ...res.clients.map((client) => getClientByIdCached.clear(client.id)),
       ]);
       return res;
     }),

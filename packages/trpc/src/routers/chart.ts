@@ -1,11 +1,7 @@
-import { flatten, map, pipe, prop, range, sort, uniq } from 'ramda';
-import sqlstring from 'sqlstring';
-import { z } from 'zod';
-
+import { round } from '@openpanel/common';
 import {
-  type IClickhouseProfile,
-  type IServiceProfile,
-  TABLE_NAMES,
+  AggregateChartEngine,
+  ChartEngine,
   ch,
   chQuery,
   clix,
@@ -21,8 +17,11 @@ import {
   getReportById,
   getSelectPropertyKey,
   getSettingsForProject,
+  type IClickhouseProfile,
+  type IServiceProfile,
   onlyReportEvents,
   sankeyService,
+  TABLE_NAMES,
   validateShareAccess,
 } from '@openpanel/db';
 import {
@@ -33,15 +32,15 @@ import {
   zReportInput,
   zTimeInterval,
 } from '@openpanel/validation';
-
-import { round } from '@openpanel/common';
-import { AggregateChartEngine, ChartEngine } from '@openpanel/db';
 import {
   differenceInDays,
   differenceInMonths,
   differenceInWeeks,
   formatISO,
 } from 'date-fns';
+import { flatten, map, pipe, prop, range, sort, uniq } from 'ramda';
+import sqlstring from 'sqlstring';
+import { z } from 'zod';
 import { getProjectAccess } from '../access';
 import { TRPCAccessError } from '../errors';
 import {
@@ -83,7 +82,7 @@ const chartProcedure = publicProcedure.use(
           session: ctx.session?.userId
             ? { userId: ctx.session.userId }
             : undefined,
-        },
+        }
       );
       if (!shareValidation.isValid) {
         throw TRPCAccessError('You do not have access to this share');
@@ -119,7 +118,7 @@ const chartProcedure = publicProcedure.use(
         report: null,
       },
     });
-  },
+  }
 );
 
 export const chartRouter = createTRPCRouter({
@@ -128,7 +127,7 @@ export const chartRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string(),
-      }),
+      })
     )
     .query(async ({ input: { projectId } }) => {
       const { timezone } = await getSettingsForProject(projectId);
@@ -151,7 +150,7 @@ export const chartRouter = createTRPCRouter({
         TO toStartOfDay(now()) 
         STEP INTERVAL 1 day
         SETTINGS session_timezone = '${timezone}'
-      `,
+      `
       );
 
       const metricsPromise = clix(ch, timezone)
@@ -185,7 +184,7 @@ export const chartRouter = createTRPCRouter({
           ? Math.round(
               ((metrics.months_3 - metrics.months_3_prev) /
                 metrics.months_3_prev) *
-                100,
+                100
             )
           : null;
 
@@ -209,12 +208,12 @@ export const chartRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string(),
-      }),
+      })
     )
     .query(async ({ input: { projectId } }) => {
       const [events, meta] = await Promise.all([
         chQuery<{ name: string; count: number }>(
-          `SELECT name, count(name) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${sqlstring.escape(projectId)} GROUP BY name ORDER BY count DESC, name ASC`,
+          `SELECT name, count(name) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${sqlstring.escape(projectId)} GROUP BY name ORDER BY count DESC, name ASC`
         ),
         getEventMetasCached(projectId),
       ]);
@@ -238,7 +237,7 @@ export const chartRouter = createTRPCRouter({
       z.object({
         event: z.string().optional(),
         projectId: z.string(),
-      }),
+      })
     )
     .query(async ({ input: { projectId, event } }) => {
       const profiles = await clix(ch, 'UTC')
@@ -252,8 +251,8 @@ export const chartRouter = createTRPCRouter({
       const profileProperties = [
         ...new Set(
           profiles.flatMap((p) =>
-            Object.keys(p.properties).map((k) => `profile.properties.${k}`),
-          ),
+            Object.keys(p.properties).map((k) => `profile.properties.${k}`)
+          )
         ),
       ];
 
@@ -283,7 +282,6 @@ export const chartRouter = createTRPCRouter({
       });
 
       const fixedProperties = [
-        'duration',
         'revenue',
         'has_profile',
         'path',
@@ -316,7 +314,7 @@ export const chartRouter = createTRPCRouter({
 
       return pipe(
         sort<string>((a, b) => a.length - b.length),
-        uniq,
+        uniq
       )(properties);
     }),
 
@@ -326,9 +324,9 @@ export const chartRouter = createTRPCRouter({
         event: z.string(),
         property: z.string(),
         projectId: z.string(),
-      }),
+      })
     )
-    .query(async ({ input: { event, property, projectId, ...input } }) => {
+    .query(async ({ input: { event, property, projectId } }) => {
       if (property === 'has_profile') {
         return {
           values: ['true', 'false'],
@@ -378,7 +376,7 @@ export const chartRouter = createTRPCRouter({
               .from(TABLE_NAMES.profiles)
               .where('project_id', '=', projectId),
             'profile.id = profile_id',
-            'profile',
+            'profile'
           );
         }
 
@@ -389,8 +387,8 @@ export const chartRouter = createTRPCRouter({
             (data: typeof events) => map(prop('values'), data),
             flatten,
             uniq,
-            sort((a, b) => a.length - b.length),
-          )(events),
+            sort((a, b) => a.length - b.length)
+          )(events)
         );
       }
 
@@ -406,8 +404,8 @@ export const chartRouter = createTRPCRouter({
         z.object({
           shareId: z.string().optional(),
           id: z.string().optional(),
-        }),
-      ),
+        })
+      )
     )
     .query(async ({ input, ctx }) => {
       const chartInput = ctx.report
@@ -448,8 +446,8 @@ export const chartRouter = createTRPCRouter({
         z.object({
           shareId: z.string().optional(),
           id: z.string().optional(),
-        }),
-      ),
+        })
+      )
     )
     .query(async ({ input, ctx }) => {
       const chartInput = ctx.report
@@ -536,12 +534,10 @@ export const chartRouter = createTRPCRouter({
         z.object({
           shareId: z.string().optional(),
           id: z.string().optional(),
-        }),
-      ),
+        })
+      )
     )
-    .query(async ({ input, ctx }) => {
-      console.log('input', input);
-
+    .query(({ input, ctx }) => {
       const chartInput = ctx.report
         ? {
             ...ctx.report,
@@ -562,10 +558,10 @@ export const chartRouter = createTRPCRouter({
         z.object({
           shareId: z.string().optional(),
           id: z.string().optional(),
-        }),
-      ),
+        })
+      )
     )
-    .query(async ({ input, ctx }) => {
+    .query(({ input, ctx }) => {
       const chartInput = ctx.report
         ? {
             ...ctx.report,
@@ -593,7 +589,7 @@ export const chartRouter = createTRPCRouter({
         range: zRange,
         shareId: z.string().optional(),
         id: z.string().optional(),
-      }),
+      })
     )
     .query(async ({ input, ctx }) => {
       const projectId = ctx.report?.projectId ?? input.projectId;
@@ -647,7 +643,7 @@ export const chartRouter = createTRPCRouter({
           startDate,
           endDate,
         },
-        timezone,
+        timezone
       );
       const diffInterval = {
         minute: () => differenceInDays(dates.endDate, dates.startDate),
@@ -677,14 +673,14 @@ export const chartRouter = createTRPCRouter({
       const usersSelect = range(0, diffInterval + 1)
         .map(
           (index) =>
-            `groupUniqArrayIf(profile_id, x_after_cohort ${countCriteria} ${index}) AS interval_${index}_users`,
+            `groupUniqArrayIf(profile_id, x_after_cohort ${countCriteria} ${index}) AS interval_${index}_users`
         )
         .join(',\n');
 
       const countsSelect = range(0, diffInterval + 1)
         .map(
           (index) =>
-            `length(interval_${index}_users) AS interval_${index}_user_count`,
+            `length(interval_${index}_users) AS interval_${index}_user_count`
         )
         .join(',\n');
 
@@ -769,12 +765,10 @@ export const chartRouter = createTRPCRouter({
         interval: zTimeInterval.default('day'),
         series: zChartSeries,
         breakdowns: z.record(z.string(), z.string()).optional(),
-      }),
+      })
     )
     .query(async ({ input }) => {
-      const { timezone } = await getSettingsForProject(input.projectId);
       const { projectId, date, series } = input;
-      const limit = 100;
       const serie = series[0];
 
       if (!serie) {
@@ -813,7 +807,7 @@ export const chartRouter = createTRPCRouter({
       if (profileFields.length > 0) {
         // Extract top-level field names and select only what's needed
         const fieldsToSelect = uniq(
-          profileFields.map((f) => f.split('.')[0]),
+          profileFields.map((f) => f.split('.')[0])
         ).join(', ');
         sb.joins.profiles = `LEFT ANY JOIN (SELECT id, ${fieldsToSelect} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
       }
@@ -836,7 +830,7 @@ export const chartRouter = createTRPCRouter({
       // Fetch profile details in batches to avoid exceeding ClickHouse max_query_size
       const ids = profileIds.map((p) => p.profile_id).filter(Boolean);
       const BATCH_SIZE = 200;
-      const profiles = [];
+      const profiles: IServiceProfile[] = [];
       for (let i = 0; i < ids.length; i += BATCH_SIZE) {
         const batch = ids.slice(i, i + BATCH_SIZE);
         const batchProfiles = await getProfilesCached(batch, projectId);
@@ -859,13 +853,13 @@ export const chartRouter = createTRPCRouter({
           .optional()
           .default(false)
           .describe(
-            'If true, show users who dropped off at this step. If false, show users who completed at least this step.',
+            'If true, show users who dropped off at this step. If false, show users who completed at least this step.'
           ),
         funnelWindow: z.number().optional(),
         funnelGroup: z.string().optional(),
         breakdowns: z.array(z.object({ name: z.string() })).optional(),
         range: zRange,
-      }),
+      })
     )
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
@@ -911,15 +905,15 @@ export const chartRouter = createTRPCRouter({
 
       // Check for profile filters and add profile join if needed
       const profileFilters = funnelService.getProfileFilters(
-        eventSeries as IChartEvent[],
+        eventSeries as IChartEvent[]
       );
       if (profileFilters.length > 0) {
         const fieldsToSelect = uniq(
-          profileFilters.map((f) => f.split('.')[0]),
+          profileFilters.map((f) => f.split('.')[0])
         ).join(', ');
         funnelCte.leftJoin(
           `(SELECT id, ${fieldsToSelect} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
-          'profile.id = events.profile_id',
+          'profile.id = events.profile_id'
         );
       }
 
@@ -934,7 +928,7 @@ export const chartRouter = createTRPCRouter({
         // `max(level) AS level` alias (ILLEGAL_AGGREGATION error).
         query.with(
           'funnel',
-          'SELECT profile_id, max(level) AS level FROM (SELECT * FROM session_funnel WHERE level != 0) GROUP BY profile_id',
+          'SELECT profile_id, max(level) AS level FROM (SELECT * FROM session_funnel WHERE level != 0) GROUP BY profile_id'
         );
       } else {
         // For session grouping: filter out level = 0 inside the CTE
@@ -969,7 +963,7 @@ export const chartRouter = createTRPCRouter({
       // when there are many profile IDs to pass in the IN(...) clause
       const ids = profileIdsResult.map((p) => p.profile_id).filter(Boolean);
       const BATCH_SIZE = 500;
-      const profiles = [];
+      const profiles: IServiceProfile[] = [];
       for (let i = 0; i < ids.length; i += BATCH_SIZE) {
         const batch = ids.slice(i, i + BATCH_SIZE);
         const batchProfiles = await getProfilesCached(batch, projectId);
@@ -986,7 +980,7 @@ function processCohortData(
     total_first_event_count: number;
     [key: string]: any;
   }>,
-  diffInterval: number,
+  diffInterval: number
 ) {
   if (data.length === 0) {
     return [];
@@ -995,13 +989,13 @@ function processCohortData(
   const processed = data.map((row) => {
     const sum = row.total_first_event_count;
     const values = range(0, diffInterval + 1).map(
-      (index) => (row[`interval_${index}_user_count`] || 0) as number,
+      (index) => (row[`interval_${index}_user_count`] || 0) as number
     );
 
     return {
       cohort_interval: row.cohort_interval,
       sum,
-      values: values,
+      values,
       percentages: values.map((value) => (sum > 0 ? round(value / sum, 2) : 0)),
     };
   });
@@ -1041,10 +1035,10 @@ function processCohortData(
     cohort_interval: 'Weighted Average',
     sum: round(averageData.totalSum / processed.length, 0),
     percentages: averageData.percentages.map(({ sum, weightedSum }) =>
-      sum > 0 ? round(weightedSum / sum, 2) : 0,
+      sum > 0 ? round(weightedSum / sum, 2) : 0
     ),
     values: averageData.values.map(({ sum, weightedSum }) =>
-      sum > 0 ? round(weightedSum / sum, 0) : 0,
+      sum > 0 ? round(weightedSum / sum, 0) : 0
     ),
   };
 

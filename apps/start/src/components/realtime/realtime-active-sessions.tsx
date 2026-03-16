@@ -1,11 +1,9 @@
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
-
-import useWS from '@/hooks/use-ws';
-import type { IServiceEvent } from '@openpanel/db';
-import { EventItem } from '../events/table/item';
+import { ProjectLink } from '../links';
+import { SerieIcon } from '../report-chart/common/serie-icon';
+import { useTRPC } from '@/integrations/trpc/react';
+import { formatTimeAgoOrDateTime } from '@/utils/date';
 
 interface RealtimeActiveSessionsProps {
   projectId: string;
@@ -17,64 +15,52 @@ export function RealtimeActiveSessions({
   limit = 10,
 }: RealtimeActiveSessionsProps) {
   const trpc = useTRPC();
-  const activeSessionsQuery = useQuery(
-    trpc.realtime.activeSessions.queryOptions({
-      projectId,
-    }),
+  const { data: sessions = [] } = useQuery(
+    trpc.realtime.activeSessions.queryOptions(
+      { projectId },
+      { refetchInterval: 5000 }
+    )
   );
-
-  const [state, setState] = useState<IServiceEvent[]>([]);
-
-  // Update state when initial data loads
-  useEffect(() => {
-    if (activeSessionsQuery.data && state.length === 0) {
-      setState(activeSessionsQuery.data);
-    }
-  }, [activeSessionsQuery.data, state]);
-
-  // Set up WebSocket connection for real-time updates
-  useWS<IServiceEvent>(
-    `/live/events/${projectId}`,
-    (session) => {
-      setState((prev) => {
-        // Add new session and remove duplicates, keeping most recent
-        const filtered = prev.filter((s) => s.id !== session.id);
-        return [session, ...filtered].slice(0, limit);
-      });
-    },
-    {
-      debounce: {
-        delay: 1000,
-        maxWait: 5000,
-      },
-    },
-  );
-
-  const sessions = state.length > 0 ? state : (activeSessionsQuery.data ?? []);
 
   return (
-    <div className="col h-full max-md:hidden">
-      <div className="hide-scrollbar h-full overflow-y-auto pb-10">
-        <AnimatePresence mode="popLayout" initial={false}>
-          <div className="col gap-4">
-            {sessions.map((session) => (
+    <div className="col card h-full max-md:hidden">
+      <div className="hide-scrollbar h-full overflow-y-auto">
+        <AnimatePresence initial={false} mode="popLayout">
+          <div className="col divide-y">
+            {sessions.slice(0, limit).map((session) => (
               <motion.div
-                key={session.id}
-                layout
-                // initial={{ opacity: 0, x: -200, scale: 0.8 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 200, scale: 0.8 }}
+                key={session.id}
+                layout
                 transition={{ duration: 0.4, type: 'spring', stiffness: 300 }}
               >
-                <EventItem
-                  event={session}
-                  viewOptions={{
-                    properties: false,
-                    origin: false,
-                    queryString: false,
-                  }}
-                  className="w-full"
-                />
+                <ProjectLink
+                  className="relative block p-4 py-3 pr-14"
+                  href={`/sessions/${session.sessionId}`}
+                >
+                  <div className="col flex-1 gap-1">
+                    {session.name === 'screen_view' && (
+                      <span className="text-muted-foreground text-xs leading-normal/80">
+                        {session.origin}
+                      </span>
+                    )}
+                    <span className="font-medium text-sm leading-normal">
+                      {session.name === 'screen_view'
+                        ? session.path
+                        : session.name}
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      {formatTimeAgoOrDateTime(session.createdAt)}
+                    </span>
+                  </div>
+                  <div className="row absolute top-1/2 right-4 origin-right -translate-y-1/2 scale-50 gap-2">
+                    <SerieIcon name={session.referrerName} />
+                    <SerieIcon name={session.os} />
+                    <SerieIcon name={session.browser} />
+                    <SerieIcon name={session.device} />
+                  </div>
+                </ProjectLink>
               </motion.div>
             ))}
           </div>

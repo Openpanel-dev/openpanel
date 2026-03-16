@@ -1,6 +1,6 @@
 import { cacheable } from '@openpanel/redis';
 import sqlstring from 'sqlstring';
-import { TABLE_NAMES, chQuery } from '../clickhouse/client';
+import { chQuery, TABLE_NAMES } from '../clickhouse/client';
 import type { Prisma, Project } from '../prisma-client';
 import { db } from '../prisma-client';
 
@@ -25,6 +25,7 @@ export async function getProjectById(id: string) {
   return res;
 }
 
+/** L1 LRU (60s) + L2 Redis. clear() invalidates Redis + local LRU; other nodes may serve stale from LRU for up to 60s. */
 export const getProjectByIdCached = cacheable(getProjectById, 60 * 60 * 24);
 
 export async function getProjectWithClients(id: string) {
@@ -44,7 +45,7 @@ export async function getProjectWithClients(id: string) {
   return res;
 }
 
-export async function getProjectsByOrganizationId(organizationId: string) {
+export function getProjectsByOrganizationId(organizationId: string) {
   return db.project.findMany({
     where: {
       organizationId,
@@ -95,7 +96,7 @@ export async function getProjects({
 
   if (access.length > 0) {
     return projects.filter((project) =>
-      access.some((a) => a.projectId === project.id),
+      access.some((a) => a.projectId === project.id)
     );
   }
 
@@ -104,7 +105,7 @@ export async function getProjects({
 
 export const getProjectEventsCount = async (projectId: string) => {
   const res = await chQuery<{ count: number }>(
-    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`,
+    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`
   );
   return res[0]?.count;
 };

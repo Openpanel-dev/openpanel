@@ -1,5 +1,4 @@
 import crypto from 'node:crypto';
-import { HttpError } from '@/utils/errors';
 import { stripTrailingSlash } from '@openpanel/common';
 import { hashPassword } from '@openpanel/common/server';
 import {
@@ -10,6 +9,7 @@ import {
 } from '@openpanel/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { HttpError } from '@/utils/errors';
 
 // Validation schemas
 const zCreateProject = z.object({
@@ -57,7 +57,7 @@ const zUpdateReference = z.object({
 // Projects CRUD
 export async function listProjects(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const projects = await db.project.findMany({
     where: {
@@ -74,7 +74,7 @@ export async function listProjects(
 
 export async function getProject(
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const project = await db.project.findFirst({
     where: {
@@ -92,7 +92,7 @@ export async function getProject(
 
 export async function createProject(
   request: FastifyRequest<{ Body: z.infer<typeof zCreateProject> }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const parsed = zCreateProject.safeParse(request.body);
 
@@ -139,12 +139,9 @@ export async function createProject(
     },
   });
 
-  // Clear cache
   await Promise.all([
     getProjectByIdCached.clear(project.id),
-    project.clients.map((client) => {
-      getClientByIdCached.clear(client.id);
-    }),
+    ...project.clients.map((client) => getClientByIdCached.clear(client.id)),
   ]);
 
   reply.send({
@@ -165,7 +162,7 @@ export async function updateProject(
     Params: { id: string };
     Body: z.infer<typeof zUpdateProject>;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const parsed = zUpdateProject.safeParse(request.body);
 
@@ -223,12 +220,9 @@ export async function updateProject(
     data: updateData,
   });
 
-  // Clear cache
   await Promise.all([
     getProjectByIdCached.clear(project.id),
-    existing.clients.map((client) => {
-      getClientByIdCached.clear(client.id);
-    }),
+    ...existing.clients.map((client) => getClientByIdCached.clear(client.id)),
   ]);
 
   reply.send({ data: project });
@@ -236,7 +230,7 @@ export async function updateProject(
 
 export async function deleteProject(
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const project = await db.project.findFirst({
     where: {
@@ -266,7 +260,7 @@ export async function deleteProject(
 // Clients CRUD
 export async function listClients(
   request: FastifyRequest<{ Querystring: { projectId?: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const where: any = {
     organizationId: request.client!.organizationId,
@@ -300,7 +294,7 @@ export async function listClients(
 
 export async function getClient(
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const client = await db.client.findFirst({
     where: {
@@ -318,7 +312,7 @@ export async function getClient(
 
 export async function createClient(
   request: FastifyRequest<{ Body: z.infer<typeof zCreateClient> }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const parsed = zCreateClient.safeParse(request.body);
 
@@ -374,7 +368,7 @@ export async function updateClient(
     Params: { id: string };
     Body: z.infer<typeof zUpdateClient>;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const parsed = zUpdateClient.safeParse(request.body);
 
@@ -417,7 +411,7 @@ export async function updateClient(
 
 export async function deleteClient(
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const client = await db.client.findFirst({
     where: {
@@ -444,7 +438,7 @@ export async function deleteClient(
 // References CRUD
 export async function listReferences(
   request: FastifyRequest<{ Querystring: { projectId?: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const where: any = {};
 
@@ -488,7 +482,7 @@ export async function listReferences(
 
 export async function getReference(
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const reference = await db.reference.findUnique({
     where: {
@@ -516,7 +510,7 @@ export async function getReference(
 
 export async function createReference(
   request: FastifyRequest<{ Body: z.infer<typeof zCreateReference> }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const parsed = zCreateReference.safeParse(request.body);
 
@@ -559,7 +553,7 @@ export async function updateReference(
     Params: { id: string };
     Body: z.infer<typeof zUpdateReference>;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const parsed = zUpdateReference.safeParse(request.body);
 
@@ -616,7 +610,7 @@ export async function updateReference(
 
 export async function deleteReference(
   request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const reference = await db.reference.findUnique({
     where: {

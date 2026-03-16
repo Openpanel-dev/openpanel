@@ -42,6 +42,7 @@
         "useSemanticElements": "off"
       },
       "style": {
+        "noNestedTernary": "off",
         "noNonNullAssertion": "off",
         "noParameterAssign": "error",
         "useAsConstAssertion": "error",
@@ -70,7 +71,8 @@
         "noDangerouslySetInnerHtml": "off"
       },
       "complexity": {
-        "noForEach": "off"
+        "noForEach": "off",
+        "noExcessiveCognitiveComplexity": "off"
       }
     }
   },

@@ -7,7 +7,10 @@ import {
   upsertProfile,
 } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
-import { getEventsGroupQueueShard } from '@openpanel/queue';
+import {
+  type EventsQueuePayloadIncomingEvent,
+  getEventsGroupQueueShard,
+} from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import {
   type IDecrementPayload,
@@ -112,6 +115,7 @@ interface TrackContext {
   identity?: IIdentifyPayload;
   deviceId: string;
   sessionId: string;
+  session?: EventsQueuePayloadIncomingEvent['payload']['session'];
   geo: GeoLocation;
 }
 
@@ -141,19 +145,21 @@ async function buildContext(
     validatedBody.payload.profileId = profileId;
   }
 
+  const overrideDeviceId =
+    validatedBody.type === 'track' &&
+    typeof validatedBody.payload?.properties?.__deviceId === 'string'
+      ? validatedBody.payload?.properties.__deviceId
+      : undefined;
+
   // Get geo location (needed for track and identify)
   const [geo, salts] = await Promise.all([getGeoLocation(ip), getSalts()]);
 
-  const { deviceId, sessionId } = await getDeviceId({
+  const deviceIdResult = await getDeviceId({
     projectId,
     ip,
     ua,
     salts,
-    overrideDeviceId:
-      validatedBody.type === 'track' &&
-      typeof validatedBody.payload?.properties?.__deviceId === 'string'
-        ? validatedBody.payload?.properties.__deviceId
-        : undefined,
+    overrideDeviceId,
   });
 
   return {
@@ -166,8 +172,9 @@ async function buildContext(
       isFromPast: timestamp.isTimestampFromThePast,
     },
     identity,
-    deviceId,
-    sessionId,
+    deviceId: deviceIdResult.deviceId,
+    sessionId: deviceIdResult.sessionId,
+    session: deviceIdResult.session,
     geo,
   };
 }
@@ -176,13 +183,14 @@ async function handleTrack(
   payload: ITrackPayload,
   context: TrackContext
 ): Promise<void> {
-  const { projectId, deviceId, geo, headers, timestamp, sessionId } = context;
+  const { projectId, deviceId, geo, headers, timestamp, sessionId, session } =
+    context;
 
   const uaInfo = parseUserAgent(headers['user-agent'], payload.properties);
   const groupId = uaInfo.isServer
     ? payload.profileId
       ? `${projectId}:${payload.profileId}`
-      : `${projectId}:${generateId()}`
+      : undefined
     : deviceId;
   const jobId = [
     slug(payload.name),
@@ -203,7 +211,7 @@ async function handleTrack(
   }
 
   promises.push(
-    getEventsGroupQueueShard(groupId).add({
+    getEventsGroupQueueShard(groupId || generateId()).add({
       orderMs: timestamp.value,
       data: {
         projectId,
@@ -217,6 +225,7 @@ async function handleTrack(
         geo,
         deviceId,
         sessionId,
+        session,
       },
       groupId,
       jobId,
