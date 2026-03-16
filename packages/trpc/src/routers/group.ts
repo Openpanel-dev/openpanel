@@ -14,6 +14,7 @@ import {
   toNullIfDefaultMinDate,
   updateGroup,
 } from '@openpanel/db';
+import { zCreateGroup, zUpdateGroup } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
@@ -55,29 +56,13 @@ export const groupRouter = createTRPCRouter({
     }),
 
   create: protectedProcedure
-    .input(
-      z.object({
-        id: z.string().min(1),
-        projectId: z.string(),
-        type: z.string().min(1),
-        name: z.string().min(1),
-        properties: z.record(z.string()).default({}),
-      })
-    )
+    .input(zCreateGroup)
     .mutation(({ input }) => {
       return createGroup(input);
     }),
 
   update: protectedProcedure
-    .input(
-      z.object({
-        id: z.string().min(1),
-        projectId: z.string(),
-        type: z.string().min(1).optional(),
-        name: z.string().min(1).optional(),
-        properties: z.record(z.string()).optional(),
-      })
-    )
+    .input(zUpdateGroup)
     .mutation(({ input: { id, projectId, ...data } }) => {
       return updateGroup(id, projectId, data);
     }),
