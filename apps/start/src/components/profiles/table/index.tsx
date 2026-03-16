@@ -1,11 +1,15 @@
+import type { IServiceProfile } from '@openpanel/db';
 import type { UseQueryResult } from '@tanstack/react-query';
-
-import { useDataTableColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
-import type { RouterOutputs } from '@/trpc/client';
+import { useNavigate } from '@tanstack/react-router';
+import type { PaginationState, Table, Updater } from '@tanstack/react-table';
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { memo, useCallback } from 'react';
 import { useColumns } from './columns';
-
 import { DataTable } from '@/components/ui/data-table/data-table';
-import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
+import {
+  useDataTableColumnVisibility,
+  useDataTablePagination,
+} from '@/components/ui/data-table/data-table-hooks';
 import {
   AnimatedSearchInput,
   DataTableToolbarContainer,
@@ -13,12 +17,8 @@ import {
 import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
+import type { RouterOutputs } from '@/trpc/client';
 import { arePropsEqual } from '@/utils/are-props-equal';
-import type { IServiceProfile } from '@openpanel/db';
-import { useNavigate } from '@tanstack/react-router';
-import type { PaginationState, Table, Updater } from '@tanstack/react-table';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { memo, useCallback } from 'react';
 
 const PAGE_SIZE = 50;
 
@@ -40,7 +40,7 @@ export const ProfilesTable = memo(
     const handleRowClick = useCallback(
       (row: any) => {
         navigate({
-          to: '/$organizationId/$projectId/profiles/$profileId' as any,
+          to: '/$organizationId/$projectId/profiles/$profileId',
           params: {
             organizationId,
             projectId,
@@ -48,7 +48,7 @@ export const ProfilesTable = memo(
           },
         });
       },
-      [navigate, organizationId, projectId],
+      [navigate, organizationId, projectId]
     );
 
     const { setPage, state: pagination } = useDataTablePagination(pageSize);
@@ -68,7 +68,7 @@ export const ProfilesTable = memo(
       columns,
       rowCount: data?.meta.count,
       pageCount: Math.ceil(
-        (data?.meta.count || 0) / (pagination.pageSize || 1),
+        (data?.meta.count || 0) / (pagination.pageSize || 1)
       ),
       filterFns: {
         isWithinRange: () => true,
@@ -94,18 +94,18 @@ export const ProfilesTable = memo(
       <>
         <ProfileTableToolbar table={table} />
         <DataTable
-          table={table}
-          loading={isLoading}
-          onRowClick={handleRowClick}
           empty={{
             title: 'No profiles',
             description: "Looks like you haven't identified any profiles yet.",
           }}
+          loading={isLoading}
+          onRowClick={handleRowClick}
+          table={table}
         />
       </>
     );
   },
-  arePropsEqual(['query.isLoading', 'query.data', 'type', 'pageSize']),
+  arePropsEqual(['query.isLoading', 'query.data', 'type', 'pageSize'])
 );
 
 function ProfileTableToolbar({ table }: { table: Table<IServiceProfile> }) {
@@ -113,9 +113,9 @@ function ProfileTableToolbar({ table }: { table: Table<IServiceProfile> }) {
   return (
     <DataTableToolbarContainer>
       <AnimatedSearchInput
+        onChange={setSearch}
         placeholder="Search profiles"
         value={search}
-        onChange={setSearch}
       />
       <DataTableViewOptions table={table} />
     </DataTableToolbarContainer>

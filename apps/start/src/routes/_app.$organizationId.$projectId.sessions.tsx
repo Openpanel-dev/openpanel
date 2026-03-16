@@ -1,19 +1,15 @@
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { SessionsTable } from '@/components/sessions/table';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
+import { useSessionFilters } from '@/hooks/use-session-filters';
 import { useTRPC } from '@/integrations/trpc/react';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
-import {
-  keepPreviousData,
-  useInfiniteQuery,
-  useQuery,
-} from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
+import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/sessions',
+  '/_app/$organizationId/$projectId/sessions'
 )({
   component: Component,
   head: () => {
@@ -31,6 +27,8 @@ function Component() {
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const { debouncedSearch } = useSearchQueryState();
+  const { filters, minPageViews, maxPageViews, minEvents, maxEvents } =
+    useSessionFilters();
 
   const query = useInfiniteQuery(
     trpc.session.list.infiniteQueryOptions(
@@ -38,19 +36,24 @@ function Component() {
         projectId,
         take: 50,
         search: debouncedSearch,
+        filters,
+        minPageViews,
+        maxPageViews,
+        minEvents,
+        maxEvents,
       },
       {
         getNextPageParam: (lastPage) => lastPage.meta.next,
-      },
-    ),
+      }
+    )
   );
 
   return (
     <PageContainer>
       <PageHeader
-        title="Sessions"
-        description="Access all your sessions here"
         className="mb-8"
+        description="Access all your sessions here"
+        title="Sessions"
       />
       <SessionsTable query={query} />
     </PageContainer>

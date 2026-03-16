@@ -53,7 +53,9 @@
         "noUnusedTemplateLiteral": "error",
         "useNumberNamespace": "error",
         "noInferrableTypes": "error",
-        "noUselessElse": "error"
+        "noUselessElse": "error",
+        "noNestedTernary": "off",
+        "useDefaultSwitchClause": "off"
       },
       "correctness": {
         "useExhaustiveDependencies": "off",

@@ -1,6 +1,8 @@
 import {
+  getSessionDistinctValues,
   getSessionList,
   getSessionReplayChunksFrom,
+  SESSION_DISTINCT_FIELDS,
   sessionService,
 } from '@openpanel/db';
 import { zChartEventFilter } from '@openpanel/validation';
@@ -42,20 +44,28 @@ export const sessionRouter = createTRPCRouter({
         endDate: z.date().optional(),
         search: z.string().optional(),
         take: z.number().default(50),
+        minPageViews: z.number().nullish(),
+        maxPageViews: z.number().nullish(),
+        minEvents: z.number().nullish(),
+        maxEvents: z.number().nullish(),
       })
     )
-    .query(async ({ input }) => {
-      const cursor = input.cursor ? decodeCursor(input.cursor) : null;
-      const data = await getSessionList({
+    .query(({ input }) => {
+      return getSessionList({
         ...input,
-        cursor,
+        cursor: input.cursor ? new Date(input.cursor) : undefined,
       });
-      return {
-        data: data.items,
-        meta: {
-          next: data.meta.next ? encodeCursor(data.meta.next) : undefined,
-        },
-      };
+    }),
+
+  distinctValues: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        field: z.enum(SESSION_DISTINCT_FIELDS),
+      })
+    )
+    .query(({ input }) => {
+      return getSessionDistinctValues(input.projectId, input.field);
     }),
 
   byId: protectedProcedure
