@@ -26,7 +26,7 @@ export function format(
   }>,
   includeAlphaIds: boolean,
   previousSeries: ConcreteSeries[] | null = null,
-  limit: number | undefined = undefined,
+  limit: number | undefined = undefined
 ): FinalChart {
   const series = concreteSeries.map((cs) => {
     // Find definition for this series
@@ -70,7 +70,7 @@ export function format(
     const previousSerie = previousSeries?.find(
       (ps) =>
         ps.definitionIndex === cs.definitionIndex &&
-        ps.name.slice(1).join(':::') === cs.name.slice(1).join(':::'),
+        ps.name.slice(1).join(':::') === cs.name.slice(1).join(':::')
     );
 
     return {
@@ -89,24 +89,24 @@ export function format(
               previous: {
                 sum: getPreviousMetric(
                   metrics.sum,
-                  sum(previousSerie.data.map((d) => d.count)),
+                  sum(previousSerie.data.map((d) => d.count))
                 ),
                 average: getPreviousMetric(
                   metrics.average,
-                  round(average(previousSerie.data.map((d) => d.count)), 2),
+                  round(average(previousSerie.data.map((d) => d.count)), 2)
                 ),
                 min: getPreviousMetric(
                   metrics.min,
-                  min(previousSerie.data.map((d) => d.count)),
+                  min(previousSerie.data.map((d) => d.count))
                 ),
                 max: getPreviousMetric(
                   metrics.max,
-                  max(previousSerie.data.map((d) => d.count)),
+                  max(previousSerie.data.map((d) => d.count))
                 ),
                 count: getPreviousMetric(
                   metrics.count ?? 0,
                   previousSerie.data.find((item) => !!item.total_count)
-                    ?.total_count ?? null,
+                    ?.total_count ?? null
                 ),
               },
             }
@@ -118,7 +118,7 @@ export function format(
         previous: previousSerie?.data[index]
           ? getPreviousMetric(
               item.count,
-              previousSerie.data[index]?.count ?? null,
+              previousSerie.data[index]?.count ?? null
             )
           : undefined,
       })),

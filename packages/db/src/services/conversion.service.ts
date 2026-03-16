@@ -101,11 +101,11 @@ export class ConversionService {
 
     // Build funnel conditions
     const conditionA = whereA
-      ? `(name = '${eventA.name}' AND ${whereA})`
-      : `name = '${eventA.name}'`;
+      ? `(events.name = '${eventA.name}' AND ${whereA})`
+      : `events.name = '${eventA.name}'`;
     const conditionB = whereB
-      ? `(name = '${eventB.name}' AND ${whereB})`
-      : `name = '${eventB.name}'`;
+      ? `(events.name = '${eventB.name}' AND ${whereB})`
+      : `events.name = '${eventB.name}'`;
 
     const groupJoin = needsGroupArrayJoin
       ? `ARRAY JOIN groups AS _group_id LEFT ANY JOIN (SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) AS _g ON _g.id = _group_id`
@@ -141,7 +141,7 @@ export class ConversionService {
         ${profileJoin}
         ${groupJoin}
         WHERE project_id = '${projectId}'
-          AND name IN ('${eventA.name}', '${eventB.name}')
+          AND events.name IN ('${eventA.name}', '${eventB.name}')
           AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')
         GROUP BY ${group}${breakdownExpressions.length ? `, ${breakdownExpressions.join(', ')}` : ''})
       `),

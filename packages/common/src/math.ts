@@ -20,11 +20,17 @@ export const average = (arr: (number | null)[], includeZero = false) => {
 export const sum = (arr: (number | null | undefined)[]): number =>
   round(arr.filter(isNumber).reduce((acc, item) => acc + item, 0));
 
-export const min = (arr: (number | null | undefined)[]): number =>
-  Math.min(...arr.filter(isNumber));
+export const min = (arr: (number | null | undefined)[]): number => {
+  const filtered = arr.filter(isNumber);
+  if (filtered.length === 0) return 0;
+  return filtered.reduce((a, b) => (b < a ? b : a), filtered[0]!);
+};
 
-export const max = (arr: (number | null | undefined)[]): number =>
-  Math.max(...arr.filter(isNumber));
+export const max = (arr: (number | null | undefined)[]): number => {
+  const filtered = arr.filter(isNumber);
+  if (filtered.length === 0) return 0;
+  return filtered.reduce((a, b) => (b > a ? b : a), filtered[0]!);
+};
 
 export const isFloat = (n: number) => n % 1 !== 0;
 

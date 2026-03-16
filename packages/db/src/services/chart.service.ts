@@ -150,7 +150,7 @@ export function getChartSql({
 
   if (event.name !== '*') {
     sb.select.label_0 = `${sqlstring.escape(event.name)} as label_0`;
-    sb.where.eventName = `name = ${sqlstring.escape(event.name)}`;
+    sb.where.eventName = `e.name = ${sqlstring.escape(event.name)}`;
   } else {
     sb.select.label_0 = `'*' as label_0`;
   }
@@ -359,7 +359,7 @@ export function getChartSql({
 
   if (event.segment === 'one_event_per_user') {
     sb.from = `(
-      SELECT DISTINCT ON (profile_id) * from ${TABLE_NAMES.events} ${getJoins()} WHERE ${join(
+      SELECT DISTINCT ON (profile_id) * from ${TABLE_NAMES.events} e ${getJoins()} WHERE ${join(
         sb.where,
         ' AND '
       )}
@@ -380,40 +380,47 @@ export function getChartSql({
     : '';
 
   if (breakdowns.length > 0) {
-    // Match breakdown properties in subquery with outer query's grouped values
-    // Since outer query groups by label_X, we reference those in the correlation
-    const breakdownMatches = breakdowns
+    // Pre-compute unique counts per breakdown group in a CTE, then JOIN it.
+    // We can't use a correlated subquery because:
+    // 1. ClickHouse expands label_X aliases to their underlying expressions,
+    //    which resolve in the subquery's scope, making the condition a tautology.
+    // 2. Correlated subqueries aren't supported on distributed/remote tables.
+    const ucSelectParts: string[] = breakdowns.map((breakdown, index) => {
+      const propertyKey = getSelectPropertyKey(breakdown.name, projectId);
+      return `${propertyKey} as _uc_label_${index + 1}`;
+    });
+    ucSelectParts.push('uniq(profile_id) as total_count');
+
+    const ucGroupByParts = breakdowns.map(
+      (_, index) => `_uc_label_${index + 1}`
+    );
+
+    const ucWhere = getWhereWithoutBar();
+
+    addCte(
+      '_uc',
+      `SELECT ${ucSelectParts.join(', ')} FROM ${TABLE_NAMES.events} e ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${ucWhere} GROUP BY ${ucGroupByParts.join(', ')}`
+    );
+
+    const ucJoinConditions = breakdowns
       .map((b, index) => {
         const propertyKey = getSelectPropertyKey(b.name, projectId);
-        // Correlate: match the property expression with outer query's label_X value
-        // ClickHouse allows referencing outer query columns in correlated subqueries
-        return `${propertyKey} = label_${index + 1}`;
+        return `_uc._uc_label_${index + 1} = ${propertyKey}`;
       })
       .join(' AND ');
 
-    // Build WHERE clause for subquery - replace table alias and keep profile CTE reference
-    const subqueryWhere = getWhereWithoutBar()
-      .replace(/\be\./g, 'e2.')
-      .replace(/\bprofile\./g, 'profile.');
-
-    sb.select.total_unique_count = `(
-        SELECT uniq(profile_id)
-        FROM ${TABLE_NAMES.events} e2
-        ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${subqueryWhere}
-        AND ${breakdownMatches}
-      ) as total_count`;
+    sb.joins.unique_counts = `LEFT ANY JOIN _uc ON ${ucJoinConditions}`;
+    sb.select.total_unique_count = 'any(_uc.total_count) as total_count';
   } else {
-    // No breakdowns: calculate unique count across all data
-    // Build WHERE clause for subquery - replace table alias and keep profile CTE reference
-    const subqueryWhere = getWhereWithoutBar()
-      .replace(/\be\./g, 'e2.')
-      .replace(/\bprofile\./g, 'profile.');
+    const ucWhere = getWhereWithoutBar();
 
-    sb.select.total_unique_count = `(
-        SELECT uniq(profile_id)
-        FROM ${TABLE_NAMES.events} e2
-        ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${subqueryWhere}
-      ) as total_count`;
+    addCte(
+      '_uc',
+      `SELECT uniq(profile_id) as total_count FROM ${TABLE_NAMES.events} e ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${ucWhere}`
+    );
+
+    sb.select.total_unique_count =
+      '(SELECT total_count FROM _uc) as total_count';
   }
 
   const sql = `${getWith()}${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
@@ -440,7 +447,7 @@ export function getAggregateChartSql({
 
   if (event.name !== '*') {
     sb.select.label_0 = `${sqlstring.escape(event.name)} as label_0`;
-    sb.where.eventName = `name = ${sqlstring.escape(event.name)}`;
+    sb.where.eventName = `e.name = ${sqlstring.escape(event.name)}`;
   } else {
     sb.select.label_0 = `'*' as label_0`;
   }
@@ -617,7 +624,7 @@ export function getAggregateChartSql({
 
   if (event.segment === 'one_event_per_user') {
     sb.from = `(
-      SELECT DISTINCT ON (profile_id) * from ${TABLE_NAMES.events} ${getJoins()} WHERE ${join(
+      SELECT DISTINCT ON (profile_id) * from ${TABLE_NAMES.events} e ${getJoins()} WHERE ${join(
         sb.where,
         ' AND '
       )}

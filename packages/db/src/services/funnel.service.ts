@@ -38,7 +38,7 @@ export class FunnelService {
     return events.map((event) => {
       const { sb, getWhere } = createSqlBuilder();
       sb.where = getEventFiltersWhereClause(event.filters, projectId);
-      sb.where.name = `name = ${sqlstring.escape(event.name)}`;
+      sb.where.name = `events.name = ${sqlstring.escape(event.name)}`;
       return getWhere().replace('WHERE ', '');
     });
   }
@@ -90,7 +90,7 @@ export class FunnelService {
         clix.datetime(endDate, 'toDateTime'),
       ])
       .where(
-        'name',
+        'events.name',
         'IN',
         eventSeries.map((e) => e.name),
       )
