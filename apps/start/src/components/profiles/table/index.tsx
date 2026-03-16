@@ -11,12 +11,14 @@ import {
   DataTableToolbarContainer,
 } from '@/components/ui/data-table/data-table-toolbar';
 import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
+import { useAppParams } from '@/hooks/use-app-params';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { arePropsEqual } from '@/utils/are-props-equal';
 import type { IServiceProfile } from '@openpanel/db';
+import { useNavigate } from '@tanstack/react-router';
 import type { PaginationState, Table, Updater } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 
 const PAGE_SIZE = 50;
 
@@ -32,6 +34,22 @@ export const ProfilesTable = memo(
   ({ type, query, pageSize = PAGE_SIZE }: Props) => {
     const { data, isLoading } = query;
     const columns = useColumns(type);
+    const navigate = useNavigate();
+    const { organizationId, projectId } = useAppParams();
+
+    const handleRowClick = useCallback(
+      (row: any) => {
+        navigate({
+          to: '/$organizationId/$projectId/profiles/$profileId' as any,
+          params: {
+            organizationId,
+            projectId,
+            profileId: encodeURIComponent(row.original.id),
+          },
+        });
+      },
+      [navigate, organizationId, projectId],
+    );
 
     const { setPage, state: pagination } = useDataTablePagination(pageSize);
     const {
@@ -78,6 +96,7 @@ export const ProfilesTable = memo(
         <DataTable
           table={table}
           loading={isLoading}
+          onRowClick={handleRowClick}
           empty={{
             title: 'No profiles',
             description: "Looks like you haven't identified any profiles yet.",

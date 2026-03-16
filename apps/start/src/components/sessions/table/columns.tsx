@@ -74,7 +74,7 @@ export function useColumns() {
         if (session.profile) {
           return (
             <ProjectLink
-              className="row items-center gap-2 font-medium"
+              className="row items-center gap-2 font-medium hover:underline"
               href={`/profiles/${encodeURIComponent(session.profile.id)}`}
             >
               <ProfileAvatar size="sm" {...session.profile} />

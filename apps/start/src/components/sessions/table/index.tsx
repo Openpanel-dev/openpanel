@@ -44,17 +44,19 @@ import {
   DataTableToolbarContainer,
 } from '@/components/ui/data-table/data-table-toolbar';
 import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
+import { useAppParams } from '@/hooks/use-app-params';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { arePropsEqual } from '@/utils/are-props-equal';
 import { cn } from '@/utils/cn';
 import type { IServiceSession } from '@openpanel/db';
+import { useNavigate } from '@tanstack/react-router';
 import type { Table } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
 import { Loader2Icon } from 'lucide-react';
 import { last } from 'ramda';
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useInViewport } from 'react-in-viewport';
 
 type Props = {
@@ -83,6 +85,7 @@ interface VirtualRowProps {
   scrollMargin: number;
   isLoading: boolean;
   headerColumnsHash: string;
+  onRowClick?: (row: any) => void;
 }
 
 const VirtualRow = memo(
@@ -92,12 +95,24 @@ const VirtualRow = memo(
     headerColumns,
     scrollMargin,
     isLoading,
+    onRowClick,
   }: VirtualRowProps) {
     return (
       <div
         data-index={virtualRow.index}
         ref={virtualRow.measureElement}
-        className="absolute top-0 left-0 w-full border-b hover:bg-muted/50 transition-colors group/row"
+        className={cn(
+          'absolute top-0 left-0 w-full border-b hover:bg-muted/50 transition-colors group/row',
+          onRowClick && 'cursor-pointer',
+        )}
+        onClick={
+          onRowClick
+            ? (e) => {
+                if ((e.target as HTMLElement).closest('a, button')) return;
+                onRowClick(row);
+              }
+            : undefined
+        }
         style={{
           transform: `translateY(${virtualRow.start - scrollMargin}px)`,
           display: 'grid',
@@ -143,7 +158,8 @@ const VirtualRow = memo(
       prevProps.virtualRow.start === nextProps.virtualRow.start &&
       prevProps.virtualRow.size === nextProps.virtualRow.size &&
       prevProps.isLoading === nextProps.isLoading &&
-      prevProps.headerColumnsHash === nextProps.headerColumnsHash
+      prevProps.headerColumnsHash === nextProps.headerColumnsHash &&
+      prevProps.onRowClick === nextProps.onRowClick
     );
   },
 );
@@ -152,7 +168,8 @@ const VirtualizedSessionsTable = ({
   table,
   data,
   isLoading,
-}: VirtualizedSessionsTableProps) => {
+  onRowClick,
+}: VirtualizedSessionsTableProps & { onRowClick?: (row: any) => void }) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
   const headerColumns = table.getAllLeafColumns().filter((col) => {
@@ -234,6 +251,7 @@ const VirtualizedSessionsTable = ({
               headerColumnsHash={headerColumnsHash}
               scrollMargin={rowVirtualizer.options.scrollMargin}
               isLoading={isLoading}
+              onRowClick={onRowClick}
             />
           );
         })}
@@ -245,6 +263,18 @@ const VirtualizedSessionsTable = ({
 export const SessionsTable = ({ query }: Props) => {
   const { isLoading } = query;
   const columns = useColumns();
+  const navigate = useNavigate();
+  const { organizationId, projectId } = useAppParams();
+
+  const handleRowClick = useCallback(
+    (row: any) => {
+      navigate({
+        to: '/$organizationId/$projectId/sessions/$sessionId' as any,
+        params: { organizationId, projectId, sessionId: row.original.id },
+      });
+    },
+    [navigate, organizationId, projectId],
+  );
 
   const data = useMemo(() => {
     if (isLoading) {
@@ -304,6 +334,7 @@ export const SessionsTable = ({ query }: Props) => {
         table={table}
         data={data}
         isLoading={isLoading}
+        onRowClick={handleRowClick}
       />
       <div className="w-full h-10 center-center pt-4" ref={inViewportRef}>
         <div

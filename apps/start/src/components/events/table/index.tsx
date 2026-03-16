@@ -1,3 +1,17 @@
+import type { IServiceEvent } from '@openpanel/db';
+import type { UseInfiniteQueryResult } from '@tanstack/react-query';
+import type { Table } from '@tanstack/react-table';
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
+import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
+import { format } from 'date-fns';
+import { CalendarIcon, Loader2Icon } from 'lucide-react';
+import { parseAsIsoDateTime, useQueryState } from 'nuqs';
+import { last } from 'ramda';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useInViewport } from 'react-in-viewport';
+import EventListener from '../event-listener';
+import { useColumns } from './columns';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import {
   OverviewFilterButton,
@@ -12,20 +26,6 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { pushModal } from '@/modals';
 import type { RouterInputs, RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import type { IServiceEvent } from '@openpanel/db';
-import type { UseInfiniteQueryResult } from '@tanstack/react-query';
-import type { Table } from '@tanstack/react-table';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
-import { format } from 'date-fns';
-import { CalendarIcon, FilterIcon, Loader2Icon } from 'lucide-react';
-import { parseAsIsoDateTime, useQueryState } from 'nuqs';
-import { last } from 'ramda';
-import { memo, useEffect, useMemo, useRef } from 'react';
-import { useInViewport } from 'react-in-viewport';
-import EventListener from '../event-listener';
-import { useColumns } from './columns';
 
 type Props = {
   query: UseInfiniteQueryResult<
@@ -54,6 +54,7 @@ interface VirtualRowProps {
   scrollMargin: number;
   isLoading: boolean;
   headerColumnsHash: string;
+  onRowClick?: (row: any) => void;
 }
 
 const VirtualRow = memo(
@@ -63,12 +64,26 @@ const VirtualRow = memo(
     headerColumns,
     scrollMargin,
     isLoading,
+    onRowClick,
   }: VirtualRowProps) {
     return (
       <div
+        className={cn(
+          'group/row absolute top-0 left-0 w-full border-b transition-colors hover:bg-muted/50',
+          onRowClick && 'cursor-pointer'
+        )}
         data-index={virtualRow.index}
+        onClick={
+          onRowClick
+            ? (e) => {
+                if ((e.target as HTMLElement).closest('a, button')) {
+                  return;
+                }
+                onRowClick(row);
+              }
+            : undefined
+        }
         ref={virtualRow.measureElement}
-        className="absolute top-0 left-0 w-full border-b hover:bg-muted/50 transition-colors group/row"
         style={{
           transform: `translateY(${virtualRow.start - scrollMargin}px)`,
           display: 'grid',
@@ -83,8 +98,8 @@ const VirtualRow = memo(
           const width = `${cell.column.getSize()}px`;
           return (
             <div
+              className="flex items-center whitespace-nowrap p-2 px-4 align-middle"
               key={cell.id}
-              className="flex items-center p-2 px-4 align-middle whitespace-nowrap"
               style={{
                 width,
                 overflow: 'hidden',
@@ -114,16 +129,18 @@ const VirtualRow = memo(
       prevProps.virtualRow.start === nextProps.virtualRow.start &&
       prevProps.virtualRow.size === nextProps.virtualRow.size &&
       prevProps.isLoading === nextProps.isLoading &&
-      prevProps.headerColumnsHash === nextProps.headerColumnsHash
+      prevProps.headerColumnsHash === nextProps.headerColumnsHash &&
+      prevProps.onRowClick === nextProps.onRowClick
     );
-  },
+  }
 );
 
 const VirtualizedEventsTable = ({
   table,
   data,
   isLoading,
-}: VirtualizedEventsTableProps) => {
+  onRowClick,
+}: VirtualizedEventsTableProps & { onRowClick?: (row: any) => void }) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
   const headerColumns = table.getAllLeafColumns().filter((col) => {
@@ -145,12 +162,12 @@ const VirtualizedEventsTable = ({
   const headerColumnsHash = headerColumns.map((col) => col.id).join(',');
   return (
     <div
+      className="w-full overflow-x-auto rounded-md border bg-card"
       ref={parentRef}
-      className="w-full overflow-x-auto border rounded-md bg-card"
     >
       {/* Table Header */}
       <div
-        className="sticky top-0 z-10 bg-card border-b"
+        className="sticky top-0 z-10 border-b bg-card"
         style={{
           display: 'grid',
           gridTemplateColumns: headerColumns
@@ -164,8 +181,8 @@ const VirtualizedEventsTable = ({
           const width = `${column.getSize()}px`;
           return (
             <div
+              className="flex h-10 items-center whitespace-nowrap px-4 text-left font-semibold text-[10px] text-foreground uppercase"
               key={column.id}
-              className="flex items-center h-10 px-4 text-left text-[10px] uppercase text-foreground font-semibold whitespace-nowrap"
               style={{
                 width,
               }}
@@ -178,8 +195,8 @@ const VirtualizedEventsTable = ({
 
       {!isLoading && data.length === 0 && (
         <FullPageEmptyState
-          title="No events"
           description={"Start sending events and you'll see them here"}
+          title="No events"
         />
       )}
 
@@ -194,20 +211,23 @@ const VirtualizedEventsTable = ({
       >
         {virtualRows.map((virtualRow) => {
           const row = table.getRowModel().rows[virtualRow.index];
-          if (!row) return null;
+          if (!row) {
+            return null;
+          }
 
           return (
             <VirtualRow
+              headerColumns={headerColumns}
+              headerColumnsHash={headerColumnsHash}
+              isLoading={isLoading}
               key={row.id}
+              onRowClick={onRowClick}
               row={row}
+              scrollMargin={rowVirtualizer.options.scrollMargin}
               virtualRow={{
                 ...virtualRow,
                 measureElement: rowVirtualizer.measureElement,
               }}
-              headerColumns={headerColumns}
-              headerColumnsHash={headerColumnsHash}
-              scrollMargin={rowVirtualizer.options.scrollMargin}
-              isLoading={isLoading}
             />
           );
         })}
@@ -219,6 +239,14 @@ const VirtualizedEventsTable = ({
 export const EventsTable = ({ query, showEventListener = false }: Props) => {
   const { isLoading } = query;
   const columns = useColumns();
+
+  const handleRowClick = useCallback((row: any) => {
+    pushModal('EventDetails', {
+      id: row.original.id,
+      createdAt: row.original.createdAt,
+      projectId: row.original.projectId,
+    });
+  }, []);
 
   const data = useMemo(() => {
     if (isLoading) {
@@ -273,13 +301,22 @@ export const EventsTable = ({ query, showEventListener = false }: Props) => {
 
   return (
     <>
-      <EventsTableToolbar query={query} table={table} showEventListener={showEventListener} />
-      <VirtualizedEventsTable table={table} data={data} isLoading={isLoading} />
-      <div className="w-full h-10 center-center pt-4" ref={inViewportRef}>
+      <EventsTableToolbar
+        query={query}
+        showEventListener={showEventListener}
+        table={table}
+      />
+      <VirtualizedEventsTable
+        data={data}
+        isLoading={isLoading}
+        onRowClick={handleRowClick}
+        table={table}
+      />
+      <div className="center-center h-10 w-full pt-4" ref={inViewportRef}>
         <div
           className={cn(
-            'size-8 bg-background rounded-full center-center border opacity-0 transition-opacity',
-            query.isFetchingNextPage && 'opacity-100',
+            'center-center size-8 rounded-full border bg-background opacity-0 transition-opacity',
+            query.isFetchingNextPage && 'opacity-100'
           )}
         >
           <Loader2Icon className="size-4 animate-spin" />
@@ -301,17 +338,17 @@ function EventsTableToolbar({
   const { projectId } = useAppParams();
   const [startDate, setStartDate] = useQueryState(
     'startDate',
-    parseAsIsoDateTime,
+    parseAsIsoDateTime
   );
   const [endDate, setEndDate] = useQueryState('endDate', parseAsIsoDateTime);
 
   return (
     <DataTableToolbarContainer>
       <div className="flex flex-1 flex-wrap items-center gap-2">
-        {showEventListener && <EventListener onRefresh={() => query.refetch()} />}
+        {showEventListener && (
+          <EventListener onRefresh={() => query.refetch()} />
+        )}
         <Button
-          variant="outline"
-          size="sm"
           icon={CalendarIcon}
           onClick={() => {
             pushModal('DateRangerPicker', {
@@ -323,6 +360,8 @@ function EventsTableToolbar({
               endDate: endDate || undefined,
             });
           }}
+          size="sm"
+          variant="outline"
         >
           {startDate && endDate
             ? `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`
