@@ -6,7 +6,7 @@ import { duplicateHook } from '@/hooks/duplicate.hook';
 import { isBotHook } from '@/hooks/is-bot.hook';
 
 const eventRouter: FastifyPluginCallback = async (fastify) => {
-  fastify.addHook('preValidation', duplicateHook);
+  // fastify.addHook('preValidation', duplicateHook);
   fastify.addHook('preHandler', clientHook);
   fastify.addHook('preHandler', isBotHook);
 
