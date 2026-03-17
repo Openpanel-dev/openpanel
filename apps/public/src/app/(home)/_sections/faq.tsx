@@ -34,9 +34,9 @@ const faqData = [
       'We have a dedicated compare page where you can see how OpenPanel compares to other analytics tools. You can find it [here](/compare). You can also read our comprehensive guide on the [best open source web analytics tools](/articles/open-source-web-analytics).',
   },
   {
-    question: 'How does OpenPanel compare to Mixpanel?',
+    question: 'Is OpenPanel a good Mixpanel alternative?',
     answer:
-      "OpenPanel offers similar powerful product analytics features as Mixpanel, but with the added benefits of being open-source, more affordable, and including web analytics capabilities.\n\nYou get Mixpanel's power with Plausible's simplicity.",
+      "Yes — OpenPanel covers the core features most teams use in Mixpanel: event tracking, funnels, retention, cohorts, and user profiles. The key differences are pricing, privacy, and self-hosting.\n\nOpenPanel starts at $2.50/month and can be self-hosted for free, while Mixpanel is cloud-only and scales to hundreds or thousands per month. OpenPanel is also cookie-free by default with EU-only hosting, so no consent banners required — something Mixpanel can't offer.\n\nSee the full [OpenPanel vs Mixpanel comparison](/compare/mixpanel-alternative) for a side-by-side breakdown.",
   },
   {
     question: 'How does OpenPanel compare to Plausible?',

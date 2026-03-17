@@ -4,6 +4,7 @@ import { FeatureSpotlight } from './_sections/feature-spotlight';
 import { CtaBanner } from './_sections/cta-banner';
 import { DataPrivacy } from './_sections/data-privacy';
 import { Faq } from './_sections/faq';
+import { MixpanelAlternative } from './_sections/mixpanel-alternative';
 import { Hero } from './_sections/hero';
 import { Pricing } from './_sections/pricing';
 import { Sdks } from './_sections/sdks';
@@ -63,6 +64,7 @@ export default function HomePage() {
       <Testimonials />
       <Pricing />
       <DataPrivacy />
+      <MixpanelAlternative />
       <Sdks />
       <Faq />
       <CtaBanner />

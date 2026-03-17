@@ -1,0 +1,155 @@
+{
+  "slug": "nextjs",
+  "audience": "nextjs",
+  "seo": {
+    "title": "Next.js Analytics — OpenPanel SDK for App Router & Pages Router",
+    "description": "Add analytics to your Next.js app in minutes. OpenPanel's Next.js SDK supports App Router, Pages Router, server-side events, and automatic route change tracking. Open source, cookieless, from $2.50/month.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Analytics Built for Next.js",
+    "subheading": "Most analytics tools treat Next.js like a static site. OpenPanel was built for how Next.js actually works — App Router, server components, API routes, and route changes all tracked correctly. Install in 5 minutes, get events, funnels, and user profiles that work with SSR.",
+    "badges": [
+      "App Router support",
+      "Server-side events",
+      "Auto route tracking",
+      "2.3 KB client bundle"
+    ]
+  },
+  "problem": {
+    "title": "Why standard analytics breaks in Next.js",
+    "intro": "Next.js is not a traditional website. Most analytics tools were built before App Router existed and show it.",
+    "items": [
+      {
+        "title": "GA4 breaks with App Router route changes",
+        "description": "Google Analytics was designed for traditional page loads. In Next.js App Router, client-side navigation doesn't trigger GA4's page view events unless you add custom workarounds. Your analytics misses a significant portion of page views."
+      },
+      {
+        "title": "Cookie consent is painful in Next.js",
+        "description": "Implementing a GDPR-compliant cookie consent flow in a Next.js app requires next/script, consent state management, and conditional script loading. It's a non-trivial engineering task just to run analytics."
+      },
+      {
+        "title": "No server-side tracking",
+        "description": "Most analytics SDKs are client-only. Server-side events — API route completions, background jobs, server actions — are invisible. You're missing half the picture."
+      },
+      {
+        "title": "Analytics libraries bloat your bundle",
+        "description": "Many analytics SDKs add 20–50 KB to your JavaScript bundle. In a performance-conscious Next.js app, that overhead matters for Core Web Vitals."
+      }
+    ]
+  },
+  "features": {
+    "title": "Analytics that works the way Next.js works",
+    "intro": "OpenPanel's Next.js SDK was designed for modern Next.js patterns — not adapted from a legacy client-only library.",
+    "items": [
+      {
+        "title": "Next.js SDK with App Router support",
+        "description": "Install @openpanel/nextjs, add the <OpenPanelComponent> to your root layout, and automatic route change tracking works immediately across App Router and Pages Router."
+      },
+      {
+        "title": "Automatic route change tracking",
+        "description": "Every router.push(), <Link> navigation, and back/forward browser action is captured as a page view. No custom useEffect or router event listeners needed."
+      },
+      {
+        "title": "Server-side event tracking",
+        "description": "Import openPanel in any server component, API route, or server action to track events server-side. Track form submissions, payment completions, and background jobs without any client involvement."
+      },
+      {
+        "title": "Cookieless by default",
+        "description": "The OpenPanel SDK uses no cookies. No consent management library, no conditional script loading, no GDPR consent modal needed — just install and track."
+      },
+      {
+        "title": "Identify users across sessions",
+        "description": "Call op.identify({ profileId, name, email }) after authentication to tie anonymous events to known users. Works with any auth solution including NextAuth.js, Clerk, and custom implementations."
+      },
+      {
+        "title": "TypeScript-first SDK",
+        "description": "Full TypeScript types for all methods. Autocomplete for event names and properties. Zero runtime errors from mistyped event calls."
+      },
+      {
+        "title": "2.3 KB gzipped client bundle",
+        "description": "The smallest full-featured analytics SDK for Next.js. No impact on Lighthouse scores or Core Web Vitals."
+      }
+    ]
+  },
+  "benefits": {
+    "title": "Why Next.js developers choose OpenPanel",
+    "intro": "OpenPanel fits naturally into a modern Next.js codebase — not as an afterthought.",
+    "items": [
+      {
+        "title": "Works exactly how Next.js works",
+        "description": "Built for App Router, server components, and modern Next.js patterns. Not bolted onto a client-only library."
+      },
+      {
+        "title": "No consent infrastructure needed",
+        "description": "Cookieless tracking means no consent modal, no next/script loading gymnastics, no conditional initialization. Install once, works everywhere."
+      },
+      {
+        "title": "Track server and client events in the same dashboard",
+        "description": "Server actions, API endpoints, and client interactions all show up together. Full picture of what your app is doing."
+      },
+      {
+        "title": "Open source and self-hostable",
+        "description": "Run OpenPanel on your own infrastructure. Your Next.js app's analytics data never leaves your servers."
+      },
+      {
+        "title": "From $2.50/month",
+        "description": "No enterprise contract, no per-seat fees. Pay for events, get all features. Start free with 30-day trial."
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions from Next.js developers evaluating OpenPanel.",
+    "items": [
+      {
+        "question": "How do I install OpenPanel in a Next.js app?",
+        "answer": "Install @openpanel/nextjs, add <OpenPanelComponent clientId=\"...\" /> to your root layout.tsx, and you're tracking page views. For custom events, import and call op.track('event_name', { properties }) anywhere. See the full step-by-step guide at /guides/nextjs-analytics."
+      },
+      {
+        "question": "Does OpenPanel support Next.js App Router?",
+        "answer": "Yes. The <OpenPanelComponent> handles App Router route changes automatically using the usePathname hook internally. No custom setup is needed for client-side navigation tracking."
+      },
+      {
+        "question": "Can I track events in Server Components and API Routes?",
+        "answer": "Yes. Import { openPanel } from @openpanel/nextjs/server and call openPanel.track() in any server context including Server Components, Route Handlers, and Server Actions."
+      },
+      {
+        "question": "Does OpenPanel work with NextAuth.js or Clerk?",
+        "answer": "Yes. Call op.identify({ profileId: session.user.id, ... }) after authentication to link events to user identities. Works with any auth solution that gives you a user ID."
+      },
+      {
+        "question": "Does OpenPanel add significant bundle size to my Next.js app?",
+        "answer": "No. The client-side SDK is 2.3 KB gzipped. For reference, GA4 adds 50+ KB. OpenPanel has negligible impact on your bundle size or Core Web Vitals."
+      },
+      {
+        "question": "Can I self-host OpenPanel for my Next.js app?",
+        "answer": "Yes. OpenPanel is fully open source and can be self-hosted with Docker. Your Next.js app sends events to your own server. The self-hosted version has no event limits and is free to run."
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "Next.js analytics setup", "url": "/guides/nextjs-analytics" },
+      { "title": "React analytics setup", "url": "/guides/react-analytics" },
+      { "title": "Track custom events", "url": "/guides/track-custom-events" }
+    ],
+    "articles": [
+      { "title": "Self-hosted web analytics", "url": "/articles/self-hosted-web-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },
+      { "title": "OpenPanel vs PostHog", "url": "/compare/posthog-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Try OpenPanel Free",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "View Source on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

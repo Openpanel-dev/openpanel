@@ -1,0 +1,165 @@
+{
+  "slug": "saas",
+  "audience": "saas",
+  "seo": {
+    "title": "SaaS Analytics — Track Events, Funnels & Retention Without Enterprise Pricing",
+    "description": "OpenPanel gives SaaS teams the product analytics they need to reduce churn and grow — events, funnels, retention, cohorts, and user profiles. Open source, from $2.50/month.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Product Analytics for SaaS Teams",
+    "subheading": "Understanding why users churn, where trials drop off, and which features drive retention is the difference between a SaaS that grows and one that plateaus. OpenPanel gives you events, funnels, retention analysis, and user profiles — the core analytics stack for SaaS — without Mixpanel or Amplitude's enterprise pricing.",
+    "badges": [
+      "Funnel analysis",
+      "Retention tracking",
+      "User profiles",
+      "From $2.50/month"
+    ]
+  },
+  "problem": {
+    "title": "Why SaaS teams outgrow their analytics tools",
+    "intro": "The analytics tools most SaaS teams start with either can't answer the right questions or become unaffordable as you grow.",
+    "items": [
+      {
+        "title": "Mixpanel and Amplitude become unaffordable at scale",
+        "description": "Event-based pricing sounds cheap at 10K events, but SaaS products are event-heavy. At 1M events/month you're paying $300–800/month. At 10M, it's thousands. Your analytics bill grows faster than your revenue."
+      },
+      {
+        "title": "GA4 doesn't answer SaaS questions",
+        "description": "Google Analytics tells you pageviews. It can't tell you which users completed your onboarding flow, how feature adoption correlates with retention, or why your trial-to-paid conversion dropped last month."
+      },
+      {
+        "title": "Complex tools slow down your team",
+        "description": "Mixpanel's interface is powerful but has a steep learning curve. When it takes 30 minutes to build a simple funnel, your team stops using analytics to make decisions."
+      },
+      {
+        "title": "Cloud-only means full vendor dependence",
+        "description": "If Mixpanel raises prices, your data is hostage. No export path, no self-hosting option, and a pricing model that punishes growth."
+      }
+    ]
+  },
+  "features": {
+    "title": "The full product analytics stack for SaaS",
+    "intro": "Everything your team needs to understand users, reduce churn, and grow — without the enterprise pricing.",
+    "items": [
+      {
+        "title": "Event tracking",
+        "description": "Track any user action — feature used, button clicked, settings changed, plan upgraded. One line of code. Works across web, mobile, and your backend."
+      },
+      {
+        "title": "Funnel analysis",
+        "description": "Build conversion funnels for trial signup, onboarding, activation, and upgrade flows. See the exact step losing you the most conversions and fix it."
+      },
+      {
+        "title": "Retention analysis",
+        "description": "Cohort-based retention charts show you whether users activated in week 1 are still active in week 8. Identify which actions predict long-term retention."
+      },
+      {
+        "title": "User profiles",
+        "description": "See every event a specific user triggered since they signed up. Walk through their session to diagnose support issues or understand power user behavior."
+      },
+      {
+        "title": "Cohort analysis",
+        "description": "Group users by signup date, plan, or any property and compare their behavior over time. Understand how product changes affect different user segments."
+      },
+      {
+        "title": "Real-time dashboard",
+        "description": "See new signups, trial activations, and feature usage as they happen. Know immediately when a new deployment changes user behavior."
+      },
+      {
+        "title": "Revenue tracking",
+        "description": "Send MRR, payment events, and plan upgrade data to OpenPanel. Correlate feature usage with revenue without a separate BI tool."
+      },
+      {
+        "title": "Multi-platform SDKs",
+        "description": "Track across web app, marketing site, iOS, Android, and backend in one unified analytics view. Events from all platforms share the same user profiles."
+      }
+    ]
+  },
+  "benefits": {
+    "title": "Why SaaS teams choose OpenPanel",
+    "intro": "OpenPanel gives you the analytics depth of Mixpanel at a price that makes sense for growing SaaS products.",
+    "items": [
+      {
+        "title": "Predictable pricing as you scale",
+        "description": "Flat event tiers from $2.50 to $900/month. No per-seat fees, no MTU limits. Know exactly what you'll pay as your user base grows."
+      },
+      {
+        "title": "Answer the questions SaaS teams actually ask",
+        "description": "Which onboarding step has the highest drop-off? Which features are used by retained users vs churned users? OpenPanel is built for these questions."
+      },
+      {
+        "title": "Self-host to eliminate per-event costs",
+        "description": "Large SaaS products generate millions of events. Self-hosting eliminates the cost entirely — pay only for your server infrastructure."
+      },
+      {
+        "title": "All features from day one",
+        "description": "Funnels, retention, cohorts, user profiles, and dashboards are available at every pricing tier. No feature gating that forces upgrades."
+      },
+      {
+        "title": "Open source and auditable",
+        "description": "Your product data is sensitive. OpenPanel's open source codebase means you can audit exactly what's tracked and how it's stored."
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions from SaaS founders and product teams evaluating OpenPanel.",
+    "items": [
+      {
+        "question": "How is OpenPanel different from Mixpanel for SaaS?",
+        "answer": "OpenPanel covers the same core analytics (events, funnels, retention, cohorts, user profiles) at a fraction of the cost. Mixpanel adds features like Metric Trees and advanced experimentation, but most SaaS teams don't use them. OpenPanel focuses on the analytics that actually drive decisions."
+      },
+      {
+        "question": "Can OpenPanel replace both GA4 and Mixpanel?",
+        "answer": "Yes. OpenPanel includes web analytics (pageviews, referrers, UTM campaigns) alongside product analytics. Most SaaS teams can replace both tools with one OpenPanel deployment."
+      },
+      {
+        "question": "How do I track trial-to-paid conversions?",
+        "answer": "Track a trial_started event on signup and a plan_upgraded event on conversion. Build a funnel in OpenPanel between those two events. See conversion rate by cohort, traffic source, or any user property."
+      },
+      {
+        "question": "Does OpenPanel support multi-product or multi-tenant SaaS?",
+        "answer": "Yes. Use the profileId to identify individual users and pass organization or workspace IDs as properties. You can filter analytics by any property you send."
+      },
+      {
+        "question": "What happens to my data if I stop paying for OpenPanel cloud?",
+        "answer": "You can export all your event data via the API at any time. Alternatively, migrate to self-hosting — OpenPanel has no lock-in and no proprietary data format."
+      },
+      {
+        "question": "Can I track backend events from my SaaS API?",
+        "answer": "Yes. OpenPanel has server-side SDKs for Node.js, Python, and a REST API. Track subscription webhooks, background jobs, and server-side logic alongside client events."
+      },
+      {
+        "question": "Is OpenPanel GDPR compliant for SaaS?",
+        "answer": "Yes. Cookieless tracking by default, EU-only cloud hosting, and the option to self-host for complete data sovereignty. No consent banner required for product analytics."
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "Track custom events", "url": "/guides/track-custom-events" },
+      { "title": "Next.js analytics setup", "url": "/guides/nextjs-analytics" },
+      { "title": "React analytics setup", "url": "/guides/react-analytics" }
+    ],
+    "articles": [
+      { "title": "How to create a funnel", "url": "/articles/how-to-create-a-funnel" },
+      { "title": "Self-hosted web analytics", "url": "/articles/self-hosted-web-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel vs Mixpanel", "url": "/compare/mixpanel-alternative" },
+      { "title": "OpenPanel vs PostHog", "url": "/compare/posthog-alternative" },
+      { "title": "OpenPanel vs Amplitude", "url": "/compare/amplitude-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Try OpenPanel Free",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "View Source on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

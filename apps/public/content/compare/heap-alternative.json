@@ -2,8 +2,8 @@
   "slug": "heap-alternative",
   "page_type": "alternative",
   "seo": {
-    "title": "Best Heap Alternative 2026 - Open Source & Free",
-    "description": "Looking for a Heap alternative? OpenPanel offers transparent pricing, lightweight analytics, and self-hosting without autocapture complexity. Open source and free to get started.",
+    "title": "Best Heap Alternatives 2026 — After the Contentsquare Acquisition",
+    "description": "Heap was acquired by Contentsquare in 2023. If you're re-evaluating, OpenPanel is an open-source alternative with transparent pricing from $2.50/month, full self-hosting, and no sales call required.",
     "noindex": false
   },
   "hero": {
@@ -27,8 +27,8 @@
   "overview": {
     "title": "Why consider OpenPanel over Heap?",
     "paragraphs": [
-      "Heap made its name with autocapture \u2014 the ability to automatically record every user interaction and analyze it retroactively. It's a compelling feature for teams that want to ask questions about user behavior without planning instrumentation in advance. But Heap's acquisition by Contentsquare, opaque enterprise pricing, and cloud-only architecture have many teams looking for alternatives.",
-      "OpenPanel takes a different approach with explicit event tracking, giving you precise control over what you measure and how. While you lose Heap's retroactive analysis capability, you gain transparency \u2014 both in your data collection and your costs. OpenPanel's pricing is publicly listed and event-based, starting at just $2.50 per month, compared to Heap's sales-required pricing that reportedly starts at $3,600 per year.",
+      "Heap was acquired by Contentsquare in September 2023. For many teams, that acquisition raised real questions: Will pricing change? Will the product roadmap shift to serve Contentsquare's enterprise customers? Will independent support continue? These concerns, combined with Heap's opaque pricing model and cloud-only architecture, have driven a wave of teams to evaluate alternatives.",
+      "OpenPanel takes a different approach with explicit event tracking, giving you precise control over what you measure and how. While you lose Heap's retroactive analysis capability, you gain transparency \u2014 both in your data collection and your costs. OpenPanel's pricing is publicly listed and event-based, starting at just $2.50 per month, compared to Heap's sales-required pricing that reportedly starts at $3,600 per year. And unlike Heap, OpenPanel is fully self-hostable and open source \u2014 no acquisition can change that.",
       "For teams that value data sovereignty, OpenPanel offers full self-hosting via a simple Docker deployment \u2014 something Heap doesn't provide at all. Being open source under the MIT license means you can inspect every line of code, contribute improvements, and avoid the vendor lock-in risk that comes with Heap's proprietary, now-Contentsquare-owned platform.",
       "If you prefer intentional, controlled analytics over autocapture-everything, want transparent pricing without sales calls, and need the option to self-host \u2014 OpenPanel gives you solid product analytics with full ownership of your data."
     ]
@@ -443,8 +443,8 @@
     ],
     "articles": [
       {
-        "title": "Find an alternative to Mixpanel",
-        "url": "/articles/alternatives-to-mixpanel"
+        "title": "Best product analytics tools in 2026",
+        "url": "/articles/mixpanel-alternatives"
       },
       {
         "title": "9 best open source web analytics tools",
