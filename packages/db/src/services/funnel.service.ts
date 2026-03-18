@@ -28,9 +28,7 @@ export class FunnelService {
 
   /**
    * Returns the grouping strategy for the funnel.
-   * Note: windowFunnel is ALWAYS computed per session_id first to handle
-   * identity changes mid-session (anonymous → logged-in).
-   * The returned group is used for the final aggregation step.
+   * Determines whether windowFunnel is computed per session_id or profile_id.
    */
   getFunnelGroup(group?: string): 'profile_id' | 'session_id' {
     return group === 'profile_id' ? 'profile_id' : 'session_id';
@@ -46,10 +44,11 @@ export class FunnelService {
   }
 
   /**
-   * Builds the session-level funnel CTE.
-   * IMPORTANT: windowFunnel is ALWAYS computed per session_id first.
-   * This ensures identity changes mid-session (anonymous → logged-in) don't break the funnel.
-   * The profile_id is extracted from the last event in the session using argMax.
+   * Builds the funnel CTE.
+   * - When group === 'session_id': windowFunnel is computed per session_id.
+   *   profile_id is resolved via argMax to handle identity changes mid-session.
+   * - When group === 'profile_id': windowFunnel is computed directly per profile_id.
+   *   This correctly handles cross-session funnel completions.
    */
   buildFunnelCte({
     projectId,
@@ -60,6 +59,7 @@ export class FunnelService {
     timezone,
     additionalSelects = [],
     additionalGroupBy = [],
+    group = 'session_id',
   }: {
     projectId: string;
     startDate: string;
@@ -69,14 +69,18 @@ export class FunnelService {
     timezone: string;
     additionalSelects?: string[];
     additionalGroupBy?: string[];
+    group?: 'session_id' | 'profile_id';
   }) {
     const funnels = this.getFunnelConditions(eventSeries);
+    const primaryKey = group === 'profile_id' ? 'profile_id' : 'session_id';
 
     return clix(this.client, timezone)
       .select([
-        'session_id',
+        primaryKey,
         `windowFunnel(${funnelWindowMilliseconds}, 'strict_increase')(toUInt64(toUnixTimestamp64Milli(created_at)), ${funnels.join(', ')}) AS level`,
-        'argMax(profile_id, created_at) AS profile_id',
+        ...(group === 'session_id'
+          ? ['argMax(profile_id, created_at) AS profile_id']
+          : []),
         ...additionalSelects,
       ])
       .from(TABLE_NAMES.events, false)
@@ -90,7 +94,7 @@ export class FunnelService {
         'IN',
         eventSeries.map((e) => e.name),
       )
-      .groupBy(['session_id', ...additionalGroupBy]);
+      .groupBy([primaryKey, ...additionalGroupBy]);
   }
 
   buildSessionsCte({
@@ -248,6 +252,7 @@ export class FunnelService {
       timezone,
       additionalSelects: breakdownSelects,
       additionalGroupBy: breakdownGroupBy,
+      group,
     });
 
     if (anyFilterOnProfile || anyBreakdownOnProfile) {
@@ -276,25 +281,12 @@ export class FunnelService {
     const funnelQuery = clix(this.client, timezone);
     funnelQuery.with('session_funnel', funnelCte);
 
-    if (group === 'profile_id') {
-      // For profile grouping: re-aggregate by profile_id, taking MAX level per profile.
-      // This ensures a user who completed the funnel across multiple sessions
-      // (or with identity change) is counted correctly.
-      const breakdownAggregates =
-        breakdowns.length > 0
-          ? `, ${breakdowns.map((_, index) => `any(b_${index}) AS b_${index}`).join(', ')}`
-          : '';
-      funnelQuery.with(
-        'funnel',
-        `SELECT profile_id, max(level) AS level${breakdownAggregates} FROM (SELECT * FROM session_funnel WHERE level != 0) GROUP BY profile_id`,
-      );
-    } else {
-      // For session grouping: filter out level = 0 inside the CTE
-      funnelQuery.with(
-        'funnel',
-        'SELECT * FROM session_funnel WHERE level != 0',
-      );
-    }
+    // windowFunnel is computed per the primary key (profile_id or session_id),
+    // so we just filter out level=0 rows — no re-aggregation needed.
+    funnelQuery.with(
+      'funnel',
+      'SELECT * FROM session_funnel WHERE level != 0',
+    );
 
     funnelQuery
       .select<{
