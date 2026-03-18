@@ -10,6 +10,10 @@ export { Redis };
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
+// Dedicated URLs for high-traffic buffers. Fall back to REDIS_URL if not set.
+const REDIS_SESSION_URL = process.env.REDIS_SESSION_URL || REDIS_URL;
+const REDIS_EVENT_URL = process.env.REDIS_EVENT_URL || REDIS_URL;
+
 export interface ExtendedRedis extends Redis {
   getJson: <T = any>(key: string) => Promise<T | null>;
   setJson: <T = any>(
@@ -107,8 +111,9 @@ export function getRedisQueue() {
 let redisGroupQueue: ExtendedRedis;
 export function getRedisGroupQueue() {
   if (!redisGroupQueue) {
-    // Dedicated Redis connection for GroupWorker to avoid blocking BullMQ
-    redisGroupQueue = createRedisClient(REDIS_URL, {
+    // Dedicated Redis connection for GroupWorker to avoid blocking BullMQ.
+    // Uses REDIS_EVENT_URL so GroupMQ and EventBuffer share the same instance.
+    redisGroupQueue = createRedisClient(REDIS_EVENT_URL, {
       ...options,
       enableReadyCheck: false,
       maxRetriesPerRequest: null,
@@ -117,6 +122,22 @@ export function getRedisGroupQueue() {
   }
 
   return redisGroupQueue;
+}
+
+let redisSession: ExtendedRedis;
+export function getRedisSession() {
+  if (!redisSession) {
+    redisSession = createRedisClient(REDIS_SESSION_URL, options);
+  }
+  return redisSession;
+}
+
+let redisEvent: ExtendedRedis;
+export function getRedisEvent() {
+  if (!redisEvent) {
+    redisEvent = createRedisClient(REDIS_EVENT_URL, options);
+  }
+  return redisEvent;
 }
 
 export async function getLock(key: string, value: string, timeout: number) {

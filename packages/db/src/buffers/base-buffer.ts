@@ -1,7 +1,7 @@
 import { generateSecureId } from '@openpanel/common/server';
 import { type ILogger, createLogger } from '@openpanel/logger';
 import { cronQueue } from '@openpanel/queue';
-import { getRedisCache, runEvery } from '@openpanel/redis';
+import { type ExtendedRedis, getRedisCache, runEvery } from '@openpanel/redis';
 
 export class BaseBuffer {
   name: string;
@@ -12,11 +12,15 @@ export class BaseBuffer {
   enableParallelProcessing: boolean;
 
   protected bufferCounterKey: string;
+  protected redis: ExtendedRedis;
 
   constructor(options: {
     name: string;
     onFlush: () => Promise<void>;
     enableParallelProcessing?: boolean;
+    // Pass a dedicated Redis client to isolate this buffer from the general cache.
+    // Falls back to getRedisCache() so existing buffers need no changes.
+    redis?: ExtendedRedis;
   }) {
     this.logger = createLogger({ name: options.name });
     this.name = options.name;
@@ -24,6 +28,7 @@ export class BaseBuffer {
     this.onFlush = options.onFlush;
     this.bufferCounterKey = `${this.name}:buffer:count`;
     this.enableParallelProcessing = options.enableParallelProcessing ?? false;
+    this.redis = options.redis ?? getRedisCache();
   }
 
   protected chunks<T>(items: T[], size: number) {
@@ -48,14 +53,14 @@ export class BaseBuffer {
         fn: async () => {
           try {
             const actual = await fallbackFn();
-            await getRedisCache().set(this.bufferCounterKey, actual.toString());
+            await this.redis.set(this.bufferCounterKey, actual.toString());
           } catch (error) {
             this.logger.warn('Failed to resync buffer counter', { error });
           }
         },
       }).catch(() => {});
 
-      const counterValue = await getRedisCache().get(key);
+      const counterValue = await this.redis.get(key);
       if (counterValue !== null) {
         const parsed = Number.parseInt(counterValue, 10);
         if (!Number.isNaN(parsed)) {
@@ -70,7 +75,7 @@ export class BaseBuffer {
 
       // Initialize counter with current size
       const count = await fallbackFn();
-      await getRedisCache().set(key, count.toString());
+      await this.redis.set(key, count.toString());
       return count;
     } catch (error) {
       this.logger.warn(
@@ -90,7 +95,7 @@ export class BaseBuffer {
         return 0
       end
     `;
-    await getRedisCache().eval(script, 1, this.lockKey, lockId);
+    await this.redis.eval(script, 1, this.lockKey, lockId);
   }
 
   async tryFlush() {
@@ -121,7 +126,7 @@ export class BaseBuffer {
 
     // Sequential mode: Use lock to ensure only one worker processes at a time
     const lockId = generateSecureId('lock');
-    const acquired = await getRedisCache().set(
+    const acquired = await this.redis.set(
       this.lockKey,
       lockId,
       'EX',
@@ -142,7 +147,7 @@ export class BaseBuffer {
         // On error, we might want to reset counter to avoid drift
         if (this.bufferCounterKey) {
           this.logger.warn('Resetting buffer counter due to flush error');
-          await getRedisCache().del(this.bufferCounterKey);
+          await this.redis.del(this.bufferCounterKey);
         }
       } finally {
         await this.releaseLock(lockId);

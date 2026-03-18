@@ -1,7 +1,7 @@
 import { getSafeJson } from '@openpanel/json';
 import {
   type Redis,
-  getRedisCache,
+  getRedisEvent,
   getRedisPub,
   publishEvent,
 } from '@openpanel/redis';
@@ -195,6 +195,7 @@ return added
         await this.processBuffer();
       },
       enableParallelProcessing: true,
+      redis: getRedisEvent(),
     });
     // Load Lua scripts into Redis on startup
     this.loadScripts();
@@ -206,7 +207,7 @@ return added
    */
   private async loadScripts() {
     try {
-      const redis = getRedisCache();
+      const redis = this.redis;
       const [screenViewSha, sessionEndSha] = await Promise.all([
         redis.script('LOAD', this.addScreenViewScript),
         redis.script('LOAD', this.addSessionEndScript),
@@ -377,7 +378,7 @@ return added
     this.pendingEvents = [];
 
     try {
-      const redis = getRedisCache();
+      const redis = this.redis;
       const multi = redis.multi();
 
       // Add all events to the pipeline
@@ -486,7 +487,7 @@ return added
    * 5. Clean up processed events from queue
    */
   async processBuffer() {
-    const redis = getRedisCache();
+    const redis = this.redis;
 
     try {
       // Atomically pop events off the queue — no two workers can get the same events
@@ -566,7 +567,7 @@ return added
           profileId: string;
         },
   ): Promise<IServiceEvent | null> {
-    const redis = getRedisCache();
+    const redis = this.redis;
 
     let lastScreenViewKey: string;
     if ('sessionId' in params) {
@@ -594,7 +595,7 @@ return added
 
   public async getBufferSize() {
     return this.getBufferSizeWithCounter(async () => {
-      const redis = getRedisCache();
+      const redis = this.redis;
       return await redis.llen(this.queueKey);
     });
   }
@@ -618,7 +619,7 @@ return added
   }
 
   public async getActiveVisitorCount(projectId: string): Promise<number> {
-    const redis = getRedisCache();
+    const redis = this.redis;
     const zsetKey = `live:visitors:${projectId}`;
     const cutoff = Date.now() - this.activeVisitorsExpiration * 1000;
 

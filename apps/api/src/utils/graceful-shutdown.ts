@@ -8,9 +8,11 @@ import {
 } from '@openpanel/queue';
 import {
   getRedisCache,
+  getRedisEvent,
   getRedisPub,
   getRedisQueue,
   getRedisSub,
+  getRedisSession,
 } from '@openpanel/redis';
 import type { FastifyInstance } from 'fastify';
 import { logger } from './logger';
@@ -89,6 +91,8 @@ export async function shutdown(
       getRedisPub(),
       getRedisSub(),
       getRedisQueue(),
+      getRedisSession(),
+      getRedisEvent(),
     ];
 
     await Promise.all(

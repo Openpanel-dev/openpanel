@@ -1,4 +1,4 @@
-import { type Redis, getRedisCache } from '@openpanel/redis';
+import { getRedisSession } from '@openpanel/redis';
 
 import { getSafeJson } from '@openpanel/json';
 import { assocPath, clone } from 'ramda';
@@ -16,15 +16,15 @@ export class SessionBuffer extends BaseBuffer {
     : 1000;
 
   private readonly redisKey = 'session-buffer';
-  private redis: Redis;
+
   constructor() {
     super({
       name: 'session',
       onFlush: async () => {
         await this.processBuffer();
       },
+      redis: getRedisSession(),
     });
-    this.redis = getRedisCache();
   }
 
   public async getExistingSession(
