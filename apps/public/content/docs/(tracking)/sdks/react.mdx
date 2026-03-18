@@ -174,9 +174,37 @@ function MyComponent() {
 }
 ```
 
+### Working with Groups
+
+Groups let you track analytics at the account or company level. See the [Groups guide](/docs/get-started/groups) for the full walkthrough.
+
+```tsx
+import { op } from '@/openpanel';
+
+function LoginComponent() {
+  const handleLogin = async (user: User) => {
+    // 1. Identify the user
+    op.identify({ profileId: user.id, email: user.email });
+
+    // 2. Create/update the group entity (only when data changes)
+    op.upsertGroup({
+      id: user.organizationId,
+      type: 'company',
+      name: user.organizationName,
+      properties: { plan: user.plan },
+    });
+
+    // 3. Link the user to their group — tags all future events
+    op.setGroup(user.organizationId);
+  };
+
+  return <button onClick={() => handleLogin(user)}>Login</button>;
+}
+```
+
 ### Clearing User Data
 
-To clear the current user's data:
+To clear the current user's data (including groups):
 
 ```tsx
 import { op } from '@/openpanel';

@@ -68,6 +68,34 @@ app.listen(3000, () => {
 - `trackRequest` - A function that returns `true` if the request should be tracked.
 - `getProfileId` - A function that returns the profile ID of the user making the request.
 
+## Working with Groups
+
+Groups let you track analytics at the account or company level. Since Express is a backend SDK, you can upsert groups and assign users from your route handlers.
+
+See the [Groups guide](/docs/get-started/groups) for the full walkthrough.
+
+```ts
+app.post('/login', async (req, res) => {
+  const user = await loginUser(req.body);
+
+  // Identify the user
+  req.op.identify({ profileId: user.id, email: user.email });
+
+  // Create/update the group entity
+  req.op.upsertGroup({
+    id: user.organizationId,
+    type: 'company',
+    name: user.organizationName,
+    properties: { plan: user.plan },
+  });
+
+  // Assign the user to the group
+  req.op.setGroup(user.organizationId);
+
+  res.json({ ok: true });
+});
+```
+
 ## Typescript
 
 If `req.op` is not typed you can extend the `Request` interface.
