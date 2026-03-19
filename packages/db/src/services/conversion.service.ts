@@ -108,7 +108,11 @@ export class ConversionService {
       // Minimal SELECT: only the columns actually needed downstream
       const baseColumns = ['profile_id', 'session_id', 'created_at'];
       const selectColumns = [...new Set([...baseColumns, ...extraColumns])];
-      const selectList = selectColumns.map(col => `\`${col}\``).join(', ');
+      // TODO: Root fix needed — getMaterializedColumns() stores column names pre-wrapped with backticks
+      // (e.g. `paymentGateway`) but buildSingleEventCte wraps them again causing ``paymentGateway``.
+      // Proper fix: store raw column names in the cache and let all callers handle quoting consistently.
+      // For now, skip wrapping if already backtick-quoted.
+      const selectList = selectColumns.map(col => col.startsWith('`') ? col : `\`${col}\``).join(', ');
 
       return `${cteName} AS (
         SELECT ${selectList}
