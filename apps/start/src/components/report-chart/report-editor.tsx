@@ -5,6 +5,7 @@ import { ReportLineType } from '@/components/report/ReportLineType';
 import { ReportSaveButton } from '@/components/report/ReportSaveButton';
 import {
   changeChartType,
+  changeDateRanges,
   changeEndDate,
   changeInterval,
   changeStartDate,
