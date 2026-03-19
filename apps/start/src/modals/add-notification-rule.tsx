@@ -9,6 +9,7 @@ import { ModalHeader } from './Modal/Container';
 
 import { ColorSquare } from '@/components/color-square';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
+import { Input } from '@/components/ui/input';
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -140,7 +141,7 @@ export default function AddNotificationRule({
   };
 
   const integrations = integrationsQuery.data ?? [];
-  const reports = (reportsQuery.data ?? []) as { id: string; name: string }[];
+  const reports = (reportsQuery.data ?? []) as { id: string; name: string; chartType: string }[];
 
   const isAlertType = configType === 'threshold' || configType === 'anomaly';
 
@@ -351,9 +352,15 @@ function ThresholdFields({
   lockedReportId,
 }: {
   form: UseFormReturn<IForm>;
-  reports: { id: string; name: string }[];
+  reports: { id: string; name: string; chartType: string }[];
   lockedReportId?: string;
 }) {
+  const selectedReportId = useWatch({ control: form.control, name: 'config.reportId' });
+  const selectedReport = reports.find((r) => r.id === selectedReportId);
+  const isPercentageChart =
+    selectedReport?.chartType === 'conversion' ||
+    selectedReport?.chartType === 'funnel';
+
   return (
     <>
       <Controller
@@ -397,17 +404,26 @@ function ThresholdFields({
         control={form.control}
         name="config.value"
         render={({ field }) => (
-          <InputWithLabel
-            label="Threshold value"
-            type="text"
-            inputMode="numeric"
-            placeholder="e.g. 5000"
-            value={field.value as number}
-            onChange={(e) => {
-              const val = e.target.value.replace(/[^0-9]/g, '');
-              field.onChange(val === '' ? 0 : Number(val));
-            }}
-          />
+          <WithLabel label={isPercentageChart ? 'Threshold value (%)' : 'Threshold value'}>
+            <div className="relative flex items-center">
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder={isPercentageChart ? 'e.g. 90' : 'e.g. 5000'}
+                value={field.value as number}
+                className={isPercentageChart ? 'pr-8' : undefined}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9.]/g, '');
+                  field.onChange(val === '' ? 0 : Number(val));
+                }}
+              />
+              {isPercentageChart && (
+                <span className="pointer-events-none absolute right-3 text-sm text-muted-foreground">
+                  %
+                </span>
+              )}
+            </div>
+          </WithLabel>
         )}
       />
       <Controller

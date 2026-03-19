@@ -5,7 +5,6 @@ import { ReportLineType } from '@/components/report/ReportLineType';
 import { ReportSaveButton } from '@/components/report/ReportSaveButton';
 import {
   changeChartType,
-  changeDateRanges,
   changeEndDate,
   changeInterval,
   changeStartDate,
@@ -25,7 +24,7 @@ import { BellPlusIcon, GanttChartSquareIcon } from 'lucide-react';
 import { useEffect } from 'react';
 
 import type { IServiceReport } from '@openpanel/db';
-import { useParams } from '@tanstack/react-router';
+import { useParams, useSearch } from '@tanstack/react-router';
 import { pushModal } from '@/modals';
 import EditReportName from '../report/edit-report-name';
 
@@ -38,13 +37,19 @@ export default function ReportEditor({
 }: ReportEditorProps) {
   const { projectId } = useAppParams();
   const { reportId } = useParams({ strict: false });
+  const search = useSearch({ strict: false });
+  const rangeOverride = (search as { range?: string }).range;
   const dispatch = useDispatch();
   const report = useSelector((state) => state.report);
 
-  // Set report if reportId exists
+  // Set report if reportId exists, applying URL range override in one shot
   useEffect(() => {
     if (initialReport) {
-      dispatch(setReport(initialReport));
+      dispatch(setReport(
+        rangeOverride
+          ? { ...initialReport, range: rangeOverride as any }
+          : initialReport
+      ));
     } else {
       dispatch(ready());
     }
@@ -52,7 +57,7 @@ export default function ReportEditor({
     return () => {
       dispatch(reset());
     };
-  }, [initialReport, dispatch]);
+  }, [initialReport, dispatch, rangeOverride]);
 
   return (
     <Sheet>

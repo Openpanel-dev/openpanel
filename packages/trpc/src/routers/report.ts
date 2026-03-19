@@ -34,7 +34,7 @@ export const reportRouter = createTRPCRouter({
       }
       return db.report.findMany({
         where: { projectId },
-        select: { id: true, name: true },
+        select: { id: true, name: true, chartType: true },
         orderBy: { name: 'asc' },
       });
     }),

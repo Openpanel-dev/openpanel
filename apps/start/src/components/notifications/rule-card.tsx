@@ -43,18 +43,19 @@ function EventBadge({
   );
 }
 
-function useReportName(reportId: string | undefined) {
+function useReport(reportId: string | undefined) {
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const { data } = useQuery(
     trpc.report.listByProject.queryOptions({ projectId }),
   );
-  if (!reportId || !data) return 'Unknown report';
+  if (!reportId || !data) return undefined;
   const reports = (Array.isArray(data) ? data : []) as {
     id: string;
     name: string;
+    chartType: string;
   }[];
-  return reports.find((r) => r.id === reportId)?.name ?? 'Unknown report';
+  return reports.find((r) => r.id === reportId);
 }
 
 export function RuleCard({
@@ -63,7 +64,10 @@ export function RuleCard({
   const trpc = useTRPC();
   const client = useQueryClient();
   const config = rule.config as { type: string; reportId?: string };
-  const reportName = useReportName(config.reportId);
+  const report = useReport(config.reportId);
+  const reportName = report?.name ?? 'Unknown report';
+  const isPercentageChart =
+    report?.chartType === 'conversion' || report?.chartType === 'funnel';
   const deletion = useMutation(
     trpc.notification.deleteRule.mutationOptions({
       onSuccess() {
@@ -116,7 +120,7 @@ export function RuleCard({
             <div>Alert when</div>
             <Badge variant="outline">{reportName}</Badge>
             <div>
-              is {tc.operator} {tc.value}
+              is {tc.operator} {tc.value}{isPercentageChart ? '%' : ''}
             </div>
             <Badge variant="secondary">{tc.frequency}</Badge>
           </div>

@@ -39,6 +39,8 @@ import { Route as AppOrganizationIdProjectIdReferencesRouteImport } from './rout
 import { Route as AppOrganizationIdProjectIdRealtimeRouteImport } from './routes/_app.$organizationId.$projectId.realtime'
 import { Route as AppOrganizationIdProjectIdPagesRouteImport } from './routes/_app.$organizationId.$projectId.pages'
 import { Route as AppOrganizationIdProjectIdDashboardsRouteImport } from './routes/_app.$organizationId.$projectId.dashboards'
+import { Route as AppOrganizationIdProjectIdCustomEventsRouteImport } from './routes/_app.$organizationId.$projectId.custom-events'
+import { Route as AppOrganizationIdProjectIdCohortsRouteImport } from './routes/_app.$organizationId.$projectId.cohorts'
 import { Route as AppOrganizationIdProjectIdChatRouteImport } from './routes/_app.$organizationId.$projectId.chat'
 import { Route as AppOrganizationIdMembersTabsIndexRouteImport } from './routes/_app.$organizationId.members._tabs.index'
 import { Route as AppOrganizationIdIntegrationsTabsIndexRouteImport } from './routes/_app.$organizationId.integrations._tabs.index'
@@ -279,6 +281,18 @@ const AppOrganizationIdProjectIdDashboardsRoute =
     path: '/dashboards',
     getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
+const AppOrganizationIdProjectIdCustomEventsRoute =
+  AppOrganizationIdProjectIdCustomEventsRouteImport.update({
+    id: '/custom-events',
+    path: '/custom-events',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
+  } as any)
+const AppOrganizationIdProjectIdCohortsRoute =
+  AppOrganizationIdProjectIdCohortsRouteImport.update({
+    id: '/cohorts',
+    path: '/cohorts',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
+  } as any)
 const AppOrganizationIdProjectIdChatRoute =
   AppOrganizationIdProjectIdChatRouteImport.update({
     id: '/chat',
@@ -494,6 +508,8 @@ export interface FileRoutesByFullPath {
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
   '/$organizationId/': typeof AppOrganizationIdIndexRoute
   '/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
+  '/$organizationId/$projectId/cohorts': typeof AppOrganizationIdProjectIdCohortsRoute
+  '/$organizationId/$projectId/custom-events': typeof AppOrganizationIdProjectIdCustomEventsRoute
   '/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
   '/$organizationId/$projectId/pages': typeof AppOrganizationIdProjectIdPagesRoute
   '/$organizationId/$projectId/realtime': typeof AppOrganizationIdProjectIdRealtimeRoute
@@ -551,6 +567,8 @@ export interface FileRoutesByTo {
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
   '/$organizationId': typeof AppOrganizationIdIndexRoute
   '/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
+  '/$organizationId/$projectId/cohorts': typeof AppOrganizationIdProjectIdCohortsRoute
+  '/$organizationId/$projectId/custom-events': typeof AppOrganizationIdProjectIdCustomEventsRoute
   '/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
   '/$organizationId/$projectId/pages': typeof AppOrganizationIdProjectIdPagesRoute
   '/$organizationId/$projectId/realtime': typeof AppOrganizationIdProjectIdRealtimeRoute
@@ -608,6 +626,8 @@ export interface FileRoutesById {
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
   '/_app/$organizationId/': typeof AppOrganizationIdIndexRoute
   '/_app/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
+  '/_app/$organizationId/$projectId/cohorts': typeof AppOrganizationIdProjectIdCohortsRoute
+  '/_app/$organizationId/$projectId/custom-events': typeof AppOrganizationIdProjectIdCustomEventsRoute
   '/_app/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
   '/_app/$organizationId/$projectId/pages': typeof AppOrganizationIdProjectIdPagesRoute
   '/_app/$organizationId/$projectId/realtime': typeof AppOrganizationIdProjectIdRealtimeRoute
@@ -676,6 +696,8 @@ export interface FileRouteTypes {
     | '/share/overview/$shareId'
     | '/$organizationId/'
     | '/$organizationId/$projectId/chat'
+    | '/$organizationId/$projectId/cohorts'
+    | '/$organizationId/$projectId/custom-events'
     | '/$organizationId/$projectId/dashboards'
     | '/$organizationId/$projectId/pages'
     | '/$organizationId/$projectId/realtime'
@@ -733,6 +755,8 @@ export interface FileRouteTypes {
     | '/share/overview/$shareId'
     | '/$organizationId'
     | '/$organizationId/$projectId/chat'
+    | '/$organizationId/$projectId/cohorts'
+    | '/$organizationId/$projectId/custom-events'
     | '/$organizationId/$projectId/dashboards'
     | '/$organizationId/$projectId/pages'
     | '/$organizationId/$projectId/realtime'
@@ -789,6 +813,8 @@ export interface FileRouteTypes {
     | '/share/overview/$shareId'
     | '/_app/$organizationId/'
     | '/_app/$organizationId/$projectId/chat'
+    | '/_app/$organizationId/$projectId/cohorts'
+    | '/_app/$organizationId/$projectId/custom-events'
     | '/_app/$organizationId/$projectId/dashboards'
     | '/_app/$organizationId/$projectId/pages'
     | '/_app/$organizationId/$projectId/realtime'
@@ -1090,6 +1116,20 @@ declare module '@tanstack/react-router' {
       path: '/dashboards'
       fullPath: '/$organizationId/$projectId/dashboards'
       preLoaderRoute: typeof AppOrganizationIdProjectIdDashboardsRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
+    }
+    '/_app/$organizationId/$projectId/custom-events': {
+      id: '/_app/$organizationId/$projectId/custom-events'
+      path: '/custom-events'
+      fullPath: '/$organizationId/$projectId/custom-events'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdCustomEventsRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
+    }
+    '/_app/$organizationId/$projectId/cohorts': {
+      id: '/_app/$organizationId/$projectId/cohorts'
+      path: '/cohorts'
+      fullPath: '/$organizationId/$projectId/cohorts'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdCohortsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
     '/_app/$organizationId/$projectId/chat': {
@@ -1527,6 +1567,8 @@ const AppOrganizationIdProjectIdSettingsRouteWithChildren =
 
 interface AppOrganizationIdProjectIdRouteChildren {
   AppOrganizationIdProjectIdChatRoute: typeof AppOrganizationIdProjectIdChatRoute
+  AppOrganizationIdProjectIdCohortsRoute: typeof AppOrganizationIdProjectIdCohortsRoute
+  AppOrganizationIdProjectIdCustomEventsRoute: typeof AppOrganizationIdProjectIdCustomEventsRoute
   AppOrganizationIdProjectIdDashboardsRoute: typeof AppOrganizationIdProjectIdDashboardsRoute
   AppOrganizationIdProjectIdPagesRoute: typeof AppOrganizationIdProjectIdPagesRoute
   AppOrganizationIdProjectIdRealtimeRoute: typeof AppOrganizationIdProjectIdRealtimeRoute
@@ -1546,6 +1588,10 @@ interface AppOrganizationIdProjectIdRouteChildren {
 const AppOrganizationIdProjectIdRouteChildren: AppOrganizationIdProjectIdRouteChildren =
   {
     AppOrganizationIdProjectIdChatRoute: AppOrganizationIdProjectIdChatRoute,
+    AppOrganizationIdProjectIdCohortsRoute:
+      AppOrganizationIdProjectIdCohortsRoute,
+    AppOrganizationIdProjectIdCustomEventsRoute:
+      AppOrganizationIdProjectIdCustomEventsRoute,
     AppOrganizationIdProjectIdDashboardsRoute:
       AppOrganizationIdProjectIdDashboardsRoute,
     AppOrganizationIdProjectIdPagesRoute: AppOrganizationIdProjectIdPagesRoute,

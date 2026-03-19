@@ -28,6 +28,7 @@ export const Route = createFileRoute(
   },
   validateSearch: z.object({
     dashboardId: z.string().optional(),
+    range: z.string().optional(),
   }),
   pendingComponent: FullPageLoadingState,
 });
