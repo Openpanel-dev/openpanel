@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/nuxt",
-  "version": "0.2.0-local",
+  "version": "0.3.0-local",
   "type": "module",
   "main": "./dist/module.mjs",
   "exports": {
@@ -24,7 +24,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/web": "workspace:1.2.0-local"
+    "@openpanel/web": "workspace:1.3.0-local"
   },
   "peerDependencies": {
     "h3": "^1.0.0",
