@@ -111,7 +111,7 @@ export class SessionBuffer extends BaseBuffer {
 
       if (event.groups) {
         newSession.groups = [
-          ...new Set([...newSession.groups, ...event.groups]),
+          ...new Set([...(newSession.groups ?? []), ...event.groups]),
         ];
       }
 
@@ -216,7 +216,7 @@ export class SessionBuffer extends BaseBuffer {
         await this.tryFlush();
       }
     } catch (error) {
-      this.logger.error('Failed to add bot event', { error });
+      this.logger.error('Failed to add session', { error });
     }
   }
 
