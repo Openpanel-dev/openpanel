@@ -256,7 +256,7 @@ export type AlertFrequency = 'hour' | 'day' | 'week' | 'month';
  * Maps alert frequency to the range used for historical data (anomaly detection)
  */
 export const ALERT_FREQUENCY_TO_RANGE: Record<AlertFrequency, string> = {
-  hour: 'lastHour',
+  hour: '7d',
   day: '30d',
   week: '30d',
   month: '180d',
