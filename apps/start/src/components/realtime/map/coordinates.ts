@@ -1,13 +1,133 @@
-export type Coordinate = {
+export interface Coordinate {
   lat: number;
   long: number;
   city?: string;
   country?: string;
-};
+  count?: number;
+}
+
+export type ClusterDetailLevel = 'country' | 'city' | 'coordinate';
+
+export interface CoordinateCluster {
+  center: Coordinate;
+  count: number;
+  members: Coordinate[];
+  location: {
+    city?: string;
+    country?: string;
+  };
+}
+
+const COUNTRY_GROUP_MAX_ZOOM = 2;
+const CITY_GROUP_MAX_ZOOM = 4.5;
+
+function normalizeLocationValue(value?: string) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+export function getClusterDetailLevel(zoom: number): ClusterDetailLevel {
+  if (zoom <= COUNTRY_GROUP_MAX_ZOOM) {
+    return 'country';
+  }
+
+  if (zoom <= CITY_GROUP_MAX_ZOOM) {
+    return 'city';
+  }
+
+  return 'coordinate';
+}
+
+function getLocationSummary(members: Coordinate[]) {
+  const cityCounts = new Map<string, number>();
+  const countryCounts = new Map<string, number>();
+
+  for (const member of members) {
+    const city = normalizeLocationValue(member.city);
+    const country = normalizeLocationValue(member.country);
+    const weight = member.count ?? 1;
+
+    if (city) {
+      cityCounts.set(city, (cityCounts.get(city) ?? 0) + weight);
+    }
+
+    if (country) {
+      countryCounts.set(country, (countryCounts.get(country) ?? 0) + weight);
+    }
+  }
+
+  const getTopLocation = (counts: Map<string, number>) =>
+    [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+
+  return {
+    city: getTopLocation(cityCounts),
+    country: getTopLocation(countryCounts),
+  };
+}
+
+function getAggregationKey(
+  member: Coordinate,
+  detailLevel: Exclude<ClusterDetailLevel, 'coordinate'>
+) {
+  const city = normalizeLocationValue(member.city);
+  const country = normalizeLocationValue(member.country);
+
+  if (detailLevel === 'country') {
+    return country ?? city;
+  }
+
+  if (country && city) {
+    return `${country}::${city}`;
+  }
+
+  return city ?? country;
+}
+
+function regroupClustersByDetail(
+  clusters: CoordinateCluster[],
+  detailLevel: Exclude<ClusterDetailLevel, 'coordinate'>
+): CoordinateCluster[] {
+  const grouped = new Map<string, Coordinate[]>();
+  const ungrouped: CoordinateCluster[] = [];
+
+  for (const cluster of clusters) {
+    for (const member of cluster.members) {
+      const key = getAggregationKey(member, detailLevel);
+
+      if (!key) {
+        ungrouped.push({
+          members: [member],
+          center: calculateClusterCenter([member]),
+          count: member.count ?? 1,
+          location: {
+            city: normalizeLocationValue(member.city),
+            country: normalizeLocationValue(member.country),
+          },
+        });
+        continue;
+      }
+
+      grouped.set(key, [...(grouped.get(key) ?? []), member]);
+    }
+  }
+
+  const regrouped = [...grouped.values()].map((members) => {
+    const location = getLocationSummary(members);
+
+    return {
+      members,
+      center: calculateClusterCenter(members),
+      count: members.reduce((sum, member) => sum + (member.count ?? 1), 0),
+      location,
+    };
+  });
+
+  return [...regrouped, ...ungrouped];
+}
 
 export function haversineDistance(
   coord1: Coordinate,
-  coord2: Coordinate,
+  coord2: Coordinate
 ): number {
   const R = 6371; // Earth's radius in kilometers
   const lat1Rad = coord1.lat * (Math.PI / 180);
@@ -27,7 +147,7 @@ export function haversineDistance(
 }
 
 export function findFarthestPoints(
-  coordinates: Coordinate[],
+  coordinates: Coordinate[]
 ): [Coordinate, Coordinate] {
   if (coordinates.length < 2) {
     throw new Error('At least two coordinates are required');
@@ -58,14 +178,17 @@ export function getAverageCenter(coordinates: Coordinate[]): Coordinate {
 
   let sumLong = 0;
   let sumLat = 0;
+  let totalWeight = 0;
 
   for (const coord of coordinates) {
-    sumLong += coord.long;
-    sumLat += coord.lat;
+    const weight = coord.count ?? 1;
+    sumLong += coord.long * weight;
+    sumLat += coord.lat * weight;
+    totalWeight += weight;
   }
 
-  const avgLat = sumLat / coordinates.length;
-  const avgLong = sumLong / coordinates.length;
+  const avgLat = sumLat / totalWeight;
+  const avgLong = sumLong / totalWeight;
 
   return { long: avgLong, lat: avgLat };
 }
@@ -82,15 +205,17 @@ function cross(o: Coordinate, a: Coordinate, b: Coordinate): number {
 
 // convex hull
 export function getOuterMarkers(coordinates: Coordinate[]): Coordinate[] {
-  const sorted = coordinates.sort(sortCoordinates);
+  const sorted = [...coordinates].sort(sortCoordinates);
 
-  if (sorted.length <= 3) return sorted;
+  if (sorted.length <= 3) {
+    return sorted;
+  }
 
   const lower: Coordinate[] = [];
   for (const coord of sorted) {
     while (
       lower.length >= 2 &&
-      cross(lower[lower.length - 2]!, lower[lower.length - 1]!, coord) <= 0
+      cross(lower.at(-2)!, lower.at(-1)!, coord) <= 0
     ) {
       lower.pop();
     }
@@ -101,7 +226,7 @@ export function getOuterMarkers(coordinates: Coordinate[]): Coordinate[] {
   for (let i = coordinates.length - 1; i >= 0; i--) {
     while (
       upper.length >= 2 &&
-      cross(upper[upper.length - 2]!, upper[upper.length - 1]!, sorted[i]!) <= 0
+      cross(upper.at(-2)!, upper.at(-1)!, sorted[i]!) <= 0
     ) {
       upper.pop();
     }
@@ -133,7 +258,7 @@ export function calculateCentroid(polygon: Coordinate[]): Coordinate {
     centroidLat += (y0 + y1) * a;
   }
 
-  area = area / 2;
+  area /= 2;
   if (area === 0) {
     // This should not happen for a proper convex hull
     throw new Error('Area of the polygon is zero, check the coordinates.');
@@ -146,7 +271,7 @@ export function calculateCentroid(polygon: Coordinate[]): Coordinate {
 }
 
 export function calculateGeographicMidpoint(
-  coordinate: Coordinate[],
+  coordinate: Coordinate[]
 ): Coordinate {
   let minLat = Number.POSITIVE_INFINITY;
   let maxLat = Number.NEGATIVE_INFINITY;
@@ -154,10 +279,18 @@ export function calculateGeographicMidpoint(
   let maxLong = Number.NEGATIVE_INFINITY;
 
   for (const { lat, long } of coordinate) {
-    if (lat < minLat) minLat = lat;
-    if (lat > maxLat) maxLat = lat;
-    if (long < minLong) minLong = long;
-    if (long > maxLong) maxLong = long;
+    if (lat < minLat) {
+      minLat = lat;
+    }
+    if (lat > maxLat) {
+      maxLat = lat;
+    }
+    if (long < minLong) {
+      minLong = long;
+    }
+    if (long > maxLong) {
+      maxLong = long;
+    }
   }
 
   // Handling the wrap around the international date line
@@ -191,9 +324,10 @@ export function clusterCoordinates(
         maxLong: number;
       };
     };
-  } = {},
+  } = {}
 ) {
   const { zoom = 1, adaptiveRadius = true, viewport } = options;
+  const detailLevel = getClusterDetailLevel(zoom);
 
   // Calculate adaptive radius based on zoom level and coordinate density
   let adjustedRadius = radius;
@@ -214,7 +348,7 @@ export function clusterCoordinates(
           coord.lat >= viewport.bounds.minLat &&
           coord.lat <= viewport.bounds.maxLat &&
           coord.long >= viewport.bounds.minLong &&
-          coord.long <= viewport.bounds.maxLong,
+          coord.long <= viewport.bounds.maxLong
       );
 
       if (viewportCoords.length > 0) {
@@ -227,7 +361,7 @@ export function clusterCoordinates(
         // Adjust radius based on density - higher density = larger radius for more aggressive clustering
         const densityFactor = Math.max(
           0.5,
-          Math.min(5, Math.sqrt(density * 1000) + 1),
+          Math.min(5, Math.sqrt(density * 1000) + 1)
         );
         adjustedRadius *= densityFactor;
       }
@@ -241,44 +375,44 @@ export function clusterCoordinates(
   // TODO: Re-enable optimized clustering after thorough testing
   const result = basicClusterCoordinates(coordinates, adjustedRadius);
 
-  // Debug: Log clustering results
-  if (coordinates.length > 0) {
-    console.log(
-      `Clustering ${coordinates.length} coordinates with radius ${adjustedRadius.toFixed(2)}km resulted in ${result.length} clusters`,
-    );
+  if (detailLevel === 'coordinate') {
+    return result;
   }
 
-  return result;
+  return regroupClustersByDetail(result, detailLevel);
 }
 
 // Aggressive clustering algorithm with iterative expansion
 function basicClusterCoordinates(coordinates: Coordinate[], radius: number) {
-  if (coordinates.length === 0) return [];
+  if (coordinates.length === 0) {
+    return [];
+  }
 
-  const clusters: {
-    center: Coordinate;
-    count: number;
-    members: Coordinate[];
-  }[] = [];
+  const clusters: CoordinateCluster[] = [];
   const visited = new Set<number>();
 
   // Sort coordinates by density (coordinates near others first)
   const coordinatesWithDensity = coordinates
     .map((coord, idx) => {
       const nearbyCount = coordinates.filter(
-        (other) => haversineDistance(coord, other) <= radius * 0.5,
+        (other) => haversineDistance(coord, other) <= radius * 0.5
       ).length;
       return { ...coord, originalIdx: idx, nearbyCount };
     })
     .sort((a, b) => b.nearbyCount - a.nearbyCount);
 
   coordinatesWithDensity.forEach(
-    ({ lat, long, city, country, originalIdx }) => {
+    ({ lat, long, city, country, count, originalIdx }) => {
       if (!visited.has(originalIdx)) {
+        const initialCount = count ?? 1;
         const cluster = {
-          members: [{ lat, long, city, country }],
+          members: [{ lat, long, city, country, count: initialCount }],
           center: { lat, long },
-          count: 1,
+          count: initialCount,
+          location: {
+            city: normalizeLocationValue(city),
+            country: normalizeLocationValue(country),
+          },
         };
 
         // Mark the initial coordinate as visited
@@ -297,6 +431,7 @@ function basicClusterCoordinates(coordinates: Coordinate[], radius: number) {
                 long: otherLong,
                 city: otherCity,
                 country: otherCountry,
+                count: otherCount,
                 originalIdx: otherIdx,
               }) => {
                 if (!visited.has(otherIdx)) {
@@ -306,28 +441,31 @@ function basicClusterCoordinates(coordinates: Coordinate[], radius: number) {
                   });
 
                   if (distance <= radius) {
+                    const memberCount = otherCount ?? 1;
                     cluster.members.push({
                       lat: otherLat,
                       long: otherLong,
                       city: otherCity,
                       country: otherCountry,
+                      count: memberCount,
                     });
                     visited.add(otherIdx);
-                    cluster.count++;
+                    cluster.count += memberCount;
                     expandedInLastIteration = true;
                   }
                 }
-              },
+              }
             );
           }
         }
 
         // Calculate the proper center for the cluster
         cluster.center = calculateClusterCenter(cluster.members);
+        cluster.location = getLocationSummary(cluster.members);
 
         clusters.push(cluster);
       }
-    },
+    }
   );
 
   return clusters;
@@ -339,9 +477,12 @@ function basicClusterCoordinates(coordinates: Coordinate[], radius: number) {
 // Utility function to get clustering statistics for debugging
 export function getClusteringStats(
   coordinates: Coordinate[],
-  clusters: ReturnType<typeof clusterCoordinates>,
+  clusters: ReturnType<typeof clusterCoordinates>
 ) {
-  const totalPoints = coordinates.length;
+  const totalPoints = coordinates.reduce(
+    (sum, coordinate) => sum + (coordinate.count ?? 1),
+    0
+  );
   const totalClusters = clusters.length;
   const singletonClusters = clusters.filter((c) => c.count === 1).length;
   const avgClusterSize = totalPoints > 0 ? totalPoints / totalClusters : 0;
@@ -371,26 +512,33 @@ function calculateClusterCenter(members: Coordinate[]): Coordinate {
 
   let avgLat = 0;
   let avgLong = 0;
+  let totalWeight = 0;
 
   if (maxLong - minLong > 180) {
     // Handle dateline crossing
     let adjustedLongSum = 0;
     for (const member of members) {
-      avgLat += member.lat;
+      const weight = member.count ?? 1;
+      avgLat += member.lat * weight;
       const adjustedLong = member.long < 0 ? member.long + 360 : member.long;
-      adjustedLongSum += adjustedLong;
+      adjustedLongSum += adjustedLong * weight;
+      totalWeight += weight;
     }
-    avgLat /= members.length;
-    avgLong = (adjustedLongSum / members.length) % 360;
-    if (avgLong > 180) avgLong -= 360;
+    avgLat /= totalWeight;
+    avgLong = (adjustedLongSum / totalWeight) % 360;
+    if (avgLong > 180) {
+      avgLong -= 360;
+    }
   } else {
     // Normal case - no dateline crossing
     for (const member of members) {
-      avgLat += member.lat;
-      avgLong += member.long;
+      const weight = member.count ?? 1;
+      avgLat += member.lat * weight;
+      avgLong += member.long * weight;
+      totalWeight += weight;
     }
-    avgLat /= members.length;
-    avgLong /= members.length;
+    avgLat /= totalWeight;
+    avgLong /= totalWeight;
   }
 
   return { lat: avgLat, long: avgLong };

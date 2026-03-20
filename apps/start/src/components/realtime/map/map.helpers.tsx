@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useZoomPan } from 'react-simple-maps';
-
 import type { Coordinate } from './coordinates';
 
 export const GEO_MAP_URL =
@@ -49,7 +48,7 @@ export const getBoundingBox = (coordinates: Coordinate[]) => {
 
 export const determineZoom = (
   bbox: ReturnType<typeof getBoundingBox>,
-  aspectRatio = 1.0,
+  aspectRatio = 1.0
 ): number => {
   const latDiff = bbox.maxLat - bbox.minLat;
   const longDiff = bbox.maxLong - bbox.minLong;
@@ -80,7 +79,7 @@ export function CustomZoomableGroup({
   children: React.ReactNode;
 }) {
   const { mapRef, transformString } = useZoomPan({
-    center: center,
+    center,
     zoom,
     filterZoomEvent: () => false,
   });

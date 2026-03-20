@@ -1,15 +1,17 @@
-import reportSlice from '@/components/report/reportSlice';
 import { configureStore } from '@reduxjs/toolkit';
+import type { TypedUseSelectorHook } from 'react-redux';
 import {
   useDispatch as useBaseDispatch,
   useSelector as useBaseSelector,
 } from 'react-redux';
-import type { TypedUseSelectorHook } from 'react-redux';
+import realtimeMapBadgeReducer from '@/components/realtime/map/realtime-map-badge-slice';
+import reportSlice from '@/components/report/reportSlice';
 
 const makeStore = () =>
   configureStore({
     reducer: {
       report: reportSlice,
+      realtimeMapBadge: realtimeMapBadgeReducer,
     },
   });
 

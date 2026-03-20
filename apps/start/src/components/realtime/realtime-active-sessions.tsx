@@ -3,16 +3,19 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ProjectLink } from '../links';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { useTRPC } from '@/integrations/trpc/react';
+import { cn } from '@/utils/cn';
 import { formatTimeAgoOrDateTime } from '@/utils/date';
 
 interface RealtimeActiveSessionsProps {
   projectId: string;
   limit?: number;
+  className?: string;
 }
 
 export function RealtimeActiveSessions({
   projectId,
   limit = 10,
+  className,
 }: RealtimeActiveSessionsProps) {
   const trpc = useTRPC();
   const { data: sessions = [] } = useQuery(
@@ -23,7 +26,7 @@ export function RealtimeActiveSessions({
   );
 
   return (
-    <div className="col card h-full max-md:hidden">
+    <div className={cn('col card h-full', className)}>
       <div className="hide-scrollbar h-full overflow-y-auto">
         <AnimatePresence initial={false} mode="popLayout">
           <div className="col divide-y">
@@ -45,7 +48,7 @@ export function RealtimeActiveSessions({
                         {session.origin}
                       </span>
                     )}
-                    <span className="font-medium text-sm leading-normal">
+                    <span className="truncate font-medium text-sm leading-normal">
                       {session.name === 'screen_view'
                         ? session.path
                         : session.name}

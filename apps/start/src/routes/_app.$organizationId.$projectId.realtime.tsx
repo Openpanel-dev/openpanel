@@ -41,15 +41,45 @@ function Component() {
   );
 
   return (
-    <>
-      <Fullscreen>
-        <FullscreenClose />
-        <RealtimeReloader projectId={projectId} />
+    <Fullscreen>
+      <FullscreenClose />
+      <RealtimeReloader projectId={projectId} />
 
+      <div className="flex flex-col gap-4 p-4 md:hidden">
+        <div className="card bg-background/90 p-4">
+          <RealtimeLiveHistogram projectId={projectId} />
+        </div>
+
+        <div className="-mx-4 aspect-square">
+          <RealtimeMap
+            markers={coordinatesQuery.data ?? []}
+            projectId={projectId}
+          />
+        </div>
+
+        <div className="min-h-[320px]">
+          <RealtimeActiveSessions projectId={projectId} />
+        </div>
+
+        <div>
+          <RealtimeGeo projectId={projectId} />
+        </div>
+
+        <div>
+          <RealtimeReferrals projectId={projectId} />
+        </div>
+
+        <div>
+          <RealtimePaths projectId={projectId} />
+        </div>
+      </div>
+
+      <div className="hidden md:block">
         <div className="row relative">
-          <div className="aspect-[4/2] w-full overflow-hidden">
+          <div className="aspect-[4/2] w-full">
             <RealtimeMap
               markers={coordinatesQuery.data ?? []}
+              projectId={projectId}
               sidebarConfig={{
                 width: 280, // w-96 = 384px
                 position: 'left',
@@ -61,7 +91,10 @@ function Component() {
               <RealtimeLiveHistogram projectId={projectId} />
             </div>
             <div className="relative min-h-0 w-72 flex-1">
-              <RealtimeActiveSessions projectId={projectId} />
+              <RealtimeActiveSessions
+                className="max-md:hidden"
+                projectId={projectId}
+              />
             </div>
           </div>
         </div>
@@ -77,7 +110,7 @@ function Component() {
             <RealtimePaths projectId={projectId} />
           </div>
         </div>
-      </Fullscreen>
-    </>
+      </div>
+    </Fullscreen>
   );
 }

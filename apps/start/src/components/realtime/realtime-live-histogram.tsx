@@ -1,9 +1,5 @@
-import { useTRPC } from '@/integrations/trpc/react';
-import { useQuery } from '@tanstack/react-query';
-
-import { useNumber } from '@/hooks/use-numer-formatter';
-import { getChartColor } from '@/utils/theme';
 import * as Portal from '@radix-ui/react-portal';
+import { useQuery } from '@tanstack/react-query';
 import { bind } from 'bind-event-listener';
 import throttle from 'lodash.throttle';
 import React, { useEffect, useState } from 'react';
@@ -17,6 +13,9 @@ import {
 } from 'recharts';
 import { AnimatedNumber } from '../animated-number';
 import { SerieIcon } from '../report-chart/common/serie-icon';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import { useTRPC } from '@/integrations/trpc/react';
+import { getChartColor } from '@/utils/theme';
 
 interface RealtimeLiveHistogramProps {
   projectId: string;
@@ -26,10 +25,11 @@ export function RealtimeLiveHistogram({
   projectId,
 }: RealtimeLiveHistogramProps) {
   const trpc = useTRPC();
+  const number = useNumber();
 
   // Use the same liveData endpoint as overview
   const { data: liveData, isLoading } = useQuery(
-    trpc.overview.liveData.queryOptions({ projectId }),
+    trpc.overview.liveData.queryOptions({ projectId })
   );
 
   const chartData = liveData?.minuteCounts ?? [];
@@ -40,7 +40,7 @@ export function RealtimeLiveHistogram({
   if (isLoading) {
     return (
       <Wrapper count={0}>
-        <div className="h-full w-full animate-pulse bg-def-200 rounded" />
+        <div className="h-full w-full animate-pulse rounded bg-def-200" />
       </Wrapper>
     );
   }
@@ -55,23 +55,23 @@ export function RealtimeLiveHistogram({
   return (
     <Wrapper
       count={totalVisitors}
-      icons={
-        liveData.referrers && liveData.referrers.length > 0 ? (
-          <div className="row gap-2 shrink-0">
-            {liveData.referrers.slice(0, 3).map((ref, index) => (
-              <div
-                key={`${ref.referrer}-${ref.count}-${index}`}
-                className="font-bold text-xs row gap-1 items-center"
-              >
-                <SerieIcon name={ref.referrer} />
-                <span>{ref.count}</span>
-              </div>
-            ))}
-          </div>
-        ) : null
-      }
+      // icons={
+      //   liveData.referrers && liveData.referrers.length > 0 ? (
+      //     <div className="row shrink-0 gap-2">
+      //       {liveData.referrers.slice(0, 3).map((ref, index) => (
+      //         <div
+      //           className="row items-center gap-1 font-bold text-xs"
+      //           key={`${ref.referrer}-${ref.count}-${index}`}
+      //         >
+      //           <SerieIcon name={ref.referrer} />
+      //           <span>{number.short(ref.count)}</span>
+      //         </div>
+      //       ))}
+      //     </div>
+      //   ) : null
+      // }
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer height="100%" width="100%">
         <BarChart
           data={chartData}
           margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
@@ -82,11 +82,11 @@ export function RealtimeLiveHistogram({
               fill: 'var(--def-200)',
             }}
           />
-          <XAxis dataKey="time" axisLine={false} tickLine={false} hide />
-          <YAxis hide domain={[0, maxDomain]} />
+          <XAxis axisLine={false} dataKey="time" hide tickLine={false} />
+          <YAxis domain={[0, maxDomain]} hide />
           <Bar
-            dataKey="visitorCount"
             className="fill-chart-0"
+            dataKey="visitorCount"
             isAnimationActive={false}
           />
         </BarChart>
@@ -104,19 +104,18 @@ interface WrapperProps {
 function Wrapper({ children, count, icons }: WrapperProps) {
   return (
     <div className="flex flex-col">
-      <div className="row gap-2 justify-between mb-2">
-        <div className="relative text-sm font-medium text-muted-foreground leading-normal">
-          Unique visitors {icons ? <br /> : null}
-          last 30 min
+      <div className="row justify-between gap-2">
+        <div className="relative font-medium text-muted-foreground text-sm leading-normal">
+          Unique visitors last 30 min
         </div>
         <div>{icons}</div>
       </div>
-      <div className="col gap-2 mb-4">
-        <div className="font-mono text-6xl font-bold">
+      <div className="col -mt-1 gap-2">
+        <div className="font-bold font-mono text-6xl">
           <AnimatedNumber value={count} />
         </div>
       </div>
-      <div className="relative aspect-[6/1] w-full">{children}</div>
+      <div className="relative -mt-2 aspect-[6/1] w-full">{children}</div>
     </div>
   );
 }
@@ -125,10 +124,10 @@ function Wrapper({ children, count, icons }: WrapperProps) {
 const CustomTooltip = ({ active, payload, coordinate }: any) => {
   const number = useNumber();
   const [position, setPosition] = useState<{ x: number; y: number } | null>(
-    null,
+    null
   );
 
-  const inactive = !active || !payload?.length;
+  const inactive = !(active && payload?.length);
   useEffect(() => {
     const setPositionThrottled = throttle(setPosition, 50);
     const unsubMouseMove = bind(window, {
@@ -156,7 +155,7 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
     return null;
   }
 
-  if (!active || !payload || !payload.length) {
+  if (!(active && payload && payload.length)) {
     return null;
   }
 
@@ -179,6 +178,7 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
 
   return (
     <Portal.Portal
+      className="rounded-md border bg-background/80 p-3 shadow-xl backdrop-blur-sm"
       style={{
         position: 'fixed',
         top: position?.y,
@@ -186,7 +186,6 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
         zIndex: 1000,
         width: tooltipWidth,
       }}
-      className="bg-background/80 p-3 rounded-md border shadow-xl backdrop-blur-sm"
     >
       <div className="flex justify-between gap-8 text-muted-foreground">
         <div>{data.time}</div>
@@ -199,7 +198,7 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
           />
           <div className="col flex-1 gap-1">
             <div className="flex items-center gap-1">Active users</div>
-            <div className="flex justify-between gap-8 font-mono font-medium">
+            <div className="flex justify-between gap-8 font-medium font-mono">
               <div className="row gap-1">
                 {number.formatWithUnit(data.visitorCount)}
               </div>
@@ -207,18 +206,18 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
           </div>
         </div>
         {data.referrers && data.referrers.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-border">
-            <div className="text-xs text-muted-foreground mb-2">Referrers:</div>
+          <div className="mt-2 border-border border-t pt-2">
+            <div className="mb-2 text-muted-foreground text-xs">Referrers:</div>
             <div className="space-y-1">
               {data.referrers.slice(0, 3).map((ref: any, index: number) => (
                 <div
-                  key={`${ref.referrer}-${ref.count}-${index}`}
                   className="row items-center justify-between text-xs"
+                  key={`${ref.referrer}-${ref.count}-${index}`}
                 >
                   <div className="row items-center gap-1">
                     <SerieIcon name={ref.referrer} />
                     <span
-                      className="truncate max-w-[120px]"
+                      className="max-w-[120px] truncate"
                       title={ref.referrer}
                     >
                       {ref.referrer}
@@ -228,7 +227,7 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
                 </div>
               ))}
               {data.referrers.length > 3 && (
-                <div className="text-xs text-muted-foreground">
+                <div className="text-muted-foreground text-xs">
                   +{data.referrers.length - 3} more
                 </div>
               )}
