@@ -1,6 +1,6 @@
 import type { Job } from 'bullmq';
 
-import { eventBuffer, profileBackfillBuffer, profileBuffer, replayBuffer, sessionBuffer } from '@openpanel/db';
+import { eventBuffer, groupBuffer, profileBackfillBuffer, profileBuffer, replayBuffer, sessionBuffer } from '@openpanel/db';
 import type { CronQueuePayload } from '@openpanel/queue';
 
 import { jobdeleteProjects } from './cron.delete-projects';
@@ -29,6 +29,9 @@ export async function cronJob(job: Job<CronQueuePayload>) {
     }
     case 'flushReplay': {
       return await replayBuffer.tryFlush();
+    }
+    case 'flushGroups': {
+      return await groupBuffer.tryFlush();
     }
     case 'ping': {
       return await ping();

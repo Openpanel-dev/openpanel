@@ -1,0 +1,208 @@
+---
+title: Groups
+description: Track analytics at the account, company, or team level — not just individual users.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Groups let you associate users with a shared entity — like a company, workspace, or team — and analyze behavior at that level. Instead of asking "what did Jane do?", you can ask "what is Acme Inc doing?"
+
+This is especially useful for B2B SaaS products where a single paying account has many users.
+
+## How Groups work
+
+There are two separate concepts:
+
+1. **The group entity** — created/updated with `upsertGroup()`. Stores metadata about the group (name, plan, etc.).
+2. **Group membership** — set with `setGroup()` / `setGroups()`. Links a user profile to one or more groups, and automatically attaches those group IDs to every subsequent `track()` call.
+
+## Creating or updating a group
+
+Call `upsertGroup()` to create a group or update its properties. The group is identified by its `id` and `type`.
+
+```typescript
+op.upsertGroup({
+  id: 'org_acme',        // Your group's unique ID
+  type: 'company',       // Group type (company, workspace, team, etc.)
+  name: 'Acme Inc',      // Display name
+  properties: {
+    plan: 'enterprise',
+    seats: 25,
+    industry: 'logistics',
+  },
+});
+```
+
+### Group payload
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes | Unique identifier for the group |
+| `type` | `string` | Yes | Category of group (e.g. `"company"`, `"workspace"`) |
+| `name` | `string` | Yes | Human-readable display name |
+| `properties` | `object` | No | Custom metadata about the group |
+
+## Managing groups in the dashboard
+
+The easiest way to create, edit, and delete groups is directly in the OpenPanel dashboard. Navigate to your project and open the **Groups** section — from there you can manage group names, types, and properties without touching any code.
+
+`upsertGroup()` is the right tool when your group properties are **dynamic and driven by your own data** — for example, syncing a customer's current plan, seat count, or MRR from your backend at login time.
+
+<Callout>
+A good rule of thumb: call `upsertGroup()` on login or when group properties change — not on every request or page view. If you find yourself calling it frequently with the same data, the dashboard is probably the better place to manage that group.
+</Callout>
+
+## Assigning a user to a group
+
+After identifying a user, call `setGroup()` to link them to a group. This also attaches the group ID to all future `track()` calls for the current session.
+
+```typescript
+// After login
+op.identify({ profileId: 'user_123' });
+
+// Link the user to their organization
+op.setGroup('org_acme');
+```
+
+For users that belong to multiple groups:
+
+```typescript
+op.setGroups(['org_acme', 'team_engineering']);
+```
+
+<Callout>
+`setGroup()` and `setGroups()` persist group IDs on the SDK instance. All subsequent `track()` calls will automatically include these group IDs until `clear()` is called.
+</Callout>
+
+## Full login flow example
+
+`setGroup()` doesn't require the group to exist first. You can call it with just an ID — events will be tagged with that group ID, and you can create the group later in the dashboard or via `upsertGroup()`.
+
+```typescript
+// 1. Identify the user
+op.identify({
+  profileId: 'user_123',
+  firstName: 'Jane',
+  email: 'jane@acme.com',
+});
+
+// 2. Assign the user to the group — the group doesn't need to exist yet
+op.setGroup('org_acme');
+
+// 3. All subsequent events are now tagged with the group
+op.track('dashboard_viewed');  // → includes groups: ['org_acme']
+op.track('report_exported');   // → includes groups: ['org_acme']
+```
+
+If you want to sync dynamic group properties from your own data (plan, seats, MRR), add `upsertGroup()` to the flow:
+
+```typescript
+op.identify({ profileId: 'user_123', email: 'jane@acme.com' });
+
+// Sync group metadata from your backend
+op.upsertGroup({
+  id: 'org_acme',
+  type: 'company',
+  name: 'Acme Inc',
+  properties: { plan: 'pro' },
+});
+
+op.setGroup('org_acme');
+```
+
+## Per-event group override
+
+You can attach group IDs to a specific event without affecting the SDK's persistent group state:
+
+```typescript
+op.track('file_shared', {
+  filename: 'q4-report.pdf',
+  groups: ['org_acme', 'org_partner'], // Only applies to this event
+});
+```
+
+Groups passed in `track()` are **merged** with any groups already set on the SDK instance.
+
+## Clearing groups on logout
+
+`clear()` resets the profile, device, session, and all groups. Always call it on logout.
+
+```typescript
+function handleLogout() {
+  op.clear();
+  // redirect to login...
+}
+```
+
+## Common patterns
+
+### B2B SaaS — company accounts
+
+```typescript
+// On login
+op.identify({ profileId: user.id, email: user.email });
+op.upsertGroup({
+  id: user.organizationId,
+  type: 'company',
+  name: user.organizationName,
+  properties: { plan: user.plan, mrr: user.mrr },
+});
+op.setGroup(user.organizationId);
+```
+
+### Multi-tenant — workspaces
+
+```typescript
+// When user switches workspace
+op.upsertGroup({
+  id: workspace.id,
+  type: 'workspace',
+  name: workspace.name,
+});
+op.setGroup(workspace.id);
+```
+
+### Teams within a company
+
+```typescript
+// User belongs to a company and a specific team
+op.setGroups([user.organizationId, user.teamId]);
+```
+
+## API reference
+
+### `upsertGroup(payload)`
+
+Creates the group if it doesn't exist, or merges properties into the existing group.
+
+```typescript
+op.upsertGroup({
+  id: string;       // Required
+  type: string;     // Required
+  name: string;     // Required
+  properties?: Record<string, unknown>;
+});
+```
+
+### `setGroup(groupId)`
+
+Adds a single group ID to the SDK's internal group list and sends an `assign_group` event to link the current profile to that group.
+
+```typescript
+op.setGroup('org_acme');
+```
+
+### `setGroups(groupIds)`
+
+Same as `setGroup()` but for multiple group IDs at once.
+
+```typescript
+op.setGroups(['org_acme', 'team_engineering']);
+```
+
+## What to avoid
+
+- **Calling `upsertGroup()` on every event or page view** — call it on login or when group properties actually change. For static group management, use the dashboard instead.
+- **Not calling `setGroup()` after `identify()`** — without it, events won't be tagged with the group and you won't see group-level data in the dashboard.
+- **Forgetting `clear()` on logout** — groups persist on the SDK instance, so a new user logging in on the same session could inherit the previous user's groups.
+- **Using `upsertGroup()` to link a user to a group** — `upsertGroup()` manages the group entity only. Use `setGroup()` to link a user profile to it.

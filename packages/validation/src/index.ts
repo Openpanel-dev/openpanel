@@ -540,6 +540,32 @@ export const zCheckout = z.object({
 });
 export type ICheckout = z.infer<typeof zCheckout>;
 
+export const zGroupId = z
+  .string()
+  .min(1)
+  .regex(
+    /^[a-z0-9_-]+$/,
+    'ID must only contain lowercase letters, digits, hyphens, or underscores',
+  );
+
+export const zCreateGroup = z.object({
+  id: zGroupId,
+  projectId: z.string(),
+  type: z.string().min(1),
+  name: z.string().min(1),
+  properties: z.record(z.string()).default({}),
+});
+export type ICreateGroup = z.infer<typeof zCreateGroup>;
+
+export const zUpdateGroup = z.object({
+  id: z.string().min(1),
+  projectId: z.string(),
+  type: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
+  properties: z.record(z.string()).optional(),
+});
+export type IUpdateGroup = z.infer<typeof zUpdateGroup>;
+
 export const zEditOrganization = z.object({
   id: z.string().min(2),
   name: z.string().min(2),

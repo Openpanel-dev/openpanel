@@ -116,9 +116,38 @@ op.decrement({
 });
 ```
 
+### Working with Groups
+
+Groups let you track analytics at the account or company level. See the [Groups guide](/docs/get-started/groups) for the full walkthrough.
+
+**Create or update a group:**
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.upsertGroup({
+  id: 'org_acme',
+  type: 'company',
+  name: 'Acme Inc',
+  properties: { plan: 'enterprise' },
+});
+```
+
+**Assign the current user to a group** (call after `identify`):
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.setGroup('org_acme');
+// or multiple groups:
+op.setGroups(['org_acme', 'team_eng']);
+```
+
+Once set, all subsequent `track()` calls will automatically include the group IDs.
+
 ### Clearing User Data
 
-To clear the current user's data:
+To clear the current user's data (including groups):
 
 ```js title="index.js"
 import { op } from './op.ts'

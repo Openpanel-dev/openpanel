@@ -1,11 +1,7 @@
 import { getSafeJson } from '@openpanel/json';
-import {
-  type Redis,
-  getRedisCache,
-  publishEvent,
-} from '@openpanel/redis';
+import { getRedisCache, publishEvent, type Redis } from '@openpanel/redis';
 import { ch } from '../clickhouse/client';
-import { type IClickhouseEvent } from '../services/event.service';
+import type { IClickhouseEvent } from '../services/event.service';
 import { BaseBuffer } from './base-buffer';
 
 export class EventBuffer extends BaseBuffer {
@@ -95,7 +91,7 @@ export class EventBuffer extends BaseBuffer {
           this.incrementActiveVisitorCount(
             multi,
             event.project_id,
-            event.profile_id,
+            event.profile_id
           );
         }
       }
@@ -116,7 +112,7 @@ export class EventBuffer extends BaseBuffer {
           error,
           eventCount: eventsToFlush.length,
           flushRetryCount: this.flushRetryCount,
-        },
+        }
       );
     } finally {
       this.isFlushing = false;
@@ -137,7 +133,7 @@ export class EventBuffer extends BaseBuffer {
       const queueEvents = await redis.lrange(
         this.queueKey,
         0,
-        this.batchSize - 1,
+        this.batchSize - 1
       );
 
       if (queueEvents.length === 0) {
@@ -149,6 +145,9 @@ export class EventBuffer extends BaseBuffer {
       for (const eventStr of queueEvents) {
         const event = getSafeJson<IClickhouseEvent>(eventStr);
         if (event) {
+          if (!Array.isArray(event.groups)) {
+            event.groups = [];
+          }
           eventsToClickhouse.push(event);
         }
       }
@@ -161,7 +160,7 @@ export class EventBuffer extends BaseBuffer {
       eventsToClickhouse.sort(
         (a, b) =>
           new Date(a.created_at || 0).getTime() -
-          new Date(b.created_at || 0).getTime(),
+          new Date(b.created_at || 0).getTime()
       );
 
       this.logger.info('Inserting events into ClickHouse', {
@@ -181,7 +180,7 @@ export class EventBuffer extends BaseBuffer {
       for (const event of eventsToClickhouse) {
         countByProject.set(
           event.project_id,
-          (countByProject.get(event.project_id) ?? 0) + 1,
+          (countByProject.get(event.project_id) ?? 0) + 1
         );
       }
       for (const [projectId, count] of countByProject) {
@@ -222,7 +221,7 @@ export class EventBuffer extends BaseBuffer {
   private incrementActiveVisitorCount(
     multi: ReturnType<Redis['multi']>,
     projectId: string,
-    profileId: string,
+    profileId: string
   ) {
     const key = `${projectId}:${profileId}`;
     const now = Date.now();

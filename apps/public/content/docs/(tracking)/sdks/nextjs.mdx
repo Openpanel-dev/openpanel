@@ -227,9 +227,32 @@ useOpenPanel().decrement({
 });
 ```
 
+### Working with Groups
+
+Groups let you track analytics at the account or company level. See the [Groups guide](/docs/get-started/groups) for the full walkthrough.
+
+**Create or update a group:**
+
+```tsx title="app/login/page.tsx"
+useOpenPanel().upsertGroup({
+  id: 'org_acme',
+  type: 'company',
+  name: 'Acme Inc',
+  properties: { plan: 'enterprise' },
+});
+```
+
+**Assign the current user to a group** (call after `identify`):
+
+```tsx title="app/login/page.tsx"
+useOpenPanel().setGroup('org_acme');
+```
+
+Once set, all subsequent `track()` calls will automatically include the group IDs.
+
 ### Clearing User Data
 
-To clear the current user's data:
+To clear the current user's data (including groups):
 
 ```js title="index.js"
 useOpenPanel().clear()
