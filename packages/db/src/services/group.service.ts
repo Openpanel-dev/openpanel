@@ -323,32 +323,21 @@ export async function getGroupMemberProfiles({
     ? `AND (email ILIKE ${sqlstring.escape(`%${search.trim()}%`)} OR first_name ILIKE ${sqlstring.escape(`%${search.trim()}%`)} OR last_name ILIKE ${sqlstring.escape(`%${search.trim()}%`)})`
     : '';
 
-  // count() OVER () is evaluated after JOINs/WHERE but before LIMIT,
-  // so we get the total match count and the paginated IDs in one query.
-  const rows = await chQuery<{ profile_id: string; total_count: number }>(`
+  const rows = await chQuery<{ id: string; total_count: number }>(`
     SELECT
-      gm.profile_id,
+      id,
       count() OVER () AS total_count
-    FROM (
-      SELECT profile_id, max(created_at) AS last_seen
-      FROM ${TABLE_NAMES.events}
-      WHERE project_id = ${sqlstring.escape(projectId)}
-        AND has(groups, ${sqlstring.escape(groupId)})
-        AND profile_id != device_id
-      GROUP BY profile_id
-    ) gm
-    INNER JOIN (
-      SELECT id FROM ${TABLE_NAMES.profiles} FINAL
-      WHERE project_id = ${sqlstring.escape(projectId)}
+    FROM ${TABLE_NAMES.profiles} FINAL
+    WHERE project_id = ${sqlstring.escape(projectId)}
+      AND has(groups, ${sqlstring.escape(groupId)})
       ${searchCondition}
-    ) p ON p.id = gm.profile_id
-    ORDER BY gm.last_seen DESC
+    ORDER BY created_at DESC
     LIMIT ${take}
     OFFSET ${offset}
   `);
 
   const count = rows[0]?.total_count ?? 0;
-  const profileIds = rows.map((r) => r.profile_id);
+  const profileIds = rows.map((r) => r.id);
 
   if (profileIds.length === 0) {
     return { data: [], count };

@@ -81,7 +81,7 @@ export function GroupMemberGrowth({ data }: Props) {
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <WidgetTitle icon={TrendingUpIcon}>Member growth</WidgetTitle>
+        <WidgetTitle icon={TrendingUpIcon}>New members last 30 days</WidgetTitle>
       </WidgetHead>
       <WidgetBody>
         {data.length === 0 ? (

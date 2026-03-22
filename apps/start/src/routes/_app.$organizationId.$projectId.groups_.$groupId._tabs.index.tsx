@@ -1,21 +1,17 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { UsersIcon } from 'lucide-react';
+import { createFileRoute } from '@tanstack/react-router';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { GroupMemberGrowth } from '@/components/groups/group-member-growth';
 import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
-import { WidgetHead, WidgetTitle } from '@/components/overview/overview-widget';
+import { WidgetHead } from '@/components/overview/overview-widget';
 import { MostEvents } from '@/components/profiles/most-events';
 import { PopularRoutes } from '@/components/profiles/popular-routes';
 import { ProfileActivity } from '@/components/profiles/profile-activity';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
-import { Widget, WidgetBody, WidgetEmptyState } from '@/components/widget';
-import { WidgetTable } from '@/components/widget-table';
+import { Widget } from '@/components/widget';
 import { useTRPC } from '@/integrations/trpc/react';
-import { formatDateTime, formatTimeAgoOrDateTime } from '@/utils/date';
+import { formatDateTime } from '@/utils/date';
 import { createProjectTitle } from '@/utils/title';
-
-const MEMBERS_PREVIEW_LIMIT = 13;
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/groups_/$groupId/_tabs/'
@@ -38,7 +34,7 @@ export const Route = createFileRoute(
 });
 
 function Component() {
-  const { projectId, organizationId, groupId } = Route.useParams();
+  const { projectId, groupId } = Route.useParams();
   const trpc = useTRPC();
 
   const group = useSuspenseQuery(
@@ -49,9 +45,6 @@ function Component() {
   );
   const activity = useSuspenseQuery(
     trpc.group.activity.queryOptions({ id: groupId, projectId })
-  );
-  const members = useSuspenseQuery(
-    trpc.group.members.queryOptions({ id: groupId, projectId })
   );
   const mostEvents = useSuspenseQuery(
     trpc.group.mostEvents.queryOptions({ id: groupId, projectId })
@@ -154,7 +147,7 @@ function Component() {
         <ProfileActivity data={activity.data} />
       </div>
 
-      {/* Member growth */}
+      {/* New members last 30 days */}
       <div className="col-span-1">
         <GroupMemberGrowth data={memberGrowth.data} />
       </div>
@@ -169,65 +162,6 @@ function Component() {
         <PopularRoutes data={popularRoutes.data} />
       </div>
 
-      {/* Members preview */}
-      <div className="col-span-1 md:col-span-2">
-        <Widget className="w-full">
-          <WidgetHead>
-            <WidgetTitle icon={UsersIcon}>Members</WidgetTitle>
-          </WidgetHead>
-          <WidgetBody className="p-0">
-            {members.data.length === 0 ? (
-              <WidgetEmptyState icon={UsersIcon} text="No members yet" />
-            ) : (
-              <WidgetTable
-                columnClassName="px-2"
-                columns={[
-                  {
-                    key: 'profile',
-                    name: 'Profile',
-                    width: 'w-full',
-                    render: (member) => (
-                      <Link
-                        className="font-mono text-xs hover:underline"
-                        params={{
-                          organizationId,
-                          projectId,
-                          profileId: member.profileId,
-                        }}
-                        to="/$organizationId/$projectId/profiles/$profileId"
-                      >
-                        {member.profileId}
-                      </Link>
-                    ),
-                  },
-                  {
-                    key: 'events',
-                    name: 'Events',
-                    width: '60px',
-                    className: 'text-muted-foreground',
-                    render: (member) => member.eventCount,
-                  },
-                  {
-                    key: 'lastSeen',
-                    name: 'Last Seen',
-                    width: '150px',
-                    className: 'text-muted-foreground',
-                    render: (member) =>
-                      formatTimeAgoOrDateTime(new Date(member.lastSeen)),
-                  },
-                ]}
-                data={members.data.slice(0, MEMBERS_PREVIEW_LIMIT)}
-                keyExtractor={(member) => member.profileId}
-              />
-            )}
-            {members.data.length > MEMBERS_PREVIEW_LIMIT && (
-              <p className="border-t py-2 text-center text-muted-foreground text-xs">
-                {`${members.data.length} members found. View all in Members tab`}
-              </p>
-            )}
-          </WidgetBody>
-        </Widget>
-      </div>
     </div>
   );
 }

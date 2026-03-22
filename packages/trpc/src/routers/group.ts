@@ -82,27 +82,29 @@ export const groupRouter = createTRPCRouter({
   metrics: protectedProcedure
     .input(z.object({ id: z.string(), projectId: z.string() }))
     .query(async ({ input: { id, projectId } }) => {
-      const data = await chQuery<{
-        totalEvents: number;
-        uniqueProfiles: number;
-        firstSeen: string;
-        lastSeen: string;
-      }>(`
-        SELECT
-          count() AS totalEvents,
-          uniqExact(profile_id) AS uniqueProfiles,
-          min(created_at) AS firstSeen,
-          max(created_at) AS lastSeen
-        FROM ${TABLE_NAMES.events}
-        WHERE project_id = ${sqlstring.escape(projectId)}
-          AND has(groups, ${sqlstring.escape(id)})
-      `);
+      const [eventData, profileData] = await Promise.all([
+        chQuery<{ totalEvents: number; firstSeen: string; lastSeen: string }>(`
+          SELECT
+            count() AS totalEvents,
+            min(created_at) AS firstSeen,
+            max(created_at) AS lastSeen
+          FROM ${TABLE_NAMES.events}
+          WHERE project_id = ${sqlstring.escape(projectId)}
+            AND has(groups, ${sqlstring.escape(id)})
+        `),
+        chQuery<{ uniqueProfiles: number }>(`
+          SELECT count() AS uniqueProfiles
+          FROM ${TABLE_NAMES.profiles} FINAL
+          WHERE project_id = ${sqlstring.escape(projectId)}
+            AND has(groups, ${sqlstring.escape(id)})
+        `),
+      ]);
 
       return {
-        totalEvents: data[0]?.totalEvents ?? 0,
-        uniqueProfiles: data[0]?.uniqueProfiles ?? 0,
-        firstSeen: toNullIfDefaultMinDate(data[0]?.firstSeen),
-        lastSeen: toNullIfDefaultMinDate(data[0]?.lastSeen),
+        totalEvents: eventData[0]?.totalEvents ?? 0,
+        uniqueProfiles: profileData[0]?.uniqueProfiles ?? 0,
+        firstSeen: toNullIfDefaultMinDate(eventData[0]?.firstSeen),
+        lastSeen: toNullIfDefaultMinDate(eventData[0]?.lastSeen),
       };
     }),
 
@@ -119,25 +121,22 @@ export const groupRouter = createTRPCRouter({
       `);
     }),
 
-  members: protectedProcedure
+  memberGrowth: protectedProcedure
     .input(z.object({ id: z.string(), projectId: z.string() }))
     .query(({ input: { id, projectId } }) => {
-      return chQuery<{
-        profileId: string;
-        lastSeen: string;
-        eventCount: number;
-      }>(`
+      return chQuery<{ date: string; count: number }>(`
         SELECT
-          profile_id AS profileId,
-          max(created_at) AS lastSeen,
-          count() AS eventCount
-        FROM ${TABLE_NAMES.events}
+          toDate(toStartOfDay(created_at)) AS date,
+          count() AS count
+        FROM ${TABLE_NAMES.profiles} FINAL
         WHERE project_id = ${sqlstring.escape(projectId)}
           AND has(groups, ${sqlstring.escape(id)})
-          AND profile_id != device_id
-        GROUP BY profile_id
-        ORDER BY lastSeen DESC, eventCount DESC
-        LIMIT 50
+          AND created_at >= now() - INTERVAL 30 DAY
+        GROUP BY date
+        ORDER BY date ASC WITH FILL
+          FROM toDate(now() - INTERVAL 29 DAY)
+          TO toDate(now() + INTERVAL 1 DAY)
+          STEP 1
       `);
     }),
 
@@ -192,30 +191,6 @@ export const groupRouter = createTRPCRouter({
         GROUP BY path
         ORDER BY count DESC
         LIMIT 10
-      `);
-    }),
-
-  memberGrowth: protectedProcedure
-    .input(z.object({ id: z.string(), projectId: z.string() }))
-    .query(({ input: { id, projectId } }) => {
-      return chQuery<{ date: string; count: number }>(`
-        SELECT
-          toDate(toStartOfDay(min_date)) AS date,
-          count() AS count
-        FROM (
-          SELECT profile_id, min(created_at) AS min_date
-          FROM ${TABLE_NAMES.events}
-          WHERE project_id = ${sqlstring.escape(projectId)}
-            AND has(groups, ${sqlstring.escape(id)})
-            AND profile_id != device_id
-            AND created_at >= now() - INTERVAL 30 DAY
-          GROUP BY profile_id
-        )
-        GROUP BY date
-        ORDER BY date ASC WITH FILL
-          FROM toDate(now() - INTERVAL 29 DAY)
-          TO toDate(now() + INTERVAL 1 DAY)
-          STEP 1
       `);
     }),
 
