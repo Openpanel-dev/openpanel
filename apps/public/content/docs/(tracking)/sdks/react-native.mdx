@@ -120,3 +120,35 @@ op.track('my_event', { foo: 'bar' });
 </Tabs>
 
 For more information on how to use the SDK, check out the [Javascript SDK](/docs/sdks/javascript#usage).
+
+## Offline support
+
+The SDK can buffer events when the device is offline and flush them once connectivity is restored. Events are stamped with a `__timestamp` at the time they are fired so they are recorded with the correct time even if they are delivered later.
+
+Two optional peer dependencies enable this feature:
+
+```npm
+npm install @react-native-async-storage/async-storage @react-native-community/netinfo
+```
+
+Pass them to the constructor:
+
+```typescript
+import { OpenPanel } from '@openpanel/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
+
+const op = new OpenPanel({
+  clientId: '{YOUR_CLIENT_ID}',
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+  // Persist the event queue across app restarts
+  storage: AsyncStorage,
+  // Automatically flush the queue when the device comes back online
+  networkInfo: NetInfo,
+});
+```
+
+Both options are independent — you can use either one or both:
+
+- **`storage`** — persists the queue to disk so events survive app restarts while offline.
+- **`networkInfo`** — flushes the queue automatically when connectivity is restored. Without this, the queue is flushed the next time the app becomes active.
