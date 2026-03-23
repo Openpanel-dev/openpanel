@@ -106,17 +106,77 @@ function buildRealtimeBadgeDetailsFilter(input: {
   return buildRealtimeLocationFilter(input.locations);
 }
 
+interface CoordinatePoint {
+  country: string;
+  city: string;
+  long: number;
+  lat: number;
+  count: number;
+};
+
+function mergeByRadius(
+  points: CoordinatePoint[],
+  radius: number
+): CoordinatePoint[] {
+  // Highest-count points become cluster centers; nearby points get absorbed into them
+  const sorted = [...points].sort((a, b) => b.count - a.count);
+  const absorbed = new Uint8Array(sorted.length);
+  const clusters: CoordinatePoint[] = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    if (absorbed[i]) {
+      continue;
+    }
+    const seed = sorted[i];
+    if (!seed) {
+      continue;
+    }
+    const center: CoordinatePoint = { ...seed };
+    for (let j = i + 1; j < sorted.length; j++) {
+      if (absorbed[j]) {
+        continue;
+      }
+      const other = sorted[j];
+      if (!other) {
+        continue;
+      }
+      const dlat = other.lat - center.lat;
+      const dlong = other.long - center.long;
+      if (Math.sqrt(dlat * dlat + dlong * dlong) <= radius) {
+        center.count += other.count;
+        absorbed[j] = 1;
+      }
+    }
+    clusters.push(center);
+  }
+
+  return clusters;
+}
+
+function adaptiveCluster(
+  points: CoordinatePoint[],
+  target: number
+): CoordinatePoint[] {
+  if (points.length <= target) {
+    return points;
+  }
+
+  // Expand merge radius until we hit the target (~55km → ~111km → ~333km → ~1110km)
+  for (const radius of [0.5, 1, 3, 10]) {
+    const clustered = mergeByRadius(points, radius);
+    if (clustered.length <= target) {
+      return clustered;
+    }
+  }
+
+  return points.slice(0, target);
+}
+
 export const realtimeRouter = createTRPCRouter({
   coordinates: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input }) => {
-      const res = await chQuery<{
-        city: string;
-        country: string;
-        long: number;
-        lat: number;
-        count: number;
-      }>(
+      const res = await chQuery<CoordinatePoint>(
         `SELECT
           country,
           city,
@@ -129,13 +189,11 @@ export const realtimeRouter = createTRPCRouter({
           AND longitude IS NOT NULL
           AND latitude IS NOT NULL
         GROUP BY country, city, longitude, latitude
-        ORDER BY count DESC`
+        ORDER BY count DESC
+        LIMIT 5000`
       );
 
-      res.forEach((item) => {
-        console.log(item.country, item.city, item.long, item.lat);
-      });
-      return res;
+      return adaptiveCluster(res, 500);
     }),
   mapBadgeDetails: protectedProcedure
     .input(
