@@ -45,7 +45,7 @@
     ],
     "best_for_competitor": [
       "Enterprise teams needing advanced experimentation and feature flags",
-      "Organizations requiring session replay across web and mobile",
+      "Teams needing Metric Trees for organizational goal alignment",
       "Companies with complex data warehouse integration needs",
       "Teams that need Metric Trees for organizational alignment"
     ]
@@ -184,9 +184,15 @@
           },
           {
             "name": "Session replay",
-            "openpanel": false,
+            "openpanel": true,
             "competitor": true,
-            "notes": "Mixpanel supports web, iOS, and Android"
+            "notes": "Mixpanel supports web, iOS, and Android. OpenPanel also offers session replay."
+          },
+          {
+            "name": "Group analytics",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both support group/company-level analytics"
           },
           {
             "name": "Revenue tracking",
@@ -441,7 +447,7 @@
     "items": [
       {
         "question": "Does OpenPanel have all the features I use in Mixpanel?",
-        "answer": "OpenPanel covers the core features most teams actually use: event tracking, funnels, retention, cohorts, user profiles, and A/B testing. If you rely heavily on Mixpanel's session replay, feature flags, or Metric Trees, those aren't available in OpenPanel yet."
+        "answer": "OpenPanel covers the core features most teams actually use: event tracking, funnels, retention, cohorts, user profiles, A/B testing, session replay, and group analytics. If you rely heavily on Mixpanel's feature flags or Metric Trees, those aren't available in OpenPanel."
       },
       {
         "question": "Can I import my historical Mixpanel data?",

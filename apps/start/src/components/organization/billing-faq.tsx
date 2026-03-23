@@ -34,13 +34,13 @@ const questions = [
   {
     question: 'How do I change my billing information?',
     answer: [
-      'You can change your billing information by clicking the "Manage your subscription" button in the billing section.',
+      'You can change your billing information by clicking the "Customer portal" button in the billing section.',
     ],
   },
   {
     question: 'We need a custom plan, can you help us?',
     answer: [
-      'Yes, we can help you with that. Please contact us at hello@openpanel.com to request a quote.',
+      'Yes, we can help you with that. Please contact us at hello@openpanel.dev to request a quote.',
     ],
   },
 ];
@@ -52,13 +52,13 @@ export function BillingFaq() {
         <span className="title">Frequently asked questions</span>
       </WidgetHead>
       <Accordion
-        type="single"
-        collapsible
         className="w-full max-w-screen-md self-center"
+        collapsible
+        type="single"
       >
         {questions.map((q) => (
-          <AccordionItem value={q.question} key={q.question}>
-            <AccordionTrigger className="text-left px-4">
+          <AccordionItem key={q.question} value={q.question}>
+            <AccordionTrigger className="px-4 text-left">
               {q.question}
             </AccordionTrigger>
             <AccordionContent>

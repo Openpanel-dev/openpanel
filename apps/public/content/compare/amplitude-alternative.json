@@ -47,7 +47,7 @@
       "Large enterprises with dedicated analytics teams",
       "Organizations that need advanced experimentation and feature flags",
       "Teams requiring sophisticated behavioral cohorts and predictive analytics",
-      "Companies wanting an all-in-one platform with session replay and guides"
+      "Companies wanting an all-in-one platform with guides, surveys, and advanced experimentation"
     ]
   },
   "highlights": {
@@ -184,9 +184,9 @@
           },
           {
             "name": "Session replay",
-            "openpanel": false,
+            "openpanel": true,
             "competitor": true,
-            "notes": "Included in Amplitude platform"
+            "notes": "Both platforms include session replay"
           },
           {
             "name": "Custom dashboards",
@@ -423,7 +423,7 @@
       },
       {
         "title": "Simpler analytics needs",
-        "description": "If you don't need predictive ML models, feature flags, or session replay, OpenPanel gives you core analytics without the bloat.",
+        "description": "If you don't need predictive ML models or feature flags, OpenPanel gives you core analytics — including session replay — without the enterprise bloat.",
         "icon": "target"
       }
     ]
@@ -484,7 +484,7 @@
       },
       {
         "question": "What Amplitude features will I lose?",
-        "answer": "OpenPanel doesn't have feature flags, session replay, predictive cohorts, or the Guides & Surveys product. If you rely heavily on these enterprise features, Amplitude may still be the better fit."
+        "answer": "OpenPanel doesn't have feature flags, predictive cohorts, or the Guides & Surveys product. OpenPanel does include session replay. If you rely heavily on Amplitude's enterprise experimentation or ML-powered features, Amplitude may still be the better fit."
       },
       {
         "question": "How does the SDK size affect my app?",

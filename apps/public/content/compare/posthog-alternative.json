@@ -28,7 +28,7 @@
     "title": "Why consider OpenPanel over PostHog?",
     "paragraphs": [
       "PostHog has built an impressive all-in-one platform with product analytics, feature flags, session replay, surveys, A/B testing, and more \u2014 over 10 products under one roof. It's a popular choice among developer-led teams who want everything in a single tool. But that breadth comes with trade-offs: a 52+ KB SDK, complex multi-product pricing, and a self-hosted setup that requires ClickHouse, Kafka, Redis, and PostgreSQL.",
-      "OpenPanel takes a focused approach. Instead of trying to be everything, it delivers excellent analytics \u2014 events, funnels, retention, cohorts, user profiles, and web analytics \u2014 with a dramatically smaller footprint. The SDK is just 2.3 KB (over 20x lighter than PostHog), which directly translates to faster page loads and better Core Web Vitals for your users.",
+      "OpenPanel takes a focused approach. Instead of trying to be everything, it delivers excellent analytics \u2014 events, funnels, retention, cohorts, user profiles, session replay, and web analytics \u2014 with a dramatically smaller footprint. The SDK is just 2.3 KB (over 20x lighter than PostHog), which directly translates to faster page loads and better Core Web Vitals for your users.",
       "Cookie-free tracking is another key difference. PostHog uses cookies by default and requires configuration to go cookieless, while OpenPanel is cookie-free out of the box \u2014 no consent banners needed. Self-hosting is also far simpler: OpenPanel runs in a single Docker container compared to PostHog's multi-service architecture.",
       "If you need focused analytics without the feature bloat, want a lighter SDK that doesn't impact performance, and prefer simple event-based pricing over multi-product metering \u2014 OpenPanel gives you exactly what you need without the overhead."
     ]
@@ -38,13 +38,13 @@
     "intro": "Both are open-source analytics platforms. PostHog is an all-in-one platform with many products. OpenPanel focuses on analytics with simplicity.",
     "one_liner": "PostHog is an all-in-one platform with 10+ products; OpenPanel focuses on analytics with a lighter footprint.",
     "best_for_openpanel": [
-      "Teams wanting focused analytics without feature flags, session replay, or surveys",
+      "Teams wanting focused analytics without feature flags or surveys",
       "Privacy-conscious products needing cookie-free tracking by default",
       "Performance-conscious applications (2.3KB SDK vs 52KB+)",
       "Teams preferring simple Docker deployment over multi-service architecture"
     ],
     "best_for_competitor": [
-      "Teams needing all-in-one platform (analytics, feature flags, session replay, surveys)",
+      "Teams needing all-in-one platform (analytics, feature flags, surveys, A/B experiments)",
       "Developers wanting SQL access (HogQL) for custom queries",
       "Y Combinator companies leveraging PostHog's ecosystem",
       "Teams requiring extensive CDP capabilities with 60+ connectors"
@@ -176,9 +176,9 @@
           },
           {
             "name": "Session Replay",
-            "openpanel": false,
+            "openpanel": true,
             "competitor": true,
-            "notes": "PostHog includes session replay for web, Android (beta), iOS (alpha)"
+            "notes": "Both platforms offer session replay."
           },
           {
             "name": "Surveys",
@@ -391,7 +391,7 @@
     "items": [
       {
         "title": "Teams Who Want Analytics Without Feature Bloat",
-        "description": "If you need product analytics but don't use PostHog's feature flags, session replay, surveys, or experiments, OpenPanel gives you exactly what you need without the overhead.",
+        "description": "If you need product analytics and session replay but don't need PostHog's feature flags, surveys, or experiments, OpenPanel gives you exactly what you need without the overhead.",
         "icon": "target"
       },
       {
@@ -430,7 +430,7 @@
       },
       {
         "question": "What features will I lose switching from PostHog?",
-        "answer": "PostHog includes feature flags, session replay, surveys, and A/B experiments in their platform. If you actively use these, you'd need separate tools. If you primarily use PostHog for analytics, OpenPanel provides everything you need with less complexity."
+        "answer": "PostHog includes feature flags, surveys, and A/B experiments in their platform. If you actively use these, you'd need separate tools. OpenPanel now includes session replay, so you won't lose that. If you primarily use PostHog for analytics, OpenPanel provides everything you need with less complexity."
       },
       {
         "question": "How does OpenPanel compare on privacy?",
@@ -442,7 +442,7 @@
       },
       {
         "question": "Is PostHog more feature-rich than OpenPanel?",
-        "answer": "PostHog offers more products (10+ including feature flags, session replay, surveys, A/B testing, data warehouse). However, this comes with added complexity. OpenPanel focuses on doing analytics exceptionally well with a simpler, more focused experience."
+        "answer": "PostHog offers more products (10+ including feature flags, surveys, A/B testing, data warehouse). However, this comes with added complexity. OpenPanel now includes session replay alongside its core analytics, while staying focused on simplicity and performance."
       },
       {
         "question": "How do SDK sizes compare?",

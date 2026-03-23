@@ -353,7 +353,7 @@
       },
       {
         "title": "Remove FullStory script",
-        "description": "Once verified, remove the FullStory snippet. Note: You'll lose access to session replay and heatmaps."
+        "description": "Once verified, remove the FullStory snippet. Note: You'll lose access to FullStory's advanced heatmaps, frustration signals, and pixel-perfect replay. OpenPanel includes basic session replay."
       }
     ],
     "sdk_compatibility": {

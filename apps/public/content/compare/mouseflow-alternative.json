@@ -139,9 +139,9 @@
         "features": [
           {
             "name": "Session replay",
-            "openpanel": false,
+            "openpanel": true,
             "competitor": true,
-            "notes": null
+            "notes": "Mouseflow's session replay is more advanced with friction scoring and form analytics"
           },
           {
             "name": "Click heatmaps",
