@@ -106,6 +106,81 @@ curl -X POST https://api.openpanel.dev/track \
 }'
 ```
 
+### Creating or updating a group
+
+```bash
+curl -X POST https://api.openpanel.dev/track \
+-H "Content-Type: application/json" \
+-H "openpanel-client-id: YOUR_CLIENT_ID" \
+-H "openpanel-client-secret: YOUR_CLIENT_SECRET" \
+-d '{
+  "type": "group",
+  "payload": {
+    "id": "org_acme",
+    "type": "company",
+    "name": "Acme Inc",
+    "properties": {
+      "plan": "enterprise",
+      "seats": 25
+    }
+  }
+}'
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes | Unique identifier for the group |
+| `type` | `string` | Yes | Category of group (e.g. `"company"`, `"workspace"`) |
+| `name` | `string` | Yes | Display name |
+| `properties` | `object` | No | Custom metadata |
+
+### Assigning a user to a group
+
+Links a profile to one or more groups. This updates the profile record but does not auto-attach groups to future events — you still need to pass `groups` explicitly on each track call.
+
+```bash
+curl -X POST https://api.openpanel.dev/track \
+-H "Content-Type: application/json" \
+-H "openpanel-client-id: YOUR_CLIENT_ID" \
+-H "openpanel-client-secret: YOUR_CLIENT_SECRET" \
+-d '{
+  "type": "assign_group",
+  "payload": {
+    "profileId": "user_123",
+    "groupIds": ["org_acme"]
+  }
+}'
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `profileId` | `string` | No | Profile to assign. Falls back to the device ID if omitted |
+| `groupIds` | `string[]` | Yes | Group IDs to link to the profile |
+
+### Tracking events with groups
+
+Groups are never auto-populated on events — even if the profile has been assigned to a group via `assign_group`. Pass `groups` on every track event where you want group data.
+
+```bash
+curl -X POST https://api.openpanel.dev/track \
+-H "Content-Type: application/json" \
+-H "openpanel-client-id: YOUR_CLIENT_ID" \
+-H "openpanel-client-secret: YOUR_CLIENT_SECRET" \
+-d '{
+  "type": "track",
+  "payload": {
+    "name": "report_exported",
+    "profileId": "user_123",
+    "groups": ["org_acme"],
+    "properties": {
+      "format": "pdf"
+    }
+  }
+}'
+```
+
+Unlike the SDK, where `setGroup()` stores group IDs on the instance and attaches them to every subsequent `track()` call, the API has no such state. You must pass `groups` on each event.
+
 ### Error Handling
 The API uses standard HTTP response codes to indicate the success or failure of requests. In case of an error, the response body will contain more information about the error.
 Example error response:
