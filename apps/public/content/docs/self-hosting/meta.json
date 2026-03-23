@@ -8,6 +8,7 @@
     "[Deploy with Dokploy](/docs/self-hosting/deploy-dokploy)",
     "[Deploy on Kubernetes](/docs/self-hosting/deploy-kubernetes)",
     "[Environment Variables](/docs/self-hosting/environment-variables)",
+    "[High volume setup](/docs/self-hosting/high-volume)",
     "supporter-access-latest-docker-images",
     "changelog"
   ]

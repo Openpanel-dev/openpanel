@@ -1,0 +1,251 @@
+---
+title: High volume setup
+description: Tuning OpenPanel for high event throughput
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+The default Docker Compose setup works well for most deployments. When you start seeing high event throughput — thousands of events per second or dozens of worker replicas — a few things need adjusting.
+
+## Connection pooling with PGBouncer
+
+PostgreSQL has a hard limit on the number of open connections. Each worker and API replica opens its own pool of connections, so the total can grow fast. Without pooling, you will start seeing `too many connections` errors under load.
+
+PGBouncer sits in front of PostgreSQL and maintains a small pool of real database connections, multiplexing many application connections on top of them.
+
+### Add PGBouncer to docker-compose.yml
+
+Add the `op-pgbouncer` service and update the `op-api` and `op-worker` dependencies:
+
+```yaml
+op-pgbouncer:
+  image: edoburu/pgbouncer:v1.25.1-p0
+  restart: always
+  depends_on:
+    op-db:
+      condition: service_healthy
+  environment:
+    - DB_HOST=op-db
+    - DB_PORT=5432
+    - DB_USER=postgres
+    - DB_PASSWORD=postgres
+    - DB_NAME=postgres
+    - AUTH_TYPE=scram-sha-256
+    - POOL_MODE=transaction
+    - MAX_CLIENT_CONN=1000
+    - DEFAULT_POOL_SIZE=20
+    - MIN_POOL_SIZE=5
+    - RESERVE_POOL_SIZE=5
+  healthcheck:
+    test: ["CMD-SHELL", "PGPASSWORD=postgres psql -h 127.0.0.1 -p 5432 -U postgres pgbouncer -c 'SHOW VERSION;' -q || exit 1"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+```
+
+Then update `op-api` and `op-worker` to depend on `op-pgbouncer` instead of `op-db`:
+
+```yaml
+op-api:
+  depends_on:
+    op-pgbouncer:
+      condition: service_healthy
+    op-ch:
+      condition: service_healthy
+    op-kv:
+      condition: service_healthy
+
+op-worker:
+  depends_on:
+    op-pgbouncer:
+      condition: service_healthy
+    op-api:
+      condition: service_healthy
+```
+
+### Update DATABASE_URL
+
+Prisma needs to know it is talking to a pooler. Point `DATABASE_URL` at `op-pgbouncer` and add `&pgbouncer=true`:
+
+```bash
+# Before
+DATABASE_URL=postgresql://postgres:postgres@op-db:5432/postgres?schema=public
+
+# After
+DATABASE_URL=postgresql://postgres:postgres@op-pgbouncer:5432/postgres?schema=public&pgbouncer=true
+```
+
+Leave `DATABASE_URL_DIRECT` pointing at `op-db` directly, without the `pgbouncer=true` flag. Migrations use the direct connection and will not work through a transaction-mode pooler.
+
+```bash
+DATABASE_URL_DIRECT=postgresql://postgres:postgres@op-db:5432/postgres?schema=public
+```
+
+<Callout type="warn">
+PGBouncer runs in transaction mode. Prisma migrations and interactive transactions require a direct connection. Always set `DATABASE_URL_DIRECT` to the `op-db` address.
+</Callout>
+
+### Tuning the pool size
+
+A rough rule: `DEFAULT_POOL_SIZE` should not exceed your PostgreSQL `max_connections` divided by the number of distinct database/user pairs. The PostgreSQL default is 100. If you raise `max_connections` in Postgres, you can raise `DEFAULT_POOL_SIZE` proportionally.
+
+---
+
+## Buffer tuning
+
+Events, sessions, and profiles flow through in-memory Redis buffers before being written to ClickHouse in batches. The defaults are conservative. Under high load you want larger batches to reduce the number of ClickHouse inserts and improve throughput.
+
+### Event buffer
+
+The event buffer collects incoming events in Redis and flushes them to ClickHouse on a cron schedule.
+
+| Variable | Default | What it controls |
+|---|---|---|
+| `EVENT_BUFFER_BATCH_SIZE` | `4000` | How many events are read from Redis and sent to ClickHouse per flush |
+| `EVENT_BUFFER_CHUNK_SIZE` | `1000` | How many events are sent in a single ClickHouse insert call |
+| `EVENT_BUFFER_MICRO_BATCH_MS` | `10` | How long (ms) to accumulate events in memory before writing to Redis |
+| `EVENT_BUFFER_MICRO_BATCH_SIZE` | `100` | Max events to accumulate before forcing a Redis write |
+
+For high throughput, increase `EVENT_BUFFER_BATCH_SIZE` so each flush processes more events. Keep `EVENT_BUFFER_CHUNK_SIZE` at or below `EVENT_BUFFER_BATCH_SIZE`.
+
+```bash
+EVENT_BUFFER_BATCH_SIZE=10000
+EVENT_BUFFER_CHUNK_SIZE=2000
+```
+
+### Session buffer
+
+Sessions are updated on each event and flushed to ClickHouse separately.
+
+| Variable | Default | What it controls |
+|---|---|---|
+| `SESSION_BUFFER_BATCH_SIZE` | `1000` | Events read per flush |
+| `SESSION_BUFFER_CHUNK_SIZE` | `1000` | Events per ClickHouse insert |
+
+```bash
+SESSION_BUFFER_BATCH_SIZE=5000
+SESSION_BUFFER_CHUNK_SIZE=2000
+```
+
+### Profile buffer
+
+Profiles are merged with existing data before writing. The default batch size is small because each profile may require a ClickHouse lookup.
+
+| Variable | Default | What it controls |
+|---|---|---|
+| `PROFILE_BUFFER_BATCH_SIZE` | `200` | Profiles processed per flush |
+| `PROFILE_BUFFER_CHUNK_SIZE` | `1000` | Profiles per ClickHouse insert |
+| `PROFILE_BUFFER_TTL_IN_SECONDS` | `3600` | How long a profile stays cached in Redis |
+
+Raise `PROFILE_BUFFER_BATCH_SIZE` if profile processing is a bottleneck. Higher values mean fewer flushes but more memory used per flush.
+
+```bash
+PROFILE_BUFFER_BATCH_SIZE=500
+PROFILE_BUFFER_CHUNK_SIZE=1000
+```
+
+---
+
+## Scaling ingestion
+
+If the event queue is growing faster than workers can drain it, you have a few options.
+
+Start vertical before going horizontal. Each worker replica adds overhead: more Redis connections, more ClickHouse connections, more memory. Increasing concurrency on an existing replica is almost always cheaper and more effective than adding another one.
+
+### Increase job concurrency (do this first)
+
+Each worker processes multiple jobs in parallel. The default is `10` per replica.
+
+```bash
+EVENT_JOB_CONCURRENCY=20
+```
+
+Raise this in steps and watch your queue depth. The limit is memory, not logic — values of `500`, `1000`, or even `2000+` are possible on hardware with enough RAM. Each concurrent job holds event data in memory, so monitor usage as you increase the value. Only add more replicas once concurrency alone stops helping.
+
+### Add more worker replicas
+
+If you have maxed out concurrency and the queue is still falling behind, add more replicas.
+
+In `docker-compose.yml`:
+
+```yaml
+op-worker:
+  deploy:
+    replicas: 8
+```
+
+Or at runtime:
+
+```bash
+docker compose up -d --scale op-worker=8
+```
+
+### Shard the events queue
+
+<Callout type="warn">
+**Experimental.** Queue sharding requires either a Redis Cluster or Dragonfly. Dragonfly has seen minimal testing and Redis Cluster has not been tested at all. Do not use this in production without validating it in your environment first.
+</Callout>
+
+Redis is single-threaded, so a single queue instance can become the bottleneck at very high event rates. Queue sharding works around this by splitting the queue across multiple independent shards. Each shard can be backed by its own Redis instance, so the throughput scales with the number of instances rather than being capped by one core.
+
+Events are distributed across shards by project ID, so ordering within a project is preserved.
+
+```bash
+EVENTS_GROUP_QUEUES_SHARDS=4
+QUEUE_CLUSTER=true
+```
+
+<Callout type="warn">
+Set `EVENTS_GROUP_QUEUES_SHARDS` before you have live traffic on the queue. Changing it while jobs are pending will cause those jobs to be looked up on the wrong shard and they will not be processed until the shard count is restored.
+</Callout>
+
+### Tune the ordering delay
+
+Events arriving out of order are held briefly before processing. The default is `100ms`.
+
+```bash
+ORDERING_DELAY_MS=100
+```
+
+Lowering this reduces latency but increases the chance of out-of-order writes to ClickHouse. The value should not exceed `500ms`.
+
+---
+
+## Putting it together
+
+A starting point for a high-volume `.env`:
+
+```bash
+# Route app traffic through PGBouncer
+DATABASE_URL=postgresql://postgres:postgres@op-pgbouncer:5432/postgres?schema=public&pgbouncer=true
+# Keep direct connection for migrations
+DATABASE_URL_DIRECT=postgresql://postgres:postgres@op-db:5432/postgres?schema=public
+
+# Event buffer
+EVENT_BUFFER_BATCH_SIZE=10000
+EVENT_BUFFER_CHUNK_SIZE=2000
+
+# Session buffer
+SESSION_BUFFER_BATCH_SIZE=5000
+SESSION_BUFFER_CHUNK_SIZE=2000
+
+# Profile buffer
+PROFILE_BUFFER_BATCH_SIZE=500
+
+# Queue
+EVENTS_GROUP_QUEUES_SHARDS=4
+EVENT_JOB_CONCURRENCY=20
+```
+
+Then start with more workers:
+
+```bash
+docker compose up -d --scale op-worker=8
+```
+
+Monitor the Redis queue depth and ClickHouse insert latency as you tune. The right values depend on your hardware, event shape, and traffic pattern.
