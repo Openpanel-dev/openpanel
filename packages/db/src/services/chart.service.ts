@@ -455,6 +455,24 @@ export async function getChartSql({
     with: addCte,
   } = createSqlBuilder();
 
+  // Determine if we can use profile_event_summary_mv instead of raw events table
+  // for cohort-only breakdown queries (no property breakdowns/filters, day+ interval)
+  const hasCohortBreakdown = breakdowns.some((b) => b.name.startsWith('cohort:') || b.cohortId);
+  const allBreakdownsAreCohort = breakdowns.every((b) => b.name.startsWith('cohort:') || b.cohortId);
+  const hasPropertyFilters = event.filters?.some((f) => f.name.startsWith('properties.') || f.name.startsWith('profile.'));
+  const useCohortMV =
+    !customEvent &&
+    hasCohortBreakdown &&
+    allBreakdownsAreCohort &&
+    !hasPropertyFilters &&
+    ['day', 'week', 'month'].includes(interval) &&
+    ['user', 'event', undefined].includes(event.segment ?? 'event') &&
+    event.segment !== 'one_event_per_user';
+
+  if (useCohortMV) {
+    sb.from = `${TABLE_NAMES.profile_event_summary_mv} e`;
+  }
+
   // Create CTEs for all cohorts (used by main query only)
   // NOTE: ClickHouse allows CTEs to be referenced in the main query's JOINs,
   // but NOT in other CTEs' JOINs. For CTEs that need cohort data, we inline subqueries.
@@ -577,31 +595,36 @@ export async function getChartSql({
     sb.joins[`cohort_${cohortId}`] = `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = e.profile_id`;
   });
 
-  sb.select.count = 'count(*) as count';
+  // When using cohort MV, swap column names and aggregate functions
+  const countExpr = useCohortMV ? 'countMerge(e.event_count)' : 'count(*)';
+  const dateExpr = useCohortMV ? 'toDateTime(e.event_date)' : 'created_at';
+
+  sb.select.count = `${countExpr} as count`;
+
   switch (interval) {
     case 'minute': {
       sb.fill = `FROM toStartOfMinute(toDateTime('${startDate}')) TO toStartOfMinute(toDateTime('${endDate}')) STEP toIntervalMinute(1)`;
-      sb.select.date = 'toStartOfMinute(created_at) as date';
+      sb.select.date = `toStartOfMinute(${dateExpr}) as date`;
       break;
     }
     case 'hour': {
       sb.fill = `FROM toStartOfHour(toDateTime('${startDate}')) TO toStartOfHour(toDateTime('${endDate}')) STEP toIntervalHour(1)`;
-      sb.select.date = 'toStartOfHour(created_at) as date';
+      sb.select.date = `toStartOfHour(${dateExpr}) as date`;
       break;
     }
     case 'day': {
       sb.fill = `FROM toStartOfDay(toDateTime('${startDate}')) TO toStartOfDay(toDateTime('${endDate}')) STEP toIntervalDay(1)`;
-      sb.select.date = 'toStartOfDay(created_at) as date';
+      sb.select.date = `toStartOfDay(${dateExpr}) as date`;
       break;
     }
     case 'week': {
       sb.fill = `FROM toStartOfWeek(toDateTime('${startDate}'), 1, '${timezone}') TO toStartOfWeek(toDateTime('${endDate}'), 1, '${timezone}') STEP toIntervalWeek(1)`;
-      sb.select.date = `toStartOfWeek(created_at, 1, '${timezone}') as date`;
+      sb.select.date = `toStartOfWeek(${dateExpr}, 1, '${timezone}') as date`;
       break;
     }
     case 'month': {
       sb.fill = `FROM toStartOfMonth(toDateTime('${startDate}'), '${timezone}') TO toStartOfMonth(toDateTime('${endDate}'), '${timezone}') STEP toIntervalMonth(1)`;
-      sb.select.date = `toStartOfMonth(created_at, '${timezone}') as date`;
+      sb.select.date = `toStartOfMonth(${dateExpr}, '${timezone}') as date`;
       break;
     }
   }
@@ -609,11 +632,15 @@ export async function getChartSql({
   sb.orderBy.date = 'date ASC';
 
   if (startDate) {
-    sb.where.startDate = `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`;
+    sb.where.startDate = useCohortMV
+      ? `event_date >= toDate('${formatClickhouseDate(startDate)}')`
+      : `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`;
   }
 
   if (endDate) {
-    sb.where.endDate = `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
+    sb.where.endDate = useCohortMV
+      ? `event_date <= toDate('${formatClickhouseDate(endDate)}')`
+      : `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
   }
 
   // Use CTE to define top breakdown values once, then reference in WHERE clause
@@ -629,8 +656,11 @@ export async function getChartSql({
       return buildInlineCohortJoin(cohortId, projectId, 'e', cohortMeta);
     }).join(' ');
 
-    // Determine data source: use custom event CTE if present, otherwise events table
-    const dataSource = customEvent ? 'custom_event_data' : TABLE_NAMES.events;
+    // Determine data source: use cohort MV, custom event CTE, or regular events table
+    const dataSource = useCohortMV
+      ? TABLE_NAMES.profile_event_summary_mv
+      : customEvent ? 'custom_event_data' : TABLE_NAMES.events;
+    const orderByCount = useCohortMV ? 'countMerge(e.event_count)' : 'count(*)';
 
     // Add top_breakdowns CTE using the builder
     addCte(
@@ -639,7 +669,7 @@ export async function getChartSql({
       FROM ${dataSource} AS e
       ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${cohortJoinsForTop ? `${cohortJoinsForTop} ` : ''}${getWhereWithoutBar()}
       GROUP BY ${breakdownSelects}
-      ORDER BY count(*) DESC
+      ORDER BY ${orderByCount} DESC
       LIMIT ${limit}`,
     );
 
@@ -717,8 +747,10 @@ export async function getChartSql({
 
     const totalCountWhere = getWhereWithoutBar();
 
-    // Determine data source: use custom event CTE if present, otherwise events table
-    const dataSourceForBreakdown = customEvent ? 'custom_event_data' : TABLE_NAMES.events;
+    // Determine data source: use cohort MV, custom event CTE, or regular events table
+    const dataSourceForBreakdown = useCohortMV
+      ? TABLE_NAMES.profile_event_summary_mv
+      : customEvent ? 'custom_event_data' : TABLE_NAMES.events;
 
     // Build cohort JOINs for breakdown_totals CTE
     // NOTE: ClickHouse CTEs cannot reference other CTEs in JOINs, so we inline the subquery
@@ -749,8 +781,10 @@ export async function getChartSql({
   } else {
     const totalCountWhere = getWhereWithoutBar();
 
-    // Determine data source: use custom event CTE if present, otherwise events table
-    const dataSourceForTotal = customEvent ? 'custom_event_data' : TABLE_NAMES.events;
+    // Determine data source: use cohort MV, custom event CTE, or regular events table
+    const dataSourceForTotal = useCohortMV
+      ? TABLE_NAMES.profile_event_summary_mv
+      : customEvent ? 'custom_event_data' : TABLE_NAMES.events;
 
     // Build cohort JOINs for total_unique CTE
     // NOTE: ClickHouse CTEs cannot reference other CTEs in JOINs, so we inline the subquery
