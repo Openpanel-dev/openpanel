@@ -1,6 +1,5 @@
 import { getRedisCache } from '@openpanel/redis';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getSafeJson } from '@openpanel/json';
 import type { IClickhouseProfile } from '../services/profile.service';
 
 // Mock chQuery to avoid hitting real ClickHouse
@@ -36,7 +35,11 @@ function makeProfile(overrides: Partial<IClickhouseProfile>): IClickhouseProfile
 }
 
 beforeEach(async () => {
-  await redis.flushdb();
+  const keys = [
+    ...await redis.keys('profile*'),
+    ...await redis.keys('lock:profile'),
+  ];
+  if (keys.length > 0) await redis.del(...keys);
   vi.mocked(chQuery).mockResolvedValue([]);
 });
 
@@ -63,64 +66,12 @@ describe('ProfileBuffer', () => {
     expect(sizeAfter).toBe(sizeBefore + 1);
   });
 
-  it('merges subsequent updates via cache (sequential calls)', async () => {
+  it('concurrent adds: both raw profiles are queued', async () => {
     const identifyProfile = makeProfile({
       first_name: 'John',
       email: 'john@example.com',
       groups: [],
     });
-
-    const groupProfile = makeProfile({
-      first_name: '',
-      email: '',
-      groups: ['group-abc'],
-    });
-
-    // Sequential: identify first, then group
-    await profileBuffer.add(identifyProfile);
-    await profileBuffer.add(groupProfile);
-
-    // Second add should read the cached identify profile and merge groups in
-    const cached = await profileBuffer.fetchFromCache('profile-1', 'project-1');
-    expect(cached?.first_name).toBe('John');
-    expect(cached?.email).toBe('john@example.com');
-    expect(cached?.groups).toContain('group-abc');
-  });
-
-  it('race condition: concurrent identify + group calls preserve all data', async () => {
-    const identifyProfile = makeProfile({
-      first_name: 'John',
-      email: 'john@example.com',
-      groups: [],
-    });
-
-    const groupProfile = makeProfile({
-      first_name: '',
-      email: '',
-      groups: ['group-abc'],
-    });
-
-    // Both calls run concurrently — the per-profile lock serializes them so the
-    // second one reads the first's result from cache and merges correctly.
-    await Promise.all([
-      profileBuffer.add(identifyProfile),
-      profileBuffer.add(groupProfile),
-    ]);
-
-    const cached = await profileBuffer.fetchFromCache('profile-1', 'project-1');
-
-    expect(cached?.first_name).toBe('John');
-    expect(cached?.email).toBe('john@example.com');
-    expect(cached?.groups).toContain('group-abc');
-  });
-
-  it('race condition: concurrent writes produce one merged buffer entry', async () => {
-    const identifyProfile = makeProfile({
-      first_name: 'John',
-      email: 'john@example.com',
-      groups: [],
-    });
-
     const groupProfile = makeProfile({
       first_name: '',
       email: '',
@@ -128,24 +79,126 @@ describe('ProfileBuffer', () => {
     });
 
     const sizeBefore = await profileBuffer.getBufferSize();
+    await Promise.all([
+      profileBuffer.add(identifyProfile),
+      profileBuffer.add(groupProfile),
+    ]);
+    const sizeAfter = await profileBuffer.getBufferSize();
+
+    // Both raw profiles are queued; merge happens at flush time
+    expect(sizeAfter).toBe(sizeBefore + 2);
+  });
+
+  it('merges sequential updates for the same profile at flush time', async () => {
+    const identifyProfile = makeProfile({
+      first_name: 'John',
+      email: 'john@example.com',
+      groups: [],
+    });
+    const groupProfile = makeProfile({
+      first_name: '',
+      email: '',
+      groups: ['group-abc'],
+    });
+
+    await profileBuffer.add(identifyProfile);
+    await profileBuffer.add(groupProfile);
+    await profileBuffer.processBuffer();
+
+    const cached = await profileBuffer.fetchFromCache('profile-1', 'project-1');
+    expect(cached?.first_name).toBe('John');
+    expect(cached?.email).toBe('john@example.com');
+    expect(cached?.groups).toContain('group-abc');
+  });
+
+  it('merges concurrent updates for the same profile at flush time', async () => {
+    const identifyProfile = makeProfile({
+      first_name: 'John',
+      email: 'john@example.com',
+      groups: [],
+    });
+    const groupProfile = makeProfile({
+      first_name: '',
+      email: '',
+      groups: ['group-abc'],
+    });
 
     await Promise.all([
       profileBuffer.add(identifyProfile),
       profileBuffer.add(groupProfile),
     ]);
+    await profileBuffer.processBuffer();
 
-    const sizeAfter = await profileBuffer.getBufferSize();
+    const cached = await profileBuffer.fetchFromCache('profile-1', 'project-1');
+    expect(cached?.first_name).toBe('John');
+    expect(cached?.email).toBe('john@example.com');
+    expect(cached?.groups).toContain('group-abc');
+  });
 
-    // The second add merges into the first — only 2 buffer entries total
-    // (one from identify, one merged update with group)
-    expect(sizeAfter).toBe(sizeBefore + 2);
+  it('uses existing ClickHouse data for cache misses when merging', async () => {
+    const existingInClickhouse = makeProfile({
+      first_name: 'Jane',
+      email: 'jane@example.com',
+      groups: ['existing-group'],
+    });
+    vi.mocked(chQuery).mockResolvedValue([existingInClickhouse]);
 
-    // The last entry in the buffer should have both name and group
-    const rawEntries = await redis.lrange('profile-buffer', 0, -1);
-    const entries = rawEntries.map((e) => getSafeJson<IClickhouseProfile>(e));
-    const lastEntry = entries[entries.length - 1];
+    const incomingProfile = makeProfile({
+      first_name: '',
+      email: '',
+      groups: ['new-group'],
+    });
 
-    expect(lastEntry?.first_name).toBe('John');
-    expect(lastEntry?.groups).toContain('group-abc');
+    await profileBuffer.add(incomingProfile);
+    await profileBuffer.processBuffer();
+
+    const cached = await profileBuffer.fetchFromCache('profile-1', 'project-1');
+    expect(cached?.first_name).toBe('Jane');
+    expect(cached?.email).toBe('jane@example.com');
+    expect(cached?.groups).toContain('existing-group');
+    expect(cached?.groups).toContain('new-group');
+  });
+
+  it('buffer is empty after flush', async () => {
+    await profileBuffer.add(makeProfile({ first_name: 'John' }));
+    expect(await profileBuffer.getBufferSize()).toBe(1);
+
+    await profileBuffer.processBuffer();
+
+    expect(await profileBuffer.getBufferSize()).toBe(0);
+  });
+
+  it('retains profiles in queue when ClickHouse insert fails', async () => {
+    await profileBuffer.add(makeProfile({ first_name: 'John' }));
+
+    const { ch } = await import('../clickhouse/client');
+    const insertSpy = vi
+      .spyOn(ch, 'insert')
+      .mockRejectedValueOnce(new Error('ClickHouse unavailable'));
+
+    await profileBuffer.processBuffer();
+
+    // Profiles must still be in the queue — not lost
+    expect(await profileBuffer.getBufferSize()).toBe(1);
+
+    insertSpy.mockRestore();
+  });
+
+  it('proceeds with insert when ClickHouse fetch fails (treats profiles as new)', async () => {
+    vi.mocked(chQuery).mockRejectedValueOnce(new Error('ClickHouse unavailable'));
+
+    const { ch } = await import('../clickhouse/client');
+    const insertSpy = vi
+      .spyOn(ch, 'insert')
+      .mockResolvedValueOnce(undefined as any);
+
+    await profileBuffer.add(makeProfile({ first_name: 'John' }));
+    await profileBuffer.processBuffer();
+
+    // Insert must still have been called — no data loss even when fetch fails
+    expect(insertSpy).toHaveBeenCalled();
+    expect(await profileBuffer.getBufferSize()).toBe(0);
+
+    insertSpy.mockRestore();
   });
 });

@@ -10,7 +10,11 @@ import { EventBuffer } from './event-buffer';
 const redis = getRedisCache();
 
 beforeEach(async () => {
-  await redis.flushdb();
+  const keys = [
+    ...await redis.keys('event*'),
+    ...await redis.keys('live:*'),
+  ];
+  if (keys.length > 0) await redis.del(...keys);
 });
 
 afterAll(async () => {
@@ -272,5 +276,25 @@ describe('EventBuffer', () => {
     await eventBuffer.flush();
 
     expect(await eventBuffer.getBufferSize()).toBe(5);
+  });
+
+  it('retains events in queue when ClickHouse insert fails', async () => {
+    eventBuffer.add({
+      project_id: 'p12',
+      name: 'event1',
+      created_at: new Date().toISOString(),
+    } as any);
+    await eventBuffer.flush();
+
+    const insertSpy = vi
+      .spyOn(ch, 'insert')
+      .mockRejectedValueOnce(new Error('ClickHouse unavailable'));
+
+    await eventBuffer.processBuffer();
+
+    // Events must still be in the queue — not lost
+    expect(await eventBuffer.getBufferSize()).toBe(1);
+
+    insertSpy.mockRestore();
   });
 });
