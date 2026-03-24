@@ -15,6 +15,8 @@ import {
 import { onlyReportEvents } from './reports.service';
 import { getCustomEventByName, expandCustomEventToSQL } from './custom-event.service';
 
+const quoteCol = (col: string) => `\`${col.replace(/^`|`$/g, '')}\``;
+
 export class ConversionService {
   constructor(private client: typeof ch) {}
 
@@ -81,7 +83,12 @@ export class ConversionService {
         baseWhere,
       );
 
-      return `${cteName} AS (${sql})`;
+      // Wrap to only expose columns needed downstream — prevents broadcasting
+      // all materialized columns into FillingRightJoinSide × 32 copies
+      const baseColumns = ['profile_id', 'session_id', 'created_at'];
+      const neededColumns = [...new Set([...baseColumns, ...extraColumns])];
+      const selectList = neededColumns.map(quoteCol).join(', ');
+      return `${cteName} AS (SELECT ${selectList} FROM (${sql}))`;
     } else {
       // Regular event - apply filters if present
       // Exclude cohort filters — they're handled via JOINs in the outer query
@@ -108,11 +115,7 @@ export class ConversionService {
       // Minimal SELECT: only the columns actually needed downstream
       const baseColumns = ['profile_id', 'session_id', 'created_at'];
       const selectColumns = [...new Set([...baseColumns, ...extraColumns])];
-      // TODO: Root fix needed — getMaterializedColumns() stores column names pre-wrapped with backticks
-      // (e.g. `paymentGateway`) but buildSingleEventCte wraps them again causing ``paymentGateway``.
-      // Proper fix: store raw column names in the cache and let all callers handle quoting consistently.
-      // For now, skip wrapping if already backtick-quoted.
-      const selectList = selectColumns.map(col => col.startsWith('`') ? col : `\`${col}\``).join(', ');
+      const selectList = selectColumns.map(quoteCol).join(', ');
 
       return `${cteName} AS (
         SELECT ${selectList}
@@ -405,23 +408,26 @@ export class ConversionService {
     );
     // Deduplicate (same filter merged into multiple events)
     const uniqueCohortFilterClauses = [...new Set(cohortFilterClauses)];
-    const cohortFilterWhere = uniqueCohortFilterClauses.length > 0
-      ? '\n      WHERE ' + uniqueCohortFilterClauses.join(' AND ')
-      : '';
 
     // Inner SELECT: raw per-event rows from the self-join (no aggregation yet)
+    // Build WHERE for inner query: ASOF upper bound + any cohort filters
+    const innerWhereConditions = [
+      `(ee.created_at IS NULL OR ee.created_at <= se.created_at + INTERVAL ${funnelWindowSeconds} SECOND)`,
+      ...uniqueCohortFilterClauses,
+    ];
+    const innerWhere = `\n      WHERE ${innerWhereConditions.join('\n        AND ')}`;
+
     const innerSQL = `
       SELECT
         ${toStartOf} AS event_day,
         se.${groupCol} AS ${groupCol},
         ee.${groupCol} AS conversion_${groupCol}${breakdownColumns.length ? ',\n        ' + breakdownColumns.join(',\n        ') : ''}${timeDiffCol}
       FROM start_events se${profileJoin}
-      LEFT JOIN end_events ee ON
+      LEFT ASOF JOIN end_events ee ON
         ee.${groupCol} = se.${groupCol}
-        AND ee.created_at >= se.created_at - INTERVAL ${gracePeriodSeconds} SECOND
-        AND ee.created_at <= se.created_at + INTERVAL ${funnelWindowSeconds} SECOND
         ${holdJoinConditions}
-      ${cohortJoins}${cohortFilterWhere}`;
+        AND ee.created_at >= se.created_at - INTERVAL ${gracePeriodSeconds} SECOND
+      ${cohortJoins}${innerWhere}`;
 
     // TTC aggregation columns (all computed in single scan, negligible extra cost)
     const ttcAggColumns = measuring === 'time_to_convert'
