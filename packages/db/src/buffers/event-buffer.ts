@@ -73,10 +73,11 @@ export class EventBuffer extends BaseBuffer {
   private activeVisitorsExpiration = 60 * 5; // 5 minutes
 
   // LIST - Stores all events ready to be flushed
-  private queueKey = 'event_buffer:queue';
+  // {event_buffer} hash tag ensures all EventBuffer keys hash to the same Redis Cluster slot
+  private queueKey = '{event_buffer}:queue';
 
   // STRING - Tracks total buffer size incrementally
-  protected bufferCounterKey = 'event_buffer:total_count';
+  protected bufferCounterKey = '{event_buffer}:total_count';
 
   // Script SHAs for loaded Lua scripts
   private scriptShas: {
@@ -86,12 +87,12 @@ export class EventBuffer extends BaseBuffer {
 
   // Hash key for storing last screen_view per session
   private getLastScreenViewKeyBySession(sessionId: string) {
-    return `event_buffer:last_screen_view:session:${sessionId}`;
+    return `{event_buffer}:last_screen_view:session:${sessionId}`;
   }
 
   // Hash key for storing last screen_view per profile
   private getLastScreenViewKeyByProfile(projectId: string, profileId: string) {
-    return `event_buffer:last_screen_view:profile:${projectId}:${profileId}`;
+    return `{event_buffer}:last_screen_view:profile:${projectId}:${profileId}`;
   }
 
   /**
