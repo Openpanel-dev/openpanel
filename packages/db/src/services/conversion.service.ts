@@ -334,7 +334,10 @@ export class ConversionService {
     const otherIdCol = groupCol === 'profile_id' ? 'session_id' : 'profile_id';
     const safeGroupByCols = startExtraCols.filter(c => c !== 'properties');
     const anyWrapCols = startExtraCols.filter(c => c === 'properties');
-    const dedupeGroupBy = [quoteCol(groupCol), 'toDate(created_at)', ...safeGroupByCols.map(quoteCol)].join(', ');
+    // GROUP BY uses _day (pre-computed in the subquery) instead of toDate(created_at)
+    // to avoid ClickHouse resolving 'created_at' in toDate(created_at) to the SELECT
+    // alias min(created_at) AS created_at — which would put an aggregate in GROUP BY.
+    const dedupeGroupBy = [quoteCol(groupCol), '_day', ...safeGroupByCols.map(quoteCol)].join(', ');
     const dedupeSelect = [
       quoteCol(groupCol),
       `any(${quoteCol(otherIdCol)}) AS ${quoteCol(otherIdCol)}`,
@@ -344,10 +347,9 @@ export class ConversionService {
     ].join(', ');
     ctes.push(`start_events AS (
       SELECT ${dedupeSelect}
-      FROM start_events_raw
+      FROM (SELECT *, toDate(created_at) AS _day FROM start_events_raw)
       GROUP BY ${dedupeGroupBy}
     )`);
-
     // End events CTE — needs hold property columns for the JOIN condition
     const endEventCte = await this.buildSingleEventCte(
       lastEvent,
