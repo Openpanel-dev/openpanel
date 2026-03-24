@@ -1,10 +1,7 @@
 import type { WebSocket } from '@fastify/websocket';
 import { eventBuffer } from '@openpanel/db';
 import { setSuperJson } from '@openpanel/json';
-import {
-  psubscribeToPublishedEvent,
-  subscribeToPublishedEvent,
-} from '@openpanel/redis';
+import { subscribeToPublishedEvent } from '@openpanel/redis';
 import { getProjectAccess } from '@openpanel/trpc';
 import { getOrganizationAccess } from '@openpanel/trpc/src/access';
 import type { FastifyRequest } from 'fastify';
@@ -39,19 +36,8 @@ export function wsVisitors(
     }
   );
 
-  const punsubscribe = psubscribeToPublishedEvent(
-    '__keyevent@0__:expired',
-    (key) => {
-      const [, , projectId] = key.split(':');
-      if (projectId === params.projectId) {
-        sendCount();
-      }
-    }
-  );
-
   socket.on('close', () => {
     unsubscribe();
-    punsubscribe();
   });
 }
 

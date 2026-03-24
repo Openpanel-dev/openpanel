@@ -1,61 +1,25 @@
-import { TooltipComplete } from '@/components/tooltip-complete';
-import { useDebounceState } from '@/hooks/use-debounce-state';
-import useWS from '@/hooks/use-ws';
-import { useTRPC } from '@/integrations/trpc/react';
-import { cn } from '@/utils/cn';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { AnimatedNumber } from '../animated-number';
+import { TooltipComplete } from '@/components/tooltip-complete';
+import { useLiveCounter } from '@/hooks/use-live-counter';
+import { cn } from '@/utils/cn';
 
 export interface LiveCounterProps {
   projectId: string;
   shareId?: string;
 }
 
-const FIFTEEN_SECONDS = 1000 * 30;
-
 export function LiveCounter({ projectId, shareId }: LiveCounterProps) {
-  const trpc = useTRPC();
   const client = useQueryClient();
-  const counter = useDebounceState(0, 1000);
-  const lastRefresh = useRef(Date.now());
-  const query = useQuery(
-    trpc.overview.liveVisitors.queryOptions({
-      projectId,
-      shareId,
-    }),
-  );
-
-  useEffect(() => {
-    if (query.data) {
-      counter.set(query.data);
-    }
-  }, [query.data]);
-
-  useWS<number>(
-    `/live/visitors/${projectId}`,
-    (value) => {
-      if (!Number.isNaN(value)) {
-        counter.set(value);
-        if (Date.now() - lastRefresh.current > FIFTEEN_SECONDS) {
-          lastRefresh.current = Date.now();
-          if (!document.hidden) {
-            toast('Refreshed data');
-            client.refetchQueries({
-              type: 'active',
-            });
-          }
-        }
-      }
-    },
-    {
-      debounce: {
-        delay: 1000,
-        maxWait: 5000,
-      },
-    },
-  );
+  const onRefresh = useCallback(() => {
+    toast('Refreshed data');
+    client.refetchQueries({
+      type: 'active',
+    });
+  }, [client]);
+  const counter = useLiveCounter({ projectId, shareId, onRefresh });
 
   return (
     <TooltipComplete
@@ -66,13 +30,13 @@ export function LiveCounter({ projectId, shareId }: LiveCounterProps) {
           <div
             className={cn(
               'h-3 w-3 animate-ping rounded-full bg-emerald-500 opacity-100 transition-all',
-              counter.debounced === 0 && 'bg-destructive opacity-0',
+              counter.debounced === 0 && 'bg-destructive opacity-0'
             )}
           />
           <div
             className={cn(
-              'absolute left-0 top-0 h-3 w-3 rounded-full bg-emerald-500 transition-all',
-              counter.debounced === 0 && 'bg-destructive',
+              'absolute top-0 left-0 h-3 w-3 rounded-full bg-emerald-500 transition-all',
+              counter.debounced === 0 && 'bg-destructive'
             )}
           />
         </div>

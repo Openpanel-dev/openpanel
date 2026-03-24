@@ -1,6 +1,7 @@
 import { getRedisCache } from '@openpanel/redis';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ch } from '../clickhouse/client';
+import * as chClient from '../clickhouse/client';
+const { ch } = chClient;
 
 // Break circular dep: event-buffer -> event.service -> buffers/index -> EventBuffer
 vi.mock('../services/event.service', () => ({}));
@@ -10,10 +11,7 @@ import { EventBuffer } from './event-buffer';
 const redis = getRedisCache();
 
 beforeEach(async () => {
-  const keys = [
-    ...await redis.keys('event*'),
-    ...await redis.keys('live:*'),
-  ];
+  const keys = await redis.keys('event*');
   if (keys.length > 0) await redis.del(...keys);
 });
 
@@ -213,18 +211,16 @@ describe('EventBuffer', () => {
   });
 
   it('tracks active visitors', async () => {
-    const event = {
-      project_id: 'p9',
-      profile_id: 'u9',
-      name: 'custom',
-      created_at: new Date().toISOString(),
-    } as any;
-
-    eventBuffer.add(event);
-    await eventBuffer.flush();
+    const querySpy = vi
+      .spyOn(chClient, 'chQuery')
+      .mockResolvedValueOnce([{ count: 2 }] as any);
 
     const count = await eventBuffer.getActiveVisitorCount('p9');
-    expect(count).toBeGreaterThanOrEqual(1);
+    expect(count).toBe(2);
+    expect(querySpy).toHaveBeenCalledOnce();
+    expect(querySpy.mock.calls[0]![0]).toContain("project_id = 'p9'");
+
+    querySpy.mockRestore();
   });
 
   it('handles multiple sessions independently — all events go to buffer', async () => {
