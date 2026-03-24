@@ -22,8 +22,7 @@ export function registerProfileMetricTools(
     async ({ projectId: inputProjectId, profileId }) =>
       withErrorHandling(async () => {
         const projectId = resolveProjectId(context, inputProjectId);
-        const rows = await getProfileMetrics(profileId, projectId);
-        const raw = rows[0];
+        const raw = await getProfileMetrics(profileId, projectId);
         if (!raw) {
           return { error: 'Profile not found or has no events', profileId };
         }

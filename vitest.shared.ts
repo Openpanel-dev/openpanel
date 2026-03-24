@@ -3,7 +3,9 @@ import { defineConfig } from 'vitest/config';
 
 export const getSharedVitestConfig = ({
   __dirname: dirname,
-}: { __dirname: string }) => {
+}: {
+  __dirname: string;
+}) => {
   return defineConfig({
     resolve: {
       alias: {
@@ -12,8 +14,11 @@ export const getSharedVitestConfig = ({
     },
     test: {
       env: {
-        // Not used, just so prisma is happy
+        // Always point at local Docker — never production, regardless of .env
         DATABASE_URL: 'postgresql://u:p@127.0.0.1:5432/db',
+        CLICKHOUSE_URL: 'http://localhost:8123/openpanel',
+        REDIS_URL: 'redis://localhost:6379',
+        SELF_HOSTED: 'true',
       },
       include: ['**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
       browser: {
