@@ -59,8 +59,19 @@ export class ProfileBuffer extends BaseBuffer {
     return getSafeJson<IClickhouseProfile>(cached);
   }
 
-  async add(profile: IClickhouseProfile, _isFromEvent = false) {
+  async add(profile: IClickhouseProfile, isFromEvent = false) {
     try {
+      if (isFromEvent) {
+        const cacheKey = this.getProfileCacheKey({
+          profileId: profile.id,
+          projectId: profile.project_id,
+        });
+        const exists = await this.redis.exists(cacheKey);
+        if (exists === 1) {
+          return;
+        }
+      }
+
       const result = await this.redis
         .multi()
         .rpush(this.redisKey, JSON.stringify(profile))
