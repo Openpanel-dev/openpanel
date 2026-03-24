@@ -63,6 +63,7 @@ export class ConversionService {
     startDate: string,
     endDate: string,
     extraColumns: string[] = [],
+    groupCol: string,
   ): Promise<string> {
     // Check if this is a custom event
     const customEvent = await getCustomEventByName(event.name, projectId);
@@ -88,7 +89,7 @@ export class ConversionService {
       const baseColumns = ['profile_id', 'session_id', 'created_at'];
       const neededColumns = [...new Set([...baseColumns, ...extraColumns])];
       const selectList = neededColumns.map(quoteCol).join(', ');
-      return `${cteName} AS (SELECT ${selectList} FROM (${sql}))`;
+      return `${cteName} AS (SELECT ${selectList} FROM (${sql}) WHERE ${groupCol} != '')`;
     } else {
       // Regular event - apply filters if present
       // Exclude cohort filters — they're handled via JOINs in the outer query
@@ -122,6 +123,7 @@ export class ConversionService {
         FROM ${TABLE_NAMES.events}${profileJoinClause}
         WHERE project_id = '${projectId}'
           AND name = '${event.name}'
+          AND ${groupCol} != ''
           AND created_at >= toDateTime('${formatClickhouseDate(startDate)}')
           AND created_at <= toDateTime('${formatClickhouseDate(endDate)}')${filterWhere}
       )`;
@@ -307,19 +309,44 @@ export class ConversionService {
     const startExtraCols = [...new Set([...breakdownExtraCols, ...holdExtraCols])];
     const endExtraCols = [...new Set(holdExtraCols)];
 
+    // Define group column (profile_id or session_id) — needed by CTE builders below
+    const groupCol = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
+
     // Build CTEs for start and end events
     const ctes: string[] = [];
 
-    // Start events CTE — includes columns needed for breakdowns + hold properties
+    // Start events CTE — named _raw so we can wrap it with deduplication below
     const startEventCte = await this.buildSingleEventCte(
       firstEvent,
-      'start_events',
+      'start_events_raw',
       projectId,
       startDate,
       endDate,
       startExtraCols,
+      groupCol,
     );
     ctes.push(startEventCte);
+
+    // Deduplicate to one row per (groupCol, day) using the earliest created_at.
+    // A user who triggers the start event 50 times a day produces 50 rows — all
+    // collapse to the same uniqExact bucket anyway. Deduplicating here shrinks
+    // the ASOF JOIN left side proportionally, which matters a lot for 30d ranges.
+    const otherIdCol = groupCol === 'profile_id' ? 'session_id' : 'profile_id';
+    const safeGroupByCols = startExtraCols.filter(c => c !== 'properties');
+    const anyWrapCols = startExtraCols.filter(c => c === 'properties');
+    const dedupeGroupBy = [quoteCol(groupCol), 'toDate(created_at)', ...safeGroupByCols.map(quoteCol)].join(', ');
+    const dedupeSelect = [
+      quoteCol(groupCol),
+      `any(${quoteCol(otherIdCol)}) AS ${quoteCol(otherIdCol)}`,
+      'min(created_at) AS created_at',
+      ...safeGroupByCols.map(quoteCol),
+      ...anyWrapCols.map(c => `any(${quoteCol(c)}) AS ${quoteCol(c)}`),
+    ].join(', ');
+    ctes.push(`start_events AS (
+      SELECT ${dedupeSelect}
+      FROM start_events_raw
+      GROUP BY ${dedupeGroupBy}
+    )`);
 
     // End events CTE — needs hold property columns for the JOIN condition
     const endEventCte = await this.buildSingleEventCte(
@@ -329,6 +356,7 @@ export class ConversionService {
       startDate,
       extendedEndDate,
       endExtraCols,
+      groupCol,
     );
     ctes.push(endEventCte);
 
@@ -338,9 +366,6 @@ export class ConversionService {
       const cohortQuery = buildCohortMembershipQuery(cohortId, projectId, cohortMeta);
       ctes.push(`${getCohortCteName(cohortId)} AS (${cohortQuery})`);
     });
-
-    // Define group column (profile_id or session_id)
-    const groupCol = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
 
     // Build breakdown columns (from start_events with 'se' alias)
     const breakdownColumns = breakdowns.map((b, index) => {

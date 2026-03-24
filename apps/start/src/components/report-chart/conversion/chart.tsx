@@ -113,6 +113,22 @@ export function Chart({ data }: Props) {
     hide: hideYAxis,
   });
 
+  // Compute a tight Y-axis domain so small differences between data points
+  // are visible instead of being flattened against a 0-100 baseline.
+  const yDomain = useMemo<[number, number]>(() => {
+    const allRates = series
+      .flatMap((serie) => serie.data.map((d) => d.rate))
+      .filter((r) => r != null && !Number.isNaN(r));
+    if (allRates.length === 0) return [0, 100];
+    const min = Math.min(...allRates);
+    const max = Math.max(...allRates);
+    const padding = Math.max((max - min) * 0.2, 2);
+    return [
+      Math.max(0, Math.floor(min - padding)),
+      Math.min(100, Math.ceil(max + padding)),
+    ];
+  }, [series]);
+
   const averageConversionRate = average(
     series.map((serie) => {
       return average(serie.data.map((item) => item.rate));
@@ -205,7 +221,7 @@ export function Chart({ data }: Props) {
                 tickFormatter={(value: number) => fancyMinutes(value)}
               />
             ) : (
-              <YAxis {...yAxisProps} domain={[0, 100]} />
+              <YAxis {...yAxisProps} domain={yDomain} />
             )}
             <XAxis {...xAxisProps} allowDuplicatedCategory={false} />
             {series.length > 1 && <Legend content={<CustomLegend />} />}
