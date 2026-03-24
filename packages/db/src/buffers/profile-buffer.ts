@@ -160,16 +160,16 @@ export class ProfileBuffer extends BaseBuffer {
             `SELECT
               id,
               project_id,
-              last_value(nullIf(first_name, '')) as first_name,
-              last_value(nullIf(last_name, '')) as last_name,
-              last_value(nullIf(email, '')) as email,
-              last_value(nullIf(avatar, '')) as avatar,
-              last_value(is_external) as is_external,
-              last_value(properties) as properties,
-              last_value(created_at) as created_at
+              argMax(nullIf(first_name, ''), ${TABLE_NAMES.profiles}.created_at) as first_name,
+              argMax(nullIf(last_name, ''), ${TABLE_NAMES.profiles}.created_at) as last_name,
+              argMax(nullIf(email, ''), ${TABLE_NAMES.profiles}.created_at) as email,
+              argMax(nullIf(avatar, ''), ${TABLE_NAMES.profiles}.created_at) as avatar,
+              argMax(is_external, ${TABLE_NAMES.profiles}.created_at) as is_external,
+              argMax(properties, ${TABLE_NAMES.profiles}.created_at) as properties,
+              max(created_at) as created_at
             FROM ${TABLE_NAMES.profiles}
             WHERE (id, project_id) IN (${tuples})
-            ${withDateFilter ? 'AND created_at > now() - INTERVAL 2 DAY' : ''}
+            ${withDateFilter ? `AND ${TABLE_NAMES.profiles}.created_at > now() - INTERVAL 2 DAY` : ''}
             GROUP BY id, project_id`
           );
           for (const row of rows) {
