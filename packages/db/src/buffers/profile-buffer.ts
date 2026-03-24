@@ -170,8 +170,7 @@ export class ProfileBuffer extends BaseBuffer {
             FROM ${TABLE_NAMES.profiles}
             WHERE (id, project_id) IN (${tuples})
             ${withDateFilter ? 'AND created_at > now() - INTERVAL 2 DAY' : ''}
-            GROUP BY id, project_id
-            ORDER BY created_at DESC`
+            GROUP BY id, project_id`
           );
           for (const row of rows) {
             result.set(`${row.project_id}:${row.id}`, row);
