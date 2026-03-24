@@ -124,7 +124,8 @@ OpenPanel includes an AI-powered analytics assistant that can help you analyze d
   - `gpt-4o` - More powerful but higher cost
   - `gpt-4o-mini` - Default model, good balance of performance and cost
 - **Anthropic**
-  - `claude-3-5-haiku-latest` - Fast and cost-effective
+  - `claude` - Uses `claude-sonnet-4-20250514` by default
+  - Any `claude-*` model identifier (e.g. `claude-haiku-3-5-20241022`)
 
 #### Configuration
 
@@ -141,7 +142,7 @@ AI_MODEL=gpt-4o-mini  # Optional: defaults to gpt-4o-mini
 
 ```bash title=".env"
 ANTHROPIC_API_KEY=your-anthropic-api-key-here
-AI_MODEL=claude-3-5
+AI_MODEL=claude
 ```
 
 #### Getting API Keys

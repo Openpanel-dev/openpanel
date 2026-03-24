@@ -268,7 +268,7 @@ ALLOW_INVITATION=false
 **Required**: No  
 **Default**: `gpt-4.1-mini`
 
-AI model to use for the analytics assistant. Options: `gpt-4o`, `gpt-4o-mini`, `claude-3-5`.
+AI model to use for the analytics assistant. Options: `gpt-4o`, `claude`, or any model identifier (e.g. `claude-sonnet-4-20250514`, `gpt-4.1-mini`). Models prefixed with `claude-` use Anthropic; models prefixed with `gpt-` or `o` use OpenAI.
 
 **Example**:
 ```bash
@@ -294,7 +294,7 @@ OPENAI_API_KEY=sk-your-openai-api-key-here
 **Required**: No (required if using Claude models)  
 **Default**: None
 
-Anthropic API key for Claude AI models. Required if `AI_MODEL` is set to `claude-3-5`.
+Anthropic API key for Claude AI models. Required if `AI_MODEL` is set to `claude` or any `claude-*` model.
 
 **Example**:
 ```bash

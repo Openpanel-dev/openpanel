@@ -4,12 +4,19 @@ import { chartTypes, operators, timeWindows } from '@openpanel/constants';
 import { mapKeys } from '@openpanel/validation';
 
 export const getChatModel = () => {
-  switch (process.env.AI_MODEL) {
+  const model = process.env.AI_MODEL;
+  switch (model) {
     case 'gpt-4o':
       return openai('gpt-4o');
-    case 'claude-3-5':
-      return anthropic('claude-3-5-haiku-latest');
+    case 'claude':
+      return anthropic('claude-sonnet-4-20250514');
     default:
+      if (model?.startsWith('claude-')) {
+        return anthropic(model);
+      }
+      if (model?.startsWith('gpt-') || model?.startsWith('o')) {
+        return openai(model);
+      }
       return openai('gpt-4.1-mini');
   }
 };
