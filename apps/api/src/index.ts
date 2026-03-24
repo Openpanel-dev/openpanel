@@ -34,6 +34,7 @@ import { requestIdHook } from './hooks/request-id.hook';
 import { requestLoggingHook } from './hooks/request-logging.hook';
 import { timestampHook } from './hooks/timestamp.hook';
 import aiRouter from './routes/ai.router';
+import mcpRouter, { mcpSessionManager } from './routes/mcp.router';
 import eventRouter from './routes/event.router';
 import exportRouter from './routes/export.router';
 import gscCallbackRouter from './routes/gsc-callback.router';
@@ -94,6 +95,7 @@ const startServer = async () => {
           '/oauth',
           '/misc',
           '/ai',
+          '/mcp',
         ];
 
         const isPrivatePath = corsPaths.some((path) =>
@@ -198,6 +200,7 @@ const startServer = async () => {
       instance.register(gscCallbackRouter, { prefix: '/gsc' });
       instance.register(miscRouter, { prefix: '/misc' });
       instance.register(aiRouter, { prefix: '/ai' });
+      instance.register(mcpRouter, { prefix: '/mcp' });
     });
 
     // Public API

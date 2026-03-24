@@ -380,7 +380,7 @@ export async function handler(
       status: 400,
       error: 'Bad Request',
       message: 'Validation failed',
-      errors: validationResult.error.errors,
+      errors: validationResult.error.issues,
     });
   }
 

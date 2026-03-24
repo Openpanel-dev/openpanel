@@ -15,7 +15,7 @@ import { BaseImportProvider } from '../base-provider';
 
 export const zMixpanelRawEvent = z.object({
   event: z.string(),
-  properties: z.record(z.unknown()),
+  properties: z.record(z.string(), z.unknown()),
 });
 
 export type MixpanelRawEvent = z.infer<typeof zMixpanelRawEvent>;
@@ -23,7 +23,7 @@ export type MixpanelRawEvent = z.infer<typeof zMixpanelRawEvent>;
 /** Engage API profile: https://docs.mixpanel.com/docs/export-methods#exporting-profiles */
 export const zMixpanelRawProfile = z.object({
   $distinct_id: z.union([z.string(), z.number()]),
-  $properties: z.record(z.unknown()).optional().default({}),
+  $properties: z.record(z.string(), z.unknown()).optional().default({}),
 });
 export type MixpanelRawProfile = z.infer<typeof zMixpanelRawProfile>;
 

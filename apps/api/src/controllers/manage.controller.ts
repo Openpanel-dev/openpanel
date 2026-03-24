@@ -100,7 +100,7 @@ export async function createProject(
     return reply.status(400).send({
       error: 'Bad Request',
       message: 'Invalid request body',
-      details: parsed.error.errors,
+      details: parsed.error.issues,
     });
   }
 
@@ -170,7 +170,7 @@ export async function updateProject(
     return reply.status(400).send({
       error: 'Bad Request',
       message: 'Invalid request body',
-      details: parsed.error.errors,
+      details: parsed.error.issues,
     });
   }
 
@@ -320,7 +320,7 @@ export async function createClient(
     return reply.status(400).send({
       error: 'Bad Request',
       message: 'Invalid request body',
-      details: parsed.error.errors,
+      details: parsed.error.issues,
     });
   }
 
@@ -376,7 +376,7 @@ export async function updateClient(
     return reply.status(400).send({
       error: 'Bad Request',
       message: 'Invalid request body',
-      details: parsed.error.errors,
+      details: parsed.error.issues,
     });
   }
 
@@ -518,7 +518,7 @@ export async function createReference(
     return reply.status(400).send({
       error: 'Bad Request',
       message: 'Invalid request body',
-      details: parsed.error.errors,
+      details: parsed.error.issues,
     });
   }
 
@@ -561,7 +561,7 @@ export async function updateReference(
     return reply.status(400).send({
       error: 'Bad Request',
       message: 'Invalid request body',
-      details: parsed.error.errors,
+      details: parsed.error.issues,
     });
   }
 

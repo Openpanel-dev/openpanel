@@ -360,14 +360,14 @@ export const zSlackConfig = z
   .object({
     type: z.literal('slack'),
   })
-  .merge(zSlackAuthResponse);
+  .extend(zSlackAuthResponse.shape);
 
 export type ISlackConfig = z.infer<typeof zSlackConfig>;
 
 export const zWebhookConfig = z.object({
   type: z.literal('webhook'),
   url: z.string().url(),
-  headers: z.record(z.string()),
+  headers: z.record(z.string(), z.string()),
   payload: z.record(z.string(), z.unknown()).optional(),
   mode: z.enum(['message', 'javascript']).default('message'),
   javascriptTemplate: z.string().optional(),
@@ -405,17 +405,13 @@ const zCreateIntegration = z.object({
 
 export const zCreateSlackIntegration = zCreateIntegration;
 
-export const zCreateWebhookIntegration = zCreateIntegration.merge(
-  z.object({
-    config: zWebhookConfig,
-  }),
-);
+export const zCreateWebhookIntegration = zCreateIntegration.extend({
+  config: zWebhookConfig,
+});
 
-export const zCreateDiscordIntegration = zCreateIntegration.merge(
-  z.object({
-    config: zDiscordConfig,
-  }),
-);
+export const zCreateDiscordIntegration = zCreateIntegration.extend({
+  config: zDiscordConfig,
+});
 
 export const zNotificationRuleEventConfig = z.object({
   type: z.literal('events'),
@@ -553,7 +549,7 @@ export const zCreateGroup = z.object({
   projectId: z.string(),
   type: z.string().min(1),
   name: z.string().min(1),
-  properties: z.record(z.string()).default({}),
+  properties: z.record(z.string(), z.string()).default({}),
 });
 export type ICreateGroup = z.infer<typeof zCreateGroup>;
 
@@ -562,7 +558,7 @@ export const zUpdateGroup = z.object({
   projectId: z.string(),
   type: z.string().min(1).optional(),
   name: z.string().min(1).optional(),
-  properties: z.record(z.string()).optional(),
+  properties: z.record(z.string(), z.string()).optional(),
 });
 export type IUpdateGroup = z.infer<typeof zUpdateGroup>;
 

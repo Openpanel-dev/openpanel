@@ -6,7 +6,7 @@ export const zGroupPayload = z.object({
   id: z.string().min(1),
   type: z.string().min(1),
   name: z.string().min(1),
-  properties: z.record(z.unknown()).optional(),
+  properties: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const zAssignGroupPayload = z.object({
@@ -56,7 +56,7 @@ export const zIdentifyPayload = z.object({
   lastName: z.string().optional(),
   email: z.string().email().optional(),
   avatar: z.string().url().optional(),
-  properties: z.record(z.unknown()).optional(),
+  properties: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const zIncrementPayload = z.object({

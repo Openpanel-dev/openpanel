@@ -102,7 +102,7 @@ export async function events(
     return reply.status(400).send({
       error: 'Bad Request',
       message: 'Invalid query parameters',
-      details: query.error.errors,
+      details: query.error.issues,
     });
   }
 
@@ -195,7 +195,7 @@ export async function charts(
     return reply.status(400).send({
       error: 'Bad Request',
       message: 'Invalid query parameters',
-      details: query.error.errors,
+      details: query.error.issues,
     });
   }
 

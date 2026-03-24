@@ -1,0 +1,26 @@
+{
+  "name": "@openpanel/mcp",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@openpanel/common": "workspace:*",
+    "@openpanel/db": "workspace:*",
+    "@openpanel/logger": "workspace:*",
+    "@openpanel/redis": "workspace:*",
+    "@openpanel/validation": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

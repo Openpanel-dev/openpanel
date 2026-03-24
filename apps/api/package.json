@@ -21,6 +21,7 @@
     "@fastify/websocket": "^11.2.0",
     "@node-rs/argon2": "^2.0.2",
     "@openpanel/auth": "workspace:^",
+    "@openpanel/mcp": "workspace:*",
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",
     "@openpanel/db": "workspace:*",
