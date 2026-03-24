@@ -17,9 +17,11 @@ import {
   MoreHorizontal,
   PlusIcon,
   RotateCcw,
+  SearchIcon,
   Trash,
   TrashIcon,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 import { timeWindows } from '@openpanel/constants';
@@ -304,7 +306,13 @@ function Component() {
     }),
   );
 
-  const reports = reportsQuery.data ?? [];
+  const [searchQuery, setSearchQuery] = useState('');
+  const allReports = reportsQuery.data ?? [];
+  const reports = searchQuery
+    ? allReports.filter((r) =>
+        r.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : allReports;
   const dashboard = dashboardQuery.data;
   const [isGridReady, setIsGridReady] = useState(false);
   const [enableTransitions, setEnableTransitions] = useState(false);
@@ -466,6 +474,15 @@ function Component() {
         className="mb-0"
         actions={
           <>
+            <div className="relative">
+              <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search reports..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 w-48"
+              />
+            </div>
             <OverviewRange />
             <OverviewInterval />
             <LinkButton
@@ -518,7 +535,7 @@ function Component() {
         }
       />
 
-      {reports.length === 0 ? (
+      {allReports.length === 0 ? (
         <FullPageEmptyState title="No reports" icon={LayoutPanelTopIcon}>
           <p>You can visualize your data with a report</p>
           <LinkButton
@@ -529,6 +546,10 @@ function Component() {
           >
             Create report
           </LinkButton>
+        </FullPageEmptyState>
+      ) : reports.length === 0 ? (
+        <FullPageEmptyState title="No reports found" icon={SearchIcon}>
+          <p>No reports match "{searchQuery}"</p>
         </FullPageEmptyState>
       ) : !isGridReady || reportsQuery.isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
