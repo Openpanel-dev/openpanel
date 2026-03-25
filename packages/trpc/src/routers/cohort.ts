@@ -358,6 +358,47 @@ export const cohortRouter = createTRPCRouter({
     }),
 
   /**
+   * Export cohort member IDs with pagination
+   */
+  exportProfiles: protectedProcedure
+    .input(
+      z.object({
+        cohortId: z.string(),
+        limit: z.number().min(1).max(10000).default(10000),
+        offset: z.number().min(0).default(0),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const cohort = await db.cohort.findUnique({
+        where: { id: input.cohortId },
+      });
+
+      if (!cohort) {
+        throw TRPCNotFoundError('Cohort not found');
+      }
+
+      const access = await getProjectAccess({
+        projectId: cohort.projectId,
+        userId: ctx.session.userId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this cohort');
+      }
+
+      const result = await getCohortMembers(input.cohortId, cohort.projectId, {
+        limit: input.limit,
+        offset: input.offset,
+      });
+
+      return {
+        profileIds: result.profileIds,
+        total: result.total,
+        cohortName: cohort.name,
+      };
+    }),
+
+  /**
    * Manually trigger cohort refresh
    */
   refresh: protectedProcedure
