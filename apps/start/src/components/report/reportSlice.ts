@@ -56,6 +56,7 @@ const initialState: InitialState = {
   funnelWindow: undefined,
   globalFilters: [],
   holdProperties: [],
+  hiddenSeries: [],
   measuring: 'conversion_rate' as const,
   cohortFilters: [],
 };
@@ -345,6 +346,11 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.measuring = action.payload;
     },
+
+    setHiddenSeries(state, action: PayloadAction<string[]>) {
+      state.dirty = true;
+      state.hiddenSeries = action.payload;
+    },
   },
 });
 
@@ -382,6 +388,7 @@ export const {
   removeHoldProperty,
   changeLimit,
   changeMeasuring,
+  setHiddenSeries,
 } = reportSlice.actions;
 
 export default reportSlice.reducer;

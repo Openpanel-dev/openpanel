@@ -90,6 +90,7 @@ export function transformReport(
     measuring: (report.measuring as 'conversion_rate' | 'time_to_convert') ?? undefined,
     globalFilters: ((report.globalFilters as IChartEventFilter[]) ?? []).map(transformFilter),
     holdProperties: (report.holdProperties as string[]) ?? [],
+    hiddenSeries: (report.hiddenSeries as string[]) ?? [],
     limit: 50,
     cohortFilters: [],
     layout: report.layout ?? undefined,

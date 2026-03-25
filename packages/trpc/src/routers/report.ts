@@ -82,6 +82,7 @@ export const reportRouter = createTRPCRouter({
           measuring: report.measuring ?? null,
           globalFilters: report.globalFilters ?? [],
           holdProperties: report.holdProperties ?? [],
+          hiddenSeries: report.hiddenSeries ?? [],
         },
       });
     }),
@@ -130,6 +131,7 @@ export const reportRouter = createTRPCRouter({
           measuring: report.measuring ?? null,
           globalFilters: report.globalFilters ?? [],
           holdProperties: report.holdProperties ?? [],
+          hiddenSeries: report.hiddenSeries ?? [],
         },
       });
     }),
@@ -203,6 +205,7 @@ export const reportRouter = createTRPCRouter({
           funnelWindow: report.funnelWindow,
           globalFilters: report.globalFilters ?? [],
           holdProperties: report.holdProperties ?? [],
+          hiddenSeries: (report.hiddenSeries as string[]) ?? [],
         },
       });
     }),

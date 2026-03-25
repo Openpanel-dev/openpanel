@@ -250,6 +250,11 @@ export const zReportInput = zChartInputBase.extend({
     .describe(
       "Optional unit of measurement for the chart's Y-axis (e.g., $, %, users)",
     ),
+  hiddenSeries: z
+    .array(z.string())
+    .optional()
+    .default([])
+    .describe('Series IDs hidden in the chart visualization'),
 });
 
 export const zChartInputAI = zReportInput
