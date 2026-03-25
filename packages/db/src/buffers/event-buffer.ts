@@ -614,14 +614,14 @@ return added
     profileId: string,
   ) {
     const now = Date.now();
-    const zsetKey = `live:visitors:${projectId}`;
+    const zsetKey = `{event_buffer}:live:visitors:${projectId}`;
     // Only ZADD - the score is the timestamp, no need for separate heartbeat key
     return multi.zadd(zsetKey, now, profileId);
   }
 
   public async getActiveVisitorCount(projectId: string): Promise<number> {
     const redis = this.redis;
-    const zsetKey = `live:visitors:${projectId}`;
+    const zsetKey = `{event_buffer}:live:visitors:${projectId}`;
     const cutoff = Date.now() - this.activeVisitorsExpiration * 1000;
 
     const multi = redis.multi();
