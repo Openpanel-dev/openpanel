@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { cn } from '@/utils/cn';
+import { cohortMembersToCSV, downloadCSV } from '@/utils/csv-download';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { Link, createFileRoute } from '@tanstack/react-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
-import { PencilIcon, PlusIcon, RefreshCwIcon, TrashIcon, UsersIcon } from 'lucide-react';
+import { DownloadIcon, PencilIcon, PlusIcon, RefreshCwIcon, TrashIcon, UsersIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute(
@@ -60,6 +61,20 @@ function Component() {
       },
     }),
   );
+
+  const queryClient = useQueryClient();
+
+  async function handleDownload(cohortId: string, cohortName: string) {
+    try {
+      const result = await queryClient.fetchQuery(
+        trpc.cohort.exportProfiles.queryOptions({ cohortId }),
+      );
+      const csv = cohortMembersToCSV(result.profileIds);
+      downloadCSV(csv, `${cohortName}-members.csv`);
+    } catch {
+      toast.error('Failed to download cohort members');
+    }
+  }
 
   const refresh = useMutation(
     trpc.cohort.refresh.mutationOptions({
@@ -140,6 +155,15 @@ function Component() {
               </div>
 
               <CardActions>
+                <CardActionsItem className="w-full" asChild>
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(cohort.id, cohort.name)}
+                  >
+                    <DownloadIcon size={16} />
+                    Download
+                  </button>
+                </CardActionsItem>
                 {!cohort.isStatic && (
                   <CardActionsItem className="w-full" asChild>
                     <button

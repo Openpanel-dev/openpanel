@@ -106,6 +106,11 @@ export function cohortDataToCSV(data: CohortData): string {
   return buildCSV([['Cohort Date', ...cohortDates], totalRow, ...periodRows]);
 }
 
+export function cohortMembersToCSV(profileIds: string[]): string {
+  if (!profileIds.length) return '';
+  return buildCSV([['profile_id'], ...profileIds.map((id) => [id])]);
+}
+
 export function conversionDataToCSV(data: ConversionData): string {
   if (!data.current.length) return '';
 
