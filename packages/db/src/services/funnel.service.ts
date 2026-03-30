@@ -58,54 +58,33 @@ export class FunnelService {
       };
     }
 
-    // Get materialized columns to ensure UNION compatibility (events table only)
-    const materializedColumns = await getMaterializedColumns('events');
-    const materializedColumnNames = Object.values(materializedColumns);
-    const materializedColumnsSelect = materializedColumnNames.length > 0
-      ? `, ${materializedColumnNames.map(col => `\`${col}\``).join(', ')}`
-      : '';
-
-    // Build CTEs for custom events
     const withClauses: Array<{ name: string; query: any }> = [];
     const baseWhere = [
       `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`,
       `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`,
     ];
-
-    // Build union parts - one for each event (custom or regular)
     const unionParts: string[] = [];
 
     for (let i = 0; i < events.length; i++) {
       const event = events[i]!;
       const customEvent = customEventsChecks[i];
+      const cteName = `event_${i}`;
 
-      if (customEvent) {
-        // Custom event - create CTE and reference it
-        const cteName = `custom_event_${i}`;
-        const sql = await expandCustomEventToSQL(
-          {
-            name: customEvent.name,
-            projectId,
-            definition: customEvent.definition as any,
-          },
-          baseWhere,
-        );
+      // Use expandCustomEventToSQL for all events — custom and regular alike.
+      // Materialized column handling is centralised there; regular events get
+      // a synthetic single-event definition that produces identical SQL to the
+      // direct table query, without duplicating column-quoting logic here.
+      const sql = await expandCustomEventToSQL(
+        {
+          name: event.name,
+          projectId,
+          definition: customEvent?.definition ?? { events: [{ name: event.name }] },
+        } as any,
+        baseWhere,
+      );
 
-        withClauses.push({
-          name: cteName,
-          query: sql,
-        });
-
-        unionParts.push(`SELECT * FROM ${cteName}`);
-      } else {
-        // Regular event - include materialized columns to match custom events
-        unionParts.push(`
-          SELECT *${materializedColumnsSelect} FROM ${TABLE_NAMES.events}
-          WHERE project_id = '${projectId}'
-            AND name = '${event.name}'
-            AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')
-        `);
-      }
+      withClauses.push({ name: cteName, query: sql });
+      unionParts.push(`SELECT * FROM ${cteName}`);
     }
 
     // Create combined_events CTE
