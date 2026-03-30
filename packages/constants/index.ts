@@ -24,6 +24,11 @@ export const timeWindows = {
     label: 'Yesterday',
     shortcut: 'E',
   },
+  '3d': {
+    key: '3d',
+    label: 'Last 3 days',
+    shortcut: '3',
+  },
   '7d': {
     key: '7d',
     label: 'Last 7 days',
@@ -256,7 +261,7 @@ export type AlertFrequency = 'hour' | 'day' | 'week' | 'month';
  * Maps alert frequency to the range used for historical data (anomaly detection)
  */
 export const ALERT_FREQUENCY_TO_RANGE: Record<AlertFrequency, string> = {
-  hour: '7d',
+  hour: '3d',
   day: '30d',
   week: '30d',
   month: '180d',
