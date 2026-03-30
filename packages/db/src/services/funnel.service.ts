@@ -88,7 +88,7 @@ export class FunnelService {
       // Without this, ClickHouse may produce String Const for custom events (where
       // REPLACE changes the value) but LowCardinality(String) for regular events
       // (where REPLACE is a no-op), causing a Block structure mismatch.
-      unionParts.push(`SELECT * REPLACE(toString(name) AS name) FROM ${cteName}`);
+      unionParts.push(`SELECT * REPLACE(CAST(name AS String) AS name) FROM ${cteName}`);
     }
 
     // Create combined_events CTE

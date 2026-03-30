@@ -102,7 +102,13 @@ export async function expandCustomEventToSQL(
   // Use 'events' target to exclude profile.* materialized columns — those require a profiles JOIN
   // and must not be referenced in a bare SELECT from the events table.
   const materializedColumns = await getMaterializedColumns('events');
-  const materializedColumnNames = Object.values(materializedColumns);
+  // Exclude any materialized column whose name conflicts with the REPLACE target.
+  // SELECT * REPLACE(... AS name) already outputs `name`, so adding the `name`
+  // materialized column explicitly creates a duplicate with a different type
+  // (String Const vs LowCardinality(String)) → AMBIGUOUS_COLUMN_NAME / Block structure mismatch.
+  const replaceTargets = new Set(['name']);
+  const materializedColumnNames = Object.values(materializedColumns)
+    .filter(col => !replaceTargets.has(col.replace(/`/g, '')));
   const materializedColumnsSelect = materializedColumnNames.length > 0
     ? `, ${materializedColumnNames.join(', ')}`
     : '';
