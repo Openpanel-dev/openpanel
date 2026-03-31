@@ -34,6 +34,11 @@ export const timeWindows = {
     label: 'Last 7 days',
     shortcut: 'W',
   },
+  '21d': {
+    key: '21d',
+    label: 'Last 21 days',
+    shortcut: '',
+  },
   '30d': {
     key: '30d',
     label: 'Last 30 days',
@@ -262,7 +267,7 @@ export type AlertFrequency = 'hour' | 'day' | 'week' | 'month';
  */
 export const ALERT_FREQUENCY_TO_RANGE: Record<AlertFrequency, string> = {
   hour: '3d',
-  day: '30d',
+  day: '21d',
   week: '30d',
   month: '180d',
 };
@@ -291,7 +296,7 @@ export const ALERT_FREQUENCY_TO_INTERVAL: Record<AlertFrequency, string> = {
 /**
  * How many historical data points to use for anomaly detection
  */
-export const ANOMALY_HISTORY_COUNT = 30;
+export const ANOMALY_HISTORY_COUNT = 72;
 
 /**
  * Z-scores for confidence levels used in anomaly detection

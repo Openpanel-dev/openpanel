@@ -1375,6 +1375,24 @@ export function getDatesFromRange(range: IChartRange, timezone: string) {
     };
   }
 
+  if (range === '21d') {
+    const startDate = DateTime.now()
+      .minus({ day: 21 })
+      .setZone(timezone)
+      .startOf('day')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = DateTime.now()
+      .setZone(timezone)
+      .endOf('day')
+      .plus({ millisecond: 1 })
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+
+    return {
+      startDate: startDate,
+      endDate: endDate,
+    };
+  }
+
   if (range === '3d') {
     const startDate = DateTime.now()
       .minus({ day: 3 })

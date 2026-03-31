@@ -267,7 +267,7 @@ async function evaluateThreshold(
       startDate,
       endDate,
       series: report.series,
-      breakdowns: report.breakdowns,
+      breakdowns: [],
       interval: interval as any,
       timezone,
       funnelGroup: report.funnelGroup,
@@ -280,7 +280,8 @@ async function evaluateThreshold(
     });
 
     const data = series[0]?.data ?? [];
-    const lastPoint = data[data.length - 1];
+    // Use second-to-last point — last point is the incomplete/partial period
+    const lastPoint = data.length >= 2 ? data[data.length - 2] : data[data.length - 1];
     const currentValue = lastPoint?.rate ?? 0;
 
     const crossed =
@@ -309,7 +310,7 @@ async function evaluateThreshold(
       startDate,
       endDate,
       series: report.series,
-      breakdowns: report.breakdowns,
+      breakdowns: [],
       interval: interval as any,
       range: report.range,
       chartType: report.chartType,
@@ -392,6 +393,7 @@ async function evaluateAnomaly(
   const interval = ALERT_FREQUENCY_TO_INTERVAL[freq];
 
   // Conversion charts: use conversionService and compare on rate (%) not raw counts
+  // Evaluates each breakdown independently (e.g. per payment gateway)
   if (report.chartType === 'conversion') {
     const { timezone } = await getSettingsForProject(report.projectId);
     const { startDate, endDate } = getDatesFromRange(historicalRange as any, timezone);
@@ -413,44 +415,52 @@ async function evaluateAnomaly(
       cohortFilters: report.cohortFilters,
     });
 
-    const data = seriesResult[0]?.data ?? [];
-    if (data.length < 3) {
-      logger.warn(
-        `Not enough historical data for anomaly detection on report ${report.id}`,
-      );
-      return { shouldAlert: false, currentValue: 0, lowerBound: 0, upperBound: 0, title: '', message: '' };
-    }
-
-    // dataPoints are conversion rates (percentages, e.g. 88.63)
-    const dataPoints = data.map((d) => d.rate);
-    const historicalValues = dataPoints.slice(
-      0,
-      Math.min(dataPoints.length - 1, ANOMALY_HISTORY_COUNT),
-    );
-    const currentValue = dataPoints[dataPoints.length - 1] ?? 0;
-
-    if (historicalValues.length < 3) {
-      return { shouldAlert: false, currentValue: 0, lowerBound: 0, upperBound: 0, title: '', message: '' };
-    }
-
-    const mean = historicalValues.reduce((sum, v) => sum + v, 0) / historicalValues.length;
-    const variance =
-      historicalValues.reduce((sum, v) => sum + (v - mean) ** 2, 0) /
-      historicalValues.length;
-    const stddev = Math.sqrt(variance);
-
     const zScore = CONFIDENCE_Z_SCORES[config.confidence] ?? 1.96;
-    const lowerBound = mean - zScore * stddev;
-    const upperBound = mean + zScore * stddev;
-    const isAnomaly = currentValue < lowerBound || currentValue > upperBound;
+    const anomalies: string[] = [];
+    let firstTriggered = { currentValue: 0, lowerBound: 0, upperBound: 0 };
 
+    for (const serie of seriesResult) {
+      const data = serie.data ?? [];
+      // Use second-to-last point as "current" — last point is the incomplete/partial period
+      if (data.length < 4) continue;
+
+      const lastCompleted = data[data.length - 2];
+      if (!lastCompleted) continue;
+
+      const dataPoints = data.map((d) => d.rate);
+      const historicalRates = dataPoints.slice(0, Math.min(dataPoints.length - 2, ANOMALY_HISTORY_COUNT));
+      const currentValue = dataPoints[dataPoints.length - 2] ?? 0;
+
+      if (historicalRates.length < 3) continue;
+
+      const mean = historicalRates.reduce((sum, v) => sum + v, 0) / historicalRates.length;
+      const variance = historicalRates.reduce((sum, v) => sum + (v - mean) ** 2, 0) / historicalRates.length;
+      const stddev = Math.sqrt(variance);
+      const lowerBound = mean - zScore * stddev;
+      const upperBound = mean + zScore * stddev;
+
+      if (currentValue < lowerBound || currentValue > upperBound) {
+        const breakdownName = serie.breakdowns?.join(', ') || 'Overall';
+        anomalies.push(`${breakdownName}: ${currentValue.toFixed(2)}% (band: [${lowerBound.toFixed(2)}%, ${upperBound.toFixed(2)}%])`);
+        if (anomalies.length === 1) {
+          firstTriggered = { currentValue, lowerBound, upperBound };
+        }
+      }
+    }
+
+    const shouldAlert = anomalies.length > 0;
+    const hasBreakdowns = report.breakdowns && report.breakdowns.length > 0;
     return {
-      shouldAlert: isAnomaly,
-      currentValue,
-      lowerBound,
-      upperBound,
+      shouldAlert,
+      currentValue: firstTriggered.currentValue,
+      lowerBound: firstTriggered.lowerBound,
+      upperBound: firstTriggered.upperBound,
       title: `Alert: ${report.name}`,
-      message: `The current value for ${report.name} is ${currentValue.toFixed(2)}%. Triggered when the current value is not within forecasted range [${lowerBound.toFixed(2)}%, ${upperBound.toFixed(2)}%].`,
+      message: shouldAlert
+        ? hasBreakdowns
+          ? `The current value for ${report.name} is ${firstTriggered.currentValue.toFixed(2)}%. Triggered when the current value is not within forecasted range [${firstTriggered.lowerBound.toFixed(2)}%, ${firstTriggered.upperBound.toFixed(2)}%].\n\n${anomalies.join('\n')}`
+          : `The current value for ${report.name} is ${firstTriggered.currentValue.toFixed(2)}%. Triggered when the current value is not within forecasted range [${firstTriggered.lowerBound.toFixed(2)}%, ${firstTriggered.upperBound.toFixed(2)}%].`
+        : '',
     };
   }
 
@@ -488,12 +498,16 @@ async function evaluateAnomaly(
     return { shouldAlert: false, currentValue: 0, lowerBound: 0, upperBound: 0, title: '', message: '' };
   }
 
+  // Use second-to-last point as "current" — last point is the incomplete/partial period
   const dataPoints = series.data.map((d) => d.count);
+  if (dataPoints.length < 4) {
+    return { shouldAlert: false, currentValue: 0, lowerBound: 0, upperBound: 0, title: '', message: '' };
+  }
   const historicalValues = dataPoints.slice(
     0,
-    Math.min(dataPoints.length - 1, ANOMALY_HISTORY_COUNT),
+    Math.min(dataPoints.length - 2, ANOMALY_HISTORY_COUNT),
   );
-  const currentValue = dataPoints[dataPoints.length - 1] ?? 0;
+  const currentValue = dataPoints[dataPoints.length - 2] ?? 0;
 
   if (historicalValues.length < 3) {
     return { shouldAlert: false, currentValue: 0, lowerBound: 0, upperBound: 0, title: '', message: '' };
