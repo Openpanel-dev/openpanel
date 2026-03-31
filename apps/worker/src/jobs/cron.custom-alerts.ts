@@ -22,7 +22,7 @@ import { getLock } from '@openpanel/redis';
 
 import { logger } from '../utils/logger';
 
-const CRON_QUERY_TIMEOUT_MS = 30_000; // 30 seconds
+const CRON_QUERY_TIMEOUT_MS = 60_000; // 60 seconds
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -441,9 +441,14 @@ async function evaluateAnomaly(
       const upperBound = mean + zScore * stddev;
 
       lastEvaluated = { currentValue, lowerBound, upperBound };
+      const breakdownName = serie.breakdowns?.join(', ') || 'Overall';
+      const isOutside = currentValue < lowerBound || currentValue > upperBound;
 
-      if (currentValue < lowerBound || currentValue > upperBound) {
-        const breakdownName = serie.breakdowns?.join(', ') || 'Overall';
+      logger.info(
+        `[custom-alerts]   ↳ ${breakdownName}: ${currentValue.toFixed(2)}% — band: [${lowerBound.toFixed(2)}%, ${upperBound.toFixed(2)}%] — ${isOutside ? 'ANOMALY' : 'ok'}`,
+      );
+
+      if (isOutside) {
         anomalies.push(`${breakdownName}: ${currentValue.toFixed(2)}% (band: [${lowerBound.toFixed(2)}%, ${upperBound.toFixed(2)}%])`);
         if (anomalies.length === 1) {
           firstTriggered = { currentValue, lowerBound, upperBound };
