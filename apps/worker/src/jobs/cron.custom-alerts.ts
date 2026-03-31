@@ -418,6 +418,7 @@ async function evaluateAnomaly(
     const zScore = CONFIDENCE_Z_SCORES[config.confidence] ?? 1.96;
     const anomalies: string[] = [];
     let firstTriggered = { currentValue: 0, lowerBound: 0, upperBound: 0 };
+    let lastEvaluated = { currentValue: 0, lowerBound: 0, upperBound: 0 };
 
     for (const serie of seriesResult) {
       const data = serie.data ?? [];
@@ -439,6 +440,8 @@ async function evaluateAnomaly(
       const lowerBound = mean - zScore * stddev;
       const upperBound = mean + zScore * stddev;
 
+      lastEvaluated = { currentValue, lowerBound, upperBound };
+
       if (currentValue < lowerBound || currentValue > upperBound) {
         const breakdownName = serie.breakdowns?.join(', ') || 'Overall';
         anomalies.push(`${breakdownName}: ${currentValue.toFixed(2)}% (band: [${lowerBound.toFixed(2)}%, ${upperBound.toFixed(2)}%])`);
@@ -450,11 +453,12 @@ async function evaluateAnomaly(
 
     const shouldAlert = anomalies.length > 0;
     const hasBreakdowns = report.breakdowns && report.breakdowns.length > 0;
+    const values = shouldAlert ? firstTriggered : lastEvaluated;
     return {
       shouldAlert,
-      currentValue: firstTriggered.currentValue,
-      lowerBound: firstTriggered.lowerBound,
-      upperBound: firstTriggered.upperBound,
+      currentValue: values.currentValue,
+      lowerBound: values.lowerBound,
+      upperBound: values.upperBound,
       title: `Alert: ${report.name}`,
       message: shouldAlert
         ? hasBreakdowns
