@@ -106,6 +106,7 @@ getMaterializedColumns().catch(() => {
 // Cohort metadata type
 type CohortMetadata = {
   id: string;
+  name: string;
   computeOnDemand: boolean;
   definition: CohortDefinition;
 };
@@ -123,7 +124,7 @@ export async function fetchCohortsMetadata(
   // Fetch all cohorts in one query
   const cohorts = await db.cohort.findMany({
     where: { id: { in: cohortIds } },
-    select: { id: true, computeOnDemand: true, definition: true },
+    select: { id: true, name: true, computeOnDemand: true, definition: true },
   });
 
   return new Map(
@@ -131,6 +132,7 @@ export async function fetchCohortsMetadata(
       c.id,
       {
         id: c.id,
+        name: c.name,
         computeOnDemand: c.computeOnDemand,
         definition: c.definition as CohortDefinition,
       },
@@ -231,6 +233,7 @@ export function getSelectPropertyKey(
   property: string,
   projectId?: string,
   cohortId?: string,
+  cohortName?: string,
 ) {
   // Handle cohort breakdown
   // Use cohortId parameter if provided, otherwise parse from property name (backwards compatibility)
@@ -239,13 +242,15 @@ export function getSelectPropertyKey(
   if (extractedCohortId && projectId) {
     // Use JOIN-based approach instead of IN subquery for better performance
     const cohortAlias = getCohortAlias(extractedCohortId);
+    const inLabel = cohortName ? sqlstring.escape(cohortName) : "'In Cohort'";
+    const notInLabel = cohortName ? sqlstring.escape(`Not ${cohortName}`) : "'Not In Cohort'";
     // Use notEmpty() to handle both join_use_nulls=0 (returns '') and join_use_nulls=1 (returns NULL)
     // When join_use_nulls=0, ClickHouse returns empty string for unmatched LEFT JOIN rows instead of NULL
     // notEmpty() correctly identifies both cases as "Not In Cohort"
     return `if(
       notEmpty(${cohortAlias}.profile_id),
-      'In Cohort',
-      'Not In Cohort'
+      ${inLabel},
+      ${notInLabel}
     )`;
   }
 
@@ -670,7 +675,7 @@ export async function getChartSql({
   if (breakdowns.length > 0 && limit) {
     // When using property MV, use property_value instead of properties['key']
     const breakdownSelects = breakdowns
-      .map((b) => usePropertyMV ? 'property_value' : getSelectPropertyKey(b.name, projectId, b.cohortId))
+      .map((b) => usePropertyMV ? 'property_value' : getSelectPropertyKey(b.name, projectId, b.cohortId, b.cohortId ? cohortMetadata.get(b.cohortId)?.name : undefined))
       .join(', ');
 
     // Build cohort JOINs for top_breakdowns CTE
@@ -700,14 +705,14 @@ export async function getChartSql({
     );
 
     // Filter main query to only include top breakdown values
-    const barSelects = breakdowns.map((b) => usePropertyMV ? 'property_value' : getSelectPropertyKey(b.name, projectId, b.cohortId)).join(',');
+    const barSelects = breakdowns.map((b) => usePropertyMV ? 'property_value' : getSelectPropertyKey(b.name, projectId, b.cohortId, b.cohortId ? cohortMetadata.get(b.cohortId)?.name : undefined)).join(',');
     sb.where.bar = `(${barSelects}) IN (SELECT * FROM top_breakdowns)`;
   }
 
   breakdowns.forEach((breakdown, index) => {
     // Breakdowns start at label_1 (label_0 is reserved for event name)
     const key = `label_${index + 1}`;
-    const selectKey = usePropertyMV ? 'property_value' : getSelectPropertyKey(breakdown.name, projectId, breakdown.cohortId);
+    const selectKey = usePropertyMV ? 'property_value' : getSelectPropertyKey(breakdown.name, projectId, breakdown.cohortId, breakdown.cohortId ? cohortMetadata.get(breakdown.cohortId)?.name : undefined);
     sb.select[key] = `${selectKey} as ${key}`;
     sb.groupBy[key] = `${key}`;
   });
@@ -764,7 +769,7 @@ export async function getChartSql({
   if (breakdowns.length > 0) {
     const breakdownSelects = breakdowns
       .map((b, index) => {
-        const propertyKey = usePropertyMV ? 'property_value' : getSelectPropertyKey(b.name, projectId, b.cohortId);
+        const propertyKey = usePropertyMV ? 'property_value' : getSelectPropertyKey(b.name, projectId, b.cohortId, b.cohortId ? cohortMetadata.get(b.cohortId)?.name : undefined);
         return `${propertyKey} as breakdown_${index + 1}`;
       })
       .join(', ');
@@ -801,7 +806,7 @@ export async function getChartSql({
 
     const joinConditions = breakdowns
       .map((b, index) => {
-        const propertyKey = usePropertyMV ? 'property_value' : getSelectPropertyKey(b.name, projectId, b.cohortId);
+        const propertyKey = usePropertyMV ? 'property_value' : getSelectPropertyKey(b.name, projectId, b.cohortId, b.cohortId ? cohortMetadata.get(b.cohortId)?.name : undefined);
         return `breakdown_totals.breakdown_${index + 1} = ${propertyKey}`;
       })
       .join(' AND ');

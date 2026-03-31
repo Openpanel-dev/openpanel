@@ -29,8 +29,9 @@ export class ConversionService {
     projectId: string,
     cohortId: string | undefined,
     tableAlias: string,
+    cohortName?: string,
   ): string {
-    const propertyKey = getSelectPropertyKey(breakdownName, projectId, cohortId);
+    const propertyKey = getSelectPropertyKey(breakdownName, projectId, cohortId, cohortName);
 
     // Cohort expressions already have their own aliases (e.g., cohort_abc123.profile_id)
     if (propertyKey.includes('cohort_') || propertyKey.startsWith('if(')) {
@@ -371,7 +372,7 @@ export class ConversionService {
 
     // Build breakdown columns (from start_events with 'se' alias)
     const breakdownColumns = breakdowns.map((b, index) => {
-      const columnWithAlias = this.getBreakdownColumnWithAlias(b.name, projectId, b.cohortId, 'se');
+      const columnWithAlias = this.getBreakdownColumnWithAlias(b.name, projectId, b.cohortId, 'se', b.cohortId ? cohortMetadata.get(b.cohortId)?.name : undefined);
       return `${columnWithAlias} as b_${index}`;
     });
     const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
