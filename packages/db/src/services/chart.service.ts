@@ -547,9 +547,7 @@ export async function getChartSql({
   if (useCohortMV) {
     sb.from = `${TABLE_NAMES.profile_event_summary_mv} e`;
   } else if (usePropertyMV) {
-    const firstPropName = propertyBreakdowns[0]!.name.replace('properties.', '');
     sb.from = `${propertyMVTable} e`;
-    sb.where.propertyKey = `e.property_key = ${sqlstring.escape(firstPropName)}`;
 
     // Add self-joins for additional breakdowns + filters to main query
     const mvJoins = buildMVSelfJoins();
@@ -574,6 +572,12 @@ export async function getChartSql({
     : event.filters;
   sb.where = getEventFiltersWhereClause(filtersForWhere, projectId);
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
+
+  // Filter base table to first breakdown property_key (after sb.where reassignment to avoid being wiped)
+  if (usePropertyMV) {
+    const firstPropName = propertyBreakdowns[0]!.name.replace('properties.', '');
+    sb.where.propertyKey = `e.property_key = ${sqlstring.escape(firstPropName)}`;
+  }
   sb.select.label_0 =
     event.name !== '*'
       ? `${sqlstring.escape(event.name)} as label_0`
