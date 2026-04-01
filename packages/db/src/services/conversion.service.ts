@@ -70,10 +70,17 @@ export class ConversionService {
     const customEvent = await getCustomEventByName(event.name, projectId);
 
     if (customEvent) {
-      // Custom event - expand to SQL
+      // Compute needed columns upfront and pass to expandCustomEventToSQL.
+      // This skips SELECT * REPLACE entirely for the inner scan, allowing
+      // ClickHouse to use proj_funnel instead of reading all columns from disk.
+      // REPLACE is preserved for all other callers that don't pass selectColumns.
+      const baseColumns = ['profile_id', 'session_id', 'created_at'];
+      const neededColumns = [...new Set([...baseColumns, ...extraColumns])];
+
       const baseWhere = [
         `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`,
         `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`,
+        `${groupCol} != ''`,
       ];
 
       const sql = await expandCustomEventToSQL(
@@ -83,14 +90,10 @@ export class ConversionService {
           definition: customEvent.definition as any,
         },
         baseWhere,
+        neededColumns,
       );
 
-      // Wrap to only expose columns needed downstream — prevents broadcasting
-      // all materialized columns into FillingRightJoinSide × 32 copies
-      const baseColumns = ['profile_id', 'session_id', 'created_at'];
-      const neededColumns = [...new Set([...baseColumns, ...extraColumns])];
-      const selectList = neededColumns.map(quoteCol).join(', ');
-      return `${cteName} AS (SELECT ${selectList} FROM (${sql}) WHERE ${groupCol} != '')`;
+      return `${cteName} AS (${sql})`;
     } else {
       // Regular event - apply filters if present
       // Exclude cohort filters — they're handled via JOINs in the outer query

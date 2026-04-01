@@ -85,6 +85,9 @@ function buildCustomEventSourceQuery(
  *
  * @param customEvent - The custom event definition
  * @param baseWhere - Base WHERE conditions to apply to all source events (date ranges, etc)
+ * @param selectColumns - When provided, skip SELECT * REPLACE and only read these columns.
+ *                        This allows ClickHouse projections to be used. Safe to pass when
+ *                        the renamed `name` column is not needed downstream (e.g. conversion CTEs).
  * @returns SQL query string that selects from all source events
  */
 export async function expandCustomEventToSQL(
@@ -94,6 +97,7 @@ export async function expandCustomEventToSQL(
     definition: ICustomEventDefinition;
   },
   baseWhere: string[] = [],
+  selectColumns?: string[],
 ): Promise<string> {
   const definition = customEvent.definition;
 
@@ -118,6 +122,39 @@ export async function expandCustomEventToSQL(
   const canOptimize = definition.events.every(
     (event) => !event.filters || event.filters.length === 0
   );
+
+  // When selectColumns is provided, skip SELECT * REPLACE entirely.
+  // The caller doesn't need the renamed name column (e.g. conversion CTEs),
+  // so we do a minimal SELECT that allows ClickHouse projections to be used.
+  if (selectColumns) {
+    const selectList = selectColumns.map(c => `\`${c.replace(/^`|`$/g, '')}\``).join(', ');
+
+    if (canOptimize && definition.events.length > 0) {
+      const eventNames = definition.events.map((e) => sqlstring.escape(e.name));
+      return `
+        SELECT ${selectList}
+        FROM ${TABLE_NAMES.events}
+        WHERE project_id = ${sqlstring.escape(customEvent.projectId)}
+          AND name IN (${eventNames.join(', ')})
+          AND ${baseWhere.join(' AND ')}
+      `;
+    }
+
+    // UNION ALL fallback — per-event filters, still minimal SELECT
+    const sourceQueries = definition.events.map((sourceEvent) => {
+      const whereClauses = [
+        `project_id = ${sqlstring.escape(customEvent.projectId)}`,
+        `name = ${sqlstring.escape(sourceEvent.name)}`,
+        ...baseWhere,
+      ];
+      if (sourceEvent.filters && sourceEvent.filters.length > 0) {
+        const filterWhere = getEventFiltersWhereClause(sourceEvent.filters, customEvent.projectId);
+        whereClauses.push(...Object.values(filterWhere));
+      }
+      return `SELECT ${selectList} FROM ${TABLE_NAMES.events} WHERE ${whereClauses.join(' AND ')}`;
+    });
+    return sourceQueries.join(' UNION ALL ');
+  }
 
   if (canOptimize && definition.events.length > 0) {
     // OPTIMIZED PATH: Single SELECT with IN clause
