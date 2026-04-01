@@ -1,0 +1,199 @@
+name: Release OpenPanel
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: ${{ contains(github.event.head_commit.message, '#tag') || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get short SHA
+        uses: benjlevesque/short-sha@v2.1
+        id: short-sha
+        with:
+          length: 7
+
+      - name: Get current date for versioning
+        id: get_date
+        run: echo "CURRENT_DATE=$(date +'%y.%m.%d')" >> $GITHUB_ENV
+
+      - name: Determine the new tag
+        id: determine_tag
+        run: |
+          BASE_TAG="${{ env.CURRENT_DATE }}"
+          PREVIOUS_TAG=$(git tag --sort=-creatordate | head -1 2>/dev/null || echo "")
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            NEW_TAG="${BASE_TAG}"
+          elif [[ "$PREVIOUS_TAG" == "${BASE_TAG}" ]]; then
+            NEW_TAG="${BASE_TAG}.01"
+          elif [[ "$PREVIOUS_TAG" == "${BASE_TAG}."* ]]; then
+            SUFFIX=$(echo "$PREVIOUS_TAG" | awk -F. '{print $NF}')
+            if [[ "$SUFFIX" =~ ^[0-9]+$ ]]; then
+              NEW_SUFFIX=$(printf "%02d" $((SUFFIX + 1)))
+              NEW_TAG="${BASE_TAG}.${NEW_SUFFIX}"
+            else
+              NEW_TAG="${BASE_TAG}.01"
+            fi
+          else
+            NEW_TAG="$BASE_TAG"
+          fi
+
+          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
+          echo "PREVIOUS_TAG=$PREVIOUS_TAG" >> $GITHUB_ENV
+          echo "Creating release tag: $NEW_TAG"
+          echo "Previous release tag: $PREVIOUS_TAG"
+
+      - name: Get all commits and filter out tag/ci commits
+        id: get_filtered_commits
+        run: |
+          CURRENT_TAG=$(git log --first-parent --grep="^#tag" --format="%H" -1)
+
+          if [ -z "$CURRENT_TAG" ]; then
+            echo "No tag commit found. Cannot create release."
+            echo "SKIP_RELEASE=true" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          echo "Current tag commit: $CURRENT_TAG"
+
+          PREVIOUS_TAG_COMMIT=$(git log --first-parent --grep="^#tag" --format="%H" --skip=1 -1)
+
+          if [ -z "$PREVIOUS_TAG_COMMIT" ]; then
+            echo "No previous tag commit found. This is the first release."
+            echo "Getting all commits up to current d2p"
+            git log --first-parent ${CURRENT_TAG}^ --pretty=format:"%H%n%ae%n%s%n---COMMIT-END---" > all_commits_raw.txt
+          else
+            echo "Previous tag commit: $PREVIOUS_TAG_COMMIT"
+            echo "Getting commits between $PREVIOUS_TAG_COMMIT and $CURRENT_TAG (exclusive)"
+            git log --first-parent ${PREVIOUS_TAG_COMMIT}..${CURRENT_TAG}^ --pretty=format:"%H%n%ae%n%s%n---COMMIT-END---" > all_commits_raw.txt
+          fi
+
+          if [ ! -s all_commits_raw.txt ]; then
+            echo "No commits found between d2p boundaries."
+            echo "SKIP_RELEASE=true" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          echo "Release notes:" > release_notes.txt
+          ANY_VALID_COMMITS=false
+
+          CURRENT_HASH=""
+          CURRENT_AUTHOR=""
+          CURRENT_MESSAGE=""
+          LINE_COUNT=0
+
+          while IFS= read -r line; do
+            if [[ "$line" == "---COMMIT-END---" ]]; then
+              SHORT_HASH=$(echo "$CURRENT_HASH" | cut -c1-7)
+              CURRENT_MESSAGE_LOWER=$(echo "$CURRENT_MESSAGE" | tr '[:upper:]' '[:lower:]')
+
+              if [[ "$CURRENT_MESSAGE_LOWER" != "#tag"* ]]; then
+                echo "• $CURRENT_MESSAGE (by $CURRENT_AUTHOR, $SHORT_HASH)" >> release_notes.txt
+                echo "$SHORT_HASH|$CURRENT_AUTHOR|$CURRENT_MESSAGE" >> all_commits.txt
+                ANY_VALID_COMMITS=true
+              else
+                echo "Skipping: $CURRENT_MESSAGE"
+                echo "$SHORT_HASH|$CURRENT_AUTHOR|$CURRENT_MESSAGE" >> all_commits.txt
+              fi
+
+              CURRENT_HASH=""
+              CURRENT_AUTHOR=""
+              CURRENT_MESSAGE=""
+              LINE_COUNT=0
+            else
+              case $LINE_COUNT in
+                0) CURRENT_HASH="$line" ;;
+                1) CURRENT_AUTHOR="$line" ;;
+                *)
+                  if [[ -n "$CURRENT_MESSAGE" ]]; then
+                    CURRENT_MESSAGE="$CURRENT_MESSAGE $line"
+                  else
+                    CURRENT_MESSAGE="$line"
+                  fi
+                  ;;
+              esac
+              LINE_COUNT=$((LINE_COUNT + 1))
+            fi
+          done < all_commits_raw.txt
+
+          if [ "$ANY_VALID_COMMITS" = false ]; then
+            echo "No valid commits for release. Skipping release creation..."
+            echo "SKIP_RELEASE=true" >> $GITHUB_ENV
+          else
+            echo "Release notes generated successfully:"
+            cat release_notes.txt || true
+          fi
+
+      - name: Create Release
+        if: env.SKIP_RELEASE != 'true'
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: '${{ env.NEW_TAG }}'
+          release_name: '${{ env.NEW_TAG }}'
+          body_path: './release_notes.txt'
+          draft: false
+          prerelease: false
+
+      - name: Prepare Slack message
+        if: env.SKIP_RELEASE != 'true'
+        id: prepare_slack_message
+        run: |
+          echo "OpenPanel Release: ${{ env.NEW_TAG }}" > slack_message.txt
+          echo "" >> slack_message.txt
+
+          if [[ -f all_commits.txt ]]; then
+            while IFS='|' read -r HASH AUTHOR MESSAGE || [[ -n "$HASH" ]]; do
+              [[ -z "$HASH" ]] && continue
+
+              MESSAGE_LOWER=$(echo "$MESSAGE" | tr '[:upper:]' '[:lower:]')
+
+              if [[ "$MESSAGE_LOWER" != "#tag"* ]]; then
+                URL="${{ github.server_url }}/${{ github.repository }}/commit/$HASH"
+                echo "• $MESSAGE (<$URL|$HASH>)" >> slack_message.txt
+              fi
+            done < all_commits.txt
+          fi
+
+          if [ $(wc -c < slack_message.txt) -gt 3000 ]; then
+            echo "$(head -c 2997 slack_message.txt)... " > slack_message.txt
+          fi
+
+          echo "SLACK_MESSAGE<<EOF" >> $GITHUB_ENV
+          cat slack_message.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Notify Slack
+        if: env.SKIP_RELEASE != 'true'
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          channel-id: '${{ secrets.RELEASE_CHANNEL_ID }}'
+          payload: |
+            {
+              "icon_url": "https://openpanel.dev/apple-touch-icon.png",
+              "username": "OpenPanel Releases",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ${{ toJSON(env.SLACK_MESSAGE) }}
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_RELEASE_BOT_TOKEN }}
