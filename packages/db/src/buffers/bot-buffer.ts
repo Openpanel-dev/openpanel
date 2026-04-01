@@ -10,7 +10,8 @@ export class BotBuffer extends BaseBuffer {
     ? Number.parseInt(process.env.BOT_BUFFER_BATCH_SIZE, 10)
     : 1000;
 
-  private readonly redisKey = 'bot-events-buffer';
+  private readonly redisKey = '{bot_buffer}:events';
+  protected bufferCounterKey = '{bot_buffer}:count';
   private redis: Redis;
   constructor() {
     super({

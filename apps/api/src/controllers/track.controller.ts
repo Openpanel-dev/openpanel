@@ -6,7 +6,7 @@ import { generateId, slug } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
-import { getEventsGroupQueueShard } from '@openpanel/queue';
+import { getEventsGroupQueueShard, getQueueName } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import type {
   DecrementPayload,
@@ -446,19 +446,21 @@ export async function fetchDeviceId(
   });
 
   try {
-    const multi = getRedisCache().multi();
-    multi.exists(`bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`);
-    multi.exists(`bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`);
-    const res = await multi.exec();
+    const redis = getRedisCache();
+    const queueName = getQueueName('sessions');
+    const [currentExists, previousExists] = await Promise.all([
+      redis.exists(`bull:${queueName}:sessionEnd:${projectId}:${currentDeviceId}`),
+      redis.exists(`bull:${queueName}:sessionEnd:${projectId}:${previousDeviceId}`),
+    ]);
 
-    if (res?.[0]?.[1]) {
+    if (currentExists) {
       return reply.status(200).send({
         deviceId: currentDeviceId,
         message: 'current session exists for this device id',
       });
     }
 
-    if (res?.[1]?.[1]) {
+    if (previousExists) {
       return reply.status(200).send({
         deviceId: previousDeviceId,
         message: 'previous session exists for this device id',
