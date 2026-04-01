@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release:
-    if: ${{ contains(github.event.head_commit.message, '#d2p-openpanel') || github.event_name == 'workflow_dispatch' }}
+    if: ${{ contains(github.event.head_commit.message, '#tag') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -54,29 +54,29 @@ jobs:
           echo "Creating release tag: $NEW_TAG"
           echo "Previous release tag: $PREVIOUS_TAG"
 
-      - name: Get all commits and filter out d2p/ci commits
+      - name: Get all commits and filter out tag/ci commits
         id: get_filtered_commits
         run: |
-          CURRENT_D2P=$(git log --first-parent --grep="^#d2p-openpanel" --format="%H" -1)
+          CURRENT_TAG=$(git log --first-parent --grep="^#tag" --format="%H" -1)
 
-          if [ -z "$CURRENT_D2P" ]; then
-            echo "No d2p deployment commit found. Cannot create release."
+          if [ -z "$CURRENT_TAG" ]; then
+            echo "No tag commit found. Cannot create release."
             echo "SKIP_RELEASE=true" >> $GITHUB_ENV
             exit 0
           fi
 
-          echo "Current d2p commit: $CURRENT_D2P"
+          echo "Current tag commit: $CURRENT_TAG"
 
-          PREVIOUS_D2P=$(git log --first-parent --grep="^#d2p-openpanel" --format="%H" --skip=1 -1)
+          PREVIOUS_TAG_COMMIT=$(git log --first-parent --grep="^#tag" --format="%H" --skip=1 -1)
 
-          if [ -z "$PREVIOUS_D2P" ]; then
-            echo "No previous d2p commit found. This is the first release."
+          if [ -z "$PREVIOUS_TAG_COMMIT" ]; then
+            echo "No previous tag commit found. This is the first release."
             echo "Getting all commits up to current d2p"
-            git log --first-parent ${CURRENT_D2P}^ --pretty=format:"%H%n%ae%n%s%n---COMMIT-END---" > all_commits_raw.txt
+            git log --first-parent ${CURRENT_TAG}^ --pretty=format:"%H%n%ae%n%s%n---COMMIT-END---" > all_commits_raw.txt
           else
-            echo "Previous d2p commit: $PREVIOUS_D2P"
-            echo "Getting commits between $PREVIOUS_D2P and $CURRENT_D2P (exclusive)"
-            git log --first-parent ${PREVIOUS_D2P}..${CURRENT_D2P}^ --pretty=format:"%H%n%ae%n%s%n---COMMIT-END---" > all_commits_raw.txt
+            echo "Previous tag commit: $PREVIOUS_TAG_COMMIT"
+            echo "Getting commits between $PREVIOUS_TAG_COMMIT and $CURRENT_TAG (exclusive)"
+            git log --first-parent ${PREVIOUS_TAG_COMMIT}..${CURRENT_TAG}^ --pretty=format:"%H%n%ae%n%s%n---COMMIT-END---" > all_commits_raw.txt
           fi
 
           if [ ! -s all_commits_raw.txt ]; then
@@ -98,7 +98,7 @@ jobs:
               SHORT_HASH=$(echo "$CURRENT_HASH" | cut -c1-7)
               CURRENT_MESSAGE_LOWER=$(echo "$CURRENT_MESSAGE" | tr '[:upper:]' '[:lower:]')
 
-              if [[ "$CURRENT_MESSAGE_LOWER" != "#d2p-openpanel"* ]]; then
+              if [[ "$CURRENT_MESSAGE_LOWER" != "#tag"* ]]; then
                 echo "• $CURRENT_MESSAGE (by $CURRENT_AUTHOR, $SHORT_HASH)" >> release_notes.txt
                 echo "$SHORT_HASH|$CURRENT_AUTHOR|$CURRENT_MESSAGE" >> all_commits.txt
                 ANY_VALID_COMMITS=true
@@ -161,7 +161,7 @@ jobs:
 
               MESSAGE_LOWER=$(echo "$MESSAGE" | tr '[:upper:]' '[:lower:]')
 
-              if [[ "$MESSAGE_LOWER" != "#d2p-openpanel"* ]]; then
+              if [[ "$MESSAGE_LOWER" != "#tag"* ]]; then
                 URL="${{ github.server_url }}/${{ github.repository }}/commit/$HASH"
                 echo "• $MESSAGE (<$URL|$HASH>)" >> slack_message.txt
               fi
