@@ -199,6 +199,19 @@ export class ProfileBuffer extends BaseBuffer {
     return getSafeJson<IClickhouseProfile>(existingProfile);
   }
 
+  public async writeToCache(profile: IClickhouseProfile): Promise<void> {
+    const cacheKey = this.getProfileCacheKey({
+      profileId: profile.id,
+      projectId: profile.project_id,
+    });
+    await this.redis.set(
+      cacheKey,
+      JSON.stringify(profile),
+      'EX',
+      this.ttlInSeconds,
+    );
+  }
+
   private async fetchFromClickhouse(
     profile: IClickhouseProfile,
     logger: ILogger,

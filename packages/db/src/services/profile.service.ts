@@ -120,14 +120,16 @@ export async function getProfileById(id: string, projectId: string) {
     `SELECT
       id,
       project_id,
-      last_value(nullIf(first_name, '')) as first_name,
-      last_value(nullIf(last_name, '')) as last_name,
-      last_value(nullIf(email, '')) as email,
-      last_value(nullIf(avatar, '')) as avatar,
-      last_value(is_external) as is_external,
-      last_value(properties) as properties,
-      last_value(created_at) as created_at
-    FROM ${TABLE_NAMES.profiles} FINAL WHERE id = ${sqlstring.escape(String(id))} AND project_id = ${sqlstring.escape(projectId)} GROUP BY id, project_id ORDER BY created_at DESC LIMIT 1`,
+      nullIf(first_name, '') as first_name,
+      nullIf(last_name, '') as last_name,
+      nullIf(email, '') as email,
+      nullIf(avatar, '') as avatar,
+      is_external,
+      properties,
+      created_at
+    FROM ${TABLE_NAMES.profiles} FINAL
+    WHERE project_id = ${sqlstring.escape(projectId)} AND id = ${sqlstring.escape(String(id))}
+    LIMIT 1`,
     undefined,
     true,
   );
@@ -135,6 +137,9 @@ export async function getProfileById(id: string, projectId: string) {
   if (!profile) {
     return null;
   }
+
+  // Write back to cache so subsequent reads within TTL skip ClickHouse
+  profileBuffer.writeToCache(profile).catch(() => {});
 
   return transformProfile(profile);
 }
