@@ -54,7 +54,7 @@ jobs:
           echo "Creating release tag: $NEW_TAG"
           echo "Previous release tag: $PREVIOUS_TAG"
 
-      - name: Get commits (NUL-separated, robust)
+      - name: Get commits
         id: get_commits
         run: |
           set -euo pipefail
@@ -72,15 +72,15 @@ jobs:
 
           if [ -n "$PREV_TAGGED_COMMIT" ]; then
             echo "Previous tag commit: $PREV_TAGGED_COMMIT"
-            git log --first-parent --pretty=format:'%h%x00%s%x00%an' "$PREV_TAGGED_COMMIT".."$LAST_TAGGED_COMMIT"^ -z > commits.bin || true
+            git log --first-parent --pretty=format:'%h|%s|%an' "$PREV_TAGGED_COMMIT".."$LAST_TAGGED_COMMIT"^ > commits.txt || true
           else
             echo "No previous tag commit found. This is the first release."
-            git log --first-parent --pretty=format:'%h%x00%s%x00%an' "$LAST_TAGGED_COMMIT"^ -z > commits.bin || true
+            git log --first-parent --pretty=format:'%h|%s|%an' "$LAST_TAGGED_COMMIT"^ > commits.txt || true
           fi
 
-          if [ -s commits.bin ]; then
+          if [ -s commits.txt ]; then
             echo "Collected commits:"
-            tr '\0' '|' < commits.bin | sed -n '1,5p' || true
+            cat commits.txt
           else
             echo "No commits found."
             echo "SKIP_RELEASE=true" >> $GITHUB_ENV
@@ -104,10 +104,8 @@ jobs:
           echo "Release notes:" > release_notes.txt
           ANY_VALID_COMMITS=false
 
-          if [ -s commits.bin ]; then
-            while IFS= read -r -d '' HASH && \
-                  IFS= read -r -d '' MESSAGE && \
-                  IFS= read -r -d '' AUTHOR; do
+          if [ -s commits.txt ]; then
+            while IFS='|' read -r HASH MESSAGE AUTHOR; do
               # Skip #tag and ci: commits
               case "$MESSAGE" in
                 \#tag*|ci:*) continue ;;
@@ -117,7 +115,7 @@ jobs:
               ANY_VALID_COMMITS=true
 
               if [ $COMMIT_COUNT -ge $MAX_COMMITS ]; then
-                REMAINING=$(( $(tr -cd '\0' < commits.bin | wc -c) / 3 - MAX_COMMITS ))
+                REMAINING=$(( $(wc -l < commits.txt) - MAX_COMMITS ))
                 if [ $REMAINING -gt 0 ]; then
                   COMMIT_BLOCKS=$(echo "$COMMIT_BLOCKS" | jq --arg text "... and ${REMAINING} more commits" \
                     '. += [{"type": "section", "text": {"type": "plain_text", "text": $text}}]')
@@ -140,7 +138,7 @@ jobs:
                 ]}]}]')
 
               COMMIT_COUNT=$((COMMIT_COUNT + 1))
-            done < commits.bin
+            done < commits.txt
           fi
 
           if [ "$ANY_VALID_COMMITS" = false ]; then
