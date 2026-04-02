@@ -54,86 +54,125 @@ jobs:
           echo "Creating release tag: $NEW_TAG"
           echo "Previous release tag: $PREVIOUS_TAG"
 
-      - name: Get all commits and filter out tag/ci commits
-        id: get_filtered_commits
+      - name: Get commits (NUL-separated, robust)
+        id: get_commits
         run: |
-          CURRENT_TAG=$(git log --first-parent --grep="^#tag" --format="%H" -1)
+          set -euo pipefail
+          LAST_TAGGED_COMMIT=$(git log --first-parent --grep="#tag" --pretty=format:"%H" -n 1 || true)
 
-          if [ -z "$CURRENT_TAG" ]; then
+          if [ -z "$LAST_TAGGED_COMMIT" ]; then
             echo "No tag commit found. Cannot create release."
             echo "SKIP_RELEASE=true" >> $GITHUB_ENV
             exit 0
           fi
 
-          echo "Current tag commit: $CURRENT_TAG"
+          echo "Current tag commit: $LAST_TAGGED_COMMIT"
 
-          PREVIOUS_TAG_COMMIT=$(git log --first-parent --grep="^#tag" --format="%H" --skip=1 -1)
+          PREV_TAGGED_COMMIT=$(git log --first-parent --grep="#tag" --pretty=format:"%H" -n 1 --skip=1 || true)
 
-          if [ -z "$PREVIOUS_TAG_COMMIT" ]; then
-            echo "No previous tag commit found. This is the first release."
-            echo "Getting all commits up to current d2p"
-            git log --first-parent ${CURRENT_TAG}^ --pretty=format:"%H%n%ae%n%s%n---COMMIT-END---" > all_commits_raw.txt
+          if [ -n "$PREV_TAGGED_COMMIT" ]; then
+            echo "Previous tag commit: $PREV_TAGGED_COMMIT"
+            git log --first-parent --pretty=format:'%h%x00%s%x00%an' "$PREV_TAGGED_COMMIT".."$LAST_TAGGED_COMMIT"^ -z > commits.bin || true
           else
-            echo "Previous tag commit: $PREVIOUS_TAG_COMMIT"
-            echo "Getting commits between $PREVIOUS_TAG_COMMIT and $CURRENT_TAG (exclusive)"
-            git log --first-parent ${PREVIOUS_TAG_COMMIT}..${CURRENT_TAG}^ --pretty=format:"%H%n%ae%n%s%n---COMMIT-END---" > all_commits_raw.txt
+            echo "No previous tag commit found. This is the first release."
+            git log --first-parent --pretty=format:'%h%x00%s%x00%an' "$LAST_TAGGED_COMMIT"^ -z > commits.bin || true
           fi
 
-          if [ ! -s all_commits_raw.txt ]; then
-            echo "No commits found between d2p boundaries."
+          if [ -s commits.bin ]; then
+            echo "Collected commits:"
+            tr '\0' '|' < commits.bin | sed -n '1,5p' || true
+          else
+            echo "No commits found."
             echo "SKIP_RELEASE=true" >> $GITHUB_ENV
-            exit 0
           fi
+
+      - name: Prepare release notes and Slack payload
+        if: env.SKIP_RELEASE != 'true'
+        id: prepare_payload
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          NEW_TAG: ${{ env.NEW_TAG }}
+        run: |
+          set -euo pipefail
+          HEADER="OpenPanel Release: ${NEW_TAG}"
+          REPO="${GITHUB_REPOSITORY}"
+
+          COMMIT_BLOCKS="[]"
+          COMMIT_COUNT=0
+          MAX_COMMITS=20
 
           echo "Release notes:" > release_notes.txt
           ANY_VALID_COMMITS=false
 
-          CURRENT_HASH=""
-          CURRENT_AUTHOR=""
-          CURRENT_MESSAGE=""
-          LINE_COUNT=0
+          if [ -s commits.bin ]; then
+            while IFS= read -r -d '' HASH && \
+                  IFS= read -r -d '' MESSAGE && \
+                  IFS= read -r -d '' AUTHOR; do
+              # Skip #tag and ci: commits
+              case "$MESSAGE" in
+                \#tag*|ci:*) continue ;;
+              esac
 
-          while IFS= read -r line; do
-            if [[ "$line" == "---COMMIT-END---" ]]; then
-              SHORT_HASH=$(echo "$CURRENT_HASH" | cut -c1-7)
-              CURRENT_MESSAGE_LOWER=$(echo "$CURRENT_MESSAGE" | tr '[:upper:]' '[:lower:]')
+              echo "• $MESSAGE (by $AUTHOR, $HASH)" >> release_notes.txt
+              ANY_VALID_COMMITS=true
 
-              if [[ "$CURRENT_MESSAGE_LOWER" != "#tag"* ]]; then
-                echo "• $CURRENT_MESSAGE (by $CURRENT_AUTHOR, $SHORT_HASH)" >> release_notes.txt
-                echo "$SHORT_HASH|$CURRENT_AUTHOR|$CURRENT_MESSAGE" >> all_commits.txt
-                ANY_VALID_COMMITS=true
-              else
-                echo "Skipping: $CURRENT_MESSAGE"
-                echo "$SHORT_HASH|$CURRENT_AUTHOR|$CURRENT_MESSAGE" >> all_commits.txt
+              if [ $COMMIT_COUNT -ge $MAX_COMMITS ]; then
+                REMAINING=$(( $(tr -cd '\0' < commits.bin | wc -c) / 3 - MAX_COMMITS ))
+                if [ $REMAINING -gt 0 ]; then
+                  COMMIT_BLOCKS=$(echo "$COMMIT_BLOCKS" | jq --arg text "... and ${REMAINING} more commits" \
+                    '. += [{"type": "section", "text": {"type": "plain_text", "text": $text}}]')
+                fi
+                break
               fi
 
-              CURRENT_HASH=""
-              CURRENT_AUTHOR=""
-              CURRENT_MESSAGE=""
-              LINE_COUNT=0
-            else
-              case $LINE_COUNT in
-                0) CURRENT_HASH="$line" ;;
-                1) CURRENT_AUTHOR="$line" ;;
-                *)
-                  if [[ -n "$CURRENT_MESSAGE" ]]; then
-                    CURRENT_MESSAGE="$CURRENT_MESSAGE $line"
-                  else
-                    CURRENT_MESSAGE="$line"
-                  fi
-                  ;;
-              esac
-              LINE_COUNT=$((LINE_COUNT + 1))
-            fi
-          done < all_commits_raw.txt
+              SHORT_HASH="${HASH:0:7}"
+              URL="https://github.com/${REPO}/commit/${HASH}"
+
+              COMMIT_BLOCKS=$(echo "$COMMIT_BLOCKS" | jq --arg msg "$MESSAGE" --arg hash "$SHORT_HASH" --arg author "$AUTHOR" --arg url "$URL" \
+                '. += [{"type": "rich_text", "elements": [{"type": "rich_text_section", "elements": [
+                  {"type": "text", "text": "• "},
+                  {"type": "text", "text": $msg, "style": {"bold": true}},
+                  {"type": "text", "text": " ("},
+                  {"type": "link", "url": $url, "text": $hash},
+                  {"type": "text", "text": ", by "},
+                  {"type": "text", "text": $author, "style": {"italic": true}},
+                  {"type": "text", "text": ")"}
+                ]}]}]')
+
+              COMMIT_COUNT=$((COMMIT_COUNT + 1))
+            done < commits.bin
+          fi
 
           if [ "$ANY_VALID_COMMITS" = false ]; then
             echo "No valid commits for release. Skipping release creation..."
             echo "SKIP_RELEASE=true" >> $GITHUB_ENV
-          else
-            echo "Release notes generated successfully:"
-            cat release_notes.txt || true
+            exit 0
           fi
+
+          echo "Release notes generated successfully:"
+          cat release_notes.txt || true
+
+          # Build full Slack payload
+          jq -n \
+            --arg channel "${{ secrets.RELEASE_CHANNEL_ID }}" \
+            --arg header "$HEADER" \
+            --argjson blocks "$COMMIT_BLOCKS" \
+            --arg fallback "${HEADER} - ${COMMIT_COUNT} commits" \
+            --arg icon "https://openpanel.dev/apple-touch-icon.png" \
+            --arg username "Open-panel-release-bot" \
+            '{
+              channel: $channel,
+              icon_url: $icon,
+              username: $username,
+              text: $fallback,
+              blocks: ([
+                {"type": "header", "text": {"type": "plain_text", "text": $header}},
+                {"type": "divider"}
+              ] + $blocks)
+            }' > slack_payload.json
+
+          echo "Slack payload prepared: $(wc -c < slack_payload.json) bytes"
+          echo "Commit count: ${COMMIT_COUNT}"
 
       - name: Create Release
         if: env.SKIP_RELEASE != 'true'
@@ -148,52 +187,10 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Prepare Slack message
-        if: env.SKIP_RELEASE != 'true'
-        id: prepare_slack_message
-        run: |
-          echo "OpenPanel Release: ${{ env.NEW_TAG }}" > slack_message.txt
-          echo "" >> slack_message.txt
-
-          if [[ -f all_commits.txt ]]; then
-            while IFS='|' read -r HASH AUTHOR MESSAGE || [[ -n "$HASH" ]]; do
-              [[ -z "$HASH" ]] && continue
-
-              MESSAGE_LOWER=$(echo "$MESSAGE" | tr '[:upper:]' '[:lower:]')
-
-              if [[ "$MESSAGE_LOWER" != "#tag"* ]]; then
-                URL="${{ github.server_url }}/${{ github.repository }}/commit/$HASH"
-                echo "• $MESSAGE (<$URL|$HASH>)" >> slack_message.txt
-              fi
-            done < all_commits.txt
-          fi
-
-          if [ $(wc -c < slack_message.txt) -gt 3000 ]; then
-            echo "$(head -c 2997 slack_message.txt)... " > slack_message.txt
-          fi
-
-          echo "SLACK_MESSAGE<<EOF" >> $GITHUB_ENV
-          cat slack_message.txt >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
       - name: Notify Slack
         if: env.SKIP_RELEASE != 'true'
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@v2.0.0
         with:
-          channel-id: '${{ secrets.RELEASE_CHANNEL_ID }}'
-          payload: |
-            {
-              "icon_url": "https://openpanel.dev/apple-touch-icon.png",
-              "username": "OpenPanel Releases",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ${{ toJSON(env.SLACK_MESSAGE) }}
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_RELEASE_BOT_TOKEN }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_RELEASE_BOT_TOKEN }}
+          payload-file-path: slack_payload.json
