@@ -16,6 +16,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { useYAxisProps } from '../report-chart/common/axis';
 
 type ChartDataItem = {
   value: number;
@@ -107,6 +108,7 @@ export function ProjectChart({
 
   const maxValue = Math.max(...data.map((d) => d.value), 0);
   const maxRevenue = Math.max(...data.map((d) => d.revenue), 0);
+  const yAxisProps = useYAxisProps({});
 
   const getColorValue = () => {
     if (color === 'green') return '#16a34a';
@@ -120,7 +122,7 @@ export function ProjectChart({
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
-            margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+            margin={{ top: 10, right: 10, bottom: 10, left: 0 }}
             onMouseMove={(e) => {
               setActiveBar(e.activeTooltipIndex ?? -1);
             }}
@@ -132,7 +134,10 @@ export function ProjectChart({
               domain={['dataMin', 'dataMax']}
               hide
             />
-            <YAxis domain={[0, maxValue || 'dataMax']} hide width={0} />
+            <YAxis
+              {...yAxisProps}
+              domain={[0, maxValue || 'dataMax']}
+            />
             <YAxis
               yAxisId="right"
               orientation="right"
