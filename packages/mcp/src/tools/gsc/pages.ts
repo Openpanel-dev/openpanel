@@ -10,6 +10,34 @@ import {
   zDateRange,
 } from '../shared';
 
+export async function gscGetTopPagesCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  limit?: number;
+}) {
+  return getGscPages(
+    input.projectId,
+    input.startDate,
+    input.endDate,
+    input.limit ?? 100,
+  );
+}
+
+export async function gscGetPageDetailsCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  page: string;
+}) {
+  return getGscPageDetails(
+    input.projectId,
+    input.page,
+    input.startDate,
+    input.endDate,
+  );
+}
+
 export function registerGscPageTools(
   server: McpServer,
   context: McpAuthContext,

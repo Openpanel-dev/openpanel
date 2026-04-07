@@ -56,7 +56,8 @@ const mcpRouter: FastifyPluginAsync = async (fastify) => {
         .status(400)
         .send({ error: 'Mcp-Session-Id header is required' });
     }
-    if (!mcpSessionManager.has(sessionId)) {
+    const context = await mcpSessionManager.getContext(sessionId);
+    if (!context) {
       return reply.status(404).send({ error: 'Session not found' });
     }
     await mcpSessionManager.close(sessionId);

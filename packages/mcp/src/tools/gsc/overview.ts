@@ -10,6 +10,39 @@ import {
   zDateRange,
 } from '../shared';
 
+export async function gscGetOverviewCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  interval?: 'day' | 'week' | 'month';
+}) {
+  const data = await getGscOverview(
+    input.projectId,
+    input.startDate,
+    input.endDate,
+    input.interval ?? 'day',
+  );
+  return {
+    data,
+    summary: {
+      total_clicks: data.reduce((s, r) => s + r.clicks, 0),
+      total_impressions: data.reduce((s, r) => s + r.impressions, 0),
+      avg_ctr:
+        data.length > 0
+          ? Math.round(
+              (data.reduce((s, r) => s + r.ctr, 0) / data.length) * 10000,
+            ) / 100
+          : 0,
+      avg_position:
+        data.length > 0
+          ? Math.round(
+              (data.reduce((s, r) => s + r.position, 0) / data.length) * 10,
+            ) / 10
+          : 0,
+    },
+  };
+}
+
 export function registerGscOverviewTools(
   server: McpServer,
   context: McpAuthContext,

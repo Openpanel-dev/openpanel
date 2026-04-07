@@ -24,6 +24,9 @@ export async function getTopEventNames(projectId: string): Promise<string[]> {
   });
 }
 
+export const listEventNamesCore = (projectId: string): Promise<string[]> =>
+  getTopEventNames(projectId);
+
 export function registerEventNameTools(
   server: McpServer,
   context: McpAuthContext,

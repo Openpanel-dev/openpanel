@@ -16,7 +16,7 @@ import {
 
 const overviewService = new OverviewService(ch);
 
-type TrafficColumn =
+export type TrafficColumn =
   | 'referrer'
   | 'referrer_name'
   | 'referrer_type'
@@ -29,6 +29,15 @@ type TrafficColumn =
   | 'device'
   | 'browser'
   | 'os';
+
+export async function getTrafficBreakdownCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  column: TrafficColumn;
+}) {
+  return getTopGeneric(input);
+}
 
 async function getTopGeneric(input: {
   projectId: string;

@@ -34,6 +34,101 @@ function dashboardUrl(
   return `${dashboardBaseUrl()}/${organizationId}/${projectId}/dashboards/${dashboardId}`;
 }
 
+export async function listDashboardsCore(input: {
+  projectId: string;
+  organizationId: string;
+}) {
+  const dashboards = await db.dashboard.findMany({
+    where: { projectId: input.projectId },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true, name: true, projectId: true },
+  });
+  return dashboards.map((d) => ({
+    ...d,
+    dashboard_url: dashboardUrl(input.organizationId, input.projectId, d.id),
+  }));
+}
+
+export async function listReportsCore(input: {
+  projectId: string;
+  dashboardId: string;
+  organizationId: string;
+}) {
+  const reports = await getReportsByDashboardId(input.dashboardId);
+  return reports.map((r) => ({
+    id: r.id,
+    name: r.name,
+    chartType: r.chartType,
+    range: r.range,
+    interval: r.interval,
+    metric: r.metric,
+    series: r.series.map((s) =>
+      s.type === 'formula'
+        ? { type: 'formula', id: s.id, formula: s.formula }
+        : {
+            type: 'event',
+            id: s.id,
+            name: s.name,
+            displayName: s.displayName,
+            segment: s.segment,
+          },
+    ),
+    breakdowns: r.breakdowns,
+    dashboard_url: reportUrl(input.organizationId, input.projectId, r.id),
+  }));
+}
+
+export async function getReportDataCore(input: {
+  projectId: string;
+  reportId: string;
+  organizationId: string;
+}) {
+  const report = await getReportById(input.reportId);
+
+  if (!report) {
+    return { error: 'Report not found', reportId: input.reportId };
+  }
+
+  if (report.projectId !== input.projectId) {
+    return {
+      error: 'Report does not belong to this project',
+      reportId: input.reportId,
+    };
+  }
+
+  const { timezone } = await getSettingsForProject(input.projectId);
+  const { startDate, endDate } = getChartStartEndDate(report, timezone);
+  const chartInput = { ...report, startDate, endDate, timezone };
+
+  const meta = {
+    id: report.id,
+    name: report.name,
+    chartType: report.chartType,
+    range: report.range,
+    interval: report.interval,
+    startDate,
+    endDate,
+    dashboard_url: reportUrl(
+      input.organizationId,
+      input.projectId,
+      input.reportId,
+    ),
+  };
+
+  if (report.chartType === 'funnel') {
+    const result = await funnelService.getFunnel(chartInput);
+    return { ...meta, data: result };
+  }
+
+  if (report.chartType === 'metric') {
+    const result = await AggregateChartEngine.execute(chartInput);
+    return { ...meta, data: result };
+  }
+
+  const result = await ChartEngine.execute(chartInput);
+  return { ...meta, data: result };
+}
+
 export function registerReportTools(
   server: McpServer,
   context: McpAuthContext,

@@ -42,6 +42,7 @@ import insightsRouter from './routes/insights.router';
 import liveRouter from './routes/live.router';
 import manageRouter from './routes/manage.router';
 import mcpRouter from './routes/mcp.router';
+import queryRouter from './routes/query.router';
 import miscRouter from './routes/misc.router';
 import oauthRouter from './routes/oauth-callback.router';
 import profileRouter from './routes/profile.router';
@@ -213,6 +214,7 @@ const startServer = async () => {
       instance.register(insightsRouter, { prefix: '/insights' });
       instance.register(trackRouter, { prefix: '/track' });
       instance.register(manageRouter, { prefix: '/manage' });
+      instance.register(queryRouter, { prefix: '/query' });
       // Keep existing endpoints for backward compatibility
       instance.get('/healthcheck', healthcheck);
       // New Kubernetes-style health endpoints

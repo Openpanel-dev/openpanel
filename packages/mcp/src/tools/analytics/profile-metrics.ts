@@ -8,6 +8,32 @@ import {
   withErrorHandling,
 } from '../shared';
 
+export async function getProfileMetricsCore(input: {
+  projectId: string;
+  profileId: string;
+}) {
+  const raw = await getProfileMetrics(input.profileId, input.projectId);
+  if (!raw) {
+    return { error: 'Profile not found or has no events', profileId: input.profileId };
+  }
+  return {
+    profileId: input.profileId,
+    firstSeen: raw.firstSeen,
+    lastSeen: raw.lastSeen,
+    sessions: raw.sessions,
+    screenViews: raw.screenViews,
+    totalEvents: raw.totalEvents,
+    conversionEvents: raw.conversionEvents,
+    uniqueDaysActive: raw.uniqueDaysActive,
+    avgSessionDurationMin: raw.durationAvg,
+    p90SessionDurationMin: raw.durationP90,
+    avgEventsPerSession: raw.avgEventsPerSession,
+    avgTimeBetweenSessionsSec: raw.avgTimeBetweenSessions,
+    bounceRate: raw.bounceRate,
+    revenue: raw.revenue,
+  };
+}
+
 export function registerProfileMetricTools(
   server: McpServer,
   context: McpAuthContext,

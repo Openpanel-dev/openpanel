@@ -88,6 +88,57 @@ function computeOpportunities(
     .slice(0, 50);
 }
 
+export async function gscGetTopQueriesCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  limit?: number;
+}) {
+  return getGscQueries(
+    input.projectId,
+    input.startDate,
+    input.endDate,
+    input.limit ?? 100,
+  );
+}
+
+export async function gscGetQueryOpportunitiesCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  minImpressions?: number;
+}) {
+  const queries = await getGscQueries(
+    input.projectId,
+    input.startDate,
+    input.endDate,
+    5000,
+  );
+  const filtered = queries.filter(
+    (q) => q.impressions >= (input.minImpressions ?? 50),
+  );
+  const opportunities = computeOpportunities(filtered);
+  return {
+    opportunities,
+    total_analyzed: filtered.length,
+    min_impressions: input.minImpressions ?? 50,
+  };
+}
+
+export async function gscGetQueryDetailsCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  query: string;
+}) {
+  return getGscQueryDetails(
+    input.projectId,
+    input.query,
+    input.startDate,
+    input.endDate,
+  );
+}
+
 export function registerGscQueryTools(
   server: McpServer,
   context: McpAuthContext,

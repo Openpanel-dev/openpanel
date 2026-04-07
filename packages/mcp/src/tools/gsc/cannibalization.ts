@@ -9,6 +9,18 @@ import {
   zDateRange,
 } from '../shared';
 
+export async function gscGetCannibalizationCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+}) {
+  return getGscCannibalization(
+    input.projectId,
+    input.startDate,
+    input.endDate,
+  );
+}
+
 export function registerGscCannibalizationTools(
   server: McpServer,
   context: McpAuthContext,

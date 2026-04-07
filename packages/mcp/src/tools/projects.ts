@@ -3,6 +3,47 @@ import { db } from '@openpanel/db';
 import type { McpAuthContext } from '../auth';
 import { withErrorHandling } from './shared';
 
+export async function listProjectsCore(input: {
+  clientType: 'root' | 'read';
+  organizationId: string;
+  projectId: string | null;
+}) {
+  if (input.clientType === 'root') {
+    const projects = await db.project.findMany({
+      where: { organizationId: input.organizationId },
+      orderBy: { eventsCount: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        organizationId: true,
+        eventsCount: true,
+        domain: true,
+        types: true,
+      },
+    });
+    return { clientType: 'root', projects };
+  }
+
+  const project = input.projectId
+    ? await db.project.findUnique({
+        where: { id: input.projectId },
+        select: {
+          id: true,
+          name: true,
+          organizationId: true,
+          eventsCount: true,
+          domain: true,
+          types: true,
+        },
+      })
+    : null;
+
+  return {
+    clientType: 'read',
+    projects: project ? [project] : [],
+  };
+}
+
 export function registerProjectTools(
   server: McpServer,
   context: McpAuthContext,

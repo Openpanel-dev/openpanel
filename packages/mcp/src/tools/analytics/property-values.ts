@@ -8,6 +8,50 @@ import {
   withErrorHandling,
 } from '../shared';
 
+export async function listEventPropertiesCore(input: {
+  projectId: string;
+  eventName?: string;
+}): Promise<{ properties: Array<{ property_key: string; event_name: string }> }> {
+  const builder = clix(ch)
+    .select<{ property_key: string; event_name: string }>([
+      'distinct property_key',
+      'name as event_name',
+    ])
+    .from(TABLE_NAMES.event_property_values_mv)
+    .where('project_id', '=', input.projectId)
+    .orderBy('property_key', 'ASC')
+    .limit(500);
+
+  if (input.eventName) {
+    builder.where('name', '=', input.eventName);
+  }
+
+  const rows = await builder.execute();
+  return { properties: rows };
+}
+
+export async function getEventPropertyValuesCore(input: {
+  projectId: string;
+  eventName: string;
+  propertyKey: string;
+}): Promise<{ event: string; property: string; values: string[] }> {
+  const rows = await clix(ch)
+    .select<{ value: string }>(['property_value as value'])
+    .from(TABLE_NAMES.event_property_values_mv)
+    .where('project_id', '=', input.projectId)
+    .where('name', '=', input.eventName)
+    .where('property_key', '=', input.propertyKey)
+    .orderBy('created_at', 'DESC')
+    .limit(200)
+    .execute();
+
+  return {
+    event: input.eventName,
+    property: input.propertyKey,
+    values: rows.map((r) => r.value),
+  };
+}
+
 export function registerPropertyValueTools(
   server: McpServer,
   context: McpAuthContext,

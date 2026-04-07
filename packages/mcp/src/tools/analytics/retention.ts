@@ -7,6 +7,10 @@ import {
   withErrorHandling,
 } from '../shared';
 
+export async function getRetentionCohortCore(projectId: string) {
+  return getRetentionCohortTable({ projectId });
+}
+
 export function registerRetentionTools(
   server: McpServer,
   context: McpAuthContext,
