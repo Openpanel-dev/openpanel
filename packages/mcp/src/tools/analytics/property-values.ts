@@ -1,5 +1,3 @@
-export { listEventPropertiesCore, getEventPropertyValuesCore } from '@openpanel/db';
-
 import { TABLE_NAMES, ch, clix } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';

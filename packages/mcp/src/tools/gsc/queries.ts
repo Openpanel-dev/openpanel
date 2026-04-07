@@ -1,5 +1,3 @@
-export { type GscQueryOpportunity, gscGetQueryDetailsCore, gscGetQueryOpportunitiesCore, gscGetTopQueriesCore } from '@openpanel/db';
-
 import { getGscQueryDetails, getGscQueries } from '@openpanel/db';
 import type { GscQueryOpportunity } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';

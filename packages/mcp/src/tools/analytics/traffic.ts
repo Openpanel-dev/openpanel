@@ -1,5 +1,3 @@
-export { getTrafficBreakdownCore, type TrafficColumn } from '@openpanel/db';
-
 import { getTrafficBreakdownCore, type TrafficColumn } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';

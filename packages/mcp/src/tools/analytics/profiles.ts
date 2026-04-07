@@ -1,5 +1,4 @@
-import { findProfilesCore, getProfileSessionsCore, getProfileWithEvents, type FindProfilesInput } from '@openpanel/db';
-export { findProfilesCore, getProfileSessionsCore, getProfileWithEvents, type FindProfilesInput };
+import { findProfilesCore, getProfileSessionsCore, getProfileWithEvents } from '@openpanel/db';
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';

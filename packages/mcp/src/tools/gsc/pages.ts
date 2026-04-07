@@ -1,5 +1,3 @@
-export { gscGetPageDetailsCore, gscGetTopPagesCore } from '@openpanel/db';
-
 import { getGscPageDetails, getGscPages } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';

@@ -1,5 +1,3 @@
-export { gscGetOverviewCore } from '@openpanel/db';
-
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getGscOverview } from '@openpanel/db';
 import { z } from 'zod';

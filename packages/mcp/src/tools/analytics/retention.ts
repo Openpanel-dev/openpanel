@@ -1,5 +1,3 @@
-export { getRetentionCohortCore } from '@openpanel/db';
-
 import { getRetentionCohortTable } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpAuthContext } from '../../auth';

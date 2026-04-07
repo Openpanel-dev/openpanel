@@ -1,5 +1,3 @@
-export { queryEventsCore, type QueryEventsInput } from '@openpanel/db';
-
 import { queryEventsCore } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';

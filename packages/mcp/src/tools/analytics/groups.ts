@@ -1,5 +1,3 @@
-export { findGroupsCore, getGroupCore, listGroupTypesCore } from '@openpanel/db';
-
 import { getGroupById, getGroupList, getGroupMemberProfiles, getGroupTypes } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';

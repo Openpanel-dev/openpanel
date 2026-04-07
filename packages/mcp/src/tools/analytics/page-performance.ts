@@ -1,5 +1,3 @@
-export { getPagePerformanceCore } from '@openpanel/db';
-
 import { PagesService, ch, getSettingsForProject } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';

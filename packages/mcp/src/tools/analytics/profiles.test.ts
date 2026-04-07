@@ -24,7 +24,7 @@ vi.mock('@openpanel/db', () => ({
   }),
 }));
 
-import { findProfilesCore } from './profiles';
+import { findProfilesCore } from '@openpanel/db';
 
 function capturedSql(): string {
   return mockChQuery.mock.calls[0]?.[0] as string;
