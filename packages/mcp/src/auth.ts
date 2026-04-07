@@ -120,21 +120,3 @@ export function extractToken(
   return undefined;
 }
 
-/**
- * Resolve the effective projectId for a tool call.
- * For read clients the projectId is fixed; for root clients it must be supplied.
- */
-export function resolveProjectId(
-  context: McpAuthContext,
-  inputProjectId: string | undefined,
-): string {
-  if (context.projectId !== null) {
-    return context.projectId;
-  }
-  if (!inputProjectId) {
-    throw new Error(
-      'projectId is required when using a root (organization-level) client',
-    );
-  }
-  return inputProjectId;
-}

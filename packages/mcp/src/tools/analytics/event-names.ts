@@ -1,9 +1,9 @@
-import { getTopEventNames } from '@openpanel/db';
+import { resolveClientProjectId, getTopEventNames } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,
-  resolveProjectId,
+  
   withErrorHandling,
 } from '../shared';
 
@@ -19,7 +19,7 @@ export function registerEventNameTools(
     },
     async ({ projectId: inputProjectId }) =>
       withErrorHandling(async () => {
-        const projectId = resolveProjectId(context, inputProjectId);
+        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
         const names = await getTopEventNames(projectId);
         return { event_names: names };
       }),

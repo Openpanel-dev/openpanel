@@ -11,6 +11,7 @@ vi.mock('@openpanel/db', () => ({
   })),
   ch: {},
   getSettingsForProject: mockGetSettingsForProject,
+  resolveClientProjectId: vi.fn(({ clientProjectId }: { clientProjectId: string }) => Promise.resolve(clientProjectId)),
 }));
 
 import { registerPagePerformanceTools } from './page-performance';

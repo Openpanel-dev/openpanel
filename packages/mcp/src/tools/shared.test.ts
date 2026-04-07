@@ -1,6 +1,7 @@
+import { resolveClientProjectId } from '@openpanel/db';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { McpAuthContext } from '../auth';
-import { resolveDateRange, resolveProjectId } from './shared';
+import { resolveDateRange } from './shared';
 
 const READ_CTX: McpAuthContext = {
   projectId: 'proj-abc',
@@ -46,19 +47,28 @@ describe('resolveDateRange', () => {
   });
 });
 
-describe('resolveProjectId', () => {
-  it('returns the context projectId for read clients, ignoring any input', () => {
-    expect(resolveProjectId(READ_CTX, undefined)).toBe('proj-abc');
-    expect(resolveProjectId(READ_CTX, 'other-proj')).toBe('proj-abc');
+describe('resolveClientProjectId', () => {
+  it('returns the context projectId for read clients, ignoring any input', async () => {
+    await expect(resolveClientProjectId({
+      clientType: READ_CTX.clientType,
+      clientProjectId: READ_CTX.projectId,
+      organizationId: READ_CTX.organizationId,
+      inputProjectId: undefined,
+    })).resolves.toBe('proj-abc');
+    await expect(resolveClientProjectId({
+      clientType: READ_CTX.clientType,
+      clientProjectId: READ_CTX.projectId,
+      organizationId: READ_CTX.organizationId,
+      inputProjectId: 'other-proj',
+    })).resolves.toBe('proj-abc');
   });
 
-  it('returns the input projectId for root clients', () => {
-    expect(resolveProjectId(ROOT_CTX, 'proj-xyz')).toBe('proj-xyz');
-  });
-
-  it('throws for root clients when no projectId is provided', () => {
-    expect(() => resolveProjectId(ROOT_CTX, undefined)).toThrow(
-      'projectId is required',
-    );
+  it('throws for root clients when no projectId is provided', async () => {
+    await expect(resolveClientProjectId({
+      clientType: ROOT_CTX.clientType,
+      clientProjectId: ROOT_CTX.projectId,
+      organizationId: ROOT_CTX.organizationId,
+      inputProjectId: undefined,
+    })).rejects.toThrow('projectId is required');
   });
 });

@@ -29,7 +29,7 @@ interface McpLocalSession {
  * when that instance goes down the client reconnects and gets a fresh session.
  */
 export class SessionManager {
-  private local = new Map<string, McpLocalSession>();
+  private readonly local = new Map<string, McpLocalSession>();
 
   generateId(): string {
     return randomUUID();
@@ -47,7 +47,7 @@ export class SessionManager {
     });
   }
 
-  async getContext(id: string): Promise<McpAuthContext | null> {
+  getContext(id: string): Promise<McpAuthContext | null> {
     return getRedisCache().getJson<McpAuthContext>(redisKey(id));
   }
 

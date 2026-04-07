@@ -1,11 +1,11 @@
-import { queryEventsCore } from '@openpanel/db';
+import { resolveClientProjectId, queryEventsCore } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,
   resolveDateRange,
-  resolveProjectId,
+  
   withErrorHandling,
   zDateRange,
 } from '../shared';
@@ -65,7 +65,7 @@ export function registerEventTools(server: McpServer, context: McpAuthContext) {
     },
     async ({ projectId: inputProjectId, ...input }) =>
       withErrorHandling(async () => {
-        const projectId = resolveProjectId(context, inputProjectId);
+        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
         return queryEventsCore({ projectId, ...input });
       }),
   );

@@ -64,6 +64,14 @@ export function createLogger({ name }: { name: string }): ILogger {
     'apiKey',
   ];
 
+  const sensitiveUrlParamPattern = new RegExp(
+    `([?&])(${sensitiveKeys.join('|')})=([^&]*)`,
+    'gi',
+  );
+
+  const redactUrl = (value: string): string =>
+    value.replace(sensitiveUrlParamPattern, '$1$2=[REDACTED]');
+
   const redactSensitiveInfo = winston.format((info) => {
     const redactObject = (obj: any): any => {
       if (!obj || typeof obj !== 'object') {
@@ -74,6 +82,8 @@ export function createLogger({ name }: { name: string }): ILogger {
         const lowerKey = key.toLowerCase();
         if (sensitiveKeys.some((k) => lowerKey.includes(k))) {
           acc[key] = '[REDACTED]';
+        } else if (typeof obj[key] === 'string') {
+          acc[key] = redactUrl(obj[key]);
         } else if (typeof obj[key] === 'object') {
           if (obj[key] instanceof Date) {
             acc[key] = obj[key].toISOString();

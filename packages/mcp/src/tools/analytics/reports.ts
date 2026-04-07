@@ -1,4 +1,4 @@
-import {
+import { resolveClientProjectId,
   AggregateChartEngine,
   ChartEngine,
   db,
@@ -14,7 +14,7 @@ import type { McpAuthContext } from '../../auth';
 import { dashboardBaseUrl } from '../dashboard-links';
 import {
   projectIdSchema,
-  resolveProjectId,
+  
   withErrorHandling,
 } from '../shared';
 
@@ -46,7 +46,7 @@ export function registerReportTools(
     },
     async ({ projectId: inputProjectId }) =>
       withErrorHandling(async () => {
-        const projectId = resolveProjectId(context, inputProjectId);
+        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
         const dashboards = await db.dashboard.findMany({
           where: { projectId },
           orderBy: { createdAt: 'desc' },
@@ -68,7 +68,7 @@ export function registerReportTools(
     },
     async ({ projectId: inputProjectId, dashboardId }) =>
       withErrorHandling(async () => {
-        const projectId = resolveProjectId(context, inputProjectId);
+        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
         const reports = await getReportsByDashboardId(dashboardId);
         return reports.map((r) => ({
           id: r.id,
@@ -103,7 +103,7 @@ export function registerReportTools(
     },
     async ({ projectId: inputProjectId, reportId }) =>
       withErrorHandling(async () => {
-        const projectId = resolveProjectId(context, inputProjectId);
+        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
         const report = await getReportById(reportId);
 
         if (!report) {

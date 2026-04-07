@@ -2,15 +2,9 @@ import { Prisma } from '@openpanel/db';
 import type { FastifyRequest } from 'fastify';
 import type { FastifyPluginAsyncZodOpenApi } from 'fastify-zod-openapi';
 import { z } from 'zod';
-import * as insights from '@/controllers/insights.controller';
+import * as c from '@/controllers/insights.controller';
 import {
   overviewColumns,
-  zGetMetricsQuery,
-  zGetTopPagesQuery,
-  zOverviewGenericQuerystring,
-} from '@/controllers/insights.controller';
-import * as query from '@/controllers/query.controller';
-import {
   zActiveUsersQuery,
   zDateRange,
   zDeviceQuery,
@@ -20,13 +14,16 @@ import {
   zFunnelQuery,
   zGeoQuery,
   zGetGroupQuery,
+  zGetMetricsQuery,
   zGetProfileQuery,
+  zGetTopPagesQuery,
   zGroupsQuery,
   zGscLimitQuery,
   zGscOpportunitiesQuery,
   zGscOverviewQuery,
   zGscPageDetailsQuery,
   zGscQueryDetailsQuery,
+  zOverviewGenericQuerystring,
   zOverviewQuery,
   zPagePerfQuery,
   zProfilesQuery,
@@ -35,7 +32,7 @@ import {
   zReferrerQuery,
   zSessionsQuery,
   zUserFlowQuery,
-} from '@/controllers/query.controller';
+} from '@/controllers/insights.controller';
 import { validateExportRequest } from '@/utils/auth';
 import { parseQueryString } from '@/utils/parse-zod-query-string';
 import { activateRateLimiter } from '@/utils/rate-limiter';
@@ -63,6 +60,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       }
       return reply.status(401).send({ error: 'Unauthorized', message: 'Unexpected error' });
     }
+
   });
 
   // Run parseQueryString before Fastify schema validation so coercion
@@ -84,7 +82,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zOverviewQuery,
     },
-    handler: query.getOverview,
+    handler: c.getOverview,
   });
 
   fastify.route({
@@ -96,7 +94,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zActiveUsersQuery,
     },
-    handler: query.getActiveUsers,
+    handler: c.getActiveUsers,
   });
 
   fastify.route({
@@ -107,7 +105,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       description: 'Get weekly retention series data.',
       params: projectIdParam,
     },
-    handler: query.getRetentionSeries,
+    handler: c.getRetentionSeries,
   });
 
   fastify.route({
@@ -118,7 +116,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       description: 'Get retention cohort data.',
       params: projectIdParam,
     },
-    handler: query.getRetentionCohort,
+    handler: c.getRetentionCohort,
   });
 
   // ---------------------------------------------------------------------------
@@ -134,7 +132,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zDateRange,
     },
-    handler: query.getTopPages,
+    handler: c.getTopPages,
   });
 
   fastify.route({
@@ -146,7 +144,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zEntryExitQuery,
     },
-    handler: query.getEntryExitPages,
+    handler: c.getEntryExitPages,
   });
 
   fastify.route({
@@ -158,7 +156,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zPagePerfQuery,
     },
-    handler: query.getPagePerformance,
+    handler: c.getPagePerformance,
   });
 
   // ---------------------------------------------------------------------------
@@ -174,7 +172,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zGetMetricsQuery,
     },
-    handler: insights.getMetrics,
+    handler: c.getMetrics,
   });
 
   fastify.route({
@@ -185,7 +183,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       description: 'Get the current number of live (active) visitors.',
       params: projectIdParam,
     },
-    handler: insights.getLiveVisitors,
+    handler: c.getLiveVisitors,
   });
 
   fastify.route({
@@ -197,7 +195,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zGetTopPagesQuery,
     },
-    handler: insights.getPages,
+    handler: c.getPages,
   });
 
   for (const column of overviewColumns) {
@@ -210,7 +208,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
         params: projectIdParam,
         querystring: zOverviewGenericQuerystring,
       },
-      handler: insights.getOverviewGeneric(column),
+      handler: c.getOverviewGeneric(column),
     });
   }
 
@@ -227,7 +225,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zFunnelQuery,
     },
-    handler: query.getFunnel,
+    handler: c.getFunnel,
   });
 
   // ---------------------------------------------------------------------------
@@ -243,7 +241,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zReferrerQuery,
     },
-    handler: query.getTrafficReferrers,
+    handler: c.getTrafficReferrers,
   });
 
   fastify.route({
@@ -255,7 +253,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zGeoQuery,
     },
-    handler: query.getTrafficGeo,
+    handler: c.getTrafficGeo,
   });
 
   fastify.route({
@@ -267,7 +265,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zDeviceQuery,
     },
-    handler: query.getTrafficDevices,
+    handler: c.getTrafficDevices,
   });
 
   // ---------------------------------------------------------------------------
@@ -283,7 +281,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zUserFlowQuery,
     },
-    handler: query.getUserFlow,
+    handler: c.getUserFlow,
   });
 
   fastify.route({
@@ -294,7 +292,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       description: 'Get engagement metrics for the project.',
       params: projectIdParam,
     },
-    handler: query.getEngagement,
+    handler: c.getEngagement,
   });
 
   // ---------------------------------------------------------------------------
@@ -310,7 +308,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zEventsQuery,
     },
-    handler: query.queryEvents,
+    handler: c.queryEvents,
   });
 
   fastify.route({
@@ -321,7 +319,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       description: 'List all distinct event names tracked in the project.',
       params: projectIdParam,
     },
-    handler: query.listEventNames,
+    handler: c.listEventNames,
   });
 
   fastify.route({
@@ -333,7 +331,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zEventPropertiesQuery,
     },
-    handler: query.listEventProperties,
+    handler: c.listEventProperties,
   });
 
   fastify.route({
@@ -345,7 +343,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zPropertyValuesQuery,
     },
-    handler: query.getEventPropertyValues,
+    handler: c.getEventPropertyValues,
   });
 
   // ---------------------------------------------------------------------------
@@ -361,7 +359,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zProfilesQuery,
     },
-    handler: query.findProfiles,
+    handler: c.findProfiles,
   });
 
   fastify.route({
@@ -373,7 +371,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: profileParam,
       querystring: zGetProfileQuery,
     },
-    handler: query.getProfile,
+    handler: c.getProfile,
   });
 
   fastify.route({
@@ -385,7 +383,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: profileParam,
       querystring: zProfileSessionsQuery,
     },
-    handler: query.getProfileSessions,
+    handler: c.getProfileSessions,
   });
 
   fastify.route({
@@ -396,7 +394,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       description: 'Get aggregated metrics for a specific user profile.',
       params: profileParam,
     },
-    handler: query.getProfileMetrics,
+    handler: c.getProfileMetrics,
   });
 
   // ---------------------------------------------------------------------------
@@ -412,7 +410,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zSessionsQuery,
     },
-    handler: query.querySessions,
+    handler: c.querySessions,
   });
 
   // ---------------------------------------------------------------------------
@@ -427,7 +425,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       description: 'List all group types defined in the project.',
       params: projectIdParam,
     },
-    handler: query.listGroupTypes,
+    handler: c.listGroupTypes,
   });
 
   fastify.route({
@@ -439,7 +437,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zGroupsQuery,
     },
-    handler: query.findGroups,
+    handler: c.findGroups,
   });
 
   fastify.route({
@@ -451,7 +449,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: groupParam,
       querystring: zGetGroupQuery,
     },
-    handler: query.getGroup,
+    handler: c.getGroup,
   });
 
   // ---------------------------------------------------------------------------
@@ -466,7 +464,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       description: 'Get the data for a saved report.',
       params: reportParam,
     },
-    handler: query.getReportData,
+    handler: c.getReportData,
   });
 
   // ---------------------------------------------------------------------------
@@ -482,7 +480,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zGscOverviewQuery,
     },
-    handler: query.gscOverview,
+    handler: c.gscOverview,
   });
 
   fastify.route({
@@ -494,7 +492,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zGscLimitQuery,
     },
-    handler: query.gscPages,
+    handler: c.gscPages,
   });
 
   fastify.route({
@@ -506,7 +504,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zGscPageDetailsQuery,
     },
-    handler: query.gscPageDetails,
+    handler: c.gscPageDetails,
   });
 
   fastify.route({
@@ -518,7 +516,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zGscLimitQuery,
     },
-    handler: query.gscQueries,
+    handler: c.gscQueries,
   });
 
   fastify.route({
@@ -530,7 +528,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zGscQueryDetailsQuery,
     },
-    handler: query.gscQueryDetails,
+    handler: c.gscQueryDetails,
   });
 
   fastify.route({
@@ -542,7 +540,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zGscOpportunitiesQuery,
     },
-    handler: query.gscQueryOpportunities,
+    handler: c.gscQueryOpportunities,
   });
 
   fastify.route({
@@ -554,7 +552,7 @@ const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       params: projectIdParam,
       querystring: zDateRange,
     },
-    handler: query.gscCannibalization,
+    handler: c.gscCannibalization,
   });
 };
 

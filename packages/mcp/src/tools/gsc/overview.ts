@@ -1,11 +1,11 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getGscOverview } from '@openpanel/db';
+import { resolveClientProjectId, getGscOverview } from '@openpanel/db';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,
   resolveDateRange,
-  resolveProjectId,
+  
   withErrorHandling,
   zDateRange,
 } from '../shared';
@@ -33,7 +33,7 @@ export function registerGscOverviewTools(
       interval,
     }) =>
       withErrorHandling(async () => {
-        const projectId = resolveProjectId(context, inputProjectId);
+        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const data = await getGscOverview(
           projectId,

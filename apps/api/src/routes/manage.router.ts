@@ -1,9 +1,9 @@
-import { Prisma } from '@openpanel/db';
+import { Prisma, resolveClientProjectId } from '@openpanel/db';
 import type { FastifyRequest } from 'fastify';
 import type { FastifyPluginAsyncZodOpenApi } from 'fastify-zod-openapi';
 import { z } from 'zod';
 import * as controller from '@/controllers/manage.controller';
-import { listDashboards, listReports } from '@/controllers/query.controller';
+import { listDashboards, listReports } from '@/controllers/insights.controller';
 import {
   zCreateClient,
   zCreateProject,
@@ -45,6 +45,22 @@ const manageRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
       return reply
         .status(401)
         .send({ error: 'Unauthorized', message: 'Unexpected error' });
+    }
+
+    // Validate :projectId URL param belongs to this client's organization.
+    const client = req.client!;
+    const params = req.params as { projectId?: string };
+    if (params.projectId) {
+      try {
+        await resolveClientProjectId({
+          clientType: 'root',
+          clientProjectId: null,
+          organizationId: client.organizationId,
+          inputProjectId: params.projectId,
+        });
+      } catch {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Project does not belong to your organization' });
+      }
     }
   });
 

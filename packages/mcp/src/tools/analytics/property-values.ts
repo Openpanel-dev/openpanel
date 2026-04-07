@@ -1,10 +1,10 @@
-import { TABLE_NAMES, ch, clix } from '@openpanel/db';
+import { resolveClientProjectId, TABLE_NAMES, ch, clix } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,
-  resolveProjectId,
+  
   withErrorHandling,
 } from '../shared';
 
@@ -24,7 +24,7 @@ export function registerPropertyValueTools(
     },
     async ({ projectId: inputProjectId, eventName }) =>
       withErrorHandling(async () => {
-        const projectId = resolveProjectId(context, inputProjectId);
+        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
         const builder = clix(ch)
           .select<{ property_key: string; event_name: string }>([
             'distinct property_key',
@@ -58,7 +58,7 @@ export function registerPropertyValueTools(
     },
     async ({ projectId: inputProjectId, eventName, propertyKey }) =>
       withErrorHandling(async () => {
-        const projectId = resolveProjectId(context, inputProjectId);
+        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
         const rows = await clix(ch)
           .select<{ value: string }>(['property_value as value'])
           .from(TABLE_NAMES.event_property_values_mv)

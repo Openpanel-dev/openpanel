@@ -1,10 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getGscCannibalization } from '@openpanel/db';
+import { resolveClientProjectId, getGscCannibalization } from '@openpanel/db';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,
   resolveDateRange,
-  resolveProjectId,
+  
   withErrorHandling,
   zDateRange,
 } from '../shared';
@@ -21,8 +21,8 @@ export function registerGscCannibalizationTools(
       ...zDateRange,
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed }) =>
-      withErrorHandling(() => {
-        const projectId = resolveProjectId(context, inputProjectId);
+      withErrorHandling(async () => {
+        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
         const { startDate, endDate } = resolveDateRange(sd, ed);
         return getGscCannibalization(projectId, startDate, endDate);
       })

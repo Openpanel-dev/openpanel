@@ -20,23 +20,6 @@ export function projectIdSchema(context: McpAuthContext) {
     : z.string().optional();
 }
 
-/**
- * Resolve the effective projectId from context + optional tool input.
- */
-export function resolveProjectId(
-  context: McpAuthContext,
-  inputProjectId: string | undefined
-): string {
-  if (context.projectId !== null) {
-    return context.projectId;
-  }
-  if (!inputProjectId) {
-    throw new Error(
-      'projectId is required when using a root (organization-level) client'
-    );
-  }
-  return inputProjectId;
-}
 
 /**
  * Zod schema for common date range inputs. Both fields are optional and

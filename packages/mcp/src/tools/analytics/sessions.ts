@@ -1,11 +1,11 @@
-import { querySessionsCore } from '@openpanel/db';
+import { resolveClientProjectId, querySessionsCore } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import { sessionUrl } from '../dashboard-links';
 import {
   projectIdSchema,
-  resolveProjectId,
+  
   withErrorHandling,
   zDateRange,
 } from '../shared';
@@ -51,7 +51,7 @@ export function registerSessionTools(
     },
     async ({ projectId: inputProjectId, ...input }) =>
       withErrorHandling(async () => {
-        const projectId = resolveProjectId(context, inputProjectId);
+        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
         const sessions = await querySessionsCore({ projectId, ...input });
         return sessions.map((s) => ({
           ...s,

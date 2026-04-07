@@ -4,6 +4,7 @@ const mockGetRetentionLastSeenSeries = vi.hoisted(() => vi.fn());
 
 vi.mock('@openpanel/db', () => ({
   getRetentionLastSeenSeries: mockGetRetentionLastSeenSeries,
+  resolveClientProjectId: vi.fn(({ clientProjectId }: { clientProjectId: string }) => Promise.resolve(clientProjectId)),
 }));
 
 // Import after mock is set up

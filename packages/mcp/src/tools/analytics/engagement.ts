@@ -1,7 +1,7 @@
-import { getRetentionLastSeenSeries } from '@openpanel/db';
+import { resolveClientProjectId, getRetentionLastSeenSeries } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpAuthContext } from '../../auth';
-import { projectIdSchema, resolveProjectId, withErrorHandling } from '../shared';
+import { projectIdSchema,  withErrorHandling } from '../shared';
 
 export function registerEngagementTools(
   server: McpServer,
@@ -15,7 +15,7 @@ export function registerEngagementTools(
     },
     async ({ projectId: inputProjectId }) =>
       withErrorHandling(async () => {
-        const projectId = resolveProjectId(context, inputProjectId);
+        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
         const raw = await getRetentionLastSeenSeries({ projectId });
 
         // Bucket into meaningful segments for easier reading

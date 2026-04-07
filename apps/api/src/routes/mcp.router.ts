@@ -1,8 +1,4 @@
-import {
-  SessionManager,
-  handleMcpGet,
-  handleMcpPost,
-} from '@openpanel/mcp';
+import { handleMcpGet, handleMcpPost, SessionManager } from '@openpanel/mcp';
 import type { FastifyPluginAsync } from 'fastify';
 
 /**
@@ -21,7 +17,7 @@ const mcpRouter: FastifyPluginAsync = async (fastify) => {
    * First request: authenticate via ?token= query param or Authorization: Bearer.
    * Subsequent requests: route by Mcp-Session-Id header.
    */
-  fastify.post('/', async (req, reply) => {
+  await fastify.post('/', async (req, reply) => {
     // Hand off full response control to the MCP transport
     reply.hijack();
     await handleMcpPost(
@@ -39,7 +35,7 @@ const mcpRouter: FastifyPluginAsync = async (fastify) => {
    * Establishes an SSE stream for server-to-client notifications.
    * Requires Mcp-Session-Id header from a previously initialized session.
    */
-  fastify.get('/', async (req, reply) => {
+  await fastify.get('/', async (req, reply) => {
     reply.hijack();
     await handleMcpGet(mcpSessionManager, req.raw, reply.raw);
   });
@@ -49,7 +45,7 @@ const mcpRouter: FastifyPluginAsync = async (fastify) => {
    *
    * Explicitly close an MCP session and free its resources.
    */
-  fastify.delete('/', async (req, reply) => {
+  await fastify.delete('/', async (req, reply) => {
     const sessionId = req.headers['mcp-session-id'] as string | undefined;
     if (!sessionId) {
       return reply
