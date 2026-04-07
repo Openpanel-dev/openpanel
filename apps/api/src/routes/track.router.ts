@@ -16,7 +16,8 @@ const trackRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
     url: '/',
     schema: {
       body: zTrackHandlerPayload,
-      tags: ['track'],
+      tags: ['ingestion'],
+      description: 'Ingest a tracking event (track, identify, group, increment, decrement, replay).',
     },
     handler,
   });
@@ -25,7 +26,8 @@ const trackRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
     method: 'GET',
     url: '/device-id',
     schema: {
-      tags: ['track'],
+      tags: ['ingestion'],
+      description: 'Get or generate a stable device ID and session ID for the current visitor.',
       response: {
         200: z.object({
           deviceId: z.string(),

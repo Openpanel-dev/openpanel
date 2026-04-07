@@ -1,4 +1,3 @@
-import { parseQueryString } from '@/utils/parse-zod-query-string';
 import { getDefaultIntervalByDates } from '@openpanel/constants';
 import {
   eventBuffer,
@@ -10,13 +9,13 @@ import { zChartEventFilter, zRange } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
-const zGetMetricsQuery = z.object({
+export const zGetMetricsQuery = z.object({
   startDate: z.string().nullish(),
   endDate: z.string().nullish(),
   range: zRange.default('7d'),
   filters: z.array(zChartEventFilter).default([]),
 });
-// Website stats - main metrics overview
+
 export async function getMetrics(
   request: FastifyRequest<{
     Params: { projectId: string };
@@ -25,35 +24,21 @@ export async function getMetrics(
   reply: FastifyReply,
 ) {
   const { timezone } = await getSettingsForProject(request.params.projectId);
-  const parsed = zGetMetricsQuery.safeParse(parseQueryString(request.query));
-
-  if (parsed.success === false) {
-    return reply.status(400).send({
-      error: 'Bad Request',
-      message: 'Invalid query parameters',
-      details: parsed.error,
-    });
-  }
-
-  const { startDate, endDate } = getChartStartEndDate(parsed.data, timezone);
-
+  const { startDate, endDate } = getChartStartEndDate(request.query, timezone);
   reply.send(
     await overviewService.getMetrics({
       projectId: request.params.projectId,
-      filters: parsed.data.filters,
-      startDate: startDate,
-      endDate: endDate,
+      filters: request.query.filters,
+      startDate,
+      endDate,
       interval: getDefaultIntervalByDates(startDate, endDate) ?? 'day',
       timezone,
     }),
   );
 }
 
-// Live visitors (real-time)
 export async function getLiveVisitors(
-  request: FastifyRequest<{
-    Params: { projectId: string };
-  }>,
+  request: FastifyRequest<{ Params: { projectId: string } }>,
   reply: FastifyReply,
 ) {
   reply.send({
@@ -70,7 +55,6 @@ export const zGetTopPagesQuery = z.object({
   limit: z.number().default(10),
 });
 
-// Page views with top pages
 export async function getPages(
   request: FastifyRequest<{
     Params: { projectId: string };
@@ -80,93 +64,66 @@ export async function getPages(
 ) {
   const { timezone } = await getSettingsForProject(request.params.projectId);
   const { startDate, endDate } = getChartStartEndDate(request.query, timezone);
-  const parsed = zGetTopPagesQuery.safeParse(parseQueryString(request.query));
-
-  if (parsed.success === false) {
-    return reply.status(400).send({
-      error: 'Bad Request',
-      message: 'Invalid query parameters',
-      details: parsed.error,
-    });
-  }
-
   return overviewService.getTopPages({
     projectId: request.params.projectId,
-    filters: parsed.data.filters,
-    startDate: startDate,
-    endDate: endDate,
+    filters: request.query.filters,
+    startDate,
+    endDate,
     timezone,
   });
 }
 
-const zGetOverviewGenericQuery = z.object({
+export const overviewColumns = [
+  'referrer',
+  'referrer_name',
+  'referrer_type',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+  'region',
+  'country',
+  'city',
+  'device',
+  'brand',
+  'model',
+  'browser',
+  'browser_version',
+  'os',
+  'os_version',
+] as const;
+
+export type OverviewColumn = (typeof overviewColumns)[number];
+
+// Querystring schema for the dynamic overview generic routes.
+// `column` is injected from the route factory, not from the querystring.
+export const zOverviewGenericQuerystring = z.object({
   filters: z.array(zChartEventFilter).default([]),
   startDate: z.string().nullish(),
   endDate: z.string().nullish(),
   range: zRange.default('7d'),
-  column: z.enum([
-    // Referrers
-    'referrer',
-    'referrer_name',
-    'referrer_type',
-    'utm_source',
-    'utm_medium',
-    'utm_campaign',
-    'utm_term',
-    'utm_content',
-    // Geo
-    'region',
-    'country',
-    'city',
-    // Device
-    'device',
-    'brand',
-    'model',
-    'browser',
-    'browser_version',
-    'os',
-    'os_version',
-  ]),
   cursor: z.number().optional(),
   limit: z.number().default(10),
 });
 
-export function getOverviewGeneric(
-  column: z.infer<typeof zGetOverviewGenericQuery>['column'],
-) {
+export function getOverviewGeneric(column: OverviewColumn) {
   return async (
     request: FastifyRequest<{
-      Params: { projectId: string; key: string };
-      Querystring: z.infer<typeof zGetOverviewGenericQuery>;
+      Params: { projectId: string };
+      Querystring: z.infer<typeof zOverviewGenericQuerystring>;
     }>,
     reply: FastifyReply,
   ) => {
     const { timezone } = await getSettingsForProject(request.params.projectId);
-    const { startDate, endDate } = getChartStartEndDate(
-      request.query,
-      timezone,
-    );
-    const parsed = zGetOverviewGenericQuery.safeParse({
-      ...parseQueryString(request.query),
-      column,
-    });
-
-    if (parsed.success === false) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: 'Invalid query parameters',
-        details: parsed.error,
-      });
-    }
-
-    // TODO: Implement overview generic endpoint
+    const { startDate, endDate } = getChartStartEndDate(request.query, timezone);
     reply.send(
       await overviewService.getTopGeneric({
         column,
         projectId: request.params.projectId,
-        filters: parsed.data.filters,
-        startDate: startDate,
-        endDate: endDate,
+        filters: request.query.filters,
+        startDate,
+        endDate,
         timezone,
       }),
     );

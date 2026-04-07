@@ -1,4 +1,3 @@
-import { parseQueryString } from '@/utils/parse-zod-query-string';
 import {
   findGroupsCore,
   findProfilesCore,
@@ -63,7 +62,7 @@ function resolveQueryProjectId(
   return client.projectId;
 }
 
-const zDateRange = z.object({
+export const zDateRange = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   // Convenience shorthand matching the insights API (e.g. ?range=7d, ?range=30d).
@@ -106,14 +105,6 @@ function getClientType(
   return req.client!.type === ClientType.root ? 'root' : 'read';
 }
 
-function badRequest(reply: FastifyReply, error: z.ZodError) {
-  return reply.status(400).send({
-    error: 'Bad Request',
-    message: 'Invalid query parameters',
-    details: error.issues,
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Projects
 // ---------------------------------------------------------------------------
@@ -136,37 +127,33 @@ export async function listProjects(
 // Analytics — overview
 // ---------------------------------------------------------------------------
 
-const zOverviewQuery = zDateRange.extend({
+export const zOverviewQuery = zDateRange.extend({
   interval: z.enum(['hour', 'day', 'week', 'month']).optional(),
 });
 
 export async function getOverview(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zOverviewQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zOverviewQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
-  return reply.send(await getAnalyticsOverviewCore({ projectId, startDate, endDate, interval: parsed.data.interval }));
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  return reply.send(await getAnalyticsOverviewCore({ projectId, startDate, endDate, interval: req.query.interval }));
 }
 
 // ---------------------------------------------------------------------------
 // Analytics — active users
 // ---------------------------------------------------------------------------
 
-const zActiveUsersQuery = z.object({
+export const zActiveUsersQuery = z.object({
   days: z.number().int().min(1).max(90).default(7),
 });
 
 export async function getActiveUsers(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zActiveUsersQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zActiveUsersQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  return reply.send(await getRollingActiveUsersCore({ projectId, days: parsed.data.days }));
+  return reply.send(await getRollingActiveUsersCore({ projectId, days: req.query.days }));
 }
 
 // ---------------------------------------------------------------------------
@@ -198,13 +185,11 @@ export async function getRetentionCohort(
 // ---------------------------------------------------------------------------
 
 export async function getTopPages(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zDateRange> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zDateRange.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(await getTopPagesCore({ projectId, startDate, endDate }));
 }
 
@@ -212,26 +197,24 @@ export async function getTopPages(
 // Analytics — pages (entry/exit)
 // ---------------------------------------------------------------------------
 
-const zEntryExitQuery = zDateRange.extend({
+export const zEntryExitQuery = zDateRange.extend({
   mode: z.enum(['entry', 'exit']).default('entry'),
 });
 
 export async function getEntryExitPages(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zEntryExitQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zEntryExitQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
-  return reply.send(await getEntryExitPagesCore({ projectId, startDate, endDate, mode: parsed.data.mode }));
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  return reply.send(await getEntryExitPagesCore({ projectId, startDate, endDate, mode: req.query.mode }));
 }
 
 // ---------------------------------------------------------------------------
 // Analytics — page performance
 // ---------------------------------------------------------------------------
 
-const zPagePerfQuery = zDateRange.extend({
+export const zPagePerfQuery = zDateRange.extend({
   search: z.string().optional(),
   sortBy: z.enum(['sessions', 'pageviews', 'bounce_rate', 'avg_duration']).optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
@@ -239,15 +222,13 @@ const zPagePerfQuery = zDateRange.extend({
 });
 
 export async function getPagePerformance(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zPagePerfQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zPagePerfQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await getPagePerformanceCore({ projectId, startDate, endDate, ...parsed.data }),
+    await getPagePerformanceCore({ projectId, startDate, endDate, ...req.query }),
   );
 }
 
@@ -255,7 +236,7 @@ export async function getPagePerformance(
 // Analytics — funnel
 // ---------------------------------------------------------------------------
 
-const zFunnelQuery = zDateRange.extend({
+export const zFunnelQuery = zDateRange.extend({
   steps: z
     .union([z.array(z.string()), z.string().transform((s) => [s])])
     .refine((a) => a.length >= 2 && a.length <= 10, {
@@ -266,21 +247,19 @@ const zFunnelQuery = zDateRange.extend({
 });
 
 export async function getFunnel(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zFunnelQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zFunnelQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
     await getFunnelCore({
       projectId,
       startDate,
       endDate,
-      steps: parsed.data.steps,
-      windowHours: parsed.data.windowHours,
-      groupBy: parsed.data.groupBy,
+      steps: req.query.steps,
+      windowHours: req.query.windowHours,
+      groupBy: req.query.groupBy,
     }),
   );
 }
@@ -293,54 +272,48 @@ const referrerColumns = ['referrer_name', 'referrer_type', 'referrer', 'utm_sour
 const geoColumns = ['country', 'region', 'city'] as const;
 const deviceColumns = ['device', 'browser', 'os'] as const;
 
-const zReferrerQuery = zDateRange.extend({
+export const zReferrerQuery = zDateRange.extend({
   breakdown: z.enum(referrerColumns).default('referrer_name'),
 });
 
-const zGeoQuery = zDateRange.extend({
+export const zGeoQuery = zDateRange.extend({
   breakdown: z.enum(geoColumns).default('country'),
 });
 
-const zDeviceQuery = zDateRange.extend({
+export const zDeviceQuery = zDateRange.extend({
   breakdown: z.enum(deviceColumns).default('device'),
 });
 
 export async function getTrafficReferrers(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zReferrerQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zReferrerQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await getTrafficBreakdownCore({ projectId, startDate, endDate, column: parsed.data.breakdown as TrafficColumn }),
+    await getTrafficBreakdownCore({ projectId, startDate, endDate, column: req.query.breakdown as TrafficColumn }),
   );
 }
 
 export async function getTrafficGeo(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGeoQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zGeoQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await getTrafficBreakdownCore({ projectId, startDate, endDate, column: parsed.data.breakdown as TrafficColumn }),
+    await getTrafficBreakdownCore({ projectId, startDate, endDate, column: req.query.breakdown as TrafficColumn }),
   );
 }
 
 export async function getTrafficDevices(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zDeviceQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zDeviceQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await getTrafficBreakdownCore({ projectId, startDate, endDate, column: parsed.data.breakdown as TrafficColumn }),
+    await getTrafficBreakdownCore({ projectId, startDate, endDate, column: req.query.breakdown as TrafficColumn }),
   );
 }
 
@@ -348,7 +321,7 @@ export async function getTrafficDevices(
 // Analytics — user flow
 // ---------------------------------------------------------------------------
 
-const zUserFlowQuery = zDateRange.extend({
+export const zUserFlowQuery = zDateRange.extend({
   startEvent: z.string(),
   endEvent: z.string().optional(),
   mode: z.enum(['after', 'before', 'between']).default('after'),
@@ -362,15 +335,13 @@ const zUserFlowQuery = zDateRange.extend({
 });
 
 export async function getUserFlow(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zUserFlowQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zUserFlowQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await getUserFlowCore({ projectId, startDate, endDate, ...parsed.data }),
+    await getUserFlowCore({ projectId, startDate, endDate, ...req.query }),
   );
 }
 
@@ -390,7 +361,7 @@ export async function getEngagement(
 // Events
 // ---------------------------------------------------------------------------
 
-const zEventsQuery = zDateRange.extend({
+export const zEventsQuery = zDateRange.extend({
   eventNames: z
     .union([z.array(z.string()), z.string().transform((s) => [s])])
     .optional(),
@@ -409,15 +380,11 @@ const zEventsQuery = zDateRange.extend({
 });
 
 export async function queryEvents(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zEventsQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zEventsQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  return reply.send(
-    await queryEventsCore({ projectId, ...parsed.data }),
-  );
+  return reply.send(await queryEventsCore({ projectId, ...req.query }));
 }
 
 export async function listEventNames(
@@ -428,42 +395,36 @@ export async function listEventNames(
   return reply.send(await listEventNamesCore(projectId));
 }
 
-const zEventPropertiesQuery = z.object({
+export const zEventPropertiesQuery = z.object({
   eventName: z.string().optional(),
 });
 
 export async function listEventProperties(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zEventPropertiesQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zEventPropertiesQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  return reply.send(await listEventPropertiesCore({ projectId, eventName: parsed.data.eventName }));
+  return reply.send(await listEventPropertiesCore({ projectId, eventName: req.query.eventName }));
 }
 
-const zPropertyValuesQuery = z.object({
+export const zPropertyValuesQuery = z.object({
   eventName: z.string(),
   propertyKey: z.string(),
 });
 
 export async function getEventPropertyValues(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zPropertyValuesQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zPropertyValuesQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  return reply.send(
-    await getEventPropertyValuesCore({ projectId, ...parsed.data }),
-  );
+  return reply.send(await getEventPropertyValuesCore({ projectId, ...req.query }));
 }
 
 // ---------------------------------------------------------------------------
 // Profiles
 // ---------------------------------------------------------------------------
 
-const zProfilesQuery = z.object({
+export const zProfilesQuery = z.object({
   name: z.string().optional(),
   email: z.string().optional(),
   country: z.string().optional(),
@@ -478,47 +439,39 @@ const zProfilesQuery = z.object({
 });
 
 export async function findProfiles(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zProfilesQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zProfilesQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  return reply.send(await findProfilesCore({ projectId, ...parsed.data }));
+  return reply.send(await findProfilesCore({ projectId, ...req.query }));
 }
 
-const zGetProfileQuery = z.object({
+export const zGetProfileQuery = z.object({
   eventLimit: z.number().int().min(1).max(100).default(20),
 });
 
 export async function getProfile(
-  req: FastifyRequest<{ Params: { projectId?: string; profileId: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string; profileId: string }; Querystring: z.infer<typeof zGetProfileQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zGetProfileQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const result = await getProfileWithEvents(projectId, req.params.profileId, parsed.data.eventLimit);
+  const result = await getProfileWithEvents(projectId, req.params.profileId, req.query.eventLimit);
   if (!result.profile) {
     return reply.status(404).send({ error: 'Profile not found', profileId: req.params.profileId });
   }
-  // Transform snake_case MCP key to camelCase for REST consumers
   return reply.send({ profile: result.profile, recentEvents: result.recent_events });
 }
 
-const zProfileSessionsQuery = z.object({
+export const zProfileSessionsQuery = z.object({
   limit: z.number().int().min(1).max(100).default(20),
 });
 
 export async function getProfileSessions(
-  req: FastifyRequest<{ Params: { projectId?: string; profileId: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string; profileId: string }; Querystring: z.infer<typeof zProfileSessionsQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zProfileSessionsQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const sessions = await getProfileSessionsCore(projectId, req.params.profileId, parsed.data.limit);
-  return reply.send(sessions);
+  return reply.send(await getProfileSessionsCore(projectId, req.params.profileId, req.query.limit));
 }
 
 export async function getProfileMetrics(
@@ -535,7 +488,7 @@ export async function getProfileMetrics(
 // Sessions
 // ---------------------------------------------------------------------------
 
-const zSessionsQuery = zDateRange.extend({
+export const zSessionsQuery = zDateRange.extend({
   country: z.string().optional(),
   city: z.string().optional(),
   device: z.string().optional(),
@@ -549,13 +502,11 @@ const zSessionsQuery = zDateRange.extend({
 });
 
 export async function querySessions(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zSessionsQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zSessionsQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  return reply.send(await querySessionsCore({ projectId, ...parsed.data }));
+  return reply.send(await querySessionsCore({ projectId, ...req.query }));
 }
 
 // ---------------------------------------------------------------------------
@@ -570,35 +521,31 @@ export async function listGroupTypes(
   return reply.send(await listGroupTypesCore(projectId));
 }
 
-const zGroupsQuery = z.object({
+export const zGroupsQuery = z.object({
   type: z.string().optional(),
   search: z.string().optional(),
   limit: z.number().int().min(1).max(100).default(20),
 });
 
 export async function findGroups(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGroupsQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zGroupsQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  return reply.send(await findGroupsCore({ projectId, ...parsed.data }));
+  return reply.send(await findGroupsCore({ projectId, ...req.query }));
 }
 
-const zGetGroupQuery = z.object({
+export const zGetGroupQuery = z.object({
   memberLimit: z.number().int().min(1).max(50).default(10),
 });
 
 export async function getGroup(
-  req: FastifyRequest<{ Params: { projectId?: string; groupId: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string; groupId: string }; Querystring: z.infer<typeof zGetGroupQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zGetGroupQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
   return reply.send(
-    await getGroupCore({ projectId, groupId: req.params.groupId, memberLimit: parsed.data.memberLimit }),
+    await getGroupCore({ projectId, groupId: req.params.groupId, memberLimit: req.query.memberLimit }),
   );
 }
 
@@ -641,103 +588,89 @@ export async function getReportData(
 // Google Search Console
 // ---------------------------------------------------------------------------
 
-const zGscOverviewQuery = zDateRange.extend({
+export const zGscOverviewQuery = zDateRange.extend({
   interval: z.enum(['day', 'week', 'month']).default('day'),
 });
 
 export async function gscOverview(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscOverviewQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zGscOverviewQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
-  return reply.send(await gscGetOverviewCore({ projectId, startDate, endDate, interval: parsed.data.interval }));
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  return reply.send(await gscGetOverviewCore({ projectId, startDate, endDate, interval: req.query.interval }));
 }
 
-const zGscLimitQuery = zDateRange.extend({
+export const zGscLimitQuery = zDateRange.extend({
   limit: z.number().int().min(1).max(1000).default(100),
 });
 
 export async function gscPages(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscLimitQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zGscLimitQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
-  return reply.send(await gscGetTopPagesCore({ projectId, startDate, endDate, limit: parsed.data.limit }));
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  return reply.send(await gscGetTopPagesCore({ projectId, startDate, endDate, limit: req.query.limit }));
 }
 
-const zGscPageDetailsQuery = zDateRange.extend({
+export const zGscPageDetailsQuery = zDateRange.extend({
   page: z.string().url(),
 });
 
 export async function gscPageDetails(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscPageDetailsQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zGscPageDetailsQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
-  return reply.send(await gscGetPageDetailsCore({ projectId, startDate, endDate, page: parsed.data.page }));
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  return reply.send(await gscGetPageDetailsCore({ projectId, startDate, endDate, page: req.query.page }));
 }
 
 export async function gscQueries(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscLimitQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zGscLimitQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
-  return reply.send(await gscGetTopQueriesCore({ projectId, startDate, endDate, limit: parsed.data.limit }));
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  return reply.send(await gscGetTopQueriesCore({ projectId, startDate, endDate, limit: req.query.limit }));
 }
 
-const zGscQueryDetailsQuery = zDateRange.extend({
+export const zGscQueryDetailsQuery = zDateRange.extend({
   query: z.string(),
 });
 
 export async function gscQueryDetails(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscQueryDetailsQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zGscQueryDetailsQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await gscGetQueryDetailsCore({ projectId, startDate, endDate, query: parsed.data.query }),
+    await gscGetQueryDetailsCore({ projectId, startDate, endDate, query: req.query.query }),
   );
 }
 
-const zGscOpportunitiesQuery = zDateRange.extend({
+export const zGscOpportunitiesQuery = zDateRange.extend({
   minImpressions: z.number().int().min(1).default(50),
 });
 
 export async function gscQueryOpportunities(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscOpportunitiesQuery> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zGscOpportunitiesQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await gscGetQueryOpportunitiesCore({ projectId, startDate, endDate, minImpressions: parsed.data.minImpressions }),
+    await gscGetQueryOpportunitiesCore({ projectId, startDate, endDate, minImpressions: req.query.minImpressions }),
   );
 }
 
 export async function gscCannibalization(
-  req: FastifyRequest<{ Params: { projectId?: string } }>,
+  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zDateRange> }>,
   reply: FastifyReply,
 ) {
-  const parsed = zDateRange.safeParse(parseQueryString(req.query as Record<string, unknown>));
-  if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
+  const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(await gscGetCannibalizationCore({ projectId, startDate, endDate }));
 }

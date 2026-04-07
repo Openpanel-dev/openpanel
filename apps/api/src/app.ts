@@ -46,7 +46,6 @@ import mcpRouter from './routes/mcp.router';
 import miscRouter from './routes/misc.router';
 import oauthRouter from './routes/oauth-callback.router';
 import profileRouter from './routes/profile.router';
-import queryRouter from './routes/query.router';
 import trackRouter from './routes/track.router';
 import webhookRouter from './routes/webhook.router';
 import { HttpError } from './utils/errors';
@@ -119,16 +118,6 @@ export async function buildApp(
 
   fastify.register(compress, { global: false, encodings: ['gzip', 'deflate'] });
 
-  await fastify.register(fastifyZodOpenApiPlugin);
-  await fastify.register(fastifySwagger, {
-    openapi: {
-      info: { title: 'OpenPanel API', version: '1.0.0' },
-      openapi: '3.1.0',
-    },
-    ...fastifyZodOpenApiTransformers,
-  });
-  await fastify.register(fastifySwaggerUI, { routePrefix: '/documentation' });
-
   // Dashboard API
   fastify.register(async (instance) => {
     instance.register(cookie, {
@@ -193,6 +182,16 @@ export async function buildApp(
 
   // Public API
   fastify.register(async (instance) => {
+    await instance.register(fastifyZodOpenApiPlugin);
+    await instance.register(fastifySwagger, {
+      openapi: {
+        info: { title: 'OpenPanel API', version: '1.0.0' },
+        openapi: '3.1.0',
+      },
+      ...fastifyZodOpenApiTransformers,
+    });
+    await instance.register(fastifySwaggerUI, { routePrefix: '/documentation' });
+
     // Prometheus metrics: skip in tests (causes global state conflicts across test runs)
     if (!testing) {
       instance.register(metricsPlugin, { endpoint: '/metrics' });
@@ -205,7 +204,6 @@ export async function buildApp(
     instance.register(insightsRouter, { prefix: '/insights' });
     instance.register(trackRouter, { prefix: '/track' });
     instance.register(manageRouter, { prefix: '/manage' });
-    instance.register(queryRouter, { prefix: '/query' });
 
     instance.get('/healthcheck', healthcheck);
     instance.get('/healthz/live', liveness);
