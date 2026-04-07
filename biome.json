@@ -60,7 +60,8 @@
       },
       "correctness": {
         "useExhaustiveDependencies": "off",
-        "noUnreachable": "off"
+        "noUnreachable": "off",
+        "noGlobalDirnameFilename": "off"
       },
       "performance": {
         "noDelete": "off",

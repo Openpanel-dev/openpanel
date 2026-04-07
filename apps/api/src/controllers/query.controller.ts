@@ -37,8 +37,9 @@ import {
   resolveDateRange,
   type TrafficColumn,
 } from '@openpanel/mcp';
-import { ClientType } from '@openpanel/db';
+import { ClientType, getChartStartEndDate, getSettingsForProject } from '@openpanel/db';
 import type { IServiceClientWithProject } from '@openpanel/db';
+import { zRange } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
@@ -65,7 +66,27 @@ function resolveQueryProjectId(
 const zDateRange = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
+  // Convenience shorthand matching the insights API (e.g. ?range=7d, ?range=30d).
+  // When provided without explicit startDate, it expands to a timezone-aware range.
+  // Explicit startDate/endDate always take precedence.
+  range: zRange.optional(),
 });
+
+type DateRangeInput = z.infer<typeof zDateRange>;
+
+async function resolveDates(
+  projectId: string,
+  data: DateRangeInput,
+): Promise<{ startDate: string; endDate: string }> {
+  // Explicit dates always win — range is only a shorthand when no startDate is given
+  if (!data.range || data.startDate) {
+    return resolveDateRange(data.startDate, data.endDate);
+  }
+  const { timezone } = await getSettingsForProject(projectId);
+  // data.range is guaranteed non-nullish here (checked above); cast to satisfy
+  // getChartStartEndDate which expects a non-optional range with a default value.
+  return getChartStartEndDate({ startDate: data.startDate, endDate: data.endDate, range: data.range! }, timezone);
+}
 
 type RequestWithProjectParam = FastifyRequest<{
   Params: { projectId?: string };
@@ -126,7 +147,7 @@ export async function getOverview(
   const parsed = zOverviewQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(await getAnalyticsOverviewCore({ projectId, startDate, endDate, interval: parsed.data.interval }));
 }
 
@@ -183,7 +204,7 @@ export async function getTopPages(
   const parsed = zDateRange.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(await getTopPagesCore({ projectId, startDate, endDate }));
 }
 
@@ -202,7 +223,7 @@ export async function getEntryExitPages(
   const parsed = zEntryExitQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(await getEntryExitPagesCore({ projectId, startDate, endDate, mode: parsed.data.mode }));
 }
 
@@ -224,7 +245,7 @@ export async function getPagePerformance(
   const parsed = zPagePerfQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(
     await getPagePerformanceCore({ projectId, startDate, endDate, ...parsed.data }),
   );
@@ -251,7 +272,7 @@ export async function getFunnel(
   const parsed = zFunnelQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(
     await getFunnelCore({
       projectId,
@@ -291,7 +312,7 @@ export async function getTrafficReferrers(
   const parsed = zReferrerQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(
     await getTrafficBreakdownCore({ projectId, startDate, endDate, column: parsed.data.breakdown as TrafficColumn }),
   );
@@ -304,7 +325,7 @@ export async function getTrafficGeo(
   const parsed = zGeoQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(
     await getTrafficBreakdownCore({ projectId, startDate, endDate, column: parsed.data.breakdown as TrafficColumn }),
   );
@@ -317,7 +338,7 @@ export async function getTrafficDevices(
   const parsed = zDeviceQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(
     await getTrafficBreakdownCore({ projectId, startDate, endDate, column: parsed.data.breakdown as TrafficColumn }),
   );
@@ -347,7 +368,7 @@ export async function getUserFlow(
   const parsed = zUserFlowQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(
     await getUserFlowCore({ projectId, startDate, endDate, ...parsed.data }),
   );
@@ -404,8 +425,7 @@ export async function listEventNames(
   reply: FastifyReply,
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const names = await listEventNamesCore(projectId);
-  return reply.send({ event_names: names });
+  return reply.send(await listEventNamesCore(projectId));
 }
 
 const zEventPropertiesQuery = z.object({
@@ -482,7 +502,8 @@ export async function getProfile(
   if (!result.profile) {
     return reply.status(404).send({ error: 'Profile not found', profileId: req.params.profileId });
   }
-  return reply.send(result);
+  // Transform snake_case MCP key to camelCase for REST consumers
+  return reply.send({ profile: result.profile, recentEvents: result.recent_events });
 }
 
 const zProfileSessionsQuery = z.object({
@@ -497,7 +518,7 @@ export async function getProfileSessions(
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
   const sessions = await getProfileSessionsCore(projectId, req.params.profileId, parsed.data.limit);
-  return reply.send({ profileId: req.params.profileId, session_count: sessions.length, sessions });
+  return reply.send(sessions);
 }
 
 export async function getProfileMetrics(
@@ -631,7 +652,7 @@ export async function gscOverview(
   const parsed = zGscOverviewQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(await gscGetOverviewCore({ projectId, startDate, endDate, interval: parsed.data.interval }));
 }
 
@@ -646,7 +667,7 @@ export async function gscPages(
   const parsed = zGscLimitQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(await gscGetTopPagesCore({ projectId, startDate, endDate, limit: parsed.data.limit }));
 }
 
@@ -661,7 +682,7 @@ export async function gscPageDetails(
   const parsed = zGscPageDetailsQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(await gscGetPageDetailsCore({ projectId, startDate, endDate, page: parsed.data.page }));
 }
 
@@ -672,7 +693,7 @@ export async function gscQueries(
   const parsed = zGscLimitQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(await gscGetTopQueriesCore({ projectId, startDate, endDate, limit: parsed.data.limit }));
 }
 
@@ -687,7 +708,7 @@ export async function gscQueryDetails(
   const parsed = zGscQueryDetailsQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(
     await gscGetQueryDetailsCore({ projectId, startDate, endDate, query: parsed.data.query }),
   );
@@ -704,7 +725,7 @@ export async function gscQueryOpportunities(
   const parsed = zGscOpportunitiesQuery.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(
     await gscGetQueryOpportunitiesCore({ projectId, startDate, endDate, minImpressions: parsed.data.minImpressions }),
   );
@@ -717,6 +738,6 @@ export async function gscCannibalization(
   const parsed = zDateRange.safeParse(parseQueryString(req.query as Record<string, unknown>));
   if (!parsed.success) return badRequest(reply, parsed.error);
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = resolveDateRange(parsed.data.startDate, parsed.data.endDate);
+  const { startDate, endDate } = await resolveDates(projectId, parsed.data);
   return reply.send(await gscGetCannibalizationCore({ projectId, startDate, endDate }));
 }

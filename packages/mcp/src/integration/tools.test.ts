@@ -33,7 +33,7 @@ vi.mock('@openpanel/redis', async (importOriginal) => {
   };
 });
 
-import { setup, teardown } from './setup';
+import { FIXTURE, setup, teardown } from './setup';
 import { registerActiveUserTools } from '../tools/analytics/active-users';
 import { registerEngagementTools } from '../tools/analytics/engagement';
 import { registerEventNameTools } from '../tools/analytics/event-names';
@@ -137,7 +137,7 @@ describe('query_events', () => {
     });
     expect(res.length).toBe(1);
     expect(res[0].name).toBe('purchase');
-    expect(res[0].profile_id).toBe('profile-charlie');
+    expect(res[0].profile_id).toBe(FIXTURE.profiles.charlie);
     expect(res[0].revenue).toBe(9900);
   });
 
@@ -148,10 +148,10 @@ describe('query_events', () => {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
       endDate: '2099-01-01',
-      profileId: 'profile-alice',
+      profileId: FIXTURE.profiles.alice,
     });
     expect(res.length).toBe(3);
-    expect(res.every((e: any) => e.profile_id === 'profile-alice')).toBe(true);
+    expect(res.every((e: any) => e.profile_id === FIXTURE.profiles.alice)).toBe(true);
   });
 
   it('filters by browser', async () => {
@@ -191,10 +191,10 @@ describe('query_sessions', () => {
       projectId: TEST_PROJECT_ID,
       startDate: '2000-01-01',
       endDate: '2099-01-01',
-      profileId: 'profile-charlie',
+      profileId: FIXTURE.profiles.charlie,
     });
     expect(res.length).toBe(2);
-    expect(res.every((s: any) => s.profile_id === 'profile-charlie')).toBe(true);
+    expect(res.every((s: any) => s.profile_id === FIXTURE.profiles.charlie)).toBe(true);
   });
 
   it('filters by browser', async () => {
@@ -207,7 +207,7 @@ describe('query_sessions', () => {
       browser: 'Chrome',
     });
     expect(res.length).toBe(1);
-    expect(res[0].profile_id).toBe('profile-alice');
+    expect(res[0].profile_id).toBe(FIXTURE.profiles.alice);
   });
 });
 
@@ -286,7 +286,7 @@ describe('get_profile', () => {
     registerProfileTools(server as any, CTX);
     const res = await server.invoke('get_profile', {
       projectId: TEST_PROJECT_ID,
-      profileId: 'profile-charlie',
+      profileId: FIXTURE.profiles.charlie,
     });
     expect(res.profile.first_name).toBe('Charlie');
     expect(res.profile.email).toBe('charlie@example.com');
@@ -301,10 +301,10 @@ describe('get_profile_sessions', () => {
     registerProfileTools(server as any, CTX);
     const res = await server.invoke('get_profile_sessions', {
       projectId: TEST_PROJECT_ID,
-      profileId: 'profile-charlie',
+      profileId: FIXTURE.profiles.charlie,
     });
     expect(res.sessions.length).toBe(2);
-    expect(res.sessions.every((s: any) => s.profile_id === 'profile-charlie')).toBe(true);
+    expect(res.sessions.every((s: any) => s.profile_id === FIXTURE.profiles.charlie)).toBe(true);
   });
 });
 
@@ -314,11 +314,11 @@ describe('get_profile_metrics', () => {
     registerProfileMetricTools(server as any, CTX);
     const res = await server.invoke('get_profile_metrics', {
       projectId: TEST_PROJECT_ID,
-      profileId: 'profile-charlie',
+      profileId: FIXTURE.profiles.charlie,
     });
     // No error — bug was getProfileMetrics returns single object, not array
     expect(res.error).toBeUndefined();
-    expect(res.profileId).toBe('profile-charlie');
+    expect(res.profileId).toBe(FIXTURE.profiles.charlie);
     expect(res.sessions).toBe(1);           // 1 session_start event
     expect(res.screenViews).toBe(1);        // 1 screen_view event
     expect(res.totalEvents).toBe(5);        // session_start + screen_view + page_view + purchase + session_end
@@ -333,7 +333,7 @@ describe('get_profile_metrics', () => {
     registerProfileMetricTools(server as any, CTX);
     const res = await server.invoke('get_profile_metrics', {
       projectId: TEST_PROJECT_ID,
-      profileId: 'profile-alice',
+      profileId: FIXTURE.profiles.alice,
     });
     expect(res.error).toBeUndefined();
     expect(res.sessions).toBe(1);
