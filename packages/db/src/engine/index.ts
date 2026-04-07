@@ -7,10 +7,8 @@ import type {
   IReportInput,
 } from '@openpanel/validation';
 import { chQuery } from '../clickhouse/client';
-import {
-  getAggregateChartSql,
-  getChartPrevStartEndDate,
-} from '../services/chart.service';
+import { getAggregateChartSql } from '../services/chart.service';
+import { getChartPrevStartEndDate } from '../services/date.service';
 import {
   getOrganizationSubscriptionChartEndDate,
   getSettingsForProject,

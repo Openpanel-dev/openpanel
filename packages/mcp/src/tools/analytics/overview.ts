@@ -1,8 +1,6 @@
-import {
-  OverviewService,
-  ch,
-  getSettingsForProject,
-} from '@openpanel/db';
+export { getAnalyticsOverviewCore, type GetAnalyticsOverviewInput } from '@openpanel/db';
+
+import { getAnalyticsOverviewCore } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -13,39 +11,6 @@ import {
   withErrorHandling,
   zDateRange,
 } from '../shared';
-
-const overviewService = new OverviewService(ch);
-
-export interface GetAnalyticsOverviewInput {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  interval?: 'hour' | 'day' | 'week' | 'month';
-}
-
-export async function getAnalyticsOverviewCore(
-  input: GetAnalyticsOverviewInput,
-) {
-  const { timezone } = await getSettingsForProject(input.projectId);
-  const interval = input.interval ?? 'day';
-
-  const result = await overviewService.getMetrics({
-    projectId: input.projectId,
-    filters: [],
-    startDate: input.startDate,
-    endDate: input.endDate,
-    interval,
-    timezone,
-  });
-
-  return {
-    summary: result.metrics,
-    series: result.series,
-    interval,
-    startDate: input.startDate,
-    endDate: input.endDate,
-  };
-}
 
 export function registerOverviewTools(
   server: McpServer,

@@ -1,3 +1,5 @@
+export { getRetentionCohortCore } from '@openpanel/db';
+
 import { getRetentionCohortTable } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpAuthContext } from '../../auth';
@@ -6,10 +8,6 @@ import {
   resolveProjectId,
   withErrorHandling,
 } from '../shared';
-
-export async function getRetentionCohortCore(projectId: string) {
-  return getRetentionCohortTable({ projectId });
-}
 
 export function registerRetentionTools(
   server: McpServer,

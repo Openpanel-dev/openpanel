@@ -1,4 +1,6 @@
-import { SankeyService, ch, getSettingsForProject } from '@openpanel/db';
+import { getUserFlowCore } from '@openpanel/db';
+export { getUserFlowCore };
+
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -9,59 +11,6 @@ import {
   withErrorHandling,
   zDateRange,
 } from '../shared';
-
-const sankeyService = new SankeyService(ch);
-
-function toChartEvent(name: string) {
-  return {
-    id: name,
-    name,
-    displayName: name,
-    type: 'event' as const,
-    segment: 'event' as const,
-    filters: [],
-  };
-}
-
-export async function getUserFlowCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  startEvent: string;
-  endEvent?: string;
-  mode: 'after' | 'before' | 'between';
-  steps?: number;
-  exclude?: string[];
-  include?: string[];
-}) {
-  if (input.mode === 'between' && !input.endEvent) {
-    return { error: 'endEvent is required when mode is "between"' };
-  }
-
-  const { timezone } = await getSettingsForProject(input.projectId);
-  const result = await sankeyService.getSankey({
-    projectId: input.projectId,
-    startDate: input.startDate,
-    endDate: input.endDate,
-    steps: input.steps ?? 5,
-    mode: input.mode,
-    startEvent: toChartEvent(input.startEvent),
-    endEvent: input.endEvent ? toChartEvent(input.endEvent) : undefined,
-    exclude: input.exclude ?? [],
-    include: input.include,
-    timezone,
-  });
-
-  return {
-    mode: input.mode,
-    startEvent: input.startEvent,
-    endEvent: input.endEvent,
-    node_count: result.nodes.length,
-    link_count: result.links.length,
-    nodes: result.nodes,
-    links: result.links,
-  };
-}
 
 export function registerUserFlowTools(
   server: McpServer,
@@ -107,34 +56,7 @@ export function registerUserFlowTools(
       withErrorHandling(async () => {
         const projectId = resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
-        const { timezone } = await getSettingsForProject(projectId);
-
-        if (mode === 'between' && !endEvent) {
-          return { error: 'endEvent is required when mode is "between"' };
-        }
-
-        const result = await sankeyService.getSankey({
-          projectId,
-          startDate,
-          endDate,
-          steps: steps ?? 5,
-          mode,
-          startEvent: toChartEvent(startEvent),
-          endEvent: endEvent ? toChartEvent(endEvent) : undefined,
-          exclude: exclude ?? [],
-          include,
-          timezone,
-        });
-
-        return {
-          mode,
-          startEvent,
-          endEvent,
-          node_count: result.nodes.length,
-          link_count: result.links.length,
-          nodes: result.nodes,
-          links: result.links,
-        };
+        return getUserFlowCore({ projectId, startDate, endDate, startEvent, endEvent, mode, steps, exclude, include });
       }),
   );
 }

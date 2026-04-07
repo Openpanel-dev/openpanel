@@ -1,5 +1,5 @@
-import { getGscCannibalization } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { getGscCannibalization } from '@openpanel/db';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,
@@ -9,21 +9,9 @@ import {
   zDateRange,
 } from '../shared';
 
-export async function gscGetCannibalizationCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-}) {
-  return getGscCannibalization(
-    input.projectId,
-    input.startDate,
-    input.endDate,
-  );
-}
-
 export function registerGscCannibalizationTools(
   server: McpServer,
-  context: McpAuthContext,
+  context: McpAuthContext
 ) {
   server.tool(
     'gsc_get_cannibalization',
@@ -33,10 +21,10 @@ export function registerGscCannibalizationTools(
       ...zDateRange,
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed }) =>
-      withErrorHandling(async () => {
+      withErrorHandling(() => {
         const projectId = resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         return getGscCannibalization(projectId, startDate, endDate);
-      }),
+      })
   );
 }

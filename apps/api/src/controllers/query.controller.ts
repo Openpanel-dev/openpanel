@@ -1,6 +1,10 @@
+import type { IServiceClientWithProject } from '@openpanel/db';
 import {
+  ClientType,
   findGroupsCore,
   findProfilesCore,
+  getAnalyticsOverviewCore,
+  getChartStartEndDate,
   getEngagementCore,
   getEntryExitPagesCore,
   getEventPropertyValuesCore,
@@ -8,11 +12,12 @@ import {
   getGroupCore,
   getPagePerformanceCore,
   getProfileMetricsCore,
-  getProfileWithEvents,
   getProfileSessionsCore,
+  getProfileWithEvents,
   getReportDataCore,
   getRetentionCohortCore,
   getRollingActiveUsersCore,
+  getSettingsForProject,
   getTopPagesCore,
   getTrafficBreakdownCore,
   getUserFlowCore,
@@ -30,14 +35,11 @@ import {
   listGroupTypesCore,
   listProjectsCore,
   listReportsCore,
-  getAnalyticsOverviewCore,
   queryEventsCore,
   querySessionsCore,
   resolveDateRange,
   type TrafficColumn,
-} from '@openpanel/mcp';
-import { ClientType, getChartStartEndDate, getSettingsForProject } from '@openpanel/db';
-import type { IServiceClientWithProject } from '@openpanel/db';
+} from '@openpanel/db';
 import { zRange } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -48,7 +50,7 @@ import { z } from 'zod';
 
 function resolveQueryProjectId(
   client: IServiceClientWithProject,
-  urlProjectId: string | undefined,
+  urlProjectId: string | undefined
 ): string {
   if (client.type === ClientType.root) {
     if (!urlProjectId) {
@@ -75,7 +77,7 @@ type DateRangeInput = z.infer<typeof zDateRange>;
 
 async function resolveDates(
   projectId: string,
-  data: DateRangeInput,
+  data: DateRangeInput
 ): Promise<{ startDate: string; endDate: string }> {
   // Explicit dates always win — range is only a shorthand when no startDate is given
   if (!data.range || data.startDate) {
@@ -84,7 +86,10 @@ async function resolveDates(
   const { timezone } = await getSettingsForProject(projectId);
   // data.range is guaranteed non-nullish here (checked above); cast to satisfy
   // getChartStartEndDate which expects a non-optional range with a default value.
-  return getChartStartEndDate({ startDate: data.startDate, endDate: data.endDate, range: data.range! }, timezone);
+  return getChartStartEndDate(
+    { startDate: data.startDate, endDate: data.endDate, range: data.range! },
+    timezone
+  );
 }
 
 type RequestWithProjectParam = FastifyRequest<{
@@ -99,9 +104,7 @@ function getOrgId(req: RequestWithProjectParam): string {
   return req.client!.organizationId;
 }
 
-function getClientType(
-  req: RequestWithProjectParam,
-): 'root' | 'read' {
+function getClientType(req: RequestWithProjectParam): 'root' | 'read' {
   return req.client!.type === ClientType.root ? 'root' : 'read';
 }
 
@@ -109,17 +112,14 @@ function getClientType(
 // Projects
 // ---------------------------------------------------------------------------
 
-export async function listProjects(
-  req: FastifyRequest,
-  reply: FastifyReply,
-) {
+export async function listProjects(req: FastifyRequest, reply: FastifyReply) {
   const client = req.client!;
   return reply.send(
     await listProjectsCore({
       clientType: getClientType(req as RequestWithProjectParam),
       organizationId: client.organizationId,
       projectId: client.projectId ?? null,
-    }),
+    })
   );
 }
 
@@ -132,12 +132,22 @@ export const zOverviewQuery = zDateRange.extend({
 });
 
 export async function getOverview(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zOverviewQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zOverviewQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
-  return reply.send(await getAnalyticsOverviewCore({ projectId, startDate, endDate, interval: req.query.interval }));
+  return reply.send(
+    await getAnalyticsOverviewCore({
+      projectId,
+      startDate,
+      endDate,
+      interval: req.query.interval,
+    })
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -149,11 +159,16 @@ export const zActiveUsersQuery = z.object({
 });
 
 export async function getActiveUsers(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zActiveUsersQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zActiveUsersQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
-  return reply.send(await getRollingActiveUsersCore({ projectId, days: req.query.days }));
+  return reply.send(
+    await getRollingActiveUsersCore({ projectId, days: req.query.days })
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -162,7 +177,7 @@ export async function getActiveUsers(
 
 export async function getRetentionSeries(
   req: FastifyRequest<{ Params: { projectId?: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   return reply.send(await getWeeklyRetentionSeriesCore(projectId));
@@ -174,7 +189,7 @@ export async function getRetentionSeries(
 
 export async function getRetentionCohort(
   req: FastifyRequest<{ Params: { projectId?: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   return reply.send(await getRetentionCohortCore(projectId));
@@ -185,8 +200,11 @@ export async function getRetentionCohort(
 // ---------------------------------------------------------------------------
 
 export async function getTopPages(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zDateRange> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zDateRange>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
@@ -202,12 +220,22 @@ export const zEntryExitQuery = zDateRange.extend({
 });
 
 export async function getEntryExitPages(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zEntryExitQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zEntryExitQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
-  return reply.send(await getEntryExitPagesCore({ projectId, startDate, endDate, mode: req.query.mode }));
+  return reply.send(
+    await getEntryExitPagesCore({
+      projectId,
+      startDate,
+      endDate,
+      mode: req.query.mode,
+    })
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -216,19 +244,29 @@ export async function getEntryExitPages(
 
 export const zPagePerfQuery = zDateRange.extend({
   search: z.string().optional(),
-  sortBy: z.enum(['sessions', 'pageviews', 'bounce_rate', 'avg_duration']).optional(),
+  sortBy: z
+    .enum(['sessions', 'pageviews', 'bounce_rate', 'avg_duration'])
+    .optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
   limit: z.number().int().min(1).max(500).default(50),
 });
 
 export async function getPagePerformance(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zPagePerfQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zPagePerfQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await getPagePerformanceCore({ projectId, startDate, endDate, ...req.query }),
+    await getPagePerformanceCore({
+      projectId,
+      startDate,
+      endDate,
+      ...req.query,
+    })
   );
 }
 
@@ -247,8 +285,11 @@ export const zFunnelQuery = zDateRange.extend({
 });
 
 export async function getFunnel(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zFunnelQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zFunnelQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
@@ -260,7 +301,7 @@ export async function getFunnel(
       steps: req.query.steps,
       windowHours: req.query.windowHours,
       groupBy: req.query.groupBy,
-    }),
+    })
   );
 }
 
@@ -268,7 +309,14 @@ export async function getFunnel(
 // Analytics — traffic (referrers / geo / devices)
 // ---------------------------------------------------------------------------
 
-const referrerColumns = ['referrer_name', 'referrer_type', 'referrer', 'utm_source', 'utm_medium', 'utm_campaign'] as const;
+const referrerColumns = [
+  'referrer_name',
+  'referrer_type',
+  'referrer',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+] as const;
 const geoColumns = ['country', 'region', 'city'] as const;
 const deviceColumns = ['device', 'browser', 'os'] as const;
 
@@ -285,35 +333,59 @@ export const zDeviceQuery = zDateRange.extend({
 });
 
 export async function getTrafficReferrers(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zReferrerQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zReferrerQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await getTrafficBreakdownCore({ projectId, startDate, endDate, column: req.query.breakdown as TrafficColumn }),
+    await getTrafficBreakdownCore({
+      projectId,
+      startDate,
+      endDate,
+      column: req.query.breakdown as TrafficColumn,
+    })
   );
 }
 
 export async function getTrafficGeo(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGeoQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zGeoQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await getTrafficBreakdownCore({ projectId, startDate, endDate, column: req.query.breakdown as TrafficColumn }),
+    await getTrafficBreakdownCore({
+      projectId,
+      startDate,
+      endDate,
+      column: req.query.breakdown as TrafficColumn,
+    })
   );
 }
 
 export async function getTrafficDevices(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zDeviceQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zDeviceQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await getTrafficBreakdownCore({ projectId, startDate, endDate, column: req.query.breakdown as TrafficColumn }),
+    await getTrafficBreakdownCore({
+      projectId,
+      startDate,
+      endDate,
+      column: req.query.breakdown as TrafficColumn,
+    })
   );
 }
 
@@ -335,13 +407,16 @@ export const zUserFlowQuery = zDateRange.extend({
 });
 
 export async function getUserFlow(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zUserFlowQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zUserFlowQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await getUserFlowCore({ projectId, startDate, endDate, ...req.query }),
+    await getUserFlowCore({ projectId, startDate, endDate, ...req.query })
   );
 }
 
@@ -351,7 +426,7 @@ export async function getUserFlow(
 
 export async function getEngagement(
   req: FastifyRequest<{ Params: { projectId?: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   return reply.send(await getEngagementCore(projectId));
@@ -380,8 +455,11 @@ export const zEventsQuery = zDateRange.extend({
 });
 
 export async function queryEvents(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zEventsQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zEventsQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   return reply.send(await queryEventsCore({ projectId, ...req.query }));
@@ -389,7 +467,7 @@ export async function queryEvents(
 
 export async function listEventNames(
   req: FastifyRequest<{ Params: { projectId?: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   return reply.send(await listEventNamesCore(projectId));
@@ -400,11 +478,16 @@ export const zEventPropertiesQuery = z.object({
 });
 
 export async function listEventProperties(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zEventPropertiesQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zEventPropertiesQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
-  return reply.send(await listEventPropertiesCore({ projectId, eventName: req.query.eventName }));
+  return reply.send(
+    await listEventPropertiesCore({ projectId, eventName: req.query.eventName })
+  );
 }
 
 export const zPropertyValuesQuery = z.object({
@@ -413,11 +496,16 @@ export const zPropertyValuesQuery = z.object({
 });
 
 export async function getEventPropertyValues(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zPropertyValuesQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zPropertyValuesQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
-  return reply.send(await getEventPropertyValuesCore({ projectId, ...req.query }));
+  return reply.send(
+    await getEventPropertyValuesCore({ projectId, ...req.query })
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -439,8 +527,11 @@ export const zProfilesQuery = z.object({
 });
 
 export async function findProfiles(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zProfilesQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zProfilesQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   return reply.send(await findProfilesCore({ projectId, ...req.query }));
@@ -451,15 +542,27 @@ export const zGetProfileQuery = z.object({
 });
 
 export async function getProfile(
-  req: FastifyRequest<{ Params: { projectId?: string; profileId: string }; Querystring: z.infer<typeof zGetProfileQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string; profileId: string };
+    Querystring: z.infer<typeof zGetProfileQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
-  const result = await getProfileWithEvents(projectId, req.params.profileId, req.query.eventLimit);
+  const result = await getProfileWithEvents(
+    projectId,
+    req.params.profileId,
+    req.query.eventLimit
+  );
   if (!result.profile) {
-    return reply.status(404).send({ error: 'Profile not found', profileId: req.params.profileId });
+    return reply
+      .status(404)
+      .send({ error: 'Profile not found', profileId: req.params.profileId });
   }
-  return reply.send({ profile: result.profile, recentEvents: result.recent_events });
+  return reply.send({
+    profile: result.profile,
+    recentEvents: result.recent_events,
+  });
 }
 
 export const zProfileSessionsQuery = z.object({
@@ -467,20 +570,29 @@ export const zProfileSessionsQuery = z.object({
 });
 
 export async function getProfileSessions(
-  req: FastifyRequest<{ Params: { projectId?: string; profileId: string }; Querystring: z.infer<typeof zProfileSessionsQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string; profileId: string };
+    Querystring: z.infer<typeof zProfileSessionsQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
-  return reply.send(await getProfileSessionsCore(projectId, req.params.profileId, req.query.limit));
+  return reply.send(
+    await getProfileSessionsCore(
+      projectId,
+      req.params.profileId,
+      req.query.limit
+    )
+  );
 }
 
 export async function getProfileMetrics(
   req: FastifyRequest<{ Params: { projectId?: string; profileId: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   return reply.send(
-    await getProfileMetricsCore({ projectId, profileId: req.params.profileId }),
+    await getProfileMetricsCore({ projectId, profileId: req.params.profileId })
   );
 }
 
@@ -502,8 +614,11 @@ export const zSessionsQuery = zDateRange.extend({
 });
 
 export async function querySessions(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zSessionsQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zSessionsQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   return reply.send(await querySessionsCore({ projectId, ...req.query }));
@@ -515,7 +630,7 @@ export async function querySessions(
 
 export async function listGroupTypes(
   req: FastifyRequest<{ Params: { projectId?: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   return reply.send(await listGroupTypesCore(projectId));
@@ -528,8 +643,11 @@ export const zGroupsQuery = z.object({
 });
 
 export async function findGroups(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGroupsQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zGroupsQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   return reply.send(await findGroupsCore({ projectId, ...req.query }));
@@ -540,12 +658,19 @@ export const zGetGroupQuery = z.object({
 });
 
 export async function getGroup(
-  req: FastifyRequest<{ Params: { projectId?: string; groupId: string }; Querystring: z.infer<typeof zGetGroupQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string; groupId: string };
+    Querystring: z.infer<typeof zGetGroupQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   return reply.send(
-    await getGroupCore({ projectId, groupId: req.params.groupId, memberLimit: req.query.memberLimit }),
+    await getGroupCore({
+      projectId,
+      groupId: req.params.groupId,
+      memberLimit: req.query.memberLimit,
+    })
   );
 }
 
@@ -555,7 +680,7 @@ export async function getGroup(
 
 export async function listDashboards(
   req: FastifyRequest<{ Params: { projectId?: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const organizationId = getOrgId(req as RequestWithProjectParam);
@@ -564,23 +689,31 @@ export async function listDashboards(
 
 export async function listReports(
   req: FastifyRequest<{ Params: { projectId?: string; dashboardId: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const organizationId = getOrgId(req as RequestWithProjectParam);
   return reply.send(
-    await listReportsCore({ projectId, dashboardId: req.params.dashboardId, organizationId }),
+    await listReportsCore({
+      projectId,
+      dashboardId: req.params.dashboardId,
+      organizationId,
+    })
   );
 }
 
 export async function getReportData(
   req: FastifyRequest<{ Params: { projectId?: string; reportId: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const organizationId = getOrgId(req as RequestWithProjectParam);
   return reply.send(
-    await getReportDataCore({ projectId, reportId: req.params.reportId, organizationId }),
+    await getReportDataCore({
+      projectId,
+      reportId: req.params.reportId,
+      organizationId,
+    })
   );
 }
 
@@ -593,12 +726,22 @@ export const zGscOverviewQuery = zDateRange.extend({
 });
 
 export async function gscOverview(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscOverviewQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zGscOverviewQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
-  return reply.send(await gscGetOverviewCore({ projectId, startDate, endDate, interval: req.query.interval }));
+  return reply.send(
+    await gscGetOverviewCore({
+      projectId,
+      startDate,
+      endDate,
+      interval: req.query.interval,
+    })
+  );
 }
 
 export const zGscLimitQuery = zDateRange.extend({
@@ -606,12 +749,22 @@ export const zGscLimitQuery = zDateRange.extend({
 });
 
 export async function gscPages(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscLimitQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zGscLimitQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
-  return reply.send(await gscGetTopPagesCore({ projectId, startDate, endDate, limit: req.query.limit }));
+  return reply.send(
+    await gscGetTopPagesCore({
+      projectId,
+      startDate,
+      endDate,
+      limit: req.query.limit,
+    })
+  );
 }
 
 export const zGscPageDetailsQuery = zDateRange.extend({
@@ -619,21 +772,41 @@ export const zGscPageDetailsQuery = zDateRange.extend({
 });
 
 export async function gscPageDetails(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscPageDetailsQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zGscPageDetailsQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
-  return reply.send(await gscGetPageDetailsCore({ projectId, startDate, endDate, page: req.query.page }));
+  return reply.send(
+    await gscGetPageDetailsCore({
+      projectId,
+      startDate,
+      endDate,
+      page: req.query.page,
+    })
+  );
 }
 
 export async function gscQueries(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscLimitQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zGscLimitQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
-  return reply.send(await gscGetTopQueriesCore({ projectId, startDate, endDate, limit: req.query.limit }));
+  return reply.send(
+    await gscGetTopQueriesCore({
+      projectId,
+      startDate,
+      endDate,
+      limit: req.query.limit,
+    })
+  );
 }
 
 export const zGscQueryDetailsQuery = zDateRange.extend({
@@ -641,13 +814,21 @@ export const zGscQueryDetailsQuery = zDateRange.extend({
 });
 
 export async function gscQueryDetails(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscQueryDetailsQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zGscQueryDetailsQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await gscGetQueryDetailsCore({ projectId, startDate, endDate, query: req.query.query }),
+    await gscGetQueryDetailsCore({
+      projectId,
+      startDate,
+      endDate,
+      query: req.query.query,
+    })
   );
 }
 
@@ -656,21 +837,34 @@ export const zGscOpportunitiesQuery = zDateRange.extend({
 });
 
 export async function gscQueryOpportunities(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zGscOpportunitiesQuery> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zGscOpportunitiesQuery>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
   return reply.send(
-    await gscGetQueryOpportunitiesCore({ projectId, startDate, endDate, minImpressions: req.query.minImpressions }),
+    await gscGetQueryOpportunitiesCore({
+      projectId,
+      startDate,
+      endDate,
+      minImpressions: req.query.minImpressions,
+    })
   );
 }
 
 export async function gscCannibalization(
-  req: FastifyRequest<{ Params: { projectId?: string }; Querystring: z.infer<typeof zDateRange> }>,
-  reply: FastifyReply,
+  req: FastifyRequest<{
+    Params: { projectId?: string };
+    Querystring: z.infer<typeof zDateRange>;
+  }>,
+  reply: FastifyReply
 ) {
   const projectId = getProjectId(req as RequestWithProjectParam);
   const { startDate, endDate } = await resolveDates(projectId, req.query);
-  return reply.send(await gscGetCannibalizationCore({ projectId, startDate, endDate }));
+  return reply.send(
+    await gscGetCannibalizationCore({ projectId, startDate, endDate })
+  );
 }

@@ -325,3 +325,171 @@ export function upsertProfile(
 
   return profileBuffer.add(profile, isFromEvent);
 }
+
+import { ch } from '../clickhouse/client';
+import { clix } from '../clickhouse/query-builder';
+import type { IClickhouseEvent } from './event.service';
+import type { IClickhouseSession } from './session.service';
+
+function esc(value: string): string {
+  return "'" + value.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
+}
+
+const PROFILE_COLUMNS =
+  'id, first_name, last_name, email, avatar, properties, project_id, is_external, created_at, groups';
+
+export interface FindProfilesInput {
+  projectId: string;
+  name?: string;
+  email?: string;
+  country?: string;
+  city?: string;
+  device?: string;
+  browser?: string;
+  inactiveDays?: number;
+  minSessions?: number;
+  performedEvent?: string;
+  sortBy?: 'created_at';
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+}
+
+export async function findProfilesCore(
+  input: FindProfilesInput,
+): Promise<IClickhouseProfile[]> {
+  const pid = esc(input.projectId);
+  const conditions: string[] = [`project_id = ${pid}`];
+
+  if (input.email) {
+    conditions.push(`email LIKE ${esc('%' + input.email + '%')}`);
+  }
+  if (input.name) {
+    const escaped = esc('%' + input.name + '%');
+    conditions.push(`(first_name LIKE ${escaped} OR last_name LIKE ${escaped})`);
+  }
+  if (input.country) {
+    conditions.push(`properties['country'] = ${esc(input.country)}`);
+  }
+  if (input.city) {
+    conditions.push(`properties['city'] = ${esc(input.city)}`);
+  }
+  if (input.device) {
+    conditions.push(`properties['device'] = ${esc(input.device)}`);
+  }
+  if (input.browser) {
+    conditions.push(`properties['browser'] = ${esc(input.browser)}`);
+  }
+
+  if (input.inactiveDays !== undefined) {
+    const days = Math.floor(input.inactiveDays);
+    conditions.push(`id NOT IN (
+      SELECT DISTINCT profile_id FROM ${TABLE_NAMES.events}
+      WHERE project_id = ${pid}
+        AND profile_id != ''
+        AND created_at >= now() - INTERVAL ${days} DAY
+    )`);
+  }
+
+  if (input.minSessions !== undefined) {
+    const min = Math.floor(input.minSessions);
+    conditions.push(`id IN (
+      SELECT profile_id FROM ${TABLE_NAMES.sessions}
+      WHERE project_id = ${pid}
+        AND sign = 1
+        AND profile_id != ''
+      GROUP BY profile_id
+      HAVING count() >= ${min}
+    )`);
+  }
+
+  if (input.performedEvent) {
+    conditions.push(`id IN (
+      SELECT DISTINCT profile_id FROM ${TABLE_NAMES.events}
+      WHERE project_id = ${pid}
+        AND name = ${esc(input.performedEvent)}
+    )`);
+  }
+
+  const orderDir = input.sortOrder === 'asc' ? 'ASC' : 'DESC';
+  const limit = Math.min(input.limit ?? 20, 100);
+
+  const sql = `
+    SELECT ${PROFILE_COLUMNS}
+    FROM ${TABLE_NAMES.profiles}
+    WHERE ${conditions.join(' AND ')}
+    ORDER BY created_at ${orderDir}
+    LIMIT ${limit}
+  `;
+
+  return chQuery<IClickhouseProfile>(sql);
+}
+
+export async function getProfileWithEvents(
+  projectId: string,
+  profileId: string,
+  eventLimit = 10,
+): Promise<{
+  profile: IClickhouseProfile | null;
+  recent_events: IClickhouseEvent[];
+}> {
+  const [profiles, recent_events] = await Promise.all([
+    chQuery<IClickhouseProfile>(`
+      SELECT ${PROFILE_COLUMNS}
+      FROM ${TABLE_NAMES.profiles}
+      WHERE project_id = ${esc(projectId)} AND id = ${esc(profileId)}
+      LIMIT 1
+    `),
+    clix(ch)
+      .select<IClickhouseEvent>([])
+      .from(TABLE_NAMES.events)
+      .where('project_id', '=', projectId)
+      .where('profile_id', '=', profileId)
+      .orderBy('created_at', 'DESC')
+      .limit(eventLimit)
+      .execute(),
+  ]);
+
+  return { profile: profiles[0] ?? null, recent_events };
+}
+
+export async function getProfileSessionsCore(
+  projectId: string,
+  profileId: string,
+  limit = 20,
+): Promise<IClickhouseSession[]> {
+  return clix(ch)
+    .select<IClickhouseSession>([])
+    .from(TABLE_NAMES.sessions)
+    .where('project_id', '=', projectId)
+    .where('profile_id', '=', profileId)
+    .where('sign', '=', 1)
+    .orderBy('created_at', 'DESC')
+    .limit(limit)
+    .execute();
+}
+
+export async function getProfileMetricsCore(input: {
+  projectId: string;
+  profileId: string;
+}) {
+  const raw = await getProfileMetrics(input.profileId, input.projectId);
+  if (!raw) {
+    throw new Error(`Profile not found or has no events: ${input.profileId}`);
+  }
+  return {
+    profileId: input.profileId,
+    firstSeen: raw.firstSeen,
+    lastSeen: raw.lastSeen,
+    sessions: raw.sessions,
+    screenViews: raw.screenViews,
+    totalEvents: raw.totalEvents,
+    conversionEvents: raw.conversionEvents,
+    uniqueDaysActive: raw.uniqueDaysActive,
+    avgSessionDurationMin: raw.durationAvg,
+    p90SessionDurationMin: raw.durationP90,
+    avgEventsPerSession: raw.avgEventsPerSession,
+    avgTimeBetweenSessionsSec: raw.avgTimeBetweenSessions,
+    bounceRate: raw.bounceRate,
+    revenue: raw.revenue,
+  };
+}

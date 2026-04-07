@@ -1,8 +1,6 @@
-import {
-  OverviewService,
-  ch,
-  getSettingsForProject,
-} from '@openpanel/db';
+import { getEntryExitPagesCore, getTopPagesCore } from '@openpanel/db';
+export { getEntryExitPagesCore, getTopPagesCore };
+
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -13,41 +11,6 @@ import {
   withErrorHandling,
   zDateRange,
 } from '../shared';
-
-const overviewService = new OverviewService(ch);
-
-export async function getTopPagesCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  limit?: number;
-}) {
-  const { timezone } = await getSettingsForProject(input.projectId);
-  return overviewService.getTopPages({
-    projectId: input.projectId,
-    filters: [],
-    startDate: input.startDate,
-    endDate: input.endDate,
-    timezone,
-  });
-}
-
-export async function getEntryExitPagesCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  mode: 'entry' | 'exit';
-}) {
-  const { timezone } = await getSettingsForProject(input.projectId);
-  return overviewService.getTopEntryExit({
-    projectId: input.projectId,
-    filters: [],
-    startDate: input.startDate,
-    endDate: input.endDate,
-    mode: input.mode,
-    timezone,
-  });
-}
 
 export function registerPageTools(server: McpServer, context: McpAuthContext) {
   server.tool(

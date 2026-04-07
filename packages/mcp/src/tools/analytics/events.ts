@@ -1,5 +1,6 @@
-import { TABLE_NAMES, ch, clix } from '@openpanel/db';
-import type { IClickhouseEvent } from '@openpanel/db';
+export { queryEventsCore, type QueryEventsInput } from '@openpanel/db';
+
+import { queryEventsCore } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -10,93 +11,6 @@ import {
   withErrorHandling,
   zDateRange,
 } from '../shared';
-
-export interface QueryEventsInput {
-  projectId: string;
-  startDate?: string;
-  endDate?: string;
-  eventNames?: string[];
-  path?: string;
-  country?: string;
-  city?: string;
-  device?: string;
-  browser?: string;
-  os?: string;
-  referrer?: string;
-  referrerName?: string;
-  referrerType?: string;
-  profileId?: string;
-  properties?: Record<string, string>;
-  limit?: number;
-}
-
-export async function queryEventsCore(
-  input: QueryEventsInput,
-): Promise<IClickhouseEvent[]> {
-  const builder = clix(ch)
-    .select<IClickhouseEvent>([])
-    .from(TABLE_NAMES.events)
-    .where('project_id', '=', input.projectId);
-
-  if (input.profileId) {
-    builder.where('profile_id', '=', input.profileId);
-  }
-
-  if (input.eventNames?.length) {
-    builder.where('name', 'IN', input.eventNames);
-  }
-
-  if (input.path) {
-    builder.where('path', '=', input.path);
-  }
-
-  if (input.referrer) {
-    builder.where('referrer', '=', input.referrer);
-  }
-
-  if (input.referrerName) {
-    builder.where('referrer_name', '=', input.referrerName);
-  }
-
-  if (input.referrerType) {
-    builder.where('referrer_type', '=', input.referrerType);
-  }
-
-  if (input.device) {
-    builder.where('device', '=', input.device);
-  }
-
-  if (input.country) {
-    builder.where('country', '=', input.country);
-  }
-
-  if (input.city) {
-    builder.where('city', '=', input.city);
-  }
-
-  if (input.os) {
-    builder.where('os', '=', input.os);
-  }
-
-  if (input.browser) {
-    builder.where('browser', '=', input.browser);
-  }
-
-  if (input.properties) {
-    for (const [key, value] of Object.entries(input.properties)) {
-      builder.where(`properties['${key}']`, '=', value);
-    }
-  }
-
-  const { startDate: start, endDate: end } = resolveDateRange(input.startDate, input.endDate);
-
-  builder.where('created_at', 'BETWEEN', [
-    clix.datetime(start),
-    clix.datetime(end),
-  ]);
-
-  return builder.limit(input.limit ?? 20).execute();
-}
 
 export function registerEventTools(server: McpServer, context: McpAuthContext) {
   server.tool(

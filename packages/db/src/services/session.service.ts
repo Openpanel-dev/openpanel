@@ -462,3 +462,76 @@ class SessionService {
 }
 
 export const sessionService = new SessionService(ch);
+
+import { resolveDateRange } from './date.service';
+
+export interface QuerySessionsInput {
+  projectId: string;
+  startDate?: string;
+  endDate?: string;
+  country?: string;
+  city?: string;
+  device?: string;
+  browser?: string;
+  os?: string;
+  referrer?: string;
+  referrerName?: string;
+  referrerType?: string;
+  profileId?: string;
+  limit?: number;
+}
+
+export async function querySessionsCore(
+  input: QuerySessionsInput,
+): Promise<IClickhouseSession[]> {
+  const builder = clix(ch)
+    .select<IClickhouseSession>([])
+    .from(TABLE_NAMES.sessions)
+    .where('project_id', '=', input.projectId)
+    .where('sign', '=', 1);
+
+  if (input.profileId) {
+    builder.where('profile_id', '=', input.profileId);
+  }
+
+  if (input.referrer) {
+    builder.where('referrer', '=', input.referrer);
+  }
+
+  if (input.referrerName) {
+    builder.where('referrer_name', '=', input.referrerName);
+  }
+
+  if (input.referrerType) {
+    builder.where('referrer_type', '=', input.referrerType);
+  }
+
+  if (input.device) {
+    builder.where('device', '=', input.device);
+  }
+
+  if (input.country) {
+    builder.where('country', '=', input.country);
+  }
+
+  if (input.city) {
+    builder.where('city', '=', input.city);
+  }
+
+  if (input.os) {
+    builder.where('os', '=', input.os);
+  }
+
+  if (input.browser) {
+    builder.where('browser', '=', input.browser);
+  }
+
+  const { startDate: start, endDate: end } = resolveDateRange(input.startDate, input.endDate);
+
+  builder.where('created_at', 'BETWEEN', [
+    clix.datetime(start),
+    clix.datetime(end),
+  ]);
+
+  return builder.limit(input.limit ?? 20).execute();
+}

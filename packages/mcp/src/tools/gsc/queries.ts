@@ -1,4 +1,7 @@
+export { type GscQueryOpportunity, gscGetQueryDetailsCore, gscGetQueryOpportunitiesCore, gscGetTopQueriesCore } from '@openpanel/db';
+
 import { getGscQueryDetails, getGscQueries } from '@openpanel/db';
+import type { GscQueryOpportunity } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -10,24 +13,6 @@ import {
   zDateRange,
 } from '../shared';
 
-export interface GscQueryOpportunity {
-  query: string;
-  clicks: number;
-  impressions: number;
-  ctr: number;
-  position: number;
-  opportunity_score: number;
-  reason: string;
-}
-
-/**
- * Identify low-hanging-fruit queries:
- * - Position between 4-20 (ranking but not on page 1 top 3)
- * - Reasonable impression volume (signal of real search demand)
- * - CTR below benchmark for that position (room to improve)
- *
- * Opportunity score = impressions * (1 / position) — higher is better
- */
 function computeOpportunities(
   queries: Array<{
     query: string;
@@ -37,7 +22,6 @@ function computeOpportunities(
     position: number;
   }>,
 ): GscQueryOpportunity[] {
-  // Expected CTR benchmarks by position bucket
   const ctrBenchmarks: Record<string, number> = {
     '1': 0.28,
     '2': 0.15,
@@ -86,57 +70,6 @@ function computeOpportunities(
     })
     .sort((a, b) => b.opportunity_score - a.opportunity_score)
     .slice(0, 50);
-}
-
-export async function gscGetTopQueriesCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  limit?: number;
-}) {
-  return getGscQueries(
-    input.projectId,
-    input.startDate,
-    input.endDate,
-    input.limit ?? 100,
-  );
-}
-
-export async function gscGetQueryOpportunitiesCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  minImpressions?: number;
-}) {
-  const queries = await getGscQueries(
-    input.projectId,
-    input.startDate,
-    input.endDate,
-    5000,
-  );
-  const filtered = queries.filter(
-    (q) => q.impressions >= (input.minImpressions ?? 50),
-  );
-  const opportunities = computeOpportunities(filtered);
-  return {
-    opportunities,
-    total_analyzed: filtered.length,
-    min_impressions: input.minImpressions ?? 50,
-  };
-}
-
-export async function gscGetQueryDetailsCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  query: string;
-}) {
-  return getGscQueryDetails(
-    input.projectId,
-    input.query,
-    input.startDate,
-    input.endDate,
-  );
 }
 
 export function registerGscQueryTools(

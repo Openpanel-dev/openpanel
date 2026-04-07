@@ -1441,3 +1441,67 @@ export class OverviewService {
 }
 
 export const overviewService = new OverviewService(ch);
+
+import { getSettingsForProject } from './organization.service';
+
+export type TrafficColumn =
+  | 'referrer'
+  | 'referrer_name'
+  | 'referrer_type'
+  | 'utm_source'
+  | 'utm_medium'
+  | 'utm_campaign'
+  | 'country'
+  | 'region'
+  | 'city'
+  | 'device'
+  | 'browser'
+  | 'os';
+
+export async function getTrafficBreakdownCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  column: TrafficColumn;
+}) {
+  const { timezone } = await getSettingsForProject(input.projectId);
+  return overviewService.getTopGeneric({
+    projectId: input.projectId,
+    filters: [],
+    startDate: input.startDate,
+    endDate: input.endDate,
+    column: input.column,
+    timezone,
+  });
+}
+
+export interface GetAnalyticsOverviewInput {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  interval?: 'hour' | 'day' | 'week' | 'month';
+}
+
+export async function getAnalyticsOverviewCore(
+  input: GetAnalyticsOverviewInput,
+) {
+  const { timezone } = await getSettingsForProject(input.projectId);
+  const interval = input.interval ?? 'day';
+
+  const result = await overviewService.getMetrics({
+    projectId: input.projectId,
+    filters: [],
+    startDate: input.startDate,
+    endDate: input.endDate,
+    interval,
+    timezone,
+  });
+
+  return {
+    summary: result.metrics,
+    series: result.series,
+    interval,
+    startDate: input.startDate,
+    endDate: input.endDate,
+  };
+}

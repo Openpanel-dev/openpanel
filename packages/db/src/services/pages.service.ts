@@ -172,3 +172,83 @@ export class PagesService {
 }
 
 export const pagesService = new PagesService(ch);
+
+import { OverviewService } from './overview.service';
+import { getSettingsForProject } from './organization.service';
+
+const _overviewServiceForPages = new OverviewService(ch);
+
+export async function getTopPagesCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  limit?: number;
+}) {
+  const { timezone } = await getSettingsForProject(input.projectId);
+  return _overviewServiceForPages.getTopPages({
+    projectId: input.projectId,
+    filters: [],
+    startDate: input.startDate,
+    endDate: input.endDate,
+    timezone,
+  });
+}
+
+export async function getEntryExitPagesCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  mode: 'entry' | 'exit';
+}) {
+  const { timezone } = await getSettingsForProject(input.projectId);
+  return _overviewServiceForPages.getTopEntryExit({
+    projectId: input.projectId,
+    filters: [],
+    startDate: input.startDate,
+    endDate: input.endDate,
+    mode: input.mode,
+    timezone,
+  });
+}
+
+export async function getPagePerformanceCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  search?: string;
+  sortBy?: 'sessions' | 'pageviews' | 'bounce_rate' | 'avg_duration';
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+}) {
+  const { timezone } = await getSettingsForProject(input.projectId);
+  const pages = await pagesService.getTopPages({
+    projectId: input.projectId,
+    startDate: input.startDate,
+    endDate: input.endDate,
+    timezone,
+    search: input.search,
+    limit: 1000,
+  });
+
+  const col = input.sortBy ?? 'sessions';
+  const dir = input.sortOrder === 'asc' ? 1 : -1;
+  const sorted = [...pages].sort(
+    (a, b) => dir * ((a[col] ?? 0) < (b[col] ?? 0) ? -1 : 1),
+  );
+  const results = sorted.slice(0, input.limit ?? 50);
+
+  const annotated = results.map((p) => ({
+    ...p,
+    seo_signals: {
+      high_bounce: p.bounce_rate > 70,
+      low_engagement: p.avg_duration < 1,
+      good_landing_page: p.bounce_rate < 40 && p.avg_duration > 2,
+    },
+  }));
+
+  return {
+    total_pages: pages.length,
+    shown: annotated.length,
+    pages: annotated,
+  };
+}

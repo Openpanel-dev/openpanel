@@ -1,8 +1,6 @@
-import {
-  OverviewService,
-  ch,
-  getSettingsForProject,
-} from '@openpanel/db';
+export { getTrafficBreakdownCore, type TrafficColumn } from '@openpanel/db';
+
+import { getTrafficBreakdownCore, type TrafficColumn } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -13,48 +11,6 @@ import {
   withErrorHandling,
   zDateRange,
 } from '../shared';
-
-const overviewService = new OverviewService(ch);
-
-export type TrafficColumn =
-  | 'referrer'
-  | 'referrer_name'
-  | 'referrer_type'
-  | 'utm_source'
-  | 'utm_medium'
-  | 'utm_campaign'
-  | 'country'
-  | 'region'
-  | 'city'
-  | 'device'
-  | 'browser'
-  | 'os';
-
-export async function getTrafficBreakdownCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  column: TrafficColumn;
-}) {
-  return getTopGeneric(input);
-}
-
-async function getTopGeneric(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  column: TrafficColumn;
-}) {
-  const { timezone } = await getSettingsForProject(input.projectId);
-  return overviewService.getTopGeneric({
-    projectId: input.projectId,
-    filters: [],
-    startDate: input.startDate,
-    endDate: input.endDate,
-    column: input.column,
-    timezone,
-  });
-}
 
 export function registerTrafficTools(
   server: McpServer,
@@ -78,7 +34,7 @@ export function registerTrafficTools(
       withErrorHandling(async () => {
         const projectId = resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
-        return getTopGeneric({
+        return getTrafficBreakdownCore({
           projectId,
           startDate,
           endDate,
@@ -103,7 +59,7 @@ export function registerTrafficTools(
       withErrorHandling(async () => {
         const projectId = resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
-        return getTopGeneric({
+        return getTrafficBreakdownCore({
           projectId,
           startDate,
           endDate,
@@ -130,7 +86,7 @@ export function registerTrafficTools(
       withErrorHandling(async () => {
         const projectId = resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
-        return getTopGeneric({
+        return getTrafficBreakdownCore({
           projectId,
           startDate,
           endDate,

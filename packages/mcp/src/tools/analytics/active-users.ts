@@ -1,7 +1,6 @@
-import {
-  getRollingActiveUsers,
-  getRetentionSeries,
-} from '@openpanel/db';
+export { getRollingActiveUsersCore, getWeeklyRetentionSeriesCore } from '@openpanel/db';
+
+import { getRollingActiveUsers, getRetentionSeries } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -10,29 +9,6 @@ import {
   resolveProjectId,
   withErrorHandling,
 } from '../shared';
-
-export async function getRollingActiveUsersCore(input: {
-  projectId: string;
-  days: number;
-}) {
-  const data = await getRollingActiveUsers(input);
-  return {
-    window_days: input.days,
-    label:
-      input.days === 1
-        ? 'DAU'
-        : input.days === 7
-          ? 'WAU'
-          : input.days === 30
-            ? 'MAU'
-            : `${input.days}d active`,
-    series: data,
-  };
-}
-
-export async function getWeeklyRetentionSeriesCore(projectId: string) {
-  return getRetentionSeries({ projectId });
-}
 
 export function registerActiveUserTools(
   server: McpServer,

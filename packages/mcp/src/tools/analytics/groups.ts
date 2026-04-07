@@ -1,57 +1,10 @@
-import {
-  getGroupById,
-  getGroupList,
-  getGroupMemberProfiles,
-  getGroupTypes,
-} from '@openpanel/db';
+export { findGroupsCore, getGroupCore, listGroupTypesCore } from '@openpanel/db';
+
+import { getGroupById, getGroupList, getGroupMemberProfiles, getGroupTypes } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import { projectIdSchema, resolveProjectId, withErrorHandling } from '../shared';
-
-export async function listGroupTypesCore(projectId: string) {
-  const types = await getGroupTypes(projectId);
-  return { types };
-}
-
-export async function findGroupsCore(input: {
-  projectId: string;
-  type?: string;
-  search?: string;
-  limit?: number;
-}) {
-  return getGroupList({
-    projectId: input.projectId,
-    type: input.type,
-    search: input.search,
-    take: input.limit ?? 20,
-  });
-}
-
-export async function getGroupCore(input: {
-  projectId: string;
-  groupId: string;
-  memberLimit?: number;
-}) {
-  const [group, members] = await Promise.all([
-    getGroupById(input.groupId, input.projectId),
-    getGroupMemberProfiles({
-      projectId: input.projectId,
-      groupId: input.groupId,
-      take: input.memberLimit ?? 10,
-    }),
-  ]);
-
-  if (!group) {
-    return { error: 'Group not found', groupId: input.groupId };
-  }
-
-  return {
-    group,
-    member_count: members.count,
-    members: members.data,
-  };
-}
 
 export function registerGroupTools(
   server: McpServer,
