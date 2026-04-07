@@ -22,7 +22,6 @@ import {
   type IReplayPayload,
   type ITrackHandlerPayload,
   type ITrackPayload,
-  zTrackHandlerPayload,
 } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr, pick } from 'ramda';
@@ -373,18 +372,7 @@ export async function handler(
   }>,
   reply: FastifyReply
 ) {
-  // Validate request body with Zod
-  const validationResult = zTrackHandlerPayload.safeParse(request.body);
-  if (!validationResult.success) {
-    return reply.status(400).send({
-      status: 400,
-      error: 'Bad Request',
-      message: 'Validation failed',
-      errors: validationResult.error.issues,
-    });
-  }
-
-  const validatedBody = validationResult.data;
+  const validatedBody = request.body;
 
   // Handle alias (not supported)
   if (validatedBody.type === 'alias') {

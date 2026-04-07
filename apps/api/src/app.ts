@@ -2,6 +2,8 @@
 import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import cors, { type FastifyCorsOptions } from '@fastify/cors';
+import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUI from '@fastify/swagger-ui';
 import {
   EMPTY_SESSION,
   type SessionValidationResult,
@@ -17,6 +19,12 @@ import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import type { FastifyBaseLogger, FastifyInstance, FastifyRequest } from 'fastify';
 import Fastify from 'fastify';
 import metricsPlugin from 'fastify-metrics';
+import {
+  fastifyZodOpenApiPlugin,
+  fastifyZodOpenApiTransformers,
+  serializerCompiler,
+  validatorCompiler,
+} from 'fastify-zod-openapi';
 import {
   healthcheck,
   liveness,
@@ -77,6 +85,9 @@ export async function buildApp(
       : { loggerInstance: logger as unknown as FastifyBaseLogger }),
   });
 
+  fastify.setValidatorCompiler(validatorCompiler);
+  fastify.setSerializerCompiler(serializerCompiler);
+
   fastify.register(cors, () => {
     return (
       req: FastifyRequest,
@@ -107,6 +118,16 @@ export async function buildApp(
   fastify.addHook('onResponse', requestLoggingHook);
 
   fastify.register(compress, { global: false, encodings: ['gzip', 'deflate'] });
+
+  await fastify.register(fastifyZodOpenApiPlugin);
+  await fastify.register(fastifySwagger, {
+    openapi: {
+      info: { title: 'OpenPanel API', version: '1.0.0' },
+      openapi: '3.1.0',
+    },
+    ...fastifyZodOpenApiTransformers,
+  });
+  await fastify.register(fastifySwaggerUI, { routePrefix: '/documentation' });
 
   // Dashboard API
   fastify.register(async (instance) => {
