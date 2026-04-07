@@ -1,5 +1,4 @@
 import { ch, db } from '@openpanel/db';
-import { mcpSessionManager } from '@/routes/mcp.router';
 import {
   cronQueue,
   eventsGroupQueues,
@@ -15,6 +14,7 @@ import {
 } from '@openpanel/redis';
 import type { FastifyInstance } from 'fastify';
 import { logger } from './logger';
+import { mcpSessionManager } from '@/routes/mcp.router';
 
 let shuttingDown = false;
 
@@ -30,7 +30,7 @@ export function isShuttingDown() {
 export async function shutdown(
   fastify: FastifyInstance,
   signal: string,
-  exitCode = 0,
+  exitCode = 0
 ) {
   if (isShuttingDown()) {
     logger.warn('Shutdown already in progress, ignoring signal', { signal });
@@ -105,7 +105,7 @@ export async function shutdown(
         if (redis.status === 'ready') {
           await redis.quit();
         }
-      }),
+      })
     );
     logger.info('Redis connections closed');
   } catch (error) {

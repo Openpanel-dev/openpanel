@@ -14,7 +14,7 @@
  * that function — all ClickHouse queries still run for real.
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@openpanel/db', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@openpanel/db')>();
@@ -24,6 +24,16 @@ vi.mock('@openpanel/db', async (importOriginal) => {
   };
 });
 
+// Bypass Redis caching — prevents ioredis TCP connections that hang the process
+vi.mock('@openpanel/redis', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@openpanel/redis')>();
+  return {
+    ...actual,
+    getCache: async <T>(_key: string, _ttl: number, fn: () => Promise<T>) => fn(),
+  };
+});
+
+import { setup, teardown } from './setup';
 import { registerActiveUserTools } from '../tools/analytics/active-users';
 import { registerEngagementTools } from '../tools/analytics/engagement';
 import { registerEventNameTools } from '../tools/analytics/event-names';
@@ -47,6 +57,10 @@ const CTX = {
   organizationId: 'org-test',
   clientType: 'read' as const,
 };
+
+// Run ClickHouse fixture setup only when this file is executed (not for unit tests)
+beforeAll(() => setup(), 30_000);
+afterAll(() => teardown(), 10_000);
 
 function makeServer() {
   const handlers = new Map<string, (input: unknown) => Promise<unknown>>();

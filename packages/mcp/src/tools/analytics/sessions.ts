@@ -3,6 +3,7 @@ import type { IClickhouseSession } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
+import { sessionUrl } from '../dashboard-links';
 import {
   projectIdSchema,
   resolveDateRange,
@@ -124,7 +125,11 @@ export function registerSessionTools(
     async ({ projectId: inputProjectId, ...input }) =>
       withErrorHandling(async () => {
         const projectId = resolveProjectId(context, inputProjectId);
-        return querySessionsCore({ projectId, ...input });
+        const sessions = await querySessionsCore({ projectId, ...input });
+        return sessions.map((s) => ({
+          ...s,
+          dashboard_url: sessionUrl(context.organizationId, projectId, s.id),
+        }));
       }),
   );
 }

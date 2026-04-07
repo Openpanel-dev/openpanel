@@ -1,5 +1,8 @@
-import type { McpAuthContext } from '../auth';
+import { createLogger } from '@openpanel/logger';
 import { z } from 'zod';
+import type { McpAuthContext } from '../auth';
+
+const logger = createLogger({ name: 'mcp' });
 
 /**
  * Build the projectId portion of an input schema.
@@ -11,11 +14,10 @@ export function projectIdSchema(context: McpAuthContext) {
   return context.projectId === null
     ? z
         .string()
-        .uuid()
         .describe(
-          'Project ID to query (required for organization-level access)',
+          'Project ID to query (required for organization-level access)'
         )
-    : z.string().uuid().optional();
+    : z.string().optional();
 }
 
 /**
@@ -23,14 +25,14 @@ export function projectIdSchema(context: McpAuthContext) {
  */
 export function resolveProjectId(
   context: McpAuthContext,
-  inputProjectId: string | undefined,
+  inputProjectId: string | undefined
 ): string {
   if (context.projectId !== null) {
     return context.projectId;
   }
   if (!inputProjectId) {
     throw new Error(
-      'projectId is required when using a root (organization-level) client',
+      'projectId is required when using a root (organization-level) client'
     );
   }
   return inputProjectId;
@@ -44,11 +46,15 @@ export const zDateRange = {
   startDate: z
     .string()
     .optional()
-    .describe('Start date in YYYY-MM-DD format (e.g. 2024-01-01). Defaults to 30 days ago.'),
+    .describe(
+      'Start date in YYYY-MM-DD format (e.g. 2024-01-01). Defaults to 30 days ago.'
+    ),
   endDate: z
     .string()
     .optional()
-    .describe('End date in YYYY-MM-DD format (e.g. 2024-03-31). Defaults to today.'),
+    .describe(
+      'End date in YYYY-MM-DD format (e.g. 2024-03-31). Defaults to today.'
+    ),
 };
 
 /**
@@ -56,19 +62,21 @@ export const zDateRange = {
  */
 export function resolveDateRange(
   startDate?: string,
-  endDate?: string,
+  endDate?: string
 ): { startDate: string; endDate: string } {
   const end = endDate ?? new Date().toISOString().slice(0, 10);
   const start =
     startDate ??
-    new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
+    new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
   return { startDate: start, endDate: end };
 }
 
 /**
  * Serialize a tool result to MCP content format.
  */
-export function toText(data: unknown): { content: [{ type: 'text'; text: string }] } {
+export function toText(data: unknown): {
+  content: [{ type: 'text'; text: string }];
+} {
   return {
     content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
   };
@@ -78,13 +86,14 @@ export function toText(data: unknown): { content: [{ type: 'text'; text: string 
  * Wrap a tool handler to catch errors and return them as MCP error content.
  */
 export async function withErrorHandling<T>(
-  fn: () => Promise<T>,
+  fn: () => Promise<T>
 ): Promise<{ content: [{ type: 'text'; text: string }]; isError?: boolean }> {
   try {
     const result = await fn();
     return toText(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    logger.error(`MCP tool error: ${message}`, { err });
     return {
       content: [{ type: 'text' as const, text: `Error: ${message}` }],
       isError: true,

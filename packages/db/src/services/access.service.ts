@@ -4,13 +4,7 @@ import { getProjectById } from './project.service';
 
 export const getProjectAccess = cacheable(
   'getProjectAccess',
-  async ({
-    userId,
-    projectId,
-  }: {
-    userId: string;
-    projectId: string;
-  }) => {
+  async ({ userId, projectId }: { userId: string; projectId: string }) => {
     try {
       // Check if user has access to the project
       const project = await getProjectById(projectId);
@@ -19,13 +13,13 @@ export const getProjectAccess = cacheable(
       }
 
       const [projectAccess, member] = await Promise.all([
-        db.$primary().projectAccess.findMany({
+        db.projectAccess.findMany({
           where: {
             userId,
             organizationId: project.organizationId,
           },
         }),
-        db.$primary().member.findFirst({
+        db.member.findFirst({
           where: {
             organizationId: project.organizationId,
             userId,
@@ -42,7 +36,7 @@ export const getProjectAccess = cacheable(
       return false;
     }
   },
-  60 * 5,
+  60 * 5
 );
 
 export const getOrganizationAccess = cacheable(
@@ -54,14 +48,14 @@ export const getOrganizationAccess = cacheable(
     userId: string;
     organizationId: string;
   }) => {
-    return db.$primary().member.findFirst({
+    return db.member.findFirst({
       where: {
         userId,
         organizationId,
       },
     });
   },
-  60 * 5,
+  60 * 5
 );
 
 export async function getClientAccess({

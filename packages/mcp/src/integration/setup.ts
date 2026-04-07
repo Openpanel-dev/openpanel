@@ -25,9 +25,9 @@ export async function setup() {
     .split(';')
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
-  for (const statement of statements) {
-    await client.command({ query: statement });
-  }
+  // Run all CREATE TABLE / CREATE DATABASE statements in parallel — they are
+  // independent so there's no ordering requirement.
+  await Promise.all(statements.map((statement) => client.command({ query: statement })));
 
   // Clean up any leftover data from a previous run
   await cleanTestData(client);

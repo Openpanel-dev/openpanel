@@ -7,6 +7,7 @@ import type {
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
+import { profileUrl, sessionUrl } from '../dashboard-links';
 import {
   projectIdSchema,
   resolveProjectId,
@@ -218,7 +219,11 @@ export function registerProfileTools(
     async ({ projectId: inputProjectId, ...input }) =>
       withErrorHandling(async () => {
         const projectId = resolveProjectId(context, inputProjectId);
-        return findProfilesCore({ projectId, ...input });
+        const profiles = await findProfilesCore({ projectId, ...input });
+        return profiles.map((p) => ({
+          ...p,
+          dashboard_url: profileUrl(context.organizationId, projectId, p.id),
+        }));
       }),
   );
 
@@ -243,7 +248,10 @@ export function registerProfileTools(
         if (!result.profile) {
           return { error: 'Profile not found', profileId };
         }
-        return result;
+        return {
+          ...result,
+          dashboard_url: profileUrl(context.organizationId, projectId, profileId),
+        };
       }),
   );
 
@@ -265,7 +273,15 @@ export function registerProfileTools(
       withErrorHandling(async () => {
         const projectId = resolveProjectId(context, inputProjectId);
         const sessions = await getProfileSessionsCore(projectId, profileId, limit);
-        return { profileId, session_count: sessions.length, sessions };
+        return {
+          profileId,
+          dashboard_url: profileUrl(context.organizationId, projectId, profileId),
+          session_count: sessions.length,
+          sessions: sessions.map((s) => ({
+            ...s,
+            dashboard_url: sessionUrl(context.organizationId, projectId, s.id),
+          })),
+        };
       }),
   );
 }

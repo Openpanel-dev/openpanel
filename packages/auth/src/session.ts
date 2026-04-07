@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { type Session, type User, db } from '@openpanel/db';
+import { db, type Session, type User } from '@openpanel/db';
 import { sha256 } from '@oslojs/crypto/sha2';
 import {
   encodeBase32LowerCaseNoPadding,
@@ -15,7 +15,7 @@ export function generateSessionToken(): string {
 
 export async function createSession(
   token: string,
-  userId: string,
+  userId: string
 ): Promise<Session> {
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
   const session: Session = {
@@ -38,7 +38,7 @@ export const EMPTY_SESSION: SessionValidationResult = {
 };
 
 export async function createDemoSession(
-  userId: string,
+  userId: string
 ): Promise<SessionValidationResult> {
   const user = await db.user.findUniqueOrThrow({
     where: {
@@ -66,7 +66,7 @@ export const decodeSessionToken = (token: string): string | null => {
 };
 
 export async function validateSessionToken(
-  token: string | null | undefined,
+  token: string | null | undefined
 ): Promise<SessionValidationResult> {
   if (process.env.DEMO_USER_ID) {
     return createDemoSession(process.env.DEMO_USER_ID);
@@ -79,7 +79,7 @@ export async function validateSessionToken(
   if (!sessionId) {
     return EMPTY_SESSION;
   }
-  const result = await db.$primary().session.findUnique({
+  const result = await db.session.findUnique({
     where: {
       id: sessionId,
     },

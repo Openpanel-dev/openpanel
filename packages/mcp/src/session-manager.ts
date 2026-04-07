@@ -2,108 +2,101 @@ import { randomUUID } from 'node:crypto';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createLogger } from '@openpanel/logger';
+import { getRedisCache } from '@openpanel/redis';
 import type { McpAuthContext } from './auth';
 
 const logger = createLogger({ name: 'mcp:sessions' });
 
-interface McpSession {
-  server: McpServer;
-  transport: StreamableHTTPServerTransport;
-  context: McpAuthContext;
-  lastActivity: number;
+const SESSION_TTL_SECONDS = 30 * 60; // 30 minutes
+
+function redisKey(id: string) {
+  return `mcp:session:${id}`;
 }
 
-const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // check every 5 minutes
+interface McpLocalSession {
+  server: McpServer;
+  transport: StreamableHTTPServerTransport;
+}
 
+/**
+ * Hybrid session manager:
+ * - Auth context is stored in Redis (shared across all API instances, TTL 30 min)
+ * - Active transport/server are kept in a local Map (in-process only — they hold live HTTP connections)
+ *
+ * This means POST requests can be handled by any instance: if the transport
+ * isn't local, we retrieve the context from Redis and recreate it here.
+ * SSE (GET) streams are inherently tied to the instance they started on;
+ * when that instance goes down the client reconnects and gets a fresh session.
+ */
 export class SessionManager {
-  private sessions = new Map<string, McpSession>();
-  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
-
-  constructor() {
-    this.cleanupTimer = setInterval(
-      () => this.cleanup(),
-      CLEANUP_INTERVAL_MS,
-    );
-    // Don't keep the process alive just for session cleanup
-    this.cleanupTimer.unref();
-  }
+  private local = new Map<string, McpLocalSession>();
 
   generateId(): string {
     return randomUUID();
   }
 
-  set(id: string, session: McpSession): void {
-    this.sessions.set(id, session);
-    logger.info('MCP session created', {
+  // --- context (Redis) ---
+
+  async setContext(id: string, context: McpAuthContext): Promise<void> {
+    await getRedisCache().setJson(redisKey(id), SESSION_TTL_SECONDS, context);
+    logger.info('MCP session context stored', {
       sessionId: id,
-      clientType: session.context.clientType,
-      organizationId: session.context.organizationId,
-      projectId: session.context.projectId,
+      clientType: context.clientType,
+      organizationId: context.organizationId,
+      projectId: context.projectId,
     });
   }
 
-  get(id: string): McpSession | undefined {
-    const session = this.sessions.get(id);
-    if (session) {
-      session.lastActivity = Date.now();
-    }
-    return session;
+  async getContext(id: string): Promise<McpAuthContext | null> {
+    return getRedisCache().getJson<McpAuthContext>(redisKey(id));
   }
 
-  has(id: string): boolean {
-    return this.sessions.has(id);
+  async touchContext(id: string): Promise<void> {
+    await getRedisCache().expire(redisKey(id), SESSION_TTL_SECONDS);
   }
+
+  async deleteContext(id: string): Promise<void> {
+    await getRedisCache().del(redisKey(id));
+  }
+
+  // --- transport/server (local) ---
+
+  setLocal(id: string, session: McpLocalSession): void {
+    this.local.set(id, session);
+  }
+
+  getLocal(id: string): McpLocalSession | undefined {
+    return this.local.get(id);
+  }
+
+  deleteLocal(id: string): void {
+    this.local.delete(id);
+  }
+
+  // --- combined ops ---
 
   async close(id: string): Promise<void> {
-    const session = this.sessions.get(id);
-    if (!session) return;
+    const session = this.local.get(id);
+    this.local.delete(id);
+    await this.deleteContext(id);
 
-    this.sessions.delete(id);
-
-    try {
-      await session.transport.close();
-    } catch (err) {
-      logger.warn('Error closing MCP transport', { sessionId: id, err });
+    if (session) {
+      try {
+        await session.transport.close();
+      } catch (err) {
+        logger.warn('Error closing MCP transport', { sessionId: id, err });
+      }
     }
 
     logger.info('MCP session closed', { sessionId: id });
   }
 
-  get size(): number {
-    return this.sessions.size;
-  }
-
-  private async cleanup(): Promise<void> {
-    const now = Date.now();
-    const expired: string[] = [];
-
-    for (const [id, session] of this.sessions) {
-      if (now - session.lastActivity > SESSION_TTL_MS) {
-        expired.push(id);
-      }
-    }
-
-    for (const id of expired) {
-      logger.info('MCP session expired', { sessionId: id });
-      await this.close(id);
-    }
-
-    if (expired.length > 0) {
-      logger.info('MCP session cleanup complete', {
-        expired: expired.length,
-        remaining: this.sessions.size,
-      });
-    }
-  }
-
   async destroy(): Promise<void> {
-    if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer);
-      this.cleanupTimer = null;
-    }
-    for (const id of [...this.sessions.keys()]) {
-      await this.close(id);
-    }
+    const ids = [...this.local.keys()];
+    await Promise.all(ids.map((id) => this.close(id)));
+  }
+
+  get localSize(): number {
+    return this.local.size;
   }
 }
