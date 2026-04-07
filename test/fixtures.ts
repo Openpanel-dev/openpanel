@@ -22,7 +22,20 @@
  * different project IDs (ClickHouse's MergeTree ordering includes project_id).
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createClient } from '../packages/db/src/clickhouse/client';
+import { PrismaClient } from '../packages/db/src/generated/prisma/client';
+
+// Lazily create a Prisma client so DATABASE_URL is read at call time,
+// not at module-import time (globalSetup runs before env is configured).
+function getDb() {
+  const url =
+    process.env.DATABASE_URL ??
+    'postgresql://postgres:postgres@localhost:5432/postgres?schema=public';
+  return new PrismaClient({ datasources: { db: { url } } });
+}
 
 // ---------------------------------------------------------------------------
 // Well-known fixture IDs — import these in tests instead of hard-coding strings
@@ -42,15 +55,15 @@ export const FIXTURE = {
   events: {
     alice: {
       sessionStart: '00000000-0000-0000-0000-000000000001',
-      pageView:     '00000000-0000-0000-0000-000000000002',
-      sessionEnd:   '00000000-0000-0000-0000-000000000003',
+      pageView: '00000000-0000-0000-0000-000000000002',
+      sessionEnd: '00000000-0000-0000-0000-000000000003',
     },
     charlie: {
       sessionStart: '00000000-0000-0000-0000-000000000004',
-      screenView:   '00000000-0000-0000-0000-000000000005',
-      pageView:     '00000000-0000-0000-0000-000000000006',
-      purchase:     '00000000-0000-0000-0000-000000000007',
-      sessionEnd:   '00000000-0000-0000-0000-000000000008',
+      screenView: '00000000-0000-0000-0000-000000000005',
+      pageView: '00000000-0000-0000-0000-000000000006',
+      purchase: '00000000-0000-0000-0000-000000000007',
+      sessionEnd: '00000000-0000-0000-0000-000000000008',
     },
   },
 } as const;
@@ -67,10 +80,13 @@ function getClient() {
 }
 
 function timeAgo(now: Date, days: number, minutesOffset = 0) {
-  return new Date(now.getTime() - days * 86_400_000 - minutesOffset * 60_000)
-    .toISOString()
-    .replace('T', ' ')
-    .replace(/\.\d+Z$/, '');
+  return (
+    new Date(now.getTime() - days * 86_400_000 - minutesOffset * 60_000)
+      .toISOString()
+      .replace('T', ' ')
+      // biome-ignore lint/performance/useTopLevelRegex: test setup
+      .replace(/\.\d+Z$/, '')
+  );
 }
 
 function buildEvent(
@@ -82,7 +98,7 @@ function buildEvent(
   sessionId: string,
   daysBack: number,
   minutesOffset = 0,
-  overrides: Record<string, unknown> = {},
+  overrides: Record<string, unknown> = {}
 ) {
   return {
     id,
@@ -123,7 +139,7 @@ function buildSession(
   id: string,
   profileId: string,
   daysBack: number,
-  overrides: Record<string, unknown> = {},
+  overrides: Record<string, unknown> = {}
 ) {
   return {
     id,
@@ -220,15 +236,94 @@ async function insertFixtures(client: ChClient, projectId: string) {
   await client.insert({
     table: 'openpanel.events',
     values: [
-      buildEvent(now, projectId, FIXTURE.events.alice.sessionStart, 'session_start', FIXTURE.profiles.alice, FIXTURE.sessions.alice1, 2, 4),
-      buildEvent(now, projectId, FIXTURE.events.alice.pageView,     'page_view',     FIXTURE.profiles.alice, FIXTURE.sessions.alice1, 2, 2, { path: '/home', browser: 'Chrome' }),
-      buildEvent(now, projectId, FIXTURE.events.alice.sessionEnd,   'session_end',   FIXTURE.profiles.alice, FIXTURE.sessions.alice1, 2, 0, { duration: 120000 }),
+      buildEvent(
+        now,
+        projectId,
+        FIXTURE.events.alice.sessionStart,
+        'session_start',
+        FIXTURE.profiles.alice,
+        FIXTURE.sessions.alice1,
+        2,
+        4
+      ),
+      buildEvent(
+        now,
+        projectId,
+        FIXTURE.events.alice.pageView,
+        'page_view',
+        FIXTURE.profiles.alice,
+        FIXTURE.sessions.alice1,
+        2,
+        2,
+        { path: '/home', browser: 'Chrome' }
+      ),
+      buildEvent(
+        now,
+        projectId,
+        FIXTURE.events.alice.sessionEnd,
+        'session_end',
+        FIXTURE.profiles.alice,
+        FIXTURE.sessions.alice1,
+        2,
+        0,
+        { duration: 120_000 }
+      ),
 
-      buildEvent(now, projectId, FIXTURE.events.charlie.sessionStart, 'session_start', FIXTURE.profiles.charlie, FIXTURE.sessions.charlie1, 5, 20, { browser: 'Firefox' }),
-      buildEvent(now, projectId, FIXTURE.events.charlie.screenView,   'screen_view',   FIXTURE.profiles.charlie, FIXTURE.sessions.charlie1, 5, 15, { path: '/shop', browser: 'Firefox' }),
-      buildEvent(now, projectId, FIXTURE.events.charlie.pageView,     'page_view',     FIXTURE.profiles.charlie, FIXTURE.sessions.charlie1, 5, 10, { path: '/shop', browser: 'Firefox' }),
-      buildEvent(now, projectId, FIXTURE.events.charlie.purchase,     'purchase',      FIXTURE.profiles.charlie, FIXTURE.sessions.charlie1, 5,  5, { path: '/checkout', revenue: 9900, browser: 'Firefox' }),
-      buildEvent(now, projectId, FIXTURE.events.charlie.sessionEnd,   'session_end',   FIXTURE.profiles.charlie, FIXTURE.sessions.charlie1, 5,  0, { duration: 300000, browser: 'Firefox' }),
+      buildEvent(
+        now,
+        projectId,
+        FIXTURE.events.charlie.sessionStart,
+        'session_start',
+        FIXTURE.profiles.charlie,
+        FIXTURE.sessions.charlie1,
+        5,
+        20,
+        { browser: 'Firefox' }
+      ),
+      buildEvent(
+        now,
+        projectId,
+        FIXTURE.events.charlie.screenView,
+        'screen_view',
+        FIXTURE.profiles.charlie,
+        FIXTURE.sessions.charlie1,
+        5,
+        15,
+        { path: '/shop', browser: 'Firefox' }
+      ),
+      buildEvent(
+        now,
+        projectId,
+        FIXTURE.events.charlie.pageView,
+        'page_view',
+        FIXTURE.profiles.charlie,
+        FIXTURE.sessions.charlie1,
+        5,
+        10,
+        { path: '/shop', browser: 'Firefox' }
+      ),
+      buildEvent(
+        now,
+        projectId,
+        FIXTURE.events.charlie.purchase,
+        'purchase',
+        FIXTURE.profiles.charlie,
+        FIXTURE.sessions.charlie1,
+        5,
+        5,
+        { path: '/checkout', revenue: 9900, browser: 'Firefox' }
+      ),
+      buildEvent(
+        now,
+        projectId,
+        FIXTURE.events.charlie.sessionEnd,
+        'session_end',
+        FIXTURE.profiles.charlie,
+        FIXTURE.sessions.charlie1,
+        5,
+        0,
+        { duration: 300_000, browser: 'Firefox' }
+      ),
     ],
     format: 'JSONEachRow',
   });
@@ -236,23 +331,43 @@ async function insertFixtures(client: ChClient, projectId: string) {
   await client.insert({
     table: 'openpanel.sessions',
     values: [
-      buildSession(now, projectId, FIXTURE.sessions.alice1, FIXTURE.profiles.alice, 2),
-      buildSession(now, projectId, FIXTURE.sessions.charlie1, FIXTURE.profiles.charlie, 5, {
-        browser: 'Firefox',
-        entry_path: '/shop',
-        exit_path: '/checkout',
-        revenue: 9900,
-        duration: 300,
-        screen_view_count: 2,
-        event_count: 5,
-      }),
-      buildSession(now, projectId, FIXTURE.sessions.charlie2, FIXTURE.profiles.charlie, 10, {
-        browser: 'Firefox',
-        is_bounce: true,
-        entry_path: '/shop',
-        exit_path: '/shop',
-        duration: 15,
-      }),
+      buildSession(
+        now,
+        projectId,
+        FIXTURE.sessions.alice1,
+        FIXTURE.profiles.alice,
+        2
+      ),
+      buildSession(
+        now,
+        projectId,
+        FIXTURE.sessions.charlie1,
+        FIXTURE.profiles.charlie,
+        5,
+        {
+          browser: 'Firefox',
+          entry_path: '/shop',
+          exit_path: '/checkout',
+          revenue: 9900,
+          duration: 300,
+          screen_view_count: 2,
+          event_count: 5,
+        }
+      ),
+      buildSession(
+        now,
+        projectId,
+        FIXTURE.sessions.charlie2,
+        FIXTURE.profiles.charlie,
+        10,
+        {
+          browser: 'Firefox',
+          is_bounce: true,
+          entry_path: '/shop',
+          exit_path: '/shop',
+          duration: 15,
+        }
+      ),
     ],
     format: 'JSONEachRow',
   });
@@ -260,15 +375,83 @@ async function insertFixtures(client: ChClient, projectId: string) {
 
 async function deleteFixtures(client: ChClient, projectId: string) {
   await Promise.all([
-    client.command({ query: `DELETE FROM openpanel.profiles WHERE project_id = '${projectId}'` }),
-    client.command({ query: `DELETE FROM openpanel.events WHERE project_id = '${projectId}'` }),
-    client.command({ query: `DELETE FROM openpanel.sessions WHERE project_id = '${projectId}'` }),
+    client.command({
+      query: `DELETE FROM openpanel.profiles WHERE project_id = '${projectId}'`,
+    }),
+    client.command({
+      query: `DELETE FROM openpanel.events WHERE project_id = '${projectId}'`,
+    }),
+    client.command({
+      query: `DELETE FROM openpanel.sessions WHERE project_id = '${projectId}'`,
+    }),
   ]);
 }
 
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
+
+export async function setupPostgresFixtures(
+  projectId: string,
+  orgId: string
+): Promise<void> {
+  const db = getDb();
+  try {
+    await db.organization.upsert({
+      where: { id: orgId },
+      create: { id: orgId, name: 'Test Org', timezone: 'UTC' },
+      update: { timezone: 'UTC' },
+    });
+    await db.project.upsert({
+      where: { id: projectId },
+      create: { id: projectId, name: 'Test Project', organizationId: orgId },
+      update: {},
+    });
+  } finally {
+    await db.$disconnect();
+  }
+}
+
+export async function teardownPostgresFixtures(
+  projectId: string,
+  orgId: string
+): Promise<void> {
+  const db = getDb();
+  try {
+    await db.project.deleteMany({ where: { id: projectId } });
+    await db.organization.deleteMany({ where: { id: orgId } });
+  } finally {
+    await db.$disconnect();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ClickHouse schema bootstrap
+// ---------------------------------------------------------------------------
+
+const __fixturesDir = dirname(fileURLToPath(import.meta.url));
+
+export async function ensureSchema(): Promise<void> {
+  const client = createClient({
+    url: process.env.CLICKHOUSE_URL ?? 'http://localhost:8123',
+  });
+  const sql = readFileSync(
+    join(__fixturesDir, 'clickhouse-schema.sql'),
+    'utf8'
+  );
+  const statements = sql
+    .split('\n')
+    .filter((line) => !line.trimStart().startsWith('--'))
+    .join('\n')
+    .split(';')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  await Promise.all(
+    statements.map((statement) => client.command({ query: statement }))
+  );
+  await client.close();
+}
+
 
 export async function setupFixtures(projectId: string): Promise<void> {
   const client = getClient();

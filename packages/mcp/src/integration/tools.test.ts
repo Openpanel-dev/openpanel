@@ -14,26 +14,19 @@
  * that function — all ClickHouse queries still run for real.
  */
 
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-
-vi.mock('@openpanel/db', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@openpanel/db')>();
-  return {
-    ...actual,
-    getSettingsForProject: vi.fn().mockResolvedValue({ timezone: 'UTC' }),
-  };
-});
+import { describe, expect, it, vi } from 'vitest';
 
 // Bypass Redis caching — prevents ioredis TCP connections that hang the process
 vi.mock('@openpanel/redis', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@openpanel/redis')>();
   return {
     ...actual,
-    getCache: async <T>(_key: string, _ttl: number, fn: () => Promise<T>) => fn(),
+    getCache: async <T>(_key: string, _ttl: number, fn: () => Promise<T>) =>
+      fn(),
   };
 });
 
-import { FIXTURE, setup, teardown } from './setup';
+import { FIXTURE, TEST_PROJECT_ID } from '../../../../test/global-setup';
 import { registerActiveUserTools } from '../tools/analytics/active-users';
 import { registerEngagementTools } from '../tools/analytics/engagement';
 import { registerEventNameTools } from '../tools/analytics/event-names';
@@ -50,7 +43,6 @@ import { registerRetentionTools } from '../tools/analytics/retention';
 import { registerSessionTools } from '../tools/analytics/sessions';
 import { registerTrafficTools } from '../tools/analytics/traffic';
 import { registerUserFlowTools } from '../tools/analytics/user-flow';
-import { TEST_PROJECT_ID } from './setup';
 
 const CTX = {
   projectId: TEST_PROJECT_ID,
@@ -58,21 +50,28 @@ const CTX = {
   clientType: 'read' as const,
 };
 
-// Run ClickHouse fixture setup only when this file is executed (not for unit tests)
-beforeAll(() => setup(), 30_000);
-afterAll(() => teardown(), 10_000);
-
 function makeServer() {
   const handlers = new Map<string, (input: unknown) => Promise<unknown>>();
   return {
-    tool: (name: string, _desc: string, _schema: unknown, fn: (input: unknown) => Promise<unknown>) => {
+    tool: (
+      name: string,
+      _desc: string,
+      _schema: unknown,
+      fn: (input: unknown) => Promise<unknown>
+    ) => {
       handlers.set(name, fn);
     },
     invoke: async (name: string, input: unknown) => {
       const handler = handlers.get(name);
-      if (!handler) throw new Error(`Tool not registered: ${name}`);
-      const result = await handler(input) as any;
-      return JSON.parse(result.content[0].text);
+      if (!handler) {
+        throw new Error(`Tool not registered: ${name}`);
+      }
+      const result = (await handler(input)) as any;
+      const text = result.content[0].text as string;
+      if (result.isError) {
+        return { error: text.replace(/^Error:\s*/, '') };
+      }
+      return JSON.parse(text);
     },
   };
 }
@@ -83,7 +82,9 @@ describe('list_event_names', () => {
   it('returns { event_names: string[] }', async () => {
     const server = makeServer();
     registerEventNameTools(server as any, CTX);
-    const res = await server.invoke('list_event_names', { projectId: TEST_PROJECT_ID });
+    const res = await server.invoke('list_event_names', {
+      projectId: TEST_PROJECT_ID,
+    });
     expect(Array.isArray(res.event_names)).toBe(true);
   });
 });
@@ -92,7 +93,9 @@ describe('list_event_properties', () => {
   it('returns { properties: array }', async () => {
     const server = makeServer();
     registerPropertyValueTools(server as any, CTX);
-    const res = await server.invoke('list_event_properties', { projectId: TEST_PROJECT_ID });
+    const res = await server.invoke('list_event_properties', {
+      projectId: TEST_PROJECT_ID,
+    });
     expect(Array.isArray(res.properties)).toBe(true);
   });
 });
@@ -151,7 +154,9 @@ describe('query_events', () => {
       profileId: FIXTURE.profiles.alice,
     });
     expect(res.length).toBe(3);
-    expect(res.every((e: any) => e.profile_id === FIXTURE.profiles.alice)).toBe(true);
+    expect(res.every((e: any) => e.profile_id === FIXTURE.profiles.alice)).toBe(
+      true
+    );
   });
 
   it('filters by browser', async () => {
@@ -169,7 +174,6 @@ describe('query_events', () => {
 
   // Note: read-context resolveProjectId ignores the input projectId and always
   // uses CTX.projectId — so there is no way to query another project's data.
-
 });
 
 describe('query_sessions', () => {
@@ -194,7 +198,9 @@ describe('query_sessions', () => {
       profileId: FIXTURE.profiles.charlie,
     });
     expect(res.length).toBe(2);
-    expect(res.every((s: any) => s.profile_id === FIXTURE.profiles.charlie)).toBe(true);
+    expect(
+      res.every((s: any) => s.profile_id === FIXTURE.profiles.charlie)
+    ).toBe(true);
   });
 
   it('filters by browser', async () => {
@@ -217,14 +223,19 @@ describe('find_profiles', () => {
   it('returns all 3 fixture profiles', async () => {
     const server = makeServer();
     registerProfileTools(server as any, CTX);
-    const res = await server.invoke('find_profiles', { projectId: TEST_PROJECT_ID });
+    const res = await server.invoke('find_profiles', {
+      projectId: TEST_PROJECT_ID,
+    });
     expect(res.length).toBe(3);
   });
 
   it('filters by email partial match', async () => {
     const server = makeServer();
     registerProfileTools(server as any, CTX);
-    const res = await server.invoke('find_profiles', { projectId: TEST_PROJECT_ID, email: 'alice@' });
+    const res = await server.invoke('find_profiles', {
+      projectId: TEST_PROJECT_ID,
+      email: 'alice@',
+    });
     expect(res.length).toBe(1);
     expect(res[0].email).toBe('alice@example.com');
   });
@@ -232,11 +243,17 @@ describe('find_profiles', () => {
   it('filters by name — matches first_name and last_name', async () => {
     const server = makeServer();
     registerProfileTools(server as any, CTX);
-    const byFirst = await server.invoke('find_profiles', { projectId: TEST_PROJECT_ID, name: 'Charlie' });
+    const byFirst = await server.invoke('find_profiles', {
+      projectId: TEST_PROJECT_ID,
+      name: 'Charlie',
+    });
     expect(byFirst.length).toBe(1);
     expect(byFirst[0].first_name).toBe('Charlie');
 
-    const byLast = await server.invoke('find_profiles', { projectId: TEST_PROJECT_ID, name: 'Smith' });
+    const byLast = await server.invoke('find_profiles', {
+      projectId: TEST_PROJECT_ID,
+      name: 'Smith',
+    });
     expect(byLast.length).toBe(1);
     expect(byLast[0].last_name).toBe('Smith');
   });
@@ -244,7 +261,10 @@ describe('find_profiles', () => {
   it('filters by country property', async () => {
     const server = makeServer();
     registerProfileTools(server as any, CTX);
-    const res = await server.invoke('find_profiles', { projectId: TEST_PROJECT_ID, country: 'SE' });
+    const res = await server.invoke('find_profiles', {
+      projectId: TEST_PROJECT_ID,
+      country: 'SE',
+    });
     expect(res.length).toBe(1);
     expect(res[0].email).toBe('bob@example.com');
   });
@@ -252,7 +272,10 @@ describe('find_profiles', () => {
   it('inactiveDays=7 excludes alice (active 2 days ago) but includes bob (no events)', async () => {
     const server = makeServer();
     registerProfileTools(server as any, CTX);
-    const res = await server.invoke('find_profiles', { projectId: TEST_PROJECT_ID, inactiveDays: 7 });
+    const res = await server.invoke('find_profiles', {
+      projectId: TEST_PROJECT_ID,
+      inactiveDays: 7,
+    });
     const emails = res.map((p: any) => p.email);
     expect(emails).not.toContain('alice@example.com');
     expect(emails).not.toContain('charlie@example.com');
@@ -262,7 +285,10 @@ describe('find_profiles', () => {
   it('minSessions=2 returns only charlie (has 2 sessions)', async () => {
     const server = makeServer();
     registerProfileTools(server as any, CTX);
-    const res = await server.invoke('find_profiles', { projectId: TEST_PROJECT_ID, minSessions: 2 });
+    const res = await server.invoke('find_profiles', {
+      projectId: TEST_PROJECT_ID,
+      minSessions: 2,
+    });
     expect(res.length).toBe(1);
     expect(res[0].first_name).toBe('Charlie');
   });
@@ -270,14 +296,16 @@ describe('find_profiles', () => {
   it('performedEvent=purchase returns only charlie', async () => {
     const server = makeServer();
     registerProfileTools(server as any, CTX);
-    const res = await server.invoke('find_profiles', { projectId: TEST_PROJECT_ID, performedEvent: 'purchase' });
+    const res = await server.invoke('find_profiles', {
+      projectId: TEST_PROJECT_ID,
+      performedEvent: 'purchase',
+    });
     expect(res.length).toBe(1);
     expect(res[0].first_name).toBe('Charlie');
   });
 
   // Note: read-context resolveProjectId ignores the input projectId and always
   // uses CTX.projectId — so there is no way to query another project's data.
-
 });
 
 describe('get_profile', () => {
@@ -304,7 +332,9 @@ describe('get_profile_sessions', () => {
       profileId: FIXTURE.profiles.charlie,
     });
     expect(res.sessions.length).toBe(2);
-    expect(res.sessions.every((s: any) => s.profile_id === FIXTURE.profiles.charlie)).toBe(true);
+    expect(
+      res.sessions.every((s: any) => s.profile_id === FIXTURE.profiles.charlie)
+    ).toBe(true);
   });
 });
 
@@ -319,11 +349,11 @@ describe('get_profile_metrics', () => {
     // No error — bug was getProfileMetrics returns single object, not array
     expect(res.error).toBeUndefined();
     expect(res.profileId).toBe(FIXTURE.profiles.charlie);
-    expect(res.sessions).toBe(1);           // 1 session_start event
-    expect(res.screenViews).toBe(1);        // 1 screen_view event
-    expect(res.totalEvents).toBe(5);        // session_start + screen_view + page_view + purchase + session_end
-    expect(res.conversionEvents).toBe(2);   // page_view + purchase (excludes session_start/screen_view/session_end)
-    expect(res.uniqueDaysActive).toBe(1);   // all on the same day
+    expect(res.sessions).toBe(1); // 1 session_start event
+    expect(res.screenViews).toBe(1); // 1 screen_view event
+    expect(res.totalEvents).toBe(5); // session_start + screen_view + page_view + purchase + session_end
+    expect(res.conversionEvents).toBe(2); // page_view + purchase (excludes session_start/screen_view/session_end)
+    expect(res.uniqueDaysActive).toBe(1); // all on the same day
     expect(res.firstSeen).not.toBeNull();
     expect(res.lastSeen).not.toBeNull();
   });
@@ -337,7 +367,7 @@ describe('get_profile_metrics', () => {
     });
     expect(res.error).toBeUndefined();
     expect(res.sessions).toBe(1);
-    expect(res.totalEvents).toBe(3);     // session_start + page_view + session_end
+    expect(res.totalEvents).toBe(3); // session_start + page_view + session_end
     expect(res.conversionEvents).toBe(1); // page_view only
     expect(res.screenViews).toBe(0);
   });
@@ -349,7 +379,9 @@ describe('list_group_types', () => {
   it('returns { types: [] } (no groups in fixtures)', async () => {
     const server = makeServer();
     registerGroupTools(server as any, CTX);
-    const res = await server.invoke('list_group_types', { projectId: TEST_PROJECT_ID });
+    const res = await server.invoke('list_group_types', {
+      projectId: TEST_PROJECT_ID,
+    });
     expect(Array.isArray(res.types)).toBe(true);
     expect(res.types).toHaveLength(0);
   });
@@ -359,7 +391,9 @@ describe('find_groups', () => {
   it('returns empty array (no groups in fixtures)', async () => {
     const server = makeServer();
     registerGroupTools(server as any, CTX);
-    const res = await server.invoke('find_groups', { projectId: TEST_PROJECT_ID });
+    const res = await server.invoke('find_groups', {
+      projectId: TEST_PROJECT_ID,
+    });
     expect(Array.isArray(res)).toBe(true);
   });
 });
@@ -581,7 +615,10 @@ describe('get_rolling_active_users', () => {
   it('returns DAU series (may be empty — dau_mv not auto-populated)', async () => {
     const server = makeServer();
     registerActiveUserTools(server as any, CTX);
-    const res = await server.invoke('get_rolling_active_users', { projectId: TEST_PROJECT_ID, days: 1 });
+    const res = await server.invoke('get_rolling_active_users', {
+      projectId: TEST_PROJECT_ID,
+      days: 1,
+    });
     expect(res.label).toBe('DAU');
     expect(res.window_days).toBe(1);
     expect(Array.isArray(res.series)).toBe(true);
@@ -590,9 +627,15 @@ describe('get_rolling_active_users', () => {
   it('uses correct label for WAU and MAU', async () => {
     const server = makeServer();
     registerActiveUserTools(server as any, CTX);
-    const wau = await server.invoke('get_rolling_active_users', { projectId: TEST_PROJECT_ID, days: 7 });
+    const wau = await server.invoke('get_rolling_active_users', {
+      projectId: TEST_PROJECT_ID,
+      days: 7,
+    });
     expect(wau.label).toBe('WAU');
-    const mau = await server.invoke('get_rolling_active_users', { projectId: TEST_PROJECT_ID, days: 30 });
+    const mau = await server.invoke('get_rolling_active_users', {
+      projectId: TEST_PROJECT_ID,
+      days: 30,
+    });
     expect(mau.label).toBe('MAU');
   });
 });
@@ -601,7 +644,9 @@ describe('get_weekly_retention_series', () => {
   it('returns array of { date, active_users, retained_users, retention } rows', async () => {
     const server = makeServer();
     registerActiveUserTools(server as any, CTX);
-    const res = await server.invoke('get_weekly_retention_series', { projectId: TEST_PROJECT_ID });
+    const res = await server.invoke('get_weekly_retention_series', {
+      projectId: TEST_PROJECT_ID,
+    });
     expect(Array.isArray(res)).toBe(true);
     if (res.length > 0) {
       expect(res[0]).toHaveProperty('date');
@@ -616,7 +661,9 @@ describe('get_retention_cohort', () => {
   it('returns array of cohort rows with period_0..period_9', async () => {
     const server = makeServer();
     registerRetentionTools(server as any, CTX);
-    const res = await server.invoke('get_retention_cohort', { projectId: TEST_PROJECT_ID });
+    const res = await server.invoke('get_retention_cohort', {
+      projectId: TEST_PROJECT_ID,
+    });
     expect(Array.isArray(res)).toBe(true);
     if (res.length > 0) {
       expect(res[0]).toHaveProperty('first_seen');
@@ -629,7 +676,9 @@ describe('get_user_last_seen_distribution', () => {
   it('returns alice and charlie in active_last_7_days bucket', async () => {
     const server = makeServer();
     registerEngagementTools(server as any, CTX);
-    const res = await server.invoke('get_user_last_seen_distribution', { projectId: TEST_PROJECT_ID });
+    const res = await server.invoke('get_user_last_seen_distribution', {
+      projectId: TEST_PROJECT_ID,
+    });
     // Alice: last event 2 days ago → 0-7 bucket
     // Charlie: last event 5 days ago → 0-7 bucket
     // Bob: no events → not counted

@@ -1,6 +1,10 @@
 import * as path from 'node:path';
 import { defineConfig } from 'vitest/config';
 
+// Absolute path to the root test-setup — used as setupFiles so every package
+// gets connection-pool cleanup without needing a per-package file.
+const rootTestSetup = (dirname: string) => path.resolve(dirname, '../../test/test-setup.ts');
+
 export const getSharedVitestConfig = ({
   __dirname: dirname,
 }: {
@@ -13,9 +17,10 @@ export const getSharedVitestConfig = ({
       },
     },
     test: {
+      setupFiles: [rootTestSetup(dirname)],
       env: {
         // Always point at local Docker — never production, regardless of .env
-        DATABASE_URL: 'postgresql://u:p@127.0.0.1:5432/db',
+        DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/postgres?schema=public',
         CLICKHOUSE_URL: 'http://localhost:8123/openpanel',
         REDIS_URL: 'redis://localhost:6379',
         SELF_HOSTED: 'true',

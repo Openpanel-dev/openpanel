@@ -2,29 +2,50 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockChQuery = vi.hoisted(() => vi.fn().mockResolvedValue([]));
 
-vi.mock('@openpanel/db', () => ({
-  TABLE_NAMES: {
-    profiles: 'profiles',
-    events: 'events',
-    sessions: 'sessions',
-  },
-  ch: {},
-  chQuery: mockChQuery,
-  // clix is used by getProfileSessionsCore and getProfileWithEvents — mock a chainable builder
-  clix: vi.fn(() => {
-    const builder: Record<string, unknown> = {};
-    const chain = () => builder;
-    builder.select = chain;
-    builder.from = chain;
-    builder.where = chain;
-    builder.orderBy = chain;
-    builder.limit = chain;
-    builder.execute = vi.fn().mockResolvedValue([]);
-    return builder;
-  }),
-}));
+// Mock the ClickHouse client WITHOUT importOriginal — using importOriginal
+// causes the real module to be bound into profile.service.ts before the mock
+// factory result is visible, bypassing the chQuery replacement.
+vi.mock('../../../../db/src/clickhouse/client', () => {
+  return {
+    chQuery: mockChQuery,
+    chQueryWithMeta: vi.fn().mockResolvedValue({ data: [], rows: 0 }),
+    ch: {},
+    originalCh: {},
+    createClient: () => ({}),
+    withRetry: vi.fn().mockImplementation((fn: () => unknown) => fn()),
+    isClickhouseClustered: () => false,
+    getReplicatedTableName: (name: string) => name,
+    CLICKHOUSE_OPTIONS: {},
+    TABLE_NAMES: {
+      events: 'events',
+      profiles: 'profiles',
+      alias: 'profile_aliases',
+      self_hosting: 'self_hosting',
+      events_bots: 'events_bots',
+      dau_mv: 'dau_mv',
+      event_names_mv: 'distinct_event_names_mv',
+      event_property_values_mv: 'event_property_values_mv',
+      cohort_events_mv: 'cohort_events_mv',
+      sessions: 'sessions',
+      events_imports: 'events_imports',
+      session_replay_chunks: 'session_replay_chunks',
+      gsc_daily: 'gsc_daily',
+      gsc_pages_daily: 'gsc_pages_daily',
+      gsc_queries_daily: 'gsc_queries_daily',
+      groups: 'groups',
+    },
+    formatClickhouseDate: (date: Date | string, skipTime = false) => {
+      if (skipTime) return new Date(date).toISOString().split('T')[0];
+      return new Date(date).toISOString().replace('T', ' ').replace(/(\.\d{3})?Z+$/, '');
+    },
+    toDate: (str: string) => str,
+    convertClickhouseDateToJs: (date: string) => new Date(`${date.replace(' ', 'T')}Z`),
+    isClickhouseDefaultMinDate: (date: string) => date.startsWith('1970-01-01') || date.startsWith('1969-12-31'),
+    toNullIfDefaultMinDate: () => null,
+  };
+});
 
-import { findProfilesCore } from '@openpanel/db';
+import { findProfilesCore } from '../../../../db/src/services/profile.service';
 
 function capturedSql(): string {
   return mockChQuery.mock.calls[0]?.[0] as string;

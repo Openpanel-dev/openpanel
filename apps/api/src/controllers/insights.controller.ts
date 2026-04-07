@@ -21,7 +21,7 @@ export async function getMetrics(
     Params: { projectId: string };
     Querystring: z.infer<typeof zGetMetricsQuery>;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const { timezone } = await getSettingsForProject(request.params.projectId);
   const { startDate, endDate } = getChartStartEndDate(request.query, timezone);
@@ -33,13 +33,13 @@ export async function getMetrics(
       endDate,
       interval: getDefaultIntervalByDates(startDate, endDate) ?? 'day',
       timezone,
-    }),
+    })
   );
 }
 
 export async function getLiveVisitors(
   request: FastifyRequest<{ Params: { projectId: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   reply.send({
     visitors: await eventBuffer.getActiveVisitorCount(request.params.projectId),
@@ -59,8 +59,7 @@ export async function getPages(
   request: FastifyRequest<{
     Params: { projectId: string };
     Querystring: z.infer<typeof zGetTopPagesQuery>;
-  }>,
-  reply: FastifyReply,
+  }>
 ) {
   const { timezone } = await getSettingsForProject(request.params.projectId);
   const { startDate, endDate } = getChartStartEndDate(request.query, timezone);
@@ -113,10 +112,13 @@ export function getOverviewGeneric(column: OverviewColumn) {
       Params: { projectId: string };
       Querystring: z.infer<typeof zOverviewGenericQuerystring>;
     }>,
-    reply: FastifyReply,
+    reply: FastifyReply
   ) => {
     const { timezone } = await getSettingsForProject(request.params.projectId);
-    const { startDate, endDate } = getChartStartEndDate(request.query, timezone);
+    const { startDate, endDate } = getChartStartEndDate(
+      request.query,
+      timezone
+    );
     reply.send(
       await overviewService.getTopGeneric({
         column,
@@ -125,7 +127,7 @@ export function getOverviewGeneric(column: OverviewColumn) {
         startDate,
         endDate,
         timezone,
-      }),
+      })
     );
   };
 }

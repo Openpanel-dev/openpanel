@@ -33,7 +33,6 @@ import {
   listEventNamesCore,
   listEventPropertiesCore,
   listGroupTypesCore,
-  listProjectsCore,
   listReportsCore,
   queryEventsCore,
   querySessionsCore,
@@ -110,19 +109,6 @@ function getClientType(req: RequestWithProjectParam): 'root' | 'read' {
 
 // ---------------------------------------------------------------------------
 // Projects
-// ---------------------------------------------------------------------------
-
-export async function listProjects(req: FastifyRequest, reply: FastifyReply) {
-  const client = req.client!;
-  return reply.send(
-    await listProjectsCore({
-      clientType: getClientType(req as RequestWithProjectParam),
-      organizationId: client.organizationId,
-      projectId: client.projectId ?? null,
-    })
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Analytics — overview
 // ---------------------------------------------------------------------------

@@ -36,6 +36,19 @@ jobs:
   lint-and-test:
     runs-on: ubuntu-latest
     services:
+      postgres:
+        image: postgres:16-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
       redis:
         image: redis:7-alpine
         ports:
@@ -89,8 +102,17 @@ jobs:
       - name: Codegen
         run: pnpm codegen
 
-      - name: Run MCP tests
-        run: pnpm --filter @openpanel/mcp test:run
+      - name: Migrate database
+        run: pnpm migrate:deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+
+      - name: Run tests
+        run: pnpm test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+          CLICKHOUSE_URL: http://localhost:8123/openpanel
+          REDIS_URL: redis://localhost:6379
 
       # - name: Run Biome
       #   run: pnpm lint
