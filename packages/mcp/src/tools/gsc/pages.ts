@@ -1,4 +1,4 @@
-import { resolveClientProjectId, getGscPageDetails, getGscPages } from '@openpanel/db';
+import { getGscPageDetails, getGscPages } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -8,6 +8,7 @@ import {
   
   withErrorHandling,
   zDateRange,
+  resolveProjectId
 } from '../shared';
 
 export function registerGscPageTools(
@@ -30,7 +31,7 @@ export function registerGscPageTools(
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, limit }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         return getGscPages(projectId, startDate, endDate, limit ?? 100);
       }),
@@ -49,7 +50,7 @@ export function registerGscPageTools(
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, page }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         return getGscPageDetails(projectId, page, startDate, endDate);
       }),

@@ -1,4 +1,4 @@
-import { resolveClientProjectId, getProfileMetrics } from '@openpanel/db';
+import { getProfileMetrics } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -6,6 +6,7 @@ import {
   projectIdSchema,
   
   withErrorHandling,
+  resolveProjectId
 } from '../shared';
 
 export function registerProfileMetricTools(
@@ -21,7 +22,7 @@ export function registerProfileMetricTools(
     },
     async ({ projectId: inputProjectId, profileId }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const raw = await getProfileMetrics(profileId, projectId);
         if (!raw) {
           return { error: 'Profile not found or has no events', profileId };

@@ -1,4 +1,4 @@
-import { resolveClientProjectId, findProfilesCore, getProfileSessionsCore, getProfileWithEvents } from '@openpanel/db';
+import { findProfilesCore, getProfileSessionsCore, getProfileWithEvents } from '@openpanel/db';
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
@@ -8,6 +8,7 @@ import {
   projectIdSchema,
   
   withErrorHandling,
+  resolveProjectId
 } from '../shared';
 
 export function registerProfileTools(
@@ -72,7 +73,7 @@ export function registerProfileTools(
     },
     async ({ projectId: inputProjectId, ...input }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const profiles = await findProfilesCore({ projectId, ...input });
         return profiles.map((p) => ({
           ...p,
@@ -97,7 +98,7 @@ export function registerProfileTools(
     },
     async ({ projectId: inputProjectId, profileId, eventLimit }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const result = await getProfileWithEvents(projectId, profileId, eventLimit);
         if (!result.profile) {
           return { error: 'Profile not found', profileId };
@@ -125,7 +126,7 @@ export function registerProfileTools(
     },
     async ({ projectId: inputProjectId, profileId, limit }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const sessions = await getProfileSessionsCore(projectId, profileId, limit);
         return {
           profileId,

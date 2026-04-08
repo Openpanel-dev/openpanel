@@ -1,4 +1,4 @@
-import { resolveClientProjectId, getFunnelCore } from '@openpanel/db';
+import { getFunnelCore } from '@openpanel/db';
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import {
   
   withErrorHandling,
   zDateRange,
+  resolveProjectId
 } from '../shared';
 
 export function registerFunnelTools(
@@ -47,7 +48,7 @@ export function registerFunnelTools(
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, steps, windowHours, groupBy }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         return getFunnelCore({
           projectId,

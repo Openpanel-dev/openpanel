@@ -1,4 +1,4 @@
-import { resolveClientProjectId, getAnalyticsOverviewCore } from '@openpanel/db';
+import { getAnalyticsOverviewCore } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -8,6 +8,7 @@ import {
   
   withErrorHandling,
   zDateRange,
+  resolveProjectId
 } from '../shared';
 
 export function registerOverviewTools(
@@ -28,7 +29,7 @@ export function registerOverviewTools(
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, interval }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         return getAnalyticsOverviewCore({
           projectId,

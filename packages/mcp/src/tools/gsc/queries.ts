@@ -1,4 +1,4 @@
-import { resolveClientProjectId, getGscQueryDetails, getGscQueries } from '@openpanel/db';
+import { getGscQueryDetails, getGscQueries } from '@openpanel/db';
 import type { GscQueryOpportunity } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import {
   
   withErrorHandling,
   zDateRange,
+  resolveProjectId
 } from '../shared';
 
 function computeOpportunities(
@@ -90,7 +91,7 @@ export function registerGscQueryTools(
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, limit }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         return getGscQueries(projectId, startDate, endDate, limit ?? 100);
       }),
@@ -113,7 +114,7 @@ export function registerGscQueryTools(
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, minImpressions }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const queries = await getGscQueries(projectId, startDate, endDate, 5000);
         const filtered = queries.filter(
@@ -140,7 +141,7 @@ export function registerGscQueryTools(
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, query }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         return getGscQueryDetails(projectId, query, startDate, endDate);
       }),

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { verifyPassword } from '@openpanel/common/server';
 import { ClientType, getClientByIdCached } from '@openpanel/db';
 import { getCache } from '@openpanel/redis';
@@ -82,7 +83,8 @@ export async function authenticateToken(
     );
   }
 
-  const cacheKey = `mcp:auth:${clientId}:${Buffer.from(clientSecret).toString('base64')}`;
+  const secretHash = createHash('sha256').update(clientSecret).digest('hex').slice(0, 16);
+  const cacheKey = `mcp:auth:${clientId}:${secretHash}`;
   const isVerified = await getCache(
     cacheKey,
     60 * 5,

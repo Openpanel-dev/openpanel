@@ -1,4 +1,4 @@
-import { resolveClientProjectId, getRollingActiveUsers, getRetentionSeries } from '@openpanel/db';
+import { getRollingActiveUsers, getRetentionSeries } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -6,6 +6,7 @@ import {
   projectIdSchema,
   
   withErrorHandling,
+  resolveProjectId
 } from '../shared';
 
 export function registerActiveUserTools(
@@ -26,7 +27,7 @@ export function registerActiveUserTools(
     },
     async ({ projectId: inputProjectId, days }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const data = await getRollingActiveUsers({ projectId, days });
         return {
           window_days: days,
@@ -44,7 +45,7 @@ export function registerActiveUserTools(
     },
     async ({ projectId: inputProjectId }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         return getRetentionSeries({ projectId });
       }),
   );

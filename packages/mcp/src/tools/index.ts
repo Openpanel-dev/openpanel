@@ -8,6 +8,7 @@ import { registerEventTools } from './analytics/events';
 import { registerFunnelTools } from './analytics/funnel';
 import { registerGroupTools } from './analytics/groups';
 import { registerOverviewTools } from './analytics/overview';
+import { registerPageConversionTools } from './analytics/page-conversions';
 import { registerPagePerformanceTools } from './analytics/page-performance';
 import { registerPageTools } from './analytics/pages';
 import { registerProfileMetricTools } from './analytics/profile-metrics';
@@ -54,6 +55,7 @@ export function registerAllTools(
   registerActiveUserTools(server, context);
   registerPageTools(server, context);
   registerPagePerformanceTools(server, context);
+  registerPageConversionTools(server, context);
   registerTrafficTools(server, context);
 
   // Analytics — user behavior

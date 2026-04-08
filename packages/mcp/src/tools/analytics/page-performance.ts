@@ -1,4 +1,4 @@
-import { resolveClientProjectId, PagesService, ch, getSettingsForProject } from '@openpanel/db';
+import { PagesService, ch, getSettingsForProject } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -8,6 +8,7 @@ import {
   
   withErrorHandling,
   zDateRange,
+  resolveProjectId
 } from '../shared';
 
 const pagesService = new PagesService(ch);
@@ -47,7 +48,7 @@ export function registerPagePerformanceTools(
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, search, sortBy, sortOrder, limit }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const { timezone } = await getSettingsForProject(projectId);
 

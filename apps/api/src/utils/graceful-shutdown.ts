@@ -41,11 +41,11 @@ export async function shutdown(
 
   setShuttingDown(true);
 
-  // Step 2: Wait for load balancer to stop sending traffic (matches preStop sleep)
+  // Step 1: Wait for load balancer to stop sending traffic (matches preStop sleep)
   const gracePeriod = Number(process.env.SHUTDOWN_GRACE_PERIOD_MS || '5000');
   await new Promise((resolve) => setTimeout(resolve, gracePeriod));
 
-  // Step 3: Close Fastify to drain in-flight requests
+  // Step 2: Close Fastify to drain in-flight requests
   try {
     await fastify.close();
     logger.info('Fastify server closed');
@@ -53,7 +53,7 @@ export async function shutdown(
     logger.error('Error closing Fastify server', error);
   }
 
-  // Step 4: Destroy MCP sessions
+  // Step 3: Destroy MCP sessions
   try {
     await mcpSessionManager.destroy();
     logger.info('MCP sessions closed');
@@ -61,7 +61,7 @@ export async function shutdown(
     logger.error('Error closing MCP sessions', error);
   }
 
-  // Step 6: Close database connections
+  // Step 4: Close database connections
   try {
     await db.$disconnect();
     logger.info('Database connection closed');
@@ -69,7 +69,7 @@ export async function shutdown(
     logger.error('Error closing database connection', error);
   }
 
-  // Step 7: Close ClickHouse connections
+  // Step 5: Close ClickHouse connections
   try {
     await ch.close();
     logger.info('ClickHouse connections closed');
@@ -77,7 +77,7 @@ export async function shutdown(
     logger.error('Error closing ClickHouse connections', error);
   }
 
-  // Step 8: Close Bull queues (graceful shutdown of queue state)
+  // Step 6: Close Bull queues (graceful shutdown of queue state)
   try {
     await Promise.all([
       ...eventsGroupQueues.map((queue) => queue.close()),
@@ -91,7 +91,7 @@ export async function shutdown(
     logger.error('Error closing queue state', error);
   }
 
-  // Step 9: Close Redis connections
+  // Step 7: Close Redis connections
   try {
     const redisConnections = [
       getRedisCache(),

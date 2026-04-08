@@ -1,8 +1,10 @@
-import { resolveClientProjectId } from '@openpanel/db';
+import { } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../auth';
-import { projectIdSchema,  withErrorHandling } from './shared';
+import { projectIdSchema,  withErrorHandling,
+  resolveProjectId
+} from './shared';
 
 export function dashboardBaseUrl() {
   return (
@@ -36,7 +38,7 @@ export function registerDashboardLinkTools(
     },
     async ({ projectId: inputProjectId, profileId, sessionId, dashboardId, reportId }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const base = `${dashboardBaseUrl()}/${context.organizationId}/${projectId}`;
 
         const urls: Record<string, string> = {

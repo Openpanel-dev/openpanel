@@ -1,8 +1,10 @@
-import { resolveClientProjectId, getGroupById, getGroupList, getGroupMemberProfiles, getGroupTypes } from '@openpanel/db';
+import { getGroupById, getGroupList, getGroupMemberProfiles, getGroupTypes } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
-import { projectIdSchema,  withErrorHandling } from '../shared';
+import { projectIdSchema,  withErrorHandling,
+  resolveProjectId
+} from '../shared';
 
 export function registerGroupTools(
   server: McpServer,
@@ -16,7 +18,7 @@ export function registerGroupTools(
     },
     async ({ projectId: inputProjectId }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const types = await getGroupTypes(projectId);
         return { types };
       }),
@@ -46,7 +48,7 @@ export function registerGroupTools(
     },
     async ({ projectId: inputProjectId, type, search, limit }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         return getGroupList({ projectId, type, search, take: limit ?? 20 });
       }),
   );
@@ -68,7 +70,7 @@ export function registerGroupTools(
     },
     async ({ projectId: inputProjectId, groupId, memberLimit }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const [group, members] = await Promise.all([
           getGroupById(groupId, projectId),
           getGroupMemberProfiles({

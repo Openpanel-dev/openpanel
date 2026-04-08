@@ -1,8 +1,25 @@
+import { resolveClientProjectId } from '@openpanel/db';
 import { createLogger } from '@openpanel/logger';
 import { z } from 'zod';
 import type { McpAuthContext } from '../auth';
 
 const logger = createLogger({ name: 'mcp' });
+
+/**
+ * Resolve the effective projectId from context + optional tool input.
+ * Thin adapter so tool files don't repeat the full argument object every call.
+ */
+export function resolveProjectId(
+  context: McpAuthContext,
+  inputProjectId: string | undefined,
+): Promise<string> {
+  return resolveClientProjectId({
+    clientType: context.clientType,
+    clientProjectId: context.projectId,
+    organizationId: context.organizationId,
+    inputProjectId,
+  });
+}
 
 /**
  * Build the projectId portion of an input schema.

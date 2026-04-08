@@ -1,10 +1,11 @@
-import { resolveClientProjectId, getRetentionCohortTable } from '@openpanel/db';
+import { getRetentionCohortTable } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,
   
   withErrorHandling,
+  resolveProjectId
 } from '../shared';
 
 export function registerRetentionTools(
@@ -19,7 +20,7 @@ export function registerRetentionTools(
     },
     async ({ projectId: inputProjectId }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         return getRetentionCohortTable({ projectId });
       }),
   );

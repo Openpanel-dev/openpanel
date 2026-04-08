@@ -1,4 +1,4 @@
-import { resolveClientProjectId, getTrafficBreakdownCore, type TrafficColumn } from '@openpanel/db';
+import { getTrafficBreakdownCore, type TrafficColumn } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -8,6 +8,7 @@ import {
   
   withErrorHandling,
   zDateRange,
+  resolveProjectId
 } from '../shared';
 
 export function registerTrafficTools(
@@ -30,7 +31,7 @@ export function registerTrafficTools(
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, breakdown }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         return getTrafficBreakdownCore({
           projectId,
@@ -55,7 +56,7 @@ export function registerTrafficTools(
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, breakdown }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         return getTrafficBreakdownCore({
           projectId,
@@ -82,7 +83,7 @@ export function registerTrafficTools(
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, breakdown }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         return getTrafficBreakdownCore({
           projectId,

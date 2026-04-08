@@ -1,4 +1,4 @@
-import { resolveClientProjectId, querySessionsCore } from '@openpanel/db';
+import { querySessionsCore } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -8,6 +8,7 @@ import {
   
   withErrorHandling,
   zDateRange,
+  resolveProjectId
 } from '../shared';
 
 export function registerSessionTools(
@@ -51,7 +52,7 @@ export function registerSessionTools(
     },
     async ({ projectId: inputProjectId, ...input }) =>
       withErrorHandling(async () => {
-        const projectId = await resolveClientProjectId({ clientType: context.clientType, clientProjectId: context.projectId, organizationId: context.organizationId, inputProjectId });
+        const projectId = await resolveProjectId(context, inputProjectId);
         const sessions = await querySessionsCore({ projectId, ...input });
         return sessions.map((s) => ({
           ...s,
