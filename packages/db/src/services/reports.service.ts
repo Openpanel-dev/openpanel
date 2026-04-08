@@ -161,16 +161,16 @@ export async function getReportDataCore(input: {
   reportId: string;
   organizationId: string;
 }) {
-  const report = await getReportById(input.reportId);
+  const rawReport = await db.report.findUnique({
+    where: { id: input.reportId, projectId: input.projectId },
+    include: { layout: true },
+  });
 
-  if (!report) {
+  if (!rawReport) {
     throw new Error(`Report not found: ${input.reportId}`);
   }
 
-  if (report.projectId !== input.projectId) {
-    throw new Error(`Report does not belong to this project: ${input.reportId}`);
-  }
-
+  const report = transformReport(rawReport);
   const { timezone } = await getSettingsForProject(input.projectId);
   const { startDate, endDate } = getChartStartEndDate(report, timezone);
   const chartInput = { ...report, startDate, endDate, timezone };

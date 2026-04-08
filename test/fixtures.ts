@@ -384,6 +384,9 @@ async function deleteFixtures(client: ChClient, projectId: string) {
     client.command({
       query: `DELETE FROM openpanel.sessions WHERE project_id = '${projectId}'`,
     }),
+    client.command({
+      query: `ALTER TABLE openpanel.distinct_event_names_mv DELETE WHERE project_id = '${projectId}'`,
+    }),
   ]);
 }
 

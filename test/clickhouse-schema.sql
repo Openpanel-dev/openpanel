@@ -114,11 +114,22 @@ CREATE TABLE IF NOT EXISTS openpanel.distinct_event_names_mv
 (
     project_id String,
     name LowCardinality(String),
-    count UInt64
+    created_at DateTime64(3),
+    event_count UInt64
 )
 ENGINE = AggregatingMergeTree
-ORDER BY (project_id, name)
+ORDER BY (project_id, name, created_at)
 SETTINGS index_granularity = 8192;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS openpanel.distinct_event_names_mv_trigger
+TO openpanel.distinct_event_names_mv
+AS SELECT
+    project_id,
+    name,
+    max(created_at) AS created_at,
+    count() AS event_count
+FROM openpanel.events
+GROUP BY project_id, name;
 
 CREATE TABLE IF NOT EXISTS openpanel.event_property_values_mv
 (
@@ -156,11 +167,13 @@ CREATE TABLE IF NOT EXISTS openpanel.groups
 (
     id String,
     project_id String,
-    group_id String,
     type String,
+    name String,
     properties Map(String, String),
-    created_at DateTime64(3)
+    created_at DateTime,
+    version UInt64,
+    deleted UInt8 DEFAULT 0
 )
-ENGINE = ReplacingMergeTree(created_at)
-ORDER BY (project_id, type, group_id)
+ENGINE = ReplacingMergeTree(version, deleted)
+ORDER BY (project_id, id)
 SETTINGS index_granularity = 8192;
