@@ -153,7 +153,7 @@ const updatePackageJsonForRelease = (
       main: './dist/index.js',
       module: './dist/index.js',
       types: './dist/index.d.ts',
-      files: ['dist', 'README.md'],
+      files: ['dist', 'README.md', 'LICENSE'],
       exports: restPkgJson.exports ?? {
         '.': {
           import: './dist/index.js',

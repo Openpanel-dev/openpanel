@@ -1,6 +1,7 @@
 {
   "name": "@openpanel/react-native",
   "version": "1.4.0-local",
+  "license": "MIT",
   "module": "index.ts",
   "config": {
     "docPath": "apps/public/content/docs/(tracking)/sdks/react-native.mdx"

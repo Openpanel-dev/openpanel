@@ -1,6 +1,7 @@
 {
   "name": "@openpanel/nuxt",
   "version": "0.3.0-local",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/module.mjs",
   "exports": {
