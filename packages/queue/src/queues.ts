@@ -184,7 +184,7 @@ export const eventsGroupQueues = Array.from({
         list.length === 1 ? 'group_events' : `group_events_${index}`
       ),
       redis: getRedisGroupQueue(),
-      keepCompleted: 1000,
+      keepCompleted: 1,
       keepFailed: 10_000,
       orderingDelayMs,
       autoBatch:
@@ -211,7 +211,7 @@ export const sessionsQueue = new Queue<SessionsQueuePayload>(
   {
     connection: getRedisQueue(),
     defaultJobOptions: {
-      removeOnComplete: 10,
+      removeOnComplete: true,
     },
   }
 );
