@@ -94,7 +94,6 @@ export class SessionBuffer extends BaseBuffer {
       newSession.revenue = (newSession.revenue ?? 0) + addedRevenue;
 
       if (event.name === 'screen_view' && event.path) {
-        newSession.screen_views.push(event.path);
         newSession.screen_view_count += 1;
       } else {
         newSession.event_count += 1;
@@ -130,7 +129,6 @@ export class SessionBuffer extends BaseBuffer {
         ended_at: event.created_at,
         event_count: event.name === 'screen_view' ? 0 : 1,
         screen_view_count: event.name === 'screen_view' ? 1 : 0,
-        screen_views: event.name === 'screen_view' ? [event.path] : [],
         entry_path: event.path,
         entry_origin: event.origin,
         exit_path: event.path,

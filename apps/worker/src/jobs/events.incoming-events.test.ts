@@ -311,7 +311,6 @@ describe('incomingEvent', () => {
       project_id: projectId,
       device_id: 'last-device-123',
       profile_id: 'profile-123',
-      screen_views: [],
       sign: 1,
       version: 1,
       groups: [],

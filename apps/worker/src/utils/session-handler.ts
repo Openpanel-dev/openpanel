@@ -1,5 +1,6 @@
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 import { sessionsQueue } from '@openpanel/queue';
+import { LRUCache } from '@openpanel/redis';
 
 export const SESSION_TIMEOUT = 1000 * 60 * 30;
 
@@ -7,7 +8,10 @@ const CHANGE_DELAY_THROTTLE_MS = process.env.CHANGE_DELAY_THROTTLE_MS
   ? Number.parseInt(process.env.CHANGE_DELAY_THROTTLE_MS, 10)
   : 60_000; // 1 minute
 
-const CHANGE_DELAY_THROTTLE_MAP = new Map<string, number>();
+const CHANGE_DELAY_THROTTLE_MAP = new LRUCache<string, number>({
+  max: 100_000,
+  ttl: SESSION_TIMEOUT,
+});
 
 export async function extendSessionEndJob({
   projectId,

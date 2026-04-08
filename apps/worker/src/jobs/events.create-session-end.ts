@@ -21,7 +21,7 @@ import { logger as baseLogger } from '@/utils/logger';
 
 const MAX_SESSION_EVENTS = 500;
 
-// Grabs session_start and screen_views + the last occured event
+// Grabs session_start and the last occured event
 async function getSessionEvents({
   projectId,
   sessionId,

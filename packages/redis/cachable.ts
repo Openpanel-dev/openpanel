@@ -1,6 +1,8 @@
 import { LRUCache } from 'lru-cache';
 import { getRedisCache } from './redis';
 
+export { LRUCache } from 'lru-cache';
+
 export const deleteCache = (key: string) => {
   return getRedisCache().del(key);
 };
