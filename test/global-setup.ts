@@ -1,5 +1,4 @@
 import {
-  ensureSchema,
   setupFixtures,
   setupPostgresFixtures,
   teardownFixtures,
@@ -20,7 +19,6 @@ function setEnvDefaults() {
 
 export async function setup() {
   setEnvDefaults();
-  await ensureSchema();
   await setupPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
   await setupFixtures(TEST_PROJECT_ID);
 }

@@ -107,6 +107,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
           DATABASE_URL_DIRECT: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+          CLICKHOUSE_URL: http://localhost:8123/openpanel
+          SELF_HOSTED: "true"
 
       - name: Run tests
         run: pnpm test

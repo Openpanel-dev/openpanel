@@ -22,9 +22,6 @@
  * different project IDs (ClickHouse's MergeTree ordering includes project_id).
  */
 
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createClient } from '../packages/db/src/clickhouse/client';
 import { PrismaClient } from '../packages/db/src/generated/prisma/client';
 
@@ -428,32 +425,6 @@ export async function teardownPostgresFixtures(
   }
 }
 
-// ---------------------------------------------------------------------------
-// ClickHouse schema bootstrap
-// ---------------------------------------------------------------------------
-
-const __fixturesDir = dirname(fileURLToPath(import.meta.url));
-
-export async function ensureSchema(): Promise<void> {
-  const client = createClient({
-    url: process.env.CLICKHOUSE_URL ?? 'http://localhost:8123',
-  });
-  const sql = readFileSync(
-    join(__fixturesDir, 'clickhouse-schema.sql'),
-    'utf8'
-  );
-  const statements = sql
-    .split('\n')
-    .filter((line) => !line.trimStart().startsWith('--'))
-    .join('\n')
-    .split(';')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-  await Promise.all(
-    statements.map((statement) => client.command({ query: statement }))
-  );
-  await client.close();
-}
 
 
 export async function setupFixtures(projectId: string): Promise<void> {
