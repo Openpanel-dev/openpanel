@@ -13,7 +13,7 @@ const eventRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
     method: 'POST',
     url: '/',
     schema: {
-      tags: ['ingestion'],
+      tags: ['Event'],
       description: 'Deprecated direct event ingestion endpoint. Use /track instead.',
     },
     handler: controller.postEvent,

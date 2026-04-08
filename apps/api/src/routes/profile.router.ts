@@ -11,7 +11,7 @@ const profileRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
     method: 'POST',
     url: '/',
     schema: {
-      tags: ['ingestion'],
+      tags: ['Profile'],
       description: 'Identify or update a user profile.',
     },
     handler: controller.updateProfile,
@@ -21,7 +21,7 @@ const profileRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
     method: 'POST',
     url: '/increment',
     schema: {
-      tags: ['ingestion'],
+      tags: ['Profile'],
       description: 'Increment a numeric property on a user profile.',
     },
     handler: controller.incrementProfileProperty,
@@ -31,7 +31,7 @@ const profileRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
     method: 'POST',
     url: '/decrement',
     schema: {
-      tags: ['ingestion'],
+      tags: ['Profile'],
       description: 'Decrement a numeric property on a user profile.',
     },
     handler: controller.decrementProfileProperty,

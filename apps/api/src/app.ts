@@ -187,8 +187,23 @@ export async function buildApp(
       openapi: {
         info: { title: 'OpenPanel API', version: '1.0.0' },
         openapi: '3.1.0',
+        tags: [
+          { name: 'Track', description: 'Track events and sessions' },
+          { name: 'Profile', description: 'Identify and update user profiles' },
+          { name: 'Export', description: 'Export data' },
+          { name: 'Import', description: 'Import historical data' },
+          { name: 'Insights', description: 'Query analytics data' },
+          { name: 'Manage', description: 'Manage projects and clients' },
+          { name: 'Event', description: 'Legacy event ingestion (deprecated, use /track)' },
+        ],
       },
       ...fastifyZodOpenApiTransformers,
+      transform(args) {
+        if (args.url === '/metrics') {
+          return { schema: { ...args.schema, hide: true }, url: args.url };
+        }
+        return fastifyZodOpenApiTransformers.transform(args);
+      },
     });
     await instance.register(fastifySwaggerUI, { routePrefix: '/documentation' });
 
@@ -205,10 +220,10 @@ export async function buildApp(
     instance.register(trackRouter, { prefix: '/track' });
     instance.register(manageRouter, { prefix: '/manage' });
 
-    instance.get('/healthcheck', healthcheck);
-    instance.get('/healthz/live', liveness);
-    instance.get('/healthz/ready', readiness);
-    instance.get('/', (_request, reply) =>
+    instance.get('/healthcheck', { schema: { hide: true } }, healthcheck);
+    instance.get('/healthz/live', { schema: { hide: true } }, liveness);
+    instance.get('/healthz/ready', { schema: { hide: true } }, readiness);
+    instance.get('/', { schema: { hide: true } }, (_request, reply) =>
       reply.send({ status: 'ok', message: 'Successfully running OpenPanel.dev API' }),
     );
   });

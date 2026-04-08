@@ -42,7 +42,7 @@ const profileParam = z.object({ projectId: z.string(), profileId: z.string() });
 const groupParam = z.object({ projectId: z.string(), groupId: z.string() });
 const reportParam = z.object({ projectId: z.string(), reportId: z.string() });
 
-const TAGS = ['insights'] as const;
+const TAGS = ['Insights'] as const;
 
 const insightsRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
   await activateRateLimiter({ fastify, max: 100, timeWindow: '10 seconds' });

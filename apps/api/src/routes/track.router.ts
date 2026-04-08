@@ -11,23 +11,31 @@ const trackRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
   fastify.addHook('preHandler', clientHook);
   fastify.addHook('preHandler', isBotHook);
 
-  fastify.route({
+  await fastify.route({
     method: 'POST',
     url: '/',
     schema: {
       body: zTrackHandlerPayload,
-      tags: ['ingestion'],
-      description: 'Ingest a tracking event (track, identify, group, increment, decrement, replay).',
+      tags: ['Track'],
+      description:
+        'Ingest a tracking event (track, identify, group, increment, decrement, replay).',
+      response: {
+        200: z.object({
+          deviceId: z.string(),
+          sessionId: z.string(),
+        }),
+      },
     },
     handler,
   });
 
-  fastify.route({
+  await fastify.route({
     method: 'GET',
     url: '/device-id',
     schema: {
-      tags: ['ingestion'],
-      description: 'Get or generate a stable device ID and session ID for the current visitor.',
+      tags: ['Track'],
+      description:
+        'Get or generate a stable device ID and session ID for the current visitor.',
       response: {
         200: z.object({
           deviceId: z.string(),

@@ -89,6 +89,12 @@ export const guideMeta = defineCollections({
   schema: zGuide,
 });
 
+export const apiRefCollection = defineCollections({
+  type: 'doc',
+  dir: './content/docs/api-reference',
+  schema: frontmatterSchema,
+});
+
 export default defineConfig({
   mdxOptions: {
     // MDX options

@@ -86,38 +86,54 @@ export const zReplayPayload = z.object({
 });
 
 export const zTrackHandlerPayload = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('track'),
-    payload: zTrackPayload,
-  }),
-  z.object({
-    type: z.literal('identify'),
-    payload: zIdentifyPayload,
-  }),
-  z.object({
-    type: z.literal('increment'),
-    payload: zIncrementPayload,
-  }),
-  z.object({
-    type: z.literal('decrement'),
-    payload: zDecrementPayload,
-  }),
-  z.object({
-    type: z.literal('alias'),
-    payload: zAliasPayload,
-  }),
-  z.object({
-    type: z.literal('replay'),
-    payload: zReplayPayload,
-  }),
-  z.object({
-    type: z.literal('group'),
-    payload: zGroupPayload,
-  }),
-  z.object({
-    type: z.literal('assign_group'),
-    payload: zAssignGroupPayload,
-  }),
+  z
+    .object({
+      type: z.enum(['track']),
+      payload: zTrackPayload,
+    })
+    .meta({ title: 'Track' }),
+  z
+    .object({
+      type: z.enum(['identify']),
+      payload: zIdentifyPayload,
+    })
+    .meta({ title: 'Identify' }),
+  z
+    .object({
+      type: z.enum(['increment']),
+      payload: zIncrementPayload,
+    })
+    .meta({ title: 'Increment' }),
+  z
+    .object({
+      type: z.enum(['decrement']),
+      payload: zDecrementPayload,
+    })
+    .meta({ title: 'Decrement' }),
+  z
+    .object({
+      type: z.enum(['alias']),
+      payload: zAliasPayload,
+    })
+    .meta({ title: 'Alias' }),
+  z
+    .object({
+      type: z.enum(['replay']),
+      payload: zReplayPayload,
+    })
+    .meta({ title: 'Replay' }),
+  z
+    .object({
+      type: z.enum(['group']),
+      payload: zGroupPayload,
+    })
+    .meta({ title: 'Group' }),
+  z
+    .object({
+      type: z.enum(['assign_group']),
+      payload: zAssignGroupPayload,
+    })
+    .meta({ title: 'Assign Group' }),
 ]);
 
 export type ITrackPayload = z.infer<typeof zTrackPayload>;

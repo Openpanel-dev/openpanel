@@ -5,13 +5,17 @@ import { uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import { profileBuffer } from '../buffers';
 import {
+  ch,
   chQuery,
   convertClickhouseDateToJs,
   formatClickhouseDate,
   isClickhouseDefaultMinDate,
   TABLE_NAMES,
 } from '../clickhouse/client';
+import { clix } from '../clickhouse/query-builder';
 import { createSqlBuilder } from '../sql-builder';
+import type { IClickhouseEvent } from './event.service';
+import type { IClickhouseSession } from './session.service';
 
 export interface IProfileMetrics {
   lastSeen: Date | null;
@@ -326,12 +330,6 @@ export function upsertProfile(
   return profileBuffer.add(profile, isFromEvent);
 }
 
-import sqlstring from 'sqlstring';
-import { ch } from '../clickhouse/client';
-import { clix } from '../clickhouse/query-builder';
-import type { IClickhouseEvent } from './event.service';
-import type { IClickhouseSession } from './session.service';
-
 const PROFILE_COLUMNS =
   'id, first_name, last_name, email, avatar, properties, project_id, is_external, created_at, groups';
 
@@ -351,21 +349,25 @@ export interface FindProfilesInput {
   limit?: number;
 }
 
-export async function findProfilesCore(
-  input: FindProfilesInput,
+export function findProfilesCore(
+  input: FindProfilesInput
 ): Promise<IClickhouseProfile[]> {
   const pid = sqlstring.escape(input.projectId);
   const conditions: string[] = [`project_id = ${pid}`];
 
   if (input.email) {
-    conditions.push(`email LIKE ${sqlstring.escape('%' + input.email + '%')}`);
+    conditions.push(`email LIKE ${sqlstring.escape(`%${input.email}%`)}`);
   }
   if (input.name) {
-    const escaped = sqlstring.escape('%' + input.name + '%');
-    conditions.push(`(first_name LIKE ${escaped} OR last_name LIKE ${escaped})`);
+    const escaped = sqlstring.escape(`%${input.name}%`);
+    conditions.push(
+      `(first_name LIKE ${escaped} OR last_name LIKE ${escaped})`
+    );
   }
   if (input.country) {
-    conditions.push(`properties['country'] = ${sqlstring.escape(input.country)}`);
+    conditions.push(
+      `properties['country'] = ${sqlstring.escape(input.country)}`
+    );
   }
   if (input.city) {
     conditions.push(`properties['city'] = ${sqlstring.escape(input.city)}`);
@@ -374,7 +376,9 @@ export async function findProfilesCore(
     conditions.push(`properties['device'] = ${sqlstring.escape(input.device)}`);
   }
   if (input.browser) {
-    conditions.push(`properties['browser'] = ${sqlstring.escape(input.browser)}`);
+    conditions.push(
+      `properties['browser'] = ${sqlstring.escape(input.browser)}`
+    );
   }
 
   if (input.inactiveDays !== undefined) {
@@ -424,7 +428,7 @@ export async function findProfilesCore(
 export async function getProfileWithEvents(
   projectId: string,
   profileId: string,
-  eventLimit = 10,
+  eventLimit = 10
 ): Promise<{
   profile: IClickhouseProfile | null;
   recent_events: IClickhouseEvent[];
@@ -449,10 +453,10 @@ export async function getProfileWithEvents(
   return { profile: profiles[0] ?? null, recent_events };
 }
 
-export async function getProfileSessionsCore(
+export function getProfileSessionsCore(
   projectId: string,
   profileId: string,
-  limit = 20,
+  limit = 20
 ): Promise<IClickhouseSession[]> {
   return clix(ch)
     .select<IClickhouseSession>([])

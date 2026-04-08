@@ -1,0 +1,29 @@
+---
+title: Authentication
+description: How to authenticate with the OpenPanel API
+---
+
+## Client ID & Secret
+
+OpenPanel uses client credentials for authentication. Every API client has a **Client ID** and a **Client Secret** that you generate from the dashboard.
+
+Pass them as request headers:
+
+```http
+openpanel-client-id: <clientId>
+openpanel-client-secret: <secret>
+```
+
+## API Client Types
+
+| Type    | Description                                      |
+| ------- | ------------------------------------------------ |
+| `write` | Can ingest events and profile updates            |
+| `read`  | Can query analytics data (insights, export, etc) |
+| `root`  | Full access — use only for server-side admin     |
+
+## Creating a Client
+
+Go to **Settings → API Clients** in your dashboard and create a client with the appropriate type. Copy the secret immediately — it is only shown once.
+
+For more details on authentication, permissions, and security best practices, see the [Authentication guide](/docs/api/authentication).

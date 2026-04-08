@@ -13,15 +13,15 @@ import {
   getEventsGroupQueueShard,
 } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
-import {
-  type IAssignGroupPayload,
-  type IDecrementPayload,
-  type IGroupPayload,
-  type IIdentifyPayload,
-  type IIncrementPayload,
-  type IReplayPayload,
-  type ITrackHandlerPayload,
-  type ITrackPayload,
+import type {
+  IAssignGroupPayload,
+  IDecrementPayload,
+  IGroupPayload,
+  IIdentifyPayload,
+  IIncrementPayload,
+  IReplayPayload,
+  ITrackHandlerPayload,
+  ITrackPayload,
 } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr, pick } from 'ramda';

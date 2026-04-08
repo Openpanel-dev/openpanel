@@ -10,7 +10,7 @@ import { validateExportRequest } from '@/utils/auth';
 import { parseQueryString } from '@/utils/parse-zod-query-string';
 import { activateRateLimiter } from '@/utils/rate-limiter';
 
-const TAGS = ['export'] as const;
+const TAGS = ['Export'] as const;
 
 const exportRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
   await activateRateLimiter({ fastify, max: 100, timeWindow: '10 seconds' });
