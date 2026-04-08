@@ -40,9 +40,17 @@ export class SessionBuffer extends BaseBuffer {
     if ('sessionId' in options) {
       hit = await this.redis.get(`session:${options.sessionId}`);
     } else {
-      hit = await this.redis.get(
+      const value = await this.redis.get(
         `session:${options.projectId}:${options.profileId}`
       );
+      if (!value) return null;
+
+      // Backward compat: old keys stored full JSON, new keys store just the sessionId
+      if (value.startsWith('{')) {
+        return getSafeJson<IClickhouseSession>(value);
+      }
+
+      hit = await this.redis.get(`session:${value}`);
     }
 
     if (hit) {
@@ -195,7 +203,7 @@ export class SessionBuffer extends BaseBuffer {
       if (newSession.profile_id) {
         multi.set(
           `session:${newSession.project_id}:${newSession.profile_id}`,
-          JSON.stringify(newSession),
+          newSession.id,
           'EX',
           60 * 60
         );
