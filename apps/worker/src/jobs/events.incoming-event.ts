@@ -218,8 +218,7 @@ export async function incomingEvent(
       projectId,
       deviceId,
     }).catch((error) => {
-      logger.error('Error finding and extending session end job', { error });
-      throw error;
+      logger.warn('Failed to extend session end job', { error });
     });
   } else {
     await createEventAndNotify(

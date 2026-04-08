@@ -1,6 +1,7 @@
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 import { sessionsQueue } from '@openpanel/queue';
 import { LRUCache } from '@openpanel/redis';
+import { logger as baseLogger } from '@/utils/logger';
 
 export const SESSION_TIMEOUT = 1000 * 60 * 30;
 
@@ -34,8 +35,32 @@ export async function extendSessionEndJob({
     return;
   }
 
-  await job.changeDelay(SESSION_TIMEOUT);
-  CHANGE_DELAY_THROTTLE_MAP.set(`${projectId}:${deviceId}`, Date.now());
+  const state = await job.getState();
+  if (state !== 'delayed') {
+    baseLogger.warn(
+      'Session end job is not in delayed state, skipping extend',
+      {
+        jobId,
+        state,
+      }
+    );
+    return;
+  }
+
+  // Narrow TOCTOU window: state could flip from delayed → waiting between
+  // the getState() check above and this call.
+  try {
+    await job.changeDelay(SESSION_TIMEOUT);
+    CHANGE_DELAY_THROTTLE_MAP.set(`${projectId}:${deviceId}`, Date.now());
+  } catch (error) {
+    baseLogger.warn(
+      'Session end job moved out of delayed state during extend',
+      {
+        jobId,
+        error,
+      }
+    );
+  }
 }
 
 const getSessionEndJobId = (projectId: string, deviceId: string) =>
