@@ -125,6 +125,7 @@ export async function getReportById(id: string) {
 }
 
 import { AggregateChartEngine, ChartEngine } from '../engine';
+import { getDashboardById } from './dashboard.service';
 import { getChartStartEndDate } from './date.service';
 import { funnelService } from './funnel.service';
 import { getSettingsForProject } from './organization.service';
@@ -134,6 +135,10 @@ export async function listReportsCore(input: {
   dashboardId: string;
   organizationId: string;
 }) {
+  const dashboard = await getDashboardById(input.dashboardId, input.projectId);
+  if (!dashboard) {
+    return [];
+  }
   const reports = await getReportsByDashboardId(input.dashboardId);
   return reports.map((r) => ({
     id: r.id,
