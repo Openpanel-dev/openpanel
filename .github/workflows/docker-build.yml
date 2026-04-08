@@ -106,6 +106,7 @@ jobs:
         run: pnpm migrate:deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+          DATABASE_URL_DIRECT: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
 
       - name: Run tests
         run: pnpm test
