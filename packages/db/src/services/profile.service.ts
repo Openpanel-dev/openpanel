@@ -326,14 +326,11 @@ export function upsertProfile(
   return profileBuffer.add(profile, isFromEvent);
 }
 
+import sqlstring from 'sqlstring';
 import { ch } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import type { IClickhouseEvent } from './event.service';
 import type { IClickhouseSession } from './session.service';
-
-function esc(value: string): string {
-  return "'" + value.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
-}
 
 const PROFILE_COLUMNS =
   'id, first_name, last_name, email, avatar, properties, project_id, is_external, created_at, groups';
@@ -357,27 +354,27 @@ export interface FindProfilesInput {
 export async function findProfilesCore(
   input: FindProfilesInput,
 ): Promise<IClickhouseProfile[]> {
-  const pid = esc(input.projectId);
+  const pid = sqlstring.escape(input.projectId);
   const conditions: string[] = [`project_id = ${pid}`];
 
   if (input.email) {
-    conditions.push(`email LIKE ${esc('%' + input.email + '%')}`);
+    conditions.push(`email LIKE ${sqlstring.escape('%' + input.email + '%')}`);
   }
   if (input.name) {
-    const escaped = esc('%' + input.name + '%');
+    const escaped = sqlstring.escape('%' + input.name + '%');
     conditions.push(`(first_name LIKE ${escaped} OR last_name LIKE ${escaped})`);
   }
   if (input.country) {
-    conditions.push(`properties['country'] = ${esc(input.country)}`);
+    conditions.push(`properties['country'] = ${sqlstring.escape(input.country)}`);
   }
   if (input.city) {
-    conditions.push(`properties['city'] = ${esc(input.city)}`);
+    conditions.push(`properties['city'] = ${sqlstring.escape(input.city)}`);
   }
   if (input.device) {
-    conditions.push(`properties['device'] = ${esc(input.device)}`);
+    conditions.push(`properties['device'] = ${sqlstring.escape(input.device)}`);
   }
   if (input.browser) {
-    conditions.push(`properties['browser'] = ${esc(input.browser)}`);
+    conditions.push(`properties['browser'] = ${sqlstring.escape(input.browser)}`);
   }
 
   if (input.inactiveDays !== undefined) {
@@ -406,7 +403,7 @@ export async function findProfilesCore(
     conditions.push(`id IN (
       SELECT DISTINCT profile_id FROM ${TABLE_NAMES.events}
       WHERE project_id = ${pid}
-        AND name = ${esc(input.performedEvent)}
+        AND name = ${sqlstring.escape(input.performedEvent)}
     )`);
   }
 
@@ -436,7 +433,7 @@ export async function getProfileWithEvents(
     chQuery<IClickhouseProfile>(`
       SELECT ${PROFILE_COLUMNS}
       FROM ${TABLE_NAMES.profiles}
-      WHERE project_id = ${esc(projectId)} AND id = ${esc(profileId)}
+      WHERE project_id = ${sqlstring.escape(projectId)} AND id = ${sqlstring.escape(profileId)}
       LIMIT 1
     `),
     clix(ch)

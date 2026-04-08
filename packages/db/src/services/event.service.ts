@@ -1277,7 +1277,7 @@ export async function queryEventsCore(
 
   if (input.properties) {
     for (const [key, value] of Object.entries(input.properties)) {
-      builder.where(`properties['${key}']`, '=', value);
+      builder.rawWhere(`properties[${sqlstring.escape(key)}] = ${sqlstring.escape(value)}`);
     }
   }
 
