@@ -124,6 +124,16 @@ async function processRequest(
   message: JSONRPCMessage,
   isInitialize = false,
 ): Promise<JSONRPCMessage> {
+  if ('method' in message && message.method === 'tools/call' && 'params' in message) {
+    const { name, arguments: args } = (message.params ?? {}) as { name?: string; arguments?: unknown };
+    logger.info('MCP tool call', {
+      tool: name,
+      params: args,
+      organizationId: context.organizationId,
+      projectId: context.projectId,
+      clientType: context.clientType,
+    });
+  }
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   const server = createMcpServer(context);
   await server.connect(serverTransport);
@@ -152,10 +162,23 @@ async function processRequest(
     });
   }
 
-  return new Promise<JSONRPCMessage>((resolve, reject) => {
+  const start = Date.now();
+  const response = await new Promise<JSONRPCMessage>((resolve, reject) => {
     clientTransport.onmessage = resolve;
     clientTransport.send(message).catch(reject);
   });
+
+  if ('method' in message && message.method === 'tools/call') {
+    const { name } = (('params' in message && message.params) ?? {}) as { name?: string };
+    const isError = 'result' in response && (response.result as { isError?: boolean })?.isError;
+    logger.info('MCP tool result', {
+      tool: name,
+      durationMs: Date.now() - start,
+      isError: isError ?? false,
+    });
+  }
+
+  return response;
 }
 
 /**
