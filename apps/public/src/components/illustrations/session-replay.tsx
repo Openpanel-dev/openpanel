@@ -2,7 +2,7 @@ import { PlayIcon } from 'lucide-react';
 
 export function SessionReplayIllustration() {
   return (
-    <div className="h-full px-6 pb-3 pt-4">
+    <div className="session-replay-illustration h-full px-6 pb-3 pt-4">
       <div className="col h-full overflow-hidden rounded-xl border border-border bg-background shadow-lg transition-transform duration-300 group-hover:-translate-y-0.5">
         {/* Browser chrome */}
         <div className="row shrink-0 items-center gap-1.5 border-b border-border bg-muted/30 px-3 py-2">
@@ -55,10 +55,11 @@ export function SessionReplayIllustration() {
 
           {/* Cursor */}
           <div
-            className="absolute"
+            className="cursor-animated absolute"
             style={{
-              left: 'calc(62% + 8px)',
-              top: 'calc(48% + 6px)',
+              left: 'calc(18% + 8px)',
+              top: 'calc(22% + 6px)',
+              animation: 'cursor-trail 4s cubic-bezier(0.4, 0, 0.2, 1) infinite',
             }}
           >
             <svg fill="none" height="12" viewBox="0 0 10 12" width="10">
@@ -68,6 +69,20 @@ export function SessionReplayIllustration() {
               />
             </svg>
           </div>
+          <style>{`
+            @keyframes cursor-trail {
+              0%   { left: calc(18% + 8px); top: calc(22% + 6px); }
+              55%  { left: calc(62% + 8px); top: calc(48% + 6px); }
+              75%  { left: calc(62% + 8px); top: calc(48% + 6px); }
+              100% { left: calc(18% + 8px); top: calc(22% + 6px); }
+            }
+            .session-replay-illustration .cursor-animated {
+              animation-play-state: paused;
+            }
+            .session-replay-illustration:hover .cursor-animated {
+              animation-play-state: running;
+            }
+          `}</style>
         </div>
 
         {/* Playback bar */}

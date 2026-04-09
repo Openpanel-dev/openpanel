@@ -4,6 +4,7 @@ import { FeatureSpotlight } from './_sections/feature-spotlight';
 import { CtaBanner } from './_sections/cta-banner';
 import { DataPrivacy } from './_sections/data-privacy';
 import { Faq } from './_sections/faq';
+import { Mcp } from './_sections/mcp';
 import { MixpanelAlternative } from './_sections/mixpanel-alternative';
 import { Hero } from './_sections/hero';
 import { Pricing } from './_sections/pricing';
@@ -58,6 +59,7 @@ export default function HomePage() {
       />
       <Hero />
       <WhyOpenPanel />
+      <Mcp />
       <AnalyticsInsights />
       <FeatureSpotlight />
       <Collaboration />

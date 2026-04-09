@@ -53,7 +53,8 @@ function Component() {
     );
   }
 
-  const credentials = `CLIENT_ID=${client.id}\nCLIENT_SECRET=${secret}`;
+  const mcpToken = btoa(`${client.id}:${secret}`);
+  const credentials = `CLIENT_ID=${client.id}\nCLIENT_SECRET=${secret}\nMCP_TOKEN=${mcpToken}`;
   const download = () => {
     const blob = new Blob([credentials], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -92,7 +93,7 @@ function Component() {
             </div>
             <Syntax
               className="border"
-              code={`CLIENT_ID=${client.id}\nCLIENT_SECRET=${secret}`}
+              code={`CLIENT_ID=${client.id}\nCLIENT_SECRET=${secret}\nMCP_TOKEN=${mcpToken}`}
               copyable={false}
               language="bash"
             />

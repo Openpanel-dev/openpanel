@@ -31,7 +31,14 @@ The token is a **base64-encoded** string of your client ID and client secret joi
 base64(clientId:clientSecret)
 ```
 
-Generate it in your terminal:
+#### From the dashboard
+
+The easiest way to get your MCP token is directly from the dashboard — no terminal needed:
+
+- **New client** — after creating a client via **Settings → API Clients**, the success screen shows the **MCP Token** field ready to copy.
+- **Onboarding** — the connect step in the onboarding flow shows the MCP Token alongside your client ID and secret. Use the **Save** button to download all three values as `credentials.txt`.
+
+#### From the terminal
 
 ```bash
 echo -n "YOUR_CLIENT_ID:YOUR_CLIENT_SECRET" | base64
