@@ -31,12 +31,6 @@ const CTX: McpAuthContext = {
   clientType: 'read',
 };
 
-const mockTransport = {
-  close: vi.fn().mockResolvedValue(undefined),
-};
-
-const mockServer = {} as any;
-
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -87,75 +81,18 @@ describe('SessionManager', () => {
     });
   });
 
-  describe('local transport', () => {
-    it('stores and retrieves local session', () => {
-      const sm = new SessionManager();
-      sm.setLocal('sess-1', { server: mockServer, transport: mockTransport as any });
-      expect(sm.getLocal('sess-1')).toBeDefined();
-    });
-
-    it('returns undefined for unknown session', () => {
-      const sm = new SessionManager();
-      expect(sm.getLocal('unknown')).toBeUndefined();
-    });
-
-    it('deletes local session', () => {
-      const sm = new SessionManager();
-      sm.setLocal('sess-1', { server: mockServer, transport: mockTransport as any });
-      sm.deleteLocal('sess-1');
-      expect(sm.getLocal('sess-1')).toBeUndefined();
-    });
-
-    it('tracks localSize correctly', () => {
-      const sm = new SessionManager();
-      expect(sm.localSize).toBe(0);
-      sm.setLocal('a', { server: mockServer, transport: mockTransport as any });
-      sm.setLocal('b', { server: mockServer, transport: mockTransport as any });
-      expect(sm.localSize).toBe(2);
-      sm.deleteLocal('a');
-      expect(sm.localSize).toBe(1);
-    });
-  });
-
   describe('close', () => {
-    it('closes transport, removes local session, and deletes Redis context', async () => {
+    it('deletes session from Redis', async () => {
       const sm = new SessionManager();
-      sm.setLocal('sess-1', { server: mockServer, transport: mockTransport as any });
       await sm.close('sess-1');
-
-      expect(mockTransport.close).toHaveBeenCalled();
-      expect(sm.getLocal('sess-1')).toBeUndefined();
       expect(mockDel).toHaveBeenCalledWith('mcp:session:sess-1');
-    });
-
-    it('still removes Redis context even when no local session exists', async () => {
-      const sm = new SessionManager();
-      await sm.close('no-local-sess');
-      expect(mockDel).toHaveBeenCalledWith('mcp:session:no-local-sess');
-      expect(mockTransport.close).not.toHaveBeenCalled();
-    });
-
-    it('does not throw if transport.close fails', async () => {
-      const sm = new SessionManager();
-      const failingTransport = { close: vi.fn().mockRejectedValue(new Error('already closed')) };
-      sm.setLocal('sess-1', { server: mockServer, transport: failingTransport as any });
-      await expect(sm.close('sess-1')).resolves.toBeUndefined();
     });
   });
 
   describe('destroy', () => {
-    it('closes all local sessions', async () => {
+    it('is a no-op (sessions are in Redis, not in-process)', async () => {
       const sm = new SessionManager();
-      const t1 = { close: vi.fn().mockResolvedValue(undefined) };
-      const t2 = { close: vi.fn().mockResolvedValue(undefined) };
-      sm.setLocal('a', { server: mockServer, transport: t1 as any });
-      sm.setLocal('b', { server: mockServer, transport: t2 as any });
-
-      await sm.destroy();
-
-      expect(t1.close).toHaveBeenCalled();
-      expect(t2.close).toHaveBeenCalled();
-      expect(sm.localSize).toBe(0);
+      await expect(sm.destroy()).resolves.toBeUndefined();
     });
   });
 });

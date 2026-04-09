@@ -2,6 +2,9 @@ import { createHash } from 'node:crypto';
 import { verifyPassword } from '@openpanel/common/server';
 import { ClientType, getClientByIdCached } from '@openpanel/db';
 import { getCache } from '@openpanel/redis';
+import { createLogger } from '@openpanel/logger';
+
+const logger = createLogger({ name: 'mcp:auth' });
 
 export interface McpAuthContext {
   /**
@@ -46,6 +49,7 @@ export async function authenticateToken(
 
   const colonIndex = decoded.indexOf(':');
   if (colonIndex === -1) {
+    logger.warn('MCP auth: token has no colon separator', { decodedLength: decoded.length });
     throw new McpAuthError(
       'Invalid token format — expected base64(clientId:clientSecret)',
     );
@@ -54,11 +58,14 @@ export async function authenticateToken(
   const clientId = decoded.slice(0, colonIndex);
   const clientSecret = decoded.slice(colonIndex + 1);
 
+  logger.info('MCP auth: decoded token', { clientId, secretPrefix: clientSecret.slice(0, 6) });
+
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
       clientId,
     )
   ) {
+    logger.warn('MCP auth: invalid client ID format', { clientId });
     throw new McpAuthError('Invalid client ID format');
   }
 
@@ -68,8 +75,11 @@ export async function authenticateToken(
 
   const client = await getClientByIdCached(clientId);
   if (!client) {
+    logger.warn('MCP auth: client not found', { clientId });
     throw new McpAuthError('Invalid credentials');
   }
+
+  logger.info('MCP auth: client found', { clientId, type: client.type, hasSecret: !!client.secret });
 
   if (!client.secret) {
     throw new McpAuthError(
@@ -78,6 +88,7 @@ export async function authenticateToken(
   }
 
   if (client.type === ClientType.write) {
+    logger.warn('MCP auth: write-only client rejected', { clientId });
     throw new McpAuthError(
       'Write-only clients cannot use MCP — use a read or root client',
     );
@@ -91,6 +102,8 @@ export async function authenticateToken(
     async () => await verifyPassword(clientSecret, client.secret!),
     true,
   );
+
+  logger.info('MCP auth: password verification result', { clientId, isVerified });
 
   if (!isVerified) {
     throw new McpAuthError('Invalid credentials');

@@ -1,4 +1,5 @@
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createLogger } from '@openpanel/logger';
 import { McpAuthError, authenticateToken, extractToken } from './auth';
@@ -7,15 +8,18 @@ import type { SessionManager } from './session-manager';
 
 const logger = createLogger({ name: 'mcp:handler' });
 
+const MCP_PROTOCOL_VERSION = '2024-11-05';
+
 /**
  * Handle a POST /mcp request.
  *
- * - If Mcp-Session-Id is present and the session is local: route to existing transport.
- * - If Mcp-Session-Id is present but not local: check Redis — if context found,
- *   recreate server+transport on this instance (cross-instance migration).
- * - Otherwise authenticate via token and create a new session.
+ * Fully stateless: each request creates a fresh McpServer driven by InMemoryTransport.
+ * Auth context is the only thing persisted — stored in Redis by session ID.
+ * Works across any number of API instances with no sticky-session requirement.
  *
- * Writes directly to `res` (caller must have hijacked the Fastify reply).
+ * - No session ID: authenticate + must be an `initialize` request → create session in Redis.
+ * - Session ID found in Redis: look up context, process request on a fresh server.
+ * - Session ID not in Redis: 404 → client reinitializes.
  */
 export async function handleMcpPost(
   sessionManager: SessionManager,
@@ -25,36 +29,75 @@ export async function handleMcpPost(
   query: Record<string, unknown>,
 ): Promise<void> {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
-  logger.info('MCP POST request', { sessionId: sessionId ?? 'new', hasAuth: !!(query['token'] || req.headers.authorization) });
+  const message = body as JSONRPCMessage;
+
+  logger.info('MCP POST request', {
+    sessionId: sessionId ?? 'new',
+    method: 'method' in message ? message.method : 'unknown',
+    hasAuth: !!(query['token'] || req.headers.authorization),
+  });
 
   if (sessionId) {
-    // Fast path: session is already on this instance
-    const local = sessionManager.getLocal(sessionId);
-    if (local) {
-      await sessionManager.touchContext(sessionId);
-      await local.transport.handleRequest(req, res, body);
-      return;
-    }
-
-    // Slow path: session exists on another instance — retrieve context from Redis
     const context = await sessionManager.getContext(sessionId);
     if (!context) {
+      logger.warn('MCP session not found in Redis', { sessionId });
       res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Session not found or expired' }));
+      res.end(JSON.stringify({ error: 'Session not found — please reconnect' }));
       return;
     }
 
-    logger.info('MCP session migrated to this instance', { sessionId });
-    await attachSession(sessionManager, sessionId, context, req, res, body);
+    await sessionManager.touchContext(sessionId);
+
+    // Notifications have no `id` and expect no response
+    if (!('id' in message)) {
+      res.writeHead(202);
+      res.end();
+      return;
+    }
+
+    try {
+      const response = await processRequest(context, message);
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Mcp-Session-Id': sessionId,
+      });
+      res.end(JSON.stringify(response));
+    } catch (err) {
+      logger.error('MCP request processing error', { err, sessionId });
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Internal server error' }));
+    }
     return;
   }
 
-  // New session — authenticate first
+  // New connection — authenticate and expect `initialize`
   const token = extractToken(query, req.headers.authorization);
 
   try {
     const context = await authenticateToken(token);
-    await attachSession(sessionManager, null, context, req, res, body);
+
+    if (!('method' in message) || message.method !== 'initialize') {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'First request must be initialize' }));
+      return;
+    }
+
+    const response = await processRequest(context, message, true);
+    const newSessionId = sessionManager.generateId();
+    await sessionManager.setContext(newSessionId, context);
+
+    logger.info('MCP session created', {
+      sessionId: newSessionId,
+      clientType: context.clientType,
+      organizationId: context.organizationId,
+      projectId: context.projectId,
+    });
+
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Mcp-Session-Id': newSessionId,
+    });
+    res.end(JSON.stringify(response));
   } catch (err) {
     if (err instanceof McpAuthError) {
       logger.warn('MCP auth failed', { reason: err.message });
@@ -69,75 +112,60 @@ export async function handleMcpPost(
 }
 
 /**
- * Create (or recreate) a server+transport for the given context, handle the
- * request, and register the session locally + in Redis.
+ * Create a fresh McpServer for each request and process a single JSON-RPC message.
  *
- * @param fixedSessionId  When migrating an existing session, pass its ID so we
- *                        reuse the same session ID rather than generating a new one.
+ * For non-initialize requests we fast-forward the server through the MCP
+ * initialization handshake (using an internal fake initialize) before dispatching
+ * the real message. This keeps the handler stateless while satisfying the SDK's
+ * internal state machine.
  */
-async function attachSession(
-  sessionManager: SessionManager,
-  fixedSessionId: string | null,
+async function processRequest(
   context: Parameters<typeof createMcpServer>[0],
-  req: IncomingMessage,
-  res: ServerResponse,
-  body: unknown,
-): Promise<void> {
+  message: JSONRPCMessage,
+  isInitialize = false,
+): Promise<JSONRPCMessage> {
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   const server = createMcpServer(context);
+  await server.connect(serverTransport);
 
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: fixedSessionId
-      ? () => fixedSessionId
-      : () => sessionManager.generateId(),
-    onsessioninitialized: async (id: string) => {
-      sessionManager.setLocal(id, { server, transport });
-      await sessionManager.setContext(id, context);
-      logger.info('MCP session initialized', {
-        sessionId: id,
-        clientType: context.clientType,
-        organizationId: context.organizationId,
-        projectId: context.projectId,
-      });
-    },
+  if (!isInitialize) {
+    // Fast-forward: send a fake initialize so the server enters its ready state
+    await new Promise<void>((resolve, reject) => {
+      clientTransport.onmessage = () => resolve();
+      clientTransport
+        .send({
+          jsonrpc: '2.0',
+          id: '__mcp_init__',
+          method: 'initialize',
+          params: {
+            protocolVersion: MCP_PROTOCOL_VERSION,
+            capabilities: {},
+            clientInfo: { name: 'mcp-proxy', version: '0' },
+          },
+        })
+        .catch(reject);
+    });
+    // Notify the server that initialization is complete (no response expected)
+    await clientTransport.send({
+      jsonrpc: '2.0',
+      method: 'notifications/initialized',
+    });
+  }
+
+  return new Promise<JSONRPCMessage>((resolve, reject) => {
+    clientTransport.onmessage = resolve;
+    clientTransport.send(message).catch(reject);
   });
-
-  await server.connect(transport);
-  await transport.handleRequest(req, res, body);
 }
 
 /**
- * Handle a GET /mcp request (SSE stream for an existing session).
- *
- * SSE streams are tied to the instance they started on. If the session is not
- * local (i.e., it was started on a different instance), return 404 so the
- * client reconnects and establishes a fresh session on this instance.
+ * SSE is not supported in stateless mode — all communication happens over POST.
  */
 export async function handleMcpGet(
-  sessionManager: SessionManager,
-  req: IncomingMessage,
+  _sessionManager: SessionManager,
+  _req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
-  const sessionId = req.headers['mcp-session-id'] as string | undefined;
-  if (!sessionId) {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Mcp-Session-Id header is required' }));
-    return;
-  }
-
-  const session = sessionManager.getLocal(sessionId);
-  if (!session) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(
-      JSON.stringify({
-        error: 'Session not found on this instance — reconnect to start a new session',
-      }),
-    );
-    return;
-  }
-
-  try {
-    await session.transport.handleRequest(req, res);
-  } catch (err) {
-    logger.error('MCP SSE stream error', { err, sessionId });
-  }
+  res.writeHead(405, { 'Content-Type': 'application/json', Allow: 'POST, DELETE' });
+  res.end(JSON.stringify({ error: 'SSE not supported — use POST for all requests' }));
 }

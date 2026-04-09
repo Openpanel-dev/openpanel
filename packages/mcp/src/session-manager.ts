@@ -1,6 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createLogger } from '@openpanel/logger';
 import { getRedisCache } from '@openpanel/redis';
 import type { McpAuthContext } from './auth';
@@ -13,29 +11,16 @@ function redisKey(id: string) {
   return `mcp:session:${id}`;
 }
 
-interface McpLocalSession {
-  server: McpServer;
-  transport: StreamableHTTPServerTransport;
-}
-
 /**
- * Hybrid session manager:
- * - Auth context is stored in Redis (shared across all API instances, TTL 30 min)
- * - Active transport/server are kept in a local Map (in-process only — they hold live HTTP connections)
+ * Stateless session manager — auth context lives only in Redis.
  *
- * This means POST requests can be handled by any instance: if the transport
- * isn't local, we retrieve the context from Redis and recreate it here.
- * SSE (GET) streams are inherently tied to the instance they started on;
- * when that instance goes down the client reconnects and gets a fresh session.
+ * No in-process state: any API instance can handle any request for any session.
+ * No sticky sessions required.
  */
 export class SessionManager {
-  private readonly local = new Map<string, McpLocalSession>();
-
   generateId(): string {
     return randomUUID();
   }
-
-  // --- context (Redis) ---
 
   async setContext(id: string, context: McpAuthContext): Promise<void> {
     await getRedisCache().setJson(redisKey(id), SESSION_TTL_SECONDS, context);
@@ -57,46 +42,14 @@ export class SessionManager {
 
   async deleteContext(id: string): Promise<void> {
     await getRedisCache().del(redisKey(id));
+    logger.info('MCP session deleted', { sessionId: id });
   }
-
-  // --- transport/server (local) ---
-
-  setLocal(id: string, session: McpLocalSession): void {
-    this.local.set(id, session);
-  }
-
-  getLocal(id: string): McpLocalSession | undefined {
-    return this.local.get(id);
-  }
-
-  deleteLocal(id: string): void {
-    this.local.delete(id);
-  }
-
-  // --- combined ops ---
 
   async close(id: string): Promise<void> {
-    const session = this.local.get(id);
-    this.local.delete(id);
     await this.deleteContext(id);
-
-    if (session) {
-      try {
-        await session.transport.close();
-      } catch (err) {
-        logger.warn('Error closing MCP transport', { sessionId: id, err });
-      }
-    }
-
-    logger.info('MCP session closed', { sessionId: id });
   }
 
   async destroy(): Promise<void> {
-    const ids = [...this.local.keys()];
-    await Promise.all(ids.map((id) => this.close(id)));
-  }
-
-  get localSize(): number {
-    return this.local.size;
+    // No-op: sessions are in Redis, not in-process
   }
 }
