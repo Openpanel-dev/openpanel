@@ -92,7 +92,7 @@ export async function buildApp(
       req: FastifyRequest,
       callback: (error: Error | null, options: FastifyCorsOptions) => void,
     ) => {
-      const corsPaths = ['/trpc', '/live', '/webhook', '/oauth', '/misc', '/ai', '/mcp'];
+      const corsPaths = ['/trpc', '/live', '/webhook', '/oauth', '/misc', '/ai'];
       const isPrivatePath = corsPaths.some((p) => req.url.startsWith(p));
 
       if (isPrivatePath) {

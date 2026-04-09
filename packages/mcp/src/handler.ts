@@ -25,6 +25,7 @@ export async function handleMcpPost(
   query: Record<string, unknown>,
 ): Promise<void> {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
+  logger.info('MCP POST request', { sessionId: sessionId ?? 'new', hasAuth: !!(query['token'] || req.headers.authorization) });
 
   if (sessionId) {
     // Fast path: session is already on this instance
@@ -56,6 +57,7 @@ export async function handleMcpPost(
     await attachSession(sessionManager, null, context, req, res, body);
   } catch (err) {
     if (err instanceof McpAuthError) {
+      logger.warn('MCP auth failed', { reason: err.message });
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     } else {
