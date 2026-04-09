@@ -66,7 +66,7 @@ export default function Billing({ organization }: Props) {
 
   const currentProduct = currentProductQuery.data ?? null;
   const currentPrice = currentProduct?.prices.flatMap((p) =>
-    p.type === 'recurring' && p.amountType === 'fixed' ? [p] : []
+    p.amountType === 'fixed' ? [p] : []
   )[0];
 
   const renderStatus = () => {

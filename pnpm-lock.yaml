@@ -1461,8 +1461,8 @@ importers:
   packages/payments:
     dependencies:
       '@polar-sh/sdk':
-        specifier: ^0.35.4
-        version: 0.35.4
+        specifier: ^0.47.0
+        version: 0.47.0
     devDependencies:
       '@openpanel/db':
         specifier: workspace:*
@@ -6987,14 +6987,8 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-  '@polar-sh/sdk@0.35.4':
-    resolution: {integrity: sha512-vv4Ptl5jNsHIZoLvzKr0wR+dGXJOpz8VWOOTEGqaiYx6YJvzIvrayg52qp8ZtBjsRBkySLZS2EVTV3wDHTACwA==}
-    hasBin: true
-    peerDependencies:
-      '@modelcontextprotocol/sdk': '>=1.5.0 <1.10.0'
-    peerDependenciesMeta:
-      '@modelcontextprotocol/sdk':
-        optional: true
+  '@polar-sh/sdk@0.47.0':
+    resolution: {integrity: sha512-tZEt8eLWsQVhmyfUQzXhnN84e5Cnu/JsYFnCci1ranWkIGveQc+wTiyzDCG9Tl1xiz1Y/ztPsAJ1fevj6ExdAA==}
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -26156,10 +26150,10 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@polar-sh/sdk@0.35.4':
+  '@polar-sh/sdk@0.47.0':
     dependencies:
       standardwebhooks: 1.0.0
-      zod: 3.25.76
+      zod: 4.3.6
 
   '@polka/url@1.0.0-next.29': {}
 
