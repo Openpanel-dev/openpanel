@@ -13,15 +13,15 @@ https://api.openpanel.dev/mcp
 
 ## Authentication
 
-### Why `?token=` instead of headers
-
-MCP clients establish a long-lived SSE connection to the server. Most MCP clients do not support setting custom HTTP headers on SSE connections — only on the initial HTTP request. Because of this, the token is passed as a **query parameter** instead:
+The token can be passed as a query parameter or an `Authorization` header — both are equivalent:
 
 ```
 https://api.openpanel.dev/mcp?token=YOUR_TOKEN
 ```
 
-The `Authorization: Bearer` header is also accepted as a fallback, but `?token=` is the recommended approach for MCP clients.
+```
+Authorization: Bearer YOUR_TOKEN
+```
 
 ### Token format
 
