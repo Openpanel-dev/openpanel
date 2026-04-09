@@ -175,7 +175,7 @@ export class OpenPanel {
       this.flush();
     }
 
-    if (Object.keys(payload).length > 1) {
+    if (payload.profileId && Object.keys(payload).length > 1) {
       return this.send({
         type: 'identify',
         payload: {

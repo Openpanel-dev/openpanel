@@ -10,7 +10,7 @@ const getTrpcInput = (
   const input = path<any>(['query', 'input'], request);
   try {
     return typeof input === 'string' ? JSON.parse(input).json : input;
-  } catch (e) {
+  } catch {
     return undefined;
   }
 };
@@ -33,7 +33,13 @@ export async function requestLoggingHook(
       elapsed: reply.elapsedTime,
     });
   } else {
-    request.log.info('request done', {
+    const payload: {
+      url: string;
+      method: string;
+      elapsed: number;
+      headers: Record<string, string | string[] | undefined>;
+      body?: unknown;
+    } = {
       url: request.url,
       method: request.method,
       elapsed: reply.elapsedTime,
@@ -41,6 +47,12 @@ export async function requestLoggingHook(
         ['openpanel-client-id', 'openpanel-sdk-name', 'openpanel-sdk-version'],
         request.headers
       ),
-    });
+    };
+
+    if (payload.url.startsWith('/track')) {
+      payload.body = request.body;
+    }
+
+    request.log.info('request done', payload);
   }
 }

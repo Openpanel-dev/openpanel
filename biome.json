@@ -72,7 +72,8 @@
       },
       "suspicious": {
         "noExplicitAny": "off",
-        "noShadowRestrictedNames": "off"
+        "noShadowRestrictedNames": "off",
+        "useAwait": "off"
       },
       "security": {
         "noDangerouslySetInnerHtml": "off"
