@@ -9,7 +9,7 @@ import { GithubButton } from './github-button';
 import { Logo } from './logo';
 import { SignUpButton } from './sign-up-button';
 import { Button } from './ui/button';
-import { baseOptions } from '@/lib/layout.shared';
+import { baseOptions, siteName } from '@/lib/layout.shared';
 import { cn } from '@/lib/utils';
 
 const LINKS = [
@@ -76,7 +76,7 @@ const Navbar = () => {
             <Link className="row items-center font-medium" href="/">
               <Logo className="h-6" />
               <span className="hidden [@media(min-width:850px)]:block">
-                {baseOptions().nav?.title}
+                {siteName}
               </span>
             </Link>
           </div>

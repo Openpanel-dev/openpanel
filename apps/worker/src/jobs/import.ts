@@ -33,7 +33,7 @@ const RESUMABLE_STEPS = ['creating_sessions', 'moving', 'backfilling_sessions'];
 export async function importJob(job: Job<ImportQueuePayload>) {
   const { importId } = job.data.payload;
 
-  const record = await db.$primary().import.findUniqueOrThrow({
+  const record = await db.import.findUniqueOrThrow({
     where: { id: importId },
     include: { project: true },
   });

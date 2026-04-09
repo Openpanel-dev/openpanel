@@ -14,6 +14,7 @@ import {
 } from '@openpanel/redis';
 import type { FastifyInstance } from 'fastify';
 import { logger } from './logger';
+import { mcpSessionManager } from '@/routes/mcp.router';
 
 let shuttingDown = false;
 
@@ -29,7 +30,7 @@ export function isShuttingDown() {
 export async function shutdown(
   fastify: FastifyInstance,
   signal: string,
-  exitCode = 0,
+  exitCode = 0
 ) {
   if (isShuttingDown()) {
     logger.warn('Shutdown already in progress, ignoring signal', { signal });
@@ -40,16 +41,24 @@ export async function shutdown(
 
   setShuttingDown(true);
 
-  // Step 2: Wait for load balancer to stop sending traffic (matches preStop sleep)
+  // Step 1: Wait for load balancer to stop sending traffic (matches preStop sleep)
   const gracePeriod = Number(process.env.SHUTDOWN_GRACE_PERIOD_MS || '5000');
   await new Promise((resolve) => setTimeout(resolve, gracePeriod));
 
-  // Step 3: Close Fastify to drain in-flight requests
+  // Step 2: Close Fastify to drain in-flight requests
   try {
     await fastify.close();
     logger.info('Fastify server closed');
   } catch (error) {
     logger.error('Error closing Fastify server', error);
+  }
+
+  // Step 3: Destroy MCP sessions
+  try {
+    await mcpSessionManager.destroy();
+    logger.info('MCP sessions closed');
+  } catch (error) {
+    logger.error('Error closing MCP sessions', error);
   }
 
   // Step 4: Close database connections
@@ -96,7 +105,7 @@ export async function shutdown(
         if (redis.status === 'ready') {
           await redis.quit();
         }
-      }),
+      })
     );
     logger.info('Redis connections closed');
   } catch (error) {

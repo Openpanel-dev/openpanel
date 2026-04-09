@@ -1,22 +1,15 @@
-import ShortUniqueId from 'short-unique-id';
-import { z } from 'zod';
-
 import {
-  TABLE_NAMES,
   ch,
   clix,
   db,
   eventBuffer,
   getSettingsForProject,
+  TABLE_NAMES,
 } from '@openpanel/db';
 import { getCache } from '@openpanel/redis';
-import {
-  zCounterWidgetOptions,
-  zRealtimeWidgetOptions,
-  zWidgetOptions,
-  zWidgetType,
-} from '@openpanel/validation';
-
+import { zWidgetOptions, zWidgetType } from '@openpanel/validation';
+import ShortUniqueId from 'short-unique-id';
+import { z } from 'zod';
 import { TRPCNotFoundError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
@@ -24,11 +17,11 @@ const uid = new ShortUniqueId({ length: 6 });
 
 // Helper to find widget by projectId and type
 async function findWidgetByType(projectId: string, type: string) {
-  const widgets = await db.$primary().shareWidget.findMany({
+  const widgets = await db.shareWidget.findMany({
     where: { projectId },
   });
   return widgets.find(
-    (w) => (w.options as z.infer<typeof zWidgetOptions>)?.type === type,
+    (w) => (w.options as z.infer<typeof zWidgetOptions>)?.type === type
   );
 }
 
@@ -54,7 +47,7 @@ export const widgetRouter = createTRPCRouter({
         organizationId: z.string(),
         type: zWidgetType,
         enabled: z.boolean(),
-      }),
+      })
     )
     .mutation(async ({ input }) => {
       const existing = await findWidgetByType(input.projectId, input.type);
@@ -95,12 +88,12 @@ export const widgetRouter = createTRPCRouter({
         projectId: z.string(),
         organizationId: z.string(),
         options: zWidgetOptions,
-      }),
+      })
     )
     .mutation(async ({ input }) => {
       const existing = await findWidgetByType(
         input.projectId,
-        input.options.type,
+        input.options.type
       );
 
       if (existing) {
@@ -131,7 +124,7 @@ export const widgetRouter = createTRPCRouter({
         },
       });
 
-      if (!widget || !widget.public) {
+      if (!(widget && widget.public)) {
         throw TRPCNotFoundError('Widget not found');
       }
 
@@ -154,7 +147,7 @@ export const widgetRouter = createTRPCRouter({
         },
       });
 
-      if (!widget || !widget.public) {
+      if (!(widget && widget.public)) {
         throw TRPCNotFoundError('Widget not found');
       }
 
@@ -179,7 +172,7 @@ export const widgetRouter = createTRPCRouter({
 
           const result = await uniqueVisitorsQuery.execute();
           return result[0]?.count || 0;
-        },
+        }
       );
 
       return {
@@ -206,7 +199,7 @@ export const widgetRouter = createTRPCRouter({
         },
       });
 
-      if (!widget || !widget.public) {
+      if (!(widget && widget.public)) {
         throw TRPCNotFoundError('Widget not found');
       }
 
@@ -245,7 +238,7 @@ export const widgetRouter = createTRPCRouter({
         .fill(
           clix.exp('toStartOfMinute(now() - INTERVAL 30 MINUTE)'),
           clix.exp('toStartOfMinute(now())'),
-          clix.exp('INTERVAL 1 MINUTE'),
+          clix.exp('INTERVAL 1 MINUTE')
         );
 
       // Conditionally fetch countries

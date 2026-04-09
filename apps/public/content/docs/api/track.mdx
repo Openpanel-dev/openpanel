@@ -1,203 +1,43 @@
 ---
 title: Track
-description: This guide demonstrates how to interact with the OpenPanel API using cURL. These examples provide a low-level understanding of the API endpoints and can be useful for testing or for integrations where a full SDK isn't available.
+description: How to send events, identify users, and manage groups via the HTTP API.
 ---
 
 ## Good to know
 
-- If you want to track **geo location** you'll need to pass the `ip` property as a header `x-client-ip`
-- If you want to track **device information** you'll need to pass the `user-agent` property as a header `user-agent`
+- Pass the `x-client-ip` header to enable geo location tracking
+- Pass the `user-agent` header to enable device detection
 
 ## Authentication
 
-All requests to the OpenPanel API require authentication. You'll need to include your `clientId` and `clientSecret` in the headers of each request.
+All requests require a `write` or `root` client. See the [Authentication](/docs/api/authentication) guide.
 
 ```bash
 -H "openpanel-client-id: YOUR_CLIENT_ID" \
 -H "openpanel-client-secret: YOUR_CLIENT_SECRET"
 ```
 
-## Usage
-
-### Base URL
-
-All API requests should be made to:
+## Base URL
 
 ```
 https://api.openpanel.dev
 ```
 
-### Tracking Events
+## Event types
 
-To track an event:
+The `/track` endpoint accepts a `type` field that determines what gets recorded:
 
-```bash
-curl -X POST https://api.openpanel.dev/track \
--H "Content-Type: application/json" \
--H "openpanel-client-id: YOUR_CLIENT_ID" \
--H "openpanel-client-secret: YOUR_CLIENT_SECRET" \
--d '{
-  "type": "track",
-  "payload": {
-    "name": "my_event",
-    "properties": {
-      "foo": "bar"
-    }
-  }
-}'
-```
+| Type | Description |
+|------|-------------|
+| `track` | Record a named event with optional properties |
+| `identify` | Create or update a user profile |
+| `increment` | Increment a numeric profile property |
+| `decrement` | Decrement a numeric profile property |
+| `group` | Create or update a group |
+| `assign_group` | Link a profile to one or more groups |
 
-### Identifying Users
+### Groups and events
 
-To identify a user:
+Groups are never auto-populated on events — even after `assign_group`. Pass `groups` explicitly on each `track` call where you need group data.
 
-```bash
-curl -X POST https://api.openpanel.dev/track \
--H "Content-Type: application/json" \
--H "openpanel-client-id: YOUR_CLIENT_ID" \
--H "openpanel-client-secret: YOUR_CLIENT_SECRET" \
--d '{
-  "type": "identify",
-  "payload": {
-    "profileId": "123",
-    "firstName": "Joe",
-    "lastName": "Doe",
-    "email": "joe@doe.com",
-    "properties": {
-      "tier": "premium"
-    }
-  }
-}'
-```
-
-### Incrementing Properties
-To increment a numeric property:
-
-```bash
-curl -X POST https://api.openpanel.dev/track \
--H "Content-Type: application/json" \
--H "openpanel-client-id: YOUR_CLIENT_ID" \
--H "openpanel-client-secret: YOUR_CLIENT_SECRET" \
--d '{
-  "type": "increment",
-  "payload": {
-    "profileId": "1",
-    "property": "visits",
-    "value": 1
-  }
-}'
-```
-
-### Decrementing Properties
-To decrement a numeric property:
-
-```bash
-curl -X POST https://api.openpanel.dev/track \
--H "Content-Type: application/json" \
--H "openpanel-client-id: YOUR_CLIENT_ID" \
--H "openpanel-client-secret: YOUR_CLIENT_SECRET" \
--d '{
-  "type": "decrement",
-  "payload": {
-    "profileId": "1",
-    "property": "visits",
-    "value": 1
-  }
-}'
-```
-
-### Creating or updating a group
-
-```bash
-curl -X POST https://api.openpanel.dev/track \
--H "Content-Type: application/json" \
--H "openpanel-client-id: YOUR_CLIENT_ID" \
--H "openpanel-client-secret: YOUR_CLIENT_SECRET" \
--d '{
-  "type": "group",
-  "payload": {
-    "id": "org_acme",
-    "type": "company",
-    "name": "Acme Inc",
-    "properties": {
-      "plan": "enterprise",
-      "seats": 25
-    }
-  }
-}'
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | `string` | Yes | Unique identifier for the group |
-| `type` | `string` | Yes | Category of group (e.g. `"company"`, `"workspace"`) |
-| `name` | `string` | Yes | Display name |
-| `properties` | `object` | No | Custom metadata |
-
-### Assigning a user to a group
-
-Links a profile to one or more groups. This updates the profile record but does not auto-attach groups to future events — you still need to pass `groups` explicitly on each track call.
-
-```bash
-curl -X POST https://api.openpanel.dev/track \
--H "Content-Type: application/json" \
--H "openpanel-client-id: YOUR_CLIENT_ID" \
--H "openpanel-client-secret: YOUR_CLIENT_SECRET" \
--d '{
-  "type": "assign_group",
-  "payload": {
-    "profileId": "user_123",
-    "groupIds": ["org_acme"]
-  }
-}'
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `profileId` | `string` | No | Profile to assign. Falls back to the device ID if omitted |
-| `groupIds` | `string[]` | Yes | Group IDs to link to the profile |
-
-### Tracking events with groups
-
-Groups are never auto-populated on events — even if the profile has been assigned to a group via `assign_group`. Pass `groups` on every track event where you want group data.
-
-```bash
-curl -X POST https://api.openpanel.dev/track \
--H "Content-Type: application/json" \
--H "openpanel-client-id: YOUR_CLIENT_ID" \
--H "openpanel-client-secret: YOUR_CLIENT_SECRET" \
--d '{
-  "type": "track",
-  "payload": {
-    "name": "report_exported",
-    "profileId": "user_123",
-    "groups": ["org_acme"],
-    "properties": {
-      "format": "pdf"
-    }
-  }
-}'
-```
-
-Unlike the SDK, where `setGroup()` stores group IDs on the instance and attaches them to every subsequent `track()` call, the API has no such state. You must pass `groups` on each event.
-
-### Error Handling
-The API uses standard HTTP response codes to indicate the success or failure of requests. In case of an error, the response body will contain more information about the error.
-Example error response:
-
-```json
-{
-  "error": "Invalid client credentials",
-  "status": 401
-}
-```
-
-### Rate Limiting
-
-The API implements rate limiting to prevent abuse. If you exceed the rate limit, you'll receive a 429 (Too Many Requests) response. The response will include headers indicating your rate limit status.
-
-Best Practices
-	1.	Always use HTTPS to ensure secure communication.
-	2.	Store your clientId and clientSecret securely and never expose them in client-side code.
-	3.	Implement proper error handling in your applications.
-	4.	Respect rate limits and implement exponential backoff for retries.
+For full request/response schemas for every event type, see the [API Reference](/docs/api-reference/track/post).

@@ -9,6 +9,8 @@
     "build": "rm -rf dist && tsdown",
     "gen:bots": "jiti scripts/get-bots.ts && biome format --write src/bots/bots.ts",
     "test:manage": "jiti scripts/test-manage-api.ts",
+    "test": "vitest",
+    "test:run": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -18,6 +20,8 @@
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.1.0",
     "@fastify/rate-limit": "^10.3.0",
+    "@fastify/swagger": "^9.7.0",
+    "@fastify/swagger-ui": "^5.2.5",
     "@fastify/websocket": "^11.2.0",
     "@node-rs/argon2": "^2.0.2",
     "@openpanel/auth": "workspace:^",
@@ -28,6 +32,7 @@
     "@openpanel/integrations": "workspace:^",
     "@openpanel/json": "workspace:*",
     "@openpanel/logger": "workspace:*",
+    "@openpanel/mcp": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
@@ -39,6 +44,7 @@
     "fastify": "^5.6.1",
     "fastify-metrics": "^12.1.0",
     "fastify-raw-body": "^5.0.0",
+    "fastify-zod-openapi": "^5.6.1",
     "groupmq": "catalog:",
     "jsonwebtoken": "^9.0.2",
     "ramda": "^0.29.1",
@@ -63,6 +69,7 @@
     "@types/ws": "^8.5.14",
     "js-yaml": "^4.1.0",
     "tsdown": "0.14.2",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^1.0.0"
   }
 }

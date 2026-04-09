@@ -1,5 +1,6 @@
 import type { IInterval } from '@openpanel/validation';
-import { ch, TABLE_NAMES } from '../clickhouse/client';
+import sqlstring from 'sqlstring';
+import { ch, TABLE_NAMES, chQuery } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 
 export interface IGetPagesInput {
@@ -172,3 +173,144 @@ export class PagesService {
 }
 
 export const pagesService = new PagesService(ch);
+
+import { OverviewService } from './overview.service';
+import { getSettingsForProject } from './organization.service';
+
+const _overviewServiceForPages = new OverviewService(ch);
+
+export async function getTopPagesCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  limit?: number;
+}) {
+  const { timezone } = await getSettingsForProject(input.projectId);
+  return _overviewServiceForPages.getTopPages({
+    projectId: input.projectId,
+    filters: [],
+    startDate: input.startDate,
+    endDate: input.endDate,
+    timezone,
+  });
+}
+
+export async function getEntryExitPagesCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  mode: 'entry' | 'exit';
+}) {
+  const { timezone } = await getSettingsForProject(input.projectId);
+  return _overviewServiceForPages.getTopEntryExit({
+    projectId: input.projectId,
+    filters: [],
+    startDate: input.startDate,
+    endDate: input.endDate,
+    mode: input.mode,
+    timezone,
+  });
+}
+
+export async function getPagePerformanceCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  search?: string;
+  sortBy?: 'sessions' | 'pageviews' | 'bounce_rate' | 'avg_duration';
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+}) {
+  const { timezone } = await getSettingsForProject(input.projectId);
+  const pages = await pagesService.getTopPages({
+    projectId: input.projectId,
+    startDate: input.startDate,
+    endDate: input.endDate,
+    timezone,
+    search: input.search,
+    limit: 1000,
+  });
+
+  const col = input.sortBy ?? 'sessions';
+  const dir = input.sortOrder === 'asc' ? 1 : -1;
+  const sorted = [...pages].sort(
+    (a, b) => dir * ((a[col] ?? 0) < (b[col] ?? 0) ? -1 : 1),
+  );
+  const results = sorted.slice(0, input.limit ?? 50);
+
+  const annotated = results.map((p) => ({
+    ...p,
+    seo_signals: {
+      high_bounce: p.bounce_rate > 70,
+      low_engagement: p.avg_duration < 1,
+      good_landing_page: p.bounce_rate < 40 && p.avg_duration > 2,
+    },
+  }));
+
+  return {
+    total_pages: pages.length,
+    shown: annotated.length,
+    pages: annotated,
+  };
+}
+
+export interface IPageConversionRow {
+  path: string;
+  origin: string;
+  unique_converters: number;
+  total_visitors: number;
+  conversion_rate: number;
+}
+
+export async function getPageConversionsCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  conversionEvent: string;
+  windowHours?: number;
+  limit?: number;
+}): Promise<IPageConversionRow[]> {
+  const { projectId, startDate, endDate, conversionEvent, windowHours = 24, limit = 100 } = input;
+  const sql = `
+    WITH
+    conversion_events AS (
+      SELECT profile_id, created_at AS conv_time
+      FROM events
+      WHERE project_id = ${sqlstring.escape(projectId)}
+        AND name = ${sqlstring.escape(conversionEvent)}
+        AND created_at BETWEEN toDateTime(${sqlstring.escape(startDate)}) AND toDateTime(${sqlstring.escape(endDate)})
+    ),
+    views_before_conversions AS (
+      SELECT DISTINCT e.profile_id, e.path, e.origin
+      FROM events AS e
+      INNER JOIN conversion_events AS c ON e.profile_id = c.profile_id
+      WHERE e.project_id = ${sqlstring.escape(projectId)}
+        AND e.name = 'screen_view'
+        AND e.path != ''
+        AND e.created_at BETWEEN toDateTime(${sqlstring.escape(startDate)}) AND toDateTime(${sqlstring.escape(endDate)})
+        AND e.created_at < c.conv_time
+        AND e.created_at >= c.conv_time - INTERVAL ${Number(windowHours)} HOUR
+    ),
+    total_visitors AS (
+      SELECT path, origin, uniq(session_id) AS visitors
+      FROM events
+      WHERE project_id = ${sqlstring.escape(projectId)}
+        AND name = 'screen_view'
+        AND path != ''
+        AND created_at BETWEEN toDateTime(${sqlstring.escape(startDate)}) AND toDateTime(${sqlstring.escape(endDate)})
+      GROUP BY path, origin
+    )
+    SELECT
+      vbc.path,
+      vbc.origin,
+      count() AS unique_converters,
+      any(tv.visitors) AS total_visitors,
+      round(100.0 * count() / any(tv.visitors), 2) AS conversion_rate
+    FROM views_before_conversions AS vbc
+    LEFT JOIN total_visitors AS tv ON vbc.path = tv.path AND vbc.origin = tv.origin
+    GROUP BY vbc.path, vbc.origin
+    ORDER BY unique_converters DESC
+    LIMIT ${Number(limit)}
+  `;
+  return chQuery<IPageConversionRow>(sql);
+}

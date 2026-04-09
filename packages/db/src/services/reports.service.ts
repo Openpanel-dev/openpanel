@@ -123,3 +123,78 @@ export async function getReportById(id: string) {
 
   return transformReport(report);
 }
+
+import { AggregateChartEngine, ChartEngine } from '../engine';
+import { getDashboardById } from './dashboard.service';
+import { getChartStartEndDate } from './date.service';
+import { funnelService } from './funnel.service';
+import { getSettingsForProject } from './organization.service';
+
+export async function listReportsCore(input: {
+  projectId: string;
+  dashboardId: string;
+  organizationId: string;
+}) {
+  const dashboard = await getDashboardById(input.dashboardId, input.projectId);
+  if (!dashboard) {
+    return [];
+  }
+  const reports = await getReportsByDashboardId(input.dashboardId);
+  return reports.map((r) => ({
+    id: r.id,
+    name: r.name,
+    chartType: r.chartType,
+    range: r.range,
+    interval: r.interval,
+    metric: r.metric,
+    series: r.series.map((s) =>
+      s.type === 'formula'
+        ? { type: 'formula', id: s.id, formula: s.formula }
+        : { type: 'event', id: s.id, name: s.name, displayName: s.displayName, segment: s.segment },
+    ),
+    breakdowns: r.breakdowns,
+  }));
+}
+
+export async function getReportDataCore(input: {
+  projectId: string;
+  reportId: string;
+  organizationId: string;
+}) {
+  const rawReport = await db.report.findUnique({
+    where: { id: input.reportId, projectId: input.projectId },
+    include: { layout: true },
+  });
+
+  if (!rawReport) {
+    throw new Error(`Report not found: ${input.reportId}`);
+  }
+
+  const report = transformReport(rawReport);
+  const { timezone } = await getSettingsForProject(input.projectId);
+  const { startDate, endDate } = getChartStartEndDate(report, timezone);
+  const chartInput = { ...report, startDate, endDate, timezone };
+
+  const meta = {
+    id: report.id,
+    name: report.name,
+    chartType: report.chartType,
+    range: report.range,
+    interval: report.interval,
+    startDate,
+    endDate,
+  };
+
+  if (report.chartType === 'funnel') {
+    const result = await funnelService.getFunnel(chartInput);
+    return { ...meta, data: result };
+  }
+
+  if (report.chartType === 'metric') {
+    const result = await AggregateChartEngine.execute(chartInput);
+    return { ...meta, data: result };
+  }
+
+  const result = await ChartEngine.execute(chartInput);
+  return { ...meta, data: result };
+}

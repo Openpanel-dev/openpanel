@@ -6,7 +6,7 @@ import type { Invite, Prisma, ProjectAccess, User } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getOrganizationAccess, getProjectAccess } from './access.service';
-import { type IServiceProject, getProjectById } from './project.service';
+import type { IServiceProject } from './project.service';
 export type IServiceOrganization = Awaited<
   ReturnType<typeof db.organization.findUniqueOrThrow>
 >;
@@ -17,7 +17,9 @@ export type IServiceMember = Prisma.MemberGetPayload<{
 export type IServiceProjectAccess = ProjectAccess;
 
 export async function getOrganizations(userId: string | null) {
-  if (!userId) return [];
+  if (!userId) {
+    return [];
+  }
 
   const organizations = await db.organization.findMany({
     where: {
@@ -62,7 +64,7 @@ export async function getOrganizationByProjectId(projectId: string) {
 
 export const getOrganizationByProjectIdCached = cacheable(
   getOrganizationByProjectId,
-  60 * 5,
+  60 * 5
 );
 
 export async function getInvites(organizationId: string) {
@@ -141,7 +143,7 @@ export async function connectUserToOrganization({
 }) {
   // Use primary since before this we might have just created the invite
   // If we use replica it might not find the invite
-  const invite = await db.$primary().invite.findUnique({
+  const invite = await db.invite.findUnique({
     where: {
       id: inviteId,
     },
@@ -202,13 +204,15 @@ export async function connectUserToOrganization({
  * current subscription period for an organization
  */
 export async function getOrganizationBillingEventsCount(
-  organization: IServiceOrganization & { projects: IServiceProject[] },
+  organization: IServiceOrganization & { projects: IServiceProject[] }
 ) {
   // Dont count events if the organization has no subscription
   // Since we only use this for billing purposes
   if (
-    !organization.subscriptionCurrentPeriodStart ||
-    !organization.subscriptionCurrentPeriodEnd
+    !(
+      organization.subscriptionCurrentPeriodStart &&
+      organization.subscriptionCurrentPeriodEnd
+    )
   ) {
     return 0;
   }
@@ -232,7 +236,7 @@ export async function getOrganizationBillingEventsCountSerie(
   }: {
     startDate: Date;
     endDate: Date;
-  },
+  }
 ) {
   const interval = 'day';
   const { sb, getSql } = createSqlBuilder();
@@ -251,12 +255,12 @@ export async function getOrganizationBillingEventsCountSerie(
 
 export const getOrganizationBillingEventsCountSerieCached = cacheable(
   getOrganizationBillingEventsCountSerie,
-  60 * 10,
+  60 * 10
 );
 
 export async function getOrganizationSubscriptionChartEndDate(
   projectId: string,
-  endDate: string,
+  endDate: string
 ) {
   const organization = await getOrganizationByProjectIdCached(projectId);
   if (!organization) {

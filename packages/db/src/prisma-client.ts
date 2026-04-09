@@ -1,12 +1,4 @@
-import { createLogger } from '@openpanel/logger';
-import { readReplicas } from '@prisma/extension-read-replicas';
-import {
-  type Organization,
-  Prisma,
-  PrismaClient,
-} from './generated/prisma/client';
-import { logger } from './logger';
-import { sessionConsistency } from './session-consistency';
+import { type Organization, PrismaClient } from './generated/prisma/client';
 
 export * from './generated/prisma/client';
 
@@ -14,7 +6,7 @@ const isWillBeCanceled = (
   organization: Pick<
     Organization,
     'subscriptionStatus' | 'subscriptionCanceledAt' | 'subscriptionEndsAt'
-  >,
+  >
 ) =>
   organization.subscriptionStatus === 'active' &&
   organization.subscriptionCanceledAt &&
@@ -24,7 +16,7 @@ const isCanceled = (
   organization: Pick<
     Organization,
     'subscriptionStatus' | 'subscriptionCanceledAt'
-  >,
+  >
 ) =>
   organization.subscriptionStatus === 'canceled' &&
   organization.subscriptionCanceledAt &&
@@ -33,254 +25,228 @@ const isCanceled = (
 const getPrismaClient = () => {
   const prisma = new PrismaClient({
     log: ['error'],
-  })
-    .$extends({
-      query: {
-        async $allOperations({ operation, model, args, query }) {
-          if (
-            operation === 'create' ||
-            operation === 'update' ||
-            operation === 'delete'
-          ) {
-            // logger.info('Prisma operation', {
-            //   operation,
-            //   args,
-            //   model,
-            // });
-          }
-          return query(args);
+  }).$extends({
+    result: {
+      organization: {
+        subscriptionStatus: {
+          needs: { subscriptionStatus: true, subscriptionCanceledAt: true },
+          compute(org) {
+            if (process.env.SELF_HOSTED === 'true') {
+              return 'active';
+            }
+
+            return org.subscriptionStatus || 'trialing';
+          },
         },
-      },
-    })
+        hasSubscription: {
+          needs: { subscriptionStatus: true, subscriptionEndsAt: true },
+          compute(org) {
+            if (process.env.SELF_HOSTED === 'true') {
+              return false;
+            }
 
-    .$extends(sessionConsistency())
-    .$extends({
-      result: {
-        organization: {
-          subscriptionStatus: {
-            needs: { subscriptionStatus: true, subscriptionCanceledAt: true },
-            compute(org) {
-              if (process.env.SELF_HOSTED === 'true') {
-                return 'active';
-              }
+            if (
+              [null, 'canceled', 'trialing'].includes(org.subscriptionStatus)
+            ) {
+              return false;
+            }
 
-              return org.subscriptionStatus || 'trialing';
-            },
+            return true;
           },
-          hasSubscription: {
-            needs: { subscriptionStatus: true, subscriptionEndsAt: true },
-            compute(org) {
-              if (process.env.SELF_HOSTED === 'true') {
-                return false;
-              }
-
-              if (
-                [null, 'canceled', 'trialing'].includes(org.subscriptionStatus)
-              ) {
-                return false;
-              }
-
-              return true;
-            },
+        },
+        slug: {
+          needs: { id: true },
+          compute(org) {
+            return org.id;
           },
-          slug: {
-            needs: { id: true },
-            compute(org) {
-              return org.id;
-            },
+        },
+        subscriptionChartEndDate: {
+          needs: {
+            subscriptionEndsAt: true,
+            subscriptionPeriodEventsCountExceededAt: true,
           },
-          subscriptionChartEndDate: {
-            needs: {
-              subscriptionEndsAt: true,
-              subscriptionPeriodEventsCountExceededAt: true,
-            },
-            compute(org) {
-              if (process.env.SELF_HOSTED === 'true') {
-                return null;
-              }
+          compute(org) {
+            if (process.env.SELF_HOSTED === 'true') {
+              return null;
+            }
 
-              if (
-                org.subscriptionEndsAt &&
+            if (
+              org.subscriptionEndsAt &&
+              org.subscriptionPeriodEventsCountExceededAt
+            ) {
+              return org.subscriptionEndsAt >
                 org.subscriptionPeriodEventsCountExceededAt
-              ) {
-                return org.subscriptionEndsAt >
-                  org.subscriptionPeriodEventsCountExceededAt
-                  ? org.subscriptionPeriodEventsCountExceededAt
-                  : org.subscriptionEndsAt;
-              }
+                ? org.subscriptionPeriodEventsCountExceededAt
+                : org.subscriptionEndsAt;
+            }
 
-              if (org.subscriptionEndsAt) {
-                return org.subscriptionEndsAt;
-              }
-
-              // Hedge against edge cases :D
-              return new Date(Date.now() + 1000 * 60 * 60 * 24);
-            },
-          },
-          isActive: {
-            needs: {
-              subscriptionStatus: true,
-              subscriptionEndsAt: true,
-              subscriptionCanceledAt: true,
-            },
-            compute(org) {
-              return (
-                org.subscriptionStatus === 'active' &&
-                org.subscriptionEndsAt &&
-                org.subscriptionEndsAt > new Date() &&
-                !isCanceled(org) &&
-                !isWillBeCanceled(org)
-              );
-            },
-          },
-          isTrial: {
-            needs: { subscriptionStatus: true, subscriptionEndsAt: true },
-            compute(org) {
-              const isSubscriptionInFuture =
-                org.subscriptionEndsAt && org.subscriptionEndsAt > new Date();
-              return (
-                (org.subscriptionStatus === 'trialing' ||
-                  org.subscriptionStatus === null) &&
-                isSubscriptionInFuture
-              );
-            },
-          },
-          isCanceled: {
-            needs: { subscriptionStatus: true, subscriptionCanceledAt: true },
-            compute(org) {
-              if (process.env.SELF_HOSTED === 'true') {
-                return false;
-              }
-
-              return isCanceled(org);
-            },
-          },
-          isWillBeCanceled: {
-            needs: {
-              subscriptionStatus: true,
-              subscriptionCanceledAt: true,
-              subscriptionEndsAt: true,
-            },
-            compute(org) {
-              if (process.env.SELF_HOSTED === 'true') {
-                return false;
-              }
-
-              return isWillBeCanceled(org);
-            },
-          },
-          isExpired: {
-            needs: {
-              subscriptionEndsAt: true,
-              subscriptionStatus: true,
-              subscriptionCanceledAt: true,
-            },
-            compute(org) {
-              if (process.env.SELF_HOSTED === 'true') {
-                return false;
-              }
-
-              if (isCanceled(org)) {
-                return false;
-              }
-
-              if (isWillBeCanceled(org)) {
-                return false;
-              }
-
-              return (
-                org.subscriptionEndsAt && org.subscriptionEndsAt < new Date()
-              );
-            },
-          },
-          isExceeded: {
-            needs: {
-              subscriptionPeriodEventsCount: true,
-              subscriptionPeriodEventsLimit: true,
-            },
-            compute(org) {
-              if (process.env.SELF_HOSTED === 'true') {
-                return false;
-              }
-
-              return (
-                org.subscriptionPeriodEventsCount >
-                org.subscriptionPeriodEventsLimit
-              );
-            },
-          },
-          subscriptionCurrentPeriodStart: {
-            needs: { subscriptionStartsAt: true, subscriptionInterval: true },
-            compute(org) {
-              if (process.env.SELF_HOSTED === 'true') {
-                return null;
-              }
-
-              if (!org.subscriptionStartsAt) {
-                return null;
-              }
-
-              if (org.subscriptionInterval === 'year') {
-                const startDay = org.subscriptionStartsAt.getUTCDate();
-                const now = new Date();
-                return new Date(
-                  Date.UTC(
-                    now.getUTCFullYear(),
-                    now.getUTCMonth(),
-                    startDay,
-                    0,
-                    0,
-                    0,
-                    0,
-                  ),
-                );
-              }
-
-              return org.subscriptionStartsAt;
-            },
-          },
-          subscriptionCurrentPeriodEnd: {
-            needs: {
-              subscriptionStartsAt: true,
-              subscriptionEndsAt: true,
-              subscriptionInterval: true,
-            },
-            compute(org) {
-              if (process.env.SELF_HOSTED === 'true') {
-                return null;
-              }
-
-              if (!org.subscriptionStartsAt) {
-                return null;
-              }
-
-              if (org.subscriptionInterval === 'year') {
-                const startDay = org.subscriptionStartsAt.getUTCDate();
-                const now = new Date();
-                return new Date(
-                  Date.UTC(
-                    now.getUTCFullYear(),
-                    now.getUTCMonth() + 1,
-                    startDay - 1,
-                    0,
-                    0,
-                    0,
-                    0,
-                  ),
-                );
-              }
-
+            if (org.subscriptionEndsAt) {
               return org.subscriptionEndsAt;
-            },
+            }
+
+            // Hedge against edge cases :D
+            return new Date(Date.now() + 1000 * 60 * 60 * 24);
+          },
+        },
+        isActive: {
+          needs: {
+            subscriptionStatus: true,
+            subscriptionEndsAt: true,
+            subscriptionCanceledAt: true,
+          },
+          compute(org) {
+            return (
+              org.subscriptionStatus === 'active' &&
+              org.subscriptionEndsAt &&
+              org.subscriptionEndsAt > new Date() &&
+              !isCanceled(org) &&
+              !isWillBeCanceled(org)
+            );
+          },
+        },
+        isTrial: {
+          needs: { subscriptionStatus: true, subscriptionEndsAt: true },
+          compute(org) {
+            const isSubscriptionInFuture =
+              org.subscriptionEndsAt && org.subscriptionEndsAt > new Date();
+            return (
+              (org.subscriptionStatus === 'trialing' ||
+                org.subscriptionStatus === null) &&
+              isSubscriptionInFuture
+            );
+          },
+        },
+        isCanceled: {
+          needs: { subscriptionStatus: true, subscriptionCanceledAt: true },
+          compute(org) {
+            if (process.env.SELF_HOSTED === 'true') {
+              return false;
+            }
+
+            return isCanceled(org);
+          },
+        },
+        isWillBeCanceled: {
+          needs: {
+            subscriptionStatus: true,
+            subscriptionCanceledAt: true,
+            subscriptionEndsAt: true,
+          },
+          compute(org) {
+            if (process.env.SELF_HOSTED === 'true') {
+              return false;
+            }
+
+            return isWillBeCanceled(org);
+          },
+        },
+        isExpired: {
+          needs: {
+            subscriptionEndsAt: true,
+            subscriptionStatus: true,
+            subscriptionCanceledAt: true,
+          },
+          compute(org) {
+            if (process.env.SELF_HOSTED === 'true') {
+              return false;
+            }
+
+            if (isCanceled(org)) {
+              return false;
+            }
+
+            if (isWillBeCanceled(org)) {
+              return false;
+            }
+
+            return (
+              org.subscriptionEndsAt && org.subscriptionEndsAt < new Date()
+            );
+          },
+        },
+        isExceeded: {
+          needs: {
+            subscriptionPeriodEventsCount: true,
+            subscriptionPeriodEventsLimit: true,
+          },
+          compute(org) {
+            if (process.env.SELF_HOSTED === 'true') {
+              return false;
+            }
+
+            return (
+              org.subscriptionPeriodEventsCount >
+              org.subscriptionPeriodEventsLimit
+            );
+          },
+        },
+        subscriptionCurrentPeriodStart: {
+          needs: { subscriptionStartsAt: true, subscriptionInterval: true },
+          compute(org) {
+            if (process.env.SELF_HOSTED === 'true') {
+              return null;
+            }
+
+            if (!org.subscriptionStartsAt) {
+              return null;
+            }
+
+            if (org.subscriptionInterval === 'year') {
+              const startDay = org.subscriptionStartsAt.getUTCDate();
+              const now = new Date();
+              return new Date(
+                Date.UTC(
+                  now.getUTCFullYear(),
+                  now.getUTCMonth(),
+                  startDay,
+                  0,
+                  0,
+                  0,
+                  0
+                )
+              );
+            }
+
+            return org.subscriptionStartsAt;
+          },
+        },
+        subscriptionCurrentPeriodEnd: {
+          needs: {
+            subscriptionStartsAt: true,
+            subscriptionEndsAt: true,
+            subscriptionInterval: true,
+          },
+          compute(org) {
+            if (process.env.SELF_HOSTED === 'true') {
+              return null;
+            }
+
+            if (!org.subscriptionStartsAt) {
+              return null;
+            }
+
+            if (org.subscriptionInterval === 'year') {
+              const startDay = org.subscriptionStartsAt.getUTCDate();
+              const now = new Date();
+              return new Date(
+                Date.UTC(
+                  now.getUTCFullYear(),
+                  now.getUTCMonth() + 1,
+                  startDay - 1,
+                  0,
+                  0,
+                  0,
+                  0
+                )
+              );
+            }
+
+            return org.subscriptionEndsAt;
           },
         },
       },
-    })
-    .$extends(
-      readReplicas({
-        url: process.env.DATABASE_URL_REPLICA ?? process.env.DATABASE_URL!,
-      }),
-    );
+    },
+  });
 
   return prisma;
 };

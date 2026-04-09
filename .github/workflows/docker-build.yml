@@ -36,12 +36,39 @@ jobs:
   lint-and-test:
     runs-on: ubuntu-latest
     services:
+      postgres:
+        image: postgres:16-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
       redis:
         image: redis:7-alpine
         ports:
           - 6379:6379
         options: >-
           --health-cmd "redis-cli ping || exit 1"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      clickhouse:
+        image: clickhouse/clickhouse-server:26.1.3.52
+        ports:
+          - 8123:8123
+        env:
+          CLICKHOUSE_DB: openpanel
+          CLICKHOUSE_USER: default
+          CLICKHOUSE_PASSWORD: ""
+          CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+        options: >-
+          --health-cmd "wget -qO- http://localhost:8123/ping || exit 1"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 20
@@ -75,14 +102,26 @@ jobs:
       - name: Codegen
         run: pnpm codegen
 
+      - name: Migrate database
+        run: pnpm migrate:deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+          DATABASE_URL_DIRECT: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+          CLICKHOUSE_URL: http://localhost:8123/openpanel
+          SELF_HOSTED: "true"
+
+      - name: Run tests
+        run: pnpm test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+          CLICKHOUSE_URL: http://localhost:8123/openpanel
+          REDIS_URL: redis://localhost:6379
+
       # - name: Run Biome
       #   run: pnpm lint
 
       # - name: Run TypeScript checks
       #   run: pnpm typecheck
-
-      # - name: Run tests
-      #   run: pnpm test
 
   build-and-push-api:
     permissions:

@@ -412,3 +412,78 @@ export class FunnelService {
 }
 
 export const funnelService = new FunnelService(ch);
+
+import { getSettingsForProject } from './organization.service';
+
+export async function getFunnelCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  steps: string[];
+  windowHours?: number;
+  groupBy?: 'session_id' | 'profile_id';
+}) {
+  const { timezone } = await getSettingsForProject(input.projectId);
+  const eventSeries = input.steps.map((name, index) => ({
+    id: String(index + 1),
+    type: 'event' as const,
+    name,
+    displayName: name,
+    segment: 'user' as const,
+    filters: [],
+  }));
+
+  const result = await funnelService.getFunnel({
+    projectId: input.projectId,
+    startDate: input.startDate,
+    endDate: input.endDate,
+    series: eventSeries,
+    breakdowns: [],
+    chartType: 'funnel',
+    interval: 'day',
+    range: 'custom',
+    previous: false,
+    metric: 'sum',
+    options: {
+      type: 'funnel',
+      funnelWindow: input.windowHours ?? 24,
+      funnelGroup: input.groupBy ?? 'session_id',
+    },
+    timezone,
+  });
+
+  const primarySeries = result[0];
+  if (!primarySeries) {
+    return {
+      steps: [],
+      totalUsers: 0,
+      completedUsers: 0,
+      overallConversionRate: 0,
+    };
+  }
+
+  const steps = primarySeries.steps.map((step, index) => ({
+    step: index + 1,
+    eventName: step.event.displayName || step.event.name,
+    users: step.count,
+    conversionRateFromStart: Math.round(step.percent * 100) / 100,
+    dropoffPercent:
+      step.dropoffPercent != null
+        ? Math.round(step.dropoffPercent * 100) / 100
+        : null,
+    isHighestDropoff: step.isHighestDropoff,
+  }));
+
+  const totalUsers = steps[0]?.users ?? 0;
+  const completedUsers = steps[steps.length - 1]?.users ?? 0;
+
+  return {
+    steps,
+    totalUsers,
+    completedUsers,
+    overallConversionRate:
+      totalUsers > 0
+        ? Math.round((completedUsers / totalUsers) * 10000) / 100
+        : 0,
+  };
+}

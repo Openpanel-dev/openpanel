@@ -1,66 +1,13 @@
 /** biome-ignore-all lint/suspicious/useAwait: fastify need async or done callbacks */
 process.env.TZ = 'UTC';
 
-import compress from '@fastify/compress';
-import cookie from '@fastify/cookie';
-import cors, { type FastifyCorsOptions } from '@fastify/cors';
-import {
-  decodeSessionToken,
-  EMPTY_SESSION,
-  type SessionValidationResult,
-  validateSessionToken,
-} from '@openpanel/auth';
-import { generateId } from '@openpanel/common';
-import {
-  type IServiceClientWithProject,
-  runWithAlsSession,
-} from '@openpanel/db';
-import { getRedisPub } from '@openpanel/redis';
-import type { AppRouter } from '@openpanel/trpc';
-import { appRouter, createContext } from '@openpanel/trpc';
-import type { FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
-import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
-import type { FastifyBaseLogger, FastifyRequest } from 'fastify';
-import Fastify from 'fastify';
-import metricsPlugin from 'fastify-metrics';
 import sourceMapSupport from 'source-map-support';
-import {
-  healthcheck,
-  liveness,
-  readiness,
-} from './controllers/healthcheck.controller';
-import { ipHook } from './hooks/ip.hook';
-import { requestIdHook } from './hooks/request-id.hook';
-import { requestLoggingHook } from './hooks/request-logging.hook';
-import { timestampHook } from './hooks/timestamp.hook';
-import aiRouter from './routes/ai.router';
-import eventRouter from './routes/event.router';
-import exportRouter from './routes/export.router';
-import gscCallbackRouter from './routes/gsc-callback.router';
-import importRouter from './routes/import.router';
-import insightsRouter from './routes/insights.router';
-import liveRouter from './routes/live.router';
-import manageRouter from './routes/manage.router';
-import miscRouter from './routes/misc.router';
-import oauthRouter from './routes/oauth-callback.router';
-import profileRouter from './routes/profile.router';
-import trackRouter from './routes/track.router';
-import webhookRouter from './routes/webhook.router';
-import { HttpError } from './utils/errors';
+import { buildApp } from './app';
 import { shutdown } from './utils/graceful-shutdown';
 import { logger } from './utils/logger';
+import { getRedisPub } from '@openpanel/redis';
 
 sourceMapSupport.install();
-
-declare module 'fastify' {
-  interface FastifyRequest {
-    client: IServiceClientWithProject | null;
-    clientIp: string;
-    clientIpHeader: string;
-    timestamp?: number;
-    session: SessionValidationResult;
-  }
-}
 
 const port = Number.parseInt(process.env.API_PORT || '3000', 10);
 const host =
@@ -70,200 +17,7 @@ const host =
 const startServer = async () => {
   logger.info('Starting server');
   try {
-    const fastify = Fastify({
-      maxParamLength: 15_000,
-      bodyLimit: 1_048_576 * 500, // 500MB
-      loggerInstance: logger as unknown as FastifyBaseLogger,
-      disableRequestLogging: true,
-      genReqId: (req) =>
-        req.headers['request-id']
-          ? String(req.headers['request-id'])
-          : generateId(),
-    });
-
-    fastify.register(cors, () => {
-      return (
-        req: FastifyRequest,
-        callback: (error: Error | null, options: FastifyCorsOptions) => void
-      ) => {
-        // TODO: set prefix on dashboard routes
-        const corsPaths = [
-          '/trpc',
-          '/live',
-          '/webhook',
-          '/oauth',
-          '/misc',
-          '/ai',
-        ];
-
-        const isPrivatePath = corsPaths.some((path) =>
-          req.url.startsWith(path)
-        );
-
-        if (isPrivatePath) {
-          // Allow multiple dashboard domains
-          const allowedOrigins = [
-            process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL,
-            ...(process.env.API_CORS_ORIGINS?.split(',') ?? []),
-          ].filter(Boolean);
-
-          const origin = req.headers.origin;
-          const isAllowed = origin && allowedOrigins.includes(origin);
-
-          return callback(null, {
-            origin: isAllowed ? origin : false,
-            credentials: true,
-          });
-        }
-
-        return callback(null, {
-          origin: '*',
-          maxAge: 86_400 * 7, // cache preflight for 7 days
-        });
-      };
-    });
-
-    await fastify.register(import('fastify-raw-body'), {
-      global: false,
-    });
-
-    fastify.addHook('onRequest', requestIdHook);
-    fastify.addHook('onRequest', timestampHook);
-    fastify.addHook('onRequest', ipHook);
-    fastify.addHook('onResponse', requestLoggingHook);
-
-    fastify.register(compress, {
-      global: false,
-      encodings: ['gzip', 'deflate'],
-    });
-
-    // Dashboard API
-    fastify.register(async (instance) => {
-      instance.register(cookie, {
-        secret: process.env.COOKIE_SECRET ?? '',
-        hook: 'onRequest',
-        parseOptions: {},
-      });
-
-      instance.addHook('onRequest', async (req) => {
-        if (req.cookies?.session) {
-          try {
-            const sessionId = decodeSessionToken(req.cookies?.session);
-            const session = await runWithAlsSession(sessionId, () =>
-              validateSessionToken(req.cookies.session)
-            );
-            req.session = session;
-          } catch {
-            req.session = EMPTY_SESSION;
-          }
-        } else if (process.env.DEMO_USER_ID) {
-          try {
-            const session = await runWithAlsSession('1', () =>
-              validateSessionToken(null)
-            );
-            req.session = session;
-          } catch {
-            req.session = EMPTY_SESSION;
-          }
-        } else {
-          req.session = EMPTY_SESSION;
-        }
-      });
-
-      instance.register(fastifyTRPCPlugin, {
-        prefix: '/trpc',
-        trpcOptions: {
-          router: appRouter,
-          createContext,
-          onError(ctx) {
-            if (
-              ctx.error.code === 'UNAUTHORIZED' &&
-              ctx.path === 'organization.list'
-            ) {
-              return;
-            }
-            ctx.req.log.error('trpc error', {
-              error: ctx.error,
-              path: ctx.path,
-              input: ctx.input,
-              type: ctx.type,
-              session: ctx.ctx?.session,
-            });
-          },
-        } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
-      });
-      instance.register(liveRouter, { prefix: '/live' });
-      instance.register(webhookRouter, { prefix: '/webhook' });
-      instance.register(oauthRouter, { prefix: '/oauth' });
-      instance.register(gscCallbackRouter, { prefix: '/gsc' });
-      instance.register(miscRouter, { prefix: '/misc' });
-      instance.register(aiRouter, { prefix: '/ai' });
-    });
-
-    // Public API
-    fastify.register(async (instance) => {
-      instance.register(metricsPlugin, { endpoint: '/metrics' });
-      instance.register(eventRouter, { prefix: '/event' });
-      instance.register(profileRouter, { prefix: '/profile' });
-      instance.register(exportRouter, { prefix: '/export' });
-      instance.register(importRouter, { prefix: '/import' });
-      instance.register(insightsRouter, { prefix: '/insights' });
-      instance.register(trackRouter, { prefix: '/track' });
-      instance.register(manageRouter, { prefix: '/manage' });
-      // Keep existing endpoints for backward compatibility
-      instance.get('/healthcheck', healthcheck);
-      // New Kubernetes-style health endpoints
-      instance.get('/healthz/live', liveness);
-      instance.get('/healthz/ready', readiness);
-      instance.get('/', (_request, reply) =>
-        reply.send({
-          status: 'ok',
-          message: 'Successfully running OpenPanel.dev API',
-        })
-      );
-    });
-
-    const SKIP_LOG_ERRORS = ['UNAUTHORIZED', 'FST_ERR_CTP_INVALID_MEDIA_TYPE'];
-    fastify.setErrorHandler((error, request, reply) => {
-      if (error.statusCode === 429) {
-        return reply.status(429).send({
-          status: 429,
-          error: 'Too Many Requests',
-          message: 'You have exceeded the rate limit for this endpoint.',
-        });
-      }
-
-      if (error instanceof HttpError) {
-        if (!SKIP_LOG_ERRORS.includes(error.code)) {
-          request.log.error('internal server error', { error });
-        }
-
-        if (process.env.NODE_ENV === 'production' && error.status === 500) {
-          return reply.status(500).send('Internal server error');
-        }
-
-        return reply.status(error.status).send({
-          status: error.status,
-          error: error.error,
-          message: error.message,
-        });
-      }
-
-      if (!SKIP_LOG_ERRORS.includes(error.code)) {
-        request.log.error('request error', { error });
-      }
-
-      const status = error?.statusCode ?? 500;
-      if (process.env.NODE_ENV === 'production' && status === 500) {
-        return reply.status(500).send('Internal server error');
-      }
-
-      return reply.status(status).send({
-        status,
-        error,
-        message: error.message,
-      });
-    });
+    const fastify = await buildApp();
 
     if (process.env.NODE_ENV === 'production') {
       logger.info('Registering graceful shutdown handlers');
@@ -282,12 +36,11 @@ const startServer = async () => {
     await fastify.listen({ host, port });
 
     try {
-      // Notify when keys expires
       await getRedisPub().config('SET', 'notify-keyspace-events', 'Ex');
     } catch (error) {
       logger.warn('Failed to set redis notify-keyspace-events', error);
       logger.warn(
-        'If you use a managed Redis service, you may need to set this manually.'
+        'If you use a managed Redis service, you may need to set this manually.',
       );
       logger.warn('Otherwise some functions may not work as expected.');
     }

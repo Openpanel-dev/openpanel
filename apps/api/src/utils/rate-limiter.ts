@@ -22,7 +22,8 @@ export async function activateRateLimiter<T extends FastifyRequest>({
         message: 'You have exceeded the rate limit for this endpoint.',
       };
     },
-    redis: getRedisCache(),
+    // In test mode use in-memory storage so tests don't need a running Redis
+    redis: process.env.NODE_ENV !== 'test' ? getRedisCache() : undefined,
     keyGenerator(req) {
       if (keyGenerator) {
         const key = keyGenerator(req as T);

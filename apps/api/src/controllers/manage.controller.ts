@@ -11,8 +11,8 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { HttpError } from '@/utils/errors';
 
-// Validation schemas
-const zCreateProject = z.object({
+// Validation schemas (exported for use in router)
+export const zCreateProject = z.object({
   name: z.string().min(1),
   domain: z.string().url().or(z.literal('')).or(z.null()).optional(),
   cors: z.array(z.string()).default([]),
@@ -23,7 +23,7 @@ const zCreateProject = z.object({
     .default([]),
 });
 
-const zUpdateProject = z.object({
+export const zUpdateProject = z.object({
   name: z.string().min(1).optional(),
   domain: z.string().url().or(z.literal('')).or(z.null()).optional(),
   cors: z.array(z.string()).optional(),
@@ -31,24 +31,24 @@ const zUpdateProject = z.object({
   allowUnsafeRevenueTracking: z.boolean().optional(),
 });
 
-const zCreateClient = z.object({
+export const zCreateClient = z.object({
   name: z.string().min(1),
   projectId: z.string().optional(),
   type: z.enum(['read', 'write', 'root']).optional().default('write'),
 });
 
-const zUpdateClient = z.object({
+export const zUpdateClient = z.object({
   name: z.string().min(1).optional(),
 });
 
-const zCreateReference = z.object({
+export const zCreateReference = z.object({
   projectId: z.string(),
   title: z.string().min(1),
   description: z.string().optional(),
   datetime: z.string(),
 });
 
-const zUpdateReference = z.object({
+export const zUpdateReference = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
   datetime: z.string().optional(),
@@ -94,17 +94,7 @@ export async function createProject(
   request: FastifyRequest<{ Body: z.infer<typeof zCreateProject> }>,
   reply: FastifyReply
 ) {
-  const parsed = zCreateProject.safeParse(request.body);
-
-  if (parsed.success === false) {
-    return reply.status(400).send({
-      error: 'Bad Request',
-      message: 'Invalid request body',
-      details: parsed.error.errors,
-    });
-  }
-
-  const { name, domain, cors, crossDomain, types } = parsed.data;
+  const { name, domain, cors, crossDomain, types } = request.body;
 
   // Generate a default client secret
   const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
@@ -164,15 +154,7 @@ export async function updateProject(
   }>,
   reply: FastifyReply
 ) {
-  const parsed = zUpdateProject.safeParse(request.body);
-
-  if (parsed.success === false) {
-    return reply.status(400).send({
-      error: 'Bad Request',
-      message: 'Invalid request body',
-      details: parsed.error.errors,
-    });
-  }
+  const body = request.body;
 
   // Verify project exists and belongs to organization
   const existing = await db.project.findFirst({
@@ -194,23 +176,22 @@ export async function updateProject(
   }
 
   const updateData: any = {};
-  if (parsed.data.name !== undefined) {
-    updateData.name = parsed.data.name;
+  if (body.name !== undefined) {
+    updateData.name = body.name;
   }
-  if (parsed.data.domain !== undefined) {
-    updateData.domain = parsed.data.domain
-      ? stripTrailingSlash(parsed.data.domain)
+  if (body.domain !== undefined) {
+    updateData.domain = body.domain
+      ? stripTrailingSlash(body.domain)
       : null;
   }
-  if (parsed.data.cors !== undefined) {
-    updateData.cors = parsed.data.cors.map((c) => stripTrailingSlash(c));
+  if (body.cors !== undefined) {
+    updateData.cors = body.cors.map((c) => stripTrailingSlash(c));
   }
-  if (parsed.data.crossDomain !== undefined) {
-    updateData.crossDomain = parsed.data.crossDomain;
+  if (body.crossDomain !== undefined) {
+    updateData.crossDomain = body.crossDomain;
   }
-  if (parsed.data.allowUnsafeRevenueTracking !== undefined) {
-    updateData.allowUnsafeRevenueTracking =
-      parsed.data.allowUnsafeRevenueTracking;
+  if (body.allowUnsafeRevenueTracking !== undefined) {
+    updateData.allowUnsafeRevenueTracking = body.allowUnsafeRevenueTracking;
   }
 
   const project = await db.project.update({
@@ -314,17 +295,7 @@ export async function createClient(
   request: FastifyRequest<{ Body: z.infer<typeof zCreateClient> }>,
   reply: FastifyReply
 ) {
-  const parsed = zCreateClient.safeParse(request.body);
-
-  if (parsed.success === false) {
-    return reply.status(400).send({
-      error: 'Bad Request',
-      message: 'Invalid request body',
-      details: parsed.error.errors,
-    });
-  }
-
-  const { name, projectId, type } = parsed.data;
+  const { name, projectId, type } = request.body;
 
   // If projectId is provided, verify it belongs to organization
   if (projectId) {
@@ -370,16 +341,6 @@ export async function updateClient(
   }>,
   reply: FastifyReply
 ) {
-  const parsed = zUpdateClient.safeParse(request.body);
-
-  if (parsed.success === false) {
-    return reply.status(400).send({
-      error: 'Bad Request',
-      message: 'Invalid request body',
-      details: parsed.error.errors,
-    });
-  }
-
   // Verify client exists and belongs to organization
   const existing = await db.client.findFirst({
     where: {
@@ -393,8 +354,8 @@ export async function updateClient(
   }
 
   const updateData: any = {};
-  if (parsed.data.name !== undefined) {
-    updateData.name = parsed.data.name;
+  if (request.body.name !== undefined) {
+    updateData.name = request.body.name;
   }
 
   const client = await db.client.update({
@@ -512,17 +473,7 @@ export async function createReference(
   request: FastifyRequest<{ Body: z.infer<typeof zCreateReference> }>,
   reply: FastifyReply
 ) {
-  const parsed = zCreateReference.safeParse(request.body);
-
-  if (parsed.success === false) {
-    return reply.status(400).send({
-      error: 'Bad Request',
-      message: 'Invalid request body',
-      details: parsed.error.errors,
-    });
-  }
-
-  const { projectId, title, description, datetime } = parsed.data;
+  const { projectId, title, description, datetime } = request.body;
 
   // Verify project belongs to organization
   const project = await db.project.findFirst({
@@ -555,15 +506,7 @@ export async function updateReference(
   }>,
   reply: FastifyReply
 ) {
-  const parsed = zUpdateReference.safeParse(request.body);
-
-  if (parsed.success === false) {
-    return reply.status(400).send({
-      error: 'Bad Request',
-      message: 'Invalid request body',
-      details: parsed.error.errors,
-    });
-  }
+  const body = request.body;
 
   // Verify reference exists and belongs to organization
   const existing = await db.reference.findUnique({
@@ -588,14 +531,14 @@ export async function updateReference(
   }
 
   const updateData: any = {};
-  if (parsed.data.title !== undefined) {
-    updateData.title = parsed.data.title;
+  if (body.title !== undefined) {
+    updateData.title = body.title;
   }
-  if (parsed.data.description !== undefined) {
-    updateData.description = parsed.data.description ?? null;
+  if (body.description !== undefined) {
+    updateData.description = body.description ?? null;
   }
-  if (parsed.data.datetime !== undefined) {
-    updateData.date = new Date(parsed.data.datetime);
+  if (body.datetime !== undefined) {
+    updateData.date = new Date(body.datetime);
   }
 
   const reference = await db.reference.update({

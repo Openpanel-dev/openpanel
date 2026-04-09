@@ -5,7 +5,7 @@ import type {
   IReportInput,
   IReportInputWithDates,
 } from '@openpanel/validation';
-import { getChartStartEndDate } from '../services/chart.service';
+import { getChartStartEndDate } from '../services/date.service';
 import { getSettingsForProject } from '../services/organization.service';
 import type { SeriesDefinition } from './types';
 

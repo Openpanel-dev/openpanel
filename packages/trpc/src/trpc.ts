@@ -2,7 +2,7 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { has } from 'ramda';
 import superjson from 'superjson';
-import { ZodError } from 'zod';
+import { ZodError, z } from 'zod';
 
 import { COOKIE_OPTIONS, type SessionValidationResult } from '@openpanel/auth';
 import { runWithAlsSession } from '@openpanel/db';
@@ -68,7 +68,7 @@ const t = initTRPC.context<Context>().create({
       data: {
         ...shape.data,
         zodError:
-          error.cause instanceof ZodError ? error.cause.flatten() : null,
+          error.cause instanceof ZodError ? z.flattenError(error.cause) : null,
       },
     };
   },

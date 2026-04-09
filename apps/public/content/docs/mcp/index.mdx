@@ -1,0 +1,179 @@
+---
+title: MCP Server
+description: Connect AI assistants to your OpenPanel analytics data using the Model Context Protocol.
+---
+
+OpenPanel exposes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that lets AI assistants — Claude, Cursor, Windsurf, and others — query your analytics data directly in conversation.
+
+## Endpoint
+
+```
+https://api.openpanel.dev/mcp
+```
+
+## Authentication
+
+### Why `?token=` instead of headers
+
+MCP clients establish a long-lived SSE connection to the server. Most MCP clients do not support setting custom HTTP headers on SSE connections — only on the initial HTTP request. Because of this, the token is passed as a **query parameter** instead:
+
+```
+https://api.openpanel.dev/mcp?token=YOUR_TOKEN
+```
+
+The `Authorization: Bearer` header is also accepted as a fallback, but `?token=` is the recommended approach for MCP clients.
+
+### Token format
+
+The token is a **base64-encoded** string of your client ID and client secret joined by a colon:
+
+```
+base64(clientId:clientSecret)
+```
+
+Generate it in your terminal:
+
+```bash
+echo -n "YOUR_CLIENT_ID:YOUR_CLIENT_SECRET" | base64
+```
+
+Then append it to the MCP URL:
+
+```
+https://api.openpanel.dev/mcp?token=<base64-encoded-token>
+```
+
+### Required client type
+
+Only `read` and `root` clients can authenticate with MCP. Write-only clients are rejected.
+
+| Client type | Access |
+|-------------|--------|
+| `read` | Scoped to a single project (the one the client belongs to) |
+| `root` | Can query any project in your organization |
+
+Use a `read` client if you want to limit the AI assistant to one project. Use a `root` client if you need cross-project access or want to list all projects.
+
+Go to **Settings → API Clients** in your dashboard to create a client. See the [Authentication guide](/docs/api/authentication) for more details.
+
+## Connecting to Claude Desktop
+
+Add the following to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "openpanel": {
+      "type": "streamable-http",
+      "url": "https://api.openpanel.dev/mcp?token=YOUR_TOKEN"
+    }
+  }
+}
+```
+
+## Connecting with Claude Code CLI
+
+With the Claude CLI you can use the `--header` flag to pass the token via `Authorization: Bearer` rather than embedding it in the URL:
+
+```bash
+claude mcp add --transport http openpanel https://api.openpanel.dev/mcp \
+  --header "Authorization: Bearer YOUR_TOKEN"
+```
+
+Or with the token in the URL (equivalent):
+
+```bash
+claude mcp add --transport http openpanel "https://api.openpanel.dev/mcp?token=YOUR_TOKEN"
+```
+
+## Available tools
+
+### Project access
+
+| Tool | Description |
+|------|-------------|
+| `list_projects` | List all projects accessible with your credentials. Root clients see all organization projects; read clients see only their own. |
+| `get_dashboard_urls` | Get clickable dashboard links for the current project — overview, events, profiles, sessions, and deep-links to specific items. |
+
+### Dashboards & reports
+
+| Tool | Description |
+|------|-------------|
+| `list_dashboards` | List all dashboards for a project. |
+| `list_reports` | List all reports in a dashboard with their chart types and tracked events. |
+| `get_report_data` | Execute a saved report and return its data (time-series, funnel, metric, etc.). |
+
+### Discovery
+
+| Tool | Description |
+|------|-------------|
+| `list_event_names` | Get the top 50 most common event names in the project. Call this first if you don't know exact event names. |
+| `list_event_properties` | List all property keys tracked for an event (or across all events). |
+| `get_event_property_values` | Get all distinct values for a specific event property. |
+
+### Events & sessions
+
+| Tool | Description |
+|------|-------------|
+| `query_events` | Query raw events with optional filters. Returns individual records with path, device, country, referrer, and custom properties. |
+| `query_sessions` | Query sessions with optional filters. Each session includes duration, entry/exit pages, bounce status, and attribution data. |
+
+### Profiles (users)
+
+| Tool | Description |
+|------|-------------|
+| `find_profiles` | Search and filter user profiles by name, email, location, inactivity, session count, or whether they performed a specific event. |
+| `get_profile` | Get a specific user profile with their most recent events. |
+| `get_profile_sessions` | Get all sessions for a user profile, ordered by most recent first. |
+| `get_profile_metrics` | Get computed lifetime metrics for a user: sessions, pageviews, bounce rate, revenue, and more. |
+
+### Groups (B2B)
+
+| Tool | Description |
+|------|-------------|
+| `list_group_types` | List all group types defined in the project (e.g. `company`, `team`). Call this first before querying groups. |
+| `find_groups` | Search for groups by name, ID, or type. |
+| `get_group` | Get a specific group with its properties and member profiles. |
+
+### Aggregated metrics
+
+| Tool | Description |
+|------|-------------|
+| `get_analytics_overview` | Key metrics for a date range: visitors, pageviews, sessions, bounce rate, and avg session duration. |
+| `get_rolling_active_users` | Time series of active users using a rolling window — DAU (1 day), WAU (7 days), or MAU (30 days). |
+| `get_top_pages` | Most visited pages ranked by pageviews. |
+| `get_page_performance` | Per-page bounce rate, avg session duration, sessions, and pageviews. |
+| `get_page_conversions` | Pages ranked by how many visitors went on to convert after viewing them. |
+| `get_entry_exit_pages` | Most common entry pages (session start) or exit pages (session end). |
+| `get_top_referrers` | Top traffic sources broken down by referrer name and type. |
+| `get_country_breakdown` | Visitor counts by country, region, or city. |
+| `get_device_breakdown` | Visitor counts by device type, browser, or OS. |
+
+### User behavior
+
+| Tool | Description |
+|------|-------------|
+| `get_funnel` | Analyze a conversion funnel between 2+ events — sign-up flows, checkout, onboarding. |
+| `get_retention_cohort` | Weekly user retention cohort table showing long-term product stickiness. |
+| `get_weekly_retention_series` | Week-over-week retention as a time series. |
+| `get_user_last_seen_distribution` | Histogram of user recency — useful for churn analysis. |
+| `get_user_flow` | Visualize user navigation flows as a Sankey diagram (before/after/between events). |
+| `get_engagement_metrics` | Engagement metrics over time. |
+
+### Google Search Console
+
+These tools require GSC to be connected for the project in your dashboard settings.
+
+| Tool | Description |
+|------|-------------|
+| `gsc_get_overview` | GSC performance over time: clicks, impressions, CTR, and avg position. |
+| `gsc_get_top_pages` | Top-performing pages from GSC ranked by clicks. |
+| `gsc_get_page_details` | Detailed GSC performance for a specific page including all queries driving traffic to it. |
+| `gsc_get_top_queries` | Top search queries ranked by clicks. |
+| `gsc_get_query_opportunities` | Low-hanging-fruit SEO opportunities: queries ranking 4–20 with meaningful search volume. |
+| `gsc_get_query_details` | Detailed GSC data for a specific search query with all pages that rank for it. |
+| `gsc_get_cannibalization` | Queries where multiple pages on your site compete against each other in Google. |
+
+## Rate limiting
+
+60 requests per minute per client.

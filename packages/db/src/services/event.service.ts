@@ -1138,3 +1138,155 @@ class EventService {
 }
 
 export const eventService = new EventService(ch);
+
+import { getCache } from '@openpanel/redis';
+import { resolveDateRange } from './date.service';
+
+export async function getTopEventNames(projectId: string): Promise<string[]> {
+  return getCache(`mcp:event-names:${projectId}`, 60 * 10, async () => {
+    const rows = await clix(ch)
+      .select<IClickhouseEvent>(['name', 'count() as count'])
+      .from(TABLE_NAMES.event_names_mv)
+      .where('project_id', '=', projectId)
+      .groupBy(['name'])
+      .orderBy('count', 'DESC')
+      .limit(50)
+      .execute();
+
+    return rows.map((r) => r.name);
+  });
+}
+
+export const listEventNamesCore = (projectId: string): Promise<string[]> =>
+  getTopEventNames(projectId);
+
+export async function listEventPropertiesCore(input: {
+  projectId: string;
+  eventName?: string;
+}): Promise<{ properties: Array<{ property_key: string; event_name: string }> }> {
+  const builder = clix(ch)
+    .select<{ property_key: string; event_name: string }>([
+      'distinct property_key',
+      'name as event_name',
+    ])
+    .from(TABLE_NAMES.event_property_values_mv)
+    .where('project_id', '=', input.projectId)
+    .orderBy('property_key', 'ASC')
+    .limit(500);
+
+  if (input.eventName) {
+    builder.where('name', '=', input.eventName);
+  }
+
+  const rows = await builder.execute();
+  return { properties: rows };
+}
+
+export async function getEventPropertyValuesCore(input: {
+  projectId: string;
+  eventName: string;
+  propertyKey: string;
+}): Promise<{ event: string; property: string; values: string[] }> {
+  const rows = await clix(ch)
+    .select<{ value: string }>(['property_value as value'])
+    .from(TABLE_NAMES.event_property_values_mv)
+    .where('project_id', '=', input.projectId)
+    .where('name', '=', input.eventName)
+    .where('property_key', '=', input.propertyKey)
+    .orderBy('created_at', 'DESC')
+    .limit(200)
+    .execute();
+
+  return {
+    event: input.eventName,
+    property: input.propertyKey,
+    values: rows.map((r) => r.value),
+  };
+}
+
+export interface QueryEventsInput {
+  projectId: string;
+  startDate?: string;
+  endDate?: string;
+  eventNames?: string[];
+  path?: string;
+  country?: string;
+  city?: string;
+  device?: string;
+  browser?: string;
+  os?: string;
+  referrer?: string;
+  referrerName?: string;
+  referrerType?: string;
+  profileId?: string;
+  properties?: Record<string, string>;
+  limit?: number;
+}
+
+export async function queryEventsCore(
+  input: QueryEventsInput,
+): Promise<IClickhouseEvent[]> {
+  const builder = clix(ch)
+    .select<IClickhouseEvent>([])
+    .from(TABLE_NAMES.events)
+    .where('project_id', '=', input.projectId);
+
+  if (input.profileId) {
+    builder.where('profile_id', '=', input.profileId);
+  }
+
+  if (input.eventNames?.length) {
+    builder.where('name', 'IN', input.eventNames);
+  }
+
+  if (input.path) {
+    builder.where('path', '=', input.path);
+  }
+
+  if (input.referrer) {
+    builder.where('referrer', '=', input.referrer);
+  }
+
+  if (input.referrerName) {
+    builder.where('referrer_name', '=', input.referrerName);
+  }
+
+  if (input.referrerType) {
+    builder.where('referrer_type', '=', input.referrerType);
+  }
+
+  if (input.device) {
+    builder.where('device', '=', input.device);
+  }
+
+  if (input.country) {
+    builder.where('country', '=', input.country);
+  }
+
+  if (input.city) {
+    builder.where('city', '=', input.city);
+  }
+
+  if (input.os) {
+    builder.where('os', '=', input.os);
+  }
+
+  if (input.browser) {
+    builder.where('browser', '=', input.browser);
+  }
+
+  if (input.properties) {
+    for (const [key, value] of Object.entries(input.properties)) {
+      builder.rawWhere(`properties[${sqlstring.escape(key)}] = ${sqlstring.escape(value)}`);
+    }
+  }
+
+  const { startDate: start, endDate: end } = resolveDateRange(input.startDate, input.endDate);
+
+  builder.where('created_at', 'BETWEEN', [
+    clix.datetime(start),
+    clix.datetime(end),
+  ]);
+
+  return builder.limit(input.limit ?? 20).execute();
+}

@@ -32,6 +32,10 @@ const importRouter: FastifyPluginCallback = async (fastify) => {
   fastify.route({
     method: 'POST',
     url: '/events',
+    schema: {
+      tags: ['Import'],
+      description: 'Bulk import historical events.',
+    },
     handler: controller.importEvents,
   });
 };

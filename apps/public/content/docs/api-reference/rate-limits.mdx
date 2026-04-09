@@ -1,0 +1,30 @@
+---
+title: Rate Limits
+description: Request limits and how to handle them
+---
+
+## Limits
+
+| Endpoint group | Limit               |
+| -------------- | ------------------- |
+| Insights       | 100 req / 10 seconds |
+| Export         | 100 req / 10 seconds |
+| Manage         | 20 req / 10 seconds  |
+
+Limits are applied per **Client ID**.
+
+Track, Profile, and Import endpoints do not have a rate limit applied.
+
+## Handling 429s
+
+When you exceed the limit the API returns `429 Too Many Requests`:
+
+```json
+{
+  "status": 429,
+  "error": "Too Many Requests",
+  "message": "You have exceeded the rate limit for this endpoint."
+}
+```
+
+Wait for the rate limit window to reset before retrying.

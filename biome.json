@@ -60,13 +60,15 @@
       },
       "correctness": {
         "useExhaustiveDependencies": "off",
-        "noUnreachable": "off"
+        "noUnreachable": "off",
+        "noGlobalDirnameFilename": "off"
       },
       "performance": {
         "noDelete": "off",
         "noAccumulatingSpread": "off",
         "noBarrelFile": "off",
-        "noNamespaceImport": "off"
+        "noNamespaceImport": "off",
+        "useTopLevelRegex": "off"
       },
       "suspicious": {
         "noExplicitAny": "off",

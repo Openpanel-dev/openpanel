@@ -12,7 +12,6 @@ import { zChartEvent, zReport } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { HttpError } from '@/utils/errors';
-import { parseQueryString } from '@/utils/parse-zod-query-string';
 
 async function getProjectId(
   request: FastifyRequest<{
@@ -61,7 +60,7 @@ async function getProjectId(
   return projectId;
 }
 
-const eventsScheme = z.object({
+export const eventsScheme = z.object({
   project_id: z.string().optional(),
   projectId: z.string().optional(),
   profileId: z.string().optional(),
@@ -96,39 +95,22 @@ export async function events(
   }>,
   reply: FastifyReply
 ) {
-  const query = eventsScheme.safeParse(request.query);
-
-  if (query.success === false) {
-    return reply.status(400).send({
-      error: 'Bad Request',
-      message: 'Invalid query parameters',
-      details: query.error.errors,
-    });
-  }
-
   const projectId = await getProjectId(request);
-  const limit = query.data.limit;
-  const page = Math.max(query.data.page, 1);
+  const { limit, page: rawPage, event, start, end, profileId, includes } = request.query;
   const take = Math.max(Math.min(limit, 1000), 1);
-  const cursor = page - 1;
+  const cursor = Math.max(rawPage, 1) - 1;
   const options: GetEventListOptions = {
     projectId,
-    events: (Array.isArray(query.data.event)
-      ? query.data.event
-      : [query.data.event]
-    ).filter((s): s is string => typeof s === 'string'),
-    startDate: query.data.start ? new Date(query.data.start) : undefined,
-    endDate: query.data.end ? new Date(query.data.end) : undefined,
+    events: (Array.isArray(event) ? event : [event]).filter((s): s is string => typeof s === 'string'),
+    startDate: start ? new Date(start) : undefined,
+    endDate: end ? new Date(end) : undefined,
     cursor,
     take,
-    profileId: query.data.profileId,
+    profileId,
     select: {
       profile: false,
       meta: false,
-      ...query.data.includes?.reduce(
-        (acc, key) => ({ ...acc, [key]: true }),
-        {}
-      ),
+      ...includes?.reduce((acc, key) => ({ ...acc, [key]: true }), {}),
     },
   };
 
@@ -148,7 +130,7 @@ export async function events(
   });
 }
 
-const chartSchemeFull = zReport
+export const chartSchemeFull = zReport
   .pick({
     breakdowns: true,
     interval: true,
@@ -185,23 +167,13 @@ const chartSchemeFull = zReport
 
 export async function charts(
   request: FastifyRequest<{
-    Querystring: Record<string, string>;
+    Querystring: z.infer<typeof chartSchemeFull>;
   }>,
   reply: FastifyReply
 ) {
-  const query = chartSchemeFull.safeParse(parseQueryString(request.query));
-
-  if (query.success === false) {
-    return reply.status(400).send({
-      error: 'Bad Request',
-      message: 'Invalid query parameters',
-      details: query.error.errors,
-    });
-  }
-
   const projectId = await getProjectId(request);
   const { timezone } = await getSettingsForProject(projectId);
-  const { events, series, ...rest } = query.data;
+  const { events, series, ...rest } = request.query;
 
   // Use series if available, otherwise fall back to events (backward compat)
   const eventSeries = (series ?? events ?? []).map((event: any) => ({

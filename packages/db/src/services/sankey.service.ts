@@ -781,3 +781,56 @@ export class SankeyService {
 }
 
 export const sankeyService = new SankeyService(ch);
+
+import { getSettingsForProject } from './organization.service';
+
+function toChartEvent(name: string) {
+  return {
+    id: name,
+    name,
+    displayName: name,
+    type: 'event' as const,
+    segment: 'event' as const,
+    filters: [],
+  };
+}
+
+export async function getUserFlowCore(input: {
+  projectId: string;
+  startDate: string;
+  endDate: string;
+  startEvent: string;
+  endEvent?: string;
+  mode: 'after' | 'before' | 'between';
+  steps?: number;
+  exclude?: string[];
+  include?: string[];
+}) {
+  if (input.mode === 'between' && !input.endEvent) {
+    throw new Error('endEvent is required when mode is "between"');
+  }
+
+  const { timezone } = await getSettingsForProject(input.projectId);
+  const result = await sankeyService.getSankey({
+    projectId: input.projectId,
+    startDate: input.startDate,
+    endDate: input.endDate,
+    steps: input.steps ?? 5,
+    mode: input.mode,
+    startEvent: toChartEvent(input.startEvent),
+    endEvent: input.endEvent ? toChartEvent(input.endEvent) : undefined,
+    exclude: input.exclude ?? [],
+    include: input.include,
+    timezone,
+  });
+
+  return {
+    mode: input.mode,
+    startEvent: input.startEvent,
+    endEvent: input.endEvent,
+    node_count: result.nodes.length,
+    link_count: result.links.length,
+    nodes: result.nodes,
+    links: result.links,
+  };
+}
