@@ -333,19 +333,21 @@ export class ConversionService {
 
     // Deduplicate to one row per (groupCol, day) using the earliest created_at.
     // A user who triggers the start event 50 times a day produces 50 rows — all
-    // collapse to the same uniqExact bucket anyway. Deduplicating here shrinks
-    // the ASOF JOIN left side proportionally, which matters a lot for 30d ranges.
+    // collapse to the same bucket anyway. Deduplicating here shrinks the left
+    // side of the JOIN proportionally, which matters a lot for 30d ranges.
+    // Alias is first_open_at (not created_at) to avoid ILLEGAL_AGGREGATION when
+    // ClickHouse inlines the CTE and sees the aggregate alias in JOIN/WHERE conditions.
     const otherIdCol = groupCol === 'profile_id' ? 'session_id' : 'profile_id';
     const safeGroupByCols = startExtraCols.filter(c => c !== 'properties');
     const anyWrapCols = startExtraCols.filter(c => c === 'properties');
     // GROUP BY uses _day (pre-computed in the subquery) instead of toDate(created_at)
     // to avoid ClickHouse resolving 'created_at' in toDate(created_at) to the SELECT
-    // alias min(created_at) AS created_at — which would put an aggregate in GROUP BY.
+    // alias min(created_at) AS first_open_at — which would put an aggregate in GROUP BY.
     const dedupeGroupBy = [quoteCol(groupCol), '_day', ...safeGroupByCols.map(quoteCol)].join(', ');
     const dedupeSelect = [
       quoteCol(groupCol),
       `any(${quoteCol(otherIdCol)}) AS ${quoteCol(otherIdCol)}`,
-      'min(created_at) AS created_at',
+      'min(created_at) AS first_open_at',
       ...safeGroupByCols.map(quoteCol),
       ...anyWrapCols.map(c => `any(${quoteCol(c)}) AS ${quoteCol(c)}`),
     ].join(', ');
@@ -354,10 +356,11 @@ export class ConversionService {
       FROM (SELECT *, toDate(created_at) AS _day FROM start_events_raw)
       GROUP BY ${dedupeGroupBy}
     )`);
-    // End events CTE — needs hold property columns for the JOIN condition
+
+    // End events raw CTE — all matching activation events (custom or regular)
     const endEventCte = await this.buildSingleEventCte(
       lastEvent,
-      'end_events',
+      'end_events_raw',
       projectId,
       startDate,
       extendedEndDate,
@@ -365,6 +368,25 @@ export class ConversionService {
       groupCol,
     );
     ctes.push(endEventCte);
+
+    // Deduplicate end events to one row per (groupCol, hold cols, day).
+    // Per-day dedup (not global) so the same user converting on different days
+    // is counted as multiple conversions — one per (profile, show, day).
+    // Alias is first_act_at (not created_at) for the same ILLEGAL_AGGREGATION reason.
+    const endSafeGroupByCols = endExtraCols.filter(c => c !== 'properties');
+    const endAnyWrapCols = endExtraCols.filter(c => c === 'properties');
+    const endDedupeGroupBy = [quoteCol(groupCol), 'toDate(created_at)', ...endSafeGroupByCols.map(quoteCol)].join(', ');
+    const endDedupeSelect = [
+      quoteCol(groupCol),
+      'min(created_at) AS first_act_at',
+      ...endSafeGroupByCols.map(quoteCol),
+      ...endAnyWrapCols.map(c => `any(${quoteCol(c)}) AS ${quoteCol(c)}`),
+    ].join(', ');
+    ctes.push(`end_events AS (
+      SELECT ${endDedupeSelect}
+      FROM end_events_raw
+      GROUP BY ${endDedupeGroupBy}
+    )`);
 
     // Add cohort CTEs (computed once per query, not per row)
     cohortIds.forEach((cohortId) => {
@@ -418,15 +440,21 @@ export class ConversionService {
       return `AND se.${col} = ee.${col}`;
     }).join('\n        ');
 
-    const toStartOf = clix.toStartOf('se.created_at', interval);
+    const toStartOf = clix.toStartOf('se.first_open_at', interval);
     const breakdownGroupByStr = breakdownGroupBy.join(', ');
 
-    // Time diff column for time-to-convert measuring
+    // Conversion window condition — reused in both converted flag and time diff
+    const conversionCondition = `ee.${groupCol} != '' AND ee.first_act_at >= se.first_open_at - INTERVAL ${gracePeriodSeconds} SECOND AND ee.first_act_at <= se.first_open_at + INTERVAL ${funnelWindowSeconds} SECOND`;
+
+    // Time diff column for time-to-convert measuring.
+    // Uses minIf so that when multiple end_events rows fall in the window we
+    // take the earliest gap (most conservative conversion time).
     const timeDiffCol = measuring === 'time_to_convert'
-      ? `,\n        IF(ee.${groupCol} != '' AND ee.${groupCol} IS NOT NULL, dateDiff('second', se.created_at, ee.created_at), NULL) AS time_diff_seconds`
+      ? `,\n        minIf(dateDiff('second', se.first_open_at, ee.first_act_at), ${conversionCondition}) AS time_diff_seconds`
       : '';
 
-    // Build WHERE clause for cohort global filters (inCohort / notInCohort)
+    // Build WHERE clause for cohort global filters (inCohort / notInCohort).
+    // Applied before GROUP BY so cohort alias columns are still in scope.
     const cohortFilterClauses = events.flatMap(event =>
       (event.filters ?? [])
         .filter(f => (f.operator === 'inCohort' || f.operator === 'notInCohort') && f.cohortId)
@@ -439,47 +467,57 @@ export class ConversionService {
     );
     // Deduplicate (same filter merged into multiple events)
     const uniqueCohortFilterClauses = [...new Set(cohortFilterClauses)];
+    const cohortFilterWhere = uniqueCohortFilterClauses.length > 0
+      ? `\n      WHERE ${uniqueCohortFilterClauses.join('\n        AND ')}`
+      : '';
 
-    // Inner SELECT: raw per-event rows from the self-join (no aggregation yet)
-    // Build WHERE for inner query: ASOF upper bound + any cohort filters
-    const innerWhereConditions = [
-      `(ee.created_at IS NULL OR ee.created_at <= se.created_at + INTERVAL ${funnelWindowSeconds} SECOND)`,
-      ...uniqueCohortFilterClauses,
-    ];
-    const innerWhere = `\n      WHERE ${innerWhereConditions.join('\n        AND ')}`;
+    // Inner GROUP BY: one row per unique start-event occurrence.
+    // Includes first_open_at so it is accessible in the countIf / minIf expressions.
+    // Hold property cols (e.g. showId) ensure distinct shows are not merged.
+    // Breakdown aliases (b_0, b_1 …) are ClickHouse SELECT aliases — valid in GROUP BY.
+    const innerGroupByCols = [
+      'event_day',
+      `se.${quoteCol(groupCol)}`,
+      'se.first_open_at',
+      ...holdExtraCols.filter(c => c !== 'properties').map(c => `se.${quoteCol(c)}`),
+      ...breakdownGroupBy,
+    ].join(', ');
 
     const innerSQL = `
       SELECT
         ${toStartOf} AS event_day,
-        se.${groupCol} AS ${groupCol},
-        ee.${groupCol} AS conversion_${groupCol}${breakdownColumns.length ? ',\n        ' + breakdownColumns.join(',\n        ') : ''}${timeDiffCol}
+        se.${groupCol},
+        countIf(${conversionCondition}) > 0 AS converted${breakdownColumns.length ? ',\n        ' + breakdownColumns.join(',\n        ') : ''}${timeDiffCol}
       FROM start_events se${profileJoin}
-      LEFT ASOF JOIN end_events ee ON
+      LEFT JOIN end_events ee ON
         ee.${groupCol} = se.${groupCol}
         ${holdJoinConditions}
-        AND ee.created_at >= se.created_at - INTERVAL ${gracePeriodSeconds} SECOND
-      ${cohortJoins}${innerWhere}`;
+      ${cohortJoins}${cohortFilterWhere}
+      GROUP BY ${innerGroupByCols}`;
 
-    // TTC aggregation columns (all computed in single scan, negligible extra cost)
+    // TTC aggregation columns — condition is 'converted' (Bool) so TTC stats
+    // are computed only over start events that actually had a conversion.
     const ttcAggColumns = measuring === 'time_to_convert'
       ? `,
-        round(avgIf(time_diff_seconds, time_diff_seconds IS NOT NULL)) AS ttc_avg,
-        round(quantileIf(0.5)(time_diff_seconds, time_diff_seconds IS NOT NULL)) AS ttc_median,
-        minIf(time_diff_seconds, time_diff_seconds IS NOT NULL) AS ttc_min,
-        maxIf(time_diff_seconds, time_diff_seconds IS NOT NULL) AS ttc_max,
-        round(quantileIf(0.25)(time_diff_seconds, time_diff_seconds IS NOT NULL)) AS ttc_p25,
-        round(quantileIf(0.75)(time_diff_seconds, time_diff_seconds IS NOT NULL)) AS ttc_p75,
-        round(quantileIf(0.9)(time_diff_seconds, time_diff_seconds IS NOT NULL)) AS ttc_p90,
-        round(quantileIf(0.99)(time_diff_seconds, time_diff_seconds IS NOT NULL)) AS ttc_p99`
+        round(avgIf(time_diff_seconds, converted)) AS ttc_avg,
+        round(quantileIf(0.5)(time_diff_seconds, converted)) AS ttc_median,
+        minIf(time_diff_seconds, converted) AS ttc_min,
+        maxIf(time_diff_seconds, converted) AS ttc_max,
+        round(quantileIf(0.25)(time_diff_seconds, converted)) AS ttc_p25,
+        round(quantileIf(0.75)(time_diff_seconds, converted)) AS ttc_p75,
+        round(quantileIf(0.9)(time_diff_seconds, converted)) AS ttc_p90,
+        round(quantileIf(0.99)(time_diff_seconds, converted)) AS ttc_p99`
       : '';
 
-    // agg CTE: aggregate inner rows into (event_day, breakdowns) buckets
+    // agg CTE: count() for total opens, countIf(converted) for conversions.
+    // Counts all conversion opportunities (not just unique users) so the same
+    // user opening the same show on different days contributes multiple times.
     const aggCte = `agg AS (
       SELECT
         event_day,
-        ${breakdownGroupBy.length ? breakdownGroupByStr + ',\n        ' : ''}uniqExact(${groupCol}) AS total_first,
-        uniqExact(conversion_${groupCol}) AS conversions,
-        round(100.0 * uniqExact(conversion_${groupCol}) / uniqExact(${groupCol}), 2) AS conversion_rate_percentage${ttcAggColumns}
+        ${breakdownGroupBy.length ? breakdownGroupByStr + ',\n        ' : ''}count() AS total_first,
+        countIf(converted) AS conversions,
+        round(100.0 * countIf(converted) / count(), 2) AS conversion_rate_percentage${ttcAggColumns}
       FROM (${innerSQL})
       GROUP BY event_day${breakdownGroupBy.length ? ', ' + breakdownGroupByStr : ''}
     )`;
