@@ -13,8 +13,8 @@
     ]
   },
   "hero": {
-    "heading": "Ask your AI about your users",
-    "subheading": "Point Claude, Cursor, Windsurf, or any MCP client at api.openpanel.dev/mcp and your AI can query funnels, retention, user profiles, and events directly. No dashboard required.",
+    "heading": "MCP: Ask your AI about your users",
+    "subheading": "Let your AI deep dive into your OpenPanel data and understand what's going on. Skip dashboards and reports when you just want a quick answer.",
     "badges": [
       "38 tools",
       "Works with Claude, Cursor & Windsurf",
@@ -58,7 +58,7 @@
   ],
   "screenshots": [
     {
-      "src": "/features/feature-mcp-placeholder.webp",
+      "src": "/features/feature-mcp-claude.webp",
       "alt": "Claude Desktop querying OpenPanel analytics via MCP",
       "caption": "Ask about retention, funnels, or individual users directly from Claude Desktop."
     }

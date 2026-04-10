@@ -4,13 +4,16 @@ import { DownloadIcon, RocketIcon } from 'lucide-react';
 
 import CopyInput from '../forms/copy-input';
 
-type Props = { id: string; secret: string };
+type Props = { id: string; secret: string; type?: 'read' | 'write' | 'root' };
 
-export function CreateClientSuccess({ id, secret }: Props) {
+export function CreateClientSuccess({ id, secret, type }: Props) {
   const mcpToken = btoa(`${id}:${secret}`);
+  const showMcpToken = type === 'root' || type === 'read';
 
   const download = () => {
-    const credentials = `CLIENT_ID=${id}\nCLIENT_SECRET=${secret}\nMCP_TOKEN=${mcpToken}`;
+    const credentials = showMcpToken
+      ? `CLIENT_ID=${id}\nCLIENT_SECRET=${secret}\nMCP_TOKEN=${mcpToken}`
+      : `CLIENT_ID=${id}\nCLIENT_SECRET=${secret}`;
     const blob = new Blob([credentials], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -20,18 +23,18 @@ export function CreateClientSuccess({ id, secret }: Props) {
   };
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4 [&>*]:min-w-0">
       <CopyInput label="Client ID" value={id} />
       {secret && (
-        <div className="w-full">
+        <div className="w-full min-w-0">
           <CopyInput label="Secret" value={secret} />
           <p className="mt-1 text-sm text-muted-foreground">
             You will only need the secret if you want to send server events.
           </p>
         </div>
       )}
-      {secret && (
-        <div className="w-full">
+      {secret && showMcpToken && (
+        <div className="w-full min-w-0">
           <CopyInput label="MCP Token" value={mcpToken} />
           <p className="mt-1 text-sm text-muted-foreground">
             Use this token to authenticate with the MCP server (base64 encoded

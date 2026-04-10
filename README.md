@@ -38,6 +38,9 @@ Openpanel is an open-source web and product analytics platform that combines the
 - **💸 Transparent Pricing**: No hidden costs or usage limits
 - **🛠️ Custom Dashboards**: Flexible chart creation and data visualization
 - **📱 Multi-Platform**: Web, mobile (iOS/Android), and server-side tracking
+- **🤖 MCP Server**: Ask Claude, Cursor, or any MCP client about your users — 38 tools, hosted, no install
+- **💰 Revenue Tracking**: Monitor purchases, subscriptions, and LTV alongside product events
+- **🔌 Integrations**: Connect Google Search Console, and more to enrich your data
 
 ## 📊 Analytics Platform Comparison
 

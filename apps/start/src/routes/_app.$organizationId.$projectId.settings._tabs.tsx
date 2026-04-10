@@ -43,6 +43,7 @@ function ProjectDashboard() {
     { id: 'events', label: 'Events' },
     { id: 'clients', label: 'Clients' },
     { id: 'tracking', label: 'Tracking script' },
+    { id: 'mcp', label: 'MCP' },
     { id: 'widgets', label: 'Widgets' },
     { id: 'imports', label: 'Imports' },
     { id: 'gsc', label: 'Google Search' },
