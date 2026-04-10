@@ -12,7 +12,11 @@ import {
   getProjectWithClients,
   getProjectsByOrganizationId,
 } from '@openpanel/db';
-import { zOnboardingProject, zProject } from '@openpanel/validation';
+import {
+  zOnboardingProject,
+  zProject,
+  zProjectUpdate,
+} from '@openpanel/validation';
 import { addHours } from 'date-fns';
 import { getProjectAccess } from '../access';
 import { TRPCAccessError, TRPCBadRequestError } from '../errors';
@@ -50,12 +54,8 @@ export const projectRouter = createTRPCRouter({
     }),
 
   update: protectedProcedure
-    .input(zProject.partial())
+    .input(zProjectUpdate)
     .mutation(async ({ input, ctx }) => {
-      if (!input.id) {
-        throw new Error('Project ID is required to update a project');
-      }
-
       const access = await getProjectAccess({
         userId: ctx.session.userId,
         projectId: input.id,
@@ -72,6 +72,7 @@ export const projectRouter = createTRPCRouter({
         data: {
           name: input.name,
           crossDomain: input.crossDomain,
+          allowUnsafeRevenueTracking: input.allowUnsafeRevenueTracking,
           filters:
             input.filters === undefined ? undefined : input.filters || [],
           domain:
@@ -84,7 +85,6 @@ export const projectRouter = createTRPCRouter({
             input.cors === undefined
               ? undefined
               : input.cors.map((c) => stripTrailingSlash(c)) || [],
-          allowUnsafeRevenueTracking: input.allowUnsafeRevenueTracking,
         },
         include: {
           clients: {

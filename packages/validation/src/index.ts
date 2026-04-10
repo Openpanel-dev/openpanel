@@ -484,6 +484,17 @@ export const zProject = z.object({
 });
 export type IProjectEdit = z.infer<typeof zProject>;
 
+export const zProjectUpdate = z.object({
+  id: z.string(),
+  name: z.string().min(1).optional(),
+  filters: z.array(zProjectFilters).optional(),
+  domain: z.string().url().or(z.literal('').or(z.null())).optional(),
+  cors: z.array(z.string()).optional(),
+  crossDomain: z.boolean().optional(),
+  allowUnsafeRevenueTracking: z.boolean().optional(),
+});
+export type IProjectUpdate = z.infer<typeof zProjectUpdate>;
+
 export const zPassword = z.string().min(8);
 
 export const zSignInEmail = z.object({
