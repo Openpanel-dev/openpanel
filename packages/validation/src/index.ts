@@ -69,6 +69,12 @@ export const zChartFormula = z.object({
     .string()
     .optional()
     .describe('A user-friendly name for display purposes'),
+  hideSeries: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'Alpha IDs (e.g. ["A", "B"]) of series referenced by this formula that should be hidden from the chart while still being used in the formula computation',
+    ),
 });
 
 // Event with type field for discriminated union

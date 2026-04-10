@@ -1,5 +1,6 @@
 import { ColorSquare } from '@/components/color-square';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { Input } from '@/components/ui/input';
 import { InputEnter } from '@/components/ui/input-enter';
@@ -43,6 +44,35 @@ import {
   ReportSeriesItem,
   type ReportSeriesItemProps,
 } from './ReportSeriesItem';
+
+// Matches a single uppercase letter that isn't part of a larger identifier,
+// which is how mathjs treats series references in formulas (A, B, C, ...).
+const ALPHA_REFERENCE_REGEX = /(?<![a-zA-Z0-9_])[A-Z](?![a-zA-Z0-9_])/g;
+
+function getReferencedAlphaIds(
+  formula: string,
+  formulaIndex: number,
+): string[] {
+  if (!formula) {
+    return [];
+  }
+  const matches = formula.match(ALPHA_REFERENCE_REGEX) ?? [];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const match of matches) {
+    if (seen.has(match)) {
+      continue;
+    }
+    const idx = alphabetIds.indexOf(match as (typeof alphabetIds)[number]);
+    // Only include references to series that exist before this formula
+    if (idx === -1 || idx >= formulaIndex) {
+      continue;
+    }
+    seen.add(match);
+    result.push(match);
+  }
+  return result;
+}
 
 function SortableReportSeriesItem({
   event,
@@ -218,6 +248,52 @@ export function ReportSeries() {
                             }}
                           />
                         )}
+                        {(() => {
+                          const referencedAlphaIds = getReferencedAlphaIds(
+                            event.formula,
+                            index,
+                          );
+                          if (referencedAlphaIds.length === 0) {
+                            return null;
+                          }
+                          const hideSeries = event.hideSeries ?? [];
+                          return (
+                            <div className="flex flex-wrap gap-x-3 gap-y-1.5 pt-1">
+                              {referencedAlphaIds.map((alphaId) => {
+                                const isHidden = hideSeries.includes(alphaId);
+                                return (
+                                  <label
+                                    key={alphaId}
+                                    className="flex items-center gap-1.5 text-xs font-medium select-none cursor-pointer"
+                                  >
+                                    <Checkbox
+                                      checked={isHidden}
+                                      onCheckedChange={(checked) => {
+                                        const next = checked
+                                          ? [
+                                              ...hideSeries.filter(
+                                                (id) => id !== alphaId,
+                                              ),
+                                              alphaId,
+                                            ]
+                                          : hideSeries.filter(
+                                              (id) => id !== alphaId,
+                                            );
+                                        dispatch(
+                                          changeEvent({
+                                            ...event,
+                                            hideSeries: next,
+                                          }),
+                                        );
+                                      }}
+                                    />
+                                    Hide series {alphaId} from chart
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                       </div>
                       <ReportEventMore onClick={handleMore(event)} />
                     </>

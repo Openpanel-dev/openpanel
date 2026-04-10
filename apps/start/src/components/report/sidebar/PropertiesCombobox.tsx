@@ -32,6 +32,7 @@ interface PropertiesComboboxProps {
     description: string;
   }) => void;
   exclude?: string[];
+  include?: string[];
   mode?: 'events' | 'profile';
 }
 
@@ -67,6 +68,7 @@ export function PropertiesCombobox({
   onSelect,
   mode,
   exclude = [],
+  include = [],
 }: PropertiesComboboxProps) {
   const { projectId } = useAppParams();
   const trpc = useTRPC();
@@ -90,14 +92,18 @@ export function PropertiesCombobox({
     }
   }, [open, mode]);
 
-  const shouldShowProperty = (property: string) => {
-    return !exclude.find((ex) => {
-      if (ex.endsWith('*')) {
-        return property.startsWith(ex.slice(0, -1));
-      }
-      return property === ex;
-    });
+  const matchesPropertyPattern = (property: string, pattern: string) => {
+    if (pattern.endsWith('*')) {
+      return property.startsWith(pattern.slice(0, -1));
+    }
+    return property === pattern;
   };
+
+  const shouldShowProperty = (property: string) => {
+    return !exclude.some((pattern) => matchesPropertyPattern(property, pattern));
+  };
+
+  const allProperties = Array.from(new Set([...properties, ...include]));
 
   // Fixed group properties: name, type, plus dynamic property keys
   const groupActions = [
@@ -110,7 +116,7 @@ export function PropertiesCombobox({
     })),
   ].filter((a) => shouldShowProperty(a.value));
 
-  const profileActions = properties
+  const profileActions = allProperties
     .filter(
       (property) =>
         property.startsWith('profile') && shouldShowProperty(property)
@@ -120,7 +126,7 @@ export function PropertiesCombobox({
       label: property.split('.').pop() ?? property,
       description: property.split('.').slice(0, -1).join('.'),
     }));
-  const eventActions = properties
+  const eventActions = allProperties
     .filter(
       (property) =>
         !property.startsWith('profile') && shouldShowProperty(property)

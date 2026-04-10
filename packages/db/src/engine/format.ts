@@ -23,12 +23,36 @@ export function format(
     displayName?: string;
     formula?: string;
     name?: string;
+    hideSeries?: string[];
   }>,
   includeAlphaIds: boolean,
   previousSeries: ConcreteSeries[] | null = null,
   limit: number | undefined = undefined
 ): FinalChart {
-  const series = concreteSeries.map((cs) => {
+  // Collect definition indices that should be hidden from the chart.
+  // A formula can opt to hide any of the series it references (by alpha ID)
+  // so the chart only shows the formula result without the input series.
+  const hiddenDefinitionIndices = new Set<number>();
+  for (const definition of definitions) {
+    if (definition.type !== 'formula' || !definition.hideSeries?.length) {
+      continue;
+    }
+    for (const alphaId of definition.hideSeries) {
+      const index = alphabetIds.indexOf(alphaId as (typeof alphabetIds)[number]);
+      if (index >= 0) {
+        hiddenDefinitionIndices.add(index);
+      }
+    }
+  }
+
+  const visibleConcreteSeries =
+    hiddenDefinitionIndices.size > 0
+      ? concreteSeries.filter(
+          (cs) => !hiddenDefinitionIndices.has(cs.definitionIndex)
+        )
+      : concreteSeries;
+
+  const series = visibleConcreteSeries.map((cs) => {
     // Find definition for this series
     const definition = definitions[cs.definitionIndex];
     const alphaId = includeAlphaIds
@@ -128,8 +152,10 @@ export function format(
   // Sort series by sum (biggest first)
   series.sort((a, b) => b.metrics.sum - a.metrics.sum);
 
-  // Calculate global metrics
-  const allValues = concreteSeries.flatMap((cs) => cs.data.map((d) => d.count));
+  // Calculate global metrics (excluding hidden series)
+  const allValues = visibleConcreteSeries.flatMap((cs) =>
+    cs.data.map((d) => d.count)
+  );
   const globalMetrics = {
     sum: sum(allValues),
     average: round(average(allValues), 2),
