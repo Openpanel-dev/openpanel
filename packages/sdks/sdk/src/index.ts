@@ -51,7 +51,7 @@ export interface OpenPanelOptions {
 export class OpenPanel {
   api: Api;
   options: OpenPanelOptions;
-  profileId?: string;
+  profileId?: string | number;
   groups: string[] = [];
   deviceId?: string;
   sessionId?: string;
@@ -171,7 +171,7 @@ export class OpenPanel {
   identify(payload: IdentifyPayload) {
     this.log('identify user', payload);
     if (payload.profileId) {
-      this.profileId = payload.profileId;
+      this.profileId = payload.profileId
       this.flush();
     }
 

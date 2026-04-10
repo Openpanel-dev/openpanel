@@ -9,16 +9,18 @@ export const zGroupPayload = z.object({
   properties: z.record(z.string(), z.unknown()).optional(),
 });
 
+export const zProfileId = z.union([z.string().min(1), z.number()]);
+
 export const zAssignGroupPayload = z.object({
   groupIds: z.array(z.string().min(1)),
-  profileId: z.union([z.string().min(1), z.number()]).optional(),
+  profileId: zProfileId.optional(),
 });
 
 export const zTrackPayload = z
   .object({
     name: z.string().min(1),
     properties: z.record(z.string(), z.unknown()).optional(),
-    profileId: z.union([z.string().min(1), z.number()]).optional(),
+    profileId: zProfileId.optional(),
     groups: z.array(z.string().min(1)).optional(),
   })
   .refine((data) => !RESERVED_EVENT_NAMES.includes(data.name as any), {
@@ -51,7 +53,7 @@ export const zTrackPayload = z
   );
 
 export const zIdentifyPayload = z.object({
-  profileId: z.string().min(1),
+  profileId: zProfileId,
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   email: z.string().email().optional(),
@@ -60,19 +62,19 @@ export const zIdentifyPayload = z.object({
 });
 
 export const zIncrementPayload = z.object({
-  profileId: z.string().min(1),
+  profileId: zProfileId,
   property: z.string().min(1),
   value: z.number().positive().optional(),
 });
 
 export const zDecrementPayload = z.object({
-  profileId: z.string().min(1),
+  profileId: zProfileId,
   property: z.string().min(1),
   value: z.number().positive().optional(),
 });
 
 export const zAliasPayload = z.object({
-  profileId: z.string().min(1),
+  profileId: zProfileId,
   alias: z.string().min(1),
 });
 

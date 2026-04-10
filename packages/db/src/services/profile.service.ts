@@ -270,7 +270,7 @@ export interface IClickhouseProfile {
 
 export interface IServiceUpsertProfile {
   projectId: string;
-  id: string;
+  id: string | number;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -315,7 +315,7 @@ export function upsertProfile(
   isFromEvent = false
 ) {
   const profile: IClickhouseProfile = {
-    id,
+    id: String(id),
     first_name: firstName || '',
     last_name: lastName || '',
     email: email || '',

@@ -273,7 +273,7 @@ async function adjustProfileProperty(
   direction: 1 | -1
 ): Promise<void> {
   const { profileId, property, value } = payload;
-  const profile = await getProfileById(profileId, projectId);
+  const profile = await getProfileById(String(profileId), projectId);
   if (!profile) {
     throw new HttpError('Profile not found', { status: 404 });
   }
