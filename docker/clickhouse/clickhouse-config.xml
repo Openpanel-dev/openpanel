@@ -2,6 +2,11 @@
     <logger>
         <level>warning</level>
         <console>true</console>
+        <!-- Disable file logging entirely; rely on docker's json-file driver for stdout capture + rotation.
+             See https://github.com/ClickHouse/clickhouse-docs/issues/4255 — <console>true</console> alone
+             does NOT disable the inherited <log>/<errorlog> file paths, which can spin-loop on inode loss. -->
+        <log remove="remove" />
+        <errorlog remove="remove" />
     </logger>
     
     <keep_alive_timeout>10</keep_alive_timeout>

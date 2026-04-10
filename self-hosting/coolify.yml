@@ -37,7 +37,6 @@ services:
     restart: always
     volumes:
       - opch-data:/var/lib/clickhouse
-      - opch-logs:/var/log/clickhouse-server
       - type: bind
         source: ./clickhouse-config.xml
         target: /etc/clickhouse-server/config.d/op-config.xml
@@ -47,6 +46,11 @@ services:
               <logger>
                   <level>warning</level>
                   <console>true</console>
+                  <!-- Disable file logging entirely; rely on docker's log driver for stdout capture.
+                       <console>true</console> alone does not disable inherited <log>/<errorlog> file paths,
+                       which can spin-loop on inode loss. See ClickHouse/clickhouse-docs#4255. -->
+                  <log remove="remove" />
+                  <errorlog remove="remove" />
               </logger>
               <keep_alive_timeout>10</keep_alive_timeout>
               <!-- Stop all the unnecessary logging -->
