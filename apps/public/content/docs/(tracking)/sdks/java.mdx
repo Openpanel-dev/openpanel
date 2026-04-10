@@ -1,0 +1,307 @@
+---
+title: Java
+description: The OpenPanel Java SDK allows you to track user behavior in your JVM backend applications.
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+The OpenPanel Java SDK allows you to track user behavior in your JVM backend applications. It targets **Java 11+** and works with Spring Boot, Quarkus, Micronaut, plain Java, and more.
+
+<Callout>
+View the [Java SDK on GitHub](https://github.com/idcapture/openpanel-java-sdk) for the latest updates and source code.
+</Callout>
+
+<Callout type="info">
+For Android/Kotlin applications, see the [Kotlin SDK](/docs/sdks/kotlin) instead.
+</Callout>
+
+## Installation
+
+<Steps>
+### Step 1: Add Dependency
+
+Add the OpenPanel SDK to your project's dependencies:
+
+#### Maven
+
+```xml
+<dependency>
+    <groupId>fr.idcapture</groupId>
+    <artifactId>openpanel-java</artifactId>
+    <version>0.4.0</version>
+</dependency>
+```
+
+#### Gradle (Groovy)
+
+```groovy
+implementation 'fr.idcapture:openpanel-java:0.4.0'
+```
+
+#### Gradle (Kotlin DSL)
+
+```kotlin
+implementation("fr.idcapture:openpanel-java:0.4.0")
+```
+
+### Step 2: Initialize
+
+Import the SDK and initialize it with your client ID and secret:
+
+```java
+import fr.idcapture.openpanel.OpenPanel;
+import fr.idcapture.openpanel.OpenPanelOptions;
+
+OpenPanel op = OpenPanel.create(
+    OpenPanelOptions.builder()
+        .clientId("YOUR_CLIENT_ID")
+        .clientSecret("YOUR_CLIENT_SECRET")
+        .build()
+);
+```
+
+### Configuration Options
+
+<CommonSdkConfig />
+
+Additional Java-specific options:
+
+- `apiUrl` - API endpoint URL (default: `https://api.openpanel.dev`)
+- `disabled` - Set to `true` to disable all [event tracking](/features/event-tracking)
+- `filter` - A function that will be called before tracking an event. If it returns `false`, the event will not be tracked
+- `connectTimeoutSeconds` - Connection timeout in seconds (default: `10`)
+- `readTimeoutSeconds` - Read timeout in seconds (default: `30`)
+- `maxRetries` - Maximum number of retries for failed requests (default: `3`, set to `0` to disable)
+- `initialRetryDelayMs` - Initial retry delay in milliseconds (default: `500`, doubles each attempt)
+- `verbose` - Set to `true` to enable verbose logging via `java.util.logging`
+
+#### Full configuration example
+
+```java
+OpenPanel op = OpenPanel.create(
+    OpenPanelOptions.builder()
+        .clientId("YOUR_CLIENT_ID")
+        .clientSecret("YOUR_CLIENT_SECRET")
+        .apiUrl("https://api.openpanel.dev")
+        .disabled(false)
+        .filter(name -> !name.startsWith("debug_"))
+        .connectTimeoutSeconds(10)
+        .readTimeoutSeconds(30)
+        .maxRetries(3)
+        .initialRetryDelayMs(500)
+        .verbose(false)
+        .build()
+);
+```
+
+</Steps>
+
+## Usage
+
+All methods return `CompletableFuture<Void>`. You can ignore the future (fire-and-forget) or chain callbacks for error handling.
+
+### Tracking Events
+
+To track an event:
+
+```java
+// Minimal
+op.track("page_viewed");
+
+// With properties
+op.track("button_clicked", Map.of("button_id", "submit_form"));
+
+// With user
+op.track("checkout_started", Map.of("cart_value", 149.99), "user123");
+
+// With user + groups
+op.track("report_exported",
+    Map.of("format", "pdf"),
+    "user123",
+    List.of("org_acme")
+);
+```
+
+### Identifying Users
+
+To identify a user:
+
+```java
+// With custom properties only
+op.identify("user123", Map.of("plan", "enterprise"));
+
+// With standard fields + custom properties
+op.identify("user123", "John", "Doe", "john@example.com", Map.of("tier", "premium"));
+
+// With avatar
+op.identify("user123", "John", "Doe", "john@example.com",
+    "https://example.com/avatar.png", Map.of("tier", "premium"));
+```
+
+### Setting Global Properties
+
+Properties set here are merged into every `track()` call. Caller properties take precedence over global ones.
+
+```java
+op.setGlobalProperties(Map.of(
+    "app_version", "2.1.0",
+    "env", "production"
+));
+
+// All subsequent track() calls will include app_version and env automatically
+op.track("feature_used", Map.of("feature", "export"));
+```
+
+### Incrementing Properties
+
+To increment a numeric property on a user profile:
+
+```java
+op.increment("user123", "login_count", 1);
+```
+
+### Decrementing Properties
+
+To decrement a numeric property on a user profile:
+
+```java
+op.decrement("user123", "credits", 5);
+```
+
+### Tracking Revenue
+
+To track revenue events:
+
+```java
+// Simple
+op.revenue(99.99);
+
+// With user
+op.revenue(99.99, "user123");
+
+// With user + extra properties
+op.revenue(49.99, "user123", Map.of("currency", "EUR", "plan", "pro"));
+```
+
+### Groups
+
+```java
+// Create or update a group
+op.group("org_acme", "company", "Acme Inc", Map.of("plan", "enterprise", "seats", 25));
+
+// Assign a user to groups
+op.assignGroup("user123", List.of("org_acme"));
+```
+
+<Callout>
+Groups are **not** automatically attached to track events. Pass them explicitly on each `track()` call where needed.
+</Callout>
+
+### Shutdown
+
+Shutdown the client cleanly when your application stops:
+
+```java
+// Explicit
+op.close();
+
+// Or via try-with-resources
+try (OpenPanel op = OpenPanel.create(options)) {
+    op.track("startup");
+}
+```
+
+## Advanced Usage
+
+### Error Handling
+
+On API errors (4xx/5xx), the `CompletableFuture` is completed exceptionally with an `HttpTracker.OpenPanelApiException` containing the HTTP status code:
+
+```java
+op.track("event")
+  .exceptionally(e -> {
+      if (e.getCause() instanceof HttpTracker.OpenPanelApiException apiEx) {
+          logger.warn("OpenPanel returned {}", apiEx.getStatusCode());
+      }
+      return null;
+  });
+```
+
+### Retry Behavior
+
+Failed requests (5xx and network errors) are retried automatically with exponential backoff. Defaults: 3 retries, starting at 500ms (500ms → 1s → 2s). Client errors (4xx) are not retried.
+
+```java
+// Customize retry behavior
+OpenPanelOptions.builder()
+    .clientId("id")
+    .maxRetries(5)              // more retries
+    .initialRetryDelayMs(1000)  // start at 1s
+    .build();
+
+// Disable retries entirely
+OpenPanelOptions.builder()
+    .clientId("id")
+    .maxRetries(0)
+    .build();
+```
+
+### Custom Event Filtering
+
+You can filter events by name before they are sent:
+
+```java
+OpenPanelOptions.builder()
+    .clientId("YOUR_CLIENT_ID")
+    .filter(eventName -> !eventName.startsWith("internal_"))
+    .build();
+```
+
+### Disabling Tracking
+
+Useful for local development or testing — no HTTP calls are made:
+
+```java
+OpenPanelOptions.builder()
+    .clientId("YOUR_CLIENT_ID")
+    .disabled(true)
+    .build();
+```
+
+### Self-Hosted OpenPanel
+
+If you're running a self-hosted OpenPanel instance, set the `apiUrl`:
+
+```java
+OpenPanelOptions.builder()
+    .clientId("YOUR_CLIENT_ID")
+    .apiUrl("https://your-openpanel-instance.com")
+    .build();
+```
+
+### Debug Logging
+
+Enable verbose mode to log all HTTP requests and responses via `java.util.logging`:
+
+```java
+OpenPanelOptions.builder()
+    .clientId("YOUR_CLIENT_ID")
+    .verbose(true)
+    .build();
+```
+
+### Kotlin Interop
+
+All property maps use JetBrains `@Nullable` type-use annotations (`Map<String, @Nullable Object>`), so Kotlin sees `Map<String, Any?>` natively — no `@Suppress("UNCHECKED_CAST")` needed.
+
+```kotlin
+op.track("checkout", mapOf("amount" to 49.99, "coupon" to null))
+```
+
+## Community SDK
+
+<Callout>
+The Java SDK is a community-maintained SDK by [idcapture](https://github.com/idcapture). For issues or feature requests, please file an issue on the [Java SDK GitHub repository](https://github.com/idcapture/openpanel-java-sdk).
+</Callout>
