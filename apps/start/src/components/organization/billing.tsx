@@ -52,6 +52,7 @@ export default function Billing({ organization }: Props) {
 
   useWS(`/live/organization/${organization.id}`, () => {
     queryClient.invalidateQueries(trpc.organization.pathFilter());
+    queryClient.invalidateQueries(trpc.subscription.pathFilter());
   });
 
   const [recurringInterval, setRecurringInterval] = useState<'year' | 'month'>(
@@ -92,7 +93,7 @@ export default function Billing({ organization }: Props) {
       organization.subscriptionCurrentPeriodEnd
     ) {
       return (
-        <p>
+        <p className="text-destructive">
           Your subscription will be canceled on{' '}
           {formatDate(organization.subscriptionCurrentPeriodEnd)}
         </p>
@@ -104,7 +105,7 @@ export default function Billing({ organization }: Props) {
       organization.subscriptionCurrentPeriodEnd
     ) {
       return (
-        <p>
+        <p className="text-destructive">
           Your subscription expired on{' '}
           {formatDate(organization.subscriptionCurrentPeriodEnd)}
         </p>

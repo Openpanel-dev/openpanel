@@ -33,7 +33,7 @@ export default function BillingSuccess() {
         </div>
 
         {/* Success Message */}
-        <h2 className="text-3xl font-semibold mb-4 text-gray-900">
+        <h2 className="text-3xl font-semibold mb-4">
           Subscription updated successfully
         </h2>
         <p className="text-center mb-12 max-w-md text-base leading-normal">

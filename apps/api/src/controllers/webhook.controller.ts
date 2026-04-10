@@ -130,12 +130,22 @@ export async function polarWebhook(
   }>,
   reply: FastifyReply,
 ) {
+  request.log.info('polar webhook raw', {
+    rawBody: request.rawBody,
+    headers: request.headers,
+  })
   try {
     const event = validatePolarEvent(
       request.rawBody!,
       request.headers as Record<string, string>,
       process.env.POLAR_WEBHOOK_SECRET ?? '',
     );
+
+    request.log.info('polar webhook event', {
+      rawBody: request.rawBody,
+      headers: request.headers,
+      event,
+    })
 
     switch (event.type) {
       case 'order.created': {
