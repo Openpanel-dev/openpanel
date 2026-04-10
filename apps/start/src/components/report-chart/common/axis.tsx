@@ -24,8 +24,9 @@ export function getYAxisWidth(value: string | undefined | null) {
 export const useYAxisProps = (options?: {
   hide?: boolean;
   tickFormatter?: (value: number) => string;
+  width?: number;
 }) => {
-  const [width, setWidth] = useState(24);
+  const [width, setWidth] = useState(options?.width || 24);
   const setWidthDebounced = useDebounceFn(setWidth, 100);
   const number = useNumber();
   const ref = useRef<number[]>([]);
@@ -40,9 +41,11 @@ export const useYAxisProps = (options?: {
       const tick = options?.tickFormatter
         ? options.tickFormatter(value)
         : number.short(value);
-      const newWidth = getYAxisWidth(tick);
-      ref.current.push(newWidth);
-      setWidthDebounced(Math.max(...ref.current));
+      if(!options?.width) {
+        const newWidth = getYAxisWidth(tick);
+        ref.current.push(newWidth);
+        setWidthDebounced(Math.max(...ref.current));
+      }
       return tick;
     },
   };

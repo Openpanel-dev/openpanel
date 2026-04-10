@@ -16,6 +16,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { useYAxisProps } from '../report-chart/common/axis';
 
 type ChartDataItem = {
   value: number;
@@ -94,7 +95,10 @@ export function ProjectChart({
   data: { value: number; date: Date; revenue: number }[];
 }) {
   const [activeBar, setActiveBar] = useState(-1);
-
+  
+  const yAxisProps = useYAxisProps({
+    width: 30,
+  });
   if (data.length === 0) {
     return null;
   }
@@ -114,13 +118,39 @@ export function ProjectChart({
     return getChartColor(0);
   };
 
+  if (maxValue === 0) {
+    return (
+      <div className="relative h-full w-full pl-3">
+
+          <div className="pointer-events-none absolute inset-x-3 bottom-2 h-12">
+            <div className="flex h-full items-end gap-1.5 opacity-35">
+              {[28, 42, 35, 50, 40, 56, 45, 60, 49, 32,98,29,49,69,49,20, 28, 42, 35, 50, 40, 56, 45, 60, 49, 32,98,29,49,69,49,20].map((height, index) => (
+                <div
+                  key={index}
+                  className="flex-1 rounded-full bg-foreground/20"
+                  style={{ height: `${height}%` }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center">
+            <p className="text-sm font-medium text-foreground/85">No activity yet</p>
+            <p className="text-xs text-muted-foreground">
+              Sessions will show up here once tracking starts.
+            </p>
+          </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full pl-3">
       <TooltipProvider color={color}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
-            margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+            margin={{ top: 10, right: 10, bottom: 10, left: 0 }}
             onMouseMove={(e) => {
               setActiveBar(e.activeTooltipIndex ?? -1);
             }}
@@ -132,7 +162,11 @@ export function ProjectChart({
               domain={['dataMin', 'dataMax']}
               hide
             />
-            <YAxis domain={[0, maxValue || 'dataMax']} hide width={0} />
+            <YAxis
+              {...yAxisProps}
+              domain={[0, maxValue || 'dataMax']}
+              allowDecimals={false}
+            />
             <YAxis
               yAxisId="right"
               orientation="right"

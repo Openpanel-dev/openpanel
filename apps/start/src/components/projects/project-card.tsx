@@ -92,11 +92,11 @@ function ProjectChartOuter({ id }: { id: string }) {
   );
 }
 
-function Metric({ value, label }: { value: React.ReactNode; label: string }) {
+function Metric({ value, label, className }: { value: React.ReactNode; label: string; className?: string }) {
   return (
-    <div className="flex flex-col gap-2 md:flex-row items-center">
-      <div className="text-muted-foreground text-xs">{label}</div>
-      <span className="font-semibold">{value}</span>
+    <div className={cn("flex flex-col gap-1 md:flex-row items-center text-sm", className)}>
+      <div className="text-muted-foreground">{label}</div>
+      <span className="font-medium whitespace-nowrap">{value}</span>
     </div>
   );
 }
@@ -111,8 +111,7 @@ function ProjectMetrics({ id }: { id: string }) {
   );
 
   return (
-    <FadeIn className="flex gap-8 flex-1">
-      <div className="flex-1 items-center gap-2 row">
+    <FadeIn className="row flex-wrap gap-3 flex-1">
         {typeof data?.trend?.percentage === 'number' && (
           <Metric
             label="3M DIFF"
@@ -147,10 +146,9 @@ function ProjectMetrics({ id }: { id: string }) {
             })}
           />
         )}
-      </div>
-      <Metric label="3M" value={number.short(data?.metrics?.months_3 ?? 0)} />
-      <Metric label="30D" value={number.short(data?.metrics?.month ?? 0)} />
-      <Metric label="24H" value={number.short(data?.metrics?.day ?? 0)} />
+      <Metric label="3M" value={number.short(data?.metrics?.months_3 ?? 0)} className="ml-auto" />
+        <Metric label="30D" value={number.short(data?.metrics?.month ?? 0)} />
+        <Metric label="24H" value={number.short(data?.metrics?.day ?? 0)} />
     </FadeIn>
   );
 }

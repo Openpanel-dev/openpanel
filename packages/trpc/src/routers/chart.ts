@@ -147,7 +147,7 @@ export const chartRouter = createTRPCRouter({
             created_at >= now() - interval '3 month'
         GROUP BY date
         ORDER BY date ASC
-        WITH FILL FROM toStartOfDay(now() - interval '1 month') 
+        WITH FILL FROM toStartOfDay(now() - interval '3 month') 
         TO toStartOfDay(now()) 
         STEP INTERVAL 1 day
         SETTINGS session_timezone = '${timezone}'
