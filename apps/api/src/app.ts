@@ -240,7 +240,10 @@ export async function buildApp(
 
     if (error instanceof HttpError) {
       if (!SKIP_LOG_ERRORS.includes(error.code)) {
-        request.log.error('internal server error', { error });
+        // 4xx are client-side problems (bad payloads, missing fields, etc.) —
+        // log as warn so they don't drown out real server errors.
+        const log = error.status >= 500 ? request.log.error : request.log.warn;
+        log.call(request.log, 'internal server error', { error });
       }
       if (process.env.NODE_ENV === 'production' && error.status === 500) {
         return reply.status(500).send('Internal server error');
@@ -252,11 +255,15 @@ export async function buildApp(
       });
     }
 
+    const status = error?.statusCode ?? 500;
+
     if (!SKIP_LOG_ERRORS.includes(error.code)) {
-      request.log.error('request error', { error });
+      // Same rationale: client errors (incl. FST_ERR_VALIDATION) are warnings,
+      // not errors. They are caused by callers, not by us.
+      const log = status >= 500 ? request.log.error : request.log.warn;
+      log.call(request.log, 'request error', { error });
     }
 
-    const status = error?.statusCode ?? 500;
     if (process.env.NODE_ENV === 'production' && status === 500) {
       return reply.status(500).send('Internal server error');
     }
