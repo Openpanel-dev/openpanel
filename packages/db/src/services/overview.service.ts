@@ -591,23 +591,30 @@ export class OverviewService {
 
   getRawWhereClause(type: 'events' | 'sessions', filters: IChartEventFilter[]) {
     const where = getEventFiltersWhereClause(
-      filters.map((item) => {
+      filters.flatMap((item) => {
         if (type === 'sessions') {
           if (item.name === 'path') {
-            return { ...item, name: 'entry_path' };
+            return [{ ...item, name: 'entry_path' }];
           }
           if (item.name === 'origin') {
-            return { ...item, name: 'entry_origin' };
+            return [{ ...item, name: 'entry_origin' }];
           }
           if (item.name.startsWith('properties.__query.utm_')) {
-            return {
-              ...item,
-              name: item.name.replace('properties.__query.utm_', 'utm_'),
-            };
+            return [
+              {
+                ...item,
+                name: item.name.replace('properties.__query.utm_', 'utm_'),
+              },
+            ];
           }
-          return item;
+          // sessions table has no `properties` map for arbitrary keys —
+          // drop them instead of generating an invalid WHERE clause.
+          if (item.name.startsWith('properties.')) {
+            return [];
+          }
+          return [item];
         }
-        return item;
+        return [item];
       })
     );
 
