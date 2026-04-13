@@ -130,10 +130,6 @@ export async function polarWebhook(
   }>,
   reply: FastifyReply,
 ) {
-  request.log.info('polar webhook raw', {
-    rawBody: request.rawBody,
-    headers: request.headers,
-  })
   try {
     const event = validatePolarEvent(
       request.rawBody!,
@@ -141,11 +137,13 @@ export async function polarWebhook(
       process.env.POLAR_WEBHOOK_SECRET ?? '',
     );
 
-    request.log.info('polar webhook event', {
-      rawBody: request.rawBody,
-      headers: request.headers,
-      event,
-    })
+    if (
+      'data' in event &&
+      'product' in event.data &&
+      event.data.product?.name === 'Supporter'
+    ) {
+      return reply.status(202).send('OK');
+    }
 
     switch (event.type) {
       case 'order.created': {
