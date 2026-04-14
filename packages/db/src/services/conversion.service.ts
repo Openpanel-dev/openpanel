@@ -65,6 +65,7 @@ export class ConversionService {
     endDate: string,
     extraColumns: string[] = [],
     groupCol: string,
+    preFilterCte?: string,
   ): Promise<string> {
     // Check if this is a custom event
     const customEvent = await getCustomEventByName(event.name, projectId);
@@ -81,6 +82,7 @@ export class ConversionService {
         `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`,
         `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`,
         `${groupCol} != ''`,
+        ...(preFilterCte ? [`${groupCol} IN (SELECT ${groupCol} FROM ${preFilterCte})`] : []),
       ];
 
       const sql = await expandCustomEventToSQL(
@@ -129,7 +131,7 @@ export class ConversionService {
           AND name = '${event.name}'
           AND ${groupCol} != ''
           AND created_at >= toDateTime('${formatClickhouseDate(startDate)}')
-          AND created_at <= toDateTime('${formatClickhouseDate(endDate)}')${filterWhere}
+          AND created_at <= toDateTime('${formatClickhouseDate(endDate)}')${filterWhere}${preFilterCte ? `\n          AND ${groupCol} IN (SELECT ${groupCol} FROM ${preFilterCte})` : ''}
       )`;
     }
   }
@@ -366,6 +368,7 @@ export class ConversionService {
       extendedEndDate,
       endExtraCols,
       groupCol,
+      'start_events_raw',
     );
     ctes.push(endEventCte);
 
