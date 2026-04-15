@@ -8,11 +8,16 @@ import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 
-type EventListItemProps = IServiceEventMinimal | IServiceEvent;
+type EventListItemProps = (IServiceEventMinimal | IServiceEvent) & {
+  /** Hide the profile name/link at the right of the row. Used in
+   *  single-profile contexts (e.g. the profile detail page) where
+   *  every row belongs to the same person and the name is redundant. */
+  hideProfile?: boolean;
+};
 
 export function EventListItem(props: EventListItemProps) {
   const { organizationId, projectId } = useAppParams();
-  const { createdAt, name, path, meta } = props;
+  const { createdAt, name, path, meta, hideProfile } = props;
   const profile = 'profile' in props ? props.profile : null;
 
   const renderName = () => {
@@ -61,7 +66,7 @@ export function EventListItem(props: EventListItemProps) {
         </div>
       </div>
       <div className="flex gap-4">
-        {profile && (
+        {profile && !hideProfile && (
           <Tooltiper asChild content={getProfileName(profile)}>
             <Link
               className="max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap text-muted-foreground hover:underline"

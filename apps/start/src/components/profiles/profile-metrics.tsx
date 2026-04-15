@@ -35,10 +35,14 @@ const PROFILE_METRICS = [
     hideOnZero: false,
   },
   {
-    title: 'Bounce Rate',
-    key: 'bounceRate',
-    unit: '%',
-    inverted: true,
+    // Bounce rate for an individual profile isn't actionable (it's a
+    // cohort metric), so this slot now shows total time the profile
+    // has spent in session across every platform they use. `fancyMinutes`
+    // formats the value as "1h 24m" / "3m 20s" automatically.
+    title: 'Total Session Time',
+    key: 'totalSessionDuration',
+    unit: 'min',
+    inverted: false,
     hideOnZero: false,
   },
   {
@@ -77,13 +81,6 @@ const PROFILE_METRICS = [
     hideOnZero: false,
   },
   {
-    title: 'Conversion Events',
-    key: 'conversionEvents',
-    unit: '',
-    inverted: false,
-    hideOnZero: false,
-  },
-  {
     title: 'Avg Time Between Sessions (h)',
     key: 'avgTimeBetweenSessions',
     unit: 'min',
@@ -95,7 +92,10 @@ const PROFILE_METRICS = [
     key: 'revenue',
     unit: 'currency',
     inverted: false,
-    hideOnZero: true,
+    // Always show revenue even when the profile hasn't paid anything
+    // yet — otherwise the tile silently disappears and it looks like
+    // we've removed the metric. `$0` is legit information.
+    hideOnZero: false,
   },
 ] as const;
 

@@ -118,8 +118,11 @@ export const ProfileActivity = ({ data }: Props) => {
         </WidgetAbsoluteButtons>
       </WidgetHead>
       <WidgetBody>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {[3, 2, 1, 0].map((offset) => (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {/* Three months laid out side-by-side now that this card
+           * spans the full width of the grid. Chevrons in the header
+           * walk further back when the user needs it. */}
+          {[2, 1, 0].map((offset) => (
             <MonthCalendar
               key={offset}
               month={subMonths(startDate, offset)}

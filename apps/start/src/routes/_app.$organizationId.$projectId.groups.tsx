@@ -59,15 +59,13 @@ function Component() {
 
   return (
     <PageContainer>
+      {/* "Add group" button intentionally removed — in a real Pin Drop
+       * self-hosted setup groups flow in from Stripe / RevenueCat
+       * webhooks rather than being hand-created in this UI. Kept the
+       * modal + API so integrations can still upsert via the SDK. */}
       <PageHeader
-        actions={
-          <Button onClick={() => pushModal('AddGroup')}>
-            <PlusIcon className="mr-2 size-4" />
-            Add group
-          </Button>
-        }
         className="mb-8"
-        description="Groups represent companies, teams, or other entities that events belong to."
+        description="Groups represent companies or paying teams. They're created automatically when your billing system (Stripe, RevenueCat) posts to the OpenPanel API."
         title="Groups"
       />
 

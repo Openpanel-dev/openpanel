@@ -10,7 +10,7 @@ import { Skeleton } from '../skeleton';
 import { Tooltiper } from '../ui/tooltip';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
-import { formatDate, timeAgo } from '@/utils/date';
+import { formatDate, timeAgo, timeAgoShort } from '@/utils/date';
 
 interface MetricCardProps {
   id: string;
@@ -74,7 +74,9 @@ export function OverviewMetricCard({
       if (!value) {
         return <>{'N/A'}</>;
       }
-      return <>{timeAgo(new Date(value))}</>;
+      // Use the short variant so "25 minutes ago" becomes "25 mins ago" —
+      // fits inside the metric tile without truncation.
+      return <>{timeAgoShort(new Date(value))}</>;
     }
 
     if (unit === 'min') {
@@ -131,7 +133,12 @@ export function OverviewMetricCard({
     <Tooltiper asChild content={renderTooltip()} sideOffset={-20}>
       <button
         className={cn(
-          'col-span-2 flex-1 shadow-[0_0_0_0.5px] shadow-border md:col-span-1',
+          // `min-w-0` + `overflow-hidden` are required on every grid
+          // item so the CSS grid tracks resolve to `minmax(0, 1fr)`
+          // rather than the default `minmax(auto, 1fr)`. Without this,
+          // long values like "25 minutes ago" expand the column and
+          // bleed into the neighbouring metric cell.
+          'col-span-2 flex-1 min-w-0 overflow-hidden shadow-[0_0_0_0.5px] shadow-border md:col-span-1',
           active && 'bg-def-100'
         )}
         onClick={onClick}

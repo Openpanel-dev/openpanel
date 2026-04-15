@@ -7,6 +7,8 @@ import { ProfileCharts } from '@/components/profiles/profile-charts';
 import { ProfileGroups } from '@/components/profiles/profile-groups';
 import { ProfileMetrics } from '@/components/profiles/profile-metrics';
 import { ProfileProperties } from '@/components/profiles/profile-properties';
+import { ProfileSource } from '@/components/profiles/profile-source';
+import { ProfilePlatforms } from '@/components/profiles/profile-platforms';
 import { useTRPC } from '@/integrations/trpc/react';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -39,6 +41,18 @@ export const Route = createFileRoute(
       ),
       context.queryClient.prefetchQuery(
         context.trpc.profile.popularRoutes.queryOptions({
+          profileId: params.profileId,
+          projectId: params.projectId,
+        }),
+      ),
+      context.queryClient.prefetchQuery(
+        context.trpc.profile.source.queryOptions({
+          profileId: params.profileId,
+          projectId: params.projectId,
+        }),
+      ),
+      context.queryClient.prefetchQuery(
+        context.trpc.profile.platforms.queryOptions({
           profileId: params.profileId,
           projectId: params.projectId,
         }),
@@ -115,12 +129,27 @@ function Component() {
           ) : null}
         </div>
 
-        {/* Heatmap / Activity */}
+        {/* Source (referrer + UTM attribution) */}
         <div className="col-span-1">
+          <ProfileSource profileId={profileId} projectId={projectId} />
+        </div>
+
+        {/* Platforms (web vs app split, current app version) */}
+        <div className="col-span-1">
+          <ProfilePlatforms
+            profileId={profileId}
+            projectId={projectId}
+          />
+        </div>
+
+        {/* Heatmap / Activity */}
+        <div className="col-span-1 md:col-span-2">
           <ProfileActivity data={activity.data} />
         </div>
 
-        {/* Latest events */}
+        {/* Latest events fills the left column; Popular events + Most
+         * visited pages stack on the right so the bottom row never has
+         * an awkward empty cell. */}
         <div className="col-span-1">
           <LatestEvents
             profileId={profileId}
@@ -129,13 +158,8 @@ function Component() {
           />
         </div>
 
-        {/* Most events */}
-        <div className="col-span-1">
+        <div className="col-span-1 flex flex-col gap-6">
           <MostEvents data={mostEvents.data} />
-        </div>
-
-        {/* Popular routes */}
-        <div className="col-span-1">
           <PopularRoutes data={popularRoutes.data} />
         </div>
 

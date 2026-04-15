@@ -69,11 +69,16 @@ export function KeyValueGrid({
     );
   };
 
+  // Explicit `minmax(0, 1fr)` tracks are important here — the default
+  // `grid-cols-N` in Tailwind resolves to `minmax(auto, 1fr)`, which
+  // lets a long value (e.g. a long `biography` property) push its
+  // column wider than its share and bleed over into the neighbouring
+  // cell regardless of overflow-hidden on the child.
   const gridCols = {
-    1: 'grid-cols-1',
-    2: 'grid-cols-1 md:grid-cols-2',
-    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-    4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+    1: 'grid-cols-[minmax(0,1fr)]',
+    2: 'grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]',
+    3: 'grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]',
+    4: 'grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]',
   };
 
   return (
@@ -84,7 +89,11 @@ export function KeyValueGrid({
         <div
           key={`${item.name}-${index}`}
           className={cn(
-            'relative flex items-center justify-between gap-4 p-4 py-3 shadow-[0_0_0_0.5px] shadow-border group',
+            // `min-w-0 overflow-hidden` on the grid cell itself stops
+            // long values from pushing the column wider than its 1fr
+            // share — without this a property like `biography` bleeds
+            // over the neighbouring cell's label.
+            'relative flex min-w-0 items-center justify-between gap-4 overflow-hidden p-4 py-3 shadow-[0_0_0_0.5px] shadow-border group',
             onItemClick && 'cursor-pointer hover:bg-muted/50',
             rowClassName,
           )}
@@ -126,7 +135,10 @@ export function KeyValueGrid({
           </div>
           <div
             className={cn(
-              'text-right text-sm font-mono truncate',
+              // `min-w-0` is required so the truncate can actually
+              // shrink inside the parent flex row — without it long
+              // values overflow into the neighbouring cell.
+              'min-w-0 flex-shrink text-right text-sm font-mono truncate',
               valueClassName,
             )}
             title={typeof item.value === 'string' ? item.value : undefined}

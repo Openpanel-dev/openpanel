@@ -24,6 +24,9 @@ export interface IProfileMetrics {
   sessions: number;
   durationAvg: number;
   durationP90: number;
+  /** Total session time across every session the profile has had,
+   *  expressed in minutes (so the UI can format it with `fancyMinutes`). */
+  totalSessionDuration: number;
   totalEvents: number;
   uniqueDaysActive: number;
   bounceRate: number;
@@ -52,10 +55,11 @@ export function getProfileMetrics(profileId: string, projectId: string) {
       SELECT count(*) as sessions FROM ${TABLE_NAMES.events} WHERE name = 'session_start' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     duration AS (
-      SELECT 
-        round(avg(duration) / 1000 / 60, 2) as durationAvg, 
-        round(quantilesExactInclusive(0.9)(duration)[1] / 1000 / 60, 2) as durationP90 
-      FROM ${TABLE_NAMES.events} 
+      SELECT
+        round(avg(duration) / 1000 / 60, 2) as durationAvg,
+        round(quantilesExactInclusive(0.9)(duration)[1] / 1000 / 60, 2) as durationP90,
+        round(sum(duration) / 1000 / 60, 2) as totalSessionDuration
+      FROM ${TABLE_NAMES.events}
       WHERE name = 'session_end' AND duration != 0 AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     totalEvents AS (
@@ -88,8 +92,9 @@ export function getProfileMetrics(profileId: string, projectId: string) {
       (SELECT firstSeen FROM firstSeen) as firstSeen, 
       (SELECT screenViews FROM screenViews) as screenViews, 
       (SELECT sessions FROM sessions) as sessions, 
-      (SELECT durationAvg FROM duration) as durationAvg, 
+      (SELECT durationAvg FROM duration) as durationAvg,
       (SELECT durationP90 FROM duration) as durationP90,
+      (SELECT totalSessionDuration FROM duration) as totalSessionDuration,
       (SELECT totalEvents FROM totalEvents) as totalEvents,
       (SELECT uniqueDaysActive FROM uniqueDaysActive) as uniqueDaysActive,
       (SELECT bounceRate FROM bounceRate) as bounceRate,
@@ -208,13 +213,181 @@ export async function getProfileList({
   return data.map(transformProfile);
 }
 
+// Columns the UI is allowed to sort the profile list by. `name` / `country`
+// / `os` / `model` / `plan` / `createdAt` are resolved on the profile row
+// itself; `lastSeen` / `firstSeenActivity` / `eventCount` come from the
+// event aggregate and `totalDuration` / `sessionCount` from the session
+// aggregate — we still sort those in the same query by joining the
+// aggregates in as CTEs, so pagination works correctly either way.
+export type ProfileListSortBy =
+  | 'name'
+  | 'country'
+  | 'os'
+  | 'model'
+  | 'plan'
+  | 'createdAt'
+  | 'lastSeen'
+  | 'firstSeenActivity'
+  | 'eventCount'
+  | 'totalDuration'
+  | 'sessionCount';
+
+export type ProfileListSortDirection = 'asc' | 'desc';
+
+interface GetEnrichedProfileListOptions extends GetProfileListOptions {
+  sortBy?: ProfileListSortBy;
+  sortDirection?: ProfileListSortDirection;
+}
+
+export interface IEnrichedServiceProfile extends IServiceProfile {
+  eventCount: number;
+  sessionCount: number;
+  totalDuration: number;
+  lastSeen: Date | null;
+  firstSeenActivity: Date | null;
+  plan: string | null;
+  isSubscriber: boolean;
+}
+
+/**
+ * Return a page of profiles joined with per-profile aggregates (event count,
+ * session count, total session duration, first/last activity, plan). This is
+ * the data source behind the unified "Identified / Anonymous / Power Users"
+ * tables in the dashboard. All three tables share the same columns and just
+ * differ by filter (`isExternal`) and default sort.
+ */
+export async function getEnrichedProfileList({
+  take,
+  cursor,
+  projectId,
+  search,
+  isExternal,
+  sortBy = 'createdAt',
+  sortDirection = 'desc',
+}: GetEnrichedProfileListOptions) {
+  const sortColumnMap: Record<ProfileListSortBy, string> = {
+    name: 'lower(concat(p.first_name, p.last_name, p.email))',
+    country: "p.properties['country']",
+    os: "p.properties['os']",
+    model: "p.properties['model']",
+    plan: 'plan',
+    createdAt: 'p.created_at',
+    lastSeen: 'last_seen',
+    firstSeenActivity: 'first_seen_activity',
+    eventCount: 'event_count',
+    totalDuration: 'total_duration',
+    sessionCount: 'session_count',
+  };
+  const orderByExpr = sortColumnMap[sortBy] ?? 'p.created_at';
+  const direction = sortDirection === 'asc' ? 'ASC' : 'DESC';
+
+  const filterExternal =
+    isExternal !== undefined
+      ? `AND p.is_external = ${isExternal ? 'true' : 'false'}`
+      : '';
+  const filterSearch = search
+    ? `AND (p.email ILIKE '%${search}%' OR p.first_name ILIKE '%${search}%' OR p.last_name ILIKE '%${search}%')`
+    : '';
+
+  const sql = `
+    WITH event_stats AS (
+      SELECT
+        profile_id,
+        count(*) AS event_count,
+        max(created_at) AS last_seen,
+        min(created_at) AS first_seen
+      FROM ${TABLE_NAMES.events}
+      WHERE profile_id != ''
+        AND project_id = ${sqlstring.escape(projectId)}
+      GROUP BY profile_id
+    ),
+    session_stats AS (
+      SELECT
+        profile_id,
+        sum(duration) AS total_duration,
+        count() AS session_count
+      FROM ${TABLE_NAMES.sessions} FINAL
+      WHERE profile_id != ''
+        AND project_id = ${sqlstring.escape(projectId)}
+      GROUP BY profile_id
+    )
+    SELECT
+      p.id AS id,
+      p.project_id AS project_id,
+      p.first_name AS first_name,
+      p.last_name AS last_name,
+      p.email AS email,
+      p.avatar AS avatar,
+      p.is_external AS is_external,
+      p.properties AS properties,
+      p.created_at AS created_at,
+      p.groups AS groups,
+      coalesce(p.properties['plan'], '') AS plan,
+      coalesce(e.event_count, 0) AS event_count,
+      e.last_seen AS last_seen,
+      e.first_seen AS first_seen_activity,
+      coalesce(s.total_duration, 0) AS total_duration,
+      coalesce(s.session_count, 0) AS session_count
+    FROM ${TABLE_NAMES.profiles} AS p FINAL
+    LEFT JOIN event_stats AS e ON p.id = e.profile_id
+    LEFT JOIN session_stats AS s ON p.id = s.profile_id
+    WHERE p.project_id = ${sqlstring.escape(projectId)}
+    ${filterExternal}
+    ${filterSearch}
+    ORDER BY ${orderByExpr} ${direction}
+    LIMIT ${take} OFFSET ${Math.max(0, (cursor ?? 0) * take)}
+  `;
+
+  type EnrichedRow = IClickhouseProfile & {
+    event_count: number;
+    session_count: number;
+    total_duration: number;
+    last_seen: string | null;
+    first_seen_activity: string | null;
+    plan: string;
+  };
+
+  const rows = await chQuery<EnrichedRow>(sql);
+
+  return rows.map((row): IEnrichedServiceProfile => {
+    const base = transformProfile(row);
+    const plan = row.plan && row.plan.length > 0 ? row.plan : null;
+    // The SDK-facing convention: `is_subscriber` can be set either as an
+    // explicit boolean property, or implied from a non-free `plan`. This
+    // keeps the UI honest whether Pin Drop sends plan, is_subscriber, or
+    // both.
+    const rawIsSub = row.properties?.is_subscriber;
+    const explicit =
+      rawIsSub === 'true' || rawIsSub === '1' || (rawIsSub as any) === true;
+    const impliedFromPlan =
+      !!plan && plan !== 'free' && plan.toLowerCase() !== 'free';
+    return {
+      ...base,
+      eventCount: Number(row.event_count) || 0,
+      sessionCount: Number(row.session_count) || 0,
+      totalDuration: Number(row.total_duration) || 0,
+      lastSeen: row.last_seen ? convertClickhouseDateToJs(row.last_seen) : null,
+      firstSeenActivity: row.first_seen_activity
+        ? convertClickhouseDateToJs(row.first_seen_activity)
+        : null,
+      plan,
+      isSubscriber: explicit || impliedFromPlan,
+    };
+  });
+}
+
 export async function getProfileListCount({
   projectId,
   isExternal,
   search,
 }: Omit<GetProfileListOptions, 'cursor' | 'take'>) {
   const { sb, getSql } = createSqlBuilder();
-  sb.from = 'profiles';
+  // Use FINAL so the count matches the deduped row set returned by
+  // getProfileList (which also reads from `profiles FINAL`). Without
+  // FINAL the ReplacingMergeTree's older row versions inflate the
+  // count, which causes the UI to show pages that have no data
+  // beyond the real distinct profile count.
+  sb.from = `${TABLE_NAMES.profiles} FINAL`;
   sb.select.count = 'count(id) as count';
   sb.where.project_id = `project_id = ${sqlstring.escape(projectId)}`;
   sb.groupBy.project_id = 'project_id';

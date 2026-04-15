@@ -16,8 +16,11 @@ export const MostEvents = ({ data }: Props) => {
       {data.length === 0 ? (
         <WidgetEmptyState icon={ZapIcon} text="No events yet" />
       ) : (
-        <div className="flex flex-col gap-1 p-1">
-          {data.slice(0, 5).map((item) => (
+        // Cap the list height so this widget never forces the right
+        // column to grow past the Latest Events column next to it —
+        // anything beyond the visible rows scrolls internally.
+        <div className="flex max-h-[220px] flex-col gap-1 overflow-y-auto p-1">
+          {data.map((item) => (
             <div key={item.name} className="relative px-3 py-2">
               <div
                 className="absolute bottom-0 left-0 top-0 rounded bg-def-200"

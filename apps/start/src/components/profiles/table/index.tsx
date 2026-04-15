@@ -1,7 +1,12 @@
 import type { IServiceProfile } from '@openpanel/db';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import type { PaginationState, Table, Updater } from '@tanstack/react-table';
+import type {
+  PaginationState,
+  SortingState,
+  Table,
+  Updater,
+} from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { memo, useCallback } from 'react';
 import { useColumns } from './columns';
@@ -9,6 +14,7 @@ import { DataTable } from '@/components/ui/data-table/data-table';
 import {
   useDataTableColumnVisibility,
   useDataTablePagination,
+  useDataTableSort,
 } from '@/components/ui/data-table/data-table-hooks';
 import {
   AnimatedSearchInput,
@@ -52,6 +58,15 @@ export const ProfilesTable = memo(
     );
 
     const { setPage, state: pagination } = useDataTablePagination(pageSize);
+    const defaultSortBy =
+      type === 'power-users' ? 'eventCount' : 'createdAt';
+    const { sortBy, sortDirection, setSort } = useDataTableSort(
+      defaultSortBy,
+      'desc',
+    );
+    const sortingState: SortingState = sortBy
+      ? [{ id: sortBy, desc: sortDirection === 'desc' }]
+      : [];
     const {
       columnVisibility,
       setColumnVisibility,
@@ -75,11 +90,20 @@ export const ProfilesTable = memo(
       },
       state: {
         pagination,
+        sorting: sortingState,
         columnVisibility,
         columnOrder,
       },
       onColumnVisibilityChange: setColumnVisibility,
       onColumnOrderChange: setColumnOrder,
+      onSortingChange: (updaterOrValue: Updater<SortingState>) => {
+        const next =
+          typeof updaterOrValue === 'function'
+            ? updaterOrValue(sortingState)
+            : updaterOrValue;
+        setPage(1);
+        setSort(next[0] ?? null);
+      },
       onPaginationChange: (updaterOrValue: Updater<PaginationState>) => {
         const nextPagination =
           typeof updaterOrValue === 'function'

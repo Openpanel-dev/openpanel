@@ -3,9 +3,46 @@ import type {
   PaginationState,
   VisibilityState,
 } from '@tanstack/react-table';
-import { parseAsInteger, useQueryState } from 'nuqs';
+import { parseAsInteger, parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useState } from 'react';
 import { useLocalStorage, useReadLocalStorage } from 'usehooks-ts';
+
+/**
+ * Sync a table's manual sort state to the URL query string. The `sortBy`
+ * value is passed straight into the tRPC input, so the set of allowed
+ * values should match the server-side `ProfileListSortBy` enum.
+ */
+export const useDataTableSort = (
+  defaultSortBy: string | null = null,
+  defaultDirection: 'asc' | 'desc' = 'desc',
+) => {
+  const [sortBy, setSortBy] = useQueryState(
+    'sort',
+    parseAsString
+      .withDefault(defaultSortBy ?? '')
+      .withOptions({ clearOnDefault: true, history: 'push' }),
+  );
+  const [direction, setDirection] = useQueryState(
+    'dir',
+    parseAsStringEnum(['asc', 'desc'])
+      .withDefault(defaultDirection)
+      .withOptions({ clearOnDefault: true, history: 'push' }),
+  );
+  const effectiveSortBy = sortBy || defaultSortBy || null;
+  return {
+    sortBy: effectiveSortBy,
+    sortDirection: direction,
+    setSort: (next: { id: string; desc: boolean } | null) => {
+      if (!next) {
+        setSortBy('');
+        setDirection(defaultDirection);
+        return;
+      }
+      setSortBy(next.id);
+      setDirection(next.desc ? 'desc' : 'asc');
+    },
+  };
+};
 
 export const useDataTablePagination = (pageSize = 10) => {
   const [page, setPage] = useQueryState(

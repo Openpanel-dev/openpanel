@@ -258,33 +258,65 @@ export async function getGroupStats(
     return new Map();
   }
 
-  const rows = await chQuery<{
-    group_id: string;
-    member_count: number;
-    last_active_at: string;
-  }>(`
-    SELECT
-      g AS group_id,
-      uniqExact(profile_id) AS member_count,
-      max(created_at) AS last_active_at
-    FROM ${TABLE_NAMES.events}
-    ARRAY JOIN groups AS g
-    WHERE project_id = ${sqlstring.escape(projectId)}
-      AND g IN (${groupIds.map((id) => sqlstring.escape(id)).join(',')})
-      AND profile_id != device_id
-    GROUP BY g
-  `);
+  const escapedIds = groupIds.map((id) => sqlstring.escape(id)).join(',');
 
-  return new Map(
-    rows.map((r) => [
-      r.group_id,
-      {
-        groupId: r.group_id,
-        memberCount: r.member_count,
-        lastActiveAt: r.last_active_at ? new Date(r.last_active_at) : null,
-      },
-    ])
+  // Member count is derived from the **profiles** table so that it
+  // matches exactly what the "Members" tab on a group detail page
+  // shows. Previously we were counting distinct `profile_id`s from
+  // events instead, which produced a smaller number than the members
+  // list itself (profiles with a group assignment but no tagged events
+  // were missing) — making the two views disagree.
+  //
+  // `lastActiveAt` still comes from events because that's a genuine
+  // activity signal, not a membership one.
+  const [memberRows, activityRows] = await Promise.all([
+    chQuery<{ group_id: string; member_count: number }>(`
+      SELECT
+        g AS group_id,
+        count() AS member_count
+      FROM ${TABLE_NAMES.profiles} FINAL
+      ARRAY JOIN groups AS g
+      WHERE project_id = ${sqlstring.escape(projectId)}
+        AND g IN (${escapedIds})
+      GROUP BY g
+    `),
+    chQuery<{ group_id: string; last_active_at: string }>(`
+      SELECT
+        g AS group_id,
+        max(created_at) AS last_active_at
+      FROM ${TABLE_NAMES.events}
+      ARRAY JOIN groups AS g
+      WHERE project_id = ${sqlstring.escape(projectId)}
+        AND g IN (${escapedIds})
+      GROUP BY g
+    `),
+  ]);
+
+  const activityByGroup = new Map(
+    activityRows.map((r) => [r.group_id, r.last_active_at]),
   );
+
+  const result = new Map<string, IServiceGroupStats>();
+  for (const id of groupIds) {
+    result.set(id, {
+      groupId: id,
+      memberCount: 0,
+      lastActiveAt: null,
+    });
+  }
+  for (const row of memberRows) {
+    const existing = result.get(row.group_id);
+    if (existing) {
+      existing.memberCount = row.member_count;
+    }
+  }
+  for (const [groupId, lastActive] of activityByGroup) {
+    const existing = result.get(groupId);
+    if (existing && lastActive) {
+      existing.lastActiveAt = new Date(lastActive);
+    }
+  }
+  return result;
 }
 
 export async function getGroupsByIds(

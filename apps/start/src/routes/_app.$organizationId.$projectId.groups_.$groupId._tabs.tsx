@@ -9,10 +9,11 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router';
-import { Building2Icon, PencilIcon, Trash2Icon } from 'lucide-react';
+import { Building2Icon, ChevronRight, PencilIcon, Trash2Icon } from 'lucide-react';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
+import { ProjectLink } from '@/components/links';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
@@ -98,6 +99,16 @@ function Component() {
 
   return (
     <PageContainer className="col">
+      {/* Breadcrumb — clickable trail back to the Groups list so the
+       * navigation experience matches the profile detail page. */}
+      <nav className="mb-2 flex items-center gap-1 text-sm text-muted-foreground">
+        <ProjectLink href="/groups" className="hover:underline">
+          Groups
+        </ProjectLink>
+        <ChevronRight className="size-3.5" />
+        <span className="truncate text-foreground">{g.name}</span>
+      </nav>
+
       <PageHeader
         actions={
           <div className="row gap-2">
