@@ -307,6 +307,35 @@ button {
   scrollbar-width: none; /* Firefox */
 }
 
+/*
+ * Shimmer text — used in the chat to signal that an AI step is in
+ * flight (tool call running, model thinking). The gradient sweeps
+ * left-to-right; `background-clip: text` makes the moving gradient
+ * visible only inside the text glyphs.
+ */
+@keyframes op-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.op-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-muted-foreground) 0%,
+    var(--color-foreground) 50%,
+    var(--color-muted-foreground) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: op-shimmer 2.2s linear infinite;
+}
+
 /* Custom slow pulse animation */
 @keyframes slow-pulse {
   0%, 100% {

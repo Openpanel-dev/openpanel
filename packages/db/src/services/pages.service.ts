@@ -1,4 +1,4 @@
-import type { IInterval } from '@openpanel/validation';
+import type { IChartEventFilter, IInterval } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
 import { ch, TABLE_NAMES, chQuery } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
@@ -184,11 +184,12 @@ export async function getTopPagesCore(input: {
   startDate: string;
   endDate: string;
   limit?: number;
+  filters?: IChartEventFilter[];
 }) {
   const { timezone } = await getSettingsForProject(input.projectId);
   return _overviewServiceForPages.getTopPages({
     projectId: input.projectId,
-    filters: [],
+    filters: input.filters ?? [],
     startDate: input.startDate,
     endDate: input.endDate,
     timezone,
@@ -200,11 +201,12 @@ export async function getEntryExitPagesCore(input: {
   startDate: string;
   endDate: string;
   mode: 'entry' | 'exit';
+  filters?: IChartEventFilter[];
 }) {
   const { timezone } = await getSettingsForProject(input.projectId);
   return _overviewServiceForPages.getTopEntryExit({
     projectId: input.projectId,
-    filters: [],
+    filters: input.filters ?? [],
     startDate: input.startDate,
     endDate: input.endDate,
     mode: input.mode,

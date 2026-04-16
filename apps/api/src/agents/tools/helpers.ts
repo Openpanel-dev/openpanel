@@ -1,0 +1,154 @@
+import {
+  type AgentToolDefinition,
+  defineTool,
+  type ToolRunContext,
+} from '@better-agent/core';
+import { resolveDateRange as resolveDateRangeCore } from '@openpanel/db';
+import type { IChartEventFilter } from '@openpanel/validation';
+import type { z } from 'zod';
+import type { ChatAgentContext, PageContext } from '../context';
+
+/** Max time a single tool handler is allowed to run. */
+const TOOL_TIMEOUT_MS = 30_000;
+
+/**
+ * Thin wrapper around `defineTool().server()` that bakes in our typed
+ * agent context and enforces a time ceiling. Three things this gives
+ * us over the raw API:
+ *
+ *  1. The agent's `contextSchema` only types itself — `defineTool` has
+ *     no idea which agent it'll be bound to, so its `runCtx.context`
+ *     is `unknown`. We cast it to `ChatAgentContext` here so every
+ *     handler sees a typed context.
+ *  2. The handler input is `any` (validated at runtime by Zod). We
+ *     deliberately don't try to infer it from the schema generic —
+ *     mixing TInput inference with the `BivariantFn` parameter shape
+ *     hits TypeScript's "type instantiation is excessively deep" limit
+ *     and breaks. Tools that need typed input destructure with an
+ *     inline annotation, or use `z.infer<typeof mySchema>`.
+ *  3. A 30-second timeout wraps every handler. A slow ClickHouse query
+ *     or a stalled external fetch would otherwise hold the turn for
+ *     the full latency of the tool. We throw with a known shape so
+ *     the agent sees a clear "tool took too long" message and can
+ *     decide whether to retry with narrower params or move on.
+ */
+export function chatTool(
+  config: {
+    name: string;
+    description: string;
+    schema: z.ZodTypeAny;
+  },
+  handler: (
+    // biome-ignore lint/suspicious/noExplicitAny: deliberate, see comment above
+    input: any,
+    ctx: ChatAgentContext,
+    runCtx: ToolRunContext,
+  ) => Promise<unknown>,
+): AgentToolDefinition {
+  // biome-ignore lint/suspicious/noExplicitAny: see block comment above
+  const contract: any = defineTool({
+    name: config.name,
+    description: config.description,
+    schema: config.schema,
+  });
+  return contract.server(
+    async (input: unknown, runCtx: ToolRunContext) => {
+      const work = handler(
+        input,
+        runCtx.context as ChatAgentContext,
+        runCtx,
+      );
+      let timer: NodeJS.Timeout | undefined;
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(
+            new Error(
+              `Tool "${config.name}" timed out after ${TOOL_TIMEOUT_MS / 1000}s`,
+            ),
+          );
+        }, TOOL_TIMEOUT_MS);
+      });
+      try {
+        return await Promise.race([work, timeout]);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+    },
+  ) as AgentToolDefinition;
+}
+
+/**
+ * Cap an array result to `max` items and append a truncation marker so the
+ * frontend renderer + the LLM both know there's more data.
+ */
+export function truncateRows<T>(
+  rows: T[],
+  max = 500,
+): { rows: T[]; total: number; _truncated: boolean } {
+  if (rows.length <= max) {
+    return { rows, total: rows.length, _truncated: false };
+  }
+  return { rows: rows.slice(0, max), total: rows.length, _truncated: true };
+}
+
+/**
+ * Resolve a date range from PageContext.filters, defaulting to the
+ * last 30 days. Delegates to the canonical `resolveDateRange` in
+ * `@openpanel/db` so server-side tools and db services agree on the
+ * default window.
+ */
+export function resolveDateRange(filters?: PageContext['filters']): {
+  startDate: string;
+  endDate: string;
+} {
+  return resolveDateRangeCore(filters?.startDate, filters?.endDate);
+}
+
+/**
+ * Extract `IChartEventFilter[]` from the chat's page context. The
+ * context schema keeps filters loose (Zod `record`), but the frontend
+ * always ships the real chart-filter shape — so we cast here. Invalid
+ * entries (missing `name`) are dropped defensively.
+ *
+ * Tools use this so the assistant sees the user's active filters ("I
+ * see you're filtered to mobile") instead of returning project-wide
+ * numbers that contradict the dashboard.
+ */
+export function pageContextFilters(
+  pageContext: ChatAgentContext['pageContext'],
+): IChartEventFilter[] {
+  const raw = pageContext?.filters?.eventFilters;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (f): f is IChartEventFilter =>
+      typeof (f as { name?: unknown })?.name === 'string',
+  );
+}
+
+/**
+ * Compute the immediately-preceding period given a (start, end) range.
+ */
+export function previousPeriod(startDate: string, endDate: string) {
+  const start = new Date(startDate).getTime();
+  const end = new Date(endDate).getTime();
+  const span = end - start;
+  return {
+    startDate: new Date(start - span - 86_400_000).toISOString().slice(0, 10),
+    endDate: new Date(start - 86_400_000).toISOString().slice(0, 10),
+  };
+}
+
+/**
+ * Build a clickable dashboard URL for a tool result.
+ */
+export function dashboardUrl(
+  organizationId: string,
+  projectId: string,
+  path = '',
+): string {
+  const base =
+    process.env.DASHBOARD_URL ||
+    process.env.NEXT_PUBLIC_DASHBOARD_URL ||
+    'http://localhost:3000';
+  return `${base}/${organizationId}/${projectId}${path}`;
+}

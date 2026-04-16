@@ -1,6 +1,7 @@
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
+import { useRangePageContext } from '@/hooks/use-page-context-helpers';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
 
@@ -21,6 +22,7 @@ export const Route = createFileRoute(
 
 function Component() {
   const router = useRouter();
+  useRangePageContext('events');
 
   const { activeTab, tabs } = usePageTabs([
     { id: 'events', label: 'Events' },

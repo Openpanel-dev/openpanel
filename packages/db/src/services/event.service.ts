@@ -1218,7 +1218,9 @@ export interface QueryEventsInput {
   referrer?: string;
   referrerName?: string;
   referrerType?: string;
+  sessionId?: string;
   profileId?: string;
+  profileIds?: string[];
   properties?: Record<string, string>;
   limit?: number;
 }
@@ -1231,8 +1233,16 @@ export async function queryEventsCore(
     .from(TABLE_NAMES.events)
     .where('project_id', '=', input.projectId);
 
+  if (input.sessionId) {
+    builder.where('session_id', '=', input.sessionId);
+  }
+
   if (input.profileId) {
     builder.where('profile_id', '=', input.profileId);
+  }
+
+  if (input.profileIds?.length) {
+    builder.where('profile_id', 'IN', input.profileIds);
   }
 
   if (input.eventNames?.length) {
@@ -1281,12 +1291,29 @@ export async function queryEventsCore(
     }
   }
 
-  const { startDate: start, endDate: end } = resolveDateRange(input.startDate, input.endDate);
-
-  builder.where('created_at', 'BETWEEN', [
-    clix.datetime(start),
-    clix.datetime(end),
-  ]);
+  // Skip the default 30-day date filter when sessionId is set — a
+  // session id is unique and narrow enough to query directly. Without
+  // this, an older session's events would be silently excluded.
+  if (!input.sessionId) {
+    const { startDate: start, endDate: end } = resolveDateRange(
+      input.startDate,
+      input.endDate,
+    );
+    builder.where('created_at', 'BETWEEN', [
+      clix.datetime(start),
+      clix.datetime(end),
+    ]);
+  } else if (input.startDate || input.endDate) {
+    // If caller still wants to scope by date, honor it.
+    const { startDate: start, endDate: end } = resolveDateRange(
+      input.startDate,
+      input.endDate,
+    );
+    builder.where('created_at', 'BETWEEN', [
+      clix.datetime(start),
+      clix.datetime(end),
+    ]);
+  }
 
   return builder.limit(input.limit ?? 20).execute();
 }

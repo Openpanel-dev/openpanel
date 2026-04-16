@@ -34,7 +34,15 @@ import { ipHook } from './hooks/ip.hook';
 import { requestIdHook } from './hooks/request-id.hook';
 import { requestLoggingHook } from './hooks/request-logging.hook';
 import { timestampHook } from './hooks/timestamp.hook';
-import aiRouter from './routes/ai.router';
+import { toFastifyHandler } from '@better-agent/adapters';
+import { chatApp } from './agents/app';
+import { chatRunContext } from './agents/run-context';
+import {
+  db,
+  getConversationById,
+  getOrganizationByProjectIdCached,
+  getProjectAccess,
+} from '@openpanel/db';
 import eventRouter from './routes/event.router';
 import exportRouter from './routes/export.router';
 import gscCallbackRouter from './routes/gsc-callback.router';
@@ -87,21 +95,25 @@ export async function buildApp(
   fastify.setValidatorCompiler(validatorCompiler);
   fastify.setSerializerCompiler(serializerCompiler);
 
+  // Env is read once at startup — changing CORS origins requires a
+  // restart, which is already true for every other env-driven piece
+  // of the server.
+  const dashboardOrigins = [
+    process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL,
+    ...(process.env.API_CORS_ORIGINS?.split(',') ?? []),
+  ].filter(Boolean) as string[];
+  const corsPaths = ['/trpc', '/live', '/webhook', '/oauth', '/misc', '/ai'];
+
   fastify.register(cors, () => {
     return (
       req: FastifyRequest,
       callback: (error: Error | null, options: FastifyCorsOptions) => void,
     ) => {
-      const corsPaths = ['/trpc', '/live', '/webhook', '/oauth', '/misc', '/ai'];
       const isPrivatePath = corsPaths.some((p) => req.url.startsWith(p));
 
       if (isPrivatePath) {
-        const allowedOrigins = [
-          process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL,
-          ...(process.env.API_CORS_ORIGINS?.split(',') ?? []),
-        ].filter(Boolean);
         const origin = req.headers.origin;
-        const isAllowed = origin && allowedOrigins.includes(origin);
+        const isAllowed = origin && dashboardOrigins.includes(origin);
         return callback(null, { origin: isAllowed ? origin : false, credentials: true });
       }
 
@@ -176,7 +188,120 @@ export async function buildApp(
     instance.register(oauthRouter, { prefix: '/oauth' });
     instance.register(gscCallbackRouter, { prefix: '/gsc' });
     instance.register(miscRouter, { prefix: '/misc' });
-    instance.register(aiRouter, { prefix: '/ai' });
+    // Better Agent chat, mounted under /ai/agents/*.
+    //
+    // The wrapper does three things before delegating to the Better
+    // Agent handler:
+    //   1. Sets CORS headers on `reply.raw` (survives `reply.hijack()`
+    //      which bypasses @fastify/cors's onSend hook)
+    //   2. Validates the session + project access (the user-visible
+    //      POST /run body carries `context.projectId` +
+    //      `context.organizationId`)
+    //   3. Wraps the handler call in `chatRunContext.run(...)` so the
+    //      Prisma conversation-store can upsert the `Conversation`
+    //      row with the right owner on first save
+    //
+    // Preflight OPTIONS is handled by @fastify/cors before this route
+    // runs, so we only skip auth/ALS for that case.
+    {
+      const agentHandler = toFastifyHandler(chatApp);
+
+      instance.all('/ai/agents/*', async (request, reply) => {
+        const origin = request.headers.origin;
+        if (origin && dashboardOrigins.includes(origin)) {
+          reply.raw.setHeader('Access-Control-Allow-Origin', origin);
+          reply.raw.setHeader('Access-Control-Allow-Credentials', 'true');
+          reply.raw.setHeader('Vary', 'Origin');
+        }
+
+        // OPTIONS preflight is already handled by @fastify/cors.
+        if (request.method === 'OPTIONS') {
+          return agentHandler(request, reply);
+        }
+
+        const userId = request.session?.session?.userId;
+        if (!userId) {
+          return reply.status(401).send({ message: 'Sign in required' });
+        }
+
+        // Parse the URL tail that comes after `/ai/agents/`.
+        // Examples:
+        //   "claude-sonnet-4-5/run"                      → run
+        //   "claude-sonnet-4-5/conversations/abc"        → load conversation
+        //   "__titler/run"                               → title stream (no project context)
+        const wildcard =
+          (request.params as { '*'?: string })['*'] ?? '';
+        const segments = wildcard.split('/').filter(Boolean);
+        const agentName = segments[0] ?? '';
+        const route = segments[1] ?? '';
+        const routeId = segments[2] ?? '';
+
+        // The internal `__titler` agent has no project context — skip
+        // the access check; session auth is enough.
+        if (agentName === '__titler') {
+          return agentHandler(request, reply);
+        }
+
+        // Conversation hydration: `GET /:name/conversations/:id` and
+        // `GET /:name/conversations/:id/resume`. If the row exists,
+        // verify ownership. If it doesn't exist yet (brand-new chat
+        // the client is opening for the first time), let the agent
+        // handler respond — its ConversationStore.load() returns null
+        // and the adapter maps that to a 204, which Better Agent's
+        // client treats as "no saved history". Returning 404 here
+        // would instead put `useAgent` in an error state and block
+        // the first send.
+        if (route === 'conversations' && routeId) {
+          const conv = await getConversationById(routeId);
+          if (conv && conv.userId !== userId) {
+            return reply
+              .status(404)
+              .send({ message: 'Conversation not found' });
+          }
+          return agentHandler(request, reply);
+        }
+
+        // Everything else (primarily `POST /:name/run`) is an active
+        // run and must carry `context.projectId` + `context.organizationId`.
+        const body = request.body as
+          | { context?: { projectId?: string; organizationId?: string } }
+          | null
+          | undefined;
+        const projectId = body?.context?.projectId;
+        const organizationIdFromBody = body?.context?.organizationId;
+
+        if (!projectId || !organizationIdFromBody) {
+          return reply.status(400).send({
+            message: 'Missing projectId or organizationId in context',
+          });
+        }
+
+        const [access, organization] = await Promise.all([
+          getProjectAccess({ projectId, userId }),
+          getOrganizationByProjectIdCached(projectId),
+        ]);
+        if (
+          !access ||
+          !organization ||
+          organization.id !== organizationIdFromBody
+        ) {
+          return reply
+            .status(403)
+            .send({ message: 'No access to this project' });
+        }
+
+        // The conversation row is created lazily: the agent's
+        // `ConversationStore.save()` upserts on first save, and the
+        // TRPC `conversation.rename` endpoint upserts when the titler
+        // finishes first. Either path ends up with the correct owner
+        // — no eager upsert needed here.
+
+        return chatRunContext.run(
+          { userId, projectId, organizationId: organization.id },
+          () => agentHandler(request, reply),
+        );
+      });
+    }
     instance.register(mcpRouter, { prefix: '/mcp' });
   });
 

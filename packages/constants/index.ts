@@ -1,4 +1,4 @@
-import { differenceInDays, isSameDay, isSameMonth } from 'date-fns';
+import { differenceInDays, isSameDay } from 'date-fns';
 
 export const DEFAULT_ASPECT_RATIO = 0.5625;
 export const NOT_SET_VALUE = '(not set)';
@@ -227,6 +227,9 @@ export function getDefaultIntervalByRange(
   ) {
     return 'day';
   }
+  if (range === '6m') {
+    return 'week';
+  }
   return 'month';
 }
 
@@ -238,11 +241,12 @@ export function getDefaultIntervalByDates(
     if (isSameDay(startDate, endDate)) {
       return 'hour';
     }
-    if (isSameMonth(startDate, endDate)) {
+    const days = differenceInDays(endDate, startDate);
+    if (days <= 92) {
       return 'day';
     }
-    if (differenceInDays(endDate, startDate) <= 31) {
-      return 'day';
+    if (days <= 186) {
+      return 'week';
     }
     return 'month';
   }

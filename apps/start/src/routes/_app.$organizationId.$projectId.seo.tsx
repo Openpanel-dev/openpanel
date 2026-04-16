@@ -37,6 +37,7 @@ import { Skeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
+import { useRangePageContext } from '@/hooks/use-page-context-helpers';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { getChartColor } from '@/utils/theme';
@@ -86,6 +87,7 @@ const { TooltipProvider, Tooltip: GscTooltip } = createChartTooltip<
 
 function SeoPage() {
   const { projectId, organizationId } = useAppParams();
+  useRangePageContext('seo');
   const trpc = useTRPC();
   const navigate = useNavigate();
   const { range, startDate, endDate, interval } = useOverviewOptions();

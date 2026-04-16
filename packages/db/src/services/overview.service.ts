@@ -31,6 +31,24 @@ const COLUMN_PREFIX_MAP: Record<string, string> = {
   os_version: 'os',
 };
 
+const WHITELISTED_FILTERS = [
+  'os',
+  'path',
+  'city',
+  'brand',
+  'model',
+  'origin',
+  'region',
+  'device',
+  'revenue',
+  'country',
+  'browser',
+  'referrer',
+  'os_version',
+  'referrer_name',
+  'browser_version',
+];
+
 // Types
 type MetricsRow = {
   bounce_rate: number;
@@ -592,6 +610,9 @@ export class OverviewService {
   getRawWhereClause(type: 'events' | 'sessions', filters: IChartEventFilter[]) {
     const where = getEventFiltersWhereClause(
       filters.flatMap((item) => {
+        if (!WHITELISTED_FILTERS.includes(item.name)) {
+          return []
+        }
         if (type === 'sessions') {
           if (item.name === 'path') {
             return [{ ...item, name: 'entry_path' }];
@@ -744,6 +765,10 @@ export class OverviewService {
     column,
     timezone,
   }: IGetTopGenericInput) {
+    if (!WHITELISTED_FILTERS.includes(column)) {
+      return [];
+    }
+    
     const prefixColumn = COLUMN_PREFIX_MAP[column] ?? null;
 
     const selectColumns: (string | null | undefined | false)[] = [
@@ -1470,11 +1495,12 @@ export async function getTrafficBreakdownCore(input: {
   startDate: string;
   endDate: string;
   column: TrafficColumn;
+  filters?: IChartEventFilter[];
 }) {
   const { timezone } = await getSettingsForProject(input.projectId);
   return overviewService.getTopGeneric({
     projectId: input.projectId,
-    filters: [],
+    filters: input.filters ?? [],
     startDate: input.startDate,
     endDate: input.endDate,
     column: input.column,
@@ -1487,6 +1513,7 @@ export interface GetAnalyticsOverviewInput {
   startDate: string;
   endDate: string;
   interval?: 'hour' | 'day' | 'week' | 'month';
+  filters?: IChartEventFilter[];
 }
 
 export async function getAnalyticsOverviewCore(
@@ -1497,7 +1524,7 @@ export async function getAnalyticsOverviewCore(
 
   const result = await overviewService.getMetrics({
     projectId: input.projectId,
-    filters: [],
+    filters: input.filters ?? [],
     startDate: input.startDate,
     endDate: input.endDate,
     interval,

@@ -1,4 +1,5 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { useRangePageContext } from '@/hooks/use-page-context-helpers';
 import { InsightCard } from '@/components/insights/insight-card';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
@@ -64,6 +65,7 @@ function getModuleDisplayName(moduleKey: string): string {
 
 function Component() {
   const { projectId } = Route.useParams();
+  useRangePageContext('insights');
   const trpc = useTRPC();
   const { data: insights, isLoading } = useQuery(
     trpc.insight.listAll.queryOptions({

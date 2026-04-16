@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { LazyComponent } from '@/components/lazy-component';
+import { useRangePageContext } from '@/hooks/use-page-context-helpers';
 import {
   OverviewFilterButton,
   OverviewFiltersButtons,
@@ -34,6 +35,7 @@ export const Route = createFileRoute('/_app/$organizationId/$projectId/')({
 
 function ProjectDashboard() {
   const { projectId } = Route.useParams();
+  useRangePageContext('overview');
   return (
     <div>
       <div className="sticky-header -top-px!">

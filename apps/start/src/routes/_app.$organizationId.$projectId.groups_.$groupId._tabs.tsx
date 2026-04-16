@@ -15,6 +15,7 @@ import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useEntityPageContext } from '@/hooks/use-page-context-helpers';
 import { usePageTabs } from '@/hooks/use-page-tabs';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
@@ -55,6 +56,17 @@ function Component() {
 
   const group = useSuspenseQuery(
     trpc.group.byId.queryOptions({ id: groupId, projectId })
+  );
+
+  useEntityPageContext(
+    'groupDetail',
+    { groupId },
+    group.data
+      ? {
+          name: group.data.name,
+          type: group.data.type,
+        }
+      : undefined,
   );
 
   const deleteMutation = useMutation(

@@ -199,6 +199,17 @@ export function getDatesFromRange(range: IChartRange, timezone: string) {
   };
 }
 
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+function normalizeBoundary(value: string, boundary: 'start' | 'end'): string {
+  if (DATE_ONLY_REGEX.test(value)) {
+    return boundary === 'start'
+      ? `${value} 00:00:00`
+      : `${value} 23:59:59`;
+  }
+  return value;
+}
+
 export function getChartStartEndDate(
   {
     startDate,
@@ -207,13 +218,18 @@ export function getChartStartEndDate(
   }: Pick<IReportInput, 'endDate' | 'startDate' | 'range'>,
   timezone: string
 ) {
-  if (startDate && endDate) {
-    return { startDate, endDate };
+  const normalizedStart = startDate
+    ? normalizeBoundary(startDate, 'start')
+    : startDate;
+  const normalizedEnd = endDate ? normalizeBoundary(endDate, 'end') : endDate;
+
+  if (normalizedStart && normalizedEnd) {
+    return { startDate: normalizedStart, endDate: normalizedEnd };
   }
 
   const ranges = getDatesFromRange(range, timezone);
-  if (!startDate && endDate) {
-    return { startDate: ranges.startDate, endDate };
+  if (!normalizedStart && normalizedEnd) {
+    return { startDate: ranges.startDate, endDate: normalizedEnd };
   }
 
   return ranges;

@@ -23,6 +23,7 @@ import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
+import Syntax from '@/components/syntax';
 
 interface Props {
   id: string;
@@ -77,6 +78,7 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
     },
   };
   const [widget, setWidget] = useState(TABS.essentials);
+  const [propertiesMode, setPropertiesMode] = useState<'table' | 'json'>('table');
   const trpc = useTRPC();
   const query = useSuspenseQuery(
     trpc.event.details.queryOptions({
@@ -271,7 +273,17 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
           <section>
             <div className="mb-2 flex justify-between font-medium">
               <div>Properties</div>
+              <button
+                type="button"
+                onClick={() =>
+                  setPropertiesMode((p) => (p === 'table' ? 'json' : 'table'))
+                }
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {propertiesMode === 'table' ? 'View JSON' : 'View Table'}
+              </button>
             </div>
+            {propertiesMode === 'table' && (
             <KeyValueGrid
               columns={1}
               data={properties}
@@ -286,6 +298,10 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
                 </div>
               )}
             />
+            )}
+            {propertiesMode === 'json' && (
+              <Syntax code={JSON.stringify(properties, null, 2)} language="json" />
+            )}
           </section>
         )}
         <section>

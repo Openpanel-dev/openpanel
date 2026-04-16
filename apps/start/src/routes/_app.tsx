@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { ConstructionIcon } from 'lucide-react';
+import { ChatDrawerSlot } from '@/components/chat/chat-drawer-slot';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Sidebar } from '@/components/sidebar';
 import { buttonVariants } from '@/components/ui/button';
@@ -41,11 +42,12 @@ function AppLayout() {
   return (
     <div className="flex h-screen w-full">
       <Sidebar />
-      <div className="w-full lg:pl-72">
+      <div className="w-full lg:pl-72 min-w-0 flex-1">
         <div className="fixed top-0 z-10 block h-16 w-full border-b bg-background lg:hidden" />
         <div className="block h-16 lg:hidden" />
         <Outlet />
       </div>
+      <ChatDrawerSlot />
     </div>
   );
 }

@@ -17,7 +17,7 @@
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
-    "@ai-sdk/react": "^1.2.5",
+    "@better-agent/client": "^0.1.0-beta.3",
     "@codemirror/commands": "^6.7.0",
     "@codemirror/lang-javascript": "^6.2.0",
     "@codemirror/lang-json": "^6.0.1",
@@ -88,7 +88,6 @@
     "@trpc/server": "^11.6.0",
     "@trpc/tanstack-react-query": "^11.6.0",
     "@types/d3": "^7.4.3",
-    "ai": "^4.2.10",
     "bind-event-listener": "^3.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -151,6 +150,7 @@
     "tailwindcss": "^4.0.6",
     "tailwindcss-animate": "^1.0.7",
     "tw-animate-css": "^1.3.6",
+    "use-stick-to-bottom": "^1.1.3",
     "usehooks-ts": "^2.14.0",
     "vite-tsconfig-paths": "^5.1.4",
     "zod": "catalog:"

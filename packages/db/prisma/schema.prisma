@@ -34,15 +34,35 @@ enum ProjectType {
   backend
 }
 
-model Chat {
-  id        String   @id @default(dbgenerated("gen_random_uuid()"))
-  messages  Json
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+model Conversation {
+  id             String        @id @default(dbgenerated("gen_random_uuid()"))
+  projectId      String
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @default(now()) @updatedAt
+  messages       ChatMessage[]
 
-  @@map("chats")
+  @@index([projectId, updatedAt])
+  @@index([userId, updatedAt])
+  @@map("conversations")
+}
+
+model ChatMessage {
+  id             String       @id @default(dbgenerated("gen_random_uuid()"))
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  /// [IPrismaUIMessageParts]
+  parts          Json
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@map("chat_messages")
 }
 
 model Organization {
@@ -61,6 +81,7 @@ model Organization {
   ShareWidget     ShareWidget[]
   integrations    Integration[]
   invites         Invite[]
+  conversations   Conversation[]
   timezone        String?
   onboarding      String?          @default("completed")
 
@@ -106,6 +127,7 @@ model User {
   sessions             Session[]
   accounts             Account[]
   invites              Invite[]
+  conversations        Conversation[]
 
   @@map("users")
 }
@@ -207,9 +229,9 @@ model Project {
   // When deleteAt > now(), the project will be deleted
   deleteAt DateTime?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-  Chat      Chat[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @default(now()) @updatedAt
+  conversations Conversation[]
 
   @@map("projects")
 }

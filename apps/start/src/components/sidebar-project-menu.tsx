@@ -32,6 +32,8 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { useChatState } from '@/components/chat/chat-context';
+import { SidebarChatComposer } from '@/components/chat/sidebar-chat-composer';
 import { pushModal } from '@/modals';
 
 interface SidebarProjectMenuProps {
@@ -43,6 +45,7 @@ export default function SidebarProjectMenu({
 }: SidebarProjectMenuProps) {
   return (
     <>
+      <SidebarChatComposer />
       <div className="mb-2 font-medium text-muted-foreground text-sm">
         Analytics
       </div>
@@ -87,6 +90,7 @@ export default function SidebarProjectMenu({
 
 export function ActionCTAButton() {
   const navigate = useNavigate();
+  const { openChatForContext } = useChatState();
 
   const ACTIONS = [
     {
@@ -106,11 +110,7 @@ export function ActionCTAButton() {
     {
       label: 'Ask AI',
       icon: SparklesIcon,
-      onClick: () =>
-        navigate({
-          to: '/$organizationId/$projectId/chat',
-          from: '/$organizationId/$projectId',
-        }),
+      onClick: () => openChatForContext(),
     },
     {
       label: 'Create dashboard',

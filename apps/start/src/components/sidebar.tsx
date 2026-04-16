@@ -1,8 +1,9 @@
 import type { IServiceOrganization } from '@openpanel/db';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from '@tanstack/react-router';
-import { MenuIcon, XIcon } from 'lucide-react';
+import { MenuIcon, SparklesIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useChatState } from './chat/chat-context';
 import { FeedbackButton } from './feedback-button';
 import { LogoSquare } from './logo';
 import { ProfileToggle } from './profile-toggle';
@@ -78,6 +79,8 @@ export function SidebarContainer({
   const [active, setActive] = useState(false);
   const location = useLocation();
   const { isSelfHosted } = useAppContext();
+  const { projectId } = useParams({ strict: false });
+  const { isOpen: chatOpen, openChatForContext, closeChat } = useChatState();
 
   useEffect(() => {
     setActive(false);
@@ -142,6 +145,19 @@ export function SidebarContainer({
               >
                 Docs
               </a>
+              {projectId && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    chatOpen ? closeChat() : openChatForContext()
+                  }
+                  className="flex h-12 w-12 items-center justify-center border-border border-r font-medium text-muted-foreground text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+                  title="Open AI chat (⌘J)"
+                  aria-label="Open AI chat"
+                >
+                  <SparklesIcon size={16} />
+                </button>
+              )}
               <ProfileToggle className="h-12 flex-1 rounded-none hover:bg-accent hover:text-accent-foreground" />
             </div>
             {isSelfHosted && (

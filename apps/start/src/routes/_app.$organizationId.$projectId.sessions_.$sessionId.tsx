@@ -16,6 +16,7 @@ import {
   WidgetTitle,
 } from '@/components/widget';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { useEntityPageContext } from '@/hooks/use-page-context-helpers';
 import { useTRPC } from '@/integrations/trpc/react';
 import { formatDateTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
@@ -142,6 +143,21 @@ function Component() {
 
   const { data: session } = useSuspenseQuery(
     trpc.session.byId.queryOptions({ sessionId, projectId })
+  );
+
+  useEntityPageContext(
+    'sessionDetail',
+    { sessionId },
+    {
+      duration: session.duration,
+      eventCount: session.eventCount,
+      screenViewCount: session.screenViewCount,
+      country: session.country,
+      device: session.device,
+      isBounce: session.isBounce,
+      entryPath: session.entryPath,
+      exitPath: session.exitPath,
+    },
   );
 
   const { data: eventsData } = useSuspenseQuery(

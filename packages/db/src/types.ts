@@ -25,6 +25,12 @@ declare global {
     type IPrismaClickhouseEvent = IClickhouseEvent;
     type IPrismaClickhouseProfile = IClickhouseProfile;
     type IPrismaClickhouseBotEvent = IClickhouseBotEvent;
+    // Each ChatMessage row stores one Better Agent `ConversationItem`
+    // (message, tool call, or tool result) as JSON. Typed as `unknown[]`
+    // here to avoid pulling `@better-agent/core` into @openpanel/db's
+    // dependency graph; the real shape is narrowed at the API boundary
+    // in apps/api/src/agents/persistence.ts.
+    type IPrismaUIMessageParts = unknown[];
     type IPrismaSubscriptionStatus =
       | 'incomplete'
       | 'incomplete_expired'
