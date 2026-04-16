@@ -24,6 +24,14 @@ export function ChatDrawerBody() {
 
   const hasContext = usePageContextValue();
 
+  // `runStillActive` flags the currently-generating assistant message
+  // so its reasoning blocks can stay in the shimmer state until Better
+  // Agent emits a terminal signal. Everything in older messages is
+  // always done. `isLoading` covers submitted/waiting, `isStreaming`
+  // covers actively streaming — combining both catches the full run.
+  const isRunActive = isLoading || isStreaming;
+  const lastMessageIndex = messages.length - 1;
+
   if (messages.length === 0) {
     return (
       <div className="flex-1 flex flex-col">
@@ -49,8 +57,12 @@ export function ChatDrawerBody() {
             hasContext && 'pt-24',
           )}
         >
-          {messages.map((message) => (
-            <ChatMessage key={message.localId} message={message} />
+          {messages.map((message, idx) => (
+            <ChatMessage
+              key={message.localId}
+              message={message}
+              runStillActive={isRunActive && idx === lastMessageIndex}
+            />
           ))}
           {isLoading && !isStreaming && (
             <div className="flex items-center gap-2 text-sm">

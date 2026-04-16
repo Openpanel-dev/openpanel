@@ -3,10 +3,14 @@ import {
   defineTool,
   type ToolRunContext,
 } from '@better-agent/core';
-import { resolveDateRange as resolveDateRangeCore } from '@openpanel/db';
-import type { IChartEventFilter } from '@openpanel/validation';
+import {
+  getDatesFromRange,
+  resolveDateRange as resolveDateRangeCore,
+} from '@openpanel/db';
+import type { IChartEventFilter, IChartRange } from '@openpanel/validation';
 import type { z } from 'zod';
 import type { ChatAgentContext, PageContext } from '../context';
+import { chatRunContext } from '../run-context';
 
 /** Max time a single tool handler is allowed to run. */
 const TOOL_TIMEOUT_MS = 30_000;
@@ -92,16 +96,57 @@ export function truncateRows<T>(
 }
 
 /**
- * Resolve a date range from PageContext.filters, defaulting to the
- * last 30 days. Delegates to the canonical `resolveDateRange` in
- * `@openpanel/db` so server-side tools and db services agree on the
- * default window.
+ * Known range presets that map to date windows via `getDatesFromRange`.
+ * Anything outside this set (including `"custom"`) is treated as "no
+ * preset" and we fall through to explicit dates / the 30-day default.
+ */
+const PRESET_RANGES: ReadonlySet<IChartRange> = new Set([
+  '30min',
+  'lastHour',
+  'today',
+  'yesterday',
+  '7d',
+  '30d',
+  '6m',
+  '12m',
+  'monthToDate',
+  'lastMonth',
+  'yearToDate',
+  'lastYear',
+]);
+
+/**
+ * Resolve a date range from `PageContext.filters`.
+ *
+ * Precedence:
+ *   1. Explicit `startDate` + `endDate` → use as-is (either one alone
+ *      falls back to the other via `resolveDateRangeCore`).
+ *   2. `range` is a known preset (`"7d"`, `"6m"`, …) → expand via
+ *      `getDatesFromRange(range, projectTimezone)` so a preset-only
+ *      URL (as set by the dashboard's `useOverviewOptions`) produces
+ *      the same window the dashboard is displaying.
+ *   3. Nothing → default to the last 30 days (via
+ *      `resolveDateRangeCore`).
+ *
+ * Timezone comes from `chatRunContext` (populated by the Fastify
+ * wrapper once per request). Outside that context we fall back to UTC
+ * — only relevant in tests / direct calls.
  */
 export function resolveDateRange(filters?: PageContext['filters']): {
   startDate: string;
   endDate: string;
 } {
-  return resolveDateRangeCore(filters?.startDate, filters?.endDate);
+  if (filters?.startDate || filters?.endDate) {
+    return resolveDateRangeCore(filters.startDate, filters.endDate);
+  }
+
+  const range = filters?.range as IChartRange | undefined;
+  if (range && PRESET_RANGES.has(range)) {
+    const timezone = chatRunContext.getStore()?.timezone ?? 'UTC';
+    return getDatesFromRange(range, timezone);
+  }
+
+  return resolveDateRangeCore(undefined, undefined);
 }
 
 /**

@@ -42,6 +42,7 @@ import {
   getConversationById,
   getOrganizationByProjectIdCached,
   getProjectAccess,
+  getSettingsForProject,
 } from '@openpanel/db';
 import eventRouter from './routes/event.router';
 import exportRouter from './routes/export.router';
@@ -276,9 +277,15 @@ export async function buildApp(
           });
         }
 
-        const [access, organization] = await Promise.all([
+        const [access, organization, settings] = await Promise.all([
           getProjectAccess({ projectId, userId }),
           getOrganizationByProjectIdCached(projectId),
+          // Fetch the project's timezone up front so the tools +
+          // prompt builder can resolve range presets ("6m", "7d", …)
+          // into concrete dates without an async lookup per call.
+          // Falls back to UTC on any error — preset resolution then
+          // still works, just in UTC instead of the user's zone.
+          getSettingsForProject(projectId).catch(() => ({ timezone: 'UTC' })),
         ]);
         if (
           !access ||
@@ -297,7 +304,12 @@ export async function buildApp(
         // — no eager upsert needed here.
 
         return chatRunContext.run(
-          { userId, projectId, organizationId: organization.id },
+          {
+            userId,
+            projectId,
+            organizationId: organization.id,
+            timezone: settings.timezone || 'UTC',
+          },
           () => agentHandler(request, reply),
         );
       });

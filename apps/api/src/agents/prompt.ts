@@ -1,4 +1,5 @@
 import type { ChatAgentContext, PageContext } from './context';
+import { resolveDateRange } from './tools/helpers';
 
 function buildBasePrompt(): string {
   return `You are the OpenPanel AI assistant. OpenPanel is an open-source product/web analytics platform similar to Mixpanel and Plausible. You help users explore and understand their analytics data.
@@ -169,10 +170,11 @@ function buildPageContextSection(pc?: PageContext): string {
 
   if (pc.filters?.range) {
     const range = pc.filters.range;
-    const dates =
-      pc.filters.startDate && pc.filters.endDate
-        ? ` (${pc.filters.startDate} to ${pc.filters.endDate})`
-        : '';
+    // Resolve presets ("6m", "7d", …) to actual dates in the project's
+    // timezone so the model sees the same window the dashboard shows.
+    // Falls through gracefully if the range isn't a preset.
+    const resolved = resolveDateRange(pc.filters);
+    const dates = ` (${resolved.startDate} to ${resolved.endDate})`;
     const interval = pc.filters.interval ?? 'day';
     lines.push(`Date range: ${range}${dates}, interval: ${interval}.`);
   }
