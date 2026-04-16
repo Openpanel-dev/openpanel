@@ -182,14 +182,24 @@ export async function polarWebhook(
             id: metadata.organizationId,
           },
         });
-        const eventsLimit = product.metadata?.eventsLimit;
-        const subscriptionPeriodEventsLimit =
-          typeof eventsLimit === 'number' ? eventsLimit : undefined;
+        const rawEventsLimit = product.metadata?.eventsLimit;
+        const parsedEventsLimit =
+          typeof rawEventsLimit === 'number'
+            ? rawEventsLimit
+            : typeof rawEventsLimit === 'string'
+              ? Number(rawEventsLimit)
+              : Number.NaN;
+        const hasValidEventsLimit = Number.isFinite(parsedEventsLimit);
+        const subscriptionPeriodEventsLimit = hasValidEventsLimit
+          ? parsedEventsLimit
+          : organization.subscriptionPeriodEventsLimit;
 
-        if (!subscriptionPeriodEventsLimit) {
-          request.log.warn('No events limit found for product', { product });
+        if (!hasValidEventsLimit) {
+          request.log.warn(
+            { product },
+            'No valid eventsLimit on product, preserving existing organization limit',
+          );
         }
-
         // If we get a cancel event and we cant find it we should ignore it
         // Since we only have one subscription per organization but you can have several in polar
         // we dont want to override the existing subscription with a canceled one
@@ -232,8 +242,9 @@ export async function polarWebhook(
             subscriptionInterval: event.data.recurringInterval,
             subscriptionPeriodEventsLimit,
             subscriptionPeriodEventsCountExceededAt:
-              subscriptionPeriodEventsLimit &&
+              typeof subscriptionPeriodEventsLimit === 'number' &&
               organization.subscriptionPeriodEventsCountExceededAt &&
+              typeof organization.subscriptionPeriodEventsLimit === 'number' &&
               organization.subscriptionPeriodEventsLimit <
                 subscriptionPeriodEventsLimit
                 ? null
