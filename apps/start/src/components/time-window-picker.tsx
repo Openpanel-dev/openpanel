@@ -1,9 +1,10 @@
-import { timeWindows } from '@openpanel/constants';
+import { getDefaultIntervalByDates, timeWindows } from '@openpanel/constants';
 import type { IChartRange, IInterval } from '@openpanel/validation';
 import { bind } from 'bind-event-listener';
-import { endOfDay, format, startOfDay } from 'date-fns';
+import { endOfDay, format, startOfDay, subDays } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -44,6 +45,26 @@ export function TimeWindowPicker({
     isDateRangerPickerOpen.current = open;
   });
   const timeWindow = timeWindows[value ?? '30d'];
+  const [customDays, setCustomDays] = useState('');
+
+  const handleCustomDays = useCallback(
+    (days: number) => {
+      if (days < 1 || days > 365) return;
+      const end = endOfDay(new Date());
+      const start = startOfDay(subDays(new Date(), days - 1));
+      onStartDateChange(format(start, 'yyyy-MM-dd HH:mm:ss'));
+      onEndDateChange(format(end, 'yyyy-MM-dd HH:mm:ss'));
+      onChange('custom');
+      const interval = getDefaultIntervalByDates(
+        start.toISOString(),
+        end.toISOString()
+      );
+      if (interval) {
+        onIntervalChange(interval);
+      }
+    },
+    [onChange, onStartDateChange, onEndDateChange, onIntervalChange]
+  );
 
   const handleCustom = useCallback(() => {
     pushModal('DateRangerPicker', {
@@ -194,6 +215,33 @@ export function TimeWindowPicker({
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
+          <div
+            className="flex items-center gap-2 px-2 py-1.5"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <span className="text-sm whitespace-nowrap">Last</span>
+            <Input
+              type="number"
+              min={1}
+              max={365}
+              placeholder="X"
+              value={customDays}
+              onChange={(e) => setCustomDays(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const days = Number.parseInt(customDays, 10);
+                  if (days >= 1 && days <= 365) {
+                    handleCustomDays(days);
+                    setCustomDays('');
+                  }
+                }
+                e.stopPropagation();
+              }}
+              className="h-7 w-16 text-center"
+            />
+            <span className="text-sm whitespace-nowrap">days</span>
+          </div>
           <DropdownMenuItem onClick={() => handleCustom()}>
             {timeWindows.custom.label}
             <DropdownMenuShortcut>
