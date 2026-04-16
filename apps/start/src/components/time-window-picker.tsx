@@ -50,8 +50,9 @@ export function TimeWindowPicker({
   const handleCustomDays = useCallback(
     (days: number) => {
       if (days < 1 || days > 365) return;
-      const end = endOfDay(new Date());
-      const start = startOfDay(subDays(new Date(), days - 1));
+      const now = new Date();
+      const end = endOfDay(now);
+      const start = startOfDay(subDays(now, days - 1));
       onStartDateChange(format(start, 'yyyy-MM-dd HH:mm:ss'));
       onEndDateChange(format(end, 'yyyy-MM-dd HH:mm:ss'));
       onChange('custom');
@@ -222,6 +223,7 @@ export function TimeWindowPicker({
           >
             <span className="text-sm whitespace-nowrap">Last</span>
             <Input
+              aria-label="Number of days for custom date filter"
               type="number"
               min={1}
               max={365}
@@ -230,6 +232,7 @@ export function TimeWindowPicker({
               onChange={(e) => setCustomDays(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
+                  e.preventDefault();
                   const days = Number.parseInt(customDays, 10);
                   if (days >= 1 && days <= 365) {
                     handleCustomDays(days);
