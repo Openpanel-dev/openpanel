@@ -227,14 +227,15 @@ export function TimeWindowPicker({
               type="number"
               min={1}
               max={365}
+              step={1}
               placeholder="X"
               value={customDays}
               onChange={(e) => setCustomDays(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  const days = Number.parseInt(customDays, 10);
-                  if (days >= 1 && days <= 365) {
+                  const days = Number(customDays);
+                  if (Number.isInteger(days) && days >= 1 && days <= 365) {
                     handleCustomDays(days);
                     setCustomDays('');
                   }
