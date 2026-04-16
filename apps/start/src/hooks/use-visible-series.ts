@@ -45,14 +45,17 @@ export function useVisibleSeries(data: IChartData, limit?: number | undefined) {
   // Issue 3 fix: memoize to avoid recreating on every render
   // Issue 1 fix: only dispatch to Redux when in edit mode
   const setVisibleSeries = useCallback(
-    (ids: string[]) => {
+    (idsOrFn: string[] | ((prev: string[]) => string[])) => {
       hasUserToggled.current = true;
-      setVisibleSeriesState(ids);
-      if (isEditMode) {
-        const allIds = data?.series?.map((serie) => serie.id) ?? [];
-        const hidden = allIds.filter((id) => !ids.includes(id));
-        dispatch(setHiddenSeries(hidden));
-      }
+      setVisibleSeriesState((prev) => {
+        const ids = typeof idsOrFn === 'function' ? idsOrFn(prev) : idsOrFn;
+        if (isEditMode) {
+          const allIds = data?.series?.map((serie) => serie.id) ?? [];
+          const hidden = allIds.filter((id) => !ids.includes(id));
+          dispatch(setHiddenSeries(hidden));
+        }
+        return ids;
+      });
     },
     [data, isEditMode, dispatch],
   );
