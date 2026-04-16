@@ -47,7 +47,7 @@ declare module '@tanstack/react-table' {
 interface ReportTableProps {
   data: IChartData;
   visibleSeries: IChartData['series'] | string[];
-  setVisibleSeries: React.Dispatch<React.SetStateAction<string[]>>;
+  setVisibleSeries: (idsOrFn: string[] | ((prev: string[]) => string[])) => void;
 }
 
 const DEFAULT_COLUMN_WIDTH = 150;
