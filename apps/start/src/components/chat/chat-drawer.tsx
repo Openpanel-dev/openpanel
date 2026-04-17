@@ -1,4 +1,3 @@
-import { useAppContext } from '@/hooks/use-app-context';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useResizableDrawer } from '@/hooks/use-resizable-drawer';
 import { useEffect } from 'react';
@@ -27,9 +26,14 @@ const MAX_WIDTH = 720;
  */
 export function ChatDrawer() {
   const { projectId } = useAppParams();
-  const { isAiEnabled } = useAppContext();
-  const { agentName, conversationId, isOpen, closeChat, openChatForContext } =
-    useChatState();
+  const {
+    agentName,
+    conversationId,
+    isOpen,
+    isAiEnabled,
+    closeChat,
+    openChatForContext,
+  } = useChatState();
   const { width, dragHandleProps } = useResizableDrawer({
     defaultWidth: DEFAULT_WIDTH,
     minWidth: MIN_WIDTH,
@@ -83,18 +87,20 @@ export function ChatDrawer() {
         />
         <ChatDrawerHeader projectId={projectId} onClose={closeChat} />
         {/*
-          Three states here:
-            1. `!isAiEnabled` — neither `OPENAI_API_KEY` nor
-               `ANTHROPIC_API_KEY` is set on the API. Skip the runtime
-               entirely and render the setup-instructions empty state.
-            2. `isAiEnabled` but `agentName` is still empty — the
-               `trpc.chat.models` query is in flight. Render a brief
-               placeholder so we don't crash `useAgent({ agent: '' })`.
+          Three states, all derived from the `chat.models` tRPC query
+          (see `ChatStateProvider`). The frontend no longer reads any
+          AI-specific env vars — empty models list = not configured.
+            1. `isAiEnabled === false` — the API returned zero models,
+               meaning no provider keys are set. Skip the runtime and
+               render the setup-instructions empty state.
+            2. `isAiEnabled` is `null` or `agentName` is still empty —
+               models query in flight. Render a placeholder so we don't
+               crash `useAgent({ agent: '' })`.
             3. `agentName` resolved — mount the runtime as normal.
                `key={conversationId}` remounts the `useAgent` controller
                on conversation switches to force a fresh hydrate.
         */}
-        {!isAiEnabled ? (
+        {isAiEnabled === false ? (
           <ChatDrawerNotConfigured />
         ) : agentName ? (
           <ChatRuntimeProvider key={conversationId}>

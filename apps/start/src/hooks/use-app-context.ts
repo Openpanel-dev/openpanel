@@ -18,6 +18,5 @@ export function useAppContext() {
     isSelfHosted: params.isSelfHosted,
     isMaintenance: params.isMaintenance ?? false,
     isDemo: params.isDemo ?? false,
-    isAiEnabled: params.isAiEnabled ?? false,
   };
 }

@@ -10,9 +10,6 @@ export const getServerEnvs = createServerFn().handler(() => {
     isSelfHosted: process.env.SELF_HOSTED !== undefined,
     isMaintenance: process.env.MAINTENANCE === '1',
     isDemo: process.env.DEMO_USER_ID !== undefined,
-    isAiEnabled: Boolean(
-      process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY,
-    ),
   };
 
   return envs;

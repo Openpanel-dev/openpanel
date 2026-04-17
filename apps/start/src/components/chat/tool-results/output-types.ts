@@ -98,8 +98,14 @@ export type TableNormalized = {
 
 /**
  * Several tools return either an array directly or wrap it in `{ rows }`,
- * `{ data }`, or `{ opportunities }`. This is the one place where we
- * resolve that — every renderer downstream gets a clean `TableRow[]`.
+ * `{ data }`, `{ opportunities }`, or `{ properties }`. This is the one
+ * place where we resolve that — every renderer downstream gets a clean
+ * `TableRow[]`.
+ *
+ * `properties` covers `list_event_properties` / `list_properties_for_event`,
+ * which return a flat `string[]` of property keys after the server rolled
+ * up dotted sub-keys. We lift each into `{ property_key }` so the generic
+ * table renderer can pick it up as the label column.
  */
 export function normalizeTableOutput(value: unknown): TableNormalized {
   if (Array.isArray(value)) {
@@ -121,6 +127,12 @@ export function normalizeTableOutput(value: unknown): TableNormalized {
     }
     if (Array.isArray(o.opportunities)) {
       return { rows: o.opportunities as TableRow[], total, truncated };
+    }
+    if (Array.isArray(o.properties)) {
+      const rows: TableRow[] = (o.properties as unknown[]).map((p) =>
+        typeof p === 'string' ? { property_key: p } : (p as TableRow),
+      );
+      return { rows, total, truncated };
     }
   }
   return { rows: [], total: undefined, truncated: false };

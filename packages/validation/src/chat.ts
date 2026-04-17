@@ -142,7 +142,27 @@ export const CHAT_MODELS = [
 
 export type ChatModelId = (typeof CHAT_MODELS)[number]['id'];
 
-export const MODEL_STORAGE_KEY = 'op-chat-model';
+/**
+ * localStorage key holding the user's preferred chat model id.
+ *
+ * Bumped to `v2` when the default was switched from `gpt-4-1` to
+ * `gpt-4-1-mini` (April 2026). Existing users had `gpt-4-1` pinned in
+ * their v1 key and hit rate-limit errors almost immediately on Tier 1
+ * OpenAI accounts; invalidating the old key is the only way to
+ * migrate them to the new default without a UI prompt. If you change
+ * the default again, bump the suffix.
+ */
+export const MODEL_STORAGE_KEY = 'op-chat-model-v2';
+
+/**
+ * Preferred default model id. The tRPC `chat.models` endpoint picks
+ * this when it's available in the configured provider set, falling
+ * back to the first entry in `CHAT_MODELS` otherwise. Picked for its
+ * much higher per-minute token budget (OpenAI Tier 1 gives gpt-4.1
+ * just 30k TPM — one user exhausts it with a single long turn —
+ * whereas gpt-4.1-mini gets 200k TPM for the same tier).
+ */
+export const PREFERRED_DEFAULT_MODEL_ID = 'gpt-4-1-mini';
 
 export function isValidModelId(id: string | null | undefined): id is ChatModelId {
   return !!id && CHAT_MODELS.some((m) => m.id === id);

@@ -96,6 +96,55 @@ export function truncateRows<T>(
 }
 
 /**
+ * Compact output from `listEventPropertiesCore` for consumption by the LLM.
+ *
+ * The raw shape is `{ properties: [{ property_key, event_name }, …] }` ordered
+ * alphabetically and capped at 500 rows. That shape has three token-hungry
+ * problems when passed back as a tool result:
+ *
+ *   1. Dotted sub-keys explode. A single property like `__query` or `data`
+ *      with dynamic sub-paths surfaces as hundreds of rows
+ *      (`__query.foo`, `__query.bar`, `__query.<uuid>`, …). They flood
+ *      alphabetically-first — 300 of them before `country` appears.
+ *   2. `event_name` is repeated on every row. When the caller passed an
+ *      `eventName` filter it's a constant string; we only need it once.
+ *   3. The full 500-row dump is rarely necessary — the model uses this
+ *      list for filter/breakdown discovery, which is satisfied by the
+ *      top ~50 distinct roots.
+ *
+ * This helper collapses dotted keys to their root segment, dedupes, orders
+ * by frequency (how many original sub-keys fell under each root — a decent
+ * "how prominent is this property" signal), and caps the list.
+ */
+export function compactEventProperties(
+  raw: { properties: Array<{ property_key: string; event_name: string }> },
+  options: { eventName?: string; max?: number } = {},
+): {
+  event_name?: string;
+  properties: string[];
+  total: number;
+  _truncated: boolean;
+} {
+  const { eventName, max = 50 } = options;
+  const counts = new Map<string, number>();
+  for (const row of raw.properties) {
+    const dot = row.property_key.indexOf('.');
+    const root = dot >= 0 ? row.property_key.slice(0, dot) : row.property_key;
+    counts.set(root, (counts.get(root) ?? 0) + 1);
+  }
+  const sorted = Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([key]) => key);
+  const truncated = sorted.length > max;
+  return {
+    ...(eventName ? { event_name: eventName } : {}),
+    properties: truncated ? sorted.slice(0, max) : sorted,
+    total: sorted.length,
+    _truncated: truncated,
+  };
+}
+
+/**
  * Known range presets that map to date windows via `getDatesFromRange`.
  * Anything outside this set (including `"custom"`) is treated as "no
  * preset" and we fall through to explicit dates / the 30-day default.

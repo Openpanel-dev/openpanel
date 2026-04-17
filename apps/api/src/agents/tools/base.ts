@@ -25,6 +25,7 @@ import {
 import { runReport, runReportFromConfig } from '@openpanel/mcp';
 import {
   chatTool,
+  compactEventProperties,
   dashboardUrl,
   pageContextFilters,
   resolveDateRange,
@@ -52,7 +53,7 @@ export const listEventProperties = chatTool(
   {
     name: 'list_event_properties',
     description:
-      'List the property keys available for an event (or all events). Call this before using a property as a filter or breakdown in generate_report.',
+      'List property keys available for an event (or across all events). Call this before using a property as a filter or breakdown in generate_report. NOTE: dotted sub-keys are rolled up to their root — e.g. all `__query.foo`, `__query.bar`, … are represented by a single `__query` entry. Keys are ordered by how many sub-keys roll up under them (most prominent first). To filter on a specific sub-key like `__query.utm_source`, use that exact full key in `set_property_filters` / breakdowns — the rollup is purely a discovery optimization.',
     schema: z.object({
       eventName: z
         .string()
@@ -60,8 +61,13 @@ export const listEventProperties = chatTool(
         .describe('Optional — filter to one event. Omit to list properties across all events.'),
     }),
   },
-  async ({ eventName }, context) =>
-    listEventPropertiesCore({ projectId: context.projectId, eventName }),
+  async ({ eventName }, context) => {
+    const raw = await listEventPropertiesCore({
+      projectId: context.projectId,
+      eventName,
+    });
+    return compactEventProperties(raw, { eventName });
+  },
 );
 
 export const getEventPropertyValues = chatTool(

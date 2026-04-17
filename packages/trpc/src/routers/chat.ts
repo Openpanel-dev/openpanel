@@ -1,4 +1,7 @@
-import { getAvailableChatModels } from '@openpanel/validation';
+import {
+  getAvailableChatModels,
+  PREFERRED_DEFAULT_MODEL_ID,
+} from '@openpanel/validation';
 
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -17,10 +20,12 @@ export const chatRouter = createTRPCRouter({
       anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
     };
     const models = getAvailableChatModels(providers);
+    const preferred = models.find((m) => m.id === PREFERRED_DEFAULT_MODEL_ID);
+    const defaultModelId = preferred?.id ?? models[0]?.id ?? null;
     return {
       providers,
       models,
-      defaultModelId: models[0]?.id ?? null,
+      defaultModelId,
     };
   }),
 });

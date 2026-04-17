@@ -4,7 +4,12 @@ import {
   listEventPropertiesCore,
   queryEventsCore,
 } from '@openpanel/db';
-import { chatTool, resolveDateRange, truncateRows } from './helpers';
+import {
+  chatTool,
+  compactEventProperties,
+  resolveDateRange,
+  truncateRows,
+} from './helpers';
 
 export const analyzeEventDistribution = chatTool(
   {
@@ -136,11 +141,16 @@ export const listPropertiesForEvent = chatTool(
   {
     name: 'list_properties_for_event',
     description:
-      'List property keys available for a specific event (or all events). Useful before correlating or filtering.',
+      'List property keys available for a specific event (or all events). Useful before correlating or filtering. Dotted sub-keys are rolled up to their root (e.g. all `__query.*` become a single `__query`); ordered by how many sub-keys roll up under each root.',
     schema: z.object({
       eventName: z.string().optional(),
     }),
   },
-  async ({ eventName }, context) =>
-    listEventPropertiesCore({ projectId: context.projectId, eventName }),
+  async ({ eventName }, context) => {
+    const raw = await listEventPropertiesCore({
+      projectId: context.projectId,
+      eventName,
+    });
+    return compactEventProperties(raw, { eventName });
+  },
 );

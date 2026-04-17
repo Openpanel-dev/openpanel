@@ -3,7 +3,6 @@ import {
   isValidModelId,
   MODEL_STORAGE_KEY,
 } from '@/agents/models';
-import { useAppContext } from '@/hooks/use-app-context';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -69,6 +68,13 @@ type ChatStateValue = {
   agentName: string;
   models: readonly ChatModelOption[];
   setAgent: (agentName: string) => void;
+  /**
+   * Tri-state derived from the `chat.models` query:
+   *   - `null`  — query hasn't resolved yet (show the neutral loading state)
+   *   - `true`  — at least one provider is configured on the API
+   *   - `false` — no providers configured → show setup instructions
+   */
+  isAiEnabled: boolean | null;
 
   /**
    * Title being streamed for the active conversation, if any. Flips
@@ -97,19 +103,21 @@ function readStoredAgent(): string | null {
 }
 
 export function ChatStateProvider({ children }: { children: ReactNode }) {
-  const { isAiEnabled } = useAppContext();
   const trpc = useTRPC();
 
-  // Fetch the list of models the API can actually serve. When the user has
-  // no AI env vars set, `isAiEnabled` is false and we skip the query — the
-  // drawer's empty state shows setup instructions instead.
+  // Single source of truth for "is AI configured on the API" — the
+  // `chat.models` query already filters by which provider keys are set, so
+  // an empty `models` array means no OpenAI/Anthropic key and we render the
+  // setup-instructions empty state. No need to leak env vars to the client.
   const modelsQuery = useQuery({
     ...trpc.chat.models.queryOptions(),
-    enabled: isAiEnabled,
     staleTime: Number.POSITIVE_INFINITY,
   });
   const models = modelsQuery.data?.models ?? [];
   const defaultModelId = modelsQuery.data?.defaultModelId ?? null;
+  const isAiEnabled: boolean | null = modelsQuery.isPending
+    ? null
+    : models.length > 0;
   // URL is the source of truth for the active conversation + drawer
   // open state. `chatParam`:
   //   - null         → drawer closed
@@ -216,6 +224,7 @@ export function ChatStateProvider({ children }: { children: ReactNode }) {
       agentName,
       models,
       setAgent,
+      isAiEnabled,
       streamingTitle,
       setStreamingTitle,
       pendingMessage,
@@ -233,6 +242,7 @@ export function ChatStateProvider({ children }: { children: ReactNode }) {
       agentName,
       models,
       setAgent,
+      isAiEnabled,
       streamingTitle,
       pendingMessage,
     ],
