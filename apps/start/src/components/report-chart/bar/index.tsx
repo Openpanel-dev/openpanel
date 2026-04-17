@@ -5,6 +5,7 @@ import { AspectContainer } from '../aspect-container';
 import { ChartDownloadButton } from '../common/chart-download-button';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
+import { RefetchingOverlay } from '../common/refetching-overlay';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
 
@@ -37,6 +38,7 @@ export function ReportBarChart() {
 
   return (
     <div className="relative group/chart">
+      <RefetchingOverlay isRefetching={res.isPlaceholderData && res.isFetching} />
       <Chart data={res.data} />
       <ChartDownloadButton type="standard" data={res.data} />
     </div>

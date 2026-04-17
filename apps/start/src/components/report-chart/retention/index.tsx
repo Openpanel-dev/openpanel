@@ -6,6 +6,7 @@ import { ChartDownloadButton } from '../common/chart-download-button';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
+import { RefetchingOverlay } from '../common/refetching-overlay';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
 import CohortTable from './table';
@@ -66,6 +67,7 @@ export function ReportRetentionChart() {
 
   return (
     <div className="col gap-4 relative group/chart">
+      <RefetchingOverlay isRefetching={res.isPlaceholderData && res.isFetching} />
       <ChartDownloadButton type="cohort" data={res.data} />
       <AspectContainer>
         <Chart data={res.data} />

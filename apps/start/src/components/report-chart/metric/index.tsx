@@ -2,6 +2,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { ChartDownloadButton } from '../common/chart-download-button';
+import { RefetchingOverlay } from '../common/refetching-overlay';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
 
@@ -34,6 +35,7 @@ export function ReportMetricChart() {
 
   return (
     <div className="relative group/chart">
+      <RefetchingOverlay isRefetching={res.isPlaceholderData && res.isFetching} />
       <Chart data={res.data} />
       <ChartDownloadButton type="standard" data={res.data} />
     </div>

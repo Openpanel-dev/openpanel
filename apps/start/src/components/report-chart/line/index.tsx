@@ -7,6 +7,7 @@ import { ChartDownloadButton } from '../common/chart-download-button';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
+import { RefetchingOverlay } from '../common/refetching-overlay';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
 
@@ -39,6 +40,7 @@ export function ReportLineChart() {
 
   return (
     <div className="relative group/chart">
+      <RefetchingOverlay isRefetching={res.isPlaceholderData && res.isFetching} />
       <AspectContainer>
         <Chart data={res.data} />
       </AspectContainer>
