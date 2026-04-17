@@ -1,5 +1,6 @@
 import { authRouter } from './routers/auth';
 import { chartRouter } from './routers/chart';
+import { chatRouter } from './routers/chat';
 import { clientRouter } from './routers/client';
 import { conversationRouter } from './routers/conversation';
 import { dashboardRouter } from './routers/dashboard';
@@ -51,6 +52,7 @@ export const appRouter = createTRPCRouter({
   subscription: subscriptionRouter,
   overview: overviewRouter,
   realtime: realtimeRouter,
+  chat: chatRouter,
   conversation: conversationRouter,
   insight: insightRouter,
   widget: widgetRouter,

@@ -1,10 +1,11 @@
 import {
-  CHAT_MODELS,
   type ChatModelOption,
-  DEFAULT_MODEL_ID,
   isValidModelId,
   MODEL_STORAGE_KEY,
 } from '@/agents/models';
+import { useAppContext } from '@/hooks/use-app-context';
+import { useTRPC } from '@/integrations/trpc/react';
+import { useQuery } from '@tanstack/react-query';
 import {
   createContext,
   type ReactNode,
@@ -89,13 +90,26 @@ type ChatStateValue = {
 
 const ChatContext = createContext<ChatStateValue | null>(null);
 
-function readStoredAgent(): string {
-  if (typeof window === 'undefined') return DEFAULT_MODEL_ID;
+function readStoredAgent(): string | null {
+  if (typeof window === 'undefined') return null;
   const raw = window.localStorage.getItem(MODEL_STORAGE_KEY);
-  return isValidModelId(raw) ? raw : DEFAULT_MODEL_ID;
+  return isValidModelId(raw) ? raw : null;
 }
 
 export function ChatStateProvider({ children }: { children: ReactNode }) {
+  const { isAiEnabled } = useAppContext();
+  const trpc = useTRPC();
+
+  // Fetch the list of models the API can actually serve. When the user has
+  // no AI env vars set, `isAiEnabled` is false and we skip the query — the
+  // drawer's empty state shows setup instructions instead.
+  const modelsQuery = useQuery({
+    ...trpc.chat.models.queryOptions(),
+    enabled: isAiEnabled,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const models = modelsQuery.data?.models ?? [];
+  const defaultModelId = modelsQuery.data?.defaultModelId ?? null;
   // URL is the source of truth for the active conversation + drawer
   // open state. `chatParam`:
   //   - null         → drawer closed
@@ -145,17 +159,33 @@ export function ChatStateProvider({ children }: { children: ReactNode }) {
 
   const newConversation = openNewChat;
 
-  // Model selection — persisted to localStorage.
-  const [agentName, setAgentNameState] = useState<string>(() =>
-    readStoredAgent(),
+  // Model selection — persisted to localStorage. Initial value is the
+  // stored preference (if any); resolves to the server-provided default
+  // once the models query loads.
+  const [agentName, setAgentNameState] = useState<string>(
+    () => readStoredAgent() ?? '',
   );
-  const setAgent = useCallback((id: string) => {
-    if (!isValidModelId(id)) return;
-    setAgentNameState(id);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(MODEL_STORAGE_KEY, id);
-    }
-  }, []);
+  const setAgent = useCallback(
+    (id: string) => {
+      if (!models.some((m) => m.id === id)) return;
+      setAgentNameState(id);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(MODEL_STORAGE_KEY, id);
+      }
+    },
+    [models],
+  );
+
+  // Once the models query resolves, make sure `agentName` points at a
+  // model the server can actually serve. Covers:
+  //   - first render (no stored preference) → pick `defaultModelId`
+  //   - stored preference from a provider that's no longer configured
+  //     (e.g. ANTHROPIC_API_KEY was removed) → fall back to default
+  useEffect(() => {
+    if (!defaultModelId) return;
+    if (agentName && models.some((m) => m.id === agentName)) return;
+    setAgentNameState(defaultModelId);
+  }, [agentName, defaultModelId, models]);
 
   // Transient session state.
   const [streamingTitle, setStreamingTitle] = useState<string | null>(null);
@@ -184,7 +214,7 @@ export function ChatStateProvider({ children }: { children: ReactNode }) {
       switchConversation,
       newConversation,
       agentName,
-      models: CHAT_MODELS,
+      models,
       setAgent,
       streamingTitle,
       setStreamingTitle,
@@ -201,6 +231,7 @@ export function ChatStateProvider({ children }: { children: ReactNode }) {
       switchConversation,
       newConversation,
       agentName,
+      models,
       setAgent,
       streamingTitle,
       pendingMessage,

@@ -1,8 +1,10 @@
+import { useAppContext } from '@/hooks/use-app-context';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useResizableDrawer } from '@/hooks/use-resizable-drawer';
 import { useEffect } from 'react';
 import { useChatState } from './chat-context';
 import { ChatDrawerBody } from './chat-drawer-body';
+import { ChatDrawerNotConfigured } from './chat-drawer-empty';
 import { ChatDrawerFooter } from './chat-drawer-footer';
 import { ChatDrawerHeader } from './chat-drawer-header';
 import { ChatRuntimeProvider } from './chat-runtime';
@@ -25,7 +27,8 @@ const MAX_WIDTH = 720;
  */
 export function ChatDrawer() {
   const { projectId } = useAppParams();
-  const { conversationId, isOpen, closeChat, openChatForContext } =
+  const { isAiEnabled } = useAppContext();
+  const { agentName, conversationId, isOpen, closeChat, openChatForContext } =
     useChatState();
   const { width, dragHandleProps } = useResizableDrawer({
     defaultWidth: DEFAULT_WIDTH,
@@ -80,16 +83,27 @@ export function ChatDrawer() {
         />
         <ChatDrawerHeader projectId={projectId} onClose={closeChat} />
         {/*
-          Remount the runtime provider (and the `useAgent` controller
-          inside it) whenever `conversationId` changes. The controller
-          caches the id in a ref and only loads from the server on
-          `init()`, so without this key a switch wouldn't trigger the
-          hydrate fetch.
+          Three states here:
+            1. `!isAiEnabled` — neither `OPENAI_API_KEY` nor
+               `ANTHROPIC_API_KEY` is set on the API. Skip the runtime
+               entirely and render the setup-instructions empty state.
+            2. `isAiEnabled` but `agentName` is still empty — the
+               `trpc.chat.models` query is in flight. Render a brief
+               placeholder so we don't crash `useAgent({ agent: '' })`.
+            3. `agentName` resolved — mount the runtime as normal.
+               `key={conversationId}` remounts the `useAgent` controller
+               on conversation switches to force a fresh hydrate.
         */}
-        <ChatRuntimeProvider key={conversationId}>
-          <ChatDrawerBody />
-          <ChatDrawerFooter />
-        </ChatRuntimeProvider>
+        {!isAiEnabled ? (
+          <ChatDrawerNotConfigured />
+        ) : agentName ? (
+          <ChatRuntimeProvider key={conversationId}>
+            <ChatDrawerBody />
+            <ChatDrawerFooter />
+          </ChatRuntimeProvider>
+        ) : (
+          <div className="flex-1" />
+        )}
       </aside>
     </>
   );

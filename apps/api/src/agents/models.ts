@@ -1,7 +1,8 @@
+import { createAnthropic } from '@better-agent/providers/anthropic';
 import { createOpenAI } from '@better-agent/providers/openai';
 import { CHAT_MODELS, type ChatModelEntry } from '@openpanel/validation';
 
-export { CHAT_MODELS as ALLOWED_MODELS, DEFAULT_MODEL_ID } from '@openpanel/validation';
+export { CHAT_MODELS as ALLOWED_MODELS } from '@openpanel/validation';
 export type { ChatModelEntry } from '@openpanel/validation';
 
 // ────────────────────────────────────────────────────────────────────
@@ -31,6 +32,16 @@ function openai() {
   return _openai;
 }
 
+let _anthropic: ReturnType<typeof createAnthropic> | null = null;
+function anthropic() {
+  if (!_anthropic) {
+    _anthropic = createAnthropic({
+      apiKey: requireEnv('ANTHROPIC_API_KEY', 'Anthropic'),
+    });
+  }
+  return _anthropic;
+}
+
 /**
  * Exposed for the titler agent in `app.ts`. Same singleton as the one
  * used by the chat agents so we don't duplicate API-key wiring.
@@ -40,15 +51,14 @@ export const openaiProvider = openai;
 /**
  * Resolve a model entry to the provider's model instance.
  * Used by the agent factory.
- *
- * NB: Anthropic support has been removed. Re-add `createAnthropic`
- * from `@better-agent/providers/anthropic` + a switch arm here when
- * an Anthropic model is added to the whitelist.
  */
 export function resolveModel(entry: ChatModelEntry) {
   switch (entry.group) {
     case 'OpenAI':
       // biome-ignore lint/suspicious/noExplicitAny: OpenAI model id union is open
       return openai().model(entry.modelId as any);
+    case 'Anthropic':
+      // biome-ignore lint/suspicious/noExplicitAny: Anthropic model id union is open
+      return anthropic().model(entry.modelId as any);
   }
 }

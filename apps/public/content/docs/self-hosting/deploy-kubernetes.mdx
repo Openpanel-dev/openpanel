@@ -239,20 +239,16 @@ Get your Resend API key from [resend.com](https://resend.com). Make sure to veri
 
 #### AI Features
 
-Enable AI-powered features:
+Enable the in-app AI chat assistant by setting one or both provider API keys:
 
 ```yaml
-config:
-  aiModel: "gpt-4o-mini"  # Options: gpt-4o, gpt-4o-mini, claude-3-5
-
 secrets:
-  openaiApiKey: "sk-xxxxxxxxxxxxx"  # For OpenAI models
-  anthropicApiKey: ""  # For Claude models (leave empty if not using)
-  geminiApiKey: ""  # For Gemini models (leave empty if not using)
+  openaiApiKey: "sk-xxxxxxxxxxxxx"          # For GPT-4.1 / 4.1 mini / 5.4 mini
+  anthropicApiKey: "sk-ant-xxxxxxxxxxxxx"   # For Claude Haiku 4.5 / Sonnet 4.6 / Opus 4.6
 ```
 
 <Callout>
-You only need to configure the API key for the model you choose. Leave other API keys as empty strings (`""`) if not using them.
+The chat's model picker only shows models whose provider has a key configured — set either or both. Without any key, the chat drawer still opens but shows a setup hint.
 </Callout>
 
 #### Google OAuth

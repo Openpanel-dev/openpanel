@@ -1,14 +1,14 @@
+import CopyInput from '@/components/forms/copy-input';
 import { usePageContextValue } from '@/contexts/page-context';
-import { SparklesIcon } from 'lucide-react';
+import { ExternalLinkIcon, KeyRoundIcon, SparklesIcon } from 'lucide-react';
 import { useChatRuntime } from './chat-runtime';
 
 /**
- * Empty-state panel shown when a chat has no messages yet. Headline,
- * description, and example prompts are tailored to the current page
- * so the user gets ideas relevant to what they're looking at. The
- * prompts are clickable — they fire the same `send()` as typing and
- * pressing Enter, so the user can kick off the conversation in one
- * tap.
+ * Empty-state panel shown inside the drawer body when a chat has no
+ * messages yet — page-aware suggestion prompts. The "AI not configured"
+ * variant is a separate component (`ChatDrawerNotConfigured` below)
+ * rendered directly from `<ChatDrawer>` without the runtime, since
+ * it doesn't depend on an agent being available.
  */
 export function ChatDrawerEmpty() {
   const ctx = usePageContextValue();
@@ -38,6 +38,38 @@ export function ChatDrawerEmpty() {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+export function ChatDrawerNotConfigured() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8 text-center">
+      <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <KeyRoundIcon className="size-5" />
+      </div>
+      <div className="max-w-xs">
+        <h3 className="font-semibold text-xl mb-2">AI chat isn't configured</h3>
+        <p className="mt-1.5 text-muted-foreground leading-[1.5]">
+          Set <code className="font-mono text-sm">OPENAI_API_KEY</code> and/or{' '}
+          <code className="font-mono text-sm">ANTHROPIC_API_KEY</code> on the
+          API service to enable AI chat, then restart it. The model picker
+          shows only providers with a configured key.
+        </p>
+      </div>
+      <div className="flex w-full max-w-xs flex-col gap-2">
+        <CopyInput label="OpenAI" value="OPENAI_API_KEY=sk-..." />
+        <CopyInput label="Anthropic" value="ANTHROPIC_API_KEY=sk-ant-..." />
+      </div>
+      <a
+        href="https://openpanel.dev/docs/self-hosting/environment-variables#ai-features"
+        target="_blank"
+        rel="noopener"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
+        View setup docs
+        <ExternalLinkIcon className="size-3.5" />
+      </a>
     </div>
   );
 }

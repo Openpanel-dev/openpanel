@@ -87,13 +87,15 @@ export type ChatAgentContext = z.infer<typeof chatContextSchema>;
 // Adding a new model = add an entry here. No other changes required.
 // ────────────────────────────────────────────────────────────────────
 
+export type ChatProvider = 'OpenAI' | 'Anthropic';
+
 export type ChatModelEntry = {
   /** URL-safe agent name (no colons, slashes, or percent-encoding needed). */
   id: string;
   /** Native model id passed to the provider client. */
   modelId: string;
   label: string;
-  group: 'OpenAI';
+  group: ChatProvider;
   /**
    * When true, the agent is configured with the provider's `reasoning`
    * options so the model returns reasoning tokens as streamed text
@@ -118,11 +120,27 @@ export const CHAT_MODELS = [
     group: 'OpenAI',
     reasoning: true,
   },
+  {
+    id: 'claude-haiku-4-5',
+    modelId: 'claude-haiku-4-5',
+    label: 'Claude Haiku 4.5',
+    group: 'Anthropic',
+  },
+  {
+    id: 'claude-sonnet-4-6',
+    modelId: 'claude-sonnet-4-6',
+    label: 'Claude Sonnet 4.6',
+    group: 'Anthropic',
+  },
+  {
+    id: 'claude-opus-4-6',
+    modelId: 'claude-opus-4-6',
+    label: 'Claude Opus 4.6',
+    group: 'Anthropic',
+  },
 ] as const satisfies readonly ChatModelEntry[];
 
 export type ChatModelId = (typeof CHAT_MODELS)[number]['id'];
-
-export const DEFAULT_MODEL_ID: ChatModelId = CHAT_MODELS[0].id;
 
 export const MODEL_STORAGE_KEY = 'op-chat-model';
 
@@ -132,6 +150,22 @@ export function isValidModelId(id: string | null | undefined): id is ChatModelId
 
 export function getModelLabel(id: string): string {
   return CHAT_MODELS.find((m) => m.id === id)?.label ?? id;
+}
+
+/**
+ * Filter the whitelist to models whose provider has an API key configured.
+ * Returned in the same order as `CHAT_MODELS` (OpenAI first, then Anthropic)
+ * so the first entry is a stable default.
+ */
+export function getAvailableChatModels(providers: {
+  openai: boolean;
+  anthropic: boolean;
+}): ChatModelEntry[] {
+  return CHAT_MODELS.filter((m) => {
+    if (m.group === 'OpenAI') return providers.openai;
+    if (m.group === 'Anthropic') return providers.anthropic;
+    return false;
+  });
 }
 
 // ────────────────────────────────────────────────────────────────────

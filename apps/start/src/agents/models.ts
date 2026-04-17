@@ -1,9 +1,10 @@
-// Re-export the shared model whitelist from `@openpanel/validation`.
+// Re-export the shared model whitelist helpers from `@openpanel/validation`.
 // Server + client consume the same source, so drift is a compile error
 // rather than a silent "agent not found at runtime".
+//
+// The *available* model list is fetched at runtime via `trpc.chat.models` —
+// it filters by which provider API keys the API process has configured.
 export {
-  CHAT_MODELS,
-  DEFAULT_MODEL_ID,
   MODEL_STORAGE_KEY,
   getModelLabel,
   isValidModelId,

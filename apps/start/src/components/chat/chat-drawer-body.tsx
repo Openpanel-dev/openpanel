@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { usePageContextValue } from '@/contexts/page-context';
 import { cn } from '@/utils/cn';
-import { ArrowDownIcon } from 'lucide-react';
+import { AlertCircleIcon, ArrowDownIcon } from 'lucide-react';
 import {
   StickToBottom,
   useStickToBottomContext,
@@ -20,7 +20,7 @@ import { useChatRuntime } from './chat-runtime';
  * up — courtesy of `use-stick-to-bottom`. Zero refs, zero effects.
  */
 export function ChatDrawerBody() {
-  const { messages, isLoading, isStreaming } = useChatRuntime();
+  const { messages, isLoading, isStreaming, status, error } = useChatRuntime();
 
   const hasContext = usePageContextValue();
 
@@ -67,6 +67,14 @@ export function ChatDrawerBody() {
           {isLoading && !isStreaming && (
             <div className="flex items-center gap-2 text-sm">
               <span className="op-shimmer font-medium">Thinking…</span>
+            </div>
+          )}
+          {status === 'error' && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              <AlertCircleIcon className="size-4 shrink-0 mt-0.5" />
+              <span className="leading-[1.5]">
+                {error?.message ?? 'Something went wrong. Try again.'}
+              </span>
             </div>
           )}
         </StickToBottom.Content>
