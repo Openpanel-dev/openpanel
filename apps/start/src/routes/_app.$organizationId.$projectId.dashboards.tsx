@@ -213,6 +213,7 @@ function Component() {
                   <button
                     type="button"
                     onClick={() => {
+                      toast('Duplicating dashboard...');
                       duplication.mutate({ id: item.id });
                     }}
                   >
