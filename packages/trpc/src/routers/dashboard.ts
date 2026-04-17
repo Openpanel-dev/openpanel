@@ -165,4 +165,90 @@ export const dashboardRouter = createTRPCRouter({
         }
       }
     }),
+  duplicate: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const dashboard = await db.dashboard.findUniqueOrThrow({
+        where: { id: input.id },
+        include: {
+          reports: {
+            include: { layout: true },
+          },
+        },
+      });
+
+      const access = await getProjectAccess({
+        projectId: dashboard.projectId,
+        userId: ctx.session.userId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this dashboard');
+      }
+
+      const newDashboardId = await getId(
+        'dashboard',
+        `Copy of ${dashboard.name}`,
+      );
+
+      return db.$transaction(async (tx) => {
+        const newDashboard = await tx.dashboard.create({
+          data: {
+            id: newDashboardId,
+            name: `Copy of ${dashboard.name}`,
+            projectId: dashboard.projectId,
+            organizationId: dashboard.organizationId,
+          },
+        });
+
+        for (const report of dashboard.reports) {
+          const newReport = await tx.report.create({
+            data: {
+              projectId: report.projectId,
+              dashboardId: newDashboard.id,
+              name: report.name,
+              events: report.events!,
+              interval: report.interval,
+              breakdowns: report.breakdowns!,
+              chartType: report.chartType,
+              lineType: report.lineType,
+              range: report.range,
+              formula: report.formula,
+              previous: report.previous,
+              unit: report.unit,
+              criteria: report.criteria,
+              metric: report.metric,
+              funnelGroup: report.funnelGroup,
+              funnelWindow: report.funnelWindow,
+              globalFilters: report.globalFilters ?? [],
+              holdProperties: report.holdProperties ?? [],
+              hiddenSeries: (report.hiddenSeries as string[]) ?? [],
+              measuring: report.measuring,
+            },
+          });
+
+          if (report.layout) {
+            await tx.reportLayout.create({
+              data: {
+                reportId: newReport.id,
+                x: report.layout.x,
+                y: report.layout.y,
+                w: report.layout.w,
+                h: report.layout.h,
+                minW: report.layout.minW,
+                minH: report.layout.minH,
+                maxW: report.layout.maxW,
+                maxH: report.layout.maxH,
+              },
+            });
+          }
+        }
+
+        return newDashboard;
+      });
+    }),
 });
