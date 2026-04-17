@@ -4,6 +4,7 @@ import {
   Building2Icon,
   GanttChartIcon,
   LayersIcon,
+  LayoutDashboardIcon,
   LayoutPanelTopIcon,
   type LucideIcon,
   SearchIcon,
@@ -118,6 +119,7 @@ const PAGE_META: Record<
   profileDetail: { label: 'Profile detail', icon: UserCircleIcon },
   groupDetail: { label: 'Group detail', icon: Building2Icon },
   reportEditor: { label: 'Report editor', icon: LayoutPanelTopIcon },
+  dashboard: { label: 'Dashboard', icon: LayoutDashboardIcon },
 };
 
 function formatRange(range: string): string {

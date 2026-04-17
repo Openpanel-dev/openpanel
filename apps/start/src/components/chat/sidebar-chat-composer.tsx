@@ -34,20 +34,20 @@ export function SidebarChatComposer() {
     <form
       onSubmit={submit}
       className={cn(
-        'mb-4 flex items-center gap-1.5 rounded-md border bg-card pl-2 pr-1',
-        'focus-within:ring-1 focus-within:ring-ring transition-shadow',
+        'mb-4 flex items-center gap-2 rounded-md border border-border bg-def-100 pl-3 pr-2',
+        'transition-all focus-within:border-def-400 focus-within:ring-1 focus-within:ring-ring',
       )}
     >
-      <SparklesIcon className="size-4 text-muted-foreground shrink-0" />
+      <SparklesIcon className="size-5 shrink-0 text-muted-foreground" />
       <input
         type="text"
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Ask AI anything…"
         className={cn(
-          'flex-1 min-w-0 bg-transparent text-sm py-2 text-foreground',
-          'placeholder:text-muted-foreground/70',
-          'border-0 outline-none ring-0 shadow-none',
+          'min-w-0 flex-1 bg-transparent py-2 text-[13px] font-medium text-foreground',
+          'placeholder:font-normal placeholder:text-muted-foreground',
+          'border-0 shadow-none outline-none ring-0',
           'focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0',
         )}
         onKeyDown={(e) => {
@@ -62,18 +62,19 @@ export function SidebarChatComposer() {
           type="submit"
           size="icon"
           variant="default"
-          className="size-6 rounded-sm shrink-0"
+          className="size-6 shrink-0 rounded-sm"
           aria-label="Send to AI"
         >
-          <ArrowUpIcon className="size-3" />
+          <ArrowUpIcon className="size-3.5" />
         </Button>
       ) : (
         <kbd
           className={cn(
-            'shrink-0 rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px]',
-            'text-muted-foreground',
+            'shrink-0 rounded border border-border bg-def-200 px-1.5 py-0.5 font-mono text-[11px]',
+            'text-muted-foreground cursor-pointer',
           )}
           aria-label="Keyboard shortcut: Cmd+J"
+          onClick={() => openNewChat()}
         >
           ⌘J
         </kbd>

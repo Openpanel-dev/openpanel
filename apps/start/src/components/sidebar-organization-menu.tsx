@@ -17,7 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
@@ -134,31 +133,37 @@ export function ActionCTAButton() {
     <div className="mb-4">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="w-full justify-between" size="default">
-            <div className="flex items-center gap-2">
-              <PlusIcon size={16} />
-              <div className="relative flex h-5 items-center">
-                <AnimatePresence mode="popLayout">
-                  <motion.span
-                    animate={{ y: 0, opacity: 1 }}
-                    className="absolute whitespace-nowrap"
-                    exit={{ y: -20, opacity: 0 }}
-                    initial={{ y: 20, opacity: 0 }}
-                    key={currentActionIndex}
-                    transition={{
-                      type: 'spring',
-                      stiffness: 300,
-                      damping: 25,
-                      duration: 0.3,
-                    }}
-                  >
-                    {ACTIONS[currentActionIndex].label}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
+          <button
+            type="button"
+            className={cn(
+              'group flex w-full items-center gap-2 rounded-md border border-border bg-def-200 px-3 py-2 text-left',
+              'text-[13px] font-medium text-foreground',
+              'transition-colors hover:bg-def-300',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            )}
+          >
+            <PlusIcon className="size-5 shrink-0" />
+            <div className="relative flex h-5 flex-1 items-center overflow-hidden">
+              <AnimatePresence mode="popLayout">
+                <motion.span
+                  animate={{ y: 0, opacity: 1 }}
+                  className="absolute whitespace-nowrap"
+                  exit={{ y: -16, opacity: 0 }}
+                  initial={{ y: 16, opacity: 0 }}
+                  key={currentActionIndex}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 300,
+                    damping: 25,
+                    duration: 0.3,
+                  }}
+                >
+                  {ACTIONS[currentActionIndex].label}
+                </motion.span>
+              </AnimatePresence>
             </div>
-            <ChevronDownIcon size={16} />
-          </Button>
+            <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+          </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
           {ACTIONS.map((action) => (
@@ -167,7 +172,7 @@ export function ActionCTAButton() {
               key={action.label}
               onClick={action.onClick}
             >
-              <action.icon className="mr-2 h-4 w-4" />
+              <action.icon className="mr-2 size-4" />
               {action.label}
             </DropdownMenuItem>
           ))}

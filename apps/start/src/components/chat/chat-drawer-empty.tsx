@@ -181,6 +181,19 @@ function getSuggestionsForContext(
         ],
       };
 
+    case 'dashboard':
+      return {
+        headline: 'Ask about this dashboard',
+        description:
+          'I can summarize every report on this dashboard at once, flag what changed, or zoom into a single chart.',
+        prompts: [
+          'Summarize this dashboard',
+          "What's underperforming here?",
+          'Compare this dashboard to the previous period',
+          'Which report has the biggest change?',
+        ],
+      };
+
     default:
       return {
         headline: 'Ask about your data',

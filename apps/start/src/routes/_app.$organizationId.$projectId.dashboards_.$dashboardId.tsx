@@ -33,11 +33,12 @@ import {
   ReportItem,
   ReportItemSkeleton,
 } from '@/components/report/report-item';
+import { useDashboardPageContext } from '@/hooks/use-page-context-helpers';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/dashboards_/$dashboardId',
@@ -181,6 +182,21 @@ function Component() {
 
   // Convert reports to grid layout format for all breakpoints
   const layouts = useReportLayouts(reports);
+
+  const dashboardPrimer = useMemo(
+    () => ({
+      name: dashboard?.name,
+      reportCount: reports.length,
+      reports: reports.map((r) => ({
+        id: r.id,
+        name: r.name,
+        chartType: r.chartType,
+      })),
+    }),
+    [dashboard?.name, reports],
+  );
+
+  useDashboardPageContext(dashboardId, dashboardPrimer);
 
   const handleLayoutChange = useCallback((newLayout: Layout[]) => {
     // This is called during dragging/resizing, we'll save on drag/resize stop

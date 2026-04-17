@@ -30,6 +30,7 @@ export const pageContextPageSchema = z.enum([
   'reportEditor',
   'events',
   'groupDetail',
+  'dashboard',
 ]);
 
 export const pageContextSchema = z.object({
@@ -44,6 +45,7 @@ export const pageContextSchema = z.object({
       profileId: z.string().optional(),
       reportId: z.string().optional(),
       groupId: z.string().optional(),
+      dashboardId: z.string().optional(),
     })
     .optional(),
   filters: z

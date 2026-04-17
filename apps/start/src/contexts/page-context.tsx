@@ -34,7 +34,8 @@ export type PageContextPage =
   | 'profileDetail'
   | 'reportEditor'
   | 'events'
-  | 'groupDetail';
+  | 'groupDetail'
+  | 'dashboard';
 
 export type PageContext = {
   page: PageContextPage;
@@ -44,6 +45,7 @@ export type PageContext = {
     profileId?: string;
     reportId?: string;
     groupId?: string;
+    dashboardId?: string;
   };
   filters?: {
     range?: IChartRange;

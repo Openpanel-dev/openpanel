@@ -1,6 +1,7 @@
 import type { AgentToolDefinition } from '@better-agent/core';
 import type { ChatAgentContext } from '../context';
 import * as base from './base';
+import * as dashboard from './dashboard';
 import * as events from './events';
 import * as groups from './groups';
 import * as insights from './insights';
@@ -120,6 +121,10 @@ const GROUP_TOOLS: ToolList = [
   groups.compareGroups,
 ] as AgentToolDefinition[];
 
+const DASHBOARD_TOOLS: ToolList = [
+  dashboard.summarizeDashboard,
+] as AgentToolDefinition[];
+
 // Client-side UI mutators. Available on pages that have user-
 // settable filters (date range, event names, property filters) so
 // the assistant can act on requests like "filter to last 7 days",
@@ -167,6 +172,10 @@ export function composeChatTools(context: ChatAgentContext) {
       return [...BASE_TOOLS, ...INSIGHTS_TOOLS, ...UI_TOOLS];
     case 'groupDetail':
       return ids?.groupId ? [...BASE_TOOLS, ...GROUP_TOOLS] : BASE_TOOLS;
+    case 'dashboard':
+      return ids?.dashboardId
+        ? [...BASE_TOOLS, ...DASHBOARD_TOOLS, ...UI_TOOLS]
+        : [...BASE_TOOLS, ...UI_TOOLS];
     case 'overview':
       return [...BASE_TOOLS, ...UI_TOOLS];
     default:

@@ -63,6 +63,34 @@ export function useEntityPageContext(
 }
 
 /**
+ * For the Dashboard detail page. Sends the dashboardId + the active
+ * range/interval picker (so `summarize_dashboard` runs each report
+ * against whatever window the user is currently viewing) plus an
+ * optional primer with the dashboard name + report list, so the model
+ * can answer "what's on this dashboard?" without an extra tool call.
+ */
+export function useDashboardPageContext(
+  dashboardId: string,
+  primer?: Record<string, unknown>,
+) {
+  const { projectId, organizationId } = useAppParams();
+  const { range, startDate, endDate, interval } = useOverviewOptions();
+
+  usePageContext({
+    page: 'dashboard',
+    route: { projectId, organizationId },
+    ids: { dashboardId },
+    filters: {
+      range,
+      startDate: startDate ?? undefined,
+      endDate: endDate ?? undefined,
+      interval: interval ?? undefined,
+    },
+    ...(primer ? { primer } : {}),
+  });
+}
+
+/**
  * For the Report Editor page. Sends the full live report draft so the
  * model can propose concrete edits via `preview_report_with_changes`.
  */
