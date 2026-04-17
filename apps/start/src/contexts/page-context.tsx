@@ -14,39 +14,31 @@ import type {
   IChartRange,
   IInterval,
   IReportInput,
+  PageContext as ValidatedPageContext,
+  PageContextPage,
 } from '@openpanel/validation';
+
+export type { PageContextPage };
 
 /**
  * What the chat backend needs to know about "what the user is currently
- * looking at". Mirrors apps/api/src/chat/types.ts.
+ * looking at".
+ *
+ * Same wire shape as `ValidatedPageContext` from `@openpanel/validation`,
+ * but with stricter typing for `filters` / `reportDraft`. The validation
+ * schema keeps those loose (`z.record(unknown)`) because Zod can't narrow
+ * `IChartEventFilter` / `IReportInput` at the boundary; the server
+ * re-narrows in `apps/api/src/agents/tools/helpers.ts`.
  *
  * Each target page calls `usePageContext({...})` in an effect; the
  * provider stores the latest value. The chat drawer reads it via a ref so
  * it always sends the *current* page's context with each request, even on
  * an old conversation.
  */
-export type PageContextPage =
-  | 'overview'
-  | 'insights'
-  | 'pages'
-  | 'seo'
-  | 'sessionDetail'
-  | 'profileDetail'
-  | 'reportEditor'
-  | 'events'
-  | 'groupDetail'
-  | 'dashboard';
-
-export type PageContext = {
-  page: PageContextPage;
-  route: { projectId: string; organizationId: string };
-  ids?: {
-    sessionId?: string;
-    profileId?: string;
-    reportId?: string;
-    groupId?: string;
-    dashboardId?: string;
-  };
+export type PageContext = Omit<
+  ValidatedPageContext,
+  'filters' | 'reportDraft'
+> & {
   filters?: {
     range?: IChartRange;
     startDate?: string;
@@ -57,7 +49,6 @@ export type PageContext = {
     search?: string;
   };
   reportDraft?: IReportInput;
-  primer?: Record<string, unknown>;
 };
 
 type PageContextValue = {
