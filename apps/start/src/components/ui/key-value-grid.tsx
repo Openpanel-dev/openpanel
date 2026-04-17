@@ -126,7 +126,7 @@ export function KeyValueGrid({
           </div>
           <div
             className={cn(
-              'text-right text-sm font-mono truncate',
+              'text-right text-sm font-mono truncate min-w-0 max-w-[60%]',
               valueClassName,
             )}
             title={typeof item.value === 'string' ? item.value : undefined}
