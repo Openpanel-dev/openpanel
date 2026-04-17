@@ -108,6 +108,7 @@ export async function events(
     take,
     profileId,
     select: {
+      properties: true,
       profile: false,
       meta: false,
       ...includes?.reduce((acc, key) => ({ ...acc, [key]: true }), {}),
