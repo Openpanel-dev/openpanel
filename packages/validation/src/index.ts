@@ -82,10 +82,13 @@ export const zChartEventWithType = zChartEvent.extend({
   type: z.literal('event'),
 });
 
-export const zChartEventItem = z.discriminatedUnion('type', [
-  zChartEventWithType,
-  zChartFormula,
-]);
+export const zChartEventItem = z
+  .preprocess((val) => {
+    if (typeof val === 'object' && val !== null && !('type' in val)) {
+      return { ...val, type: 'event' };
+    }
+    return val;
+  }, z.discriminatedUnion('type', [zChartEventWithType, zChartFormula]));
 
 export const zChartBreakdown = z.object({
   id: z.string().optional(),
