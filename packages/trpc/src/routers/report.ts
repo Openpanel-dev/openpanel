@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { db, getReportById, getReportsByDashboardId } from '@openpanel/db';
+import type { Prisma } from '@openpanel/db';
 import { zReportInput } from '@openpanel/validation';
 
 import { getProjectAccess } from '../access';
@@ -185,28 +186,17 @@ export const reportRouter = createTRPCRouter({
         throw TRPCAccessError('You do not have access to this project');
       }
 
+      const {
+        id: _id,
+        createdAt: _createdAt,
+        updatedAt: _updatedAt,
+        ...reportFields
+      } = report;
       return db.report.create({
         data: {
-          projectId: report.projectId,
-          dashboardId: report.dashboardId,
+          ...reportFields,
           name: `Copy of ${report.name}`,
-          events: report.events!,
-          interval: report.interval,
-          breakdowns: report.breakdowns!,
-          chartType: report.chartType,
-          lineType: report.lineType,
-          range: report.range,
-          formula: report.formula,
-          previous: report.previous,
-          unit: report.unit,
-          criteria: report.criteria,
-          metric: report.metric,
-          funnelGroup: report.funnelGroup,
-          funnelWindow: report.funnelWindow,
-          globalFilters: report.globalFilters ?? [],
-          holdProperties: report.holdProperties ?? [],
-          hiddenSeries: (report.hiddenSeries as string[]) ?? [],
-        },
+        } as Prisma.ReportUncheckedCreateInput,
       });
     }),
   get: protectedProcedure
