@@ -12,6 +12,7 @@ import {
   BarChartHorizontalIcon,
   ChartScatterIcon,
   ConeIcon,
+  CopyIcon,
   Globe2Icon,
   HashIcon,
   LayoutPanelTopIcon,
@@ -63,6 +64,17 @@ function Component() {
     }),
   );
   const dashboards = query.data ?? [];
+  const duplication = useMutation(
+    trpc.dashboard.duplicate.mutationOptions({
+      onSuccess() {
+        query.refetch();
+        toast('Success', {
+          description: 'Dashboard duplicated.',
+        });
+      },
+      onError: handleErrorToastOptions({}),
+    }),
+  );
   const deletion = useMutation(
     trpc.dashboard.delete.mutationOptions({
       onError: (error, variables) => {
@@ -195,6 +207,18 @@ function Component() {
                   >
                     <Pencil size={16} />
                     Edit
+                  </button>
+                </CardActionsItem>
+                <CardActionsItem className="w-full" asChild>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toast('Duplicating dashboard...');
+                      duplication.mutate({ id: item.id });
+                    }}
+                  >
+                    <CopyIcon size={16} />
+                    Duplicate
                   </button>
                 </CardActionsItem>
                 <CardActionsItem className="w-full text-destructive" asChild>

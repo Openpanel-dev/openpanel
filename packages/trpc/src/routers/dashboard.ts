@@ -165,4 +165,80 @@ export const dashboardRouter = createTRPCRouter({
         }
       }
     }),
+  duplicate: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const dashboard = await db.dashboard.findUniqueOrThrow({
+        where: { id: input.id },
+        include: {
+          reports: {
+            include: { layout: true },
+          },
+        },
+      });
+
+      const access = await getProjectAccess({
+        projectId: dashboard.projectId,
+        userId: ctx.session.userId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this dashboard');
+      }
+
+      const newDashboardId = await getId(
+        'dashboard',
+        `Copy of ${dashboard.name}`,
+      );
+
+      return db.$transaction(async (tx) => {
+        const newDashboard = await tx.dashboard.create({
+          data: {
+            id: newDashboardId,
+            name: `Copy of ${dashboard.name}`,
+            projectId: dashboard.projectId,
+            organizationId: dashboard.organizationId,
+          },
+        });
+
+        for (const report of dashboard.reports) {
+          const {
+            id: _id,
+            createdAt: _createdAt,
+            updatedAt: _updatedAt,
+            dashboardId: _dashboardId,
+            layout,
+            ...reportFields
+          } = report;
+          const newReport = await tx.report.create({
+            data: {
+              ...reportFields,
+              dashboardId: newDashboard.id,
+            } as Prisma.ReportUncheckedCreateInput,
+          });
+
+          if (layout) {
+            const {
+              id: _layoutId,
+              reportId: _reportId,
+              createdAt: _lCreatedAt,
+              updatedAt: _lUpdatedAt,
+              ...layoutFields
+            } = layout;
+            await tx.reportLayout.create({
+              data: {
+                ...layoutFields,
+                reportId: newReport.id,
+              } as Prisma.ReportLayoutUncheckedCreateInput,
+            });
+          }
+        }
+
+        return newDashboard;
+      });
+    }),
 });
