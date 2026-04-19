@@ -206,44 +206,34 @@ export const dashboardRouter = createTRPCRouter({
         });
 
         for (const report of dashboard.reports) {
+          const {
+            id: _id,
+            createdAt: _createdAt,
+            updatedAt: _updatedAt,
+            dashboardId: _dashboardId,
+            layout,
+            ...reportFields
+          } = report;
           const newReport = await tx.report.create({
             data: {
-              projectId: report.projectId,
+              ...reportFields,
               dashboardId: newDashboard.id,
-              name: report.name,
-              events: report.events!,
-              interval: report.interval,
-              breakdowns: report.breakdowns!,
-              chartType: report.chartType,
-              lineType: report.lineType,
-              range: report.range,
-              formula: report.formula,
-              previous: report.previous,
-              unit: report.unit,
-              criteria: report.criteria,
-              metric: report.metric,
-              funnelGroup: report.funnelGroup,
-              funnelWindow: report.funnelWindow,
-              globalFilters: report.globalFilters ?? [],
-              holdProperties: report.holdProperties ?? [],
-              hiddenSeries: (report.hiddenSeries as string[]) ?? [],
-              measuring: report.measuring,
-            },
+            } as Prisma.ReportUncheckedCreateInput,
           });
 
-          if (report.layout) {
+          if (layout) {
+            const {
+              id: _layoutId,
+              reportId: _reportId,
+              createdAt: _lCreatedAt,
+              updatedAt: _lUpdatedAt,
+              ...layoutFields
+            } = layout;
             await tx.reportLayout.create({
               data: {
+                ...layoutFields,
                 reportId: newReport.id,
-                x: report.layout.x,
-                y: report.layout.y,
-                w: report.layout.w,
-                h: report.layout.h,
-                minW: report.layout.minW,
-                minH: report.layout.minH,
-                maxW: report.layout.maxW,
-                maxH: report.layout.maxH,
-              },
+              } as Prisma.ReportLayoutUncheckedCreateInput,
             });
           }
         }
