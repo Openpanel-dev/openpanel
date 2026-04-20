@@ -10,6 +10,7 @@ import {
   TABLE_NAMES,
   updateCohortMembership,
 } from '@openpanel/db';
+import type { Prisma } from '@openpanel/db';
 import type { CohortDefinition } from '@openpanel/validation';
 import { zCohortDefinition, zCohortInput, zCohortUpdate } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
@@ -225,6 +226,46 @@ export const cohortRouter = createTRPCRouter({
       });
 
       return { success: true };
+    }),
+
+  /**
+   * Duplicate cohort
+   */
+  duplicate: protectedProcedure
+    .input(z.object({ cohortId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const cohort = await db.cohort.findUnique({
+        where: { id: input.cohortId },
+      });
+
+      if (!cohort) {
+        throw TRPCNotFoundError('Cohort not found');
+      }
+
+      const access = await getProjectAccess({
+        projectId: cohort.projectId,
+        userId: ctx.session.userId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this cohort');
+      }
+
+      const {
+        id: _id,
+        createdAt: _createdAt,
+        updatedAt: _updatedAt,
+        ...cohortFields
+      } = cohort;
+
+      return db.cohort.create({
+        data: {
+          ...cohortFields,
+          name: `Copy of ${cohort.name}`,
+          profileCount: 0,
+          lastComputedAt: null,
+        } as Prisma.CohortUncheckedCreateInput,
+      });
     }),
 
   /**
