@@ -28,6 +28,10 @@ export const zChartEventFilter = z.object({
   value: z
     .array(z.string().or(z.number()).or(z.boolean()).or(z.null()))
     .describe('The values to filter on'),
+  cohortId: z
+    .string()
+    .optional()
+    .describe('Cohort ID when using inCohort/notInCohort operators'),
 });
 
 export const zChartEventSegment = z
@@ -640,3 +644,4 @@ export * from './types.insights';
 export * from './track.validation';
 export * from './event-blocklist';
 export * from './chat';
+export * from './cohort.validation';

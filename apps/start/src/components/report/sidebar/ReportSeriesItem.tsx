@@ -71,18 +71,27 @@ export function ReportSeriesItem({
           {showAddFilter && (
             <PropertiesCombobox
               event={chartEvent}
+              showCohorts
               onSelect={(action) => {
                 dispatch(
                   changeEvent({
                     ...chartEvent,
                     filters: [
                       ...chartEvent.filters,
-                      {
-                        id: shortId(),
-                        name: action.value,
-                        operator: 'is',
-                        value: [],
-                      },
+                      action.cohortId
+                        ? {
+                            id: shortId(),
+                            name: action.value,
+                            operator: 'inCohort',
+                            value: [],
+                            cohortId: action.cohortId,
+                          }
+                        : {
+                            id: shortId(),
+                            name: action.value,
+                            operator: 'is',
+                            value: [],
+                          },
                     ],
                   }),
                 );

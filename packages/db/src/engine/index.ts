@@ -133,7 +133,7 @@ export async function executeAggregateChart(
 
     // Execute aggregate query
     let queryResult = await chQuery<ISerieDataItem>(
-      getAggregateChartSql(queryInput),
+      await getAggregateChartSql(queryInput),
       {
         session_timezone: timezone,
       }
@@ -142,7 +142,7 @@ export async function executeAggregateChart(
     // Fallback: if no results with breakdowns, try without breakdowns
     if (queryResult.length === 0 && normalized.breakdowns.length > 0) {
       queryResult = await chQuery<ISerieDataItem>(
-        getAggregateChartSql({
+        await getAggregateChartSql({
           ...queryInput,
           breakdowns: [],
         }),
@@ -258,7 +258,7 @@ export async function executeAggregateChart(
       };
 
       let queryResult = await chQuery<ISerieDataItem>(
-        getAggregateChartSql(queryInput),
+        await getAggregateChartSql(queryInput),
         {
           session_timezone: timezone,
         }
@@ -266,7 +266,7 @@ export async function executeAggregateChart(
 
       if (queryResult.length === 0 && normalized.breakdowns.length > 0) {
         queryResult = await chQuery<ISerieDataItem>(
-          getAggregateChartSql({
+          await getAggregateChartSql({
             ...queryInput,
             breakdowns: [],
           }),

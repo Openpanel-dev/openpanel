@@ -88,6 +88,11 @@ export async function bootCron() {
       type: 'gscSync',
       pattern: '0 3 * * *',
     },
+    {
+      name: 'cohortRefresh',
+      type: 'cohortRefresh',
+      pattern: '*/30 * * * *',
+    },
   ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {

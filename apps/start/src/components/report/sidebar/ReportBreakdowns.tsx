@@ -71,6 +71,7 @@ export function ReportBreakdowns() {
         })}
 
         <PropertiesCombobox
+          showCohorts
           onSelect={(action) => {
             dispatch(
               addBreakdown({

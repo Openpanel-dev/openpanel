@@ -3,6 +3,7 @@ import type { Job } from 'bullmq';
 import { eventBuffer, groupBuffer, profileBackfillBuffer, profileBuffer, replayBuffer, sessionBuffer } from '@openpanel/db';
 import type { CronQueuePayload } from '@openpanel/queue';
 
+import { cohortRefreshCronJob } from './cron.cohort-refresh';
 import { jobdeleteProjects } from './cron.delete-projects';
 import { gscSyncAllJob } from './gsc';
 import { onboardingJob } from './cron.onboarding';
@@ -47,6 +48,9 @@ export async function cronJob(job: Job<CronQueuePayload>) {
     }
     case 'gscSync': {
       return await gscSyncAllJob();
+    }
+    case 'cohortRefresh': {
+      return await cohortRefreshCronJob();
     }
   }
 }

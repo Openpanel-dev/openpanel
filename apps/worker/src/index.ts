@@ -3,6 +3,7 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import { createInitialSalts } from '@openpanel/db';
 import {
+  cohortComputeQueue,
   cronQueue,
   eventsGroupQueues,
   gscQueue,
@@ -48,6 +49,7 @@ async function start() {
         new BullMQAdapter(importQueue),
         new BullMQAdapter(insightsQueue),
         new BullMQAdapter(gscQueue),
+        new BullMQAdapter(cohortComputeQueue),
       ],
       serverAdapter,
     });

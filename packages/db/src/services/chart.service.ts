@@ -1,13 +1,94 @@
 /** biome-ignore-all lint/style/useDefaultSwitchClause: switch cases are exhaustive by design */
 import { stripLeadingAndTrailingSlashes } from '@openpanel/common';
 import type {
+  CohortDefinition,
+  IChartBreakdown,
   IChartEventFilter,
   IGetChartDataInput,
   IReportInput,
 } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
 import { formatClickhouseDate, TABLE_NAMES } from '../clickhouse/client';
+import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
+
+export type CohortMetadata = {
+  id: string;
+  name: string;
+};
+
+export async function fetchCohortsMetadata(
+  cohortIds: string[],
+): Promise<Map<string, CohortMetadata>> {
+  if (cohortIds.length === 0) {
+    return new Map();
+  }
+
+  const cohorts = await db.cohort.findMany({
+    where: { id: { in: cohortIds } },
+    select: { id: true, name: true },
+  });
+
+  return new Map(
+    cohorts.map((c) => [c.id, { id: c.id, name: c.name }]),
+  );
+}
+
+export function getCohortCteName(cohortId: string): string {
+  return `\`cohort-${cohortId}\``;
+}
+
+export function getCohortAlias(cohortId: string): string {
+  return `cohort_${cohortId.replace(/-/g, '_')}`;
+}
+
+export function buildCohortMembershipQuery(
+  cohortId: string,
+  projectId: string,
+): string {
+  return `
+    SELECT profile_id
+    FROM ${TABLE_NAMES.cohort_members} FINAL
+    WHERE cohort_id = ${sqlstring.escape(cohortId)}
+      AND project_id = ${sqlstring.escape(projectId)}
+  `;
+}
+
+export function buildInlineCohortJoin(
+  cohortId: string,
+  projectId: string,
+  tableAlias: string,
+): string {
+  const cohortAlias = getCohortAlias(cohortId);
+  const cohortQuery = buildCohortMembershipQuery(cohortId, projectId);
+  return `LEFT ANY JOIN (${cohortQuery}) AS ${cohortAlias} ON ${cohortAlias}.profile_id = ${tableAlias}.profile_id`;
+}
+
+export function extractCohortId(breakdownName: string): string | null {
+  if (breakdownName.startsWith('cohort:')) {
+    return breakdownName.split(':')[1] ?? null;
+  }
+  return null;
+}
+
+export function collectCohortIds(
+  filters: IChartEventFilter[],
+  breakdowns: IChartBreakdown[],
+): string[] {
+  const ids = new Set<string>();
+  for (const filter of filters) {
+    if (filter.cohortId) {
+      ids.add(filter.cohortId);
+    }
+  }
+  for (const breakdown of breakdowns) {
+    const id = extractCohortId(breakdown.name);
+    if (id) {
+      ids.add(id);
+    }
+  }
+  return Array.from(ids);
+}
 
 export function transformPropertyKey(property: string) {
   const propertyPatterns = ['properties', 'profile.properties'];
@@ -93,7 +174,25 @@ export function getProfilePropertySelect(property: string): string {
   return 'id';
 }
 
-export function getSelectPropertyKey(property: string, projectId?: string) {
+export function getSelectPropertyKey(
+  property: string,
+  projectId?: string,
+  cohortId?: string,
+  cohortName?: string,
+) {
+  const extractedCohortId = cohortId || extractCohortId(property);
+
+  if (extractedCohortId && projectId) {
+    const cohortAlias = getCohortAlias(extractedCohortId);
+    const inLabel = cohortName
+      ? sqlstring.escape(cohortName)
+      : "'In Cohort'";
+    const notInLabel = cohortName
+      ? sqlstring.escape(`Not ${cohortName}`)
+      : "'Not In Cohort'";
+    return `if(notEmpty(${cohortAlias}.profile_id), ${inLabel}, ${notInLabel})`;
+  }
+
   if (property === 'has_profile') {
     return `if(profile_id != device_id, 'true', 'false')`;
   }
@@ -121,7 +220,7 @@ export function getSelectPropertyKey(property: string, projectId?: string) {
   return `${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
 }
 
-export function getChartSql({
+export async function getChartSql({
   event,
   breakdowns,
   interval,
@@ -143,6 +242,18 @@ export function getChartSql({
     getWith,
     with: addCte,
   } = createSqlBuilder();
+
+  const cohortIds = collectCohortIds(event.filters, breakdowns);
+  const cohortMetadata = await fetchCohortsMetadata(cohortIds);
+
+  for (const cohortId of cohortIds) {
+    addCte(
+      getCohortCteName(cohortId),
+      buildCohortMembershipQuery(cohortId, projectId),
+    );
+    sb.joins[`cohort_${cohortId}`] =
+      `LEFT ANY JOIN ${getCohortCteName(cohortId)} AS ${getCohortAlias(cohortId)} ON ${getCohortAlias(cohortId)}.profile_id = e.profile_id`;
+  }
 
   sb.where = getEventFiltersWhereClause(event.filters, projectId);
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
@@ -315,8 +426,12 @@ export function getChartSql({
   breakdowns.forEach((breakdown, index) => {
     // Breakdowns start at label_1 (label_0 is reserved for event name)
     const key = `label_${index + 1}`;
+    const breakdownCohortId = extractCohortId(breakdown.name);
+    const breakdownCohortName = breakdownCohortId
+      ? cohortMetadata.get(breakdownCohortId)?.name
+      : undefined;
     sb.select[key] =
-      `${getSelectPropertyKey(breakdown.name, projectId)} as ${key}`;
+      `${getSelectPropertyKey(breakdown.name, projectId, breakdownCohortId ?? undefined, breakdownCohortName)} as ${key}`;
     sb.groupBy[key] = `${key}`;
   });
 
@@ -373,10 +488,14 @@ export function getChartSql({
     return sql;
   }
 
-  // Note: The profile CTE (if it exists) is available in subqueries, so we can reference it directly
+  // Note: The profile CTE (if it exists) is available in subqueries, so we can reference it directly.
+  // Cohort CTEs cannot be referenced from nested CTEs in ClickHouse, so we inline them.
   const subqueryGroupJoins = needsGroupArrayJoin
     ? 'ARRAY JOIN groups AS _group_id LEFT ANY JOIN _g ON _g.id = _group_id '
     : '';
+  const inlineCohortJoinsSql = cohortIds
+    .map((id) => buildInlineCohortJoin(id, projectId, 'e'))
+    .join(' ');
 
   if (breakdowns.length > 0) {
     // Pre-compute unique counts per breakdown group in a CTE, then JOIN it.
@@ -385,7 +504,14 @@ export function getChartSql({
     //    which resolve in the subquery's scope, making the condition a tautology.
     // 2. Correlated subqueries aren't supported on distributed/remote tables.
     const ucSelectParts: string[] = breakdowns.map((breakdown, index) => {
-      const propertyKey = getSelectPropertyKey(breakdown.name, projectId);
+      const bId = extractCohortId(breakdown.name);
+      const bName = bId ? cohortMetadata.get(bId)?.name : undefined;
+      const propertyKey = getSelectPropertyKey(
+        breakdown.name,
+        projectId,
+        bId ?? undefined,
+        bName,
+      );
       return `${propertyKey} as _uc_label_${index + 1}`;
     });
     ucSelectParts.push('uniq(profile_id) as total_count');
@@ -398,12 +524,19 @@ export function getChartSql({
 
     addCte(
       '_uc',
-      `SELECT ${ucSelectParts.join(', ')} FROM ${TABLE_NAMES.events} e ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${ucWhere} GROUP BY ${ucGroupByParts.join(', ')}`
+      `SELECT ${ucSelectParts.join(', ')} FROM ${TABLE_NAMES.events} e ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${inlineCohortJoinsSql ? `${inlineCohortJoinsSql} ` : ''}${ucWhere} GROUP BY ${ucGroupByParts.join(', ')}`
     );
 
     const ucJoinConditions = breakdowns
       .map((b, index) => {
-        const propertyKey = getSelectPropertyKey(b.name, projectId);
+        const bId = extractCohortId(b.name);
+        const bName = bId ? cohortMetadata.get(bId)?.name : undefined;
+        const propertyKey = getSelectPropertyKey(
+          b.name,
+          projectId,
+          bId ?? undefined,
+          bName,
+        );
         return `_uc._uc_label_${index + 1} = ${propertyKey}`;
       })
       .join(' AND ');
@@ -415,7 +548,7 @@ export function getChartSql({
 
     addCte(
       '_uc',
-      `SELECT uniq(profile_id) as total_count FROM ${TABLE_NAMES.events} e ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${ucWhere}`
+      `SELECT uniq(profile_id) as total_count FROM ${TABLE_NAMES.events} e ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${inlineCohortJoinsSql ? `${inlineCohortJoinsSql} ` : ''}${ucWhere}`
     );
 
     sb.select.total_unique_count =
@@ -429,7 +562,7 @@ export function getChartSql({
   return sql;
 }
 
-export function getAggregateChartSql({
+export async function getAggregateChartSql({
   event,
   breakdowns,
   startDate,
@@ -440,6 +573,18 @@ export function getAggregateChartSql({
   timezone: string;
 }) {
   const { sb, join, getJoins, with: addCte, getSql } = createSqlBuilder();
+
+  const cohortIds = collectCohortIds(event.filters, breakdowns);
+  const cohortMetadata = await fetchCohortsMetadata(cohortIds);
+
+  for (const cohortId of cohortIds) {
+    addCte(
+      getCohortCteName(cohortId),
+      buildCohortMembershipQuery(cohortId, projectId),
+    );
+    sb.joins[`cohort_${cohortId}`] =
+      `LEFT ANY JOIN ${getCohortCteName(cohortId)} AS ${getCohortAlias(cohortId)} ON ${getCohortAlias(cohortId)}.profile_id = e.profile_id`;
+  }
 
   sb.where = getEventFiltersWhereClause(event.filters, projectId);
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
@@ -573,8 +718,12 @@ export function getAggregateChartSql({
   breakdowns.forEach((breakdown, index) => {
     // Breakdowns start at label_1 (label_0 is reserved for event name)
     const key = `label_${index + 1}`;
+    const breakdownCohortId = extractCohortId(breakdown.name);
+    const breakdownCohortName = breakdownCohortId
+      ? cohortMetadata.get(breakdownCohortId)?.name
+      : undefined;
     sb.select[key] =
-      `${getSelectPropertyKey(breakdown.name, projectId)} as ${key}`;
+      `${getSelectPropertyKey(breakdown.name, projectId, breakdownCohortId ?? undefined, breakdownCohortName)} as ${key}`;
     sb.groupBy[key] = `${key}`;
   });
 
@@ -665,7 +814,17 @@ export function getEventFiltersWhereClause(
   const where: Record<string, string> = {};
   filters.forEach((filter, index) => {
     const id = `f${index}`;
-    const { name, value, operator } = filter;
+    const { name, value, operator, cohortId } = filter;
+
+    if (operator === 'inCohort' && cohortId && projectId) {
+      where[id] = `notEmpty(${getCohortAlias(cohortId)}.profile_id)`;
+      return;
+    }
+
+    if (operator === 'notInCohort' && cohortId && projectId) {
+      where[id] = `empty(${getCohortAlias(cohortId)}.profile_id)`;
+      return;
+    }
 
     if (
       value.length === 0 &&

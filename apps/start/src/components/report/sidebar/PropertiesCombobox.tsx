@@ -5,6 +5,7 @@ import {
   ArrowLeftIcon,
   Building2Icon,
   DatabaseIcon,
+  TargetIcon,
   UserIcon,
 } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
@@ -20,20 +21,25 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
+import { useCohorts } from '@/hooks/use-cohorts';
 import { useEventProperties } from '@/hooks/use-event-properties';
 import { useTRPC } from '@/integrations/trpc/react';
+
+export type PropertiesComboboxAction = {
+  value: string;
+  label: string;
+  description: string;
+  cohortId?: string;
+};
 
 interface PropertiesComboboxProps {
   event?: IChartEvent;
   children: (setOpen: Dispatch<SetStateAction<boolean>>) => React.ReactNode;
-  onSelect: (action: {
-    value: string;
-    label: string;
-    description: string;
-  }) => void;
+  onSelect: (action: PropertiesComboboxAction) => void;
   exclude?: string[];
   include?: string[];
   mode?: 'events' | 'profile';
+  showCohorts?: boolean;
 }
 
 function SearchHeader({
@@ -69,6 +75,7 @@ export function PropertiesCombobox({
   mode,
   exclude = [],
   include = [],
+  showCohorts = false,
 }: PropertiesComboboxProps) {
   const { projectId } = useAppParams();
   const trpc = useTRPC();
@@ -80,9 +87,13 @@ export function PropertiesCombobox({
   const groupPropertiesQuery = useQuery(
     trpc.group.properties.queryOptions({ projectId })
   );
-  const [state, setState] = useState<'index' | 'event' | 'profile' | 'group'>(
-    'index'
+  const cohorts = useCohorts(
+    { projectId, includeCount: false },
+    { enabled: showCohorts },
   );
+  const [state, setState] = useState<
+    'index' | 'event' | 'profile' | 'group' | 'cohort'
+  >('index');
   const [search, setSearch] = useState('');
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
 
@@ -138,20 +149,25 @@ export function PropertiesCombobox({
     }));
 
   const handleStateChange = (
-    newState: 'index' | 'event' | 'profile' | 'group'
+    newState: 'index' | 'event' | 'profile' | 'group' | 'cohort'
   ) => {
     setDirection(newState === 'index' ? 'backward' : 'forward');
     setState(newState);
   };
 
-  const handleSelect = (action: {
-    value: string;
-    label: string;
-    description: string;
-  }) => {
+  const handleSelect = (action: PropertiesComboboxAction) => {
     setOpen(false);
     onSelect(action);
   };
+
+  const cohortActions: PropertiesComboboxAction[] = cohorts.map((cohort) => ({
+    value: `cohort:${cohort.id}`,
+    label: cohort.name,
+    description: cohort.description
+      ? cohort.description
+      : `${cohort.profileCount ?? 0} members`,
+    cohortId: cohort.id,
+  }));
 
   const renderIndex = () => {
     return (
@@ -188,7 +204,58 @@ export function PropertiesCombobox({
           Group properties
           <Building2Icon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
         </DropdownMenuItem>
+        {showCohorts && (
+          <DropdownMenuItem
+            className="group justify-between gap-2"
+            onClick={(e) => {
+              e.preventDefault();
+              handleStateChange('cohort');
+            }}
+          >
+            Cohorts
+            <TargetIcon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
+          </DropdownMenuItem>
+        )}
       </DropdownMenuGroup>
+    );
+  };
+
+  const renderCohort = () => {
+    const filteredActions = cohortActions.filter(
+      (action) =>
+        action.label.toLowerCase().includes(search.toLowerCase()) ||
+        action.description.toLowerCase().includes(search.toLowerCase()),
+    );
+
+    return (
+      <div className="flex flex-col">
+        <SearchHeader
+          onBack={() => handleStateChange('index')}
+          onSearch={setSearch}
+          value={search}
+        />
+        <DropdownMenuSeparator />
+        <VirtualList
+          data={filteredActions}
+          height={Math.min(300, filteredActions.length * 40 + 8)}
+          itemHeight={40}
+          itemKey="value"
+        >
+          {(action) => (
+            <motion.div
+              animate={{ opacity: 1, y: 0 }}
+              className="col cursor-pointer gap-px rounded-md p-2 hover:bg-accent"
+              initial={{ opacity: 0, y: 10 }}
+              onClick={() => handleSelect(action)}
+            >
+              <div className="font-medium">{action.label}</div>
+              <div className="text-muted-foreground text-sm">
+                {action.description}
+              </div>
+            </motion.div>
+          )}
+        </VirtualList>
+      </div>
     );
   };
 
@@ -363,6 +430,17 @@ export function PropertiesCombobox({
               transition={{ duration: 0.05 }}
             >
               {renderGroup()}
+            </motion.div>
+          )}
+          {state === 'cohort' && (
+            <motion.div
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction === 'forward' ? -20 : 20 }}
+              initial={{ opacity: 0, x: direction === 'forward' ? 20 : -20 }}
+              key="cohort"
+              transition={{ duration: 0.05 }}
+            >
+              {renderCohort()}
             </motion.div>
           )}
         </AnimatePresence>

@@ -1,4 +1,5 @@
 import type {
+  CohortDefinition,
   IImportConfig,
   IIntegrationConfig,
   INotificationRuleConfig,
@@ -25,6 +26,7 @@ declare global {
     type IPrismaClickhouseEvent = IClickhouseEvent;
     type IPrismaClickhouseProfile = IClickhouseProfile;
     type IPrismaClickhouseBotEvent = IClickhouseBotEvent;
+    type IPrismaCohortDefinition = CohortDefinition;
     // Each ChatMessage row stores one Better Agent `ConversationItem`
     // (message, tool call, or tool result) as JSON. Typed as `unknown[]`
     // here to avoid pulling `@better-agent/core` into @openpanel/db's
