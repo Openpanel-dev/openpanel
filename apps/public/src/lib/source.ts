@@ -6,7 +6,7 @@ import {
   docs,
   guideCollection,
   pageCollection,
-} from 'fumadocs-mdx:collections/server';
+} from 'collections/server';
 import { type InferPageType, loader } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { toFumadocsSource } from 'fumadocs-mdx/runtime/server';

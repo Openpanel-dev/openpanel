@@ -4,7 +4,7 @@ import {
   openapiPlugin,
   openapiSource,
 } from 'fumadocs-openapi/server';
-import { apiRefCollection } from 'fumadocs-mdx:collections/server';
+import { apiRefCollection } from 'collections/server';
 import { toFumadocsSource } from 'fumadocs-mdx/runtime/server';
 import path from 'node:path';
 import { cache } from 'react';
