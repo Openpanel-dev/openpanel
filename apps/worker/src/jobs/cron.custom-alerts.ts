@@ -257,8 +257,9 @@ async function evaluateThreshold(
   // Conversion charts: use conversionService to get the actual conversion rate (%)
   if (report.chartType === 'conversion') {
     const { timezone } = await getSettingsForProject(report.projectId);
+    // Use the full historical range so we always have enough data points to skip the partial current period
     const { startDate, endDate } = getDatesFromRange(
-      ALERT_FREQUENCY_TO_CURRENT_RANGE[freq] as any,
+      ALERT_FREQUENCY_TO_RANGE[freq] as any,
       timezone,
     );
 
@@ -280,8 +281,9 @@ async function evaluateThreshold(
     });
 
     const data = series[0]?.data ?? [];
-    // Use second-to-last point — last point is the incomplete/partial period
-    const lastPoint = data.length >= 2 ? data[data.length - 2] : data[data.length - 1];
+    // Skip partial current period — always use last completed
+    const skipLast = getSkipLast(freq);
+    const lastPoint = data.length >= skipLast + 1 ? data[data.length - skipLast] : data[data.length - 1];
     const currentValue = lastPoint?.rate ?? 0;
 
     const crossed =
@@ -342,7 +344,8 @@ async function evaluateThreshold(
   }
 
   // All other chart types: use ChartEngine with raw metric values
-  const range = ALERT_FREQUENCY_TO_CURRENT_RANGE[freq];
+  // Use full historical range so we have enough data points to skip the partial current period
+  const range = ALERT_FREQUENCY_TO_RANGE[freq];
 
   const result = await ChartEngine.execute({
     projectId: report.projectId,
@@ -361,11 +364,12 @@ async function evaluateThreshold(
     cohortFilters: report.cohortFilters,
   });
 
-  const currentValue = result.series[0]?.metrics?.sum ?? 0;
-  const metricKey = (report.metric as string) || 'sum';
-  const metricValue =
-    (result.series[0]?.metrics as unknown as Record<string, number>)?.[metricKey] ??
-    currentValue;
+  // Skip partial current period — use last completed data point
+  const skipLast = getSkipLast(freq);
+  const seriesData = result.series[0]?.data ?? [];
+  const lastPoint = seriesData.length >= skipLast + 1 ? seriesData[seriesData.length - skipLast] : seriesData[seriesData.length - 1];
+  const metricValue = lastPoint?.count ?? 0;
+  const currentValue = metricValue;
 
   const crossed =
     config.operator === 'above'
