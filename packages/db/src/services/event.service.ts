@@ -441,6 +441,7 @@ export interface GetEventListOptions {
   profileId?: string;
   sessionId?: string;
   groupId?: string;
+  cohortId?: string;
   take: number;
   cursor?: number | Date;
   events?: string[] | null;
@@ -460,6 +461,7 @@ export async function getEventList(options: GetEventListOptions) {
     profileId,
     sessionId,
     groupId,
+    cohortId,
     events,
     filters,
     startDate,
@@ -613,6 +615,10 @@ export async function getEventList(options: GetEventListOptions) {
     sb.where.groupId = `has(groups, ${sqlstring.escape(groupId)})`;
   }
 
+  if (cohortId) {
+    sb.where.cohortId = `profile_id IN (SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL WHERE cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)})`;
+  }
+
   if (startDate && endDate) {
     sb.where.created_at = `toDate(created_at) BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}')`;
   }
@@ -677,6 +683,7 @@ export async function getEventsCount({
   projectId,
   profileId,
   groupId,
+  cohortId,
   events,
   filters,
   startDate,
@@ -690,6 +697,10 @@ export async function getEventsCount({
 
   if (groupId) {
     sb.where.groupId = `has(groups, ${sqlstring.escape(groupId)})`;
+  }
+
+  if (cohortId) {
+    sb.where.cohortId = `profile_id IN (SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL WHERE cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)})`;
   }
 
   if (startDate && endDate) {

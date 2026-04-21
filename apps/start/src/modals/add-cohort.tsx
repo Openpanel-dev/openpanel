@@ -96,7 +96,7 @@ export default function AddCohort() {
               />
             )}
           />
-          <Label htmlFor="isStatic" className="cursor-pointer text-sm">
+          <Label htmlFor="isStatic" className="cursor-pointer text-sm mb-0">
             Freeze snapshot (don&apos;t auto-refresh)
           </Label>
         </div>

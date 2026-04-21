@@ -123,6 +123,7 @@ export const eventRouter = createTRPCRouter({
         profileId: z.string().optional(),
         sessionId: z.string().optional(),
         groupId: z.string().optional(),
+        cohortId: z.string().optional(),
         cursor: z.string().optional(),
         filters: z.array(zChartEventFilter).default([]),
         startDate: z.date().optional(),

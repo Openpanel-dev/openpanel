@@ -1,6 +1,7 @@
 import { Card, CardActions, CardActionsItem } from '@/components/card';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import { ProjectLink } from '@/components/links';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -120,7 +121,10 @@ function Component() {
           const displayCount = count ?? 0;
           return (
             <Card key={cohort.id} hover>
-              <div className="flex flex-col p-4">
+              <ProjectLink
+                href={`/cohorts/${cohort.id}`}
+                className="flex flex-col p-4 outline-none"
+              >
                 <div className="col gap-2">
                   <div className="font-medium">{cohort.name}</div>
                   {cohort.description && (
@@ -149,7 +153,7 @@ function Component() {
                     </div>
                   )}
                 </div>
-              </div>
+              </ProjectLink>
 
               <CardActions>
                 <CardActionsItem className="w-full" asChild>

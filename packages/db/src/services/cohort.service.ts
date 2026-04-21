@@ -12,6 +12,7 @@ import type {
 import { cohortComputeQueue } from '@openpanel/queue';
 import { TABLE_NAMES, ch, chQuery } from '../clickhouse/client';
 import { db } from '../prisma-client';
+import { getProfiles, type IServiceProfile } from './profile.service';
 
 export const COHORT_MATERIALIZE_LIMIT = 10000;
 
@@ -585,4 +586,125 @@ export async function enqueueCohortCompute(cohortId: string): Promise<void> {
       removeOnFail: { age: 86400 },
     },
   );
+}
+
+export async function removeCohortComputeJob(cohortId: string): Promise<void> {
+  await cohortComputeQueue.remove(
+    `cohort-${cohortId}`,
+  );
+}
+
+export async function listCohortMemberProfiles({
+  projectId,
+  cohortId,
+  cursor,
+  take,
+  search,
+}: {
+  projectId: string;
+  cohortId: string;
+  cursor?: number;
+  take: number;
+  search?: string;
+}): Promise<{ data: IServiceProfile[]; count: number }> {
+  const offset = Math.max(0, (cursor ?? 0) * take);
+  const trimmed = search?.trim();
+  const searchCondition = trimmed
+    ? `AND (email ILIKE ${sqlstring.escape(`%${trimmed}%`)} OR first_name ILIKE ${sqlstring.escape(`%${trimmed}%`)} OR last_name ILIKE ${sqlstring.escape(`%${trimmed}%`)})`
+    : '';
+
+  const rows = await chQuery<{ id: string; total_count: number }>(`
+    SELECT id, count() OVER () AS total_count
+    FROM ${TABLE_NAMES.profiles} FINAL
+    WHERE project_id = ${sqlstring.escape(projectId)}
+      AND id IN (
+        SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL
+        WHERE cohort_id = ${sqlstring.escape(cohortId)}
+          AND project_id = ${sqlstring.escape(projectId)}
+      )
+      ${searchCondition}
+    ORDER BY created_at DESC
+    LIMIT ${take} OFFSET ${offset}
+  `);
+
+  const count = rows[0]?.total_count ?? 0;
+  const ids = rows.map((r) => r.id);
+  if (ids.length === 0) return { data: [], count };
+
+  const profiles = await getProfiles(ids, projectId);
+  const byId = new Map(profiles.map((p) => [p.id, p]));
+  const data = ids
+    .map((id) => byId.get(id))
+    .filter(Boolean) as IServiceProfile[];
+  return { data, count };
+}
+
+export async function getCohortMemberEvents(
+  projectId: string,
+  cohortId: string,
+  limit = 10,
+): Promise<{ name: string; count: number }[]> {
+  return chQuery<{ name: string; count: number }>(`
+    SELECT name, count() AS count
+    FROM ${TABLE_NAMES.events}
+    WHERE project_id = ${sqlstring.escape(projectId)}
+      AND profile_id IN (
+        SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL
+        WHERE cohort_id = ${sqlstring.escape(cohortId)}
+          AND project_id = ${sqlstring.escape(projectId)}
+      )
+      AND name NOT IN ('screen_view', 'session_start', 'session_end')
+    GROUP BY name
+    ORDER BY count DESC
+    LIMIT ${limit}
+  `);
+}
+
+export async function getCohortEventsPerDay(
+  projectId: string,
+  cohortId: string,
+  days = 30,
+): Promise<{ date: string; count: number }[]> {
+  const rows = await chQuery<{ date: string; count: number }>(`
+    SELECT
+      toDate(created_at) AS date,
+      count() AS count
+    FROM ${TABLE_NAMES.events}
+    WHERE project_id = ${sqlstring.escape(projectId)}
+      AND created_at >= toDate(now() - INTERVAL ${days} DAY)
+      AND profile_id IN (
+        SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL
+        WHERE cohort_id = ${sqlstring.escape(cohortId)}
+          AND project_id = ${sqlstring.escape(projectId)}
+      )
+    GROUP BY date
+    ORDER BY date ASC
+    WITH FILL
+      FROM toDate(now() - INTERVAL ${days} DAY)
+      TO toDate(now() + INTERVAL 1 DAY)
+      STEP INTERVAL 1 DAY
+  `);
+  return rows.map((r) => ({ date: String(r.date), count: Number(r.count) }));
+}
+
+export async function getCohortMemberRoutes(
+  projectId: string,
+  cohortId: string,
+  limit = 10,
+): Promise<{ path: string; count: number }[]> {
+  return chQuery<{ path: string; count: number }>(`
+    SELECT path, count() AS count
+    FROM ${TABLE_NAMES.events}
+    WHERE project_id = ${sqlstring.escape(projectId)}
+      AND profile_id IN (
+        SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL
+        WHERE cohort_id = ${sqlstring.escape(cohortId)}
+          AND project_id = ${sqlstring.escape(projectId)}
+      )
+      AND name = 'screen_view'
+      AND path != ''
+    GROUP BY path
+    ORDER BY count DESC
+    LIMIT ${limit}
+  `);
 }

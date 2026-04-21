@@ -100,6 +100,9 @@ export const PAGE_TITLES = {
   GROUP_DETAILS: 'Group details',
   // Cohorts
   COHORTS: 'Cohorts',
+  COHORT_DETAIL: 'Cohort',
+  COHORT_MEMBERS: 'Cohort members',
+  COHORT_EVENTS: 'Cohort events',
 
   // Sub-sections
   CONVERSIONS: 'Conversions',

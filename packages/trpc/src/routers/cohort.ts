@@ -1,15 +1,18 @@
 import { z } from 'zod';
 
 import {
-  TABLE_NAMES,
-  chQuery,
   computeCohort,
   countCohort,
   db,
   deleteCohortMembership,
   enqueueCohortCompute,
   getCohortCount,
+  getCohortEventsPerDay,
+  getCohortMemberEvents,
+  getCohortMemberRoutes,
   getCohortMembers,
+  listCohortMemberProfiles,
+  removeCohortComputeJob,
 } from '@openpanel/db';
 import {
   type CohortDefinition,
@@ -17,7 +20,6 @@ import {
   zCohortInput,
   zCohortUpdate,
 } from '@openpanel/validation';
-import sqlstring from 'sqlstring';
 
 import { getProjectAccess } from '../access';
 import { TRPCAccessError, TRPCNotFoundError } from '../errors';
@@ -154,63 +156,47 @@ export const cohortRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  getProfiles: protectedProcedure
+  listProfiles: protectedProcedure
     .input(
       z.object({
+        projectId: z.string(),
         cohortId: z.string(),
-        limit: z.number().int().min(1).max(500).default(50),
-        offset: z.number().int().min(0).default(0),
+        cursor: z.number().optional(),
+        take: z.number().default(50),
+        search: z.string().optional(),
       }),
     )
-    .query(async ({ input, ctx }) => {
-      const cohort = await db.cohort.findUnique({
-        where: { id: input.cohortId },
-      });
-
-      if (!cohort) {
-        throw TRPCNotFoundError('Cohort not found');
-      }
-
-      const access = await getProjectAccess({
-        projectId: cohort.projectId,
-        userId: ctx.session.userId!,
-      });
-
-      if (!access) {
-        throw TRPCAccessError('You do not have access to this cohort');
-      }
-
-      const result = await getCohortMembers(input.cohortId, cohort.projectId, {
-        limit: input.limit,
-        offset: input.offset,
-      });
-
-      if (result.profileIds.length > 0) {
-        const profiles = await chQuery<{
-          id: string;
-          email: string;
-          first_name: string;
-          last_name: string;
-          properties: Record<string, string>;
-          created_at: string;
-        }>(`
-          SELECT id, email, first_name, last_name, properties, created_at
-          FROM ${TABLE_NAMES.profiles} FINAL
-          WHERE project_id = ${sqlstring.escape(cohort.projectId)}
-            AND id IN (${result.profileIds.map((id) => sqlstring.escape(id)).join(',')})
-        `);
-
-        return {
-          profiles,
-          total: result.total,
-        };
-      }
-
+    .query(async ({ input }) => {
+      const { data, count } = await listCohortMemberProfiles(input);
       return {
-        profiles: [],
-        total: result.total,
+        data,
+        meta: { count, pageCount: input.take },
       };
     }),
+
+  mostEvents: protectedProcedure
+    .input(
+      z.object({ projectId: z.string(), cohortId: z.string() }),
+    )
+    .query(({ input }) =>
+      getCohortMemberEvents(input.projectId, input.cohortId),
+    ),
+
+  eventsPerDay: protectedProcedure
+    .input(
+      z.object({ projectId: z.string(), cohortId: z.string() }),
+    )
+    .query(({ input }) =>
+      getCohortEventsPerDay(input.projectId, input.cohortId),
+    ),
+
+  popularRoutes: protectedProcedure
+    .input(
+      z.object({ projectId: z.string(), cohortId: z.string() }),
+    )
+    .query(({ input }) =>
+      getCohortMemberRoutes(input.projectId, input.cohortId),
+    ),
 
   getCount: protectedProcedure
     .input(z.object({ cohortId: z.string() }))
@@ -318,6 +304,7 @@ export const cohortRouter = createTRPCRouter({
         );
       }
 
+      await removeCohortComputeJob(input.cohortId);
       await enqueueCohortCompute(input.cohortId);
 
       return { success: true };

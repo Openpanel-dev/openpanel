@@ -98,7 +98,7 @@ export default function EditCohort(props: EditCohortProps) {
               />
             )}
           />
-          <Label htmlFor="isStatic" className="cursor-pointer text-sm">
+          <Label htmlFor="isStatic" className="cursor-pointer text-sm mb-0">
             Freeze snapshot (don&apos;t auto-refresh)
           </Label>
         </div>
