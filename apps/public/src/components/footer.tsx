@@ -2,11 +2,16 @@ import { MailIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from './logo';
 import { TOOLS } from '@/app/tools/tools';
+import { getAllForSlugs, getForData } from '@/lib/for';
 import { articleSource, compareSource, featureSource } from '@/lib/source';
 export async function Footer() {
   const articles = (await articleSource.getPages()).sort(
     (a, b) => b.data.date.getTime() - a.data.date.getTime()
   );
+  const forSlugs = await getAllForSlugs();
+  const forPages = (
+    await Promise.all(forSlugs.map((slug) => getForData(slug)))
+  ).filter((p): p is NonNullable<typeof p> => p !== null);
   const year = new Date().getFullYear();
 
   return (
@@ -57,6 +62,17 @@ export async function Footer() {
                 { title: 'Guides', url: '/guides' },
                 { title: 'Articles', url: '/articles' },
                 { title: 'Compare', url: '/compare' },
+              ]}
+            />
+            <div className="h-5" />
+            <h3 className="font-medium">Solutions</h3>
+            <Links
+              data={[
+                { title: 'All use cases', url: '/for' },
+                ...forPages.map((page) => ({
+                  title: page.hero.heading,
+                  url: page.url,
+                })),
               ]}
             />
             <div className="h-5" />

@@ -2,8 +2,8 @@
   "slug": "posthog-alternative",
   "page_type": "alternative",
   "seo": {
-    "title": "Best PostHog Alternatives in 2026 — Simpler, Free & Self-Hosted",
-    "description": "Looking for a simpler PostHog alternative? OpenPanel is free, open-source, and self-hostable — 2.3 KB SDK, cookie-free tracking, and no complex feature flags or session replay you don't need.",
+    "title": "PostHog Alternatives 2026 — Fully Self-Hostable, All Features",
+    "description": "PostHog deprecated its full self-hosted version — only a hobby build remains and new features ship cloud-only. OpenPanel stays fully open source and self-hostable, with every feature identical between cloud and self-hosted. 2.3 KB SDK, cookie-free by default, MIT-licensed.",
     "noindex": false
   },
   "hero": {

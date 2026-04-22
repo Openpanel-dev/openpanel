@@ -36,9 +36,9 @@ export function MixpanelAlternative() {
   return (
     <Section className="container">
       <SectionHeader
-        description="OpenPanel covers the product analytics features teams actually use — events, funnels, retention, cohorts, and user profiles — without Mixpanel's pricing, privacy trade-offs, or vendor lock-in."
-        label="Mixpanel Alternative"
-        title="Why teams switch from Mixpanel to OpenPanel"
+        description="Looking for the best Mixpanel alternatives in 2026? OpenPanel covers the product analytics features teams actually use — events, funnels, retention, cohorts, and user profiles — without Mixpanel's pricing, privacy trade-offs, or vendor lock-in."
+        label="Best Mixpanel Alternatives"
+        title="The Best Mixpanel Alternatives in 2026 — Why Teams Switch to OpenPanel"
       />
       <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
         {reasons.map((reason) => (

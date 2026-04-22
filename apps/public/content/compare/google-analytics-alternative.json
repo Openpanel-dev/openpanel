@@ -373,7 +373,7 @@
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Single Docker container with setup script",
+        "openpanel": "Docker Compose with one-command setup script",
         "competitor": "Not available",
         "notes": "OpenPanel self-hosting takes ~15 minutes with our setup script"
       },

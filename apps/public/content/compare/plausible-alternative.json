@@ -80,9 +80,9 @@
       },
       {
         "label": "Self-Hosting Complexity",
-        "openpanel": "Single Docker container",
-        "competitor": "Docker with PostgreSQL + ClickHouse",
-        "notes": "OpenPanel requires just Docker. Plausible Community Edition needs both PostgreSQL and ClickHouse databases configured."
+        "openpanel": "Docker Compose with one-command setup script",
+        "competitor": "Docker Compose with PostgreSQL + ClickHouse",
+        "notes": "Both are Docker Compose stacks. OpenPanel ships a one-command setup script that handles DB init, SSL, and config — Plausible Community Edition requires manual PostgreSQL + ClickHouse configuration."
       }
     ]
   },
