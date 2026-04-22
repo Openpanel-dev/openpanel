@@ -193,6 +193,7 @@ export async function getTopPagesCore(input: {
     startDate: input.startDate,
     endDate: input.endDate,
     timezone,
+    limit: input.limit,
   });
 }
 
@@ -201,6 +202,7 @@ export async function getEntryExitPagesCore(input: {
   startDate: string;
   endDate: string;
   mode: 'entry' | 'exit';
+  limit?: number;
   filters?: IChartEventFilter[];
 }) {
   const { timezone } = await getSettingsForProject(input.projectId);
@@ -211,6 +213,7 @@ export async function getEntryExitPagesCore(input: {
     endDate: input.endDate,
     mode: input.mode,
     timezone,
+    limit: input.limit,
   });
 }
 

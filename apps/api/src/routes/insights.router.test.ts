@@ -173,10 +173,12 @@ describe('GET /insights/:projectId/events', () => {
 });
 
 describe('GET /insights/:projectId/events/properties', () => {
-  it('returns properties array', async () => {
+  it('returns columns + properties arrays', async () => {
     const res = await get(`/insights/${TEST_PROJECT_ID}/events/properties`);
     expect(res.statusCode).toBe(200);
     const body = res.json();
+    expect(Array.isArray(body.columns)).toBe(true);
+    expect(body.columns).toContain('path');
     expect(Array.isArray(body.properties)).toBe(true);
   });
 });

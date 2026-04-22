@@ -1171,10 +1171,49 @@ export async function getTopEventNames(projectId: string): Promise<string[]> {
 export const listEventNamesCore = (projectId: string): Promise<string[]> =>
   getTopEventNames(projectId);
 
+/**
+ * Top-level filterable columns on the `events` table. These apply to
+ * every event regardless of name and can be passed straight to
+ * `getEventFiltersWhereClause` as filter / breakdown `name` values.
+ *
+ * Kept as a whitelist because the filter builder splices `name` into
+ * SQL verbatim — only these are safe to expose through the AI /
+ * MCP discovery surface.
+ */
+export const EVENT_COLUMNS = [
+  'path',
+  'origin',
+  'referrer',
+  'referrer_name',
+  'referrer_type',
+  'duration',
+  'country',
+  'city',
+  'region',
+  'os',
+  'os_version',
+  'browser',
+  'browser_version',
+  'device',
+  'brand',
+  'model',
+  'sdk_name',
+  'sdk_version',
+  'profile_id',
+  'session_id',
+  'device_id',
+  'revenue',
+] as const;
+
+export type IEventColumn = (typeof EVENT_COLUMNS)[number];
+
 export async function listEventPropertiesCore(input: {
   projectId: string;
   eventName?: string;
-}): Promise<{ properties: Array<{ property_key: string; event_name: string }> }> {
+}): Promise<{
+  columns: readonly string[];
+  properties: Array<{ property_key: string; event_name: string }>;
+}> {
   const builder = clix(ch)
     .select<{ property_key: string; event_name: string }>([
       'distinct property_key',
@@ -1190,7 +1229,7 @@ export async function listEventPropertiesCore(input: {
   }
 
   const rows = await builder.execute();
-  return { properties: rows };
+  return { columns: EVENT_COLUMNS, properties: rows };
 }
 
 export async function getEventPropertyValuesCore(input: {

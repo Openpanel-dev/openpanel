@@ -1,4 +1,4 @@
-import { TABLE_NAMES, ch, clix } from '@openpanel/db';
+import { EVENT_COLUMNS, TABLE_NAMES, ch, clix } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -15,7 +15,7 @@ export function registerPropertyValueTools(
 ) {
   server.tool(
     'list_event_properties',
-    'List all property keys that have been tracked for a specific event (or across all events). Use this to discover what data is available before filtering or breaking down by a property.',
+    'List fields available for filtering or breaking down events. Returns `columns` (top-level event columns like `path`, `country`, `device` — use the bare name in filters) and `properties` (custom JSON keys — use prefixed as `properties.<key>` in filters). Use this to discover what data is available before filtering or breaking down.',
     {
       projectId: projectIdSchema(context),
       eventName: z
@@ -41,7 +41,7 @@ export function registerPropertyValueTools(
         }
 
         const rows = await builder.execute();
-        return { properties: rows };
+        return { columns: EVENT_COLUMNS, properties: rows };
       }),
   );
 

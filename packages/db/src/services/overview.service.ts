@@ -78,6 +78,7 @@ export const zGetTopPagesInput = z.object({
   filters: z.array(z.any()),
   startDate: z.string(),
   endDate: z.string(),
+  limit: z.number().min(1).max(1000).optional(),
 });
 
 export type IGetTopPagesInput = z.infer<typeof zGetTopPagesInput> & {
@@ -90,6 +91,7 @@ export const zGetTopEntryExitInput = z.object({
   startDate: z.string(),
   endDate: z.string(),
   mode: z.enum(['entry', 'exit']),
+  limit: z.number().min(1).max(1000).optional(),
 });
 
 export type IGetTopEntryExitInput = z.infer<typeof zGetTopEntryExitInput> & {
@@ -648,6 +650,7 @@ export class OverviewService {
     startDate,
     endDate,
     timezone,
+    limit,
   }: IGetTopPagesInput) {
     const selectColumns: (string | null | undefined | false)[] = [
       'origin',
@@ -679,7 +682,7 @@ export class OverviewService {
       .rawWhere(this.getRawWhereClause('events', filters))
       .groupBy(['origin', 'path'])
       .orderBy('sessions', 'DESC')
-      .limit(MAX_RECORDS_LIMIT);
+      .limit(Math.min(limit ?? MAX_RECORDS_LIMIT, MAX_RECORDS_LIMIT));
 
     return query.execute();
   }
@@ -691,6 +694,7 @@ export class OverviewService {
     endDate,
     mode,
     timezone,
+    limit,
   }: IGetTopEntryExitInput) {
     const selectColumns: (string | null | undefined | false)[] = [
       `${mode}_origin AS origin`,
@@ -720,7 +724,7 @@ export class OverviewService {
       .groupBy([`${mode}_origin`, `${mode}_path`])
       .having('sum(sign)', '>', 0)
       .orderBy('sessions', 'DESC')
-      .limit(MAX_RECORDS_LIMIT);
+      .limit(Math.min(limit ?? MAX_RECORDS_LIMIT, MAX_RECORDS_LIMIT));
 
     const mainQuery = this.withDistinctSessionsIfNeeded(query, {
       projectId,

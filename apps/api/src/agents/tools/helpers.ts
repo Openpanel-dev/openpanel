@@ -98,9 +98,15 @@ export function truncateRows<T>(
 /**
  * Compact output from `listEventPropertiesCore` for consumption by the LLM.
  *
- * The raw shape is `{ properties: [{ property_key, event_name }, …] }` ordered
- * alphabetically and capped at 500 rows. That shape has three token-hungry
- * problems when passed back as a tool result:
+ * Two buckets come back:
+ *
+ *   - `columns`: top-level event columns (path, referrer, country, …).
+ *     Apply to every event. Use the bare name in filters/breakdowns.
+ *   - `properties`: custom keys from the JSON `properties` map. Use
+ *     prefixed as `properties.<key>` in filters/breakdowns.
+ *
+ * The raw `properties` rows are ordered alphabetically and capped at 500.
+ * That shape has three token-hungry problems when passed back:
  *
  *   1. Dotted sub-keys explode. A single property like `__query` or `data`
  *      with dynamic sub-paths surfaces as hundreds of rows
@@ -117,10 +123,14 @@ export function truncateRows<T>(
  * "how prominent is this property" signal), and caps the list.
  */
 export function compactEventProperties(
-  raw: { properties: Array<{ property_key: string; event_name: string }> },
+  raw: {
+    columns: readonly string[];
+    properties: Array<{ property_key: string; event_name: string }>;
+  },
   options: { eventName?: string; max?: number } = {},
 ): {
   event_name?: string;
+  columns: readonly string[];
   properties: string[];
   total: number;
   _truncated: boolean;
@@ -138,6 +148,7 @@ export function compactEventProperties(
   const truncated = sorted.length > max;
   return {
     ...(eventName ? { event_name: eventName } : {}),
+    columns: raw.columns,
     properties: truncated ? sorted.slice(0, max) : sorted,
     total: sorted.length,
     _truncated: truncated,

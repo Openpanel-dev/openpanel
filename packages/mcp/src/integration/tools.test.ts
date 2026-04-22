@@ -90,12 +90,14 @@ describe('list_event_names', () => {
 });
 
 describe('list_event_properties', () => {
-  it('returns { properties: array }', async () => {
+  it('returns { columns, properties }', async () => {
     const server = makeServer();
     registerPropertyValueTools(server as any, CTX);
     const res = await server.invoke('list_event_properties', {
       projectId: TEST_PROJECT_ID,
     });
+    expect(Array.isArray(res.columns)).toBe(true);
+    expect(res.columns).toContain('path');
     expect(Array.isArray(res.properties)).toBe(true);
   });
 });

@@ -53,7 +53,7 @@ export const listEventProperties = chatTool(
   {
     name: 'list_event_properties',
     description:
-      'List property keys available for an event (or across all events). Call this before using a property as a filter or breakdown in generate_report. NOTE: dotted sub-keys are rolled up to their root — e.g. all `__query.foo`, `__query.bar`, … are represented by a single `__query` entry. Keys are ordered by how many sub-keys roll up under them (most prominent first). To filter on a specific sub-key like `__query.utm_source`, use that exact full key in `set_property_filters` / breakdowns — the rollup is purely a discovery optimization.',
+      'List fields available for filtering or breaking down events. Returns TWO buckets:\n\n- `columns`: top-level event columns (path, referrer, country, device, browser, os, etc.). Apply to every event. Use the bare name in filters/breakdowns (e.g. `{ name: "path", operator: "endsWith", value: ["/cohorts"] }`).\n- `properties`: custom keys from the event\'s JSON `properties` map. Use prefixed as `properties.<key>` in filters/breakdowns (e.g. `properties.plan`).\n\nCall this before using any field as a filter or breakdown in generate_report. NOTE: dotted sub-keys inside `properties` are rolled up to their root — e.g. all `__query.foo`, `__query.bar`, … are represented by a single `__query` entry, ordered by how many sub-keys roll up under them (most prominent first). To filter on a specific sub-key like `properties.__query.utm_source`, use that exact full key — the rollup is purely a discovery optimization.',
     schema: z.object({
       eventName: z
         .string()
@@ -215,7 +215,9 @@ export const generateReport = chatTool(
                   z.object({
                     name: z
                       .string()
-                      .describe('Property key — verify with list_event_properties'),
+                      .describe(
+                        'Field to filter on — verify with list_event_properties. Use the bare column name for top-level columns (e.g. `path`, `country`, `device`) or `properties.<key>` for custom JSON properties (e.g. `properties.plan`).',
+                      ),
                     operator: z
                       .enum(objectToZodEnums(operators))
                       .describe(
