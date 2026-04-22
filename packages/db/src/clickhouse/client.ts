@@ -62,6 +62,10 @@ export const TABLE_NAMES = {
   gsc_pages_daily: 'gsc_pages_daily',
   gsc_queries_daily: 'gsc_queries_daily',
   groups: 'groups',
+  cohort_members: 'cohort_members',
+  cohort_metadata: 'cohort_metadata',
+  profile_event_summary_mv: 'profile_event_summary_mv',
+  profile_event_property_summary_mv: 'profile_event_property_summary_mv',
 };
 
 /**

@@ -7,6 +7,10 @@ import { TABLE_NAMES } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import { createSqlBuilder } from '../sql-builder';
 import {
+  buildInlineCohortJoin,
+  collectCohortIds,
+  extractCohortId,
+  fetchCohortsMetadata,
   getEventFiltersWhereClause,
   getSelectPropertyKey,
 } from './chart.service';
@@ -245,10 +249,16 @@ export class FunnelService {
     const needsGroupArrayJoin =
       anyFilterOnGroup || anyBreakdownOnGroup || funnelGroup === 'group';
 
+    const allFilters = eventSeries.flatMap((e) => e.filters ?? []);
+    const cohortIds = collectCohortIds(allFilters, breakdowns);
+    const cohortMetadata = await fetchCohortsMetadata(cohortIds);
+
     // Create the funnel CTE (session-level)
-    const breakdownSelects = breakdowns.map(
-      (b, index) => `${getSelectPropertyKey(b.name, projectId)} as b_${index}`,
-    );
+    const breakdownSelects = breakdowns.map((b, index) => {
+      const bId = extractCohortId(b.name);
+      const bName = bId ? cohortMetadata.get(bId)?.name : undefined;
+      return `${getSelectPropertyKey(b.name, projectId, bId ?? undefined, bName)} as b_${index}`;
+    });
     const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
 
     const funnelCte = this.buildFunnelCte({
@@ -288,6 +298,10 @@ export class FunnelService {
     if (needsGroupArrayJoin) {
       funnelCte.rawJoin('ARRAY JOIN groups AS _group_id');
       funnelCte.rawJoin('LEFT ANY JOIN _g ON _g.id = _group_id');
+    }
+
+    for (const cohortId of cohortIds) {
+      funnelCte.rawJoin(buildInlineCohortJoin(cohortId, projectId, 'events'));
     }
 
     // Base funnel query with CTEs

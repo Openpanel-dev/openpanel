@@ -57,7 +57,7 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
 
     // Execute query
     let queryResult = await chQuery<ISerieDataItem>(
-      getChartSql({ ...queryInput, timezone: plan.timezone }),
+      await getChartSql({ ...queryInput, timezone: plan.timezone }),
       {
         session_timezone: plan.timezone,
       },
@@ -66,7 +66,7 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
     // Fallback: if no results with breakdowns, try without breakdowns
     if (queryResult.length === 0 && plan.input.breakdowns.length > 0) {
       queryResult = await chQuery<ISerieDataItem>(
-        getChartSql({
+        await getChartSql({
           ...queryInput,
           breakdowns: [],
           timezone: plan.timezone,

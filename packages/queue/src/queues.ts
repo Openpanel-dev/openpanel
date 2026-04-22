@@ -138,6 +138,10 @@ export type CronQueuePayloadFlushGroups = {
   type: 'flushGroups';
   payload: undefined;
 };
+export type CronQueuePayloadCohortRefresh = {
+  type: 'cohortRefresh';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
@@ -150,7 +154,8 @@ export type CronQueuePayload =
   | CronQueuePayloadProject
   | CronQueuePayloadInsightsDaily
   | CronQueuePayloadOnboarding
-  | CronQueuePayloadGscSync;
+  | CronQueuePayloadGscSync
+  | CronQueuePayloadCohortRefresh;
 
 export type MiscQueuePayloadTrialEndingSoon = {
   type: 'trialEndingSoon';
@@ -297,3 +302,20 @@ export const gscQueue = new Queue<GscQueuePayload>(getQueueName('gsc'), {
     removeOnFail: 100,
   },
 });
+
+export type CohortComputePayload = {
+  cohortId: string;
+};
+
+export const cohortComputeQueue = new Queue<CohortComputePayload>(
+  getQueueName('cohortCompute'),
+  {
+    connection: getRedisQueue(),
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+      removeOnComplete: { age: 3600 },
+      removeOnFail: { age: 86400 },
+    },
+  },
+);

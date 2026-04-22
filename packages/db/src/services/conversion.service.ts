@@ -5,6 +5,10 @@ import sqlstring from 'sqlstring';
 import { TABLE_NAMES, ch } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import {
+  buildInlineCohortJoin,
+  collectCohortIds,
+  extractCohortId,
+  fetchCohortsMetadata,
   getEventFiltersWhereClause,
   getSelectPropertyKey,
 } from './chart.service';
@@ -30,9 +34,21 @@ export class ConversionService {
     const funnelGroup = funnelOptions?.funnelGroup;
     const funnelWindow = funnelOptions?.funnelWindow ?? 24;
     const group = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
-    const breakdownExpressions = breakdowns.map(
-      (b) => getSelectPropertyKey(b.name, projectId),
+
+    const allFilters = series.flatMap((s) =>
+      s.type === 'event' ? s.filters ?? [] : [],
     );
+    const cohortIds = collectCohortIds(allFilters, breakdowns);
+    const cohortMetadata = await fetchCohortsMetadata(cohortIds);
+    const cohortJoinsSql = cohortIds
+      .map((id) => buildInlineCohortJoin(id, projectId, 'events'))
+      .join(' ');
+
+    const breakdownExpressions = breakdowns.map((b) => {
+      const bId = extractCohortId(b.name);
+      const bName = bId ? cohortMetadata.get(bId)?.name : undefined;
+      return getSelectPropertyKey(b.name, projectId, bId ?? undefined, bName);
+    });
     const breakdownSelects = breakdownExpressions.map(
       (expr, index) => `${expr} as b_${index}`,
     );
@@ -140,6 +156,7 @@ export class ConversionService {
         FROM ${TABLE_NAMES.events}
         ${profileJoin}
         ${groupJoin}
+        ${cohortJoinsSql}
         WHERE project_id = '${projectId}'
           AND events.name IN ('${eventA.name}', '${eventB.name}')
           AND created_at BETWEEN toDateTime('${startDate}') AND toDateTime('${endDate}')

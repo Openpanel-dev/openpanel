@@ -1,5 +1,6 @@
 import { createPushModal } from 'pushmodal';
 import AddClient from './add-client';
+import AddCohort from './add-cohort';
 import AddDashboard from './add-dashboard';
 import AddGroup from './add-group';
 import AddImport from './add-import';
@@ -14,6 +15,7 @@ import CreateInvite from './create-invite';
 import DateRangerPicker from './date-ranger-picker';
 import DateTimePicker from './date-time-picker';
 import EditClient from './edit-client';
+import EditCohort from './edit-cohort';
 import EditDashboard from './edit-dashboard';
 import EditEvent from './edit-event';
 import EditGroup from './edit-group';
@@ -40,6 +42,8 @@ const modals = {
   PageDetails,
   AddGroup,
   EditGroup,
+  AddCohort,
+  EditCohort,
   OverviewTopPagesModal,
   OverviewTopGenericModal,
   RequestPasswordReset,

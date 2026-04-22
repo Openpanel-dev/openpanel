@@ -24,10 +24,13 @@ export function FilterOperatorSelect({
   return (
     <DropdownMenuComposed
       onChange={onChange}
-      items={mapKeys(operators).map((key) => ({
-        value: key,
-        label: operators[key],
-      }))}
+      items={mapKeys(operators)
+        // Cohort operators are surfaced via CohortFilterItem, not here.
+        .filter((key) => key !== 'inCohort' && key !== 'notInCohort')
+        .map((key) => ({
+          value: key,
+          label: operators[key],
+        }))}
       label="Operator"
     >
       {trigger}

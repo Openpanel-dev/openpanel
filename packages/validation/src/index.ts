@@ -28,6 +28,10 @@ export const zChartEventFilter = z.object({
   value: z
     .array(z.string().or(z.number()).or(z.boolean()).or(z.null()))
     .describe('The values to filter on'),
+  cohortId: z
+    .string()
+    .optional()
+    .describe('Cohort ID when using inCohort/notInCohort operators'),
 });
 
 export const zChartEventSegment = z
@@ -224,6 +228,10 @@ export const zReportInput = z.object({
     .number()
     .optional()
     .describe('Skip how many series should be returned'),
+  visibleSeries: z
+    .array(z.string())
+    .nullish()
+    .describe('IDs of series that should be visible on the chart'),
   options: zReportOptions
     .optional()
     .describe('Chart-specific options (funnel, retention, sankey)'),
@@ -640,3 +648,4 @@ export * from './types.insights';
 export * from './track.validation';
 export * from './event-blocklist';
 export * from './chat';
+export * from './cohort.validation';

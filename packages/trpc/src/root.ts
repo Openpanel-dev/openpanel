@@ -2,6 +2,7 @@ import { authRouter } from './routers/auth';
 import { chartRouter } from './routers/chart';
 import { chatRouter } from './routers/chat';
 import { clientRouter } from './routers/client';
+import { cohortRouter } from './routers/cohort';
 import { conversationRouter } from './routers/conversation';
 import { dashboardRouter } from './routers/dashboard';
 import { emailRouter } from './routers/email';
@@ -59,6 +60,7 @@ export const appRouter = createTRPCRouter({
   email: emailRouter,
   gsc: gscRouter,
   group: groupRouter,
+  cohort: cohortRouter,
 });
 
 // export type definition of API

@@ -54,7 +54,7 @@ export function Chart({ data }: Props) {
   const number = useNumber();
 
   // Use useVisibleSeries to add index property for colors
-  const { series: allSeriesWithIndex } = useVisibleSeries(data, 500);
+  const { series: allSeriesWithIndex } = useVisibleSeries(data, { limit: 500 });
 
   const totalSum = data.metrics.sum || 1;
 

@@ -17,6 +17,7 @@ import {
   PlusIcon,
   SearchIcon,
   SparklesIcon,
+  TargetIcon,
   TrendingUpDownIcon,
   UndoDotIcon,
   UserCircleIcon,
@@ -67,6 +68,7 @@ export default function SidebarProjectMenu({
       <SidebarLink href={'/sessions'} icon={UsersIcon} label="Sessions" />
       <SidebarLink href={'/profiles'} icon={UserCircleIcon} label="Profiles" />
       <SidebarLink href={'/groups'} icon={Building2Icon} label="Groups" />
+      <SidebarLink href={'/cohorts'} icon={TargetIcon} label="Cohorts" />
       <div className="mt-4 mb-2 font-medium text-muted-foreground text-sm">
         Manage
       </div>

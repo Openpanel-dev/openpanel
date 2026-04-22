@@ -225,6 +225,7 @@ model Project {
   notifications     Notification[]
   imports           Import[]
   gscConnection     GscConnection?
+  cohorts           Cohort[]
 
   // When deleteAt > now(), the project will be deleted
   deleteAt DateTime?
@@ -234,6 +235,24 @@ model Project {
   conversations Conversation[]
 
   @@map("projects")
+}
+
+model Cohort {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  description    String?
+  projectId      String
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// [IPrismaCohortDefinition]
+  definition     Json      @default("{}")
+  isStatic       Boolean   @default(false)
+  profileCount   Int       @default(0)
+  lastComputedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  @@index([projectId])
+  @@map("cohorts")
 }
 
 
@@ -354,7 +373,10 @@ model Report {
   funnelGroup  String?
   funnelWindow Float?
   /// [IReportOptions]
-  options      Json?
+  options       Json?
+  visibleSeries String[]
+  startDate     String?
+  endDate       String?
 
   dashboardId String
   dashboard   Dashboard     @relation(fields: [dashboardId], references: [id], onDelete: Cascade)

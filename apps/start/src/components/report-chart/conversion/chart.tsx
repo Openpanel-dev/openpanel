@@ -1,4 +1,6 @@
+import { changeVisibleSeries } from '@/components/report/reportSlice';
 import { pushModal } from '@/modals';
+import { useDispatch } from '@/redux';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
@@ -40,11 +42,26 @@ interface Props {
 
 export function Chart({ data }: Props) {
   const {
-    report: { interval, projectId, startDate, endDate, range, lineType },
+    report: {
+      interval,
+      projectId,
+      startDate,
+      endDate,
+      range,
+      lineType,
+      visibleSeries: savedVisibleSeries,
+    },
     isEditMode,
     options: { hideXAxis, hideYAxis, maxDomain },
   } = useReportChartContext();
-  const { series, setVisibleSeries } = useVisibleConversionSeries(data, 5);
+  const dispatch = useDispatch();
+  const { series, setVisibleSeries } = useVisibleConversionSeries(data, {
+    limit: 5,
+    savedVisibleSeries,
+    onVisibleSeriesChange: isEditMode
+      ? (ids) => dispatch(changeVisibleSeries(ids))
+      : undefined,
+  });
   const rechartData = useConversionRechartDataModel(series);
   const trpc = useTRPC();
   const references = useQuery(

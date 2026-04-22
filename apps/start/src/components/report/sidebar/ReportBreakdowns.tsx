@@ -39,6 +39,8 @@ export function ReportBreakdowns() {
               <div className="flex items-center gap-2 p-2 px-4">
                 <ColorSquare>{index}</ColorSquare>
                 <PropertiesCombobox
+                  isBreakdown
+                  showCohorts
                   onSelect={(action) => {
                     dispatch(
                       changeBreakdown({
@@ -58,7 +60,7 @@ export function ReportBreakdowns() {
                     >
                       <div className="row w-full gap-2 items-center">
                         <SplitIcon className="size-4" />
-                        {item.name}
+                        {item.name === 'cohort' ? 'Cohorts' : item.name}
                       </div>
                       <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -71,6 +73,8 @@ export function ReportBreakdowns() {
         })}
 
         <PropertiesCombobox
+          showCohorts
+          isBreakdown
           onSelect={(action) => {
             dispatch(
               addBreakdown({

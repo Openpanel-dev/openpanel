@@ -1,4 +1,6 @@
+import { changeVisibleSeries } from '@/components/report/reportSlice';
 import { useTRPC } from '@/integrations/trpc/react';
+import { useDispatch } from '@/redux';
 import type { RouterOutputs } from '@/trpc/client';
 import { useQuery } from '@tanstack/react-query';
 
@@ -6,29 +8,38 @@ import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
-import { useReportChartContext } from '../context';
+import { useChartInput, useReportChartContext } from '../context';
 import { useVisibleFunnelBreakdowns } from '@/hooks/use-visible-funnel-breakdowns';
 import { Chart, Summary } from './chart';
 import { BreakdownList } from './breakdown-list';
 
 export function ReportFunnelChart() {
-  const { isLazyLoading, report, shareId } = useReportChartContext();
+  const { isLazyLoading, report, shareId, isEditMode } =
+    useReportChartContext();
+  const chartInput = useChartInput();
+  const dispatch = useDispatch();
   const trpc = useTRPC();
   const res = useQuery(
     trpc.chart.funnel.queryOptions(
       {
-        ...report,
+        ...chartInput,
         shareId,
       },
       {
-        enabled: !isLazyLoading && report.series.length > 0,
+        enabled: !isLazyLoading && chartInput.series.length > 0,
       },
     ),
   );
 
   // Hook for limiting which breakdowns are shown in the chart only
   const { breakdowns: visibleBreakdowns, setVisibleSeries } =
-    useVisibleFunnelBreakdowns(res.data?.current ?? [], 10);
+    useVisibleFunnelBreakdowns(res.data?.current ?? [], {
+      limit: 10,
+      savedVisibleSeries: report.visibleSeries,
+      onVisibleSeriesChange: isEditMode
+        ? (ids) => dispatch(changeVisibleSeries(ids))
+        : undefined,
+    });
 
   if (isLazyLoading || res.isLoading) {
     return <Loading />;

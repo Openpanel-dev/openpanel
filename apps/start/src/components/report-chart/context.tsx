@@ -1,6 +1,6 @@
 import isEqual from 'lodash.isequal';
 import type { LucideIcon } from 'lucide-react';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 import type { IChartSerie, IReportInput } from '@openpanel/validation';
 
@@ -49,6 +49,18 @@ export const useReportChartContext = () => {
     );
   }
   return ctx;
+};
+
+/**
+ * Returns the report input suitable for chart queries — strips display-only
+ * fields (like visibleSeries) that shouldn't affect the query cache key.
+ */
+export const useChartInput = () => {
+  const { report } = useReportChartContext();
+  return useMemo(() => {
+    const { visibleSeries, ...input } = report;
+    return input;
+  }, [report]);
 };
 
 export const ReportChartProvider = ({

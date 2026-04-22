@@ -5,16 +5,17 @@ import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
-import { useReportChartContext } from '../context';
+import { useChartInput, useReportChartContext } from '../context';
 import { Chart } from './chart';
 
 export function ReportLineChart() {
-  const { isLazyLoading, report, shareId } = useReportChartContext();
+  const { isLazyLoading, shareId } = useReportChartContext();
+  const chartInput = useChartInput();
   const trpc = useTRPC();
   const res = useQuery(
     trpc.chart.chart.queryOptions(
       {
-        ...report,
+        ...chartInput,
         shareId,
       },
       {

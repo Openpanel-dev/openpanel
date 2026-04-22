@@ -1,6 +1,7 @@
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
 import {
+  cohortComputeQueue,
   cronQueue,
   EVENTS_GROUP_QUEUES_SHARDS,
   type EventsQueuePayloadIncomingEvent,
@@ -17,6 +18,7 @@ import { getRedisQueue } from '@openpanel/redis';
 import type { Queue, WorkerOptions } from 'bullmq';
 import { Worker } from 'bullmq';
 import { Worker as GroupWorker } from 'groupmq';
+import { cohortComputeJob } from './jobs/cohort.compute';
 import { cronJob } from './jobs/cron';
 import { incomingEvent } from './jobs/events.incoming-event';
 import { gscJob } from './jobs/gsc';
@@ -59,6 +61,7 @@ function getEnabledQueues(): QueueName[] {
       'import',
       'insights',
       'gsc',
+      'cohortCompute',
     ];
   }
 
@@ -219,6 +222,21 @@ export function bootWorkers() {
     });
     workers.push(gscWorker);
     logger.info('Started worker for gsc', { concurrency });
+  }
+
+  // Start cohortCompute worker
+  if (enabledQueues.includes('cohortCompute')) {
+    const concurrency = getConcurrencyFor('cohortCompute', 2);
+    const cohortComputeWorker = new Worker(
+      cohortComputeQueue.name,
+      cohortComputeJob,
+      {
+        ...workerOptions,
+        concurrency,
+      },
+    );
+    workers.push(cohortComputeWorker);
+    logger.info('Started worker for cohortCompute', { concurrency });
   }
 
   if (workers.length === 0) {

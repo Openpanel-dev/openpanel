@@ -1,4 +1,6 @@
+import { changeVisibleSeries } from '@/components/report/reportSlice';
 import { useVisibleSeries } from '@/hooks/use-visible-series';
+import { useDispatch } from '@/redux';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { round } from '@/utils/math';
@@ -64,8 +66,17 @@ const PieTooltip = (props: { payload?: any[] }) => {
 };
 
 export function Chart({ data }: Props) {
-  const { isEditMode } = useReportChartContext();
-  const { series, setVisibleSeries } = useVisibleSeries(data);
+  const {
+    isEditMode,
+    report: { visibleSeries: savedVisibleSeries },
+  } = useReportChartContext();
+  const dispatch = useDispatch();
+  const { series, setVisibleSeries } = useVisibleSeries(data, {
+    savedVisibleSeries,
+    onVisibleSeriesChange: isEditMode
+      ? (ids) => dispatch(changeVisibleSeries(ids))
+      : undefined,
+  });
 
   const sum = series.reduce((acc, serie) => acc + serie.metrics.sum, 0);
   const pieData = series.map((serie) => ({
