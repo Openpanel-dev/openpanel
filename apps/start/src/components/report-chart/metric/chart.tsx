@@ -14,7 +14,7 @@ export function Chart({ data }: Props) {
     isEditMode,
     report: { unit },
   } = useReportChartContext();
-  const { series } = useVisibleSeries(data, isEditMode ? 20 : 4);
+  const { series } = useVisibleSeries(data, { limit: isEditMode ? 20 : 4 });
   return (
     <div
       className={cn(

@@ -48,6 +48,7 @@ export function transformReportEventItem(
       id: item.id ?? alphabetIds[index]!,
       formula: item.formula || '',
       displayName: item.displayName,
+      hideSeries: item.hideSeries,
     };
   }
 
@@ -91,6 +92,9 @@ export function transformReport(
     unit: report.unit ?? undefined,
     layout: report.layout ?? undefined,
     options: options ?? undefined,
+    visibleSeries: report.visibleSeries ?? undefined,
+    startDate: report.startDate ?? undefined,
+    endDate: report.endDate ?? undefined,
   };
 }
 

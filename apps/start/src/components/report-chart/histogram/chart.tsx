@@ -3,6 +3,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useVisibleSeries } from '@/hooks/use-visible-series';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
+import { useDispatch } from '@/redux';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
@@ -20,6 +21,7 @@ import {
   YAxis,
 } from 'recharts';
 
+import { changeVisibleSeries } from '@/components/report/reportSlice';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import {
   ChartClickMenu,
@@ -62,9 +64,11 @@ export function Chart({ data }: Props) {
       series: reportSeries,
       breakdowns,
       options: reportOptions,
+      visibleSeries: savedVisibleSeries,
     },
     options: { hideXAxis, hideYAxis },
   } = useReportChartContext();
+  const dispatch = useDispatch();
 
   const histogramOptions =
     reportOptions?.type === 'histogram' ? reportOptions : undefined;
@@ -83,7 +87,12 @@ export function Chart({ data }: Props) {
       },
     ),
   );
-  const { series, setVisibleSeries } = useVisibleSeries(data);
+  const { series, setVisibleSeries } = useVisibleSeries(data, {
+    savedVisibleSeries,
+    onVisibleSeriesChange: isEditMode
+      ? (ids) => dispatch(changeVisibleSeries(ids))
+      : undefined,
+  });
   const rechartData = useRechartDataModel(series);
   const yAxisProps = useYAxisProps({
     hide: hideYAxis,

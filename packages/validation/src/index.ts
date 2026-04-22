@@ -228,6 +228,10 @@ export const zReportInput = z.object({
     .number()
     .optional()
     .describe('Skip how many series should be returned'),
+  visibleSeries: z
+    .array(z.string())
+    .nullish()
+    .describe('IDs of series that should be visible on the chart'),
   options: zReportOptions
     .optional()
     .describe('Chart-specific options (funnel, retention, sankey)'),

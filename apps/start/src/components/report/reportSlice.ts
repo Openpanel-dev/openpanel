@@ -50,6 +50,7 @@ const initialState: InitialState = {
   metric: 'sum',
   limit: 500,
   options: undefined,
+  visibleSeries: undefined,
 };
 
 export const reportSlice = createSlice({
@@ -75,8 +76,8 @@ export const reportSlice = createSlice({
       return {
         ...state,
         ...action.payload,
-        startDate: null,
-        endDate: null,
+        startDate: action.payload.startDate ?? null,
+        endDate: action.payload.endDate ?? null,
         dirty: false,
         ready: true,
       };
@@ -383,6 +384,13 @@ export const reportSlice = createSlice({
         state.series.splice(toIndex, 0, movedEvent);
       }
     },
+    changeVisibleSeries(
+      state,
+      action: PayloadAction<string[] | undefined>,
+    ) {
+      state.dirty = true;
+      state.visibleSeries = action.payload;
+    },
   },
 });
 
@@ -419,6 +427,7 @@ export const {
   changeSankeyInclude,
   changeStacked,
   reorderEvents,
+  changeVisibleSeries,
 } = reportSlice.actions;
 
 export default reportSlice.reducer;

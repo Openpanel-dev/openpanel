@@ -2,6 +2,7 @@ import { useRechartDataModel } from '@/hooks/use-rechart-data-model';
 import { useVisibleSeries } from '@/hooks/use-visible-series';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
+import { useDispatch } from '@/redux';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
@@ -24,6 +25,7 @@ import {
   YAxis,
 } from 'recharts';
 
+import { changeVisibleSeries } from '@/components/report/reportSlice';
 import { useDashedStroke } from '@/hooks/use-dashed-stroke';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import {
@@ -52,10 +54,12 @@ export function Chart({ data }: Props) {
       lineType,
       series: reportSeries,
       breakdowns,
+      visibleSeries: savedVisibleSeries,
     },
     isEditMode,
     options: { hideXAxis, hideYAxis },
   } = useReportChartContext();
+  const dispatch = useDispatch();
   const trpc = useTRPC();
   const references = useQuery(
     trpc.reference.getChartReferences.queryOptions(
@@ -70,7 +74,12 @@ export function Chart({ data }: Props) {
       },
     ),
   );
-  const { series, setVisibleSeries } = useVisibleSeries(data);
+  const { series, setVisibleSeries } = useVisibleSeries(data, {
+    savedVisibleSeries,
+    onVisibleSeriesChange: isEditMode
+      ? (ids) => dispatch(changeVisibleSeries(ids))
+      : undefined,
+  });
   const rechartData = useRechartDataModel(series);
 
   let dotIndex = undefined;

@@ -373,7 +373,10 @@ model Report {
   funnelGroup  String?
   funnelWindow Float?
   /// [IReportOptions]
-  options      Json?
+  options       Json?
+  visibleSeries String[]
+  startDate     String?
+  endDate       String?
 
   dashboardId String
   dashboard   Dashboard     @relation(fields: [dashboardId], references: [id], onDelete: Cascade)

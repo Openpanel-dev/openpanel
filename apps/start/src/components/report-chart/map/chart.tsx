@@ -15,7 +15,7 @@ export function Chart({ data }: Props) {
   const {
     report: { metric, unit },
   } = useReportChartContext();
-  const { series } = useVisibleSeries(data, 99999);
+  const { series } = useVisibleSeries(data, { limit: 99999 });
   const [_, setFilter] = useEventQueryFilters();
   const mapData = useMemo(
     () =>
