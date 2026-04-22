@@ -40,6 +40,7 @@ interface PropertiesComboboxProps {
   include?: string[];
   mode?: 'events' | 'profile';
   showCohorts?: boolean;
+  isBreakdown?: boolean;
 }
 
 function SearchHeader({
@@ -76,6 +77,7 @@ export function PropertiesCombobox({
   exclude = [],
   include = [],
   showCohorts = false,
+  isBreakdown = false,
 }: PropertiesComboboxProps) {
   const { projectId } = useAppParams();
   const trpc = useTRPC();
@@ -209,7 +211,15 @@ export function PropertiesCombobox({
             className="group justify-between gap-2"
             onClick={(e) => {
               e.preventDefault();
-              handleStateChange('cohort');
+              if (isBreakdown) {
+                handleSelect({
+                  value: 'cohort',
+                  label: 'Cohorts',
+                  description: 'All cohorts',
+                });
+              } else {
+                handleStateChange('cohort');
+              }
             }}
           >
             Cohorts

@@ -71,6 +71,41 @@ export function extractCohortId(breakdownName: string): string | null {
   return null;
 }
 
+export function isAllCohortsBreakdown(breakdownName: string): boolean {
+  return breakdownName === 'cohort';
+}
+
+export async function fetchProjectCohorts(
+  projectId: string,
+): Promise<CohortMetadata[]> {
+  return db.cohort.findMany({
+    where: { projectId },
+    select: { id: true, name: true },
+  });
+}
+
+export function buildAllCohortsMembershipQuery(
+  projectId: string,
+): string {
+  return `
+    SELECT profile_id, cohort_id
+    FROM ${TABLE_NAMES.cohort_members} FINAL
+    WHERE project_id = ${sqlstring.escape(projectId)}
+  `;
+}
+
+export function buildAllCohortsLabelExpr(
+  cohorts: CohortMetadata[],
+  alias = '_all_cohorts',
+): string {
+  if (cohorts.length === 0) {
+    return "'Unknown'";
+  }
+  const ids = cohorts.map((c) => sqlstring.escape(c.id)).join(', ');
+  const names = cohorts.map((c) => sqlstring.escape(c.name)).join(', ');
+  return `transform(${alias}.cohort_id, [${ids}], [${names}], 'Unknown')`;
+}
+
 export function collectCohortIds(
   filters: IChartEventFilter[],
   breakdowns: IChartBreakdown[],
@@ -243,9 +278,24 @@ export async function getChartSql({
     with: addCte,
   } = createSqlBuilder();
 
+  const hasAllCohortsBreakdown = breakdowns.some((b) =>
+    isAllCohortsBreakdown(b.name),
+  );
+  const allCohorts = hasAllCohortsBreakdown
+    ? await fetchProjectCohorts(projectId)
+    : [];
+
   const cohortIds = collectCohortIds(event.filters, breakdowns);
   const cohortMetadata = await fetchCohortsMetadata(cohortIds);
 
+  // Add CTE + JOIN for "all cohorts" breakdown
+  if (hasAllCohortsBreakdown) {
+    addCte('_all_cohorts', buildAllCohortsMembershipQuery(projectId));
+    sb.joins._all_cohorts =
+      'INNER JOIN _all_cohorts ON _all_cohorts.profile_id = e.profile_id';
+  }
+
+  // Add individual cohort CTEs (for single-cohort filters)
   for (const cohortId of cohortIds) {
     addCte(
       getCohortCteName(cohortId),
@@ -426,12 +476,17 @@ export async function getChartSql({
   breakdowns.forEach((breakdown, index) => {
     // Breakdowns start at label_1 (label_0 is reserved for event name)
     const key = `label_${index + 1}`;
-    const breakdownCohortId = extractCohortId(breakdown.name);
-    const breakdownCohortName = breakdownCohortId
-      ? cohortMetadata.get(breakdownCohortId)?.name
-      : undefined;
-    sb.select[key] =
-      `${getSelectPropertyKey(breakdown.name, projectId, breakdownCohortId ?? undefined, breakdownCohortName)} as ${key}`;
+
+    if (isAllCohortsBreakdown(breakdown.name)) {
+      sb.select[key] = `${buildAllCohortsLabelExpr(allCohorts)} as ${key}`;
+    } else {
+      const breakdownCohortId = extractCohortId(breakdown.name);
+      const breakdownCohortName = breakdownCohortId
+        ? cohortMetadata.get(breakdownCohortId)?.name
+        : undefined;
+      sb.select[key] =
+        `${getSelectPropertyKey(breakdown.name, projectId, breakdownCohortId ?? undefined, breakdownCohortName)} as ${key}`;
+    }
     sb.groupBy[key] = `${key}`;
   });
 
@@ -496,6 +551,10 @@ export async function getChartSql({
   const inlineCohortJoinsSql = cohortIds
     .map((id) => buildInlineCohortJoin(id, projectId, 'e'))
     .join(' ');
+  // Inline all-cohorts join for use in _uc CTE (can't reference CTEs from nested CTEs)
+  const inlineAllCohortsJoin = hasAllCohortsBreakdown
+    ? `INNER JOIN (${buildAllCohortsMembershipQuery(projectId)}) AS _all_cohorts ON _all_cohorts.profile_id = e.profile_id `
+    : '';
 
   if (breakdowns.length > 0) {
     // Pre-compute unique counts per breakdown group in a CTE, then JOIN it.
@@ -504,6 +563,9 @@ export async function getChartSql({
     //    which resolve in the subquery's scope, making the condition a tautology.
     // 2. Correlated subqueries aren't supported on distributed/remote tables.
     const ucSelectParts: string[] = breakdowns.map((breakdown, index) => {
+      if (isAllCohortsBreakdown(breakdown.name)) {
+        return `${buildAllCohortsLabelExpr(allCohorts)} as _uc_label_${index + 1}`;
+      }
       const bId = extractCohortId(breakdown.name);
       const bName = bId ? cohortMetadata.get(bId)?.name : undefined;
       const propertyKey = getSelectPropertyKey(
@@ -524,11 +586,14 @@ export async function getChartSql({
 
     addCte(
       '_uc',
-      `SELECT ${ucSelectParts.join(', ')} FROM ${TABLE_NAMES.events} e ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${inlineCohortJoinsSql ? `${inlineCohortJoinsSql} ` : ''}${ucWhere} GROUP BY ${ucGroupByParts.join(', ')}`
+      `SELECT ${ucSelectParts.join(', ')} FROM ${TABLE_NAMES.events} e ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${inlineCohortJoinsSql ? `${inlineCohortJoinsSql} ` : ''}${inlineAllCohortsJoin}${ucWhere} GROUP BY ${ucGroupByParts.join(', ')}`
     );
 
     const ucJoinConditions = breakdowns
       .map((b, index) => {
+        if (isAllCohortsBreakdown(b.name)) {
+          return `_uc._uc_label_${index + 1} = ${buildAllCohortsLabelExpr(allCohorts)}`;
+        }
         const bId = extractCohortId(b.name);
         const bName = bId ? cohortMetadata.get(bId)?.name : undefined;
         const propertyKey = getSelectPropertyKey(
@@ -574,9 +639,24 @@ export async function getAggregateChartSql({
 }) {
   const { sb, join, getJoins, with: addCte, getSql } = createSqlBuilder();
 
+  const hasAllCohortsBreakdown = breakdowns.some((b) =>
+    isAllCohortsBreakdown(b.name),
+  );
+  const allCohorts = hasAllCohortsBreakdown
+    ? await fetchProjectCohorts(projectId)
+    : [];
+
   const cohortIds = collectCohortIds(event.filters, breakdowns);
   const cohortMetadata = await fetchCohortsMetadata(cohortIds);
 
+  // Add CTE + JOIN for "all cohorts" breakdown
+  if (hasAllCohortsBreakdown) {
+    addCte('_all_cohorts', buildAllCohortsMembershipQuery(projectId));
+    sb.joins._all_cohorts =
+      'INNER JOIN _all_cohorts ON _all_cohorts.profile_id = e.profile_id';
+  }
+
+  // Add individual cohort CTEs (for single-cohort filters)
   for (const cohortId of cohortIds) {
     addCte(
       getCohortCteName(cohortId),
@@ -718,12 +798,17 @@ export async function getAggregateChartSql({
   breakdowns.forEach((breakdown, index) => {
     // Breakdowns start at label_1 (label_0 is reserved for event name)
     const key = `label_${index + 1}`;
-    const breakdownCohortId = extractCohortId(breakdown.name);
-    const breakdownCohortName = breakdownCohortId
-      ? cohortMetadata.get(breakdownCohortId)?.name
-      : undefined;
-    sb.select[key] =
-      `${getSelectPropertyKey(breakdown.name, projectId, breakdownCohortId ?? undefined, breakdownCohortName)} as ${key}`;
+
+    if (isAllCohortsBreakdown(breakdown.name)) {
+      sb.select[key] = `${buildAllCohortsLabelExpr(allCohorts)} as ${key}`;
+    } else {
+      const breakdownCohortId = extractCohortId(breakdown.name);
+      const breakdownCohortName = breakdownCohortId
+        ? cohortMetadata.get(breakdownCohortId)?.name
+        : undefined;
+      sb.select[key] =
+        `${getSelectPropertyKey(breakdown.name, projectId, breakdownCohortId ?? undefined, breakdownCohortName)} as ${key}`;
+    }
     sb.groupBy[key] = `${key}`;
   });
 
