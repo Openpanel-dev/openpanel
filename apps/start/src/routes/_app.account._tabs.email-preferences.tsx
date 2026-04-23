@@ -20,10 +20,6 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 
-/**
- * Build explicit boolean values for every key in emailCategories.
- * Uses saved preferences when available, falling back to true (opted-in).
- */
 function buildCategoryDefaults(
   savedPreferences?: Record<string, boolean>,
 ): Record<string, boolean> {
@@ -37,7 +33,7 @@ function buildCategoryDefaults(
 }
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/profile/_tabs/email-preferences',
+  '/_app/account/_tabs/email-preferences',
 )({
   component: Component,
   pendingComponent: FullPageLoadingState,
@@ -66,7 +62,6 @@ function Component() {
         await queryClient.invalidateQueries(
           trpc.email.getPreferences.pathFilter(),
         );
-        // Reset form with fresh data after refetch
         const freshData = await queryClient.fetchQuery(
           trpc.email.getPreferences.queryOptions(),
         );

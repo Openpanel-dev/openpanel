@@ -543,6 +543,18 @@ export const zRequestResetPassword = z.object({
 });
 export type IRequestResetPassword = z.infer<typeof zRequestResetPassword>;
 
+export const zTotpCode = z
+  .string()
+  .transform((v) => v.replace(/\s+/g, ''))
+  .refine((v) => /^\d{6}$/.test(v), { message: 'Enter a 6-digit code' });
+export type ITotpCode = z.infer<typeof zTotpCode>;
+
+export const zTotpOrRecoveryCode = z
+  .string()
+  .min(1)
+  .transform((v) => v.trim());
+export type ITotpOrRecoveryCode = z.infer<typeof zTotpOrRecoveryCode>;
+
 export const zSignInShare = z.object({
   password: z.string().min(1),
   shareId: z.string().min(1),

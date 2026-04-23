@@ -1,3 +1,4 @@
+import { useRouter } from '@tanstack/react-router';
 import { CheckIcon, UserIcon } from 'lucide-react';
 import { themeConfig } from './theme-provider';
 import {
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function ProfileToggle({ className }: Props) {
+  const router = useRouter();
   const { setTheme, userTheme, themes } = useTheme();
   const logout = useLogout();
 
@@ -35,6 +37,10 @@ export function ProfileToggle({ className }: Props) {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="w-56">
+        <DropdownMenuItem onClick={() => router.navigate({ to: '/account' })}>
+          Account
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="flex w-full items-center justify-between">
             Theme
