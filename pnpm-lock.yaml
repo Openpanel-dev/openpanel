@@ -16,8 +16,8 @@ catalogs:
       specifier: ^19.2.3
       version: 19.2.3
     groupmq:
-      specifier: 2.0.0-next.3
-      version: 2.0.0-next.3
+      specifier: 2.0.0-next.4
+      version: 2.0.0-next.4
     react:
       specifier: ^19.2.3
       version: 19.2.3
@@ -210,7 +210,7 @@ importers:
         version: 5.6.1(@fastify/swagger-ui@5.2.5)(@fastify/swagger@9.7.0)(fastify@5.6.1)(zod@4.3.6)
       groupmq:
         specifier: 'catalog:'
-        version: 2.0.0-next.3(ioredis@5.8.2)
+        version: 2.0.0-next.4(ioredis@5.8.2)
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -988,7 +988,7 @@ importers:
         version: 4.18.2
       groupmq:
         specifier: 'catalog:'
-        version: 2.0.0-next.3(ioredis@5.8.2)
+        version: 2.0.0-next.4(ioredis@5.8.2)
       prom-client:
         specifier: ^15.1.3
         version: 15.1.3
@@ -1508,7 +1508,7 @@ importers:
         version: 5.63.0
       groupmq:
         specifier: 'catalog:'
-        version: 2.0.0-next.3(ioredis@5.8.2)
+        version: 2.0.0-next.4(ioredis@5.8.2)
     devDependencies:
       '@openpanel/tsconfig':
         specifier: workspace:*
@@ -13176,8 +13176,8 @@ packages:
     resolution: {integrity: sha512-5gghUc24tP9HRznNpV2+FIoq3xKkj5dTQqf4v0CpdPbFVwFkWoxOM+o+2OC9ZSvjEMTjfmG9QT+gcvggTwW1zw==}
     engines: {node: '>= 10.x'}
 
-  groupmq@2.0.0-next.3:
-    resolution: {integrity: sha512-aVza75AKavLUxDKhGGljJDJbYW5PjM5pbBErbGLLm6F8ybqWXEbKHi+P69DvRwI+ChF6Z6DbJwTBz9v9/EW81Q==}
+  groupmq@2.0.0-next.4:
+    resolution: {integrity: sha512-VvSKuDdEWr7PrtpGo+sWaMsH4q61NMBTiThFXXZVwgcAMJNeOWHhVVMiEvxHiU/R6P6xVqy0HaJu75Pbo6iD1A==}
     engines: {node: '>=18'}
     peerDependencies:
       ioredis: '>=5'
@@ -33993,7 +33993,7 @@ snapshots:
 
   graphql@15.8.0: {}
 
-  groupmq@2.0.0-next.3(ioredis@5.8.2):
+  groupmq@2.0.0-next.4(ioredis@5.8.2):
     dependencies:
       cron-parser: 4.9.0
       ioredis: 5.8.2
