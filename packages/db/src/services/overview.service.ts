@@ -47,6 +47,12 @@ const WHITELISTED_FILTERS = [
   'os_version',
   'referrer_name',
   'browser_version',
+  'referrer_type',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
 ];
 
 // Types
