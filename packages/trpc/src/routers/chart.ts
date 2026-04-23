@@ -688,21 +688,30 @@ export const chartRouter = createTRPCRouter({
       const funnelWindowSeconds = (funnelWindow || 24) * 3600;
       const funnelWindowMilliseconds = funnelWindowSeconds * 1000;
 
-      // Use funnel service methods
-      const group = funnelService.getFunnelGroup(funnelGroup);
+      // Resolve events source (handles custom events) and funnel group column
+      const { fromClause, withClauses, needsNameFilter } =
+        await funnelService.buildEventsSource(
+          eventSeries as IChartEvent[],
+          projectId,
+          startDate,
+          endDate,
+        );
 
-      // Create sessions CTE if needed
-      const sessionsCte =
-        group[0] !== 'session_id'
-          ? funnelService.buildSessionsCte({
-              projectId,
-              startDate,
-              endDate,
-              timezone,
-            })
-          : null;
+      const group = funnelService.resolveFunnelGroup(funnelGroup, fromClause);
+      const groupedByProfile = group[1] === 'profile_id';
 
-      // Create funnel CTE using funnel service
+      // Create sessions CTE if grouping by profile_id (needs sessions.pid lookup)
+      const sessionsCte = groupedByProfile
+        ? funnelService.buildSessionsCte({
+            projectId,
+            startDate,
+            endDate,
+            timezone,
+          })
+        : null;
+
+      // When grouped by profile_id, the group column is already aliased to
+      // profile_id; only add a separate profile_id select in session-grouped mode.
       const funnelCte = funnelService.buildFunnelCte({
         projectId,
         startDate,
@@ -711,8 +720,12 @@ export const chartRouter = createTRPCRouter({
         funnelWindowMilliseconds,
         group,
         timezone,
-        additionalSelects: ['profile_id'],
-        additionalGroupBy: ['profile_id'],
+        additionalSelects: groupedByProfile
+          ? []
+          : [`${fromClause}.profile_id AS profile_id`],
+        additionalGroupBy: groupedByProfile ? [] : ['profile_id'],
+        fromClause,
+        needsNameFilter,
       });
 
       // Check for profile filters and add profile join if needed
@@ -725,15 +738,20 @@ export const chartRouter = createTRPCRouter({
         ).join(', ');
         funnelCte.leftJoin(
           `(SELECT id, ${fieldsToSelect} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
-          'profile.id = events.profile_id',
+          `profile.id = ${fromClause}.profile_id`,
         );
       }
 
       // Build main query
       const query = clix(ch, timezone);
 
+      // Register custom-event CTEs (if any) on the outer query
+      for (const withClause of withClauses) {
+        query.with(withClause.name, withClause.query);
+      }
+
       if (sessionsCte) {
-        funnelCte.leftJoin('sessions s', 's.sid = events.session_id');
+        funnelCte.leftJoin('sessions s', `s.sid = ${fromClause}.session_id`);
         query.with('sessions', sessionsCte);
       }
 

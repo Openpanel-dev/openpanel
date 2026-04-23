@@ -32,7 +32,7 @@ export class FunnelService {
    * Build events source for funnel query
    * Handles both regular events and custom events
    */
-  private async buildEventsSource(
+  async buildEventsSource(
     events: IChartEvent[],
     projectId: string,
     startDate: string,
@@ -111,6 +111,15 @@ export class FunnelService {
       sb.where.name = `name = ${sqlstring.escape(event.name)}`;
       return getWhere().replace('WHERE ', '');
     });
+  }
+
+  resolveFunnelGroup(
+    funnelGroup: string | undefined | null,
+    fromClause: string,
+  ): [string, string] {
+    return funnelGroup === 'profile_id'
+      ? [`COALESCE(nullIf(s.pid, ''), ${fromClause}.profile_id)`, 'profile_id']
+      : [`${fromClause}.session_id`, 'session_id'];
   }
 
   buildFunnelCte({
@@ -334,9 +343,7 @@ export class FunnelService {
       await this.buildEventsSource(eventSeries, projectId, startDate, endDate);
 
     // Determine group column using the actual fromClause (not hardcoded table name)
-    const group = funnelGroup === 'profile_id'
-      ? [`COALESCE(nullIf(s.pid, ''), ${fromClause}.profile_id)`, 'profile_id'] as [string, string]
-      : [`${fromClause}.session_id`, 'session_id'] as [string, string];
+    const group = this.resolveFunnelGroup(funnelGroup, fromClause);
 
     // Create the funnel CTE
     const breakdownSelects = breakdowns.map(
