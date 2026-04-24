@@ -51,7 +51,6 @@ export default function SetupTwoFactor() {
 
   useEffect(() => {
     setupMutation.mutate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (step === 'recovery') {

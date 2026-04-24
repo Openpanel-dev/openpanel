@@ -1,18 +1,20 @@
-import { WithLabel } from '@/components/forms/input-with-label';
-import FullPageLoadingState from '@/components/full-page-loading-state';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
-import { useTRPC } from '@/integrations/trpc/react';
-import { handleError } from '@/integrations/trpc/react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { emailCategories } from '@openpanel/constants';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { SaveIcon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import FullPageLoadingState from '@/components/full-page-loading-state';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = z.object({
   categories: z.record(z.string(), z.boolean()),
@@ -21,19 +23,19 @@ const validator = z.object({
 type IForm = z.infer<typeof validator>;
 
 function buildCategoryDefaults(
-  savedPreferences?: Record<string, boolean>,
+  savedPreferences?: Record<string, boolean>
 ): Record<string, boolean> {
   return Object.keys(emailCategories).reduce(
     (acc, category) => {
       acc[category] = savedPreferences?.[category] ?? true;
       return acc;
     },
-    {} as Record<string, boolean>,
+    {} as Record<string, boolean>
   );
 }
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/account/_tabs/email-preferences',
+  '/_app/$organizationId/account/_tabs/email-preferences'
 )({
   component: Component,
   pendingComponent: FullPageLoadingState,
@@ -44,13 +46,14 @@ function Component() {
   const queryClient = useQueryClient();
 
   const preferencesQuery = useSuspenseQuery(
-    trpc.email.getPreferences.queryOptions(),
+    trpc.email.getPreferences.queryOptions()
   );
 
   const { control, handleSubmit, formState, reset } = useForm<IForm>({
     defaultValues: {
       categories: buildCategoryDefaults(preferencesQuery.data),
     },
+    resolver: zodResolver(validator),
   });
 
   const mutation = useMutation(
@@ -60,17 +63,17 @@ function Component() {
           description: 'Your email preferences have been saved.',
         });
         await queryClient.invalidateQueries(
-          trpc.email.getPreferences.pathFilter(),
+          trpc.email.getPreferences.pathFilter()
         );
         const freshData = await queryClient.fetchQuery(
-          trpc.email.getPreferences.queryOptions(),
+          trpc.email.getPreferences.queryOptions()
         );
         reset({
           categories: buildCategoryDefaults(freshData),
         });
       },
       onError: handleError,
-    }),
+    })
   );
 
   return (
@@ -79,12 +82,12 @@ function Component() {
         mutation.mutate(values);
       })}
     >
-      <Widget className="max-w-screen-md w-full">
+      <Widget className="w-full max-w-screen-md">
         <WidgetHead>
           <span className="title">Email Preferences</span>
         </WidgetHead>
-        <WidgetBody className="gap-4 col">
-          <p className="text-sm text-muted-foreground mb-4">
+        <WidgetBody className="col gap-4">
+          <p className="mb-4 text-muted-foreground text-sm">
             Choose which types of emails you want to receive. Uncheck a category
             to stop receiving those emails.
           </p>
@@ -92,14 +95,14 @@ function Component() {
           <div className="space-y-4">
             {Object.entries(emailCategories).map(([category, label]) => (
               <Controller
+                control={control}
                 key={category}
                 name={`categories.${category}`}
-                control={control}
                 render={({ field }) => (
-                  <div className="flex items-center justify-between gap-4 px-4 py-4 rounded-md border border-border hover:bg-def-200 transition-colors">
+                  <div className="flex items-center justify-between gap-4 rounded-md border border-border px-4 py-4 transition-colors hover:bg-def-200">
                     <div className="flex-1">
                       <div className="font-medium">{label}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-muted-foreground text-sm">
                         {category === 'onboarding' &&
                           'Get started tips and guidance emails'}
                         {category === 'billing' &&
@@ -108,8 +111,8 @@ function Component() {
                     </div>
                     <Switch
                       checked={field.value}
-                      onCheckedChange={field.onChange}
                       disabled={mutation.isPending}
+                      onCheckedChange={field.onChange}
                     />
                   </div>
                 )}
@@ -118,12 +121,12 @@ function Component() {
           </div>
 
           <Button
-            size="sm"
-            type="submit"
+            className="mt-4 self-end"
             disabled={!formState.isDirty || mutation.isPending}
-            className="self-end mt-4"
             icon={SaveIcon}
             loading={mutation.isPending}
+            size="sm"
+            type="submit"
           >
             Save
           </Button>
