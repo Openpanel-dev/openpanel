@@ -18,9 +18,11 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAppContext } from '@/hooks/use-app-context';
+import { useOrganizationAccess } from '@/hooks/use-organization-access';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
+import { useParams } from '@tanstack/react-router';
 
 export default function SidebarOrganizationMenu({
   organization,
@@ -28,6 +30,8 @@ export default function SidebarOrganizationMenu({
   organization: RouterOutputs['organization']['list'][number];
 }) {
   const { isSelfHosted } = useAppContext();
+  const { organizationId } = useParams({ strict: false });
+  const { isAdmin } = useOrganizationAccess(organizationId);
 
   return (
     <>
@@ -53,7 +57,7 @@ export default function SidebarOrganizationMenu({
         <CogIcon size={20} />
         <div className="flex-1">Settings</div>
       </Link>
-      {!isSelfHosted && (
+      {isAdmin && !isSelfHosted && (
         <Link
           activeOptions={{ exact: true }}
           className={cn(
@@ -70,16 +74,18 @@ export default function SidebarOrganizationMenu({
           {organization?.isCanceled && <Badge>Canceled</Badge>}
         </Link>
       )}
-      <Link
-        className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
-        )}
-        from="/$organizationId"
-        to="/$organizationId/members"
-      >
-        <UsersIcon size={20} />
-        <div className="flex-1">Members</div>
-      </Link>
+      {isAdmin && (
+        <Link
+          className={cn(
+            'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
+          )}
+          from="/$organizationId"
+          to="/$organizationId/members"
+        >
+          <UsersIcon size={20} />
+          <div className="flex-1">Members</div>
+        </Link>
+      )}
       <Link
         className={cn(
           'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
@@ -96,18 +102,24 @@ export default function SidebarOrganizationMenu({
 
 export function ActionCTAButton() {
   const navigate = useNavigate();
+  const { organizationId } = useParams({ strict: false });
+  const { isAdmin } = useOrganizationAccess(organizationId);
 
   const ACTIONS = [
-    {
-      label: 'Create a project',
-      icon: PlusIcon,
-      onClick: () => pushModal('AddProject'),
-    },
-    {
-      label: 'Invite a user',
-      icon: UsersIcon,
-      onClick: () => pushModal('CreateInvite'),
-    },
+    ...(isAdmin
+      ? [
+          {
+            label: 'Create a project',
+            icon: PlusIcon,
+            onClick: () => pushModal('AddProject'),
+          },
+          {
+            label: 'Invite a user',
+            icon: UsersIcon,
+            onClick: () => pushModal('CreateInvite'),
+          },
+        ]
+      : []),
     {
       label: 'Add integration',
       icon: WorkflowIcon,

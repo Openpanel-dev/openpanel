@@ -45,17 +45,6 @@ export async function getProjectWithClients(id: string) {
   return res;
 }
 
-export function getProjectsByOrganizationId(organizationId: string) {
-  return db.project.findMany({
-    where: {
-      organizationId,
-    },
-    orderBy: {
-      eventsCount: 'desc',
-    },
-  });
-}
-
 export async function getProjects({
   organizationId,
   userId,

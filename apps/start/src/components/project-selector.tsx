@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAppParams } from '@/hooks/use-app-params';
+import { useOrganizationAccess } from '@/hooks/use-organization-access';
 import { pushModal } from '@/modals';
 
 interface ProjectSelectorProps {
@@ -34,6 +35,7 @@ export default function ProjectSelector({
 }: ProjectSelectorProps) {
   const router = useRouter();
   const { organizationId, projectId } = useAppParams();
+  const { isAdmin } = useOrganizationAccess(organizationId);
   const [open, setOpen] = useState(false);
 
   const changeProject = (newProjectId: string) => {
@@ -115,17 +117,19 @@ export default function ProjectSelector({
               </Link>
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem
-            className="text-emerald-600"
-            onClick={() => {
-              pushModal('AddProject');
-            }}
-          >
-            Create new project
-            <DropdownMenuShortcut>
-              <PlusIcon size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
+          {isAdmin && (
+            <DropdownMenuItem
+              className="text-emerald-600"
+              onClick={() => {
+                pushModal('AddProject');
+              }}
+            >
+              Create new project
+              <DropdownMenuShortcut>
+                <PlusIcon size={16} />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
         </DropdownMenuGroup>
         {!!organizations && (
           <>

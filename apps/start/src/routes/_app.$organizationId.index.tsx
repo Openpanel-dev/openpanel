@@ -5,11 +5,13 @@ import { PageHeader } from '@/components/page-header';
 import ProjectCard, {
   ProjectCardSkeleton,
 } from '@/components/projects/project-card';
-import { LinkButton } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { AnimatedSearchInput } from '@/components/ui/data-table/data-table-toolbar';
 import { TableButtons } from '@/components/ui/table';
+import { useOrganizationAccess } from '@/hooks/use-organization-access';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
+import { pushModal } from '@/modals';
 import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -44,18 +46,25 @@ function OrganizationPage() {
       organizationId,
     }),
   );
+  const { isAdmin } = useOrganizationAccess(organizationId);
   const { setSearch, search } = useSearchQueryState();
 
   if (!projects?.length) {
     return (
       <FullPageEmptyState
         title="No projects found"
-        description="Create your first project to get started with analytics."
+        description={
+          isAdmin
+            ? 'Create your first project to get started with analytics.'
+            : 'You do not have access to any projects in this organization yet. Ask an admin to grant you access.'
+        }
         icon={BoxSelectIcon}
       >
-        <LinkButton icon={PlusIcon} to=".">
-          Create project
-        </LinkButton>
+        {isAdmin && (
+          <Button icon={PlusIcon} onClick={() => pushModal('AddProject')}>
+            Create project
+          </Button>
+        )}
       </FullPageEmptyState>
     );
   }

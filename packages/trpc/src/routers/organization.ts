@@ -34,6 +34,17 @@ export const organizationRouter = createTRPCRouter({
     return getOrganizations(ctx.session.userId);
   }),
 
+  myAccess: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const access = await getOrganizationAccess({
+        userId: ctx.session.userId,
+        organizationId: input.organizationId,
+      });
+      if (!access) return null;
+      return { role: access.role };
+    }),
+
   update: protectedProcedure
     .input(zEditOrganization)
     .mutation(async ({ input, ctx }) => {
@@ -266,13 +277,27 @@ export const organizationRouter = createTRPCRouter({
 
   members: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const access = await getOrganizationAccess({
+        userId: ctx.session.userId,
+        organizationId: input.organizationId,
+      });
+      if (access?.role !== 'org:admin') {
+        throw TRPCAccessError('You do not have access to this project');
+      }
       return getMembers(input.organizationId);
     }),
 
   invitations: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const access = await getOrganizationAccess({
+        userId: ctx.session.userId,
+        organizationId: input.organizationId,
+      });
+      if (access?.role !== 'org:admin') {
+        throw TRPCAccessError('You do not have access to this project');
+      }
       return getInvites(input.organizationId);
     }),
 

@@ -1,13 +1,3 @@
-import AnimateHeight from '@/components/animate-height';
-import { ButtonContainer } from '@/components/button-container';
-import { CreateClientSuccess } from '@/components/clients/create-client-success';
-import { CheckboxItem } from '@/components/forms/checkbox-item';
-import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
-import TagInput from '@/components/forms/tag-input';
-import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useTRPC } from '@/integrations/trpc/react';
-import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zOnboardingProject } from '@openpanel/validation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -24,6 +14,15 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import AnimateHeight from '@/components/animate-height';
+import { ButtonContainer } from '@/components/button-container';
+import { CreateClientSuccess } from '@/components/clients/create-client-success';
+import { CheckboxItem } from '@/components/forms/checkbox-item';
+import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
+import TagInput from '@/components/forms/tag-input';
+import { Button } from '@/components/ui/button';
+import { useAppParams } from '@/hooks/use-app-params';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = zOnboardingProject;
 type IForm = z.infer<typeof validator>;
@@ -51,7 +50,7 @@ export default function AddProject() {
       onError: handleError,
       onSuccess: (res) => {
         queryClient.invalidateQueries(
-          trpc.project.list.queryFilter({ organizationId }),
+          trpc.project.list.queryFilter({ organizationId })
         );
         toast.success('Project created', {
           description: `${res.name}`,
@@ -68,7 +67,7 @@ export default function AddProject() {
           },
         });
       },
-    }),
+    })
   );
 
   const onSubmit = (values: IForm) => {
@@ -105,7 +104,7 @@ export default function AddProject() {
     <ModalContent>
       {mutation.isSuccess ? (
         <>
-          <ModalHeader title="Success" text={'Your project is created'} />
+          <ModalHeader text={'Your project is created'} title="Success" />
           {mutation.data.client && (
             <CreateClientSuccess {...mutation.data.client} />
           )}
@@ -118,7 +117,7 @@ export default function AddProject() {
       ) : (
         <>
           <ModalHeader title="Create project" />
-          <form onSubmit={form.handleSubmit(onSubmit)} className="col gap-4">
+          <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
             <InputWithLabel
               label="Project name"
               placeholder="Eg. My music site"
@@ -128,15 +127,15 @@ export default function AddProject() {
 
             <div className="flex flex-col divide-y">
               <Controller
-                name="website"
                 control={form.control}
+                name="website"
                 render={({ field }) => (
                   <CheckboxItem
+                    description="Track events and conversion for your website"
+                    disabled={isApp}
                     error={form.formState.errors.website?.message}
                     Icon={MonitorIcon}
                     label="Website"
-                    disabled={isApp}
-                    description="Track events and conversion for your website"
                     {...field}
                   >
                     <AnimateHeight open={isWebsite && !isApp}>
@@ -160,20 +159,13 @@ export default function AddProject() {
                         />
 
                         <Controller
-                          name="cors"
                           control={form.control}
+                          name="cors"
                           render={({ field }) => (
                             <WithLabel label="Allowed domains">
                               <TagInput
                                 {...field}
                                 error={form.formState.errors.cors?.message}
-                                placeholder="Accept events from these domains"
-                                value={field.value ?? []}
-                                renderTag={(tag) =>
-                                  tag === '*'
-                                    ? 'Accept events from any domains'
-                                    : tag
-                                }
                                 onChange={(newValue) => {
                                   field.onChange(
                                     newValue.map((item) => {
@@ -186,9 +178,16 @@ export default function AddProject() {
                                         return trimmed;
                                       }
                                       return `https://${trimmed}`;
-                                    }),
+                                    })
                                   );
                                 }}
+                                placeholder="Accept events from these domains"
+                                renderTag={(tag) =>
+                                  tag === '*'
+                                    ? 'Accept events from any domains'
+                                    : tag
+                                }
+                                value={field.value ?? []}
                               />
                             </WithLabel>
                           )}
@@ -199,28 +198,28 @@ export default function AddProject() {
                 )}
               />
               <Controller
-                name="app"
                 control={form.control}
+                name="app"
                 render={({ field }) => (
                   <CheckboxItem
-                    error={form.formState.errors.app?.message}
+                    description="Track events and conversion for your app"
                     disabled={isWebsite}
+                    error={form.formState.errors.app?.message}
                     Icon={SmartphoneIcon}
                     label="App"
-                    description="Track events and conversion for your app"
                     {...field}
                   />
                 )}
               />
               <Controller
-                name="backend"
                 control={form.control}
+                name="backend"
                 render={({ field }) => (
                   <CheckboxItem
+                    description="Track events and conversion for your backend / API"
                     error={form.formState.errors.backend?.message}
                     Icon={ServerIcon}
                     label="Backend / API"
-                    description="Track events and conversion for your backend / API"
                     {...field}
                   />
                 )}
@@ -229,9 +228,9 @@ export default function AddProject() {
 
             <ButtonContainer className="justify-end">
               <Button
+                icon={SaveIcon}
                 loading={mutation.isPending}
                 type="submit"
-                icon={SaveIcon}
               >
                 Create project
               </Button>

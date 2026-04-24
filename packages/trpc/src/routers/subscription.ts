@@ -1,5 +1,6 @@
 import {
   db,
+  getOrganizationAccess,
   getOrganizationBillingEventsCountSerieCached,
   getOrganizationById,
 } from '@openpanel/db';
@@ -17,8 +18,15 @@ import { zCheckout } from '@openpanel/validation';
 import { getCache } from '@openpanel/redis';
 import { subDays } from 'date-fns';
 import { z } from 'zod';
-import { TRPCBadRequestError } from '../errors';
+import { TRPCAccessError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
+
+async function requireAdmin(userId: string, organizationId: string) {
+  const access = await getOrganizationAccess({ userId, organizationId });
+  if (access?.role !== 'org:admin') {
+    throw TRPCAccessError('Only organization admins can manage billing');
+  }
+}
 
 export const subscriptionRouter = createTRPCRouter({
   getCurrent: protectedProcedure
@@ -36,6 +44,7 @@ export const subscriptionRouter = createTRPCRouter({
   checkout: protectedProcedure
     .input(zCheckout)
     .mutation(async ({ input, ctx }) => {
+      await requireAdmin(ctx.session.userId, input.organizationId);
       const [user, organization] = await Promise.all([
         db.user.findFirstOrThrow({
           where: {
@@ -148,7 +157,8 @@ export const subscriptionRouter = createTRPCRouter({
 
   cancelSubscription: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await requireAdmin(ctx.session.userId, input.organizationId);
       const organization = await getOrganizationById(input.organizationId);
       if (!organization.subscriptionId) {
         throw TRPCBadRequestError('Organization has no subscription');
@@ -161,7 +171,8 @@ export const subscriptionRouter = createTRPCRouter({
 
   portal: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await requireAdmin(ctx.session.userId, input.organizationId);
       const organization = await getOrganizationById(input.organizationId);
       if (!organization.subscriptionCustomerId) {
         throw TRPCBadRequestError('Organization has no subscription');

@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/page-header';
 import { useTRPC } from '@/integrations/trpc/react';
 import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
 import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { BoxSelectIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/_app/$organizationId/billing')({
@@ -20,6 +20,17 @@ export const Route = createFileRoute('/_app/$organizationId/billing')({
     };
   },
   beforeLoad: async ({ params, context }) => {
+    const access = await context.queryClient.fetchQuery(
+      context.trpc.organization.myAccess.queryOptions({
+        organizationId: params.organizationId,
+      }),
+    );
+    if (access?.role !== 'org:admin') {
+      throw redirect({
+        to: '/$organizationId',
+        params: { organizationId: params.organizationId },
+      });
+    }
     await Promise.all([
       context.queryClient.prefetchQuery(
         context.trpc.subscription.products.queryOptions({

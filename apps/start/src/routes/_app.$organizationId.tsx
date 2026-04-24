@@ -45,11 +45,18 @@ export const Route = createFileRoute('/_app/$organizationId')({
     }
   },
   loader: async ({ context, params }) => {
-    await context.queryClient.prefetchQuery(
-      context.trpc.organization.get.queryOptions({
-        organizationId: params.organizationId,
-      }),
-    );
+    await Promise.all([
+      context.queryClient.prefetchQuery(
+        context.trpc.organization.get.queryOptions({
+          organizationId: params.organizationId,
+        }),
+      ),
+      context.queryClient.prefetchQuery(
+        context.trpc.organization.myAccess.queryOptions({
+          organizationId: params.organizationId,
+        }),
+      ),
+    ]);
   },
   pendingComponent: FullPageLoadingState,
 });
