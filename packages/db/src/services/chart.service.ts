@@ -474,86 +474,8 @@ export async function getChartSql({
     ['user', 'event', undefined].includes(event.segment ?? 'event') &&
     event.segment !== 'one_event_per_user';
 
-  // Check if we can use profile_event_property_summary_mv for properties.X breakdowns
-  // Supports multiple property breakdowns + property filters via self-join (max 5 total)
-  // Excludes funnel/conversion, non-property filters, profile filters, hourly intervals
-  const propertyBreakdowns = breakdowns.filter((b) => b.name.startsWith('properties.') && !b.cohortId);
-  const allBreakdownsAreProperties = breakdowns.length > 0 &&
-    breakdowns.every((b) => b.name.startsWith('properties.') && !b.cohortId);
-  const propertyFilters = (event.filters || []).filter((f) =>
-    f.name.startsWith('properties.') && f.value.length > 0);
-  const hasNonPropertyFilters = event.filters?.some((f) =>
-    !f.name.startsWith('properties.') && f.name !== 'name' && !f.name.startsWith('profile.'));
-  const hasProfileFilters = event.filters?.some((f) => f.name.startsWith('profile.'));
-  const totalPropertyJoins = propertyBreakdowns.length + propertyFilters.length;
-  const usePropertyMV =
-    !customEvent &&
-    !useCohortMV &&
-    allBreakdownsAreProperties &&
-    !hasNonPropertyFilters &&
-    !hasProfileFilters &&
-    totalPropertyJoins >= 1 &&
-    totalPropertyJoins <= 5 &&
-    ['day', 'week', 'month'].includes(interval) &&
-    ['user', 'event', undefined].includes(event.segment ?? 'event') &&
-    event.segment !== 'one_event_per_user' &&
-    chartType !== 'funnel' && chartType !== 'conversion';
-
-  const useMV = useCohortMV || usePropertyMV;
-
-  // Property MV self-join helpers
-  const propertyMVTable = TABLE_NAMES.profile_event_property_summary_mv;
-  const propertyMVBreakdownAliases = propertyBreakdowns.map((_, i) => i === 0 ? 'e' : `e_bd${i}`);
-  const propertyMVFilterAliases = propertyFilters.map((_, i) => `e_f${i}`);
-
-  // Build a filter value condition for a property MV self-join
-  const buildMVFilterCondition = (alias: string, filter: IChartEventFilter): string => {
-    const values = filter.value.map((v) => sqlstring.escape(String(v).trim()));
-    switch (filter.operator) {
-      case 'is':
-        return values.length === 1
-          ? `${alias}.property_value = ${values[0]}`
-          : `${alias}.property_value IN (${values.join(', ')})`;
-      case 'isNot':
-        return values.length === 1
-          ? `${alias}.property_value != ${values[0]}`
-          : `${alias}.property_value NOT IN (${values.join(', ')})`;
-      case 'contains':
-        return `${alias}.property_value LIKE ${sqlstring.escape(`%${String(filter.value[0]).trim()}%`)}`;
-      default:
-        return '1=1';
-    }
-  };
-
-  // Build self-join SQL clauses for property MV (reused in main query + CTEs)
-  const buildMVSelfJoins = (baseAlias: string = 'e'): string => {
-    let joins = '';
-    // Additional breakdown self-joins (index 1+ since 0 is the base table)
-    for (let i = 1; i < propertyBreakdowns.length; i++) {
-      const alias = propertyMVBreakdownAliases[i]!;
-      const propName = propertyBreakdowns[i]!.name.replace('properties.', '');
-      joins += ` JOIN ${propertyMVTable} ${alias} ON ${alias}.profile_id = ${baseAlias}.profile_id AND ${alias}.event_date = ${baseAlias}.event_date AND ${alias}.name = ${baseAlias}.name AND ${alias}.project_id = ${baseAlias}.project_id AND ${alias}.property_key = ${sqlstring.escape(propName)}`;
-    }
-    // Filter self-joins
-    for (let i = 0; i < propertyFilters.length; i++) {
-      const alias = propertyMVFilterAliases[i]!;
-      const filter = propertyFilters[i]!;
-      const propName = filter.name.replace('properties.', '');
-      joins += ` JOIN ${propertyMVTable} ${alias} ON ${alias}.profile_id = ${baseAlias}.profile_id AND ${alias}.event_date = ${baseAlias}.event_date AND ${alias}.name = ${baseAlias}.name AND ${alias}.project_id = ${baseAlias}.project_id AND ${alias}.property_key = ${sqlstring.escape(propName)} AND ${buildMVFilterCondition(alias, filter)}`;
-    }
-    return joins;
-  };
-
   if (useCohortMV) {
     sb.from = `${TABLE_NAMES.profile_event_summary_mv} e`;
-  } else if (usePropertyMV) {
-    sb.from = `${propertyMVTable} e`;
-
-    // Add self-joins for additional breakdowns + filters to main query
-    const mvJoins = buildMVSelfJoins();
-    if (mvJoins) {
-      sb.joins.mv_self = mvJoins.trim();
-    }
   }
 
   // Create CTEs for all cohorts (used by main query only)
@@ -566,18 +488,8 @@ export async function getChartSql({
   });
 
   // Common setup
-  // When using property MV self-join, property filters are handled via JOINs — exclude them from WHERE
-  const filtersForWhere = usePropertyMV
-    ? event.filters.filter((f) => !f.name.startsWith('properties.'))
-    : event.filters;
-  sb.where = getEventFiltersWhereClause(filtersForWhere, projectId);
+  sb.where = getEventFiltersWhereClause(event.filters, projectId);
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
-
-  // Filter base table to first breakdown property_key (after sb.where reassignment to avoid being wiped)
-  if (usePropertyMV) {
-    const firstPropName = propertyBreakdowns[0]!.name.replace('properties.', '');
-    sb.where.propertyKey = `e.property_key = ${sqlstring.escape(firstPropName)}`;
-  }
   sb.select.label_0 =
     event.name !== '*'
       ? `${sqlstring.escape(event.name)} as label_0`
@@ -688,9 +600,9 @@ export async function getChartSql({
     sb.joins[`cohort_${cohortId}`] = `LEFT ANY JOIN ${cohortCte} AS ${cohortAlias} ON ${cohortAlias}.profile_id = e.profile_id`;
   });
 
-  // When using any MV, swap column names and aggregate functions
-  const countExpr = useMV ? 'countMerge(e.event_count)' : 'count(*)';
-  const dateExpr = useMV ? 'toDateTime(e.event_date)' : 'created_at';
+  // When using cohort MV, swap column names and aggregate functions
+  const countExpr = useCohortMV ? 'countMerge(e.event_count)' : 'count(*)';
+  const dateExpr = useCohortMV ? 'toDateTime(e.event_date)' : 'created_at';
 
   sb.select.count = `${countExpr} as count`;
 
@@ -725,28 +637,21 @@ export async function getChartSql({
   sb.orderBy.date = 'date ASC';
 
   if (startDate) {
-    sb.where.startDate = useMV
+    sb.where.startDate = useCohortMV
       ? `event_date >= toDate('${formatClickhouseDate(startDate)}')`
       : `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`;
   }
 
   if (endDate) {
-    sb.where.endDate = useMV
+    sb.where.endDate = useCohortMV
       ? `event_date <= toDate('${formatClickhouseDate(endDate)}')`
       : `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
   }
 
-  // Helper: get the SELECT expression for a breakdown column
-  const getBreakdownPropertyExpr = (b: typeof breakdowns[0], index: number) => {
-    if (!usePropertyMV) return getSelectPropertyKey(b.name, projectId, b.cohortId, b.cohortId ? cohortMetadata.get(b.cohortId)?.name : undefined);
-    const alias = propertyMVBreakdownAliases[index] || `e_bd${index}`;
-    return `${alias}.property_value`;
-  };
-
   // Use CTE to define top breakdown values once, then reference in WHERE clause
   if (breakdowns.length > 0 && limit) {
     const breakdownSelects = breakdowns
-      .map((b, i) => getBreakdownPropertyExpr(b, i))
+      .map((b) => getSelectPropertyKey(b.name, projectId, b.cohortId, b.cohortId ? cohortMetadata.get(b.cohortId)?.name : undefined))
       .join(', ');
 
     // Build cohort JOINs for top_breakdowns CTE
@@ -756,35 +661,32 @@ export async function getChartSql({
       return buildInlineCohortJoin(cohortId, projectId, 'e', cohortMeta);
     }).join(' ');
 
-    // Determine data source: use MV, custom event CTE, or regular events table
+    // Determine data source: use cohort MV, custom event CTE, or regular events table
     const dataSource = useCohortMV
       ? TABLE_NAMES.profile_event_summary_mv
-      : usePropertyMV
-        ? TABLE_NAMES.profile_event_property_summary_mv
-        : customEvent ? 'custom_event_data' : TABLE_NAMES.events;
-    const orderByCount = useMV ? 'countMerge(e.event_count)' : 'count(*)';
+      : customEvent ? 'custom_event_data' : TABLE_NAMES.events;
+    const orderByCount = useCohortMV ? 'countMerge(e.event_count)' : 'count(*)';
 
     // Add top_breakdowns CTE using the builder
-    const mvJoinsForCte = usePropertyMV ? buildMVSelfJoins() : '';
     addCte(
       'top_breakdowns',
       `SELECT ${breakdownSelects}
-      FROM ${usePropertyMV ? `${propertyMVTable} AS e` : `${dataSource} AS e`}
-      ${mvJoinsForCte}${profilesJoinRef ? ` ${profilesJoinRef}` : ''}${cohortJoinsForTop ? ` ${cohortJoinsForTop}` : ''} ${getWhereWithoutBar()}
+      FROM ${dataSource} AS e
+      ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${cohortJoinsForTop ? `${cohortJoinsForTop} ` : ''}${getWhereWithoutBar()}
       GROUP BY ${breakdownSelects}
       ORDER BY ${orderByCount} DESC
       LIMIT ${limit}`,
     );
 
     // Filter main query to only include top breakdown values
-    const barSelects = breakdowns.map((b, i) => getBreakdownPropertyExpr(b, i)).join(',');
+    const barSelects = breakdowns.map((b) => getSelectPropertyKey(b.name, projectId, b.cohortId, b.cohortId ? cohortMetadata.get(b.cohortId)?.name : undefined)).join(',');
     sb.where.bar = `(${barSelects}) IN (SELECT * FROM top_breakdowns)`;
   }
 
   breakdowns.forEach((breakdown, index) => {
     // Breakdowns start at label_1 (label_0 is reserved for event name)
     const key = `label_${index + 1}`;
-    const selectKey = getBreakdownPropertyExpr(breakdown, index);
+    const selectKey = getSelectPropertyKey(breakdown.name, projectId, breakdown.cohortId, breakdown.cohortId ? cohortMetadata.get(breakdown.cohortId)?.name : undefined);
     sb.select[key] = `${selectKey} as ${key}`;
     sb.groupBy[key] = `${key}`;
   });
@@ -841,23 +743,21 @@ export async function getChartSql({
   if (breakdowns.length > 0) {
     const breakdownSelects = breakdowns
       .map((b, index) => {
-        const propertyKey = getBreakdownPropertyExpr(b, index);
+        const propertyKey = getSelectPropertyKey(b.name, projectId, b.cohortId, b.cohortId ? cohortMetadata.get(b.cohortId)?.name : undefined);
         return `${propertyKey} as breakdown_${index + 1}`;
       })
       .join(', ');
 
     const breakdownGroupBy = breakdowns
-      .map((_, index) => `breakdown_${index + 1}`)
+      .map((b, index) => `breakdown_${index + 1}`)
       .join(', ');
 
     const totalCountWhere = getWhereWithoutBar();
 
-    // Determine data source: use MV, custom event CTE, or regular events table
+    // Determine data source: use cohort MV, custom event CTE, or regular events table
     const dataSourceForBreakdown = useCohortMV
       ? TABLE_NAMES.profile_event_summary_mv
-      : usePropertyMV
-        ? TABLE_NAMES.profile_event_property_summary_mv
-        : customEvent ? 'custom_event_data' : TABLE_NAMES.events;
+      : customEvent ? 'custom_event_data' : TABLE_NAMES.events;
 
     // Build cohort JOINs for breakdown_totals CTE
     // NOTE: ClickHouse CTEs cannot reference other CTEs in JOINs, so we inline the subquery
@@ -866,20 +766,19 @@ export async function getChartSql({
       return buildInlineCohortJoin(cohortId, projectId, dataSourceForBreakdown, cohortMeta);
     }).join(' ');
 
-    const mvJoinsForBreakdownCte = usePropertyMV ? buildMVSelfJoins() : '';
     addCte(
       'breakdown_totals',
       `SELECT
         ${breakdownSelects},
-        uniq(${usePropertyMV ? 'e' : dataSourceForBreakdown}.profile_id) as total_count
-       FROM ${usePropertyMV ? `${propertyMVTable} e` : dataSourceForBreakdown}
-       ${mvJoinsForBreakdownCte}${profilesJoinRefForCTE ? ` ${profilesJoinRefForCTE}` : ''}${cohortJoinsForBreakdown ? ` ${cohortJoinsForBreakdown}` : ''} ${totalCountWhere}
+        uniq(${dataSourceForBreakdown}.profile_id) as total_count
+       FROM ${dataSourceForBreakdown}
+       ${profilesJoinRefForCTE ? `${profilesJoinRefForCTE} ` : ''}${cohortJoinsForBreakdown ? `${cohortJoinsForBreakdown} ` : ''}${totalCountWhere}
        GROUP BY ${breakdownGroupBy}`,
     );
 
     const joinConditions = breakdowns
       .map((b, index) => {
-        const propertyKey = getBreakdownPropertyExpr(b, index);
+        const propertyKey = getSelectPropertyKey(b.name, projectId, b.cohortId, b.cohortId ? cohortMetadata.get(b.cohortId)?.name : undefined);
         return `breakdown_totals.breakdown_${index + 1} = ${propertyKey}`;
       })
       .join(' AND ');
