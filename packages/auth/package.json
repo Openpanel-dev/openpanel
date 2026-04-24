@@ -12,11 +12,14 @@
     "@openpanel/validation": "workspace:^",
     "@oslojs/crypto": "^1.0.1",
     "@oslojs/encoding": "^1.1.0",
-    "arctic": "^2.3.0"
+    "@oslojs/otp": "^1.1.0",
+    "arctic": "^2.3.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "catalog:",
     "prisma": "^5.1.1",
     "typescript": "catalog:"

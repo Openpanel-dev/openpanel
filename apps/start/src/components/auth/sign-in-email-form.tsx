@@ -17,7 +17,11 @@ export function SignInEmailForm({ isLastUsed }: { isLastUsed?: boolean }) {
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInEmail.mutationOptions({
-      async onSuccess() {
+      async onSuccess(data) {
+        if (data.type === 'totp_required') {
+          window.location.href = '/verify';
+          return;
+        }
         toast.success('Successfully signed in');
         window.location.href = '/';
       },

@@ -1,7 +1,5 @@
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import FullPageLoadingState from '@/components/full-page-loading-state';
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
@@ -20,7 +18,7 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 
-export const Route = createFileRoute('/_app/$organizationId/profile/_tabs/')({
+export const Route = createFileRoute('/_app/$organizationId/account/_tabs/')({
   component: Component,
   pendingComponent: FullPageLoadingState,
 });
@@ -69,6 +67,12 @@ function Component() {
           <span className="title">Profile</span>
         </WidgetHead>
         <WidgetBody className="gap-4 col">
+          <InputWithLabel
+            label="Email"
+            value={user.email}
+            disabled
+            readOnly
+          />
           <InputWithLabel
             label="First name"
             {...register('firstName')}

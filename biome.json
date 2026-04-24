@@ -68,7 +68,8 @@
         "noAccumulatingSpread": "off",
         "noBarrelFile": "off",
         "noNamespaceImport": "off",
-        "useTopLevelRegex": "off"
+        "useTopLevelRegex": "off",
+        "noImgElement": "off"
       },
       "suspicious": {
         "noExplicitAny": "off",

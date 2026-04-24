@@ -41,7 +41,7 @@ function ProjectDashboard() {
   const settingsTabs = [
     { id: 'details', label: 'Details' },
     { id: 'events', label: 'Events' },
-    { id: 'clients', label: 'Clients' },
+    { id: 'clients', label: 'Clients / API keys' },
     { id: 'tracking', label: 'Tracking script' },
     { id: 'mcp', label: 'MCP' },
     { id: 'widgets', label: 'Widgets' },

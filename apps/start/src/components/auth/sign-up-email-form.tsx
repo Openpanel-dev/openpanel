@@ -21,7 +21,7 @@ export function SignUpEmailForm({
     trpc.auth.signUpEmail.mutationOptions({
       async onSuccess() {
         toast.success('Successfully signed up');
-        window.location.href = '/onboarding/project';
+        window.location.href = '/';
       },
       onError(error) {
         toast.error(error.message);
