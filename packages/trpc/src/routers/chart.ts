@@ -945,6 +945,7 @@ export const chartRouter = createTRPCRouter({
         timezone,
         additionalSelects: breakdownSelects,
         additionalGroupBy: breakdownGroupBy,
+        group,
       });
 
       // Check for profile filters and add profile join if needed
