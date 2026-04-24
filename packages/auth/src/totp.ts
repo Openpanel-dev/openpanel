@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 import { createTOTPKeyURI, verifyTOTPWithGracePeriod } from '@oslojs/otp';
 import {
-  decodeBase32,
-  encodeBase32NoPadding,
+  decodeBase32IgnorePadding,
+  encodeBase32UpperCaseNoPadding,
 } from '@oslojs/encoding';
 import qrcode from 'qrcode';
 import { hashPassword, verifyPasswordHash } from './password';
@@ -10,13 +10,15 @@ import { hashPassword, verifyPasswordHash } from './password';
 const ISSUER = 'OpenPanel';
 const PERIOD_SECONDS = 30;
 const DIGITS = 6;
-// ±30s grace — tolerates small clock drift between the server and the user's device
-const GRACE_PERIOD_SECONDS = 30;
+// ±60s grace — ~2 windows on each side. Covers clock drift and the case where
+// an authenticator (e.g. 1Password autofill) emits a code that rolls over
+// between fill and submit.
+const GRACE_PERIOD_SECONDS = 60;
 
 export function generateTotpSecret(): string {
   const bytes = new Uint8Array(20);
   crypto.getRandomValues(bytes);
-  return encodeBase32NoPadding(bytes);
+  return encodeBase32UpperCaseNoPadding(bytes);
 }
 
 export function buildOtpauthUrl({
@@ -26,7 +28,7 @@ export function buildOtpauthUrl({
   secret: string;
   accountName: string;
 }): string {
-  const key = decodeBase32(secret);
+  const key = decodeBase32IgnorePadding(secret);
   return createTOTPKeyURI(ISSUER, accountName, key, PERIOD_SECONDS, DIGITS);
 }
 
@@ -35,11 +37,13 @@ export async function generateQrDataUrl(otpauthUrl: string): Promise<string> {
 }
 
 export function verifyTotpCode(secret: string, code: string): boolean {
-  const normalized = code.replace(/\s+/g, '');
-  if (!/^\d{6}$/.test(normalized)) {
+  // Strip any non-digits — some authenticators emit codes like "123 456" or
+  // "123-456"; paste-from-clipboard can also carry whitespace.
+  const normalized = code.replace(/\D/g, '');
+  if (normalized.length !== DIGITS) {
     return false;
   }
-  const key = decodeBase32(secret);
+  const key = decodeBase32IgnorePadding(secret);
   return verifyTOTPWithGracePeriod(
     key,
     PERIOD_SECONDS,

@@ -337,18 +337,33 @@ export const authRouter = createTRPCRouter({
     }),
 
   totpStatus: protectedProcedure.query(async ({ ctx }) => {
-    const totp = await db.userTotp.findUnique({
-      where: { userId: ctx.session.userId! },
-    });
+    const userId = ctx.session.userId!;
+    const [totp, emailAccount] = await Promise.all([
+      db.userTotp.findUnique({ where: { userId } }),
+      db.account.findFirst({
+        where: { userId, provider: 'email' },
+        select: { id: true },
+      }),
+    ]);
     return {
       enabled: Boolean(totp?.enabledAt),
       enabledAt: totp?.enabledAt ?? null,
       remainingRecoveryCodes: totp?.recoveryCodes.length ?? 0,
+      hasEmailProvider: Boolean(emailAccount),
     };
   }),
 
   totpSetup: protectedProcedure.mutation(async ({ ctx }) => {
     const userId = ctx.session.userId!;
+    const emailAccount = await db.account.findFirst({
+      where: { userId, provider: 'email' },
+      select: { id: true },
+    });
+    if (!emailAccount) {
+      throw TRPCAccessError(
+        'Two-factor authentication is only available for email/password sign-ins. Your account uses a social provider, which handles 2FA on its end.',
+      );
+    }
     const existing = await db.userTotp.findUnique({ where: { userId } });
     if (existing?.enabledAt) {
       throw TRPCAccessError(

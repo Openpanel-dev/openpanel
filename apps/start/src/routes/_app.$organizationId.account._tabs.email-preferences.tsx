@@ -33,7 +33,7 @@ function buildCategoryDefaults(
 }
 
 export const Route = createFileRoute(
-  '/_app/account/_tabs/email-preferences',
+  '/_app/$organizationId/account/_tabs/email-preferences',
 )({
   component: Component,
   pendingComponent: FullPageLoadingState,

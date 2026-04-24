@@ -19,7 +19,7 @@ export function SignInEmailForm({ isLastUsed }: { isLastUsed?: boolean }) {
     trpc.auth.signInEmail.mutationOptions({
       async onSuccess(data) {
         if (data.type === 'totp_required') {
-          window.location.href = '/login/verify';
+          window.location.href = '/verify';
           return;
         }
         toast.success('Successfully signed in');

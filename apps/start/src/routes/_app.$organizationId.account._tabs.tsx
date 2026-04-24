@@ -5,13 +5,14 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
 import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
 
-export const Route = createFileRoute('/_app/account/_tabs')({
+export const Route = createFileRoute('/_app/$organizationId/account/_tabs')({
   component: Component,
   pendingComponent: FullPageLoadingState,
 });
 
 function Component() {
   const router = useRouter();
+  const { organizationId } = Route.useParams();
   const { activeTab, tabs } = usePageTabs([
     { id: 'account', label: 'Profile' },
     { id: 'email-preferences', label: 'Email preferences' },
@@ -20,7 +21,10 @@ function Component() {
 
   const handleTabChange = (tabId: string) => {
     if (tabId === 'account') {
-      router.navigate({ to: '/account' });
+      router.navigate({
+        to: '/$organizationId/account',
+        params: { organizationId },
+      });
       return;
     }
     router.navigate({

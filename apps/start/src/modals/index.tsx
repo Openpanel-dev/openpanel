@@ -14,6 +14,7 @@ import Confirm from './confirm';
 import CreateInvite from './create-invite';
 import DateRangerPicker from './date-ranger-picker';
 import DateTimePicker from './date-time-picker';
+import DisableTwoFactor from './disable-two-factor';
 import EditClient from './edit-client';
 import EditCohort from './edit-cohort';
 import EditDashboard from './edit-dashboard';
@@ -27,9 +28,11 @@ import Instructions from './Instructions';
 import OverviewChartDetails from './overview-chart-details';
 import OverviewFilters from './overview-filters';
 import PageDetails from './page-details';
+import RegenerateRecoveryCodes from './regenerate-recovery-codes';
 import RequestPasswordReset from './request-reset-password';
 import SaveReport from './save-report';
 import SelectBillingPlan from './select-billing-plan';
+import SetupTwoFactor from './setup-two-factor';
 import ShareDashboardModal from './share-dashboard-modal';
 import ShareOverviewModal from './share-overview-modal';
 import ShareReportModal from './share-report-modal';
@@ -75,6 +78,9 @@ const modals = {
   CreateInvite,
   SelectBillingPlan,
   BillingSuccess,
+  SetupTwoFactor,
+  DisableTwoFactor,
+  RegenerateRecoveryCodes,
 };
 
 export const {

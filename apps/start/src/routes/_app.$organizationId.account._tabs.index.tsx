@@ -18,7 +18,7 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 
-export const Route = createFileRoute('/_app/account/_tabs/')({
+export const Route = createFileRoute('/_app/$organizationId/account/_tabs/')({
   component: Component,
   pendingComponent: FullPageLoadingState,
 });
