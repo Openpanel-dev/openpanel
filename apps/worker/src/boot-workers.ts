@@ -28,6 +28,11 @@ import { miscJob } from './jobs/misc';
 import { notificationJob } from './jobs/notification';
 import { sessionsJob } from './jobs/sessions';
 import { eventsGroupJobDuration } from './metrics';
+import { setShuttingDown } from './utils/graceful-shutdown';
+import {
+  enableEventsHeartbeat,
+  markEventsActivity,
+} from './utils/worker-heartbeat';
 import { logger } from './utils/logger';
 
 const workerOptions: WorkerOptions = {
@@ -117,6 +122,10 @@ export function bootWorkers() {
     }
   }
 
+  if (eventQueuesToStart.length > 0) {
+    enableEventsHeartbeat();
+  }
+
   for (const index of eventQueuesToStart) {
     const queue = eventsGroupQueues[index];
     if (!queue) {
@@ -140,6 +149,13 @@ export function bootWorkers() {
         return await incomingEvent(job.data);
       },
     });
+
+    // Consumer-loop heartbeat for the readiness probe. `completed` fires after
+    // each processed job; `drained` fires on each poll cycle that finds the
+    // queue empty. Together they refresh the timestamp every poll cycle while
+    // the consumer is alive — busy or idle.
+    worker.on('completed', markEventsActivity);
+    worker.on('drained', markEventsActivity);
 
     worker.run();
     workers.push(worker);
@@ -337,6 +353,7 @@ export function bootWorkers() {
   ['uncaughtException', 'unhandledRejection', 'SIGTERM', 'SIGINT'].forEach(
     (evt) => {
       process.on(evt, (code) => {
+        setShuttingDown(true);
         exitHandler(evt, code);
       });
     }
