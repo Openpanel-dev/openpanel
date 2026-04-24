@@ -393,12 +393,19 @@ export const zEmailConfig = z.object({
 });
 export type IEmailConfig = z.infer<typeof zEmailConfig>;
 
+export const zHermesConfig = z.object({
+  type: z.literal('hermes'),
+  webhookUrl: z.string().url(),
+});
+export type IHermesConfig = z.infer<typeof zHermesConfig>;
+
 export type IIntegrationConfig =
   | ISlackConfig
   | IDiscordConfig
   | IWebhookConfig
   | IAppConfig
-  | IEmailConfig;
+  | IEmailConfig
+  | IHermesConfig;
 
 const zCreateIntegration = z.object({
   id: z.string().optional(),
@@ -417,6 +424,12 @@ export const zCreateWebhookIntegration = zCreateIntegration.merge(
 export const zCreateDiscordIntegration = zCreateIntegration.merge(
   z.object({
     config: zDiscordConfig,
+  }),
+);
+
+export const zCreateHermesIntegration = zCreateIntegration.merge(
+  z.object({
+    config: zHermesConfig,
   }),
 );
 
@@ -464,11 +477,24 @@ export type INotificationRuleAnomalyConfig = z.infer<
   typeof zNotificationRuleAnomalyConfig
 >;
 
+export const zNotificationRuleFlowConfig = z.object({
+  type: z.literal('flow'),
+  triggerEvent: z.string().min(1),
+  triggerFilters: z.array(zChartEventFilter).default([]),
+  delayMinutes: z.number().int().min(0).max(60 * 24 * 30),
+  exitEvent: z.string().optional(),
+});
+
+export type INotificationRuleFlowConfig = z.infer<
+  typeof zNotificationRuleFlowConfig
+>;
+
 export const zNotificationRuleConfig = z.discriminatedUnion('type', [
   zNotificationRuleEventConfig,
   zNotificationRuleFunnelConfig,
   zNotificationRuleThresholdConfig,
   zNotificationRuleAnomalyConfig,
+  zNotificationRuleFlowConfig,
 ]);
 
 export type INotificationRuleConfig = z.infer<typeof zNotificationRuleConfig>;

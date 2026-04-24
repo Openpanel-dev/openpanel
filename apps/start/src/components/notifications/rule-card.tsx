@@ -5,7 +5,7 @@ import type { NotificationRule } from '@openpanel/db';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAppParams } from '@/hooks/use-app-params';
-import { FilterIcon } from 'lucide-react';
+import { CopyIcon, FilterIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { ColorSquare } from '../color-square';
 import {
@@ -140,14 +140,67 @@ export function RuleCard({
           </div>
         );
       }
+      case 'flow': {
+        const fc = rule.config as {
+          triggerEvent: string;
+          delayMinutes: number;
+          exitEvent?: string;
+          triggerFilters?: unknown[];
+        };
+        const delayLabel =
+          fc.delayMinutes >= 1440
+            ? `${Math.round(fc.delayMinutes / 1440)}d`
+            : fc.delayMinutes >= 60
+              ? `${Math.round(fc.delayMinutes / 60)}h`
+              : `${fc.delayMinutes}m`;
+        return (
+          <div className="row gap-2 items-baseline flex-wrap">
+            <div>Fire</div>
+            <Badge variant="secondary">{delayLabel}</Badge>
+            <div>after</div>
+            <Badge variant="outline">
+              {fc.triggerEvent}
+              {Boolean(fc.triggerFilters?.length) && (
+                <FilterIcon className="size-2 ml-1" />
+              )}
+            </Badge>
+            {fc.exitEvent && (
+              <>
+                <div>unless user does</div>
+                <Badge variant="outline">{fc.exitEvent}</Badge>
+              </>
+            )}
+          </div>
+        );
+      }
     }
   };
+  const isFlowRule = rule.config.type === 'flow';
   return (
     <div className="card">
       <IntegrationCardHeader>
         <div className="title">{rule.name}</div>
       </IntegrationCardHeader>
-      <div className="p-4 col gap-2">{renderConfig()}</div>
+      <div className="p-4 col gap-2">
+        {renderConfig()}
+        {isFlowRule && (
+          <div className="row gap-2 items-center mt-2 text-xs text-muted-foreground">
+            <span>Rule ID:</span>
+            <code className="font-mono bg-def-100 rounded px-1.5 py-0.5">
+              {rule.id}
+            </code>
+            <Button
+              size="icon"
+              variant="ghost"
+              icon={CopyIcon}
+              onClick={() => {
+                navigator.clipboard.writeText(rule.id);
+                toast.success('Rule ID copied');
+              }}
+            />
+          </div>
+        )}
+      </div>
       <IntegrationCardFooter className="row gap-2 justify-between items-center">
         <div className="row gap-2 flex-wrap">
           {rule.integrations.map((integration) => (

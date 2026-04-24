@@ -39,6 +39,11 @@ export async function bootCron() {
       type: 'customAlerts',
       pattern: '*/15 * * * *',
     },
+    {
+      name: 'hermesFlows',
+      type: 'hermesFlows',
+      pattern: '*/5 * * * *',
+    },
   ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {

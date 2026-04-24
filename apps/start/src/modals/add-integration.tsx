@@ -1,6 +1,7 @@
 import { useTRPC } from '@/integrations/trpc/react';
 
 import { DiscordIntegrationForm } from '@/components/integrations/forms/discord-integration';
+import { HermesIntegrationForm } from '@/components/integrations/forms/hermes-integration';
 import { SlackIntegrationForm } from '@/components/integrations/forms/slack-integration';
 import { WebhookIntegrationForm } from '@/components/integrations/forms/webhook-integration';
 import { IntegrationCardContent } from '@/components/integrations/integration-card';
@@ -86,6 +87,13 @@ export default function AddIntegration(props: Props) {
       case 'slack':
         return (
           <SlackIntegrationForm
+            defaultValues={query.data}
+            onSuccess={handleSuccess}
+          />
+        );
+      case 'hermes':
+        return (
+          <HermesIntegrationForm
             defaultValues={query.data}
             onSuccess={handleSuccess}
           />

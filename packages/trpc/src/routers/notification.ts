@@ -4,11 +4,15 @@ import {
   APP_NOTIFICATION_INTEGRATION_ID,
   BASE_INTEGRATIONS,
   EMAIL_NOTIFICATION_INTEGRATION_ID,
+  countFlowRuleMatches,
   db,
   getNotificationRulesByProjectId,
   isBaseIntegration,
 } from '@openpanel/db';
-import { zCreateNotificationRule } from '@openpanel/validation';
+import {
+  zCreateNotificationRule,
+  zNotificationRuleFlowConfig,
+} from '@openpanel/validation';
 
 import { getProjectAccess } from '../access';
 import { TRPCAccessError } from '../errors';
@@ -124,6 +128,30 @@ export const notificationRouter = createTRPCRouter({
           template: input.template || null,
         },
       });
+    }),
+  previewFlowRule: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        config: zNotificationRuleFlowConfig,
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
+      const count = await countFlowRuleMatches({
+        projectId: input.projectId,
+        config: input.config,
+      });
+
+      return { count };
     }),
   deleteRule: protectedProcedure
     .input(z.object({ id: z.string() }))

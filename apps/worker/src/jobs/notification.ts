@@ -65,6 +65,13 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
             ),
           });
         }
+
+        case 'hermes': {
+          // Hermes flow rules are dispatched in bulk by cron.hermes-flows.ts.
+          // If this integration is attached to a non-flow rule, there's no
+          // per-notification dispatch — silently skip.
+          return;
+        }
       }
     }
   }

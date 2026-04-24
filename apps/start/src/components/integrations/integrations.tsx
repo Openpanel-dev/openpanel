@@ -1,5 +1,5 @@
 import type { IIntegrationConfig } from '@openpanel/validation';
-import { WebhookIcon } from 'lucide-react';
+import { BellRingIcon, WebhookIcon } from 'lucide-react';
 import {
   IntegrationCardLogo,
   IntegrationCardLogoImage,
@@ -43,6 +43,17 @@ export const INTEGRATIONS: {
     icon: (
       <IntegrationCardLogo className="bg-foreground text-background">
         <WebhookIcon className="size-10" />
+      </IntegrationCardLogo>
+    ),
+  },
+  {
+    type: 'hermes',
+    name: 'Hermes',
+    description:
+      'Send push notifications via Hermes when flow rules match. Pair with a Flow notification rule.',
+    icon: (
+      <IntegrationCardLogo className="bg-foreground text-background">
+        <BellRingIcon className="size-10" />
       </IntegrationCardLogo>
     ),
   },
