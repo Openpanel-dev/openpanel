@@ -1,8 +1,8 @@
 import {
   Arctic,
   buildOtpauthUrl,
-  consumeRecoveryCode,
   COOKIE_OPTIONS,
+  consumeRecoveryCode,
   createSession,
   deleteSessionTokenCookie,
   generateQrDataUrl,
@@ -248,7 +248,7 @@ export const authRouter = createTRPCRouter({
             id: challengeId,
             userId: user.id,
             expiresAt: new Date(
-              Date.now() + TWO_FACTOR_CHALLENGE_TTL_SECONDS * 1000,
+              Date.now() + TWO_FACTOR_CHALLENGE_TTL_SECONDS * 1000
             ),
           },
         });
@@ -361,13 +361,13 @@ export const authRouter = createTRPCRouter({
     });
     if (!emailAccount) {
       throw TRPCAccessError(
-        'Two-factor authentication is only available for email/password sign-ins. Your account uses a social provider, which handles 2FA on its end.',
+        'Two-factor authentication is only available for email/password sign-ins. Your account uses a social provider, which handles 2FA on its end.'
       );
     }
     const existing = await db.userTotp.findUnique({ where: { userId } });
     if (existing?.enabledAt) {
       throw TRPCAccessError(
-        'Two-factor is already enabled. Disable it first to re-configure.',
+        'Two-factor is already enabled. Disable it first to re-configure.'
       );
     }
 

@@ -52,8 +52,8 @@ function DisabledView({ hasEmailProvider }: { hasEmailProvider: boolean }) {
           <span>Two-factor authentication is not available.</span>
         </div>
         <p className="text-muted-foreground leading-normal">
-          Your account signs in with Google or GitHub, which already provide
-          two-factor authentication on their side. Enable it in your provider's
+          Your account signs in with Google or GitHub, which handle two-factor
+          authentication in their account settings. Enable it in your provider's
           security settings.
         </p>
       </div>
