@@ -15,7 +15,7 @@ OpenPanel ships with a Caddy container that handles TLS and routing. It's two li
 
 The bundled Caddy config is deliberately small. Everything else on this page is a translation of this into your proxy of choice:
 
-```caddy title="self-hosting/caddy/Caddyfile.template"
+```text title="self-hosting/caddy/Caddyfile.template"
 $DOMAIN_NAME {$SSL_CONFIG
     encode gzip
 
@@ -111,7 +111,7 @@ If you're terminating TLS on a cloud load balancer or another VM and sending pla
 
 Fix on the Caddy side — tell it to trust the upstream's `X-Forwarded-*` headers:
 
-```caddy
+```
 {
     auto_https off
     admin off
