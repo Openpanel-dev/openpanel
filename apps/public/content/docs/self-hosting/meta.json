@@ -7,6 +7,7 @@
     "[Deploy with Coolify](/docs/self-hosting/deploy-coolify)",
     "[Deploy with Dokploy](/docs/self-hosting/deploy-dokploy)",
     "[Deploy on Kubernetes](/docs/self-hosting/deploy-kubernetes)",
+    "[Reverse proxy setup](/docs/self-hosting/reverse-proxy)",
     "[Environment Variables](/docs/self-hosting/environment-variables)",
     "[High volume setup](/docs/self-hosting/high-volume)",
     "supporter-access-latest-docker-images",

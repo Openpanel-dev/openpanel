@@ -344,17 +344,7 @@ If health checks are failing:
 
 ## Using Your Own Reverse Proxy
 
-If you're using your own reverse proxy (like Nginx or Traefik), you can disable the included Caddy proxy by commenting it out in `docker-compose.yml`:
-
-```yaml
-# op-proxy:
-#   image: caddy:2-alpine
-#   ...
-```
-
-Then configure your reverse proxy to forward requests:
-- `/api/*` → `op-api:3000`
-- `/*` → `op-dashboard:3000`
+If you want to use NGINX, Traefik, or another reverse proxy instead of the bundled Caddy — or put a TLS terminator upstream of Caddy — see the dedicated [Reverse proxy setup](/docs/self-hosting/reverse-proxy) guide. It covers the working NGINX config, the `Connection: upgrade` SSR-break gotcha, and the WebSocket upgrade headers required for the Realtime view.
 
 ## Next Steps
 

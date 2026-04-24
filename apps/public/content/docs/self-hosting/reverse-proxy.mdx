@@ -1,0 +1,185 @@
+---
+title: Reverse proxy setup
+description: Run OpenPanel behind your own reverse proxy, or upstream of the bundled Caddy. Covers routing, WebSockets, and the gotchas that bite every time.
+---
+
+OpenPanel ships with a Caddy container that handles TLS and routing. It's two lines of config and Just Works. If you prefer NGINX, Traefik, HAProxy, or you're putting another TLS terminator in front of Caddy, this page covers how and — more importantly — what will break along the way.
+
+## When do you need this?
+
+- **Replacing Caddy with NGINX/Traefik/HAProxy** — jump to [Your own reverse proxy](#your-own-reverse-proxy).
+- **Putting a TLS terminator upstream of the bundled Caddy** (cloud LB, edge VM) — see [TLS terminated upstream of Caddy](#tls-terminated-upstream-of-caddy).
+- **Just using the bundled Caddy** — you don't need this page. `./setup` + `./start` and you're done.
+
+## How the bundled Caddy does it
+
+The bundled Caddy config is deliberately small. Everything else on this page is a translation of this into your proxy of choice:
+
+```caddy title="self-hosting/caddy/Caddyfile.template"
+$DOMAIN_NAME {$SSL_CONFIG
+    encode gzip
+
+    handle_path /api* {
+        reverse_proxy op-api:3000
+    }
+
+    reverse_proxy /* op-dashboard:3000
+}
+```
+
+That's it. Two rules:
+
+- `/api/*` → `op-api:3000` with the `/api` prefix stripped
+- `/*` → `op-dashboard:3000`
+
+**The API handles CORS itself** — your proxy doesn't need to add `Access-Control-*` headers, and there's no special `/track` route. Everything under `/api/` (including `/api/track`, `/api/live/*`, `/api/export`, …) hits the API container.
+
+## Your own reverse proxy
+
+The simplest way to plug in your own proxy is to run it as another container on the same Docker network: comment out `op-proxy` in `docker-compose.yml`, add your proxy service, and target `op-api:3000` / `op-dashboard:3000` by service name — same as Caddy does. No host-port binding needed on the app containers.
+
+Every snippet below is a **template**, not a finished config. TLS, logging, rate limiting, body size limits, and whatever your deployment actually needs — that's on you.
+
+### NGINX
+
+```nginx
+# Forward Connection: upgrade only when the client asked for an upgrade.
+# Unconditional "upgrade" breaks the dashboard's SSR — see gotchas.
+map $http_upgrade $connection_upgrade {
+    default keep-alive;
+    websocket upgrade;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name openpanel.example.com;
+
+    # ssl_certificate / ssl_certificate_key — your TLS setup here
+
+    # /api/* → API (prefix stripped)
+    location /api/ {
+        proxy_pass         http://op-api:3000/;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade           $http_upgrade;
+        proxy_set_header   Connection        $connection_upgrade;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 24h;  # keep idle /api/live/* WebSockets alive
+    }
+
+    # /* → dashboard
+    location / {
+        proxy_pass         http://op-dashboard:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade           $http_upgrade;
+        proxy_set_header   Connection        $connection_upgrade;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Caddy does this in two lines. NGINX needs a lot more boilerplate to land on the same behaviour — the `map` block for conditional upgrades, explicit `X-Forwarded-*` headers, a long `proxy_read_timeout` for WebSockets. See [gotchas](#gotchas).
+
+### Traefik
+
+```yaml
+op-api:
+  labels:
+    - traefik.enable=true
+    - traefik.http.routers.op-api.rule=Host(`openpanel.example.com`) && PathPrefix(`/api`)
+    - traefik.http.middlewares.op-api-strip.stripprefix.prefixes=/api
+    - traefik.http.routers.op-api.middlewares=op-api-strip
+    - traefik.http.services.op-api.loadbalancer.server.port=3000
+
+op-dashboard:
+  labels:
+    - traefik.enable=true
+    - traefik.http.routers.op-dashboard.rule=Host(`openpanel.example.com`)
+    - traefik.http.services.op-dashboard.loadbalancer.server.port=3000
+```
+
+Traefik forwards WebSocket upgrades by default, so the Realtime view works without extra config.
+
+## TLS terminated upstream of Caddy
+
+If you're terminating TLS on a cloud load balancer or another VM and sending plain HTTP to the bundled Caddy, you'll hit mixed-content errors on the login page — the dashboard thinks it's on HTTP because the inner Caddy doesn't see the forwarded scheme.
+
+Fix on the Caddy side — tell it to trust the upstream's `X-Forwarded-*` headers:
+
+```caddy
+{
+    auto_https off
+    admin off
+    servers {
+        trusted_proxies static private_ranges
+    }
+}
+```
+
+`private_ranges` trusts RFC1918 addresses — the usual case for an LB sitting in the same VPC. Without this, Caddy ignores `X-Forwarded-Proto: https` from the upstream and the dashboard builds `http://` URLs.
+
+On the upstream terminator, forward the scheme:
+
+```
+X-Forwarded-Proto: https
+```
+
+And set the public URL in `.env` so the dashboard + API use the right scheme everywhere:
+
+```bash title=".env"
+DASHBOARD_URL=https://openpanel.example.com
+API_URL=https://openpanel.example.com/api
+CORS_ORIGIN=https://openpanel.example.com
+```
+
+## Gotchas
+
+These are the things that actually bite. The ones that make you stare at "Something went wrong" for an hour.
+
+### `Connection: upgrade` can break dashboard SSR
+
+Unconditionally forwarding `Connection: upgrade` on every request — a common copy-paste for "add WebSocket support" — breaks the dashboard's server-side rendering with an opaque `fetch failed`.
+
+**Why:** the dashboard does server-side tRPC calls to the API during SSR. Node's `undici` rejects any `fetch()` carrying `Connection: upgrade` with `UND_ERR_INVALID_ARG` → `TypeError: fetch failed` → browser shows "Something went wrong / fetch failed".
+
+**Fix:** only forward the upgrade header when the client asked for one. The NGINX snippet above does this with the `map $http_upgrade $connection_upgrade` block. Caddy and Traefik handle this correctly out of the box.
+
+### WebSocket upgrade required for `/api/live/*`
+
+The Realtime view and live notifications use WebSockets at `/api/live/events/:projectId` and `/api/live/notifications/:projectId`. If your proxy drops the `Upgrade` / `Connection` headers, the page loads fine (from an SSR snapshot) but never updates. DevTools → Network → WS will show the failed connections.
+
+For NGINX you need both:
+
+```nginx
+proxy_set_header Upgrade    $http_upgrade;
+proxy_set_header Connection $connection_upgrade;
+proxy_read_timeout          24h;
+```
+
+The long `proxy_read_timeout` stops the proxy from closing idle connections between events.
+
+### CORS is handled by the API — don't re-add it in the proxy
+
+The API handles CORS dynamically per-path (dashboard routes are origin-locked; `/api/track` is permissive). If your proxy also adds `Access-Control-Allow-Origin: *` headers, browsers will see two headers and reject the response. Let the API do it.
+
+### Mixed-content behind an upstream TLS terminator
+
+See [TLS terminated upstream of Caddy](#tls-terminated-upstream-of-caddy). Short version: `trusted_proxies` on the inner Caddy, `X-Forwarded-Proto: https` from the upstream, `DASHBOARD_URL=https://...` in `.env`.
+
+### SDK `apiUrl` must match what the browser loads
+
+Whatever your final public URL is, the SDK `apiUrl` has to match — including the `/api` path:
+
+```ts
+new OpenPanel({
+  apiUrl: 'https://openpanel.example.com/api',
+  clientId: 'YOUR_CLIENT_ID',
+});
+```
+
+See [Always use correct API URL](/docs/self-hosting/self-hosting#always-use-correct-api-url).
