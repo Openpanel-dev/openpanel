@@ -178,27 +178,30 @@ const updatePackageJsonForRelease = (
 };
 
 const searchAndReplace = (path: string, search: RegExp, replace: string) => {
-  const files = fs.readdirSync(path);
-  for (const file of files) {
-    const fullpath = join(path, file);
-    if (file === 'node_modules') {
+  const entries = fs.readdirSync(path, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name === 'node_modules') {
       continue;
     }
-    if (file.includes('.')) {
-      const content = fs.readFileSync(fullpath, {
+    const fullpath = join(path, entry.name);
+    if (entry.isDirectory()) {
+      searchAndReplace(fullpath, search, replace);
+      continue;
+    }
+    if (!entry.isFile()) {
+      continue;
+    }
+    const content = fs.readFileSync(fullpath, {
+      encoding: 'utf-8',
+    });
+
+    const match = content.match(search);
+    if (match) {
+      console.log(`✏️ Will replace ${search} with ${replace} in ${entry.name}`);
+      const newContent = content.replaceAll(search, replace);
+      fs.writeFileSync(fullpath, newContent, {
         encoding: 'utf-8',
       });
-
-      const match = content.match(search);
-      if (match) {
-        console.log(`✏️ Will replace ${search} with ${replace} in ${file}`);
-        const newContent = content.replaceAll(search, replace);
-        fs.writeFileSync(fullpath, newContent, {
-          encoding: 'utf-8',
-        });
-      }
-    } else {
-      searchAndReplace(fullpath, search, replace);
     }
   }
 };
