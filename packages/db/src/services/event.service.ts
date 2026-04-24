@@ -604,7 +604,12 @@ export async function getEventList(options: GetEventListOptions) {
   }
 
   if (profileId) {
-    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND device_id != '' AND profile_id = ${sqlstring.escape(profileId)} group by did) OR profile_id = ${sqlstring.escape(profileId)})`;
+    // Identity stitching: pull pre-identification anonymous events from devices
+    // this profile has used, plus the profile's own identified events.
+    // Anonymous events have profile_id = device_id (see event.service.ts:357);
+    // the guard prevents leaking another user's identified events when a
+    // device_id collides (NAT, shared UA, server-side senders).
+    sb.where.deviceId = `((device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND device_id != '' AND profile_id = ${sqlstring.escape(profileId)} group by did) AND profile_id = device_id) OR profile_id = ${sqlstring.escape(profileId)})`;
   }
 
   if (sessionId) {
