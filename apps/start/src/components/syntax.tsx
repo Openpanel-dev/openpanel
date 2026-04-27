@@ -1,10 +1,10 @@
 import { CopyIcon } from 'lucide-react';
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
-import bash from 'react-syntax-highlighter/dist/cjs/languages/hljs/bash';
-import json from 'react-syntax-highlighter/dist/cjs/languages/hljs/json';
-import markdown from 'react-syntax-highlighter/dist/cjs/languages/hljs/markdown';
-import ts from 'react-syntax-highlighter/dist/cjs/languages/hljs/typescript';
-import docco from 'react-syntax-highlighter/dist/cjs/styles/hljs/vs2015';
+import bash from 'react-syntax-highlighter/dist/esm/languages/hljs/bash';
+import json from 'react-syntax-highlighter/dist/esm/languages/hljs/json';
+import markdown from 'react-syntax-highlighter/dist/esm/languages/hljs/markdown';
+import ts from 'react-syntax-highlighter/dist/esm/languages/hljs/typescript';
+import docco from 'react-syntax-highlighter/dist/esm/styles/hljs/vs2015';
 import { clipboard } from '@/utils/clipboard';
 import { cn } from '@/utils/cn';
 

@@ -29,6 +29,9 @@ if (process.env.NITRO) {
 
 const config = defineConfig({
   plugins,
+  ssr: {
+    noExternal: ['react-syntax-highlighter', 'lowlight', 'highlight.js'],
+  },
 });
 
 export default wrapVinxiConfigWithSentry(config, {
