@@ -5,6 +5,7 @@ import { FeatureCardContainer } from '@/components/feature-card';
 import { SectionHeader } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { API_URL } from '@/lib/api-url';
 import { cn } from '@/lib/utils';
 import {
   AlertCircle,
@@ -113,7 +114,7 @@ export default function SiteCheckerPage() {
 
     try {
       const response = await fetch(
-        `/api/tools/site-checker?url=${encodeURIComponent(url)}`,
+        `${API_URL}/tools/site-checker?url=${encodeURIComponent(url)}`,
       );
       const data = await response.json();
 

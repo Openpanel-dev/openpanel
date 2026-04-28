@@ -55,6 +55,7 @@ import mcpRouter from './routes/mcp.router';
 import miscRouter from './routes/misc.router';
 import oauthRouter from './routes/oauth-callback.router';
 import profileRouter from './routes/profile.router';
+import toolsRouter from './routes/tools.router';
 import trackRouter from './routes/track.router';
 import webhookRouter from './routes/webhook.router';
 import { HttpError, normalizeError } from './utils/errors';
@@ -359,6 +360,7 @@ export async function buildApp(
     instance.register(insightsRouter, { prefix: '/insights' });
     instance.register(trackRouter, { prefix: '/track' });
     instance.register(manageRouter, { prefix: '/manage' });
+    instance.register(toolsRouter, { prefix: '/tools' });
 
     instance.get('/healthcheck', { schema: { hide: true } }, healthcheck);
     instance.get('/healthz/live', { schema: { hide: true } }, liveness);

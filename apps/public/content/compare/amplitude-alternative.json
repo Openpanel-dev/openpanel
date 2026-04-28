@@ -363,38 +363,38 @@
   },
   "migration": {
     "title": "Migrating from Amplitude to OpenPanel",
-    "intro": "Switching from Amplitude to OpenPanel is straightforward. The event tracking APIs are similar, and you can run both tools in parallel during transition.",
+    "intro": "Switching from Amplitude to OpenPanel is mostly a find-and-replace job. The two SDKs use the same event-based model, so most calls map 1-to-1 with no logic changes. Run both tools in parallel for a week to validate data, then remove the Amplitude SDK. Most teams ship the swap in an afternoon.",
     "difficulty": "easy",
     "estimated_time": "2-4 hours",
     "steps": [
       {
         "title": "Install the OpenPanel SDK",
-        "description": "Add the lightweight OpenPanel SDK to your app. At 2.3 KB, it's significantly smaller than Amplitude's SDK."
+        "description": "Add @openpanel/web (or the framework SDK that matches your stack: React, Next.js, Vue, Node, Python, Swift, Kotlin, React Native) to your app. The JS bundle is ~2.3 KB gzipped — drop-in replacement for Amplitude's 36 KB analytics SDK or 96 KB unified bundle."
       },
       {
-        "title": "Map your events",
-        "description": "Review your Amplitude tracking plan and map events to OpenPanel. The track() API is similar: amplitude.track('event') becomes op.track('event')."
+        "title": "Map your tracking calls (the cheat sheet)",
+        "description": "Most Amplitude calls map directly. amplitude.track('Signup', {plan: 'pro'}) becomes op.track('Signup', {plan: 'pro'}). amplitude.identify(userId, traits) becomes op.identify(userId, traits). amplitude.setGroup('org', orgId) becomes op.setProfile({orgId}) — OpenPanel doesn't have a separate group concept; orgs/teams are profile properties. amplitude.setUserProperties(traits) becomes op.setProfile(traits). amplitude.logRevenue() becomes op.track('Purchase', {revenue: amount}) — revenue is a property, not a separate API. Keep your existing event names. Track plans don't need rewriting."
       },
       {
-        "title": "Configure user identification",
-        "description": "Set up user identification in OpenPanel. The identify() method works similarly to Amplitude's."
+        "title": "Re-map advanced features (or accept feature loss)",
+        "description": "Amplitude features without a 1-to-1 mapping in OpenPanel: predictive cohorts (no equivalent), feature flags (use a dedicated tool like Hypertune or Statsig), Guides & Surveys (no equivalent), and Amplitude Experiment (you'll need a separate experimentation tool — OpenPanel handles A/B test events but doesn't run experiments). Behavioral cohorts, funnels, retention, custom events, user properties, and session replay all have direct equivalents."
       },
       {
-        "title": "Set up dashboards",
-        "description": "Create your key reports in OpenPanel. While you'll lose Amplitude's advanced features like predictive cohorts, core analytics translate directly."
+        "title": "Set up dashboards and reports",
+        "description": "Recreate your key Amplitude charts in OpenPanel: Funnels, Retention, Cohorts, Custom event reports. The math is the same; the UI is different. OpenPanel's report builder is simpler — no separate behavioral cohort builder, fewer chart types — but that's the point. Most teams find their critical reports take 30 minutes total."
       },
       {
         "title": "Run in parallel and validate",
-        "description": "Keep both tools running for a week to compare data and ensure accuracy before removing Amplitude."
+        "description": "Keep both SDKs firing events for 5-7 days. Compare totals on key events (signups, purchases, key feature events) between the two dashboards. Differences over 5% usually point to identify() mismatches — Amplitude attaches anonymous events to users on first identify, OpenPanel does the same but uses a slightly different anonymous-id strategy. Once parity is confirmed, remove the Amplitude SDK."
       }
     ],
     "sdk_compatibility": {
       "similar_api": true,
-      "notes": "Both use event-based tracking with similar APIs. amplitude.track('Purchase', {amount: 99}) becomes op.track('Purchase', {amount: 99})."
+      "notes": "Both use event-based tracking. Direct mappings: amplitude.track(event, props) → op.track(event, props). amplitude.identify(userId, traits) → op.identify(userId, traits). amplitude.setUserProperties(traits) → op.setProfile(traits). amplitude.logRevenue({price, quantity}) → op.track('Purchase', {revenue: price * quantity}). amplitude.setGroup('org', orgId) → op.setProfile({orgId}). Anonymous tracking and session-stitching work the same way in both SDKs."
     },
     "historical_data": {
       "can_import": false,
-      "notes": "Amplitude data export is available for paid plans but requires manual transformation. Most teams start fresh with OpenPanel."
+      "notes": "Amplitude data export is available on paid plans (S3, Snowflake, BigQuery) but requires manual transformation to OpenPanel's event schema. Most teams start fresh with OpenPanel and keep the Amplitude account read-only for 90 days as a historical archive. If you need ongoing access to historical data, the Amplitude data export to S3 stays available even after you cancel the active subscription."
     }
   },
   "use_cases": {
@@ -497,6 +497,14 @@
       {
         "question": "Is OpenPanel as powerful as Amplitude?",
         "answer": "OpenPanel covers core product analytics (events, funnels, retention, cohorts, user profiles) and adds web analytics. Amplitude has more advanced features like predictive analytics and feature flags, but many teams don't need that complexity."
+      },
+      {
+        "question": "How do I migrate Amplitude.track() calls to OpenPanel?",
+        "answer": "Most calls map 1-to-1 with no logic change. amplitude.track('Signup', {plan: 'pro'}) becomes op.track('Signup', {plan: 'pro'}). Identify: amplitude.identify(userId, traits) becomes op.identify(userId, traits). User properties: amplitude.setUserProperties(traits) becomes op.setProfile(traits). Revenue: amplitude.logRevenue({price, quantity}) becomes op.track('Purchase', {revenue: price * quantity}) — revenue is a property in OpenPanel, not a separate API. Groups: amplitude.setGroup('org', orgId) becomes op.setProfile({orgId}) — OpenPanel doesn't have a separate group concept. Keep your existing event names; the track plan doesn't need rewriting. The full migration is usually a 2-4 hour find-and-replace job."
+      },
+      {
+        "question": "What does Amplitude cost at 100K, 500K, 1M MTUs vs OpenPanel?",
+        "answer": "Direct comparison at common volumes: 100K MTUs/month — Amplitude Plus tier ~$995/mo (custom-quoted, varies), OpenPanel ~$20/mo (100K events, not MTUs — OpenPanel charges per event, which usually works out cheaper since one MTU can fire dozens of events). 500K MTUs/month — Amplitude Growth tier typically $22K-50K/year ($1,800-4,200/mo), OpenPanel $50/mo (500K events). 1M MTUs/month — Amplitude Growth/Enterprise tier typically $50K-150K/year ($4,200-12,500/mo), OpenPanel $90/mo (1M events). Self-hosted OpenPanel is unlimited and free regardless of volume — your only cost is the server. Amplitude does not offer self-hosting at any tier. Note: Amplitude charges by Monthly Tracked Users (MTU); OpenPanel charges by events. A typical SaaS app fires 30-100 events per MTU, so the gap in absolute cost can be even larger than the per-MTU rates suggest. Always check Amplitude's current pricing — Growth and Enterprise tiers are custom-quoted and rates have moved upward year-over-year."
       }
     ]
   },

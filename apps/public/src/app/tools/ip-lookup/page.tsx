@@ -5,6 +5,7 @@ import { FeatureCardContainer } from '@/components/feature-card';
 import { SectionHeader } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { API_URL } from '@/lib/api-url';
 import { cn } from '@/lib/utils';
 import {
   AlertCircle,
@@ -48,7 +49,7 @@ export default function IPLookupPage() {
     const detectIP = async () => {
       setAutoDetecting(true);
       try {
-        const response = await fetch('/api/tools/ip-lookup');
+        const response = await fetch(`${API_URL}/tools/ip-lookup`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -85,7 +86,7 @@ export default function IPLookupPage() {
 
     try {
       const response = await fetch(
-        `/api/tools/ip-lookup?ip=${encodeURIComponent(ip.trim())}`,
+        `${API_URL}/tools/ip-lookup?ip=${encodeURIComponent(ip.trim())}`,
       );
       const data = await response.json();
 

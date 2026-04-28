@@ -4,18 +4,18 @@ description: "We tested 7 self-hosted web analytics tools on deployment, feature
 tag: Comparison
 team: OpenPanel Team
 date: 2024-11-14
-updated: 2026-04-22
+updated: 2026-04-28
 cover: /content/self-hosted-analytics.jpg
 ---
 import { Faqs, FaqItem } from '@/components/faq';
 
-Self-hosted web analytics gives you something cloud-only tools can't: **complete ownership of your data**. No third-party servers. No vendor lock-in. No surprise pricing changes. Your analytics data lives on your infrastructure, under your control.
+You've decided to self-host your web analytics. The question now is: which tool do you deploy?
 
-But which self-hosted analytics tool should you actually use? There are over a dozen options, and they vary wildly in features, deployment complexity, and what they're good at.
+This article picks among the production-ready self-hostable options head-to-head — deployment difficulty, hosting cost at scale, real running requirements. We focus on the four most-used tools (Plausible, Matomo, Umami, OpenPanel) and cover three lighter alternatives at the end.
 
-We tested and compared the most popular self-hosted web analytics tools so you don't have to. Here's what we found.
+This is a buyer's comparison, not a survey. Looking for a broader survey of the open-source analytics space — including cloud-hosted options and the difference between AGPL, MIT, and source-available licensing? See our [open source analytics tools survey](/articles/open-source-web-analytics).
 
-## Quick Comparison
+## Quick comparison
 
 | Tool | Type | License | Deployment | Cloud Option | Best For |
 |------|------|---------|------------|-------------|----------|
@@ -27,19 +27,17 @@ We tested and compared the most popular self-hosted web analytics tools so you d
 | [**PostHog**](#posthog) | Product + Web | MIT | Docker/K8s | Free tier | Developer teams needing analytics + flags |
 | [**Ackee**](#ackee) | Web | MIT | Docker + MongoDB | None | Privacy-focused minimalist tracking |
 
-## How to Choose the Right Self-Hosted Analytics Tool
+## How to choose the right self-hosted analytics tool
 
-Before picking a tool, think about what you actually need:
+Before picking a tool, think about what you actually need.
 
-**Web analytics vs product analytics.** If you only need pageviews, traffic sources, and referrals, a simple web analytics tool like Plausible or Umami will do. If you also need [funnels](/features/funnels), [retention analysis](/features/retention), user identification, and [event tracking](/features/event-tracking), you need a tool with product analytics capabilities.
+**Web analytics vs product analytics.** If you only need pageviews, traffic sources, and referrals, a simple tool like Plausible or Umami will do. If you also need [funnels](/features/funnels), [retention analysis](/features/retention), user identification, and [event tracking](/features/event-tracking), you need a tool with product analytics capabilities.
 
 **Deployment complexity.** Some tools deploy in under 5 minutes with a single Docker Compose command. Others need Kubernetes clusters, multiple databases, or PHP environments. Be honest about your ops capacity.
 
-**Maintenance burden.** Self-hosting means you handle updates, backups, and scaling. Simpler tools like GoatCounter or Umami need minimal maintenance. Feature-rich tools like Matomo or PostHog require more attention.
+**Maintenance burden.** You handle updates, backups, and scaling yourself. Lighter tools like GoatCounter or Umami need minimal maintenance. Feature-rich tools like Matomo or PostHog need more attention.
 
-**Privacy and compliance.** All self-hosted tools keep data on your servers. But some go further with cookieless tracking (no consent banners needed), while others still use cookies by default.
-
-**Cost at scale.** Self-hosting isn't free — you pay for server infrastructure. A $5/month VPS handles most small-to-medium sites, but high-traffic sites need more resources.
+**Cost at scale.** A $5/month VPS handles most small-to-medium sites. High-traffic sites need more resources, but cost stays predictable — you're paying for servers, not events.
 
 ---
 
@@ -321,27 +319,13 @@ Compare with OpenPanel: [Ackee vs OpenPanel](/compare/ackee-alternative)
 
 ---
 
-## Self-Hosted vs Cloud Analytics: When to Self-Host
+## Migration path: starting cloud, switching later
 
-Self-hosting isn't always the right choice. Here's when it makes sense — and when it doesn't.
+Most self-hosted analytics tools also offer cloud versions. With [OpenPanel](/pricing), you can start with Cloud and migrate to self-hosting later — or vice versa — because the cloud and self-hosted versions have identical features. The same applies to Plausible, Umami, and Matomo. PostHog is the exception: its cloud and self-hosted versions diverge.
 
-### Self-host when:
+For deeper coverage of when self-hosting makes sense vs cloud, see [better compliance with self-hosted analytics](/articles/better-compliance-self-hosted-analytics).
 
-- **You need data sovereignty.** Regulations like GDPR, HIPAA, or industry-specific rules require data to stay on your infrastructure. Self-hosting eliminates third-party data transfers entirely. Read more in our [compliance guide](/articles/better-compliance-self-hosted-analytics).
-- **You want predictable costs.** Cloud analytics pricing scales with events or pageviews. Self-hosting costs are your server costs, which are more predictable and often cheaper at scale.
-- **You have ops capacity.** Someone on your team can manage Docker, handle updates, and monitor uptime.
-- **You want full control.** Custom retention policies, direct database access, integration with internal systems.
-
-### Use cloud when:
-
-- **You want zero maintenance.** No server management, no updates, no uptime monitoring.
-- **You're just getting started.** Cloud gets you analytics in minutes. Self-hosting takes longer to set up.
-- **Your team is small.** If nobody on the team is comfortable managing infrastructure, cloud is safer.
-- **You need guaranteed uptime.** Cloud providers handle redundancy and failover.
-
-Most self-hosted analytics tools also offer cloud versions. With [OpenPanel](/pricing), you can start with Cloud and migrate to self-hosting later — or vice versa — since the features are identical.
-
-## How to Get Started with Self-Hosted Analytics
+## How to get started with self-hosted analytics
 
 ### 1. Pick a server
 

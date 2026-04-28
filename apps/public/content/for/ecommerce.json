@@ -1,0 +1,168 @@
+{
+  "slug": "ecommerce",
+  "audience": "ecommerce",
+  "seo": {
+    "title": "Ecommerce Analytics — Cookieless Tracking for Shopify, WooCommerce, Stripe",
+    "description": "Ecommerce analytics without consent banners. Track revenue, funnels, and customers across Shopify, WooCommerce, and Stripe checkouts. From $2.50/month or self-host free.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Ecommerce Analytics That Survives Cookie Consent",
+    "subheading": "GA4 loses 30-50% of your data to consent banners. Mixpanel and Heap charge per event and scale into thousands per month. OpenPanel tracks every cart, checkout, and purchase without cookies — so attribution stays intact and your CFO doesn't get a surprise invoice.",
+    "badges": [
+      "Cookieless tracking",
+      "No consent banner needed",
+      "Revenue + funnel tracking",
+      "Shopify, WooCommerce, Stripe"
+    ]
+  },
+  "problem": {
+    "title": "Why ecommerce analytics is broken in 2026",
+    "intro": "Every analytics tool has a different failure mode for online stores. Here's what actually breaks.",
+    "items": [
+      {
+        "title": "Cookie consent destroys GA4 data",
+        "description": "Under GDPR you need explicit consent for analytics cookies. Around 30-50% of EU shoppers click reject. GA4 fills the gap with modeled data — you're optimising your ad spend on estimates, not real conversions."
+      },
+      {
+        "title": "Event-priced analytics scale into the thousands",
+        "description": "Mixpanel and Heap charge per event. A modestly busy store firing 50 events per session reaches 1M events at 20K sessions. That's $300-500/mo before you've made any business decisions with the data."
+      },
+      {
+        "title": "Shopify and WooCommerce native reports are shallow",
+        "description": "Pageviews and orders are there, but you can't build a funnel from product page → cart → checkout, segment by acquisition channel, or compare retention between SKUs. Native reports show what happened, not why."
+      },
+      {
+        "title": "Cart-abandonment retargeting depends on attribution that breaks",
+        "description": "When a third of shoppers reject cookies and the rest get cleared by ITP and tracking-prevention, last-click attribution becomes fiction. You're paying ads on data that no longer exists."
+      }
+    ]
+  },
+  "features": {
+    "title": "Everything an online store needs",
+    "intro": "OpenPanel was built for products that ship, not just websites that sit. The features below cover the full ecommerce funnel without the privacy or pricing trade-offs.",
+    "items": [
+      {
+        "title": "Cookieless tracking by default",
+        "description": "No cookies, no consent banner, no modeled data. Every visitor counts, every event lands in the database, and your conversion data isn't filtered by opt-out rates."
+      },
+      {
+        "title": "Revenue and order tracking",
+        "description": "Send purchase events with revenue, currency, order ID, and product properties. Build revenue-by-channel reports without stitching together GA4 and Stripe."
+      },
+      {
+        "title": "Funnel analysis at the SKU level",
+        "description": "Build funnels from product page → add to cart → checkout → purchase, broken down by SKU, category, or campaign. See exactly where each product loses customers."
+      },
+      {
+        "title": "Works with Shopify, WooCommerce, Stripe, and custom stacks",
+        "description": "Drop a script tag in a Shopify theme, hook into WooCommerce events, fire purchase events from Stripe webhooks, or instrument a custom Next.js or Remix store. Same tracking model everywhere."
+      },
+      {
+        "title": "EU-only data residency",
+        "description": "All cloud data is stored in EU infrastructure. No transfers to US servers. GDPR-clean by default — no DPAs, no transfer-impact assessments, no Standard Contractual Clauses to maintain."
+      },
+      {
+        "title": "Customer profiles and lifetime value",
+        "description": "See every customer's full journey: which ad they came from, what products they viewed, when they purchased, when they came back. Compute LTV and repeat-purchase rate without exporting data to a warehouse."
+      },
+      {
+        "title": "Real-time dashboard",
+        "description": "Run a flash sale or send an email and watch traffic and revenue land live. No 24-hour processing delay like GA4."
+      },
+      {
+        "title": "Self-host for unlimited events",
+        "description": "Run OpenPanel on your own infrastructure with Docker Compose for a flat hosting cost — no per-event pricing. The setup script is one command. The cloud and self-hosted versions have feature parity."
+      }
+    ]
+  },
+  "benefits": {
+    "title": "Why ecommerce teams switch to OpenPanel",
+    "intro": "The trade-offs that break ecommerce on other tools — consent attrition, runaway pricing, shallow reports — don't apply here.",
+    "items": [
+      {
+        "title": "Real attribution, not modeled estimates",
+        "description": "Cookieless tracking means 100% of visitors are counted. No GA4 consent-mode gaps, no Mixpanel sampling. You make ad-spend decisions on real numbers."
+      },
+      {
+        "title": "Predictable cost as you scale",
+        "description": "$2.50/mo at 5K events. $20/mo at 100K events. $90/mo at 1M events. Self-host free for unlimited. No usage-based billing surprises after a Black Friday spike."
+      },
+      {
+        "title": "One tool replaces GA4 + product analytics + heatmap subscriptions",
+        "description": "Web analytics, funnels, retention, and revenue tracking in one tool. Cancel two or three subscriptions in the process."
+      },
+      {
+        "title": "Compliance handled at the architecture level",
+        "description": "EU hosting, no cookies, no third-party data sharing. No consent platform required, no DPAs to negotiate with vendors. The privacy work was done before you signed up."
+      },
+      {
+        "title": "Works on every platform",
+        "description": "Shopify, WooCommerce, BigCommerce, Magento, Squarespace, custom Next.js, Remix, Astro, or a Stripe-direct checkout. The script tag and SDK setup are identical."
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions from ecommerce teams evaluating OpenPanel.",
+    "items": [
+      {
+        "question": "Can OpenPanel replace GA4 for an online store?",
+        "answer": "Yes. OpenPanel covers all the core ecommerce reporting GA4 does — pageviews, traffic sources, UTM attribution, conversion events, revenue tracking, funnels — and adds product-analytics features (cohorts, retention, customer profiles) that GA4 lacks. The biggest difference is that OpenPanel is cookieless, so your consent banner can go away and your data is complete."
+      },
+      {
+        "question": "How do I install OpenPanel on Shopify?",
+        "answer": "Add the OpenPanel script tag in Shopify Admin → Online Store → Themes → Edit Code → theme.liquid, before </head>. Pageviews track automatically. For purchase events, add a small script on the order confirmation page that fires op.track('Purchase', {revenue, currency, orderId, products}). See our [Shopify analytics page](/for/shopify) for the full walkthrough."
+      },
+      {
+        "question": "How do I install OpenPanel on WooCommerce?",
+        "answer": "Two options. Easiest: install the OpenPanel WordPress plugin (or the Site Kit alternative). Manual: hook into WooCommerce's woocommerce_thankyou action to fire op.track('Purchase') with the order object, and add the OpenPanel script to your theme header. WooCommerce events like add_to_cart and product_view are also available as native hooks."
+      },
+      {
+        "question": "Does OpenPanel work with Stripe Checkout or Payment Links?",
+        "answer": "Yes. Fire op.track('CheckoutStarted') from your product page when a customer clicks the buy button, then fire op.track('Purchase', {revenue, currency, orderId}) from a Stripe webhook handler when checkout.session.completed fires. This works for Stripe Checkout, Payment Links, Subscriptions, and custom Stripe Elements integrations."
+      },
+      {
+        "question": "Will I need a cookie consent banner with OpenPanel on my store?",
+        "answer": "Not for analytics. OpenPanel is cookieless and doesn't process personal data — no consent banner is required under GDPR or CCPA for analytics tracking. You may still need a consent banner for marketing pixels (Meta, Google Ads) if you use them, but you can drop it for analytics-only sites."
+      },
+      {
+        "question": "Will OpenPanel slow down my checkout?",
+        "answer": "OpenPanel's JavaScript SDK is 2.3 KB gzipped. GA4 is 50 KB. Mixpanel is 60 KB. Performance impact at checkout is negligible — far below the threshold that affects Core Web Vitals or conversion."
+      },
+      {
+        "question": "How does OpenPanel pricing compare to Mixpanel for a busy store?",
+        "answer": "A store with 20K sessions/month and 50 events per session fires 1M events. Mixpanel charges roughly $200-300/mo at that volume. Heap is similar. OpenPanel's cloud costs $90/mo for 1M events, or $0/mo if self-hosted. At Black Friday traffic spikes, the gap widens — Mixpanel scales with overages, OpenPanel stays at the same monthly tier."
+      },
+      {
+        "question": "Can I track multi-store setups (Shopify Plus with multiple stores)?",
+        "answer": "Yes. OpenPanel supports unlimited projects per account, so you can track each store as a separate project, or roll them all up into one project and segment by store_id. Both patterns work — pick whichever matches your reporting needs."
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "Ecommerce tracking setup", "url": "/guides/ecommerce-tracking" },
+      { "title": "Track custom events", "url": "/guides/track-custom-events" }
+    ],
+    "articles": [
+      { "title": "Cookieless analytics explained", "url": "/articles/cookieless-analytics" },
+      { "title": "Open source analytics tools survey", "url": "/articles/open-source-web-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },
+      { "title": "OpenPanel vs Mixpanel", "url": "/compare/mixpanel-alternative" },
+      { "title": "OpenPanel vs Plausible", "url": "/compare/plausible-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Try OpenPanel Free",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "View Source on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}
