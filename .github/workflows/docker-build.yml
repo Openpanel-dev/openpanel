@@ -123,22 +123,87 @@ jobs:
       # - name: Run TypeScript checks
       #   run: pnpm typecheck
 
-  build-and-push-api:
+  build-api:
+    permissions:
+      packages: write
+      contents: read
+    needs: lint-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Prepare platform pair
+        run: |
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=api-${{ env.PLATFORM_PAIR }}
+          cache-to: type=gha,mode=max,scope=api-${{ env.PLATFORM_PAIR }}
+          outputs: type=image,name=ghcr.io/${{ env.repo_owner }}/api,push-by-digest=true,name-canonical=true,push=true
+          build-args: |
+            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-api-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge-api:
     permissions:
       packages: write
       contents: write
-    needs: lint-and-test
+    needs: build-api
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-api-*
+          merge-multiple: true
+
       - name: Generate tags
         id: tags
         run: |
-          # Sanitize branch name by replacing / with -
           BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
-          # Get first 4 characters of commit SHA
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-4)
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
@@ -153,18 +218,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/api/Dockerfile
-          push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: |
-            ghcr.io/${{ env.repo_owner }}/api:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }}
-          build-args: |
-            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            -t ghcr.io/${{ env.repo_owner }}/api:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }} \
+            $(printf 'ghcr.io/${{ env.repo_owner }}/api@sha256:%s ' *)
 
       - name: Create/Update API tag
         if: github.ref == 'refs/heads/main'
@@ -183,22 +242,87 @@ jobs:
           git push origin "api" --force
           echo "Pushed tag: api"
 
-  build-and-push-worker:
+  build-worker:
+    permissions:
+      packages: write
+      contents: read
+    needs: lint-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Prepare platform pair
+        run: |
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/worker/Dockerfile
+          platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=worker-${{ env.PLATFORM_PAIR }}
+          cache-to: type=gha,mode=max,scope=worker-${{ env.PLATFORM_PAIR }}
+          outputs: type=image,name=ghcr.io/${{ env.repo_owner }}/worker,push-by-digest=true,name-canonical=true,push=true
+          build-args: |
+            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-worker-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge-worker:
     permissions:
       packages: write
       contents: write
-    needs: lint-and-test
+    needs: build-worker
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-worker-*
+          merge-multiple: true
+
       - name: Generate tags
         id: tags
         run: |
-          # Sanitize branch name by replacing / with -
           BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
-          # Get first 4 characters of commit SHA
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-4)
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
@@ -213,18 +337,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/worker/Dockerfile
-          push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: |
-            ghcr.io/${{ env.repo_owner }}/worker:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }}
-          build-args: |
-            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            -t ghcr.io/${{ env.repo_owner }}/worker:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }} \
+            $(printf 'ghcr.io/${{ env.repo_owner }}/worker@sha256:%s ' *)
 
       - name: Create/Update Worker tag
         if: github.ref == 'refs/heads/main'
@@ -243,22 +361,87 @@ jobs:
           git push origin "worker" --force
           echo "Pushed tag: worker"
 
-  build-and-push-dashboard:
+  build-dashboard:
+    permissions:
+      packages: write
+      contents: read
+    needs: lint-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Prepare platform pair
+        run: |
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/start/Dockerfile
+          platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=dashboard-${{ env.PLATFORM_PAIR }}
+          cache-to: type=gha,mode=max,scope=dashboard-${{ env.PLATFORM_PAIR }}
+          outputs: type=image,name=ghcr.io/${{ env.repo_owner }}/dashboard,push-by-digest=true,name-canonical=true,push=true
+          build-args: |
+            NO_CLOUDFLARE=1
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-dashboard-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge-dashboard:
     permissions:
       packages: write
       contents: write
-    needs: lint-and-test
+    needs: build-dashboard
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-dashboard-*
+          merge-multiple: true
+
       - name: Generate tags
         id: tags
         run: |
-          # Sanitize branch name by replacing / with -
           BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
-          # Get first 4 characters of commit SHA
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-4)
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
@@ -273,18 +456,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/start/Dockerfile
-          push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: |
-            ghcr.io/${{ env.repo_owner }}/dashboard:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }}
-          build-args: |
-            NO_CLOUDFLARE=1
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            -t ghcr.io/${{ env.repo_owner }}/dashboard:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }} \
+            $(printf 'ghcr.io/${{ env.repo_owner }}/dashboard@sha256:%s ' *)
 
       - name: Create/Update Dashboard tag
         if: github.ref == 'refs/heads/main'
