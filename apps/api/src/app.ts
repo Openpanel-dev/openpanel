@@ -57,7 +57,7 @@ import oauthRouter from './routes/oauth-callback.router';
 import profileRouter from './routes/profile.router';
 import trackRouter from './routes/track.router';
 import webhookRouter from './routes/webhook.router';
-import { HttpError } from './utils/errors';
+import { HttpError, normalizeError } from './utils/errors';
 import { logger } from './utils/logger';
 
 declare module 'fastify' {
@@ -370,7 +370,9 @@ export async function buildApp(
 
   const SKIP_LOG_ERRORS = ['UNAUTHORIZED', 'FST_ERR_CTP_INVALID_MEDIA_TYPE'];
   fastify.setErrorHandler((error, request, reply) => {
-    if (error.statusCode === 429) {
+    const { status, code, message, errorName } = normalizeError(error);
+
+    if (status === 429) {
       return reply.status(429).send({
         status: 429,
         error: 'Too Many Requests',
@@ -378,35 +380,16 @@ export async function buildApp(
       });
     }
 
-    if (error instanceof HttpError) {
-      if (!SKIP_LOG_ERRORS.includes(error.code)) {
-        // 4xx are client-side problems (bad payloads, missing fields, etc.) —
-        // log as warn so they don't drown out real server errors.
-        if (error.status >= 500) {
-          request.log.error({ err: error }, 'internal server error');
-        } else {
-          request.log.warn({ err: error }, 'internal server error');
-        }
-      }
-      if (process.env.NODE_ENV === 'production' && error.status === 500) {
-        return reply.status(500).send('Internal server error');
-      }
-      return reply.status(error.status).send({
-        status: error.status,
-        error: error.error,
-        message: error.message,
-      });
-    }
-
-    const status = error?.statusCode ?? 500;
-
-    if (!SKIP_LOG_ERRORS.includes(error.code)) {
-      // Same rationale: client errors (incl. FST_ERR_VALIDATION) are warnings,
-      // not errors. They are caused by callers, not by us.
+    const skipLog = code !== undefined && SKIP_LOG_ERRORS.includes(code);
+    if (!skipLog) {
+      // 4xx are client-side problems (bad payloads, missing fields, etc.) —
+      // log as warn so they don't drown out real server errors.
+      const label =
+        error instanceof HttpError ? 'internal server error' : 'request error';
       if (status >= 500) {
-        request.log.error({ err: error }, 'request error');
+        request.log.error({ err: error }, label);
       } else {
-        request.log.warn({ err: error }, 'request error');
+        request.log.warn({ err: error }, label);
       }
     }
 
@@ -414,7 +397,14 @@ export async function buildApp(
       return reply.status(500).send('Internal server error');
     }
 
-    return reply.status(status).send({ status, error, message: error.message });
+    return reply.status(status).send({
+      status,
+      // HttpError carries an explicit `error` payload (the underlying cause);
+      // for everything else we surface the error name so the body is always
+      // a stable JSON shape, regardless of what was thrown.
+      error: error instanceof HttpError ? error.error : errorName,
+      message,
+    });
   });
 
   return fastify;

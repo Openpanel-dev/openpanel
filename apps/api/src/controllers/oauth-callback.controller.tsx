@@ -130,11 +130,11 @@ async function handleNewUser({
     try {
       await connectUserToOrganization({ user, inviteId });
     } catch (error) {
-      reply.log.error('error connecting user to organization', {
+      reply.log.error({
         error,
         inviteId,
         user,
-      });
+      }, 'error connecting user to organization');
     }
   }
 
