@@ -24,11 +24,11 @@ const startServer = async () => {
       process.on('SIGTERM', async () => await shutdown(fastify, 'SIGTERM', 0));
       process.on('SIGINT', async () => await shutdown(fastify, 'SIGINT', 0));
       process.on('uncaughtException', async (error) => {
-        logger.error('Uncaught exception', error);
+        logger.error({ err: error }, 'Uncaught exception');
         await shutdown(fastify, 'uncaughtException', 1);
       });
       process.on('unhandledRejection', async (reason, promise) => {
-        logger.error('Unhandled rejection', { reason, promise });
+        logger.error({ reason, promise }, 'Unhandled rejection');
         await shutdown(fastify, 'unhandledRejection', 1);
       });
     }
@@ -38,14 +38,14 @@ const startServer = async () => {
     try {
       await getRedisPub().config('SET', 'notify-keyspace-events', 'Ex');
     } catch (error) {
-      logger.warn('Failed to set redis notify-keyspace-events', error);
+      logger.warn({ err: error }, 'Failed to set redis notify-keyspace-events');
       logger.warn(
         'If you use a managed Redis service, you may need to set this manually.',
       );
       logger.warn('Otherwise some functions may not work as expected.');
     }
   } catch (error) {
-    logger.error('Failed to start server', error);
+    logger.error({ err: error }, 'Failed to start server');
   }
 };
 

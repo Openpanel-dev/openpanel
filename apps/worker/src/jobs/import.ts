@@ -76,7 +76,7 @@ export async function importJob(job: Job<ImportQueuePayload>) {
             rawEvent
           )
         ) {
-          jobLogger.warn('Skipping invalid event', { rawEvent });
+          jobLogger.warn({ rawEvent }, 'Skipping invalid event');
           continue;
         }
 
@@ -126,7 +126,7 @@ export async function importJob(job: Job<ImportQueuePayload>) {
         eventBatch.length = 0;
       }
 
-      jobLogger.info('Loading complete', { processedEvents });
+      jobLogger.info({ processedEvents }, 'Loading complete');
 
       // Phase 1b: Load user profiles (Mixpanel only)
       const profileBatchSize = 5000;
@@ -172,7 +172,7 @@ export async function importJob(job: Job<ImportQueuePayload>) {
           });
         }
 
-        jobLogger.info('Profile loading complete', { processedProfiles });
+        jobLogger.info({ processedProfiles }, 'Profile loading complete');
       }
 
       // Phase 2: Generate gap-based session IDs (Mixpanel etc.)
@@ -269,7 +269,7 @@ export async function importJob(job: Job<ImportQueuePayload>) {
 
     return { success: true };
   } catch (error) {
-    jobLogger.error('Import job failed', { error });
+    jobLogger.error({ err: error }, 'Import job failed');
 
     try {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -278,7 +278,10 @@ export async function importJob(job: Job<ImportQueuePayload>) {
         errorMessage: errorMsg,
       });
     } catch (markError) {
-      jobLogger.error('Failed to mark import as failed', { error, markError });
+      jobLogger.error(
+        { err: error, markError },
+        'Failed to mark import as failed',
+      );
     }
 
     throw error;

@@ -24,12 +24,15 @@ export class SessionManager {
 
   async setContext(id: string, context: McpAuthContext): Promise<void> {
     await getRedisCache().setJson(redisKey(id), SESSION_TTL_SECONDS, context);
-    logger.info('MCP session context stored', {
-      sessionId: id,
-      clientType: context.clientType,
-      organizationId: context.organizationId,
-      projectId: context.projectId,
-    });
+    logger.info(
+      {
+        sessionId: id,
+        clientType: context.clientType,
+        organizationId: context.organizationId,
+        projectId: context.projectId,
+      },
+      'MCP session context stored',
+    );
   }
 
   getContext(id: string): Promise<McpAuthContext | null> {
@@ -42,7 +45,7 @@ export class SessionManager {
 
   async deleteContext(id: string): Promise<void> {
     await getRedisCache().del(redisKey(id));
-    logger.info('MCP session deleted', { sessionId: id });
+    logger.info({ sessionId: id }, 'MCP session deleted');
   }
 
   async close(id: string): Promise<void> {

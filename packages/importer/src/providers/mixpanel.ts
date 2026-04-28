@@ -80,11 +80,11 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
       if (waitMs > 0) {
         this.logger?.info(
-          `Rate limit: ${this.requestTimestamps.length} requests in the last hour, waiting ${Math.ceil(waitMs / 1000)}s`,
           {
             requestsInWindow: this.requestTimestamps.length,
             waitMs,
-          }
+          },
+          `Rate limit: ${this.requestTimestamps.length} requests in the last hour, waiting ${Math.ceil(waitMs / 1000)}s`,
         );
         await new Promise((resolve) => setTimeout(resolve, waitMs));
         // Prune again after waiting
@@ -149,15 +149,18 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
             (error instanceof Error && error.message.includes('429'));
           const isLastRetry = retries > maxRetries;
 
-          this.logger?.warn('Failed to fetch events for date range', {
-            chunkFrom,
-            chunkTo,
-            attempt: retries,
-            maxRetries,
-            error: (error as Error).message,
-            isRateLimit,
-            willRetry: !isLastRetry,
-          });
+          this.logger?.warn(
+            {
+              err: error,
+              chunkFrom,
+              chunkTo,
+              attempt: retries,
+              maxRetries,
+              isRateLimit,
+              willRetry: !isLastRetry,
+            },
+            'Failed to fetch events for date range',
+          );
 
           if (isLastRetry) {
             throw new Error(
@@ -175,12 +178,15 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
             delay = Math.min(1000 * 2 ** (retries - 1), 60_000);
           }
 
-          this.logger?.info('Retrying after delay', {
-            delayMs: delay,
-            chunkFrom,
-            chunkTo,
-            isRateLimit,
-          });
+          this.logger?.info(
+            {
+              delayMs: delay,
+              chunkFrom,
+              chunkTo,
+              isRateLimit,
+            },
+            'Retrying after delay',
+          );
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
@@ -202,13 +208,16 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       project_id: projectId,
     });
 
-    this.logger?.info('Fetching events from Mixpanel', {
-      url: `${url}?${params}`,
-      from,
-      to,
-      projectId,
-      serviceAccount,
-    });
+    this.logger?.info(
+      {
+        url: `${url}?${params}`,
+        from,
+        to,
+        projectId,
+        serviceAccount,
+      },
+      'Fetching events from Mixpanel',
+    );
 
     const response = await fetch(`${url}?${params}`, {
       method: 'GET',
@@ -262,10 +271,10 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
               const event = JSON.parse(line);
               yield event;
             } catch (error) {
-              this.logger?.warn('Failed to parse Mixpanel event', {
-                line: line.substring(0, 100),
-                error,
-              });
+              this.logger?.warn(
+                { err: error, line: line.substring(0, 100) },
+                'Failed to parse Mixpanel event',
+              );
             }
           }
         }
@@ -278,11 +287,8 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
           yield event;
         } catch (error) {
           this.logger?.warn(
+            { err: error, line: buffer.substring(0, 100) },
             'Failed to parse Mixpanel event (remaining buffer)',
-            {
-              line: buffer.substring(0, 100),
-              error,
-            }
           );
         }
       }
@@ -309,11 +315,10 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         page_size: String(pageSize),
       });
 
-      this.logger?.info('Fetching profiles from Mixpanel Engage', {
-        page,
-        page_size: pageSize,
-        projectId,
-      });
+      this.logger?.info(
+        { page, page_size: pageSize, projectId },
+        'Fetching profiles from Mixpanel Engage',
+      );
 
       const response = await fetch(url, {
         method: 'POST',
@@ -353,9 +358,10 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         if (parsed.success) {
           yield parsed.data;
         } else {
-          this.logger?.warn('Skipping invalid Mixpanel profile', {
-            row: JSON.stringify(row).slice(0, 200),
-          });
+          this.logger?.warn(
+            { row: JSON.stringify(row).slice(0, 200) },
+            'Skipping invalid Mixpanel profile',
+          );
         }
       }
 

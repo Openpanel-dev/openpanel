@@ -13,6 +13,7 @@
   "dependencies": {
     "@bull-board/api": "6.14.0",
     "@bull-board/express": "6.14.0",
+    "@hyperdx/node-opentelemetry": "catalog:",
     "@openpanel/common": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/email": "workspace:*",
@@ -28,6 +29,8 @@
     "date-fns": "^3.3.1",
     "express": "^4.18.2",
     "groupmq": "catalog:",
+    "pino": "catalog:",
+    "pino-pretty": "catalog:",
     "prom-client": "^15.1.3",
     "ramda": "^0.29.1",
     "source-map-support": "^0.5.21",

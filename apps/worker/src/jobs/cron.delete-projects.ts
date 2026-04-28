@@ -18,13 +18,9 @@ export async function jobdeleteProjects(job: Job<CronQueuePayload>) {
 
   await deleteProjects(projects.map((project) => project.id));
 
-  logger.info('Deleting projects', {
-    projects,
-  });
+  logger.info({ projects }, 'Deleting projects');
 
   await deleteFromClickhouse(projects.map((project) => project.id));
 
-  logger.info(`Deleted ${projects.length} projects`, {
-    projects,
-  });
+  logger.info({ projects }, `Deleted ${projects.length} projects`);
 }

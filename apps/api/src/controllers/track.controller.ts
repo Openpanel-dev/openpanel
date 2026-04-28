@@ -487,7 +487,10 @@ export async function fetchDeviceId(
       });
     }
   } catch (error) {
-    request.log.error('Error getting session end GET /track/device-id', error);
+    request.log.error(
+      { err: error },
+      'Error getting session end GET /track/device-id',
+    );
   }
 
   return reply.status(200).send({

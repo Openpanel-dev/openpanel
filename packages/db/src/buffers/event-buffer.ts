@@ -95,12 +95,12 @@ export class EventBuffer extends BaseBuffer {
 
       this.flushRetryCount += 1;
       this.logger.warn(
-        'Failed to flush local buffer to Redis; events re-queued',
         {
-          error,
+          err: error,
           eventCount: eventsToFlush.length,
           flushRetryCount: this.flushRetryCount,
-        }
+        },
+        'Failed to flush local buffer to Redis; events re-queued',
       );
     } finally {
       this.isFlushing = false;
@@ -151,10 +151,13 @@ export class EventBuffer extends BaseBuffer {
           new Date(b.created_at || 0).getTime()
       );
 
-      this.logger.info('Inserting events into ClickHouse', {
-        totalEvents: eventsToClickhouse.length,
-        chunks: Math.ceil(eventsToClickhouse.length / this.chunkSize),
-      });
+      this.logger.info(
+        {
+          totalEvents: eventsToClickhouse.length,
+          chunks: Math.ceil(eventsToClickhouse.length / this.chunkSize),
+        },
+        'Inserting events into ClickHouse',
+      );
 
       for (const chunk of this.chunks(eventsToClickhouse, this.chunkSize)) {
         await ch.insert({
@@ -181,12 +184,15 @@ export class EventBuffer extends BaseBuffer {
         .decrby(this.bufferCounterKey, queueEvents.length)
         .exec();
 
-      this.logger.info('Processed events from Redis buffer', {
-        batchSize: this.batchSize,
-        eventsProcessed: eventsToClickhouse.length,
-      });
+      this.logger.info(
+        {
+          batchSize: this.batchSize,
+          eventsProcessed: eventsToClickhouse.length,
+        },
+        'Processed events from Redis buffer',
+      );
     } catch (error) {
-      this.logger.error('Error processing Redis buffer', { error });
+      this.logger.error({ err: error }, 'Error processing Redis buffer');
     }
   }
 

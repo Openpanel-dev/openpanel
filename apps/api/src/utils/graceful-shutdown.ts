@@ -33,11 +33,11 @@ export async function shutdown(
   exitCode = 0
 ) {
   if (isShuttingDown()) {
-    logger.warn('Shutdown already in progress, ignoring signal', { signal });
+    logger.warn({ signal }, 'Shutdown already in progress, ignoring signal');
     return;
   }
 
-  logger.info('Starting graceful shutdown', { signal });
+  logger.info({ signal }, 'Starting graceful shutdown');
 
   setShuttingDown(true);
 
@@ -50,7 +50,7 @@ export async function shutdown(
     await fastify.close();
     logger.info('Fastify server closed');
   } catch (error) {
-    logger.error('Error closing Fastify server', error);
+    logger.error({ err: error }, 'Error closing Fastify server');
   }
 
   // Step 3: Destroy MCP sessions
@@ -58,7 +58,7 @@ export async function shutdown(
     await mcpSessionManager.destroy();
     logger.info('MCP sessions closed');
   } catch (error) {
-    logger.error('Error closing MCP sessions', error);
+    logger.error({ err: error }, 'Error closing MCP sessions');
   }
 
   // Step 4: Close database connections
@@ -66,7 +66,7 @@ export async function shutdown(
     await db.$disconnect();
     logger.info('Database connection closed');
   } catch (error) {
-    logger.error('Error closing database connection', error);
+    logger.error({ err: error }, 'Error closing database connection');
   }
 
   // Step 5: Close ClickHouse connections
@@ -74,7 +74,7 @@ export async function shutdown(
     await ch.close();
     logger.info('ClickHouse connections closed');
   } catch (error) {
-    logger.error('Error closing ClickHouse connections', error);
+    logger.error({ err: error }, 'Error closing ClickHouse connections');
   }
 
   // Step 6: Close Bull queues (graceful shutdown of queue state)
@@ -88,7 +88,7 @@ export async function shutdown(
     ]);
     logger.info('Queue state closed');
   } catch (error) {
-    logger.error('Error closing queue state', error);
+    logger.error({ err: error }, 'Error closing queue state');
   }
 
   // Step 7: Close Redis connections
@@ -109,7 +109,7 @@ export async function shutdown(
     );
     logger.info('Redis connections closed');
   } catch (error) {
-    logger.error('Error closing Redis connections', error);
+    logger.error({ err: error }, 'Error closing Redis connections');
   }
 
   logger.info('Graceful shutdown completed');

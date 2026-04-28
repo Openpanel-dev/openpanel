@@ -38,7 +38,7 @@ export class BotBuffer extends BaseBuffer {
         await this.tryFlush();
       }
     } catch (error) {
-      this.logger.error('Failed to add bot event', { error });
+      this.logger.error({ err: error }, 'Failed to add bot event');
     }
   }
 
@@ -71,11 +71,9 @@ export class BotBuffer extends BaseBuffer {
         .decrby(this.bufferCounterKey, events.length)
         .exec();
 
-      this.logger.debug('Processed bot events', {
-        count: events.length,
-      });
+      this.logger.debug({ count: events.length }, 'Processed bot events');
     } catch (error) {
-      this.logger.error('Failed to process buffer', { error });
+      this.logger.error({ err: error }, 'Failed to process buffer');
     }
   }
 

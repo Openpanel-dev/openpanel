@@ -48,14 +48,14 @@ async function createEventAndNotify(
   // Check project-level event exclude filters
   const isExcluded = await isEventExcludedByProjectFilter(payload, projectId);
   if (isExcluded) {
-    logger.info('Event excluded by project filter', {
-      event: payload.name,
-      projectId,
-    });
+    logger.info(
+      { event: payload.name, projectId },
+      'Event excluded by project filter',
+    );
     return null;
   }
 
-  logger.info('Creating event', { event: payload });
+  logger.info({ event: payload }, 'Creating event');
   const [event] = await Promise.all([
     createEvent(payload),
     checkNotificationRulesForEvent(payload).catch(() => null),
@@ -207,8 +207,8 @@ export async function incomingEvent(
   const isExcluded = await isEventExcludedByProjectFilter(payload, projectId);
   if (isExcluded) {
     logger.info(
+      { event: payload.name, projectId },
       'Skipping session_start and event (excluded by project filter)',
-      { event: payload.name, projectId }
     );
     return null;
   }
@@ -218,7 +218,7 @@ export async function incomingEvent(
       projectId,
       deviceId,
     }).catch((error) => {
-      logger.warn('Failed to extend session end job', { error });
+      logger.warn({ err: error }, 'Failed to extend session end job');
     });
   } else {
     await createEventAndNotify(
@@ -230,12 +230,18 @@ export async function incomingEvent(
       logger,
       projectId
     ).catch((error) => {
-      logger.error('Error creating session start event', { event: payload });
+      logger.error(
+        { err: error, event: payload },
+        'Error creating session start event',
+      );
       throw error;
     });
 
     await createSessionEndJob({ payload }).catch((error) => {
-      logger.error('Error creating session end job', { event: payload });
+      logger.error(
+        { err: error, event: payload },
+        'Error creating session end job',
+      );
       throw error;
     });
   }

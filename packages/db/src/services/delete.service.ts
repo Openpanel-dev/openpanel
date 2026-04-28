@@ -59,7 +59,7 @@ export async function deleteFromClickhouse(projectIds: string[]) {
       ? `ALTER TABLE ${getReplicatedTableName(table)} DELETE WHERE ${where};`
       : `DELETE FROM ${getReplicatedTableName(table)} WHERE ${where};`;
 
-    logger.info('Deleting from ClickHouse table:', { query });
+    logger.info({ query }, 'Deleting from ClickHouse table:');
     await ch.command({
       query,
       clickhouse_settings: {

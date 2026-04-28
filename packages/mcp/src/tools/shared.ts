@@ -93,7 +93,7 @@ export async function withErrorHandling<T>(
     return toText(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`MCP tool error: ${message}`, { err });
+    logger.error({ err }, `MCP tool error: ${message}`);
     return {
       content: [{ type: 'text' as const, text: `Error: ${message}` }],
       isError: true,

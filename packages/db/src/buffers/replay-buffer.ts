@@ -48,7 +48,10 @@ export class ReplayBuffer extends BaseBuffer {
         await this.tryFlush();
       }
     } catch (error) {
-      this.logger.error('Failed to add replay chunk to buffer', { error });
+      this.logger.error(
+        { err: error },
+        'Failed to add replay chunk to buffer',
+      );
     }
   }
 
@@ -79,9 +82,9 @@ export class ReplayBuffer extends BaseBuffer {
         .decrby(this.bufferCounterKey, items.length)
         .exec();
 
-      this.logger.debug('Processed replay chunks', { count: items.length });
+      this.logger.debug({ count: items.length }, 'Processed replay chunks');
     } catch (error) {
-      this.logger.error('Failed to process replay buffer', { error });
+      this.logger.error({ err: error }, 'Failed to process replay buffer');
     }
   }
 

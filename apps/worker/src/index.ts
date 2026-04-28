@@ -103,12 +103,15 @@ async function start() {
     const status = failedDependencies.length === 0 ? 200 : 503;
 
     if (status !== 200) {
-      logger.warn('healthcheck failed', {
-        workingDependencies,
-        failedDependencies,
-        dependencies,
-        dependencyErrors,
-      });
+      logger.warn(
+        {
+          workingDependencies,
+          failedDependencies,
+          dependencies,
+          dependencyErrors,
+        },
+        'healthcheck failed',
+      );
     }
 
     res.status(status).json({

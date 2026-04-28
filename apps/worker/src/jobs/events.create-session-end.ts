@@ -125,9 +125,10 @@ export async function createSessionEnd(
       sessionEndEvent: transformEvent(sessionEndEvent),
     });
   } catch (error) {
-    logger.error('Creating notificatios for session end failed', {
-      error,
-    });
+    logger.error(
+      { err: error },
+      'Creating notificatios for session end failed',
+    );
   }
 
   return sessionEndEvent;

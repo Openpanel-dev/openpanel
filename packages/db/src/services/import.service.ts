@@ -718,7 +718,7 @@ export async function updateImportStatus(
       break;
   }
 
-  jobLogger.info('Import status update', data);
+  jobLogger.info({ data }, 'Import status update');
 
   await job.updateProgress(data);
 

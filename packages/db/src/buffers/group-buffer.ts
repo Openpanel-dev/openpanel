@@ -119,7 +119,7 @@ export class GroupBuffer extends BaseBuffer {
         existing.name === entry.name &&
         shallowEqual(existing.properties, entry.properties)
       ) {
-        this.logger.debug('Group not changed, skipping', { id: input.id });
+        this.logger.debug({ id: input.id }, 'Group not changed, skipping');
         return;
       }
 
@@ -141,7 +141,7 @@ export class GroupBuffer extends BaseBuffer {
         .exec();
 
       if (!result) {
-        this.logger.error('Failed to add group to Redis', { input });
+        this.logger.error({ input }, 'Failed to add group to Redis');
         return;
       }
 
@@ -150,7 +150,7 @@ export class GroupBuffer extends BaseBuffer {
         await this.tryFlush();
       }
     } catch (error) {
-      this.logger.error('Failed to add group', { error, input });
+      this.logger.error({ err: error, input }, 'Failed to add group');
     }
   }
 
@@ -181,11 +181,12 @@ export class GroupBuffer extends BaseBuffer {
         .decrby(this.bufferCounterKey, items.length)
         .exec();
 
-      this.logger.debug('Successfully completed group processing', {
-        totalGroups: items.length,
-      });
+      this.logger.debug(
+        { totalGroups: items.length },
+        'Successfully completed group processing',
+      );
     } catch (error) {
-      this.logger.error('Failed to process buffer', { error });
+      this.logger.error({ err: error }, 'Failed to process buffer');
     }
   }
 

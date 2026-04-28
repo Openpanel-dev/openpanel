@@ -90,7 +90,7 @@ export async function buildApp(
         : generateId(),
     ...(testing
       ? { logger: false }
-      : { loggerInstance: logger as unknown as FastifyBaseLogger }),
+      : { loggerInstance: logger as FastifyBaseLogger }),
   });
 
   fastify.setValidatorCompiler(validatorCompiler);
@@ -173,13 +173,16 @@ export async function buildApp(
           if (ctx.error.code === 'UNAUTHORIZED' && ctx.path === 'organization.list') {
             return;
           }
-          ctx.req.log.error('trpc error', {
-            error: ctx.error,
-            path: ctx.path,
-            input: ctx.input,
-            type: ctx.type,
-            session: ctx.ctx?.session,
-          });
+          ctx.req.log.error(
+            {
+              err: ctx.error,
+              path: ctx.path,
+              input: ctx.input,
+              type: ctx.type,
+              session: ctx.ctx?.session,
+            },
+            'trpc error',
+          );
         },
       } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
     });
@@ -379,8 +382,11 @@ export async function buildApp(
       if (!SKIP_LOG_ERRORS.includes(error.code)) {
         // 4xx are client-side problems (bad payloads, missing fields, etc.) —
         // log as warn so they don't drown out real server errors.
-        const log = error.status >= 500 ? request.log.error : request.log.warn;
-        log.call(request.log, 'internal server error', { error });
+        if (error.status >= 500) {
+          request.log.error({ err: error }, 'internal server error');
+        } else {
+          request.log.warn({ err: error }, 'internal server error');
+        }
       }
       if (process.env.NODE_ENV === 'production' && error.status === 500) {
         return reply.status(500).send('Internal server error');
@@ -397,8 +403,11 @@ export async function buildApp(
     if (!SKIP_LOG_ERRORS.includes(error.code)) {
       // Same rationale: client errors (incl. FST_ERR_VALIDATION) are warnings,
       // not errors. They are caused by callers, not by us.
-      const log = status >= 500 ? request.log.error : request.log.warn;
-      log.call(request.log, 'request error', { error });
+      if (status >= 500) {
+        request.log.error({ err: error }, 'request error');
+      } else {
+        request.log.warn({ err: error }, 'request error');
+      }
     }
 
     if (process.env.NODE_ENV === 'production' && status === 500) {

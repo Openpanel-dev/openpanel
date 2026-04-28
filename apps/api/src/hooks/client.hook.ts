@@ -16,11 +16,11 @@ export async function clientHook(
     req.client = client;
   } catch (error) {
     if (error instanceof SdkAuthError) {
-      req.log.warn('Invalid SDK request', error);
+      req.log.warn({ err: error }, 'Invalid SDK request');
       return reply.status(401).send(error.message);
     }
 
-    req.log.error('Invalid SDK request', error);
+    req.log.error({ err: error }, 'Invalid SDK request');
     return reply.status(500).send('Internal server error');
   }
 }

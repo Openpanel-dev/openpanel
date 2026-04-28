@@ -26,12 +26,15 @@ export async function requestLoggingHook(
     return;
   }
   if (request.url.includes('trpc')) {
-    request.log.info('request done', {
-      url: request.url.split('?')[0],
-      method: request.method,
-      input: getTrpcInput(request),
-      elapsed: reply.elapsedTime,
-    });
+    request.log.info(
+      {
+        url: request.url.split('?')[0],
+        method: request.method,
+        input: getTrpcInput(request),
+        elapsed: reply.elapsedTime,
+      },
+      'request done',
+    );
   } else {
     const payload: {
       url: string;
@@ -53,6 +56,6 @@ export async function requestLoggingHook(
       payload.body = request.body;
     }
 
-    request.log.info('request done', payload);
+    request.log.info(payload, 'request done');
   }
 }

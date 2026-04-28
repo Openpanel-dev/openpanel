@@ -91,11 +91,10 @@ export class SessionBuffer extends BaseBuffer {
       if (duration >= 0) {
         newSession.duration = duration;
       } else {
-        this.logger.warn('Session duration is negative', {
-          duration,
-          event,
-          session: newSession,
-        });
+        this.logger.warn(
+          { duration, event, session: newSession },
+          'Session duration is negative',
+        );
       }
 
       const addedRevenue = event.name === 'revenue' ? (event.revenue ?? 0) : 0;
@@ -222,7 +221,7 @@ export class SessionBuffer extends BaseBuffer {
         await this.tryFlush();
       }
     } catch (error) {
-      this.logger.error('Failed to add session', { error });
+      this.logger.error({ err: error }, 'Failed to add session');
     }
   }
 
@@ -264,11 +263,9 @@ export class SessionBuffer extends BaseBuffer {
         .decrby(this.bufferCounterKey, events.length);
       await multi.exec();
 
-      this.logger.debug('Processed sessions', {
-        count: events.length,
-      });
+      this.logger.debug({ count: events.length }, 'Processed sessions');
     } catch (error) {
-      this.logger.error('Failed to process buffer', { error });
+      this.logger.error({ err: error }, 'Failed to process buffer');
     }
   }
 

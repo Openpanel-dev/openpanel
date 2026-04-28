@@ -54,9 +54,10 @@ function getEnabledQueues(): QueueName[] {
   const enabledQueuesEnv = process.env.ENABLED_QUEUES?.trim();
 
   if (!enabledQueuesEnv) {
-    logger.info('No ENABLED_QUEUES specified, starting all queues', {
-      totalEventShards: EVENTS_GROUP_QUEUES_SHARDS,
-    });
+    logger.info(
+      { totalEventShards: EVENTS_GROUP_QUEUES_SHARDS },
+      'No ENABLED_QUEUES specified, starting all queues',
+    );
     return [
       'events',
       'sessions',
@@ -75,10 +76,10 @@ function getEnabledQueues(): QueueName[] {
     .map((q) => q.trim())
     .filter(Boolean);
 
-  logger.info('Starting queues from ENABLED_QUEUES', {
-    queues,
-    totalEventShards: EVENTS_GROUP_QUEUES_SHARDS,
-  });
+  logger.info(
+    { queues, totalEventShards: EVENTS_GROUP_QUEUES_SHARDS },
+    'Starting queues from ENABLED_QUEUES',
+  );
   return queues;
 }
 
@@ -159,7 +160,7 @@ export function bootWorkers() {
 
     worker.run();
     workers.push(worker);
-    logger.info(`Started worker for ${queueName}`, { concurrency });
+    logger.info({ concurrency }, `Started worker for ${queueName}`);
   }
 
   // Start sessions worker
@@ -170,7 +171,7 @@ export function bootWorkers() {
       concurrency,
     });
     workers.push(sessionsWorker);
-    logger.info('Started worker for sessions', { concurrency });
+    logger.info({ concurrency }, 'Started worker for sessions');
   }
 
   // Start cron worker
@@ -181,7 +182,7 @@ export function bootWorkers() {
       concurrency,
     });
     workers.push(cronWorker);
-    logger.info('Started worker for cron', { concurrency });
+    logger.info({ concurrency }, 'Started worker for cron');
   }
 
   // Start notification worker
@@ -193,7 +194,7 @@ export function bootWorkers() {
       { ...workerOptions, concurrency }
     );
     workers.push(notificationWorker);
-    logger.info('Started worker for notification', { concurrency });
+    logger.info({ concurrency }, 'Started worker for notification');
   }
 
   // Start misc worker
@@ -204,7 +205,7 @@ export function bootWorkers() {
       concurrency,
     });
     workers.push(miscWorker);
-    logger.info('Started worker for misc', { concurrency });
+    logger.info({ concurrency }, 'Started worker for misc');
   }
 
   // Start import worker
@@ -215,7 +216,7 @@ export function bootWorkers() {
       concurrency,
     });
     workers.push(importWorker);
-    logger.info('Started worker for import', { concurrency });
+    logger.info({ concurrency }, 'Started worker for import');
   }
 
   // Start insights worker
@@ -226,7 +227,7 @@ export function bootWorkers() {
       concurrency,
     });
     workers.push(insightsWorker);
-    logger.info('Started worker for insights', { concurrency });
+    logger.info({ concurrency }, 'Started worker for insights');
   }
 
   // Start gsc worker
@@ -237,7 +238,7 @@ export function bootWorkers() {
       concurrency,
     });
     workers.push(gscWorker);
-    logger.info('Started worker for gsc', { concurrency });
+    logger.info({ concurrency }, 'Started worker for gsc');
   }
 
   // Start cohortCompute worker
@@ -252,7 +253,7 @@ export function bootWorkers() {
       },
     );
     workers.push(cohortComputeWorker);
-    logger.info('Started worker for cohortCompute', { concurrency });
+    logger.info({ concurrency }, 'Started worker for cohortCompute');
   }
 
   if (workers.length === 0) {
@@ -263,22 +264,15 @@ export function bootWorkers() {
 
   workers.forEach((worker) => {
     (worker as Worker).on('error', (error) => {
-      logger.error('worker error', {
-        worker: worker.name,
-        error,
-      });
+      logger.error({ err: error, worker: worker.name }, 'worker error');
     });
 
     (worker as Worker).on('closed', () => {
-      logger.info('worker closed', {
-        worker: worker.name,
-      });
+      logger.info({ worker: worker.name }, 'worker closed');
     });
 
     (worker as Worker).on('ready', () => {
-      logger.info('worker ready', {
-        worker: worker.name,
-      });
+      logger.info({ worker: worker.name }, 'worker ready');
     });
 
     (worker as Worker).on('failed', (job) => {
@@ -290,20 +284,24 @@ export function bootWorkers() {
             elapsed
           );
         }
-        logger.error('job failed', {
-          jobId: job.id,
-          worker: worker.name,
-          data: job.data,
-          error: job.failedReason,
-          options: job.opts,
-        });
+        logger.error(
+          {
+            jobId: job.id,
+            worker: worker.name,
+            data: job.data,
+            failedReason: job.failedReason,
+            options: job.opts,
+          },
+          'job failed',
+        );
       }
     });
 
     (worker as Worker).on('ioredis:close', () => {
-      logger.error('worker closed due to ioredis:close', {
-        worker: worker.name,
-      });
+      logger.error(
+        { worker: worker.name },
+        'worker closed due to ioredis:close',
+      );
     });
   });
 
@@ -313,17 +311,15 @@ export function bootWorkers() {
   ) {
     // Log the actual error details for unhandled rejections/exceptions
     if (evtOrExitCodeOrError instanceof Error) {
-      logger.error('Unhandled error triggered shutdown', {
-        eventName,
-        message: evtOrExitCodeOrError.message,
-        stack: evtOrExitCodeOrError.stack,
-        name: evtOrExitCodeOrError.name,
-      });
+      logger.error(
+        { err: evtOrExitCodeOrError, eventName },
+        'Unhandled error triggered shutdown',
+      );
     } else {
-      logger.info('Starting graceful shutdown', {
-        code: evtOrExitCodeOrError,
-        eventName,
-      });
+      logger.info(
+        { code: evtOrExitCodeOrError, eventName },
+        'Starting graceful shutdown',
+      );
     }
     try {
       const time = performance.now();
@@ -335,14 +331,15 @@ export function bootWorkers() {
 
       await Promise.all(workers.map((worker) => worker.close()));
 
-      logger.info('workers closed successfully', {
-        elapsed: performance.now() - time,
-      });
+      logger.info(
+        { elapsed: performance.now() - time },
+        'workers closed successfully',
+      );
     } catch (e) {
-      logger.error('exit handler error', {
-        code: evtOrExitCodeOrError,
-        error: e,
-      });
+      logger.error(
+        { err: e, code: evtOrExitCodeOrError },
+        'exit handler error',
+      );
     }
     const exitCode = Number.isNaN(+evtOrExitCodeOrError)
       ? 1
@@ -373,17 +370,17 @@ export async function waitForQueueToEmpty(queue: Queue, timeout = 60_000) {
     }
 
     if (performance.now() - startTime > timeout) {
-      logger.warn('Timeout reached while waiting for queue to empty', {
-        queue: queue.name,
-        remainingCount: activeCount,
-      });
+      logger.warn(
+        { queue: queue.name, remainingCount: activeCount },
+        'Timeout reached while waiting for queue to empty',
+      );
       break;
     }
 
-    logger.info('Waiting for queue to finish', {
-      queue: queue.name,
-      count: activeCount,
-    });
+    logger.info(
+      { queue: queue.name, count: activeCount },
+      'Waiting for queue to finish',
+    );
     await sleep(500);
   }
 }

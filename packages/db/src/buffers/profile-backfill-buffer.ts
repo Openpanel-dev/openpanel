@@ -33,14 +33,17 @@ export class ProfileBackfillBuffer extends BaseBuffer {
 
   async add(entry: ProfileBackfillEntry) {
     try {
-      this.logger.info('Adding profile backfill entry', entry);
+      this.logger.info({ entry }, 'Adding profile backfill entry');
       await this.redis
         .multi()
         .rpush(this.redisKey, JSON.stringify(entry))
         .incr(this.bufferCounterKey)
         .exec();
     } catch (error) {
-      this.logger.error('Failed to add profile backfill entry', { error });
+      this.logger.error(
+        { err: error },
+        'Failed to add profile backfill entry',
+      );
     }
   }
 
@@ -90,9 +93,10 @@ export class ProfileBackfillBuffer extends BaseBuffer {
         });
 
         processedChunks++;
-        this.logger.info('Profile backfill chunk applied', {
-          count: chunk.length,
-        });
+        this.logger.info(
+          { count: chunk.length },
+          'Profile backfill chunk applied',
+        );
       }
 
       if (processedChunks === chunks.length) {
@@ -102,12 +106,16 @@ export class ProfileBackfillBuffer extends BaseBuffer {
           .decrby(this.bufferCounterKey, raw.length)
           .exec();
 
-        this.logger.info('Profile backfill buffer processed', {
-          total: entries.length,
-        });
+        this.logger.info(
+          { total: entries.length },
+          'Profile backfill buffer processed',
+        );
       }
     } catch (error) {
-      this.logger.error('Failed to process profile backfill buffer', { error });
+      this.logger.error(
+        { err: error },
+        'Failed to process profile backfill buffer',
+      );
     }
   }
 

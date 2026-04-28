@@ -37,9 +37,10 @@ export async function activateRateLimiter<T extends FastifyRequest>({
         req.headers['x-forwarded-for']) as string;
     },
     onExceeded: (req, reply) => {
-      req.log.warn('Rate limit exceeded', {
-        clientId: req.headers['openpanel-client-id'],
-      });
+      req.log.warn(
+        { clientId: req.headers['openpanel-client-id'] },
+        'Rate limit exceeded',
+      );
     },
   });
 }

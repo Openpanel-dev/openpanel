@@ -16,7 +16,7 @@ export async function sessionsJob(job: Job<SessionsQueuePayload>) {
   try {
     await updateEventsCount(job.data.payload.projectId);
   } catch (e) {
-    logger.error('Failed to update events count', e);
+    logger.error({ err: e }, 'Failed to update events count');
   }
   return res;
 }

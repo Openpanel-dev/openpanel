@@ -38,11 +38,8 @@ export async function extendSessionEndJob({
   const state = await job.getState();
   if (state !== 'delayed') {
     baseLogger.warn(
+      { jobId, state },
       'Session end job is not in delayed state, skipping extend',
-      {
-        jobId,
-        state,
-      }
     );
     return;
   }
@@ -54,11 +51,8 @@ export async function extendSessionEndJob({
     CHANGE_DELAY_THROTTLE_MAP.set(`${projectId}:${deviceId}`, Date.now());
   } catch (error) {
     baseLogger.warn(
+      { err: error, jobId },
       'Session end job moved out of delayed state during extend',
-      {
-        jobId,
-        error,
-      }
     );
   }
 }

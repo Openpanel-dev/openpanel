@@ -23,25 +23,22 @@ type WarnLogParams = LogParams & { err?: Error };
 
 class CustomLogger implements Logger {
   trace({ message, args }: LogParams) {
-    logger.debug(message, args);
+    logger.debug({ args }, message);
   }
   debug({ message, args }: LogParams) {
     if (message.includes('Query:') && args?.response_status === 200) {
       return;
     }
-    logger.debug(message, args);
+    logger.debug({ args }, message);
   }
   info({ message, args }: LogParams) {
-    logger.info(message, args);
+    logger.info({ args }, message);
   }
   warn({ message, args }: WarnLogParams) {
-    logger.warn(message, args);
+    logger.warn({ args }, message);
   }
   error({ message, args, err }: ErrorLogParams) {
-    logger.error(message, {
-      ...args,
-      error: err,
-    });
+    logger.error({ err, args }, message);
   }
 }
 
@@ -132,7 +129,7 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   },
 };
 
-logger.info('Clickhouse options', CLICKHOUSE_OPTIONS);
+logger.info({ options: CLICKHOUSE_OPTIONS }, 'Clickhouse options');
 
 export const originalCh = createClient({
   url: process.env.CLICKHOUSE_URL,
@@ -155,7 +152,7 @@ export async function withRetry<T>(
     try {
       const res = await operation();
       if (attempt > 0) {
-        logger.info('Retry operation succeeded', { attempt });
+        logger.info({ attempt }, 'Retry operation succeeded');
       }
       return res;
     } catch (error: any) {
@@ -168,10 +165,8 @@ export async function withRetry<T>(
       ) {
         const delay = baseDelay * 2 ** attempt;
         logger.warn(
+          { err: error },
           `Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${delay}ms`,
-          {
-            error: error.message,
-          }
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
@@ -247,13 +242,16 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
     }),
   };
 
-  logger.info('query info', {
-    query: cleanQuery(query),
-    rows: json.rows,
-    stats: response.statistics,
-    elapsed: Date.now() - start,
-    clickhouseSettings,
-  });
+  logger.info(
+    {
+      query: cleanQuery(query),
+      rows: json.rows,
+      stats: response.statistics,
+      elapsed: Date.now() - start,
+      clickhouseSettings,
+    },
+    'query info',
+  );
 
   return response;
 }

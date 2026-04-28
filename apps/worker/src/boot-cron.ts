@@ -15,10 +15,10 @@ async function removeConflictingJobs(schedulerKey: string) {
         // Check if this job was created by the scheduler we're about to upsert
         if (job.id?.startsWith(`repeat:${schedulerKey}:`)) {
           await job.remove();
-          logger.info('Removed conflicting scheduler job', {
-            jobId: job.id,
-            schedulerKey,
-          });
+          logger.info(
+            { jobId: job.id, schedulerKey },
+            'Removed conflicting scheduler job',
+          );
         }
       }
     } catch (error) {
@@ -110,18 +110,16 @@ export async function bootCron() {
   const currentJobSchedulers = await cronQueue
     .getJobSchedulers()
     .catch((error) => {
-      logger.error('Error getting job schedulers', {
-        error,
-      });
+      logger.error({ err: error }, 'Error getting job schedulers');
       return [];
     });
   for (const jobScheduler of currentJobSchedulers) {
     if (!jobsToKeep.has(jobScheduler.key as CronQueueType)) {
       await cronQueue.removeJobScheduler(jobScheduler.key).catch((error) => {
-        logger.error('Error removing job scheduler', {
-          error,
-          jobScheduler: jobScheduler.key,
-        });
+        logger.error(
+          { err: error, jobScheduler: jobScheduler.key },
+          'Error removing job scheduler',
+        );
       });
     }
   }
@@ -151,9 +149,10 @@ export async function bootCron() {
         error.message.includes('job ID already exists');
 
       if (isConflictError) {
-        logger.warn('Job scheduler conflict detected, attempting cleanup', {
-          job: job.type,
-        });
+        logger.warn(
+          { job: job.type },
+          'Job scheduler conflict detected, attempting cleanup',
+        );
 
         await removeConflictingJobs(job.type);
 
@@ -182,20 +181,21 @@ export async function bootCron() {
               },
             },
           );
-          logger.info('Job scheduler created after cleanup', {
-            job: job.type,
-          });
+          logger.info(
+            { job: job.type },
+            'Job scheduler created after cleanup',
+          );
         } catch (retryError) {
-          logger.error('Error upserting job scheduler after cleanup', {
-            error: retryError,
-            job: job.type,
-          });
+          logger.error(
+            { err: retryError, job: job.type },
+            'Error upserting job scheduler after cleanup',
+          );
         }
       } else {
-        logger.error('Error upserting job scheduler', {
-          error,
-          job: job.type,
-        });
+        logger.error(
+          { err: error, job: job.type },
+          'Error upserting job scheduler',
+        );
       }
     }
   }

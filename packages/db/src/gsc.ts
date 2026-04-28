@@ -55,18 +55,21 @@ export async function getGscAccessToken(projectId: string): Promise<string> {
     conn.accessTokenExpiresAt &&
     conn.accessTokenExpiresAt.getTime() > Date.now() + 60_000
   ) {
-    logger.info('GSC using cached access token', {
-      projectId,
-      expiresAt: conn.accessTokenExpiresAt,
-    });
+    logger.info(
+      { projectId, expiresAt: conn.accessTokenExpiresAt },
+      'GSC using cached access token',
+    );
     return decrypt(conn.accessToken);
   }
 
-  logger.info('GSC access token expired, attempting refresh', {
-    projectId,
-    expiresAt: conn.accessTokenExpiresAt,
-    hasRefreshToken: !!conn.refreshToken,
-  });
+  logger.info(
+    {
+      projectId,
+      expiresAt: conn.accessTokenExpiresAt,
+      hasRefreshToken: !!conn.refreshToken,
+    },
+    'GSC access token expired, attempting refresh',
+  );
 
   try {
     const { accessToken, expiresAt } = await refreshGscToken(
@@ -76,12 +79,18 @@ export async function getGscAccessToken(projectId: string): Promise<string> {
       where: { projectId },
       data: { accessToken: encrypt(accessToken), accessTokenExpiresAt: expiresAt },
     });
-    logger.info('GSC token refreshed successfully', { projectId, expiresAt });
+    logger.info(
+      { projectId, expiresAt },
+      'GSC token refreshed successfully',
+    );
     return accessToken;
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to refresh token';
-    logger.error('GSC token refresh failed', { projectId, error: errorMessage });
+    logger.error(
+      { err: error, projectId, errorMessage },
+      'GSC token refresh failed',
+    );
     await db.gscConnection.update({
       where: { projectId },
       data: {

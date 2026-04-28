@@ -136,27 +136,27 @@ async function processImage(
 ): Promise<Buffer> {
   // If it's an ICO file, just return it as-is (no conversion needed)
   if (originalUrl && isIcoFile(originalUrl, contentType)) {
-    logger.debug('Serving ICO file directly', {
-      originalUrl,
-      bufferSize: buffer.length,
-    });
+    logger.debug(
+      { originalUrl, bufferSize: buffer.length },
+      'Serving ICO file directly',
+    );
     return buffer;
   }
 
   if (originalUrl && isSvgFile(originalUrl, contentType)) {
-    logger.debug('Serving SVG file directly', {
-      originalUrl,
-      bufferSize: buffer.length,
-    });
+    logger.debug(
+      { originalUrl, bufferSize: buffer.length },
+      'Serving SVG file directly',
+    );
     return buffer;
   }
 
   // If buffer isnt to big just return it as well
   if (buffer.length < 5000) {
-    logger.debug('Serving image directly without processing', {
-      originalUrl,
-      bufferSize: buffer.length,
-    });
+    logger.debug(
+      { originalUrl, bufferSize: buffer.length },
+      'Serving image directly without processing',
+    );
     return buffer;
   }
 
@@ -169,11 +169,14 @@ async function processImage(
       .png()
       .toBuffer();
   } catch (error) {
-    logger.warn('Sharp failed to process image, trying fallback', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      originalUrl,
-      bufferSize: buffer.length,
-    });
+    logger.warn(
+      {
+        err: error,
+        originalUrl,
+        bufferSize: buffer.length,
+      },
+      'Sharp failed to process image, trying fallback',
+    );
 
     throw error;
   }
@@ -187,10 +190,10 @@ async function processOgImage(
 ): Promise<Buffer> {
   // If buffer is small enough, return it as-is
   if (buffer.length < 10000) {
-    logger.debug('Serving OG image directly without processing', {
-      originalUrl,
-      bufferSize: buffer.length,
-    });
+    logger.debug(
+      { originalUrl, bufferSize: buffer.length },
+      'Serving OG image directly without processing',
+    );
     return buffer;
   }
 
@@ -204,11 +207,14 @@ async function processOgImage(
       .png()
       .toBuffer();
   } catch (error) {
-    logger.warn('Sharp failed to process OG image, trying fallback', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      originalUrl,
-      bufferSize: buffer.length,
-    });
+    logger.warn(
+      {
+        err: error,
+        originalUrl,
+        bufferSize: buffer.length,
+      },
+      'Sharp failed to process OG image, trying fallback',
+    );
 
     throw error;
   }
@@ -230,9 +236,7 @@ export async function getFavicon(
   reply: FastifyReply,
 ) {
   try {
-    logger.info('getFavicon', {
-      url: request.query.url,
-    });
+    logger.info({ url: request.query.url }, 'getFavicon');
     const url = validateUrl(request.query.url);
     if (!url) {
       return reply
@@ -256,15 +260,13 @@ export async function getFavicon(
     if (isDirectImage(url)) {
       imageUrl = url;
     } else {
-      logger.info('before parseUrlMeta', {
-        url: url.toString(),
-      });
+      logger.info({ url: url.toString() }, 'before parseUrlMeta');
       // For website URLs, extract favicon from HTML
       const meta = await parseUrlMeta(url.toString());
-      logger.info('parseUrlMeta result', {
-        url: url.toString(),
-        favicon: meta?.favicon,
-      });
+      logger.info(
+        { url: url.toString(), favicon: meta?.favicon },
+        'parseUrlMeta result',
+      );
       if (meta?.favicon) {
         imageUrl = new URL(meta.favicon);
       } else {
@@ -274,21 +276,27 @@ export async function getFavicon(
       }
     }
 
-    logger.info('Fetching favicon', {
-      originalUrl: url.toString(),
-      imageUrl: imageUrl.toString(),
-    });
+    logger.info(
+      {
+        originalUrl: url.toString(),
+        imageUrl: imageUrl.toString(),
+      },
+      'Fetching favicon',
+    );
 
     // Fetch the image
     let { buffer, contentType, status } = await fetchImage(imageUrl);
 
-    logger.info('Favicon fetch result', {
-      originalUrl: url.toString(),
-      imageUrl: imageUrl.toString(),
-      status,
-      bufferLength: buffer.length,
-      contentType,
-    });
+    logger.info(
+      {
+        originalUrl: url.toString(),
+        imageUrl: imageUrl.toString(),
+        status,
+        bufferLength: buffer.length,
+        contentType,
+      },
+      'Favicon fetch result',
+    );
 
     // If the direct favicon fetch failed and it's not from DuckDuckGo's service,
     // try DuckDuckGo's favicon service as a fallback
@@ -298,10 +306,13 @@ export async function getFavicon(
         `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
       );
 
-      logger.info('Trying DuckDuckGo favicon service', {
-        originalUrl: url.toString(),
-        duckduckgoUrl: duckduckgoUrl.toString(),
-      });
+      logger.info(
+        {
+          originalUrl: url.toString(),
+          duckduckgoUrl: duckduckgoUrl.toString(),
+        },
+        'Trying DuckDuckGo favicon service',
+      );
 
       const duckduckgoResult = await fetchImage(duckduckgoUrl);
       buffer = duckduckgoResult.buffer;
@@ -309,11 +320,14 @@ export async function getFavicon(
       status = duckduckgoResult.status;
       imageUrl = duckduckgoUrl;
 
-      logger.info('DuckDuckGo favicon result', {
-        status,
-        bufferLength: buffer.length,
-        contentType,
-      });
+      logger.info(
+        {
+          status,
+          bufferLength: buffer.length,
+          contentType,
+        },
+        'DuckDuckGo favicon result',
+      );
     }
 
     // Accept any response as long as we have valid image data
@@ -331,11 +345,14 @@ export async function getFavicon(
       contentType,
     );
 
-    logger.info('Favicon processing result', {
-      originalUrl: url.toString(),
-      originalBufferLength: buffer.length,
-      processedBufferLength: processedBuffer.length,
-    });
+    logger.info(
+      {
+        originalUrl: url.toString(),
+        originalBufferLength: buffer.length,
+        processedBufferLength: processedBuffer.length,
+      },
+      'Favicon processing result',
+    );
 
     // Determine the correct content type for caching and response
     const isIco = isIcoFile(imageUrl.toString(), contentType);
@@ -364,10 +381,10 @@ export async function getFavicon(
     reply.header('Cache-Control', 'public, max-age=3600, immutable');
     return reply.send(processedBuffer);
   } catch (error: any) {
-    logger.error('Favicon fetch error', {
-      error: error.message,
-      url: request.query.url,
-    });
+    logger.error(
+      { err: error, url: request.query.url },
+      'Favicon fetch error',
+    );
 
     const message =
       process.env.NODE_ENV === 'production'
@@ -437,9 +454,7 @@ export async function ping(
       domain: request.body.domain,
     });
   } catch (error) {
-    request.log.error('Failed to insert ping', {
-      error,
-    });
+    request.log.error({ err: error }, 'Failed to insert ping');
     reply.status(500).send({
       error: 'Failed to insert ping',
     });
@@ -557,10 +572,10 @@ export async function getOgImage(
     reply.header('Cache-Control', 'public, max-age=3600, immutable');
     return reply.send(processedBuffer);
   } catch (error: any) {
-    logger.error('OG image fetch error', {
-      error: error.message,
-      url: request.query.url,
-    });
+    logger.error(
+      { err: error, url: request.query.url },
+      'OG image fetch error',
+    );
 
     const message =
       process.env.NODE_ENV === 'production'

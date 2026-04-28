@@ -31,16 +31,19 @@ export async function handleMcpPost(
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   const message = body as JSONRPCMessage;
 
-  logger.info('MCP POST request', {
-    sessionId: sessionId ?? 'new',
-    method: 'method' in message ? message.method : 'unknown',
-    hasAuth: !!(query['token'] || req.headers.authorization),
-  });
+  logger.info(
+    {
+      sessionId: sessionId ?? 'new',
+      method: 'method' in message ? message.method : 'unknown',
+      hasAuth: !!(query['token'] || req.headers.authorization),
+    },
+    'MCP POST request',
+  );
 
   if (sessionId) {
     const context = await sessionManager.getContext(sessionId);
     if (!context) {
-      logger.warn('MCP session not found in Redis', { sessionId });
+      logger.warn({ sessionId }, 'MCP session not found in Redis');
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Session not found — please reconnect' }));
       return;
@@ -63,7 +66,7 @@ export async function handleMcpPost(
       });
       res.end(JSON.stringify(response));
     } catch (err) {
-      logger.error('MCP request processing error', { err, sessionId });
+      logger.error({ err, sessionId }, 'MCP request processing error');
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Internal server error' }));
     }
@@ -86,12 +89,15 @@ export async function handleMcpPost(
     const newSessionId = sessionManager.generateId();
     await sessionManager.setContext(newSessionId, context);
 
-    logger.info('MCP session created', {
-      sessionId: newSessionId,
-      clientType: context.clientType,
-      organizationId: context.organizationId,
-      projectId: context.projectId,
-    });
+    logger.info(
+      {
+        sessionId: newSessionId,
+        clientType: context.clientType,
+        organizationId: context.organizationId,
+        projectId: context.projectId,
+      },
+      'MCP session created',
+    );
 
     res.writeHead(200, {
       'Content-Type': 'application/json',
@@ -100,11 +106,11 @@ export async function handleMcpPost(
     res.end(JSON.stringify(response));
   } catch (err) {
     if (err instanceof McpAuthError) {
-      logger.warn('MCP auth failed', { reason: err.message });
+      logger.warn({ reason: err.message }, 'MCP auth failed');
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     } else {
-      logger.error('MCP session creation error', { err });
+      logger.error({ err }, 'MCP session creation error');
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Internal server error' }));
     }
@@ -126,13 +132,16 @@ async function processRequest(
 ): Promise<JSONRPCMessage> {
   if ('method' in message && message.method === 'tools/call' && 'params' in message) {
     const { name, arguments: args } = (message.params ?? {}) as { name?: string; arguments?: unknown };
-    logger.info('MCP tool call', {
-      tool: name,
-      params: args,
-      organizationId: context.organizationId,
-      projectId: context.projectId,
-      clientType: context.clientType,
-    });
+    logger.info(
+      {
+        tool: name,
+        params: args,
+        organizationId: context.organizationId,
+        projectId: context.projectId,
+        clientType: context.clientType,
+      },
+      'MCP tool call',
+    );
   }
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   const server = createMcpServer(context);
@@ -171,11 +180,14 @@ async function processRequest(
   if ('method' in message && message.method === 'tools/call') {
     const { name } = (('params' in message && message.params) ?? {}) as { name?: string };
     const isError = 'result' in response && (response.result as { isError?: boolean })?.isError;
-    logger.info('MCP tool result', {
-      tool: name,
-      durationMs: Date.now() - start,
-      isError: isError ?? false,
-    });
+    logger.info(
+      {
+        tool: name,
+        durationMs: Date.now() - start,
+        isError: isError ?? false,
+      },
+      'MCP tool result',
+    );
   }
 
   return response;

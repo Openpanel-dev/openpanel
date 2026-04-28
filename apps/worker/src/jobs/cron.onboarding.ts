@@ -195,13 +195,13 @@ export async function onboardingJob(job: Job<CronQueuePayload>) {
     }
 
     logger.info(
-      `Checking if enough days have passed for organization ${org.id}`,
       {
         daysSinceOrgCreation,
         nextEmailDay: nextEmail.day,
         orgCreatedAt: org.createdAt,
         today: new Date(),
       },
+      `Checking if enough days have passed for organization ${org.id}`,
     );
     // Check if enough days have passed
     if (daysSinceOrgCreation < nextEmail.day) {
@@ -251,21 +251,21 @@ export async function onboardingJob(job: Job<CronQueuePayload>) {
       );
     } catch (error) {
       logger.error(
+        { err: error, template: nextEmail.template },
         `Failed to send onboarding email to organization ${org.id}`,
-        {
-          error,
-          template: nextEmail.template,
-        },
       );
     }
   }
 
-  logger.info('Completed onboarding email job', {
-    totalOrgs: orgs.length,
-    emailsSent,
-    orgsCompleted,
-    orgsSkipped,
-  });
+  logger.info(
+    {
+      totalOrgs: orgs.length,
+      emailsSent,
+      orgsCompleted,
+      orgsSkipped,
+    },
+    'Completed onboarding email job',
+  );
 
   return {
     totalOrgs: orgs.length,

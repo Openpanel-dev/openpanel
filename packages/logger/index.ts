@@ -1,145 +1,105 @@
 import * as HyperDX from '@hyperdx/node-opentelemetry';
-import winston from 'winston';
+import pino, { type Logger } from 'pino';
 
-export { winston };
-
-export type ILogger = winston.Logger;
+export type ILogger = Logger;
 
 const logLevel = process.env.LOG_LEVEL ?? 'info';
 const silent = process.env.LOG_SILENT === 'true';
 
-const customLevels = {
-  fatal: 0,
-  warn: 4,
-  trace: 7,
-};
+// Substring match (lowercased). Catches camelCase, snake_case, prefixed and
+// suffixed variants in one entry — e.g. 'token' covers accessToken,
+// refresh_token, jwtToken, etc.
+const SENSITIVE_KEY_PATTERNS = [
+  'password',
+  'passwd',
+  'pwd',
+  'token',
+  'secret',
+  'authorization',
+  'apikey',
+  'accesskey',
+  'privatekey',
+  'cookie',
+  'bearer',
+  'credential',
+  'salt',
+  'signature',
+  'ip',
+  'email',
+  'firstname',
+  'lastname',
+  'surname',
+];
 
-// naming all darn levels to make sure we never get any errors with the logger
-winston.addColors({
-  emerg: 'red',
-  alert: 'red',
-  crit: 'red',
-  error: 'red',
-  warning: 'yellow',
-  notice: 'cyan',
-  info: 'green',
-  debug: 'blue',
-  fatal: 'red',
-  warn: 'yellow',
-  trace: 'gray',
-});
+const MAX_REDACT_DEPTH = 5;
+
+function redactSensitive(value: unknown, depth = 0): unknown {
+  if (value instanceof Error) {
+    return {
+      ...value,
+      message: value.message,
+      stack: value.stack,
+      name: value.name,
+    };
+  }
+  if (
+    depth >= MAX_REDACT_DEPTH ||
+    value === null ||
+    typeof value !== 'object'
+  ) {
+    return value;
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((v) => redactSensitive(v, depth + 1));
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+    const lowered = key.toLowerCase();
+    if (SENSITIVE_KEY_PATTERNS.some((k) => lowered.includes(k))) {
+      result[key] = '[REDACTED]';
+    } else {
+      result[key] = redactSensitive(val, depth + 1);
+    }
+  }
+  return result;
+}
 
 export function createLogger({ name }: { name: string }): ILogger {
   const service = [process.env.LOG_PREFIX, name, process.env.NODE_ENV ?? 'dev']
     .filter(Boolean)
     .join('-');
 
-  const prettyError = (error: Error) => ({
-    ...error,
-    stack: error.stack,
-    message: error.message,
-  });
+  const useHyperDX = !!process.env.HYPERDX_API_KEY;
+  const usePretty = !useHyperDX && process.env.NODE_ENV !== 'production';
 
-  const errorFormatter = winston.format((info) => {
-    if (info.error instanceof Error) {
-      return {
-        ...info,
-        error: prettyError(info.error),
-      };
-    }
-    if (info instanceof Error) {
-      return {
-        ...info,
-        ...prettyError(info),
-      };
-    }
-    return info;
-  });
-
-  const sensitiveKeys = [
-    'password',
-    'token',
-    'secret',
-    'authorization',
-    'apiKey',
-  ];
-
-  const sensitiveUrlParamPattern = new RegExp(
-    `([?&])(${sensitiveKeys.join('|')})=([^&]*)`,
-    'gi',
-  );
-
-  const redactUrl = (value: string): string =>
-    value.replace(sensitiveUrlParamPattern, '$1$2=[REDACTED]');
-
-  const redactSensitiveInfo = winston.format((info) => {
-    const redactObject = (obj: any): any => {
-      if (!obj || typeof obj !== 'object') {
-        return obj;
-      }
-
-      return Object.keys(obj).reduce((acc, key) => {
-        const lowerKey = key.toLowerCase();
-        if (sensitiveKeys.some((k) => lowerKey.includes(k))) {
-          acc[key] = '[REDACTED]';
-        } else if (typeof obj[key] === 'string') {
-          acc[key] = redactUrl(obj[key]);
-        } else if (typeof obj[key] === 'object') {
-          if (obj[key] instanceof Date) {
-            acc[key] = obj[key].toISOString();
-          } else {
-            acc[key] = redactObject(obj[key]);
-          }
-        } else {
-          acc[key] = obj[key];
-        }
-        return acc;
-      }, {} as any);
-    };
-
-    return { ...info, ...redactObject(info) };
-  });
-
-  const transports: winston.transport[] = [];
-  let format: winston.Logform.Format;
-
-  if (process.env.HYPERDX_API_KEY) {
-    transports.push(
-      HyperDX.getWinstonTransport(logLevel, {
-        detectResources: true,
-        service,
-      })
-    );
-    format = winston.format.combine(
-      errorFormatter(),
-      redactSensitiveInfo(),
-      winston.format.json()
-    );
-  } else {
-    transports.push(new winston.transports.Console());
-    format = winston.format.combine(
-      errorFormatter(),
-      redactSensitiveInfo(),
-      winston.format.colorize({
-        all: true,
-      }),
-      winston.format.printf((info) => {
-        const { level, message, service, ...meta } = info;
-        const metaStr =
-          Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
-        return `${level} ${message}${metaStr}`;
-      })
-    );
-  }
-
-  const logger = winston.createLogger({
-    defaultMeta: { service },
+  return pino({
+    name: service,
     level: logLevel,
-    format,
-    transports,
-    silent,
-    levels: { ...customLevels, ...winston.config.syslog.levels },
+    enabled: !silent,
+    formatters: {
+      log: (obj) => {
+        return redactSensitive(obj) as Record<string, unknown>;
+      },
+    },
+    mixin: useHyperDX ? HyperDX.getPinoMixinFunction : undefined,
+    transport: useHyperDX
+      ? HyperDX.getPinoTransport(logLevel, {
+          detectResources: true,
+          service,
+        })
+      : usePretty
+        ? {
+            target: 'pino-pretty',
+            options: {
+              colorize: true,
+              translateTime: 'SYS:standard',
+              ignore: 'pid,hostname,service',
+            },
+          }
+        : undefined,
   });
-
-  return logger;
 }

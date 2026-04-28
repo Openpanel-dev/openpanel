@@ -139,16 +139,21 @@ const loggerMiddleware = t.middleware(
     const rawInput = await getRawInput();
     // Only log mutations
     if (type === 'mutation') {
-      ctx.req.log.info('TRPC mutation', {
-        path,
-        rawInput,
-        input,
-        userId: ctx.session?.userId,
-        organizationId: has('organizationId', rawInput)
-          ? rawInput.organizationId
-          : undefined,
-        projectId: has('projectId', rawInput) ? rawInput.projectId : undefined,
-      });
+      ctx.req.log.info(
+        {
+          path,
+          rawInput,
+          input,
+          userId: ctx.session?.userId,
+          organizationId: has('organizationId', rawInput)
+            ? rawInput.organizationId
+            : undefined,
+          projectId: has('projectId', rawInput)
+            ? rawInput.projectId
+            : undefined,
+        },
+        'TRPC mutation',
+      );
     }
     return next();
   },

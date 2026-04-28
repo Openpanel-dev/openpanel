@@ -144,7 +144,7 @@ export async function gscGoogleCallback(
     const redirectUrl = `${dashboardUrl}/${project.organizationId}/${projectIdStr}/settings/gsc`;
     return reply.redirect(redirectUrl);
   } catch (error) {
-    req.log.error(error);
+    req.log.error({ err: error }, 'GSC OAuth callback error');
     reply.clearCookie('gsc_oauth_state');
     reply.clearCookie('gsc_code_verifier');
     reply.clearCookie('gsc_project_id');

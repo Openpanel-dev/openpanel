@@ -51,7 +51,7 @@ async function getCurrentWalLsn(
     `;
     return result[0]?.lsn || null;
   } catch (error) {
-    logger.error('Failed to get WAL LSN', { error });
+    logger.error({ err: error }, 'Failed to get WAL LSN');
     return null;
   }
 }
@@ -64,7 +64,7 @@ async function cacheWalLsnForSession(
     const redis = getRedisCache();
     await redis.setex(`${LSN_CACHE_PREFIX}${sessionId}`, LSN_CACHE_TTL, lsn);
   } catch (error) {
-    logger.error('Failed to cache WAL LSN', { error, sessionId });
+    logger.error({ err: error, sessionId }, 'Failed to cache WAL LSN');
   }
 }
 
@@ -73,7 +73,7 @@ async function getCachedWalLsn(sessionId: string): Promise<string | null> {
     const redis = getRedisCache();
     return await redis.get(`${LSN_CACHE_PREFIX}${sessionId}`);
   } catch (error) {
-    logger.error('Failed to get cached WAL LSN', { error, sessionId });
+    logger.error({ err: error, sessionId }, 'Failed to get cached WAL LSN');
     return null;
   }
 }
@@ -114,35 +114,38 @@ async function waitForReplicaCatchup(
 
     // Check if replica has caught up (current >= expected)
     if (compareWalLsn(currentLsn, expectedLsn) >= 0) {
-      logger.debug('Replica caught up', {
-        attempt: attempt + 1,
-        currentLsn,
-        expectedLsn,
-        sessionId,
-      });
+      logger.debug(
+        {
+          attempt: attempt + 1,
+          currentLsn,
+          expectedLsn,
+          sessionId,
+        },
+        'Replica caught up',
+      );
       return true;
     }
 
     // Exponential backoff
     if (attempt < MAX_RETRY_ATTEMPTS - 1) {
       const delayMs = INITIAL_RETRY_DELAY_MS * 2 ** attempt;
-      logger.debug('Waiting for replica to catch up', {
-        attempt: attempt + 1,
-        delayMs,
-        currentLsn,
-        expectedLsn,
-        sessionId,
-      });
+      logger.debug(
+        {
+          attempt: attempt + 1,
+          delayMs,
+          currentLsn,
+          expectedLsn,
+          sessionId,
+        },
+        'Waiting for replica to catch up',
+      );
       await sleep(delayMs);
     }
   }
 
   logger.warn(
+    { sessionId, expectedLsn },
     'Replica did not catch up after max retries, falling back to primary',
-    {
-      sessionId,
-      expectedLsn,
-    },
   );
   return false;
 }
@@ -193,12 +196,10 @@ export function sessionConsistency() {
               const lsn = await getCurrentWalLsn(client);
               if (lsn) {
                 await cacheWalLsnForSession(sessionId, lsn);
-                logger.debug('Cached WAL LSN after write', {
-                  sessionId,
-                  lsn,
-                  operation,
-                  model,
-                });
+                logger.debug(
+                  { sessionId, lsn, operation, model },
+                  'Cached WAL LSN after write',
+                );
               }
             }
 

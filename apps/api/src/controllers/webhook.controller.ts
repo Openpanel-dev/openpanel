@@ -265,7 +265,7 @@ export async function polarWebhook(
     reply.status(202).send('OK');
   } catch (error) {
     if (error instanceof PolarWebhookVerificationError) {
-      request.log.error('Polar webhook error', { error });
+      request.log.error({ err: error }, 'Polar webhook error');
       reply.status(403).send('');
     }
 

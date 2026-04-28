@@ -50,7 +50,10 @@ export class BaseBuffer {
             const actual = await fallbackFn();
             await getRedisCache().set(this.bufferCounterKey, actual.toString());
           } catch (error) {
-            this.logger.warn('Failed to resync buffer counter', { error });
+            this.logger.warn(
+              { err: error },
+              'Failed to resync buffer counter',
+            );
           }
         },
       }).catch(() => {});
@@ -62,10 +65,10 @@ export class BaseBuffer {
           return Math.max(0, parsed);
         }
         // Corrupted value → treat as missing
-        this.logger.warn('Invalid buffer counter value, reinitializing', {
-          key,
-          counterValue,
-        });
+        this.logger.warn(
+          { key, counterValue },
+          'Invalid buffer counter value, reinitializing',
+        );
       }
 
       // Initialize counter with current size
@@ -74,8 +77,8 @@ export class BaseBuffer {
       return count;
     } catch (error) {
       this.logger.warn(
+        { err: error },
         'Failed to get buffer size from counter, using fallback',
-        { error },
       );
       return fallbackFn();
     }
@@ -106,13 +109,15 @@ export class BaseBuffer {
       try {
         this.logger.debug('Processing buffer (parallel mode)...');
         await this.onFlush();
-        this.logger.debug('Flush completed (parallel mode)', {
-          elapsed: performance.now() - now,
-        });
+        this.logger.debug(
+          { elapsed: performance.now() - now },
+          'Flush completed (parallel mode)',
+        );
       } catch (error) {
-        this.logger.error('Failed to process buffer (parallel mode)', {
-          error,
-        });
+        this.logger.error(
+          { err: error },
+          'Failed to process buffer (parallel mode)',
+        );
         // In parallel mode, we can't safely reset counter as other workers might be active
         // Counter will be resynced automatically by the periodic job
       }
@@ -130,15 +135,13 @@ export class BaseBuffer {
     );
     if (acquired === 'OK') {
       try {
-        this.logger.debug('Acquired lock. Processing buffer...', {
-          lockId,
-        });
+        this.logger.debug({ lockId }, 'Acquired lock. Processing buffer...');
         await this.onFlush();
       } catch (error) {
-        this.logger.error('Failed to process buffer', {
-          error,
-          lockId,
-        });
+        this.logger.error(
+          { err: error, lockId },
+          'Failed to process buffer',
+        );
         // On error, we might want to reset counter to avoid drift
         if (this.bufferCounterKey) {
           this.logger.warn('Resetting buffer counter due to flush error');
@@ -146,10 +149,10 @@ export class BaseBuffer {
         }
       } finally {
         await this.releaseLock(lockId);
-        this.logger.debug('Flush completed', {
-          elapsed: performance.now() - now,
-          lockId,
-        });
+        this.logger.debug(
+          { elapsed: performance.now() - now, lockId },
+          'Flush completed',
+        );
       }
     }
   }

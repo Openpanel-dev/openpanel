@@ -21,7 +21,7 @@ export function gscJob(job: Job<GscQueuePayload>) {
 async function gscProjectSyncJob(projectId: string) {
   const conn = await db.gscConnection.findUnique({ where: { projectId } });
   if (!conn?.siteUrl) {
-    logger.warn('GSC sync skipped: no connection or siteUrl', { projectId });
+    logger.warn({ projectId }, 'GSC sync skipped: no connection or siteUrl');
     return;
   }
 
@@ -42,7 +42,7 @@ async function gscProjectSyncJob(projectId: string) {
         lastSyncError: null,
       },
     });
-    logger.info('GSC sync completed', { projectId });
+    logger.info({ projectId }, 'GSC sync completed');
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await db.gscConnection.update({
@@ -53,7 +53,7 @@ async function gscProjectSyncJob(projectId: string) {
         lastSyncError: message,
       },
     });
-    logger.error('GSC sync failed', { projectId, error });
+    logger.error({ err: error, projectId }, 'GSC sync failed');
     throw error;
   }
 }
@@ -61,9 +61,10 @@ async function gscProjectSyncJob(projectId: string) {
 async function gscProjectBackfillJob(projectId: string) {
   const conn = await db.gscConnection.findUnique({ where: { projectId } });
   if (!conn?.siteUrl) {
-    logger.warn('GSC backfill skipped: no connection or siteUrl', {
-      projectId,
-    });
+    logger.warn(
+      { projectId },
+      'GSC backfill skipped: no connection or siteUrl',
+    );
     return;
   }
 
@@ -88,11 +89,14 @@ async function gscProjectBackfillJob(projectId: string) {
         chunkStart.setTime(startDate.getTime());
       }
 
-      logger.info('GSC backfill chunk', {
-        projectId,
-        from: chunkStart.toISOString().slice(0, 10),
-        to: chunkEnd.toISOString().slice(0, 10),
-      });
+      logger.info(
+        {
+          projectId,
+          from: chunkStart.toISOString().slice(0, 10),
+          to: chunkEnd.toISOString().slice(0, 10),
+        },
+        'GSC backfill chunk',
+      );
 
       await syncGscData(projectId, chunkStart, chunkEnd);
 
@@ -109,7 +113,7 @@ async function gscProjectBackfillJob(projectId: string) {
         lastSyncError: null,
       },
     });
-    logger.info('GSC backfill completed', { projectId });
+    logger.info({ projectId }, 'GSC backfill completed');
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await db.gscConnection.update({
@@ -120,7 +124,7 @@ async function gscProjectBackfillJob(projectId: string) {
         lastSyncError: message,
       },
     });
-    logger.error('GSC backfill failed', { projectId, error });
+    logger.error({ err: error, projectId }, 'GSC backfill failed');
     throw error;
   }
 }
@@ -133,9 +137,10 @@ export async function gscSyncAllJob() {
     select: { projectId: true },
   });
 
-  logger.info('GSC nightly sync: enqueuing projects', {
-    count: connections.length,
-  });
+  logger.info(
+    { count: connections.length },
+    'GSC nightly sync: enqueuing projects',
+  );
 
   for (const conn of connections) {
     await gscQueue.add('gscProjectSync', {

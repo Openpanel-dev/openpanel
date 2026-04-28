@@ -8,7 +8,6 @@ export async function healthcheck(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-
   const [redisResult, dbResult, chResult] = await Promise.all([
     tryCatch(async () => (await getRedisCache().ping()) === 'PONG'),
     tryCatch(async () => !!(await db.$executeRaw`SELECT 1`)),
@@ -36,18 +35,24 @@ export async function healthcheck(
   const status = failedDependencies.length === 0 ? 200 : 503;
 
   if (status === 200) {
-    request.log.debug('healthcheck passed', {
-      workingDependencies,
-      failedDependencies,
-      dependencies,
-    });
+    request.log.debug(
+      {
+        workingDependencies,
+        failedDependencies,
+        dependencies,
+      },
+      'healthcheck passed'
+    );
   } else {
-    request.log.warn('healthcheck failed', {
-      workingDependencies,
-      failedDependencies,
-      dependencies,
-      dependencyErrors,
-    });
+    request.log.warn(
+      {
+        workingDependencies,
+        failedDependencies,
+        dependencies,
+        dependencyErrors,
+      },
+      'healthcheck failed'
+    );
   }
 
   return reply.status(status).send({

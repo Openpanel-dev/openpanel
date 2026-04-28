@@ -80,7 +80,7 @@ export class ProfileBuffer extends BaseBuffer {
         .exec();
 
       if (!result) {
-        this.logger.error('Failed to add profile to Redis', { profile });
+        this.logger.error({ profile }, 'Failed to add profile to Redis');
         return;
       }
 
@@ -89,7 +89,7 @@ export class ProfileBuffer extends BaseBuffer {
         await this.tryFlush();
       }
     } catch (error) {
-      this.logger.error('Failed to add profile', { error, profile });
+      this.logger.error({ err: error, profile }, 'Failed to add profile');
     }
   }
 
@@ -177,8 +177,8 @@ export class ProfileBuffer extends BaseBuffer {
           }
         } catch (error) {
           this.logger.warn(
+            { err: error, chunkSize: chunk.length },
             'Failed to batch fetch profiles from Clickhouse, proceeding without existing data',
-            { error, chunkSize: chunk.length }
           );
         }
       }
@@ -289,12 +289,15 @@ export class ProfileBuffer extends BaseBuffer {
         .decrby(this.bufferCounterKey, rawProfiles.length);
       await multi.exec();
 
-      this.logger.debug('Successfully completed profile processing', {
-        totalProfiles: rawProfiles.length,
-        uniqueProfiles: uniqueProfiles.length,
-      });
+      this.logger.debug(
+        {
+          totalProfiles: rawProfiles.length,
+          uniqueProfiles: uniqueProfiles.length,
+        },
+        'Successfully completed profile processing',
+      );
     } catch (error) {
-      this.logger.error('Failed to process buffer', { error });
+      this.logger.error({ err: error }, 'Failed to process buffer');
     }
   }
 
