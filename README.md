@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/openpanel-dev-openpanel-badge.png)](https://mseep.ai/app/openpanel-dev-openpanel)
+
 ![hero](apps/public/public/ogimage.png)
 
 <p align="center">
