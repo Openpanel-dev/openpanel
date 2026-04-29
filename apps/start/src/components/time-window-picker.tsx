@@ -1,9 +1,9 @@
-import { timeWindows } from '@openpanel/constants';
+import { getDefaultIntervalByDates, timeWindows } from '@openpanel/constants';
 import type { IChartRange, IInterval } from '@openpanel/validation';
 import { bind } from 'bind-event-listener';
-import { endOfDay, format, startOfDay } from 'date-fns';
+import { addDays, endOfDay, format, startOfDay, subDays } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,6 +15,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { InputEnter } from '@/components/ui/input-enter';
 import { pushModal, useOnPushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { shouldIgnoreKeypress } from '@/utils/should-ignore-keypress';
@@ -44,6 +45,33 @@ export function TimeWindowPicker({
     isDateRangerPickerOpen.current = open;
   });
   const timeWindow = timeWindows[value ?? '30d'];
+  const [open, setOpen] = useState(false);
+  const [customDaysKey, setCustomDaysKey] = useState(0);
+
+  const handleCustomDays = useCallback(
+    (raw: string) => {
+      const days = Number(raw);
+      if (!Number.isInteger(days) || days < 1 || days > 365) {
+        return;
+      }
+      const now = new Date();
+      const start = startOfDay(subDays(now, days - 1));
+      const end = startOfDay(addDays(now, 1));
+      onStartDateChange(format(start, 'yyyy-MM-dd HH:mm:ss'));
+      onEndDateChange(format(end, 'yyyy-MM-dd HH:mm:ss'));
+      onChange('custom');
+      const interval = getDefaultIntervalByDates(
+        start.toISOString(),
+        end.toISOString()
+      );
+      if (interval) {
+        onIntervalChange(interval);
+      }
+      setCustomDaysKey((k) => k + 1);
+      setOpen(false);
+    },
+    [onChange, onStartDateChange, onEndDateChange, onIntervalChange]
+  );
 
   const handleCustom = useCallback(() => {
     pushModal('DateRangerPicker', {
@@ -83,7 +111,7 @@ export function TimeWindowPicker({
   }, [handleCustom]);
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={setOpen} open={open}>
       <DropdownMenuTrigger asChild>
         <Button
           className={cn('justify-start', className)}
@@ -193,6 +221,31 @@ export function TimeWindowPicker({
 
         <DropdownMenuSeparator />
 
+        <DropdownMenuGroup>
+          {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: none */}
+          {/** biome-ignore lint/a11y/noStaticElementInteractions: none */}
+          <div
+            className="flex items-center gap-4 rounded-sm px-2 py-1.5"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <span className="whitespace-nowrap">Last days</span>
+            <InputEnter
+              aria-label="Number of days for custom date filter"
+              className="h-7 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              inputMode="numeric"
+              key={customDaysKey}
+              max={365}
+              min={1}
+              onChangeValue={handleCustomDays}
+              placeholder="X days"
+              step={1}
+              type="number"
+              value=""
+            />
+          </div>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => handleCustom()}>
             {timeWindows.custom.label}
