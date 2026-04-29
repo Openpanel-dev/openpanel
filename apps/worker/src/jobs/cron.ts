@@ -5,7 +5,6 @@ import type { CronQueuePayload } from '@openpanel/queue';
 
 import { customAlerts } from './cron.custom-alerts';
 import { jobdeleteProjects } from './cron.delete-projects';
-import { hermesFlows } from './cron.hermes-flows';
 import { materializeColumns } from './cron.materialize-columns';
 import { ping } from './cron.ping';
 import { salt } from './cron.salt';
@@ -38,9 +37,6 @@ export async function cronJob(job: Job<CronQueuePayload>) {
     }
     case 'customAlerts': {
       return await customAlerts();
-    }
-    case 'hermesFlows': {
-      return await hermesFlows();
     }
   }
 }

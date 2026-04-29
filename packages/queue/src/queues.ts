@@ -115,10 +115,6 @@ export type CronQueuePayloadCustomAlerts = {
   type: 'customAlerts';
   payload: undefined;
 };
-export type CronQueuePayloadHermesFlows = {
-  type: 'hermesFlows';
-  payload: undefined;
-};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
@@ -126,8 +122,7 @@ export type CronQueuePayload =
   | CronQueuePayloadFlushProfiles
   | CronQueuePayloadPing
   | CronQueuePayloadProject
-  | CronQueuePayloadCustomAlerts
-  | CronQueuePayloadHermesFlows;
+  | CronQueuePayloadCustomAlerts;
 
 export type MiscQueuePayloadTrialEndingSoon = {
   type: 'trialEndingSoon';

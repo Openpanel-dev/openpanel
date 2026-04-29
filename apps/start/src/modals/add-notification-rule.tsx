@@ -137,10 +137,6 @@ export default function AddNotificationRule({
       toast.error('At least one event is required');
       return;
     }
-    if (data.config.type === 'flow' && !data.config.triggerEvent) {
-      toast.error('Trigger event is required');
-      return;
-    }
     mutation.mutate(data);
   };
 
@@ -199,13 +195,6 @@ export default function AddNotificationRule({
                       type: 'funnel',
                       events: [{ name: '', segment: 'event', filters: [] }],
                     });
-                  } else if (value === 'flow') {
-                    form.setValue('config', {
-                      type: 'flow',
-                      triggerEvent: '',
-                      triggerFilters: [],
-                      delayMinutes: 5,
-                    });
                   }
                 }}
                 className="w-full"
@@ -217,7 +206,6 @@ export default function AddNotificationRule({
                   { label: 'Funnel', value: 'funnel' },
                   { label: 'Threshold', value: 'threshold' },
                   { label: 'Anomaly', value: 'anomaly' },
-                  { label: 'Flow (Push Notifications)', value: 'flow' },
                 ]}
               />
             )}
@@ -330,9 +318,6 @@ export default function AddNotificationRule({
             lockedReportId={initialReportId}
           />
         )}
-
-        {/* Flow (Push Notifications) fields */}
-        {configType === 'flow' && <FlowFields form={form} />}
 
         <Controller
           control={form.control}
@@ -545,197 +530,6 @@ function AnomalyFields({
         <div className="flex items-center gap-2 rounded border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
           <AlertTriangleIcon className="size-4 shrink-0" />
           Hourly checks may result in more false positives
-        </div>
-      )}
-    </>
-  );
-}
-
-function FlowFields({ form }: { form: UseFormReturn<IForm> }) {
-  const { projectId } = useAppParams();
-  const trpc = useTRPC();
-  const eventNames = useEventNames({ projectId });
-
-  const triggerEvent = useWatch({
-    control: form.control,
-    name: 'config.triggerEvent',
-  });
-  const delayMinutes = useWatch({
-    control: form.control,
-    name: 'config.delayMinutes',
-  });
-  const exitEvent = useWatch({
-    control: form.control,
-    name: 'config.exitEvent',
-  });
-  const triggerFilters = useWatch({
-    control: form.control,
-    name: 'config.triggerFilters',
-  });
-
-  const filtersArray = useFieldArray({
-    control: form.control,
-    name: 'config.triggerFilters',
-  });
-
-  const properties = useEventProperties({ projectId });
-
-  const previewQuery = useQuery(
-    trpc.notification.previewFlowRule.queryOptions(
-      {
-        projectId,
-        config: {
-          type: 'flow',
-          triggerEvent: triggerEvent ?? '',
-          triggerFilters: (triggerFilters ?? []) as any,
-          delayMinutes: Number(delayMinutes ?? 0),
-          exitEvent: exitEvent || undefined,
-        },
-      },
-      {
-        enabled: !!triggerEvent,
-        retry: false,
-      },
-    ),
-  );
-
-  return (
-    <>
-      <Controller
-        control={form.control}
-        name="config.triggerEvent"
-        render={({ field }) => (
-          <WithLabel label="Trigger event">
-            <ComboboxEvents
-              searchable
-              className="w-full"
-              value={field.value ?? ''}
-              placeholder="Select trigger event"
-              onChange={field.onChange}
-              items={eventNames}
-            />
-          </WithLabel>
-        )}
-      />
-
-      <WithLabel label="Filters (optional)">
-        <div className="col gap-2">
-          {filtersArray.fields.map((filter, index) => (
-            <div key={filter.id} className="border bg-def-100 rounded p-2">
-              <PureFilterItem
-                eventName={triggerEvent ?? ''}
-                filter={filter}
-                onRemove={() => filtersArray.remove(index)}
-                onChangeValue={(value) => {
-                  filtersArray.update(index, { ...filter, value });
-                }}
-                onChangeOperator={(operator) => {
-                  filtersArray.update(index, { ...filter, operator });
-                }}
-              />
-            </div>
-          ))}
-          <Combobox
-            searchable
-            placeholder="Add filter"
-            value=""
-            items={properties.map((item) => ({ label: item, value: item }))}
-            onChange={(value) => {
-              filtersArray.append({
-                id: shortId(),
-                name: value,
-                operator: 'is',
-                value: [],
-              });
-            }}
-          >
-            <Button
-              className="self-start"
-              variant={'outline'}
-              icon={FilterIcon}
-            >
-              Add filter
-            </Button>
-          </Combobox>
-        </div>
-      </WithLabel>
-
-      <Controller
-        control={form.control}
-        name="config.delayMinutes"
-        render={({ field }) => (
-          <WithLabel
-            label="Fire after (minutes)"
-            info={
-              <div className="prose dark:prose-invert">
-                <p>
-                  How long after the trigger event to fire the rule. Cron
-                  evaluates every 5 min, so actual timing can drift by up to
-                  5 min.
-                </p>
-              </div>
-            }
-          >
-            <Input
-              type="text"
-              inputMode="numeric"
-              placeholder="e.g. 5"
-              value={field.value as number}
-              onChange={(e) => {
-                const val = e.target.value.replace(/[^0-9]/g, '');
-                field.onChange(val === '' ? 0 : Number(val));
-              }}
-            />
-          </WithLabel>
-        )}
-      />
-
-      <Controller
-        control={form.control}
-        name="config.exitEvent"
-        render={({ field }) => (
-          <WithLabel
-            label="Exit event (optional)"
-            info={
-              <div className="prose dark:prose-invert">
-                <p>
-                  If the user also does this event after the trigger (before
-                  the delay elapses), they're excluded from the fire. Used for
-                  rules like "X but not Y in 24h".
-                </p>
-              </div>
-            }
-          >
-            <ComboboxEvents
-              searchable
-              className="w-full"
-              value={field.value ?? ''}
-              placeholder="No exit event"
-              onChange={field.onChange}
-              items={eventNames}
-            />
-          </WithLabel>
-        )}
-      />
-
-      {triggerEvent && (
-        <div className="rounded border bg-def-100 p-3 text-sm">
-          {previewQuery.isLoading ? (
-            <span className="text-muted-foreground">
-              Counting matching users…
-            </span>
-          ) : previewQuery.data ? (
-            <span>
-              Would currently fire for{' '}
-              <strong>{previewQuery.data.count}</strong> user
-              {previewQuery.data.count === 1 ? '' : 's'} in the last 5 min
-              window.
-            </span>
-          ) : previewQuery.error ? (
-            <span className="text-destructive">
-              Preview failed: {String(previewQuery.error.message ?? 'unknown')}
-            </span>
-          ) : null}
         </div>
       )}
     </>

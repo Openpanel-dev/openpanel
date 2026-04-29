@@ -6,7 +6,6 @@ import { getSlackInstallUrl } from '@openpanel/integrations/src/slack';
 import {
   type ISlackConfig,
   zCreateDiscordIntegration,
-  zCreateHermesIntegration,
   zCreateSlackIntegration,
   zCreateWebhookIntegration,
 } from '@openpanel/validation';
@@ -92,13 +91,7 @@ export const integrationRouter = createTRPCRouter({
       };
     }),
   createOrUpdate: protectedProcedure
-    .input(
-      z.union([
-        zCreateDiscordIntegration,
-        zCreateWebhookIntegration,
-        zCreateHermesIntegration,
-      ]),
-    )
+    .input(z.union([zCreateDiscordIntegration, zCreateWebhookIntegration]))
     .mutation(async ({ input }) => {
       if (input.id) {
         return db.integration.update({
