@@ -1,7 +1,6 @@
 import { createRouter as createTanstackRouter } from '@tanstack/react-router';
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';
 import * as TanstackQuery from './integrations/tanstack-query/root-provider';
-
 import { routeTree } from './routeTree.gen';
 import { getServerEnvs } from './server/get-envs';
 
@@ -14,6 +13,11 @@ export const getRouter = async () => {
     context: {
       ...rqContext,
       ...envs,
+      session: {
+        session: null,
+        user: null,
+        userId: null,
+      },
     },
     defaultPreload: 'intent',
     Wrap: (props: { children: React.ReactNode }) => {

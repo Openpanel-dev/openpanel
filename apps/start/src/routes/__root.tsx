@@ -20,6 +20,7 @@ import { ThemeScriptOnce } from '@/components/theme-provider';
 import { LinkButton } from '@/components/ui/button';
 import { getCookiesFn } from '@/hooks/use-cookie-store';
 import { useSessionExtension } from '@/hooks/use-session-extension';
+import type { RouterOutputs } from '@/trpc/client';
 import { op } from '@/utils/op';
 
 if (import.meta.env.VITE_OP_CLIENT_ID) {
@@ -29,6 +30,7 @@ if (import.meta.env.VITE_OP_CLIENT_ID) {
 interface MyRouterContext extends ConfigResonse {
   queryClient: QueryClient;
   trpc: TRPCOptionsProxy<AppRouter>;
+  session: RouterOutputs['auth']['session'];
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({

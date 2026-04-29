@@ -1,10 +1,5 @@
-import {
-  type ChatModelOption,
-  isValidModelId,
-  MODEL_STORAGE_KEY,
-} from '@/agents/models';
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
+import { useRouteContext } from '@tanstack/react-router';
 import {
   createContext,
   type ReactNode,
@@ -15,6 +10,12 @@ import {
   useState,
 } from 'react';
 import { newConversationId, useChatUrlState } from './use-chat-open';
+import {
+  type ChatModelOption,
+  isValidModelId,
+  MODEL_STORAGE_KEY,
+} from '@/agents/models';
+import { useTRPC } from '@/integrations/trpc/react';
 
 /**
  * Thin global context for chat identifiers. The active conversation
@@ -28,7 +29,7 @@ import { newConversationId, useChatUrlState } from './use-chat-open';
  * scoped to it.
  */
 
-type ChatStateValue = {
+interface ChatStateValue {
   /**
    * Active conversation id. Mirrors `?chat` in the URL. When the
    * drawer is closed this is still populated (the next open uses it),
@@ -92,27 +93,33 @@ type ChatStateValue = {
    */
   pendingMessage: string | null;
   setPendingMessage: (text: string | null) => void;
-};
+}
 
 const ChatContext = createContext<ChatStateValue | null>(null);
 
 function readStoredAgent(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
   const raw = window.localStorage.getItem(MODEL_STORAGE_KEY);
   return isValidModelId(raw) ? raw : null;
 }
 
 export function ChatStateProvider({ children }: { children: ReactNode }) {
   const trpc = useTRPC();
+  const { session } = useRouteContext({
+    from: '__root__',
+  });
 
   // Single source of truth for "is AI configured on the API" — the
   // `chat.models` query already filters by which provider keys are set, so
   // an empty `models` array means no OpenAI/Anthropic key and we render the
   // setup-instructions empty state. No need to leak env vars to the client.
-  const modelsQuery = useQuery({
-    ...trpc.chat.models.queryOptions(),
-    staleTime: Number.POSITIVE_INFINITY,
-  });
+  const modelsQuery = useQuery(
+    trpc.chat.models.queryOptions(undefined, {
+      enabled: !!session?.session,
+    })
+  );
   const models = modelsQuery.data?.models ?? [];
   const defaultModelId = modelsQuery.data?.defaultModelId ?? null;
   const isAiEnabled: boolean | null = modelsQuery.isPending
@@ -130,39 +137,40 @@ export function ChatStateProvider({ children }: { children: ReactNode }) {
   // `<ChatRuntimeProvider key={conversationId}>` never sees empty.
   // Replaced the moment the user opens the drawer.
   const [ghostId] = useState(() => newConversationId());
-  const conversationId = chatParam && chatParam.length > 0 ? chatParam : ghostId;
+  const conversationId =
+    chatParam && chatParam.length > 0 ? chatParam : ghostId;
   const isOpen = chatParam !== null;
 
   // If the URL says "open with empty id" (e.g. ?chat= from a stale
   // link or legacy boolean param), materialize a fresh conversation.
   useEffect(() => {
     if (chatParam === '') {
-      void setChatParam(newConversationId());
+      setChatParam(newConversationId());
     }
   }, [chatParam, setChatParam]);
 
   const openChatForContext = useCallback(() => {
-    void setChatParam(newConversationId());
+    setChatParam(newConversationId());
   }, [setChatParam]);
 
   const openNewChat = openChatForContext;
 
   const openChat = useCallback(
     (id: string) => {
-      void setChatParam(id);
+      setChatParam(id);
     },
-    [setChatParam],
+    [setChatParam]
   );
 
   const closeChat = useCallback(() => {
-    void setChatParam(null);
+    setChatParam(null);
   }, [setChatParam]);
 
   const switchConversation = useCallback(
     (id: string) => {
-      void setChatParam(id);
+      setChatParam(id);
     },
-    [setChatParam],
+    [setChatParam]
   );
 
   const newConversation = openNewChat;
@@ -171,17 +179,19 @@ export function ChatStateProvider({ children }: { children: ReactNode }) {
   // stored preference (if any); resolves to the server-provided default
   // once the models query loads.
   const [agentName, setAgentNameState] = useState<string>(
-    () => readStoredAgent() ?? '',
+    () => readStoredAgent() ?? ''
   );
   const setAgent = useCallback(
     (id: string) => {
-      if (!models.some((m) => m.id === id)) return;
+      if (!models.some((m) => m.id === id)) {
+        return;
+      }
       setAgentNameState(id);
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(MODEL_STORAGE_KEY, id);
       }
     },
-    [models],
+    [models]
   );
 
   // Once the models query resolves, make sure `agentName` points at a
@@ -190,8 +200,12 @@ export function ChatStateProvider({ children }: { children: ReactNode }) {
   //   - stored preference from a provider that's no longer configured
   //     (e.g. ANTHROPIC_API_KEY was removed) → fall back to default
   useEffect(() => {
-    if (!defaultModelId) return;
-    if (agentName && models.some((m) => m.id === agentName)) return;
+    if (!defaultModelId) {
+      return;
+    }
+    if (agentName && models.some((m) => m.id === agentName)) {
+      return;
+    }
     setAgentNameState(defaultModelId);
   }, [agentName, defaultModelId, models]);
 
@@ -245,7 +259,7 @@ export function ChatStateProvider({ children }: { children: ReactNode }) {
       isAiEnabled,
       streamingTitle,
       pendingMessage,
-    ],
+    ]
   );
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
