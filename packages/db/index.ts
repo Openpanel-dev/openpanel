@@ -22,6 +22,7 @@ export * from './src/services/import.service';
 export * from './src/services/insights';
 export * from './src/services/notification.service';
 export * from './src/services/organization.service';
+export * from './src/services/pat.service';
 export * from './src/services/overview.service';
 export * from './src/services/pages.service';
 export * from './src/services/profile.service';

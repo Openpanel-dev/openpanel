@@ -11,7 +11,7 @@ import {
   validateSessionToken,
 } from '@openpanel/auth';
 import { generateId } from '@openpanel/common';
-import { type IServiceClientWithProject, runWithAlsSession } from '@openpanel/db';
+import { type IServiceClientWithProject, db, runWithAlsSession, validatePersonalAccessToken } from '@openpanel/db';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';
 import type { FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
@@ -35,6 +35,7 @@ import { requestIdHook } from './hooks/request-id.hook';
 import { requestLoggingHook } from './hooks/request-logging.hook';
 import { timestampHook } from './hooks/timestamp.hook';
 import aiRouter from './routes/ai.router';
+import patRouter from './routes/pat.router';
 import eventRouter from './routes/event.router';
 import exportRouter from './routes/export.router';
 import gscCallbackRouter from './routes/gsc-callback.router';
@@ -137,6 +138,33 @@ export async function buildApp(
         } catch {
           req.session = EMPTY_SESSION;
         }
+      } else if (req.headers.authorization?.startsWith('Bearer opat_')) {
+        try {
+          const token = req.headers.authorization.slice(7);
+          const result = await validatePersonalAccessToken(token);
+          if (result) {
+            const user = await db.user.findUnique({ where: { id: result.userId } });
+            if (user) {
+              req.session = {
+                session: {
+                  id: `pat:${result.userId}`,
+                  userId: result.userId,
+                  expiresAt: new Date(Date.now() + 1000 * 60 * 60),
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+                user,
+                userId: result.userId,
+              };
+            } else {
+              req.session = EMPTY_SESSION;
+            }
+          } else {
+            req.session = EMPTY_SESSION;
+          }
+        } catch {
+          req.session = EMPTY_SESSION;
+        }
       } else if (process.env.DEMO_USER_ID) {
         try {
           const session = await runWithAlsSession('1', () =>
@@ -178,6 +206,7 @@ export async function buildApp(
     instance.register(miscRouter, { prefix: '/misc' });
     instance.register(aiRouter, { prefix: '/ai' });
     instance.register(mcpRouter, { prefix: '/mcp' });
+    instance.register(patRouter, { prefix: '/pat' });
   });
 
   // Public API

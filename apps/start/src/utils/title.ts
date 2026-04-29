@@ -85,6 +85,7 @@ export const PAGE_TITLES = {
   NOTIFICATIONS: 'Notifications',
   SETTINGS: 'Settings',
   INTEGRATIONS: 'Integrations',
+  TOKENS: 'Access Tokens',
   MEMBERS: 'Members',
   BILLING: 'Billing',
   CHAT: 'AI Assistant',

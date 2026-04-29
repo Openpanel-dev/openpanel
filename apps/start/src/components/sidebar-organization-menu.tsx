@@ -4,6 +4,7 @@ import {
   ChevronDownIcon,
   CogIcon,
   CreditCardIcon,
+  KeyIcon,
   LayoutListIcon,
   PlusIcon,
   UsersIcon,
@@ -90,6 +91,16 @@ export default function SidebarOrganizationMenu({
       >
         <WorkflowIcon size={20} />
         <div className="flex-1">Integrations</div>
+      </Link>
+      <Link
+        className={cn(
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
+        )}
+        from="/$organizationId"
+        to="/$organizationId/tokens"
+      >
+        <KeyIcon size={20} />
+        <div className="flex-1">Access Tokens</div>
       </Link>
     </>
   );

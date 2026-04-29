@@ -59,8 +59,9 @@ model Organization {
   ShareDashboard  ShareDashboard[]
   ShareReport     ShareReport[]
   ShareWidget     ShareWidget[]
-  integrations    Integration[]
-  invites         Invite[]
+  integrations         Integration[]
+  invites              Invite[]
+  personalAccessTokens PersonalAccessToken[]
   timezone        String?
   onboarding      String?          @default("completed")
 
@@ -91,23 +92,40 @@ model Organization {
 }
 
 model User {
-  id                   String          @id @default(dbgenerated("gen_random_uuid()"))
-  email                String          @unique
+  id                   String                @id @default(dbgenerated("gen_random_uuid()"))
+  email                String                @unique
   firstName            String?
   lastName             String?
-  createdOrganizations Organization[]  @relation("organizationCreatedBy")
-  subscriptions        Organization[]  @relation("subscriptionCreatedBy")
+  createdOrganizations Organization[]        @relation("organizationCreatedBy")
+  subscriptions        Organization[]        @relation("subscriptionCreatedBy")
   membership           Member[]
-  sentInvites          Member[]        @relation("invitedBy")
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @default(now()) @updatedAt
+  sentInvites          Member[]              @relation("invitedBy")
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @default(now()) @updatedAt
   deletedAt            DateTime?
   ProjectAccess        ProjectAccess[]
   sessions             Session[]
   accounts             Account[]
   invites              Invite[]
+  personalAccessTokens PersonalAccessToken[]
 
   @@map("users")
+}
+
+model PersonalAccessToken {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  secret         String
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+
+  @@map("personal_access_tokens")
 }
 
 model Account {
