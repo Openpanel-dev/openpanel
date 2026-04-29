@@ -12,7 +12,7 @@ import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
-import { CopyIcon, DownloadIcon, PencilIcon, PlusIcon, RefreshCwIcon, TrashIcon, UsersIcon } from 'lucide-react';
+import { DownloadIcon, PencilIcon, PlusIcon, RefreshCwIcon, TrashIcon, UsersIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute(
@@ -49,18 +49,6 @@ function Component() {
     }),
   );
   const cohorts = query.data ?? [];
-
-  const duplication = useMutation(
-    trpc.cohort.duplicate.mutationOptions({
-      onSuccess() {
-        query.refetch();
-        toast('Success', {
-          description: 'Cohort duplicated.',
-        });
-      },
-      onError: handleErrorToastOptions({}),
-    }),
-  );
 
   const deletion = useMutation(
     trpc.cohort.delete.mutationOptions({
@@ -198,18 +186,6 @@ function Component() {
                   >
                     <PencilIcon size={16} />
                     Edit
-                  </button>
-                </CardActionsItem>
-                <CardActionsItem className="w-full" asChild>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      toast('Duplicating cohort...');
-                      duplication.mutate({ cohortId: cohort.id });
-                    }}
-                  >
-                    <CopyIcon size={16} />
-                    Duplicate
                   </button>
                 </CardActionsItem>
                 <CardActionsItem className="w-full text-destructive" asChild>
