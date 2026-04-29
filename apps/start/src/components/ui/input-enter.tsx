@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 import { AnimatePresence } from 'framer-motion';
-import { RefreshCcwIcon } from 'lucide-react';
+import { CornerDownLeftIcon } from 'lucide-react';
 import { type InputHTMLAttributes, useEffect, useState } from 'react';
 import { Badge } from './badge';
 import { Input, type InputProps } from './input';
@@ -51,9 +51,12 @@ export function InputEnter({
               exit={{ opacity: 0, scale: 0.8 }}
               onClick={() => onChangeValue(internalValue)}
             >
-              <Badge variant="secondary">
-                Press enter
-                <RefreshCcwIcon className="ml-1 h-3 w-3" />
+              <Badge
+                variant="secondary"
+                className="gap-1 px-1.5 py-0 text-xs"
+              >
+                Press
+                <CornerDownLeftIcon className="h-3 w-3" />
               </Badge>
             </motion.button>
           )}
