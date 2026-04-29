@@ -8,7 +8,7 @@ import {
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
 import { useProfileValues } from '@/hooks/use-profile-values';
-import { FilterIcon, GanttChartIcon, GlobeIcon, LucideIcon, SlidersHorizontal, XIcon } from 'lucide-react';
+import { FilterIcon, GanttChartIcon, GlobeIcon, LucideIcon, SlidersHorizontal, SparklesIcon, XIcon } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
 
 import type {
@@ -18,6 +18,7 @@ import type {
 } from '@openpanel/validation';
 
 import { OriginFilter } from '@/components/overview/filters/origin-filter';
+import { OverviewAICommand } from '@/components/overview/overview-ai-command';
 import { PropertiesCombobox } from '@/components/report/sidebar/PropertiesCombobox';
 import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { useAppParams } from '@/hooks/use-app-params';
@@ -54,6 +55,9 @@ export default function OverviewFilters({
     <SheetContent className="[&>button.absolute]:hidden">
       <ModalHeader title="Filters" />
       <div className="flex flex-col gap-4">
+        <Heading icon={SparklesIcon} title="Ask AI" />
+        <OverviewAICommand className="w-full" />
+        <Seperator />
         <Heading icon={GlobeIcon} title="Origins" />
         <OriginFilter />
         <Seperator />

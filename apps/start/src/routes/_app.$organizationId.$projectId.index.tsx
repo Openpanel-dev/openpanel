@@ -5,6 +5,7 @@ import {
   OverviewFilterButton,
   OverviewFiltersButtons,
 } from '@/components/overview/filters/overview-filters-buttons';
+import { OverviewAICommand } from '@/components/overview/overview-ai-command';
 import { LiveCounter } from '@/components/overview/live-counter';
 import OverviewInsights from '@/components/overview/overview-insights';
 import { OverviewInterval } from '@/components/overview/overview-interval';
@@ -45,6 +46,7 @@ function ProjectDashboard() {
               <OverviewRange />
               <OverviewInterval />
               <OverviewFilterButton mode="events" />
+              <OverviewAICommand className="hidden w-[280px] md:block" />
             </div>
             <div className="flex gap-2">
               <LiveCounter projectId={projectId} />

@@ -19,12 +19,18 @@ import {
   zGetTopPagesInput,
   zGetUserJourneyInput,
 } from '@openpanel/db';
-import { type IChartRange, zRange } from '@openpanel/validation';
+import { pageContextSchema, type IChartRange, zRange } from '@openpanel/validation';
 import { format } from 'date-fns';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
+import { runFilterCommand } from '../agents/filter-command';
 import { TRPCAccessError } from '../errors';
-import { cacheMiddleware, createTRPCRouter, publicProcedure } from '../trpc';
+import {
+  cacheMiddleware,
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from '../trpc';
 
 const cacher = cacheMiddleware((input, opts) => {
   const range = input.range as IChartRange;
@@ -451,6 +457,28 @@ export const overviewRouter = createTRPCRouter({
       )(overviewService.getTopLinkOut.bind(overviewService));
 
       return current;
+    }),
+
+  // One-shot AI command bar — converts natural-language requests
+  // ("show 7 aug to 11 aug", "from google", "mobile only for august
+  // last year") into structured filter changes the dashboard can apply
+  // through the same handlers the chat panel uses.
+  runFilterCommand: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        query: z.string().min(1).max(500),
+        pageContext: pageContextSchema.optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      return runFilterCommand({
+        query: input.query,
+        projectId: input.projectId,
+        pageContext: input.pageContext,
+        timezone: timezone || 'UTC',
+      });
     }),
 
   map: overviewProcedure

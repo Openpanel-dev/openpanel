@@ -1,6 +1,11 @@
 import { betterAgent, defineAgent } from '@better-agent/core';
 import { type ChatAgentContext, chatContextSchema } from './context';
-import { ALLOWED_MODELS, type ChatModelEntry, openaiProvider, resolveModel } from './models';
+import {
+  ALLOWED_MODELS,
+  type ChatModelEntry,
+  openaiProvider,
+  resolveModel,
+} from '@openpanel/trpc/src/agents/models';
 import { prismaConversationStore } from './persistence';
 import { buildSystemPrompt } from './prompt';
 import { composeChatTools } from './tools';

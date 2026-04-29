@@ -8,6 +8,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-agent/core": "^0.1.0-beta.3",
+    "@better-agent/providers": "^0.1.0-beta.3",
     "@openpanel/auth": "workspace:^",
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",
