@@ -102,7 +102,7 @@ const op = new OpenPanel({
 
 ### E-mail
 
-Some of OpenPanel's features require e-mail. We use Resend as our transactional e-mail provider. To enable email features, create an account on Resend and set the `RESEND_API_KEY` environment variable.
+Some of OpenPanel's features require e-mail. We use Resend as our transactional e-mail provider by default, but you can also use your own SMTP server. To enable email features, set the relevant environment variables described below.
 
 <Callout>This is nothing that is required for the basic setup, but it is required for some features.</Callout>
 
@@ -111,6 +111,32 @@ Features that require e-mail:
 - Password reset
 - Invitations
 - more will be added over time
+
+#### Option A — Resend
+
+Create an account on [resend.com](https://resend.com), verify your sender domain, and set the `RESEND_API_KEY` environment variable.
+
+```bash title=".env"
+RESEND_API_KEY=re_xxxxxxxxxxxxx
+EMAIL_SENDER=noreply@yourdomain.com
+```
+
+#### Option B — SMTP
+
+If you prefer to use your own SMTP server, set `SMTP_HOST` and OpenPanel will use it instead of Resend.
+
+```bash title=".env"
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=smtp-user@example.com
+SMTP_PASS=your-smtp-password
+EMAIL_SENDER=noreply@yourdomain.com
+```
+
+<Callout type="info">
+`SMTP_HOST` takes priority over `RESEND_API_KEY` if both are set. If neither is configured, emails are logged to the console instead of being sent.
+</Callout>
 
 For email configuration details, see the [Environment Variables documentation](/docs/self-hosting/environment-variables#email).
 
