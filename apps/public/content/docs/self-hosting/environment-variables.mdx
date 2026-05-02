@@ -401,6 +401,10 @@ Set `SMTP_HOST` to enable SMTP. If both `SMTP_HOST` and `RESEND_API_KEY` are pre
 In case of using Resend, the sender email must be verified in your Resend account.
 </Callout>
 
+<Callout type="warn">
+If `SMTP_HOST` is set and an SMTP send attempt fails, the system will **not** automatically fall back to `RESEND_API_KEY` — the email will be silently dropped. To use Resend instead, unset `SMTP_HOST`.
+</Callout>
+
 ## OAuth & Integrations
 
 ### SLACK_CLIENT_ID
