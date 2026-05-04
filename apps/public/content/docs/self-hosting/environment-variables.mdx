@@ -324,15 +324,85 @@ Get your API key from [resend.com](https://resend.com). Make sure to verify your
 **Required**: No  
 **Default**: `hello@openpanel.dev`
 
-Email address used as the sender for transactional emails.
+Email address used as the sender for transactional emails. Applies to both Resend and SMTP transports.
 
 **Example**:
 ```bash
 EMAIL_SENDER=noreply@yourdomain.com
 ```
 
+### SMTP_HOST
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+SMTP server hostname. When set, OpenPanel uses SMTP to send emails instead of Resend. Takes priority over `RESEND_API_KEY` if both are configured.
+
+**Example**:
+```bash
+SMTP_HOST=smtp.example.com
+```
+
+### SMTP_PORT
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `587`
+
+SMTP server port.
+
+**Example**:
+```bash
+SMTP_PORT=587
+```
+
+### SMTP_SECURE
+
+**Type**: `boolean`  
+**Required**: No  
+**Default**: `false`
+
+Use TLS for the SMTP connection. Set to `true` when using port `465`.
+
+**Example**:
+```bash
+SMTP_SECURE=true
+```
+
+### SMTP_USER
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+SMTP authentication username. Leave unset if your server does not require authentication.
+
+**Example**:
+```bash
+SMTP_USER=smtp-user@example.com
+```
+
+### SMTP_PASS
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+SMTP authentication password.
+
+**Example**:
+```bash
+SMTP_PASS=your-smtp-password
+```
+
 <Callout>
-The sender email must be verified in your Resend account.
+Set `SMTP_HOST` to enable SMTP. If both `SMTP_HOST` and `RESEND_API_KEY` are present, SMTP takes priority. If neither is set, emails are logged to the console (useful for development).
+In case of using Resend, the sender email must be verified in your Resend account.
+</Callout>
+
+<Callout type="warn">
+If `SMTP_HOST` is set and an SMTP send attempt fails, the system will **not** automatically fall back to `RESEND_API_KEY` — the email will be silently dropped. To use Resend instead, unset `SMTP_HOST`.
 </Callout>
 
 ## OAuth & Integrations
@@ -834,7 +904,7 @@ For a basic self-hosted installation, these variables are required:
 
 ### Optional but Recommended
 
-- `RESEND_API_KEY` - For email features
+- `RESEND_API_KEY` or `SMTP_HOST` - For email features (pick one)
 - `EMAIL_SENDER` - Email sender address
 - `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY` - For the in-app AI chat assistant
 
