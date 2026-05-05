@@ -61,17 +61,9 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     },
   };
 
-  private static getResidencyUrls(): { dataBase: string; apiBase: string } {
-    const residency = process.env.MIXPANEL_DATA_RESIDENCY ?? 'us';
-    return (
-      MixpanelProvider.dataResidencyUrls[residency] ??
-      MixpanelProvider.dataResidencyUrls.us!
-    );
-  }
-
   private requestTimestamps: number[] = [];
   private lastRequestTime = 0;
-  private readonly residencyUrls = MixpanelProvider.getResidencyUrls();
+  private readonly residencyUrls: { dataBase: string; apiBase: string };
 
   constructor(
     private readonly projectId: string,
@@ -79,6 +71,15 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     private readonly logger?: ILogger
   ) {
     super();
+    const residency = process.env.MIXPANEL_DATA_RESIDENCY ?? 'us';
+    const urls = MixpanelProvider.dataResidencyUrls[residency];
+    if (!urls) {
+      this.logger?.warn(
+        { residency },
+        `Unknown MIXPANEL_DATA_RESIDENCY value "${residency}". Valid values: us, eu, in. Falling back to "us".`,
+      );
+    }
+    this.residencyUrls = urls ?? MixpanelProvider.dataResidencyUrls.us!;
   }
 
   private async waitForRateLimit(): Promise<void> {
