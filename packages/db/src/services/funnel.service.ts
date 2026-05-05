@@ -585,11 +585,15 @@ export class FunnelService {
       const firstEvent = eventSeries[0]!;
       const lastEventItem = eventSeries[eventSeries.length - 1]!;
 
-      const firstEventFilters = firstEvent.filters && firstEvent.filters.length > 0
-        ? ' AND ' + Object.values(getEventFiltersWhereClause(firstEvent.filters, projectId)).join(' AND ')
+      // Keep project_id / name / created_at in PREWHERE so ClickHouse can skip
+      // granules using the sort key before reading other columns (profile_id,
+      // properties, …). User-defined filters stay in WHERE — they may reference
+      // map / high-cardinality columns where PREWHERE isn't a clear win.
+      const firstEventWhere = firstEvent.filters && firstEvent.filters.length > 0
+        ? '\n          WHERE ' + Object.values(getEventFiltersWhereClause(firstEvent.filters, projectId)).join(' AND ')
         : '';
-      const lastEventFilters = lastEventItem.filters && lastEventItem.filters.length > 0
-        ? ' AND ' + Object.values(getEventFiltersWhereClause(lastEventItem.filters, projectId)).join(' AND ')
+      const lastEventWhere = lastEventItem.filters && lastEventItem.filters.length > 0
+        ? '\n          WHERE ' + Object.values(getEventFiltersWhereClause(lastEventItem.filters, projectId)).join(' AND ')
         : '';
 
       const toStartOf = clix.toStartOf('fs.first_ts', interval || 'day');
@@ -599,19 +603,19 @@ export class FunnelService {
         first_step_events AS (
           SELECT profile_id, min(created_at) AS first_ts
           FROM ${TABLE_NAMES.events}
-          WHERE project_id = ${sqlstring.escape(projectId)}
+          PREWHERE project_id = ${sqlstring.escape(projectId)}
             AND name = ${sqlstring.escape(firstEvent.name)}
             AND created_at >= toDateTime('${formatClickhouseDate(startDate)}')
-            AND created_at <= toDateTime('${formatClickhouseDate(endDate)}')${firstEventFilters}
+            AND created_at <= toDateTime('${formatClickhouseDate(endDate)}')${firstEventWhere}
           GROUP BY profile_id
         ),
         last_step_events AS (
           SELECT profile_id, min(created_at) AS last_ts
           FROM ${TABLE_NAMES.events}
-          WHERE project_id = ${sqlstring.escape(projectId)}
+          PREWHERE project_id = ${sqlstring.escape(projectId)}
             AND name = ${sqlstring.escape(lastEventItem.name)}
             AND created_at >= toDateTime('${formatClickhouseDate(startDate)}')
-            AND created_at <= toDateTime('${extendedEndDate}')${lastEventFilters}
+            AND created_at <= toDateTime('${extendedEndDate}')${lastEventWhere}
           GROUP BY profile_id
         ),
         matched AS (

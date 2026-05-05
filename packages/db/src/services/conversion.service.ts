@@ -124,14 +124,19 @@ export class ConversionService {
       const selectColumns = [...new Set([...baseColumns, ...extraColumns])];
       const selectList = selectColumns.map(quoteCol).join(', ');
 
+      // project_id / name / created_at go into PREWHERE so ClickHouse can skip
+      // granules using the sort key before loading other columns. The rest of
+      // the predicates (groupCol != '', user filters, preFilterCte subquery)
+      // stay in WHERE — they reference columns that PREWHERE can't help with
+      // or depend on the profile LEFT JOIN executed after PREWHERE.
       return `${cteName} AS (
         SELECT ${selectList}
         FROM ${TABLE_NAMES.events}${profileJoinClause}
-        WHERE project_id = '${projectId}'
+        PREWHERE project_id = '${projectId}'
           AND name = '${event.name}'
-          AND ${groupCol} != ''
           AND created_at >= toDateTime('${formatClickhouseDate(startDate)}')
-          AND created_at <= toDateTime('${formatClickhouseDate(endDate)}')${filterWhere}${preFilterCte ? `\n          AND ${groupCol} IN (SELECT ${groupCol} FROM ${preFilterCte})` : ''}
+          AND created_at <= toDateTime('${formatClickhouseDate(endDate)}')
+        WHERE ${groupCol} != ''${filterWhere}${preFilterCte ? `\n          AND ${groupCol} IN (SELECT ${groupCol} FROM ${preFilterCte})` : ''}
       )`;
     }
   }
@@ -391,11 +396,27 @@ export class ConversionService {
       GROUP BY ${endDedupeGroupBy}
     )`);
 
-    // Add cohort CTEs (computed once per query, not per row)
+    // Add cohort CTEs, prefiltered to the profiles present in start_events_raw.
+    //
+    // The base cohort query reads cohort_members FINAL (a ReplacingMergeTree
+    // merge at query time) and returns every profile in the cohort — millions
+    // of rows for large cohorts. The conversion only ever joins the cohort
+    // against se.profile_id, so any profile not in start_events_raw is dead
+    // weight in the JOIN hash table.
+    //
+    // Wrapping with `WHERE profile_id IN (SELECT profile_id FROM start_events_raw)`:
+    //   1. Shrinks the LEFT ANY JOIN hash to |cohort ∩ start_events_raw|.
+    //   2. Lets ClickHouse's analyzer push the IN into the cohort_members scan,
+    //      where the bloom_filter index on profile_id can skip granules that
+    //      don't contain any relevant profile — most of the table for narrow
+    //      date ranges against large cohorts.
     cohortIds.forEach((cohortId) => {
       const cohortMeta = cohortMetadata.get(cohortId);
       const cohortQuery = buildCohortMembershipQuery(cohortId, projectId, cohortMeta);
-      ctes.push(`${getCohortCteName(cohortId)} AS (${cohortQuery})`);
+      ctes.push(`${getCohortCteName(cohortId)} AS (
+        SELECT profile_id FROM (${cohortQuery})
+        WHERE profile_id IN (SELECT profile_id FROM start_events_raw)
+      )`);
     });
 
     // Build breakdown columns (from start_events with 'se' alias)
@@ -446,18 +467,31 @@ export class ConversionService {
     const toStartOf = clix.toStartOf('se.first_open_at', interval);
     const breakdownGroupByStr = breakdownGroupBy.join(', ');
 
-    // Conversion window condition — reused in both converted flag and time diff
-    const conversionCondition = `ee.${groupCol} != '' AND ee.first_act_at >= se.first_open_at - INTERVAL ${gracePeriodSeconds} SECOND AND ee.first_act_at <= se.first_open_at + INTERVAL ${funnelWindowSeconds} SECOND`;
+    // ASOF LEFT JOIN matches each start event with the closest end event whose
+    // first_act_at is at or after (start - grace). The inequality is the asof
+    // condition; everything else (groupCol, hold properties) is plain equality.
+    // ClickHouse picks exactly one matched (or unmatched-default) row per start,
+    // so the equi-join + range filter + inner GROUP BY pattern collapses into a
+    // single pass with no fanout when a (user, hold-tuple, day) bucket has many
+    // candidate end events.
+    const asofLowerBound = `AND ee.first_act_at >= se.first_open_at - INTERVAL ${gracePeriodSeconds} SECOND`;
 
-    // Time diff column for time-to-convert measuring.
-    // Uses minIf so that when multiple end_events rows fall in the window we
-    // take the earliest gap (most conservative conversion time).
+    // Per-row conversion check. ASOF returns the smallest matching ee.first_act_at,
+    // so the upper bound is checked here (not in the join): if the closest match
+    // lies past the funnel window, treat it as not converted. notEmpty() handles
+    // both join_use_nulls modes — '' under default 0, NULL under 1 — matching the
+    // pattern used by the cohort filters below and in chart.service.ts.
+    const conversionCondition = `notEmpty(ee.${groupCol}) AND ee.first_act_at <= se.first_open_at + INTERVAL ${funnelWindowSeconds} SECOND`;
+
+    // Time-to-convert: ASOF emits a single matched row per start, so no minIf is
+    // needed — dateDiff is already correct per row. Emit NULL when unmatched (or
+    // matched but past the window) so quantile / avg / min / max skip it.
     const timeDiffCol = measuring === 'time_to_convert'
-      ? `,\n        minIf(dateDiff('second', se.first_open_at, ee.first_act_at), ${conversionCondition}) AS time_diff_seconds`
+      ? `,\n        if(${conversionCondition}, dateDiff('second', se.first_open_at, ee.first_act_at), NULL) AS time_diff_seconds`
       : '';
 
     // Build WHERE clause for cohort global filters (inCohort / notInCohort).
-    // Applied before GROUP BY so cohort alias columns are still in scope.
+    // Applied per joined row, before the agg CTE aggregates by event_day.
     const cohortFilterClauses = events.flatMap(event =>
       (event.filters ?? [])
         .filter(f => (f.operator === 'inCohort' || f.operator === 'notInCohort') && f.cohortId)
@@ -474,29 +508,20 @@ export class ConversionService {
       ? `\n      WHERE ${uniqueCohortFilterClauses.join('\n        AND ')}`
       : '';
 
-    // Inner GROUP BY: one row per unique start-event occurrence.
-    // Includes first_open_at so it is accessible in the countIf / minIf expressions.
-    // Hold property cols (e.g. showId) ensure distinct shows are not merged.
-    // Breakdown aliases (b_0, b_1 …) are ClickHouse SELECT aliases — valid in GROUP BY.
-    const innerGroupByCols = [
-      'event_day',
-      `se.${quoteCol(groupCol)}`,
-      'se.first_open_at',
-      ...holdExtraCols.filter(c => c !== 'properties').map(c => `se.${quoteCol(c)}`),
-      ...breakdownGroupBy,
-    ].join(', ');
-
+    // One row per start_events row — ASOF guarantees a single matched-or-default
+    // ee row, so no inner GROUP BY is needed. The agg CTE below aggregates
+    // (event_day, breakdown) into total_first / conversions.
     const innerSQL = `
       SELECT
         ${toStartOf} AS event_day,
         se.${groupCol},
-        countIf(${conversionCondition}) > 0 AS converted${breakdownColumns.length ? ',\n        ' + breakdownColumns.join(',\n        ') : ''}${timeDiffCol}
+        ${conversionCondition} AS converted${breakdownColumns.length ? ',\n        ' + breakdownColumns.join(',\n        ') : ''}${timeDiffCol}
       FROM start_events se${profileJoin}
-      LEFT JOIN end_events ee ON
+      ASOF LEFT JOIN end_events ee ON
         ee.${groupCol} = se.${groupCol}
         ${holdJoinConditions}
-      ${cohortJoins}${cohortFilterWhere}
-      GROUP BY ${innerGroupByCols}`;
+        ${asofLowerBound}
+      ${cohortJoins}${cohortFilterWhere}`;
 
     // TTC aggregation columns — condition is 'converted' (Bool) so TTC stats
     // are computed only over start events that actually had a conversion.
