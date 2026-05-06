@@ -401,6 +401,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       avatar: String(props.$avatar ?? props.$image ?? ''),
       properties,
       created_at: createdAt,
+      last_seen_at: createdAt,
       is_external: true,
       groups: [],
     };

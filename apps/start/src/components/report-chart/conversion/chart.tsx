@@ -65,17 +65,12 @@ export function Chart({ data }: Props) {
   const rechartData = useConversionRechartDataModel(series);
   const trpc = useTRPC();
   const references = useQuery(
-    trpc.reference.getChartReferences.queryOptions(
-      {
-        projectId,
-        startDate,
-        endDate,
-        range,
-      },
-      {
-        staleTime: 1000 * 60 * 10,
-      },
-    ),
+    trpc.reference.getChartReferences.queryOptions({
+      projectId,
+      startDate,
+      endDate,
+      range,
+    }),
   );
 
   const xAxisProps = useXAxisProps({ interval, hide: hideXAxis });

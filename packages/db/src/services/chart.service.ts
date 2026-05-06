@@ -202,6 +202,12 @@ export function getProfilePropertySelect(property: string): string {
   if (withoutPrefix === 'avatar') {
     return 'avatar';
   }
+  if (withoutPrefix === 'created_at') {
+    return 'created_at';
+  }
+  if (withoutPrefix === 'last_seen_at') {
+    return 'last_seen_at';
+  }
   if (withoutPrefix.startsWith('properties.')) {
     const propKey = withoutPrefix.replace(/^properties\./, '');
     return `properties[${sqlstring.escape(propKey)}]`;
@@ -370,7 +376,13 @@ export async function getChartSql({
           fields.add('properties');
         } else if (
           fieldName &&
-          ['email', 'first_name', 'last_name'].includes(fieldName)
+          [
+            'email',
+            'first_name',
+            'last_name',
+            'created_at',
+            'last_seen_at',
+          ].includes(fieldName)
         ) {
           fields.add(fieldName);
         }
@@ -385,7 +397,13 @@ export async function getChartSql({
           fields.add('properties');
         } else if (
           fieldName &&
-          ['email', 'first_name', 'last_name'].includes(fieldName)
+          [
+            'email',
+            'first_name',
+            'last_name',
+            'created_at',
+            'last_seen_at',
+          ].includes(fieldName)
         ) {
           fields.add(fieldName);
         }
@@ -418,6 +436,12 @@ export async function getChartSql({
       }
       if (field === 'last_name') {
         return 'last_name as "profile.last_name"';
+      }
+      if (field === 'created_at') {
+        return 'created_at as "profile.created_at"';
+      }
+      if (field === 'last_seen_at') {
+        return 'last_seen_at as "profile.last_seen_at"';
       }
       return field;
     });
@@ -720,7 +744,13 @@ export async function getAggregateChartSql({
           fields.add('properties');
         } else if (
           fieldName &&
-          ['email', 'first_name', 'last_name'].includes(fieldName)
+          [
+            'email',
+            'first_name',
+            'last_name',
+            'created_at',
+            'last_seen_at',
+          ].includes(fieldName)
         ) {
           fields.add(fieldName);
         }
@@ -735,7 +765,13 @@ export async function getAggregateChartSql({
           fields.add('properties');
         } else if (
           fieldName &&
-          ['email', 'first_name', 'last_name'].includes(fieldName)
+          [
+            'email',
+            'first_name',
+            'last_name',
+            'created_at',
+            'last_seen_at',
+          ].includes(fieldName)
         ) {
           fields.add(fieldName);
         }
@@ -767,6 +803,12 @@ export async function getAggregateChartSql({
       }
       if (field === 'last_name') {
         return 'last_name as "profile.last_name"';
+      }
+      if (field === 'created_at') {
+        return 'created_at as "profile.created_at"';
+      }
+      if (field === 'last_seen_at') {
+        return 'last_seen_at as "profile.last_seen_at"';
       }
       return field;
     });

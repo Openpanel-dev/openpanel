@@ -62,17 +62,12 @@ export function Chart({ data }: Props) {
   const dataLength = data.series[0]?.data?.length || 0;
   const trpc = useTRPC();
   const references = useQuery(
-    trpc.reference.getChartReferences.queryOptions(
-      {
-        projectId,
-        startDate,
-        endDate,
-        range,
-      },
-      {
-        staleTime: 1000 * 60 * 10,
-      },
-    ),
+    trpc.reference.getChartReferences.queryOptions({
+      projectId,
+      startDate,
+      endDate,
+      range,
+    }),
   );
   const { series, setVisibleSeries } = useVisibleSeries(data, {
     savedVisibleSeries,

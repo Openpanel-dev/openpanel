@@ -39,11 +39,11 @@ export function getProfileMetrics(profileId: string, projectId: string) {
       firstSeen: string;
     }
   >(`
-    WITH lastSeen AS (
-      SELECT max(created_at) as lastSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
-    ),
-    firstSeen AS (
-      SELECT min(created_at) as firstSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+    WITH profileSeen AS (
+      SELECT created_at as firstSeen, last_seen_at as lastSeen
+      FROM ${TABLE_NAMES.profiles} FINAL
+      WHERE id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+      LIMIT 1
     ),
     screenViews AS (
       SELECT count(*) as screenViews FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
@@ -77,15 +77,15 @@ export function getProfileMetrics(profileId: string, projectId: string) {
       SELECT 
         CASE 
           WHEN (SELECT sessions FROM sessions) <= 1 THEN 0
-          ELSE round(dateDiff('second', (SELECT firstSeen FROM firstSeen), (SELECT lastSeen FROM lastSeen)) / nullIf((SELECT sessions FROM sessions) - 1, 0), 1)
+          ELSE round(dateDiff('second', (SELECT firstSeen FROM profileSeen), (SELECT lastSeen FROM profileSeen)) / nullIf((SELECT sessions FROM sessions) - 1, 0), 1)
         END as avgTimeBetweenSessions
     ),
     revenue AS (
       SELECT sum(revenue) as revenue FROM ${TABLE_NAMES.events} WHERE name = 'revenue' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     )
     SELECT 
-      (SELECT lastSeen FROM lastSeen) as lastSeen, 
-      (SELECT firstSeen FROM firstSeen) as firstSeen, 
+      (SELECT lastSeen FROM profileSeen) as lastSeen,
+      (SELECT firstSeen FROM profileSeen) as firstSeen,
       (SELECT screenViews FROM screenViews) as screenViews, 
       (SELECT sessions FROM sessions) as sessions, 
       (SELECT durationAvg FROM duration) as durationAvg, 
@@ -123,17 +123,10 @@ export async function getProfileById(id: string, projectId: string) {
   }
 
   const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT 
-      id, 
-      project_id,
-      last_value(nullIf(first_name, '')) as first_name, 
-      last_value(nullIf(last_name, '')) as last_name, 
-      last_value(nullIf(email, '')) as email, 
-      last_value(nullIf(avatar, '')) as avatar, 
-      last_value(is_external) as is_external, 
-      last_value(properties) as properties, 
-      last_value(created_at) as created_at
-    FROM ${TABLE_NAMES.profiles} FINAL WHERE id = ${sqlstring.escape(String(id))} AND project_id = ${sqlstring.escape(projectId)} GROUP BY id, project_id ORDER BY created_at DESC LIMIT 1`
+    `SELECT ${PROFILE_COLUMNS}
+    FROM ${TABLE_NAMES.profiles} FINAL
+    WHERE id = ${sqlstring.escape(String(id))} AND project_id = ${sqlstring.escape(projectId)}
+    LIMIT 1`
   );
 
   if (!profile) {
@@ -160,22 +153,11 @@ export async function getProfiles(ids: string[], projectId: string) {
   }
 
   const data = await chQuery<IClickhouseProfile>(
-    `SELECT 
-      id, 
-      project_id,
-      any(nullIf(first_name, '')) as first_name, 
-      any(nullIf(last_name, '')) as last_name, 
-      any(nullIf(email, '')) as email, 
-      any(nullIf(avatar, '')) as avatar, 
-      last_value(is_external) as is_external, 
-      any(properties) as properties, 
-      any(created_at) as created_at,
-      any(groups) as groups
-    FROM ${TABLE_NAMES.profiles}
-    WHERE 
+    `SELECT ${PROFILE_COLUMNS}
+    FROM ${TABLE_NAMES.profiles} FINAL
+    WHERE
       project_id = ${sqlstring.escape(projectId)} AND
       id IN (${filteredIds.map((id) => sqlstring.escape(id)).join(',')})
-    GROUP BY id, project_id
     `
   );
 
@@ -234,7 +216,10 @@ export interface IServiceProfile {
   avatar: string;
   firstName: string;
   lastName: string;
+  /** First time this profile was seen — preserved across upserts. */
   createdAt: Date;
+  /** Most recent activity. ReplacingMergeTree version column. */
+  lastSeenAt: Date;
   isExternal: boolean;
   projectId: string;
   groups: string[];
@@ -264,7 +249,10 @@ export interface IClickhouseProfile {
   properties: Record<string, string | undefined>;
   project_id: string;
   is_external: boolean;
+  /** First time this profile was seen — preserved across upserts. */
   created_at: string;
+  /** Most recent activity. ReplacingMergeTree version column. */
+  last_seen_at: string;
   groups: string[];
 }
 
@@ -282,16 +270,21 @@ export interface IServiceUpsertProfile {
 
 export function transformProfile({
   created_at,
+  last_seen_at,
   first_name,
   last_name,
   ...profile
 }: IClickhouseProfile): IServiceProfile {
+  const createdAtJs = convertClickhouseDateToJs(created_at);
   return {
     firstName: first_name,
     lastName: last_name,
     isExternal: profile.is_external,
     properties: toObject(profile.properties),
-    createdAt: convertClickhouseDateToJs(created_at),
+    createdAt: createdAtJs,
+    lastSeenAt: last_seen_at
+      ? convertClickhouseDateToJs(last_seen_at)
+      : createdAtJs,
     projectId: profile.project_id,
     id: profile.id,
     email: profile.email,
@@ -314,6 +307,7 @@ export function upsertProfile(
   }: IServiceUpsertProfile,
   isFromEvent = false
 ) {
+  const now = formatClickhouseDate(new Date());
   const profile: IClickhouseProfile = {
     id: String(id),
     first_name: firstName || '',
@@ -322,7 +316,12 @@ export function upsertProfile(
     avatar: avatar || '',
     properties: strip((properties as Record<string, string | undefined>) || {}),
     project_id: projectId,
-    created_at: formatClickhouseDate(new Date()),
+    // First-seen value for brand-new profiles. The buffer's mergeProfiles
+    // omits `created_at` from incoming, so for existing profiles the original
+    // value is carried forward.
+    created_at: now,
+    // RMT version column — must advance on every write so the latest row wins.
+    last_seen_at: now,
     is_external: isExternal,
     groups: groups ?? [],
   };
@@ -330,8 +329,8 @@ export function upsertProfile(
   return profileBuffer.add(profile, isFromEvent);
 }
 
-const PROFILE_COLUMNS =
-  'id, first_name, last_name, email, avatar, properties, project_id, is_external, created_at, groups';
+export const PROFILE_COLUMNS =
+  'id, first_name, last_name, email, avatar, properties, project_id, is_external, created_at, last_seen_at, groups';
 
 export interface FindProfilesInput {
   projectId: string;
@@ -416,7 +415,7 @@ export function findProfilesCore(
 
   const sql = `
     SELECT ${PROFILE_COLUMNS}
-    FROM ${TABLE_NAMES.profiles}
+    FROM ${TABLE_NAMES.profiles} FINAL
     WHERE ${conditions.join(' AND ')}
     ORDER BY created_at ${orderDir}
     LIMIT ${limit}
@@ -436,7 +435,7 @@ export async function getProfileWithEvents(
   const [profiles, recent_events] = await Promise.all([
     chQuery<IClickhouseProfile>(`
       SELECT ${PROFILE_COLUMNS}
-      FROM ${TABLE_NAMES.profiles}
+      FROM ${TABLE_NAMES.profiles} FINAL
       WHERE project_id = ${sqlstring.escape(projectId)} AND id = ${sqlstring.escape(profileId)}
       LIMIT 1
     `),

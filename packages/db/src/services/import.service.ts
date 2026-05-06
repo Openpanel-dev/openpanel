@@ -161,6 +161,7 @@ export async function insertProfilesBatch(
       )
     ) as Record<string, string>,
     created_at: p.created_at,
+    last_seen_at: p.last_seen_at ?? p.created_at,
   }));
 
   await ch.insert({

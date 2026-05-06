@@ -304,6 +304,8 @@ export const chartRouter = createTRPCRouter({
         'profile.first_name',
         'profile.last_name',
         'profile.email',
+        'profile.created_at',
+        'profile.last_seen_at',
       ];
 
       const properties = [
