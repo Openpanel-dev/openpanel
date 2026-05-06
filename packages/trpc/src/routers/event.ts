@@ -120,21 +120,29 @@ export const eventRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string(),
-        profileId: z.string().optional(),
-        sessionId: z.string().optional(),
-        groupId: z.string().optional(),
-        cohortId: z.string().optional(),
-        cursor: z.string().optional(),
+        profileId: z.string().nullish(),
+        sessionId: z.string().nullish(),
+        groupId: z.string().nullish(),
+        cohortId: z.string().nullish(),
+        cursor: z.string().nullish(),
         filters: z.array(zChartEventFilter).default([]),
-        startDate: z.date().optional(),
-        endDate: z.date().optional(),
-        events: z.array(z.string()).optional(),
-        columnVisibility: z.record(z.string(), z.boolean()).optional(),
+        startDate: z.date().nullish(),
+        endDate: z.date().nullish(),
+        events: z.array(z.string()).nullish(),
+        columnVisibility: z.record(z.string(), z.boolean()).nullish(),
       }),
     )
     .query(async ({ input: { columnVisibility, ...input } }) => {
       const items = await getEventList({
-        ...input,
+        projectId: input.projectId,
+        filters: input.filters,
+        profileId: input.profileId ?? undefined,
+        sessionId: input.sessionId ?? undefined,
+        groupId: input.groupId ?? undefined,
+        cohortId: input.cohortId ?? undefined,
+        startDate: input.startDate ?? undefined,
+        endDate: input.endDate ?? undefined,
+        events: input.events ?? undefined,
         take: 50,
         cursor: input.cursor ? new Date(input.cursor) : undefined,
         select: {
@@ -187,11 +195,11 @@ export const eventRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string(),
-        cursor: z.string().optional(),
-        startDate: z.date().optional(),
-        endDate: z.date().optional(),
-        events: z.array(z.string()).optional(),
-        columnVisibility: z.record(z.string(), z.boolean()).optional(),
+        cursor: z.string().nullish(),
+        startDate: z.date().nullish(),
+        endDate: z.date().nullish(),
+        events: z.array(z.string()).nullish(),
+        columnVisibility: z.record(z.string(), z.boolean()).nullish(),
       }),
     )
     .query(async ({ input: { columnVisibility, ...input } }) => {
@@ -213,7 +221,10 @@ export const eventRouter = createTRPCRouter({
       }
 
       const items = await getEventList({
-        ...input,
+        projectId: input.projectId,
+        startDate: input.startDate ?? undefined,
+        endDate: input.endDate ?? undefined,
+        events: input.events ?? undefined,
         take: 50,
         cursor: input.cursor ? new Date(input.cursor) : undefined,
         select: {
