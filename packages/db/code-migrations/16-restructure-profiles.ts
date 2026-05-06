@@ -157,8 +157,8 @@ export async function up() {
            min(created_at) as v_created_at,
            min(created_at) as v_last_seen_at
          FROM profiles FINAL
-         WHERE profiles.created_at >= toDateTime('${monthBoundary(lower)}')
-           AND profiles.created_at <  toDateTime('${monthBoundary(cursor)}')
+         WHERE created_at >= toDateTime('${monthBoundary(lower)}')
+           AND created_at <  toDateTime('${monthBoundary(cursor)}')
          GROUP BY id, project_id
          SETTINGS insert_distributed_sync = 1`
       );

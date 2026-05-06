@@ -51,8 +51,8 @@ const concurrency = Math.max(
   1,
   Number.parseInt(
     typeof values.concurrency === 'string' ? values.concurrency : '1',
-    10,
-  ) || 1,
+    10
+  ) || 1
 );
 
 function buildSql(): string {
@@ -103,13 +103,17 @@ function buildSql(): string {
   `;
 }
 
-async function backfillProject(projectId: string, index: number, total: number) {
+async function backfillProject(
+  projectId: string,
+  index: number,
+  total: number
+) {
   const t0 = Date.now();
   const sql = buildSql();
 
   if (dryRun) {
     console.log(
-      `[backfill] [${index}/${total}] DRY RUN project=${projectId}\n${sql}\n`,
+      `[backfill] [${index}/${total}] DRY RUN project=${projectId}\n${sql}\n`
     );
     return;
   }
@@ -121,7 +125,7 @@ async function backfillProject(projectId: string, index: number, total: number) 
 
   const ms = Date.now() - t0;
   console.log(
-    `[backfill] [${index}/${total}] project=${projectId} done in ${ms}ms`,
+    `[backfill] [${index}/${total}] project=${projectId} done in ${ms}ms`
   );
 }
 
@@ -134,35 +138,40 @@ async function main() {
   } else {
     const rows = await chQuery<{ project_id: string }>(
       `SELECT DISTINCT project_id FROM ${TABLE_NAMES.profiles}
-       ORDER BY project_id`,
+       ORDER BY project_id`
     );
     projectIds = rows.map((r) => r.project_id);
   }
 
   console.log(
-    `[backfill] ${projectIds.length} project(s) · concurrency=${concurrency}${dryRun ? ' · DRY RUN' : ''}`,
+    `[backfill] ${projectIds.length} project(s) · concurrency=${concurrency}${dryRun ? ' · DRY RUN' : ''}`
   );
 
   // Simple worker-pool: each worker drains a shared cursor.
   let cursor = 0;
   await Promise.all(
-    Array.from({ length: Math.min(concurrency, projectIds.length) }, async () => {
-      while (cursor < projectIds.length) {
-        const i = cursor++;
-        const id = projectIds[i]!;
-        try {
-          await backfillProject(id, i + 1, projectIds.length);
-        } catch (err) {
-          console.error(
-            `[backfill] [${i + 1}/${projectIds.length}] project=${id} FAILED`,
-            err,
-          );
+    Array.from(
+      { length: Math.min(concurrency, projectIds.length) },
+      async () => {
+        while (cursor < projectIds.length) {
+          const i = cursor++;
+          const id = projectIds[i]!;
+          try {
+            await backfillProject(id, i + 1, projectIds.length);
+          } catch (err) {
+            console.error(
+              `[backfill] [${i + 1}/${projectIds.length}] project=${id} FAILED`,
+              err
+            );
+          }
         }
       }
-    }),
+    )
   );
 
-  console.log(`[backfill] Done in ${((Date.now() - start) / 1000).toFixed(1)}s`);
+  console.log(
+    `[backfill] Done in ${((Date.now() - start) / 1000).toFixed(1)}s`
+  );
 }
 
 main().catch((err) => {
