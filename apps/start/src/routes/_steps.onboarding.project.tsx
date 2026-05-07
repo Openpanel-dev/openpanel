@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zOnboardingProject } from '@openpanel/validation';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import {
   BuildingIcon,
@@ -41,13 +41,21 @@ export const Route = createFileRoute('/_steps/onboarding/project')({
   },
   loader: async ({ context, location }) => {
     const search = validateSearch.safeParse(location.search);
+    const promises: Promise<unknown>[] = [
+      context.queryClient.prefetchQuery(
+        context.trpc.organization.list.queryOptions()
+      ),
+    ];
     if (search.success && search.data.inviteId) {
-      await context.queryClient.prefetchQuery(
-        context.trpc.organization.getInvite.queryOptions({
-          inviteId: search.data.inviteId,
-        })
+      promises.push(
+        context.queryClient.prefetchQuery(
+          context.trpc.organization.getInvite.queryOptions({
+            inviteId: search.data.inviteId,
+          })
+        )
       );
     }
+    await Promise.all(promises);
   },
   pendingComponent: FullPageLoadingState,
 });
@@ -56,6 +64,7 @@ type IForm = z.infer<typeof zOnboardingProject>;
 
 function Component() {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const { data: organizations } = useQuery(
     trpc.organization.list.queryOptions(undefined, { initialData: [] })
   );
@@ -65,6 +74,7 @@ function Component() {
     trpc.onboarding.project.mutationOptions({
       onError: handleError,
       onSuccess(res) {
+        queryClient.invalidateQueries(trpc.organization.list.queryFilter());
         setSecret(res.secret);
         navigate({
           to: '/onboarding/$projectId/connect',
@@ -111,6 +121,9 @@ function Component() {
   });
 
   const [showCorsInput, setShowCorsInput] = useState(false);
+  const [createNewOrg, setCreateNewOrg] = useState(false);
+  const canUseExistingWorkspace = organizations.length > 0;
+  const showCreateForm = createNewOrg || organizations.length === 0;
 
   useEffect(() => {
     if (!isWebsite) {
@@ -134,36 +147,38 @@ function Component() {
       onSubmit={form.handleSubmit(onSubmit)}
     >
       <div className="scrollbar-thin flex-1 overflow-y-auto p-4">
+        <div className="row mb-4 gap-2 rounded-lg bg-muted p-1">
+          <button
+            className={cn(
+              'rounded-md px-3 py-2 font-medium text-sm transition-colors',
+              createNewOrg || !canUseExistingWorkspace
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+            onClick={() => setCreateNewOrg(true)}
+            type="button"
+          >
+            Create new workspace
+          </button>
+          <button
+            className={cn(
+              'rounded-md px-3 py-2 font-medium text-sm transition-colors',
+              !createNewOrg && canUseExistingWorkspace
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground',
+              canUseExistingWorkspace
+                ? 'hover:text-foreground'
+                : 'cursor-not-allowed opacity-60'
+            )}
+            disabled={!canUseExistingWorkspace}
+            onClick={() => setCreateNewOrg(false)}
+            type="button"
+          >
+            Use existing workspace
+          </button>
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
-          {organizations.length > 0 ? (
-            <Controller
-              control={form.control}
-              name="organizationId"
-              render={({ field, formState }) => {
-                return (
-                  <div>
-                    <Label>Workspace</Label>
-                    <Combobox
-                      className="w-full"
-                      error={formState.errors.organizationId?.message}
-                      icon={BuildingIcon}
-                      items={
-                        organizations
-                          .filter((item) => item.id)
-                          .map((item) => ({
-                            label: item.name,
-                            value: item.id,
-                          })) ?? []
-                      }
-                      onChange={field.onChange}
-                      placeholder="Select workspace"
-                      value={field.value}
-                    />
-                  </div>
-                );
-              }}
-            />
-          ) : (
+          {showCreateForm ? (
             <>
               <InputWithLabel
                 error={form.formState.errors.organization?.message}
@@ -191,7 +206,64 @@ function Component() {
                   </WithLabel>
                 )}
               />
+              {/* {organizations.length > 0 && (
+                <button
+                  className="-mt-2 self-start text-left text-muted-foreground text-sm hover:text-foreground"
+                  onClick={() => {
+                    form.setValue('organization', '', {
+                      shouldValidate: false,
+                    });
+                    form.clearErrors(['organization', 'organizationId']);
+                    setCreateNewOrg(false);
+                  }}
+                  type="button"
+                >
+                  ← Use existing workspace
+                </button>
+              )} */}
             </>
+          ) : (
+            <div className="col-span-2">
+              <Controller
+                control={form.control}
+                name="organizationId"
+                render={({ field, formState }) => {
+                  return (
+                    <WithLabel label="Workspace">
+                      <Combobox
+                        className="w-full"
+                        error={formState.errors.organizationId?.message}
+                        icon={BuildingIcon}
+                        items={
+                          organizations
+                            .filter((item) => item.id)
+                            .map((item) => ({
+                              label: item.name,
+                              value: item.id,
+                            })) ?? []
+                        }
+                        onChange={field.onChange}
+                        placeholder="Select workspace"
+                        value={field.value}
+                      />
+                    </WithLabel>
+                  );
+                }}
+              />
+              {/* <button
+                className="mt-2 text-muted-foreground text-sm hover:text-foreground"
+                onClick={() => {
+                  form.setValue('organizationId', undefined, {
+                    shouldValidate: false,
+                  });
+                  form.clearErrors(['organization', 'organizationId']);
+                  setCreateNewOrg(true);
+                }}
+                type="button"
+              >
+                + Create new workspace
+              </button> */}
+            </div>
           )}
           <InputWithLabel
             error={form.formState.errors.project?.message}
