@@ -17,6 +17,13 @@ import {
   zMixpanelImportConfig,
   zUmamiImportConfig,
 } from '@openpanel/validation';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -214,6 +221,24 @@ function MixpanelImport({
           error={form.formState.errors.mapScreenViewProperty?.message}
           {...form.register('mapScreenViewProperty')}
         />
+
+        <WithLabel label="Data Residency" info="Select the Mixpanel data center your project uses">
+          <Select
+            value={form.watch('dataResidency') ?? 'us'}
+            onValueChange={(value) =>
+              form.setValue('dataResidency', value as 'us' | 'eu' | 'in')
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="US (default)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="us">US (default)</SelectItem>
+              <SelectItem value="eu">EU</SelectItem>
+              <SelectItem value="in">India</SelectItem>
+            </SelectContent>
+          </Select>
+        </WithLabel>
       </div>
 
       <div className="flex justify-between">

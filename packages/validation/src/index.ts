@@ -627,6 +627,9 @@ export type IUmamiImportConfig = z.infer<typeof zUmamiImportConfig>;
 export const zPlausibleImportConfig = createFileImportConfig('plausible');
 export type IPlausibleImportConfig = z.infer<typeof zPlausibleImportConfig>;
 
+export const zMixpanelDataResidency = z.enum(['us', 'eu', 'in']);
+export type IMixpanelDataResidency = z.infer<typeof zMixpanelDataResidency>;
+
 export const zMixpanelImportConfig = z.object({
   provider: z.literal('mixpanel'),
   type: z.literal('api'),
@@ -636,6 +639,7 @@ export const zMixpanelImportConfig = z.object({
   from: z.string().min(1),
   to: z.string().min(1),
   mapScreenViewProperty: z.string().optional(),
+  dataResidency: zMixpanelDataResidency.optional(),
 });
 export type IMixpanelImportConfig = z.infer<typeof zMixpanelImportConfig>;
 

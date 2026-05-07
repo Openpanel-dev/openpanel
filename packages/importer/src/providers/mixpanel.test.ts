@@ -317,4 +317,24 @@ describe('mixpanel', () => {
       groups: [],
     });
   });
+
+  it('should accept dataResidency config', () => {
+    const base = {
+      from: '2025-01-01',
+      to: '2025-01-02',
+      serviceAccount: 'sa',
+      serviceSecret: 'ss',
+      projectId: '123',
+      provider: 'mixpanel' as const,
+      type: 'api' as const,
+    };
+
+    // All valid values should construct without throwing
+    expect(() => new MixpanelProvider('pid', { ...base, dataResidency: 'us' })).not.toThrow();
+    expect(() => new MixpanelProvider('pid', { ...base, dataResidency: 'eu' })).not.toThrow();
+    expect(() => new MixpanelProvider('pid', { ...base, dataResidency: 'in' })).not.toThrow();
+
+    // Undefined defaults to 'us' without throwing
+    expect(() => new MixpanelProvider('pid', { ...base })).not.toThrow();
+  });
 });
