@@ -116,7 +116,7 @@ const getProjectEventsCountUncached = async (projectId: string) => {
 
   try {
     const res = await chQuery<{ count: number }>(
-      `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`,
+      `SELECT countMerge(event_count) as count FROM ${TABLE_NAMES.events_daily_stats} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`,
     );
     return res[0]?.count;
   } finally {

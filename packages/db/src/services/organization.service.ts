@@ -215,9 +215,10 @@ export async function getOrganizationBillingEventsCount(
 
   const { sb, getSql } = createSqlBuilder();
 
-  sb.select.count = 'COUNT(*) AS count';
+  sb.from = 'events_daily_stats';
+  sb.select.count = 'countMerge(event_count) AS count';
   sb.where.projectIds = `project_id IN (${organization.projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
-  sb.where.createdAt = `created_at BETWEEN ${sqlstring.escape(formatClickhouseDate(organization.subscriptionCurrentPeriodStart))} AND ${sqlstring.escape(formatClickhouseDate(organization.subscriptionCurrentPeriodEnd))}`;
+  sb.where.createdAt = `date BETWEEN toDate(${sqlstring.escape(formatClickhouseDate(organization.subscriptionCurrentPeriodStart))}) AND toDate(${sqlstring.escape(formatClickhouseDate(organization.subscriptionCurrentPeriodEnd))})`;
   sb.where.names = `name NOT IN ('session_start', 'session_end')`;
 
   const res = await chQuery<{ count: number }>(getSql());
@@ -237,12 +238,13 @@ export async function getOrganizationBillingEventsCountSerie(
   const interval = 'day';
   const { sb, getSql } = createSqlBuilder();
 
-  sb.select.count = 'COUNT(*) AS count';
-  sb.select.day = `toDate(toStartOf${interval.slice(0, 1).toUpperCase() + interval.slice(1)}(created_at)) AS ${interval}`;
+  sb.from = 'events_daily_stats';
+  sb.select.count = 'countMerge(event_count) AS count';
+  sb.select.day = `date AS ${interval}`;
   sb.groupBy.day = interval;
   sb.orderBy.day = `${interval} WITH FILL FROM toDate(${sqlstring.escape(formatClickhouseDate(startDate, true))}) TO toDate(${sqlstring.escape(formatClickhouseDate(endDate, true))}) STEP INTERVAL 1 ${interval.toUpperCase()}`;
   sb.where.projectIds = `project_id IN (${organization.projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
-  sb.where.createdAt = `${interval} BETWEEN ${sqlstring.escape(formatClickhouseDate(startDate, true))} AND ${sqlstring.escape(formatClickhouseDate(endDate, true))}`;
+  sb.where.createdAt = `${interval} BETWEEN toDate(${sqlstring.escape(formatClickhouseDate(startDate, true))}) AND toDate(${sqlstring.escape(formatClickhouseDate(endDate, true))})`;
   sb.where.names = `name NOT IN ('session_start', 'session_end')`;
 
   const res = await chQuery<{ count: number; day: string }>(getSql());
