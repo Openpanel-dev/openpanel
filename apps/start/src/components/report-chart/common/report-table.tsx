@@ -70,6 +70,12 @@ const METRIC_COLUMNS = [
   { key: 'max', label: 'Max' },
 ] as const;
 
+const getBreakdownColumnKey = (
+  breakdownPropertyKeys: string[],
+  propertyName: string,
+  index: number,
+) => `breakdown:${breakdownPropertyKeys[index] ?? propertyName}:${index}`;
+
 interface VirtualRowProps {
   row: Row<TableRow | GroupedTableRow>;
   virtualRow: VirtualItem;
@@ -301,7 +307,7 @@ export function ReportTable({
     return [
       { key: 'serie', label: 'Serie' },
       ...breakdownPropertyNames.map((propertyName, index) => ({
-        key: `breakdown:${breakdownPropertyKeys[index] ?? propertyName}`,
+        key: getBreakdownColumnKey(breakdownPropertyKeys, propertyName, index),
         label: propertyName,
       })),
       ...METRIC_COLUMNS.map((metric) => ({
@@ -850,7 +856,11 @@ export function ReportTable({
     breakdownPropertyNames.forEach((propertyName, index) => {
       const isLastBreakdown = index === breakdownPropertyNames.length - 1;
       const isCollapsible = grouped && !isLastBreakdown;
-      const aliasKey = `breakdown:${breakdownPropertyKeys[index] ?? propertyName}`;
+      const aliasKey = getBreakdownColumnKey(
+        breakdownPropertyKeys,
+        propertyName,
+        index,
+      );
 
       if (!isColumnVisible(aliasKey)) {
         return;

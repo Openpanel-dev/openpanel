@@ -412,7 +412,7 @@ function getBreakdownPropertyKeys(
   breakdowns: Array<{ name: string }>,
 ): string[] {
   if (breakdowns.length > 0) {
-    return breakdowns.map((b) => b.name);
+    return breakdowns.map((b, index) => `${b.name}#${index}`);
   }
 
   if (series.length === 0) return [];
