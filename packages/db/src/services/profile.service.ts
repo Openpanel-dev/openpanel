@@ -127,8 +127,9 @@ export async function getProfileById(id: string, projectId: string) {
       is_external,
       properties,
       created_at
-    FROM ${TABLE_NAMES.profiles} FINAL
+    FROM ${TABLE_NAMES.profiles}
     WHERE project_id = ${sqlstring.escape(projectId)} AND id = ${sqlstring.escape(String(id))}
+    ORDER BY created_at DESC
     LIMIT 1`,
     undefined,
     true,
