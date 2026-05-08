@@ -13,10 +13,17 @@ import { createSessionEnd } from './events.create-session-end';
 
 export async function sessionsJob(job: Job<SessionsQueuePayload>) {
   const res = await createSessionEnd(job);
-  try {
-    await updateEventsCount(job.data.payload.projectId);
-  } catch (e) {
-    logger.error('Failed to update events count', e);
+  // Self-hosted instances have no Stripe billing, so the counts only feed
+  // cloud-only billing UI (plan-exceeded banner, usage gauge). Skip entirely.
+  if (
+    process.env.SELF_HOSTED !== 'true' &&
+    process.env.SELF_HOSTED !== '1'
+  ) {
+    try {
+      await updateEventsCount(job.data.payload.projectId);
+    } catch (e) {
+      logger.error('Failed to update events count', e);
+    }
   }
   return res;
 }
