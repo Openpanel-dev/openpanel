@@ -180,6 +180,8 @@ function humanizeChartType(type: string): string {
       return 'Funnel';
     case 'metric':
       return 'Metric';
+    case 'table':
+      return 'Table';
     case 'retention':
       return 'Retention';
     case 'histogram':

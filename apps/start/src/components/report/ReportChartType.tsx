@@ -10,6 +10,7 @@ import {
   LineChartIcon,
   type LucideIcon,
   PieChartIcon,
+  TableIcon,
   TrendingUpIcon,
   UsersIcon,
 } from 'lucide-react';
@@ -56,6 +57,7 @@ export function ReportChartType({
     histogram: ChartColumnIncreasingIcon,
     linear: LineChartIcon,
     metric: GaugeIcon,
+    table: TableIcon,
     retention: UsersIcon,
     map: Globe2Icon,
     conversion: TrendingUpIcon,

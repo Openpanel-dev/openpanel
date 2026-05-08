@@ -20,6 +20,7 @@ import {
   Pencil,
   PieChartIcon,
   PlusIcon,
+  TableIcon,
   Trash,
   TrendingUpIcon,
 } from 'lucide-react';
@@ -150,6 +151,7 @@ function Component() {
                         linear: LineChartIcon,
                         pie: PieChartIcon,
                         metric: HashIcon,
+                        table: TableIcon,
                         map: Globe2Icon,
                         histogram: BarChart3Icon,
                         funnel: ConeIcon,

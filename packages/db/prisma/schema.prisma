@@ -348,6 +348,7 @@ enum ChartType {
   histogram
   pie
   metric
+  table
   area
   map
   funnel

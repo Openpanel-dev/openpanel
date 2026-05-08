@@ -25,7 +25,10 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import type * as React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ReportTableToolbar } from './report-table-toolbar';
+import {
+  type ReportTableAliasableColumn,
+  ReportTableToolbar,
+} from './report-table-toolbar';
 import {
   type ExpandableTableRow,
   type GroupedTableRow,
@@ -48,10 +51,24 @@ interface ReportTableProps {
   data: IChartData;
   visibleSeries: IChartData['series'] | string[];
   setVisibleSeries: React.Dispatch<React.SetStateAction<string[]>>;
+  className?: string;
+  columnAliases?: Record<string, string>;
+  hiddenColumnKeys?: string[];
+  dateMode?: 'columns' | 'aggregate';
+  onColumnAliasChange?: (key: string, alias: string) => void;
+  onColumnVisibilityChange?: (key: string, visible: boolean) => void;
+  onDateModeChange?: (dateMode: 'columns' | 'aggregate') => void;
 }
 
 const DEFAULT_COLUMN_WIDTH = 150;
 const ROW_HEIGHT = 48; // h-12
+const METRIC_COLUMNS = [
+  { key: 'count', label: 'Unique' },
+  { key: 'sum', label: 'Sum' },
+  { key: 'average', label: 'Average' },
+  { key: 'min', label: 'Min' },
+  { key: 'max', label: 'Max' },
+] as const;
 
 interface VirtualRowProps {
   row: Row<TableRow | GroupedTableRow>;
@@ -217,6 +234,13 @@ export function ReportTable({
   data,
   visibleSeries,
   setVisibleSeries,
+  className,
+  columnAliases = {},
+  hiddenColumnKeys = [],
+  dateMode = 'columns',
+  onColumnAliasChange,
+  onColumnVisibilityChange,
+  onDateModeChange,
 }: ReportTableProps) {
   const [grouped, setGrouped] = useState(false);
   const [expanded, setExpanded] = useState<ExpandedState>({});
@@ -242,6 +266,7 @@ export function ReportTable({
     rows: flatRows,
     dates,
     breakdownPropertyNames,
+    breakdownPropertyKeys,
   } = useMemo(() => {
     if (grouped) {
       const result = transformToHierarchicalGroups(data, breakdowns);
@@ -250,6 +275,7 @@ export function ReportTable({
         rows: null,
         dates: result.dates,
         breakdownPropertyNames: result.breakdownPropertyNames,
+        breakdownPropertyKeys: result.breakdownPropertyKeys,
       };
     }
     const result = transformToTableData(data, breakdowns, false);
@@ -258,8 +284,38 @@ export function ReportTable({
       rows: result.rows as TableRow[],
       dates: result.dates,
       breakdownPropertyNames: result.breakdownPropertyNames,
+      breakdownPropertyKeys: result.breakdownPropertyKeys,
     };
   }, [data, breakdowns, grouped]);
+
+  const getColumnAlias = (key: string, fallback: string) => {
+    const alias = columnAliases[key]?.trim();
+    return alias || fallback;
+  };
+
+  const isColumnVisible = (key: string) => !hiddenColumnKeys.includes(key);
+  const getDateTotal = (row: TableRow | GroupedTableRow | ExpandableTableRow) =>
+    dates.reduce((sum, date) => sum + (row.dateValues[date] ?? 0), 0);
+
+  const aliasableColumns = useMemo<ReportTableAliasableColumn[]>(() => {
+    return [
+      { key: 'serie', label: 'Serie' },
+      ...breakdownPropertyNames.map((propertyName, index) => ({
+        key: `breakdown:${breakdownPropertyKeys[index] ?? propertyName}`,
+        label: propertyName,
+      })),
+      ...METRIC_COLUMNS.map((metric) => ({
+        key: `metric:${metric.key}`,
+        label: metric.label,
+      })),
+      ...(dateMode === 'aggregate'
+        ? [{ key: 'date:total', label: 'Total' }]
+        : dates.map((date) => ({
+            key: `date:${date}`,
+            label: formatDate(date),
+          }))),
+    ];
+  }, [breakdownPropertyNames, breakdownPropertyKeys, dates, dateMode, formatDate]);
 
   // Convert hierarchical groups to expandable rows (for TanStack Table's expanding feature)
   const expandableRows = useMemo(() => {
@@ -355,6 +411,9 @@ export function ReportTable({
             const metric = id.replace('metric-', '') as keyof TableRow;
             aValue = a[metric] ?? 0;
             bValue = b[metric] ?? 0;
+          } else if (id === 'date-total') {
+            aValue = getDateTotal(a);
+            bValue = getDateTotal(b);
           } else if (id.startsWith('date-')) {
             const date = id.replace('date-', '');
             aValue = a.dateValues[date] ?? 0;
@@ -446,6 +505,9 @@ export function ReportTable({
             const metric = id.replace('metric-', '') as keyof TableRow;
             aValue = a[metric] ?? 0;
             bValue = b[metric] ?? 0;
+          } else if (id === 'date-total') {
+            aValue = getDateTotal(a);
+            bValue = getDateTotal(b);
           } else if (id.startsWith('date-')) {
             const date = id.replace('date-', '');
             aValue = a.dateValues[date] ?? 0;
@@ -473,10 +535,10 @@ export function ReportTable({
     }
 
     return result;
-  }, [rows, globalFilter, grouped, sorting]);
+  }, [rows, globalFilter, grouped, sorting, dates]);
 
   // Calculate min/max values for color visualization
-  const { metricRanges, dateRanges } = useMemo(() => {
+  const { metricRanges, dateRanges, dateTotalRange } = useMemo(() => {
     const metricRanges: Record<string, { min: number; max: number }> = {
       count: {
         min: Number.POSITIVE_INFINITY,
@@ -498,6 +560,10 @@ export function ReportTable({
         max: Number.NEGATIVE_INFINITY,
       };
     });
+    const dateTotalRange = {
+      min: Number.POSITIVE_INFINITY,
+      max: Number.NEGATIVE_INFINITY,
+    };
 
     // Helper function to flatten expandable rows and get only individual rows
     function getIndividualRows(
@@ -534,6 +600,9 @@ export function ReportTable({
       );
       const dateMin = Math.min(...allDateValues);
       const dateMax = Math.max(...allDateValues);
+      const dateTotal = allDateValues.reduce((sum, value) => sum + value, 0);
+      dateTotalRange.min = dateTotal;
+      dateTotalRange.max = dateTotal;
 
       // For date columns, use the range across all dates
       dates.forEach((date) => {
@@ -579,11 +648,17 @@ export function ReportTable({
               dateRanges[date]!.max = Math.max(dateRanges[date]!.max, value);
             }
           });
+
+          const dateTotal = getDateTotal(row);
+          if (!Number.isNaN(dateTotal)) {
+            dateTotalRange.min = Math.min(dateTotalRange.min, dateTotal);
+            dateTotalRange.max = Math.max(dateTotalRange.max, dateTotal);
+          }
         });
       }
     }
 
-    return { metricRanges, dateRanges };
+    return { metricRanges, dateRanges, dateTotalRange };
   }, [rows, dates]);
 
   // Helper to get background color style and opacity for a value
@@ -661,16 +736,17 @@ export function ReportTable({
     const cols: ColumnDef<TableRow | GroupedTableRow>[] = [];
 
     // Serie name column (pinned left) with checkbox
-    cols.push({
-      id: 'serie-name',
-      header: 'Serie',
-      accessorKey: 'serieName',
-      enableSorting: true,
-      size: DEFAULT_COLUMN_WIDTH,
-      meta: {
-        pinned: 'left',
-      },
-      cell: ({ row }) => {
+    if (isColumnVisible('serie')) {
+      cols.push({
+        id: 'serie-name',
+        header: getColumnAlias('serie', 'Serie'),
+        accessorKey: 'serieName',
+        enableSorting: true,
+        size: DEFAULT_COLUMN_WIDTH,
+        meta: {
+          pinned: 'left',
+        },
+        cell: ({ row }) => {
         const original = row.original;
         const serieId = original.serieId;
         // Look up serie name directly from data to ensure we always have the latest value
@@ -766,13 +842,19 @@ export function ReportTable({
             )}
           </div>
         );
-      },
-    });
+        },
+      });
+    }
 
     // Breakdown columns (pinned left, collapsible)
     breakdownPropertyNames.forEach((propertyName, index) => {
       const isLastBreakdown = index === breakdownPropertyNames.length - 1;
       const isCollapsible = grouped && !isLastBreakdown;
+      const aliasKey = `breakdown:${breakdownPropertyKeys[index] ?? propertyName}`;
+
+      if (!isColumnVisible(aliasKey)) {
+        return;
+      }
 
       cols.push({
         id: `breakdown-${index}`,
@@ -789,7 +871,7 @@ export function ReportTable({
         },
         header: ({ column }) => {
           if (!isCollapsible) {
-            return propertyName;
+            return getColumnAlias(aliasKey, propertyName);
           }
 
           // Find all rows at this breakdown level that can be expanded
@@ -862,7 +944,7 @@ export function ReportTable({
               role="button"
               tabIndex={0}
             >
-              <span>{propertyName}</span>
+              <span>{getColumnAlias(aliasKey, propertyName)}</span>
             </div>
           );
         },
@@ -928,18 +1010,14 @@ export function ReportTable({
     });
 
     // Metric columns
-    const metrics = [
-      { key: 'count', label: 'Unique' },
-      { key: 'sum', label: 'Sum' },
-      { key: 'average', label: 'Average' },
-      { key: 'min', label: 'Min' },
-      { key: 'max', label: 'Max' },
-    ] as const;
+    METRIC_COLUMNS.forEach((metric) => {
+      if (!isColumnVisible(`metric:${metric.key}`)) {
+        return;
+      }
 
-    metrics.forEach((metric) => {
       cols.push({
         id: `metric-${metric.key}`,
-        header: metric.label,
+        header: getColumnAlias(`metric:${metric.key}`, metric.label),
         accessorKey: metric.key,
         enableSorting: true,
         size: 100,
@@ -983,10 +1061,61 @@ export function ReportTable({
     });
 
     // Date columns
+    if (dateMode === 'aggregate') {
+      if (isColumnVisible('date:total')) {
+        cols.push({
+          id: 'date-total',
+          header: getColumnAlias('date:total', 'Total'),
+          accessorFn: getDateTotal,
+          enableSorting: true,
+          size: 120,
+          cell: ({ row }) => {
+            const value = getDateTotal(row.original);
+            const isSummary = row.original.isSummaryRow ?? false;
+            const isGroupHeader =
+              'isGroupHeader' in row.original &&
+              row.original.isGroupHeader === true;
+            const isIndividualRow = !isSummary && !isGroupHeader;
+            const hasValidRange =
+              dateTotalRange.min !== Number.POSITIVE_INFINITY &&
+              dateTotalRange.max !== Number.NEGATIVE_INFINITY;
+            const backgroundStyle = isIndividualRow && hasValidRange
+              ? getCellBackgroundStyle(
+                  value,
+                  dateTotalRange.min,
+                  dateTotalRange.max,
+                  'emerald',
+                ).style
+              : {};
+
+            return (
+              <div
+                className={cn(
+                  'h-12 w-full text-right font-mono text-sm px-4 flex items-center justify-end',
+                  '[text-shadow:_0_0_3px_rgb(0_0_0_/_20%)] shadow-[inset_-1px_-1px_0_var(--border)]',
+                  (isSummary || isGroupHeader) && 'font-semibold',
+                )}
+                style={backgroundStyle}
+              >
+                {number.format(value)}
+              </div>
+            );
+          },
+        });
+      }
+
+      return cols;
+    }
+
     dates.forEach((date) => {
+      const formattedDate = formatDate(date);
+      if (!isColumnVisible(`date:${date}`)) {
+        return;
+      }
+
       cols.push({
         id: `date-${date}`,
-        header: formatDate(date),
+        header: getColumnAlias(`date:${date}`, formattedDate),
         accessorFn: (row) => row.dateValues[date] ?? 0,
         enableSorting: true,
         size: 100,
@@ -1030,6 +1159,7 @@ export function ReportTable({
     return cols;
   }, [
     breakdownPropertyNames,
+    breakdownPropertyKeys,
     dates,
     formatDate,
     number,
@@ -1039,9 +1169,13 @@ export function ReportTable({
     rows,
     metricRanges,
     dateRanges,
+    dateTotalRange,
+    dateMode,
+    hiddenColumnKeys,
     columnSizing,
     expanded,
     data,
+    columnAliases,
   ]);
 
   // Create a hash of column IDs to track when columns change
@@ -1288,7 +1422,12 @@ export function ReportTable({
   }
 
   return (
-    <div className="flex flex-col border rounded-lg overflow-hidden bg-card mt-8">
+    <div
+      className={cn(
+        'flex flex-col border rounded-lg overflow-hidden bg-card mt-8',
+        className,
+      )}
+    >
       <ReportTableToolbar
         grouped={grouped}
         onToggleGrouped={
@@ -1299,6 +1438,13 @@ export function ReportTable({
         search={globalFilter}
         onSearchChange={setGlobalFilter}
         onUnselectAll={() => setVisibleSeries([])}
+        aliasableColumns={aliasableColumns}
+        columnAliases={columnAliases}
+        hiddenColumnKeys={hiddenColumnKeys}
+        dateMode={dateMode}
+        onColumnAliasChange={onColumnAliasChange}
+        onColumnVisibilityChange={onColumnVisibilityChange}
+        onDateModeChange={onDateModeChange}
       />
       <div
         ref={parentRef}
