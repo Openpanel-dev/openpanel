@@ -1,4 +1,4 @@
-import { generateId, slug } from '@openpanel/common';
+import { generateId } from '@openpanel/common';
 import { parseUserAgent } from '@openpanel/common/server';
 import { getSalts } from '@openpanel/db';
 import { getGeoLocation } from '@openpanel/geo';
@@ -40,15 +40,6 @@ export async function postEvent(
   const groupId = uaInfo.isServer
     ? `${projectId}:${request.body?.profileId ?? generateId()}`
     : deviceId;
-  const jobId = [
-    slug(request.body.name),
-    timestamp,
-    projectId,
-    deviceId,
-    groupId,
-  ]
-    .filter(Boolean)
-    .join('-');
   await getEventsGroupQueueShard(groupId).add({
     orderMs: new Date(timestamp).getTime(),
     data: {
@@ -65,7 +56,6 @@ export async function postEvent(
       sessionId: sessionId ?? '',
     },
     groupId,
-    jobId,
   });
 
   reply.status(202).send('ok');

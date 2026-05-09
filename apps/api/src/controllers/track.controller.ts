@@ -1,4 +1,4 @@
-import { generateId, slug } from '@openpanel/common';
+import { generateId } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import {
   getProfileById,
@@ -194,16 +194,6 @@ async function handleTrack(
       ? `${projectId}:${payload.profileId}`
       : undefined
     : deviceId;
-  const jobId = [
-    slug(payload.name),
-    timestamp.value,
-    projectId,
-    deviceId,
-    groupId,
-  ]
-    .filter(Boolean)
-    .join('-');
-
   const promises: Promise<unknown>[] = [];
 
   // If we have more than one property in the identity object, we should identify the user
@@ -231,7 +221,6 @@ async function handleTrack(
         session,
       },
       groupId,
-      jobId,
     })
   );
 
