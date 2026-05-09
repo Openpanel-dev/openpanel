@@ -9,8 +9,8 @@ import {
   chQuery,
   convertClickhouseDateToJs,
   formatClickhouseDate,
-  isClickhouseDefaultMinDate,
   TABLE_NAMES,
+  toNullIfDefaultMinDate,
 } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import { createSqlBuilder } from '../sql-builder';
@@ -102,12 +102,8 @@ export function getProfileMetrics(profileId: string, projectId: string) {
     .then((data) => {
       return {
         ...data,
-        lastSeen: isClickhouseDefaultMinDate(data.lastSeen)
-          ? null
-          : convertClickhouseDateToJs(data.lastSeen),
-        firstSeen: isClickhouseDefaultMinDate(data.firstSeen)
-          ? null
-          : convertClickhouseDateToJs(data.firstSeen),
+        lastSeen: toNullIfDefaultMinDate(data.lastSeen),
+        firstSeen: toNullIfDefaultMinDate(data.firstSeen),
       };
     });
 }
