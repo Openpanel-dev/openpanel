@@ -136,28 +136,29 @@ export function buildEventCriteriaQuery(
     `;
   }
 
-  // Use standard MV for queries without property filters
+  // cohort_events_mv: name is 2nd in sort key (vs profile_id 2nd in
+  // profile_event_summary_mv) — much better prefix match for these filters.
   if (frequency) {
     const frequencyOp = getFrequencyOperator(frequency);
 
     return `
       SELECT profile_id
-      FROM ${TABLE_NAMES.profile_event_summary_mv}
+      FROM ${TABLE_NAMES.cohort_events_mv}
       WHERE project_id = ${sqlstring.escape(projectId)}
         AND name = ${sqlstring.escape(name)}
-        AND ${timeConstraint.replace('created_at', 'event_date')}
+        AND ${timeConstraint}
       GROUP BY profile_id
-      HAVING countMerge(event_count) ${frequencyOp}
+      HAVING sum(event_count) ${frequencyOp}
     `;
   }
 
   // For simple "did event" queries
   return `
     SELECT DISTINCT profile_id
-    FROM ${TABLE_NAMES.profile_event_summary_mv}
+    FROM ${TABLE_NAMES.cohort_events_mv}
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND name = ${sqlstring.escape(name)}
-      AND ${timeConstraint.replace('created_at', 'event_date')}
+      AND ${timeConstraint}
   `;
 }
 
