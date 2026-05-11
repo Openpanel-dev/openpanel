@@ -61,11 +61,18 @@ function getFrequencyOperator(frequency: Frequency): string {
 export function buildEventCriteriaQuery(
   projectId: string,
   criteria: EventCriteria,
+  profileIdPrefilter?: string,
 ): string {
   const { name, filters, timeframe, frequency } = criteria;
 
   // Build time constraint
   const timeConstraint = buildTimeConstraint(timeframe);
+
+  // Caller-supplied prefilter shrinks the MV scan to a known small profile
+  // set (e.g. start_events_raw in conversion charts) before the GROUP BY.
+  const prefilterClause = profileIdPrefilter
+    ? `AND profile_id IN (${profileIdPrefilter})`
+    : '';
 
   // Build event filters
   const filterWhere = filters.length > 0
@@ -121,6 +128,7 @@ export function buildEventCriteriaQuery(
           AND name = ${sqlstring.escape(name)}
           AND ${timeConstraint.replace('created_at', 'event_date')}
           AND (${propertyConditions})
+          ${prefilterClause}
         GROUP BY profile_id
         HAVING countMerge(event_count) ${frequencyOp}
       `;
@@ -133,6 +141,7 @@ export function buildEventCriteriaQuery(
         AND name = ${sqlstring.escape(name)}
         AND ${timeConstraint.replace('created_at', 'event_date')}
         AND (${propertyConditions})
+        ${prefilterClause}
     `;
   }
 
@@ -147,6 +156,7 @@ export function buildEventCriteriaQuery(
       WHERE project_id = ${sqlstring.escape(projectId)}
         AND name = ${sqlstring.escape(name)}
         AND ${timeConstraint}
+        ${prefilterClause}
       GROUP BY profile_id
       HAVING sum(event_count) ${frequencyOp}
     `;
@@ -159,6 +169,7 @@ export function buildEventCriteriaQuery(
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND name = ${sqlstring.escape(name)}
       AND ${timeConstraint}
+      ${prefilterClause}
   `;
 }
 
@@ -169,6 +180,7 @@ export function buildEventCriteriaQuery(
 export function buildPropertyBasedCohortQuery(
   projectId: string,
   definition: PropertyBasedCohortDefinition,
+  profileIdPrefilter?: string,
 ): string {
   const { properties, operator } = definition.criteria;
 
@@ -184,11 +196,16 @@ export function buildPropertyBasedCohortQuery(
     operator === 'and' ? ' AND ' : ' OR ',
   );
 
+  const prefilterClause = profileIdPrefilter
+    ? `AND id IN (${profileIdPrefilter})`
+    : '';
+
   return `
     SELECT id as profile_id
     FROM ${TABLE_NAMES.profiles} FINAL
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND (${filterClause})
+      ${prefilterClause}
   `;
 }
 

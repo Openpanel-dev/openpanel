@@ -412,11 +412,13 @@ export class ConversionService {
     //      date ranges against large cohorts.
     cohortIds.forEach((cohortId) => {
       const cohortMeta = cohortMetadata.get(cohortId);
-      const cohortQuery = buildCohortMembershipQuery(cohortId, projectId, cohortMeta);
-      ctes.push(`${getCohortCteName(cohortId)} AS (
-        SELECT profile_id FROM (${cohortQuery})
-        WHERE profile_id IN (SELECT profile_id FROM start_events_raw)
-      )`);
+      const cohortQuery = buildCohortMembershipQuery(
+        cohortId,
+        projectId,
+        cohortMeta,
+        'SELECT profile_id FROM start_events_raw',
+      );
+      ctes.push(`${getCohortCteName(cohortId)} AS (${cohortQuery})`);
     });
 
     // Build breakdown columns (from start_events with 'se' alias)

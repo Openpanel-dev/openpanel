@@ -148,14 +148,19 @@ export function buildCohortMembershipQuery(
   cohortId: string,
   projectId: string,
   cohortMeta?: CohortMetadata,
+  profileIdPrefilter?: string,
 ): string {
   // Pre-computed cohorts or missing metadata: read from stored membership
   if (!cohortMeta || !cohortMeta.computeOnDemand) {
+    const prefilterClause = profileIdPrefilter
+      ? `AND profile_id IN (${profileIdPrefilter})`
+      : '';
     return `
       SELECT profile_id
       FROM ${TABLE_NAMES.cohort_members} FINAL
       WHERE cohort_id = ${sqlstring.escape(cohortId)}
         AND project_id = ${sqlstring.escape(projectId)}
+        ${prefilterClause}
     `;
   }
 
@@ -165,14 +170,14 @@ export function buildCohortMembershipQuery(
   if (definition.type === 'event') {
     const { events, operator } = definition.criteria;
     const queries = events.map((eventCriteria) =>
-      buildEventCriteriaQuery(projectId, eventCriteria),
+      buildEventCriteriaQuery(projectId, eventCriteria, profileIdPrefilter),
     );
 
     return operator === 'and'
       ? queries.join(' INTERSECT ')
       : queries.join(' UNION DISTINCT ');
   } else if (definition.type === 'property') {
-    return buildPropertyBasedCohortQuery(projectId, definition);
+    return buildPropertyBasedCohortQuery(projectId, definition, profileIdPrefilter);
   }
 
   throw new Error(`Unknown cohort type: ${(definition as any).type}`);
