@@ -91,6 +91,7 @@ export const getNotificationRulesByProjectId = cacheable(
     });
   },
   60 * 24,
+  { cacheEmptyArray: true }
 );
 
 function getIntegration(integrationId: string | null) {

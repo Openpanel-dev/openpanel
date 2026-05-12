@@ -109,7 +109,11 @@ function stringify(obj: unknown): string {
   return String(obj);
 }
 
-function hasResult(result: unknown): boolean {
+export interface CacheableOptions {
+  cacheEmptyArray?: boolean;
+}
+
+function shouldCache(result: unknown, options: CacheableOptions = {}): boolean {
   // Don't cache undefined or null
   if (result === undefined || result === null) {
     return false;
@@ -120,9 +124,8 @@ function hasResult(result: unknown): boolean {
     return result.length > 0;
   }
 
-  // Don't cache empty arrays
   if (Array.isArray(result)) {
-    return result.length > 0;
+    return options.cacheEmptyArray ? true : result.length > 0;
   }
 
   // Don't cache empty objects
@@ -153,10 +156,11 @@ const parseCache = (cached: string) => {
 const CACHEABLE_LRU_TTL_MS = 60 * 1000; // 60 seconds
 const CACHEABLE_LRU_MAX = 1000;
 
-// Overload 1: cacheable(fn, expireInSec)
+// Overload 1: cacheable(fn, expireInSec, options?)
 export function cacheable<T extends (...args: any) => any>(
   fn: T,
-  expireInSec: number
+  expireInSec: number,
+  options?: CacheableOptions
 ): T & {
   getKey: (...args: Parameters<T>) => string;
   clear: (...args: Parameters<T>) => Promise<number>;
@@ -165,11 +169,12 @@ export function cacheable<T extends (...args: any) => any>(
   ) => (payload: Awaited<ReturnType<T>>) => Promise<'OK'>;
 };
 
-// Overload 2: cacheable(name, fn, expireInSec)
+// Overload 2: cacheable(name, fn, expireInSec, options?)
 export function cacheable<T extends (...args: any) => any>(
   name: string,
   fn: T,
-  expireInSec: number
+  expireInSec: number,
+  options?: CacheableOptions
 ): T & {
   getKey: (...args: Parameters<T>) => string;
   clear: (...args: Parameters<T>) => Promise<number>;
@@ -182,7 +187,8 @@ export function cacheable<T extends (...args: any) => any>(
 export function cacheable<T extends (...args: any) => any>(
   fnOrName: T | string,
   fnOrExpireInSec: number | T,
-  _expireInSec?: number
+  expireInSecOrOptions?: number | CacheableOptions,
+  maybeOptions?: CacheableOptions
 ) {
   const name = typeof fnOrName === 'string' ? fnOrName : fnOrName.name;
   const fn =
@@ -193,14 +199,22 @@ export function cacheable<T extends (...args: any) => any>(
         : null;
 
   let expireInSec: number | null = null;
+  let options: CacheableOptions = {};
 
   // Parse parameters based on function signature
   if (typeof fnOrName === 'function') {
-    // Overload 1: cacheable(fn, expireInSec)
+    // Overload 1: cacheable(fn, expireInSec, options?)
     expireInSec = typeof fnOrExpireInSec === 'number' ? fnOrExpireInSec : null;
+    if (expireInSecOrOptions && typeof expireInSecOrOptions === 'object') {
+      options = expireInSecOrOptions;
+    }
   } else {
-    // Overload 2: cacheable(name, fn, expireInSec)
-    expireInSec = typeof _expireInSec === 'number' ? _expireInSec : null;
+    // Overload 2: cacheable(name, fn, expireInSec, options?)
+    expireInSec =
+      typeof expireInSecOrOptions === 'number' ? expireInSecOrOptions : null;
+    if (maybeOptions) {
+      options = maybeOptions;
+    }
   }
 
   if (typeof fn !== 'function') {
@@ -228,7 +242,7 @@ export function cacheable<T extends (...args: any) => any>(
 
     // L1: in-memory LRU first (offloads Redis on hot keys)
     const lruHit = lruCache.get(key);
-    if (lruHit !== undefined && hasResult(lruHit)) {
+    if (lruHit !== undefined && shouldCache(lruHit, options)) {
       return lruHit as Awaited<ReturnType<T>>;
     }
 
@@ -236,7 +250,7 @@ export function cacheable<T extends (...args: any) => any>(
     const cached = await getRedisCache().get(key);
     if (cached) {
       const parsed = parseCache(cached);
-      if (hasResult(parsed)) {
+      if (shouldCache(parsed, options)) {
         lruCache.set(key, parsed);
         return parsed;
       }
@@ -245,7 +259,7 @@ export function cacheable<T extends (...args: any) => any>(
     // Cache miss: execute function
     const result = await fn(...(args as any));
 
-    if (hasResult(result)) {
+    if (shouldCache(result, options)) {
       lruCache.set(key, result);
       getRedisCache()
         .setex(key, expireInSec, JSON.stringify(result))
@@ -267,7 +281,7 @@ export function cacheable<T extends (...args: any) => any>(
     (...args: Parameters<T>) =>
     (payload: Awaited<ReturnType<T>>) => {
       const key = getKey(...args);
-      if (hasResult(payload)) {
+      if (shouldCache(payload, options)) {
         lruCache.set(key, payload);
         return getRedisCache()
           .setex(key, expireInSec, JSON.stringify(payload))
