@@ -563,40 +563,37 @@ export class ConversionService {
     let finalSql: string;
 
     if (breakdownGroupBy.length > 0) {
-      // top_breakdowns CTE: rank breakdowns — by fastest TTC when measuring time, else by rate
-      const ttcTopBreakdownCol = measuring === 'time_to_convert'
-        ? ', avg(ttc_avg) AS avg_ttc'
-        : '';
-      const topBreakdownsOrderBy = measuring === 'time_to_convert'
-        ? 'avg_ttc ASC'
-        : 'avg_rate DESC';
-      const topBreakdownsCte = `top_breakdowns AS (
-        SELECT ${breakdownGroupByStr}, avg(conversion_rate_percentage) AS avg_rate${ttcTopBreakdownCol}
-        FROM agg
-        GROUP BY ${breakdownGroupByStr}
-        ORDER BY ${topBreakdownsOrderBy}
-        LIMIT ${limit ?? 50}
-      )`;
-
-      const joinConditions = breakdownGroupBy
-        .map(b => `agg.${b} = top_breakdowns.${b}`)
-        .join(' AND ');
-
-      const orderBy = measuring === 'time_to_convert'
-        ? 'top_breakdowns.avg_ttc ASC, agg.event_day ASC'
-        : 'top_breakdowns.avg_rate DESC, agg.event_day ASC';
+      // Rank breakdowns inline via a window function instead of a separate
+      // top_breakdowns CTE that JOINs back to agg. The old pattern referenced
+      // `agg` twice (once in top_breakdowns, once in the outer SELECT), which
+      // CH inlined — making the full conversion subtree run twice per query.
+      // Window function over a single `FROM agg` halves CH work.
+      const rankMetric = measuring === 'time_to_convert'
+        ? 'avg(ttc_avg)'
+        : 'avg(conversion_rate_percentage)';
+      const rankDirection = measuring === 'time_to_convert' ? 'ASC' : 'DESC';
+      const topNLimit = limit ?? 50;
+      const partitionBy = breakdownGroupByStr;
 
       finalSql = `
-        WITH ${[...ctes, aggCte, topBreakdownsCte].join(',\n')}
+        WITH ${[...ctes, aggCte].join(',\n')}
         SELECT
-          agg.event_day,
-          ${breakdownGroupBy.map(b => `agg.${b}`).join(',\n          ')},
-          agg.total_first,
-          agg.conversions,
-          agg.conversion_rate_percentage${ttcSelectColumnsWithPrefix}
-        FROM agg
-        INNER JOIN top_breakdowns ON ${joinConditions}
-        ORDER BY ${orderBy}`;
+          event_day,
+          ${breakdownGroupBy.join(',\n          ')},
+          total_first,
+          conversions,
+          conversion_rate_percentage${ttcSelectColumns}
+        FROM (
+          SELECT *,
+            dense_rank() OVER (ORDER BY _bucket_rate ${rankDirection}) AS _bucket_rank
+          FROM (
+            SELECT *,
+              ${rankMetric} OVER (PARTITION BY ${partitionBy}) AS _bucket_rate
+            FROM agg
+          )
+        )
+        WHERE _bucket_rank <= ${topNLimit}
+        ORDER BY _bucket_rate ${rankDirection}, event_day ASC`;
     } else {
       finalSql = `
         WITH ${[...ctes, aggCte].join(',\n')}
