@@ -11,6 +11,8 @@ import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import {
   type EventsQueuePayloadIncomingEvent,
   getEventsGroupQueueShard,
+  produceIncomingEvent,
+  shouldUseRedpanda,
 } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import type {
@@ -202,27 +204,35 @@ async function handleTrack(
     promises.push(handleIdentify(context.identity, context));
   }
 
-  promises.push(
-    getEventsGroupQueueShard(groupId || generateId()).add({
-      orderMs: timestamp.value,
-      data: {
-        projectId,
-        headers,
-        event: {
-          ...payload,
-          groups: payload.groups ?? [],
-          timestamp: timestamp.value,
-          isTimestampFromThePast: timestamp.isFromPast,
-        },
-        uaInfo,
-        geo,
-        deviceId,
-        sessionId,
-        session,
-      },
-      groupId,
-    })
-  );
+  const queueData: EventsQueuePayloadIncomingEvent['payload'] = {
+    projectId,
+    headers,
+    event: {
+      ...payload,
+      groups: payload.groups ?? [],
+      timestamp: timestamp.value,
+      isTimestampFromThePast: timestamp.isFromPast,
+    },
+    uaInfo,
+    geo,
+    deviceId,
+    sessionId,
+    session,
+  };
+
+  const partitionKey = groupId || generateId();
+
+  if (shouldUseRedpanda(projectId)) {
+    promises.push(produceIncomingEvent(queueData, partitionKey));
+  } else {
+    promises.push(
+      getEventsGroupQueueShard(partitionKey).add({
+        orderMs: timestamp.value,
+        data: queueData,
+        groupId,
+      })
+    );
+  }
 
   await Promise.all(promises);
 }

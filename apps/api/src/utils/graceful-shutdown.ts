@@ -1,6 +1,7 @@
 import { ch, db } from '@openpanel/db';
 import {
   cronQueue,
+  disconnectRedpanda,
   eventsGroupQueues,
   miscQueue,
   notificationQueue,
@@ -89,6 +90,14 @@ export async function shutdown(
     logger.info('Queue state closed');
   } catch (error) {
     logger.error({ err: error }, 'Error closing queue state');
+  }
+
+  // Step 6.5: Disconnect Redpanda producer (no-op if never initialized)
+  try {
+    await disconnectRedpanda();
+    logger.info('Redpanda producer disconnected');
+  } catch (error) {
+    logger.error({ err: error }, 'Error disconnecting Redpanda producer');
   }
 
   // Step 7: Close Redis connections

@@ -1545,6 +1545,9 @@ importers:
       groupmq:
         specifier: 'catalog:'
         version: 2.0.0-next.6(ioredis@5.8.2)
+      kafkajs:
+        specifier: ^2.2.4
+        version: 2.2.4
     devDependencies:
       '@openpanel/tsconfig':
         specifier: workspace:*
@@ -14155,6 +14158,10 @@ packages:
 
   jws@3.2.2:
     resolution: {integrity: sha512-YHlZCB6lMTllWDtSPHz/ZXTsi8S00usEV6v1tjq8tOUZzw7DpSDWVXjXDre6ed1w/pd495ODpHZYSdkRTsa0HA==}
+
+  kafkajs@2.2.4:
+    resolution: {integrity: sha512-j/YeapB1vfPT2iOIUn/vxdyKEuhuY2PxMBvf5JWux6iSaukAccrMtXEY/Lb7OvavDhOWME589bpLrEdnVHjfjA==}
+    engines: {node: '>=14.0.0'}
 
   katex@0.16.21:
     resolution: {integrity: sha512-XvqR7FgOHtWupfMiigNzmh+MgUVmDGU2kXZm899ZkPfcuoPuFxyHmXsgATDpFZDAXCI8tvinaVcDo8PIIJSo4A==}
@@ -35965,6 +35972,8 @@ snapshots:
     dependencies:
       jwa: 1.4.1
       safe-buffer: 5.2.1
+
+  kafkajs@2.2.4: {}
 
   katex@0.16.21:
     dependencies:
