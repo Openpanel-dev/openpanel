@@ -66,10 +66,6 @@ export interface EventsQueuePayloadIncomingEvent {
     headers: Record<string, string | undefined>;
     deviceId: string;
     sessionId: string;
-    session?: Pick<
-      IServiceCreateEventPayload,
-      'referrer' | 'referrerName' | 'referrerType'
-    >;
   };
 }
 export interface EventsQueuePayloadCreateEvent {

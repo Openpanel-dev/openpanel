@@ -119,7 +119,6 @@ interface TrackContext {
   identity?: IIdentifyPayload;
   deviceId: string;
   sessionId: string;
-  session?: EventsQueuePayloadIncomingEvent['payload']['session'];
   geo: GeoLocation;
 }
 
@@ -178,7 +177,6 @@ async function buildContext(
     identity,
     deviceId: deviceIdResult.deviceId,
     sessionId: deviceIdResult.sessionId,
-    session: deviceIdResult.session,
     geo,
   };
 }
@@ -187,8 +185,7 @@ async function handleTrack(
   payload: ITrackPayload,
   context: TrackContext
 ): Promise<void> {
-  const { projectId, deviceId, geo, headers, timestamp, sessionId, session } =
-    context;
+  const { projectId, deviceId, geo, headers, timestamp, sessionId } = context;
 
   const uaInfo = parseUserAgent(headers['user-agent'], payload.properties);
   const groupId = uaInfo.isServer
@@ -217,7 +214,6 @@ async function handleTrack(
     geo,
     deviceId,
     sessionId,
-    session,
   };
 
   const partitionKey = groupId || generateId();
