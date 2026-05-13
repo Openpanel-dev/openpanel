@@ -49,6 +49,12 @@ type INotificationRuleAnomalyConfig = {
   frequency: AlertFrequency;
 };
 
+// Cron runs every 15 min, so the trailing bucket is always in-progress for every interval.
+// Use the previous bucket as the "current completed" value.
+function getSkipLast(_freq: AlertFrequency): number {
+  return 2;
+}
+
 /**
  * Main custom alerts cron job
  * Runs every 15 minutes, evaluates all threshold and anomaly rules
