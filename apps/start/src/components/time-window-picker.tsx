@@ -29,6 +29,19 @@ type Props = {
   startDate: string | null;
   className?: string;
 };
+const VISIBLE_RANGES: IChartRange[] = [
+  'lastHour',
+  'today',
+  'yesterday',
+  '3d',
+  '7d',
+  '21d',
+  '30d',
+  'yearToDate',
+  'lastYear',
+  'custom',
+];
+
 export function TimeWindowPicker({
   value,
   onChange,
@@ -68,8 +81,8 @@ export function TimeWindowPicker({
           return;
         }
 
-        const match = Object.values(timeWindows).find(
-          (tw) => event.key === tw.shortcut.toLowerCase(),
+        const match = VISIBLE_RANGES.map((k) => timeWindows[k]).find(
+          (tw) => tw.shortcut && event.key === tw.shortcut.toLowerCase(),
         );
         if (match?.key === 'custom') {
           handleCustom();
@@ -96,12 +109,6 @@ export function TimeWindowPicker({
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => onChange(timeWindows['30min'].key)}>
-            {timeWindows['30min'].label}
-            <DropdownMenuShortcut>
-              {timeWindows['30min'].shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows.lastHour.key)}>
             {timeWindows.lastHour.label}
             <DropdownMenuShortcut>
@@ -125,47 +132,28 @@ export function TimeWindowPicker({
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
+          <DropdownMenuItem onClick={() => onChange(timeWindows['3d'].key)}>
+            {timeWindows['3d'].label}
+            <DropdownMenuShortcut>
+              {timeWindows['3d'].shortcut}
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows['7d'].key)}>
             {timeWindows['7d'].label}
             <DropdownMenuShortcut>
               {timeWindows['7d'].shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange(timeWindows['21d'].key)}>
+            {timeWindows['21d'].label}
+            <DropdownMenuShortcut>
+              {timeWindows['21d'].shortcut}
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows['30d'].key)}>
             {timeWindows['30d'].label}
             <DropdownMenuShortcut>
               {timeWindows['30d'].shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows['6m'].key)}>
-            {timeWindows['6m'].label}
-            <DropdownMenuShortcut>
-              {timeWindows['6m'].shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows['12m'].key)}>
-            {timeWindows['12m'].label}
-            <DropdownMenuShortcut>
-              {timeWindows['12m'].shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            onClick={() => onChange(timeWindows.monthToDate.key)}
-          >
-            {timeWindows.monthToDate.label}
-            <DropdownMenuShortcut>
-              {timeWindows.monthToDate.shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows.lastMonth.key)}>
-            {timeWindows.lastMonth.label}
-            <DropdownMenuShortcut>
-              {timeWindows.lastMonth.shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>
