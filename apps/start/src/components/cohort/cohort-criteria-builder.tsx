@@ -30,7 +30,7 @@ export function CohortCriteriaBuilder({
   onChange,
 }: CohortCriteriaBuilderProps) {
   const { projectId } = useAppParams();
-  const eventNames = useEventNames({ projectId });
+  const { items: eventNames } = useEventNames({ projectId });
 
   const handleTypeChange = (type: 'event' | 'property') => {
     if (type === 'event') {

@@ -15,7 +15,13 @@ import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { PopoverPortal } from '@radix-ui/react-popover';
-import { CheckIcon, ChevronsUpDown, GanttChartIcon } from 'lucide-react';
+import {
+  CheckIcon,
+  ChevronsUpDown,
+  GanttChartIcon,
+  Loader2,
+  RefreshCwIcon,
+} from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
 import { EventIcon } from '../events/event-icon';
@@ -57,6 +63,9 @@ export interface ComboboxProps<T, TMultiple extends boolean = false> {
   disabled?: boolean;
   multiple?: TMultiple;
   maxDisplayItems?: number;
+  isLoading?: boolean;
+  isError?: boolean;
+  onRefresh?: () => void;
 }
 
 export function ComboboxEvents<
@@ -76,6 +85,9 @@ export function ComboboxEvents<
   items,
   multiple = false as TMultiple,
   maxDisplayItems = 2,
+  isLoading,
+  isError,
+  onRefresh,
 }: ComboboxProps<T, TMultiple>) {
   const number = useNumber();
   const [open, setOpen] = React.useState(false);
@@ -176,17 +188,41 @@ export function ComboboxEvents<
               />
             )}
 
-            <CommandEmpty>Nothing selected</CommandEmpty>
-            <VirtualList
-              height={400}
-              data={items.filter((item) => {
-                if (search === '') return true;
-                return item.name.toLowerCase().includes(search.toLowerCase());
-              })}
-              itemHeight={32}
-              itemKey="value"
-              className="w-[33em] max-sm:max-w-[100vw]"
-            >
+            {isLoading && items.length === 0 ? (
+              <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading events…
+              </div>
+            ) : isError && items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+                <span>Failed to load events.</span>
+                {onRefresh && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onRefresh()}
+                  >
+                    <RefreshCwIcon className="mr-2 h-3 w-3" />
+                    Refresh
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <>
+                <CommandEmpty>Nothing selected</CommandEmpty>
+                <VirtualList
+                  height={400}
+                  data={items.filter((item) => {
+                    if (search === '') return true;
+                    return item.name
+                      .toLowerCase()
+                      .includes(search.toLowerCase());
+                  })}
+                  itemHeight={32}
+                  itemKey="value"
+                  className="w-[33em] max-sm:max-w-[100vw]"
+                >
               {(item) => {
                 return (
                   <CommandItem
@@ -215,6 +251,8 @@ export function ComboboxEvents<
                 );
               }}
             </VirtualList>
+              </>
+            )}
           </Command>
         </PopoverContent>
       </PopoverPortal>

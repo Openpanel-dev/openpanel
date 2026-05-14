@@ -157,7 +157,12 @@ export function ReportSeries() {
   const chartType = useSelector((state) => state.report.chartType);
   const dispatch = useDispatch();
   const { projectId } = useAppParams();
-  const eventNames = useEventNames({
+  const {
+    items: eventNames,
+    isLoading: isLoadingEventNames,
+    isError: isErrorEventNames,
+    refetch: refetchEventNames,
+  } = useEventNames({
     projectId,
   });
 
@@ -323,6 +328,9 @@ export function ReportSeries() {
                         }}
                         items={eventNames}
                         placeholder="Select event"
+                        isLoading={isLoadingEventNames}
+                        isError={isErrorEventNames}
+                        onRefresh={refetchEventNames}
                       />
                       {showDisplayNameInput && (
                         <Input
@@ -386,6 +394,9 @@ export function ReportSeries() {
                 }}
                 placeholder="Select event"
                 items={eventNames}
+                isLoading={isLoadingEventNames}
+                isError={isErrorEventNames}
+                onRefresh={refetchEventNames}
               />
               {showFormula && (
                 <Button

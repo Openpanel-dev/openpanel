@@ -13,7 +13,14 @@ import { useEventProperties } from '@/hooks/use-event-properties';
 import { useCohorts } from '@/hooks/use-cohorts';
 import type { IChartEvent } from '@openpanel/validation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeftIcon, DatabaseIcon, UserIcon, UsersIcon } from 'lucide-react';
+import {
+  ArrowLeftIcon,
+  DatabaseIcon,
+  Loader2,
+  RefreshCwIcon,
+  UserIcon,
+  UsersIcon,
+} from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 
@@ -65,11 +72,21 @@ export function PropertiesCombobox({
 }: PropertiesComboboxProps) {
   const { projectId } = useAppParams();
   const [open, setOpen] = useState(false);
-  const properties = useEventProperties({
+  const {
+    items: properties,
+    isLoading: isLoadingProperties,
+    isError: isErrorProperties,
+    refetch: refetchProperties,
+  } = useEventProperties({
     event: event?.name,
     projectId,
   });
-  const cohorts = useCohorts(
+  const {
+    items: cohorts,
+    isLoading: isLoadingCohorts,
+    isError: isErrorCohorts,
+    refetch: refetchCohorts,
+  } = useCohorts(
     { projectId, includeCount: false },
     { enabled: open }
   );
@@ -129,6 +146,39 @@ export function PropertiesCombobox({
     onSelect(action);
   };
 
+  const renderListState = (
+    label: string,
+    isLoading: boolean,
+    isError: boolean,
+    onRefresh: () => void,
+  ) => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading {label}…
+        </div>
+      );
+    }
+    if (isError) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+          <span>Failed to load {label}.</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onRefresh()}
+          >
+            <RefreshCwIcon className="mr-2 h-3 w-3" />
+            Refresh
+          </Button>
+        </div>
+      );
+    }
+    return null;
+  };
+
   const renderIndex = () => {
     return (
       <DropdownMenuGroup>
@@ -174,6 +224,15 @@ export function PropertiesCombobox({
         action.label.toLowerCase().includes(search.toLowerCase()) ||
         action.description.toLowerCase().includes(search.toLowerCase()),
     );
+    const listState =
+      properties.length === 0
+        ? renderListState(
+            'properties',
+            isLoadingProperties,
+            isErrorProperties,
+            refetchProperties,
+          )
+        : null;
 
     return (
       <div className="col">
@@ -185,6 +244,7 @@ export function PropertiesCombobox({
           value={search}
         />
         <DropdownMenuSeparator />
+        {listState}
         <VirtualList
           height={300}
           data={filteredActions}
@@ -215,6 +275,15 @@ export function PropertiesCombobox({
         action.label.toLowerCase().includes(search.toLowerCase()) ||
         action.description.toLowerCase().includes(search.toLowerCase()),
     );
+    const listState =
+      properties.length === 0
+        ? renderListState(
+            'properties',
+            isLoadingProperties,
+            isErrorProperties,
+            refetchProperties,
+          )
+        : null;
 
     return (
       <div className="flex flex-col">
@@ -224,6 +293,7 @@ export function PropertiesCombobox({
           value={search}
         />
         <DropdownMenuSeparator />
+        {listState}
         <VirtualList
           height={300}
           data={filteredActions}
@@ -249,16 +319,25 @@ export function PropertiesCombobox({
   };
 
   const renderCohort = () => {
-    const filteredCohorts = cohorts.filter(cohort =>
+    const filteredCohorts = cohorts.filter((cohort) =>
       cohort.name.toLowerCase().includes(search.toLowerCase())
     );
 
-    const cohortActions = filteredCohorts.map(cohort => ({
+    const cohortActions = filteredCohorts.map((cohort) => ({
       value: `cohort:${cohort.id}`,
       label: cohort.name,
       description: cohort.description || `${cohort.profileCount || 0} users`,
       cohortId: cohort.id,
     }));
+    const listState =
+      cohorts.length === 0
+        ? renderListState(
+            'cohorts',
+            isLoadingCohorts,
+            isErrorCohorts,
+            refetchCohorts,
+          )
+        : null;
 
     return (
       <div className="col">
@@ -268,6 +347,7 @@ export function PropertiesCombobox({
           value={search}
         />
         <DropdownMenuSeparator />
+        {listState}
         <VirtualList
           height={300}
           data={cohortActions}

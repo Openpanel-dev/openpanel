@@ -10,5 +10,10 @@ export function useCohorts(params: { projectId: string; includeCount?: boolean }
           ? options.enabled : true,
     }),
   );
-  return query.data ?? [];
+  return {
+    items: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: query.refetch,
+  };
 }

@@ -24,11 +24,11 @@ export function CustomEventBuilder({
   onChange,
   projectId,
 }: CustomEventBuilderProps) {
-  const eventNamesQuery = useEventNames({ projectId });
+  const { items: eventNamesItems } = useEventNames({ projectId });
 
   // Transform array of event objects to format expected by ComboboxAdvanced
   // Filter out custom events (can't create custom event from custom events)
-  const eventNames = (eventNamesQuery || [])
+  const eventNames = (eventNamesItems || [])
     .filter((event) => !event.isCustom && event.name !== '*')
     .map((event) => ({
       value: event.name,

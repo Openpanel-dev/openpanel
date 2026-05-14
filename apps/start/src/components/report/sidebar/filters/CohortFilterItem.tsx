@@ -104,7 +104,7 @@ export function PureCohortFilterItem({
 }: PureCohortFilterItemProps) {
   const { projectId } = useAppParams();
 
-  const cohorts = useCohorts({ projectId, includeCount: false });
+  const { items: cohorts } = useCohorts({ projectId, includeCount: false });
 
   const cohortsCombobox = cohorts.map((cohort) => ({
     value: cohort.id,

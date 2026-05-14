@@ -38,7 +38,12 @@ export default function OverviewFilters({
   const { projectId } = useAppParams();
   const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
   const [event, setEvent] = useEventQueryNamesFilter(nuqsOptions);
-  const eventNames = useEventNames({ projectId });
+  const {
+    items: eventNames,
+    isLoading: isLoadingEventNames,
+    isError: isErrorEventNames,
+    refetch: refetchEventNames,
+  } = useEventNames({ projectId });
   const selectedFilters = filters.filter((filter) => filter.value[0] !== null);
   return (
     <SheetContent className="[&>button.absolute]:hidden">
@@ -56,6 +61,9 @@ export default function OverviewFilters({
             placeholder="Select event"
             maxDisplayItems={2}
             searchable
+            isLoading={isLoadingEventNames}
+            isError={isErrorEventNames}
+            onRefresh={refetchEventNames}
           />
         )}
       </div>

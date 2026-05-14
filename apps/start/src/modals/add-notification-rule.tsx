@@ -546,7 +546,12 @@ function EventField({
   remove: () => void;
 }) {
   const { projectId } = useAppParams();
-  const eventNames = useEventNames({ projectId });
+  const {
+    items: eventNames,
+    isLoading: isLoadingEventNames,
+    isError: isErrorEventNames,
+    refetch: refetchEventNames,
+  } = useEventNames({ projectId });
   const filtersArray = useFieldArray({
     control: form.control,
     name: `config.events.${index}.filters`,
@@ -555,7 +560,7 @@ function EventField({
     control: form.control,
     name: `config.events.${index}.name`,
   });
-  const properties = useEventProperties({ projectId });
+  const { items: properties } = useEventProperties({ projectId });
 
   return (
     <div className="border bg-def-100 rounded">
@@ -572,6 +577,9 @@ function EventField({
               placeholder="Select event"
               onChange={field.onChange}
               items={eventNames}
+              isLoading={isLoadingEventNames}
+              isError={isErrorEventNames}
+              onRefresh={refetchEventNames}
             />
           )}
         />

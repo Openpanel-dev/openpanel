@@ -8,5 +8,10 @@ export function useEventNames(params: any) {
       enabled: !!params.projectId,
     }),
   );
-  return query.data ?? [];
+  return {
+    items: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: query.refetch,
+  };
 }

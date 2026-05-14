@@ -18,7 +18,7 @@ export function EventPropertiesCombobox({
 }: EventPropertiesComboboxProps) {
   const dispatch = useDispatch();
   const { projectId } = useAppParams();
-  const properties = useEventProperties(
+  const { items: rawProperties } = useEventProperties(
     {
       event: event.name,
       projectId,
@@ -26,7 +26,8 @@ export function EventPropertiesCombobox({
     {
       enabled: !!event.name,
     },
-  ).map((item) => ({
+  );
+  const properties = rawProperties.map((item) => ({
     label: item,
     value: item,
   }));

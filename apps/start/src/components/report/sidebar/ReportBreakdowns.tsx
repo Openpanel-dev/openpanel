@@ -19,7 +19,7 @@ export function ReportBreakdowns() {
   const { projectId } = useAppParams();
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
   const limit = useSelector((state) => state.report.limit);
-  const cohorts = useCohorts({ projectId, includeCount: false });
+  const { items: cohorts } = useCohorts({ projectId, includeCount: false });
   const dispatch = useDispatch();
 
   const handleMore = (breakdown: IChartBreakdown) => {
