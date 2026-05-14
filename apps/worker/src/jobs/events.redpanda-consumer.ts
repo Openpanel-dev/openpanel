@@ -1,6 +1,7 @@
 import {
   createRedpandaEventsConsumer,
   type EventsQueuePayloadIncomingEvent,
+  type KafkaMessage,
   REDPANDA_EVENTS_TOPIC,
   REDPANDA_PARTITIONS_CONCURRENT,
   redpandaLogger,
@@ -12,6 +13,11 @@ import { incomingEvent } from './events.incoming-event';
 export interface RedpandaConsumerHandle {
   stop: () => Promise<void>;
 }
+
+// Heartbeat every N messages within a per-key group. The default kafkajs
+// sessionTimeout is 30s — calling heartbeat every 16 messages keeps us
+// comfortably under that even for slow handlers.
+const HEARTBEAT_EVERY = 16;
 
 export async function startRedpandaEventsConsumer(): Promise<RedpandaConsumerHandle> {
   const consumer = createRedpandaEventsConsumer();
@@ -25,40 +31,85 @@ export async function startRedpandaEventsConsumer(): Promise<RedpandaConsumerHan
 
   await consumer.run({
     partitionsConsumedConcurrently: REDPANDA_PARTITIONS_CONCURRENT,
-    eachMessage: async ({ message, partition }) => {
-      if (!message.value) {
+    eachBatchAutoResolve: false,
+    eachBatch: async ({
+      batch,
+      resolveOffset,
+      heartbeat,
+      isRunning,
+      isStale,
+    }) => {
+      if (batch.messages.length === 0) {
         return;
       }
-      let payload: EventsQueuePayloadIncomingEvent['payload'];
-      try {
-        payload = JSON.parse(
-          message.value.toString()
-        ) as EventsQueuePayloadIncomingEvent['payload'];
-      } catch (err) {
-        logger.error(
-          { err, partition, offset: message.offset },
-          'redpanda message parse failed'
-        );
-        return;
+
+      // Group by partition key (= deviceId or `${projectId}:${profileId}`).
+      // Same-key messages stay serial so sessionBuffer/session-end-job state
+      // can't race; different keys run in parallel via Promise.all.
+      // Keyless messages get their own singleton group.
+      const groups = new Map<string, KafkaMessage[]>();
+      for (const m of batch.messages) {
+        const key = m.key ? m.key.toString() : `__no_key__:${m.offset}`;
+        const arr = groups.get(key);
+        if (arr) {
+          arr.push(m);
+        } else {
+          groups.set(key, [m]);
+        }
       }
-      try {
-        await incomingEvent(payload);
-      } catch (err) {
-        // Match the GroupWorker behaviour: log and ack. At-most-once on
-        // handler exceptions; failures here would otherwise block the
-        // partition. Future hardening can switch to retry/DLQ.
-        logger.error(
-          {
-            err,
-            partition,
-            offset: message.offset,
-            projectId: payload.projectId,
-          },
-          'redpanda incomingEvent handler failed'
-        );
-      } finally {
-        markEventsActivity();
-      }
+
+      await Promise.all(
+        [...groups.values()].map(async (msgs) => {
+          let processed = 0;
+          for (const m of msgs) {
+            if (!isRunning() || isStale()) {
+              return;
+            }
+
+            if (m.value) {
+              let payload: EventsQueuePayloadIncomingEvent['payload'] | null =
+                null;
+              try {
+                payload = JSON.parse(
+                  m.value.toString()
+                ) as EventsQueuePayloadIncomingEvent['payload'];
+              } catch (err) {
+                logger.error(
+                  { err, partition: batch.partition, offset: m.offset },
+                  'redpanda message parse failed'
+                );
+              }
+              if (payload) {
+                try {
+                  await incomingEvent(payload);
+                } catch (err) {
+                  // Match the previous eachMessage behaviour: log and ack.
+                  // At-most-once on handler exceptions; failures here would
+                  // otherwise block the partition.
+                  logger.error(
+                    {
+                      err,
+                      partition: batch.partition,
+                      offset: m.offset,
+                      projectId: payload.projectId,
+                    },
+                    'redpanda incomingEvent handler failed'
+                  );
+                }
+              }
+            }
+
+            resolveOffset(m.offset);
+            processed += 1;
+            if (processed % HEARTBEAT_EVERY === 0) {
+              await heartbeat();
+            }
+          }
+        })
+      );
+
+      await heartbeat();
+      markEventsActivity();
     },
   });
 

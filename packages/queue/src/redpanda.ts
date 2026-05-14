@@ -2,6 +2,8 @@ import { createLogger } from '@openpanel/logger';
 import { type Consumer, Kafka, logLevel, type Producer } from 'kafkajs';
 import type { EventsQueuePayloadIncomingEvent } from './queues';
 
+export type { KafkaMessage } from 'kafkajs';
+
 export const redpandaLogger = createLogger({ name: 'redpanda' });
 
 const parseBrokers = (raw: string | undefined): string[] => {
@@ -23,6 +25,35 @@ export const REDPANDA_PARTITIONS_CONCURRENT = Number.parseInt(
   process.env.REDPANDA_PARTITIONS_CONCURRENT || '8',
   10
 );
+// Approx size of one event payload (observed range ~0.9–1.3 KiB).
+// We size fetch knobs in messages and convert to bytes via this constant.
+const REDPANDA_BYTES_PER_MESSAGE = 1024;
+
+export const REDPANDA_MIN_MESSAGES = Number.parseInt(
+  process.env.REDPANDA_MIN_MESSAGES || '1',
+  10
+);
+export const REDPANDA_MAX_WAIT_MS = Number.parseInt(
+  process.env.REDPANDA_MAX_WAIT_MS || '500',
+  10
+);
+export const REDPANDA_MAX_MESSAGES_PER_PARTITION = Number.parseInt(
+  process.env.REDPANDA_MAX_MESSAGES_PER_PARTITION || '256',
+  10
+);
+export const REDPANDA_SESSION_TIMEOUT_MS = Number.parseInt(
+  process.env.REDPANDA_SESSION_TIMEOUT_MS || '30000',
+  10
+);
+export const REDPANDA_HEARTBEAT_INTERVAL_MS = Number.parseInt(
+  process.env.REDPANDA_HEARTBEAT_INTERVAL_MS || '3000',
+  10
+);
+
+const REDPANDA_MIN_BYTES =
+  REDPANDA_MIN_MESSAGES * REDPANDA_BYTES_PER_MESSAGE;
+const REDPANDA_MAX_BYTES_PER_PARTITION =
+  REDPANDA_MAX_MESSAGES_PER_PARTITION * REDPANDA_BYTES_PER_MESSAGE;
 
 const projectIdsEnv = (process.env.REDPANDA_PROJECT_IDS || '').trim();
 const allowAllProjects = projectIdsEnv === '*';
@@ -120,6 +151,11 @@ export const createRedpandaEventsConsumer = (options?: {
   const client = getKafka();
   const consumer = client.consumer({
     groupId: options?.groupId || REDPANDA_CONSUMER_GROUP,
+    sessionTimeout: REDPANDA_SESSION_TIMEOUT_MS,
+    heartbeatInterval: REDPANDA_HEARTBEAT_INTERVAL_MS,
+    minBytes: REDPANDA_MIN_BYTES,
+    maxWaitTimeInMs: REDPANDA_MAX_WAIT_MS,
+    maxBytesPerPartition: REDPANDA_MAX_BYTES_PER_PARTITION,
   });
   consumers.add(consumer);
   return consumer;
