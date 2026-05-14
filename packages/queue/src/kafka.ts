@@ -4,7 +4,7 @@ import type { EventsQueuePayloadIncomingEvent } from './queues';
 
 export type { KafkaMessage } from 'kafkajs';
 
-export const redpandaLogger = createLogger({ name: 'redpanda' });
+export const kafkaLogger = createLogger({ name: 'kafka' });
 
 const parseBrokers = (raw: string | undefined): string[] => {
   if (!raw) {
@@ -16,46 +16,45 @@ const parseBrokers = (raw: string | undefined): string[] => {
     .filter(Boolean);
 };
 
-export const REDPANDA_BROKERS = parseBrokers(process.env.REDPANDA_BROKERS);
-export const REDPANDA_EVENTS_TOPIC =
-  process.env.REDPANDA_EVENTS_TOPIC || 'events';
-export const REDPANDA_CONSUMER_GROUP =
-  process.env.REDPANDA_CONSUMER_GROUP || 'openpanel-events';
-export const REDPANDA_PARTITIONS_CONCURRENT = Number.parseInt(
-  process.env.REDPANDA_PARTITIONS_CONCURRENT || '8',
+export const KAFKA_BROKERS = parseBrokers(process.env.KAFKA_BROKERS);
+export const KAFKA_EVENTS_TOPIC = process.env.KAFKA_EVENTS_TOPIC || 'events';
+export const KAFKA_CONSUMER_GROUP =
+  process.env.KAFKA_CONSUMER_GROUP || 'openpanel-events';
+export const KAFKA_PARTITIONS_CONCURRENT = Number.parseInt(
+  process.env.KAFKA_PARTITIONS_CONCURRENT || '8',
   10
 );
+
 // Approx size of one event payload (observed range ~0.9–1.3 KiB).
 // We size fetch knobs in messages and convert to bytes via this constant.
-const REDPANDA_BYTES_PER_MESSAGE = 1024;
+const KAFKA_BYTES_PER_MESSAGE = 1024;
 
-export const REDPANDA_MIN_MESSAGES = Number.parseInt(
-  process.env.REDPANDA_MIN_MESSAGES || '1',
+export const KAFKA_MIN_MESSAGES = Number.parseInt(
+  process.env.KAFKA_MIN_MESSAGES || '1',
   10
 );
-export const REDPANDA_MAX_WAIT_MS = Number.parseInt(
-  process.env.REDPANDA_MAX_WAIT_MS || '500',
+export const KAFKA_MAX_WAIT_MS = Number.parseInt(
+  process.env.KAFKA_MAX_WAIT_MS || '500',
   10
 );
-export const REDPANDA_MAX_MESSAGES_PER_PARTITION = Number.parseInt(
-  process.env.REDPANDA_MAX_MESSAGES_PER_PARTITION || '256',
+export const KAFKA_MAX_MESSAGES_PER_PARTITION = Number.parseInt(
+  process.env.KAFKA_MAX_MESSAGES_PER_PARTITION || '256',
   10
 );
-export const REDPANDA_SESSION_TIMEOUT_MS = Number.parseInt(
-  process.env.REDPANDA_SESSION_TIMEOUT_MS || '30000',
+export const KAFKA_SESSION_TIMEOUT_MS = Number.parseInt(
+  process.env.KAFKA_SESSION_TIMEOUT_MS || '30000',
   10
 );
-export const REDPANDA_HEARTBEAT_INTERVAL_MS = Number.parseInt(
-  process.env.REDPANDA_HEARTBEAT_INTERVAL_MS || '3000',
+export const KAFKA_HEARTBEAT_INTERVAL_MS = Number.parseInt(
+  process.env.KAFKA_HEARTBEAT_INTERVAL_MS || '3000',
   10
 );
 
-const REDPANDA_MIN_BYTES =
-  REDPANDA_MIN_MESSAGES * REDPANDA_BYTES_PER_MESSAGE;
-const REDPANDA_MAX_BYTES_PER_PARTITION =
-  REDPANDA_MAX_MESSAGES_PER_PARTITION * REDPANDA_BYTES_PER_MESSAGE;
+const KAFKA_MIN_BYTES = KAFKA_MIN_MESSAGES * KAFKA_BYTES_PER_MESSAGE;
+const KAFKA_MAX_BYTES_PER_PARTITION =
+  KAFKA_MAX_MESSAGES_PER_PARTITION * KAFKA_BYTES_PER_MESSAGE;
 
-const projectIdsEnv = (process.env.REDPANDA_PROJECT_IDS || '').trim();
+const projectIdsEnv = (process.env.KAFKA_PROJECT_IDS || '').trim();
 const allowAllProjects = projectIdsEnv === '*';
 const projectIdAllowList = new Set<string>(
   projectIdsEnv && !allowAllProjects
@@ -66,10 +65,10 @@ const projectIdAllowList = new Set<string>(
     : []
 );
 
-export const isRedpandaConfigured = (): boolean => REDPANDA_BROKERS.length > 0;
+export const isKafkaConfigured = (): boolean => KAFKA_BROKERS.length > 0;
 
-export const shouldUseRedpanda = (projectId: string): boolean => {
-  if (!isRedpandaConfigured()) {
+export const shouldUseKafka = (projectId: string): boolean => {
+  if (!isKafkaConfigured()) {
     return false;
   }
   if (allowAllProjects) {
@@ -80,15 +79,15 @@ export const shouldUseRedpanda = (projectId: string): boolean => {
 
 let kafka: Kafka | null = null;
 const getKafka = (): Kafka => {
-  if (!isRedpandaConfigured()) {
+  if (!isKafkaConfigured()) {
     throw new Error(
-      'REDPANDA_BROKERS env var is not set; cannot create Kafka client'
+      'KAFKA_BROKERS env var is not set; cannot create Kafka client'
     );
   }
   if (!kafka) {
     kafka = new Kafka({
-      clientId: process.env.REDPANDA_CLIENT_ID || 'openpanel',
-      brokers: REDPANDA_BROKERS,
+      clientId: process.env.KAFKA_CLIENT_ID || 'openpanel',
+      brokers: KAFKA_BROKERS,
       logLevel: logLevel.WARN,
     });
   }
@@ -113,9 +112,9 @@ const getProducer = async (): Promise<Producer> => {
       .connect()
       .then(() => {
         producer = p;
-        redpandaLogger.info(
-          { brokers: REDPANDA_BROKERS, topic: REDPANDA_EVENTS_TOPIC },
-          'redpanda producer connected'
+        kafkaLogger.info(
+          { brokers: KAFKA_BROKERS, topic: KAFKA_EVENTS_TOPIC },
+          'kafka producer connected'
         );
         return p;
       })
@@ -133,7 +132,7 @@ export const produceIncomingEvent = async (
 ): Promise<void> => {
   const p = await getProducer();
   await p.send({
-    topic: REDPANDA_EVENTS_TOPIC,
+    topic: KAFKA_EVENTS_TOPIC,
     messages: [
       {
         key: Buffer.from(partitionKey),
@@ -145,28 +144,28 @@ export const produceIncomingEvent = async (
 
 const consumers = new Set<Consumer>();
 
-export const createRedpandaEventsConsumer = (options?: {
+export const createKafkaEventsConsumer = (options?: {
   groupId?: string;
 }): Consumer => {
   const client = getKafka();
   const consumer = client.consumer({
-    groupId: options?.groupId || REDPANDA_CONSUMER_GROUP,
-    sessionTimeout: REDPANDA_SESSION_TIMEOUT_MS,
-    heartbeatInterval: REDPANDA_HEARTBEAT_INTERVAL_MS,
-    minBytes: REDPANDA_MIN_BYTES,
-    maxWaitTimeInMs: REDPANDA_MAX_WAIT_MS,
-    maxBytesPerPartition: REDPANDA_MAX_BYTES_PER_PARTITION,
+    groupId: options?.groupId || KAFKA_CONSUMER_GROUP,
+    sessionTimeout: KAFKA_SESSION_TIMEOUT_MS,
+    heartbeatInterval: KAFKA_HEARTBEAT_INTERVAL_MS,
+    minBytes: KAFKA_MIN_BYTES,
+    maxWaitTimeInMs: KAFKA_MAX_WAIT_MS,
+    maxBytesPerPartition: KAFKA_MAX_BYTES_PER_PARTITION,
   });
   consumers.add(consumer);
   return consumer;
 };
 
-export const disconnectRedpanda = async (): Promise<void> => {
+export const disconnectKafka = async (): Promise<void> => {
   const tasks: Promise<unknown>[] = [];
   for (const c of consumers) {
     tasks.push(
       c.disconnect().catch((err) => {
-        redpandaLogger.error({ err }, 'redpanda consumer disconnect error');
+        kafkaLogger.error({ err }, 'kafka consumer disconnect error');
       })
     );
   }
@@ -177,7 +176,7 @@ export const disconnectRedpanda = async (): Promise<void> => {
     producerConnectPromise = null;
     tasks.push(
       p.disconnect().catch((err) => {
-        redpandaLogger.error({ err }, 'redpanda producer disconnect error');
+        kafkaLogger.error({ err }, 'kafka producer disconnect error');
       })
     );
   }

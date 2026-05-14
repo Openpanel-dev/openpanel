@@ -12,7 +12,7 @@ import {
   type EventsQueuePayloadIncomingEvent,
   getEventsGroupQueueShard,
   produceIncomingEvent,
-  shouldUseRedpanda,
+  shouldUseKafka,
 } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import type {
@@ -218,7 +218,7 @@ async function handleTrack(
 
   const partitionKey = groupId || generateId();
 
-  if (shouldUseRedpanda(projectId)) {
+  if (shouldUseKafka(projectId)) {
     promises.push(produceIncomingEvent(queueData, partitionKey));
   } else {
     promises.push(

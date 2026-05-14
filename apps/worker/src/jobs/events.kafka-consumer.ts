@@ -1,16 +1,16 @@
 import {
-  createRedpandaEventsConsumer,
+  createKafkaEventsConsumer,
   type EventsQueuePayloadIncomingEvent,
+  KAFKA_EVENTS_TOPIC,
+  KAFKA_PARTITIONS_CONCURRENT,
+  kafkaLogger,
   type KafkaMessage,
-  REDPANDA_EVENTS_TOPIC,
-  REDPANDA_PARTITIONS_CONCURRENT,
-  redpandaLogger,
 } from '@openpanel/queue';
 import { logger } from '../utils/logger';
 import { markEventsActivity } from '../utils/worker-heartbeat';
 import { incomingEvent } from './events.incoming-event';
 
-export interface RedpandaConsumerHandle {
+export interface KafkaConsumerHandle {
   stop: () => Promise<void>;
 }
 
@@ -19,18 +19,18 @@ export interface RedpandaConsumerHandle {
 // comfortably under that even for slow handlers.
 const HEARTBEAT_EVERY = 16;
 
-export async function startRedpandaEventsConsumer(): Promise<RedpandaConsumerHandle> {
-  const consumer = createRedpandaEventsConsumer();
+export async function startKafkaEventsConsumer(): Promise<KafkaConsumerHandle> {
+  const consumer = createKafkaEventsConsumer();
   await consumer.connect();
   await consumer.subscribe({
-    topic: REDPANDA_EVENTS_TOPIC,
+    topic: KAFKA_EVENTS_TOPIC,
     fromBeginning: false,
   });
 
   consumer.on(consumer.events.HEARTBEAT, markEventsActivity);
 
   await consumer.run({
-    partitionsConsumedConcurrently: REDPANDA_PARTITIONS_CONCURRENT,
+    partitionsConsumedConcurrently: KAFKA_PARTITIONS_CONCURRENT,
     eachBatchAutoResolve: false,
     eachBatch: async ({
       batch,
@@ -76,7 +76,7 @@ export async function startRedpandaEventsConsumer(): Promise<RedpandaConsumerHan
               } catch (err) {
                 logger.error(
                   { err, partition: batch.partition, offset: m.offset },
-                  'redpanda message parse failed'
+                  'kafka message parse failed'
                 );
               }
               if (payload) {
@@ -93,7 +93,7 @@ export async function startRedpandaEventsConsumer(): Promise<RedpandaConsumerHan
                       offset: m.offset,
                       projectId: payload.projectId,
                     },
-                    'redpanda incomingEvent handler failed'
+                    'kafka incomingEvent handler failed'
                   );
                 }
               }
@@ -113,12 +113,12 @@ export async function startRedpandaEventsConsumer(): Promise<RedpandaConsumerHan
     },
   });
 
-  redpandaLogger.info(
+  kafkaLogger.info(
     {
-      topic: REDPANDA_EVENTS_TOPIC,
-      partitionsConsumedConcurrently: REDPANDA_PARTITIONS_CONCURRENT,
+      topic: KAFKA_EVENTS_TOPIC,
+      partitionsConsumedConcurrently: KAFKA_PARTITIONS_CONCURRENT,
     },
-    'redpanda events consumer running'
+    'kafka events consumer running'
   );
 
   return {

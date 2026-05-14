@@ -22,9 +22,9 @@ import { cohortComputeJob } from './jobs/cohort.compute';
 import { cronJob } from './jobs/cron';
 import { incomingEvent } from './jobs/events.incoming-event';
 import {
-  type RedpandaConsumerHandle,
-  startRedpandaEventsConsumer,
-} from './jobs/events.redpanda-consumer';
+  type KafkaConsumerHandle,
+  startKafkaEventsConsumer,
+} from './jobs/events.kafka-consumer';
 import { gscJob } from './jobs/gsc';
 import { importJob } from './jobs/import';
 import { insightsProjectJob } from './jobs/insights';
@@ -64,7 +64,7 @@ function getEnabledQueues(): QueueName[] {
     );
     return [
       'events',
-      'events_redpanda',
+      'events_kafka',
       'sessions',
       'cron',
       'notification',
@@ -169,20 +169,17 @@ export function bootWorkers() {
     logger.info({ concurrency }, `Started worker for ${queueName}`);
   }
 
-  // Start Redpanda events consumer (parallel to groupmq events for allow-listed project IDs)
-  if (
-    enabledQueues.includes('events_redpanda') &&
-    process.env.REDPANDA_BROKERS
-  ) {
+  // Start Kafka events consumer (parallel to groupmq events for allow-listed project IDs)
+  if (enabledQueues.includes('events_kafka') && process.env.KAFKA_BROKERS) {
     enableEventsHeartbeat();
-    let handle: RedpandaConsumerHandle | null = null;
-    const startPromise = startRedpandaEventsConsumer()
+    let handle: KafkaConsumerHandle | null = null;
+    const startPromise = startKafkaEventsConsumer()
       .then((h) => {
         handle = h;
-        logger.info('Started Redpanda events consumer');
+        logger.info('Started Kafka events consumer');
       })
       .catch((err) => {
-        logger.error({ err }, 'Failed to start Redpanda events consumer');
+        logger.error({ err }, 'Failed to start Kafka events consumer');
       });
     extraStops.push(async () => {
       await startPromise.catch(() => undefined);
