@@ -176,30 +176,18 @@ function ReportItem({
           tabIndex={0}
         >
           <div className="font-medium">{report.name}</div>
-          {chartRange !== null && (
-            <div className="mt-2 flex gap-2 ">
-              <span
-                className={
-                  (chartRange !== range && range !== null) ||
-                  (startDate && endDate)
-                    ? 'line-through'
-                    : ''
-                }
-              >
-                {timeWindows[chartRange as keyof typeof timeWindows]?.label}
-              </span>
-              {startDate && endDate ? (
-                <span>Custom dates</span>
-              ) : (
-                range !== null &&
-                chartRange !== range && (
-                  <span>
-                    {timeWindows[range as keyof typeof timeWindows]?.label}
-                  </span>
-                )
-              )}
-            </div>
-          )}
+          {(() => {
+            if (startDate && endDate) {
+              return <div className="mt-2">Custom dates</div>;
+            }
+            const effectiveRange = range ?? chartRange;
+            if (effectiveRange === null || effectiveRange === undefined) {
+              return null;
+            }
+            const label =
+              timeWindows[effectiveRange as keyof typeof timeWindows]?.label;
+            return label ? <div className="mt-2">{label}</div> : null;
+          })()}
         </div>
         <div className="flex items-center gap-2">
           <div className="drag-handle cursor-move p-2 hover:bg-muted rounded">

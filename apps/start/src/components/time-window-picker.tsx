@@ -35,10 +35,8 @@ const VISIBLE_RANGES: IChartRange[] = [
   'yesterday',
   '3d',
   '7d',
-  '21d',
   '30d',
-  'yearToDate',
-  'lastYear',
+  '3m',
   'custom',
 ];
 
@@ -144,35 +142,16 @@ export function TimeWindowPicker({
               {timeWindows['7d'].shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows['21d'].key)}>
-            {timeWindows['21d'].label}
-            <DropdownMenuShortcut>
-              {timeWindows['21d'].shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows['30d'].key)}>
             {timeWindows['30d'].label}
             <DropdownMenuShortcut>
               {timeWindows['30d'].shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
-        </DropdownMenuGroup>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            onClick={() => onChange(timeWindows.yearToDate.key)}
-          >
-            {timeWindows.yearToDate.label}
+          <DropdownMenuItem onClick={() => onChange(timeWindows['3m'].key)}>
+            {timeWindows['3m'].label}
             <DropdownMenuShortcut>
-              {timeWindows.yearToDate.shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows.lastYear.key)}>
-            {timeWindows.lastYear.label}
-            <DropdownMenuShortcut>
-              {timeWindows.lastYear.shortcut}
+              {timeWindows['3m'].shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>

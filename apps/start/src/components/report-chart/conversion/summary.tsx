@@ -15,7 +15,7 @@ interface Props {
 
 export function Summary({ data }: Props) {
   const number = useNumber();
-  const { report } = useReportChartContext();
+  const { report, isEditMode } = useReportChartContext();
   const isTtc = report.measuring === 'time_to_convert';
 
   if (isTtc) {
@@ -145,23 +145,25 @@ export function Summary({ data }: Props) {
 
   return (
     <Stats className="my-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      <StatsCard
-        title="Flow"
-        value={
-          <div className="row flex-wrap gap-1">
-            {report.series
-              .filter((item) => item.type === 'event')
-              .map((event, index) => {
-                return (
-                  <div key={event.id} className="row items-center gap-2">
-                    {index !== 0 && <ChevronRightIcon className="size-3" />}
-                    <span>{event.name}</span>
-                  </div>
-                );
-              })}
-          </div>
-        }
-      />
+      {isEditMode && (
+        <StatsCard
+          title="Flow"
+          value={
+            <div className="row flex-wrap gap-1">
+              {report.series
+                .filter((item) => item.type === 'event')
+                .map((event, index) => {
+                  return (
+                    <div key={event.id} className="row items-center gap-2">
+                      {index !== 0 && <ChevronRightIcon className="size-3" />}
+                      <span>{event.name}</span>
+                    </div>
+                  );
+                })}
+            </div>
+          }
+        />
+      )}
       {bestAverageConversionRateMatch && hasManySeries && (
         <StatsCard
           title="Best breakdown (avg)"
@@ -217,13 +219,13 @@ export function Summary({ data }: Props) {
           )
         }
       />
-      {bestConversionRate && (
+      {isEditMode && bestConversionRate && (
         <StatsCard
           title="Best conversion rate"
           value={getConversionRateNode(bestConversionRate)}
         />
       )}
-      {worstConversionRate && (
+      {isEditMode && worstConversionRate && (
         <StatsCard
           title="Worst conversion rate"
           value={getConversionRateNode(worstConversionRate)}
@@ -234,7 +236,7 @@ export function Summary({ data }: Props) {
 }
 
 function TtcSummary({ data }: Props) {
-  const { report } = useReportChartContext();
+  const { report, isEditMode } = useReportChartContext();
 
   const avgTtcValues = data.current.flatMap((serie) =>
     serie.data.filter((d) => d.ttc).map((d) => d.ttc!.avg),
@@ -246,21 +248,23 @@ function TtcSummary({ data }: Props) {
 
   return (
     <Stats className="my-4 grid grid-cols-1 md:grid-cols-2">
-      <StatsCard
-        title="Flow"
-        value={
-          <div className="row flex-wrap gap-1">
-            {report.series
-              .filter((item) => item.type === 'event')
-              .map((event, index) => (
-                <div key={event.id} className="row items-center gap-2">
-                  {index !== 0 && <ChevronRightIcon className="size-3" />}
-                  <span>{event.name}</span>
-                </div>
-              ))}
-          </div>
-        }
-      />
+      {isEditMode && (
+        <StatsCard
+          title="Flow"
+          value={
+            <div className="row flex-wrap gap-1">
+              {report.series
+                .filter((item) => item.type === 'event')
+                .map((event, index) => (
+                  <div key={event.id} className="row items-center gap-2">
+                    {index !== 0 && <ChevronRightIcon className="size-3" />}
+                    <span>{event.name}</span>
+                  </div>
+                ))}
+            </div>
+          }
+        />
+      )}
       <StatsCard
         title="Average time to convert"
         value={fancyMinutes(overallAvg)}
