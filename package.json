@@ -5,7 +5,7 @@
   "private": true,
   "license": "MIT",
   "author": "Carl-Gerhard Lindesvärd",
-  "packageManager": "pnpm@10.6.2",
+  "packageManager": "pnpm@11.1.2",
   "scripts": {
     "test": "vitest run",
     "gen:bots": "pnpm -r --filter api gen:bots",
