@@ -346,10 +346,28 @@ export class FunnelService {
     const group = this.resolveFunnelGroup(funnelGroup, fromClause);
 
     // Create the funnel CTE
-    const breakdownSelects = breakdowns.map(
-      (b, index) => `${getSelectPropertyKey(b.name, projectId, b.cohortId, b.cohortId ? cohortMetadata.get(b.cohortId)?.name : undefined)} as b_${index}`,
-    );
-    const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
+    // Pull breakdown value from step 1's qualifying events only via anyIf().
+    // Without this, the breakdown column would be added to the windowFunnel
+    // GROUP BY, which buckets events by their breakdown value before
+    // windowFunnel sees them — so a property that exists on step 1 events
+    // (e.g. `thumbnail_container_index` on `showOpen`) but not on later
+    // events would push those later events into a different bucket and
+    // they'd never match, producing zero conversions.
+    // Mirrors the conversion service's "breakdown from start_events" behaviour.
+    const funnelConditions = this.getFunnelConditions(eventSeries, projectId);
+    const step1Condition = funnelConditions[0];
+    const breakdownSelects = breakdowns.map((b, index) => {
+      const expr = getSelectPropertyKey(
+        b.name,
+        projectId,
+        b.cohortId,
+        b.cohortId ? cohortMetadata.get(b.cohortId)?.name : undefined,
+      );
+      return step1Condition
+        ? `anyIf(${expr}, ${step1Condition}) as b_${index}`
+        : `${expr} as b_${index}`;
+    });
+    const breakdownGroupBy: string[] = [];
 
     // Hold property constant: add to inner CTE GROUP BY so windowFunnel()
     // evaluates per (profile_id, property_value), but NOT to outer query
