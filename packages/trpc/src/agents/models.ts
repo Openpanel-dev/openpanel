@@ -1,7 +1,7 @@
 import { createAnthropic } from '@better-agent/providers/anthropic';
 import { createOpenAI } from '@better-agent/providers/openai';
 import type { ChatModelEntry } from '@openpanel/validation';
-import z from 'zod';
+import { z } from 'zod';
 
 export type { ChatModelEntry } from '@openpanel/validation';
 export { CHAT_MODELS as ALLOWED_MODELS } from '@openpanel/validation';
