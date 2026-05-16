@@ -117,7 +117,9 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   request_timeout: 300_000,
   keep_alive: {
     enabled: true,
-    idle_socket_ttl: 60_000,
+    // Must be lower than server-side keep_alive_timeout (default 10s) so we
+    // never reuse a socket the server has already closed.
+    idle_socket_ttl: 7000,
   },
   compression: {
     request: true,
@@ -166,7 +168,7 @@ export async function withRetry<T>(
         const delay = baseDelay * 2 ** attempt;
         logger.warn(
           { err: error },
-          `Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${delay}ms`,
+          `Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${delay}ms`
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
@@ -250,7 +252,7 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
       elapsed: Date.now() - start,
       clickhouseSettings,
     },
-    'query info',
+    'query info'
   );
 
   return response;

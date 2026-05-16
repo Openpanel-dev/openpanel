@@ -51,6 +51,17 @@ import {
   publicProcedure,
 } from '../trpc';
 
+// utm_* are surfaced as filterable "columns" in the UI but only exist on the
+// sessions table — on events they live inside the properties map under the
+// __query.utm_* keys.
+const UTM_COLUMNS = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+];
+
 function utc(date: string | Date) {
   if (typeof date === 'string') {
     return date.replace('T', ' ').slice(0, 19);
@@ -385,9 +396,15 @@ export const chartRouter = createTRPCRouter({
         const res = await query.execute();
         values.push(...res.map((r) => String(r.values)).filter(Boolean));
       } else {
+        // utm_* don't exist as columns on the events table — they live in
+        // the properties map. Route them through the properties code path
+        // so the SELECT becomes `properties['__query.utm_source']`.
+        const resolvedProperty = UTM_COLUMNS.includes(property)
+          ? `properties.__query.${property}`
+          : property;
         const query = clix(ch)
           .select<{ values: string[] }>([
-            `distinct ${getSelectPropertyKey(property)} as values`,
+            `distinct ${getSelectPropertyKey(resolvedProperty)} as values`,
           ])
           .from(TABLE_NAMES.events)
           .where('project_id', '=', projectId)

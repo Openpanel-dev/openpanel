@@ -220,6 +220,13 @@ export function getSelectPropertyKey(
   projectId?: string,
   cohortId?: string,
   cohortName?: string,
+  /**
+   * When set, the events table's `properties` map is qualified with this
+   * alias (e.g. `e.properties[...]`). Required in any query where another
+   * joined table also exposes a `properties` column (such as the groups
+   * `_g` join), otherwise ClickHouse rejects with "ambiguous identifier".
+   */
+  eventsAlias?: string,
 ) {
   const extractedCohortId = cohortId || extractCohortId(property);
 
@@ -252,18 +259,24 @@ export function getSelectPropertyKey(
     return property;
   }
 
+  // Only the events table's bare `properties` map needs aliasing —
+  // `profile.properties` already routes through the profile join alias.
+  const aliasPrefix = match === 'properties' && eventsAlias
+    ? `${eventsAlias}.`
+    : '';
+
   if (property.includes('*')) {
-    return `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(${match}, ${sqlstring.escape(
+    return `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(${aliasPrefix}${match}, ${sqlstring.escape(
       transformPropertyKey(property)
     )})))`;
   }
 
-  return `${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
+  return `${aliasPrefix}${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
 }
 
 export async function getChartSql({
   event,
-  breakdowns,
+  breakdowns: initialBreakdowns,
   interval,
   startDate,
   endDate,
@@ -284,12 +297,22 @@ export async function getChartSql({
     with: addCte,
   } = createSqlBuilder();
 
-  const hasAllCohortsBreakdown = breakdowns.some((b) =>
+  let breakdowns = initialBreakdowns;
+  const requestedAllCohortsBreakdown = breakdowns.some((b) =>
     isAllCohortsBreakdown(b.name),
   );
-  const allCohorts = hasAllCohortsBreakdown
+  const allCohorts = requestedAllCohortsBreakdown
     ? await fetchProjectCohorts(projectId)
     : [];
+  // Drop the all-cohorts breakdown when the project has no cohorts: the label
+  // expression collapses to the literal 'Unknown', making the _uc JOIN ON it
+  // a constant comparison with no join key (ClickHouse rejects with
+  // "Cannot determine join keys").
+  if (requestedAllCohortsBreakdown && allCohorts.length === 0) {
+    breakdowns = breakdowns.filter((b) => !isAllCohortsBreakdown(b.name));
+  }
+  const hasAllCohortsBreakdown =
+    requestedAllCohortsBreakdown && allCohorts.length > 0;
 
   const cohortIds = collectCohortIds(event.filters, breakdowns);
   const cohortMetadata = await fetchCohortsMetadata(cohortIds);
@@ -311,7 +334,7 @@ export async function getChartSql({
       `LEFT ANY JOIN ${getCohortCteName(cohortId)} AS ${getCohortAlias(cohortId)} ON ${getCohortAlias(cohortId)}.profile_id = e.profile_id`;
   }
 
-  sb.where = getEventFiltersWhereClause(event.filters, projectId);
+  sb.where = getEventFiltersWhereClause(event.filters, projectId, 'e');
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
 
   if (event.name !== '*') {
@@ -459,29 +482,43 @@ export async function getChartSql({
   }
 
   sb.select.count = 'count(*) as count';
+  // ClickHouse rejects WITH FILL when TO < FROM, so only emit a fill clause
+  // for a valid range. The SELECT bucket truncation is always safe.
+  const hasValidFillRange =
+    !!startDate && !!endDate && new Date(endDate) >= new Date(startDate);
   switch (interval) {
     case 'minute': {
-      sb.fill = `FROM toStartOfMinute(toDateTime('${startDate}')) TO toStartOfMinute(toDateTime('${endDate}')) STEP toIntervalMinute(1)`;
+      if (hasValidFillRange) {
+        sb.fill = `FROM toStartOfMinute(toDateTime('${startDate}')) TO toStartOfMinute(toDateTime('${endDate}')) STEP toIntervalMinute(1)`;
+      }
       sb.select.date = 'toStartOfMinute(created_at) as date';
       break;
     }
     case 'hour': {
-      sb.fill = `FROM toStartOfHour(toDateTime('${startDate}')) TO toStartOfHour(toDateTime('${endDate}')) STEP toIntervalHour(1)`;
+      if (hasValidFillRange) {
+        sb.fill = `FROM toStartOfHour(toDateTime('${startDate}')) TO toStartOfHour(toDateTime('${endDate}')) STEP toIntervalHour(1)`;
+      }
       sb.select.date = 'toStartOfHour(created_at) as date';
       break;
     }
     case 'day': {
-      sb.fill = `FROM toStartOfDay(toDateTime('${startDate}')) TO toStartOfDay(toDateTime('${endDate}')) STEP toIntervalDay(1)`;
+      if (hasValidFillRange) {
+        sb.fill = `FROM toStartOfDay(toDateTime('${startDate}')) TO toStartOfDay(toDateTime('${endDate}')) STEP toIntervalDay(1)`;
+      }
       sb.select.date = 'toStartOfDay(created_at) as date';
       break;
     }
     case 'week': {
-      sb.fill = `FROM toStartOfWeek(toDateTime('${startDate}'), 1, '${timezone}') TO toStartOfWeek(toDateTime('${endDate}'), 1, '${timezone}') STEP toIntervalWeek(1)`;
+      if (hasValidFillRange) {
+        sb.fill = `FROM toStartOfWeek(toDateTime('${startDate}'), 1, '${timezone}') TO toStartOfWeek(toDateTime('${endDate}'), 1, '${timezone}') STEP toIntervalWeek(1)`;
+      }
       sb.select.date = `toStartOfWeek(created_at, 1, '${timezone}') as date`;
       break;
     }
     case 'month': {
-      sb.fill = `FROM toStartOfMonth(toDateTime('${startDate}'), '${timezone}') TO toStartOfMonth(toDateTime('${endDate}'), '${timezone}') STEP toIntervalMonth(1)`;
+      if (hasValidFillRange) {
+        sb.fill = `FROM toStartOfMonth(toDateTime('${startDate}'), '${timezone}') TO toStartOfMonth(toDateTime('${endDate}'), '${timezone}') STEP toIntervalMonth(1)`;
+      }
       sb.select.date = `toStartOfMonth(created_at, '${timezone}') as date`;
       break;
     }
@@ -509,7 +546,7 @@ export async function getChartSql({
         ? cohortMetadata.get(breakdownCohortId)?.name
         : undefined;
       sb.select[key] =
-        `${getSelectPropertyKey(breakdown.name, projectId, breakdownCohortId ?? undefined, breakdownCohortName)} as ${key}`;
+        `${getSelectPropertyKey(breakdown.name, projectId, breakdownCohortId ?? undefined, breakdownCohortName, 'e')} as ${key}`;
     }
     sb.groupBy[key] = `${key}`;
   });
@@ -539,7 +576,13 @@ export async function getChartSql({
   }[event.segment as string];
 
   if (mathFunction && event.property) {
-    const propertyKey = getSelectPropertyKey(event.property);
+    const propertyKey = getSelectPropertyKey(
+      event.property,
+      undefined,
+      undefined,
+      undefined,
+      'e',
+    );
 
     if (isNumericColumn(event.property)) {
       sb.select.count = `${mathFunction}(${propertyKey}) as count`;
@@ -559,6 +602,11 @@ export async function getChartSql({
         ORDER BY profile_id, created_at DESC
       ) as subQuery`;
     sb.joins = {};
+    // Filters were already applied inside the subquery, and the outer query
+    // selects from `subQuery` — the `e` alias used in sb.where is no longer
+    // in scope, so re-emitting WHERE would produce
+    // "Unknown identifier `e.name`". Clear it.
+    sb.where = {};
 
     const sql = `${getWith()}${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
     console.log('-- Report --');
@@ -597,6 +645,7 @@ export async function getChartSql({
         projectId,
         bId ?? undefined,
         bName,
+        'e',
       );
       return `${propertyKey} as _uc_label_${index + 1}`;
     });
@@ -625,6 +674,7 @@ export async function getChartSql({
           projectId,
           bId ?? undefined,
           bName,
+          'e',
         );
         return `_uc._uc_label_${index + 1} = ${propertyKey}`;
       })
@@ -653,7 +703,7 @@ export async function getChartSql({
 
 export async function getAggregateChartSql({
   event,
-  breakdowns,
+  breakdowns: initialBreakdowns,
   startDate,
   endDate,
   projectId,
@@ -663,12 +713,19 @@ export async function getAggregateChartSql({
 }) {
   const { sb, join, getJoins, with: addCte, getSql } = createSqlBuilder();
 
-  const hasAllCohortsBreakdown = breakdowns.some((b) =>
+  let breakdowns = initialBreakdowns;
+  const requestedAllCohortsBreakdown = breakdowns.some((b) =>
     isAllCohortsBreakdown(b.name),
   );
-  const allCohorts = hasAllCohortsBreakdown
+  const allCohorts = requestedAllCohortsBreakdown
     ? await fetchProjectCohorts(projectId)
     : [];
+  // See getChartSql for rationale.
+  if (requestedAllCohortsBreakdown && allCohorts.length === 0) {
+    breakdowns = breakdowns.filter((b) => !isAllCohortsBreakdown(b.name));
+  }
+  const hasAllCohortsBreakdown =
+    requestedAllCohortsBreakdown && allCohorts.length > 0;
 
   const cohortIds = collectCohortIds(event.filters, breakdowns);
   const cohortMetadata = await fetchCohortsMetadata(cohortIds);
@@ -690,7 +747,7 @@ export async function getAggregateChartSql({
       `LEFT ANY JOIN ${getCohortCteName(cohortId)} AS ${getCohortAlias(cohortId)} ON ${getCohortAlias(cohortId)}.profile_id = e.profile_id`;
   }
 
-  sb.where = getEventFiltersWhereClause(event.filters, projectId);
+  sb.where = getEventFiltersWhereClause(event.filters, projectId, 'e');
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
 
   if (event.name !== '*') {
@@ -849,7 +906,7 @@ export async function getAggregateChartSql({
         ? cohortMetadata.get(breakdownCohortId)?.name
         : undefined;
       sb.select[key] =
-        `${getSelectPropertyKey(breakdown.name, projectId, breakdownCohortId ?? undefined, breakdownCohortName)} as ${key}`;
+        `${getSelectPropertyKey(breakdown.name, projectId, breakdownCohortId ?? undefined, breakdownCohortName, 'e')} as ${key}`;
     }
     sb.groupBy[key] = `${key}`;
   });
@@ -886,7 +943,13 @@ export async function getAggregateChartSql({
   }[event.segment as string];
 
   if (mathFunction && event.property) {
-    const propertyKey = getSelectPropertyKey(event.property, projectId);
+    const propertyKey = getSelectPropertyKey(
+      event.property,
+      projectId,
+      undefined,
+      undefined,
+      'e',
+    );
 
     if (isNumericColumn(event.property)) {
       sb.select.count = `${mathFunction}(${propertyKey}) as count`;
@@ -936,7 +999,14 @@ function isNumericColumn(columnName: string): boolean {
 
 export function getEventFiltersWhereClause(
   filters: IChartEventFilter[],
-  projectId?: string
+  projectId?: string,
+  /**
+   * See `getSelectPropertyKey`. When the surrounding query joins another
+   * table that has a `properties` column (e.g. the `_g` groups join), the
+   * events table must be aliased and passed here so we can emit
+   * `e.properties[...]` instead of the ambiguous `properties[...]`.
+   */
+  eventsAlias?: string,
 ) {
   const where: Record<string, string> = {};
   filters.forEach((filter, index) => {
@@ -1035,9 +1105,15 @@ export function getEventFiltersWhereClause(
       name.startsWith('properties.') ||
       name.startsWith('profile.properties.')
     ) {
-      const propertyKey = getSelectPropertyKey(name);
+      const propertyKey = getSelectPropertyKey(
+        name,
+        undefined,
+        undefined,
+        undefined,
+        eventsAlias,
+      );
       const isWildcard = propertyKey.includes('%');
-      const whereFrom = getSelectPropertyKey(name);
+      const whereFrom = propertyKey;
 
       switch (operator) {
         case 'is': {
