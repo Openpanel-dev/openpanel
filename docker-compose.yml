@@ -40,3 +40,24 @@ services:
       - "8123:8123" # HTTP interface
       - "9000:9000" # Native/TCP interface
       - "9009:9009" # Inter-server communication
+
+  op-rp:
+    image: redpandadata/redpanda:v25.1.4
+    restart: always
+    command:
+      - redpanda
+      - start
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://op-rp:9092,external://localhost:19092
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=op-rp:33145
+      - --smp=1
+      - --memory=1G
+      - --mode=dev-container
+      - --default-log-level=info
+    volumes:
+      - ./docker/data/op-rp-data:/var/lib/redpanda/data
+      - ./docker/redpanda/bootstrap.yaml:/etc/redpanda/.bootstrap.yaml:ro
+    ports:
+      - "19092:19092" # Kafka API (external)
+      - "9644:9644"   # Admin API

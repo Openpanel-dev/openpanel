@@ -1,6 +1,7 @@
 import { ch, db } from '@openpanel/db';
 import {
   cronQueue,
+  disconnectKafka,
   eventsGroupQueues,
   miscQueue,
   notificationQueue,
@@ -89,6 +90,14 @@ export async function shutdown(
     logger.info('Queue state closed');
   } catch (error) {
     logger.error({ err: error }, 'Error closing queue state');
+  }
+
+  // Step 6.5: Disconnect Kafka producer (no-op if never initialized)
+  try {
+    await disconnectKafka();
+    logger.info('Kafka producer disconnected');
+  } catch (error) {
+    logger.error({ err: error }, 'Error disconnecting Kafka producer');
   }
 
   // Step 7: Close Redis connections

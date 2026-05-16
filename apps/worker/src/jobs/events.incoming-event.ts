@@ -15,6 +15,7 @@ import { logger as baseLogger } from '@/utils/logger';
 import {
   createSessionEndJob,
   extendSessionEndJob,
+  getActiveSessionEndJob,
 } from '@/utils/session-handler';
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp', '__revenue'];
@@ -92,7 +93,6 @@ export async function incomingEvent(
     deviceId,
     sessionId,
     uaInfo,
-    session,
   } = jobPayload;
   const properties = body.properties ?? {};
   const reqId = headers['request-id'] ?? 'unknown';
@@ -198,10 +198,16 @@ export async function incomingEvent(
     return createEventAndNotify(payload as IServiceEvent, logger, projectId);
   }
 
+  const activeSessionEndJob = await getActiveSessionEndJob(
+    projectId,
+    deviceId,
+  );
+  const activeSessionPayload = activeSessionEndJob?.data.payload;
+
   const payload: IServiceCreateEventPayload = merge(baseEvent, {
-    referrer: session?.referrer ?? baseEvent.referrer,
-    referrerName: session?.referrerName ?? baseEvent.referrerName,
-    referrerType: session?.referrerType ?? baseEvent.referrerType,
+    referrer: activeSessionPayload?.referrer ?? baseEvent.referrer,
+    referrerName: activeSessionPayload?.referrerName ?? baseEvent.referrerName,
+    referrerType: activeSessionPayload?.referrerType ?? baseEvent.referrerType,
   } as Partial<IServiceCreateEventPayload>) as IServiceCreateEventPayload;
 
   const isExcluded = await isEventExcludedByProjectFilter(payload, projectId);
@@ -213,10 +219,11 @@ export async function incomingEvent(
     return null;
   }
 
-  if (session) {
+  if (activeSessionEndJob) {
     await extendSessionEndJob({
       projectId,
       deviceId,
+      job: activeSessionEndJob,
     }).catch((error) => {
       logger.warn({ err: error }, 'Failed to extend session end job');
     });
