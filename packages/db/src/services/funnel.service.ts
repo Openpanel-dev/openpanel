@@ -189,6 +189,12 @@ export class FunnelService {
     );
 
     return [
+      // project_id is filtered by the outer funnel CTE via
+      // `WHERE project_id = ...`; include it here so the column exists on
+      // `combined_events`. The per-event CTEs are already filtered by
+      // project_id, so this outer filter is logically redundant but it's
+      // emitted unconditionally by the SQL builder.
+      'project_id',
       'profile_id',
       'session_id',
       'created_at',
