@@ -380,14 +380,21 @@ export function bootWorkers() {
     process.exit(exitCode);
   }
 
-  ['uncaughtException', 'unhandledRejection', 'SIGTERM', 'SIGINT'].forEach(
-    (evt) => {
-      process.on(evt, (code) => {
-        setShuttingDown(true);
-        exitHandler(evt, code);
-      });
-    }
-  );
+  ['uncaughtException', 'SIGTERM', 'SIGINT'].forEach((evt) => {
+    process.on(evt, (code) => {
+      setShuttingDown(true);
+      exitHandler(evt, code);
+    });
+  });
+
+  // Log-only on unhandledRejection. Mirror of the API fix: transient
+  // upstream errors (ClickHouse / Postgres / Redis ECONNRESET) should not
+  // exit the worker process, since the process exit may not propagate to
+  // a restart depending on container init, leaving workers hard-down.
+  // Healthchecks + orchestrator restart policies cover genuine failures.
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.error({ reason, promise }, 'Unhandled rejection');
+  });
 
   return workers;
 }

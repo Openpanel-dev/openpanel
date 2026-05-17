@@ -27,9 +27,14 @@ const startServer = async () => {
         logger.error({ err: error }, 'Uncaught exception');
         await shutdown(fastify, 'uncaughtException', 1);
       });
-      process.on('unhandledRejection', async (reason, promise) => {
+      // Log-only on unhandledRejection. Calling shutdown() here takes the
+      // API down on transient upstream errors (e.g. Postgres or ClickHouse
+      // ECONNRESET under load), and depending on the container init the
+      // process exit may not propagate to a restart — leaving the service
+      // hard-down. Healthchecks + orchestrator restart policies are the
+      // right place to detect genuine bad state. See #271.
+      process.on('unhandledRejection', (reason, promise) => {
         logger.error({ reason, promise }, 'Unhandled rejection');
-        await shutdown(fastify, 'unhandledRejection', 1);
       });
     }
 
