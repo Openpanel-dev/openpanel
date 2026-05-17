@@ -4,7 +4,10 @@ import {
   generateSessionToken,
   github,
   google,
+  isOidcEnabled,
   type OAuth2Tokens,
+  oidc,
+  OIDC_TOKEN_ENDPOINT,
   setLastAuthProviderCookie,
   setSessionTokenCookie,
 } from '@openpanel/auth';
@@ -40,7 +43,7 @@ async function getGithubEmail(githubAccessToken: string) {
 }
 
 // New types and interfaces
-type Provider = 'github' | 'google';
+type Provider = 'github' | 'google' | 'oidc';
 interface OAuthUser {
   id: string;
   email: string;
@@ -190,6 +193,48 @@ async function fetchGithubUser(accessToken: string): Promise<OAuthUser> {
   };
 }
 
+async function fetchOidcUser(tokens: OAuth2Tokens): Promise<OAuthUser> {
+  const claims = Arctic.decodeIdToken(tokens.idToken());
+
+  // Minimal OIDC standard claims. Most IdPs surface these (sub + email
+  // are the only hard requirements). given_name/family_name/name are
+  // best-effort — Zitadel emits them; some IdPs only emit `name`.
+  const claimsSchema = z.object({
+    sub: z.string(),
+    email: z.string(),
+    email_verified: z.boolean().optional(),
+    given_name: z.string().optional(),
+    family_name: z.string().optional(),
+    name: z.string().optional(),
+  });
+
+  const claimsResult = claimsSchema.safeParse(claims);
+  if (!claimsResult.success) {
+    throw new LogError('Error decoding OIDC ID token claims', {
+      error: claimsResult.error,
+      claims,
+    });
+  }
+
+  // Default to "verified" when the IdP doesn't surface email_verified —
+  // in OIDC, the IdP is the source of truth for email and platform
+  // operators choose which IdPs they trust.
+  if (claimsResult.data.email_verified === false) {
+    throw new LogError('Email not verified with OIDC provider');
+  }
+
+  const givenName = claimsResult.data.given_name ?? '';
+  const familyName = claimsResult.data.family_name ?? '';
+  const fallbackName = claimsResult.data.name ?? '';
+
+  return {
+    id: claimsResult.data.sub,
+    email: claimsResult.data.email,
+    firstName: givenName || fallbackName || claimsResult.data.email,
+    lastName: familyName,
+  };
+}
+
 async function fetchGoogleUser(tokens: OAuth2Tokens): Promise<OAuthUser> {
   const claims = Arctic.decodeIdToken(tokens.idToken());
 
@@ -246,20 +291,22 @@ async function validateOAuthCallback(
 
   const { code, state } = query.data;
   const storedState = req.cookies[`${provider}_oauth_state`] ?? null;
-  const codeVerifier =
-    provider === 'google' ? (req.cookies.google_code_verifier ?? null) : null;
+  const usesPkce = provider === 'google' || provider === 'oidc';
+  const codeVerifier = usesPkce
+    ? (req.cookies[`${provider}_code_verifier`] ?? null)
+    : null;
 
   if (
     code === null ||
     state === null ||
     storedState === null ||
-    (provider === 'google' && codeVerifier === null)
+    (usesPkce && codeVerifier === null)
   ) {
     throw new LogError('Missing oauth parameters', {
       code: code === null,
       state: state === null,
       storedState: storedState === null,
-      codeVerifier: provider === 'google' ? codeVerifier === null : undefined,
+      codeVerifier: usesPkce ? codeVerifier === null : undefined,
       provider,
     });
   }
@@ -351,6 +398,57 @@ export async function googleCallback(req: FastifyRequest, reply: FastifyReply) {
     return await handleNewUser({
       oauthUser: googleUser,
       providerName: 'google',
+      inviteId,
+      reply,
+    });
+  } catch (error) {
+    req.log.error(error);
+    return redirectWithError(reply, error);
+  }
+}
+
+export async function oidcCallback(req: FastifyRequest, reply: FastifyReply) {
+  try {
+    if (!isOidcEnabled()) {
+      throw new LogError('OIDC is not configured on this instance');
+    }
+
+    const { code } = await validateOAuthCallback(req, 'oidc');
+    const inviteId = req.cookies.inviteId;
+    const codeVerifier = req.cookies.oidc_code_verifier!;
+    const tokens = await oidc.validateAuthorizationCode(
+      OIDC_TOKEN_ENDPOINT,
+      code,
+      codeVerifier
+    );
+    const oidcUser = await fetchOidcUser(tokens);
+    const existingAccount = await db.account.findFirst({
+      where: {
+        OR: [
+          { provider: 'oidc', providerId: oidcUser.id },
+          // Allow operators to migrate users by matching on email
+          // when they flip to OIDC after initial signup.
+          { provider: 'oidc', providerId: null, email: oidcUser.email },
+          { provider: 'oauth', user: { email: oidcUser.email } },
+        ],
+      },
+    });
+
+    reply.clearCookie('oidc_code_verifier');
+    reply.clearCookie('oidc_oauth_state');
+
+    if (existingAccount) {
+      return await handleExistingUser({
+        account: existingAccount,
+        oauthUser: oidcUser,
+        providerName: 'oidc',
+        reply,
+      });
+    }
+
+    return await handleNewUser({
+      oauthUser: oidcUser,
+      providerName: 'oidc',
       inviteId,
       reply,
     });

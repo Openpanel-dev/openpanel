@@ -14,6 +14,9 @@ import {
   hashPassword,
   hashRecoveryCodes,
   invalidateSession,
+  isOidcEnabled,
+  oidc,
+  OIDC_AUTHORIZATION_ENDPOINT,
   setLastAuthProviderCookie,
   setSessionTokenCookie,
   validateSessionToken,
@@ -51,7 +54,7 @@ import {
 const TWO_FACTOR_COOKIE = '2fa_challenge';
 const TWO_FACTOR_CHALLENGE_TTL_SECONDS = 5 * 60;
 
-const zProvider = z.enum(['email', 'google', 'github']);
+const zProvider = z.enum(['email', 'google', 'github', 'oidc']);
 
 async function getIsRegistrationAllowed(inviteId?: string | null) {
   // ALLOW_REGISTRATION is always undefined in cloud
@@ -124,6 +127,36 @@ export const authRouter = createTRPCRouter({
 
         return {
           type: 'github',
+          url: url.toString(),
+        };
+      }
+
+      if (provider === 'oidc') {
+        if (!isOidcEnabled()) {
+          throw TRPCAccessError(
+            'OIDC sign-in is not configured on this instance'
+          );
+        }
+
+        const state = Arctic.generateState();
+        const codeVerifier = Arctic.generateCodeVerifier();
+        const url = oidc.createAuthorizationURLWithPKCE(
+          OIDC_AUTHORIZATION_ENDPOINT,
+          state,
+          Arctic.CodeChallengeMethod.S256,
+          codeVerifier,
+          ['openid', 'profile', 'email']
+        );
+
+        ctx.setCookie('oidc_oauth_state', state, {
+          maxAge: 60 * 10,
+        });
+        ctx.setCookie('oidc_code_verifier', codeVerifier, {
+          maxAge: 60 * 10,
+        });
+
+        return {
+          type: 'oidc',
           url: url.toString(),
         };
       }
