@@ -26,6 +26,16 @@ vi.mock('@openpanel/db', async () => {
     },
   };
 });
+// Mock the session_start dedup lock so tests don't need a live Redis. By
+// default the lock is acquired (true) so existing tests' session_start
+// expectations still hold; individual tests can override per-call.
+vi.mock('@openpanel/redis', async () => {
+  const actual = await vi.importActual('@openpanel/redis');
+  return {
+    ...actual,
+    getLock: vi.fn().mockResolvedValue(true),
+  };
+});
 
 // 30 minutes
 const SESSION_TIMEOUT = 30 * 60 * 1000;
@@ -486,6 +496,54 @@ describe('incomingEvent', () => {
     expect(spySessionsQueueAdd).toHaveBeenCalledTimes(1);
   });
 
+  it('does not emit duplicate session_start when lock is held', async () => {
+    const { getLock } = await import('@openpanel/redis');
+    // Simulate "another worker already claimed session_start" by failing
+    // the lock acquisition. Live event still fires; sessionEnd job is
+    // still scheduled (it's idempotent on jobId).
+    vi.mocked(getLock).mockResolvedValueOnce(false);
+    const spySessionsQueueAdd = vi
+      .spyOn(sessionsQueue, 'add')
+      .mockResolvedValue({} as Job);
+
+    const timestamp = new Date();
+    const jobData: EventsQueuePayloadIncomingEvent['payload'] = {
+      geo,
+      event: {
+        name: 'live_event',
+        timestamp: timestamp.toISOString(),
+        properties: { __path: 'https://example.com/test' },
+      },
+      uaInfo,
+      headers: {
+        'request-id': '123',
+        'user-agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/91.0.4472.124',
+        'openpanel-sdk-name': 'web',
+        'openpanel-sdk-version': '1.0.0',
+      },
+      projectId,
+      deviceId,
+      sessionId: newSessionId,
+    };
+    (createEvent as Mock).mockReturnValue({});
+
+    await incomingEvent(jobData);
+
+    // No session_start emission (lock not acquired)
+    const startCalls = (createEvent as Mock).mock.calls.filter(
+      (call) => call[0]?.name === 'session_start',
+    );
+    expect(startCalls).toHaveLength(0);
+    // Live event itself still gets created
+    const liveCalls = (createEvent as Mock).mock.calls.filter(
+      (call) => call[0]?.name === 'live_event',
+    );
+    expect(liveCalls).toHaveLength(1);
+    // sessionEnd is still scheduled even when lock not acquired (idempotent)
+    expect(spySessionsQueueAdd).toHaveBeenCalled();
+  });
+
   it('historical event preserves API-computed deviceId/sessionId', async () => {
     // Event with __timestamp older than SESSION_TIMEOUT (30 min). Worker
     // should write it with the deviceId/sessionId the API computed,
@@ -511,13 +569,23 @@ describe('incomingEvent', () => {
       sessionId: 'deterministic-bucket-id',
     };
 
+    (createEvent as Mock).mockReturnValue({});
     await incomingEvent(jobData);
 
+    // Live state untouched: no sessionEnd job scheduled
     expect(sessionsQueue.add).not.toHaveBeenCalled();
-    expect(createEvent as Mock).toHaveBeenCalledTimes(1);
-    const written = (createEvent as Mock).mock.calls[0]![0];
-    expect(written.deviceId).toBe('mobile-device-xyz');
-    expect(written.sessionId).toBe('deterministic-bucket-id');
-    expect(written.name).toBe('historical_event');
+    // Two createEvent calls: one for the historical session_start (lock
+    // acquired by default in the redis mock), one for the event itself
+    expect((createEvent as Mock).mock.calls).toHaveLength(2);
+    const startCall = (createEvent as Mock).mock.calls.find(
+      (call) => call[0]?.name === 'session_start',
+    );
+    const eventCall = (createEvent as Mock).mock.calls.find(
+      (call) => call[0]?.name === 'historical_event',
+    );
+    expect(startCall).toBeDefined();
+    expect(eventCall).toBeDefined();
+    expect(eventCall![0].deviceId).toBe('mobile-device-xyz');
+    expect(eventCall![0].sessionId).toBe('deterministic-bucket-id');
   });
 });

@@ -10,6 +10,7 @@ import {
 } from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
+import { getLock } from '@openpanel/redis';
 import { anyPass, isEmpty, isNil, mergeDeepRight, omit, reject } from 'ramda';
 import { logger as baseLogger } from '@/utils/logger';
 import {
@@ -18,6 +19,34 @@ import {
   getActiveSessionEndJob,
   SESSION_TIMEOUT,
 } from '@/utils/session-handler';
+
+/**
+ * Acquire a Redis-backed lock that prevents duplicate session_start rows for
+ * the same `(projectId, sessionId)`. Returns true if THIS caller should emit
+ * the session_start row; false if another worker (or earlier event in the
+ * same batch) already claimed it.
+ *
+ * TTL matches SESSION_TIMEOUT — a session can't extend beyond 30 min of
+ * inactivity in the live mechanism, and the deterministic bucket is exactly
+ * 30 min wide. By the time the lock TTL elapses, the session itself has
+ * rolled.
+ *
+ * Keyed on sessionId (not deviceId) so historical events from the same
+ * device but different 30-min buckets each get their own session_start.
+ */
+async function acquireSessionStartLock(
+  projectId: string,
+  sessionId: string,
+): Promise<boolean> {
+  if (!sessionId) {
+    return false;
+  }
+  return getLock(
+    `session_start:${projectId}:${sessionId}`,
+    '1',
+    SESSION_TIMEOUT,
+  );
+}
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp', '__revenue'];
 
@@ -230,11 +259,30 @@ export async function incomingEvent(
   }
 
   // Historical (buffered) events: the API has already computed a
-  // deterministic sessionId for them. Write the event but do NOT mutate
-  // live session state — historical events shouldn't extend the user's
-  // current session or schedule a 30-min sessionEnd timer.
-  // Session_start emission for historical buckets lands in a follow-up.
+  // deterministic sessionId for them. Write the event and emit one
+  // session_start per bucket (Redis lock dedups across batches and
+  // workers). Do NOT touch live session state — historical events
+  // must not extend the user's current session or schedule a 30-min
+  // sessionEnd timer.
   if (!isLiveEvent) {
+    if (await acquireSessionStartLock(projectId, sessionId)) {
+      await createEventAndNotify(
+        {
+          ...payload,
+          name: 'session_start',
+          createdAt: new Date(getTime(payload.createdAt) - 100),
+        },
+        logger,
+        projectId,
+      ).catch((error) => {
+        logger.error(
+          { err: error, event: payload },
+          'Error creating historical session start event',
+        );
+        // Don't throw — historical session_start is best-effort. The
+        // event itself should still land.
+      });
+    }
     return createEventAndNotify(payload, logger, projectId);
   }
 
@@ -246,7 +294,11 @@ export async function incomingEvent(
     }).catch((error) => {
       logger.warn({ err: error }, 'Failed to extend session end job');
     });
-  } else {
+  } else if (await acquireSessionStartLock(projectId, sessionId)) {
+    // Lock prevents the previously-observed batch race: when N events for
+    // the same device land in the API in parallel, all see no Redis
+    // sessionEnd key yet, all queue with session: undefined, and would
+    // each try to emit session_start. The lock collapses them to one.
     await createEventAndNotify(
       {
         ...payload,
@@ -269,6 +321,17 @@ export async function incomingEvent(
         'Error creating session end job',
       );
       throw error;
+    });
+  } else {
+    // Another worker (or earlier event in this batch) claimed the
+    // session_start. Still ensure a sessionEnd is scheduled so the
+    // session closes cleanly. createSessionEndJob is idempotent on
+    // jobId, so this is a no-op when the job already exists.
+    await createSessionEndJob({ payload }).catch((error) => {
+      logger.warn(
+        { err: error, event: payload },
+        'Failed to schedule session end job (lock not acquired)',
+      );
     });
   }
 
