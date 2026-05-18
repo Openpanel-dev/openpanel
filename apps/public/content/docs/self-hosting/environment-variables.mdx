@@ -269,6 +269,10 @@ Available models:
 - **OpenAI** — `GPT-4.1`, `GPT-4.1 mini`, `GPT-5.4 mini`
 - **Anthropic** — `Claude Haiku 4.5`, `Claude Sonnet 4.6`, `Claude Opus 4.6`
 
+<Callout type="info">
+The AI assistant is optional. Without `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` set, every other OpenPanel feature continues to work normally.
+</Callout>
+
 ### OPENAI_API_KEY
 
 **Type**: `string`  
@@ -280,6 +284,45 @@ OpenAI API key. When set, the OpenAI models appear in the chat model picker.
 **Example**:
 ```bash
 OPENAI_API_KEY=sk-your-openai-api-key-here
+```
+
+### OPENAI_BASE_URL
+
+**Type**: `string`  
+**Required**: No  
+**Default**: OpenAI default API base URL
+
+Override the OpenAI API base URL. Useful for proxies, gateways, Azure-compatible endpoints, or self-hosted OpenAI-compatible providers.
+
+**Example**:
+```bash
+OPENAI_BASE_URL=https://your-openai-compatible-endpoint.example.com/v1
+```
+
+### OPENAI_PROJECT
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Optional OpenAI project identifier to send with requests.
+
+**Example**:
+```bash
+OPENAI_PROJECT=proj_1234567890
+```
+
+### OPENAI_ORGANIZATION
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Optional OpenAI organization identifier to send with requests.
+
+**Example**:
+```bash
+OPENAI_ORGANIZATION=org_1234567890
 ```
 
 ### ANTHROPIC_API_KEY
@@ -295,9 +338,44 @@ Anthropic API key. When set, the Claude models appear in the chat model picker.
 ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
 ```
 
-<Callout type="info">
-The AI assistant is optional. Without `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` set, every other OpenPanel feature continues to work normally.
-</Callout>
+### ANTHROPIC_BASE_URL
+
+**Type**: `string`  
+**Required**: No  
+**Default**: Anthropic default API base URL
+
+Override the Anthropic API base URL. Useful for proxies, gateways, or Anthropic-compatible endpoints.
+
+**Example**:
+```bash
+ANTHROPIC_BASE_URL=https://your-anthropic-endpoint.example.com
+```
+
+### ANTHROPIC_TOKEN
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Optional auth token sent to the Anthropic provider in addition to the API key. Use this only if your Anthropic-compatible gateway requires it.
+
+**Example**:
+```bash
+ANTHROPIC_TOKEN=your-auth-token
+```
+
+### ANTHROPIC_VERSION
+
+**Type**: `string`  
+**Required**: No  
+**Default**: Provider default
+
+Override the Anthropic API version header sent with requests.
+
+**Example**:
+```bash
+ANTHROPIC_VERSION=2023-06-01
+```
 
 ## Email
 
