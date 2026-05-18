@@ -12,6 +12,16 @@ import { z } from 'zod';
 import { HttpError } from '@/utils/errors';
 
 // Validation schemas (exported for use in router)
+export const zCreateOrganization = z.object({
+  name: z.string().min(1),
+  timezone: z.string().optional(),
+});
+
+export const zUpdateOrganization = z.object({
+  name: z.string().min(1).optional(),
+  timezone: z.string().optional(),
+});
+
 export const zCreateProject = z.object({
   name: z.string().min(1),
   domain: z.string().url().or(z.literal('')).or(z.null()).optional(),
@@ -235,6 +245,119 @@ export async function deleteProject(
 
   await getProjectByIdCached.clear(request.params.id);
 
+  reply.send({ success: true });
+}
+
+// ---------------------------------------------------------------------
+// Organizations CRUD
+//
+// Available to /manage callers authenticated via OIDC JWT
+// (`platform-admin`-class roles, see apps/api/src/utils/auth.ts) and to
+// root-Client callers for read/update/delete of their own organization.
+// Creating *new* organizations is realistically only useful to a
+// platform-admin caller — root Clients are scoped to one org and can't
+// create siblings — but the endpoint doesn't enforce that gate; it
+// trusts that whoever has admin auth is permitted by the operator.
+// ---------------------------------------------------------------------
+
+export async function listOrganizations(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  // For now, callers see only the org their auth scope is bound to.
+  // A platform-admin JWT scoped at the instance level would warrant
+  // returning every Organization, but that requires a richer claim
+  // model than v1 ships with.
+  const org = await db.organization.findFirst({
+    where: { id: request.client!.organizationId },
+  });
+  reply.send({ data: org ? [org] : [] });
+}
+
+export async function getOrganization(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply
+) {
+  const org = await db.organization.findFirst({
+    where: {
+      id: request.params.id,
+      // Same-org scoping. JWT-auth callers can only `get` the org
+      // their claim is bound to; cross-org reads require additional
+      // claim plumbing we haven't designed yet.
+      ...(request.client!.organizationId
+        ? { id: request.client!.organizationId }
+        : {}),
+    },
+  });
+  if (!org) {
+    throw new HttpError('Organization not found', { status: 404 });
+  }
+  reply.send({ data: org });
+}
+
+export async function createOrganization(
+  request: FastifyRequest<{ Body: z.infer<typeof zCreateOrganization> }>,
+  reply: FastifyReply
+) {
+  const { name, timezone } = request.body;
+
+  // No createdByUserId on this code path — Organization.createdByUserId
+  // is nullable and the relation is SetNull on delete. JWT-auth admins
+  // and root Clients are not Users; we leave the field unset so the
+  // newly-created Org has no human owner.
+  const org = await db.organization.create({
+    data: {
+      id: await getId('organization', name),
+      name,
+      timezone: timezone ?? null,
+      onboarding: 'completed',
+    },
+  });
+
+  reply.send({ data: org });
+}
+
+export async function updateOrganization(
+  request: FastifyRequest<{
+    Params: { id: string };
+    Body: z.infer<typeof zUpdateOrganization>;
+  }>,
+  reply: FastifyReply
+) {
+  const existing = await db.organization.findFirst({
+    where: { id: request.params.id },
+  });
+  if (!existing) {
+    throw new HttpError('Organization not found', { status: 404 });
+  }
+
+  const data: { name?: string; timezone?: string | null } = {};
+  if (request.body.name !== undefined) data.name = request.body.name;
+  if (request.body.timezone !== undefined) {
+    data.timezone = request.body.timezone;
+  }
+
+  const org = await db.organization.update({
+    where: { id: request.params.id },
+    data,
+  });
+  reply.send({ data: org });
+}
+
+export async function deleteOrganization(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply
+) {
+  const existing = await db.organization.findFirst({
+    where: { id: request.params.id },
+  });
+  if (!existing) {
+    throw new HttpError('Organization not found', { status: 404 });
+  }
+
+  await db.organization.delete({
+    where: { id: request.params.id },
+  });
   reply.send({ success: true });
 }
 

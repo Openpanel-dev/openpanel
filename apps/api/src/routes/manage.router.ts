@@ -6,9 +6,11 @@ import * as controller from '@/controllers/manage.controller';
 import { listDashboards, listReports } from '@/controllers/insights.controller';
 import {
   zCreateClient,
+  zCreateOrganization,
   zCreateProject,
   zCreateReference,
   zUpdateClient,
+  zUpdateOrganization,
   zUpdateProject,
   zUpdateReference,
 } from '@/controllers/manage.controller';
@@ -62,6 +64,42 @@ const manageRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
         return reply.status(403).send({ error: 'Forbidden', message: 'Project does not belong to your organization' });
       }
     }
+  });
+
+  // Organizations routes
+  fastify.route({
+    method: 'GET',
+    url: '/organizations',
+    schema: { tags: ['Manage'], description: 'List organizations the caller has access to.' },
+    handler: controller.listOrganizations,
+  });
+
+  fastify.route({
+    method: 'GET',
+    url: '/organizations/:id',
+    schema: { params: idParam, tags: ['Manage'], description: 'Get an organization by ID.' },
+    handler: controller.getOrganization,
+  });
+
+  fastify.route({
+    method: 'POST',
+    url: '/organizations',
+    schema: { body: zCreateOrganization, tags: ['Manage'], description: 'Create a new organization. Typically called by platform-admin OIDC-authenticated callers.' },
+    handler: controller.createOrganization,
+  });
+
+  fastify.route({
+    method: 'PATCH',
+    url: '/organizations/:id',
+    schema: { params: idParam, body: zUpdateOrganization, tags: ['Manage'], description: 'Update an organization (name, timezone).' },
+    handler: controller.updateOrganization,
+  });
+
+  fastify.route({
+    method: 'DELETE',
+    url: '/organizations/:id',
+    schema: { params: idParam, tags: ['Manage'], description: 'Delete an organization and cascade its projects, clients, and members.' },
+    handler: controller.deleteOrganization,
   });
 
   // Projects routes
