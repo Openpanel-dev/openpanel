@@ -14,9 +14,9 @@ import { clientHook } from '@/hooks/client.hook';
 import { duplicateHook } from '@/hooks/duplicate.hook';
 import { isBotHook } from '@/hooks/is-bot.hook';
 
-// Per-route body limit for /track/batch. Each event is small (a few KB at
-// most after Zod constraints), 1000 events × ~5 KB ≈ 5 MB headroom.
-const TRACK_BATCH_BODY_LIMIT_BYTES = 5 * 1024 * 1024;
+// Per-route body limit for /track/batch: 10 MB uncompressed, matching the
+// stated public contract ("up to 2000 events and 10 MB per request").
+const TRACK_BATCH_BODY_LIMIT_BYTES = 10 * 1024 * 1024;
 
 const trackRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
   fastify.addHook('preHandler', clientHook);
@@ -56,7 +56,7 @@ const trackRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
     schema: {
       body: zTrackBatchBody,
       tags: ['Track'],
-      description: `Bulk-ingest up to ${TRACK_BATCH_MAX_EVENTS} tracking events in a single request. Each event is dispatched through the same pipeline as POST /track. Per-event validation failures are returned in the rejected[] array — the whole batch does not fail on a single bad row.`,
+      description: `We accept up to ${TRACK_BATCH_MAX_EVENTS} events and 10MB uncompressed per request. Events are part of the request body. Each event is dispatched through the same pipeline as POST /track. Per-event validation failures are returned in the rejected[] array — the whole batch does not fail on a single bad row.`,
       response: {
         202: z.object({
           accepted: z.number().int().min(0),

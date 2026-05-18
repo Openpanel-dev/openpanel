@@ -188,8 +188,8 @@ describe('POST /track/batch — auth & envelope', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  it('returns 400 when array exceeds 1000 events', async () => {
-    const events = Array.from({ length: 1001 }, () => validTrack());
+  it('returns 400 when array exceeds the per-request cap', async () => {
+    const events = Array.from({ length: 2001 }, () => validTrack());
     const res = await postBatch({ events });
     expect(res.statusCode).toBe(400);
   });

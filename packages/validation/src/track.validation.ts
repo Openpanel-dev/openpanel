@@ -223,7 +223,9 @@ export const zTrackHandlerPayload = z.discriminatedUnion('type', [
 // Batch ingestion: envelope is validated strictly (array length only); per-event
 // validation runs inside the controller via `safeParse(zTrackHandlerPayload)` so
 // invalid items can be rejected per-index without failing the whole batch.
-export const TRACK_BATCH_MAX_EVENTS = 1000;
+//
+// Per-request caps: up to 2000 events and 10 MB uncompressed body.
+export const TRACK_BATCH_MAX_EVENTS = 2000;
 
 export const zTrackBatchBody = z.object({
   events: z.array(z.unknown()).min(1).max(TRACK_BATCH_MAX_EVENTS),
