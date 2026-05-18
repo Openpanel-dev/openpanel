@@ -427,4 +427,29 @@ describe('POST /track/batch — per-item validation', () => {
     expect(body.rejected).toHaveLength(3);
     expect(queueAdd).not.toHaveBeenCalled();
   });
+
+  // Regression: per-event processing is chunked (BATCH_CONCURRENCY = 50).
+  // A 200-event batch spans 4 chunks. Verifies that rejected indices land in
+  // the right positions across chunk boundaries — including the very first
+  // event in chunk 1, the last event in chunk 2, and one in chunk 4 — which
+  // would catch off-by-one slicing or out-of-order result accumulation.
+  it('preserves per-index results across chunk boundaries', async () => {
+    const SIZE = 200;
+    const badIndices = new Set([0, 50, 99, 100, 149, 199]);
+    const events = Array.from({ length: SIZE }, (_, i) =>
+      badIndices.has(i)
+        ? { type: 'track', payload: { name: '' } } // invalid
+        : validTrack(`chunked_${i}`),
+    );
+    const res = await postBatch({ events });
+    expect(res.statusCode).toBe(202);
+    const body = res.json();
+    expect(body.accepted).toBe(SIZE - badIndices.size);
+    expect(body.rejected).toHaveLength(badIndices.size);
+    const rejectedIndices = new Set(
+      body.rejected.map((r: { index: number }) => r.index),
+    );
+    expect(rejectedIndices).toEqual(badIndices);
+    expect(queueAdd).toHaveBeenCalledTimes(SIZE - badIndices.size);
+  });
 });
