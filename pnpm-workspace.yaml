@@ -4,6 +4,34 @@ packages:
   - "tooling/*"
   - "admin"
 
+# Security essentials
+blockExoticSubdeps: true
+minimumReleaseAge: 2880
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  # These versions are to be trusted - however rewrite to latest version
+  - "react-redux@8.1.3"
+  # To fix this one upgrade tsdown to latest
+  - "chokidar@4.0.3"
+  # To fix this one upgrade vitest to latest
+  - "vite@5.4.21"
+  # To fix this one upgrade @reduxjs/toolkit to latest
+  - "reselect@5.1.1"
+  # Connected to the version @types/node@20.19.24 - might need to upgrade some other package
+  - "undici-types@6.21.0"
+  # Upgrading these packages @vitejs/plugin-react@5.2.0 and fast-extract@1.4.3 might fix this
+  - "semver@6.3.1 || 5.7.2"
+  # This is because of presence of expo@50.0.7 somewhere
+  - "ua-parser-js@1.0.41"
+allowBuilds:
+  "@biomejs/biome": true
+  "@prisma/client": true
+  "@prisma/engines": true
+  "@tailwindcss/oxide": true
+  prisma: true
+  sharp: true
+  esbuild: true
+
 # Define a catalog of version ranges.
 catalog:
   zod: ^4.1.8
