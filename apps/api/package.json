@@ -48,6 +48,7 @@
     "fastify-raw-body": "^5.0.0",
     "fastify-zod-openapi": "^5.6.1",
     "groupmq": "catalog:",
+    "jose": "^6.2.3",
     "jsonwebtoken": "^9.0.2",
     "pino": "catalog:",
     "pino-pretty": "catalog:",

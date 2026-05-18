@@ -12,7 +12,7 @@ import {
   zUpdateProject,
   zUpdateReference,
 } from '@/controllers/manage.controller';
-import { validateManageRequest } from '@/utils/auth';
+import { validateAdminRequest } from '@/utils/auth';
 import { activateRateLimiter } from '@/utils/rate-limiter';
 
 const idParam = z.object({ id: z.string() });
@@ -26,7 +26,7 @@ const manageRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
 
   fastify.addHook('preHandler', async (req: FastifyRequest, reply) => {
     try {
-      const client = await validateManageRequest(req.headers);
+      const client = await validateAdminRequest(req.headers);
       req.client = client;
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
