@@ -22,13 +22,34 @@ import type {
   IIdentifyPayload,
   IIncrementPayload,
   IReplayPayload,
+  ITrackBatchBody,
   ITrackHandlerPayload,
   ITrackPayload,
+} from '@openpanel/validation';
+import {
+  TRACK_BATCH_MAX_EVENTS,
+  zTrackHandlerPayload,
 } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr, pick } from 'ramda';
 import { HttpError } from '@/utils/errors';
 import { getDeviceId } from '@/utils/ids';
+
+type Salts = Awaited<ReturnType<typeof getSalts>>;
+
+/**
+ * Per-request data that is identical for every event in a batch.
+ * Computed once in the batch handler so we don't re-fetch salts/geo
+ * or re-parse headers N times.
+ */
+interface SharedRequestContext {
+  projectId: string;
+  requestIp: string;
+  requestUa: string;
+  requestHeaders: Record<string, string | undefined>;
+  requestGeo: GeoLocation;
+  salts: Salts;
+}
 
 export function getStringHeaders(headers: FastifyRequest['headers']) {
   return Object.entries(
@@ -122,28 +143,65 @@ interface TrackContext {
   geo: GeoLocation;
 }
 
-async function buildContext(
-  request: FastifyRequest<{
-    Body: ITrackHandlerPayload;
-  }>,
-  validatedBody: ITrackHandlerPayload
-): Promise<TrackContext> {
+/**
+ * Build the per-request shared context. Done once per HTTP request — for
+ * single-event /track this is just an extra struct; for /track/batch it
+ * lets N events share one salts + one geo lookup.
+ */
+async function buildSharedRequestContext(
+  request: FastifyRequest,
+): Promise<SharedRequestContext> {
   const projectId = request.client?.projectId;
   if (!projectId) {
     throw new HttpError('Missing projectId', { status: 400 });
   }
 
-  const timestamp = getTimestamp(request.timestamp, validatedBody.payload);
-  const ip =
+  const requestIp = request.clientIp;
+  const requestUa = request.headers['user-agent'] ?? 'unknown/1.0';
+  const requestHeaders = getStringHeaders(request.headers);
+
+  const [requestGeo, salts] = await Promise.all([
+    getGeoLocation(requestIp),
+    getSalts(),
+  ]);
+
+  return {
+    projectId,
+    requestIp,
+    requestUa,
+    requestHeaders,
+    requestGeo,
+    salts,
+  };
+}
+
+/**
+ * Build a per-event TrackContext from already-fetched shared data.
+ * Per-event work: timestamp, identity, ip override, deviceId, and a
+ * second geo lookup *only* if the event overrides __ip.
+ */
+async function buildEventContext(
+  shared: SharedRequestContext,
+  requestTimestamp: FastifyRequest['timestamp'],
+  validatedBody: ITrackHandlerPayload,
+): Promise<TrackContext> {
+  const timestamp = getTimestamp(requestTimestamp, validatedBody.payload);
+
+  const overrideIp =
     validatedBody.type === 'track' && validatedBody.payload.properties?.__ip
       ? (validatedBody.payload.properties.__ip as string)
-      : request.clientIp;
-  const ua = request.headers['user-agent'] ?? 'unknown/1.0';
+      : undefined;
+  const ip = overrideIp ?? shared.requestIp;
 
-  const headers = getStringHeaders(request.headers);
+  // Only re-fetch geo when the event overrode the IP — the common case
+  // (browser SDK, no __ip) reuses the request-level geo computed once.
+  const geo =
+    overrideIp && overrideIp !== shared.requestIp
+      ? await getGeoLocation(overrideIp)
+      : shared.requestGeo;
+
   const identity = getIdentity(validatedBody);
   const profileId = identity?.profileId;
-
   if (profileId && validatedBody.type === 'track') {
     validatedBody.payload.profileId = profileId;
   }
@@ -154,22 +212,19 @@ async function buildContext(
       ? validatedBody.payload?.properties.__deviceId
       : undefined;
 
-  // Get geo location (needed for track and identify)
-  const [geo, salts] = await Promise.all([getGeoLocation(ip), getSalts()]);
-
   const deviceIdResult = await getDeviceId({
-    projectId,
+    projectId: shared.projectId,
     ip,
-    ua,
-    salts,
+    ua: shared.requestUa,
+    salts: shared.salts,
     overrideDeviceId,
   });
 
   return {
-    projectId,
+    projectId: shared.projectId,
     ip,
-    ua,
-    headers,
+    ua: shared.requestUa,
+    headers: shared.requestHeaders,
     timestamp: {
       value: timestamp.timestamp,
       isFromPast: timestamp.isTimestampFromThePast,
@@ -179,6 +234,16 @@ async function buildContext(
     sessionId: deviceIdResult.sessionId,
     geo,
   };
+}
+
+async function buildContext(
+  request: FastifyRequest<{
+    Body: ITrackHandlerPayload;
+  }>,
+  validatedBody: ITrackHandlerPayload,
+): Promise<TrackContext> {
+  const shared = await buildSharedRequestContext(request);
+  return buildEventContext(shared, request.timestamp, validatedBody);
 }
 
 async function handleTrack(
@@ -361,15 +426,59 @@ async function handleAssignGroup(
   });
 }
 
+/**
+ * Dispatch a validated event to the matching per-type handler. Shared by
+ * /track and /track/batch. Throws HttpError(400) for the unsupported `alias`
+ * type so single-event and batch can both surface it consistently.
+ */
+async function dispatchEvent(
+  body: ITrackHandlerPayload,
+  context: TrackContext,
+): Promise<void> {
+  switch (body.type) {
+    case 'alias':
+      throw new HttpError('Alias is not supported', { status: 400 });
+    case 'track':
+      await handleTrack(body.payload, context);
+      return;
+    case 'identify':
+      await handleIdentify(body.payload, context);
+      return;
+    case 'increment':
+      await handleIncrement(body.payload, context);
+      return;
+    case 'decrement':
+      await handleDecrement(body.payload, context);
+      return;
+    case 'replay':
+      await handleReplay(body.payload, context);
+      return;
+    case 'group':
+      await handleGroup(body.payload, context);
+      return;
+    case 'assign_group':
+      await handleAssignGroup(body.payload, context);
+      return;
+    default: {
+      // Exhaustiveness guard — body is `never` here when all variants are
+      // handled. If a new type is added to `ITrackHandlerPayload`, this
+      // surfaces as a TS error rather than a silent runtime fallthrough.
+      const _exhaustive: never = body;
+      throw new HttpError('Invalid type', { status: 400 });
+    }
+  }
+}
+
 export async function handler(
   request: FastifyRequest<{
     Body: ITrackHandlerPayload;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const validatedBody = request.body;
 
-  // Handle alias (not supported)
+  // Reject `alias` before building context — saves the salts/geo/deviceId work
+  // for a request that's going to fail anyway.
   if (validatedBody.type === 'alias') {
     return reply.status(400).send({
       status: 400,
@@ -378,43 +487,103 @@ export async function handler(
     });
   }
 
-  // Build request context
   const context = await buildContext(request, validatedBody);
-
-  // Dispatch to appropriate handler
-  switch (validatedBody.type) {
-    case 'track':
-      await handleTrack(validatedBody.payload, context);
-      break;
-    case 'identify':
-      await handleIdentify(validatedBody.payload, context);
-      break;
-    case 'increment':
-      await handleIncrement(validatedBody.payload, context);
-      break;
-    case 'decrement':
-      await handleDecrement(validatedBody.payload, context);
-      break;
-    case 'replay':
-      await handleReplay(validatedBody.payload, context);
-      break;
-    case 'group':
-      await handleGroup(validatedBody.payload, context);
-      break;
-    case 'assign_group':
-      await handleAssignGroup(validatedBody.payload, context);
-      break;
-    default:
-      return reply.status(400).send({
-        status: 400,
-        error: 'Bad Request',
-        message: 'Invalid type',
-      });
-  }
+  await dispatchEvent(validatedBody, context);
 
   reply.status(200).send({
     deviceId: context.deviceId,
     sessionId: context.sessionId,
+  });
+}
+
+type BatchItemResult =
+  | { index: number; status: 'accepted' }
+  | {
+      index: number;
+      status: 'rejected';
+      reason: 'validation' | 'internal';
+      error: string;
+    };
+
+/**
+ * POST /track/batch — accepts up to TRACK_BATCH_MAX_EVENTS payloads in one
+ * request and dispatches each through the same per-event pipeline as /track.
+ *
+ * Per-event validation failures do NOT fail the whole batch: the response is
+ * always 202 (assuming envelope + auth pass) with `{ accepted, rejected[] }`
+ * so callers can fix and retry just the bad indices.
+ *
+ * Optimization: salts + request-IP geo are fetched once and shared across
+ * all events. Events that override `__ip` still get their own geo lookup.
+ */
+export async function batchHandler(
+  request: FastifyRequest<{
+    Body: ITrackBatchBody;
+  }>,
+  reply: FastifyReply,
+) {
+  const { events } = request.body;
+
+  // Envelope length is already enforced by zTrackBatchBody; the cap repeat
+  // here is defense-in-depth in case the schema is bypassed in the future.
+  if (events.length === 0 || events.length > TRACK_BATCH_MAX_EVENTS) {
+    return reply.status(400).send({
+      status: 400,
+      error: 'Bad Request',
+      message: `events must be 1..${TRACK_BATCH_MAX_EVENTS} items`,
+    });
+  }
+
+  const shared = await buildSharedRequestContext(request);
+
+  const results = await Promise.all(
+    events.map<Promise<BatchItemResult>>(async (raw, index) => {
+      const parsed = zTrackHandlerPayload.safeParse(raw);
+      if (!parsed.success) {
+        const issue = parsed.error.issues[0];
+        const path = issue?.path?.join('.') ?? '';
+        const error = path ? `${path}: ${issue?.message}` : issue?.message ?? 'invalid payload';
+        return { index, status: 'rejected', reason: 'validation', error };
+      }
+
+      try {
+        const context = await buildEventContext(
+          shared,
+          request.timestamp,
+          parsed.data,
+        );
+        await dispatchEvent(parsed.data, context);
+        return { index, status: 'accepted' };
+      } catch (err) {
+        // HttpError with 4xx → caller's fault (validation-style: alias,
+        // unknown type, replay without session). Anything else → ours.
+        const isClientError =
+          err instanceof HttpError && err.status >= 400 && err.status < 500;
+        const reason: 'validation' | 'internal' = isClientError
+          ? 'validation'
+          : 'internal';
+        const message =
+          err instanceof Error ? err.message : 'unknown error';
+        if (!isClientError) {
+          request.log.error(
+            { err, index },
+            'Batch event dispatch failed',
+          );
+        }
+        return { index, status: 'rejected', reason, error: message };
+      }
+    }),
+  );
+
+  const accepted = results.filter((r) => r.status === 'accepted').length;
+  const rejected = results.filter(
+    (r): r is Extract<BatchItemResult, { status: 'rejected' }> =>
+      r.status === 'rejected',
+  );
+
+  reply.status(202).send({
+    accepted,
+    rejected,
   });
 }
 
