@@ -292,8 +292,9 @@ describe('POST /track/batch — per-item validation', () => {
     // Two events on the same device, 1h apart in __timestamp. They
     // should land in different deterministic 30-min buckets and thus
     // get different sessionIds, even though they arrive in the same
-    // request.
-    const baseMs = Date.UTC(2026, 4, 1, 10, 0, 0); // 10:00 UTC
+    // request. Anchored to "now" so the events stay inside the 5-day
+    // acceptance window when the test runs.
+    const baseMs = Date.now() - 2 * 60 * 60 * 1000; // 2h ago
     const res = await postBatch({
       events: [
         {
@@ -330,8 +331,14 @@ describe('POST /track/batch — per-item validation', () => {
 
   it('shares sessionId across events in the same 30-min bucket', async () => {
     // Two events on the same device, 5 min apart inside the same
-    // wall-clock 30-min bucket. They should share a sessionId.
-    const baseMs = Date.UTC(2026, 4, 1, 10, 5, 0); // 10:05 UTC
+    // wall-clock 30-min bucket. They should share a sessionId. Anchor
+    // to the bucket that closed ~1 hour ago so both timestamps are in
+    // the past (avoiding the future-timestamp guard) and well within
+    // the 5-day acceptance window.
+    const WINDOW_MS = 30 * 60 * 1000;
+    const oneHourAgoBucket =
+      Math.floor((Date.now() - 60 * 60 * 1000) / WINDOW_MS) * WINDOW_MS;
+    const baseMs = oneHourAgoBucket + 60_000; // 1 min past bucket start (past the grace)
     const res = await postBatch({
       events: [
         {

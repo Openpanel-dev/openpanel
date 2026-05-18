@@ -414,10 +414,11 @@ describe('incomingEvent', () => {
       duration: 0,
       path: '',
       origin: '',
-      // baseEvent fields fall through uniformly: empty strings for
-      // referrer/referrerType, undefined for referrerName.
+      // baseEvent fields fall through uniformly when there's no
+      // session enrichment available — empty strings for all referrer
+      // fields rather than the previous mix of undefined/''.
       referrer: '',
-      referrerName: undefined,
+      referrerName: '',
       referrerType: '',
       sdkName: 'server',
       sdkVersion: '1.0.0',
