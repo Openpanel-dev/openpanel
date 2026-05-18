@@ -71,31 +71,45 @@ export class SessionBuffer extends BaseBuffer {
       const oldSession = assocPath(['sign'], -1, clone(existingSession));
       const newSession = assocPath(['sign'], 1, clone(existingSession));
 
-      newSession.ended_at = event.created_at;
       newSession.version = existingSession.version + 1;
-      if (!newSession.entry_path && event.path) {
-        newSession.entry_path = event.path;
+
+      // Events can arrive out of order (client-side batching, retries, offline
+      // queueing). Treat the session window as [min(event ts), max(event ts)]
+      // so duration stays non-negative and entry/exit reflect actual order.
+      const eventTime = new Date(event.created_at).getTime();
+      const startTime = new Date(newSession.created_at).getTime();
+      const endTime = new Date(newSession.ended_at).getTime();
+
+      if (eventTime >= endTime) {
+        newSession.ended_at = event.created_at;
+        if (event.path) {
+          newSession.exit_path = event.path;
+        }
+        if (event.origin) {
+          newSession.exit_origin = event.origin;
+        }
       }
-      if (!newSession.entry_origin && event.origin) {
-        newSession.entry_origin = event.origin;
+
+      if (eventTime < startTime) {
+        newSession.created_at = event.created_at;
+        if (event.path) {
+          newSession.entry_path = event.path;
+        }
+        if (event.origin) {
+          newSession.entry_origin = event.origin;
+        }
+      } else {
+        if (!newSession.entry_path && event.path) {
+          newSession.entry_path = event.path;
+        }
+        if (!newSession.entry_origin && event.origin) {
+          newSession.entry_origin = event.origin;
+        }
       }
-      if (event.path) {
-        newSession.exit_path = event.path;
-      }
-      if (event.origin) {
-        newSession.exit_origin = event.origin;
-      }
-      const duration =
+
+      newSession.duration =
         new Date(newSession.ended_at).getTime() -
         new Date(newSession.created_at).getTime();
-      if (duration >= 0) {
-        newSession.duration = duration;
-      } else {
-        this.logger.warn(
-          { duration, event, session: newSession },
-          'Session duration is negative',
-        );
-      }
 
       const addedRevenue = event.name === 'revenue' ? (event.revenue ?? 0) : 0;
       newSession.revenue = (newSession.revenue ?? 0) + addedRevenue;
