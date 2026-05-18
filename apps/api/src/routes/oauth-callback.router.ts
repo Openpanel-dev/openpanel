@@ -12,6 +12,11 @@ const router: FastifyPluginCallback = async (fastify) => {
     url: '/google/callback',
     handler: controller.googleCallback,
   });
+  fastify.route({
+    method: 'GET',
+    url: '/oidc/callback',
+    handler: controller.oidcCallback,
+  });
 };
 
 export default router;
