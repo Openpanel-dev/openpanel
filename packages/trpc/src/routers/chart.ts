@@ -20,6 +20,8 @@ import {
   getSelectPropertyKey,
   getSettingsForProject,
   type IServiceProfile,
+  isKnownEventField,
+  normalizeEventField,
   onlyReportEvents,
   sankeyService,
   TABLE_NAMES,
@@ -50,17 +52,6 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '../trpc';
-
-// utm_* are surfaced as filterable "columns" in the UI but only exist on the
-// sessions table — on events they live inside the properties map under the
-// __query.utm_* keys.
-const UTM_COLUMNS = [
-  'utm_source',
-  'utm_medium',
-  'utm_campaign',
-  'utm_term',
-  'utm_content',
-];
 
 function utc(date: string | Date) {
   if (typeof date === 'string') {
@@ -396,12 +387,15 @@ export const chartRouter = createTRPCRouter({
         const res = await query.execute();
         values.push(...res.map((r) => String(r.values)).filter(Boolean));
       } else {
-        // utm_* don't exist as columns on the events table — they live in
-        // the properties map. Route them through the properties code path
-        // so the SELECT becomes `properties['__query.utm_source']`.
-        const resolvedProperty = UTM_COLUMNS.includes(property)
-          ? `properties.__query.${property}`
-          : property;
+        // Normalize bare utm_* names to `properties.__query.utm_*` and rewrite
+        // camelCase aliases (`referrerName`) to their snake_case columns.
+        // Unknown identifiers (saved-report typos like `temple_name`, or
+        // misnamed columns from older clients) get an empty value list rather
+        // than crashing the autocomplete query with UNKNOWN_IDENTIFIER.
+        const resolvedProperty = normalizeEventField(property);
+        if (!isKnownEventField(resolvedProperty)) {
+          return { values: [] };
+        }
         const query = clix(ch)
           .select<{ values: string[] }>([
             `distinct ${getSelectPropertyKey(resolvedProperty)} as values`,

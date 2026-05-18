@@ -661,7 +661,10 @@ export class OverviewService {
           return [{ ...item, name: `properties.__query.${item.name}` }];
         }
         return [item];
-      })
+      }),
+      undefined,
+      undefined,
+      type,
     );
 
     return Object.values(where).join(' AND ');

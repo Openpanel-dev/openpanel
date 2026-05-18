@@ -13,6 +13,7 @@ import {
   fetchCohortsMetadata,
   getEventFiltersWhereClause,
   getSelectPropertyKey,
+  isKnownEventField,
 } from './chart.service';
 import { onlyReportEvents } from './reports.service';
 
@@ -225,6 +226,14 @@ export class FunnelService {
     const funnelOptions = options?.type === 'funnel' ? options : undefined;
     const funnelWindow = funnelOptions?.funnelWindow ?? 24;
     const funnelGroup = funnelOptions?.funnelGroup;
+
+    // Drop breakdowns that don't resolve to a known events column, properties
+    // path, profile path, group path, or cohort. The funnel CTE inlines each
+    // breakdown's name directly via getSelectPropertyKey — a saved report with
+    // breakdown `cohort` (intended for the chart's all-cohorts feature; the
+    // funnel doesn't support it) used to produce `cohort as b_0 FROM events
+    // GROUP BY b_0`, failing parse.
+    breakdowns = breakdowns.filter((b) => isKnownEventField(b.name));
 
     const eventSeries = onlyReportEvents(series);
 

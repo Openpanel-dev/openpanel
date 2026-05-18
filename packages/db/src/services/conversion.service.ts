@@ -11,6 +11,7 @@ import {
   fetchCohortsMetadata,
   getEventFiltersWhereClause,
   getSelectPropertyKey,
+  isKnownEventField,
 } from './chart.service';
 import { onlyReportEvents } from './reports.service';
 
@@ -34,6 +35,10 @@ export class ConversionService {
     const funnelGroup = funnelOptions?.funnelGroup;
     const funnelWindow = funnelOptions?.funnelWindow ?? 24;
     const group = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
+
+    // Same guard as FunnelService / getChartSql — drop breakdowns whose name
+    // can't be resolved against the events schema.
+    breakdowns = breakdowns.filter((b) => isKnownEventField(b.name));
 
     const allFilters = series.flatMap((s) =>
       s.type === 'event' ? s.filters ?? [] : [],

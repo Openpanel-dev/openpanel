@@ -13,6 +13,103 @@ import { formatClickhouseDate, TABLE_NAMES } from '../clickhouse/client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 
+// Top-level columns on the events table. Derived from the migration in
+// packages/db/code-migrations/3-init-ch.ts (+ revenue added in 6-add-revenue-
+// column.ts). Used by `resolveEventColumn` to distinguish real columns from
+// property keys and reject unknown identifiers before they reach ClickHouse.
+const EVENT_TOP_LEVEL_COLUMNS = new Set<string>([
+  'id',
+  'name',
+  'sdk_name',
+  'sdk_version',
+  'device_id',
+  'profile_id',
+  'project_id',
+  'session_id',
+  'path',
+  'origin',
+  'referrer',
+  'referrer_name',
+  'referrer_type',
+  'duration',
+  'revenue',
+  'created_at',
+  'country',
+  'city',
+  'region',
+  'longitude',
+  'latitude',
+  'os',
+  'os_version',
+  'browser',
+  'browser_version',
+  'device',
+  'brand',
+  'model',
+  'imported_at',
+]);
+
+// Older clients / saved reports send some field names in camelCase. Map them
+// to the canonical snake_case ClickHouse column so they don't fall through as
+// unknown identifiers. The bare values (`utm_source` etc.) actually live in
+// the `properties` map — `normalizeEventField` rewrites those into the
+// `properties.__query.utm_*` form.
+const EVENT_FIELD_ALIASES: Record<string, string> = {
+  referrerName: 'referrer_name',
+  referrerType: 'referrer_type',
+  sessionId: 'session_id',
+  deviceId: 'device_id',
+  profileId: 'profile_id',
+  projectId: 'project_id',
+  osVersion: 'os_version',
+  browserVersion: 'browser_version',
+  sdkName: 'sdk_name',
+  sdkVersion: 'sdk_version',
+  createdAt: 'created_at',
+  importedAt: 'imported_at',
+};
+
+const EVENT_UTM_BARE_COLUMNS = new Set<string>([
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+]);
+
+// Normalize an incoming field name into its canonical form. Returns a string
+// suitable for `getSelectPropertyKey` / `getEventFiltersWhereClause` — i.e.
+// either a top-level column name (`referrer_name`), a `properties.foo` /
+// `profile.foo` / `group.foo` path, or `has_profile`. Unknown names are
+// returned unchanged; callers must guard with `isKnownEventField` before
+// inlining into SQL.
+export function normalizeEventField(name: string): string {
+  if (EVENT_FIELD_ALIASES[name]) {
+    return EVENT_FIELD_ALIASES[name]!;
+  }
+  if (EVENT_UTM_BARE_COLUMNS.has(name)) {
+    return `properties.__query.${name}`;
+  }
+  return name;
+}
+
+// Returns true if `name` resolves to something we can inline into SQL safely:
+// a known top-level events column, a properties / profile / group path, a
+// cohort breakdown, or `has_profile`. Used to drop unknown filters/breakdowns
+// instead of emitting invalid `SELECT cohort` / `SELECT temple_name` queries.
+export function isKnownEventField(name: string): boolean {
+  if (name === 'has_profile') return true;
+  if (isAllCohortsBreakdown(name)) return true;
+  if (extractCohortId(name)) return true;
+  if (name.startsWith('properties.')) return true;
+  if (name.startsWith('profile.')) return true;
+  if (name.startsWith('group.')) return true;
+  const normalized = normalizeEventField(name);
+  if (normalized.startsWith('properties.')) return true;
+  if (EVENT_TOP_LEVEL_COLUMNS.has(normalized)) return true;
+  return false;
+}
+
 export type CohortMetadata = {
   id: string;
   name: string;
@@ -221,7 +318,7 @@ export function getProfilePropertySelect(property: string): string {
 }
 
 export function getSelectPropertyKey(
-  property: string,
+  rawProperty: string,
   projectId?: string,
   cohortId?: string,
   cohortName?: string,
@@ -233,6 +330,13 @@ export function getSelectPropertyKey(
    */
   eventsAlias?: string,
 ) {
+  // Map camelCase aliases (`referrerName` → `referrer_name`) and bare UTM
+  // names (`utm_source` → `properties.__query.utm_source`) into their
+  // canonical form before doing any pattern matching. The fallback at the
+  // bottom of this function returns `property` verbatim, so without this
+  // normalization an alias would leak into the generated SQL and fail with
+  // UNKNOWN_IDENTIFIER.
+  const property = normalizeEventField(rawProperty);
   const extractedCohortId = cohortId || extractCohortId(property);
 
   if (extractedCohortId && projectId) {
@@ -302,7 +406,12 @@ export async function getChartSql({
     with: addCte,
   } = createSqlBuilder();
 
-  let breakdowns = initialBreakdowns;
+  // Drop breakdowns whose field name doesn't resolve to a known events
+  // column, properties path, profile path, group path, or cohort. The chart
+  // service used to inline whatever the dashboard sent — saved reports with
+  // fields like `temple_name` (a property, not a column) reached the _uc CTE
+  // as `SELECT temple_name as _uc_label_1 FROM events`, failing parse.
+  let breakdowns = initialBreakdowns.filter((b) => isKnownEventField(b.name));
   const requestedAllCohortsBreakdown = breakdowns.some((b) =>
     isAllCohortsBreakdown(b.name),
   );
@@ -718,7 +827,12 @@ export async function getAggregateChartSql({
 }) {
   const { sb, join, getJoins, with: addCte, getSql } = createSqlBuilder();
 
-  let breakdowns = initialBreakdowns;
+  // Drop breakdowns whose field name doesn't resolve to a known events
+  // column, properties path, profile path, group path, or cohort. The chart
+  // service used to inline whatever the dashboard sent — saved reports with
+  // fields like `temple_name` (a property, not a column) reached the _uc CTE
+  // as `SELECT temple_name as _uc_label_1 FROM events`, failing parse.
+  let breakdowns = initialBreakdowns.filter((b) => isKnownEventField(b.name));
   const requestedAllCohortsBreakdown = breakdowns.some((b) =>
     isAllCohortsBreakdown(b.name),
   );
@@ -1012,11 +1126,30 @@ export function getEventFiltersWhereClause(
    * `e.properties[...]` instead of the ambiguous `properties[...]`.
    */
   eventsAlias?: string,
+  /**
+   * Which physical table the WHERE clause is being built for. Affects which
+   * names count as "top-level columns" and whether bare `utm_*` gets routed
+   * into the events-specific `properties.__query.utm_*` map. Defaults to
+   * 'events' because that's where the vast majority of callers (chart,
+   * funnel, conversion, sankey, event services) target — OverviewService
+   * sets it to 'sessions' when querying the sessions table.
+   */
+  tableScope: 'events' | 'sessions' = 'events',
 ) {
   const where: Record<string, string> = {};
   filters.forEach((filter, index) => {
     const id = `f${index}`;
-    const { name, value, operator } = filter;
+    const { value, operator } = filter;
+    // Normalize camelCase aliases (`referrerName` → `referrer_name`) on both
+    // tables — both events and sessions schemas use snake_case. The bare-
+    // utm rewrite only applies to events because sessions stores utm_* as
+    // real top-level columns; doing it for sessions would emit
+    // `properties['__query.utm_source']` against a table that has no
+    // `properties` column.
+    const name =
+      tableScope === 'sessions'
+        ? EVENT_FIELD_ALIASES[filter.name] ?? filter.name
+        : normalizeEventField(filter.name);
 
     if (
       (operator === 'inCohort' || operator === 'notInCohort') &&
@@ -1345,6 +1478,15 @@ export function getEventFiltersWhereClause(
         }
       }
     } else {
+      // Bare-column branch. For events queries: enforce that `name` is one
+      // of the known top-level columns (anything else would crash parse with
+      // UNKNOWN_IDENTIFIER). For sessions queries: skip the guard because
+      // the sessions table has its own column set (utm_*, entry_path, etc.)
+      // that OverviewService.getRawWhereClause already vets via its
+      // WHITELISTED_FILTERS pre-pass.
+      if (tableScope === 'events' && !EVENT_TOP_LEVEL_COLUMNS.has(name)) {
+        return;
+      }
       switch (operator) {
         case 'is': {
           if (value.length === 1) {

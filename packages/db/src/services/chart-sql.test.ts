@@ -233,6 +233,91 @@ describe('chart.service / getChartSql', () => {
     });
     await explain(sql);
   });
+
+  // Regressions from HyperDX 2026-05-14 → 2026-05-17 ClickHouse error log.
+  // Saved reports / older clients send field names that don't match the events
+  // schema; the chart service used to inline them verbatim, crashing parse.
+  itCH(
+    'normalizes camelCase filter alias (referrerName → referrer_name)',
+    async () => {
+      const sql = await getChartSql({
+        event: event({
+          filters: [
+            { name: 'referrerName', operator: 'is', value: ['email'] },
+          ],
+        }),
+        breakdowns: [],
+        interval: 'day',
+        startDate: START,
+        endDate: END,
+        projectId: PROJECT_ID,
+        timezone: 'UTC',
+      });
+      expect(sql).toContain('referrer_name');
+      expect(sql).not.toMatch(/(?<![._\w])referrerName/);
+      await explain(sql);
+    },
+  );
+
+  itCH(
+    'routes bare utm_source filter through properties map',
+    async () => {
+      const sql = await getChartSql({
+        event: event({
+          filters: [{ name: 'utm_source', operator: 'is', value: ['awn'] }],
+        }),
+        breakdowns: [],
+        interval: 'day',
+        startDate: START,
+        endDate: END,
+        projectId: PROJECT_ID,
+        timezone: 'UTC',
+      });
+      expect(sql).toContain("properties['__query.utm_source']");
+      // The unqualified `utm_source = …` form would fail with UNKNOWN_IDENTIFIER.
+      expect(sql).not.toMatch(/(?<![._\w])utm_source\s*=/);
+      await explain(sql);
+    },
+  );
+
+  itCH(
+    'drops unknown breakdown rather than emitting invalid identifier',
+    async () => {
+      // `temple_name` is a custom property (lives in properties map) but
+      // got saved as a top-level breakdown. The old code path emitted
+      // `SELECT temple_name as _uc_label_1 FROM events`, failing parse.
+      const sql = await getChartSql({
+        event: event(),
+        breakdowns: [breakdown('temple_name')],
+        interval: 'day',
+        startDate: START,
+        endDate: END,
+        projectId: PROJECT_ID,
+        timezone: 'UTC',
+      });
+      expect(sql).not.toMatch(/(?<![._\w])temple_name/);
+      expect(sql).not.toContain('_uc_label_1');
+      await explain(sql);
+    },
+  );
+
+  itCH('drops unknown filter rather than emitting invalid identifier', async () => {
+    const sql = await getChartSql({
+      event: event({
+        filters: [
+          { name: 'totally_made_up_column', operator: 'is', value: ['x'] },
+        ],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+    expect(sql).not.toMatch(/totally_made_up_column/);
+    await explain(sql);
+  });
 });
 
 describe('chart.service / getAggregateChartSql', () => {
