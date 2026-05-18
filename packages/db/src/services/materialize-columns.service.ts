@@ -262,7 +262,12 @@ export class MaterializeColumnsService {
     }>
   > {
     const reports = await db.report.findMany({
-      select: { breakdowns: true, events: true },
+      select: {
+        breakdowns: true,
+        events: true,
+        globalFilters: true,
+        holdProperties: true,
+      },
     });
 
     const propertyMap = new Map<string, number>();
@@ -298,7 +303,12 @@ export class MaterializeColumnsService {
     }>
   > {
     const reports = await db.report.findMany({
-      select: { breakdowns: true, events: true },
+      select: {
+        breakdowns: true,
+        events: true,
+        globalFilters: true,
+        holdProperties: true,
+      },
     });
 
     const propertyMap = new Map<string, number>();
@@ -329,6 +339,8 @@ export class MaterializeColumnsService {
   private extractPropertiesFromReport(report: {
     breakdowns: any;
     events: any;
+    globalFilters?: any;
+    holdProperties?: any;
   }): { eventsProperties: string[]; profileProperties: string[] } {
     const eventsProperties = new Set<string>();
     const profileProperties = new Set<string>();
@@ -336,40 +348,63 @@ export class MaterializeColumnsService {
     const isValid = (name: string) =>
       !name.includes('*') && !name.includes('(') && !name.includes('[');
 
+    const addProperty = (name: unknown) => {
+      if (typeof name !== 'string' || !isValid(name)) return;
+      if (name.startsWith('properties.')) {
+        eventsProperties.add(name);
+      } else if (name.startsWith('profile.properties.')) {
+        profileProperties.add(name);
+      }
+    };
+
     // Parse breakdowns
     try {
       const breakdowns = Array.isArray(report.breakdowns) ? report.breakdowns : [];
       for (const breakdown of breakdowns) {
-        if (breakdown?.name && typeof breakdown.name === 'string') {
-          if (breakdown.name.startsWith('properties.') && isValid(breakdown.name)) {
-            eventsProperties.add(breakdown.name);
-          } else if (breakdown.name.startsWith('profile.properties.') && isValid(breakdown.name)) {
-            profileProperties.add(breakdown.name);
-          }
-        }
+        if (breakdown?.name) addProperty(breakdown.name);
       }
     } catch (e) {
       this.logger.warn('Failed to parse breakdowns', { error: e });
     }
 
-    // Parse events (filters)
+    // Parse events (per-series filters)
     try {
       const events = Array.isArray(report.events) ? report.events : [];
       for (const event of events) {
         if (event?.filters && Array.isArray(event.filters)) {
           for (const filter of event.filters) {
-            if (filter?.name && typeof filter.name === 'string') {
-              if (filter.name.startsWith('properties.') && isValid(filter.name)) {
-                eventsProperties.add(filter.name);
-              } else if (filter.name.startsWith('profile.properties.') && isValid(filter.name)) {
-                profileProperties.add(filter.name);
-              }
-            }
+            if (filter?.name) addProperty(filter.name);
           }
         }
       }
     } catch (e) {
       this.logger.warn('Failed to parse event filters', { error: e });
+    }
+
+    // Parse globalFilters — same shape as per-event filters but stored at
+    // the report level. Properties used only via globalFilters (e.g.
+    // metadata_type on a funnel that applies it across both steps) were
+    // previously invisible to the analyser and never became materialization
+    // candidates.
+    try {
+      const globalFilters = Array.isArray(report.globalFilters) ? report.globalFilters : [];
+      for (const filter of globalFilters) {
+        if (filter?.name) addProperty(filter.name);
+      }
+    } catch (e) {
+      this.logger.warn('Failed to parse global filters', { error: e });
+    }
+
+    // Parse holdProperties — funnel "hold constant" property names stored
+    // as a plain string[] on the report. Same materialization win applies
+    // when the held property is read from `properties` map on every event.
+    try {
+      const holdProperties = Array.isArray(report.holdProperties) ? report.holdProperties : [];
+      for (const prop of holdProperties) {
+        addProperty(prop);
+      }
+    } catch (e) {
+      this.logger.warn('Failed to parse hold properties', { error: e });
     }
 
     return {
