@@ -109,6 +109,9 @@ export function getTimestamp(
   // Constants for time validation
   const ONE_MINUTE_MS = 60 * 1000;
   const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
+  // Hard floor for accepted historical events. Public contract for /track
+  // and /track/batch, hard-coded (not per-project configurable).
+  const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 
   // Use safeTimestamp if invalid or more than 1 minute in the future
   if (
@@ -116,6 +119,13 @@ export function getTimestamp(
     clientTimestampNumber > safeTimestamp + ONE_MINUTE_MS
   ) {
     return { timestamp: safeTimestamp, isTimestampFromThePast: false };
+  }
+
+  // Reject events older than 5 days. In /track/batch this surfaces as a
+  // per-row { reason: 'validation' } entry in rejected[]; in single-event
+  // /track it returns 400 to the caller.
+  if (clientTimestampNumber < safeTimestamp - FIVE_DAYS_MS) {
+    throw new HttpError('event timestamp older than 5 days', { status: 400 });
   }
 
   // isTimestampFromThePast is true only if timestamp is older than 15 minutes

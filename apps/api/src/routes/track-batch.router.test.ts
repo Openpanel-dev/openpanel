@@ -364,6 +364,48 @@ describe('POST /track/batch — per-item validation', () => {
     expect(sessionIdA).toBe(sessionIdB);
   });
 
+  it('rejects events with __timestamp older than 5 days', async () => {
+    // Older events should be rejected per-row with a clear reason.
+    const sixDaysAgo = Date.now() - 6 * 24 * 60 * 60 * 1000;
+    const fourDaysAgo = Date.now() - 4 * 24 * 60 * 60 * 1000;
+    const res = await postBatch({
+      events: [
+        // valid (4 days old, within window)
+        {
+          type: 'track' as const,
+          payload: {
+            name: 'probe_within_window',
+            properties: {
+              __deviceId: 'd-1',
+              __timestamp: new Date(fourDaysAgo).toISOString(),
+            },
+          },
+        },
+        // too old (6 days)
+        {
+          type: 'track' as const,
+          payload: {
+            name: 'probe_too_old',
+            properties: {
+              __deviceId: 'd-2',
+              __timestamp: new Date(sixDaysAgo).toISOString(),
+            },
+          },
+        },
+      ],
+    });
+    expect(res.statusCode).toBe(202);
+    const body = res.json();
+    expect(body.accepted).toBe(1);
+    expect(body.rejected).toHaveLength(1);
+    expect(body.rejected[0]).toMatchObject({
+      index: 1,
+      reason: 'validation',
+    });
+    expect(body.rejected[0].error).toMatch(/5 days/i);
+    expect(queueAdd).toHaveBeenCalledTimes(1);
+  });
+
   it('returns 202 with accepted=0 when every event fails validation', async () => {
     const res = await postBatch({
       events: [
