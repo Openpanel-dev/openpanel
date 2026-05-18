@@ -7,6 +7,10 @@ export interface ConfigResonse {
   isSelfHosted: boolean;
   isMaintenance: boolean;
   isDemo: boolean;
+  oidc: {
+    enabled: boolean;
+    displayName: string;
+  };
 }
 // Nothing sensitive here, its client environment variables which is good for debugging
 export const Route = createFileRoute('/api/config')({
