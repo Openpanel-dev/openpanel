@@ -10,7 +10,12 @@ import type {
 } from '@openpanel/validation';
 
 import { cohortComputeQueue } from '@openpanel/queue';
-import { TABLE_NAMES, ch, chQuery } from '../clickhouse/client';
+import {
+  TABLE_NAMES,
+  ch,
+  chQuery,
+  getReplicatedTableName,
+} from '../clickhouse/client';
 import { db } from '../prisma-client';
 import { getProfiles, type IServiceProfile } from './profile.service';
 
@@ -538,6 +543,16 @@ export async function updateCohortMembership(
 
   const version = Date.now();
 
+  // ReplacingMergeTree only dedupes within the same ORDER BY key
+  // (project_id, cohort_id, profile_id), so profiles that fell out of the
+  // cohort definition would otherwise linger forever. Clear them first.
+  await ch.command({
+    query: `DELETE FROM ${getReplicatedTableName(TABLE_NAMES.cohort_members)} WHERE cohort_id = ${sqlstring.escape(cohort.id)} AND project_id = ${sqlstring.escape(cohort.projectId)}`,
+    clickhouse_settings: {
+      lightweight_deletes_sync: '1',
+    },
+  });
+
   await storeCohortMembership(
     cohort.projectId,
     cohort.id,
@@ -558,12 +573,15 @@ export async function deleteCohortMembership(
   cohortId: string,
   projectId: string,
 ): Promise<void> {
-  await ch.command({
-    query: `ALTER TABLE ${TABLE_NAMES.cohort_members} DELETE WHERE cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)}`,
-  });
-  await ch.command({
-    query: `ALTER TABLE ${TABLE_NAMES.cohort_metadata} DELETE WHERE cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)}`,
-  });
+  const where = `cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)}`;
+  for (const table of [TABLE_NAMES.cohort_members, TABLE_NAMES.cohort_metadata]) {
+    await ch.command({
+      query: `DELETE FROM ${getReplicatedTableName(table)} WHERE ${where}`,
+      clickhouse_settings: {
+        lightweight_deletes_sync: '0',
+      },
+    });
+  }
 }
 
 export async function getProfilesInCohort(
