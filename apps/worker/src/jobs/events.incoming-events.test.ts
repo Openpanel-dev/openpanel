@@ -503,6 +503,11 @@ describe('incomingEvent', () => {
     // the lock acquisition. Live event still fires; sessionEnd job is
     // still scheduled (it's idempotent on jobId).
     vi.mocked(getLock).mockResolvedValueOnce(false);
+    // No active session-end job exists yet — force getJob to undefined so the
+    // worker falls into the "no active session" branch where the lock check
+    // matters. (vi.clearAllMocks resets call history but keeps implementations
+    // set via mockResolvedValue in previous tests.)
+    vi.spyOn(sessionsQueue, 'getJob').mockResolvedValue(undefined);
     const spySessionsQueueAdd = vi
       .spyOn(sessionsQueue, 'add')
       .mockResolvedValue({} as Job);
