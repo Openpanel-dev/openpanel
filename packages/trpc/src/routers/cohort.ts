@@ -14,6 +14,7 @@ import {
 } from '@openpanel/db';
 import {
   type CohortDefinition,
+  zChartEventFilter,
   zCohortDefinition,
   zCohortInput,
   zCohortUpdate,
@@ -164,6 +165,7 @@ export const cohortRouter = createTRPCRouter({
         cursor: z.number().optional(),
         take: z.number().default(50),
         search: z.string().optional(),
+        filters: z.array(zChartEventFilter).default([]),
       })
     )
     .query(async ({ input }) => {

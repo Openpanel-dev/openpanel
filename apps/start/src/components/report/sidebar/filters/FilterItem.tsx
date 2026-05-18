@@ -2,9 +2,12 @@ import { ColorSquare } from '@/components/color-square';
 import { FilterOperatorSelect } from '@/components/report/sidebar/filters/FilterOperatorSelect';
 import { RenderDots } from '@/components/ui/RenderDots';
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
+import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { InputEnter } from '@/components/ui/input-enter';
 import { useAppParams } from '@/hooks/use-app-params';
+import { useEventNames } from '@/hooks/use-event-names';
 import { usePropertyValues } from '@/hooks/use-property-values';
 import { useDispatch } from '@/redux';
 import type {
@@ -107,6 +110,11 @@ export function FilterItem({ filter, event }: FilterProps) {
   );
 }
 
+const BOOLEAN_VALUE_ITEMS = [
+  { value: 'true', label: 'Yes' },
+  { value: 'false', label: 'No' },
+];
+
 export function PureFilterItem({
   filter,
   eventName,
@@ -118,10 +126,23 @@ export function PureFilterItem({
 }: PureFilterProps) {
   const { projectId } = useAppParams();
 
+  const isBooleanSessionFilter = filter.name === 'session.is_bounce';
+  const isPerformedEventFilter = filter.name === 'session.performed_event';
+
   const potentialValues = usePropertyValues({
     event: eventName,
     property: filter.name,
     projectId,
+    // session.* filters live on the sessions row, not on event properties.
+    // The standard property-values endpoint can't enumerate them, so we
+    // bypass the lookup entirely.
+    enabled: !filter.name.startsWith('session.'),
+  });
+
+  const eventNames = useEventNames({
+    projectId,
+    anyEvents: false,
+    enabled: isPerformedEventFilter,
   });
 
   const valuesCombobox =
@@ -142,6 +163,55 @@ export function PureFilterItem({
     onChangeOperator(operator, filter);
   };
 
+  const renderValueControl = () => {
+    if (isBooleanSessionFilter) {
+      return (
+        <Combobox
+          className="flex-1"
+          items={BOOLEAN_VALUE_ITEMS}
+          value={
+            filter.value[0] === undefined ? null : String(filter.value[0])
+          }
+          onChange={(v) => changeFilterValue([v])}
+          placeholder="Yes / No"
+        />
+      );
+    }
+
+    if (isPerformedEventFilter) {
+      return (
+        <ComboboxEvents
+          className="flex-1"
+          items={eventNames}
+          value={filter.value[0] ? String(filter.value[0]) : null}
+          onChange={(v: string) => changeFilterValue([v])}
+          placeholder="Select event"
+          searchable
+        />
+      );
+    }
+
+    if (filter.operator === 'is' || filter.operator === 'isNot') {
+      return (
+        <ComboboxAdvanced
+          items={valuesCombobox}
+          value={filter.value}
+          className="flex-1"
+          onChange={changeFilterValue}
+          placeholder="Select..."
+        />
+      );
+    }
+
+    return (
+      <InputEnter
+        value={filter.value[0] ? String(filter.value[0]) : ''}
+        onChangeValue={(value) => changeFilterValue([value])}
+        immediate={immediateInput}
+      />
+    );
+  };
+
   return (
     <div className={className}>
       <div className="mb-2 flex items-center gap-2">
@@ -160,21 +230,7 @@ export function PureFilterItem({
           value={filter.operator}
           onChange={changeFilterOperator}
         />
-        {filter.operator === 'is' || filter.operator === 'isNot' ? (
-          <ComboboxAdvanced
-            items={valuesCombobox}
-            value={filter.value}
-            className="flex-1"
-            onChange={changeFilterValue}
-            placeholder="Select..."
-          />
-        ) : (
-          <InputEnter
-            value={filter.value[0] ? String(filter.value[0]) : ''}
-            onChangeValue={(value) => changeFilterValue([value])}
-            immediate={immediateInput}
-          />
-        )}
+        {renderValueControl()}
       </div>
     </div>
   );

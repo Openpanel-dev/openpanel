@@ -36,31 +36,26 @@ const usePersistentColumnVisibility = (columns: any[]) => {
 };
 
 import type { IServiceSession } from '@openpanel/db';
-import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import type { Table } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
-import { Loader2Icon, SlidersHorizontalIcon } from 'lucide-react';
+import { Loader2Icon } from 'lucide-react';
 import { last } from 'ramda';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
+import { TableFilterPills } from '@/components/filters/TableFilterPills';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Skeleton } from '@/components/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   AnimatedSearchInput,
   DataTableToolbarContainer,
 } from '@/components/ui/data-table/data-table-toolbar';
 import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
-import type { FilterDefinition } from '@/components/ui/filter-dropdown';
-import { FilterDropdown } from '@/components/ui/filter-dropdown';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
-import { useSessionFilters } from '@/hooks/use-session-filters';
-import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
 type Props = {
@@ -187,6 +182,10 @@ const VirtualizedSessionsTable = ({
     estimateSize: () => ROW_HEIGHT, // Estimated row height
     overscan: 10,
     scrollMargin: parentRef.current?.offsetTop ?? 0,
+    // Key cache entries by row id so when filters refetch and the data
+    // array changes, the virtualizer doesn't reuse stale per-index
+    // measurements (which produces overlapping rows).
+    getItemKey: (index) => data[index]?.id ?? index,
   });
 
   const virtualRows = rowVirtualizer.getVirtualItems();
@@ -357,55 +356,8 @@ export const SessionsTable = ({ query }: Props) => {
   );
 };
 
-const SESSION_FILTER_KEY_TO_FIELD: Record<string, string> = {
-  referrer: 'referrer_name',
-  country: 'country',
-  os: 'os',
-  browser: 'browser',
-  device: 'device',
-};
-
-const SESSION_FILTER_DEFINITIONS: FilterDefinition[] = [
-  { key: 'referrer', label: 'Referrer', type: 'select' },
-  { key: 'country', label: 'Country', type: 'select' },
-  { key: 'os', label: 'OS', type: 'select' },
-  { key: 'browser', label: 'Browser', type: 'select' },
-  { key: 'device', label: 'Device', type: 'select' },
-  { key: 'entryPage', label: 'Entry page', type: 'string' },
-  { key: 'exitPage', label: 'Exit page', type: 'string' },
-  { key: 'minPageViews', label: 'Min page views', type: 'number' },
-  { key: 'maxPageViews', label: 'Max page views', type: 'number' },
-  { key: 'minEvents', label: 'Min events', type: 'number' },
-  { key: 'maxEvents', label: 'Max events', type: 'number' },
-];
-
 function SessionTableToolbar({ table }: { table: Table<IServiceSession> }) {
-  const { projectId } = useAppParams();
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
   const { search, setSearch } = useSearchQueryState();
-  const { values, setValue, activeCount } = useSessionFilters();
-
-  const loadOptions = useCallback(
-    (key: string) => {
-      const field = SESSION_FILTER_KEY_TO_FIELD[key];
-      if (!field) {
-        return Promise.resolve([]);
-      }
-      return queryClient.fetchQuery(
-        trpc.session.distinctValues.queryOptions({
-          projectId,
-          field: field as
-            | 'referrer_name'
-            | 'country'
-            | 'os'
-            | 'browser'
-            | 'device',
-        })
-      );
-    },
-    [trpc, queryClient, projectId]
-  );
 
   return (
     <DataTableToolbarContainer>
@@ -415,29 +367,11 @@ function SessionTableToolbar({ table }: { table: Table<IServiceSession> }) {
           placeholder="Search sessions by path, referrer..."
           value={search}
         />
-        <FilterDropdown
-          definitions={SESSION_FILTER_DEFINITIONS}
-          loadOptions={loadOptions}
-          onChange={setValue}
-          values={values}
-        >
-          <Button
-            className={cn(
-              'border-dashed',
-              activeCount > 0 && 'border-primary border-solid'
-            )}
-            size="sm"
-            variant="outline"
-          >
-            <SlidersHorizontalIcon className="mr-2 size-4" />
-            Filters
-            {activeCount > 0 && (
-              <Badge className="ml-2 rounded-full px-1.5 py-0 text-xs">
-                {activeCount}
-              </Badge>
-            )}
-          </Button>
-        </FilterDropdown>
+        <TableFilterPills
+          urlKey="f"
+          categories={['profile', 'group', 'cohort', 'session']}
+          title="Session filters"
+        />
       </div>
       <DataTableViewOptions table={table} />
     </DataTableToolbarContainer>

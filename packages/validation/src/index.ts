@@ -31,8 +31,39 @@ export const zChartEventFilter = z.object({
   cohortId: z
     .string()
     .optional()
-    .describe('Cohort ID when using inCohort/notInCohort operators'),
+    .describe(
+      'DEPRECATED: legacy single-cohort id, kept for saved reports. ' +
+        'New code reads cohortIds via getCohortIds(filter).',
+    ),
+  cohortIds: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'Cohort IDs for inCohort/notInCohort. Multiple ids OR-match ' +
+        '(matches profiles in any of the listed cohorts).',
+    ),
 });
+
+/**
+ * Normalize the two cohort id fields on a filter into a single array.
+ *
+ * Both `cohortIds` (new, multi-value) and `cohortId` (legacy, single-value)
+ * coexist on `zChartEventFilter` for backward compatibility with saved
+ * reports. Always read cohort membership through this helper instead of
+ * accessing the raw fields, so legacy data keeps working.
+ */
+export function getCohortIds(filter: {
+  cohortIds?: string[];
+  cohortId?: string;
+}): string[] {
+  if (filter.cohortIds && filter.cohortIds.length > 0) {
+    return filter.cohortIds;
+  }
+  if (filter.cohortId) {
+    return [filter.cohortId];
+  }
+  return [];
+}
 
 export const zChartEventSegment = z
   .enum(objectToZodEnums(chartSegments))

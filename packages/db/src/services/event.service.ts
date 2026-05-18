@@ -17,6 +17,7 @@ import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder, type SqlBuilderObject } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
+import { buildFilterWhere } from './filter-where.service';
 import type { IServiceProfile, IServiceUpsertProfile } from './profile.service';
 import {
   getProfileById,
@@ -1284,6 +1285,7 @@ export interface QueryEventsInput {
   profileId?: string;
   profileIds?: string[];
   properties?: Record<string, string>;
+  filters?: IChartEventFilter[];
   limit?: number;
 }
 
@@ -1375,6 +1377,17 @@ export async function queryEventsCore(
       clix.datetime(start),
       clix.datetime(end),
     ]);
+  }
+
+  if (input.filters?.length) {
+    const filterClauses = buildFilterWhere(input.filters, input.projectId, {
+      selfTable: 'events',
+      profileIdExpr: 'profile_id',
+      groupsExpr: 'groups',
+    });
+    for (const clause of Object.values(filterClauses)) {
+      builder.rawWhere(clause);
+    }
   }
 
   return builder.limit(input.limit ?? 20).execute();

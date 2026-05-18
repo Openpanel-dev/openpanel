@@ -71,7 +71,7 @@ export function ReportSeriesItem({
           {showAddFilter && (
             <PropertiesCombobox
               event={chartEvent}
-              showCohorts
+              categories={['event', 'profile', 'group', 'cohort']}
               onSelect={(action) => {
                 dispatch(
                   changeEvent({

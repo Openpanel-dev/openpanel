@@ -15,6 +15,7 @@ import {
 import { clix } from '../clickhouse/query-builder';
 import { createSqlBuilder } from '../sql-builder';
 import type { IClickhouseEvent } from './event.service';
+import { buildFilterWhere } from './filter-where.service';
 import type { IClickhouseSession } from './session.service';
 
 export interface IProfileMetrics {
@@ -141,6 +142,22 @@ interface GetProfileListOptions {
   isExternal?: boolean;
 }
 
+/**
+ * Build a profile search predicate that handles multi-token queries like
+ * "John Smith" — splits on whitespace, requires every token to match SOME
+ * profile field (email/first/last/full name), case-insensitively. Returns
+ * `null` when the search string is empty.
+ */
+export function profileSearchSql(search: string | null | undefined): string | null {
+  const tokens = (search ?? '').trim().split(/\s+/).filter(Boolean).slice(0, 5);
+  if (tokens.length === 0) return null;
+  const perToken = tokens.map((token) => {
+    const like = sqlstring.escape(`%${token}%`);
+    return `(email ILIKE ${like} OR first_name ILIKE ${like} OR last_name ILIKE ${like} OR concat(first_name, ' ', last_name) ILIKE ${like})`;
+  });
+  return `(${perToken.join(' AND ')})`;
+}
+
 export async function getProfiles(ids: string[], projectId: string) {
   const filteredIds = uniq(ids.filter((id) => id !== ''));
 
@@ -166,6 +183,7 @@ export async function getProfileList({
   take,
   cursor,
   projectId,
+  filters,
   search,
   isExternal,
 }: GetProfileListOptions) {
@@ -176,11 +194,22 @@ export async function getProfileList({
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.orderBy.created_at = 'created_at DESC';
-  if (search) {
-    sb.where.search = `(email ILIKE '%${search}%' OR first_name ILIKE '%${search}%' OR last_name ILIKE '%${search}%')`;
+  const searchClause = profileSearchSql(search);
+  if (searchClause) {
+    sb.where.search = searchClause;
   }
   if (isExternal !== undefined) {
     sb.where.external = `is_external = ${isExternal ? 'true' : 'false'}`;
+  }
+  if (filters?.length) {
+    Object.assign(
+      sb.where,
+      buildFilterWhere(filters, projectId, {
+        selfTable: 'profiles',
+        profileIdExpr: 'id',
+        groupsExpr: 'groups',
+      }),
+    );
   }
   const data = await chQuery<IClickhouseProfile>(getSql());
   return data.map(transformProfile);
@@ -188,6 +217,7 @@ export async function getProfileList({
 
 export async function getProfileListCount({
   projectId,
+  filters,
   isExternal,
   search,
 }: Omit<GetProfileListOptions, 'cursor' | 'take'>) {
@@ -196,11 +226,22 @@ export async function getProfileListCount({
   sb.select.count = 'count(id) as count';
   sb.where.project_id = `project_id = ${sqlstring.escape(projectId)}`;
   sb.groupBy.project_id = 'project_id';
-  if (search) {
-    sb.where.search = `(email ILIKE '%${search}%' OR first_name ILIKE '%${search}%' OR last_name ILIKE '%${search}%')`;
+  const searchClause = profileSearchSql(search);
+  if (searchClause) {
+    sb.where.search = searchClause;
   }
   if (isExternal !== undefined) {
     sb.where.external = `is_external = ${isExternal ? 'true' : 'false'}`;
+  }
+  if (filters?.length) {
+    Object.assign(
+      sb.where,
+      buildFilterWhere(filters, projectId, {
+        selfTable: 'profiles',
+        profileIdExpr: 'id',
+        groupsExpr: 'groups',
+      }),
+    );
   }
   const data = await chQuery<{ count: number }>(getSql());
   return data[0]?.count ?? 0;
@@ -339,6 +380,7 @@ export interface FindProfilesInput {
   inactiveDays?: number;
   minSessions?: number;
   performedEvent?: string;
+  filters?: IChartEventFilter[];
   sortBy?: 'created_at';
   sortOrder?: 'asc' | 'desc';
   limit?: number;
@@ -351,13 +393,11 @@ export function findProfilesCore(
   const conditions: string[] = [`project_id = ${pid}`];
 
   if (input.email) {
-    conditions.push(`email LIKE ${sqlstring.escape(`%${input.email}%`)}`);
+    conditions.push(`email ILIKE ${sqlstring.escape(`%${input.email}%`)}`);
   }
   if (input.name) {
-    const escaped = sqlstring.escape(`%${input.name}%`);
-    conditions.push(
-      `(first_name LIKE ${escaped} OR last_name LIKE ${escaped})`
-    );
+    const nameClause = profileSearchSql(input.name);
+    if (nameClause) conditions.push(nameClause);
   }
   if (input.country) {
     conditions.push(
@@ -404,6 +444,15 @@ export function findProfilesCore(
       WHERE project_id = ${pid}
         AND name = ${sqlstring.escape(input.performedEvent)}
     )`);
+  }
+
+  if (input.filters?.length) {
+    const filterClauses = buildFilterWhere(input.filters, input.projectId, {
+      selfTable: 'profiles',
+      profileIdExpr: 'id',
+      groupsExpr: 'groups',
+    });
+    conditions.push(...Object.values(filterClauses));
   }
 
   const orderDir = input.sortOrder === 'asc' ? 'ASC' : 'DESC';

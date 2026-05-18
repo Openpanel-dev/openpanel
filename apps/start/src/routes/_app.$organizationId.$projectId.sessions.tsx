@@ -4,7 +4,7 @@ import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { SessionsTable } from '@/components/sessions/table';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
-import { useSessionFilters } from '@/hooks/use-session-filters';
+import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
@@ -27,8 +27,7 @@ function Component() {
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const { debouncedSearch } = useSearchQueryState();
-  const { filters, minPageViews, maxPageViews, minEvents, maxEvents } =
-    useSessionFilters();
+  const [filters, setFilters] = useTableFilters('f');
 
   const query = useInfiniteQuery(
     trpc.session.list.infiniteQueryOptions(
@@ -37,10 +36,6 @@ function Component() {
         take: 50,
         search: debouncedSearch,
         filters,
-        minPageViews,
-        maxPageViews,
-        minEvents,
-        maxEvents,
       },
       {
         getNextPageParam: (lastPage) => lastPage.meta.next,

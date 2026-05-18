@@ -3,9 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 
 export function usePropertyValues(params: any) {
   const trpc = useTRPC();
+  const { enabled = true, ...input } = params;
   const query = useQuery(
-    trpc.chart.values.queryOptions(params, {
-      enabled: !!params.projectId,
+    trpc.chart.values.queryOptions(input, {
+      enabled: enabled !== false && !!input.projectId,
     }),
   );
   return query.data?.values ?? [];

@@ -5,6 +5,7 @@ import type { PaginationState, Table, Updater } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { memo, useCallback } from 'react';
 import { useColumns } from './columns';
+import { TableFilterPills } from '@/components/filters/TableFilterPills';
 import { DataTable } from '@/components/ui/data-table/data-table';
 import {
   useDataTableColumnVisibility,
@@ -110,13 +111,21 @@ export const ProfilesTable = memo(
 
 function ProfileTableToolbar({ table }: { table: Table<IServiceProfile> }) {
   const { search, setSearch } = useSearchQueryState();
+
   return (
     <DataTableToolbarContainer>
-      <AnimatedSearchInput
-        onChange={setSearch}
-        placeholder="Search profiles"
-        value={search}
-      />
+      <div className="flex flex-1 flex-wrap items-center gap-2">
+        <AnimatedSearchInput
+          onChange={setSearch}
+          placeholder="Search profiles"
+          value={search}
+        />
+        <TableFilterPills
+          urlKey="f"
+          categories={['profile', 'group', 'cohort']}
+          title="Profile filters"
+        />
+      </div>
       <DataTableViewOptions table={table} />
     </DataTableToolbarContainer>
   );

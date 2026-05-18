@@ -27,6 +27,7 @@ import EventDetails from './event-details';
 import Instructions from './Instructions';
 import OverviewChartDetails from './overview-chart-details';
 import OverviewFilters from './overview-filters';
+import TableFilters from './table-filters';
 import PageDetails from './page-details';
 import RegenerateRecoveryCodes from './regenerate-recovery-codes';
 import RequestPasswordReset from './request-reset-password';
@@ -75,6 +76,7 @@ const modals = {
   AddIntegration,
   AddNotificationRule,
   OverviewFilters,
+  TableFilters,
   CreateInvite,
   SelectBillingPlan,
   BillingSuccess,

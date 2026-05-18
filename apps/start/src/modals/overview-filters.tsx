@@ -112,7 +112,13 @@ export default function OverviewFilters({
           })}
         </div>
         <PropertiesCombobox
-          mode={mode}
+          categories={
+            mode === 'events'
+              ? ['event']
+              : mode === 'profile'
+                ? ['profile']
+                : ['event', 'profile', 'group', 'cohort']
+          }
           exclude={
             enableEventsFilter
               ? []

@@ -1,11 +1,12 @@
 /** biome-ignore-all lint/style/useDefaultSwitchClause: switch cases are exhaustive by design */
 import { stripLeadingAndTrailingSlashes } from '@openpanel/common';
-import type {
-  CohortDefinition,
-  IChartBreakdown,
-  IChartEventFilter,
-  IGetChartDataInput,
-  IReportInput,
+import {
+  type CohortDefinition,
+  getCohortIds,
+  type IChartBreakdown,
+  type IChartEventFilter,
+  type IGetChartDataInput,
+  type IReportInput,
 } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
 import { formatClickhouseDate, TABLE_NAMES } from '../clickhouse/client';
@@ -112,8 +113,12 @@ export function collectCohortIds(
 ): string[] {
   const ids = new Set<string>();
   for (const filter of filters) {
-    if (filter.cohortId) {
-      ids.add(filter.cohortId);
+    // Collect from both `cohortId` (legacy) and `cohortIds` (multi-value).
+    // Only single-cohort filters use the CTE join path — multi-cohort
+    // filters compile to a direct subselect in getEventFiltersWhereClause.
+    const filterCohortIds = getCohortIds(filter);
+    if (filterCohortIds.length === 1) {
+      ids.add(filterCohortIds[0]!);
     }
   }
   for (const breakdown of breakdowns) {
@@ -1011,15 +1016,34 @@ export function getEventFiltersWhereClause(
   const where: Record<string, string> = {};
   filters.forEach((filter, index) => {
     const id = `f${index}`;
-    const { name, value, operator, cohortId } = filter;
+    const { name, value, operator } = filter;
 
-    if (operator === 'inCohort' && cohortId && projectId) {
-      where[id] = `notEmpty(${getCohortAlias(cohortId)}.profile_id)`;
-      return;
-    }
+    if (
+      (operator === 'inCohort' || operator === 'notInCohort') &&
+      projectId
+    ) {
+      const cohortIds = getCohortIds(filter);
+      if (cohortIds.length === 0) return;
 
-    if (operator === 'notInCohort' && cohortId && projectId) {
-      where[id] = `empty(${getCohortAlias(cohortId)}.profile_id)`;
+      if (cohortIds.length === 1) {
+        // Preserve the original CTE-join path for the single-cohort case
+        // (collectCohortIds wires up the CTE for us). Behaviour for saved
+        // reports with `cohortId: string` is unchanged.
+        const single = cohortIds[0]!;
+        where[id] =
+          operator === 'notInCohort'
+            ? `empty(${getCohortAlias(single)}.profile_id)`
+            : `notEmpty(${getCohortAlias(single)}.profile_id)`;
+        return;
+      }
+
+      // Multi-cohort: compile to a direct subselect against cohort_members.
+      // No CTE join needed — saves an unnecessary plan for the ad-hoc case.
+      const escapedIds = cohortIds
+        .map((c) => sqlstring.escape(c))
+        .join(', ');
+      const op = operator === 'notInCohort' ? 'NOT IN' : 'IN';
+      where[id] = `e.profile_id ${op} (SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL WHERE cohort_id IN (${escapedIds}) AND project_id = ${sqlstring.escape(projectId)})`;
       return;
     }
 

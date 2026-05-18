@@ -43,6 +43,26 @@ import {
   type TrafficColumn,
 } from '@openpanel/db';
 import { zChartEventFilter, zRange } from '@openpanel/validation';
+
+/**
+ * REST querystrings can't carry arrays of objects natively. Callers pass
+ * `filters` as a URL-encoded JSON string; we decode it here. Empty string and
+ * already-parsed arrays (e.g. from server-side dispatch) are both accepted.
+ */
+const zFiltersParam = z
+  .preprocess((value) => {
+    if (value == null || value === '') return undefined;
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return undefined;
+      }
+    }
+    return value;
+  }, z.array(zChartEventFilter))
+  .optional();
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
@@ -442,6 +462,7 @@ export const zEventsQuery = zDateRange.extend({
   referrerType: z.string().optional(),
   profileId: z.string().optional(),
   properties: z.record(z.string(), z.string()).optional(),
+  filters: zFiltersParam,
   limit: z.number().int().min(1).max(100).default(20),
 });
 
@@ -495,6 +516,7 @@ export const zProfilesQuery = z.object({
   inactiveDays: z.number().int().min(1).optional(),
   minSessions: z.number().int().min(1).optional(),
   performedEvent: z.string().optional(),
+  filters: zFiltersParam,
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
   limit: z.number().int().min(1).max(100).default(20),
 });
@@ -553,6 +575,7 @@ export const zSessionsQuery = zDateRange.extend({
   referrerName: z.string().optional(),
   referrerType: z.string().optional(),
   profileId: z.string().optional(),
+  filters: zFiltersParam,
   limit: z.number().int().min(1).max(100).default(20),
 });
 

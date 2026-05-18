@@ -17,7 +17,12 @@ import {
   getReplicatedTableName,
 } from '../clickhouse/client';
 import { db } from '../prisma-client';
-import { getProfiles, type IServiceProfile } from './profile.service';
+import { buildFilterWhere } from './filter-where.service';
+import {
+  getProfiles,
+  profileSearchSql,
+  type IServiceProfile,
+} from './profile.service';
 
 export const COHORT_MATERIALIZE_LIMIT = 10000;
 
@@ -618,17 +623,30 @@ export async function listCohortMemberProfiles({
   cursor,
   take,
   search,
+  filters,
 }: {
   projectId: string;
   cohortId: string;
   cursor?: number;
   take: number;
   search?: string;
+  filters?: IChartEventFilter[];
 }): Promise<{ data: IServiceProfile[]; count: number }> {
   const offset = Math.max(0, (cursor ?? 0) * take);
-  const trimmed = search?.trim();
-  const searchCondition = trimmed
-    ? `AND (email ILIKE ${sqlstring.escape(`%${trimmed}%`)} OR first_name ILIKE ${sqlstring.escape(`%${trimmed}%`)} OR last_name ILIKE ${sqlstring.escape(`%${trimmed}%`)})`
+  const searchClause = profileSearchSql(search);
+  const searchCondition = searchClause ? `AND ${searchClause}` : '';
+
+  const extraConditions = filters?.length
+    ? Object.values(
+        buildFilterWhere(filters, projectId, {
+          selfTable: 'profiles',
+          profileIdExpr: 'id',
+          groupsExpr: 'groups',
+        }),
+      )
+    : [];
+  const extraConditionSql = extraConditions.length
+    ? `AND ${extraConditions.join(' AND ')}`
     : '';
 
   const rows = await chQuery<{ id: string; total_count: number }>(`
@@ -641,6 +659,7 @@ export async function listCohortMemberProfiles({
           AND project_id = ${sqlstring.escape(projectId)}
       )
       ${searchCondition}
+      ${extraConditionSql}
     ORDER BY created_at DESC
     LIMIT ${take} OFFSET ${offset}
   `);

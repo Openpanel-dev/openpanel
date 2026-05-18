@@ -8,7 +8,7 @@ import {
   getEventsCount,
   getSettingsForProject,
 } from '@openpanel/db';
-import { zChartEvent, zReport } from '@openpanel/validation';
+import { zChartEvent, zChartEventFilter, zReport } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { HttpError } from '@/utils/errors';
@@ -69,6 +69,20 @@ export const eventsScheme = z.object({
   end: z.coerce.string().optional(),
   page: z.coerce.number().optional().default(1),
   limit: z.coerce.number().optional().default(50),
+  filters: z
+    .preprocess((value) => {
+      if (value == null || value === '') return undefined;
+      if (Array.isArray(value)) return value;
+      if (typeof value === 'string') {
+        try {
+          return JSON.parse(value);
+        } catch {
+          return undefined;
+        }
+      }
+      return value;
+    }, z.array(zChartEventFilter))
+    .optional(),
   includes: z
     .preprocess(
       (arg) => {
@@ -96,7 +110,7 @@ export async function events(
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(request);
-  const { limit, page: rawPage, event, start, end, profileId, includes } = request.query;
+  const { limit, page: rawPage, event, start, end, profileId, includes, filters } = request.query;
   const take = Math.max(Math.min(limit, 1000), 1);
   const cursor = Math.max(rawPage, 1) - 1;
   const options: GetEventListOptions = {
@@ -107,6 +121,7 @@ export async function events(
     cursor,
     take,
     profileId,
+    filters,
     select: {
       profile: false,
       meta: false,

@@ -477,7 +477,7 @@ function EventCriteriaItem({
         onSelect={(action) => {
           addFilter(action.value);
         }}
-        mode="events"
+        categories={['event']}
       >
         {(setOpen) => (
           <Button
@@ -612,7 +612,7 @@ function PropertyBasedBuilder({
         onSelect={(action) => {
           addPropertyFilter(action.value);
         }}
-        mode="profile"
+        categories={['profile']}
       >
         {(setOpen) => (
           <Button

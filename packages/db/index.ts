@@ -16,6 +16,7 @@ export * from './src/services/dashboard.service';
 export * from './src/services/date.service';
 export * from './src/services/delete.service';
 export * from './src/services/event.service';
+export * from './src/services/filter-where.service';
 export * from './src/services/funnel.service';
 export * from './src/services/group.service';
 export * from './src/services/gsc.service';
