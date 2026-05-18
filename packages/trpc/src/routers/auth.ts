@@ -53,7 +53,7 @@ const TWO_FACTOR_CHALLENGE_TTL_SECONDS = 5 * 60;
 
 const zProvider = z.enum(['email', 'google', 'github']);
 
-async function getIsRegistrationAllowed(inviteId?: string | null) {
+export async function getIsRegistrationAllowed(inviteId?: string | null) {
   // ALLOW_REGISTRATION is always undefined in cloud
   if (process.env.ALLOW_REGISTRATION === undefined) {
     return true;
@@ -95,13 +95,6 @@ export const authRouter = createTRPCRouter({
   signInOAuth: publicProcedure
     .input(z.object({ provider: zProvider, inviteId: z.string().nullish() }))
     .mutation(async ({ input, ctx }) => {
-      const isRegistrationAllowed = await getIsRegistrationAllowed(
-        input.inviteId
-      );
-
-      if (!isRegistrationAllowed) {
-        throw TRPCAccessError('Registrations are not allowed');
-      }
 
       const { provider } = input;
 

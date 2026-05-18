@@ -12,6 +12,7 @@ import { type Account, connectUserToOrganization, db } from '@openpanel/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { LogError } from '@/utils/errors';
+import { getIsRegistrationAllowed, TRPCAccessError } from "@openpanel/trpc";
 
 async function getGithubEmail(githubAccessToken: string) {
   const emailListRequest = new Request('https://api.github.com/user/emails');
@@ -111,6 +112,14 @@ async function handleNewUser({
       }
     );
   }
+
+      const isRegistrationAllowed = await getIsRegistrationAllowed(
+        input.inviteId
+      );
+
+      if (!isRegistrationAllowed) {
+        throw TRPCAccessError('Registrations are not allowed');
+      }
 
   const user = await db.user.create({
     data: {
