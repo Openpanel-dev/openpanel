@@ -1,6 +1,6 @@
 import { getTime, isSameDomain, parsePath } from '@openpanel/common';
 import { getReferrerWithQuery, parseReferrer } from '@openpanel/common/server';
-import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
+import type { IServiceCreateEventPayload } from '@openpanel/db';
 import {
   checkNotificationRulesForEvent,
   createEvent,
@@ -16,6 +16,7 @@ import {
   createSessionEndJob,
   extendSessionEndJob,
   getActiveSessionEndJob,
+  SESSION_TIMEOUT,
 } from '@/utils/session-handler';
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp', '__revenue'];
@@ -113,7 +114,14 @@ export async function incomingEvent(
   // this will get the profileId from the alias table if it exists
   const profileId = body.profileId ? String(body.profileId) : '';
   const createdAt = new Date(body.timestamp);
-  const isTimestampFromThePast = body.isTimestampFromThePast;
+  // "Live" = the event is recent enough that it could plausibly belong to
+  // an active in-memory session. We use the same window as SESSION_TIMEOUT
+  // (30 min) so historical events never push the live sessionEnd job
+  // forward or create new live sessions. Server-side events are always
+  // treated as non-live (they get session enrichment from sessionBuffer
+  // when a profile is supplied; otherwise they keep the API-computed id).
+  const isLiveEvent =
+    !uaInfo.isServer && Date.now() - createdAt.getTime() <= SESSION_TIMEOUT;
   const url = getProperty('__path');
   const { path, hash, query, origin } = parsePath(url);
   const referrer = isSameDomain(getProperty('__referrer'), url)
@@ -162,40 +170,42 @@ export async function incomingEvent(
         : undefined,
   };
 
-  // if timestamp is from the past we dont want to create a new session
-  if (uaInfo.isServer || isTimestampFromThePast) {
-    const session =
-      profileId && !isTimestampFromThePast
-        ? await sessionBuffer.getExistingSession({
-            profileId,
-            projectId,
-          })
-        : null;
+  // Server-side events: when a profileId is supplied, enrich from the
+  // user's most recent browser session (deviceId, sessionId, geo, UA, path,
+  // referrer). Without a session, fall back to the API-computed identity.
+  // Server events never create or extend live sessions in Redis.
+  if (uaInfo.isServer) {
+    const enrichment = profileId
+      ? await sessionBuffer.getExistingSession({ profileId, projectId })
+      : null;
 
-    const payload = {
-      ...baseEvent,
-      deviceId: session?.device_id ?? '',
-      sessionId: session?.id ?? '',
-      referrer: session?.referrer ?? undefined,
-      referrerName: session?.referrer_name ?? undefined,
-      referrerType: session?.referrer_type ?? undefined,
-      path: session?.exit_path ?? baseEvent.path,
-      origin: session?.exit_origin ?? baseEvent.origin,
-      os: session?.os ?? baseEvent.os,
-      osVersion: session?.os_version ?? baseEvent.osVersion,
-      browserVersion: session?.browser_version ?? baseEvent.browserVersion,
-      browser: session?.browser ?? baseEvent.browser,
-      device: session?.device ?? baseEvent.device,
-      brand: session?.brand ?? baseEvent.brand,
-      model: session?.model ?? baseEvent.model,
-      city: session?.city ?? baseEvent.city,
-      country: session?.country ?? baseEvent.country,
-      region: session?.region ?? baseEvent.region,
-      longitude: session?.longitude ?? baseEvent.longitude,
-      latitude: session?.latitude ?? baseEvent.latitude,
-    };
+    const payload: IServiceCreateEventPayload = enrichment
+      ? {
+          ...baseEvent,
+          deviceId: enrichment.device_id,
+          sessionId: enrichment.id,
+          referrer: enrichment.referrer ?? undefined,
+          referrerName: enrichment.referrer_name ?? undefined,
+          referrerType: enrichment.referrer_type ?? undefined,
+          path: enrichment.exit_path ?? baseEvent.path,
+          origin: enrichment.exit_origin ?? baseEvent.origin,
+          os: enrichment.os ?? baseEvent.os,
+          osVersion: enrichment.os_version ?? baseEvent.osVersion,
+          browserVersion:
+            enrichment.browser_version ?? baseEvent.browserVersion,
+          browser: enrichment.browser ?? baseEvent.browser,
+          device: enrichment.device ?? baseEvent.device,
+          brand: enrichment.brand ?? baseEvent.brand,
+          model: enrichment.model ?? baseEvent.model,
+          city: enrichment.city ?? baseEvent.city,
+          country: enrichment.country ?? baseEvent.country,
+          region: enrichment.region ?? baseEvent.region,
+          longitude: enrichment.longitude ?? baseEvent.longitude,
+          latitude: enrichment.latitude ?? baseEvent.latitude,
+        }
+      : baseEvent;
 
-    return createEventAndNotify(payload as IServiceEvent, logger, projectId);
+    return createEventAndNotify(payload, logger, projectId);
   }
 
   const activeSessionEndJob = await getActiveSessionEndJob(
@@ -217,6 +227,15 @@ export async function incomingEvent(
       'Skipping session_start and event (excluded by project filter)',
     );
     return null;
+  }
+
+  // Historical (buffered) events: the API has already computed a
+  // deterministic sessionId for them. Write the event but do NOT mutate
+  // live session state — historical events shouldn't extend the user's
+  // current session or schedule a 30-min sessionEnd timer.
+  // Session_start emission for historical buckets lands in a follow-up.
+  if (!isLiveEvent) {
+    return createEventAndNotify(payload, logger, projectId);
   }
 
   if (activeSessionEndJob) {

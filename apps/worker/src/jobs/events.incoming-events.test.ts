@@ -79,7 +79,6 @@ describe('incomingEvent', () => {
       event: {
         name: 'test_event',
         timestamp: timestamp.toISOString(),
-        isTimestampFromThePast: false,
         properties: { __path: 'https://example.com/test' },
       },
       uaInfo,
@@ -174,7 +173,6 @@ describe('incomingEvent', () => {
         name: 'test_event',
         timestamp: timestamp.toISOString(),
         properties: { __path: 'https://example.com/test' },
-        isTimestampFromThePast: false,
       },
       headers: {
         'request-id': '123',
@@ -256,7 +254,6 @@ describe('incomingEvent', () => {
         timestamp: timestamp.toISOString(),
         properties: { custom_property: 'test_value' },
         profileId: 'profile-123',
-        isTimestampFromThePast: false,
       },
       headers: {
         'user-agent': 'OpenPanel Server/1.0',
@@ -361,7 +358,6 @@ describe('incomingEvent', () => {
         timestamp: timestamp.toISOString(),
         properties: { custom_property: 'test_value' },
         profileId: 'profile-123',
-        isTimestampFromThePast: false,
       },
       headers: {
         'user-agent': 'OpenPanel Server/1.0',
@@ -379,6 +375,9 @@ describe('incomingEvent', () => {
 
     expect((createEvent as Mock).mock.calls[0]![0]).toStrictEqual({
       name: 'server_event',
+      // Server event with profileId but no existing session: keep the
+      // API-computed identity instead of blanking deviceId/sessionId.
+      // The fixture sends '' for both so that's what we expect here.
       deviceId: '',
       sessionId: '',
       profileId: 'profile-123',
@@ -405,9 +404,11 @@ describe('incomingEvent', () => {
       duration: 0,
       path: '',
       origin: '',
-      referrer: undefined,
+      // baseEvent fields fall through uniformly: empty strings for
+      // referrer/referrerType, undefined for referrerName.
+      referrer: '',
       referrerName: undefined,
-      referrerType: undefined,
+      referrerType: '',
       sdkName: 'server',
       sdkVersion: '1.0.0',
       groups: [],
@@ -434,7 +435,6 @@ describe('incomingEvent', () => {
       event: {
         name: eventName,
         timestamp: new Date().toISOString(),
-        isTimestampFromThePast: false,
         properties: { __path: 'https://example.com/test' },
       },
       uaInfo,
@@ -484,5 +484,40 @@ describe('incomingEvent', () => {
     // Only the first event should have queued a session-end job; subsequent
     // events extend the existing one via changeDelay.
     expect(spySessionsQueueAdd).toHaveBeenCalledTimes(1);
+  });
+
+  it('historical event preserves API-computed deviceId/sessionId', async () => {
+    // Event with __timestamp older than SESSION_TIMEOUT (30 min). Worker
+    // should write it with the deviceId/sessionId the API computed,
+    // without scheduling sessionEnd (live state untouched).
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const jobData: EventsQueuePayloadIncomingEvent['payload'] = {
+      geo,
+      event: {
+        name: 'historical_event',
+        timestamp: oneHourAgo.toISOString(),
+        properties: { __path: 'https://example.com/replay' },
+      },
+      uaInfo,
+      headers: {
+        'request-id': '123',
+        'user-agent':
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15',
+        'openpanel-sdk-name': 'react-native',
+        'openpanel-sdk-version': '1.0.0',
+      },
+      projectId,
+      deviceId: 'mobile-device-xyz',
+      sessionId: 'deterministic-bucket-id',
+    };
+
+    await incomingEvent(jobData);
+
+    expect(sessionsQueue.add).not.toHaveBeenCalled();
+    expect(createEvent as Mock).toHaveBeenCalledTimes(1);
+    const written = (createEvent as Mock).mock.calls[0]![0];
+    expect(written.deviceId).toBe('mobile-device-xyz');
+    expect(written.sessionId).toBe('deterministic-bucket-id');
+    expect(written.name).toBe('historical_event');
   });
 });
