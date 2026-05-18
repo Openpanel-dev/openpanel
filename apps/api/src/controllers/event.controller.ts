@@ -14,10 +14,7 @@ export async function postEvent(
   }>,
   reply: FastifyReply
 ) {
-  const { timestamp, isTimestampFromThePast } = getTimestamp(
-    request.timestamp,
-    request.body
-  );
+  const { timestamp } = getTimestamp(request.timestamp, request.body);
   const ip = request.clientIp;
   const ua = request.headers['user-agent'] ?? 'unknown/1.0';
   const projectId = request.client?.projectId;
@@ -34,6 +31,7 @@ export async function postEvent(
     ip,
     ua,
     salts,
+    eventMs: new Date(timestamp).getTime(),
   });
 
   const uaInfo = parseUserAgent(ua, request.body?.properties);
@@ -48,7 +46,6 @@ export async function postEvent(
       event: {
         ...request.body,
         timestamp,
-        isTimestampFromThePast,
       },
       uaInfo,
       geo,

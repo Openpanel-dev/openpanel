@@ -10,15 +10,31 @@ export async function getDeviceId({
   ua,
   salts,
   overrideDeviceId,
+  eventMs,
 }: {
   projectId: string;
   ip: string;
   ua: string | undefined;
   salts: { current: string; previous: string };
   overrideDeviceId?: string;
-}) {
+  /**
+   * Wall-clock time of the event being processed. Used as the bucket input for
+   * the deterministic session_id fallback so historical/buffered events bucket
+   * into the window they actually happened in, not the moment the API
+   * received them.
+   */
+  eventMs: number;
+}): Promise<DeviceIdResult> {
+  // Client-supplied stable device id (mobile/server SDKs). We still need to
+  // resolve a sessionId — first try the live session lookup keyed on this
+  // exact deviceId, then fall back to the deterministic 30-min bucket.
   if (overrideDeviceId) {
-    return { deviceId: overrideDeviceId, sessionId: '' };
+    return getInfoFromSession({
+      projectId,
+      currentDeviceId: overrideDeviceId,
+      previousDeviceId: overrideDeviceId,
+      eventMs,
+    });
   }
 
   if (!ua) {
@@ -42,6 +58,7 @@ export async function getDeviceId({
     projectId,
     currentDeviceId,
     previousDeviceId,
+    eventMs,
   });
 }
 
@@ -54,10 +71,12 @@ async function getInfoFromSession({
   projectId,
   currentDeviceId,
   previousDeviceId,
+  eventMs,
 }: {
   projectId: string;
   currentDeviceId: string;
   previousDeviceId: string;
+  eventMs: number;
 }): Promise<DeviceIdResult> {
   try {
     const multi = getRedisCache().multi();
@@ -101,6 +120,7 @@ async function getInfoFromSession({
     sessionId: getSessionId({
       projectId,
       deviceId: currentDeviceId,
+      eventMs,
       graceMs: 5 * 1000,
       windowMs: 1000 * 60 * 30,
     }),

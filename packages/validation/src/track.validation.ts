@@ -220,6 +220,19 @@ export const zTrackHandlerPayload = z.discriminatedUnion('type', [
     .meta({ title: 'Assign Group' }),
 ]) satisfies z.ZodType<ITrackHandlerPayload>;
 
+// Batch ingestion: envelope is validated strictly (array length only); per-event
+// validation runs inside the controller via `safeParse(zTrackHandlerPayload)` so
+// invalid items can be rejected per-index without failing the whole batch.
+//
+// Per-request caps: up to 2000 events and 10 MB uncompressed body.
+export const TRACK_BATCH_MAX_EVENTS = 2000;
+
+export const zTrackBatchBody = z.object({
+  events: z.array(z.unknown()).min(1).max(TRACK_BATCH_MAX_EVENTS),
+});
+
+export type ITrackBatchBody = z.infer<typeof zTrackBatchBody>;
+
 // Deprecated types for beta version of the SDKs
 
 export interface DeprecatedOpenpanelEventOptions {
