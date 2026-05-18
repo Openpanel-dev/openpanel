@@ -34,6 +34,7 @@ export async function postEvent(
     ip,
     ua,
     salts,
+    eventMs: new Date(timestamp).getTime(),
   });
 
   const uaInfo = parseUserAgent(ua, request.body?.properties);

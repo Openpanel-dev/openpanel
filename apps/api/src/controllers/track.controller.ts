@@ -215,6 +215,10 @@ async function buildEventContext(
     ua: shared.requestUa,
     salts: shared.salts,
     overrideDeviceId,
+    // Bucket the deterministic session_id by the event's own __timestamp,
+    // not the wall-clock moment the request arrived. Critical for
+    // /track/batch where one request can contain events spanning days.
+    eventMs: timestamp.timestamp,
   });
 
   return {

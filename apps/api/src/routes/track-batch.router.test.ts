@@ -260,6 +260,110 @@ describe('POST /track/batch — per-item validation', () => {
     expect(body.rejected[0].error).toMatch(/alias/i);
   });
 
+  it('populates sessionId for events with __deviceId override', async () => {
+    // When a client supplies __deviceId, the API still resolves a
+    // sessionId — first via the live-session Redis lookup, then a
+    // deterministic 30-min bucket keyed on the event's __timestamp.
+    // Both deviceId and sessionId reach the queue.
+    const res = await postBatch({
+      events: [
+        {
+          type: 'track' as const,
+          payload: {
+            name: 'probe_device_override',
+            properties: {
+              __deviceId: 'mobile-device-abc',
+              __path: '/home',
+            },
+          },
+        },
+      ],
+    });
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toEqual({ accepted: 1, rejected: [] });
+    expect(queueAdd).toHaveBeenCalledTimes(1);
+    const queuedJob = queueAdd.mock.calls[0]?.[0];
+    expect(queuedJob.data.deviceId).toBe('mobile-device-abc');
+    expect(queuedJob.data.sessionId).toBeTruthy();
+    expect(queuedJob.data.sessionId.length).toBeGreaterThan(0);
+  });
+
+  it('buckets historical events by __timestamp, not request time', async () => {
+    // Two events on the same device, 1h apart in __timestamp. They
+    // should land in different deterministic 30-min buckets and thus
+    // get different sessionIds, even though they arrive in the same
+    // request.
+    const baseMs = Date.UTC(2026, 4, 1, 10, 0, 0); // 10:00 UTC
+    const res = await postBatch({
+      events: [
+        {
+          type: 'track' as const,
+          payload: {
+            name: 'probe_bucket_a',
+            properties: {
+              __deviceId: 'shared-device',
+              __timestamp: new Date(baseMs).toISOString(),
+            },
+          },
+        },
+        {
+          type: 'track' as const,
+          payload: {
+            name: 'probe_bucket_b',
+            properties: {
+              __deviceId: 'shared-device',
+              __timestamp: new Date(baseMs + 60 * 60 * 1000).toISOString(),
+            },
+          },
+        },
+      ],
+    });
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toEqual({ accepted: 2, rejected: [] });
+    expect(queueAdd).toHaveBeenCalledTimes(2);
+    const sessionIdA = queueAdd.mock.calls[0]?.[0].data.sessionId;
+    const sessionIdB = queueAdd.mock.calls[1]?.[0].data.sessionId;
+    expect(sessionIdA).toBeTruthy();
+    expect(sessionIdB).toBeTruthy();
+    expect(sessionIdA).not.toBe(sessionIdB);
+  });
+
+  it('shares sessionId across events in the same 30-min bucket', async () => {
+    // Two events on the same device, 5 min apart inside the same
+    // wall-clock 30-min bucket. They should share a sessionId.
+    const baseMs = Date.UTC(2026, 4, 1, 10, 5, 0); // 10:05 UTC
+    const res = await postBatch({
+      events: [
+        {
+          type: 'track' as const,
+          payload: {
+            name: 'probe_same_bucket_a',
+            properties: {
+              __deviceId: 'same-bucket-device',
+              __timestamp: new Date(baseMs).toISOString(),
+            },
+          },
+        },
+        {
+          type: 'track' as const,
+          payload: {
+            name: 'probe_same_bucket_b',
+            properties: {
+              __deviceId: 'same-bucket-device',
+              __timestamp: new Date(baseMs + 5 * 60 * 1000).toISOString(),
+            },
+          },
+        },
+      ],
+    });
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toEqual({ accepted: 2, rejected: [] });
+    expect(queueAdd).toHaveBeenCalledTimes(2);
+    const sessionIdA = queueAdd.mock.calls[0]?.[0].data.sessionId;
+    const sessionIdB = queueAdd.mock.calls[1]?.[0].data.sessionId;
+    expect(sessionIdA).toBe(sessionIdB);
+  });
+
   it('returns 202 with accepted=0 when every event fails validation', async () => {
     const res = await postBatch({
       events: [
