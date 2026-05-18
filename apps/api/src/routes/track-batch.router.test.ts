@@ -10,9 +10,15 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ─── Module mocks (hoisted before imports) ────────────────────────────────────
+//
+// `vi.mock` is hoisted above all top-level statements, so any spies the factory
+// references must be created via `vi.hoisted(...)` (also hoisted) — otherwise
+// the factory runs first and hits a temporal-dead-zone ReferenceError.
 
-const queueAdd = vi.fn().mockResolvedValue(undefined);
-const upsertProfileMock = vi.fn().mockResolvedValue(undefined);
+const { queueAdd, upsertProfileMock } = vi.hoisted(() => ({
+  queueAdd: vi.fn().mockResolvedValue(undefined),
+  upsertProfileMock: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('@openpanel/db', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@openpanel/db')>();

@@ -26,10 +26,7 @@ import type {
   ITrackHandlerPayload,
   ITrackPayload,
 } from '@openpanel/validation';
-import {
-  TRACK_BATCH_MAX_EVENTS,
-  zTrackHandlerPayload,
-} from '@openpanel/validation';
+import { zTrackHandlerPayload } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr, pick } from 'ramda';
 import { HttpError } from '@/utils/errors';
@@ -460,11 +457,13 @@ async function dispatchEvent(
       await handleAssignGroup(body.payload, context);
       return;
     default: {
-      // Exhaustiveness guard — body is `never` here when all variants are
-      // handled. If a new type is added to `ITrackHandlerPayload`, this
-      // surfaces as a TS error rather than a silent runtime fallthrough.
-      const _exhaustive: never = body;
-      throw new HttpError('Invalid type', { status: 400 });
+      // Exhaustiveness check: `body` narrows to `never` when every variant
+      // of ITrackHandlerPayload['type'] is handled. Adding a new variant
+      // makes this assignment fail to compile.
+      const exhaustive: never = body;
+      throw new HttpError(`Unhandled event type: ${exhaustive}`, {
+        status: 400,
+      });
     }
   }
 }
@@ -523,17 +522,6 @@ export async function batchHandler(
   reply: FastifyReply,
 ) {
   const { events } = request.body;
-
-  // Envelope length is already enforced by zTrackBatchBody; the cap repeat
-  // here is defense-in-depth in case the schema is bypassed in the future.
-  if (events.length === 0 || events.length > TRACK_BATCH_MAX_EVENTS) {
-    return reply.status(400).send({
-      status: 400,
-      error: 'Bad Request',
-      message: `events must be 1..${TRACK_BATCH_MAX_EVENTS} items`,
-    });
-  }
-
   const shared = await buildSharedRequestContext(request);
 
   const results = await Promise.all(
