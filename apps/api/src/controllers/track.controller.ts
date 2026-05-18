@@ -519,6 +519,14 @@ type BatchItemResult =
  * Optimization: salts + request-IP geo are fetched once and shared across
  * all events. Events that override `__ip` still get their own geo lookup.
  */
+// Bounded concurrency for per-event processing inside a batch. Each event
+// hits Redis (session lookup + groupmq queue add) and may trigger a geo
+// lookup if it overrides `__ip`, so an unbounded `Promise.all` over 2000
+// events can spike Redis pool usage and the geo provider's rate budget on
+// smaller self-hosted instances. 50 keeps the pipeline saturated without
+// turning a single big batch into a thundering herd.
+const BATCH_CONCURRENCY = 50;
+
 export async function batchHandler(
   request: FastifyRequest<{
     Body: ITrackBatchBody;
@@ -528,44 +536,59 @@ export async function batchHandler(
   const { events } = request.body;
   const shared = await buildSharedRequestContext(request);
 
-  const results = await Promise.all(
-    events.map<Promise<BatchItemResult>>(async (raw, index) => {
-      const parsed = zTrackHandlerPayload.safeParse(raw);
-      if (!parsed.success) {
-        const issue = parsed.error.issues[0];
-        const path = issue?.path?.join('.') ?? '';
-        const error = path ? `${path}: ${issue?.message}` : issue?.message ?? 'invalid payload';
-        return { index, status: 'rejected', reason: 'validation', error };
-      }
+  const processOne = async (
+    raw: unknown,
+    index: number,
+  ): Promise<BatchItemResult> => {
+    const parsed = zTrackHandlerPayload.safeParse(raw);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const path = issue?.path?.join('.') ?? '';
+      const error = path
+        ? `${path}: ${issue?.message}`
+        : issue?.message ?? 'invalid payload';
+      return { index, status: 'rejected', reason: 'validation', error };
+    }
 
-      try {
-        const context = await buildEventContext(
-          shared,
-          request.timestamp,
-          parsed.data,
+    try {
+      const context = await buildEventContext(
+        shared,
+        request.timestamp,
+        parsed.data,
+      );
+      await dispatchEvent(parsed.data, context);
+      return { index, status: 'accepted' };
+    } catch (err) {
+      // HttpError with 4xx → caller's fault (validation-style: alias,
+      // unknown type, replay without session). Anything else → ours.
+      const isClientError =
+        err instanceof HttpError && err.status >= 400 && err.status < 500;
+      const reason: 'validation' | 'internal' = isClientError
+        ? 'validation'
+        : 'internal';
+      const message = err instanceof Error ? err.message : 'unknown error';
+      if (!isClientError) {
+        request.log.error(
+          { err, index },
+          'Batch event dispatch failed',
         );
-        await dispatchEvent(parsed.data, context);
-        return { index, status: 'accepted' };
-      } catch (err) {
-        // HttpError with 4xx → caller's fault (validation-style: alias,
-        // unknown type, replay without session). Anything else → ours.
-        const isClientError =
-          err instanceof HttpError && err.status >= 400 && err.status < 500;
-        const reason: 'validation' | 'internal' = isClientError
-          ? 'validation'
-          : 'internal';
-        const message =
-          err instanceof Error ? err.message : 'unknown error';
-        if (!isClientError) {
-          request.log.error(
-            { err, index },
-            'Batch event dispatch failed',
-          );
-        }
-        return { index, status: 'rejected', reason, error: message };
       }
-    }),
-  );
+      return { index, status: 'rejected', reason, error: message };
+    }
+  };
+
+  // Process in chunks of BATCH_CONCURRENCY. We keep results aligned with
+  // input indices via the `index` field on each BatchItemResult.
+  const results: BatchItemResult[] = new Array(events.length);
+  for (let start = 0; start < events.length; start += BATCH_CONCURRENCY) {
+    const end = Math.min(start + BATCH_CONCURRENCY, events.length);
+    const chunk = await Promise.all(
+      events.slice(start, end).map((raw, i) => processOne(raw, start + i)),
+    );
+    for (const r of chunk) {
+      results[r.index] = r;
+    }
+  }
 
   const accepted = results.filter((r) => r.status === 'accepted').length;
   const rejected = results.filter(
