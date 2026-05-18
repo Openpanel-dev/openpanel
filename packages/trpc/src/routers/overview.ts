@@ -42,6 +42,7 @@ const cacher = cacheMiddleware((input, opts) => {
     case '30min':
     case 'today':
     case 'lastHour':
+    case 'last24h':
       return 1;
     default:
       return 1;

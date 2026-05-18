@@ -138,6 +138,12 @@ export function TimeWindowPicker({
               {timeWindows.lastHour.shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange(timeWindows.last24h.key)}>
+            {timeWindows.last24h.label}
+            <DropdownMenuShortcut>
+              {timeWindows.last24h.shortcut}
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows.today.key)}>
             {timeWindows.today.label}
             <DropdownMenuShortcut>
@@ -165,6 +171,12 @@ export function TimeWindowPicker({
             {timeWindows['30d'].label}
             <DropdownMenuShortcut>
               {timeWindows['30d'].shortcut}
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange(timeWindows['3m'].key)}>
+            {timeWindows['3m'].label}
+            <DropdownMenuShortcut>
+              {timeWindows['3m'].shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows['6m'].key)}>

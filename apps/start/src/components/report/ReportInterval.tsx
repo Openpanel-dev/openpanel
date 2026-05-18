@@ -76,13 +76,18 @@ export function ReportInterval({
       disabled:
         range === 'today' ||
         range === 'lastHour' ||
+        range === 'last24h' ||
         range === '30min' ||
         range === '7d',
     },
     {
       value: 'month',
       label: 'Month',
-      disabled: range === 'today' || range === 'lastHour' || range === '30min',
+      disabled:
+        range === 'today' ||
+        range === 'lastHour' ||
+        range === 'last24h' ||
+        range === '30min',
     },
   ];
 

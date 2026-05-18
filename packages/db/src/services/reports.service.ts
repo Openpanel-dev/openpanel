@@ -1,8 +1,4 @@
-import {
-  alphabetIds,
-  deprecated_timeRanges,
-  lineTypes,
-} from '@openpanel/constants';
+import { alphabetIds, lineTypes } from '@openpanel/constants';
 import type {
   IChartBreakdown,
   IChartEventFilter,
@@ -82,10 +78,7 @@ export function transformReport(
     series:
       (report.events as IChartEventItem[]).map(transformReportEventItem) ?? [],
     breakdowns: report.breakdowns as IChartBreakdown[],
-    range:
-      report.range in deprecated_timeRanges
-        ? '30d'
-        : (report.range as IChartRange),
+    range: report.range as IChartRange,
     previous: report.previous ?? false,
     formula: report.formula ?? undefined,
     metric: report.metric ?? 'sum',
