@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
   PlusIcon,
   RotateCcw,
+  SearchIcon,
   ShareIcon,
   TrashIcon,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ import {
   ReportItem,
   ReportItemSkeleton,
 } from '@/components/report/report-item';
+import { Input } from '@/components/ui/input';
 import { useDashboardPageContext } from '@/hooks/use-page-context-helpers';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
@@ -124,6 +126,13 @@ function Component() {
   const dashboard = dashboardQuery.data;
   const [isGridReady, setIsGridReady] = useState(false);
   const [enableTransitions, setEnableTransitions] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const filteredReports = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return reports;
+    return reports.filter((r) => r.name?.toLowerCase().includes(q));
+  }, [reports, search]);
 
   // Wait for initial render to ensure grid has proper dimensions
   useEffect(() => {
@@ -181,7 +190,7 @@ function Component() {
   );
 
   // Convert reports to grid layout format for all breakpoints
-  const layouts = useReportLayouts(reports);
+  const layouts = useReportLayouts(filteredReports);
 
   const dashboardPrimer = useMemo(
     () => ({
@@ -280,6 +289,18 @@ function Component() {
         className="mb-4"
         actions={
           <>
+            {reports.length > 0 && (
+              <div className="relative">
+                <SearchIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="search"
+                  placeholder="Search reports..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-8 w-[180px] sm:w-[220px]"
+                />
+              </div>
+            )}
             <OverviewRange />
             <OverviewInterval />
             <LinkButton
@@ -361,6 +382,10 @@ function Component() {
           <ReportItemSkeleton />
           <ReportItemSkeleton />
         </div>
+      ) : filteredReports.length === 0 ? (
+        <FullPageEmptyState title="No matching reports" icon={SearchIcon}>
+          <p>No reports match "{search}". Try a different search.</p>
+        </FullPageEmptyState>
       ) : (
         <GrafanaGrid
           transitions={enableTransitions}
@@ -368,10 +393,10 @@ function Component() {
           onLayoutChange={handleLayoutChange}
           onDragStop={handleDragStop}
           onResizeStop={handleResizeStop}
-          isDraggable={true}
-          isResizable={true}
+          isDraggable={!search}
+          isResizable={!search}
         >
-          {reports.map((report) => (
+          {filteredReports.map((report) => (
             <div key={report.id}>
               <ReportItem
                 report={report}

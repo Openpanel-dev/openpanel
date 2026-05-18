@@ -332,6 +332,7 @@ export async function getEvents(
         firstName: '',
         lastName: '',
         createdAt: new Date(),
+        lastSeenAt: new Date(),
         projectId,
         isExternal: false,
         properties: {},
@@ -421,11 +422,17 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
       },
     };
 
-    if (
-      profile.isExternal ||
-      (profile.isExternal === false && payload.name === 'session_start')
-    ) {
-      promises.push(upsertProfile(profile, true));
+    // Only upsert the profile on session boundaries.
+    // - session_start covers fresh activity (drives `last_seen_at` via
+    //   `created_at`, our ReplacingMergeTree version column).
+    // - session_end is synthesized server-side by the worker, so we get a
+    //   reliable end-of-session bump even when the SDK doesn't fire it.
+    // Per-event upserts for identified users are skipped — `op.identify()` /
+    // `op.setProfile()` go through the controller path directly and stay fresh.
+    // `isFromEvent=false` so the buffer's cache-shortcut doesn't suppress the
+    // write — we want every session boundary to bump `last_seen_at`.
+    if (payload.name === 'session_start' || payload.name === 'session_end') {
+      promises.push(upsertProfile(profile));
     }
   }
 

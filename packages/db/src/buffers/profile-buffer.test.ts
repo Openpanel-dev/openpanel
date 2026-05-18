@@ -19,6 +19,7 @@ import { chQuery } from '../clickhouse/client';
 const redis = getRedisCache();
 
 function makeProfile(overrides: Partial<IClickhouseProfile>): IClickhouseProfile {
+  const now = new Date().toISOString();
   return {
     id: 'profile-1',
     project_id: 'project-1',
@@ -28,7 +29,8 @@ function makeProfile(overrides: Partial<IClickhouseProfile>): IClickhouseProfile
     avatar: '',
     properties: {},
     is_external: true,
-    created_at: new Date().toISOString(),
+    created_at: now,
+    last_seen_at: now,
     groups: [],
     ...overrides,
   };

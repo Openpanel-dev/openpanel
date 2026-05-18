@@ -2,19 +2,101 @@ import { RESERVED_EVENT_NAMES } from '@openpanel/constants';
 import { z } from 'zod';
 import { isBlockedEventName } from './event-blocklist';
 
+// ----- Hand-written types (source of truth) -----
+//
+// These interfaces are duplicated in code that ships in our SDK type
+// declarations. We hand-write them (instead of using `z.infer<…>`) so:
+//   1. Generated `.d.ts` files for the SDKs are readable plain TypeScript
+//      with no `import type { ITrackPayload } from '@openpanel/validation'`
+//      lines (the package isn't published).
+//   2. The interfaces stay clean — no zod internals leaking through.
+// Each schema below has `satisfies z.ZodType<…>` attached so a drift
+// between the interface and the schema fails to compile.
+
+export type IProfileId = string | number;
+
+export interface IGroupPayload {
+  id: string;
+  type: string;
+  name: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface IAssignGroupPayload {
+  groupIds: string[];
+  profileId?: IProfileId;
+}
+
+export interface ITrackPayload {
+  name: string;
+  properties?: Record<string, unknown>;
+  profileId?: IProfileId;
+  groups?: string[];
+}
+
+export interface IIdentifyPayload {
+  profileId: IProfileId;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  avatar?: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface IIncrementPayload {
+  profileId: IProfileId;
+  property: string;
+  value?: number;
+}
+
+export interface IDecrementPayload {
+  profileId: IProfileId;
+  property: string;
+  value?: number;
+}
+
+export interface IAliasPayload {
+  profileId: IProfileId;
+  alias: string;
+}
+
+export interface IReplayPayload {
+  chunk_index: number;
+  events_count: number;
+  is_full_snapshot: boolean;
+  started_at: string;
+  ended_at: string;
+  payload: string;
+}
+
+export type ITrackHandlerPayload =
+  | { type: 'track'; payload: ITrackPayload }
+  | { type: 'identify'; payload: IIdentifyPayload }
+  | { type: 'increment'; payload: IIncrementPayload }
+  | { type: 'decrement'; payload: IDecrementPayload }
+  | { type: 'alias'; payload: IAliasPayload }
+  | { type: 'replay'; payload: IReplayPayload }
+  | { type: 'group'; payload: IGroupPayload }
+  | { type: 'assign_group'; payload: IAssignGroupPayload };
+
+// ----- Schemas (each `satisfies` its hand-written interface) -----
+
+export const zProfileId = z.union([
+  z.string().min(1),
+  z.number(),
+]) satisfies z.ZodType<IProfileId>;
+
 export const zGroupPayload = z.object({
   id: z.string().min(1),
   type: z.string().min(1),
   name: z.string().min(1),
   properties: z.record(z.string(), z.unknown()).optional(),
-});
-
-export const zProfileId = z.union([z.string().min(1), z.number()]);
+}) satisfies z.ZodType<IGroupPayload>;
 
 export const zAssignGroupPayload = z.object({
   groupIds: z.array(z.string().min(1)),
   profileId: zProfileId.optional(),
-});
+}) satisfies z.ZodType<IAssignGroupPayload>;
 
 export const zTrackPayload = z
   .object({
@@ -50,7 +132,7 @@ export const zTrackPayload = z
       message: '__revenue must be an integer (no floats or strings)',
       path: ['properties', '__revenue'],
     }
-  );
+  ) satisfies z.ZodType<ITrackPayload>;
 
 export const zIdentifyPayload = z.object({
   profileId: zProfileId,
@@ -59,24 +141,24 @@ export const zIdentifyPayload = z.object({
   email: z.string().email().optional(),
   avatar: z.string().url().optional(),
   properties: z.record(z.string(), z.unknown()).optional(),
-});
+}) satisfies z.ZodType<IIdentifyPayload>;
 
 export const zIncrementPayload = z.object({
   profileId: zProfileId,
   property: z.string().min(1),
   value: z.number().positive().optional(),
-});
+}) satisfies z.ZodType<IIncrementPayload>;
 
 export const zDecrementPayload = z.object({
   profileId: zProfileId,
   property: z.string().min(1),
   value: z.number().positive().optional(),
-});
+}) satisfies z.ZodType<IDecrementPayload>;
 
 export const zAliasPayload = z.object({
   profileId: zProfileId,
   alias: z.string().min(1),
-});
+}) satisfies z.ZodType<IAliasPayload>;
 
 export const zReplayPayload = z.object({
   chunk_index: z.number().int().min(0).max(65_535),
@@ -85,7 +167,7 @@ export const zReplayPayload = z.object({
   started_at: z.string().datetime(),
   ended_at: z.string().datetime(),
   payload: z.string().max(1_048_576 * 2), // 2MB max
-});
+}) satisfies z.ZodType<IReplayPayload>;
 
 export const zTrackHandlerPayload = z.discriminatedUnion('type', [
   z
@@ -136,17 +218,7 @@ export const zTrackHandlerPayload = z.discriminatedUnion('type', [
       payload: zAssignGroupPayload,
     })
     .meta({ title: 'Assign Group' }),
-]);
-
-export type ITrackPayload = z.infer<typeof zTrackPayload>;
-export type IIdentifyPayload = z.infer<typeof zIdentifyPayload>;
-export type IIncrementPayload = z.infer<typeof zIncrementPayload>;
-export type IDecrementPayload = z.infer<typeof zDecrementPayload>;
-export type IAliasPayload = z.infer<typeof zAliasPayload>;
-export type IReplayPayload = z.infer<typeof zReplayPayload>;
-export type IGroupPayload = z.infer<typeof zGroupPayload>;
-export type IAssignGroupPayload = z.infer<typeof zAssignGroupPayload>;
-export type ITrackHandlerPayload = z.infer<typeof zTrackHandlerPayload>;
+]) satisfies z.ZodType<ITrackHandlerPayload>;
 
 // Deprecated types for beta version of the SDKs
 

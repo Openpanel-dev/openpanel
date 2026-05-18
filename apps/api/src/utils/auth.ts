@@ -1,5 +1,3 @@
-import type { FastifyRequest, RawRequestDefaultExpression } from 'fastify';
-
 import { verifyPassword } from '@openpanel/common/server';
 import type { IServiceClientWithProject } from '@openpanel/db';
 import { ClientType, getClientByIdCached } from '@openpanel/db';
@@ -10,6 +8,7 @@ import type {
   IProjectFilterProfileId,
   ITrackHandlerPayload,
 } from '@openpanel/validation';
+import type { FastifyRequest, RawRequestDefaultExpression } from 'fastify';
 import { path } from 'ramda';
 
 const cleanDomain = (domain: string) =>
@@ -31,7 +30,7 @@ export class SdkAuthError extends Error {
       clientId?: string;
       clientSecret?: string;
       origin?: string;
-    },
+    }
   ) {
     super(message);
     this.name = 'SdkAuthError';
@@ -43,15 +42,21 @@ export class SdkAuthError extends Error {
 export async function validateSdkRequest(
   req: FastifyRequest<{
     Body: ITrackHandlerPayload | DeprecatedPostEventPayload;
-  }>,
+  }>
 ): Promise<IServiceClientWithProject> {
   const { headers, clientIp } = req;
   const clientIdNew = headers['openpanel-client-id'] as string;
   const clientIdOld = headers['mixan-client-id'] as string;
   const clientSecretNew = headers['openpanel-client-secret'] as string;
   const clientSecretOld = headers['mixan-client-secret'] as string;
-  const clientId = clientIdNew || clientIdOld;
-  const clientSecret = clientSecretNew || clientSecretOld;
+  const clientIdFromBody = path<string | undefined>(['clientId'], req.body);
+  const clientSecretFromBody = path<string | undefined>(
+    ['clientSecret'],
+    req.body
+  );
+  const clientId = clientIdNew || clientIdOld || clientIdFromBody;
+  const clientSecret =
+    clientSecretNew || clientSecretOld || clientSecretFromBody;
   const origin = headers.origin;
 
   const createError = (message: string) =>
@@ -70,7 +75,7 @@ export async function validateSdkRequest(
 
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
-      clientId,
+      clientId
     )
   ) {
     throw createError('Ingestion: Client ID must be a valid UUIDv4');
@@ -88,7 +93,7 @@ export async function validateSdkRequest(
 
   // Filter out blocked IPs
   const ipFilter = client.project.filters.filter(
-    (filter): filter is IProjectFilterIp => filter.type === 'ip',
+    (filter): filter is IProjectFilterIp => filter.type === 'ip'
   );
   if (ipFilter.some((filter) => filter.ip === clientIp)) {
     throw createError('Ingestion: IP address is blocked by project filter');
@@ -96,7 +101,7 @@ export async function validateSdkRequest(
 
   // Filter out blocked profile ids
   const profileFilter = client.project.filters.filter(
-    (filter): filter is IProjectFilterProfileId => filter.type === 'profile_id',
+    (filter): filter is IProjectFilterProfileId => filter.type === 'profile_id'
   );
   const profileId =
     path<string | undefined>(['payload', 'profileId'], req.body) || // Track handler
@@ -113,12 +118,11 @@ export async function validateSdkRequest(
   // Only allow revenue tracking if it was sent with a client secret
   // or if the project has allowUnsafeRevenueTracking enabled
   if (
-    !client.project.allowUnsafeRevenueTracking &&
-    !clientSecret &&
+    !(client.project.allowUnsafeRevenueTracking || clientSecret) &&
     typeof revenue !== 'undefined'
   ) {
     throw createError(
-      'Ingestion: Revenue tracking is not allowed without a client secret',
+      'Ingestion: Revenue tracking is not allowed without a client secret'
     );
   }
 
@@ -132,7 +136,7 @@ export async function validateSdkRequest(
       // support wildcard domains `*.foo.com`
       if (cleanedDomain.includes('*')) {
         const regex = new RegExp(
-          `${cleanedDomain.replaceAll('.', '\\.').replaceAll('*', '.+?')}`,
+          `${cleanedDomain.replaceAll('.', '\\.').replaceAll('*', '.+?')}`
         );
 
         return regex.test(origin || '');
@@ -157,7 +161,7 @@ export async function validateSdkRequest(
       `client:auth:${clientId}:${Buffer.from(clientSecret).toString('base64')}`,
       60 * 5,
       async () => await verifyPassword(clientSecret, client.secret!),
-      true,
+      true
     );
     if (isVerified) {
       return client;
@@ -168,14 +172,14 @@ export async function validateSdkRequest(
 }
 
 export async function validateExportRequest(
-  headers: RawRequestDefaultExpression['headers'],
+  headers: RawRequestDefaultExpression['headers']
 ): Promise<IServiceClientWithProject> {
   const clientId = headers['openpanel-client-id'] as string;
   const clientSecret = (headers['openpanel-client-secret'] as string) || '';
 
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
-      clientId,
+      clientId
     )
   ) {
     throw new Error('Export: Client ID must be a valid UUIDv4');
@@ -203,14 +207,14 @@ export async function validateExportRequest(
 }
 
 export async function validateImportRequest(
-  headers: RawRequestDefaultExpression['headers'],
+  headers: RawRequestDefaultExpression['headers']
 ): Promise<IServiceClientWithProject> {
   const clientId = headers['openpanel-client-id'] as string;
   const clientSecret = (headers['openpanel-client-secret'] as string) || '';
 
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
-      clientId,
+      clientId
     )
   ) {
     throw new Error('Import: Client ID must be a valid UUIDv4');
@@ -238,14 +242,14 @@ export async function validateImportRequest(
 }
 
 export async function validateManageRequest(
-  headers: RawRequestDefaultExpression['headers'],
+  headers: RawRequestDefaultExpression['headers']
 ): Promise<IServiceClientWithProject> {
   const clientId = headers['openpanel-client-id'] as string;
   const clientSecret = (headers['openpanel-client-secret'] as string) || '';
 
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
-      clientId,
+      clientId
     )
   ) {
     throw new Error('Manage: Client ID must be a valid UUIDv4');
@@ -263,7 +267,7 @@ export async function validateManageRequest(
 
   if (client.type !== ClientType.root) {
     throw new Error(
-      'Manage: Only root clients are allowed to manage resources',
+      'Manage: Only root clients are allowed to manage resources'
     );
   }
 

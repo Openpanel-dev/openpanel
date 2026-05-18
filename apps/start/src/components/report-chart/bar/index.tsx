@@ -21,7 +21,6 @@ export function ReportBarChart() {
       },
       {
         placeholderData: keepPreviousData,
-        staleTime: 1000 * 60 * 1,
         enabled: !isLazyLoading,
       },
     ),

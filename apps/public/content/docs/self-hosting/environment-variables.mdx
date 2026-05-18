@@ -269,6 +269,10 @@ Available models:
 - **OpenAI** — `GPT-4.1`, `GPT-4.1 mini`, `GPT-5.4 mini`
 - **Anthropic** — `Claude Haiku 4.5`, `Claude Sonnet 4.6`, `Claude Opus 4.6`
 
+<Callout type="info">
+The AI assistant is optional. Without `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` set, every other OpenPanel feature continues to work normally.
+</Callout>
+
 ### OPENAI_API_KEY
 
 **Type**: `string`  
@@ -280,6 +284,45 @@ OpenAI API key. When set, the OpenAI models appear in the chat model picker.
 **Example**:
 ```bash
 OPENAI_API_KEY=sk-your-openai-api-key-here
+```
+
+### OPENAI_BASE_URL
+
+**Type**: `string`  
+**Required**: No  
+**Default**: OpenAI default API base URL
+
+Override the OpenAI API base URL. Useful for proxies, gateways, Azure-compatible endpoints, or self-hosted OpenAI-compatible providers.
+
+**Example**:
+```bash
+OPENAI_BASE_URL=https://your-openai-compatible-endpoint.example.com/v1
+```
+
+### OPENAI_PROJECT
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Optional OpenAI project identifier to send with requests.
+
+**Example**:
+```bash
+OPENAI_PROJECT=proj_1234567890
+```
+
+### OPENAI_ORGANIZATION
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Optional OpenAI organization identifier to send with requests.
+
+**Example**:
+```bash
+OPENAI_ORGANIZATION=org_1234567890
 ```
 
 ### ANTHROPIC_API_KEY
@@ -295,9 +338,44 @@ Anthropic API key. When set, the Claude models appear in the chat model picker.
 ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
 ```
 
-<Callout type="info">
-The AI assistant is optional. Without `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` set, every other OpenPanel feature continues to work normally.
-</Callout>
+### ANTHROPIC_BASE_URL
+
+**Type**: `string`  
+**Required**: No  
+**Default**: Anthropic default API base URL
+
+Override the Anthropic API base URL. Useful for proxies, gateways, or Anthropic-compatible endpoints.
+
+**Example**:
+```bash
+ANTHROPIC_BASE_URL=https://your-anthropic-endpoint.example.com
+```
+
+### ANTHROPIC_TOKEN
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Optional auth token sent to the Anthropic provider in addition to the API key. Use this only if your Anthropic-compatible gateway requires it.
+
+**Example**:
+```bash
+ANTHROPIC_TOKEN=your-auth-token
+```
+
+### ANTHROPIC_VERSION
+
+**Type**: `string`  
+**Required**: No  
+**Default**: Provider default
+
+Override the Anthropic API version header sent with requests.
+
+**Example**:
+```bash
+ANTHROPIC_VERSION=2023-06-01
+```
 
 ## Email
 
@@ -521,12 +599,16 @@ DISABLE_WORKERS=true
 **Required**: No  
 **Default**: All queues enabled
 
-Comma-separated list of queue names to enable. Available queues: `events`, `sessions`, `cron`, `notification`, `misc`, `import`.
+Comma-separated list of queue names to enable. Available queues: `events`, `events_kafka`, `sessions`, `cron`, `notification`, `misc`, `import`.
 
 **Example**:
 ```bash
 ENABLED_QUEUES=events,sessions,cron
 ```
+
+<Callout>
+Enable `events_kafka` to run the Kafka-based events consumer alongside (or instead of) the default `events` queue. See the [Event Streaming (Kafka)](#event-streaming-kafka) section for the full configuration. A common high-throughput layout is to run one worker pool with `ENABLED_QUEUES=events_kafka` and another pool with everything else.
+</Callout>
 
 ### EVENT_JOB_CONCURRENCY
 
@@ -630,6 +712,165 @@ AUTO_BATCH_SIZE=100
 <Callout type="warn">
 ⚠️ **Experimental**: This feature is experimental and not used in production. Do not use unless you have a good understanding of the implications and specific performance requirements.
 </Callout>
+
+## Event Streaming (Kafka)
+
+OpenPanel can optionally ingest events through a Kafka-compatible broker (Kafka itself, Redpanda, etc.) instead of (or alongside) the default Redis-backed events queue. This is opt-in per project and useful at high throughput, where many consumer instances can process partitions in parallel.
+
+Routing is decided per event at produce time: if the project's ID matches `KAFKA_PROJECT_IDS` and `KAFKA_BROKERS` is set, the event is produced to the Kafka topic; otherwise it stays on the default Redis-backed `events` queue. Set `ENABLED_QUEUES=events_kafka` on the worker(s) that should consume from Kafka.
+
+<Callout>
+The client speaks the Kafka wire protocol via [kafkajs](https://kafka.js.org/), so any Kafka-compatible broker works. The bundled `docker-compose.yml` uses [Redpanda](https://redpanda.com/) as a lightweight, single-binary option, but you can point `KAFKA_BROKERS` at any Kafka cluster.
+</Callout>
+
+### KAFKA_BROKERS
+
+**Type**: `string` (comma-separated)
+**Required**: Yes (to enable the Kafka path)
+**Default**: None
+
+Comma-separated list of Kafka broker addresses. When unset, the Kafka producer/consumer is disabled and all events fall back to the default Redis-backed queue.
+
+**Example**:
+```bash
+KAFKA_BROKERS=redpanda:9092
+# Multiple brokers
+KAFKA_BROKERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
+```
+
+### KAFKA_PROJECT_IDS
+
+**Type**: `string` (comma-separated or `*`)
+**Required**: No
+**Default**: None (no projects route to Kafka)
+
+Allow-list of project IDs whose events should be produced to Kafka. Use `*` to route every project's events through Kafka. If unset, no project uses Kafka even when `KAFKA_BROKERS` is configured.
+
+**Example**:
+```bash
+# Route every project through Kafka
+KAFKA_PROJECT_IDS=*
+
+# Route only specific projects
+KAFKA_PROJECT_IDS=proj_abc123,proj_def456
+```
+
+### KAFKA_EVENTS_TOPIC
+
+**Type**: `string`
+**Required**: No
+**Default**: `events`
+
+Name of the Kafka topic used for incoming events.
+
+**Example**:
+```bash
+KAFKA_EVENTS_TOPIC=openpanel-events
+```
+
+### KAFKA_CONSUMER_GROUP
+
+**Type**: `string`
+**Required**: No
+**Default**: `openpanel-events`
+
+Kafka consumer group ID used by the worker. All worker replicas with the same group ID share partition assignments cooperatively.
+
+**Example**:
+```bash
+KAFKA_CONSUMER_GROUP=openpanel-events
+```
+
+### KAFKA_CLIENT_ID
+
+**Type**: `string`
+**Required**: No
+**Default**: `openpanel`
+
+Kafka client ID used by both producer and consumer. Shows up in broker logs and metrics.
+
+**Example**:
+```bash
+KAFKA_CLIENT_ID=openpanel-prod
+```
+
+### KAFKA_PARTITIONS_CONCURRENT
+
+**Type**: `number`
+**Required**: No
+**Default**: `8`
+
+Maximum number of partitions a single consumer instance processes concurrently. Has no effect beyond the number of partitions actually assigned to this consumer.
+
+**Example**:
+```bash
+KAFKA_PARTITIONS_CONCURRENT=12
+```
+
+### KAFKA_MIN_MESSAGES
+
+**Type**: `number`
+**Required**: No
+**Default**: `1`
+
+Minimum number of messages the broker should accumulate before responding to a fetch request (each message is assumed to be ~1 KiB internally). Higher values create larger batches at the cost of slightly higher latency.
+
+**Example**:
+```bash
+KAFKA_MIN_MESSAGES=16
+```
+
+### KAFKA_MAX_WAIT_MS
+
+**Type**: `number`
+**Required**: No
+**Default**: `500`
+
+Maximum time in milliseconds the broker waits to fulfil `KAFKA_MIN_MESSAGES` before returning a fetch response. Caps end-to-end latency under low traffic.
+
+**Example**:
+```bash
+KAFKA_MAX_WAIT_MS=200
+```
+
+### KAFKA_MAX_MESSAGES_PER_PARTITION
+
+**Type**: `number`
+**Required**: No
+**Default**: `256`
+
+Maximum number of messages returned per partition per fetch request (each message is assumed to be ~1 KiB internally). Caps in-memory batch size during backlog recovery and bounds the worst-case time the consumer spends on a single batch.
+
+**Example**:
+```bash
+KAFKA_MAX_MESSAGES_PER_PARTITION=512
+```
+
+### KAFKA_SESSION_TIMEOUT_MS
+
+**Type**: `number`
+**Required**: No
+**Default**: `30000`
+
+Consumer group session timeout in milliseconds. The broker considers a consumer dead and rebalances its partitions if it does not heartbeat within this window.
+
+**Example**:
+```bash
+KAFKA_SESSION_TIMEOUT_MS=45000
+```
+
+### KAFKA_HEARTBEAT_INTERVAL_MS
+
+**Type**: `number`
+**Required**: No
+**Default**: `3000`
+
+How often, in milliseconds, the consumer sends background heartbeats to the broker. Should be well below `KAFKA_SESSION_TIMEOUT_MS`.
+
+**Example**:
+```bash
+KAFKA_HEARTBEAT_INTERVAL_MS=3000
+```
 
 ## Buffers
 

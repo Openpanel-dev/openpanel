@@ -1,27 +1,30 @@
-/** biome-ignore-all lint/style/noExportedImports: lazy */
-
+// Deep-imported on purpose: rollup-plugin-dts (used by tsup) only inlines
+// types when the import resolves to a single source file. Importing from
+// the package root ('@openpanel/validation') leaves an external reference
+// in dist/index.d.ts, and `@openpanel/validation` is not published so
+// consumers would see a broken import. We tested tsdown too; it hits the
+// same limitation via rolldown-plugin-dts (Oxc/tsc both fail to follow
+// `export *` chains across source-only workspace packages).
 import type {
-  IAliasPayload as AliasPayload,
-  IAssignGroupPayload as AssignGroupPayload,
-  IDecrementPayload as DecrementPayload,
-  IGroupPayload as GroupPayload,
-  IIdentifyPayload as IdentifyPayload,
-  IIncrementPayload as IncrementPayload,
-  ITrackHandlerPayload as TrackHandlerPayload,
-  ITrackPayload as TrackPayload,
-} from '@openpanel/validation';
+  IAliasPayload,
+  IAssignGroupPayload,
+  IDecrementPayload,
+  IGroupPayload,
+  IIdentifyPayload,
+  IIncrementPayload,
+  ITrackHandlerPayload,
+  ITrackPayload,
+} from '@openpanel/validation/src/track.validation';
 import { Api } from './api';
 
-export type {
-  AliasPayload,
-  AssignGroupPayload,
-  DecrementPayload,
-  GroupPayload,
-  IdentifyPayload,
-  IncrementPayload,
-  TrackHandlerPayload,
-  TrackPayload,
-};
+export type AliasPayload = IAliasPayload;
+export type AssignGroupPayload = IAssignGroupPayload;
+export type DecrementPayload = IDecrementPayload;
+export type GroupPayload = IGroupPayload;
+export type IdentifyPayload = IIdentifyPayload;
+export type IncrementPayload = IIncrementPayload;
+export type TrackHandlerPayload = ITrackHandlerPayload;
+export type TrackPayload = ITrackPayload;
 
 export interface TrackProperties {
   [key: string]: unknown;

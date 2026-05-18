@@ -1,18 +1,17 @@
 import { BanIcon, InfoIcon } from 'lucide-react';
 import { forwardRef } from 'react';
-
-import { Input } from '../ui/input';
 import type { InputProps } from '../ui/input';
+import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Tooltiper } from '../ui/tooltip';
 
-type WithLabel = {
+interface WithLabel {
   children: React.ReactNode;
   label: string;
   error?: string | undefined;
   info?: React.ReactNode;
   className?: string;
-};
+}
 type InputWithLabelProps = InputProps & Omit<WithLabel, 'children'>;
 
 export const WithLabel = ({
@@ -38,12 +37,12 @@ export const WithLabel = ({
         </Label>
         {error && (
           <Tooltiper
+            align="end"
             asChild
             content={error}
             tooltipClassName="max-w-80 leading-normal"
-            align="end"
           >
-            <div className="flex items-center gap-1 leading-none text-destructive">
+            <div className="flex items-center gap-1 text-destructive leading-none">
               Issues
               <BanIcon size={14} />
             </div>
@@ -59,10 +58,10 @@ export const InputWithLabel = forwardRef<HTMLInputElement, InputWithLabelProps>(
   (props, ref) => {
     return (
       <WithLabel {...props}>
-        <Input ref={ref} id={props.label} {...props} />
+        <Input id={props.label} ref={ref} {...props} />
       </WithLabel>
     );
-  },
+  }
 );
 
 InputWithLabel.displayName = 'InputWithLabel';

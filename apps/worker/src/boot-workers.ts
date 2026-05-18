@@ -21,6 +21,10 @@ import { Worker as GroupWorker } from 'groupmq';
 import { cohortComputeJob } from './jobs/cohort.compute';
 import { cronJob } from './jobs/cron';
 import { incomingEvent } from './jobs/events.incoming-event';
+import {
+  type KafkaConsumerHandle,
+  startKafkaEventsConsumer,
+} from './jobs/events.kafka-consumer';
 import { gscJob } from './jobs/gsc';
 import { importJob } from './jobs/import';
 import { insightsProjectJob } from './jobs/insights';
@@ -29,11 +33,11 @@ import { notificationJob } from './jobs/notification';
 import { sessionsJob } from './jobs/sessions';
 import { eventsGroupJobDuration } from './metrics';
 import { setShuttingDown } from './utils/graceful-shutdown';
+import { logger } from './utils/logger';
 import {
   enableEventsHeartbeat,
   markEventsActivity,
 } from './utils/worker-heartbeat';
-import { logger } from './utils/logger';
 
 const workerOptions: WorkerOptions = {
   connection: getRedisQueue(),
@@ -56,10 +60,11 @@ function getEnabledQueues(): QueueName[] {
   if (!enabledQueuesEnv) {
     logger.info(
       { totalEventShards: EVENTS_GROUP_QUEUES_SHARDS },
-      'No ENABLED_QUEUES specified, starting all queues',
+      'No ENABLED_QUEUES specified, starting all queues'
     );
     return [
       'events',
+      'events_kafka',
       'sessions',
       'cron',
       'notification',
@@ -78,7 +83,7 @@ function getEnabledQueues(): QueueName[] {
 
   logger.info(
     { queues, totalEventShards: EVENTS_GROUP_QUEUES_SHARDS },
-    'Starting queues from ENABLED_QUEUES',
+    'Starting queues from ENABLED_QUEUES'
   );
   return queues;
 }
@@ -105,6 +110,7 @@ export function bootWorkers() {
   const enabledQueues = getEnabledQueues();
 
   const workers: (Worker | GroupWorker<any>)[] = [];
+  const extraStops: Array<() => Promise<unknown>> = [];
 
   // Start event workers based on enabled queues
   const eventQueuesToStart: number[] = [];
@@ -161,6 +167,26 @@ export function bootWorkers() {
     worker.run();
     workers.push(worker);
     logger.info({ concurrency }, `Started worker for ${queueName}`);
+  }
+
+  // Start Kafka events consumer (parallel to groupmq events for allow-listed project IDs)
+  if (enabledQueues.includes('events_kafka') && process.env.KAFKA_BROKERS) {
+    enableEventsHeartbeat();
+    let handle: KafkaConsumerHandle | null = null;
+    const startPromise = startKafkaEventsConsumer()
+      .then((h) => {
+        handle = h;
+        logger.info('Started Kafka events consumer');
+      })
+      .catch((err) => {
+        logger.error({ err }, 'Failed to start Kafka events consumer');
+      });
+    extraStops.push(async () => {
+      await startPromise.catch(() => undefined);
+      if (handle) {
+        await handle.stop();
+      }
+    });
   }
 
   // Start sessions worker
@@ -250,7 +276,7 @@ export function bootWorkers() {
       {
         ...workerOptions,
         concurrency,
-      },
+      }
     );
     workers.push(cohortComputeWorker);
     logger.info({ concurrency }, 'Started worker for cohortCompute');
@@ -292,7 +318,7 @@ export function bootWorkers() {
             failedReason: job.failedReason,
             options: job.opts,
           },
-          'job failed',
+          'job failed'
         );
       }
     });
@@ -300,7 +326,7 @@ export function bootWorkers() {
     (worker as Worker).on('ioredis:close', () => {
       logger.error(
         { worker: worker.name },
-        'worker closed due to ioredis:close',
+        'worker closed due to ioredis:close'
       );
     });
   });
@@ -313,12 +339,12 @@ export function bootWorkers() {
     if (evtOrExitCodeOrError instanceof Error) {
       logger.error(
         { err: evtOrExitCodeOrError, eventName },
-        'Unhandled error triggered shutdown',
+        'Unhandled error triggered shutdown'
       );
     } else {
       logger.info(
         { code: evtOrExitCodeOrError, eventName },
-        'Starting graceful shutdown',
+        'Starting graceful shutdown'
       );
     }
     try {
@@ -329,16 +355,23 @@ export function bootWorkers() {
         await waitForQueueToEmpty(cronQueue);
       }
 
-      await Promise.all(workers.map((worker) => worker.close()));
+      await Promise.all([
+        ...workers.map((worker) => worker.close()),
+        ...extraStops.map((stop) =>
+          stop().catch((err) => {
+            logger.error({ err }, 'extra stop handler error');
+          })
+        ),
+      ]);
 
       logger.info(
         { elapsed: performance.now() - time },
-        'workers closed successfully',
+        'workers closed successfully'
       );
     } catch (e) {
       logger.error(
         { err: e, code: evtOrExitCodeOrError },
-        'exit handler error',
+        'exit handler error'
       );
     }
     const exitCode = Number.isNaN(+evtOrExitCodeOrError)
@@ -372,14 +405,14 @@ export async function waitForQueueToEmpty(queue: Queue, timeout = 60_000) {
     if (performance.now() - startTime > timeout) {
       logger.warn(
         { queue: queue.name, remainingCount: activeCount },
-        'Timeout reached while waiting for queue to empty',
+        'Timeout reached while waiting for queue to empty'
       );
       break;
     }
 
     logger.info(
       { queue: queue.name, count: activeCount },
-      'Waiting for queue to finish',
+      'Waiting for queue to finish'
     );
     await sleep(500);
   }

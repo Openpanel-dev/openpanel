@@ -197,6 +197,7 @@ async function insertFixtures(client: ChClient, projectId: string) {
         properties: { browser: 'Chrome', country: 'US', device: 'desktop' },
         groups: [],
         created_at: timeAgo(now, 60),
+        last_seen_at: timeAgo(now, 1),
       },
       {
         id: FIXTURE.profiles.bob,
@@ -210,6 +211,7 @@ async function insertFixtures(client: ChClient, projectId: string) {
         properties: { browser: 'Chrome', country: 'SE', device: 'desktop' },
         groups: [],
         created_at: timeAgo(now, 90),
+        last_seen_at: timeAgo(now, 90),
       },
       {
         id: FIXTURE.profiles.charlie,
@@ -222,6 +224,7 @@ async function insertFixtures(client: ChClient, projectId: string) {
         properties: { browser: 'Firefox', country: 'US', device: 'desktop' },
         groups: [],
         created_at: timeAgo(now, 30),
+        last_seen_at: timeAgo(now, 5),
       },
     ],
     format: 'JSONEachRow',

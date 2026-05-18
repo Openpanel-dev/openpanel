@@ -103,6 +103,15 @@ export function useColumns(type: 'profiles' | 'power-users') {
       },
     },
     {
+      accessorKey: 'lastSeenAt',
+      header: 'Last seen',
+      size: ColumnCreatedAt.size,
+      cell: ({ row }) => {
+        const item = row.original;
+        return <ColumnCreatedAt>{item.lastSeenAt}</ColumnCreatedAt>;
+      },
+    },
+    {
       accessorKey: 'groups',
       header: 'Groups',
       size: 200,

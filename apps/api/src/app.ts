@@ -382,16 +382,27 @@ export async function buildApp(
       });
     }
 
-    const skipLog = code !== undefined && SKIP_LOG_ERRORS.includes(code);
+    const skipLog =
+      status < 500 && code !== undefined && SKIP_LOG_ERRORS.includes(code);
     if (!skipLog) {
       // 4xx are client-side problems (bad payloads, missing fields, etc.) —
       // log as warn so they don't drown out real server errors.
       const label =
         error instanceof HttpError ? 'internal server error' : 'request error';
+      const reqCtx = {
+        id: request.id,
+        url: request.url,
+        method: request.method,
+        query: request.query,
+        headers: request.headers,
+        body:
+          (request as FastifyRequest & { rawBody?: string }).rawBody ??
+          request.body,
+      };
       if (status >= 500) {
-        request.log.error({ err: error }, label);
+        request.log.error({ err: error, req: reqCtx }, label);
       } else {
-        request.log.warn({ err: error }, label);
+        request.log.warn({ err: error, req: reqCtx }, label);
       }
     }
 

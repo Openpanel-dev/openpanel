@@ -1,0 +1,4 @@
+Contact: mailto:security@openpanel.dev
+Expires: 2027-05-04T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://openpanel.dev/.well-known/security.txt

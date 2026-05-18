@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/correctness/noUnusedFunctionParameters: test */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cacheable, getCache } from './cachable';
 import { getRedisCache } from './redis';
@@ -9,8 +10,8 @@ describe('cachable', () => {
     redis = getRedisCache();
     // Clear any existing cache data for clean tests
     const keys = [
-      ...await redis.keys('cachable:*'),
-      ...await redis.keys('test-key*'),
+      ...(await redis.keys('cachable:*')),
+      ...(await redis.keys('test-key*')),
     ];
     if (keys.length > 0) {
       await redis.del(...keys);
@@ -20,8 +21,8 @@ describe('cachable', () => {
   afterEach(async () => {
     // Clean up after each test
     const keys = [
-      ...await redis.keys('cachable:*'),
-      ...await redis.keys('test-key*'),
+      ...(await redis.keys('cachable:*')),
+      ...(await redis.keys('test-key*')),
     ];
     if (keys.length > 0) {
       await redis.del(...keys);
@@ -139,7 +140,7 @@ describe('cachable', () => {
       const cachedFn = cacheable(
         'testFunction',
         async (arg1: string, arg2: string) => mockData,
-        3600,
+        3600
       );
       await cachedFn('arg1', 'arg2');
 
@@ -231,6 +232,106 @@ describe('cachable', () => {
       const key = cachedFn.getKey('arg1');
       const cached = await redis.get(key);
       expect(cached).toBeNull();
+    });
+
+    it('should cache empty arrays when cacheEmptyArray option is enabled', async () => {
+      let callCount = 0;
+      const fn = async (arg1: string) => {
+        callCount++;
+        return [] as number[];
+      };
+
+      const cachedFn = cacheable(fn, 3600, { cacheEmptyArray: true });
+      const first = await cachedFn('arg1');
+
+      expect(first).toEqual([]);
+      expect(callCount).toBe(1);
+
+      // Verify it was written to Redis
+      const key = cachedFn.getKey('arg1');
+      const cached = await redis.get(key);
+      expect(cached).toBe('[]');
+
+      // Second call should hit the cache (L1 LRU) and not invoke the function
+      const second = await cachedFn('arg1');
+      expect(second).toEqual([]);
+      expect(callCount).toBe(1);
+    });
+
+    it('should serve cached empty array from Redis on a fresh instance (no L1)', async () => {
+      let firstCallCount = 0;
+      const firstFn = async (arg1: string) => {
+        firstCallCount++;
+        return [] as number[];
+      };
+
+      // First instance writes the empty array into Redis
+      const firstCachedFn = cacheable('sharedEmptyArrayFn', firstFn, 3600, {
+        cacheEmptyArray: true,
+      });
+      await firstCachedFn('arg1');
+      expect(firstCallCount).toBe(1);
+
+      // Second instance has a cold L1 LRU; it must read [] from Redis
+      let secondCallCount = 0;
+      const secondFn = async (arg1: string) => {
+        secondCallCount++;
+        return [1, 2, 3];
+      };
+      const secondCachedFn = cacheable('sharedEmptyArrayFn', secondFn, 3600, {
+        cacheEmptyArray: true,
+      });
+      const result = await secondCachedFn('arg1');
+
+      expect(result).toEqual([]);
+      expect(secondCallCount).toBe(0);
+    });
+
+    it('should still not cache null even with cacheEmptyArray enabled', async () => {
+      let callCount = 0;
+      const fn = async (arg1: string) => {
+        callCount++;
+        return null;
+      };
+
+      const cachedFn = cacheable(fn, 3600, { cacheEmptyArray: true });
+      await cachedFn('arg1');
+      await cachedFn('arg1');
+
+      expect(callCount).toBe(2);
+      const key = cachedFn.getKey('arg1');
+      const cached = await redis.get(key);
+      expect(cached).toBeNull();
+    });
+
+    it('should still not cache empty objects even with cacheEmptyArray enabled', async () => {
+      let callCount = 0;
+      const fn = async (arg1: string) => {
+        callCount++;
+        return {};
+      };
+
+      const cachedFn = cacheable(fn, 3600, { cacheEmptyArray: true });
+      await cachedFn('arg1');
+      await cachedFn('arg1');
+
+      expect(callCount).toBe(2);
+      const key = cachedFn.getKey('arg1');
+      const cached = await redis.get(key);
+      expect(cached).toBeNull();
+    });
+
+    it('should clear a cached empty array entry', async () => {
+      const fn = async (arg1: string) => [] as number[];
+      const cachedFn = cacheable(fn, 3600, { cacheEmptyArray: true });
+
+      await cachedFn('arg1');
+      const key = cachedFn.getKey('arg1');
+      expect(await redis.get(key)).toBe('[]');
+
+      const deleted = await cachedFn.clear('arg1');
+      expect(deleted).toBe(1);
+      expect(await redis.get(key)).toBeNull();
     });
 
     it('should not cache empty objects', async () => {
@@ -354,14 +455,14 @@ describe('cachable', () => {
       const cachedFn = cacheable(
         'testFunction',
         async (arg1: string) => mockData,
-        3600,
+        3600
       );
       const key = cachedFn.getKey('arg1');
       await redis.set(key, 'invalid json');
 
-      const consoleSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+        // noop
+      });
 
       let fnCalled = false;
       const fn = async (arg1: string) => {
@@ -376,7 +477,7 @@ describe('cachable', () => {
       expect(fnCalled).toBe(true);
       expect(consoleSpy).toHaveBeenCalledWith(
         'Failed to parse cache',
-        expect.any(Error),
+        expect.any(Error)
       );
 
       consoleSpy.mockRestore();
@@ -390,7 +491,7 @@ describe('cachable', () => {
       const cachedFn = cacheable(
         'testFunction',
         async (arg1: string) => cachedData,
-        3600,
+        3600
       );
       await cachedFn('arg1');
 
@@ -478,7 +579,7 @@ describe('cachable', () => {
         arg5: undefined,
         arg6: number[],
         arg7: { a: number; b: number },
-        arg8: Date,
+        arg8: Date
       ) => ({});
       const cachedFn = cacheable(fn, 3600);
 
@@ -490,7 +591,7 @@ describe('cachable', () => {
         undefined,
         [1, 2, 3],
         { a: 1, b: 2 },
-        new Date('2023-01-01T00:00:00Z'),
+        new Date('2023-01-01T00:00:00Z')
       );
 
       expect(key).toMatch(/^cachable:.*:/);

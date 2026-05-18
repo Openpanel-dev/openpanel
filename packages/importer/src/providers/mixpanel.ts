@@ -43,8 +43,27 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
   private static readonly MAX_REQUESTS_PER_HOUR = 100;
   private static readonly MIN_REQUEST_INTERVAL_MS = 334; // 3 QPS limit
+  private static readonly dataResidencyUrls: Record<
+    string,
+    { dataBase: string; apiBase: string }
+  > = {
+    us: {
+      dataBase: 'https://data.mixpanel.com',
+      apiBase: 'https://mixpanel.com',
+    },
+    eu: {
+      dataBase: 'https://data-eu.mixpanel.com',
+      apiBase: 'https://eu.mixpanel.com',
+    },
+    in: {
+      dataBase: 'https://data-in.mixpanel.com',
+      apiBase: 'https://in.mixpanel.com',
+    },
+  };
+
   private requestTimestamps: number[] = [];
   private lastRequestTime = 0;
+  private readonly residencyUrls: { dataBase: string; apiBase: string };
 
   constructor(
     private readonly projectId: string,
@@ -52,6 +71,10 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     private readonly logger?: ILogger
   ) {
     super();
+    const residency = config.dataResidency ?? 'us';
+    this.residencyUrls =
+      MixpanelProvider.dataResidencyUrls[residency] ??
+      MixpanelProvider.dataResidencyUrls.us!;
   }
 
   private async waitForRateLimit(): Promise<void> {
@@ -200,7 +223,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     from: string,
     to: string
   ): AsyncGenerator<MixpanelRawEvent, void, unknown> {
-    const url = 'https://data.mixpanel.com/api/2.0/export';
+    const url = `${this.residencyUrls.dataBase}/api/2.0/export`;
 
     const params = new URLSearchParams({
       from_date: from,
@@ -309,7 +332,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     while (true) {
       await this.waitForRateLimit();
 
-      const url = `https://mixpanel.com/api/query/engage?project_id=${encodeURIComponent(projectId)}`;
+      const url = `${this.residencyUrls.apiBase}/api/query/engage?project_id=${encodeURIComponent(projectId)}`;
       const body = new URLSearchParams({
         page: String(page),
         page_size: String(pageSize),
@@ -401,6 +424,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       avatar: String(props.$avatar ?? props.$image ?? ''),
       properties,
       created_at: createdAt,
+      last_seen_at: createdAt,
       is_external: true,
       groups: [],
     };

@@ -15,7 +15,12 @@ const trackRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
     method: 'POST',
     url: '/',
     schema: {
-      body: zTrackHandlerPayload,
+      body: zTrackHandlerPayload.and(
+        z.object({
+          clientId: z.string().optional(),
+          clientSecret: z.string().optional(),
+        })
+      ),
       tags: ['Track'],
       description:
         'Ingest a tracking event (track, identify, group, increment, decrement, replay).',

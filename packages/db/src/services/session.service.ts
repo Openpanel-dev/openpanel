@@ -292,6 +292,7 @@ export async function getSessionList(options: GetSessionListOptions) {
       firstName: '',
       lastName: '',
       createdAt: new Date(),
+      lastSeenAt: new Date(),
       projectId,
       isExternal: false,
       properties: {},

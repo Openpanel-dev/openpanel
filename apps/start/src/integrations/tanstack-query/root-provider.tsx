@@ -2,11 +2,23 @@ import type { AppRouter } from '@openpanel/trpc';
 import { QueryClient } from '@tanstack/react-query';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
-import { createTRPCClient, httpLink } from '@trpc/client';
+import { createTRPCClient, httpLink, TRPCClientError } from '@trpc/client';
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
 import { useMemo } from 'react';
 import superjson from 'superjson';
 import { TRPCProvider } from '@/integrations/trpc/react';
+
+const DEFAULT_RETRY_COUNT = 3;
+
+function shouldRetryQuery(failureCount: number, error: unknown) {
+  if (error instanceof TRPCClientError) {
+    const status = error.data?.httpStatus;
+    if (typeof status === 'number' && status >= 400 && status < 500) {
+      return false;
+    }
+  }
+  return failureCount < DEFAULT_RETRY_COUNT;
+}
 
 export const getIsomorphicHeaders = createIsomorphicFn()
   .server(() => {
@@ -80,6 +92,7 @@ export function getContext(apiUrl: string) {
         staleTime: 1000 * 60 * 5,
         gcTime: 1000 * 60 * 10,
         refetchOnReconnect: false,
+        retry: shouldRetryQuery,
       },
       dehydrate: { serializeData: superjson.serialize },
       hydrate: { deserializeData: superjson.deserialize },

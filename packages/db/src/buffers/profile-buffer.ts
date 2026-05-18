@@ -7,6 +7,12 @@ import { ch, chQuery, TABLE_NAMES } from '../clickhouse/client';
 import type { IClickhouseProfile } from '../services/profile.service';
 import { BaseBuffer } from './base-buffer';
 
+// Inlined to avoid a circular value-import with `profile.service.ts`
+// (which imports `profileBuffer` from `../buffers`). Keep this in sync
+// with the `PROFILE_COLUMNS` constant there.
+const PROFILE_COLUMNS =
+  'id, first_name, last_name, email, avatar, properties, project_id, is_external, created_at, last_seen_at, groups';
+
 export class ProfileBuffer extends BaseBuffer {
   private readonly batchSize = process.env.PROFILE_BUFFER_BATCH_SIZE
     ? Number.parseInt(process.env.PROFILE_BUFFER_BATCH_SIZE, 10)
@@ -57,6 +63,19 @@ export class ProfileBuffer extends BaseBuffer {
       return null;
     }
     return getSafeJson<IClickhouseProfile>(cached);
+  }
+
+  public async setCache(profile: IClickhouseProfile): Promise<void> {
+    const cacheKey = this.getProfileCacheKey({
+      profileId: profile.id,
+      projectId: profile.project_id,
+    });
+    await this.redis.set(
+      cacheKey,
+      JSON.stringify(profile),
+      'EX',
+      this.ttlInSeconds
+    );
   }
 
   async add(profile: IClickhouseProfile, isFromEvent = false) {
@@ -129,6 +148,9 @@ export class ProfileBuffer extends BaseBuffer {
     }
 
     return {
+      // `created_at` is preserved (existing wins → first seen stays put).
+      // `last_seen_at` flows through from incoming so the RMT version advances.
+      // `groups` get unioned below.
       ...deepMergeObjects(existing, omit(['created_at', 'groups'], profile)),
       groups: uniq([...(existing.groups ?? []), ...(incoming.groups ?? [])]),
     };
@@ -157,20 +179,10 @@ export class ProfileBuffer extends BaseBuffer {
           .join(', ');
         try {
           const rows = await chQuery<IClickhouseProfile>(
-            `SELECT
-              id,
-              project_id,
-              argMax(nullIf(first_name, ''), ${TABLE_NAMES.profiles}.created_at) as first_name,
-              argMax(nullIf(last_name, ''), ${TABLE_NAMES.profiles}.created_at) as last_name,
-              argMax(nullIf(email, ''), ${TABLE_NAMES.profiles}.created_at) as email,
-              argMax(nullIf(avatar, ''), ${TABLE_NAMES.profiles}.created_at) as avatar,
-              argMax(is_external, ${TABLE_NAMES.profiles}.created_at) as is_external,
-              argMax(properties, ${TABLE_NAMES.profiles}.created_at) as properties,
-              max(created_at) as created_at
-            FROM ${TABLE_NAMES.profiles}
+            `SELECT ${PROFILE_COLUMNS}
+            FROM ${TABLE_NAMES.profiles} FINAL
             WHERE (id, project_id) IN (${tuples})
-            ${withDateFilter ? `AND ${TABLE_NAMES.profiles}.created_at > now() - INTERVAL 2 DAY` : ''}
-            GROUP BY id, project_id`
+            ${withDateFilter ? `AND ${TABLE_NAMES.profiles}.last_seen_at > now() - INTERVAL 2 DAY` : ''}`
           );
           for (const row of rows) {
             result.set(`${row.project_id}:${row.id}`, row);
@@ -178,7 +190,7 @@ export class ProfileBuffer extends BaseBuffer {
         } catch (error) {
           this.logger.warn(
             { err: error, chunkSize: chunk.length },
-            'Failed to batch fetch profiles from Clickhouse, proceeding without existing data',
+            'Failed to batch fetch profiles from Clickhouse, proceeding without existing data'
           );
         }
       }
@@ -294,7 +306,7 @@ export class ProfileBuffer extends BaseBuffer {
           totalProfiles: rawProfiles.length,
           uniqueProfiles: uniqueProfiles.length,
         },
-        'Successfully completed profile processing',
+        'Successfully completed profile processing'
       );
     } catch (error) {
       this.logger.error({ err: error }, 'Failed to process buffer');

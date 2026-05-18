@@ -60,6 +60,10 @@ export const ProfileProperties = ({ profile }: Props) => {
               name: 'createdAt',
               value: formatDateTime(new Date(profile.createdAt)),
             },
+            {
+              name: 'lastSeenAt',
+              value: formatDateTime(new Date(profile.lastSeenAt)),
+            },
             ...(profile.properties.country
               ? [{ name: 'country', value: profile.properties.country }]
               : []),

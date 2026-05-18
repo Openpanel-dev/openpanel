@@ -75,6 +75,7 @@ export class Query<T = any> {
   private _transform?: Record<string, (item: T) => any>;
   private _union?: Query;
   private _dateRegex = /\d{4}-\d{2}-\d{2}([\s:\d.]+)?/g;
+  private _dateValueRegex = /^(?:[a-zA-Z]\w*\()?\d{4}-\d{2}-\d{2}(?:[\s:\d.]+)?\)?$/;
   constructor(
     private client: ClickHouseClient,
     private timezone: string
@@ -136,7 +137,7 @@ export class Query<T = any> {
     }
 
     if (
-      (typeof value === 'string' && this._dateRegex.test(value)) ||
+      (typeof value === 'string' && this._dateValueRegex.test(value)) ||
       value instanceof Date
     ) {
       return this.escapeDate(value);

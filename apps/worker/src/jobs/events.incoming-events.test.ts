@@ -187,11 +187,6 @@ describe('incomingEvent', () => {
       projectId,
       deviceId,
       sessionId: 'session-123',
-      session: {
-        referrer: '',
-        referrerName: '',
-        referrerType: '',
-      },
     };
 
     const changeDelay = vi.fn();
@@ -419,5 +414,75 @@ describe('incomingEvent', () => {
     });
 
     expect(sessionsQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('should emit session_start only once when 3 events arrive in rapid succession', async () => {
+    // Regression test: previously the API baked `session: undefined` into every
+    // payload when no session-end job existed yet. Even with sequential
+    // per-device processing in the worker, the worker re-checks the BullMQ
+    // session-end job at processing time, so events 2 and 3 should extend
+    // rather than emit duplicate session_starts.
+    const spySessionsQueueAdd = vi
+      .spyOn(sessionsQueue, 'add')
+      .mockResolvedValue({} as Job);
+    const spySessionsQueueGetJob = vi.spyOn(sessionsQueue, 'getJob');
+
+    const buildJobData = (
+      eventName: string,
+    ): EventsQueuePayloadIncomingEvent['payload'] => ({
+      geo,
+      event: {
+        name: eventName,
+        timestamp: new Date().toISOString(),
+        isTimestampFromThePast: false,
+        properties: { __path: 'https://example.com/test' },
+      },
+      uaInfo,
+      headers: {
+        'request-id': '123',
+        'user-agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'openpanel-sdk-name': 'web',
+        'openpanel-sdk-version': '1.0.0',
+      },
+      projectId,
+      deviceId,
+      sessionId: newSessionId,
+    });
+
+    // Event 1: no session-end job exists yet → emit session_start.
+    spySessionsQueueGetJob.mockResolvedValueOnce(undefined);
+    // Events 2 and 3: session-end job is now present (delayed) → extend only.
+    const liveJob = {
+      id: `sessionEnd:${projectId}:${deviceId}`,
+      getState: vi.fn().mockResolvedValue('delayed'),
+      changeDelay: vi.fn(),
+      data: {
+        type: 'createSessionEnd',
+        payload: {
+          sessionId: newSessionId,
+          deviceId,
+          referrer: '',
+          referrerName: '',
+          referrerType: '',
+        },
+      },
+    } as Partial<Job> as Job;
+    spySessionsQueueGetJob.mockResolvedValue(liveJob);
+
+    (createEvent as Mock).mockImplementation((event) => event);
+
+    await incomingEvent(buildJobData('event_a'));
+    await incomingEvent(buildJobData('event_b'));
+    await incomingEvent(buildJobData('event_c'));
+
+    const sessionStartCalls = (createEvent as Mock).mock.calls.filter(
+      ([arg]) => arg?.name === 'session_start',
+    );
+    expect(sessionStartCalls).toHaveLength(1);
+
+    // Only the first event should have queued a session-end job; subsequent
+    // events extend the existing one via changeDelay.
+    expect(spySessionsQueueAdd).toHaveBeenCalledTimes(1);
   });
 });

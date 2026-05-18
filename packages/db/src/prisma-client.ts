@@ -95,6 +95,10 @@ const getPrismaClient = () => {
             subscriptionCanceledAt: true,
           },
           compute(org) {
+            if (process.env.SELF_HOSTED === 'true') {
+              return true;
+            }
+
             return (
               org.subscriptionStatus === 'active' &&
               org.subscriptionEndsAt &&

@@ -70,7 +70,15 @@ export class ConversionService {
         const fieldName = b.name.replace('profile.', '').split('.')[0];
         if (fieldName === 'properties') {
           profileFields.add('properties');
-        } else if (['email', 'first_name', 'last_name'].includes(fieldName!)) {
+        } else if (
+          [
+            'email',
+            'first_name',
+            'last_name',
+            'created_at',
+            'last_seen_at',
+          ].includes(fieldName!)
+        ) {
           profileFields.add(fieldName!);
         }
       }
