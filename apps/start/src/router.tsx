@@ -9,6 +9,7 @@ export const getRouter = async () => {
   const rqContext = TanstackQuery.getContext(envs.apiUrl);
 
   const router = createTanstackRouter({
+    scrollRestoration: true,
     routeTree,
     context: {
       ...rqContext,
