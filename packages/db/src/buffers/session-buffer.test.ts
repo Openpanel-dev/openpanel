@@ -93,46 +93,26 @@ describe('SessionBuffer', () => {
     expect(parsed.device_id).toBe(deviceId);
   });
 
-  it('registers the device in active+wallclock sorted sets and the projects set', async () => {
+  it('registers the device in the wallclock sorted set and the projects set', async () => {
     await sessionBuffer.ingest(makePayload());
 
-    expect(
-      await redis.zscore(`session:active:${projectId}`, deviceId)
-    ).not.toBeNull();
     expect(
       await redis.zscore(`session:wallclock:${projectId}`, deviceId)
     ).not.toBeNull();
     expect(await redis.sismember('session:projects', projectId)).toBe(1);
   });
 
-  it('advances session:hwm:{pid} monotonically — never regresses', async () => {
-    const t0 = new Date('2026-01-01T00:00:00.000Z');
-    await sessionBuffer.ingest(makePayload({ createdAt: t0 }));
-    expect(Number(await redis.get(`session:hwm:${projectId}`))).toBe(
-      t0.getTime()
+  it('writes no TTL on the session blob or profile pointer', async () => {
+    await sessionBuffer.ingest(
+      makePayload({ profileId: 'profile-X', deviceId: 'device-Y' })
     );
 
-    // A later event in event-time advances HWM.
-    await sessionBuffer.ingest(
-      makePayload({
-        createdAt: new Date(t0.getTime() + 5000),
-        deviceId: 'device-2',
-      })
-    );
-    expect(Number(await redis.get(`session:hwm:${projectId}`))).toBe(
-      t0.getTime() + 5000
-    );
-
-    // An older event does NOT regress HWM.
-    await sessionBuffer.ingest(
-      makePayload({
-        createdAt: new Date(t0.getTime() - 5000),
-        deviceId: 'device-3',
-      })
-    );
-    expect(Number(await redis.get(`session:hwm:${projectId}`))).toBe(
-      t0.getTime() + 5000
-    );
+    // Blob and profile pointer must survive arbitrarily long reaper outages,
+    // so neither carries a Redis TTL.
+    expect(await redis.ttl(`session:${projectId}:device-Y`)).toBe(-1);
+    expect(
+      await redis.ttl(`session:profile:${projectId}:profile-X`)
+    ).toBe(-1);
   });
 
   it('writes profile→device pointer when profile_id differs from device_id', async () => {
@@ -220,7 +200,7 @@ describe('SessionBuffer', () => {
     expect(blob.duration).toBeGreaterThanOrEqual(0);
   });
 
-  it('cleanup() removes blob, sorted set entries, and profile pointer', async () => {
+  it('cleanup() removes blob, wallclock entry, and profile pointer', async () => {
     await sessionBuffer.ingest(
       makePayload({ profileId: 'profile-X', deviceId: 'device-Y' })
     );
@@ -228,19 +208,45 @@ describe('SessionBuffer', () => {
     await sessionBuffer.cleanup({
       projectId,
       deviceId: 'device-Y',
+      sessionId,
       profileId: 'profile-X',
     });
 
     expect(await redis.get(`session:${projectId}:device-Y`)).toBeNull();
-    expect(
-      await redis.zscore(`session:active:${projectId}`, 'device-Y')
-    ).toBeNull();
     expect(
       await redis.zscore(`session:wallclock:${projectId}`, 'device-Y')
     ).toBeNull();
     expect(
       await redis.get(`session:profile:${projectId}:profile-X`)
     ).toBeNull();
+  });
+
+  it('cleanup() is a no-op when slot is owned by a different session (boundary)', async () => {
+    // Open session S1
+    await sessionBuffer.ingest(makePayload({ sessionId: 's1' }));
+    // 35min later — boundary, opens S2 at same (pid, did)
+    await sessionBuffer.ingest(
+      makePayload({
+        sessionId: 's2',
+        createdAt: new Date(Date.now() + 35 * 60 * 1000),
+      })
+    );
+
+    // Try to cleanup S1 — should not touch S2's data. The Lua script in
+    // cleanup() detects the id mismatch and returns early.
+    await sessionBuffer.cleanup({
+      projectId,
+      deviceId,
+      sessionId: 's1',
+    });
+
+    const blob = await redis.get(`session:${projectId}:${deviceId}`);
+    expect(blob).not.toBeNull();
+    const parsed = JSON.parse(blob ?? '');
+    expect(parsed.id).toBe('s2');
+    expect(
+      await redis.zscore(`session:wallclock:${projectId}`, deviceId)
+    ).not.toBeNull();
   });
 
   it('processes buffer and inserts sessions into ClickHouse', async () => {

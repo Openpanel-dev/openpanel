@@ -59,7 +59,7 @@ async function getSessionEvents({
 export async function createSessionEnd(
   job: Job<EventsQueuePayloadCreateSessionEnd>
 ) {
-  const { payload } = job.data;
+  const { payload, snapshot } = job.data;
   const logger = baseLogger.child({
     payload,
     jobId: job.id,
@@ -67,19 +67,41 @@ export async function createSessionEnd(
 
   logger.debug('Processing session end job');
 
-  const session = await sessionBuffer.getExistingSession({
+  // Prefer the live blob — it reflects any late extensions that arrived after
+  // enqueue. Fall back to the snapshot if the blob expired (very long queue
+  // lag, retries hours later, etc.).
+  const live = await sessionBuffer.getExistingSession({
     projectId: payload.projectId,
     deviceId: payload.deviceId,
   });
 
+  // Distinguish three cases:
+  //  - Same session, extended after enqueue → bail. Reaper will retry later.
+  //  - Same session, no change                → use live (snapshot equivalent).
+  //  - Different session in slot (boundary)   → use snapshot for emission;
+  //    cleanup will be a no-op since the slot is owned by the new session.
+  //  - No live blob at all (TTL expired)      → use snapshot.
+  const sameSession = live && live.id === snapshot.id;
+  if (sameSession && live.ended_at > snapshot.ended_at) {
+    sessionEndsSkipped.inc({ reason: 'extended_after_enqueue' });
+    logger.info(
+      {
+        sessionId: live.id,
+        projectId: live.project_id,
+        snapshotEndedAt: snapshot.ended_at,
+        liveEndedAt: live.ended_at,
+      },
+      'session was extended after close was enqueued, skipping',
+    );
+    return null;
+  }
+
+  const session = sameSession ? live : snapshot;
   if (!session) {
-    // Session already cleaned up — likely already ended by a sibling job or
-    // reaped after Redis TTL. Treat as a no-op rather than a hard error so
-    // retries don't spam the queue.
     sessionEndsSkipped.inc({ reason: 'not_found' });
     logger.warn(
       { projectId: payload.projectId, deviceId: payload.deviceId },
-      'Session not found in Redis — skipping session_end',
+      'No live session and no snapshot — skipping session_end',
     );
     return null;
   }
@@ -156,12 +178,14 @@ export async function createSessionEnd(
     );
   }
 
-  // Clean up Redis state for this session. The session blob, profile index,
-  // and active/wallclock sorted set entries are all removed atomically.
+  // Clean up Redis state for this session. cleanup() is id-gated — if a new
+  // session has already taken over this (projectId, deviceId) slot via a
+  // boundary, the call is a no-op and the new session is preserved.
   await sessionBuffer
     .cleanup({
       projectId: session.project_id,
       deviceId: session.device_id,
+      sessionId: session.id,
       profileId: session.profile_id,
     })
     .catch((error) => {

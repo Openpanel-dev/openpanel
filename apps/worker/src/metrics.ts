@@ -344,6 +344,13 @@ export const sessionsReaped = new client.Counter({
 });
 register.registerMetric(sessionsReaped);
 
+export const sessionsReaperOrphans = new client.Counter({
+  name: 'sessions_reaper_orphans_total',
+  help: 'Reaper found a sorted-set entry whose session blob is missing. Non-zero usually means TTL mismatch.',
+  labelNames: ['reason'], // 'event-time' | 'deadman'
+});
+register.registerMetric(sessionsReaperOrphans);
+
 export const sessionDurationOnClose = new client.Histogram({
   name: 'session_duration_ms_on_close',
   help: 'Duration of closed sessions (ms)',
@@ -383,7 +390,7 @@ register.registerMetric(
       }
       const multi = redis.multi();
       for (const pid of projectIds) {
-        multi.zcard(`session:active:${pid}`);
+        multi.zcard(`session:wallclock:${pid}`);
       }
       const results = await multi.exec();
       let total = 0;
@@ -441,3 +448,10 @@ register.registerMetric(
     },
   })
 );
+
+export const sessionsVacuumed = new client.Counter({
+  name: 'sessions_vacuumed_total',
+  help: 'Sessions removed by the daily vacuum cron (catches blobs that cleanup() missed)',
+  labelNames: ['reason'], // 'stale_blob' | 'missing_blob'
+});
+register.registerMetric(sessionsVacuumed);

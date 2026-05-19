@@ -11,15 +11,17 @@ export const SESSION_TIMEOUT = SESSION_TIMEOUT_MS;
 /**
  * Deterministic v2 jobId for a closed session.
  *
- * Includes the session's stable `id` so concurrent / retried closes for the
+ * Keyed on the session's stable `id` so concurrent / retried closes for the
  * same logical session dedupe in BullMQ. The `v2:` prefix lets the legacy
  * drain script differentiate from pre-migration delayed jobs.
+ *
+ * Format constraint: BullMQ only accepts ':' in custom jobIds when splitting
+ * by ':' yields exactly 3 parts, so we keep the suffix as a single segment.
+ * Cross-project sessionInternalId collisions would be astronomical given the
+ * 128-bit hash used to generate them.
  */
-export const getSessionEndJobIdV2 = (
-  projectId: string,
-  deviceId: string,
-  sessionInternalId: string
-) => `sessionEnd:v2:${projectId}:${deviceId}:${sessionInternalId}`;
+export const getSessionEndJobIdV2 = (sessionInternalId: string) =>
+  `sessionEnd:v2:${sessionInternalId}`;
 
 /**
  * Enqueue a session_end job. Idempotent via jobId.
@@ -34,11 +36,7 @@ export async function enqueueSessionEndV2({
   payload: IServiceCreateEventPayload;
   closedSession: IClickhouseSession;
 }) {
-  const jobId = getSessionEndJobIdV2(
-    closedSession.project_id,
-    closedSession.device_id,
-    closedSession.id
-  );
+  const jobId = getSessionEndJobIdV2(closedSession.id);
 
   return sessionsQueue.add(
     'session',
@@ -51,6 +49,7 @@ export async function enqueueSessionEndV2({
         sessionId: closedSession.id,
         profileId: closedSession.profile_id || payload.profileId,
       },
+      snapshot: closedSession,
     },
     {
       jobId,

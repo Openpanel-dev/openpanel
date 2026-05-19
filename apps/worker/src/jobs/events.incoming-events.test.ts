@@ -188,9 +188,8 @@ describe('incomingEvent', () => {
     const [, payload, opts] = spy.mock.calls[0]!;
     expect((payload as any).type).toBe('createSessionEnd');
     expect((payload as any).payload.sessionId).toBe('old-session-id');
-    expect(opts?.jobId).toBe(
-      `sessionEnd:v2:${projectId}:${deviceId}:old-session-id`
-    );
+    expect((payload as any).snapshot.id).toBe('old-session-id');
+    expect(opts?.jobId).toBe('sessionEnd:v2:old-session-id');
 
     const calls = (createEvent as Mock).mock.calls;
     expect(calls.filter(([a]) => a?.name === 'session_start')).toHaveLength(1);

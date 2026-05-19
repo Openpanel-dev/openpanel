@@ -6,28 +6,35 @@ import type { IServiceCreateEventPayload } from '../services/event.service';
 import type { IClickhouseSession } from '../services/session.service';
 import { BaseBuffer } from './base-buffer';
 
-export const SESSION_TIMEOUT_MS = 1000 * 60 * 30; // 30 minutes
-export const SESSION_BLOB_TTL_SECONDS = 60 * 60; // 1 hour
-export const SESSION_WALLCLOCK_TTL_SECONDS = 60 * 60 * 25; // 25h, > 24h deadman
+// 30min of idle in event-time → session ends. Matches industry default.
+export const SESSION_TIMEOUT_MS = 1000 * 60 * 30;
 
 const sessionKey = (projectId: string, deviceId: string) =>
   `session:${projectId}:${deviceId}`;
 const profileIndexKey = (projectId: string, profileId: string) =>
   `session:profile:${projectId}:${profileId}`;
-const activeSetKey = (projectId: string) => `session:active:${projectId}`;
 const wallclockSetKey = (projectId: string) =>
   `session:wallclock:${projectId}`;
-const hwmKey = (projectId: string) => `session:hwm:${projectId}`;
 const PROJECTS_SET_KEY = 'session:projects';
 
-// Monotonic-set Lua: only update if new value is greater than current.
-const MONOTONIC_HWM_LUA = `
+// Atomic id-gated cleanup. Only deletes the blob + sorted-set entry +
+// profile pointer if the live blob's session id matches the one we're
+// closing. Prevents races where a boundary has already overwritten the slot
+// with a new session.
+const CLEANUP_LUA = `
 local cur = redis.call('GET', KEYS[1])
-if not cur or tonumber(ARGV[1]) > tonumber(cur) then
-  redis.call('SET', KEYS[1], ARGV[1])
-  return 1
+if cur then
+  local ok, parsed = pcall(cjson.decode, cur)
+  if ok and parsed and parsed.id ~= ARGV[1] then
+    return 0
+  end
 end
-return 0
+redis.call('DEL', KEYS[1])
+redis.call('ZREM', KEYS[2], ARGV[2])
+if KEYS[3] ~= '' then
+  redis.call('DEL', KEYS[3])
+end
+return 1
 `;
 
 export type SessionIngestResult =
@@ -110,8 +117,8 @@ export class SessionBuffer extends BaseBuffer {
    * Reads the device's current session (if any), decides whether the event
    * extends it, opens a brand-new one, or boundaries (gap > 30min) → close
    * the old session and start a fresh one. Writes the updated session blob,
-   * advances HWM, updates sorted sets, and queues CollapsingMergeTree rows
-   * for ClickHouse.
+   * updates the wall-clock index, and queues CollapsingMergeTree rows for
+   * ClickHouse.
    *
    * Returns the action taken so the caller can drive session_start /
    * session_end event emission. `session_start` / `session_end` events
@@ -157,27 +164,41 @@ export class SessionBuffer extends BaseBuffer {
   }
 
   /**
-   * Remove a closed session from Redis. Called by `createSessionEnd` after
-   * the session_end event has been emitted, or by the reaper when it
-   * sweeps stale sessions.
+   * Remove a closed session from Redis. Atomically gated on `sessionId` via
+   * Lua: if a different session now occupies the `(projectId, deviceId)`
+   * slot (because a boundary already overwrote it with a new session), the
+   * call is a no-op — the new session still needs its blob and sorted-set
+   * entry.
+   *
+   * Blobs no longer have a Redis TTL — this is the only path that removes
+   * them. The daily vacuum cron is a backstop for the rare case where this
+   * fails (worker crash, network partition).
    */
   async cleanup({
     projectId,
     deviceId,
+    sessionId,
     profileId,
   }: {
     projectId: string;
     deviceId: string;
+    sessionId: string;
     profileId?: string | null;
   }): Promise<void> {
-    const multi = this.redis.multi();
-    multi.del(sessionKey(projectId, deviceId));
-    multi.zrem(activeSetKey(projectId), deviceId);
-    multi.zrem(wallclockSetKey(projectId), deviceId);
-    if (profileId && profileId !== deviceId) {
-      multi.del(profileIndexKey(projectId, profileId));
-    }
-    await multi.exec();
+    const pointerKey =
+      profileId && profileId !== deviceId
+        ? profileIndexKey(projectId, profileId)
+        : '';
+
+    await this.redis.eval(
+      CLEANUP_LUA,
+      3,
+      sessionKey(projectId, deviceId),
+      wallclockSetKey(projectId),
+      pointerKey,
+      sessionId,
+      deviceId
+    );
   }
 
   /**
@@ -303,8 +324,13 @@ export class SessionBuffer extends BaseBuffer {
   }
 
   /**
-   * Atomic write-back: session blob + active/wallclock ZSETs + projects SET +
-   * HWM advance + profile index + ClickHouse buffer rows + counter.
+   * Atomic write-back: session blob + wallclock ZSET + projects SET +
+   * profile index + ClickHouse buffer rows + counter.
+   *
+   * No TTLs on the blob or profile index — they are removed exclusively by
+   * `cleanup()` after `session_end` emission. This guarantees the reaper
+   * can always find a session's state regardless of how long the worker
+   * has been down.
    */
   private async persist(
     current: IClickhouseSession,
@@ -312,29 +338,15 @@ export class SessionBuffer extends BaseBuffer {
   ) {
     const projectId = current.project_id;
     const deviceId = current.device_id;
-    const eventTimeMs = fromClickhouseDate(current.ended_at).getTime();
     const wallClockMs = Date.now();
 
     const multi = this.redis.multi();
-    multi.set(
-      sessionKey(projectId, deviceId),
-      JSON.stringify(current),
-      'EX',
-      SESSION_BLOB_TTL_SECONDS
-    );
-    multi.zadd(activeSetKey(projectId), eventTimeMs.toString(), deviceId);
+    multi.set(sessionKey(projectId, deviceId), JSON.stringify(current));
     multi.zadd(wallclockSetKey(projectId), wallClockMs.toString(), deviceId);
-    multi.expire(wallclockSetKey(projectId), SESSION_WALLCLOCK_TTL_SECONDS);
     multi.sadd(PROJECTS_SET_KEY, projectId);
-    multi.eval(MONOTONIC_HWM_LUA, 1, hwmKey(projectId), eventTimeMs.toString());
 
     if (current.profile_id && current.profile_id !== current.device_id) {
-      multi.set(
-        profileIndexKey(projectId, current.profile_id),
-        deviceId,
-        'EX',
-        SESSION_BLOB_TTL_SECONDS
-      );
+      multi.set(profileIndexKey(projectId, current.profile_id), deviceId);
     }
 
     for (const row of chRows) {

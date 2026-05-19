@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type {
+  IClickhouseSession,
   IServiceCreateEventPayload,
   IServiceEvent,
   Prisma,
@@ -76,6 +77,11 @@ export interface EventsQueuePayloadCreateEvent {
 export interface EventsQueuePayloadCreateSessionEnd {
   type: 'createSessionEnd';
   payload: IServiceCreateEventPayload;
+  // Snapshot of the session at the moment the close was decided. Used as a
+  // fallback when the live Redis blob has expired by the time the job runs,
+  // and to detect post-enqueue extensions (so we don't close a session that
+  // received more events in the meantime).
+  snapshot: IClickhouseSession;
 }
 
 // TODO: Rename `EventsQueuePayloadCreateSessionEnd`
@@ -142,6 +148,10 @@ export type CronQueuePayloadSessionReaper = {
   type: 'sessionReaper';
   payload: undefined;
 };
+export type CronQueuePayloadSessionVacuum = {
+  type: 'sessionVacuum';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
@@ -156,7 +166,8 @@ export type CronQueuePayload =
   | CronQueuePayloadOnboarding
   | CronQueuePayloadGscSync
   | CronQueuePayloadCohortRefresh
-  | CronQueuePayloadSessionReaper;
+  | CronQueuePayloadSessionReaper
+  | CronQueuePayloadSessionVacuum;
 
 export type MiscQueuePayloadTrialEndingSoon = {
   type: 'trialEndingSoon';

@@ -1,18 +1,26 @@
-import type { Job } from 'bullmq';
-
-import { eventBuffer, groupBuffer, profileBackfillBuffer, profileBuffer, replayBuffer, sessionBuffer } from '@openpanel/db';
+import {
+  eventBuffer,
+  groupBuffer,
+  profileBackfillBuffer,
+  profileBuffer,
+  replayBuffer,
+  sessionBuffer,
+} from '@openpanel/db';
 import type { CronQueuePayload } from '@openpanel/queue';
-
+import type { Job } from 'bullmq';
 import { cohortRefreshCronJob } from './cron.cohort-refresh';
 import { jobDelete } from './cron.delete';
-import { gscSyncAllJob } from './gsc';
 import { onboardingJob } from './cron.onboarding';
 import { ping } from './cron.ping';
 import { salt } from './cron.salt';
 import { sessionReaperCronJob } from './cron.session-reaper';
+import { sessionVacuumCronJob } from './cron.session-vacuum';
+import { gscSyncAllJob } from './gsc';
 import { insightsDailyJob } from './insights';
+import { logger } from '@/utils/logger';
 
 export async function cronJob(job: Job<CronQueuePayload>) {
+  logger.info(`Cron job started - ${job.data.type}`);
   switch (job.data.type) {
     case 'salt': {
       return await salt();
@@ -55,6 +63,9 @@ export async function cronJob(job: Job<CronQueuePayload>) {
     }
     case 'sessionReaper': {
       return await sessionReaperCronJob();
+    }
+    case 'sessionVacuum': {
+      return await sessionVacuumCronJob();
     }
   }
 }

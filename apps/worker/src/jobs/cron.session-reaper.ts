@@ -1,7 +1,11 @@
 import { SESSION_TIMEOUT_MS, sessionBuffer } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 import { logger as baseLogger } from '@/utils/logger';
-import { sessionEndsEnqueued, sessionsReaped } from '@/metrics';
+import {
+  sessionEndsEnqueued,
+  sessionsReaped,
+  sessionsReaperOrphans,
+} from '@/metrics';
 import { enqueueSessionEndV2 } from '@/utils/session-handler';
 
 const logger = baseLogger.child({ job: 'session-reaper' });
@@ -11,28 +15,31 @@ const REAPER_BATCH_SIZE = Number.parseInt(
   process.env.SESSION_REAPER_BATCH_SIZE || '5000',
   10
 );
-// 24h deadman: close sessions whose host project has gone silent in event-time
-// AND whose last wall-clock-received is older than this. Bounds Redis memory
-// for projects that fall idle.
+// Wall-clock deadman: close sessions whose last *received* event is older
+// than this. Single source of truth for "this session has ended", regardless
+// of project traffic.
+//
+// Default 30min, matching SESSION_TIMEOUT_MS. With the 5-min reaper interval,
+// max session_end latency is 30-35min after the last event.
+//
+// During a worker pause longer than this, sessions in flight will be split
+// when the worker resumes. Bump via env if you expect long pauses, but
+// remember that BullMQ jobId-dedup + the extension check in createSessionEnd
+// already cover normal queue lag.
 const WALLCLOCK_DEADMAN_MS = Number.parseInt(
   process.env.SESSION_REAPER_WALLCLOCK_DEADMAN_MS ||
-    String(1000 * 60 * 60 * 24),
+    String(SESSION_TIMEOUT_MS),
   10
 );
 const LOCK_TTL_SECONDS = 60;
 
-const activeSetKey = (projectId: string) => `session:active:${projectId}`;
 const wallclockSetKey = (projectId: string) =>
   `session:wallclock:${projectId}`;
-const sessionKey = (projectId: string, deviceId: string) =>
-  `session:${projectId}:${deviceId}`;
-const hwmKey = (projectId: string) => `session:hwm:${projectId}`;
 const lockKey = (projectId: string) => `session:reaper:lock:${projectId}`;
 
 /**
  * Cron: scan every project with active sessions, close any whose last event
- * is older than the timeout in event-time (HWM-based) or older than the
- * 24h wall-clock deadman.
+ * was received more than the deadman ago in wall-clock time.
  *
  * Idempotent — uses BullMQ jobId-dedup via enqueueSessionEndV2.
  */
@@ -89,52 +96,28 @@ async function reapProject(projectId: string): Promise<number> {
   }
 
   try {
-    const hwmRaw = await redis.get(hwmKey(projectId));
     const now = Date.now();
-    let reaped = 0;
+    const cutoff = now - WALLCLOCK_DEADMAN_MS;
 
-    // 1. Event-time reap: close sessions whose last event is more than
-    // SESSION_TIMEOUT_MS behind the project's high-water mark.
-    if (hwmRaw) {
-      const hwm = Number.parseInt(hwmRaw, 10);
-      if (Number.isFinite(hwm)) {
-        const threshold = hwm - SESSION_TIMEOUT_MS;
-        const candidates = await redis.zrangebyscore(
-          activeSetKey(projectId),
-          0,
-          threshold,
-          'LIMIT',
-          0,
-          REAPER_BATCH_SIZE
-        );
-        for (const deviceId of candidates) {
-          if (await closeSession(projectId, deviceId, 'event-time')) {
-            reaped++;
-          }
-        }
-      }
-    }
-
-    // 2. Wall-clock deadman: catches sessions in projects whose HWM never
-    // advances (low/zero traffic). Bounds memory.
-    const deadmanCutoff = now - WALLCLOCK_DEADMAN_MS;
-    const stragglers = await redis.zrangebyscore(
+    const candidates = await redis.zrangebyscore(
       wallclockSetKey(projectId),
       0,
-      deadmanCutoff,
+      cutoff,
       'LIMIT',
       0,
       REAPER_BATCH_SIZE
     );
-    for (const deviceId of stragglers) {
-      if (await closeSession(projectId, deviceId, 'deadman')) {
+
+    let reaped = 0;
+    for (const deviceId of candidates) {
+      if (await closeSession(projectId, deviceId)) {
         reaped++;
       }
     }
 
-    // 3. House-keeping: if the project has no active sessions anymore,
-    // remove it from the projects set so the reaper stops iterating it.
-    const remaining = await redis.zcard(activeSetKey(projectId));
+    // If the project has no remaining sessions in the wallclock index,
+    // remove it from the projects set so we stop iterating it.
+    const remaining = await redis.zcard(wallclockSetKey(projectId));
     if (remaining === 0) {
       await redis.srem(PROJECTS_SET_KEY, projectId);
     }
@@ -147,8 +130,7 @@ async function reapProject(projectId: string): Promise<number> {
 
 async function closeSession(
   projectId: string,
-  deviceId: string,
-  reason: 'event-time' | 'deadman'
+  deviceId: string
 ): Promise<boolean> {
   const session = await sessionBuffer.getExistingSession({
     projectId,
@@ -156,13 +138,16 @@ async function closeSession(
   });
 
   if (!session) {
-    // Already cleaned up (e.g., session_end ran from another path). Drop
-    // from the sorted sets to keep them tidy.
-    const redis = getRedisCache();
-    const multi = redis.multi();
-    multi.zrem(activeSetKey(projectId), deviceId);
-    multi.zrem(wallclockSetKey(projectId), deviceId);
-    await multi.exec();
+    // Sorted-set entry exists but the blob is gone. Without a TTL on the
+    // blob this should be rare — only happens if cleanup() partially
+    // failed (worker crash mid-MULTI, network partition). Log + count it
+    // and ZREM the orphan entry.
+    sessionsReaperOrphans.inc({ reason: 'deadman' });
+    baseLogger.warn(
+      { projectId, deviceId },
+      'Reaper found wallclock entry without blob — likely a partial cleanup failure',
+    );
+    await getRedisCache().zrem(wallclockSetKey(projectId), deviceId);
     return false;
   }
 
@@ -201,17 +186,17 @@ async function closeSession(
       closedSession: session,
     });
 
-    sessionsReaped.inc({ reason });
+    sessionsReaped.inc({ reason: 'deadman' });
     sessionEndsEnqueued.inc({ source: 'reaper' });
 
     logger.debug(
-      { sessionId: session.id, projectId, deviceId, reason },
+      { sessionId: session.id, projectId, deviceId },
       'Enqueued session_end (reaped)',
     );
     return true;
   } catch (error) {
     logger.error(
-      { err: error, sessionId: session.id, projectId, deviceId, reason },
+      { err: error, sessionId: session.id, projectId, deviceId },
       'Failed to enqueue session_end during reap',
     );
     return false;
