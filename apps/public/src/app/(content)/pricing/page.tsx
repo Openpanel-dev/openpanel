@@ -130,7 +130,7 @@ function ComparisonSection() {
           <>
             See how OpenPanel stacks up against other analytics tools in our{' '}
             <Link
-              href="/articles/open-source-web-analytics"
+              href="/articles/self-hosted-web-analytics"
               className="underline hover:text-primary transition-colors"
             >
               comprehensive comparison of open source web analytics tools

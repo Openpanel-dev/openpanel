@@ -138,7 +138,7 @@
     ],
     "articles": [
       { "title": "Cookieless analytics explained", "url": "/articles/cookieless-analytics" },
-      { "title": "Best open source analytics tools", "url": "/articles/open-source-web-analytics" }
+      { "title": "Best open source analytics tools", "url": "/articles/self-hosted-web-analytics" }
     ],
     "comparisons": [
       { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },

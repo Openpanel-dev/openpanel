@@ -157,7 +157,7 @@
     ],
     "articles": [
       { "title": "How to self-host OpenPanel", "url": "/articles/how-to-self-host-openpanel" },
-      { "title": "Best open source analytics tools", "url": "/articles/open-source-web-analytics" },
+      { "title": "Best open source analytics tools", "url": "/articles/self-hosted-web-analytics" },
       { "title": "Cookieless analytics explained", "url": "/articles/cookieless-analytics" }
     ],
     "comparisons": [

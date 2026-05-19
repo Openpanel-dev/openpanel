@@ -2,18 +2,18 @@
   "slug": "microsoft-clarity-alternative",
   "page_type": "alternative",
   "seo": {
-    "title": "Best Microsoft Clarity Alternative 2026 - Open Source & Free",
-    "description": "Looking for a Microsoft Clarity alternative? OpenPanel offers full product analytics with user identification, retention analysis, and self-hosting. Open source and free to start.",
+    "title": "Microsoft Clarity Alternative 2026 — Session Replay With Real Privacy",
+    "description": "Microsoft Clarity is free but Microsoft owns the session data. OpenPanel adds the product analytics Clarity skips — funnels, retention, cohorts — plus session replay you can self-host.",
     "noindex": false
   },
   "hero": {
-    "heading": "Best Microsoft Clarity Alternative",
-    "subheading": "Love Clarity's free heatmaps and session recordings? OpenPanel adds what Clarity lacks - product analytics, user identification, retention analysis, cohorts, and self-hosting - while staying privacy-friendly and open source.",
+    "heading": "Microsoft Clarity Alternative",
+    "subheading": "Clarity is free, but every session recording lives on Microsoft's servers — and there's no event tracking, no funnels, no retention. OpenPanel adds product analytics on top of session replay, so you understand what users do AND why retention moves. Self-host it for full data ownership.",
     "badges": [
-      "Open-source",
-      "Product Analytics",
+      "Session replay",
+      "Funnels & retention",
       "Self-hostable",
-      "Retention Analysis"
+      "Open source"
     ]
   },
   "competitor": {
@@ -62,15 +62,15 @@
       },
       {
         "label": "Self-Hosting",
-        "openpanel": "Yes - Full Docker deployment",
+        "openpanel": "Yes — Docker Compose (one-command setup)",
         "competitor": "No - Cloud only",
-        "notes": "OpenPanel can be self-hosted with Docker, giving you complete data ownership. Microsoft Clarity is cloud-only with data stored on Microsoft Azure servers."
+        "notes": "OpenPanel self-hosts via Docker Compose (ClickHouse + Postgres + Redis), with a one-command setup script. Microsoft Clarity is cloud-only with data stored on Microsoft Azure servers."
       },
       {
         "label": "Session Recordings",
-        "openpanel": "No",
+        "openpanel": "Yes — Session replay built-in",
         "competitor": "Yes - Unlimited free recordings",
-        "notes": "Clarity offers unlimited session recordings with visual playback of user sessions. OpenPanel focuses on event-based analytics rather than session replay."
+        "notes": "Both offer session replay. Clarity stores recordings on Microsoft Azure (30-day default retention); OpenPanel session replay can be self-hosted with unlimited retention."
       },
       {
         "label": "Retention & Cohort Analysis",
@@ -95,14 +95,15 @@
         "features": [
           {
             "name": "Session Recordings",
-            "openpanel": false,
+            "openpanel": true,
             "competitor": true,
-            "notes": "Clarity offers unlimited session recordings with 30-day retention"
+            "notes": "OpenPanel has session replay built-in. Clarity offers 30-day retention by default (13 months if labeled); OpenPanel self-host has no retention cap."
           },
           {
             "name": "Click Heatmaps",
             "openpanel": false,
-            "competitor": true
+            "competitor": true,
+            "notes": "OpenPanel doesn't generate heatmaps. If heatmaps are critical, pair OpenPanel with Clarity (Clarity is free)."
           },
           {
             "name": "Scroll Heatmaps",
@@ -348,7 +349,7 @@
       },
       {
         "label": "Self Hosting",
-        "openpanel": "Docker (simple single-container setup)",
+        "openpanel": "Docker Compose (ClickHouse + Postgres + Redis, one-command setup)",
         "competitor": "Not available - Cloud only (Microsoft Azure)",
         "notes": null
       },
@@ -388,38 +389,46 @@
   },
   "migration": {
     "title": "Migrating from Microsoft Clarity to OpenPanel",
-    "intro": "Clarity and OpenPanel serve different purposes. Many teams use both.",
+    "intro": "If you only need session replay, OpenPanel replaces Clarity directly. If you need heatmaps, run both — Clarity stays free for heatmaps; OpenPanel handles session replay, funnels, and retention. Most migrations land in under two hours.",
     "difficulty": "easy",
     "estimated_time": "30 minutes to 2 hours",
     "steps": [
       {
-        "title": "Understand the Difference",
-        "description": "Clarity and OpenPanel serve different purposes. Clarity is for behavioral analytics (watching sessions). OpenPanel is for product analytics (tracking user actions over time). Many teams use both."
+        "title": "Decide: replace or pair?",
+        "description": "If your use case is session replay + product analytics (events, funnels, retention), OpenPanel replaces Clarity entirely. If you rely on Clarity's click/scroll heatmaps or rage-click detection, keep Clarity for heatmaps (it stays free) and use OpenPanel for everything else. Most teams pick replace — heatmaps rarely change product decisions on their own."
       },
       {
-        "title": "Install OpenPanel SDK",
-        "description": "Add the OpenPanel SDK to your application. If you're using Clarity's Smart Events, map them to OpenPanel events."
+        "title": "Install the OpenPanel SDK (replaces clarity.js)",
+        "description": "Remove the Clarity tracking snippet and add @openpanel/web (or your framework SDK). The web SDK is 2.3 KB gzipped vs Clarity's ~10 KB. Framework SDKs available: React, Next.js, Vue, Nuxt, Svelte, React Native, iOS, Android, Node.js, Python, PHP, Go, Rust."
       },
       {
-        "title": "Set Up User Identification",
-        "description": "Unlike Clarity, OpenPanel tracks users across sessions. Add op.identify() calls to enable retention analysis, cohorts, and user profiles."
+        "title": "Map Clarity Smart Events to OpenPanel events",
+        "description": "Clarity Smart Events fire on click/scroll patterns. In OpenPanel call op.track('event_name', { property: value }) at the same trigger points. Clarity's auto-captured events (rage clicks, dead clicks, quick backs) have no direct equivalent — if you depended on them, log them manually via your existing click handlers. Most teams find they were never acting on auto-captured events anyway."
       },
       {
-        "title": "Configure Funnels and Retention",
-        "description": "Set up funnels in OpenPanel. Unlike Clarity's session-based funnels, OpenPanel tracks conversions over time across multiple sessions."
+        "title": "Add user identification (Clarity's biggest gap)",
+        "description": "Clarity has custom IDs but no real user profiles. Call op.identify({ profileId, email, plan, ... }) on login. Now every event, session replay, and funnel ties back to a real user — you can pull up any single user's full timeline, which Clarity can't do."
       },
       {
-        "title": "Consider Keeping Both",
-        "description": "Since Clarity is free, consider keeping it for session recordings and heatmaps while using OpenPanel for product analytics. They complement each other."
+        "title": "Enable session replay",
+        "description": "Session replay is a separate config flag. Set recordSession: true in the SDK init (or via dashboard project settings). Replays start recording immediately on the next page load. Default retention is 30 days on cloud; unlimited on self-host."
+      },
+      {
+        "title": "Build the funnels and retention reports Clarity doesn't have",
+        "description": "Clarity is session-scoped — no cross-session retention or cohort analysis. Build your first funnel (signup → activation → upgrade) in the dashboard. Add a retention chart showing how week-1 actions correlate with week-8 retention. These are the reports that drive product decisions and Clarity can't produce."
+      },
+      {
+        "title": "Run parallel for 1 week, then cut",
+        "description": "Keep Clarity running alongside OpenPanel for a week to validate event volume parity. Once OpenPanel funnels match what you expect from Clarity's session data (within ~5%), remove the Clarity snippet. Most teams keep Clarity around indefinitely just for heatmaps since it costs nothing."
       }
     ],
     "sdk_compatibility": {
       "similar_api": false,
-      "notes": "These tools serve different purposes. Clarity focuses on session recordings; OpenPanel focuses on event-based analytics."
+      "notes": "Clarity uses clarity('event', name, value) for Smart Events; OpenPanel uses op.track(name, properties). Mapping: clarity('event', 'signup') → op.track('signup'). clarity('set', 'planType', 'pro') → op.identify({ planType: 'pro' }). clarity('identify', userId) → op.identify({ profileId: userId })."
     },
     "historical_data": {
       "can_import": false,
-      "notes": "Most teams use both tools together since they serve different purposes."
+      "notes": "Clarity doesn't export historical session data. You start fresh in OpenPanel. If you need to preserve Clarity recordings, keep Clarity running on a separate snippet for as long as you want to retain the archive (30-day default retention applies)."
     }
   },
   "use_cases": {
@@ -488,6 +497,14 @@
       {
         "question": "Is Clarity open source?",
         "answer": "Partially. The Clarity tracking code is open source on GitHub, but the backend and dashboard are proprietary Microsoft services. OpenPanel is fully open source with MIT license."
+      },
+      {
+        "question": "How do I move Microsoft Clarity Smart Events to OpenPanel?",
+        "answer": "Clarity Smart Events fire on click/scroll patterns and use the syntax `clarity('event', 'event_name')`. The OpenPanel equivalent is `op.track('event_name', { property: value })` at the same trigger point. For user properties, `clarity('set', 'planType', 'pro')` becomes `op.identify({ planType: 'pro' })`. For user IDs, `clarity('identify', userId)` becomes `op.identify({ profileId: userId })`. Auto-captured events (rage clicks, dead clicks, quick backs) don't have direct equivalents — log them manually if you act on them; most teams find they don't."
+      },
+      {
+        "question": "Microsoft Clarity is free — what does OpenPanel cost in comparison?",
+        "answer": "Clarity is genuinely free with no traffic limits, so cost isn't a switching driver. Switch to OpenPanel when you need product analytics Clarity doesn't offer (funnels, retention, cohorts, real user profiles) or when Microsoft's data ownership becomes a compliance issue. OpenPanel starts at $0 (10K events/month free tier) and scales to $900/month for high volume — or self-host for $0 of OpenPanel cost (you pay only for the server). For session-replay-only use cases, Clarity remains the cheaper option."
       }
     ]
   },
@@ -509,7 +526,7 @@
     "articles": [
       {
         "title": "9 best open source web analytics tools",
-        "url": "/articles/open-source-web-analytics"
+        "url": "/articles/self-hosted-web-analytics"
       }
     ],
     "alternatives": [

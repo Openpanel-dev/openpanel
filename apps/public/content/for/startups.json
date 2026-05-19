@@ -155,7 +155,7 @@
       { "title": "Migrate from Google Analytics", "url": "/guides/migrate-from-google-analytics" }
     ],
     "articles": [
-      { "title": "Best open source analytics tools", "url": "/articles/open-source-web-analytics" },
+      { "title": "Best open source analytics tools", "url": "/articles/self-hosted-web-analytics" },
       { "title": "How to create a funnel", "url": "/articles/how-to-create-a-funnel" },
       { "title": "Cookieless analytics guide", "url": "/articles/cookieless-analytics" }
     ],

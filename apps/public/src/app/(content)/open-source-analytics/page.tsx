@@ -451,7 +451,7 @@ export default function OpenSourceAnalyticsPage() {
               Want a deeper look? Read our{' '}
               <Link
                 className="text-primary hover:underline"
-                href="/articles/open-source-web-analytics"
+                href="/articles/self-hosted-web-analytics"
               >
                 comprehensive comparison of 9 open source analytics tools
               </Link>{' '}
@@ -532,7 +532,7 @@ export default function OpenSourceAnalyticsPage() {
               <Faqs>
                 <FaqItem question="What is the best open source analytics tool?">
                   {
-                    'The best open source analytics tool depends on your needs. **OpenPanel** is the best choice for teams that need both web analytics and product analytics in one platform. **PostHog** is ideal for engineering teams wanting analytics plus feature flags and experiments. **Plausible** is best for simple, privacy-first pageview tracking. **Matomo** is the most mature Google Analytics replacement. See our [full comparison of 9 open source analytics tools](/articles/open-source-web-analytics) for a detailed breakdown.'
+                    'The best open source analytics tool depends on your needs. **OpenPanel** is the best choice for teams that need both web analytics and product analytics in one platform. **PostHog** is ideal for engineering teams wanting analytics plus feature flags and experiments. **Plausible** is best for simple, privacy-first pageview tracking. **Matomo** is the most mature Google Analytics replacement. See our [full comparison of 9 open source analytics tools](/articles/self-hosted-web-analytics) for a detailed breakdown.'
                   }
                 </FaqItem>
                 <FaqItem question="Is open source analytics free to self-host?">
