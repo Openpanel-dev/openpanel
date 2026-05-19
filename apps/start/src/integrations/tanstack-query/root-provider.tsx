@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 import superjson from 'superjson';
 import { TRPCProvider } from '@/integrations/trpc/react';
 
-const DEFAULT_RETRY_COUNT = 3;
+const DEFAULT_RETRY_COUNT = 1;
 
 function shouldRetryQuery(failureCount: number, error: unknown) {
   if (error instanceof TRPCClientError) {

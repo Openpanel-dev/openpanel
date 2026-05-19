@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
-import { useCohorts } from '@/hooks/use-cohorts';
 import { useEventProperties } from '@/hooks/use-event-properties';
 import { useTRPC } from '@/integrations/trpc/react';
 
@@ -30,7 +29,6 @@ export type PropertiesComboboxAction = {
   value: string;
   label: string;
   description: string;
-  cohortId?: string;
 };
 
 export type PropertiesComboboxCategory =
@@ -40,7 +38,7 @@ export type PropertiesComboboxCategory =
   | 'cohort'
   | 'session';
 
-type State = 'index' | PropertiesComboboxCategory;
+type State = 'index' | Exclude<PropertiesComboboxCategory, 'cohort'>;
 
 interface PropertiesComboboxProps {
   event?: IChartEvent;
@@ -49,7 +47,6 @@ interface PropertiesComboboxProps {
   exclude?: string[];
   include?: string[];
   categories?: PropertiesComboboxCategory[];
-  isBreakdown?: boolean;
 }
 
 /**
@@ -129,7 +126,6 @@ export function PropertiesCombobox({
   categories = DEFAULT_CATEGORIES,
   exclude = [],
   include = [],
-  isBreakdown = false,
 }: PropertiesComboboxProps) {
   const { projectId } = useAppParams();
   const trpc = useTRPC();
@@ -144,14 +140,16 @@ export function PropertiesCombobox({
       { enabled: categories.includes('group') },
     ),
   );
-  const cohorts = useCohorts(
-    { projectId, includeCount: false },
-    { enabled: categories.includes('cohort') },
-  );
 
-  /** Skip the index screen when only one category is reachable. */
+  /**
+   * Skip the index screen when only one category is reachable — except for
+   * `cohort`, which has no sub-list (clicking it emits a generic cohort
+   * filter action directly).
+   */
   const initialState: State =
-    categories.length === 1 ? categories[0]! : 'index';
+    categories.length === 1 && categories[0] !== 'cohort'
+      ? (categories[0] as Exclude<PropertiesComboboxCategory, 'cohort'>)
+      : 'index';
 
   const [state, setState] = useState<State>(initialState);
   const [search, setSearch] = useState('');
@@ -220,15 +218,6 @@ export function PropertiesCombobox({
     onSelect(action);
   };
 
-  const cohortActions: PropertiesComboboxAction[] = cohorts.map((cohort) => ({
-    value: `cohort:${cohort.id}`,
-    label: cohort.name,
-    description: cohort.description
-      ? cohort.description
-      : `${cohort.profileCount ?? 0} members`,
-    cohortId: cohort.id,
-  }));
-
   const showBackButton = categories.length > 1;
 
   const renderIndex = () => {
@@ -275,15 +264,11 @@ export function PropertiesCombobox({
             className="group justify-between gap-2"
             onClick={(e) => {
               e.preventDefault();
-              if (isBreakdown) {
-                handleSelect({
-                  value: 'cohort',
-                  label: 'Cohorts',
-                  description: 'All cohorts',
-                });
-              } else {
-                handleStateChange('cohort');
-              }
+              handleSelect({
+                value: 'cohort',
+                label: 'Cohorts',
+                description: 'All cohorts',
+              });
             }}
           >
             Cohorts
@@ -400,17 +385,6 @@ export function PropertiesCombobox({
               transition={{ duration: 0.05 }}
             >
               {renderActionList(groupActions)}
-            </motion.div>
-          )}
-          {state === 'cohort' && (
-            <motion.div
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction === 'forward' ? -20 : 20 }}
-              initial={{ opacity: 0, x: direction === 'forward' ? 20 : -20 }}
-              key="cohort"
-              transition={{ duration: 0.05 }}
-            >
-              {renderActionList(cohortActions)}
             </motion.div>
           )}
           {state === 'session' && (

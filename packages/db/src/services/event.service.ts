@@ -646,7 +646,7 @@ export async function getEventList(options: GetEventListOptions) {
   if (filters) {
     sb.where = {
       ...sb.where,
-      ...getEventFiltersWhereClause(filters, projectId),
+      ...getEventFiltersWhereClause(filters, projectId, 'e'),
     };
 
     // Join profiles table if any filter uses profile fields
@@ -730,7 +730,7 @@ export async function getEventsCount({
   if (filters) {
     sb.where = {
       ...sb.where,
-      ...getEventFiltersWhereClause(filters, projectId),
+      ...getEventFiltersWhereClause(filters, projectId, 'e'),
     };
 
     // Join profiles table if any filter uses profile fields

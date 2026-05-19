@@ -6,7 +6,7 @@ import { TABLE_NAMES, ch } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import {
   buildInlineCohortJoin,
-  collectCohortIds,
+  collectBreakdownCohortIds,
   extractCohortId,
   fetchCohortsMetadata,
   getEventFiltersWhereClause,
@@ -40,10 +40,7 @@ export class ConversionService {
     // can't be resolved against the events schema.
     breakdowns = breakdowns.filter((b) => isKnownEventField(b.name));
 
-    const allFilters = series.flatMap((s) =>
-      s.type === 'event' ? s.filters ?? [] : [],
-    );
-    const cohortIds = collectCohortIds(allFilters, breakdowns);
+    const cohortIds = collectBreakdownCohortIds(breakdowns);
     const cohortMetadata = await fetchCohortsMetadata(cohortIds);
     const cohortJoinsSql = cohortIds
       .map((id) => buildInlineCohortJoin(id, projectId, 'events'))

@@ -54,24 +54,37 @@ export default function TableFilters({
     setFilters(filters.filter((f) => f.id !== target.id));
   };
 
-  const addFilter = (action: { value: string; cohortId?: string }) => {
-    // Use the property name as the id so the URL serializer (which encodes
-    // by name) round-trips cleanly on reload.
-    const next: IChartEventFilter = action.cohortId
-      ? {
-          id: action.value,
-          name: action.value,
+  const addFilter = (action: { value: string }) => {
+    if (action.value === 'cohort') {
+      // Only one cohort filter at a time — multi-cohort OR semantics already
+      // live inside a single filter's cohortIds array.
+      const hasCohort = filters.some(
+        (f) => f.operator === 'inCohort' || f.operator === 'notInCohort',
+      );
+      if (hasCohort) return;
+      setFilters([
+        ...filters,
+        {
+          id: 'cohort',
+          name: 'cohort',
           operator: 'inCohort',
           value: [],
-          cohortId: action.cohortId,
-        }
-      : {
-          id: action.value,
-          name: action.value,
-          operator: 'is',
-          value: [],
-        };
-    setFilters([...filters, next]);
+          cohortIds: [],
+        },
+      ]);
+      return;
+    }
+    // Use the property name as the id so the URL serializer (which encodes
+    // by name) round-trips cleanly on reload.
+    setFilters([
+      ...filters,
+      {
+        id: action.value,
+        name: action.value,
+        operator: 'is',
+        value: [],
+      },
+    ]);
   };
 
   return (
@@ -100,16 +113,13 @@ export default function TableFilters({
                     setFilter({ ...original, operator })
                   }
                   onChangeCohort={(cohortIds, original) => {
-                    // Keep `id` stable so the setFilter helper (which matches
-                    // by id) still finds this row. URL serializes by `name`,
-                    // which we update — on reload the parser will resync id
-                    // from the name. Write both cohort fields so legacy
-                    // consumers reading `cohortId` keep working.
-                    const firstId = cohortIds[0];
+                    // Write both cohort fields so legacy consumers reading
+                    // `cohortId` keep working. Name stays stable as `cohort`
+                    // (new filters) or `cohort:<id>` (legacy saved filters)
+                    // — the URL parser reads the cohortIds segment first.
                     setFilter({
                       ...original,
-                      name: firstId ? `cohort:${firstId}` : original.name,
-                      cohortId: firstId,
+                      cohortId: cohortIds[0],
                       cohortIds,
                     });
                   }}

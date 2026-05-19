@@ -204,20 +204,16 @@ export function buildAllCohortsLabelExpr(
   return `transform(${alias}.cohort_id, [${ids}], [${names}], 'Unknown')`;
 }
 
-export function collectCohortIds(
-  filters: IChartEventFilter[],
+/**
+ * Cohort IDs that need a `cohort_<id>` JOIN alias to be wired up by the
+ * caller. After filter SQL became self-contained, only cohort *breakdowns*
+ * require the JOIN — they reference `cohort_<id>.profile_id` in their
+ * SELECT expression via `getSelectPropertyKey`.
+ */
+export function collectBreakdownCohortIds(
   breakdowns: IChartBreakdown[],
 ): string[] {
   const ids = new Set<string>();
-  for (const filter of filters) {
-    // Collect from both `cohortId` (legacy) and `cohortIds` (multi-value).
-    // Only single-cohort filters use the CTE join path — multi-cohort
-    // filters compile to a direct subselect in getEventFiltersWhereClause.
-    const filterCohortIds = getCohortIds(filter);
-    if (filterCohortIds.length === 1) {
-      ids.add(filterCohortIds[0]!);
-    }
-  }
   for (const breakdown of breakdowns) {
     const id = extractCohortId(breakdown.name);
     if (id) {
@@ -428,7 +424,7 @@ export async function getChartSql({
   const hasAllCohortsBreakdown =
     requestedAllCohortsBreakdown && allCohorts.length > 0;
 
-  const cohortIds = collectCohortIds(event.filters, breakdowns);
+  const cohortIds = collectBreakdownCohortIds(breakdowns);
   const cohortMetadata = await fetchCohortsMetadata(cohortIds);
 
   // Add CTE + JOIN for "all cohorts" breakdown
@@ -846,7 +842,7 @@ export async function getAggregateChartSql({
   const hasAllCohortsBreakdown =
     requestedAllCohortsBreakdown && allCohorts.length > 0;
 
-  const cohortIds = collectCohortIds(event.filters, breakdowns);
+  const cohortIds = collectBreakdownCohortIds(breakdowns);
   const cohortMetadata = await fetchCohortsMetadata(cohortIds);
 
   // Add CTE + JOIN for "all cohorts" breakdown
@@ -1155,28 +1151,20 @@ export function getEventFiltersWhereClause(
       (operator === 'inCohort' || operator === 'notInCohort') &&
       projectId
     ) {
+      // Self-contained membership subselect — no caller JOIN wiring needed.
+      // Cohort filters and cohort breakdowns are decoupled: the breakdown
+      // path (getSelectPropertyKey) still uses a JOIN alias for SELECT
+      // expressions, but filters never depend on it.
       const cohortIds = getCohortIds(filter);
       if (cohortIds.length === 0) return;
-
-      if (cohortIds.length === 1) {
-        // Preserve the original CTE-join path for the single-cohort case
-        // (collectCohortIds wires up the CTE for us). Behaviour for saved
-        // reports with `cohortId: string` is unchanged.
-        const single = cohortIds[0]!;
-        where[id] =
-          operator === 'notInCohort'
-            ? `empty(${getCohortAlias(single)}.profile_id)`
-            : `notEmpty(${getCohortAlias(single)}.profile_id)`;
-        return;
-      }
-
-      // Multi-cohort: compile to a direct subselect against cohort_members.
-      // No CTE join needed — saves an unnecessary plan for the ad-hoc case.
+      const profileIdExpr = eventsAlias
+        ? `${eventsAlias}.profile_id`
+        : 'profile_id';
+      const op = operator === 'notInCohort' ? 'NOT IN' : 'IN';
       const escapedIds = cohortIds
         .map((c) => sqlstring.escape(c))
         .join(', ');
-      const op = operator === 'notInCohort' ? 'NOT IN' : 'IN';
-      where[id] = `e.profile_id ${op} (SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL WHERE cohort_id IN (${escapedIds}) AND project_id = ${sqlstring.escape(projectId)})`;
+      where[id] = `${profileIdExpr} ${op} (SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL WHERE cohort_id IN (${escapedIds}) AND project_id = ${sqlstring.escape(projectId)})`;
       return;
     }
 

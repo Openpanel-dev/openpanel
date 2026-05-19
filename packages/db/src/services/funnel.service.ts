@@ -8,7 +8,7 @@ import { clix } from '../clickhouse/query-builder';
 import { createSqlBuilder } from '../sql-builder';
 import {
   buildInlineCohortJoin,
-  collectCohortIds,
+  collectBreakdownCohortIds,
   extractCohortId,
   fetchCohortsMetadata,
   getEventFiltersWhereClause,
@@ -258,8 +258,7 @@ export class FunnelService {
     const needsGroupArrayJoin =
       anyFilterOnGroup || anyBreakdownOnGroup || funnelGroup === 'group';
 
-    const allFilters = eventSeries.flatMap((e) => e.filters ?? []);
-    const cohortIds = collectCohortIds(allFilters, breakdowns);
+    const cohortIds = collectBreakdownCohortIds(breakdowns);
     const cohortMetadata = await fetchCohortsMetadata(cohortIds);
 
     // Create the funnel CTE (session-level)

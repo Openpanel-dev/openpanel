@@ -45,29 +45,33 @@ export function FiltersBuilder({
     onChange(value.filter((f) => f.id !== target.id));
   };
 
-  const addFilter = (action: {
-    value: string;
-    cohortId?: string;
-  }) => {
-    // Use the property name as the id so the URL serializer can encode the
-    // filter under a stable, human-readable key. A random id would survive
-    // round-trips through the URL but would replace the human-readable
-    // `name` on reload — see useTableFilters serialize/parse logic.
-    const next: IChartEventFilter = action.cohortId
-      ? {
-          id: action.value,
-          name: action.value,
+  const addFilter = (action: { value: string }) => {
+    if (action.value === 'cohort') {
+      const hasCohort = value.some(
+        (f) => f.operator === 'inCohort' || f.operator === 'notInCohort',
+      );
+      if (hasCohort) return;
+      onChange([
+        ...value,
+        {
+          id: 'cohort',
+          name: 'cohort',
           operator: 'inCohort',
           value: [],
-          cohortId: action.cohortId,
-        }
-      : {
-          id: action.value,
-          name: action.value,
-          operator: 'is',
-          value: [],
-        };
-    onChange([...value, next]);
+          cohortIds: [],
+        },
+      ]);
+      return;
+    }
+    onChange([
+      ...value,
+      {
+        id: action.value,
+        name: action.value,
+        operator: 'is',
+        value: [],
+      },
+    ]);
   };
 
   return (
@@ -87,11 +91,9 @@ export function FiltersBuilder({
                   setFilter({ ...original, operator })
                 }
                 onChangeCohort={(cohortIds, original) => {
-                  const firstId = cohortIds[0];
                   setFilter({
                     ...original,
-                    name: firstId ? `cohort:${firstId}` : original.name,
-                    cohortId: firstId,
+                    cohortId: cohortIds[0],
                     cohortIds,
                   });
                 }}

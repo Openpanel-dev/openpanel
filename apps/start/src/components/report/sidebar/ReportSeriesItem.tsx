@@ -73,18 +73,28 @@ export function ReportSeriesItem({
               event={chartEvent}
               categories={['event', 'profile', 'group', 'cohort']}
               onSelect={(action) => {
+                const isCohortAction = action.value === 'cohort';
+                if (
+                  isCohortAction &&
+                  chartEvent.filters.some(
+                    (f) =>
+                      f.operator === 'inCohort' || f.operator === 'notInCohort',
+                  )
+                ) {
+                  return;
+                }
                 dispatch(
                   changeEvent({
                     ...chartEvent,
                     filters: [
                       ...chartEvent.filters,
-                      action.cohortId
+                      isCohortAction
                         ? {
                             id: shortId(),
-                            name: action.value,
+                            name: 'cohort',
                             operator: 'inCohort',
                             value: [],
-                            cohortId: action.cohortId,
+                            cohortIds: [],
                           }
                         : {
                             id: shortId(),

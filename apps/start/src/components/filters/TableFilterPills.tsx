@@ -38,7 +38,7 @@ const SESSION_LABELS: Record<string, string> = {
 };
 
 function humanizeFilterName(name: string): string {
-  if (name.startsWith('cohort:')) return 'Cohort';
+  if (name === 'cohort' || name.startsWith('cohort:')) return 'Cohort';
   if (SESSION_LABELS[name]) return SESSION_LABELS[name]!;
   if (name.startsWith('profile.')) {
     const rest = name.replace(/^profile\./, '');
