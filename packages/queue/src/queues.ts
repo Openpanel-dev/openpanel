@@ -138,6 +138,10 @@ export type CronQueuePayloadCohortRefresh = {
   type: 'cohortRefresh';
   payload: undefined;
 };
+export type CronQueuePayloadSessionReaper = {
+  type: 'sessionReaper';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
@@ -151,7 +155,8 @@ export type CronQueuePayload =
   | CronQueuePayloadInsightsDaily
   | CronQueuePayloadOnboarding
   | CronQueuePayloadGscSync
-  | CronQueuePayloadCohortRefresh;
+  | CronQueuePayloadCohortRefresh
+  | CronQueuePayloadSessionReaper;
 
 export type MiscQueuePayloadTrialEndingSoon = {
   type: 'trialEndingSoon';

@@ -9,6 +9,7 @@ import { gscSyncAllJob } from './gsc';
 import { onboardingJob } from './cron.onboarding';
 import { ping } from './cron.ping';
 import { salt } from './cron.salt';
+import { sessionReaperCronJob } from './cron.session-reaper';
 import { insightsDailyJob } from './insights';
 
 export async function cronJob(job: Job<CronQueuePayload>) {
@@ -51,6 +52,9 @@ export async function cronJob(job: Job<CronQueuePayload>) {
     }
     case 'cohortRefresh': {
       return await cohortRefreshCronJob();
+    }
+    case 'sessionReaper': {
+      return await sessionReaperCronJob();
     }
   }
 }

@@ -5,6 +5,7 @@ import {
   getSalts,
   groupBuffer,
   replayBuffer,
+  sessionBuffer,
   upsertProfile,
 } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
@@ -14,7 +15,6 @@ import {
   produceIncomingEvent,
   shouldUseKafka,
 } from '@openpanel/queue';
-import { getRedisCache } from '@openpanel/redis';
 import type {
   IAssignGroupPayload,
   IDecrementPayload,
@@ -486,32 +486,29 @@ export async function fetchDeviceId(
   });
 
   try {
-    const multi = getRedisCache().multi();
-    multi.hget(
-      `bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`,
-      'data'
-    );
-    multi.hget(
-      `bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`,
-      'data'
-    );
-    const res = await multi.exec();
-    if (res?.[0]?.[1]) {
-      const data = JSON.parse(res?.[0]?.[1] as string);
-      const sessionId = data.payload.sessionId;
+    const [current, previous] = await Promise.all([
+      sessionBuffer.getExistingSession({
+        projectId,
+        deviceId: currentDeviceId,
+      }),
+      sessionBuffer.getExistingSession({
+        projectId,
+        deviceId: previousDeviceId,
+      }),
+    ]);
+
+    if (current) {
       return reply.status(200).send({
         deviceId: currentDeviceId,
-        sessionId,
+        sessionId: current.id,
         message: 'current session exists for this device id',
       });
     }
 
-    if (res?.[1]?.[1]) {
-      const data = JSON.parse(res?.[1]?.[1] as string);
-      const sessionId = data.payload.sessionId;
+    if (previous) {
       return reply.status(200).send({
         deviceId: previousDeviceId,
-        sessionId,
+        sessionId: previous.id,
         message: 'previous session exists for this device id',
       });
     }

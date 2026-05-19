@@ -1,8 +1,6 @@
 import crypto from 'node:crypto';
 import { generateDeviceId } from '@openpanel/common/server';
-import { getSafeJson } from '@openpanel/json';
-import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue';
-import { getRedisCache } from '@openpanel/redis';
+import { sessionBuffer } from '@openpanel/db';
 
 export async function getDeviceId({
   projectId,
@@ -66,40 +64,25 @@ async function getInfoFromSession({
   previousDeviceId: string;
 }): Promise<DeviceIdResult> {
   try {
-    const multi = getRedisCache().multi();
-    multi.hget(
-      `bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`,
-      'data'
-    );
-    multi.hget(
-      `bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`,
-      'data'
-    );
-    const res = await multi.exec();
-    if (res?.[0]?.[1]) {
-      const data = getSafeJson<EventsQueuePayloadCreateSessionEnd>(
-        (res?.[0]?.[1] as string) ?? ''
-      );
-      if (data) {
-        return {
-          deviceId: currentDeviceId,
-          sessionId: data.payload.sessionId,
-        };
-      }
+    const [current, previous] = await Promise.all([
+      sessionBuffer.getExistingSession({
+        projectId,
+        deviceId: currentDeviceId,
+      }),
+      sessionBuffer.getExistingSession({
+        projectId,
+        deviceId: previousDeviceId,
+      }),
+    ]);
+
+    if (current) {
+      return { deviceId: currentDeviceId, sessionId: current.id };
     }
-    if (res?.[1]?.[1]) {
-      const data = getSafeJson<EventsQueuePayloadCreateSessionEnd>(
-        (res?.[1]?.[1] as string) ?? ''
-      );
-      if (data) {
-        return {
-          deviceId: previousDeviceId,
-          sessionId: data.payload.sessionId,
-        };
-      }
+    if (previous) {
+      return { deviceId: previousDeviceId, sessionId: previous.id };
     }
   } catch (error) {
-    console.error('Error getting session end GET /track/device-id', error);
+    console.error('Error getting session GET /track/device-id', error);
   }
 
   return {
