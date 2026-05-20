@@ -13,6 +13,35 @@ import { BaseBuffer } from './base-buffer';
 const PROFILE_COLUMNS =
   'id, first_name, last_name, email, avatar, properties, project_id, is_external, created_at, last_seen_at, groups';
 
+// Equivalent of `SELECT ... FROM profiles FINAL` but expressed via GROUP BY +
+// argMax. ReplicatedReplacingMergeTree uses `last_seen_at` as the version
+// column, so argMax(col, last_seen_at) yields the same value FINAL would
+// produce. Avoiding FINAL lets CH use the primary key (project_id, id) to
+// scan instead of merging parts at query time — order(s) of magnitude
+// faster on the profile-buffer's fetch path.
+//
+// `p.last_seen_at` is qualified with the FROM-clause table alias because
+// the SELECT exposes a `last_seen_at` aggregate alias, and CH resolves
+// bare column refs against the alias list first — causing ILLEGAL_AGGREGATION
+// inside the argMax/max calls. Qualifying with `p.` bypasses the alias
+// lookup and binds to the raw column.
+const PROFILE_LATEST_AGGREGATE_COLUMNS = [
+  'id',
+  'project_id',
+  'argMax(first_name, p.last_seen_at) AS first_name',
+  'argMax(last_name, p.last_seen_at) AS last_name',
+  'argMax(email, p.last_seen_at) AS email',
+  'argMax(avatar, p.last_seen_at) AS avatar',
+  'argMax(properties, p.last_seen_at) AS properties',
+  'argMax(is_external, p.last_seen_at) AS is_external',
+  'argMax(groups, p.last_seen_at) AS groups',
+  // created_at doesn't change between rows for the same profile, but
+  // min() is safe and matches "first seen" semantics if there ever is a
+  // discrepancy.
+  'min(created_at) AS created_at',
+  'max(p.last_seen_at) AS last_seen_at',
+].join(', ');
+
 export class ProfileBuffer extends BaseBuffer {
   private readonly batchSize = process.env.PROFILE_BUFFER_BATCH_SIZE
     ? Number.parseInt(process.env.PROFILE_BUFFER_BATCH_SIZE, 10)
@@ -88,6 +117,7 @@ export class ProfileBuffer extends BaseBuffer {
           });
           const exists = await this.redis.exists(cacheKey);
           if (exists === 1) {
+            this.reportAddSkipped('cached');
             return;
           }
         }
@@ -179,11 +209,17 @@ export class ProfileBuffer extends BaseBuffer {
           )
           .join(', ');
         try {
+          // Table alias `p` is required: without it, WHERE's `last_seen_at`
+          // resolves to the SELECT-list aggregate alias `max(last_seen_at) AS
+          // last_seen_at`, which is an aggregate function and illegal in WHERE
+          // (CH ILLEGAL_AGGREGATION). Qualifying with `p.` bypasses the alias
+          // lookup and binds to the raw column.
           const rows = await chQuery<IClickhouseProfile>(
-            `SELECT ${PROFILE_COLUMNS}
-            FROM ${TABLE_NAMES.profiles} FINAL
-            WHERE (id, project_id) IN (${tuples})
-            ${withDateFilter ? `AND ${TABLE_NAMES.profiles}.last_seen_at > now() - INTERVAL 2 DAY` : ''}`
+            `SELECT ${PROFILE_LATEST_AGGREGATE_COLUMNS}
+            FROM ${TABLE_NAMES.profiles} AS p
+            WHERE (p.id, p.project_id) IN (${tuples})
+            ${withDateFilter ? `AND p.last_seen_at > now() - INTERVAL 2 DAY` : ''}
+            GROUP BY p.id, p.project_id`
           );
           for (const row of rows) {
             result.set(`${row.project_id}:${row.id}`, row);
@@ -262,10 +298,16 @@ export class ProfileBuffer extends BaseBuffer {
       }
     }
 
-    // Fetch cache misses from ClickHouse in bounded chunks
+    // Fetch cache misses from ClickHouse in bounded chunks. Timed separately
+    // from the ch.insert phase because it can dominate flush time for
+    // profile-buffer specifically (FINAL replaced with argMax + GROUP BY in
+    // batchFetchFromClickhouse, but worth measuring directly).
+    let chFetchMs: number | undefined;
     if (cacheMisses.length > 0) {
+      const chFetchStart = performance.now();
       const clickhouseResults =
         await this.batchFetchFromClickhouse(cacheMisses);
+      chFetchMs = performance.now() - chFetchStart;
       for (const [key, profile] of clickhouseResults) {
         existingByKey.set(key, profile);
       }
@@ -310,7 +352,7 @@ export class ProfileBuffer extends BaseBuffer {
 
     this.reportFlushStats({
       rowsProcessed: rawProfiles.length,
-      phases: { lrangeMs, chInsertMs, trimMs },
+      phases: { lrangeMs, chFetchMs, chInsertMs, trimMs },
     });
   }
 }

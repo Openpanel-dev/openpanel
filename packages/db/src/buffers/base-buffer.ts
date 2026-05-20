@@ -5,6 +5,10 @@ import { getRedisCache } from '@openpanel/redis';
 
 export type FlushPhaseTimings = {
   lrangeMs?: number;
+  /** Time spent in CH SELECT(s) during flush (e.g. profile-buffer's
+   *  fetch-existing-profile-for-merge step). Only buffers that read CH
+   *  during flush will populate this. */
+  chFetchMs?: number;
   chInsertMs?: number;
   trimMs?: number;
   /** Total time spent inside onFlush (subclass-specific processing) */
@@ -39,6 +43,12 @@ export type FlushObserver = (obs: FlushObservation) => void;
 export type AddObservation = {
   buffer: string;
   durationMs: number;
+  /** True if the add was a no-op (e.g. cached-and-skipped). When set,
+   *  prefer not to charge this against add-latency histograms — the call
+   *  did almost no work. */
+  skipped?: boolean;
+  /** Free-form reason label for skipped adds (e.g. 'cached'). */
+  skipReason?: string;
 };
 
 export type AddObserver = (obs: AddObservation) => void;
@@ -59,6 +69,13 @@ export class BaseBuffer {
   private inflightStats: {
     rowsProcessed?: number;
     phases?: FlushPhaseTimings;
+  } = {};
+
+  /** Subclass-set markers for the in-flight add() call. Reset on every
+   *  call so a single short-circuit doesn't pollute the next observation. */
+  private inflightAddStats: {
+    skipped?: boolean;
+    skipReason?: string;
   } = {};
 
   /** Optional hook used by the worker to bridge flushes into Prometheus. */
@@ -131,9 +148,12 @@ export class BaseBuffer {
   /**
    * Time the body of an `add()` call. Subclasses wrap their work with this
    * so all add latency is reported uniformly via the `addObserver` hook.
+   * Subclasses may call `reportAddSkipped(reason)` from inside the fn to
+   * mark the call as a no-op (e.g. cached-and-skipped).
    */
   protected async timeAdd<T>(fn: () => Promise<T>): Promise<T> {
     const start = performance.now();
+    this.inflightAddStats = {};
     try {
       return await fn();
     } finally {
@@ -141,11 +161,19 @@ export class BaseBuffer {
         this.addObserver?.({
           buffer: this.name,
           durationMs: performance.now() - start,
+          skipped: this.inflightAddStats.skipped,
+          skipReason: this.inflightAddStats.skipReason,
         });
       } catch {
         // observer errors must not break add
       }
     }
+  }
+
+  /** Mark the in-flight add() as a no-op for observability. */
+  protected reportAddSkipped(reason: string) {
+    this.inflightAddStats.skipped = true;
+    this.inflightAddStats.skipReason = reason;
   }
 
   private async releaseLock(lockId: string): Promise<void> {
@@ -180,6 +208,10 @@ export class BaseBuffer {
       lrangeMs:
         obs.phases?.lrangeMs != null
           ? Math.round(obs.phases.lrangeMs)
+          : undefined,
+      chFetchMs:
+        obs.phases?.chFetchMs != null
+          ? Math.round(obs.phases.chFetchMs)
           : undefined,
       chInsertMs:
         obs.phases?.chInsertMs != null

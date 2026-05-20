@@ -174,6 +174,18 @@ const chInsertDurationMs = new client.Histogram({
 });
 register.registerMetric(chInsertDurationMs);
 
+// CH SELECT latency inside a flush (e.g. profile-buffer's fetch-existing
+// profiles for merge). Separated from ch_insert because for some buffers
+// the SELECT dominates total flush time. Only populated by buffers that
+// actually read CH inside the flush path.
+const chFetchDurationMs = new client.Histogram({
+  name: 'buffer_ch_fetch_duration_ms',
+  help: 'Duration of CH SELECT(s) inside a single flush (e.g. profile merge fetch)',
+  labelNames: ['buffer'],
+  buckets: [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10_000, 30_000, 60_000],
+});
+register.registerMetric(chFetchDurationMs);
+
 const flushLlenAtStart = new client.Histogram({
   name: 'buffer_flush_llen_at_start',
   help: 'LLEN observed at the start of a flush attempt',
@@ -194,10 +206,17 @@ register.registerMetric(addDurationMs);
 
 const addTotal = new client.Counter({
   name: 'buffer_add_total',
-  help: 'Total add() calls per buffer (ingest rate). Pair with buffer_flush_rows_total for fill-vs-drain.',
+  help: 'Total add() calls per buffer that actually enqueued (excludes skipped).',
   labelNames: ['buffer'],
 });
 register.registerMetric(addTotal);
+
+const addSkippedTotal = new client.Counter({
+  name: 'buffer_add_skipped_total',
+  help: 'add() calls that short-circuited (no enqueue). Reason: cached, etc.',
+  labelNames: ['buffer', 'reason'],
+});
+register.registerMetric(addSkippedTotal);
 
 for (const buf of allBuffers) {
   buf.flushObserver = (obs) => {
@@ -231,6 +250,12 @@ for (const buf of allBuffers) {
         obs.phases.trimMs,
       );
     }
+    if (obs.phases?.chFetchMs != null) {
+      chFetchDurationMs.observe(
+        { buffer: obs.buffer },
+        obs.phases.chFetchMs,
+      );
+    }
     if (obs.phases?.chInsertMs != null) {
       chInsertDurationMs.observe(
         { buffer: obs.buffer },
@@ -240,6 +265,14 @@ for (const buf of allBuffers) {
   };
 
   buf.addObserver = (obs) => {
+    if (obs.skipped) {
+      addSkippedTotal.inc({
+        buffer: obs.buffer,
+        reason: obs.skipReason ?? 'unknown',
+      });
+      // Don't pollute add-latency histogram with no-op fast paths
+      return;
+    }
     addTotal.inc({ buffer: obs.buffer });
     addDurationMs.observe({ buffer: obs.buffer }, obs.durationMs);
   };
