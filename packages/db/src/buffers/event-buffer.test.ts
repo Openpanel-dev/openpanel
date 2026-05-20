@@ -286,9 +286,11 @@ describe('EventBuffer', () => {
       .spyOn(ch, 'insert')
       .mockRejectedValueOnce(new Error('ClickHouse unavailable'));
 
-    await eventBuffer.processBuffer();
-
-    // Events must still be in the queue — not lost
+    // Errors propagate to tryFlush (which resyncs the counter). The safety
+    // property — queue preserved on CH failure — still holds.
+    await expect(eventBuffer.processBuffer()).rejects.toThrow(
+      'ClickHouse unavailable',
+    );
     expect(await eventBuffer.getBufferSize()).toBe(1);
 
     insertSpy.mockRestore();

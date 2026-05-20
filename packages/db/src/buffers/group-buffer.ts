@@ -88,109 +88,107 @@ export class GroupBuffer extends BaseBuffer {
   }
 
   async add(input: IGroupBufferInput): Promise<void> {
-    try {
-      const cacheKey = this.getCacheKey(input.projectId, input.id);
+    return this.timeAdd(async () => {
+      try {
+        const cacheKey = this.getCacheKey(input.projectId, input.id);
 
-      const existing =
-        (await this.fetchFromCache(input.projectId, input.id)) ??
-        (await this.fetchFromClickhouse(input.projectId, input.id));
+        const existing =
+          (await this.fetchFromCache(input.projectId, input.id)) ??
+          (await this.fetchFromClickhouse(input.projectId, input.id));
 
-      const mergedProperties = toDots({
-        ...(existing?.properties ?? {}),
-        ...(input.properties ?? {}),
-      }) as Record<string, string>;
+        const mergedProperties = toDots({
+          ...(existing?.properties ?? {}),
+          ...(input.properties ?? {}),
+        }) as Record<string, string>;
 
-      const entry: IGroupBufferEntry = {
-        project_id: input.projectId,
-        id: input.id,
-        type: input.type,
-        name: input.name,
-        properties: mergedProperties,
-        created_at: formatClickhouseDate(
-          existing?.created_at ? new Date(existing.created_at) : new Date()
-        ),
-        version: String(Date.now()),
-        deleted: 0,
-      };
+        const entry: IGroupBufferEntry = {
+          project_id: input.projectId,
+          id: input.id,
+          type: input.type,
+          name: input.name,
+          properties: mergedProperties,
+          created_at: formatClickhouseDate(
+            existing?.created_at ? new Date(existing.created_at) : new Date(),
+          ),
+          version: String(Date.now()),
+          deleted: 0,
+        };
 
-      if (
-        existing &&
-        existing.type === entry.type &&
-        existing.name === entry.name &&
-        shallowEqual(existing.properties, entry.properties)
-      ) {
-        this.logger.debug({ id: input.id }, 'Group not changed, skipping');
-        return;
+        if (
+          existing &&
+          existing.type === entry.type &&
+          existing.name === entry.name &&
+          shallowEqual(existing.properties, entry.properties)
+        ) {
+          this.logger.debug({ id: input.id }, 'Group not changed, skipping');
+          return;
+        }
+
+        const cacheEntry: IGroupCacheEntry = {
+          id: entry.id,
+          project_id: entry.project_id,
+          type: entry.type,
+          name: entry.name,
+          properties: entry.properties,
+          created_at: entry.created_at,
+        };
+
+        const result = await this.redis
+          .multi()
+          .set(cacheKey, JSON.stringify(cacheEntry), 'EX', this.ttlInSeconds)
+          .rpush(this.redisKey, JSON.stringify(entry))
+          .llen(this.redisKey)
+          .exec();
+
+        if (!result) {
+          this.logger.error({ input }, 'Failed to add group to Redis');
+          return;
+        }
+
+        const bufferLength = (result?.[2]?.[1] as number) ?? 0;
+        if (bufferLength >= this.batchSize) {
+          await this.tryFlush({ trigger: 'add' });
+        }
+      } catch (error) {
+        this.logger.error({ err: error, input }, 'Failed to add group');
       }
+    });
+  }
 
-      const cacheEntry: IGroupCacheEntry = {
-        id: entry.id,
-        project_id: entry.project_id,
-        type: entry.type,
-        name: entry.name,
-        properties: entry.properties,
-        created_at: entry.created_at,
-      };
 
-      const result = await this.redis
-        .multi()
-        .set(cacheKey, JSON.stringify(cacheEntry), 'EX', this.ttlInSeconds)
-        .rpush(this.redisKey, JSON.stringify(entry))
-        .incr(this.bufferCounterKey)
-        .llen(this.redisKey)
-        .exec();
-
-      if (!result) {
-        this.logger.error({ input }, 'Failed to add group to Redis');
-        return;
-      }
-
-      const bufferLength = (result?.[3]?.[1] as number) ?? 0;
-      if (bufferLength >= this.batchSize) {
-        await this.tryFlush();
-      }
-    } catch (error) {
-      this.logger.error({ err: error, input }, 'Failed to add group');
-    }
+  protected getRedisListKey(): string {
+    return this.redisKey;
   }
 
   async processBuffer(): Promise<void> {
-    try {
-      this.logger.debug('Starting group buffer processing');
-      const items = await this.redis.lrange(this.redisKey, 0, this.batchSize - 1);
+    const lrangeStart = performance.now();
+    const items = await this.redis.lrange(this.redisKey, 0, this.batchSize - 1);
+    const lrangeMs = performance.now() - lrangeStart;
 
-      if (items.length === 0) {
-        this.logger.debug('No groups to process');
-        return;
-      }
-
-      this.logger.debug(`Processing ${items.length} groups in buffer`);
-      const parsed = items.map((i) => getSafeJson<IGroupBufferEntry>(i));
-
-      for (const chunk of this.chunks(parsed, this.chunkSize)) {
-        await ch.insert({
-          table: TABLE_NAMES.groups,
-          values: chunk,
-          format: 'JSONEachRow',
-        });
-      }
-
-      await this.redis
-        .multi()
-        .ltrim(this.redisKey, items.length, -1)
-        .decrby(this.bufferCounterKey, items.length)
-        .exec();
-
-      this.logger.debug(
-        { totalGroups: items.length },
-        'Successfully completed group processing',
-      );
-    } catch (error) {
-      this.logger.error({ err: error }, 'Failed to process buffer');
+    if (items.length === 0) {
+      this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
+      return;
     }
-  }
 
-  async getBufferSize(): Promise<number> {
-    return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
+    const parsed = items.map((i) => getSafeJson<IGroupBufferEntry>(i));
+
+    const chStart = performance.now();
+    for (const chunk of this.chunks(parsed, this.chunkSize)) {
+      await ch.insert({
+        table: TABLE_NAMES.groups,
+        values: chunk,
+        format: 'JSONEachRow',
+      });
+    }
+    const chInsertMs = performance.now() - chStart;
+
+    const trimStart = performance.now();
+    await this.redis.ltrim(this.redisKey, items.length, -1);
+    const trimMs = performance.now() - trimStart;
+
+    this.reportFlushStats({
+      rowsProcessed: items.length,
+      phases: { lrangeMs, chInsertMs, trimMs },
+    });
   }
 }

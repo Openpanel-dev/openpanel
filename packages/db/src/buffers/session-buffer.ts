@@ -192,6 +192,10 @@ export class SessionBuffer extends BaseBuffer {
     ];
   }
 
+  protected getRedisListKey(): string {
+    return this.redisKey;
+  }
+
   async add(event: IClickhouseEvent) {
     if (!event.session_id) {
       return;
@@ -201,89 +205,87 @@ export class SessionBuffer extends BaseBuffer {
       return;
     }
 
-    try {
-      // Plural since we will delete the old session with sign column
-      const sessions = await this.getSession(event);
-      const [newSession] = sessions;
+    return this.timeAdd(async () => {
+      try {
+        // Plural since we will delete the old session with sign column
+        const sessions = await this.getSession(event);
+        const [newSession] = sessions;
 
-      const multi = this.redis.multi();
-      multi.set(
-        `session:${newSession.id}`,
-        JSON.stringify(newSession),
-        'EX',
-        60 * 60
-      );
-      if (newSession.profile_id) {
+        const multi = this.redis.multi();
         multi.set(
-          `session:${newSession.project_id}:${newSession.profile_id}`,
-          newSession.id,
+          `session:${newSession.id}`,
+          JSON.stringify(newSession),
           'EX',
-          60 * 60
+          60 * 60,
         );
-      }
-      for (const session of sessions) {
-        multi.rpush(this.redisKey, JSON.stringify(session));
-      }
-      // Increment counter by number of sessions added
-      multi.incrby(this.bufferCounterKey, sessions.length);
-      await multi.exec();
+        if (newSession.profile_id) {
+          multi.set(
+            `session:${newSession.project_id}:${newSession.profile_id}`,
+            newSession.id,
+            'EX',
+            60 * 60,
+          );
+        }
+        for (const session of sessions) {
+          multi.rpush(this.redisKey, JSON.stringify(session));
+        }
+        // Append LLEN at the end so we can read ground-truth queue length
+        // from the exec result without an extra round-trip.
+        multi.llen(this.redisKey);
+        const result = await multi.exec();
 
-      // Check buffer length using counter
-      const bufferLength = await this.getBufferSize();
+        const llenIndex = (result?.length ?? 1) - 1;
+        const bufferLength = (result?.[llenIndex]?.[1] as number) ?? 0;
 
-      if (bufferLength >= this.batchSize) {
-        await this.tryFlush();
+        if (bufferLength >= this.batchSize) {
+          await this.tryFlush({ trigger: 'add' });
+        }
+      } catch (error) {
+        this.logger.error({ err: error }, 'Failed to add session');
       }
-    } catch (error) {
-      this.logger.error({ err: error }, 'Failed to add session');
-    }
+    });
   }
 
   async processBuffer() {
-    try {
-      // Get events from the start without removing them
-      const events = await this.redis.lrange(
-        this.redisKey,
-        0,
-        this.batchSize - 1
-      );
+    const lrangeStart = performance.now();
+    const events = await this.redis.lrange(
+      this.redisKey,
+      0,
+      this.batchSize - 1
+    );
+    const lrangeMs = performance.now() - lrangeStart;
 
-      if (events.length === 0) {
-        return;
-      }
-
-      const sessions = events
-        .map((e) => getSafeJson<IClickhouseSession>(e))
-        .map((session) => {
-          return {
-            ...session,
-            duration: Math.max(0, session?.duration || 0),
-          };
-        });
-
-      for (const chunk of this.chunks(sessions, this.chunkSize)) {
-        // Insert to ClickHouse
-        await ch.insert({
-          table: TABLE_NAMES.sessions,
-          values: chunk,
-          format: 'JSONEachRow',
-        });
-      }
-
-      // Only remove events after successful insert and update counter
-      const multi = this.redis.multi();
-      multi
-        .ltrim(this.redisKey, events.length, -1)
-        .decrby(this.bufferCounterKey, events.length);
-      await multi.exec();
-
-      this.logger.debug({ count: events.length }, 'Processed sessions');
-    } catch (error) {
-      this.logger.error({ err: error }, 'Failed to process buffer');
+    if (events.length === 0) {
+      this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
+      return;
     }
-  }
 
-  getBufferSize() {
-    return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
+    const sessions = events
+      .map((e) => getSafeJson<IClickhouseSession>(e))
+      .map((session) => {
+        return {
+          ...session,
+          duration: Math.max(0, session?.duration || 0),
+        };
+      });
+
+    const chStart = performance.now();
+    for (const chunk of this.chunks(sessions, this.chunkSize)) {
+      await ch.insert({
+        table: TABLE_NAMES.sessions,
+        values: chunk,
+        format: 'JSONEachRow',
+      });
+    }
+    const chInsertMs = performance.now() - chStart;
+
+    const trimStart = performance.now();
+    await this.redis.ltrim(this.redisKey, events.length, -1);
+    const trimMs = performance.now() - trimStart;
+
+    this.reportFlushStats({
+      rowsProcessed: events.length,
+      phases: { lrangeMs, chInsertMs, trimMs },
+    });
   }
 }

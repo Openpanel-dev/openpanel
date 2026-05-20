@@ -178,9 +178,11 @@ describe('ProfileBuffer', () => {
       .spyOn(ch, 'insert')
       .mockRejectedValueOnce(new Error('ClickHouse unavailable'));
 
-    await profileBuffer.processBuffer();
-
-    // Profiles must still be in the queue — not lost
+    // Errors propagate to tryFlush (which resyncs the counter). The safety
+    // property — queue preserved on CH failure — still holds.
+    await expect(profileBuffer.processBuffer()).rejects.toThrow(
+      'ClickHouse unavailable',
+    );
     expect(await profileBuffer.getBufferSize()).toBe(1);
 
     insertSpy.mockRestore();

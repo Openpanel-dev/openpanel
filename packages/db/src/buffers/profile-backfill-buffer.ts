@@ -32,94 +32,88 @@ export class ProfileBackfillBuffer extends BaseBuffer {
   }
 
   async add(entry: ProfileBackfillEntry) {
-    try {
-      this.logger.info({ entry }, 'Adding profile backfill entry');
-      await this.redis
-        .multi()
-        .rpush(this.redisKey, JSON.stringify(entry))
-        .incr(this.bufferCounterKey)
-        .exec();
-    } catch (error) {
-      this.logger.error(
-        { err: error },
-        'Failed to add profile backfill entry',
-      );
-    }
+    return this.timeAdd(async () => {
+      try {
+        this.logger.info({ entry }, 'Adding profile backfill entry');
+        await this.redis.rpush(this.redisKey, JSON.stringify(entry));
+      } catch (error) {
+        this.logger.error(
+          { err: error },
+          'Failed to add profile backfill entry',
+        );
+      }
+    });
+  }
+
+
+  protected getRedisListKey(): string {
+    return this.redisKey;
   }
 
   async processBuffer() {
-    try {
-      const raw = await this.redis.lrange(this.redisKey, 0, this.batchSize - 1);
+    const lrangeStart = performance.now();
+    const raw = await this.redis.lrange(this.redisKey, 0, this.batchSize - 1);
+    const lrangeMs = performance.now() - lrangeStart;
 
-      if (raw.length === 0) return;
-
-      // Deduplicate by sessionId — last write wins (most recent profileId)
-      const seen = new Map<string, ProfileBackfillEntry>();
-      for (const r of raw) {
-        const parsed = getSafeJson<ProfileBackfillEntry>(r);
-        if (parsed) {
-          seen.set(parsed.sessionId, parsed);
-        }
-      }
-      const entries = Array.from(seen.values());
-
-      const table = getReplicatedTableName(TABLE_NAMES.events);
-
-      const chunks = this.chunks(entries, CHUNK_SIZE);
-      let processedChunks = 0;
-
-      for (const chunk of chunks) {
-        const caseClause = chunk
-          .map(({ sessionId, profileId }) => `WHEN ${sqlstring.escape(sessionId)} THEN ${sqlstring.escape(profileId)}`)
-          .join('\n');
-        const tupleList = chunk
-          .map(({ projectId, sessionId }) => `(${sqlstring.escape(projectId)}, ${sqlstring.escape(sessionId)})`)
-          .join(',');
-
-        const query = `
-          UPDATE ${table}
-          SET profile_id = CASE session_id
-            ${caseClause}
-          END
-          WHERE (project_id, session_id) IN (${tupleList})
-            AND created_at > now() - INTERVAL 6 HOURS`;
-
-        await ch.command({
-          query,
-          clickhouse_settings: {
-            mutations_sync: '0',
-            allow_experimental_lightweight_update: '1'
-          },
-        });
-
-        processedChunks++;
-        this.logger.info(
-          { count: chunk.length },
-          'Profile backfill chunk applied',
-        );
-      }
-
-      if (processedChunks === chunks.length) {
-        await this.redis
-          .multi()
-          .ltrim(this.redisKey, raw.length, -1)
-          .decrby(this.bufferCounterKey, raw.length)
-          .exec();
-
-        this.logger.info(
-          { total: entries.length },
-          'Profile backfill buffer processed',
-        );
-      }
-    } catch (error) {
-      this.logger.error(
-        { err: error },
-        'Failed to process profile backfill buffer',
-      );
+    if (raw.length === 0) {
+      this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
+      return;
     }
-  }
 
-  async getBufferSize() {
-    return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
+    // Deduplicate by sessionId — last write wins (most recent profileId)
+    const seen = new Map<string, ProfileBackfillEntry>();
+    for (const r of raw) {
+      const parsed = getSafeJson<ProfileBackfillEntry>(r);
+      if (parsed) {
+        seen.set(parsed.sessionId, parsed);
+      }
+    }
+    const entries = Array.from(seen.values());
+
+    const table = getReplicatedTableName(TABLE_NAMES.events);
+
+    const chunks = this.chunks(entries, CHUNK_SIZE);
+    let processedChunks = 0;
+
+    const chStart = performance.now();
+    for (const chunk of chunks) {
+      const caseClause = chunk
+        .map(({ sessionId, profileId }) => `WHEN ${sqlstring.escape(sessionId)} THEN ${sqlstring.escape(profileId)}`)
+        .join('\n');
+      const tupleList = chunk
+        .map(({ projectId, sessionId }) => `(${sqlstring.escape(projectId)}, ${sqlstring.escape(sessionId)})`)
+        .join(',');
+
+      const query = `
+        UPDATE ${table}
+        SET profile_id = CASE session_id
+          ${caseClause}
+        END
+        WHERE (project_id, session_id) IN (${tupleList})
+          AND created_at > now() - INTERVAL 6 HOURS`;
+
+      await ch.command({
+        query,
+        clickhouse_settings: {
+          mutations_sync: '0',
+          allow_experimental_lightweight_update: '1'
+        },
+      });
+
+      processedChunks++;
+    }
+    const chInsertMs = performance.now() - chStart;
+
+    let trimMs: number | undefined;
+    if (processedChunks === chunks.length) {
+      const trimStart = performance.now();
+      await this.redis.ltrim(this.redisKey, raw.length, -1);
+      trimMs = performance.now() - trimStart;
+    }
+
+    this.reportFlushStats({
+      rowsProcessed: raw.length,
+      phases: { lrangeMs, chInsertMs, trimMs },
+    });
   }
 }

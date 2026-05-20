@@ -26,7 +26,6 @@ export class EventBuffer extends BaseBuffer {
   private flushRetryCount = 0;
 
   private queueKey = 'event_buffer:queue';
-  protected bufferCounterKey = 'event_buffer:total_count';
 
   constructor() {
     super({
@@ -44,19 +43,33 @@ export class EventBuffer extends BaseBuffer {
   }
 
   add(event: IClickhouseEvent) {
+    // Event-buffer's add() is synchronous (in-memory push). Measured anyway
+    // for consistency with the other buffers' add-latency tracking.
+    const start = performance.now();
     this.pendingEvents.push(event);
 
     if (this.pendingEvents.length >= this.microBatchMaxSize) {
       this.flushLocalBuffer();
-      return;
-    }
-
-    if (!this.flushTimer) {
+    } else if (!this.flushTimer) {
       this.flushTimer = setTimeout(() => {
         this.flushTimer = null;
         this.flushLocalBuffer();
       }, this.microBatchIntervalMs);
     }
+
+    try {
+      this.addObserver?.({
+        buffer: this.name,
+        durationMs: performance.now() - start,
+      });
+    } catch {
+      // never break add on observer failure
+    }
+  }
+
+  /** Number of events buffered locally in process memory, before Redis. */
+  public getPendingLocalCount(): number {
+    return this.pendingEvents.length;
   }
 
   public async flush() {
@@ -84,7 +97,6 @@ export class EventBuffer extends BaseBuffer {
       for (const event of eventsToFlush) {
         multi.rpush(this.queueKey, JSON.stringify(event));
       }
-      multi.incrby(this.bufferCounterKey, eventsToFlush.length);
 
       await multi.exec();
 
@@ -114,92 +126,76 @@ export class EventBuffer extends BaseBuffer {
     }
   }
 
+  protected getRedisListKey(): string {
+    return this.queueKey;
+  }
+
   async processBuffer() {
     const redis = getRedisCache();
 
-    try {
-      const queueEvents = await redis.lrange(
-        this.queueKey,
-        0,
-        this.batchSize - 1
-      );
+    const lrangeStart = performance.now();
+    const queueEvents = await redis.lrange(
+      this.queueKey,
+      0,
+      this.batchSize - 1,
+    );
+    const lrangeMs = performance.now() - lrangeStart;
 
-      if (queueEvents.length === 0) {
-        this.logger.debug('No events to process');
-        return;
-      }
-
-      const eventsToClickhouse: IClickhouseEvent[] = [];
-      for (const eventStr of queueEvents) {
-        const event = getSafeJson<IClickhouseEvent>(eventStr);
-        if (event) {
-          if (!Array.isArray(event.groups)) {
-            event.groups = [];
-          }
-          eventsToClickhouse.push(event);
-        }
-      }
-
-      if (eventsToClickhouse.length === 0) {
-        this.logger.debug('No valid events to process');
-        return;
-      }
-
-      eventsToClickhouse.sort(
-        (a, b) =>
-          new Date(a.created_at || 0).getTime() -
-          new Date(b.created_at || 0).getTime()
-      );
-
-      this.logger.info(
-        {
-          totalEvents: eventsToClickhouse.length,
-          chunks: Math.ceil(eventsToClickhouse.length / this.chunkSize),
-        },
-        'Inserting events into ClickHouse',
-      );
-
-      for (const chunk of this.chunks(eventsToClickhouse, this.chunkSize)) {
-        await ch.insert({
-          table: 'events',
-          values: chunk,
-          format: 'JSONEachRow',
-        });
-      }
-
-      const countByProject = new Map<string, number>();
-      for (const event of eventsToClickhouse) {
-        countByProject.set(
-          event.project_id,
-          (countByProject.get(event.project_id) ?? 0) + 1
-        );
-      }
-      for (const [projectId, count] of countByProject) {
-        publishEvent('events', 'batch', { projectId, count });
-      }
-
-      await redis
-        .multi()
-        .ltrim(this.queueKey, queueEvents.length, -1)
-        .decrby(this.bufferCounterKey, queueEvents.length)
-        .exec();
-
-      this.logger.info(
-        {
-          batchSize: this.batchSize,
-          eventsProcessed: eventsToClickhouse.length,
-        },
-        'Processed events from Redis buffer',
-      );
-    } catch (error) {
-      this.logger.error({ err: error }, 'Error processing Redis buffer');
+    if (queueEvents.length === 0) {
+      this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
+      return;
     }
-  }
 
-  public getBufferSize() {
-    return this.getBufferSizeWithCounter(async () => {
-      const redis = getRedisCache();
-      return await redis.llen(this.queueKey);
+    const eventsToClickhouse: IClickhouseEvent[] = [];
+    for (const eventStr of queueEvents) {
+      const event = getSafeJson<IClickhouseEvent>(eventStr);
+      if (event) {
+        if (!Array.isArray(event.groups)) {
+          event.groups = [];
+        }
+        eventsToClickhouse.push(event);
+      }
+    }
+
+    if (eventsToClickhouse.length === 0) {
+      this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
+      return;
+    }
+
+    eventsToClickhouse.sort(
+      (a, b) =>
+        new Date(a.created_at || 0).getTime() -
+        new Date(b.created_at || 0).getTime(),
+    );
+
+    const chStart = performance.now();
+    for (const chunk of this.chunks(eventsToClickhouse, this.chunkSize)) {
+      await ch.insert({
+        table: 'events',
+        values: chunk,
+        format: 'JSONEachRow',
+      });
+    }
+    const chInsertMs = performance.now() - chStart;
+
+    const countByProject = new Map<string, number>();
+    for (const event of eventsToClickhouse) {
+      countByProject.set(
+        event.project_id,
+        (countByProject.get(event.project_id) ?? 0) + 1,
+      );
+    }
+    for (const [projectId, count] of countByProject) {
+      publishEvent('events', 'batch', { projectId, count });
+    }
+
+    const trimStart = performance.now();
+    await redis.ltrim(this.queueKey, queueEvents.length, -1);
+    const trimMs = performance.now() - trimStart;
+
+    this.reportFlushStats({
+      rowsProcessed: queueEvents.length,
+      phases: { lrangeMs, chInsertMs, trimMs },
     });
   }
 

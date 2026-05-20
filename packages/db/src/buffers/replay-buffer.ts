@@ -34,62 +34,66 @@ export class ReplayBuffer extends BaseBuffer {
   }
 
   async add(chunk: IClickhouseSessionReplayChunk) {
-    try {
-      const redis = getRedisCache();
-      const result = await redis
-        .multi()
-        .rpush(this.redisKey, JSON.stringify(chunk))
-        .incr(this.bufferCounterKey)
-        .llen(this.redisKey)
-        .exec();
+    return this.timeAdd(async () => {
+      try {
+        const redis = getRedisCache();
+        const result = await redis
+          .multi()
+          .rpush(this.redisKey, JSON.stringify(chunk))
+          .llen(this.redisKey)
+          .exec();
 
-      const bufferLength = (result?.[2]?.[1] as number) ?? 0;
-      if (bufferLength >= this.batchSize) {
-        await this.tryFlush();
+        const bufferLength = (result?.[1]?.[1] as number) ?? 0;
+        if (bufferLength >= this.batchSize) {
+          await this.tryFlush({ trigger: 'add' });
+        }
+      } catch (error) {
+        this.logger.error(
+          { err: error },
+          'Failed to add replay chunk to buffer',
+        );
       }
-    } catch (error) {
-      this.logger.error(
-        { err: error },
-        'Failed to add replay chunk to buffer',
-      );
-    }
+    });
+  }
+
+
+  protected getRedisListKey(): string {
+    return this.redisKey;
   }
 
   async processBuffer() {
     const redis = getRedisCache();
-    try {
-      const items = await redis.lrange(this.redisKey, 0, this.batchSize - 1);
 
-      if (items.length === 0) {
-        return;
-      }
+    const lrangeStart = performance.now();
+    const items = await redis.lrange(this.redisKey, 0, this.batchSize - 1);
+    const lrangeMs = performance.now() - lrangeStart;
 
-      const chunks = items
-        .map((item) => getSafeJson<IClickhouseSessionReplayChunk>(item))
-        .filter((item): item is IClickhouseSessionReplayChunk => item != null);
-
-      for (const chunk of this.chunks(chunks, this.chunkSize)) {
-        await ch.insert({
-          table: TABLE_NAMES.session_replay_chunks,
-          values: chunk,
-          format: 'JSONEachRow',
-        });
-      }
-
-      await redis
-        .multi()
-        .ltrim(this.redisKey, items.length, -1)
-        .decrby(this.bufferCounterKey, items.length)
-        .exec();
-
-      this.logger.debug({ count: items.length }, 'Processed replay chunks');
-    } catch (error) {
-      this.logger.error({ err: error }, 'Failed to process replay buffer');
+    if (items.length === 0) {
+      this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
+      return;
     }
-  }
 
-  async getBufferSize() {
-    const redis = getRedisCache();
-    return this.getBufferSizeWithCounter(() => redis.llen(this.redisKey));
+    const chunks = items
+      .map((item) => getSafeJson<IClickhouseSessionReplayChunk>(item))
+      .filter((item): item is IClickhouseSessionReplayChunk => item != null);
+
+    const chStart = performance.now();
+    for (const chunk of this.chunks(chunks, this.chunkSize)) {
+      await ch.insert({
+        table: TABLE_NAMES.session_replay_chunks,
+        values: chunk,
+        format: 'JSONEachRow',
+      });
+    }
+    const chInsertMs = performance.now() - chStart;
+
+    const trimStart = performance.now();
+    await redis.ltrim(this.redisKey, items.length, -1);
+    const trimMs = performance.now() - trimStart;
+
+    this.reportFlushStats({
+      rowsProcessed: items.length,
+      phases: { lrangeMs, chInsertMs, trimMs },
+    });
   }
 }

@@ -1,17 +1,71 @@
 import { generateSecureId } from '@openpanel/common/server';
 import { type ILogger, createLogger } from '@openpanel/logger';
 import { cronQueue } from '@openpanel/queue';
-import { getRedisCache, runEvery } from '@openpanel/redis';
+import { getRedisCache } from '@openpanel/redis';
+
+export type FlushPhaseTimings = {
+  lrangeMs?: number;
+  chInsertMs?: number;
+  trimMs?: number;
+  /** Total time spent inside onFlush (subclass-specific processing) */
+  onFlushMs?: number;
+};
+
+export type FlushTrigger = 'add' | 'cron';
+
+export type FlushObservation = {
+  buffer: string;
+  /**
+   * - `success`: flush ran and completed without error
+   * - `error`: flush ran and threw
+   * - `locked`: another worker held the lock (no-op)
+   * - `paused`: cron queue paused (no-op)
+   */
+  result: 'success' | 'error' | 'locked' | 'paused';
+  /** What invoked this flush: `add` = fast-path (buffer crossed batchSize), `cron` = periodic scheduler. */
+  trigger: FlushTrigger;
+  /** Total wall time of the tryFlush call, including lock acquisition. */
+  totalMs: number;
+  /** Number of rows actually processed by this flush (subclass-reported). */
+  rowsProcessed?: number;
+  /** LLEN of the buffer's main list captured at flush start. */
+  llenAtStart?: number;
+  phases?: FlushPhaseTimings;
+  err?: unknown;
+};
+
+export type FlushObserver = (obs: FlushObservation) => void;
+
+export type AddObservation = {
+  buffer: string;
+  durationMs: number;
+};
+
+export type AddObserver = (obs: AddObservation) => void;
 
 export class BaseBuffer {
   name: string;
   logger: ILogger;
   lockKey: string;
   lockTimeout = 60;
-  onFlush: () => void;
+  onFlush: () => Promise<void> | void;
   enableParallelProcessing: boolean;
 
-  protected bufferCounterKey: string;
+  /**
+   * Subclass-reported counts/timings for the in-flight flush. Populated by
+   * `reportFlushStats` from within `onFlush` so the base-class observer can
+   * include them in the FlushObservation.
+   */
+  private inflightStats: {
+    rowsProcessed?: number;
+    phases?: FlushPhaseTimings;
+  } = {};
+
+  /** Optional hook used by the worker to bridge flushes into Prometheus. */
+  public flushObserver: FlushObserver | null = null;
+
+  /** Optional hook for instrumenting add() latency. */
+  public addObserver: AddObserver | null = null;
 
   constructor(options: {
     name: string;
@@ -22,8 +76,18 @@ export class BaseBuffer {
     this.name = options.name;
     this.lockKey = `lock:${this.name}`;
     this.onFlush = options.onFlush;
-    this.bufferCounterKey = `${this.name}:buffer:count`;
     this.enableParallelProcessing = options.enableParallelProcessing ?? false;
+  }
+
+  /**
+   * Returns the Redis key of the buffer's main list (the queue of pending
+   * rows). Used by base-class methods for ground-truth size and
+   * observability. Subclasses MUST override.
+   */
+  protected getRedisListKey(): string {
+    throw new Error(
+      `${this.name}: subclass must override getRedisListKey()`,
+    );
   }
 
   protected chunks<T>(items: T[], size: number) {
@@ -35,57 +99,56 @@ export class BaseBuffer {
   }
 
   /**
-   * Utility method to safely get buffer size with counter fallback
+   * Subclasses call this from within onFlush to record what they actually
+   * did. The base class includes these in the FlushObservation it emits.
    */
-  protected async getBufferSizeWithCounter(
-    fallbackFn: () => Promise<number>,
-  ): Promise<number> {
-    const key = this.bufferCounterKey;
+  protected reportFlushStats(stats: {
+    rowsProcessed?: number;
+    phases?: FlushPhaseTimings;
+  }) {
+    if (stats.rowsProcessed !== undefined) {
+      this.inflightStats.rowsProcessed = stats.rowsProcessed;
+    }
+    if (stats.phases) {
+      this.inflightStats.phases = {
+        ...(this.inflightStats.phases ?? {}),
+        ...stats.phases,
+      };
+    }
+  }
+
+  /**
+   * Ground-truth size of the buffer (LLEN of the Redis list). O(1). The
+   * previous implementation kept a shadow counter to "avoid" LLEN — but
+   * LLEN and GET are both O(1) single-roundtrip ops in Redis, so the
+   * counter was free complexity that silently drifted (see incident
+   * 2026-05-20). Always use this.
+   */
+  async getBufferSize(): Promise<number> {
+    return await getRedisCache().llen(this.getRedisListKey());
+  }
+
+  /**
+   * Time the body of an `add()` call. Subclasses wrap their work with this
+   * so all add latency is reported uniformly via the `addObserver` hook.
+   */
+  protected async timeAdd<T>(fn: () => Promise<T>): Promise<T> {
+    const start = performance.now();
     try {
-      await runEvery({
-        interval: 60 * 60,
-        key: `${this.name}-buffer:resync`,
-        fn: async () => {
-          try {
-            const actual = await fallbackFn();
-            await getRedisCache().set(this.bufferCounterKey, actual.toString());
-          } catch (error) {
-            this.logger.warn(
-              { err: error },
-              'Failed to resync buffer counter',
-            );
-          }
-        },
-      }).catch(() => {});
-
-      const counterValue = await getRedisCache().get(key);
-      if (counterValue !== null) {
-        const parsed = Number.parseInt(counterValue, 10);
-        if (!Number.isNaN(parsed)) {
-          return Math.max(0, parsed);
-        }
-        // Corrupted value → treat as missing
-        this.logger.warn(
-          { key, counterValue },
-          'Invalid buffer counter value, reinitializing',
-        );
+      return await fn();
+    } finally {
+      try {
+        this.addObserver?.({
+          buffer: this.name,
+          durationMs: performance.now() - start,
+        });
+      } catch {
+        // observer errors must not break add
       }
-
-      // Initialize counter with current size
-      const count = await fallbackFn();
-      await getRedisCache().set(key, count.toString());
-      return count;
-    } catch (error) {
-      this.logger.warn(
-        { err: error },
-        'Failed to get buffer size from counter, using fallback',
-      );
-      return fallbackFn();
     }
   }
 
   private async releaseLock(lockId: string): Promise<void> {
-    this.logger.debug('Releasing lock...');
     const script = `
       if redis.call("get", KEYS[1]) == ARGV[1] then
         return redis.call("del", KEYS[1])
@@ -96,35 +159,110 @@ export class BaseBuffer {
     await getRedisCache().eval(script, 1, this.lockKey, lockId);
   }
 
-  async tryFlush() {
-    const now = performance.now();
+  /**
+   * Emit a flush observation to the configured observer and to the structured
+   * logger. Catches observer errors so a bad metrics path can never break
+   * the worker.
+   */
+  private emitFlushObservation(obs: FlushObservation): void {
+    try {
+      this.flushObserver?.(obs);
+    } catch (error) {
+      this.logger.warn({ err: error }, 'flushObserver threw');
+    }
+
+    const logPayload = {
+      result: obs.result,
+      trigger: obs.trigger,
+      totalMs: Math.round(obs.totalMs),
+      rowsProcessed: obs.rowsProcessed,
+      llenAtStart: obs.llenAtStart,
+      lrangeMs:
+        obs.phases?.lrangeMs != null
+          ? Math.round(obs.phases.lrangeMs)
+          : undefined,
+      chInsertMs:
+        obs.phases?.chInsertMs != null
+          ? Math.round(obs.phases.chInsertMs)
+          : undefined,
+      trimMs:
+        obs.phases?.trimMs != null
+          ? Math.round(obs.phases.trimMs)
+          : undefined,
+      onFlushMs:
+        obs.phases?.onFlushMs != null
+          ? Math.round(obs.phases.onFlushMs)
+          : undefined,
+    };
+
+    if (obs.result === 'error') {
+      this.logger.error({ ...logPayload, err: obs.err }, 'Buffer flush');
+    } else if (obs.result === 'paused') {
+      // Demoted to debug — happens every 10s when intentionally paused
+      this.logger.debug(logPayload, 'Buffer flush skipped (cron paused)');
+    } else {
+      this.logger.info(logPayload, 'Buffer flush');
+    }
+  }
+
+  async tryFlush(options: { trigger?: FlushTrigger } = {}) {
+    const trigger: FlushTrigger = options.trigger ?? 'cron';
+    const startedAt = performance.now();
+    this.inflightStats = {};
+
+    let llenAtStart: number | undefined;
+    try {
+      llenAtStart = await this.getBufferSize();
+    } catch {
+      // best-effort
+    }
+
     const isCronQueuePaused = await cronQueue.isPaused();
     if (isCronQueuePaused) {
-      this.logger.info('Cron queue is paused, skipping flush');
+      this.emitFlushObservation({
+        buffer: this.name,
+        result: 'paused',
+        trigger,
+        totalMs: performance.now() - startedAt,
+        llenAtStart,
+      });
       return;
     }
 
-    // Parallel mode: No locking, multiple workers can process simultaneously
     if (this.enableParallelProcessing) {
+      const onFlushStarted = performance.now();
       try {
-        this.logger.debug('Processing buffer (parallel mode)...');
         await this.onFlush();
-        this.logger.debug(
-          { elapsed: performance.now() - now },
-          'Flush completed (parallel mode)',
-        );
+        this.emitFlushObservation({
+          buffer: this.name,
+          result: 'success',
+          trigger,
+          totalMs: performance.now() - startedAt,
+          rowsProcessed: this.inflightStats.rowsProcessed,
+          llenAtStart,
+          phases: {
+            ...this.inflightStats.phases,
+            onFlushMs: performance.now() - onFlushStarted,
+          },
+        });
       } catch (error) {
-        this.logger.error(
-          { err: error },
-          'Failed to process buffer (parallel mode)',
-        );
-        // In parallel mode, we can't safely reset counter as other workers might be active
-        // Counter will be resynced automatically by the periodic job
+        this.emitFlushObservation({
+          buffer: this.name,
+          result: 'error',
+          trigger,
+          totalMs: performance.now() - startedAt,
+          rowsProcessed: this.inflightStats.rowsProcessed,
+          llenAtStart,
+          phases: {
+            ...this.inflightStats.phases,
+            onFlushMs: performance.now() - onFlushStarted,
+          },
+          err: error,
+        });
       }
       return;
     }
 
-    // Sequential mode: Use lock to ensure only one worker processes at a time
     const lockId = generateSecureId('lock');
     const acquired = await getRedisCache().set(
       this.lockKey,
@@ -133,27 +271,49 @@ export class BaseBuffer {
       this.lockTimeout,
       'NX',
     );
-    if (acquired === 'OK') {
-      try {
-        this.logger.debug({ lockId }, 'Acquired lock. Processing buffer...');
-        await this.onFlush();
-      } catch (error) {
-        this.logger.error(
-          { err: error, lockId },
-          'Failed to process buffer',
-        );
-        // On error, we might want to reset counter to avoid drift
-        if (this.bufferCounterKey) {
-          this.logger.warn('Resetting buffer counter due to flush error');
-          await getRedisCache().del(this.bufferCounterKey);
-        }
-      } finally {
-        await this.releaseLock(lockId);
-        this.logger.debug(
-          { elapsed: performance.now() - now, lockId },
-          'Flush completed',
-        );
-      }
+
+    if (acquired !== 'OK') {
+      this.emitFlushObservation({
+        buffer: this.name,
+        result: 'locked',
+        trigger,
+        totalMs: performance.now() - startedAt,
+        llenAtStart,
+      });
+      return;
+    }
+
+    const onFlushStarted = performance.now();
+    try {
+      await this.onFlush();
+      this.emitFlushObservation({
+        buffer: this.name,
+        result: 'success',
+        trigger,
+        totalMs: performance.now() - startedAt,
+        rowsProcessed: this.inflightStats.rowsProcessed,
+        llenAtStart,
+        phases: {
+          ...this.inflightStats.phases,
+          onFlushMs: performance.now() - onFlushStarted,
+        },
+      });
+    } catch (error) {
+      this.emitFlushObservation({
+        buffer: this.name,
+        result: 'error',
+        trigger,
+        totalMs: performance.now() - startedAt,
+        rowsProcessed: this.inflightStats.rowsProcessed,
+        llenAtStart,
+        phases: {
+          ...this.inflightStats.phases,
+          onFlushMs: performance.now() - onFlushStarted,
+        },
+        err: error,
+      });
+    } finally {
+      await this.releaseLock(lockId);
     }
   }
 }
