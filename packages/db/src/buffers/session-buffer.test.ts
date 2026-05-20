@@ -61,8 +61,10 @@ beforeEach(async () => {
     ...(await redis.keys('session*')),
     ...(await redis.keys('lock:session')),
   ];
-  if (keys.length > 0) {
-    await redis.del(...keys);
+  // Spread breaks at ~100k args — del in chunks so old test state can't kill us.
+  const BATCH = 1000;
+  for (let i = 0; i < keys.length; i += BATCH) {
+    await redis.del(...keys.slice(i, i + BATCH));
   }
   vi.mocked(ch.insert).mockResolvedValue(undefined as any);
 });
@@ -110,9 +112,7 @@ describe('SessionBuffer', () => {
     // Blob and profile pointer must survive arbitrarily long reaper outages,
     // so neither carries a Redis TTL.
     expect(await redis.ttl(`session:${projectId}:device-Y`)).toBe(-1);
-    expect(
-      await redis.ttl(`session:profile:${projectId}:profile-X`)
-    ).toBe(-1);
+    expect(await redis.ttl(`session:profile:${projectId}:profile-X`)).toBe(-1);
   });
 
   it('writes profile→device pointer when profile_id differs from device_id', async () => {

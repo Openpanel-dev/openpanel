@@ -281,11 +281,15 @@ export class SessionBuffer extends BaseBuffer {
    */
   private newSession(payload: IServiceCreateEventPayload): IClickhouseSession {
     const createdAt = toClickhouseDate(payload.createdAt);
+    // For anonymous traffic the SDK doesn't send a profileId — fall back to
+    // the deviceId so each anonymous device shows up as a unique visitor in
+    // the dashboard. Matches what `createEvent` does for the events table.
+    const profileId = payload.profileId || payload.deviceId;
     return {
       id: payload.sessionId,
       project_id: payload.projectId,
       device_id: payload.deviceId,
-      profile_id: payload.profileId ?? '',
+      profile_id: profileId,
       is_bounce: true,
       created_at: createdAt,
       ended_at: createdAt,

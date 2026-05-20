@@ -1,10 +1,12 @@
 import { generateId } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import {
+  convertClickhouseDateToJs,
   getProfileById,
   getSalts,
   groupBuffer,
   replayBuffer,
+  SESSION_TIMEOUT_MS,
   sessionBuffer,
   upsertProfile,
 } from '@openpanel/db';
@@ -182,6 +184,7 @@ async function buildContext(
     ua,
     salts,
     overrideDeviceId,
+    eventTimeMs: timestamp.timestamp,
   });
 
   return {
@@ -497,7 +500,16 @@ export async function fetchDeviceId(
       }),
     ]);
 
-    if (current) {
+    // Blob has no TTL — only treat the session as "current" if its last
+    // event is within the idle window. Otherwise the SDK should ask the
+    // server to start a fresh session id on the next event.
+    const now = Date.now();
+    const isLive = (s: typeof current) =>
+      !!s &&
+      now - convertClickhouseDateToJs(s.ended_at).getTime() <
+        SESSION_TIMEOUT_MS;
+
+    if (current && isLive(current)) {
       return reply.status(200).send({
         deviceId: currentDeviceId,
         sessionId: current.id,
@@ -505,7 +517,7 @@ export async function fetchDeviceId(
       });
     }
 
-    if (previous) {
+    if (previous && isLive(previous)) {
       return reply.status(200).send({
         deviceId: previousDeviceId,
         sessionId: previous.id,

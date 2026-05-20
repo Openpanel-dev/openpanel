@@ -61,3 +61,15 @@ services:
     ports:
       - "19092:19092" # Kafka API (external)
       - "9644:9644"   # Admin API
+
+  op-rp-console:
+    image: redpandadata/console:v3.7.2
+    restart: always
+    depends_on:
+      - op-rp
+    environment:
+      KAFKA_BROKERS: op-rp:9092
+      REDPANDA_ADMINAPI_ENABLED: "true"
+      REDPANDA_ADMINAPI_URLS: http://op-rp:9644
+    ports:
+      - "8091:8080"

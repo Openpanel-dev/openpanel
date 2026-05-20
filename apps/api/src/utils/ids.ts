@@ -1,6 +1,11 @@
 import crypto from 'node:crypto';
 import { generateDeviceId } from '@openpanel/common/server';
-import { sessionBuffer } from '@openpanel/db';
+import {
+  convertClickhouseDateToJs,
+  SESSION_TIMEOUT_MS,
+  sessionBuffer,
+} from '@openpanel/db';
+import type { IClickhouseSession } from '@openpanel/db';
 
 export async function getDeviceId({
   projectId,
@@ -8,12 +13,16 @@ export async function getDeviceId({
   ua,
   salts,
   overrideDeviceId,
+  eventTimeMs,
 }: {
   projectId: string;
   ip: string;
   ua: string | undefined;
   salts: { current: string; previous: string };
   overrideDeviceId?: string;
+  /** Event timestamp (ms). Used to decide whether an existing session is
+   *  still within its idle window. Defaults to `Date.now()`. */
+  eventTimeMs?: number;
 }) {
   if (overrideDeviceId) {
     // Resolve a caller-supplied device id through the same path as internal ones
@@ -46,6 +55,7 @@ export async function getDeviceId({
     projectId,
     currentDeviceId,
     previousDeviceId,
+    eventTimeMs: eventTimeMs ?? Date.now(),
   });
 }
 
@@ -54,14 +64,34 @@ interface DeviceIdResult {
   sessionId: string;
 }
 
+/**
+ * Returns true when an existing session is recent enough that the incoming
+ * event should EXTEND it rather than start a new session.
+ *
+ * Critical: blobs no longer have a Redis TTL (so the reaper can always find
+ * them), which means an existing session blob may linger past its idle
+ * window. We must NOT blindly reuse `existing.id` — if we did, the worker's
+ * boundary detection would open a "new" session with the same id as the
+ * closed one, breaking the id-based extension check in createSessionEnd.
+ */
+function withinIdleWindow(
+  session: IClickhouseSession,
+  eventTimeMs: number
+): boolean {
+  const lastEventMs = convertClickhouseDateToJs(session.ended_at).getTime();
+  return eventTimeMs - lastEventMs < SESSION_TIMEOUT_MS;
+}
+
 async function getInfoFromSession({
   projectId,
   currentDeviceId,
   previousDeviceId,
+  eventTimeMs,
 }: {
   projectId: string;
   currentDeviceId: string;
   previousDeviceId: string;
+  eventTimeMs: number;
 }): Promise<DeviceIdResult> {
   try {
     const [current, previous] = await Promise.all([
@@ -75,10 +105,10 @@ async function getInfoFromSession({
       }),
     ]);
 
-    if (current) {
+    if (current && withinIdleWindow(current, eventTimeMs)) {
       return { deviceId: currentDeviceId, sessionId: current.id };
     }
-    if (previous) {
+    if (previous && withinIdleWindow(previous, eventTimeMs)) {
       return { deviceId: previousDeviceId, sessionId: previous.id };
     }
   } catch (error) {
@@ -90,6 +120,7 @@ async function getInfoFromSession({
     sessionId: getSessionId({
       projectId,
       deviceId: currentDeviceId,
+      eventMs: eventTimeMs,
       graceMs: 5 * 1000,
       windowMs: 1000 * 60 * 30,
     }),
