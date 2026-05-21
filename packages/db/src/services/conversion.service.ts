@@ -321,7 +321,7 @@ export class ConversionService {
     const endExtraCols = [...new Set(holdExtraCols)];
 
     // Define group column (profile_id or session_id) — needed by CTE builders below
-    const groupCol = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
+    const groupCol = funnelGroup === 'session_id' ? 'session_id' : 'profile_id';
 
     // Build CTEs for start and end events
     const ctes: string[] = [];

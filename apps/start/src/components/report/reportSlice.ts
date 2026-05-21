@@ -208,6 +208,22 @@ export const reportSlice = createSlice({
       ) {
         state.interval = 'day';
       }
+
+      // Conversion/funnel require at least 2 events — add empty slots if needed
+      if (
+        (action.payload === 'conversion' || action.payload === 'funnel') &&
+        state.series.length < 2
+      ) {
+        while (state.series.length < 2) {
+          state.series.push({
+            id: shortId(),
+            type: 'event',
+            name: '',
+            segment: 'event',
+            filters: [],
+          });
+        }
+      }
     },
 
     // Line type

@@ -217,9 +217,9 @@ export class FunnelService {
     funnelGroup: string | undefined | null,
     fromClause: string,
   ): [string, string] {
-    return funnelGroup === 'profile_id'
-      ? [`COALESCE(nullIf(s.pid, ''), ${fromClause}.profile_id)`, 'profile_id']
-      : [`${fromClause}.session_id`, 'session_id'];
+    return funnelGroup === 'session_id'
+      ? [`${fromClause}.session_id`, 'session_id']
+      : [`COALESCE(nullIf(s.pid, ''), ${fromClause}.profile_id)`, 'profile_id'];
   }
 
   buildFunnelCte({

@@ -50,7 +50,7 @@ export function ReportGlobalFilters() {
 
   return (
     <div>
-      <h3 className="mb-2 font-medium">Global Filters</h3>
+      <h3 className="mb-2 font-medium">Filter</h3>
       <div className="flex flex-col gap-2">
         {globalFilters.map((filter) => {
           const isCohortFilter =
