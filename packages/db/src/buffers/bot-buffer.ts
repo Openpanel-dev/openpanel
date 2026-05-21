@@ -65,11 +65,7 @@ export class BotBuffer extends BaseBuffer {
       table: TABLE_NAMES.events_bots,
       values: parsedEvents,
       format: 'JSONEachRow',
-      clickhouse_settings: {
-        async_insert: 1,
-        wait_for_async_insert: 0,
-        parallel_view_processing: 1,
-      },
+      clickhouse_settings: this.getClickhouseSettings(),
     });
     const chInsertMs = performance.now() - chStart;
 

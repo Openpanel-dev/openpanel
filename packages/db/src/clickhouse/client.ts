@@ -1,9 +1,14 @@
-import type { ClickHouseSettings, ResponseJSON } from '@clickhouse/client';
+import type {
+  ClickHouseClient,
+  ClickHouseSettings,
+  ResponseJSON,
+} from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
 import { createLogger } from '@openpanel/logger';
 import type { IInterval } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
+import { RoundRobinPicker, withRoundRobinRetry } from './round-robin';
 
 export { createClient };
 
@@ -128,13 +133,30 @@ const requestCompressionEnabled =
 const maxOpenConnections = process.env.CLICKHOUSE_MAX_OPEN_CONNECTIONS
   ? Math.max(
       1,
-      Number.parseInt(process.env.CLICKHOUSE_MAX_OPEN_CONNECTIONS, 10),
+      Number.parseInt(process.env.CLICKHOUSE_MAX_OPEN_CONNECTIONS, 10)
     )
   : 50;
 
+// Per-request timeout. Was 300_000 (5 min) — way too long for fast failover
+// against a dead node, and after the Hetzner LB story we want stuck inserts
+// to fail and retry on a different node well before 5 min. 30s is enough for
+// any legitimate batch insert in this codebase. Bumpable via env if needed.
+const requestTimeoutMs = process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS
+  ? Math.max(
+      1000,
+      Number.parseInt(process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS, 10)
+    )
+  : 30_000;
+
+// How long to skip a node after a connection failure, before trying it
+// again. Short by default — we want fast recovery once a node comes back.
+const unhealthyMarkMs = process.env.CLICKHOUSE_UNHEALTHY_MARK_MS
+  ? Math.max(0, Number.parseInt(process.env.CLICKHOUSE_UNHEALTHY_MARK_MS, 10))
+  : 5000;
+
 export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   max_open_connections: maxOpenConnections,
-  request_timeout: 300_000,
+  request_timeout: requestTimeoutMs,
   keep_alive: {
     enabled: true,
     // Must be lower than server-side keep_alive_timeout (default 10s) so we
@@ -151,100 +173,150 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   },
 };
 
-logger.info({ options: CLICKHOUSE_OPTIONS }, 'Clickhouse options');
+// CLICKHOUSE_URL accepts a single URL or comma-separated list. With a list,
+// we round-robin across nodes ourselves and fail over on connection errors —
+// avoids putting an L4 LB on the hot path.
+//
+// Tests sometimes import this module without CLICKHOUSE_URL set; in that
+// case we fall back to a single client created the same way the old code
+// did (URL = undefined, delegated to the client library's own handling).
+const rawClickhouseUrls = (process.env.CLICKHOUSE_URL ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 
-export const originalCh = createClient({
-  url: process.env.CLICKHOUSE_URL,
-  ...CLICKHOUSE_OPTIONS,
-});
+const clickhouseUrls = rawClickhouseUrls.length > 0 ? rawClickhouseUrls : [''];
+
+const clients: ClickHouseClient[] = clickhouseUrls.map((url) =>
+  createClient({
+    url: url || process.env.CLICKHOUSE_URL,
+    ...CLICKHOUSE_OPTIONS,
+  })
+);
+
+const picker = new RoundRobinPicker(clients, clickhouseUrls, unhealthyMarkMs);
+
+function maskUrlCredentials(url: string): string {
+  if (!url) return '<unset>';
+  try {
+    const u = new URL(url);
+    if (u.username) {
+      u.username = u.username.slice(0, 2) + '*'.repeat(u.username.length - 2);
+    }
+    if (u.password) {
+      u.password = '***';
+    }
+    return u.toString();
+  } catch {
+    // Malformed URL — fall back to the original; better than crashing module
+    // load in test envs where CLICKHOUSE_URL may be empty/garbage.
+    return url;
+  }
+}
+
+logger.info(
+  {
+    nodeCount: clients.length,
+    urls: clickhouseUrls.map(maskUrlCredentials),
+    requestTimeoutMs,
+    unhealthyMarkMs,
+    options: { ...CLICKHOUSE_OPTIONS, log: undefined },
+  },
+  'ClickHouse clients initialized'
+);
+
+// Backwards-compat export. Some callers (notably gsc.ts) use `originalCh`
+// directly to bypass the retry/round-robin layer for one-off DDL or for
+// places where retry semantics aren't wanted. Points at the first node.
+export const originalCh = clients[0]!;
 
 const cleanQuery = (query?: string) =>
   typeof query === 'string'
     ? query.replace(/\n/g, '').replace(/\s+/g, ' ').trim()
     : undefined;
 
+/**
+ * Run `operation` against the next round-robin node, retrying on the next
+ * node when a connection error is hit. Non-connection errors (SQL, auth,
+ * 4xx) propagate immediately.
+ *
+ * `operation` receives the picked client and a context with the node URL
+ * (useful for adding `host` to log lines / metrics).
+ */
 export async function withRetry<T>(
-  operation: () => Promise<T>,
-  maxRetries = 3,
-  baseDelay = 500
+  operation: (
+    client: ClickHouseClient,
+    ctx: { url: string; index: number },
+  ) => Promise<T>,
 ): Promise<T> {
-  let lastError: Error | undefined;
-
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const res = await operation();
-      if (attempt > 0) {
-        logger.info({ attempt }, 'Retry operation succeeded');
-      }
-      return res;
-    } catch (error: any) {
-      lastError = error;
-
-      if (
-        error.message.includes('Connect') ||
-        error.message.includes('socket hang up') ||
-        error.message.includes('Timeout error')
-      ) {
-        const delay = baseDelay * 2 ** attempt;
-        logger.warn(
-          { err: error },
-          `Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${delay}ms`
-        );
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        continue;
-      }
-
-      throw error; // Non-retriable error
-    }
-  }
-
-  throw lastError;
+  return withRoundRobinRetry(picker, operation, logger);
 }
 
-export const ch = new Proxy(originalCh, {
+/** Best-effort URL → hostname extraction for log labels. */
+function urlHostname(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return undefined;
+  }
+}
+
+const INSERT_DEFAULT_SETTINGS: ClickHouseSettings = {
+  // Increase insert timeouts and buffer sizes for large batches
+  max_execution_time: 300,
+  max_insert_block_size: '500000',
+  max_http_get_redirects: '0',
+  // Ensure JSONEachRow stays efficient
+  input_format_parallel_parsing: 1,
+  // Keep long-running inserts/queries from idling out at proxies by sending progress headers
+  send_progress_in_http_headers: 1,
+  http_headers_progress_interval_ms: '50000',
+  // Ensure server holds the connection until the query is finished
+  wait_end_of_query: 1,
+};
+
+/**
+ * High-level CH client. For insert/command/query, picks a node round-robin
+ * and retries on a *different* node if the connection fails. The methods
+ * live as own-properties on the proxy target so `vi.spyOn(ch, 'insert')`
+ * works in tests. Other method accesses (rare — config readers, instance
+ * checks) fall through to the first client.
+ */
+const chTarget = {
+  insert: (params: any) =>
+    withRetry((client) => {
+      params.clickhouse_settings = {
+        ...INSERT_DEFAULT_SETTINGS,
+        ...params.clickhouse_settings,
+      };
+      return client.insert(params);
+    }),
+  command: (params: any) => withRetry((client) => client.command(params)),
+  query: (params: any) => withRetry((client) => client.query(params)),
+};
+
+export const ch = new Proxy(chTarget as unknown as ClickHouseClient, {
   get(target, property, receiver) {
-    const value = Reflect.get(target, property, receiver);
-
-    if (property === 'insert') {
-      return (...args: any[]) =>
-        withRetry(() => {
-          args[0].clickhouse_settings = {
-            // Increase insert timeouts and buffer sizes for large batches
-            max_execution_time: 300,
-            max_insert_block_size: '500000',
-            max_http_get_redirects: '0',
-            // Ensure JSONEachRow stays efficient
-            input_format_parallel_parsing: 1,
-            // Keep long-running inserts/queries from idling out at proxies by sending progress headers
-            send_progress_in_http_headers: 1,
-            http_headers_progress_interval_ms: '50000',
-            // Ensure server holds the connection until the query is finished
-            wait_end_of_query: 1,
-            ...args[0].clickhouse_settings,
-          };
-          return value.apply(target, args);
-        });
+    if (property in target) {
+      return Reflect.get(target, property, receiver);
     }
-
-    if (property === 'command') {
-      return (...args: any[]) =>
-        withRetry(() => {
-          return value.apply(target, args);
-        });
-    }
-
-    return value;
+    return (originalCh as any)[property];
   },
-});
+}) as ClickHouseClient;
 
 export async function chQueryWithMeta<T extends Record<string, any>>(
   query: string,
   clickhouseSettings?: ClickHouseSettings
 ): Promise<ResponseJSON<T>> {
   const start = Date.now();
-  const res = await ch.query({
-    query,
-    clickhouse_settings: clickhouseSettings,
+  let host: string | undefined;
+  const res = await withRetry((client, ctx) => {
+    host = urlHostname(ctx.url);
+    return client.query({
+      query,
+      clickhouse_settings: clickhouseSettings,
+    });
   });
   const json = await res.json<T>();
   const keys = Object.keys(json.data[0] || {});
@@ -266,6 +338,7 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
 
   logger.info(
     {
+      host,
       query: cleanQuery(query),
       rows: json.rows,
       stats: response.statistics,

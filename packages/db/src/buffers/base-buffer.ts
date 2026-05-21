@@ -1,5 +1,6 @@
+import type { ClickHouseSettings } from '@clickhouse/client';
 import { generateSecureId } from '@openpanel/common/server';
-import { type ILogger, createLogger } from '@openpanel/logger';
+import { createLogger, type ILogger } from '@openpanel/logger';
 import { cronQueue } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 
@@ -78,6 +79,18 @@ export class BaseBuffer {
     skipReason?: string;
   } = {};
 
+  protected getClickhouseSettings(): ClickHouseSettings {
+    if (process.env.BUFFER_ASYNC_INSERTS) {
+      return {
+        async_insert: 1,
+        wait_for_async_insert: 0,
+        parallel_view_processing: 1,
+      };
+    }
+
+    return {};
+  }
+
   /** Optional hook used by the worker to bridge flushes into Prometheus. */
   public flushObserver: FlushObserver | null = null;
 
@@ -102,9 +115,7 @@ export class BaseBuffer {
    * observability. Subclasses MUST override.
    */
   protected getRedisListKey(): string {
-    throw new Error(
-      `${this.name}: subclass must override getRedisListKey()`,
-    );
+    throw new Error(`${this.name}: subclass must override getRedisListKey()`);
   }
 
   protected chunks<T>(items: T[], size: number) {
@@ -135,9 +146,11 @@ export class BaseBuffer {
   protected async parallelLimit<T, R>(
     items: T[],
     fn: (item: T, index: number) => Promise<R>,
-    concurrency: number = this.chInsertConcurrency,
+    concurrency: number = this.chInsertConcurrency
   ): Promise<R[]> {
-    if (items.length === 0) return [];
+    if (items.length === 0) {
+      return [];
+    }
     if (concurrency <= 1 || items.length === 1) {
       const out: R[] = [];
       for (let i = 0; i < items.length; i++) {
@@ -150,13 +163,15 @@ export class BaseBuffer {
     const worker = async (): Promise<void> => {
       while (true) {
         const idx = nextIndex++;
-        if (idx >= items.length) return;
+        if (idx >= items.length) {
+          return;
+        }
         results[idx] = await fn(items[idx] as T, idx);
       }
     };
     const workers = Array.from(
       { length: Math.min(concurrency, items.length) },
-      () => worker(),
+      () => worker()
     );
     await Promise.all(workers);
     return results;
@@ -247,6 +262,7 @@ export class BaseBuffer {
     }
 
     const logPayload = {
+      buffer: obs.buffer,
       result: obs.result,
       trigger: obs.trigger,
       totalMs: Math.round(obs.totalMs),
@@ -265,9 +281,7 @@ export class BaseBuffer {
           ? Math.round(obs.phases.chInsertMs)
           : undefined,
       trimMs:
-        obs.phases?.trimMs != null
-          ? Math.round(obs.phases.trimMs)
-          : undefined,
+        obs.phases?.trimMs != null ? Math.round(obs.phases.trimMs) : undefined,
       onFlushMs:
         obs.phases?.onFlushMs != null
           ? Math.round(obs.phases.onFlushMs)
@@ -275,12 +289,20 @@ export class BaseBuffer {
     };
 
     if (obs.result === 'error') {
-      this.logger.error({ ...logPayload, err: obs.err }, 'Buffer flush');
+      this.logger.error(
+        { ...logPayload, err: obs.err },
+        `Flush failed for ${this.name}`
+      );
     } else if (obs.result === 'paused') {
       // Demoted to debug — happens every 10s when intentionally paused
-      this.logger.debug(logPayload, 'Buffer flush skipped (cron paused)');
+      this.logger.debug(
+        logPayload,
+        `Flush skipped for ${this.name} (cron paused)`
+      );
+    } else if (obs.result === 'locked') {
+      this.logger.debug(logPayload, `Flush skipped for ${this.name} (locked)`);
     } else {
-      this.logger.info(logPayload, 'Buffer flush');
+      this.logger.info(logPayload, `Flush completed for ${this.name}`);
     }
   }
 
@@ -348,7 +370,7 @@ export class BaseBuffer {
       lockId,
       'EX',
       this.lockTimeout,
-      'NX',
+      'NX'
     );
 
     if (acquired !== 'OK') {
