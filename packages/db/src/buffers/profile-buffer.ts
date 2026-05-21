@@ -259,18 +259,24 @@ export class ProfileBuffer extends BaseBuffer {
       return;
     }
 
-    const parsedProfiles = rawProfiles
-      .map((p) => getSafeJson<IClickhouseProfile>(p))
-      .filter(Boolean) as IClickhouseProfile[];
-
-    // Merge within batch: collapse multiple updates for the same profile
+    // Parse + merge within batch in a single pass. Yields back to the
+    // event loop every 500 items so concurrent add() calls and BullMQ
+    // heartbeats can make progress while the merge churns through 10k+
+    // profiles. The merge step is the hottest CPU stage of any buffer —
+    // deepMergeObjects recursively combines nested `properties` objects
+    // and was previously responsible for ~500ms event-loop blocks.
     const mergedInBatch = new Map<string, IClickhouseProfile>();
-    for (const profile of parsedProfiles) {
+    for (let i = 0; i < rawProfiles.length; i++) {
+      const profile = getSafeJson<IClickhouseProfile>(rawProfiles[i]!);
+      if (!profile) continue;
       const key = `${profile.project_id}:${profile.id}`;
       mergedInBatch.set(
         key,
-        this.mergeProfiles(mergedInBatch.get(key) ?? null, profile)
+        this.mergeProfiles(mergedInBatch.get(key) ?? null, profile),
       );
+      if ((i + 1) % 500 === 0) {
+        await this.yieldToEventLoop();
+      }
     }
 
     const uniqueProfiles = Array.from(mergedInBatch.values());
@@ -313,15 +319,18 @@ export class ProfileBuffer extends BaseBuffer {
       }
     }
 
-    // Final merge: in-batch profile + existing (from cache or ClickHouse)
+    // Final merge: in-batch profile + existing (from cache or ClickHouse).
+    // Second heavy stage — same deepMergeObjects call per unique profile,
+    // so the same yield-every-500 pattern applies.
     const toInsert: IClickhouseProfile[] = [];
     const multi = this.redis.multi();
 
-    for (const profile of uniqueProfiles) {
+    for (let i = 0; i < uniqueProfiles.length; i++) {
+      const profile = uniqueProfiles[i]!;
       const key = `${profile.project_id}:${profile.id}`;
       const merged = this.mergeProfiles(
         existingByKey.get(key) ?? null,
-        profile
+        profile,
       );
       toInsert.push(merged);
       multi.set(
@@ -331,8 +340,11 @@ export class ProfileBuffer extends BaseBuffer {
         }),
         JSON.stringify(merged),
         'EX',
-        this.ttlInSeconds
+        this.ttlInSeconds,
       );
+      if ((i + 1) % 500 === 0) {
+        await this.yieldToEventLoop();
+      }
     }
 
     const chStart = performance.now();

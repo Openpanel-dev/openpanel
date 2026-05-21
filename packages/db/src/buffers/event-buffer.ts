@@ -146,14 +146,21 @@ export class EventBuffer extends BaseBuffer {
       return;
     }
 
+    // Parse with periodic yields. Event batches can be very large
+    // (EVENT_BUFFER_BATCH_SIZE defaults to 4000 but is often set to
+    // 100k in prod). Yielding every 1000 items keeps the event loop
+    // responsive without measurable throughput impact.
     const eventsToClickhouse: IClickhouseEvent[] = [];
-    for (const eventStr of queueEvents) {
-      const event = getSafeJson<IClickhouseEvent>(eventStr);
+    for (let i = 0; i < queueEvents.length; i++) {
+      const event = getSafeJson<IClickhouseEvent>(queueEvents[i]!);
       if (event) {
         if (!Array.isArray(event.groups)) {
           event.groups = [];
         }
         eventsToClickhouse.push(event);
+      }
+      if ((i + 1) % 1000 === 0) {
+        await this.yieldToEventLoop();
       }
     }
 
@@ -161,12 +168,6 @@ export class EventBuffer extends BaseBuffer {
       this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
       return;
     }
-
-    eventsToClickhouse.sort(
-      (a, b) =>
-        new Date(a.created_at || 0).getTime() -
-        new Date(b.created_at || 0).getTime()
-    );
 
     const chStart = performance.now();
     await this.parallelLimit(

@@ -72,9 +72,18 @@ export class ReplayBuffer extends BaseBuffer {
       return;
     }
 
-    const chunks = items
-      .map((item) => getSafeJson<IClickhouseSessionReplayChunk>(item))
-      .filter((item): item is IClickhouseSessionReplayChunk => item != null);
+    // Parse rrweb chunks with periodic yields. Each chunk's `payload`
+    // field is a large JSON blob (~10-100KB) so JSON.parse is expensive
+    // per item. Yield every 100 items to keep the event loop responsive
+    // during big flushes.
+    const chunks: IClickhouseSessionReplayChunk[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const parsed = getSafeJson<IClickhouseSessionReplayChunk>(items[i]!);
+      if (parsed != null) chunks.push(parsed);
+      if ((i + 1) % 100 === 0) {
+        await this.yieldToEventLoop();
+      }
+    }
 
     const chStart = performance.now();
     await this.parallelLimit(this.chunks(chunks, this.chunkSize), (chunk) =>

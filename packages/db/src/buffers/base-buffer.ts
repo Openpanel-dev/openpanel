@@ -118,6 +118,20 @@ export class BaseBuffer {
     throw new Error(`${this.name}: subclass must override getRedisListKey()`);
   }
 
+  /**
+   * Yield control back to the event loop. Use periodically inside CPU-bound
+   * loops (parse / merge / sort over N items) so other awaiters — incoming
+   * add() calls, BullMQ heartbeats, the /healthz endpoint — can make
+   * progress instead of waiting hundreds of milliseconds for the loop to
+   * monopolise itself on one flush.
+   *
+   * Costs ~1ms per call (one event-loop tick); use every 500–1000 items,
+   * not every iteration.
+   */
+  protected yieldToEventLoop(): Promise<void> {
+    return new Promise((resolve) => setImmediate(resolve));
+  }
+
   protected chunks<T>(items: T[], size: number) {
     const chunks = [];
     for (let i = 0; i < items.length; i += size) {
