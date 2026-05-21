@@ -176,6 +176,10 @@ export class EventBuffer extends BaseBuffer {
           table: 'events',
           values: chunk,
           format: 'JSONEachRow',
+          clickhouse_settings: {
+            async_insert: 1,
+            parallel_view_processing: 1
+          }
         }),
     );
     const chInsertMs = performance.now() - chStart;

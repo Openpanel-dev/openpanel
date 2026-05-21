@@ -370,6 +370,10 @@ export class SessionBuffer extends BaseBuffer {
         table: TABLE_NAMES.sessions,
         values: chunk,
         format: 'JSONEachRow',
+        clickhouse_settings: {
+          async_insert: 1,
+          parallel_view_processing: 1
+        }
       }),
     );
     const chInsertMs = performance.now() - chStart;

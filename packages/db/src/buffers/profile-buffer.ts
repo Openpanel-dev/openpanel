@@ -341,6 +341,10 @@ export class ProfileBuffer extends BaseBuffer {
         table: TABLE_NAMES.profiles,
         values: chunk,
         format: 'JSONEachRow',
+        clickhouse_settings: {
+          async_insert: 1,
+          parallel_view_processing: 1
+        }
       }),
     );
     const chInsertMs = performance.now() - chStart;
