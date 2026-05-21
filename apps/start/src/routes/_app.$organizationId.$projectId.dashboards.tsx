@@ -20,6 +20,7 @@ import {
   Pencil,
   PieChartIcon,
   PlusIcon,
+  SearchIcon,
   Trash,
   TrendingUpIcon,
 } from 'lucide-react';
@@ -31,6 +32,8 @@ import { PageHeader } from '@/components/page-header';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
+import { useState } from 'react';
+import { Input } from '@/components/ui/input';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/dashboards',
@@ -63,7 +66,13 @@ function Component() {
       projectId,
     }),
   );
-  const dashboards = query.data ?? [];
+  const [searchQuery, setSearchQuery] = useState('');
+  const allDashboards = query.data ?? [];
+  const dashboards = searchQuery
+    ? allDashboards.filter((d) =>
+        d.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : allDashboards;
   const duplication = useMutation(
     trpc.dashboard.duplicate.mutationOptions({
       onSuccess() {
@@ -99,7 +108,7 @@ function Component() {
     }),
   );
 
-  if (dashboards.length === 0) {
+  if (allDashboards.length === 0) {
     return (
       <FullPageEmptyState title="No dashboards" icon={LayoutPanelTopIcon}>
         <p>You have not created any dashboards for this project yet</p>
@@ -121,12 +130,29 @@ function Component() {
         description="Access all your dashboards here"
         className="mb-8"
         actions={
-          <Button icon={PlusIcon} onClick={() => pushModal('AddDashboard')}>
-            <span className="max-sm:hidden">Create dashboard</span>
-            <span className="sm:hidden">Dashboard</span>
-          </Button>
+          <>
+            <div className="relative flex items-center">
+              <SearchIcon className="absolute left-2.5 size-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search dashboards..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-48"
+                style={{ paddingLeft: '2rem' }}
+              />
+            </div>
+            <Button icon={PlusIcon} onClick={() => pushModal('AddDashboard')}>
+              <span className="max-sm:hidden">Create dashboard</span>
+              <span className="sm:hidden">Dashboard</span>
+            </Button>
+          </>
         }
       />
+      {dashboards.length === 0 ? (
+        <FullPageEmptyState title="No dashboards found" icon={SearchIcon}>
+          <p>No dashboards match "{searchQuery}"</p>
+        </FullPageEmptyState>
+      ) : (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         {dashboards.map((item) => {
           const visibleReports = item.reports.slice(
@@ -241,6 +267,7 @@ function Component() {
           );
         })}
       </div>
+      )}
     </PageContainer>
   );
 }

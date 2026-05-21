@@ -8,6 +8,7 @@ import {
   BookOpenIcon,
   ChartLineIcon,
   ChevronDownIcon,
+  CircleUserRoundIcon,
   CogIcon,
   GanttChartIcon,
   Globe2Icon,
@@ -17,8 +18,9 @@ import {
   LayoutPanelTopIcon,
   PlusIcon,
   SparklesIcon,
+  TargetIcon,
   UndoDotIcon,
-  UsersIcon,
+  UsersRoundIcon,
   WallpaperIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -49,9 +51,9 @@ export default function SidebarProjectMenu({
       <SidebarLink icon={LayersIcon} label="Pages" href={'/pages'} />
       <SidebarLink icon={Globe2Icon} label="Realtime" href={'/realtime'} />
       <SidebarLink icon={GanttChartIcon} label="Events" href={'/events'} />
-      <SidebarLink icon={UsersIcon} label="Sessions" href={'/sessions'} />
-      <SidebarLink icon={UsersIcon} label="Profiles" href={'/profiles'} />
-      <SidebarLink icon={UsersIcon} label="Cohorts" href={'/cohorts'} />
+      <SidebarLink icon={UsersRoundIcon} label="Sessions" href={'/sessions'} />
+      <SidebarLink icon={CircleUserRoundIcon} label="Profiles" href={'/profiles'} />
+      <SidebarLink icon={TargetIcon} label="Cohorts" href={'/cohorts'} />
       <SidebarLink icon={SparklesIcon} label="Custom Events" href={'/custom-events'} />
       <div className="mt-4 mb-2 font-medium text-muted-foreground">Manage</div>
       <SidebarLink

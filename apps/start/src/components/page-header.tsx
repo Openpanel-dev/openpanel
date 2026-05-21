@@ -16,7 +16,7 @@ export function PageHeader({
   actions,
 }: PageHeaderProps) {
   return (
-    <div className={cn('col md:row gap-2', className)}>
+    <div className={cn('col md:row md:items-center gap-2', className)}>
       <div className={'space-y-1 flex-1'}>
         <h1 className="text-2xl font-semibold">{title}</h1>
         {description && (
