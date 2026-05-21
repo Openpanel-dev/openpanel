@@ -3,7 +3,7 @@ title: Data Processing Agreement
 description: OpenPanel's Data Processing Agreement (DPA) under Art. 28 GDPR for cloud customers who use OpenPanel to collect analytics on their websites and applications.
 ---
 
-_Last updated: March 3, 2026_
+_Last updated: May 21, 2026_
 
 This Data Processing Agreement ("DPA") is incorporated into and forms part of the OpenPanel Terms of Service between OpenPanel AB ("OpenPanel", "we", "us") and the customer ("Controller", "you"). It applies where OpenPanel processes personal data on your behalf as part of the OpenPanel Cloud service.
 
@@ -36,6 +36,10 @@ Because of this approach, the analytics data OpenPanel collects in standard webs
 
 OpenPanel optionally supports session replay, which must be explicitly enabled by the Controller. When enabled, session replay records DOM snapshots and user interactions (mouse movements, clicks, scrolls) on the Controller's website using rrweb. This data is stored against the session identifier and may incidentally capture personal data visible in the page (for example, a logged-in user's name displayed in the UI). All text content and form inputs are masked by default. The Controller is responsible for ensuring their use of session replay complies with applicable privacy law, including providing appropriate notice to end users. Additional masking options are available via the SDK configuration.
 
+**AI features (optional, opt-in)**
+
+OpenPanel offers optional AI features (such as natural-language queries over the Controller's analytics data, anomaly insights, and AI-assisted reports) which must be explicitly invoked by the Controller. When the Controller uses these features, the prompt and the relevant slice of the Controller's analytics data are transmitted to OpenAI, L.L.C. (United States) as a sub-processor for the sole purpose of generating the requested response. OpenAI is contractually bound under its Data Processing Addendum and the EU Standard Contractual Clauses; OpenAI does not use API-submitted data to train its models. If the Controller does not use these features, no data is sent to OpenAI.
+
 ## 3. Scope and roles
 
 OpenPanel acts as a **Processor** when processing data on behalf of the Controller. You act as the **Controller** for the analytics data collected from visitors to your websites and applications.
@@ -50,7 +54,7 @@ OpenPanel commits to the following:
 - Not engage a Sub-processor without your prior general or specific written authorization and flow down equivalent data protection obligations to any Sub-processor.
 - Assist you, where reasonably possible, in responding to Data Subject requests to exercise their rights under GDPR.
 - Notify you without undue delay (and no later than 48 hours) upon becoming aware of a Personal Data breach.
-- Make available all information necessary to demonstrate compliance with this DPA and cooperate with audits conducted by you or your designated auditor, subject to reasonable notice and confidentiality obligations.
+- Make available all information necessary to demonstrate compliance with this DPA. Audits by you or your designated auditor are limited to one per 12-month period (unless required by a supervisory authority or following a confirmed Personal Data breach), require 30 days' prior notice, are conducted under confidentiality, at your cost, and without unreasonable disruption to operations. Documentary requests in lieu of on-site audits will be accommodated where they provide equivalent assurance.
 - At your choice, delete or return all Personal Data upon termination of the service.
 
 ## 5. Your obligations as Controller
@@ -63,12 +67,15 @@ You confirm that:
 
 ## 6. Sub-processors
 
-OpenPanel uses the following sub-processors to deliver the service. All sub-processors are located within the European Economic Area or provide adequate safeguards under GDPR Chapter V.
+OpenPanel uses the following sub-processors to deliver the service. All sub-processors are either located within the European Economic Area or provide adequate safeguards under GDPR Chapter V (Standard Contractual Clauses).
 
 | Sub-processor | Purpose | Location |
 |---|---|---|
-| Hetzner Online GmbH | Cloud infrastructure and data storage | Germany (EU) |
+| Hetzner Online GmbH | Cloud infrastructure and primary data storage | Germany (EU) |
+| Cloudflare, Inc. | CDN, WAF, and edge proxy in front of public endpoints | EU edge (under SCCs for any US transit) |
 | Cloudflare R2 | Backup storage | EU |
+| OpenAI, L.L.C. | LLM provider, used only when the Controller invokes opt-in AI features | United States (under SCCs) |
+| Resend, Inc. | Transactional email delivery (account, billing, and product notifications) | United States (under SCCs) |
 
 We will inform you of any intended changes to this list (additions or replacements) with reasonable notice, giving you the opportunity to object.
 
@@ -102,7 +109,15 @@ OpenPanel implements the following measures under GDPR Art. 32:
 
 ## 8. International data transfers
 
-OpenPanel stores and processes all analytics data on Hetzner infrastructure located in Germany. No Personal Data is transferred to countries outside the EEA in the course of delivering the service.
+All analytics data is stored on Hetzner infrastructure located in Germany. Backups are stored on Cloudflare R2 within the EU. In standard operation, analytics data does not leave the European Economic Area.
+
+Limited transfers to the United States may occur in the following cases:
+
+- **Transactional email** (via Resend, Inc.) — necessary to deliver account, billing, and product communications to the Controller's authorized users.
+- **AI features** (via OpenAI, L.L.C.) — only when the Controller actively invokes an opt-in AI feature, in which case the relevant prompt and data slice are transmitted to OpenAI for processing.
+- **Cloudflare edge** — public-endpoint traffic is served via Cloudflare's global network. Cloudflare's EU traffic is processed at EU edge locations where possible.
+
+All such transfers are governed by the EU Standard Contractual Clauses (Commission Decision (EU) 2021/914) executed with each sub-processor, providing the adequate safeguards required under GDPR Chapter V.
 
 ## 9. Data retention and deletion
 

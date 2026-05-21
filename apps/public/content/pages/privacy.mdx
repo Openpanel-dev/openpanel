@@ -3,7 +3,7 @@ title: Privacy Policy
 description: Our privacy policy outlines how we handle your data, including usage information and cookies, to provide and improve our services.
 ---
 
-_Last updated: March 3, 2026_
+_Last updated: May 21, 2026_
 
 This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service and tells You about Your privacy rights and how the law protects You.
 
@@ -78,7 +78,7 @@ When you create an OpenPanel account, we collect:
 
 - Email address (required for login and transactional notifications)
 - Name (optional, used for display purposes)
-- Billing information (processed by our payment provider; we do not store full card details)
+- Billing information — payments are processed by Polar.sh, who acts as our Merchant of Record. Polar.sh collects and stores payment data (including payment card details, billing address, and applicable tax information) as an independent Controller. OpenPanel receives only a customer reference, the subscription state, and net payout records. We do not store full card details. See Polar.sh's Privacy Policy at [polar.sh/legal/privacy-policy](https://polar.sh/legal/privacy-policy).
 
 #### Dashboard session
 
@@ -124,11 +124,26 @@ The Company will retain Your Personal Data only for as long as is necessary for 
 
 The Company will also retain Usage Data for internal analysis purposes. Usage Data is generally retained for a shorter period of time, except when this data is used to strengthen the security or to improve the functionality of Our Service, or We are legally obligated to retain this data for longer time periods.
 
+### Service providers we use
+
+We rely on a small set of third-party providers to deliver the service. Each provider is bound by appropriate contractual safeguards (DPA, and where applicable EU Standard Contractual Clauses for transfers outside the EEA).
+
+| Provider | Role | Data they see | Location |
+|---|---|---|---|
+| Hetzner Online GmbH | Cloud infrastructure and primary data storage | All data stored by OpenPanel (analytics events, account data) | Germany (EU) |
+| Cloudflare, Inc. | CDN, WAF, and edge proxy in front of public endpoints | Traffic in transit (IP, request metadata) | EU edge; under SCCs for any US transit |
+| Cloudflare R2 | Backup storage | Backups of OpenPanel's databases | EU |
+| OpenAI, L.L.C. | LLM provider for opt-in AI features (chat, anomaly insights, AI-assisted reports) | Only the prompt and the slice of analytics data the user invokes the AI on. If you do not use the AI features, no data is sent to OpenAI. OpenAI does not use API-submitted data to train its models. | United States, under SCCs |
+| Resend, Inc. | Transactional email delivery (account, billing, product notifications) | Recipient name and email address; email content | United States, under SCCs |
+| Polar.sh (Polar Software Inc.) | Merchant of Record for billing and payments — independent Controller, not a sub-processor of OpenPanel | Billing name, email, address, payment card data, applicable tax information | United States; see [Polar.sh's Privacy Policy](https://polar.sh/legal/privacy-policy) |
+
 ### Data storage and transfers
 
-All analytics data is stored on Hetzner infrastructure located in Germany. All backups are stored on Cloudflare R2 within the EU. No analytics data is transferred outside the European Economic Area.
+Analytics event data is stored on Hetzner infrastructure in Germany; backups are stored on Cloudflare R2 within the EU. In standard operation, analytics event data does not leave the European Economic Area.
 
-Account data (email, name, billing) is processed within the EU. Our payment processor and transactional email provider operate under EU data protection standards.
+Limited transfers of account-related personal data (email address, name) to the United States may occur via Resend (transactional email) and OpenAI (only when you use the opt-in AI features). These transfers are governed by the EU Standard Contractual Clauses executed with each provider.
+
+Billing data is collected and stored in the United States by Polar.sh, our Merchant of Record. Polar.sh acts as an independent Controller for that data; please refer to Polar.sh's Privacy Policy for details.
 
 ### Delete Your Personal Data
 

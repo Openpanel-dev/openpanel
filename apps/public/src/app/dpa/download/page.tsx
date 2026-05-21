@@ -24,7 +24,7 @@ export default function DpaDownloadPage() {
           </p>
           <h1 className="mb-2 font-bold text-3xl">Data Processing Agreement</h1>
           <p className="text-gray-500 text-sm">
-            Version 1.0 &middot; Last updated: March 3, 2026
+            Version 1.1 &middot; Last updated: May 21, 2026
           </p>
         </div>
 
@@ -99,7 +99,7 @@ export default function DpaDownloadPage() {
           <p className="mb-1 text-gray-700 text-sm font-semibold">
             Session replay (optional feature)
           </p>
-          <p className="text-gray-700 text-sm">
+          <p className="mb-3 text-gray-700 text-sm">
             OpenPanel optionally supports session replay, which must be
             explicitly enabled by the Controller. When enabled, session replay
             records DOM snapshots and user interactions (mouse movements, clicks,
@@ -107,6 +107,22 @@ export default function DpaDownloadPage() {
             default. The Controller is responsible for ensuring their use of
             session replay complies with applicable privacy law, including
             providing appropriate notice to end users.
+          </p>
+          <p className="mb-1 text-gray-700 text-sm font-semibold">
+            AI features (optional, opt-in)
+          </p>
+          <p className="text-gray-700 text-sm">
+            OpenPanel offers optional AI features (such as natural-language
+            queries over the Controller's analytics data, anomaly insights, and
+            AI-assisted reports) which must be explicitly invoked by the
+            Controller. When the Controller uses these features, the prompt and
+            the relevant slice of the Controller's analytics data are
+            transmitted to OpenAI, L.L.C. (United States) as a sub-processor for
+            the sole purpose of generating the requested response. OpenAI is
+            contractually bound under its Data Processing Addendum and the EU
+            Standard Contractual Clauses; OpenAI does not use API-submitted data
+            to train its models. If the Controller does not use these features,
+            no data is sent to OpenAI.
           </p>
         </Section>
 
@@ -150,9 +166,14 @@ export default function DpaDownloadPage() {
             </li>
             <li>
               Make available all information necessary to demonstrate compliance
-              with this DPA and cooperate with audits conducted by the
-              Controller or their designated auditor, subject to reasonable
-              notice and confidentiality obligations.
+              with this DPA. Audits by the Controller or their designated
+              auditor are limited to one per 12-month period (unless required by
+              a supervisory authority or following a confirmed Personal Data
+              breach), require 30 days' prior notice, are conducted under
+              confidentiality, at the Controller's cost, and without
+              unreasonable disruption to operations. Documentary requests in
+              lieu of on-site audits will be accommodated where they provide
+              equivalent assurance.
             </li>
             <li>
               At the Controller's choice, delete or return all Personal Data
@@ -203,10 +224,21 @@ export default function DpaDownloadPage() {
                   Hetzner Online GmbH
                 </td>
                 <td className="border border-gray-300 px-3 py-2">
-                  Cloud infrastructure and data storage
+                  Cloud infrastructure and primary data storage
                 </td>
                 <td className="border border-gray-300 px-3 py-2">
                   Germany (EU)
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-3 py-2">
+                  Cloudflare, Inc.
+                </td>
+                <td className="border border-gray-300 px-3 py-2">
+                  CDN, WAF, and edge proxy in front of public endpoints
+                </td>
+                <td className="border border-gray-300 px-3 py-2">
+                  EU edge (under SCCs for any US transit)
                 </td>
               </tr>
               <tr>
@@ -217,6 +249,30 @@ export default function DpaDownloadPage() {
                   Backup storage
                 </td>
                 <td className="border border-gray-300 px-3 py-2">EU</td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-3 py-2">
+                  OpenAI, L.L.C.
+                </td>
+                <td className="border border-gray-300 px-3 py-2">
+                  LLM provider, used only when the Controller invokes opt-in AI
+                  features
+                </td>
+                <td className="border border-gray-300 px-3 py-2">
+                  United States (under SCCs)
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-3 py-2">
+                  Resend, Inc.
+                </td>
+                <td className="border border-gray-300 px-3 py-2">
+                  Transactional email delivery (account, billing, and product
+                  notifications)
+                </td>
+                <td className="border border-gray-300 px-3 py-2">
+                  United States (under SCCs)
+                </td>
               </tr>
             </tbody>
           </table>
@@ -310,11 +366,39 @@ export default function DpaDownloadPage() {
         </Section>
 
         <Section number="8" title="International data transfers">
+          <p className="mb-3 text-gray-700 text-sm leading-relaxed">
+            All analytics data is stored on Hetzner infrastructure located in
+            Germany. Backups are stored on Cloudflare R2 within the EU. In
+            standard operation, analytics data does not leave the European
+            Economic Area.
+          </p>
+          <p className="mb-2 text-gray-700 text-sm">
+            Limited transfers to the United States may occur in the following
+            cases:
+          </p>
+          <ul className="mb-3 list-disc space-y-1 pl-5 text-gray-700 text-sm">
+            <li>
+              <strong>Transactional email</strong> (via Resend, Inc.) —
+              necessary to deliver account, billing, and product communications
+              to the Controller's authorized users.
+            </li>
+            <li>
+              <strong>AI features</strong> (via OpenAI, L.L.C.) — only when the
+              Controller actively invokes an opt-in AI feature, in which case
+              the relevant prompt and data slice are transmitted to OpenAI for
+              processing.
+            </li>
+            <li>
+              <strong>Cloudflare edge</strong> — public-endpoint traffic is
+              served via Cloudflare's global network. EU traffic is processed at
+              EU edge locations where possible.
+            </li>
+          </ul>
           <p className="text-gray-700 text-sm leading-relaxed">
-            OpenPanel stores and processes all analytics data on Hetzner
-            infrastructure located in Germany. No Personal Data is transferred
-            to countries outside the EEA in the course of delivering the
-            service.
+            All such transfers are governed by the EU Standard Contractual
+            Clauses (Commission Decision (EU) 2021/914) executed with each
+            sub-processor, providing the adequate safeguards required under GDPR
+            Chapter V.
           </p>
         </Section>
 
@@ -382,7 +466,7 @@ export default function DpaDownloadPage() {
               />
               <Row
                 label="Sub-processors"
-                value="Hetzner Online GmbH (Germany) — cloud infrastructure; Cloudflare R2 (EU) — backup storage"
+                value="Hetzner Online GmbH (Germany) — cloud infrastructure and primary data storage; Cloudflare, Inc. (EU edge, under SCCs) — CDN/WAF/edge proxy; Cloudflare R2 (EU) — backup storage; OpenAI, L.L.C. (United States, under SCCs) — LLM provider for opt-in AI features only; Resend, Inc. (United States, under SCCs) — transactional email delivery."
               />
             </tbody>
           </table>
@@ -421,7 +505,7 @@ export default function DpaDownloadPage() {
               />
               <SignatureLine label="Name" value="Carl-Gerhard Lindesvärd" />
               <SignatureLine label="Title" value="Founder" />
-              <SignatureLine label="Date" value="March 3, 2026" />
+              <SignatureLine label="Date" value="May 21, 2026" />
             </div>
 
             {/* Controller - blank */}
