@@ -1,7 +1,6 @@
-import { type Redis, getRedisCache } from '@openpanel/redis';
-
 import { getSafeJson } from '@openpanel/json';
-import { TABLE_NAMES, ch } from '../clickhouse/client';
+import { getRedisCache, type Redis } from '@openpanel/redis';
+import { ch, TABLE_NAMES } from '../clickhouse/client';
 import type { IClickhouseBotEvent } from '../services/event.service';
 import { BaseBuffer } from './base-buffer';
 
@@ -50,7 +49,7 @@ export class BotBuffer extends BaseBuffer {
     const events = await this.redis.lrange(
       this.redisKey,
       0,
-      this.batchSize - 1,
+      this.batchSize - 1
     );
     const lrangeMs = performance.now() - lrangeStart;
 
@@ -59,9 +58,7 @@ export class BotBuffer extends BaseBuffer {
       return;
     }
 
-    const parsedEvents = events.map((e) =>
-      getSafeJson<IClickhouseBotEvent>(e),
-    );
+    const parsedEvents = events.map((e) => getSafeJson<IClickhouseBotEvent>(e));
 
     const chStart = performance.now();
     await ch.insert({
@@ -70,8 +67,9 @@ export class BotBuffer extends BaseBuffer {
       format: 'JSONEachRow',
       clickhouse_settings: {
         async_insert: 1,
-        parallel_view_processing: 1
-      }
+        wait_for_async_insert: 0,
+        parallel_view_processing: 1,
+      },
     });
     const chInsertMs = performance.now() - chStart;
 

@@ -47,7 +47,9 @@ export class SessionBuffer extends BaseBuffer {
       const value = await this.redis.get(
         `session:${options.projectId}:${options.profileId}`
       );
-      if (!value) return null;
+      if (!value) {
+        return null;
+      }
 
       // Backward compat: old keys stored full JSON, new keys store just the sessionId
       if (value.startsWith('{')) {
@@ -220,14 +222,14 @@ export class SessionBuffer extends BaseBuffer {
           `session:${newSession.id}`,
           JSON.stringify(newSession),
           'EX',
-          60 * 60,
+          60 * 60
         );
         if (newSession.profile_id) {
           multi.set(
             `session:${newSession.project_id}:${newSession.profile_id}`,
             newSession.id,
             'EX',
-            60 * 60,
+            60 * 60
           );
         }
         for (const session of sessions) {
@@ -264,16 +266,21 @@ export class SessionBuffer extends BaseBuffer {
    * either way — keeping them is wasted work.
    */
   private squashSessionsByVersion(
-    sessions: IClickhouseSession[],
+    sessions: IClickhouseSession[]
   ): IClickhouseSession[] {
-    if (sessions.length <= 1) return sessions;
+    if (sessions.length <= 1) {
+      return sessions;
+    }
 
     const grouped = new Map<string, IClickhouseSession[]>();
     for (const s of sessions) {
       const key = s.id;
       const arr = grouped.get(key);
-      if (arr) arr.push(s);
-      else grouped.set(key, [s]);
+      if (arr) {
+        arr.push(s);
+      } else {
+        grouped.set(key, [s]);
+      }
     }
 
     let squashedCount = 0;
@@ -291,15 +298,20 @@ export class SessionBuffer extends BaseBuffer {
           if (!oldestNeg || e.version < oldestNeg.version) {
             oldestNeg = e;
           }
-        } else if (e.sign === 1) {
-          if (!newestPos || e.version > newestPos.version) {
-            newestPos = e;
-          }
+        } else if (
+          e.sign === 1 &&
+          (!newestPos || e.version > newestPos.version)
+        ) {
+          newestPos = e;
         }
       }
       const emitted: IClickhouseSession[] = [];
-      if (oldestNeg) emitted.push(oldestNeg);
-      if (newestPos) emitted.push(newestPos);
+      if (oldestNeg) {
+        emitted.push(oldestNeg);
+      }
+      if (newestPos) {
+        emitted.push(newestPos);
+      }
       squashedCount += entries.length - emitted.length;
       out.push(...emitted);
     }
@@ -312,13 +324,19 @@ export class SessionBuffer extends BaseBuffer {
           dropped: squashedCount,
           uniqueSessions: grouped.size,
         },
-        'Session batch squashed',
+        'Session batch squashed'
       );
     }
 
     console.log(
-      squashedCount > 0 ? 'Session batch squashed' : 'Session batch not squashed',
-      { inputRows: sessions.length, outputRows: out.length, dropped: squashedCount },
+      squashedCount > 0
+        ? 'Session batch squashed'
+        : 'Session batch not squashed',
+      {
+        inputRows: sessions.length,
+        outputRows: out.length,
+        dropped: squashedCount,
+      }
     );
 
     return out;
@@ -341,7 +359,9 @@ export class SessionBuffer extends BaseBuffer {
     const parsed: IClickhouseSession[] = [];
     for (const raw of events) {
       const session = getSafeJson<IClickhouseSession>(raw);
-      if (!session) continue;
+      if (!session) {
+        continue;
+      }
       parsed.push({
         ...session,
         duration: Math.max(0, session.duration || 0),
@@ -372,9 +392,10 @@ export class SessionBuffer extends BaseBuffer {
         format: 'JSONEachRow',
         clickhouse_settings: {
           async_insert: 1,
-          parallel_view_processing: 1
-        }
-      }),
+          wait_for_async_insert: 0,
+          parallel_view_processing: 1,
+        },
+      })
     );
     const chInsertMs = performance.now() - chStart;
 

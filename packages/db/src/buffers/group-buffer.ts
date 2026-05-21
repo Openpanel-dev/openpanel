@@ -3,7 +3,12 @@ import { getSafeJson } from '@openpanel/json';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import shallowEqual from 'fast-deep-equal';
 import sqlstring from 'sqlstring';
-import { ch, chQuery, formatClickhouseDate, TABLE_NAMES } from '../clickhouse/client';
+import {
+  ch,
+  chQuery,
+  formatClickhouseDate,
+  TABLE_NAMES,
+} from '../clickhouse/client';
 import { BaseBuffer } from './base-buffer';
 
 type IGroupBufferEntry = {
@@ -69,7 +74,9 @@ export class GroupBuffer extends BaseBuffer {
     id: string
   ): Promise<IGroupCacheEntry | null> {
     const raw = await this.redis.get(this.getCacheKey(projectId, id));
-    if (!raw) return null;
+    if (!raw) {
+      return null;
+    }
     return getSafeJson<IGroupCacheEntry>(raw);
   }
 
@@ -108,7 +115,7 @@ export class GroupBuffer extends BaseBuffer {
           name: input.name,
           properties: mergedProperties,
           created_at: formatClickhouseDate(
-            existing?.created_at ? new Date(existing.created_at) : new Date(),
+            existing?.created_at ? new Date(existing.created_at) : new Date()
           ),
           version: String(Date.now()),
           deleted: 0,
@@ -155,7 +162,6 @@ export class GroupBuffer extends BaseBuffer {
     });
   }
 
-
   protected getRedisListKey(): string {
     return this.redisKey;
   }
@@ -180,9 +186,10 @@ export class GroupBuffer extends BaseBuffer {
         format: 'JSONEachRow',
         clickhouse_settings: {
           async_insert: 1,
-          parallel_view_processing: 1
-        }
-      }),
+          wait_for_async_insert: 0,
+          parallel_view_processing: 1,
+        },
+      })
     );
     const chInsertMs = performance.now() - chStart;
 

@@ -218,7 +218,7 @@ export class ProfileBuffer extends BaseBuffer {
             `SELECT ${PROFILE_LATEST_AGGREGATE_COLUMNS}
             FROM ${TABLE_NAMES.profiles} AS p
             WHERE (p.id, p.project_id) IN (${tuples})
-            ${withDateFilter ? `AND p.last_seen_at > now() - INTERVAL 2 DAY` : ''}
+            ${withDateFilter ? 'AND p.last_seen_at > now() - INTERVAL 2 DAY' : ''}
             GROUP BY p.id, p.project_id`
           );
           for (const row of rows) {
@@ -250,7 +250,7 @@ export class ProfileBuffer extends BaseBuffer {
     const rawProfiles = await this.redis.lrange(
       this.redisKey,
       0,
-      this.batchSize - 1,
+      this.batchSize - 1
     );
     const lrangeMs = performance.now() - lrangeStart;
 
@@ -269,7 +269,7 @@ export class ProfileBuffer extends BaseBuffer {
       const key = `${profile.project_id}:${profile.id}`;
       mergedInBatch.set(
         key,
-        this.mergeProfiles(mergedInBatch.get(key) ?? null, profile),
+        this.mergeProfiles(mergedInBatch.get(key) ?? null, profile)
       );
     }
 
@@ -277,7 +277,7 @@ export class ProfileBuffer extends BaseBuffer {
 
     // Check Redis cache for all unique profiles in a single MGET
     const cacheKeys = uniqueProfiles.map((p) =>
-      this.getProfileCacheKey({ profileId: p.id, projectId: p.project_id }),
+      this.getProfileCacheKey({ profileId: p.id, projectId: p.project_id })
     );
     const cacheResults = await this.redis.mget(...cacheKeys);
 
@@ -321,7 +321,7 @@ export class ProfileBuffer extends BaseBuffer {
       const key = `${profile.project_id}:${profile.id}`;
       const merged = this.mergeProfiles(
         existingByKey.get(key) ?? null,
-        profile,
+        profile
       );
       toInsert.push(merged);
       multi.set(
@@ -331,7 +331,7 @@ export class ProfileBuffer extends BaseBuffer {
         }),
         JSON.stringify(merged),
         'EX',
-        this.ttlInSeconds,
+        this.ttlInSeconds
       );
     }
 
@@ -343,9 +343,10 @@ export class ProfileBuffer extends BaseBuffer {
         format: 'JSONEachRow',
         clickhouse_settings: {
           async_insert: 1,
-          parallel_view_processing: 1
-        }
-      }),
+          wait_for_async_insert: 0,
+          parallel_view_processing: 1,
+        },
+      })
     );
     const chInsertMs = performance.now() - chStart;
 

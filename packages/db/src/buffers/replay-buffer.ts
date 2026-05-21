@@ -1,6 +1,6 @@
 import { getSafeJson } from '@openpanel/json';
 import { getRedisCache } from '@openpanel/redis';
-import { TABLE_NAMES, ch } from '../clickhouse/client';
+import { ch, TABLE_NAMES } from '../clickhouse/client';
 import { BaseBuffer } from './base-buffer';
 
 export interface IClickhouseSessionReplayChunk {
@@ -50,12 +50,11 @@ export class ReplayBuffer extends BaseBuffer {
       } catch (error) {
         this.logger.error(
           { err: error },
-          'Failed to add replay chunk to buffer',
+          'Failed to add replay chunk to buffer'
         );
       }
     });
   }
-
 
   protected getRedisListKey(): string {
     return this.redisKey;
@@ -85,9 +84,10 @@ export class ReplayBuffer extends BaseBuffer {
         format: 'JSONEachRow',
         clickhouse_settings: {
           async_insert: 1,
-          parallel_view_processing: 1
-        }
-      }),
+          wait_for_async_insert: 0,
+          parallel_view_processing: 1,
+        },
+      })
     );
     const chInsertMs = performance.now() - chStart;
 

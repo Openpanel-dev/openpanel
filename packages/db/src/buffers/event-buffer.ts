@@ -112,7 +112,7 @@ export class EventBuffer extends BaseBuffer {
           eventCount: eventsToFlush.length,
           flushRetryCount: this.flushRetryCount,
         },
-        'Failed to flush local buffer to Redis; events re-queued',
+        'Failed to flush local buffer to Redis; events re-queued'
       );
     } finally {
       this.isFlushing = false;
@@ -137,7 +137,7 @@ export class EventBuffer extends BaseBuffer {
     const queueEvents = await redis.lrange(
       this.queueKey,
       0,
-      this.batchSize - 1,
+      this.batchSize - 1
     );
     const lrangeMs = performance.now() - lrangeStart;
 
@@ -165,7 +165,7 @@ export class EventBuffer extends BaseBuffer {
     eventsToClickhouse.sort(
       (a, b) =>
         new Date(a.created_at || 0).getTime() -
-        new Date(b.created_at || 0).getTime(),
+        new Date(b.created_at || 0).getTime()
     );
 
     const chStart = performance.now();
@@ -178,9 +178,10 @@ export class EventBuffer extends BaseBuffer {
           format: 'JSONEachRow',
           clickhouse_settings: {
             async_insert: 1,
-            parallel_view_processing: 1
-          }
-        }),
+            wait_for_async_insert: 0,
+            parallel_view_processing: 1,
+          },
+        })
     );
     const chInsertMs = performance.now() - chStart;
 
@@ -188,7 +189,7 @@ export class EventBuffer extends BaseBuffer {
     for (const event of eventsToClickhouse) {
       countByProject.set(
         event.project_id,
-        (countByProject.get(event.project_id) ?? 0) + 1,
+        (countByProject.get(event.project_id) ?? 0) + 1
       );
     }
     for (const [projectId, count] of countByProject) {
