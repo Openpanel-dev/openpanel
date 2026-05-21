@@ -112,8 +112,28 @@ function getClickhouseSettings(): ClickHouseSettings {
   };
 }
 
+// Request gzip is on by default — pays CPU on the worker to send less data
+// over the wire. For payload-heavy buffers (replay) the gzip step happens on
+// the single Node main thread and can block the event loop, so it's worth
+// being able to flip it off to test. Set CLICKHOUSE_REQUEST_COMPRESSION=false
+// to disable.
+const requestCompressionEnabled =
+  process.env.CLICKHOUSE_REQUEST_COMPRESSION !== 'false' &&
+  process.env.CLICKHOUSE_REQUEST_COMPRESSION !== '0';
+
+// Pool size per worker process. With parallel chunk inserts (cap 5 per
+// flush) and a few buffers potentially flushing concurrently across cluster
+// nodes, the previous 30 left headroom but might be tight at peak. Set
+// CLICKHOUSE_MAX_OPEN_CONNECTIONS to override.
+const maxOpenConnections = process.env.CLICKHOUSE_MAX_OPEN_CONNECTIONS
+  ? Math.max(
+      1,
+      Number.parseInt(process.env.CLICKHOUSE_MAX_OPEN_CONNECTIONS, 10),
+    )
+  : 50;
+
 export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
-  max_open_connections: 30,
+  max_open_connections: maxOpenConnections,
   request_timeout: 300_000,
   keep_alive: {
     enabled: true,
@@ -122,7 +142,7 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
     idle_socket_ttl: 7000,
   },
   compression: {
-    request: true,
+    request: requestCompressionEnabled,
   },
   clickhouse_settings: getClickhouseSettings(),
   log: {

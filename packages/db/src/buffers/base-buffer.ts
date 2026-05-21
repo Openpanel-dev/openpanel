@@ -116,6 +116,53 @@ export class BaseBuffer {
   }
 
   /**
+   * Max number of ch.insert sub-chunks that a single flush may run in
+   * parallel. Caps connection-pool usage and worker memory peak. The
+   * ClickHouse client pool defaults to 30 connections; with 3 workers and
+   * up to ~3 buffers flushing concurrently cluster-wide, a per-flush cap
+   * of 5 keeps total in-flight inserts well under the pool.
+   */
+  protected chInsertConcurrency = process.env.BUFFER_CH_INSERT_CONCURRENCY
+    ? Math.max(1, Number.parseInt(process.env.BUFFER_CH_INSERT_CONCURRENCY, 10))
+    : 5;
+
+  /**
+   * Run `fn` over `items` with a bounded concurrency. Preserves order of
+   * `results`. If any worker throws, the helper propagates the first error
+   * (consistent with `Promise.all`); other in-flight promises run to
+   * completion but their resolved values/errors are discarded.
+   */
+  protected async parallelLimit<T, R>(
+    items: T[],
+    fn: (item: T, index: number) => Promise<R>,
+    concurrency: number = this.chInsertConcurrency,
+  ): Promise<R[]> {
+    if (items.length === 0) return [];
+    if (concurrency <= 1 || items.length === 1) {
+      const out: R[] = [];
+      for (let i = 0; i < items.length; i++) {
+        out.push(await fn(items[i] as T, i));
+      }
+      return out;
+    }
+    const results = new Array<R>(items.length);
+    let nextIndex = 0;
+    const worker = async (): Promise<void> => {
+      while (true) {
+        const idx = nextIndex++;
+        if (idx >= items.length) return;
+        results[idx] = await fn(items[idx] as T, idx);
+      }
+    };
+    const workers = Array.from(
+      { length: Math.min(concurrency, items.length) },
+      () => worker(),
+    );
+    await Promise.all(workers);
+    return results;
+  }
+
+  /**
    * Subclasses call this from within onFlush to record what they actually
    * did. The base class includes these in the FlushObservation it emits.
    */

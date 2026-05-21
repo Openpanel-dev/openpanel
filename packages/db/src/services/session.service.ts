@@ -50,7 +50,10 @@ export interface IClickhouseSession {
   utm_content: string;
   utm_term: string;
   revenue: number;
-  sign: 1 | 0;
+  // CollapsingMergeTree marker: +1 = current state, -1 = cancel a prior +1.
+  // The session-buffer emits both +1 (new) and -1 (old) rows per update so
+  // CH can collapse intermediate states.
+  sign: 1 | -1;
   version: number;
   // Dynamically added
   has_replay?: boolean;

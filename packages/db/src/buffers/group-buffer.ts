@@ -173,13 +173,13 @@ export class GroupBuffer extends BaseBuffer {
     const parsed = items.map((i) => getSafeJson<IGroupBufferEntry>(i));
 
     const chStart = performance.now();
-    for (const chunk of this.chunks(parsed, this.chunkSize)) {
-      await ch.insert({
+    await this.parallelLimit(this.chunks(parsed, this.chunkSize), (chunk) =>
+      ch.insert({
         table: TABLE_NAMES.groups,
         values: chunk,
         format: 'JSONEachRow',
-      });
-    }
+      }),
+    );
     const chInsertMs = performance.now() - chStart;
 
     const trimStart = performance.now();

@@ -78,13 +78,13 @@ export class ReplayBuffer extends BaseBuffer {
       .filter((item): item is IClickhouseSessionReplayChunk => item != null);
 
     const chStart = performance.now();
-    for (const chunk of this.chunks(chunks, this.chunkSize)) {
-      await ch.insert({
+    await this.parallelLimit(this.chunks(chunks, this.chunkSize), (chunk) =>
+      ch.insert({
         table: TABLE_NAMES.session_replay_chunks,
         values: chunk,
         format: 'JSONEachRow',
-      });
-    }
+      }),
+    );
     const chInsertMs = performance.now() - chStart;
 
     const trimStart = performance.now();

@@ -14,6 +14,10 @@ export class SessionBuffer extends BaseBuffer {
     ? Number.parseInt(process.env.SESSION_BUFFER_CHUNK_SIZE, 10)
     : 1000;
 
+  private readonly squashEnabled =
+    process.env.SESSION_BUFFER_SQUASH !== 'false' &&
+    process.env.SESSION_BUFFER_SQUASH !== '0';
+
   private readonly redisKey = 'session-buffer';
   private redis: Redis;
   constructor() {
@@ -246,6 +250,80 @@ export class SessionBuffer extends BaseBuffer {
     });
   }
 
+  /**
+   * Squash multiple (sign=-1, sign=+1) pairs for the same session id into
+   * just the boundary rows: the oldest -1 (cancels the previous CH state)
+   * and the newest +1 (the final state). Single-row sessions (no update
+   * pair yet) pass through unchanged.
+   *
+   * Correctness depends on the invariant maintained by `getSession`: every
+   * update for an existing session emits exactly one -1 at version V and
+   * one +1 at V+1, where V is the existing version. The oldest -1 in the
+   * batch cancels CH's previous +1, and the newest +1 becomes the new
+   * canonical row. Intermediate (-1, +1) pairs cancel each other in CH
+   * either way — keeping them is wasted work.
+   */
+  private squashSessionsByVersion(
+    sessions: IClickhouseSession[],
+  ): IClickhouseSession[] {
+    if (sessions.length <= 1) return sessions;
+
+    const grouped = new Map<string, IClickhouseSession[]>();
+    for (const s of sessions) {
+      const key = s.id;
+      const arr = grouped.get(key);
+      if (arr) arr.push(s);
+      else grouped.set(key, [s]);
+    }
+
+    let squashedCount = 0;
+    const out: IClickhouseSession[] = [];
+
+    for (const entries of grouped.values()) {
+      if (entries.length === 1) {
+        out.push(entries[0]!);
+        continue;
+      }
+      let oldestNeg: IClickhouseSession | null = null;
+      let newestPos: IClickhouseSession | null = null;
+      for (const e of entries) {
+        if (e.sign === -1) {
+          if (!oldestNeg || e.version < oldestNeg.version) {
+            oldestNeg = e;
+          }
+        } else if (e.sign === 1) {
+          if (!newestPos || e.version > newestPos.version) {
+            newestPos = e;
+          }
+        }
+      }
+      const emitted: IClickhouseSession[] = [];
+      if (oldestNeg) emitted.push(oldestNeg);
+      if (newestPos) emitted.push(newestPos);
+      squashedCount += entries.length - emitted.length;
+      out.push(...emitted);
+    }
+
+    if (squashedCount > 0) {
+      this.logger.debug(
+        {
+          inputRows: sessions.length,
+          outputRows: out.length,
+          dropped: squashedCount,
+          uniqueSessions: grouped.size,
+        },
+        'Session batch squashed',
+      );
+    }
+
+    console.log(
+      squashedCount > 0 ? 'Session batch squashed' : 'Session batch not squashed',
+      { inputRows: sessions.length, outputRows: out.length, dropped: squashedCount },
+    );
+
+    return out;
+  }
+
   async processBuffer() {
     const lrangeStart = performance.now();
     const events = await this.redis.lrange(
@@ -260,23 +338,40 @@ export class SessionBuffer extends BaseBuffer {
       return;
     }
 
-    const sessions = events
-      .map((e) => getSafeJson<IClickhouseSession>(e))
-      .map((session) => {
-        return {
-          ...session,
-          duration: Math.max(0, session?.duration || 0),
-        };
+    const parsed: IClickhouseSession[] = [];
+    for (const raw of events) {
+      const session = getSafeJson<IClickhouseSession>(raw);
+      if (!session) continue;
+      parsed.push({
+        ...session,
+        duration: Math.max(0, session.duration || 0),
       });
+    }
+
+    // A single high-activity session can produce many (sign=-1, sign=+1)
+    // pairs within one flush window — each event for that session adds a
+    // pair. The VersionedCollapsingMergeTree on `sessions` will collapse
+    // them at merge time, so the final state is correct either way. But
+    // inserting all the intermediate rows costs network bytes, gzip CPU,
+    // CH ingest work, and CH merge work.
+    //
+    // We can squash within the batch and only insert the boundary rows:
+    // the oldest sign=-1 (which cancels the previous CH state) and the
+    // newest sign=+1 (the final state). Same end result, fewer rows.
+    //
+    // Set SESSION_BUFFER_SQUASH=false to disable as a safety hatch.
+    const sessions = this.squashEnabled
+      ? this.squashSessionsByVersion(parsed)
+      : parsed;
 
     const chStart = performance.now();
-    for (const chunk of this.chunks(sessions, this.chunkSize)) {
-      await ch.insert({
+    await this.parallelLimit(this.chunks(sessions, this.chunkSize), (chunk) =>
+      ch.insert({
         table: TABLE_NAMES.sessions,
         values: chunk,
         format: 'JSONEachRow',
-      });
-    }
+      }),
+    );
     const chInsertMs = performance.now() - chStart;
 
     const trimStart = performance.now();

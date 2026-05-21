@@ -336,13 +336,13 @@ export class ProfileBuffer extends BaseBuffer {
     }
 
     const chStart = performance.now();
-    for (const chunk of this.chunks(toInsert, this.chunkSize)) {
-      await ch.insert({
+    await this.parallelLimit(this.chunks(toInsert, this.chunkSize), (chunk) =>
+      ch.insert({
         table: TABLE_NAMES.profiles,
         values: chunk,
         format: 'JSONEachRow',
-      });
-    }
+      }),
+    );
     const chInsertMs = performance.now() - chStart;
 
     const trimStart = performance.now();

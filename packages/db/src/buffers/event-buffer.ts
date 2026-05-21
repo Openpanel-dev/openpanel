@@ -169,13 +169,15 @@ export class EventBuffer extends BaseBuffer {
     );
 
     const chStart = performance.now();
-    for (const chunk of this.chunks(eventsToClickhouse, this.chunkSize)) {
-      await ch.insert({
-        table: 'events',
-        values: chunk,
-        format: 'JSONEachRow',
-      });
-    }
+    await this.parallelLimit(
+      this.chunks(eventsToClickhouse, this.chunkSize),
+      (chunk) =>
+        ch.insert({
+          table: 'events',
+          values: chunk,
+          format: 'JSONEachRow',
+        }),
+    );
     const chInsertMs = performance.now() - chStart;
 
     const countByProject = new Map<string, number>();
