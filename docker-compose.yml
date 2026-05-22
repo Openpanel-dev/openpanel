@@ -42,7 +42,7 @@ services:
       - "9009:9009" # Inter-server communication
 
   op-rp:
-    image: redpandadata/redpanda:v25.1.4
+    image: redpandadata/redpanda:v26.1.7
     restart: always
     command:
       - redpanda
