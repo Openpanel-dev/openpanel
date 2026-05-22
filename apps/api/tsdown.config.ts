@@ -10,10 +10,6 @@ const options: Options = {
     'pino',
     'pino-pretty',
     '@node-rs/argon2',
-    // @platformatic/wasm-utils does readFileSync('./native.wasm') at import
-    // time; bundling breaks the relative path lookup. Keep the whole
-    // @platformatic/* family external so it resolves from node_modules.
-    /^@platformatic\//u,
   ],
   sourcemap: true,
   platform: 'node',
