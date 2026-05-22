@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { generateSecureId } from '@openpanel/common/server';
 import { createLogger, type ILogger } from '@openpanel/logger';
@@ -130,6 +131,60 @@ export class BaseBuffer {
    */
   protected yieldToEventLoop(): Promise<void> {
     return new Promise((resolve) => setImmediate(resolve));
+  }
+
+  /**
+   * Compute how often to yield in a CPU-bound loop over `batchSize`
+   * items: target ~20 yields per flush, clamped to a per-buffer band.
+   *
+   * The band lets each buffer reflect per-item cost:
+   * - cheap loops (regex, shallow checks): min=1000, max=5000 → coarse
+   * - heavy loops (JSON.parse + deep merge): min=100,  max=1000 → fine
+   *
+   * Without clamping, small default batchSizes (e.g. profile-buffer's
+   * 200) would yield far too often (every ~10 items, dominated by yield
+   * overhead) or — with hardcoded `% N` literals where N > batchSize —
+   * never yield at all. Both are bad; the band rules out both.
+   *
+   * @param batchSize total items the loop will process
+   * @param opts.min  lower bound for yield interval (default 100)
+   * @param opts.max  upper bound for yield interval (default 5000)
+   * @param opts.targetYieldsPerFlush  default 20
+   */
+  protected getYieldInterval(
+    batchSize: number,
+    opts: { min?: number; max?: number; targetYieldsPerFlush?: number } = {},
+  ): number {
+    const target = opts.targetYieldsPerFlush ?? 20;
+    const min = opts.min ?? 100;
+    const max = opts.max ?? 5000;
+    return Math.max(min, Math.min(max, Math.ceil(batchSize / target)));
+  }
+
+  /**
+   * Wrap an array of already-serialized JSONEachRow lines into an
+   * object-mode Readable stream that yields the lines as strings. The
+   * @clickhouse/client requires object-mode for JSON* formats — but with
+   * our custom `json.stringify` in `CLICKHOUSE_OPTIONS` (passes strings
+   * through unchanged), the lines reach CH without being re-serialized.
+   *
+   * Net effect: no JSON.parse on our side, no JSON.stringify on the
+   * client's side — the bytes go from Redis to CH's HTTP body
+   * essentially unchanged.
+   *
+   * Caller must guarantee each line is a valid single-line JSON object
+   * (the contract when we JSON.stringify(obj) before rpush'ing into
+   * Redis). A malformed line will fail the whole CH insert, not just
+   * that row.
+   */
+  protected jsonEachRowStream(lines: string[]): Readable {
+    return Readable.from(
+      (function* () {
+        for (const line of lines) {
+          yield line;
+        }
+      })(),
+    );
   }
 
   protected chunks<T>(items: T[], size: number) {

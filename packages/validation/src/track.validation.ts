@@ -31,7 +31,7 @@ export interface ITrackPayload {
   name: string;
   properties?: Record<string, unknown>;
   profileId?: IProfileId;
-  groups?: string[];
+  groups?: string[] | null;
 }
 
 export interface IIdentifyPayload {
@@ -103,7 +103,7 @@ export const zTrackPayload = z
     name: z.string().min(1),
     properties: z.record(z.string(), z.unknown()).optional(),
     profileId: zProfileId.optional(),
-    groups: z.array(z.string().min(1)).optional(),
+    groups: z.array(z.string().min(1)).nullish(),
   })
   .refine((data) => !RESERVED_EVENT_NAMES.includes(data.name as any), {
     message: `Event name cannot be one of the reserved names: ${RESERVED_EVENT_NAMES.join(', ')}`,

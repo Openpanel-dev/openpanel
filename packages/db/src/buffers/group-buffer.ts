@@ -176,16 +176,17 @@ export class GroupBuffer extends BaseBuffer {
       return;
     }
 
-    const parsed = items.map((i) => getSafeJson<IGroupBufferEntry>(i));
-
+    // Raw passthrough: each Redis entry is already a valid JSONEachRow
+    // line. Streaming raw strings to CH skips JSON.parse + the client's
+    // re-stringify on the hot path.
     const chStart = performance.now();
-    await this.parallelLimit(this.chunks(parsed, this.chunkSize), (chunk) =>
+    await this.parallelLimit(this.chunks(items, this.chunkSize), (chunk) =>
       ch.insert({
         table: TABLE_NAMES.groups,
-        values: chunk,
+        values: this.jsonEachRowStream(chunk),
         format: 'JSONEachRow',
         clickhouse_settings: this.getClickhouseSettings(),
-      })
+      }),
     );
     const chInsertMs = performance.now() - chStart;
 

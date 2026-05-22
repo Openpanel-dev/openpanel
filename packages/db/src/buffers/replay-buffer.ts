@@ -1,4 +1,3 @@
-import { getSafeJson } from '@openpanel/json';
 import { getRedisCache } from '@openpanel/redis';
 import { ch, TABLE_NAMES } from '../clickhouse/client';
 import { BaseBuffer } from './base-buffer';
@@ -72,27 +71,19 @@ export class ReplayBuffer extends BaseBuffer {
       return;
     }
 
-    // Parse rrweb chunks with periodic yields. Each chunk's `payload`
-    // field is a large JSON blob (~10-100KB) so JSON.parse is expensive
-    // per item. Yield every 100 items to keep the event loop responsive
-    // during big flushes.
-    const chunks: IClickhouseSessionReplayChunk[] = [];
-    for (let i = 0; i < items.length; i++) {
-      const parsed = getSafeJson<IClickhouseSessionReplayChunk>(items[i]!);
-      if (parsed != null) chunks.push(parsed);
-      if ((i + 1) % 100 === 0) {
-        await this.yieldToEventLoop();
-      }
-    }
-
+    // Raw passthrough: each Redis entry is already a valid JSONEachRow
+    // line (we JSON.stringify a single chunk before rpush). Streaming the
+    // raw strings to CH skips JSON.parse × N on the worker AND the
+    // client's internal JSON.stringify × N — significant because each
+    // rrweb chunk's `payload` is 10–100KB.
     const chStart = performance.now();
-    await this.parallelLimit(this.chunks(chunks, this.chunkSize), (chunk) =>
+    await this.parallelLimit(this.chunks(items, this.chunkSize), (chunk) =>
       ch.insert({
         table: TABLE_NAMES.session_replay_chunks,
-        values: chunk,
+        values: this.jsonEachRowStream(chunk),
         format: 'JSONEachRow',
         clickhouse_settings: this.getClickhouseSettings(),
-      })
+      }),
     );
     const chInsertMs = performance.now() - chStart;
 

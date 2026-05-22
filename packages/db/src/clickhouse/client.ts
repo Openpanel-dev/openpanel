@@ -10,7 +10,7 @@ import type { IInterval } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
 import { RoundRobinPicker, withRoundRobinRetry } from './round-robin';
 
-export { createClient };
+export { createClient } from '@clickhouse/client';
 
 const logger = createLogger({ name: 'clickhouse' });
 
@@ -171,6 +171,16 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
     LoggerClass: CustomLogger,
     level: ClickHouseLogLevel.DEBUG,
   },
+  // Custom JSON serializer used on inserts. For buffers that already
+  // hold JSONEachRow lines as strings (event/replay/bot/group — pulled
+  // straight out of Redis), this is a passthrough — no JSON.stringify
+  // on the hot path. For buffers that pass real objects (session /
+  // profile, which need to parse + transform before inserting), it
+  // falls back to JSON.stringify. The client appends '\n' itself.
+  json: {
+    stringify: <T>(value: T): string =>
+      typeof value === 'string' ? value : JSON.stringify(value),
+  },
 };
 
 // CLICKHOUSE_URL accepts a single URL or comma-separated list. With a list,
@@ -197,7 +207,9 @@ const clients: ClickHouseClient[] = clickhouseUrls.map((url) =>
 const picker = new RoundRobinPicker(clients, clickhouseUrls, unhealthyMarkMs);
 
 function maskUrlCredentials(url: string): string {
-  if (!url) return '<unset>';
+  if (!url) {
+    return '<unset>';
+  }
   try {
     const u = new URL(url);
     if (u.username) {
@@ -246,15 +258,17 @@ const cleanQuery = (query?: string) =>
 export async function withRetry<T>(
   operation: (
     client: ClickHouseClient,
-    ctx: { url: string; index: number },
-  ) => Promise<T>,
+    ctx: { url: string; index: number }
+  ) => Promise<T>
 ): Promise<T> {
   return withRoundRobinRetry(picker, operation, logger);
 }
 
 /** Best-effort URL → hostname extraction for log labels. */
 function urlHostname(url: string | undefined): string | undefined {
-  if (!url) return undefined;
+  if (!url) {
+    return undefined;
+  }
   try {
     return new URL(url).hostname;
   } catch {

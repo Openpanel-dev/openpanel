@@ -260,11 +260,19 @@ export class ProfileBuffer extends BaseBuffer {
     }
 
     // Parse + merge within batch in a single pass. Yields back to the
-    // event loop every 500 items so concurrent add() calls and BullMQ
-    // heartbeats can make progress while the merge churns through 10k+
+    // event loop periodically so concurrent add() calls and BullMQ
+    // heartbeats can make progress while the merge churns through
     // profiles. The merge step is the hottest CPU stage of any buffer —
     // deepMergeObjects recursively combines nested `properties` objects
     // and was previously responsible for ~500ms event-loop blocks.
+    //
+    // Heavy loop (parse + deep merge): narrow band so we yield often
+    // even with smaller batches but don't yield every-few-items on
+    // very small ones.
+    const mergeYieldEvery = this.getYieldInterval(rawProfiles.length, {
+      min: 100,
+      max: 1000,
+    });
     const mergedInBatch = new Map<string, IClickhouseProfile>();
     for (let i = 0; i < rawProfiles.length; i++) {
       const profile = getSafeJson<IClickhouseProfile>(rawProfiles[i]!);
@@ -274,7 +282,7 @@ export class ProfileBuffer extends BaseBuffer {
         key,
         this.mergeProfiles(mergedInBatch.get(key) ?? null, profile),
       );
-      if ((i + 1) % 500 === 0) {
+      if ((i + 1) % mergeYieldEvery === 0) {
         await this.yieldToEventLoop();
       }
     }
@@ -320,8 +328,12 @@ export class ProfileBuffer extends BaseBuffer {
     }
 
     // Final merge: in-batch profile + existing (from cache or ClickHouse).
-    // Second heavy stage — same deepMergeObjects call per unique profile,
-    // so the same yield-every-500 pattern applies.
+    // Second heavy stage — same deepMergeObjects call per unique profile.
+    // Same band as the in-batch merge above.
+    const finalYieldEvery = this.getYieldInterval(uniqueProfiles.length, {
+      min: 100,
+      max: 1000,
+    });
     const toInsert: IClickhouseProfile[] = [];
     const multi = this.redis.multi();
 
@@ -342,7 +354,7 @@ export class ProfileBuffer extends BaseBuffer {
         'EX',
         this.ttlInSeconds,
       );
-      if ((i + 1) % 500 === 0) {
+      if ((i + 1) % finalYieldEvery === 0) {
         await this.yieldToEventLoop();
       }
     }

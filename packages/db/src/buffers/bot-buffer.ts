@@ -1,4 +1,3 @@
-import { getSafeJson } from '@openpanel/json';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import { ch, TABLE_NAMES } from '../clickhouse/client';
 import type { IClickhouseBotEvent } from '../services/event.service';
@@ -58,12 +57,13 @@ export class BotBuffer extends BaseBuffer {
       return;
     }
 
-    const parsedEvents = events.map((e) => getSafeJson<IClickhouseBotEvent>(e));
-
+    // Raw passthrough: each Redis entry is already a valid JSONEachRow
+    // line. Streaming raw strings skips JSON.parse + the client's
+    // re-stringify on the hot path.
     const chStart = performance.now();
     await ch.insert({
       table: TABLE_NAMES.events_bots,
-      values: parsedEvents,
+      values: this.jsonEachRowStream(events),
       format: 'JSONEachRow',
       clickhouse_settings: this.getClickhouseSettings(),
     });
