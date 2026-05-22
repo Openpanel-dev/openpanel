@@ -131,7 +131,10 @@ const getProducer = async (): Promise<Producer> => {
     const client = getKafka();
     const p = client.producer({
       idempotent: true,
-      maxInFlightRequests: 5,
+      // 1 (not 5) to avoid in-flight reordering after a transient broker hiccup:
+      // with idempotency on and low retries, reordered batches trip
+      // OUT_OF_ORDER_SEQUENCE_NUMBER and stick the producer per-partition.
+      maxInFlightRequests: 1,
       allowAutoTopicCreation: true,
       retry: {
         retries: KAFKA_PRODUCER_RETRIES,
@@ -158,21 +161,73 @@ const getProducer = async (): Promise<Producer> => {
   return producerConnectPromise;
 };
 
+// Kafka error codes that mean the producer's PID/sequence state is
+// permanently out of sync with the broker for some partition — only a
+// fresh PID (new producer instance) can recover.
+//   45 OUT_OF_ORDER_SEQUENCE_NUMBER
+//   46 DUPLICATE_SEQUENCE_NUMBER
+//   47 INVALID_PRODUCER_EPOCH
+//   65 UNKNOWN_PRODUCER_ID
+const FATAL_PRODUCER_ERROR_CODES = new Set<number>([45, 46, 47, 65]);
+
+const isFatalProducerError = (err: unknown): boolean => {
+  if (!err || typeof err !== 'object') {
+    return false;
+  }
+  const name = (err as { name?: string }).name;
+  // Retries-exceeded leaves the idempotent producer's sequence state
+  // suspect (broker may have persisted a batch we gave up on), so treat
+  // it as fatal-for-this-producer too.
+  if (name === 'KafkaJSNumberOfRetriesExceeded') {
+    return true;
+  }
+  if (name === 'KafkaJSProtocolError') {
+    const code = (err as { code?: number }).code;
+    return typeof code === 'number' && FATAL_PRODUCER_ERROR_CODES.has(code);
+  }
+  return false;
+};
+
+const resetProducer = (broken: Producer): void => {
+  if (producer !== broken) {
+    return;
+  }
+  producer = null;
+  producerConnectPromise = null;
+  broken.disconnect().catch((err) => {
+    kafkaLogger.warn(
+      { err },
+      'kafka producer disconnect after fatal error failed'
+    );
+  });
+};
+
 export const produceIncomingEvent = async (
   payload: EventsQueuePayloadIncomingEvent['payload'],
   partitionKey: string
 ): Promise<void> => {
   const p = await getProducer();
-  await p.send({
-    topic: KAFKA_EVENTS_TOPIC,
-    timeout: KAFKA_REQUEST_TIMEOUT_MS,
-    messages: [
-      {
-        key: Buffer.from(partitionKey),
-        value: Buffer.from(JSON.stringify(payload)),
-      },
-    ],
-  });
+  try {
+    await p.send({
+      topic: KAFKA_EVENTS_TOPIC,
+      timeout: KAFKA_REQUEST_TIMEOUT_MS,
+      messages: [
+        {
+          key: Buffer.from(partitionKey),
+          value: Buffer.from(JSON.stringify(payload)),
+        },
+      ],
+    });
+  } catch (err) {
+    if (isFatalProducerError(err)) {
+      kafkaLogger.warn(
+        { err },
+        'kafka producer in fatal state; resetting for next call'
+      );
+      resetProducer(p);
+    }
+    throw err;
+  }
 };
 
 const consumers = new Set<Consumer>();
