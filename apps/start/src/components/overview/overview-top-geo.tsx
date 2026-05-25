@@ -134,6 +134,7 @@ export default function OverviewTopGeo({
               <OverviewLineChart
                 data={seriesQuery.data}
                 interval={interval}
+                range={range}
                 searchQuery={searchQuery}
               />
             ) : (

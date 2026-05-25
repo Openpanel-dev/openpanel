@@ -21,13 +21,13 @@ code {
 :root {
   /* Core colors converted from HSL to OKLCH using convert-to-oklch tool */
   --highlight: oklch(55.1% 0.21 262); /* hsl(220, 84%, 53%) -> #2266ec */
-  
+
   /* def- color scale converted from HSL to OKLCH */
   --def-100: oklch(98.4% 0 248); /* hsl(210, 40%, 98%) -> #F0F4F9 */
   --def-200: oklch(96.8% 0 248); /* hsl(210, 40%, 96.1%) -> #E7ECF2 */
   --def-300: oklch(91.7% 0 248); /* hsl(210, 15.14%, 89.41%) -> #DDE3E9 */
   --def-400: oklch(80.3% 0 248); /* hsl(210, 9.08%, 75.05%) -> #B3BDC7 */
-  
+
   /* foregroundish converted from HSL to OKLCH */
   --foregroundish: oklch(34.4% 0 273); /* hsl(226.49, 3.06%, 22.62%) */
 
@@ -50,7 +50,7 @@ code {
   --border: oklch(92.9% 0.01 256); /* hsl(214.3, 31.8%, 91.4%) -> #E8EBF1 */
   --input: oklch(92.9% 0.01 256); /* hsl(214.3, 31.8%, 91.4%) -> #E8EBF1 */
   --ring: oklch(86.9% 0.02 253); /* hsl(212.73, 26.83%, 83.92%) -> #CDD6E2 */
-  
+
   /* Chart colors converted to OKLCH for consistency */
   --chart-0: oklch(54.6% 0.22 263); /* #2563EB */
   --chart-1: oklch(72.2% 0.17 33.7); /* #ff7557 */
@@ -65,20 +65,47 @@ code {
   --chart-10: oklch(71.1% 0.15 320); /* #cb80dc */
   --chart-11: oklch(72.1% 0.09 188); /* #5cb7af */
   --chart-12: oklch(58.7% 0.24 286); /* #7856ff */
-  
+
   --radius: 0.5rem;
+
+  /* Bklit chart tokens — single-series defaults pick OpenPanel brand palette.
+     We deliberately do NOT redefine --chart-1..5 (OpenPanel uses them as a 13-color
+     fixed palette via --chart-0..12); for multi-series charts we always pass
+     explicit colors via getChartColor(i). */
+  --chart-background: var(--card);
+  --chart-foreground: var(--foreground);
+  --chart-foreground-muted: var(--muted-foreground);
+  --chart-line-primary: var(--chart-0);
+  --chart-line-secondary: var(--chart-1);
+  --chart-crosshair: oklch(from var(--foreground) l c h / 0.4);
+  --chart-grid: var(--border);
+  /* Outer tooltip box is transparent — OPTooltipCard owns the visible card. */
+  --chart-tooltip-background: transparent;
+  --chart-tooltip-foreground: var(--background);
+  --chart-tooltip-muted: oklch(from var(--background) l c h / 0.6);
+  --chart-marker-background: var(--def-100);
+  --chart-marker-border: var(--border);
+  --chart-marker-foreground: var(--foreground);
+  /* Notification-pill style: high-contrast against the marker circle. Auto-
+     adapts to light/dark via the foreground/background tokens. Without
+     these the SVG <circle> / <text> in MarkerGroup fall back to black on
+     black and the count badge renders as a black dot. */
+  --chart-marker-badge-background: var(--foreground);
+  --chart-marker-badge-foreground: var(--background);
+  --chart-ring-background: oklch(from var(--foreground) l c h / 0.12);
+  --chart-label: var(--muted-foreground);
 }
 
 .dark {
   /* Core colors converted from HSL to OKLCH for dark mode using convert-to-oklch tool */
   --highlight: oklch(61.3% 0.21 263); /* hsl(221.44, 100%, 62.04%) */
-  
+
   /* def- color scale converted from HSL to OKLCH for dark mode */
   --def-100: oklch(19.3% 0 0); /* hsl(0, 0%, 8%) -> #0f0f0f */
   --def-200: oklch(25% 0 0); /* hsl(0, 0%, 13.12%) -> #212121 */
   --def-300: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
   --def-400: oklch(37.3% 0 0); /* hsl(0, 0%, 25.23%) -> #404040 */
-  
+
   --foregroundish: oklch(83.9% 0 0); /* hsl(0, 0%, 79.23%) */
 
   --background: oklch(23.8% 0 0); /* hsl(0, 0%, 12.02%) -> #1e1e1e */
@@ -100,6 +127,12 @@ code {
   --border: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
   --input: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
   --ring: oklch(87.6% 0 0); /* hsl(0, 0%, 83.9%) -> #d6d6d6 */
+
+  /* Bklit chart tokens (dark) — OpenPanel chart palette (--chart-0..12) stays
+     theme-agnostic and is defined in :root only, so we do NOT redefine it here. */
+  --chart-tooltip-background: transparent;
+  --chart-tooltip-foreground: var(--background);
+  --chart-tooltip-muted: oklch(from var(--background) l c h / 0.6);
 }
 
 @theme {
@@ -151,7 +184,7 @@ code {
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  
+
   /* Extended chart colors */
   --color-chart-0: var(--chart-0);
   --color-chart-1: var(--chart-1);
@@ -166,23 +199,23 @@ code {
   --color-chart-10: var(--chart-10);
   --color-chart-11: var(--chart-11);
   --color-chart-12: var(--chart-12);
-  
+
   /* Additional colors */
   --color-highlight: var(--highlight);
   --color-foregroundish: var(--foregroundish);
-  
+
   /* def color scale - properly defined for all variants */
   --color-def-100: var(--def-100);
   --color-def-200: var(--def-200);
   --color-def-300: var(--def-300);
   --color-def-400: var(--def-400);
-  
+
   /* Radius variables */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  
+
   /* Sidebar colors */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -234,7 +267,7 @@ code {
   .subtitle {
     @apply text-base font-medium;
   }
-  
+
   .card {
     @apply rounded-md border border-border bg-card;
   }
@@ -271,7 +304,6 @@ code {
 button {
   @apply cursor-pointer;
 }
-
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
@@ -452,4 +484,27 @@ button {
   animation: sticky-shadow linear both;
   animation-timeline: scroll();
   animation-range: 0 1px;
+}
+
+@theme inline {
+  --color-chart-1: var(----chart-1);
+  --color-chart-2: var(----chart-2);
+  --color-chart-3: var(----chart-3);
+  --color-chart-4: var(----chart-4);
+  --color-chart-5: var(----chart-5);
+  --color-chart-background: var(----chart-background);
+  --color-chart-foreground: var(----chart-foreground);
+  --color-chart-foreground-muted: var(----chart-foreground-muted);
+  --chart-line-primary: var(----chart-line-primary);
+  --chart-line-secondary: var(----chart-line-secondary);
+  --color-chart-crosshair: var(----chart-crosshair);
+  --color-chart-grid: var(----chart-grid);
+  --color-chart-tooltip-background: var(----chart-tooltip-background);
+  --color-chart-tooltip-foreground: var(----chart-tooltip-foreground);
+  --color-chart-tooltip-muted: var(----chart-tooltip-muted);
+  --color-chart-marker-background: var(----chart-marker-background);
+  --color-chart-marker-border: var(----chart-marker-border);
+  --color-chart-marker-foreground: var(----chart-marker-foreground);
+  --color-chart-ring-background: var(----chart-ring-background);
+  --color-chart-label: var(----chart-label);
 }

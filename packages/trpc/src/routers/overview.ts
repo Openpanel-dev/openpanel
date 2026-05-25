@@ -7,6 +7,7 @@ import {
   getChartStartEndDate,
   getConversionEventNames,
   getOrganizationSubscriptionChartEndDate,
+  getReferrerSpikes,
   getSettingsForProject,
   overviewService,
   validateOverviewShareAccess,
@@ -295,6 +296,41 @@ export const overviewRouter = createTRPCRouter({
           };
         }),
       };
+    }),
+
+  getReferrerSpikes: overviewProcedure
+    .input(
+      zGetMetricsInput.omit({ startDate: true, endDate: true }).extend({
+        startDate: z.string().nullish(),
+        endDate: z.string().nullish(),
+        range: zRange,
+        shareId: z.string().optional(),
+      }),
+    )
+    .use(cacher)
+    .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
+      const clusters = await getReferrerSpikes({
+        projectId: input.projectId,
+        filters: input.filters,
+        interval: input.interval,
+        startDate,
+        endDate,
+        timezone,
+      });
+      // Reformat every spike date (and the cluster's anchor) to match
+      // overview.stats' series date format, so markers x-align with the
+      // chart's data points (xScale matches by Date identity).
+      const fmt = (iso: string) =>
+        format(new Date(iso), 'yyyy-MM-dd HH:mm:ss');
+      return clusters.map((cluster) => ({
+        anchorDate: fmt(cluster.anchorDate),
+        spikes: cluster.spikes.map((spike) => ({
+          ...spike,
+          date: fmt(spike.date),
+        })),
+      }));
     }),
 
   topPages: overviewProcedure

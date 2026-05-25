@@ -134,6 +134,7 @@ export default function OverviewTopSources({
               <OverviewLineChart
                 data={seriesQuery.data}
                 interval={interval}
+                range={range}
                 searchQuery={searchQuery}
               />
             ) : (

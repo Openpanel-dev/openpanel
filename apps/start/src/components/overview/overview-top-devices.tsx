@@ -388,6 +388,7 @@ export default function OverviewTopDevices({
               <OverviewLineChart
                 data={seriesQuery.data}
                 interval={interval}
+                range={range}
                 searchQuery={searchQuery}
               />
             ) : (
