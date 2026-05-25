@@ -3,8 +3,8 @@
 import { motion, useSpring } from "motion/react";
 import { chartCssVars } from "../chart-context";
 
-// Near-instant — original 300/30 felt sluggish snapping between data points.
-const crosshairSpringConfig = { stiffness: 1000, damping: 60 };
+// Faster spring to stay in sync with indicator
+const crosshairSpringConfig = { stiffness: 300, damping: 30 };
 
 export interface TooltipDotProps {
   x: number;

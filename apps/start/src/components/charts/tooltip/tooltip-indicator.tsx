@@ -3,8 +3,8 @@
 import { motion, useSpring } from "motion/react";
 import { chartCssVars } from "../chart-context";
 
-// Near-instant — original 300/30 felt sluggish snapping between data points.
-const crosshairSpringConfig = { stiffness: 1000, damping: 60 };
+// Faster spring for crosshair - responsive to mouse movement
+const crosshairSpringConfig = { stiffness: 300, damping: 30 };
 
 export type IndicatorWidth =
   | number // Pixel width
@@ -60,26 +60,10 @@ function resolveWidth(width: IndicatorWidth): number {
   }
 }
 
-/**
- * Visibility guard lives in the outer wrapper. Without it, the inner
- * component (and its `useSpring`) would mount on first render when
- * `tooltipData` is still null (so `x` is 0) and the spring would
- * initialize at the chart's left edge. On the user's first hover the line
- * would have to spring all the way across to the cursor — a 1px line
- * moving at high stiffness is essentially invisible, so users perceive
- * "the crosshair didn't appear". Mounting on visibility = spring
- * initializes at the correct cursor position. (Same pattern as OPDot.)
- */
-export function TooltipIndicator(props: TooltipIndicatorProps) {
-  if (!props.visible) {
-    return null;
-  }
-  return <TooltipIndicatorInner {...props} />;
-}
-
-function TooltipIndicatorInner({
+export function TooltipIndicator({
   x,
   height,
+  visible,
   width = "line",
   span,
   columnWidth,
@@ -96,6 +80,10 @@ function TooltipIndicatorInner({
   const animatedX = useSpring(x - pixelWidth / 2, crosshairSpringConfig);
 
   animatedX.set(x - pixelWidth / 2);
+
+  if (!visible) {
+    return null;
+  }
 
   const edgeOpacity = fadeEdges ? 0 : 1;
 

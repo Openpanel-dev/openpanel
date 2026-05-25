@@ -63,27 +63,6 @@ export function useChartInteraction({
 
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef<number>(0);
-  // Tracks the data-bucket index currently shown in the tooltip. The chart
-  // snaps tooltips to data points, so mouse motion within the same bucket
-  // produces identical tooltip output — coalescing identical-bucket events
-  // here eliminates ~95% of state updates during hover and stops the entire
-  // chart subtree from re-rendering on every pixel of mouse motion.
-  const lastTooltipIndexRef = useRef<number>(-1);
-  const commitTooltip = useCallback(
-    (next: TooltipData | null) => {
-      if (next === null) {
-        if (lastTooltipIndexRef.current !== -1) {
-          lastTooltipIndexRef.current = -1;
-          setTooltipData(null);
-        }
-        return;
-      }
-      if (next.index === lastTooltipIndexRef.current) return;
-      lastTooltipIndexRef.current = next.index;
-      setTooltipData(next);
-    },
-    [],
-  );
 
   const resolveTooltipFromX = useCallback(
     (pixelX: number): TooltipData | null => {
@@ -199,19 +178,19 @@ export function useChartInteraction({
 
       const tooltip = resolveTooltipFromX(chartX);
       if (tooltip) {
-        commitTooltip(tooltip);
+        setTooltipData(tooltip);
       }
     },
-    [getChartX, resolveTooltipFromX, resolveIndexFromX, commitTooltip]
+    [getChartX, resolveTooltipFromX, resolveIndexFromX]
   );
 
   const handleMouseLeave = useCallback(() => {
-    commitTooltip(null);
+    setTooltipData(null);
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
     }
     setSelection(null);
-  }, [commitTooltip]);
+  }, []);
 
   const handleMouseDown = useCallback(
     (event: React.MouseEvent<SVGGElement>) => {
@@ -221,10 +200,10 @@ export function useChartInteraction({
       }
       isDraggingRef.current = true;
       dragStartXRef.current = chartX;
-      commitTooltip(null);
+      setTooltipData(null);
       setSelection(null);
     },
-    [getChartX, commitTooltip]
+    [getChartX]
   );
 
   const handleMouseUp = useCallback(() => {
@@ -246,11 +225,11 @@ export function useChartInteraction({
         }
         const tooltip = resolveTooltipFromX(chartX);
         if (tooltip) {
-          commitTooltip(tooltip);
+          setTooltipData(tooltip);
         }
       } else if (event.touches.length === 2) {
         event.preventDefault();
-        commitTooltip(null);
+        setTooltipData(null);
         const x0 = getChartX(event, 0);
         const x1 = getChartX(event, 1);
         if (x0 === null || x1 === null) {
@@ -280,7 +259,7 @@ export function useChartInteraction({
         }
         const tooltip = resolveTooltipFromX(chartX);
         if (tooltip) {
-          commitTooltip(tooltip);
+          setTooltipData(tooltip);
         }
       } else if (event.touches.length === 2) {
         event.preventDefault();
@@ -304,9 +283,9 @@ export function useChartInteraction({
   );
 
   const handleTouchEnd = useCallback(() => {
-    commitTooltip(null);
+    setTooltipData(null);
     setSelection(null);
-  }, [commitTooltip]);
+  }, []);
 
   const clearSelection = useCallback(() => {
     setSelection(null);

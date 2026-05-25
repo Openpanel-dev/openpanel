@@ -1,24 +1,22 @@
-'use client';
+"use client";
 
-import { scaleLinear, scaleTime } from '@visx/scale';
-import { bisector } from 'd3-array';
-import type { Transition } from 'motion/react';
+import { scaleLinear, scaleTime } from "@visx/scale";
+import { bisector } from "d3-array";
+import type { Transition } from "motion/react";
 import {
   Children,
   isValidElement,
-  memo,
   type ReactElement,
   type ReactNode,
   useCallback,
   useEffect,
   useMemo,
   useState,
-} from 'react';
-import { DEFAULT_ANIMATION_EASING } from './animation';
-import { ChartProvider, type LineConfig, type Margin } from './chart-context';
-import { isGradientDefComponent, isPatternDefComponent } from './chart-defs';
-import { shortDateFmt } from './chart-formatters';
-import { useChartInteraction } from './use-chart-interaction';
+} from "react";
+import { DEFAULT_ANIMATION_EASING } from "./animation";
+import { ChartProvider, type LineConfig, type Margin } from "./chart-context";
+import { isGradientDefComponent, isPatternDefComponent } from "./chart-defs";
+import { useChartInteraction } from "./use-chart-interaction";
 
 /** Markers render after the interaction overlay so they stay clickable. */
 export function isPostOverlayComponent(child: ReactElement): boolean {
@@ -33,11 +31,11 @@ export function isPostOverlayComponent(child: ReactElement): boolean {
   }
 
   const componentName =
-    typeof child.type === 'function'
-      ? childType.displayName || childType.name || ''
-      : '';
+    typeof child.type === "function"
+      ? childType.displayName || childType.name || ""
+      : "";
 
-  return componentName === 'ChartMarkers' || componentName === 'MarkerGroup';
+  return componentName === "ChartMarkers" || componentName === "MarkerGroup";
 }
 
 export interface TimeSeriesChartInnerProps {
@@ -69,21 +67,7 @@ export interface TimeSeriesChartInnerProps {
   yScaleDomainMax?: number;
 }
 
-/**
- * Outer wrapper owns the dimension guard. All scales / accessors / interaction
- * hooks live in the memoized core — so a hidden chart (width < 10) builds zero
- * d3 scales, runs zero useMemos, and never instantiates useChartInteraction.
- * When the core does mount, the memo() boundary skips re-renders when the
- * parent passes the same props (common case for static dashboard panels).
- */
-export function TimeSeriesChartInner(props: TimeSeriesChartInnerProps) {
-  if (props.width < 10 || props.height < 10) {
-    return null;
-  }
-  return <TimeSeriesChartCore {...props} />;
-}
-
-const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
+export function TimeSeriesChartInner({
   width,
   height,
   data,
@@ -92,7 +76,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   animationDuration,
   animationEasing = DEFAULT_ANIMATION_EASING,
   enterTransition,
-  revealSignature = '',
+  revealSignature = "",
   children,
   containerRef,
   lines,
@@ -151,7 +135,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
       for (const line of lines) {
         for (const d of data) {
           const value = d[line.dataKey];
-          if (typeof value === 'number' && value > maxValue) {
+          if (typeof value === "number" && value > maxValue) {
             maxValue = value;
           }
         }
@@ -170,7 +154,13 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   }, [innerHeight, data, lines, yScaleDomainMax]);
 
   const dateLabels = useMemo(
-    () => data.map((d) => shortDateFmt.format(xAccessor(d))),
+    () =>
+      data.map((d) =>
+        xAccessor(d).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })
+      ),
     [data, xAccessor]
   );
 
@@ -204,110 +194,66 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
     canInteract,
   });
 
-  const { defsChildren, preOverlayChildren, postOverlayChildren } =
-    useMemo(() => {
-      const defs: ReactElement[] = [];
-      const pre: ReactElement[] = [];
-      const post: ReactElement[] = [];
-      Children.forEach(children, (child) => {
-        if (!isValidElement(child)) {
-          return;
-        }
-        if (isGradientDefComponent(child)) {
-          defs.push(child);
-        } else if (isPatternDefComponent(child)) {
-          // Keep pattern defs in the plot <g> (same as main) — hoisting breaks url(#id) fills.
-          pre.push(child);
-        } else if (isPostOverlayComponent(child)) {
-          post.push(child);
-        } else {
-          pre.push(child);
-        }
-      });
-      return {
-        defsChildren: defs,
-        preOverlayChildren: pre,
-        postOverlayChildren: post,
-      };
-    }, [children]);
+  if (width < 10 || height < 10) {
+    return null;
+  }
 
-  // Memoize the context value so identity is stable when its contents don't
-  // change. Without this, every render allocates a fresh object and forces
-  // all useContext(ChartContext) consumers (Line, Area, OPReferences, etc.)
-  // to re-render even when no actual state moved.
-  const contextValue = useMemo(
-    () => ({
-      data,
-      xScale,
-      yScale,
-      width,
-      height,
-      innerWidth,
-      innerHeight,
-      margin,
-      columnWidth,
-      tooltipData,
-      setTooltipData,
-      containerRef,
-      lines,
-      isLoaded,
-      animationDuration,
-      animationEasing,
-      enterTransition,
-      revealEpoch,
-      xAccessor,
-      dateLabels,
-      selection,
-      clearSelection,
-      composedBarDataKeys,
-      composedBarSize,
-      composedMaxBarSize,
-      composedBarGap,
-      composedStacked,
-      composedStackOffsets,
-      composedStackGap,
-    }),
-    [
-      data,
-      xScale,
-      yScale,
-      width,
-      height,
-      innerWidth,
-      innerHeight,
-      margin,
-      columnWidth,
-      tooltipData,
-      setTooltipData,
-      containerRef,
-      lines,
-      isLoaded,
-      animationDuration,
-      animationEasing,
-      enterTransition,
-      revealEpoch,
-      xAccessor,
-      dateLabels,
-      selection,
-      clearSelection,
-      composedBarDataKeys,
-      composedBarSize,
-      composedMaxBarSize,
-      composedBarGap,
-      composedStacked,
-      composedStackOffsets,
-      composedStackGap,
-    ]
-  );
+  const defsChildren: ReactElement[] = [];
+  const preOverlayChildren: ReactElement[] = [];
+  const postOverlayChildren: ReactElement[] = [];
+
+  Children.forEach(children, (child) => {
+    if (!isValidElement(child)) {
+      return;
+    }
+
+    if (isGradientDefComponent(child)) {
+      defsChildren.push(child);
+    } else if (isPatternDefComponent(child)) {
+      // Keep pattern defs in the plot <g> (same as main) — hoisting breaks url(#id) fills.
+      preOverlayChildren.push(child);
+    } else if (isPostOverlayComponent(child)) {
+      postOverlayChildren.push(child);
+    } else {
+      preOverlayChildren.push(child);
+    }
+  });
+
+  const contextValue = {
+    data,
+    xScale,
+    yScale,
+    width,
+    height,
+    innerWidth,
+    innerHeight,
+    margin,
+    columnWidth,
+    tooltipData,
+    setTooltipData,
+    containerRef,
+    lines,
+    isLoaded,
+    animationDuration,
+    animationEasing,
+    enterTransition,
+    revealEpoch,
+    xAccessor,
+    dateLabels,
+    selection,
+    clearSelection,
+    composedBarDataKeys,
+    composedBarSize,
+    composedMaxBarSize,
+    composedBarGap,
+    composedStacked,
+    composedStackOffsets,
+    composedStackGap,
+  };
 
   return (
     <ChartProvider value={contextValue}>
-      <svg
-        aria-hidden="true"
-        height={height}
-        style={{ overflow: 'visible' }}
-        width={width}
-      >
+      <svg aria-hidden="true" height={height} width={width}>
         {defsChildren.length > 0 && <defs>{defsChildren}</defs>}
 
         <rect fill="transparent" height={height} width={width} x={0} y={0} />
@@ -331,4 +277,4 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
       </svg>
     </ChartProvider>
   );
-});
+}

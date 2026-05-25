@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import type * as React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { chartCssVars } from "../chart-context";
@@ -59,45 +59,9 @@ export interface MarkerGroupProps {
   lineHeight?: number;
   /** Whether to show the vertical guide line. Default: true */
   showLine?: boolean;
-  /**
-   * Force the marker fan to open even when the user isn't hovering this
-   * group directly. Used by OPMarkerLayer to fan out a cluster when the
-   * chart's main crosshair lands on one of the cluster's buckets.
-   */
-  forceOpen?: boolean;
-  /**
-   * Make the icon `foreignObject` fill the entire circle (no 4px inset)
-   * so favicon-style icons sit edge-to-edge with the marker border.
-   */
-  iconFill?: boolean;
-  /**
-   * Override the marker circle's stroke color. Falls back to
-   * `chartCssVars.markerBorder` when not set.
-   */
-  borderColor?: string;
-  /**
-   * Marker circle stroke width in px. Default 1.5.
-   */
-  borderWidth?: number;
-  /**
-   * Cap the number of markers rendered in the fan-out arc. The count
-   * badge still reflects the full cluster size. Without this, large
-   * clusters (e.g. 20+ spikes) collapse the fan angular spacing to
-   * essentially zero and the markers stack on top of each other.
-   */
-  maxFanned?: number;
-  /**
-   * Fade this marker group when another cluster has focus. Used by
-   * OPMarkerLayer to spotlight the active cluster.
-   */
-  isMuted?: boolean;
 }
 
-// Entrance + fanned + muted variants. `fanned` shrinks and dims the
-// collapsed marker while its siblings are flying out in the portal, so
-// users only see the fan and not a duplicate icon sitting underneath.
-// `muted` fades non-active clusters when one cluster is being focused —
-// without this, adjacent clusters compete visually with the open fan.
+// Entrance animation variants
 const markerEntranceVariants = {
   hidden: {
     scale: 0.85,
@@ -107,16 +71,6 @@ const markerEntranceVariants = {
   visible: {
     scale: 1,
     opacity: 1,
-    filter: "blur(0px)",
-  },
-  fanned: {
-    scale: 0.85,
-    opacity: 0.4,
-    filter: "blur(0px)",
-  },
-  muted: {
-    scale: 0.92,
-    opacity: 0.25,
     filter: "blur(0px)",
   },
 };
@@ -135,31 +89,10 @@ export function MarkerGroup({
   animate = true,
   lineHeight = 0,
   showLine = true,
-  forceOpen = false,
-  iconFill = false,
-  borderColor,
-  borderWidth = 1.5,
-  maxFanned,
-  isMuted = false,
 }: MarkerGroupProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const shouldFan = (isHovered || forceOpen) && markers.length > 1;
+  const shouldFan = isHovered && markers.length > 1;
   const hasMultiple = markers.length > 1;
-  // Trim the fan to a sensible visual cap; the count badge still shows
-  // the true cluster size so users know more are hidden.
-  const fannedMarkers =
-    maxFanned != null && markers.length > maxFanned
-      ? markers.slice(0, maxFanned)
-      : markers;
-  // `animationDelay` is meant for the entrance stagger only — without this
-  // guard, the same delay is applied to every fan-open / fan-close
-  // transition, making the marker take ~animationDelay seconds to reappear
-  // after the user moves off a cluster.
-  const hasEntered = useRef(false);
-  useEffect(() => {
-    hasEntered.current = true;
-  }, []);
-  const effectiveDelay = hasEntered.current ? 0 : animationDelay;
 
   const getCirclePosition = (index: number, total: number) => {
     const startAngle = -90 - FAN_ANGLE / 2;
@@ -187,16 +120,6 @@ export function MarkerGroup({
 
   const handleMouseMove = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent chart crosshair from moving while hovering markers
-  };
-
-  const handleMainClick = (e: React.MouseEvent) => {
-    // Click on the collapsed marker fires the visible item's onClick.
-    // For multi-item clusters, this is the top item (index 0). Fanned
-    // markers in the portal have their own per-item click handlers.
-    const handler = markers[0]?.onClick;
-    if (!handler) return;
-    e.stopPropagation();
-    handler();
   };
 
   const portalX = x + marginLeft;
@@ -237,22 +160,19 @@ export function MarkerGroup({
         {/* Interactive marker group */}
         {/* biome-ignore lint/a11y/noStaticElementInteractions: Chart marker interaction */}
         <g
-          onClick={handleMainClick}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onMouseMove={handleMouseMove}
-          style={{ cursor: markers[0]?.onClick ? "pointer" : "default" }}
+          style={{ cursor: "pointer" }}
         >
           <motion.g
-            animate={
-              shouldFan ? "fanned" : isMuted ? "muted" : "visible"
-            }
+            animate="visible"
             initial={animate ? "hidden" : "visible"}
             transition={{
               type: "spring",
               stiffness: 300,
               damping: 25,
-              delay: effectiveDelay,
+              delay: animationDelay,
             }}
             variants={markerEntranceVariants}
           >
@@ -267,11 +187,8 @@ export function MarkerGroup({
 
             {/* Main marker */}
             <MarkerCircle
-              borderColor={borderColor}
-              borderWidth={borderWidth}
               color={markers[0]?.color}
               icon={markers[0]?.icon}
-              iconFill={iconFill}
               size={size}
             />
 
@@ -339,11 +256,8 @@ export function MarkerGroup({
             >
               <AnimatePresence mode="sync">
                 {shouldFan &&
-                  fannedMarkers.map((marker, index) => {
-                    const position = getCirclePosition(
-                      index,
-                      fannedMarkers.length,
-                    );
+                  markers.map((marker, index) => {
+                    const position = getCirclePosition(index, markers.length);
                     return (
                       <motion.div
                         animate={{
@@ -370,12 +284,9 @@ export function MarkerGroup({
                         }}
                       >
                         <MarkerCircleHTML
-                          borderColor={borderColor}
-                          borderWidth={borderWidth}
                           color={marker.color}
                           href={marker.href}
                           icon={marker.icon}
-                          iconFill={iconFill}
                           isClickable={!!(marker.onClick || marker.href)}
                           onClick={marker.onClick}
                           size={size}
@@ -386,6 +297,28 @@ export function MarkerGroup({
                   })}
               </AnimatePresence>
 
+              <AnimatePresence>
+                {shouldFan && (
+                  <motion.div
+                    animate={{ scale: 1, opacity: 0.5 }}
+                    className="absolute"
+                    exit={{ scale: 0, opacity: 0 }}
+                    initial={{ scale: 0, opacity: 0 }}
+                    style={{
+                      width: size * 0.5,
+                      height: size * 0.5,
+                      left: -size * 0.25,
+                      top: -size * 0.25,
+                    }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  >
+                    <div
+                      className="h-full w-full rounded-full"
+                      style={{ backgroundColor: chartCssVars.markerBorder }}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>,
           containerRef.current
@@ -402,24 +335,9 @@ interface MarkerCircleProps {
   href?: string;
   target?: "_blank" | "_self";
   isClickable?: boolean;
-  /** When true, foreignObject fills the entire circle (no 4px inset). */
-  iconFill?: boolean;
-  /** Override stroke color. Falls back to `chartCssVars.markerBorder`. */
-  borderColor?: string;
-  /** Stroke width in px. Default 1.5. */
-  borderWidth?: number;
 }
 
-function MarkerCircle({
-  icon,
-  size,
-  color,
-  iconFill = false,
-  borderColor,
-  borderWidth = 1.5,
-}: MarkerCircleProps) {
-  const inset = iconFill ? 0 : 4;
-  const foSize = size - inset * 2;
+function MarkerCircle({ icon, size, color }: MarkerCircleProps) {
   return (
     <g>
       <circle cx={0} cy={2} fill="black" opacity={0.15} r={size / 2} />
@@ -428,14 +346,14 @@ function MarkerCircle({
         cy={0}
         fill={color || chartCssVars.markerBackground}
         r={size / 2}
-        stroke={borderColor || chartCssVars.markerBorder}
-        strokeWidth={borderWidth}
+        stroke={chartCssVars.markerBorder}
+        strokeWidth={1.5}
       />
       <foreignObject
-        height={foSize}
-        width={foSize}
-        x={-size / 2 + inset}
-        y={-size / 2 + inset}
+        height={size - 8}
+        width={size - 8}
+        x={-size / 2 + 4}
+        y={-size / 2 + 4}
       >
         <div
           style={{
@@ -446,8 +364,6 @@ function MarkerCircle({
             justifyContent: "center",
             color: chartCssVars.markerForeground,
             fontSize: size * 0.5,
-            overflow: "hidden",
-            borderRadius: iconFill ? "50%" : undefined,
           }}
         >
           {icon}
@@ -465,9 +381,6 @@ function MarkerCircleHTML({
   href,
   target = "_self",
   isClickable = false,
-  iconFill = false,
-  borderColor,
-  borderWidth = 1.5,
 }: MarkerCircleProps) {
   const hasAction = isClickable || onClick || href;
 
@@ -494,11 +407,9 @@ function MarkerCircleHTML({
       onClick={hasAction ? handleClick : undefined}
       style={{
         backgroundColor: color || chartCssVars.markerBackground,
-        border: `${borderWidth}px solid ${borderColor || chartCssVars.markerBorder}`,
+        border: `1.5px solid ${chartCssVars.markerBorder}`,
         fontSize: size * 0.5,
         color: chartCssVars.markerForeground,
-        overflow: "hidden",
-        padding: iconFill ? 0 : undefined,
       }}
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
       whileHover={

@@ -133,6 +133,21 @@ code {
   --chart-tooltip-background: transparent;
   --chart-tooltip-foreground: var(--background);
   --chart-tooltip-muted: oklch(from var(--background) l c h / 0.6);
+  --chart-1: oklch(1 0 none);
+  --chart-2: oklch(0.73 0 none);
+  --chart-3: oklch(0.51 0 none);
+  --chart-4: oklch(0.39 0 none);
+  --chart-5: oklch(0.32 0 none);
+  --chart-background: oklch(0.145 0 0);
+  --chart-foreground: oklch(0.45 0 0);
+  --chart-foreground-muted: oklch(0.65 0.01 260);
+  --chart-crosshair: oklch(0.45 0 0);
+  --chart-grid: oklch(0.25 0 0);
+  --chart-marker-background: oklch(0.25 0.01 260);
+  --chart-marker-border: oklch(0.4 0.01 260);
+  --chart-marker-foreground: oklch(0.9 0 0);
+  --chart-ring-background: oklch(0.35 0.01 260 / 0.25);
+  --chart-label: oklch(0.75 0.01 260);
 }
 
 @theme {

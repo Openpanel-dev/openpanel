@@ -1,15 +1,14 @@
-"use client";
+'use client';
 
-import { motion, useSpring } from "motion/react";
-import { memo, useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
-import { chartCssVars, useChart } from "../chart-context";
-import { weekdayDateFmt } from "../chart-formatters";
-import { DateTicker } from "./date-ticker";
-import { TooltipBox } from "./tooltip-box";
-import { TooltipContent, type TooltipRow } from "./tooltip-content";
-import { TooltipDot } from "./tooltip-dot";
-import { TooltipIndicator } from "./tooltip-indicator";
+import { motion, useSpring } from 'motion/react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { chartCssVars, useChart } from '../chart-context';
+import { DateTicker } from './date-ticker';
+import { TooltipBox } from './tooltip-box';
+import { TooltipContent, type TooltipRow } from './tooltip-content';
+import { TooltipDot } from './tooltip-dot';
+import { TooltipIndicator } from './tooltip-indicator';
 
 // Spring config for crosshair
 const crosshairSpringConfig = { stiffness: 300, damping: 30 };
@@ -39,29 +38,7 @@ export interface ChartTooltipProps {
   className?: string;
 }
 
-/**
- * Outer wrapper owns the mount + container guard. The expensive work
- * (useSpring, three useMemos for tooltipRows / indicatorColor / title) lives
- * in the memoized inner — so none of it runs before the chart container is
- * attached, and the inner can skip re-renders when its props are unchanged.
- */
-export function ChartTooltip(props: ChartTooltipProps) {
-  const { containerRef } = useChart();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const container = containerRef.current;
-  if (!(mounted && container)) {
-    return null;
-  }
-
-  return <ChartTooltipInner {...props} container={container} />;
-}
-
-const ChartTooltipInner = memo(function ChartTooltipInner({
+export function ChartTooltip({
   showDatePill = true,
   showCrosshair = true,
   showDots = true,
@@ -69,9 +46,8 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
   content,
   rows: rowsRenderer,
   children,
-  className = "",
-  container,
-}: ChartTooltipProps & { container: HTMLElement }) {
+  className = '',
+}: ChartTooltipProps) {
   const {
     tooltipData,
     width,
@@ -87,7 +63,14 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     barXAccessor,
   } = useChart();
 
-  const isHorizontal = orientation === "horizontal";
+  const isHorizontal = orientation === 'horizontal';
+
+  const [mounted, setMounted] = useState(false);
+
+  // Only render portals on client side after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const visible = tooltipData !== null;
   const x = tooltipData?.x ?? 0;
@@ -128,7 +111,7 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     if (indicatorColorProp == null) {
       return chartCssVars.crosshair;
     }
-    if (typeof indicatorColorProp === "function") {
+    if (typeof indicatorColorProp === 'function') {
       return tooltipData
         ? indicatorColorProp(tooltipData.point)
         : chartCssVars.crosshair;
@@ -146,8 +129,19 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
       return barXAccessor(tooltipData.point);
     }
     // For line/area charts, use the date
-    return weekdayDateFmt.format(xAccessor(tooltipData.point));
+    return xAccessor(tooltipData.point).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
   }, [tooltipData, barXAccessor, xAccessor]);
+
+  // Use portal to render into the chart container
+  // Only render after mount on client side
+  const container = containerRef.current;
+  if (!(mounted && container)) {
+    return null;
+  }
 
   const tooltipContent = (
     <>
@@ -226,7 +220,7 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
           className="pointer-events-none absolute z-50"
           style={{
             left: animatedX,
-            transform: "translateX(-50%)",
+            transform: 'translateX(-50%)',
             bottom: 4,
           }}
         >
@@ -241,8 +235,8 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
   );
 
   return createPortal(tooltipContent, container);
-});
+}
 
-ChartTooltip.displayName = "ChartTooltip";
+ChartTooltip.displayName = 'ChartTooltip';
 
 export default ChartTooltip;

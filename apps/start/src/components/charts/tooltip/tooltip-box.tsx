@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { motion, useSpring } from "motion/react";
-import type { RefObject } from "react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { cn } from "@/lib/utils";
+import { motion, useSpring } from 'motion/react';
+import type { RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { cn } from '@/lib/utils';
 
-// Near-instant — original 100/20 felt sluggish.
-const springConfig = { stiffness: 1000, damping: 60 };
+// Spring config for smooth tooltip movement
+const springConfig = { stiffness: 100, damping: 20 };
 
 export interface TooltipBoxProps {
   /** X position in pixels (relative to container) */
@@ -36,47 +36,31 @@ export interface TooltipBoxProps {
   flipped?: boolean;
 }
 
-/**
- * Outer wrapper owns the mount + visibility guards. The inner component
- * (which owns the position springs) only mounts when the tooltip is
- * actually being shown, so `useSpring` initializes at the cursor's actual
- * x/y instead of at (0, 0) — without this split the tooltip would slide
- * in from the top-left of the chart on every first hover.
- */
-export function TooltipBox(props: TooltipBoxProps) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const container = props.containerRef.current;
-  if (!(mounted && container)) {
-    return null;
-  }
-  if (!props.visible) {
-    return null;
-  }
-  return <TooltipBoxInner {...props} container={container} />;
-}
-
-function TooltipBoxInner({
+export function TooltipBox({
   x,
   y,
+  visible,
+  containerRef,
   containerWidth,
   containerHeight,
   offset = 16,
-  className = "",
+  className = '',
   children,
   left: leftOverride,
   top: topOverride,
   flipped: flippedOverride,
-  container,
-}: Omit<TooltipBoxProps, "visible" | "containerRef"> & {
-  container: HTMLElement;
-}) {
+}: TooltipBoxProps) {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const tooltipWidthRef = useRef(180);
   const tooltipHeightRef = useRef(80);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const animatedLeft = useSpring(x + offset, springConfig);
+  const animatedTop = useSpring(y, springConfig);
 
   const tw = tooltipWidthRef.current;
   const th = tooltipHeightRef.current;
@@ -87,11 +71,6 @@ function TooltipBoxInner({
     Math.min(y - th / 2, containerHeight - th - offset)
   );
 
-  // Init springs at the *current* target — this component only mounts when
-  // the tooltip is visible, so target values are real cursor coords.
-  const animatedLeft = useSpring(targetX, springConfig);
-  const animatedTop = useSpring(targetY, springConfig);
-
   if (leftOverride === undefined) {
     animatedLeft.set(targetX);
   }
@@ -100,7 +79,7 @@ function TooltipBoxInner({
   }
 
   useLayoutEffect(() => {
-    if (!tooltipRef.current) {
+    if (!(visible && tooltipRef.current)) {
       return;
     }
     const el = tooltipRef.current;
@@ -127,6 +106,7 @@ function TooltipBoxInner({
       animatedTop.set(ty);
     }
   }, [
+    visible,
     x,
     y,
     containerWidth,
@@ -151,12 +131,21 @@ function TooltipBoxInner({
   const finalLeft = leftOverride ?? animatedLeft;
   const finalTop = topOverride ?? animatedTop;
   const isFlipped = flippedOverride ?? shouldFlipX;
-  const transformOrigin = isFlipped ? "right top" : "left top";
+  const transformOrigin = isFlipped ? 'right top' : 'left top';
+
+  const container = containerRef.current;
+  if (!(mounted && container)) {
+    return null;
+  }
+
+  if (!visible) {
+    return null;
+  }
 
   return createPortal(
     <motion.div
       animate={{ opacity: 1 }}
-      className={cn("pointer-events-none absolute z-50", className)}
+      className={cn('pointer-events-none absolute z-50', className)}
       exit={{ opacity: 0 }}
       initial={{ opacity: 0 }}
       ref={tooltipRef}
@@ -169,7 +158,7 @@ function TooltipBoxInner({
         initial={{ scale: 0.85, opacity: 0, x: isFlipped ? 20 : -20 }}
         key={flipKey}
         style={{ transformOrigin }}
-        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       >
         {children}
       </motion.div>
@@ -178,6 +167,6 @@ function TooltipBoxInner({
   );
 }
 
-TooltipBox.displayName = "TooltipBox";
+TooltipBox.displayName = 'TooltipBox';
 
 export default TooltipBox;

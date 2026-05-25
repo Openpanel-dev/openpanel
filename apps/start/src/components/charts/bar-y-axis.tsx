@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
-import { cn } from "@/lib/utils";
-import { useChart } from "./chart-context";
+import { motion } from 'motion/react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useChart } from './chart-context';
+import { cn } from '@/lib/utils';
 
 export interface BarYAxisProps {
   /** Whether to show all labels or skip some for dense data. Default: true */
@@ -38,13 +38,13 @@ function BarYAxisLabel({
         animate={{
           opacity: isHovered ? 1 : 0.7,
           color: isHovered
-            ? "var(--foreground)"
-            : "var(--chart-label, var(--color-zinc-500))",
+            ? 'var(--foreground)'
+            : 'var(--chart-label, var(--color-zinc-500))',
         }}
-        className={cn("truncate whitespace-nowrap text-right text-xs")}
+        className={cn('truncate whitespace-nowrap text-right text-xs')}
         initial={{
           opacity: 0.7,
-          color: "var(--chart-label, var(--color-zinc-500))",
+          color: 'var(--chart-label, var(--color-zinc-500))',
         }}
         style={{ maxWidth: 70 }}
         transition={{ duration: 0.15 }}
@@ -140,6 +140,6 @@ export function BarYAxis({
   );
 }
 
-BarYAxis.displayName = "BarYAxis";
+BarYAxis.displayName = 'BarYAxis';
 
 export default BarYAxis;

@@ -517,7 +517,7 @@ function ChartInner({
 
   return (
     <ChartProvider value={contextValue}>
-      <svg aria-hidden="true" height={height} width={width} style={{ overflow: 'visible' }}>
+      <svg aria-hidden="true" height={height} width={width}>
         {/* Gradient and pattern definitions */}
         {defsChildren.length > 0 && <defs>{defsChildren}</defs>}
 

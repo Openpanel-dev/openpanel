@@ -1,10 +1,9 @@
-"use client";
+'use client';
 
-import { memo, useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
-import { cn } from "@/lib/utils";
-import { shortDateFmt } from "./chart-formatters";
-import { useChart } from "./chart-context";
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useChart } from './chart-context';
+import { cn } from '@/lib/utils';
 
 export interface XAxisProps {
   /** Number of ticks to show (including first and last). Default: 5. Used when `tickMode` is `"domain"`. */
@@ -15,7 +14,7 @@ export interface XAxisProps {
    * `"domain"` — evenly spaced ticks across the time domain (default).
    * `"data"` — one label per data row at its x value (better with sparse or monthly bars).
    */
-  tickMode?: "domain" | "data";
+  tickMode?: 'domain' | 'data';
 }
 
 interface XAxisLabelProps {
@@ -56,15 +55,15 @@ function XAxisLabel({
         left: x,
         bottom: 12,
         width: 0,
-        display: "flex",
-        justifyContent: "center",
+        display: 'flex',
+        justifyContent: 'center',
       }}
     >
       <span
-        className={cn("whitespace-nowrap text-chart-label text-xs")}
+        className={cn('whitespace-nowrap text-chart-label text-xs')}
         style={{
           opacity,
-          transition: "opacity 0.4s ease-in-out",
+          transition: 'opacity 0.4s ease-in-out',
         }}
       >
         {label}
@@ -73,60 +72,39 @@ function XAxisLabel({
   );
 }
 
-/**
- * Outer wrapper owns the mount guard. The expensive `labelsToShow` memo
- * (which iterates `data` or builds `numTicks` ticks) lives in the memoized
- * inner component — so it doesn't run on every render before the portal
- * container is attached, and skips when props haven't changed.
- */
 export function XAxis({
   numTicks = 5,
   tickerHalfWidth = 50,
-  tickMode = "domain",
+  tickMode = 'domain',
 }: XAxisProps) {
-  const { containerRef } = useChart();
+  const {
+    xScale,
+    margin,
+    tooltipData,
+    containerRef,
+    data,
+    xAccessor,
+    dateLabels,
+  } = useChart();
   const [mounted, setMounted] = useState(false);
 
+  // Only render on client side after mount
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const container = containerRef.current;
-  if (!(mounted && container)) {
-    return null;
-  }
-
-  return (
-    <XAxisInner
-      container={container}
-      numTicks={numTicks}
-      tickMode={tickMode}
-      tickerHalfWidth={tickerHalfWidth}
-    />
-  );
-}
-
-const XAxisInner = memo(function XAxisInner({
-  container,
-  numTicks,
-  tickMode,
-  tickerHalfWidth,
-}: {
-  container: HTMLElement;
-  numTicks: number;
-  tickMode: "domain" | "data";
-  tickerHalfWidth: number;
-}) {
-  const { xScale, margin, tooltipData, data, xAccessor, dateLabels } =
-    useChart();
-
   // Generate tick labels: evenly spaced along the domain, or one per data row
   const labelsToShow = useMemo(() => {
-    if (tickMode === "data") {
+    if (tickMode === 'data') {
       return data.map((d, i) => ({
         date: xAccessor(d),
         x: (xScale(xAccessor(d)) ?? 0) + margin.left,
-        label: dateLabels[i] ?? shortDateFmt.format(xAccessor(d)),
+        label:
+          dateLabels[i] ??
+          xAccessor(d).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          }),
       }));
     }
 
@@ -142,11 +120,12 @@ const XAxisInner = memo(function XAxisInner({
     const endTime = endDate.getTime();
     const timeRange = endTime - startTime;
 
-    const tickCount = Math.max(2, numTicks);
+    // Create evenly spaced dates from start to end
+    const tickCount = Math.max(2, numTicks); // At least first and last
     const dates: Date[] = [];
 
     for (let i = 0; i < tickCount; i++) {
-      const t = i / (tickCount - 1);
+      const t = i / (tickCount - 1); // 0 to 1
       const time = startTime + t * timeRange;
       dates.push(new Date(time));
     }
@@ -154,12 +133,22 @@ const XAxisInner = memo(function XAxisInner({
     return dates.map((date) => ({
       date,
       x: (xScale(date) ?? 0) + margin.left,
-      label: shortDateFmt.format(date),
+      label: date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      }),
     }));
   }, [tickMode, data, xAccessor, xScale, margin.left, dateLabels, numTicks]);
 
   const isHovering = tooltipData !== null;
   const crosshairX = tooltipData ? tooltipData.x + margin.left : null;
+
+  // Use portal to render into the chart container
+  // Only render after mount on client side
+  const container = containerRef.current;
+  if (!(mounted && container)) {
+    return null;
+  }
 
   return createPortal(
     <div className="pointer-events-none absolute inset-0">
@@ -176,8 +165,8 @@ const XAxisInner = memo(function XAxisInner({
     </div>,
     container
   );
-});
+}
 
-XAxis.displayName = "XAxis";
+XAxis.displayName = 'XAxis';
 
 export default XAxis;

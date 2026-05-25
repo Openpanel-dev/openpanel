@@ -2,7 +2,7 @@
 
 import { GridColumns, GridRows } from "@visx/grid";
 import { useId } from "react";
-import { chartCssVars, useChartStable } from "./chart-context";
+import { chartCssVars, useChart } from "./chart-context";
 
 export interface GridProps {
   /** Show horizontal grid lines. Default: true */
@@ -43,7 +43,7 @@ export function Grid({
   fadeVertical = false,
 }: GridProps) {
   const { xScale, yScale, innerWidth, innerHeight, orientation, barScale } =
-    useChartStable();
+    useChart();
 
   // For bar charts, determine which scale to use for grid lines
   // Horizontal bar charts: vertical grid should use yScale (value scale)
