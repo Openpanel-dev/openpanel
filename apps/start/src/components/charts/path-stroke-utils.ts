@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useState } from "react";
 
 export function findPathLengthAtX(
   path: SVGPathElement | null,
@@ -26,39 +26,26 @@ export function findPathLengthAtX(
 
 export function usePathStrokeMetrics(
   pathRef: RefObject<SVGPathElement | null>,
-  // Kept for callsite ergonomics, no longer used as a dep — see comment
-  // below. Removing the param would churn every caller for no benefit.
-  _remeasureKey?: string,
+  remeasureKey: string
 ) {
   const [pathLength, setPathLength] = useState(0);
   const [pathD, setPathD] = useState<string | null>(null);
-  const pathLengthRef = useRef(0);
-  const pathDRef = useRef<string | null>(null);
 
-  // Runs after every Line/Area render. Necessary because content-only
-  // changes (e.g. a filter that swaps values but keeps the bucket count)
-  // don't show up in any deterministic key — the old key-based remeasure
-  // would skip and leave `pathD` / `pathLength` stale, so SeriesDashTailOverlay
-  // drew the previous data's path shape after a filter remove. The ref
-  // comparison early-returns when nothing changed, so this is cheap
-  // outside of actual geometry updates.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional every-render measure
+  // biome-ignore lint/correctness/useExhaustiveDependencies: remeasure when series geometry changes
   useEffect(() => {
     const path = pathRef.current;
     if (!path) {
       return;
     }
-    const newD = path.getAttribute("d");
-    if (newD && newD !== pathDRef.current) {
-      pathDRef.current = newD;
-      setPathD(newD);
+    const len = path.getTotalLength();
+    const d = path.getAttribute("d");
+    if (len > 0) {
+      setPathLength(len);
     }
-    const newLen = path.getTotalLength();
-    if (newLen > 0 && newLen !== pathLengthRef.current) {
-      pathLengthRef.current = newLen;
-      setPathLength(newLen);
+    if (d) {
+      setPathD(d);
     }
-  });
+  }, [remeasureKey, pathRef]);
 
   return { pathLength, pathD };
 }

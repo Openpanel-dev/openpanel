@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, type RefObject } from "react";
+import type { RefObject } from "react";
 import { DashTailStroke } from "./dash-tail-stroke";
 import {
   findPathLengthAtX,
@@ -23,14 +23,7 @@ interface SeriesDashTailOverlayProps {
   xAccessor: (datum: Record<string, unknown>) => Date | number;
 }
 
-/**
- * Wrapped in `memo` because the binary-search `findPathLengthAtX` inside is
- * ~30-60 `getPointAtLength` DOM calls and was profiling at 70+ms on dense
- * datasets. All inputs are stable on hover (data, pathLength, scales,
- * dashFromIndex), so shallow-comparing props lets Area's per-bucket re-render
- * skip this entire subtree.
- */
-export const SeriesDashTailOverlay = memo(function SeriesDashTailOverlay({
+export function SeriesDashTailOverlay({
   dashFromIndex,
   dashArray,
   data,
@@ -69,4 +62,4 @@ export const SeriesDashTailOverlay = memo(function SeriesDashTailOverlay({
       strokeWidth={strokeWidth}
     />
   );
-});
+}

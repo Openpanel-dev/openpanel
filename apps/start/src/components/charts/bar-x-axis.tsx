@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { motion } from 'motion/react';
-import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { useChart } from './chart-context';
-import { cn } from '@/lib/utils';
+import { motion } from "motion/react";
+import { memo, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { cn } from "@/lib/utils";
+import { useChart, useChartStable } from "./chart-context";
 
 export interface BarXAxisProps {
   /** Width of the date ticker box for fade calculation. Default: 50 */
@@ -51,15 +51,15 @@ function BarXAxisLabel({
         left: x,
         bottom: 12,
         width: 0,
-        display: 'flex',
-        justifyContent: 'center',
+        display: "flex",
+        justifyContent: "center",
       }}
     >
       <motion.span
         animate={{ opacity }}
-        className={cn('whitespace-nowrap text-chart-label text-xs')}
+        className={cn("whitespace-nowrap text-chart-label text-xs")}
         initial={{ opacity: 1 }}
-        transition={{ duration: 0.4, ease: 'easeInOut' }}
+        transition={{ duration: 0.4, ease: "easeInOut" }}
       >
         {label}
       </motion.span>
@@ -67,26 +67,34 @@ function BarXAxisLabel({
   );
 }
 
-export function BarXAxis({
-  tickerHalfWidth = 50,
-  showAllLabels = false,
-  maxLabels = 12,
-}: BarXAxisProps) {
-  const {
-    margin,
-    tooltipData,
-    containerRef,
-    barScale,
-    bandWidth,
-    barXAccessor,
-    data,
-  } = useChart();
+export function BarXAxis(props: BarXAxisProps) {
+  const { containerRef, barScale } = useChartStable();
   const [mounted, setMounted] = useState(false);
 
-  // Only render on client side after mount
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const container = containerRef.current;
+  if (!(mounted && container)) {
+    return null;
+  }
+
+  if (!barScale) {
+    return null;
+  }
+
+  return <BarXAxisInner {...props} container={container} />;
+}
+
+const BarXAxisInner = memo(function BarXAxisInner({
+  tickerHalfWidth = 50,
+  showAllLabels = false,
+  maxLabels = 12,
+  container,
+}: BarXAxisProps & { container: HTMLDivElement }) {
+  const { margin, tooltipData, barScale, bandWidth, barXAccessor, data } =
+    useChart();
 
   // Generate labels for each bar
   const labelsToShow = useMemo(() => {
@@ -123,17 +131,6 @@ export function BarXAxis({
   const isHovering = tooltipData !== null;
   const crosshairX = tooltipData ? tooltipData.x + margin.left : null;
 
-  // Use portal to render into the chart container
-  const container = containerRef.current;
-  if (!(mounted && container)) {
-    return null;
-  }
-
-  // Early return if not in a BarChart
-  if (!barScale) {
-    return null;
-  }
-
   return createPortal(
     <div className="pointer-events-none absolute inset-0">
       {labelsToShow.map((item) => (
@@ -149,8 +146,8 @@ export function BarXAxis({
     </div>,
     container
   );
-}
+});
 
-BarXAxis.displayName = 'BarXAxis';
+BarXAxis.displayName = "BarXAxis";
 
 export default BarXAxis;

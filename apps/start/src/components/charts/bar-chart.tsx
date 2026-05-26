@@ -7,6 +7,7 @@ import type { Transition } from "motion/react";
 import {
   Children,
   isValidElement,
+  memo,
   type ReactElement,
   type ReactNode,
   useCallback,
@@ -25,6 +26,8 @@ import {
   type TooltipData,
 } from "./chart-context";
 import { isGradientDefComponent, isPatternDefComponent } from "./chart-defs";
+import { shortDateFmt } from "./chart-formatters";
+import { useScheduledTooltip } from "./use-scheduled-tooltip";
 
 export type BarOrientation = "vertical" | "horizontal";
 
@@ -141,7 +144,15 @@ interface ChartInnerProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-function ChartInner({
+function ChartInner(props: ChartInnerProps) {
+  const { width, height } = props;
+  if (width < 10 || height < 10) {
+    return null;
+  }
+  return <ChartCore {...props} />;
+}
+
+const ChartCore = memo(function ChartCore({
   width,
   height,
   data,
@@ -159,10 +170,11 @@ function ChartInner({
   children,
   containerRef,
 }: ChartInnerProps) {
-  const [tooltipData, setTooltipData] = useState<TooltipData | null>(null);
+  const { tooltipData, setTooltipData, scheduleTooltip, clearTooltip } =
+    useScheduledTooltip<TooltipData>();
   const [isLoaded, setIsLoaded] = useState(false);
   const [revealEpoch, setRevealEpoch] = useState(0);
-  const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
+  const hoveredBarIndex = tooltipData?.index ?? null;
 
   const isHorizontal = orientation === "horizontal";
 
@@ -177,10 +189,7 @@ function ChartInner({
     (d: Record<string, unknown>): string => {
       const value = d[xDataKey];
       if (value instanceof Date) {
-        return value.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        });
+        return shortDateFmt.format(value);
       }
       return String(value ?? "");
     },
@@ -423,14 +432,13 @@ function ChartInner({
         tooltipX = barPos + bandWidth / 2;
       }
 
-      setTooltipData({
+      scheduleTooltip({
         point: d,
         index: clampedIndex,
         x: tooltipX,
         yPositions,
         xPositions: Object.keys(xPositions).length > 0 ? xPositions : undefined,
       });
-      setHoveredBarIndex(clampedIndex);
     },
     [
       categoryScale,
@@ -445,18 +453,13 @@ function ChartInner({
       isHorizontal,
       stacked,
       stackGap,
+      scheduleTooltip,
     ]
   );
 
   const handleMouseLeave = useCallback(() => {
-    setTooltipData(null);
-    setHoveredBarIndex(null);
-  }, []);
-
-  // Early return if dimensions not ready
-  if (width < 10 || height < 10) {
-    return null;
-  }
+    clearTooltip();
+  }, [clearTooltip]);
 
   const canInteract = isLoaded;
 
@@ -483,6 +486,7 @@ function ChartInner({
 
   const contextValue = {
     data,
+    renderData: data,
     xScale: fakeTimeScale as unknown as ReturnType<
       typeof import("@visx/scale").scaleTime<number>
     >,
@@ -508,7 +512,6 @@ function ChartInner({
     barScale: categoryScale,
     bandWidth,
     hoveredBarIndex,
-    setHoveredBarIndex,
     barXAccessor: categoryAccessor,
     orientation,
     stacked,
@@ -548,7 +551,7 @@ function ChartInner({
       </svg>
     </ChartProvider>
   );
-}
+});
 
 export function BarChart({
   data,

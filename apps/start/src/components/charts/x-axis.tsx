@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import { memo, useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { useChart } from './chart-context';
-import { cn } from '@/lib/utils';
+import { memo, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { cn } from "@/lib/utils";
+import { useChart, useChartStable } from "./chart-context";
+import { shortDateFmt } from "./chart-formatters";
 
 export interface XAxisProps {
   /** Number of ticks to show (including first and last). Default: 5. Used when `tickMode` is `"domain"`. */
@@ -14,7 +15,7 @@ export interface XAxisProps {
    * `"domain"` — evenly spaced ticks across the time domain (default).
    * `"data"` — one label per data row at its x value (better with sparse or monthly bars).
    */
-  tickMode?: 'domain' | 'data';
+  tickMode?: "domain" | "data";
 }
 
 interface XAxisLabelProps {
@@ -45,6 +46,9 @@ function XAxisLabel({
     }
   }
 
+  // Zero-width container approach for perfect centering
+  // The wrapper is positioned exactly at x with width:0
+  // The inner span overflows and is centered via text-align
   return (
     <div
       className="absolute"
@@ -52,15 +56,15 @@ function XAxisLabel({
         left: x,
         bottom: 12,
         width: 0,
-        display: 'flex',
-        justifyContent: 'center',
+        display: "flex",
+        justifyContent: "center",
       }}
     >
       <span
-        className={cn('whitespace-nowrap text-chart-label text-xs')}
+        className={cn("whitespace-nowrap text-chart-label text-xs")}
         style={{
           opacity,
-          transition: 'opacity 0.4s ease-in-out',
+          transition: "opacity 0.4s ease-in-out",
         }}
       >
         {label}
@@ -69,18 +73,8 @@ function XAxisLabel({
   );
 }
 
-/**
- * Outer wrapper owns the mount guard. The expensive `labelsToShow` memo
- * (which iterates `data` or builds `numTicks` ticks) lives in the memoized
- * inner component — so it doesn't run on every render before the portal
- * container is attached, and skips when props haven't changed.
- */
-export function XAxis({
-  numTicks = 5,
-  tickerHalfWidth = 50,
-  tickMode = 'domain',
-}: XAxisProps) {
-  const { containerRef } = useChart();
+export function XAxis(props: XAxisProps) {
+  const { containerRef } = useChartStable();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -92,41 +86,25 @@ export function XAxis({
     return null;
   }
 
-  return (
-    <XAxisInner
-      container={container}
-      numTicks={numTicks}
-      tickMode={tickMode}
-      tickerHalfWidth={tickerHalfWidth}
-    />
-  );
+  return <XAxisInner {...props} container={container} />;
 }
 
 const XAxisInner = memo(function XAxisInner({
+  numTicks = 5,
+  tickerHalfWidth = 50,
+  tickMode = "domain",
   container,
-  numTicks,
-  tickMode,
-  tickerHalfWidth,
-}: {
-  container: HTMLElement;
-  numTicks: number;
-  tickMode: 'domain' | 'data';
-  tickerHalfWidth: number;
-}) {
+}: XAxisProps & { container: HTMLDivElement }) {
   const { xScale, margin, tooltipData, data, xAccessor, dateLabels } =
     useChart();
 
+  // Generate tick labels: evenly spaced along the domain, or one per data row
   const labelsToShow = useMemo(() => {
-    if (tickMode === 'data') {
+    if (tickMode === "data") {
       return data.map((d, i) => ({
         date: xAccessor(d),
         x: (xScale(xAccessor(d)) ?? 0) + margin.left,
-        label:
-          dateLabels[i] ??
-          xAccessor(d).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          }),
+        label: dateLabels[i] ?? shortDateFmt.format(xAccessor(d)),
       }));
     }
 
@@ -142,11 +120,12 @@ const XAxisInner = memo(function XAxisInner({
     const endTime = endDate.getTime();
     const timeRange = endTime - startTime;
 
-    const tickCount = Math.max(2, numTicks);
+    // Create evenly spaced dates from start to end
+    const tickCount = Math.max(2, numTicks); // At least first and last
     const dates: Date[] = [];
 
     for (let i = 0; i < tickCount; i++) {
-      const t = i / (tickCount - 1);
+      const t = i / (tickCount - 1); // 0 to 1
       const time = startTime + t * timeRange;
       dates.push(new Date(time));
     }
@@ -154,10 +133,7 @@ const XAxisInner = memo(function XAxisInner({
     return dates.map((date) => ({
       date,
       x: (xScale(date) ?? 0) + margin.left,
-      label: date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      }),
+      label: shortDateFmt.format(date),
     }));
   }, [tickMode, data, xAccessor, xScale, margin.left, dateLabels, numTicks]);
 
@@ -181,6 +157,6 @@ const XAxisInner = memo(function XAxisInner({
   );
 });
 
-XAxis.displayName = 'XAxis';
+XAxis.displayName = "XAxis";
 
 export default XAxis;

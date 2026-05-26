@@ -7,11 +7,19 @@ import { LinePath } from "@visx/shape";
 // biome-ignore lint/suspicious/noExplicitAny: d3 curve factory type
 type CurveFactory = any;
 
-import { motion, useMotionTemplate, useSpring } from "motion/react";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { useCallback, useId, useRef } from "react";
 import { chartCssVars, useChart } from "./chart-context";
 import { ChartRevealClip } from "./chart-reveal-clip";
-import { useLineSegmentHighlight } from "./use-line-segment-highlight";
+import { HighlightSegment } from "./highlight-segment";
+import {
+  resolveDashTailBounds,
+  usePathStrokeMetrics,
+} from "./path-stroke-utils";
+import { SeriesDashTailOverlay } from "./series-dash-tail-overlay";
+import { SeriesMarkers } from "./series-markers";
+import type { SeriesPointMarkerStyle } from "./series-point-marker";
+import { useHighlightSegment } from "./use-highlight-segment";
 
 export interface LineProps {
   /** Key in data to use for y values */
@@ -28,6 +36,17 @@ export interface LineProps {
   fadeEdges?: boolean;
   /** Whether to show highlight segment on hover. Default: true */
   showHighlight?: boolean;
+  /** Render scatter-style circle markers at each data point. Default: false */
+  showMarkers?: boolean;
+  /** Marker styling (same options as Scatter). */
+  markers?: SeriesPointMarkerStyle;
+  /**
+   * Data index from which the line stroke becomes dashed (inclusive).
+   * Useful for projecting incomplete periods, e.g. dashed from yesterday through today.
+   */
+  dashFromIndex?: number;
+  /** Dash pattern for the tail segment when `dashFromIndex` is set. Default: "6,4" */
+  dashArray?: string;
 }
 
 export function Line({
@@ -38,9 +57,14 @@ export function Line({
   animate = true,
   fadeEdges = true,
   showHighlight = true,
+  showMarkers = false,
+  markers,
+  dashFromIndex,
+  dashArray = "6,4",
 }: LineProps) {
   const {
     data,
+    renderData,
     xScale,
     yScale,
     innerHeight,
@@ -54,52 +78,15 @@ export function Line({
   } = useChart();
 
   const pathRef = useRef<SVGPathElement>(null);
-  const [pathLength, setPathLength] = useState(0);
-  // Cache the `d` attribute as state so the highlight `motion.path` reads a
-  // stable string ref instead of a DOM attribute on every render.
-  const [pathD, setPathD] = useState<string | null>(null);
+  const pathMetricsKey = `${renderData.length}:${innerWidth}:${dashFromIndex}:${animate}`;
+  const { pathLength, pathD } = usePathStrokeMetrics(pathRef, pathMetricsKey);
 
-  // `useId()` is SSR-stable and skips per-render `Math.random()` / base36 work.
   const reactId = useId();
   const gradientId = `line-gradient-${dataKey}-${reactId}`;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: data, innerWidth
-  useEffect(() => {
-    const path = pathRef.current;
-    if (!path) return;
-    const len = path.getTotalLength();
-    if (len > 0) setPathLength(len);
-    const d = path.getAttribute("d");
-    if (d) setPathD(d);
-  }, [data, innerWidth, yScale]);
-
-  // Chord-length based highlight bounds — no `getPointAtLength` binary search
-  // per hover. Memoized on (data, scales, dataKey); subsequent hovers are
-  // O(1) lookups instead of ~30-60 SVG DOM ops per Line.
-  const segmentBounds = useLineSegmentHighlight({
-    pathLength,
-    data,
-    tooltipData,
-    selection,
-    xScale,
-    yScale,
-    xAccessor,
-    dataKey,
+  const { xSpring, widthSpring, isActive } = useHighlightSegment({
+    enabled: showHighlight,
   });
-
-  // Springs for smooth highlight animation (both offset AND segment length).
-  // High stiffness so they snap near-instantly between data buckets.
-  const springConfig = { stiffness: 1000, damping: 60 };
-  const offsetSpring = useSpring(0, springConfig);
-  const segmentLengthSpring = useSpring(0, springConfig);
-
-  // Set spring targets directly in render — motion schedules its own animation
-  // frame internally and doesn't trigger a React re-render. The effect-based
-  // version cost a double render per hover update.
-  offsetSpring.set(-segmentBounds.startLength);
-  segmentLengthSpring.set(segmentBounds.segmentLength);
-
-  const animatedDasharray = useMotionTemplate`${segmentLengthSpring} ${pathLength}`;
 
   const getY = useCallback(
     (d: Record<string, unknown>) => {
@@ -110,11 +97,12 @@ export function Line({
   );
 
   const isHovering = tooltipData !== null || selection?.active === true;
+  const hasDashTail = resolveDashTailBounds(dashFromIndex, data.length);
+  const lineStroke = fadeEdges ? `url(#${gradientId})` : stroke;
 
   return (
     <>
-      {/* Gradient definition for fading edges */}
-      {fadeEdges && (
+      {fadeEdges ? (
         <defs>
           <linearGradient id={gradientId} x1="0%" x2="100%" y1="0%" y2="0%">
             <stop offset="0%" style={{ stopColor: stroke, stopOpacity: 0 }} />
@@ -123,10 +111,9 @@ export function Line({
             <stop offset="100%" style={{ stopColor: stroke, stopOpacity: 0 }} />
           </linearGradient>
         </defs>
-      )}
+      ) : null}
 
-      {/* Clip path for grow animation - unique per line */}
-      {animate && data.length > 1 ? (
+      {animate && renderData.length > 1 ? (
         <defs>
           <ChartRevealClip
             clipPathId={`grow-clip-${dataKey}`}
@@ -140,7 +127,9 @@ export function Line({
 
       <g
         clipPath={
-          animate && data.length > 1 ? `url(#grow-clip-${dataKey})` : undefined
+          animate && renderData.length > 1
+            ? `url(#grow-clip-${dataKey})`
+            : undefined
         }
       >
         <motion.g
@@ -150,36 +139,51 @@ export function Line({
         >
           <LinePath
             curve={curve}
-            data={data}
+            data={renderData}
             innerRef={pathRef}
-            stroke={fadeEdges ? `url(#${gradientId})` : stroke}
+            stroke={hasDashTail ? "transparent" : lineStroke}
             strokeLinecap="round"
             strokeWidth={strokeWidth}
             x={(d) => xScale(xAccessor(d)) ?? 0}
             y={getY}
           />
+
+          <SeriesDashTailOverlay
+            dashArray={dashArray}
+            dashFromIndex={dashFromIndex}
+            data={data}
+            innerHeight={innerHeight}
+            innerWidth={innerWidth}
+            pathD={pathD}
+            pathLength={pathLength}
+            pathRef={pathRef}
+            stroke={lineStroke}
+            strokeWidth={strokeWidth}
+            xAccessor={xAccessor}
+            xScale={xScale}
+          />
         </motion.g>
       </g>
 
-      {/* Highlight segment on hover — reads cached pathD instead of doing a
-          DOM attribute read on every render. */}
-      {showHighlight && isHovering && isLoaded && pathD && (
-        <motion.path
-          animate={{ opacity: 1 }}
-          d={pathD}
-          exit={{ opacity: 0 }}
-          fill="none"
-          initial={{ opacity: 0 }}
-          stroke={stroke}
-          strokeLinecap="round"
-          strokeWidth={strokeWidth}
-          style={{
-            strokeDasharray: animatedDasharray,
-            strokeDashoffset: offsetSpring,
-          }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
+      {showMarkers ? (
+        <SeriesMarkers
+          animate={animate}
+          dataKey={dataKey}
+          {...markers}
+          fill={markers?.fill ?? stroke}
+          stroke={markers?.stroke ?? markers?.fill ?? stroke}
         />
-      )}
+      ) : null}
+
+      <HighlightSegment
+        height={innerHeight}
+        pathRef={pathRef}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+        visible={showHighlight && isActive && isLoaded}
+        width={widthSpring}
+        x={xSpring}
+      />
     </>
   );
 }

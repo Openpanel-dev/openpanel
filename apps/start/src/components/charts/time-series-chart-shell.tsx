@@ -1,7 +1,7 @@
 "use client";
 
 import { scaleLinear, scaleTime } from "@visx/scale";
-import { bisector } from "d3-array";
+import { bisector, extent } from "d3-array";
 import type { Transition } from "motion/react";
 import {
   Children,
@@ -17,6 +17,11 @@ import {
 import { DEFAULT_ANIMATION_EASING } from "./animation";
 import { ChartProvider, type LineConfig, type Margin } from "./chart-context";
 import { isGradientDefComponent, isPatternDefComponent } from "./chart-defs";
+import { shortDateFmt } from "./chart-formatters";
+import {
+  decimateTimeSeries,
+  maxRenderPointsForWidth,
+} from "./decimate-time-series";
 import { useChartInteraction } from "./use-chart-interaction";
 
 /** Markers render after the interaction overlay so they stay clickable. */
@@ -68,16 +73,9 @@ export interface TimeSeriesChartInnerProps {
   yScaleDomainMax?: number;
 }
 
-/**
- * Outer guard short-circuits before any hooks run when the chart container
- * is too small (eg. hidden by a parent layout). The expensive scale + memo
- * work + the `useChartInteraction` hook live in the memoized core — so a
- * hidden chart (width < 10) builds zero d3 scales, runs zero useMemos, and
- * never instantiates useChartInteraction. The memo() boundary also skips
- * re-renders when none of the parent-supplied props changed.
- */
 export function TimeSeriesChartInner(props: TimeSeriesChartInnerProps) {
-  if (props.width < 10 || props.height < 10) {
+  const { width, height } = props;
+  if (width < 10 || height < 10) {
     return null;
   }
   return <TimeSeriesChartCore {...props} />;
@@ -126,15 +124,24 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   );
 
   const xScale = useMemo(() => {
-    const dates = data.map((d) => xAccessor(d));
-    const minTime = Math.min(...dates.map((d) => d.getTime()));
-    const maxTime = Math.max(...dates.map((d) => d.getTime()));
+    const timeExtent = extent(data, (d) => xAccessor(d).getTime());
+    const minTime = timeExtent[0] ?? 0;
+    const maxTime = timeExtent[1] ?? minTime;
 
     return scaleTime({
       range: [0, innerWidth],
       domain: [minTime, maxTime],
     });
   }, [innerWidth, data, xAccessor]);
+
+  const renderData = useMemo(() => {
+    const valueKeys = lines.map((line) => line.dataKey);
+    return decimateTimeSeries(
+      data,
+      maxRenderPointsForWidth(innerWidth),
+      valueKeys
+    );
+  }, [data, innerWidth, lines]);
 
   const columnWidth = useMemo(() => {
     if (data.length < 2) {
@@ -148,9 +155,10 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
     if (yScaleDomainMax != null && yScaleDomainMax > 0) {
       maxValue = yScaleDomainMax;
     } else {
-      for (const line of lines) {
-        for (const d of data) {
-          const value = d[line.dataKey];
+      const dataKeys = lines.map((line) => line.dataKey);
+      for (const d of data) {
+        for (const key of dataKeys) {
+          const value = d[key];
           if (typeof value === "number" && value > maxValue) {
             maxValue = value;
           }
@@ -170,13 +178,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   }, [innerHeight, data, lines, yScaleDomainMax]);
 
   const dateLabels = useMemo(
-    () =>
-      data.map((d) =>
-        xAccessor(d).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })
-      ),
+    () => data.map((d) => shortDateFmt.format(xAccessor(d))),
     [data, xAccessor]
   );
 
@@ -234,6 +236,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   const contextValue = useMemo(
     () => ({
       data,
+      renderData,
       xScale,
       yScale,
       width,
@@ -265,6 +268,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
     }),
     [
       data,
+      renderData,
       xScale,
       yScale,
       width,

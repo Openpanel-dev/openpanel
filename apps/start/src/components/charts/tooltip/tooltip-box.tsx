@@ -1,13 +1,11 @@
-'use client';
+"use client";
 
-import { motion, useSpring } from 'motion/react';
-import type { RefObject } from 'react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { cn } from '@/lib/utils';
-
-// Near-instant — original 100/20 felt sluggish on dense time series.
-const springConfig = { stiffness: 1000, damping: 60 };
+import { motion, useSpring } from "motion/react";
+import type { RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { cn } from "@/lib/utils";
+import { type SpringConfig, useChartConfig } from "../chart-config-context";
 
 export interface TooltipBoxProps {
   /** X position in pixels (relative to container) */
@@ -34,17 +32,15 @@ export interface TooltipBoxProps {
   top?: number | ReturnType<typeof useSpring>;
   /** Force flip direction (for custom positioning) */
   flipped?: boolean;
+  /** Per-chart override; falls back to `ChartConfigProvider.tooltipBoxSpring`. */
+  springConfig?: SpringConfig;
 }
 
-/**
- * Outer wrapper owns the mount + visibility guards. The inner component
- * (which owns the position springs) only mounts when the tooltip is
- * actually being shown, so `useSpring` initializes at the cursor's actual
- * x/y instead of at (0, 0) — without this split the tooltip would slide
- * in from the top-left of the chart on every first hover.
- */
+// Inner-only-on-visible so `useSpring` initializes at the cursor's actual x/y
+// instead of (0, 0) on first hover.
 export function TooltipBox(props: TooltipBoxProps) {
   const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -65,15 +61,19 @@ function TooltipBoxInner({
   containerWidth,
   containerHeight,
   offset = 16,
-  className = '',
+  className = "",
   children,
   left: leftOverride,
   top: topOverride,
   flipped: flippedOverride,
+  springConfig,
   container,
-}: Omit<TooltipBoxProps, 'visible' | 'containerRef'> & {
+}: Omit<TooltipBoxProps, "visible" | "containerRef"> & {
   container: HTMLElement;
 }) {
+  const { tooltipBoxSpring } = useChartConfig();
+  const effectiveSpring = springConfig ?? tooltipBoxSpring;
+
   const tooltipRef = useRef<HTMLDivElement>(null);
   const tooltipWidthRef = useRef(180);
   const tooltipHeightRef = useRef(80);
@@ -87,10 +87,8 @@ function TooltipBoxInner({
     Math.min(y - th / 2, containerHeight - th - offset)
   );
 
-  // Init springs at the *current* target — this component only mounts when
-  // the tooltip is visible, so target values are real cursor coords.
-  const animatedLeft = useSpring(targetX, springConfig);
-  const animatedTop = useSpring(targetY, springConfig);
+  const animatedLeft = useSpring(targetX, effectiveSpring);
+  const animatedTop = useSpring(targetY, effectiveSpring);
 
   if (leftOverride === undefined) {
     animatedLeft.set(targetX);
@@ -151,12 +149,12 @@ function TooltipBoxInner({
   const finalLeft = leftOverride ?? animatedLeft;
   const finalTop = topOverride ?? animatedTop;
   const isFlipped = flippedOverride ?? shouldFlipX;
-  const transformOrigin = isFlipped ? 'right top' : 'left top';
+  const transformOrigin = isFlipped ? "right top" : "left top";
 
   return createPortal(
     <motion.div
       animate={{ opacity: 1 }}
-      className={cn('pointer-events-none absolute z-50', className)}
+      className={cn("pointer-events-none absolute z-50", className)}
       exit={{ opacity: 0 }}
       initial={{ opacity: 0 }}
       ref={tooltipRef}
@@ -169,7 +167,7 @@ function TooltipBoxInner({
         initial={{ scale: 0.85, opacity: 0, x: isFlipped ? 20 : -20 }}
         key={flipKey}
         style={{ transformOrigin }}
-        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
       >
         {children}
       </motion.div>
@@ -178,6 +176,6 @@ function TooltipBoxInner({
   );
 }
 
-TooltipBox.displayName = 'TooltipBox';
+TooltipBox.displayName = "TooltipBox";
 
 export default TooltipBox;

@@ -1,10 +1,8 @@
 "use client";
 
 import { motion, useSpring } from "motion/react";
+import { type SpringConfig, useChartConfig } from "../chart-config-context";
 import { chartCssVars } from "../chart-context";
-
-// Near-instant — original 300/30 felt sluggish snapping between data points.
-const crosshairSpringConfig = { stiffness: 1000, damping: 60 };
 
 export type IndicatorWidth =
   | number // Pixel width
@@ -38,8 +36,12 @@ export interface TooltipIndicatorProps {
   colorMid?: string;
   /** Whether to fade to transparent at 0% and 100% */
   fadeEdges?: boolean;
+  /** Animate position with a spring. Default: true */
+  animate?: boolean;
   /** Unique ID for the gradient */
   gradientId?: string;
+  /** Per-chart override; falls back to `ChartConfigProvider.tooltipSpring`. */
+  springConfig?: SpringConfig;
 }
 
 function resolveWidth(width: IndicatorWidth): number {
@@ -60,15 +62,8 @@ function resolveWidth(width: IndicatorWidth): number {
   }
 }
 
-/**
- * Visibility guard lives in the outer wrapper. Without it, the inner
- * component (and its `useSpring`) would mount on first render when
- * `tooltipData` is still null (so `x` is 0) and the spring would
- * initialize at the chart's left edge. On the user's first hover the line
- * would have to spring all the way across to the cursor — a 1px line
- * moving at high stiffness is essentially invisible, so users perceive
- * "the crosshair didn't appear".
- */
+// Inner-only-on-visible so `useSpring` initializes at the real cursor x
+// instead of 0 on first hover.
 export function TooltipIndicator(props: TooltipIndicatorProps) {
   if (!props.visible) {
     return null;
@@ -85,16 +80,24 @@ function TooltipIndicatorInner({
   colorEdge = chartCssVars.crosshair,
   colorMid = chartCssVars.crosshair,
   fadeEdges = true,
+  animate = true,
   gradientId = "tooltip-indicator-gradient",
-}: TooltipIndicatorProps) {
+  springConfig,
+}: Omit<TooltipIndicatorProps, "visible">) {
+  const { tooltipSpring } = useChartConfig();
+  const effectiveSpring = springConfig ?? tooltipSpring;
+
   const pixelWidth =
     span !== undefined && columnWidth !== undefined
       ? span * columnWidth
       : resolveWidth(width);
 
-  const animatedX = useSpring(x - pixelWidth / 2, crosshairSpringConfig);
+  const rectX = x - pixelWidth / 2;
+  const animatedX = useSpring(rectX, effectiveSpring);
 
-  animatedX.set(x - pixelWidth / 2);
+  if (animate) {
+    animatedX.set(rectX);
+  }
 
   const edgeOpacity = fadeEdges ? 0 : 1;
 
@@ -115,13 +118,23 @@ function TooltipIndicatorInner({
           />
         </linearGradient>
       </defs>
-      <motion.rect
-        fill={`url(#${gradientId})`}
-        height={height}
-        width={pixelWidth}
-        x={animatedX}
-        y={0}
-      />
+      {animate ? (
+        <motion.rect
+          fill={`url(#${gradientId})`}
+          height={height}
+          width={pixelWidth}
+          x={animatedX}
+          y={0}
+        />
+      ) : (
+        <rect
+          fill={`url(#${gradientId})`}
+          height={height}
+          width={pixelWidth}
+          x={rectX}
+          y={0}
+        />
+      )}
     </g>
   );
 }

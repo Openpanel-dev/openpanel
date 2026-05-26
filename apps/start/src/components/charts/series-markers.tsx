@@ -1,15 +1,13 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import {
-  clipRevealTransition,
-  DEFAULT_CHART_ENTER_TRANSITION,
-} from "./animation";
+import { clipRevealTransition } from "./animation";
 import { defaultScatterColors, useChart } from "./chart-context";
 import {
   getSeriesMarkerVisualExtent,
   SeriesPointMarker,
   type SeriesPointMarkerStyle,
+  StaticSeriesPointMarker,
 } from "./series-point-marker";
 
 export interface SeriesMarkersProps extends SeriesPointMarkerStyle {
@@ -78,7 +76,6 @@ export function SeriesMarkers({
   const revealDurationSec =
     clipRevealTransition(enterTransition).duration ?? animationDuration / 1000;
   const enterDuration = 0.5;
-  const hoverEase = DEFAULT_CHART_ENTER_TRANSITION.ease;
   const isRevealing = animate && !isLoaded;
 
   const getY = useCallback(
@@ -120,35 +117,70 @@ export function SeriesMarkers({
     ]
   );
 
+  const markerStyle = {
+    fill: resolvedFill,
+    stroke: resolvedStroke,
+    strokeWidth,
+    ringGap,
+    outlineWidth,
+    outlineColor,
+    radius,
+  };
+
+  if (isRevealing) {
+    return (
+      <g>
+        {points.map((point) => (
+          <SeriesPointMarker
+            cx={point.cx}
+            cy={point.cy}
+            dataKey={dataKey}
+            enterBlur={enterBlur}
+            enterDuration={enterDuration}
+            index={point.index}
+            key={`${dataKey}-${point.index}`}
+            revealDelay={point.revealDelay}
+            revealEpoch={revealEpoch ?? 0}
+            {...markerStyle}
+          />
+        ))}
+      </g>
+    );
+  }
+
+  const dimBase = fadeOnHover && isHovering;
+  const activePoint = dimBase
+    ? points.find((point) => point.index === activeIndex)
+    : null;
+  const activeScale = showActiveHighlight ? 1.35 : 1;
+
   return (
     <g>
-      {points.map((point) => (
-        <SeriesPointMarker
-          cx={point.cx}
-          cy={point.cy}
-          dataKey={dataKey}
-          enterBlur={enterBlur}
-          enterDuration={enterDuration}
-          fadeOnHover={fadeOnHover}
-          fill={resolvedFill}
-          hoverEase={hoverEase}
-          inactiveBlur={inactiveBlur}
-          inactiveOpacity={inactiveOpacity}
-          index={point.index}
-          isActive={activeIndex === point.index}
-          isHovering={isHovering}
-          key={`${dataKey}-${point.index}`}
-          outlineColor={outlineColor}
-          outlineWidth={outlineWidth}
-          radius={radius}
-          revealDelay={point.revealDelay}
-          revealEpoch={revealEpoch ?? 0}
-          ringGap={ringGap}
-          showActiveHighlight={showActiveHighlight}
-          stroke={resolvedStroke}
-          strokeWidth={strokeWidth}
+      <g
+        opacity={dimBase ? inactiveOpacity : 1}
+        style={{
+          transition: "opacity 0.15s ease-in-out, filter 0.15s ease-in-out",
+          filter:
+            dimBase && inactiveBlur > 0 ? `blur(${inactiveBlur}px)` : "none",
+        }}
+      >
+        {points.map((point) => (
+          <StaticSeriesPointMarker
+            cx={point.cx}
+            cy={point.cy}
+            key={`${dataKey}-${point.index}`}
+            {...markerStyle}
+          />
+        ))}
+      </g>
+      {activePoint ? (
+        <StaticSeriesPointMarker
+          cx={activePoint.cx}
+          cy={activePoint.cy}
+          scale={activeScale}
+          {...markerStyle}
         />
-      ))}
+      ) : null}
     </g>
   );
 }
