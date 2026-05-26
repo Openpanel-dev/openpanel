@@ -3,15 +3,34 @@ import type {
   TrackProperties,
 } from '@openpanel/sdk';
 import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
+import {
+  type ReplayRecorderConfig,
+  startReplayRecorder,
+  stopReplayRecorder,
+} from './replay';
 
 export type * from '@openpanel/sdk';
 export { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
+
+export type SessionReplayOptions = ReplayRecorderConfig & {
+  enabled: boolean;
+  /**
+   * Fraction of sessions to record. 0..1 (default 1 = record all).
+   */
+  sampleRate?: number;
+  /**
+   * Max milliseconds to wait for a session_id (established by a track call)
+   * before giving up on starting the recorder. Default 10000.
+   */
+  startTimeoutMs?: number;
+};
 
 export type OpenPanelOptions = OpenPanelBaseOptions & {
   trackOutgoingLinks?: boolean;
   trackScreenViews?: boolean;
   trackAttributes?: boolean;
   trackHashChanges?: boolean;
+  sessionReplay?: SessionReplayOptions;
 };
 
 function toCamelCase(str: string) {
@@ -66,7 +85,53 @@ export class OpenPanel extends OpenPanelBase {
       if (this.options.trackAttributes) {
         this.trackAttributes();
       }
+
+      if (this.options.sessionReplay?.enabled) {
+        this.maybeStartReplay();
+      }
     }
+  }
+
+  private async maybeStartReplay() {
+    const opts = this.options.sessionReplay;
+    if (!opts?.enabled) return;
+
+    const sampleRate = opts.sampleRate ?? 1;
+    if (Math.random() >= sampleRate) {
+      this.log('replay sample miss, not recording');
+      return;
+    }
+
+    const startTimeoutMs = opts.startTimeoutMs ?? 10_000;
+    const pollIntervalMs = 500;
+    const start = Date.now();
+
+    // Poll until we have a sessionId (established by track calls) or timeout.
+    while (!this.sessionId && Date.now() - start < startTimeoutMs) {
+      await this.fetchDeviceId().catch(() => undefined);
+      if (this.sessionId) break;
+      await new Promise((r) => setTimeout(r, pollIntervalMs));
+    }
+
+    if (!this.sessionId) {
+      this.log('replay: no sessionId after timeout, not starting recorder');
+      return;
+    }
+
+    const sessionId = this.sessionId;
+    startReplayRecorder(opts, (chunk) => {
+      this.send({
+        type: 'replay',
+        payload: {
+          ...chunk,
+          session_id: sessionId,
+        },
+      });
+    });
+  }
+
+  public stopReplay() {
+    stopReplayRecorder();
   }
 
   private debounce(func: () => void, delay: number) {

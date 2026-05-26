@@ -20,7 +20,21 @@ export type TrackHandlerPayload =
   | {
       type: 'identify';
       payload: IdentifyPayload;
+    }
+  | {
+      type: 'replay';
+      payload: ReplayPayload;
     };
+
+export type ReplayPayload = {
+  session_id: string;
+  chunk_index: number;
+  events_count: number;
+  is_full_snapshot: boolean;
+  started_at: string;
+  ended_at: string;
+  payload: string;
+};
 
 export type TrackPayload = {
   name: string;
@@ -74,6 +88,8 @@ export type OpenPanelOptions = {
 export class OpenPanel {
   api: Api;
   profileId?: string;
+  deviceId?: string;
+  sessionId?: string;
   global?: Record<string, unknown>;
   queue: TrackHandlerPayload[] = [];
 
@@ -198,11 +214,16 @@ export class OpenPanel {
   }
 
   async fetchDeviceId(): Promise<string> {
-    const result = await this.api.fetch<undefined, { deviceId: string }>(
-      '/track/device-id',
+    const result = await this.api.fetch<
       undefined,
-      { method: 'GET', keepalive: false },
-    );
+      { deviceId: string; sessionId?: string }
+    >('/track/device-id', undefined, { method: 'GET', keepalive: false });
+    if (result?.deviceId) {
+      this.deviceId = result.deviceId;
+    }
+    if (result?.sessionId) {
+      this.sessionId = result.sessionId;
+    }
     return result?.deviceId ?? '';
   }
 
@@ -213,15 +234,18 @@ export class OpenPanel {
 
   flush() {
     this.queue.forEach((item) => {
+      if (item.type === 'replay') {
+        this.send(item);
+        return;
+      }
+      const profileId = item.payload.profileId ?? this.profileId;
       this.send({
         ...item,
-        // Not sure why ts-expect-error is needed here
-        // @ts-expect-error
         payload: {
           ...item.payload,
-          profileId: item.payload.profileId ?? this.profileId,
+          profileId,
         },
-      });
+      } as TrackHandlerPayload);
     });
     this.queue = [];
   }

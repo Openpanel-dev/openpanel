@@ -188,3 +188,5 @@ dist
 .DS_Store
 
 *.tsbuildinfo
+
+/docs

@@ -1,6 +1,11 @@
 import type { Job } from 'bullmq';
 
-import { eventBuffer, profileBuffer, sessionBuffer } from '@openpanel/db';
+import {
+  eventBuffer,
+  profileBuffer,
+  replayBuffer,
+  sessionBuffer,
+} from '@openpanel/db';
 import type { CronQueuePayload } from '@openpanel/queue';
 
 import { customAlerts } from './cron.custom-alerts';
@@ -22,6 +27,9 @@ export async function cronJob(job: Job<CronQueuePayload>) {
     }
     case 'flushSessions': {
       return await sessionBuffer.tryFlush();
+    }
+    case 'flushReplays': {
+      return await replayBuffer.tryFlush();
     }
     case 'ping': {
       return await ping();

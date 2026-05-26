@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { getSessionList, sessionService } from '@openpanel/db';
+import {
+  getSessionList,
+  getSessionReplayChunksFrom,
+  sessionHasReplay,
+  sessionService,
+} from '@openpanel/db';
 import { zChartEventFilter } from '@openpanel/validation';
 
 import { createTRPCRouter, protectedProcedure } from '../trpc';
@@ -60,5 +65,23 @@ export const sessionRouter = createTRPCRouter({
     .input(z.object({ sessionId: z.string(), projectId: z.string() }))
     .query(async ({ input: { sessionId, projectId } }) => {
       return sessionService.byId(sessionId, projectId);
+    }),
+
+  hasReplay: protectedProcedure
+    .input(z.object({ sessionId: z.string(), projectId: z.string() }))
+    .query(({ input: { sessionId, projectId } }) => {
+      return sessionHasReplay(sessionId, projectId);
+    }),
+
+  replayChunksFrom: protectedProcedure
+    .input(
+      z.object({
+        sessionId: z.string(),
+        projectId: z.string(),
+        fromIndex: z.number().int().min(0).default(0),
+      }),
+    )
+    .query(({ input: { sessionId, projectId, fromIndex } }) => {
+      return getSessionReplayChunksFrom(sessionId, projectId, fromIndex);
     }),
 });

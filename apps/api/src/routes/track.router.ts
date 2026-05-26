@@ -21,7 +21,14 @@ const trackRouter: FastifyPluginCallback = async (fastify) => {
         properties: {
           type: {
             type: 'string',
-            enum: ['track', 'increment', 'decrement', 'alias', 'identify'],
+            enum: [
+              'track',
+              'increment',
+              'decrement',
+              'alias',
+              'identify',
+              'replay',
+            ],
           },
           payload: {
             type: 'object',
@@ -42,6 +49,7 @@ const trackRouter: FastifyPluginCallback = async (fastify) => {
           type: 'object',
           properties: {
             deviceId: { type: 'string' },
+            sessionId: { type: 'string' },
             message: { type: 'string', optional: true },
           },
         },

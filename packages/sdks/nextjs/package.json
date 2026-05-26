@@ -7,7 +7,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/web": "workspace:1.0.6-local"
+    "@openpanel/web": "workspace:1.1.0-local"
   },
   "peerDependencies": {
     "next": "^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0",

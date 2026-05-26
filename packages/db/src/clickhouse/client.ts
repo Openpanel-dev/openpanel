@@ -64,6 +64,7 @@ export const TABLE_NAMES = {
   cohort_metadata: 'cohort_metadata',
   profile_event_summary_mv: 'profile_event_summary_mv',
   profile_event_property_summary_mv: 'profile_event_property_summary_mv',
+  session_replay_chunks: 'session_replay_chunks',
 };
 
 /**

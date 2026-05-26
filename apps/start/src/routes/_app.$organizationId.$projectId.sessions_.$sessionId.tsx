@@ -3,6 +3,7 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { ReplayPlayer } from '@/components/sessions/replay/replay-player';
 import { useReadColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
 import {
   useEventQueryFilters,
@@ -10,7 +11,7 @@ import {
 } from '@/hooks/use-event-query-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle } from '@/utils/title';
-import { useInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { parseAsIsoDateTime, useQueryState } from 'nuqs';
 
@@ -51,6 +52,10 @@ function Component() {
       sessionId,
       projectId,
     }),
+  );
+
+  const { data: hasReplay } = useQuery(
+    trpc.session.hasReplay.queryOptions({ sessionId, projectId }),
   );
 
   const [filters] = useEventQueryFilters();
@@ -117,6 +122,12 @@ function Component() {
           )}
         </div>
       </PageHeader>
+      {hasReplay && (
+        <div className="mb-8">
+          <h2 className="text-base font-medium mb-3">Session Replay</h2>
+          <ReplayPlayer sessionId={sessionId} projectId={projectId} />
+        </div>
+      )}
       <EventsTable query={query} />
     </PageContainer>
   );

@@ -103,6 +103,10 @@ export type CronQueuePayloadFlushSessions = {
   type: 'flushSessions';
   payload: undefined;
 };
+export type CronQueuePayloadFlushReplays = {
+  type: 'flushReplays';
+  payload: undefined;
+};
 export type CronQueuePayloadPing = {
   type: 'ping';
   payload: undefined;
@@ -119,6 +123,7 @@ export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
   | CronQueuePayloadFlushSessions
+  | CronQueuePayloadFlushReplays
   | CronQueuePayloadFlushProfiles
   | CronQueuePayloadPing
   | CronQueuePayloadProject

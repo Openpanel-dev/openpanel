@@ -14,7 +14,7 @@
   "files": ["src", "index.ts"],
   "keywords": ["astro-component"],
   "dependencies": {
-    "@openpanel/web": "workspace:1.0.6-local"
+    "@openpanel/web": "workspace:1.1.0-local"
   },
   "devDependencies": {
     "astro": "^5.7.7"

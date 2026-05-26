@@ -126,6 +126,7 @@
     "react-svg-worldmap": "2.0.0-alpha.16",
     "react-syntax-highlighter": "^15.5.0",
     "react-use-websocket": "^4.7.0",
+    "rrweb": "2.0.0-alpha.20",
     "react-virtualized-auto-sizer": "^1.0.22",
     "recharts": "^2.15.4",
     "rehype-katex": "^7.0.1",

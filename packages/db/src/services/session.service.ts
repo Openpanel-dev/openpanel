@@ -342,3 +342,50 @@ class SessionService {
 }
 
 export const sessionService = new SessionService(ch);
+
+const REPLAY_CHUNKS_PAGE_SIZE = 50;
+
+export async function getSessionReplayChunksFrom(
+  sessionId: string,
+  projectId: string,
+  fromIndex: number,
+) {
+  const rows = await chQuery<{ chunk_index: number; payload: string }>(
+    `SELECT chunk_index, payload
+     FROM ${TABLE_NAMES.session_replay_chunks}
+     WHERE session_id = ${sqlstring.escape(sessionId)}
+       AND project_id = ${sqlstring.escape(projectId)}
+     ORDER BY started_at, ended_at, chunk_index
+     LIMIT ${REPLAY_CHUNKS_PAGE_SIZE + 1}
+     OFFSET ${fromIndex}`,
+  );
+
+  const items = rows.slice(0, REPLAY_CHUNKS_PAGE_SIZE).map((row, index) => {
+    let events: { type: number; data: unknown; timestamp: number }[] = [];
+    try {
+      events = JSON.parse(row.payload);
+    } catch {
+      events = [];
+    }
+    return { chunkIndex: index + fromIndex, events };
+  });
+
+  return {
+    data: items,
+    hasMore: rows.length > REPLAY_CHUNKS_PAGE_SIZE,
+  };
+}
+
+export async function sessionHasReplay(
+  sessionId: string,
+  projectId: string,
+): Promise<boolean> {
+  const rows = await chQuery<{ has: number }>(
+    `SELECT 1 AS has
+     FROM ${TABLE_NAMES.session_replay_chunks}
+     WHERE session_id = ${sqlstring.escape(sessionId)}
+       AND project_id = ${sqlstring.escape(projectId)}
+     LIMIT 1`,
+  );
+  return rows.length > 0;
+}
