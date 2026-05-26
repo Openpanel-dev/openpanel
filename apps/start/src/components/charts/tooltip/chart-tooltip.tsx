@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useSpring } from 'motion/react';
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { chartCssVars, useChart } from '../chart-context';
 import { DateTicker } from './date-ticker';
@@ -10,8 +10,8 @@ import { TooltipContent, type TooltipRow } from './tooltip-content';
 import { TooltipDot } from './tooltip-dot';
 import { TooltipIndicator } from './tooltip-indicator';
 
-// Spring config for crosshair
-const crosshairSpringConfig = { stiffness: 300, damping: 30 };
+// Near-instant — original 300/30 felt sluggish snapping between data points.
+const crosshairSpringConfig = { stiffness: 1000, damping: 60 };
 
 export interface ChartTooltipProps {
   /** Whether to show the date pill at bottom. Default: true */
@@ -38,7 +38,29 @@ export interface ChartTooltipProps {
   className?: string;
 }
 
-export function ChartTooltip({
+/**
+ * Outer wrapper owns the mount + container guard. The expensive work
+ * (useSpring, three useMemos for tooltipRows / indicatorColor / title) lives
+ * in the memoized inner — so none of it runs before the chart container is
+ * attached, and the inner can skip re-renders when its props are unchanged.
+ */
+export function ChartTooltip(props: ChartTooltipProps) {
+  const { containerRef } = useChart();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const container = containerRef.current;
+  if (!(mounted && container)) {
+    return null;
+  }
+
+  return <ChartTooltipInner {...props} container={container} />;
+}
+
+const ChartTooltipInner = memo(function ChartTooltipInner({
   showDatePill = true,
   showCrosshair = true,
   showDots = true,
@@ -47,7 +69,8 @@ export function ChartTooltip({
   rows: rowsRenderer,
   children,
   className = '',
-}: ChartTooltipProps) {
+  container,
+}: ChartTooltipProps & { container: HTMLElement }) {
   const {
     tooltipData,
     width,
@@ -64,13 +87,6 @@ export function ChartTooltip({
   } = useChart();
 
   const isHorizontal = orientation === 'horizontal';
-
-  const [mounted, setMounted] = useState(false);
-
-  // Only render portals on client side after mount
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const visible = tooltipData !== null;
   const x = tooltipData?.x ?? 0;
@@ -98,7 +114,6 @@ export function ChartTooltip({
       return rowsRenderer(tooltipData.point);
     }
 
-    // Default: generate rows from registered lines
     return lines.map((line) => ({
       color: line.stroke,
       label: line.dataKey,
@@ -124,11 +139,9 @@ export function ChartTooltip({
     if (!tooltipData) {
       return undefined;
     }
-    // For bar charts (horizontal or vertical), use the category name
     if (barXAccessor) {
       return barXAccessor(tooltipData.point);
     }
-    // For line/area charts, use the date
     return xAccessor(tooltipData.point).toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
@@ -136,16 +149,9 @@ export function ChartTooltip({
     });
   }, [tooltipData, barXAccessor, xAccessor]);
 
-  // Use portal to render into the chart container
-  // Only render after mount on client side
-  const container = containerRef.current;
-  if (!(mounted && container)) {
-    return null;
-  }
-
   const tooltipContent = (
     <>
-      {/* Crosshair indicator - rendered as SVG overlay */}
+      {/* Crosshair indicator */}
       {showCrosshair && (
         <svg
           aria-hidden="true"
@@ -168,7 +174,7 @@ export function ChartTooltip({
         </svg>
       )}
 
-      {/* Dots on bars/lines - show for vertical charts only */}
+      {/* Dots on bars/lines */}
       {showDots && visible && !isHorizontal && (
         <svg
           aria-hidden="true"
@@ -214,7 +220,7 @@ export function ChartTooltip({
             )}
       </TooltipBox>
 
-      {/* Date/Category Ticker - only show for vertical charts */}
+      {/* Date/Category Ticker */}
       {showDatePill && dateLabels.length > 0 && visible && !isHorizontal && (
         <motion.div
           className="pointer-events-none absolute z-50"
@@ -235,7 +241,7 @@ export function ChartTooltip({
   );
 
   return createPortal(tooltipContent, container);
-}
+});
 
 ChartTooltip.displayName = 'ChartTooltip';
 

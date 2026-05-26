@@ -11,7 +11,6 @@ import { useDashedTail } from '../charts/op-dashed-tail';
 import { OPDatePill } from '../charts/op-date-pill';
 import { OPReferences } from '../charts/op-references';
 import { OPReferrerSpikes } from '../charts/op-referrer-spikes';
-import { OPSeriesDots } from '../charts/op-series-dots';
 import { OPChartTooltip } from '../charts/op-tooltip';
 import { XAxis } from '../charts/x-axis';
 import { YAxis } from '../charts/y-axis';
@@ -32,7 +31,9 @@ interface OverviewMetricsProps {
 
 // Softer than --chart-8's electric emerald, still clearly "green = money".
 const REVENUE_COLOR = 'oklch(0.68 0.11 158)';
-const PREV_LINE_COLOR = 'oklch(from var(--foreground) l c h / 0.2)';
+// Bump alpha (0.2 → 0.4) so the bklit hover highlight — which inherits the
+// line's stroke color — has enough body to be perceptible on hover.
+const PREV_LINE_COLOR = 'oklch(from var(--foreground) l c h / 0.4)';
 
 const TITLES = [
   {
@@ -320,6 +321,7 @@ function Chart({
 
   return (
     <ComposedChart
+      animationDuration={0}
       aspectRatio="auto"
       className="h-full"
       data={chartData}
@@ -330,32 +332,15 @@ function Chart({
       <YAxis numTicks={4} />
       <XAxis />
 
-      {showRevenue && (
-        <Line
-          animate={false}
-          curve={curveMonotoneX}
-          dataKey="revenue_norm"
-          stroke={REVENUE_COLOR}
-          strokeWidth={1.5}
-        />
-      )}
-
-      {/* Previous-period line (rendered behind the current area). */}
-      <Line
-        animate={false}
-        curve={curveMonotoneX}
-        dataKey={`prev_${activeMetric.key}`}
-        key={`prev-${activeMetric.key}`}
-        stroke={PREV_LINE_COLOR}
-        strokeWidth={2}
-      />
-
-      {/* Current-period area */}
+      {/* Current-period area — rendered FIRST so the line highlights below
+          paint on top of the area's semi-transparent fill instead of being
+          obscured by it. */}
       <Area
         animate={false}
         dashArray="4,4"
         dashFromIndex={dashFromIndex}
         dataKey={activeMetric.key}
+        fadeEdges
         fill={primaryColor}
         fillOpacity={0.18}
         gradientToOpacity={0}
@@ -364,17 +349,37 @@ function Chart({
         strokeWidth={2}
       />
 
+      {/* Previous-period line — `animate` MUST stay true so bklit measures
+          `pathLength` via `getTotalLength()` (it gates that measurement on
+          `animate`). Without it, the hover-highlight overlay renders with a
+          zero-length dasharray and stays invisible. The shell-level
+          `animationDuration={0}` above kills the actual reveal animation. */}
+      <Line
+        curve={curveMonotoneX}
+        dataKey={`prev_${activeMetric.key}`}
+        fadeEdges
+        key={`prev-${activeMetric.key}`}
+        stroke={PREV_LINE_COLOR}
+        strokeWidth={2}
+      />
+
+      {showRevenue && (
+        <Line
+          curve={curveMonotoneX}
+          dataKey="revenue_norm"
+          fadeEdges
+          stroke={REVENUE_COLOR}
+          strokeWidth={1.5}
+        />
+      )}
+
       <OPReferences items={references.data} />
       <OPReferrerSpikes
         items={referrerSpikes.data}
         onSpikeClick={handleSpikeClick}
       />
-      {/* Tooltip needs the flat list of spikes (so it can match the hovered
-          bucket to any spike, not just cluster anchors). */}
-
       <OPDatePill interval={interval} />
-
-      <OPSeriesDots
+      {/* <OPSeriesDots
         dots={[
           { dataKey: activeMetric.key, color: primaryColor },
           ...(showRevenue
@@ -387,7 +392,7 @@ function Chart({
               ]
             : []),
         ]}
-      />
+      /> */}
 
       <OPChartTooltip<ChartPoint>
         indicatorColor={primaryColor}

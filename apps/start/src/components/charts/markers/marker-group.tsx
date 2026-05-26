@@ -59,9 +59,45 @@ export interface MarkerGroupProps {
   lineHeight?: number;
   /** Whether to show the vertical guide line. Default: true */
   showLine?: boolean;
+  /**
+   * Force the marker fan to open even when the user isn't hovering this
+   * group directly. Used by OPMarkerLayer to fan out a cluster when the
+   * chart's main crosshair lands on one of the cluster's buckets.
+   */
+  forceOpen?: boolean;
+  /**
+   * Make the icon `foreignObject` fill the entire circle (no 4px inset)
+   * so favicon-style icons sit edge-to-edge with the marker border.
+   */
+  iconFill?: boolean;
+  /**
+   * Override the marker circle's stroke color. Falls back to
+   * `chartCssVars.markerBorder` when not set.
+   */
+  borderColor?: string;
+  /**
+   * Marker circle stroke width in px. Default 1.5.
+   */
+  borderWidth?: number;
+  /**
+   * Cap the number of markers rendered in the fan-out arc. The count
+   * badge still reflects the full cluster size. Without this, large
+   * clusters (e.g. 20+ spikes) collapse the fan angular spacing to
+   * essentially zero and the markers stack on top of each other.
+   */
+  maxFanned?: number;
+  /**
+   * Fade this marker group when another cluster has focus. Used by
+   * OPMarkerLayer to spotlight the active cluster.
+   */
+  isMuted?: boolean;
 }
 
-// Entrance animation variants
+// Entrance + fanned + muted variants. `fanned` shrinks and dims the
+// collapsed marker while its siblings are flying out in the portal, so
+// users only see the fan and not a duplicate icon sitting underneath.
+// `muted` fades non-active clusters when one cluster is being focused —
+// see OPMarkerLayer.
 const markerEntranceVariants = {
   hidden: {
     scale: 0.85,
@@ -71,6 +107,16 @@ const markerEntranceVariants = {
   visible: {
     scale: 1,
     opacity: 1,
+    filter: "blur(0px)",
+  },
+  fanned: {
+    scale: 0.6,
+    opacity: 0,
+    filter: "blur(2px)",
+  },
+  muted: {
+    scale: 1,
+    opacity: 0.4,
     filter: "blur(0px)",
   },
 };
@@ -89,10 +135,23 @@ export function MarkerGroup({
   animate = true,
   lineHeight = 0,
   showLine = true,
+  forceOpen = false,
+  iconFill = false,
+  borderColor,
+  borderWidth = 1.5,
+  maxFanned,
+  isMuted = false,
 }: MarkerGroupProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const shouldFan = isHovered && markers.length > 1;
+  const shouldFan = (isHovered || forceOpen) && markers.length > 1;
   const hasMultiple = markers.length > 1;
+  const fannedMarkers =
+    maxFanned !== undefined ? markers.slice(0, maxFanned) : markers;
+  const currentVariant = shouldFan
+    ? "fanned"
+    : isMuted
+      ? "muted"
+      : "visible";
 
   const getCirclePosition = (index: number, total: number) => {
     const startAngle = -90 - FAN_ANGLE / 2;
@@ -166,8 +225,8 @@ export function MarkerGroup({
           style={{ cursor: "pointer" }}
         >
           <motion.g
-            animate="visible"
-            initial={animate ? "hidden" : "visible"}
+            animate={currentVariant}
+            initial={animate ? "hidden" : currentVariant}
             transition={{
               type: "spring",
               stiffness: 300,
@@ -187,8 +246,11 @@ export function MarkerGroup({
 
             {/* Main marker */}
             <MarkerCircle
+              borderColor={borderColor}
+              borderWidth={borderWidth}
               color={markers[0]?.color}
               icon={markers[0]?.icon}
+              iconFill={iconFill}
               size={size}
             />
 
@@ -256,8 +318,11 @@ export function MarkerGroup({
             >
               <AnimatePresence mode="sync">
                 {shouldFan &&
-                  markers.map((marker, index) => {
-                    const position = getCirclePosition(index, markers.length);
+                  fannedMarkers.map((marker, index) => {
+                    const position = getCirclePosition(
+                      index,
+                      fannedMarkers.length
+                    );
                     return (
                       <motion.div
                         animate={{
@@ -284,9 +349,12 @@ export function MarkerGroup({
                         }}
                       >
                         <MarkerCircleHTML
+                          borderColor={borderColor}
+                          borderWidth={borderWidth}
                           color={marker.color}
                           href={marker.href}
                           icon={marker.icon}
+                          iconFill={iconFill}
                           isClickable={!!(marker.onClick || marker.href)}
                           onClick={marker.onClick}
                           size={size}
@@ -335,9 +403,23 @@ interface MarkerCircleProps {
   href?: string;
   target?: "_blank" | "_self";
   isClickable?: boolean;
+  /** Edge-to-edge icon (no 4px inset). */
+  iconFill?: boolean;
+  /** Override circle stroke color. */
+  borderColor?: string;
+  /** Circle stroke width. */
+  borderWidth?: number;
 }
 
-function MarkerCircle({ icon, size, color }: MarkerCircleProps) {
+function MarkerCircle({
+  icon,
+  size,
+  color,
+  iconFill = false,
+  borderColor,
+  borderWidth = 1.5,
+}: MarkerCircleProps) {
+  const inset = iconFill ? 0 : 4;
   return (
     <g>
       <circle cx={0} cy={2} fill="black" opacity={0.15} r={size / 2} />
@@ -346,14 +428,14 @@ function MarkerCircle({ icon, size, color }: MarkerCircleProps) {
         cy={0}
         fill={color || chartCssVars.markerBackground}
         r={size / 2}
-        stroke={chartCssVars.markerBorder}
-        strokeWidth={1.5}
+        stroke={borderColor ?? chartCssVars.markerBorder}
+        strokeWidth={borderWidth}
       />
       <foreignObject
-        height={size - 8}
-        width={size - 8}
-        x={-size / 2 + 4}
-        y={-size / 2 + 4}
+        height={size - inset * 2}
+        width={size - inset * 2}
+        x={-size / 2 + inset}
+        y={-size / 2 + inset}
       >
         <div
           style={{
@@ -364,6 +446,8 @@ function MarkerCircle({ icon, size, color }: MarkerCircleProps) {
             justifyContent: "center",
             color: chartCssVars.markerForeground,
             fontSize: size * 0.5,
+            overflow: "hidden",
+            borderRadius: "50%",
           }}
         >
           {icon}
@@ -381,8 +465,12 @@ function MarkerCircleHTML({
   href,
   target = "_self",
   isClickable = false,
+  iconFill = false,
+  borderColor,
+  borderWidth = 1.5,
 }: MarkerCircleProps) {
   const hasAction = isClickable || onClick || href;
+  const inset = iconFill ? 0 : 4;
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -407,9 +495,11 @@ function MarkerCircleHTML({
       onClick={hasAction ? handleClick : undefined}
       style={{
         backgroundColor: color || chartCssVars.markerBackground,
-        border: `1.5px solid ${chartCssVars.markerBorder}`,
+        border: `${borderWidth}px solid ${borderColor ?? chartCssVars.markerBorder}`,
         fontSize: size * 0.5,
         color: chartCssVars.markerForeground,
+        padding: inset,
+        overflow: "hidden",
       }}
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
       whileHover={

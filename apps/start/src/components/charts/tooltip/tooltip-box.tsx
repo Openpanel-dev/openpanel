@@ -6,8 +6,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
-// Spring config for smooth tooltip movement
-const springConfig = { stiffness: 100, damping: 20 };
+// Near-instant — original 100/20 felt sluggish on dense time series.
+const springConfig = { stiffness: 1000, damping: 60 };
 
 export interface TooltipBoxProps {
   /** X position in pixels (relative to container) */
@@ -36,11 +36,32 @@ export interface TooltipBoxProps {
   flipped?: boolean;
 }
 
-export function TooltipBox({
+/**
+ * Outer wrapper owns the mount + visibility guards. The inner component
+ * (which owns the position springs) only mounts when the tooltip is
+ * actually being shown, so `useSpring` initializes at the cursor's actual
+ * x/y instead of at (0, 0) — without this split the tooltip would slide
+ * in from the top-left of the chart on every first hover.
+ */
+export function TooltipBox(props: TooltipBoxProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const container = props.containerRef.current;
+  if (!(mounted && container)) {
+    return null;
+  }
+  if (!props.visible) {
+    return null;
+  }
+  return <TooltipBoxInner {...props} container={container} />;
+}
+
+function TooltipBoxInner({
   x,
   y,
-  visible,
-  containerRef,
   containerWidth,
   containerHeight,
   offset = 16,
@@ -49,18 +70,13 @@ export function TooltipBox({
   left: leftOverride,
   top: topOverride,
   flipped: flippedOverride,
-}: TooltipBoxProps) {
+  container,
+}: Omit<TooltipBoxProps, 'visible' | 'containerRef'> & {
+  container: HTMLElement;
+}) {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const tooltipWidthRef = useRef(180);
   const tooltipHeightRef = useRef(80);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const animatedLeft = useSpring(x + offset, springConfig);
-  const animatedTop = useSpring(y, springConfig);
 
   const tw = tooltipWidthRef.current;
   const th = tooltipHeightRef.current;
@@ -71,6 +87,11 @@ export function TooltipBox({
     Math.min(y - th / 2, containerHeight - th - offset)
   );
 
+  // Init springs at the *current* target — this component only mounts when
+  // the tooltip is visible, so target values are real cursor coords.
+  const animatedLeft = useSpring(targetX, springConfig);
+  const animatedTop = useSpring(targetY, springConfig);
+
   if (leftOverride === undefined) {
     animatedLeft.set(targetX);
   }
@@ -79,7 +100,7 @@ export function TooltipBox({
   }
 
   useLayoutEffect(() => {
-    if (!(visible && tooltipRef.current)) {
+    if (!tooltipRef.current) {
       return;
     }
     const el = tooltipRef.current;
@@ -106,7 +127,6 @@ export function TooltipBox({
       animatedTop.set(ty);
     }
   }, [
-    visible,
     x,
     y,
     containerWidth,
@@ -132,15 +152,6 @@ export function TooltipBox({
   const finalTop = topOverride ?? animatedTop;
   const isFlipped = flippedOverride ?? shouldFlipX;
   const transformOrigin = isFlipped ? 'right top' : 'left top';
-
-  const container = containerRef.current;
-  if (!(mounted && container)) {
-    return null;
-  }
-
-  if (!visible) {
-    return null;
-  }
 
   return createPortal(
     <motion.div

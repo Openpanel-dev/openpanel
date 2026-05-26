@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useChart } from './chart-context';
 import { cn } from '@/lib/utils';
@@ -45,9 +45,6 @@ function XAxisLabel({
     }
   }
 
-  // Zero-width container approach for perfect centering
-  // The wrapper is positioned exactly at x with width:0
-  // The inner span overflows and is centered via text-align
   return (
     <div
       className="absolute"
@@ -72,28 +69,53 @@ function XAxisLabel({
   );
 }
 
+/**
+ * Outer wrapper owns the mount guard. The expensive `labelsToShow` memo
+ * (which iterates `data` or builds `numTicks` ticks) lives in the memoized
+ * inner component — so it doesn't run on every render before the portal
+ * container is attached, and skips when props haven't changed.
+ */
 export function XAxis({
   numTicks = 5,
   tickerHalfWidth = 50,
   tickMode = 'domain',
 }: XAxisProps) {
-  const {
-    xScale,
-    margin,
-    tooltipData,
-    containerRef,
-    data,
-    xAccessor,
-    dateLabels,
-  } = useChart();
+  const { containerRef } = useChart();
   const [mounted, setMounted] = useState(false);
 
-  // Only render on client side after mount
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Generate tick labels: evenly spaced along the domain, or one per data row
+  const container = containerRef.current;
+  if (!(mounted && container)) {
+    return null;
+  }
+
+  return (
+    <XAxisInner
+      container={container}
+      numTicks={numTicks}
+      tickMode={tickMode}
+      tickerHalfWidth={tickerHalfWidth}
+    />
+  );
+}
+
+const XAxisInner = memo(function XAxisInner({
+  container,
+  numTicks,
+  tickMode,
+  tickerHalfWidth,
+}: {
+  container: HTMLElement;
+  numTicks: number;
+  tickMode: 'domain' | 'data';
+  tickerHalfWidth: number;
+}) {
+  const { xScale, margin, tooltipData, data, xAccessor, dateLabels } =
+    useChart();
+
   const labelsToShow = useMemo(() => {
     if (tickMode === 'data') {
       return data.map((d, i) => ({
@@ -120,12 +142,11 @@ export function XAxis({
     const endTime = endDate.getTime();
     const timeRange = endTime - startTime;
 
-    // Create evenly spaced dates from start to end
-    const tickCount = Math.max(2, numTicks); // At least first and last
+    const tickCount = Math.max(2, numTicks);
     const dates: Date[] = [];
 
     for (let i = 0; i < tickCount; i++) {
-      const t = i / (tickCount - 1); // 0 to 1
+      const t = i / (tickCount - 1);
       const time = startTime + t * timeRange;
       dates.push(new Date(time));
     }
@@ -143,13 +164,6 @@ export function XAxis({
   const isHovering = tooltipData !== null;
   const crosshairX = tooltipData ? tooltipData.x + margin.left : null;
 
-  // Use portal to render into the chart container
-  // Only render after mount on client side
-  const container = containerRef.current;
-  if (!(mounted && container)) {
-    return null;
-  }
-
   return createPortal(
     <div className="pointer-events-none absolute inset-0">
       {labelsToShow.map((item) => (
@@ -165,7 +179,7 @@ export function XAxis({
     </div>,
     container
   );
-}
+});
 
 XAxis.displayName = 'XAxis';
 

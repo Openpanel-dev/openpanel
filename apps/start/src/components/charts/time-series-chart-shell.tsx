@@ -6,6 +6,7 @@ import type { Transition } from "motion/react";
 import {
   Children,
   isValidElement,
+  memo,
   type ReactElement,
   type ReactNode,
   useCallback,
@@ -67,7 +68,22 @@ export interface TimeSeriesChartInnerProps {
   yScaleDomainMax?: number;
 }
 
-export function TimeSeriesChartInner({
+/**
+ * Outer guard short-circuits before any hooks run when the chart container
+ * is too small (eg. hidden by a parent layout). The expensive scale + memo
+ * work + the `useChartInteraction` hook live in the memoized core — so a
+ * hidden chart (width < 10) builds zero d3 scales, runs zero useMemos, and
+ * never instantiates useChartInteraction. The memo() boundary also skips
+ * re-renders when none of the parent-supplied props changed.
+ */
+export function TimeSeriesChartInner(props: TimeSeriesChartInnerProps) {
+  if (props.width < 10 || props.height < 10) {
+    return null;
+  }
+  return <TimeSeriesChartCore {...props} />;
+}
+
+const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   width,
   height,
   data,
@@ -194,10 +210,6 @@ export function TimeSeriesChartInner({
     canInteract,
   });
 
-  if (width < 10 || height < 10) {
-    return null;
-  }
-
   const defsChildren: ReactElement[] = [];
   const preOverlayChildren: ReactElement[] = [];
   const postOverlayChildren: ReactElement[] = [];
@@ -219,37 +231,70 @@ export function TimeSeriesChartInner({
     }
   });
 
-  const contextValue = {
-    data,
-    xScale,
-    yScale,
-    width,
-    height,
-    innerWidth,
-    innerHeight,
-    margin,
-    columnWidth,
-    tooltipData,
-    setTooltipData,
-    containerRef,
-    lines,
-    isLoaded,
-    animationDuration,
-    animationEasing,
-    enterTransition,
-    revealEpoch,
-    xAccessor,
-    dateLabels,
-    selection,
-    clearSelection,
-    composedBarDataKeys,
-    composedBarSize,
-    composedMaxBarSize,
-    composedBarGap,
-    composedStacked,
-    composedStackOffsets,
-    composedStackGap,
-  };
+  const contextValue = useMemo(
+    () => ({
+      data,
+      xScale,
+      yScale,
+      width,
+      height,
+      innerWidth,
+      innerHeight,
+      margin,
+      columnWidth,
+      tooltipData,
+      setTooltipData,
+      containerRef,
+      lines,
+      isLoaded,
+      animationDuration,
+      animationEasing,
+      enterTransition,
+      revealEpoch,
+      xAccessor,
+      dateLabels,
+      selection,
+      clearSelection,
+      composedBarDataKeys,
+      composedBarSize,
+      composedMaxBarSize,
+      composedBarGap,
+      composedStacked,
+      composedStackOffsets,
+      composedStackGap,
+    }),
+    [
+      data,
+      xScale,
+      yScale,
+      width,
+      height,
+      innerWidth,
+      innerHeight,
+      margin,
+      columnWidth,
+      tooltipData,
+      setTooltipData,
+      containerRef,
+      lines,
+      isLoaded,
+      animationDuration,
+      animationEasing,
+      enterTransition,
+      revealEpoch,
+      xAccessor,
+      dateLabels,
+      selection,
+      clearSelection,
+      composedBarDataKeys,
+      composedBarSize,
+      composedMaxBarSize,
+      composedBarGap,
+      composedStacked,
+      composedStackOffsets,
+      composedStackGap,
+    ]
+  );
 
   return (
     <ChartProvider value={contextValue}>
@@ -277,4 +322,4 @@ export function TimeSeriesChartInner({
       </svg>
     </ChartProvider>
   );
-}
+});

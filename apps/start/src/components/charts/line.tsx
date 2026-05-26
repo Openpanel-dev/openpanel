@@ -8,9 +8,10 @@ import { LinePath } from "@visx/shape";
 type CurveFactory = any;
 
 import { motion, useMotionTemplate, useSpring } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { chartCssVars, useChart } from "./chart-context";
 import { ChartRevealClip } from "./chart-reveal-clip";
+import { useLineSegmentHighlight } from "./use-line-segment-highlight";
 
 export interface LineProps {
   /** Key in data to use for y values */
@@ -54,120 +55,52 @@ export function Line({
 
   const pathRef = useRef<SVGPathElement>(null);
   const [pathLength, setPathLength] = useState(0);
+  // Cache the `d` attribute as state so the highlight `motion.path` reads a
+  // stable string ref instead of a DOM attribute on every render.
+  const [pathD, setPathD] = useState<string | null>(null);
 
-  // Unique gradient ID for this line
-  const gradientId = useMemo(
-    () => `line-gradient-${dataKey}-${Math.random().toString(36).slice(2, 9)}`,
-    [dataKey]
-  );
+  // `useId()` is SSR-stable and skips per-render `Math.random()` / base36 work.
+  const reactId = useId();
+  const gradientId = `line-gradient-${dataKey}-${reactId}`;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: data, innerWidth
   useEffect(() => {
-    if (pathRef.current && animate) {
-      const len = pathRef.current.getTotalLength();
-      if (len > 0) {
-        setPathLength(len);
-      }
-    }
-  }, [animate, data, innerWidth]);
+    const path = pathRef.current;
+    if (!path) return;
+    const len = path.getTotalLength();
+    if (len > 0) setPathLength(len);
+    const d = path.getAttribute("d");
+    if (d) setPathD(d);
+  }, [data, innerWidth, yScale]);
 
-  // Binary search to find path length at a given X coordinate
-  const findLengthAtX = useCallback(
-    (targetX: number): number => {
-      const path = pathRef.current;
-      if (!path || pathLength === 0) {
-        return 0;
-      }
-      let low = 0;
-      let high = pathLength;
-      const tolerance = 0.5;
-
-      while (high - low > tolerance) {
-        const mid = (low + high) / 2;
-        const point = path.getPointAtLength(mid);
-        if (point.x < targetX) {
-          low = mid;
-        } else {
-          high = mid;
-        }
-      }
-      return (low + high) / 2;
-    },
-    [pathLength]
-  );
-
-  // Calculate segment bounds for highlight from either selection or hover
-  const segmentBounds = useMemo(() => {
-    if (!pathRef.current || pathLength === 0) {
-      return { startLength: 0, segmentLength: 0, isActive: false };
-    }
-
-    // Selection takes priority over hover
-    if (selection?.active) {
-      const startLength = findLengthAtX(selection.startX);
-      const endLength = findLengthAtX(selection.endX);
-      return {
-        startLength,
-        segmentLength: endLength - startLength,
-        isActive: true,
-      };
-    }
-
-    if (!tooltipData) {
-      return { startLength: 0, segmentLength: 0, isActive: false };
-    }
-
-    const idx = tooltipData.index;
-    const startIdx = Math.max(0, idx - 1);
-    const endIdx = Math.min(data.length - 1, idx + 1);
-
-    const startPoint = data[startIdx];
-    const endPoint = data[endIdx];
-    if (!(startPoint && endPoint)) {
-      return { startLength: 0, segmentLength: 0, isActive: false };
-    }
-
-    const startX = xScale(xAccessor(startPoint)) ?? 0;
-    const endX = xScale(xAccessor(endPoint)) ?? 0;
-
-    const startLength = findLengthAtX(startX);
-    const endLength = findLengthAtX(endX);
-
-    return {
-      startLength,
-      segmentLength: endLength - startLength,
-      isActive: true,
-    };
-  }, [
+  // Chord-length based highlight bounds — no `getPointAtLength` binary search
+  // per hover. Memoized on (data, scales, dataKey); subsequent hovers are
+  // O(1) lookups instead of ~30-60 SVG DOM ops per Line.
+  const segmentBounds = useLineSegmentHighlight({
+    pathLength,
+    data,
     tooltipData,
     selection,
-    data,
     xScale,
-    pathLength,
+    yScale,
     xAccessor,
-    findLengthAtX,
-  ]);
+    dataKey,
+  });
 
-  // Springs for smooth highlight animation (both offset AND segment length)
-  const springConfig = { stiffness: 180, damping: 28 };
+  // Springs for smooth highlight animation (both offset AND segment length).
+  // High stiffness so they snap near-instantly between data buckets.
+  const springConfig = { stiffness: 1000, damping: 60 };
   const offsetSpring = useSpring(0, springConfig);
   const segmentLengthSpring = useSpring(0, springConfig);
 
-  // Update springs when segment bounds change
-  useEffect(() => {
-    offsetSpring.set(-segmentBounds.startLength);
-    segmentLengthSpring.set(segmentBounds.segmentLength);
-  }, [
-    segmentBounds.startLength,
-    segmentBounds.segmentLength,
-    offsetSpring,
-    segmentLengthSpring,
-  ]);
+  // Set spring targets directly in render — motion schedules its own animation
+  // frame internally and doesn't trigger a React re-render. The effect-based
+  // version cost a double render per hover update.
+  offsetSpring.set(-segmentBounds.startLength);
+  segmentLengthSpring.set(segmentBounds.segmentLength);
 
-  // Create animated strokeDasharray using motion template
   const animatedDasharray = useMotionTemplate`${segmentLengthSpring} ${pathLength}`;
 
-  // Get y value for a data point
   const getY = useCallback(
     (d: Record<string, unknown>) => {
       const value = d[dataKey];
@@ -228,11 +161,12 @@ export function Line({
         </motion.g>
       </g>
 
-      {/* Highlight segment on hover */}
-      {showHighlight && isHovering && isLoaded && pathRef.current && (
+      {/* Highlight segment on hover — reads cached pathD instead of doing a
+          DOM attribute read on every render. */}
+      {showHighlight && isHovering && isLoaded && pathD && (
         <motion.path
           animate={{ opacity: 1 }}
-          d={pathRef.current.getAttribute("d") || ""}
+          d={pathD}
           exit={{ opacity: 0 }}
           fill="none"
           initial={{ opacity: 0 }}

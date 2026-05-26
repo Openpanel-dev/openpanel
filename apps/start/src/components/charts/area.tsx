@@ -202,7 +202,7 @@ export function Area({
   ]);
 
   // Springs for smooth highlight animation (both offset AND segment length)
-  const springConfig = { stiffness: 180, damping: 28 };
+  const springConfig = { stiffness: 1000, damping: 60 };
   const offsetSpring = useSpring(0, springConfig);
   const segmentLengthSpring = useSpring(0, springConfig);
 

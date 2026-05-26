@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useChart } from './chart-context';
+import { useChartStable } from './chart-context';
 
 export interface YAxisProps {
   /** Number of ticks to show. Default: 5 */
@@ -27,17 +27,50 @@ function formatLabel(
   return String(value);
 }
 
+/**
+ * Outer wrapper owns the mount guard. The tick-generation memo runs only
+ * once the portal container is attached and skips entirely when the inner
+ * props are unchanged.
+ */
 export function YAxis({
   numTicks = 5,
   formatLargeNumbers = true,
   formatValue,
 }: YAxisProps) {
-  const { yScale, margin, containerRef } = useChart();
+  const { containerRef } = useChartStable();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const container = containerRef.current;
+  if (!(mounted && container)) {
+    return null;
+  }
+
+  return (
+    <YAxisInner
+      container={container}
+      formatLargeNumbers={formatLargeNumbers}
+      formatValue={formatValue}
+      numTicks={numTicks}
+    />
+  );
+}
+
+const YAxisInner = memo(function YAxisInner({
+  container,
+  numTicks,
+  formatLargeNumbers,
+  formatValue,
+}: {
+  container: HTMLElement;
+  numTicks: number;
+  formatLargeNumbers: boolean;
+  formatValue?: (value: number) => string;
+}) {
+  const { yScale, margin } = useChartStable();
 
   const ticks = useMemo(() => {
     const tickValues = yScale.ticks(numTicks);
@@ -47,11 +80,6 @@ export function YAxis({
       label: formatLabel(value, formatLargeNumbers, formatValue),
     }));
   }, [yScale, margin.top, numTicks, formatLargeNumbers, formatValue]);
-
-  const container = containerRef.current;
-  if (!(mounted && container)) {
-    return null;
-  }
 
   return createPortal(
     <div
@@ -70,7 +98,7 @@ export function YAxis({
     </div>,
     container
   );
-}
+});
 
 YAxis.displayName = 'YAxis';
 
