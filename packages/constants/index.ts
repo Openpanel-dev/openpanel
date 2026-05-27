@@ -219,6 +219,7 @@ export function isHourIntervalEnabledByRange(range: keyof typeof timeWindows) {
     isMinuteIntervalEnabledByRange(range) ||
     range === 'today' ||
     range === 'yesterday' ||
+    range === '3d' ||
     range === '7d'
   );
 }
@@ -233,8 +234,10 @@ export function getDefaultIntervalByRange(
     return 'hour';
   }
   if (
+    range === '3d' ||
     range === '7d' ||
     range === '30d' ||
+    range === '3m' ||
     range === 'lastMonth' ||
     range === 'monthToDate'
   ) {
