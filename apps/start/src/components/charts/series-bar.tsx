@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { useMemo } from "react";
 import { chartCssVars, useChart } from "./chart-context";
 import { transitionWithDelay } from "./motion-utils";
+import { computeSeriesBarWidth } from "./series-bar-layout";
 
 function computeSeriesBarLayout(input: {
   stacked: boolean;
@@ -146,33 +147,29 @@ export function SeriesBar({
 
   const isLastSeries = seriesIndex === n - 1;
 
-  const slot = useMemo(() => {
-    if (columnWidth > 0) {
-      return columnWidth;
-    }
-    if (data.length < 2) {
-      return innerWidth;
-    }
-    return innerWidth / (data.length - 1);
-  }, [columnWidth, data.length, innerWidth]);
-
-  const barWidth = useMemo(() => {
-    const groupCount = stacked ? 1 : n;
-    let w =
-      composedBarSize ??
-      Math.min(slot * 0.88, composedMaxBarSize ?? Number.POSITIVE_INFINITY);
-    if (composedMaxBarSize != null) {
-      w = Math.min(w, composedMaxBarSize);
-    }
-    if (groupCount > 1) {
-      const maxGroup = slot * 0.92;
-      const needed = groupCount * w + (groupCount - 1) * gap;
-      if (needed > maxGroup && maxGroup > 0) {
-        w = Math.max(4, (maxGroup - (groupCount - 1) * gap) / groupCount);
-      }
-    }
-    return Math.max(2, w);
-  }, [composedBarSize, composedMaxBarSize, gap, n, slot, stacked]);
+  const barWidth = useMemo(
+    () =>
+      computeSeriesBarWidth({
+        innerWidth,
+        dataLength: data.length,
+        columnWidth,
+        seriesCount: n,
+        composedBarSize,
+        composedMaxBarSize,
+        composedBarGap: gap,
+        stacked,
+      }),
+    [
+      columnWidth,
+      composedBarSize,
+      composedMaxBarSize,
+      data.length,
+      gap,
+      innerWidth,
+      n,
+      stacked,
+    ]
+  );
 
   const totalAnimDuration = animationDuration || 1100;
   const staggerSpread = totalAnimDuration * 0.4;

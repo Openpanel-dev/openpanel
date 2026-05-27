@@ -5,6 +5,7 @@ import { bisector, extent } from "d3-array";
 import type { Transition } from "motion/react";
 import {
   Children,
+  cloneElement,
   isValidElement,
   memo,
   type ReactElement,
@@ -23,7 +24,59 @@ import {
   decimateTimeSeries,
   maxRenderPointsForWidth,
 } from "./decimate-time-series";
+import {
+  computeSeriesBarRevealClipPadding,
+  computeSeriesBarWidth,
+} from "./series-bar-layout";
 import { useChartInteraction } from "./use-chart-interaction";
+
+function collectNumericExtents(
+  data: Record<string, unknown>[],
+  dataKeys: string[]
+) {
+  let minValue = Number.POSITIVE_INFINITY;
+  let maxValue = Number.NEGATIVE_INFINITY;
+
+  for (const d of data) {
+    for (const key of dataKeys) {
+      const value = d[key];
+      if (typeof value === "number") {
+        if (value < minValue) {
+          minValue = value;
+        }
+        if (value > maxValue) {
+          maxValue = value;
+        }
+      }
+    }
+  }
+
+  if (minValue === Number.POSITIVE_INFINITY) {
+    return { minValue: 0, maxValue: 100 };
+  }
+
+  return { minValue, maxValue };
+}
+
+function resolveTimeSeriesYDomain(
+  data: Record<string, unknown>[],
+  dataKeys: string[],
+  yScaleDomainMax: number | undefined
+): [number, number] {
+  if (yScaleDomainMax != null && yScaleDomainMax > 0) {
+    return [0, yScaleDomainMax * 1.1];
+  }
+
+  const { minValue, maxValue } = collectNumericExtents(data, dataKeys);
+
+  if (minValue >= 0) {
+    const top = maxValue <= 0 ? 100 : maxValue * 1.1;
+    return [0, top];
+  }
+
+  const padding = (maxValue - minValue) * 0.05 || 1;
+  return [minValue - padding, maxValue + padding];
+}
 
 /** Markers render after the interaction overlay so they stay clickable. */
 export function isPostOverlayComponent(child: ReactElement): boolean {
@@ -43,6 +96,13 @@ export function isPostOverlayComponent(child: ReactElement): boolean {
       : "";
 
   return componentName === "ChartMarkers" || componentName === "MarkerGroup";
+}
+
+function ensureChildKey(child: ReactElement, index: number): ReactElement {
+  if (child.key != null) {
+    return child;
+  }
+  return cloneElement(child, { key: `chart-child-${index}` });
 }
 
 export interface TimeSeriesChartInnerProps {
@@ -152,28 +212,12 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   }, [innerWidth, data.length]);
 
   const yScale = useMemo(() => {
-    let maxValue = 0;
-    if (yScaleDomainMax != null && yScaleDomainMax > 0) {
-      maxValue = yScaleDomainMax;
-    } else {
-      const dataKeys = lines.map((line) => line.dataKey);
-      for (const d of data) {
-        for (const key of dataKeys) {
-          const value = d[key];
-          if (typeof value === "number" && value > maxValue) {
-            maxValue = value;
-          }
-        }
-      }
-
-      if (maxValue === 0) {
-        maxValue = 100;
-      }
-    }
+    const dataKeys = lines.map((line) => line.dataKey);
+    const domain = resolveTimeSeriesYDomain(data, dataKeys, yScaleDomainMax);
 
     return scaleLinear({
       range: [innerHeight, 0],
-      domain: [0, maxValue * 1.1],
+      domain,
       nice: true,
     });
   }, [innerHeight, data, lines, yScaleDomainMax]);
@@ -217,20 +261,22 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   const preOverlayChildren: ReactElement[] = [];
   const postOverlayChildren: ReactElement[] = [];
 
-  Children.forEach(children, (child) => {
+  Children.forEach(children, (child, index) => {
     if (!isValidElement(child)) {
       return;
     }
 
-    if (isGradientDefComponent(child)) {
-      defsChildren.push(child);
-    } else if (isPatternDefComponent(child)) {
+    const keyedChild = ensureChildKey(child, index);
+
+    if (isGradientDefComponent(keyedChild)) {
+      defsChildren.push(keyedChild);
+    } else if (isPatternDefComponent(keyedChild)) {
       // Keep pattern defs in the plot <g> (same as main) — hoisting breaks url(#id) fills.
-      preOverlayChildren.push(child);
-    } else if (isPostOverlayComponent(child)) {
-      postOverlayChildren.push(child);
+      preOverlayChildren.push(keyedChild);
+    } else if (isPostOverlayComponent(keyedChild)) {
+      postOverlayChildren.push(keyedChild);
     } else {
-      preOverlayChildren.push(child);
+      preOverlayChildren.push(keyedChild);
     }
   });
 
@@ -318,6 +364,37 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
     duration: animationDuration / 1000,
   };
 
+  const revealClipPadding = useMemo(() => {
+    if (!composedBarDataKeys?.length) {
+      return 0;
+    }
+    const barWidth = computeSeriesBarWidth({
+      innerWidth,
+      dataLength: data.length,
+      columnWidth,
+      seriesCount: composedBarDataKeys.length,
+      composedBarSize,
+      composedMaxBarSize,
+      composedBarGap,
+      stacked: composedStacked,
+    });
+    return computeSeriesBarRevealClipPadding({
+      barWidth,
+      seriesCount: composedBarDataKeys.length,
+      gap: composedBarGap,
+      stacked: composedStacked,
+    });
+  }, [
+    columnWidth,
+    composedBarDataKeys,
+    composedBarGap,
+    composedBarSize,
+    composedMaxBarSize,
+    composedStacked,
+    data.length,
+    innerWidth,
+  ]);
+
   return (
     <ChartProvider value={contextValue}>
       <svg aria-hidden="true" height={height} width={width}>
@@ -328,6 +405,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
               clipPathId={clipPathId}
               enterTransition={effectiveEnterTransition}
               height={innerHeight + 20}
+              padding={revealClipPadding}
               revealEpoch={revealEpoch}
               targetWidth={innerWidth}
             />

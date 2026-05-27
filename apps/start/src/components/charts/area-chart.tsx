@@ -146,7 +146,7 @@ export function AreaChart({
 
   return (
     <div
-      className={cn("relative w-full overflow-clip", className)}
+      className={cn("relative w-full", className)}
       ref={containerRef}
       style={{ aspectRatio, touchAction: "none" }}
     >

@@ -4,7 +4,12 @@ import { motion, useSpring } from "motion/react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { type SpringConfig, useChartConfig } from "../chart-config-context";
-import { chartCssVars, useChart, useChartStable } from "../chart-context";
+import {
+  chartCssVars,
+  type LineConfig,
+  useChart,
+  useChartStable,
+} from "../chart-context";
 import { weekdayDateFmt } from "../chart-formatters";
 import { DateTicker } from "./date-ticker";
 import { TooltipBox } from "./tooltip-box";
@@ -31,6 +36,13 @@ export interface ChartTooltipProps {
   }) => React.ReactNode;
   /** Custom row renderer - return array of TooltipRow */
   rows?: (point: Record<string, unknown>) => TooltipRow[];
+  /**
+   * Override tooltip dot fill. When omitted and `rows` is set, dot colors match row colors.
+   * When a function, receives the hovered point and line config.
+   */
+  dotColor?:
+    | string
+    | ((point: Record<string, unknown>, line: LineConfig) => string);
   /** Additional content to show below rows (e.g., markers) */
   children?: React.ReactNode;
   /** Custom class name */
@@ -52,6 +64,7 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
   indicatorColor: indicatorColorProp,
   content,
   rows: rowsRenderer,
+  dotColor: dotColorProp,
   children,
   className = "",
   container,
@@ -103,6 +116,23 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
       value: (tooltipData.point[line.dataKey] as number) ?? 0,
     }));
   }, [tooltipData, lines, rowsRenderer]);
+
+  const resolveDotColor = useMemo(() => {
+    return (line: LineConfig, index: number): string => {
+      if (rowsRenderer && tooltipRows[index]?.color) {
+        return tooltipRows[index].color;
+      }
+      if (dotColorProp != null) {
+        if (typeof dotColorProp === "function" && tooltipData) {
+          return dotColorProp(tooltipData.point, line);
+        }
+        if (typeof dotColorProp === "string") {
+          return dotColorProp;
+        }
+      }
+      return line.stroke;
+    };
+  }, [dotColorProp, rowsRenderer, tooltipData, tooltipRows]);
 
   // Resolve indicator color (static or from hovered point)
   const indicatorColor = useMemo(() => {
@@ -166,9 +196,9 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
           width="100%"
         >
           <g transform={`translate(${margin.left},${margin.top})`}>
-            {lines.map((line) => (
+            {lines.map((line, index) => (
               <TooltipDot
-                color={line.stroke}
+                color={resolveDotColor(line, index)}
                 key={line.dataKey}
                 springConfig={springConfig}
                 strokeColor={chartCssVars.background}

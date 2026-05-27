@@ -52,6 +52,16 @@ function getChildComponentName(child: ReactElement): string {
     : "";
 }
 
+function upsertLineConfig(lines: LineConfig[], config: LineConfig): void {
+  const index = lines.findIndex((line) => line.dataKey === config.dataKey);
+  if (index === -1) {
+    lines.push(config);
+    return;
+  }
+  // Area+Line pairs share a dataKey — keep the later config (Line over Area).
+  lines[index] = config;
+}
+
 function tryAppendSeriesBar(
   child: ReactElement,
   lines: LineConfig[],
@@ -66,7 +76,7 @@ function tryAppendSeriesBar(
     return true;
   }
   barDataKeys.push(props.dataKey);
-  lines.push({
+  upsertLineConfig(lines, {
     dataKey: props.dataKey,
     stroke: props.stroke || props.fill || "var(--chart-line-primary)",
     strokeWidth: 0,
@@ -81,7 +91,7 @@ function tryAppendLine(child: ReactElement, lines: LineConfig[]): boolean {
   }
   const props = child.props as LineProps;
   if (props.dataKey) {
-    lines.push({
+    upsertLineConfig(lines, {
       dataKey: props.dataKey,
       stroke: props.stroke || "var(--chart-line-primary)",
       strokeWidth: props.strokeWidth ?? 2.5,
@@ -97,7 +107,7 @@ function tryAppendArea(child: ReactElement, lines: LineConfig[]): boolean {
   }
   const props = child.props as AreaProps;
   if (props.dataKey) {
-    lines.push({
+    upsertLineConfig(lines, {
       dataKey: props.dataKey,
       stroke: props.stroke || props.fill || "var(--chart-line-primary)",
       strokeWidth: props.strokeWidth ?? 2,
@@ -283,7 +293,7 @@ export function ComposedChart({
 
   return (
     <div
-      className={cn("relative w-full overflow-clip", className)}
+      className={cn("relative w-full", className)}
       ref={containerRef}
       style={{ aspectRatio, touchAction: "none" }}
     >

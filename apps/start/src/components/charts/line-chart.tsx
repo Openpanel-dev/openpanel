@@ -5,6 +5,7 @@ import type { Transition } from "motion/react";
 import {
   Children,
   isValidElement,
+  type ReactElement,
   type ReactNode,
   useMemo,
   useRef,
@@ -37,38 +38,71 @@ export interface LineChartProps {
 
 const DEFAULT_MARGIN: Margin = { top: 40, right: 40, bottom: 40, left: 40 };
 
+/** Series renderers that carry a dataKey but must not drive the shared y-domain. */
+const LINE_DOMAIN_EXCLUDED_NAMES = new Set([
+  "ProfitLossLine",
+  "Area",
+  "SeriesBar",
+  "Scatter",
+  "Candlestick",
+  "Bar",
+  "PatternArea",
+]);
+
+function getChildComponentName(child: ReactElement) {
+  const childType = child.type as { displayName?: string; name?: string };
+  return typeof child.type === "function"
+    ? childType.displayName || childType.name || ""
+    : "";
+}
+
+function registersLineDomain(
+  child: ReactElement,
+  props: LineProps | undefined
+) {
+  if (!props?.dataKey) {
+    return false;
+  }
+
+  const componentName = getChildComponentName(child);
+  if (componentName === "Line" || child.type === Line) {
+    return true;
+  }
+  if (LINE_DOMAIN_EXCLUDED_NAMES.has(componentName)) {
+    return false;
+  }
+  // MDX / duplicate bundle instances may not share the same `Line` reference.
+  return typeof props.dataKey === "string" && props.dataKey.length > 0;
+}
+
 function extractLineConfigs(children: ReactNode): LineConfig[] {
   const configs: LineConfig[] = [];
 
-  Children.forEach(children, (child) => {
-    if (!isValidElement(child)) {
-      return;
-    }
+  const visit = (node: ReactNode) => {
+    Children.forEach(node, (child) => {
+      if (!isValidElement(child)) {
+        return;
+      }
 
-    const childType = child.type as {
-      displayName?: string;
-      name?: string;
-    };
-    const componentName =
-      typeof child.type === "function"
-        ? childType.displayName || childType.name || ""
-        : "";
+      const props = child.props as LineProps | undefined;
 
-    const props = child.props as LineProps | undefined;
-    const isLineComponent =
-      componentName === "Line" ||
-      child.type === Line ||
-      (props && typeof props.dataKey === "string" && props.dataKey.length > 0);
+      if (registersLineDomain(child, props) && props?.dataKey) {
+        configs.push({
+          dataKey: props.dataKey,
+          stroke: props.stroke || "var(--chart-line-primary)",
+          strokeWidth: props.strokeWidth || 2.5,
+        });
+        return;
+      }
 
-    if (isLineComponent && props?.dataKey) {
-      configs.push({
-        dataKey: props.dataKey,
-        stroke: props.stroke || "var(--chart-line-primary)",
-        strokeWidth: props.strokeWidth || 2.5,
-      });
-    }
-  });
+      const childProps = child.props as { children?: ReactNode } | undefined;
+      if (childProps?.children) {
+        visit(childProps.children);
+      }
+    });
+  };
 
+  visit(children);
   return configs;
 }
 
@@ -138,7 +172,7 @@ export function LineChart({
 
   return (
     <div
-      className={cn("relative w-full overflow-clip", className)}
+      className={cn("relative w-full", className)}
       ref={containerRef}
       style={{ aspectRatio, touchAction: "none" }}
     >

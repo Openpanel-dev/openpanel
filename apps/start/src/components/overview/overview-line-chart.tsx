@@ -1,20 +1,19 @@
-import { cn } from '@/utils/cn';
-import { getChartColor } from '@/utils/theme';
+import type { timeWindows } from '@openpanel/constants';
+import type { IInterval } from '@openpanel/validation';
 import { curveMonotoneX } from '@visx/curve';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-import type { RouterOutputs } from '@/trpc/client';
-import type { IInterval } from '@openpanel/validation';
-import type { timeWindows } from '@openpanel/constants';
 import { Grid } from '../charts/grid';
 import { Line } from '../charts/line';
 import { LineChart } from '../charts/line-chart';
-import { OPChartTooltip } from '../charts/op-tooltip';
-import { OPDatePill } from '../charts/op-date-pill';
 import { useDashedTail } from '../charts/op-dashed-tail';
+import { OPDatePill } from '../charts/op-date-pill';
+import { OPChartTooltip } from '../charts/op-tooltip';
 import { XAxis } from '../charts/x-axis';
 import { YAxis } from '../charts/y-axis';
 import { SerieIcon } from '../report-chart/common/serie-icon';
+import type { RouterOutputs } from '@/trpc/client';
+import { cn } from '@/utils/cn';
+import { getChartColor } from '@/utils/theme';
 
 type SeriesData =
   RouterOutputs['overview']['topGenericSeries']['items'][number];
@@ -48,7 +47,7 @@ function getSeriesKey(item: SeriesData): string {
 
 function transformData(
   items: SeriesData[],
-  visibleSeries: SeriesMeta[],
+  visibleSeries: SeriesMeta[]
 ): ChartPoint[] {
   const allDates = new Set<string>();
   items.forEach((item) => {
@@ -101,7 +100,7 @@ export function OverviewLineChart({
 
   const chartData = useMemo(
     () => transformData(data.items, visibleSeries),
-    [data.items, visibleSeries],
+    [data.items, visibleSeries]
   );
 
   const dashFromIndex = useDashedTail({ data: chartData, range, interval });
@@ -109,7 +108,7 @@ export function OverviewLineChart({
   if (visibleSeries.length === 0) {
     return (
       <div
-        className={cn('flex items-center justify-center h-[358px]', className)}
+        className={cn('flex h-[358px] items-center justify-center', className)}
       >
         <div className="text-muted-foreground text-sm">
           {searchQuery ? 'No results found' : 'No data available'}
@@ -122,35 +121,44 @@ export function OverviewLineChart({
     <div className={cn('w-full p-4', className)}>
       <div className="h-[300px] w-full">
         <LineChart
-          data={chartData}
-          xDataKey="date"
+          animationDuration={0}
           aspectRatio="auto"
           className="h-full"
+          data={chartData}
           margin={{ top: 8, right: 12, bottom: 40, left: 32 }}
-          animationDuration={0}
+          xDataKey="date"
         >
           <Grid horizontal />
           <YAxis />
           <XAxis />
           {visibleSeries.map((series) => (
             <Line
-              key={series.key}
+              animate={false}
+              curve={curveMonotoneX}
+              dashArray="4,4"
+              dashFromIndex={dashFromIndex}
               dataKey={`${series.key}:pageviews`}
+              fadeEdges="left"
+              key={series.key}
               stroke={series.color}
               strokeWidth={1.5}
-              curve={curveMonotoneX}
-              animate={false}
-              fadeEdges={false}
-              dashFromIndex={dashFromIndex}
-              dashArray="4,4"
             />
           ))}
           <OPDatePill interval={interval} />
           <OPChartTooltip<ChartPoint>
+            extra={() => {
+              const total = visibleSeries.length;
+              const hidden = Math.max(0, total - TOOLTIP_LIMIT);
+              if (hidden === 0) {
+                return null;
+              }
+              return (
+                <div className="text-muted-foreground text-sm">
+                  and {hidden} more {hidden === 1 ? 'item' : 'items'}
+                </div>
+              );
+            }}
             interval={interval}
-            showDots
-            showCrosshair
-            showDatePill={false}
             rows={(point) => {
               const ranked = visibleSeries
                 .map((series) => {
@@ -201,16 +209,9 @@ export function OverviewLineChart({
                 ],
               }));
             }}
-            extra={(point) => {
-              const total = visibleSeries.length;
-              const hidden = Math.max(0, total - TOOLTIP_LIMIT);
-              if (hidden === 0) return null;
-              return (
-                <div className="text-muted-foreground text-sm">
-                  and {hidden} more {hidden === 1 ? 'item' : 'items'}
-                </div>
-              );
-            }}
+            showCrosshair
+            showDatePill={false}
+            showDots
           />
         </LineChart>
       </div>
@@ -227,20 +228,24 @@ function LegendScrollable({ items }: { items: SeriesMeta[] }) {
 
   const updateGradients = useCallback(() => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const { scrollLeft, scrollWidth, clientWidth } = el;
     const hasOverflow = scrollWidth > clientWidth;
 
     setShowLeftGradient(hasOverflow && scrollLeft > 0);
     setShowRightGradient(
-      hasOverflow && scrollLeft < scrollWidth - clientWidth - 1,
+      hasOverflow && scrollLeft < scrollWidth - clientWidth - 1
     );
   }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     updateGradients();
 
@@ -261,14 +266,14 @@ function LegendScrollable({ items }: { items: SeriesMeta[] }) {
     <div className="relative mt-4 -mb-2">
       <div
         className={cn(
-          'pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-card to-transparent transition-opacity duration-200',
-          showLeftGradient ? 'opacity-100' : 'opacity-0',
+          'pointer-events-none absolute top-0 left-0 z-10 h-full w-8 bg-gradient-to-r from-card to-transparent transition-opacity duration-200',
+          showLeftGradient ? 'opacity-100' : 'opacity-0'
         )}
       />
 
       <div
+        className="hide-scrollbar flex gap-x-4 gap-y-1 overflow-x-auto px-2 py-1 text-xs"
         ref={scrollRef}
-        className="flex gap-x-4 gap-y-1 overflow-x-auto px-2 py-1 hide-scrollbar text-xs"
       >
         {items.map((series) => (
           <div
@@ -277,7 +282,7 @@ function LegendScrollable({ items }: { items: SeriesMeta[] }) {
             style={{ color: series.color }}
           >
             <SerieIcon name={series.prefix || series.name} />
-            <span className="font-semibold whitespace-nowrap">
+            <span className="whitespace-nowrap font-semibold">
               {series.prefix && (
                 <>
                   <span className="text-muted-foreground">{series.prefix}</span>
@@ -292,8 +297,8 @@ function LegendScrollable({ items }: { items: SeriesMeta[] }) {
 
       <div
         className={cn(
-          'pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-card to-transparent transition-opacity duration-200',
-          showRightGradient ? 'opacity-100' : 'opacity-0',
+          'pointer-events-none absolute top-0 right-0 z-10 h-full w-8 bg-gradient-to-l from-card to-transparent transition-opacity duration-200',
+          showRightGradient ? 'opacity-100' : 'opacity-0'
         )}
       />
     </div>
@@ -307,21 +312,17 @@ export function OverviewLineChartLoading({
 }) {
   return (
     <div
-      className={cn('flex items-center justify-center h-[358px]', className)}
+      className={cn('flex h-[358px] items-center justify-center', className)}
     >
       <div className="text-muted-foreground text-sm">Loading...</div>
     </div>
   );
 }
 
-export function OverviewLineChartEmpty({
-  className,
-}: {
-  className?: string;
-}) {
+export function OverviewLineChartEmpty({ className }: { className?: string }) {
   return (
     <div
-      className={cn('flex items-center justify-center h-[358px]', className)}
+      className={cn('flex h-[358px] items-center justify-center', className)}
     >
       <div className="text-muted-foreground text-sm">No data available</div>
     </div>

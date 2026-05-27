@@ -23,6 +23,16 @@ export interface GridProps {
   strokeWidth?: number;
   /** Grid line dash array. Default: "4,4" for dashed lines */
   strokeDasharray?: string;
+  /** Horizontal row values rendered with alternate styling (e.g. zero baseline). */
+  highlightRowValues?: number[];
+  /** Stroke for highlighted rows. Default: var(--chart-foreground-muted) */
+  highlightRowStroke?: string;
+  /** Stroke opacity for highlighted rows. Default: 1 */
+  highlightRowStrokeOpacity?: number;
+  /** Stroke width for highlighted rows. Default: 1 */
+  highlightRowStrokeWidth?: number;
+  /** Dash array for highlighted rows. Default: solid line */
+  highlightRowStrokeDasharray?: string;
   /** Enable horizontal fade effect on grid rows (fades at left/right). Default: true */
   fadeHorizontal?: boolean;
   /** Enable vertical fade effect on grid columns (fades at top/bottom). Default: false */
@@ -39,6 +49,11 @@ export function Grid({
   strokeOpacity = 1,
   strokeWidth = 1,
   strokeDasharray = "4,4",
+  highlightRowValues,
+  highlightRowStroke = chartCssVars.foregroundMuted,
+  highlightRowStrokeOpacity = 1,
+  highlightRowStrokeWidth = 1,
+  highlightRowStrokeDasharray = "0",
   fadeHorizontal = true,
   fadeVertical = false,
 }: GridProps) {
@@ -127,6 +142,30 @@ export function Grid({
           />
         </g>
       )}
+      {horizontal && highlightRowValues && highlightRowValues.length > 0 ? (
+        <g className="chart-grid-highlight-rows">
+          {highlightRowValues.map((value) => {
+            const y = yScale(value);
+            if (y == null || !Number.isFinite(y)) {
+              return null;
+            }
+
+            return (
+              <line
+                key={value}
+                stroke={highlightRowStroke}
+                strokeDasharray={highlightRowStrokeDasharray}
+                strokeOpacity={highlightRowStrokeOpacity}
+                strokeWidth={highlightRowStrokeWidth}
+                x1={0}
+                x2={innerWidth}
+                y1={y}
+                y2={y}
+              />
+            );
+          })}
+        </g>
+      ) : null}
       {vertical && columnScale && typeof columnScale === "function" && (
         <g mask={fadeVertical ? `url(#${vMaskId})` : undefined}>
           <GridColumns

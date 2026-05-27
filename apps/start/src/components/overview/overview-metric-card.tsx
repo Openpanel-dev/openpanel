@@ -91,7 +91,7 @@ export function OverviewMetricCard({
         </div>
         <div className="mt-1 flex items-baseline gap-0.5 leading-none">
           {isLoading ? (
-            <Skeleton className="h-6 w-20" />
+            <Skeleton className="h-5 w-20" />
           ) : (
             <MetricValue value={displayValue} unit={unit} />
           )}
