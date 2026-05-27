@@ -115,6 +115,7 @@ describe('incomingEvent', () => {
       properties: {
         __hash: undefined,
         __query: undefined,
+        __syncedAt: expect.any(String),
       },
       createdAt: timestamp,
       country: 'US',
@@ -223,6 +224,7 @@ describe('incomingEvent', () => {
       properties: {
         __hash: undefined,
         __query: undefined,
+        __syncedAt: expect.any(String),
       },
       createdAt: timestamp,
       country: 'US',
@@ -330,6 +332,7 @@ describe('incomingEvent', () => {
         custom_property: 'test_value',
         __hash: undefined,
         __query: undefined,
+        __syncedAt: expect.any(String),
       },
       createdAt: timestamp,
       country: 'CA',
@@ -396,6 +399,7 @@ describe('incomingEvent', () => {
         custom_property: 'test_value',
         __hash: undefined,
         __query: undefined,
+        __syncedAt: expect.any(String),
       },
       createdAt: timestamp,
       country: 'US',
