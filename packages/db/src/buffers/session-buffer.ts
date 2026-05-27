@@ -196,6 +196,14 @@ export class SessionBuffer extends BaseBuffer {
           60 * 60,
         );
       }
+      if (newSession.device_id) {
+        multi.set(
+          `session:${newSession.project_id}:${newSession.device_id}`,
+          JSON.stringify(newSession),
+          'EX',
+          60 * 60,
+        );
+      }
       for (const session of sessions) {
         multi.rpush(this.redisKey, JSON.stringify(session));
       }
