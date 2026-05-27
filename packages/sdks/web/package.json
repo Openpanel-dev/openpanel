@@ -13,8 +13,8 @@
   "peerDependencies": {},
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
-    "@types/node": "catalog:",
+    "@types/node": "^24.7.1",
     "tsup": "^7.2.0",
-    "typescript": "catalog:"
+    "typescript": "^5.9.3"
   }
 }
