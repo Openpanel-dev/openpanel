@@ -7,20 +7,19 @@ import { AreaClosed, LinePath } from "@visx/shape";
 // biome-ignore lint/suspicious/noExplicitAny: d3 curve factory type
 type CurveFactory = any;
 
-import { motion } from "motion/react";
 import { useCallback, useId, useRef } from "react";
 import { AreaGradientDefs } from "./area-gradient-defs";
-import { chartCssVars, useChart } from "./chart-context";
-import { ChartRevealClip } from "./chart-reveal-clip";
-import { HighlightSegment } from "./highlight-segment";
+import { chartCssVars, useChartStable } from "./chart-context";
+import { type FadeEdges, resolveFadeSides } from "./fade-edges";
 import {
   resolveDashTailBounds,
   usePathStrokeMetrics,
 } from "./path-stroke-utils";
 import { SeriesDashTailOverlay } from "./series-dash-tail-overlay";
+import { SeriesHighlightLayer } from "./series-highlight-layer";
+import { SeriesHoverDim } from "./series-hover-dim";
 import { SeriesMarkers } from "./series-markers";
 import type { SeriesPointMarkerStyle } from "./series-point-marker";
-import { useHighlightSegment } from "./use-highlight-segment";
 
 export interface AreaProps {
   /** Key in data to use for y values */
@@ -43,8 +42,14 @@ export interface AreaProps {
   showHighlight?: boolean;
   /** Gradient opacity at bottom (0 = fully transparent). Default: 0 */
   gradientToOpacity?: number;
-  /** Whether to fade the area fill at left/right edges. Default: false */
-  fadeEdges?: boolean;
+  /**
+   * Fade the area fill (and stroke) toward transparent at the chart edges.
+   * - `true` fades both edges, `false` disables the fade entirely.
+   * - `"left"` / `"right"` fades only that side — useful when the opposite
+   *   edge butts up against another element you don't want to fade into.
+   * Default: false
+   */
+  fadeEdges?: FadeEdges;
   /** Render scatter-style circle markers at each data point. Default: false */
   showMarkers?: boolean;
   /** Marker styling (same options as Scatter). */
@@ -58,7 +63,6 @@ export interface AreaProps {
   dashArray?: string;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: gradient defs and fill/stroke layers share one composable entry point
 export function Area({
   dataKey,
   fill = chartCssVars.linePrimary,
@@ -76,6 +80,12 @@ export function Area({
   dashFromIndex,
   dashArray = "6,4",
 }: AreaProps) {
+  // Stable slice only: hover state lives inside `<SeriesHoverDim>` and
+  // `<SeriesHighlightLayer>` so this component (and its expensive
+  // <SeriesDashTailOverlay> child) does not re-render on cursor motion.
+  // The reveal-clip is now a single shared clipPath at the chart-shell
+  // level (`time-series-chart-shell.tsx`); we no longer render a per-area
+  // `<ChartRevealClip>` or read `revealEpoch` here.
   const {
     data,
     renderData,
@@ -83,13 +93,8 @@ export function Area({
     yScale,
     innerHeight,
     innerWidth,
-    tooltipData,
-    selection,
-    isLoaded,
-    enterTransition,
-    revealEpoch,
     xAccessor,
-  } = useChart();
+  } = useChartStable();
 
   const pathRef = useRef<SVGPathElement>(null);
   const pathMetricsKey = `${renderData.length}:${innerWidth}:${dashFromIndex}:${showLine}`;
@@ -101,8 +106,6 @@ export function Area({
   const strokeGradientId = `area-stroke-gradient-${dataKey}-${uniqueId}`;
   const edgeMaskId = `area-edge-mask-${dataKey}-${uniqueId}`;
   const edgeGradientId = `${edgeMaskId}-gradient`;
-  const revealClipId = `grow-clip-area-${dataKey}-${uniqueId}`;
-  const useRevealClip = animate && renderData.length > 1 && innerWidth > 0;
 
   const isPatternFill = fill.startsWith("url(");
   const showAreaFill = isPatternFill || fillOpacity > 0;
@@ -120,15 +123,14 @@ export function Area({
     [dataKey, yScale]
   );
 
-  // Hover-highlight band via the shared hook. Disabled when there is no stroke
-  // to highlight (showLine={false}) or the highlight is off.
-  const { xSpring, widthSpring, isActive } = useHighlightSegment({
-    enabled: showHighlight && showLine,
-  });
-
-  const isHovering = tooltipData !== null || selection?.active === true;
   const hasDashTail = resolveDashTailBounds(dashFromIndex, data.length);
-  const strokePaint = `url(#${strokeGradientId})`;
+  // The stroke gradient is only emitted when at least one edge fades, so fall
+  // back to the resolved solid color otherwise — avoids an invalid url(#...).
+  const fadeSides = resolveFadeSides(fadeEdges);
+  const strokePaint = fadeSides.any
+    ? `url(#${strokeGradientId})`
+    : resolvedStroke;
+  const highlightEnabled = showHighlight && showLine;
 
   return (
     <>
@@ -147,85 +149,64 @@ export function Area({
         strokeGradientId={strokeGradientId}
       />
 
-      {/* Clip path for grow animation - unique per area */}
-      {useRevealClip ? (
-        <defs>
-          <ChartRevealClip
-            clipPathId={revealClipId}
-            enterTransition={enterTransition}
-            height={innerHeight + 20}
-            revealEpoch={revealEpoch ?? 0}
-            targetWidth={innerWidth}
-          />
-        </defs>
-      ) : null}
+      <SeriesHoverDim dimOpacity={0.6} enabled={showHighlight}>
+        {/* Area fill */}
+        {showAreaFill ? (
+          <g
+            mask={
+              fadeSides.any && !isPatternFill
+                ? `url(#${edgeMaskId})`
+                : undefined
+            }
+          >
+            <AreaClosed
+              curve={curve}
+              data={renderData}
+              fill={areaFill}
+              x={(d) => xScale(xAccessor(d)) ?? 0}
+              y={getY}
+              yScale={yScale}
+            />
+          </g>
+        ) : null}
 
-      {/* Main area with clip path */}
-      <g clipPath={useRevealClip ? `url(#${revealClipId})` : undefined}>
-        <motion.g
-          animate={{ opacity: isHovering && showHighlight ? 0.6 : 1 }}
-          initial={{ opacity: 1 }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
-        >
-          {/* Area fill */}
-          {showAreaFill ? (
-            <g
-              mask={
-                fadeEdges && !isPatternFill ? `url(#${edgeMaskId})` : undefined
-              }
-            >
-              <AreaClosed
-                curve={curve}
-                data={renderData}
-                fill={areaFill}
-                x={(d) => xScale(xAccessor(d)) ?? 0}
-                y={getY}
-                yScale={yScale}
-              />
-            </g>
-          ) : null}
+        {/* Stroke line on top of area */}
+        {showLine ? (
+          <>
+            <LinePath
+              curve={curve}
+              data={renderData}
+              innerRef={pathRef}
+              stroke={hasDashTail ? "transparent" : strokePaint}
+              strokeLinecap="round"
+              strokeWidth={strokeWidth}
+              x={(d) => xScale(xAccessor(d)) ?? 0}
+              y={getY}
+            />
+            <SeriesDashTailOverlay
+              dashArray={dashArray}
+              dashFromIndex={dashFromIndex}
+              data={data}
+              innerHeight={innerHeight}
+              innerWidth={innerWidth}
+              pathD={pathD}
+              pathLength={pathLength}
+              stroke={strokePaint}
+              strokeWidth={strokeWidth}
+              xAccessor={xAccessor}
+              xScale={xScale}
+            />
+          </>
+        ) : null}
+      </SeriesHoverDim>
 
-          {/* Stroke line on top of area */}
-          {showLine ? (
-            <>
-              <LinePath
-                curve={curve}
-                data={renderData}
-                innerRef={pathRef}
-                stroke={hasDashTail ? "transparent" : strokePaint}
-                strokeLinecap="round"
-                strokeWidth={strokeWidth}
-                x={(d) => xScale(xAccessor(d)) ?? 0}
-                y={getY}
-              />
-              <SeriesDashTailOverlay
-                dashArray={dashArray}
-                dashFromIndex={dashFromIndex}
-                data={data}
-                innerHeight={innerHeight}
-                innerWidth={innerWidth}
-                pathD={pathD}
-                pathLength={pathLength}
-                pathRef={pathRef}
-                stroke={strokePaint}
-                strokeWidth={strokeWidth}
-                xAccessor={xAccessor}
-                xScale={xScale}
-              />
-            </>
-          ) : null}
-        </motion.g>
-      </g>
-
-      {/* Highlight segment on hover */}
-      <HighlightSegment
+      {/* Highlight segment on hover — isolated hover subscriber. */}
+      <SeriesHighlightLayer
+        enabled={highlightEnabled}
         height={innerHeight}
         pathRef={pathRef}
         stroke={resolvedStroke}
         strokeWidth={strokeWidth}
-        visible={showHighlight && showLine && isActive && isLoaded}
-        width={widthSpring}
-        x={xSpring}
       />
 
       {showMarkers ? (

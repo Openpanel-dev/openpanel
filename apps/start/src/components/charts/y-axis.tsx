@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { memo, useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { useChartStable } from './chart-context';
+import { memo, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { useChartStable } from "./chart-context";
 
 export interface YAxisProps {
   /** Number of ticks to show. Default: 5 */
@@ -27,16 +27,7 @@ function formatLabel(
   return String(value);
 }
 
-/**
- * Outer wrapper owns the mount guard. The tick-generation memo runs only
- * once the portal container is attached and skips entirely when the inner
- * props are unchanged.
- */
-export function YAxis({
-  numTicks = 5,
-  formatLargeNumbers = true,
-  formatValue,
-}: YAxisProps) {
+export function YAxis(props: YAxisProps) {
   const { containerRef } = useChartStable();
   const [mounted, setMounted] = useState(false);
 
@@ -49,27 +40,15 @@ export function YAxis({
     return null;
   }
 
-  return (
-    <YAxisInner
-      container={container}
-      formatLargeNumbers={formatLargeNumbers}
-      formatValue={formatValue}
-      numTicks={numTicks}
-    />
-  );
+  return <YAxisInner {...props} container={container} />;
 }
 
 const YAxisInner = memo(function YAxisInner({
-  container,
-  numTicks,
-  formatLargeNumbers,
+  numTicks = 5,
+  formatLargeNumbers = true,
   formatValue,
-}: {
-  container: HTMLElement;
-  numTicks: number;
-  formatLargeNumbers: boolean;
-  formatValue?: (value: number) => string;
-}) {
+  container,
+}: YAxisProps & { container: HTMLDivElement }) {
   const { yScale, margin } = useChartStable();
 
   const ticks = useMemo(() => {
@@ -90,7 +69,7 @@ const YAxisInner = memo(function YAxisInner({
         <div
           className="absolute right-0 flex items-center justify-end pr-2"
           key={tick.value}
-          style={{ top: tick.y, transform: 'translateY(-50%)' }}
+          style={{ top: tick.y, transform: "translateY(-50%)" }}
         >
           <span className="text-chart-label text-xs">{tick.label}</span>
         </div>
@@ -100,6 +79,6 @@ const YAxisInner = memo(function YAxisInner({
   );
 });
 
-YAxis.displayName = 'YAxis';
+YAxis.displayName = "YAxis";
 
 export default YAxis;

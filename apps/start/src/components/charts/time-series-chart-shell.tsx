@@ -18,6 +18,7 @@ import { DEFAULT_ANIMATION_EASING } from "./animation";
 import { ChartProvider, type LineConfig, type Margin } from "./chart-context";
 import { isGradientDefComponent, isPatternDefComponent } from "./chart-defs";
 import { shortDateFmt } from "./chart-formatters";
+import { ChartRevealClip } from "./chart-reveal-clip";
 import {
   decimateTimeSeries,
   maxRenderPointsForWidth,
@@ -94,7 +95,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   children,
   containerRef,
   lines,
-  clipPathId: _clipPathId,
+  clipPathId,
   composedBarDataKeys,
   composedBarSize,
   composedMaxBarSize,
@@ -300,10 +301,38 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
     ]
   );
 
+  // Single shared reveal clip for every series. Replaces the per-<Line> /
+  // per-<Area> `<ChartRevealClip>` motion.rects: one motion-driven attribute
+  // animation instead of N, with all series referencing the same `<clipPath>`.
+  // The wipe semantics (left-to-right unveil of static path geometry) are
+  // identical to the previous per-series clips.
+  // animationDuration === 0 truly disables the reveal (no clipPath wrapper),
+  // so consumers can opt out without having to also pass enterTransition.
+  const showReveal =
+    renderData.length > 1 && innerWidth > 0 && animationDuration > 0;
+  // If the consumer didn't pass an explicit enterTransition, derive one from
+  // animationDuration so clipRevealTransition picks up the override instead
+  // of falling back to its 1100ms default.
+  const effectiveEnterTransition: Transition = enterTransition ?? {
+    type: "tween",
+    duration: animationDuration / 1000,
+  };
+
   return (
     <ChartProvider value={contextValue}>
       <svg aria-hidden="true" height={height} width={width}>
-        {defsChildren.length > 0 && <defs>{defsChildren}</defs>}
+        <defs>
+          {defsChildren}
+          {showReveal ? (
+            <ChartRevealClip
+              clipPathId={clipPathId}
+              enterTransition={effectiveEnterTransition}
+              height={innerHeight + 20}
+              revealEpoch={revealEpoch}
+              targetWidth={innerWidth}
+            />
+          ) : null}
+        </defs>
 
         <rect fill="transparent" height={height} width={width} x={0} y={0} />
 
@@ -320,7 +349,11 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
             y={0}
           />
 
-          {preOverlayChildren}
+          {showReveal ? (
+            <g clipPath={`url(#${clipPathId})`}>{preOverlayChildren}</g>
+          ) : (
+            preOverlayChildren
+          )}
           {postOverlayChildren}
         </g>
       </svg>

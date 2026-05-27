@@ -91,6 +91,12 @@ export interface MarkerGroupProps {
    * OPMarkerLayer to spotlight the active cluster.
    */
   isMuted?: boolean;
+  /** Count-badge circle radius in px. Default 9. */
+  badgeRadius?: number;
+  /** Count-badge text size in px. Default 11. */
+  badgeFontSize?: number;
+  /** Offset of badge from marker corner along x/-y. Default 2. */
+  badgeOffset?: number;
 }
 
 // Entrance + fanned + muted variants. `fanned` shrinks and dims the
@@ -141,6 +147,9 @@ export function MarkerGroup({
   borderWidth = 1.5,
   maxFanned,
   isMuted = false,
+  badgeRadius = 9,
+  badgeFontSize = 11,
+  badgeOffset = 2,
 }: MarkerGroupProps) {
   const [isHovered, setIsHovered] = useState(false);
   const shouldFan = (isHovered || forceOpen) && markers.length > 1;
@@ -264,19 +273,19 @@ export function MarkerGroup({
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
                 >
                   <circle
-                    cx={size / 2 + 2}
-                    cy={-size / 2 - 2}
-                    r={9}
+                    cx={size / 2 + badgeOffset}
+                    cy={-size / 2 - badgeOffset}
+                    r={badgeRadius}
                     style={{ fill: chartCssVars.badgeBackground }}
                   />
                   <text
                     dominantBaseline="central"
-                    fontSize={11}
+                    fontSize={badgeFontSize}
                     fontWeight={600}
                     style={{ fill: chartCssVars.badgeForeground }}
                     textAnchor="middle"
-                    x={size / 2 + 2}
-                    y={-size / 2 - 2}
+                    x={size / 2 + badgeOffset}
+                    y={-size / 2 - badgeOffset}
                   >
                     {markers.length}
                   </text>

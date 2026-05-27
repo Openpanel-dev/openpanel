@@ -575,7 +575,7 @@ export function BarChart({
 
   return (
     <div
-      className={cn("relative w-full", className)}
+      className={cn("relative w-full overflow-clip", className)}
       ref={containerRef}
       style={{ aspectRatio }}
     >

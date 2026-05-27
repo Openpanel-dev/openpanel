@@ -50,6 +50,12 @@ interface OPMarkerLayerProps {
    * Pass 0 to disable.
    */
   clusterPixelDistance?: number;
+  /** Count-badge circle radius in px. Default 6. */
+  badgeRadius?: number;
+  /** Count-badge text size in px. Default 8. */
+  badgeFontSize?: number;
+  /** Offset of badge from marker corner along x/-y. Default 0. */
+  badgeOffset?: number;
 }
 
 // Markers in this layer use a clean "app icon" look: the icon fills the
@@ -81,6 +87,9 @@ export function OPMarkerLayer({
   size = 18,
   showLines = false,
   clusterPixelDistance = 32,
+  badgeRadius = 6,
+  badgeFontSize = 8,
+  badgeOffset = 0,
 }: OPMarkerLayerProps) {
   const merged = usePixelClusters(clusters, clusterPixelDistance);
   if (merged.length === 0) {
@@ -90,6 +99,9 @@ export function OPMarkerLayer({
     <>
       {merged.map((cluster, index) => (
         <OPMarkerClusterRenderer
+          badgeFontSize={badgeFontSize}
+          badgeOffset={badgeOffset}
+          badgeRadius={badgeRadius}
           cluster={cluster}
           index={index}
           key={getClusterKey(cluster)}
@@ -110,12 +122,16 @@ export function OPMarkerLayer({
  */
 function usePixelClusters(
   clusters: OPMarkerCluster[] | null | undefined,
-  pixelDistance: number,
+  pixelDistance: number
 ): OPMarkerCluster[] {
   const { xScale } = useChartStable();
   return useMemo(() => {
-    if (!clusters || clusters.length === 0) return [];
-    if (pixelDistance <= 0) return clusters;
+    if (!clusters || clusters.length === 0) {
+      return [];
+    }
+    if (pixelDistance <= 0) {
+      return clusters;
+    }
 
     // Resolve anchor dates + pixel x once, then sort by x so merging is a
     // single pass. Inputs with no resolvable x are dropped.
@@ -128,10 +144,15 @@ function usePixelClusters(
         const x = xScale(anchorDate);
         return x == null ? null : { cluster, anchorDate, x };
       })
-      .filter((p): p is { cluster: OPMarkerCluster; anchorDate: Date; x: number } => p !== null)
+      .filter(
+        (p): p is { cluster: OPMarkerCluster; anchorDate: Date; x: number } =>
+          p !== null
+      )
       .sort((a, b) => a.x - b.x);
 
-    if (positioned.length === 0) return [];
+    if (positioned.length === 0) {
+      return [];
+    }
 
     const merged: OPMarkerCluster[] = [];
     let currentItems: OPMarkerItem[] = [...positioned[0]!.cluster.items];
@@ -174,6 +195,9 @@ interface OPMarkerClusterRendererProps {
   index: number;
   size: number;
   showLine: boolean;
+  badgeRadius: number;
+  badgeFontSize: number;
+  badgeOffset: number;
 }
 
 const OPMarkerClusterRenderer = memo(function OPMarkerClusterRenderer({
@@ -181,6 +205,9 @@ const OPMarkerClusterRenderer = memo(function OPMarkerClusterRenderer({
   index,
   size,
   showLine,
+  badgeRadius,
+  badgeFontSize,
+  badgeOffset,
 }: OPMarkerClusterRendererProps) {
   const {
     data,
@@ -189,6 +216,7 @@ const OPMarkerClusterRenderer = memo(function OPMarkerClusterRenderer({
     xAccessor,
     lines,
     innerHeight,
+    innerWidth,
     margin,
     containerRef,
     animationDuration,
@@ -200,7 +228,7 @@ const OPMarkerClusterRenderer = memo(function OPMarkerClusterRenderer({
       typeof cluster.anchorDate === 'string'
         ? new Date(cluster.anchorDate)
         : cluster.anchorDate,
-    [cluster.anchorDate],
+    [cluster.anchorDate]
   );
 
   // Pre-compute which data bucket indices this cluster's items map to.
@@ -211,7 +239,9 @@ const OPMarkerClusterRenderer = memo(function OPMarkerClusterRenderer({
       const itemDate =
         typeof item.date === 'string' ? new Date(item.date) : item.date;
       const idx = findNearestIndex(itemDate, data, xAccessor);
-      if (idx >= 0) set.add(idx);
+      if (idx >= 0) {
+        set.add(idx);
+      }
     }
     return set;
   }, [cluster.items, data, xAccessor]);
@@ -237,7 +267,7 @@ const OPMarkerClusterRenderer = memo(function OPMarkerClusterRenderer({
         href: item.href,
         target: item.target,
       })),
-    [cluster.items],
+    [cluster.items]
   );
 
   // Marker hover writes the cluster's anchor bucket into the chart's
@@ -245,13 +275,21 @@ const OPMarkerClusterRenderer = memo(function OPMarkerClusterRenderer({
   // handle that, so moving from a marker into the chart doesn't flicker.
   const handleHover = useCallback(
     (hovered: ChartMarker[] | null) => {
-      if (!hovered) return;
+      if (!hovered) {
+        return;
+      }
       const anchorIdx = findNearestIndex(anchorDate, data, xAccessor);
-      if (anchorIdx < 0) return;
+      if (anchorIdx < 0) {
+        return;
+      }
       // Skip the setState entirely if the chart is already on this bucket.
-      if (tooltipData?.index === anchorIdx) return;
+      if (tooltipData?.index === anchorIdx) {
+        return;
+      }
       const point = data[anchorIdx];
-      if (!point) return;
+      if (!point) {
+        return;
+      }
       const yPositions: Record<string, number> = {};
       for (const line of lines) {
         const value = point[line.dataKey];
@@ -276,16 +314,24 @@ const OPMarkerClusterRenderer = memo(function OPMarkerClusterRenderer({
       lines,
       tooltipData,
       setTooltipData,
-    ],
+    ]
   );
 
-  const x = xScale(anchorDate) ?? 0;
+  // Clamp x so the marker (and its badge) stay fully inside the plot area —
+  // otherwise a marker on the first/last bucket gets half-clipped by the SVG
+  // and the `overflow-clip` chart wrapper.
+  const rawX = xScale(anchorDate) ?? 0;
+  const edgePadding = size / 2 + badgeRadius + badgeOffset;
+  const x = Math.min(Math.max(rawX, edgePadding), innerWidth - edgePadding);
   const delay = animationDuration / 1000 + index * 0.05;
 
   return (
     <MarkerGroup
       animate
       animationDelay={delay}
+      badgeFontSize={badgeFontSize}
+      badgeOffset={badgeOffset}
+      badgeRadius={badgeRadius}
       borderColor={MARKER_BORDER_COLOR}
       borderWidth={1}
       containerRef={containerRef}
@@ -302,7 +348,7 @@ const OPMarkerClusterRenderer = memo(function OPMarkerClusterRenderer({
       showLine={showLine}
       size={size}
       x={x}
-      y={-8}
+      y={16}
     />
   );
 });
@@ -310,15 +356,19 @@ const OPMarkerClusterRenderer = memo(function OPMarkerClusterRenderer({
 function findNearestIndex(
   target: Date,
   data: Record<string, unknown>[],
-  xAccessor: (d: Record<string, unknown>) => Date,
+  xAccessor: (d: Record<string, unknown>) => Date
 ): number {
-  if (data.length === 0) return -1;
+  if (data.length === 0) {
+    return -1;
+  }
   const targetTime = target.getTime();
   let nearestIdx = 0;
   let minDiff = Number.POSITIVE_INFINITY;
   for (let i = 0; i < data.length; i++) {
     const point = data[i];
-    if (!point) continue;
+    if (!point) {
+      continue;
+    }
     const diff = Math.abs(xAccessor(point).getTime() - targetTime);
     if (diff < minDiff) {
       minDiff = diff;

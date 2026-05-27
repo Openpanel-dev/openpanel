@@ -1,8 +1,12 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { type ReactNode, useCallback, useMemo } from "react";
 import { clipRevealTransition } from "./animation";
-import { defaultScatterColors, useChart } from "./chart-context";
+import {
+  defaultScatterColors,
+  useChartHover,
+  useChartStable,
+} from "./chart-context";
 import {
   getSeriesMarkerVisualExtent,
   SeriesPointMarker,
@@ -16,6 +20,23 @@ export interface SeriesMarkersProps extends SeriesPointMarkerStyle {
   fill?: string;
   /** Whether to animate markers with clip reveal. Default: true */
   animate?: boolean;
+}
+
+interface PointAt {
+  index: number;
+  cx: number;
+  cy: number;
+  revealDelay: number;
+}
+
+interface MarkerStyle {
+  fill: string;
+  stroke: string;
+  strokeWidth: number;
+  ringGap: number;
+  outlineWidth: number;
+  outlineColor?: string;
+  radius: number;
 }
 
 export function SeriesMarkers({
@@ -34,19 +55,21 @@ export function SeriesMarkers({
   enterBlur = 2,
   showActiveHighlight = true,
 }: SeriesMarkersProps) {
+  // Stable slice only. Hover-driven dim + active-highlight live in the inner
+  // <SeriesMarkersDimWrapper> / <SeriesMarkersActiveHighlight> components, so
+  // mouse motion does not re-render the full point grid.
   const {
     data,
     xScale,
     yScale,
     innerWidth,
-    tooltipData,
     enterTransition,
     animationDuration,
     revealEpoch,
     isLoaded,
     xAccessor,
     lines,
-  } = useChart();
+  } = useChartStable();
 
   const seriesIndex = useMemo(() => {
     const index = lines.findIndex((line) => line.dataKey === dataKey);
@@ -86,10 +109,7 @@ export function SeriesMarkers({
     [dataKey, yScale]
   );
 
-  const isHovering = tooltipData !== null;
-  const activeIndex = tooltipData?.index ?? -1;
-
-  const points = useMemo(
+  const points = useMemo<PointAt[]>(
     () =>
       data.flatMap((d, index) => {
         const cy = getY(d);
@@ -117,15 +137,28 @@ export function SeriesMarkers({
     ]
   );
 
-  const markerStyle = {
-    fill: resolvedFill,
-    stroke: resolvedStroke,
-    strokeWidth,
-    ringGap,
-    outlineWidth,
-    outlineColor,
-    radius,
-  };
+  // Memo so the inner <SeriesMarkersActiveHighlight> sees a stable prop and
+  // can be cheaply re-rendered on hover without re-creating the spread.
+  const markerStyle = useMemo<MarkerStyle>(
+    () => ({
+      fill: resolvedFill,
+      stroke: resolvedStroke,
+      strokeWidth,
+      ringGap,
+      outlineWidth,
+      outlineColor,
+      radius,
+    }),
+    [
+      resolvedFill,
+      resolvedStroke,
+      strokeWidth,
+      ringGap,
+      outlineWidth,
+      outlineColor,
+      radius,
+    ]
+  );
 
   if (isRevealing) {
     return (
@@ -148,43 +181,106 @@ export function SeriesMarkers({
     );
   }
 
-  const dimBase = fadeOnHover && isHovering;
-  const activePoint = dimBase
-    ? points.find((point) => point.index === activeIndex)
-    : null;
+  // Stable base layer — its children come from the parent and stay
+  // referentially identical when the dim wrapper re-renders for hover.
+  const baseMarkers = points.map((point) => (
+    <StaticSeriesPointMarker
+      cx={point.cx}
+      cy={point.cy}
+      key={`${dataKey}-${point.index}`}
+      {...markerStyle}
+    />
+  ));
   const activeScale = showActiveHighlight ? 1.35 : 1;
 
   return (
     <g>
-      <g
-        opacity={dimBase ? inactiveOpacity : 1}
-        style={{
-          transition: "opacity 0.15s ease-in-out, filter 0.15s ease-in-out",
-          filter:
-            dimBase && inactiveBlur > 0 ? `blur(${inactiveBlur}px)` : "none",
-        }}
+      <SeriesMarkersDimWrapper
+        enabled={fadeOnHover}
+        inactiveBlur={inactiveBlur}
+        inactiveOpacity={inactiveOpacity}
       >
-        {points.map((point) => (
-          <StaticSeriesPointMarker
-            cx={point.cx}
-            cy={point.cy}
-            key={`${dataKey}-${point.index}`}
-            {...markerStyle}
-          />
-        ))}
-      </g>
-      {activePoint ? (
-        <StaticSeriesPointMarker
-          cx={activePoint.cx}
-          cy={activePoint.cy}
-          scale={activeScale}
-          {...markerStyle}
-        />
-      ) : null}
+        {baseMarkers}
+      </SeriesMarkersDimWrapper>
+      <SeriesMarkersActiveHighlight
+        activeScale={activeScale}
+        enabled={fadeOnHover}
+        markerStyle={markerStyle}
+        points={points}
+      />
     </g>
   );
 }
 
 SeriesMarkers.displayName = "SeriesMarkers";
+
+interface SeriesMarkersDimWrapperProps {
+  enabled: boolean;
+  inactiveOpacity: number;
+  inactiveBlur: number;
+  children: ReactNode;
+}
+
+/**
+ * Wraps the stable point grid with hover-driven opacity + blur. Subscribes to
+ * hover internally so the grid (passed as `children`) keeps a stable reference
+ * and React skips reconciling it when this wrapper re-renders.
+ */
+function SeriesMarkersDimWrapper({
+  enabled,
+  inactiveOpacity,
+  inactiveBlur,
+  children,
+}: SeriesMarkersDimWrapperProps) {
+  const { tooltipData } = useChartHover();
+  const dimBase = enabled && tooltipData !== null;
+  return (
+    <g
+      opacity={dimBase ? inactiveOpacity : 1}
+      style={{
+        transition: "opacity 0.15s ease-in-out, filter 0.15s ease-in-out",
+        filter:
+          dimBase && inactiveBlur > 0 ? `blur(${inactiveBlur}px)` : "none",
+      }}
+    >
+      {children}
+    </g>
+  );
+}
+
+interface SeriesMarkersActiveHighlightProps {
+  enabled: boolean;
+  points: PointAt[];
+  markerStyle: MarkerStyle;
+  activeScale: number;
+}
+
+/**
+ * Renders the scaled "active" marker on top of the base grid. Subscribes to
+ * hover internally; the parent doesn't re-render on cursor motion.
+ */
+function SeriesMarkersActiveHighlight({
+  enabled,
+  points,
+  markerStyle,
+  activeScale,
+}: SeriesMarkersActiveHighlightProps) {
+  const { tooltipData } = useChartHover();
+  if (!enabled || tooltipData === null) {
+    return null;
+  }
+  const activePoint = points.find((point) => point.index === tooltipData.index);
+  if (!activePoint) {
+    return null;
+  }
+  return (
+    <StaticSeriesPointMarker
+      cx={activePoint.cx}
+      cy={activePoint.cy}
+      scale={activeScale}
+      {...markerStyle}
+    />
+  );
+}
 
 export default SeriesMarkers;

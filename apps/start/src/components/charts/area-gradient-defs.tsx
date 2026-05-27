@@ -1,3 +1,9 @@
+import {
+  type FadeEdges,
+  fadeGradientStops,
+  resolveFadeSides,
+} from "./fade-edges";
+
 interface AreaGradientDefsProps {
   gradientId: string;
   strokeGradientId: string;
@@ -8,7 +14,7 @@ interface AreaGradientDefsProps {
   gradientToOpacity: number;
   resolvedStroke: string;
   isPatternFill: boolean;
-  fadeEdges: boolean;
+  fadeEdges: FadeEdges;
   innerWidth: number;
   innerHeight: number;
 }
@@ -27,6 +33,14 @@ export function AreaGradientDefs({
   innerWidth,
   innerHeight,
 }: AreaGradientDefsProps) {
+  const sides = resolveFadeSides(fadeEdges);
+  // Stroke gradient mirrors the area's edge fade so the line doesn't pop in
+  // past the faded fill. Skip emitting it when neither edge fades — the line
+  // can then paint a solid stroke instead of an unnecessary url(#...) ref.
+  const strokeStops = sides.any ? fadeGradientStops(sides) : null;
+  const showEdgeMask = sides.any && !isPatternFill;
+  const edgeStops = showEdgeMask ? fadeGradientStops(sides) : null;
+
   return (
     <defs>
       {isPatternFill ? null : (
@@ -42,35 +56,28 @@ export function AreaGradientDefs({
         </linearGradient>
       )}
 
-      <linearGradient id={strokeGradientId} x1="0%" x2="100%" y1="0%" y2="0%">
-        <stop
-          offset="0%"
-          style={{ stopColor: resolvedStroke, stopOpacity: 0 }}
-        />
-        <stop
-          offset="15%"
-          style={{ stopColor: resolvedStroke, stopOpacity: 1 }}
-        />
-        <stop
-          offset="85%"
-          style={{ stopColor: resolvedStroke, stopOpacity: 1 }}
-        />
-        <stop
-          offset="100%"
-          style={{ stopColor: resolvedStroke, stopOpacity: 0 }}
-        />
-      </linearGradient>
+      {strokeStops ? (
+        <linearGradient id={strokeGradientId} x1="0%" x2="100%" y1="0%" y2="0%">
+          {strokeStops.map((stop) => (
+            <stop
+              key={stop.offset}
+              offset={stop.offset}
+              style={{ stopColor: resolvedStroke, stopOpacity: stop.opacity }}
+            />
+          ))}
+        </linearGradient>
+      ) : null}
 
-      {fadeEdges && !isPatternFill ? (
+      {edgeStops ? (
         <>
           <linearGradient id={edgeGradientId} x1="0%" x2="100%" y1="0%" y2="0%">
-            <stop offset="0%" style={{ stopColor: "white", stopOpacity: 0 }} />
-            <stop offset="20%" style={{ stopColor: "white", stopOpacity: 1 }} />
-            <stop offset="80%" style={{ stopColor: "white", stopOpacity: 1 }} />
-            <stop
-              offset="100%"
-              style={{ stopColor: "white", stopOpacity: 0 }}
-            />
+            {edgeStops.map((stop) => (
+              <stop
+                key={stop.offset}
+                offset={stop.offset}
+                style={{ stopColor: "white", stopOpacity: stop.opacity }}
+              />
+            ))}
           </linearGradient>
           <mask id={edgeMaskId}>
             <rect

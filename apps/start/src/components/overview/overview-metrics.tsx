@@ -11,6 +11,7 @@ import { useDashedTail } from '../charts/op-dashed-tail';
 import { OPDatePill } from '../charts/op-date-pill';
 import { OPReferences } from '../charts/op-references';
 import { OPReferrerSpikes } from '../charts/op-referrer-spikes';
+import { OPSeriesDots } from '../charts/op-series-dots';
 import { OPChartTooltip } from '../charts/op-tooltip';
 import { XAxis } from '../charts/x-axis';
 import { YAxis } from '../charts/y-axis';
@@ -140,7 +141,7 @@ export default function OverviewMetrics({
       </div>
 
       <div className="card p-4">
-        <div className="-mt-1 mb-3 flex items-center justify-between">
+        <div className="-mt-1 flex items-center justify-between">
           <div className="font-medium text-muted-foreground text-sm">
             {activeMetric.title}
           </div>
@@ -325,22 +326,19 @@ function Chart({
       aspectRatio="auto"
       className="h-full"
       data={chartData}
-      margin={{ top: 16, right: 8, bottom: 40, left: 32 }}
+      margin={{ top: 0, right: 20, bottom: 40, left: 20 }}
       xDataKey="date"
     >
       <Grid horizontal />
       <YAxis numTicks={4} />
       <XAxis />
 
-      {/* Current-period area — rendered FIRST so the line highlights below
-          paint on top of the area's semi-transparent fill instead of being
-          obscured by it. */}
       <Area
         animate={false}
         dashArray="4,4"
         dashFromIndex={dashFromIndex}
         dataKey={activeMetric.key}
-        fadeEdges
+        fadeEdges="left"
         fill={primaryColor}
         fillOpacity={0.18}
         gradientToOpacity={0}
@@ -349,11 +347,6 @@ function Chart({
         strokeWidth={2}
       />
 
-      {/* Previous-period line — `animate` MUST stay true so bklit measures
-          `pathLength` via `getTotalLength()` (it gates that measurement on
-          `animate`). Without it, the hover-highlight overlay renders with a
-          zero-length dasharray and stays invisible. The shell-level
-          `animationDuration={0}` above kills the actual reveal animation. */}
       <Line
         curve={curveMonotoneX}
         dataKey={`prev_${activeMetric.key}`}
@@ -373,15 +366,11 @@ function Chart({
         />
       )}
 
-      <OPReferences items={references.data} />
-      <OPReferrerSpikes
-        items={referrerSpikes.data}
-        onSpikeClick={handleSpikeClick}
-      />
       <OPDatePill interval={interval} />
-      {/* <OPSeriesDots
+      <OPSeriesDots
         dots={[
           { dataKey: activeMetric.key, color: primaryColor },
+          { dataKey: `prev_${activeMetric.key}`, color: 'var(--foreground)' },
           ...(showRevenue
             ? [
                 {
@@ -392,7 +381,7 @@ function Chart({
               ]
             : []),
         ]}
-      /> */}
+      />
 
       <OPChartTooltip<ChartPoint>
         indicatorColor={primaryColor}
@@ -436,6 +425,12 @@ function Chart({
         showDatePill={false}
         showDots={false}
         spikes={flatSpikes}
+      />
+
+      <OPReferences items={references.data} />
+      <OPReferrerSpikes
+        items={referrerSpikes.data}
+        onSpikeClick={handleSpikeClick}
       />
     </ComposedChart>
   );
