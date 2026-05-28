@@ -335,18 +335,30 @@ export function bootWorkers() {
     eventName: string,
     evtOrExitCodeOrError: number | string | Error
   ) {
-    // Log the actual error details for unhandled rejections/exceptions
-    if (evtOrExitCodeOrError instanceof Error) {
+    logger.info(
+      { code: evtOrExitCodeOrError, eventName },
+      'Starting graceful shutdown'
+    );
+
+    // Hard deadline: if cron drain or worker.close() hangs, force-exit
+    // before Docker's stop_grace_period elapses. Without this the
+    // container sits in "Stopping" until SIGKILL (exit 137) and looks
+    // like a real crash to the swarm.
+    const forceExitMs = Number(
+      process.env.SHUTDOWN_FORCE_EXIT_MS || '20000'
+    );
+    const exitCode = Number.isNaN(+evtOrExitCodeOrError)
+      ? 1
+      : +evtOrExitCodeOrError;
+    const forceExit = setTimeout(() => {
       logger.error(
-        { err: evtOrExitCodeOrError, eventName },
-        'Unhandled error triggered shutdown'
+        { eventName, forceExitMs },
+        'Graceful shutdown timed out — forcing exit'
       );
-    } else {
-      logger.info(
-        { code: evtOrExitCodeOrError, eventName },
-        'Starting graceful shutdown'
-      );
-    }
+      process.exit(exitCode);
+    }, forceExitMs);
+    forceExit.unref();
+
     try {
       const time = performance.now();
 
@@ -374,20 +386,30 @@ export function bootWorkers() {
         'exit handler error'
       );
     }
-    const exitCode = Number.isNaN(+evtOrExitCodeOrError)
-      ? 1
-      : +evtOrExitCodeOrError;
+    clearTimeout(forceExit);
     process.exit(exitCode);
   }
 
-  ['uncaughtException', 'unhandledRejection', 'SIGTERM', 'SIGINT'].forEach(
-    (evt) => {
-      process.on(evt, (code) => {
-        setShuttingDown(true);
-        exitHandler(evt, code);
-      });
-    }
-  );
+  // SIGTERM / SIGINT: drain in-flight jobs, then exit.
+  ['SIGTERM', 'SIGINT'].forEach((evt) => {
+    process.on(evt, (code) => {
+      setShuttingDown(true);
+      exitHandler(evt, code);
+    });
+  });
+
+  // uncaughtException / unhandledRejection: process state is corrupt.
+  // Don't try to drain — log and exit fast so Docker respawns us.
+  process.on('uncaughtException', (error) => {
+    logger.fatal({ err: error }, 'Uncaught exception — exiting');
+    setShuttingDown(true);
+    setTimeout(() => process.exit(1), 1000).unref();
+  });
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.fatal({ reason, promise }, 'Unhandled rejection — exiting');
+    setShuttingDown(true);
+    setTimeout(() => process.exit(1), 1000).unref();
+  });
 
   return workers;
 }

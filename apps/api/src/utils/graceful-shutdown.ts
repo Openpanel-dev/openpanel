@@ -42,6 +42,20 @@ export async function shutdown(
 
   setShuttingDown(true);
 
+  // Hard deadline: if any close() below hangs (Kafka producer stuck,
+  // Redis still connecting, BullMQ wait), force-exit before Docker's
+  // stop_grace_period elapses. Without this the container can sit in
+  // "Stopping" until SIGKILL (exit 137) and look like a real crash.
+  const forceExitMs = Number(process.env.SHUTDOWN_FORCE_EXIT_MS || '15000');
+  const forceExit = setTimeout(() => {
+    logger.error(
+      { signal, forceExitMs },
+      'Graceful shutdown timed out — forcing exit',
+    );
+    process.exit(exitCode);
+  }, forceExitMs);
+  forceExit.unref();
+
   // Step 1: Wait for load balancer to stop sending traffic (matches preStop sleep)
   const gracePeriod = Number(process.env.SHUTDOWN_GRACE_PERIOD_MS || '5000');
   await new Promise((resolve) => setTimeout(resolve, gracePeriod));
@@ -122,5 +136,6 @@ export async function shutdown(
   }
 
   logger.info('Graceful shutdown completed');
+  clearTimeout(forceExit);
   process.exit(exitCode);
 }

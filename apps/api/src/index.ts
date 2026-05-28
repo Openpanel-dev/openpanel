@@ -23,13 +23,21 @@ const startServer = async () => {
       logger.info('Registering graceful shutdown handlers');
       process.on('SIGTERM', async () => await shutdown(fastify, 'SIGTERM', 0));
       process.on('SIGINT', async () => await shutdown(fastify, 'SIGINT', 0));
-      process.on('uncaughtException', async (error) => {
-        logger.error({ err: error }, 'Uncaught exception');
-        await shutdown(fastify, 'uncaughtException', 1);
+
+      // After an uncaughtException / unhandledRejection the process state
+      // is corrupt — don't try to gracefully drain queues/DBs. Log and
+      // exit immediately so Docker can respawn the container. Anything
+      // slower than this lets bad requests keep hitting a poisoned process
+      // and risks blocking past Docker's stop_grace_period (→ SIGKILL).
+      process.on('uncaughtException', (error) => {
+        logger.fatal({ err: error }, 'Uncaught exception — exiting');
+        // Flush pino, then hard-exit. unref() so the safety net doesn't
+        // keep the loop alive on its own.
+        setTimeout(() => process.exit(1), 1000).unref();
       });
-      process.on('unhandledRejection', async (reason, promise) => {
-        logger.error({ reason, promise }, 'Unhandled rejection');
-        await shutdown(fastify, 'unhandledRejection', 1);
+      process.on('unhandledRejection', (reason, promise) => {
+        logger.fatal({ reason, promise }, 'Unhandled rejection — exiting');
+        setTimeout(() => process.exit(1), 1000).unref();
       });
     }
 
