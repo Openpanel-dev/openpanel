@@ -27,8 +27,15 @@ import iconsWithUrls from './serie-icon.urls';
 // Types
 // ============================================================================
 
-type SerieIconProps = Omit<LucideProps, 'name'> & {
+type SerieIconProps = Omit<LucideProps, 'name' | 'fill'> & {
   name?: string | string[];
+  /**
+   * When true, render the icon at the size of its parent container instead
+   * of the default max-h-4 cap. Use for circular/full-bleed contexts like
+   * chart markers where the favicon should fill the surrounding circle.
+   * Overrides Lucide's `fill` prop semantics for this component.
+   */
+  fill?: boolean;
 };
 
 type IconType = 'lucide' | 'image' | 'flag';
@@ -279,15 +286,24 @@ function resolveIcon(name: string): ResolvedIcon {
   return null;
 }
 
-function IconWrapper({ children }: { children: React.ReactNode }) {
+function IconWrapper({
+  children,
+  fill,
+}: { children: React.ReactNode; fill?: boolean }) {
   return (
-    <div className={'relative max-h-4 flex-shrink-0 [&_svg]:!rounded-[2px]'}>
+    <div
+      className={
+        fill
+          ? 'relative size-full flex-shrink-0 [&_svg]:!rounded-[2px]'
+          : 'relative max-h-4 flex-shrink-0 [&_svg]:!rounded-[2px]'
+      }
+    >
       {children}
     </div>
   );
 }
 
-function ImageIcon({ url }: { url: string }) {
+function ImageIcon({ url, fill }: { url: string; fill?: boolean }) {
   const context = useAppContext();
   const [hasError, setHasError] = useState(false);
 
@@ -298,11 +314,15 @@ function ImageIcon({ url }: { url: string }) {
   const fullUrl = context.apiUrl?.replace(/\/$/, '') + url;
 
   return (
-    <IconWrapper>
+    <IconWrapper fill={fill}>
       <img
         src={fullUrl}
         alt=""
-        className="w-full max-h-4 rounded-[2px] object-contain"
+        className={
+          fill
+            ? 'size-full rounded-full object-cover'
+            : 'w-full max-h-4 rounded-[2px] object-contain'
+        }
         loading="lazy"
         decoding="async"
         onError={() => setHasError(true)}
@@ -311,11 +331,15 @@ function ImageIcon({ url }: { url: string }) {
   );
 }
 
-function FlagIcon({ code }: { code: string }) {
+function FlagIcon({ code, fill }: { code: string; fill?: boolean }) {
   return (
-    <IconWrapper>
+    <IconWrapper fill={fill}>
       <span
-        className={`fi !block aspect-[1.33] overflow-hidden rounded-[2px] fi-${code}`}
+        className={
+          fill
+            ? `fi !block size-full overflow-hidden rounded-full fi-${code}`
+            : `fi !block aspect-[1.33] overflow-hidden rounded-[2px] fi-${code}`
+        }
       />
     </IconWrapper>
   );
@@ -323,18 +347,22 @@ function FlagIcon({ code }: { code: string }) {
 
 function LucideIconWrapper({
   Icon,
+  fill,
   ...props
-}: { Icon: React.ComponentType<LucideProps> } & LucideProps) {
+}: {
+  Icon: React.ComponentType<LucideProps>;
+  fill?: boolean;
+} & Omit<LucideProps, 'fill'>) {
   return (
-    <IconWrapper>
-      <Icon size={16} {...props} />
+    <IconWrapper fill={fill}>
+      <Icon size={fill ? undefined : 16} {...props} />
     </IconWrapper>
   );
 }
 
 // Main component
 
-export function SerieIcon({ name: names, ...props }: SerieIconProps) {
+export function SerieIcon({ name: names, fill, ...props }: SerieIconProps) {
   const name = Array.isArray(names) ? names[0] : names;
 
   if (!name) {
@@ -349,10 +377,10 @@ export function SerieIcon({ name: names, ...props }: SerieIconProps) {
 
   switch (resolved.type) {
     case 'lucide':
-      return <LucideIconWrapper Icon={resolved.Icon} {...props} />;
+      return <LucideIconWrapper Icon={resolved.Icon} fill={fill} {...props} />;
     case 'image':
-      return <ImageIcon url={resolved.url} />;
+      return <ImageIcon url={resolved.url} fill={fill} />;
     case 'flag':
-      return <FlagIcon code={resolved.code} />;
+      return <FlagIcon code={resolved.code} fill={fill} />;
   }
 }

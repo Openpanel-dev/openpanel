@@ -30,6 +30,7 @@ export * from './src/services/pages.service';
 export * from './src/services/profile.service';
 export * from './src/services/project.service';
 export * from './src/services/reference.service';
+export * from './src/services/referrer-spikes.service';
 export * from './src/services/reports.service';
 export * from './src/services/retention.service';
 export * from './src/services/salt.service';
