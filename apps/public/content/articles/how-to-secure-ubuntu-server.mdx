@@ -1,6 +1,6 @@
 ---
 title: How to secure your Ubuntu server
-description: Learn essential steps to secure your Ubuntu server, including user management, firewall configuration, SSH hardening, and best practices for maintaining a robust security posture.
+description: Learn the basic steps to secure your Ubuntu server, including user management, firewall configuration, SSH hardening, and practices for keeping a solid security posture.
 tag: Hosting
 team: OpenPanel Team
 date: 2024-11-14
@@ -24,7 +24,7 @@ sudo apt update && sudo apt upgrade -y
 
 ## 2. Create a new user
 
-Create a new user with sudo privilages. By doing this you can manage your server without giving full root access to your server. But for this to be secure, you should also disable root login over SSH.
+Create a new user with sudo privileges. This lets you manage your server without giving out full root access. For this to be secure, you should also disable root login over SSH.
 
 ```bash
 sudo adduser <username>

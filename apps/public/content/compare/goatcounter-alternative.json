@@ -74,15 +74,15 @@
       },
       {
         "label": "Open Source License",
-        "openpanel": "MIT License",
+        "openpanel": "AGPL-3.0 (copyleft)",
         "competitor": "EUPL 1.2 (copyleft)",
-        "notes": "OpenPanel uses the permissive MIT license. GoatCounter uses EUPL 1.2, a copyleft license requiring derivative works to use compatible licenses."
+        "notes": "Both are copyleft open source licenses: OpenPanel uses AGPL-3.0, GoatCounter uses EUPL 1.2. Both require derivative works to stay open source under compatible terms."
       },
       {
-        "label": "Free Hosted Service",
-        "openpanel": "10,000 events/month",
-        "competitor": "Unlimited (reasonable use)",
-        "notes": "GoatCounter offers free hosted service for personal sites and small-to-medium businesses with reasonable usage. OpenPanel offers 10,000 events/month free."
+        "label": "Free Option",
+        "openpanel": "Free, unlimited self-hosting",
+        "competitor": "Free hosted (reasonable use)",
+        "notes": "GoatCounter offers a free hosted service for personal sites and small-to-medium businesses with reasonable usage. OpenPanel's cloud is a 30-day free trial (then from $2.50/mo), but self-hosting is free with unlimited events."
       }
     ]
   },
@@ -215,9 +215,9 @@
           },
           {
             "name": "Email Reports",
-            "openpanel": true,
+            "openpanel": false,
             "competitor": false,
-            "notes": "GoatCounter doesn't have automated email reports"
+            "notes": "Neither offers automated email reports. OpenPanel sends real-time alerts via Slack, Discord, webhook, and in-app instead."
           },
           {
             "name": "Tracking Pixel (No-JS)",
@@ -369,13 +369,15 @@
           "Next.js",
           "Vue",
           "React Native",
+          "Flutter",
           "iOS",
           "Android",
           "Node.js",
           "Python",
-          "PHP",
-          "Go",
-          "Rust"
+          "Ruby",
+          "Java",
+          "Rust",
+          "PHP"
         ],
         "competitor": [
           "JavaScript (browser)",
@@ -387,13 +389,13 @@
       },
       {
         "label": "Open Source",
-        "openpanel": "Yes - MIT License",
+        "openpanel": "Yes - AGPL-3.0 (copyleft)",
         "competitor": "Yes - EUPL 1.2 (copyleft)",
-        "notes": "OpenPanel uses MIT license. GoatCounter uses EUPL 1.2 (copyleft). GoatCounter has 5,200+ GitHub stars."
+        "notes": "Both are copyleft: OpenPanel uses AGPL-3.0, GoatCounter uses EUPL 1.2. GoatCounter has 5,200+ GitHub stars."
       },
       {
         "label": "Self Hosting",
-        "openpanel": "Docker (simple single-container setup)",
+        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), guided setup wizard",
         "competitor": "Single binary (~7MB) or Docker. SQLite or PostgreSQL. Built-in ACME/TLS support.",
         "notes": null
       },
@@ -425,10 +427,10 @@
   },
   "pricing": {
     "title": "Pricing comparison",
-    "intro": "GoatCounter is donation-supported. OpenPanel offers both free cloud and self-hosting.",
+    "intro": "GoatCounter is donation-supported. OpenPanel offers free, unlimited self-hosting plus a managed cloud (30-day free trial).",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Simple pricing with 10,000 free events per month. All features included at every tier. Self-host for free with unlimited events."
+      "description": "Transparent pricing from $2.50/month for 5,000 events, with a 30-day free trial. All features included at every tier. Self-host free with unlimited events."
     },
     "competitor": {
       "model": "Donation-supported or free self-hosting",
@@ -518,7 +520,7 @@
       },
       {
         "question": "How does GoatCounter's pricing compare to OpenPanel?",
-        "answer": "GoatCounter is free for reasonable public use (personal sites, small-to-medium businesses) and completely free when self-hosted. It's donation-supported. OpenPanel offers 10,000 events/month free with paid tiers after that. Both have free self-hosting options."
+        "answer": "GoatCounter is free for reasonable public use (personal sites, small-to-medium businesses) and completely free when self-hosted. It's donation-supported. OpenPanel's cloud is a 30-day free trial, then from $2.50/month for 5,000 events. Both have free self-hosting options."
       },
       {
         "question": "Which has the smaller tracking script?",
@@ -534,11 +536,11 @@
       },
       {
         "question": "How does self-hosting compare?",
-        "answer": "GoatCounter is extremely easy to self-host: a single ~7MB statically compiled Go binary with SQLite as default database. It includes built-in TLS/ACME certificate generation. OpenPanel uses Docker with ClickHouse. GoatCounter is simpler; OpenPanel scales better."
+        "answer": "GoatCounter is extremely easy to self-host: a single ~7MB statically compiled Go binary with SQLite as default database. It includes built-in TLS/ACME certificate generation. OpenPanel runs a Docker Compose stack (ClickHouse, Postgres, Redis), but it's still simple: a one-command ./setup wizard walks you through configuration and brings the whole stack up in minutes. GoatCounter is leaner; OpenPanel scales better."
       },
       {
         "question": "What license does GoatCounter use?",
-        "answer": "GoatCounter uses EUPL 1.2 (European Union Public License), a copyleft license requiring derivative works to use compatible licenses. OpenPanel uses the permissive MIT license which allows any use including proprietary derivatives."
+        "answer": "GoatCounter uses EUPL 1.2 (European Union Public License), a copyleft license requiring derivative works to use compatible licenses. OpenPanel uses the AGPL-3.0 license, which is also copyleft — network-deployed modifications must be made available as open source. Both allow commercial use."
       }
     ]
   },

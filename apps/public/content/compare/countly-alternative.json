@@ -13,7 +13,7 @@
       "Open-source",
       "Simple Pricing",
       "Lightweight",
-      "MIT License"
+      "AGPL-3.0"
     ]
   },
   "competitor": {
@@ -27,10 +27,10 @@
   "overview": {
     "title": "Why consider OpenPanel over Countly?",
     "paragraphs": [
-      "Countly positions itself as an all-in-one product analytics platform with built-in push notifications, crash reporting, remote configuration, and surveys. It's a feature-rich platform that appeals to teams wanting everything under one roof. But that breadth comes with significant costs \u2014 MAU-based pricing that can reach $132,000 or more per year, a complex self-hosted setup requiring MongoDB, Node.js, and Nginx, and a restrictive AGPL license for the free tier that limits commercial use.",
+      "Countly positions itself as an all-in-one product analytics platform with built-in push notifications, crash reporting, remote configuration, and surveys. It's a feature-rich platform that appeals to teams wanting everything under one roof. But that breadth comes with significant costs \u2014 MAU-based pricing that can reach $132,000 or more per year, a complex self-hosted setup requiring MongoDB, Node.js, and Nginx, and a free Lite tier whose license adds restrictions on commercial use.",
       "OpenPanel takes a focused approach to analytics with simpler pricing and deployment. Instead of bundling push notifications and crash reporting (which most teams already have through dedicated tools), OpenPanel focuses on what matters most: understanding user behavior through events, funnels, retention analysis, and cohort breakdowns. All features are included at every tier, with no premium add-ons or feature gating.",
-      "The licensing and pricing differences are substantial. Countly's free Lite tier uses AGPL licensing that prohibits commercial use, and paid plans start at $80 per month for just 2,000 MAUs. OpenPanel uses the permissive MIT license for unlimited commercial use, and its event-based pricing starts at $2.50 per month \u2014 or is completely free when self-hosted with no restrictions.",
-      "For teams that want straightforward product analytics without the complexity and cost of an all-in-one platform, OpenPanel delivers the analytics essentials with a dramatically simpler setup, lower cost, and more permissive licensing."
+      "The licensing and pricing differences are substantial. OpenPanel is licensed under standard AGPL-3.0 \u2014 an OSI-approved open source license that allows commercial use \u2014 and self-hosting is free, unlimited, and fully featured with no feature gating. Countly's free Lite tier is also AGPL-based but adds its own restrictions on commercial use, and its paid Flex plans start at $80 per month for just 2,000 MAUs with advanced features gated behind higher tiers. OpenPanel's event-based cloud pricing starts at $2.50 per month, or is completely free to self-host.",
+      "For teams that want straightforward product analytics without the complexity and cost of an all-in-one platform, OpenPanel delivers the analytics essentials with a dramatically simpler setup, lower cost, and free, unlimited, fully-featured self-hosting under standard AGPL-3.0."
     ]
   },
   "summary_comparison": {
@@ -40,14 +40,14 @@
     "best_for_openpanel": [
       "Teams wanting simple analytics without push notifications or crash reporting",
       "Startups needing affordable, predictable event-based pricing",
-      "Developers wanting true open source (MIT) without commercial restrictions",
+      "Developers wanting standard open source (AGPL-3.0) with no added commercial restrictions",
       "Teams preferring lightweight Docker deployment over MongoDB setup"
     ],
     "best_for_competitor": [
       "Mobile apps needing push notifications and crash reporting in one platform",
       "Teams requiring remote configuration and in-app messaging",
       "Enterprise customers needing ISO 27001 and SOC2 certifications",
-      "Products needing Flutter, Unity, or desktop (Windows/Mac) SDKs"
+      "Products needing Unity or desktop (Windows/Mac) SDKs"
     ]
   },
   "highlights": {
@@ -56,21 +56,21 @@
     "items": [
       {
         "label": "Pricing Model",
-        "openpanel": "Event-based (10K free/month)",
+        "openpanel": "Event-based (from $2.50/mo, 30-day trial)",
         "competitor": "MAU-based (starts at $80/month for 2K MAUs)",
-        "notes": "OpenPanel offers simple event-based pricing with 10,000 free events/month. Countly Flex charges by Monthly Active Users starting at $80/month for 2,000 MAUs, which can get expensive quickly."
+        "notes": "OpenPanel offers simple event-based pricing from $2.50/month for 5,000 events (30-day free trial), or free self-hosting. Countly Flex charges by Monthly Active Users starting at $80/month for 2,000 MAUs, which can get expensive quickly."
       },
       {
         "label": "Open Source License",
-        "openpanel": "MIT License (fully permissive)",
-        "competitor": "AGPL-3.0 (copyleft, non-commercial use only)",
-        "notes": "OpenPanel uses the permissive MIT license allowing any commercial use. Countly Lite uses AGPL-3.0 with modified terms that prohibit commercial use - you must purchase Enterprise for business use."
+        "openpanel": "AGPL-3.0 (standard, commercial use allowed)",
+        "competitor": "AGPL-3.0 with added commercial restrictions",
+        "notes": "OpenPanel uses standard AGPL-3.0, which allows commercial use, and self-hosting is free, unlimited, and fully featured. Countly Lite is AGPL-based but adds modified terms restricting commercial use - you must purchase Enterprise or use Flex for business use."
       },
       {
         "label": "Setup Complexity",
         "openpanel": "Simple Docker deployment",
         "competitor": "Complex (MongoDB, Node.js, Nginx)",
-        "notes": "OpenPanel runs in a simple Docker container. Countly requires MongoDB, Node.js, and Nginx with a more complex installation process and upgrade path."
+        "notes": "OpenPanel runs via a one-command Docker Compose setup (ClickHouse, Postgres, Redis). Countly requires MongoDB, Node.js, and Nginx with a more complex installation process and upgrade path."
       },
       {
         "label": "Push Notifications",
@@ -294,8 +294,9 @@
           },
           {
             "name": "Flutter SDK",
-            "openpanel": false,
-            "competitor": true
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both offer a Flutter SDK (OpenPanel's is community-maintained)"
           },
           {
             "name": "Unity SDK",
@@ -341,13 +342,15 @@
           "Next.js",
           "Vue",
           "React Native",
+          "Flutter",
           "iOS",
           "Android",
           "Node.js",
           "Python",
-          "PHP",
-          "Go",
-          "Rust"
+          "Ruby",
+          "Java",
+          "Rust",
+          "PHP"
         ],
         "competitor": [
           "JavaScript/Web",
@@ -365,13 +368,13 @@
       },
       {
         "label": "Open Source",
-        "openpanel": "Yes - MIT License",
-        "competitor": "Partial - AGPL (non-commercial only)",
-        "notes": "OpenPanel is fully MIT licensed. Countly Lite is AGPL-3.0 (non-commercial only). Countly Enterprise is proprietary."
+        "openpanel": "Yes - AGPL-3.0",
+        "competitor": "Partial - AGPL with added restrictions",
+        "notes": "OpenPanel is fully AGPL-3.0 licensed (standard, commercial use allowed). Countly Lite is AGPL-based with added terms restricting commercial use. Countly Enterprise is proprietary."
       },
       {
         "label": "Self Hosting",
-        "openpanel": "Docker (simple single-container setup)",
+        "openpanel": "Docker Compose (ClickHouse + Postgres + Redis), guided setup wizard",
         "competitor": "Docker or install script (requires MongoDB, Node.js, Nginx)",
         "notes": null
       },
@@ -400,7 +403,7 @@
     "intro": "Countly's MAU-based pricing with add-ons can get expensive. OpenPanel offers simple event-based pricing.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Simple pricing with 10,000 free events per month. All features included at every tier. Self-host for free with unlimited events."
+      "description": "Transparent pricing from $2.50/month for 5,000 events, with a 30-day free trial. All features included at every tier. Self-host free with unlimited events."
     },
     "competitor": {
       "model": "MAU-based with feature add-ons",
@@ -456,12 +459,12 @@
       },
       {
         "title": "Open Source Commercial Use",
-        "description": "Countly Lite's AGPL license prohibits commercial use - you must buy Enterprise. OpenPanel's MIT license allows unlimited commercial use for free.",
+        "description": "Countly Lite's license adds restrictions on commercial use - you must buy Enterprise for business use. OpenPanel's standard AGPL-3.0 license allows commercial use, and self-hosting is free, unlimited, and fully featured.",
         "icon": "unlock"
       },
       {
         "title": "Lightweight Self-Hosting",
-        "description": "Countly requires MongoDB, Node.js, and Nginx with complex upgrade procedures. OpenPanel runs in a simple Docker container with ClickHouse for faster queries.",
+        "description": "Countly requires MongoDB, Node.js, and Nginx with complex upgrade procedures. OpenPanel uses a one-command `./setup` wizard that walks you through configuration and brings the whole Docker Compose stack (ClickHouse, Postgres, Redis) up in minutes.",
         "icon": "server"
       },
       {
@@ -482,11 +485,11 @@
     "items": [
       {
         "question": "Is Countly really open source?",
-        "answer": "Partially. Countly Lite is open source under AGPL-3.0 with modified terms, but it explicitly prohibits commercial use. For business use, you must purchase Countly Enterprise or use Countly Flex (their SaaS). OpenPanel is fully open source under MIT license with no commercial restrictions."
+        "answer": "Partially. Countly Lite is open source under AGPL-3.0 with modified terms, but it explicitly prohibits commercial use. For business use, you must purchase Countly Enterprise or use Countly Flex (their SaaS). OpenPanel is fully open source under the standard AGPL-3.0 license, which allows commercial use, and self-hosting is free, unlimited, and fully featured with no feature gating."
       },
       {
         "question": "Why is OpenPanel cheaper than Countly?",
-        "answer": "OpenPanel uses event-based pricing with 10,000 free events/month. Countly charges by Monthly Active Users (MAUs) starting at $80/month for just 2,000 MAUs, plus additional fees for features like A/B testing, surveys, and push notifications as add-ons."
+        "answer": "OpenPanel uses event-based pricing from $2.50/month for 5,000 events (with a 30-day free trial), or free self-hosting. Countly charges by Monthly Active Users (MAUs) starting at $80/month for just 2,000 MAUs, plus additional fees for features like A/B testing, surveys, and push notifications as add-ons."
       },
       {
         "question": "Does OpenPanel have push notifications like Countly?",
@@ -498,11 +501,11 @@
       },
       {
         "question": "How does self-hosting compare?",
-        "answer": "OpenPanel runs in a simple Docker container with ClickHouse. Countly requires MongoDB, Node.js, and Nginx with a more complex installation script. Countly's upgrade process can be tedious for older versions."
+        "answer": "OpenPanel uses a one-command Docker Compose setup with ClickHouse (alongside Postgres and Redis). Countly requires MongoDB, Node.js, and Nginx with a more complex installation script. Countly's upgrade process can be tedious for older versions."
       },
       {
         "question": "Which has better mobile SDK support?",
-        "answer": "Countly has broader SDK coverage including Flutter, Unity, and desktop (Windows/Mac). OpenPanel supports iOS, Android, and React Native. Choose based on your specific platform needs."
+        "answer": "OpenPanel supports iOS, Android, React Native, and Flutter. Countly adds broader coverage with Unity and desktop (Windows/Mac). Choose based on your specific platform needs."
       },
       {
         "question": "Is Countly better for enterprise?",

@@ -7,8 +7,8 @@
     "noindex": false
   },
   "hero": {
-    "heading": "Product Analytics for SaaS Teams",
-    "subheading": "Understanding why users churn, where trials drop off, and which features drive retention is the difference between a SaaS that grows and one that plateaus. OpenPanel gives you events, funnels, retention analysis, and user profiles — the core analytics stack for SaaS — without Mixpanel or Amplitude's enterprise pricing.",
+    "heading": "Product analytics for SaaS teams",
+    "subheading": "See why users churn, where trials drop off, and which features drive retention. OpenPanel gives you events, funnels, retention analysis, and user profiles — the core analytics stack for SaaS — without Mixpanel or Amplitude's enterprise pricing.",
     "badges": [
       "Funnel analysis",
       "Retention tracking",

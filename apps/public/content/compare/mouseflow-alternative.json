@@ -30,7 +30,7 @@
       "Mouseflow is a behavior analytics platform that excels at visual website optimization with seven types of heatmaps, session replay, friction detection, and form analytics. It's a solid tool for understanding how visitors interact with specific pages on your website. But Mouseflow is web-only, proprietary, cloud-only, and focused on session-based observation rather than event-based product analytics.",
       "OpenPanel takes a fundamentally different approach with event-based analytics designed for product teams. Instead of watching session recordings to spot issues, you define the events and funnels that matter to your business and measure them quantitatively. Retention analysis shows whether users come back, cohort breakdowns reveal behavioral patterns, and user profiles connect the dots across multiple sessions.",
       "The platform support gap is significant. Mouseflow works only on websites, while OpenPanel provides native SDKs for iOS, Android, React Native, and Flutter alongside its web SDKs. For teams building multi-platform products, this means a single analytics tool for all surfaces instead of piecing together separate solutions.",
-      "OpenPanel also offers what Mouseflow can't: full data ownership through self-hosting and open-source transparency under the MIT license. If you need to move beyond visual website optimization and measure product outcomes across web and mobile, OpenPanel provides the analytics foundation to do it."
+      "OpenPanel also offers what Mouseflow can't: full data ownership through self-hosting and open-source transparency under the AGPL-3.0 license. If you need to move beyond visual website optimization and measure product outcomes across web and mobile, OpenPanel provides the analytics foundation to do it."
     ]
   },
   "summary_comparison": {
@@ -58,17 +58,17 @@
     "items": [
       {
         "label": "Open source",
-        "openpanel": "Yes (MIT)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "No (proprietary)"
       },
       {
         "label": "Self-hosting",
-        "openpanel": "Yes, with Docker",
+        "openpanel": "Yes, with Docker Compose",
         "competitor": "No (cloud only)"
       },
       {
         "label": "Mobile SDKs",
-        "openpanel": "iOS, Android, RN, Flutter",
+        "openpanel": "iOS, Android, React Native, Flutter",
         "competitor": "Web only"
       },
       {
@@ -276,9 +276,10 @@
           "Next.js",
           "Vue",
           "React Native",
+          "Flutter",
           "iOS",
           "Android",
-          "Flutter"
+          "Node.js"
         ],
         "competitor": [
           "JavaScript (web only)"
@@ -287,13 +288,13 @@
       },
       {
         "label": "Open source",
-        "openpanel": "Yes (MIT)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "No",
         "notes": null
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker, simple setup",
+        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), guided setup wizard",
         "competitor": "Not available",
         "notes": null
       },
@@ -377,12 +378,12 @@
       },
       {
         "title": "Data ownership & self-hosting",
-        "description": "Complete data control with self-hosting. Mouseflow is cloud-only.",
+        "description": "Complete data control with self-hosting. A one-command ./setup wizard walks you through configuration and brings the whole Docker Compose stack up in minutes. Mouseflow is cloud-only.",
         "icon": "server"
       },
       {
         "title": "Open source requirements",
-        "description": "Full transparency and customization with MIT license. Mouseflow is proprietary.",
+        "description": "Full transparency and customization with AGPL-3.0 license. Mouseflow is proprietary.",
         "icon": "code"
       },
       {
@@ -414,7 +415,7 @@
       },
       {
         "question": "How does pricing compare?",
-        "answer": "Mouseflow uses session-based pricing starting at $31/month for 5,000 sessions. OpenPanel uses event-based pricing with 10,000 free events/month. OpenPanel's self-hosted option is completely free."
+        "answer": "Mouseflow uses session-based pricing starting at $31/month for 5,000 sessions. OpenPanel uses tiered event-based pricing from $2.50/month for 5,000 events (30-day free trial). OpenPanel's self-hosted option is completely free with unlimited events."
       },
       {
         "question": "Can I use both tools together?",

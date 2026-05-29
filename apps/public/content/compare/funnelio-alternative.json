@@ -29,7 +29,7 @@
     "paragraphs": [
       "Funnel.io is a marketing data integration platform designed to aggregate data from over 500 advertising platforms and marketing tools into unified reports. It's used by marketing teams at large organizations to bring together campaign performance data from Google Ads, Facebook, LinkedIn, and hundreds of other sources. But Funnel.io doesn't track user behavior at all \u2014 it aggregates data that already exists in external platforms.",
       "OpenPanel and Funnel.io serve fundamentally different purposes. Funnel.io answers the question 'how are my marketing campaigns performing across platforms?' while OpenPanel answers 'what are users doing inside my product?' If you need to track events, build funnels, analyze retention, and understand user behavior, that's product analytics \u2014 and that's what OpenPanel does.",
-      "The cost difference reflects these different markets. Funnel.io starts at $399 per month with no free tier, targeting enterprise marketing teams with large budgets. OpenPanel starts at $2.50 per month with a free tier of 10,000 events, or can be self-hosted for free. For product teams and startups, OpenPanel delivers actionable analytics without the enterprise price tag.",
+      "The cost difference reflects these different markets. Funnel.io starts at $399 per month, targeting enterprise marketing teams with large budgets. OpenPanel starts at $2.50 per month with a 30-day free trial, or can be self-hosted for free with unlimited events. For product teams and startups, OpenPanel delivers actionable analytics without the enterprise price tag.",
       "If you're evaluating analytics tools and Funnel.io appeared in your search, you likely need product analytics rather than marketing data aggregation. OpenPanel gives you the user behavior insights, funnel analysis, and retention tracking that help you build better products \u2014 with open-source transparency and the option to self-host."
     ]
   },
@@ -39,7 +39,7 @@
     "one_liner": "OpenPanel is for product analytics (how users interact with your product); Funnel.io is for marketing data integration (aggregating ad platform data).",
     "best_for_openpanel": [
       "Product teams who need to track user behavior in their website or app",
-      "Startups needing affordable analytics with a generous free tier",
+      "Startups needing affordable analytics (free self-hosting; cloud from $2.50/mo)",
       "Teams requiring self-hosting for data privacy or compliance",
       "Mobile app developers needing native iOS, Android, React Native SDKs"
     ],
@@ -68,7 +68,7 @@
       },
       {
         "label": "Self-Hosting & Open Source",
-        "openpanel": "Yes - MIT License, Docker deployment",
+        "openpanel": "Yes - AGPL-3.0, Docker Compose deployment",
         "competitor": "No - Cloud-only SaaS",
         "notes": "OpenPanel is fully open source and can be self-hosted. Funnel.io is proprietary cloud-only software with no self-hosting option."
       },
@@ -80,9 +80,9 @@
       },
       {
         "label": "Pricing Transparency",
-        "openpanel": "Public pricing, free tier",
-        "competitor": "Starts at $399/month, no free tier",
-        "notes": "OpenPanel offers transparent pricing with a free tier. Funnel.io starts at $399/month (Essentials) with enterprise plans reaching $1,999+/month."
+        "openpanel": "Public pricing from $2.50/mo + free self-hosting",
+        "competitor": "Starts at $399/month",
+        "notes": "OpenPanel offers transparent pricing from $2.50/month (30-day free trial) plus free unlimited self-hosting. Funnel.io starts at $399/month (Essentials) with enterprise plans reaching $1,999+/month."
       }
     ]
   },
@@ -222,9 +222,9 @@
           },
           {
             "name": "Data Warehouse Export",
-            "openpanel": true,
+            "openpanel": "Coming 2026",
             "competitor": true,
-            "notes": "Both export to BigQuery, Snowflake, etc."
+            "notes": "Funnel.io exports to BigQuery, Snowflake, etc. OpenPanel has an export API today, with native data-warehouse export (S3/GCS) on the roadmap for 2026."
           },
           {
             "name": "Looker Studio Integration",
@@ -317,13 +317,13 @@
     "items": [
       {
         "label": "Deployment",
-        "openpanel": "Docker (self-hosted) or managed cloud",
+        "openpanel": "Docker Compose, guided setup wizard (self-hosted) or managed cloud",
         "competitor": "Cloud SaaS only - no self-hosting",
         "notes": null
       },
       {
         "label": "Open Source",
-        "openpanel": "Yes - MIT License",
+        "openpanel": "Yes - AGPL-3.0",
         "competitor": "No - Proprietary closed-source",
         "notes": null
       },
@@ -341,7 +341,7 @@
       },
       {
         "label": "Integrations",
-        "openpanel": "Segment, webhooks, API, data warehouse export",
+        "openpanel": "Slack, Discord, webhooks, export API (data-warehouse export coming 2026)",
         "competitor": "500+ marketing connectors, Looker Studio, Power BI, Tableau, BigQuery, Snowflake, Redshift",
         "notes": null
       },
@@ -357,8 +357,8 @@
     "title": "Pricing comparison",
     "intro": "OpenPanel and Funnel.io have very different pricing models reflecting their different use cases.",
     "openpanel": {
-      "model": "Event-based, transparent",
-      "description": "Simple pricing with 10,000 free events per month. $0.00005 per event after free tier. All features included at every tier. No limits on users, dashboards, or data retention."
+      "model": "Flat monthly by event volume, transparent",
+      "description": "Tiered pricing from $2.50/month (5,000 events), e.g. $20/mo for 100K — 30-day free trial — or free self-hosting. All features included at every tier. No limits on users, dashboards, or data retention."
     },
     "competitor": {
       "model": "Flexpoint-based, no free tier",
@@ -414,17 +414,17 @@
       },
       {
         "title": "Startups Wanting Affordable Analytics",
-        "description": "Funnel.io starts at $399/month with no free tier. OpenPanel offers a generous free tier (10,000 events/month) and transparent pricing, making it accessible for startups and small teams.",
+        "description": "Funnel.io starts at $399/month. OpenPanel offers transparent pricing from $2.50/month (with a 30-day free trial) and free unlimited self-hosting, making it accessible for startups and small teams.",
         "icon": "dollar-sign"
       },
       {
         "title": "Teams Requiring Self-Hosting",
-        "description": "Funnel.io is cloud-only with no self-hosting option. If you need to host analytics on your own infrastructure for data privacy, compliance, or cost reasons, OpenPanel can be self-hosted via Docker.",
+        "description": "Funnel.io is cloud-only with no self-hosting option. If you need to host analytics on your own infrastructure for data privacy, compliance, or cost reasons, OpenPanel can be self-hosted via Docker Compose. A one-command ./setup wizard walks you through configuration and brings the whole stack up in minutes.",
         "icon": "server"
       },
       {
         "title": "Open Source Requirements",
-        "description": "Funnel.io is proprietary closed-source software. If your organization requires open source tools for security audits or compliance, OpenPanel is fully open source under the MIT license.",
+        "description": "Funnel.io is proprietary closed-source software. If your organization requires open source tools for security audits or compliance, OpenPanel is fully open source under the AGPL-3.0 license.",
         "icon": "code"
       },
       {
@@ -456,7 +456,7 @@
       },
       {
         "question": "Can I self-host Funnel.io?",
-        "answer": "No. Funnel.io is cloud-only SaaS with no self-hosting option. OpenPanel is open source (MIT license) and can be self-hosted via Docker for full data control."
+        "answer": "No. Funnel.io is cloud-only SaaS with no self-hosting option. OpenPanel is open source (AGPL-3.0 license) and can be self-hosted via Docker Compose for full data control."
       },
       {
         "question": "Does Funnel.io have mobile SDKs?",

@@ -94,7 +94,7 @@
       },
       {
         "label": "Self-hosting",
-        "openpanel": "Yes \u2014 single Docker container, simple setup",
+        "openpanel": "Yes \u2014 Docker Compose, guided setup wizard",
         "competitor": "Not available"
       }
     ]
@@ -308,9 +308,9 @@
           },
           {
             "name": "Google Search Console",
-            "openpanel": false,
+            "openpanel": true,
             "competitor": true,
-            "notes": "Native GA4 integration for search data"
+            "notes": "Both integrate with Google Search Console for search data"
           },
           {
             "name": "Webhooks",
@@ -373,7 +373,7 @@
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker Compose with one-command setup script",
+        "openpanel": "Docker Compose, guided setup wizard",
         "competitor": "Not available",
         "notes": "OpenPanel self-hosting takes ~15 minutes with our setup script"
       },
@@ -458,12 +458,12 @@
       },
       {
         "title": "Open source transparency and control",
-        "description": "Every line of OpenPanel's code is on GitHub under AGPL-3.0. Audit the tracking code, verify privacy claims, and contribute improvements. No black-box data processing.",
+        "description": "Every line of OpenPanel is on GitHub — the platform under AGPL-3.0, the client SDKs under MIT. Audit the code, verify privacy claims, and contribute improvements. No black-box data processing.",
         "icon": "code"
       },
       {
         "title": "Self-hosted for complete data sovereignty",
-        "description": "Deploy OpenPanel on your own servers with a single Docker container. Your analytics data never leaves your infrastructure \u2014 critical for healthcare, finance, and government.",
+        "description": "Deploy OpenPanel on your own servers with a one-command Docker Compose setup. Your analytics data never leaves your infrastructure \u2014 critical for healthcare, finance, and government.",
         "icon": "server"
       },
       {
@@ -509,7 +509,7 @@
       },
       {
         "question": "Can I self-host OpenPanel?",
-        "answer": "Yes. OpenPanel can be self-hosted using a single Docker container with our setup script. The entire process takes about 15 minutes. When self-hosted, you get unlimited events, unlimited data retention, and complete control over your data \u2014 no usage fees. The source code is available under the AGPL-3.0 license."
+        "answer": "Yes. OpenPanel can be self-hosted using Docker Compose (ClickHouse, Postgres, and Redis). A one-command ./setup wizard walks you through configuration, then ./start brings the whole stack up in minutes \u2014 the entire process takes about 15 minutes. When self-hosted, you get unlimited events, unlimited data retention, and complete control over your data \u2014 no usage fees. The source code is available under the AGPL-3.0 license."
       },
       {
         "question": "Can I import my Google Analytics data into OpenPanel?",

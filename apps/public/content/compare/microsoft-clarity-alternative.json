@@ -29,7 +29,7 @@
     "paragraphs": [
       "Microsoft Clarity is a completely free behavioral analytics tool that offers unlimited session recordings, heatmaps, and insights powered by AI. The price \u2014 free forever with no limits \u2014 is hard to argue with, and it's become a popular complement to Google Analytics. But Clarity is designed for observing behavior, not measuring outcomes. There's no event tracking, no funnels, no retention analysis, and no cohort breakdowns.",
       "OpenPanel fills the gap that Clarity leaves. While Clarity shows you recordings of individual sessions and aggregate heatmaps, OpenPanel gives you the structured analytics to understand patterns: which features drive retention, where users drop off in conversion flows, and how different cohorts of users behave over time. These are the insights that drive product decisions.",
-      "Self-hosting and data ownership are important distinctions. Clarity runs entirely on Microsoft's Azure cloud with no alternative, and your session recording data lives on their servers. OpenPanel can be self-hosted on your own infrastructure for complete data sovereignty, and its open-source MIT license means you can audit every line of code processing your users' data.",
+      "Self-hosting and data ownership are important distinctions. Clarity runs entirely on Microsoft's Azure cloud with no alternative, and your session recording data lives on their servers. OpenPanel can be self-hosted on your own infrastructure for complete data sovereignty, and its open-source AGPL-3.0 license means you can audit every line of code processing your users' data.",
       "Many teams find that Clarity and OpenPanel work well together \u2014 Clarity for visual session recordings and OpenPanel for structured product analytics. But if you're choosing one tool to understand and improve your product, OpenPanel provides the actionable metrics that behavioral observation alone can't deliver."
     ]
   },
@@ -62,9 +62,9 @@
       },
       {
         "label": "Self-Hosting",
-        "openpanel": "Yes — Docker Compose (one-command setup)",
+        "openpanel": "Yes — Docker Compose, guided setup wizard",
         "competitor": "No - Cloud only",
-        "notes": "OpenPanel self-hosts via Docker Compose (ClickHouse + Postgres + Redis), with a one-command setup script. Microsoft Clarity is cloud-only with data stored on Microsoft Azure servers."
+        "notes": "OpenPanel self-hosts via Docker Compose (ClickHouse, Postgres, Redis). A one-command ./setup wizard walks you through configuration and brings the whole stack up in minutes. Microsoft Clarity is cloud-only with data stored on Microsoft Azure servers."
       },
       {
         "label": "Session Recordings",
@@ -80,9 +80,9 @@
       },
       {
         "label": "Pricing",
-        "openpanel": "Free tier + paid plans",
+        "openpanel": "From $2.50/mo, or free self-hosted",
         "competitor": "100% Free forever",
-        "notes": "Microsoft Clarity is completely free with no paid tiers, no traffic limits, and no restrictions. OpenPanel has a free tier with 10,000 events/month."
+        "notes": "Microsoft Clarity is completely free with no paid tiers, no traffic limits, and no restrictions. OpenPanel's cloud starts at $2.50/month (5,000 events) after a 30-day free trial, or self-host free with unlimited events."
       }
     ]
   },
@@ -275,9 +275,9 @@
           },
           {
             "name": "Flutter SDK",
-            "openpanel": false,
+            "openpanel": true,
             "competitor": true,
-            "notes": "Clarity Flutter SDK launched June 2025"
+            "notes": "Clarity Flutter SDK launched June 2025; OpenPanel has a community-maintained Flutter SDK"
           },
           {
             "name": "React Native SDK",
@@ -317,13 +317,15 @@
           "Next.js",
           "Vue",
           "React Native",
+          "Flutter",
           "iOS",
           "Android",
           "Node.js",
-          "Python",
           "PHP",
-          "Go",
-          "Rust"
+          "Python",
+          "Ruby",
+          "Rust",
+          "Java"
         ],
         "competitor": [
           "JavaScript",
@@ -343,13 +345,13 @@
       },
       {
         "label": "Open Source",
-        "openpanel": "Yes - MIT License",
+        "openpanel": "Yes - AGPL-3.0",
         "competitor": "Partial - Tracking code only",
         "notes": "Clarity tracking code is open source on GitHub. Backend is proprietary."
       },
       {
         "label": "Self Hosting",
-        "openpanel": "Docker Compose (ClickHouse + Postgres + Redis, one-command setup)",
+        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), guided setup wizard",
         "competitor": "Not available - Cloud only (Microsoft Azure)",
         "notes": null
       },
@@ -375,10 +377,10 @@
   },
   "pricing": {
     "title": "Pricing comparison",
-    "intro": "Microsoft Clarity is 100% free. OpenPanel offers free tier with paid plans.",
+    "intro": "Microsoft Clarity is 100% free. OpenPanel offers transparent event-based pricing, with free self-hosting.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Simple pricing with 10,000 free events per month. All features included at every tier."
+      "description": "Transparent pricing from $2.50/month for 5,000 events, with a 30-day free trial. All features included at every tier. Self-host free with unlimited events."
     },
     "competitor": {
       "model": "100% Free forever",
@@ -399,7 +401,7 @@
       },
       {
         "title": "Install the OpenPanel SDK (replaces clarity.js)",
-        "description": "Remove the Clarity tracking snippet and add @openpanel/web (or your framework SDK). The web SDK is 2.3 KB gzipped vs Clarity's ~10 KB. Framework SDKs available: React, Next.js, Vue, Nuxt, Svelte, React Native, iOS, Android, Node.js, Python, PHP, Go, Rust."
+        "description": "Remove the Clarity tracking snippet and add @openpanel/web (or your framework SDK). The web SDK is 2.3 KB gzipped vs Clarity's ~10 KB. SDKs available: React, Next.js, Vue, Astro, Remix, React Native, Flutter, iOS (Swift), Android (Kotlin), Node.js, PHP, Python, Ruby, Rust, Java."
       },
       {
         "title": "Map Clarity Smart Events to OpenPanel events",
@@ -411,7 +413,7 @@
       },
       {
         "title": "Enable session replay",
-        "description": "Session replay is a separate config flag. Set recordSession: true in the SDK init (or via dashboard project settings). Replays start recording immediately on the next page load. Default retention is 30 days on cloud; unlimited on self-host."
+        "description": "Session replay is not enabled by default. Add sessionReplay: { enabled: true } to your SDK init (script tag or @openpanel/web). The replay module loads asynchronously on the next page load so your main tracking bundle stays lean. Unlimited sessions can be recorded; replays are retained for 30 days."
       },
       {
         "title": "Build the funnels and retention reports Clarity doesn't have",
@@ -476,7 +478,7 @@
       },
       {
         "question": "Can I self-host Microsoft Clarity?",
-        "answer": "No. Microsoft Clarity is cloud-only with data stored on Microsoft Azure servers. If you need self-hosting for data sovereignty or compliance, OpenPanel offers full Docker-based self-hosting."
+        "answer": "No. Microsoft Clarity is cloud-only with data stored on Microsoft Azure servers. If you need self-hosting for data sovereignty or compliance, OpenPanel offers full Docker Compose self-hosting."
       },
       {
         "question": "Does Clarity have retention and cohort analysis?",
@@ -496,7 +498,7 @@
       },
       {
         "question": "Is Clarity open source?",
-        "answer": "Partially. The Clarity tracking code is open source on GitHub, but the backend and dashboard are proprietary Microsoft services. OpenPanel is fully open source with MIT license."
+        "answer": "Partially. The Clarity tracking code is open source on GitHub, but the backend and dashboard are proprietary Microsoft services. OpenPanel is fully open source under the AGPL-3.0 license."
       },
       {
         "question": "How do I move Microsoft Clarity Smart Events to OpenPanel?",
@@ -504,7 +506,7 @@
       },
       {
         "question": "Microsoft Clarity is free — what does OpenPanel cost in comparison?",
-        "answer": "Clarity is genuinely free with no traffic limits, so cost isn't a switching driver. Switch to OpenPanel when you need product analytics Clarity doesn't offer (funnels, retention, cohorts, real user profiles) or when Microsoft's data ownership becomes a compliance issue. OpenPanel starts at $0 (10K events/month free tier) and scales to $900/month for high volume — or self-host for $0 of OpenPanel cost (you pay only for the server). For session-replay-only use cases, Clarity remains the cheaper option."
+        "answer": "Clarity is genuinely free with no traffic limits, so cost isn't a switching driver. Switch to OpenPanel when you need product analytics Clarity doesn't offer (funnels, retention, cohorts, real user profiles) or when Microsoft's data ownership becomes a compliance issue. OpenPanel starts at $2.50/month (5,000 events) with a 30-day free trial and scales to $900/month for high volume — or self-host free (you pay only for the server). For session-replay-only use cases, Clarity remains the cheaper option."
       }
     ]
   },

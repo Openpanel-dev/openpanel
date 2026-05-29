@@ -7,8 +7,8 @@
     "noindex": false
   },
   "hero": {
-    "heading": "Analytics for Developers",
-    "subheading": "An open-source analytics platform that respects your stack and your users' privacy. 16 SDKs, a clean REST API, Docker Compose self-hosting, and a 2.3 KB script. No cookies, no consent banners, no vendor lock-in.",
+    "heading": "Analytics for developers",
+    "subheading": "An open-source analytics platform that respects your stack and your users' privacy. 16 SDKs, a REST API, Docker Compose self-hosting, and a 2.3 KB script. No cookies, no consent banners, no vendor lock-in.",
     "badges": [
       "Open source (AGPL-3.0)",
       "16 SDKs",

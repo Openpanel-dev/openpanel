@@ -10,7 +10,7 @@ import { Faqs, FaqItem } from '@/components/faq';
 
 When you scale your database with read replicas, you gain performance but introduce a subtle problem: users might not see the data they just created. In this article, we'll walk through how we solved the read-after-write consistency challenge at OpenPanel, including the ideal solution we built and the practical compromise we had to make.
 
-## The Read-After-Write Problem
+## The read-after-write problem
 
 Picture this: A user creates a new dashboard in OpenPanel. The write goes to your primary database, and they're immediately redirected to view their creation. But the read request hits a replica that hasn't caught up yet. Result? A confusing 404 error for something they just created.
 
@@ -18,7 +18,7 @@ This happens because database replication has inherent lag. PostgreSQL replicati
 
 For OpenPanel, where users constantly create and modify dashboards, charts, and reports, this inconsistency was unacceptable. We needed to guarantee that users always see their own writes immediately.
 
-## WAL LSN: The Perfect Solution (In Theory)
+## WAL LSN: the perfect solution (in theory)
 
 PostgreSQL maintains a Write-Ahead Log (WAL) with Log Sequence Numbers (LSN) that increment with each database change. Think of LSN as a precise timestamp for your database state. By comparing LSN values between primary and replicas, you can determine exactly whether a replica has received specific changes.
 
@@ -60,7 +60,7 @@ function compareWalLsn(lsn1: string, lsn2: string): number {
 }
 ```
 
-## The Prisma Limitation
+## The Prisma limitation
 
 Here's where theory meets reality. Our implementation hit a fundamental limitation: Prisma's `readReplicas` extension doesn't expose which replica will be used before executing a query.
 
@@ -78,7 +78,7 @@ We built all the LSN comparison logic, caching, and retry mechanisms. But withou
 
 If you have full control over your database connection routing and implement custom replica selection, LSN tracking is absolutely the way to go. But working within Prisma's constraints, we needed a simpler approach.
 
-## Our Practical Solution (For Now): Session-Based Primary Routing
+## Our practical solution (for now): session-based primary routing
 
 Instead of checking exact replication positions, we simplified: if a session has written recently, route all their reads to the primary. Here's how it works:
 
@@ -112,7 +112,7 @@ if (isReadOperation(operation) && sessionId) {
 
 The 5-second TTL is our safety margin. In our testing, replicas typically catch up within 100-500ms, but we prefer being conservative. This window could likely be reduced, but the current setting has proven reliable.
 
-## AsyncLocalStorage: Avoiding Prop Drilling
+## AsyncLocalStorage: avoiding prop drilling
 
 The biggest implementation challenge wasn't the consistency logic; it was making session information available throughout our application stack. We needed the session ID deep in our Prisma extension without modifying every function signature.
 
@@ -150,11 +150,11 @@ const sessionId = getAlsSessionId(); // Magic! No prop drilling
 
 This works reliably as long as you maintain the async chain. Loose promises (ones that aren't awaited) will lose the context, so always await your async operations.
 
-## The Complete Implementation
+## The complete implementation
 
 Let me walk through the key components of our solution.
 
-### AsyncLocalStorage Setup
+### AsyncLocalStorage setup
 
 ```typescript
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -170,7 +170,7 @@ export const runWithAlsSession = <T>(
 export const getAlsSessionId = () => als.getStore()?.sessionId ?? null;
 ```
 
-### TRPC Middleware Integration
+### TRPC middleware integration
 
 ```typescript
 const sessionScopeMiddleware = t.middleware(async ({ ctx, next }) => {
@@ -181,7 +181,7 @@ const sessionScopeMiddleware = t.middleware(async ({ ctx, next }) => {
 });
 ```
 
-### The Prisma Extension
+### The Prisma extension
 
 Here's our complete session consistency extension:
 
@@ -239,7 +239,7 @@ export function sessionConsistency() {
 }
 ```
 
-### Applying the Extensions
+### Applying the extensions
 
 Order matters when applying Prisma extensions:
 
@@ -251,7 +251,7 @@ export const prisma = new PrismaClient()
   }));
 ```
 
-## Why This Works Well
+## Why this works well
 
 Our solution might seem like a compromise, but it has several advantages:
 
@@ -263,7 +263,7 @@ Our solution might seem like a compromise, but it has several advantages:
 
 **Maintainability**: The logic is contained in one Prisma extension. No changes needed elsewhere in the codebase. If Prisma adds replica selection APIs in the future, we can upgrade to true LSN checking without touching application code.
 
-## Monitoring and Insights
+## Monitoring and insights
 
 We track several metrics to ensure our system performs well:
 
@@ -273,7 +273,7 @@ We track several metrics to ensure our system performs well:
 
 These metrics confirm that most reads still go to replicas. Only active users who just performed writes hit the primary, which is exactly what we want.
 
-## Future Improvements
+## Future improvements
 
 While our current solution works well, we see opportunities for enhancement:
 
@@ -285,7 +285,7 @@ While our current solution works well, we see opportunities for enhancement:
 
 If Prisma eventually supports custom replica selection logic, we'd love to implement proper LSN checking. Until then, our approach provides excellent consistency guarantees with minimal complexity.
 
-## Key Takeaways
+## Key takeaways
 
 Building read-after-write consistency taught us valuable lessons:
 
@@ -295,9 +295,9 @@ Building read-after-write consistency taught us valuable lessons:
 
 **Conservative defaults are good defaults.** A 5-second primary routing window might be overkill, but it's never caused issues.
 
-**Measure everything.** Without metrics, you're guessing. Track your primary/replica distribution to ensure you're not overloading the primary.
+**Measure everything.** Without metrics, you're guessing. Track your primary/replica distribution to make sure you're not overloading the primary.
 
-Have you solved similar consistency challenges? We'd love to hear about your approach. And if you're looking for an analytics platform that sweats the details on data consistency, check out [OpenPanel](https://openpanel.dev).
+If you're looking for an analytics platform that takes data consistency seriously, check out [OpenPanel](https://openpanel.dev).
 
 <Faqs>
 <FaqItem question="Why not just use the primary database for everything?">

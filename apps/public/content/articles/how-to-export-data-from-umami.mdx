@@ -17,31 +17,31 @@ import { Figure } from '@/components/figure'
   caption="Running the OpenPanel Umami exporter to export analytics data from Umami"
 />
 
-When it comes to [web analytics](/features/web-analytics), having control over your data is crucial. Whether you're planning to switch analytics platforms, need to create backups, or want to analyze your data in specialized tools, being able to export your Umami Analytics data is essential.
+With [web analytics](/features/web-analytics), you want control over your data. If you're switching platforms, creating backups, or analyzing your data in other tools, you need a way to export it from Umami Analytics.
 
-The challenge is that Umami handles data export differently depending on whether you're using their cloud service or self-hosting. This guide will walk you through both scenarios and help you understand why you might want to consider alternatives like OpenPanel for your analytics needs.
+Umami handles data export differently depending on whether you use their cloud service or self-host. This guide walks through both, and explains why you might consider alternatives like OpenPanel.
 
-## Understanding Umami's Export Limitations
+## Understanding Umami's export limitations
 
-Umami Analytics is a fantastic privacy-focused analytics tool, but it has some limitations when it comes to data portability. The cloud version includes an export feature, which is great if you're paying for their service. However, if you're self-hosting Umami, you're left without an official export tool.
+Umami Analytics is a good privacy-focused analytics tool, but it has limits around data portability. The cloud version includes an export feature, which is great if you're paying for their service. If you self-host Umami, though, there's no official export tool.
 
-This gap exists because Umami's development team focuses primarily on the analytics features themselves rather than data migration tools. It's understandable, but it creates a real challenge for users who need to move their data.
+This gap exists because Umami's team focuses on the analytics features rather than data migration tools. That's understandable, but it's a real problem for users who need to move their data.
 
 Many self-hosted users discover this limitation only when they need to migrate or create backups. You might have months or years of valuable analytics data locked in your PostgreSQL database with no straightforward way to get it out.
 
-## The Cloud Export Feature
+## The cloud export feature
 
-If you're using Umami Cloud, you have access to their built-in export functionality. The process is relatively simple but comes with its own set of considerations.
+If you're using Umami Cloud, you have access to their built-in export. The process is simple but has a few considerations.
 
-To export from Umami Cloud, you'll need to log into your account and navigate to the Account section. From there, you'll find a Data tab that contains the export option. The interface is clean and straightforward, which is typical of Umami's design philosophy.
+To export from Umami Cloud, log into your account and go to the Account section. There you'll find a Data tab with the export option.
 
-Once you submit an export request, Umami processes it in the background. This asynchronous approach means you don't have to wait around while your data is being prepared. Instead, they'll send you an email with a download link once the export is ready.
+Once you submit an export request, Umami processes it in the background, so you don't have to wait while your data is prepared. They'll send you an email with a download link once the export is ready.
 
-The exported data comes in CSV format, compressed with gzip to reduce file size. This is particularly helpful if you have a high-traffic website with millions of pageviews. The compression can reduce file sizes by 70-90%, making downloads much faster.
+The exported data comes in CSV format, compressed with gzip to reduce file size. This helps if you have a high-traffic website with millions of pageviews. The compression can reduce file sizes by 70-90%, making downloads faster.
 
-However, there are some limitations to consider. Each export request handles only one website at a time. If you're tracking multiple domains, you'll need to submit separate export requests for each one. This can become tedious if you manage many sites.
+There are some limitations, though. Each export request handles only one website at a time. If you track multiple domains, you'll need a separate export request for each one, which gets tedious if you manage many sites.
 
-Additionally, large datasets might take considerable time to process. Umami doesn't provide real-time progress updates, so you're left waiting for the email notification. In some cases, exports for very large sites can take hours to complete.
+Large datasets can also take a long time to process. Umami doesn't provide real-time progress updates, so you wait for the email notification. For very large sites, exports can take hours to complete.
 
 <Figure
   src="/content/npm-op-umami-exporter.png"
@@ -49,23 +49,23 @@ Additionally, large datasets might take considerable time to process. Umami does
 />
 
 
-## The Self-Hosted Solution: OpenPanel Exporter
+## The self-hosted solution: OpenPanel exporter
 
-For self-hosted Umami users, we've developed the [@openpanel/umami-exporter](https://www.npmjs.com/package/@openpanel/umami-exporter) to fill this gap. This tool connects directly to your PostgreSQL database and extracts all your analytics data into a clean CSV format.
+For self-hosted Umami users, we built the [@openpanel/umami-exporter](https://www.npmjs.com/package/@openpanel/umami-exporter) to fill this gap. It connects directly to your PostgreSQL database and extracts all your analytics data into CSV format.
 
-The beauty of this approach is its simplicity. You don't need to install anything permanently or modify your Umami installation. The tool runs independently and only needs read access to your database.
+You don't need to install anything permanently or modify your Umami installation. The tool runs independently and only needs read access to your database.
 
-Using npx, you can run the exporter without any installation:
+With npx, you can run the exporter without installing anything:
 
 ```bash
 npx op-umami-exporter "postgresql://username:password@host:port/database"
 ```
 
-This single command handles everything: connecting to your database, querying the necessary tables, joining the data correctly, and outputting it in a format that's ready for import into other systems.
+This single command handles everything: connecting to your database, querying the necessary tables, joining the data, and outputting it in a format that's ready to import into other systems.
 
-The exporter is smart about how it retrieves data. It pulls information from multiple tables including sessions, events, and website configurations, then combines them into a denormalized format. This makes the exported data much easier to work with in other tools.
+The exporter pulls data from multiple tables including sessions, events, and website configurations, then combines them into a denormalized format. This makes the exported data easier to work with in other tools.
 
-One common hurdle is that Umami's default Docker configuration doesn't expose the PostgreSQL port. You'll need to modify your docker-compose.yml file to add port mapping. This is a one-time change that takes just a minute:
+One common hurdle is that Umami's default Docker configuration doesn't expose the PostgreSQL port. You'll need to modify your docker-compose.yml file to add port mapping. This is a one-time change that takes a minute:
 
 ```yaml
 services:
@@ -76,37 +76,37 @@ services:
 
 After making this change and restarting your containers, the exporter can connect to your database. The default Umami credentials are usually umami/umami for both username and password, though you should verify this in your configuration.
 
-## Why Consider Moving from Umami?
+## Why consider moving from Umami?
 
-While Umami excels at privacy-focused web analytics, you might find yourself needing more advanced features. This is where platforms like OpenPanel come into play.
+Umami is good at privacy-focused web analytics, but you might need more advanced features. That's where platforms like OpenPanel fit.
 
-We built OpenPanel with the understanding that modern websites need more than just pageview tracking. While maintaining the same privacy-first approach as Umami, we add capabilities that help you understand user behavior at a deeper level.
+We built OpenPanel for websites that need more than pageview tracking. It keeps the same privacy-first approach as Umami and adds features to understand user behavior in more depth.
 
-One key difference is real-time data processing. With our platform, you see visitor activity as it happens, not with the delays common in batch-processing systems. This immediacy helps you respond quickly to traffic spikes, marketing campaigns, or technical issues.
+One difference is real-time data processing. You see visitor activity as it happens, not with the delays common in batch-processing systems. That helps you respond quickly to traffic spikes, marketing campaigns, or technical issues.
 
-Our [event tracking](/features/event-tracking) goes beyond simple pageviews. You can track custom events, user interactions, and [conversion funnels](/features/funnels) without writing complex code. Our platform automatically captures many interactions that would require manual setup in Umami.
+Our [event tracking](/features/event-tracking) goes beyond pageviews. You can track custom events, user interactions, and [conversion funnels](/features/funnels) without writing complex code. OpenPanel automatically captures many interactions that would require manual setup in Umami.
 
-Our filtering and segmentation capabilities are also more advanced. You can create complex queries to understand specific user segments, compare time periods with more flexibility, and build custom dashboards that focus on your key metrics.
+Filtering and segmentation are also more advanced. You can build queries for specific user segments, compare time periods more flexibly, and create custom dashboards focused on the metrics you care about.
 
-For teams, we offer better collaboration features. You can share specific views, create read-only access for stakeholders, and set up automated reports that keep everyone informed without giving full access to your analytics.
+For teams, OpenPanel has better collaboration features. You can share specific views, create read-only access for stakeholders, and set up automated reports that keep everyone informed without giving full access to your analytics.
 
-## Making the Migration Decision
+## Making the migration decision
 
-Deciding whether to migrate from Umami isn't just about features. It's about understanding your analytics needs and growth trajectory.
+Deciding whether to migrate from Umami comes down to your analytics needs and how you expect to grow.
 
-If you're running a simple blog or portfolio site, Umami's basic analytics might be perfectly adequate. The simplicity can actually be an advantage, keeping you focused on creating content rather than drowning in data.
+If you're running a simple blog or portfolio site, Umami's basic analytics might be enough. The simplicity keeps you focused on creating content.
 
-However, if you're running an e-commerce site, SaaS application, or any business where user behavior insights directly impact revenue, you'll likely hit Umami's limitations quickly. The inability to track custom events effectively or build conversion funnels becomes a real bottleneck.
+But if you're running an e-commerce site, SaaS application, or any business where user behavior directly affects revenue, you'll likely hit Umami's limits quickly. Not being able to track custom events or build conversion funnels becomes a bottleneck.
 
-Consider also the total cost of ownership. While self-hosting Umami seems free, you're paying for server resources, maintenance time, and the opportunity cost of missing insights. Cloud analytics platforms like OpenPanel often provide better value when you factor in all these hidden costs.
+Consider the total cost of ownership too. Self-hosting Umami seems free, but you're paying for server resources, maintenance time, and the cost of missing insights. Cloud platforms like OpenPanel often provide better value once you factor in those hidden costs.
 
-The export process we've covered makes migration risk-free. You can export your historical data, try OpenPanel or another platform, and make an informed decision based on actual experience rather than feature lists.
+The export process above makes migration low-risk. You can export your historical data, try OpenPanel or another platform, and decide based on real experience rather than feature lists.
 
-## Best Practices for Data Export
+## Best practices for data export
 
-When exporting your Umami data, timing matters. Choose a low-traffic period to minimize the impact on your database performance. While the export process is read-only and shouldn't affect your live analytics, it's better to be cautious.
+When exporting your Umami data, timing matters. Choose a low-traffic period to minimize the impact on your database performance. The export process is read-only and shouldn't affect your live analytics, but it's better to be cautious.
 
-Always verify your exports immediately after completion. Open the CSV file and check that the data looks correct. Look for the right date ranges, ensure all your websites are included, and verify that event data is properly formatted.
+Always verify your exports right after they finish. Open the CSV file and check that the data looks correct. Look for the right date ranges, make sure all your websites are included, and check that event data is properly formatted.
 
 For large datasets, consider breaking up exports by date range. This makes the files more manageable and reduces the risk of timeout issues. You can easily combine multiple CSV files later if needed.
 

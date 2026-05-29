@@ -2,7 +2,7 @@
   "slug": "integrations",
   "short_name": "Integrations",
   "seo": {
-    "title": "Integrations - Slack, Webhooks & More",
+    "title": "Integrations - Slack, Webhooks, and More",
     "description": "Connect OpenPanel to Slack, Discord, webhooks, and more. Trigger actions based on user behavior-send alerts, sync to Zapier, or export events to S3 and BigQuery.",
     "keywords": [
       "analytics integrations",
@@ -15,8 +15,8 @@
     ]
   },
   "hero": {
-    "heading": "Integrations: Connect to any webhook",
-    "subheading": "Push data out of OpenPanel and into Slack, Discord, or any webhook. Trigger on the events that matter - no polling, no glue code.",
+    "heading": "Integrations: connect to any webhook",
+    "subheading": "Push data out of OpenPanel and into Slack, Discord, or any webhook. Trigger on the events you choose, with no polling and no glue code.",
     "badges": [
       "Slack, Discord & webhooks",
       "Trigger on any event",
@@ -26,11 +26,11 @@
   },
   "definition": {
     "title": "What are integrations?",
-    "text": "Integrations are the bridge between OpenPanel and everything else. They let you **get data out** of OpenPanel and into the tools and workflows your team already relies on.\n\nThe idea is simple: you create an **integration** (a connection to an external service), then attach it to a **[notification rule](/features/notifications)** that fires whenever the conditions you define are met. That's it - OpenPanel handles the rest.\n\nHere's an example: you want to be notified in Slack whenever a new user signs up from a specific country. You create a Slack integration, set up a notification rule that triggers on `signup` events, and use a template like *\"New user from {{country}}\"*. Every time someone signs up, the message lands in your Slack channel - no polling, no cron jobs, no glue code.\n\nBut it goes further than alerts. With **webhooks**, you can push event data to any URL - including **Zapier**, **Make**, or your own backend. That means you can trigger custom workflows based on real user behavior: send a welcome email when someone completes onboarding, notify sales when a user hits a usage milestone, or log high-value events to an external system.\n\nYou can even trigger integrations when a user completes a **funnel** - combining OpenPanel's funnel analysis with real-time action.\n\nToday, OpenPanel supports:\n\n- **Slack** - post messages to any channel when events fire\n- **Discord** - same as Slack, but for Discord servers\n- **Webhooks** - send event payloads to any URL with custom headers and a JavaScript transform for full control over the payload shape\n\nComing soon:\n\n- **S3-compatible storage** - automatically export events to Amazon S3, MinIO, Cloudflare R2, or any S3-compatible store\n- **Google Cloud Storage** - export to GCS for easy import into **BigQuery**, **Redshift**, or your data warehouse\n\nThese storage integrations will make importing your OpenPanel events into your data warehouse straightforward and easy - no custom ETL pipelines needed."
+    "text": "Integrations are the bridge between OpenPanel and everything else. They let you **get data out** of OpenPanel and into the tools and workflows your team already relies on.\n\nThe idea is simple: you create an **integration** (a connection to an external service), then attach it to a **[notification rule](/features/notifications)** that fires whenever the conditions you define are met. That's it - OpenPanel handles the rest.\n\nHere's an example: you want to be notified in Slack whenever a new user signs up from a specific country. You create a Slack integration, set up a notification rule that triggers on `signup` events, and use a template like *\"New user from {{country}}\"*. Every time someone signs up, the message lands in your Slack channel - no polling, no cron jobs, no glue code.\n\nIt goes beyond alerts. With **webhooks**, you can push event data to any URL - including **Zapier**, **Make**, or your own backend. That means you can trigger custom workflows based on real user behavior: send a welcome email when someone completes onboarding, notify sales when a user hits a usage milestone, or log high-value events to an external system.\n\nYou can even trigger integrations when a user completes a **funnel** - combining OpenPanel's funnel analysis with real-time action.\n\nToday, OpenPanel supports:\n\n- **Slack** - post messages to any channel when events fire\n- **Discord** - same as Slack, but for Discord servers\n- **Webhooks** - send event payloads to any URL with custom headers and a JavaScript transform for full control over the payload shape\n\nComing soon:\n\n- **S3-compatible storage** - automatically export events to Amazon S3, MinIO, Cloudflare R2, or any S3-compatible store\n- **Google Cloud Storage** - export to GCS for easy import into **BigQuery**, **Redshift**, or your data warehouse\n\nThese storage integrations will let you import OpenPanel events into your data warehouse without custom ETL pipelines."
   },
   "capabilities_section": {
     "title": "What you can do with integrations",
-    "intro": "From real-time Slack alerts to warehouse exports - integrations connect OpenPanel to your stack."
+    "intro": "From real-time Slack alerts to upcoming warehouse exports - integrations connect OpenPanel to your stack."
   },
   "capabilities": [
     {

@@ -10,11 +10,11 @@ cover: /content/bullmq-alternative.jpg
 import { Faqs, FaqItem } from '@/components/faq';
 import { Figure } from '@/components/figure'
 
-When building scalable applications, job queues are essential. They help manage workload, handle traffic spikes, and ensure system reliability. But what happens when your queue system itself becomes a source of complexity?
+Job queues help manage workload, handle traffic spikes, and keep a system reliable. But what happens when your queue system itself becomes a source of complexity?
 
-At OpenPanel, we process millions of analytics events daily. Each event needs to be queued, processed, and stored efficiently. We started with BullMQ, which served us well initially. However, as our traffic grew, we encountered a challenge that many high-throughput systems face: race conditions when processing related events.
+At OpenPanel, we process millions of analytics events daily. Each event needs to be queued, processed, and stored efficiently. We started with BullMQ, which served us well initially. However, as our traffic grew, we hit a problem that many high-throughput systems face: race conditions when processing related events.
 
-## The Concurrency Problem
+## The concurrency problem
 
 Imagine you're tracking user behavior on a website. A single user might trigger multiple events within milliseconds: a page view, a click, and a form submission. These events arrive at your queue almost simultaneously, and if processed in parallel by different workers, they can create race conditions.
 
@@ -22,13 +22,13 @@ Traditional solutions involve complex locking mechanisms, distributed locks, or 
 
 The ideal solution was clear: process events from the same user sequentially while maintaining overall system throughput. This would eliminate race conditions at the architectural level rather than trying to handle them in application code.
 
-## Why Not BullMQ Pro?
+## Why not BullMQ Pro?
 
 BullMQ actually offers this exact feature through their "Group" functionality, but it's only available in their Pro version. For a commercial SaaS product, paying for BullMQ Pro makes perfect sense. However, OpenPanel is open source and self-hostable.
 
-Requiring our users to purchase a commercial license for a critical dependency would contradict our core mission. We believe in providing a complete, truly open-source analytics solution that anyone can run without hidden costs or proprietary dependencies.
+Requiring our users to buy a commercial license for a core dependency would contradict our mission. We want to provide a complete, open-source analytics solution that anyone can run without hidden costs or proprietary dependencies.
 
-This philosophy drove us to create GroupMQ: an open-source queue system that makes job grouping a first-class feature, not a premium add-on.
+So we built GroupMQ: an open-source queue system that makes job grouping a first-class feature instead of a premium add-on.
 
 ## Introducing GroupMQ
 
@@ -40,33 +40,33 @@ This philosophy drove us to create GroupMQ: an open-source queue system that mak
 
 GroupMQ is a Redis-based queue system inspired by BullMQ but designed from the ground up with job grouping as its core feature. It ensures that jobs within the same group are processed sequentially while different groups run in parallel.
 
-Here's what makes GroupMQ special:
+Here's what GroupMQ does:
 
-**Intelligent Group Processing**: Jobs are automatically organized by group IDs. The system guarantees that only one job per group is processed at any given time, completely eliminating race conditions for related operations.
+**Group processing**: Jobs are automatically organized by group IDs. The system guarantees that only one job per group is processed at any given time, which eliminates race conditions for related operations.
 
-**Fair Scheduling**: Unlike naive implementations that might let one busy group block others, GroupMQ uses a round-robin approach to ensure all groups get processing time. This prevents any single group from monopolizing worker resources.
+**Fair scheduling**: Unlike naive implementations that might let one busy group block others, GroupMQ uses a round-robin approach so all groups get processing time. This prevents any single group from monopolizing worker resources.
 
-**Familiar API**: If you've used BullMQ, you'll feel right at home. We've maintained similar patterns and conventions, making migration straightforward. The main difference is that group assignment is mandatory and built into every operation.
+**Familiar API**: If you've used BullMQ, you'll feel at home. We've kept similar patterns and conventions, which makes migration straightforward. The main difference is that group assignment is mandatory and built into every operation.
 
-**Redis-Native Performance**: Built directly on Redis data structures, GroupMQ leverages Redis's atomic operations for maximum performance and reliability. There's no additional overhead compared to other Redis-based queues.
+**Redis-native performance**: Built directly on Redis data structures, GroupMQ uses Redis's atomic operations for performance and reliability. There's no additional overhead compared to other Redis-based queues.
 
-## Real-World Use Cases
+## Real-world use cases
 
-GroupMQ shines in scenarios where you need to maintain order within related operations:
+GroupMQ fits cases where you need to maintain order within related operations:
 
-**Analytics Processing**: Process events from the same user sequentially to maintain accurate [session tracking](/features/session-tracking) and prevent duplicate counting.
+**Analytics processing**: Process events from the same user sequentially to maintain accurate [session tracking](/features/session-tracking) and prevent duplicate counting.
 
-**E-commerce Orders**: Handle order updates, payment processing, and inventory changes for the same order ID without race conditions.
+**E-commerce orders**: Handle order updates, payment processing, and inventory changes for the same order ID without race conditions.
 
-**Notification Systems**: Ensure notifications for the same recipient are processed in order, preventing confusing out-of-sequence messages.
+**Notification systems**: Process notifications for the same recipient in order, preventing out-of-sequence messages.
 
-**Multi-tenant Applications**: Process jobs for each tenant in isolation while maintaining overall system throughput.
+**Multi-tenant applications**: Process jobs for each tenant in isolation while maintaining overall system throughput.
 
-**Import/Export Operations**: Handle file processing where multiple operations on the same resource must happen sequentially.
+**Import/export operations**: Handle file processing where multiple operations on the same resource must happen sequentially.
 
-## BullBoard Compatibility
+## BullBoard compatibility
 
-One of BullMQ's strengths is its ecosystem, particularly BullBoard for queue monitoring. We've ensured that GroupMQ maintains compatibility with BullBoard through an adapter.
+One of BullMQ's strengths is its tooling, particularly BullBoard for queue monitoring. GroupMQ stays compatible with BullBoard through an adapter.
 
 <Figure
   src="/content/bullboard.png"
@@ -77,7 +77,7 @@ This means you can continue using your existing monitoring setup. View job count
 
 ## Migration from BullMQ
 
-Migrating from BullMQ to GroupMQ is designed to be as smooth as possible. The main changes involve:
+Migrating from BullMQ to GroupMQ takes a few changes:
 
 1. **Adding Group IDs**: Every job must have a group ID. This is typically derived from your existing data (user ID, order ID, etc.)
 
@@ -133,35 +133,35 @@ The main differences are:
 - Workers: BullMQ takes queue name, handler function, and options. GroupMQ takes an options object with `queue` and `handler`, then requires calling `run()`
 - Job object: GroupMQ jobs include both `job.data` and `job.groupId` properties
 
-## Performance Characteristics
+## Performance characteristics
 
-GroupMQ's performance profile differs from traditional queues in interesting ways:
+GroupMQ's performance profile differs from traditional queues:
 
-**Sequential Within Groups**: Jobs in the same group process one at a time. This might seem like a limitation, but it's exactly what prevents race conditions. The throughput for a single group matches single-threaded processing speed.
+**Sequential within groups**: Jobs in the same group process one at a time. This might seem like a limitation, but it's what prevents race conditions. The throughput for a single group matches single-threaded processing speed.
 
-**Parallel Across Groups**: Different groups process completely in parallel. With enough groups, you can saturate all available workers just like a traditional queue system.
+**Parallel across groups**: Different groups process in parallel. With enough groups, you can saturate all available workers like a traditional queue system.
 
-**Predictable Latency**: Since groups process independently, a slow job in one group doesn't impact others. This isolation provides more predictable performance characteristics.
+**Predictable latency**: Since groups process independently, a slow job in one group doesn't impact others. This isolation makes performance more predictable.
 
-**Memory Efficiency**: Group organization in Redis is optimized to minimize memory usage while maintaining fast access patterns.
+**Memory efficiency**: Group organization in Redis is optimized to minimize memory usage while keeping fast access patterns.
 
-## Advanced Features
+## Advanced features
 
-Beyond basic job grouping, GroupMQ includes several advanced features:
+Beyond basic job grouping, GroupMQ includes:
 
-**Delayed Jobs**: Schedule jobs to run after a specific delay, useful for scheduled tasks or retry backoffs.
+**Delayed jobs**: Schedule jobs to run after a specific delay, useful for scheduled tasks or retry backoffs.
 
-**Repeating Jobs**: Configure cron-like patterns to create recurring jobs on a schedule.
+**Repeating jobs**: Configure cron-like patterns to create recurring jobs on a schedule.
 
-**Job Retries**: Built-in retry mechanism with configurable attempts and backoff strategies. Failed jobs can be automatically retried or moved to dead letter storage.
+**Job retries**: Built-in retry mechanism with configurable attempts and backoff strategies. Failed jobs can be automatically retried or moved to dead letter storage.
 
-**Ordering Strategies**: Choose between different ordering methods (`'none'`, `'scheduler'`, or `'in-memory'`) to handle out-of-order job arrivals based on your use case.
+**Ordering strategies**: Choose between different ordering methods (`'none'`, `'scheduler'`, or `'in-memory'`) to handle out-of-order job arrivals based on your use case.
 
-**Graceful Shutdown**: Workers can complete processing current jobs before shutting down, ensuring data consistency.
+**Graceful shutdown**: Workers can complete processing current jobs before shutting down, keeping data consistent.
 
-**BullBoard Integration**: Monitor your queues using the familiar BullBoard interface through the provided adapter.
+**BullBoard integration**: Monitor your queues using the BullBoard interface through the provided adapter.
 
-## When to Choose GroupMQ
+## When to choose GroupMQ
 
 GroupMQ is the right choice when:
 
@@ -178,15 +178,15 @@ It might not be the best fit if:
 - You have very few natural groupings in your data
 - You're already using BullMQ Pro and happy with it
 
-## Getting Started
+## Getting started
 
-Installing GroupMQ is straightforward:
+Installing GroupMQ:
 
 ```npm
 npm install groupmq
 ```
 
-Basic usage follows familiar patterns:
+Basic usage:
 
 ```javascript
 import Redis from 'ioredis';
@@ -215,11 +215,11 @@ const worker = new Worker({
 worker.run();
 ```
 
-## Open Source Philosophy
+## Open source philosophy
 
-GroupMQ embodies our commitment to true open-source software. It's MIT licensed, accepts community contributions, and will never have a "pro" version with essential features locked away.
+GroupMQ is fully open source. It's MIT licensed, accepts community contributions, and will never have a "pro" version with essential features locked away.
 
-We built GroupMQ because we needed it for OpenPanel, but we're releasing it as a standalone project because we believe others face similar challenges. The best solutions emerge when real-world problems meet open collaboration.
+We built GroupMQ because we needed it for OpenPanel, but we're releasing it as a standalone project because others face the same problem.
 
 <Faqs>
 <FaqItem question="How does GroupMQ compare to BullMQ Pro's group feature?">
