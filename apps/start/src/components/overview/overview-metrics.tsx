@@ -170,6 +170,7 @@ export default function OverviewMetrics({
               data={data}
               interval={interval}
               projectId={projectId}
+              shareId={shareId}
             />
           )}
         </div>
@@ -222,11 +223,13 @@ function Chart({
   interval,
   data,
   projectId,
+  shareId,
 }: {
   activeMetric: (typeof TITLES)[number];
   interval: IInterval;
   data: SeriesItem[];
   projectId: string;
+  shareId?: string;
 }) {
   const { range, startDate, endDate } = useOverviewOptions();
   const trpc = useTRPC();
@@ -249,6 +252,7 @@ function Chart({
     trpc.overview.getReferrerSpikes.queryOptions(
       {
         projectId,
+        shareId,
         startDate,
         endDate,
         range,
