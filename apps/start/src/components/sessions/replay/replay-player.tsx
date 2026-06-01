@@ -1,265 +1,184 @@
-import { Button } from '@/components/ui/button';
-import { useTRPC } from '@/integrations/trpc/react';
-import { useQueryClient } from '@tanstack/react-query';
-import { PauseIcon, PlayIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { Replayer } from 'rrweb';
-import type { eventWithTime } from 'rrweb';
+import { useReplayContext } from '@/components/sessions/replay/replay-context';
+import type { ReplayPlayerInstance } from '@/components/sessions/replay/replay-context';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-interface ReplayPlayerProps {
-  sessionId: string;
-  projectId: string;
-}
+import 'rrweb-player/dist/style.css';
 
-interface MousePosition {
-  t: number;
-  x: number;
-  y: number;
-}
-
-function formatMs(ms: number) {
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  return `${m}:${String(s % 60).padStart(2, '0')}`;
-}
-
-function extractMousePositions(events: eventWithTime[]): MousePosition[] {
-  const positions: MousePosition[] = [];
-  for (const e of events) {
-    // type 3 = IncrementalSnapshot, source 1 = MouseMove
-    if ((e as any).type === 3 && (e as any).data?.source === 1) {
-      for (const p of ((e as any).data.positions ?? [])) {
-        positions.push({ t: e.timestamp + (p.timeOffset ?? 0), x: p.x, y: p.y });
-      }
-    }
+/** rrweb meta event (type 4) carries the recorded viewport size */
+function getRecordedDimensions(
+  events: Array<{ type: number; data: unknown }>,
+): { width: number; height: number } | null {
+  const meta = events.find((e) => e.type === 4);
+  if (
+    meta &&
+    typeof meta.data === 'object' &&
+    meta.data !== null &&
+    'width' in meta.data &&
+    'height' in meta.data
+  ) {
+    const { width, height } = meta.data as { width: number; height: number };
+    if (width > 0 && height > 0) return { width, height };
   }
-  return positions.sort((a, b) => a.t - b.t);
+  return null;
 }
 
-function findCursorAt(positions: MousePosition[], absT: number): MousePosition | null {
-  if (positions.length === 0) return null;
-  let lo = 0;
-  let hi = positions.length - 1;
-  let best = 0;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    if (positions[mid].t <= absT) {
-      best = mid;
-      lo = mid + 1;
-    } else {
-      hi = mid - 1;
-    }
-  }
-  return positions[best] ?? null;
+function calcDimensions(
+  containerWidth: number,
+  aspectRatio: number,
+): { width: number; height: number } {
+  const maxHeight = window.innerHeight * 0.7;
+  const height = Math.min(Math.round(containerWidth / aspectRatio), maxHeight);
+  const width = Math.min(containerWidth, Math.round(height * aspectRatio));
+  return { width, height };
 }
 
-export function ReplayPlayer({ sessionId, projectId }: ReplayPlayerProps) {
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
+export function ReplayPlayer({
+  events,
+}: {
+  events: Array<{ type: number; data: unknown; timestamp: number }>;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const replayerRef = useRef<Replayer | null>(null);
-  const scaleRef = useRef<number>(1);
-  const mousePositionsRef = useRef<MousePosition[]>([]);
-  const startTimestampRef = useRef<number>(0);
-  const cursorDotRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<ReplayPlayerInstance | null>(null);
+  const {
+    onPlayerReady,
+    onPlayerDestroy,
+    setCurrentTime,
+    setIsPlaying,
+    setDuration,
+  } = useReplayContext();
+  const [importError, setImportError] = useState(false);
 
-  const [events, setEvents] = useState<eventWithTime[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [totalTime, setTotalTime] = useState(0);
+  const recordedDimensions = useMemo(
+    () => getRecordedDimensions(events),
+    [events],
+  );
 
-  // Fetch all chunk pages upfront
   useEffect(() => {
-    let cancelled = false;
+    if (!events.length || !containerRef.current) return;
 
-    async function loadAllChunks() {
-      try {
-        let fromIndex = 0;
-        const allEvents: eventWithTime[] = [];
+    // Clear any previous player DOM
+    containerRef.current.innerHTML = '';
 
-        while (!cancelled) {
-          const page = await queryClient.fetchQuery(
-            trpc.session.replayChunksFrom.queryOptions({
-              sessionId,
-              projectId,
-              fromIndex,
-            }),
-          );
+    let mounted = true;
+    let player: ReplayPlayerInstance | null = null;
+    let handleVisibilityChange: (() => void) | null = null;
 
-          for (const chunk of page.data) {
-            allEvents.push(...(chunk.events as unknown as eventWithTime[]));
+    const aspectRatio = recordedDimensions
+      ? recordedDimensions.width / recordedDimensions.height
+      : 16 / 9;
+
+    const { width, height } = calcDimensions(
+      containerRef.current.offsetWidth,
+      aspectRatio,
+    );
+
+    import('rrweb-player')
+      .then((module) => {
+        if (!containerRef.current || !mounted) return;
+
+        const PlayerConstructor = module.default;
+        player = new PlayerConstructor({
+          target: containerRef.current,
+          props: {
+            events,
+            width,
+            height,
+            autoPlay: false,
+            showController: false,
+            speedOption: [0.5, 1, 2, 4, 8],
+            UNSAFE_replayCanvas: true,
+            skipInactive: false,
+          },
+        }) as ReplayPlayerInstance;
+
+        playerRef.current = player;
+
+        // Track play state from replayer (getMetaData() does not expose isPlaying)
+        let playingState = false;
+
+        // Wire rrweb's built-in event emitter — no RAF loop needed.
+        // Note: rrweb-player does NOT emit ui-update-duration; duration is
+        // read from getMetaData() on init and after each addEvent batch.
+        player.addEventListener('ui-update-current-time', (e) => {
+          const t = e.payload as number;
+          setCurrentTime(t);
+        });
+
+        player.addEventListener('ui-update-player-state', (e) => {
+          const playing = e.payload === 'playing';
+          playingState = playing;
+          setIsPlaying(playing);
+        });
+
+        // Pause on tab hide; resume on show (prevents timer drift).
+        // getMetaData() does not expose isPlaying, so we use playingState
+        // kept in sync by ui-update-player-state above.
+        let wasPlaying = false;
+        handleVisibilityChange = () => {
+          if (!player) return;
+          if (document.hidden) {
+            wasPlaying = playingState;
+            if (wasPlaying) player.pause();
+          } else {
+            if (wasPlaying) {
+              player.play();
+              wasPlaying = false;
+            }
           }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
-          if (!page.hasMore) break;
-          fromIndex += 50;
-        }
+        // Notify context — marks isReady = true and sets initial duration
+        const meta = player.getMetaData();
+        if (meta.totalTime > 0) setDuration(meta.totalTime);
+        onPlayerReady(player, meta.startTime);
+      })
+      .catch(() => {
+        if (mounted) setImportError(true);
+      });
 
-        if (!cancelled) {
-          setEvents(allEvents);
-          setLoaded(true);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError('Failed to load replay data.');
-        }
-      }
-    }
-
-    loadAllChunks();
-    return () => {
-      cancelled = true;
+    const onWindowResize = () => {
+      if (!containerRef.current || !mounted || !playerRef.current?.$set) return;
+      const { width: w, height: h } = calcDimensions(
+        containerRef.current.offsetWidth,
+        aspectRatio,
+      );
+      playerRef.current.$set({ width: w, height: h });
     };
-  }, [sessionId, projectId]);
-
-  // Init replayer once events are available
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!loaded || !container || events.length === 0) return;
-
-    // Pull recorded viewport from the Meta event (type 4) so we can scale correctly
-    const metaEvent = events.find((e) => (e as any).type === 4);
-    const recordedWidth: number = (metaEvent?.data as any)?.width ?? 1280;
-    const recordedHeight: number = (metaEvent?.data as any)?.height ?? 800;
-
-    // Pre-extract mouse positions for the cursor overlay
-    mousePositionsRef.current = extractMousePositions(events);
-    startTimestampRef.current = events[0]?.timestamp ?? 0;
-
-    // mouseTail disabled — causes blank iframe in rrweb 2.0.0-alpha.20.
-    // Cursor is rendered by our own overlay instead (see cursorPos state).
-    const replayer = new Replayer(events, {
-      root: container,
-      mouseTail: false,
-    });
-
-    const meta = replayer.getMetaData();
-    setTotalTime(meta.totalTime);
-
-    // Scale the replayer wrapper so the full recorded page fits the container width
-    const applyScale = () => {
-      const wrapper = container.querySelector('.replayer-wrapper') as HTMLElement | null;
-      if (!wrapper) return;
-      const scale = Math.min(1, container.clientWidth / recordedWidth);
-      scaleRef.current = scale;
-      wrapper.style.transform = `scale(${scale})`;
-      wrapper.style.transformOrigin = 'top left';
-      // shrink the outer container to match scaled height so no dead space below
-      container.style.height = `${Math.round(recordedHeight * scale)}px`;
-    };
-    // rrweb injects the wrapper asynchronously — wait one tick
-    setTimeout(applyScale, 50);
-
-    // Cursor updates via direct DOM mutation (no React re-render) — 50ms for smooth movement
-    const cursorTimer = setInterval(() => {
-      const dot = cursorDotRef.current;
-      if (!dot) return;
-      const absT = startTimestampRef.current + (replayerRef.current?.getCurrentTime() ?? 0);
-      const pos = findCursorAt(mousePositionsRef.current, absT);
-      if (pos) {
-        dot.style.left = `${pos.x * scaleRef.current}px`;
-        dot.style.top = `${pos.y * scaleRef.current}px`;
-        dot.style.display = 'block';
-      }
-    }, 50);
-
-    // Scrubber / time display updates via React state — 300ms is plenty
-    const timer = setInterval(() => {
-      if (replayerRef.current) {
-        setCurrentTime(replayerRef.current.getCurrentTime());
-      }
-    }, 300);
-
-    replayer.on('finish', () => setPlaying(false));
-
-    replayerRef.current = replayer;
+    window.addEventListener('resize', onWindowResize);
 
     return () => {
-      clearInterval(cursorTimer);
-      clearInterval(timer);
-      replayerRef.current?.pause();
-      container.innerHTML = '';
-      container.style.height = '';
-      replayerRef.current = null;
-      if (cursorDotRef.current) cursorDotRef.current.style.display = 'none';
+      mounted = false;
+      window.removeEventListener('resize', onWindowResize);
+      if (handleVisibilityChange) {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+      if (player) {
+        player.pause();
+      }
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
+      playerRef.current = null;
+      onPlayerDestroy();
     };
-  }, [loaded, events]);
+  }, [events, recordedDimensions, onPlayerReady, onPlayerDestroy, setCurrentTime, setIsPlaying, setDuration]);
 
-  function togglePlay() {
-    const r = replayerRef.current;
-    if (!r) return;
-    if (playing) {
-      r.pause();
-    } else {
-      r.play();
-    }
-    setPlaying((p) => !p);
-  }
-
-  function seek(timeMs: number) {
-    replayerRef.current?.play(timeMs);
-    setCurrentTime(timeMs);
-    setPlaying(true);
-  }
-
-  if (error) {
+  if (importError) {
     return (
-      <div className="flex items-center justify-center h-32 text-destructive text-sm">
-        {error}
-      </div>
-    );
-  }
-
-  if (!loaded) {
-    return (
-      <div className="flex items-center justify-center h-32 text-muted-foreground text-sm animate-pulse">
-        Loading replay…
-      </div>
-    );
-  }
-
-  if (events.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-        No replay data for this session.
+      <div className="flex h-[320px] items-center justify-center bg-black text-sm text-muted-foreground">
+        Failed to load replay player.
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* rrweb mounts an iframe here; height set dynamically after scale is applied */}
-      <div className="relative w-full overflow-hidden rounded-md border bg-white" style={{ minHeight: 200 }}>
-        <div ref={containerRef} className="w-full" />
-        {/* Custom cursor overlay — position mutated directly, no React re-render on each tick */}
-        <div
-          ref={cursorDotRef}
-          className="pointer-events-none absolute z-10 size-3 rounded-full bg-indigo-500/80 ring-2 ring-white shadow-md"
-          style={{ display: 'none', transform: 'translate(-50%, -50%)' }}
-        />
-      </div>
-      {/* Controls */}
-      <div className="flex items-center gap-3 px-1">
-        <Button variant="ghost" size="icon" onClick={togglePlay}>
-          {playing ? (
-            <PauseIcon className="size-4" />
-          ) : (
-            <PlayIcon className="size-4" />
-          )}
-        </Button>
-        <input
-          type="range"
-          min={0}
-          max={totalTime || 1}
-          value={currentTime}
-          onChange={(e) => seek(Number(e.target.value))}
-          className="flex-1 h-1.5 accent-primary cursor-pointer"
-        />
-        <span className="text-xs text-muted-foreground tabular-nums w-20 text-right">
-          {formatMs(currentTime)} / {formatMs(totalTime)}
-        </span>
-      </div>
+    <div className="relative flex w-full justify-center overflow-hidden">
+      <div
+        ref={containerRef}
+        className="w-full"
+        style={{ maxHeight: '70vh' }}
+      />
     </div>
   );
 }

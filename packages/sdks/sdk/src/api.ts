@@ -47,11 +47,16 @@ export class Api {
     attempt: number,
   ): Promise<ResBody | null> {
     try {
+      const body = data ? JSON.stringify(data ?? {}) : undefined;
+      // keepalive:true lets requests survive page unload, but Chrome limits
+      // keepalive request bodies to 64 KB. Disable it for large payloads
+      // (e.g. session-replay FullSnapshot chunks) so the fetch doesn't fail.
+      const keepalive = !body || body.length < 60_000;
       const response = await fetch(url, {
         method: 'POST',
         headers: await this.resolveHeaders(),
-        body: data ? JSON.stringify(data ?? {}) : undefined,
-        keepalive: true,
+        body,
+        keepalive,
         ...options,
       });
 

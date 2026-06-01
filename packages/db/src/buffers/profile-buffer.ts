@@ -1,7 +1,7 @@
 import { deepMergeObjects } from '@openpanel/common';
 import { getSafeJson } from '@openpanel/json';
 import type { ILogger } from '@openpanel/logger';
-import { type Redis, getRedisSession } from '@openpanel/redis';
+import { getRedisSession } from '@openpanel/redis';
 import shallowEqual from 'fast-deep-equal';
 import { omit } from 'ramda';
 import { TABLE_NAMES, ch, chQuery } from '../clickhouse/client';
@@ -23,16 +23,14 @@ export class ProfileBuffer extends BaseBuffer {
   private readonly redisKey = 'profile-buffer';
   private readonly redisProfilePrefix = 'profile-cache:';
 
-  private redis: Redis;
-
   constructor() {
     super({
       name: 'profile',
       onFlush: async () => {
         await this.processBuffer();
       },
+      redis: getRedisSession(),
     });
-    this.redis = getRedisSession();
   }
 
   private getProfileCacheKey({

@@ -1,4 +1,4 @@
-import { type Redis, getRedisCache } from '@openpanel/redis';
+import { getRedisCache } from '@openpanel/redis';
 
 import { getSafeJson } from '@openpanel/json';
 import { TABLE_NAMES, ch } from '../clickhouse/client';
@@ -12,15 +12,15 @@ export class BotBuffer extends BaseBuffer {
 
   private readonly redisKey = '{bot_buffer}:events';
   protected bufferCounterKey = '{bot_buffer}:count';
-  private redis: Redis;
+
   constructor() {
     super({
       name: 'bot',
       onFlush: async () => {
         await this.processBuffer();
       },
+      redis: getRedisCache(),
     });
-    this.redis = getRedisCache();
   }
 
   async add(event: IClickhouseBotEvent) {

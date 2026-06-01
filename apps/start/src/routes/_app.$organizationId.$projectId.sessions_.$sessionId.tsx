@@ -3,7 +3,7 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
-import { ReplayPlayer } from '@/components/sessions/replay/replay-player';
+import { ReplayShell } from '@/components/sessions/replay';
 import { useReadColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
 import {
   useEventQueryFilters,
@@ -125,7 +125,7 @@ function Component() {
       {hasReplay && (
         <div className="mb-8">
           <h2 className="text-base font-medium mb-3">Session Replay</h2>
-          <ReplayPlayer sessionId={sessionId} projectId={projectId} />
+          <ReplayShell sessionId={sessionId} projectId={projectId} />
         </div>
       )}
       <EventsTable query={query} />

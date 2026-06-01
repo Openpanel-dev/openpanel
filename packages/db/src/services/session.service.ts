@@ -351,11 +351,12 @@ export async function getSessionReplayChunksFrom(
   fromIndex: number,
 ) {
   const rows = await chQuery<{ chunk_index: number; payload: string }>(
-    `SELECT chunk_index, payload
+    `SELECT chunk_index, argMin(payload, started_at) AS payload
      FROM ${TABLE_NAMES.session_replay_chunks}
      WHERE session_id = ${sqlstring.escape(sessionId)}
        AND project_id = ${sqlstring.escape(projectId)}
-     ORDER BY started_at, ended_at, chunk_index
+     GROUP BY chunk_index
+     ORDER BY chunk_index
      LIMIT ${REPLAY_CHUNKS_PAGE_SIZE + 1}
      OFFSET ${fromIndex}`,
   );
