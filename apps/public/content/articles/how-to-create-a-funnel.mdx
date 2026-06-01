@@ -1,23 +1,31 @@
 ---
-title: How to Create and Use Funnels
-description: Funnels are powerful tools that help you understand how users move through your website or app. In this guide, we'll walk you through everything you need to know about creating and using funnels effectively.
+title: "What Is a Conversion Funnel? How to Build & Optimize One"
+description: "A conversion funnel shows where users drop off before they sign up or buy. Learn what a conversion funnel is, how to build one in minutes, and how to fix the leaks."
 tag: Guide
 team: OpenPanel Team
 date: 2025-03-31
-updated: 2026-02-07
+updated: 2026-05-29
 cover: /content/funnels.jpg
 ---
 import { Figure } from "@/components/figure";
 
-[Funnels](/features/funnels) help you understand how users move through your website or app. This guide walks you through creating and using them.
+A **conversion funnel** is the path users take toward a goal — signing up, subscribing, or buying — and the report that shows how many of them make it through each step. [Funnels](/features/funnels) are one of the most useful reports in product analytics, because they show you exactly where people drop off. This guide walks you through what a conversion funnel is, how to build one, and how to fix the leaks.
 
-## What is a funnel?
+## What is a conversion funnel?
 
-Think about a kitchen funnel - it's wide at the top and narrow at the bottom. Analytics funnels work the same way. They show how many people start a process and how many continue through each step. On a recipe website, users might start by viewing a recipe, then save it, then mark it as cooked. At each step, some people drop off, making the funnel narrower.
+A conversion funnel is a series of steps a user moves through on the way to a goal, where each step has fewer people than the one before it. Think of a kitchen funnel: wide at the top, narrow at the bottom. On a recipe site, users might view a recipe, then save it, then mark it as cooked — and some people drop off at every step, making the funnel narrower as it goes.
 
-## Why do you need funnels?
+The steps you pick depend on your product:
 
-Funnels show you where users get stuck or leave your process. Instead of guessing what's wrong, you see exactly where users lose interest or hit a problem, so you know where to make improvements.
+- **SaaS signup funnel:** landing page → sign up → activate → upgrade
+- **Ecommerce funnel:** product view → add to cart → checkout → purchase
+- **Content funnel:** article view → save → return visit
+
+The **conversion rate** is the percentage of people who make it from one step to the next, or all the way through. If 1,000 people view a recipe and 175 save it, that step converts at 17.5%. A conversion funnel turns "we're losing people somewhere" into "we're losing 60% of people between add-to-cart and checkout" — a problem you can actually fix.
+
+## Why do you need a conversion funnel?
+
+Conversion funnels show you where users get stuck or leave your process. Instead of guessing what's wrong, you see exactly where users lose interest or hit a problem, so you know where to make improvements. Pair a funnel with [retention](/features/retention) reports and you see not just whether people convert, but whether they stick around afterward.
 
 <Figure
   src="/content/funnel/funnel-3.png"
@@ -120,3 +128,7 @@ In the example below, we've broken down our funnel by a `version` property to co
 Run your tests long enough to get statistically significant results. A good rule of thumb is to wait until you have at least 1,000 users in each group before making major decisions based on the data.
 
 Pro tip: you can use multiple breakdowns to segment further. For example, compare versions across countries or device types to check that your improvements work for everyone.
+
+## Build your first conversion funnel
+
+You don't need a data team to build a conversion funnel. [OpenPanel](/articles/self-hosted-web-analytics) is an open-source, privacy-first analytics platform with [funnels](/features/funnels), [retention](/features/retention), and [event tracking](/features/event-tracking) built in — track the events that matter, switch the report type to Funnel, and you'll see exactly where users drop off. It's cookieless by default, so there's no consent banner to slow you down, and you can use the cloud or self-host it for free.

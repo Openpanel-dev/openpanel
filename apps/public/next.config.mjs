@@ -31,6 +31,11 @@ const config = {
       destination: '/articles/self-hosted-web-analytics',
       permanent: true,
     },
+    {
+      source: '/open-source-analytics',
+      destination: '/articles/self-hosted-web-analytics',
+      permanent: true,
+    },
   ],
 };
 
