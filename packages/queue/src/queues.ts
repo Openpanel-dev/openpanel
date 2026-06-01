@@ -106,8 +106,8 @@ export type CronQueuePayloadPing = {
   type: 'ping';
   payload: undefined;
 };
-export type CronQueuePayloadProject = {
-  type: 'deleteProjects';
+export type CronQueuePayloadDelete = {
+  type: 'delete';
   payload: undefined;
 };
 export type CronQueuePayloadInsightsDaily = {
@@ -147,7 +147,7 @@ export type CronQueuePayload =
   | CronQueuePayloadFlushReplay
   | CronQueuePayloadFlushGroups
   | CronQueuePayloadPing
-  | CronQueuePayloadProject
+  | CronQueuePayloadDelete
   | CronQueuePayloadInsightsDaily
   | CronQueuePayloadOnboarding
   | CronQueuePayloadGscSync

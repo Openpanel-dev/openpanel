@@ -200,6 +200,28 @@ export const projectRouter = createTRPCRouter({
         throw TRPCAccessError('You do not have access to this project');
       }
 
+      const project = await db.project.findUnique({
+        where: {
+          id: input.projectId,
+        },
+        select: {
+          organization: {
+            select: {
+              deleteAt: true,
+            },
+          },
+        },
+      });
+
+      // If the whole organization is scheduled for deletion, this project's
+      // deletion is part of it and can only be cancelled at the organization
+      // level. Cancelling it here would leave the organization unable to delete.
+      if (project?.organization?.deleteAt) {
+        throw TRPCBadRequestError(
+          'This organization is scheduled for deletion. Cancel the deletion from the organization settings.',
+        );
+      }
+
       await db.project.update({
         where: {
           id: input.projectId,

@@ -13,7 +13,7 @@ import { zEditOrganization, zInviteUser } from '@openpanel/validation';
 
 import { generateSecureId } from '@openpanel/common/server';
 import { sendEmail } from '@openpanel/email';
-import { addDays } from 'date-fns';
+import { addDays, addHours } from 'date-fns';
 import { getOrganizationAccess } from '../access';
 import { TRPCAccessError, TRPCBadRequestError } from '../errors';
 import {
@@ -66,6 +66,90 @@ export const organizationRouter = createTRPCRouter({
           timezone: input.timezone,
         },
       });
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const access = await getOrganizationAccess({
+        userId: ctx.session.userId,
+        organizationId: input.organizationId,
+      });
+
+      if (access?.role !== 'org:admin') {
+        throw TRPCAccessError('You do not have access to this organization');
+      }
+
+      const organization = await getOrganizationById(input.organizationId);
+
+      // Require billing to be cancelled first. We don't want to delete an
+      // organization that still has a live paid subscription. Once the user has
+      // cancelled (the subscription is scheduled to end), deletion is allowed.
+      if (organization.hasSubscription && !organization.isWillBeCanceled) {
+        throw TRPCBadRequestError(
+          'Please cancel your subscription before deleting this organization.',
+        );
+      }
+
+      // Schedule the organization and all of its projects for deletion in 24
+      // hours (cancelable until then). The hourly `delete` cron removes the
+      // projects (and their ClickHouse events) and the organization in a single
+      // pass once their `deleteAt` has passed.
+      const deleteAt = addHours(new Date(), 24);
+      await db.$transaction([
+        db.project.updateMany({
+          where: {
+            organizationId: input.organizationId,
+          },
+          data: {
+            deleteAt,
+          },
+        }),
+        db.organization.update({
+          where: {
+            id: input.organizationId,
+          },
+          data: {
+            deleteAt,
+          },
+        }),
+      ]);
+
+      return true;
+    }),
+
+  cancelDeletion: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const access = await getOrganizationAccess({
+        userId: ctx.session.userId,
+        organizationId: input.organizationId,
+      });
+
+      if (access?.role !== 'org:admin') {
+        throw TRPCAccessError('You do not have access to this organization');
+      }
+
+      await db.$transaction([
+        db.project.updateMany({
+          where: {
+            organizationId: input.organizationId,
+          },
+          data: {
+            deleteAt: null,
+          },
+        }),
+        db.organization.update({
+          where: {
+            id: input.organizationId,
+          },
+          data: {
+            deleteAt: null,
+          },
+        }),
+      ]);
+
+      return true;
     }),
 
   inviteUser: protectedProcedure

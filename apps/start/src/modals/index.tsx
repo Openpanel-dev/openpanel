@@ -11,6 +11,8 @@ import AddReference from './add-reference';
 import BillingSuccess from './billing-success';
 import type { ConfirmProps } from './confirm';
 import Confirm from './confirm';
+import ConfirmDeleteAccount from './confirm-delete-account';
+import ConfirmDeleteOrganization from './confirm-delete-organization';
 import CreateInvite from './create-invite';
 import DateRangerPicker from './date-ranger-picker';
 import DateTimePicker from './date-time-picker';
@@ -59,6 +61,8 @@ const modals = {
   AddClient,
   AddImport,
   Confirm,
+  ConfirmDeleteAccount,
+  ConfirmDeleteOrganization,
   SaveReport,
   AddDashboard,
   EditDashboard,
