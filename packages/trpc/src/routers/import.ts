@@ -6,7 +6,7 @@ import { zCreateImport } from '@openpanel/validation';
 
 import { getProjectAccess } from '../access';
 import {
-  TRPCAccessError,
+  TRPCForbiddenError,
   TRPCBadRequestError,
   TRPCNotFoundError,
 } from '../errors';
@@ -22,7 +22,7 @@ export const importRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       return db.import.findMany({
@@ -53,7 +53,7 @@ export const importRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this import');
+        throw new TRPCForbiddenError('You do not have access to this import');
       }
 
       return importRecord;
@@ -68,7 +68,7 @@ export const importRouter = createTRPCRouter({
       });
 
       if (!access || (typeof access !== 'boolean' && access.level === 'read')) {
-        throw TRPCAccessError(
+        throw new TRPCForbiddenError(
           'You do not have permission to create imports for this project',
         );
       }
@@ -84,13 +84,13 @@ export const importRouter = createTRPCRouter({
       });
 
       if (!organization) {
-        throw TRPCNotFoundError(
+        throw new TRPCNotFoundError(
           'Could not start import, organization not found',
         );
       }
 
       if (!organization.isActive) {
-        throw TRPCBadRequestError(
+        throw new TRPCBadRequestError(
           'You cannot start an import without an active subscription!',
         );
       }
@@ -139,7 +139,7 @@ export const importRouter = createTRPCRouter({
       });
 
       if (!access || (typeof access !== 'boolean' && access.level === 'read')) {
-        throw TRPCAccessError(
+        throw new TRPCForbiddenError(
           'You do not have permission to delete imports for this project',
         );
       }
@@ -173,7 +173,7 @@ export const importRouter = createTRPCRouter({
       });
 
       if (!access || (typeof access !== 'boolean' && access.level === 'read')) {
-        throw TRPCAccessError(
+        throw new TRPCForbiddenError(
           'You do not have permission to retry imports for this project',
         );
       }

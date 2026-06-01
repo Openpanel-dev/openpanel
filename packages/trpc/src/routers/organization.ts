@@ -15,10 +15,11 @@ import { generateSecureId } from '@openpanel/common/server';
 import { sendEmail } from '@openpanel/email';
 import { addDays, addHours } from 'date-fns';
 import { getOrganizationAccess } from '../access';
-import { TRPCAccessError, TRPCBadRequestError } from '../errors';
+import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
 import {
   createTRPCRouter,
   protectedProcedure,
+  protectedProcedureWithoutAccess,
   publicProcedure,
   rateLimitMiddleware,
 } from '../trpc';
@@ -34,7 +35,10 @@ export const organizationRouter = createTRPCRouter({
     return getOrganizations(ctx.session.userId);
   }),
 
-  myAccess: protectedProcedure
+  // Membership-exempt on purpose: any logged-in user may ask whether they have
+  // access to a given org. Returns null when they're not a member (instead of
+  // throwing), which the org-layout guard uses to render a not-found page.
+  myAccess: protectedProcedureWithoutAccess
     .input(z.object({ organizationId: z.string() }))
     .query(async ({ input, ctx }) => {
       const access = await getOrganizationAccess({
@@ -54,7 +58,7 @@ export const organizationRouter = createTRPCRouter({
       });
 
       if (access?.role !== 'org:admin') {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       return db.organization.update({
@@ -77,7 +81,7 @@ export const organizationRouter = createTRPCRouter({
       });
 
       if (access?.role !== 'org:admin') {
-        throw TRPCAccessError('You do not have access to this organization');
+        throw new TRPCForbiddenError('You do not have access to this organization');
       }
 
       const organization = await getOrganizationById(input.organizationId);
@@ -86,7 +90,7 @@ export const organizationRouter = createTRPCRouter({
       // organization that still has a live paid subscription. Once the user has
       // cancelled (the subscription is scheduled to end), deletion is allowed.
       if (organization.hasSubscription && !organization.isWillBeCanceled) {
-        throw TRPCBadRequestError(
+        throw new TRPCBadRequestError(
           'Please cancel your subscription before deleting this organization.',
         );
       }
@@ -127,7 +131,7 @@ export const organizationRouter = createTRPCRouter({
       });
 
       if (access?.role !== 'org:admin') {
-        throw TRPCAccessError('You do not have access to this organization');
+        throw new TRPCForbiddenError('You do not have access to this organization');
       }
 
       await db.$transaction([
@@ -161,7 +165,7 @@ export const organizationRouter = createTRPCRouter({
       });
 
       if (access?.role !== 'org:admin') {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       const email = input.email.toLowerCase();
@@ -182,7 +186,7 @@ export const organizationRouter = createTRPCRouter({
       });
 
       if (alreadyMember && userExists) {
-        throw TRPCBadRequestError(
+        throw new TRPCBadRequestError(
           'User is already a member of the organization',
         );
       }
@@ -195,7 +199,7 @@ export const organizationRouter = createTRPCRouter({
       });
 
       if (alreadyInvited) {
-        throw TRPCBadRequestError(
+        throw new TRPCBadRequestError(
           'User is already invited to the organization',
         );
       }
@@ -263,7 +267,7 @@ export const organizationRouter = createTRPCRouter({
       });
 
       if (access?.role !== 'org:admin') {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       return db.invite.delete({
@@ -299,7 +303,7 @@ export const organizationRouter = createTRPCRouter({
       });
 
       if (access?.role !== 'org:admin') {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       await db.$transaction([
@@ -329,7 +333,7 @@ export const organizationRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       if (input.userId === ctx.session.userId) {
-        throw TRPCAccessError('You cannot update your own access');
+        throw new TRPCForbiddenError('You cannot update your own access');
       }
 
       const access = await getOrganizationAccess({
@@ -338,7 +342,7 @@ export const organizationRouter = createTRPCRouter({
       });
 
       if (access?.role !== 'org:admin') {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       return db.$transaction([
@@ -367,7 +371,7 @@ export const organizationRouter = createTRPCRouter({
         organizationId: input.organizationId,
       });
       if (access?.role !== 'org:admin') {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       return getMembers(input.organizationId);
     }),
@@ -380,7 +384,7 @@ export const organizationRouter = createTRPCRouter({
         organizationId: input.organizationId,
       });
       if (access?.role !== 'org:admin') {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       return getInvites(input.organizationId);
     }),
@@ -395,7 +399,7 @@ export const organizationRouter = createTRPCRouter({
     .input(z.object({ inviteId: z.string().optional() }))
     .query(async ({ input }) => {
       if (!input.inviteId) {
-        throw TRPCBadRequestError('Invite ID is required');
+        throw new TRPCBadRequestError('Invite ID is required');
       }
       return getInviteById(input.inviteId);
     }),

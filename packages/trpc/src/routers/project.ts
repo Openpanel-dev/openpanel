@@ -15,7 +15,7 @@ import { zOnboardingProject, zProjectUpdate } from '@openpanel/validation';
 import { addHours } from 'date-fns';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
-import { TRPCAccessError, TRPCBadRequestError } from '../errors';
+import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const projectRouter = createTRPCRouter({
@@ -32,7 +32,7 @@ export const projectRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       return getProjectWithClients(projectId);
@@ -63,7 +63,7 @@ export const projectRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       const res = await db.project.update({
@@ -105,7 +105,7 @@ export const projectRouter = createTRPCRouter({
     .input(zOnboardingProject)
     .mutation(async ({ input, ctx }) => {
       if (!input.organizationId) {
-        throw TRPCBadRequestError('Organization is required');
+        throw new TRPCBadRequestError('Organization is required');
       }
 
       const access = await getOrganizationAccess({
@@ -114,7 +114,7 @@ export const projectRouter = createTRPCRouter({
       });
 
       if (access?.role !== 'org:admin') {
-        throw TRPCAccessError('Only organization admins can create projects');
+        throw new TRPCForbiddenError('Only organization admins can create projects');
       }
 
       const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
@@ -170,7 +170,7 @@ export const projectRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       await db.project.update({
@@ -197,7 +197,7 @@ export const projectRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       const project = await db.project.findUnique({
@@ -217,7 +217,7 @@ export const projectRouter = createTRPCRouter({
       // deletion is part of it and can only be cancelled at the organization
       // level. Cancelling it here would leave the organization unable to delete.
       if (project?.organization?.deleteAt) {
-        throw TRPCBadRequestError(
+        throw new TRPCBadRequestError(
           'This organization is scheduled for deletion. Cancel the deletion from the organization settings.',
         );
       }

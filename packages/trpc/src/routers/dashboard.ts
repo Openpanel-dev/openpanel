@@ -11,7 +11,7 @@ import {
 import type { Prisma } from '@openpanel/db';
 
 import { getProjectAccess } from '../access';
-import { TRPCAccessError, TRPCNotFoundError } from '../errors';
+import { TRPCForbiddenError, TRPCNotFoundError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const dashboardRouter = createTRPCRouter({
@@ -38,13 +38,13 @@ export const dashboardRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       const dashboard = await getDashboardById(input.id, input.projectId);
 
       if (!dashboard) {
-        throw TRPCNotFoundError('Dashboard not found');
+        throw new TRPCNotFoundError('Dashboard not found');
       }
 
       return dashboard;
@@ -63,13 +63,13 @@ export const dashboardRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       const project = await getProjectById(input.projectId);
 
       if (!project) {
-        throw TRPCNotFoundError('Project not found');
+        throw new TRPCNotFoundError('Project not found');
       }
 
       return db.dashboard.create({
@@ -101,7 +101,7 @@ export const dashboardRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this dashboard');
+        throw new TRPCForbiddenError('You do not have access to this dashboard');
       }
 
       return db.dashboard.update({
@@ -133,7 +133,7 @@ export const dashboardRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this dashboard');
+        throw new TRPCForbiddenError('You do not have access to this dashboard');
       }
 
       try {

@@ -35,7 +35,7 @@ export const userRouter = createTRPCRouter({
     );
 
     if (blocking.length > 0) {
-      throw TRPCBadRequestError(
+      throw new TRPCBadRequestError(
         `Please cancel the subscription for ${blocking
           .map((organization) => organization.name)
           .join(', ')} before deleting your account.`,
