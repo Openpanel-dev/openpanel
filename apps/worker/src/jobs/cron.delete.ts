@@ -9,7 +9,8 @@ import { logger } from '@/utils/logger';
 export async function jobDelete() {
   const now = new Date();
 
-  // Orgs to delete: explicitly scheduled OR ownerless (no org:admin member left).
+  // Find orphaned organizations (no admin member)
+  // or organizations that are scheduled for deletion
   const organizations = await db.organization.findMany({
     where: {
       OR: [
@@ -17,47 +18,44 @@ export async function jobDelete() {
         { members: { none: { role: 'org:admin' } } },
       ],
     },
-    select: { id: true, name: true, projects: { select: { id: true } } },
+    include: { projects: { select: { id: true } } },
   });
-  const orgIds = organizations.map((organization) => organization.id);
-  const orgProjectIds = organizations.flatMap((organization) =>
-    organization.projects.map((project) => project.id),
+
+  // Skip paying organizations
+  const deletableOrganizations = organizations.filter(
+    (organization) =>
+      !(organization.hasSubscription && !organization.isWillBeCanceled)
   );
 
-  // Standalone projects scheduled for deletion (skip ones already covered by an
-  // org delete, since deleting the org cascades its projects in Postgres).
+  // Find projects that are scheduled for deletion
   const scheduledProjects = await db.project.findMany({
-    where: {
-      deleteAt: { lte: now },
-      organizationId: { notIn: orgIds },
-    },
+    where: { deleteAt: { lte: now } },
     select: { id: true },
   });
-  const standaloneProjectIds = scheduledProjects.map((project) => project.id);
 
-  const allProjectIds = [...orgProjectIds, ...standaloneProjectIds];
+  const projectIds = [
+    ...new Set([
+      ...deletableOrganizations.flatMap((organization) =>
+        organization.projects.map((project) => project.id)
+      ),
+      ...scheduledProjects.map((project) => project.id),
+    ]),
+  ];
 
-  if (allProjectIds.length === 0 && organizations.length === 0) {
-    return;
+  if (projectIds.length > 0) {
+    await deleteFromClickhouse(projectIds);
+    await deleteProjects(projectIds);
   }
 
-  // ClickHouse first: Postgres cascades projects when an org is deleted, but the
-  // ClickHouse events are not cascade-deleted, so they must be cleaned for every
-  // project that is about to disappear.
-  if (allProjectIds.length > 0) {
-    await deleteFromClickhouse(allProjectIds);
-  }
-
-  if (standaloneProjectIds.length > 0) {
-    await deleteProjects(standaloneProjectIds);
-  }
-
-  for (const organization of organizations) {
+  for (const organization of deletableOrganizations) {
     await deleteOrganization(organization.id);
   }
 
   logger.info(
-    { organizations: organizations.length, projects: allProjectIds.length },
-    'Delete cron complete',
+    {
+      organizations: deletableOrganizations.length,
+      projects: projectIds.length,
+    },
+    'Delete cron complete'
   );
 }
