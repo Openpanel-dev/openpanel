@@ -2,6 +2,7 @@ import ShortUniqueId from 'short-unique-id';
 
 import {
   db,
+  getDashboardById,
   getReportById,
   getReportsByDashboardId,
   getShareDashboardById,
@@ -169,6 +170,14 @@ export const shareRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this project');
       }
 
+      const dashboard = await getDashboardById(
+        input.dashboardId,
+        input.projectId,
+      );
+      if (!dashboard) {
+        throw new TRPCNotFoundError('Dashboard not found');
+      }
+
       const passwordHash = input.password
         ? await hashPassword(input.password)
         : null;
@@ -276,6 +285,11 @@ export const shareRouter = createTRPCRouter({
 
       if (!access) {
         throw new TRPCForbiddenError('You do not have access to this project');
+      }
+
+      const report = await getReportById(input.reportId);
+      if (!report || report.projectId !== input.projectId) {
+        throw new TRPCNotFoundError('Report not found');
       }
 
       const passwordHash = input.password
