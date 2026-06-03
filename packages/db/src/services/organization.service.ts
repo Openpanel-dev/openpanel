@@ -162,26 +162,26 @@ export async function connectUserToOrganization({
   }
 
   // The invite might be consumed by a user who is already a member of the
-  // organization (e.g. accepting it a second time). Avoid creating a duplicate
-  // membership in that case and just consume the invite below.
-  const existingMember = await db.member.findFirst({
+  // organization (e.g. accepting it a second time). Upsert atomically against
+  // the (organizationId, userId) unique constraint so concurrent consumption
+  // cannot create duplicate membership rows; an existing membership is reused
+  // unchanged and the invite is still consumed below.
+  const member = await db.member.upsert({
     where: {
-      organizationId: invite.organizationId,
-      userId: user.id,
-    },
-  });
-
-  const member =
-    existingMember ??
-    (await db.member.create({
-      data: {
+      organizationId_userId: {
         organizationId: invite.organizationId,
         userId: user.id,
-        role: invite.role,
-        email: user.email,
-        invitedById: invite.createdById,
       },
-    }));
+    },
+    update: {},
+    create: {
+      organizationId: invite.organizationId,
+      userId: user.id,
+      role: invite.role,
+      email: user.email,
+      invitedById: invite.createdById,
+    },
+  });
 
   await getOrganizationAccess.clear({
     userId: user.id,
