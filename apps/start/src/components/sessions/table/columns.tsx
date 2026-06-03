@@ -7,6 +7,7 @@ import { ColumnCreatedAt } from '@/components/column-created-at';
 import { getProfileName } from '@/utils/getters';
 import { round } from '@openpanel/common';
 import type { IServiceSession } from '@openpanel/db';
+import { VideoIcon } from 'lucide-react';
 
 function formatDuration(milliseconds: number): string {
   const seconds = milliseconds / 1000;
@@ -34,6 +35,19 @@ export function useColumns() {
       cell: ({ row }) => {
         const item = row.original;
         return <ColumnCreatedAt>{item.createdAt}</ColumnCreatedAt>;
+      },
+    },
+    {
+      accessorKey: 'hasReplay',
+      header: '',
+      size: 36,
+      cell: ({ row }) => {
+        if (!row.original.hasReplay) return null;
+        return (
+          <span title="Session replay available">
+            <VideoIcon className="size-3.5 text-muted-foreground" />
+          </span>
+        );
       },
     },
     {

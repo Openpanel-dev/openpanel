@@ -57,6 +57,7 @@ export type IClickhouseSession = {
 export interface IServiceSession {
   id: string;
   profileId: string;
+  hasReplay?: boolean;
   eventCount: number;
   screenViewCount: number;
   entryPath: string;
@@ -261,8 +262,12 @@ export async function getSessionList({
   const profiles = await getProfilesCached(profileIds, projectId);
   const map = new Map<string, IServiceProfile>(profiles.map((p) => [p.id, p]));
 
+  const sessionIds = data.map((s) => s.id);
+  const replaySet = await batchSessionHasReplay(sessionIds, projectId);
+
   const items = data.map(transformSession).map((item) => ({
     ...item,
+    hasReplay: replaySet.has(item.id),
     profile: map.get(item.profileId) ?? {
       id: item.profileId,
       email: '',
@@ -375,6 +380,25 @@ export async function getSessionReplayChunksFrom(
     data: items,
     hasMore: rows.length > REPLAY_CHUNKS_PAGE_SIZE,
   };
+}
+
+export async function batchSessionHasReplay(
+  sessionIds: string[],
+  projectId: string,
+): Promise<Set<string>> {
+  if (sessionIds.length === 0) return new Set();
+  try {
+    const inList = sessionIds.map((id) => sqlstring.escape(id)).join(',');
+    const rows = await chQuery<{ session_id: string }>(
+      `SELECT DISTINCT session_id
+       FROM ${TABLE_NAMES.session_replay_chunks}
+       WHERE project_id = ${sqlstring.escape(projectId)}
+         AND session_id IN (${inList})`,
+    );
+    return new Set(rows.map((r) => r.session_id));
+  } catch {
+    return new Set();
+  }
 }
 
 export async function sessionHasReplay(
