@@ -33,6 +33,7 @@ interface ComboboxAdvancedProps {
   placeholder: string;
   className?: string;
   size?: ButtonProps['size'];
+  keepSearchOnSelect?: boolean;
 }
 
 export function ComboboxAdvanced({
@@ -42,6 +43,7 @@ export function ComboboxAdvanced({
   placeholder,
   className,
   size,
+  keepSearchOnSelect,
 }: ComboboxAdvancedProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState('');
@@ -67,7 +69,9 @@ export function ComboboxAdvanced({
           e.stopPropagation();
         }}
         onSelect={() => {
-          setInputValue('');
+          if (!keepSearchOnSelect) {
+            setInputValue('');
+          }
           onChange(
             value.includes(desanitize(item.value))
               ? value.filter((s) => s !== desanitize(item.value))

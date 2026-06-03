@@ -42,8 +42,8 @@ export const zCustomEventDefinition = z.object({
   events: z
     .array(zCustomEventCriteria)
     .min(1)
-    .max(20)
-    .describe('Source events to combine (max 20)'),
+    .max(40)
+    .describe('Source events to combine (max 40)'),
 });
 
 export type ICustomEventDefinition = z.infer<typeof zCustomEventDefinition>;

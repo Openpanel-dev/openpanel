@@ -37,19 +37,6 @@ export function CustomEventBuilder({
       meta: event.meta,
     }));
 
-  const addEvent = () => {
-    onChange({
-      ...value,
-      events: [
-        ...value.events,
-        {
-          name: '',
-          filters: [],
-        },
-      ],
-    });
-  };
-
   const removeEvent = (index: number) => {
     onChange({
       ...value,
@@ -88,19 +75,34 @@ export function CustomEventBuilder({
         />
       ))}
 
-      <Button
-        type="button"
-        variant="outline"
-        onClick={addEvent}
-        icon={PlusIcon}
+      <ComboboxAdvanced
+        value={value.events.map((e) => e.name).filter(Boolean)}
+        onChange={(selected) => {
+          const currentNames = value.events.map((e) => e.name);
+          // Find newly added events
+          const added = selected.filter(
+            (name: string) => !currentNames.includes(name),
+          );
+          // Find removed events
+          const removed = new Set(
+            currentNames.filter((name) => !selected.includes(name)),
+          );
+          // Keep existing events that weren't removed, add new ones
+          const updatedEvents = [
+            ...value.events.filter((e) => !removed.has(e.name)),
+            ...added.map((name: string) => ({ name, filters: [] })),
+          ];
+          onChange({ ...value, events: updatedEvents });
+        }}
+        placeholder="Add events..."
+        items={eventNames}
         className="w-full"
-      >
-        Add Event
-      </Button>
+        keepSearchOnSelect
+      />
 
-      {value.events.length > 20 && (
+      {value.events.length > 40 && (
         <div className="text-sm text-destructive">
-          Maximum 20 events allowed (Mixpanel limit)
+          Maximum 40 events allowed
         </div>
       )}
     </div>
