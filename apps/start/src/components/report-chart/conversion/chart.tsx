@@ -1,8 +1,10 @@
+import { changeTtcAggregation } from '@/components/report/reportSlice';
+import { useDispatch } from '@/redux';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   CartesianGrid,
   Legend,
@@ -70,12 +72,14 @@ export function Chart({ data }: Props) {
       range,
       lineType,
       measuring,
+      ttcAggregation: savedTtcAggregation,
     },
     isEditMode,
     options: { hideXAxis, hideYAxis, maxDomain },
   } = useReportChartContext();
+  const dispatch = useDispatch();
   const isTtc = measuring === 'time_to_convert';
-  const [ttcAggregation, setTtcAggregation] = useState<TtcAggregation>('avg');
+  const ttcAggregation = (savedTtcAggregation as TtcAggregation) || 'avg';
   const { series, setVisibleSeries } = useVisibleConversionSeries(data, 5);
   const rechartData = useConversionRechartDataModel(series);
   const trpc = useTRPC();
@@ -186,7 +190,7 @@ export function Chart({ data }: Props) {
           <Combobox
             placeholder="Select aggregation"
             value={ttcAggregation}
-            onChange={(val) => setTtcAggregation(val as TtcAggregation)}
+            onChange={(val) => dispatch(changeTtcAggregation(val))}
             items={TTC_AGGREGATION_ITEMS}
           />
         </div>

@@ -231,6 +231,11 @@ export const zChartInputBase = z.object({
     .optional()
     .default('conversion_rate')
     .describe('What to measure: conversion rate or time to convert'),
+  ttcAggregation: z
+    .enum(['avg', 'median', 'min', 'max', 'p25', 'p75', 'p90', 'p99'])
+    .optional()
+    .default('avg')
+    .describe('Aggregation method for time-to-convert display'),
 });
 
 export const zChartInput = z.preprocess((val) => {
