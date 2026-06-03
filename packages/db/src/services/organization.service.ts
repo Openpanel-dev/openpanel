@@ -161,15 +161,27 @@ export async function connectUserToOrganization({
     throw new Error('Invite expired');
   }
 
-  const member = await db.member.create({
-    data: {
+  // The invite might be consumed by a user who is already a member of the
+  // organization (e.g. accepting it a second time). Avoid creating a duplicate
+  // membership in that case and just consume the invite below.
+  const existingMember = await db.member.findFirst({
+    where: {
       organizationId: invite.organizationId,
       userId: user.id,
-      role: invite.role,
-      email: user.email,
-      invitedById: invite.createdById,
     },
   });
+
+  const member =
+    existingMember ??
+    (await db.member.create({
+      data: {
+        organizationId: invite.organizationId,
+        userId: user.id,
+        role: invite.role,
+        email: user.email,
+        invitedById: invite.createdById,
+      },
+    }));
 
   await getOrganizationAccess.clear({
     userId: user.id,

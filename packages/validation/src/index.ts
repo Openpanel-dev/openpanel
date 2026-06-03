@@ -545,6 +545,7 @@ export const zPassword = z.string().min(8);
 export const zSignInEmail = z.object({
   email: z.string().email().min(1),
   password: zPassword,
+  inviteId: z.string().nullish(),
 });
 export type ISignInEmail = z.infer<typeof zSignInEmail>;
 

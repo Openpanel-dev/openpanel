@@ -50,8 +50,30 @@ import {
 
 const TWO_FACTOR_COOKIE = '2fa_challenge';
 const TWO_FACTOR_CHALLENGE_TTL_SECONDS = 5 * 60;
+const INVITE_COOKIE = 'inviteId';
 
 const zProvider = z.enum(['email', 'google', 'github']);
+
+/**
+ * Best-effort consumption of an invite for a user that just authenticated.
+ * Failures (expired/invalid invite) must not block the sign-in itself, so we
+ * swallow and log the error instead of rethrowing.
+ */
+async function consumeInviteForUser(
+  userId: string,
+  inviteId: string,
+  log: { error: (obj: unknown, msg?: string) => void }
+) {
+  try {
+    const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
+    await connectUserToOrganization({ user, inviteId });
+  } catch (error) {
+    log.error(
+      { userId, inviteId, error },
+      'Failed to connect user to organization via invite'
+    );
+  }
+}
 
 async function getIsRegistrationAllowed(inviteId?: string | null) {
   // ALLOW_REGISTRATION is always undefined in cloud
@@ -255,6 +277,13 @@ export const authRouter = createTRPCRouter({
         ctx.setCookie(TWO_FACTOR_COOKIE, challengeId, {
           maxAge: TWO_FACTOR_CHALLENGE_TTL_SECONDS,
         });
+        // Carry the invite through the 2FA challenge so it can be consumed once
+        // the user completes the second factor in `signInTotp`.
+        if (input.inviteId) {
+          ctx.setCookie(INVITE_COOKIE, input.inviteId, {
+            maxAge: TWO_FACTOR_CHALLENGE_TTL_SECONDS,
+          });
+        }
         return { type: 'totp_required' as const };
       }
 
@@ -262,6 +291,11 @@ export const authRouter = createTRPCRouter({
       const session = await createSession(token, user.id);
       setSessionTokenCookie(ctx.setCookie, token, session.expiresAt);
       setLastAuthProviderCookie(ctx.setCookie, 'email');
+
+      if (input.inviteId) {
+        await consumeInviteForUser(user.id, input.inviteId, ctx.req.log);
+      }
+
       return {
         type: 'email' as const,
       };
@@ -333,6 +367,13 @@ export const authRouter = createTRPCRouter({
       const session = await createSession(token, challenge.userId);
       setSessionTokenCookie(ctx.setCookie, token, session.expiresAt);
       setLastAuthProviderCookie(ctx.setCookie, 'email');
+
+      const inviteId = ctx.cookies[INVITE_COOKIE];
+      if (inviteId) {
+        await consumeInviteForUser(challenge.userId, inviteId, ctx.req.log);
+        ctx.setCookie(INVITE_COOKIE, '', { maxAge: 0 });
+      }
+
       return { type: 'email' as const };
     }),
 

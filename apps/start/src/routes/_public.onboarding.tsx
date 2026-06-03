@@ -82,7 +82,14 @@ function Component() {
         </p>
         <p className="mt-3 text-muted-foreground">
           Already have an account?{' '}
-          <a className="font-medium text-foreground underline" href="/login">
+          <a
+            className="font-medium text-foreground underline"
+            href={
+              inviteId
+                ? `/login?inviteId=${encodeURIComponent(inviteId)}`
+                : '/login'
+            }
+          >
             Sign in
           </a>
         </p>
