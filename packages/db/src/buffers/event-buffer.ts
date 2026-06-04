@@ -305,22 +305,45 @@ export class EventBuffer extends BaseBuffer {
         }
       }
 
-      // Per-chunk parallel insert with independent failure tracking.
-      // Promise.allSettled returns every chunk's result so a single
-      // CH timeout cannot abort the other inserts mid-way.
+      // Per-chunk parallel insert with independent failure tracking AND a
+      // concurrency cap. `Promise.allSettled(chunks.map(...))` would fan
+      // out unbounded — with sharding, env-tuned batch/chunk sizes, and
+      // multiple buffers flushing in parallel across the cluster, that
+      // can easily exhaust the ClickHouse client connection pool
+      // (`CLICKHOUSE_OPTIONS.max_open_connections`, default 50). We honor
+      // `this.chInsertConcurrency` (default 5) by hand-rolling a small
+      // worker-pool that still preserves per-chunk fulfillment status
+      // (the equivalent of `Promise.allSettled` semantics, just with a
+      // cap on in-flight work).
       const chStart = performance.now();
       const chunks = this.chunks(popped, this.chunkSize);
-      const results = await Promise.allSettled(
-        chunks.map((chunk) =>
-          ch.insert({
-            table: 'events',
-            // Stream the raw JSONEachRow lines straight through — already
-            // serialized in Redis, no client-side parse/stringify needed.
-            values: this.jsonEachRowStream(chunk),
-            format: 'JSONEachRow',
-            clickhouse_settings: this.getClickhouseSettings(),
-          })
-        )
+      const results: PromiseSettledResult<unknown>[] = new Array(
+        chunks.length
+      );
+      let nextChunkIdx = 0;
+      const insertWorker = async (): Promise<void> => {
+        while (true) {
+          const idx = nextChunkIdx++;
+          if (idx >= chunks.length) return;
+          try {
+            const value = await ch.insert({
+              table: 'events',
+              // Stream the raw JSONEachRow lines straight through —
+              // already serialized in Redis, no client-side parse /
+              // stringify needed.
+              values: this.jsonEachRowStream(chunks[idx]!),
+              format: 'JSONEachRow',
+              clickhouse_settings: this.getClickhouseSettings(),
+            });
+            results[idx] = { status: 'fulfilled', value };
+          } catch (err) {
+            results[idx] = { status: 'rejected', reason: err };
+          }
+        }
+      };
+      const workerCount = Math.min(this.chInsertConcurrency, chunks.length);
+      await Promise.all(
+        Array.from({ length: Math.max(1, workerCount) }, () => insertWorker())
       );
       const chInsertMs = performance.now() - chStart;
 

@@ -113,13 +113,33 @@ export const eventBuffer = {
     return n;
   },
 
-  /** Aggregate LLEN across legacy + all shards (used for healthchecks). */
+  /**
+   * Aggregate LLEN across legacy + all shards (used for healthchecks and
+   * metrics).
+   *
+   * We deliberately propagate errors instead of swallowing them: this
+   * method is consumed by `/healthz/ready` and by Prometheus gauges, both
+   * of which need to see an actual Redis outage as an error — not as a
+   * fabricated "0 backlog" that looks perfectly healthy. Callers that
+   * want best-effort semantics (the existing Prometheus collector
+   * already does) can wrap in their own try/catch.
+   */
   async getBufferSize(): Promise<number> {
-    const sizes = await Promise.all([
-      legacyEventBuffer.getBufferSize().catch(() => 0),
-      ...shardedEventBuffers.map((b) => b.getBufferSize().catch(() => 0)),
+    const results = await Promise.allSettled([
+      legacyEventBuffer.getBufferSize(),
+      ...shardedEventBuffers.map((b) => b.getBufferSize()),
     ]);
-    return sizes.reduce((a, b) => a + b, 0);
+    const firstError = results.find(
+      (r): r is PromiseRejectedResult => r.status === 'rejected'
+    );
+    if (firstError) {
+      throw firstError.reason;
+    }
+    let total = 0;
+    for (const r of results) {
+      if (r.status === 'fulfilled') total += r.value;
+    }
+    return total;
   },
 
   /** Route a single event to its shard. */
