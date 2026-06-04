@@ -33,6 +33,7 @@ export interface EventsQueuePayloadIncomingEvent {
     projectId: string;
     event: ITrackPayload & {
       timestamp: string | number;
+      isTimestampFromThePast: boolean;
     };
     uaInfo:
       | {

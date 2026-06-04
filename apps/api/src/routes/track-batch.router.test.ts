@@ -1,5 +1,6 @@
 /**
- * Integration tests for POST /track/batch.
+ * Integration tests for batch ingestion via POST /track with
+ * `{ type: 'batch', payload: [event, ...] }`.
  *
  * Side effects (queue, db, geo, redis) are mocked so the test runs without
  * Docker. Auth uses the same getClientByIdCached mock as the insights
@@ -149,13 +150,17 @@ beforeEach(() => {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function postBatch(body: unknown, headers: Record<string, string> = AUTH) {
+function postTrack(body: unknown, headers: Record<string, string> = AUTH) {
   return app.inject({
     method: 'POST',
-    url: '/track/batch',
+    url: '/track',
     headers,
     payload: body as any,
   });
+}
+
+function postBatch(events: unknown, headers: Record<string, string> = AUTH) {
+  return postTrack({ type: 'batch', payload: events }, headers);
 }
 
 const validTrack = (name = 'page_view') => ({
@@ -170,34 +175,34 @@ const validIdentify = (profileId = 'user-1') => ({
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-describe('POST /track/batch — auth & envelope', () => {
+describe('POST /track type=batch — auth & envelope', () => {
   it('returns 401 without client-id', async () => {
-    const res = await postBatch({ events: [validTrack()] }, {
+    const res = await postBatch([validTrack()], {
       'content-type': 'application/json',
     });
     expect(res.statusCode).toBe(401);
   });
 
-  it('returns 400 on empty events array', async () => {
-    const res = await postBatch({ events: [] });
+  it('returns 400 on empty payload array', async () => {
+    const res = await postBatch([]);
     expect(res.statusCode).toBe(400);
   });
 
-  it('returns 400 on missing events field', async () => {
-    const res = await postBatch({});
+  it('returns 400 on missing payload field', async () => {
+    const res = await postTrack({ type: 'batch' });
     expect(res.statusCode).toBe(400);
   });
 
   it('returns 400 when array exceeds the per-request cap', async () => {
     const events = Array.from({ length: 2001 }, () => validTrack());
-    const res = await postBatch({ events });
+    const res = await postBatch(events);
     expect(res.statusCode).toBe(400);
   });
 });
 
-describe('POST /track/batch — happy path', () => {
+describe('POST /track type=batch — happy path', () => {
   it('accepts a single track event and queues it', async () => {
-    const res = await postBatch({ events: [validTrack()] });
+    const res = await postBatch([validTrack()]);
     expect(res.statusCode).toBe(202);
     const body = res.json();
     expect(body).toEqual({ accepted: 1, rejected: [] });
@@ -205,9 +210,11 @@ describe('POST /track/batch — happy path', () => {
   });
 
   it('accepts a mixed batch (track + identify) and dispatches each', async () => {
-    const res = await postBatch({
-      events: [validTrack('signup'), validIdentify('alice'), validTrack('purchase')],
-    });
+    const res = await postBatch([
+      validTrack('signup'),
+      validIdentify('alice'),
+      validTrack('purchase'),
+    ]);
     expect(res.statusCode).toBe(202);
     expect(res.json()).toEqual({ accepted: 3, rejected: [] });
     expect(queueAdd).toHaveBeenCalledTimes(2); // two `track` events
@@ -216,23 +223,71 @@ describe('POST /track/batch — happy path', () => {
 
   it('treats each event as if sent one by one (per-event queue add)', async () => {
     const events = Array.from({ length: 5 }, (_, i) => validTrack(`event_${i}`));
-    const res = await postBatch({ events });
+    const res = await postBatch(events);
     expect(res.statusCode).toBe(202);
     expect(res.json()).toEqual({ accepted: 5, rejected: [] });
     expect(queueAdd).toHaveBeenCalledTimes(5);
   });
+
+  it('still handles a single-event body (non-batch) with a 200', async () => {
+    // Regression guard: adding the batch variant to the /track body schema
+    // must not change the single-event contract.
+    const res = await postTrack(validTrack('single_event_probe'));
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body).toHaveProperty('deviceId');
+    expect(body).toHaveProperty('sessionId');
+    expect(queueAdd).toHaveBeenCalledTimes(1);
+  });
+
+  it('flags historical events with isTimestampFromThePast and keeps __timestamp', async () => {
+    // Batch items go through the exact same timestamp rules as single
+    // events: a __timestamp older than 15 minutes is accepted and flagged
+    // so the worker skips live-session handling for it.
+    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+    const res = await postBatch([
+      {
+        type: 'track' as const,
+        payload: {
+          name: 'probe_historical',
+          properties: { __timestamp: new Date(twoHoursAgo).toISOString() },
+        },
+      },
+    ]);
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toEqual({ accepted: 1, rejected: [] });
+    expect(queueAdd).toHaveBeenCalledTimes(1);
+    const queuedJob = queueAdd.mock.calls[0]?.[0];
+    expect(queuedJob.data.event.timestamp).toBe(twoHoursAgo);
+    expect(queuedJob.data.event.isTimestampFromThePast).toBe(true);
+  });
+
+  it('passes a client-supplied __deviceId through to the queue', async () => {
+    const res = await postBatch([
+      {
+        type: 'track' as const,
+        payload: {
+          name: 'probe_device_override',
+          properties: { __deviceId: 'mobile-device-abc', __path: '/home' },
+        },
+      },
+    ]);
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toEqual({ accepted: 1, rejected: [] });
+    expect(queueAdd).toHaveBeenCalledTimes(1);
+    const queuedJob = queueAdd.mock.calls[0]?.[0];
+    expect(queuedJob.data.deviceId).toBe('mobile-device-abc');
+  });
 });
 
-describe('POST /track/batch — per-item validation', () => {
+describe('POST /track type=batch — per-item validation', () => {
   it('rejects bad rows by index without failing the batch', async () => {
-    const res = await postBatch({
-      events: [
-        validTrack('good_1'),
-        { type: 'track', payload: { name: '' } }, // empty name → invalid
-        validTrack('good_2'),
-        { type: 'wrong-type', payload: {} }, // unknown discriminator
-      ],
-    });
+    const res = await postBatch([
+      validTrack('good_1'),
+      { type: 'track', payload: { name: '' } }, // empty name → invalid
+      validTrack('good_2'),
+      { type: 'wrong-type', payload: {} }, // unknown discriminator
+    ]);
     expect(res.statusCode).toBe(202);
     const body = res.json();
     expect(body.accepted).toBe(2);
@@ -243,12 +298,10 @@ describe('POST /track/batch — per-item validation', () => {
   });
 
   it('rejects alias as per-item validation (does not 400 the whole batch)', async () => {
-    const res = await postBatch({
-      events: [
-        validTrack(),
-        { type: 'alias', payload: { profileId: 'user-1', alias: 'u1' } },
-      ],
-    });
+    const res = await postBatch([
+      validTrack(),
+      { type: 'alias', payload: { profileId: 'user-1', alias: 'u1' } },
+    ]);
     expect(res.statusCode).toBe(202);
     const body = res.json();
     expect(body.accepted).toBe(1);
@@ -260,147 +313,13 @@ describe('POST /track/batch — per-item validation', () => {
     expect(body.rejected[0].error).toMatch(/alias/i);
   });
 
-  it('populates sessionId for events with __deviceId override', async () => {
-    // When a client supplies __deviceId, the API still resolves a
-    // sessionId — first via the live-session Redis lookup, then a
-    // deterministic 30-min bucket keyed on the event's __timestamp.
-    // Both deviceId and sessionId reach the queue.
-    const res = await postBatch({
-      events: [
-        {
-          type: 'track' as const,
-          payload: {
-            name: 'probe_device_override',
-            properties: {
-              __deviceId: 'mobile-device-abc',
-              __path: '/home',
-            },
-          },
-        },
-      ],
-    });
-    expect(res.statusCode).toBe(202);
-    expect(res.json()).toEqual({ accepted: 1, rejected: [] });
-    expect(queueAdd).toHaveBeenCalledTimes(1);
-    const queuedJob = queueAdd.mock.calls[0]?.[0];
-    expect(queuedJob.data.deviceId).toBe('mobile-device-abc');
-    expect(queuedJob.data.sessionId).toBeTruthy();
-    expect(queuedJob.data.sessionId.length).toBeGreaterThan(0);
-  });
-
-  it('buckets historical events by __timestamp, not request time', async () => {
-    // Two events on the same device, 1h apart in __timestamp. They
-    // should land in different deterministic 30-min buckets and thus
-    // get different sessionIds, even though they arrive in the same
-    // request. Anchored to "now" so the events stay inside the 5-day
-    // acceptance window when the test runs.
-    const baseMs = Date.now() - 2 * 60 * 60 * 1000; // 2h ago
-    const res = await postBatch({
-      events: [
-        {
-          type: 'track' as const,
-          payload: {
-            name: 'probe_bucket_a',
-            properties: {
-              __deviceId: 'shared-device',
-              __timestamp: new Date(baseMs).toISOString(),
-            },
-          },
-        },
-        {
-          type: 'track' as const,
-          payload: {
-            name: 'probe_bucket_b',
-            properties: {
-              __deviceId: 'shared-device',
-              __timestamp: new Date(baseMs + 60 * 60 * 1000).toISOString(),
-            },
-          },
-        },
-      ],
-    });
-    expect(res.statusCode).toBe(202);
-    expect(res.json()).toEqual({ accepted: 2, rejected: [] });
-    expect(queueAdd).toHaveBeenCalledTimes(2);
-    const sessionIdA = queueAdd.mock.calls[0]?.[0].data.sessionId;
-    const sessionIdB = queueAdd.mock.calls[1]?.[0].data.sessionId;
-    expect(sessionIdA).toBeTruthy();
-    expect(sessionIdB).toBeTruthy();
-    expect(sessionIdA).not.toBe(sessionIdB);
-  });
-
-  it('shares sessionId across events in the same 30-min bucket', async () => {
-    // Two events on the same device, 5 min apart inside the same
-    // wall-clock 30-min bucket. They should share a sessionId. Anchor
-    // to the bucket that closed ~1 hour ago so both timestamps are in
-    // the past (avoiding the future-timestamp guard) and well within
-    // the 5-day acceptance window.
-    const WINDOW_MS = 30 * 60 * 1000;
-    const oneHourAgoBucket =
-      Math.floor((Date.now() - 60 * 60 * 1000) / WINDOW_MS) * WINDOW_MS;
-    const baseMs = oneHourAgoBucket + 60_000; // 1 min past bucket start (past the grace)
-    const res = await postBatch({
-      events: [
-        {
-          type: 'track' as const,
-          payload: {
-            name: 'probe_same_bucket_a',
-            properties: {
-              __deviceId: 'same-bucket-device',
-              __timestamp: new Date(baseMs).toISOString(),
-            },
-          },
-        },
-        {
-          type: 'track' as const,
-          payload: {
-            name: 'probe_same_bucket_b',
-            properties: {
-              __deviceId: 'same-bucket-device',
-              __timestamp: new Date(baseMs + 5 * 60 * 1000).toISOString(),
-            },
-          },
-        },
-      ],
-    });
-    expect(res.statusCode).toBe(202);
-    expect(res.json()).toEqual({ accepted: 2, rejected: [] });
-    expect(queueAdd).toHaveBeenCalledTimes(2);
-    const sessionIdA = queueAdd.mock.calls[0]?.[0].data.sessionId;
-    const sessionIdB = queueAdd.mock.calls[1]?.[0].data.sessionId;
-    expect(sessionIdA).toBe(sessionIdB);
-  });
-
-  it('rejects events with __timestamp older than 5 days', async () => {
-    // Older events should be rejected per-row with a clear reason.
-    const sixDaysAgo = Date.now() - 6 * 24 * 60 * 60 * 1000;
-    const fourDaysAgo = Date.now() - 4 * 24 * 60 * 60 * 1000;
-    const res = await postBatch({
-      events: [
-        // valid (4 days old, within window)
-        {
-          type: 'track' as const,
-          payload: {
-            name: 'probe_within_window',
-            properties: {
-              __deviceId: 'd-1',
-              __timestamp: new Date(fourDaysAgo).toISOString(),
-            },
-          },
-        },
-        // too old (6 days)
-        {
-          type: 'track' as const,
-          payload: {
-            name: 'probe_too_old',
-            properties: {
-              __deviceId: 'd-2',
-              __timestamp: new Date(sixDaysAgo).toISOString(),
-            },
-          },
-        },
-      ],
-    });
+  it('rejects a nested batch envelope as a per-item validation error', async () => {
+    // `batch` is only valid at the top level — items are validated against
+    // the single-event union, so recursion is impossible by construction.
+    const res = await postBatch([
+      validTrack(),
+      { type: 'batch', payload: [validTrack()] },
+    ]);
     expect(res.statusCode).toBe(202);
     const body = res.json();
     expect(body.accepted).toBe(1);
@@ -409,18 +328,15 @@ describe('POST /track/batch — per-item validation', () => {
       index: 1,
       reason: 'validation',
     });
-    expect(body.rejected[0].error).toMatch(/5 days/i);
     expect(queueAdd).toHaveBeenCalledTimes(1);
   });
 
   it('returns 202 with accepted=0 when every event fails validation', async () => {
-    const res = await postBatch({
-      events: [
-        { type: 'track', payload: { name: '' } },
-        { type: 'track', payload: {} },
-        { type: 'identify', payload: {} },
-      ],
-    });
+    const res = await postBatch([
+      { type: 'track', payload: { name: '' } },
+      { type: 'track', payload: {} },
+      { type: 'identify', payload: {} },
+    ]);
     expect(res.statusCode).toBe(202);
     const body = res.json();
     expect(body.accepted).toBe(0);
@@ -441,7 +357,7 @@ describe('POST /track/batch — per-item validation', () => {
         ? { type: 'track', payload: { name: '' } } // invalid
         : validTrack(`chunked_${i}`),
     );
-    const res = await postBatch({ events });
+    const res = await postBatch(events);
     expect(res.statusCode).toBe(202);
     const body = res.json();
     expect(body.accepted).toBe(SIZE - badIndices.size);

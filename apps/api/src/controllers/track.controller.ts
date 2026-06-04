@@ -22,7 +22,7 @@ import type {
   IIdentifyPayload,
   IIncrementPayload,
   IReplayPayload,
-  ITrackBatchBody,
+  ITrackBatchHandlerPayload,
   ITrackHandlerPayload,
   ITrackPayload,
 } from '@openpanel/validation';
@@ -100,7 +100,7 @@ export function getTimestamp(
       : undefined;
 
   if (!userDefinedTimestamp) {
-    return { timestamp: safeTimestamp };
+    return { timestamp: safeTimestamp, isTimestampFromThePast: false };
   }
 
   const clientTimestamp = new Date(userDefinedTimestamp);
@@ -108,26 +108,24 @@ export function getTimestamp(
 
   // Constants for time validation
   const ONE_MINUTE_MS = 60 * 1000;
-  // Hard floor for accepted historical events. Public contract for /track
-  // and /track/batch, hard-coded (not per-project configurable).
-  const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+  const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
 
   // Use safeTimestamp if invalid or more than 1 minute in the future
   if (
     Number.isNaN(clientTimestampNumber) ||
     clientTimestampNumber > safeTimestamp + ONE_MINUTE_MS
   ) {
-    return { timestamp: safeTimestamp };
+    return { timestamp: safeTimestamp, isTimestampFromThePast: false };
   }
 
-  // Reject events older than 5 days. In /track/batch this surfaces as a
-  // per-row { reason: 'validation' } entry in rejected[]; in single-event
-  // /track it returns 400 to the caller.
-  if (clientTimestampNumber < safeTimestamp - FIVE_DAYS_MS) {
-    throw new HttpError('event timestamp older than 5 days', { status: 400 });
-  }
+  // isTimestampFromThePast is true only if timestamp is older than 15 minutes
+  const isTimestampFromThePast =
+    clientTimestampNumber < safeTimestamp - FIFTEEN_MINUTES_MS;
 
-  return { timestamp: clientTimestampNumber };
+  return {
+    timestamp: clientTimestampNumber,
+    isTimestampFromThePast,
+  };
 }
 
 interface TrackContext {
@@ -135,7 +133,7 @@ interface TrackContext {
   ip: string;
   ua?: string;
   headers: Record<string, string | undefined>;
-  timestamp: { value: number };
+  timestamp: { value: number; isFromPast: boolean };
   identity?: IIdentifyPayload;
   deviceId: string;
   sessionId: string;
@@ -217,10 +215,6 @@ async function buildEventContext(
     ua: shared.requestUa,
     salts: shared.salts,
     overrideDeviceId,
-    // Bucket the deterministic session_id by the event's own __timestamp,
-    // not the wall-clock moment the request arrived. Critical for
-    // /track/batch where one request can contain events spanning days.
-    eventMs: timestamp.timestamp,
   });
 
   return {
@@ -230,6 +224,7 @@ async function buildEventContext(
     headers: shared.requestHeaders,
     timestamp: {
       value: timestamp.timestamp,
+      isFromPast: timestamp.isTimestampFromThePast,
     },
     identity,
     deviceId: deviceIdResult.deviceId,
@@ -239,9 +234,7 @@ async function buildEventContext(
 }
 
 async function buildContext(
-  request: FastifyRequest<{
-    Body: ITrackHandlerPayload;
-  }>,
+  request: FastifyRequest,
   validatedBody: ITrackHandlerPayload,
 ): Promise<TrackContext> {
   const shared = await buildSharedRequestContext(request);
@@ -275,6 +268,7 @@ async function handleTrack(
       ...payload,
       groups: payload.groups ?? [],
       timestamp: timestamp.value,
+      isTimestampFromThePast: timestamp.isFromPast,
     },
     uaInfo,
     geo,
@@ -474,11 +468,17 @@ async function dispatchEvent(
 
 export async function handler(
   request: FastifyRequest<{
-    Body: ITrackHandlerPayload;
+    Body: ITrackHandlerPayload | ITrackBatchHandlerPayload;
   }>,
   reply: FastifyReply,
 ) {
   const validatedBody = request.body;
+
+  // Batch envelope: `{ type: 'batch', payload: [event, ...] }` — fan each
+  // item through the same per-event pipeline as a single-event request.
+  if (validatedBody.type === 'batch') {
+    return handleBatch(request, reply, validatedBody.payload);
+  }
 
   // Reject `alias` before building context — saves the salts/geo/deviceId work
   // for a request that's going to fail anyway.
@@ -509,8 +509,9 @@ type BatchItemResult =
     };
 
 /**
- * POST /track/batch — accepts up to TRACK_BATCH_MAX_EVENTS payloads in one
- * request and dispatches each through the same per-event pipeline as /track.
+ * `POST /track` with `{ type: 'batch', payload: [...] }` — accepts up to
+ * TRACK_BATCH_MAX_EVENTS payloads in one request and dispatches each through
+ * the same per-event pipeline as a single-event request.
  *
  * Per-event validation failures do NOT fail the whole batch: the response is
  * always 202 (assuming envelope + auth pass) with `{ accepted, rejected[] }`
@@ -527,13 +528,13 @@ type BatchItemResult =
 // turning a single big batch into a thundering herd.
 const BATCH_CONCURRENCY = 50;
 
-export async function batchHandler(
+async function handleBatch(
   request: FastifyRequest<{
-    Body: ITrackBatchBody;
+    Body: ITrackHandlerPayload | ITrackBatchHandlerPayload;
   }>,
   reply: FastifyReply,
+  events: unknown[],
 ) {
-  const { events } = request.body;
   const shared = await buildSharedRequestContext(request);
 
   const processOne = async (
