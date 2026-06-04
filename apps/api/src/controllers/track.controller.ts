@@ -591,11 +591,15 @@ async function handleBatch(
     }
   }
 
-  const accepted = results.filter((r) => r.status === 'accepted').length;
-  const rejected = results.filter(
-    (r): r is Extract<BatchItemResult, { status: 'rejected' }> =>
-      r.status === 'rejected',
-  );
+  let accepted = 0;
+  const rejected: Extract<BatchItemResult, { status: 'rejected' }>[] = [];
+  for (const result of results) {
+    if (result.status === 'accepted') {
+      accepted += 1;
+    } else {
+      rejected.push(result);
+    }
+  }
 
   reply.status(202).send({
     accepted,
