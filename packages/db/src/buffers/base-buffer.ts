@@ -453,6 +453,35 @@ export class BaseBuffer {
       return;
     }
 
+    // Lock heartbeat. Without renewal, a flush that
+    // takes longer than `lockTimeout` (60s default) will release the lock
+    // mid-flight, letting another worker acquire it and run a CONCURRENT
+    // flush on the same data. With our LPOP-based consume pattern that
+    // would not cause duplicates (LPOP is atomic) — but the lock also
+    // guards against multiple workers hammering CH with overlapping
+    // inserts during a slow phase, and against split-brain re-queue
+    // logic. Renewing at lockTimeout/3 (20s) gives us 2 missed beats
+    // before expiry. Best-effort: if heartbeat fails we just lose the
+    // lock; the next worker that picks up the cron job will retry.
+    const heartbeatMs = Math.max(5_000, (this.lockTimeout * 1000) / 3);
+    const heartbeat = setInterval(() => {
+      // Atomic compare-and-extend via Lua: only extend if we still own
+      // the lock. Catches network blips silently — they'll either
+      // succeed on the next tick or the lock will lapse.
+      getRedisCache()
+        .eval(
+          `if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('expire', KEYS[1], ARGV[2]) else return 0 end`,
+          1,
+          this.lockKey,
+          lockId,
+          String(this.lockTimeout)
+        )
+        .catch(() => {
+          // best-effort — heartbeat misses are non-fatal
+        });
+    }, heartbeatMs);
+    heartbeat.unref();
+
     const onFlushStarted = performance.now();
     try {
       await this.onFlush();
@@ -483,6 +512,7 @@ export class BaseBuffer {
         err: error,
       });
     } finally {
+      clearInterval(heartbeat);
       await this.releaseLock(lockId);
     }
   }

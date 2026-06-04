@@ -2,8 +2,20 @@ import { getSuperJson, setSuperJson } from '@openpanel/json';
 import type { RedisOptions } from 'ioredis';
 import { Redis } from 'ioredis';
 
+// Per-command timeout. ioredis has no per-command timeout by default — if
+// the TCP connection goes half-dead (kernel says "alive" but no ACKs come
+// back), commands queue forever and any caller awaiting a Redis op wedges
+// indefinitely. With this set, a single command rejects after 30s and the
+// caller can re-queue / retry. Mirrors the order of magnitude of
+// CLICKHOUSE_REQUEST_TIMEOUT_MS so failures across the two systems
+// propagate consistently.
+const COMMAND_TIMEOUT_MS = process.env.REDIS_COMMAND_TIMEOUT_MS
+  ? Math.max(1000, Number.parseInt(process.env.REDIS_COMMAND_TIMEOUT_MS, 10))
+  : 30000;
+
 const options: RedisOptions = {
   connectTimeout: 10000,
+  commandTimeout: COMMAND_TIMEOUT_MS,
 };
 
 export { Redis };
