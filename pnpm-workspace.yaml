@@ -23,6 +23,8 @@ trustPolicyExclude:
   - "semver@6.3.1 || 5.7.2"
   # This is because of presence of expo@50.0.7 somewhere
   - "ua-parser-js@1.0.41"
+  # This is because of presence of astro@6.4.2 somewhere
+  - "tinyclip@0.1.13"
 allowBuilds:
   "@biomejs/biome": true
   "@prisma/client": true
@@ -31,6 +33,11 @@ allowBuilds:
   prisma: true
   sharp: true
   esbuild: true
+  "@parcel/watcher": false
+  msgpackr-extract: false
+  protobufjs: false
+  simple-git-hooks: true
+  workerd: false
 
 # Define a catalog of version ranges.
 catalog:
