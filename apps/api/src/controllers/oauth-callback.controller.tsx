@@ -53,11 +53,13 @@ async function handleExistingUser({
   account,
   oauthUser,
   providerName,
+  inviteId,
   reply,
 }: {
   account: Account;
   oauthUser: OAuthUser;
   providerName: Provider;
+  inviteId: string | undefined | null;
   reply: FastifyReply;
 }) {
   const sessionToken = generateSessionToken();
@@ -71,6 +73,24 @@ async function handleExistingUser({
       email: oauthUser.email,
     },
   });
+
+  if (inviteId) {
+    try {
+      const user = await db.user.findUniqueOrThrow({
+        where: { id: account.userId },
+      });
+      await connectUserToOrganization({ user, inviteId });
+    } catch (error) {
+      reply.log.error(
+        {
+          error,
+          inviteId,
+          userId: account.userId,
+        },
+        'error connecting existing user to organization'
+      );
+    }
+  }
 
   setSessionTokenCookie(
     (...args) => reply.setCookie(...args),
@@ -301,6 +321,7 @@ export async function githubCallback(req: FastifyRequest, reply: FastifyReply) {
         account,
         oauthUser: githubUser,
         providerName: 'github',
+        inviteId,
         reply,
       });
     }
@@ -344,6 +365,7 @@ export async function googleCallback(req: FastifyRequest, reply: FastifyReply) {
         account: existingUser,
         oauthUser: googleUser,
         providerName: 'google',
+        inviteId,
         reply,
       });
     }

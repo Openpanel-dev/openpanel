@@ -36,7 +36,7 @@ export function SignInGoogle({
         onClick={() =>
           mutation.mutate({
             provider: 'google',
-            inviteId: type === 'sign-up' ? inviteId : undefined,
+            inviteId,
           })
         }
         size="lg"
