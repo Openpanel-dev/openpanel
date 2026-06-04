@@ -240,6 +240,84 @@ describe('POST /track type=batch — happy path', () => {
     expect(queueAdd).toHaveBeenCalledTimes(1);
   });
 
+  it('still rejects a single-event alias body with a 400', async () => {
+    const res = await postTrack({
+      type: 'alias',
+      payload: { profileId: 'user-1', alias: 'u1' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('marks dispatch failures as internal rejections', async () => {
+    queueAdd.mockRejectedValueOnce(new Error('queue unavailable'));
+    const res = await postBatch([validTrack('internal_error_probe')]);
+    expect(res.statusCode).toBe(202);
+    const body = res.json();
+    expect(body.accepted).toBe(0);
+    expect(body.rejected).toHaveLength(1);
+    expect(body.rejected[0]).toMatchObject({ index: 0, reason: 'internal' });
+  });
+
+  it('dispatches every supported event type through the shared pipeline', async () => {
+    const now = new Date().toISOString();
+    const res = await postBatch([
+      { type: 'group', payload: { id: 'g-1', type: 'company', name: 'Acme' } },
+      {
+        type: 'assign_group',
+        payload: { groupIds: ['g-1'], profileId: 'user-1' },
+      },
+      // getProfileById is mocked to null → 404 → per-row validation reject
+      {
+        type: 'increment',
+        payload: { profileId: 'missing', property: 'visits' },
+      },
+      {
+        type: 'decrement',
+        payload: { profileId: 'missing', property: 'visits' },
+      },
+      // sessionId falls back to the deterministic bucket → replay accepted
+      {
+        type: 'replay',
+        payload: {
+          chunk_index: 0,
+          events_count: 1,
+          is_full_snapshot: true,
+          started_at: now,
+          ended_at: now,
+          payload: 'chunk',
+        },
+      },
+    ]);
+    expect(res.statusCode).toBe(202);
+    const body = res.json();
+    expect(body.accepted).toBe(3); // group + assign_group + replay
+    expect(body.rejected).toHaveLength(2); // increment + decrement
+    expect(
+      body.rejected.every((r: { reason: string }) => r.reason === 'validation'),
+    ).toBe(true);
+  });
+
+  it('fetches geo per event when __ip overrides the request ip', async () => {
+    const res = await postBatch([
+      {
+        type: 'track' as const,
+        payload: { name: 'ip_probe', properties: { __ip: '203.0.113.9' } },
+      },
+    ]);
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toEqual({ accepted: 1, rejected: [] });
+  });
+
+  it('rejects non-object items with a top-level validation message', async () => {
+    const res = await postBatch([42]);
+    expect(res.statusCode).toBe(202);
+    const body = res.json();
+    expect(body.accepted).toBe(0);
+    expect(body.rejected).toHaveLength(1);
+    expect(body.rejected[0].reason).toBe('validation');
+    expect(body.rejected[0].error).toBeTruthy();
+  });
+
   it('flags historical events with isTimestampFromThePast and keeps __timestamp', async () => {
     // Batch items go through the exact same timestamp rules as single
     // events: a __timestamp older than 15 minutes is accepted and flagged
