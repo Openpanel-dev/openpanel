@@ -7,8 +7,8 @@
     "noindex": false
   },
   "hero": {
-    "heading": "WordPress Analytics Without the Cookie Banner",
-    "subheading": "Google Analytics on WordPress means cookie consent popups, GDPR complexity, and sending your visitors' data to US servers. OpenPanel is a cookieless WordPress analytics plugin that gives you pageviews, events, and user behavior — with full GDPR compliance out of the box and none of the privacy headaches.",
+    "heading": "WordPress analytics without the cookie banner",
+    "subheading": "Google Analytics on WordPress means cookie consent popups, GDPR complexity, and sending your visitors' data to US servers. OpenPanel is a cookieless WordPress analytics plugin that gives you pageviews, events, and user behavior, with full GDPR compliance out of the box and none of the privacy headaches.",
     "badges": [
       "No cookie banner needed",
       "GDPR compliant",
@@ -26,7 +26,7 @@
       },
       {
         "title": "GA4 sends data to US servers",
-        "description": "Google Analytics transfers visitor data to US servers. For European sites, this creates legal exposure under SCHREMS II — a risk WordPress site owners increasingly can't ignore."
+        "description": "Google Analytics transfers visitor data to US servers. For European sites, this creates legal exposure under Schrems II, a risk WordPress site owners increasingly can't ignore."
       },
       {
         "title": "WordPress analytics plugins are bloated",

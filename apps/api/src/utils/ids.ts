@@ -1,12 +1,8 @@
 import crypto from 'node:crypto';
 import { generateDeviceId } from '@openpanel/common/server';
 import { getSafeJson } from '@openpanel/json';
-import type {
-  EventsQueuePayloadCreateSessionEnd,
-  EventsQueuePayloadIncomingEvent,
-} from '@openpanel/queue';
+import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
-import { pick } from 'ramda';
 
 export async function getDeviceId({
   projectId,
@@ -52,7 +48,6 @@ export async function getDeviceId({
 interface DeviceIdResult {
   deviceId: string;
   sessionId: string;
-  session?: EventsQueuePayloadIncomingEvent['payload']['session'];
 }
 
 async function getInfoFromSession({
@@ -83,10 +78,6 @@ async function getInfoFromSession({
         return {
           deviceId: currentDeviceId,
           sessionId: data.payload.sessionId,
-          session: pick(
-            ['referrer', 'referrerName', 'referrerType'],
-            data.payload
-          ),
         };
       }
     }
@@ -98,10 +89,6 @@ async function getInfoFromSession({
         return {
           deviceId: previousDeviceId,
           sessionId: data.payload.sessionId,
-          session: pick(
-            ['referrer', 'referrerName', 'referrerType'],
-            data.payload
-          ),
         };
       }
     }

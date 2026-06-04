@@ -112,9 +112,12 @@ describe('SessionBuffer', () => {
       .spyOn(ch, 'insert')
       .mockRejectedValueOnce(new Error('ClickHouse unavailable'));
 
-    await sessionBuffer.processBuffer();
-
-    // Sessions must still be in the queue — not lost
+    // Errors now propagate to tryFlush (which handles them by resyncing the
+    // counter). processBuffer no longer swallows — we still verify the
+    // safety property: the queue is preserved.
+    await expect(sessionBuffer.processBuffer()).rejects.toThrow(
+      'ClickHouse unavailable',
+    );
     expect(await sessionBuffer.getBufferSize()).toBe(1);
 
     insertSpy.mockRestore();

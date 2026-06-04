@@ -29,7 +29,7 @@
     "paragraphs": [
       "Plausible Analytics has earned a strong reputation as a lightweight, privacy-first alternative to Google Analytics. Its simple dashboard and cookie-free tracking make it a great choice for bloggers and content sites that need basic traffic metrics without the complexity. But as your product grows, you'll quickly hit the limits of what Plausible can offer.",
       "OpenPanel shares Plausible's commitment to privacy \u2014 cookie-free tracking, no consent banners, and EU-based data processing \u2014 but goes significantly further with full product analytics capabilities. Where Plausible gives you pageviews, referrers, and country breakdowns, OpenPanel adds funnels, retention analysis, cohort breakdowns, user profiles, and A/B testing. It's the best of both worlds: Plausible-style simplicity for web analytics combined with Mixpanel-style depth for product analytics.",
-      "Self-hosting is another area where OpenPanel has a clear advantage. Plausible Community Edition requires you to set up and manage PostgreSQL and ClickHouse separately. OpenPanel runs in a single Docker container, making deployment and maintenance far simpler. And unlike Plausible, OpenPanel offers a permanent free cloud tier with 10,000 events per month \u2014 no credit card required.",
+      "Self-hosting is another area where OpenPanel has a clear advantage. Plausible Community Edition requires you to set up and manage PostgreSQL and ClickHouse separately. OpenPanel ships a one-command setup script for its Docker Compose stack (ClickHouse, Postgres, and Redis), making deployment and maintenance far simpler. And like Plausible, OpenPanel is free and unlimited to self-host; its cloud starts at $2.50/month for 5,000 events after a 30-day trial.",
       "If you've outgrown simple web analytics and need to understand how users actually interact with your product \u2014 without adding a second analytics tool \u2014 OpenPanel is a natural next step from Plausible."
     ]
   },
@@ -41,7 +41,7 @@
       "SaaS products needing user-level analytics and retention tracking",
       "Teams outgrowing simple web analytics needing product features",
       "Apps requiring user identification for logged-in users",
-      "Mobile app developers needing native iOS, Android, React Native SDKs"
+      "Mobile app developers needing native iOS, Android, React Native, Flutter SDKs"
     ],
     "best_for_competitor": [
       "Simple content sites and blogs wanting traffic stats only",
@@ -296,14 +296,18 @@
           "React",
           "Next.js",
           "Vue",
+          "Astro",
+          "Remix",
           "React Native",
-          "iOS",
-          "Android",
+          "Flutter",
+          "iOS (Swift)",
+          "Android (Kotlin)",
           "Node.js",
           "Python",
-          "PHP",
-          "Go",
-          "Rust"
+          "Ruby",
+          "Rust",
+          "Java",
+          "PHP"
         ],
         "competitor": [
           "JavaScript (browser)",
@@ -320,19 +324,19 @@
       },
       {
         "label": "Open Source",
-        "openpanel": "Yes - MIT License",
+        "openpanel": "Yes - AGPL-3.0",
         "competitor": "Yes - AGPL-3.0",
-        "notes": "Both are open source. Plausible is AGPL-3.0 licensed."
+        "notes": "Both are open source and AGPL-3.0 licensed."
       },
       {
         "label": "Self Hosting",
-        "openpanel": "Docker (simple single-container setup)",
+        "openpanel": "Docker Compose, guided setup wizard",
         "competitor": "Docker Compose with PostgreSQL + ClickHouse (2GB RAM minimum)",
         "notes": null
       },
       {
         "label": "Database",
-        "openpanel": "ClickHouse",
+        "openpanel": "ClickHouse (analytics) + PostgreSQL (config) + Redis",
         "competitor": "PostgreSQL (user data) + ClickHouse (analytics data)",
         "notes": null
       },
@@ -352,10 +356,10 @@
   },
   "pricing": {
     "title": "Pricing comparison",
-    "intro": "Plausible has no free tier for cloud. OpenPanel offers free cloud and self-hosting.",
+    "intro": "Neither has a free cloud tier. Both are free to self-host; OpenPanel's cloud starts at $2.50/month.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Simple pricing with 10,000 free events per month. All features included at every tier. Self-host for free with unlimited events."
+      "description": "Transparent pricing from $2.50/month for 5,000 events, with a 30-day free trial. All features included at every tier. Self-host free with unlimited events."
     },
     "competitor": {
       "model": "Pageview-based with 30-day trial",
@@ -421,12 +425,12 @@
       },
       {
         "title": "Mobile App Analytics",
-        "description": "Plausible is primarily designed for websites. OpenPanel offers native SDKs for iOS, Android, and React Native with full product analytics capabilities.",
+        "description": "Plausible is primarily designed for websites. OpenPanel offers native SDKs for iOS, Android, React Native, and Flutter with full product analytics capabilities.",
         "icon": "smartphone"
       },
       {
         "title": "Simpler Self-Hosting",
-        "description": "Plausible CE requires PostgreSQL and ClickHouse. OpenPanel runs in a single Docker container, making self-hosting more straightforward.",
+        "description": "Plausible CE requires you to configure PostgreSQL and ClickHouse separately. OpenPanel ships a one-command ./setup wizard that walks you through configuration and brings the whole Docker Compose stack up in minutes, making self-hosting far more straightforward.",
         "icon": "server"
       }
     ]
@@ -445,7 +449,7 @@
       },
       {
         "question": "Does Plausible have a free tier?",
-        "answer": "No, Plausible Cloud requires a paid subscription starting at $9/month. They offer a 30-day free trial. The self-hosted Community Edition is free but requires you to manage PostgreSQL and ClickHouse infrastructure. OpenPanel offers a free cloud tier with 10,000 events/month."
+        "answer": "No, Plausible Cloud requires a paid subscription starting at $9/month. They offer a 30-day free trial. The self-hosted Community Edition is free but requires you to manage PostgreSQL and ClickHouse infrastructure. OpenPanel is the same: no free cloud tier (30-day trial, then from $2.50/month for 5,000 events), but free and unlimited to self-host."
       },
       {
         "question": "Which has the smaller tracking script?",
@@ -453,7 +457,7 @@
       },
       {
         "question": "Can Plausible track mobile apps?",
-        "answer": "Not officially. Plausible is designed for web analytics and doesn't provide native mobile SDKs. You can send events via their API, but there are no mobile-specific metrics. OpenPanel offers native iOS, Android, and React Native SDKs."
+        "answer": "Not officially. Plausible is designed for web analytics and doesn't provide native mobile SDKs. You can send events via their API, but there are no mobile-specific metrics. OpenPanel offers native iOS, Android, React Native, and Flutter SDKs."
       },
       {
         "question": "What will I lose switching from Plausible?",
@@ -461,7 +465,7 @@
       },
       {
         "question": "How does self-hosting compare?",
-        "answer": "Plausible CE requires Docker Compose with PostgreSQL and ClickHouse (2GB RAM minimum). OpenPanel runs in a single Docker container with simpler setup. Both use ClickHouse for analytics queries."
+        "answer": "Plausible CE requires Docker Compose with PostgreSQL and ClickHouse (2GB RAM minimum). OpenPanel also uses Docker Compose (ClickHouse, Postgres, and Redis) but ships a one-command setup script that handles DB init, SSL, and config. Both use ClickHouse for analytics queries."
       },
       {
         "question": "Is Plausible or OpenPanel better for blogs/content sites?",
@@ -487,7 +491,7 @@
     "articles": [
       {
         "title": "9 best open source web analytics tools",
-        "url": "/articles/open-source-web-analytics"
+        "url": "/articles/self-hosted-web-analytics"
       },
       {
         "title": "Cookieless analytics",

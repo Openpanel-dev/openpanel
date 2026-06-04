@@ -4,7 +4,7 @@ import { eventBuffer, groupBuffer, profileBackfillBuffer, profileBuffer, replayB
 import type { CronQueuePayload } from '@openpanel/queue';
 
 import { cohortRefreshCronJob } from './cron.cohort-refresh';
-import { jobdeleteProjects } from './cron.delete-projects';
+import { jobDelete } from './cron.delete';
 import { gscSyncAllJob } from './gsc';
 import { onboardingJob } from './cron.onboarding';
 import { ping } from './cron.ping';
@@ -17,28 +17,28 @@ export async function cronJob(job: Job<CronQueuePayload>) {
       return await salt();
     }
     case 'flushEvents': {
-      return await eventBuffer.tryFlush();
+      return await eventBuffer.tryFlush({ trigger: 'cron' });
     }
     case 'flushProfiles': {
-      return await profileBuffer.tryFlush();
+      return await profileBuffer.tryFlush({ trigger: 'cron' });
     }
     case 'flushSessions': {
-      return await sessionBuffer.tryFlush();
+      return await sessionBuffer.tryFlush({ trigger: 'cron' });
     }
     case 'flushProfileBackfill': {
-      return await profileBackfillBuffer.tryFlush();
+      return await profileBackfillBuffer.tryFlush({ trigger: 'cron' });
     }
     case 'flushReplay': {
-      return await replayBuffer.tryFlush();
+      return await replayBuffer.tryFlush({ trigger: 'cron' });
     }
     case 'flushGroups': {
-      return await groupBuffer.tryFlush();
+      return await groupBuffer.tryFlush({ trigger: 'cron' });
     }
     case 'ping': {
       return await ping();
     }
-    case 'deleteProjects': {
-      return await jobdeleteProjects(job);
+    case 'delete': {
+      return await jobDelete();
     }
     case 'insightsDaily': {
       return await insightsDailyJob(job);

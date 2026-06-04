@@ -3,7 +3,7 @@
   "page_type": "alternative",
   "seo": {
     "title": "FullStory Alternatives 2026: $2.50/mo vs $12,000/yr (Open Source)",
-    "description": "FullStory's enterprise contract starts at $12,000–$50,000/year. OpenPanel delivers events, funnels, retention, and session replay for $2.50/month — or free to self-host. Open source, MIT-licensed, no sales call required.",
+    "description": "FullStory's enterprise contract starts at $12,000–$50,000/year. OpenPanel delivers events, funnels, retention, and session replay for $2.50/month — or free to self-host. Open source, AGPL-3.0 licensed, no sales call required.",
     "noindex": false
   },
   "hero": {
@@ -29,7 +29,7 @@
     "paragraphs": [
       "FullStory is a premium Digital Experience Intelligence platform known for its pixel-perfect session replay and frustration signal detection. It's a powerful tool for UX teams debugging user issues and optimizing conversion flows. But with enterprise pricing reportedly starting at $12,000 to $50,000 or more per year and no public pricing page, FullStory is out of reach for most teams.",
       "OpenPanel focuses on product analytics rather than session replay, giving you event tracking, funnels, retention analysis, cohort breakdowns, and user profiles at a fraction of the cost. Starting at $2.50 per month \u2014 or completely free when self-hosted \u2014 OpenPanel makes product analytics accessible to teams of any size, with pricing that's transparent and predictable.",
-      "The open-source advantage is significant here. FullStory is entirely proprietary and cloud-only, which means you have no visibility into how your data is processed and no option to run it on your own infrastructure. OpenPanel is MIT-licensed with full self-hosting support, giving you complete data sovereignty and the ability to audit every line of code.",
+      "The open-source advantage is significant here. FullStory is entirely proprietary and cloud-only, which means you have no visibility into how your data is processed and no option to run it on your own infrastructure. OpenPanel is AGPL-3.0 licensed with full self-hosting support, giving you complete data sovereignty and the ability to audit every line of code.",
       "If session replay is your primary need, FullStory remains strong in that niche. But if you need product analytics \u2014 understanding how users flow through funnels, measuring retention, and tracking user behavior \u2014 OpenPanel delivers those capabilities without requiring an enterprise budget or sales conversation."
     ]
   },
@@ -58,7 +58,7 @@
     "items": [
       {
         "label": "Open source",
-        "openpanel": "Yes (MIT)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "No (proprietary)"
       },
       {
@@ -68,7 +68,7 @@
       },
       {
         "label": "Transparent pricing",
-        "openpanel": "Public pricing, free tier",
+        "openpanel": "Public pricing, 30-day free trial",
         "competitor": "Sales-required pricing"
       },
       {
@@ -244,9 +244,9 @@
           },
           {
             "name": "Data warehouse sync",
-            "openpanel": true,
+            "openpanel": "Coming 2026",
             "competitor": true,
-            "notes": null
+            "notes": "OpenPanel offers raw data via its export API today, with native data-warehouse export (S3/GCS) on the roadmap for 2026."
           },
           {
             "name": "Mobile SDKs",
@@ -276,9 +276,11 @@
           "Next.js",
           "Vue",
           "React Native",
+          "Flutter",
           "iOS",
           "Android",
-          "Node.js"
+          "Node.js",
+          "PHP"
         ],
         "competitor": [
           "JavaScript",
@@ -291,13 +293,13 @@
       },
       {
         "label": "Open source",
-        "openpanel": "Yes (MIT)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "No",
         "notes": null
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker, simple setup",
+        "openpanel": "Docker Compose, guided setup wizard",
         "competitor": "Not available",
         "notes": null
       },
@@ -371,7 +373,7 @@
     "items": [
       {
         "title": "Teams needing open source analytics",
-        "description": "FullStory is proprietary with no source code access. OpenPanel provides full source code transparency under MIT license.",
+        "description": "FullStory is proprietary with no source code access. OpenPanel provides full source code transparency under AGPL-3.0 license.",
         "icon": "code"
       },
       {
@@ -410,15 +412,15 @@
       },
       {
         "question": "How does pricing compare?",
-        "answer": "FullStory requires sales conversations with pricing reportedly starting at $12,000/year. OpenPanel offers transparent pricing: 10,000 events/month free, then $0.00005/event. Most teams will save 80-90% with OpenPanel."
+        "answer": "FullStory requires sales conversations with pricing reportedly starting at $12,000/year. OpenPanel offers transparent tiered pricing from $2.50/month (5,000 events), e.g. $20/mo for 100K events, with a 30-day free trial — or free self-hosting. Most teams will save 80-90% with OpenPanel."
       },
       {
         "question": "Can I self-host FullStory?",
-        "answer": "No. FullStory is cloud-only SaaS. OpenPanel offers full self-hosting via Docker for complete data control."
+        "answer": "No. FullStory is cloud-only SaaS. OpenPanel offers full self-hosting via Docker Compose for complete data control — a one-command `./setup` wizard walks you through configuration and brings the whole stack up in minutes."
       },
       {
         "question": "Is FullStory open source?",
-        "answer": "No. FullStory is proprietary closed-source. OpenPanel is fully open source under the MIT license."
+        "answer": "No. FullStory is proprietary closed-source. OpenPanel is fully open source under the AGPL-3.0 license."
       },
       {
         "question": "Does OpenPanel have autocapture like FullStory?",
@@ -444,7 +446,7 @@
     "articles": [
       {
         "title": "9 best open source web analytics tools",
-        "url": "/articles/open-source-web-analytics"
+        "url": "/articles/self-hosted-web-analytics"
       }
     ],
     "alternatives": [

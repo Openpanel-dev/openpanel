@@ -18,13 +18,13 @@ import { zCheckout } from '@openpanel/validation';
 import { getCache } from '@openpanel/redis';
 import { subDays } from 'date-fns';
 import { z } from 'zod';
-import { TRPCAccessError, TRPCBadRequestError } from '../errors';
+import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 async function requireAdmin(userId: string, organizationId: string) {
   const access = await getOrganizationAccess({ userId, organizationId });
   if (access?.role !== 'org:admin') {
-    throw TRPCAccessError('Only organization admins can manage billing');
+    throw new TRPCForbiddenError('Only organization admins can manage billing');
   }
 }
 
@@ -161,7 +161,7 @@ export const subscriptionRouter = createTRPCRouter({
       await requireAdmin(ctx.session.userId, input.organizationId);
       const organization = await getOrganizationById(input.organizationId);
       if (!organization.subscriptionId) {
-        throw TRPCBadRequestError('Organization has no subscription');
+        throw new TRPCBadRequestError('Organization has no subscription');
       }
 
       const res = await cancelSubscription(organization.subscriptionId);
@@ -175,7 +175,7 @@ export const subscriptionRouter = createTRPCRouter({
       await requireAdmin(ctx.session.userId, input.organizationId);
       const organization = await getOrganizationById(input.organizationId);
       if (!organization.subscriptionCustomerId) {
-        throw TRPCBadRequestError('Organization has no subscription');
+        throw new TRPCBadRequestError('Organization has no subscription');
       }
 
       const portal = await createPortal({

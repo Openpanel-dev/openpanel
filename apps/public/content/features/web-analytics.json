@@ -16,7 +16,7 @@
     ]
   },
   "hero": {
-    "heading": "Web analytics: One script. Full dashboard.",
+    "heading": "Web analytics: one script, full dashboard",
     "subheading": "Add one script tag and get visitors, sessions, bounce rate, referrers, UTM campaigns, geo with maps, devices, and popular pages. No configuration needed.",
     "badges": [
       "Zero-config setup",
@@ -27,7 +27,7 @@
   },
   "definition": {
     "title": "What is OpenPanel web analytics?",
-    "text": "OpenPanel web analytics gives you a **complete website analytics dashboard** the moment you add our tracking script. No goals to configure, no views to set up, no filters to define - everything works out of the box.\n\nHere's what you get immediately:\n\n- **Key metrics at a glance** - unique visitors, sessions, pageviews, pages per session, bounce rate, and session duration. Each metric has a sparkline showing the trend and percentage change vs. the previous period\n- **Traffic sources** - see where your visitors come from. Top referrers, search engines, social networks, and direct traffic are broken down automatically\n- **UTM campaign tracking** - every UTM parameter (source, medium, campaign, term, content) gets its own breakdown so you can measure marketing campaigns without any extra setup\n- **Popular pages, entries, and exits** - know which pages get the most views, which pages visitors land on first, and which pages they leave from\n- **Device breakdown** - browser, browser version, OS, OS version, device brand, and device model. See exactly what your visitors use\n- **Geographic details** - a country table with flags and visitor counts alongside an interactive map. Drill into regions and cities\n- **User journey** - follow the path visitors take through your site, from landing page through navigation to exit\n- **Insights** - AI-powered highlights that surface the biggest changes and anomalies in your traffic so you can act on what matters\n\nThe most powerful part: **every value in the dashboard is clickable**. See a referrer you want to investigate? Click it to filter the entire dashboard by that referrer. Curious about mobile traffic from Germany? Click the country, click the device - the whole view updates instantly. No query builder, no SQL, no waiting.\n\nOpenPanel is **privacy-first**. We don't use third-party cookies, we don't sell your data, and we don't slow down your site. You can self-host or use our cloud - your data stays yours."
+    "text": "OpenPanel web analytics gives you a **complete website analytics dashboard** the moment you add our tracking script. No goals to configure, no views to set up, no filters to define - everything works out of the box.\n\nHere's what you get immediately:\n\n- **Key metrics at a glance** - unique visitors, sessions, pageviews, pages per session, bounce rate, and session duration. Each metric has a sparkline showing the trend and percentage change vs. the previous period\n- **Traffic sources** - see where your visitors come from. Top referrers, search engines, social networks, and direct traffic are broken down automatically\n- **UTM campaign tracking** - every UTM parameter (source, medium, campaign, term, content) gets its own breakdown so you can measure marketing campaigns without any extra setup\n- **Popular pages, entries, and exits** - know which pages get the most views, which pages visitors land on first, and which pages they leave from\n- **Device breakdown** - browser, browser version, OS, OS version, device brand, and device model. See exactly what your visitors use\n- **Geographic details** - a country table with flags and visitor counts alongside an interactive map. Drill into regions and cities\n- **User journey** - follow the path visitors take through your site, from landing page through navigation to exit\n- **Insights** - AI-powered highlights that surface the biggest changes and anomalies in your traffic\n\nThe useful part: **every value in the dashboard is clickable**. See a referrer you want to investigate? Click it to filter the entire dashboard by that referrer. Curious about mobile traffic from Germany? Click the country, click the device - the whole view updates instantly. No query builder, no SQL, no waiting.\n\nOpenPanel is **privacy-first**. We don't use third-party cookies, we don't sell your data, and we don't slow down your site. You can self-host or use our cloud - your data stays yours."
   },
   "capabilities_section": {
     "title": "Everything you get out of the box",
@@ -52,7 +52,7 @@
     },
     {
       "title": "Device details",
-      "description": "Break down traffic by browser, browser version, operating system, OS version, device brand, and device model. Understand exactly what your visitors use and optimize accordingly."
+      "description": "Break down traffic by browser, browser version, operating system, OS version, device brand, and device model. See exactly what your visitors use."
     },
     {
       "title": "Geographic breakdown with map",

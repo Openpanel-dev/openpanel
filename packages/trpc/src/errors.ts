@@ -1,25 +1,31 @@
 import { TRPCError } from '@trpc/server';
 
-export const TRPCAccessError = (message: string) =>
-  new TRPCError({
-    code: 'UNAUTHORIZED',
-    message,
-  });
+export class TRPCAccessError extends TRPCError {
+  constructor(message: string) {
+    super({ code: 'UNAUTHORIZED', message });
+  }
+}
 
-export const TRPCNotFoundError = (message: string) =>
-  new TRPCError({
-    code: 'NOT_FOUND',
-    message,
-  });
+export class TRPCNotFoundError extends TRPCError {
+  constructor(message: string) {
+    super({ code: 'NOT_FOUND', message });
+  }
+}
 
-export const TRPCInternalServerError = (message: string) =>
-  new TRPCError({
-    code: 'INTERNAL_SERVER_ERROR',
-    message,
-  });
+export class TRPCForbiddenError extends TRPCError {
+  constructor(message: string) {
+    super({ code: 'FORBIDDEN', message });
+  }
+}
 
-export const TRPCBadRequestError = (message: string) =>
-  new TRPCError({
-    code: 'BAD_REQUEST',
-    message,
-  });
+export class TRPCInternalServerError extends TRPCError {
+  constructor(message: string) {
+    super({ code: 'INTERNAL_SERVER_ERROR', message });
+  }
+}
+
+export class TRPCBadRequestError extends TRPCError {
+  constructor(message: string) {
+    super({ code: 'BAD_REQUEST', message });
+  }
+}

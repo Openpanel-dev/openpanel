@@ -61,17 +61,27 @@ describe('findProfilesCore — SQL conditions', () => {
     expect(capturedSql()).toContain("project_id = 'proj-1'");
   });
 
-  it('adds email LIKE condition when email is provided', async () => {
+  it('adds email ILIKE condition when email is provided', async () => {
     await findProfilesCore({ projectId: 'proj-1', email: 'carl@' });
-    expect(capturedSql()).toContain("email LIKE '%carl@%'");
+    expect(capturedSql()).toContain("email ILIKE '%carl@%'");
   });
 
-  it('searches both first_name and last_name for name filter', async () => {
+  it('searches across first/last/full name for name filter', async () => {
     await findProfilesCore({ projectId: 'proj-1', name: 'Carl' });
     const sql = capturedSql();
-    expect(sql).toContain('first_name LIKE');
-    expect(sql).toContain('last_name LIKE');
+    expect(sql).toContain('first_name ILIKE');
+    expect(sql).toContain('last_name ILIKE');
+    expect(sql).toContain("concat(first_name, ' ', last_name) ILIKE");
     expect(sql).toContain('%Carl%');
+  });
+
+  it('matches multi-token name queries by ANDing each token', async () => {
+    await findProfilesCore({ projectId: 'proj-1', name: 'John Smith' });
+    const sql = capturedSql();
+    expect(sql).toContain('%John%');
+    expect(sql).toContain('%Smith%');
+    // Each token wrapped in its own OR-of-fields group, joined by AND.
+    expect(sql).toContain(') AND (');
   });
 
   it('adds country property condition', async () => {

@@ -11,6 +11,8 @@ import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import {
   type EventsQueuePayloadIncomingEvent,
   getEventsGroupQueueShard,
+  produceIncomingEvent,
+  shouldUseKafka,
 } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import type {
@@ -117,7 +119,6 @@ interface TrackContext {
   identity?: IIdentifyPayload;
   deviceId: string;
   sessionId: string;
-  session?: EventsQueuePayloadIncomingEvent['payload']['session'];
   geo: GeoLocation;
 }
 
@@ -176,7 +177,6 @@ async function buildContext(
     identity,
     deviceId: deviceIdResult.deviceId,
     sessionId: deviceIdResult.sessionId,
-    session: deviceIdResult.session,
     geo,
   };
 }
@@ -185,8 +185,7 @@ async function handleTrack(
   payload: ITrackPayload,
   context: TrackContext
 ): Promise<void> {
-  const { projectId, deviceId, geo, headers, timestamp, sessionId, session } =
-    context;
+  const { projectId, deviceId, geo, headers, timestamp, sessionId } = context;
 
   const uaInfo = parseUserAgent(headers['user-agent'], payload.properties);
   const groupId = uaInfo.isServer
@@ -202,27 +201,34 @@ async function handleTrack(
     promises.push(handleIdentify(context.identity, context));
   }
 
-  promises.push(
-    getEventsGroupQueueShard(groupId || generateId()).add({
-      orderMs: timestamp.value,
-      data: {
-        projectId,
-        headers,
-        event: {
-          ...payload,
-          groups: payload.groups ?? [],
-          timestamp: timestamp.value,
-          isTimestampFromThePast: timestamp.isFromPast,
-        },
-        uaInfo,
-        geo,
-        deviceId,
-        sessionId,
-        session,
-      },
-      groupId,
-    })
-  );
+  const queueData: EventsQueuePayloadIncomingEvent['payload'] = {
+    projectId,
+    headers,
+    event: {
+      ...payload,
+      groups: payload.groups ?? [],
+      timestamp: timestamp.value,
+      isTimestampFromThePast: timestamp.isFromPast,
+    },
+    uaInfo,
+    geo,
+    deviceId,
+    sessionId,
+  };
+
+  const partitionKey = groupId || generateId();
+
+  if (shouldUseKafka(projectId)) {
+    promises.push(produceIncomingEvent(queueData, partitionKey));
+  } else {
+    promises.push(
+      getEventsGroupQueueShard(partitionKey).add({
+        orderMs: timestamp.value,
+        data: queueData,
+        groupId,
+      })
+    );
+  }
 
   await Promise.all(promises);
 }

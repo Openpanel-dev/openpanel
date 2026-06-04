@@ -14,6 +14,10 @@ export class SessionBuffer extends BaseBuffer {
     ? Number.parseInt(process.env.SESSION_BUFFER_CHUNK_SIZE, 10)
     : 1000;
 
+  private readonly squashEnabled =
+    process.env.SESSION_BUFFER_SQUASH !== 'false' &&
+    process.env.SESSION_BUFFER_SQUASH !== '0';
+
   private readonly redisKey = 'session-buffer';
   private redis: Redis;
   constructor() {
@@ -43,7 +47,9 @@ export class SessionBuffer extends BaseBuffer {
       const value = await this.redis.get(
         `session:${options.projectId}:${options.profileId}`
       );
-      if (!value) return null;
+      if (!value) {
+        return null;
+      }
 
       // Backward compat: old keys stored full JSON, new keys store just the sessionId
       if (value.startsWith('{')) {
@@ -71,31 +77,45 @@ export class SessionBuffer extends BaseBuffer {
       const oldSession = assocPath(['sign'], -1, clone(existingSession));
       const newSession = assocPath(['sign'], 1, clone(existingSession));
 
-      newSession.ended_at = event.created_at;
       newSession.version = existingSession.version + 1;
-      if (!newSession.entry_path && event.path) {
-        newSession.entry_path = event.path;
+
+      // Events can arrive out of order (client-side batching, retries, offline
+      // queueing). Treat the session window as [min(event ts), max(event ts)]
+      // so duration stays non-negative and entry/exit reflect actual order.
+      const eventTime = new Date(event.created_at).getTime();
+      const startTime = new Date(newSession.created_at).getTime();
+      const endTime = new Date(newSession.ended_at).getTime();
+
+      if (eventTime >= endTime) {
+        newSession.ended_at = event.created_at;
+        if (event.path) {
+          newSession.exit_path = event.path;
+        }
+        if (event.origin) {
+          newSession.exit_origin = event.origin;
+        }
       }
-      if (!newSession.entry_origin && event.origin) {
-        newSession.entry_origin = event.origin;
+
+      if (eventTime < startTime) {
+        newSession.created_at = event.created_at;
+        if (event.path) {
+          newSession.entry_path = event.path;
+        }
+        if (event.origin) {
+          newSession.entry_origin = event.origin;
+        }
+      } else {
+        if (!newSession.entry_path && event.path) {
+          newSession.entry_path = event.path;
+        }
+        if (!newSession.entry_origin && event.origin) {
+          newSession.entry_origin = event.origin;
+        }
       }
-      if (event.path) {
-        newSession.exit_path = event.path;
-      }
-      if (event.origin) {
-        newSession.exit_origin = event.origin;
-      }
-      const duration =
+
+      newSession.duration =
         new Date(newSession.ended_at).getTime() -
         new Date(newSession.created_at).getTime();
-      if (duration >= 0) {
-        newSession.duration = duration;
-      } else {
-        this.logger.warn(
-          { duration, event, session: newSession },
-          'Session duration is negative',
-        );
-      }
 
       const addedRevenue = event.name === 'revenue' ? (event.revenue ?? 0) : 0;
       newSession.revenue = (newSession.revenue ?? 0) + addedRevenue;
@@ -178,6 +198,10 @@ export class SessionBuffer extends BaseBuffer {
     ];
   }
 
+  protected getRedisListKey(): string {
+    return this.redisKey;
+  }
+
   async add(event: IClickhouseEvent) {
     if (!event.session_id) {
       return;
@@ -187,89 +211,197 @@ export class SessionBuffer extends BaseBuffer {
       return;
     }
 
-    try {
-      // Plural since we will delete the old session with sign column
-      const sessions = await this.getSession(event);
-      const [newSession] = sessions;
+    return this.timeAdd(async () => {
+      try {
+        // Plural since we will delete the old session with sign column
+        const sessions = await this.getSession(event);
+        const [newSession] = sessions;
 
-      const multi = this.redis.multi();
-      multi.set(
-        `session:${newSession.id}`,
-        JSON.stringify(newSession),
-        'EX',
-        60 * 60
-      );
-      if (newSession.profile_id) {
+        const multi = this.redis.multi();
         multi.set(
-          `session:${newSession.project_id}:${newSession.profile_id}`,
-          newSession.id,
+          `session:${newSession.id}`,
+          JSON.stringify(newSession),
           'EX',
           60 * 60
         );
-      }
-      for (const session of sessions) {
-        multi.rpush(this.redisKey, JSON.stringify(session));
-      }
-      // Increment counter by number of sessions added
-      multi.incrby(this.bufferCounterKey, sessions.length);
-      await multi.exec();
+        if (newSession.profile_id) {
+          multi.set(
+            `session:${newSession.project_id}:${newSession.profile_id}`,
+            newSession.id,
+            'EX',
+            60 * 60
+          );
+        }
+        for (const session of sessions) {
+          multi.rpush(this.redisKey, JSON.stringify(session));
+        }
+        // Append LLEN at the end so we can read ground-truth queue length
+        // from the exec result without an extra round-trip.
+        multi.llen(this.redisKey);
+        const result = await multi.exec();
 
-      // Check buffer length using counter
-      const bufferLength = await this.getBufferSize();
+        const llenIndex = (result?.length ?? 1) - 1;
+        const bufferLength = (result?.[llenIndex]?.[1] as number) ?? 0;
 
-      if (bufferLength >= this.batchSize) {
-        await this.tryFlush();
+        if (bufferLength >= this.batchSize) {
+          await this.tryFlush({ trigger: 'add' });
+        }
+      } catch (error) {
+        this.logger.error({ err: error }, 'Failed to add session');
       }
-    } catch (error) {
-      this.logger.error({ err: error }, 'Failed to add session');
+    });
+  }
+
+  /**
+   * Squash multiple (sign=-1, sign=+1) pairs for the same session id into
+   * just the boundary rows: the oldest -1 (cancels the previous CH state)
+   * and the newest +1 (the final state). Single-row sessions (no update
+   * pair yet) pass through unchanged.
+   *
+   * Correctness depends on the invariant maintained by `getSession`: every
+   * update for an existing session emits exactly one -1 at version V and
+   * one +1 at V+1, where V is the existing version. The oldest -1 in the
+   * batch cancels CH's previous +1, and the newest +1 becomes the new
+   * canonical row. Intermediate (-1, +1) pairs cancel each other in CH
+   * either way — keeping them is wasted work.
+   */
+  private squashSessionsByVersion(
+    sessions: IClickhouseSession[]
+  ): IClickhouseSession[] {
+    if (sessions.length <= 1) {
+      return sessions;
     }
+
+    const grouped = new Map<string, IClickhouseSession[]>();
+    for (const s of sessions) {
+      const key = s.id;
+      const arr = grouped.get(key);
+      if (arr) {
+        arr.push(s);
+      } else {
+        grouped.set(key, [s]);
+      }
+    }
+
+    let squashedCount = 0;
+    const out: IClickhouseSession[] = [];
+
+    for (const entries of grouped.values()) {
+      if (entries.length === 1) {
+        out.push(entries[0]!);
+        continue;
+      }
+      let oldestNeg: IClickhouseSession | null = null;
+      let newestPos: IClickhouseSession | null = null;
+      for (const e of entries) {
+        if (e.sign === -1) {
+          if (!oldestNeg || e.version < oldestNeg.version) {
+            oldestNeg = e;
+          }
+        } else if (
+          e.sign === 1 &&
+          (!newestPos || e.version > newestPos.version)
+        ) {
+          newestPos = e;
+        }
+      }
+      const emitted: IClickhouseSession[] = [];
+      if (oldestNeg) {
+        emitted.push(oldestNeg);
+      }
+      if (newestPos) {
+        emitted.push(newestPos);
+      }
+      squashedCount += entries.length - emitted.length;
+      out.push(...emitted);
+    }
+
+    if (squashedCount > 0) {
+      this.logger.debug(
+        {
+          inputRows: sessions.length,
+          outputRows: out.length,
+          dropped: squashedCount,
+          uniqueSessions: grouped.size,
+        },
+        'Session batch squashed'
+      );
+    }
+
+    console.log(
+      squashedCount > 0
+        ? 'Session batch squashed'
+        : 'Session batch not squashed',
+      {
+        inputRows: sessions.length,
+        outputRows: out.length,
+        dropped: squashedCount,
+      }
+    );
+
+    return out;
   }
 
   async processBuffer() {
-    try {
-      // Get events from the start without removing them
-      const events = await this.redis.lrange(
-        this.redisKey,
-        0,
-        this.batchSize - 1
-      );
+    const lrangeStart = performance.now();
+    const events = await this.redis.lrange(
+      this.redisKey,
+      0,
+      this.batchSize - 1
+    );
+    const lrangeMs = performance.now() - lrangeStart;
 
-      if (events.length === 0) {
-        return;
-      }
-
-      const sessions = events
-        .map((e) => getSafeJson<IClickhouseSession>(e))
-        .map((session) => {
-          return {
-            ...session,
-            duration: Math.max(0, session?.duration || 0),
-          };
-        });
-
-      for (const chunk of this.chunks(sessions, this.chunkSize)) {
-        // Insert to ClickHouse
-        await ch.insert({
-          table: TABLE_NAMES.sessions,
-          values: chunk,
-          format: 'JSONEachRow',
-        });
-      }
-
-      // Only remove events after successful insert and update counter
-      const multi = this.redis.multi();
-      multi
-        .ltrim(this.redisKey, events.length, -1)
-        .decrby(this.bufferCounterKey, events.length);
-      await multi.exec();
-
-      this.logger.debug({ count: events.length }, 'Processed sessions');
-    } catch (error) {
-      this.logger.error({ err: error }, 'Failed to process buffer');
+    if (events.length === 0) {
+      this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
+      return;
     }
-  }
 
-  getBufferSize() {
-    return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
+    const parsed: IClickhouseSession[] = [];
+    for (const raw of events) {
+      const session = getSafeJson<IClickhouseSession>(raw);
+      if (!session) {
+        continue;
+      }
+      parsed.push({
+        ...session,
+        duration: Math.max(0, session.duration || 0),
+      });
+    }
+
+    // A single high-activity session can produce many (sign=-1, sign=+1)
+    // pairs within one flush window — each event for that session adds a
+    // pair. The VersionedCollapsingMergeTree on `sessions` will collapse
+    // them at merge time, so the final state is correct either way. But
+    // inserting all the intermediate rows costs network bytes, gzip CPU,
+    // CH ingest work, and CH merge work.
+    //
+    // We can squash within the batch and only insert the boundary rows:
+    // the oldest sign=-1 (which cancels the previous CH state) and the
+    // newest sign=+1 (the final state). Same end result, fewer rows.
+    //
+    // Set SESSION_BUFFER_SQUASH=false to disable as a safety hatch.
+    const sessions = this.squashEnabled
+      ? this.squashSessionsByVersion(parsed)
+      : parsed;
+
+    const chStart = performance.now();
+    await this.parallelLimit(this.chunks(sessions, this.chunkSize), (chunk) =>
+      ch.insert({
+        table: TABLE_NAMES.sessions,
+        values: chunk,
+        format: 'JSONEachRow',
+        clickhouse_settings: this.getClickhouseSettings(),
+      })
+    );
+    const chInsertMs = performance.now() - chStart;
+
+    const trimStart = performance.now();
+    await this.redis.ltrim(this.redisKey, events.length, -1);
+    const trimMs = performance.now() - trimStart;
+
+    this.reportFlushStats({
+      rowsProcessed: events.length,
+      phases: { lrangeMs, chInsertMs, trimMs },
+    });
   }
 }

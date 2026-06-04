@@ -31,6 +31,23 @@ export function getDatesFromRange(range: IChartRange, timezone: string) {
     };
   }
 
+  if (range === 'last24h') {
+    const startDate = DateTime.now()
+      .minus({ hour: 24 })
+      .startOf('minute')
+      .setZone(timezone)
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = DateTime.now()
+      .setZone(timezone)
+      .endOf('minute')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+
+    return {
+      startDate,
+      endDate,
+    };
+  }
+
   if (range === 'today') {
     const startDate = DateTime.now()
       .setZone(timezone)
@@ -67,6 +84,24 @@ export function getDatesFromRange(range: IChartRange, timezone: string) {
   if (range === '7d') {
     const startDate = DateTime.now()
       .minus({ day: 7 })
+      .setZone(timezone)
+      .startOf('day')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = DateTime.now()
+      .setZone(timezone)
+      .endOf('day')
+      .plus({ millisecond: 1 })
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+
+    return {
+      startDate,
+      endDate,
+    };
+  }
+
+  if (range === '3m') {
+    const startDate = DateTime.now()
+      .minus({ month: 3 })
       .setZone(timezone)
       .startOf('day')
       .toFormat('yyyy-MM-dd HH:mm:ss');

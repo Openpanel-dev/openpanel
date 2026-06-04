@@ -1,5 +1,6 @@
 import { usePageContextValue } from '@/contexts/page-context';
 import { cn } from '@/utils/cn';
+import { timeWindows } from '@openpanel/constants';
 import {
   Building2Icon,
   GanttChartIcon,
@@ -123,32 +124,5 @@ const PAGE_META: Record<
 };
 
 function formatRange(range: string): string {
-  switch (range) {
-    case '30min':
-      return 'Last 30 min';
-    case 'lastHour':
-      return 'Last hour';
-    case 'today':
-      return 'Today';
-    case 'yesterday':
-      return 'Yesterday';
-    case '7d':
-      return 'Last 7 days';
-    case '30d':
-      return 'Last 30 days';
-    case '6m':
-      return 'Last 6 months';
-    case '12m':
-      return 'Last 12 months';
-    case 'monthToDate':
-      return 'Month to date';
-    case 'lastMonth':
-      return 'Last month';
-    case 'yearToDate':
-      return 'Year to date';
-    case 'lastYear':
-      return 'Last year';
-    default:
-      return range;
-  }
+  return timeWindows[range as keyof typeof timeWindows]?.label ?? range;
 }

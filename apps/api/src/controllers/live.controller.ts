@@ -6,6 +6,17 @@ import { getProjectAccess } from '@openpanel/trpc';
 import { getOrganizationAccess } from '@openpanel/trpc/src/access';
 import type { FastifyRequest } from 'fastify';
 
+// Every ws handler MUST call this before its first await. Without an
+// 'error' listener, an ECONNRESET from the client (laptop sleep, network
+// flip, LB reset storm) propagates to uncaughtException and kills the
+// whole process. The ws library always emits 'close' after 'error', so
+// the existing close-based cleanup still runs.
+function guardSocket(socket: WebSocket, req: FastifyRequest) {
+  socket.on('error', (err) => {
+    req.log.warn({ err }, 'ws socket error');
+  });
+}
+
 export function wsVisitors(
   socket: WebSocket,
   req: FastifyRequest<{
@@ -14,6 +25,7 @@ export function wsVisitors(
     };
   }>
 ) {
+  guardSocket(socket, req);
   const { params } = req;
   const sendCount = () => {
     eventBuffer
@@ -52,6 +64,7 @@ export async function wsProjectEvents(
     };
   }>
 ) {
+  guardSocket(socket, req);
   const { params } = req;
 
   const userId = req.session?.userId;
@@ -93,6 +106,7 @@ export async function wsProjectNotifications(
     };
   }>
 ) {
+  guardSocket(socket, req);
   const { params } = req;
   const userId = req.session?.userId;
 
@@ -134,6 +148,7 @@ export async function wsOrganizationEvents(
     };
   }>
 ) {
+  guardSocket(socket, req);
   const { params } = req;
   const userId = req.session?.userId;
 

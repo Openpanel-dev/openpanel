@@ -10,7 +10,7 @@ import {
   zCreateWebhookIntegration,
 } from '@openpanel/validation';
 import { getOrganizationAccess } from '../access';
-import { TRPCAccessError, TRPCBadRequestError } from '../errors';
+import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 import { validate as validateJavaScriptTemplate } from '@openpanel/js-runtime';
 
@@ -30,7 +30,7 @@ export const integrationRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       return integration;
@@ -104,7 +104,7 @@ export const integrationRouter = createTRPCRouter({
           input.config.javascriptTemplate,
         );
         if (!validation.valid) {
-          throw TRPCBadRequestError(
+          throw new TRPCBadRequestError(
             `Invalid JavaScript template: ${validation.error}`,
           );
         }
@@ -145,7 +145,7 @@ export const integrationRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       return db.integration.delete({

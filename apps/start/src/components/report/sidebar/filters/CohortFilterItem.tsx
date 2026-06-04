@@ -6,10 +6,11 @@ import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useCohorts } from '@/hooks/use-cohorts';
 import { useDispatch } from '@/redux';
-import type {
-  IChartEvent,
-  IChartEventFilter,
-  IChartEventFilterOperator,
+import {
+  getCohortIds,
+  type IChartEvent,
+  type IChartEventFilter,
+  type IChartEventFilterOperator,
 } from '@openpanel/validation';
 import { SlidersHorizontal, Trash } from 'lucide-react';
 import { changeEvent } from '../../reportSlice';
@@ -26,7 +27,7 @@ interface PureCohortFilterItemProps {
     operator: IChartEventFilterOperator,
     filter: IChartEventFilter,
   ) => void;
-  onChangeCohort: (cohortId: string, filter: IChartEventFilter) => void;
+  onChangeCohort: (cohortIds: string[], filter: IChartEventFilter) => void;
   className?: string;
 }
 
@@ -58,13 +59,23 @@ export function CohortFilterItem({ filter, event }: CohortFilterItemProps) {
     );
   };
 
-  const onChangeCohort = (cohortId: string, { id }: IChartEventFilter) => {
+  const onChangeCohort = (cohortIds: string[], { id }: IChartEventFilter) => {
+    // Write both `cohortIds` (source of truth) and `cohortId` (legacy, set
+    // to the first id) so saved reports loaded by older code keep working.
+    const firstId = cohortIds[0];
     dispatch(
       changeEvent({
         ...event,
         type: 'event',
         filters: event.filters.map((item) =>
-          item.id === id ? { ...item, cohortId } : item,
+          item.id === id
+            ? {
+                ...item,
+                name: firstId ? `cohort:${firstId}` : item.name,
+                cohortId: firstId,
+                cohortIds,
+              }
+            : item,
         ),
       }),
     );
@@ -91,11 +102,24 @@ export function PureCohortFilterItem({
   const { projectId } = useAppParams();
 
   const cohorts = useCohorts({ projectId, includeCount: false });
+  const selectedIds = getCohortIds(filter);
 
   const cohortsCombobox = cohorts.map((cohort) => ({
     value: cohort.id,
     label: cohort.name,
   }));
+
+  /**
+   * The filter's `name` is a `cohort:<id>` sentinel — show one or more
+   * cohort names in the header instead of the raw uuid. Falls back to the
+   * sentinel while the cohorts query is still loading or when no cohorts
+   * are selected yet.
+   */
+  const cohortLabel =
+    selectedIds
+      .map((id) => cohorts.find((c) => c.id === id)?.name)
+      .filter(Boolean)
+      .join(', ') || filter.name;
 
   const removeFilter = () => {
     onRemove(filter);
@@ -105,11 +129,11 @@ export function PureCohortFilterItem({
     onChangeOperator(operator, filter);
   };
 
-  const changeCohort = (cohortIds: Array<string | number>) => {
-    const cohortId = cohortIds[0];
-    if (cohortId && typeof cohortId === 'string') {
-      onChangeCohort(cohortId, filter);
-    }
+  const changeCohort = (next: Array<string | number>) => {
+    onChangeCohort(
+      next.filter((id): id is string => typeof id === 'string'),
+      filter,
+    );
   };
 
   return (
@@ -119,7 +143,7 @@ export function PureCohortFilterItem({
           <SlidersHorizontal size={10} />
         </ColorSquare>
         <div className="flex flex-1">
-          <RenderDots truncate>{filter.name}</RenderDots>
+          <RenderDots truncate>{cohortLabel}</RenderDots>
         </div>
         <Button variant="ghost" size="sm" onClick={removeFilter}>
           <Trash size={16} />
@@ -140,10 +164,10 @@ export function PureCohortFilterItem({
         </DropdownMenuComposed>
         <ComboboxAdvanced
           items={cohortsCombobox}
-          value={filter.cohortId ? [filter.cohortId] : []}
+          value={selectedIds}
           className="flex-1"
           onChange={changeCohort}
-          placeholder="Select cohort..."
+          placeholder="Select cohorts..."
         />
       </div>
     </div>

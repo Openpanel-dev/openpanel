@@ -1,16 +1,25 @@
-import { getPreviousMetric } from '@openpanel/common';
-import { useEffect, useRef, useState } from 'react';
-import AutoSizer from 'react-virtualized-auto-sizer';
-import { Bar, BarChart, Tooltip } from 'recharts';
-import {
-  getDiffIndicator,
-  PreviousDiffIndicatorPure,
-} from '../report-chart/common/previous-diff-indicator';
-import { Skeleton } from '../skeleton';
-import { Tooltiper } from '../ui/tooltip';
+import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
-import { formatDate, timeAgo } from '@/utils/date';
+import { timeWindows } from '@openpanel/constants';
+import { getPreviousMetric } from '@openpanel/common';
+import type { IInterval } from '@openpanel/validation';
+import { curveMonotoneX } from '@visx/curve';
+import { type ReactNode, useState } from 'react';
+import { Area } from '../charts/area';
+import { AreaChart } from '../charts/area-chart';
+import { useDashedTail } from '../charts/op-dashed-tail';
+import {
+  OPStatHoverBridge,
+  type OPStatHoverState,
+} from '../charts/op-stat-hover-bridge';
+import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
+import { Skeleton } from '../skeleton';
+import { formatDate as formatAbsoluteDate, timeAgo } from '@/utils/date';
+
+const PRIMARY_COLOR = 'var(--chart-0)';
+
+export type MetricUnit = '' | 'date' | 'timeAgo' | 'min' | '%' | 'currency';
 
 interface MetricCardProps {
   id: string;
@@ -23,12 +32,16 @@ interface MetricCardProps {
     current: number;
     previous?: number | null;
   };
-  unit?: '' | 'date' | 'timeAgo' | 'min' | '%' | 'currency';
+  unit?: MetricUnit;
   label: string;
   onClick?: () => void;
   active?: boolean;
   inverted?: boolean;
   isLoading?: boolean;
+  /** Interval drives the hover-label date format. */
+  interval?: IInterval;
+  /** Range drives the default label ("Last 30 days") and dashed-tail logic. */
+  range?: keyof typeof timeWindows;
 }
 
 export function OverviewMetricCard({
@@ -41,187 +54,166 @@ export function OverviewMetricCard({
   active,
   inverted = false,
   isLoading = false,
+  interval = 'day',
+  range,
 }: MetricCardProps) {
-  const [currentIndex, setCurrentIndex] = useState<number | null>(null);
-  const number = useNumber();
-  const { current, previous } = metric;
-  const timer = useRef<NodeJS.Timeout | null>(null);
+  const formatDate = useFormatDateInterval({ interval, short: false });
+  const [hover, setHover] = useState<
+    OPStatHoverState<{ date: string; current: number; previous?: number }>
+  >({ index: null, point: null });
 
-  useEffect(() => {
-    if (timer.current) {
-      clearTimeout(timer.current);
-    }
+  const hovered = hover.point;
+  const displayValue = hovered ? (hovered.current ?? 0) : metric.current;
+  const displayPrev = hovered
+    ? (hovered.previous ?? null)
+    : (metric.previous ?? null);
+  const displayLabel = hovered
+    ? formatDate(new Date(hovered.date))
+    : (range ? timeWindows[range]?.label : 'Total') || 'Total';
 
-    if (currentIndex) {
-      timer.current = setTimeout(() => {
-        setCurrentIndex(null);
-      }, 1000);
-    }
+  const diff = getPreviousMetric(displayValue, displayPrev);
+  const dashFromIndex = useDashedTail({ data, range, interval });
 
-    return () => {
-      if (timer.current) {
-        clearTimeout(timer.current);
-      }
-    };
-  }, [currentIndex]);
-
-  const renderValue = (value: number, unitClassName?: string, short = true) => {
-    if (unit === 'date') {
-      return <>{formatDate(new Date(value))}</>;
-    }
-
-    if (unit === 'timeAgo') {
-      if (!value) {
-        return <>{'N/A'}</>;
-      }
-      return <>{timeAgo(new Date(value))}</>;
-    }
-
-    if (unit === 'min') {
-      return <>{fancyMinutes(value)}</>;
-    }
-
-    if (unit === 'currency') {
-      // Revenue is stored in cents, convert to dollars
-      return <>{number.currency(value / 100)}</>;
-    }
-
-    return (
-      <>
-        {short ? number.short(value) : number.format(value)}
-        {unit && <span className={unitClassName}>{unit}</span>}
-      </>
-    );
-  };
-
-  const graphColors = getDiffIndicator(
-    inverted,
-    getPreviousMetric(current, previous)?.state,
-    '#6ee7b7', // green
-    '#fda4af', // red
-    '#93c5fd' // blue
-  );
-
-  const renderTooltip = () => {
-    if (currentIndex) {
-      return (
-        <span>
-          {formatDate(new Date(data[currentIndex]?.date))}:{' '}
-          <span className="font-semibold">
-            {renderValue(
-              data[currentIndex].current,
-              'ml-1 font-light text-xl',
-              false
-            )}
-          </span>
-        </span>
-      );
-    }
-
-    return (
-      <span>
-        {label}:{' '}
-        <span className="font-semibold">
-          {renderValue(metric.current, 'ml-1 font-light text-xl', false)}
-        </span>
-      </span>
-    );
-  };
   return (
-    <Tooltiper asChild content={renderTooltip()} sideOffset={-20}>
-      <button
-        className={cn(
-          'col-span-2 flex-1 shadow-[0_0_0_0.5px] shadow-border md:col-span-1',
-          active && 'bg-def-100'
-        )}
-        onClick={onClick}
-        type="button"
-      >
-        <div className={cn('group relative p-4')}>
-          <div
-            className={cn(
-              'absolute right-4 bottom-0 left-4 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100'
-            )}
-          >
-            <AutoSizer style={{ height: 20 }}>
-              {({ width }) => (
-                <BarChart
-                  data={data}
-                  height={20}
-                  margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-                  onMouseMove={(event) => {
-                    setCurrentIndex(event.activeTooltipIndex ?? null);
-                  }}
-                  style={{
-                    background: 'transparent',
-                  }}
-                  width={width}
-                >
-                  <Tooltip content={() => null} cursor={false} />
-                  <Bar
-                    dataKey={'current'}
-                    fill={graphColors}
-                    fillOpacity={1}
-                    isAnimationActive={false}
-                    strokeWidth={0}
-                    type="step"
-                  />
-                </BarChart>
-              )}
-            </AutoSizer>
-          </div>
-          <OverviewMetricCardNumber
-            enhancer={
-              <PreviousDiffIndicatorPure
-                className="text-sm"
-                inverted={inverted}
-                size="sm"
-                {...getPreviousMetric(current, previous)}
-              />
-            }
-            isLoading={isLoading}
-            label={label}
-            value={renderValue(current, 'ml-1 font-light text-xl')}
-          />
+    <MetricCardShell active={active} onClick={onClick}>
+      <div className="px-3 pt-2.5">
+        <div className="flex items-start justify-between gap-2">
+          <span className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            {label}
+          </span>
+          {isLoading ? null : (
+            <PreviousDiffIndicatorPure
+              {...diff}
+              inverted={inverted}
+              size="xs"
+            />
+          )}
         </div>
-      </button>
-    </Tooltiper>
+        <div className="mt-1 flex items-baseline gap-0.5 leading-none">
+          {isLoading ? (
+            <Skeleton className="h-5 w-20" />
+          ) : (
+            <MetricValue value={displayValue} unit={unit} />
+          )}
+        </div>
+        <div className="mt-0.5 truncate text-[11px] leading-none text-muted-foreground">
+          {displayLabel}
+        </div>
+      </div>
+
+      <div className="mt-1.5 h-[40px]">
+        {data.length > 0 && (
+          <AreaChart
+            data={data}
+            xDataKey="date"
+            aspectRatio="auto"
+            className="h-full"
+            margin={{ top: 6, right: 0, bottom: 4, left: 0 }}
+            animationDuration={0}
+          >
+            <OPStatHoverBridge onHoverChange={setHover} />
+            <Area
+              dataKey="current"
+              stroke={PRIMARY_COLOR}
+              fill={PRIMARY_COLOR}
+              fillOpacity={active ? 0.25 : 0.16}
+              gradientToOpacity={0}
+              strokeWidth={1.5}
+              curve={curveMonotoneX}
+              fadeEdges={false}
+              animate={false}
+              dashFromIndex={dashFromIndex}
+              dashArray="3,3"
+            />
+          </AreaChart>
+        )}
+      </div>
+    </MetricCardShell>
   );
 }
 
-export function OverviewMetricCardNumber({
-  label,
-  value,
-  enhancer,
+/**
+ * Outer chrome shared by the metric cards and the live histogram card —
+ * fixed-height button with hover/active states and a left-bar accent. The
+ * sparkline is expected to be the last child and bleed to the bottom edge.
+ */
+export function MetricCardShell({
+  children,
+  active,
+  onClick,
   className,
-  isLoading,
 }: {
-  label: React.ReactNode;
-  value: React.ReactNode;
-  enhancer?: React.ReactNode;
+  children: ReactNode;
+  active?: boolean;
+  onClick?: () => void;
   className?: string;
-  isLoading?: boolean;
 }) {
+  const Tag: 'button' | 'div' = onClick ? 'button' : 'div';
   return (
-    <div className={cn('col min-w-0 gap-2', className)}>
-      <div className="flex min-w-0 items-center gap-2 text-left">
-        <span className="truncate font-medium text-muted-foreground text-sm leading-[1.1]">
-          {label}
-        </span>
-      </div>
-      {isLoading ? (
-        <div className="flex items-end justify-between gap-4">
-          <Skeleton className="h-6 w-16" />
-          <Skeleton className="h-6 w-12" />
-        </div>
-      ) : (
-        <div className="w-full truncate text-left font-bold font-mono text-3xl leading-[1.1]">
-          {value}
-        </div>
+    <Tag
+      type={onClick ? 'button' : undefined}
+      onClick={onClick}
+      className={cn(
+        'group relative flex flex-col overflow-hidden text-left',
+        'shadow-[0_0_0_0.5px] shadow-border transition-colors',
+        active ? 'bg-def-100' : 'bg-card hover:bg-def-100/50',
+        onClick && 'cursor-pointer',
+        className,
       )}
-      <div className="center col absolute top-0 right-0 bottom-0 justify-center pr-4">
-        {enhancer}
-      </div>
-    </div>
+    >
+      {active && (
+        <span
+          aria-hidden
+          className="absolute inset-y-0 left-0 w-[2px] bg-chart-0"
+        />
+      )}
+      {children}
+    </Tag>
   );
+}
+
+const VALUE_CLASS =
+  'truncate font-mono font-semibold text-xl text-foreground tracking-tight tabular-nums';
+
+function MetricValue({ value, unit }: { value: number; unit?: MetricUnit }) {
+  const number = useNumber();
+
+  if (unit === 'date') {
+    return (
+      <span className={VALUE_CLASS}>
+        {value ? formatAbsoluteDate(new Date(value)) : 'N/A'}
+      </span>
+    );
+  }
+
+  if (unit === 'timeAgo') {
+    return (
+      <span className={VALUE_CLASS}>{value ? timeAgo(new Date(value)) : 'N/A'}</span>
+    );
+  }
+
+  if (unit === 'min') {
+    return <span className={VALUE_CLASS}>{fancyMinutes(value)}</span>;
+  }
+
+  if (unit === 'currency') {
+    return (
+      <span className={VALUE_CLASS}>
+        {number.currency(value / 100, { short: true })}
+      </span>
+    );
+  }
+
+  if (unit === '%') {
+    return (
+      <>
+        <span className={VALUE_CLASS}>{number.format(value)}</span>
+        <span className="font-mono font-medium text-sm text-muted-foreground">
+          %
+        </span>
+      </>
+    );
+  }
+
+  return <span className={VALUE_CLASS}>{number.short(value)}</span>;
 }

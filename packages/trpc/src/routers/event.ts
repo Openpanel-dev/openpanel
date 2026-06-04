@@ -26,7 +26,7 @@ import {
 
 import { clone } from 'ramda';
 import { getProjectAccess } from '../access';
-import { TRPCAccessError } from '../errors';
+import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 export const eventRouter = createTRPCRouter({
@@ -287,7 +287,7 @@ export const eventRouter = createTRPCRouter({
           userId: ctx.session.userId,
         });
         if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
+          throw new TRPCForbiddenError('You do not have access to this project');
         }
       } else {
         const share = await db.shareOverview.findFirst({
@@ -297,7 +297,7 @@ export const eventRouter = createTRPCRouter({
         });
 
         if (!share) {
-          throw TRPCAccessError('You do not have access to this project');
+          throw new TRPCForbiddenError('You do not have access to this project');
         }
       }
 

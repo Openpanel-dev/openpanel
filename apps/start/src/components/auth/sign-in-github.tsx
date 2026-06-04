@@ -29,7 +29,7 @@ export function SignInGithub({
         onClick={() =>
           mutation.mutate({
             provider: 'github',
-            inviteId: type === 'sign-up' ? inviteId : undefined,
+            inviteId,
           })
         }
       >

@@ -7,8 +7,8 @@
     "noindex": false
   },
   "hero": {
-    "heading": "Shopify Analytics That Actually Works",
-    "subheading": "Most analytics tools break on Shopify — cookie consent blocks tracking, GA4 loses attribution, and Shopify's built-in reports can't answer the questions that matter. OpenPanel tracks every event without cookies, so your data is complete and your checkout conversion doesn't suffer from a consent banner.",
+    "heading": "Shopify analytics that actually works",
+    "subheading": "Most analytics tools break on Shopify: cookie consent blocks tracking, GA4 loses attribution, and Shopify's built-in reports can't answer the questions that matter. OpenPanel tracks every event without cookies, so your data is complete and your checkout conversion doesn't suffer from a consent banner.",
     "badges": [
       "Cookie-free tracking",
       "No consent banner needed",
@@ -138,7 +138,7 @@
     ],
     "articles": [
       { "title": "Cookieless analytics explained", "url": "/articles/cookieless-analytics" },
-      { "title": "Best open source analytics tools", "url": "/articles/open-source-web-analytics" }
+      { "title": "Best open source analytics tools", "url": "/articles/self-hosted-web-analytics" }
     ],
     "comparisons": [
       { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },

@@ -13,6 +13,35 @@ import { BaseBuffer } from './base-buffer';
 const PROFILE_COLUMNS =
   'id, first_name, last_name, email, avatar, properties, project_id, is_external, created_at, last_seen_at, groups';
 
+// Equivalent of `SELECT ... FROM profiles FINAL` but expressed via GROUP BY +
+// argMax. ReplicatedReplacingMergeTree uses `last_seen_at` as the version
+// column, so argMax(col, last_seen_at) yields the same value FINAL would
+// produce. Avoiding FINAL lets CH use the primary key (project_id, id) to
+// scan instead of merging parts at query time — order(s) of magnitude
+// faster on the profile-buffer's fetch path.
+//
+// `p.last_seen_at` is qualified with the FROM-clause table alias because
+// the SELECT exposes a `last_seen_at` aggregate alias, and CH resolves
+// bare column refs against the alias list first — causing ILLEGAL_AGGREGATION
+// inside the argMax/max calls. Qualifying with `p.` bypasses the alias
+// lookup and binds to the raw column.
+const PROFILE_LATEST_AGGREGATE_COLUMNS = [
+  'id',
+  'project_id',
+  'argMax(first_name, p.last_seen_at) AS first_name',
+  'argMax(last_name, p.last_seen_at) AS last_name',
+  'argMax(email, p.last_seen_at) AS email',
+  'argMax(avatar, p.last_seen_at) AS avatar',
+  'argMax(properties, p.last_seen_at) AS properties',
+  'argMax(is_external, p.last_seen_at) AS is_external',
+  'argMax(groups, p.last_seen_at) AS groups',
+  // created_at doesn't change between rows for the same profile, but
+  // min() is safe and matches "first seen" semantics if there ever is a
+  // discrepancy.
+  'min(created_at) AS created_at',
+  'max(p.last_seen_at) AS last_seen_at',
+].join(', ');
+
 export class ProfileBuffer extends BaseBuffer {
   private readonly batchSize = process.env.PROFILE_BUFFER_BATCH_SIZE
     ? Number.parseInt(process.env.PROFILE_BUFFER_BATCH_SIZE, 10)
@@ -79,37 +108,39 @@ export class ProfileBuffer extends BaseBuffer {
   }
 
   async add(profile: IClickhouseProfile, isFromEvent = false) {
-    try {
-      if (isFromEvent) {
-        const cacheKey = this.getProfileCacheKey({
-          profileId: profile.id,
-          projectId: profile.project_id,
-        });
-        const exists = await this.redis.exists(cacheKey);
-        if (exists === 1) {
+    return this.timeAdd(async () => {
+      try {
+        if (isFromEvent) {
+          const cacheKey = this.getProfileCacheKey({
+            profileId: profile.id,
+            projectId: profile.project_id,
+          });
+          const exists = await this.redis.exists(cacheKey);
+          if (exists === 1) {
+            this.reportAddSkipped('cached');
+            return;
+          }
+        }
+
+        const result = await this.redis
+          .multi()
+          .rpush(this.redisKey, JSON.stringify(profile))
+          .llen(this.redisKey)
+          .exec();
+
+        if (!result) {
+          this.logger.error({ profile }, 'Failed to add profile to Redis');
           return;
         }
-      }
 
-      const result = await this.redis
-        .multi()
-        .rpush(this.redisKey, JSON.stringify(profile))
-        .incr(this.bufferCounterKey)
-        .llen(this.redisKey)
-        .exec();
-
-      if (!result) {
-        this.logger.error({ profile }, 'Failed to add profile to Redis');
-        return;
+        const bufferLength = (result?.[1]?.[1] as number) ?? 0;
+        if (bufferLength >= this.batchSize) {
+          await this.tryFlush({ trigger: 'add' });
+        }
+      } catch (error) {
+        this.logger.error({ err: error, profile }, 'Failed to add profile');
       }
-
-      const bufferLength = (result?.[2]?.[1] as number) ?? 0;
-      if (bufferLength >= this.batchSize) {
-        await this.tryFlush();
-      }
-    } catch (error) {
-      this.logger.error({ err: error, profile }, 'Failed to add profile');
-    }
+    });
   }
 
   private mergeProfiles(
@@ -178,11 +209,17 @@ export class ProfileBuffer extends BaseBuffer {
           )
           .join(', ');
         try {
+          // Table alias `p` is required: without it, WHERE's `last_seen_at`
+          // resolves to the SELECT-list aggregate alias `max(last_seen_at) AS
+          // last_seen_at`, which is an aggregate function and illegal in WHERE
+          // (CH ILLEGAL_AGGREGATION). Qualifying with `p.` bypasses the alias
+          // lookup and binds to the raw column.
           const rows = await chQuery<IClickhouseProfile>(
-            `SELECT ${PROFILE_COLUMNS}
-            FROM ${TABLE_NAMES.profiles} FINAL
-            WHERE (id, project_id) IN (${tuples})
-            ${withDateFilter ? `AND ${TABLE_NAMES.profiles}.last_seen_at > now() - INTERVAL 2 DAY` : ''}`
+            `SELECT ${PROFILE_LATEST_AGGREGATE_COLUMNS}
+            FROM ${TABLE_NAMES.profiles} AS p
+            WHERE (p.id, p.project_id) IN (${tuples})
+            ${withDateFilter ? 'AND p.last_seen_at > now() - INTERVAL 2 DAY' : ''}
+            GROUP BY p.id, p.project_id`
           );
           for (const row of rows) {
             result.set(`${row.project_id}:${row.id}`, row);
@@ -204,116 +241,143 @@ export class ProfileBuffer extends BaseBuffer {
     return result;
   }
 
-  async processBuffer() {
-    try {
-      this.logger.debug('Starting profile buffer processing');
-      const rawProfiles = await this.redis.lrange(
-        this.redisKey,
-        0,
-        this.batchSize - 1
-      );
-
-      if (rawProfiles.length === 0) {
-        this.logger.debug('No profiles to process');
-        return;
-      }
-
-      const parsedProfiles = rawProfiles
-        .map((p) => getSafeJson<IClickhouseProfile>(p))
-        .filter(Boolean) as IClickhouseProfile[];
-
-      // Merge within batch: collapse multiple updates for the same profile
-      const mergedInBatch = new Map<string, IClickhouseProfile>();
-      for (const profile of parsedProfiles) {
-        const key = `${profile.project_id}:${profile.id}`;
-        mergedInBatch.set(
-          key,
-          this.mergeProfiles(mergedInBatch.get(key) ?? null, profile)
-        );
-      }
-
-      const uniqueProfiles = Array.from(mergedInBatch.values());
-
-      // Check Redis cache for all unique profiles in a single MGET
-      const cacheKeys = uniqueProfiles.map((p) =>
-        this.getProfileCacheKey({ profileId: p.id, projectId: p.project_id })
-      );
-      const cacheResults = await this.redis.mget(...cacheKeys);
-
-      const existingByKey = new Map<string, IClickhouseProfile>();
-      const cacheMisses: IClickhouseProfile[] = [];
-      for (let i = 0; i < uniqueProfiles.length; i++) {
-        const uniqueProfile = uniqueProfiles[i];
-        if (uniqueProfile) {
-          const key = `${uniqueProfile.project_id}:${uniqueProfile.id}`;
-          const cached = cacheResults[i]
-            ? getSafeJson<IClickhouseProfile>(cacheResults[i]!)
-            : null;
-          if (cached) {
-            existingByKey.set(key, cached);
-          } else {
-            cacheMisses.push(uniqueProfile);
-          }
-        }
-      }
-
-      // Fetch cache misses from ClickHouse in bounded chunks
-      if (cacheMisses.length > 0) {
-        const clickhouseResults =
-          await this.batchFetchFromClickhouse(cacheMisses);
-        for (const [key, profile] of clickhouseResults) {
-          existingByKey.set(key, profile);
-        }
-      }
-
-      // Final merge: in-batch profile + existing (from cache or ClickHouse)
-      const toInsert: IClickhouseProfile[] = [];
-      const multi = this.redis.multi();
-
-      for (const profile of uniqueProfiles) {
-        const key = `${profile.project_id}:${profile.id}`;
-        const merged = this.mergeProfiles(
-          existingByKey.get(key) ?? null,
-          profile
-        );
-        toInsert.push(merged);
-        multi.set(
-          this.getProfileCacheKey({
-            projectId: profile.project_id,
-            profileId: profile.id,
-          }),
-          JSON.stringify(merged),
-          'EX',
-          this.ttlInSeconds
-        );
-      }
-
-      for (const chunk of this.chunks(toInsert, this.chunkSize)) {
-        await ch.insert({
-          table: TABLE_NAMES.profiles,
-          values: chunk,
-          format: 'JSONEachRow',
-        });
-      }
-
-      multi
-        .ltrim(this.redisKey, rawProfiles.length, -1)
-        .decrby(this.bufferCounterKey, rawProfiles.length);
-      await multi.exec();
-
-      this.logger.debug(
-        {
-          totalProfiles: rawProfiles.length,
-          uniqueProfiles: uniqueProfiles.length,
-        },
-        'Successfully completed profile processing'
-      );
-    } catch (error) {
-      this.logger.error({ err: error }, 'Failed to process buffer');
-    }
+  protected getRedisListKey(): string {
+    return this.redisKey;
   }
 
-  getBufferSize() {
-    return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
+  async processBuffer() {
+    const lrangeStart = performance.now();
+    const rawProfiles = await this.redis.lrange(
+      this.redisKey,
+      0,
+      this.batchSize - 1
+    );
+    const lrangeMs = performance.now() - lrangeStart;
+
+    if (rawProfiles.length === 0) {
+      this.reportFlushStats({ rowsProcessed: 0, phases: { lrangeMs } });
+      return;
+    }
+
+    // Parse + merge within batch in a single pass. Yields back to the
+    // event loop periodically so concurrent add() calls and BullMQ
+    // heartbeats can make progress while the merge churns through
+    // profiles. The merge step is the hottest CPU stage of any buffer —
+    // deepMergeObjects recursively combines nested `properties` objects
+    // and was previously responsible for ~500ms event-loop blocks.
+    //
+    // Heavy loop (parse + deep merge): narrow band so we yield often
+    // even with smaller batches but don't yield every-few-items on
+    // very small ones.
+    const mergeYieldEvery = this.getYieldInterval(rawProfiles.length, {
+      min: 100,
+      max: 1000,
+    });
+    const mergedInBatch = new Map<string, IClickhouseProfile>();
+    for (let i = 0; i < rawProfiles.length; i++) {
+      const profile = getSafeJson<IClickhouseProfile>(rawProfiles[i]!);
+      if (!profile) continue;
+      const key = `${profile.project_id}:${profile.id}`;
+      mergedInBatch.set(
+        key,
+        this.mergeProfiles(mergedInBatch.get(key) ?? null, profile),
+      );
+      if ((i + 1) % mergeYieldEvery === 0) {
+        await this.yieldToEventLoop();
+      }
+    }
+
+    const uniqueProfiles = Array.from(mergedInBatch.values());
+
+    // Check Redis cache for all unique profiles in a single MGET
+    const cacheKeys = uniqueProfiles.map((p) =>
+      this.getProfileCacheKey({ profileId: p.id, projectId: p.project_id })
+    );
+    const cacheResults = await this.redis.mget(...cacheKeys);
+
+    const existingByKey = new Map<string, IClickhouseProfile>();
+    const cacheMisses: IClickhouseProfile[] = [];
+    for (let i = 0; i < uniqueProfiles.length; i++) {
+      const uniqueProfile = uniqueProfiles[i];
+      if (uniqueProfile) {
+        const key = `${uniqueProfile.project_id}:${uniqueProfile.id}`;
+        const cached = cacheResults[i]
+          ? getSafeJson<IClickhouseProfile>(cacheResults[i]!)
+          : null;
+        if (cached) {
+          existingByKey.set(key, cached);
+        } else {
+          cacheMisses.push(uniqueProfile);
+        }
+      }
+    }
+
+    // Fetch cache misses from ClickHouse in bounded chunks. Timed separately
+    // from the ch.insert phase because it can dominate flush time for
+    // profile-buffer specifically (FINAL replaced with argMax + GROUP BY in
+    // batchFetchFromClickhouse, but worth measuring directly).
+    let chFetchMs: number | undefined;
+    if (cacheMisses.length > 0) {
+      const chFetchStart = performance.now();
+      const clickhouseResults =
+        await this.batchFetchFromClickhouse(cacheMisses);
+      chFetchMs = performance.now() - chFetchStart;
+      for (const [key, profile] of clickhouseResults) {
+        existingByKey.set(key, profile);
+      }
+    }
+
+    // Final merge: in-batch profile + existing (from cache or ClickHouse).
+    // Second heavy stage — same deepMergeObjects call per unique profile.
+    // Same band as the in-batch merge above.
+    const finalYieldEvery = this.getYieldInterval(uniqueProfiles.length, {
+      min: 100,
+      max: 1000,
+    });
+    const toInsert: IClickhouseProfile[] = [];
+    const multi = this.redis.multi();
+
+    for (let i = 0; i < uniqueProfiles.length; i++) {
+      const profile = uniqueProfiles[i]!;
+      const key = `${profile.project_id}:${profile.id}`;
+      const merged = this.mergeProfiles(
+        existingByKey.get(key) ?? null,
+        profile,
+      );
+      toInsert.push(merged);
+      multi.set(
+        this.getProfileCacheKey({
+          projectId: profile.project_id,
+          profileId: profile.id,
+        }),
+        JSON.stringify(merged),
+        'EX',
+        this.ttlInSeconds,
+      );
+      if ((i + 1) % finalYieldEvery === 0) {
+        await this.yieldToEventLoop();
+      }
+    }
+
+    const chStart = performance.now();
+    await this.parallelLimit(this.chunks(toInsert, this.chunkSize), (chunk) =>
+      ch.insert({
+        table: TABLE_NAMES.profiles,
+        values: chunk,
+        format: 'JSONEachRow',
+        clickhouse_settings: this.getClickhouseSettings(),
+      })
+    );
+    const chInsertMs = performance.now() - chStart;
+
+    const trimStart = performance.now();
+    multi.ltrim(this.redisKey, rawProfiles.length, -1);
+    await multi.exec();
+    const trimMs = performance.now() - trimStart;
+
+    this.reportFlushStats({
+      rowsProcessed: rawProfiles.length,
+      phases: { lrangeMs, chFetchMs, chInsertMs, trimMs },
+    });
   }
 }

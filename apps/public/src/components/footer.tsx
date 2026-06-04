@@ -35,7 +35,7 @@ export async function Footer() {
                 },
                 {
                   title: 'Open source analytics',
-                  url: '/open-source-analytics',
+                  url: '/articles/self-hosted-web-analytics',
                 },
               ]}
             />

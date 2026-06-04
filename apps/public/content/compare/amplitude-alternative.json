@@ -302,9 +302,11 @@
           "Swift",
           "Kotlin",
           "React Native",
+          "Flutter",
           "Astro",
           "Remix",
-          "Express"
+          "Express",
+          "PHP"
         ],
         "competitor": [
           "JavaScript",
@@ -329,7 +331,7 @@
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker, simple setup script",
+        "openpanel": "Docker Compose, guided setup wizard",
         "competitor": "Not available",
         "notes": "Amplitude is cloud-only"
       },
@@ -373,7 +375,7 @@
       },
       {
         "title": "Map your tracking calls (the cheat sheet)",
-        "description": "Most Amplitude calls map directly. amplitude.track('Signup', {plan: 'pro'}) becomes op.track('Signup', {plan: 'pro'}). amplitude.identify(userId, traits) becomes op.identify(userId, traits). amplitude.setGroup('org', orgId) becomes op.setProfile({orgId}) — OpenPanel doesn't have a separate group concept; orgs/teams are profile properties. amplitude.setUserProperties(traits) becomes op.setProfile(traits). amplitude.logRevenue() becomes op.track('Purchase', {revenue: amount}) — revenue is a property, not a separate API. Keep your existing event names. Track plans don't need rewriting."
+        "description": "Most Amplitude calls map directly. amplitude.track('Signup', {plan: 'pro'}) becomes op.track('Signup', {plan: 'pro'}). amplitude.identify(userId, traits) becomes op.identify({ profileId: userId, ...traits }). amplitude.setGroup('org', orgId) becomes op.setGroup(orgId) — OpenPanel has native group support via setGroup/setGroups. amplitude.setUserProperties(traits) becomes op.identify({ profileId, ...traits }). amplitude.logRevenue() becomes op.revenue(amount) (or op.track with a revenue property). Keep your existing event names. Track plans don't need rewriting."
       },
       {
         "title": "Re-map advanced features (or accept feature loss)",
@@ -390,7 +392,7 @@
     ],
     "sdk_compatibility": {
       "similar_api": true,
-      "notes": "Both use event-based tracking. Direct mappings: amplitude.track(event, props) → op.track(event, props). amplitude.identify(userId, traits) → op.identify(userId, traits). amplitude.setUserProperties(traits) → op.setProfile(traits). amplitude.logRevenue({price, quantity}) → op.track('Purchase', {revenue: price * quantity}). amplitude.setGroup('org', orgId) → op.setProfile({orgId}). Anonymous tracking and session-stitching work the same way in both SDKs."
+      "notes": "Both use event-based tracking. Direct mappings: amplitude.track(event, props) → op.track(event, props). amplitude.identify(userId, traits) → op.identify({ profileId: userId, ...traits }). amplitude.setUserProperties(traits) → op.identify({ profileId, ...traits }). amplitude.logRevenue({price, quantity}) → op.revenue(price * quantity) or op.track with a revenue property. amplitude.setGroup('org', orgId) → op.setGroup(orgId) (OpenPanel has native group support). Anonymous tracking and session-stitching work the same way in both SDKs."
     },
     "historical_data": {
       "can_import": false,
@@ -413,7 +415,7 @@
       },
       {
         "title": "Self-hosted requirements",
-        "description": "Deploy OpenPanel on your own infrastructure for complete data ownership. Amplitude is cloud-only with no self-hosting option.",
+        "description": "Deploy OpenPanel on your own infrastructure for complete data ownership. A one-command `./setup` wizard walks you through configuration and brings the whole Docker Compose stack up in minutes. Amplitude is cloud-only with no self-hosting option.",
         "icon": "server"
       },
       {
@@ -500,7 +502,7 @@
       },
       {
         "question": "How do I migrate Amplitude.track() calls to OpenPanel?",
-        "answer": "Most calls map 1-to-1 with no logic change. amplitude.track('Signup', {plan: 'pro'}) becomes op.track('Signup', {plan: 'pro'}). Identify: amplitude.identify(userId, traits) becomes op.identify(userId, traits). User properties: amplitude.setUserProperties(traits) becomes op.setProfile(traits). Revenue: amplitude.logRevenue({price, quantity}) becomes op.track('Purchase', {revenue: price * quantity}) — revenue is a property in OpenPanel, not a separate API. Groups: amplitude.setGroup('org', orgId) becomes op.setProfile({orgId}) — OpenPanel doesn't have a separate group concept. Keep your existing event names; the track plan doesn't need rewriting. The full migration is usually a 2-4 hour find-and-replace job."
+        "answer": "Most calls map 1-to-1 with no logic change. amplitude.track('Signup', {plan: 'pro'}) becomes op.track('Signup', {plan: 'pro'}). Identify: amplitude.identify(userId, traits) becomes op.identify({ profileId: userId, ...traits }). User properties: amplitude.setUserProperties(traits) becomes op.identify({ profileId, ...traits }). Revenue: amplitude.logRevenue({price, quantity}) becomes op.revenue(price * quantity) (or op.track with a revenue property). Groups: amplitude.setGroup('org', orgId) becomes op.setGroup(orgId) — OpenPanel has native group support via setGroup/setGroups. Keep your existing event names; the track plan doesn't need rewriting. The full migration is usually a 2-4 hour find-and-replace job."
       },
       {
         "question": "What does Amplitude cost at 100K, 500K, 1M MTUs vs OpenPanel?",
@@ -534,7 +536,7 @@
       },
       {
         "title": "9 best open source web analytics tools",
-        "url": "/articles/open-source-web-analytics"
+        "url": "/articles/self-hosted-web-analytics"
       }
     ],
     "alternatives": [

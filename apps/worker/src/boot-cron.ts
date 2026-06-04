@@ -39,8 +39,8 @@ export async function bootCron() {
       pattern: '0 0 * * *',
     },
     {
-      name: 'deleteProjects',
-      type: 'deleteProjects',
+      name: 'delete',
+      type: 'delete',
       pattern: '0 * * * *',
     },
     {

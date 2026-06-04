@@ -4,7 +4,7 @@ import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { showConfirm } from '@/modals';
 import type { IServiceProjectWithClients } from '@openpanel/db';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { addHours, format, startOfHour } from 'date-fns';
 import { TrashIcon } from 'lucide-react';
@@ -17,6 +17,14 @@ export default function DeleteProject({ project }: Props) {
   const trpc = useTRPC();
 
   const queryClient = useQueryClient();
+  const { data: organization } = useQuery(
+    trpc.organization.get.queryOptions({
+      organizationId: project.organizationId,
+    }),
+  );
+  // When the whole organization is scheduled for deletion, this project's
+  // deletion is part of it and can only be cancelled at the organization level.
+  const isOrgScheduledForDeletion = !!organization?.deleteAt;
   const mutation = useMutation(
     trpc.project.delete.mutationOptions({
       onError: handleError,
@@ -71,6 +79,13 @@ export default function DeleteProject({ project }: Props) {
                 }
               </span>
               . Any event associated with this project will be deleted.
+              {isOrgScheduledForDeletion && (
+                <>
+                  {' '}
+                  The whole organization is scheduled for deletion. To keep this
+                  project, cancel the deletion from the organization settings.
+                </>
+              )}
             </AlertDescription>
           </Alert>
         )}
@@ -78,6 +93,7 @@ export default function DeleteProject({ project }: Props) {
           {project?.deleteAt && (
             <Button
               variant="outline"
+              disabled={isOrgScheduledForDeletion}
               onClick={() => {
                 cancelDeletionMutation.mutate({ projectId: project.id });
               }}

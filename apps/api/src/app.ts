@@ -370,7 +370,11 @@ export async function buildApp(
     );
   });
 
-  const SKIP_LOG_ERRORS = ['UNAUTHORIZED', 'FST_ERR_CTP_INVALID_MEDIA_TYPE'];
+  const SKIP_LOG_ERRORS = [
+    'UNAUTHORIZED',
+    'FORBIDDEN',
+    'FST_ERR_CTP_INVALID_MEDIA_TYPE',
+  ];
   fastify.setErrorHandler((error, request, reply) => {
     const { status, code, message, errorName } = normalizeError(error);
 

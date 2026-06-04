@@ -125,11 +125,11 @@ export const widgetRouter = createTRPCRouter({
       });
 
       if (!(widget && widget.public)) {
-        throw TRPCNotFoundError('Widget not found');
+        throw new TRPCNotFoundError('Widget not found');
       }
 
       if (widget.options.type !== 'counter') {
-        throw TRPCNotFoundError('Invalid widget type');
+        throw new TRPCNotFoundError('Invalid widget type');
       }
 
       return {
@@ -148,11 +148,11 @@ export const widgetRouter = createTRPCRouter({
       });
 
       if (!(widget && widget.public)) {
-        throw TRPCNotFoundError('Widget not found');
+        throw new TRPCNotFoundError('Widget not found');
       }
 
       if (widget.options.type !== 'counter') {
-        throw TRPCNotFoundError('Invalid widget type');
+        throw new TRPCNotFoundError('Invalid widget type');
       }
 
       const { projectId } = widget;
@@ -200,13 +200,13 @@ export const widgetRouter = createTRPCRouter({
       });
 
       if (!(widget && widget.public)) {
-        throw TRPCNotFoundError('Widget not found');
+        throw new TRPCNotFoundError('Widget not found');
       }
 
       const { projectId, options } = widget;
 
       if (options.type !== 'realtime') {
-        throw TRPCNotFoundError('Invalid widget type');
+        throw new TRPCNotFoundError('Invalid widget type');
       }
 
       const { timezone } = await getSettingsForProject(projectId);

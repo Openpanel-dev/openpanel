@@ -10,9 +10,19 @@ import type {
 } from '@openpanel/validation';
 
 import { cohortComputeQueue } from '@openpanel/queue';
-import { TABLE_NAMES, ch, chQuery } from '../clickhouse/client';
+import {
+  TABLE_NAMES,
+  ch,
+  chQuery,
+  getReplicatedTableName,
+} from '../clickhouse/client';
 import { db } from '../prisma-client';
-import { getProfiles, type IServiceProfile } from './profile.service';
+import { buildFilterWhere } from './filter-where.service';
+import {
+  getProfiles,
+  profileSearchSql,
+  type IServiceProfile,
+} from './profile.service';
 
 export const COHORT_MATERIALIZE_LIMIT = 10000;
 
@@ -538,6 +548,16 @@ export async function updateCohortMembership(
 
   const version = Date.now();
 
+  // ReplacingMergeTree only dedupes within the same ORDER BY key
+  // (project_id, cohort_id, profile_id), so profiles that fell out of the
+  // cohort definition would otherwise linger forever. Clear them first.
+  await ch.command({
+    query: `DELETE FROM ${getReplicatedTableName(TABLE_NAMES.cohort_members)} WHERE cohort_id = ${sqlstring.escape(cohort.id)} AND project_id = ${sqlstring.escape(cohort.projectId)}`,
+    clickhouse_settings: {
+      lightweight_deletes_sync: '1',
+    },
+  });
+
   await storeCohortMembership(
     cohort.projectId,
     cohort.id,
@@ -558,12 +578,15 @@ export async function deleteCohortMembership(
   cohortId: string,
   projectId: string,
 ): Promise<void> {
-  await ch.command({
-    query: `ALTER TABLE ${TABLE_NAMES.cohort_members} DELETE WHERE cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)}`,
-  });
-  await ch.command({
-    query: `ALTER TABLE ${TABLE_NAMES.cohort_metadata} DELETE WHERE cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)}`,
-  });
+  const where = `cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)}`;
+  for (const table of [TABLE_NAMES.cohort_members, TABLE_NAMES.cohort_metadata]) {
+    await ch.command({
+      query: `DELETE FROM ${getReplicatedTableName(table)} WHERE ${where}`,
+      clickhouse_settings: {
+        lightweight_deletes_sync: '0',
+      },
+    });
+  }
 }
 
 export async function getProfilesInCohort(
@@ -600,17 +623,30 @@ export async function listCohortMemberProfiles({
   cursor,
   take,
   search,
+  filters,
 }: {
   projectId: string;
   cohortId: string;
   cursor?: number;
   take: number;
   search?: string;
+  filters?: IChartEventFilter[];
 }): Promise<{ data: IServiceProfile[]; count: number }> {
   const offset = Math.max(0, (cursor ?? 0) * take);
-  const trimmed = search?.trim();
-  const searchCondition = trimmed
-    ? `AND (email ILIKE ${sqlstring.escape(`%${trimmed}%`)} OR first_name ILIKE ${sqlstring.escape(`%${trimmed}%`)} OR last_name ILIKE ${sqlstring.escape(`%${trimmed}%`)})`
+  const searchClause = profileSearchSql(search);
+  const searchCondition = searchClause ? `AND ${searchClause}` : '';
+
+  const extraConditions = filters?.length
+    ? Object.values(
+        buildFilterWhere(filters, projectId, {
+          selfTable: 'profiles',
+          profileIdExpr: 'id',
+          groupsExpr: 'groups',
+        }),
+      )
+    : [];
+  const extraConditionSql = extraConditions.length
+    ? `AND ${extraConditions.join(' AND ')}`
     : '';
 
   const rows = await chQuery<{ id: string; total_count: number }>(`
@@ -623,6 +659,7 @@ export async function listCohortMemberProfiles({
           AND project_id = ${sqlstring.escape(projectId)}
       )
       ${searchCondition}
+      ${extraConditionSql}
     ORDER BY created_at DESC
     LIMIT ${take} OFFSET ${offset}
   `);

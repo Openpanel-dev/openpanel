@@ -1,6 +1,7 @@
 import { ProfilesTable } from '@/components/profiles/table';
 import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
+import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { PAGE_TITLES, createEntityTitle } from '@/utils/title';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
@@ -27,6 +28,7 @@ function Component() {
 
   const { page } = useDataTablePagination(50);
   const { debouncedSearch } = useSearchQueryState();
+  const [filters] = useTableFilters('f');
 
   const query = useQuery(
     trpc.profile.list.queryOptions(
@@ -36,6 +38,7 @@ function Component() {
         take: 50,
         search: debouncedSearch,
         isExternal: true,
+        filters,
       },
       {
         placeholderData: keepPreviousData,

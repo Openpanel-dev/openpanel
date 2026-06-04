@@ -1,3 +1,4 @@
+import { PureCohortFilterItem } from '@/components/report/sidebar/filters/CohortFilterItem';
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -47,10 +48,31 @@ export default function OverviewFilters({
   mode,
 }: OverviewFiltersProps) {
   const { projectId } = useAppParams();
-  const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
+  const [filters, setFilter, setFilters, removeFilter] =
+    useEventQueryFilters(nuqsOptions);
   const [event, setEvent] = useEventQueryNamesFilter(nuqsOptions);
   const eventNames = useEventNames({ projectId, anyEvents: false });
   const selectedFilters = filters.filter((filter) => filter.value[0] !== null);
+
+  const isCohortFilter = (filter: IChartEventFilter) =>
+    filter.operator === 'inCohort' || filter.operator === 'notInCohort';
+
+  const updateCohortFilter = (updated: IChartEventFilter) => {
+    setFilters((prev) =>
+      prev.map((f) =>
+        f.name === updated.name
+          ? {
+              id: updated.id ?? updated.name,
+              name: updated.name,
+              operator: updated.operator,
+              value: updated.value.map((v) => (v == null ? '' : String(v))),
+              ...(updated.cohortIds ? { cohortIds: updated.cohortIds } : {}),
+              ...(updated.cohortId ? { cohortId: updated.cohortId } : {}),
+            }
+          : f,
+      ),
+    );
+  };
   return (
     <SheetContent className="[&>button.absolute]:hidden">
       <ModalHeader title="Filters" />
@@ -92,6 +114,26 @@ export default function OverviewFilters({
             </div>
           )}
           {selectedFilters.map((filter) => {
+            if (isCohortFilter(filter)) {
+              return (
+                <PureCohortFilterItem
+                  className="border-t p-4 first:border-0"
+                  key={filter.id ?? filter.name}
+                  filter={filter}
+                  onRemove={(target) => removeFilter(target.name)}
+                  onChangeOperator={(operator, original) =>
+                    updateCohortFilter({ ...original, operator })
+                  }
+                  onChangeCohort={(cohortIds, original) =>
+                    updateCohortFilter({
+                      ...original,
+                      cohortId: cohortIds[0],
+                      cohortIds,
+                    })
+                  }
+                />
+              );
+            }
             return (
               <PureFilterItem
                 className="border-t p-4 first:border-0"
@@ -112,7 +154,13 @@ export default function OverviewFilters({
           })}
         </div>
         <PropertiesCombobox
-          mode={mode}
+          categories={
+            mode === 'events'
+              ? ['event']
+              : mode === 'profile'
+                ? ['profile']
+                : ['event', 'profile', 'group', 'cohort']
+          }
           exclude={
             enableEventsFilter
               ? []
@@ -125,6 +173,23 @@ export default function OverviewFilters({
                 ]
           }
           onSelect={(action) => {
+            if (action.value === 'cohort') {
+              // Only one cohort filter at a time; OR-semantics live inside
+              // the filter's cohortIds array.
+              const hasCohort = filters.some(isCohortFilter);
+              if (hasCohort) return;
+              setFilters((prev) => [
+                ...prev,
+                {
+                  id: 'cohort',
+                  name: 'cohort',
+                  operator: 'inCohort',
+                  value: [],
+                  cohortIds: [],
+                },
+              ]);
+              return;
+            }
             setFilter(action.value, [], 'is');
           }}
         >

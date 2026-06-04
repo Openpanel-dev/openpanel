@@ -11,7 +11,8 @@
     "@openpanel/logger": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "bullmq": "^5.63.0",
-    "groupmq": "catalog:"
+    "groupmq": "catalog:",
+    "kafkajs": "^2.2.4"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",

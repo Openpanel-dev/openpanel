@@ -7,8 +7,8 @@
     "noindex": false
   },
   "hero": {
-    "heading": "Analytics for Startups",
-    "subheading": "Get the product analytics you need to grow — without the enterprise price tag. OpenPanel gives you events, funnels, retention, and user profiles from $2.50/month. Self-host for free when budgets are tight.",
+    "heading": "Analytics for startups",
+    "subheading": "Get the product analytics you need to grow, without the enterprise price tag. OpenPanel gives you events, funnels, retention, and user profiles from $2.50/month. Self-host for free when budgets are tight.",
     "badges": [
       "From $2.50/month",
       "Self-host free",
@@ -155,7 +155,7 @@
       { "title": "Migrate from Google Analytics", "url": "/guides/migrate-from-google-analytics" }
     ],
     "articles": [
-      { "title": "Best open source analytics tools", "url": "/articles/open-source-web-analytics" },
+      { "title": "Best open source analytics tools", "url": "/articles/self-hosted-web-analytics" },
       { "title": "How to create a funnel", "url": "/articles/how-to-create-a-funnel" },
       { "title": "Cookieless analytics guide", "url": "/articles/cookieless-analytics" }
     ],

@@ -17,6 +17,7 @@ import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder, type SqlBuilderObject } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
+import { buildFilterWhere } from './filter-where.service';
 import type { IServiceProfile, IServiceUpsertProfile } from './profile.service';
 import {
   getProfileById,
@@ -423,16 +424,23 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     };
 
     // Only upsert the profile on session boundaries.
-    // - session_start covers fresh activity (drives `last_seen_at` via
-    //   `created_at`, our ReplacingMergeTree version column).
-    // - session_end is synthesized server-side by the worker, so we get a
-    //   reliable end-of-session bump even when the SDK doesn't fire it.
-    // Per-event upserts for identified users are skipped — `op.identify()` /
-    // `op.setProfile()` go through the controller path directly and stay fresh.
-    // `isFromEvent=false` so the buffer's cache-shortcut doesn't suppress the
-    // write — we want every session boundary to bump `last_seen_at`.
+    // - session_start covers fresh activity.
+    // - session_end is synthesized server-side by the worker.
+    // Identified users' explicit profile writes (op.identify(), op.setProfile())
+    // go through the controller path and are not affected by this branch.
+    //
+    // `isFromEvent=true` activates profile-buffer's cache shortcut: if the
+    // profile is in the 1h Redis cache (i.e. recently flushed), the add is
+    // skipped. Trade-off: profile.last_seen_at granularity is capped at the
+    // cache TTL (~1h) rather than per-session. We accept this because
+    // (a) profile-buffer was the leading indicator in the 2026-05-20 buildup
+    //     and was processing ~2 writes per session per anonymous user;
+    // (b) the bulk of those writes carried no new information (anonymous
+    //     profile data is event-derived and stable across a session);
+    // (c) recency queries should derive from event timestamps, not from
+    //     profile.last_seen_at.
     if (payload.name === 'session_start' || payload.name === 'session_end') {
-      promises.push(upsertProfile(profile));
+      promises.push(upsertProfile(profile, true));
     }
   }
 
@@ -645,7 +653,7 @@ export async function getEventList(options: GetEventListOptions) {
   if (filters) {
     sb.where = {
       ...sb.where,
-      ...getEventFiltersWhereClause(filters, projectId),
+      ...getEventFiltersWhereClause(filters, projectId, 'e'),
     };
 
     // Join profiles table if any filter uses profile fields
@@ -729,7 +737,7 @@ export async function getEventsCount({
   if (filters) {
     sb.where = {
       ...sb.where,
-      ...getEventFiltersWhereClause(filters, projectId),
+      ...getEventFiltersWhereClause(filters, projectId, 'e'),
     };
 
     // Join profiles table if any filter uses profile fields
@@ -1284,6 +1292,7 @@ export interface QueryEventsInput {
   profileId?: string;
   profileIds?: string[];
   properties?: Record<string, string>;
+  filters?: IChartEventFilter[];
   limit?: number;
 }
 
@@ -1375,6 +1384,17 @@ export async function queryEventsCore(
       clix.datetime(start),
       clix.datetime(end),
     ]);
+  }
+
+  if (input.filters?.length) {
+    const filterClauses = buildFilterWhere(input.filters, input.projectId, {
+      selfTable: 'events',
+      profileIdExpr: 'profile_id',
+      groupsExpr: 'groups',
+    });
+    for (const clause of Object.values(filterClauses)) {
+      builder.rawWhere(clause);
+    }
   }
 
   return builder.limit(input.limit ?? 20).execute();

@@ -4,6 +4,7 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
+import DeleteOrganization from '@/components/settings/delete-organization';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
@@ -129,6 +130,10 @@ function Component() {
           </WidgetBody>
         </Widget>
       </form>
+
+      <div className="mt-8">
+        <DeleteOrganization organization={organization} />
+      </div>
     </div>
   );
 }

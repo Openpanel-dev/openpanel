@@ -1,0 +1,138 @@
+---
+title: "What Is Cohort Analysis? A Practical Guide to Retention & Churn"
+description: "Cohort analysis groups users by when they signed up or what they did, then tracks each group over time. Learn to read a retention curve and cut churn."
+tag: Guide
+team: OpenPanel Team
+date: 2026-05-29
+updated: 2026-05-29
+cover: /content/cohort-analysis.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+
+Your dashboard says you have 12,000 active users this month, up from 11,000 last month. Good news? You can't tell. That single number hides whether you're keeping the users you already had or just replacing the ones who left.
+
+**Cohort analysis** is how you find out. It groups users by something they share — the week they signed up, or an action they took — and then tracks each group over time. Instead of one blurry total, you get a clear picture of who sticks around, who leaves, and when.
+
+This guide explains what cohort analysis is, how to read a retention curve, how to run one step by step, and where it quietly lies to you.
+
+## What is cohort analysis?
+
+A cohort is a group of users who share a starting point. Everyone who signed up the same week is one cohort. Everyone who placed their first order in March is another. Cohort analysis tracks each of these groups separately as time passes, so you can compare how different groups behave instead of mashing them into one average.
+
+The mental model is a spreadsheet grid. Each row is a cohort. Each column is a period of time after their start — week 1, week 2, week 3, and so on. Each cell shows how many of that cohort were still active in that period. Because older cohorts have had more time to age, the filled-in cells form a triangle.
+
+Here's why this matters. Say overall retention looks flat at 30%. That average could mean every cohort retains at a steady 30%, or it could mean your old cohorts are collapsing while new ones retain at 45%. Those are opposite situations — one is healthy, one is on fire — and a single number can't tell them apart. Cohort analysis can.
+
+## Acquisition vs behavioral cohorts
+
+There are two ways to group users, and they answer different questions.
+
+### Acquisition cohorts
+
+Acquisition cohorts group users by *when* they started — signup week, first-purchase month, install date. This is the default kind of cohort, and it answers one question well: **are newer users retaining better or worse than older ones?**
+
+If you shipped a new onboarding flow in April, compare the March cohorts against the April cohorts. If April retains better four weeks in, the onboarding flow worked. Acquisition cohorts turn "we changed something" into "we changed something and retention went up 9 points."
+
+### Behavioral cohorts
+
+Behavioral cohorts group users by *what they did* — created a dashboard, invited a teammate, hit some activation milestone in their first week. These answer the more valuable question: **which actions actually predict retention?**
+
+If users who connect an integration in week one retain at 60% and everyone else retains at 25%, you've found your activation lever. Now you have a reason to push every new user toward that action.
+
+| | Acquisition cohort | Behavioral cohort |
+|---|---|---|
+| Grouped by | When users started (signup week or month) | An action they took (used a feature, hit activation) |
+| Answers | Are newer users retaining better than older ones? | Do users who do X retain better than those who don't? |
+| Example | Everyone who signed up in March | Everyone who created a dashboard in week 1 |
+| Best for | Measuring whether changes improved retention over time | Finding the actions that drive retention |
+
+Most teams start with acquisition cohorts to track the trend, then switch to behavioral cohorts to find the levers behind it.
+
+## How to read a cohort table
+
+This is where people get stuck, so let's read a real one. Below is weekly retention for four signup cohorts. Week 0 is the signup week (always 100%), and each later column is the share of that cohort who came back and did something meaningful that week.
+
+| Signup week | Users | Week 0 | Week 1 | Week 2 | Week 3 | Week 4 |
+|---|---|---|---|---|---|---|
+| Mar 3 | 480 | 100% | 41% | 33% | 29% | 27% |
+| Mar 10 | 510 | 100% | 39% | 31% | 28% | 26% |
+| Mar 17 | 465 | 100% | 44% | 36% | 33% | 31% |
+| Mar 24 | 530 | 100% | 47% | 40% | 36% | 34% |
+
+Read it two ways.
+
+**Across a row** you see the retention curve for one cohort. The Mar 3 group drops from 100% to 41% in a single week, then the decline slows: 33%, 29%, 27%. That early cliff is normal — most products lose a big chunk of signups immediately. What matters is whether the curve *flattens*. A curve that flattens means you've found a core of users who keep coming back. A curve that keeps sliding toward zero means you have a leaky bucket and no real retention.
+
+**Down a column** you compare cohorts at the same age. Look at Week 4: 27%, 26%, 31%, 34%. Later cohorts retain better. Something you did in mid-to-late March improved four-week retention by about 8 points. That trend — reading down the columns — is the single most useful thing a cohort grid gives you, and it's invisible in any total-active-users chart.
+
+## How to run a cohort analysis, step by step
+
+You don't need SQL or a spreadsheet full of `VLOOKUP`s. Any product analytics tool with a retention report will build the grid for you. Here's the process.
+
+1. **Identify your users.** Cohort analysis needs to recognize the same person across visits. That means calling an identify method when someone logs in, so events tie to a stable user ID instead of an anonymous session. See [identifying users](/docs/get-started/identify-users) for how this works.
+2. **Pick the cohort definition.** Start with an acquisition cohort (signup date) to get your baseline retention trend. Once that's running, add a behavioral cohort around a suspected activation action.
+3. **Pick the return event.** Decide what "retained" means. A login doesn't count for much. Pick an event that represents real value — viewed a report, sent a message, completed an order. Retention is only as honest as the event you choose.
+4. **Choose the interval.** Daily for high-frequency consumer apps, weekly for most B2B and SaaS products, monthly for low-frequency tools like tax software. Match the interval to how often a healthy user is supposed to come back.
+5. **Read the grid, then the curve.** Scan down the columns for the cohort-over-cohort trend, then across the rows to see where the curve flattens. Build the report once in a tool like [OpenPanel's retention view](/features/retention) and it updates as new cohorts mature.
+
+## A worked example
+
+A small SaaS team is worried about churn. Their total active users are flat, which they read as "stable." The cohort grid tells a different story.
+
+Their March acquisition cohorts retain around 22% at week four. In early April they ship an onboarding checklist that nudges new users to create their first dashboard. The April cohorts come in at 31% at week four — a 9-point lift that flat top-line numbers completely hid.
+
+Then they build a behavioral cohort: users who created a dashboard in week one versus those who didn't. The dashboard-creators retain at 48%; everyone else at 19%. Now they have proof, not a hunch. Creating a dashboard is the activation moment, so the next quarter's work is obvious: get more new users to that moment, faster.
+
+This is the difference between cohorts and a [conversion funnel](/articles/how-to-create-a-funnel). A funnel shows where users drop off on the way to a goal in one short window. A cohort shows whether they *keep coming back* weeks later. You need both: the funnel finds the leak in signup, the cohort tells you whether the people who got through actually stay.
+
+## When cohort analysis misleads
+
+Cohort grids look authoritative, which makes their failure modes dangerous. Watch for these.
+
+- **Small cohorts are noise.** A cohort of 30 users swinging from 20% to 40% retention is probably randomness, not a trend. Don't make decisions on cohorts smaller than a few hundred users unless the effect is huge.
+- **Seasonality fakes trends.** A cohort that signed up the week before a holiday will look worse than one from a normal week, for reasons that have nothing to do with your product. Compare like with like.
+- **Vanity return events.** If "retained" means "opened the app," your retention will look great and mean nothing. Tie retention to an event that represents value.
+- **Changing the definition mid-stream.** If you redefine the return event or the activation action halfway through, old and new cohorts stop being comparable. Lock your definitions before you start reading trends.
+- **Survivorship blindness.** The grid shows who stayed. To understand churn you also have to look at the users who left — what they did, or failed to do, before they went quiet.
+
+## Cohorts, segments, and funnels
+
+These three get mixed up constantly. Quick version:
+
+- A **funnel** measures steps toward a goal over a short window (view → add to cart → checkout). It answers *where do people drop off?*
+- A **cohort** measures one group over a long window. It answers *do people keep coming back?*
+- A **segment** is a filter you can apply to either one — "users in Germany," "mobile signups." It answers *which slice are we even looking at?*
+
+They work together. Segment a cohort by acquisition channel and you'll often find paid signups retain far worse than organic ones — the kind of insight that changes where you spend money.
+
+## Track retention without the cookie banner
+
+[OpenPanel](/articles/self-hosted-web-analytics) is an open-source analytics platform with [retention and cohorts](/features/retention) built in, alongside funnels and event tracking. Build acquisition and behavioral cohorts, read the retention curve, and find your activation lever — without sending user data to a third party.
+
+It's cookieless by default, so there's no consent banner to slow anything down, and it's a credible [Mixpanel alternative](/compare/mixpanel-alternative) at a fraction of the cost. Use the cloud (Frankfurt-hosted EU option, from $2.50/month with a 30-day free trial) or self-host the whole thing for free with one Docker Compose command (ClickHouse, Postgres, and Redis included). The self-hosted version has the same features as cloud — no gated reports.
+
+<Faqs>
+<FaqItem question="What is cohort analysis?">
+Cohort analysis is a method that groups users by a shared starting point — like the week they signed up or an action they took — and tracks each group over time. Instead of a single average that hides what's happening, you see whether each group keeps coming back, which is the clearest way to measure [retention](/features/retention) and spot churn early.
+</FaqItem>
+
+<FaqItem question="What's the difference between acquisition and behavioral cohorts?">
+Acquisition cohorts group users by *when* they started (signup week or month) and answer "are newer users retaining better than older ones?" Behavioral cohorts group users by *what they did* (used a feature, hit an activation milestone) and answer "which actions predict retention?" Acquisition cohorts track the trend; behavioral cohorts find the lever behind it. Most teams use both.
+</FaqItem>
+
+<FaqItem question="How do you do a cohort analysis?">
+Identify your users so events tie to a stable ID, pick a cohort definition (start with signup date), choose a return event that represents real value (not just a login), pick an interval (daily, weekly, or monthly), and read the resulting grid. Scan down the columns for the cohort-over-cohort trend and across the rows to see where the retention curve flattens. A product analytics tool with a [retention report](/features/retention) builds the grid automatically — no SQL or spreadsheets needed.
+</FaqItem>
+
+<FaqItem question="What's the difference between cohort analysis and segmentation?">
+A cohort is a group defined by a shared starting point and tracked over time — it answers "do these users keep coming back?" A segment is a filter you apply to your data, like "users in Germany" or "mobile signups" — it answers "which slice am I looking at?" They combine well: segment a cohort by acquisition channel and you'll often find paid and organic signups retain very differently.
+</FaqItem>
+
+<FaqItem question="What is the best tool for cohort analysis?">
+[Mixpanel](/compare/mixpanel-alternative) and Amplitude are the established product analytics tools with strong cohort and retention reports, but both get expensive as your event volume grows. [OpenPanel](/features/retention) offers the same acquisition and behavioral cohorts, is open source, cookieless by default, and starts at $2.50/month — or free if you self-host. The best tool is the one that ties retention to a meaningful return event and lets you build behavioral cohorts, not just signup-date ones.
+</FaqItem>
+
+<FaqItem question="Can Google Analytics do cohort analysis?">
+GA4 includes a basic cohort exploration that groups users by acquisition date and shows retention over time. It works for a quick look, but it's limited to acquisition-style cohorts and is awkward for behavioral cohorts tied to specific product events. Dedicated product analytics tools like OpenPanel, Mixpanel, or Amplitude go deeper — letting you define cohorts by any event and read retention against the actions that matter.
+</FaqItem>
+</Faqs>

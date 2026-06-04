@@ -7,8 +7,8 @@
     "noindex": false
   },
   "hero": {
-    "heading": "Analytics for Agencies",
-    "subheading": "Manage web and product analytics for every client from one account. No cookie consent banners to configure, no per-seat pricing, and transparent costs that make sense for agency billing. From $2.50/month per project.",
+    "heading": "Analytics for agencies",
+    "subheading": "Manage web and product analytics for every client from one account. No cookie consent banners to configure, no per-seat pricing, and costs that make sense for agency billing. From $2.50/month per project.",
     "badges": [
       "Unlimited projects",
       "No per-seat fees",
@@ -40,7 +40,7 @@
   },
   "features": {
     "title": "Analytics built for multi-client workflows",
-    "intro": "OpenPanel is designed to work the way agencies do — multiple projects, multiple team members, one simple interface.",
+    "intro": "OpenPanel works the way agencies do: multiple projects, multiple team members, one interface.",
     "items": [
       {
         "title": "Unlimited projects per account",
@@ -156,7 +156,7 @@
     "articles": [
       { "title": "Cookieless analytics explained", "url": "/articles/cookieless-analytics" },
       { "title": "How to self-host OpenPanel", "url": "/articles/how-to-self-host-openpanel" },
-      { "title": "Best open source analytics tools", "url": "/articles/open-source-web-analytics" }
+      { "title": "Best open source analytics tools", "url": "/articles/self-hosted-web-analytics" }
     ],
     "comparisons": [
       { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },

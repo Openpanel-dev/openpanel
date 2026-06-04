@@ -54,14 +54,13 @@ function Component() {
     )
   );
   return (
-    <div className="col w-full gap-8 text-left">
+    <div className="col w-full gap-8 py-4 text-left">
       <div>
         <h1 className="mb-2 font-bold text-3xl text-foreground">
           Start tracking in minutes
         </h1>
         <p className="text-muted-foreground">
-          Join 1,000+ projects already using OpenPanel. By creating an account
-          you accept the{' '}
+          By creating an account you accept the{' '}
           <a
             className="underline transition-colors hover:text-foreground"
             href="https://openpanel.dev/terms"
@@ -80,6 +79,19 @@ function Component() {
             Privacy Policy
           </a>
           .
+        </p>
+        <p className="mt-3 text-muted-foreground">
+          Already have an account?{' '}
+          <a
+            className="font-medium text-foreground underline"
+            href={
+              inviteId
+                ? `/login?inviteId=${encodeURIComponent(inviteId)}`
+                : '/login'
+            }
+          >
+            Sign in
+          </a>
         </p>
       </div>
 

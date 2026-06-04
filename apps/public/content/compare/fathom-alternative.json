@@ -8,12 +8,12 @@
   },
   "hero": {
     "heading": "Best Fathom Alternative",
-    "subheading": "Love Fathom's simplicity and privacy focus? OpenPanel adds product analytics capabilities - funnels, cohorts, retention, and user identification - plus self-hosting options and a free tier.",
+    "subheading": "Love Fathom's simplicity and privacy focus? OpenPanel adds product analytics capabilities - funnels, cohorts, retention, and user identification - plus free self-hosting.",
     "badges": [
       "Open-source",
       "Privacy-first",
       "Self-hostable",
-      "Free Tier"
+      "Free Self-Hosting"
     ]
   },
   "competitor": {
@@ -29,19 +29,19 @@
     "paragraphs": [
       "Fathom Analytics is a well-respected privacy-first analytics tool known for its clean interface and cookie-free tracking. It's a solid choice for websites that need simple traffic metrics without the complexity of Google Analytics. But Fathom is intentionally limited to web analytics \u2014 there's no user identification, no funnels, no retention analysis, and no self-hosting option.",
       "OpenPanel shares Fathom's commitment to privacy and simplicity but extends far beyond basic web metrics. You get full product analytics capabilities including funnel analysis, retention tracking, cohort breakdowns, and individual user profiles. This means you can track not just how many visitors you get, but how they convert, where they drop off, and whether they come back.",
-      "Pricing is another significant difference. Fathom has no free tier \u2014 plans start at $15 per month with no way to try the product beyond a brief trial. OpenPanel offers 10,000 free events per month on its cloud tier, and unlimited events when self-hosted. Self-hosting is available as a simple Docker deployment, giving teams full data ownership that Fathom's cloud-only model can't provide.",
+      "Pricing is another significant difference. Fathom has no free tier \u2014 plans start at $15 per month with no way to try the product beyond a brief trial. OpenPanel's cloud starts at $2.50/month for 5,000 events after a 30-day free trial, and self-hosting is free with unlimited events. Self-hosting is available as a simple Docker Compose deployment, giving teams full data ownership that Fathom's cloud-only model can't provide.",
       "If you love Fathom's privacy-first approach but need deeper analytics to understand user behavior and grow your product, OpenPanel gives you that depth while keeping things simple and affordable."
     ]
   },
   "summary_comparison": {
     "title": "OpenPanel vs Fathom: Which is right for you?",
     "intro": "Both are privacy-focused analytics platforms. Fathom focuses on simple web traffic metrics. OpenPanel adds product analytics with user identification and self-hosting.",
-    "one_liner": "Fathom excels at simple web analytics; OpenPanel adds product analytics, self-hosting, and a free tier.",
+    "one_liner": "Fathom excels at simple web analytics; OpenPanel adds product analytics, self-hosting, and free self-hosting.",
     "best_for_openpanel": [
       "SaaS products needing user-level analytics and retention tracking",
       "Teams wanting self-hosting for complete data control",
-      "Startups needing a free tier to get started",
-      "Mobile app developers needing native iOS, Android, React Native SDKs"
+      "Startups needing affordable analytics to get started",
+      "Mobile app developers needing native iOS, Android, React Native, Flutter SDKs"
     ],
     "best_for_competitor": [
       "Simple content sites and blogs wanting traffic stats only",
@@ -64,13 +64,13 @@
         "label": "Self-Hosting",
         "openpanel": "Full self-hosting available",
         "competitor": "Cloud-only (no self-host option)",
-        "notes": "OpenPanel offers full self-hosting in a single Docker container. Fathom is cloud-only; their legacy open-source version (Fathom Lite) uses cookies and is no longer actively developed."
+        "notes": "OpenPanel offers full self-hosting via Docker Compose with a one-command setup. Fathom is cloud-only; their legacy open-source version (Fathom Lite) uses cookies and is no longer actively developed."
       },
       {
-        "label": "Free Tier",
-        "openpanel": "10,000 events/month free",
-        "competitor": "No free tier (7-day trial only)",
-        "notes": "OpenPanel offers a generous free tier. Fathom has no free option - just a 7-day trial before requiring a $15/month minimum subscription."
+        "label": "Cloud Pricing",
+        "openpanel": "From $2.50/mo (30-day trial)",
+        "competitor": "From $15/mo (7-day trial)",
+        "notes": "Neither has a free cloud tier. OpenPanel's cloud starts at $2.50/month (5,000 events) with a 30-day trial; Fathom starts at $15/month with a 7-day trial. OpenPanel also offers free, unlimited self-hosting."
       },
       {
         "label": "User Identification",
@@ -184,9 +184,9 @@
           },
           {
             "name": "Email Reports",
-            "openpanel": true,
+            "openpanel": false,
             "competitor": true,
-            "notes": "Both offer scheduled email reports"
+            "notes": "Fathom offers scheduled email reports. OpenPanel doesn't — it sends real-time alerts via Slack, Discord, webhook, and in-app."
           },
           {
             "name": "Dashboard Sharing",
@@ -295,14 +295,18 @@
           "React",
           "Next.js",
           "Vue",
+          "Astro",
+          "Remix",
           "React Native",
-          "iOS",
-          "Android",
+          "Flutter",
+          "iOS (Swift)",
+          "Android (Kotlin)",
           "Node.js",
           "Python",
-          "PHP",
-          "Go",
-          "Rust"
+          "Ruby",
+          "Rust",
+          "Java",
+          "PHP"
         ],
         "competitor": [
           "JavaScript (browser)",
@@ -318,13 +322,13 @@
       },
       {
         "label": "Open Source",
-        "openpanel": "Yes - MIT License",
+        "openpanel": "Yes - AGPL-3.0",
         "competitor": "No - Closed source",
         "notes": "Fathom Analytics is closed-source. Fathom Lite (legacy) is open-source but limited and uses cookies."
       },
       {
         "label": "Self Hosting",
-        "openpanel": "Docker (simple single-container setup)",
+        "openpanel": "Docker Compose, guided setup wizard",
         "competitor": "Not available (cloud-only service)",
         "notes": null
       },
@@ -350,10 +354,10 @@
   },
   "pricing": {
     "title": "Pricing comparison",
-    "intro": "Fathom has no free tier. OpenPanel offers free cloud and self-hosting.",
+    "intro": "Fathom has no free tier. OpenPanel offers free self-hosting plus affordable cloud pricing.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Simple pricing with 10,000 free events per month. All features included at every tier. Self-host for free with unlimited events."
+      "description": "Transparent pricing from $2.50/month for 5,000 events, with a 30-day free trial. All features included at every tier. Self-host free with unlimited events."
     },
     "competitor": {
       "model": "Pageview-based with 7-day trial",
@@ -409,17 +413,17 @@
       },
       {
         "title": "Teams Who Want Self-Hosting",
-        "description": "Fathom is cloud-only with no self-hosting option. If data sovereignty or compliance requirements mean you need to host your own analytics, OpenPanel provides full self-hosting in a single Docker container.",
+        "description": "Fathom is cloud-only with no self-hosting option. If data sovereignty or compliance requirements mean you need to host your own analytics, OpenPanel provides full self-hosting via Docker Compose. A one-command ./setup wizard walks you through configuration and brings the whole stack up in minutes.",
         "icon": "server"
       },
       {
-        "title": "Startups Needing a Free Tier",
-        "description": "Fathom has no free option, requiring a minimum $15/month commitment. OpenPanel offers 10,000 free events monthly, perfect for early-stage products or side projects.",
+        "title": "Startups Needing Affordable Analytics",
+        "description": "Fathom has no free option, requiring a minimum $15/month commitment. OpenPanel is free to self-host with unlimited events, or its cloud starts at just $2.50/month (5,000 events) after a 30-day trial - perfect for early-stage products or side projects.",
         "icon": "trending-up"
       },
       {
         "title": "Mobile App Analytics",
-        "description": "Fathom is designed for websites and doesn't provide native mobile SDKs. OpenPanel offers native iOS, Android, and React Native SDKs with full product analytics capabilities.",
+        "description": "Fathom is designed for websites and doesn't provide native mobile SDKs. OpenPanel offers native iOS, Android, React Native, and Flutter SDKs with full product analytics capabilities.",
         "icon": "smartphone"
       },
       {
@@ -439,15 +443,15 @@
       },
       {
         "question": "Why switch from Fathom to OpenPanel?",
-        "answer": "Teams typically switch when they need: 1) Product analytics (funnels, retention, cohorts), 2) User identification, 3) Self-hosting options, or 4) A free tier for starting out. Fathom excels at simple web analytics but doesn't offer these capabilities."
+        "answer": "Teams typically switch when they need: 1) Product analytics (funnels, retention, cohorts), 2) User identification, 3) Self-hosting options, or 4) Affordable pricing for starting out (free self-hosting, or cloud from $2.50/month). Fathom excels at simple web analytics but doesn't offer these capabilities."
       },
       {
         "question": "Does Fathom have a free tier?",
-        "answer": "No. Fathom offers a 7-day free trial, then requires a minimum $15/month subscription. They intentionally don't offer a free tier or discounts. OpenPanel provides 10,000 free events monthly."
+        "answer": "No. Fathom offers a 7-day free trial, then requires a minimum $15/month subscription. They intentionally don't offer a free tier or discounts. OpenPanel doesn't have a free cloud tier either (30-day trial, then from $2.50/month for 5,000 events), but it is free to self-host with unlimited events."
       },
       {
         "question": "Can I self-host Fathom?",
-        "answer": "No. Fathom Analytics is cloud-only. Their legacy open-source version (Fathom Lite) exists but uses cookies, has limited features, and is no longer actively developed. OpenPanel offers full self-hosting in a single Docker container."
+        "answer": "No. Fathom Analytics is cloud-only. Their legacy open-source version (Fathom Lite) exists but uses cookies, has limited features, and is no longer actively developed. OpenPanel offers full self-hosting via Docker Compose with a one-command setup."
       },
       {
         "question": "Which has the smaller tracking script?",
@@ -455,11 +459,11 @@
       },
       {
         "question": "Can Fathom track mobile apps?",
-        "answer": "Not natively. Fathom is designed for web analytics and doesn't provide mobile SDKs. You could send events via their API, but there are no mobile-specific features. OpenPanel offers native iOS, Android, and React Native SDKs."
+        "answer": "Not natively. Fathom is designed for web analytics and doesn't provide mobile SDKs. You could send events via their API, but there are no mobile-specific features. OpenPanel offers native iOS, Android, React Native, and Flutter SDKs."
       },
       {
         "question": "What will I lose switching from Fathom?",
-        "answer": "Fathom's Google Analytics import tool is well-regarded if you're migrating historical data. Their EU Isolation feature is enabled by default for all customers. However, you'll gain product analytics, self-hosting options, and a free tier that Fathom doesn't offer."
+        "answer": "Fathom's Google Analytics import tool is well-regarded if you're migrating historical data. Their EU Isolation feature is enabled by default for all customers. However, you'll gain product analytics, self-hosting options, and free self-hosting that Fathom doesn't offer."
       },
       {
         "question": "Is Fathom or OpenPanel better for blogs/content sites?",
@@ -485,7 +489,7 @@
     "articles": [
       {
         "title": "9 best open source web analytics tools",
-        "url": "/articles/open-source-web-analytics"
+        "url": "/articles/self-hosted-web-analytics"
       },
       {
         "title": "Cookieless analytics",

@@ -11,7 +11,7 @@ import {
 import { zCreateNotificationRule } from '@openpanel/validation';
 
 import { getProjectAccess } from '../access';
-import { TRPCAccessError } from '../errors';
+import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const notificationRouter = createTRPCRouter({
@@ -76,11 +76,28 @@ export const notificationRouter = createTRPCRouter({
     }),
   createOrUpdateRule: protectedProcedure
     .input(zCreateNotificationRule)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       // Clear the cache for the project
       await getNotificationRulesByProjectId.clear(input.projectId);
 
       if (input.id) {
+        const existing = await db.notificationRule.findUniqueOrThrow({
+          where: {
+            id: input.id,
+          },
+        });
+
+        const access = await getProjectAccess({
+          userId: ctx.session.userId,
+          projectId: existing.projectId,
+        });
+
+        if (!access) {
+          throw new TRPCForbiddenError(
+            'You do not have access to this project',
+          );
+        }
+
         return db.notificationRule.update({
           where: {
             id: input.id,
@@ -140,7 +157,7 @@ export const notificationRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       return db.notificationRule.delete({

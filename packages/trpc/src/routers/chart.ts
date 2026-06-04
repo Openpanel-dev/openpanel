@@ -20,6 +20,8 @@ import {
   getSelectPropertyKey,
   getSettingsForProject,
   type IServiceProfile,
+  isKnownEventField,
+  normalizeEventField,
   onlyReportEvents,
   sankeyService,
   TABLE_NAMES,
@@ -43,7 +45,7 @@ import { flatten, map, pipe, prop, range, sort, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
-import { TRPCAccessError } from '../errors';
+import { TRPCAccessError, TRPCForbiddenError } from '../errors';
 import {
   cacheMiddleware,
   createTRPCRouter,
@@ -86,13 +88,13 @@ const chartProcedure = publicProcedure.use(
         }
       );
       if (!shareValidation.isValid) {
-        throw TRPCAccessError('You do not have access to this share');
+        throw new TRPCForbiddenError('You do not have access to this share');
       }
 
       // Fetch report
       const report = await getReportById(rawInput.id);
       if (!report) {
-        throw TRPCAccessError('Report not found');
+        throw new TRPCAccessError('Report not found');
       }
 
       return next({
@@ -104,14 +106,14 @@ const chartProcedure = publicProcedure.use(
 
     // Regular member access check
     if (!ctx.session?.userId) {
-      throw TRPCAccessError('Authentication required');
+      throw new TRPCAccessError('Authentication required');
     }
     const access = await getProjectAccess({
       projectId: rawInput.projectId,
       userId: ctx.session.userId,
     });
     if (!access) {
-      throw TRPCAccessError('You do not have access to this project');
+      throw new TRPCForbiddenError('You do not have access to this project');
     }
 
     return next({
@@ -384,10 +386,26 @@ export const chartRouter = createTRPCRouter({
 
         const res = await query.execute();
         values.push(...res.map((r) => String(r.values)).filter(Boolean));
+      } else if (property === 'cohort' || property.startsWith('cohort:')) {
+        // Cohort filters use a dedicated cohort multi-select on the client
+        // (ComboboxAdvanced over all cohorts) — values aren't sourced from
+        // an event-column distinct query. Without this guard, the events
+        // SELECT would emit a literal `cohort:<uuid>` identifier and crash
+        // with a ClickHouse syntax error.
+        return { values: [] };
       } else {
+        // Normalize bare utm_* names to `properties.__query.utm_*` and rewrite
+        // camelCase aliases (`referrerName`) to their snake_case columns.
+        // Unknown identifiers (saved-report typos like `temple_name`, or
+        // misnamed columns from older clients) get an empty value list rather
+        // than crashing the autocomplete query with UNKNOWN_IDENTIFIER.
+        const resolvedProperty = normalizeEventField(property);
+        if (!isKnownEventField(resolvedProperty)) {
+          return { values: [] };
+        }
         const query = clix(ch)
           .select<{ values: string[] }>([
-            `distinct ${getSelectPropertyKey(property)} as values`,
+            `distinct ${getSelectPropertyKey(resolvedProperty)} as values`,
           ])
           .from(TABLE_NAMES.events)
           .where('project_id', '=', projectId)
@@ -950,14 +968,22 @@ export const chartRouter = createTRPCRouter({
         group,
       });
 
-      // Check for profile filters and add profile join if needed
+      // Profile JOIN must cover both profile filters AND profile breakdowns —
+      // breakdownSelects reference `profile.properties[...]` etc. via
+      // getSelectPropertyKey, so the alias has to exist in scope even when
+      // no filter touches the profiles table. Mirrors the same guard in
+      // funnelService.getFunnel.
       const profileFilters = funnelService.getProfileFilters(
         eventSeries as IChartEvent[]
       );
-      if (profileFilters.length > 0) {
-        const fieldsToSelect = uniq(
-          profileFilters.map((f) => f.split('.')[0])
-        ).join(', ');
+      const profileBreakdownNames = breakdowns
+        .filter((b) => b.name.startsWith('profile.'))
+        .map((b) => b.name.replace('profile.', ''));
+      if (profileFilters.length > 0 || profileBreakdownNames.length > 0) {
+        const fieldsToSelect = uniq([
+          ...profileFilters.map((f) => f.split('.')[0]!),
+          ...profileBreakdownNames.map((f) => f.split('.')[0]!),
+        ]).join(', ');
         funnelCte.leftJoin(
           `(SELECT id, ${fieldsToSelect} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
           'profile.id = events.profile_id'

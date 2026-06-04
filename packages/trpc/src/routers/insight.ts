@@ -1,7 +1,7 @@
 import { db } from '@openpanel/db';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
-import { TRPCAccessError } from '../errors';
+import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const insightRouter = createTRPCRouter({
@@ -19,7 +19,7 @@ export const insightRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       // Fetch more insights than needed to account for deduplication
@@ -80,7 +80,7 @@ export const insightRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       const insights = await db.projectInsight.findMany({

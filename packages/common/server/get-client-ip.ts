@@ -5,11 +5,16 @@
  * Example: IP_HEADER_ORDER="cf-connecting-ip,x-real-ip,x-forwarded-for"
  */
 
+// Order matters: client-forwarded headers (set explicitly by SDKs/upstream
+// servers) must come before infrastructure headers like `cf-connecting-ip`.
+// Otherwise, when our API sits behind Cloudflare (orange cloud), Cloudflare
+// rewrites `cf-connecting-ip` to the SDK server's IP — losing the original
+// end-user IP that the SDK forwarded in `x-client-ip` / `openpanel-client-ip`.
 export const DEFAULT_IP_HEADER_ORDER = [
   'openpanel-client-ip',
-  'cf-connecting-ip',
   'true-client-ip',
   'x-client-ip',
+  'cf-connecting-ip',
   'x-forwarded-for',
   'x-real-ip',
   'fastly-client-ip',

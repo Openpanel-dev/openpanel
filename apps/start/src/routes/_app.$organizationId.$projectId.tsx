@@ -1,4 +1,5 @@
 import BillingPrompt from '@/components/organization/billing-prompt';
+import { useProjectDocumentTitle } from '@/hooks/use-project-document-title';
 import { useTRPC } from '@/integrations/trpc/react';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { FREE_PRODUCT_IDS } from '@openpanel/payments';
@@ -17,22 +18,33 @@ export const Route = createFileRoute('/_app/$organizationId/$projectId')({
     };
   },
   loader: async ({ context, params }) => {
-    await context.queryClient.prefetchQuery(
-      context.trpc.organization.get.queryOptions({
-        organizationId: params.organizationId,
-      }),
-    );
+    await Promise.all([
+      context.queryClient.prefetchQuery(
+        context.trpc.organization.get.queryOptions({
+          organizationId: params.organizationId,
+        }),
+      ),
+      context.queryClient.prefetchQuery(
+        context.trpc.project.getProjectWithClients.queryOptions({
+          projectId: params.projectId,
+        }),
+      ),
+    ]);
   },
 });
 
 function ProjectDashboard() {
-  const { organizationId } = Route.useParams();
+  const { organizationId, projectId } = Route.useParams();
   const trpc = useTRPC();
   const { data: organization } = useSuspenseQuery(
     trpc.organization.get.queryOptions({
       organizationId,
     }),
   );
+  const { data: project } = useSuspenseQuery(
+    trpc.project.getProjectWithClients.queryOptions({ projectId }),
+  );
+  useProjectDocumentTitle(project?.name);
 
   if (
     organization.subscriptionProductId &&

@@ -8,11 +8,12 @@ import { clix } from '../clickhouse/query-builder';
 import { createSqlBuilder } from '../sql-builder';
 import {
   buildInlineCohortJoin,
-  collectCohortIds,
+  collectBreakdownCohortIds,
   extractCohortId,
   fetchCohortsMetadata,
   getEventFiltersWhereClause,
   getSelectPropertyKey,
+  isKnownEventField,
 } from './chart.service';
 import { onlyReportEvents } from './reports.service';
 
@@ -226,6 +227,14 @@ export class FunnelService {
     const funnelWindow = funnelOptions?.funnelWindow ?? 24;
     const funnelGroup = funnelOptions?.funnelGroup;
 
+    // Drop breakdowns that don't resolve to a known events column, properties
+    // path, profile path, group path, or cohort. The funnel CTE inlines each
+    // breakdown's name directly via getSelectPropertyKey — a saved report with
+    // breakdown `cohort` (intended for the chart's all-cohorts feature; the
+    // funnel doesn't support it) used to produce `cohort as b_0 FROM events
+    // GROUP BY b_0`, failing parse.
+    breakdowns = breakdowns.filter((b) => isKnownEventField(b.name));
+
     const eventSeries = onlyReportEvents(series);
 
     if (eventSeries.length === 0) {
@@ -249,8 +258,7 @@ export class FunnelService {
     const needsGroupArrayJoin =
       anyFilterOnGroup || anyBreakdownOnGroup || funnelGroup === 'group';
 
-    const allFilters = eventSeries.flatMap((e) => e.filters ?? []);
-    const cohortIds = collectCohortIds(allFilters, breakdowns);
+    const cohortIds = collectBreakdownCohortIds(breakdowns);
     const cohortMetadata = await fetchCohortsMetadata(cohortIds);
 
     // Create the funnel CTE (session-level)

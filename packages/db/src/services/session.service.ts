@@ -11,7 +11,7 @@ import {
 } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import { createSqlBuilder } from '../sql-builder';
-import { getEventFiltersWhereClause } from './chart.service';
+import { buildFilterWhere } from './filter-where.service';
 import { getProfilesCached, type IServiceProfile } from './profile.service';
 
 export interface IClickhouseSession {
@@ -50,7 +50,10 @@ export interface IClickhouseSession {
   utm_content: string;
   utm_term: string;
   revenue: number;
-  sign: 1 | 0;
+  // CollapsingMergeTree marker: +1 = current state, -1 = cancel a prior +1.
+  // The session-buffer emits both +1 (new) and -1 (old) rows per update so
+  // CH can collapse intermediate states.
+  sign: 1 | -1;
   version: number;
   // Dynamically added
   has_replay?: boolean;
@@ -107,10 +110,6 @@ export interface GetSessionListOptions {
   endDate?: Date;
   search?: string;
   cursor?: Date;
-  minPageViews?: number | null;
-  maxPageViews?: number | null;
-  minEvents?: number | null;
-  maxEvents?: number | null;
   dateIntervalInDays?: number;
 }
 
@@ -167,10 +166,6 @@ export async function getSessionList(options: GetSessionListOptions) {
     startDate,
     endDate,
     search,
-    minPageViews,
-    maxPageViews,
-    minEvents,
-    maxEvents,
     dateIntervalInDays = 0.5,
   } = options;
 
@@ -210,19 +205,16 @@ export async function getSessionList(options: GetSessionListOptions) {
     sb.where.search = `(entry_path ILIKE ${s} OR exit_path ILIKE ${s} OR referrer ILIKE ${s} OR referrer_name ILIKE ${s})`;
   }
   if (filters?.length) {
-    Object.assign(sb.where, getEventFiltersWhereClause(filters));
-  }
-  if (minPageViews != null) {
-    sb.where.minPageViews = `screen_view_count >= ${minPageViews}`;
-  }
-  if (maxPageViews != null) {
-    sb.where.maxPageViews = `screen_view_count <= ${maxPageViews}`;
-  }
-  if (minEvents != null) {
-    sb.where.minEvents = `event_count >= ${minEvents}`;
-  }
-  if (maxEvents != null) {
-    sb.where.maxEvents = `event_count <= ${maxEvents}`;
+    Object.assign(
+      sb.where,
+      buildFilterWhere(filters, projectId, {
+        selfTable: 'sessions',
+        profileIdExpr: 'profile_id',
+        groupsExpr: 'groups',
+        startDate,
+        endDate,
+      }),
+    );
   }
 
   const columns = [
@@ -333,15 +325,21 @@ export async function getSessionsCount({
   }
 
   if (search) {
-    sb.where.search = `(entry_path ILIKE '%${search}%' OR exit_path ILIKE '%${search}%' OR referrer ILIKE '%${search}%' OR referrer_name ILIKE '%${search}%')`;
+    const s = sqlstring.escape(`%${search}%`);
+    sb.where.search = `(entry_path ILIKE ${s} OR exit_path ILIKE ${s} OR referrer ILIKE ${s} OR referrer_name ILIKE ${s})`;
   }
 
   if (filters && filters.length > 0) {
-    const sessionFilters = getEventFiltersWhereClause(filters);
-    sb.where = {
-      ...sb.where,
-      ...sessionFilters,
-    };
+    Object.assign(
+      sb.where,
+      buildFilterWhere(filters, projectId, {
+        selfTable: 'sessions',
+        profileIdExpr: 'profile_id',
+        groupsExpr: 'groups',
+        startDate,
+        endDate,
+      }),
+    );
   }
 
   sb.from = TABLE_NAMES.sessions;
@@ -478,6 +476,7 @@ export interface QuerySessionsInput {
   referrerName?: string;
   referrerType?: string;
   profileId?: string;
+  filters?: IChartEventFilter[];
   limit?: number;
 }
 
@@ -532,6 +531,19 @@ export async function querySessionsCore(
     clix.datetime(start),
     clix.datetime(end),
   ]);
+
+  if (input.filters?.length) {
+    const filterClauses = buildFilterWhere(input.filters, input.projectId, {
+      selfTable: 'sessions',
+      profileIdExpr: 'profile_id',
+      groupsExpr: 'groups',
+      startDate: new Date(start),
+      endDate: new Date(end),
+    });
+    for (const clause of Object.values(filterClauses)) {
+      builder.rawWhere(clause);
+    }
+  }
 
   return builder.limit(input.limit ?? 20).execute();
 }

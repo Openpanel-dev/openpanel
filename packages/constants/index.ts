@@ -16,6 +16,11 @@ export const timeWindows = {
     label: 'Last hour',
     shortcut: 'H',
   },
+  last24h: {
+    key: 'last24h',
+    label: 'Last 24 hours',
+    shortcut: '4',
+  },
   today: {
     key: 'today',
     label: 'Today',
@@ -35,6 +40,11 @@ export const timeWindows = {
     key: '30d',
     label: 'Last 30 days',
     shortcut: 'T',
+  },
+  '3m': {
+    key: '3m',
+    label: 'Last 3 months',
+    shortcut: '3',
   },
   '6m': {
     key: '6m',
@@ -179,15 +189,6 @@ export const alphabetIds = [
   'Z',
 ] as const;
 
-export const deprecated_timeRanges = {
-  '1h': '1h',
-  '24h': '24h',
-  '14d': '14d',
-  '1m': '1m',
-  '3m': '3m',
-  '1y': '1y',
-};
-
 export const metrics = {
   count: 'count',
   sum: 'sum',
@@ -207,6 +208,7 @@ export function isHourIntervalEnabledByRange(range: keyof typeof timeWindows) {
     isMinuteIntervalEnabledByRange(range) ||
     range === 'today' ||
     range === 'yesterday' ||
+    range === 'last24h' ||
     range === '7d'
   );
 }
@@ -217,12 +219,13 @@ export function getDefaultIntervalByRange(
   if (range === '30min' || range === 'lastHour') {
     return 'minute';
   }
-  if (range === 'today' || range === 'yesterday') {
+  if (range === 'today' || range === 'yesterday' || range === 'last24h') {
     return 'hour';
   }
   if (
     range === '7d' ||
     range === '30d' ||
+    range === '3m' ||
     range === 'lastMonth' ||
     range === 'monthToDate'
   ) {

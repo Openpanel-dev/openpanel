@@ -21,17 +21,32 @@ async function createOrGetOrganization(
   const TRIAL_DURATION_IN_DAYS = 30;
 
   if (input.organization) {
-    const organization = await db.organization.create({
-      data: {
-        id: await getId('organization', input.organization),
-        name: input.organization,
-        createdByUserId: user.id,
-        subscriptionEndsAt: addDays(new Date(), TRIAL_DURATION_IN_DAYS),
-        subscriptionStatus: 'trialing',
-        timezone: input.timezone,
-        onboarding: '',
-      },
-    });
+    const organizationId = await getId('organization', input.organization);
+
+    // Create the organization and its owner (org:admin member) atomically. The
+    // `delete` cron treats an organization with no org:admin member as ownerless
+    // and removes it, so an organization must never exist without one.
+    const [organization] = await db.$transaction([
+      db.organization.create({
+        data: {
+          id: organizationId,
+          name: input.organization,
+          createdByUserId: user.id,
+          subscriptionEndsAt: addDays(new Date(), TRIAL_DURATION_IN_DAYS),
+          subscriptionStatus: 'trialing',
+          timezone: input.timezone,
+          onboarding: '',
+        },
+      }),
+      db.member.create({
+        data: {
+          email: user.email,
+          organizationId,
+          role: 'org:admin',
+          userId: user.id,
+        },
+      }),
+    ]);
 
     return organization;
   }
@@ -84,17 +99,6 @@ export const onboardingRouter = createTRPCRouter({
 
       if (!organization?.id) {
         throw new Error('Organization slug is missing');
-      }
-
-      if (input.organization) {
-        await db.member.create({
-          data: {
-            email: user.email,
-            organizationId: organization.id,
-            role: 'org:admin',
-            userId: user.id,
-          },
-        });
       }
 
       if (input.cors.length === 0 && input.website) {

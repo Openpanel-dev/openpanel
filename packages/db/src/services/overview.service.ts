@@ -55,6 +55,16 @@ const WHITELISTED_FILTERS = [
   'utm_content',
 ];
 
+// Columns that exist on the sessions table but not on events — on events
+// they're stored inside the properties map under __query.utm_*.
+const UTM_COLUMNS = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+];
+
 // Types
 type MetricsRow = {
   bounce_rate: number;
@@ -643,8 +653,18 @@ export class OverviewService {
           }
           return [item];
         }
+        // events table has no top-level utm_* columns — those live in the
+        // properties map under the __query.utm_* keys. Route them through
+        // getEventFiltersWhereClause's properties.* path so we emit
+        // `properties['__query.utm_source']` instead of the bare column.
+        if (UTM_COLUMNS.includes(item.name)) {
+          return [{ ...item, name: `properties.__query.${item.name}` }];
+        }
         return [item];
-      })
+      }),
+      undefined,
+      undefined,
+      type,
     );
 
     return Object.values(where).join(' AND ');

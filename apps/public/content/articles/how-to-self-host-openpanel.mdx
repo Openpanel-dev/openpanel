@@ -11,7 +11,7 @@ import { Callout } from 'fumadocs-ui/components/callout';
 
 ## TLDR
 
-Run the script below, you can also watch the video were we show the entire process (at the bottom of the page).
+Run the script below. You can also watch the video at the bottom of the page, where we show the entire process.
 
 ```bash
 git clone https://github.com/openpanel-dev/openpanel.git
@@ -20,26 +20,26 @@ cd openpanel/self-hosting
 ./start
 ```
 
-## Why Self-Host Your Own Analytics Platform?
+## Why self-host your own analytics platform?
 
-Looking for a [Mixpanel alternative](/articles/alternatives-to-mixpanel)? Self-hosting your own [web analytics](/features/web-analytics) and product analytics platform comes with several benefits. Let's break down the pros and cons of running your own analytics server.
+Looking for a [Mixpanel alternative](/articles/alternatives-to-mixpanel)? Self-hosting your own [web analytics](/features/web-analytics) and product analytics platform has a few benefits. Here are the pros and cons of running your own analytics server.
 
-For a comparison of all open source analytics platforms, see our [comprehensive guide to open source web analytics tools](/articles/open-source-web-analytics).
+For a comparison of all open source analytics platforms, see our [guide to open source web analytics tools](/articles/self-hosted-web-analytics).
 
-### Cost Benefits
+### Cost benefits
 
-Self-hosting your own web analytics solution is typically much more cost-effective than cloud-based alternatives, especially as your traffic grows. This is one of the primary reasons organizations choose to self-host their analytics.
+Self-hosting is usually cheaper than cloud-based alternatives, especially as your traffic grows. This is one of the main reasons teams choose to self-host.
 
-### Data Privacy and Control
+### Data privacy and control
 
-When you self-host OpenPanel, you maintain complete control over your website statistics and visitor data. This makes it easier to:
+When you self-host OpenPanel, you keep full control over your website statistics and visitor data. This makes it easier to:
 
 - Ensure GDPR and privacy compliance
 - Keep sensitive analytics data within your infrastructure
 - Maintain full ownership of your website traffic data
 - Customize data retention policies
 
-### Self-hosting is ideal if you
+### Self-hosting is a good fit if you
 
 - Are comfortable managing a server
 - Need customizable web traffic monitoring
@@ -48,9 +48,9 @@ When you self-host OpenPanel, you maintain complete control over your website st
 
 ## Considering cloud
 
-OpenPanel offers a cloud version of the platform, which is a hosted solution that you don't need to self-host. This might be the better option if you don't want to manage your own server.
+OpenPanel offers a hosted cloud version that you don't need to self-host. This might be the better option if you don't want to manage your own server.
 
-It can actually be cheaper as well depending on traffic and server provider you choose.
+Depending on your traffic and server provider, it can be cheaper too.
 
 ## Prerequisites
 
@@ -66,7 +66,7 @@ Now that you have a server and a domain name, you can start the installation pro
 
 ### Step 1: SSH into your server
 
-Let's SSH into your newly (or already existing) server. If its fresh from the server provider, we recommend to make some changes to secure it. We have a guide on [how to secure your server](/articles/how-to-secure-ubuntu-server) that you can follow.
+SSH into your new (or existing) server. If it's fresh from the provider, secure it first. We have a guide on [how to secure your server](/articles/how-to-secure-ubuntu-server) you can follow.
 
 ```bash
 ssh root@your-server-ip
@@ -74,7 +74,7 @@ ssh root@your-server-ip
 
 ### Step 2: Pull source code
 
-Now we need to pull OpenPanel's source code which is open-sourced and available on [GitHub](https://github.com/openpanel-dev/openpanel).
+Pull OpenPanel's source code, which is open source and available on [GitHub](https://github.com/openpanel-dev/openpanel).
 
 ```bash
 git clone https://github.com/openpanel-dev/openpanel.git
@@ -82,17 +82,17 @@ git clone https://github.com/openpanel-dev/openpanel.git
 
 ### Step 3: installation
 
-After you have pulled the source code, you should have a folder named `openpanel` in your server. Lets jump into that and then the self-hosting folder.
+After pulling the source code, you'll have a folder named `openpanel` on your server. Jump into it and then into the self-hosting folder.
 
 ```bash
 cd openpanel/self-hosting
 ```
 
-Inside this folder you usually run all commands related to your installation, weather you need to restart something or check if there is any available updates.
+You run all installation commands from this folder, whether you need to restart something or check for updates.
 
-Now let's start the quiz/wizard which will guide you through the installation process. This will first ensure that you have docker and node installed, if not it will install them for you.
+Now start the wizard, which guides you through the installation. It first checks that you have docker and node installed, and installs them for you if not.
 
-After that it'll run `npm install` and `npm run quiz` which will ask you some questions about your installation.
+After that it runs `npm install` and `npm run quiz`, which asks you some questions about your installation.
 
 The questions are below and should be self-explanatory.
 
@@ -115,9 +115,9 @@ The questions are below and should be self-explanatory.
 
 ### Step 4: Start OpenPanel
 
-Now that you have answered the questions, you can start OpenPanel with the following command.
+Once you've answered the questions, start OpenPanel with the following command.
 
-We usually follow up with `./logs` to check if everything is running fine.
+We usually follow up with `./logs` to check that everything is running.
 
 ```bash
 ./start
@@ -128,14 +128,14 @@ We usually follow up with `./logs` to check if everything is running fine.
 
 ### Step 5: Access OpenPanel
 
-Now that OpenPanel is running, you can access it by going to the domain name you chose in the quiz.
+With OpenPanel running, access it at the domain name you chose in the quiz.
 
 
-## Available Commands
+## Available commands
 
 OpenPanel comes with several utility scripts to manage your installation:
 
-### Basic Operations
+### Basic operations
 ```bash
 ./start                   # Start all OpenPanel services
 ./stop                    # Stop all OpenPanel services
@@ -146,15 +146,15 @@ OpenPanel comes with several utility scripts to manage your installation:
 ./danger_wipe_everything  # ⚠️ Removes all containers, volumes, and data
 ```
 
-## Environment Variables
+## Environment variables
 
 <Callout>
 If you change the `.env` file, you need to restart the services for the changes to take effect.
 </Callout>
 
-You can customize your OpenPanel installation by modifying the `.env` file in the self-hosting directory. 
+You can customize your OpenPanel installation by editing the `.env` file in the self-hosting directory.
 
-Typically its only these two that you need to change:
+Typically these are the only two you need to change:
 
 ```
 # Disable new user registration (will always allow the first user to register)
@@ -166,21 +166,21 @@ ALLOW_INVITATION="true"
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/R4yoddV5BGw?si=S6qPAz2QO6QJEB7T" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-## Troubleshooting Common Issues
+## Troubleshooting common issues
 
-### Connection Issues
+### Connection issues
 If you can't access your analytics dashboard after installation:
 - Verify your domain DNS settings
-- Check if all Docker containers are running with `docker compose ps`
-- Ensure your firewall allows traffic to the necessary ports
+- Check that all Docker containers are running with `docker compose ps`
+- Make sure your firewall allows traffic to the necessary ports
 
-### Performance Optimization
+### Performance optimization
 For high-traffic websites:
 - Adjust worker count in docker-compose.yml
 - Monitor database performance
 
-### Updates and Maintenance
+### Updates and maintenance
 To keep your analytics platform running smoothly:
-- Regularly check for updates using `./update`
+- Check for updates regularly using `./update`
 - Monitor disk usage
 - Back up your data periodically

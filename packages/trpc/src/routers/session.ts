@@ -44,10 +44,6 @@ export const sessionRouter = createTRPCRouter({
         endDate: z.date().optional(),
         search: z.string().optional(),
         take: z.number().default(50),
-        minPageViews: z.number().nullish(),
-        maxPageViews: z.number().nullish(),
-        minEvents: z.number().nullish(),
-        maxEvents: z.number().nullish(),
       })
     )
     .query(({ input }) => {

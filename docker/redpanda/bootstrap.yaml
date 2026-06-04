@@ -1,0 +1,5 @@
+default_topic_partitions: 24
+default_topic_replications: 1
+auto_create_topics_enabled: true
+log_compression_type: lz4
+log_retention_ms: 172800000

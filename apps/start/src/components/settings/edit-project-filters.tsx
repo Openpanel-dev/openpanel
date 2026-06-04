@@ -135,7 +135,7 @@ function EventRuleItem({
         </>
       )}
       <div className="p-4 border-t">
-        <PropertiesCombobox onSelect={addFilter} mode="events">
+        <PropertiesCombobox onSelect={addFilter} categories={['event']}>
           {(setOpen) => (
             <Button
               variant="outline"

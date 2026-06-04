@@ -13,7 +13,7 @@
   },
   "hero": {
     "heading": "What happened in the session",
-    "subheading": "Pages visited, events fired, time spent. Full structured session data—and optional session replay when you need to go deeper.",
+    "subheading": "Pages visited, events fired, time spent. Full structured session data, plus optional session replay when you need to go deeper.",
     "badges": [
       "Privacy-first by design",
       "Entry-to-exit visibility",
@@ -81,7 +81,7 @@
       },
       {
         "title": "Sessions connect to everything",
-        "description": "Each session links to the user profile, the events fired, and the pages visited. Enable session replay to also record a playable video of the session."
+        "description": "Each session links to the user profile, the events fired, and the pages visited. Enable session replay to also record a playable recording of the session."
       }
     ]
   },

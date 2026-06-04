@@ -29,7 +29,7 @@
     "paragraphs": [
       "Smartlook combines product analytics with visual insights \u2014 session recordings, heatmaps, and event tracking in one platform. Since its acquisition by Cisco in 2023, it has positioned itself as an enterprise-ready analytics and observation tool. But enterprise ownership often means enterprise pricing, proprietary lock-in, and cloud-only infrastructure with no option for self-hosting.",
       "OpenPanel delivers event tracking, funnels, retention analysis, cohort breakdowns, and session replay in a focused, open-source package. The result is a tool that covers both product analytics and visual session review \u2014 at a dramatically lower cost with transparent, event-based pricing starting at $2.50 per month.",
-      "Being open source under the MIT license gives OpenPanel advantages that Smartlook's proprietary, Cisco-owned platform can't match. You can self-host on your own infrastructure for complete data sovereignty, audit the source code for security compliance, and avoid the vendor lock-in risk that comes with acquisition-prone platforms. Self-hosting also means unlimited data retention, compared to Smartlook's plan-based limits.",
+      "Being open source under the AGPL-3.0 license gives OpenPanel advantages that Smartlook's proprietary, Cisco-owned platform can't match. You can self-host on your own infrastructure for complete data sovereignty, audit the source code for security compliance, and avoid the vendor lock-in risk that comes with acquisition-prone platforms. Self-hosting also means unlimited data retention, compared to Smartlook's plan-based limits.",
       "If you need advanced heatmaps or Unity/game analytics, Smartlook has the edge. But for teams that want product analytics plus session replay with open-source transparency, self-hosting, and predictable pricing, OpenPanel delivers more value without the Cisco enterprise complexity."
     ]
   },
@@ -57,12 +57,12 @@
     "items": [
       {
         "label": "Open source",
-        "openpanel": "Yes (MIT)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "No (proprietary, Cisco-owned)"
       },
       {
         "label": "Self-hosting",
-        "openpanel": "Yes, with Docker",
+        "openpanel": "Yes, with Docker Compose",
         "competitor": "No (cloud only)"
       },
       {
@@ -251,9 +251,9 @@
           "Next.js",
           "Vue",
           "React Native",
+          "Flutter",
           "iOS",
           "Android",
-          "Flutter",
           "Node.js"
         ],
         "competitor": [
@@ -270,13 +270,13 @@
       },
       {
         "label": "Open source",
-        "openpanel": "Yes (MIT)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "No",
         "notes": null
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker, simple setup",
+        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), guided setup wizard",
         "competitor": "Not available",
         "notes": null
       },
@@ -355,12 +355,12 @@
       },
       {
         "title": "Data ownership & self-hosting",
-        "description": "Complete data control with self-hosting. Smartlook is cloud-only with no self-hosting option.",
+        "description": "Complete data control with self-hosting. A one-command ./setup wizard walks you through configuration and brings the whole Docker Compose stack up in minutes. Smartlook is cloud-only with no self-hosting option.",
         "icon": "server"
       },
       {
         "title": "Open source requirements",
-        "description": "Full transparency and customization with MIT license. Smartlook is proprietary (now Cisco-owned).",
+        "description": "Full transparency and customization with AGPL-3.0 license. Smartlook is proprietary (now Cisco-owned).",
         "icon": "code"
       },
       {
@@ -397,7 +397,7 @@
       },
       {
         "question": "How does pricing compare?",
-        "answer": "Smartlook uses session-based pricing with a free tier of 3,000 sessions/month and paid plans starting at $55/month. OpenPanel uses event-based pricing with 10,000 free events/month. OpenPanel's self-hosted option is completely free with unlimited events."
+        "answer": "Smartlook uses session-based pricing with a free tier of 3,000 sessions/month and paid plans starting at $55/month. OpenPanel uses tiered event-based pricing from $2.50/month for 5,000 events (30-day free trial). OpenPanel's self-hosted option is completely free with unlimited events."
       },
       {
         "question": "Does OpenPanel support mobile apps?",
@@ -423,7 +423,7 @@
     "articles": [
       {
         "title": "9 best open source web analytics tools",
-        "url": "/articles/open-source-web-analytics"
+        "url": "/articles/self-hosted-web-analytics"
       }
     ],
     "alternatives": [

@@ -28,8 +28,8 @@
     "title": "Why consider OpenPanel over Matomo?",
     "paragraphs": [
       "Matomo is one of the most established open-source analytics platforms, used by over 1.4 million websites worldwide. It offers both self-hosted and cloud options with a strong focus on privacy and data ownership. However, Matomo's age shows in its interface, and many essential features like funnels, A/B testing, and heatmaps are locked behind premium plugins that cost $229 per year each.",
-      "OpenPanel is a modern, open-source alternative that includes all features at every tier \u2014 no premium plugins, no upsells. Funnels, cohorts, retention analysis, A/B testing, and user profiles are all available whether you're on the free tier or self-hosting. The interface is clean and modern, designed for today's product teams rather than as a legacy dashboard.",
-      "A critical difference is cookie-free tracking. While Matomo can be configured for cookieless mode, it uses cookies by default and still requires a consent banner in most GDPR scenarios. OpenPanel is truly cookie-free from the start, with no configuration needed. Self-hosting is also dramatically simpler \u2014 a single Docker container versus Matomo's PHP, MySQL, and web server stack.",
+      "OpenPanel is a modern, open-source alternative that includes all features at every tier \u2014 no premium plugins, no upsells. Funnels, cohorts, retention analysis, A/B testing, and user profiles are all available on every paid plan and when self-hosting. The interface is clean and modern, designed for today's product teams rather than as a legacy dashboard.",
+      "A critical difference is cookie-free tracking. While Matomo can be configured for cookieless mode, it uses cookies by default and still requires a consent banner in most GDPR scenarios. OpenPanel is truly cookie-free from the start, with no configuration needed. Self-hosting is also dramatically simpler \u2014 a one-command ./setup wizard walks you through configuration and brings the whole Docker Compose stack up in minutes, versus Matomo's PHP, MySQL, and web server stack.",
       "For teams who value Matomo's open-source philosophy but want a modern experience with all features included, lighter tracking (2.3 KB vs 20 KB), and simpler deployment \u2014 OpenPanel delivers what Matomo promises, without the hidden costs."
     ]
   },
@@ -46,7 +46,7 @@
     "best_for_competitor": [
       "Organizations already invested in the Matomo ecosystem",
       "Enterprises needing CNIL-approved consent-exempt analytics",
-      "Teams requiring heatmaps and session recordings",
+      "Teams requiring heatmaps and form analytics",
       "Large self-hosted deployments with existing PHP/MySQL infrastructure"
     ]
   },
@@ -184,9 +184,9 @@
           },
           {
             "name": "Session recordings",
-            "openpanel": false,
+            "openpanel": true,
             "competitor": "premium",
-            "notes": "Matomo plugin costs extra"
+            "notes": "OpenPanel has built-in session replay (rrweb, opt-in); Matomo's is a paid plugin"
           },
           {
             "name": "Custom dashboards",
@@ -302,9 +302,11 @@
           "Swift",
           "Kotlin",
           "React Native",
+          "Flutter",
           "Astro",
           "Remix",
-          "Express"
+          "Express",
+          "PHP"
         ],
         "competitor": [
           "JavaScript",
@@ -328,7 +330,7 @@
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker, simple setup script",
+        "openpanel": "Docker Compose, guided setup wizard",
         "competitor": "PHP/MySQL stack, more complex setup",
         "notes": "OpenPanel has simpler Docker-based deployment"
       },
@@ -417,7 +419,7 @@
       },
       {
         "title": "Simpler self-hosting",
-        "description": "Deploy with Docker in minutes. No PHP/MySQL stack to manage, no plugin compatibility issues to debug.",
+        "description": "Deploy with Docker Compose in minutes. No PHP/MySQL stack to manage, no plugin compatibility issues to debug.",
         "icon": "server"
       },
       {
@@ -449,7 +451,7 @@
       },
       {
         "question": "What Matomo features will I lose?",
-        "answer": "OpenPanel doesn't have heatmaps, session recordings, form analytics, or a tag manager. If you rely heavily on these visual UX tools, Matomo may still be the better fit. However, you'll gain simpler setup and all core analytics features included."
+        "answer": "OpenPanel doesn't have heatmaps, form analytics, or a tag manager. If you rely heavily on these tools, Matomo may still be the better fit. However, OpenPanel does include session replay, and you'll gain simpler setup with all core analytics features included."
       },
       {
         "question": "Is Matomo GDPR compliant?",
@@ -457,7 +459,7 @@
       },
       {
         "question": "How does self-hosting compare?",
-        "answer": "Matomo requires PHP 7.2.5+ and MySQL/MariaDB, with additional configuration for performance at scale. OpenPanel uses Docker with ClickHouse for analytics queries, offering simpler deployment and better query performance for most use cases."
+        "answer": "Matomo requires PHP 7.2.5+ and MySQL/MariaDB, with additional configuration for performance at scale. OpenPanel uses Docker Compose with ClickHouse for analytics queries, offering simpler deployment and better query performance for most use cases."
       },
       {
         "question": "Is OpenPanel as mature as Matomo?",
@@ -493,7 +495,7 @@
     "articles": [
       {
         "title": "9 best open source web analytics tools",
-        "url": "/articles/open-source-web-analytics"
+        "url": "/articles/self-hosted-web-analytics"
       },
       {
         "title": "Self-hosted web analytics",

@@ -37,6 +37,7 @@ export function InputEnter({
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
+            e.preventDefault();
             onChangeValue(internalValue);
           }
         }}
@@ -46,6 +47,7 @@ export function InputEnter({
           {!immediate && internalValue !== value && (
             <motion.button
               key="refresh"
+              type="button"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}

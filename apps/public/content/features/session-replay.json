@@ -19,7 +19,7 @@
       "Unlimited replays",
       "30-day retention",
       "Privacy controls built in",
-      "Async—zero bundle bloat"
+      "Loads async, no bundle bloat"
     ]
   },
   "definition": {
@@ -48,7 +48,7 @@
       "description": "Block entire elements from recording with a data attribute or CSS selector. Mask specific text. Ignore interactions on sensitive areas."
     },
     {
-      "title": "Async loading—zero bundle impact",
+      "title": "Async loading, no bundle impact",
       "description": "The replay module loads as a separate async script. When replay is disabled it's never fetched. When enabled it doesn't block your main bundle."
     },
     {

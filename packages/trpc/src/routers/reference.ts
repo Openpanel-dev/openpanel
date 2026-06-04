@@ -4,7 +4,7 @@ import { db, getChartStartEndDate, getSettingsForProject } from '@openpanel/db';
 import { zCreateReference, zRange } from '@openpanel/validation';
 
 import { getProjectAccess } from '../access';
-import { TRPCAccessError } from '../errors';
+import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 export const referenceRouter = createTRPCRouter({
@@ -22,7 +22,7 @@ export const referenceRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       return db.reference.findMany({
@@ -68,7 +68,7 @@ export const referenceRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       return db.reference.update({
@@ -95,7 +95,7 @@ export const referenceRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       return db.reference.delete({
