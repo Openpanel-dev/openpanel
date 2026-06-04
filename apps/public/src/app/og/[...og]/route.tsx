@@ -36,13 +36,6 @@ async function getOgData(
           "Get free web and product analytics for your open source project. Track up to 2.5M events/month. Apply to OpenPanel's open source program today.",
       };
     }
-    case 'open-source-analytics': {
-      return {
-        title: 'Open Source Analytics for Web and Product Teams',
-        description:
-          'OpenPanel is an open source analytics platform that combines web analytics and product analytics in one privacy-first tool. Track pageviews, events, funnels, retention, and user journeys — all without cookies.',
-      };
-    }
     case 'pricing': {
       return {
         title: 'Pricing',

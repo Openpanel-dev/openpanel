@@ -50,8 +50,30 @@ import {
 
 const TWO_FACTOR_COOKIE = '2fa_challenge';
 const TWO_FACTOR_CHALLENGE_TTL_SECONDS = 5 * 60;
+const INVITE_COOKIE = 'inviteId';
 
 const zProvider = z.enum(['email', 'google', 'github']);
+
+/**
+ * Best-effort consumption of an invite for a user that just authenticated.
+ * Failures (expired/invalid invite) must not block the sign-in itself, so we
+ * swallow and log the error instead of rethrowing.
+ */
+async function consumeInviteForUser(
+  userId: string,
+  inviteId: string,
+  log: { error: (obj: unknown, msg?: string) => void }
+) {
+  try {
+    const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
+    await connectUserToOrganization({ user, inviteId });
+  } catch (error) {
+    log.error(
+      { userId, inviteId, error },
+      'Failed to connect user to organization via invite'
+    );
+  }
+}
 
 async function getIsRegistrationAllowed(inviteId?: string | null) {
   // ALLOW_REGISTRATION is always undefined in cloud
@@ -100,7 +122,7 @@ export const authRouter = createTRPCRouter({
       );
 
       if (!isRegistrationAllowed) {
-        throw TRPCAccessError('Registrations are not allowed');
+        throw new TRPCAccessError('Registrations are not allowed');
       }
 
       const { provider } = input;
@@ -156,7 +178,7 @@ export const authRouter = createTRPCRouter({
       );
 
       if (!isRegistrationAllowed) {
-        throw TRPCAccessError('Registrations are not allowed');
+        throw new TRPCAccessError('Registrations are not allowed');
       }
 
       const provider = 'email';
@@ -166,7 +188,7 @@ export const authRouter = createTRPCRouter({
       });
 
       if (user) {
-        throw TRPCNotFoundError('User already exists');
+        throw new TRPCNotFoundError('User already exists');
       }
 
       const createdUser = await db.user.create({
@@ -215,7 +237,7 @@ export const authRouter = createTRPCRouter({
       });
 
       if (!user) {
-        throw TRPCNotFoundError('User does not exists');
+        throw new TRPCNotFoundError('User does not exists');
       }
 
       if (provider === 'email') {
@@ -229,10 +251,10 @@ export const authRouter = createTRPCRouter({
           );
 
           if (!validPassword) {
-            throw TRPCAccessError('Incorrect email or password');
+            throw new TRPCAccessError('Incorrect email or password');
           }
         } else {
-          throw TRPCAccessError(
+          throw new TRPCAccessError(
             'Reset your password, old password has expired'
           );
         }
@@ -255,6 +277,13 @@ export const authRouter = createTRPCRouter({
         ctx.setCookie(TWO_FACTOR_COOKIE, challengeId, {
           maxAge: TWO_FACTOR_CHALLENGE_TTL_SECONDS,
         });
+        // Carry the invite through the 2FA challenge so it can be consumed once
+        // the user completes the second factor in `signInTotp`.
+        if (input.inviteId) {
+          ctx.setCookie(INVITE_COOKIE, input.inviteId, {
+            maxAge: TWO_FACTOR_CHALLENGE_TTL_SECONDS,
+          });
+        }
         return { type: 'totp_required' as const };
       }
 
@@ -262,6 +291,11 @@ export const authRouter = createTRPCRouter({
       const session = await createSession(token, user.id);
       setSessionTokenCookie(ctx.setCookie, token, session.expiresAt);
       setLastAuthProviderCookie(ctx.setCookie, 'email');
+
+      if (input.inviteId) {
+        await consumeInviteForUser(user.id, input.inviteId, ctx.req.log);
+      }
+
       return {
         type: 'email' as const,
       };
@@ -278,7 +312,7 @@ export const authRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const challengeId = ctx.cookies[TWO_FACTOR_COOKIE];
       if (!challengeId) {
-        throw TRPCAccessError('No active two-factor challenge');
+        throw new TRPCAccessError('No active two-factor challenge');
       }
 
       const challenge = await db.twoFactorChallenge.findUnique({
@@ -290,7 +324,7 @@ export const authRouter = createTRPCRouter({
           await db.twoFactorChallenge.delete({ where: { id: challenge.id } });
         }
         ctx.setCookie(TWO_FACTOR_COOKIE, '', { maxAge: 0 });
-        throw TRPCAccessError('Two-factor challenge has expired');
+        throw new TRPCAccessError('Two-factor challenge has expired');
       }
 
       const totp = await db.userTotp.findUnique({
@@ -299,7 +333,7 @@ export const authRouter = createTRPCRouter({
       if (!totp?.enabledAt) {
         await db.twoFactorChallenge.delete({ where: { id: challenge.id } });
         ctx.setCookie(TWO_FACTOR_COOKIE, '', { maxAge: 0 });
-        throw TRPCAccessError('Two-factor is not enabled');
+        throw new TRPCAccessError('Two-factor is not enabled');
       }
 
       const secret = decrypt(totp.secret);
@@ -323,7 +357,7 @@ export const authRouter = createTRPCRouter({
       }
 
       if (!valid) {
-        throw TRPCAccessError('Invalid code');
+        throw new TRPCAccessError('Invalid code');
       }
 
       await db.twoFactorChallenge.delete({ where: { id: challenge.id } });
@@ -333,6 +367,13 @@ export const authRouter = createTRPCRouter({
       const session = await createSession(token, challenge.userId);
       setSessionTokenCookie(ctx.setCookie, token, session.expiresAt);
       setLastAuthProviderCookie(ctx.setCookie, 'email');
+
+      const inviteId = ctx.cookies[INVITE_COOKIE];
+      if (inviteId) {
+        await consumeInviteForUser(challenge.userId, inviteId, ctx.req.log);
+        ctx.setCookie(INVITE_COOKIE, '', { maxAge: 0 });
+      }
+
       return { type: 'email' as const };
     }),
 
@@ -360,13 +401,13 @@ export const authRouter = createTRPCRouter({
       select: { id: true },
     });
     if (!emailAccount) {
-      throw TRPCAccessError(
+      throw new TRPCAccessError(
         'Two-factor authentication is only available for email/password sign-ins. Your account uses a social provider, which handles 2FA on its end.'
       );
     }
     const existing = await db.userTotp.findUnique({ where: { userId } });
     if (existing?.enabledAt) {
-      throw TRPCAccessError(
+      throw new TRPCAccessError(
         'Two-factor is already enabled. Disable it first to re-configure.'
       );
     }
@@ -407,15 +448,15 @@ export const authRouter = createTRPCRouter({
       const userId = ctx.session.userId!;
       const totp = await db.userTotp.findUnique({ where: { userId } });
       if (!totp) {
-        throw TRPCNotFoundError('Start two-factor setup first');
+        throw new TRPCNotFoundError('Start two-factor setup first');
       }
       if (totp.enabledAt) {
-        throw TRPCAccessError('Two-factor is already enabled');
+        throw new TRPCAccessError('Two-factor is already enabled');
       }
 
       const secret = decrypt(totp.secret);
       if (!verifyTotpCode(secret, input.code)) {
-        throw TRPCAccessError('Invalid code');
+        throw new TRPCAccessError('Invalid code');
       }
 
       const recoveryCodes = generateRecoveryCodes();
@@ -439,7 +480,7 @@ export const authRouter = createTRPCRouter({
       const userId = ctx.session.userId!;
       const totp = await db.userTotp.findUnique({ where: { userId } });
       if (!totp?.enabledAt) {
-        throw TRPCAccessError('Two-factor is not enabled');
+        throw new TRPCAccessError('Two-factor is not enabled');
       }
 
       const secret = decrypt(totp.secret);
@@ -454,7 +495,7 @@ export const authRouter = createTRPCRouter({
           ).valid;
 
       if (!valid) {
-        throw TRPCAccessError('Invalid code');
+        throw new TRPCAccessError('Invalid code');
       }
 
       await db.userTotp.delete({ where: { userId } });
@@ -469,11 +510,11 @@ export const authRouter = createTRPCRouter({
       const userId = ctx.session.userId!;
       const totp = await db.userTotp.findUnique({ where: { userId } });
       if (!totp?.enabledAt) {
-        throw TRPCAccessError('Two-factor is not enabled');
+        throw new TRPCAccessError('Two-factor is not enabled');
       }
       const secret = decrypt(totp.secret);
       if (!verifyTotpCode(secret, input.code)) {
-        throw TRPCAccessError('Invalid code');
+        throw new TRPCAccessError('Invalid code');
       }
       const recoveryCodes = generateRecoveryCodes();
       const hashed = await hashRecoveryCodes(recoveryCodes);
@@ -502,11 +543,11 @@ export const authRouter = createTRPCRouter({
       });
 
       if (!resetPassword) {
-        throw TRPCNotFoundError('Reset password not found');
+        throw new TRPCNotFoundError('Reset password not found');
       }
 
       if (resetPassword.expiresAt < new Date()) {
-        throw TRPCNotFoundError('Reset password expired');
+        throw new TRPCNotFoundError('Reset password expired');
       }
 
       await db.account.update({
@@ -623,21 +664,21 @@ export const authRouter = createTRPCRouter({
       }
 
       if (!share) {
-        throw TRPCNotFoundError('Share not found');
+        throw new TRPCNotFoundError('Share not found');
       }
 
       if (!share.public) {
-        throw TRPCNotFoundError('Share is not public');
+        throw new TRPCNotFoundError('Share is not public');
       }
 
       if (!share.password) {
-        throw TRPCNotFoundError('Share is not password protected');
+        throw new TRPCNotFoundError('Share is not password protected');
       }
 
       const validPassword = await verifyPasswordHash(share.password, password);
 
       if (!validPassword) {
-        throw TRPCAccessError('Incorrect password');
+        throw new TRPCAccessError('Incorrect password');
       }
 
       ctx.setCookie(cookieName, '1', {

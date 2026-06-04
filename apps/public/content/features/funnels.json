@@ -11,8 +11,8 @@
     ]
   },
   "hero": {
-    "heading": "Funnels: Where do users drop off?",
-    "subheading": "Build funnels from your events and see conversion and drop-off at every step. No complex setup - just pick the events and go.",
+    "heading": "Funnels: where do users drop off?",
+    "subheading": "Build funnels from your events and see conversion and drop-off at every step. No complex setup, just pick the events and go.",
     "badges": [
       "Find drop-off points",
       "No sampling",
@@ -22,7 +22,7 @@
   },
   "definition": {
     "title": "What is funnel analysis?",
-    "text": "A funnel is a **sequence of steps** you expect users to complete-for example: *visited homepage → signed up → verified email → created first project*. Funnel analysis shows you how many users complete each step and, critically, **where they leave**.\n\nThis matters because most products lose the majority of their users somewhere in the journey. Without funnel analysis, you're guessing where. With it, you can see:\n\n- **Step-by-step conversion rates** - what percentage of users move from one step to the next\n- **Biggest drop-off points** - where the most users abandon the flow\n- **Time between steps** - how long users take, and where they get stuck\n- **Segment differences** - whether users from organic search convert differently than paid traffic\n\nUnlike traditional analytics tools that require complex configuration, OpenPanel funnels are built **directly on your events**. If you're already tracking `signup_started`, `signup_completed`, and `first_action`, you can create a funnel from those events in seconds-no extra instrumentation needed.\n\nFunnels in OpenPanel use **every event** (no sampling) and update in real time. You can add filters, compare segments, and save funnels to dashboards alongside retention charts and other reports.\n\nThe result: you stop guessing and start **fixing the steps that actually lose users**."
+    "text": "A funnel is a **sequence of steps** you expect users to complete-for example: *visited homepage → signed up → verified email → created first project*. Funnel analysis shows you how many users complete each step and **where they leave**.\n\nMost products lose the majority of their users somewhere in the journey. Without funnel analysis, you're guessing where. With it, you can see:\n\n- **Step-by-step conversion rates** - what percentage of users move from one step to the next\n- **Biggest drop-off points** - where the most users abandon the flow\n- **Time between steps** - how long users take, and where they get stuck\n- **Segment differences** - whether users from organic search convert differently than paid traffic\n\nUnlike traditional analytics tools that require complex configuration, OpenPanel funnels are built **directly on your events**. If you're already tracking `signup_started`, `signup_completed`, and `first_action`, you can create a funnel from those events in seconds-no extra instrumentation needed.\n\nFunnels in OpenPanel use **every event** (no sampling) and update in real time. You can add filters, compare segments, and save funnels to dashboards alongside retention charts and other reports."
   },
   "capabilities_section": {
     "title": "What you can do with funnels",

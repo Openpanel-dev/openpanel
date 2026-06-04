@@ -45,7 +45,7 @@ import { flatten, map, pipe, prop, range, sort, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
-import { TRPCAccessError } from '../errors';
+import { TRPCAccessError, TRPCForbiddenError } from '../errors';
 import {
   cacheMiddleware,
   createTRPCRouter,
@@ -88,13 +88,13 @@ const chartProcedure = publicProcedure.use(
         }
       );
       if (!shareValidation.isValid) {
-        throw TRPCAccessError('You do not have access to this share');
+        throw new TRPCForbiddenError('You do not have access to this share');
       }
 
       // Fetch report
       const report = await getReportById(rawInput.id);
       if (!report) {
-        throw TRPCAccessError('Report not found');
+        throw new TRPCAccessError('Report not found');
       }
 
       return next({
@@ -106,14 +106,14 @@ const chartProcedure = publicProcedure.use(
 
     // Regular member access check
     if (!ctx.session?.userId) {
-      throw TRPCAccessError('Authentication required');
+      throw new TRPCAccessError('Authentication required');
     }
     const access = await getProjectAccess({
       projectId: rawInput.projectId,
       userId: ctx.session.userId,
     });
     if (!access) {
-      throw TRPCAccessError('You do not have access to this project');
+      throw new TRPCForbiddenError('You do not have access to this project');
     }
 
     return next({

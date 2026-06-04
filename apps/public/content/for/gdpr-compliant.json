@@ -7,8 +7,8 @@
     "noindex": false
   },
   "hero": {
-    "heading": "GDPR-Compliant Analytics That Doesn't Need a Consent Banner",
-    "subheading": "Google Analytics needs explicit consent — and modern banner-dismissal rates kill your attribution data. Mixpanel and Amplitude route data through US servers, which Schrems II made a legal mess. OpenPanel is cookieless, EU-hosted, and self-hostable for full data sovereignty. No banner. No DPA hell. No US transfer risk.",
+    "heading": "GDPR-compliant analytics that doesn't need a consent banner",
+    "subheading": "Google Analytics needs explicit consent, and banner-dismissal rates kill your attribution data. Mixpanel and Amplitude route data through US servers, which Schrems II made a legal mess. OpenPanel is cookieless, EU-hosted, and self-hostable for full data sovereignty. No banner. No DPA hell. No US transfer risk.",
     "badges": [
       "EU-hosted",
       "Cookieless by default",
@@ -56,11 +56,11 @@
       },
       {
         "title": "IP anonymization built-in",
-        "description": "Raw IP addresses are never stored — they're hashed for the session identifier and discarded. Geo data is derived from the hash, not the IP. Already GDPR-aligned without configuration."
+        "description": "Raw IP addresses are never stored — they're hashed for the session identifier and discarded. Geo data is derived from the hash, not the IP. No configuration required."
       },
       {
         "title": "Open-source codebase you can audit",
-        "description": "MIT-licensed. Show your DPO exactly which fields are collected, how they're hashed, and where they're stored. Tells the privacy story competing tools can only assert."
+        "description": "MIT-licensed. Show your DPO exactly which fields are collected, how they're hashed, and where they're stored. Competing tools can only ask you to take their word for it."
       },
       {
         "title": "Data subject request tooling",

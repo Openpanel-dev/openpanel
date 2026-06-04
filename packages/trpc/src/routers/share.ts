@@ -2,6 +2,7 @@ import ShortUniqueId from 'short-unique-id';
 
 import {
   db,
+  getDashboardById,
   getReportById,
   getReportsByDashboardId,
   getShareDashboardById,
@@ -17,7 +18,11 @@ import {
 import { hashPassword } from '@openpanel/auth';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
-import { TRPCAccessError, TRPCNotFoundError } from '../errors';
+import {
+  TRPCAccessError,
+  TRPCForbiddenError,
+  TRPCNotFoundError,
+} from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 const uid = new ShortUniqueId({ length: 6 });
@@ -62,7 +67,7 @@ export const shareRouter = createTRPCRouter({
       if (!share) {
         // Throw error if shareId is provided, otherwise return null
         if ('shareId' in input) {
-          throw TRPCNotFoundError('Share not found');
+          throw new TRPCNotFoundError('Share not found');
         }
 
         return null;
@@ -142,7 +147,7 @@ export const shareRouter = createTRPCRouter({
 
       if (!share) {
         if ('shareId' in input) {
-          throw TRPCNotFoundError('Dashboard share not found');
+          throw new TRPCNotFoundError('Dashboard share not found');
         }
         return null;
       }
@@ -162,7 +167,15 @@ export const shareRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
+      }
+
+      const dashboard = await getDashboardById(
+        input.dashboardId,
+        input.projectId,
+      );
+      if (!dashboard) {
+        throw new TRPCNotFoundError('Dashboard not found');
       }
 
       const passwordHash = input.password
@@ -198,13 +211,13 @@ export const shareRouter = createTRPCRouter({
       const share = await getShareDashboardById(input.shareId);
 
       if (!share || !share.public) {
-        throw TRPCNotFoundError('Dashboard share not found');
+        throw new TRPCNotFoundError('Dashboard share not found');
       }
 
       // Check password access
       const hasAccess = !!ctx.cookies[`shared-dashboard-${share.id}`];
       if (share.password && !hasAccess) {
-        throw TRPCAccessError('Password required');
+        throw new TRPCAccessError('Password required');
       }
 
       return getReportsByDashboardId(share.dashboardId);
@@ -250,7 +263,7 @@ export const shareRouter = createTRPCRouter({
 
       if (!share) {
         if ('shareId' in input) {
-          throw TRPCNotFoundError('Report share not found');
+          throw new TRPCNotFoundError('Report share not found');
         }
         return null;
       }
@@ -271,7 +284,12 @@ export const shareRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
+      }
+
+      const report = await getReportById(input.reportId);
+      if (!report || report.projectId !== input.projectId) {
+        throw new TRPCNotFoundError('Report not found');
       }
 
       const passwordHash = input.password

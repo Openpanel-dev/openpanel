@@ -24,10 +24,10 @@
     "@openpanel/web": "workspace:1.4.1-local"
   },
   "devDependencies": {
-    "astro": "^5.7.7"
+    "astro": "^6.4.2"
   },
   "peerDependencies": {
-    "astro": "^4.0.0 || ^5.0.0"
+    "astro": "^4.0.0 || ^5.0.0 || ^6.0.0"
   },
   "private": false,
   "type": "module"

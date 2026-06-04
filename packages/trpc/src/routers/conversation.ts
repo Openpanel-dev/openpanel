@@ -10,7 +10,7 @@ import {
 } from '@openpanel/db';
 
 import { getProjectAccess } from '../access';
-import { TRPCAccessError } from '../errors';
+import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 /**
@@ -35,7 +35,7 @@ export const conversationRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       return listConversations({
         projectId: input.projectId,
@@ -87,7 +87,7 @@ export const conversationRouter = createTRPCRouter({
           userId: ctx.session.userId,
         });
         if (!access) {
-          throw TRPCAccessError('You do not have access to this project');
+          throw new TRPCForbiddenError('You do not have access to this project');
         }
       }
       // Derive organizationId from the project — we never trust a

@@ -7,8 +7,8 @@
     "noindex": false
   },
   "hero": {
-    "heading": "Ecommerce Analytics That Survives Cookie Consent",
-    "subheading": "GA4 loses 30-50% of your data to consent banners. Mixpanel and Heap charge per event and scale into thousands per month. OpenPanel tracks every cart, checkout, and purchase without cookies — so attribution stays intact and your CFO doesn't get a surprise invoice.",
+    "heading": "Ecommerce analytics that survives cookie consent",
+    "subheading": "GA4 loses 30-50% of your data to consent banners. Mixpanel and Heap charge per event and scale into thousands per month. OpenPanel tracks every cart, checkout, and purchase without cookies, so attribution stays intact and your CFO doesn't get a surprise invoice.",
     "badges": [
       "Cookieless tracking",
       "No consent banner needed",
@@ -40,7 +40,7 @@
   },
   "features": {
     "title": "Everything an online store needs",
-    "intro": "OpenPanel was built for products that ship, not just websites that sit. The features below cover the full ecommerce funnel without the privacy or pricing trade-offs.",
+    "intro": "These features cover the full ecommerce funnel without the privacy or pricing trade-offs.",
     "items": [
       {
         "title": "Cookieless tracking by default",

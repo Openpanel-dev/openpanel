@@ -10,10 +10,9 @@
     "@openpanel/db": "workspace:*",
     "@openpanel/logger": "workspace:*",
     "@openpanel/redis": "workspace:*",
-    "@platformatic/kafka": "^2.1.0",
     "bullmq": "^5.63.0",
     "groupmq": "catalog:",
-    "hwp": "^0.4.1"
+    "kafkajs": "^2.2.4"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",

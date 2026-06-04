@@ -2,7 +2,7 @@
   "slug": "identify-users",
   "short_name": "Identify users",
   "seo": {
-    "title": "User Profiles & Identification",
+    "title": "User Profiles and Identification",
     "description": "Track individual users across sessions with privacy-first user profiles. See first seen, last seen, activity timelines, and custom properties-without invasive tracking.",
     "keywords": [
       "user profiles analytics",
@@ -24,7 +24,7 @@
   },
   "definition": {
     "title": "What is user identification?",
-    "text": "User identification connects anonymous activity to a **known user profile**. Instead of treating every visit as a nameless session, you link events, page views, and sessions to a real person-someone you can look up, follow over time, and understand in context.\n\nWith OpenPanel, identification works like this:\n\n1. A visitor arrives and generates anonymous events\n2. When they sign up or log in, you call `identify()` with an ID and optional properties\n3. OpenPanel merges their anonymous history with the identified profile\n\nFrom that point on, you have a **complete picture**: when they first appeared, when they were last active, every event they triggered, and any properties you attached (plan, company, role, etc.).\n\nThis is how modern product teams answer questions like:\n\n- **When did this user first show up, and what led them to sign up?**\n- **What did they do in the last 7 days?**\n- **Which features does this account actually use?**\n- **Is this user at risk of churning?**\n\nUnlike traditional analytics that reduce users to anonymous metrics, OpenPanel gives you **individual-level visibility** without compromising privacy. You control what data you send. No third-party cookies, no fingerprinting, no data sold to advertisers. You get user profiles that help your support, sales, and product teams-without the surveillance."
+    "text": "User identification connects anonymous activity to a **known user profile**. Instead of treating every visit as a nameless session, you link events, page views, and sessions to a real person-someone you can look up, follow over time, and understand in context.\n\nWith OpenPanel, identification works like this:\n\n1. A visitor arrives and generates anonymous events\n2. When they sign up or log in, you call `identify()` with an ID and optional properties\n3. OpenPanel merges their anonymous history with the identified profile\n\nFrom that point on, you can see when they first appeared, when they were last active, every event they triggered, and any properties you attached (plan, company, role, etc.).\n\nThat lets you answer questions like:\n\n- **When did this user first show up, and what led them to sign up?**\n- **What did they do in the last 7 days?**\n- **Which features does this account actually use?**\n- **Is this user at risk of churning?**\n\nMost analytics tools reduce users to anonymous metrics. OpenPanel gives you individual-level profiles while keeping you in control of what data you send. No third-party cookies, no fingerprinting, no data sold to advertisers. These profiles help your support, sales, and product teams."
   },
   "capabilities_section": {
     "title": "What you get with user profiles",

@@ -29,7 +29,7 @@
     "paragraphs": [
       "Cabin Analytics stands out with its unique carbon-conscious approach to web analytics \u2014 measuring not just your traffic, but the environmental impact of your website. Combined with privacy-first tracking and an ultra-lightweight script, it's an appealing choice for environmentally conscious teams. But Cabin is a web-only, cloud-only platform with no self-hosting option, no user identification, and no product analytics capabilities.",
       "OpenPanel provides the same lightweight, privacy-first foundation while adding the depth that growing products need. User identification lets you connect anonymous visits to real accounts, funnels help you optimize conversion flows, and retention analysis shows whether your product keeps users coming back. These features transform analytics from simple traffic counting into actionable product insights.",
-      "Self-hosting is a major differentiator. Cabin Analytics is cloud-only, which means your data lives on their servers with no alternative. OpenPanel gives you the choice \u2014 use the managed cloud with a free tier, or deploy on your own infrastructure via Docker for complete data ownership. And with native SDKs for iOS, Android, and React Native, OpenPanel works for mobile apps too, not just websites.",
+      "Self-hosting is a major differentiator. Cabin Analytics is cloud-only, which means your data lives on their servers with no alternative. OpenPanel gives you the choice \u2014 use the managed cloud (30-day trial, then from $2.50/mo) or deploy on your own infrastructure via Docker for complete data ownership. And with native SDKs for iOS, Android, and React Native, OpenPanel works for mobile apps too, not just websites.",
       "If you love Cabin's lightweight and privacy-first approach but need analytics that go deeper than pageviews \u2014 especially for SaaS products, mobile apps, or any product where understanding user behavior matters \u2014 OpenPanel provides that depth without compromising on simplicity."
     ]
   },
@@ -78,7 +78,7 @@
       },
       {
         "label": "Open source",
-        "openpanel": "Yes (MIT)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "Partial (client only)"
       }
     ]
@@ -222,9 +222,9 @@
           },
           {
             "name": "Email reports",
-            "openpanel": true,
+            "openpanel": false,
             "competitor": true,
-            "notes": null
+            "notes": "Cabin sends email reports. OpenPanel doesn't offer scheduled email reports — it sends real-time alerts via Slack, Discord, webhook, and in-app."
           }
         ]
       },
@@ -313,12 +313,14 @@
           "Vue",
           "Nuxt",
           "React Native",
+          "Flutter",
           "iOS",
           "Android",
           "Node.js",
           "Python",
-          "PHP",
-          "Go"
+          "Ruby",
+          "Java",
+          "PHP"
         ],
         "competitor": [
           "JavaScript",
@@ -335,13 +337,13 @@
       },
       {
         "label": "Open source",
-        "openpanel": "Yes (MIT)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "Partial (client only)",
         "notes": null
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker, simple setup",
+        "openpanel": "Docker Compose, guided setup wizard",
         "competitor": "Not available",
         "notes": null
       },
@@ -361,10 +363,10 @@
   },
   "pricing": {
     "title": "Pricing comparison",
-    "intro": "Both offer generous free tiers with different pricing models\u2014event-based vs flat monthly.",
+    "intro": "Different pricing models\u2014event-based vs flat monthly. Cabin has a free tier; OpenPanel offers free, unlimited self-hosting plus a 30-day cloud trial.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Start at $2.50/month for 5,000 events. Self-host for free with unlimited events. No limits on users, dashboards, or features at any tier."
+      "description": "Transparent pricing from $2.50/month for 5,000 events, with a 30-day free trial. Self-host free with unlimited events. No limits on users, dashboards, or features at any tier."
     },
     "competitor": {
       "model": "Flat monthly pricing",
@@ -415,7 +417,7 @@
     "items": [
       {
         "title": "Teams requiring self-hosting",
-        "description": "Cabin is cloud-only. If you need data on your own infrastructure for compliance or security, OpenPanel provides full self-hosting with Docker.",
+        "description": "Cabin is cloud-only. If you need data on your own infrastructure for compliance or security, OpenPanel provides full self-hosting with Docker Compose. A one-command `./setup` wizard walks you through configuration and brings the whole stack up in minutes.",
         "icon": "server"
       },
       {
@@ -466,7 +468,7 @@
       },
       {
         "question": "How does pricing compare?",
-        "answer": "Cabin uses flat pricing: Free (1 site, 30-day retention) or $19/month Pro (unlimited sites and retention). OpenPanel uses event-based pricing with 10,000 free events/month. For high-traffic sites, Cabin's flat fee may be more cost-effective."
+        "answer": "Cabin uses flat pricing: Free (1 site, 30-day retention) or $19/month Pro (unlimited sites and retention). OpenPanel uses event-based pricing from $2.50/month for 5,000 events (30-day free trial), or free self-hosting. For high-traffic sites, Cabin's flat fee may be more cost-effective."
       },
       {
         "question": "Does Cabin support mobile apps?",

@@ -314,9 +314,11 @@
           "Swift",
           "Kotlin",
           "React Native",
+          "Flutter",
           "Astro",
           "Remix",
-          "Express"
+          "Express",
+          "PHP"
         ],
         "competitor": [
           "JavaScript",
@@ -342,7 +344,7 @@
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker, simple setup script",
+        "openpanel": "Docker Compose, guided setup wizard",
         "competitor": "Not available",
         "notes": null
       },
@@ -463,7 +465,7 @@
       },
       {
         "question": "Can I self-host OpenPanel?",
-        "answer": "Yes. OpenPanel is fully open source and can be self-hosted with a simple Docker setup script. Self-hosting is completely free with unlimited events."
+        "answer": "Yes. OpenPanel is fully open source and can be self-hosted with a Docker Compose stack. A one-command ./setup wizard walks you through configuration and brings the whole stack up in minutes. Self-hosting is completely free with unlimited events."
       },
       {
         "question": "How does the SDK size compare?",

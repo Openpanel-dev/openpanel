@@ -17,7 +17,7 @@ import { gscQueue } from '@openpanel/queue';
 import { zRange, zTimeInterval } from '@openpanel/validation';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
-import { TRPCAccessError, TRPCNotFoundError } from '../errors';
+import { TRPCForbiddenError, TRPCNotFoundError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 const zGscDateInput = z.object({
@@ -56,7 +56,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       return db.gscConnection.findUnique({
         where: { projectId: input.projectId },
@@ -81,7 +81,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       const state = Arctic.generateState();
@@ -108,7 +108,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       return listGscSites(input.projectId);
     }),
@@ -121,14 +121,14 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       const conn = await db.gscConnection.findUnique({
         where: { projectId: input.projectId },
       });
       if (!conn) {
-        throw TRPCNotFoundError('GSC connection not found');
+        throw new TRPCNotFoundError('GSC connection not found');
       }
 
       await db.gscConnection.update({
@@ -155,7 +155,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
 
       await db.gscConnection.deleteMany({
@@ -173,7 +173,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       const { startDate, endDate } = await resolveDates(input.projectId, input);
       const interval = ['day', 'week', 'month'].includes(input.interval)
@@ -194,7 +194,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       const { startDate, endDate } = await resolveDates(input.projectId, input);
       return getGscPages(input.projectId, startDate, endDate, input.limit);
@@ -208,7 +208,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       const { startDate, endDate } = await resolveDates(input.projectId, input);
       return getGscPageDetails(input.projectId, input.page, startDate, endDate);
@@ -222,7 +222,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       const { startDate, endDate } = await resolveDates(input.projectId, input);
       return getGscQueryDetails(
@@ -245,7 +245,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       const { startDate, endDate } = await resolveDates(input.projectId, input);
       return getGscQueries(input.projectId, startDate, endDate, input.limit);
@@ -259,7 +259,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       const { startDate, endDate } = await resolveDates(input.projectId, input);
 
@@ -308,7 +308,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       const { startDate, endDate } = await resolveDates(input.projectId, input);
 
@@ -376,7 +376,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       const { startDate, endDate } = await resolveDates(input.projectId, input);
 
@@ -408,7 +408,7 @@ export const gscRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
       const { startDate, endDate } = await resolveDates(input.projectId, input);
       return getGscCannibalization(input.projectId, startDate, endDate);

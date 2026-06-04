@@ -29,8 +29,8 @@
     "paragraphs": [
       "Ackee is an ultra-minimal, self-hosted analytics tool that prioritizes anonymous tracking and a clean interface. Built on MongoDB, it's a solid choice for developers who want basic web metrics on their own server without any third-party data sharing. But its intentional minimalism means no user identification, no product analytics, and no cloud-hosted option.",
       "OpenPanel provides everything Ackee offers \u2014 privacy-focused, open-source, and self-hostable \u2014 while adding the product analytics capabilities that help you actually grow your product. Funnels let you understand where users drop off, retention analysis shows whether they come back, and user identification connects anonymous visits to real accounts once users sign in.",
-      "The database architecture is a fundamental difference. Ackee uses MongoDB, which works for small sites but isn't designed for analytical queries. OpenPanel uses ClickHouse, a column-oriented database purpose-built for analytics, which means fast queries even with millions of events. And if you don't want to manage servers, OpenPanel offers a cloud option with a free tier \u2014 something Ackee doesn't provide.",
-      "If you appreciate Ackee's self-hosted simplicity but need mobile app analytics through native SDKs, deeper insights into user behavior, or the option to use a managed cloud service, OpenPanel is the natural upgrade path."
+      "The database architecture is a fundamental difference. Ackee uses MongoDB, which works for small sites but isn't designed for analytical queries. OpenPanel uses ClickHouse, a column-oriented database purpose-built for analytics, which means fast queries even with millions of events. And if you don't want to manage servers, OpenPanel offers a managed cloud (30-day trial, then from $2.50/mo) \u2014 something Ackee doesn't provide.",
+      "If you appreciate Ackee's self-hosted simplicity but need mobile app analytics through native SDKs, deeper insights into user behavior, or the option to use a managed cloud service, OpenPanel is the natural upgrade path. Self-hosting stays just as simple: a one-command `./setup` wizard walks you through configuration and brings the whole Docker Compose stack up in minutes."
     ]
   },
   "summary_comparison": {
@@ -80,9 +80,9 @@
       },
       {
         "label": "Open Source",
-        "openpanel": "Yes (MIT License)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "Yes (MIT License)",
-        "notes": "Both platforms are fully open source under the MIT license, allowing complete code inspection and modification."
+        "notes": "OpenPanel is AGPL-3.0; Ackee is MIT — both are fully open source, allowing complete code inspection and modification."
       }
     ]
   },
@@ -193,9 +193,9 @@
           },
           {
             "name": "Email Reports",
-            "openpanel": true,
+            "openpanel": false,
             "competitor": false,
-            "notes": "Ackee has no built-in reporting - requires custom tools"
+            "notes": "Neither offers scheduled email reports. OpenPanel sends real-time alerts via Slack, Discord, webhook, and in-app; Ackee has no built-in reporting."
           },
           {
             "name": "Multiple Domains",
@@ -299,9 +299,9 @@
           },
           {
             "name": "Flutter/Dart SDK",
-            "openpanel": false,
+            "openpanel": true,
             "competitor": true,
-            "notes": "ackee_dart community package available"
+            "notes": "OpenPanel has a community Flutter SDK; Ackee has the ackee_dart community package"
           }
         ]
       }
@@ -325,13 +325,15 @@
           "Next.js",
           "Vue",
           "React Native",
+          "Flutter",
           "iOS",
           "Android",
           "Node.js",
           "Python",
-          "PHP",
-          "Go",
-          "Rust"
+          "Ruby",
+          "Java",
+          "Rust",
+          "PHP"
         ],
         "competitor": [
           "JavaScript (browser)",
@@ -348,13 +350,13 @@
       },
       {
         "label": "Open Source",
-        "openpanel": "Yes - MIT License",
+        "openpanel": "Yes - AGPL-3.0",
         "competitor": "Yes - MIT License",
-        "notes": "Both are MIT licensed and fully open source"
+        "notes": "OpenPanel is AGPL-3.0; Ackee is MIT. Both are fully open source."
       },
       {
         "label": "Self Hosting",
-        "openpanel": "Docker (simple single-container setup)",
+        "openpanel": "Docker Compose (ClickHouse + Postgres + Redis), guided setup wizard",
         "competitor": "Docker with MongoDB required, or deploy to Vercel/Netlify/Heroku with MongoDB Atlas",
         "notes": null
       },
@@ -389,7 +391,7 @@
     "intro": "Both offer free self-hosting. OpenPanel also offers managed cloud options.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Simple pricing with 10,000 free events per month. Self-host for free with unlimited events. All features included at every tier."
+      "description": "Transparent pricing from $2.50/month for 5,000 events, with a 30-day free trial. Self-host free with unlimited events. All features included at every tier."
     },
     "competitor": {
       "model": "100% Free (self-hosted only)",
@@ -450,7 +452,7 @@
       },
       {
         "title": "Wanting a Cloud Option",
-        "description": "Ackee is self-hosted only with no managed cloud option. If you want analytics without managing servers, MongoDB, and backups, OpenPanel offers a free cloud tier.",
+        "description": "Ackee is self-hosted only with no managed cloud option. If you want analytics without managing servers, MongoDB, and backups, OpenPanel offers a managed cloud with a 30-day free trial (then from $2.50/mo).",
         "icon": "cloud"
       },
       {

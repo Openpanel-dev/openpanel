@@ -4,7 +4,7 @@ import { eventBuffer, groupBuffer, profileBackfillBuffer, profileBuffer, replayB
 import type { CronQueuePayload } from '@openpanel/queue';
 
 import { cohortRefreshCronJob } from './cron.cohort-refresh';
-import { jobdeleteProjects } from './cron.delete-projects';
+import { jobDelete } from './cron.delete';
 import { gscSyncAllJob } from './gsc';
 import { onboardingJob } from './cron.onboarding';
 import { ping } from './cron.ping';
@@ -37,8 +37,8 @@ export async function cronJob(job: Job<CronQueuePayload>) {
     case 'ping': {
       return await ping();
     }
-    case 'deleteProjects': {
-      return await jobdeleteProjects(job);
+    case 'delete': {
+      return await jobDelete();
     }
     case 'insightsDaily': {
       return await insightsDailyJob(job);

@@ -10,9 +10,12 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import type { AppRouter } from '@openpanel/trpc';
 import type { QueryClient } from '@tanstack/react-query';
+import { TRPCClientError } from '@trpc/client';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
+import { LockIcon } from 'lucide-react';
 import appCss from '../styles.css?url';
 import type { ConfigResonse } from './api/config';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { FullPageErrorState } from '@/components/full-page-error-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Providers } from '@/components/providers';
@@ -63,14 +66,30 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     ],
   }),
   shellComponent: RootDocument,
-  errorComponent: ({ error }) => (
-    <FullPageErrorState
-      description={error.message}
-      title={'Something went wrong'}
-    >
-      <LinkButton href="/">Go back to home</LinkButton>
-    </FullPageErrorState>
-  ),
+  errorComponent: ({ error }) => {
+    // Authorization failures (403) surface as a friendly "no access" page
+    // instead of a scary error. 401s never reach here — handleUnauthorized
+    // hard-redirects them to /login.
+    if (error instanceof TRPCClientError && error.data?.httpStatus === 403) {
+      return (
+        <FullPageEmptyState
+          description={error.message}
+          icon={LockIcon}
+          title="No access"
+        >
+          <LinkButton href="/">Go back to home</LinkButton>
+        </FullPageEmptyState>
+      );
+    }
+    return (
+      <FullPageErrorState
+        description={error.message}
+        title={'Something went wrong'}
+      >
+        <LinkButton href="/">Go back to home</LinkButton>
+      </FullPageErrorState>
+    );
+  },
   pendingComponent: FullPageLoadingState,
 });
 

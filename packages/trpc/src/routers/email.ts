@@ -19,7 +19,7 @@ export const emailRouter = createTRPCRouter({
 
       // Verify token
       if (!verifyUnsubscribeToken(email, category, token)) {
-        throw TRPCBadRequestError('Invalid unsubscribe link');
+        throw new TRPCBadRequestError('Invalid unsubscribe link');
       }
 
       // Upsert the unsubscribe record

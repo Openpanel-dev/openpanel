@@ -1,5 +1,6 @@
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import DeleteAccount from '@/components/settings/delete-account';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
@@ -57,12 +58,13 @@ function Component() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit((values) => {
-        mutation.mutate(values);
-      })}
-    >
-      <Widget className="max-w-screen-md w-full">
+    <div className="space-y-8">
+      <form
+        onSubmit={handleSubmit((values) => {
+          mutation.mutate(values);
+        })}
+      >
+        <Widget className="max-w-screen-md w-full">
         <WidgetHead>
           <span className="title">Profile</span>
         </WidgetHead>
@@ -95,6 +97,8 @@ function Component() {
           </Button>
         </WidgetBody>
       </Widget>
-    </form>
+      </form>
+      <DeleteAccount />
+    </div>
   );
 }

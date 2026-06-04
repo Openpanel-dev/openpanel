@@ -13,7 +13,7 @@ import {
   defaultFingerPrint,
 } from '@trpc-limiter/redis';
 import { getOrganizationAccess, getProjectAccess } from './access';
-import { TRPCAccessError } from './errors';
+import { TRPCForbiddenError } from './errors';
 
 export const rateLimitMiddleware = ({
   max,
@@ -100,10 +100,7 @@ const enforceAccess = t.middleware(async ({ ctx, next, type, getRawInput }) => {
   return runWithAlsSession(sessionId, async () => {
     const rawInput = await getRawInput();
     if (type === 'mutation' && process.env.DEMO_USER_ID) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'You are not allowed to do this in demo mode',
-      });
+      throw new TRPCForbiddenError('You are not allowed to do this in demo mode');
     }
 
     if (has('projectId', rawInput)) {
@@ -113,7 +110,7 @@ const enforceAccess = t.middleware(async ({ ctx, next, type, getRawInput }) => {
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
     }
 
@@ -124,7 +121,7 @@ const enforceAccess = t.middleware(async ({ ctx, next, type, getRawInput }) => {
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this organization');
+        throw new TRPCForbiddenError('You do not have access to this organization');
       }
     }
 
@@ -172,6 +169,13 @@ export const publicProcedure = t.procedure
 export const protectedProcedure = t.procedure
   .use(enforceUserIsAuthed)
   .use(enforceAccess)
+  .use(loggerMiddleware)
+  .use(sessionScopeMiddleware);
+// Authenticated but WITHOUT the org/project membership check. Use for endpoints
+// that must answer for any logged-in user (e.g. checking your own access to an
+// org you may not belong to) and return null instead of throwing.
+export const protectedProcedureWithoutAccess = t.procedure
+  .use(enforceUserIsAuthed)
   .use(loggerMiddleware)
   .use(sessionScopeMiddleware);
 

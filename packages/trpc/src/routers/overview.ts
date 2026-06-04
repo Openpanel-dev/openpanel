@@ -1,5 +1,4 @@
 import {
-  TABLE_NAMES,
   ch,
   clix,
   eventBuffer,
@@ -7,8 +6,10 @@ import {
   getChartStartEndDate,
   getConversionEventNames,
   getOrganizationSubscriptionChartEndDate,
+  getReferrerSpikes,
   getSettingsForProject,
   overviewService,
+  TABLE_NAMES,
   validateOverviewShareAccess,
   zGetMapDataInput,
   zGetMetricsInput,
@@ -19,12 +20,16 @@ import {
   zGetTopPagesInput,
   zGetUserJourneyInput,
 } from '@openpanel/db';
-import { pageContextSchema, type IChartRange, zRange } from '@openpanel/validation';
+import {
+  type IChartRange,
+  pageContextSchema,
+  zRange,
+} from '@openpanel/validation';
 import { format } from 'date-fns';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
 import { runFilterCommand } from '../agents/filter-command';
-import { TRPCAccessError } from '../errors';
+import { TRPCAccessError, TRPCForbiddenError } from '../errors';
 import {
   cacheMiddleware,
   createTRPCRouter,
@@ -65,19 +70,19 @@ const overviewProcedure = publicProcedure.use(
       });
     } else {
       if (!ctx.session?.userId) {
-        throw TRPCAccessError('Authentication required');
+        throw new TRPCAccessError('Authentication required');
       }
       const access = await getProjectAccess({
         projectId: rawInput.projectId,
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        throw new TRPCForbiddenError('You do not have access to this project');
       }
     }
 
     return next();
-  },
+  }
 );
 
 function getCurrentAndPrevious<
@@ -92,14 +97,14 @@ function getCurrentAndPrevious<
   const previous = getChartPrevStartEndDate(current);
 
   return async <R>(
-    fn: (input: T & { startDate: string; endDate: string }) => Promise<R>,
+    fn: (input: T & { startDate: string; endDate: string }) => Promise<R>
   ): Promise<{
     current: R;
     previous: R | null;
   }> => {
     const endDate = await getOrganizationSubscriptionChartEndDate(
       input.projectId,
-      current.endDate,
+      current.endDate
     );
     if (endDate) {
       current.endDate = endDate;
@@ -171,7 +176,7 @@ export const overviewRouter = createTRPCRouter({
         .fill(
           clix.exp('toStartOfMinute(now() - INTERVAL 30 MINUTE)'),
           clix.exp('toStartOfMinute(now())'),
-          clix.exp('INTERVAL 1 MINUTE'),
+          clix.exp('INTERVAL 1 MINUTE')
         );
 
       // Get referrers per minute for the last 30 minutes
@@ -258,7 +263,7 @@ export const overviewRouter = createTRPCRouter({
         endDate: z.string().nullish(),
         range: zRange,
         shareId: z.string().optional(),
-      }),
+      })
     )
     .use(cacher)
     .query(async ({ input }) => {
@@ -266,7 +271,7 @@ export const overviewRouter = createTRPCRouter({
       const { current, previous } = await getCurrentAndPrevious(
         { ...input, timezone },
         true,
-        timezone,
+        timezone
       )(overviewService.getMetrics.bind(overviewService));
       return {
         metrics: {
@@ -297,6 +302,40 @@ export const overviewRouter = createTRPCRouter({
       };
     }),
 
+  getReferrerSpikes: overviewProcedure
+    .input(
+      zGetMetricsInput.omit({ startDate: true, endDate: true }).extend({
+        startDate: z.string().nullish(),
+        endDate: z.string().nullish(),
+        range: zRange,
+        shareId: z.string().optional(),
+      })
+    )
+    .use(cacher)
+    .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
+      const clusters = await getReferrerSpikes({
+        projectId: input.projectId,
+        filters: input.filters,
+        interval: input.interval,
+        startDate,
+        endDate,
+        timezone,
+      });
+      // Reformat every spike date (and the cluster's anchor) to match
+      // overview.stats' series date format, so markers x-align with the
+      // chart's data points (xScale matches by Date identity).
+      const fmt = (iso: string) => format(new Date(iso), 'yyyy-MM-dd HH:mm:ss');
+      return clusters.map((cluster) => ({
+        anchorDate: fmt(cluster.anchorDate),
+        spikes: cluster.spikes.map((spike) => ({
+          ...spike,
+          date: fmt(spike.date),
+        })),
+      }));
+    }),
+
   topPages: overviewProcedure
     .input(
       zGetTopPagesInput.omit({ startDate: true, endDate: true }).extend({
@@ -305,7 +344,7 @@ export const overviewRouter = createTRPCRouter({
         range: zRange,
         mode: z.enum(['page', 'entry', 'exit', 'bot']),
         shareId: z.string().optional(),
-      }),
+      })
     )
     .use(cacher)
     .query(async ({ input }) => {
@@ -313,7 +352,7 @@ export const overviewRouter = createTRPCRouter({
       const { current } = await getCurrentAndPrevious(
         { ...input },
         false,
-        timezone,
+        timezone
       )(async (input) => {
         if (input.mode === 'page') {
           return overviewService.getTopPages({ ...input, timezone });
@@ -340,17 +379,15 @@ export const overviewRouter = createTRPCRouter({
         endDate: z.string().nullish(),
         range: zRange,
         shareId: z.string().optional(),
-      }),
+      })
     )
     .use(cacher)
     .query(async ({ input }) => {
-      console.log('input', input);
-
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
         false,
-        timezone,
+        timezone
       )(overviewService.getTopGeneric.bind(overviewService));
 
       return current;
@@ -365,7 +402,7 @@ export const overviewRouter = createTRPCRouter({
           endDate: z.string().nullish(),
           range: zRange,
           shareId: z.string().optional(),
-        }),
+        })
     )
     .use(cacher)
     .query(async ({ input }) => {
@@ -373,7 +410,7 @@ export const overviewRouter = createTRPCRouter({
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
         false,
-        timezone,
+        timezone
       )(overviewService.getTopGenericSeries.bind(overviewService));
 
       return current;
@@ -387,7 +424,7 @@ export const overviewRouter = createTRPCRouter({
         range: zRange,
         steps: z.number().min(2).max(10).default(5).optional(),
         shareId: z.string().optional(),
-      }),
+      })
     )
     .use(cacher)
     .query(async ({ input }) => {
@@ -395,7 +432,7 @@ export const overviewRouter = createTRPCRouter({
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
         false,
-        timezone,
+        timezone
       )(async (input) => {
         return overviewService.getUserJourney({
           ...input,
@@ -414,7 +451,7 @@ export const overviewRouter = createTRPCRouter({
         endDate: z.string().nullish(),
         range: zRange,
         shareId: z.string().optional(),
-      }),
+      })
     )
     .use(cacher)
     .query(async ({ input }) => {
@@ -422,7 +459,7 @@ export const overviewRouter = createTRPCRouter({
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
         false,
-        timezone,
+        timezone
       )(overviewService.getTopEvents.bind(overviewService));
 
       return current;
@@ -433,7 +470,7 @@ export const overviewRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         shareId: z.string().optional(),
-      }),
+      })
     )
     .query(async ({ input }) => {
       return getConversionEventNames(input.projectId);
@@ -446,7 +483,7 @@ export const overviewRouter = createTRPCRouter({
         endDate: z.string().nullish(),
         range: zRange,
         shareId: z.string().optional(),
-      }),
+      })
     )
     .use(cacher)
     .query(async ({ input }) => {
@@ -454,7 +491,7 @@ export const overviewRouter = createTRPCRouter({
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
         false,
-        timezone,
+        timezone
       )(overviewService.getTopLinkOut.bind(overviewService));
 
       return current;
@@ -470,7 +507,7 @@ export const overviewRouter = createTRPCRouter({
         projectId: z.string(),
         query: z.string().min(1).max(500),
         pageContext: pageContextSchema.optional(),
-      }),
+      })
     )
     .mutation(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
@@ -489,7 +526,7 @@ export const overviewRouter = createTRPCRouter({
         endDate: z.string().nullish(),
         range: zRange,
         shareId: z.string().optional(),
-      }),
+      })
     )
     .use(cacher)
     .query(async ({ input }) => {
@@ -497,7 +534,7 @@ export const overviewRouter = createTRPCRouter({
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
         false,
-        timezone,
+        timezone
       )(overviewService.getMapData.bind(overviewService));
 
       return current;

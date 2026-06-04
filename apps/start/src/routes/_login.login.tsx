@@ -20,11 +20,12 @@ export const Route = createFileRoute('/_login/login')({
   validateSearch: z.object({
     error: z.string().optional(),
     correlationId: z.string().optional(),
+    inviteId: z.string().optional(),
   }),
 });
 
 function LoginPage() {
-  const { error, correlationId } = Route.useSearch();
+  const { error, correlationId, inviteId } = Route.useSearch();
   const [lastProvider] = useCookieStore<null | string>(
     'last-auth-provider',
     null
@@ -72,11 +73,19 @@ function LoginPage() {
       )}
 
       <div className="space-y-4">
-        <SignInGoogle isLastUsed={lastProvider === 'google'} type="sign-in" />
-        <SignInGithub isLastUsed={lastProvider === 'github'} type="sign-in" />
+        <SignInGoogle
+          inviteId={inviteId}
+          isLastUsed={lastProvider === 'google'}
+          type="sign-in"
+        />
+        <SignInGithub
+          inviteId={inviteId}
+          isLastUsed={lastProvider === 'github'}
+          type="sign-in"
+        />
       </div>
       <Or />
-      <SignInEmailForm isLastUsed={lastProvider === 'email'} />
+      <SignInEmailForm inviteId={inviteId} isLastUsed={lastProvider === 'email'} />
     </div>
   );
 }

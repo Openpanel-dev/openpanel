@@ -161,8 +161,20 @@ export async function connectUserToOrganization({
     throw new Error('Invite expired');
   }
 
-  const member = await db.member.create({
-    data: {
+  // The invite might be consumed by a user who is already a member of the
+  // organization (e.g. accepting it a second time). Upsert atomically against
+  // the (organizationId, userId) unique constraint so concurrent consumption
+  // cannot create duplicate membership rows; an existing membership is reused
+  // unchanged and the invite is still consumed below.
+  const member = await db.member.upsert({
+    where: {
+      organizationId_userId: {
+        organizationId: invite.organizationId,
+        userId: user.id,
+      },
+    },
+    update: {},
+    create: {
       organizationId: invite.organizationId,
       userId: user.id,
       role: invite.role,

@@ -8,7 +8,7 @@
   },
   "hero": {
     "heading": "Best Heap Alternative",
-    "subheading": "Looking for Heap's product analytics without the black-box pricing and vendor lock-in? OpenPanel offers transparent event-based pricing, full self-hosting, and MIT-licensed open source code\u2014giving you control over your analytics.",
+    "subheading": "Looking for Heap's product analytics without the black-box pricing and vendor lock-in? OpenPanel offers transparent event-based pricing, full self-hosting, and AGPL-3.0 licensed open source code\u2014giving you control over your analytics.",
     "badges": [
       "Open-source",
       "Transparent pricing",
@@ -29,7 +29,7 @@
     "paragraphs": [
       "Heap was acquired by Contentsquare in September 2023. For many teams, that acquisition raised real questions: Will pricing change? Will the product roadmap shift to serve Contentsquare's enterprise customers? Will independent support continue? These concerns, combined with Heap's opaque pricing model and cloud-only architecture, have driven a wave of teams to evaluate alternatives.",
       "OpenPanel takes a different approach with explicit event tracking, giving you precise control over what you measure and how. While you lose Heap's retroactive analysis capability, you gain transparency \u2014 both in your data collection and your costs. OpenPanel's pricing is publicly listed and event-based, starting at just $2.50 per month, compared to Heap's sales-required pricing that reportedly starts at $3,600 per year. And unlike Heap, OpenPanel is fully self-hostable and open source \u2014 no acquisition can change that.",
-      "For teams that value data sovereignty, OpenPanel offers full self-hosting via a simple Docker deployment \u2014 something Heap doesn't provide at all. Being open source under the MIT license means you can inspect every line of code, contribute improvements, and avoid the vendor lock-in risk that comes with Heap's proprietary, now-Contentsquare-owned platform.",
+      "For teams that value data sovereignty, OpenPanel offers full self-hosting via a simple Docker Compose deployment \u2014 a one-command ./setup wizard walks you through configuration and brings the whole stack up in minutes, something Heap doesn't provide at all. Being open source under the AGPL-3.0 license means you can inspect every line of code, contribute improvements, and avoid the vendor lock-in risk that comes with Heap's proprietary, now-Contentsquare-owned platform.",
       "If you prefer intentional, controlled analytics over autocapture-everything, want transparent pricing without sales calls, and need the option to self-host \u2014 OpenPanel gives you solid product analytics with full ownership of your data."
     ]
   },
@@ -49,7 +49,7 @@
       "Organizations needing retroactive analysis for new events",
       "Companies requiring visual event definition tools",
       "Enterprise teams with budget for premium features",
-      "Teams needing session replay and heatmaps (add-ons)"
+      "Teams needing heatmaps (a Heap add-on; OpenPanel has session replay but no heatmaps)"
     ]
   },
   "highlights": {
@@ -68,7 +68,7 @@
       },
       {
         "label": "Open source",
-        "openpanel": "Yes (MIT)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "No (proprietary)"
       },
       {
@@ -169,15 +169,15 @@
           },
           {
             "name": "Session replay",
-            "openpanel": false,
+            "openpanel": true,
             "competitor": true,
-            "notes": "Heap offers as paid add-on"
+            "notes": "OpenPanel includes rrweb-based session replay (opt-in); Heap offers it as a paid add-on"
           },
           {
             "name": "Heatmaps",
             "openpanel": false,
             "competitor": true,
-            "notes": "Heap offers as paid add-on"
+            "notes": "Heap offers as paid add-on; OpenPanel does not have heatmaps"
           },
           {
             "name": "Path analysis",
@@ -233,15 +233,15 @@
           },
           {
             "name": "Data warehouse export",
-            "openpanel": true,
+            "openpanel": "Coming 2026",
             "competitor": true,
-            "notes": "Heap Connect exports to major warehouses"
+            "notes": "Heap Connect exports to major warehouses. OpenPanel has an export API today, with native data-warehouse export (S3/GCS) on the roadmap for 2026."
           },
           {
             "name": "Segment integration",
-            "openpanel": true,
+            "openpanel": false,
             "competitor": true,
-            "notes": null
+            "notes": "OpenPanel has no Segment integration (Slack/Discord/webhook + export API only)."
           },
           {
             "name": "100+ integrations",
@@ -270,11 +270,19 @@
           "React",
           "Next.js",
           "Vue",
+          "Astro",
+          "Remix",
+          "Express",
           "React Native",
+          "Flutter",
           "iOS",
           "Android",
           "Node.js",
-          "Python"
+          "Python",
+          "Ruby",
+          "Java",
+          "Rust",
+          "PHP"
         ],
         "competitor": [
           "JavaScript",
@@ -287,13 +295,13 @@
       },
       {
         "label": "Open source",
-        "openpanel": "Yes (MIT)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "No",
         "notes": null
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker, simple setup",
+        "openpanel": "Docker Compose, guided setup wizard",
         "competitor": "Not available",
         "notes": null
       },
@@ -372,12 +380,12 @@
       },
       {
         "title": "Self-hosting and data sovereignty",
-        "description": "Heap is cloud-only. OpenPanel can be fully self-hosted with Docker, keeping all data on your own infrastructure.",
+        "description": "Heap is cloud-only. OpenPanel can be fully self-hosted with Docker Compose, keeping all data on your own infrastructure.",
         "icon": "server"
       },
       {
         "title": "Open source requirements",
-        "description": "Heap is completely proprietary. OpenPanel is fully open source under MIT license, allowing inspection and modification.",
+        "description": "Heap is completely proprietary. OpenPanel is fully open source under AGPL-3.0 license, allowing inspection and modification.",
         "icon": "code"
       },
       {
@@ -402,11 +410,11 @@
       },
       {
         "question": "Can I self-host Heap?",
-        "answer": "No. Heap is cloud-only with no self-hosting option. Your data always resides on Heap/Contentsquare's infrastructure. OpenPanel offers full self-hosting with Docker for complete data ownership."
+        "answer": "No. Heap is cloud-only with no self-hosting option. Your data always resides on Heap/Contentsquare's infrastructure. OpenPanel offers full self-hosting with Docker Compose for complete data ownership."
       },
       {
         "question": "Is Heap open source?",
-        "answer": "No. Heap is entirely proprietary with closed-source code. OpenPanel is fully open source under the MIT license."
+        "answer": "No. Heap is entirely proprietary with closed-source code. OpenPanel is fully open source under the AGPL-3.0 license."
       },
       {
         "question": "Why is Heap's pricing not public?",
@@ -422,7 +430,7 @@
       },
       {
         "question": "Does OpenPanel have session replay?",
-        "answer": "No. Heap offers session replay as an add-on on Pro and Premier plans. OpenPanel focuses on product analytics without session replay or heatmaps."
+        "answer": "Yes. OpenPanel includes rrweb-based session replay (opt-in via sessionReplay: { enabled: true }), with unlimited recordings and 30-day retention. Heap offers session replay as an add-on on Pro and Premier plans. OpenPanel does not have heatmaps, however."
       }
     ]
   },

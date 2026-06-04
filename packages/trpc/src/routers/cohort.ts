@@ -21,7 +21,7 @@ import {
 } from '@openpanel/validation';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
-import { TRPCAccessError, TRPCNotFoundError } from '../errors';
+import { TRPCForbiddenError, TRPCNotFoundError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const cohortRouter = createTRPCRouter({
@@ -56,7 +56,7 @@ export const cohortRouter = createTRPCRouter({
       });
 
       if (!cohort) {
-        throw TRPCNotFoundError('Cohort not found');
+        throw new TRPCNotFoundError('Cohort not found');
       }
 
       const access = await getProjectAccess({
@@ -65,7 +65,7 @@ export const cohortRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this cohort');
+        throw new TRPCForbiddenError('You do not have access to this cohort');
       }
 
       return cohort;
@@ -95,7 +95,7 @@ export const cohortRouter = createTRPCRouter({
       const existingCohort = await db.cohort.findUnique({ where: { id } });
 
       if (!existingCohort) {
-        throw TRPCNotFoundError('Cohort not found');
+        throw new TRPCNotFoundError('Cohort not found');
       }
 
       const access = await getProjectAccess({
@@ -104,7 +104,7 @@ export const cohortRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this cohort');
+        throw new TRPCForbiddenError('You do not have access to this cohort');
       }
 
       const cohort = await db.cohort.update({
@@ -136,7 +136,7 @@ export const cohortRouter = createTRPCRouter({
       const cohort = await db.cohort.findUnique({ where: { id: input.id } });
 
       if (!cohort) {
-        throw TRPCNotFoundError('Cohort not found');
+        throw new TRPCNotFoundError('Cohort not found');
       }
 
       const access = await getProjectAccess({
@@ -145,7 +145,7 @@ export const cohortRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this cohort');
+        throw new TRPCForbiddenError('You do not have access to this cohort');
       }
 
       await db.cohort.delete({ where: { id: input.id } });
@@ -202,7 +202,7 @@ export const cohortRouter = createTRPCRouter({
       });
 
       if (!cohort) {
-        throw TRPCNotFoundError('Cohort not found');
+        throw new TRPCNotFoundError('Cohort not found');
       }
 
       const access = await getProjectAccess({
@@ -211,7 +211,7 @@ export const cohortRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this cohort');
+        throw new TRPCForbiddenError('You do not have access to this cohort');
       }
 
       const count = await getCohortCount(input.cohortId, cohort.projectId);
@@ -250,7 +250,7 @@ export const cohortRouter = createTRPCRouter({
       });
 
       if (!cohort) {
-        throw TRPCNotFoundError('Cohort not found');
+        throw new TRPCNotFoundError('Cohort not found');
       }
 
       const access = await getProjectAccess({
@@ -259,7 +259,7 @@ export const cohortRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this cohort');
+        throw new TRPCForbiddenError('You do not have access to this cohort');
       }
 
       const result = await getCohortMembers(input.cohortId, cohort.projectId, {
@@ -282,7 +282,7 @@ export const cohortRouter = createTRPCRouter({
       });
 
       if (!cohort) {
-        throw TRPCNotFoundError('Cohort not found');
+        throw new TRPCNotFoundError('Cohort not found');
       }
 
       const access = await getProjectAccess({
@@ -291,7 +291,7 @@ export const cohortRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this cohort');
+        throw new TRPCForbiddenError('You do not have access to this cohort');
       }
 
       if (cohort.isStatic) {

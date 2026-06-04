@@ -3,7 +3,7 @@
   "page_type": "alternative",
   "seo": {
     "title": "PostHog Alternatives 2026 — Fully Self-Hostable, All Features",
-    "description": "PostHog deprecated its full self-hosted version — only a hobby build remains and new features ship cloud-only. OpenPanel stays fully open source and self-hostable, with every feature identical between cloud and self-hosted. 2.3 KB SDK, cookie-free by default, MIT-licensed.",
+    "description": "PostHog deprecated its full self-hosted version — only a hobby build remains and new features ship cloud-only. OpenPanel stays fully open source and self-hostable, with every feature identical between cloud and self-hosted. 2.3 KB SDK, cookie-free by default, AGPL-3.0 platform (SDKs are MIT).",
     "noindex": false
   },
   "hero": {
@@ -29,7 +29,7 @@
     "paragraphs": [
       "PostHog has built an impressive all-in-one platform with product analytics, feature flags, session replay, surveys, A/B testing, and more \u2014 over 10 products under one roof. It's a popular choice among developer-led teams who want everything in a single tool. But that breadth comes with trade-offs: a 52+ KB SDK, complex multi-product pricing, and a self-hosted setup that requires ClickHouse, Kafka, Redis, and PostgreSQL.",
       "OpenPanel takes a focused approach. Instead of trying to be everything, it delivers excellent analytics \u2014 events, funnels, retention, cohorts, user profiles, session replay, and web analytics \u2014 with a dramatically smaller footprint. The SDK is just 2.3 KB (over 20x lighter than PostHog), which directly translates to faster page loads and better Core Web Vitals for your users.",
-      "Cookie-free tracking is another key difference. PostHog uses cookies by default and requires configuration to go cookieless, while OpenPanel is cookie-free out of the box \u2014 no consent banners needed. Self-hosting is also far simpler: OpenPanel runs in a single Docker container compared to PostHog's multi-service architecture.",
+      "Cookie-free tracking is another key difference. PostHog uses cookies by default and requires configuration to go cookieless, while OpenPanel is cookie-free out of the box \u2014 no consent banners needed. Self-hosting is also far simpler: OpenPanel runs via a one-command Docker Compose setup (ClickHouse, Postgres, Redis) compared to PostHog's heavier multi-service architecture that also requires Kafka.",
       "If you need focused analytics without the feature bloat, want a lighter SDK that doesn't impact performance, and prefer simple event-based pricing over multi-product metering \u2014 OpenPanel gives you exactly what you need without the overhead."
     ]
   },
@@ -74,9 +74,9 @@
       },
       {
         "label": "Self-Hosting Complexity",
-        "openpanel": "Simple Docker Setup",
+        "openpanel": "One-command Docker Compose, guided setup wizard",
         "competitor": "ClickHouse + Kafka + Redis + PostgreSQL",
-        "notes": "OpenPanel self-hosting requires just Docker. PostHog needs multiple services including ClickHouse, Kafka, Redis, and PostgreSQL."
+        "notes": "OpenPanel self-hosts via a one-command Docker Compose setup (ClickHouse, Postgres, Redis). PostHog needs a heavier stack that also includes Kafka."
       },
       {
         "label": "Focus",
@@ -193,9 +193,9 @@
           },
           {
             "name": "SQL Query Access",
-            "openpanel": true,
+            "openpanel": false,
             "competitor": true,
-            "notes": "PostHog offers HogQL, their SQL variant"
+            "notes": "PostHog offers HogQL, their SQL variant; OpenPanel uses a visual report builder"
           }
         ]
       },
@@ -257,9 +257,9 @@
           },
           {
             "name": "Data Warehouse Sync",
-            "openpanel": true,
+            "openpanel": "Coming 2026",
             "competitor": true,
-            "notes": "PostHog has extensive CDP capabilities with 60+ connectors"
+            "notes": "PostHog has extensive CDP capabilities with 60+ connectors. OpenPanel has an export API today, with native data-warehouse export (S3/GCS) on the roadmap for 2026."
           }
         ]
       }
@@ -282,14 +282,19 @@
           "React",
           "Next.js",
           "Vue",
+          "Astro",
+          "Remix",
+          "Express",
           "React Native",
+          "Flutter",
           "iOS",
           "Android",
           "Node.js",
           "Python",
-          "PHP",
-          "Go",
-          "Rust"
+          "Ruby",
+          "Java",
+          "Rust",
+          "PHP"
         ],
         "competitor": [
           "JavaScript/TypeScript",
@@ -311,13 +316,13 @@
       },
       {
         "label": "Open Source",
-        "openpanel": "Yes - MIT License",
+        "openpanel": "Yes - AGPL-3.0",
         "competitor": "Yes - MIT License",
-        "notes": "Both are open source. PostHog is MIT licensed."
+        "notes": "Both are open source. OpenPanel is AGPL-3.0; PostHog is MIT licensed."
       },
       {
         "label": "Self Hosting",
-        "openpanel": "Docker (simple single-container setup)",
+        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), one-command setup",
         "competitor": "Docker with multiple services (ClickHouse, Kafka, Redis, PostgreSQL) or Kubernetes",
         "notes": null
       },
@@ -340,7 +345,7 @@
     "intro": "PostHog has generous free tiers but complex multi-product pricing. OpenPanel offers simpler event-based pricing.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Simple pricing with 10,000 free events per month. All features included at every tier."
+      "description": "Transparent pricing from $2.50/month for 5,000 events, with a 30-day free trial. All features included at every tier. Self-host free with unlimited events."
     },
     "competitor": {
       "model": "Multi-product usage-based",
@@ -406,7 +411,7 @@
       },
       {
         "title": "Simple Self-Hosting Needs",
-        "description": "OpenPanel runs in a single Docker container. PostHog requires ClickHouse, Kafka, Redis, and PostgreSQL - significantly more infrastructure to manage.",
+        "description": "OpenPanel self-hosts with a one-command Docker Compose setup (ClickHouse, Postgres, Redis). PostHog requires a heavier stack that also includes Kafka - significantly more infrastructure to manage.",
         "icon": "server"
       },
       {
@@ -422,7 +427,7 @@
     "items": [
       {
         "question": "Is OpenPanel really free?",
-        "answer": "Yes! OpenPanel offers a generous free tier with 10,000 events per month. Self-hosting is completely free with no limits. PostHog also has generous free tiers (1M events, 5K recordings) but costs can scale quickly with usage."
+        "answer": "OpenPanel is free to self-host with unlimited events. The cloud version starts at $2.50/month for 5,000 events after a 30-day free trial - there is no free cloud tier. PostHog has a generous free cloud tier (1M events, 5K recordings) but costs can scale quickly with usage."
       },
       {
         "question": "Why switch from PostHog to OpenPanel?",
@@ -438,7 +443,7 @@
       },
       {
         "question": "Can I self-host OpenPanel?",
-        "answer": "Yes! OpenPanel runs in a simple Docker container with ClickHouse. PostHog self-hosting requires multiple services (ClickHouse, Kafka, Redis, PostgreSQL) and has official limitations of around 100k events/month for single-server hobby deployments."
+        "answer": "Yes! OpenPanel self-hosts via a one-command Docker Compose setup (ClickHouse, Postgres, Redis) — a ./setup wizard walks you through configuration and brings the whole stack up in minutes. PostHog self-hosting requires a heavier stack that also includes Kafka, and has official limitations of around 100k events/month for single-server hobby deployments."
       },
       {
         "question": "Is PostHog more feature-rich than OpenPanel?",
@@ -450,7 +455,7 @@
       },
       {
         "question": "Which is better for startups?",
-        "answer": "Both offer generous free tiers. PostHog provides more features out of the box (feature flags, etc.) but with more complexity. OpenPanel is simpler to set up and understand, making it ideal for teams that want focused analytics without the overhead of an all-in-one platform."
+        "answer": "PostHog has a generous free cloud tier; OpenPanel is free to self-host with unlimited events, with cloud plans from $2.50/month after a 30-day trial. PostHog provides more features out of the box (feature flags, etc.) but with more complexity. OpenPanel is simpler to set up and understand, making it ideal for teams that want focused analytics without the overhead of an all-in-one platform."
       }
     ]
   },

@@ -6,7 +6,7 @@ import { db } from '@openpanel/db';
 
 import { hashPassword } from '@openpanel/common/server';
 import { getClientAccess } from '../access';
-import { TRPCAccessError } from '../errors';
+import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const clientRouter = createTRPCRouter({
@@ -37,7 +37,7 @@ export const clientRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this client');
+        throw new TRPCForbiddenError('You do not have access to this client');
       }
 
       return db.client.update({
@@ -88,7 +88,7 @@ export const clientRouter = createTRPCRouter({
       });
 
       if (!access) {
-        throw TRPCAccessError('You do not have access to this client');
+        throw new TRPCForbiddenError('You do not have access to this client');
       }
 
       await db.client.delete({

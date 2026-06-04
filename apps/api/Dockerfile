@@ -117,6 +117,11 @@ RUN pnpm db:codegen
 
 WORKDIR /app/apps/api
 
+# Drop a diagnostic report on fatal errors / SIGUSR2 so the next native
+# segfault (exit 139) leaves a stack we can read. Override per-environment
+# by setting NODE_OPTIONS in the swarm stack file.
+ENV NODE_OPTIONS="--report-on-fatalerror --report-on-signal --report-directory=/tmp"
+
 EXPOSE 3000
 
 CMD ["node", "dist/index.js"]

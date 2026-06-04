@@ -20,6 +20,7 @@ import { BullBoardGroupMQAdapter } from 'groupmq';
 import client from 'prom-client';
 import sourceMapSupport from 'source-map-support';
 import { bootCron } from './boot-cron';
+import { bootDebugRoutes } from './boot-debug';
 import { bootWorkers } from './boot-workers';
 import { register } from './metrics';
 import { isShuttingDown } from './utils/graceful-shutdown';
@@ -36,6 +37,12 @@ async function start() {
 
   const PORT = Number.parseInt(process.env.WORKER_PORT || '3000', 10);
   const app = express();
+
+  // Local-only: trigger cron jobs on demand. Disabled in production. Mounted
+  // before bull-board so its routes take precedence.
+  if (process.env.NODE_ENV !== 'production') {
+    bootDebugRoutes(app);
+  }
 
   if (
     process.env.DISABLE_BULLBOARD !== '1' &&

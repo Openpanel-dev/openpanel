@@ -73,7 +73,7 @@
       },
       {
         "label": "Open source",
-        "openpanel": "Yes (MIT)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "No (proprietary)"
       },
       {
@@ -270,10 +270,12 @@
           "Next.js",
           "Vue",
           "React Native",
+          "Flutter",
           "iOS",
           "Android",
           "Node.js",
-          "Python"
+          "Python",
+          "PHP"
         ],
         "competitor": [
           "iOS",
@@ -289,13 +291,13 @@
       },
       {
         "label": "Open source",
-        "openpanel": "Yes (MIT)",
+        "openpanel": "Yes (AGPL-3.0)",
         "competitor": "No",
         "notes": null
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker, simple setup",
+        "openpanel": "Docker Compose, guided setup wizard",
         "competitor": "Not available",
         "notes": null
       },
@@ -368,7 +370,7 @@
       },
       {
         "title": "Startups seeking affordable analytics",
-        "description": "AppsFlyer's pricing can reach tens of thousands monthly. OpenPanel offers a generous free tier and simple pricing without expensive add-ons.",
+        "description": "AppsFlyer's pricing can reach tens of thousands monthly. OpenPanel offers simple pricing from $2.50/month (with a 30-day free trial), free unlimited self-hosting, and no expensive add-ons.",
         "icon": "dollar"
       },
       {
@@ -418,7 +420,7 @@
       },
       {
         "question": "Can I self-host AppsFlyer?",
-        "answer": "No. AppsFlyer is a cloud-only SaaS platform with no self-hosting option. OpenPanel can be fully self-hosted using Docker."
+        "answer": "No. AppsFlyer is a cloud-only SaaS platform with no self-hosting option. OpenPanel can be fully self-hosted using Docker Compose — a one-command `./setup` wizard walks you through configuration and brings the whole stack up in minutes."
       }
     ]
   },

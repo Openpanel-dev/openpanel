@@ -7,8 +7,8 @@
     "noindex": false
   },
   "hero": {
-    "heading": "Analytics Built for Next.js",
-    "subheading": "Most analytics tools treat Next.js like a static site. OpenPanel was built for how Next.js actually works — App Router, server components, API routes, and route changes all tracked correctly. Install in 5 minutes, get events, funnels, and user profiles that work with SSR.",
+    "heading": "Analytics built for Next.js",
+    "subheading": "Most analytics tools treat Next.js like a static site. OpenPanel was built for how Next.js actually works: App Router, server components, API routes, and route changes all tracked correctly. Install in 5 minutes and get events, funnels, and user profiles that work with SSR.",
     "badges": [
       "App Router support",
       "Server-side events",

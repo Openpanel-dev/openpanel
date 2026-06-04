@@ -17,7 +17,7 @@ But here's the problem: most self-hosted analytics tools only cover **web analyt
 
 We compared every self-hosted tool that offers real product analytics capabilities. Here's what's worth your time.
 
-## Quick Comparison
+## Quick comparison
 
 | Tool | Focus | License | Self-Host Cost | Cloud Pricing (from) | Best For |
 |------|-------|---------|---------------|---------------------|----------|
@@ -27,7 +27,7 @@ We compared every self-hosted tool that offers real product analytics capabiliti
 | [**Matomo**](#matomo) | Web (+ Product plugins) | GPL-3.0 | Free (core) | €29/mo | GA replacement with product add-ons |
 | [**Mitzu**](#mitzu) | Product | Source Available | Paid | Custom | Warehouse-native product analytics |
 
-## What Makes Product Analytics Different from Web Analytics
+## What makes product analytics different from web analytics
 
 Web analytics answers questions about your **website traffic**: where visitors come from, which pages they view, and how long they stay. Tools like [Plausible](/compare/plausible-alternative), [Umami](/compare/umami-alternative), and [GoatCounter](/compare/goatcounter-alternative) do this well.
 
@@ -49,11 +49,11 @@ For a comparison of self-hosted tools focused purely on web analytics, see our [
 
 **Best for: Teams that want Mixpanel-like product analytics with a self-hosted option**
 
-[OpenPanel](/) was built to give you the power of tools like [Mixpanel](/compare/mixpanel-alternative) and [Amplitude](/compare/amplitude-alternative) without sending your data to a third party. It combines web analytics and product analytics in one platform, with cookieless tracking and a straightforward self-hosting setup.
+[OpenPanel](/) gives you what tools like [Mixpanel](/compare/mixpanel-alternative) and [Amplitude](/compare/amplitude-alternative) do without sending your data to a third party. It combines web analytics and product analytics in one platform, with cookieless tracking and a simple self-hosting setup.
 
 ![OpenPanel Dashboard](/content/tools/openpanel.png)
 
-### Product Analytics Features
+### Product analytics features
 
 - **[Funnels](/features/funnels)**: Build multi-step conversion funnels with any events. See where users drop off and break down by properties.
 - **[Retention](/features/retention)**: Analyze how many users come back over time. Compare retention across cohorts, plans, or acquisition channels.
@@ -90,7 +90,7 @@ Cloud plans start at $2.50/month (5,000 events) and scale to $90/month for 1 mil
 
 ### Cons
 - Newer project — smaller community than PostHog or Matomo
-- No built-in session replay or heatmaps yet
+- No built-in heatmaps yet
 - No built-in feature flags or A/B testing
 
 ---
@@ -99,11 +99,11 @@ Cloud plans start at $2.50/month (5,000 events) and scale to $90/month for 1 mil
 
 **Best for: Engineering teams that want analytics, feature flags, and experiments in one platform**
 
-[PostHog](https://posthog.com/) is the most feature-rich self-hosted product analytics tool. It bundles product analytics with session replay, feature flags, A/B testing, surveys, and error tracking. If you want a Swiss Army knife for product development, PostHog is the most complete option.
+[PostHog](https://posthog.com/) is the most feature-rich self-hosted product analytics tool. It bundles product analytics with session replay, feature flags, A/B testing, surveys, and error tracking. If you want one tool that does everything for product development, PostHog is the most complete option.
 
 ![PostHog Dashboard](/content/tools/posthog.png)
 
-### Product Analytics Features
+### Product analytics features
 
 - **Funnels**: Multi-step funnel analysis with breakdown by user properties
 - **Retention**: Cohort-based retention analysis
@@ -122,12 +122,12 @@ Requirements: Minimum 4 vCPU, 16 GB RAM, 30 GB+ storage. PostHog recommends self
 
 ### Pricing
 
-Self-hosting is free under MIT license. Cloud has a generous free tier: 1 million analytics events, 5,000 session recordings, and 1 million feature flag requests per month. Beyond that, usage-based pricing kicks in (roughly $0.00005 per event for the next million).
+Self-hosting is free under MIT license. The cloud free tier covers 1 million analytics events, 5,000 session recordings, and 1 million feature flag requests per month. Past that, usage-based pricing kicks in (roughly $0.00005 per event for the next million).
 
 ### Pros
 - Most comprehensive feature set of any self-hosted analytics tool
 - MIT license — very permissive
-- Generous cloud free tier for getting started
+- Cloud free tier (1M events) to get started
 - Active community and rapid development cycle
 
 ### Cons
@@ -147,7 +147,7 @@ Compare with OpenPanel: [PostHog vs OpenPanel](/compare/posthog-alternative)
 
 [Countly](https://countly.com/) is a product analytics platform with strong mobile analytics roots. It supports web, mobile, and desktop apps with SDKs for iOS, Android, React Native, Flutter, and more. The Community Edition is self-hostable under AGPL-3.0.
 
-### Product Analytics Features
+### Product analytics features
 
 - **Funnels**: Define conversion funnels and track drop-off rates
 - **Retention**: Cohort retention analysis with configurable time periods
@@ -191,7 +191,7 @@ Compare with OpenPanel: [Countly vs OpenPanel](/compare/countly-alternative)
 
 ![Matomo Dashboard](/content/tools/matomo.png)
 
-### Product Analytics Features
+### Product analytics features
 
 - **Funnels** (paid plugin): Multi-step conversion funnels
 - **Cohorts** (paid plugin): Group users by behavior and analyze over time
@@ -219,7 +219,7 @@ These costs add up. A full product analytics setup on self-hosted Matomo can cos
 ### Pros
 - Most mature self-hosted analytics platform (since 2007)
 - Closest feature parity to Google Analytics
-- Large plugin ecosystem
+- Large plugin library
 - Strong compliance track record
 
 ### Cons
@@ -238,7 +238,7 @@ Compare with OpenPanel: [Matomo vs OpenPanel](/compare/matomo-alternative)
 
 [Mitzu](https://www.mitzu.io/) takes a different approach. Instead of ingesting data into its own database, it runs analytics queries directly on your existing data warehouse (BigQuery, Snowflake, Databricks, etc.). If you already have event data in a warehouse, Mitzu gives you product analytics without duplicating data.
 
-### Product Analytics Features
+### Product analytics features
 
 - **Funnels**: Conversion funnel analysis running on your warehouse
 - **Retention**: Cohort retention directly on warehouse data
@@ -270,7 +270,7 @@ Self-hosting requires a paid license (pricing available on request). Cloud plans
 
 ---
 
-## Self-Hosted Product Analytics vs Cloud: When to Self-Host
+## Self-hosted product analytics vs cloud: when to self-host
 
 The case for self-hosting product analytics is even stronger than for web analytics. Product analytics involves **user-level data** — individual users, their behaviors, their journeys through your product. This data is more sensitive than aggregate pageview counts.
 
@@ -291,7 +291,7 @@ With [OpenPanel](/pricing), you can start on Cloud and migrate to self-hosting a
 
 ---
 
-## How to Get Started
+## How to get started
 
 ### 1. Pick a server
 
@@ -352,7 +352,7 @@ Once events are flowing, create your first conversion funnel. A common starting 
 
 <Faqs>
 <FaqItem question="What is the best self-hosted product analytics tool?">
-For most teams, OpenPanel offers the best balance of product analytics features, ease of self-hosting, and cost. PostHog is more feature-rich (session replay, feature flags) but significantly more complex to self-host. Countly is best for mobile-first products.
+For most teams, OpenPanel offers the best balance of product analytics features, ease of self-hosting, and cost. PostHog is more feature-rich (feature flags, A/B testing) but significantly more complex to self-host. Countly is best for mobile-first products.
 </FaqItem>
 
 <FaqItem question="Can I self-host Mixpanel or Amplitude?">

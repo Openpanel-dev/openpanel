@@ -1,3 +1,4 @@
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import FeedbackPrompt from '@/components/organization/feedback-prompt';
 import SupporterPrompt from '@/components/organization/supporter-prompt';
@@ -12,6 +13,7 @@ import {
   useLocation,
 } from '@tanstack/react-router';
 import { format } from 'date-fns';
+import { Building2Icon } from 'lucide-react';
 
 const IGNORE_ORGANIZATION_IDS = ['.well-known', 'onboarding', 'assets'];
 
@@ -43,22 +45,39 @@ export const Route = createFileRoute('/_app/$organizationId')({
     if (isStaticFile(params.organizationId)) {
       throw notFound();
     }
+    // Single source of truth for "can this user see this org?". myAccess is
+    // membership-exempt and returns null for non-members (and non-existent
+    // orgs), which we surface as a not-found page. Real errors (network/500)
+    // reject and fall through to the errorComponent. Runs before child routes,
+    // so it short-circuits settings/index/billing/members/project.
+    const access = await context.queryClient.fetchQuery(
+      context.trpc.organization.myAccess.queryOptions({
+        organizationId: params.organizationId,
+      }),
+    );
+    if (access === null) {
+      throw notFound();
+    }
   },
   loader: async ({ context, params }) => {
-    await Promise.all([
-      context.queryClient.prefetchQuery(
-        context.trpc.organization.get.queryOptions({
-          organizationId: params.organizationId,
-        }),
-      ),
-      context.queryClient.prefetchQuery(
-        context.trpc.organization.myAccess.queryOptions({
-          organizationId: params.organizationId,
-        }),
-      ),
-    ]);
+    // myAccess is already warmed in beforeLoad; only organization.get remains.
+    await context.queryClient.prefetchQuery(
+      context.trpc.organization.get.queryOptions({
+        organizationId: params.organizationId,
+      }),
+    );
   },
   pendingComponent: FullPageLoadingState,
+  notFoundComponent: () => (
+    <FullPageEmptyState
+      title="Workspace not found"
+      description="This workspace doesn't exist or you don't have access to it."
+      icon={Building2Icon}
+      className="min-h-[calc(100vh-4rem)]"
+    >
+      <LinkButton href="/">Go to home</LinkButton>
+    </FullPageEmptyState>
+  ),
 });
 
 function Alert({
