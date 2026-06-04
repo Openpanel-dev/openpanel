@@ -352,12 +352,37 @@ export class EventBuffer extends BaseBuffer {
         );
       }
 
-      // Publish per-project counts only for fully-successful flushes.
-      // On partial failure, the re-queued events will be counted on
-      // their next flush; emitting now would over-count.
+      // Publish per-project counts for events that actually landed in CH.
+      // On the happy path, all `popped` events were inserted; emit the
+      // counts we built up-front. On partial failure, the failed events
+      // will be counted on their next (successful) flush, but the
+      // successful chunks ARE already in CH right now — so we subtract
+      // the failed counts from the total to give realtime consumers an
+      // accurate per-project signal for the rows that just landed.
       if (failedEvents.length === 0) {
         for (const [projectId, count] of countByProject) {
           publishEvent('events', 'batch', { projectId, count });
+        }
+      } else {
+        const failedCountByProject = new Map<string, number>();
+        for (const eventLine of failedEvents) {
+          const projectId = extractProjectId(eventLine);
+          if (projectId) {
+            failedCountByProject.set(
+              projectId,
+              (failedCountByProject.get(projectId) ?? 0) + 1
+            );
+          }
+        }
+        for (const [projectId, totalCount] of countByProject) {
+          const failedCount = failedCountByProject.get(projectId) ?? 0;
+          const successCount = totalCount - failedCount;
+          if (successCount > 0) {
+            publishEvent('events', 'batch', {
+              projectId,
+              count: successCount,
+            });
+          }
         }
       }
 

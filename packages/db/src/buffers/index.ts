@@ -58,6 +58,39 @@ function eventBufferFor(event: IClickhouseEvent): EventBufferRedis {
 }
 
 /**
+ * Map a result index back to a human-readable buffer name. The first slot
+ * is always the legacy buffer; the rest follow the order of
+ * shardedEventBuffers.
+ */
+function bufferLabelForIndex(idx: number): string {
+  if (idx === 0) return 'event';
+  return `event:${idx - 1}`;
+}
+
+/**
+ * Walk a Promise.allSettled result set and log any rejected outcomes via
+ * the legacy buffer's logger. We intentionally do NOT re-throw — the
+ * whole point of allSettled here is per-shard isolation, so a single
+ * failing shard must not block the others. But silently dropping the
+ * rejection would recreate exactly the silent-stall failure mode the
+ * rest of this module is trying to prevent, so we surface it loudly.
+ */
+function surfaceRejections(
+  results: PromiseSettledResult<unknown>[],
+  op: 'flush' | 'tryFlush'
+): void {
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i]!;
+    if (r.status === 'rejected') {
+      legacyEventBuffer.logger.error(
+        { err: r.reason, buffer: bufferLabelForIndex(i), op },
+        `Unexpected rejection from event buffer ${op}`
+      );
+    }
+  }
+}
+
+/**
  * Backward-compatible facade: the singleton callers expect. Routes adds to
  * the correct shard; flush fans out to all buffers in parallel; pending-
  * local count sums across all buffers; observers fan out to every buffer.
@@ -103,23 +136,29 @@ export const eventBuffer = {
 
   /** Synchronously force a flush of in-memory pending events on ALL buffers. */
   async flush() {
-    await Promise.allSettled([
+    const results = await Promise.allSettled([
       legacyEventBuffer.flush(),
       ...shardedEventBuffers.map((b) => b.flush()),
     ]);
+    surfaceRejections(results, 'flush');
   },
 
   /**
    * Cron-driven flush. Runs tryFlush on legacy + every shard in parallel.
    * Each tryFlush takes its own per-buffer Redis lock (lock:event,
    * lock:event:0, lock:event:1, ...), so they never serialize on Redis.
-   * Errors on any one buffer are isolated (Promise.allSettled).
+   *
+   * Per-buffer errors are isolated via Promise.allSettled (a single shard
+   * failing must not bring down the others), but any rejection IS logged
+   * via `surfaceRejections` — silently swallowing would recreate exactly
+   * the silent-stall class of bug this whole module is trying to prevent.
    */
   async tryFlush(options: { trigger?: 'add' | 'cron' } = {}) {
-    await Promise.allSettled([
+    const results = await Promise.allSettled([
       legacyEventBuffer.tryFlush(options),
       ...shardedEventBuffers.map((b) => b.tryFlush(options)),
     ]);
+    surfaceRejections(results, 'tryFlush');
   },
 
   /** CH SELECT helper — same in legacy + sharded modes. */
