@@ -14,6 +14,7 @@ import {
   queueLogger,
   sessionsQueue,
 } from '@openpanel/queue';
+import { eventBuffer } from '@openpanel/db';
 import { getRedisQueue } from '@openpanel/redis';
 import type { Queue, WorkerOptions } from 'bullmq';
 import { Worker } from 'bullmq';
@@ -375,6 +376,16 @@ export function bootWorkers() {
           })
         ),
       ]);
+
+      // After all queue handlers have drained, flush any events still sitting
+      // in the EventBuffer's in-memory micro-batch (pendingEvents) to Redis.
+      // Without this, up to microBatchMaxSize events per worker process
+      // (default 200) can be lost on graceful shutdown — the handlers added
+      // them to pendingEvents but the next 10ms-interval RPUSH to Redis
+      // never got a chance to run before exit.
+      await eventBuffer.flush().catch((err) => {
+        logger.error({ err }, 'eventBuffer.flush on shutdown failed');
+      });
 
       logger.info(
         { elapsed: performance.now() - time },
