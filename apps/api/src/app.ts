@@ -64,6 +64,7 @@ import { logger } from './utils/logger';
 declare module 'fastify' {
   interface FastifyRequest {
     client: IServiceClientWithProject | null;
+    clientSecretAuth?: boolean;
     clientIp: string;
     clientIpHeader: string;
     timestamp?: number;

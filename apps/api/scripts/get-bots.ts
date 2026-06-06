@@ -10,9 +10,44 @@ import yaml from 'js-yaml';
 // Regex special characters that indicate we need actual regex
 const regexSpecialChars = /[|^$.*+?(){}\[\]\\]/;
 
+// User agents that must NEVER be treated as bots, even though the upstream
+// device-detector list flags them. Its "Generic Bot" pattern lumps bare
+// runtime/client identifiers (e.g. `node`, `Node.js`) into an anchored
+// alternation because browsers never send them — but legitimate server-side
+// traffic does. We only want to flag traffic whose user agent *explicitly*
+// identifies itself as a bot (handled by the separate `bot|crawler|spider...`
+// heuristic), so these plain identifiers are stripped out of the generated
+// patterns here. This runs on every regen, so upstream can never re-introduce
+// the false positives. Values are matched against single alternation branches,
+// so regex metacharacters must be escaped exactly as they appear upstream.
+export const ALLOWLISTED_BOT_UA_TOKENS = new Set(['node', 'Node\\.js']);
+
+// Removes allowlisted identifiers from anchored exact-match groups such as
+// `^(?:chrome|node|Node\.js|url)$`, leaving the genuinely suspicious branches
+// intact. If a group ends up empty it is dropped together with a trailing `|`
+// so the surrounding alternation stays valid.
+export function stripAllowlistedTokens(regex: string): string {
+  return regex.replace(
+    /\^\(\?:([^)]+)\)\$\|?/g,
+    (match: string, inner: string) => {
+      const kept = inner
+        .split('|')
+        .filter((alt) => !ALLOWLISTED_BOT_UA_TOKENS.has(alt));
+
+      if (kept.length === 0) {
+        return '';
+      }
+
+      const trailingPipe = match.endsWith('|') ? '|' : '';
+      return `^(?:${kept.join('|')})$${trailingPipe}`;
+    },
+  );
+}
+
 function transformBots(bots: any[]): any[] {
   return bots.map((bot) => {
-    const { regex, ...rest } = bot;
+    const { regex: rawRegex, ...rest } = bot;
+    const regex = stripAllowlistedTokens(rawRegex);
     const hasRegexChars = regexSpecialChars.test(regex);
 
     if (hasRegexChars) {
@@ -60,4 +95,8 @@ async function main() {
   }
 }
 
-main();
+// Only fetch + regenerate when run directly (e.g. `pnpm gen:bots`), so the
+// transformation helpers can be imported and unit-tested without a network call.
+if (process.argv[1] === __filename) {
+  main();
+}
