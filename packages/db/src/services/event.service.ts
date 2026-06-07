@@ -552,7 +552,7 @@ export async function getEventList(options: GetEventListOptions) {
   if (select.properties) {
     if (propertyKeys && propertyKeys.length > 0) {
       const keys = propertyKeys.map((k) => sqlstring.escape(k)).join(', ');
-      sb.select.properties = `mapFilter((k, v) -> k IN (${keys}), properties)`;
+      sb.select.properties = `mapFilter((k, v) -> k IN (${keys}), properties) AS properties`;
     } else {
       sb.select.properties = 'properties';
     }
