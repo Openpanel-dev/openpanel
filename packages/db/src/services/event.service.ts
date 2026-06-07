@@ -466,6 +466,7 @@ export interface GetEventListOptions {
   select?: SelectHelper<IServiceEvent>;
   custom?: (sb: SqlBuilderObject) => void;
   dateIntervalInDays?: number;
+  propertyKeys?: string[];
 }
 
 export async function getEventList(options: GetEventListOptions) {
@@ -484,6 +485,7 @@ export async function getEventList(options: GetEventListOptions) {
     custom,
     select: incomingSelect,
     dateIntervalInDays = 0.5,
+    propertyKeys,
   } = options;
   const { sb, getSql, join } = createSqlBuilder();
 
@@ -548,7 +550,12 @@ export async function getEventList(options: GetEventListOptions) {
     sb.select.sessionId = 'session_id';
   }
   if (select.properties) {
-    sb.select.properties = 'properties';
+    if (propertyKeys && propertyKeys.length > 0) {
+      const keys = propertyKeys.map((k) => sqlstring.escape(k)).join(', ');
+      sb.select.properties = `mapFilter((k, v) -> k IN (${keys}), properties)`;
+    } else {
+      sb.select.properties = 'properties';
+    }
   }
   if (select.country) {
     sb.select.country = 'country';

@@ -86,19 +86,25 @@ export const eventsScheme = z.object({
   includes: z
     .preprocess(
       (arg) => {
-        if (arg == null) {
-          return undefined;
-        }
-        if (Array.isArray(arg)) {
-          return arg;
-        }
-        if (typeof arg === 'string') {
-          const parts = arg.split(',').map((s) => s.trim()).filter(Boolean);
-          return parts;
-        }
+        if (arg == null) return undefined;
+        if (Array.isArray(arg)) return arg;
+        if (typeof arg === 'string')
+          return arg.split(',').map((s) => s.trim()).filter(Boolean);
         return arg;
       },
-      z.array(z.string())
+      z.array(z.string()),
+    )
+    .optional(),
+  property_keys: z
+    .preprocess(
+      (arg) => {
+        if (arg == null) return undefined;
+        if (Array.isArray(arg)) return arg;
+        if (typeof arg === 'string')
+          return arg.split(',').map((s) => s.trim()).filter(Boolean);
+        return arg;
+      },
+      z.array(z.string()),
     )
     .optional(),
 });
@@ -110,7 +116,7 @@ export async function events(
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(request);
-  const { limit, page: rawPage, event, start, end, profileId, includes, filters } = request.query;
+  const { limit, page: rawPage, event, start, end, profileId, includes, filters, property_keys } = request.query;
   const take = Math.max(Math.min(limit, 1000), 1);
   const cursor = Math.max(rawPage, 1) - 1;
   const options: GetEventListOptions = {
@@ -122,6 +128,7 @@ export async function events(
     take,
     profileId,
     filters,
+    propertyKeys: property_keys,
     select: {
       profile: false,
       meta: false,
