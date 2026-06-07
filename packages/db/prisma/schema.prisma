@@ -500,12 +500,13 @@ model ShareWidget {
 }
 
 model EventMeta {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String
-  conversion Boolean?
-  color      String?
-  icon       String?
-  projectId  String
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  conversion  Boolean?
+  color       String?
+  icon        String?
+  description String?
+  projectId   String
   project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())

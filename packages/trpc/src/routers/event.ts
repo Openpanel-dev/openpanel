@@ -38,10 +38,11 @@ export const eventRouter = createTRPCRouter({
         icon: z.string().optional(),
         color: z.string().optional(),
         conversion: z.boolean().optional(),
+        description: z.string().optional(),
       }),
     )
     .mutation(
-      async ({ input: { projectId, name, icon, color, conversion } }) => {
+      async ({ input: { projectId, name, icon, color, conversion, description } }) => {
         await getEventMetasCached.clear(projectId);
         return db.eventMeta.upsert({
           where: {
@@ -50,8 +51,8 @@ export const eventRouter = createTRPCRouter({
               projectId,
             },
           },
-          create: { projectId, name, icon, color, conversion },
-          update: { icon, color, conversion },
+          create: { projectId, name, icon, color, conversion, description },
+          update: { icon, color, conversion, description },
         });
       },
     ),

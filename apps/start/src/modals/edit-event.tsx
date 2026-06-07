@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
@@ -37,6 +38,7 @@ export default function EditEvent({ id }: Props) {
   const [selectedIcon, setIcon] = useState<string | null>(null);
   const [selectedColor, setColor] = useState(EventIconRecords.default!.color);
   const [conversion, setConversion] = useState(false);
+  const [description, setDescription] = useState('');
   const [step, setStep] = useState<'icon' | 'color'>('icon');
   useEffect(() => {
     if (event?.meta?.icon) {
@@ -47,6 +49,9 @@ export default function EditEvent({ id }: Props) {
     }
     if (event?.meta?.conversion) {
       setConversion(event.meta.conversion);
+    }
+    if (event?.meta?.description) {
+      setDescription(event.meta.description);
     }
   }, [event]);
 
@@ -86,6 +91,15 @@ export default function EditEvent({ id }: Props) {
               <span>Yes, this event is important!</span>
             </div>
           </label>
+        </div>
+        <div>
+          <Label className="mb-2 block">Description</Label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="What does this event mean? When does it fire?"
+            rows={3}
+          />
         </div>
         <AnimatePresence mode="wait">
           {step === 'icon' ? (
@@ -203,6 +217,7 @@ export default function EditEvent({ id }: Props) {
               icon: selectedIcon ?? EventIconRecords.default!.icon,
               color: selectedColor ?? EventIconRecords.default!.color,
               conversion,
+              description: description.trim() || undefined,
             })
           }
         >
