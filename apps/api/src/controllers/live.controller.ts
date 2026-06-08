@@ -12,6 +12,30 @@ import { subscribeToPublishedEvent } from '@openpanel/redis';
 import { getProjectAccess } from '@openpanel/trpc';
 import { getOrganizationAccess } from '@openpanel/trpc/src/access';
 
+/**
+ * Per-socket cap on undrained outbound bytes. Above this the client is
+ * considered too slow to consume the firehose, and we drop the message
+ * instead of buffering it indefinitely.
+ *
+ * Live data is fire-and-forget — dropping is safe. The alternative
+ * (queueing forever) is what caused the heap leak: in heap snapshots we
+ * saw ~105 sockets each holding 100-200 MB of pending WebSocket frames,
+ * each with the serialized event + profile payload. Heaviest pods had
+ * 200K+ {chunk, encoding, callback} entries retaining 200+ MB and
+ * 105 WritableStates retaining ~214 MB each.
+ */
+const MAX_WS_BUFFERED_BYTES = 1_000_000;
+
+function shouldSkipSend(socket: WebSocket): boolean {
+  if (socket.readyState !== socket.OPEN) {
+    return true;
+  }
+  if (socket.bufferedAmount > MAX_WS_BUFFERED_BYTES) {
+    return true;
+  }
+  return false;
+}
+
 export function wsVisitors(
   socket: WebSocket,
   req: FastifyRequest<{
@@ -23,7 +47,9 @@ export function wsVisitors(
   const { params } = req;
   const unsubscribe = subscribeToPublishedEvent('events', 'saved', (event) => {
     if (event?.projectId === params.projectId) {
+      if (shouldSkipSend(socket)) return;
       eventBuffer.getActiveVisitorCount(params.projectId).then((count) => {
+        if (shouldSkipSend(socket)) return;
         socket.send(String(count));
       });
     }
@@ -71,19 +97,24 @@ export async function wsProjectEvents(
     'events',
     type,
     async (event) => {
-      if (event.projectId === params.projectId) {
-        const profile = await getProfileById(event.profileId, event.projectId);
-        socket.send(
-          superjson.stringify(
-            access
-              ? {
-                  ...event,
-                  profile,
-                }
-              : transformMinimalEvent(event),
-          ),
-        );
-      }
+      if (event.projectId !== params.projectId) return;
+      // Drop the message if the client is falling behind. Without this the
+      // per-socket WritableState grows unbounded for slow/backgrounded tabs
+      // and the API pod heap fills up. Dropping live events is safe — the
+      // dashboard is for live tail, not durable delivery.
+      if (shouldSkipSend(socket)) return;
+      const profile = await getProfileById(event.profileId, event.projectId);
+      if (shouldSkipSend(socket)) return;
+      socket.send(
+        superjson.stringify(
+          access
+            ? {
+                ...event,
+                profile,
+              }
+            : transformMinimalEvent(event),
+        ),
+      );
     },
   );
 
@@ -122,9 +153,9 @@ export async function wsProjectNotifications(
     'notification',
     'created',
     (notification) => {
-      if (notification.projectId === params.projectId) {
-        socket.send(superjson.stringify(notification));
-      }
+      if (notification.projectId !== params.projectId) return;
+      if (shouldSkipSend(socket)) return;
+      socket.send(superjson.stringify(notification));
     },
   );
 
@@ -163,6 +194,7 @@ export async function wsOrganizationEvents(
     'organization',
     'subscription_updated',
     (message) => {
+      if (shouldSkipSend(socket)) return;
       socket.send(setSuperJson(message));
     },
   );
