@@ -9,11 +9,13 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type {
+  IAmplitudeImportConfig,
   IImportConfig,
   IMixpanelImportConfig,
   IUmamiImportConfig,
 } from '@openpanel/validation';
 import {
+  zAmplitudeImportConfig,
   zMixpanelImportConfig,
   zUmamiImportConfig,
 } from '@openpanel/validation';
@@ -31,7 +33,7 @@ import type { z } from 'zod';
 import { popModal, pushModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
-type Provider = 'umami' | 'plausible' | 'mixpanel';
+type Provider = 'umami' | 'plausible' | 'mixpanel' | 'amplitude';
 
 interface AddImportProps {
   provider: Provider;
@@ -41,6 +43,7 @@ interface AddImportProps {
 
 type UmamiFormData = z.infer<typeof zUmamiImportConfig>;
 type MixpanelFormData = z.infer<typeof zMixpanelImportConfig>;
+type AmplitudeFormData = z.infer<typeof zAmplitudeImportConfig>;
 
 interface UmamiImportProps {
   onSubmit: (config: IUmamiImportConfig) => void;
@@ -253,6 +256,77 @@ function MixpanelImport({
   );
 }
 
+interface AmplitudeImportProps {
+  onSubmit: (config: IAmplitudeImportConfig) => void;
+  isPending: boolean;
+  organizationId: string;
+}
+
+function AmplitudeImport({
+  onSubmit,
+  isPending,
+  organizationId,
+}: AmplitudeImportProps) {
+  const trpc = useTRPC();
+  const { data: projects = [] } = useQuery(
+    trpc.project.list.queryOptions({
+      organizationId,
+    }),
+  );
+
+  const form = useForm<AmplitudeFormData>({
+    resolver: zodResolver(zAmplitudeImportConfig),
+    defaultValues: {
+      provider: 'amplitude',
+      type: 'file',
+      fileUrl: '',
+      projectMapper: [],
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'projectMapper',
+  });
+
+  const handleSubmit = form.handleSubmit((data) => {
+    onSubmit(data);
+  });
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4 py-4">
+        <InputWithLabel
+          label="File URL"
+          placeholder="https://example.com/export.json"
+          error={form.formState.errors.fileUrl?.message}
+          info="Provide a publicly accessible URL to your Amplitude export (newline-delimited JSON, optionally gzipped)."
+          {...form.register('fileUrl')}
+        />
+
+        <ProjectMapper
+          fields={fields}
+          append={append}
+          remove={remove}
+          projects={projects}
+          register={form.register}
+          watch={form.watch}
+          setValue={form.setValue}
+        />
+      </div>
+
+      <div className="flex justify-between">
+        <Button type="button" variant="outline" onClick={() => popModal()}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? 'Starting...' : 'Start Import'}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export default function AddImport({ provider, name }: AddImportProps) {
   const { projectId, organizationId } = useAppParams();
   const trpc = useTRPC();
@@ -297,6 +371,14 @@ export default function AddImport({ provider, name }: AddImportProps) {
 
       {provider === 'mixpanel' && (
         <MixpanelImport
+          onSubmit={handleImportSubmit}
+          isPending={createImport.isPending}
+          organizationId={organizationId}
+        />
+      )}
+
+      {provider === 'amplitude' && (
+        <AmplitudeImport
           onSubmit={handleImportSubmit}
           isPending={createImport.isPending}
           organizationId={organizationId}

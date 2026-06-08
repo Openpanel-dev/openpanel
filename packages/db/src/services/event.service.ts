@@ -487,7 +487,7 @@ export async function getEventList(options: GetEventListOptions) {
   } = options;
   const { sb, getSql, join } = createSqlBuilder();
 
-  const MAX_DATE_INTERVAL_IN_DAYS = 365;
+  const MAX_DATE_INTERVAL_IN_DAYS = 365 * 5;
   // Cap the date interval to prevent infinity
   const safeDateIntervalInDays = Math.min(
     dateIntervalInDays,
@@ -1297,7 +1297,7 @@ export interface QueryEventsInput {
 }
 
 export async function queryEventsCore(
-  input: QueryEventsInput,
+  input: QueryEventsInput
 ): Promise<IClickhouseEvent[]> {
   const builder = clix(ch)
     .select<IClickhouseEvent>([])
@@ -1358,7 +1358,9 @@ export async function queryEventsCore(
 
   if (input.properties) {
     for (const [key, value] of Object.entries(input.properties)) {
-      builder.rawWhere(`properties[${sqlstring.escape(key)}] = ${sqlstring.escape(value)}`);
+      builder.rawWhere(
+        `properties[${sqlstring.escape(key)}] = ${sqlstring.escape(value)}`
+      );
     }
   }
 
@@ -1368,7 +1370,7 @@ export async function queryEventsCore(
   if (!input.sessionId) {
     const { startDate: start, endDate: end } = resolveDateRange(
       input.startDate,
-      input.endDate,
+      input.endDate
     );
     builder.where('created_at', 'BETWEEN', [
       clix.datetime(start),
@@ -1378,7 +1380,7 @@ export async function queryEventsCore(
     // If caller still wants to scope by date, honor it.
     const { startDate: start, endDate: end } = resolveDateRange(
       input.startDate,
-      input.endDate,
+      input.endDate
     );
     builder.where('created_at', 'BETWEEN', [
       clix.datetime(start),

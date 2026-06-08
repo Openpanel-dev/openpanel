@@ -105,7 +105,6 @@ export class UmamiProvider extends BaseImportProvider<UmamiRawEvent> {
     }
 
     const contentType = res.headers.get('content-type') || '';
-    const contentEnc = res.headers.get('content-encoding') || '';
     const contentLen = Number(res.headers.get('content-length') ?? 0);
 
     if (
@@ -123,33 +122,52 @@ export class UmamiProvider extends BaseImportProvider<UmamiRawEvent> {
       );
     }
 
-    const looksGzip =
-      /\.gz($|\?)/i.test(url) ||
-      /gzip/i.test(contentEnc) ||
-      /application\/gzip/i.test(contentType);
-    const looksBr = /br/i.test(contentEnc) || /\.br($|\?)/i.test(url);
-
     // WHATWG -> Node stream
-    const body = Readable.fromWeb(res.body as any);
+    const rawBody = Readable.fromWeb(res.body as any);
 
-    // Optional size guard during stream
+    // Detect gzip by peeking the first chunk's magic bytes (0x1f 0x8b) rather
+    // than trusting Content-Encoding/Type. fetch/undici already decompresses
+    // transport-level gzip/br while leaving the header in place; trusting it
+    // would gunzip already-plain bytes and throw "incorrect header check".
+    const iterator = rawBody[Symbol.asyncIterator]();
+    const first = await iterator.next();
+    const firstChunk = first.done ? undefined : (first.value as Buffer);
+
+    const isGzip =
+      !!firstChunk &&
+      firstChunk.length >= 2 &&
+      firstChunk[0] === 0x1f &&
+      firstChunk[1] === 0x8b;
+    const isBrotli = !isGzip && /\.br($|\?)/i.test(url);
+
+    // Replay the peeked chunk and enforce the optional size guard inline.
     let seenBytes = 0;
-    if (maxBytes) {
-      body.on('data', (chunk: Buffer) => {
+    async function* sourceChunks() {
+      if (firstChunk !== undefined) {
+        seenBytes += firstChunk.length;
+        yield firstChunk;
+      }
+      for (
+        let next = await iterator.next();
+        !next.done;
+        next = await iterator.next()
+      ) {
+        const chunk = next.value as Buffer;
         seenBytes += chunk.length;
-        if (seenBytes > maxBytes) {
-          controller.abort();
-          body.destroy(
-            new Error(`Stream exceeded size limit (${seenBytes} > ${maxBytes})`)
+        if (maxBytes && seenBytes > maxBytes) {
+          throw new Error(
+            `Stream exceeded size limit (${seenBytes} > ${maxBytes})`
           );
         }
-      });
+        yield chunk;
+      }
     }
+    const body = Readable.from(sourceChunks());
 
     // Build decode chain (gzip/brotli -> CSV parser)
-    const decompress = looksGzip
+    const decompress = isGzip
       ? createGunzip()
-      : looksBr
+      : isBrotli
         ? createBrotliDecompress()
         : null;
 

@@ -659,6 +659,14 @@ export type IUmamiImportConfig = z.infer<typeof zUmamiImportConfig>;
 export const zPlausibleImportConfig = createFileImportConfig('plausible');
 export type IPlausibleImportConfig = z.infer<typeof zPlausibleImportConfig>;
 
+export const zAmplitudeImportConfig = createFileImportConfig('amplitude').extend(
+  {
+    projectMapper: z.array(zProjectMapper),
+    mapScreenViewProperty: z.string().optional(),
+  },
+);
+export type IAmplitudeImportConfig = z.infer<typeof zAmplitudeImportConfig>;
+
 export const zMixpanelDataResidency = z.enum(['us', 'eu', 'in']);
 export type IMixpanelDataResidency = z.infer<typeof zMixpanelDataResidency>;
 
@@ -678,15 +686,17 @@ export type IMixpanelImportConfig = z.infer<typeof zMixpanelImportConfig>;
 export type IImportConfig =
   | IUmamiImportConfig
   | IPlausibleImportConfig
-  | IMixpanelImportConfig;
+  | IMixpanelImportConfig
+  | IAmplitudeImportConfig;
 
 export const zCreateImport = z.object({
   projectId: z.string().min(1),
-  provider: z.enum(['umami', 'plausible', 'mixpanel']),
+  provider: z.enum(['umami', 'plausible', 'mixpanel', 'amplitude']),
   config: z.union([
     zUmamiImportConfig,
     zPlausibleImportConfig,
     zMixpanelImportConfig,
+    zAmplitudeImportConfig,
   ]),
 });
 
