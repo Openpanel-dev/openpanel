@@ -25,6 +25,7 @@ import {
 import sourceMapSupport from 'source-map-support';
 import {
   healthcheck,
+  heapSnapshot,
   liveness,
   readiness,
 } from './controllers/healthcheck.controller';
@@ -199,6 +200,9 @@ const startServer = async () => {
       // New Kubernetes-style health endpoints
       instance.get('/healthz/live', liveness);
       instance.get('/healthz/ready', readiness);
+      // Heap snapshot dump — disabled unless HEAP_DUMP_TOKEN env is set
+      // (production safety). Caller authenticates via ?token=<HEAP_DUMP_TOKEN>.
+      instance.get('/healthz/heap-snapshot', heapSnapshot);
       instance.get('/', (_request, reply) =>
         reply.send({
           status: 'ok',
