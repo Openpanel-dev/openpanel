@@ -733,8 +733,11 @@ model BigQueryConnection {
   name                        String
   project                     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   gcpProjectId                String
+  gcpRegion                   String         @default("US")
   serviceAccountEmail         String
   serviceAccountJsonEncrypted String
+  lastTestedAt                DateTime?
+  lastTestStatus              Boolean?
   createdAt                   DateTime       @default(now())
   updatedAt                   DateTime       @default(now()) @updatedAt
   syncs                       BigQuerySync[]
@@ -759,9 +762,12 @@ model BigQuerySync {
   columnMapping  Json
   lastCursor     String?
   lastSyncedAt   DateTime?
-  lastSyncStatus String?
+  lastSyncStatus BigQuerySyncRunStatus?
   lastSyncError  String?
   isEnabled      Boolean                 @default(true)
+  errorRetryCount Int                    @default(0)
+  isErrorPaused  Boolean                 @default(false)
+  partitionFilter String?
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @default(now()) @updatedAt
   runs           BigQuerySyncRun[]
@@ -774,11 +780,12 @@ model BigQuerySyncRun {
   syncId       String                @db.Uuid
   sync         BigQuerySync          @relation(fields: [syncId], references: [id], onDelete: Cascade)
   projectId    String
-  status       BigQuerySyncRunStatus @default(pending)
-  rowCount     Int                   @default(0)
-  errorMessage String?
-  startedAt    DateTime              @default(now())
-  completedAt  DateTime?
+  status         BigQuerySyncRunStatus @default(pending)
+  rowCount       BigInt                @default(0)
+  bytesProcessed BigInt?
+  errorMessage   String?
+  startedAt      DateTime              @default(now())
+  completedAt    DateTime?
 
   @@map("bigquery_sync_runs")
 }

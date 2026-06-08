@@ -692,8 +692,115 @@ export const zCreateImport = z.object({
 
 export type ICreateImport = z.infer<typeof zCreateImport>;
 
-// Validates a BigQuery column reference: simple name or dot-notation for STRUCT
-// fields (e.g. "user.profile.email"). Allows alphanumeric and underscores per segment.
+// BigQuery identifier validators — enforce BQ naming rules at form-save time, not query time
+
+// GCP project ID: lowercase letters, digits, hyphens; 6-30 chars; must start/end with letter or digit
+const zGcpProjectId = z
+  .string()
+  .min(6, 'GCP project ID must be at least 6 characters')
+  .max(30, 'GCP project ID must be at most 30 characters')
+  .regex(
+    /^[a-z][a-z0-9\-]{4,28}[a-z0-9]$/,
+    'GCP project ID must start with a lowercase letter, contain only lowercase letters, digits, and hyphens, and end with a letter or digit',
+  );
+
+// BigQuery dataset/table names: letters, digits, underscores only (no hyphens without backtick quoting)
+const zBqIdentifier = z
+  .string()
+  .min(1)
+  .max(1024)
+  .regex(
+    /^[a-zA-Z0-9_]+$/,
+    'BigQuery identifiers may only contain letters, digits, and underscores (no hyphens or spaces)',
+  );
+
+// Service account JSON structure check — catches authorized_user creds pasted by mistake
+export const zServiceAccountJson = z
+  .string()
+  .min(1)
+  .superRefine((val, ctx) => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(val);
+    } catch {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Must be valid JSON',
+      });
+      return;
+    }
+    const sa = parsed as Record<string, unknown>;
+    if (sa.type !== 'service_account') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'Must be a service account key (type: "service_account"). Application Default Credentials are not supported.',
+      });
+    }
+    if (!sa.private_key || typeof sa.private_key !== 'string') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Service account key is missing the private_key field',
+      });
+    }
+    if (!sa.client_email || typeof sa.client_email !== 'string') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Service account key is missing the client_email field',
+      });
+    }
+    if (!sa.project_id || typeof sa.project_id !== 'string') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Service account key is missing the project_id field',
+      });
+    }
+  });
+
+// Connection creation schema — used in Phase 2 tRPC router
+export const zBigQueryConnectionCreate = z.object({
+  name: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(
+      /^[a-zA-Z0-9 _\-]+$/,
+      'Connection name may only contain letters, digits, spaces, hyphens, and underscores',
+    ),
+  serviceAccountJson: zServiceAccountJson,
+  gcpRegion: z
+    .enum([
+      'US',
+      'EU',
+      'us-central1',
+      'us-east1',
+      'us-east4',
+      'us-west1',
+      'us-west2',
+      'us-west3',
+      'us-west4',
+      'europe-west1',
+      'europe-west2',
+      'europe-west3',
+      'europe-west4',
+      'europe-west6',
+      'europe-north1',
+      'asia-east1',
+      'asia-east2',
+      'asia-northeast1',
+      'asia-northeast2',
+      'asia-northeast3',
+      'asia-south1',
+      'asia-southeast1',
+      'asia-southeast2',
+      'australia-southeast1',
+      'northamerica-northeast1',
+      'southamerica-east1',
+    ])
+    .default('US'),
+});
+
+// Column reference: simple field name or dot-notation path for STRUCT fields (e.g. user.profile.email)
 const zBqColRef = z
   .string()
   .min(1)
@@ -708,7 +815,6 @@ export const zBigQueryColumnMappingEvents = z.object({
   profileId: zBqColRef.optional(),
   deviceId: zBqColRef.optional(),
   timestamp: zBqColRef.optional(),
-  // Required for append mode — must point to a TIMESTAMP/DATETIME column
   insertTime: zBqColRef.optional(),
 });
 
@@ -724,10 +830,11 @@ export const zBigQueryColumnMappingProfiles = z.object({
 export const zBigQuerySyncConfig = z
   .object({
     displayName: z.string().min(1).max(100),
-    dataset: z.string().min(1),
-    tableName: z.string().min(1),
+    dataset: zBqIdentifier,
+    tableName: zBqIdentifier,
     syncMode: z.enum(['append', 'full']),
     schedule: z.enum(['hourly', 'daily', 'weekly']),
+    partitionFilter: z.string().max(500).optional(),
     columnMapping: z.discriminatedUnion('mappingType', [
       zBigQueryColumnMappingEvents,
       zBigQueryColumnMappingProfiles,
@@ -758,6 +865,10 @@ export type IBigQueryColumnMapping =
   | IBigQueryColumnMappingEvents
   | IBigQueryColumnMappingProfiles;
 export type IBigQuerySyncConfig = z.infer<typeof zBigQuerySyncConfig>;
+export type IBigQueryConnectionCreate = z.infer<
+  typeof zBigQueryConnectionCreate
+>;
+export { zGcpProjectId, zBqIdentifier };
 
 export * from './types.insights';
 export * from './types.validation';
