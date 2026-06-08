@@ -83,7 +83,11 @@ const parseRevenue = (revenue: unknown): number | undefined => {
 };
 
 export async function incomingEvent(
-  jobPayload: EventsQueuePayloadIncomingEvent['payload']
+  jobPayload: EventsQueuePayloadIncomingEvent['payload'],
+  // Kafka delivery coordinates, when the event came through the Kafka consumer.
+  // Logged so a duplicate row in ClickHouse can be traced back to the exact
+  // partition/offset that produced it.
+  meta?: { partition: number; offset: string }
 ) {
   const {
     geo,
@@ -98,6 +102,9 @@ export async function incomingEvent(
   const reqId = headers['request-id'] ?? 'unknown';
   const logger = baseLogger.child({
     reqId,
+    ...(meta
+      ? { kafkaPartition: meta.partition, kafkaOffset: meta.offset }
+      : {}),
   });
   const getProperty = (name: string): string | undefined => {
     // replace thing is just for older sdks when we didn't have `__`

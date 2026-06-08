@@ -25,6 +25,17 @@ export const eventsGroupJobDuration = new client.Histogram({
 
 register.registerMetric(eventsGroupJobDuration);
 
+// Kafka event messages reprocessed (same offset redelivered outside a
+// rebalance). Should stay ~0. A sustained non-zero rate means the consumer is
+// re-delivering messages it already handled — an offset-handling/duplicate bug.
+export const kafkaReprocessedTotal = new client.Counter({
+  name: 'kafka_events_reprocessed_total',
+  help: 'Kafka event messages reprocessed (offset redelivered outside a rebalance)',
+  labelNames: ['partition'],
+});
+
+register.registerMetric(kafkaReprocessedTotal);
+
 queues.forEach((queue) => {
   register.registerMetric(
     new client.Gauge({

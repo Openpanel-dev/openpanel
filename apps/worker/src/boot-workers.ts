@@ -9,6 +9,7 @@ import {
   gscQueue,
   importQueue,
   insightsQueue,
+  isKafkaConfigured,
   miscQueue,
   notificationQueue,
   queueLogger,
@@ -112,10 +113,15 @@ export function bootWorkers() {
   const workers: (Worker | GroupWorker<any>)[] = [];
   const extraStops: Array<() => Promise<unknown>> = [];
 
-  // Start event workers based on enabled queues
+  // Start event workers based on enabled queues.
+  // When Kafka is configured the producer routes every event to Kafka, so the
+  // GroupMQ event shards would only poll an empty queue — skip them entirely
+  // and let the Kafka consumer handle ingestion.
   const eventQueuesToStart: number[] = [];
 
-  if (enabledQueues.includes('events')) {
+  if (isKafkaConfigured()) {
+    logger.info('Kafka is configured, skipping GroupMQ event workers');
+  } else if (enabledQueues.includes('events')) {
     // Start all event shards
     for (let i = 0; i < EVENTS_GROUP_QUEUES_SHARDS; i++) {
       eventQueuesToStart.push(i);
@@ -169,8 +175,9 @@ export function bootWorkers() {
     logger.info({ concurrency }, `Started worker for ${queueName}`);
   }
 
-  // Start Kafka events consumer (parallel to groupmq events for allow-listed project IDs)
-  if (enabledQueues.includes('events_kafka') && process.env.KAFKA_BROKERS) {
+  // Start Kafka events consumer. When Kafka is configured this fully replaces
+  // the GroupMQ event workers (which are skipped above).
+  if (enabledQueues.includes('events_kafka') && isKafkaConfigured()) {
     enableEventsHeartbeat();
     let handle: KafkaConsumerHandle | null = null;
     const startPromise = startKafkaEventsConsumer()

@@ -218,7 +218,7 @@ async function handleTrack(
 
   const partitionKey = groupId || generateId();
 
-  if (shouldUseKafka(projectId)) {
+  if (shouldUseKafka()) {
     promises.push(produceIncomingEvent(queueData, partitionKey));
   } else {
     promises.push(
