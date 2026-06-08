@@ -692,34 +692,61 @@ export const zCreateImport = z.object({
 
 export type ICreateImport = z.infer<typeof zCreateImport>;
 
+// Validates a BigQuery column reference: simple name or dot-notation for STRUCT
+// fields (e.g. "user.profile.email"). Allows alphanumeric and underscores per segment.
+const zBqColRef = z
+  .string()
+  .min(1)
+  .regex(
+    /^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*$/,
+    'Column reference must be a valid BigQuery field name or dot-notation path (e.g. user.email)',
+  );
+
 export const zBigQueryColumnMappingEvents = z.object({
-  eventName: z.string().optional(),
-  profileId: z.string().optional(),
-  deviceId: z.string().optional(),
-  timestamp: z.string().optional(),
-  insertTime: z.string().optional(),
+  mappingType: z.literal('events'),
+  eventName: zBqColRef.optional(),
+  profileId: zBqColRef.optional(),
+  deviceId: zBqColRef.optional(),
+  timestamp: zBqColRef.optional(),
+  // Required for append mode — must point to a TIMESTAMP/DATETIME column
+  insertTime: zBqColRef.optional(),
 });
 
 export const zBigQueryColumnMappingProfiles = z.object({
-  profileIdColumn: z.string().min(1),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  email: z.string().optional(),
-  avatar: z.string().optional(),
+  mappingType: z.literal('profiles'),
+  profileIdColumn: zBqColRef,
+  firstName: zBqColRef.optional(),
+  lastName: zBqColRef.optional(),
+  email: zBqColRef.optional(),
+  avatar: zBqColRef.optional(),
 });
 
-export const zBigQuerySyncConfig = z.object({
-  displayName: z.string().min(1).max(100),
-  dataset: z.string().min(1),
-  tableName: z.string().min(1),
-  mappingType: z.enum(['events', 'profiles']),
-  syncMode: z.enum(['append', 'full']),
-  schedule: z.enum(['hourly', 'daily', 'weekly']),
-  columnMapping: z.union([
-    zBigQueryColumnMappingEvents,
-    zBigQueryColumnMappingProfiles,
-  ]),
-});
+export const zBigQuerySyncConfig = z
+  .object({
+    displayName: z.string().min(1).max(100),
+    dataset: z.string().min(1),
+    tableName: z.string().min(1),
+    syncMode: z.enum(['append', 'full']),
+    schedule: z.enum(['hourly', 'daily', 'weekly']),
+    columnMapping: z.discriminatedUnion('mappingType', [
+      zBigQueryColumnMappingEvents,
+      zBigQueryColumnMappingProfiles,
+    ]),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.syncMode === 'append' &&
+      data.columnMapping.mappingType === 'events' &&
+      !data.columnMapping.insertTime
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['columnMapping', 'insertTime'],
+        message:
+          'insertTime column is required for append mode — it must point to a TIMESTAMP column used as the incremental cursor',
+      });
+    }
+  });
 
 export type IBigQueryColumnMappingEvents = z.infer<
   typeof zBigQueryColumnMappingEvents
