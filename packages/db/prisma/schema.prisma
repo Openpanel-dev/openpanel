@@ -251,9 +251,9 @@ model Project {
   notificationRules NotificationRule[]
   notifications     Notification[]
   imports           Import[]
-  gscConnection      GscConnection?
-  bigQueryConnection BigQueryConnection?
-  bigQuerySyncs      BigQuerySync[]
+  gscConnection       GscConnection?
+  bigQueryConnections BigQueryConnection[]
+  bigQuerySyncs       BigQuerySync[]
   cohorts            Cohort[]
 
   // When deleteAt > now(), the project will be deleted
@@ -729,7 +729,8 @@ enum BigQuerySyncRunStatus {
 
 model BigQueryConnection {
   id                          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId                   String         @unique
+  projectId                   String
+  name                        String
   project                     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   gcpProjectId                String
   serviceAccountEmail         String
@@ -738,6 +739,7 @@ model BigQueryConnection {
   updatedAt                   DateTime       @default(now()) @updatedAt
   syncs                       BigQuerySync[]
 
+  @@unique([projectId, name])
   @@map("bigquery_connections")
 }
 
