@@ -217,7 +217,7 @@ export default function EditEvent({ id }: Props) {
               icon: selectedIcon ?? EventIconRecords.default!.icon,
               color: selectedColor ?? EventIconRecords.default!.color,
               conversion,
-              description: description.trim() || undefined,
+              description: description.trim(),
             })
           }
         >
