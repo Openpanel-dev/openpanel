@@ -1,94 +1,47 @@
+import { DateTime, round } from '@openpanel/common';
+import type { IChartEventFilter } from '@openpanel/validation';
+import { range } from 'ramda';
 import sqlstring from 'sqlstring';
 
 import { TABLE_NAMES, chQuery } from '../clickhouse/client';
+import { getEventFiltersWhereClause } from './chart.service';
 
 type IGetWeekRetentionInput = {
   projectId: string;
 };
 
-// https://www.geeksforgeeks.org/how-to-calculate-retention-rate-in-sql/
-export function getRetentionCohortTable({ projectId }: IGetWeekRetentionInput) {
-  const sql = `
-WITH 
-  m AS
-  (
-      SELECT
-          profile_id,
-          max(toWeek(created_at)) AS last_seen
-      FROM ${TABLE_NAMES.events}
-      WHERE (project_id = ${sqlstring.escape(projectId)}) AND (profile_id != device_id)
-      GROUP BY profile_id
-  ),
-  n AS
-  (
-      SELECT
-          profile_id,
-          min(toWeek(created_at)) AS first_seen
-      FROM ${TABLE_NAMES.events}
-      WHERE (project_id = ${sqlstring.escape(projectId)}) AND (profile_id != device_id)
-      GROUP BY profile_id
-  ),
-  a AS
-  (
-      SELECT
-          m.profile_id,
-          m.last_seen,
-          n.first_seen,
-          m.last_seen - n.first_seen AS diff
-      FROM m, n
-      WHERE m.profile_id = n.profile_id
-  )
-SELECT
-  first_seen,
-  SUM(multiIf(diff = 0, 1, 0)) AS period_0,
-  SUM(multiIf(diff = 1, 1, 0)) AS period_1,
-  SUM(multiIf(diff = 2, 1, 0)) AS period_2,
-  SUM(multiIf(diff = 3, 1, 0)) AS period_3,
-  SUM(multiIf(diff = 4, 1, 0)) AS period_4,
-  SUM(multiIf(diff = 5, 1, 0)) AS period_5,
-  SUM(multiIf(diff = 6, 1, 0)) AS period_6,
-  SUM(multiIf(diff = 7, 1, 0)) AS period_7,
-  SUM(multiIf(diff = 8, 1, 0)) AS period_8,
-  SUM(multiIf(diff = 9, 1, 0)) AS period_9
-FROM a
-GROUP BY first_seen
-ORDER BY first_seen ASC
-  `;
-
-  return chQuery<{
-    first_seen: number;
-    period_0: number;
-    period_1: number;
-    period_2: number;
-    period_3: number;
-    period_4: number;
-    period_5: number;
-    period_6: number;
-    period_7: number;
-    period_8: number;
-    period_9: number;
-  }>(sql);
-}
-
-// Retention graph
-// https://www.sisense.com/blog/how-to-calculate-cohort-retention-in-sql/
+// Week-over-week retention graph: for each week, how many active users were
+// also active the following week.
+//
+// Instead of self-joining the raw events table (O(events²) per profile), we
+// first collapse events to one row per (profile, week) in `weekly_active`,
+// then self-join that much smaller set to its next week. Same result, a
+// fraction of the work on high-volume projects.
 export function getRetentionSeries({ projectId }: IGetWeekRetentionInput) {
   const sql = `
+    WITH weekly_active AS (
+      SELECT
+        profile_id,
+        toStartOfWeek(created_at) AS week
+      FROM ${TABLE_NAMES.events}
+      WHERE project_id = ${sqlstring.escape(projectId)}
+        AND profile_id != device_id
+      GROUP BY profile_id, week
+    )
     SELECT
-      toStartOfWeek(events.created_at) AS date,
-      countDistinct(events.profile_id) AS active_users,
-      countDistinct(future_events.profile_id) AS retained_users,
-      (100 * (countDistinct(future_events.profile_id) / CAST(countDistinct(events.profile_id), 'float'))) AS retention
-    FROM ${TABLE_NAMES.events} as events
-    LEFT JOIN ${TABLE_NAMES.events} AS future_events ON 
-      events.profile_id = future_events.profile_id
-      AND toStartOfWeek(events.created_at) = toStartOfWeek(future_events.created_at - toIntervalWeek(1))
-      AND future_events.profile_id != future_events.device_id
-    WHERE 
-      project_id = ${sqlstring.escape(projectId)} 
-      AND events.profile_id != events.device_id
-    GROUP BY 1
-    ORDER BY date ASC`;
+      cur.week AS date,
+      countDistinct(cur.profile_id) AS active_users,
+      countDistinct(nxt.profile_id) AS retained_users,
+      (100 * (countDistinct(nxt.profile_id) / CAST(countDistinct(cur.profile_id), 'Float64'))) AS retention
+    FROM weekly_active AS cur
+    LEFT JOIN weekly_active AS nxt
+      ON cur.profile_id = nxt.profile_id
+      AND nxt.week = cur.week + toIntervalWeek(1)
+    GROUP BY date
+    ORDER BY date ASC
+    -- Unmatched LEFT JOIN rows must be NULL (not the empty-string default),
+    -- otherwise countDistinct(nxt.profile_id) counts '' as a retained user.
+    SETTINGS join_use_nulls = 1`;
 
   return chQuery<{
     date: string;
@@ -180,8 +133,19 @@ export async function getWeeklyRetentionSeriesCore(projectId: string) {
   return getRetentionSeries({ projectId });
 }
 
+// Weekly active-user retention cohort over the last 12 weeks, computed by the
+// unified getRetentionCohort engine (replaces the legacy, broken
+// getRetentionCohortTable). firstEvent/secondEvent are omitted so any
+// identified activity counts toward the cohort.
 export async function getRetentionCohortCore(projectId: string) {
-  return getRetentionCohortTable({ projectId });
+  const end = DateTime.now();
+  const start = end.minus({ weeks: 12 });
+  return getRetentionCohort({
+    projectId,
+    interval: 'week',
+    startDate: start.toFormat('yyyy-MM-dd HH:mm:ss'),
+    endDate: end.toFormat('yyyy-MM-dd HH:mm:ss'),
+  });
 }
 
 export async function getEngagementCore(projectId: string) {
@@ -215,4 +179,326 @@ export async function getEngagementCore(projectId: string) {
     },
     distribution: raw,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Cohort retention matrix
+//
+// This is the single source of truth for retention cohorts. It powers the
+// dashboard retention chart (via the tRPC `cohort` procedure) as well as the
+// MCP / agent / REST retention endpoints.
+//
+// Definition: every user is assigned to exactly ONE cohort, the interval of
+// their FIRST `firstEvent` within the window (first-touch). For each cohort we
+// count how many of those users performed `secondEvent` 0..N intervals later.
+//   - criteria 'on'           -> active exactly k intervals after  (=)
+//   - criteria 'on_or_after'  -> active at least k intervals after  (>=, cumulative)
+// When `firstEvent` / `secondEvent` is empty the name filter is dropped and the
+// query measures retention on ANY activity (active-user retention).
+// ---------------------------------------------------------------------------
+
+export type IRetentionInterval = 'minute' | 'hour' | 'day' | 'week' | 'month';
+export type IRetentionCriteria = 'on' | 'on_or_after';
+
+export type IGetRetentionCohortInput = {
+  projectId: string;
+  /** Event name(s) defining cohort entry. Empty/undefined => any event. */
+  firstEvent?: string[];
+  /** Event name(s) that count as "returned". Empty/undefined => any event. */
+  secondEvent?: string[];
+  criteria?: IRetentionCriteria;
+  interval?: IRetentionInterval;
+  /** ISO or `yyyy-MM-dd HH:mm:ss`. */
+  startDate: string;
+  /** ISO or `yyyy-MM-dd HH:mm:ss`. */
+  endDate: string;
+  /**
+   * Property and/or cohort filters scoping the analysed events. Cohort
+   * membership (inCohort/notInCohort) keeps the fast cohort_events_mv path;
+   * any property/column filter falls back to the raw events table.
+   */
+  filters?: IChartEventFilter[];
+};
+
+export type IRetentionCohortRow = {
+  cohort_interval: string;
+  sum: number;
+  values: number[];
+  percentages: number[];
+};
+
+const SQL_START_OF: Record<IRetentionInterval, string> = {
+  minute: 'toDate',
+  hour: 'toDate',
+  day: 'toDate',
+  week: 'toStartOfWeek',
+  month: 'toStartOfMonth',
+};
+
+const SQL_INTERVAL: Record<IRetentionInterval, string> = {
+  minute: 'DAY',
+  hour: 'DAY',
+  day: 'DAY',
+  week: 'WEEK',
+  month: 'MONTH',
+};
+
+const LUXON_UNIT: Record<IRetentionInterval, 'days' | 'weeks' | 'months'> = {
+  minute: 'days',
+  hour: 'days',
+  day: 'days',
+  week: 'weeks',
+  month: 'months',
+};
+
+// Normalize an ISO or `yyyy-MM-dd HH:mm:ss` string into ClickHouse date-time form.
+function utc(date: string) {
+  return date.replace('T', ' ').slice(0, 19);
+}
+
+// Number of `interval` buckets spanned by [startDate, endDate]; drives the
+// number of retention columns (0..diffInterval).
+function diffIntervalCount(
+  startDate: string,
+  endDate: string,
+  interval: IRetentionInterval
+) {
+  const unit = LUXON_UNIT[interval];
+  const start = DateTime.fromFormat(utc(startDate), 'yyyy-MM-dd HH:mm:ss', {
+    zone: 'utc',
+  });
+  const end = DateTime.fromFormat(utc(endDate), 'yyyy-MM-dd HH:mm:ss', {
+    zone: 'utc',
+  });
+  return Math.max(0, Math.floor(end.diff(start, unit).as(unit)));
+}
+
+// Build the `name = ... / name IN (...)` predicate; null means "any event".
+function eventNameWhere(events: string[] | undefined): string | null {
+  if (!events || events.length === 0) {
+    return null;
+  }
+  if (events.length === 1) {
+    return `name = ${sqlstring.escape(events[0])}`;
+  }
+  return `name IN (${events.map((event) => sqlstring.escape(event)).join(', ')})`;
+}
+
+export async function getRetentionCohort(input: IGetRetentionCohortInput) {
+  const {
+    projectId,
+    firstEvent,
+    secondEvent,
+    criteria = 'on_or_after',
+    interval = 'day',
+    startDate,
+    endDate,
+    filters = [],
+  } = input;
+
+  const diffInterval = diffIntervalCount(startDate, endDate, interval);
+  const sqlInterval = SQL_INTERVAL[interval];
+  const sqlToStartOf = SQL_START_OF[interval];
+  const countCriteria: '>=' | '=' = criteria === 'on_or_after' ? '>=' : '=';
+
+  const start = utc(startDate);
+  const end = utc(endDate);
+  const escProject = sqlstring.escape(projectId);
+  const firstWhere = eventNameWhere(firstEvent);
+  const secondWhere = eventNameWhere(secondEvent);
+
+  // Hybrid source: cohort_events_mv (skinny, fast) carries only
+  // project_id/name/created_at/profile_id, so any filter referencing event
+  // properties or columns forces a fallback to the raw events table. Cohort
+  // membership filters only need profile_id, so they stay on the fast path.
+  const needRawEvents = filters.some(
+    (filter) =>
+      filter.operator !== 'inCohort' && filter.operator !== 'notInCohort'
+  );
+  const source = needRawEvents ? TABLE_NAMES.events : TABLE_NAMES.cohort_events_mv;
+
+  const baseConditions = [`project_id = ${escProject}`];
+  if (needRawEvents) {
+    // cohort_events_mv only stores identified-user rows; replicate that here.
+    baseConditions.push('profile_id != device_id');
+  }
+  if (filters.length > 0) {
+    baseConditions.push(
+      ...Object.values(getEventFiltersWhereClause(filters, projectId))
+    );
+  }
+  const baseWhere = baseConditions.join('\n        AND ');
+
+  const columns = range(0, diffInterval + 1);
+  const usersSelect = columns
+    .map(
+      (index) =>
+        `groupUniqArrayIf(profile_id, x_after_cohort ${countCriteria} ${index}) AS interval_${index}_users`
+    )
+    .join(',\n          ');
+  const countsSelect = columns
+    .map(
+      (index) =>
+        `length(interval_${index}_users) AS interval_${index}_user_count`
+    )
+    .join(',\n          ');
+
+  const cohortQuery = `
+    WITH
+    cohort_users AS (
+      SELECT
+        profile_id AS userID,
+        ${sqlToStartOf}(min(created_at)) AS cohort_interval
+      FROM ${source}
+      WHERE ${baseWhere}
+        ${firstWhere ? `AND ${firstWhere}` : ''}
+        AND created_at >= toDateTime('${start}')
+        AND created_at <= toDateTime('${end}')
+      GROUP BY profile_id
+    ),
+    last_event AS (
+      SELECT
+        profile_id,
+        toDate(created_at) AS event_date
+      FROM ${source}
+      WHERE ${baseWhere}
+        ${secondWhere ? `AND ${secondWhere}` : ''}
+        AND created_at >= toDateTime('${start}')
+        AND created_at <= toDateTime('${end}') + INTERVAL ${diffInterval} ${sqlInterval}
+    ),
+    retention_matrix AS (
+      SELECT
+        f.cohort_interval,
+        l.profile_id,
+        dateDiff('${sqlInterval}', f.cohort_interval, ${sqlToStartOf}(l.event_date)) AS x_after_cohort
+      FROM cohort_users AS f
+      INNER JOIN last_event AS l ON f.userID = l.profile_id
+      WHERE l.event_date >= f.cohort_interval
+        AND dateDiff('${sqlInterval}', f.cohort_interval, ${sqlToStartOf}(l.event_date)) <= ${diffInterval}
+    ),
+    interval_users AS (
+      SELECT
+        cohort_interval,
+        ${usersSelect}
+      FROM retention_matrix
+      GROUP BY cohort_interval
+    ),
+    cohort_sizes AS (
+      SELECT
+        cohort_interval,
+        COUNT(DISTINCT userID) AS total_first_event_count
+      FROM cohort_users
+      GROUP BY cohort_interval
+    )
+    SELECT
+      interval_users.cohort_interval AS cohort_interval,
+      cs.total_first_event_count AS total_first_event_count,
+      ${countsSelect}
+    FROM interval_users
+    LEFT JOIN cohort_sizes AS cs ON interval_users.cohort_interval = cs.cohort_interval
+    ORDER BY cohort_interval ASC
+  `;
+
+  const cohortData = await chQuery<{
+    cohort_interval: string;
+    total_first_event_count: number;
+    [key: string]: number | string;
+  }>(cohortQuery);
+
+  // Reference point for cohort maturity: we only have return data up to "now",
+  // so periods that haven't elapsed yet are excluded from the weighted average.
+  const until = DateTime.utc().toFormat('yyyy-MM-dd HH:mm:ss');
+  return processCohortData(cohortData, diffInterval, interval, until);
+}
+
+// Number of fully-elapsed periods between a cohort's start and the reference
+// date. Periods beyond this haven't happened yet, so they carry no return data
+// and must be excluded from the average. Fails open (treats everything as
+// mature) when dates are missing/unparseable.
+function maturePeriodCount(
+  cohortInterval: string,
+  until: string | undefined,
+  interval: IRetentionInterval
+): number {
+  if (!until) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const unit = LUXON_UNIT[interval];
+  const cohort = DateTime.fromFormat(cohortInterval.slice(0, 10), 'yyyy-MM-dd', {
+    zone: 'utc',
+  });
+  const ref = DateTime.fromFormat(until, 'yyyy-MM-dd HH:mm:ss', { zone: 'utc' });
+  if (!cohort.isValid || !ref.isValid) {
+    return Number.POSITIVE_INFINITY;
+  }
+  return Math.floor(ref.diff(cohort, unit).as(unit));
+}
+
+// Shapes the raw ClickHouse matrix into per-cohort rows + a leading weighted-
+// average row.
+//
+// The average is a maturity-aware pooled rate: for each period column it pools
+// only the cohorts old enough to have actually reached that period
+// (cohort_interval + N intervals <= `until`). This keeps not-yet-elapsed cells
+// from being read as churn AND keeps genuine zeros in, so the late curve is not
+// inflated. Counts are normalised to the representative (mean) cohort size, so
+// the row is internally consistent: period 0 equals Total profiles and the
+// curve starts at 100%.
+export function processCohortData(
+  data: Array<{
+    cohort_interval: string;
+    total_first_event_count: number;
+    [key: string]: number | string;
+  }>,
+  diffInterval: number,
+  interval: IRetentionInterval = 'day',
+  until?: string
+): IRetentionCohortRow[] {
+  if (data.length === 0) {
+    return [];
+  }
+
+  const columns = range(0, diffInterval + 1);
+  const processed = data.map((row) => {
+    const sum = row.total_first_event_count;
+    const values = columns.map(
+      (index) => (row[`interval_${index}_user_count`] || 0) as number
+    );
+
+    return {
+      cohort_interval: row.cohort_interval,
+      sum,
+      values,
+      percentages: values.map((value) => (sum > 0 ? round(value / sum, 2) : 0)),
+    };
+  });
+
+  const maturePeriods = processed.map((row) =>
+    maturePeriodCount(row.cohort_interval, until, interval)
+  );
+  const totalSize = processed.reduce((acc, row) => acc + row.sum, 0);
+  const representativeSize = round(totalSize / processed.length, 0);
+
+  const averageRow: IRetentionCohortRow = {
+    cohort_interval: 'Weighted Average',
+    sum: representativeSize,
+    values: [],
+    percentages: [],
+  };
+
+  for (const index of columns) {
+    let matureSize = 0;
+    let retained = 0;
+    processed.forEach((row, i) => {
+      if (index <= maturePeriods[i]!) {
+        matureSize += row.sum;
+        retained += row.values[index]!;
+      }
+    });
+    const rate = matureSize > 0 ? retained / matureSize : 0;
+    averageRow.percentages.push(round(rate, 2));
+    averageRow.values.push(round(rate * representativeSize, 0));
+  }
+
+  return [averageRow, ...processed];
 }

@@ -125,7 +125,9 @@ export function ReportSeries() {
   });
 
   const showSegment = !['retention', 'funnel', 'sankey'].includes(chartType);
-  const showAddFilter = !['retention', 'sankey'].includes(chartType);
+  // Retention supports property + cohort filters (hybrid cohort_events_mv /
+  // raw-events engine), so the filter UI is enabled for it.
+  const showAddFilter = !['sankey'].includes(chartType);
   const showDisplayNameInput = !['retention', 'sankey'].includes(chartType);
   const options = useSelector((state) => state.report.options);
   const isSankey = chartType === 'sankey';

@@ -14,6 +14,11 @@ export function ReportRetentionChart() {
   const eventSeries = report.series.filter((item) => item.type === 'event');
   const firstEvent = (eventSeries[0]?.filters?.[0]?.value ?? []).map(String);
   const secondEvent = (eventSeries[1]?.filters?.[0]?.value ?? []).map(String);
+  // filters[0] on each retention series is the event-name selector; everything
+  // else is an audience filter (property or cohort) applied to the cohort.
+  const filters = eventSeries.flatMap((item) =>
+    (item.filters ?? []).filter((filter) => filter.name !== 'name'),
+  );
   const isEnabled =
     firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
 
@@ -26,6 +31,7 @@ export function ReportRetentionChart() {
       {
         firstEvent,
         secondEvent,
+        filters,
         projectId: report.projectId,
         range: report.range,
         startDate: report.startDate,
