@@ -67,6 +67,9 @@ export interface IReplayPayload {
   started_at: string;
   ended_at: string;
   payload: string;
+  // Server-issued session id (from a prior /track response) the SDK echoes back,
+  // so the chunk is filed under the right session without device resolution.
+  sessionId?: string;
 }
 
 export type ITrackHandlerPayload =
@@ -167,6 +170,7 @@ export const zReplayPayload = z.object({
   started_at: z.string().datetime(),
   ended_at: z.string().datetime(),
   payload: z.string().max(1_048_576 * 2), // 2MB max
+  sessionId: z.string().max(64).optional(),
 }) satisfies z.ZodType<IReplayPayload>;
 
 export const zTrackHandlerPayload = z.discriminatedUnion('type', [

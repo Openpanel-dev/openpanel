@@ -71,6 +71,29 @@ function getIdentity(body: ITrackHandlerPayload): IIdentifyPayload | undefined {
   return undefined;
 }
 
+const MAX_OVERRIDE_DEVICE_ID_LENGTH = 64;
+
+function sanitizeOverrideDeviceId(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') {
+    return undefined;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > MAX_OVERRIDE_DEVICE_ID_LENGTH) {
+    return undefined;
+  }
+  return trimmed;
+}
+
+// Resolve a caller-supplied device id from a track event's `properties.__deviceId`.
+export function getOverrideDeviceId(
+  body: ITrackHandlerPayload
+): string | undefined {
+  if (body.type !== 'track') {
+    return undefined;
+  }
+  return sanitizeOverrideDeviceId(body.payload?.properties?.__deviceId);
+}
+
 export function getTimestamp(
   timestamp: FastifyRequest['timestamp'],
   payload: ITrackHandlerPayload['payload']
@@ -148,11 +171,7 @@ async function buildContext(
     validatedBody.payload.profileId = profileId;
   }
 
-  const overrideDeviceId =
-    validatedBody.type === 'track' &&
-    typeof validatedBody.payload?.properties?.__deviceId === 'string'
-      ? validatedBody.payload?.properties.__deviceId
-      : undefined;
+  const overrideDeviceId = getOverrideDeviceId(validatedBody);
 
   // Get geo location (needed for track and identify)
   const [geo, salts] = await Promise.all([getGeoLocation(ip), getSalts()]);
@@ -310,17 +329,19 @@ async function handleDecrement(
   await adjustProfileProperty(payload, context.projectId, -1);
 }
 
-async function handleReplay(
+// Replay only needs the server-issued session id (the SDK echoes it back). Trust
+// it — scoped to the authed project, unguessable, same trust level as event data.
+export async function handleReplay(
   payload: IReplayPayload,
-  context: TrackContext
+  { projectId, sessionId }: { projectId: string; sessionId: string | undefined }
 ): Promise<void> {
-  if (!context.sessionId) {
+  if (!sessionId) {
     throw new HttpError('Session ID is required for replay', { status: 400 });
   }
 
   const row = {
-    project_id: context.projectId,
-    session_id: context.sessionId,
+    project_id: projectId,
+    session_id: sessionId,
     chunk_index: payload.chunk_index,
     started_at: payload.started_at,
     ended_at: payload.ended_at,
@@ -395,9 +416,22 @@ export async function handler(
     case 'decrement':
       await handleDecrement(validatedBody.payload, context);
       break;
-    case 'replay':
-      await handleReplay(validatedBody.payload, context);
+    case 'replay': {
+      // BACKCOMPAT(replay-sessionid): TEMPORARY legacy branch, remove when new SDK is fully deployed
+      if (!validatedBody.payload.sessionId) {
+        await handleReplay(validatedBody.payload, {
+          projectId: context.projectId,
+          sessionId: context.sessionId,
+        });
+        break;
+      }
+
+      await handleReplay(validatedBody.payload, {
+        projectId: context.projectId,
+        sessionId: validatedBody.payload.sessionId,
+      });
       break;
+    }
     case 'group':
       await handleGroup(validatedBody.payload, context);
       break;
@@ -484,7 +518,7 @@ export async function fetchDeviceId(
   } catch (error) {
     request.log.error(
       { err: error },
-      'Error getting session end GET /track/device-id',
+      'Error getting session end GET /track/device-id'
     );
   }
 

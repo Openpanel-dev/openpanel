@@ -124,6 +124,7 @@ export class OpenPanel extends OpenPanelBase {
                 type: 'replay',
                 payload: {
                   ...chunk,
+                  sessionId: this.sessionId,
                 },
               });
             });

@@ -18,7 +18,13 @@ export async function getDeviceId({
   overrideDeviceId?: string;
 }) {
   if (overrideDeviceId) {
-    return { deviceId: overrideDeviceId, sessionId: '' };
+    // Resolve a caller-supplied device id through the same path as internal ones
+    // (stable, so it's both candidates) — sessions open/extend/close identically.
+    return await getInfoFromSession({
+      projectId,
+      currentDeviceId: overrideDeviceId,
+      previousDeviceId: overrideDeviceId,
+    });
   }
 
   if (!ua) {
