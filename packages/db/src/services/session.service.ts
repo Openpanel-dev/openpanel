@@ -18,7 +18,6 @@ export type IClickhouseSession = {
   profile_id: string;
   event_count: number;
   screen_view_count: number;
-  screen_views: string[];
   entry_path: string;
   entry_origin: string;
   exit_path: string;
