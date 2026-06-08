@@ -1,11 +1,12 @@
 import type {
   CohortDefinition,
+  IBigQueryColumnMapping as IBigQueryColumnMappingType,
   IImportConfig,
   IIntegrationConfig,
   INotificationRuleConfig,
+  InsightPayload,
   IProjectFilters,
   IWidgetOptions,
-  InsightPayload,
 } from '@openpanel/validation';
 import type {
   IClickhouseBotEvent,
@@ -27,6 +28,7 @@ declare global {
     type IPrismaClickhouseProfile = IClickhouseProfile;
     type IPrismaClickhouseBotEvent = IClickhouseBotEvent;
     type IPrismaCohortDefinition = CohortDefinition;
+    type IBigQueryColumnMapping = IBigQueryColumnMappingType;
     // Each ChatMessage row stores one Better Agent `ConversationItem`
     // (message, tool call, or tool result) as JSON. Typed as `unknown[]`
     // here to avoid pulling `@better-agent/core` into @openpanel/db's

@@ -692,6 +692,46 @@ export const zCreateImport = z.object({
 
 export type ICreateImport = z.infer<typeof zCreateImport>;
 
+export const zBigQueryColumnMappingEvents = z.object({
+  eventName: z.string().optional(),
+  profileId: z.string().optional(),
+  deviceId: z.string().optional(),
+  timestamp: z.string().optional(),
+  insertTime: z.string().optional(),
+});
+
+export const zBigQueryColumnMappingProfiles = z.object({
+  profileIdColumn: z.string().min(1),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  email: z.string().optional(),
+  avatar: z.string().optional(),
+});
+
+export const zBigQuerySyncConfig = z.object({
+  displayName: z.string().min(1).max(100),
+  dataset: z.string().min(1),
+  tableName: z.string().min(1),
+  mappingType: z.enum(['events', 'profiles']),
+  syncMode: z.enum(['append', 'full']),
+  schedule: z.enum(['hourly', 'daily', 'weekly']),
+  columnMapping: z.union([
+    zBigQueryColumnMappingEvents,
+    zBigQueryColumnMappingProfiles,
+  ]),
+});
+
+export type IBigQueryColumnMappingEvents = z.infer<
+  typeof zBigQueryColumnMappingEvents
+>;
+export type IBigQueryColumnMappingProfiles = z.infer<
+  typeof zBigQueryColumnMappingProfiles
+>;
+export type IBigQueryColumnMapping =
+  | IBigQueryColumnMappingEvents
+  | IBigQueryColumnMappingProfiles;
+export type IBigQuerySyncConfig = z.infer<typeof zBigQuerySyncConfig>;
+
 export * from './types.insights';
 export * from './types.validation';
 export * from './track.validation';

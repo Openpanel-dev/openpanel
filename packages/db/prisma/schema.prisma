@@ -251,8 +251,10 @@ model Project {
   notificationRules NotificationRule[]
   notifications     Notification[]
   imports           Import[]
-  gscConnection     GscConnection?
-  cohorts           Cohort[]
+  gscConnection      GscConnection?
+  bigQueryConnection BigQueryConnection?
+  bigQuerySyncs      BigQuerySync[]
+  cohorts            Cohort[]
 
   // When deleteAt > now(), the project will be deleted
   deleteAt DateTime?
@@ -500,12 +502,13 @@ model ShareWidget {
 }
 
 model EventMeta {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String
-  conversion Boolean?
-  color      String?
-  icon       String?
-  projectId  String
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  conversion  Boolean?
+  color       String?
+  icon        String?
+  description String?
+  projectId   String
   project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
@@ -699,6 +702,83 @@ model GscConnection {
   updatedAt            DateTime  @default(now()) @updatedAt
 
   @@map("gsc_connections")
+}
+
+enum BigQuerySyncMappingType {
+  events
+  profiles
+}
+
+enum BigQuerySyncMode {
+  append
+  full
+}
+
+enum BigQuerySyncSchedule {
+  hourly
+  daily
+  weekly
+}
+
+enum BigQuerySyncRunStatus {
+  pending
+  running
+  completed
+  failed
+}
+
+model BigQueryConnection {
+  id                          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId                   String         @unique
+  project                     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  gcpProjectId                String
+  serviceAccountEmail         String
+  serviceAccountJsonEncrypted String
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @default(now()) @updatedAt
+  syncs                       BigQuerySync[]
+
+  @@map("bigquery_connections")
+}
+
+model BigQuerySync {
+  id             String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId   String                  @db.Uuid
+  connection     BigQueryConnection      @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  displayName    String
+  dataset        String
+  tableName      String
+  mappingType    BigQuerySyncMappingType
+  syncMode       BigQuerySyncMode
+  schedule       BigQuerySyncSchedule
+  /// [IBigQueryColumnMapping]
+  columnMapping  Json
+  lastCursor     String?
+  lastSyncedAt   DateTime?
+  lastSyncStatus String?
+  lastSyncError  String?
+  isEnabled      Boolean                 @default(true)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @default(now()) @updatedAt
+  runs           BigQuerySyncRun[]
+
+  @@map("bigquery_syncs")
+}
+
+model BigQuerySyncRun {
+  id           String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  syncId       String                @db.Uuid
+  sync         BigQuerySync          @relation(fields: [syncId], references: [id], onDelete: Cascade)
+  projectId    String
+  status       BigQuerySyncRunStatus @default(pending)
+  rowCount     Int                   @default(0)
+  errorMessage String?
+  startedAt    DateTime              @default(now())
+  completedAt  DateTime?
+
+  @@map("bigquery_sync_runs")
 }
 
 model EmailUnsubscribe {
