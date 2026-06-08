@@ -121,6 +121,16 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
     LoggerClass: CustomLogger,
     level: ClickHouseLogLevel.DEBUG,
   },
+  // Custom JSON serializer used on inserts. For buffers that already
+  // hold JSONEachRow lines as strings (event/replay/bot/group — pulled
+  // straight out of Redis), this is a passthrough — no JSON.stringify
+  // on the hot path. For buffers that pass real objects (session /
+  // profile, which need to parse + transform before inserting), it
+  // falls back to JSON.stringify. The client appends '\n' itself.
+  json: {
+    stringify: <T>(value: T): string =>
+      typeof value === 'string' ? value : JSON.stringify(value),
+  },
 };
 
 logger.info('Clickhouse options', CLICKHOUSE_OPTIONS);

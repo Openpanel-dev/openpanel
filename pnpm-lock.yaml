@@ -1060,8 +1060,8 @@ importers:
   packages/db:
     dependencies:
       '@clickhouse/client':
-        specifier: ^1.12.1
-        version: 1.12.1
+        specifier: ^1.18.5
+        version: 1.20.0
       '@openpanel/common':
         specifier: workspace:*
         version: link:../common
@@ -2741,11 +2741,11 @@ packages:
   '@capsizecss/unpack@2.4.0':
     resolution: {integrity: sha512-GrSU71meACqcmIUxPYOJvGKF0yryjN/L1aCuE9DViCTJI7bfkjgYDPD1zbNDcINJwSSP6UaBZY9GAbYDO7re0Q==}
 
-  '@clickhouse/client-common@1.12.1':
-    resolution: {integrity: sha512-ccw1N6hB4+MyaAHIaWBwGZ6O2GgMlO99FlMj0B0UEGfjxM9v5dYVYql6FpP19rMwrVAroYs/IgX2vyZEBvzQLg==}
+  '@clickhouse/client-common@1.20.0':
+    resolution: {integrity: sha512-s0oDSwxQyJO/Xwne6sNE7xTAlms72Hq2AHzHAB9oSOBfiaXTzQOyHQrhufJ9ldPJTwr4L47/RxG1i6I0I8Xy9A==}
 
-  '@clickhouse/client@1.12.1':
-    resolution: {integrity: sha512-7ORY85rphRazqHzImNXMrh4vsaPrpetFoTWpZYueCO2bbO6PXYDXp/GQ4DgxnGIqbWB/Di1Ai+Xuwq2o7DJ36A==}
+  '@clickhouse/client@1.20.0':
+    resolution: {integrity: sha512-LfHZ9bZZhc7KrNFVa9v73JMqwsP+m/5SgwdKMmxze4Urcw6pE0F7RNog3Lzx3GKRnJr3Hd15uDlIbqaDa9BbgA==}
     engines: {node: '>=16'}
 
   '@cloudflare/kv-asset-handler@0.4.0':
@@ -18099,11 +18099,11 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@clickhouse/client-common@1.12.1': {}
+  '@clickhouse/client-common@1.20.0': {}
 
-  '@clickhouse/client@1.12.1':
+  '@clickhouse/client@1.20.0':
     dependencies:
-      '@clickhouse/client-common': 1.12.1
+      '@clickhouse/client-common': 1.20.0
 
   '@cloudflare/kv-asset-handler@0.4.0':
     dependencies:
