@@ -151,7 +151,10 @@ export default function ProjectSelector({
               ))}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to={'/onboarding/project'}>
+                <Link
+                  search={{ createNewOrg: true }}
+                  to={'/onboarding/project'}
+                >
                   New organization
                   <DropdownMenuShortcut>
                     <PlusIcon size={16} />
