@@ -25,12 +25,12 @@ export async function getDeviceId({
   eventTimeMs?: number;
 }) {
   if (overrideDeviceId) {
-    // Resolve a caller-supplied device id through the same path as internal ones
-    // (stable, so it's both candidates) — sessions open/extend/close identically.
+    // A caller-supplied device id is stable (no salt rotation), so it's the only
+    // candidate — resolve it through the same path as internal ids.
     return await getInfoFromSession({
       projectId,
-      currentDeviceId: overrideDeviceId,
-      previousDeviceId: overrideDeviceId,
+      deviceIds: [overrideDeviceId],
+      eventTimeMs: eventTimeMs ?? Date.now(),
     });
   }
 
@@ -53,8 +53,7 @@ export async function getDeviceId({
 
   return await getInfoFromSession({
     projectId,
-    currentDeviceId,
-    previousDeviceId,
+    deviceIds: [currentDeviceId, previousDeviceId],
     eventTimeMs: eventTimeMs ?? Date.now(),
   });
 }
@@ -84,45 +83,54 @@ function withinIdleWindow(
 
 async function getInfoFromSession({
   projectId,
-  currentDeviceId,
-  previousDeviceId,
+  deviceIds,
   eventTimeMs,
 }: {
   projectId: string;
-  currentDeviceId: string;
-  previousDeviceId: string;
+  /** Candidate device ids in priority order (e.g. [current, previous] salt
+   *  windows, or just [override]). Deduped; the first is canonical. */
+  deviceIds: string[];
   eventTimeMs: number;
 }): Promise<DeviceIdResult> {
-  try {
-    const [current, previous] = await Promise.all([
-      sessionBuffer.getExistingSession({
-        projectId,
-        deviceId: currentDeviceId,
-      }),
-      sessionBuffer.getExistingSession({
-        projectId,
-        deviceId: previousDeviceId,
-      }),
-    ]);
+  const candidates = [...new Set(deviceIds.filter(Boolean))];
+  const primary = candidates[0] ?? '';
 
-    if (current && withinIdleWindow(current, eventTimeMs)) {
-      return { deviceId: currentDeviceId, sessionId: current.id };
-    }
-    if (previous && withinIdleWindow(previous, eventTimeMs)) {
-      return { deviceId: previousDeviceId, sessionId: previous.id };
+  try {
+    // Reading the live blob is the source of truth for an active session — it's
+    // what keeps a visit on one id across page reloads and salt rotation. Don't
+    // drop this read to "save" a lookup or sessions split at the bucket boundary.
+    const sessions = await Promise.all(
+      candidates.map((deviceId) =>
+        sessionBuffer.getExistingSession({ projectId, deviceId })
+      )
+    );
+
+    for (const [i, session] of sessions.entries()) {
+      if (session && withinIdleWindow(session, eventTimeMs)) {
+        return { deviceId: candidates[i]!, sessionId: session.id };
+      }
     }
   } catch (error) {
-    console.error('Error getting session GET /track/device-id', error);
+    console.error('Error resolving session for device id', error);
   }
 
   return {
-    deviceId: currentDeviceId,
+    deviceId: primary,
+    // Deterministic id for the first event of a session and to bridge the window
+    // before the worker persists the blob (API resolves synchronously, worker
+    // writes async — same bucket → same id, so they agree).
+    //
+    // The bucket window MUST track the idle timeout: a gap > the window has to
+    // land in a new bucket so a boundary mints a *fresh* id. If it didn't (e.g.
+    // a hardcoded 30min while SESSION_TIMEOUT_MS is shorter), the worker would
+    // reopen the just-closed id and its session_end would be skipped. Grace must
+    // stay < window or getSessionId throws.
     sessionId: getSessionId({
       projectId,
-      deviceId: currentDeviceId,
+      deviceId: primary,
       eventMs: eventTimeMs,
-      graceMs: 5 * 1000,
-      windowMs: 1000 * 60 * 30,
+      graceMs: Math.min(5_000, Math.floor(SESSION_TIMEOUT_MS / 6)),
+      windowMs: SESSION_TIMEOUT_MS,
     }),
   };
 }

@@ -293,16 +293,9 @@ for (const buf of allBuffers) {
   };
 }
 
-register.registerMetric(
-  new client.Gauge({
-    name: `buffer_${replayBuffer.name}_count`,
-    help: 'Number of unprocessed replay chunks',
-    async collect() {
-      const metric = await replayBuffer.getBufferSize();
-      this.set(metric);
-    },
-  })
-);
+// Note: `buffer_replay_count` is already registered by the allBuffers loop
+// above (replayBuffer is in that list), so no standalone gauge here — a second
+// registration with the same name throws and crashes the worker on boot.
 
 // -----------------------------------------------------------------------
 // Session lifecycle metrics (new session-buffer + reaper world)

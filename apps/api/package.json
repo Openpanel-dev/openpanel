@@ -9,6 +9,8 @@
     "build": "rm -rf dist && tsdown",
     "gen:bots": "jiti scripts/get-bots.ts && biome format --write src/bots/bots.ts",
     "test:manage": "jiti scripts/test-manage-api.ts",
+    "e2e:sessions": "LOG_LEVEL=warn dotenv -e ../../.env -- jiti e2e/session-e2e.ts",
+    "e2e:sessions:stress": "LOG_LEVEL=warn dotenv -e ../../.env -- jiti e2e/session-stress.ts",
     "test": "vitest",
     "test:run": "vitest run",
     "typecheck": "tsc --noEmit"

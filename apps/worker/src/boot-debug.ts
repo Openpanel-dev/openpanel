@@ -18,6 +18,8 @@ const CRON_TYPES = [
   'onboarding',
   'gscSync',
   'cohortRefresh',
+  'sessionReaper',
+  'sessionVacuum',
 ] as const satisfies readonly CronQueueType[];
 
 function escapeHtml(value: string) {

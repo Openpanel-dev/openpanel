@@ -167,6 +167,48 @@ describe('SessionBuffer', () => {
     }
   });
 
+  it('invariant: one visit keeps one id across extends; a >30min gap splits and closes the first', async () => {
+    // This ties the layers together against real Redis: ingest() drives the
+    // state machine, and getExistingSession() is what the API reads on each
+    // request to resolve the id — they must agree throughout a visit.
+    const t0 = new Date('2026-06-08T12:00:00.000Z');
+    const at = (mins: number) => new Date(t0.getTime() + mins * 60_000);
+
+    const e1 = await sessionBuffer.ingest(
+      makePayload({ createdAt: t0, sessionId: 'S1' })
+    );
+    expect(e1?.kind).toBe('new');
+    expect(e1?.current.id).toBe('S1');
+    // The API's next lookup must see the live session.
+    expect(
+      (await sessionBuffer.getExistingSession({ projectId, deviceId }))?.id
+    ).toBe('S1');
+
+    // Events within the idle window extend the SAME session.
+    for (const mins of [10, 20]) {
+      const ext = await sessionBuffer.ingest(
+        makePayload({ createdAt: at(mins), sessionId: 'S1' })
+      );
+      expect(ext?.kind).toBe('extend');
+      expect(ext?.current.id).toBe('S1');
+    }
+
+    // A >30min gap: ingest detects the boundary, closes S1, opens S2.
+    const e4 = await sessionBuffer.ingest(
+      makePayload({ createdAt: at(55), sessionId: 'S2' })
+    );
+    expect(e4?.kind).toBe('boundary');
+    if (e4?.kind === 'boundary') {
+      expect(e4.closed.id).toBe('S1');
+      expect(e4.current.id).toBe('S2');
+    }
+
+    // The slot now holds the new session — the API reads S2 from here on.
+    expect(
+      (await sessionBuffer.getExistingSession({ projectId, deviceId }))?.id
+    ).toBe('S2');
+  });
+
   it('inherits utm_* fields from event.properties.__query', async () => {
     await sessionBuffer.ingest(
       makePayload({

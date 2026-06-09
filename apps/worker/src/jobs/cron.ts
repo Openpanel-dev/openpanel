@@ -20,7 +20,7 @@ import { insightsDailyJob } from './insights';
 import { logger } from '@/utils/logger';
 
 export async function cronJob(job: Job<CronQueuePayload>) {
-  logger.info(`Cron job started - ${job.data.type}`);
+  logger.debug(`Cron job started - ${job.data.type}`);
   switch (job.data.type) {
     case 'salt': {
       return await salt();

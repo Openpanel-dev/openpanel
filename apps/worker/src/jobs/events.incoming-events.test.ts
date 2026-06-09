@@ -22,6 +22,10 @@ vi.mock('@openpanel/db', async () => {
     getProjectByIdCached: vi.fn().mockResolvedValue({ filters: [] }),
     matchEvent: vi.fn().mockReturnValue(false),
     sessionBuffer: {
+      // name/getBufferSize keep metrics.ts happy (it registers a per-buffer
+      // gauge at import); the tests only drive getExistingSession/ingest.
+      name: 'session',
+      getBufferSize: vi.fn().mockResolvedValue(0),
       getExistingSession: vi.fn(),
       ingest: vi.fn(),
     },
