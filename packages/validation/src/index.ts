@@ -718,6 +718,7 @@ const zBqIdentifier = z
 export const zServiceAccountJson = z
   .string()
   .min(1)
+  .max(16384, 'Service account JSON must be under 16 KB')
   .superRefine((val, ctx) => {
     let parsed: unknown;
     try {
@@ -757,47 +758,41 @@ export const zServiceAccountJson = z
     }
   });
 
-// Connection creation schema — used in Phase 2 tRPC router
-export const zBigQueryConnectionCreate = z.object({
-  name: z
-    .string()
-    .min(1)
-    .max(50)
-    .regex(
-      /^[a-zA-Z0-9 _\-]+$/,
-      'Connection name may only contain letters, digits, spaces, hyphens, and underscores',
-    ),
+// GCP region: regex-based so new Google Cloud regions work without code changes
+const zWarehouseRegion = z
+  .string()
+  .min(1)
+  .max(63)
+  .regex(
+    /^([A-Z]+|[a-z]+-[a-z0-9]+-[0-9]+|[a-z]+-[a-z0-9]+)$/,
+    'Must be a valid cloud region (e.g. US, EU, us-central1, asia-south1)',
+  );
+
+// BigQuery-specific connection config
+export const zBigQueryWarehouseConfig = z.object({
+  type: z.literal('bigquery'),
+  gcpProjectId: zGcpProjectId,
+  gcpRegion: zWarehouseRegion.optional(),
   serviceAccountJson: zServiceAccountJson,
-  gcpRegion: z
-    .enum([
-      'US',
-      'EU',
-      'us-central1',
-      'us-east1',
-      'us-east4',
-      'us-west1',
-      'us-west2',
-      'us-west3',
-      'us-west4',
-      'europe-west1',
-      'europe-west2',
-      'europe-west3',
-      'europe-west4',
-      'europe-west6',
-      'europe-north1',
-      'asia-east1',
-      'asia-east2',
-      'asia-northeast1',
-      'asia-northeast2',
-      'asia-northeast3',
-      'asia-south1',
-      'asia-southeast1',
-      'asia-southeast2',
-      'australia-southeast1',
-      'northamerica-northeast1',
-      'southamerica-east1',
-    ])
-    .default('US'),
+});
+
+// Discriminated union — add zSnowflakeWarehouseConfig, zRedshiftWarehouseConfig etc. here as they land
+export const zWarehouseConfig = z.discriminatedUnion('type', [
+  zBigQueryWarehouseConfig,
+]);
+
+const zWarehouseConnectionName = z
+  .string()
+  .min(1)
+  .max(50)
+  .regex(
+    /^[a-zA-Z0-9 _\-]+$/,
+    'Connection name may only contain letters, digits, spaces, hyphens, and underscores',
+  );
+
+export const zWarehouseConnectionCreate = z.object({
+  name: zWarehouseConnectionName,
+  config: zWarehouseConfig,
 });
 
 // Column reference: simple field name or dot-notation path for STRUCT fields (e.g. user.profile.email)
@@ -811,11 +806,34 @@ const zBqColRef = z
 
 export const zBigQueryColumnMappingEvents = z.object({
   mappingType: z.literal('events'),
-  eventName: zBqColRef.optional(),
+  // Event name — two modes (only one should be set):
+  // eventName: column reference → value of that column becomes the event name per row
+  // eventNameStatic: fixed string → every row gets this event name (e.g. "Subscription")
+  // If neither is set, the table name is used as the event name fallback.
+  eventNameStatic: z.string().min(1).max(100).optional(),
+  // The authenticated user identifier — maps to profile_id in OpenPanel.
+  // For warehouse data this is always a known user ID (ClientCode, user_id, etc.).
+  // When absent, events are ingested without a profile association.
   profileId: zBqColRef.optional(),
+  // Anonymous device identifier — maps to device_id in OpenPanel.
+  // Rare in warehouse tables; exists when the source table tracks both device
+  // and user separately (e.g. pre-login funnel data).
+  // If omitted, device_id is set equal to profileId at ingest time.
   deviceId: zBqColRef.optional(),
+  // Custom event ID for deduplication — maps to the ClickHouse event id.
+  // When set, this column's value becomes the event's unique id (prevents
+  // duplicate imports on re-runs). When omitted, id is computed as
+  // sha256(syncId + ':' + rowHash).
+  eventId: zBqColRef.optional(),
+  // Revenue — first-class numeric field in OpenPanel events.
+  // Map to any numeric column representing transaction or subscription value.
+  revenue: zBqColRef.optional(),
+  eventName: zBqColRef.optional(),
   timestamp: zBqColRef.optional(),
   insertTime: zBqColRef.optional(),
+  // JSON column whose key-value content is flattened into event properties.
+  // e.g. a `metadata JSON` column → its keys become individual event properties.
+  jsonProperties: zBqColRef.optional(),
 });
 
 export const zBigQueryColumnMappingProfiles = z.object({
@@ -825,6 +843,11 @@ export const zBigQueryColumnMappingProfiles = z.object({
   lastName: zBqColRef.optional(),
   email: zBqColRef.optional(),
   avatar: zBqColRef.optional(),
+  // When the source table has a profile creation timestamp, map it here.
+  // Used to preserve original signup/creation date rather than defaulting to sync time.
+  createdAt: zBqColRef.optional(),
+  // JSON column whose key-value content is merged into profile properties.
+  jsonProperties: zBqColRef.optional(),
 });
 
 export const zBigQuerySyncConfig = z
@@ -832,8 +855,9 @@ export const zBigQuerySyncConfig = z
     displayName: z.string().min(1).max(100),
     dataset: zBqIdentifier,
     tableName: zBqIdentifier,
-    syncMode: z.enum(['append', 'full']),
-    schedule: z.enum(['hourly', 'daily', 'weekly']),
+    syncMode: z.enum(['append', 'full', 'onetime']),
+    // Required for append and full (recurring) modes. Not set for onetime syncs.
+    schedule: z.enum(['hourly', 'daily', 'weekly']).optional(),
     partitionFilter: z.string().max(500).optional(),
     columnMapping: z.discriminatedUnion('mappingType', [
       zBigQueryColumnMappingEvents,
@@ -841,6 +865,15 @@ export const zBigQuerySyncConfig = z
     ]),
   })
   .superRefine((data, ctx) => {
+    // Recurring modes require a schedule
+    if (data.syncMode !== 'onetime' && !data.schedule) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['schedule'],
+        message: 'schedule is required for append and full sync modes',
+      });
+    }
+    // Append mode requires an insertTime cursor column
     if (
       data.syncMode === 'append' &&
       data.columnMapping.mappingType === 'events' &&
@@ -853,21 +886,35 @@ export const zBigQuerySyncConfig = z
           'insertTime column is required for append mode — it must point to a TIMESTAMP column used as the incremental cursor',
       });
     }
+    // eventName and eventNameStatic are mutually exclusive
+    if (
+      data.columnMapping.mappingType === 'events' &&
+      data.columnMapping.eventName &&
+      data.columnMapping.eventNameStatic
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['columnMapping', 'eventNameStatic'],
+        message:
+          'set either eventName (column reference) or eventNameStatic (fixed value), not both',
+      });
+    }
   });
 
-export type IBigQueryColumnMappingEvents = z.infer<
+export type IWarehouseColumnMappingEvents = z.infer<
   typeof zBigQueryColumnMappingEvents
 >;
-export type IBigQueryColumnMappingProfiles = z.infer<
+export type IWarehouseColumnMappingProfiles = z.infer<
   typeof zBigQueryColumnMappingProfiles
 >;
-export type IBigQueryColumnMapping =
-  | IBigQueryColumnMappingEvents
-  | IBigQueryColumnMappingProfiles;
+export type IWarehouseColumnMapping =
+  | IWarehouseColumnMappingEvents
+  | IWarehouseColumnMappingProfiles;
 export type IBigQuerySyncConfig = z.infer<typeof zBigQuerySyncConfig>;
-export type IBigQueryConnectionCreate = z.infer<
-  typeof zBigQueryConnectionCreate
+export type IWarehouseConnectionCreate = z.infer<
+  typeof zWarehouseConnectionCreate
 >;
+export type IWarehouseConfig = z.infer<typeof zWarehouseConfig>;
 export { zGcpProjectId, zBqIdentifier };
 
 export * from './types.insights';

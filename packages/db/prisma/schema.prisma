@@ -252,8 +252,9 @@ model Project {
   notifications     Notification[]
   imports           Import[]
   gscConnection       GscConnection?
-  bigQueryConnections BigQueryConnection[]
-  bigQuerySyncs       BigQuerySync[]
+  warehouseConnections WarehouseConnection[]
+  warehouseSyncs       WarehouseSync[]
+  warehouseSyncRuns    WarehouseSyncRun[]
   cohorts            Cohort[]
 
   // When deleteAt > now(), the project will be deleted
@@ -704,90 +705,108 @@ model GscConnection {
   @@map("gsc_connections")
 }
 
-enum BigQuerySyncMappingType {
+enum WarehouseType {
+  bigquery
+  snowflake
+  redshift
+  databricks
+  postgres
+}
+
+enum WarehouseSyncMappingType {
   events
   profiles
 }
 
-enum BigQuerySyncMode {
+enum WarehouseSyncMode {
   append
   full
+  onetime
 }
 
-enum BigQuerySyncSchedule {
+enum WarehouseSyncSchedule {
   hourly
   daily
   weekly
 }
 
-enum BigQuerySyncRunStatus {
+enum WarehouseSyncRunStatus {
   pending
   running
   completed
   failed
 }
 
-model BigQueryConnection {
-  id                          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId                   String
-  name                        String
-  project                     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  gcpProjectId                String
-  gcpRegion                   String         @default("US")
-  serviceAccountEmail         String
-  serviceAccountJsonEncrypted String
-  lastTestedAt                DateTime?
-  lastTestStatus              Boolean?
-  createdAt                   DateTime       @default(now())
-  updatedAt                   DateTime       @default(now()) @updatedAt
-  syncs                       BigQuerySync[]
+model WarehouseConnection {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId         String
+  name              String
+  type              WarehouseType
+  project           Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  configEncrypted   String
+  displayIdentifier String?
+  displayEmail      String?
+  lastTestedAt      DateTime?
+  lastTestStatus    Boolean?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @default(now()) @updatedAt
+  syncs             WarehouseSync[]
 
   @@unique([projectId, name])
-  @@map("bigquery_connections")
+  @@unique([projectId, id])
+  @@map("warehouse_connections")
 }
 
-model BigQuerySync {
-  id             String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  connectionId   String                  @db.Uuid
-  connection     BigQueryConnection      @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+model WarehouseSync {
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId    String                   @db.Uuid
+  projectId       String
+  connection      WarehouseConnection      @relation(fields: [projectId, connectionId], references: [projectId, id], onDelete: Cascade)
+  project         Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  displayName     String
+  dataset         String
+  tableName       String
+  mappingType     WarehouseSyncMappingType
+  syncMode        WarehouseSyncMode
+  schedule        WarehouseSyncSchedule?
+  /// [IWarehouseColumnMapping]
+  columnMapping   Json
+  lastCursor      String?
+  lastSyncedAt    DateTime?
+  lastSyncStatus  WarehouseSyncRunStatus?
+  lastSyncError   String?
+  isEnabled       Boolean                  @default(true)
+  errorRetryCount Int                      @default(0)
+  isErrorPaused   Boolean                  @default(false)
+  partitionFilter      String?
+  cursorOverlapMinutes Int                      @default(10)
+  syncDelayMinutes     Int                      @default(0)
+  createdBy            String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @default(now()) @updatedAt
+  runs            WarehouseSyncRun[]
+
+  @@index([projectId])
+  @@index([connectionId])
+  @@map("warehouse_syncs")
+}
+
+model WarehouseSyncRun {
+  id             String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  syncId         String                 @db.Uuid
+  sync           WarehouseSync          @relation(fields: [syncId], references: [id], onDelete: Cascade)
   projectId      String
-  project        Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  displayName    String
-  dataset        String
-  tableName      String
-  mappingType    BigQuerySyncMappingType
-  syncMode       BigQuerySyncMode
-  schedule       BigQuerySyncSchedule
-  /// [IBigQueryColumnMapping]
-  columnMapping  Json
-  lastCursor     String?
-  lastSyncedAt   DateTime?
-  lastSyncStatus BigQuerySyncRunStatus?
-  lastSyncError  String?
-  isEnabled      Boolean                 @default(true)
-  errorRetryCount Int                    @default(0)
-  isErrorPaused  Boolean                 @default(false)
-  partitionFilter String?
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @default(now()) @updatedAt
-  runs           BigQuerySyncRun[]
-
-  @@map("bigquery_syncs")
-}
-
-model BigQuerySyncRun {
-  id           String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  syncId       String                @db.Uuid
-  sync         BigQuerySync          @relation(fields: [syncId], references: [id], onDelete: Cascade)
-  projectId    String
-  status         BigQuerySyncRunStatus @default(pending)
-  rowCount       BigInt                @default(0)
+  project        Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status         WarehouseSyncRunStatus @default(pending)
+  rowCount       BigInt                 @default(0)
+  failureCount   BigInt                 @default(0)
   bytesProcessed BigInt?
   errorMessage   String?
-  startedAt      DateTime              @default(now())
+  startedAt      DateTime               @default(now())
   completedAt    DateTime?
 
-  @@map("bigquery_sync_runs")
+  @@index([syncId])
+  @@map("warehouse_sync_runs")
 }
 
 model EmailUnsubscribe {
