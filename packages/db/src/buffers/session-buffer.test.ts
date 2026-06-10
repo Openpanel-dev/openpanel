@@ -105,6 +105,48 @@ describe('SessionBuffer', () => {
     insertSpy.mockRestore();
   });
 
+  it('squash does not orphan the creation row when create + updates share a batch', async () => {
+    // Regression: a brand-new session whose creation event and subsequent
+    // updates all land in one flush window. getSession emits (+1,v1) for the
+    // creation then (-1,vN)/(+1,vN+1) pairs for each update. The squash must
+    // net per version so nothing is left un-collapsible: a (-1,V) row only
+    // collapses against a (+1,V) of the SAME version in CH.
+    const t0 = Date.now();
+    const EVENTS = 8;
+    for (let i = 0; i < EVENTS; i++) {
+      await sessionBuffer.add(
+        makeEvent({ created_at: new Date(t0 + i * 1000).toISOString() }),
+      );
+    }
+
+    const inserted: Array<{ sign: number; version: number }> = [];
+    const insertSpy = vi
+      .spyOn(ch, 'insert')
+      .mockImplementation(async ({ values }: any) => {
+        for (const v of values) {
+          inserted.push({ sign: v.sign, version: v.version });
+        }
+        return undefined as any;
+      });
+
+    await sessionBuffer.processBuffer();
+
+    // Net the inserted rows per version exactly as CH's
+    // VersionedCollapsingMergeTree(sign, version) would: a row survives only
+    // if positives and negatives at its version don't cancel.
+    const netByVersion = new Map<number, number>();
+    for (const { sign, version } of inserted) {
+      netByVersion.set(version, (netByVersion.get(version) ?? 0) + sign);
+    }
+    const survivors = [...netByVersion.entries()].filter(([, net]) => net !== 0);
+
+    // A fresh session must collapse to exactly one final +1 row, with no
+    // orphaned negatives (the bug left a permanent (-1, v1)).
+    expect(survivors).toEqual([[EVENTS, 1]]);
+
+    insertSpy.mockRestore();
+  });
+
   it('retains sessions in queue when ClickHouse insert fails', async () => {
     await sessionBuffer.add(makeEvent({}));
 

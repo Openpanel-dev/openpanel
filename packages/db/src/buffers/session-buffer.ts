@@ -253,17 +253,26 @@ export class SessionBuffer extends BaseBuffer {
   }
 
   /**
-   * Squash multiple (sign=-1, sign=+1) pairs for the same session id into
-   * just the boundary rows: the oldest -1 (cancels the previous CH state)
-   * and the newest +1 (the final state). Single-row sessions (no update
-   * pair yet) pass through unchanged.
+   * Squash the (sign=-1, sign=+1) rows for each session id down to the
+   * minimal set that produces the same collapsed state in ClickHouse, by
+   * netting the signs per version. Single-row sessions pass through
+   * unchanged.
    *
-   * Correctness depends on the invariant maintained by `getSession`: every
-   * update for an existing session emits exactly one -1 at version V and
-   * one +1 at V+1, where V is the existing version. The oldest -1 in the
-   * batch cancels CH's previous +1, and the newest +1 becomes the new
-   * canonical row. Intermediate (-1, +1) pairs cancel each other in CH
-   * either way — keeping them is wasted work.
+   * `sessions` uses VersionedCollapsingMergeTree(sign, version): a (-1, V)
+   * row only collapses against a (+1, V) row of the SAME version. So the
+   * net effect of a batch on a session is computed per-version — sum the
+   * signs at each version and emit only the rows needed to realise that
+   * net. Versions that fully cancel (net 0) are dropped; the surviving
+   * rows are normally the final (+1, maxVersion) plus, for a mid-life
+   * session, the (-1, V) that cancels CH's resident row.
+   *
+   * This per-version netting is required because a session's creation row
+   * (+1 at the base version) can land in the SAME batch as its updates.
+   * The first update emits a (-1, baseVersion) whose only partner is that
+   * in-batch creation (+1, baseVersion). They must cancel each other here;
+   * naively keeping "oldest -1 + newest +1" would drop the creation +1
+   * while keeping its canceller, leaving a permanently un-collapsible (-1)
+   * row in CH (duplicate session rows + negative bounce counts).
    */
   private squashSessionsByVersion(
     sessions: IClickhouseSession[]
@@ -274,12 +283,11 @@ export class SessionBuffer extends BaseBuffer {
 
     const grouped = new Map<string, IClickhouseSession[]>();
     for (const s of sessions) {
-      const key = s.id;
-      const arr = grouped.get(key);
+      const arr = grouped.get(s.id);
       if (arr) {
         arr.push(s);
       } else {
-        grouped.set(key, [s]);
+        grouped.set(s.id, [s]);
       }
     }
 
@@ -291,27 +299,36 @@ export class SessionBuffer extends BaseBuffer {
         out.push(entries[0]!);
         continue;
       }
-      let oldestNeg: IClickhouseSession | null = null;
-      let newestPos: IClickhouseSession | null = null;
+
+      const netByVersion = new Map<
+        number,
+        { net: number; pos?: IClickhouseSession; neg?: IClickhouseSession }
+      >();
       for (const e of entries) {
-        if (e.sign === -1) {
-          if (!oldestNeg || e.version < oldestNeg.version) {
-            oldestNeg = e;
-          }
-        } else if (
-          e.sign === 1 &&
-          (!newestPos || e.version > newestPos.version)
-        ) {
-          newestPos = e;
+        const slot = netByVersion.get(e.version) ?? { net: 0 };
+        slot.net += e.sign;
+        if (e.sign === 1) {
+          slot.pos = e;
+        } else if (e.sign === -1) {
+          slot.neg = e;
+        }
+        netByVersion.set(e.version, slot);
+      }
+
+      const emitted: IClickhouseSession[] = [];
+      for (const slot of netByVersion.values()) {
+        if (slot.net === 0) {
+          continue;
+        }
+        const row = slot.net > 0 ? slot.pos : slot.neg;
+        if (!row) {
+          continue;
+        }
+        for (let i = 0; i < Math.abs(slot.net); i++) {
+          emitted.push(row);
         }
       }
-      const emitted: IClickhouseSession[] = [];
-      if (oldestNeg) {
-        emitted.push(oldestNeg);
-      }
-      if (newestPos) {
-        emitted.push(newestPos);
-      }
+
       squashedCount += entries.length - emitted.length;
       out.push(...emitted);
     }
@@ -327,17 +344,6 @@ export class SessionBuffer extends BaseBuffer {
         'Session batch squashed'
       );
     }
-
-    console.log(
-      squashedCount > 0
-        ? 'Session batch squashed'
-        : 'Session batch not squashed',
-      {
-        inputRows: sessions.length,
-        outputRows: out.length,
-        dropped: squashedCount,
-      }
-    );
 
     return out;
   }
