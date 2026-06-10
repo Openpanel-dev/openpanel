@@ -111,7 +111,18 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   request_timeout: parseInt(process.env.CLICKHOUSE_REQUEST_TIMEOUT || '3600000', 10),
   keep_alive: {
     enabled: true,
-    idle_socket_ttl: 60000,
+    // Must be lower than server-side keep_alive_timeout (CH default 10s)
+    // so we never reuse a socket the server has already closed.
+    // Matches upstream openpanel — kept that value rather than going
+    // more aggressive because upstream's been running it in production
+    // long enough to validate it.
+    //
+    // The previous 60s value here was guaranteed to hit stale sockets
+    // under sustained load: server closes after ~10s idle, client kept
+    // the socket in the pool until 60s, and the next reuse failed with
+    // "socket hang up" / ECONNRESET. Worker-cron logs showed ~70 hang
+    // ups per 15min at 100% replay sampling before this change.
+    idle_socket_ttl: 7000,
   },
   compression: {
     request: true,
