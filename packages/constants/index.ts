@@ -107,6 +107,87 @@ export const operators = {
   notInCohort: 'Not in cohort',
 } as const;
 
+// Compact labels for the operator trigger button. The comparison operators
+// have very long names ("Greater than or equal to"), so we show a symbol on
+// the trigger (reads naturally next to the value, e.g. "≥ 2019-01-01") and
+// surface the full `operators` text as a sub-line in the dropdown.
+export const operatorsShort: Record<keyof typeof operators, string> = {
+  is: 'Is',
+  isNot: 'Is not',
+  contains: 'Contains',
+  doesNotContain: 'Not contains',
+  startsWith: 'Starts with',
+  endsWith: 'Ends with',
+  regex: 'Regex',
+  isNull: 'Is null',
+  isNotNull: 'Is not null',
+  gt: '>',
+  lt: '<',
+  gte: '≥',
+  lte: '≤',
+  inCohort: 'In cohort',
+  notInCohort: 'Not in cohort',
+};
+
+// Cast type a filter value/column should be coerced to before comparing.
+// `string` (the default) keeps raw text comparison; the others wrap both sides
+// of the comparison in the matching ClickHouse cast (see packages/db
+// filter-cast.ts) so e.g. a date property compares as a date instead of
+// crashing `toFloat64('2019-01-01')`.
+export const filterValueTypes = {
+  string: 'Text',
+  number: 'Number',
+  date: 'Date',
+  datetime: 'Date & time',
+  boolean: 'Boolean',
+} as const;
+
+export type IFilterValueType = keyof typeof filterValueTypes;
+
+// Operators that make sense for each value type. The type constrains the
+// operator list in the UI (a Number can't `contains`, a Boolean only
+// `is`/`isNot`). Cohort operators are excluded everywhere — they're surfaced by
+// CohortFilterItem, not the standard operator select.
+const STRING_OPERATORS = [
+  'is',
+  'isNot',
+  'contains',
+  'doesNotContain',
+  'startsWith',
+  'endsWith',
+  'regex',
+  'isNull',
+  'isNotNull',
+] as const;
+
+const ORDERED_OPERATORS = [
+  'is',
+  'isNot',
+  'gt',
+  'gte',
+  'lt',
+  'lte',
+  'isNull',
+  'isNotNull',
+] as const;
+
+const BOOLEAN_OPERATORS = ['is', 'isNot', 'isNull', 'isNotNull'] as const;
+
+export function getOperatorsForType(
+  type?: IFilterValueType,
+): readonly (keyof typeof operators)[] {
+  switch (type) {
+    case 'number':
+    case 'date':
+    case 'datetime':
+      return ORDERED_OPERATORS;
+    case 'boolean':
+      return BOOLEAN_OPERATORS;
+    default:
+      return STRING_OPERATORS;
+  }
+}
+
 export const chartTypes = {
   linear: 'Linear',
   bar: 'Bar',

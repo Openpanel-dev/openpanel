@@ -1,7 +1,12 @@
 /** biome-ignore-all lint/style/useDefaultSwitchClause: switch cases are exhaustive by design */
-import { getCohortIds, type IChartEventFilter } from '@openpanel/validation';
+import {
+  getCohortIds,
+  type IChartEventFilter,
+  type IChartFilterValueType,
+} from '@openpanel/validation';
 import sqlstring from 'sqlstring';
 import { formatClickhouseDate, TABLE_NAMES } from '../clickhouse/client';
+import { buildTypedClause, hasTypedCast, isTypedOperator } from './filter-cast';
 
 export type FilterTableContext = {
   /** Outer query's primary table. */
@@ -51,7 +56,7 @@ function compileScalarClause(
   column: string,
   operator: IChartEventFilter['operator'],
   value: IChartEventFilter['value'],
-  options: { numeric?: boolean } = {},
+  options: { numeric?: boolean; type?: IChartFilterValueType } = {},
 ): string | null {
   if (
     value.length === 0 &&
@@ -59,6 +64,12 @@ function compileScalarClause(
     operator !== 'isNotNull'
   ) {
     return null;
+  }
+
+  // Explicit cast type wins over the column-name `numeric` auto-detect. Casts
+  // both the column and each value consistently (see filter-cast.ts).
+  if (hasTypedCast(options.type) && isTypedOperator(operator)) {
+    return buildTypedClause(column, operator, value, options.type!);
   }
 
   const numeric = options.numeric === true;
@@ -218,7 +229,9 @@ function buildGroupClause(
 ): string | null {
   if (!ctx.groupsExpr) return null;
   const column = groupColumnSql(filter.name);
-  const inner = compileScalarClause(column, filter.operator, filter.value);
+  const inner = compileScalarClause(column, filter.operator, filter.value, {
+    type: filter.type,
+  });
   if (!inner) return null;
   const projectClause = `project_id = ${sqlstring.escape(projectId)}`;
   return `arrayExists(g -> g IN (SELECT id FROM ${TABLE_NAMES.groups} FINAL WHERE ${projectClause} AND ${inner}), ${ctx.groupsExpr})`;
@@ -233,6 +246,7 @@ function buildProfileClause(
   const numeric = column === 'created_at' || column === 'last_seen_at';
   const inner = compileScalarClause(column, filter.operator, filter.value, {
     numeric,
+    type: filter.type,
   });
   if (!inner) return null;
   if (ctx.selfTable === 'profiles') {
@@ -279,6 +293,7 @@ function buildSessionClause(
   if (!column) return null;
   return compileScalarClause(column, filter.operator, filter.value, {
     numeric: SESSION_NUMERIC_COLUMNS.has(column),
+    type: filter.type,
   });
 }
 

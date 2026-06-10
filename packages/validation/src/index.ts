@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   chartSegments,
   chartTypes,
+  filterValueTypes,
   intervals,
   lineTypes,
   metrics,
@@ -28,6 +29,13 @@ export const zChartEventFilter = z.object({
   value: z
     .array(z.string().or(z.number()).or(z.boolean()).or(z.null()))
     .describe('The values to filter on'),
+  type: z
+    .enum(objectToZodEnums(filterValueTypes))
+    .optional()
+    .describe(
+      'Cast type for the column/value in equality & comparison operators ' +
+        '(string/number/date/datetime/boolean). Absent = legacy behavior.',
+    ),
   cohortId: z
     .string()
     .optional()

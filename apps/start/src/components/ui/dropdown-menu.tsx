@@ -187,6 +187,8 @@ interface DropdownProps<Value> {
   items: {
     label: string;
     value: Value;
+    // Optional secondary line rendered below the label in smaller muted text.
+    description?: string;
   }[];
   onChange?: (value: Value) => void;
 }
@@ -216,7 +218,16 @@ export function DropdownMenuComposed<Value extends string>({
                 onChange?.(item.value);
               }}
             >
-              {item.label}
+              {item.description ? (
+                <div className="flex flex-col gap-0.5">
+                  <span>{item.label}</span>
+                  <span className="text-muted-foreground text-xs">
+                    {item.description}
+                  </span>
+                </div>
+              ) : (
+                item.label
+              )}
             </DropdownMenuItem>
           ))}
         </DropdownMenuGroup>
