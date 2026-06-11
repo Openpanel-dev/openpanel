@@ -769,7 +769,7 @@ model WarehouseSync {
   mappingType     WarehouseSyncMappingType
   syncMode        WarehouseSyncMode
   schedule        WarehouseSyncSchedule?
-  /// [IWarehouseColumnMapping]
+  /// [IPrismaWarehouseColumnMapping]
   columnMapping   Json
   lastCursor      String?
   lastSyncedAt    DateTime?
@@ -786,6 +786,7 @@ model WarehouseSync {
   updatedAt       DateTime                 @default(now()) @updatedAt
   runs            WarehouseSyncRun[]
 
+  @@unique([id, projectId])
   @@index([projectId])
   @@index([connectionId])
   @@map("warehouse_syncs")
@@ -794,8 +795,8 @@ model WarehouseSync {
 model WarehouseSyncRun {
   id             String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   syncId         String                 @db.Uuid
-  sync           WarehouseSync          @relation(fields: [syncId], references: [id], onDelete: Cascade)
   projectId      String
+  sync           WarehouseSync          @relation(fields: [syncId, projectId], references: [id, projectId], onDelete: Cascade)
   project        Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
   status         WarehouseSyncRunStatus @default(pending)
   rowCount       BigInt                 @default(0)
