@@ -11,6 +11,15 @@ CREATE UNIQUE INDEX "warehouse_syncs_id_projectId_key"
 ALTER TABLE "public"."warehouse_sync_runs"
     DROP CONSTRAINT "warehouse_sync_runs_syncId_fkey";
 
+-- Backfill: normalize any runs whose projectId doesn't match their parent sync.
+-- Defensive — tables are dev-only at this stage, but makes the migration
+-- safe to apply to any environment that might have mismatched rows.
+UPDATE "public"."warehouse_sync_runs" r
+SET "projectId" = s."projectId"
+FROM "public"."warehouse_syncs" s
+WHERE s."id" = r."syncId"
+  AND r."projectId" IS DISTINCT FROM s."projectId";
+
 ALTER TABLE "public"."warehouse_sync_runs"
     ADD CONSTRAINT "warehouse_sync_runs_syncId_projectId_fkey"
     FOREIGN KEY ("syncId", "projectId")
