@@ -51,7 +51,7 @@ function EventRuleItem({
   onChange,
   onRemove,
 }: EventRuleItemProps) {
-  const eventNames = useEventNames({ projectId, anyEvents: false });
+  const eventNames = useEventNames({ projectId, anyEvents: true });
 
   const addFilter = (action: {
     value: string;
