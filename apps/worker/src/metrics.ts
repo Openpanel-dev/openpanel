@@ -8,6 +8,7 @@ import {
   sessionBuffer,
 } from '@openpanel/db';
 import { cronQueue, eventsGroupQueues, sessionsQueue } from '@openpanel/queue';
+import { getRedisCache } from '@openpanel/redis';
 import client from 'prom-client';
 
 const Registry = client.Registry;
@@ -124,7 +125,7 @@ for (const buf of allBuffers) {
           // ignore — scrape continues
         }
       },
-    }),
+    })
   );
 }
 
@@ -141,7 +142,7 @@ register.registerMetric(
         // ignore
       }
     },
-  }),
+  })
 );
 
 // ---- Flush metrics (populated via flushObserver hooks) ----
@@ -150,7 +151,9 @@ const flushDuration = new client.Histogram({
   name: 'buffer_flush_duration_ms',
   help: 'Wall time of a tryFlush call, including lock acquisition',
   labelNames: ['buffer', 'result', 'trigger'],
-  buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10_000, 30_000, 60_000],
+  buckets: [
+    5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10_000, 30_000, 60_000,
+  ],
 });
 register.registerMetric(flushDuration);
 
@@ -181,7 +184,9 @@ const chInsertDurationMs = new client.Histogram({
   name: 'buffer_ch_insert_duration_ms',
   help: 'Duration of the ClickHouse insert(s) inside a single flush',
   labelNames: ['buffer'],
-  buckets: [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10_000, 30_000, 60_000],
+  buckets: [
+    10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10_000, 30_000, 60_000,
+  ],
 });
 register.registerMetric(chInsertDurationMs);
 
@@ -193,7 +198,9 @@ const chFetchDurationMs = new client.Histogram({
   name: 'buffer_ch_fetch_duration_ms',
   help: 'Duration of CH SELECT(s) inside a single flush (e.g. profile merge fetch)',
   labelNames: ['buffer'],
-  buckets: [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10_000, 30_000, 60_000],
+  buckets: [
+    10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10_000, 30_000, 60_000,
+  ],
 });
 register.registerMetric(chFetchDurationMs);
 
@@ -201,7 +208,10 @@ const flushLlenAtStart = new client.Histogram({
   name: 'buffer_flush_llen_at_start',
   help: 'LLEN observed at the start of a flush attempt',
   labelNames: ['buffer'],
-  buckets: [0, 10, 100, 500, 1000, 5000, 10_000, 50_000, 100_000, 500_000, 1_000_000, 5_000_000],
+  buckets: [
+    0, 10, 100, 500, 1000, 5000, 10_000, 50_000, 100_000, 500_000, 1_000_000,
+    5_000_000,
+  ],
 });
 register.registerMetric(flushLlenAtStart);
 
@@ -238,7 +248,7 @@ for (const buf of allBuffers) {
     });
     flushDuration.observe(
       { buffer: obs.buffer, result: obs.result, trigger: obs.trigger },
-      obs.totalMs,
+      obs.totalMs
     );
 
     if (obs.llenAtStart != null) {
@@ -252,26 +262,20 @@ for (const buf of allBuffers) {
     if (obs.phases?.lrangeMs != null) {
       redisOpDurationMs.observe(
         { buffer: obs.buffer, op: 'lrange' },
-        obs.phases.lrangeMs,
+        obs.phases.lrangeMs
       );
     }
     if (obs.phases?.trimMs != null) {
       redisOpDurationMs.observe(
         { buffer: obs.buffer, op: 'trim' },
-        obs.phases.trimMs,
+        obs.phases.trimMs
       );
     }
     if (obs.phases?.chFetchMs != null) {
-      chFetchDurationMs.observe(
-        { buffer: obs.buffer },
-        obs.phases.chFetchMs,
-      );
+      chFetchDurationMs.observe({ buffer: obs.buffer }, obs.phases.chFetchMs);
     }
     if (obs.phases?.chInsertMs != null) {
-      chInsertDurationMs.observe(
-        { buffer: obs.buffer },
-        obs.phases.chInsertMs,
-      );
+      chInsertDurationMs.observe({ buffer: obs.buffer }, obs.phases.chInsertMs);
     }
   };
 
@@ -288,3 +292,159 @@ for (const buf of allBuffers) {
     addDurationMs.observe({ buffer: obs.buffer }, obs.durationMs);
   };
 }
+
+// Note: `buffer_replay_count` is already registered by the allBuffers loop
+// above (replayBuffer is in that list), so no standalone gauge here — a second
+// registration with the same name throws and crashes the worker on boot.
+
+// -----------------------------------------------------------------------
+// Session lifecycle metrics (new session-buffer + reaper world)
+// -----------------------------------------------------------------------
+
+// Counters incremented at runtime by the session lifecycle code paths.
+
+export const sessionsStarted = new client.Counter({
+  name: 'sessions_started_total',
+  help: 'session_start events emitted, by lifecycle kind',
+  labelNames: ['kind'], // 'new' | 'boundary'
+});
+register.registerMetric(sessionsStarted);
+
+export const sessionEndsEnqueued = new client.Counter({
+  name: 'session_ends_enqueued_total',
+  help: 'session_end jobs pushed onto the sessions queue, by trigger source',
+  labelNames: ['source'], // 'boundary' | 'reaper'
+});
+register.registerMetric(sessionEndsEnqueued);
+
+export const sessionEndsEmitted = new client.Counter({
+  name: 'session_ends_emitted_total',
+  help: 'session_end events actually written (post-idempotency claim)',
+});
+register.registerMetric(sessionEndsEmitted);
+
+export const sessionEndsSkipped = new client.Counter({
+  name: 'session_ends_skipped_total',
+  help: 'session_end jobs that ran but did not emit, by reason',
+  labelNames: ['reason'], // 'not_found' | 'already_emitted'
+});
+register.registerMetric(sessionEndsSkipped);
+
+export const sessionsReaped = new client.Counter({
+  name: 'sessions_reaped_total',
+  help: 'Sessions closed by the reaper, by trigger condition',
+  labelNames: ['reason'], // 'event-time' | 'deadman'
+});
+register.registerMetric(sessionsReaped);
+
+export const sessionsReaperOrphans = new client.Counter({
+  name: 'sessions_reaper_orphans_total',
+  help: 'Reaper found a sorted-set entry whose session blob is missing. Non-zero usually means TTL mismatch.',
+  labelNames: ['reason'], // 'event-time' | 'deadman'
+});
+register.registerMetric(sessionsReaperOrphans);
+
+export const sessionDurationOnClose = new client.Histogram({
+  name: 'session_duration_ms_on_close',
+  help: 'Duration of closed sessions (ms)',
+  buckets: [
+    1000, // 1s
+    10_000, // 10s
+    60_000, // 1m
+    5 * 60_000, // 5m
+    15 * 60_000, // 15m
+    30 * 60_000, // 30m
+    60 * 60_000, // 1h
+    24 * 60 * 60_000, // 24h
+  ],
+});
+register.registerMetric(sessionDurationOnClose);
+
+export const sessionEventsOnClose = new client.Histogram({
+  name: 'session_events_on_close',
+  help: 'Total events (event_count + screen_view_count) on session close',
+  buckets: [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000],
+});
+register.registerMetric(sessionEventsOnClose);
+
+// Gauges polled at scrape time. The active-sessions gauge does one ZCARD
+// per project — cheap individually, fine for hundreds of projects.
+
+register.registerMetric(
+  new client.Gauge({
+    name: 'sessions_active_total',
+    help: 'Active sessions in Redis across all projects',
+    async collect() {
+      const redis = getRedisCache();
+      const projectIds = await redis.smembers('session:projects');
+      if (projectIds.length === 0) {
+        this.set(0);
+        return;
+      }
+      const multi = redis.multi();
+      for (const pid of projectIds) {
+        multi.zcard(`session:wallclock:${pid}`);
+      }
+      const results = await multi.exec();
+      let total = 0;
+      for (const entry of results ?? []) {
+        const count = Number(entry?.[1] ?? 0);
+        if (Number.isFinite(count)) {
+          total += count;
+        }
+      }
+      this.set(total);
+    },
+  })
+);
+
+register.registerMetric(
+  new client.Gauge({
+    name: 'sessions_projects_active',
+    help: 'Projects with at least one active session',
+    async collect() {
+      const redis = getRedisCache();
+      this.set(await redis.scard('session:projects'));
+    },
+  })
+);
+
+register.registerMetric(
+  new client.Gauge({
+    name: 'sessions_hwm_lag_ms',
+    help: 'Max lag (ms) between wall-clock now and project event-time HWM, across all projects. Big number → queue lag or imports.',
+    async collect() {
+      const redis = getRedisCache();
+      const projectIds = await redis.smembers('session:projects');
+      if (projectIds.length === 0) {
+        this.set(0);
+        return;
+      }
+      const multi = redis.multi();
+      for (const pid of projectIds) {
+        multi.get(`session:hwm:${pid}`);
+      }
+      const results = await multi.exec();
+      const now = Date.now();
+      let maxLag = 0;
+      for (const entry of results ?? []) {
+        const hwm = Number(entry?.[1] ?? 0);
+        if (!Number.isFinite(hwm) || hwm <= 0) {
+          continue;
+        }
+        const lag = now - hwm;
+        if (lag > maxLag) {
+          maxLag = lag;
+        }
+      }
+      this.set(maxLag);
+    },
+  })
+);
+
+export const sessionsVacuumed = new client.Counter({
+  name: 'sessions_vacuumed_total',
+  help: 'Sessions removed by the daily vacuum cron (catches blobs that cleanup() missed)',
+  labelNames: ['reason'], // 'stale_blob' | 'missing_blob'
+});
+register.registerMetric(sessionsVacuumed);

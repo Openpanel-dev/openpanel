@@ -1,10 +1,13 @@
 import { generateId } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import {
+  convertClickhouseDateToJs,
   getProfileById,
   getSalts,
   groupBuffer,
   replayBuffer,
+  SESSION_TIMEOUT_MS,
+  sessionBuffer,
   upsertProfile,
 } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
@@ -14,7 +17,6 @@ import {
   produceIncomingEvent,
   shouldUseKafka,
 } from '@openpanel/queue';
-import { getRedisCache } from '@openpanel/redis';
 import type {
   IAssignGroupPayload,
   IDecrementPayload,
@@ -182,6 +184,7 @@ async function buildContext(
     ua,
     salts,
     overrideDeviceId,
+    eventTimeMs: timestamp.timestamp,
   });
 
   return {
@@ -486,32 +489,38 @@ export async function fetchDeviceId(
   });
 
   try {
-    const multi = getRedisCache().multi();
-    multi.hget(
-      `bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`,
-      'data'
-    );
-    multi.hget(
-      `bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`,
-      'data'
-    );
-    const res = await multi.exec();
-    if (res?.[0]?.[1]) {
-      const data = JSON.parse(res?.[0]?.[1] as string);
-      const sessionId = data.payload.sessionId;
+    const [current, previous] = await Promise.all([
+      sessionBuffer.getExistingSession({
+        projectId,
+        deviceId: currentDeviceId,
+      }),
+      sessionBuffer.getExistingSession({
+        projectId,
+        deviceId: previousDeviceId,
+      }),
+    ]);
+
+    // Blob has no TTL — only treat the session as "current" if its last
+    // event is within the idle window. Otherwise the SDK should ask the
+    // server to start a fresh session id on the next event.
+    const now = Date.now();
+    const isLive = (s: typeof current) =>
+      !!s &&
+      now - convertClickhouseDateToJs(s.ended_at).getTime() <
+        SESSION_TIMEOUT_MS;
+
+    if (current && isLive(current)) {
       return reply.status(200).send({
         deviceId: currentDeviceId,
-        sessionId,
+        sessionId: current.id,
         message: 'current session exists for this device id',
       });
     }
 
-    if (res?.[1]?.[1]) {
-      const data = JSON.parse(res?.[1]?.[1] as string);
-      const sessionId = data.payload.sessionId;
+    if (previous && isLive(previous)) {
       return reply.status(200).send({
         deviceId: previousDeviceId,
-        sessionId,
+        sessionId: previous.id,
         message: 'previous session exists for this device id',
       });
     }

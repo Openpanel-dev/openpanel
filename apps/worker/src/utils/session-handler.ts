@@ -1,98 +1,58 @@
-import type { IServiceCreateEventPayload } from '@openpanel/db';
-import {
-  type EventsQueuePayloadCreateSessionEnd,
-  sessionsQueue,
-} from '@openpanel/queue';
-import { LRUCache } from '@openpanel/redis';
-import type { Job } from 'bullmq';
-import { logger as baseLogger } from '@/utils/logger';
+import type {
+  IClickhouseSession,
+  IServiceCreateEventPayload,
+} from '@openpanel/db';
+import { SESSION_TIMEOUT_MS } from '@openpanel/db';
+import { sessionsQueue } from '@openpanel/queue';
 
-export const SESSION_TIMEOUT = 1000 * 60 * 30;
+export { SESSION_TIMEOUT_MS };
+export const SESSION_TIMEOUT = SESSION_TIMEOUT_MS;
 
-const CHANGE_DELAY_THROTTLE_MS = process.env.CHANGE_DELAY_THROTTLE_MS
-  ? Number.parseInt(process.env.CHANGE_DELAY_THROTTLE_MS, 10)
-  : 60_000; // 1 minute
+/**
+ * Deterministic v2 jobId for a closed session.
+ *
+ * Keyed on the session's stable `id` so concurrent / retried closes for the
+ * same logical session dedupe in BullMQ. The `v2:` prefix lets the legacy
+ * drain script differentiate from pre-migration delayed jobs.
+ *
+ * Format constraint: BullMQ only accepts ':' in custom jobIds when splitting
+ * by ':' yields exactly 3 parts, so we keep the suffix as a single segment.
+ * Cross-project sessionInternalId collisions would be astronomical given the
+ * 128-bit hash used to generate them.
+ */
+export const getSessionEndJobIdV2 = (sessionInternalId: string) =>
+  `sessionEnd:v2:${sessionInternalId}`;
 
-const CHANGE_DELAY_THROTTLE_MAP = new LRUCache<string, number>({
-  max: 100_000,
-  ttl: SESSION_TIMEOUT,
-});
-
-export type SessionEndJob = Job<EventsQueuePayloadCreateSessionEnd>;
-
-// Treats any existing session-end job as "session in progress" regardless of
-// state — avoids duplicate session_starts when the close job is mid-flight.
-export async function getActiveSessionEndJob(
-  projectId: string,
-  deviceId: string,
-): Promise<SessionEndJob | null> {
-  const jobId = getSessionEndJobId(projectId, deviceId);
-  const job = await sessionsQueue.getJob(jobId);
-  return (job as SessionEndJob | undefined) ?? null;
-}
-
-export async function extendSessionEndJob({
-  projectId,
-  deviceId,
-  job,
-}: {
-  projectId: string;
-  deviceId: string;
-  job?: SessionEndJob | null;
-}) {
-  const last = CHANGE_DELAY_THROTTLE_MAP.get(`${projectId}:${deviceId}`) ?? 0;
-  const isThrottled = Date.now() - last < CHANGE_DELAY_THROTTLE_MS;
-
-  if (isThrottled) {
-    return;
-  }
-
-  const resolvedJob =
-    job ?? (await getActiveSessionEndJob(projectId, deviceId));
-
-  if (!resolvedJob) {
-    return;
-  }
-
-  const state = await resolvedJob.getState();
-  if (state !== 'delayed') {
-    baseLogger.warn(
-      { jobId: resolvedJob.id, state },
-      'Session end job is not in delayed state, skipping extend',
-    );
-    return;
-  }
-
-  // Narrow TOCTOU window: state could flip from delayed → waiting between
-  // the getState() check above and this call.
-  try {
-    await resolvedJob.changeDelay(SESSION_TIMEOUT);
-    CHANGE_DELAY_THROTTLE_MAP.set(`${projectId}:${deviceId}`, Date.now());
-  } catch (error) {
-    baseLogger.warn(
-      { err: error, jobId: resolvedJob.id },
-      'Session end job moved out of delayed state during extend',
-    );
-  }
-}
-
-const getSessionEndJobId = (projectId: string, deviceId: string) =>
-  `sessionEnd:${projectId}:${deviceId}`;
-
-export function createSessionEndJob({
+/**
+ * Enqueue a session_end job. Idempotent via jobId.
+ *
+ * Called when a boundary is detected during ingest (old session must close)
+ * or by the reaper when a session has been idle past the timeout.
+ */
+export async function enqueueSessionEndV2({
   payload,
+  closedSession,
 }: {
   payload: IServiceCreateEventPayload;
+  closedSession: IClickhouseSession;
 }) {
+  const jobId = getSessionEndJobIdV2(closedSession.id);
+
   return sessionsQueue.add(
     'session',
     {
       type: 'createSessionEnd',
-      payload,
+      payload: {
+        ...payload,
+        projectId: closedSession.project_id,
+        deviceId: closedSession.device_id,
+        sessionId: closedSession.id,
+        profileId: closedSession.profile_id || payload.profileId,
+      },
+      snapshot: closedSession,
     },
     {
-      delay: SESSION_TIMEOUT,
-      jobId: getSessionEndJobId(payload.projectId, payload.deviceId),
+      jobId,
       attempts: 3,
       backoff: {
         type: 'exponential',

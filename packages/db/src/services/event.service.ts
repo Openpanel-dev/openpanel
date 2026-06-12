@@ -4,7 +4,7 @@ import type { IChartEventFilter } from '@openpanel/validation';
 import { assocPath, last, mergeDeepRight, path, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import { v4 as uuid } from 'uuid';
-import { botBuffer, eventBuffer, sessionBuffer } from '../buffers';
+import { botBuffer, eventBuffer } from '../buffers';
 import {
   ch,
   chQuery,
@@ -355,6 +355,16 @@ export async function getEvents(
   return events.map(transformEvent);
 }
 
+/**
+ * Persist an event to ClickHouse (via the buffer) and upsert the profile
+ * on session boundaries.
+ *
+ * Does NOT touch the session-row buffer. Callers producing non-session_start
+ * / session_end events are responsible for calling `sessionBuffer.ingest()`
+ * before this. `incoming-event.ts` is the only such caller today; everywhere
+ * else (session_start, session_end) the session-row update is correctly a
+ * no-op anyway.
+ */
 export async function createEvent(payload: IServiceCreateEventPayload) {
   if (!payload.profileId && payload.deviceId) {
     payload.profileId = payload.deviceId;
@@ -396,7 +406,9 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     groups: payload.groups ?? [],
   };
 
-  const promises = [sessionBuffer.add(event), eventBuffer.add(event)];
+  eventBuffer.add(event);
+
+  const promises: Promise<unknown>[] = [];
 
   if (payload.profileId) {
     const profile: IServiceUpsertProfile = {
