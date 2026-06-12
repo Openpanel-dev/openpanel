@@ -77,6 +77,10 @@ export class SessionBuffer extends BaseBuffer {
     ? Number.parseInt(process.env.SESSION_BUFFER_CHUNK_SIZE, 10)
     : 1000;
 
+  private readonly squashEnabled =
+    process.env.SESSION_BUFFER_SQUASH !== 'false' &&
+    process.env.SESSION_BUFFER_SQUASH !== '0';
+
   private readonly redisKey = 'session-buffer';
   private redis: Redis;
   constructor() {
@@ -365,6 +369,102 @@ export class SessionBuffer extends BaseBuffer {
     }
   }
 
+  /**
+   * Squash the (sign=-1, sign=+1) rows for each session id down to the
+   * minimal set that produces the same collapsed state in ClickHouse, by
+   * netting the signs per version. Single-row sessions pass through
+   * unchanged.
+   *
+   * `sessions` uses VersionedCollapsingMergeTree(sign, version): a (-1, V)
+   * row only collapses against a (+1, V) row of the SAME version. So the
+   * net effect of a batch on a session is computed per-version — sum the
+   * signs at each version and emit only the rows needed to realise that
+   * net. Versions that fully cancel (net 0) are dropped; the surviving
+   * rows are normally the final (+1, maxVersion) plus, for a mid-life
+   * session, the (-1, V) that cancels CH's resident row.
+   *
+   * This per-version netting is required because a session's creation row
+   * (+1 at the base version) can land in the SAME batch as its updates.
+   * The first update emits a (-1, baseVersion) whose only partner is that
+   * in-batch creation (+1, baseVersion). They must cancel each other here;
+   * naively keeping "oldest -1 + newest +1" would drop the creation +1
+   * while keeping its canceller, leaving a permanently un-collapsible (-1)
+   * row in CH (duplicate session rows + negative bounce counts).
+   */
+  private squashSessionsByVersion(
+    sessions: IClickhouseSession[]
+  ): IClickhouseSession[] {
+    if (sessions.length <= 1) {
+      return sessions;
+    }
+
+    const grouped = new Map<string, IClickhouseSession[]>();
+    for (const s of sessions) {
+      const arr = grouped.get(s.id);
+      if (arr) {
+        arr.push(s);
+      } else {
+        grouped.set(s.id, [s]);
+      }
+    }
+
+    let squashedCount = 0;
+    const out: IClickhouseSession[] = [];
+
+    for (const entries of grouped.values()) {
+      if (entries.length === 1) {
+        out.push(entries[0]!);
+        continue;
+      }
+
+      const netByVersion = new Map<
+        number,
+        { net: number; pos?: IClickhouseSession; neg?: IClickhouseSession }
+      >();
+      for (const e of entries) {
+        const slot = netByVersion.get(e.version) ?? { net: 0 };
+        slot.net += e.sign;
+        if (e.sign === 1) {
+          slot.pos = e;
+        } else if (e.sign === -1) {
+          slot.neg = e;
+        }
+        netByVersion.set(e.version, slot);
+      }
+
+      const emitted: IClickhouseSession[] = [];
+      for (const slot of netByVersion.values()) {
+        if (slot.net === 0) {
+          continue;
+        }
+        const row = slot.net > 0 ? slot.pos : slot.neg;
+        if (!row) {
+          continue;
+        }
+        for (let i = 0; i < Math.abs(slot.net); i++) {
+          emitted.push(row);
+        }
+      }
+
+      squashedCount += entries.length - emitted.length;
+      out.push(...emitted);
+    }
+
+    if (squashedCount > 0) {
+      this.logger.debug(
+        {
+          inputRows: sessions.length,
+          outputRows: out.length,
+          dropped: squashedCount,
+          uniqueSessions: grouped.size,
+        },
+        'Session batch squashed'
+      );
+    }
+
+    return out;
+  }
+
   async processBuffer() {
     const events = await this.redis.lrange(
       this.redisKey,
@@ -373,9 +473,26 @@ export class SessionBuffer extends BaseBuffer {
     );
     if (events.length === 0) return;
 
-    const sessions = events
-      .map((e) => getSafeJson<IClickhouseSession>(e))
-      .map((s) => ({ ...s, duration: Math.max(0, s?.duration || 0) }));
+    const parsed: IClickhouseSession[] = [];
+    for (const e of events) {
+      const s = getSafeJson<IClickhouseSession>(e);
+      if (!s) continue;
+      // Freshly parsed object — safe to clamp in place, no clone needed.
+      s.duration = Math.max(0, s.duration || 0);
+      parsed.push(s);
+    }
+
+    // A single high-activity session produces many (sign=-1, sign=+1)
+    // pairs within one flush window — every extend appends a pair. The
+    // VersionedCollapsingMergeTree collapses them at merge time, so the
+    // final state is correct either way, but inserting all the
+    // intermediate rows costs network bytes, gzip CPU, and CH ingest +
+    // merge work. Squash per-version to insert only the boundary rows.
+    //
+    // Set SESSION_BUFFER_SQUASH=false to disable as a safety hatch.
+    const sessions = this.squashEnabled
+      ? this.squashSessionsByVersion(parsed)
+      : parsed;
 
     for (const chunk of this.chunks(sessions, this.chunkSize)) {
       await ch.insert({

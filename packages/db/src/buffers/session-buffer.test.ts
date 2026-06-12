@@ -334,6 +334,13 @@ describe('SessionBuffer', () => {
 
     await sessionBuffer.processBuffer();
 
+    // Squash must actually fire. The 8 events queue 1 creation + 7
+    // (-1,vN)/(+1,vN+1) pairs = 15 raw rows; for a fresh session with no
+    // CH-resident row they all net down to the single final (+1, v8). If
+    // squash is disabled/removed, every raw row is inserted and this is 15
+    // — this assertion is the guard that the optimisation is wired in.
+    expect(inserted.length).toBe(1);
+
     // Net the inserted rows per version exactly as CH's
     // VersionedCollapsingMergeTree(sign, version) would: a row survives only
     // if positives and negatives at its version don't cancel.
