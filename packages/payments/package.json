@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@polar-sh/sdk": "^0.47.0"
+    "@polar-sh/sdk": "^0.48.1"
   },
   "devDependencies": {
     "@openpanel/db": "workspace:*",

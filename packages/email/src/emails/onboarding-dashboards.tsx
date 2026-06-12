@@ -7,13 +7,20 @@ import { List } from '../components/list';
 export const zOnboardingDashboards = z.object({
   firstName: z.string().optional(),
   dashboardUrl: z.string(),
+  hasData: z.boolean().default(false),
+  eventsCount: z.number().optional(),
 });
+
+const formatEvents = (count: number) =>
+  new Intl.NumberFormat('en-US').format(count);
 
 export type Props = z.infer<typeof zOnboardingDashboards>;
 export default OnboardingDashboards;
 export function OnboardingDashboards({
   firstName,
   dashboardUrl = 'https://dashboard.openpanel.dev',
+  hasData = false,
+  eventsCount,
   unsubscribeUrl,
 }: Props & { unsubscribeUrl?: string }) {
   const newUrl = new URL(dashboardUrl);
@@ -21,34 +28,61 @@ export function OnboardingDashboards({
   newUrl.searchParams.set('utm_medium', 'email');
   newUrl.searchParams.set('utm_campaign', 'onboarding-dashboards');
 
+  if (!hasData) {
+    return (
+      <Layout unsubscribeUrl={unsubscribeUrl}>
+        <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
+        <Text>
+          It's been a week and your project hasn't received any events, so the
+          dashboard advice I'd normally send wouldn't help you yet.
+        </Text>
+        <Text>
+          If you still want to try OpenPanel, the install is the only thing in
+          the way:{' '}
+          <Link
+            href={'https://openpanel.dev/docs/get-started/install-openpanel'}
+          >
+            install guide
+          </Link>
+          .
+        </Text>
+        <Text>
+          If something about the product put you off, I'd like to know what.
+          One line is enough.
+        </Text>
+        <Text>Carl</Text>
+      </Layout>
+    );
+  }
+
   return (
     <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>
-        Tracking events is the easy part. The value comes from actually looking
-        at them.
+        {eventsCount
+          ? `You've tracked ${formatEvents(eventsCount)} events so far. The next step is making them useful.`
+          : 'Your events are coming in. The next step is making them useful.'}
       </Text>
       <Text>
-        If you haven't yet, try building a simple dashboard. Pick one thing you
-        care about and visualize it. Could be:
+        Raw events don't tell you much on their own. A dashboard with two or
+        three reports does:
       </Text>
       <List
         items={[
-          'How many people sign up and then actually do something',
-          'Where users drop off in a flow (funnel)',
-          'Which pages lead to conversions (entry page → CTA)',
+          'a funnel for your main flow',
+          'a conversion trend over time',
+          'where your visitors come from',
         ]}
       />
       <Text>
-        This is usually when people go from "I have analytics" to "I understand
-        what's happening." It's a different feeling.
+        Takes about ten minutes:{' '}
+        <Link href={newUrl.toString()}>build a dashboard</Link>.
       </Text>
-      <Text>Takes maybe 10 minutes to set up. Worth it.</Text>
       <Text>
-        Best regards,
-        <br />
-        Carl
+        Once it exists you'll actually open it. That's the difference between
+        having analytics and using them.
       </Text>
+      <Text>Carl</Text>
       <span style={{ margin: '0 -20px', display: 'block' }}>
         <img
           src="https://openpanel.dev/_next/image?url=%2Fscreenshots%2Fdashboard-dark.webp&w=3840&q=75"
@@ -63,3 +97,10 @@ export function OnboardingDashboards({
     </Layout>
   );
 }
+
+OnboardingDashboards.PreviewProps = {
+  firstName: 'Alex',
+  dashboardUrl: 'https://dashboard.openpanel.dev/org-id',
+  hasData: true,
+  eventsCount: 48211,
+};

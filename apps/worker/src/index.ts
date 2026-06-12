@@ -10,7 +10,6 @@ import {
   gscQueue,
   importQueue,
   insightsQueue,
-  miscQueue,
   notificationQueue,
   sessionsQueue,
 } from '@openpanel/queue';
@@ -58,7 +57,6 @@ async function start() {
         new BullMQAdapter(sessionsQueue),
         new BullMQAdapter(cronQueue),
         new BullMQAdapter(notificationQueue),
-        new BullMQAdapter(miscQueue),
         new BullMQAdapter(importQueue),
         new BullMQAdapter(insightsQueue),
         new BullMQAdapter(gscQueue),

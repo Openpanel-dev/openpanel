@@ -169,15 +169,6 @@ export type CronQueuePayload =
   | CronQueuePayloadSessionReaper
   | CronQueuePayloadSessionVacuum;
 
-export type MiscQueuePayloadTrialEndingSoon = {
-  type: 'trialEndingSoon';
-  payload: {
-    organizationId: string;
-  };
-};
-
-export type MiscQueuePayload = MiscQueuePayloadTrialEndingSoon;
-
 export type CronQueueType = CronQueuePayload['type'];
 
 const orderingDelayMs = Number.parseInt(
@@ -234,13 +225,6 @@ export const sessionsQueue = new Queue<SessionsQueuePayload>(
 );
 
 export const cronQueue = new Queue<CronQueuePayload>(getQueueName('cron'), {
-  connection: getRedisQueue(),
-  defaultJobOptions: {
-    removeOnComplete: 10,
-  },
-});
-
-export const miscQueue = new Queue<MiscQueuePayload>(getQueueName('misc'), {
   connection: getRedisQueue(),
   defaultJobOptions: {
     removeOnComplete: 10,

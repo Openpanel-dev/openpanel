@@ -1,7 +1,11 @@
 import BillingPrompt from '@/components/organization/billing-prompt';
 import { useProjectDocumentTitle } from '@/hooks/use-project-document-title';
 import { useTRPC } from '@/integrations/trpc/react';
+import { getSubscriptionStateMeta } from '@/utils/subscription-state';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
+// Deep import of the pure leaf module (only `import type`s from db) so the
+// barrel — and its ioredis/clickhouse clients — never reaches the browser bundle.
+import { subscriptionBlocksDashboard } from '@openpanel/db/src/subscription-state';
 import { FREE_PRODUCT_IDS } from '@openpanel/payments';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Outlet, createFileRoute } from '@tanstack/react-router';
@@ -53,16 +57,16 @@ function ProjectDashboard() {
     return <BillingPrompt organization={organization} type={'freePlan'} />;
   }
 
-  if (organization.isExpired) {
+  if (subscriptionBlocksDashboard(organization.subscriptionState)) {
+    const { blockType } = getSubscriptionStateMeta(
+      organization.subscriptionState,
+      {
+        endsAt: organization.subscriptionEndsAt,
+        canceledAt: organization.subscriptionCanceledAt,
+      }
+    );
     return (
-      <BillingPrompt
-        organization={organization}
-        type={
-          organization.subscriptionStatus === 'trialing'
-            ? 'trialEnded'
-            : 'expired'
-        }
-      />
+      <BillingPrompt organization={organization} type={blockType ?? 'expired'} />
     );
   }
 

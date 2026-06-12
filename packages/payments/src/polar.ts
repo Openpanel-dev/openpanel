@@ -110,6 +110,7 @@ export function changeSubscription(subscriptionId: string, productId: string) {
     id: subscriptionId,
     subscriptionUpdate: {
       productId,
+      prorationBehavior: 'invoice',
     },
   });
 }

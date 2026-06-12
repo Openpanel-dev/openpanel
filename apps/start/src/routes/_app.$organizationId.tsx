@@ -5,12 +5,17 @@ import SupporterPrompt from '@/components/organization/supporter-prompt';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
+import { getSubscriptionStateMeta } from '@/utils/subscription-state';
+// Deep import of the pure leaf module (only `import type`s from db) so the
+// barrel — and its ioredis/clickhouse clients — never reaches the browser bundle.
+import { subscriptionBlocksDashboard } from '@openpanel/db/src/subscription-state';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import {
   Outlet,
   createFileRoute,
   notFound,
   useLocation,
+  useMatches,
 } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { Building2Icon } from 'lucide-react';
@@ -116,12 +121,30 @@ function Component() {
     }),
   );
 
+  const stateMeta = getSubscriptionStateMeta(organization.subscriptionState, {
+    endsAt: organization.subscriptionEndsAt,
+    canceledAt: organization.subscriptionCanceledAt,
+  });
+
+  // Project routes show the full-screen BillingPrompt for blocking states;
+  // don't stack the (sometimes contradicting) banner on top. Org-level pages
+  // have no prompt, so the banner still shows there.
+  const isProjectRoute = useMatches({
+    select: (matches) =>
+      matches.some(
+        (match) => match.routeId === '/_app/$organizationId/$projectId',
+      ),
+  });
+  const hideBannerForPrompt =
+    isProjectRoute &&
+    subscriptionBlocksDashboard(organization.subscriptionState);
+
   return (
     <>
-      {organization.subscriptionEndsAt && organization.isTrial && (
+      {stateMeta.banner && !hideBannerForPrompt && (
         <Alert
-          title="Free trial"
-          description={`Your organization is on a free trial. It ends on ${format(organization.subscriptionEndsAt, 'PPP')}`}
+          title={stateMeta.banner.title}
+          description={stateMeta.banner.description}
         >
           <LinkButton
             to="/$organizationId/billing"
@@ -129,37 +152,7 @@ function Component() {
               organizationId: organizationId,
             }}
           >
-            Upgrade from $2.5/month
-          </LinkButton>
-        </Alert>
-      )}
-      {organization.subscriptionEndsAt && organization.isWillBeCanceled && (
-        <Alert
-          title="Subscription will be canceled"
-          description={`You have canceled your subscription. You can reactivate it by choosing a new plan below. It'll expire on ${format(organization.subscriptionEndsAt, 'PPP')}`}
-        >
-          <LinkButton
-            to="/$organizationId/billing"
-            params={{
-              organizationId: organizationId,
-            }}
-          >
-            Reactivate
-          </LinkButton>
-        </Alert>
-      )}
-      {organization.subscriptionCanceledAt && organization.isCanceled && (
-        <Alert
-          title="Subscription canceled"
-          description={`Your subscription was canceled on ${format(organization.subscriptionCanceledAt, 'PPP')}`}
-        >
-          <LinkButton
-            to="/$organizationId/billing"
-            params={{
-              organizationId: organizationId,
-            }}
-          >
-            Reactivate
+            {stateMeta.banner.cta}
           </LinkButton>
         </Alert>
       )}
