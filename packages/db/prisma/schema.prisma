@@ -389,6 +389,7 @@ model Report {
   lineType      String    @default("monotone")
   breakdowns    Json
   events        Json
+  globalFilters Json      @default("[]")
   formula       String?
   unit          String?
   metric        Metric    @default(sum)

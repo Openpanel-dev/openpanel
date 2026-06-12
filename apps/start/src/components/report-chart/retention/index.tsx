@@ -16,9 +16,13 @@ export function ReportRetentionChart() {
   const secondEvent = (eventSeries[1]?.filters?.[0]?.value ?? []).map(String);
   // filters[0] on each retention series is the event-name selector; everything
   // else is an audience filter (property or cohort) applied to the cohort.
-  const filters = eventSeries.flatMap((item) =>
-    (item.filters ?? []).filter((filter) => filter.name !== 'name'),
-  );
+  // Report-level global filters apply to the whole retention audience too.
+  const filters = [
+    ...(report.globalFilters ?? []),
+    ...eventSeries.flatMap((item) =>
+      (item.filters ?? []).filter((filter) => filter.name !== 'name'),
+    ),
+  ];
   const isEnabled =
     firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
 

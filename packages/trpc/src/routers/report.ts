@@ -56,6 +56,7 @@ export const reportRouter = createTRPCRouter({
           dashboardId,
           name: report.name,
           events: report.series,
+          globalFilters: report.globalFilters ?? [],
           interval: report.interval,
           breakdowns: report.breakdowns,
           chartType: report.chartType,
@@ -102,6 +103,7 @@ export const reportRouter = createTRPCRouter({
         data: {
           name: report.name,
           events: report.series,
+          globalFilters: report.globalFilters ?? [],
           interval: report.interval,
           breakdowns: report.breakdowns,
           chartType: report.chartType,
@@ -174,6 +176,7 @@ export const reportRouter = createTRPCRouter({
           dashboardId: report.dashboardId,
           name: `Copy of ${report.name}`,
           events: report.events!,
+          globalFilters: report.globalFilters ?? [],
           interval: report.interval,
           breakdowns: report.breakdowns!,
           chartType: report.chartType,

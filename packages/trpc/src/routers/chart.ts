@@ -21,6 +21,7 @@ import {
   getSettingsForProject,
   type IServiceProfile,
   isKnownEventField,
+  mergeGlobalFilters,
   normalizeEventField,
   onlyReportEvents,
   sankeyService,
@@ -532,7 +533,9 @@ export const chartRouter = createTRPCRouter({
     }
 
     // Extract start/end events from series based on mode
-    const eventSeries = onlyReportEvents(input.series);
+    const eventSeries = onlyReportEvents(
+      mergeGlobalFilters(input.series, input.globalFilters),
+    );
 
     if (!eventSeries[0]) {
       throw new Error('Start and end events are required');
@@ -664,9 +667,12 @@ export const chartRouter = createTRPCRouter({
 
         firstEvent = extractedFirstEvent;
         secondEvent = extractedSecondEvent;
-        filters = eventSeries.flatMap((serie) =>
-          (serie.filters ?? []).filter((filter) => filter.name !== 'name')
-        );
+        filters = [
+          ...(ctx.report.globalFilters ?? []),
+          ...eventSeries.flatMap((serie) =>
+            (serie.filters ?? []).filter((filter) => filter.name !== 'name')
+          ),
+        ];
       }
 
       const { timezone } = await getSettingsForProject(projectId);

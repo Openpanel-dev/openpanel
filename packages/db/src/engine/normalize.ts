@@ -7,6 +7,7 @@ import type {
 } from '@openpanel/validation';
 import { getChartStartEndDate } from '../services/date.service';
 import { getSettingsForProject } from '../services/organization.service';
+import { mergeGlobalFilters } from '../services/reports.service';
 import type { SeriesDefinition } from './types';
 
 export type NormalizedInput = Awaited<ReturnType<typeof normalize>>;
@@ -58,7 +59,7 @@ export async function normalize(
 
   return {
     ...input,
-    series: normalizedSeries,
+    series: mergeGlobalFilters(normalizedSeries, input.globalFilters),
     startDate,
     endDate,
   };

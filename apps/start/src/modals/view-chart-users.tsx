@@ -194,7 +194,15 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
         date: date,
         series:
           selectedReportSerie && selectedReportSerie.type === 'event'
-            ? [selectedReportSerie]
+            ? [
+                {
+                  ...selectedReportSerie,
+                  filters: [
+                    ...(report.globalFilters ?? []),
+                    ...selectedReportSerie.filters,
+                  ],
+                },
+              ]
             : [],
         breakdowns: selectedBreakdown?.event.breakdowns,
         interval: report.interval,
@@ -295,7 +303,14 @@ function FunnelUsersView({ report, stepIndex, breakdownValues }: FunnelUsersView
         startDate: report.startDate!,
         endDate: report.endDate!,
         range: report.range,
-        series: report.series,
+        series: report.series.map((item) =>
+          item.type === 'event'
+            ? {
+                ...item,
+                filters: [...(report.globalFilters ?? []), ...item.filters],
+              }
+            : item,
+        ),
         stepIndex: stepIndex,
         showDropoffs: showDropoffs,
         funnelWindow:

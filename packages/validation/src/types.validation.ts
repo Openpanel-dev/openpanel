@@ -58,7 +58,10 @@ export type IGetChartDataInput = {
   projectId: string;
   startDate: string;
   endDate: string;
-} & Omit<IReportInput, 'series' | 'startDate' | 'endDate' | 'range'>;
+} & Omit<
+  IReportInput,
+  'series' | 'globalFilters' | 'startDate' | 'endDate' | 'range'
+>;
 export type ICriteria = z.infer<typeof zCriteria>;
 
 export type PreviousValue =

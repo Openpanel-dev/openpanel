@@ -231,6 +231,12 @@ export const zReportInput = z.object({
   breakdowns: zChartBreakdowns
     .default([])
     .describe('Array of dimensions to break down the data by'),
+  globalFilters: z
+    .array(zChartEventFilter)
+    .optional()
+    .describe(
+      'Filters applied to ALL event series in this report (combined with each series own filters using AND)',
+    ),
   range: zRange
     .default('30d')
     .describe('The time range for which data should be displayed'),

@@ -3,6 +3,7 @@ import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { useSelector } from '@/redux';
 
 import { ReportBreakdowns } from './ReportBreakdowns';
+import { ReportGlobalFilters } from './ReportGlobalFilters';
 import { ReportSeries } from './ReportSeries';
 import { ReportSettings } from './ReportSettings';
 import { ReportFixedEvents } from './report-fixed-events';
@@ -23,6 +24,7 @@ export function ReportSidebar() {
         ) : (
           <ReportSeries />
         )}
+        <ReportGlobalFilters />
         {showBreakdown && <ReportBreakdowns />}
         <ReportSettings />
       </div>

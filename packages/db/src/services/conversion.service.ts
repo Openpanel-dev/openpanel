@@ -13,7 +13,7 @@ import {
   getSelectPropertyKey,
   isKnownEventField,
 } from './chart.service';
-import { onlyReportEvents } from './reports.service';
+import { mergeGlobalFilters, onlyReportEvents } from './reports.service';
 
 export class ConversionService {
   constructor(private client: typeof ch) {}
@@ -24,6 +24,7 @@ export class ConversionService {
     endDate,
     options,
     series,
+    globalFilters,
     breakdowns = [],
     limit,
     interval,
@@ -31,6 +32,7 @@ export class ConversionService {
   }: Omit<IReportInput, 'range' | 'previous' | 'metric' | 'chartType'> & {
     timezone: string;
   }) {
+    series = mergeGlobalFilters(series, globalFilters);
     const funnelOptions = options?.type === 'funnel' ? options : undefined;
     const funnelGroup = funnelOptions?.funnelGroup;
     const funnelWindow = funnelOptions?.funnelWindow ?? 24;

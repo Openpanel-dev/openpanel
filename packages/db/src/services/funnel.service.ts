@@ -15,7 +15,7 @@ import {
   getSelectPropertyKey,
   isKnownEventField,
 } from './chart.service';
-import { onlyReportEvents } from './reports.service';
+import { mergeGlobalFilters, onlyReportEvents } from './reports.service';
 
 /** Display label for null/empty breakdown values (e.g. property not set). */
 export const EMPTY_BREAKDOWN_LABEL = 'Not set';
@@ -214,6 +214,7 @@ export class FunnelService {
     startDate,
     endDate,
     series,
+    globalFilters,
     options,
     breakdowns = [],
     limit,
@@ -222,6 +223,8 @@ export class FunnelService {
     if (!startDate || !endDate) {
       throw new Error('startDate and endDate are required');
     }
+
+    series = mergeGlobalFilters(series, globalFilters);
 
     const funnelOptions = options?.type === 'funnel' ? options : undefined;
     const funnelWindow = funnelOptions?.funnelWindow ?? 24;

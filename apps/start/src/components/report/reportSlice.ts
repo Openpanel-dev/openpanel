@@ -10,6 +10,7 @@ import {
 } from '@openpanel/constants';
 import type {
   IChartBreakdown,
+  IChartEventFilter,
   IChartEventItem,
   IChartLineType,
   IChartRange,
@@ -28,6 +29,9 @@ type InitialState = IReport & {
   ready: boolean;
   startDate: string | null;
   endDate: string | null;
+  // Always an array in state (initialState + setReport guarantee it) so the
+  // reducers below can push/map without optional-chaining.
+  globalFilters: IChartEventFilter[];
 };
 
 // First approach: define the initial state using that type
@@ -40,6 +44,7 @@ const initialState: InitialState = {
   lineType: 'monotone',
   interval: 'day',
   breakdowns: [],
+  globalFilters: [],
   series: [],
   range: '30d',
   startDate: null,
@@ -76,6 +81,7 @@ export const reportSlice = createSlice({
       return {
         ...state,
         ...action.payload,
+        globalFilters: action.payload.globalFilters ?? [],
         startDate: action.payload.startDate ?? null,
         endDate: action.payload.endDate ?? null,
         dirty: false,
@@ -172,6 +178,24 @@ export const reportSlice = createSlice({
         }
         return breakdown;
       });
+    },
+
+    // Global filters (applied to every event series in the report)
+    addGlobalFilter: (state, action: PayloadAction<IChartEventFilter>) => {
+      state.dirty = true;
+      state.globalFilters.push(action.payload);
+    },
+    removeGlobalFilter: (state, action: PayloadAction<{ id?: string }>) => {
+      state.dirty = true;
+      state.globalFilters = state.globalFilters.filter(
+        (filter) => filter.id !== action.payload.id,
+      );
+    },
+    changeGlobalFilter: (state, action: PayloadAction<IChartEventFilter>) => {
+      state.dirty = true;
+      state.globalFilters = state.globalFilters.map((filter) =>
+        filter.id === action.payload.id ? action.payload : filter,
+      );
     },
 
     // Interval
@@ -407,6 +431,9 @@ export const {
   addBreakdown,
   removeBreakdown,
   changeBreakdown,
+  addGlobalFilter,
+  removeGlobalFilter,
+  changeGlobalFilter,
   changeInterval,
   changeStartDate,
   changeEndDate,
