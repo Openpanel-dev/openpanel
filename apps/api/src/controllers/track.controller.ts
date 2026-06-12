@@ -630,12 +630,20 @@ async function handleBatch(
   }
 
   let accepted = 0;
-  const rejected: Extract<BatchItemResult, { status: 'rejected' }>[] = [];
+  const rejected: Array<{
+    index: number;
+    reason: 'validation' | 'internal';
+    error: string;
+  }> = [];
   for (const result of results) {
     if (result.status === 'accepted') {
       accepted += 1;
     } else {
-      rejected.push(result);
+      rejected.push({
+        index: result.index,
+        reason: result.reason,
+        error: result.error,
+      });
     }
   }
 
