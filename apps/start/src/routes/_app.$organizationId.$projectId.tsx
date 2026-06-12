@@ -1,8 +1,10 @@
 import BillingPrompt from '@/components/organization/billing-prompt';
 import { useProjectDocumentTitle } from '@/hooks/use-project-document-title';
 import { useTRPC } from '@/integrations/trpc/react';
+import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { FREE_PRODUCT_IDS } from '@openpanel/payments';
+import { subscriptionBlocksDashboard } from '@openpanel/payments/subscription-state';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Outlet, createFileRoute } from '@tanstack/react-router';
 
@@ -53,16 +55,16 @@ function ProjectDashboard() {
     return <BillingPrompt organization={organization} type={'freePlan'} />;
   }
 
-  if (organization.isExpired) {
+  if (subscriptionBlocksDashboard(organization.subscriptionState)) {
+    const { blockType } = getSubscriptionStateMeta(
+      organization.subscriptionState,
+      {
+        endsAt: organization.subscriptionEndsAt,
+        canceledAt: organization.subscriptionCanceledAt,
+      }
+    );
     return (
-      <BillingPrompt
-        organization={organization}
-        type={
-          organization.subscriptionStatus === 'trialing'
-            ? 'trialEnded'
-            : 'expired'
-        }
-      />
+      <BillingPrompt organization={organization} type={blockType ?? 'expired'} />
     );
   }
 

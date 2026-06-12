@@ -1,7 +1,7 @@
 import type { Job } from 'bullmq';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, format } from 'date-fns';
 
-import { db } from '@openpanel/db';
+import { db, getOrganizationEventsCount } from '@openpanel/db';
 import {
   type EmailData,
   type EmailTemplate,
@@ -23,6 +23,11 @@ const orgQuery = {
         deletedAt: true,
       },
     },
+    projects: {
+      select: {
+        id: true,
+      },
+    },
   },
 } as const;
 
@@ -30,16 +35,23 @@ type OrgWithCreator = Awaited<
   ReturnType<typeof db.organization.findMany<typeof orgQuery>>
 >[number];
 
+type OnboardingUsage = {
+  eventsCount: number;
+  hasData: boolean;
+};
+
 type OnboardingContext = {
   org: OrgWithCreator;
   user: NonNullable<OrgWithCreator['createdBy']>;
+  // Lazy + memoized: only emails past the day gate pay for the ClickHouse count.
+  getUsage: () => Promise<OnboardingUsage>;
 };
 
 type OnboardingEmail<T extends EmailTemplate = EmailTemplate> = {
   day: number;
   template: T;
   shouldSend?: (ctx: OnboardingContext) => Promise<boolean | 'complete'>;
-  data: (ctx: OnboardingContext) => EmailData<T>;
+  data: (ctx: OnboardingContext) => EmailData<T> | Promise<EmailData<T>>;
 };
 
 // Helper to create type-safe email entries with correlated template/data types
@@ -47,18 +59,36 @@ function email<T extends EmailTemplate>(config: OnboardingEmail<T>) {
   return config;
 }
 
+function createUsageGetter(org: OrgWithCreator) {
+  let promise: Promise<OnboardingUsage> | null = null;
+  return () => {
+    promise ??= getOrganizationEventsCount(
+      org.projects.map((project) => project.id),
+    ).then((eventsCount) => ({
+      eventsCount,
+      hasData: eventsCount > 0,
+    }));
+    return promise;
+  };
+}
+
 const getters = {
   firstName: (ctx: OnboardingContext) => ctx.user.firstName || undefined,
-  organizationName: (ctx: OnboardingContext) => ctx.org.name,
   dashboardUrl: (ctx: OnboardingContext) => {
     return `${process.env.DASHBOARD_URL}/${ctx.org.id}`;
   },
   billingUrl: (ctx: OnboardingContext) => {
     return `${process.env.DASHBOARD_URL}/${ctx.org.id}/billing`;
   },
-  recommendedPlan: (ctx: OnboardingContext) => {
+  trialEndDate: (ctx: OnboardingContext) => {
+    return ctx.org.subscriptionEndsAt
+      ? format(ctx.org.subscriptionEndsAt, 'MMMM d')
+      : undefined;
+  },
+  recommendedPlan: async (ctx: OnboardingContext) => {
+    const { eventsCount } = await ctx.getUsage();
     return getRecommendedPlan(
-      ctx.org.subscriptionPeriodEventsCount,
+      eventsCount,
       (plan) =>
         `${plan.formattedEvents} events per month for ${plan.formattedPrice}`,
     );
@@ -70,31 +100,43 @@ const ONBOARDING_EMAILS = [
   email({
     day: 0,
     template: 'onboarding-welcome',
-    data: (ctx) => ({
+    data: async (ctx) => ({
       firstName: getters.firstName(ctx),
       dashboardUrl: getters.dashboardUrl(ctx),
+      hasData: (await ctx.getUsage()).hasData,
     }),
   }),
   email({
     day: 2,
     template: 'onboarding-what-to-track',
-    data: (ctx) => ({
-      firstName: getters.firstName(ctx),
-    }),
+    data: async (ctx) => {
+      const usage = await ctx.getUsage();
+      return {
+        firstName: getters.firstName(ctx),
+        hasData: usage.hasData,
+        eventsCount: usage.eventsCount,
+      };
+    },
   }),
   email({
     day: 6,
     template: 'onboarding-dashboards',
-    data: (ctx) => ({
-      firstName: getters.firstName(ctx),
-      dashboardUrl: getters.dashboardUrl(ctx),
-    }),
+    data: async (ctx) => {
+      const usage = await ctx.getUsage();
+      return {
+        firstName: getters.firstName(ctx),
+        dashboardUrl: getters.dashboardUrl(ctx),
+        hasData: usage.hasData,
+        eventsCount: usage.eventsCount,
+      };
+    },
   }),
   email({
     day: 14,
     template: 'onboarding-feature-request',
-    data: (ctx) => ({
+    data: async (ctx) => ({
       firstName: getters.firstName(ctx),
+      hasData: (await ctx.getUsage()).hasData,
     }),
   }),
   email({
@@ -106,12 +148,15 @@ const ONBOARDING_EMAILS = [
       }
       return true;
     },
-    data: (ctx) => {
+    data: async (ctx) => {
+      const usage = await ctx.getUsage();
       return {
         firstName: getters.firstName(ctx),
-        organizationName: getters.organizationName(ctx),
         billingUrl: getters.billingUrl(ctx),
-        recommendedPlan: getters.recommendedPlan(ctx),
+        recommendedPlan: await getters.recommendedPlan(ctx),
+        trialEndDate: getters.trialEndDate(ctx),
+        hasData: usage.hasData,
+        eventsCount: usage.eventsCount,
       };
     },
   }),
@@ -124,11 +169,14 @@ const ONBOARDING_EMAILS = [
       }
       return true;
     },
-    data: (ctx) => {
+    data: async (ctx) => {
+      const usage = await ctx.getUsage();
       return {
         firstName: getters.firstName(ctx),
         billingUrl: getters.billingUrl(ctx),
-        recommendedPlan: getters.recommendedPlan(ctx),
+        recommendedPlan: await getters.recommendedPlan(ctx),
+        hasData: usage.hasData,
+        eventsCount: usage.eventsCount,
       };
     },
   }),
@@ -167,6 +215,11 @@ export async function onboardingJob(job: Job<CronQueuePayload>) {
     }
 
     const user = org.createdBy;
+    const ctx: OnboardingContext = {
+      org,
+      user,
+      getUsage: createUsageGetter(org),
+    };
     const daysSinceOrgCreation = differenceInDays(new Date(), org.createdAt);
 
     // Find the next email to send
@@ -211,7 +264,7 @@ export async function onboardingJob(job: Job<CronQueuePayload>) {
 
     // Check shouldSend callback if defined
     if (nextEmail.shouldSend) {
-      const result = await nextEmail.shouldSend({ org, user });
+      const result = await nextEmail.shouldSend(ctx);
 
       if (result === 'complete') {
         await db.organization.update({
@@ -232,7 +285,7 @@ export async function onboardingJob(job: Job<CronQueuePayload>) {
     }
 
     try {
-      const emailData = nextEmail.data({ org, user });
+      const emailData = await nextEmail.data(ctx);
 
       await sendEmail(nextEmail.template, {
         to: user.email,

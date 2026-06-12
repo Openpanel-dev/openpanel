@@ -3,7 +3,6 @@ import {
   cronQueue,
   disconnectKafka,
   eventsGroupQueues,
-  miscQueue,
   notificationQueue,
   sessionsQueue,
 } from '@openpanel/queue';
@@ -98,7 +97,6 @@ export async function shutdown(
       ...eventsGroupQueues.map((queue) => queue.close()),
       sessionsQueue.close(),
       cronQueue.close(),
-      miscQueue.close(),
       notificationQueue.close(),
     ]);
     logger.info('Queue state closed');

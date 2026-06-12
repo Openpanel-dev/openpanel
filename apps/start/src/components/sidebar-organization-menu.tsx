@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAppContext } from '@/hooks/use-app-context';
+import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 import { useOrganizationAccess } from '@/hooks/use-organization-access';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
@@ -68,10 +69,21 @@ export default function SidebarOrganizationMenu({
         >
           <CreditCardIcon size={20} />
           <div className="flex-1">Billing</div>
-          {organization?.isTrial && <Badge>Trial</Badge>}
-          {organization?.isExpired && <Badge>Expired</Badge>}
-          {organization?.isWillBeCanceled && <Badge>Canceled</Badge>}
-          {organization?.isCanceled && <Badge>Canceled</Badge>}
+          {(() => {
+            if (!organization) {
+              return null;
+            }
+            const badge = getSubscriptionStateMeta(
+              organization.subscriptionState,
+              {
+                endsAt: organization.subscriptionEndsAt,
+                canceledAt: organization.subscriptionCanceledAt,
+              }
+            ).badge;
+            return badge ? (
+              <Badge variant={badge.variant}>{badge.label}</Badge>
+            ) : null;
+          })()}
         </Link>
       )}
       {isAdmin && (

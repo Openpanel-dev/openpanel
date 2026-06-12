@@ -5,13 +5,16 @@
   "main": "index.ts",
   "exports": {
     ".": "./index.ts",
-    "./prices": "./src/prices.ts"
+    "./prices": "./src/prices.ts",
+    "./subscription-state": "./src/subscription-state.ts",
+    "./subscription-state-meta": "./src/subscription-state-meta.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@polar-sh/sdk": "^0.47.0"
+    "@polar-sh/sdk": "^0.48.1",
+    "date-fns": "^3.3.1"
   },
   "devDependencies": {
     "@openpanel/db": "workspace:*",

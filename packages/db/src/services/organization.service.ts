@@ -218,14 +218,17 @@ export async function connectUserToOrganization({
 export async function getOrganizationBillingEventsCount(
   organization: IServiceOrganization & { projects: IServiceProject[] }
 ) {
-  // Dont count events if the organization has no subscription
-  // Since we only use this for billing purposes
-  if (
-    !(
-      organization.subscriptionCurrentPeriodStart &&
-      organization.subscriptionCurrentPeriodEnd
-    )
-  ) {
+  // Trials have no Polar billing period; fall back to the trial window
+  // (creation → trial end). Status stays 'trialing' even once expired.
+  const isTrialStatus = organization.subscriptionStatus === 'trialing';
+  const periodStart =
+    organization.subscriptionCurrentPeriodStart ??
+    (isTrialStatus ? organization.createdAt : null);
+  const periodEnd =
+    organization.subscriptionCurrentPeriodEnd ??
+    (isTrialStatus ? organization.subscriptionEndsAt : null);
+
+  if (!(periodStart && periodEnd) || organization.projects.length === 0) {
     return 0;
   }
 
@@ -233,11 +236,29 @@ export async function getOrganizationBillingEventsCount(
 
   sb.select.count = 'COUNT(*) AS count';
   sb.where.projectIds = `project_id IN (${organization.projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
-  sb.where.createdAt = `created_at BETWEEN ${sqlstring.escape(formatClickhouseDate(organization.subscriptionCurrentPeriodStart))} AND ${sqlstring.escape(formatClickhouseDate(organization.subscriptionCurrentPeriodEnd))}`;
+  sb.where.createdAt = `created_at BETWEEN ${sqlstring.escape(formatClickhouseDate(periodStart))} AND ${sqlstring.escape(formatClickhouseDate(periodEnd))}`;
   sb.where.names = `name NOT IN ('session_start', 'session_end')`;
 
   const res = await chQuery<{ count: number }>(getSql());
   return res[0]?.count;
+}
+
+// Lifetime event count for a set of projects (excluding session bookkeeping
+// events). The onboarding emails use this instead of subscriptionPeriodEventsCount,
+// which only refreshes when sessions end.
+export async function getOrganizationEventsCount(projectIds: string[]) {
+  if (projectIds.length === 0) {
+    return 0;
+  }
+
+  const { sb, getSql } = createSqlBuilder();
+
+  sb.select.count = 'COUNT(*) AS count';
+  sb.where.projectIds = `project_id IN (${projectIds.map((id) => sqlstring.escape(id)).join(',')})`;
+  sb.where.names = `name NOT IN ('session_start', 'session_end')`;
+
+  const res = await chQuery<{ count: number }>(getSql());
+  return res[0]?.count ?? 0;
 }
 
 export async function getOrganizationBillingEventsCountSerie(

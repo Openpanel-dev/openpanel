@@ -10,7 +10,6 @@ import {
   importQueue,
   insightsQueue,
   isKafkaConfigured,
-  miscQueue,
   notificationQueue,
   queueLogger,
   sessionsQueue,
@@ -29,7 +28,6 @@ import {
 import { gscJob } from './jobs/gsc';
 import { importJob } from './jobs/import';
 import { insightsProjectJob } from './jobs/insights';
-import { miscJob } from './jobs/misc';
 import { notificationJob } from './jobs/notification';
 import { sessionsJob } from './jobs/sessions';
 import { eventsGroupJobDuration } from './metrics';
@@ -44,7 +42,7 @@ const workerOptions: WorkerOptions = {
   connection: getRedisQueue(),
 };
 
-type QueueName = string; // Can be: events, events_N (where N is 0 to shards-1), sessions, cron, notification, misc
+type QueueName = string; // Can be: events, events_N (where N is 0 to shards-1), sessions, cron, notification
 
 /**
  * Parses the ENABLED_QUEUES environment variable and returns an array of queue names to start.
@@ -53,7 +51,7 @@ type QueueName = string; // Can be: events, events_N (where N is 0 to shards-1),
  * Supported queue names:
  * - events - All event shards (events_0, events_1, ..., events_N)
  * - events_N - Individual event shard (where N is 0 to EVENTS_GROUP_QUEUES_SHARDS-1)
- * - sessions, cron, notification, misc
+ * - sessions, cron, notification
  */
 function getEnabledQueues(): QueueName[] {
   const enabledQueuesEnv = process.env.ENABLED_QUEUES?.trim();
@@ -69,7 +67,6 @@ function getEnabledQueues(): QueueName[] {
       'sessions',
       'cron',
       'notification',
-      'misc',
       'import',
       'insights',
       'gsc',
@@ -228,17 +225,6 @@ export function bootWorkers() {
     );
     workers.push(notificationWorker);
     logger.info({ concurrency }, 'Started worker for notification');
-  }
-
-  // Start misc worker
-  if (enabledQueues.includes('misc')) {
-    const concurrency = getConcurrencyFor('misc');
-    const miscWorker = new Worker(miscQueue.name, miscJob, {
-      ...workerOptions,
-      concurrency,
-    });
-    workers.push(miscWorker);
-    logger.info({ concurrency }, 'Started worker for misc');
   }
 
   // Start import worker

@@ -19,6 +19,7 @@
     "@openpanel/constants": "workspace:*",
     "@openpanel/json": "workspace:*",
     "@openpanel/logger": "workspace:*",
+    "@openpanel/payments": "workspace:*",
     "@openpanel/queue": "workspace:^",
     "@openpanel/redis": "workspace:*",
     "@openpanel/validation": "workspace:*",
