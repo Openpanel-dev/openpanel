@@ -711,7 +711,7 @@ export const getRetentionCohort = chatTool(
   {
     name: 'get_retention_cohort',
     description:
-      'Weekly user retention cohort table. Each row is a cohort week, columns are retention percentages for subsequent weeks.',
+      'Weekly active-user retention cohort for the last 12 weeks. Each row is a cohort (the week users were first seen) with cohort size (sum), retained user counts (values) and retained share (percentages) for subsequent weeks; a leading weighted-average row summarises all cohorts.',
     schema: z.object({}),
   },
   async (_input, context) => getRetentionCohortCore(context.projectId),

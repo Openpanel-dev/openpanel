@@ -50,9 +50,6 @@ export interface IClickhouseSession {
   utm_content: string;
   utm_term: string;
   revenue: number;
-  // CollapsingMergeTree marker: +1 = current state, -1 = cancel a prior +1.
-  // The session-buffer emits both +1 (new) and -1 (old) rows per update so
-  // CH can collapse intermediate states.
   sign: 1 | -1;
   version: number;
   // Dynamically added
@@ -213,7 +210,7 @@ export async function getSessionList(options: GetSessionListOptions) {
         groupsExpr: 'groups',
         startDate,
         endDate,
-      }),
+      })
     );
   }
 
@@ -338,7 +335,7 @@ export async function getSessionsCount({
         groupsExpr: 'groups',
         startDate,
         endDate,
-      }),
+      })
     );
   }
 
@@ -481,7 +478,7 @@ export interface QuerySessionsInput {
 }
 
 export async function querySessionsCore(
-  input: QuerySessionsInput,
+  input: QuerySessionsInput
 ): Promise<IClickhouseSession[]> {
   const builder = clix(ch)
     .select<IClickhouseSession>([])
@@ -525,7 +522,10 @@ export async function querySessionsCore(
     builder.where('browser', '=', input.browser);
   }
 
-  const { startDate: start, endDate: end } = resolveDateRange(input.startDate, input.endDate);
+  const { startDate: start, endDate: end } = resolveDateRange(
+    input.startDate,
+    input.endDate
+  );
 
   builder.where('created_at', 'BETWEEN', [
     clix.datetime(start),

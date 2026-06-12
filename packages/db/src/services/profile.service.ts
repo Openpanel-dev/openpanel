@@ -145,15 +145,16 @@ interface GetProfileListOptions {
 /**
  * Build a profile search predicate that handles multi-token queries like
  * "John Smith" — splits on whitespace, requires every token to match SOME
- * profile field (email/first/last/full name), case-insensitively. Returns
- * `null` when the search string is empty.
+ * profile field (id/email/first/last/full name), case-insensitively. Pasting a
+ * full profile id matches on `id`. Returns `null` when the search string is
+ * empty.
  */
 export function profileSearchSql(search: string | null | undefined): string | null {
   const tokens = (search ?? '').trim().split(/\s+/).filter(Boolean).slice(0, 5);
   if (tokens.length === 0) return null;
   const perToken = tokens.map((token) => {
     const like = sqlstring.escape(`%${token}%`);
-    return `(email ILIKE ${like} OR first_name ILIKE ${like} OR last_name ILIKE ${like} OR concat(first_name, ' ', last_name) ILIKE ${like})`;
+    return `(id ILIKE ${like} OR email ILIKE ${like} OR first_name ILIKE ${like} OR last_name ILIKE ${like} OR concat(first_name, ' ', last_name) ILIKE ${like})`;
   });
   return `(${perToken.join(' AND ')})`;
 }

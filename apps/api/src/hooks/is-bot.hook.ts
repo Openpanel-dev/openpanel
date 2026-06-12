@@ -12,6 +12,15 @@ export async function isBotHook(
   }>,
   reply: FastifyReply
 ) {
+  // Requests authenticated with a client secret come from server-side SDKs
+  // (node, php, go, rust, java, python, …). That auth is a far stronger signal
+  // of legitimate first-party traffic than the user agent, so never treat them
+  // as bots — bot detection is for public/frontend (origin-authenticated)
+  // traffic.
+  if (req.clientSecretAuth) {
+    return;
+  }
+
   const bot = req.headers['user-agent']
     ? await isBot(req.headers['user-agent'])
     : null;

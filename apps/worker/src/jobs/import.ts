@@ -14,7 +14,11 @@ import {
   type Prisma,
   updateImportStatus,
 } from '@openpanel/db';
-import { MixpanelProvider, UmamiProvider } from '@openpanel/importer';
+import {
+  AmplitudeProvider,
+  MixpanelProvider,
+  UmamiProvider,
+} from '@openpanel/importer';
 import type { ILogger } from '@openpanel/logger';
 import type { ImportQueuePayload } from '@openpanel/queue';
 import type { Job } from 'bullmq';
@@ -298,6 +302,8 @@ function createProvider(
       return new UmamiProvider(record.projectId, config, jobLogger);
     case 'mixpanel':
       return new MixpanelProvider(record.projectId, config, jobLogger);
+    case 'amplitude':
+      return new AmplitudeProvider(record.projectId, config, jobLogger);
     default:
       throw new Error(`Unknown provider: ${config.provider}`);
   }

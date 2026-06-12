@@ -660,7 +660,7 @@ describe('get_weekly_retention_series', () => {
 });
 
 describe('get_retention_cohort', () => {
-  it('returns array of cohort rows with period_0..period_9', async () => {
+  it('returns weighted-average + per-cohort matrix rows', async () => {
     const server = makeServer();
     registerRetentionTools(server as any, CTX);
     const res = await server.invoke('get_retention_cohort', {
@@ -668,8 +668,12 @@ describe('get_retention_cohort', () => {
     });
     expect(Array.isArray(res)).toBe(true);
     if (res.length > 0) {
-      expect(res[0]).toHaveProperty('first_seen');
-      expect(res[0]).toHaveProperty('period_0');
+      expect(res[0]).toHaveProperty('cohort_interval');
+      expect(res[0]).toHaveProperty('sum');
+      expect(res[0]).toHaveProperty('values');
+      expect(res[0]).toHaveProperty('percentages');
+      // The first row is always the weighted-average summary.
+      expect(res[0].cohort_interval).toBe('Weighted Average');
     }
   });
 });

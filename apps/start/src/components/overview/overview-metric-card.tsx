@@ -4,11 +4,9 @@ import { cn } from '@/utils/cn';
 import { timeWindows } from '@openpanel/constants';
 import { getPreviousMetric } from '@openpanel/common';
 import type { IInterval } from '@openpanel/validation';
-import { curveMonotoneX } from '@visx/curve';
 import { type ReactNode, useState } from 'react';
-import { Area } from '../charts/area';
-import { AreaChart } from '../charts/area-chart';
-import { useDashedTail } from '../charts/op-dashed-tail';
+import { Bar } from '../charts/bar';
+import { BarChart } from '../charts/bar-chart';
 import {
   OPStatHoverBridge,
   type OPStatHoverState,
@@ -72,7 +70,6 @@ export function OverviewMetricCard({
     : (range ? timeWindows[range]?.label : 'Total') || 'Total';
 
   const diff = getPreviousMetric(displayValue, displayPrev);
-  const dashFromIndex = useDashedTail({ data, range, interval });
 
   return (
     <MetricCardShell active={active} onClick={onClick}>
@@ -103,29 +100,24 @@ export function OverviewMetricCard({
 
       <div className="mt-1.5 h-[40px]">
         {data.length > 0 && (
-          <AreaChart
+          <BarChart
             data={data}
             xDataKey="date"
             aspectRatio="auto"
             className="h-full"
-            margin={{ top: 6, right: 0, bottom: 4, left: 0 }}
+            margin={{ top: 6, right: 0, bottom: 0, left: 0 }}
             animationDuration={0}
+            barGap={0.25}
           >
             <OPStatHoverBridge onHoverChange={setHover} />
-            <Area
+            <Bar
               dataKey="current"
-              stroke={PRIMARY_COLOR}
               fill={PRIMARY_COLOR}
-              fillOpacity={active ? 0.25 : 0.16}
-              gradientToOpacity={0}
-              strokeWidth={1.5}
-              curve={curveMonotoneX}
-              fadeEdges={false}
+              fadedOpacity={0.35}
+              lineCap={1}
               animate={false}
-              dashFromIndex={dashFromIndex}
-              dashArray="3,3"
             />
-          </AreaChart>
+          </BarChart>
         )}
       </div>
     </MetricCardShell>

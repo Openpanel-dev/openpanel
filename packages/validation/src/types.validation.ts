@@ -44,6 +44,9 @@ export type IChartEventFilterValue =
   IChartEvent['filters'][number]['value'][number];
 export type IChartEventFilterOperator =
   IChartEvent['filters'][number]['operator'];
+export type IChartFilterValueType = NonNullable<
+  IChartEvent['filters'][number]['type']
+>;
 export type IChartBreakdown = z.infer<typeof zChartBreakdown>;
 export type IInterval = z.infer<typeof zTimeInterval>;
 export type IChartType = z.infer<typeof zChartType>;

@@ -93,6 +93,16 @@ export async function bootCron() {
       type: 'cohortRefresh',
       pattern: '*/30 * * * *',
     },
+    {
+      name: 'sessionReaper',
+      type: 'sessionReaper',
+      pattern: 1000 * 60 * 5, // every 5 minutes
+    },
+    {
+      name: 'sessionVacuum',
+      type: 'sessionVacuum',
+      pattern: '0 4 * * *', // daily at 04:00 UTC — backstop for cleanup leaks
+    },
   ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {

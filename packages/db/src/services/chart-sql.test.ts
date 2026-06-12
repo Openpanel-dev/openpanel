@@ -221,6 +221,74 @@ describe('chart.service / getChartSql', () => {
     await explain(sql);
   });
 
+  // Filter value type casting (filter.type). A date property compared with
+  // `gte` used to crash with `toFloat64('2019-01-01')`; declaring the type
+  // routes both column and value through the matching ClickHouse cast.
+  itCH('date-typed gte filter casts via best-effort toDate, not toFloat64', async () => {
+    const sql = await getChartSql({
+      event: event({
+        filters: [
+          {
+            name: 'properties.cook',
+            operator: 'gte',
+            value: ['2019-01-01'],
+            type: 'date',
+          },
+        ],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+    expect(sql).toContain('toDate(parseDateTimeBestEffortOrNull');
+    expect(sql).not.toContain('toFloat64');
+    await explain(sql);
+  });
+
+  itCH('number-typed gte filter casts via toFloat64OrNull', async () => {
+    const sql = await getChartSql({
+      event: event({
+        filters: [
+          {
+            name: 'properties.age',
+            operator: 'gte',
+            value: ['5'],
+            type: 'number',
+          },
+        ],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+    expect(sql).toContain('toFloat64OrNull');
+    await explain(sql);
+  });
+
+  itCH('untyped gte filter keeps legacy toFloat64 casting', async () => {
+    const sql = await getChartSql({
+      event: event({
+        filters: [
+          { name: 'properties.age', operator: 'gte', value: ['5'] },
+        ],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+    expect(sql).toContain('toFloat64OrZero');
+    await explain(sql);
+  });
+
   itCH('one_event_per_user segment still parses', async () => {
     const sql = await getChartSql({
       event: event({ segment: 'one_event_per_user' }),

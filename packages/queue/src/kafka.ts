@@ -78,28 +78,9 @@ const KAFKA_MIN_BYTES = KAFKA_MIN_MESSAGES * KAFKA_BYTES_PER_MESSAGE;
 const KAFKA_MAX_BYTES_PER_PARTITION =
   KAFKA_MAX_MESSAGES_PER_PARTITION * KAFKA_BYTES_PER_MESSAGE;
 
-const projectIdsEnv = (process.env.KAFKA_PROJECT_IDS || '').trim();
-const allowAllProjects = projectIdsEnv === '*';
-const projectIdAllowList = new Set<string>(
-  projectIdsEnv && !allowAllProjects
-    ? projectIdsEnv
-        .split(',')
-        .map((id) => id.trim())
-        .filter(Boolean)
-    : []
-);
-
 export const isKafkaConfigured = (): boolean => KAFKA_BROKERS.length > 0;
 
-export const shouldUseKafka = (projectId: string): boolean => {
-  if (!isKafkaConfigured()) {
-    return false;
-  }
-  if (allowAllProjects) {
-    return true;
-  }
-  return projectIdAllowList.has(projectId);
-};
+export const shouldUseKafka = (): boolean => isKafkaConfigured();
 
 let kafka: Kafka | null = null;
 const getKafka = (): Kafka => {

@@ -12,6 +12,7 @@ import sqlstring from 'sqlstring';
 import { formatClickhouseDate, TABLE_NAMES } from '../clickhouse/client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
+import { buildTypedClause, hasTypedCast, isTypedOperator } from './filter-cast';
 
 // Top-level columns on the events table. Derived from the migration in
 // packages/db/code-migrations/3-init-ch.ts (+ revenue added in 6-add-revenue-
@@ -1188,6 +1189,10 @@ export function getEventFiltersWhereClause(
     // Handle group. prefixed filters (requires ARRAY JOIN + _g JOIN in query)
     if (name.startsWith('group.') && projectId) {
       const whereFrom = getGroupPropertySql(name);
+      if (hasTypedCast(filter.type) && isTypedOperator(operator)) {
+        where[id] = buildTypedClause(whereFrom, operator, value, filter.type);
+        return;
+      }
       switch (operator) {
         case 'is': {
           if (value.length === 1) {
@@ -1259,6 +1264,17 @@ export function getEventFiltersWhereClause(
       );
       const isWildcard = propertyKey.includes('%');
       const whereFrom = propertyKey;
+
+      // Typed cast (number/date/datetime/boolean) short-circuit. Casts both the
+      // column and each value so e.g. `>= '2019-01-01'` compares as dates
+      // instead of crashing `toFloat64('2019-01-01')`. Untyped/string filters
+      // fall through to the legacy switch below.
+      if (hasTypedCast(filter.type) && isTypedOperator(operator)) {
+        where[id] = isWildcard
+          ? `arrayExists(x -> ${buildTypedClause('x', operator, value, filter.type)}, ${whereFrom})`
+          : buildTypedClause(whereFrom, operator, value, filter.type);
+        return;
+      }
 
       switch (operator) {
         case 'is': {
@@ -1473,6 +1489,12 @@ export function getEventFiltersWhereClause(
       // that OverviewService.getRawWhereClause already vets via its
       // WHITELISTED_FILTERS pre-pass.
       if (tableScope === 'events' && !EVENT_TOP_LEVEL_COLUMNS.has(name)) {
+        return;
+      }
+      // Typed cast short-circuit (see property branch above). Supersedes the
+      // `isNumericColumn` auto-detect when the user declared an explicit type.
+      if (hasTypedCast(filter.type) && isTypedOperator(operator)) {
+        where[id] = buildTypedClause(name, operator, value, filter.type);
         return;
       }
       switch (operator) {

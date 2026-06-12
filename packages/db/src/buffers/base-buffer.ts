@@ -153,7 +153,7 @@ export class BaseBuffer {
    */
   protected getYieldInterval(
     batchSize: number,
-    opts: { min?: number; max?: number; targetYieldsPerFlush?: number } = {},
+    opts: { min?: number; max?: number; targetYieldsPerFlush?: number } = {}
   ): number {
     const target = opts.targetYieldsPerFlush ?? 20;
     const min = opts.min ?? 100;
@@ -183,7 +183,7 @@ export class BaseBuffer {
         for (const line of lines) {
           yield line;
         }
-      })(),
+      })()
     );
   }
 
@@ -371,7 +371,7 @@ export class BaseBuffer {
     } else if (obs.result === 'locked') {
       this.logger.debug(logPayload, `Flush skipped for ${this.name} (locked)`);
     } else {
-      this.logger.info(logPayload, `Flush completed for ${this.name}`);
+      this.logger.debug(logPayload, `Flush completed for ${this.name}`);
     }
   }
 

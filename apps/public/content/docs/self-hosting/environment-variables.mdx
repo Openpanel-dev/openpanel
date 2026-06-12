@@ -715,9 +715,9 @@ AUTO_BATCH_SIZE=100
 
 ## Event Streaming (Kafka)
 
-OpenPanel can optionally ingest events through a Kafka-compatible broker (Kafka itself, Redpanda, etc.) instead of (or alongside) the default Redis-backed events queue. This is opt-in per project and useful at high throughput, where many consumer instances can process partitions in parallel.
+OpenPanel can optionally ingest events through a Kafka-compatible broker (Kafka itself, Redpanda, etc.) instead of the default Redis-backed events queue. This is useful at high throughput, where many consumer instances can process partitions in parallel.
 
-Routing is decided per event at produce time: if the project's ID matches `KAFKA_PROJECT_IDS` and `KAFKA_BROKERS` is set, the event is produced to the Kafka topic; otherwise it stays on the default Redis-backed `events` queue. Set `ENABLED_QUEUES=events_kafka` on the worker(s) that should consume from Kafka.
+Routing is all-or-nothing: if `KAFKA_BROKERS` is set, every event is produced to the Kafka topic; otherwise all events stay on the default Redis-backed `events` queue. Set `ENABLED_QUEUES=events_kafka` on the worker(s) that should consume from Kafka.
 
 <Callout>
 The client speaks the Kafka wire protocol via [kafkajs](https://kafka.js.org/), so any Kafka-compatible broker works. The bundled `docker-compose.yml` uses [Redpanda](https://redpanda.com/) as a lightweight, single-binary option, but you can point `KAFKA_BROKERS` at any Kafka cluster.
@@ -729,30 +729,13 @@ The client speaks the Kafka wire protocol via [kafkajs](https://kafka.js.org/), 
 **Required**: Yes (to enable the Kafka path)
 **Default**: None
 
-Comma-separated list of Kafka broker addresses. When unset, the Kafka producer/consumer is disabled and all events fall back to the default Redis-backed queue.
+Comma-separated list of Kafka broker addresses. When set, all events are produced to Kafka; when unset, the Kafka producer/consumer is disabled and all events fall back to the default Redis-backed queue.
 
 **Example**:
 ```bash
 KAFKA_BROKERS=redpanda:9092
 # Multiple brokers
 KAFKA_BROKERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
-```
-
-### KAFKA_PROJECT_IDS
-
-**Type**: `string` (comma-separated or `*`)
-**Required**: No
-**Default**: None (no projects route to Kafka)
-
-Allow-list of project IDs whose events should be produced to Kafka. Use `*` to route every project's events through Kafka. If unset, no project uses Kafka even when `KAFKA_BROKERS` is configured.
-
-**Example**:
-```bash
-# Route every project through Kafka
-KAFKA_PROJECT_IDS=*
-
-# Route only specific projects
-KAFKA_PROJECT_IDS=proj_abc123,proj_def456
 ```
 
 ### KAFKA_EVENTS_TOPIC

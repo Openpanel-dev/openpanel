@@ -1,8 +1,11 @@
 import crypto from 'node:crypto';
 import { generateDeviceId } from '@openpanel/common/server';
-import { getSafeJson } from '@openpanel/json';
-import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue';
-import { getRedisCache } from '@openpanel/redis';
+import {
+  convertClickhouseDateToJs,
+  SESSION_TIMEOUT_MS,
+  sessionBuffer,
+} from '@openpanel/db';
+import type { IClickhouseSession } from '@openpanel/db';
 
 export async function getDeviceId({
   projectId,
@@ -10,15 +13,25 @@ export async function getDeviceId({
   ua,
   salts,
   overrideDeviceId,
+  eventTimeMs,
 }: {
   projectId: string;
   ip: string;
   ua: string | undefined;
   salts: { current: string; previous: string };
   overrideDeviceId?: string;
+  /** Event timestamp (ms). Used to decide whether an existing session is
+   *  still within its idle window. Defaults to `Date.now()`. */
+  eventTimeMs?: number;
 }) {
   if (overrideDeviceId) {
-    return { deviceId: overrideDeviceId, sessionId: '' };
+    // A caller-supplied device id is stable (no salt rotation), so it's the only
+    // candidate — resolve it through the same path as internal ids.
+    return await getInfoFromSession({
+      projectId,
+      deviceIds: [overrideDeviceId],
+      eventTimeMs: eventTimeMs ?? Date.now(),
+    });
   }
 
   if (!ua) {
@@ -40,8 +53,8 @@ export async function getDeviceId({
 
   return await getInfoFromSession({
     projectId,
-    currentDeviceId,
-    previousDeviceId,
+    deviceIds: [currentDeviceId, previousDeviceId],
+    eventTimeMs: eventTimeMs ?? Date.now(),
   });
 }
 
@@ -50,59 +63,74 @@ interface DeviceIdResult {
   sessionId: string;
 }
 
+/**
+ * Returns true when an existing session is recent enough that the incoming
+ * event should EXTEND it rather than start a new session.
+ *
+ * Critical: blobs no longer have a Redis TTL (so the reaper can always find
+ * them), which means an existing session blob may linger past its idle
+ * window. We must NOT blindly reuse `existing.id` — if we did, the worker's
+ * boundary detection would open a "new" session with the same id as the
+ * closed one, breaking the id-based extension check in createSessionEnd.
+ */
+function withinIdleWindow(
+  session: IClickhouseSession,
+  eventTimeMs: number
+): boolean {
+  const lastEventMs = convertClickhouseDateToJs(session.ended_at).getTime();
+  return eventTimeMs - lastEventMs < SESSION_TIMEOUT_MS;
+}
+
 async function getInfoFromSession({
   projectId,
-  currentDeviceId,
-  previousDeviceId,
+  deviceIds,
+  eventTimeMs,
 }: {
   projectId: string;
-  currentDeviceId: string;
-  previousDeviceId: string;
+  /** Candidate device ids in priority order (e.g. [current, previous] salt
+   *  windows, or just [override]). Deduped; the first is canonical. */
+  deviceIds: string[];
+  eventTimeMs: number;
 }): Promise<DeviceIdResult> {
+  const candidates = [...new Set(deviceIds.filter(Boolean))];
+  const primary = candidates[0] ?? '';
+
   try {
-    const multi = getRedisCache().multi();
-    multi.hget(
-      `bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`,
-      'data'
+    // Reading the live blob is the source of truth for an active session — it's
+    // what keeps a visit on one id across page reloads and salt rotation. Don't
+    // drop this read to "save" a lookup or sessions split at the bucket boundary.
+    const sessions = await Promise.all(
+      candidates.map((deviceId) =>
+        sessionBuffer.getExistingSession({ projectId, deviceId })
+      )
     );
-    multi.hget(
-      `bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`,
-      'data'
-    );
-    const res = await multi.exec();
-    if (res?.[0]?.[1]) {
-      const data = getSafeJson<EventsQueuePayloadCreateSessionEnd>(
-        (res?.[0]?.[1] as string) ?? ''
-      );
-      if (data) {
-        return {
-          deviceId: currentDeviceId,
-          sessionId: data.payload.sessionId,
-        };
-      }
-    }
-    if (res?.[1]?.[1]) {
-      const data = getSafeJson<EventsQueuePayloadCreateSessionEnd>(
-        (res?.[1]?.[1] as string) ?? ''
-      );
-      if (data) {
-        return {
-          deviceId: previousDeviceId,
-          sessionId: data.payload.sessionId,
-        };
+
+    for (const [i, session] of sessions.entries()) {
+      if (session && withinIdleWindow(session, eventTimeMs)) {
+        return { deviceId: candidates[i]!, sessionId: session.id };
       }
     }
   } catch (error) {
-    console.error('Error getting session end GET /track/device-id', error);
+    console.error('Error resolving session for device id', error);
   }
 
   return {
-    deviceId: currentDeviceId,
+    deviceId: primary,
+    // Deterministic id for the first event of a session and to bridge the window
+    // before the worker persists the blob (API resolves synchronously, worker
+    // writes async — same bucket → same id, so they agree).
+    //
+    // The bucket window MUST track the idle timeout: a gap > the window has to
+    // land in a new bucket so a boundary mints a *fresh* id. If it didn't (e.g.
+    // a hardcoded 30min while SESSION_TIMEOUT_MS is shorter), the worker would
+    // reopen the just-closed id and its session_end would be skipped. Grace must
+    // stay < window or getSessionId throws.
     sessionId: getSessionId({
       projectId,
-      deviceId: currentDeviceId,
-      graceMs: 5 * 1000,
-      windowMs: 1000 * 60 * 30,
+      deviceId: primary,
+      eventMs: eventTimeMs,
+      graceMs: Math.min(5_000, Math.floor(SESSION_TIMEOUT_MS / 6)),
+      windowMs: SESSION_TIMEOUT_MS,
     }),
   };
 }

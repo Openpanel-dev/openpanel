@@ -59,6 +59,10 @@ export async function validateSdkRequest(
     clientSecretNew || clientSecretOld || clientSecretFromBody;
   const origin = headers.origin;
 
+  if (clientSecret) {
+    req.clientSecretAuth = true;
+  }
+
   const createError = (message: string) =>
     new SdkAuthError(message, {
       clientId,

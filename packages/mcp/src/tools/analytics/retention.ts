@@ -1,4 +1,4 @@
-import { getRetentionCohortTable } from '@openpanel/db';
+import { getRetentionCohortCore } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpAuthContext } from '../../auth';
 import {
@@ -14,14 +14,14 @@ export function registerRetentionTools(
 ) {
   server.tool(
     'get_retention_cohort',
-    'Get a weekly user retention cohort table. Shows what percentage of users who first visited in a given week returned in subsequent weeks. Useful for understanding long-term user engagement and product stickiness.',
+    'Get a weekly active-user retention cohort for the last 12 weeks. Returns one row per cohort (the week users were first seen), each with `cohort_interval`, `sum` (cohort size), `values` (retained user counts per following week) and `percentages` (retained share, 0-1). The leading "Weighted Average" row summarises all cohorts. Useful for understanding long-term user engagement and product stickiness.',
     {
       projectId: projectIdSchema(context),
     },
     async ({ projectId: inputProjectId }) =>
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
-        return getRetentionCohortTable({ projectId });
+        return getRetentionCohortCore(projectId);
       }),
   );
 }

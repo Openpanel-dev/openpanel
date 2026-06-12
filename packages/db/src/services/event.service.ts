@@ -4,7 +4,7 @@ import type { IChartEventFilter } from '@openpanel/validation';
 import { assocPath, last, mergeDeepRight, path, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import { v4 as uuid } from 'uuid';
-import { botBuffer, eventBuffer, sessionBuffer } from '../buffers';
+import { botBuffer, eventBuffer } from '../buffers';
 import {
   ch,
   chQuery,
@@ -355,6 +355,16 @@ export async function getEvents(
   return events.map(transformEvent);
 }
 
+/**
+ * Persist an event to ClickHouse (via the buffer) and upsert the profile
+ * on session boundaries.
+ *
+ * Does NOT touch the session-row buffer. Callers producing non-session_start
+ * / session_end events are responsible for calling `sessionBuffer.ingest()`
+ * before this. `incoming-event.ts` is the only such caller today; everywhere
+ * else (session_start, session_end) the session-row update is correctly a
+ * no-op anyway.
+ */
 export async function createEvent(payload: IServiceCreateEventPayload) {
   if (!payload.profileId && payload.deviceId) {
     payload.profileId = payload.deviceId;
@@ -396,7 +406,9 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     groups: payload.groups ?? [],
   };
 
-  const promises = [sessionBuffer.add(event), eventBuffer.add(event)];
+  eventBuffer.add(event);
+
+  const promises: Promise<unknown>[] = [];
 
   if (payload.profileId) {
     const profile: IServiceUpsertProfile = {
@@ -487,7 +499,7 @@ export async function getEventList(options: GetEventListOptions) {
   } = options;
   const { sb, getSql, join } = createSqlBuilder();
 
-  const MAX_DATE_INTERVAL_IN_DAYS = 365;
+  const MAX_DATE_INTERVAL_IN_DAYS = 365 * 5;
   // Cap the date interval to prevent infinity
   const safeDateIntervalInDays = Math.min(
     dateIntervalInDays,
@@ -1297,7 +1309,7 @@ export interface QueryEventsInput {
 }
 
 export async function queryEventsCore(
-  input: QueryEventsInput,
+  input: QueryEventsInput
 ): Promise<IClickhouseEvent[]> {
   const builder = clix(ch)
     .select<IClickhouseEvent>([])
@@ -1358,7 +1370,9 @@ export async function queryEventsCore(
 
   if (input.properties) {
     for (const [key, value] of Object.entries(input.properties)) {
-      builder.rawWhere(`properties[${sqlstring.escape(key)}] = ${sqlstring.escape(value)}`);
+      builder.rawWhere(
+        `properties[${sqlstring.escape(key)}] = ${sqlstring.escape(value)}`
+      );
     }
   }
 
@@ -1368,7 +1382,7 @@ export async function queryEventsCore(
   if (!input.sessionId) {
     const { startDate: start, endDate: end } = resolveDateRange(
       input.startDate,
-      input.endDate,
+      input.endDate
     );
     builder.where('created_at', 'BETWEEN', [
       clix.datetime(start),
@@ -1378,7 +1392,7 @@ export async function queryEventsCore(
     // If caller still wants to scope by date, honor it.
     const { startDate: start, endDate: end } = resolveDateRange(
       input.startDate,
-      input.endDate,
+      input.endDate
     );
     builder.where('created_at', 'BETWEEN', [
       clix.datetime(start),

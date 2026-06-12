@@ -16,3 +16,7 @@ export const groupBuffer = new GroupBuffer();
 
 export type { ProfileBackfillEntry } from './profile-backfill-buffer';
 export type { IClickhouseSessionReplayChunk } from './replay-buffer';
+export {
+  SESSION_TIMEOUT_MS,
+  type SessionIngestResult,
+} from './session-buffer';
