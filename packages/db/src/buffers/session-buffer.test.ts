@@ -374,4 +374,51 @@ describe('SessionBuffer', () => {
 
     insertSpy.mockRestore();
   });
+
+  it('does not re-insert already-landed chunks when a later chunk fails', async () => {
+    process.env.SESSION_BUFFER_CHUNK_SIZE = '1';
+    try {
+      const buffer = new SessionBuffer();
+      await buffer.ingest(
+        makePayload({ deviceId: 'device-A', sessionId: 'session-A' })
+      );
+      await buffer.ingest(
+        makePayload({ deviceId: 'device-B', sessionId: 'session-B' })
+      );
+      expect(await buffer.getBufferSize()).toBe(2);
+
+      // chunkSize=1 → two single-row chunks. The first lands in CH, the
+      // second throws (e.g. request timeout).
+      vi.mocked(ch.insert).mockClear();
+      vi.mocked(ch.insert)
+        .mockResolvedValueOnce(undefined as any)
+        .mockRejectedValueOnce(new Error('ClickHouse unavailable'));
+
+      await expect(buffer.processBuffer()).rejects.toThrow(
+        'ClickHouse unavailable'
+      );
+
+      // Only the failed row may be re-queued. The old LRANGE→LTRIM design
+      // kept BOTH rows queued (the LTRIM never ran), so the next flush
+      // re-inserted the already-landed chunk — duplicate rows in CH that
+      // double-count the session in every sum(sign * ...) metric.
+      expect(await buffer.getBufferSize()).toBe(1);
+
+      vi.mocked(ch.insert).mockResolvedValue(undefined as any);
+      await buffer.processBuffer();
+      expect(await buffer.getBufferSize()).toBe(0);
+
+      // device-A's row went to CH exactly once across both flushes.
+      const callsWithA = vi
+        .mocked(ch.insert)
+        .mock.calls.filter((c) =>
+          ((c[0] as any).values as any[]).some(
+            (row) => row.device_id === 'device-A'
+          )
+        ).length;
+      expect(callsWithA).toBe(1);
+    } finally {
+      delete process.env.SESSION_BUFFER_CHUNK_SIZE;
+    }
+  });
 });
