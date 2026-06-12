@@ -11,8 +11,10 @@ import { duplicateHook } from '@/hooks/duplicate.hook';
 import { isBotHook } from '@/hooks/is-bot.hook';
 
 // Body limit for POST /track: 10 MB uncompressed, sized for batch requests
-// ("up to 2000 events and 10 MB per request"). Single events are unaffected
-// in practice — they stay far below the previous default limit.
+// (up to 2000 events / 10 MB per request, matching Mixpanel /import). This is
+// route-wide, so single-event posts share the same 10 MB ceiling — harmless in
+// practice since a single event is tiny, but note it raises their cap above
+// Fastify's default.
 const TRACK_BODY_LIMIT_BYTES = 10 * 1024 * 1024;
 
 const trackRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
@@ -34,7 +36,10 @@ const trackRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
           })
         ),
       tags: ['Track'],
-      description: `Ingest a tracking event (track, identify, group, increment, decrement, replay) or a batch of events ({ "type": "batch", "payload": [event, ...] }). Batch requests accept up to ${TRACK_BATCH_MAX_EVENTS} events and 10MB uncompressed per request; each event is dispatched through the same pipeline as a single-event request. Per-event validation failures are returned in the rejected[] array — the whole batch does not fail on a single bad row.`,
+      description: `Ingest a tracking event (track, identify, group, increment, decrement, replay) or a batch of events.
+Batch requests use { "type": "batch", "payload": [event, ...] } and accept up to ${TRACK_BATCH_MAX_EVENTS} events and 10MB uncompressed per request.
+Each event is dispatched through the same pipeline as a single-event request.
+Per-event validation failures are returned in the rejected[] array — the whole batch does not fail on a single bad row.`,
       response: {
         200: z.object({
           deviceId: z.string(),
