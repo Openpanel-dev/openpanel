@@ -132,16 +132,28 @@ export class MaterializeColumnsService {
     });
     const existingKeys = new Set(existingColumns.map((c) => c.propertyKey));
 
-    // Check columns already existing in ClickHouse
+    // Pull every column on the target table — we need both the names
+    // (to detect collisions with reserved top-level columns like `name`,
+    // `session_id`, `country`, etc.) AND each column's default_kind
+    // (so we can tell "already materialized → skip" from
+    // "regular column collision → rename to prop_<key>").
     const clickhouseColumns = await this.getExistingClickHouseColumns(targetTable);
-    const clickhouseColumnNames = new Set(clickhouseColumns);
+    const materializedColumnNames = new Set(
+      Array.from(clickhouseColumns.entries())
+        .filter(([, kind]) => kind === 'MATERIALIZED')
+        .map(([name]) => name),
+    );
+    const allColumnNames = new Set(clickhouseColumns.keys());
 
     const alreadyTracked = propertyUsage.filter((p) => existingKeys.has(p.propertyKey));
+    // Only skip when the existing column is itself a materialized projection of
+    // this property — a regular column with the same name (e.g. `name`,
+    // `country`) is a collision we want to handle by renaming, not skipping.
     const alreadyExistsInClickHouse = propertyUsage.filter(
-      (p) => !existingKeys.has(p.propertyKey) && clickhouseColumnNames.has(p.propertyKey),
+      (p) => !existingKeys.has(p.propertyKey) && materializedColumnNames.has(p.propertyKey),
     );
     const newProperties = propertyUsage.filter(
-      (p) => !existingKeys.has(p.propertyKey) && !clickhouseColumnNames.has(p.propertyKey),
+      (p) => !existingKeys.has(p.propertyKey) && !materializedColumnNames.has(p.propertyKey),
     );
 
     const allProperties: PropertyAnalysis[] = [];
@@ -191,7 +203,7 @@ export class MaterializeColumnsService {
 
     const candidates = analyzed
       .filter((stat) => !stat.skipReason)
-      .map((stats) => this.createCandidate(stats))
+      .map((stats) => this.createCandidate(stats, allColumnNames))
       .sort((a, b) => b.stats.benefit - a.stats.benefit);
 
     this.logger.info(`Identified ${candidates.length} ${targetTable} candidates for materialization`);
@@ -203,26 +215,30 @@ export class MaterializeColumnsService {
   }
 
   /**
-   * Get existing materialized column names from a ClickHouse table
+   * Get every column on the target table, mapped to its default_kind.
+   * Used for both "already materialized → skip" detection (default_kind
+   * = 'MATERIALIZED') and reserved-column collision detection (everything
+   * else: DEFAULT, ALIAS, or no default at all).
    */
-  private async getExistingClickHouseColumns(targetTable: 'events' | 'profiles'): Promise<string[]> {
+  private async getExistingClickHouseColumns(
+    targetTable: 'events' | 'profiles',
+  ): Promise<Map<string, string>> {
     try {
       const result = await ch.query({
         query: `
-          SELECT name
+          SELECT name, default_kind
           FROM system.columns
           WHERE database = 'default'
             AND table = '${targetTable}'
-            AND default_kind = 'MATERIALIZED'
         `,
         format: 'JSONEachRow',
       });
 
-      const data = await result.json<{ name: string }>();
-      return data.map((row) => row.name);
+      const data = await result.json<{ name: string; default_kind: string }>();
+      return new Map(data.map((row) => [row.name, row.default_kind]));
     } catch (error) {
       this.logger.warn(`Failed to get existing ClickHouse columns for ${targetTable}`, { error });
-      return [];
+      return new Map();
     }
   }
 
@@ -504,10 +520,22 @@ export class MaterializeColumnsService {
   }
 
   /**
-   * Create candidate object
+   * Create candidate object.
+   *
+   * If `propertyKey` collides with a column that already exists on the target
+   * table (regular column, DEFAULT, or ALIAS — NOT another MATERIALIZED
+   * projection, which would have been skipped upstream), we prefix the
+   * column name with `prop_`. Without this rename, `ALTER TABLE ... ADD COLUMN
+   * IF NOT EXISTS` becomes a silent no-op and the Postgres tracking row
+   * misleads the chart engine into rewriting `properties.<key>` to the wrong
+   * (existing) column — e.g. `properties.name` → the event-name column.
    */
-  private createCandidate(stats: PropertyUsageStats): MaterializedColumnCandidate {
-    const columnName = stats.propertyKey;
+  private createCandidate(
+    stats: PropertyUsageStats,
+    reservedColumnNames: Set<string>,
+  ): MaterializedColumnCandidate {
+    const collides = reservedColumnNames.has(stats.propertyKey);
+    const columnName = collides ? `prop_${stats.propertyKey}` : stats.propertyKey;
 
     let reason = `Used in ${stats.usageCount} reports (~${stats.queryFrequency} queries/day). `;
 
@@ -519,6 +547,10 @@ export class MaterializeColumnsService {
 
     if (stats.estimatedSize < 100_000_000) {
       reason += 'Small storage cost. ';
+    }
+
+    if (collides) {
+      reason += `Renamed to \`${columnName}\` (collides with existing ${stats.targetTable}.${stats.propertyKey} column). `;
     }
 
     reason += `Benefit: ${stats.benefit.toFixed(0)}.`;
