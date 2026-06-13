@@ -748,6 +748,7 @@ model WarehouseConnection {
   displayEmail      String?
   lastTestedAt      DateTime?
   lastTestStatus    Boolean?
+  lastTestError     String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @default(now()) @updatedAt
   syncs             WarehouseSync[]

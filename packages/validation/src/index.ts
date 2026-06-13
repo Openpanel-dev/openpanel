@@ -788,7 +788,10 @@ const zWarehouseConnectionName = z
   .regex(
     /^[a-zA-Z0-9 _\-]+$/,
     'Connection name may only contain letters, digits, spaces, hyphens, and underscores',
-  );
+  )
+  .refine((s) => s.trim().length > 0, {
+    message: 'Connection name cannot consist of only whitespace',
+  });
 
 export const zWarehouseConnectionCreate = z.object({
   name: zWarehouseConnectionName,
@@ -858,7 +861,14 @@ export const zBigQuerySyncConfig = z
     syncMode: z.enum(['append', 'full', 'onetime']),
     // Required for append and full (recurring) modes. Not set for onetime syncs.
     schedule: z.enum(['hourly', 'daily', 'weekly']).optional(),
-    partitionFilter: z.string().max(500).optional(),
+    partitionFilter: z
+      .string()
+      .max(500)
+      .refine(
+        (v) => !/--|\/\*|\*\/|;/.test(v),
+        'Partition filter must not contain SQL comments (-- or /* */) or statement terminators (;)',
+      )
+      .optional(),
     columnMapping: z.discriminatedUnion('mappingType', [
       zBigQueryColumnMappingEvents,
       zBigQueryColumnMappingProfiles,
@@ -873,7 +883,7 @@ export const zBigQuerySyncConfig = z
         message: 'schedule is required for append and full sync modes',
       });
     }
-    // Append mode requires an insertTime cursor column
+    // Append mode requires an insertTime cursor column (events)
     if (
       data.syncMode === 'append' &&
       data.columnMapping.mappingType === 'events' &&
@@ -884,6 +894,19 @@ export const zBigQuerySyncConfig = z
         path: ['columnMapping', 'insertTime'],
         message:
           'insertTime column is required for append mode — it must point to a TIMESTAMP column used as the incremental cursor',
+      });
+    }
+    // Append mode requires a createdAt cursor column (profiles)
+    if (
+      data.syncMode === 'append' &&
+      data.columnMapping.mappingType === 'profiles' &&
+      !data.columnMapping.createdAt
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['columnMapping', 'createdAt'],
+        message:
+          'createdAt column is required for append mode on profiles — it must point to a TIMESTAMP column used as the incremental cursor',
       });
     }
     // eventName and eventNameStatic are mutually exclusive
@@ -910,6 +933,7 @@ export type IWarehouseColumnMappingProfiles = z.infer<
 export type IWarehouseColumnMapping =
   | IWarehouseColumnMappingEvents
   | IWarehouseColumnMappingProfiles;
+export type IBigQueryWarehouseConfig = z.infer<typeof zBigQueryWarehouseConfig>;
 export type IBigQuerySyncConfig = z.infer<typeof zBigQuerySyncConfig>;
 export type IWarehouseConnectionCreate = z.infer<
   typeof zWarehouseConnectionCreate
