@@ -30,6 +30,9 @@ import { cn } from '@/utils/cn';
 
 const validateSearch = z.object({
   inviteId: z.string().optional(),
+  createNewOrg: z
+    .preprocess((value) => value === true || value === 'true', z.boolean())
+    .optional(),
 });
 export const Route = createFileRoute('/_steps/onboarding/project')({
   component: Component,
@@ -63,6 +66,7 @@ export const Route = createFileRoute('/_steps/onboarding/project')({
 type IForm = z.infer<typeof zOnboardingProject>;
 
 function Component() {
+  const search = Route.useSearch();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data: organizations } = useQuery(
@@ -121,7 +125,9 @@ function Component() {
   });
 
   const [showCorsInput, setShowCorsInput] = useState(false);
-  const [createNewOrg, setCreateNewOrg] = useState(false);
+  const [createNewOrg, setCreateNewOrg] = useState(
+    () => search.createNewOrg ?? false
+  );
   const canUseExistingWorkspace = organizations.length > 0;
   const showCreateForm = createNewOrg || organizations.length === 0;
 
