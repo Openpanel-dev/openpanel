@@ -219,6 +219,15 @@ export const reportSlice = createSlice({
         };
       }
 
+      if (action.payload === 'table' && state.options?.type !== 'table') {
+        state.options = {
+          type: 'table',
+          columnAliases: {},
+          hiddenColumns: [],
+          dateMode: 'columns',
+        };
+      }
+
       if (
         !isMinuteIntervalEnabledByRange(state.range) &&
         state.interval === 'minute'
@@ -329,6 +338,63 @@ export const reportSlice = createSlice({
     changeOptions(state, action: PayloadAction<IReportOptions | undefined>) {
       state.dirty = true;
       state.options = action.payload || undefined;
+    },
+    changeTableColumnAlias(
+      state,
+      action: PayloadAction<{ key: string; alias: string }>,
+    ) {
+      state.dirty = true;
+      if (!state.options || state.options.type !== 'table') {
+        state.options = {
+          type: 'table',
+          columnAliases: {},
+          hiddenColumns: [],
+          dateMode: 'columns',
+        };
+      }
+
+      const alias = action.payload.alias.trim();
+      if (alias) {
+        state.options.columnAliases[action.payload.key] = alias;
+      } else {
+        delete state.options.columnAliases[action.payload.key];
+      }
+    },
+    changeTableColumnVisibility(
+      state,
+      action: PayloadAction<{ key: string; visible: boolean }>,
+    ) {
+      state.dirty = true;
+      if (!state.options || state.options.type !== 'table') {
+        state.options = {
+          type: 'table',
+          columnAliases: {},
+          hiddenColumns: [],
+          dateMode: 'columns',
+        };
+      }
+
+      const hiddenColumns = state.options.hiddenColumns ?? [];
+      if (action.payload.visible) {
+        state.options.hiddenColumns = hiddenColumns.filter(
+          (key) => key !== action.payload.key,
+        );
+      } else if (!hiddenColumns.includes(action.payload.key)) {
+        state.options.hiddenColumns = [...hiddenColumns, action.payload.key];
+      }
+    },
+    changeTableDateMode(state, action: PayloadAction<'columns' | 'aggregate'>) {
+      state.dirty = true;
+      if (!state.options || state.options.type !== 'table') {
+        state.options = {
+          type: 'table',
+          columnAliases: {},
+          hiddenColumns: [],
+          dateMode: action.payload,
+        };
+      } else {
+        state.options.dateMode = action.payload;
+      }
     },
     changeSankeyMode(
       state,
@@ -448,6 +514,9 @@ export const {
   changeFunnelGroup,
   changeFunnelWindow,
   changeOptions,
+  changeTableColumnAlias,
+  changeTableColumnVisibility,
+  changeTableDateMode,
   changeSankeyMode,
   changeSankeySteps,
   changeSankeyExclude,

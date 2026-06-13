@@ -16,6 +16,7 @@ import { ReportMetricChart } from './metric';
 import { ReportPieChart } from './pie';
 import { ReportRetentionChart } from './retention';
 import { ReportSankeyChart } from './sankey';
+import { ReportTableChart } from './table';
 
 export const ReportChart = ({ lazy = true, ...props }: ReportChartProps) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -52,6 +53,8 @@ export const ReportChart = ({ lazy = true, ...props }: ReportChartProps) => {
         return <ReportMapChart />;
       case 'metric':
         return <ReportMetricChart />;
+      case 'table':
+        return <ReportTableChart />;
       case 'funnel':
         return <ReportFunnelChart />;
       case 'retention':
