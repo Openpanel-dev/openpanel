@@ -466,12 +466,19 @@ export class SessionBuffer extends BaseBuffer {
   }
 
   async processBuffer() {
-    const events = await this.redis.lrange(
-      this.redisKey,
-      0,
-      this.batchSize - 1
-    );
-    if (events.length === 0) return;
+    // LPOP with COUNT atomically claims the queue head. The previous
+    // LRANGE → insert → LTRIM bracket had a partial-failure pathology:
+    // when any chunk after the first successful one threw, the LTRIM
+    // never ran, so the next flush re-read and re-inserted chunks that
+    // had ALREADY landed in ClickHouse. Duplicate net-0 pairs collapse
+    // away, but a duplicated net=+1 row (e.g. a session's final state)
+    // double-counts that session in every sum(sign * ...) metric.
+    //
+    // ioredis LPOP with COUNT returns string[] | null.
+    const events = (await this.redis.lpop(this.redisKey, this.batchSize)) as
+      | string[]
+      | null;
+    if (!events || events.length === 0) return;
 
     const parsed: IClickhouseSession[] = [];
     for (const e of events) {
@@ -494,18 +501,42 @@ export class SessionBuffer extends BaseBuffer {
       ? this.squashSessionsByVersion(parsed)
       : parsed;
 
-    for (const chunk of this.chunks(sessions, this.chunkSize)) {
-      await ch.insert({
-        table: TABLE_NAMES.sessions,
-        values: chunk,
-        format: 'JSONEachRow',
-      });
+    const chunks = this.chunks(sessions, this.chunkSize);
+    let nextChunk = 0;
+    try {
+      for (; nextChunk < chunks.length; nextChunk++) {
+        await ch.insert({
+          table: TABLE_NAMES.sessions,
+          values: chunks[nextChunk]!,
+          format: 'JSONEachRow',
+        });
+      }
+    } catch (error) {
+      // Re-queue everything not confirmed inserted — the failed chunk and
+      // every chunk after it — at the head, preserving order. Rows already
+      // squashed re-squash to themselves on the retry flush. The error
+      // still propagates so the base flush records result:'error'.
+      const remaining = chunks.slice(nextChunk).flat();
+      if (remaining.length > 0) {
+        try {
+          await this.redis.lpush(
+            this.redisKey,
+            ...remaining
+              .slice()
+              .reverse()
+              .map((row) => JSON.stringify(row))
+          );
+        } catch (requeueErr) {
+          // If even the re-queue fails the rows are lost — log loudly so
+          // it is investigable rather than silent.
+          this.logger.error(
+            { err: requeueErr, lostRowCount: remaining.length },
+            'CRITICAL: failed to re-queue session rows to Redis — rows LOST'
+          );
+        }
+      }
+      throw error;
     }
-
-    // Trim only after a successful insert — on failure the rows stay queued.
-    // Don't swallow: let it propagate so the base flush records result:'error'
-    // (and the next flush retries the still-queued rows).
-    await this.redis.ltrim(this.redisKey, events.length, -1);
 
     this.logger.debug({ count: events.length }, 'Processed sessions');
   }
