@@ -251,8 +251,11 @@ model Project {
   notificationRules NotificationRule[]
   notifications     Notification[]
   imports           Import[]
-  gscConnection     GscConnection?
-  cohorts           Cohort[]
+  gscConnection       GscConnection?
+  warehouseConnections WarehouseConnection[]
+  warehouseSyncs       WarehouseSync[]
+  warehouseSyncRuns    WarehouseSyncRun[]
+  cohorts            Cohort[]
 
   // When deleteAt > now(), the project will be deleted
   deleteAt DateTime?
@@ -501,12 +504,13 @@ model ShareWidget {
 }
 
 model EventMeta {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String
-  conversion Boolean?
-  color      String?
-  icon       String?
-  projectId  String
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  conversion  Boolean?
+  color       String?
+  icon        String?
+  description String?
+  projectId   String
   project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
@@ -700,6 +704,112 @@ model GscConnection {
   updatedAt            DateTime  @default(now()) @updatedAt
 
   @@map("gsc_connections")
+}
+
+enum WarehouseType {
+  bigquery
+  snowflake
+  redshift
+  databricks
+  postgres
+}
+
+enum WarehouseSyncMappingType {
+  events
+  profiles
+}
+
+enum WarehouseSyncMode {
+  append
+  full
+  onetime
+}
+
+enum WarehouseSyncSchedule {
+  hourly
+  daily
+  weekly
+}
+
+enum WarehouseSyncRunStatus {
+  pending
+  running
+  completed
+  failed
+}
+
+model WarehouseConnection {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId         String
+  name              String
+  type              WarehouseType
+  project           Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  configEncrypted   String
+  displayIdentifier String?
+  displayEmail      String?
+  lastTestedAt      DateTime?
+  lastTestStatus    Boolean?
+  lastTestError     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @default(now()) @updatedAt
+  syncs             WarehouseSync[]
+
+  @@unique([projectId, name])
+  @@unique([projectId, id])
+  @@map("warehouse_connections")
+}
+
+model WarehouseSync {
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  connectionId    String                   @db.Uuid
+  projectId       String
+  connection      WarehouseConnection      @relation(fields: [projectId, connectionId], references: [projectId, id], onDelete: Cascade)
+  project         Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  displayName     String
+  dataset         String
+  tableName       String
+  mappingType     WarehouseSyncMappingType
+  syncMode        WarehouseSyncMode
+  schedule        WarehouseSyncSchedule?
+  /// [IPrismaWarehouseColumnMapping]
+  columnMapping   Json
+  lastCursor      String?
+  lastSyncedAt    DateTime?
+  lastSyncStatus  WarehouseSyncRunStatus?
+  lastSyncError   String?
+  isEnabled       Boolean                  @default(true)
+  errorRetryCount Int                      @default(0)
+  isErrorPaused   Boolean                  @default(false)
+  partitionFilter      String?
+  cursorOverlapMinutes Int                      @default(10)
+  syncDelayMinutes     Int                      @default(0)
+  createdBy            String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @default(now()) @updatedAt
+  runs            WarehouseSyncRun[]
+
+  @@unique([id, projectId])
+  @@index([projectId])
+  @@index([connectionId])
+  @@map("warehouse_syncs")
+}
+
+model WarehouseSyncRun {
+  id             String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  syncId         String                 @db.Uuid
+  projectId      String
+  sync           WarehouseSync          @relation(fields: [syncId, projectId], references: [id, projectId], onDelete: Cascade)
+  project        Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status         WarehouseSyncRunStatus @default(pending)
+  rowCount       BigInt                 @default(0)
+  failureCount   BigInt                 @default(0)
+  bytesProcessed BigInt?
+  errorMessage   String?
+  startedAt      DateTime               @default(now())
+  completedAt    DateTime?
+
+  @@index([syncId])
+  @@map("warehouse_sync_runs")
 }
 
 model EmailUnsubscribe {
