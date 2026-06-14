@@ -65,9 +65,14 @@ export function transformReportEventItem(
 
 export function transformReport(
   report: DbReport & { layout?: ReportLayout | null },
-): IChartProps & { id: string; layout?: ReportLayout | null } {
+): IChartProps & {
+  id: string;
+  dashboardId: string;
+  layout?: ReportLayout | null;
+} {
   return {
     id: report.id,
+    dashboardId: report.dashboardId,
     projectId: report.projectId,
     series:
       (report.events as IChartEventItem[]).map(transformReportEventItem) ?? [],

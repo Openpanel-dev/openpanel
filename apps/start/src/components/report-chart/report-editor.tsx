@@ -22,11 +22,16 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useDispatch, useSelector } from '@/redux';
 import { useTRPC } from '@/integrations/trpc/react';
 import { bind } from 'bind-event-listener';
-import { BellIcon, BellPlusIcon, GanttChartSquareIcon } from 'lucide-react';
+import {
+  BellIcon,
+  BellPlusIcon,
+  ChevronRightIcon,
+  GanttChartSquareIcon,
+} from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 
 import type { IServiceReport } from '@openpanel/db';
-import { useParams, useSearch } from '@tanstack/react-router';
+import { Link, useParams, useSearch } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { pushModal } from '@/modals';
 import EditReportName from '../report/edit-report-name';
@@ -38,8 +43,9 @@ interface ReportEditorProps {
 export default function ReportEditor({
   report: initialReport,
 }: ReportEditorProps) {
-  const { projectId } = useAppParams();
+  const { organizationId, projectId } = useAppParams();
   const { reportId } = useParams({ strict: false });
+  const dashboardId = initialReport?.dashboardId;
   const search = useSearch({ strict: false });
   const rangeOverride = (search as { range?: string }).range;
   const dispatch = useDispatch();
@@ -49,6 +55,14 @@ export default function ReportEditor({
   const { data: notificationRules } = useQuery({
     ...trpc.notification.rules.queryOptions({ projectId }),
     enabled: !!reportId,
+  });
+
+  const { data: dashboard } = useQuery({
+    ...trpc.dashboard.byId.queryOptions({
+      id: dashboardId ?? '',
+      projectId,
+    }),
+    enabled: !!dashboardId,
   });
 
   const existingRule = useMemo(() => {
@@ -83,9 +97,27 @@ export default function ReportEditor({
     <Sheet>
       <div>
         <div className="p-4">
-          <EditReportName />
+          <div className="flex min-w-0 items-center gap-2">
+            {dashboard && dashboardId && (
+              <>
+                <Link
+                  to="/$organizationId/$projectId/dashboards/$dashboardId"
+                  params={{ organizationId, projectId, dashboardId }}
+                  className="max-w-[45%] shrink-0 truncate text-xl font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  title={dashboard.name}
+                >
+                  {dashboard.name}
+                </Link>
+                <ChevronRightIcon
+                  size={18}
+                  className="shrink-0 text-muted-foreground"
+                />
+              </>
+            )}
+            <EditReportName />
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 p-4 pt-0 md:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2 p-4 pt-0 md:grid-cols-7">
           <SheetTrigger asChild>
             <Button
               icon={GanttChartSquareIcon}
@@ -125,7 +157,7 @@ export default function ReportEditor({
             />
             <ReportLineType className="min-w-0 flex-1" />
           </div>
-          <div className="col-start-2 row-start-1 text-right md:col-start-6 row gap-2 justify-end flex-nowrap whitespace-nowrap">
+          <div className="col-start-2 row-start-1 text-right md:col-start-6 md:col-span-2 row gap-2 justify-end flex-nowrap whitespace-nowrap">
             {reportId && (
               existingRule ? (
                 <Button

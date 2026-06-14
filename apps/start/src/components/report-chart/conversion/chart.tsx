@@ -284,11 +284,13 @@ export function Chart({ data }: Props) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <ConversionTable
-        data={data}
-        visibleSeries={series}
-        setVisibleSeries={setVisibleSeries}
-      />
+      {isEditMode && (
+        <ConversionTable
+          data={data}
+          visibleSeries={series}
+          setVisibleSeries={setVisibleSeries}
+        />
+      )}
     </TooltipProvider>
   );
 }

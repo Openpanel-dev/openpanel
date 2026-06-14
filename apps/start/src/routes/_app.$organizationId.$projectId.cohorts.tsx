@@ -6,12 +6,10 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
-import { cn } from '@/utils/cn';
 import { cohortMembersToCSV, downloadCSV } from '@/utils/csv-download';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { format } from 'date-fns';
 import { CopyIcon, DownloadIcon, PencilIcon, PlusIcon, RefreshCwIcon, TrashIcon, UsersIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -134,7 +132,18 @@ function Component() {
           const displayCount = count ?? 0;
           return (
             <Card key={cohort.id} hover>
-              <div className="flex flex-col p-4">
+              <div
+                className="flex flex-col p-4 cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onClick={() => pushModal('EditCohort', cohort)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    pushModal('EditCohort', cohort);
+                  }
+                }}
+              >
                 <div className="col gap-2">
                   <div className="font-medium">{cohort.name}</div>
                   {cohort.description && (
@@ -142,25 +151,32 @@ function Component() {
                       {cohort.description}
                     </div>
                   )}
-                  <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <UsersIcon size={14} />
                       <span>{displayCount.toLocaleString()} {displayCount === 1 ? 'member' : 'members'}</span>
                     </div>
-                    {cohort.lastComputedAt && (
-                      <div className={cn('text-xs')}>
-                        Updated {format(cohort.lastComputedAt, 'MMM d, HH:mm')}
-                      </div>
+                    {!cohort.isStatic && (
+                      <button
+                        type="button"
+                        title="Refresh count"
+                        className="flex items-center transition-colors hover:text-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          refresh.mutate({ cohortId: cohort.id });
+                        }}
+                      >
+                        <RefreshCwIcon size={14} />
+                      </button>
                     )}
                   </div>
-                  {cohort.isStatic && (
+                  {cohort.computeOnDemand ? (
+                    <div className="mt-1 inline-flex w-fit rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
+                      Dynamic
+                    </div>
+                  ) : (
                     <div className="mt-1 inline-flex w-fit rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
                       Static
-                    </div>
-                  )}
-                  {cohort.computeOnDemand && (
-                    <div className="mt-1 inline-flex w-fit rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
-                      On-demand
                     </div>
                   )}
                 </div>
@@ -176,19 +192,6 @@ function Component() {
                     Download
                   </button>
                 </CardActionsItem>
-                {!cohort.isStatic && (
-                  <CardActionsItem className="w-full" asChild>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        refresh.mutate({ cohortId: cohort.id });
-                      }}
-                    >
-                      <RefreshCwIcon size={16} />
-                      Refresh
-                    </button>
-                  </CardActionsItem>
-                )}
                 <CardActionsItem className="w-full" asChild>
                   <button
                     type="button"

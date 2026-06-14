@@ -71,7 +71,7 @@ export function ReportChartType({
           {items.find((item) => item.value === value)?.label}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56">
+      <DropdownMenuContent align="start" className="w-56">
         <DropdownMenuLabel>Available charts</DropdownMenuLabel>
         <DropdownMenuSeparator />
 

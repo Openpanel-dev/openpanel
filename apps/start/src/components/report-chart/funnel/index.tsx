@@ -31,6 +31,7 @@ export function ReportFunnelChart() {
       cohortFilters,
     },
     isLazyLoading,
+    isEditMode,
   } = useReportChartContext();
 
   const input: IChartInput = {
@@ -76,21 +77,24 @@ export function ReportFunnelChart() {
   return (
     <div className="col gap-4 relative group/chart">
       <ChartDownloadButton type="funnel" data={res.data} />
-      {!isTtc && res.data.current.length > 1 && <Summary data={res.data} />}
+      {isEditMode && !isTtc && res.data.current.length > 1 && (
+        <Summary data={res.data} />
+      )}
       {isTtc ? (
         <FunnelTtcChart data={res.data as any} />
       ) : (
         <Chart data={res.data} />
       )}
-      {res.data.current.map((item, index) => (
-        <Tables
-          key={item.id}
-          data={{
-            current: item,
-            previous: res.data.previous?.[index] ?? null,
-          }}
-        />
-      ))}
+      {isEditMode &&
+        res.data.current.map((item, index) => (
+          <Tables
+            key={item.id}
+            data={{
+              current: item,
+              previous: res.data.previous?.[index] ?? null,
+            }}
+          />
+        ))}
     </div>
   );
 }

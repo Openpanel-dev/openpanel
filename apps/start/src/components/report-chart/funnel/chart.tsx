@@ -19,6 +19,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -32,6 +33,12 @@ type Props = {
     current: RouterOutputs['chart']['funnel']['current'][number];
     previous: RouterOutputs['chart']['funnel']['current'][number] | null;
   };
+};
+
+// Conversion % label shown on top of each funnel bar.
+const formatPercentLabel = (value: number | string | undefined) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? `${Math.round(n)}%` : '';
 };
 
 export const Metric = ({
@@ -369,7 +376,10 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
     <TooltipProvider data={data.current}>
       <div className="aspect-video max-h-[250px] w-full p-4 card pb-1">
         <ResponsiveContainer>
-          <BarChart data={rechartData}>
+          <BarChart
+            data={rechartData}
+            margin={{ top: 20, right: 5, left: 5, bottom: 5 }}
+          >
             <CartesianGrid
               strokeDasharray="3 3"
               horizontal={true}
@@ -406,6 +416,14 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
                       stroke={getChartColor(breakdownIndex)}
                     />
                   ))}
+                  <LabelList
+                    dataKey={`step:percent:${breakdownIndex}`}
+                    position="top"
+                    offset={8}
+                    className="fill-foreground"
+                    fontSize={10}
+                    formatter={formatPercentLabel}
+                  />
                 </Bar>
               ))
             ) : (
@@ -421,6 +439,14 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
                     stroke={getChartColor(index)}
                   />
                 ))}
+                <LabelList
+                  dataKey="step:percent:0"
+                  position="top"
+                  offset={8}
+                  className="fill-foreground"
+                  fontSize={10}
+                  formatter={formatPercentLabel}
+                />
               </Bar>
             )}
             <Tooltip />

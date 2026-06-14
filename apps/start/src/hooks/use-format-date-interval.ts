@@ -34,9 +34,8 @@ export function formatDateInterval(options: {
 
     if (interval === 'day') {
       return new Intl.DateTimeFormat('en-GB', {
-        weekday: 'short',
-        day: '2-digit',
-        month: '2-digit',
+        day: 'numeric',
+        month: 'short',
       }).format(date);
     }
 

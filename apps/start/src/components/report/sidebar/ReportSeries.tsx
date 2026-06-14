@@ -132,7 +132,7 @@ function SortableSeries({
                 <button
                   onClick={() => setOpen((p) => !p)}
                   type="button"
-                  className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none"
+                  className="flex h-8 items-center gap-1 rounded-md border border-border bg-card px-2 text-sm font-medium leading-none"
                 >
                   <FilterIcon size={12} /> Add filter
                 </button>

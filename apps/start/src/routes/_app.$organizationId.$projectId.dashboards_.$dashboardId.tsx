@@ -24,8 +24,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
-import { timeWindows } from '@openpanel/constants';
-
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
@@ -138,13 +136,12 @@ function ReportItem({
   onDuplicate: (reportId: string) => void;
 }) {
   const router = useRouter();
-  const chartRange = report.range;
 
   return (
     <div className="card h-full flex flex-col">
-      <div className="flex items-center hover:bg-muted/50 justify-between border-b border-border p-4 leading-none [&_svg]:hover:opacity-100">
+      <div className="flex items-center hover:bg-muted/50 justify-between border-b border-border px-3 py-1.5 leading-none [&_svg]:hover:opacity-100">
         <div
-          className="flex-1 cursor-pointer -m-4 p-4"
+          className="flex-1 min-w-0 cursor-pointer -mx-3 -my-1.5 px-3 py-1.5"
           onClick={(event) => {
             if (event.metaKey) {
               window.open(
@@ -175,22 +172,10 @@ function ReportItem({
           role="button"
           tabIndex={0}
         >
-          <div className="font-medium">{report.name}</div>
-          {(() => {
-            if (startDate && endDate) {
-              return <div className="mt-2">Custom dates</div>;
-            }
-            const effectiveRange = range ?? chartRange;
-            if (effectiveRange === null || effectiveRange === undefined) {
-              return null;
-            }
-            const label =
-              timeWindows[effectiveRange as keyof typeof timeWindows]?.label;
-            return label ? <div className="mt-2">{label}</div> : null;
-          })()}
+          <div className="font-medium text-sm truncate">{report.name}</div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="drag-handle cursor-move p-2 hover:bg-muted rounded">
+          <div className="drag-handle cursor-move p-1 hover:bg-muted rounded">
             <svg
               width="16"
               height="16"
@@ -207,7 +192,7 @@ function ReportItem({
             </svg>
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded hover:border">
+            <DropdownMenuTrigger className="flex h-7 w-7 items-center justify-center rounded hover:border">
               <MoreHorizontal size={16} />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[200px]">
@@ -550,7 +535,7 @@ function Component() {
           <ReportSkeleton />
         </div>
       ) : (
-        <div className="w-full overflow-hidden -mx-4">
+        <div className="overflow-hidden -mx-4">
           <style>{`
             .react-grid-item {
               transition: ${enableTransitions ? 'transform 200ms ease, width 200ms ease, height 200ms ease' : 'none'} !important;

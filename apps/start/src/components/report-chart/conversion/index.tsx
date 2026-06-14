@@ -13,7 +13,7 @@ import { Chart } from './chart';
 import { Summary } from './summary';
 
 export function ReportConversionChart() {
-  const { isLazyLoading, report } = useReportChartContext();
+  const { isLazyLoading, report, isEditMode } = useReportChartContext();
   const trpc = useTRPC();
   const res = useQuery(
     trpc.chart.conversion.queryOptions(report, {
@@ -42,7 +42,7 @@ export function ReportConversionChart() {
     <div className="relative group/chart">
       <RefetchingOverlay isRefetching={res.isPlaceholderData && res.isFetching} />
       <ChartDownloadButton type="conversion" data={res.data} />
-      <Summary data={res.data} />
+      {isEditMode && <Summary data={res.data} />}
       <AspectContainer>
         <Chart data={res.data} />
       </AspectContainer>
