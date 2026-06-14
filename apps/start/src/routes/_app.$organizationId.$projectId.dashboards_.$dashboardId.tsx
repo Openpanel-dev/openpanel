@@ -356,8 +356,8 @@ function Component() {
       y: report.layout?.y ?? Math.floor(index / 2) * 4,
       w: report.layout?.w ?? 6,
       h: report.layout?.h ?? 4,
-      minW: 3,
-      minH: 3,
+      minW: 2,
+      minH: 2,
     }));
 
     // Create responsive layouts for different breakpoints
@@ -396,8 +396,8 @@ function Component() {
                 y: item.y,
                 w: item.w,
                 h: item.h,
-                minW: item.minW ?? 3,
-                minH: item.minH ?? 3,
+                minW: item.minW ?? 2,
+                minH: item.minH ?? 2,
               },
             });
           }
@@ -429,8 +429,8 @@ function Component() {
                 y: item.y,
                 w: item.w,
                 h: item.h,
-                minW: item.minW ?? 3,
-                minH: item.minH ?? 3,
+                minW: item.minW ?? 2,
+                minH: item.minH ?? 2,
               },
             });
           }
