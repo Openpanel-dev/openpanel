@@ -184,7 +184,7 @@ export function Chart({ data }: Props) {
       isTtc={isTtc}
       ttcAggregation={ttcAggregation}
     >
-      {isTtc && (
+      {isTtc && isEditMode && (
         <div className="flex items-center gap-2 mb-2 px-1">
           <span className="text-sm text-muted-foreground">Aggregation:</span>
           <Combobox

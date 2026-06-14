@@ -371,10 +371,16 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
   const xAxisProps = useXAxisProps();
   const yAxisProps = useYAxisProps();
   const hasBreakdowns = data.current.length > 1;
+  const { options } = useReportChartContext();
 
   return (
     <TooltipProvider data={data.current}>
-      <div className="aspect-video max-h-[250px] w-full p-4 card pb-1">
+      <div
+        className={cn(
+          options?.fillHeight ? 'h-full' : 'aspect-video max-h-[250px]',
+          'w-full p-4 card pb-1',
+        )}
+      >
         <ResponsiveContainer>
           <BarChart
             data={rechartData}

@@ -19,6 +19,7 @@ export type ReportChartContextType = {
     maxHeight: number;
     minHeight: number;
     maxDomain: number;
+    fillHeight: boolean;
     onClick: (serie: IChartSerie) => void;
     renderSerieName: (names: string[]) => React.ReactNode;
     renderSerieIcon: (serie: IChartSerie) => React.ReactNode;

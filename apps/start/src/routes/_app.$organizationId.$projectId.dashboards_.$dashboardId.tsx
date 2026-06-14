@@ -228,6 +228,11 @@ function ReportItem({
         )}
       >
         <ReportChart
+          options={
+            ['linear', 'conversion', 'funnel'].includes(report.chartType)
+              ? { fillHeight: true }
+              : {}
+          }
           report={
             {
               ...report,
