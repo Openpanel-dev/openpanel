@@ -136,8 +136,11 @@ export function FunnelTtcChart({ data }: Props) {
       )}
       <div
         className={cn(
-          options?.fillHeight ? 'h-full' : 'aspect-video max-h-[300px]',
-          'w-full p-4 card pb-1',
+          'w-full',
+          options?.fillHeight
+            ? 'h-full'
+            : 'aspect-video max-h-[300px] p-4 pb-1',
+          isEditMode && 'card',
         )}
       >
         <ResponsiveContainer>
