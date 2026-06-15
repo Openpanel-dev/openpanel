@@ -127,14 +127,14 @@ describe('mapBigQueryError', () => {
 const VALID_SA = JSON.stringify({
   type: 'service_account',
   project_id: 'my-project',
-  private_key: '-----BEGIN RSA PRIVATE KEY-----\nMIIE',
+  private_key: '-----BEGIN RSA PRIVATE KEY-----\nFAKE_TEST_KEY_DO_NOT_USE',
   client_email: 'sa@my-project.iam.gserviceaccount.com',
 });
 
 const NEW_SA = JSON.stringify({
   type: 'service_account',
   project_id: 'my-project',
-  private_key: '-----BEGIN RSA PRIVATE KEY-----\nNEWKEY',
+  private_key: '-----BEGIN RSA PRIVATE KEY-----\nFAKE_TEST_KEY_DO_NOT_USE',
   client_email: 'sa-new@my-project.iam.gserviceaccount.com',
 });
 

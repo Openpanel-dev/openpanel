@@ -11,6 +11,7 @@ import {
   withTimeout,
 } from '@openpanel/db';
 import {
+  zBqIdentifier,
   zWarehouseConfig,
   zWarehouseConnectionCreate,
 } from '@openpanel/validation';
@@ -340,7 +341,7 @@ export const warehouseRouter = createTRPCRouter({
     }),
 
   listTables: protectedProcedure
-    .input(zConnectionOwnership.extend({ dataset: z.string().regex(/^[a-zA-Z0-9_]+$/, 'Invalid dataset name') }))
+    .input(zConnectionOwnership.extend({ dataset: zBqIdentifier }))
     .query(async ({ input, ctx }) => {
       const access = await getProjectAccess({
         projectId: input.projectId,
@@ -365,8 +366,8 @@ export const warehouseRouter = createTRPCRouter({
   getTableSchema: protectedProcedure
     .input(
       zConnectionOwnership.extend({
-        dataset: z.string().regex(/^[a-zA-Z0-9_]+$/, 'Invalid dataset name'),
-        tableName: z.string().regex(/^[a-zA-Z0-9_]+$/, 'Invalid table name'),
+        dataset: zBqIdentifier,
+        tableName: zBqIdentifier,
       }),
     )
     .query(async ({ input, ctx }) => {
