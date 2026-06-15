@@ -92,6 +92,115 @@ export class OpenPanel extends OpenPanelBase {
     }
   }
 
+  /**
+   * Storage keys for client-generated replay IDs.
+   *
+   * The server's default behavior derives session_id from
+   * `hash(salt + projectId + ip + ua)`. That collides for every user
+   * behind the same NAT (corporate office, shared WiFi, mobile carrier
+   * NAT) — their replay timelines get merged into one.
+   *
+   * We avoid this by generating IDs in the browser:
+   *  - device_id   localStorage   persists forever; identifies the browser
+   *  - session_id  sessionStorage tab-scoped; rotates on 30-min idle
+   *  - last_activity is the wallclock of the last `track`/`replay` event
+   *    we've sent on this tab; used to decide if the session is still
+   *    fresh enough to reuse, or if we need to mint a new one.
+   *
+   * On the wire, only `session_id` matters today (it's carried with each
+   * replay chunk and the server trusts it). device_id is stored for
+   * future use (cross-tab user-journey stitching) but not currently
+   * sent — that's a follow-up once the server-side accepts it.
+   */
+  private static readonly DEVICE_ID_KEY = '_op_device_id';
+  private static readonly SESSION_ID_KEY = '_op_session_id';
+  private static readonly LAST_ACTIVITY_KEY = '_op_last_activity';
+  private static readonly SESSION_IDLE_MS = 30 * 60 * 1000;
+
+  /**
+   * Generate a v4 UUID. Uses `crypto.randomUUID()` where available
+   * (modern browsers + HTTPS); falls back to a `Math.random`-based
+   * generator for older browsers and `http://` contexts where the
+   * Web Crypto API is unavailable. The fallback is fine for an
+   * analytics session identifier — we don't need cryptographic
+   * unpredictability, just collision-resistance.
+   */
+  private newUuid(): string {
+    try {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+    } catch {}
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  /**
+   * Returns a sessionId for this tab, generating + persisting one if
+   * needed. Also lazily persists a deviceId in localStorage (not
+   * currently sent on the wire — reserved for future cross-tab work).
+   *
+   * Returns null if browser storage is unavailable (server-side render,
+   * sandboxed iframe with `storage-access` blocked, quota exhausted).
+   * Caller should fall back to the server-derived sessionId in that
+   * case so we don't lose replays.
+   */
+  private initReplayIdsFromStorage(): string | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      // Persistent device_id — kept across tabs and visits.
+      let deviceId = localStorage.getItem(OpenPanel.DEVICE_ID_KEY);
+      if (!deviceId) {
+        deviceId = this.newUuid();
+        localStorage.setItem(OpenPanel.DEVICE_ID_KEY, deviceId);
+      }
+      this.deviceId = deviceId;
+
+      // Per-tab session_id with 30-min idle rotation. Matches the
+      // existing server behavior so analytics session counts don't
+      // drift after this change.
+      const now = Date.now();
+      const lastActivity = Number.parseInt(
+        sessionStorage.getItem(OpenPanel.LAST_ACTIVITY_KEY) ?? '0',
+        10,
+      );
+      const idleTooLong =
+        Number.isFinite(lastActivity) &&
+        lastActivity > 0 &&
+        now - lastActivity > OpenPanel.SESSION_IDLE_MS;
+
+      let sessionId = sessionStorage.getItem(OpenPanel.SESSION_ID_KEY);
+      if (!sessionId || idleTooLong) {
+        sessionId = this.newUuid();
+        sessionStorage.setItem(OpenPanel.SESSION_ID_KEY, sessionId);
+      }
+      sessionStorage.setItem(OpenPanel.LAST_ACTIVITY_KEY, String(now));
+      this.sessionId = sessionId;
+
+      return sessionId;
+    } catch {
+      // Storage unavailable (private mode quirks, sandboxed iframe,
+      // quota exhausted). Caller falls back to server-derived.
+      return null;
+    }
+  }
+
+  /**
+   * Refresh the last-activity wallclock. Called from the recorder
+   * callback so an actively-used tab keeps the same sessionId
+   * indefinitely; only goes idle when the user actually stops
+   * interacting for 30 minutes.
+   */
+  private bumpReplayActivity() {
+    if (typeof window === 'undefined') return;
+    try {
+      sessionStorage.setItem(OpenPanel.LAST_ACTIVITY_KEY, String(Date.now()));
+    } catch {}
+  }
+
   private async maybeStartReplay() {
     const opts = this.options.sessionReplay;
     if (!opts?.enabled) return;
@@ -102,15 +211,24 @@ export class OpenPanel extends OpenPanelBase {
       return;
     }
 
-    const startTimeoutMs = opts.startTimeoutMs ?? 10_000;
-    const pollIntervalMs = 500;
-    const start = Date.now();
+    // Prefer a client-generated sessionId. Fixes the NAT-collision
+    // case where multiple users on the same office/home IP collapse
+    // into one shared session_id. Falls back to the legacy
+    // server-derived id if browser storage is unavailable.
+    const localSessionId = this.initReplayIdsFromStorage();
+    if (localSessionId) {
+      this.log('replay: using client-generated session_id', localSessionId);
+    } else {
+      const startTimeoutMs = opts.startTimeoutMs ?? 10_000;
+      const pollIntervalMs = 500;
+      const start = Date.now();
 
-    // Poll until we have a sessionId (established by track calls) or timeout.
-    while (!this.sessionId && Date.now() - start < startTimeoutMs) {
-      await this.fetchDeviceId().catch(() => undefined);
-      if (this.sessionId) break;
-      await new Promise((r) => setTimeout(r, pollIntervalMs));
+      // Storage unavailable — fall back to server-derived id from /track/device-id.
+      while (!this.sessionId && Date.now() - start < startTimeoutMs) {
+        await this.fetchDeviceId().catch(() => undefined);
+        if (this.sessionId) break;
+        await new Promise((r) => setTimeout(r, pollIntervalMs));
+      }
     }
 
     if (!this.sessionId) {
@@ -120,6 +238,7 @@ export class OpenPanel extends OpenPanelBase {
 
     const sessionId = this.sessionId;
     startReplayRecorder(opts, (chunk) => {
+      this.bumpReplayActivity();
       this.send({
         type: 'replay',
         payload: {
