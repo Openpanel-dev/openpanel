@@ -1,3 +1,4 @@
+import { cn } from '@/utils/cn';
 import { mergeDeepRight } from 'ramda';
 import React, { memo, type RefObject, useEffect, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
@@ -63,7 +64,7 @@ export const ReportChart = ({ lazy = true, ...props }: ReportChartProps) => {
   };
 
   return (
-    <div ref={ref}>
+    <div ref={ref} className={cn(props.options?.fillHeight && 'h-full')}>
       <ReportChartProvider
         {...mergeDeepRight({ options: {}, isEditMode: false }, props)}
         isLazyLoading={!loaded}

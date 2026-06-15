@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import type { IChartInput } from '@openpanel/validation';
 
+import { cn } from '@/utils/cn';
 import { AspectContainer } from '../aspect-container';
 import { ChartDownloadButton } from '../common/chart-download-button';
 import { ReportChartEmpty } from '../common/empty';
@@ -32,6 +33,7 @@ export function ReportFunnelChart() {
     },
     isLazyLoading,
     isEditMode,
+    options,
   } = useReportChartContext();
 
   const input: IChartInput = {
@@ -75,7 +77,12 @@ export function ReportFunnelChart() {
   const isTtc = measuring === 'time_to_convert';
 
   return (
-    <div className="col gap-4 relative group/chart">
+    <div
+      className={cn(
+        'col gap-4 relative group/chart',
+        options?.fillHeight && 'h-full',
+      )}
+    >
       <ChartDownloadButton type="funnel" data={res.data} />
       {isEditMode && !isTtc && res.data.current.length > 1 && (
         <Summary data={res.data} />

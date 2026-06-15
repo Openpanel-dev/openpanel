@@ -12,7 +12,7 @@ import { useReportChartContext } from '../context';
 import { Chart } from './chart';
 
 export function ReportLineChart() {
-  const { isLazyLoading, report } = useReportChartContext();
+  const { isLazyLoading, report, options } = useReportChartContext();
   const trpc = useTRPC();
 
   const res = useQuery(
@@ -39,7 +39,7 @@ export function ReportLineChart() {
   }
 
   return (
-    <div className="relative group/chart">
+    <div className={cn('relative group/chart', options?.fillHeight && 'h-full')}>
       <RefetchingOverlay isRefetching={res.isPlaceholderData && res.isFetching} />
       <AspectContainer>
         <Chart data={res.data} />

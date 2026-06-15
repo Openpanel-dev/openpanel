@@ -15,6 +15,11 @@ export function AspectContainer({ children, className }: AspectContainerProps) {
   const maxHeight = options?.maxHeight ?? 300;
   const aspectRatio = options?.aspectRatio ?? DEFAULT_ASPECT_RATIO;
 
+  // Fill the parent's height (e.g. dashboard cell) instead of aspect-sizing.
+  if (options?.fillHeight) {
+    return <div className={cn('h-full w-full', className)}>{children}</div>;
+  }
+
   return (
     <div
       className={cn('w-full', className)}

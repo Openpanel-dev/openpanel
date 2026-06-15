@@ -22,6 +22,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import type { IInterval } from '@openpanel/validation';
+import { cn } from '@/utils/cn';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import { SerieIcon } from '../common/serie-icon';
 import { SerieName } from '../common/serie-name';
@@ -69,6 +70,8 @@ interface Props {
 export function FunnelTtcChart({ data }: Props) {
   const {
     report: { interval, lineType, ttcAggregation: savedTtcAggregation },
+    isEditMode,
+    options,
   } = useReportChartContext();
   const dispatch = useDispatch();
   const ttcAggregation = (savedTtcAggregation as TtcAggregation) || 'avg';
@@ -120,16 +123,26 @@ export function FunnelTtcChart({ data }: Props) {
       interval={interval ?? 'day'}
       ttcAggregation={ttcAggregation}
     >
-      <div className="flex items-center gap-2 mb-2 px-1">
-        <span className="text-sm text-muted-foreground">Aggregation:</span>
-        <Combobox
-          placeholder="Select aggregation"
-          value={ttcAggregation}
-          onChange={(val) => dispatch(changeTtcAggregation(val))}
-          items={TTC_AGGREGATION_ITEMS}
-        />
-      </div>
-      <div className="aspect-video max-h-[300px] w-full p-4 card pb-1">
+      {isEditMode && (
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <span className="text-sm text-muted-foreground">Aggregation:</span>
+          <Combobox
+            placeholder="Select aggregation"
+            value={ttcAggregation}
+            onChange={(val) => dispatch(changeTtcAggregation(val))}
+            items={TTC_AGGREGATION_ITEMS}
+          />
+        </div>
+      )}
+      <div
+        className={cn(
+          'w-full',
+          options?.fillHeight
+            ? 'h-full'
+            : 'aspect-video max-h-[300px] p-4 pb-1',
+          isEditMode && 'card',
+        )}
+      >
         <ResponsiveContainer>
           <LineChart data={rechartData}>
             <CartesianGrid
