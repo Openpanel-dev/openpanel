@@ -29,6 +29,7 @@ const SENSITIVE_KEY_PATTERNS = [
   'firstname',
   'lastname',
   'surname',
+  'serviceaccountjson',
 ];
 
 const MAX_REDACT_DEPTH = 5;

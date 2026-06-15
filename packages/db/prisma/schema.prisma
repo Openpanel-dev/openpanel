@@ -735,6 +735,7 @@ enum WarehouseSyncRunStatus {
   running
   completed
   failed
+  cancelled
 }
 
 model WarehouseConnection {
