@@ -69,8 +69,21 @@ export class OpenPanel extends OpenPanelBase {
         this.pendingRevenues = [];
       }
 
+      // Auto-generate a persistent deviceId in localStorage and send it
+      // as `__deviceId` on every event. Without this, the server falls
+      // back to `hash(salt + projectId + ip + user-agent)`, which collides
+      // for every user behind the same NAT (office, home WiFi, mobile
+      // carrier) — their sessions and replays get merged together.
+      //
+      // Consumers can override by calling
+      //   op.setGlobalProperties({ __deviceId: someStableUserId })
+      // after auth resolves (e.g. with a Firebase UID), which is strictly
+      // better than the auto-generated UUID because it stitches the same
+      // human across browsers / devices.
+      const initialDeviceId = this.initLocalDeviceId();
       this.setGlobalProperties({
         __referrer: document.referrer,
+        ...(initialDeviceId ? { __deviceId: initialDeviceId } : {}),
       });
 
       if (this.options.trackScreenViews) {
@@ -89,6 +102,68 @@ export class OpenPanel extends OpenPanelBase {
       if (this.options.sessionReplay?.enabled) {
         this.maybeStartReplay();
       }
+    }
+  }
+
+  /**
+   * Storage key for the persistent client-side deviceId.
+   *
+   * Consumers can override by calling
+   *   op.setGlobalProperties({ __deviceId: stableUserId })
+   * after auth resolves. The override only affects new events emitted
+   * after the call — events already in flight keep the localStorage id.
+   */
+  private static readonly LOCAL_DEVICE_ID_KEY = '_op_device_id';
+
+  /**
+   * Generate a v4 UUID. Uses `crypto.randomUUID()` where available
+   * (modern browsers + secure contexts including http://localhost);
+   * falls back to `Math.random` for older browsers and sandboxed
+   * contexts where the Web Crypto API is unavailable. The fallback is
+   * fine for an analytics identifier — we need collision-resistance, not
+   * cryptographic unpredictability.
+   */
+  private newUuid(): string {
+    try {
+      if (
+        typeof crypto !== 'undefined' &&
+        typeof crypto.randomUUID === 'function'
+      ) {
+        return crypto.randomUUID();
+      }
+    } catch {}
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  /**
+   * Read or create the persistent deviceId in localStorage, and stash it
+   * on the base SDK so `fetchDeviceId` can pass it back to the server.
+   *
+   * Returns the deviceId, or null if browser storage is unavailable
+   * (private mode quirks, sandboxed iframe, quota exhausted). In the
+   * null case, the caller should NOT call `setGlobalProperties({ __deviceId })`
+   * and the server falls back to its existing IP+UA derivation. This
+   * gives us a clean backward-compat path with zero regression.
+   */
+  private initLocalDeviceId(): string | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      let deviceId = localStorage.getItem(OpenPanel.LOCAL_DEVICE_ID_KEY);
+      if (!deviceId) {
+        deviceId = this.newUuid();
+        localStorage.setItem(OpenPanel.LOCAL_DEVICE_ID_KEY, deviceId);
+      }
+      // Stashed on the base SDK so `fetchDeviceId()` can pass it as a
+      // query param to /track/device-id, getting back the correct
+      // sessionId for this device.
+      this.deviceId = deviceId;
+      return deviceId;
+    } catch {
+      return null;
     }
   }
 

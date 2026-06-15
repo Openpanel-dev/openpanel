@@ -214,10 +214,19 @@ export class OpenPanel {
   }
 
   async fetchDeviceId(): Promise<string> {
+    // If a deviceId is already set client-side (web SDK auto-creates
+    // one in localStorage; consumers may also override via
+    // setGlobalProperties({ __deviceId })), pass it through as a query
+    // param so the server uses it instead of deriving from IP+UA. That
+    // fixes the NAT-collision case where multiple users behind the same
+    // public IP otherwise hash to the same deviceId/sessionId.
+    const qs = this.deviceId
+      ? `?deviceId=${encodeURIComponent(this.deviceId)}`
+      : '';
     const result = await this.api.fetch<
       undefined,
       { deviceId: string; sessionId?: string }
-    >('/track/device-id', undefined, { method: 'GET', keepalive: false });
+    >(`/track/device-id${qs}`, undefined, { method: 'GET', keepalive: false });
     if (result?.deviceId) {
       this.deviceId = result.deviceId;
     }

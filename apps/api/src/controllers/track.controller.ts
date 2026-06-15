@@ -511,7 +511,7 @@ async function decrement({
 }
 
 export async function fetchDeviceId(
-  request: FastifyRequest,
+  request: FastifyRequest<{ Querystring: { deviceId?: string } }>,
   reply: FastifyReply,
 ) {
   const salts = await getSalts();
@@ -520,28 +520,47 @@ export async function fetchDeviceId(
     return reply.status(400).send('No projectId');
   }
 
+  // Optional client-supplied deviceId. The web SDK persists a UUID in
+  // localStorage (or consumers can set a stable identifier like a Firebase
+  // UID via setGlobalProperties) and passes it through here so we can
+  // honor it instead of deriving from IP+UA. Without this, every user
+  // behind the same NAT (office WiFi, mobile carrier) collapses to the
+  // same deviceId/sessionId.
+  const overrideDeviceId = request.query?.deviceId?.trim();
+
   const ip = request.clientIp;
-  if (!ip) {
-    return reply.status(400).send('Missing ip address');
-  }
-
   const ua = request.headers['user-agent'];
-  if (!ua) {
-    return reply.status(400).send('Missing header: user-agent');
+
+  // When the SDK doesn't supply a deviceId, we still need IP + UA to
+  // derive one server-side. With an override, ip/ua are optional.
+  if (!overrideDeviceId) {
+    if (!ip) {
+      return reply.status(400).send('Missing ip address');
+    }
+    if (!ua) {
+      return reply.status(400).send('Missing header: user-agent');
+    }
   }
 
-  const currentDeviceId = generateDeviceId({
-    salt: salts.current,
-    origin: projectId,
-    ip,
-    ua,
-  });
-  const previousDeviceId = generateDeviceId({
-    salt: salts.previous,
-    origin: projectId,
-    ip,
-    ua,
-  });
+  // Prefer the SDK-supplied id when present (NAT-collision-safe).
+  // Otherwise fall back to the legacy IP+UA hash for backward compat
+  // with older SDKs that don't persist a localStorage deviceId.
+  const currentDeviceId =
+    overrideDeviceId ??
+    generateDeviceId({
+      salt: salts.current,
+      origin: projectId,
+      ip: ip!,
+      ua: ua!,
+    });
+  const previousDeviceId =
+    overrideDeviceId ??
+    generateDeviceId({
+      salt: salts.previous,
+      origin: projectId,
+      ip: ip!,
+      ua: ua!,
+    });
 
   try {
     const redis = getRedisCache();
