@@ -44,6 +44,7 @@ export const Route = createFileRoute(
 });
 
 type SortOption =
+  | 'relevance'
   | 'impact-desc'
   | 'impact-asc'
   | 'severity-desc'
@@ -105,12 +106,13 @@ function Component() {
   const [sortBy, setSortBy] = useQueryState(
     'sort',
     parseAsStringEnum<SortOption>([
+      'relevance',
       'impact-desc',
       'impact-asc',
       'severity-desc',
       'severity-asc',
       'recent',
-    ]).withDefault('impact-desc'),
+    ]).withDefault('relevance'),
   );
 
   const filteredAndSorted = useMemo(() => {
@@ -124,10 +126,18 @@ function Component() {
         const matchesSummary = insight.summary
           ?.toLowerCase()
           .includes(searchLower);
+        const matchesAiSummary = insight.aiSummary
+          ?.toLowerCase()
+          .includes(searchLower);
         const matchesDimension = insight.dimensionKey
           .toLowerCase()
           .includes(searchLower);
-        if (!matchesTitle && !matchesSummary && !matchesDimension) {
+        if (
+          !matchesTitle &&
+          !matchesSummary &&
+          !matchesAiSummary &&
+          !matchesDimension
+        ) {
           return false;
         }
       }
@@ -166,6 +176,12 @@ function Component() {
     // Sort (create new array to avoid mutation)
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
+        case 'relevance':
+          // AI relevance first (un-enriched sort last), impact as tiebreaker.
+          return (
+            (b.relevanceScore ?? -1) - (a.relevanceScore ?? -1) ||
+            (b.impactScore ?? 0) - (a.impactScore ?? 0)
+          );
         case 'impact-desc':
           return (b.impactScore ?? 0) - (a.impactScore ?? 0);
         case 'impact-asc':
@@ -342,6 +358,7 @@ function Component() {
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="relevance">Relevance (AI)</SelectItem>
             <SelectItem value="impact-desc">Impact (High → Low)</SelectItem>
             <SelectItem value="impact-asc">Impact (Low → High)</SelectItem>
             <SelectItem value="severity-desc">Severity (High → Low)</SelectItem>

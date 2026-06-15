@@ -1,7 +1,15 @@
-import type { CronQueuePayload, CronQueueType } from '@openpanel/queue';
+import { db } from '@openpanel/db';
+import {
+  type CronQueuePayload,
+  type CronQueueType,
+  type InsightsQueuePayloadProject,
+  insightsQueue,
+} from '@openpanel/queue';
 import type { Job } from 'bullmq';
 import type { Express, Request } from 'express';
 import { cronJob } from './jobs/cron';
+import { insightsProjectJob } from './jobs/insights';
+import { previewWeeklyDigestForProject } from './jobs/cron.weekly-digest';
 import { logger } from './utils/logger';
 
 const CRON_TYPES = [
@@ -20,6 +28,8 @@ const CRON_TYPES = [
   'cohortRefresh',
   'sessionReaper',
   'sessionVacuum',
+  'insightCleanup',
+  'weeklyDigest',
 ] as const satisfies readonly CronQueueType[];
 
 function escapeHtml(value: string) {
@@ -127,5 +137,121 @@ export function bootDebugRoutes(app: Express) {
     }
   });
 
+  // Run the full insights pipeline (engine + AI enrichment) for ONE project,
+  // bypassing the eligibility filter the daily cron applies. For local testing.
+  //
+  // Default: enqueues a real `insightsProject` job on the `insights` queue, so
+  // it shows up in BullBoard and runs through the normal worker path.
+  // `?inline=1`: runs synchronously instead and returns a result summary.
+  app.get('/debug/insights/:projectId', async (req, res) => {
+    const projectId = req.params.projectId;
+    const inline = req.query.inline === '1' || req.query.inline === 'true';
+    const date = new Date().toISOString().slice(0, 10);
+
+    if (!inline) {
+      try {
+        const job = await insightsQueue.add(
+          'insightsProject',
+          { type: 'insightsProject', payload: { projectId, date } },
+          // Unique id so repeated test runs aren't deduped by BullMQ.
+          { jobId: `debug:${projectId}:${Date.now()}` },
+        );
+        logger.info({ projectId, jobId: job.id }, 'Enqueued insights job');
+        res.json({
+          ok: true,
+          projectId,
+          jobId: job.id,
+          message:
+            'Enqueued on the "insights" queue — watch it in BullBoard. Add ?inline=1 to run synchronously and get a result summary.',
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error({ err: error, projectId }, 'Failed to enqueue insights');
+        res.status(500).json({ ok: false, projectId, error: message });
+      }
+      return;
+    }
+
+    logger.info({ projectId }, 'Manually running insights for project (inline)');
+
+    try {
+      await insightsProjectJob({
+        data: { type: 'insightsProject', payload: { projectId, date } },
+      } as Job<InsightsQueuePayloadProject>);
+
+      const countsByState = await db.projectInsight.groupBy({
+        by: ['state'],
+        where: { projectId },
+        _count: true,
+      });
+
+      const topActive = await db.projectInsight.findMany({
+        where: { projectId, state: 'active' },
+        orderBy: [
+          { relevanceScore: { sort: 'desc', nulls: 'last' } },
+          { impactScore: 'desc' },
+        ],
+        take: 15,
+        select: {
+          title: true,
+          aiSummary: true,
+          aiCategory: true,
+          relevanceScore: true,
+          emailWorthy: true,
+          referenceWorthy: true,
+          enrichedAt: true,
+        },
+      });
+
+      const enrichedCount = topActive.filter((i) => i.enrichedAt).length;
+
+      res.json({
+        ok: true,
+        projectId,
+        countsByState,
+        enrichedInTopActive: `${enrichedCount}/${topActive.length}`,
+        topActive,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error({ err: error, projectId }, 'Manual insights run failed');
+      res.status(500).json({ ok: false, projectId, error: message });
+    }
+  });
+
+  // Weekly digest for ONE project, bypassing eligibility. For local testing.
+  //   ?to=you@example.com  → send only to that address
+  //   (no ?to)             → return the assembled payload without sending
+  //   ?force=1             → build even with 0 visitors this week
+  app.get('/debug/weekly-digest/:projectId', async (req, res) => {
+    const projectId = req.params.projectId;
+    const to = typeof req.query.to === 'string' ? req.query.to : undefined;
+    const force = req.query.force === '1' || req.query.force === 'true';
+    logger.info({ projectId, to, force }, 'Manual weekly digest');
+
+    try {
+      const result = await previewWeeklyDigestForProject(projectId, {
+        to,
+        force,
+      });
+      res.json({
+        ok: true,
+        ...result,
+        hint: to
+          ? `Sent to ${to} (needs RESEND_API_KEY/SMTP_HOST, else logged to worker console).`
+          : 'Preview only — add ?to=you@example.com to send. ?force=1 builds even with no traffic this week.',
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error({ err: error, projectId }, 'Manual weekly digest failed');
+      res.status(500).json({ ok: false, projectId, error: message });
+    }
+  });
+
   logger.info('Debug cron endpoint enabled: /debug/cron/:type');
+  logger.info('Debug insights endpoint enabled: /debug/insights/:projectId');
+  logger.info(
+    'Debug weekly digest enabled: /debug/weekly-digest/:projectId?to=&force=1',
+  );
 }
+

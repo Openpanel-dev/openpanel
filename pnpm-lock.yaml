@@ -127,9 +127,6 @@ importers:
       '@better-agent/core':
         specifier: ^0.1.0-beta.3
         version: 0.1.0-beta.3
-      '@better-agent/providers':
-        specifier: ^0.1.0-beta.3
-        version: 0.1.0-beta.3(@better-agent/core@0.1.0-beta.3)
       '@fastify/compress':
         specifier: ^8.1.0
         version: 8.1.0
@@ -157,6 +154,9 @@ importers:
       '@node-rs/argon2':
         specifier: ^2.0.2
         version: 2.0.2
+      '@openpanel/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@openpanel/auth':
         specifier: workspace:^
         version: link:../../packages/auth
@@ -995,6 +995,9 @@ importers:
       '@hyperdx/node-opentelemetry':
         specifier: 'catalog:'
         version: 0.10.3
+      '@openpanel/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@openpanel/common':
         specifier: workspace:*
         version: link:../../packages/common
@@ -1083,6 +1086,31 @@ importers:
       tsdown:
         specifier: 0.14.2
         version: 0.14.2(oxc-resolver@11.19.1(@emnapi/core@1.7.1)(@emnapi/runtime@1.7.1))(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  packages/ai:
+    dependencies:
+      '@better-agent/core':
+        specifier: ^0.1.0-beta.3
+        version: 0.1.0-beta.3
+      '@better-agent/providers':
+        specifier: ^0.1.0-beta.3
+        version: 0.1.0-beta.3(@better-agent/core@0.1.0-beta.3)
+      '@openpanel/validation':
+        specifier: workspace:*
+        version: link:../validation
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
+    devDependencies:
+      '@openpanel/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.10.1
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1833,9 +1861,9 @@ importers:
       '@better-agent/core':
         specifier: ^0.1.0-beta.3
         version: 0.1.0-beta.3
-      '@better-agent/providers':
-        specifier: ^0.1.0-beta.3
-        version: 0.1.0-beta.3(@better-agent/core@0.1.0-beta.3)
+      '@openpanel/ai':
+        specifier: workspace:*
+        version: link:../ai
       '@openpanel/auth':
         specifier: workspace:^
         version: link:../auth

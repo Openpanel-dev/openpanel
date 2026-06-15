@@ -48,7 +48,7 @@ function RouteComponent() {
   };
 
   const categoryName =
-    emailCategories[category as keyof typeof emailCategories] || category;
+    emailCategories[category as keyof typeof emailCategories]?.label ?? category;
 
   if (isSuccess) {
     return (

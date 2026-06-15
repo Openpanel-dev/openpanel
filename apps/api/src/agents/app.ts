@@ -5,7 +5,7 @@ import {
   type ChatModelEntry,
   openaiProvider,
   resolveModel,
-} from '@openpanel/trpc/src/agents/models';
+} from '@openpanel/ai';
 import { prismaConversationStore } from './persistence';
 import { buildSystemPrompt } from './prompt';
 import { composeChatTools } from './tools';

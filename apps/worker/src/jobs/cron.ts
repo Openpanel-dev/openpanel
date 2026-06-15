@@ -10,6 +10,8 @@ import type { CronQueuePayload } from '@openpanel/queue';
 import type { Job } from 'bullmq';
 import { cohortRefreshCronJob } from './cron.cohort-refresh';
 import { jobDelete } from './cron.delete';
+import { insightCleanupCronJob } from './cron.insight-cleanup';
+import { weeklyDigestCronJob } from './cron.weekly-digest';
 import { onboardingJob } from './cron.onboarding';
 import { ping } from './cron.ping';
 import { salt } from './cron.salt';
@@ -66,6 +68,12 @@ export async function cronJob(job: Job<CronQueuePayload>) {
     }
     case 'sessionVacuum': {
       return await sessionVacuumCronJob();
+    }
+    case 'insightCleanup': {
+      return await insightCleanupCronJob();
+    }
+    case 'weeklyDigest': {
+      return await weeklyDigestCronJob();
     }
   }
 }

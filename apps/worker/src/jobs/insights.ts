@@ -14,6 +14,8 @@ import type {
 } from '@openpanel/queue';
 import { insightsQueue } from '@openpanel/queue';
 import type { Job } from 'bullmq';
+import { enrichProjectInsights } from './insights-enrich';
+import { logger } from '@/utils/logger';
 
 const defaultEngineConfig = {
   keepTopNPerModuleWindow: 20,
@@ -69,4 +71,12 @@ export async function insightsProjectJob(
     now: new Date(date),
     projectCreatedAt,
   });
+
+  // Tier-1 AI enrichment of this project's active insights. Isolated so a
+  // provider outage or rate-limit never fails the insights computation.
+  try {
+    await enrichProjectInsights(projectId);
+  } catch (err) {
+    logger.error({ err, projectId }, 'Insight enrichment failed');
+  }
 }

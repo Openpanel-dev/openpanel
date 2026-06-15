@@ -1,8 +1,17 @@
-import { db } from '@openpanel/db';
+import { generateInsightExplanation } from '@openpanel/ai';
+import { db, getTrafficBreakdownCore } from '@openpanel/db';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
 import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const EXPLAIN_COLUMNS = [
+  'referrer_name',
+  'country',
+  'device',
+  'utm_source',
+] as const;
 
 export const insightRouter = createTRPCRouter({
   list: protectedProcedure
@@ -22,15 +31,18 @@ export const insightRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this project');
       }
 
-      // Fetch more insights than needed to account for deduplication
+      // Fetch more insights than needed to account for deduplication.
+      // AI relevanceScore leads (un-enriched insights sort last via nulls:last),
+      // with the statistical impactScore as the tiebreaker / fallback.
       const allInsights = await db.projectInsight.findMany({
         where: {
           projectId,
           state: 'active',
         },
-        orderBy: {
-          impactScore: 'desc',
-        },
+        orderBy: [
+          { relevanceScore: { sort: 'desc', nulls: 'last' } },
+          { impactScore: 'desc' },
+        ],
         take: limit * 3, // Fetch 3x to account for deduplication
       });
 
@@ -57,9 +69,14 @@ export const insightRouter = createTRPCRouter({
         }
       }
 
-      // Convert back to array, sort by impactScore, and limit
+      // Convert back to array, sort by relevanceScore (impactScore fallback),
+      // and limit
       const insights = Array.from(deduplicated.values())
-        .sort((a, b) => (b.impactScore ?? 0) - (a.impactScore ?? 0))
+        .sort(
+          (a, b) =>
+            (b.relevanceScore ?? -1) - (a.relevanceScore ?? -1) ||
+            (b.impactScore ?? 0) - (a.impactScore ?? 0),
+        )
         .slice(0, limit)
         .map(({ impactScore, ...rest }) => rest); // Remove impactScore from response
 
@@ -88,12 +105,104 @@ export const insightRouter = createTRPCRouter({
           projectId,
           state: 'active',
         },
-        orderBy: {
-          impactScore: 'desc',
-        },
+        orderBy: [
+          { relevanceScore: { sort: 'desc', nulls: 'last' } },
+          { impactScore: 'desc' },
+        ],
         take: limit,
       });
 
       return insights;
+    }),
+
+  // Phase 5: the "why". Decompose the insight's change across referrer/country/
+  // device/utm (current vs baseline window), pull nearby references, and have
+  // the AI explain which sub-segment drove it. On-demand (a button), not cached.
+  explain: protectedProcedure
+    .input(z.object({ insightId: z.string() }))
+    .mutation(async ({ input: { insightId }, ctx }) => {
+      const insight = await db.projectInsight.findUniqueOrThrow({
+        where: { id: insightId },
+        select: {
+          projectId: true,
+          title: true,
+          aiSummary: true,
+          summary: true,
+          dimensionKey: true,
+          windowKind: true,
+          windowStart: true,
+          windowEnd: true,
+        },
+      });
+
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: insight.projectId,
+      });
+
+      if (!access) {
+        throw new TRPCForbiddenError('You do not have access to this project');
+      }
+
+      // Current window from the insight; baseline = same span immediately before.
+      const end = insight.windowEnd ?? new Date();
+      const start =
+        insight.windowStart ?? new Date(end.getTime() - 7 * DAY_MS);
+      const spanMs = Math.max(end.getTime() - start.getTime(), DAY_MS);
+      const baseEnd = new Date(start.getTime());
+      const baseStart = new Date(start.getTime() - spanMs);
+      const iso = (d: Date) => d.toISOString();
+
+      const breakdowns = await Promise.all(
+        EXPLAIN_COLUMNS.map(async (column) => {
+          const [cur, base] = await Promise.all([
+            getTrafficBreakdownCore({
+              projectId: insight.projectId,
+              column,
+              startDate: iso(start),
+              endDate: iso(end),
+            }),
+            getTrafficBreakdownCore({
+              projectId: insight.projectId,
+              column,
+              startDate: iso(baseStart),
+              endDate: iso(baseEnd),
+            }),
+          ]);
+          const compact = (rows: typeof cur) =>
+            rows.slice(0, 8).map((r) => ({
+              name: r.name ?? null,
+              sessions: Number(r.sessions ?? 0),
+            }));
+          return { column, current: compact(cur), baseline: compact(base) };
+        }),
+      );
+
+      const references = await db.reference.findMany({
+        where: {
+          projectId: insight.projectId,
+          date: {
+            gte: new Date(start.getTime() - 3 * DAY_MS),
+            lte: new Date(end.getTime() + DAY_MS),
+          },
+        },
+        orderBy: { date: 'desc' },
+        take: 10,
+        select: { title: true, date: true },
+      });
+
+      return generateInsightExplanation({
+        insight: {
+          title: insight.aiSummary ?? insight.title,
+          dimension: insight.dimensionKey,
+          window: insight.windowKind,
+          summary: insight.summary ?? undefined,
+        },
+        breakdowns,
+        references: references.map((r) => ({
+          title: r.title,
+          date: r.date.toISOString().slice(0, 10),
+        })),
+      });
     }),
 });

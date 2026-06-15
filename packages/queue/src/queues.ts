@@ -152,6 +152,14 @@ export type CronQueuePayloadSessionVacuum = {
   type: 'sessionVacuum';
   payload: undefined;
 };
+export type CronQueuePayloadInsightCleanup = {
+  type: 'insightCleanup';
+  payload: undefined;
+};
+export type CronQueuePayloadWeeklyDigest = {
+  type: 'weeklyDigest';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
@@ -167,7 +175,9 @@ export type CronQueuePayload =
   | CronQueuePayloadGscSync
   | CronQueuePayloadCohortRefresh
   | CronQueuePayloadSessionReaper
-  | CronQueuePayloadSessionVacuum;
+  | CronQueuePayloadSessionVacuum
+  | CronQueuePayloadInsightCleanup
+  | CronQueuePayloadWeeklyDigest;
 
 export type CronQueueType = CronQueuePayload['type'];
 

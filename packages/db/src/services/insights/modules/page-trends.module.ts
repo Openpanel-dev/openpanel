@@ -165,10 +165,13 @@ export const pageTrendsModule: InsightModule = {
   key: 'page-trends',
   cadence: ['daily'],
   // Share-based thresholds (values in basis points: 100 = 1%)
-  // minTotal: require at least 0.5% combined share (current + baseline)
-  // minAbsDelta: require at least 0.5 percentage point shift
-  // minPct: require at least 25% relative change in share
-  thresholds: { minTotal: 50, minAbsDelta: 50, minPct: 0.25, maxDims: 100 },
+  // Tightened to cut noise: page-trends was ~85% of all insight rows because
+  // a 0.5pp share wiggle on up to 100 pages/run crossed the bar.
+  // minTotal: require at least 1% combined share (current + baseline)
+  // minAbsDelta: require at least 1.0 percentage point shift
+  // minPct: require at least 35% relative change in share
+  // maxDims: evaluate at most 30 pages/run (was 100)
+  thresholds: { minTotal: 100, minAbsDelta: 100, minPct: 0.35, maxDims: 30 },
 
   async enumerateDimensions(ctx) {
     const { currentMap, baselineMap } = await fetchPageTrendAggregates(ctx);

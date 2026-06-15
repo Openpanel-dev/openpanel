@@ -18,7 +18,6 @@
   "dependencies": {
     "@better-agent/adapters": "^0.1.0-beta.3",
     "@better-agent/core": "^0.1.0-beta.3",
-    "@better-agent/providers": "^0.1.0-beta.3",
     "@fastify/compress": "^8.1.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.1.0",
@@ -28,6 +27,7 @@
     "@fastify/websocket": "^11.2.0",
     "@hyperdx/node-opentelemetry": "catalog:",
     "@node-rs/argon2": "^2.0.2",
+    "@openpanel/ai": "workspace:*",
     "@openpanel/auth": "workspace:^",
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",

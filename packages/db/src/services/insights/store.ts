@@ -118,6 +118,10 @@ export const insightStore: InsightStore = {
         data: {
           ...baseData,
           threadId: existing.threadId, // Preserve threadId
+          // Materially-changed insights need re-enrichment; clearing enrichedAt
+          // re-queues them for the AI pass. Keep the old score/summary as a
+          // fallback until then (don't null those).
+          ...(decision.material ? { enrichedAt: null } : {}),
         },
       });
     } else {
@@ -141,6 +145,8 @@ export const insightStore: InsightStore = {
             ...baseData,
             state: 'active',
             threadId: closed.threadId, // Preserve threadId
+            // Reopening is a material event — re-enrich it.
+            enrichedAt: null,
           },
         });
       } else {
@@ -231,113 +237,66 @@ export const insightStore: InsightStore = {
     windowKind,
     keepTopN,
     now,
-  }): Promise<{ suppressed: number; unsuppressed: number }> {
-    // Get all active insights for this module/window, ordered by impactScore desc
+  }): Promise<{ deleted: number }> {
+    // Below-top-N insights are DELETED rather than persisted as `suppressed`
+    // rows. Nothing reads suppressed insights (every query filters state=active),
+    // yet they were ~75% of the table. A dimension that later climbs back into
+    // the top-N is simply re-created on the next run — it loses thread
+    // continuity, which is cosmetic and not surfaced anywhere.
     const insights = await db.projectInsight.findMany({
       where: {
         projectId,
         moduleKey,
         windowKind,
-        state: { in: ['active', 'suppressed'] },
+        state: 'active',
       },
       orderBy: { impactScore: 'desc' },
     });
 
     if (insights.length === 0) {
-      return { suppressed: 0, unsuppressed: 0 };
+      return { deleted: 0 };
     }
 
-    let suppressed = 0;
-    let unsuppressed = 0;
+    const toDelete: string[] = [];
 
-    // For "yesterday" insights, suppress any that are stale (windowEnd is not actually yesterday)
-    // This prevents showing confusing insights like "Yesterday traffic dropped" when it's from 2+ days ago
     if (windowKind === 'yesterday') {
+      // Drop stale "yesterday" insights whose windowEnd isn't actually
+      // yesterday (prevents showing "Yesterday traffic dropped" from 2+ days
+      // ago), then apply top-N to the fresh remainder.
       const yesterday = new Date(now);
       yesterday.setUTCHours(0, 0, 0, 0);
       yesterday.setUTCDate(yesterday.getUTCDate() - 1);
       const yesterdayTime = yesterday.getTime();
 
+      const fresh: typeof insights = [];
       for (const insight of insights) {
-        // If windowEnd is null, consider it stale
         const isStale = insight.windowEnd
           ? new Date(insight.windowEnd).setUTCHours(0, 0, 0, 0) !==
             yesterdayTime
           : true;
-
-        if (isStale && insight.state === 'active') {
-          await db.projectInsight.update({
-            where: { id: insight.id },
-            data: { state: 'suppressed', lastUpdatedAt: now },
-          });
-          suppressed++;
+        if (isStale) {
+          toDelete.push(insight.id);
+        } else {
+          fresh.push(insight);
         }
       }
-
-      // Filter to only non-stale insights for top-N logic
-      const freshInsights = insights.filter((insight) => {
-        if (!insight.windowEnd) return false;
-        const windowEndTime = new Date(insight.windowEnd).setUTCHours(
-          0,
-          0,
-          0,
-          0,
-        );
-        return windowEndTime === yesterdayTime;
-      });
-
-      const topN = freshInsights.slice(0, keepTopN);
-      const belowN = freshInsights.slice(keepTopN);
-
-      for (const insight of belowN) {
-        if (insight.state === 'active') {
-          await db.projectInsight.update({
-            where: { id: insight.id },
-            data: { state: 'suppressed', lastUpdatedAt: now },
-          });
-          suppressed++;
-        }
+      // `fresh` preserves the impactScore-desc order; everything past keepTopN goes.
+      for (const insight of fresh.slice(keepTopN)) {
+        toDelete.push(insight.id);
       }
-
-      for (const insight of topN) {
-        if (insight.state === 'suppressed') {
-          await db.projectInsight.update({
-            where: { id: insight.id },
-            data: { state: 'active', lastUpdatedAt: now },
-          });
-          unsuppressed++;
-        }
-      }
-
-      return { suppressed, unsuppressed };
-    }
-
-    // For non-yesterday windows, apply standard top-N suppression
-    const topN = insights.slice(0, keepTopN);
-    const belowN = insights.slice(keepTopN);
-
-    // Suppress those below top N
-    for (const insight of belowN) {
-      if (insight.state === 'active') {
-        await db.projectInsight.update({
-          where: { id: insight.id },
-          data: { state: 'suppressed', lastUpdatedAt: now },
-        });
-        suppressed++;
+    } else {
+      for (const insight of insights.slice(keepTopN)) {
+        toDelete.push(insight.id);
       }
     }
 
-    // Unsuppress those in top N
-    for (const insight of topN) {
-      if (insight.state === 'suppressed') {
-        await db.projectInsight.update({
-          where: { id: insight.id },
-          data: { state: 'active', lastUpdatedAt: now },
-        });
-        unsuppressed++;
-      }
+    if (toDelete.length === 0) {
+      return { deleted: 0 };
     }
 
-    return { suppressed, unsuppressed };
+    const result = await db.projectInsight.deleteMany({
+      where: { id: { in: toDelete } },
+    });
+    return { deleted: result.count };
   },
 };

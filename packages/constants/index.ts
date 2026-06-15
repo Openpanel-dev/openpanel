@@ -595,8 +595,17 @@ export function getCountry(code?: string) {
   return countries[code as keyof typeof countries];
 }
 
+// Keys must match the template `category` in @openpanel/email. Each entry's
+// label + description drive the account email-preferences toggles.
 export const emailCategories = {
-  onboarding: 'Onboarding',
+  onboarding: {
+    label: 'Onboarding',
+    description: 'Get started tips and guidance emails',
+  },
+  weekly_digest: {
+    label: 'Weekly digest',
+    description: 'A weekly summary of your analytics with AI-surfaced insights',
+  },
 } as const;
 
 export type EmailCategory = keyof typeof emailCategories;

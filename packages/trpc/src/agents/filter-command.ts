@@ -23,7 +23,7 @@ import {
   zRange,
 } from '@openpanel/validation';
 import { z } from 'zod';
-import { resolveModel } from './models';
+import { resolveModel } from '@openpanel/ai';
 
 const operatorEnum = z.enum(objectToZodEnums(operators));
 const rangeEnum = zRange;

@@ -2,12 +2,20 @@ import { countries } from '@/translations/countries';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import type { InsightPayload } from '@openpanel/validation';
-import { ArrowDown, ArrowUp, FilterIcon, RotateCcwIcon } from 'lucide-react';
+import { pushModal } from '@/modals';
+import {
+  ArrowDown,
+  ArrowUp,
+  FilterIcon,
+  RotateCcwIcon,
+  SparklesIcon,
+} from 'lucide-react';
 import { last } from 'ramda';
 import { useState } from 'react';
 import { DeltaChip } from '../delta-chip';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 
 function formatWindowKind(windowKind: string): string {
   switch (windowKind) {
@@ -165,6 +173,13 @@ export function InsightCard({
         {renderTitle()}
       </div>
 
+      {/* AI plain-language summary (Tier-1 enrichment) */}
+      {insight.aiSummary && (
+        <p className="text-xs text-muted-foreground leading-snug line-clamp-3 mt-1">
+          {insight.aiSummary}
+        </p>
+      )}
+
       {/* Metric row */}
       <div className="mt-auto pt-2">
         <div className="flex items-end justify-between gap-3">
@@ -195,6 +210,16 @@ export function InsightCard({
             {deltaText}
           </DeltaChip>
         </div>
+
+        <Button
+          className="-ml-2 mt-2 h-7 self-start px-2 text-muted-foreground text-xs"
+          icon={SparklesIcon}
+          onClick={() => pushModal('InsightDetails', { insight })}
+          size="sm"
+          variant="ghost"
+        >
+          Why did this happen?
+        </Button>
       </div>
     </div>
   );

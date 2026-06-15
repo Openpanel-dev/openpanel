@@ -19,6 +19,7 @@ import OnboardingWelcome, { zOnboardingWelcome } from './onboarding-welcome';
 import OnboardingWhatToTrack, {
   zOnboardingWhatToTrack,
 } from './onboarding-what-to-track';
+import WeeklyDigest, { zWeeklyDigest } from './weekly-digest';
 
 export const templates = {
   invite: {
@@ -71,6 +72,13 @@ export const templates = {
     subject: () => 'Your trial ended, dashboard is locked',
     Component: OnboardingTrialEnded,
     schema: zOnboardingTrialEnded,
+  },
+  'weekly-digest': {
+    subject: (data: z.infer<typeof zWeeklyDigest>) =>
+      `Your week on ${data.projectName}`,
+    Component: WeeklyDigest,
+    schema: zWeeklyDigest,
+    category: 'weekly_digest' as const,
   },
 } as const;
 

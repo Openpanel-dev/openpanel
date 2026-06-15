@@ -180,12 +180,12 @@ export interface InsightStore {
     now: Date;
     staleDays: number; // close if not seen for X days
   }): Promise<number>; // count closed
-  /** Enforce top-N display by suppressing below-threshold insights. */
+  /** Enforce top-N display by deleting below-threshold insights. */
   applySuppression(args: {
     projectId: string;
     moduleKey: string;
     windowKind: WindowKind;
     keepTopN: number;
     now: Date;
-  }): Promise<{ suppressed: number; unsuppressed: number }>;
+  }): Promise<{ deleted: number }>;
 }

@@ -653,6 +653,16 @@ model ProjectInsight {
   impactScore  Float   @default(0)
   severityBand String? // "low" | "moderate" | "severe"
 
+  // AI enrichment (Tier-1, written by the OpenAI enrichment job after upsert).
+  // Null until enriched; the dashboard sorts active insights by relevanceScore.
+  relevanceScore  Float? // 0..1 — is this worth a human's attention right now
+  aiSummary       String? // plain-language one-liner derived from the payload
+  aiCategory      String? // "spike" | "drop" | "shift" | "anomaly" | "trend"
+  emailWorthy     Boolean   @default(false) // include in weekly digest selection
+  referenceWorthy Boolean   @default(false) // discrete event worth a chart annotation
+  enrichedAt      DateTime?
+  enrichVersion   Int? // bump to force re-enrichment when prompt/schema changes
+
   version  Int    @default(1)
   threadId String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
@@ -668,6 +678,7 @@ model ProjectInsight {
   @@unique([projectId, moduleKey, dimensionKey, windowKind, state])
   @@index([projectId, impactScore(sort: Desc)])
   @@index([projectId, moduleKey, windowKind, state])
+  @@index([projectId, state, relevanceScore(sort: Desc)])
   @@map("project_insights")
 }
 
