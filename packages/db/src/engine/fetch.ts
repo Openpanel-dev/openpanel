@@ -68,6 +68,7 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
       globalFilters: plan.input.globalFilters ?? [],
       holdProperties: plan.input.holdProperties ?? [],
       measuring: plan.input.measuring ?? 'conversion_rate',
+      sortOrder: plan.input.sortOrder ?? 'desc',
     };
 
     // Execute query with custom event if applicable

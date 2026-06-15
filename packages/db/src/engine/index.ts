@@ -64,6 +64,8 @@ export async function executeChart(input: IChartInput): Promise<FinalChart> {
     executionPlan.definitions,
     includeAlphaIds,
     previousSeries,
+    undefined,
+    input.sortOrder ?? 'desc',
   );
 
   return response;

@@ -410,6 +410,7 @@ export async function getChartSql({
   timezone,
   chartType,
   customEvent,
+  sortOrder,
 }: IGetChartDataInput & {
   timezone: string;
   customEvent?: { name: string; definition: ICustomEventDefinition };
@@ -679,7 +680,7 @@ export async function getChartSql({
       FROM ${dataSource} AS e
       ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${cohortJoinsForTop ? `${cohortJoinsForTop} ` : ''}${getWhereWithoutBar()}
       GROUP BY ${breakdownSelects}
-      ORDER BY ${orderByCount} DESC
+      ORDER BY ${orderByCount} ${sortOrder === 'asc' ? 'ASC' : 'DESC'}
       LIMIT ${limit}`,
     );
 

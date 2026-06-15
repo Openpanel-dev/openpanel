@@ -327,6 +327,7 @@ model Report {
   holdProperties  Json      @default("[]")
   hiddenSeries    Json      @default("[]")
   measuring       String?
+  sortOrder       String    @default("desc")
   ttcAggregation  String    @default("avg")
 
   dashboardId String

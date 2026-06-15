@@ -8,8 +8,11 @@ import { useNumber } from '@/hooks/use-numer-formatter';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { DropdownMenuPortal } from '@radix-ui/react-dropdown-menu';
+import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { changeSortOrder } from '@/components/report/reportSlice';
+import { useDispatch } from '@/redux';
 import { round } from '@openpanel/common';
 import { NOT_SET_VALUE } from '@openpanel/constants';
 
@@ -25,9 +28,10 @@ interface Props {
 
 export function Chart({ data }: Props) {
   const [isOpen, setOpen] = useState<string | null>(null);
+  const dispatch = useDispatch();
   const {
     isEditMode,
-    report: { metric, limit, previous },
+    report: { metric, limit, previous, sortOrder },
     options: { onClick, dropdownMenuContent, columns },
   } = useReportChartContext();
   const number = useNumber();
@@ -129,7 +133,25 @@ export function Chart({ data }: Props) {
 
     // Main count column (always last)
     {
-      name: 'Count',
+      name: isEditMode ? (
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors"
+          onClick={() => {
+            const next = sortOrder === 'asc' ? 'desc' : 'asc';
+            dispatch(changeSortOrder(next));
+          }}
+        >
+          Count
+          {sortOrder === 'asc' ? (
+            <ArrowUpIcon className="size-3.5" />
+          ) : (
+            <ArrowDownIcon className="size-3.5" />
+          )}
+        </button>
+      ) : (
+        'Count'
+      ),
       width: '80px',
       render: (serie: (typeof series)[0]) => (
         <div className="font-bold font-mono">

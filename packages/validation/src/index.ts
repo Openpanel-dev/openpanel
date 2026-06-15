@@ -231,6 +231,11 @@ export const zChartInputBase = z.object({
     .optional()
     .default('conversion_rate')
     .describe('What to measure: conversion rate or time to convert'),
+  sortOrder: z
+    .enum(['asc', 'desc'])
+    .optional()
+    .default('desc')
+    .describe('Sort order for bar chart series (ascending or descending)'),
   ttcAggregation: z
     .enum(['avg', 'median', 'min', 'max', 'p25', 'p75', 'p90', 'p99'])
     .optional()

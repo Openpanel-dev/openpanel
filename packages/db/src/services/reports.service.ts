@@ -96,6 +96,7 @@ export function transformReport(
     globalFilters: ((report.globalFilters as IChartEventFilter[]) ?? []).map(transformFilter),
     holdProperties: (report.holdProperties as string[]) ?? [],
     hiddenSeries: (report.hiddenSeries as string[]) ?? [],
+    sortOrder: (report.sortOrder as 'asc' | 'desc') ?? 'desc',
     ttcAggregation: (report.ttcAggregation as string) ?? 'avg',
     limit: 50,
     cohortFilters: [],
