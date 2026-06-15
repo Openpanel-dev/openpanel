@@ -2,9 +2,11 @@ import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Sidebar } from '@/components/sidebar';
 import { Button, LinkButton, buttonVariants } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
+import { useSidebarCollapsed } from '@/hooks/use-sidebar-collapsed';
 import { cn } from '@/utils/cn';
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 import { ConstructionIcon } from 'lucide-react';
+import { useEffect } from 'react';
 
 export const Route = createFileRoute('/_app')({
   beforeLoad: async ({ context }) => {
@@ -17,6 +19,16 @@ export const Route = createFileRoute('/_app')({
 
 function AppLayout() {
   const { isMaintenance } = useAppContext();
+  const [collapsed] = useSidebarCollapsed();
+
+  // Nudge width-measuring layouts (react-grid-layout) to reflow after collapse.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `collapsed` triggers the effect; it isn't read.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 50);
+    return () => clearTimeout(id);
+  }, [collapsed]);
 
   if (isMaintenance) {
     return (
@@ -41,7 +53,7 @@ function AppLayout() {
   return (
     <div className="flex h-screen w-full">
       <Sidebar />
-      <div className="lg:pl-72 w-full">
+      <div className={cn('w-full', collapsed ? 'lg:pl-16' : 'lg:pl-72')}>
         <div className="block lg:hidden bg-background h-16 w-full fixed top-0 z-10 border-b" />
         <div className="block lg:hidden h-16" />
         <Outlet />

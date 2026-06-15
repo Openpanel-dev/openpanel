@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { pushModal } from '@/modals';
+import { cn } from '@/utils/cn';
 import type { IServiceDashboards } from '@openpanel/db';
 import { useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -24,6 +25,7 @@ import {
   WallpaperIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { SB_HIDE, SB_SHOW } from './sidebar-collapse';
 import { SidebarLink } from './sidebar-link';
 import {
   DropdownMenu,
@@ -41,7 +43,9 @@ export default function SidebarProjectMenu({
 }: SidebarProjectMenuProps) {
   return (
     <>
-      <div className="mb-2 font-medium text-muted-foreground">Insights</div>
+      <div className={cn('mb-2 font-medium text-muted-foreground', SB_HIDE)}>
+        Insights
+      </div>
       <SidebarLink icon={WallpaperIcon} label="Overview" href={'/'} />
       <SidebarLink
         icon={LayoutPanelTopIcon}
@@ -52,10 +56,23 @@ export default function SidebarProjectMenu({
       <SidebarLink icon={Globe2Icon} label="Realtime" href={'/realtime'} />
       <SidebarLink icon={GanttChartIcon} label="Events" href={'/events'} />
       <SidebarLink icon={UsersRoundIcon} label="Sessions" href={'/sessions'} />
-      <SidebarLink icon={CircleUserRoundIcon} label="Profiles" href={'/profiles'} />
+      <SidebarLink
+        icon={CircleUserRoundIcon}
+        label="Profiles"
+        href={'/profiles'}
+      />
       <SidebarLink icon={TargetIcon} label="Cohorts" href={'/cohorts'} />
-      <SidebarLink icon={SparklesIcon} label="Custom Events" href={'/custom-events'} />
-      <div className="mt-4 mb-2 font-medium text-muted-foreground">Manage</div>
+      <SidebarLink
+        icon={SparklesIcon}
+        label="Custom Events"
+        href={'/custom-events'}
+      />
+      <div
+        className={cn('mt-4 mb-2 font-medium text-muted-foreground', SB_HIDE)}
+      >
+        Manage
+      </div>
+      <div className={cn('mx-2 my-2 border-t border-border', SB_SHOW)} />
       <SidebarLink
         exact={false}
         icon={CogIcon}
@@ -138,10 +155,16 @@ export function ActionCTAButton() {
     <div className="mb-4">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="w-full justify-between" size="default">
+          <Button
+            className={cn(
+              'w-full justify-between',
+              'group-data-[collapsed=true]/sidebar:lg:justify-center group-data-[collapsed=true]/sidebar:lg:px-0',
+            )}
+            size="default"
+          >
             <div className="flex items-center gap-2">
               <PlusIcon size={16} />
-              <div className="relative h-5 flex items-center">
+              <div className={cn('relative h-5 flex items-center', SB_HIDE)}>
                 <AnimatePresence mode="popLayout">
                   <motion.span
                     key={currentActionIndex}
@@ -161,7 +184,7 @@ export function ActionCTAButton() {
                 </AnimatePresence>
               </div>
             </div>
-            <ChevronDownIcon size={16} />
+            <ChevronDownIcon size={16} className={SB_HIDE} />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="start">

@@ -10,6 +10,7 @@ const VALID_COOKIES = [
   'chartType',
   'range',
   'supporter-prompt-closed',
+  'sidebar-collapsed',
 ] as const;
 const COOKIE_EVENT_NAME = '__cookie-change';
 

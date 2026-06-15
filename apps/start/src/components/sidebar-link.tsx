@@ -2,6 +2,7 @@ import { cn } from '@/utils/cn';
 import type { LucideIcon } from 'lucide-react';
 
 import { ProjectLink } from '@/components/links';
+import { SB_CENTER, SB_HIDE } from './sidebar-collapse';
 
 export function SidebarLink({
   href,
@@ -19,14 +20,16 @@ export function SidebarLink({
   return (
     <ProjectLink
       className={cn(
-        'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
+        'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-colors hover:bg-def-200 text-[13px]',
+        SB_CENTER,
         className,
       )}
       href={href}
       exact={exact}
+      title={typeof label === 'string' ? label : undefined}
     >
-      <Icon size={20} />
-      <div className="flex-1">{label}</div>
+      <Icon size={20} className="shrink-0" />
+      <div className={cn('flex-1', SB_HIDE)}>{label}</div>
     </ProjectLink>
   );
 }

@@ -15,6 +15,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDownIcon, PlusIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { SB_CENTER, SB_HIDE } from './sidebar-collapse';
 import { Badge } from './ui/badge';
 import {
   DropdownMenu,
@@ -32,60 +33,74 @@ export default function SidebarOrganizationMenu({
     <>
       <Link
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-colors hover:bg-def-200 text-[13px]',
+          SB_CENTER,
         )}
         activeOptions={{ exact: true }}
         to="/$organizationId"
         from="/$organizationId"
+        title="Projects"
       >
         <LayoutListIcon size={20} />
-        <div className="flex-1">Projects</div>
+        <div className={cn('flex-1', SB_HIDE)}>Projects</div>
       </Link>
       <Link
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-colors hover:bg-def-200 text-[13px]',
+          SB_CENTER,
         )}
         activeOptions={{ exact: true }}
         to="/$organizationId/settings"
         from="/$organizationId"
+        title="Settings"
       >
         <CogIcon size={20} />
-        <div className="flex-1">Settings</div>
+        <div className={cn('flex-1', SB_HIDE)}>Settings</div>
       </Link>
       <Link
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-colors hover:bg-def-200 text-[13px]',
+          SB_CENTER,
         )}
         activeOptions={{ exact: true }}
         to="/$organizationId/billing"
         from="/$organizationId"
+        title="Billing"
       >
         <CreditCardIcon size={20} />
-        <div className="flex-1">Billing</div>
-        {organization?.isTrial && <Badge>Trial</Badge>}
-        {organization?.isExpired && <Badge>Expired</Badge>}
-        {organization?.isWillBeCanceled && <Badge>Canceled</Badge>}
-        {organization?.isCanceled && <Badge>Canceled</Badge>}
+        <div className={cn('flex-1', SB_HIDE)}>Billing</div>
+        {organization?.isTrial && <Badge className={SB_HIDE}>Trial</Badge>}
+        {organization?.isExpired && <Badge className={SB_HIDE}>Expired</Badge>}
+        {organization?.isWillBeCanceled && (
+          <Badge className={SB_HIDE}>Canceled</Badge>
+        )}
+        {organization?.isCanceled && (
+          <Badge className={SB_HIDE}>Canceled</Badge>
+        )}
       </Link>
       <Link
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-colors hover:bg-def-200 text-[13px]',
+          SB_CENTER,
         )}
         to="/$organizationId/members"
         from="/$organizationId"
+        title="Members"
       >
         <UsersIcon size={20} />
-        <div className="flex-1">Members</div>
+        <div className={cn('flex-1', SB_HIDE)}>Members</div>
       </Link>
       <Link
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-colors hover:bg-def-200 text-[13px]',
+          SB_CENTER,
         )}
         to="/$organizationId/integrations"
         from="/$organizationId"
+        title="Integrations"
       >
         <WorkflowIcon size={20} />
-        <div className="flex-1">Integrations</div>
+        <div className={cn('flex-1', SB_HIDE)}>Integrations</div>
       </Link>
     </>
   );
@@ -130,10 +145,16 @@ export function ActionCTAButton() {
     <div className="mb-4">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="w-full justify-between" size="default">
+          <Button
+            className={cn(
+              'w-full justify-between',
+              'group-data-[collapsed=true]/sidebar:lg:justify-center group-data-[collapsed=true]/sidebar:lg:px-0',
+            )}
+            size="default"
+          >
             <div className="flex items-center gap-2">
               <PlusIcon size={16} />
-              <div className="relative h-5 flex items-center">
+              <div className={cn('relative h-5 flex items-center', SB_HIDE)}>
                 <AnimatePresence mode="popLayout">
                   <motion.span
                     key={currentActionIndex}
@@ -153,7 +174,7 @@ export function ActionCTAButton() {
                 </AnimatePresence>
               </div>
             </div>
-            <ChevronDownIcon size={16} />
+            <ChevronDownIcon size={16} className={SB_HIDE} />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="start">
