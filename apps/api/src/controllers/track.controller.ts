@@ -341,11 +341,18 @@ async function handleReplay({
     return;
   }
 
-  // Resolve session_id server-side from the request's IP + UA so it stays
-  // in sync even after the 30-min idle rotation (SDK carries a stale id).
-  // Fall back to SDK-provided session_id if we can't derive one.
+  // Trust the SDK-supplied session_id when present. Modern SDKs (1.3.0+)
+  // get this id by calling /track/device-id?deviceId=<their localStorage
+  // UUID or stable user id> — the server-side lookup there already keys
+  // off the same deviceId the track flow uses to create sessions, so the
+  // session_id the SDK echoes back IS a real row in the `sessions` table.
+  // Trusting it makes session_replay_chunks.session_id match sessions.id
+  // correctly even for users behind a shared NAT.
+  //
+  // Only fall back to IP+UA derivation when the SDK didn't send one (old
+  // SDKs that pre-date the deviceId override path).
   let sessionId = payload.session_id;
-  if (ip && ua) {
+  if (!sessionId && ip && ua) {
     try {
       const salts = await getSalts();
       const redis = getRedisCache();
@@ -367,7 +374,7 @@ async function handleReplay({
         }
       }
     } catch {
-      // non-fatal — fall back to SDK-provided session_id
+      // non-fatal — will 400 below if we still don't have a session_id.
     }
   }
 
