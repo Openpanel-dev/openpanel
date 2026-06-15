@@ -341,20 +341,11 @@ async function handleReplay({
     return;
   }
 
-  // Trust the SDK-provided session_id when present. Modern SDKs
-  // generate a UUID client-side (per-tab, with 30-min idle rotation)
-  // and persist it in sessionStorage — this avoids the NAT-collision
-  // problem where every user behind the same office/home/carrier IP
-  // collapses into a single shared session_id when derived from
-  // hash(salt + projectId + ip + ua).
-  //
-  // The fallback path below preserves backward-compat for older SDKs
-  // (or contexts where browser storage is blocked) that send chunks
-  // without a session_id — we derive one from IP + UA the way we used
-  // to. Identical behavior for callers that don't yet generate IDs
-  // themselves.
+  // Resolve session_id server-side from the request's IP + UA so it stays
+  // in sync even after the 30-min idle rotation (SDK carries a stale id).
+  // Fall back to SDK-provided session_id if we can't derive one.
   let sessionId = payload.session_id;
-  if (!sessionId && ip && ua) {
+  if (ip && ua) {
     try {
       const salts = await getSalts();
       const redis = getRedisCache();
@@ -376,7 +367,7 @@ async function handleReplay({
         }
       }
     } catch {
-      // non-fatal — fall back to undefined; will 400 below.
+      // non-fatal — fall back to SDK-provided session_id
     }
   }
 
