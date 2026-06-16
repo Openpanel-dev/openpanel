@@ -2,6 +2,7 @@ import { useDispatch, useSelector } from '@/redux';
 import {
   AreaChartIcon,
   ChartBarIcon,
+  ChartColumnBigIcon,
   ChartColumnIncreasingIcon,
   ConeIcon,
   GaugeIcon,
@@ -58,6 +59,7 @@ export function ReportChartType({
     retention: UsersIcon,
     map: Globe2Icon,
     conversion: TrendingUpIcon,
+    distribution: ChartColumnBigIcon,
   };
 
   return (

@@ -121,6 +121,7 @@ export const chartTypes = {
   funnel: 'Funnel',
   retention: 'Retention',
   conversion: 'Conversion',
+  distribution: 'Distribution',
 } as const;
 
 export const chartSegments = {
@@ -133,6 +134,11 @@ export const chartSegments = {
   property_average: 'Average of property',
   property_max: 'Max of property',
   property_min: 'Min of property',
+  property_median: 'Median of property',
+  property_p90: 'P90 of property',
+  property_p95: 'P95 of property',
+  property_p99: 'P99 of property',
+  property_distinct: 'Distinct count of property',
 };
 
 export const lineTypes = {

@@ -50,6 +50,7 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
         filters: [...event.filters, ...globalFilters],
         displayName: event.displayName,
         property: event.property,
+        perUser: event.perUser,
       },
       projectId: plan.input.projectId,
       startDate: plan.input.startDate,

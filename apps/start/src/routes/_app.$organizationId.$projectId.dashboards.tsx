@@ -191,6 +191,7 @@ function Component() {
                         area: AreaChartIcon,
                         retention: ChartScatterIcon,
                         conversion: TrendingUpIcon,
+                        distribution: BarChart3Icon,
                       }[report.chartType];
 
                       return (

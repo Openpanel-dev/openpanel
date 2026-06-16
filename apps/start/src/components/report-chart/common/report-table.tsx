@@ -230,6 +230,10 @@ export function ReportTable({
   const number = useNumber();
   const interval = useSelector((state) => state.report.interval);
   const breakdowns = useSelector((state) => state.report.breakdowns);
+  const chartType = useSelector((state) => state.report.chartType);
+  // Distribution charts carry a bucket label (e.g. "4-5", "10+") in the date
+  // field, not a real date — show it verbatim instead of date-formatting it.
+  const isDistribution = chartType === 'distribution';
 
   const formatDate = useFormatDateInterval({
     interval,
@@ -986,7 +990,7 @@ export function ReportTable({
     dates.forEach((date) => {
       cols.push({
         id: `date-${date}`,
-        header: formatDate(date),
+        header: isDistribution ? String(date) : formatDate(date),
         accessorFn: (row) => row.dateValues[date] ?? 0,
         enableSorting: true,
         size: 100,
@@ -1032,6 +1036,7 @@ export function ReportTable({
     breakdownPropertyNames,
     dates,
     formatDate,
+    isDistribution,
     number,
     grouped,
     visibleSeriesIds,

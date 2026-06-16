@@ -39,6 +39,35 @@ export const zChartEventSegment = z
   .default('event')
   .describe('Defines how the event data should be segmented or aggregated');
 
+export const zPerUserAggregation = z.enum([
+  'count',
+  'sum',
+  'avg',
+  'min',
+  'max',
+  'median',
+  'p90',
+  'p95',
+  'p99',
+  'distinct_count',
+]);
+
+export const zChartEventPerUser = z
+  .object({
+    aggregation: zPerUserAggregation.describe(
+      'How to reduce each user\'s events to a single per-user value',
+    ),
+    property: z
+      .string()
+      .optional()
+      .describe(
+        'Event property to aggregate per user. Required for every aggregation except "count".',
+      ),
+  })
+  .describe(
+    'Per-user (two-level) computed metric: first reduce each user to one value, then the segment/chart aggregates those values across users.',
+  );
+
 export const zChartEvent = z.object({
   id: z
     .string()
@@ -56,6 +85,7 @@ export const zChartEvent = z.object({
       'Optional property of the event used for specific segment calculations (e.g., value for property_sum/average)',
     ),
   segment: zChartEventSegment,
+  perUser: zChartEventPerUser.optional(),
   filters: z
     .array(zChartEventFilter)
     .default([])

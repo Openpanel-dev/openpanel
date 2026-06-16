@@ -31,6 +31,7 @@ import type {
   IChartFormula,
 } from '@openpanel/validation';
 import { FilterIcon, HandIcon, PiIcon } from 'lucide-react';
+import { ReportPerUser } from '../ReportPerUser';
 import { ReportSegment } from '../ReportSegment';
 import {
   addSerie,
@@ -94,7 +95,7 @@ function SortableSeries({
 
       {/* Segment and Filter buttons - only for events */}
       {chartEvent && (showSegment || showAddFilter) && (
-        <div className="flex gap-2 p-2 pt-0">
+        <div className="flex flex-wrap gap-2 p-2 pt-0">
           {showSegment && (
             <ReportSegment
               value={chartEvent.segment}
@@ -103,6 +104,19 @@ function SortableSeries({
                   changeEvent({
                     ...chartEvent,
                     segment,
+                  }),
+                );
+              }}
+            />
+          )}
+          {showSegment && (
+            <ReportPerUser
+              event={chartEvent}
+              onChange={(perUser) => {
+                dispatch(
+                  changeEvent({
+                    ...chartEvent,
+                    perUser,
                   }),
                 );
               }}

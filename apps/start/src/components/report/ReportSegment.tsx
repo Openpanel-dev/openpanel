@@ -2,8 +2,11 @@ import {
   ActivityIcon,
   ClockIcon,
   EqualApproximatelyIcon,
+  FingerprintIcon,
   type LucideIcon,
+  PercentIcon,
   SigmaIcon,
+  SplitIcon,
   TrendingDownIcon,
   TrendingUpIcon,
   UserCheck2Icon,
@@ -52,6 +55,11 @@ export function ReportSegment({
     property_average: EqualApproximatelyIcon,
     property_max: TrendingUpIcon,
     property_min: TrendingDownIcon,
+    property_median: SplitIcon,
+    property_p90: PercentIcon,
+    property_p95: PercentIcon,
+    property_p99: PercentIcon,
+    property_distinct: FingerprintIcon,
   };
 
   return (

@@ -1,0 +1,75 @@
+import { useTRPC } from '@/integrations/trpc/react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+
+import { AspectContainer } from '../aspect-container';
+import { ChartDownloadButton } from '../common/chart-download-button';
+import { ReportChartEmpty } from '../common/empty';
+import { ReportChartError } from '../common/error';
+import { ReportChartLoading } from '../common/loading';
+import { RefetchingOverlay } from '../common/refetching-overlay';
+import { useReportChartContext } from '../context';
+import { Chart } from './chart';
+
+export function ReportDistributionChart() {
+  const { isLazyLoading, report } = useReportChartContext();
+  const trpc = useTRPC();
+
+  const res = useQuery(
+    trpc.chart.chart.queryOptions(report, {
+      placeholderData: keepPreviousData,
+      enabled: !isLazyLoading,
+    }),
+  );
+
+  if (
+    isLazyLoading ||
+    res.isLoading ||
+    (res.isFetching && !res.data?.series.length)
+  ) {
+    return <Loading />;
+  }
+
+  if (res.isError) {
+    return <Error />;
+  }
+
+  if (!res.data || res.data?.series.length === 0) {
+    return <Empty />;
+  }
+
+  return (
+    <div className="relative group/chart">
+      <RefetchingOverlay
+        isRefetching={res.isPlaceholderData && res.isFetching}
+      />
+      <AspectContainer>
+        <Chart data={res.data} />
+      </AspectContainer>
+      <ChartDownloadButton type="standard" data={res.data} />
+    </div>
+  );
+}
+
+function Loading() {
+  return (
+    <AspectContainer>
+      <ReportChartLoading />
+    </AspectContainer>
+  );
+}
+
+function Error() {
+  return (
+    <AspectContainer>
+      <ReportChartError />
+    </AspectContainer>
+  );
+}
+
+function Empty() {
+  return (
+    <AspectContainer>
+      <ReportChartEmpty />
+    </AspectContainer>
+  );
+}

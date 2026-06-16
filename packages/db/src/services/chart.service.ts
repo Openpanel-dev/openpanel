@@ -3,6 +3,7 @@ import sqlstring from 'sqlstring';
 
 import { DateTime, stripLeadingAndTrailingSlashes } from '@openpanel/common';
 import type {
+  IChartEvent,
   IChartEventFilter,
   IChartInput,
   IChartRange,
@@ -399,6 +400,245 @@ function canUseMaterializedView(
   );
 }
 
+/**
+ * Build the inner (per-user) aggregation expression.
+ * Reduces all of a single user's events to one value.
+ */
+function getPerUserInnerAggExpr(
+  perUser: NonNullable<IChartEvent['perUser']>,
+  projectId: string,
+): string {
+  const agg = perUser.aggregation;
+  if (agg === 'count' || !perUser.property) {
+    return 'count(*)';
+  }
+
+  const propertyKey = getSelectPropertyKey(perUser.property, projectId);
+
+  // distinct_count counts distinct raw property values (no numeric cast)
+  if (agg === 'distinct_count') {
+    return `uniq(${propertyKey})`;
+  }
+
+  const numericExpr = isNumericColumn(perUser.property)
+    ? propertyKey
+    : `toFloat64OrNull(${propertyKey})`;
+
+  switch (agg) {
+    case 'sum':
+      return `sum(${numericExpr})`;
+    case 'avg':
+      return `avg(${numericExpr})`;
+    case 'min':
+      return `min(${numericExpr})`;
+    case 'max':
+      return `max(${numericExpr})`;
+    case 'median':
+      return `quantile(0.5)(${numericExpr})`;
+    case 'p90':
+      return `quantile(0.9)(${numericExpr})`;
+    case 'p95':
+      return `quantile(0.95)(${numericExpr})`;
+    case 'p99':
+      return `quantile(0.99)(${numericExpr})`;
+    default:
+      return 'count(*)';
+  }
+}
+
+/**
+ * Build the outer (across-user) aggregation, applied to the per-user values
+ * in the SUMMARY view. Driven by the event `segment`.
+ */
+function getPerUserOuterAggExpr(
+  segment: IGetChartDataInput['event']['segment'],
+  column: string,
+): string {
+  switch (segment) {
+    case 'property_sum':
+      return `sum(${column})`;
+    case 'property_min':
+      return `min(${column})`;
+    case 'property_max':
+      return `max(${column})`;
+    case 'property_median':
+      return `quantile(0.5)(${column})`;
+    case 'property_p90':
+      return `quantile(0.9)(${column})`;
+    case 'property_p95':
+      return `quantile(0.95)(${column})`;
+    case 'property_p99':
+      return `quantile(0.99)(${column})`;
+    case 'property_distinct':
+      return `uniq(${column})`;
+    // property_average, user_average and anything else default to the mean
+    // across users — the most common "per-user" summary.
+    default:
+      return `avg(${column})`;
+  }
+}
+
+/**
+ * Per-user (two-level) computed-metric SQL.
+ *
+ * Reduces each user to one value (inner aggregation), then either:
+ *  - SUMMARY: aggregates those values across users into a time series, or
+ *  - DISTRIBUTION (chartType==='distribution'): buckets users by their value.
+ *
+ * The result rows match the standard `{label_0, [label_1], date, count}` shape
+ * so the rest of the engine (fetch -> groupByLabels -> format -> tRPC) is
+ * reused unchanged. For the DISTRIBUTION view the bucket label is carried in
+ * the opaque `date` column.
+ *
+ * v1 scope: single breakdown dimension, event-level filters/breakdowns only
+ * (cohort/profile breakdowns are not supported on this path).
+ */
+function getPerUserChartSql({
+  event,
+  breakdowns,
+  interval,
+  startDate,
+  endDate,
+  projectId,
+  timezone,
+  chartType,
+}: IGetChartDataInput & { timezone: string }): string {
+  const perUser = event.perUser!;
+  const isDistribution = chartType === 'distribution';
+  // The inner aggregation falls back to count(*) whenever no property is set
+  // (e.g. a property-based aggregation chosen before picking the property).
+  const effectiveAggregation =
+    perUser.aggregation === 'count' || !perUser.property
+      ? 'count'
+      : perUser.aggregation;
+  // count() and distinct_count produce integer-valued per-user metrics → use
+  // discrete buckets; everything else is continuous → equal-width bins.
+  const isDiscrete =
+    effectiveAggregation === 'count' ||
+    effectiveAggregation === 'distinct_count';
+
+  // WHERE clause (event filters + project + name + date range)
+  const where = getEventFiltersWhereClause(event.filters ?? [], projectId);
+  where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
+  if (event.name !== '*') {
+    where.eventName = `name = ${sqlstring.escape(event.name)}`;
+  }
+  if (startDate) {
+    where.startDate = `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`;
+  }
+  if (endDate) {
+    where.endDate = `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
+  }
+  const whereClause = Object.keys(where).length
+    ? `WHERE ${Object.values(where).join(' AND ')}`
+    : '';
+
+  const innerAgg = getPerUserInnerAggExpr(perUser, projectId);
+
+  // Single breakdown (v1). Cohort/profile breakdowns are skipped on this path.
+  const breakdown = breakdowns?.find(
+    (b) => !b.cohortId && !b.name.startsWith('cohort:') && !b.name.startsWith('profile.'),
+  );
+  const breakdownKey = breakdown
+    ? getSelectPropertyKey(breakdown.name, projectId)
+    : null;
+
+  const label0 =
+    event.name !== '*'
+      ? `${sqlstring.escape(event.name)} as label_0`
+      : `'*' as label_0`;
+  const label1Select = breakdownKey ? `, bk as label_1` : '';
+  const label1Group = breakdownKey ? `, label_1` : '';
+  const bkInnerSelect = breakdownKey ? `, ${breakdownKey} as bk` : '';
+  const bkInnerGroup = breakdownKey ? `, bk` : '';
+
+  if (isDistribution) {
+    // Bucket users by their per-user value.
+    const perUserCte = `SELECT profile_id${bkInnerSelect}, ${innerAgg} as user_value
+      FROM ${TABLE_NAMES.events} e
+      ${whereClause}
+      GROUP BY profile_id${bkInnerGroup}`;
+
+    let bucketExpr: string;
+    let fromClause: string;
+    if (isDiscrete) {
+      bucketExpr = `multiIf(user_value = 1, '1', user_value = 2, '2', user_value = 3, '3', user_value <= 5, '4-5', user_value <= 10, '6-10', '10+')`;
+      fromClause = `(${perUserCte}) as per_user`;
+    } else {
+      // Equal-width bins using global min/max (10 bins). Label = bin lower bound.
+      bucketExpr = `if(
+        stats.mx = stats.mn,
+        toString(round(stats.mn, 2)),
+        toString(round(stats.mn + least(toUInt32(floor((user_value - stats.mn) / ((stats.mx - stats.mn) / 10))), 9) * ((stats.mx - stats.mn) / 10), 2))
+      )`;
+      fromClause = `(${perUserCte}) as per_user
+        CROSS JOIN (SELECT min(user_value) as mn, max(user_value) as mx FROM (${perUserCte})) as stats`;
+    }
+
+    const sql = `SELECT
+      ${label0},
+      ${bucketExpr} as date${label1Select},
+      count(*) as count,
+      min(user_value) as bucket_order
+    FROM ${fromClause}
+    WHERE user_value IS NOT NULL
+    GROUP BY date${label1Group}
+    ORDER BY bucket_order ASC`;
+
+    console.log('-- Per-user Distribution --');
+    console.log(sql.replaceAll(/[\n\r]/g, ' '));
+    console.log('-- End --');
+    return sql;
+  }
+
+  // SUMMARY view: per-user value per interval, then aggregate across users.
+  const outerAgg = getPerUserOuterAggExpr(event.segment, 'user_value');
+
+  let dateExpr: string;
+  let fill: string;
+  switch (interval) {
+    case 'minute':
+      dateExpr = `toStartOfMinute(created_at)`;
+      fill = `WITH FILL FROM toStartOfMinute(toDateTime('${startDate}')) TO toStartOfMinute(toDateTime('${endDate}')) STEP toIntervalMinute(1)`;
+      break;
+    case 'hour':
+      dateExpr = `toStartOfHour(created_at)`;
+      fill = `WITH FILL FROM toStartOfHour(toDateTime('${startDate}')) TO toStartOfHour(toDateTime('${endDate}')) STEP toIntervalHour(1)`;
+      break;
+    case 'week':
+      dateExpr = `toStartOfWeek(created_at, 1, '${timezone}')`;
+      fill = `WITH FILL FROM toStartOfWeek(toDateTime('${startDate}'), 1, '${timezone}') TO toStartOfWeek(toDateTime('${endDate}'), 1, '${timezone}') STEP toIntervalWeek(1)`;
+      break;
+    case 'month':
+      dateExpr = `toStartOfMonth(created_at, '${timezone}')`;
+      fill = `WITH FILL FROM toStartOfMonth(toDateTime('${startDate}'), '${timezone}') TO toStartOfMonth(toDateTime('${endDate}'), '${timezone}') STEP toIntervalMonth(1)`;
+      break;
+    default:
+      dateExpr = `toStartOfDay(created_at)`;
+      fill = `WITH FILL FROM toStartOfDay(toDateTime('${startDate}')) TO toStartOfDay(toDateTime('${endDate}')) STEP toIntervalDay(1)`;
+      break;
+  }
+
+  const perUserCte = `SELECT ${dateExpr} as date, profile_id${bkInnerSelect}, ${innerAgg} as user_value
+    FROM ${TABLE_NAMES.events} e
+    ${whereClause}
+    GROUP BY date, profile_id${bkInnerGroup}`;
+
+  const sql = `SELECT
+    ${label0},
+    date${label1Select},
+    ${outerAgg} as count
+  FROM (${perUserCte}) as per_user
+  WHERE user_value IS NOT NULL
+  GROUP BY date${label1Group}
+  ORDER BY date ASC ${fill}`;
+
+  console.log('-- Per-user Summary --');
+  console.log(sql.replaceAll(/[\n\r]/g, ' '));
+  console.log('-- End --');
+  return sql;
+}
+
 export async function getChartSql({
   event,
   breakdowns,
@@ -415,6 +655,26 @@ export async function getChartSql({
   timezone: string;
   customEvent?: { name: string; definition: ICustomEventDefinition };
 }) {
+  // Per-user (two-level) computed metric: handled by a self-contained builder.
+  // Also covers the `distribution` chart type (frequency / value distribution),
+  // which implies a per-user metric — default to event-count frequency.
+  if (event.perUser || chartType === 'distribution') {
+    const perUserEvent: IChartEvent =
+      event.perUser
+        ? event
+        : { ...event, perUser: { aggregation: 'count' } };
+    return getPerUserChartSql({
+      event: perUserEvent,
+      breakdowns,
+      interval,
+      startDate,
+      endDate,
+      projectId,
+      limit,
+      timezone,
+      chartType,
+    } as IGetChartDataInput & { timezone: string });
+  }
   // Pre-fetch cohort metadata for all cohorts used in this query (deduplicated)
   const cohortIdsSet = new Set<string>();
 

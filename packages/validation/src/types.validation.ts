@@ -8,8 +8,10 @@ import type {
   zChartBreakdown,
   zChartEvent,
   zChartEventItem,
+  zChartEventPerUser,
   zChartEventSegment,
   zChartFormula,
+  zPerUserAggregation,
   zChartInput,
   zChartInputAI,
   zChartSeries,
@@ -37,6 +39,8 @@ export type IChartSeries = z.infer<typeof zChartSeries>;
 // Backward compatibility alias
 export type IChartEvents = IChartSeries;
 export type IChartEventSegment = z.infer<typeof zChartEventSegment>;
+export type IChartEventPerUser = z.infer<typeof zChartEventPerUser>;
+export type IPerUserAggregation = z.infer<typeof zPerUserAggregation>;
 export type IChartEventFilter = IChartEvent['filters'][number];
 export type IChartEventFilterValue =
   IChartEvent['filters'][number]['value'][number];
