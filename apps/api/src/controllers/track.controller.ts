@@ -145,10 +145,14 @@ export async function handler(
   const identity = getIdentity(request.body);
   const profileId = identity?.profileId;
   const overrideDeviceId = (() => {
-    const deviceId =
-      'properties' in request.body.payload
-        ? request.body.payload.properties?.__deviceId
-        : undefined;
+    if (!('properties' in request.body.payload)) {
+      return undefined;
+    }
+    const properties = request.body.payload.properties;
+    // The Mixpanel proxy forwards the original device id as `$device_id`.
+    // Honor it (alongside the SDK's `__deviceId`) so proxied events use the
+    // real device id instead of falling back to the salted IP+UA fingerprint.
+    const deviceId = properties?.__deviceId ?? properties?.$device_id;
     if (typeof deviceId === 'string') {
       return deviceId;
     }
