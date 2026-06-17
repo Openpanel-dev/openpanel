@@ -365,5 +365,14 @@ export async function upsertAlias({
       },
     ],
     format: 'JSONEachRow',
+    // Aliases are written one row at a time per sign-in batch (the proxy
+    // re-emits per batch). async_insert lets ClickHouse coalesce these into
+    // server-side batches (~1 part/sec) instead of a part per insert, which
+    // matters at scale on this single-partition ReplacingMergeTree. The
+    // client-level CLICKHOUSE_SETTINGS does not enable it, so set it here.
+    clickhouse_settings: {
+      async_insert: 1,
+      wait_for_async_insert: 0,
+    },
   });
 }
