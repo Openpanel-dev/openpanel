@@ -9,6 +9,7 @@ import {
   getSalts,
   replayBuffer,
   sessionBuffer,
+  upsertAlias,
   upsertProfile,
 } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
@@ -231,11 +232,21 @@ export async function handler(
       break;
     }
     case 'alias': {
-      return reply.status(400).send({
-        status: 400,
-        error: 'Bad Request',
-        message: 'Alias is not supported',
+      const payload = request.body.payload;
+      if (!payload.profileId || !payload.alias) {
+        throw new HttpError('Missing profileId or alias', {
+          status: 400,
+        });
+      }
+
+      // Persist the (anonymous id -> identified id) mapping. Nothing reads
+      // profile_aliases yet — query-time resolution lands in a follow-up PR.
+      await upsertAlias({
+        projectId,
+        profileId: payload.profileId,
+        alias: payload.alias,
       });
+      break;
     }
     case 'increment': {
       await increment({
