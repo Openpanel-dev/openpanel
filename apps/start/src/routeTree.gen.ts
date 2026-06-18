@@ -73,6 +73,7 @@ import { Route as AppOrganizationIdProjectIdEventsTabsStatsRouteImport } from '.
 import { Route as AppOrganizationIdProjectIdEventsTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs.events'
 import { Route as AppOrganizationIdProjectIdEventsTabsConversionsRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs.conversions'
 import { Route as AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.profiles.$profileId._tabs.index'
+import { Route as AppOrganizationIdProjectIdProfilesProfileIdTabsSessionsRouteImport } from './routes/_app.$organizationId.$projectId.profiles.$profileId._tabs.sessions'
 import { Route as AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId.profiles.$profileId._tabs.events'
 
 const AppOrganizationIdMembersRouteImport = createFileRoute(
@@ -486,6 +487,12 @@ const AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRoute =
     path: '/',
     getParentRoute: () => AppOrganizationIdProjectIdProfilesProfileIdTabsRoute,
   } as any)
+const AppOrganizationIdProjectIdProfilesProfileIdTabsSessionsRoute =
+  AppOrganizationIdProjectIdProfilesProfileIdTabsSessionsRouteImport.update({
+    id: '/sessions',
+    path: '/sessions',
+    getParentRoute: () => AppOrganizationIdProjectIdProfilesProfileIdTabsRoute,
+  } as any)
 const AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute =
   AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRouteImport.update({
     id: '/events',
@@ -552,6 +559,7 @@ export interface FileRoutesByFullPath {
   '/$organizationId/$projectId/profiles/': typeof AppOrganizationIdProjectIdProfilesTabsIndexRoute
   '/$organizationId/$projectId/settings/': typeof AppOrganizationIdProjectIdSettingsTabsIndexRoute
   '/$organizationId/$projectId/profiles/$profileId/events': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute
+  '/$organizationId/$projectId/profiles/$profileId/sessions': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsSessionsRoute
   '/$organizationId/$projectId/profiles/$profileId/': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -605,6 +613,7 @@ export interface FileRoutesByTo {
   '/$organizationId/$projectId/settings/events': typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
   '/$organizationId/$projectId/settings/imports': typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
   '/$organizationId/$projectId/profiles/$profileId/events': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute
+  '/$organizationId/$projectId/profiles/$profileId/sessions': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsSessionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -677,6 +686,7 @@ export interface FileRoutesById {
   '/_app/$organizationId/$projectId/profiles/_tabs/': typeof AppOrganizationIdProjectIdProfilesTabsIndexRoute
   '/_app/$organizationId/$projectId/settings/_tabs/': typeof AppOrganizationIdProjectIdSettingsTabsIndexRoute
   '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/events': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute
+  '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/sessions': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsSessionsRoute
   '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRoute
 }
 export interface FileRouteTypes {
@@ -740,6 +750,7 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/profiles/'
     | '/$organizationId/$projectId/settings/'
     | '/$organizationId/$projectId/profiles/$profileId/events'
+    | '/$organizationId/$projectId/profiles/$profileId/sessions'
     | '/$organizationId/$projectId/profiles/$profileId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -793,6 +804,7 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/settings/events'
     | '/$organizationId/$projectId/settings/imports'
     | '/$organizationId/$projectId/profiles/$profileId/events'
+    | '/$organizationId/$projectId/profiles/$profileId/sessions'
   id:
     | '__root__'
     | '/'
@@ -864,6 +876,7 @@ export interface FileRouteTypes {
     | '/_app/$organizationId/$projectId/profiles/_tabs/'
     | '/_app/$organizationId/$projectId/settings/_tabs/'
     | '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/events'
+    | '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/sessions'
     | '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/'
   fileRoutesById: FileRoutesById
 }
@@ -1363,6 +1376,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdTabsRoute
     }
+    '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/sessions': {
+      id: '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/sessions'
+      path: '/sessions'
+      fullPath: '/$organizationId/$projectId/profiles/$profileId/sessions'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdTabsSessionsRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdTabsRoute
+    }
     '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/events': {
       id: '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/events'
       path: '/events'
@@ -1474,6 +1494,7 @@ const AppOrganizationIdProjectIdProfilesTabsRouteWithChildren =
 
 interface AppOrganizationIdProjectIdProfilesProfileIdTabsRouteChildren {
   AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute
+  AppOrganizationIdProjectIdProfilesProfileIdTabsSessionsRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdTabsSessionsRoute
   AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRoute
 }
 
@@ -1481,6 +1502,8 @@ const AppOrganizationIdProjectIdProfilesProfileIdTabsRouteChildren: AppOrganizat
   {
     AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute:
       AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute,
+    AppOrganizationIdProjectIdProfilesProfileIdTabsSessionsRoute:
+      AppOrganizationIdProjectIdProfilesProfileIdTabsSessionsRoute,
     AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRoute:
       AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRoute,
   }

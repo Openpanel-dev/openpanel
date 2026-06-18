@@ -339,7 +339,9 @@ class SessionService {
       throw new Error('Session not found');
     }
 
-    return transformSession(result[0]);
+    const session = transformSession(result[0]);
+    const profiles = await getProfilesCached([session.profileId], projectId);
+    return { ...session, profile: profiles[0] };
   }
 }
 
