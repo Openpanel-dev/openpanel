@@ -255,9 +255,7 @@ export async function getSessionList({
   };
 
   // Profile hydration (unchanged)
-  const profileIds = data
-    .filter((e) => e.device_id !== e.profile_id)
-    .map((e) => e.profile_id);
+  const profileIds = Array.from(new Set(data.map((e) => e.profile_id)));
   const profiles = await getProfilesCached(profileIds, projectId);
   const map = new Map<string, IServiceProfile>(profiles.map((p) => [p.id, p]));
 
