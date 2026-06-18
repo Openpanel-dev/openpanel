@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 import {
   getSessionList,
+  getSessionReplayChunksByIndexRange,
   getSessionReplayChunksFrom,
+  getSessionReplayMeta,
   sessionHasReplay,
   sessionService,
 } from '@openpanel/db';
@@ -83,5 +85,29 @@ export const sessionRouter = createTRPCRouter({
     )
     .query(({ input: { sessionId, projectId, fromIndex } }) => {
       return getSessionReplayChunksFrom(sessionId, projectId, fromIndex);
+    }),
+
+  replayMeta: protectedProcedure
+    .input(z.object({ sessionId: z.string(), projectId: z.string() }))
+    .query(({ input: { sessionId, projectId } }) => {
+      return getSessionReplayMeta(sessionId, projectId);
+    }),
+
+  replayChunksByIndexRange: protectedProcedure
+    .input(
+      z.object({
+        sessionId: z.string(),
+        projectId: z.string(),
+        fromIndex: z.number().int().min(0),
+        toIndex: z.number().int().min(0),
+      }),
+    )
+    .query(({ input: { sessionId, projectId, fromIndex, toIndex } }) => {
+      return getSessionReplayChunksByIndexRange(
+        sessionId,
+        projectId,
+        fromIndex,
+        toIndex,
+      );
     }),
 });

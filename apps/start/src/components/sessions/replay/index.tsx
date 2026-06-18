@@ -47,7 +47,9 @@ function BrowserUrlBar({ events }: { events: IServiceEvent[] }) {
 /**
  * Feeds remaining chunks into the player after it's ready.
  * Receives already-fetched chunks from the initial batch, then pages
- * through the rest using replayChunksFrom.
+ * through the rest using replayChunksFrom. Each chunk goes through
+ * markChunkLoaded so the buffer (used by the buffer-aware seek path) stays
+ * in sync.
  */
 function ReplayChunkLoader({
   sessionId,
@@ -60,9 +62,10 @@ function ReplayChunkLoader({
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { addEvent, refreshDuration } = useReplayContext();
+  const { markChunkLoaded } = useReplayContext();
 
   useEffect(() => {
+    let cancelled = false;
     function recursive(fromIndex: number) {
       queryClient
         .fetchQuery(
@@ -70,15 +73,19 @@ function ReplayChunkLoader({
             sessionId,
             projectId,
             fromIndex,
-          })
+          }),
         )
         .then((res) => {
+          if (cancelled) return;
           res.data.forEach((row) => {
-            row?.events?.forEach((event) => {
-              addEvent(event);
+            if (!row) return;
+            markChunkLoaded({
+              chunkIndex: row.chunkIndex,
+              startedAtMs: row.startedAtMs,
+              endedAtMs: row.endedAtMs,
+              events: row.events ?? [],
             });
           });
-          refreshDuration();
           if (res.hasMore) {
             recursive(fromIndex + res.data.length);
           }
@@ -89,6 +96,9 @@ function ReplayChunkLoader({
     }
 
     recursive(fromIndex);
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return null;
@@ -134,6 +144,57 @@ function FullscreenButton({
   );
 }
 
+/**
+ * Inside the provider, seed the buffer with first-batch chunks (events already
+ * passed to rrweb at construction — no addToPlayer) and register the prefetch
+ * function so the buffer-aware seek path can fetch chunks on demand.
+ */
+function ReplayBufferBootstrap({
+  sessionId,
+  projectId,
+  firstBatch,
+}: {
+  sessionId: string;
+  projectId: string;
+  firstBatch: { chunkIndex: number; startedAtMs: number; endedAtMs: number; events: { type: number; data: unknown; timestamp: number }[] }[];
+}) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const { markChunkLoaded, setPrefetchChunks, isReady } = useReplayContext();
+
+  // Seed the buffer once the player is ready (so duration recompute uses the
+  // real rrweb metadata, not 0).
+  useEffect(() => {
+    if (!isReady || firstBatch.length === 0) return;
+    for (const row of firstBatch) {
+      markChunkLoaded(row, { addToPlayer: false });
+    }
+  }, [isReady, firstBatch, markChunkLoaded]);
+
+  // Register the prefetch function that the seek slow-path calls.
+  useEffect(() => {
+    setPrefetchChunks(async (fromIndex, toIndex) => {
+      const res = await queryClient.fetchQuery(
+        trpc.session.replayChunksByIndexRange.queryOptions({
+          sessionId,
+          projectId,
+          fromIndex,
+          toIndex,
+        }),
+      );
+      return res.data.map((row) => ({
+        chunkIndex: row.chunkIndex,
+        startedAtMs: row.startedAtMs,
+        endedAtMs: row.endedAtMs,
+        events: row.events ?? [],
+      }));
+    });
+    return () => setPrefetchChunks(null);
+  }, [sessionId, projectId, queryClient, trpc, setPrefetchChunks]);
+
+  return null;
+}
+
 function ReplayContent({
   sessionId,
   projectId,
@@ -162,9 +223,27 @@ function ReplayContent({
     })
   );
 
+  // Definitive replay duration. One cheap min/max query — shown as the
+  // canonical timeline length from first paint instead of rrweb's progressive
+  // totalTime that grows as chunks load.
+  const { data: replayMeta } = useQuery(
+    trpc.session.replayMeta.queryOptions({ sessionId, projectId }),
+  );
+
   const events = eventsData?.data ?? [];
-  const playerEvents =
-    firstBatch?.data.flatMap((row) => row?.events ?? []) ?? [];
+  // Memoize the flat events array so its identity is stable across re-renders
+  // (replayMeta landing, buffering state flipping, etc.) — otherwise rrweb's
+  // useEffect would tear down and recreate the player on every parent render,
+  // visibly resetting playback to 0:00.
+  const playerEvents = useMemo(
+    () => firstBatch?.data.flatMap((row) => row?.events ?? []) ?? [],
+    [firstBatch],
+  );
+  // Stable reference for the same reason — passed into ReplayBufferBootstrap.
+  const firstBatchData = useMemo(
+    () => firstBatch?.data ?? [],
+    [firstBatch],
+  );
   const hasMore = firstBatch?.hasMore ?? false;
   const hasReplay = playerEvents.length !== 0;
 
@@ -188,7 +267,7 @@ function ReplayContent({
   }
 
   return (
-    <ReplayProvider>
+    <ReplayProvider totalDurationMs={replayMeta?.totalDurationMs}>
       <div
         className="grid gap-4 lg:grid-cols-[1fr_380px] [&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:bg-background [&:fullscreen]:p-4"
         id="replay"
@@ -220,6 +299,13 @@ function ReplayContent({
           </div>
         </div>
       </div>
+      {hasReplay && (
+        <ReplayBufferBootstrap
+          firstBatch={firstBatchData}
+          projectId={projectId}
+          sessionId={sessionId}
+        />
+      )}
       {hasReplay && hasMore && (
         <ReplayChunkLoader
           fromIndex={firstBatch?.data?.length ?? 0}

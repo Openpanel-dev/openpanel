@@ -349,36 +349,136 @@ export const sessionService = new SessionService(ch);
 
 const REPLAY_CHUNKS_PAGE_SIZE = 50;
 
+type ReplayChunkRow = {
+  chunk_index: number;
+  payload: string;
+  chunk_started_at: string;
+  chunk_ended_at: string;
+};
+
+type ReplayChunkItem = {
+  chunkIndex: number;
+  startedAtMs: number;
+  endedAtMs: number;
+  events: { type: number; data: unknown; timestamp: number }[];
+};
+
+function transformReplayChunkRow(
+  row: ReplayChunkRow,
+  chunkIndex: number,
+): ReplayChunkItem {
+  let events: { type: number; data: unknown; timestamp: number }[] = [];
+  try {
+    events = JSON.parse(row.payload);
+  } catch {
+    events = [];
+  }
+  return {
+    chunkIndex,
+    startedAtMs: new Date(row.chunk_started_at).getTime(),
+    endedAtMs: new Date(row.chunk_ended_at).getTime(),
+    events,
+  };
+}
+
 export async function getSessionReplayChunksFrom(
   sessionId: string,
   projectId: string,
   fromIndex: number,
 ) {
-  const rows = await chQuery<{ chunk_index: number; payload: string }>(
-    `SELECT chunk_index, argMin(payload, started_at) AS payload
+  // LIMIT 1 BY chunk_index dedupes duplicate rows at the same chunk_index
+  // (legacy recorder restart bug) by keeping the earliest one — same semantics
+  // as argMin but without holding every payload in memory.
+  const rows = await chQuery<ReplayChunkRow>(
+    `SELECT chunk_index,
+            payload,
+            started_at AS chunk_started_at,
+            ended_at AS chunk_ended_at
      FROM ${TABLE_NAMES.session_replay_chunks}
      WHERE session_id = ${sqlstring.escape(sessionId)}
        AND project_id = ${sqlstring.escape(projectId)}
-     GROUP BY chunk_index
-     ORDER BY chunk_index
+     ORDER BY chunk_index, started_at
+     LIMIT 1 BY chunk_index
      LIMIT ${REPLAY_CHUNKS_PAGE_SIZE + 1}
      OFFSET ${fromIndex}`,
   );
 
-  const items = rows.slice(0, REPLAY_CHUNKS_PAGE_SIZE).map((row, index) => {
-    let events: { type: number; data: unknown; timestamp: number }[] = [];
-    try {
-      events = JSON.parse(row.payload);
-    } catch {
-      events = [];
-    }
-    return { chunkIndex: index + fromIndex, events };
-  });
+  const items = rows
+    .slice(0, REPLAY_CHUNKS_PAGE_SIZE)
+    .map((row, index) => transformReplayChunkRow(row, index + fromIndex));
 
   return {
     data: items,
     hasMore: rows.length > REPLAY_CHUNKS_PAGE_SIZE,
   };
+}
+
+/**
+ * Returns the definitive replay duration + chunk count for a session.
+ * Used by the player to display the FINAL duration upfront — instead of the
+ * progressive `getMetaData().totalTime` that grows as chunks arrive (which
+ * makes the timeline jump from "2 min" to "35 min" to "80 min" as the user
+ * watches).
+ */
+export async function getSessionReplayMeta(
+  sessionId: string,
+  projectId: string,
+) {
+  const rows = await chQuery<{
+    started_at_ms: string;
+    ended_at_ms: string;
+    chunk_count: string;
+  }>(
+    `SELECT
+       toUnixTimestamp64Milli(min(started_at)) AS started_at_ms,
+       toUnixTimestamp64Milli(max(ended_at)) AS ended_at_ms,
+       toString(count(DISTINCT chunk_index)) AS chunk_count
+     FROM ${TABLE_NAMES.session_replay_chunks}
+     WHERE session_id = ${sqlstring.escape(sessionId)}
+       AND project_id = ${sqlstring.escape(projectId)}`,
+  );
+  const row = rows[0];
+  if (!row) {
+    return { startedAtMs: 0, endedAtMs: 0, totalDurationMs: 0, totalChunkCount: 0 };
+  }
+  const startedAtMs = Number(row.started_at_ms);
+  const endedAtMs = Number(row.ended_at_ms);
+  const totalChunkCount = Number(row.chunk_count);
+  return {
+    startedAtMs,
+    endedAtMs,
+    totalDurationMs: Math.max(0, endedAtMs - startedAtMs),
+    totalChunkCount,
+  };
+}
+
+export async function getSessionReplayChunksByIndexRange(
+  sessionId: string,
+  projectId: string,
+  fromIndex: number,
+  toIndex: number,
+) {
+  if (toIndex < fromIndex) {
+    return { data: [] as ReplayChunkItem[] };
+  }
+  const rows = await chQuery<ReplayChunkRow>(
+    `SELECT chunk_index,
+            payload,
+            started_at AS chunk_started_at,
+            ended_at AS chunk_ended_at
+     FROM ${TABLE_NAMES.session_replay_chunks}
+     WHERE session_id = ${sqlstring.escape(sessionId)}
+       AND project_id = ${sqlstring.escape(projectId)}
+       AND chunk_index BETWEEN ${Math.floor(fromIndex)} AND ${Math.floor(toIndex)}
+     ORDER BY chunk_index, started_at
+     LIMIT 1 BY chunk_index`,
+  );
+
+  const items = rows.map((row) =>
+    transformReplayChunkRow(row, row.chunk_index),
+  );
+
+  return { data: items };
 }
 
 export async function batchSessionHasReplay(

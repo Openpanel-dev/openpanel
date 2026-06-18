@@ -7,6 +7,10 @@ import {
   useRef,
   useState,
 } from 'react';
+import {
+  type ChunkData,
+  ReplayChunkBuffer,
+} from './replay-chunk-buffer';
 
 export interface ReplayPlayerInstance {
   play: () => void;
@@ -24,6 +28,11 @@ export interface ReplayPlayerInstance {
 
 type CurrentTimeListener = (t: number) => void;
 
+export type PrefetchChunksFn = (
+  fromIndex: number,
+  toIndex: number,
+) => Promise<ChunkData[]>;
+
 interface ReplayContextValue {
   // High-frequency value — read via ref, not state. Use subscribeToCurrentTime
   // or useCurrentTime() to get updates without causing 60fps re-renders.
@@ -34,6 +43,10 @@ interface ReplayContextValue {
   duration: number;
   startTime: number | null;
   isReady: boolean;
+  // Buffered-region tracking — for the YouTube-style buffered progress bar
+  // and the buffer-aware seek path.
+  loadedUpToMs: number;
+  isBuffering: boolean;
   // Playback controls
   play: () => void;
   pause: () => void;
@@ -43,6 +56,18 @@ interface ReplayContextValue {
   // Lazy chunk loading
   addEvent: (event: { type: number; data: unknown; timestamp: number }) => void;
   refreshDuration: () => void;
+  /**
+   * Called by chunk loaders for each chunk. `addToPlayer: false` is used for
+   * the FIRST batch, whose events were already passed to the rrweb player at
+   * construction time — we only need to register the range / chunkIndex so the
+   * buffer reflects reality. Defaults to true for sequential + prefetch loads.
+   */
+  markChunkLoaded: (chunk: ChunkData, opts?: { addToPlayer?: boolean }) => void;
+  /**
+   * Registered by the consumer (ReplayContent) once it has a tRPC client +
+   * sessionId. Allows seek() to prefetch chunks on demand.
+   */
+  setPrefetchChunks: (fn: PrefetchChunksFn | null) => void;
   // Called by ReplayPlayer to register/unregister the rrweb instance
   onPlayerReady: (player: ReplayPlayerInstance, playerStartTime: number) => void;
   onPlayerDestroy: () => void;
@@ -55,6 +80,11 @@ interface ReplayContextValue {
 const ReplayContext = createContext<ReplayContextValue | null>(null);
 
 const SPEED_OPTIONS = [0.5, 1, 2, 4, 8] as const;
+
+/** Chunks fetched per round trip during seek-targeted prefetch. */
+const PREFETCH_BATCH_SIZE = 50;
+/** Bound the prefetch loop so a bug can't infinitely fetch. 50 * 100 = 5,000 chunks ≈ longest session. */
+const MAX_PREFETCH_BATCHES = 100;
 
 export function useReplayContext() {
   const ctx = useContext(ReplayContext);
@@ -91,16 +121,39 @@ export function useCurrentTime(intervalMs = 0): number {
   return time;
 }
 
-export function ReplayProvider({ children }: { children: ReactNode }) {
+export function ReplayProvider({
+  children,
+  totalDurationMs,
+}: {
+  children: ReactNode;
+  /**
+   * Definitive replay duration from `session.replayMeta`. When provided, this
+   * overrides rrweb's progressive `getMetaData().totalTime` so the timeline
+   * shows the final number from the start instead of growing as chunks load.
+   */
+  totalDurationMs?: number;
+}) {
   const playerRef = useRef<ReplayPlayerInstance | null>(null);
   const isPlayingRef = useRef(false);
   const currentTimeRef = useRef(0);
   const listenersRef = useRef<Set<CurrentTimeListener>>(new Set());
 
+  // Buffer state — ref (mutated by markChunkLoaded + drained ranges) feeds
+  // the React state mirrors below so subscribers re-render at the right times.
+  const bufferRef = useRef(new ReplayChunkBuffer());
+  const startTimeRef = useRef<number | null>(null);
+  const prefetchRef = useRef<PrefetchChunksFn | null>(null);
+  // Mirror totalDurationMs in a ref so callbacks (passed to the player's
+  // useEffect deps) don't get a new identity when it changes — preventing the
+  // player from being destroyed + recreated every time the prop lands.
+  const totalDurationMsRef = useRef<number | undefined>(totalDurationMs);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [loadedUpToMs, setLoadedUpToMs] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(false);
 
   const setIsPlayingWithRef = useCallback((playing: boolean) => {
     isPlayingRef.current = playing;
@@ -126,6 +179,7 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
   const onPlayerReady = useCallback(
     (player: ReplayPlayerInstance, playerStartTime: number) => {
       playerRef.current = player;
+      startTimeRef.current = playerStartTime;
       setStartTime(playerStartTime);
       currentTimeRef.current = 0;
       setIsPlayingWithRef(false);
@@ -136,11 +190,21 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
 
   const onPlayerDestroy = useCallback(() => {
     playerRef.current = null;
+    startTimeRef.current = null;
+    bufferRef.current.reset();
     setIsReady(false);
     currentTimeRef.current = 0;
-    setDuration(0);
+    // Preserve the server-supplied duration on re-mount (read via ref so this
+    // callback's identity stays stable — putting totalDurationMs in deps would
+    // cause the player to destroy + recreate every time it lands).
+    const td = totalDurationMsRef.current;
+    if (!(td && td > 0)) {
+      setDuration(0);
+    }
     setStartTime(null);
     setIsPlayingWithRef(false);
+    setLoadedUpToMs(0);
+    setIsBuffering(false);
   }, [setIsPlayingWithRef]);
 
   const play = useCallback(() => {
@@ -155,15 +219,6 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
     playerRef.current?.toggle();
   }, []);
 
-  const seek = useCallback((timeMs: number) => {
-    playerRef.current?.goto(timeMs, isPlayingRef.current);
-  }, []);
-
-  const setSpeed = useCallback((s: number) => {
-    if (!SPEED_OPTIONS.includes(s as (typeof SPEED_OPTIONS)[number])) return;
-    playerRef.current?.setSpeed(s);
-  }, []);
-
   const addEvent = useCallback(
     (event: { type: number; data: unknown; timestamp: number }) => {
       playerRef.current?.addEvent(event);
@@ -172,8 +227,132 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
   );
 
   const refreshDuration = useCallback(() => {
+    // When a definitive totalDurationMs is supplied (from session.replayMeta),
+    // it owns the duration value — don't let rrweb's progressive totalTime
+    // overwrite it as more chunks arrive (that's what made the timeline jump
+    // from "2 min" to "35 min" to "80 min"). Read via ref to keep the callback
+    // identity stable.
+    const td = totalDurationMsRef.current;
+    if (td && td > 0) return;
     const total = playerRef.current?.getMetaData().totalTime ?? 0;
     if (total > 0) setDuration(total);
+  }, []);
+
+  // Sync the prop into state + the ref once it lands (and on subsequent changes).
+  useEffect(() => {
+    totalDurationMsRef.current = totalDurationMs;
+    if (totalDurationMs && totalDurationMs > 0) {
+      setDuration(totalDurationMs);
+    }
+  }, [totalDurationMs]);
+
+  const updateLoadedUpToMs = useCallback(() => {
+    const wallMs = bufferRef.current.maxLoadedMs();
+    const baseline = startTimeRef.current;
+    if (wallMs == null || baseline == null) return;
+    const relativeMs = Math.max(0, wallMs - baseline);
+    setLoadedUpToMs((prev) => (relativeMs > prev ? relativeMs : prev));
+  }, []);
+
+  const markChunkLoaded = useCallback(
+    (chunk: ChunkData, opts?: { addToPlayer?: boolean }) => {
+      const addToPlayer = opts?.addToPlayer ?? true;
+      const drained = bufferRef.current.enqueueAndDrain(chunk);
+      if (addToPlayer) {
+        for (const c of drained) {
+          for (const ev of c.events) {
+            playerRef.current?.addEvent(ev);
+          }
+        }
+      }
+      if (drained.length > 0) {
+        const td = totalDurationMsRef.current;
+        if (!(td && td > 0)) {
+          const total = playerRef.current?.getMetaData().totalTime ?? 0;
+          if (total > 0) setDuration(total);
+        }
+      }
+      updateLoadedUpToMs();
+    },
+    [updateLoadedUpToMs],
+  );
+
+  const setPrefetchChunks = useCallback((fn: PrefetchChunksFn | null) => {
+    prefetchRef.current = fn;
+  }, []);
+
+  /**
+   * Sequentially prefetch chunks starting from loadedUpToChunkIndex + 1 in
+   * batches of PREFETCH_BATCH_SIZE until the target wall-clock ms is buffered
+   * (or we run out of chunks to fetch). Bounded by MAX_PREFETCH_BATCHES so a
+   * runaway loop can't lock the player.
+   */
+  const prefetchUntilLoaded = useCallback(
+    async (targetWallMs: number) => {
+      const fetch = prefetchRef.current;
+      if (!fetch) return;
+      let batches = 0;
+      while (
+        !bufferRef.current.isLoaded(targetWallMs) &&
+        batches < MAX_PREFETCH_BATCHES
+      ) {
+        const fromIndex = bufferRef.current.loadedUpToChunkIndex + 1;
+        const toIndex = fromIndex + PREFETCH_BATCH_SIZE - 1;
+        const chunks = await fetch(fromIndex, toIndex);
+        if (chunks.length === 0) {
+          // Nothing more to fetch — give up.
+          return;
+        }
+        for (const c of chunks) {
+          const drained = bufferRef.current.enqueueAndDrain(c);
+          for (const dc of drained) {
+            for (const ev of dc.events) {
+              playerRef.current?.addEvent(ev);
+            }
+          }
+        }
+        const td = totalDurationMsRef.current;
+        if (!(td && td > 0)) {
+          const total = playerRef.current?.getMetaData().totalTime ?? 0;
+          if (total > 0) setDuration(total);
+        }
+        updateLoadedUpToMs();
+        batches += 1;
+      }
+    },
+    [updateLoadedUpToMs],
+  );
+
+  const seek = useCallback(
+    async (timeMs: number) => {
+      const baseline = startTimeRef.current;
+      if (baseline == null) return;
+      const targetWallMs = baseline + timeMs;
+
+      // Fast path: target already buffered.
+      if (bufferRef.current.isLoaded(targetWallMs)) {
+        playerRef.current?.goto(timeMs, isPlayingRef.current);
+        return;
+      }
+
+      // Slow path: pause, prefetch chunks until target is covered, then goto.
+      const wasPlaying = isPlayingRef.current;
+      setIsBuffering(true);
+      playerRef.current?.pause();
+      try {
+        await prefetchUntilLoaded(targetWallMs);
+      } finally {
+        playerRef.current?.goto(timeMs, false);
+        setIsBuffering(false);
+        if (wasPlaying) playerRef.current?.play();
+      }
+    },
+    [prefetchUntilLoaded],
+  );
+
+  const setSpeed = useCallback((s: number) => {
+    if (!SPEED_OPTIONS.includes(s as (typeof SPEED_OPTIONS)[number])) return;
+    playerRef.current?.setSpeed(s);
   }, []);
 
   const value: ReplayContextValue = {
@@ -183,6 +362,8 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
     duration,
     startTime,
     isReady,
+    loadedUpToMs,
+    isBuffering,
     play,
     pause,
     toggle,
@@ -190,6 +371,8 @@ export function ReplayProvider({ children }: { children: ReactNode }) {
     setSpeed,
     addEvent,
     refreshDuration,
+    markChunkLoaded,
+    setPrefetchChunks,
     onPlayerReady,
     onPlayerDestroy,
     setCurrentTime,

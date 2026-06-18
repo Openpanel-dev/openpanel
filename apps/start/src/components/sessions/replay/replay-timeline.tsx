@@ -11,12 +11,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { EventIcon } from '@/components/events/event-icon';
 import { cn } from '@/utils/cn';
+import { Loader2 } from 'lucide-react';
 import { ReplayPlayPauseButton } from './replay-controls';
 import { formatDuration, getEventOffsetMs } from './replay-utils';
 
 export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
-  const { currentTimeRef, duration, startTime, isReady, seek, subscribeToCurrentTime } =
-    useReplayContext();
+  const {
+    currentTimeRef,
+    duration,
+    startTime,
+    isReady,
+    seek,
+    subscribeToCurrentTime,
+    loadedUpToMs,
+    isBuffering,
+  } = useReplayContext();
   // currentTime as React state is only needed for keyboard seeks (low frequency).
   // The progress bar and thumb are updated directly via DOM refs to avoid re-renders.
   const currentTime = useCurrentTime(250);
@@ -141,12 +150,28 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
   if (!isReady || duration <= 0) return null;
 
   const progressPct = Math.max(0, Math.min(100, (currentTimeRef.current / duration) * 100));
+  const bufferedPct = Math.max(0, Math.min(100, (loadedUpToMs / duration) * 100));
 
   return (
     <TooltipProvider delayDuration={300}>
       <div className="row items-center gap-4 p-4">
         <ReplayPlayPauseButton />
-        <div className="col gap-4 flex-1 px-2">
+        <div className={cn('col gap-4 flex-1 px-2 relative')}>
+          <AnimatePresence>
+            {isBuffering && (
+              <motion.div
+                key="buffering"
+                className="pointer-events-none absolute inset-0 z-30 row items-center justify-center gap-2 rounded bg-background/80 text-xs text-muted-foreground"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>Buffering…</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <div
             ref={trackRef}
             role="slider"
@@ -169,10 +194,16 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
               }
             }}
           >
-            <div className="replay-track-bg bg-muted h-1.5 w-full overflow-hidden rounded-full">
+            <div className="replay-track-bg bg-muted relative h-1.5 w-full overflow-hidden rounded-full">
+              {/* Buffered region — YouTube-style lighter bar showing how far chunks have loaded */}
+              <div
+                className="bg-primary/30 absolute left-0 top-0 h-full rounded-full"
+                style={{ width: `${bufferedPct}%` }}
+                aria-hidden
+              />
               <div
                 ref={progressBarRef}
-                className="bg-primary h-full rounded-full"
+                className="bg-primary relative h-full rounded-full"
                 style={{ width: `${progressPct}%` }}
               />
             </div>

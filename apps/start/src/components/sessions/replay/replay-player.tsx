@@ -26,7 +26,13 @@ function calcDimensions(
   containerWidth: number,
   aspectRatio: number,
 ): { width: number; height: number } {
-  const maxHeight = window.innerHeight * 0.7;
+  // In fullscreen, claim almost the full viewport (leave ~120px for the
+  // BrowserChrome header + the timeline strip). Otherwise cap at 70% of the
+  // viewport so the player doesn't push the rest of the page off-screen.
+  const isFullscreen = !!document.fullscreenElement;
+  const maxHeight = isFullscreen
+    ? window.innerHeight - 120
+    : window.innerHeight * 0.7;
   const height = Math.min(Math.round(containerWidth / aspectRatio), maxHeight);
   const width = Math.min(containerWidth, Math.round(height * aspectRatio));
   return { width, height };
@@ -44,7 +50,7 @@ export function ReplayPlayer({
     onPlayerDestroy,
     setCurrentTime,
     setIsPlaying,
-    setDuration,
+    refreshDuration,
   } = useReplayContext();
   const [importError, setImportError] = useState(false);
 
@@ -128,10 +134,14 @@ export function ReplayPlayer({
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
-        // Notify context — marks isReady = true and sets initial duration
+        // Notify context — marks isReady = true. refreshDuration is gated by
+        // totalDurationMsRef so it falls back to rrweb's progressive totalTime
+        // only when no server-side definitive duration was supplied. Its
+        // identity is stable (empty deps), so listing it in this useEffect's
+        // deps doesn't cause the player to destroy + recreate.
         const meta = player.getMetaData();
-        if (meta.totalTime > 0) setDuration(meta.totalTime);
         onPlayerReady(player, meta.startTime);
+        refreshDuration();
       })
       .catch(() => {
         if (mounted) setImportError(true);
@@ -146,10 +156,19 @@ export function ReplayPlayer({
       playerRef.current.$set({ width: w, height: h });
     };
     window.addEventListener('resize', onWindowResize);
+    // Recompute dimensions when the user enters/exits fullscreen — the window
+    // doesn't fire a `resize` event for the fullscreen transition. Wait a
+    // frame so the browser has time to flush the fullscreen layout before we
+    // read containerRef.offsetWidth.
+    const onFullscreenChange = () => {
+      requestAnimationFrame(onWindowResize);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
 
     return () => {
       mounted = false;
       window.removeEventListener('resize', onWindowResize);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
       if (handleVisibilityChange) {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       }
@@ -162,7 +181,7 @@ export function ReplayPlayer({
       playerRef.current = null;
       onPlayerDestroy();
     };
-  }, [events, recordedDimensions, onPlayerReady, onPlayerDestroy, setCurrentTime, setIsPlaying, setDuration]);
+  }, [events, recordedDimensions, onPlayerReady, onPlayerDestroy, setCurrentTime, setIsPlaying, refreshDuration]);
 
   if (importError) {
     return (
