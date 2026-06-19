@@ -452,6 +452,62 @@ export async function getSessionReplayMeta(
   };
 }
 
+/**
+ * Smart seek fetch — given a target wall-clock ms inside a session, returns:
+ * - The latest `is_full_snapshot = true` chunk at or before the target (the
+ *   "anchor" — rrweb needs this to reconstruct the DOM at the target frame),
+ * - Plus every chunk between that anchor and target + lookaheadMs (so the user
+ *   can play forward without an immediate re-buffer).
+ *
+ * This is the long-session fast-path: instead of sequentially walking
+ * thousands of chunks from chunk_index 0 to the target, we ask CH directly
+ * "where's the last snapshot before T?" and load only the slice we need.
+ * One round trip, typically <100 chunks, even when seeking to hour 8 of an
+ * 86k-event session.
+ */
+export async function getSessionReplayChunksAroundTime(
+  sessionId: string,
+  projectId: string,
+  targetMs: number,
+  lookaheadMs = 30_000,
+) {
+  // Find the anchor chunk_index — the most recent full snapshot at or before
+  // the target. If none exists (shouldn't happen — every session starts with
+  // a full snapshot at chunk 0), fall back to chunk 0.
+  const anchorRows = await chQuery<{ anchor_index: string }>(
+    `SELECT toString(max(chunk_index)) AS anchor_index
+     FROM ${TABLE_NAMES.session_replay_chunks}
+     WHERE session_id = ${sqlstring.escape(sessionId)}
+       AND project_id = ${sqlstring.escape(projectId)}
+       AND is_full_snapshot = true
+       AND toUnixTimestamp64Milli(started_at) <= ${Math.floor(targetMs)}`,
+  );
+  const anchorIndex = Math.max(
+    0,
+    Number.parseInt(anchorRows[0]?.anchor_index ?? '0', 10) || 0,
+  );
+
+  const rows = await chQuery<ReplayChunkRow>(
+    `SELECT chunk_index,
+            payload,
+            started_at AS chunk_started_at,
+            ended_at AS chunk_ended_at
+     FROM ${TABLE_NAMES.session_replay_chunks}
+     WHERE session_id = ${sqlstring.escape(sessionId)}
+       AND project_id = ${sqlstring.escape(projectId)}
+       AND chunk_index >= ${anchorIndex}
+       AND toUnixTimestamp64Milli(started_at) <= ${Math.floor(targetMs + lookaheadMs)}
+     ORDER BY chunk_index, started_at
+     LIMIT 1 BY chunk_index`,
+  );
+
+  const items = rows.map((row) =>
+    transformReplayChunkRow(row, row.chunk_index),
+  );
+
+  return { data: items, anchorChunkIndex: anchorIndex };
+}
+
 export async function getSessionReplayChunksByIndexRange(
   sessionId: string,
   projectId: string,

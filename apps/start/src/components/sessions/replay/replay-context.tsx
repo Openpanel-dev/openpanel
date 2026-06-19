@@ -33,6 +33,14 @@ export type PrefetchChunksFn = (
   toIndex: number,
 ) => Promise<ChunkData[]>;
 
+/**
+ * Smart-seek fetcher: given a target wall-clock ms, returns the slice of
+ * chunks starting from the latest full snapshot at-or-before the target
+ * through target + lookahead. Replaces the sequential walk when seeking far
+ * into long sessions.
+ */
+export type SeekFetchFn = (targetMs: number) => Promise<ChunkData[]>;
+
 interface ReplayContextValue {
   // High-frequency value — read via ref, not state. Use subscribeToCurrentTime
   // or useCurrentTime() to get updates without causing 60fps re-renders.
@@ -68,6 +76,8 @@ interface ReplayContextValue {
    * sessionId. Allows seek() to prefetch chunks on demand.
    */
   setPrefetchChunks: (fn: PrefetchChunksFn | null) => void;
+  /** Registers the smart-seek fetcher (anchored at nearest full snapshot). */
+  setSeekFetch: (fn: SeekFetchFn | null) => void;
   // Called by ReplayPlayer to register/unregister the rrweb instance
   onPlayerReady: (player: ReplayPlayerInstance, playerStartTime: number) => void;
   onPlayerDestroy: () => void;
@@ -81,10 +91,12 @@ const ReplayContext = createContext<ReplayContextValue | null>(null);
 
 const SPEED_OPTIONS = [0.5, 1, 2, 4, 8] as const;
 
-/** Chunks fetched per round trip during seek-targeted prefetch. */
-const PREFETCH_BATCH_SIZE = 50;
-/** Bound the prefetch loop so a bug can't infinitely fetch. 50 * 100 = 5,000 chunks ≈ longest session. */
-const MAX_PREFETCH_BATCHES = 100;
+/** Chunks fetched per round trip during seek-targeted prefetch.
+ * Larger = fewer network round trips for seeking far into long sessions. */
+const PREFETCH_BATCH_SIZE = 250;
+/** Bound the prefetch loop so a bug can't infinitely fetch.
+ * 250 * 200 = 50,000 chunks — covers any realistic session. */
+const MAX_PREFETCH_BATCHES = 200;
 
 export function useReplayContext() {
   const ctx = useContext(ReplayContext);
@@ -143,6 +155,7 @@ export function ReplayProvider({
   const bufferRef = useRef(new ReplayChunkBuffer());
   const startTimeRef = useRef<number | null>(null);
   const prefetchRef = useRef<PrefetchChunksFn | null>(null);
+  const seekFetchRef = useRef<SeekFetchFn | null>(null);
   // Mirror totalDurationMs in a ref so callbacks (passed to the player's
   // useEffect deps) don't get a new identity when it changes — preventing the
   // player from being destroyed + recreated every time the prop lands.
@@ -281,6 +294,10 @@ export function ReplayProvider({
     prefetchRef.current = fn;
   }, []);
 
+  const setSeekFetch = useCallback((fn: SeekFetchFn | null) => {
+    seekFetchRef.current = fn;
+  }, []);
+
   /**
    * Sequentially prefetch chunks starting from loadedUpToChunkIndex + 1 in
    * batches of PREFETCH_BATCH_SIZE until the target wall-clock ms is buffered
@@ -323,6 +340,47 @@ export function ReplayProvider({
     [updateLoadedUpToMs],
   );
 
+  /**
+   * Smart seek: jumps to the latest full DOM snapshot before the target time
+   * via a single server query, then loads ~30 sec of chunks from there. One
+   * round trip, regardless of how far into the session the user is seeking.
+   * Falls back to sequential prefetch if the smart fetcher isn't registered.
+   */
+  const seekFastFetch = useCallback(
+    async (targetWallMs: number) => {
+      const fetch = seekFetchRef.current;
+      if (!fetch) return false;
+      const chunks = await fetch(targetWallMs);
+      if (chunks.length === 0) return false;
+      // Force the buffer's in-order pointer past anything we're about to skip,
+      // so subsequent enqueueAndDrain calls accept these chunks (they'd
+      // otherwise be ignored as "older than what's loaded").
+      const minChunkIndex = chunks.reduce(
+        (min, c) => (c.chunkIndex < min ? c.chunkIndex : min),
+        chunks[0]!.chunkIndex,
+      );
+      if (bufferRef.current.loadedUpToChunkIndex < minChunkIndex - 1) {
+        bufferRef.current.loadedUpToChunkIndex = minChunkIndex - 1;
+      }
+      for (const c of chunks) {
+        const drained = bufferRef.current.enqueueAndDrain(c);
+        for (const dc of drained) {
+          for (const ev of dc.events) {
+            playerRef.current?.addEvent(ev);
+          }
+        }
+      }
+      const td = totalDurationMsRef.current;
+      if (!(td && td > 0)) {
+        const total = playerRef.current?.getMetaData().totalTime ?? 0;
+        if (total > 0) setDuration(total);
+      }
+      updateLoadedUpToMs();
+      return true;
+    },
+    [updateLoadedUpToMs],
+  );
+
   const seek = useCallback(
     async (timeMs: number) => {
       const baseline = startTimeRef.current;
@@ -335,19 +393,23 @@ export function ReplayProvider({
         return;
       }
 
-      // Slow path: pause, prefetch chunks until target is covered, then goto.
+      // Slow path: pause, jump to nearest full snapshot via smart fetch, then
+      // goto. Fall back to sequential prefetch if smart fetch isn't wired.
       const wasPlaying = isPlayingRef.current;
       setIsBuffering(true);
       playerRef.current?.pause();
       try {
-        await prefetchUntilLoaded(targetWallMs);
+        const fastOk = await seekFastFetch(targetWallMs);
+        if (!fastOk) {
+          await prefetchUntilLoaded(targetWallMs);
+        }
       } finally {
         playerRef.current?.goto(timeMs, false);
         setIsBuffering(false);
         if (wasPlaying) playerRef.current?.play();
       }
     },
-    [prefetchUntilLoaded],
+    [seekFastFetch, prefetchUntilLoaded],
   );
 
   const setSpeed = useCallback((s: number) => {
@@ -373,6 +435,7 @@ export function ReplayProvider({
     refreshDuration,
     markChunkLoaded,
     setPrefetchChunks,
+    setSeekFetch,
     onPlayerReady,
     onPlayerDestroy,
     setCurrentTime,

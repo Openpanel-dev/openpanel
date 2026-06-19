@@ -160,7 +160,8 @@ function ReplayBufferBootstrap({
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { markChunkLoaded, setPrefetchChunks, isReady } = useReplayContext();
+  const { markChunkLoaded, setPrefetchChunks, setSeekFetch, isReady } =
+    useReplayContext();
 
   // Seed the buffer once the player is ready (so duration recompute uses the
   // real rrweb metadata, not 0).
@@ -191,6 +192,27 @@ function ReplayBufferBootstrap({
     });
     return () => setPrefetchChunks(null);
   }, [sessionId, projectId, queryClient, trpc, setPrefetchChunks]);
+
+  // Register the smart-seek fetcher. Used by seek() to jump to the latest
+  // full DOM snapshot before the target time — one round trip, no walking.
+  useEffect(() => {
+    setSeekFetch(async (targetMs) => {
+      const res = await queryClient.fetchQuery(
+        trpc.session.replayChunksAroundTime.queryOptions({
+          sessionId,
+          projectId,
+          targetMs,
+        }),
+      );
+      return res.data.map((row) => ({
+        chunkIndex: row.chunkIndex,
+        startedAtMs: row.startedAtMs,
+        endedAtMs: row.endedAtMs,
+        events: row.events ?? [],
+      }));
+    });
+    return () => setSeekFetch(null);
+  }, [sessionId, projectId, queryClient, trpc, setSeekFetch]);
 
   return null;
 }
