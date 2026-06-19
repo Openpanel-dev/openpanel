@@ -33,6 +33,7 @@ import { ipHook } from './hooks/ip.hook';
 import { requestIdHook } from './hooks/request-id.hook';
 import { requestLoggingHook } from './hooks/request-logging.hook';
 import { timestampHook } from './hooks/timestamp.hook';
+import agentRouter from './routes/agent.router';
 import aiRouter from './routes/ai.router';
 import eventRouter from './routes/event.router';
 import exportRouter from './routes/export.router';
@@ -195,6 +196,7 @@ const startServer = async () => {
       instance.register(importRouter, { prefix: '/import' });
       instance.register(insightsRouter, { prefix: '/insights' });
       instance.register(trackRouter, { prefix: '/track' });
+      instance.register(agentRouter, { prefix: '/agent' });
       // Keep existing endpoints for backward compatibility
       instance.get('/healthcheck', healthcheck);
       // New Kubernetes-style health endpoints
