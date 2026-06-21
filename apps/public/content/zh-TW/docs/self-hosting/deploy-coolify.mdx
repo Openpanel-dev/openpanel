@@ -1,0 +1,220 @@
+---
+title: 使用 Coolify 部署
+description: 使用 Coolify 的一鍵服務部署 OpenPanel
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+[Coolify](https://coolify.io) 是一個開源、自架的平台，可簡化應用程式部署。OpenPanel 在 Coolify 中提供一鍵服務，讓部署快速又簡單。
+
+## 先決條件
+
+- 已安裝並執行中的 Coolify 執行個體
+- 至少有 2GB RAM 的伺服器（建議 4GB 以上）
+- 已在 Coolify 中設定網域名稱（可選，但建議）
+
+## 快速開始
+
+<Steps>
+<Step>
+### 建立新資源
+
+1. 登入你的 Coolify 儀表板
+2. 前往你的專案
+3. 點擊 **"New Resource"** 或 **"Add Service"**
+4. 選擇 **"One-Click Services"** 或 **"Docker Compose"**
+</Step>
+
+<Step>
+### 選擇 OpenPanel
+
+1. 在服務清單中搜尋 **"OpenPanel"**
+2. 點擊 **OpenPanel** 以選取它
+3. 服務範本會自動填入所需設定
+</Step>
+
+<Step>
+### 設定部署
+
+Coolify 會自動設定大多數設定，但你可能會想自訂：
+
+- **Domain**：設定你的儀表板網域名稱
+- **Environment Variables**：設定可選項，例如：
+  - `ALLOW_REGISTRATION`：設為 `false` 以停用公開註冊
+  - `ALLOW_INVITATION`：設為 `true` 以允許使用者邀請
+  - `RESEND_API_KEY`：用於電子郵件功能的 Resend API key
+  - `EMAIL_SENDER`：電子郵件寄件者地址
+  - `OPENAI_API_KEY` 和/或 `ANTHROPIC_API_KEY`：內建 AI 聊天助理的 API keys（可選 — 可設定其中一個或兩者）
+
+<Callout>
+Coolify 會自動處理：
+- 資料庫設定（PostgreSQL）
+- Redis 設定
+- ClickHouse 設定
+- SSL 憑證
+- 服務健康檢查
+- 自動重新啟動
+</Callout>
+</Step>
+
+<Step>
+### 部署
+
+1. 檢查你的設定
+2. 點擊 **"Deploy"** 或 **"Save"**
+3. Coolify 會自動：
+   - 下載所需的 Docker images
+   - 啟動所有服務
+   - 執行資料庫 migrations
+   - 設定 SSL 憑證（如果已設定網域）
+
+等待所有服務變成 healthy。你可以在 Coolify 儀表板中監看部署進度。
+</Step>
+
+<Step>
+### 存取你的儀表板
+
+部署完成後，你就可以透過你設定的網域存取 OpenPanel。第一個註冊的使用者會成為 admin 帳號。
+
+<Callout type="warn">
+預設情況下，在建立第一個使用者後會停用註冊。請務必先註冊你的 admin 帳號！
+</Callout>
+</Step>
+</Steps>
+
+## 服務結構
+
+Coolify 會以下列服務部署 OpenPanel：
+
+- **opapi**：OpenPanel API 伺服器（處理 `/api` 路由）
+- **opdashboard**：OpenPanel 儀表板（前端）
+- **opworker**：用於處理事件的背景 worker
+- **opdb**：PostgreSQL 資料庫
+- **opkv**：Redis cache
+- **opch**：ClickHouse 分析資料庫
+
+## 設定
+
+### 環境變數
+
+你可以在 Coolify 中透過環境變數設定 OpenPanel。Coolify 會自動設定必要的資料庫與連線變數。
+
+關於所有可用環境變數的完整參考，請參閱 [Environment Variables 文件](/zh-TW/docs/self-hosting/environment-variables)。
+
+#### Coolify 特定說明
+
+Coolify 會自動處理這些變數：
+- `DATABASE_URL`：PostgreSQL connection string
+- `REDIS_URL`：Redis connection string
+- `CLICKHOUSE_URL`：ClickHouse connection string
+- `API_URL`：API endpoint URL（透過 `SERVICE_FQDN_OPAPI` 設定）
+- `DASHBOARD_URL`：Dashboard URL（透過 `SERVICE_FQDN_OPDASHBOARD` 設定）
+- `COOKIE_SECRET`：自動產生的 secret
+
+你可以透過 Coolify 的環境變數介面設定 `ALLOW_REGISTRATION`、`RESEND_API_KEY`、`OPENAI_API_KEY` 等可選變數。
+
+### 更新 OpenPanel
+
+要在 Coolify 中更新 OpenPanel：
+
+1. 前往你的 OpenPanel 服務
+2. 點擊 **"Redeploy"** 或 **"Update"**
+3. Coolify 會拉取最新 images 並重新啟動服務
+
+<Callout>
+資料庫 migrations 會在 API 服務啟動時自動執行，因此更新過程會很順暢。
+</Callout>
+
+### 擴充
+
+你可以在 Coolify 中擴充 worker 服務：
+
+1. 前往你的 OpenPanel 服務
+2. 編輯 `opworker` 服務設定
+3. 調整 replica 數量
+4. 儲存並重新部署
+
+## 疑難排解
+
+### 服務未啟動
+
+1. 檢查 Coolify 儀表板中的服務 logs
+2. 確認所有環境變數都已正確設定
+3. 確認你的伺服器有足夠資源（RAM、磁碟空間）
+
+### 資料庫連線問題
+
+1. 確認資料庫服務（`opdb`）正在執行
+2. 檢查 `DATABASE_URL` 格式是否正確
+3. 檢視 Coolify 中的資料庫 logs
+
+### SSL 憑證問題
+
+如果沒有簽發 SSL 憑證：
+
+1. 確認你的網域 DNS 已指向 Coolify
+2. 檢查 Coolify 的 SSL/TLS 設定
+3. 查看 Coolify logs 是否有 Let's Encrypt 錯誤
+
+### 健康檢查失敗
+
+如果健康檢查失敗：
+
+1. 檢查服務 logs 是否有錯誤
+2. 確認所有相依服務都在執行
+3. 視需要增加 health check timeout
+
+## 使用你自己的資料庫
+
+如果你想使用外部 PostgreSQL 資料庫：
+
+1. 在 Coolify 中建立新的 PostgreSQL 資料庫，或使用外部服務
+2. 更新 OpenPanel 服務中的 `DATABASE_URL` 環境變數
+3. 將 `DATABASE_URL_DIRECT` 更新為相同值
+4. 重新部署服務
+
+如果你想使用外部服務，Redis 和 ClickHouse 也同樣適用。
+
+## 備份與還原
+
+### 備份
+
+Coolify 提供內建的備份功能：
+
+1. 前往你的資料庫服務（`opdb`）
+2. 設定備份選項
+3. 設定備份排程
+4. 備份會依照你的 Coolify 設定儲存
+
+### 手動備份
+
+你也可以建立手動備份：
+
+1. 使用 Coolify 的終端機存取
+2. 匯出資料庫：
+   ```bash
+   docker exec opdb pg_dump -U postgres openpanel-db > backup.sql
+   ```
+
+### 還原
+
+要從備份還原：
+
+1. 使用 Coolify 的終端機存取
+2. 還原資料庫：
+   ```bash
+   docker exec -i opdb psql -U postgres openpanel-db < backup.sql
+   ```
+
+## 下一步
+
+- [設定電子郵件設定](/zh-TW/docs/self-hosting/self-hosting#e-mail) 用於密碼重設與邀請
+- [設定 AI 整合](/zh-TW/docs/self-hosting/self-hosting#ai-integration) 供分析助理使用
+- [設定 SDK](/zh-TW/docs/self-hosting/self-hosting#always-use-correct-api-url) 以追蹤應用程式中的事件
+
+## 其他資源
+
+- [Coolify 文件](https://coolify.io/docs)
+- [Coolify Services Directory](https://coolify.io/docs/services)
+- [Coolify 上的 OpenPanel](https://coolify.io/docs/services/openpanel)

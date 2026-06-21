@@ -1,0 +1,138 @@
+---
+title: "如何設定通知與整合"
+description: "當使用者完成事件或漏斗時，透過 Slack、Discord 或 webhook 接收通知。了解如何在 OpenPanel 連接整合並設定通知規則。"
+difficulty: beginner
+timeToComplete: 10
+date: 2026-02-27
+updated: 2026-02-27
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "建立整合"
+    anchor: "create-integration"
+  - name: "建立通知規則"
+    anchor: "create-rule"
+  - name: "事件規則"
+    anchor: "event-rules"
+  - name: "漏斗規則"
+    anchor: "funnel-rules"
+  - name: "查看通知"
+    anchor: "view-notifications"
+---
+
+## 運作方式
+
+開始前，先了解兩個獨立概念：
+
+- **整合** 是與外部服務的連線，例如 Slack、Discord 或自訂 webhook。它們屬於工作區/組織層級，可在所有專案中重複使用。
+- **通知規則** 是觸發通知的條件。規則存在於各個專案內，並參照一個或多個整合。規則在附加整合之前不會有任何作用，而整合在被規則使用之前也不會有任何作用。
+- **通知** 是規則被觸發時送出的訊息。通知可以傳送為 json 物件，或帶有變數的範本。
+
+## 步驟 1：建立整合 [#create-integration]
+
+前往你的工作區設定，開啟 **整合** 區段。點擊 **新增整合**，然後選擇要連接的服務。
+
+OpenPanel 目前支援：
+
+- **Slack** — 透過 OAuth 驗證並選擇頻道
+- **Discord** — 貼上 Discord webhook URL 供某個頻道使用
+- **Webhook** — 對你控制的任何 URL 發送 HTTP POST
+
+填入必要資訊並儲存。此整合現在可供工作區內所有專案使用。
+
+<Figure
+  src="/screenshots/integrations-create.webp"
+  caption="為 Slack、Discord 或自訂 webhook 建立新的整合。"
+/>
+
+<Callout>之後我們會提供 S3 和 GCS 整合，讓你把事件匯出到自己的儲存空間。</Callout>
+
+## 步驟 2：前往專案的通知規則 [#create-rule]
+
+只有整合本身不會有任何作用。若要開始接收警示，請開啟要監控的專案，點擊左側側邊欄的 **通知**，然後切換到 **規則** 分頁。
+
+點擊 **新增規則**，會在畫面右側開啟規則編輯器。
+
+為規則命名，接著選擇 **類型**。共有兩種類型：
+
+| 類型 | 觸發時機 |
+|------|-----------------|
+| **事件** | 收到符合條件的事件時立即觸發 |
+| **漏斗** | 在 session 結束後，且所有漏斗步驟都依序完成後觸發 |
+
+## 事件規則 [#event-rules]
+
+事件規則是即時觸發。當 OpenPanel 收到符合篩選條件的事件時，就會送出通知。
+
+<Figure
+  src="/screenshots/notifications-event-rule.webp"
+  caption="名為 'Onboarding user' 的事件規則，當發生 screen_view 事件且 path 篩選條件符合 onboarding flow 時會觸發。"
+/>
+
+在規則編輯器中：
+
+1. 將 **類型** 設為 **事件**
+2. 從 **事件** 清單新增一個或多個事件。你可以依事件屬性篩選每個事件（例如，只在 `path` 以 `/onboarding` 開頭時觸發）
+3. 為通知訊息撰寫 **範本**。使用 `{{property_name}}` 來動態插入事件屬性，例如 `來自 {{country}} 的新使用者，其第一個事件已觸發`
+4. 在 **整合** 下，選擇要接收通知的整合
+
+點擊 **更新** 儲存規則。
+
+<Callout>如果你的整合中有 Javascript transformer，則不會使用範本。</Callout>
+
+## 漏斗規則 [#funnel-rules]
+
+漏斗規則可讓你追蹤多步驟流程，並且只在使用者以正確順序完成每個步驟時通知你，例如 `session_start` → `subscription_checkout` → `subscription_created`。
+
+<Figure
+  src="/screenshots/notifications-funnel-rule.webp"
+  caption="名為 'Subscribe funnel' 的漏斗規則，當一個 session 依序完成所有三個步驟時會通知。"
+/>
+
+在規則編輯器中：
+
+1. 將 **類型** 設為 **漏斗**
+2. 依照必須發生的順序新增漏斗中的每個事件。你也可以為每個步驟選擇性加入屬性篩選條件
+3. 為通知訊息撰寫 **範本**
+4. 選擇你的 **整合**
+
+點擊 **更新** 儲存。
+
+<Callout type="warning">**重要：** 漏斗規則通知會在 session 結束後才送出，而不是在最後一步觸發時立即送出。OpenPanel 會等到 session 完成後才評估漏斗序列。</Callout>
+<Callout>如果你的整合中有 Javascript transformer，則不會使用範本。</Callout>
+
+## 查看通知 [#view-notifications]
+
+切換到 **通知** 分頁（預設檢視），即可查看專案中所有已觸發的通知。每一列都會顯示通知標題，以及觸發者的國家、作業系統、瀏覽器和 profile。
+
+<Figure
+  src="/screenshots/notifications-list.webp"
+  caption="通知分頁會顯示所有已觸發通知的即時串流，並包含國家、作業系統和瀏覽器等使用者上下文。"
+/>
+
+你可以依建立日期篩選清單，或依標題搜尋以找到特定事件。
+
+
+## 常見問題
+
+<Faqs>
+<FaqItem question="Can I use the same integration across multiple projects?">
+可以。整合是在工作區層級建立，因此你組織中的任何專案都可以在通知規則中引用它們。
+</FaqItem>
+
+<FaqItem question="Why haven't I received any funnel notifications?">
+漏斗規則會在 session 結束後才觸發，而不是在最後一個事件觸發時立即送出。如果使用者的 session 仍在進行中，通知會排隊直到 session 關閉。請確認完整的 funnel 序列是在同一個 session 內完成。
+</FaqItem>
+
+<FaqItem question="Can I filter event rules to only fire for specific users or properties?">
+可以。對於規則中的每個事件，點擊篩選圖示即可新增屬性條件，例如只在 `plan` 等於 `enterprise` 或 `country` 等於 `US` 時觸發。
+</FaqItem>
+
+<FaqItem question="What integrations are supported?">
+目前支援 Slack、Discord 和自訂 webhooks。更多整合即將推出。
+</FaqItem>
+
+<FaqItem question="Can I have multiple integrations on one rule?">
+可以。每個規則上的整合選擇器都允許你選取多個目的地。單一規則觸發時，會同時向所有選取的整合送出通知。
+</FaqItem>
+</Faqs>

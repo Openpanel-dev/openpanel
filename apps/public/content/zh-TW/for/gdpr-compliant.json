@@ -1,0 +1,169 @@
+{
+  "slug": "gdpr-compliant",
+  "audience": "gdpr-compliant",
+  "seo": {
+    "title": "符合 GDPR 的分析工具 — 無 Cookie、無同意橫幅、無 DPA",
+    "description": "符合 GDPR 的網站與產品分析，無需 Cookie 橫幅、美國資料路由或 DPA 文件作業。預設在歐盟託管、無 Cookie，且可完全自架於您自己的基礎架構上。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "不需要同意橫幅的 GDPR 合規分析",
+    "subheading": "Google Analytics 需要明確同意，而橫幅被關閉的比例會扼殺你的歸因資料。Mixpanel 和 Amplitude 會把資料經由美國伺服器傳送，這在 Schrems II 之後成了法律麻煩。OpenPanel 預設無 Cookie、託管於歐盟，且可自架，讓你完全掌握資料主權。沒有橫幅。沒有 DPA 地獄。沒有美國傳輸風險。",
+    "badges": [
+      "歐盟託管",
+      "預設無 Cookie",
+      "無需同意橫幅",
+      "可自架以獲得完全主權"
+    ]
+  },
+  "problem": {
+    "title": "為什麼大多數分析工具都會成為 GDPR 責任",
+    "intro": "多數團隊預設採用的分析堆疊，會產生比工具本身更難擴展的 GDPR 合規工作。",
+    "items": [
+      {
+        "title": "GA4 需要明確同意，但大多數使用者會拒絕",
+        "description": "同意橫幅被關閉與拒絕的比例通常落在 30–60%。這代表你的流量中最多有一半因設計而對 GA4 不可見、轉換歸因失準，而且你還在為一個無法用於最重要資料的工具付費。"
+      },
+      {
+        "title": "美國為基礎的工具意味著 Schrems II 風險",
+        "description": "Mixpanel、Amplitude、PostHog Cloud 和 Heap 都會在美國基礎架構上處理歐盟資料。EU-US Data Privacy Framework 雖然補了法律漏洞，但歐盟資料保護機關仍持續審查對美國的資料傳輸。一旦適足性被挑戰，你的處理者清單就會突然變成合規問題。"
+      },
+      {
+        "title": "DPA 與 BAA 是營運負擔 — 多數團隊會跳過",
+        "description": "你使用的每一個 SaaS 分析工具作為處理者，都需要簽署 DPA。與醫療相關的團隊還需要 BAA。多數工程團隊不會追蹤哪些工具已簽署文件，這表示大多數正式上線的分析架構，在第一次 GDPR 稽核時其實就已經默默不合格。"
+      },
+      {
+        "title": "Cookie 同意被拒絕 = 沒有資料",
+        "description": "即使橫幅有顯示，現代使用者也會很快關掉它。你收集到的其實是沒有注意到橫幅的使用者資料，而不是你的真實受眾。無 Cookie 分析才是結構性的解法；在 GA4 上面再硬加同意機制並不是。"
+      }
+    ]
+  },
+  "features": {
+    "title": "OpenPanel 如何讓 GDPR 分析變得毫不費力",
+    "intro": "從架構層級做出決策，而不是靠同意橫幅權宜之計，讓 OpenPanel 從一開始就落在 GDPR 的合法利益基礎內。",
+    "items": [
+      {
+        "title": "預設無 Cookie 追蹤",
+        "description": "OpenPanel 以具隱私保護的、每日輪替的 IP + user agent 雜湊來識別工作階段 — 24 小時後不會保留任何個人資料。不設定 Cookie，不需要 PECR（歐盟 Cookie 指令）同意，產品分析也不需要橫幅。"
+      },
+      {
+        "title": "歐盟託管雲端選項",
+        "description": "OpenPanel Cloud 運行於歐盟基礎架構（法蘭克福）。你的事件資料不會跨越大西洋。不必再向你的 DPO 解釋 Schrems II 的適足性問題。"
+      },
+      {
+        "title": "自架以實現完全資料主權",
+        "description": "在你自己的基礎架構上執行 OpenPanel（Docker Compose：ClickHouse + Postgres + Redis，一條指令即可部署）。你的伺服器、你的資料、你的管轄權。沒有第三方處理者，也不需要和任何人簽 DPA。"
+      },
+      {
+        "title": "內建 IP 匿名化",
+        "description": "原始 IP 位址從不儲存 — 只會被雜湊用作工作階段識別碼，之後即丟棄。地理位置資料是從雜湊衍生，而不是從 IP。無需設定。"
+      },
+      {
+        "title": "可稽核的開源程式碼庫",
+        "description": "MIT 授權。直接向你的 DPO 展示會收集哪些欄位、如何雜湊，以及儲存在哪裡。競爭工具只能要你相信他們的說法。"
+      },
+      {
+        "title": "資料當事人請求工具",
+        "description": "透過 API 匯出或刪除特定使用者的所有資料。幾分鐘內就能建立 GDPR 第 15 條（存取）與第 17 條（刪除）流程，而不是花上數天。"
+      },
+      {
+        "title": "無第三國資料傳輸",
+        "description": "歐盟雲端或自架代表僅在歐盟內處理資料。不需要維護標準契約條款，不需要傳輸影響評估，也沒有第 V 章風險。"
+      },
+      {
+        "title": "適合稽核的架構",
+        "description": "每一條資料流都在開放程式碼中有文件說明。把架構圖交給稽核員即可；沒有專有系統的「請相信我們」需要辯護。"
+      }
+    ]
+  },
+  "benefits": {
+    "title": "為什麼重視隱私的團隊會選 OpenPanel",
+    "intro": "合規上的好處會直接反映在你的資料品質、法務審查週期，以及稽核回應速度上。",
+    "items": [
+      {
+        "title": "看到真實的歸因全貌",
+        "description": "無 Cookie 追蹤可涵蓋所有流量，而不只是同意的使用者。轉換歸因、漏斗分析與留存指標終於能反映現實。"
+      },
+      {
+        "title": "沒有 DPA 文件負擔",
+        "description": "自架的 OpenPanel 不是第三方處理者 — 沒有任何文件需要簽。雲端使用者只需要與 OpenPanel（歐盟實體）簽一份 DPA，而不是面對一整疊美國供應商文件。"
+      },
+      {
+        "title": "不用手忙腳亂也能通過 GDPR 稽核",
+        "description": "架構層級的隱私設計代表稽核員的問題（「合法基礎是什麼？資料在哪裡？處理者是誰？」）都能用一句話回答。"
+      },
+      {
+        "title": "合規能力可隨公司成長而擴展",
+        "description": "當你擴展到醫療、金融服務或歐盟公部門合約時，這套架構已經符合更高標準。不需要為了更嚴格的稽核重新換平台。"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "關於符合 GDPR 的分析工具常見問題",
+    "intro": "來自隱私工程師、DPO 與評估 OpenPanel 是否符合歐盟法規的創辦人的常見問題。",
+    "items": [
+      {
+        "question": "使用 OpenPanel 還需要 Cookie 同意橫幅嗎？",
+        "answer": "產品分析不用。OpenPanel 預設的無 Cookie 模式不會儲存 Cookie，也不會收集個人資料，因此 PECR（歐盟 Cookie 指令）不適用，也不需要 GDPR 同意 — 合法基礎是合法利益（Article 6(1)(f)）。如果你自己另外加入以 Cookie 為基礎的功能（廣告標籤、第三方腳本等），那些仍然需要同意。"
+      },
+      {
+        "question": "在未經同意的情況下，處理資料的合法基礎是什麼？",
+        "answer": "GDPR 第 6(1)(f) 條所述的合法利益。由於 OpenPanel 在無 Cookie 模式下不收集個人資料（不保留 IP、不使用持久識別碼、不做指紋識別），與資料當事人權利之間的平衡測試相當直接 — 最少資料、不做個人化輪廓、目的透明。只要文件化合法利益評估（LIA），就已足夠。"
+      },
+      {
+        "question": "OpenPanel 能解決 Schrems II 嗎？",
+        "answer": "可以。OpenPanel Cloud 僅使用歐盟基礎架構（法蘭克福），因此不會傳輸到美國。自架版本完全運行在你自己的基礎架構上，所以這個問題根本不會出現。相較之下，Mixpanel/Amplitude/Heap/PostHog Cloud 都會在美國伺服器上處理歐盟資料，並且需要 SCC 與傳輸影響評估。"
+      },
+      {
+        "question": "我需要和 OpenPanel 簽 DPA 嗎？",
+        "answer": "如果你自架，不需要 — OpenPanel 是軟體，不是服務供應商。如果你使用 OpenPanel Cloud，則需要，且只要簽一份 DPA（與我們的歐盟實體）。不論哪種情況，都比美國工具堆疊簡單，後者每一家供應商都需要各自的 DPA 和 SCC。"
+      },
+      {
+        "question": "資料當事人存取／刪除（第 15 與第 17 條）怎麼運作？",
+        "answer": "OpenPanel 提供 API 端點，可匯出特定 profileId 的所有事件（第 15 條 — 存取權）以及刪除該 profileId 的所有事件（第 17 條 — 刪除權）。你可以把這些接到既有的 GDPR 請求流程中。多數團隊一個下午就能把整套流程做好。"
+      },
+      {
+        "question": "HIPAA 和 CCPA 呢？",
+        "answer": "自架的 OpenPanel 適用於受 HIPAA 規範的工作負載 — 其架構（不收集 PII、靜態資料加密儲存、稽核紀錄）符合技術防護措施，而且自架表示不需要 Business Associate Agreement。對於 CCPA（加州），同樣的無 Cookie + 可退出架構可涵蓋「Do Not Sell」與「Limit Use of SPI」權利，無需修改程式碼。"
+      },
+      {
+        "question": "OpenPanel 與 Plausible、Matomo 在 GDPR 方面如何比較？",
+        "answer": "這三者都可無 Cookie 且可在歐盟託管。Plausible 最簡單，但缺少產品分析功能（沒有漏斗、留存、分群、使用者檔案）。Matomo 功能更多，但預設會加入基於 Cookie 的追蹤（可切換成無 Cookie），而且進階功能需付費外掛才能使用。OpenPanel 位於兩者之間：比 Matomo 簡單，但比 Plausible 更有產品分析深度。請參閱 `/zh-TW/articles/self-hosted-web-analytics` 以取得逐項功能比較。"
+      },
+      {
+        "question": "OpenPanel 有 SOC 2 認證嗎？",
+        "answer": "截至 2026 年，OpenPanel Cloud 正在朝 SOC 2 Type II 邁進。若你的工作負載今天就需要認證，則在你自己的 SOC 2 認證基礎架構上自架，可沿用你既有的控制措施 — OpenPanel 程式碼庫可供稽核，而你能控制所有存取邊界。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "網站分析設定", "url": "/zh-TW/guides/website-analytics-setup" },
+      { "title": "追蹤自訂事件", "url": "/zh-TW/guides/track-custom-events" }
+    ],
+    "articles": [
+      { "title": "沒有 DPA 的自架分析：GDPR、HIPAA、CCPA 指南", "url": "/zh-TW/articles/better-compliance-self-hosted-analytics" },
+      { "title": "無 Cookie 分析", "url": "/zh-TW/articles/cookieless-analytics" },
+      { "title": "自架網站分析：正面對決的採購指南", "url": "/zh-TW/articles/self-hosted-web-analytics" }
+    ],
+    "audiences": [
+      { "title": "適用於 SaaS 團隊", "url": "/zh-TW/for/saas" },
+      { "title": "適用於 WordPress", "url": "/zh-TW/for/wordpress" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel vs Google Analytics", "url": "/zh-TW/compare/google-analytics-alternative" },
+      { "title": "OpenPanel vs Plausible", "url": "/zh-TW/compare/plausible-alternative" },
+      { "title": "OpenPanel vs Matomo", "url": "/zh-TW/compare/matomo-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "免費試用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "閱讀合規指南",
+      "href": "/zh-TW/articles/better-compliance-self-hosted-analytics"
+    }
+  }
+}

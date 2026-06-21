@@ -1,0 +1,566 @@
+{
+  "slug": "countly-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026年最佳 Countly 替代方案 - 开源且免费",
+    "description": "在寻找 Countly 的替代方案？OpenPanel 提供更简单的定价、现代化界面，以及内置自托管和隐私保护的轻量级产品分析。开源，免费开始使用。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Countly 替代方案",
+    "subheading": "想要 Countly 的产品分析，但不想要复杂性？OpenPanel 通过自托管、移动端 SDK 和现代产品分析，为用户分析提供更简单、更实惠的方案——而且价格透明。",
+    "badges": [
+      "开源",
+      "简单定价",
+      "轻量级",
+      "AGPL-3.0"
+    ]
+  },
+  "competitor": {
+    "name": "Countly",
+    "logo": "/logos/countly.svg",
+    "url": "https://countly.com",
+    "short_description": "一体化产品分析平台，内置推送通知、崩溃报告和问卷调查等互动功能。",
+    "founded": 2013,
+    "headquarters": "英国伦敦"
+  },
+  "overview": {
+    "title": "为什么考虑用 OpenPanel 替代 Countly？",
+    "paragraphs": [
+      "Countly 将自己定位为一体化产品分析平台，内置推送通知、崩溃报告、远程配置和问卷调查。它是一个功能丰富的平台，适合希望把所有东西都放在一个系统里的团队。但这种广度也带来了显著成本——基于 MAU 的定价每年可能高达 132,000 美元或更多，自托管部署需要 MongoDB、Node.js 和 Nginx，且免费的 Lite 版本许可证还对商业使用加以限制。",
+      "OpenPanel 采用更聚焦的分析方案，定价和部署都更简单。它不打包推送通知和崩溃报告（大多数团队已经通过专门工具拥有这些能力），而是专注于最重要的内容：通过事件、漏斗、留存分析和用户群组拆分来理解用户行为。所有功能在每个套餐中都已包含，没有高级附加项或功能分层限制。",
+      "许可证和定价差异非常显著。OpenPanel 采用标准 AGPL-3.0 许可证——这是经过 OSI 批准的开源许可证，允许商业使用——自托管免费、无限制且功能完整，没有功能分层。Countly 的免费 Lite 版本同样基于 AGPL，但附加了自己对商业使用的限制，而其付费 Flex 套餐从每月 80 美元起，仅包含 2,000 个 MAU，更多高级功能则被限制在更高套餐中。OpenPanel 的基于事件的云端定价从每月 2.50 美元起，也可以完全免费自托管。",
+      "对于那些希望获得直接、简单的产品分析，而不想承受一体化平台复杂性和成本的团队来说，OpenPanel 以标准 AGPL-3.0 提供了产品分析的核心能力，同时具备极其简化的部署、更低的成本，以及免费、无限制、功能完整的自托管体验。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Countly：哪个更适合你？",
+    "intro": "两者都提供带自托管的产品分析。Countly 是一个功能更多的一体化平台，而 OpenPanel 更专注于分析，定价也更简单。",
+    "one_liner": "Countly 是一个带推送/崩溃功能的一体化平台；OpenPanel 则专注于分析，定价更简单。",
+    "best_for_openpanel": [
+      "希望获得简单分析、而不需要推送通知或崩溃报告的团队",
+      "需要可负担、可预测的基于事件定价的初创公司",
+      "希望使用标准开源许可证（AGPL-3.0），且没有额外商业限制的开发者",
+      "偏好轻量级 Docker 部署而不是 MongoDB 配置的团队"
+    ],
+    "best_for_competitor": [
+      "需要在一个平台中同时提供推送通知和崩溃报告的移动应用",
+      "需要远程配置和应用内消息的团队",
+      "需要 ISO 27001 和 SOC2 认证的企业客户",
+      "需要 Unity 或桌面端（Windows/Mac）SDK 的产品"
+    ]
+  },
+  "highlights": {
+    "title": "关键差异一览",
+    "intro": "以下是 OpenPanel 和 Countly 在关键因素上的对比。",
+    "items": [
+      {
+        "label": "定价模式",
+        "openpanel": "基于事件（每月 2.50 美元起，30 天试用）",
+        "competitor": "基于 MAU（2K MAU 起每月 80 美元）",
+        "notes": "OpenPanel 提供简单的基于事件定价，5,000 次事件每月 2.50 美元起（30 天免费试用），也可免费自托管。Countly Flex 按月活跃用户数收费，2,000 个 MAU 起每月 80 美元，成本很容易快速上升。"
+      },
+      {
+        "label": "开源许可证",
+        "openpanel": "AGPL-3.0（标准版，允许商业使用）",
+        "competitor": "AGPL-3.0，并附加商业限制",
+        "notes": "OpenPanel 使用标准 AGPL-3.0，允许商业使用，自托管免费、无限制且功能完整。Countly Lite 基于 AGPL，但附加了修改后的条款限制商业使用——商业用途必须购买 Enterprise 或使用 Flex。"
+      },
+      {
+        "label": "部署复杂度",
+        "openpanel": "简单的 Docker 部署",
+        "competitor": "复杂（MongoDB、Node.js、Nginx）",
+        "notes": "OpenPanel 通过一条命令的 Docker Compose 进行部署（ClickHouse、Postgres、Redis）。Countly 需要 MongoDB、Node.js 和 Nginx，安装流程和升级路径都更复杂。"
+      },
+      {
+        "label": "推送通知",
+        "openpanel": "未内置",
+        "competitor": "内置丰富的推送通知",
+        "notes": "Countly 将适用于 iOS 和 Android 的丰富交互式推送通知作为核心功能。OpenPanel 专注于分析，不包含推送通知功能。"
+      },
+      {
+        "label": "崩溃分析",
+        "openpanel": "未内置",
+        "competitor": "完整的崩溃报告与符号化",
+        "notes": "Countly 提供跨所有平台的全面崩溃和错误报告，并支持符号化。OpenPanel 专注于产品分析，而不是崩溃报告。"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能对比",
+    "intro": "Countly 是一体化平台，而 OpenPanel 则完全专注于分析。",
+    "groups": [
+      {
+        "group": "核心分析",
+        "features": [
+          {
+            "name": "页面浏览与会话",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "自定义事件追踪",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "用户识别",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都支持用户资料和身份识别"
+          },
+          {
+            "name": "地理数据",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都提供国家和城市级别的数据"
+          },
+          {
+            "name": "设备与平台追踪",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "实时仪表盘",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "自定义仪表盘",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "产品分析",
+        "features": [
+          {
+            "name": "漏斗分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Countly 将其称为“Funnels”插件"
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "群组分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Countly 提供高级行为群组"
+          },
+          {
+            "name": "用户资料",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "用户流/旅程",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Countly 有“Flows”功能用于旅程可视化"
+          },
+          {
+            "name": "A/B 测试",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Countly 的 A/B 测试与远程配置绑定"
+          },
+          {
+            "name": "收入分析",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "互动功能",
+        "features": [
+          {
+            "name": "推送通知",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly 为 iOS/Android 提供丰富的交互式推送"
+          },
+          {
+            "name": "应用内消息",
+            "openpanel": false,
+            "competitor": true
+          },
+          {
+            "name": "问卷与 NPS",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly 包含问卷、评分和 NPS"
+          },
+          {
+            "name": "远程配置",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly 可以远程更改应用行为"
+          },
+          {
+            "name": "自动化工作流",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly 支持 hook 和自动推送"
+          }
+        ]
+      },
+      {
+        "group": "性能与调试",
+        "features": [
+          {
+            "name": "崩溃报告",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly 提供带符号化的完整崩溃分析"
+          },
+          {
+            "name": "性能监控（APM）",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly 监控网络和设备性能"
+          },
+          {
+            "name": "错误跟踪",
+            "openpanel": false,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "隐私与合规",
+        "features": [
+          {
+            "name": "自托管选项",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都提供自托管部署"
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "同意管理",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Countly 有“Compliance Hub”功能"
+          },
+          {
+            "name": "数据导出",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "ISO 27001 认证",
+            "openpanel": false,
+            "competitor": true
+          },
+          {
+            "name": "SOC2 认证",
+            "openpanel": false,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "集成与 SDK",
+        "features": [
+          {
+            "name": "JavaScript/Web SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "iOS SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Android SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "React Native SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Flutter SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都提供 Flutter SDK（OpenPanel 的由社区维护）"
+          },
+          {
+            "name": "Unity SDK",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly 支持使用 Unity 进行游戏开发"
+          },
+          {
+            "name": "桌面端 SDK（Windows/Mac）",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly 提供 C++ 和 Windows SDK"
+          },
+          {
+            "name": "Node.js SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技术对比",
+    "intro": "对于评估分析工具的开发者，下面是技术层面的拆解。",
+    "items": [
+      {
+        "label": "SDK 大小",
+        "openpanel": "2.3 KB（gzip 后）",
+        "competitor": "因平台而异（更大，功能更完整的 SDK）",
+        "notes": null
+      },
+      {
+        "label": "平台",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "Ruby",
+          "Java",
+          "Rust",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript/Web",
+          "iOS",
+          "Android",
+          "React Native",
+          "Flutter",
+          "Unity",
+          "C++",
+          "Java",
+          "Windows",
+          "Node.js"
+        ],
+        "notes": null
+      },
+      {
+        "label": "开源",
+        "openpanel": "是 - AGPL-3.0",
+        "competitor": "部分 - AGPL 并附加限制",
+        "notes": "OpenPanel 完全采用 AGPL-3.0 许可（标准版，允许商业使用）。Countly Lite 基于 AGPL，但附加条款限制商业使用。Countly Enterprise 为闭源专有。"
+      },
+      {
+        "label": "自托管",
+        "openpanel": "Docker Compose（ClickHouse + Postgres + Redis），带引导式设置向导",
+        "competitor": "Docker 或安装脚本（需要 MongoDB、Node.js、Nginx）",
+        "notes": null
+      },
+      {
+        "label": "数据库",
+        "openpanel": "ClickHouse",
+        "competitor": "MongoDB",
+        "notes": null
+      },
+      {
+        "label": "数据保留",
+        "openpanel": "无限制（自托管），可配置（云端）",
+        "competitor": "6 个月（Flex 免费版），可作为附加项配置",
+        "notes": null
+      },
+      {
+        "label": "认证",
+        "openpanel": "未列出",
+        "competitor": "ISO 27001，SOC2",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "定价对比",
+    "intro": "Countly 基于 MAU 的定价加上附加功能可能会变得很昂贵。OpenPanel 提供简单的基于事件定价。",
+    "openpanel": {
+      "model": "基于事件，透明",
+      "description": "透明定价从每月 2.50 美元起，包含 5,000 次事件，提供 30 天免费试用。每个套餐都包含全部功能。自托管免费且事件无限制。"
+    },
+    "competitor": {
+      "model": "基于 MAU，并带功能附加项",
+      "description": "Lite：自托管、AGPL、仅限非商业用途。Flex Free：500 个 MAU。Flex Tier 1：2,000 个 MAU 每月 80 美元。包含核心分析，高级功能（A/B 测试、问卷、推送）需作为附加项购买。功能完整的 Flex 在规模化后每年可能超过 132,000 美元。",
+      "free_tier": "Lite（仅限非商业用途）或 Flex Free（500 个 MAU）",
+      "pricing_url": "https://countly.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "从 Countly 迁移到 OpenPanel",
+    "intro": "从 Countly 切换到 OpenPanel 进行分析很直接。推送通知和崩溃报告则需要单独工具。",
+    "difficulty": "中等",
+    "estimated_time": "1-4 小时，取决于功能使用情况",
+    "steps": [
+      {
+        "title": "安装 OpenPanel SDK",
+        "description": "将 Countly SDK 替换为 OpenPanel。OpenPanel 的 SDK 明显更轻量，也更容易集成。"
+      },
+      {
+        "title": "映射事件和属性",
+        "description": "Countly 事件可直接映射到 OpenPanel 事件。Countly.recordEvent() 变为 op.track()。用户属性也类似迁移。"
+      },
+      {
+        "title": "设置用户识别",
+        "description": "两个平台都支持用户识别。将 Countly 的设备 ID 管理替换为 OpenPanel 的 identify() 方法。"
+      },
+      {
+        "title": "重建漏斗和用户群组",
+        "description": "在 OpenPanel 中重新设置转化漏斗和用户群组。概念相似，但 OpenPanel 的界面更简单。"
+      },
+      {
+        "title": "为功能差异做规划",
+        "description": "如果你使用 Countly 的推送通知、崩溃报告或远程配置，就需要单独工具。OpenPanel 完全专注于分析。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "两者都使用基于事件的追踪，API 也很相似。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "大多数团队会先从 OpenPanel 新开始，并在短时间内让两个工具并行运行。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 Countly 更适合的场景",
+    "intro": "当你想要分析能力，但不想要一体化平台的复杂性和成本时，选择 OpenPanel。",
+    "items": [
+      {
+        "title": "想要更简单、更便宜分析的团队",
+        "description": "Countly 基于 MAU 的定价很快就会变贵，而且功能附加项模式增加了复杂性。OpenPanel 提供直观的基于事件定价，并包含全部功能。",
+        "icon": "dollar-sign"
+      },
+      {
+        "title": "开源商业使用",
+        "description": "Countly Lite 的许可证对商业使用增加了限制——商业用途必须购买 Enterprise。OpenPanel 的标准 AGPL-3.0 许可证允许商业使用，自托管免费、无限制且功能完整。",
+        "icon": "unlock"
+      },
+      {
+        "title": "轻量级自托管",
+        "description": "Countly 需要 MongoDB、Node.js 和 Nginx，升级流程也很复杂。OpenPanel 使用一键式 `./setup` 向导，引导你完成配置，并在几分钟内启动完整的 Docker Compose 技术栈（ClickHouse、Postgres、Redis）。",
+        "icon": "server"
+      },
+      {
+        "title": "纯产品分析聚焦",
+        "description": "如果你只需要分析，而不需要推送通知、崩溃报告或远程配置，OpenPanel 可提供更聚焦、复杂度更低的解决方案。",
+        "icon": "bar-chart"
+      },
+      {
+        "title": "预算有限的初创公司",
+        "description": "Countly 在规模化后，完整功能的价格可能每年超过 132,000 美元。OpenPanel 基于事件的模式对成长中的初创公司来说更可预测，也更实惠。",
+        "icon": "trending-up"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于从 Countly 切换到 OpenPanel 的常见问题。",
+    "items": [
+      {
+        "question": "Countly 真的是开源吗？",
+        "answer": "部分开源。Countly Lite 以 AGPL-3.0 和修改后的条款开源，但它明确禁止商业使用。用于商业用途时，你必须购买 Countly Enterprise 或使用 Countly Flex（他们的 SaaS）。OpenPanel 采用标准 AGPL-3.0 许可证，完全开源，允许商业使用，而且自托管免费、无限制、功能完整，没有功能分层。"
+      },
+      {
+        "question": "为什么 OpenPanel 比 Countly 便宜？",
+        "answer": "OpenPanel 采用基于事件的定价，5,000 次事件每月 2.50 美元起（包含 30 天免费试用），或可免费自托管。Countly 按月活跃用户数（MAU）收费，2,000 个 MAU 起每月 80 美元，而且像 A/B 测试、问卷和推送通知等功能还要作为附加项额外收费。"
+      },
+      {
+        "question": "OpenPanel 像 Countly 一样有推送通知吗？",
+        "answer": "没有。Countly 是包含推送通知、问卷和远程配置的一体化平台。OpenPanel 完全专注于产品分析。你需要使用 OneSignal 或 Firebase 等单独工具来实现推送通知。"
+      },
+      {
+        "question": "OpenPanel 有崩溃报告吗？",
+        "answer": "没有。Countly 包含全面的崩溃和错误报告，并支持符号化。OpenPanel 专注于产品分析。若需要崩溃报告，可搭配 Sentry 或 Crashlytics 等工具一起使用。"
+      },
+      {
+        "question": "自托管方面如何比较？",
+        "answer": "OpenPanel 使用一条命令的 Docker Compose 部署，并使用 ClickHouse（以及 Postgres 和 Redis）。Countly 需要 MongoDB、Node.js 和 Nginx，安装脚本更复杂。对旧版本来说，Countly 的升级过程可能很繁琐。"
+      },
+      {
+        "question": "哪个移动端 SDK 支持更好？",
+        "answer": "OpenPanel 支持 iOS、Android、React Native 和 Flutter。Countly 额外支持 Unity 和桌面端（Windows/Mac），覆盖范围更广。请根据你的具体平台需求选择。"
+      },
+      {
+        "question": "Countly 更适合企业吗？",
+        "answer": "Countly Enterprise 提供 ISO 27001 和 SOC2 认证、SLA 以及直接支持——这对合规要求严格的大型企业很重要。OpenPanel 更适合重视简洁性和成本的初创公司和团队。"
+      },
+      {
+        "question": "我可以把 Countly Lite 用在我的初创公司吗？",
+        "answer": "不可以。Countly Lite 的许可证明确写道：'you cannot use Countly Lite for commercial or non-commercial purposes, to provide Countly as a service to your customers.' 商业用途必须购买 Countly Enterprise 或 Flex。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "React Native 分析设置",
+        "url": "/guides/react-native-analytics"
+      },
+      {
+        "title": "追踪自定义事件",
+        "url": "/guides/track-custom-events"
+      },
+      {
+        "title": "Swift/iOS 分析设置",
+        "url": "/guides/swift-analytics"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳开源网站分析工具",
+        "url": "/articles/self-hosted-web-analytics"
+      },
+      {
+        "title": "自托管网站分析",
+        "url": "/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "PostHog",
+        "url": "/compare/posthog-alternative"
+      },
+      {
+        "name": "Mixpanel",
+        "url": "/compare/mixpanel-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "从 OpenPanel 开始",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

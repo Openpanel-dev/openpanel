@@ -1,0 +1,53 @@
+---
+title: 從 Clerk 遷移
+description: 這是一份將資料從 Clerk 遷移到 OpenPanel 的簡單指南。
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+截至 0.0.5 版，我們已從 OpenPanel 移除 Clerk.com。這表示如果你是從先前版本升級，必須先從 Clerk 匯出使用者，再匯入到 OpenPanel。以下是操作方式。
+
+在開始之前，先從 Clerk 取得使用者資料。前往 **Clerk > Configure > Settings > Export all users**，並下載 CSV 檔案。這個檔案將用來匯入使用者到 OpenPanel。
+
+
+
+<Steps>
+<Step>
+將我們從 Clerk 下載的 csv 檔案複製到你的伺服器：
+```bash
+scp ./path/to/your/clerk-users.csv user@your-ip:users-dump.csv
+```
+</Step>
+<Step>
+透過 SSH 登入你的伺服器：
+```bash
+ssh user@your-ip
+```
+</Step>
+<Step>
+拉取最新映像，並重新啟動容器：
+```bash
+docker compose pull
+docker compose down
+docker compose up -d
+```
+</Step>
+<Step>
+透過 SSH 登入你的伺服器：
+```bash
+ssh user@your-ip
+```
+</Step>
+<Step>
+執行以下指令，將檔案複製到 OpenPanel 容器：
+```bash
+docker compose cp ./users-dump.csv op-api:/app/packages/db/code-migrations/users-dump.csv
+```
+</Step>
+<Step>
+執行遷移：
+```bash
+docker compose exec -it op-api bash -c "cd /app/packages/db && pnpm migrate:deploy:code 2-accounts.ts"
+```
+</Step>
+</Steps>

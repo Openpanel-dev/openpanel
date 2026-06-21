@@ -1,0 +1,28 @@
+---
+title: Projects（项目）
+description: 使用 Manage API 以编程方式管理你的 OpenPanel 项目。使用 Manage API 创建、读取、更新和删除项目。
+---
+
+## 身份验证
+
+需要 `root` 客户端。请参阅 [身份验证](/zh-CN/docs/api/authentication) 指南。
+
+## 基础 URL
+
+```
+https://api.openpanel.dev/manage/projects
+```
+
+## 端点
+
+| 方法 | 路径 | 说明 |
+|--------|------|-------------|
+| `GET` | `/manage/projects` | 列出你组织中的所有项目 |
+| `GET` | `/manage/projects/{id}` | 获取指定项目 |
+| `POST` | `/manage/projects` | 创建新项目 |
+| `PATCH` | `/manage/projects/{id}` | 更新项目 |
+| `DELETE` | `/manage/projects/{id}` | 软删除项目（24 小时宽限期） |
+
+创建项目时，会自动创建一个默认的 `write` 客户端，并随响应返回。客户端密钥只会显示一次。
+
+完整的请求/响应模式请参阅 [API 参考](/zh-CN/docs/api-reference)。

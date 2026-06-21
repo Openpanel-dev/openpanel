@@ -1,0 +1,43 @@
+---
+title: 跟踪
+description: 如何通过 HTTP API 发送事件、识别用户并管理分组。
+---
+
+## 需要了解
+
+- 传递 `x-client-ip` header 以启用地理位置跟踪
+- 传递 `user-agent` header 以启用设备检测
+
+## 身份验证
+
+所有请求都需要 `write` 或 `root` 客户端。请参阅 [身份验证](/zh-CN/docs/api/authentication) 指南。
+
+```bash
+-H "openpanel-client-id: YOUR_CLIENT_ID" \
+-H "openpanel-client-secret: YOUR_CLIENT_SECRET"
+```
+
+## 基础 URL
+
+```
+https://api.openpanel.dev
+```
+
+## 事件类型
+
+`/track` 端点接受一个 `type` 字段，用于决定记录什么内容：
+
+| 类型 | 说明 |
+|------|-------------|
+| `track` | 记录一个命名事件，可附带可选属性 |
+| `identify` | 创建或更新用户资料 |
+| `increment` | 增加数值型资料属性 |
+| `decrement` | 减少数值型资料属性 |
+| `group` | 创建或更新分组 |
+| `assign_group` | 将资料关联到一个或多个分组 |
+
+### 分组与事件
+
+分组不会自动填充到事件中——即使在 `assign_group` 之后也是如此。每次需要分组数据时，请在对应的 `track` 调用中显式传递 `groups`。
+
+有关每种事件类型的完整请求/响应 schema，请参阅 [API 参考](/zh-CN/docs/api-reference/track/track/post)。

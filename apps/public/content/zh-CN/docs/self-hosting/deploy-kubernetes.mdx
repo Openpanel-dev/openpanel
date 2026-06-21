@@ -1,0 +1,558 @@
+---
+title: 在 Kubernetes 上部署
+description: 使用 Helm 在 Kubernetes 上部署 OpenPanel
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+OpenPanel 可以使用社区维护的 Helm chart 部署到 Kubernetes。这使你可以在可扩展、可用于生产的 Kubernetes 环境中运行 OpenPanel。
+
+<Callout>
+该 Helm chart 由社区维护，可在 [Artifact Hub](https://artifacthub.io/packages/helm/openpanel/openpanel) 获取。
+</Callout>
+
+## 前提条件
+
+- Kubernetes 1.19+
+- Helm 3.0+
+- 已配置 `kubectl` 以访问你的集群
+- 每个节点至少 2GB RAM（建议 4GB+）
+- 持久卷支持（如果使用自托管数据库）
+
+## 快速开始
+
+<Steps>
+<Step>
+### 添加 Helm 仓库
+
+添加 OpenPanel Helm 仓库：
+
+```bash
+helm repo add openpanel https://yashGoyal40.github.io/openpanel
+helm repo update
+```
+</Step>
+
+<Step>
+### 下载默认值
+
+下载默认 values 文件以自定义配置：
+
+```bash
+helm show values openpanel/openpanel > my-values.yaml
+```
+
+<Callout type="warn">
+⚠️ **重要**：在安装之前，你 **必须** 配置 `values.yaml` 中所需的值。该 chart 包含占位符值（标记为 `<>`），如果未正确配置，安装将失败。
+</Callout>
+</Step>
+
+<Step>
+### 配置必需值
+
+编辑 `my-values.yaml` 并配置以下 **必需** 值：
+
+1. **Ingress 配置**：
+   ```yaml
+   ingress:
+     enabled: true
+     type: standard  # 或使用 Contour 时设置为 "httpproxy"
+     fqdn: your-domain.com  # 替换为你的实际域名
+     standard:
+       tlsSecretName: openpanel-tls
+   ```
+
+2. **应用 URL**：
+   ```yaml
+   config:
+     apiUrl: "https://your-domain.com/api"
+     dashboardUrl: "https://your-domain.com"
+     googleRedirectUri: "https://your-domain.com/api/oauth/google/callback"
+   ```
+
+3. **Cookie Secret**（使用 `openssl rand -base64 32` 生成）：
+   ```yaml
+   secrets:
+     cookieSecret: "YOUR_GENERATED_SECRET_HERE"
+   ```
+
+4. **PostgreSQL 配置**（二选一）：
+   - **选项 A**：外部 PostgreSQL（生产环境推荐）
+     ```yaml
+     postgresql:
+       enabled: false
+     externalPostgresql:
+       host: "postgres.example.com"
+       port: 5432
+       user: "openpanel"
+       password: "your-secure-password"
+       database: "openpanel"
+       schema: public
+     ```
+   - **选项 B**：自托管 PostgreSQL
+     ```yaml
+     postgresql:
+       enabled: true
+       user: postgres
+       password: "your-secure-password"
+       database: postgres
+       persistence:
+         size: 20Gi
+     ```
+</Step>
+
+<Step>
+### 安装 OpenPanel
+
+使用已配置的值安装 OpenPanel：
+
+```bash
+helm install my-openpanel openpanel/openpanel \
+  --version 0.1.0 \
+  --namespace openpanel \
+  --create-namespace \
+  -f my-values.yaml
+```
+
+或者直接覆盖特定值：
+
+```bash
+helm install my-openpanel openpanel/openpanel \
+  --version 0.1.0 \
+  --namespace openpanel \
+  --create-namespace \
+  --set ingress.fqdn=your-domain.com \
+  --set config.apiUrl=https://your-domain.com/api \
+  --set secrets.cookieSecret=$(openssl rand -base64 32)
+```
+</Step>
+
+<Step>
+### 验证安装
+
+检查所有 pod 是否正在运行：
+
+```bash
+kubectl get pods -n openpanel
+```
+
+你应该能看到以下 pod：
+- API server (`op-api`)
+- Dashboard (`op-dashboard`)
+- Worker (`op-worker`)
+- PostgreSQL（如果使用自托管）
+- Redis（如果使用自托管）
+- ClickHouse（如果使用自托管）
+
+检查状态：
+
+```bash
+kubectl get all -n openpanel
+```
+</Step>
+
+<Step>
+### 访问你的 Dashboard
+
+当所有 pod 都在运行后，通过你配置的域名访问 OpenPanel。Ingress 会将流量路由到 dashboard 服务。
+
+如果你需要在本地测试，可以执行端口转发：
+
+```bash
+kubectl port-forward svc/op-dashboard 3000:80 -n openpanel
+```
+
+然后访问 `http://localhost:3000`。
+</Step>
+</Steps>
+
+## 配置
+
+### 必需配置
+
+安装前 **必须** 配置以下值：
+
+| 配置 | 必需 | 占位符 | 说明 |
+|--------------|----------|-------------|-------------|
+| `ingress.fqdn` | ✅ 是 | `<fqdn>` | 你的域名 |
+| `ingress.*.tlsSecretName` | ✅ 是 | `<tls_secret_name>` | TLS 证书 secret 名称 |
+| `config.apiUrl` | ✅ 是 | `<fqdn>` | 完整 API URL |
+| `config.dashboardUrl` | ✅ 是 | `<fqdn>` | 完整 Dashboard URL |
+| `config.googleRedirectUri` | ✅ 是 | `<fqdn>` | OAuth 回调 URL |
+| `secrets.cookieSecret` | ✅ 是 | `CHANGE_ME_...` | 会话加密密钥 |
+| `externalPostgresql.*` | ⚠️ 如果使用外部数据库 | `<postgres_*>` | PostgreSQL 连接详情 |
+
+### 完整示例配置
+
+下面是一个最小示例配置文件（`my-values.yaml`），包含所有必需值：
+
+```yaml title="my-values.yaml"
+# Ingress Configuration
+ingress:
+  enabled: true
+  type: standard  # or "httpproxy" for Contour
+  fqdn: analytics.example.com
+  standard:
+    tlsSecretName: openpanel-tls
+
+# Application URLs
+config:
+  apiUrl: "https://analytics.example.com/api"
+  dashboardUrl: "https://analytics.example.com"
+  googleRedirectUri: "https://analytics.example.com/api/oauth/google/callback"
+
+# Cookie Secret (generate with: openssl rand -base64 32)
+secrets:
+  cookieSecret: "YOUR_GENERATED_SECRET_HERE"
+
+# PostgreSQL - Using External Database
+postgresql:
+  enabled: false
+
+externalPostgresql:
+  host: "postgres.example.com"
+  port: 5432
+  user: "openpanel"
+  password: "your-secure-password"
+  database: "openpanel"
+  schema: public
+```
+
+### 可选配置
+
+该 Helm chart 将环境变量映射为 Helm values。要查看所有可用环境变量及其说明，请参阅 [环境变量文档](/zh-CN/docs/self-hosting/environment-variables)。
+
+#### 邮件配置
+
+启用邮件功能（密码重置、邀请等）：
+
+```yaml
+secrets:
+  resendApiKey: "re_xxxxxxxxxxxxx"  # 你的 Resend API key
+  emailSender: "noreply@your-domain.com"  # 已验证的发件人邮箱
+```
+
+<Callout>
+从 [resend.com](https://resend.com) 获取你的 Resend API key。请确保验证你的发件人邮箱域名。
+</Callout>
+
+#### AI 功能
+
+通过设置一个或两个 provider 的 API key 来启用应用内 AI 聊天助手：
+
+```yaml
+secrets:
+  openaiApiKey: "sk-xxxxxxxxxxxxx"          # 用于 GPT-4.1 / 4.1 mini / 5.4 mini
+  anthropicApiKey: "sk-ant-xxxxxxxxxxxxx"   # 用于 Claude Haiku 4.5 / Sonnet 4.6 / Opus 4.6
+```
+
+<Callout>
+聊天的模型选择器只会显示已配置 key 的 provider 对应模型——设置其中一个或两个都可以。即使没有任何 key，聊天抽屉仍会打开，但会显示设置提示。
+</Callout>
+
+#### Google OAuth
+
+启用 Google OAuth 登录：
+
+```yaml
+secrets:
+  googleClientId: "xxxxx.apps.googleusercontent.com"
+  googleClientSecret: "GOCSPX-xxxxxxxxxxxxx"
+```
+
+<Callout>
+在 [Google Cloud Console](https://console.cloud.google.com) 中配置 Google OAuth。添加授权重定向 URI：`https://your-domain.com/api/oauth/google/callback`
+</Callout>
+
+#### Redis 配置
+
+Redis 默认启用并部署在 Kubernetes 内。要使用外部 Redis 实例：
+
+```yaml
+redis:
+  enabled: false
+
+externalRedis:
+  host: "redis.example.com"
+  port: 6379
+```
+
+#### ClickHouse 配置
+
+ClickHouse 默认启用并部署在 Kubernetes 内。要使用外部 ClickHouse 实例：
+
+```yaml
+clickhouse:
+  enabled: false
+
+externalClickhouse:
+  host: "clickhouse.example.com"
+  port: 8123
+  database: openpanel
+```
+
+#### 应用组件
+
+启用/禁用单个组件：
+
+```yaml
+api:
+  enabled: true
+  replicas: 1
+
+dashboard:
+  enabled: true
+  replicas: 1
+
+worker:
+  enabled: true
+  replicas: 1
+```
+
+#### 资源限制
+
+调整资源请求和限制：
+
+```yaml
+api:
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"
+```
+
+## 更新 OpenPanel
+
+升级到更新版本：
+
+```bash
+helm repo update
+helm upgrade my-openpanel openpanel/openpanel \
+  --version <new-version> \
+  --namespace openpanel \
+  -f my-values.yaml
+```
+
+将 `<new-version>` 替换为目标版本号（例如 `0.1.1`）。
+
+## 管理你的部署
+
+### 查看日志
+
+查看特定 deployment 的日志：
+
+```bash
+# API logs
+kubectl logs -f deployment/op-api -n openpanel
+
+# Dashboard logs
+kubectl logs -f deployment/op-dashboard -n openpanel
+
+# Worker logs
+kubectl logs -f deployment/op-worker -n openpanel
+```
+
+### 重启服务
+
+重启特定 deployment：
+
+```bash
+kubectl rollout restart deployment/op-api -n openpanel
+kubectl rollout restart deployment/op-dashboard -n openpanel
+kubectl rollout restart deployment/op-worker -n openpanel
+```
+
+### 扩缩容服务
+
+动态扩缩容服务：
+
+```bash
+kubectl scale deployment/op-worker --replicas=3 -n openpanel
+```
+
+或者更新 values 文件并升级：
+
+```yaml
+worker:
+  replicas: 3
+```
+
+```bash
+helm upgrade my-openpanel openpanel/openpanel -f my-values.yaml -n openpanel
+```
+
+### 查看服务
+
+查看所有 service：
+
+```bash
+kubectl get svc -n openpanel
+```
+
+### 检查 ConfigMap 和 Secrets
+
+验证配置：
+
+```bash
+kubectl get configmap openpanel-config -n openpanel -o yaml
+kubectl get secret openpanel-secrets -n openpanel -o yaml
+```
+
+## Ingress 配置
+
+### 标准 Ingress（NGINX/Traefik）
+
+```yaml
+ingress:
+  enabled: true
+  type: standard
+  fqdn: openpanel.your-domain.com
+  standard:
+    tlsSecretName: openpanel-tls
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+```
+
+### HTTPProxy（Contour）
+
+```yaml
+ingress:
+  enabled: true
+  type: httpproxy
+  fqdn: openpanel.your-domain.com
+  httpproxy:
+    tlsSecretName: openpanel-tls
+```
+
+## 故障排查
+
+### Pod 未启动
+
+1. 检查 pod 状态：
+   ```bash
+   kubectl describe pod <pod-name> -n openpanel
+   ```
+
+2. 检查事件：
+   ```bash
+   kubectl get events --sort-by='.lastTimestamp' -n openpanel
+   ```
+
+3. 检查日志：
+   ```bash
+   kubectl logs <pod-name> -n openpanel
+   ```
+
+### 数据库连接问题
+
+1. 验证数据库 pod 是否在运行（如果使用自托管）：
+   ```bash
+   kubectl get pods -n openpanel | grep postgres
+   ```
+
+2. 检查数据库 service：
+   ```bash
+   kubectl get svc -n openpanel | grep postgres
+   ```
+
+3. 测试数据库连接：
+   ```bash
+   kubectl exec -it deployment/op-api -n openpanel -- env | grep DATABASE_URL
+   ```
+
+### 配置问题
+
+如果 pod 因配置失败：
+
+1. 验证所有必需值是否已设置：
+   ```bash
+   helm get values my-openpanel -n openpanel
+   ```
+
+2. 检查占位符值：
+   ```bash
+   helm get values my-openpanel -n openpanel | grep "<"
+   ```
+
+3. 确保 secrets 已正确设置：
+   ```bash
+   kubectl get secret openpanel-secrets -n openpanel -o yaml
+   ```
+
+### Ingress 不工作
+
+1. 检查 ingress 状态：
+   ```bash
+   kubectl get ingress -n openpanel
+   kubectl describe ingress -n openpanel
+   ```
+
+2. 验证 ingress controller 是否在运行：
+   ```bash
+   kubectl get pods -n ingress-nginx  # For NGINX
+   # or
+   kubectl get pods -n projectcontour  # For Contour
+   ```
+
+3. 检查 DNS 配置
+
+## 备份和恢复
+
+### 备份 PostgreSQL
+
+如果使用自托管 PostgreSQL：
+
+```bash
+kubectl exec -it <postgresql-pod-name> -n openpanel -- \
+  pg_dump -U postgres openpanel > backup.sql
+```
+
+或者使用 Kubernetes CronJob 进行自动备份。
+
+### 恢复 PostgreSQL
+
+从备份恢复：
+
+```bash
+kubectl exec -i <postgresql-pod-name> -n openpanel -- \
+  psql -U postgres openpanel < backup.sql
+```
+
+## 卸载
+
+卸载 OpenPanel：
+
+```bash
+helm uninstall my-openpanel --namespace openpanel
+```
+
+<Callout type="warn">
+⚠️ **警告**：这将删除所有资源，包括持久卷。卸载前务必备份数据！
+</Callout>
+
+保留持久卷：
+
+```bash
+# Delete the release but keep PVCs
+helm uninstall my-openpanel --namespace openpanel
+
+# Manually delete PVCs if needed
+kubectl delete pvc -l app.kubernetes.io/name=openpanel -n openpanel
+```
+
+## 下一步
+
+- [配置邮件设置](/zh-CN/docs/self-hosting/self-hosting#e-mail) 用于密码重置和邀请
+- [设置 AI 集成](/zh-CN/docs/self-hosting/self-hosting#ai-integration) 用于分析助手
+- [配置 SDK](/zh-CN/docs/self-hosting/self-hosting#always-use-correct-api-url) 以从你的应用中跟踪事件
+
+## 其他资源
+
+- [Artifact Hub 上的 Helm Chart](https://artifacthub.io/packages/helm/openpanel/openpanel)
+- [Kubernetes 文档](https://kubernetes.io/docs/)
+- [Helm 文档](https://helm.sh/docs/)

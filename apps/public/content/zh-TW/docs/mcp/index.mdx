@@ -1,0 +1,186 @@
+---
+title: MCP 伺服器
+description: 透過 Model Context Protocol 將 AI 助理連接到你的 OpenPanel 分析資料。
+---
+
+OpenPanel 提供一個 [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server，讓 AI 助理 — Claude、Cursor、Windsurf 以及其他工具 — 可以直接在對話中查詢你的分析資料。
+
+## 端點
+
+```
+https://api.openpanel.dev/mcp
+```
+
+## 身分驗證
+
+token 可以透過查詢參數或 `Authorization` header 傳入 — 兩者等效：
+
+```
+https://api.openpanel.dev/mcp?token=YOUR_TOKEN
+```
+
+```
+Authorization: Bearer YOUR_TOKEN
+```
+
+### Token 格式
+
+token 是由你的用戶端 ID 和用戶端密鑰以冒號連接後，再進行 **base64 編碼** 的字串：
+
+```
+base64(clientId:clientSecret)
+```
+
+#### 從控制台取得
+
+取得 MCP Token 最簡單的方法是直接從控制台取得，不需要終端機：
+
+- **新增用戶端** — 透過 **設定 → API 用戶端** 建立用戶端後，成功畫面會顯示可直接複製的 **MCP Token** 欄位。
+- **引導流程** — 引導流程中的連接步驟會顯示 MCP Token、用戶端 ID 與密鑰。使用 **儲存** 按鈕將三個值一起下載為 `credentials.txt`。
+
+#### 從終端機產生
+
+```bash
+echo -n "YOUR_CLIENT_ID:YOUR_CLIENT_SECRET" | base64
+```
+
+接著將它附加到 MCP URL：
+
+```
+https://api.openpanel.dev/mcp?token=<base64-encoded-token>
+```
+
+### 所需用戶端類型
+
+只有 `read` 和 `root` 用戶端可以透過 MCP 驗證。僅可寫入的用戶端會被拒絕。
+
+| 用戶端類型 | 存取範圍 |
+|-------------|--------|
+| `read` | 限定單一專案（該用戶端所屬的專案） |
+| `root` | 可查詢組織中的任何專案 |
+
+如果你想限制 AI 助理只能存取單一專案，請使用 `read` 用戶端。若需要跨專案存取或要列出所有專案，請使用 `root` 用戶端。
+
+到控制台中的 **設定 → API 用戶端** 建立用戶端。更多細節請參考 [身分驗證指南](/zh-TW/docs/api/authentication)。
+
+## 連接 Claude Desktop
+
+將下列內容加入你的 `claude_desktop_config.json`：
+
+```json
+{
+  "mcpServers": {
+    "openpanel": {
+      "type": "streamable-http",
+      "url": "https://api.openpanel.dev/mcp?token=YOUR_TOKEN"
+    }
+  }
+}
+```
+
+## 連接 Claude Code CLI
+
+使用 Claude CLI 時，你可以用 `--header` 旗標透過 `Authorization: Bearer` 傳入 token，而不是把它嵌在 URL 中：
+
+```bash
+claude mcp add --transport http openpanel https://api.openpanel.dev/mcp \
+  --header "Authorization: Bearer YOUR_TOKEN"
+```
+
+或是把 token 放在 URL 中（等效）：
+
+```bash
+claude mcp add --transport http openpanel "https://api.openpanel.dev/mcp?token=YOUR_TOKEN"
+```
+
+## 可用工具
+
+### 專案存取
+
+| 工具 | 說明 |
+|------|-------------|
+| `list_projects` | 列出所有可用你的憑證存取的專案。root 用戶端會看到組織內所有專案；read 用戶端只會看到自己的專案。 |
+| `get_dashboard_urls` | 取得目前專案可點擊的控制台連結 — overview、events、profiles、sessions，以及特定項目的深層連結。 |
+
+### 控制台與報告
+
+| 工具 | 說明 |
+|------|-------------|
+| `list_dashboards` | 列出某個專案的所有控制台看板。 |
+| `list_reports` | 列出某個看板中的所有報告，包含圖表類型與追蹤的事件。 |
+| `get_report_data` | 執行已儲存的報告並回傳資料（time-series、funnel、metric 等）。 |
+
+### 資料探索
+
+| 工具 | 說明 |
+|------|-------------|
+| `list_event_names` | 取得專案中最常見的前 50 個 event 名稱。如果你不知道確切 event 名稱，請先呼叫這個工具。 |
+| `list_event_properties` | 列出某個 event（或所有 event）追蹤到的所有 property key。 |
+| `get_event_property_values` | 取得某個特定 event property 的所有唯一值。 |
+
+### Event 與 session
+
+| 工具 | 說明 |
+|------|-------------|
+| `query_events` | 查詢原始 event，可選擇加上篩選條件。回傳單筆紀錄，包含 path、device、country、referrer 與自訂 properties。 |
+| `query_sessions` | 查詢 session，可選擇加上篩選條件。每個 session 包含 duration、entry/exit pages、bounce 狀態與 attribution 資料。 |
+
+### Profile（使用者）
+
+| 工具 | 說明 |
+|------|-------------|
+| `find_profiles` | 依 name、email、location、inactivity、session count，或是否執行過特定 event 來搜尋與篩選 user profile。 |
+| `get_profile` | 取得特定 user profile 及其最近的 events。 |
+| `get_profile_sessions` | 取得某個 user profile 的所有 sessions，依最近時間排序。 |
+| `get_profile_metrics` | 取得使用者的計算後終身指標：sessions、pageviews、bounce rate、revenue 等。 |
+
+### Group（B2B）
+
+| 工具 | 說明 |
+|------|-------------|
+| `list_group_types` | 列出專案中定義的所有 group type（例如 `company`、`team`）。在查詢 groups 前請先呼叫這個工具。 |
+| `find_groups` | 依 name、ID 或 type 搜尋 group。 |
+| `get_group` | 取得特定 group 及其 properties 與成員 profiles。 |
+
+### 彙總指標
+
+| 工具 | 說明 |
+|------|-------------|
+| `get_analytics_overview` | 某個日期區間的關鍵指標：visitors、pageviews、sessions、bounce rate 與平均 session duration。 |
+| `get_rolling_active_users` | 以 rolling window 顯示 active users 的 time series — DAU（1 天）、WAU（7 天）或 MAU（30 天）。 |
+| `get_top_pages` | 依 pageviews 排名的最常造訪頁面。 |
+| `get_page_performance` | 各頁面的 bounce rate、平均 session duration、sessions 與 pageviews。 |
+| `get_page_conversions` | 依訪客在查看後轉換的數量來排名的頁面。 |
+| `get_entry_exit_pages` | 最常見的 entry pages（session 開始）或 exit pages（session 結束）。 |
+| `get_top_referrers` | 依 referrer 名稱與類型拆分的主要流量來源。 |
+| `get_country_breakdown` | 依 country、region 或 city 統計的訪客數。 |
+| `get_device_breakdown` | 依 device type、browser 或 OS 統計的訪客數。 |
+
+### 使用者行為
+
+| 工具 | 說明 |
+|------|-------------|
+| `get_funnel` | 分析 2 個以上 event 之間的轉換 funnel — 註冊流程、結帳、onboarding。 |
+| `get_retention_cohort` | 週級 user retention cohort 表，顯示長期產品黏著度。 |
+| `get_weekly_retention_series` | 以 time series 呈現的週對週 retention。 |
+| `get_user_last_seen_distribution` | 使用者最近活動時間的直方圖 — 適合做 churn 分析。 |
+| `get_user_flow` | 以 Sankey 圖視覺化使用者導覽流程（事件前/後/之間）。 |
+| `get_engagement_metrics` | 隨時間變化的 engagement 指標。 |
+
+### Google Search Console
+
+這些工具需要先在控制台設定中為該專案連接 GSC。
+
+| 工具 | 說明 |
+|------|-------------|
+| `gsc_get_overview` | GSC 隨時間的表現：clicks、impressions、CTR 與平均 position。 |
+| `gsc_get_top_pages` | 依 clicks 排名的 GSC 表現最佳頁面。 |
+| `gsc_get_page_details` | 特定頁面的 GSC 詳細表現，包含導流到該頁面的所有 query。 |
+| `gsc_get_top_queries` | 依 clicks 排名的熱門 search query。 |
+| `gsc_get_query_opportunities` | 容易把握的 SEO 機會：排名 4–20 且具有顯著搜尋量的 query。 |
+| `gsc_get_query_details` | 特定 search query 的 GSC 詳細資料，包含所有有排名的頁面。 |
+| `gsc_get_cannibalization` | 你網站上多個頁面在 Google 互相競爭的 query。 |
+
+## 速率限制
+
+每個用戶端每分鐘 60 次請求。

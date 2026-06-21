@@ -1,0 +1,76 @@
+---
+title: 同意管理
+description: 在用户授予同意前排队所有跟踪，然后通过一次调用一次性刷新全部数据。
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+某些司法管辖区要求在跟踪事件或记录会话之前必须获得用户的明确同意。OpenPanel 内置支持这一点：使用 `disabled: true` 初始化，在你调用 `ready()` 之前不会发送任何数据。
+
+## 工作原理
+
+设置 `disabled: true` 后，对 `track`、`identify`、`screenView` 以及会话回放分块的所有调用都会先保存在内存队列中，而不是发送到 API。用户同意后，调用 `ready()`，整个队列会立即刷新。
+
+```ts
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  disabled: true, // 在调用 ready() 之前不会发送任何内容
+});
+
+// 之后，当用户接受你的同意横幅时：
+op.ready();
+```
+
+如果用户拒绝，只需不要调用 `ready()`。页面卸载时，队列会被丢弃。
+
+## 配合会话回放
+
+在 `disabled: true` 时，会话回放分块也会排队。调用 `ready()` 后，缓冲的回放分块会与任何已排队的事件一起刷新。
+
+```ts
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  disabled: true,
+  trackScreenViews: true,
+  sessionReplay: { enabled: true },
+});
+
+// 用户同意：
+op.ready();
+```
+
+<Callout type="info">
+回放录制器会在页面加载后立即启动（因此不会错过任何交互），但在调用 `ready()` 之前不会发送任何数据。
+</Callout>
+
+## 等待用户资料
+
+如果你想在确认用户身份后再保留事件，而不是等待明确同意，请改用 `waitForProfile`。事件会一直排队，直到带有 `profileId` 的 `identify()` 被调用。
+
+```ts
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  waitForProfile: true,
+});
+
+// 事件在这里排队...
+op.track('page_view');
+
+// 一旦设置 profileId，就会刷新队列：
+op.identify({ profileId: 'user_123' });
+```
+
+如果用户始终未完成身份验证，队列不会自动刷新——不会发送任何事件。对于匿名用户或访客流程，当你确定用户不会进行身份识别时，请显式调用 `ready()`：
+
+```ts
+// 用户跳过登录 — 在没有 profileId 的情况下刷新已排队事件
+op.ready();
+```
+
+无论是否设置 `waitForProfile` 或 `disabled`，`ready()` 都会始终释放队列。
+
+## 相关内容
+
+- [同意管理指南](/zh-CN/guides/consent-management) — 使用 cookie 横幅示例的完整演练
+- [会话回放](/zh-CN/docs/session-replay) — 回放录制的隐私控制
+- [识别用户](/zh-CN/docs/get-started/identify-users) — 将事件关联到用户资料

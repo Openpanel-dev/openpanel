@@ -1,0 +1,227 @@
+---
+title: "如何使用 OpenPanel 追蹤自訂事件"
+description: "了解如何在 OpenPanel 中追蹤按鈕點擊、表單送出和使用者互動等自訂事件。"
+difficulty: beginner
+timeToComplete: 5
+date: 2025-12-15
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "了解事件結構"
+    anchor: "event-structure"
+  - name: "追蹤簡單事件"
+    anchor: "track-simple-events"
+  - name: "追蹤含屬性的事件"
+    anchor: "track-events-with-properties"
+  - name: "使用資料屬性"
+    anchor: "data-attributes"
+  - name: "驗證你的設定"
+    anchor: "verify"
+---
+
+# 如何使用 OpenPanel 追蹤自訂事件
+
+自訂事件是產品分析的基礎。它們讓你能追蹤特定的使用者動作，例如按鈕點擊、表單送出、影片播放和購買。這份指南會帶你了解如何在不同平台上使用 OpenPanel 追蹤自訂事件。
+
+OpenPanel 在所有 SDK 中都提供一致的 [事件追蹤](/features/event-tracking) API。只要理解了這個模式，你就能套用到任何整合上。
+
+## 必要條件
+
+- 一個 OpenPanel 帳號（[免費註冊](https://dashboard.openpanel.dev/onboarding)）
+- 已在你的專案中安裝 OpenPanel SDK
+- 來自儀表板的 Client ID
+
+## 了解事件結構 [#event-structure]
+
+OpenPanel 中的每個事件都由兩部分組成：名稱與可選屬性。名稱描述發生了什麼，而屬性則補充它是如何、在哪裡以及何時發生的背景資訊。
+
+一個命名良好的事件讀起來就像一個過去式的句子。不要把事件命名為 "click" 或 "button"，而是使用像 `signup_button_clicked` 或 `purchase_completed` 這類具描述性的名稱。這會讓你的分析儀表板一眼就容易理解。
+
+屬性名稱請使用 snake_case，並在整個應用程式中保持一致。如果你在某個事件上追蹤 `button_name`，在類似事件中也請使用相同的屬性名稱，而不是改成 `buttonName` 或 `name`。
+
+## 追蹤簡單事件 [#track-simple-events]
+
+最簡單的事件就是只有名稱、沒有屬性。這非常適合情境很明確的動作，例如點擊一個只出現在單一位置的特定按鈕。
+
+如果你使用的是 npm 的 Web SDK，請匯入你的 OpenPanel 實例並呼叫 track 方法。
+
+```typescript
+import { op } from './op';
+
+op.track('signup_button_clicked');
+```
+
+對於 script tag 整合，請使用全域的 `window.op` 函式，並將 'track' 作為第一個參數。
+
+```html
+<button onclick="window.op('track', 'signup_button_clicked')">
+  Sign Up
+</button>
+```
+
+如果你透過 JavaScript SDK 在伺服器端追蹤事件，模式也是完全相同的。
+
+```typescript
+import { op } from './op';
+
+op.track('order_placed');
+```
+
+track 方法會將事件排入佇列並非同步送出，因此不會阻塞你的應用程式邏輯。
+
+## 追蹤含屬性的事件 [#track-events-with-properties]
+
+屬性可將原始事件轉換為可操作的資料。你不再只是知道某人點擊了按鈕，而是可以知道是哪個按鈕、它位於哪裡，以及使用者當時在做什麼。
+
+將屬性作為第二個參數傳給 track 方法。包含任何之後能幫助你分群和分析資料的背景資訊。
+
+```typescript
+import { op } from './op';
+
+op.track('button_clicked', {
+  button_name: 'signup',
+  button_location: 'hero_section',
+  page: 'homepage',
+});
+```
+
+使用 script tag 時，請將屬性物件作為第三個參數傳入。
+
+```html
+<button onclick="window.op('track', 'button_clicked', {button_name: 'signup', button_location: 'hero_section'})">
+  Sign Up
+</button>
+```
+
+請仔細思考要包含哪些屬性。追蹤能幫助你回答使用者行為問題的資料，例如了解哪個註冊按鈕表現最好，或是哪個頁面帶來最多轉換。
+
+以下是一個使用具意義屬性來追蹤購買的範例。
+
+```typescript
+op.track('purchase_completed', {
+  product_id: 'prod_123',
+  product_name: 'Premium Plan',
+  amount: 99.99,
+  currency: 'USD',
+  payment_method: 'credit_card',
+  previous_plan: 'free',
+});
+```
+
+切勿在事件屬性中包含敏感資料。密碼、信用卡號碼以及個人可識別資訊都不應出現在你的分析資料中。
+
+## 使用資料屬性 [#data-attributes]
+
+對於 HTML 元素，OpenPanel 支援使用 `data-track` 屬性進行宣告式追蹤。當你想在不撰寫 JavaScript 處理器的情況下加入追蹤時，這種方式特別適合。
+
+加入 `data-track` 與事件名稱，然後使用額外的 `data-*` 屬性來設定屬性。
+
+```html
+<button
+  data-track="button_clicked"
+  data-button-name="signup"
+  data-button-location="hero_section"
+>
+  Sign Up
+</button>
+```
+
+SDK 會自動將 kebab-case 屬性名稱轉換為 snake_case 屬性。因此 `data-button-name` 在你的事件資料中會變成 `button_name`。
+
+若是較複雜或巢狀的屬性，請使用帶有 JSON 字串的 `data-track-properties`。
+
+```html
+<button
+  data-track="feature_used"
+  data-track-properties='{"feature_name": "export", "export_format": "csv", "row_count": 500}'
+>
+  Export Data
+</button>
+```
+
+資料屬性需要在 SDK 初始化時啟用 `trackAttributes: true` 選項。如果你沒有看到來自資料屬性的事件，請確認這個選項已啟用。
+
+## 常見事件模式
+
+表單送出時，除了追蹤送出動作本身，也應該追蹤關於送出了什麼的關鍵背景資訊。
+
+```typescript
+function handleSubmit(event) {
+  event.preventDefault();
+
+  op.track('form_submitted', {
+    form_name: 'contact',
+    form_location: 'footer',
+    fields_completed: 3,
+  });
+
+  // 提交表單
+}
+```
+
+對於影片互動，請追蹤播放、暫停和完成事件，並加上時間資訊。
+
+```typescript
+function handleVideoPlay(video) {
+  op.track('video_played', {
+    video_id: video.id,
+    video_title: video.title,
+    video_duration: video.duration,
+  });
+}
+
+function handleVideoComplete(video) {
+  op.track('video_completed', {
+    video_id: video.id,
+    watch_time: video.currentTime,
+  });
+}
+```
+
+搜尋事件應包含查詢字詞和結果數量，這有助於你了解使用者正在尋找什麼。
+
+```typescript
+function handleSearch(query, results) {
+  op.track('search_performed', {
+    query: query,
+    query_length: query.length,
+    results_count: results.length,
+    has_results: results.length > 0,
+  });
+}
+```
+
+## 驗證你的設定 [#verify]
+
+完成事件追蹤實作後，開啟你的 OpenPanel 儀表板並前往即時檢視。在你的應用程式中觸發這些事件，並確認它們會在幾秒內出現。
+
+如果事件沒有顯示，請檢查你的 Client ID 是否正確，以及 SDK 是否已無錯誤地初始化。瀏覽器開發者工具可以幫助你驗證追蹤請求是否已送出。請查看送往 `openpanel.dev` 或你自架端點的網路請求。
+
+## 下一步
+
+現在你已經在追蹤自訂事件，可以 [識別使用者](/features/identify-users) 以將事件連結到特定的人。若要分析你的事件資料，[漏斗分析指南](/articles/how-to-create-a-funnel) 會示範如何衡量多步驟流程中的 [轉換率](/features/conversion)。你也可以探索 [SDK 文件](/docs/sdks/web) 來了解全域屬性和事件篩選等進階功能。
+
+若要查看特定框架的範例與設定說明，請參考：
+- [Next.js 分析指南](/guides/nextjs-analytics) 適用於 Next.js 應用程式
+- [React 分析指南](/guides/react-analytics) 適用於 React 應用程式
+- [Node.js 分析指南](/guides/nodejs-analytics) 適用於伺服器端追蹤
+- [Python 分析指南](/guides/python-analytics) 適用於 Python 應用程式
+
+<Faqs>
+<FaqItem question="我可以追蹤多少個事件？">
+OpenPanel 不限制你可以追蹤的事件數量。請專注於追蹤能幫助你了解使用者行為並做出產品決策的有意義事件。
+</FaqItem>
+
+<FaqItem question="我應該追蹤每一次點擊嗎？">
+不需要。請追蹤能幫助你做決策的事件。追蹤每一次點擊會產生雜訊，讓你更難找到洞見。請專注於能顯示使用者意圖或朝目標前進的動作。
+</FaqItem>
+
+<FaqItem question="我可以在伺服器端追蹤事件嗎？">
+可以。[Node.js SDK](/docs/sdks/javascript) 支援使用相同 API 進行伺服器端追蹤。伺服器端追蹤適用於發生在瀏覽器之外的事件，例如 webhook 回呼或背景工作。
+</FaqItem>
+
+<FaqItem question="OpenPanel 會使用 cookie 進行事件追蹤嗎？">
+不會。OpenPanel 預設使用無 cookie 追蹤，因此在大多數隱私法規下，你不需要為基本分析放置 cookie 同意橫幅。
+</FaqItem>
+</Faqs>

@@ -1,0 +1,186 @@
+---
+title: Swift
+description: OpenPanel Swift SDK 允许你将 OpenPanel 分析集成到你的 iOS、macOS、tvOS 和 watchOS 应用中。
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+OpenPanel Swift SDK 允许你将 OpenPanel 分析集成到你的 iOS、macOS、tvOS 和 watchOS 应用中。
+
+<Callout>
+想要分步教程？查看 [Swift 分析指南](/zh-CN/guides/swift-analytics)。
+</Callout>
+
+## 功能
+
+- 易于使用的事件和用户属性跟踪 API
+- 自动收集应用状态
+- 支持自定义事件属性
+- 提供全局共享实例，便于在应用内随处访问
+
+## 要求
+
+- iOS 13.0+ / macOS 10.15+ / tvOS 13.0+ / watchOS 6.0+
+- Xcode 12.0+
+- Swift 5.3+
+
+## 安装
+
+<Steps>
+### 第 1 步：通过 Swift Package Manager 添加 Package
+
+你可以通过将 OpenPanel 添加为包依赖项来把它加入 Xcode 项目。
+
+1. 在 **File** 菜单中，选择 **Add Packages...**
+2. 在 package repository URL 文本框中输入 `https://github.com/Openpanel-dev/swift-sdk`
+3. 点击 **Add Package**
+
+或者，如果你有 `Package.swift` 文件，也可以将 OpenPanel 作为依赖项添加：
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/Openpanel-dev/swift-sdk")
+]
+```
+
+### 第 2 步：导入并初始化
+
+首先，在你的 Swift 文件中导入 SDK：
+
+```swift
+import OpenPanel
+```
+
+然后，使用你的 client ID 初始化 OpenPanel SDK：
+
+```swift
+OpenPanel.initialize(options: .init(
+    clientId: "YOUR_CLIENT_ID",
+    clientSecret: "YOUR_CLIENT_SECRET"
+))
+```
+
+### 配置选项
+
+<CommonSdkConfig />
+
+Swift 特有的附加选项：
+
+- `filter` - 在跟踪事件之前调用的闭包。如果返回 false，则不会跟踪该事件
+- `disabled` - 设为 `true` 可禁用所有 [事件跟踪](/zh-CN/features/event-tracking)
+- `automaticTracking` - 设为 `true` 可自动跟踪应用生命周期事件
+
+#### Filter 示例
+
+```swift
+OpenPanel.initialize(options: .init(
+    clientId: "YOUR_CLIENT_ID",
+    clientSecret: "YOUR_CLIENT_SECRET",
+    filter: { payload in
+        // Your custom filtering logic here
+        return true // or false to filter out the event
+    }
+))
+```
+
+</Steps>
+
+## 用法
+
+### 跟踪事件
+
+要跟踪事件：
+
+```swift
+OpenPanel.track(name: "Button Clicked", properties: ["button_id": "submit_form"])
+```
+
+### 标识用户
+
+要标识用户：
+
+```swift
+OpenPanel.identify(payload: IdentifyPayload(
+    profileId: "user123",
+    firstName: "John",
+    lastName: "Doe",
+    email: "john@example.com",
+    properties: ["subscription": "premium"]
+))
+```
+
+### 设置全局属性
+
+要设置每个事件都会随同发送的属性：
+
+```swift
+OpenPanel.setGlobalProperties([
+    "app_version": "1.0.2",
+    "environment": "production"
+])
+```
+
+### 增加属性值
+
+要增加数值属性：
+
+```swift
+OpenPanel.increment(payload: IncrementPayload(profileId: "user123", property: "login_count"))
+```
+
+### 减少属性值
+
+要减少数值属性：
+
+```swift
+OpenPanel.decrement(payload: DecrementPayload(profileId: "user123", property: "credits_remaining"))
+```
+
+## 高级用法
+
+### 禁用跟踪
+
+你可以在初始化期间临时禁用跟踪：
+
+```swift
+OpenPanel.initialize(options: .init(
+    clientId: "YOUR_CLIENT_ID",
+    clientSecret: "YOUR_CLIENT_SECRET",
+    disabled: true
+))
+```
+
+### 自定义事件过滤
+
+你可以在初始化期间设置自定义事件过滤：
+
+```swift
+OpenPanel.initialize(options: .init(
+    clientId: "YOUR_CLIENT_ID",
+    clientSecret: "YOUR_CLIENT_SECRET",
+    filter: { payload in
+        // Your custom filtering logic here
+        return true // or false to filter out the event
+    }
+))
+```
+
+### 自动跟踪
+
+如果在初始化时将 `automaticTracking` 设为 `true`，SDK 会自动跟踪应用生命周期事件（`app_opened` 和 `app_closed`）：
+
+```swift
+OpenPanel.initialize(options: .init(
+    clientId: "YOUR_CLIENT_ID",
+    clientSecret: "YOUR_CLIENT_SECRET",
+    automaticTracking: true
+))
+```
+
+## 线程安全
+
+<Callout>
+OpenPanel SDK 设计为线程安全。你可以在任意线程调用其方法，无需额外同步。
+</Callout>

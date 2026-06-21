@@ -1,0 +1,168 @@
+{
+  "slug": "integrations",
+  "short_name": "整合",
+  "seo": {
+    "title": "整合 - Slack、Webhooks 等更多功能",
+    "description": "將 OpenPanel 連接到 Slack、Discord、webhooks 等服務。根據使用者行為觸發動作——發送警示、同步到 Zapier，或將事件匯出到 S3 與 BigQuery。",
+    "keywords": [
+      "分析整合",
+      "webhook 分析",
+      "slack 通知分析",
+      "zapier 分析整合",
+      "事件驅動 webhooks",
+      "將事件匯出到 s3",
+      "分析到 bigquery"
+    ]
+  },
+  "hero": {
+    "heading": "整合：連接到任何 webhook",
+    "subheading": "將資料從 OpenPanel 推送到 Slack、Discord，或任何 webhook。依據你選擇的事件觸發，無需輪詢，也不需要黏合程式碼。",
+    "badges": [
+      "Slack、Discord 與 webhooks",
+      "可在任何事件上觸發",
+      "使用 JavaScript 自訂負載",
+      "S3 與 GCS 匯出即將推出"
+    ]
+  },
+  "definition": {
+    "title": "什麼是整合？",
+    "text": "整合是 OpenPanel 與其他一切之間的橋樑。它們讓你能把資料**從 OpenPanel 取出**，送到團隊已經依賴的工具與工作流程中。\n\n概念很簡單：你先建立一個**整合**（與外部服務的連線），再將它附加到一個**[通知規則](/features/notifications)**；當你定義的條件被滿足時，該規則就會觸發。就是這樣——剩下的交給 OpenPanel 處理。\n\n舉個例子：你想在有新使用者從特定國家註冊時收到 Slack 通知。你建立一個 Slack 整合，設定一條在 `signup` 事件時觸發的通知規則，並使用像 *\"New user from {{country}}\"* 這樣的範本。每次有人註冊時，訊息就會送到你的 Slack 頻道——不用輪詢、不用 cron job、也不用黏合程式碼。\n\n它不只用於警示。透過 **webhooks**，你可以把事件資料推送到任何 URL——包括 **Zapier**、**Make**，或你自己的後端。這表示你可以根據真實使用者行為觸發自訂工作流程：當有人完成新手引導時發送歡迎信、當使用者達到用量里程碑時通知業務團隊，或將高價值事件記錄到外部系統。\n\n你甚至可以在使用者完成某個 **funnel** 時觸發整合——把 OpenPanel 的漏斗分析與即時動作結合起來。\n\n目前，OpenPanel 支援：\n\n- **Slack** - 在事件觸發時將訊息發送到任何頻道\n- **Discord** - 與 Slack 類似，但適用於 Discord 伺服器\n- **Webhooks** - 使用自訂標頭與 JavaScript 轉換，將事件負載發送到任何 URL，完整控制負載格式\n\n即將推出：\n\n- **相容 S3 的儲存空間** - 自動將事件匯出到 Amazon S3、MinIO、Cloudflare R2，或任何相容 S3 的儲存服務\n- **Google Cloud Storage** - 匯出到 GCS，方便匯入 **BigQuery**、**Redshift**，或你的資料倉儲\n\n這些儲存整合將讓你無需自訂 ETL 流程，就能將 OpenPanel 事件匯入資料倉儲。"
+  },
+  "capabilities_section": {
+    "title": "整合可以做什麼",
+    "intro": "從即時 Slack 警示到即將推出的資料倉儲匯出——整合將 OpenPanel 與你的技術堆疊串連起來。"
+  },
+  "capabilities": [
+    {
+      "title": "Slack 與 Discord 通知",
+      "description": "連接你的 Slack 工作區或 Discord 伺服器，並在通知規則觸發時收到訊息。非常適合在不離開聊天工具的情況下，持續掌握註冊、錯誤或里程碑事件。"
+    },
+    {
+      "title": "發送到任何 URL 的 Webhooks",
+      "description": "將事件資料發送到任何 HTTP 端點——你自己的 API、Zapier、Make，或任何自動化平台。定義自訂標頭，並使用 JavaScript 轉換，將負載調整成接收服務所預期的格式。"
+    },
+    {
+      "title": "JavaScript 負載轉換",
+      "description": "Webhook 整合內建 JavaScript 編輯器。撰寫一個轉換函式，接收原始負載並回傳你需要的任何格式——重新命名欄位、篩選資料，或在發送前豐富負載內容。"
+    },
+    {
+      "title": "與通知規則搭配使用",
+      "description": "整合不會自己觸發——你要把它們附加到通知規則上。一條規則可以同時觸發多個整合，而一個整合也可以被多條規則使用。"
+    },
+    {
+      "title": "在漏斗與事件上觸發",
+      "description": "通知規則可以在符合屬性篩選條件的特定事件上觸發，或在使用者完成整個漏斗時觸發。這表示你可以在某人完成新手引導時觸發 webhook，而不只是當他們瀏覽單一頁面時。"
+    },
+    {
+      "title": "S3 與 GCS 匯出（即將推出）",
+      "description": "自動將你的事件匯出到相容 S3 的儲存空間或 Google Cloud Storage。之後可匯入 BigQuery、Redshift，或任何資料倉儲——不需要自訂 ETL。"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-integrations.webp",
+      "alt": "可用的整合，顯示 Slack、Discord 與 Webhook 選項",
+      "caption": "瀏覽可用的整合。幾秒內即可連接 Slack、Discord，或設定自訂 webhook。"
+    },
+    {
+      "src": "/features/feature-integrations-create.webp",
+      "alt": "建立 webhook 整合，包含 URL、標頭與 JavaScript 轉換",
+      "caption": "使用自訂 URL、標頭，以及 JavaScript 轉換建立 webhook 整合，將負載調整成你需要的格式。"
+    }
+  ],
+  "how_it_works": {
+    "title": "整合如何運作",
+    "intro": "幾分鐘內完成整合設定，剩下的交給通知規則處理。",
+    "steps": [
+      {
+        "title": "選擇整合類型",
+        "description": "可從 Slack、Discord 或 Webhook 中選擇。每種類型都有自己的設定方式——Slack 和 Discord 使用 OAuth，webhook 則是 URL + 標頭。"
+      },
+      {
+        "title": "設定連線",
+        "description": "對於 Slack/Discord，連接你的工作區或伺服器。對於 webhooks，輸入目標 URL、加入任何自訂標頭，並可選擇撰寫 JavaScript 轉換來控制負載格式。"
+      },
+      {
+        "title": "建立通知規則",
+        "description": "在通知區段中，建立一條定義整合應何時觸發的規則——例如當 `screen_view` 事件的 path 以 /onboarding 開頭時。將一個或多個整合附加到這條規則。"
+      },
+      {
+        "title": "事件自動觸發動作",
+        "description": "當事件符合規則時，OpenPanel 會即時將資料傳送到所有已附加的整合。無需輪詢，沒有延遲。"
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "團隊如何使用整合",
+    "intro": "從團隊警示到完整自動化流程——整合將分析轉化為行動。",
+    "items": [
+      {
+        "title": "即時團隊警示",
+        "description": "當有新使用者註冊、發生高價值購買，或觸發重大錯誤時，發送到 Slack 或 Discord。無需任何人打開儀表板，就能讓整個團隊即時掌握狀況。"
+      },
+      {
+        "title": "Zapier 與自動化工作流程",
+        "description": "將 webhook 負載傳送到 Zapier 或 Make，以觸發後續動作——發送歡迎信、更新 CRM、將資料新增到試算表，或啟動新手引導滴灌行銷活動。全部由真實使用者行為驅動。"
+      },
+      {
+        "title": "自訂後端動作",
+        "description": "將 webhook 指向你自己的 API，在特定事件觸發時執行自訂邏輯。為推薦進行加點、標記可疑工作階段，或將分析資料同步到內部工具。"
+      },
+      {
+        "title": "資料倉儲匯出",
+        "description": "透過即將推出的 S3 與 GCS 整合，將事件直接匯出到你的資料倉儲。匯入 BigQuery 或 Redshift 以進行進階 SQL 分析、與其他資料集交叉比對，或長期保存。"
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "notifications",
+      "title": "通知",
+      "description": "通知規則控制整合何時觸發。定義事件、篩選條件與範本，然後附加整合來對其採取動作。"
+    },
+    {
+      "slug": "event-tracking",
+      "title": "事件追蹤",
+      "description": "整合由你追蹤的事件所驅動。你的事件資料越豐富，觸發條件就能越精準。"
+    },
+    {
+      "slug": "funnels",
+      "title": "漏斗",
+      "description": "當使用者完成整個漏斗時觸發整合——不只是單一事件。"
+    }
+  ],
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於 OpenPanel 整合的常見問題。",
+    "items": [
+      {
+        "question": "整合與通知如何一起運作？",
+        "answer": "整合是目的地（Slack 頻道、webhook URL、Discord 伺服器）。通知規則是觸發條件（當事件 X 發生且符合篩選 Y 時）。你先建立兩者，再將整合附加到規則上。當規則觸發時，所有已附加的整合都會收到資料。"
+      },
+      {
+        "question": "我可以將 webhooks 與 Zapier 一起使用嗎？",
+        "answer": "可以。建立一個指向你 Zapier webhook URL 的 webhook 整合。你可以使用 JavaScript 轉換將負載調整成 Zap 所需的格式。這讓你能根據 OpenPanel 中真實的使用者事件觸發任何 Zapier 工作流程。"
+      },
+      {
+        "question": "JavaScript 轉換的作用是什麼？",
+        "answer": "JavaScript 轉換是一個函式，會接收原始事件負載並回傳修改後的版本。你可以重新命名欄位、篩掉屬性、加入計算值，或完全重構資料。它會在負載送到 webhook URL 之前執行。"
+      },
+      {
+        "question": "S3 和 GCS 整合何時會提供？",
+        "answer": "相容 S3 的儲存空間與 Google Cloud Storage 整合已在近期路線圖上。這些功能將讓你自動匯出事件，匯入 BigQuery、Redshift，或任何資料倉儲，而無需建立自訂 ETL 流程。"
+      },
+      {
+        "question": "一個整合可以被多條通知規則使用嗎？",
+        "answer": "可以。整合本質上只是與服務的連線。你可以將它附加到任意多條通知規則上。例如，單一 Slack 整合可以由註冊、購買與錯誤規則觸發——每條規則都有自己的範本與篩選條件。"
+      },
+      {
+        "question": "我可以建立的整合數量有限制嗎？",
+        "answer": "沒有硬性上限。你可以依需求建立任意多的整合與通知規則，以涵蓋你的工作流程。"
+      }
+    ]
+  },
+  "cta": {
+    "label": "設定你的第一個整合",
+    "href": "https://dashboard.openpanel.dev/onboarding"
+  }
+}

@@ -1,0 +1,334 @@
+---
+title: 使用副本解決讀寫一致性
+description: 了解我們如何透過 WAL LSN 追蹤與 AsyncLocalStorage，在 OpenPanel 中解決讀後寫一致性問題，確保使用者總是能看到最新變更。
+tag: 工程
+date: 2025-10-31
+team: OpenPanel Team
+cover: /content/read-after-write.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+
+當你使用讀取副本來擴充資料庫時，雖然能提升效能，卻也會帶來一個微妙的問題：使用者可能看不到自己剛建立的資料。本文將帶你了解我們在 OpenPanel 如何解決讀後寫一致性的挑戰，包括我們打造的理想方案，以及最後不得不採取的實務折衷。
+
+## 讀後寫問題
+
+想像這個情境：使用者在 OpenPanel 中建立了一個新儀表板。寫入會送到主資料庫，接著他們立刻被重新導向去查看剛建立的內容。但讀取請求打到了還沒同步完成的副本。結果呢？對於自己剛建立的東西，卻看到一個令人困惑的 404 錯誤。
+
+這是因為資料庫複寫本來就會有延遲。PostgreSQL 的複寫速度很快，通常只有幾毫秒，但即使是很小的延遲，也會在不對的時機造成糟糕的使用者體驗。
+
+對 OpenPanel 來說，使用者會持續建立與修改儀表板、圖表和報告，這種不一致是無法接受的。我們需要確保使用者總是能立即看到自己的寫入結果。
+
+## WAL LSN：理想的解決方案（理論上）
+
+PostgreSQL 會維護一份 Write-Ahead Log（WAL），其中的 Log Sequence Numbers（LSN）會隨著每次資料庫變更而遞增。你可以把 LSN 想成資料庫狀態的精準時間戳。透過比較主資料庫與副本之間的 LSN 值，就能準確判斷某個副本是否已經接收到特定變更。
+
+LSN 追蹤的運作方式如下：
+
+```sql
+-- 主資料庫寫入後
+SELECT pg_current_wal_lsn() AS lsn;
+-- 回傳類似：0/3000148
+
+-- 在副本上，檢查它的位置
+SELECT pg_last_wal_receive_lsn() AS lsn;
+-- 回傳類似：0/3000140
+```
+
+如果副本的 LSN 等於或大於這次寫入的 LSN，就可以安全讀取。否則，你就需要等待，或改導向主資料庫。
+
+我們已經實作出這個方法的完整版本，包括：
+- 在每次寫入後擷取 LSN
+- 依 session 快取 LSN
+- 使用正確的 BigInt 處理比較 LSN 值
+- 指數退避重試邏輯
+
+以下是我們實作的 LSN 比較邏輯：
+
+```typescript
+function compareWalLsn(lsn1: string, lsn2: string): number {
+  // LSN 格式為 "X/Y"，其中 X 和 Y 是十六進位
+  const [x1, y1] = lsn1.split('/').map((x) => BigInt(`0x${x}`));
+  const [x2, y2] = lsn2.split('/').map((x) => BigInt(`0x${x}`));
+
+  // 合併成單一 64 位元值進行比較
+  const v1 = ((x1 ?? 0n) << 32n) + (y1 ?? 0n);
+  const v2 = ((x2 ?? 0n) << 32n) + (y2 ?? 0n);
+
+  if (v1 < v2) return -1;
+  if (v1 > v2) return 1;
+  return 0;
+}
+```
+
+## Prisma 的限制
+
+這就是理論與現實交會的地方。我們的實作遇到了一個根本限制：Prisma 的 `readReplicas` 擴充套件，在執行查詢之前不會暴露實際會使用哪個副本。
+
+理想的流程應該是：
+1. 使用者寫入主資料庫，我們擷取 LSN
+2. 使用者發出讀取請求
+3. 在 middleware 中：「Prisma 即將把這個請求導向副本 X」
+4. 檢查副本 X 目前的 LSN
+5. 如果副本 X 已經同步完成，就繼續查詢
+6. 如果還沒，使用指數退避重試或改導向主資料庫
+
+但 Prisma 的擴充套件不提供這種細粒度控制。當我們的 extension middleware 執行時，我們可以檢查「某一個」副本的 LSN，但無法知道那是不是 Prisma 實際會用來執行查詢的那一個。當有多個副本、而且每個副本的複寫進度都可能不同時，檢查其中一個並不能告訴我們其他副本的狀態。
+
+我們已經建好了完整的 LSN 比較邏輯、快取與重試機制。但在不知道 Prisma 會使用哪個副本的情況下，我們無法根據那個特定副本的狀態做出智慧路由決策。
+
+如果你能完全掌控資料庫連線路由，並實作自訂副本選擇，LSN 追蹤絕對是正解。但在 Prisma 的限制下，我們需要更簡單的做法。
+
+## 我們目前的實際解法：以 session 為基礎導向主資料庫
+
+與其檢查精確的複寫位置，我們簡化成：如果某個 session 最近有寫入，就把它的所有讀取都導向主資料庫。運作方式如下：
+
+1. 在任何寫入操作後，擷取目前的 WAL LSN
+2. 將這個 LSN 與 session ID 一起快取（TTL 5 秒）
+3. 讀取操作時，檢查該 session 是否有快取的 LSN
+4. 如果有，就強制這個讀取走主資料庫
+
+這個做法偏保守，但很有效。我們不是在確認副本是否已同步完成，而是假設它們還沒完成，並採取最安全的方式。目前我們甚至直接略過 LSN 檢查，單純把請求導向主資料庫。我們的最終目標，是等我們對 Prisma 的路由有更多控制權後，能對實際副本做正確的 LSN 檢查，或者改用能暴露實際使用副本的自訂連線池。
+
+```typescript
+// 寫入後：快取 LSN
+if (isWriteOperation(operation) && sessionId) {
+  const result = await query(args);
+  const lsn = await getCurrentWalLsn(client);
+  if (lsn) {
+    await cacheWalLsnForSession(sessionId, lsn);
+  }
+  return result;
+}
+
+// 讀取前：檢查是否有快取的 LSN
+if (isReadOperation(operation) && sessionId) {
+  const cachedLsn = await getCachedWalLsn(sessionId);
+  if (cachedLsn) {
+    // 強制走主資料庫 - 我們知道這個 session 最近有寫入
+    __internalParams.transaction = true;
+  }
+}
+```
+
+5 秒 TTL 是我們的安全緩衝。在測試中，副本通常會在 100-500ms 內同步完成，但我們寧可保守一些。這個時間窗口理論上可以再縮短，但目前的設定已經證明很可靠。
+
+## AsyncLocalStorage：避免層層傳遞參數
+
+最大的實作挑戰不是一致性邏輯本身，而是如何讓 session 資訊在整個應用程式堆疊中都能取得。我們需要在 Prisma extension 的深處拿到 session ID，卻不想修改每個函式簽章。
+
+AsyncLocalStorage 完美解決了這件事。你可以把它想成後端版的 React Context——它會建立一個看不見的上下文，跟著你的程式穿越非同步操作。
+
+如果沒有 AsyncLocalStorage，你到處都會遇到「層層傳遞參數」的問題：
+
+```typescript
+// 麻煩的做法 - 把 sessionId 一路往下傳
+async function getUser(userId: string, sessionId: string) {
+  return db.user.findUnique({
+    where: { id: userId },
+    // 想辦法把 sessionId 傳給 Prisma...
+  });
+}
+
+async function getDashboard(id: string, userId: string, sessionId: string) {
+  const user = await getUser(userId, sessionId); // 一路往下傳
+  // 更多 sessionId 傳遞...
+}
+```
+
+使用 AsyncLocalStorage 後，上下文就變成隱式的：
+
+```typescript
+// 在你的 middleware 中
+runWithAlsSession(sessionId, async () => {
+  // 這條 async 鏈中的所有程式碼都能存取 sessionId
+  await handleRequest();
+});
+
+// 在 Prisma extension 深處
+const sessionId = getAlsSessionId(); // 神奇！不用層層傳遞參數
+```
+
+只要你維持 async 鏈，這個方法就能穩定運作。鬆散的 promise（沒有被 await 的）會失去上下文，所以一定要記得 await 你的 async 操作。
+
+## 完整實作
+
+讓我帶你看看這個解法的關鍵組成。
+
+### AsyncLocalStorage 設定
+
+```typescript
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+type Ctx = { sessionId: string | null };
+const als = new AsyncLocalStorage<Ctx>();
+
+export const runWithAlsSession = <T>(
+  sessionId: string | null | undefined,
+  fn: () => Promise<T>,
+) => als.run({ sessionId: sessionId || null }, fn);
+
+export const getAlsSessionId = () => als.getStore()?.sessionId ?? null;
+```
+
+### TRPC middleware 整合
+
+```typescript
+const sessionScopeMiddleware = t.middleware(async ({ ctx, next }) => {
+  const sessionId = ctx.session?.id ?? null;
+  return runWithAlsSession(sessionId, async () => {
+    return next();
+  });
+});
+```
+
+### Prisma extension
+
+以下是我們完整的 session 一致性 extension：
+
+```typescript
+export function sessionConsistency() {
+  return Prisma.defineExtension((client) =>
+    client.$extends({
+      name: 'session-consistency',
+      query: {
+        $allOperations: async ({
+          operation,
+          model,
+          args,
+          query,
+          __internalParams, // 文件未公開但必要
+        }) => {
+          const sessionId = getAlsSessionId();
+
+          // 處理寫入操作
+          if (isWriteOperation(operation)) {
+            const result = await query(args);
+
+            if (sessionId) {
+              const lsn = await getCurrentWalLsn(client);
+              if (lsn) {
+                await cacheWalLsnForSession(sessionId, lsn);
+                logger.debug('已在寫入後快取 WAL LSN', {
+                  sessionId,
+                  lsn,
+                  operation,
+                  model,
+                });
+              }
+            }
+
+            return result;
+          }
+
+          // 處理讀取操作
+          if (
+            isReadOperation(operation) &&
+            sessionId &&
+            (await getCachedWalLsn(sessionId))
+          ) {
+            // 透過假裝我們在交易中，強制走主資料庫
+            // readReplicas extension 會一律把交易導向主資料庫
+            __internalParams.transaction = true;
+          }
+
+          return query(args);
+        },
+      },
+    }),
+  );
+}
+```
+
+### 套用 extensions
+
+套用 Prisma extensions 時，順序很重要：
+
+```typescript
+export const prisma = new PrismaClient()
+  .$extends(sessionConsistency()) // 必須先套用！
+  .$extends(readReplicas({
+    url: process.env.DATABASE_REPLICA_URL,
+  }));
+```
+
+## 為什麼這個方法很有效
+
+我們的解法看起來像是一種折衷，但它有幾個優點：
+
+**務實**：理想的做法應該是檢查每個副本的 LSN，只在必要時才路由。但我們已經建好了那套邏輯，而 Prisma 的 `readReplicas` extension 又不會暴露實際會使用哪個副本。所以在寫入後，我們採取保守方式導向主資料庫——在 Prisma 的限制下這樣更容易實作，雖然也代表某些本來可以安全讀副本的請求，會改打到主資料庫。
+
+**可靠**：我們不猜測複寫延遲，也不依賴時間。快取的 LSN 本身就證明了寫入曾發生，而且我們知道這些讀取需要謹慎處理。
+
+**效能**：只有真的有寫入的 session 會受到影響。以讀取為主的使用者仍然會自動使用副本。5 秒的窗口雖然保守，但也意味著大多數流量仍然能享受副本帶來的效能。
+
+**可維護性**：邏輯全都集中在一個 Prisma extension 裡。程式碼庫其他地方都不用改。未來如果 Prisma 增加副本選擇 API，我們就能在不動應用程式程式碼的情況下升級成真正的 LSN 檢查。
+
+## 監控與洞察
+
+我們追蹤幾個指標來確保系統表現良好：
+
+- session LSN 的快取命中率
+- 導向主資料庫與副本的讀取比例
+- 每個 session 中，寫入到下一次讀取之間的時間分佈
+
+這些指標證實，大多數讀取仍然會走副本。只有剛完成寫入的活躍使用者才會打到主資料庫，而這正是我們想要的結果。
+
+## 未來改善
+
+雖然目前的解法運作得很好，但我們仍看到一些可以優化的方向：
+
+**動態 TTL**：根據實測的複寫延遲調整快取 TTL。如果副本一貫很快，就縮短這個窗口。
+
+**逐操作一致性**：有些讀取不需要立即一致性。我們可以加入提示，讓特定查詢跳過一致性檢查。
+
+**副本健康狀態追蹤**：監控實際複寫延遲，並動態調整路由。
+
+如果 Prisma 最終支援自訂副本選擇邏輯，我們很樂意實作真正的 LSN 檢查。在那之前，我們的方法已經能以極低的複雜度提供很好的一致性保證。
+
+## 重點整理
+
+打造讀後寫一致性讓我們學到幾個重要教訓：
+
+**先追求理想，再接受務實。** 我們在發現 Prisma 的限制之前，先實作了完整的 LSN 追蹤。最後更簡單的方案，對使用者來說同樣有效。
+
+**AsyncLocalStorage 是超能力。** 它消除了層層傳遞參數的麻煩，讓程式碼更乾淨。只要記得維持 async 鏈就好。
+
+**保守的預設值通常是好預設。** 5 秒的主資料庫導向窗口也許有點過頭，但它從未造成問題。
+
+**一切都要量測。** 沒有指標，你只能猜。請追蹤主資料庫／副本的分佈，確保沒有把主資料庫壓垮。
+
+如果你正在尋找一個認真看待資料一致性的分析平台，歡迎看看 [OpenPanel](https://openpanel.dev)。
+
+<Faqs>
+<FaqItem question="為什麼不乾脆所有東西都用主資料庫？">
+雖然那樣可以解決一致性問題，但也失去了讀取副本存在的意義。在像 OpenPanel 這樣以讀取為主的應用中，副本可以大幅減輕主資料庫負載並提升整體效能。我們的解法讓你同時擁有兩者的優點：需要一致性時能保證一致，而大多數讀取操作仍可享受副本效能。
+</FaqItem>
+
+<FaqItem question="如果我的快取（Redis）掛掉會怎樣？">
+如果快取不可用，系統會失敗開放 - 讀取會轉向副本。這表示你可能暫時看到讀後寫不一致，但應用程式仍會繼續運作。由於複寫延遲通常低於 500ms，大多數使用者不會注意到。這是為了系統韌性所做的刻意取捨。
+</FaqItem>
+
+<FaqItem question="這可以和多個讀取副本一起運作嗎？">
+可以！我們方法的優點就是，不在乎 Prisma 選了哪個副本。當某個 session 有快取的 LSN 時，不管你有多少副本、各自延遲多少，所有讀取都會被強制導向主資料庫。
+</FaqItem>
+
+<FaqItem question="我可以把這個方法用在 Prisma 以外的 ORM 嗎？">
+當然可以！核心概念——用 AsyncLocalStorage 管理上下文、LSN 快取，以及路由邏輯——都能用在任何 ORM 或資料庫 client 上。你只需要根據自己的工具的 middleware／plugin 系統調整實作，但策略本身是一樣的。
+</FaqItem>
+
+<FaqItem question="為什麼是 5 秒？這不會太保守嗎？">
+的確很保守！我們在自己的基礎架構上量到的典型複寫延遲是 100-500ms。5 秒 TTL 提供了很舒適的安全緩衝，可應付偶發的網路抖動或複寫延遲飆高。你完全可以根據自己的量測結果往下調整——只要先監控你實際的延遲分佈就好。
+</FaqItem>
+
+<FaqItem question="來自外部來源的寫入（背景工作、webhook 等）怎麼辦？">
+外部寫入沒有使用者 session，所以不會觸發一致性機制。通常這沒問題——背景作業一般不需要立即的讀後寫一致性。如果真的需要，你可以明確查詢主資料庫，或用不同的上下文識別碼實作類似的 LSN 快取機制。
+</FaqItem>
+
+<FaqItem question="AsyncLocalStorage 會有效能開銷嗎？">
+開銷非常小——AsyncLocalStorage 在 Node.js 中已高度最佳化。真正需要考量的是，寫入後多出來的主資料庫查詢（LSN 檢查），以及把更多讀取導向主資料庫。實務上，這只會影響到那些正在積極寫入的 session，佔總流量比例很小。
+</FaqItem>
+
+<FaqItem question="我可以實作逐查詢的一致性提示嗎？">
+可以！你可以把 AsyncLocalStorage 的上下文擴充成包含 `skipConsistencyCheck` 旗標，或檢查查詢中的特定模式。例如，彙總歷史資料的分析查詢就不需要立即一致性。這也是我們規劃中的未來改善之一。
+</FaqItem>
+</Faqs>

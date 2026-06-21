@@ -1,0 +1,251 @@
+---
+title: 高吞吐量配置
+description: 为高事件吞吐量调优 OpenPanel
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+默认的 Docker Compose 配置适用于大多数部署。当你开始看到高事件吞吐量——每秒数千个事件或几十个 worker 副本——就需要调整一些参数。
+
+## 使用 PGBouncer 进行连接池化
+
+PostgreSQL 对打开连接数有硬性限制。每个 worker 和 API 副本都会打开自己的连接池，因此总数会快速增长。如果不使用连接池，在高负载下会开始出现 `too many connections` 错误。
+
+PGBouncer 位于 PostgreSQL 前端，维护一个较小的真实数据库连接池，在其上复用多个应用连接。
+
+### 将 PGBouncer 添加到 docker-compose.yml
+
+添加 `op-pgbouncer` 服务，并更新 `op-api` 和 `op-worker` 依赖：
+
+```yaml
+op-pgbouncer:
+  image: edoburu/pgbouncer:v1.25.1-p0
+  restart: always
+  depends_on:
+    op-db:
+      condition: service_healthy
+  environment:
+    - DB_HOST=op-db
+    - DB_PORT=5432
+    - DB_USER=postgres
+    - DB_PASSWORD=postgres
+    - DB_NAME=postgres
+    - AUTH_TYPE=scram-sha-256
+    - POOL_MODE=transaction
+    - MAX_CLIENT_CONN=1000
+    - DEFAULT_POOL_SIZE=20
+    - MIN_POOL_SIZE=5
+    - RESERVE_POOL_SIZE=5
+  healthcheck:
+    test: ["CMD-SHELL", "PGPASSWORD=postgres psql -h 127.0.0.1 -p 5432 -U postgres pgbouncer -c 'SHOW VERSION;' -q || exit 1"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+```
+
+然后将 `op-api` 和 `op-worker` 改为依赖 `op-pgbouncer`，而不是 `op-db`：
+
+```yaml
+op-api:
+  depends_on:
+    op-pgbouncer:
+      condition: service_healthy
+    op-ch:
+      condition: service_healthy
+    op-kv:
+      condition: service_healthy
+
+op-worker:
+  depends_on:
+    op-pgbouncer:
+      condition: service_healthy
+    op-api:
+      condition: service_healthy
+```
+
+### 更新 DATABASE_URL
+
+Prisma 需要知道它连接的是池化器。将 `DATABASE_URL` 指向 `op-pgbouncer`，并添加 `&pgbouncer=true`：
+
+```bash
+# Before
+DATABASE_URL=postgresql://postgres:postgres@op-db:5432/postgres?schema=public
+
+# After
+DATABASE_URL=postgresql://postgres:postgres@op-pgbouncer:5432/postgres?schema=public&pgbouncer=true
+```
+
+让 `DATABASE_URL_DIRECT` 直接指向 `op-db`，不要带 `pgbouncer=true` 标志。迁移使用直连，不能通过事务模式池化器工作。
+
+```bash
+DATABASE_URL_DIRECT=postgresql://postgres:postgres@op-db:5432/postgres?schema=public
+```
+
+<Callout type="warn">
+PGBouncer 运行在事务模式。Prisma migrations 和交互式事务需要直连。务必将 `DATABASE_URL_DIRECT` 设置为 `op-db` 地址。
+</Callout>
+
+### 调整池大小
+
+一个粗略规则：`DEFAULT_POOL_SIZE` 不应超过你的 PostgreSQL `max_connections` 除以不同数据库/用户对的数量。PostgreSQL 默认值是 100。如果你在 Postgres 中提高了 `max_connections`，也可以按比例提高 `DEFAULT_POOL_SIZE`。
+
+---
+
+## 缓冲区调优
+
+事件、session 和 profile 会先经过内存中的 Redis 缓冲区，再按批次写入 ClickHouse。默认值偏保守。在高负载下，你需要更大的批次来减少 ClickHouse 插入次数并提升吞吐量。
+
+### 事件缓冲区
+
+事件缓冲区会在 Redis 中收集传入事件，并按 cron 计划刷新到 ClickHouse。
+
+| 变量 | 默认值 | 控制内容 |
+|---|---|---|
+| `EVENT_BUFFER_BATCH_SIZE` | `4000` | 每次刷新从 Redis 读取并发送到 ClickHouse 的事件数 |
+| `EVENT_BUFFER_CHUNK_SIZE` | `1000` | 单次 ClickHouse 插入调用发送的事件数 |
+| `EVENT_BUFFER_MICRO_BATCH_MS` | `10` | 写入 Redis 之前在内存中累积事件的时长（ms） |
+| `EVENT_BUFFER_MICRO_BATCH_SIZE` | `100` | 在强制写入 Redis 前可累积的最大事件数 |
+
+在高吞吐量场景下，增大 `EVENT_BUFFER_BATCH_SIZE`，让每次刷新处理更多事件。保持 `EVENT_BUFFER_CHUNK_SIZE` 小于或等于 `EVENT_BUFFER_BATCH_SIZE`。
+
+```bash
+EVENT_BUFFER_BATCH_SIZE=10000
+EVENT_BUFFER_CHUNK_SIZE=2000
+```
+
+### Session 缓冲区
+
+Session 会在每个事件后更新，并单独刷新到 ClickHouse。
+
+| 变量 | 默认值 | 控制内容 |
+|---|---|---|
+| `SESSION_BUFFER_BATCH_SIZE` | `1000` | 每次刷新读取的事件数 |
+| `SESSION_BUFFER_CHUNK_SIZE` | `1000` | 每次 ClickHouse 插入的事件数 |
+
+```bash
+SESSION_BUFFER_BATCH_SIZE=5000
+SESSION_BUFFER_CHUNK_SIZE=2000
+```
+
+### Profile 缓冲区
+
+写入前，profile 会与现有数据合并。默认批次较小，因为每个 profile 可能都需要一次 ClickHouse 查询。
+
+| 变量 | 默认值 | 控制内容 |
+|---|---|---|
+| `PROFILE_BUFFER_BATCH_SIZE` | `200` | 每次刷新处理的 profile 数 |
+| `PROFILE_BUFFER_CHUNK_SIZE` | `1000` | 每次 ClickHouse 插入的 profile 数 |
+| `PROFILE_BUFFER_TTL_IN_SECONDS` | `3600` | profile 在 Redis 中缓存的时长 |
+
+如果 profile 处理成为瓶颈，可提高 `PROFILE_BUFFER_BATCH_SIZE`。更高的值意味着更少的刷新次数，但每次刷新使用更多内存。
+
+```bash
+PROFILE_BUFFER_BATCH_SIZE=500
+PROFILE_BUFFER_CHUNK_SIZE=1000
+```
+
+---
+
+## 扩展 ingestion
+
+如果事件队列增长速度快于 worker 的消费速度，你有几种选择。
+
+先做纵向扩展，再做横向扩展。每增加一个 worker 副本都会带来额外开销：更多 Redis 连接、更多 ClickHouse 连接、更多内存。提高现有副本的并发度，通常比增加副本更便宜也更有效。
+
+### 提高 job 并发数（先做这个）
+
+每个 worker 会并行处理多个 job。默认每个副本为 `10`。
+
+```bash
+EVENT_JOB_CONCURRENCY=20
+```
+
+逐步提高并观察队列深度。限制因素是内存，而不是逻辑——在内存足够的硬件上，`500`、`1000` 甚至 `2000+` 都是可行的。每个并发 job 都会在内存中持有事件数据，因此在提高数值时要监控内存使用情况。只有在单纯增加并发不再有效后，才增加更多副本。
+
+### 增加更多 worker 副本
+
+如果你已经把并发调到上限，但队列仍然积压，就增加副本数。
+
+在 `docker-compose.yml` 中：
+
+```yaml
+op-worker:
+  deploy:
+    replicas: 8
+```
+
+或者运行时：
+
+```bash
+docker compose up -d --scale op-worker=8
+```
+
+### 对事件队列分片
+
+<Callout type="warn">
+**实验性功能。** 队列分片需要 Redis Cluster 或 Dragonfly。Dragonfly 测试很少，Redis Cluster 完全未测试。不要在生产环境中使用，除非先在你的环境中完成验证。
+</Callout>
+
+Redis 是单线程的，因此在极高事件速率下，单个队列实例可能成为瓶颈。队列分片通过将队列拆分为多个独立分片来规避这一点。每个分片都可以由各自的 Redis 实例支持，因此吞吐量会随实例数量扩展，而不是受限于单核。
+
+事件按 project ID 分布到各个分片，因此会保留同一 project 内的顺序。
+
+```bash
+EVENTS_GROUP_QUEUES_SHARDS=4
+QUEUE_CLUSTER=true
+```
+
+<Callout type="warn">
+在队列上出现真实流量之前就设置 `EVENTS_GROUP_QUEUES_SHARDS`。如果在有待处理 job 时修改该值，这些 job 会被查询到错误的分片，直到恢复分片数量之前都不会被处理。
+</Callout>
+
+### 调整排序延迟
+
+乱序到达的事件会在处理前短暂保留。默认值是 `100ms`。
+
+```bash
+ORDERING_DELAY_MS=100
+```
+
+降低该值会减少延迟，但会增加 ClickHouse 乱序写入的概率。该值不应超过 `500ms`。
+
+---
+
+## 综合配置
+
+高吞吐量 `.env` 的起始配置：
+
+```bash
+# Route app traffic through PGBouncer
+DATABASE_URL=postgresql://postgres:postgres@op-pgbouncer:5432/postgres?schema=public&pgbouncer=true
+# Keep direct connection for migrations
+DATABASE_URL_DIRECT=postgresql://postgres:postgres@op-db:5432/postgres?schema=public
+
+# Event buffer
+EVENT_BUFFER_BATCH_SIZE=10000
+EVENT_BUFFER_CHUNK_SIZE=2000
+
+# Session buffer
+SESSION_BUFFER_BATCH_SIZE=5000
+SESSION_BUFFER_CHUNK_SIZE=2000
+
+# Profile buffer
+PROFILE_BUFFER_BATCH_SIZE=500
+
+# Queue
+EVENTS_GROUP_QUEUES_SHARDS=4
+EVENT_JOB_CONCURRENCY=20
+```
+
+然后先增加 worker 数量：
+
+```bash
+docker compose up -d --scale op-worker=8
+```
+
+调优时，请监控 Redis 队列深度和 ClickHouse 插入延迟。最佳参数取决于你的硬件、事件形态和流量模式。

@@ -1,0 +1,325 @@
+---
+title: "如何使用 Node.js 跟踪事件"
+description: "为您的 Node.js 应用添加服务端分析。使用 OpenPanel 的 JavaScript SDK 跟踪事件、识别用户并分析行为。"
+difficulty: beginner
+timeToComplete: 7
+date: 2025-12-14
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel 团队
+steps:
+  - name: "安装 SDK"
+    anchor: "install"
+  - name: "初始化 OpenPanel"
+    anchor: "setup"
+  - name: "跟踪事件"
+    anchor: "events"
+  - name: "识别用户"
+    anchor: "identify"
+  - name: "验证您的设置"
+    anchor: "verify"
+---
+
+## 简介
+
+服务端分析让您可以完全控制要跟踪的数据，并确保事件不会被广告拦截器阻止。OpenPanel 的 JavaScript SDK 可在 Node.js 环境中完美运行，使您能够从后端、API 路由和后台任务中跟踪事件。
+
+OpenPanel 是 Mixpanel 和 Amplitude 的开源替代方案，在不影响用户隐私的前提下，为您提供强大的服务端分析能力。
+
+## 前提条件
+
+- 已设置好 Node.js 项目
+- OpenPanel 账户（[免费注册](https://dashboard.openpanel.dev/onboarding)）
+- 来自 OpenPanel 仪表板的 Client ID 和 Client Secret
+
+> **重要：** 服务端跟踪需要使用 `clientSecret` 进行身份验证。
+
+## 第 1 步：安装 SDK
+
+安装 OpenPanel JavaScript SDK：
+
+```bash
+npm install @openpanel/sdk
+```
+
+或者使用 pnpm：
+
+```bash
+pnpm install @openpanel/sdk
+```
+
+## 第 2 步：初始化 OpenPanel
+
+使用您的凭据创建一个 OpenPanel 实例：
+
+```js title="lib/op.js"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET', // 服务端必需
+});
+```
+
+> **安全提示：** 切勿在客户端代码中暴露您的 `clientSecret`。生产环境中请使用环境变量。
+
+### 使用环境变量
+
+```js title="lib/op.js"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const op = new OpenPanel({
+  clientId: process.env.OPENPANEL_CLIENT_ID,
+  clientSecret: process.env.OPENPANEL_CLIENT_SECRET,
+});
+```
+
+```bash title=".env"
+OPENPANEL_CLIENT_ID=your-client-id
+OPENPANEL_CLIENT_SECRET=your-client-secret
+```
+
+## 第 3 步：跟踪事件
+
+在您的 Node.js 应用中随处跟踪事件：
+
+```js title="routes/api/signup.js"
+import { op } from '@/lib/op';
+
+export async function POST(request) {
+  const { email, name } = await request.json();
+
+  // 跟踪注册事件
+  op.track('user_signed_up', {
+    email,
+    name,
+    source: 'website',
+  });
+
+  // 您的注册逻辑
+  const user = await createUser({ email, name });
+
+  return Response.json({ success: true, user });
+}
+```
+
+### 跟踪 API 请求
+
+```js title="middleware/analytics.js"
+import { op } from '@/lib/op';
+
+export function analyticsMiddleware(req, res, next) {
+  // 跟踪 API 请求
+  op.track('api_request', {
+    method: req.method,
+    path: req.path,
+    status_code: res.statusCode,
+  });
+
+  next();
+}
+```
+
+### 跟踪后台任务
+
+```js title="jobs/send-email.js"
+import { op } from '@/lib/op';
+
+export async function sendEmailJob(userId, emailData) {
+  try {
+    await sendEmail(emailData);
+
+    op.track('email_sent', {
+      user_id: userId,
+      email_type: emailData.type,
+      success: true,
+    });
+  } catch (error) {
+    op.track('email_failed', {
+      user_id: userId,
+      email_type: emailData.type,
+      error: error.message,
+    });
+  }
+}
+```
+
+## 第 4 步：识别用户
+
+要[识别用户](/zh-CN/features/identify-users)并跟踪其行为：
+
+```js title="routes/api/login.js"
+import { op } from '@/lib/op';
+
+export async function POST(request) {
+  const { email, password } = await request.json();
+
+  const user = await authenticateUser(email, password);
+
+  // 识别用户
+  op.identify({
+    profileId: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    properties: {
+      plan: user.plan,
+      signupDate: user.createdAt,
+    },
+  });
+
+  // 跟踪登录事件
+  op.track('user_logged_in', {
+    user_id: user.id,
+    method: 'email',
+  });
+
+  return Response.json({ success: true, user });
+}
+```
+
+### 跟踪用户操作
+
+```js title="routes/api/purchase.js"
+import { op } from '@/lib/op';
+
+export async function POST(request) {
+  const { userId, productId, amount } = await request.json();
+
+  // 跟踪购买事件
+  op.track('purchase_completed', {
+    user_id: userId,
+    product_id: productId,
+    amount,
+    currency: 'USD',
+  }, {
+    profileId: userId, // 将事件关联到用户
+  });
+
+  // 您的购买逻辑
+  await processPurchase(userId, productId, amount);
+
+  return Response.json({ success: true });
+}
+```
+
+## 验证您的设置
+
+1. 向触发事件的 API 端点发起请求
+2. 运行会跟踪事件的后台任务
+3. 打开您的 [OpenPanel 仪表板](https://dashboard.openpanel.dev)
+4. 查看实时视图，确认事件已进入
+
+**没有看到事件？**
+
+- 检查服务器日志中的错误
+- 验证您的 Client ID 和 Client Secret 是否正确
+- 确保已提供 `clientSecret`（服务端必需）
+- 检查服务器日志中的网络请求
+
+## 常见模式
+
+### 跟踪 webhook 事件
+
+```js title="routes/api/webhook.js"
+import { op } from '@/lib/op';
+
+export async function POST(request) {
+  const payload = await request.json();
+
+  op.track('webhook_received', {
+    source: payload.source,
+    event_type: payload.type,
+    timestamp: new Date().toISOString(),
+  });
+
+  // 处理 webhook
+  await processWebhook(payload);
+
+  return Response.json({ success: true });
+}
+```
+
+### 设置全局属性
+
+```js title="lib/op.js"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const op = new OpenPanel({
+  clientId: process.env.OPENPANEL_CLIENT_ID,
+  clientSecret: process.env.OPENPANEL_CLIENT_SECRET,
+  globalProperties: {
+    app_version: process.env.APP_VERSION,
+    environment: process.env.NODE_ENV,
+    server_region: process.env.SERVER_REGION,
+  },
+});
+```
+
+### 跟踪错误
+
+```js title="middleware/error-handler.js"
+import { op } from '@/lib/op';
+
+export function errorHandler(err, req, res, next) {
+  // 跟踪错误事件
+  op.track('error_occurred', {
+    error_message: err.message,
+    error_stack: err.stack,
+    path: req.path,
+    method: req.method,
+  });
+
+  // 您的错误处理逻辑
+  res.status(500).json({ error: 'Internal server error' });
+}
+```
+
+### 增加用户属性
+
+```js
+import { op } from '@/lib/op';
+
+// 增加登录次数
+op.increment({
+  profileId: user.id,
+  property: 'login_count',
+  value: 1,
+});
+```
+
+## Serverless 与 Vercel
+
+如果您使用的是无服务器函数（例如 Vercel），请使用 `waitUntil` 来确保在函数完成前事件已被跟踪：
+
+```js title="api/track.js"
+import { waitUntil } from '@vercel/functions';
+import { op } from '@/lib/op';
+
+export default async function handler(req, res) {
+  // 返回响应的同时保持函数继续运行
+  waitUntil(op.track('important_event', { foo: 'bar' }));
+
+  return res.status(200).json({ success: true });
+}
+```
+
+## 下一步
+
+- [完整的 JavaScript SDK 参考](/zh-CN/docs/sdks/javascript)
+- [如何为 Express 添加分析](/zh-CN/guides/express-analytics)
+- [将 OpenPanel 与 Mixpanel 对比](/zh-CN/compare/mixpanel-alternative)
+
+## 常见问题
+
+### 为什么服务端跟踪需要 clientSecret？
+
+由于我们无法使用 CORS 头部，服务端跟踪需要进行身份验证。`clientSecret` 可确保您的事件被正确验证，并防止未授权的跟踪。
+
+### 我可以异步跟踪事件吗？
+
+可以！OpenPanel SDK 默认会异步跟踪事件。事件会被排队并在后台发送，因此不会阻塞您的应用。
+
+### OpenPanel 是否符合 GDPR？
+
+是的！OpenPanel 在设计时就将隐私放在首位。服务端跟踪让您可以完全控制收集哪些数据。更多信息请查看我们的[无 Cookie 分析指南](/zh-CN/articles/cookieless-analytics)。

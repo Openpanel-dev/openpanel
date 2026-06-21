@@ -1,0 +1,25 @@
+---
+title: 匯出
+description: 從您的專案擷取原始事件與彙總圖表資料。
+---
+
+## 驗證
+
+需要 `read` 或 `root` 用戶端，預設的 `write` 用戶端無法存取。請參閱 [身分驗證](/zh-TW/docs/api/authentication) 指南。
+
+## 端點
+
+| 端點 | 說明 |
+|----------|-------------|
+| `GET /export/events` | 可分頁的原始事件清單，支援可選篩選 |
+| `GET /export/charts` | 具有細分的彙總時間序列資料 |
+
+### 篩選事件
+
+`/export/events` 端點接受篩選條件、分頁，以及 `includes` 參數，用於附加相關資料（profile、meta、properties、geo、device、referrer）。
+
+### 圖表序列
+
+`/export/charts` 端點接受 `series` 陣列，其中每個項目可指定事件名稱、篩選條件，以及區段類型（`event`、`user`、`session`、`property_sum` 等）。
+
+如需完整的查詢參數與回應 schema，請參閱 [API 參考](/zh-TW/docs/api-reference)。

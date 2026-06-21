@@ -1,0 +1,133 @@
+---
+title: 最新 Docker 镜像
+description: 获取 OpenPanel 的最新私有 Docker 镜像访问权限，这些镜像在每次提交时构建，包含前沿功能。
+---
+
+## 感谢你的支持！🙏
+
+首先，**感谢**你支持 OpenPanel！你的贡献对我们意义重大，帮助这个项目持续存活、维护并不断改进。你贡献的每一美元都会直接用于开发、基础设施，以及让 OpenPanel 对所有人更好。
+
+作为支持者，你可以独家访问我们的私有 Docker 镜像。这些镜像会在每次提交时构建，让你在正式发布前就能获得最新功能和修复。
+
+## 为什么最新镜像很重要
+
+### 前沿功能
+- **即时访问**：功能一合并即可获取
+- **更早的 bug 修复**：补丁和修复会立即部署
+- **持续改进**：性能增强和优化实时生效
+- **保持领先**：运行当前可用的最先进 OpenPanel 版本
+
+### 每次提交都构建
+我们维护了一条持续集成流水线，会在仓库的每一次提交后构建新的 Docker 镜像。这意味着：
+- 开发与部署之间零延迟
+- 自动测试并验证可用于生产的镜像
+- 在稳定版发布前数周或数月就能使用新功能
+
+## 工作原理
+
+我们的私有 Docker 镜像托管在 GitHub 的容器注册表中，并受限于公开访问之外。作为支持者，你会获得一个 API key，用于访问我们位于 `docker.openpanel.dev` 的私有 Docker 代理，它会无缝为你拉取这些镜像。
+
+## 开始使用
+
+### 第 1 步：成为支持者
+
+[成为支持者](/supporter) 以获取专属 Docker 镜像的访问权限。支持计划起价仅为 **$20/月**，并包含：
+- 访问所有私有 Docker 镜像
+- 在我们的 Discord 社区中获得优先支持
+- 直接推动 OpenPanel 的开发
+- 我们永远的感激 ❤️
+
+### 第 2 步：获取你的 API key
+
+成为支持者后，你会收到一个唯一的 API key，用于访问我们的 Docker 代理。
+
+### 第 3 步：登录 Docker registry
+
+在你的服务器上，使用 API key 通过我们的 Docker 代理进行认证：
+
+```bash
+echo "your_api_key" | docker login docker.openpanel.dev -u user --password-stdin
+```
+
+将 `your_api_key` 替换为实际提供给你的 API key。
+
+<Callout>
+请确保妥善保管你的 API key，切勿将其提交到版本控制中！
+</Callout>
+
+### 第 4 步：更新到最新镜像
+
+我们提供了一个便捷脚本，让更新镜像变得轻而易举。进入你的 self-hosting 目录并运行：
+
+```bash
+./get_latest_images apply
+```
+
+该脚本会：
+- 检查你是否已通过我们的 Docker registry 认证
+- 获取仓库中的最新 Git tags
+- 更新你的 `docker-compose.yml`，将新的镜像标签指向最新构建
+
+<Callout type="info">
+脚本会自动检查你是否已登录。如果没有，它会先提供认证说明。
+</Callout>
+
+你也可以在不应用的情况下查看可用的 tags：
+
+```bash
+./get_latest_images           # 显示最新 tags
+./get_latest_images --list    # 列出所有可用 tags
+```
+
+### 第 5 步：重启服务
+
+拉取最新镜像后，只需重启服务：
+
+```bash
+./restart
+```
+
+就这样！你的 OpenPanel 实例现在运行的是最新、最强大的版本。
+
+## 快速更新工作流
+
+配置完成后，更新到最新版本就非常简单：
+
+```bash
+cd /path/to/self-hosting
+./get_latest_images apply
+./restart
+```
+
+整个过程不到一分钟，就能让你立即获得新功能和修复。
+
+`get_latest_images` 脚本会：
+1. 验证你是否已登录 Docker registry
+2. 从 GitHub 获取最新 tags
+3. 更新你的 `docker-compose.yml`，使镜像指向最新的 commit SHA
+4. 在修改前为 docker-compose 文件创建备份
+
+## 重要说明
+
+- **稳定性**：虽然这些镜像经过测试，但偶尔仍可能包含尚未发现的 bug。建议你准备好备份策略。
+- **破坏性变更**：我们努力保持向后兼容，但偶尔可能会出现破坏性变更。更新前请务必查看 [更新日志](/zh-CN/docs/self-hosting/changelog)。
+- **支持**：作为支持者，你拥有优先支持权限。如果遇到任何问题，请通过 Discord 或电子邮件联系我们。
+
+## 需要帮助？
+
+如果你有任何问题或遇到问题：
+- 加入我们的 [Discord 社区](https://go.openpanel.dev/discord)（支持者会获得特殊角色！）
+- 发送邮件至 [hello@openpanel.dev](mailto:hello@openpanel.dev)
+- 查看我们的 [GitHub 仓库](https://github.com/Openpanel-dev/openpanel)
+
+---
+
+## 你的影响
+
+每一份贡献都能帮助我们：
+- 投入更多时间用于开发
+- 维护并改进基础设施
+- 提供更好的文档和支持
+- 保持 OpenPanel 开源且人人可用
+
+感谢你成为 OpenPanel 旅程中不可或缺的一部分。没有像你这样的支持者，我们无法做到这一切！💙

@@ -1,0 +1,220 @@
+---
+title: "如何为 Express 添加分析"
+description: "使用 OpenPanel 中间件为你的 Express 应用添加服务端分析。跟踪 API 请求、用户操作和自定义事件。"
+difficulty: beginner
+timeToComplete: 8
+date: 2025-12-15
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安装 SDK"
+    anchor: "install"
+  - name: "添加中间件"
+    anchor: "middleware"
+  - name: "跟踪事件"
+    anchor: "events"
+  - name: "识别用户"
+    anchor: "identify"
+  - name: "验证你的设置"
+    anchor: "verify"
+---
+
+# 如何为 Express 添加分析
+
+服务端分析为你提供可靠的[事件跟踪](/features/event-tracking)，不会被广告拦截器或浏览器扩展阻止。OpenPanel Express 中间件封装了 JavaScript SDK，并将其附加到每个请求上，让你可以轻松在整个应用中跟踪事件。
+
+OpenPanel 是 Mixpanel 和 Amplitude 的开源替代方案。你可以获得强大的分析能力，并完全掌控自己的数据；如果隐私要求更高，你还可以[自托管](/articles/how-to-self-host-openpanel)。
+
+## 前提条件
+
+- 一个 Express 应用
+- 一个 OpenPanel 账户（[免费注册](https://dashboard.openpanel.dev/onboarding)）
+- 来自 OpenPanel 控制台的 Client ID 和 Client Secret
+
+服务端跟踪需要 `clientSecret` 进行身份验证，因为服务器无法依赖浏览器的 CORS 头来验证请求来源。
+
+## 安装 SDK [#install]
+
+Express SDK 是一个轻量级中间件，会为每个请求创建一个 OpenPanel 实例。使用 npm 安装它（pnpm 和 yarn 也同样适用）。
+
+```bash
+npm install @openpanel/express
+```
+
+## 添加中间件 [#middleware]
+
+该中间件会将 OpenPanel SDK 作为 `req.op` 附加到每个请求上。请尽早将其加入你的中间件链中，这样它就可以在所有路由处理器中使用。
+
+```ts
+import express from 'express';
+import createOpenpanelMiddleware from '@openpanel/express';
+
+const app = express();
+
+app.use(express.json());
+
+app.use(
+  createOpenpanelMiddleware({
+    clientId: 'YOUR_CLIENT_ID',
+    clientSecret: 'YOUR_CLIENT_SECRET',
+  })
+);
+
+app.listen(3000, () => {
+  console.log('服务器正在 http://localhost:3000 运行');
+});
+```
+
+你应该将凭据存储在环境变量中，而不是硬编码。这样可以避免机密信息进入版本控制，并且便于在开发和生产环境中使用不同的凭据。
+
+```ts
+app.use(
+  createOpenpanelMiddleware({
+    clientId: process.env.OPENPANEL_CLIENT_ID!,
+    clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+  })
+);
+```
+
+该中间件还会转发传入请求中的客户端 IP 地址和 user-agent，因此即使事件来自你的服务器，地理和设备数据也会准确。
+
+## 跟踪事件 [#events]
+
+一旦中间件就绪，你就可以在任何路由处理器中通过调用 `req.op.track()` 来跟踪事件。第一个参数是事件名称，第二个参数是你想附加的属性对象。
+
+```ts
+app.post('/signup', async (req, res) => {
+  const { email, name } = req.body;
+
+  req.op.track('user_signed_up', {
+    email,
+    name,
+    source: 'website',
+  });
+
+  const user = await createUser({ email, name });
+  res.json({ success: true, user });
+});
+```
+
+你可以跟踪任何对业务重要的事件。常见示例包括表单提交、购买、功能使用和 API 错误。
+
+```ts
+app.post('/contact', async (req, res) => {
+  const { email, message } = req.body;
+
+  req.op.track('contact_form_submitted', {
+    email,
+    message_length: message.length,
+  });
+
+  await sendContactEmail(email, message);
+  res.json({ success: true });
+});
+```
+
+### 自动请求跟踪
+
+如果你提供 `trackRequest` 函数，中间件可以自动跟踪每个请求。这对于监控 API 使用情况非常有用，而无需为每个路由手动添加跟踪调用。
+
+```ts
+app.use(
+  createOpenpanelMiddleware({
+    clientId: process.env.OPENPANEL_CLIENT_ID!,
+    clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+    trackRequest: (url) => url.startsWith('/api/'),
+  })
+);
+```
+
+当 `trackRequest` 返回 true 时，中间件会发送一个带有 URL、方法和查询参数的 `request` 事件。
+
+## 识别用户 [#identify]
+
+要将事件与特定用户关联，请在中间件配置中使用 `getProfileId` 选项。此函数接收请求对象，并应返回用户的 ID。
+
+```ts
+app.use(
+  createOpenpanelMiddleware({
+    clientId: process.env.OPENPANEL_CLIENT_ID!,
+    clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+    getProfileId: (req) => req.user?.id,
+  })
+);
+```
+
+你也可以使用 `req.op.identify()` 发送用户资料数据。这会在 OpenPanel 中更新用户资料，包括姓名、邮箱以及任何自定义属性。
+
+```ts
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  const user = await authenticateUser(email, password);
+
+  req.op.identify({
+    profileId: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    properties: {
+      plan: user.plan,
+      signupDate: user.createdAt,
+    },
+  });
+
+  req.op.track('user_logged_in', { method: 'email' });
+  res.json({ success: true, user });
+});
+```
+
+### 增加资料属性
+
+如果你想在用户资料上跟踪累计值，例如登录次数或总购买次数，请使用 `increment` 方法。
+
+```ts
+req.op.increment({
+  profileId: user.id,
+  property: 'login_count',
+  value: 1,
+});
+```
+
+## 验证你的设置 [#verify]
+
+启动你的 Express 服务器，并通过向端点发送请求来触发几个事件。打开 [OpenPanel 控制台](https://dashboard.openpanel.dev)，并导航到实时视图，即可查看事件到达情况。
+
+如果事件没有出现，请检查服务器日志中来自 OpenPanel 的错误响应。确认 `clientId` 和 `clientSecret` 都正确，并且中间件已添加在路由之前。
+
+## TypeScript 支持
+
+Express SDK 会自动扩展 `Request` 接口以包含 `req.op`。如果你的 TypeScript 配置没有识别到这一点，你可以在声明文件中手动扩展该接口。
+
+```ts
+import { OpenPanel } from '@openpanel/express';
+
+declare global {
+  namespace Express {
+    export interface Request {
+      op: OpenPanel;
+    }
+  }
+}
+```
+
+## 下一步
+
+[Express SDK 参考](/docs/sdks/express)涵盖了所有可用选项和方法。如果你使用的是其他 Node.js 框架，[Node.js 跟踪指南](/guides/nodejs-analytics)展示了如何直接使用基础 SDK。若要将 OpenPanel 与其他分析工具进行比较，请查看 [Mixpanel 替代方案](/compare/mixpanel-alternative) 页面。
+
+<Faqs>
+<FaqItem question="为什么服务端跟踪需要 clientSecret？">
+服务端跟踪需要身份验证，因为请求来自你的服务器，而不是受 CORS 限制的浏览器。clientSecret 可确保事件得到正确认证，并防止来自其他来源的未授权跟踪。
+</FaqItem>
+
+<FaqItem question="我可以异步跟踪事件吗？">
+可以。OpenPanel SDK 默认异步发送事件。事件会被排队并在后台分发，因此跟踪调用不会阻塞你的路由处理器，也不会减慢响应时间。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 吗？">
+是的。OpenPanel 通过无 Cookie 跟踪和数据最小化来支持 GDPR 合规。服务端跟踪让你能够完全控制所收集的数据。通过自托管，你可以彻底消除国际数据传输方面的顾虑。
+</FaqItem>
+</Faqs>

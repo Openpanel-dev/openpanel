@@ -1,0 +1,517 @@
+{
+  "slug": "funnelio-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026年最佳 Funnel.io 替代方案 - 开源且免费",
+    "description": "在寻找 Funnel.io 替代方案？OpenPanel 提供产品分析、事件追踪、漏斗和用户行为洞察。开源、可自托管，并可免费开始使用。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Funnel.io 替代方案",
+    "subheading": "Funnel.io 汇总来自广告平台的营销数据。OpenPanel 跟踪你产品中的用户行为。不同工具适用于不同需求——了解哪一个更适合你。",
+    "badges": [
+      "开源",
+      "产品分析",
+      "用户行为追踪",
+      "可自托管"
+    ]
+  },
+  "competitor": {
+    "name": "Funnel.io",
+    "logo": "/logos/funnelio.svg",
+    "url": "https://funnel.io",
+    "short_description": "营销数据集成平台，将来自 500+ 广告平台和营销工具的数据汇总为统一报告。",
+    "founded": 2014,
+    "headquarters": "瑞典斯德哥尔摩"
+  },
+  "overview": {
+    "title": "为什么要考虑 OpenPanel 而不是 Funnel.io？",
+    "paragraphs": [
+      "Funnel.io 是一个营销数据集成平台，旨在将来自 500 多个广告平台和营销工具的数据汇总为统一报告。大型组织的营销团队会使用它来整合来自 Google Ads、Facebook、LinkedIn 以及数百个其他来源的广告活动表现数据。但 Funnel.io 完全不会追踪用户行为——它只是汇总已经存在于外部平台中的数据。",
+      "OpenPanel 和 Funnel.io 的用途根本不同。Funnel.io 回答的是“我的营销活动在各个平台上的表现如何？”，而 OpenPanel 回答的是“用户在我的产品里做了什么？”。如果你需要跟踪事件、构建漏斗、分析留存并理解用户行为，那就是产品分析——也正是 OpenPanel 所做的。",
+      "价格差异反映了这两个市场的不同。Funnel.io 起价为每月 399 美元，面向预算充足的企业营销团队。OpenPanel 起价为每月 2.50 美元，提供 30 天免费试用，或者可以通过自托管免费使用且事件数量无限制。对于产品团队和初创公司来说，OpenPanel 能以企业级价格之外的成本提供可执行的分析。",
+      "如果你正在评估分析工具，而搜索结果中出现了 Funnel.io，那么你很可能需要的是产品分析，而不是营销数据聚合。OpenPanel 为你提供用户行为洞察、漏斗分析和留存跟踪，帮助你构建更好的产品——同时具备开源透明性和自托管选项。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Funnel.io：哪个更适合你？",
+    "intro": "Funnel.io 和 OpenPanel 的用途根本不同。Funnel.io 聚合来自外部平台（Google Ads、Facebook Ads 等）的营销支出和活动数据。OpenPanel 跟踪你产品内的用户行为。",
+    "one_liner": "OpenPanel 用于产品分析（用户如何与你的产品交互）；Funnel.io 用于营销数据集成（聚合广告平台数据）。",
+    "best_for_openpanel": [
+      "需要跟踪网站或应用中用户行为的产品团队",
+      "需要经济实惠分析方案的初创公司（免费自托管；云服务起价每月 2.50 美元）",
+      "因数据隐私或合规要求需要自托管的团队",
+      "需要原生 iOS、Android、React Native SDK 的移动应用开发者"
+    ],
+    "best_for_competitor": [
+      "需要聚合多个广告平台数据的营销团队",
+      "为客户管理数百个营销数据源的代理机构",
+      "需要跨平台营销支出报告的组织",
+      "需要复杂营销组合建模的团队"
+    ]
+  },
+  "highlights": {
+    "title": "关键差异一览",
+    "intro": "Funnel.io 和 OpenPanel 解决的是不同问题。以下是它们的对比：",
+    "items": [
+      {
+        "label": "主要用例",
+        "openpanel": "产品分析 - 跟踪用户行为",
+        "competitor": "营销数据聚合 - 收集广告数据",
+        "notes": "OpenPanel 跟踪用户如何与你的产品交互（点击、事件、转化）。Funnel.io 聚合来自 Google Ads 和 Facebook Ads 等广告平台的营销支出和表现数据。"
+      },
+      {
+        "label": "用户行为追踪",
+        "openpanel": "是 - 事件、漏斗、留存",
+        "competitor": "否 - 聚合外部平台数据",
+        "notes": "OpenPanel 提供 SDK，用于追踪网站或应用中的用户行为。Funnel.io 不追踪用户行为——它通过 API 连接器导入外部营销平台的数据。"
+      },
+      {
+        "label": "自托管与开源",
+        "openpanel": "是 - AGPL-3.0，Docker Compose 部署",
+        "competitor": "否 - 仅云端 SaaS",
+        "notes": "OpenPanel 完全开源并可自托管。Funnel.io 是专有的仅云端软件，不提供自托管选项。"
+      },
+      {
+        "label": "营销平台连接器",
+        "openpanel": "有限 - 侧重产品数据",
+        "competitor": "500+ 广告平台连接器",
+        "notes": "Funnel.io 擅长连接 500+ 营销数据源（Google Ads、Facebook Ads、LinkedIn 等）。OpenPanel 专注于跟踪你自己的产品数据，而不是导入外部营销数据。"
+      },
+      {
+        "label": "定价透明度",
+        "openpanel": "公开定价，起价每月 2.50 美元 + 免费自托管",
+        "competitor": "起价每月 399 美元",
+        "notes": "OpenPanel 提供透明定价，起价每月 2.50 美元（30 天免费试用），并支持永久免费无限自托管。Funnel.io 起价每月 399 美元（Essentials），企业方案可达每月 1,999 美元以上。"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能对比",
+    "intro": "这些平台用途不同，并针对各自的使用场景提供了不同的功能集。",
+    "groups": [
+      {
+        "group": "用户行为追踪",
+        "features": [
+          {
+            "name": "事件追踪 SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io 不追踪用户行为——它从外部平台导入数据"
+          },
+          {
+            "name": "会话追踪",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io 聚合来自 Google Analytics 的会话数据，而不是直接追踪"
+          },
+          {
+            "name": "用户识别",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel 在你的产品中识别用户；Funnel.io 处理的是聚合营销数据"
+          },
+          {
+            "name": "自定义事件属性",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel 跟踪自定义事件；Funnel.io 导入广告平台中的预定义指标"
+          },
+          {
+            "name": "实时事件追踪",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io 按计划同步外部数据，而不是实时用户追踪"
+          }
+        ]
+      },
+      {
+        "group": "产品分析",
+        "features": [
+          {
+            "name": "漏斗分析（用户行为）",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel 跟踪你产品中的转化漏斗；Funnel.io 报告来自广告平台的营销漏斗"
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel 跟踪用户随时间的留存情况"
+          },
+          {
+            "name": "分群分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel 基于行为分析用户群组"
+          },
+          {
+            "name": "用户资料",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel 为单个用户创建资料"
+          },
+          {
+            "name": "用户路径/旅程分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel 跟踪用户在产品中的旅程"
+          },
+          {
+            "name": "A/B 测试",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io 不提供实验功能"
+          }
+        ]
+      },
+      {
+        "group": "营销数据聚合",
+        "features": [
+          {
+            "name": "广告平台连接器",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io 连接 500+ 营销平台（Google Ads、Facebook Ads 等）"
+          },
+          {
+            "name": "营销支出追踪",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io 汇总各个平台的广告支出"
+          },
+          {
+            "name": "跨平台营销报告",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io 从多个广告平台创建统一报告"
+          },
+          {
+            "name": "营销 ROI/ROAS 计算",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io 计算跨渠道营销 ROI"
+          },
+          {
+            "name": "营销组合建模",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io 为企业客户提供高级 MMM"
+          },
+          {
+            "name": "数据转换规则",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io 提供数据标准化和转换"
+          }
+        ]
+      },
+      {
+        "group": "数据导出与集成",
+        "features": [
+          {
+            "name": "API 访问",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Webhooks",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "数据仓库导出",
+            "openpanel": "即将于 2026 年推出",
+            "competitor": true,
+            "notes": "Funnel.io 可导出到 BigQuery、Snowflake 等。OpenPanel 目前提供导出 API，原生数据仓库导出（S3/GCS）已列入 2026 年路线图。"
+          },
+          {
+            "name": "Looker Studio 集成",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io 提供原生 Looker Studio 连接器"
+          },
+          {
+            "name": "Power BI 集成",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io 提供原生 Power BI 连接器"
+          },
+          {
+            "name": "Tableau 集成",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io 是 Tableau 合作伙伴"
+          }
+        ]
+      },
+      {
+        "group": "SDK 与平台",
+        "features": [
+          {
+            "name": "JavaScript SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io 不提供追踪 SDK"
+          },
+          {
+            "name": "iOS SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io 不直接追踪移动应用"
+          },
+          {
+            "name": "Android SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io 不直接追踪移动应用"
+          },
+          {
+            "name": "React Native SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io 不提供移动 SDK"
+          },
+          {
+            "name": "服务端 SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel 支持后端追踪"
+          }
+        ]
+      },
+      {
+        "group": "部署与托管",
+        "features": [
+          {
+            "name": "云端托管",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "自托管选项",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io 仅提供云端服务，不支持自托管"
+          },
+          {
+            "name": "开源",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io 是专有闭源软件"
+          },
+          {
+            "name": "欧盟数据驻留",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都提供欧盟托管选项"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技术对比",
+    "intro": "这些平台采用根本不同的技术方案，因为它们解决的是不同问题。",
+    "items": [
+      {
+        "label": "部署",
+        "openpanel": "Docker Compose，引导式设置向导（自托管）或托管云服务",
+        "competitor": "仅云端 SaaS - 不支持自托管",
+        "notes": null
+      },
+      {
+        "label": "开源",
+        "openpanel": "是 - AGPL-3.0",
+        "competitor": "否 - 专有闭源",
+        "notes": null
+      },
+      {
+        "label": "数据库",
+        "openpanel": "ClickHouse",
+        "competitor": "专有（基于 Parquet 的存储）",
+        "notes": null
+      },
+      {
+        "label": "数据保留",
+        "openpanel": "无限制（自托管），可配置（云端）",
+        "competitor": "最多可导入 2-3 年历史数据",
+        "notes": null
+      },
+      {
+        "label": "集成",
+        "openpanel": "Slack、Discord、webhooks、导出 API（数据仓库导出将在 2026 年推出）",
+        "competitor": "500+ 营销连接器、Looker Studio、Power BI、Tableau、BigQuery、Snowflake、Redshift",
+        "notes": null
+      },
+      {
+        "label": "主要数据源",
+        "openpanel": "你的网站/应用（通过 SDK 追踪）",
+        "competitor": "外部营销平台（通过 API 连接器）",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "价格对比",
+    "intro": "OpenPanel 和 Funnel.io 的定价模式差异很大，反映了它们不同的使用场景。",
+    "openpanel": {
+      "model": "按事件量固定月费，透明定价",
+      "description": "分层定价从每月 2.50 美元起（5,000 个事件），例如 10 万事件每月 20 美元——30 天免费试用——或免费自托管。所有层级都包含全部功能。用户、仪表盘或数据保留均无限制。"
+    },
+    "competitor": {
+      "model": "基于 flexpoint，无免费套餐",
+      "description": "免费计划提供有限连接器（100+ Starter connectors）。付费计划：Essentials（每月 399 美元）、Plus（每月 999 美元）、Enterprise（每月 1,999 美元以上）。定价基于“flexpoints”，取决于连接的账户数量和报告类型。企业客户据称年支出为 12,000-100,000 美元以上。也提供代理商计划。",
+      "free_tier": "免费计划，提供 100+ Starter connectors 和有限功能",
+      "pricing_url": "https://funnel.io/pricing"
+    }
+  },
+  "migration": {
+    "title": "从 Funnel.io 迁移到 OpenPanel",
+    "intro": "Funnel.io 和 OpenPanel 用途不同。你可能需要同时使用这两个工具，而不是用一个替换另一个。",
+    "difficulty": "not-applicable",
+    "estimated_time": "因工具用途不同而异",
+    "steps": [
+      {
+        "title": "了解差异",
+        "description": "Funnel.io 和 OpenPanel 用途不同。Funnel.io 聚合来自广告平台的营销数据。OpenPanel 跟踪你产品中的用户行为。你可能需要同时使用这两个工具，而不是用一个替换另一个。"
+      },
+      {
+        "title": "安装 OpenPanel SDK",
+        "description": "如果你需要产品分析（用户行为追踪），请将 OpenPanel SDK 添加到你的网站或应用中。这将为你提供事件追踪、漏斗和留存分析。"
+      },
+      {
+        "title": "保留 Funnel.io 用于营销数据",
+        "description": "如果你需要跨平台营销报告（聚合 Google Ads、Facebook Ads 等），你可能需要保留 Funnel.io。OpenPanel 不能替代营销数据聚合。"
+      },
+      {
+        "title": "连接数据源",
+        "description": "OpenPanel 跟踪你自己的产品数据。如果你之前使用 Funnel.io 导入 Google Analytics 数据，OpenPanel 可以通过更好的产品分析功能直接替代该追踪。"
+      },
+      {
+        "title": "设置产品分析",
+        "description": "在 OpenPanel 中配置漏斗、留存分析和用户识别。这些都是 Funnel.io 不提供的产品分析功能。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": false,
+      "notes": "这些工具的用途完全不同。Funnel.io 通过 API 连接器从外部平台导入数据。OpenPanel 使用客户端 SDK 跟踪用户行为。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Funnel.io 和 OpenPanel 跟踪的是不同类型的数据。Funnel.io 存储的是营销平台数据（广告支出、展示次数、来自外部来源的点击）。OpenPanel 跟踪的是你产品内的用户行为。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 Funnel.io 更适合的场景",
+    "intro": "当你需要了解产品中的用户行为时，请选择 OpenPanel。Funnel.io 则用于聚合来自外部广告平台的营销数据。",
+    "items": [
+      {
+        "title": "需要用户行为分析的产品团队",
+        "description": "Funnel.io 不追踪用户行为——它只是从外部平台导入数据。如果你需要了解用户如何与你的产品交互（点击、转化、留存），OpenPanel 提供了 Funnel.io 所缺少的追踪 SDK 和分析功能。",
+        "icon": "users"
+      },
+      {
+        "title": "希望获得经济实惠分析方案的初创公司",
+        "description": "Funnel.io 起价每月 399 美元。OpenPanel 提供透明定价，起价每月 2.50 美元（含 30 天免费试用）并支持永久免费无限自托管，因此对初创公司和小团队更友好。",
+        "icon": "dollar-sign"
+      },
+      {
+        "title": "需要自托管的团队",
+        "description": "Funnel.io 仅提供云端服务，不支持自托管。如果你出于数据隐私、合规或成本原因，需要在自己的基础设施上托管分析系统，OpenPanel 可通过 Docker Compose 进行自托管。一个命令即可启动的 ./setup 向导会引导你完成配置，并在几分钟内将整个堆栈部署完成。",
+        "icon": "server"
+      },
+      {
+        "title": "需要开源的场景",
+        "description": "Funnel.io 是专有闭源软件。如果你的组织因安全审计或合规要求必须使用开源工具，OpenPanel 在 AGPL-3.0 许可下完全开源。",
+        "icon": "code"
+      },
+      {
+        "title": "移动应用分析",
+        "description": "Funnel.io 不提供移动 SDK，也不追踪移动应用行为。OpenPanel 提供原生 iOS、Android 和 React Native SDK，用于追踪移动应用中的用户行为。",
+        "icon": "smartphone"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于 Funnel.io 和 OpenPanel 差异的常见问题。",
+    "items": [
+      {
+        "question": "Funnel.io 是产品分析工具吗？",
+        "answer": "不是。Funnel.io 是一个营销数据集成平台，用于聚合来自广告平台（Google Ads、Facebook Ads 等）的数据，并将其导出到 BI 工具。它不会追踪你网站或应用中的用户行为。OpenPanel 是一款通过 SDK 跟踪用户行为的产品分析工具。"
+      },
+      {
+        "question": "Funnel.io 能替代 OpenPanel 吗？",
+        "answer": "不能——它们用途不同。Funnel.io 聚合来自外部平台的营销支出和活动数据。OpenPanel 跟踪用户如何与你的产品交互。大多数团队都需要两者：OpenPanel 用于产品分析，再加上像 Funnel.io 这样的工具用于营销报告。"
+      },
+      {
+        "question": "Funnel.io 会追踪我网站上的用户事件吗？",
+        "answer": "不会。Funnel.io 通过 API 连接器导入来自 Google Analytics、Google Ads 和 Facebook Ads 等外部平台的数据。它不提供追踪 SDK，也不会直接追踪用户行为。若要进行事件追踪，你需要像 OpenPanel 这样的产品分析工具。"
+      },
+      {
+        "question": "为什么 Funnel.io 比 OpenPanel 贵这么多？",
+        "answer": "Funnel.io 的定价（起价每月 399 美元）反映了它的价值定位：维护 500+ 面向营销平台的 API 连接器、处理数据转换，以及提供 BI 工具集成。OpenPanel 使用轻量级 SDK 跟踪你自己的产品数据，其成本结构不同。"
+      },
+      {
+        "question": "我可以自托管 Funnel.io 吗？",
+        "answer": "不可以。Funnel.io 是仅云端的 SaaS，没有自托管选项。OpenPanel 是开源的（AGPL-3.0 许可），可以通过 Docker Compose 自托管，以实现完全的数据控制。"
+      },
+      {
+        "question": "Funnel.io 有移动 SDK 吗？",
+        "answer": "没有。Funnel.io 不为任何平台提供追踪 SDK。它通过 API 连接器从外部来源导入数据。OpenPanel 提供原生 iOS、Android 和 React Native SDK，用于移动应用分析。"
+      },
+      {
+        "question": "我应该用哪个工具来做转化漏斗？",
+        "answer": "这取决于你要衡量什么。OpenPanel 跟踪你产品中的用户转化漏斗（注册到购买、完成引导）。Funnel.io 报告的是从广告平台导入的营销漏斗指标。它们衡量的是不同的内容。"
+      },
+      {
+        "question": "OpenPanel 能替代 Funnel.io 做营销报告吗？",
+        "answer": "不能直接替代。OpenPanel 没有用于导入 Google Ads、Facebook Ads 或其他营销平台数据的连接器。如果你需要跨平台营销支出报告，你仍然需要像 Funnel.io 或 Supermetrics 这样的工具。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "跟踪自定义事件",
+        "url": "/zh-CN/guides/track-custom-events"
+      },
+      {
+        "title": "电商事件追踪",
+        "url": "/zh-CN/guides/ecommerce-tracking"
+      },
+      {
+        "title": "Next.js 分析设置",
+        "url": "/zh-CN/guides/nextjs-analytics"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳开源网站分析工具",
+        "url": "/zh-CN/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "PostHog",
+        "url": "/compare/posthog-alternative"
+      },
+      {
+        "name": "Mixpanel",
+        "url": "/compare/mixpanel-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "从 OpenPanel 开始",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

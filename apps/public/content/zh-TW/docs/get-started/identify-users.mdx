@@ -1,0 +1,46 @@
+---
+title: 使用者識別
+description: 將匿名事件連結到特定使用者。
+---
+
+預設情況下，OpenPanel 會匿名追蹤訪客。若要將這些事件連結到資料庫中的特定使用者，你需要識別他們。
+
+## 運作方式
+
+當使用者登入或註冊時，應呼叫 `identify` 方法。這會將他們目前的工作階段與所有未來事件，關聯到你系統中的唯一 ID。
+
+```javascript
+op.identify({
+  profileId: 'user_123'
+});
+```
+
+## 新增使用者特徵
+
+你也可以在識別使用者時傳入使用者特徵（例如姓名、電子郵件或方案類型）。這些特徵會顯示在儀表板中該使用者的個人檔案。
+
+```javascript
+op.identify({
+  profileId: 'user_123',
+  firstName: 'Jane',
+  lastName: 'Doe',
+  email: 'jane@example.com',
+  company: 'Acme Inc'
+});
+```
+
+### 標準特徵
+
+我們建議針對常見的使用者資訊使用這些標準鍵值，這樣它們會在 OpenPanel 儀表板中正確顯示：
+
+- `firstName`
+- `lastName`
+- `email`
+- `phone`
+- `avatar`
+
+## 最佳實務
+
+1.  **登入時呼叫**：務必在使用者登入後立即識別他們。
+2.  **更新時呼叫**：如果使用者更新了個人檔案，請使用新資訊再次呼叫 identify。
+3.  **唯一 ID**：請使用資料庫中穩定且唯一的 ID（例如 UUID），而不是可能變更的電子郵件地址或使用者名稱。

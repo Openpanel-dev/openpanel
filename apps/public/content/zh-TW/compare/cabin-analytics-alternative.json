@@ -1,0 +1,525 @@
+{
+  "slug": "cabin-analytics-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026 年最佳 Cabin Analytics 替代方案 - 開源且免費",
+    "description": "正在尋找 Cabin Analytics 的替代方案嗎？OpenPanel 提供更深入的產品分析、自架主機、行動版 SDK 與使用者識別，同時堅持隱私優先。可免費開始使用。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Cabin Analytics 替代方案",
+    "subheading": "喜歡 Cabin 以碳足跡為導向、重視隱私的做法嗎？OpenPanel 在維持開源與輕量的同時，加入更深入的產品分析——自架主機、行動版 SDK、使用者識別、漏斗與留存分析——。",
+    "badges": [
+      "開源",
+      "可自架",
+      "行動版 SDK",
+      "產品分析"
+    ]
+  },
+  "competitor": {
+    "name": "Cabin Analytics",
+    "logo": "/logos/cabin.svg",
+    "url": "https://withcabin.com",
+    "short_description": "以隱私優先、重視碳足跡的網站分析工具，作為 Google Analytics 的替代方案，具超輕量追蹤。",
+    "founded": 2020,
+    "headquarters": "英國倫敦"
+  },
+  "overview": {
+    "title": "為什麼要考慮用 OpenPanel 取代 Cabin Analytics？",
+    "paragraphs": [
+      "Cabin Analytics 以其獨特的碳足跡導向網站分析方式脫穎而出——不只衡量流量，也衡量網站對環境的影響。搭配隱私優先的追蹤與超輕量腳本，對重視永續的團隊來說是很有吸引力的選擇。不過，Cabin 是僅限網站、僅限雲端的平台，沒有自架選項、沒有使用者識別，也沒有產品分析能力。",
+      "OpenPanel 提供同樣輕量、隱私優先的基礎，同時補上成長型產品所需的深度。使用者識別可將匿名造訪連結到真實帳號，漏斗可幫助你優化轉換流程，而留存分析則能看出你的產品是否讓使用者持續回訪。這些功能能把分析從單純的流量統計，轉化為可行的產品洞察。",
+      "自架主機是很大的差異點。Cabin 僅提供雲端版，代表你的資料只會存放在他們的伺服器上，沒有其他選擇。OpenPanel 讓你自行決定——可使用代管雲端版（30 天試用，之後每月 $2.50 起），或透過 Docker 部署到自己的基礎架構上，完整掌控資料。再加上原生 iOS、Android 與 React Native SDK，OpenPanel 不只適用網站，也能支援行動應用程式。",
+      "如果你喜歡 Cabin 輕量、重視隱私的做法，但需要比頁面瀏覽更深入的分析——特別是 SaaS 產品、行動應用程式，或任何需要理解使用者行為的產品——OpenPanel 能在不犧牲簡潔性的前提下提供這樣的深度。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Cabin：哪個更適合你？",
+    "intro": "兩個平台都重視隱私與輕量追蹤。主要差異在於分析深度、自架能力，以及平台支援。",
+    "one_liner": "Cabin 更簡單且注重碳足跡，適合網站分析；OpenPanel 則提供更深入的產品分析，並支援行動版 SDK 與自架。",
+    "best_for_openpanel": [
+      "需要自架以掌握資料所有權與合規性的團隊",
+      "需要使用者層級分析與留存追蹤的 SaaS 產品",
+      "需要原生 iOS 與 Android SDK 的行動應用程式分析",
+      "需要漏斗分析與同群分析的團隊",
+      "需要 A/B 測試能力的產品"
+    ],
+    "best_for_competitor": [
+      "優先考量碳足跡追蹤與環境責任的團隊",
+      "不需要使用者識別的簡單網站分析",
+      "追求極致輕量追蹤（1KB 腳本）以提升效能",
+      "需要可再生能源主機服務的專案",
+      "希望不論流量多寡都採固定價格的團隊"
+    ]
+  },
+  "highlights": {
+    "title": "一目了然的主要差異",
+    "intro": "以下是 OpenPanel 與 Cabin 在最重要面向上的比較。",
+    "items": [
+      {
+        "label": "自架主機",
+        "openpanel": "有，完全免費",
+        "competitor": "沒有（僅限雲端）"
+      },
+      {
+        "label": "產品分析",
+        "openpanel": "漏斗、留存、同群",
+        "competitor": "僅網站分析"
+      },
+      {
+        "label": "使用者識別",
+        "openpanel": "有，可追蹤個別使用者",
+        "competitor": "沒有（僅匿名）"
+      },
+      {
+        "label": "行動版 SDK",
+        "openpanel": "iOS、Android、React Native",
+        "competitor": "僅網站"
+      },
+      {
+        "label": "開源",
+        "openpanel": "有（AGPL-3.0）",
+        "competitor": "部分開源（僅用戶端）"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能比較",
+    "intro": "OpenPanel 同時涵蓋產品分析與網站分析，而 Cabin 則專注於簡單的網站指標與獨特的碳排追蹤。",
+    "groups": [
+      {
+        "group": "網站分析",
+        "features": [
+          {
+            "name": "頁面瀏覽與訪客",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "流量來源",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "地理資料",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel 提供國家、地區、城市。Cabin 僅有國家"
+          },
+          {
+            "name": "裝置與瀏覽器統計",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "UTM 追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "即時資料",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Cabin 不提供即時監控"
+          },
+          {
+            "name": "跳出率",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "頁面載入時間",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "產品分析",
+        "features": [
+          {
+            "name": "事件追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Cabin 的自訂事件需要 Pro 方案"
+          },
+          {
+            "name": "漏斗",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "使用者檔案",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Cabin 僅限匿名"
+          },
+          {
+            "name": "同群",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "使用者識別",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Cabin 從設計上就是嚴格匿名"
+          },
+          {
+            "name": "使用者路徑分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "進階功能",
+        "features": [
+          {
+            "name": "A/B 測試",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "碳足跡追蹤",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Cabin 的獨特功能"
+          },
+          {
+            "name": "可再生能源主機託管",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Cabin 運行於 100% 可再生能源"
+          },
+          {
+            "name": "自訂屬性",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "公開儀表板",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "電子郵件報告",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Cabin 會寄送電子郵件報告。OpenPanel 不提供排程電子郵件報告——它會透過 Slack、Discord、webhook 與應用程式內送出即時警示。"
+          }
+        ]
+      },
+      {
+        "group": "隱私與合規",
+        "features": [
+          {
+            "name": "自架主機",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "無 Cookie 追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "符合 CCPA",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "不追蹤 IP",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "不需要同意橫幅",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "整合與資料",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Cabin API 需要 Pro 方案"
+          },
+          {
+            "name": "資料匯出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "行動版 SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Cabin 僅限網站"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技術比較",
+    "intro": "對於評估分析工具的開發者，以下是兩者實作方式的比較。",
+    "items": [
+      {
+        "label": "SDK 大小（JS）",
+        "openpanel": "~2.3 KB gzipped",
+        "competitor": "~1 KB gzipped",
+        "notes": "Cabin 的腳本更輕量"
+      },
+      {
+        "label": "支援的平台",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Nuxt",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "Ruby",
+          "Java",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Nuxt",
+          "SvelteKit",
+          "Astro",
+          "Hugo",
+          "Ghost"
+        ],
+        "notes": null
+      },
+      {
+        "label": "開源",
+        "openpanel": "有（AGPL-3.0）",
+        "competitor": "部分開源（僅用戶端）",
+        "notes": null
+      },
+      {
+        "label": "自架部署",
+        "openpanel": "Docker Compose、引導式設定精靈",
+        "competitor": "不可用",
+        "notes": null
+      },
+      {
+        "label": "資料庫",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "專有",
+        "notes": null
+      },
+      {
+        "label": "資料保留",
+        "openpanel": "無限期（自架）",
+        "competitor": "免費 30 天，Pro 無限期",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "價格比較",
+    "intro": "不同的計價模式——按事件 vs 每月固定費。Cabin 提供免費方案；OpenPanel 則提供免費、無限制的自架，以及 30 天雲端試用。",
+    "openpanel": {
+      "model": "按事件計費，透明清楚",
+      "description": "價格透明，5,000 個事件每月 $2.50 起，並提供 30 天免費試用。自架版可免費使用且事件無上限。任何方案都不限制使用者、儀表板或功能。"
+    },
+    "competitor": {
+      "model": "每月固定價格",
+      "description": "免費方案：1 個網站、30 天保留、無限頁面瀏覽。Pro：每月 $19，支援無限網站、無限保留、自訂事件與 API 存取。",
+      "free_tier": "有（1 個網站，30 天保留）",
+      "pricing_url": "https://withcabin.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "從 Cabin 遷移到 OpenPanel",
+    "intro": "從 Cabin 切換到 OpenPanel 對於基本追蹤來說相當容易，還能獲得更多產品分析能力。",
+    "difficulty": "easy",
+    "estimated_time": "30 分鐘到 1 小時",
+    "steps": [
+      {
+        "title": "安裝 OpenPanel SDK",
+        "description": "將 OpenPanel SDK 加入你的應用程式。這個腳本稍大一些（約 2.3KB），但仍然很輕量。"
+      },
+      {
+        "title": "對應自訂事件",
+        "description": "如果你有使用 Cabin 的自訂事件（Pro），請將它們轉換為 OpenPanel 格式。cabin.event('signup') 會變成 op.track('signup', {properties})。"
+      },
+      {
+        "title": "加入使用者識別",
+        "description": "與匿名的 Cabin 不同，OpenPanel 支援使用者識別。加入 op.identify() 呼叫即可解鎖使用者檔案與留存分析。"
+      },
+      {
+        "title": "設定漏斗與留存",
+        "description": "在 OpenPanel 中建立漏斗與留存報告——這些功能在 Cabin 中不可用。"
+      },
+      {
+        "title": "移除 Cabin 腳本",
+        "description": "確認無誤後，移除 Cabin 追蹤腳本。兩者都不使用 Cookie，所以不需要更改同意流程。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "兩者都使用類似的事件追蹤模式。OpenPanel 增加了 Cabin 沒有的使用者識別能力。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Cabin 在免費方案中不提供資料匯出。歷史資料遷移需要 Pro 方案匯出。"
+    }
+  },
+  "use_cases": {
+    "title": "哪些情境下 OpenPanel 比 Cabin 更合適",
+    "intro": "當你需要比單純網站追蹤更深入的產品分析與平台彈性時，OpenPanel 會更出色。",
+    "items": [
+      {
+        "title": "需要自架的團隊",
+        "description": "Cabin 僅提供雲端版。如果你因合規或安全需求而需要將資料放在自己的基礎架構上，OpenPanel 可透過 Docker Compose 提供完整自架能力。只要使用單一指令 `./setup` 精靈，就能引導你完成設定，並在幾分鐘內啟動整個堆疊。",
+        "icon": "server"
+      },
+      {
+        "title": "需要使用者層級分析的 SaaS 產品",
+        "description": "Cabin 會將所有訪客匿名化。如果你需要追蹤已登入使用者、分析留存，或建立同群，OpenPanel 可以提供這些能力。",
+        "icon": "users"
+      },
+      {
+        "title": "行動應用程式分析",
+        "description": "Cabin 僅支援網站。OpenPanel 提供原生 iOS、Android 與 React Native SDK，並具備完整的產品分析能力。",
+        "icon": "smartphone"
+      },
+      {
+        "title": "需要漏斗分析的團隊",
+        "description": "使用 OpenPanel 的漏斗分析，追蹤使用者在註冊、上手流程或購買流程中的路徑。",
+        "icon": "chart"
+      },
+      {
+        "title": "需要 A/B 測試的產品",
+        "description": "OpenPanel 內建實驗功能。Cabin 只有分析功能。",
+        "icon": "flask"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於從 Cabin 切換到 OpenPanel 的常見問題。",
+    "items": [
+      {
+        "question": "OpenPanel 和 Cabin 一樣重視隱私嗎？",
+        "answer": "兩者預設都不使用 Cookie，且都符合 GDPR/CCPA。主要差別在於 OpenPanel 允許可選的使用者識別以支援產品分析，而 Cabin 則嚴格保持匿名。Cabin 將資料僅儲存在歐盟；OpenPanel 則讓你透過自架自行選擇資料位置。"
+      },
+      {
+        "question": "為什麼要從 Cabin 切換到 OpenPanel？",
+        "answer": "團隊通常會在需要自架、使用者識別、行動版 SDK、漏斗分析或留存追蹤時切換。Cabin 擅長簡單、匿名的網站分析與碳排追蹤，但如果你需要更深入的產品洞察，OpenPanel 就能提供這些能力。"
+      },
+      {
+        "question": "OpenPanel 會像 Cabin 一樣追蹤碳足跡嗎？",
+        "answer": "不會。碳足跡追蹤是 Cabin 的獨特功能。如果環境影響追蹤對你的組織非常重要，你可能會想保留 Cabin，或使用其他工具來處理這項特定能力。"
+      },
+      {
+        "question": "哪個追蹤腳本比較小？",
+        "answer": "Cabin 的腳本較小，約 1KB（比 Google Analytics 小 77 倍）。OpenPanel 的腳本為 2.3KB gzipped。兩者都比傳統分析工具輕量得多。"
+      },
+      {
+        "question": "我可以自架 Cabin 嗎？",
+        "answer": "不行。Cabin 僅提供雲端版，沒有自架選項。你的資料始終會儲存在他們的歐盟伺服器上。如果你需要將資料放在自己的基礎架構上，OpenPanel 可透過 Docker 提供完整自架。"
+      },
+      {
+        "question": "價格如何比較？",
+        "answer": "Cabin 採固定價格：免費（1 個網站、30 天保留）或每月 $19 的 Pro（無限網站與保留）。OpenPanel 採按事件計費，每月 $2.50 起可處理 5,000 個事件（30 天免費試用），或可免費自架。對高流量網站來說，Cabin 的固定費用可能更划算。"
+      },
+      {
+        "question": "Cabin 支援行動應用程式嗎？",
+        "answer": "不支援。Cabin 僅限網站，沒有行動版 SDK。OpenPanel 提供原生 iOS、Android 與 React Native SDK，可用於行動應用程式分析。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "網站分析設定",
+        "url": "/zh-TW/guides/website-analytics-setup"
+      },
+      {
+        "title": "從 Google Analytics 遷移",
+        "url": "/zh-TW/guides/migrate-from-google-analytics"
+      },
+      {
+        "title": "追蹤自訂事件",
+        "url": "/zh-TW/guides/track-custom-events"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 個最佳開源網站分析工具",
+        "url": "/zh-TW/articles/self-hosted-web-analytics"
+      },
+      {
+        "title": "無 Cookie 分析",
+        "url": "/zh-TW/articles/cookieless-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Plausible",
+        "url": "/compare/plausible-alternative"
+      },
+      {
+        "name": "Fathom",
+        "url": "/compare/fathom-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "開始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

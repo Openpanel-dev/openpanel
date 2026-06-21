@@ -1,0 +1,30 @@
+---
+title: 洞察
+description: 查询分析数据，包括指标、页面、引荐来源、设备和地理分布。
+---
+
+## 身份验证
+
+需要 `read` 或 `root` 客户端——默认的 `write` 客户端没有访问权限。请参阅 [身份验证](/zh-CN/docs/api/authentication) 指南。
+
+## 基础 URL
+
+```
+https://api.openpanel.dev/insights/{projectId}
+```
+
+## 可用端点
+
+| 端点 | 描述 |
+|----------|-------------|
+| `GET /metrics` | 访客、会话、跳出率和参与度 |
+| `GET /live` | 当前活跃访客数量 |
+| `GET /pages` | 按会话数排名的热门页面 |
+| `GET /referrer` | 流量来源 |
+| `GET /country`, `/region`, `/city` | 地理分布 |
+| `GET /device`, `/browser`, `/os` | 设备和技术分布 |
+| `GET /utm_source`, `/utm_campaign`, … | UTM 参数分布 |
+
+大多数端点接受 `startDate`、`endDate`、`range`、`filters`、`cursor` 和 `limit` 查询参数。
+
+完整 schema 和所有可用端点请参阅 [API 参考](/zh-CN/docs/api-reference)。

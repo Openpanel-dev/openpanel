@@ -1,0 +1,325 @@
+---
+title: "如何使用 Node.js 追蹤事件"
+description: "為您的 Node.js 應用程式新增伺服器端分析。使用 OpenPanel 的 JavaScript SDK 追蹤事件、識別使用者並分析行為。"
+difficulty: beginner
+timeToComplete: 7
+date: 2025-12-14
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安裝 SDK"
+    anchor: "install"
+  - name: "初始化 OpenPanel"
+    anchor: "setup"
+  - name: "追蹤事件"
+    anchor: "events"
+  - name: "識別使用者"
+    anchor: "identify"
+  - name: "驗證您的設定"
+    anchor: "verify"
+---
+
+## 介紹
+
+伺服器端分析讓您能完全掌控要追蹤哪些資料，並確保事件永遠不會被廣告攔截器阻擋。OpenPanel 的 JavaScript SDK 可完美運作於 Node.js 環境，讓您可以從後端、API 路由與背景工作中追蹤事件。
+
+OpenPanel 是 Mixpanel 和 Amplitude 的開源替代方案，讓您在不影響使用者隱私的情況下獲得強大的伺服器端分析能力。
+
+## 前置需求
+
+- 已設定好 Node.js 專案
+- OpenPanel 帳號（[免費註冊](https://dashboard.openpanel.dev/onboarding)）
+- 來自 OpenPanel 控制台的 Client ID 和 Client Secret
+
+> **重要：** 伺服器端追蹤需要 `clientSecret` 進行驗證。
+
+## 步驟 1：安裝 SDK
+
+安裝 OpenPanel JavaScript SDK：
+
+```bash
+npm install @openpanel/sdk
+```
+
+或者使用 pnpm：
+
+```bash
+pnpm install @openpanel/sdk
+```
+
+## 步驟 2：初始化 OpenPanel
+
+使用您的憑證建立 OpenPanel 實例：
+
+```js title="lib/op.js"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET', // 伺服器端必填
+});
+```
+
+> **安全性注意：** 絕不要在用戶端程式碼中暴露您的 `clientSecret`。請在正式環境中使用環境變數。
+
+### 使用環境變數
+
+```js title="lib/op.js"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const op = new OpenPanel({
+  clientId: process.env.OPENPANEL_CLIENT_ID,
+  clientSecret: process.env.OPENPANEL_CLIENT_SECRET,
+});
+```
+
+```bash title=".env"
+OPENPANEL_CLIENT_ID=your-client-id
+OPENPANEL_CLIENT_SECRET=your-client-secret
+```
+
+## 步驟 3：追蹤事件
+
+在整個 Node.js 應用程式中追蹤事件：
+
+```js title="routes/api/signup.js"
+import { op } from '@/lib/op';
+
+export async function POST(request) {
+  const { email, name } = await request.json();
+
+  // 追蹤註冊事件
+  op.track('user_signed_up', {
+    email,
+    name,
+    source: 'website',
+  });
+
+  // 您的註冊邏輯
+  const user = await createUser({ email, name });
+
+  return Response.json({ success: true, user });
+}
+```
+
+### 追蹤 API 請求
+
+```js title="middleware/analytics.js"
+import { op } from '@/lib/op';
+
+export function analyticsMiddleware(req, res, next) {
+  // 追蹤 API 請求
+  op.track('api_request', {
+    method: req.method,
+    path: req.path,
+    status_code: res.statusCode,
+  });
+
+  next();
+}
+```
+
+### 追蹤背景工作
+
+```js title="jobs/send-email.js"
+import { op } from '@/lib/op';
+
+export async function sendEmailJob(userId, emailData) {
+  try {
+    await sendEmail(emailData);
+
+    op.track('email_sent', {
+      user_id: userId,
+      email_type: emailData.type,
+      success: true,
+    });
+  } catch (error) {
+    op.track('email_failed', {
+      user_id: userId,
+      email_type: emailData.type,
+      error: error.message,
+    });
+  }
+}
+```
+
+## 步驟 4：識別使用者
+
+若要 [識別使用者](/zh-TW/features/identify-users) 並追蹤其行為：
+
+```js title="routes/api/login.js"
+import { op } from '@/lib/op';
+
+export async function POST(request) {
+  const { email, password } = await request.json();
+
+  const user = await authenticateUser(email, password);
+
+  // 識別使用者
+  op.identify({
+    profileId: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    properties: {
+      plan: user.plan,
+      signupDate: user.createdAt,
+    },
+  });
+
+  // 追蹤登入事件
+  op.track('user_logged_in', {
+    user_id: user.id,
+    method: 'email',
+  });
+
+  return Response.json({ success: true, user });
+}
+```
+
+### 追蹤使用者操作
+
+```js title="routes/api/purchase.js"
+import { op } from '@/lib/op';
+
+export async function POST(request) {
+  const { userId, productId, amount } = await request.json();
+
+  // 追蹤購買事件
+  op.track('purchase_completed', {
+    user_id: userId,
+    product_id: productId,
+    amount,
+    currency: 'USD',
+  }, {
+    profileId: userId, // 將事件與使用者關聯
+  });
+
+  // 您的購買邏輯
+  await processPurchase(userId, productId, amount);
+
+  return Response.json({ success: true });
+}
+```
+
+## 驗證您的設定
+
+1. 對會觸發事件的 API 端點發送請求
+2. 執行會追蹤事件的背景工作
+3. 開啟您的 [OpenPanel 控制台](https://dashboard.openpanel.dev)
+4. 查看即時檢視，確認事件是否有進來
+
+**沒有看到事件嗎？**
+
+- 檢查伺服器日誌是否有錯誤
+- 驗證您的 Client ID 和 Client Secret 是否正確
+- 確認已提供 `clientSecret`（伺服器端必填）
+- 檢查伺服器日誌中的網路請求
+
+## 常見模式
+
+### 追蹤 webhook 事件
+
+```js title="routes/api/webhook.js"
+import { op } from '@/lib/op';
+
+export async function POST(request) {
+  const payload = await request.json();
+
+  op.track('webhook_received', {
+    source: payload.source,
+    event_type: payload.type,
+    timestamp: new Date().toISOString(),
+  });
+
+  // 處理 webhook
+  await processWebhook(payload);
+
+  return Response.json({ success: true });
+}
+```
+
+### 設定全域屬性
+
+```js title="lib/op.js"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const op = new OpenPanel({
+  clientId: process.env.OPENPANEL_CLIENT_ID,
+  clientSecret: process.env.OPENPANEL_CLIENT_SECRET,
+  globalProperties: {
+    app_version: process.env.APP_VERSION,
+    environment: process.env.NODE_ENV,
+    server_region: process.env.SERVER_REGION,
+  },
+});
+```
+
+### 追蹤錯誤
+
+```js title="middleware/error-handler.js"
+import { op } from '@/lib/op';
+
+export function errorHandler(err, req, res, next) {
+  // 追蹤錯誤事件
+  op.track('error_occurred', {
+    error_message: err.message,
+    error_stack: err.stack,
+    path: req.path,
+    method: req.method,
+  });
+
+  // 您的錯誤處理邏輯
+  res.status(500).json({ error: 'Internal server error' });
+}
+```
+
+### 增加使用者屬性
+
+```js
+import { op } from '@/lib/op';
+
+// 增加登入次數
+op.increment({
+  profileId: user.id,
+  property: 'login_count',
+  value: 1,
+});
+```
+
+## Serverless 與 Vercel
+
+如果您使用的是 serverless 函式（例如 Vercel），請使用 `waitUntil` 以確保事件在函式結束前完成追蹤：
+
+```js title="api/track.js"
+import { waitUntil } from '@vercel/functions';
+import { op } from '@/lib/op';
+
+export default async function handler(req, res) {
+  // 立即回傳回應，同時保持函式持續執行
+  waitUntil(op.track('important_event', { foo: 'bar' }));
+
+  return res.status(200).json({ success: true });
+}
+```
+
+## 下一步
+
+- [完整 JavaScript SDK 參考文件](/zh-TW/docs/sdks/javascript)
+- [如何為 Express 新增分析](/zh-TW/guides/express-analytics)
+- [將 OpenPanel 與 Mixpanel 比較](/zh-TW/compare/mixpanel-alternative)
+
+## FAQ
+
+### 為什麼伺服器端追蹤需要 clientSecret？
+
+伺服器端追蹤需要驗證，因為我們無法使用 CORS 標頭。`clientSecret` 可確保您的事件正確通過驗證，並防止未授權的追蹤。
+
+### 我可以非同步追蹤事件嗎？
+
+可以！OpenPanel SDK 預設會非同步追蹤事件。事件會排入佇列並在背景傳送，因此不會阻塞您的應用程式。
+
+### OpenPanel 符合 GDPR 嗎？
+
+是的！OpenPanel 的設計以隱私為核心。伺服器端追蹤讓您能完全掌控要收集哪些資料。請查看我們的 [無 cookie 分析指南](/zh-TW/articles/cookieless-analytics) 以了解更多資訊。

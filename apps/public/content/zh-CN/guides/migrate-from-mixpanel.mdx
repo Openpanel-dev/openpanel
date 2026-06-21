@@ -1,0 +1,252 @@
+---
+title: "如何从 Mixpanel 迁移到 OpenPanel"
+description: "使用这份分步骤迁移指南，在 2 小时内从 Mixpanel 切换到 OpenPanel。"
+difficulty: intermediate
+timeToComplete: 90
+date: 2025-12-15
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "导出 Mixpanel 数据"
+    anchor: "export"
+  - name: "安装 OpenPanel SDK"
+    anchor: "install"
+  - name: "映射你的事件"
+    anchor: "map-events"
+  - name: "导入历史数据"
+    anchor: "import"
+  - name: "并行运行"
+    anchor: "parallel"
+  - name: "移除 Mixpanel"
+    anchor: "remove"
+---
+
+# 如何从 Mixpanel 迁移到 OpenPanel
+
+迁移分析工具听起来很痛苦，但 OpenPanel 的 API 与 Mixpanel 的模式非常接近。大多数实现只需极少的代码改动即可转换。你将映射现有事件，选择性导入历史数据，并在正式切换前让两个工具并行运行。
+
+OpenPanel 默认提供无 Cookie 追踪，让你拥有更好的隐私控制、透明的定价且不会出现意外超额费用，并支持自托管。迁移通常需要 1-2 小时完成代码修改，再加上一到两周的并行追踪来验证数据一致性。
+
+## 前提条件
+
+- 现有的 Mixpanel 实现
+- 一个 OpenPanel 账户（[免费注册](https://dashboard.openpanel.dev/onboarding)）
+- 访问 Mixpanel 项目设置以导出数据的权限
+- 访问你的应用代码库的权限
+
+## 导出 Mixpanel 数据 [#export]
+
+在迁移之前，你需要先从 Mixpanel 导出历史数据。如果你愿意从头开始，这一步是可选的，但大多数团队更希望保留历史事件以便对比。
+
+Mixpanel 提供了一个以 JSON 格式返回事件的导出 API。你需要在 Mixpanel 的项目设置中获取 API 凭证。
+
+```bash
+curl https://mixpanel.com/api/2.0/export \
+  -u YOUR_API_SECRET: \
+  -d 'from_date=2024-01-01' \
+  -d 'to_date=2024-12-15' \
+  -d 'event=["event1","event2"]' \
+  > mixpanel_export.json
+```
+
+或者，你也可以通过 Mixpanel 仪表盘导出：进入 Data Management，然后选择 Export。选择你的日期范围和事件，然后下载文件。请保留此导出文件，稍后导入步骤会用到。
+
+## 安装 OpenPanel SDK [#install]
+
+在保留 Mixpanel 的同时安装 OpenPanel SDK。等你验证迁移无误后，再移除 Mixpanel。
+
+对于 Web 应用，请安装 Web SDK。它会处理浏览器特有的功能，例如自动页面浏览追踪和外链追踪。
+
+```bash
+npm install @openpanel/web
+```
+
+对于服务端应用或 Node.js，请改用核心 SDK。这个版本需要 client secret，适用于受信任的环境。
+
+```bash
+npm install @openpanel/sdk
+```
+
+如果你使用的是 Next.js，有一个专门的包可以同时处理客户端和服务端追踪，并正确集成组件。有关框架特定的设置，请查看 [SDK 文档](/zh-CN/docs/sdks/nextjs)。
+
+## 映射你的事件 [#map-events]
+
+OpenPanel 的 API 遵循与 Mixpanel 类似的模式，但在命名约定上有一些差异。Mixpanel 对事件和属性使用 Title Case，而 OpenPanel 使用 snake_case。
+
+下面展示基础的 [事件追踪](/zh-CN/features/event-tracking) 如何转换。在 Mixpanel 中，你可能会这样追踪按钮点击：
+
+```js
+mixpanel.track('Button Clicked', {
+  'Button Name': 'Sign Up',
+  'Button Location': 'Hero'
+});
+```
+
+在 OpenPanel 中，对应写法使用 snake_case 命名：
+
+```js
+op.track('button_clicked', {
+  button_name: 'Sign Up',
+  button_location: 'Hero'
+});
+```
+
+[用户识别](/zh-CN/features/identify-users) 的工作方式也类似，不过 OpenPanel 使用结构化对象，而不是分开的方法调用。Mixpanel 的模式会将 identify 和 people.set 分开：
+
+```js
+mixpanel.identify('user_123');
+mixpanel.people.set({
+  '$email': 'user@example.com',
+  '$name': 'John Doe',
+  'Plan': 'Premium'
+});
+```
+
+OpenPanel 将其合并为一次 identify 调用，并为常见属性提供内置字段：
+
+```js
+op.identify({
+  profileId: 'user_123',
+  email: 'user@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+  properties: {
+    plan: 'Premium'
+  }
+});
+```
+
+对于超级属性（会附加到每个事件的全局属性），Mixpanel 使用 `register` 或 `registerSuperProperties`。OpenPanel 将其称为 `setGlobalProperties`，但概念完全相同：
+
+```js
+op.setGlobalProperties({
+  app_version: '1.0.0',
+  environment: 'production'
+});
+```
+
+更新用户属性的方式也相同，只是方法名不同：
+
+```js
+op.increment({
+  profileId: user.id,
+  property: 'login_count',
+  value: 1
+});
+```
+
+## 导入历史数据 [#import]
+
+OpenPanel 可以使用 SDK 的服务端客户端导入你的 Mixpanel 导出数据。你需要稍微转换一下 Mixpanel 的格式，因为 Mixpanel 使用 Unix 时间戳和不同的属性名称。
+
+```js
+import { OpenPanel } from '@openpanel/sdk';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET',
+});
+
+const mixpanelEvents = await loadMixpanelExport();
+
+for (const event of mixpanelEvents) {
+  op.track(event.event, event.properties, {
+    profileId: event.distinct_id,
+    timestamp: new Date(event.time * 1000),
+  });
+}
+```
+
+对于用户资料，将 Mixpanel 以美元符号开头的属性映射到 OpenPanel 的内置字段：
+
+```js
+const mixpanelUsers = await loadMixpanelUsers();
+
+for (const user of mixpanelUsers) {
+  op.identify({
+    profileId: user.distinct_id,
+    email: user.$email,
+    firstName: user.$first_name,
+    lastName: user.$last_name,
+    properties: {
+      plan: user.Plan,
+      signupDate: user['Signup Date'],
+    },
+  });
+}
+```
+
+对于大规模迁移，请联系支持团队。OpenPanel 提供了帮助批量导入的工具。
+
+## 并行运行 [#parallel]
+
+在移除 Mixpanel 之前，先让两个工具同时运行 1-2 周。这样你可以验证事件计数是否匹配，以及用户识别是否正常工作。
+
+创建一个简单的封装函数，把事件同时发送到两个平台：
+
+```js
+function trackEvent(eventName, properties) {
+  if (typeof mixpanel !== 'undefined') {
+    mixpanel.track(eventName, properties);
+  }
+
+  if (op) {
+    op.track(eventName, properties);
+  }
+}
+
+trackEvent('button_clicked', { button_name: 'Sign Up' });
+```
+
+一周后，比较 Mixpanel 的 Live View 和 OpenPanel 的实时仪表盘。检查事件计数是否接近一致（由于时间差异，它们不会完全相同）、用户资料是否被正确创建，以及你设置的任何 [漏斗](/zh-CN/features/funnels) 是否显示出相似的 [转化率](/zh-CN/features/conversion)。
+
+## 移除 Mixpanel [#remove]
+
+在确认数据一致后，从你的项目中移除 Mixpanel SDK。对于 npm 包，请卸载该依赖：
+
+```bash
+npm uninstall mixpanel-browser
+```
+
+然后在代码库中搜索所有剩余的 `mixpanel.*` 调用，并将它们替换为 OpenPanel 对应写法。如果你在并行追踪步骤中使用了封装函数，现在就可以移除它并直接调用 OpenPanel。
+
+```js
+op.track('button_clicked', { button_name: 'Sign Up' });
+```
+
+如果你是通过 CDN 加载 Mixpanel SDK，也不要忘记移除任何 Mixpanel script 标签。
+
+## 验证你的设置 [#verify]
+
+移除 Mixpanel 后，再监控 OpenPanel 几天，确保一切追踪正常。检查实时视图，确认事件正在流入；验证用户资料是否显示预期属性；并测试你配置的任何漏斗或报表。
+
+如果事件没有出现，请再次检查你使用的是正确的 client ID，并且在任何追踪调用之前 SDK 已完成初始化。如果追踪正常，浏览器控制台会显示对 `api.openpanel.dev` 的网络请求。
+
+## 下一步
+
+[SDK 文档](/zh-CN/docs)涵盖了自定义事件属性、服务端追踪以及框架特定集成等高级功能。如果你是因为价格问题从 Mixpanel 迁移过来，你可能还想了解 [自托管](/zh-CN/articles/how-to-self-host-openpanel)，以完全掌控你的数据和成本。
+
+如需查看框架特定的设置说明，请参阅我们的指南：
+- [Next.js 分析指南](/zh-CN/guides/nextjs-analytics)，适用于 Next.js 应用
+- [React 分析指南](/zh-CN/guides/react-analytics)，适用于 React 应用
+- [Express 分析指南](/zh-CN/guides/express-analytics)，适用于 Express.js 应用
+- [Python 分析指南](/zh-CN/guides/python-analytics)，适用于 Python 应用
+
+<Faqs>
+<FaqItem question="我可以导入我的 Mixpanel 历史数据吗？">
+可以。OpenPanel 可使用 SDK 的服务端客户端导入 Mixpanel 导出数据。对于包含数百万事件的大规模迁移，请联系支持团队以获取批量导入协助。
+</FaqItem>
+
+<FaqItem question="我的 Mixpanel 漏斗在 OpenPanel 中能用吗？">
+你需要在 OpenPanel 仪表盘中重新创建漏斗，但概念是直接对应的。按相同顺序选择事件，并配置日期范围和筛选条件。转化逻辑的工作方式相同。
+</FaqItem>
+
+<FaqItem question="完整迁移需要多长时间？">
+大多数迁移在代码修改上需要 1-2 小时。在完全切换之前，建议再预留 1-2 周进行并行追踪，以验证数据一致性。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 吗？">
+是的。OpenPanel 默认使用无 Cookie 追踪，这意味着在大多数隐私法规下，进行基础分析时你不需要 Cookie 同意横幅。通过自托管，你还可以彻底消除国际数据传输方面的顾虑。
+</FaqItem>
+</Faqs>

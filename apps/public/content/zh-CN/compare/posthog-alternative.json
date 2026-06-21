@@ -1,0 +1,512 @@
+{
+  "slug": "posthog-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "PostHog 替代方案 2026 — 完全可自托管，功能齐全",
+    "description": "PostHog 已弃用其完整的自托管版本——现在只剩下一个业余版构建，新功能仅面向云端发布。OpenPanel 始终保持完全开源且可自托管，云端版与自托管版的每一项功能都完全一致。2.3 KB SDK，默认无 cookie，AGPL-3.0 平台（SDK 为 MIT）。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 PostHog 替代方案",
+    "subheading": "在不增加复杂性的前提下获得强大的产品分析能力。OpenPanel 以更轻量的体积、真正的无 cookie 跟踪和透明定价，提供核心洞察——无需企业销售电话。",
+    "badges": [
+      "开源",
+      "无 cookie",
+      "轻量级 SDK",
+      "简单定价"
+    ]
+  },
+  "competitor": {
+    "name": "PostHog",
+    "logo": "/logos/posthog.svg",
+    "url": "https://posthog.com",
+    "short_description": "面向开发者的一体化产品分析平台，提供分析、功能标志、会话回放和问卷调查等功能。",
+    "founded": 2020,
+    "headquarters": "美国加利福尼亚州旧金山"
+  },
+  "overview": {
+    "title": "为什么考虑用 OpenPanel 替代 PostHog？",
+    "paragraphs": [
+      "PostHog 打造了一个令人印象深刻的一体化平台，涵盖产品分析、功能标志、会话回放、问卷调查、A/B 测试等——一个平台里集成了 10 多种产品。对于希望把所有功能放在单一工具中的开发驱动型团队来说，它是一个受欢迎的选择。但这种广度也带来了取舍：52+ KB 的 SDK、复杂的多产品定价，以及需要 ClickHouse、Kafka、Redis 和 PostgreSQL 的自托管部署。",
+      "OpenPanel 采取的是聚焦策略。它不试图面面俱到，而是提供出色的分析能力——事件、漏斗、留存、分群、用户画像、会话回放和网页分析——同时占用空间大幅更小。SDK 仅 2.3 KB（比 PostHog 轻 20 多倍），这会直接转化为更快的页面加载速度和更好的 Core Web Vitals。",
+      "无 cookie 跟踪是另一个关键区别。PostHog 默认使用 cookie，并且需要配置才能切换为无 cookie，而 OpenPanel 开箱即用即无 cookie——无需同意横幅。自托管也简单得多：OpenPanel 通过一条命令的 Docker Compose 设置运行（ClickHouse、Postgres、Redis），而 PostHog 则需要更重的多服务架构，还要额外依赖 Kafka。",
+      "如果你需要专注的分析能力而不是功能膨胀，希望使用不会影响性能的轻量 SDK，并且更偏好简单的按事件计费而不是多产品计量——OpenPanel 能以最少的开销提供你真正需要的一切。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs PostHog：哪个更适合你？",
+    "intro": "两者都是开源分析平台。PostHog 是一个拥有众多产品的一体化平台，而 OpenPanel 则专注于简洁的分析体验。",
+    "one_liner": "PostHog 是一个拥有 10 多种产品的一体化平台；OpenPanel 则以更轻量的体积专注于分析。",
+    "best_for_openpanel": [
+      "希望获得专注分析而不需要功能标志或问卷调查的团队",
+      "重视隐私、需要默认无 cookie 跟踪的产品",
+      "关注性能的应用（2.3KB SDK vs 52KB+）",
+      "更偏好简单 Docker 部署而非多服务架构的团队"
+    ],
+    "best_for_competitor": [
+      "需要一体化平台（分析、功能标志、问卷调查、A/B 实验）的团队",
+      "希望通过 SQL 访问（HogQL）进行自定义查询的开发者",
+      "利用 PostHog 生态系统的 Y Combinator 公司",
+      "需要强大 CDP 能力和 60+ 连接器的团队"
+    ]
+  },
+  "highlights": {
+    "title": "关键差异一目了然",
+    "intro": "以下是 OpenPanel 和 PostHog 在关键因素上的对比。",
+    "items": [
+      {
+        "label": "SDK 大小",
+        "openpanel": "2.3 KB",
+        "competitor": "52+ KB",
+        "notes": "OpenPanel 的 SDK 比 PostHog 的核心库小 20 多倍，带来更快的页面加载速度和更好的 Core Web Vitals。"
+      },
+      {
+        "label": "默认无 Cookie",
+        "openpanel": "是",
+        "competitor": "需要配置",
+        "notes": "OpenPanel 开箱即用即真正无 cookie。PostHog 需要特定配置才能实现无 cookie 跟踪，而且功能会有所减少。"
+      },
+      {
+        "label": "定价复杂度",
+        "openpanel": "简单按事件计费",
+        "competitor": "多产品计量",
+        "notes": "OpenPanel 的定价清晰直接。PostHog 会分别对事件、录屏、功能标志、问卷等收费——每项都有不同层级。"
+      },
+      {
+        "label": "自托管复杂度",
+        "openpanel": "一条命令的 Docker Compose，带引导式设置向导",
+        "competitor": "ClickHouse + Kafka + Redis + PostgreSQL",
+        "notes": "OpenPanel 通过一条命令的 Docker Compose 设置进行自托管（ClickHouse、Postgres、Redis）。PostHog 需要更重的技术栈，而且还包括 Kafka。"
+      },
+      {
+        "label": "定位",
+        "openpanel": "以分析为先",
+        "competitor": "一体化平台",
+        "notes": "OpenPanel 专注于把分析做到极致。PostHog 打包了 10+ 产品，这对于只需要分析的团队来说会增加复杂性。"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能对比",
+    "intro": "PostHog 是一体化平台。OpenPanel 则纯粹专注于分析。",
+    "groups": [
+      {
+        "group": "网页分析",
+        "features": [
+          {
+            "name": "页面浏览量与访客",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "流量来源",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "地理数据",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "设备与浏览器",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "UTM 活动跟踪",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "实时仪表板",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "产品分析",
+        "features": [
+          {
+            "name": "自定义事件跟踪",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "漏斗分析",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "用户画像",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "分群分析",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "用户路径分析",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "高级功能",
+        "features": [
+          {
+            "name": "A/B 测试",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "功能标志",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "PostHog 包含功能标志；OpenPanel 专注于分析"
+          },
+          {
+            "name": "会话回放",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两个平台都提供会话回放。"
+          },
+          {
+            "name": "问卷调查",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "PostHog 包含应用内问卷；OpenPanel 可集成问卷工具"
+          },
+          {
+            "name": "自定义仪表板",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "SQL 查询访问",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "PostHog 提供 HogQL，这是其 SQL 变体；OpenPanel 使用可视化报表构建器"
+          }
+        ]
+      },
+      {
+        "group": "隐私与合规",
+        "features": [
+          {
+            "name": "默认无 Cookie",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "PostHog 默认使用 cookie，无 cookie 需要配置"
+          },
+          {
+            "name": "无需同意横幅",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "PostHog 的默认跟踪在 GDPR 下需要同意横幅"
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "EU 数据托管选项",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "PostHog 提供位于法兰克福的 EU Cloud"
+          },
+          {
+            "name": "自托管选项",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "IP 匿名化",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "集成与导出",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "数据导出",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Webhook 支持",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "数据仓库同步",
+            "openpanel": "2026 年推出",
+            "competitor": true,
+            "notes": "PostHog 拥有强大的 CDP 能力和 60+ 个连接器。OpenPanel 目前提供导出 API，原生数据仓库导出（S3/GCS）已列入 2026 年路线图。"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技术对比",
+    "intro": "对于评估分析工具的开发者来说，以下是技术层面的拆解。",
+    "items": [
+      {
+        "label": "SDK 大小",
+        "openpanel": "2.3 KB（gzip 后）",
+        "competitor": "52+ KB 核心库（gzip 后），额外功能按需懒加载",
+        "notes": null
+      },
+      {
+        "label": "支持的平台",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Astro",
+          "Remix",
+          "Express",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "Ruby",
+          "Java",
+          "Rust",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "React Native",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "PHP",
+          "Go",
+          "Ruby",
+          "Java",
+          "Flutter",
+          "Rust"
+        ],
+        "notes": null
+      },
+      {
+        "label": "开源",
+        "openpanel": "是 - AGPL-3.0",
+        "competitor": "是 - MIT License",
+        "notes": "两者都是开源。OpenPanel 采用 AGPL-3.0；PostHog 采用 MIT 许可。"
+      },
+      {
+        "label": "自托管",
+        "openpanel": "Docker Compose（ClickHouse、Postgres、Redis），一条命令即可设置",
+        "competitor": "包含多个服务的 Docker（ClickHouse、Kafka、Redis、PostgreSQL）或 Kubernetes",
+        "notes": null
+      },
+      {
+        "label": "数据库",
+        "openpanel": "ClickHouse",
+        "competitor": "ClickHouse",
+        "notes": null
+      },
+      {
+        "label": "数据保留",
+        "openpanel": "无限制（自托管），可配置（云端）",
+        "competitor": "7 年（付费计划），1 年（免费计划），录屏保留 3 个月",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "价格对比",
+    "intro": "PostHog 有慷慨的免费层，但多产品定价复杂。OpenPanel 提供更简单的按事件计费。",
+    "openpanel": {
+      "model": "按事件计费，透明清晰",
+      "description": "定价透明，5,000 个事件起每月 $2.50，提供 30 天免费试用。所有功能在每个层级都包含。自托管免费且事件无限制。"
+    },
+    "competitor": {
+      "model": "按多产品使用量计费",
+      "description": "每月 100 万事件（产品分析）、每月 5,000 次录屏、每月 100 万次功能标志请求、每月 1,500 份问卷回复免费。$0.00005/事件（匿名）、$0.000248/事件（已识别）、$0.005/次录屏、$0.0001/次标志请求。还提供 HIPAA 等附加项（$250/月）。90%+ 的客户使用免费层。",
+      "free_tier": "每月 100 万事件（分析），每月 5K 次录屏",
+      "pricing_url": "https://posthog.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "从 PostHog 迁移到 OpenPanel",
+    "intro": "两者都使用基于事件的跟踪，因此在分析层面的迁移非常直接。",
+    "difficulty": "easy",
+    "estimated_time": "基础设置 1-4 小时；如果迁移功能标志或会话回放工作流则需要更久",
+    "steps": [
+      {
+        "title": "安装 OpenPanel SDK",
+        "description": "将轻量级的 OpenPanel SDK 添加到你的应用中。它只有 2.3KB，明显比 PostHog 的库更小。"
+      },
+      {
+        "title": "映射你的事件",
+        "description": "两个平台都使用基于事件的跟踪。将你的 PostHog 事件名称映射到 OpenPanel——大多数可以保持不变。"
+      },
+      {
+        "title": "配置用户识别",
+        "description": "将 PostHog 的 identify() 调用替换为 OpenPanel 的身份识别方法。API 很相似。"
+      },
+      {
+        "title": "设置仪表板",
+        "description": "在 OpenPanel 中重新创建你的关键仪表板。如有需要，可使用我们的迁移工具导入历史数据。"
+      },
+      {
+        "title": "验证并上线",
+        "description": "短时间内并行运行两个平台以验证数据准确性，然后关闭 PostHog 跟踪。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "两者都使用基于事件的跟踪，API 也很相似。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "大多数团队会从 OpenPanel 重新开始，并短暂并行运行两个工具。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 PostHog 更适合的场景",
+    "intro": "当你希望在不增加一体化平台复杂性的前提下获得分析能力时，选择 OpenPanel。",
+    "items": [
+      {
+        "title": "想要分析但不要功能膨胀的团队",
+        "description": "如果你需要产品分析和会话回放，但不需要 PostHog 的功能标志、问卷或实验，OpenPanel 能以最少的开销提供你需要的一切。",
+        "icon": "target"
+      },
+      {
+        "title": "隐私优先的产品",
+        "description": "OpenPanel 默认无 cookie，无需任何配置。PostHog 需要显式设置才能启用无 cookie 跟踪，而且在该模式下会失去部分功能。",
+        "icon": "shield"
+      },
+      {
+        "title": "注重性能的应用",
+        "description": "OpenPanel 的 2.3KB SDK vs PostHog 的 52KB+ 库，意味着更快的页面加载和更好的 Core Web Vitals——这对 SEO 和用户体验至关重要。",
+        "icon": "zap"
+      },
+      {
+        "title": "简单自托管需求",
+        "description": "OpenPanel 通过一条命令的 Docker Compose 设置进行自托管（ClickHouse、Postgres、Redis）。PostHog 需要更重的技术栈，而且还包括 Kafka——需要管理的基础设施显著更多。",
+        "icon": "server"
+      },
+      {
+        "title": "预算可预测",
+        "description": "OpenPanel 简单的按事件计费更容易预测。PostHog 在事件、录屏、标志和问卷上的多产品计量可能会导致意外成本。",
+        "icon": "dollar-sign"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于从 PostHog 切换到 OpenPanel 的常见问题。",
+    "items": [
+      {
+        "question": "OpenPanel 真的免费吗？",
+        "answer": "OpenPanel 自托管免费，事件无限制。云端版在 30 天免费试用后，5,000 个事件起每月 $2.50——没有免费的云端层。PostHog 提供慷慨的免费云端层（100 万事件、5K 次录屏），但随着使用量增长，成本可能很快上升。"
+      },
+      {
+        "question": "为什么要从 PostHog 切换到 OpenPanel？",
+        "answer": "团队切换有几个原因：更简单的定价，没有多产品计量；更小的 SDK 大小（2.3KB vs 52KB+）；默认真正无 cookie 跟踪；更容易自托管；以及没有功能膨胀的专注分析体验。"
+      },
+      {
+        "question": "从 PostHog 切换后我会失去哪些功能？",
+        "answer": "PostHog 平台包含功能标志、问卷和 A/B 实验。如果你正在积极使用这些功能，就需要单独的工具。OpenPanel 现在也包含会话回放，所以你不会失去这一项。如果你主要用 PostHog 做分析，OpenPanel 以更少的复杂性提供你所需的一切。"
+      },
+      {
+        "question": "OpenPanel 在隐私方面表现如何？",
+        "answer": "OpenPanel 默认无 cookie——无需配置。PostHog 默认使用 cookie，需要特定设置才能启用无 cookie 模式，而这会禁用某些功能，例如跨会话用户识别。"
+      },
+      {
+        "question": "我可以自托管 OpenPanel 吗？",
+        "answer": "可以！OpenPanel 通过一条命令的 Docker Compose 设置进行自托管（ClickHouse、Postgres、Redis）——./setup 向导会引导你完成配置，并在几分钟内启动整个栈。PostHog 自托管需要更重的技术栈，而且还包括 Kafka；其官方对单服务器业余部署的限制大约为每月 10 万事件。"
+      },
+      {
+        "question": "PostHog 比 OpenPanel 功能更丰富吗？",
+        "answer": "PostHog 提供更多产品（10+，包括功能标志、问卷、A/B 测试、数据仓库）。不过这也带来了额外的复杂性。OpenPanel 现在在核心分析之外也包含会话回放，同时保持对简洁和性能的专注。"
+      },
+      {
+        "question": "SDK 大小如何对比？",
+        "answer": "OpenPanel 的 SDK 为 2.3KB gzip 后。PostHog 的核心库为 52KB+ gzip 后，不过它会对会话回放等附加功能进行懒加载。这种差异会影响页面加载时间和 Core Web Vitals。"
+      },
+      {
+        "question": "哪个更适合初创公司？",
+        "answer": "PostHog 有慷慨的免费云端层；OpenPanel 自托管免费且事件无限制，云端计划在 30 天试用后从每月 $2.50 起。PostHog 开箱即提供更多功能（如功能标志等），但复杂性也更高。OpenPanel 更容易设置和理解，因此非常适合希望获得专注分析、而不想承担一体化平台开销的团队。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "跟踪自定义事件",
+        "url": "/zh-CN/guides/track-custom-events"
+      },
+      {
+        "title": "Next.js 分析设置",
+        "url": "/zh-CN/guides/nextjs-analytics"
+      },
+      {
+        "title": "React 分析设置",
+        "url": "/zh-CN/guides/react-analytics"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳开源网页分析工具",
+        "url": "/zh-CN/articles/self-hosted-web-analytics"
+      },
+      {
+        "title": "自托管网页分析",
+        "url": "/zh-CN/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Plausible",
+        "url": "/zh-CN/compare/plausible-alternative"
+      },
+      {
+        "name": "Matomo",
+        "url": "/zh-CN/compare/matomo-alternative"
+      },
+      {
+        "name": "Umami",
+        "url": "/zh-CN/compare/umami-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "开始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

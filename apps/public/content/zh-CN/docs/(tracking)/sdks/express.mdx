@@ -1,0 +1,113 @@
+---
+title: Express
+description: Express 中间件是对 Javascript SDK 的基础封装。它提供了一种将 SDK 添加到 Express 应用的简单方式。
+---
+
+import Link from 'next/link';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { DeviceIdWarning } from '@/components/device-id-warning';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+<Callout>
+在寻找分步教程？查看 [Express 分析指南](/zh-CN/guides/express-analytics)。
+</Callout>
+
+## 安装
+
+```bash
+pnpm install @openpanel/express
+```
+
+## 使用
+
+`@openpanel/express` 的默认导出是一个返回 Express 中间件的函数。它还会将 Openpanel SDK 附加到 `req` 对象上。
+
+你可以通过 `req.op` 访问它。
+
+```ts
+import express from 'express';
+
+import createOpenpanelMiddleware from '@openpanel/express';
+
+const app = express();
+
+app.use(
+  createOpenpanelMiddleware({
+    clientId: 'xxx',
+    clientSecret: 'xxx',
+    // trackRequest(url) {
+    //   return url.includes('/v1')
+    // },
+    // getProfileId(req) {
+    //   return req.user.id
+    // }
+  })
+);
+
+app.get('/sign-up', (req, res) => {
+  // 追踪注册事件
+  req.op.track('sign-up', {
+    email: req.body.email,
+  });
+  res.send('Hello World');
+});
+
+app.listen(3000, () => {
+  console.log('Server is running on http://localhost:3000');
+});
+```
+
+### 选项
+
+<CommonSdkConfig />
+
+#### Express 选项
+
+- `trackRequest` - 返回 `true` 表示应追踪该请求的函数。
+- `getProfileId` - 返回发起请求的用户 profile ID 的函数。
+
+## 与 Groups 配合使用
+
+Groups 可让你在账户或公司级别追踪分析数据。由于 Express 是后端 SDK，你可以在路由处理器中 upsert group 并分配用户。
+
+完整流程请参见 [Groups 指南](/zh-CN/docs/get-started/groups)。
+
+```ts
+app.post('/login', async (req, res) => {
+  const user = await loginUser(req.body);
+
+  // 识别用户
+  req.op.identify({ profileId: user.id, email: user.email });
+
+  // 创建/更新 group 实体
+  req.op.upsertGroup({
+    id: user.organizationId,
+    type: 'company',
+    name: user.organizationName,
+    properties: { plan: user.plan },
+  });
+
+  // 将用户分配到 group
+  req.op.setGroup(user.organizationId);
+
+  res.json({ ok: true });
+});
+```
+
+## Typescript
+
+如果 `req.op` 没有类型，可以扩展 `Request` 接口。
+
+```ts
+import { OpenPanel } from '@openpanel/express';
+
+declare global {
+  namespace Express {
+    export interface Request {
+      op: OpenPanel;
+    }
+  }
+}
+```

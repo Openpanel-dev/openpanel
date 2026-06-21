@@ -1,0 +1,273 @@
+---
+title: React
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+## 先知道這些
+
+請注意，這裡的所有追蹤都發生在用戶端！
+
+對於 React SPA，你可以直接使用 `@openpanel/web`——不需要另外的 React SDK。只要建立一個 OpenPanel 實例，並在整個應用程式中重複使用即可。
+
+## 安裝
+
+<Steps>
+### 步驟 1：安裝
+
+```bash
+npm install @openpanel/web
+```
+
+### 步驟 2：初始化
+
+在專案中建立一個共用的 OpenPanel 實例：
+
+```ts title="src/openpanel.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+#### 選項
+
+<CommonSdkConfig />
+<WebSdkConfig />
+
+- `clientId` - 你的 OpenPanel client ID（必填）
+- `apiUrl` - 傳送事件的 API URL（預設：`https://api.openpanel.dev`）
+- `trackScreenViews` - 自動追蹤畫面瀏覽（預設：`true`）
+- `trackOutgoingLinks` - 自動追蹤外部連結（預設：`true`）
+- `trackAttributes` - 自動追蹤帶有 `data-track` 屬性的元素（預設：`true`）
+- `trackHashChanges` - 追蹤 URL 中的 hash 變更（預設：`false`）
+- `disabled` - 停用追蹤（預設：`false`）
+
+### 步驟 3：使用方式
+
+在 React 元件中匯入並使用這個實例：
+
+```tsx
+import { op } from '@/openpanel';
+
+function MyComponent() {
+  const handleClick = () => {
+    op.track('button_click', { button: 'signup' });
+  };
+
+  return <button onClick={handleClick}>Trigger event</button>;
+}
+```
+
+</Steps>
+
+## 使用方式
+
+### 追蹤事件
+
+你可以用兩種不同方式追蹤事件：直接呼叫 `op.track()` 方法，或在 HTML 元素上加入 `data-track` 屬性。
+
+```tsx
+import { op } from '@/openpanel';
+
+function MyComponent() {
+  useEffect(() => {
+    op.track('my_event', { foo: 'bar' });
+  }, []);
+
+  return <div>My Component</div>;
+}
+```
+
+### 辨識使用者
+
+要辨識使用者，請使用唯一識別碼呼叫 `op.identify()` 方法。
+
+```tsx
+import { op } from '@/openpanel';
+
+function LoginComponent() {
+  const handleLogin = (user: User) => {
+    op.identify({
+      profileId: user.id, // 必填
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      properties: {
+        tier: 'premium',
+      },
+    });
+  };
+
+  return <button onClick={() => handleLogin(user)}>Login</button>;
+}
+```
+
+### 設定全域屬性
+
+要設定會隨每個事件送出的屬性：
+
+```tsx
+import { op } from '@/openpanel';
+
+function App() {
+  useEffect(() => {
+    op.setGlobalProperties({
+      app_version: '1.0.2',
+      environment: 'production',
+    });
+  }, []);
+
+  return <div>App</div>;
+}
+```
+
+### 遞增屬性
+
+用來遞增使用者設定檔上的數值型屬性。
+
+- `value` 是要遞增的數值。如果未提供，該屬性會遞增 1。
+
+```tsx
+import { op } from '@/openpanel';
+
+function MyComponent() {
+  const handleAction = () => {
+    op.increment({
+      profileId: '1',
+      property: 'visits',
+      value: 1, // optional
+    });
+  };
+
+  return <button onClick={handleAction}>Increment</button>;
+}
+```
+
+### 遞減屬性
+
+用來遞減使用者設定檔上的數值型屬性。
+
+- `value` 是要遞減的數值。如果未提供，該屬性會遞減 1。
+
+```tsx
+import { op } from '@/openpanel';
+
+function MyComponent() {
+  const handleAction = () => {
+    op.decrement({
+      profileId: '1',
+      property: 'visits',
+      value: 1, // optional
+    });
+  };
+
+  return <button onClick={handleAction}>Decrement</button>;
+}
+```
+
+### 使用群組
+
+群組可讓你在帳號或公司層級追蹤分析。完整操作請參閱 [Groups 指南](/zh-TW/docs/get-started/groups)。
+
+```tsx
+import { op } from '@/openpanel';
+
+function LoginComponent() {
+  const handleLogin = async (user: User) => {
+    // 1. 辨識使用者
+    op.identify({ profileId: user.id, email: user.email });
+
+    // 2. 建立/更新群組實體（僅在資料變更時）
+    op.upsertGroup({
+      id: user.organizationId,
+      type: 'company',
+      name: user.organizationName,
+      properties: { plan: user.plan },
+    });
+
+    // 3. 將使用者連結到其群組——標記未來所有事件
+    op.setGroup(user.organizationId);
+  };
+
+  return <button onClick={() => handleLogin(user)}>Login</button>;
+}
+```
+
+### 清除使用者資料
+
+要清除目前使用者的資料（包含群組）：
+
+```tsx
+import { op } from '@/openpanel';
+
+function LogoutComponent() {
+  const handleLogout = () => {
+    op.clear();
+    // ... 登出邏輯
+  };
+
+  return <button onClick={handleLogout}>Logout</button>;
+}
+```
+
+### 收入追蹤
+
+追蹤收入事件：
+
+```tsx
+import { op } from '@/openpanel';
+
+function CheckoutComponent() {
+  const handlePurchase = async () => {
+    // 立即追蹤收入
+    await op.revenue(29.99, { currency: 'USD' });
+
+    // 或先累積收入，稍後再送出
+    op.pendingRevenue(29.99, { currency: 'USD' });
+    op.pendingRevenue(19.99, { currency: 'USD' });
+    await op.flushRevenue(); // 傳送兩筆收入事件
+
+    // 清除待處理收入
+    op.clearRevenue();
+  };
+
+  return <button onClick={handlePurchase}>Purchase</button>;
+}
+```
+
+### 選用：建立 Hook
+
+如果你偏好使用 React hook 模式，可以自行建立包裝器：
+
+```ts title="src/hooks/useOpenPanel.ts"
+import { op } from '@/openpanel';
+
+export function useOpenPanel() {
+  return op;
+}
+```
+
+接著在元件中使用它：
+
+```tsx
+import { useOpenPanel } from '@/hooks/useOpenPanel';
+
+function MyComponent() {
+  const op = useOpenPanel();
+
+  useEffect(() => {
+    op.track('my_event', { foo: 'bar' });
+  }, []);
+
+  return <div>My Component</div>;
+}
+```

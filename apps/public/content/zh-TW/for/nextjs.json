@@ -1,0 +1,155 @@
+{
+  "slug": "nextjs",
+  "audience": "nextjs",
+  "seo": {
+    "title": "Next.js 分析 — OpenPanel 適用於 App Router 與 Pages Router 的 SDK",
+    "description": "在幾分鐘內為您的 Next.js 應用程式加入分析。OpenPanel 的 Next.js SDK 支援 App Router、Pages Router、伺服器端事件，以及自動路由變更追蹤。開源、無 Cookie，月付 $2.50 起。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "為 Next.js 打造的分析工具",
+    "subheading": "大多數分析工具都把 Next.js 當成靜態網站來處理。OpenPanel 是依照 Next.js 實際運作方式而打造：App Router、Server Components、API 路由與路由變更都能正確追蹤。5 分鐘內完成安裝，即可取得可搭配 SSR 運作的事件、漏斗與使用者設定檔。",
+    "badges": [
+      "支援 App Router",
+      "伺服器端事件",
+      "自動路由追蹤",
+      "2.3 KB 客戶端 bundle"
+    ]
+  },
+  "problem": {
+    "title": "為什麼標準分析工具在 Next.js 中會失效",
+    "intro": "Next.js 不是傳統網站。大多數分析工具都是在 App Router 出現之前就已打造完成的，問題也因此顯而易見。",
+    "items": [
+      {
+        "title": "GA4 在 App Router 路由變更時會失效",
+        "description": "Google Analytics 是為傳統頁面載入而設計的。在 Next.js App Router 中，若不加入自訂解法，客戶端導覽不會觸發 GA4 的 page view 事件。您的分析將漏掉相當大一部分的頁面瀏覽。"
+      },
+      {
+        "title": "Next.js 的 Cookie 同意流程很麻煩",
+        "description": "在 Next.js 應用程式中實作符合 GDPR 的 Cookie 同意流程，需要 next/script、同意狀態管理，以及條件式載入腳本。光是要讓分析工具跑起來，就是一項不小的工程工作。"
+      },
+      {
+        "title": "沒有伺服器端追蹤",
+        "description": "大多數分析 SDK 都只支援客戶端。伺服器端事件 — API 路由完成、背景工作、server actions — 全都看不到。您少看了整體的一半。"
+      },
+      {
+        "title": "分析函式庫會膨脹您的 bundle",
+        "description": "許多分析 SDK 會為您的 JavaScript bundle 增加 20–50 KB。在重視效能的 Next.js 應用程式中，這樣的額外負擔會影響 Core Web Vitals。"
+      }
+    ]
+  },
+  "features": {
+    "title": "依照 Next.js 運作方式打造的分析工具",
+    "intro": "OpenPanel 的 Next.js SDK 是為現代 Next.js 模式設計的，而不是從舊式僅客戶端函式庫改造而來。",
+    "items": [
+      {
+        "title": "支援 App Router 的 Next.js SDK",
+        "description": "安裝 @openpanel/nextjs，將 <OpenPanelComponent> 加入您的 root layout，App Router 與 Pages Router 的自動路由變更追蹤就會立即生效。"
+      },
+      {
+        "title": "自動路由變更追蹤",
+        "description": "每一次 router.push()、<Link> 導覽，以及瀏覽器的上一頁/下一頁動作，都會被記錄為一次 page view。不需要自訂 useEffect 或 router 事件監聽器。"
+      },
+      {
+        "title": "伺服器端事件追蹤",
+        "description": "在任何 Server Component、API 路由或 server action 中匯入 openPanel，即可在伺服器端追蹤事件。可追蹤表單送出、付款完成與背景工作，完全不需要客戶端介入。"
+      },
+      {
+        "title": "預設無 Cookie",
+        "description": "OpenPanel SDK 不使用任何 Cookie。不需要同意管理函式庫、不需要條件式載入腳本，也不需要 GDPR 同意彈窗 — 安裝即可開始追蹤。"
+      },
+      {
+        "title": "跨工作階段識別使用者",
+        "description": "在驗證後呼叫 op.identify({ profileId, name, email })，即可將匿名事件與已知使用者關聯。可搭配任何驗證方案使用，包括 NextAuth.js、Clerk 與自訂實作。"
+      },
+      {
+        "title": "以 TypeScript 為優先的 SDK",
+        "description": "所有方法皆提供完整 TypeScript 型別。事件名稱與屬性可自動完成。完全避免因事件呼叫拼字錯誤造成的執行階段錯誤。"
+      },
+      {
+        "title": "2.3 KB gzip 後的客戶端 bundle",
+        "description": "Next.js 可用的最小全功能分析 SDK。對 Lighthouse 分數或 Core Web Vitals 幾乎沒有影響。"
+      }
+    ]
+  },
+  "benefits": {
+    "title": "為什麼 Next.js 開發者選擇 OpenPanel",
+    "intro": "OpenPanel 能自然融入現代 Next.js 程式碼庫，而不是事後補上的方案。",
+    "items": [
+      {
+        "title": "運作方式與 Next.js 完全一致",
+        "description": "為 App Router、Server Components 與現代 Next.js 模式打造，而非硬套在僅客戶端函式庫上。"
+      },
+      {
+        "title": "不需要同意基礎架構",
+        "description": "無 Cookie 追蹤代表不需要同意彈窗、不需要 next/script 載入技巧，也不需要條件式初始化。一次安裝，到處可用。"
+      },
+      {
+        "title": "在同一個儀表板追蹤伺服器與客戶端事件",
+        "description": "server actions、API 端點與客戶端互動會一起呈現。完整掌握您的應用程式正在做什麼。"
+      },
+      {
+        "title": "開源且可自架",
+        "description": "可將 OpenPanel 部署在您自己的基礎架構上。您的 Next.js 應用程式分析資料不會離開您的伺服器。"
+      },
+      {
+        "title": "月費從 $2.50 起",
+        "description": "沒有企業合約，也沒有按座席計費。依事件數付費，享有所有功能。可從 30 天試用免費開始。"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "Next.js 開發者在評估 OpenPanel 時常提出的問題。",
+    "items": [
+      {
+        "question": "我要如何在 Next.js 應用程式中安裝 OpenPanel？",
+        "answer": "安裝 @openpanel/nextjs，將 <OpenPanelComponent clientId=\"...\" /> 加入您的 root layout.tsx，就能開始追蹤 page view。若要追蹤自訂事件，請在任何地方匯入並呼叫 op.track('event_name', { properties })。完整逐步指南請見 /zh-TW/guides/nextjs-analytics。"
+      },
+      {
+        "question": "OpenPanel 支援 Next.js App Router 嗎？",
+        "answer": "可以。<OpenPanelComponent> 會在內部使用 usePathname hook，自動處理 App Router 的路由變更。不需要為客戶端導覽追蹤做任何自訂設定。"
+      },
+      {
+        "question": "我可以在 Server Components 和 API Routes 中追蹤事件嗎？",
+        "answer": "可以。從 @openpanel/nextjs/server 匯入 { openPanel }，即可在任何伺服器環境中呼叫 openPanel.track()，包括 Server Components、Route Handlers 與 Server Actions。"
+      },
+      {
+        "question": "OpenPanel 能與 NextAuth.js 或 Clerk 搭配使用嗎？",
+        "answer": "可以。驗證後呼叫 op.identify({ profileId: session.user.id, ... })，即可將事件連結到使用者身分。任何能提供 user ID 的驗證方案都可使用。"
+      },
+      {
+        "question": "OpenPanel 會為我的 Next.js 應用程式增加大量 bundle 大小嗎？",
+        "answer": "不會。客戶端 SDK 只有 2.3 KB gzip 後的大小。相較之下，GA4 會增加 50+ KB。OpenPanel 對您的 bundle 大小或 Core Web Vitals 幾乎沒有影響。"
+      },
+      {
+        "question": "我可以為我的 Next.js 應用程式自架 OpenPanel 嗎？",
+        "answer": "可以。OpenPanel 完全開源，可使用 Docker 自架。您的 Next.js 應用程式會將事件傳送到您自己的伺服器。自架版本沒有事件限制，而且可免費執行。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "Next.js 分析設定", "url": "/guides/nextjs-analytics" },
+      { "title": "React 分析設定", "url": "/guides/react-analytics" },
+      { "title": "追蹤自訂事件", "url": "/guides/track-custom-events" }
+    ],
+    "articles": [
+      { "title": "自架式 Web 分析", "url": "/articles/self-hosted-web-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },
+      { "title": "OpenPanel vs PostHog", "url": "/compare/posthog-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "免費試用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 檢視原始碼",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

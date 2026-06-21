@@ -1,0 +1,139 @@
+{
+  "slug": "event-tracking",
+  "short_name": "事件跟踪",
+  "seo": {
+    "title": "事件跟踪 - 产品分析的基础",
+    "description": "无需 Google Analytics 即可跟踪产品事件。简单、隐私优先的事件跟踪，为漏斗、留存和用户画像提供支持。几分钟即可开始使用。",
+    "keywords": [
+      "事件跟踪软件",
+      "产品事件跟踪",
+      "自定义事件跟踪"
+    ]
+  },
+  "hero": {
+    "heading": "简单的事件跟踪",
+    "subheading": "通过一个简单的 API 跟踪点击、浏览和转化。没有 Cookie，没有臃肿功能——只有帮助你理解用户行为所需的事件。",
+    "badges": [
+      "跟踪任意用户行为",
+      "自定义属性",
+      "实时采集",
+      "一个 API 覆盖所有报表"
+    ]
+  },
+  "definition": {
+    "title": "什么是事件跟踪？",
+    "text": "事件跟踪是产品分析的基础。与其依赖页面浏览次数或会话计时器，不如将离散操作——点击、页面浏览、注册、购买——作为带有属性的结构化事件进行捕获。\n\n每次交互都会变成一个可查询、可筛选、可可视化的数据点。这就是你回答以下问题的方式：\n\n- **本周有多少用户完成了新手引导？**\n- **付费客户最常使用哪些功能？**\n- **用户在注册流程的哪个环节流失？**\n\n传统分析工具（如 Google Analytics）是围绕会话和页面浏览构建的。这对于营销有效，但当你需要理解**产品行为**时就不够用了：用户在你的应用中*做了什么*、他们如何在流程中推进，以及哪些行为与留存相关。\n\nOpenPanel 采用了不同的方法。你可以通过轻量级 SDK 或 API 从应用或网站发送事件。每个事件都有一个名称（例如 `signup_completed`、`feature_used`）和可选属性（例如 `plan: pro`、`source: google`）。OpenPanel 会存储这些事件，并让你在其基础上构建**漏斗**、**留存图表**和**用户画像**——无需企业级分析工具的复杂性。\n\n由于 OpenPanel 采用**隐私优先**设计，你可以在不使用 Cookie、也不向第三方发送个人数据的情况下运行它。可以自托管，也可以使用我们的云服务——你的数据始终属于你自己。"
+  },
+  "capabilities_section": {
+    "title": "你可以跟踪什么",
+    "intro": "从基础页面浏览到自定义转化事件，你都能全面掌握用户行为。"
+  },
+  "capabilities": [
+    {
+      "title": "页面浏览和屏幕浏览",
+      "description": "跟踪用户访问了哪些页面或屏幕，并自动获取 URL、来源和设备等属性。"
+    },
+    {
+      "title": "点击和交互",
+      "description": "只需一行代码即可捕获按钮点击、表单提交以及任何自定义交互。"
+    },
+    {
+      "title": "自定义事件和转化",
+      "description": "定义你自己的事件（例如 signup、purchase、feature_used），并附加属性用于筛选和分析。"
+    },
+    {
+      "title": "用户和会话上下文",
+      "description": "事件会关联到匿名或已识别用户及其会话，因此你可以随时间分析行为。"
+    },
+    {
+      "title": "实时采集",
+      "description": "事件会在几秒内出现在你的仪表板中。没有批处理延迟，也没有过夜处理。"
+    },
+    {
+      "title": "漏斗、留存和画像",
+      "description": "使用同一组事件构建转化漏斗、留存队列和按用户的活动时间线。"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-events-list.webp",
+      "alt": "在 OpenPanel 中显示已跟踪用户行为的事件列表",
+      "caption": "浏览产品发送的每个事件。按名称、用户或属性进行筛选。"
+    },
+    {
+      "src": "/features/feature-events-stats.webp",
+      "alt": "事件统计和随时间变化的趋势",
+      "caption": "一目了然地查看事件量和趋势。在问题变大之前发现异常。"
+    },
+    {
+      "src": "/features/feature-events-details.webp",
+      "alt": "带有属性的单个事件详细视图",
+      "caption": "深入查看任意事件，了解其完整上下文：用户、会话、属性和时间戳。"
+    }
+  ],
+  "how_it_works": {
+    "title": "事件跟踪如何工作",
+    "intro": "三步即可从零开始获得完整的产品可见性。",
+    "steps": [
+      {
+        "title": "安装 SDK 或使用 API",
+        "description": "将我们的轻量级脚本添加到你的网站，或使用适用于 React、Next.js 或其他框架的 SDK。可自托管，也可使用云服务——由你选择。"
+      },
+      {
+        "title": "从你的产品发送事件",
+        "description": "自动跟踪页面浏览，并通过我们的 API 发送自定义事件（signup、purchase、feature_used），可附加可选属性。"
+      },
+      {
+        "title": "在仪表板、漏斗和留存中分析",
+        "description": "事件会流入漏斗、留存图表和用户画像。无需额外设置——一层跟踪即可驱动一切。"
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "谁在使用事件跟踪",
+    "intro": "产品和增长团队使用事件来回答具体问题。",
+    "items": [
+      {
+        "title": "产品经理",
+        "description": "了解哪些功能被使用、用户在哪里流失，以及不同细分群体的行为差异。"
+      },
+      {
+        "title": "增长与营销",
+        "description": "衡量从注册到激活、从访问到购买的转化。基于真实事件优化活动。"
+      },
+      {
+        "title": "支持与成功",
+        "description": "在通话或工单前查看用户的事件时间线。无需再问“你点了什么？”——你可以直接看到。"
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "funnels",
+      "title": "漏斗",
+      "description": "查看用户在注册、激活和转化流程中的流失位置。"
+    }
+  ],
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于使用 OpenPanel 进行事件跟踪的常见问题。",
+    "items": [
+      {
+        "question": "事件跟踪需要 Cookie 吗？",
+        "answer": "不需要。OpenPanel 可以在不使用 Cookie 的情况下运行。只有当你启用它以获得更好的会话连续性时，我们才会使用第一方 Cookie。许多团队完全无 Cookie 运行，仍然可以获得准确的漏斗和留存数据。"
+      },
+      {
+        "question": "这与 Google Analytics 有什么不同？",
+        "answer": "Google Analytics 是为营销和流量分析构建的，数据模型也更复杂。OpenPanel 是为产品和转化而构建的：简单事件可直接映射到用户行为。你可以在没有 GA 学习曲线的情况下获得漏斗、留存和用户画像。"
+      },
+      {
+        "question": "我可以跟踪自定义事件吗？",
+        "answer": "可以。你可以发送任意事件名称，并附加可选属性（例如 plan、value、feature_name）。自定义事件在漏斗、留存和用户画像中的工作方式与内置事件相同。"
+      }
+    ]
+  },
+  "cta": {
+    "label": "几分钟内开始跟踪事件",
+    "href": "https://dashboard.openpanel.dev/onboarding"
+  }
+}

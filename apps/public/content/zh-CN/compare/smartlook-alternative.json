@@ -1,0 +1,450 @@
+{
+  "slug": "smartlook-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026年 Smartlook 替代方案 — 开源且可自托管",
+    "description": "正在从 Smartlook 迁移？OpenPanel 可替代会话回放、事件追踪、漏斗和留存分析——开源、可自托管、无 Cookie，且每月仅 $2.50（或免费自托管）。没有 Cisco 锁定。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Smartlook 替代方案",
+    "subheading": "OpenPanel 是 Smartlook 的开源替代方案，提供基于事件的产品分析、会话回放、漏斗和留存分析——支持自托管、定价透明，并且没有 Cisco 供应商锁定。",
+    "badges": [
+      "开源",
+      "可自托管",
+      "无会话限制",
+      "产品分析"
+    ]
+  },
+  "competitor": {
+    "name": "Smartlook",
+    "logo": "/logos/smartlook.svg",
+    "url": "https://www.smartlook.com",
+    "short_description": "结合产品分析和可视化洞察的平台，提供会话录制、热图和事件追踪。于 2023 年被 Cisco 收购。",
+    "founded": 2016,
+    "headquarters": "捷克共和国，布尔诺"
+  },
+  "overview": {
+    "title": "为什么要考虑用 OpenPanel 替代 Smartlook？",
+    "paragraphs": [
+      "Smartlook 将产品分析与可视化洞察结合在一起——在一个平台中提供会话录制、热图和事件追踪。自 2023 年被 Cisco 收购后，它已将自己定位为面向企业的分析与观察工具。但企业所有权往往意味着企业级定价、专有锁定，以及仅限云端、无法自托管的基础设施。",
+      "OpenPanel 提供事件追踪、漏斗、留存分析、用户群组拆分和会话回放，并将其整合到一个专注的开源产品中。结果就是：既覆盖产品分析，又支持可视化会话回顾，而且成本大幅更低，采用透明的按事件计费，起价每月 $2.50。",
+      "OpenPanel 采用 AGPL-3.0 许可的开源模式，这使它拥有 Smartlook 的专有、Cisco 所有的平台无法比拟的优势。你可以在自己的基础设施上自托管，以实现完全的数据主权；可以审计源代码以满足安全合规要求；还能避免那些容易被收购的平台带来的供应商锁定风险。自托管还意味着无限数据保留，而 Smartlook 则受限于其套餐级别的存储限制。",
+      "如果你需要高级热图或 Unity/游戏分析，Smartlook 更有优势。但对于希望同时拥有产品分析和会话回放，并且重视开源透明度、自托管和可预测定价的团队来说，OpenPanel 能以更少的 Cisco 企业复杂度提供更高价值。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Smartlook：哪个更适合你？",
+    "intro": "两个平台都提供产品分析和会话回放。Smartlook 增加了热图和挫折信号；OpenPanel 增加了自托管、开源和更简单的定价。",
+    "one_liner": "OpenPanel 是开源的，支持自托管、产品分析和会话回放；Smartlook 则增加了热图和更深入的可视化行为工具。",
+    "best_for_openpanel": [
+      "需要自托管以满足数据所有权和合规要求的团队",
+      "需要开源以满足透明度和可审计性的团队",
+      "想要产品分析和会话回放，但不想被 Cisco 供应商锁定的团队",
+      "希望通过自托管实现无限数据保留的团队",
+      "需要用于后端追踪的服务端 SDK 的团队"
+    ],
+    "best_for_competitor": [
+      "需要全面热图（点击、滚动、移动）的 UX 设计师",
+      "需要带有关联会话录制的移动应用崩溃报告的团队",
+      "需要 Unity 游戏分析的团队",
+      "需要 Cisco/AppDynamics 生态集成的团队"
+    ]
+  },
+  "highlights": {
+    "title": "关键差异一览",
+    "intro": "以下是 OpenPanel 与 Smartlook 在最重要因素上的对比。",
+    "items": [
+      {
+        "label": "开源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "否（专有，Cisco 所有）"
+      },
+      {
+        "label": "自托管",
+        "openpanel": "是，使用 Docker Compose",
+        "competitor": "否（仅云端）"
+      },
+      {
+        "label": "会话回放",
+        "openpanel": "是",
+        "competitor": "是，带热图和摩擦检测"
+      },
+      {
+        "label": "热图",
+        "openpanel": "不可用",
+        "competitor": "点击、滚动、移动"
+      },
+      {
+        "label": "定价模式",
+        "openpanel": "按事件计费 / 免费自托管",
+        "competitor": "按会话计费，起价 $55/月"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能对比",
+    "intro": "OpenPanel 专注于产品分析；Smartlook 将分析与可视化行为洞察结合起来。",
+    "groups": [
+      {
+        "group": "核心分析",
+        "features": [
+          {
+            "name": "事件追踪",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "漏斗",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": "基础",
+            "notes": null
+          },
+          {
+            "name": "用户档案",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "用户群组",
+            "openpanel": true,
+            "competitor": "有限",
+            "notes": null
+          },
+          {
+            "name": "自定义仪表盘",
+            "openpanel": true,
+            "competitor": "有限",
+            "notes": null
+          },
+          {
+            "name": "实时数据",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "可视化行为分析",
+        "features": [
+          {
+            "name": "会话录制",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Smartlook 还会将录制与崩溃报告和热图关联起来"
+          },
+          {
+            "name": "点击热图",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "滚动热图",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "移动热图",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "带回放的崩溃报告",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Smartlook 将崩溃报告链接到录制内容"
+          }
+        ]
+      },
+      {
+        "group": "隐私与合规",
+        "features": [
+          {
+            "name": "自托管",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "开源",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "无 Cookie 追踪",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "SOC 2 认证",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Type II"
+          },
+          {
+            "name": "欧盟数据驻留",
+            "openpanel": "通过自托管实现",
+            "competitor": "是"
+          }
+        ]
+      },
+      {
+        "group": "集成与数据",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": "仅限 Pro 套餐",
+            "notes": null
+          },
+          {
+            "name": "数据导出",
+            "openpanel": true,
+            "competitor": "CSV（Pro+）",
+            "notes": null
+          },
+          {
+            "name": "Webhook",
+            "openpanel": true,
+            "competitor": "有限",
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技术对比",
+    "intro": "对于评估分析工具的开发者来说，以下是各自实现方式的对比。",
+    "items": [
+      {
+        "label": "SDK 大小（JS）",
+        "openpanel": "~2.3 KB gzipped",
+        "competitor": "更大（包含录制）",
+        "notes": "Smartlook 的 SDK 包含会话回放代码"
+      },
+      {
+        "label": "支持的平台",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js"
+        ],
+        "competitor": [
+          "JavaScript",
+          "iOS",
+          "Android",
+          "React Native",
+          "Flutter",
+          "Unity",
+          "Cordova",
+          "Xamarin"
+        ],
+        "notes": null
+      },
+      {
+        "label": "开源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "否",
+        "notes": null
+      },
+      {
+        "label": "自托管部署",
+        "openpanel": "Docker Compose（ClickHouse、Postgres、Redis），带引导式设置向导",
+        "competitor": "不可用",
+        "notes": null
+      },
+      {
+        "label": "数据库",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "AWS 云基础设施",
+        "notes": null
+      },
+      {
+        "label": "数据保留",
+        "openpanel": "无限（自托管）",
+        "competitor": "基础版 1-3 个月，最长 12 个月",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "价格对比",
+    "intro": "OpenPanel 提供按事件计费并支持免费自托管。Smartlook 使用按会话计费。",
+    "openpanel": {
+      "model": "按事件计费，透明",
+      "description": "5,000 个事件起价 $2.50/月。使用自托管可免费获得无限事件。所有套餐均包含全部功能。"
+    },
+    "competitor": {
+      "model": "按会话计费",
+      "description": "免费套餐：每月 3,000 个会话，包含基础功能。Pro：$55/月，5,000 个会话，包含更长的数据保留和导出。Enterprise：50,000+ 会话的定制定价。",
+      "free_tier": "有（每月 3,000 个会话）",
+      "pricing_url": "https://www.smartlook.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "从 Smartlook 迁移到 OpenPanel",
+    "intro": "从 Smartlook 迁移到 OpenPanel，意味着在保留会话回放和产品分析的同时，获得自托管、开源和更简单的定价。",
+    "difficulty": "中等",
+    "estimated_time": "2-4 小时",
+    "steps": [
+      {
+        "title": "了解功能差异",
+        "description": "OpenPanel 包含会话回放和按事件计费的产品分析。如果你依赖热图或 Unity 分析，可以考虑使用 Microsoft Clarity 这类补充工具来做热图。"
+      },
+      {
+        "title": "创建 OpenPanel 账号或进行自托管",
+        "description": "注册 OpenPanel 云服务，或使用 Docker 部署自托管版本。配置你的项目设置。"
+      },
+      {
+        "title": "安装 OpenPanel SDK",
+        "description": "将 Smartlook 片段替换为 OpenPanel 的 SDK。可通过 npm 安装或使用 CDN。对于移动应用，请安装相应的原生 SDK。"
+      },
+      {
+        "title": "映射事件和属性",
+        "description": "将 Smartlook 的事件追踪转换为 OpenPanel 的事件结构。使用 identify() 设置用户标识，以跨会话追踪用户。"
+      },
+      {
+        "title": "构建分析仪表盘",
+        "description": "在 OpenPanel 中创建漏斗、留存图表和用户群组分析，以替代 Smartlook 的分析功能。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "两者使用相似的事件追踪 API。主要区别是 OpenPanel 不会自动录制会话。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Smartlook 的历史会话录制无法迁移。事件数据可能可导出，具体取决于你的 Smartlook 套餐。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 Smartlook 更适合的场景",
+    "intro": "当你需要带数据所有权的产品分析，而不需要可视化回放功能时，OpenPanel 表现更出色。",
+    "items": [
+      {
+        "title": "产品分析与增长",
+        "description": "深入的基于事件的分析，包含漏斗、留存分析和用户群组。留存和用户群组能力比 Smartlook 更强。",
+        "icon": "chart"
+      },
+      {
+        "title": "数据所有权与自托管",
+        "description": "通过自托管实现完全的数据控制。只需一条命令的 ./setup 向导即可引导你完成配置，并在几分钟内启动完整的 Docker Compose 栈。Smartlook 仅提供云服务，无法自托管。",
+        "icon": "server"
+      },
+      {
+        "title": "开源需求",
+        "description": "采用 AGPL-3.0 许可，提供完全透明和可定制性。Smartlook 是专有产品（现归 Cisco 所有）。",
+        "icon": "code"
+      },
+      {
+        "title": "无限数据保留",
+        "description": "自托管的 OpenPanel 具有无限保留能力。Smartlook 即使在付费套餐中也限制数据保留。",
+        "icon": "database"
+      },
+      {
+        "title": "适合高流量的高性价比选择",
+        "description": "按事件计费，或免费自托管。Smartlook 的按会话计费会很快随规模上涨。",
+        "icon": "dollar"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于从 Smartlook 切换到 OpenPanel 的常见问题。",
+    "items": [
+      {
+        "question": "OpenPanel 能替代 Smartlook 的会话录制吗？",
+        "answer": "可以替代会话回放——OpenPanel 现在包含会话录制。不过，如果你需要热图（点击、滚动、移动）、挫折信号或 Unity 游戏分析，Smartlook 在这些方面仍更有优势。"
+      },
+      {
+        "question": "哪个工具的漏斗分析更好？",
+        "answer": "两个工具都提供漏斗分析。使用 OpenPanel 时，你还可以查看流失用户的会话录制，而且 OpenPanel 提供更高级的漏斗自定义和用户群组拆分。"
+      },
+      {
+        "question": "我可以自托管 Smartlook 吗？",
+        "answer": "不可以，Smartlook 仅作为云托管服务提供（现为 Cisco 的一部分）。OpenPanel 同时提供云托管和通过 Docker 进行的自托管部署，以实现完全的数据所有权。"
+      },
+      {
+        "question": "Cisco 收购 Smartlook 后发生了什么？",
+        "answer": "Cisco 于 2023 年 6 月完成了对 Smartlook 的收购。Smartlook 正在整合到 Cisco 的 AppDynamics 平台中。Smartlook 产品仍继续独立运行。"
+      },
+      {
+        "question": "价格如何比较？",
+        "answer": "Smartlook 使用按会话计费，免费套餐每月 3,000 个会话，付费套餐起价 $55/月。OpenPanel 使用分层的按事件计费，5,000 个事件起价 $2.50/月（30 天免费试用）。OpenPanel 的自托管选项完全免费，且事件无限制。"
+      },
+      {
+        "question": "OpenPanel 支持移动应用吗？",
+        "answer": "支持。两个平台都提供移动 SDK。OpenPanel 支持 iOS、Android、React Native 和 Flutter，并支持事件追踪。Smartlook 还支持 Unity、Cordova 和 Xamarin，并具备会话回放功能。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "追踪自定义事件",
+        "url": "/guides/track-custom-events"
+      },
+      {
+        "title": "React Native 分析设置",
+        "url": "/guides/react-native-analytics"
+      },
+      {
+        "title": "Swift/iOS 分析设置",
+        "url": "/guides/swift-analytics"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳开源 Web 分析工具",
+        "url": "/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Mouseflow",
+        "url": "/compare/mouseflow-alternative"
+      },
+      {
+        "name": "FullStory",
+        "url": "/compare/fullstory-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "开始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

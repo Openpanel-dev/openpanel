@@ -1,0 +1,186 @@
+---
+title: MCP 服务器
+description: 使用 Model Context Protocol 将 AI 助手连接到你的 OpenPanel 分析数据。
+---
+
+OpenPanel 提供一个 [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server，让 Claude、Cursor、Windsurf 等 AI 助手可以在对话中直接查询你的分析数据。
+
+## 端点
+
+```
+https://api.openpanel.dev/mcp
+```
+
+## 身份验证
+
+Token 可以作为查询参数或 `Authorization` header 传递，二者等价：
+
+```
+https://api.openpanel.dev/mcp?token=YOUR_TOKEN
+```
+
+```
+Authorization: Bearer YOUR_TOKEN
+```
+
+### Token 格式
+
+Token 是一个 **base64 编码**字符串，由你的客户端 ID 和客户端密钥用冒号连接后生成：
+
+```
+base64(clientId:clientSecret)
+```
+
+#### 从控制台获取
+
+获取 MCP Token 的最简单方式是直接从控制台获取，无需终端：
+
+- **新建客户端** — 通过 **设置 → API 客户端** 创建客户端后，成功页面会显示可直接复制的 **MCP Token** 字段。
+- **引导流程** — 引导流程中的连接步骤会显示 MCP Token、客户端 ID 和密钥。使用 **保存** 按钮将三项值下载为 `credentials.txt`。
+
+#### 从终端生成
+
+```bash
+echo -n "YOUR_CLIENT_ID:YOUR_CLIENT_SECRET" | base64
+```
+
+然后将其追加到 MCP URL：
+
+```
+https://api.openpanel.dev/mcp?token=<base64-encoded-token>
+```
+
+### 所需客户端类型
+
+只有 `read` 和 `root` 客户端可以通过 MCP 认证。仅写入型客户端会被拒绝。
+
+| 客户端类型 | 访问范围 |
+|-------------|--------|
+| `read` | 限定为单个项目（即该客户端所属的项目） |
+| `root` | 可查询你组织中的任意项目 |
+
+如果你只想让 AI 助手访问一个项目，请使用 `read` 客户端。如果你需要跨项目访问，或想列出所有项目，请使用 `root` 客户端。
+
+前往控制台中的 **设置 → API 客户端** 创建客户端。更多详情请参阅 [身份验证指南](/zh-CN/docs/api/authentication)。
+
+## 连接 Claude Desktop
+
+将以下内容添加到你的 `claude_desktop_config.json` 中：
+
+```json
+{
+  "mcpServers": {
+    "openpanel": {
+      "type": "streamable-http",
+      "url": "https://api.openpanel.dev/mcp?token=YOUR_TOKEN"
+    }
+  }
+}
+```
+
+## 连接 Claude Code CLI
+
+使用 Claude CLI 时，你可以使用 `--header` flag 通过 `Authorization: Bearer` 传递 token，而不是将其嵌入 URL：
+
+```bash
+claude mcp add --transport http openpanel https://api.openpanel.dev/mcp \
+  --header "Authorization: Bearer YOUR_TOKEN"
+```
+
+或者在 URL 中传递 token（等价）：
+
+```bash
+claude mcp add --transport http openpanel "https://api.openpanel.dev/mcp?token=YOUR_TOKEN"
+```
+
+## 可用工具
+
+### 项目访问
+
+| 工具 | 说明 |
+|------|-------------|
+| `list_projects` | 列出使用你的凭据可访问的所有项目。root 客户端可见组织内所有项目；read 客户端仅可见其所属项目。 |
+| `get_dashboard_urls` | 获取当前项目可点击的控制台链接——overview、events、profiles、sessions，以及指向特定条目的深链接。 |
+
+### 控制台和报告
+
+| 工具 | 说明 |
+|------|-------------|
+| `list_dashboards` | 列出某个项目的所有控制台看板。 |
+| `list_reports` | 列出某个看板中的所有报告，以及它们的图表类型和已跟踪事件。 |
+| `get_report_data` | 执行已保存的报告并返回其数据（time-series、funnel、metric 等）。 |
+
+### 数据发现
+
+| 工具 | 说明 |
+|------|-------------|
+| `list_event_names` | 获取项目中最常见的前 50 个事件名。如果你不知道准确的事件名，请先调用这个。 |
+| `list_event_properties` | 列出某个 event 跟踪的所有 property key（或所有 event 的 property key）。 |
+| `get_event_property_values` | 获取某个特定 event property 的所有不同值。 |
+
+### Event 和 session
+
+| 工具 | 说明 |
+|------|-------------|
+| `query_events` | 查询原始 event，支持可选过滤条件。返回单条记录，包含 path、device、country、referrer 和自定义 property。 |
+| `query_sessions` | 查询 session，支持可选过滤条件。每个 session 包含 duration、entry/exit page、bounce 状态和 attribution 数据。 |
+
+### Profile（用户）
+
+| 工具 | 说明 |
+|------|-------------|
+| `find_profiles` | 按 name、email、location、inactivity、session count，或是否执行过某个特定 event 来搜索和筛选 user profile。 |
+| `get_profile` | 获取某个特定 user profile 及其最近的 event。 |
+| `get_profile_sessions` | 获取某个 user profile 的所有 session，按最近优先排序。 |
+| `get_profile_metrics` | 获取用户计算后的 lifetime metric：sessions、pageviews、bounce rate、revenue 等。 |
+
+### Group（B2B）
+
+| 工具 | 说明 |
+|------|-------------|
+| `list_group_types` | 列出项目中定义的所有分组类型（例如 `company`、`team`）。在查询分组前请先调用这个。 |
+| `find_groups` | 按 name、ID 或 type 搜索 group。 |
+| `get_group` | 获取某个特定 group 及其 property 和 member profile。 |
+
+### 聚合指标
+
+| 工具 | 说明 |
+|------|-------------|
+| `get_analytics_overview` | 指定日期范围的关键指标：visitor、pageview、session、bounce rate 和平均 session 时长。 |
+| `get_rolling_active_users` | 使用滚动窗口的活跃用户 time series——DAU（1 day）、WAU（7 days）或 MAU（30 days）。 |
+| `get_top_pages` | 按 pageview 排名的最常访问 page。 |
+| `get_page_performance` | 按 page 统计的 bounce rate、平均 session 时长、session 和 pageview。 |
+| `get_page_conversions` | 按 pageview 后转化 visitor 数量排序的 page。 |
+| `get_entry_exit_pages` | 最常见的 entry page（session start）或 exit page（session end）。 |
+| `get_top_referrers` | 按 referrer name 和 type 拆分的 top traffic source。 |
+| `get_country_breakdown` | 按 country、region 或 city 统计的 visitor 数。 |
+| `get_device_breakdown` | 按 device type、browser 或 OS 统计的 visitor 数。 |
+
+### 用户行为
+
+| 工具 | 说明 |
+|------|-------------|
+| `get_funnel` | 分析 2+ 个 event 之间的转化 funnel——注册流程、checkout、onboarding。 |
+| `get_retention_cohort` | 展示长期产品粘性的按周 user retention cohort table。 |
+| `get_weekly_retention_series` | 以 time series 形式展示周环比 retention。 |
+| `get_user_last_seen_distribution` | 用户最近活跃时间的直方图——适合 churn 分析。 |
+| `get_user_flow` | 将 user navigation flow 可视化为 Sankey diagram（before/after/between events）。 |
+| `get_engagement_metrics` | 随时间变化的 engagement metric。 |
+
+### Google Search Console
+
+这些工具要求你在控制台设置中为该项目连接 GSC。
+
+| 工具 | 说明 |
+|------|-------------|
+| `gsc_get_overview` | GSC 随时间的表现：click、impression、CTR 和平均 position。 |
+| `gsc_get_top_pages` | 按 click 排名的 GSC top-performing page。 |
+| `gsc_get_page_details` | 某个特定 page 的详细 GSC 表现，包括驱动其流量的所有 query。 |
+| `gsc_get_top_queries` | 按 click 排名的 top search query。 |
+| `gsc_get_query_opportunities` | 低垂果实 SEO 机会：排名 4–20 且具有可观搜索量的 query。 |
+| `gsc_get_query_details` | 某个特定 search query 的详细 GSC 数据，以及为其排名的所有 page。 |
+| `gsc_get_cannibalization` | 你站点上多个 page 在 Google 中相互竞争的 query。 |
+
+## 速率限制
+
+每个客户端每分钟 60 次请求。

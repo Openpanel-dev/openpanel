@@ -1,0 +1,161 @@
+{
+  "slug": "mcp",
+  "short_name": "MCP",
+  "seo": {
+    "title": "分析 MCP 服务器 - 让 AI 帮你了解用户 | OpenPanel",
+    "description": "通过 MCP 将 Claude、Cursor 或 Windsurf 连接到你的 OpenPanel 分析。无需打开仪表盘，即可查询漏斗、留存、用户画像和事件。",
+    "keywords": [
+      "analytics mcp server",
+      "openpanel mcp",
+      "ai product analytics",
+      "connect analytics to claude",
+      "mixpanel mcp alternative"
+    ]
+  },
+  "hero": {
+    "heading": "MCP：让你的 AI 帮你了解用户",
+    "subheading": "让你的 AI 深入分析 OpenPanel 数据，搞清楚发生了什么。只想快速得到答案时，跳过仪表盘和报表。",
+    "badges": [
+      "38 个工具",
+      "兼容 Claude、Cursor 和 Windsurf",
+      "无需安装",
+      "由 OpenPanel 托管"
+    ]
+  },
+  "definition": {
+    "title": "什么是分析 MCP 服务器？",
+    "text": "Model Context Protocol（MCP）是 Anthropic 推出的一项开放标准，可让 AI 客户端连接外部数据源和工具。分析 MCP 服务器就是一个桥梁：它会把 AI 的请求转换为分析查询，并返回结构化数据供 AI 推理。\n\n没有它时，从分析中获取答案的过程通常是这样的：打开仪表盘，进入正确的视图，创建或找到合适的图表，读出数字，关闭标签页，再切回你原本在做的事情。如果答案又引出下一个问题，就重复一遍。\n\n使用 OpenPanel 的 MCP 服务器时，你只需提问，就能得到答案——就在你已经在使用的工具里。\n\n```\n\"上个月注册的用户 7 天留存是多少？\"\n\"本周哪个漏斗步骤流失最大？\"\n\"给我看看 user@example.com 最近 5 次会话\"\n```\n\nOpenPanel 将服务器托管在 `api.openpanel.dev/mcp`。无需在本地安装或运行任何东西。你只需在仪表盘中创建一个 API 客户端，生成令牌，然后把 URL 添加到你的 AI 客户端配置中。就这么简单。\n\n该服务器提供 **38 个工具**，覆盖你的产品数据的各个层面：\n\n- **事件和会话** — 查询原始事件、按属性筛选、查看单个会话\n- **用户画像** — 查找用户、他们的事件历史和活动时间线\n- **漏斗** — 针对任何已定义的事件序列运行漏斗查询\n- **留存** — 按天、周或月获取队列留存\n- **页面分析** — 热门页面、入口/退出页面、性能指标\n- **报表和仪表盘** — 按名称获取已保存的报表数据\n- **Google Search Console** — 点击量、展示量、热门查询、SEO 机会（需要已连接 GSC）\n\n**这与 Google Analytics MCP 服务器相比如何：**\n\nGoogle Analytics MCP 连接的是 GA4 数据——页面浏览、流量来源、GA 数据模型中的会话。OpenPanel 的 MCP 连接的是你的*产品*数据：自定义事件、用户画像、你定义的漏斗、留存队列。如果你追踪的是用户在产品内部*做了什么*，OpenPanel 的 MCP 就能回答这些问题。GA4 的 MCP 不能。\n\n身份验证使用由你的客户端 ID 和密钥生成的 base64 编码令牌。该服务器是只读的——你的 AI 可以获取和查询数据，但不能写入事件、修改用户或更改任何设置。"
+  },
+  "capabilities_section": {
+    "title": "你可以用它做什么",
+    "intro": "38 个工具覆盖分析的每个部分——可通过任何 MCP 客户端用自然语言查询。"
+  },
+  "capabilities": [
+    {
+      "title": "用自然语言提问",
+      "description": "无需 SQL，也无需图表构建器。描述你想知道什么，你的 AI 会处理查询。适用于漏斗、留存、热门页面、用户查找以及数据中的任何其他内容。"
+    },
+    {
+      "title": "漏斗和留存分析",
+      "description": "针对任何事件序列运行漏斗查询，或拉取队列留存表——无需打开仪表盘。提出后续问题，AI 会再次查询。"
+    },
+    {
+      "title": "用户和群组查找",
+      "description": "按邮箱或 ID 查找任意用户，获取他们完整的事件时间线、会话历史和生命周期指标。对于 B2B 产品，还可以查找群组及其成员画像。"
+    },
+    {
+      "title": "Google Search Console 数据",
+      "description": "如果 GSC 已连接到你的项目，你的 AI 还可以查询 SEO 数据——热门查询、排名机会、关键词蚕食和每页性能。"
+    },
+    {
+      "title": "兼容所有主流 AI 客户端",
+      "description": "Claude Desktop、Claude Code、Cursor、Windsurf、带 MCP 扩展的 VS Code，或任何其他兼容 MCP 的客户端。一个 URL，一个令牌，到处可用。"
+    },
+    {
+      "title": "保持在你现有的上下文中",
+      "description": "分析问题常常会在你构建或调试时出现。MCP 让你留在编辑器中——无需切换标签页或打断专注即可得到答案。"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-mcp-claude.webp",
+      "alt": "Claude Desktop 通过 MCP 查询 OpenPanel 分析数据",
+      "caption": "直接在 Claude Desktop 中询问留存、漏斗或单个用户。"
+    }
+  ],
+  "how_it_works": {
+    "title": "如何将你的 AI 连接到 OpenPanel",
+    "intro": "三个步骤。无需安装——MCP 服务器托管在 api.openpanel.dev/mcp。",
+    "steps": [
+      {
+        "title": "创建 API 客户端",
+        "description": "前往 OpenPanel 仪表盘中的 设置 → API 客户端。创建一个 `read` 客户端以将访问范围限定到单个项目，或创建一个 `root` 客户端以获得跨项目访问权限。复制客户端 ID 和密钥。"
+      },
+      {
+        "title": "生成你的令牌",
+        "description": "你的令牌由客户端 ID 和密钥用冒号连接后进行 base64 编码得到。在终端中运行 `echo -n \"CLIENT_ID:CLIENT_SECRET\" | base64` 来生成它。"
+      },
+      {
+        "title": "将 URL 添加到你的 AI 客户端",
+        "description": "将 `https://api.openpanel.dev/mcp?token=YOUR_TOKEN` 粘贴到你的 AI 客户端的 MCP 服务器配置中。在 Claude Desktop 中，这就是 `claude_desktop_config.json` 里的一个 JSON 块。在 Cursor 和 Windsurf 中，它位于 MCP 设置下。"
+      },
+      {
+        "title": "开始提问",
+        "description": "你的 AI 现在可以访问全部 38 个工具。你可以询问用户、漏斗、留存或事件。如果你不确定项目中有哪些事件，先让 AI 列出来。"
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "谁会使用它",
+    "intro": "任何在做其他事情时还会问分析问题的人。",
+    "items": [
+      {
+        "title": "产品团队和创始人",
+        "description": "你正在开会，有人问到上周的漏斗流失情况。你问 Claude，几秒钟内得到答案，然后继续。没人需要打开仪表盘。"
+      },
+      {
+        "title": "在 Cursor 或 Windsurf 中开发的开发者",
+        "description": "你正在调试一个结账流程，想知道有多少用户遇到了那个错误状态。直接在编辑器里问。答案会显示在代码旁边。"
+      },
+      {
+        "title": "没有专职分析师的团队",
+        "description": "大多数早期团队都没有一个整天泡在仪表盘里的人。MCP 让团队中的任何人都能在不学习工具的情况下获取答案。"
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "event-tracking",
+      "title": "事件跟踪",
+      "description": "你跟踪的事件就是 MCP 服务器查询的内容。更完善的事件覆盖意味着更准确的答案。"
+    },
+    {
+      "slug": "funnels",
+      "title": "漏斗",
+      "description": "在 OpenPanel 中定义漏斗，然后通过 MCP 按名称查询它们。"
+    },
+    {
+      "slug": "retention",
+      "title": "留存",
+      "description": "用自然语言提问留存问题——MCP 服务器会处理队列计算。"
+    }
+  ],
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于 OpenPanel 的 MCP 服务器的常见问题。",
+    "items": [
+      {
+        "question": "哪些 AI 客户端可以与 OpenPanel MCP 一起使用？",
+        "answer": "任何兼容 MCP 的客户端：Claude Desktop、Claude Code、Cursor、Windsurf、带 MCP 扩展的 VS Code，以及任何基于 MCP 规范构建的自定义客户端。传输方式为可流式 HTTP，所有主流客户端都支持。"
+      },
+      {
+        "question": "我需要安装任何东西吗？",
+        "answer": "不需要。MCP 服务器由 OpenPanel 托管在 `https://api.openpanel.dev/mcp`。你只需将该 URL 和你的令牌添加到 AI 客户端配置中——无需在你的机器上运行任何内容。"
+      },
+      {
+        "question": "身份验证是如何工作的？",
+        "answer": "你的令牌是 `base64(clientId:clientSecret)`。使用 `echo -n \"CLIENT_ID:CLIENT_SECRET\" | base64` 生成它，并将其作为 `?token=YOUR_TOKEN` 附加到 URL 上。如果你的客户端支持，也可以通过 `Authorization: Bearer` 请求头传递。"
+      },
+      {
+        "question": "read 客户端和 root 客户端有什么区别？",
+        "answer": "`read` 客户端的作用范围限定于一个项目——也就是它创建时所属的项目。`root` 客户端可以查询你组织中的任何项目。在单项目场景下使用 `read`。如果你需要跨多个项目提问，或者想列出所有项目，请使用 `root`。"
+      },
+      {
+        "question": "AI 可以修改我的数据吗？",
+        "answer": "不能。MCP 服务器严格只读。它可以查询事件、获取画像并执行分析计算，但没有用于写入事件、修改用户或更改任何配置的工具。"
+      },
+      {
+        "question": "它支持自托管的 OpenPanel 吗？",
+        "answer": "如果你是自托管，MCP 服务器就是 API 的一部分——它会在你的实例上以相同的 `/mcp` 路径运行。将你的 AI 客户端指向你自己的 API URL，而不是 `api.openpanel.dev`。"
+      },
+      {
+        "question": "这与 Google Analytics MCP 服务器有什么不同？",
+        "answer": "Google Analytics MCP 连接的是 GA4 数据——页面浏览、流量来源、会话。OpenPanel 的 MCP 连接的是产品事件数据：自定义事件、用户画像、漏斗、留存队列。如果你想问“完成 onboarding 的用户 30 天留存是多少”，这不是 GA4 的 MCP 能回答的问题。OpenPanel 可以。"
+      }
+    ]
+  },
+  "cta": {
+    "label": "将你的 AI 连接到你的分析",
+    "href": "https://dashboard.openpanel.dev/onboarding"
+  }
+}

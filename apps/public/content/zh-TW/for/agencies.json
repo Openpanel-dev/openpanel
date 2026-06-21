@@ -1,0 +1,177 @@
+{
+  "slug": "agencies",
+  "audience": "agencies",
+  "seo": {
+    "title": "代理商專用分析 — 在一處管理所有客戶網站",
+    "description": "OpenPanel 協助代理商透過一個帳號管理所有客戶網站的分析。以隱私優先、無 Cookie 橫幅、無限專案，以及每位客戶每月 $2.50 起的實惠價格計費。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "代理商專用分析",
+    "subheading": "透過一個帳號管理每位客戶的網站與產品分析。無需設定 Cookie 同意橫幅、沒有按席次計費，費用也符合代理商帳務需求。每個專案每月 $2.50 起。",
+    "badges": [
+      "無限專案",
+      "無按席次費用",
+      "不需要 Cookie 橫幅",
+      "開源"
+    ]
+  },
+  "problem": {
+    "title": "為什麼分析對代理商來說很痛苦",
+    "intro": "在數十個客戶網站之間管理分析，會產生許多多數工具原本就不是為了解決的問題。",
+    "items": [
+      {
+        "title": "Google Analytics 存取管理簡直是場噩夢",
+        "description": "建立 GA4 資源、管理使用者權限、在帳號之間切換，以及應付 Google 不斷變動的介面。若把這件事乘上 20+ 位客戶，這幾乎就是一份全職工作。"
+      },
+      {
+        "title": "每一位客戶都需要 Cookie 同意",
+        "description": "每個客戶網站都需要正確設定自己的 Cookie 同意橫幅。不同法域、不同要求、不同實作方式——任何一個小錯誤都可能導致 GDPR 罰款。"
+      },
+      {
+        "title": "按席次計費會吃掉代理商利潤",
+        "description": "多數分析工具是按使用者計費。當你的 10 人團隊需要存取客戶報表時，成本很快就會累積。接著客戶也想要存取權限。"
+      },
+      {
+        "title": "沒有簡單方式把資料展示給客戶看",
+        "description": "客戶希望在不用登入你的工具的情況下查看自己的分析資料。匯出 PDF 很麻煩、分享登入憑證不安全，而建立自訂儀表板又需要你沒有的時間。"
+      }
+    ]
+  },
+  "features": {
+    "title": "為多客戶工作流程打造的分析",
+    "intro": "OpenPanel 的運作方式就像代理商的工作模式：多個專案、多位團隊成員、一個介面。",
+    "items": [
+      {
+        "title": "每個帳號可擁有無限專案",
+        "description": "把每位客戶當作單獨專案新增到同一個帳號下。每個專案不需額外費用——只會依總事件量收取每月單一帳單。"
+      },
+      {
+        "title": "沒有按席次計費",
+        "description": "邀請整個團隊，無需額外成本。客戶經理、開發者、策略師——每個人都能存取。無需共用登入資訊，也不用限制誰能查看資料。"
+      },
+      {
+        "title": "不需要 Cookie 同意",
+        "description": "OpenPanel 預設使用無 Cookie 追蹤。無論客戶所在地或受眾為何，都不需要為任何客戶設定同意橫幅。每位客戶可節省數小時實作時間。"
+      },
+      {
+        "title": "簡單、即時的儀表板",
+        "description": "每個專案都會開箱即用地獲得完整分析儀表板。無需自訂報表製作——客戶從第一天起就能取得有用的資料。"
+      },
+      {
+        "title": "內建隱私合規",
+        "description": "從設計上即符合 GDPR 與 CCPA。無 Cookie、EU 資料託管與資料最小化，讓你能放心地為任何市場的客戶部署分析。"
+      },
+      {
+        "title": "網站 + 產品分析合而為一",
+        "description": "頁面瀏覽、推薦來源與活動，搭配事件、漏斗與使用者檔案。對需要更深入洞察的客戶來說，一套工具即可取代 Google Analytics 和 Mixpanel。"
+      },
+      {
+        "title": "新客戶快速上線",
+        "description": "加入 script 標籤或安裝 SDK。頁面瀏覽會自動開始追蹤。大多數客戶設定包含自訂事件設定在內，15 分鐘內即可完成。"
+      },
+      {
+        "title": "自行架設以完全掌控",
+        "description": "處理敏感產業的代理商可以在自己的基礎架構上自行架設 OpenPanel。為有需求的客戶提供完整的資料主權。"
+      },
+      {
+        "title": "匯出與 API 存取",
+        "description": "透過 REST API 擷取資料，用於自訂客戶報表。為希望擁有自己資料的客戶匯出事件。與你現有的報表技術堆疊整合。"
+      }
+    ]
+  },
+  "benefits": {
+    "title": "代理商選擇 OpenPanel 的原因",
+    "intro": "更簡單的分析管理，代表你有更多時間投入客戶真正付費請你做的工作。",
+    "items": [
+      {
+        "title": "一個帳號管理所有客戶",
+        "description": "只要點一下，就能在客戶專案之間切換。沒有分開的登入、沒有 Google 帳號切來切去、沒有棘手的存取管理。"
+      },
+      {
+        "title": "可預測的成本，帳務更容易",
+        "description": "依總事件量計算的固定級距。你可以把成本轉嫁給客戶，或將其吸收進你的月費合約——簡單的定價讓兩種方式都可行。"
+      },
+      {
+        "title": "為每位客戶提供免 Cookie 分析",
+        "description": "別再花幾個小時設定同意橫幅。OpenPanel 不使用 Cookie，因此無需為 GDPR 或 CCPA 進行任何設定。"
+      },
+      {
+        "title": "用即時資料讓客戶印象深刻",
+        "description": "在通話中即時向客戶展示他們的即時分析。當你說話時，事件、頁面瀏覽與轉換數據同步更新。"
+      },
+      {
+        "title": "開源帶來信任感",
+        "description": "受監管產業的客戶會欣賞分析程式碼完全可稽核。開源意味著對實際追蹤內容的完全透明。"
+      },
+      {
+        "title": "大規模使用也負擔得起",
+        "description": "每月 $20 可涵蓋所有專案共 100K 事件，OpenPanel 比為每位客戶分別架設 Mixpanel 或 GA4 資源便宜得多。"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "代理商在評估 OpenPanel 時常提出的問題。",
+    "items": [
+      {
+        "question": "多個客戶專案的計價方式是什麼？",
+        "answer": "你是根據所有專案的總事件量付費，而不是按專案計費。例如，如果你有 20 個客戶網站，合計每月產生 100K 事件，你總共只需支付每月 $20。所有專案共用同一方案。"
+      },
+      {
+        "question": "客戶可以在沒有登入的情況下查看自己的分析嗎？",
+        "answer": "OpenPanel 支援團隊邀請，因此可以把客戶加入他們各自的專案。他們只能看到自己的資料。你也可以使用 API 建立自訂儀表板，或為客戶簡報匯出報表。"
+      },
+      {
+        "question": "客戶網站需要 Cookie 同意橫幅嗎？",
+        "answer": "不需要。OpenPanel 預設使用無 Cookie 追蹤，依 GDPR、CCPA 或 PECR 均不需要同意。這消除了代理商部署中最常見的合規痛點之一。"
+      },
+      {
+        "question": "我該如何為新客戶設定追蹤？",
+        "answer": "在你的 OpenPanel 儀表板中建立新專案，複製 script 標籤，並將其加入客戶網站。頁面瀏覽會立即開始追蹤。自訂事件每個只需要一行 JavaScript。大多數設定都可在 15 分鐘內完成。"
+      },
+      {
+        "question": "可以為代理商使用自行架設嗎？",
+        "answer": "可以。自行架設免費，且沒有專案或事件限制。把 OpenPanel 部署在你自己的伺服器上，讓所有客戶資料都由你掌控。使用 Docker Compose 部署大約需要 10 分鐘。"
+      },
+      {
+        "question": "OpenPanel 對代理商來說和 Google Analytics 相比如何？",
+        "answer": "OpenPanel 在多客戶管理上更簡單（單一帳號、沒有 Google 權限管理問題）、不使用 Cookie 也能符合隱私法規，並且包含 GA4 缺少的產品分析功能。GA4 擁有更進階的歸因模型，並可與 Google Ads 整合。對多數代理商使用情境而言，OpenPanel 能大幅節省設定與合規時間。"
+      },
+      {
+        "question": "有用於建立自訂報表的 API 嗎？",
+        "answer": "有。OpenPanel 提供可查詢分析資料、管理專案與匯出事件的 REST API。你可以用它建立自訂客戶儀表板、與報表工具整合，或自動化每月報表。"
+      },
+      {
+        "question": "我可以將分析儀表板白標化嗎？",
+        "answer": "目前尚未提供內建的白標功能。不過，由於 OpenPanel 是開源的，自行架設的代理商可以自訂儀表板外觀，包括品牌識別。雲端使用者可以透過 API 建立具品牌風格的儀表板。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "Script 標籤 SDK 設定", "url": "/zh-TW/docs/sdks/script" },
+      { "title": "從 Google Analytics 遷移", "url": "/zh-TW/guides/migrate-from-google-analytics" }
+    ],
+    "articles": [
+      { "title": "無 Cookie 分析說明", "url": "/zh-TW/articles/cookieless-analytics" },
+      { "title": "如何自行架設 OpenPanel", "url": "/zh-TW/articles/how-to-self-host-openpanel" },
+      { "title": "最佳開源分析工具", "url": "/zh-TW/articles/self-hosted-web-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel 與 Google Analytics 比較", "url": "/compare/google-analytics-alternative" },
+      { "title": "OpenPanel 與 Plausible 比較", "url": "/compare/plausible-alternative" },
+      { "title": "OpenPanel 與 Matomo 比較", "url": "/compare/matomo-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "免費試用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 查看原始碼",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

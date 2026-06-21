@@ -1,0 +1,349 @@
+---
+title: "如何为 Vue 添加分析"
+description: "使用 OpenPanel 的 Web SDK 为你的 Vue 应用添加注重隐私的分析功能。跟踪页面浏览、自定义事件和用户行为。"
+difficulty: beginner
+timeToComplete: 8
+date: 2025-12-14
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安装 SDK"
+    anchor: "install"
+  - name: "创建 OpenPanel 实例"
+    anchor: "setup"
+  - name: "跟踪页面浏览"
+    anchor: "pageviews"
+  - name: "跟踪自定义事件"
+    anchor: "events"
+  - name: "识别用户"
+    anchor: "identify"
+  - name: "验证你的设置"
+    anchor: "verify"
+---
+
+为你的 Vue 应用添加分析功能，可以帮助你了解用户如何与你的应用交互。OpenPanel 的 Web SDK 可与 Vue 3 和 Vue Router 无缝集成，提供自动页面浏览跟踪、自定义事件和 [用户识别](/features/identify-users)，且无需 Vue 专用绑定。
+
+OpenPanel 是 Mixpanel 和 Google Analytics 的开源替代方案。它在默认使用无 Cookie 跟踪的同时，提供强大的洞察能力并尊重用户隐私。
+
+## 前提条件
+
+- 一个 Vue 3 项目（Vite 或 Vue CLI）
+- 一个 OpenPanel 账户（[免费注册](https://dashboard.openpanel.dev/onboarding)）
+- 来自 OpenPanel 控制台的 Client ID
+
+## 安装 SDK [#install]
+
+OpenPanel Web SDK 是一个轻量级包，可在任何 JavaScript 环境中使用，包括 Vue。使用 npm 安装，pnpm 或 yarn 的用法也相同。
+
+```bash
+npm install @openpanel/web
+```
+
+## 创建 OpenPanel 实例 [#setup]
+
+为你的 OpenPanel 实例创建一个专用文件。这会将你的分析配置集中管理，并使该实例可在应用中轻松导入。
+
+```ts title="src/lib/op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+`trackScreenViews` 选项会在 URL 变化时自动跟踪页面浏览。这适用于 Vue Router 的客户端导航。`trackAttributes` 选项支持使用 HTML 元素上的 `data-track` 属性进行声明式跟踪。
+
+### 使用环境变量
+
+对于生产应用，请将你的 Client ID 存储在环境变量中。
+
+```ts title="src/lib/op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: import.meta.env.VITE_OPENPANEL_CLIENT_ID,
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+```bash title=".env"
+VITE_OPENPANEL_CLIENT_ID=your-client-id
+```
+
+### 在应用加载时初始化
+
+在应用的入口点导入 OpenPanel 实例，以确保应用加载时完成初始化。这样就足以开始自动跟踪页面浏览。
+
+```ts title="src/main.ts"
+import { createApp } from 'vue';
+import App from './App.vue';
+import router from './router';
+import './lib/op'; // 初始化 OpenPanel
+
+const app = createApp(App);
+app.use(router);
+app.mount('#app');
+```
+
+### 让 OpenPanel 全局可用（可选）
+
+如果你更喜欢通过 Vue 实例访问 OpenPanel，而不是在每个组件中导入它，可以将其添加为全局属性。
+
+```ts title="src/main.ts"
+import { createApp } from 'vue';
+import App from './App.vue';
+import router from './router';
+import { op } from './lib/op';
+
+const app = createApp(App);
+app.config.globalProperties.$op = op;
+app.use(router);
+app.mount('#app');
+```
+
+这样，`this.$op` 就可在 Options API 组件中使用，并且你也可以在 Composition API 组件中注入它。
+
+## 跟踪页面浏览 [#pageviews]
+
+启用 `trackScreenViews: true` 后，当浏览器 URL 变化时，OpenPanel 会自动跟踪页面浏览。这与 Vue Router 开箱即用。
+
+如果你需要手动跟踪页面浏览，或者希望包含额外的路由元数据，可以使用 Vue Router 的导航守卫。
+
+```ts title="src/router/index.ts"
+import { createRouter, createWebHistory } from 'vue-router';
+import { op } from '../lib/op';
+import routes from './routes';
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+});
+
+router.afterEach((to) => {
+  op.track('screen_view', {
+    path: to.path,
+    name: String(to.name),
+  });
+});
+
+export default router;
+```
+
+如果你使用这种方式，请在 OpenPanel 配置中将 `trackScreenViews: false`，以避免重复跟踪。
+
+## 跟踪自定义事件 [#events]
+
+在组件中导入 OpenPanel 实例以跟踪事件。`track` 方法接受一个事件名称和一个可选的属性对象。
+
+### 使用 Composition API
+
+```vue title="src/components/SignupButton.vue"
+<template>
+  <button type="button" @click="handleClick">注册</button>
+</template>
+
+<script setup lang="ts">
+import { op } from '../lib/op';
+
+function handleClick() {
+  op.track('button_clicked', {
+    button_name: 'signup',
+    button_location: 'hero',
+  });
+}
+</script>
+```
+
+### 使用 Options API
+
+```vue title="src/components/SignupButton.vue"
+<template>
+  <button type="button" @click="handleClick">注册</button>
+</template>
+
+<script>
+import { op } from '../lib/op';
+
+export default {
+  methods: {
+    handleClick() {
+      op.track('button_clicked', {
+        button_name: 'signup',
+        button_location: 'hero',
+      });
+    },
+  },
+};
+</script>
+```
+
+### 跟踪表单提交
+
+表单跟踪可帮助你了解 [转化率](/features/conversion) 并识别用户在哪些地方流失。
+
+```vue title="src/components/ContactForm.vue"
+<template>
+  <form @submit.prevent="handleSubmit">
+    <input
+      v-model="email"
+      type="email"
+      placeholder="请输入你的邮箱"
+    />
+    <button type="submit">提交</button>
+  </form>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { op } from '../lib/op';
+
+const email = ref('');
+
+function handleSubmit() {
+  op.track('form_submitted', {
+    form_name: 'contact',
+    form_location: 'homepage',
+  });
+
+  // 你的表单提交逻辑
+}
+</script>
+```
+
+### 使用数据属性进行声明式跟踪
+
+Web SDK 支持使用 `data-track` 属性进行声明式跟踪。这对于无需编写 JavaScript 的简单点击跟踪非常有用。
+
+```vue
+<template>
+  <button
+    data-track="button_clicked"
+    data-track-button_name="signup"
+    data-track-button_location="hero"
+  >
+    注册
+  </button>
+</template>
+```
+
+当用户点击此按钮时，OpenPanel 会自动发送一个带有指定属性的 `button_clicked` 事件。这需要你在配置中启用 `trackAttributes: true`。
+
+## 识别用户 [#identify]
+
+一旦用户登录或提供了可识别信息，请调用 `identify` 将其活动与个人资料关联起来。这可实现用户级分析和群组分析。
+
+```vue title="src/components/UserProfile.vue"
+<template>
+  <div>欢迎，{{ user?.firstName }}！</div>
+</template>
+
+<script setup lang="ts">
+import { watch } from 'vue';
+import { op } from '../lib/op';
+
+interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  plan: string;
+  createdAt: string;
+}
+
+const props = defineProps<{ user: User | null }>();
+
+watch(
+  () => props.user,
+  (user) => {
+    if (user) {
+      op.identify({
+        profileId: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        properties: {
+          plan: user.plan,
+          signupDate: user.createdAt,
+        },
+      });
+    }
+  },
+  { immediate: true }
+);
+</script>
+```
+
+### 在用户注销时清除用户数据
+
+当用户注销时，清除已存储的个人资料数据，以确保后续事件不会与先前用户关联。
+
+```vue title="src/components/LogoutButton.vue"
+<template>
+  <button @click="handleLogout">退出登录</button>
+</template>
+
+<script setup lang="ts">
+import { op } from '../lib/op';
+
+const emit = defineEmits<{ logout: [] }>();
+
+function handleLogout() {
+  op.clear();
+  emit('logout');
+}
+</script>
+```
+
+### 设置全局属性
+
+使用 `setGlobalProperties` 设置的属性会包含在每个事件中。这对于应用版本跟踪、功能开关或 A/B 测试变体很有用。
+
+```vue title="src/App.vue"
+<script setup lang="ts">
+import { onMounted } from 'vue';
+import { op } from './lib/op';
+
+onMounted(() => {
+  op.setGlobalProperties({
+    app_version: '1.0.0',
+    environment: import.meta.env.MODE,
+  });
+});
+</script>
+```
+
+## 验证你的设置 [#verify]
+
+在浏览器中打开你的 Vue 应用，并在几个页面之间切换。与会触发自定义事件的元素交互。然后打开你的 [OpenPanel 控制台](https://dashboard.openpanel.dev) 并查看实时视图，确认事件是否出现。
+
+如果事件没有出现，请检查浏览器控制台是否有错误。验证你的 Client ID 是否正确，并确保广告拦截器没有阻止对 OpenPanel API 的请求。浏览器开发者工具中的 Network 面板可以帮助你确认请求是否已发送。
+
+## 下一步
+
+Web SDK 还提供属性递增和事件过滤等其他功能。阅读完整的 [Web SDK 文档](/docs/sdks/web) 以查看完整 API 参考。
+
+对于 Nuxt.js 应用，设置方式类似。只需在 Nuxt 插件中初始化 OpenPanel，自动页面浏览跟踪就会与 Nuxt 的路由器一起工作。
+
+<Faqs>
+<FaqItem question="OpenPanel 可以与 Vue Router 一起使用吗？">
+可以。OpenPanel 会在 URL 变化时自动跟踪页面浏览，这与 Vue Router 兼容。请在配置中设置 `trackScreenViews: true`。你也可以使用路由导航守卫进行手动跟踪。
+</FaqItem>
+
+<FaqItem question="我可以在 Vue 2 中使用 OpenPanel 吗？">
+可以。OpenPanel Web SDK 与框架无关，可在 Vue 2 中使用。请直接在组件中导入该实例并调用其方法。
+</FaqItem>
+
+<FaqItem question="OpenPanel 使用 Cookie 吗？">
+不会。OpenPanel 默认使用无 Cookie 跟踪。这意味着在大多数隐私法规下，包括 GDPR 和 PECR，你不需要为基础分析功能显示 Cookie 同意横幅。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 吗？">
+是的。OpenPanel 旨在通过无 Cookie 跟踪、数据最小化以及对数据主体权利的全面支持来满足 GDPR 合规要求。使用自托管时，你还可以完全消除国际数据传输方面的顾虑。
+</FaqItem>
+</Faqs>

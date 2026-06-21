@@ -1,0 +1,208 @@
+---
+title: Kotlin / Android
+description: OpenPanel Kotlin SDK 可讓你在 Kotlin 與 Android 應用程式中追蹤使用者行為。
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+OpenPanel Kotlin SDK 可讓你在 Kotlin 應用程式中追蹤使用者行為。本指南提供在專案中安裝與使用 Kotlin SDK 的說明。
+
+<Callout>
+想看逐步教學嗎？請參考 [Kotlin 分析指南](/zh-TW/guides/kotlin-analytics)。
+</Callout>
+
+## 安裝
+
+<Callout type="warn">
+這個套件目前尚未發布，因此你還不能用 `` 安裝它。
+</Callout>
+
+<Steps>
+### 步驟 1：加入依賴
+
+將 OpenPanel SDK 加入專案的依賴：
+
+```
+dependencies {
+    implementation 'dev.openpanel:openpanel:0.0.1'
+}
+```
+
+### 步驟 2：初始化
+
+首先，匯入 SDK，並使用你的 client ID 進行初始化：
+
+```kotlin
+import dev.openpanel.OpenPanel
+
+val op = OpenPanel.create(
+    context,
+    OpenPanel.Options(
+        clientId = "YOUR_CLIENT_ID",
+        clientSecret = "YOUR_CLIENT_SECRET"
+    )
+)
+```
+
+### 設定選項
+
+#### `context`
+
+- **Type**: `Context`
+- **Required**: Yes
+- **Description**: 用於初始化 SDK 的 Android `Context`。
+
+#### `Options`
+
+<CommonSdkConfig />
+
+Kotlin 專屬的額外選項：
+
+- `filter` - 在追蹤事件前會呼叫的函式。如果回傳 false，該事件就不會被追蹤
+- `disabled` - 設為 `true` 可停用所有 [事件追蹤](/zh-TW/features/event-tracking)
+- `automaticTracking` - 設為 `true` 可自動追蹤應用程式生命週期事件
+- `verbose` - 設為 `true` 可啟用詳細日誌
+
+#### Filter 範例
+
+```kotlin
+val op = OpenPanel.create(
+    context,
+    OpenPanel.Options(
+        clientId = "YOUR_CLIENT_ID",
+        filter = { payload ->
+            // Your custom filtering logic here
+            true // or false to filter out the event
+        }
+    )
+)
+```
+
+</Steps>
+
+## 使用方式
+
+### 追蹤事件
+
+要追蹤事件：
+
+```kotlin
+op.track("button_clicked", mapOf("button_id" to "submit_form"))
+```
+
+### 識別使用者
+
+要識別使用者：
+
+```kotlin
+op.identify("user123", mapOf(
+    "firstName" to "John",
+    "lastName" to "Doe",
+    "email" to "john@example.com",
+    "customAttribute" to "value"
+))
+```
+
+### 設定全域屬性
+
+要設定會隨每個事件送出的屬性：
+
+```kotlin
+op.setGlobalProperties(mapOf(
+    "app_version" to "1.0.2",
+    "environment" to "production"
+))
+```
+
+### 增加屬性值
+
+要增加使用者檔案中的數值屬性：
+
+```kotlin
+op.increment("user123", "login_count", 1)
+```
+
+### 減少屬性值
+
+要減少使用者檔案中的數值屬性：
+
+```kotlin
+op.decrement("user123", "credits", 5)
+```
+
+### 清除使用者資料
+
+要清除目前使用者的資料：
+
+```kotlin
+op.clear()
+```
+
+## 進階使用
+
+### 自訂事件篩選
+
+你可以設定自訂事件篩選：
+
+```kotlin
+val op = OpenPanel.create(
+    context,
+    OpenPanel.Options(
+        clientId = "YOUR_CLIENT_ID",
+        filter = { payload ->
+            // Your custom filtering logic here
+            true // or false to filter out the event
+        }
+    )
+)
+```
+
+### 停用追蹤
+
+你可以暫時停用追蹤：
+
+```kotlin
+val op = OpenPanel.create(
+    context,
+    OpenPanel.Options(
+        clientId = "YOUR_CLIENT_ID",
+        disabled = true
+    )
+)
+```
+
+### 自動追蹤
+
+如果將 `automaticTracking` 設為 `true`，SDK 可自動追蹤應用程式生命週期事件。這會追蹤 "app_opened" 和 "app_closed" 事件：
+
+```kotlin
+val op = OpenPanel.create(
+    context,
+    OpenPanel.Options(
+        clientId = "YOUR_CLIENT_ID",
+        automaticTracking = true
+    )
+)
+```
+
+### 系統資訊
+
+SDK 會自動收集系統資訊，並將其加入每個追蹤事件的屬性中。內容包括：
+
+- 作業系統詳細資訊（例如 `os`、`os_version`）
+- 裝置製造商、品牌與型號（例如 `manufacturer`、`brand`、`model`）
+- 螢幕解析度與 DPI（例如 `screen_width`、`screen_height`、`screen_dpi`）
+- App 版本（例如 `app_version`、`app_build_number`）
+- 網路詳細資訊（例如 `wifi`、`carrier`、`bluetooth_enabled`）
+
+## 執行緒安全性
+
+<Callout>
+OpenPanel SDK 設計為執行緒安全。你可以從任何執行緒呼叫其方法，而不需要額外同步。
+</Callout>
+
+## 支援
+
+如有任何問題或功能需求，請在我們的 [GitHub repository](https://github.com/Openpanel-dev/openpanel/issues) 提交 issue。

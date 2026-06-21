@@ -1,0 +1,73 @@
+---
+title: 2024 回顧
+description: 隨著今年接近尾聲，我想分享一下這一年是如何展開，以及一切又是如何開始的摘要。
+date: 2024-12-30
+updated: 2026-02-07
+tag: 文章
+team: Carl-Gerhard Lindesvärd
+cover: /content/recap-2024.jpg
+---
+
+## 一切是如何開始的
+
+我在 2023 年底，我的 Mixpanel 新創計畫結束後，開始著手 OpenPanel。也就是在那時，我真切體會到產品分析其實有多昂貴（這點我是親身痛過才學到的）。
+
+我當時經營一個簡單的食譜 App，每月大約有 1 萬名使用者，每個月觸發約 20 萬到 30 萬筆事件。以這樣的事件量來說，Mixpanel 的帳單實在太驚人了，尤其是這個 App 根本沒有替我們帶來任何收入。我開始尋找 [Mixpanel 替代方案](/articles/alternatives-to-mixpanel)，但沒有找到真正合適的選項。於是我想：「嘿，為什麼不做個簡單、能把事情做好用的東西呢？」
+
+原本只是我小小的副業專案，最後變成我想在每個地方都使用的產品。我的摯友 [Pontus](https://twitter.com/pontusab)（[Midday.ai](https://midday.ai) 背後的靈魂人物）推著我把它做成開源。
+
+而我們現在就在這裡...
+
+## 靈感
+
+我一直都是 Mixpanel 的粉絲——他們在產品分析這塊真的做得很強。但我總覺得，當談到 [網站分析](/features/web-analytics) 時，他們少了點什麼。
+
+我也注意到，過去幾年有許多以隱私為核心的網站分析工具如雨後春筍般冒出來，這點我很喜歡。這就是 OpenPanel 登場的地方。我想打造一個真正重視隱私、同時具備網站與產品分析能力、對原生 App 有很好的支援，而且即使你是分析領域的新手，也能非常容易上手的產品。
+
+還有很多事情要做，但看到它一路走到今天，我真的相當振奮。
+
+## 這一年
+
+今年三月，我以免費的 beta 模式推出了 OpenPanel。這是個很棒的決定，因為它讓我能夠累積使用者並收到寶貴的回饋。我們目前仍在 beta 階段，而且尚未向使用者收費。
+
+我很感謝所有在這一年加入並一路陪伴我們的使用者。OpenPanel 曾面臨一些挑戰，但我們已經大幅提升了產品的穩定性與可靠性。
+
+我有持續傾聽使用者回饋，並依據回饋新增功能或做出調整。
+
+從一開始，我的目標就是打造一個人人都負擔得起的服務，若你在意成本，也可以選擇 [自行架設](https://openpanel.dev/docs/self-hosting/self-hosting)。
+
+把 OpenPanel 做成 [開源](https://git.new/openpanel) 與 [自架](https://openpanel.dev/docs/self-hosting/self-hosting) 版本，是個很容易的決定。我相信，當有社群圍繞著一套軟體時，它才會真正茁壯。
+
+### 這一年中的亮點
+
+- 將基礎架構遷移到 kubernetes
+- 將 Clickhouse 移到叢集（多節點）
+- 不再使用 Clerk Auth，讓自行架設變得 MUCH 更容易
+- 新增了 swift 和 kotlin 的原生 sdk
+- 超過 1,000 個專案正在使用 OpenPanel
+- 累積超過 10 億筆事件
+- 我們每天接收約 700 萬到 900 萬筆事件
+- OpenPanel 在 GitHub 上有 3.3k 顆 stars
+- 超過 1,000 次 commits
+
+## 路線圖
+
+2025 年將有令人興奮的進展。以下是一些優先事項：
+
+- [Revenue tracking](/features/revenue-tracking)
+- 推出 Android 與 iOS App。
+- 改善報表建立流程。
+- 新增更多 [轉換率](/features/conversion) 圖表（轉換是了解你的產品最好的方式之一）。
+- 啟用報表分享。
+- 自訂總覽頁面。
+- 強化即時檢視。
+- 將 URL 分組並重寫，例如將 `/article/1` 改成 `/article/:id`。
+- 探索整合功能。
+- 改善匯出 API。
+- ……還有更多！
+
+## 總結
+
+嘿，如果你已經讀到這裡——謝謝你的陪伴！如果你還沒試過 OpenPanel，現在正是最好的時機，因為它目前仍然免費。
+
+如果你有任何問題或回饋，請告訴我。我一直都在尋找讓 OpenPanel 變得更好的方法。

@@ -1,0 +1,80 @@
+---
+title: 安裝 OpenPanel
+description: 在不到 2 分鐘內開始使用 OpenPanel。
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Code, Globe, Layout, Smartphone, FileJson } from 'lucide-react';
+
+開始使用 OpenPanel 的最快方式是使用我們的 Web SDK。它適用於任何網站。
+
+## 快速開始
+
+只要把這個 script 標籤加入你網站的 `<head>` 區段即可。
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+就是這樣！OpenPanel 現在會自動追蹤：
+- 頁面瀏覽
+- 造訪時長
+- 來源網站
+- 裝置與瀏覽器資訊
+- 位置
+
+## 使用框架？
+
+如果你正在使用特定框架或平台，我們也提供專屬 SDK，帶來更好的開發體驗。
+
+<Cards>
+  <Card
+    href="/zh-TW/docs/sdks/nextjs"
+    title="Next.js"
+    icon={<Globe />}
+    description="針對 App Router 與 Server Components 最佳化"
+  />
+  <Card
+    href="/zh-TW/docs/sdks/react"
+    title="React"
+    icon={<Layout />}
+    description="React 應用程式的元件與 hooks"
+  />
+  <Card
+    href="/zh-TW/docs/sdks/vue"
+    title="Vue"
+    icon={<Layout />}
+    description="Vue.js 應用程式的整合"
+  />
+  <Card
+    href="/zh-TW/docs/sdks/javascript"
+    title="JavaScript"
+    icon={<FileJson />}
+    description="通用 JavaScript/TypeScript SDK"
+  />
+  <Card
+    href="/zh-TW/docs/sdks/react-native"
+    title="React Native"
+    icon={<Smartphone />}
+    description="使用 React Native 追蹤行動應用程式"
+  />
+  <Card
+    href="/zh-TW/docs/sdks/python"
+    title="Python"
+    icon={<Code />}
+    description="Python 的伺服器端追蹤"
+  />
+</Cards>
+
+## 探索所有 SDK
+
+我們支援更多平台。請查看我們的 [SDK 概覽](/zh-TW/docs/sdks) 以取得完整清單。

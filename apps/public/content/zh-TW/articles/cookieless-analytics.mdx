@@ -1,0 +1,257 @@
+---
+title: "無 Cookie 分析：2026 年最佳工具與運作方式"
+description: "無 Cookie 分析平台完整指南。比較最佳的無 Cookie 分析工具，了解不使用 Cookie 的追蹤如何運作，並為您的網站找到合適的解決方案。"
+tag: 指南
+team: OpenPanel Team
+date: 2025-06-17
+updated: 2026-02-16
+cover: /content/cookieless-analytics.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+import { Figure } from '@/components/figure';
+
+第三方 Cookie 正在走向消亡。Safari 和 Firefox 多年前就已封鎖它們。Chrome 終於也在跟進。再加上隱私法規持續收緊。
+
+如果您的分析仍依賴 Cookie，您拿到的就是不完整的資料——而且還可能違法。**無 Cookie 分析**讓您在不使用 Cookie、不中斷同意橫幅、也不必為合規問題頭痛的情況下，獲得準確的訪客洞察。
+
+本指南將介紹無 Cookie 追蹤如何運作、為什麼重要，以及哪些工具做得最好。
+
+## 為什麼 Cookie 正在消失
+
+擺脫 Cookie 的轉變並不是一夕之間發生的，而是醞釀了好幾年。
+
+### 瀏覽器限制
+
+Safari 的智慧防追蹤技術（ITP）早在 2017 年就開始封鎖第三方 Cookie。Firefox 隨後在 2019 年推出增強型追蹤保護（ETP）。這兩款瀏覽器現在都會預設封鎖第三方 Cookie，並限制第一方 Cookie 的存活時間。
+
+Chrome 佔據大約 65% 的瀏覽器市佔率，已於 2020 年宣布其 Cookie 淘汰計畫。經過多次延後後，Google 正透過 Privacy Sandbox 計畫逐步淘汰第三方 Cookie。時程雖然變動過，但方向很明確：第三方 Cookie 的日子所剩不多。
+
+### 隱私法規
+
+GDPR 規定，在設定非必要 Cookie 之前必須先取得明確同意。這意味著您需要 Cookie 橫幅、同意管理平台，以及持續面臨設定錯誤的風險。罰鍰最高可達 2,000 萬歐元或全球營收的 4%。
+
+CCPA、巴西的 LGPD，以及其他地區的類似法規，也各自增加了要求。趨勢很清楚：限制只會越來越多，不會變少。
+
+### 廣告阻擋與隱私工具
+
+超過 40% 的網路使用者會使用廣告阻擋器或隱私工具。其中大多數也會封鎖分析 Cookie，因此基於 Cookie 的分析早已錯過了您流量中的很大一部分。
+
+### 結果
+
+如果您仍依賴 Cookie 進行分析，您拿到的是來自日益縮小的使用者池的不完整資料，還得為此承擔法律程序上的麻煩。無 Cookie 分析一次解決這三個問題。
+
+## 無 Cookie 追蹤如何運作
+
+無 Cookie 分析不代表您不再蒐集資料，而是以不同方式蒐集。以下是主要作法：
+
+### 後端追蹤
+
+不是在瀏覽器中執行會設定 Cookie 的 JavaScript，而是由後端在伺服器端擷取事件。使用者的瀏覽器不會收到追蹤 Cookie，因為資料蒐集發生在您的伺服器上。
+
+這種方式不受廣告阻擋器影響，不需要為基本分析顯示同意橫幅，而且讓您更能掌控蒐集哪些資料。
+
+### 以工作階段為基礎的識別碼
+
+有些工具會為每次造訪建立一個暫時、非持久性的識別碼。這能在單一工作階段內將行為串連起來（頁面瀏覽、點擊、表單送出），而不會在瀏覽器中儲存任何資料。當工作階段結束時，識別碼就會被丟棄。
+
+您可以取得工作階段層級的資料（跳出率、每次造訪頁數、轉換路徑），又不會產生持久追蹤的隱私疑慮。
+
+### 第一方資料
+
+您自己的註冊表單、使用者帳號與偏好設定都屬於第一方資料。這些資料是您直接從使用者那裡蒐集而來，而且使用者知情。當有人登入時，無 Cookie 分析工具可以把匿名工作階段資料與已驗證的使用者資料結合起來，完全不需要 Cookie。
+
+### 雜湊識別碼
+
+有些工具會根據 IP 位址、使用者代理字串與螢幕尺寸等不具識別性的訊號，產生每日雜湊。這能讓您計算不重複訪客數，而無需儲存個人資料或設定 Cookie。雜湊每天都會變，因此不會形成長期追蹤。
+
+OpenPanel 採用的正是這種方式：每日輪替的雜湊，可在不儲存任何個人資訊的情況下準確計算不重複訪客。
+
+## 最佳無 Cookie 分析工具比較
+
+不是所有無 Cookie 分析工具都一樣。有些專注於簡單的頁面瀏覽追蹤；有些則提供完整的產品分析，包括漏斗、留存與使用者旅程。以下是主要選項的比較：
+
+| 工具 | 類型 | 無 Cookie | 開源 | 自架 | 雲端價格（起） | 最適合 |
+|------|------|-----------|------|------|----------------|--------|
+| **OpenPanel** | 網站 + 產品 | 是 | 是（AGPL-3.0） | 免費 | $2.50/月 | 想要無 Cookie 產品分析的團隊 |
+| **Plausible** | 網站 | 是 | 是（AGPL-3.0） | 免費 | $9/月 | 簡單、輕量的頁面瀏覽分析 |
+| **Fathom** | 網站 | 是 | 否 | 否 | $15/月 | 想要代管主機、重視隱私的團隊 |
+| **Simple Analytics** | 網站 | 是 | 否 | 否 | $9/月 | 追求最簡單分析設定的團隊 |
+| **Pirsch** | 網站 | 是 | 是（AGPL-3.0） | 授權 | $6/月 | 不使用 JavaScript 的伺服器端分析 |
+
+### OpenPanel
+
+<Figure
+  src="/content/tools/openpanel.png"
+  caption="OpenPanel 的網站分析儀表板——預設即為無 Cookie"
+/>
+
+[OpenPanel](/) 是一個開源分析平台，結合了網站分析與產品分析，而且完全不使用 Cookie。您可以同時取得頁面瀏覽與流量來源，以及漏斗、留存、自訂事件和使用者旅程。
+
+**它的特點：**大多數無 Cookie 工具只追蹤頁面瀏覽。OpenPanel 則提供 Mixpanel 等級的產品分析（事件追蹤、[漏斗](/zh-TW/features/funnels)、[留存](/zh-TW/features/retention)、使用者屬性），而且完全不設定任何 Cookie。您還可以[免費自行架設](/zh-TW/articles/how-to-self-host-openpanel)。
+
+- 永遠零 Cookie
+- 內建符合 GDPR 與 CCPA
+- 即時儀表板
+- 自訂事件與屬性
+- 開源，完整支援自架
+- 雲端方案每月 $2.50 起
+
+### Plausible
+
+<Figure
+  src="/content/tools/plausible.png"
+  caption="Plausible 的極簡分析儀表板"
+/>
+
+[Plausible](/compare/plausible-alternative) 是一款輕量、以隱私優先的網站分析工具。它能在不使用 Cookie 的情況下追蹤頁面瀏覽、來源網站與基本互動指標。
+
+**最適合：**只需要簡單流量統計、沒有其他需求的網站。如果您不需要事件追蹤、漏斗或使用者層級分析，Plausible 能維持最精簡的體驗。
+
+- 腳本大小小於 1 KB
+- 不使用 Cookie，不需要同意橫幅
+- 可自行架設（社群版）
+- 雲端方案每月 $9 起
+
+### Fathom
+
+<Figure
+  src="/content/tools/fathom.png"
+  caption="Fathom 以隱私為核心的分析儀表板"
+/>
+
+[Fathom](/compare/fathom-alternative) 是一款以隱私為核心的代管分析工具。它處理無 Cookie 追蹤、EU 隔離與合規性，讓您不必親自處理。
+
+**最適合：**想要完全代管、零維護方案的團隊。Fathom 會負責基礎架構與合規細節。
+
+- 預設無 Cookie
+- 可提供 EU 資料隔離
+- 只提供代管主機（無自架）
+- 每月 $15 起
+
+### Simple Analytics
+
+[Simple Analytics](/compare/simple-analytics-alternative) 顧名思義，就是提供簡單、友善隱私的分析，不使用 Cookie、不在使用者裝置上安裝追蹤腳本，並提供乾淨的儀表板。
+
+**最適合：**想要最簡單設定的團隊。不需要設定、也沒有額外功能——只有流量資料。
+
+- 不使用 Cookie，不做指紋辨識
+- 輕量腳本
+- AI 驅動洞察
+- 每月 $9 起
+
+### Pirsch
+
+<Figure
+  src="/content/tools/pirsch.png"
+  caption="Pirsch 的伺服器端分析儀表板"
+/>
+
+Pirsch 採取不同的方法：純伺服器端分析。它不需要載入 JavaScript 片段，而是從後端送出事件，因此廣告阻擋器無法干擾。
+
+**最適合：**希望 100% 準確追蹤、且瀏覽器擴充功能無法封鎖的開發者。
+
+- 只做伺服器端，不需要 JavaScript
+- 設計上即不使用 Cookie
+- 開源核心
+- 每月 $6 起
+
+## 無 Cookie 分析 vs 傳統分析
+
+從基於 Cookie 的分析（例如 Google Analytics）切換到無 Cookie 平台，不只是隱私升級而已，它也會改變您取得哪些資料，以及如何使用這些資料。
+
+### 您會得到什麼
+
+**準確的訪客數。**基於 Cookie 的分析會漏掉封鎖 Cookie、使用無痕瀏覽或拒絕同意橫幅的使用者。無 Cookie 工具則能追蹤所有人，因為沒有東西可被封鎖或拒絕。
+
+**不需要同意橫幅。**如果您的分析工具不設定 Cookie，多數隱私法規對於基本分析就不需要同意橫幅。這代表不會有彈出視窗、頁面載入更快，使用者體驗也更好。
+
+**更簡單的合規性。**沒有 Cookie，就不需要 Cookie 稽核、不需要同意管理平台、不需要保存同意紀錄，也不必煩惱哪些 Cookie 算是「絕對必要」。您的法務團隊會感謝您。
+
+**更快的頁面。**基於 Cookie 的分析腳本通常比較大也比較重。大多數無 Cookie 工具都使用小於 5 KB 的輕量腳本。有些工具，例如 Pirsch，甚至完全不使用用戶端腳本。
+
+**未來更有保障的資料。**當 Chrome 完成第三方 Cookie 淘汰時，您的分析也不會跟著壞掉。
+
+### 您會失去什麼
+
+**跨工作階段的使用者追蹤（大多數情況下）。**沒有持久 Cookie，就很難在數週或數月內追蹤同一位匿名訪客的多次工作階段。如果使用者週一來訪、週四再回來，多數無 Cookie 工具會把這視為兩位不同訪客。
+
+這一點的重要性其實比想像中低。當使用者登入或註冊後，您可以透過自己的第一方資料跨工作階段追蹤他們。像 OpenPanel 這類工具就支援透過已驗證使用者識別來達成這件事。
+
+**部分 Google Analytics 功能。**GA 的再行銷受眾、跨網域追蹤，以及 Google Ads 整合，都依賴 Cookie。如果您仰賴這些功能，就需要其他做法。
+
+**歸因模型。**在沒有持久識別碼的情況下，跨長時間區間的多點歸因會更困難。不過，基於 Cookie 的歸因本來就沒有大家想像中那麼準確——廣告阻擋器與瀏覽器限制早已讓它失效。
+
+### 結論
+
+對大多數網站而言，無 Cookie 分析能提供*更*準確的資料（因為不會被封鎖），同時移除 Cookie 同意帶來的法務與使用者體驗負擔。代價是匿名跨工作階段追蹤較少，但隨著 Cookie 本來就會消失，這個取捨的重要性也愈來愈低。
+
+## 開始使用無 Cookie 分析
+
+設定 OpenPanel 大約只要兩分鐘。沒有 Cookie、沒有同意橫幅，也不需要複雜設定。
+
+### 1. 加入追蹤片段
+
+```html
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+### 2. 追蹤自訂事件
+
+```javascript
+window.op('track', 'signup_button_clicked');
+
+window.op('track', 'order_placed', {
+  orderId: 'ORD-20260216-001',
+  revenue: 49.95,
+  currency: 'EUR',
+});
+```
+
+就這樣。您已經在不使用 Cookie、不顯示同意橫幅、也不犧牲所需洞察的情況下收集分析資料了。
+
+想要完全掌控您的資料？您也可以在自己的基礎架構上[免費自架 OpenPanel](/zh-TW/articles/how-to-self-host-openpanel)。
+
+## 常見問題
+
+<Faqs>
+<FaqItem question="什麼是無 Cookie 分析？">
+無 Cookie 分析是一種不在訪客瀏覽器中儲存 Cookie，就能追蹤網站與應用程式使用情況的方法。它會改用伺服器端追蹤、以工作階段為基礎的識別碼，以及雜湊訊號等技術來蒐集資料。這能避免需要 Cookie 同意橫幅，並提升與 GDPR 和 CCPA 等隱私法規的合規性。
+</FaqItem>
+
+<FaqItem question="無 Cookie 分析符合 GDPR 嗎？">
+無 Cookie 分析會大幅簡化 GDPR 合規。由於不會設定 Cookie，針對基本分析通常不需要 Cookie 同意橫幅。不過，GDPR 適用於所有個人資料處理，不僅僅是 Cookie。請選擇一款能將資料蒐集降到最低，並提供 EU 資料託管或自架的工具。OpenPanel 從設計上就符合 GDPR——它不蒐集任何個人資料，而且可以在您自己的 EU 伺服器上[自架](/zh-TW/articles/how-to-self-host-openpanel)。
+</FaqItem>
+
+<FaqItem question="使用無 Cookie 分析還需要 Cookie 橫幅嗎？">
+對於基本分析，不需要。當您的網站會設定非必要 Cookie 時，才需要 Cookie 同意橫幅。如果您的分析工具完全不使用 Cookie——像 OpenPanel、Plausible 或 Fathom——就不需要專為分析而設的 Cookie 橫幅。不過，如果網站其他部分使用了 Cookie（例如行銷工具、聊天外掛等），您可能仍然需要。
+</FaqItem>
+
+<FaqItem question="無 Cookie 分析和 Google Analytics 相比準確度如何？">
+對於頁面瀏覽和不重複訪客等基本指標，無 Cookie 分析通常比 Google Analytics *更*準確。原因在於基於 Cookie 的分析會漏掉封鎖 Cookie、使用廣告阻擋器或拒絕同意橫幅的使用者——這些可能佔流量的 30–40%。無 Cookie 工具因為沒有東西可被封鎖或拒絕，因此能捕捉到這些訪客。
+</FaqItem>
+
+<FaqItem question="無 Cookie 分析可以追蹤單一使用者嗎？">
+無 Cookie 分析預設會追蹤匿名工作階段。不過，一旦使用者登入或表明身分，像 OpenPanel 這類工具就能使用第一方資料將其活動關聯到使用者檔案。這讓您可以在不需要 Cookie 的情況下，為已驗證使用者取得使用者層級分析（漏斗、留存、旅程）。
+</FaqItem>
+
+<FaqItem question="哪一個無 Cookie 分析平台最好？">
+這取決於您的需求。如果您想要同時具備網站分析與產品分析（漏斗、留存、事件），又不使用 Cookie，則 [OpenPanel](/) 是最佳選擇——它是開源、可自架，且每月只要 $2.50 起。若只是要簡單的頁面瀏覽追蹤，則 [Plausible](/compare/plausible-alternative) 是最受歡迎的選擇。若您想要完全代管、零維護的分析，[Fathom](/compare/fathom-alternative) 值得考慮。
+</FaqItem>
+
+<FaqItem question="Google Analytics 是無 Cookie 的嗎？">
+不是。Google Analytics（GA4）預設仍使用第一方 Cookie。Google 雖然推出了「無 Cookie 量測」模式，但它仰賴 Google 的模型與機器學習來估算資料——它並不是以真正不使用 Cookie 的方式在追蹤，和專為無 Cookie 設計的工具並不相同。若要真正的無 Cookie 分析，您需要從一開始就為此設計的工具。
+</FaqItem>
+
+<FaqItem question="我可以在自架環境中使用無 Cookie 分析嗎？">
+可以。有幾款無 Cookie 分析工具支援自架，這能讓您完全擁有資料，並具備最強的隱私保護。OpenPanel、Plausible 和 Pirsch 都提供自架選項。採用自架後，您的分析資料永遠不會離開自己的伺服器。請參閱我們關於[自架分析與合規性](/zh-TW/articles/better-compliance-self-hosted-analytics)的指南以了解更多。
+</FaqItem>
+</Faqs>

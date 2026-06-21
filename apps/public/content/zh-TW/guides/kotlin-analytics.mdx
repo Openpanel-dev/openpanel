@@ -1,0 +1,268 @@
+---
+title: "如何為 Android 應用程式加入分析"
+description: "使用 OpenPanel 的 Kotlin SDK 為 Android 應用程式加入以隱私為優先的分析功能。追蹤事件、識別使用者，並分析行為。"
+type: guide
+difficulty: intermediate
+timeToComplete: 10
+date: 2025-12-15
+updated: 2026-02-07
+lastUpdated: 2025-12-15
+team: OpenPanel Team
+steps:
+  - name: "加入依賴項"
+    anchor: "install"
+  - name: "初始化 OpenPanel"
+    anchor: "setup"
+  - name: "追蹤事件"
+    anchor: "events"
+  - name: "識別使用者"
+    anchor: "identify"
+  - name: "追蹤畫面瀏覽"
+    anchor: "screenviews"
+  - name: "驗證你的設定"
+    anchor: "verify"
+---
+
+# 如何為 Android 應用程式加入分析
+
+本指南將帶你了解如何使用 Kotlin SDK 為 Android 應用程式加入 OpenPanel 分析功能。你將學會如何追蹤事件、[識別使用者](/zh-TW/features/identify-users)，以及監控應用程式中的畫面瀏覽。
+
+OpenPanel 非常適合 Android 應用程式，因為它提供輕量、以隱私為重的 SDK，支援離線佇列與自動系統資訊收集。與網頁 SDK 不同，原生應用程式需要使用 client secret 進行驗證，因為無法使用 CORS 標頭。
+
+## 先決條件
+
+- 一個 Android 專案（minSdkVersion 21+）
+- 一個 OpenPanel 帳號
+- 來自 [儀表板](https://dashboard.openpanel.dev) 的 Client ID 與 Client Secret
+
+## 加入依賴項 [#install]
+
+首先，將 OpenPanel SDK 加入你應用程式的 `build.gradle.kts` 檔案。此 SDK 可透過標準的 Gradle 相依性管理取得。
+
+```kotlin
+dependencies {
+    implementation("dev.openpanel:openpanel:0.0.1")
+}
+```
+
+Kotlin SDK 目前仍在開發中，因此在加入專案前，請先查看 [GitHub repository](https://github.com/Openpanel-dev/kotlin-sdk) 以取得最新版本號。
+
+## 初始化 OpenPanel [#setup]
+
+在你可以追蹤事件之前，需要先在 Application 類別中初始化 OpenPanel。這可確保 SDK 在整個應用程式中都可使用，並能正確管理其生命週期。
+
+```kotlin
+import android.app.Application
+import dev.openpanel.OpenPanel
+
+class MyApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+
+        OpenPanel.create(
+            context = this,
+            options = OpenPanel.Options(
+                clientId = "YOUR_CLIENT_ID",
+                clientSecret = "YOUR_CLIENT_SECRET"
+            )
+        )
+    }
+}
+```
+
+你也需要在 Android manifest 中註冊你的 Application 類別，讓系統知道要使用它。
+
+```xml
+<application
+    android:name=".MyApplication"
+    ...>
+</application>
+```
+
+如果你使用 Hilt 或 Dagger 進行依賴注入，也可以改為將 OpenPanel 以單例方式提供。這種做法更能與現代 Android 架構模式整合。
+
+```kotlin
+import android.content.Context
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import dev.openpanel.OpenPanel
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+object AppModule {
+    @Provides
+    @Singleton
+    fun provideOpenPanel(@ApplicationContext context: Context): OpenPanel {
+        return OpenPanel.create(
+            context,
+            OpenPanel.Options(
+                clientId = "YOUR_CLIENT_ID",
+                clientSecret = "YOUR_CLIENT_SECRET"
+            )
+        )
+    }
+}
+```
+
+## 追蹤事件 [#events]
+
+一旦初始化 OpenPanel，你就可以在應用程式的任何地方，取得 SDK 實例並呼叫 `track` 方法來追蹤事件。每個事件都有名稱，以及一個可選的屬性映射。
+
+```kotlin
+import dev.openpanel.OpenPanel
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var op: OpenPanel
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        op = OpenPanel.getInstance(this)
+
+        findViewById<Button>(R.id.signupButton).setOnClickListener {
+            op.track(
+                "button_clicked",
+                mapOf(
+                    "button_name" to "signup",
+                    "button_location" to "hero"
+                )
+            )
+        }
+    }
+}
+```
+
+SDK 是執行緒安全的，所以你可以從任何執行緒呼叫 `track`，不需要額外同步。這在從背景作業或 coroutine 追蹤事件時特別有用。
+
+如果你想自動為每個事件附加屬性，請使用 `setGlobalProperties`。這對於加入應用程式版本、建置編號或環境資訊很有幫助。
+
+```kotlin
+op.setGlobalProperties(
+    mapOf(
+        "app_version" to BuildConfig.VERSION_NAME,
+        "build_number" to BuildConfig.VERSION_CODE.toString(),
+        "platform" to "Android"
+    )
+)
+```
+
+## 識別使用者 [#identify]
+
+當使用者登入，或你已掌握他們的資訊時，呼叫 `identify` 以將其個人資料與已追蹤的事件關聯起來。這可在你的儀表板中啟用使用者層級的分析與 cohort 分析。
+
+```kotlin
+op.identify(
+    user.id,
+    mapOf(
+        "firstName" to user.firstName,
+        "lastName" to user.lastName,
+        "email" to user.email,
+        "plan" to user.plan
+    )
+)
+```
+
+當使用者登出時，請清除其資料，讓後續事件不會被歸因給他們。
+
+```kotlin
+fun logout() {
+    op.clear()
+}
+```
+
+你也可以遞增使用者個人資料上的數值屬性。這對於追蹤登入次數或點數等資訊很有用，而不需要知道目前的值。
+
+```kotlin
+op.increment(user.id, "login_count", 1)
+```
+
+## 追蹤畫面瀏覽 [#screenviews]
+
+畫面瀏覽追蹤可幫助你了解導覽模式，以及應用程式中哪些部分最受關注。最簡單的做法是建立一個基底 activity，自動追蹤畫面瀏覽。
+
+```kotlin
+import androidx.appcompat.app.AppCompatActivity
+import dev.openpanel.OpenPanel
+
+abstract class BaseActivity : AppCompatActivity() {
+    protected lateinit var op: OpenPanel
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        op = OpenPanel.getInstance(this)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        op.track(
+            "screen_view",
+            mapOf("screen_name" to this::class.simpleName ?: "Unknown")
+        )
+    }
+}
+```
+
+對於 Jetpack Compose，請使用 `LaunchedEffect` 來追蹤可組合畫面何時出現。
+
+```kotlin
+import androidx.compose.runtime.LaunchedEffect
+import dev.openpanel.OpenPanel
+
+@Composable
+fun MainScreen(op: OpenPanel) {
+    LaunchedEffect(Unit) {
+        op.track(
+            "screen_view",
+            mapOf("screen_name" to "MainScreen")
+        )
+    }
+
+    // 你的 composable 內容
+}
+```
+
+如果你希望 SDK 自動追蹤像 `app_opened` 和 `app_closed` 這類應用程式生命週期事件，請在初始化時啟用自動追蹤。
+
+```kotlin
+OpenPanel.create(
+    context,
+    OpenPanel.Options(
+        clientId = "YOUR_CLIENT_ID",
+        clientSecret = "YOUR_CLIENT_SECRET",
+        automaticTracking = true
+    )
+)
+```
+
+## 驗證你的設定 [#verify]
+
+在模擬器或實體裝置上執行你的 Android 應用程式，並與幾個畫面和按鈕互動。打開你的 [OpenPanel 儀表板](https://dashboard.openpanel.dev)，查看即時畫面以確認事件是否有送達。
+
+如果事件沒有出現，請查看 Logcat 中來自 SDK 的錯誤訊息。最常見的問題是憑證錯誤或缺少 `clientSecret` 參數。你也可以使用 Android Studio 的 Network Profiler 來確認請求是否已傳送到 OpenPanel 的伺服器。
+
+## 後續步驟
+
+[完整的 Kotlin SDK 參考文件](/zh-TW/docs/sdks/kotlin)涵蓋了其他選項，例如事件過濾與詳細記錄。如果你正在為多個平台開發，[React Native 指南](/zh-TW/guides/react-native-analytics)會示範如何在 iOS 與 Android 之間共用分析程式碼。
+
+<Faqs>
+<FaqItem question="為什麼原生應用程式需要 client secret？">
+原生應用程式無法像網頁應用程式那樣使用 CORS 標頭進行驗證。client secret 提供伺服器端驗證，以確保你的事件能正確通過驗證。請妥善保管這個密鑰，切勿將它暴露在客戶端網頁程式碼中。
+</FaqItem>
+
+<FaqItem question="OpenPanel 支援 Jetpack Compose 嗎？">
+可以。OpenPanel 同時支援傳統 Views 與 Jetpack Compose。對於 Compose，請使用 LaunchedEffect 在可組合畫面出現時追蹤畫面瀏覽，如上方的畫面追蹤章節所示。
+</FaqItem>
+
+<FaqItem question="我可以在裝置離線時追蹤事件嗎？">
+可以。當沒有網路連線時，SDK 會將事件暫存在本機，並在連線恢復後自動送出。如果使用者經過隧道或啟用飛航模式，你也不會遺失事件。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 嗎？">
+是的。OpenPanel 以資料最小化與完整支援資料當事人權利為設計目標，符合 GDPR。若採自架部署，你也能完全消除跨境資料傳輸的疑慮。更多細節請參閱 [無 Cookie 分析指南](/zh-TW/articles/cookieless-analytics)。
+</FaqItem>
+</Faqs>

@@ -1,0 +1,381 @@
+---
+title: "自架式 Mixpanel 替代方案：5 款可取代它的產品分析工具（2026）"
+description: "用自架式產品分析工具取代 Mixpanel、Amplitude 或 Heap。比較 OpenPanel、PostHog、Countly、Matomo 與 Mitzu——部署、功能與總持有成本。"
+tag: 比較
+team: OpenPanel Team
+date: 2026-02-16
+updated: 2026-04-22
+cover: /content/self-hosted-analytics.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+
+產品分析會告訴你，*使用者在你的產品中做了什麼*——他們使用了哪些功能、在哪裡流失、多久回來一次，以及在轉換前走過哪些路徑。這就像是從知道「我們有 10,000 次頁面瀏覽」和知道「40% 開始註冊流程的使用者，從未完成第 3 步」之間的差別。
+
+如果你想取得這些洞察，又不想把使用者行為資料傳送給第三方，自架式產品分析就是最佳解法。
+
+但問題在於：大多數自架式分析工具只涵蓋 **網站分析**——頁面瀏覽、流量來源與推薦來源。像漏斗、留存、同群分析與使用者識別這類產品分析功能，需要的是另一種工具。
+
+我們比較了所有提供真正產品分析能力的自架式工具。以下是最值得你花時間了解的選項。
+
+## 快速比較
+
+| 工具 | 重點 | 授權 | 自架成本 | 雲端價格（起） | 最適合 |
+|------|-------|---------|---------------|---------------------|----------|
+| [**OpenPanel**](#openpanel) | 網站 + 產品 | AGPL-3.0 | 免費 | $2.50/月 | 想要類似 Mixpanel 的分析、且可自架的團隊 |
+| [**PostHog**](#posthog) | 產品 + 網站 | MIT | 免費 | $0 + 用量 | 需要分析 + 功能旗標 + 實驗的開發團隊 |
+| [**Countly**](#countly) | 產品 + 行動裝置 | AGPL-3.0 | 免費（社群版） | 客製 | 以行動裝置為優先的產品分析 |
+| [**Matomo**](#matomo) | 網站（+ 產品外掛） | GPL-3.0 | 免費（核心） | €29/月 | 需要 GA 替代品並加上產品分析外掛 |
+| [**Mitzu**](#mitzu) | 產品 | Source Available | 付費 | 客製 | 數據倉儲原生產品分析 |
+
+## 產品分析與網站分析有何不同
+
+網站分析回答的是關於你 **網站流量** 的問題：訪客從哪裡來、看了哪些頁面、停留多久。像 [Plausible](/compare/plausible-alternative)、[Umami](/compare/umami-alternative) 與 [GoatCounter](/compare/goatcounter-alternative) 這類工具就做得很好。
+
+產品分析更深入。它回答的是關於 **使用者行為** 的問題：
+
+- **漏斗**：有多少使用者完成註冊？他們具體是在哪一步流失？
+- **留存**：使用者在第一次、第二次和第 30 天後還會回來嗎？
+- **使用者旅程**：使用者在升級為付費方案前做了什麼？
+- **同群分析**：在手機端完成 onboarding 的使用者，留存率是否比桌機使用者更高？
+- **事件追蹤**：哪些功能被使用了？使用頻率多高？是誰在使用？
+
+如果你正在打造 SaaS、行動應用程式，或任何需要理解使用者行為的產品，你需要的是產品分析，而不只是頁面瀏覽數。
+
+若要比較專注於網站分析的自架式工具，請參考我們的 [自架式網站分析指南](/articles/self-hosted-web-analytics)。
+
+---
+
+## OpenPanel
+
+**最適合：想要類似 Mixpanel 的產品分析，並且需要自架選項的團隊**
+
+[OpenPanel](/) 提供像 [Mixpanel](/compare/mixpanel-alternative) 和 [Amplitude](/compare/amplitude-alternative) 這類工具的能力，但不會把你的資料送給第三方。它將網站分析與產品分析整合在同一個平台中，支援無 Cookie 追蹤，且自架設定簡單。
+
+![OpenPanel Dashboard](/content/tools/openpanel.png)
+
+### 產品分析功能
+
+- **[Funnels](/features/funnels)**：使用任何事件建立多步驟轉換漏斗。查看使用者在哪裡流失，並依屬性拆解。
+- **[Retention](/features/retention)**：分析有多少使用者會隨時間回來。可依同群、方案或獲客管道比較留存。
+- **[Event tracking](/features/event-tracking)**：追蹤任何帶有屬性的自訂事件。可用圖表、表格與拆解方式視覺化。
+- **使用者識別**：將事件連結到個別使用者。查看完整使用者檔案與其完整事件歷史。
+- **[Session tracking](/features/session-tracking)**：查看單一工作階段與完整的事件及頁面序列。
+- **即時儀表板**：具備多種圖表類型的自訂儀表板，並即時更新。
+
+### 部署
+
+只需四個指令即可自架：
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+./start
+```
+
+在 Docker Compose 上執行，搭配 ClickHouse、PostgreSQL 與 Redis。中階 VPS（4 vCPU、8 GB RAM）可處理數百萬筆事件。安裝精靈會處理設定、資料庫建立與 SSL。
+
+完整指南：[如何自架 OpenPanel](/articles/how-to-self-host-openpanel) | [自架文件](/docs/self-hosting/self-hosting)
+
+### 價格
+
+自架免費。包含所有功能——自架版與雲端版完全相同，沒有功能分級限制。
+
+雲端方案從每月 $2.50 起（5,000 事件），可擴充到每月 $90（100 萬事件）。每個方案都包含全部功能。
+
+### 優點
+- 在同一工具中同時提供完整產品分析（漏斗、留存、使用者檔案）與網站分析
+- 在具備相近功能的工具中，自架設定最簡單
+- 無 Cookie 追蹤——不需要同意橫幅
+- 自架版與雲端版完全相同
+- 多種 SDK：JavaScript、React、Next.js、Vue、React Native、Flutter 等
+
+### 缺點
+- 較新的專案——社群規模小於 PostHog 或 Matomo
+- 目前尚未內建熱點圖
+- 尚未內建功能旗標或 A/B 測試
+
+---
+
+## PostHog
+
+**最適合：希望在同一平台中整合分析、功能旗標與實驗的工程團隊**
+
+[PostHog](https://posthog.com/) 是功能最完整的自架式產品分析工具。它把產品分析與工作階段重播、功能旗標、A/B 測試、問卷與錯誤追蹤整合在一起。如果你想要一個能處理產品開發大小事的工具，PostHog 是最完整的選擇。
+
+![PostHog Dashboard](/content/tools/posthog.png)
+
+### 產品分析功能
+
+- **Funnels**：可依使用者屬性拆解的多步驟漏斗分析
+- **Retention**：基於同群的留存分析
+- **User paths**：視覺化使用者如何在你的產品中導覽
+- **Cohorts**：依行為、屬性或生命週期階段分組使用者
+- **Session replay**：觀看真實使用者工作階段錄影
+- **Feature flags**：將功能逐步釋出給特定使用者群
+- **A/B testing**：執行實驗並衡量對指標的影響
+- **Surveys**：收集產品內回饋
+
+### 部署
+
+PostHog 的自架方式，小型部署使用 Docker Compose，正式環境則使用 Kubernetes（Helm charts）。基礎設施堆疊包含 PostgreSQL、Redis、ClickHouse 與 Kafka——比其他選項複雜得多。
+
+需求：最低 4 vCPU、16 GB RAM、30 GB 以上儲存空間。PostHog 建議僅在每月約 30 萬事件以內時考慮自架。超過這個規模後，他們會引導你使用雲端方案。
+
+### 價格
+
+在 MIT 授權下可免費自架。雲端免費方案每月包含 100 萬分析事件、5,000 次工作階段錄影，以及 100 萬次功能旗標請求。超過後會啟用依用量計費（下一個百萬事件約每事件 $0.00005）。
+
+### 優點
+- 在所有自架式分析工具中，功能最完整
+- MIT 授權——非常寬鬆
+- 雲端免費方案（100 萬事件）可先試用
+- 社群活躍，開發速度快
+
+### 缺點
+- 自架複雜，且有多個基礎設施依賴
+- 資源需求高——記憶體需求是較簡單工具的 4 倍
+- 自架版與雲端版的功能並不完全一致
+- 可能會讓人不知從何下手——功能太多，多數團隊用不到
+- PostHog 其實不太鼓勵大規模自架
+
+與 OpenPanel 比較：[PostHog vs OpenPanel](/compare/posthog-alternative)
+
+---
+
+## Countly
+
+**最適合：以行動裝置為優先、且需要自架的產品分析**
+
+[Countly](https://countly.com/) 是一個以行動分析為強項的產品分析平台。它支援網頁、行動與桌面應用程式，並提供 iOS、Android、React Native、Flutter 等 SDK。Community Edition 可依 AGPL-3.0 自架。
+
+### 產品分析功能
+
+- **Funnels**：定義轉換漏斗並追蹤流失率
+- **Retention**：可自訂時間區間的同群留存分析
+- **User profiles**：具備事件歷史的個別使用者追蹤
+- **Segmentation**：依屬性與行為篩選與分群使用者
+- **Push notifications**：內建推播通知系統（行動裝置）
+- **Crash reporting**：行動應用程式當機分析
+
+### 部署
+
+Countly 可透過 Docker 或在 Linux 上手動安裝進行自架。它以 MongoDB 作為主要資料庫。設定不算複雜，但正式部署時需要具備 MongoDB 經驗。
+
+需求：最低 4 vCPU、8 GB RAM。MongoDB 6+。高流量行動應用程式則需要更多資源。
+
+### 價格
+
+Community Edition 在 AGPL-3.0 下可免費使用，但功能有限。Enterprise 價格為客製，並包含進階分析、推播通知、當機報告與專屬支援。Enterprise 版本費用預期會相當可觀。
+
+### 優點
+- 強大的行動分析，並提供所有主流平台的原生 SDK
+- 內建推播通知與當機報告
+- 成熟的平台，擁有企業客戶
+- 適合以行動為先或混合式應用程式的分析
+
+### 缺點
+- Community Edition 功能受限——多數產品分析功能需要 Enterprise
+- Enterprise 價格不透明且昂貴
+- 只支援 MongoDB——沒有 PostgreSQL 或 ClickHouse 選項
+- 與較新的工具相比，介面感覺偏舊
+- 開源社群規模比 PostHog 小
+
+與 OpenPanel 比較：[Countly vs OpenPanel](/compare/countly-alternative)
+
+---
+
+## Matomo
+
+**最適合：想要 Google Analytics 替代品，並可選配產品分析功能的組織**
+
+[Matomo](https://matomo.org/) 主要是網站分析工具，但透過其外掛系統也提供產品分析能力。熱點圖、工作階段錄影、A/B 測試與漏斗都可透過付費外掛使用——即使是在自架實例上也是如此。
+
+![Matomo Dashboard](/content/tools/matomo.png)
+
+### 產品分析功能
+
+- **Funnels**（付費外掛）：多步驟轉換漏斗
+- **Cohorts**（付費外掛）：依行為分組使用者並隨時間分析
+- **Heatmaps**（付費外掛）：查看使用者點擊、捲動與懸停的位置
+- **Session recordings**（付費外掛）：觀看使用者工作階段錄影
+- **A/B testing**（付費外掛）：在網站上執行實驗
+- **Custom events**：追蹤自訂事件與目標
+
+### 部署
+
+Matomo 執行於 PHP + MySQL/MariaDB。可部署在任何 LAMP stack 上，或使用他們的 Docker 映像。由於需要 PHP 環境與 Web 伺服器設定，因此比純 Docker 工具更複雜。
+
+完整細節請參考我們的 [開源網站分析比較](/articles/self-hosted-web-analytics#matomo)。
+
+### 價格
+
+核心平台在 GPL-3.0 下免費。產品分析外掛需另外購買：
+- Funnels：€199/年
+- Heatmaps + Session Recording：€249/年
+- A/B Testing：€199/年
+- Cohorts：€79/年
+
+這些費用加總起來不低。完整的自架式 Matomo 產品分析設定，每年光外掛授權費就可能達到 €500-700 以上。
+
+### 優點
+- 最成熟的自架式分析平台（自 2007 年起）
+- 與 Google Analytics 的功能最接近
+- 擁有龐大的外掛生態系
+- 合規紀錄良好
+
+### 缺點
+- 產品分析功能是付費加購，不包含在核心版本中
+- 外掛費用累積起來相當可觀
+- PHP 堆疊需要更多維護
+- 不是原生產品分析工具——它本質上是網站分析，只是加上了產品功能
+
+與 OpenPanel 比較：[Matomo vs OpenPanel](/compare/matomo-alternative)
+
+---
+
+## Mitzu
+
+**最適合：希望在既有數據倉儲之上進行產品分析的資料團隊**
+
+[Mitzu](https://www.mitzu.io/) 採取不同的做法。它不會把資料匯入自己的資料庫，而是直接在你既有的數據倉儲（BigQuery、Snowflake、Databricks 等）上執行分析查詢。如果你已經把事件資料放在倉儲中，Mitzu 就能讓你做產品分析，而不必重複儲存資料。
+
+### 產品分析功能
+
+- **Funnels**：在你的數據倉儲上執行轉換漏斗分析
+- **Retention**：直接針對倉儲資料做同群留存分析
+- **Segmentation**：依倉儲中的任何屬性篩選使用者
+- **User journeys**：針對倉儲資料進行路徑分析
+- **Revenue analytics**：將事件與收入資料連結
+
+### 部署
+
+Mitzu 以可連接到既有數據倉儲的 Web 應用程式形式部署。可自架，但需要付費授權。
+
+需求：已有事件資料流入的既有數據倉儲（BigQuery、Snowflake、Databricks、ClickHouse 或 PostgreSQL）。
+
+### 價格
+
+自架需要付費授權（價格需洽詢）。雲端方案也是客製報價。自架沒有免費方案。
+
+### 優點
+- 不重複儲存資料——直接查詢你既有的數據倉儲
+- 可搭配你已經擁有的資料基礎設施
+- 很適合習慣 SQL 與數據倉儲的資料團隊
+- 適合資料管線較複雜的組織
+
+### 缺點
+- 需要已有包含事件資料的數據倉儲
+- 自架需要付費授權
+- 不適合從零開始的團隊
+- 社群較小、文件較少
+
+---
+
+## 自架式產品分析 vs 雲端：何時該自架
+
+對產品分析來說，自架的理由甚至比網站分析更充分。產品分析涉及 **使用者層級資料**——個別使用者、他們的行為、以及他們在產品中的路徑。這類資料比彙總的頁面瀏覽數更敏感。
+
+### 以下情況適合自架產品分析：
+
+- **你處理敏感的使用者資料。** 醫療保健（HIPAA）、金融，或任何使用者行為資料受到法規管制的產業。自架可完全避免第三方資料傳輸。請參考我們的 [合規指南](/articles/better-compliance-self-hosted-analytics)。
+- **你需要對使用者層級資料有控制權。** 產品分析會追蹤個別使用者。在 GDPR 下，這屬於個人資料。自架能讓你完全掌握保存、刪除與存取權限。
+- **你想要成本可預測。** 雲端產品分析的價格會隨事件數與已識別使用者數量擴張。規模一大，費用很快就會上升。自架成本就是你的伺服器成本。
+- **你有資料落地要求。** 某些法規要求資料必須留在特定地理區域。自架在你自己的基礎設施上可解決這個問題。
+
+### 以下情況適合使用雲端：
+
+- **你剛開始接觸產品分析。** 雲端能更快取得洞察。當你驗證工具符合需求後，再考慮自架。
+- **你沒有營運資源。** 以 ClickHouse 為後端的產品分析工具，需要一些資料庫知識來維護。
+- **你需要保證的正常運作時間。** 如果分析系統停機會直接影響產品決策，那麼有 SLA 的代管服務可能值得這個成本。
+
+使用 [OpenPanel](/pricing)，你可以先從 Cloud 開始，之後隨時移轉到自架。兩個版本的功能完全相同。
+
+---
+
+## 如何開始
+
+### 1. 選擇伺服器
+
+對自架式產品分析來說，你會需要比基本網站分析更多一點資源，因為產品分析涉及更複雜的查詢（漏斗、留存計算）。
+
+建議起步規格：4 vCPU、8 GB RAM、80 GB SSD。這足以舒適地處理大多數中小型產品。
+
+- **[Hetzner](https://hetzner.cloud/?ref=7Hq0H5mQh7tM)** — 約 €8.50/月的 CX31（4 vCPU、8 GB RAM）
+- **DigitalOcean** — 約 $48/月的對應 droplet
+- **Vultr** — 與 DigitalOcean 類似的價格
+
+### 2. 安裝與設定
+
+以 OpenPanel 為例：
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+./start
+```
+
+安裝精靈會引導你完成網域設定、資料庫建立、SSL 與 worker 設定。完整指南：[如何自架 OpenPanel](/articles/how-to-self-host-openpanel)。
+
+### 3. 為你的產品加上追蹤
+
+產品分析需要在你的程式碼中加入事件追蹤。使用 OpenPanel 時，請為你的框架安裝對應 SDK：
+
+```bash
+npm install @openpanel/nextjs
+# or @openpanel/react, @openpanel/vue, @openpanel/sdk
+```
+
+接著在事件發生的地方進行追蹤：
+
+```typescript
+import { op } from '@openpanel/nextjs';
+
+// 追蹤自訂事件
+op.track('signup_completed', {
+  plan: 'pro',
+  source: 'landing_page'
+});
+
+// 識別使用者
+op.identify({
+  profileId: 'user_123',
+  email: 'user@example.com',
+  plan: 'pro'
+});
+```
+
+請參考你的特定框架的 [SDK 文件](/docs/get-started/install-openpanel)。
+
+### 4. 建立你的第一個漏斗
+
+當事件開始流入後，建立你的第一個轉換漏斗。常見的起點是：**造訪著陸頁 > 註冊 > 完成 onboarding > 第一次關鍵動作**。這會立即讓你看到使用者在核心流程中流失的位置。
+
+---
+
+<Faqs>
+<FaqItem question="最好的自架式產品分析工具是哪一個？">
+對大多數團隊來說，OpenPanel 在產品分析功能、自架容易度與成本之間提供了最佳平衡。PostHog 的功能更豐富（功能旗標、A/B 測試），但自架起來明顯更複雜。Countly 最適合以行動裝置為優先的產品。
+</FaqItem>
+
+<FaqItem question="我可以自架 Mixpanel 或 Amplitude 嗎？">
+不行。Mixpanel 與 Amplitude 都是僅提供雲端的平台，沒有自架選項。最接近的自架替代方案是 OpenPanel（在產品分析功能上最像 Mixpanel）以及 PostHog（功能範圍更廣，但也更複雜）。
+</FaqItem>
+
+<FaqItem question="產品分析和網站分析有什麼差別？">
+網站分析追蹤的是網站流量——頁面瀏覽、推薦來源、裝置與地理資料。產品分析追蹤的是使用者行為——事件、漏斗、留存、同群與使用者旅程。大多數自架工具只提供網站分析。OpenPanel、PostHog 與 Countly 兩者都提供。若要看專注於網站的工具，請參考我們的 [自架式網站分析比較](/articles/self-hosted-web-analytics)。
+</FaqItem>
+
+<FaqItem question="自架式產品分析要多少錢？">
+軟體本身對 OpenPanel（AGPL-3.0）與 PostHog（MIT）都是免費的。你的成本是伺服器基礎設施——通常 VPS 每月約 $10-50，視流量而定。Countly 的 Enterprise 功能與 Matomo 的產品分析外掛，則需要在伺服器成本之外再支付授權費。
+</FaqItem>
+
+<FaqItem question="我需要分開使用網站分析和產品分析工具嗎？">
+不一定。OpenPanel 與 PostHog 都把網站分析與產品分析整合在同一個平台中。這表示只需一段追蹤程式碼、一個儀表板，以及整合的使用者檔案。如果你只需要網站分析，Plausible 或 Umami 這類更簡單的工具會更適合。
+</FaqItem>
+
+<FaqItem question="自架式產品分析符合 GDPR 嗎？">
+自架是符合 GDPR 的最強方法之一，因為使用者資料不會離開你的基礎設施。再搭配無 Cookie 追蹤（OpenPanel 有提供），你就能在不使用同意橫幅的情況下執行產品分析，並完整控制資料保存與刪除。
+</FaqItem>
+
+<FaqItem question="我可以先用雲端，之後再移轉到自架嗎？">
+使用 OpenPanel，可以。雲端版與自架版在功能上完全相同。你可以先用 Cloud 驗證工具，準備好後再移轉到自架。PostHog 也支援兩者，但雲端版與自架版之間仍有一些功能差異。
+</FaqItem>
+</Faqs>

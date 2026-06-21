@@ -1,0 +1,185 @@
+---
+title: 反向代理設定
+description: 將 OpenPanel 跑在你自己的反向代理後面，或放在內建 Caddy 的上游。涵蓋路由、WebSockets，以及每次都會踩到的坑。
+---
+
+OpenPanel 隨附一個 Caddy 容器來處理 TLS 與路由。設定只有兩行，而且直接就能運作。如果你偏好 NGINX、Traefik、HAProxy，或是想在 Caddy 前面再放一層 TLS 終止器，本頁會說明怎麼做，以及——更重要的是——途中會壞掉什麼。
+
+## 什麼時候需要這個？
+
+- **用 NGINX/Traefik/HAProxy 取代 Caddy** — 跳到 [你自己的反向代理](#your-own-reverse-proxy)。
+- **把 TLS 終止器放在內建 Caddy 上游**（雲端負載平衡器、邊緣 VM）— 參考 [Caddy 上游終止 TLS](#tls-terminated-upstream-of-caddy)。
+- **只使用內建 Caddy** — 你不需要這頁。`./setup` + `./start` 就完成了。
+
+## 內建 Caddy 的運作方式
+
+內建的 Caddy 設定刻意保持精簡。這一頁其他內容，都是把它翻譯成你選擇的代理：
+
+```text title="self-hosting/caddy/Caddyfile.template"
+$DOMAIN_NAME {$SSL_CONFIG
+    encode gzip
+
+    handle_path /api* {
+        reverse_proxy op-api:3000
+    }
+
+    reverse_proxy /* op-dashboard:3000
+}
+```
+
+就是這樣。兩條規則：
+
+- `/api/*` → `op-api:3000`，並移除 `/api` 前綴
+- `/*` → `op-dashboard:3000`
+
+**API 會自行處理 CORS** — 你的代理不需要加上 `Access-Control-*` 標頭，而且也沒有特殊的 `/track` 路由。`/api/` 底下的所有請求（包含 `/api/track`、`/api/live/*`、`/api/export` 等）都會打到 API 容器。
+
+## 你自己的反向代理
+
+最簡單的接法，是把你的代理也當成同一個 Docker network 上的另一個容器來跑：在 `docker-compose.yml` 註解掉 `op-proxy`，加入你的代理服務，然後像 Caddy 一樣，用服務名稱指向 `op-api:3000` / `op-dashboard:3000`。應用容器不需要綁定主機埠。
+
+下面每段都是**範本**，不是完整設定。TLS、logging、rate limiting、body size 限制，以及你的部署實際需要的其他設定——都要你自己補上。
+
+### NGINX
+
+```nginx
+# 只有在客戶端要求升級時，才轉送 Connection: upgrade。
+# 無條件的 "upgrade" 會破壞 dashboard 的 SSR — 參見常見坑。
+map $http_upgrade $connection_upgrade {
+    default keep-alive;
+    websocket upgrade;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name openpanel.example.com;
+
+    # ssl_certificate / ssl_certificate_key — 你的 TLS 設定放這裡
+
+    # /api/* → API（移除前綴）
+    location /api/ {
+        proxy_pass         http://op-api:3000/;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade           $http_upgrade;
+        proxy_set_header   Connection        $connection_upgrade;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 24h;  # 維持閒置的 /api/live/* WebSockets
+    }
+
+    # /* → dashboard
+    location / {
+        proxy_pass         http://op-dashboard:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade           $http_upgrade;
+        proxy_set_header   Connection        $connection_upgrade;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Caddy 用兩行就能做到。NGINX 要寫更多樣板碼，才能達到同樣行為——像是條件式升級的 `map` 區塊、明確的 `X-Forwarded-*` 標頭、給 WebSockets 用的長 `proxy_read_timeout`。參見 [常見坑](#gotchas)。
+
+### Traefik
+
+```yaml
+op-api:
+  labels:
+    - traefik.enable=true
+    - traefik.http.routers.op-api.rule=Host(`openpanel.example.com`) && PathPrefix(`/api`)
+    - traefik.http.middlewares.op-api-strip.stripprefix.prefixes=/api
+    - traefik.http.routers.op-api.middlewares=op-api-strip
+    - traefik.http.services.op-api.loadbalancer.server.port=3000
+
+op-dashboard:
+  labels:
+    - traefik.enable=true
+    - traefik.http.routers.op-dashboard.rule=Host(`openpanel.example.com`)
+    - traefik.http.services.op-dashboard.loadbalancer.server.port=3000
+```
+
+Traefik 預設會轉送 WebSocket 升級，所以 Realtime 檢視不需要額外設定就能運作。
+
+## Caddy 上游終止 TLS
+
+如果你在雲端負載平衡器或另一台 VM 上終止 TLS，然後用明文 HTTP 送到內建 Caddy，登入頁會遇到混合內容錯誤——dashboard 會以為自己還在 HTTP 下，因為內層 Caddy 看不到轉送過來的 scheme。
+
+在 Caddy 端修正——告訴它信任上游的 `X-Forwarded-*` 標頭：
+
+```
+{
+    auto_https off
+    admin off
+    servers {
+        trusted_proxies static private_ranges
+    }
+}
+```
+
+`private_ranges` 會信任 RFC1918 位址——這是 LB 與同一個 VPC 內的常見情境。若沒有這個設定，Caddy 會忽略上游送來的 `X-Forwarded-Proto: https`，然後 dashboard 會組出 `http://` URL。
+
+在上游終止器上，轉送 scheme：
+
+```
+X-Forwarded-Proto: https
+```
+
+並在 `.env` 中設定公開 URL，讓 dashboard + API 在各處都使用正確 scheme：
+
+```bash title=".env"
+DASHBOARD_URL=https://openpanel.example.com
+API_URL=https://openpanel.example.com/api
+CORS_ORIGIN=https://openpanel.example.com
+```
+
+## 常見坑
+
+這些才是真正會踩到的地方。也就是那些會讓你盯著「Something went wrong」看上一小時的問題。
+
+### `Connection: upgrade` 會破壞 dashboard SSR
+
+對每個請求都無條件轉送 `Connection: upgrade`——這是很常見的「順手加 WebSocket 支援」複製貼上做法——會讓 dashboard 的 server-side rendering 失敗，最後只看到模糊的 `fetch failed`。
+
+**原因：** dashboard 在 SSR 期間會對 API 發起 server-side tRPC 呼叫。Node 的 `undici` 會拒絕任何帶有 `Connection: upgrade` 的 `fetch()`，並回傳 `UND_ERR_INVALID_ARG` → `TypeError: fetch failed` → 瀏覽器顯示「Something went wrong / fetch failed」。
+
+**修正：** 只有在客戶端有要求升級時才轉送 upgrade 標頭。上面的 NGINX 範例已用 `map $http_upgrade $connection_upgrade` 區塊做到這點。Caddy 和 Traefik 預設就能正確處理。
+
+### `/api/live/*` 需要 WebSocket upgrade
+
+Realtime 檢視與即時通知會在 `/api/live/events/:projectId` 和 `/api/live/notifications/:projectId` 使用 WebSockets。如果你的代理丟掉 `Upgrade` / `Connection` 標頭，頁面會正常載入（從 SSR snapshot），但永遠不會更新。DevTools → Network → WS 會看到連線失敗。
+
+NGINX 需要同時設定：
+
+```nginx
+proxy_set_header Upgrade    $http_upgrade;
+proxy_set_header Connection $connection_upgrade;
+proxy_read_timeout          24h;
+```
+
+較長的 `proxy_read_timeout` 可以避免代理在事件間把閒置連線關掉。
+
+### CORS 由 API 處理 — 不要在代理裡重加一次
+
+API 會依路徑動態處理 CORS（dashboard 路由會鎖定來源；`/api/track` 則較寬鬆）。如果你的代理也加上 `Access-Control-Allow-Origin: *` 標頭，瀏覽器會看到兩組標頭並拒絕回應。讓 API 自己處理即可。
+
+### 上游 TLS 終止器後面的混合內容
+
+參見 [Caddy 上游終止 TLS](#tls-terminated-upstream-of-caddy)。簡短版：內層 Caddy 設 `trusted_proxies`，上游送 `X-Forwarded-Proto: https`，並在 `.env` 設 `DASHBOARD_URL=https://...`。
+
+### SDK 的 `apiUrl` 必須與瀏覽器載入的網址一致
+
+不管你的最終公開 URL 是什麼，SDK 的 `apiUrl` 都必須一致——包含 `/api` 路徑：
+
+```ts
+new OpenPanel({
+  apiUrl: 'https://openpanel.example.com/api',
+  clientId: 'YOUR_CLIENT_ID',
+});
+```
+
+參見 [一律使用正確的 API URL](/zh-TW/docs/self-hosting/self-hosting#always-use-correct-api-url)。

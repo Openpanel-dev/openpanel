@@ -1,0 +1,165 @@
+{
+  "slug": "saas",
+  "audience": "saas",
+  "seo": {
+    "title": "SaaS 分析 — 无需企业级定价即可跟踪事件、漏斗和留存",
+    "description": "OpenPanel 为 SaaS 团队提供降低流失和推动增长所需的产品分析——事件、漏斗、留存、队列和用户画像。开源，起价 $2.50/月。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "面向 SaaS 团队的产品分析",
+    "subheading": "了解用户为什么流失、试用在哪一步流失，以及哪些功能能提升留存。OpenPanel 为你提供事件、漏斗、留存分析和用户画像——SaaS 所需的核心分析栈——且没有 Mixpanel 或 Amplitude 的企业级定价。",
+    "badges": [
+      "漏斗分析",
+      "留存跟踪",
+      "用户画像",
+      "起价 $2.50/月"
+    ]
+  },
+  "problem": {
+    "title": "为什么 SaaS 团队会超出其分析工具的承载范围",
+    "intro": "大多数 SaaS 团队最初使用的分析工具，要么无法回答正确的问题，要么会随着增长而变得难以负担。",
+    "items": [
+      {
+        "title": "Mixpanel 和 Amplitude 在规模扩大后变得难以负担",
+        "description": "按事件计费在 1 万事件时看起来很便宜，但 SaaS 产品事件量往往很高。到每月 100 万事件时，你要支付 $300–800/月。到 1000 万时，就是数千美元。你的分析账单增长速度比收入更快。"
+      },
+      {
+        "title": "GA4 无法回答 SaaS 问题",
+        "description": "Google Analytics 只告诉你页面浏览量。它不能告诉你哪些用户完成了你的引导流程、功能采用率如何影响留存，或为什么上个月试用转付费的转化率下降了。"
+      },
+      {
+        "title": "复杂工具会拖慢团队速度",
+        "description": "Mixpanel 的界面功能强大，但学习曲线很陡。要花 30 分钟才能搭建一个简单的漏斗时，你的团队就会停止使用分析来做决策。"
+      },
+      {
+        "title": "仅云端意味着完全依赖供应商",
+        "description": "如果 Mixpanel 提价，你的数据就被挟持了。没有导出路径，没有自托管选项，而且其定价模式会惩罚增长。"
+      }
+    ]
+  },
+  "features": {
+    "title": "SaaS 所需的完整产品分析栈",
+    "intro": "帮助你的团队理解用户、降低流失并推动增长所需的一切——而无需企业级定价。",
+    "items": [
+      {
+        "title": "事件跟踪",
+        "description": "跟踪任何用户行为——使用了某个功能、点击了按钮、修改了设置、升级了套餐。只需一行代码。适用于 Web、移动端和后端。"
+      },
+      {
+        "title": "漏斗分析",
+        "description": "为试用注册、引导流程、激活和升级流程构建转化漏斗。查看到底是哪一步导致你损失最多转化，并加以修复。"
+      },
+      {
+        "title": "留存分析",
+        "description": "基于队列的留存图表让你了解第一周激活的用户在第八周是否仍然活跃。识别哪些行为能预测长期留存。"
+      },
+      {
+        "title": "用户画像",
+        "description": "查看某个特定用户自注册以来触发的每个事件。浏览他们的会话以诊断支持问题或了解高级用户行为。"
+      },
+      {
+        "title": "队列分析",
+        "description": "按注册日期、套餐或任意属性对用户分组，并随时间比较他们的行为。了解产品变化如何影响不同用户群体。"
+      },
+      {
+        "title": "实时仪表板",
+        "description": "实时查看新注册、试用激活和功能使用情况。新部署一旦改变用户行为，你就能立即知晓。"
+      },
+      {
+        "title": "收入跟踪",
+        "description": "将 MRR、支付事件和套餐升级数据发送到 OpenPanel。无需单独的 BI 工具即可将功能使用情况与收入关联起来。"
+      },
+      {
+        "title": "多平台 SDK",
+        "description": "在一个统一的分析视图中跟踪 Web 应用、营销站点、iOS、Android 和后端。来自所有平台的事件共享同一套用户画像。"
+      }
+    ]
+  },
+  "benefits": {
+    "title": "为什么 SaaS 团队选择 OpenPanel",
+    "intro": "OpenPanel 以适合增长型 SaaS 产品的价格，为你提供与 Mixpanel 相当的分析深度。",
+    "items": [
+      {
+        "title": "随规模增长的可预测定价",
+        "description": "固定事件层级，价格从 $2.50 到 $900/月。无按席位收费，无 MTU 限制。随着用户规模增长，你将清楚知道需要支付多少。"
+      },
+      {
+        "title": "回答 SaaS 团队真正会问的问题",
+        "description": "哪个引导步骤流失率最高？哪些功能被留存用户使用，而不是流失用户？OpenPanel 就是为这些问题而构建的。"
+      },
+      {
+        "title": "通过自托管消除按事件成本",
+        "description": "大型 SaaS 产品会生成数百万事件。自托管可完全消除这部分成本——你只需为服务器基础设施付费。"
+      },
+      {
+        "title": "从第一天起就具备全部功能",
+        "description": "漏斗、留存、队列、用户画像和仪表板在每个定价层级都可用。没有强制升级的功能限制。"
+      },
+      {
+        "title": "开源且可审计",
+        "description": "你的产品数据很敏感。OpenPanel 的开源代码库意味着你可以准确审计跟踪了什么以及如何存储。"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "SaaS 创始人和产品团队在评估 OpenPanel 时常问的问题。",
+    "items": [
+      {
+        "question": "OpenPanel 与 Mixpanel 在 SaaS 场景下有何不同？",
+        "answer": "OpenPanel 以极低的成本覆盖相同的核心分析功能（事件、漏斗、留存、队列、用户画像）。Mixpanel 还提供 Metric Trees 和高级实验等功能，但大多数 SaaS 团队并不会用到。OpenPanel 专注于真正驱动决策的分析。"
+      },
+      {
+        "question": "OpenPanel 可以同时替代 GA4 和 Mixpanel 吗？",
+        "answer": "可以。OpenPanel 在产品分析之外还包含 Web 分析（页面浏览量、引荐来源、UTM 活动）。大多数 SaaS 团队可以用一次 OpenPanel 部署替代这两个工具。"
+      },
+      {
+        "question": "如何跟踪试用转付费转化？",
+        "answer": "在注册时跟踪 trial_started 事件，在转化时跟踪 plan_upgraded 事件。然后在 OpenPanel 中创建这两个事件之间的漏斗。按队列、流量来源或任意用户属性查看转化率。"
+      },
+      {
+        "question": "OpenPanel 支持多产品或多租户 SaaS 吗？",
+        "answer": "支持。使用 profileId 识别单个用户，并将组织或工作区 ID 作为属性传递。你可以按发送的任意属性筛选分析。"
+      },
+      {
+        "question": "如果我停止为 OpenPanel 云服务付费，我的数据会怎样？",
+        "answer": "你可以随时通过 API 导出全部事件数据。或者迁移到自托管——OpenPanel 没有锁定，也没有专有数据格式。"
+      },
+      {
+        "question": "我可以从 SaaS API 跟踪后端事件吗？",
+        "answer": "可以。OpenPanel 为 Node.js、Python 提供服务端 SDK，也提供 REST API。你可以将订阅 webhook、后台任务和服务端逻辑与客户端事件一起跟踪。"
+      },
+      {
+        "question": "OpenPanel 是否符合 SaaS 的 GDPR 要求？",
+        "answer": "是的。默认无 Cookie 跟踪，仅限欧盟的云托管，以及可自托管以实现完全的数据主权。产品分析无需同意横幅。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "跟踪自定义事件", "url": "/zh-CN/guides/track-custom-events" },
+      { "title": "Next.js 分析设置", "url": "/zh-CN/guides/nextjs-analytics" },
+      { "title": "React 分析设置", "url": "/zh-CN/guides/react-analytics" }
+    ],
+    "articles": [
+      { "title": "如何创建漏斗", "url": "/zh-CN/articles/how-to-create-a-funnel" },
+      { "title": "自托管 Web 分析", "url": "/zh-CN/articles/self-hosted-web-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel vs Mixpanel", "url": "/zh-CN/compare/mixpanel-alternative" },
+      { "title": "OpenPanel vs PostHog", "url": "/zh-CN/compare/posthog-alternative" },
+      { "title": "OpenPanel vs Amplitude", "url": "/zh-CN/compare/amplitude-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "免费试用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看源代码",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

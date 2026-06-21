@@ -1,0 +1,133 @@
+---
+title: 最新 Docker 映像
+description: 取得 OpenPanel 最新私有 Docker 映像的存取權，享受每次提交都會建置的前沿功能。
+---
+
+## 感謝你的支持！🙏
+
+首先，**感謝**你支持 OpenPanel！你的貢獻對我們意義重大，並有助於讓這個專案持續運作、維護與不斷改進。你貢獻的每一分錢都會直接投入開發、基礎設施，以及讓 OpenPanel 對所有人都更好。
+
+身為支持者，你可以獨家存取我們的私有 Docker 映像；這些映像會在每次提交時建置，讓你能在公開發布前，率先取得最新功能與修正。
+
+## 為什麼最新映像很重要
+
+### 前沿功能
+- **立即存取**：功能合併後立刻取得
+- **搶先修正錯誤**：修補與修正會立即部署
+- **持續改善**：即時效能提升與最佳化
+- **走在前面**：執行目前可用的最先進 OpenPanel 版本
+
+### 每次提交都會建置
+我們維護一條持續整合流水線，會在提交到儲存庫的每一次變更後，建置新的 Docker 映像。這代表：
+- 開發與部署之間零延遲
+- 自動測試與驗證可直接上線的映像
+- 提早數週或數月取得穩定版尚未發布的功能
+
+## 運作方式
+
+我們的私有 Docker 映像託管在 GitHub 的容器註冊表中，並受到公開存取保護。身為支持者，你會獲得一組 API 金鑰，可透過我們的私有 Docker proxy `docker.openpanel.dev` 存取，讓它無縫為你拉取這些映像。
+
+## 開始使用
+
+### 步驟 1：成為支持者
+
+[成為支持者](/supporter) 以取得獨家 Docker 映像的存取權。支持方案每月只要 **$20**，並包含：
+- 存取所有私有 Docker 映像
+- 在我們的 Discord 社群中享有優先支援
+- 直接促進 OpenPanel 的開發
+- 我們永遠的感謝 ❤️
+
+### 步驟 2：取得你的 API 金鑰
+
+成為支持者後，你會收到一組獨特的 API 金鑰，用來存取我們的 Docker proxy。
+
+### 步驟 3：登入 docker registry
+
+在你的伺服器上，使用 API 金鑰向我們的 Docker proxy 進行驗證：
+
+```bash
+echo "your_api_key" | docker login docker.openpanel.dev -u user --password-stdin
+```
+
+請將 `your_api_key` 替換成提供給你的實際 API 金鑰。
+
+<Callout>
+請務必妥善保管你的 API 金鑰，且不要將它提交到版本控制！
+</Callout>
+
+### 步驟 4：更新到最新映像
+
+我們製作了一個方便的腳本，讓更新映像變得輕鬆。請切換到你的 self-hosting 資料夾並執行：
+
+```bash
+./get_latest_images apply
+```
+
+這個腳本會：
+- 檢查你是否已向我們的 Docker registry 完成驗證
+- 取得我們儲存庫中的最新 Git 標籤
+- 更新你的 `docker-compose.yml`，將 image tag 指向最新建置
+
+<Callout type="info">
+腳本會自動檢查你是否已登入。如果沒有，它會先提供你驗證的說明。
+</Callout>
+
+你也可以在不套用的情況下，查看有哪些可用的標籤：
+
+```bash
+./get_latest_images           # 顯示最新標籤
+./get_latest_images --list    # 列出所有可用標籤
+```
+
+### 步驟 5：重新啟動你的服務
+
+拉取最新映像後，只要重新啟動你的服務：
+
+```bash
+./restart
+```
+
+就這樣！你的 OpenPanel 執行個體現在已在執行最新、最棒的版本。
+
+## 快速更新流程
+
+一旦完成設定，更新到最新版本就像這樣簡單：
+
+```bash
+cd /path/to/self-hosting
+./get_latest_images apply
+./restart
+```
+
+整個流程不到一分鐘，就能讓你立即取得新功能與修正。
+
+`get_latest_images` 腳本會：
+1. 驗證你是否已登入 Docker registry
+2. 從 GitHub 取得最新標籤
+3. 更新你的 `docker-compose.yml`，使映像指向最新的 commit SHA
+4. 在變更前先建立 docker-compose 檔案的備份
+
+## 重要注意事項
+
+- **穩定性**：雖然這些映像已經過測試，但偶爾仍可能包含尚未發現的 bug。我們建議你做好備份策略。
+- **破壞性變更**：我們努力維持向後相容性，但偶爾仍可能發生破壞性變更。更新前請務必先查看 [changelog](/zh-TW/docs/self-hosting/changelog)。
+- **支援**：身為支持者，你享有優先支援。如果遇到任何問題，請在 Discord 或透過電子郵件聯絡我們。
+
+## 需要幫助？
+
+如果你有任何問題或遇到問題：
+- 加入我們的 [Discord 社群](https://go.openpanel.dev/discord)（支持者會有特別角色！）
+- 寄信到 [hello@openpanel.dev](mailto:hello@openpanel.dev)
+- 查看我們的 [GitHub repository](https://github.com/Openpanel-dev/openpanel)
+
+---
+
+## 你的影響
+
+每一筆貢獻都幫助我們：
+- 能投入更多時間在開發上
+- 維護與改善基礎設施
+- 提供更好的文件與支援
+- 讓 OpenPanel 保持開源，並讓所有人都能存取
+
+感謝你成為 OpenPanel 旅程中不可或缺的一部分。沒有像你這樣的支持者，我們做不到這些！💙

@@ -1,0 +1,158 @@
+---
+title: SDK 概覽
+description: 為你的專案選擇合適的 OpenPanel SDK。我們支援 Web、行動、伺服器端，以及特定框架整合。
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+OpenPanel 提供多種平台與框架的 SDK，無論你的技術堆疊為何，都能輕鬆將分析功能整合到應用程式中。
+
+## 快速開始
+
+對於大多數 Web 專案，我們建議從以下其中一個開始：
+
+- **[Script Tag](/zh-TW/docs/sdks/script)** - 最快的上手方式，無需建置步驟
+- **[Web SDK](/zh-TW/docs/sdks/web)** - 適合 TypeScript 支援與更高控制度
+- **[Next.js](/zh-TW/docs/sdks/nextjs)** - 針對 Next.js 應用最佳化 | [設定指南](/zh-TW/guides/nextjs-analytics)
+
+## Web 與瀏覽器 SDK
+
+### 簡單整合
+
+- **[Script Tag](/zh-TW/docs/sdks/script)** - 使用簡單的 `<script>` 標籤加入分析功能
+  - ✅ 無需建置步驟
+  - ✅ 適用於任何網站
+  - ✅ 自動頁面瀏覽追蹤
+
+### JavaScript 與 TypeScript
+
+- **[Web SDK](/zh-TW/docs/sdks/web)** - 功能完整的瀏覽器 SDK，支援 TypeScript
+  - ✅ 型別安全 API
+  - ✅ 可 tree-shake
+  - ✅ 支援現代瀏覽器
+
+- **[JavaScript (Node / Generic)](/zh-TW/docs/sdks/javascript)** - 通用 JavaScript SDK
+  - ✅ 可在 Node.js 與瀏覽器中運作
+  - ✅ 不依賴框架
+  - ✅ 完整 API 存取
+
+### 前端框架
+
+- **[Next.js](/zh-TW/docs/sdks/nextjs)** - 針對 Next.js 最佳化 | [設定指南](/zh-TW/guides/nextjs-analytics)
+  - ✅ 伺服器端與用戶端追蹤
+  - ✅ 支援 App Router
+  - ✅ 自動路由追蹤
+
+- **[Astro](/zh-TW/docs/sdks/astro)** - Astro 框架整合 | [設定指南](/zh-TW/guides/astro-analytics)
+  - ✅ 支援靜態與 SSR
+  - ✅ 元件式追蹤
+  - ✅ 相容 Island 架構
+
+- **[React](/zh-TW/docs/sdks/react)** - React 整合
+  - 📝 目前請使用 Script Tag 或 Web SDK
+
+- **[Vue](/zh-TW/docs/sdks/vue)** - Vue.js 整合 | [設定指南](/zh-TW/guides/vue-analytics)
+  - 📝 目前請使用 Script Tag 或 Web SDK
+
+- **[Remix](/zh-TW/docs/sdks/remix)** - Remix 框架整合 | [設定指南](/zh-TW/guides/remix-analytics)
+  - 📝 目前請使用 Script Tag 或 Web SDK
+
+- **Svelte** - Svelte 整合
+  - 📝 目前請使用 [Script Tag](/zh-TW/docs/sdks/script) 或 [Web SDK](/zh-TW/docs/sdks/web)
+
+- **Angular** - Angular 整合
+  - 📝 目前請使用 [Script Tag](/zh-TW/docs/sdks/script) 或 [Web SDK](/zh-TW/docs/sdks/web)
+
+- **Solid.js** - Solid.js 整合
+  - 📝 目前請使用 [Script Tag](/zh-TW/docs/sdks/script) 或 [Web SDK](/zh-TW/docs/sdks/web)
+
+- **Nuxt** - Nuxt.js 整合
+  - 📝 目前請使用 [Script Tag](/zh-TW/docs/sdks/script) 或 [Web SDK](/zh-TW/docs/sdks/web)
+
+## 伺服器端 SDK
+
+- **[Node.js (Express)](/zh-TW/docs/sdks/express)** - Express.js middleware | [設定指南](/zh-TW/guides/express-analytics)
+  - ✅ 請求追蹤
+  - ✅ 錯誤追蹤
+  - ✅ 支援自訂 middleware
+
+- **[Python](/zh-TW/docs/sdks/python)** - 用於伺服器端追蹤的 Python SDK | [設定指南](/zh-TW/guides/python-analytics)
+  - ✅ 執行緒安全
+  - ✅ 支援非同步
+  - ✅ 相容 Django 和 Flask
+
+- **[Rust](/zh-TW/docs/sdks/rust)** - 用於伺服器端追蹤的 Rust SDK
+  - ✅ 支援 async/await
+  - ✅ 型別安全 API
+  - ✅ 環境變數設定
+
+- **[Ruby](/zh-TW/docs/sdks/ruby)** - 用於伺服器端追蹤的 Ruby SDK
+  - ✅ Rails 整合
+  - ✅ 基於 Gem 安裝
+  - ✅ 簡潔 API
+
+- **[Java](/zh-TW/docs/sdks/java)** - 適用於 JVM 後端的 Java SDK（Java 11+）
+  - ✅ 相容 Spring Boot、Quarkus、Micronaut
+  - ✅ 透過 `CompletableFuture` 非同步
+  - ✅ 使用指數退避的自動重試
+  - ✅ Maven Central
+
+## 行動 SDK
+
+- **[React Native](/zh-TW/docs/sdks/react-native)** - 跨平台行動分析 | [設定指南](/zh-TW/guides/react-native-analytics)
+  - ✅ 支援 iOS 與 Android
+  - ✅ 原生效能
+  - ✅ 支援離線
+
+- **[Swift](/zh-TW/docs/sdks/swift)** - 原生 iOS、macOS、tvOS 和 watchOS SDK | [設定指南](/zh-TW/guides/swift-analytics)
+  - ✅ 支援 Apple 平台
+  - ✅ Swift Package Manager
+  - ✅ 型別安全 API
+  - ✅ 自動生命週期追蹤
+
+- **[Kotlin / Android](/zh-TW/docs/sdks/kotlin)** - 原生 Android SDK | [設定指南](/zh-TW/guides/kotlin-analytics)
+  - ✅ 支援 Android
+  - ✅ 系統資訊蒐集
+  - ✅ 型別安全 API
+  - ⚠️ 尚未發佈到 Maven
+
+## 不確定要選哪個？
+
+<Callout>
+不確定該使用哪個 SDK？以下是一些建議：
+
+- **靜態網站或 HTML？** → 使用 [Script Tag](/zh-TW/docs/sdks/script)
+- **React 應用？** → 使用 [Web SDK](/zh-TW/docs/sdks/web) 或 [Script Tag](/zh-TW/docs/sdks/script)
+- **Next.js 應用？** → 使用 [Next.js SDK](/zh-TW/docs/sdks/nextjs)
+- **伺服器端追蹤？** → 使用 [Python](/zh-TW/docs/sdks/python)、[Rust](/zh-TW/docs/sdks/rust)、[Ruby](/zh-TW/docs/sdks/ruby)、[Java](/zh-TW/docs/sdks/java)，或 [Node](/zh-TW/docs/sdks/javascript)
+- **行動應用？** → 使用 [React Native](/zh-TW/docs/sdks/react-native)、[Swift](/zh-TW/docs/sdks/swift)，或 [Kotlin](/zh-TW/docs/sdks/kotlin)
+</Callout>
+
+## 核心功能
+
+所有 OpenPanel SDK 都支援以下核心功能：
+
+### 事件追蹤
+透過屬性追蹤自訂事件，以了解使用者行為。
+
+### 使用者識別
+將事件關聯到特定使用者並建立使用者設定檔。
+
+### 全域屬性
+設定會自動附加到每個事件的屬性。
+
+### 增加／減少
+更新使用者設定檔上的數值屬性。
+
+### 隱私優先
+所有 SDK 都以隱私為設計核心，不需要 Cookie，符合 GDPR。
+
+## API 參考
+
+若需要進階整合，請參考我們的 [API 文件](/zh-TW/docs/api/track)，可透過 HTTP 請求直接追蹤事件。
+
+## 社群與支援
+
+- 加入我們的 [Discord 社群](https://go.openpanel.dev/discord)
+- 在 [GitHub](https://github.com/Openpanel-dev/openpanel/issues) 回報問題
+- 寄信給我們： [hello@openpanel.dev](mailto:hello@openpanel.dev)

@@ -1,0 +1,78 @@
+---
+title: 驗證
+description: 了解如何使用用戶端憑證透過 OpenPanel API 進行驗證。
+---
+
+## 驗證
+
+若要透過 OpenPanel API 進行驗證，你需要使用 `clientId` 和 `clientSecret`。不同的 API 端點可能需要不同的存取等級：
+
+- **Track API**：預設用戶端可搭配 `write` 模式使用
+- **Export API**：需要 `read` 或 `root` 模式
+- **Insights API**：需要 `read` 或 `root` 模式
+- **Manage API**：僅需要 `root` 模式
+
+預設用戶端（在建立專案時產生）具有 `write` 模式，且無法存取 Export、Insights 或 Manage API。你需要建立具有適當存取等級的額外用戶端。
+
+## 標頭
+
+在 API 請求中加入以下標頭：
+
+- `openpanel-client-id`：你的 OpenPanel 用戶端 ID
+- `openpanel-client-secret`：你的 OpenPanel 用戶端密鑰
+
+## 範例
+
+```bash
+curl 'https://api.openpanel.dev/insights/{projectId}/metrics' \
+  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+```
+
+## 安全最佳實務
+
+1. **安全地儲存憑證**：不要在前端程式碼中暴露你的 `clientId` 和 `clientSecret`
+2. **使用 HTTPS**：一律使用 HTTPS 以確保通訊安全
+3. **輪替憑證**：定期輪替你的 API 憑證
+4. **限制存取**：針對你的使用情境，使用最低必要的存取等級
+
+## 錯誤回應
+
+如果驗證失敗，你會收到 `401 Unauthorized` 回應：
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid client credentials"
+}
+```
+
+常見的驗證錯誤：
+- 無效的用戶端 ID 或密鑰
+- 用戶端沒有必要的權限（例如：嘗試使用非 root 用戶端存取 Manage API）
+- 用戶端 ID 格式錯誤（必須是有效的 UUIDv4）
+- 用戶端類型不符（例如：`write` 用戶端嘗試存取 Export API）
+
+## 用戶端類型
+
+OpenPanel 支援三種具有不同存取等級的用戶端類型：
+
+| 類型 | 說明 | 存取權限 |
+|------|-------------|--------|
+| `write` | 寫入存取 | 僅 Track API |
+| `read` | 唯讀存取 | Export API、Insights API |
+| `root` | 完整存取 | 所有 API，包含 Manage API |
+
+**注意**：root 用戶端具有整個組織的存取權，可管理所有資源。請謹慎使用 root 用戶端，並安全地儲存其憑證。
+
+## 速率限制
+
+API 會實作速率限制以防止濫用。各端點的速率限制不同：
+
+- **Track API**：[事件追蹤](/zh-TW/features/event-tracking) 的限制較高
+- **Export/Insights APIs**：每 10 秒 100 次請求
+- **Manage API**：每 10 秒 20 次請求
+
+如果你超出速率限制，會收到 `429 Too Many Requests` 回應。請為重試實作指數退避。
+
+請記得將 `YOUR_CLIENT_ID` 和 `YOUR_CLIENT_SECRET` 替換為你實際的 OpenPanel API 憑證。

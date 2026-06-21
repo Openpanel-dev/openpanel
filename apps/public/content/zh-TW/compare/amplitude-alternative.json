@@ -1,0 +1,575 @@
+{
+  "slug": "amplitude-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026 年最佳 Amplitude 替代方案 - 開源、免費與付費",
+    "description": "比較 2026 年最佳的 Amplitude 替代方案：OpenPanel、PostHog、Heap 和 Plausible。為各種團隊規模提供開源、隱私優先且價格親民的選擇。看看哪一款最適合你。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Amplitude 替代方案",
+    "subheading": "OpenPanel 是 Amplitude 的開源、隱私優先替代方案。內建網站分析，提供強大的產品分析、免 Cookie 追蹤，以及可自行架設或使用我們雲端服務的自由。",
+    "badges": [
+      "開源",
+      "免 Cookie",
+      "僅 EU 主機託管",
+      "可自行架設"
+    ]
+  },
+  "competitor": {
+    "name": "Amplitude",
+    "logo": "/logos/amplitude.svg",
+    "url": "https://amplitude.com",
+    "short_description": "面向產品團隊的企業級數位分析平台，提供行為分析、實驗測試與客戶資料管理。",
+    "founded": 2012,
+    "headquarters": "加州舊金山"
+  },
+  "overview": {
+    "title": "為什麼要考慮用 OpenPanel 取代 Amplitude？",
+    "paragraphs": [
+      "Amplitude 是領先的企業級產品分析平台之一，深受大型公司信賴，用於行為分析、實驗測試與客戶資料管理。但它的強大也伴隨著很高的複雜度——學習曲線陡峭、企業級定價一年可能上看六位數，而且採用純雲端架構，沒有自行架設資料的選項。",
+      "OpenPanel 提供更簡單、更實惠的產品分析方式，同時不犧牲最重要的功能。你可以獲得事件追蹤、漏斗分析、留存分析、同群組分析與使用者檔案——全部整合在簡潔的介面中，無需專門的分析團隊也能操作。由於 OpenPanel 是開源的，你可以檢視程式碼、在自己的基礎設施上自行架設，並完全避免供應商綁定。",
+      "最大的差異之一是隱私。Amplitude 預設使用 Cookie，並將資料儲存在美國伺服器上，這對歐洲使用者來說意味著需要同意橫幅與 GDPR 的複雜性。OpenPanel 預設免 Cookie，且資料僅儲存在 EU，因此你可以在不犧牲隱私的前提下追蹤使用者行為。其 SDK 也小得多——2.3 KB，對比 Amplitude 的 36–96 KB——這會直接影響頁面效能與 Core Web Vitals。",
+      "對於需要穩定產品分析、但不想承擔企業級額外負擔的新創與成長中團隊來說，OpenPanel 以合理的價格，從第一天就能提供你需要的洞察。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Amplitude：哪個更適合你？",
+    "intro": "兩個平台都能幫助產品團隊理解使用者行為。關鍵差異在於定價模式、複雜度、隱私作法與部署選項。",
+    "one_liner": "OpenPanel 更簡單、開源且重視隱私；Amplitude 則是具備陡峭學習曲線的企業級平台。",
+    "best_for_openpanel": [
+      "想要強大分析能力、但不需要企業級複雜度的團隊",
+      "重視隱私、需要免 Cookie 追蹤的組織",
+      "想自行架設或需要輕量 SDK 的開發者",
+      "尋找透明、可預測定價的新創與中小企業"
+    ],
+    "best_for_competitor": [
+      "擁有專門分析團隊的大型企業",
+      "需要進階實驗測試與功能旗標的組織",
+      "需要精密行為同群組與預測分析的團隊",
+      "想要包含指南、問卷與進階實驗的全方位平台的公司"
+    ]
+  },
+  "highlights": {
+    "title": "一眼看懂關鍵差異",
+    "intro": "以下是 OpenPanel 與 Amplitude 在最重要面向上的比較。",
+    "items": [
+      {
+        "label": "價格",
+        "openpanel": "每月 $2.50 起（或免費自行架設）",
+        "competitor": "免費方案（50K MTU），之後每月 $49+"
+      },
+      {
+        "label": "是否需要 Cookie",
+        "openpanel": "不需要（預設免 Cookie）",
+        "competitor": "需要（第一方 Cookie）"
+      },
+      {
+        "label": "是否需要同意橫幅",
+        "openpanel": "不需要",
+        "competitor": "需要（GDPR/ePrivacy）"
+      },
+      {
+        "label": "資料位置",
+        "openpanel": "僅 EU（或你自己的伺服器）",
+        "competitor": "US 或 EU（法蘭克福）"
+      },
+      {
+        "label": "開源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "否"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能比較",
+    "intro": "OpenPanel 以更簡潔的介面結合網站分析與產品分析。Amplitude 則專注於面向企業產品團隊的深度行為分析。",
+    "groups": [
+      {
+        "group": "網站分析",
+        "features": [
+          {
+            "name": "頁面瀏覽與訪客",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "流量來源",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "地理資料",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "裝置與瀏覽器統計",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "UTM 追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude 有進階行銷歸因"
+          },
+          {
+            "name": "即時儀表板",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "產品分析",
+        "features": [
+          {
+            "name": "自訂事件追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "漏斗",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude 有進階轉換漏斗"
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude 有多種留存視圖"
+          },
+          {
+            "name": "使用者檔案",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "同群組",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude 有行為與預測同群組"
+          },
+          {
+            "name": "營收追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "進階功能",
+        "features": [
+          {
+            "name": "A/B 測試",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude Experiment 功能完整"
+          },
+          {
+            "name": "功能旗標",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Amplitude 包含無限功能旗標"
+          },
+          {
+            "name": "Session replay",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩個平台都包含 session replay"
+          },
+          {
+            "name": "自訂儀表板",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Pathfinder/Journey 地圖",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude 的 pathfinder 非常進階"
+          },
+          {
+            "name": "預測分析",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Amplitude 提供 ML 驅動的預測（Growth+）"
+          }
+        ]
+      },
+      {
+        "group": "隱私與法規遵循",
+        "features": [
+          {
+            "name": "免 Cookie 追蹤",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Amplitude 使用第一方 Cookie"
+          },
+          {
+            "name": "不需要同意橫幅",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Amplitude 在 GDPR 下需要同意"
+          },
+          {
+            "name": "EU 資料駐留",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude 在法蘭克福提供 EU 資料中心"
+          },
+          {
+            "name": "IP 匿名化",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude 可停用 IP 儲存"
+          },
+          {
+            "name": "可自行架設",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Amplitude 只有雲端版本"
+          },
+          {
+            "name": "可提供 DPA",
+            "openpanel": "視需求提供",
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "整合",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "資料匯出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude 支援 S3、Snowflake、BigQuery"
+          },
+          {
+            "name": "CDP 整合",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude 有自己的 CDP 產品"
+          },
+          {
+            "name": "Webhook 通知",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技術比較",
+    "intro": "對於評估分析工具的開發者，以下是 SDK 與技術實作的比較。",
+    "items": [
+      {
+        "label": "SDK 大小（JS）",
+        "openpanel": "~2.3 KB gzip 後",
+        "competitor": "~36 KB gzip 後（僅 analytics），~96 KB 統一版",
+        "notes": "Amplitude 的統一 SDK 包含 analytics、experiment、session replay 與 guides"
+      },
+      {
+        "label": "支援平台",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Node.js",
+          "Python",
+          "Swift",
+          "Kotlin",
+          "React Native",
+          "Flutter",
+          "Astro",
+          "Remix",
+          "Express",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript",
+          "TypeScript",
+          "React Native",
+          "iOS",
+          "Android",
+          "Flutter",
+          "Unity",
+          "Node.js",
+          "Python",
+          "Go",
+          "JRE/Java"
+        ],
+        "notes": "兩者都具備完整的 SDK 覆蓋"
+      },
+      {
+        "label": "開源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "否（SDK 開源，但平台不是）",
+        "notes": null
+      },
+      {
+        "label": "自行架設部署",
+        "openpanel": "Docker Compose、導引式設定精靈",
+        "competitor": "不提供",
+        "notes": "Amplitude 只有雲端版"
+      },
+      {
+        "label": "資料庫",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "專有（託管於 AWS）",
+        "notes": "OpenPanel 可讓你直接以 SQL 存取資料"
+      },
+      {
+        "label": "資料保留",
+        "openpanel": "無限（自行架設）或依方案而定",
+        "competitor": "儲存無限，圖表查詢限制 3 年",
+        "notes": "Amplitude 會儲存資料，但限制圖表日期範圍"
+      }
+    ]
+  },
+  "pricing": {
+    "title": "價格比較",
+    "intro": "Amplitude 有免費方案，但價格很快就會攀升。OpenPanel 提供更簡單、也更可預測的成本。",
+    "openpanel": {
+      "model": "以事件計費、透明公開",
+      "description": "簡單定價，5,000 個事件每月 $2.50 起。100,000 個事件每月 $20。自行架設可免費且事件無上限。使用者、儀表板或資料保留都沒有上限。"
+    },
+    "competitor": {
+      "model": "以 MTU 計費並有事件限制",
+      "description": "Starter（免費）：最多 50K MTU 與 10M events。Plus：依 MTU（1K–300K）每月 $49–1,000+。Growth：客製報價，通常每年 $22K–254K。Enterprise：針對大型組織的客製報價。超量部分按 1.2 倍費率計費。",
+      "free_tier": "有（50K MTU，功能受限）",
+      "pricing_url": "https://amplitude.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "從 Amplitude 遷移到 OpenPanel",
+    "intro": "從 Amplitude 切換到 OpenPanel，大致上就是找字串替換的工作。兩者的 SDK 都採用相同的事件式模型，所以大多數呼叫都能 1 對 1 對應，幾乎不需要更動邏輯。先讓兩套工具平行執行一週來驗證資料，再移除 Amplitude SDK。多數團隊可以在一個下午完成切換。",
+    "difficulty": "簡單",
+    "estimated_time": "2-4 小時",
+    "steps": [
+      {
+        "title": "安裝 OpenPanel SDK",
+        "description": "將 @openpanel/web（或符合你技術堆疊的框架 SDK：React、Next.js、Vue、Node、Python、Swift、Kotlin、React Native）加入你的應用程式。JS 套件包僅 ~2.3 KB gzip 後——可直接替換 Amplitude 的 36 KB analytics SDK 或 96 KB 統一套件。"
+      },
+      {
+        "title": "對應你的追蹤呼叫（速查表）",
+        "description": "大多數 Amplitude 呼叫都可直接對應。amplitude.track('Signup', {plan: 'pro'}) 會變成 op.track('Signup', {plan: 'pro'})。amplitude.identify(userId, traits) 會變成 op.identify({ profileId: userId, ...traits })。amplitude.setGroup('org', orgId) 會變成 op.setGroup(orgId)——OpenPanel 透過 setGroup/setGroups 原生支援群組。amplitude.setUserProperties(traits) 會變成 op.identify({ profileId, ...traits })。amplitude.logRevenue() 會變成 op.revenue(amount)（或使用帶有 revenue 屬性的 op.track）。保留你現有的事件名稱即可。方案追蹤不需要重寫。"
+      },
+      {
+        "title": "重新對應進階功能（或接受功能差異）",
+        "description": "以下是 Amplitude 有、但 OpenPanel 沒有 1 對 1 對應的功能：預測同群組（無對應）、功能旗標（請改用 Hypertune 或 Statsig 等專用工具）、Guides 與 Surveys（無對應）、以及 Amplitude Experiment（你需要另外的實驗測試工具——OpenPanel 可處理 A/B 測試事件，但不執行實驗）。行為同群組、漏斗、留存、自訂事件、使用者屬性與 session replay 都有直接對應。"
+      },
+      {
+        "title": "設定儀表板與報表",
+        "description": "在 OpenPanel 中重建你重要的 Amplitude 圖表：漏斗、留存、同群組、自訂事件報表。計算方式相同；介面不同。OpenPanel 的報表建構器更簡單——沒有獨立的行為同群組建構器、圖表類型也較少——但這正是重點。多數團隊會發現，重建關鍵報表總共只要 30 分鐘。"
+      },
+      {
+        "title": "平行執行並驗證",
+        "description": "讓兩套 SDK 都持續送出事件 5–7 天。比較兩個儀表板中關鍵事件（註冊、購買、核心功能事件）的總數。若差異超過 5%，通常表示 identify() 對應有問題——Amplitude 會在首次 identify 時將匿名事件附加到使用者，OpenPanel 也一樣，但匿名 ID 策略略有不同。確認一致後，移除 Amplitude SDK。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "兩者都使用事件式追蹤。直接對應如下：amplitude.track(event, props) → op.track(event, props)。amplitude.identify(userId, traits) → op.identify({ profileId: userId, ...traits })。amplitude.setUserProperties(traits) → op.identify({ profileId, ...traits })。amplitude.logRevenue({price, quantity}) → op.revenue(price * quantity) 或帶有 revenue 屬性的 op.track。amplitude.setGroup('org', orgId) → op.setGroup(orgId)（OpenPanel 原生支援群組）。匿名追蹤與 session stitching 在兩個 SDK 中的運作方式相同。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Amplitude 的資料匯出在付費方案中可用（S3、Snowflake、BigQuery），但需要手動轉換成 OpenPanel 的事件結構。多數團隊會直接從 OpenPanel 開始，並將 Amplitude 帳號以唯讀方式保留 90 天作為歷史封存。如果你需要持續存取歷史資料，即使取消現行訂閱，Amplitude 匯出到 S3 的功能仍可使用。"
+    }
+  },
+  "use_cases": {
+    "title": "哪些情境下 OpenPanel 比 Amplitude 更適合",
+    "intro": "對於想要強大分析能力、但不想承受企業級複雜度、定價或隱私疑慮的團隊，OpenPanel 表現特別出色。",
+    "items": [
+      {
+        "title": "新創與成長中團隊",
+        "description": "在不需要承擔 Amplitude 複雜度或企業級價格的情況下，取得你需要的產品分析。先免費開始，之後再可預測地擴充。",
+        "icon": "rocket"
+      },
+      {
+        "title": "隱私優先產品",
+        "description": "免 Cookie 追蹤代表不需要同意橫幅，使用者體驗也更好。非常適合在不妥協的情況下達成 GDPR 合規。",
+        "icon": "shield"
+      },
+      {
+        "title": "需要自行架設",
+        "description": "將 OpenPanel 部署在你自己的基礎設施上，完整掌握資料所有權。只需一個指令的 `./setup` 精靈會引導你完成設定，並在幾分鐘內啟動整套 Docker Compose 堆疊。Amplitude 只有雲端版，沒有自行架設選項。",
+        "icon": "server"
+      },
+      {
+        "title": "更快的網站與應用程式",
+        "description": "OpenPanel 的 2.3 KB SDK 對比 Amplitude 的 36–96 KB，代表更好的效能、更快的載入速度，以及更佳的使用者體驗。",
+        "icon": "zap"
+      },
+      {
+        "title": "更簡單的分析需求",
+        "description": "如果你不需要預測 ML 模型或功能旗標，OpenPanel 能提供核心分析——包含 session replay——而沒有企業級冗餘。",
+        "icon": "target"
+      }
+    ]
+  },
+  "benefits_section": {
+    "label": "為什麼團隊會轉換",
+    "title": "你需要的一切，不需要的都沒有",
+    "description": "Amplitude 堆疊了多數團隊從未使用的功能——而且也相應地收費。OpenPanel 專注於真正能驅動產品決策的分析，以從第一天就合理的價格提供。",
+    "cta": {
+      "label": "免費開始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "benefits": [
+      "事件追蹤、漏斗、留存與同群組——不必承受企業級學習曲線",
+      "預設免 Cookie：沒有同意橫幅，也沒有 EU 使用者的 GDPR 麻煩",
+      "2.3 KB SDK 對比 Amplitude 的 36–96 KB——對頁面速度與 Core Web Vitals 有實質影響",
+      "可使用 Docker 在自己的基礎設施上自行架設，或使用我們僅 EU 的雲端",
+      "透明定價，從每月 $2.50 起——沒有 MTU 驚喜，也沒有 1.2 倍超量費",
+      "開源（AGPL-3.0）：可檢視程式碼、分支、自己執行",
+      "網站分析與產品分析整合於一個工具中——不需要拼湊多個產品"
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於 Amplitude 替代方案與切換到 OpenPanel 的常見問題。",
+    "items": [
+      {
+        "question": "2026 年最佳的 Amplitude 替代方案有哪些？",
+        "answer": "最佳的 Amplitude 替代方案取決於你的團隊需求：OpenPanel（開源、可自行架設、免 Cookie——最適合重視隱私的團隊與新創）、PostHog（開源全方位平台，內建 session replay 與功能旗標——最適合想把所有功能集中在一個工具中的開發者主導團隊）、Mixpanel（成熟的事件式分析，漏斗與同群組功能強大——最適合成熟產品團隊）、Heap（自動事件擷取與回溯分析——最適合不想手動埋點的團隊），以及 Plausible（簡單、輕量的網站分析——最適合只需要流量資料而不是產品分析的團隊）。如果你重視自行架設或免 Cookie 追蹤，OpenPanel 是最強的開源替代方案。"
+      },
+      {
+        "question": "Amplitude 和 PostHog 相比如何？",
+        "answer": "Amplitude 和 PostHog 都是強大的產品分析平台，但在方法上差異很大。PostHog 完全開源且可自行架設，原生整合 session replay、功能旗標與 A/B 測試，且有相當慷慨的免費方案。Amplitude 在行為分析與實驗測試方面更成熟，但只有雲端版，按 MTU 計費，而且大型團隊的年度費用可能高達六位數。PostHog 通常較吸引開發者主導的公司；Amplitude 則較適合有專職分析師的企業產品與成長團隊。"
+      },
+      {
+        "question": "Amplitude 和 Mixpanel 相比如何？",
+        "answer": "Amplitude 和 Mixpanel 是最常見的兩款企業級產品分析工具，經常被一起評估。Mixpanel 按事件計費（不是像 Amplitude 那樣按使用者計費），依你的使用模式，可能更便宜也可能更貴。Amplitude 的實驗功能與 ML 驅動預測更強；Mixpanel 一般被認為更容易設定與使用。兩者都不提供自行架設。對於想找開源替代方案的團隊，OpenPanel 可涵蓋核心漏斗、留存與同群組，且沒有兩者的企業級定價。"
+      },
+      {
+        "question": "有免費的 Amplitude 替代方案嗎？",
+        "answer": "有——OpenPanel 可免費自行架設，事件無上限。你可以用 Docker 在自己的基礎設施上執行，而且沒有每事件或每使用者費用。雲端版從每月 $2.50 起。PostHog 也有相當慷慨的免費方案（每月 1M events）。Mixpanel 的免費方案包含最多 1M events。如果你要的是完全免費且沒有上限的方案，自行架設的 OpenPanel 是最強選擇。"
+      },
+      {
+        "question": "Amplitude 是免費的嗎？",
+        "answer": "Amplitude 提供免費的 Starter 方案，最多可追蹤 50,000 名每月追蹤使用者（MTUs）與 1,000 萬 events。不過功能有限、沒有客服支援，而且隨著成長你很快就需要升級。Plus 方案從每月 $49 起，僅包含 1,000 MTUs。"
+      },
+      {
+        "question": "為什麼要從 Amplitude 轉換？",
+        "answer": "常見原因包括：隨著成長費用快速攀升、複雜度高到需要專門分析師才能有效使用、Cookie 與同意需求帶來的隱私疑慮、沒有自行架設選項，以及會影響頁面效能的沉重 SDK。"
+      },
+      {
+        "question": "使用 OpenPanel 需要 Cookie 同意橫幅嗎？",
+        "answer": "不需要。OpenPanel 預設免 Cookie，而且不收集個人資料，因此分析用途不需要同意橫幅。Amplitude 需要 Cookie，因此在 GDPR 下需要同意。"
+      },
+      {
+        "question": "Amplitude 提供 EU 資料託管嗎？",
+        "answer": "有，Amplitude 在德國法蘭克福設有 EU 資料中心。不過你仍然需要 Cookie 同意，因為 Amplitude 會使用第一方 Cookie。OpenPanel 則同時提供僅 EU 託管與免 Cookie 追蹤。"
+      },
+      {
+        "question": "我會失去哪些 Amplitude 功能？",
+        "answer": "OpenPanel 沒有功能旗標、預測同群組，以及 Guides & Surveys 產品。OpenPanel 仍然包含 session replay。如果你高度依賴 Amplitude 的企業級實驗測試或 ML 功能，那麼 Amplitude 可能仍然更適合你。"
+      },
+      {
+        "question": "SDK 大小會如何影響我的應用程式？",
+        "answer": "OpenPanel 的 JavaScript SDK 約為 2.3 KB gzip 後，相較之下 Amplitude 為 36 KB（僅 analytics）或 96 KB（統一版）。這代表初始頁面載入更快、更好的 Core Web Vitals，以及更低的頻寬成本。"
+      },
+      {
+        "question": "我可以匯入 Amplitude 資料嗎？",
+        "answer": "Amplitude 在付費方案中允許資料匯出（至 S3、Snowflake 等），但沒有直接匯入 OpenPanel 的方式。多數團隊會短暫平行使用兩套工具，然後從 OpenPanel 重新開始。"
+      },
+      {
+        "question": "OpenPanel 和 Amplitude 一樣強大嗎？",
+        "answer": "OpenPanel 涵蓋核心產品分析（事件、漏斗、留存、同群組、使用者檔案），並且加入網站分析。Amplitude 有更多進階功能，例如預測分析與功能旗標，但許多團隊其實不需要那麼高的複雜度。"
+      },
+      {
+        "question": "如何將 Amplitude.track() 呼叫遷移到 OpenPanel？",
+        "answer": "大多數呼叫都能 1 對 1 對應，邏輯不需更動。amplitude.track('Signup', {plan: 'pro'}) 會變成 op.track('Signup', {plan: 'pro'})。Identify：amplitude.identify(userId, traits) 會變成 op.identify({ profileId: userId, ...traits })。使用者屬性：amplitude.setUserProperties(traits) 會變成 op.identify({ profileId, ...traits })。營收：amplitude.logRevenue({price, quantity}) 會變成 op.revenue(price * quantity)（或帶有 revenue 屬性的 op.track）。群組：amplitude.setGroup('org', orgId) 會變成 op.setGroup(orgId)——OpenPanel 透過 setGroup/setGroups 原生支援群組。保留你現有的事件名稱；track 方案不需要重寫。完整遷移通常只是一個 2-4 小時的找字串替換工作。"
+      },
+      {
+        "question": "在 100K、500K、1M MTU 時，Amplitude 與 OpenPanel 的費用差多少？",
+        "answer": "常見用量下的直接比較：每月 100K MTU——Amplitude Plus 級別約 $995/月（依報價而定，會浮動），OpenPanel 約 $20/月（100K events，不是 MTU——OpenPanel 按事件計費，通常更便宜，因為一個 MTU 可觸發數十個事件）。每月 500K MTU——Amplitude Growth 級別通常每年 $22K–50K（每月 $1,800–4,200），OpenPanel $50/月（500K events）。每月 1M MTU——Amplitude Growth/Enterprise 級別通常每年 $50K–150K（每月 $4,200–12,500），OpenPanel $90/月（1M events）。自行架設的 OpenPanel 不論量級都免費且無上限——你唯一的成本是伺服器。Amplitude 在任何方案都不提供自行架設。注意：Amplitude 以每月追蹤使用者數（MTU）計費；OpenPanel 以事件計費。典型的 SaaS 應用程式每個 MTU 會觸發 30–100 個事件，所以實際絕對成本差距可能比按 MTU 計算看起來更大。請務必確認 Amplitude 的最新定價——Growth 與 Enterprise 都是客製報價，而且費率逐年上升。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "從 Mixpanel 遷移",
+        "url": "/zh-TW/guides/migrate-from-mixpanel"
+      },
+      {
+        "title": "追蹤自訂事件",
+        "url": "/zh-TW/guides/track-custom-events"
+      },
+      {
+        "title": "電商事件追蹤",
+        "url": "/zh-TW/guides/ecommerce-tracking"
+      }
+    ],
+    "articles": [
+      {
+        "title": "2026 年最佳 Mixpanel 替代方案",
+        "url": "/zh-TW/articles/mixpanel-alternatives"
+      },
+      {
+        "title": "最佳自行架設產品分析工具",
+        "url": "/zh-TW/articles/self-hosted-product-analytics"
+      },
+      {
+        "title": "9 款最佳開源網站分析工具",
+        "url": "/zh-TW/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Mixpanel",
+        "url": "/compare/mixpanel-alternative"
+      },
+      {
+        "name": "PostHog",
+        "url": "/compare/posthog-alternative"
+      },
+      {
+        "name": "Heap",
+        "url": "/compare/heap-alternative"
+      },
+      {
+        "name": "Plausible",
+        "url": "/compare/plausible-alternative"
+      },
+      {
+        "name": "Fullstory",
+        "url": "/compare/fullstory-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "開始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

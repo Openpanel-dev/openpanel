@@ -1,0 +1,190 @@
+---
+title: 工作原理
+description: 了解 device ID、session ID、profile ID 和事件跟踪
+---
+
+## Device ID
+
+**device ID** 是为每个设备/浏览器组合生成的唯一标识符。它通过哈希函数计算，组合以下信息：
+
+- **User Agent**（浏览器/客户端信息）
+- **IP Address**
+- **Origin**（项目 ID）
+- **Salt**（轮换的密钥）
+
+```typescript
+export function generateDeviceId({
+  salt,
+  ua,
+  ip,
+  origin,
+}: GenerateDeviceIdOptions) {
+  return createHash(`${ua}:${ip}:${origin}:${salt}`, 16);
+}
+```
+
+### Salt Rotation
+
+用于生成 device ID 的 salt 会在**每天午夜**（UTC）轮换。这意味着：
+
+- device ID 在同一天内保持一致
+- device ID 每天重置，以保护隐私
+- 系统同时保留当前和前一天的 salt，以处理可能在午夜后稍晚到达的事件
+
+```typescript
+// Salt rotation happens daily at midnight (pattern: '0 0 * * *')
+```
+
+当 salt 轮换时，所有 device ID 都会变化，从而在每日层面上对跟踪数据进行匿名化，同时仍允许在 24 小时内保持 session 连续性。
+
+## Session ID
+
+**session** 表示一段连续的用户活动时间。session 用于将相关事件分组，并理解用户行为模式。
+
+### Session Duration
+
+session 的**超时时间为 30 分钟**。如果 30 分钟内没有收到任何事件，session 会自动结束。每个新事件都会重置这个 30 分钟计时器。
+
+```typescript
+export const SESSION_TIMEOUT = 1000 * 60 * 30; // 30 minutes
+```
+
+### 会话创建规则
+
+session **只会为客户端事件创建**，不会为服务端事件创建。这意味着：
+
+- 从浏览器、移动应用或客户端 SDK 发送的事件会创建 session
+- 从后端服务器、脚本或服务端 SDK 发送的事件**不会**创建 session
+- 如果你只跟踪来自后端的事件，则不会创建 session
+
+此外，**超过 15 分钟的旧事件不会创建 session**。这可以防止历史数据导入生成虚假的 session。
+
+```typescript
+// Sessions are not created if:
+// 1. The event is from a server (uaInfo.isServer === true)
+// 2. The timestamp is from the past (isTimestampFromThePast === true)
+if (uaInfo.isServer || isTimestampFromThePast) {
+  // Event is attached to existing session or no session
+}
+```
+
+## 用户资料 ID
+
+**用户资料 ID** 是用户在多个设备和会话之间的持久标识符。它让你可以跨不同浏览器、设备和时间段跟踪同一个用户。
+
+### 用户资料 ID 分配
+
+如果在跟踪事件时提供了 `profileId`，它将用于识别用户。不过，**如果未提供 `profileId`，则默认使用 `deviceId`**。
+
+这意味着：
+- 未登录用户（没有用户资料 ID）会通过其 device ID 进行跟踪
+- 一旦你识别了用户（通过提供用户资料 ID），其所有事件都会关联到该用户资料
+- 你可以使用相同的用户资料 ID 在多个设备上跟踪同一个用户
+
+```typescript
+// If no profileId is provided, it defaults to deviceId
+if (!payload.profileId && payload.deviceId) {
+  payload.profileId = payload.deviceId;
+}
+```
+
+## 客户端事件与服务端事件
+
+OpenPanel 根据 User-Agent header 区分**客户端事件**和**服务端事件**。
+
+### 客户端事件
+
+客户端事件来自：
+- Web 浏览器（Chrome、Firefox、Safari 等）
+- 使用客户端 SDK 的移动应用
+- 任何发送类似浏览器 User-Agent 的客户端
+
+客户端事件：
+- 创建 session
+- 生成 device ID
+- 支持完整的 [会话跟踪](/zh-CN/features/session-tracking)
+
+### 服务端事件
+
+当 User-Agent 匹配服务端模式时，会检测为服务端事件，例如：
+- `Go-http-client/1.0`
+- `node-fetch/1.0`
+- 其他单名/版本模式（例如 `LibraryName/1.0`）
+
+服务端事件：
+- **不会**创建 session
+- 如果存在已有 session，则会附加到该 session
+- 适用于无需 session 管理的后端跟踪
+
+```typescript
+// Server events are detected by patterns like "Go-http-client/1.0"
+function isServer(res: UAParser.IResult) {
+  if (SINGLE_NAME_VERSION_REGEX.test(res.ua)) {
+    return true;
+  }
+  // ... additional checks
+}
+```
+
+这一区分在事件处理流水线中完成：
+
+```typescript
+const uaInfo = parseUserAgent(userAgent, properties);
+
+// Only client events create sessions
+if (uaInfo.isServer || isTimestampFromThePast) {
+  // Server events or old events don't create new sessions
+}
+```
+
+## Timestamps
+
+事件可以包含自定义时间戳，以跟踪事件实际发生的时间，而不是服务器接收时间。
+
+### Setting Custom Timestamps
+
+你可以在事件属性中使用 `__timestamp` 属性提供自定义时间戳：
+
+```javascript
+track('page_view', {
+  __timestamp: '2024-01-15T10:30:00Z'
+});
+```
+
+### Timestamp Validation
+
+系统会校验时间戳，以防滥用并确保数据质量：
+
+1. **未来时间戳**：如果时间戳比当前时间晚超过**1 分钟**，则使用服务器时间戳
+2. **过去时间戳**：如果时间戳早于**15 分钟**，则标记为 `isTimestampFromThePast: true`
+
+```typescript
+// Timestamp validation logic
+const ONE_MINUTE_MS = 60 * 1000;
+const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
+
+// Future check: more than 1 minute ahead
+if (clientTimestampNumber > safeTimestamp + ONE_MINUTE_MS) {
+  return { timestamp: safeTimestamp, isTimestampFromThePast: false };
+}
+
+// Past check: older than 15 minutes
+const isTimestampFromThePast =
+  clientTimestampNumber < safeTimestamp - FIFTEEN_MINUTES_MS;
+```
+
+### Timestamp Impact on Sessions
+
+**重要**：时间戳早于 15 分钟的事件（`isTimestampFromThePast: true`）**不会创建新的 session**。这可以防止历史数据导入在分析中生成虚假的 session。
+
+```typescript
+// Events from the past don't create sessions
+if (uaInfo.isServer || isTimestampFromThePast) {
+  // Attach to existing session or track without session
+}
+```
+
+这可以确保：
+- 实时跟踪会创建正确的 session
+- 历史数据导入不会干扰 session 分析
+- 回填时间的事件仍会被跟踪，但不会影响 session 指标

@@ -1,0 +1,171 @@
+---
+title: "如何為 Astro 新增分析"
+description: "使用 OpenPanel 為你的 Astro 網站加入以隱私優先的分析。無需 cookies，即可追蹤頁面瀏覽、自訂事件與使用者行為。"
+difficulty: beginner
+timeToComplete: 5
+date: 2025-12-14
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安裝 SDK"
+    anchor: "install"
+  - name: "將元件加入你的版面配置"
+    anchor: "setup"
+  - name: "追蹤自訂事件"
+    anchor: "events"
+  - name: "識別使用者"
+    anchor: "identify"
+  - name: "驗證你的設定"
+    anchor: "verify"
+---
+
+# 如何為 Astro 新增分析
+
+為你的 Astro 網站加入分析，可以幫助你了解訪客如何與內容互動。本指南將帶你在大約五分鐘內完成 OpenPanel 設定，以追蹤頁面瀏覽、自訂事件與使用者行為。
+
+OpenPanel 很適合搭配 Astro，因為它是一個輕量級腳本，會非同步載入，不會阻塞網站渲染。它會自動追蹤靜態與伺服器渲染頁面的頁面瀏覽，且以元件為基礎的 API 也非常符合 Astro 的架構。
+
+## 必備條件
+
+- 一個 Astro 專案
+- 一個 OpenPanel 帳號（[免費註冊](https://dashboard.openpanel.dev/onboarding)）
+- 來自 OpenPanel 儀表板的 Client ID
+
+## 安裝 SDK [#install]
+
+先將 OpenPanel Astro 套件加入你的專案。這個套件提供 Astro 元件，負責初始化與追蹤。
+
+```bash
+npm install @openpanel/astro
+```
+
+如果你偏好，也可以使用 pnpm 或 yarn。
+
+## 將元件加入你的版面配置 [#setup]
+
+`OpenPanelComponent` 會初始化追蹤，應放在根版面配置中，讓它能在每個頁面載入。將它放在 `<head>` 標籤內，確保它在任何使用者互動之前先完成初始化。
+
+```astro
+---
+import { OpenPanelComponent } from '@openpanel/astro';
+---
+
+<html>
+  <head>
+    <OpenPanelComponent
+      clientId="your-client-id"
+      trackScreenViews={true}
+      trackOutgoingLinks={true}
+    />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+```
+
+`trackScreenViews` 選項會在有人導覽到新頁面時，自動記錄一筆頁面瀏覽事件。`trackOutgoingLinks` 選項則會追蹤訪客點擊帶他們前往外部網站的連結。這兩者都是選用項目，但對大多數網站都建議啟用。
+
+如果你在渲染時就已經知道使用者身分，也可以傳入 `profileId` 屬性；另外也可使用 `globalProperties`，為每個事件附加中繼資料。
+
+## 追蹤自訂事件 [#events]
+
+除了自動頁面瀏覽之外，你通常還會想追蹤對業務重要的特定互動。OpenPanel 提供全域 `op` 函式，你可以在任何事件處理器中呼叫它。
+
+```astro
+<button onclick="window.op('track', 'button_clicked', {button_name: 'signup'})">
+  註冊
+</button>
+```
+
+第一個參數永遠是 `'track'`，第二個是你的事件名稱，第三個是可選的物件，用來附加你想加到事件上的屬性。請在整個程式碼庫中保持事件名稱一致，使用 snake_case 是不錯的慣例。
+
+如果你不想撰寫 JavaScript，也可以改用資料屬性。任何帶有 `data-track` 屬性的元素，在被點擊時都會自動觸發事件。
+
+```astro
+<button data-track="button_clicked" data-button-name="signup">
+  註冊
+</button>
+```
+
+屬性會從元素上的任何 `data-*` 屬性中取得。`data-track` 的值會成為事件名稱，其他資料屬性則會成為事件屬性。
+
+### 追蹤表單送出
+
+表單是常見的追蹤目標。你可以在 `onsubmit` 處理器中送出事件，同時仍讓表單照常提交。
+
+```astro
+<form onsubmit="window.op('track', 'form_submitted', {form_name: 'contact'}); return true;">
+  <input type="email" name="email" placeholder="你的電子郵件" required />
+  <button type="submit">送出</button>
+</form>
+```
+
+`return true` 可確保在追蹤呼叫之後，表單提交會繼續進行。
+
+## 識別使用者 [#identify]
+
+當使用者登入，或你以其他方式得知其身分時，就可以將他們的活動與個人資料關聯起來。`IdentifyComponent` 讓這件事可以用宣告式方式完成。
+
+```astro
+---
+import { IdentifyComponent } from '@openpanel/astro';
+
+const user = await getCurrentUser();
+---
+
+<IdentifyComponent
+  profileId={user.id}
+  firstName={user.firstName}
+  lastName={user.lastName}
+  email={user.email}
+  properties={{
+    plan: user.plan,
+  }}
+/>
+```
+
+請將這個元件放在使用者已驗證身分的頁面上。一旦完成識別，該瀏覽器工作階段後續的所有事件都會連結到這個個人資料，直到他們清除瀏覽器資料，或你明確清除身分為止。
+
+### 設定全域屬性
+
+有時候你會想為每個事件附加相同的屬性，例如應用程式版本或環境。`SetGlobalPropertiesComponent` 可讓你只設定一次，不必在每次追蹤呼叫中重複。
+
+```astro
+---
+import { SetGlobalPropertiesComponent } from '@openpanel/astro';
+---
+
+<SetGlobalPropertiesComponent
+  properties={{
+    app_version: '1.0.2',
+    environment: import.meta.env.MODE,
+  }}
+/>
+```
+
+這些屬性會與你傳給個別追蹤呼叫的任何特定事件屬性合併。
+
+## 驗證你的設定 [#verify]
+
+在瀏覽器中開啟你的 Astro 網站，並在幾個頁面之間切換。接著打開你的 [OpenPanel 儀表板](https://dashboard.openpanel.dev)，查看即時視圖。你應該會在幾秒內看到頁面瀏覽事件出現。
+
+如果事件沒有顯示，請打開瀏覽器的開發者主控台查看錯誤。最常見的問題是 Client ID 錯誤，或是廣告阻擋器阻止追蹤腳本載入。你也可以查看 Network 分頁，確認請求是否有送到 OpenPanel 的伺服器。
+
+## 下一步
+
+[Astro SDK 參考文件](/zh-TW/docs/sdks/astro)涵蓋了更多設定選項，例如篩選事件與自訂 CDN URL。如果你有興趣在自己的基礎架構上執行 OpenPanel，[自架指南](/zh-TW/articles/how-to-self-host-openpanel)會帶你完成整個設定流程。
+
+<Faqs>
+<FaqItem question="OpenPanel 可以與 Astro Islands 一起使用嗎？">
+可以。OpenPanelComponent 是一個客戶端腳本，會獨立於你的 island 元件進行 hydration。無論哪些部分有 hydration，它都會追蹤整個頁面的互動。
+</FaqItem>
+
+<FaqItem question="我可以在 Astro 的 SSR 模式下使用 OpenPanel 嗎？">
+可以。OpenPanel 可同時用於靜態與伺服器渲染的 Astro 網站。無論頁面是如何被渲染的，追蹤腳本都會在瀏覽器中執行。
+</FaqItem>
+
+<FaqItem question="OpenPanel 會使用 cookies 嗎？">
+不會。OpenPanel 預設使用無 cookie 追蹤，這表示在多數隱私法規（包括 GDPR）下，你不需要為基本分析顯示 cookie 同意橫幅。閱讀更多關於[無 cookie 分析](/zh-TW/articles/cookieless-analytics)。
+</FaqItem>
+</Faqs>

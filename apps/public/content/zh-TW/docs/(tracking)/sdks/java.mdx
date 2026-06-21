@@ -1,0 +1,307 @@
+---
+title: Java
+description: OpenPanel Java SDK 可讓你在 JVM 後端應用程式中追蹤使用者行為。
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+OpenPanel Java SDK 可讓你在 JVM 後端應用程式中追蹤使用者行為。它支援 **Java 11+**，並可搭配 Spring Boot、Quarkus、Micronaut、純 Java 等使用。
+
+<Callout>
+查看 [GitHub 上的 Java SDK](https://github.com/idcapture/openpanel-java-sdk) 以取得最新更新與原始碼。
+</Callout>
+
+<Callout type="info">
+如果是 Android/Kotlin 應用程式，請改參考 [Kotlin SDK](/zh-TW/docs/sdks/kotlin)。
+</Callout>
+
+## 安裝
+
+<Steps>
+### 步驟 1：新增依賴
+
+將 OpenPanel SDK 加入專案相依性：
+
+#### Maven
+
+```xml
+<dependency>
+    <groupId>fr.idcapture</groupId>
+    <artifactId>openpanel-java</artifactId>
+    <version>0.4.0</version>
+</dependency>
+```
+
+#### Gradle (Groovy)
+
+```groovy
+implementation 'fr.idcapture:openpanel-java:0.4.0'
+```
+
+#### Gradle (Kotlin DSL)
+
+```kotlin
+implementation("fr.idcapture:openpanel-java:0.4.0")
+```
+
+### 步驟 2：初始化
+
+匯入 SDK，並使用你的 client ID 與 secret 初始化：
+
+```java
+import fr.idcapture.openpanel.OpenPanel;
+import fr.idcapture.openpanel.OpenPanelOptions;
+
+OpenPanel op = OpenPanel.create(
+    OpenPanelOptions.builder()
+        .clientId("YOUR_CLIENT_ID")
+        .clientSecret("YOUR_CLIENT_SECRET")
+        .build()
+);
+```
+
+### 設定選項
+
+<CommonSdkConfig />
+
+Java 額外選項：
+
+- `apiUrl` - API 端點 URL（預設：`https://api.openpanel.dev`）
+- `disabled` - 設為 `true` 可停用所有 [事件追蹤](/zh-TW/docs/features/event-tracking)
+- `filter` - 在追蹤事件前會呼叫的函式；如果回傳 `false`，該事件將不會被追蹤
+- `connectTimeoutSeconds` - 連線逾時（秒）（預設：`10`）
+- `readTimeoutSeconds` - 讀取逾時（秒）（預設：`30`）
+- `maxRetries` - 失敗請求的最大重試次數（預設：`3`，設為 `0` 可停用）
+- `initialRetryDelayMs` - 初始重試延遲（毫秒）（預設：`500`，每次嘗試加倍）
+- `verbose` - 設為 `true` 可透過 `java.util.logging` 啟用詳細記錄
+
+#### 完整設定範例
+
+```java
+OpenPanel op = OpenPanel.create(
+    OpenPanelOptions.builder()
+        .clientId("YOUR_CLIENT_ID")
+        .clientSecret("YOUR_CLIENT_SECRET")
+        .apiUrl("https://api.openpanel.dev")
+        .disabled(false)
+        .filter(name -> !name.startsWith("debug_"))
+        .connectTimeoutSeconds(10)
+        .readTimeoutSeconds(30)
+        .maxRetries(3)
+        .initialRetryDelayMs(500)
+        .verbose(false)
+        .build()
+);
+```
+
+</Steps>
+
+## 使用方式
+
+所有方法都會回傳 `CompletableFuture<Void>`。你可以忽略該 future（fire-and-forget），或串接 callback 進行錯誤處理。
+
+### 追蹤事件
+
+要追蹤事件：
+
+```java
+// 最簡用法
+op.track("page_viewed");
+
+// 附帶屬性
+op.track("button_clicked", Map.of("button_id", "submit_form"));
+
+// 附帶 user
+op.track("checkout_started", Map.of("cart_value", 149.99), "user123");
+
+// 附帶 user + groups
+op.track("report_exported",
+    Map.of("format", "pdf"),
+    "user123",
+    List.of("org_acme")
+);
+```
+
+### 辨識使用者
+
+要辨識使用者：
+
+```java
+// 只使用自訂屬性
+op.identify("user123", Map.of("plan", "enterprise"));
+
+// 使用標準欄位 + 自訂屬性
+op.identify("user123", "John", "Doe", "john@example.com", Map.of("tier", "premium"));
+
+// 附帶頭像
+op.identify("user123", "John", "Doe", "john@example.com",
+    "https://example.com/avatar.png", Map.of("tier", "premium"));
+```
+
+### 設定全域屬性
+
+在此設定的屬性會合併到每次 `track()` 呼叫中。呼叫端屬性會優先於全域屬性。
+
+```java
+op.setGlobalProperties(Map.of(
+    "app_version", "2.1.0",
+    "env", "production"
+));
+
+// 之後所有 track() 呼叫都會自動包含 app_version 和 env
+op.track("feature_used", Map.of("feature", "export"));
+```
+
+### 遞增屬性
+
+要遞增使用者設定檔中的數值屬性：
+
+```java
+op.increment("user123", "login_count", 1);
+```
+
+### 遞減屬性
+
+要遞減使用者設定檔中的數值屬性：
+
+```java
+op.decrement("user123", "credits", 5);
+```
+
+### 追蹤營收
+
+要追蹤營收事件：
+
+```java
+// 簡單用法
+op.revenue(99.99);
+
+// 附帶 user
+op.revenue(99.99, "user123");
+
+// 附帶 user + 額外屬性
+op.revenue(49.99, "user123", Map.of("currency", "EUR", "plan", "pro"));
+```
+
+### 群組
+
+```java
+// 建立或更新群組
+op.group("org_acme", "company", "Acme Inc", Map.of("plan", "enterprise", "seats", 25));
+
+// 指派使用者到群組
+op.assignGroup("user123", List.of("org_acme"));
+```
+
+<Callout>
+群組**不會**自動附加到 track 事件。需要時請在每次 `track()` 呼叫中明確傳入。
+</Callout>
+
+### 關閉
+
+當應用程式停止時，請乾淨地關閉 client：
+
+```java
+// 明確關閉
+op.close();
+
+// 或透過 try-with-resources
+try (OpenPanel op = OpenPanel.create(options)) {
+    op.track("startup");
+}
+```
+
+## 進階使用
+
+### 錯誤處理
+
+當 API 發生錯誤（4xx/5xx）時，`CompletableFuture` 會以例外完成，並回傳包含 HTTP 狀態碼的 `HttpTracker.OpenPanelApiException`：
+
+```java
+op.track("event")
+  .exceptionally(e -> {
+      if (e.getCause() instanceof HttpTracker.OpenPanelApiException apiEx) {
+          logger.warn("OpenPanel returned {}", apiEx.getStatusCode());
+      }
+      return null;
+  });
+```
+
+### 重試行為
+
+失敗請求（5xx 與網路錯誤）會以指數退避自動重試。預設為 3 次重試，從 500ms 開始（500ms → 1s → 2s）。客戶端錯誤（4xx）不會重試。
+
+```java
+// 自訂重試行為
+OpenPanelOptions.builder()
+    .clientId("id")
+    .maxRetries(5)              // 更多重試
+    .initialRetryDelayMs(1000)  // 從 1s 開始
+    .build();
+
+// 完全停用重試
+OpenPanelOptions.builder()
+    .clientId("id")
+    .maxRetries(0)
+    .build();
+```
+
+### 自訂事件過濾
+
+你可以在送出前依名稱過濾事件：
+
+```java
+OpenPanelOptions.builder()
+    .clientId("YOUR_CLIENT_ID")
+    .filter(eventName -> !eventName.startsWith("internal_"))
+    .build();
+```
+
+### 停用追蹤
+
+適合用於本機開發或測試——不會發出任何 HTTP 呼叫：
+
+```java
+OpenPanelOptions.builder()
+    .clientId("YOUR_CLIENT_ID")
+    .disabled(true)
+    .build();
+```
+
+### 自架 OpenPanel
+
+如果你執行的是自架 OpenPanel 實例，請設定 `apiUrl`：
+
+```java
+OpenPanelOptions.builder()
+    .clientId("YOUR_CLIENT_ID")
+    .apiUrl("https://your-openpanel-instance.com")
+    .build();
+```
+
+### 除錯記錄
+
+啟用詳細模式，透過 `java.util.logging` 記錄所有 HTTP 請求與回應：
+
+```java
+OpenPanelOptions.builder()
+    .clientId("YOUR_CLIENT_ID")
+    .verbose(true)
+    .build();
+```
+
+### Kotlin 互通
+
+所有屬性 map 都使用 JetBrains `@Nullable` type-use 註解（`Map<String, @Nullable Object>`），因此 Kotlin 會原生視為 `Map<String, Any?>`——不需要 `@Suppress("UNCHECKED_CAST")`。
+
+```kotlin
+op.track("checkout", mapOf("amount" to 49.99, "coupon" to null))
+```
+
+## 社群 SDK
+
+<Callout>
+Java SDK 是由 [idcapture](https://github.com/idcapture) 維護的社群 SDK。如有問題或功能需求，請在 [Java SDK GitHub repository](https://github.com/idcapture/openpanel-java-sdk) 提交 issue。
+</Callout>

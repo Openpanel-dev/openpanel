@@ -1,0 +1,338 @@
+---
+title: "2026 年 Mixpanel 值得嗎？1M、10M 與 20M 事件的真實成本"
+description: "Mixpanel 在 100 萬事件內免費，之後在 1,000 萬事件時每月 $2,520、2,000 萬事件時 $5,320——另外還有 session replay、feature flags 與 account analytics 的付費加購。這裡有最真實的計算，看看它是否值得，以及團隊通常何時會轉換。"
+tag: Guide
+team: OpenPanel Team
+date: 2025-12-08
+updated: 2026-04-22
+cover: /content/mixpanel-pricing-cover.jpg
+---
+
+**Mixpanel 在 2026 年值得這個價格嗎？** 對於每月追蹤少於 100 萬事件的團隊來說，免費方案讓它成為目前最好的產品分析工具之一。但超過這個門檻後，成本很快就會變得不好看。Growth 方案在 1,000 萬事件時每月達到 $2,520，在 2,000 萬事件時達到 $5,320；而且這還沒算上 session replay、feature flags、account-level analytics 與 multi-touch attribution 的付費升級。這是企業級支出，卻沒有企業級支援。
+
+本指南會拆解你在各方案層級實際要付多少錢、最常被忽略的加購費用，以及 OpenPanel 或 PostHog 在哪兩種情況下會便宜得多。
+
+## Mixpanel 價格總覽
+
+Mixpanel 的定價從最多 **100 萬每月事件** 的免費方案開始。Growth 方案在超過 100 萬免費事件後，收取 **每事件 $0.00028**（每 1,000 事件 $0.28），在 1,000 萬事件時約為每月 ~$2,520。Enterprise 定價需要聯絡銷售，通常從每年約 $25,000 起跳。
+
+快速總覽如下：
+
+| 方案 | 每月事件數 | 價格 | 適合對象 |
+|------|------------|------|----------|
+| **Free** | 最多 100 萬 | $0 | 小型專案、MVP |
+| **Growth** | 100 萬免費，最高 2,000 萬 | 從 $0 起（依使用量增加） | 成長中公司 |
+| **Enterprise** | 無限 | 客製化（約每年 ~$25K 起） | 大型組織 |
+
+接下來，我們會拆解各層級包含什麼、加購費用是多少，以及對你的使用情境來說 Mixpanel 是否值得這個價格。
+
+## Mixpanel 定價如何運作
+
+Mixpanel 採用 **以事件為基礎的定價**。你付費的依據是你追蹤了多少事件，而不是團隊人數或專案數量。
+
+「事件」可以是你決定追蹤的任何使用者行為：按鈕點擊、頁面瀏覽、購買、註冊。每一項都算一個事件。如果你追蹤 10 種行為，而且有 10,000 名每月活躍使用者，你每個月很容易就會累積到數百萬事件。
+
+因此你的成本會直接隨使用量成長。你的產品越成功，你付的錢就越多。
+
+## Mixpanel 免費方案
+
+Mixpanel 有免費方案嗎？**有。** Mixpanel 免費方案包含最多 **100 萬每月事件**，以及核心分析功能。對小型專案和早期新創來說，這是一個不錯的起點。
+
+免費方案包含以下內容：
+
+- **100 萬每月事件** — 一旦達到上限，就需要升級
+- **核心分析** — Insights、[Funnels](/features/funnels)、Flows，以及 [Retention](/features/retention) 報表
+- **每席位 5 份已儲存報表** — 足以開始使用，但團隊很快就會感受到限制
+- **每月 1 萬次 session replay** — 精準查看使用者如何與產品互動
+- **每月 30 次 Spark AI 查詢** — Mixpanel 的 AI 驅動查詢建構器
+- **無限席位** — 不按使用者收費
+
+不過，免費方案也有明顯限制：
+
+- **沒有 Group Analytics** — 對需要 account-level 分析的 B2B 產品來說非常重要
+- **沒有資料匯出** — 你無法把資料拉進資料倉儲
+- **行為 cohorts 受限** — 進階分群需要 Growth
+- **沒有 formulas 或 saved metrics** — 只有基本報表
+- **沒有異常偵測或根因分析**
+- **沒有 multi-touch attribution**
+- **自訂屬性與 borrowed properties 受限**
+- **每個專案 5 個監控警示**（Growth 則是無限）
+
+免費方案很適合驗證產品想法，或在小型專案上做基本分析。但一旦你需要協作功能、進階分析，或每月事件數超過 100 萬，就得升級。
+
+## Mixpanel Growth 方案
+
+Growth 方案是大多數付費客戶會選擇的層級。每個月它會先包含 **100 萬免費事件**。超過之後，你大約要支付 **每事件 $0.00028**（每 1,000 事件 $0.28），而更高用量還有量級折扣。
+
+以下是 Mixpanel Growth 方案隨事件量成長的定價：
+
+| 每月事件數 | 預估每月成本 | 每 1K 事件成本 |
+|------------|-------------|----------------|
+| 100 萬 | $0（免費） | $0.00 |
+| 200 萬 | ~$280 | ~$0.28 |
+| 500 萬 | ~$1,120 | ~$0.28 |
+| 1,000 萬 | ~$2,520 | ~$0.28 |
+| 2,000 萬 | ~$5,320 | ~$0.28 |
+| 2,000 萬以上 | 聯絡銷售 | 量級折扣 |
+
+*價格為依據 Mixpanel 定價計算機的估算值。年度計費通常可享 10–15% 折扣。*
+
+Growth 方案相較於 Free 新增了幾個重要功能：
+
+- **無限已儲存報表** — 不再受限於協作分析的數量上限
+- **完整行為 cohorts** — 依行為對使用者分群
+- **每月 2 萬次 session replay**（可自訂上限至 50 萬）
+- **每月 60 次 Spark AI 查詢**（是免費方案的兩倍）
+- **Formulas 與 saved metrics** — 建立進階計算
+- **Multi-touch attribution** — 了解哪些管道帶來轉換
+- **Impact 與 statistical significance** — 衡量功能影響
+- **異常偵測與根因分析** — 及早發現問題
+- **無限監控警示**
+- **自訂屬性與 borrowed properties** — 完整彈性
+
+請注意，以上價格僅包含核心分析。許多團隊認為必備的功能，其實都是在 Growth 方案之外的 **付費加購**。
+
+<Figure
+  src="/content/mixpanel-pricing.png"
+  caption="Mixpanel 定價，顯示不同方案及其價格"
+/>
+
+## Free 與 Growth 方案：差在哪裡？
+
+如果你正在決定要留在 Free 還是升級到 Growth，以下是詳細比較：
+
+| 功能 | Free 方案 | Growth 方案 |
+|------|----------|------------|
+| **每月事件數** | 最多 100 萬 | 前 100 萬免費，最高 2,000 萬 |
+| **已儲存報表** | 每席位 5 份 | 無限 |
+| **Session replay** | 每月 1 萬次 | 免費 2 萬次（最高 50 萬） |
+| **Spark AI 查詢** | 每月 30 次 | 每月 60 次 |
+| **行為 cohorts** | 受限 | 完整存取 |
+| **自訂屬性** | 受限 | 完整存取 |
+| **Formulas 與 saved metrics** | 受限 | 完整存取 |
+| **Impact 與 statistical significance** | 否 | 是 |
+| **Multi-touch attribution** | 否 | 是 |
+| **監控警示** | 每個專案 5 個 | 無限 |
+| **異常偵測** | 否 | 是 |
+| **根因分析** | 否 | 是 |
+| **Cart analysis** | 否 | 是 |
+| **Campaign reporting** | 否 | 是 |
+| **Experiment reporting** | 否 | 加購 |
+| **Feature flags** | 否 | 加購 |
+| **Account-level analytics** | 否 | 加購 |
+| **Data pipelines** | 否 | 加購 |
+| **Metric Trees** | 否 | 加購 |
+| **Lookup tables** | 受限 | 完整存取 |
+| **支援** | Email（標準） | Email（24/5） |
+
+結論很簡單：Free 適合基本分析與小型專案。一旦你需要 formulas、cohort analysis、無限已儲存報表，或每月事件超過 100 萬，你就需要 Growth。即使是 Growth，仍有多項功能是需額外付費的加購項目。
+
+## Mixpanel Enterprise 方案
+
+Enterprise 的價格沒有公開。你需要聯絡銷售，最終價格取決於你的事件量、功能需求與談判結果。
+
+根據公開資料，**Mixpanel Enterprise 方案通常從每年約 $25,000–$30,000 起跳**，而大型部署的費用可能遠超過每年 $100,000。
+
+Enterprise 提供較大型組織需要的功能：
+
+- **每月事件無上限** — 自訂容量，沒有上限
+- **最高 1 兆事件** 的容量
+- **SAML-based SSO 與 SCIM provisioning** — 對重視資安的組織很重要
+- **進階資料治理** — 敏感資料分類與保護
+- **分艙式資料存取** — 報表層級的細緻權限
+- **HIPAA 合規工具** — 供醫療保健公司使用
+- **可自訂的資料保留政策** — 保留時間長於標準限制
+- **每月 300 次 Spark AI 查詢**
+- **24/7 支援**，回應 SLA 更快
+- **Slack shared channel 支援**（加購）
+- **專屬客戶經理**
+- **可提供專業服務**
+- **Signal correlation analysis** — 進階分析
+- **跨產品分析** — 跨多個產品進行分析
+- **資料品質監控** 與已驗證資料
+- **客製化價格與條款**
+
+如果你是需要合規要求、SSO，或特定安全功能的大型組織，那麼最終通常會走向 Enterprise。
+
+## 讓費用一路往上加的加購項目
+
+這是 Mixpanel 定價最棘手的地方。有幾項你可能會認為是核心功能的項目，其實是 **付費加購**，即使在 Growth 方案也是如此：
+
+**Account-Level Behavioral Analytics（Group Analytics）** 是最重要的一項。如果你在做 B2B 產品，這幾乎是必需功能。它讓你可以在 account 或公司層級分析資料，而不只是個別使用者。沒有它，你就無法回答像是「哪些公司最活躍？」或「我們的 account 留存率如何？」這類問題。即使在 Growth 和 Enterprise，這也會是帳單上的獨立項目。
+
+**Data Pipelines** 也是常見加購項目。它會把你的 Mixpanel 資料匯出到 BigQuery、Snowflake 或 Redshift 這類資料倉儲。如果你需要把分析資料放進資料倉儲，這筆費用很快就會累積——估計大型實作每年要 $19,000 以上。
+
+**Session Replay** 超過內含免費額度的部分。Growth 包含每月 2 萬次 replay；如果你需要更多（最高 50 萬），就要額外付費。
+
+**Warehouse Connectors** 會把資料從資料倉儲匯入 Mixpanel。另行計價。
+
+**Feature Flags** 用於控制功能釋出。Growth 的加購項目。
+
+**Experiment Reporting** 用於 A/B 測試分析。Growth 的加購項目。
+
+**Metric Trees** 用於視覺化指標依賴關係。Growth 的加購項目。
+
+在編列 Mixpanel 預算時，務必要把你實際需要的加購項目算進去。如果你最後需要兩三個加購功能才能完成目標，基礎方案的價格很可能會誤導你。
+
+## Mixpanel 新創方案
+
+如果你是早期新創，Mixpanel 有不錯的優惠。他們的新創方案提供你一個 **免費一整年** 的「Startup Plan」。
+
+資格條件：
+- 公司成立未滿 **5 年**
+- 總募資金額少於 **800 萬美元**
+- 之前未兌換過類似優惠
+
+Startup Plan 包含進階功能、Group Analytics、Data Pipelines、Warehouse Connectors 和 Session Replay。你在一年內可使用最多 10 億事件，以及 50 萬次 session replay 錄製。
+
+但有個前提：你必須在核准後 **90 天內** 開始送資料，否則資格會被取消。且一年結束後，你需要轉到付費方案或降回 Free。
+
+如果你符合條件，這是一筆好交易，但也要預先規劃第一年結束後會發生什麼。很多新創會在免費期間被 Mixpanel 綁住，而優惠到期後就面臨一張高額帳單。
+
+## Mixpanel 何時會變貴
+
+Mixpanel 的事件式定價會把你的成本直接綁定到產品成長。這裡有一個很實際的情境。
+
+假設你每個使用者追蹤 15 個事件。你的產品有 50,000 名每月活躍使用者，每位使用者平均每個 session 做 20 個可追蹤行為，而且每月有 3 個 session。那就是：
+
+**15 × 50,000 × 20 × 3 = 每月 4,500 萬事件**
+
+在這個量級下，你已經遠遠超過 Growth 方案的 2,000 萬上限，進入 Enterprise 範圍——每年最低可能就要 $40,000 以上。
+
+現在想像一下，你推出了一個行銷活動，讓使用者數量翻倍。你的分析帳單也會跟著翻倍。
+
+有些團隊會因此減少追蹤事件，或只挑選少數指標來量測。這其實很可惜。你應該讓分析能力跟著產品一起成長，而不是限制你能了解使用者多少事情。
+
+另一個常讓人措手不及的是加購項目疊加。基礎方案 + Group Analytics + Data Pipelines + 額外 Session Replay，很容易就讓預期帳單變成 2 到 3 倍。
+
+## 使用者怎麼看 Mixpanel 價格
+
+在 G2、Capterra 和類似網站上，價格是人們最常抱怨 Mixpanel 的原因之一：
+
+> 「從免費升到付費的跳幅很大。」很多使用者一開始會被慷慨的免費方案吸引，熟悉工具後，當需求成長時才發現費用不小。
+
+> 「規模一大就很貴。」擁有大量使用者或追蹤很多事件的公司，會發現成本迅速飆升。
+
+> 「那些加購功能感覺應該包含在內。」尤其是 Group Analytics 常被點名。對 B2B 產品來說，它基本上是必備功能，但卻是分開收費。
+
+> 「價格逼我們少追蹤一些東西。」有些使用者表示，他們會刻意限制追蹤範圍以維持預算，這就違背了完整分析的初衷。
+
+公平地說，很多使用者仍認為 Mixpanel 很有價值，尤其是和自行建立分析基礎架構相比。這些抱怨通常來自已經超過免費門檻、正在和替代方案比較成本的團隊。
+
+## Mixpanel 與 OpenPanel：價格比較
+
+既然你正在 OpenPanel 部落格上閱讀這篇文章，我們就直接說明我們怎麼比較。我們打造 [OpenPanel](/articles/introduction-to-openpanel)，就是為了提供比 Mixpanel 更實惠的替代方案。
+
+以下是不同事件量下的價格比較：
+
+| 每月事件數 | Mixpanel Growth | OpenPanel Cloud | 節省 |
+|------------|-----------------|-----------------|------|
+| 10 萬 | ~$0（免費方案）* | $20 | — |
+| 50 萬 | ~$0（免費方案）* | $50 | — |
+| 100 萬 | $0（免費方案） | $90 | — |
+| 250 萬 | ~$420 | $180 | 便宜 57% |
+| 500 萬 | ~$1,120 | $250 | 便宜 78% |
+| 1,000 萬 | ~$2,520 | $350 | 便宜 86% |
+| 2,000 萬 | ~$5,320 | $530 | 便宜 90% |
+| 3,000 萬 | 聯絡銷售 | $680 | — |
+| 5,000 萬 | 聯絡銷售 | $900 | — |
+
+*Mixpanel 的免費方案最多涵蓋 100 萬事件，但功能有限（每席位 5 份已儲存報表、沒有 Group Analytics、沒有資料匯出、cohorts 受限）。*
+
+在 1,000 萬事件時，**OpenPanel 比 Mixpanel Growth 便宜約 86%**。但價格只是故事的一部分。
+
+**所有功能都包含在內。** 依照 [OpenPanel pricing](/pricing)，所有方案層級都包含所有功能。無限網站、無限使用者、無限儀表板。沒有層中層、沒有加購、沒有「請聯絡銷售詢價這個功能」。你只要選事件量，價格就是這樣。
+
+**自架是免費的。** 如果你想要最大的成本控制，可以免費 [self-host OpenPanel](/articles/how-to-self-host-openpanel)。你唯一的成本是基礎設施——一台不錯的 VPS 就能以每月 $20–50 處理數百萬事件。
+
+**預設就重視隱私。** OpenPanel 開箱即用就採用 [cookieless tracking](/articles/cookieless-analytics)，所以不需要 cookie consent 橫幅。這代表資料更準確，因為你不會因為使用者拒絕 cookies 而流失他們的資料。
+
+**沒有隱藏成本。** 當你把 Group Analytics、Data Pipelines、額外 Session Replay 以及其他加購都算進去後，Mixpanel Growth 的價格只是起點。OpenPanel 的價格就是全部價格。
+
+當然，我們在這裡有偏好。Mixpanel 的歷史更久、整合更多、團隊也更大。如果你需要 Mixpanel 才有的特定能力，也許值得付出溢價。但對多數做產品分析的團隊來說，OpenPanel 以極低的成本就能滿足核心需求。
+
+請參考我們完整的 [Mixpanel vs OpenPanel comparison](/compare/mixpanel-alternative)，逐項比較功能差異。
+
+## 管理 Mixpanel 成本的建議
+
+如果你決定 Mixpanel 是適合你的工具，以下是控制成本的方法：
+
+**有策略地決定要追蹤什麼。** 不要因為可以追蹤就什麼都追蹤。先定義你的關鍵指標，以及支撐這些指標的事件。之後還可以再加。
+
+**如果符合資格就使用新創方案。** 那一整年的免費期能讓你在分析成本壓力到來前先有成長空間。
+
+**考慮年度計費。** Mixpanel 通常會對年度承諾提供 10–15% 折扣。如果你確定會持續使用，這是很容易省下的錢。
+
+**定期檢查追蹤項目。** 隨著時間過去，團隊會累積一些不再使用的追蹤。舊功能下線了、實驗結束了，但事件還在持續送出。每季檢查一次，可以減少不必要的事件。
+
+**續約時記得談判。** B2B SaaS 定價通常是可以談的，尤其是用量較高時。不要只是接受續約報價，問看看有沒有彈性。
+
+**評估加購項目的必要性。** 在承諾 Group Analytics 或 Data Pipelines 前，先確認你是否真的需要，或是否有替代作法。
+
+## 做出決定
+
+Mixpanel 是一個不錯的產品。它的分析功能很強、介面設計良好，而且它之所以成為這個類別中最受歡迎的工具之一，是有原因的。
+
+但價格很重要。如果你是正在觀察現金流的新創、想維持低成本的自籌公司，或是需要向財務部門證明支出的企業，你就必須了解分析堆疊的真實成本。
+
+你該問自己的問題：
+
+1. 隨著成長，你實際上會追蹤多少事件？
+2. 你的 B2B 分析需要 Group Analytics 嗎？
+3. 你需要把資料匯出到資料倉儲嗎？
+4. 算上加購之後，你的總成本是多少，而不只是基礎方案？
+5. 當使用者數量翻倍時，你的預算會變成什麼樣子？
+
+如果這些答案讓你對 Mixpanel 的價格走勢感到不安，那就應該在被綁住之前先看看替代方案。
+
+[OpenPanel](/) 提供 30 天免費試用，無需信用卡。你可以把它和 Mixpanel 一起試用，看看哪一個更符合你的需求與預算。如果你想要對成本與資料擁有最大的控制權，[self-hosting](/docs/self-hosting/self-hosting) 永遠是一個選項。
+
+<Faqs>
+<FaqItem question="2026 年 Mixpanel 要多少錢？">
+Mixpanel 在 2026 年提供三種方案：Free 方案每月最多 100 萬事件且功能有限；Growth 方案從 $0 起，前 100 萬事件免費，之後每事件 $0.00028（每 1,000 事件 $0.28），在 2,000 萬事件時最高約每月 $5,320；Enterprise 方案則為客製化價格，通常從每年約 $25,000 起跳。Group Analytics、Data Pipelines 與額外 Session Replays 等加購項目，會在基礎方案之外另行收費。
+</FaqItem>
+
+<FaqItem question="Mixpanel 有免費方案嗎？">
+有。Mixpanel 的免費方案包含最多 100 萬每月事件、每席位 5 份已儲存報表、每月 10,000 次 session replay，以及每月 30 次 Spark AI 查詢。核心分析功能如 Insights、Funnels、Flows 與 Retention 報表都有包含。不過，免費方案沒有 Group Analytics、資料匯出、進階 cohorts、formulas、multi-touch attribution 或異常偵測。
+</FaqItem>
+
+<FaqItem question="Mixpanel 免費方案有哪些限制？">
+Mixpanel 免費方案限制為每月 100 萬事件、每席位 5 份已儲存報表、每月 1 萬次 session replay、每月 30 次 Spark AI 查詢，以及每個專案 5 個監控警示。行為 cohorts、自訂屬性、formulas 與 saved metrics 等進階功能要嘛受限，要嘛無法使用。Group Analytics、Data Pipelines 與資料匯出都不包含在內。
+</FaqItem>
+
+<FaqItem question="Mixpanel 每個事件要多少錢？">
+在 Mixpanel Growth 方案中，超過每月前 100 萬免費事件後，你大約要支付每事件 $0.00028（每 1,000 事件 $0.28）。更高的用量層級可能有量級折扣。Enterprise 方案則為客製化的每事件價格，直接與 Mixpanel 銷售團隊協商。
+</FaqItem>
+
+<FaqItem question="在 Mixpanel 裡，什麼算是一個事件？">
+事件是你選擇追蹤的任何使用者行為。這包含按鈕點擊、頁面瀏覽、註冊、購買、表單送出、功能使用，或你定義的任何自訂行為。每次發生都會算入你每月的總事件數。Mixpanel 也支援 autocapture，可自動追蹤事件而不需手動埋點。
+</FaqItem>
+
+<FaqItem question="Mixpanel 值得這個價格嗎？">
+這取決於你的需求與預算。Mixpanel 在深入產品分析方面表現優秀——包括漏斗、留存、cohort analysis 與實驗分析。對於資金充足、需要其特定功能且能負擔加購的公司來說，它很有價值。對於重視成本的團隊，或只需要更簡單分析的團隊，隨著成長，價格可能很快攀升。像 OpenPanel 這類替代方案，則以顯著更低的價格提供相似的核心功能，且所有功能都已包含。
+</FaqItem>
+
+<FaqItem question="Mixpanel 會對 Group Analytics 收費嗎？">
+會。Group Analytics（account-level behavioral analytics）在 Growth 與 Enterprise 方案中都是付費加購。這個功能對 B2B 產品非常重要，因為它需要在公司或 account 層級分析資料，而不只是單一使用者。這筆額外費用不包含在 Mixpanel 價格頁上顯示的基礎方案價格內。
+</FaqItem>
+
+<FaqItem question="Mixpanel 與 OpenPanel 的價格相比如何？">
+在大多數事件量級下，OpenPanel 便宜得多，而且每個方案層級都包含所有功能。在 1,000 萬事件時，OpenPanel 每月 $350，而 Mixpanel 則約為每月 $2,520——大約便宜 86%。OpenPanel 也沒有加購或隱藏費用，並提供免費自架選項，以便最大程度控制成本。
+</FaqItem>
+
+<FaqItem question="新創可以免費使用 Mixpanel 嗎？">
+可以。Mixpanel 的 Startup Program 會讓符合資格的新創在 Startup Plan 上免費使用第一年。若要符合資格，你的公司必須成立未滿 5 年、總募資金額少於 $8 百萬，而且未曾兌換過類似優惠。此方案包含進階功能，以及一年內最多 10 億事件。你必須在核准後 90 天內開始送資料。
+</FaqItem>
+
+<FaqItem question="如果我超過 Mixpanel 的事件上限會怎樣？">
+在 Growth 方案中，超過額度的額外事件會依照你方案的超額費率收費。Mixpanel 表示他們不會收取懲罰性的超額費用——你支付的是正常的每事件費率。他們也有針對誤追蹤事件的「寬恕政策」。在免費方案中，超過 100 萬事件上限就需要升級到付費方案。
+</FaqItem>
+
+<FaqItem question="Mixpanel 包含多少次 Spark AI 查詢？">
+Free 方案每月包含 30 次 Spark AI 查詢。Growth 方案則增加到每月 60 次。Enterprise 方案每月包含 300 次 Spark AI 查詢。Spark 是 Mixpanel 的 AI 驅動查詢建構器，讓你可以用自然語言詢問資料問題。
+</FaqItem>
+
+<FaqItem question="預算有限的新創，有哪些 Mixpanel 價格替代方案？">
+對於想要負擔得起的產品分析新創，OpenPanel 是很強的替代方案，起價為每月 $2.50 可處理 5,000 事件，或每月 $90 可處理 100 萬事件，且所有功能都已包含。OpenPanel 也提供免費自架。其他替代方案還包括 PostHog（開源且有免費方案）與 Amplitude（有限免費方案）。不同於 Mixpanel，OpenPanel 的 group analytics 或資料匯出等功能沒有額外加購費用。
+</FaqItem>
+</Faqs>

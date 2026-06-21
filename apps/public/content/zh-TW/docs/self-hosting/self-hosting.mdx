@@ -1,0 +1,240 @@
+---
+title: 使用自架部署快速開始
+description: 這是一份簡單指南，說明如何在自己的 VPS 上開始使用 OpenPanel。
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+## 操作說明
+
+### 先決條件
+
+- 任何類型的 VPS（僅在 Ubuntu 24.04 上測試）
+  - 我們建議使用 [Hetzner（聯盟連結）](https://hetzner.cloud/?ref=7Hq0H5mQh7tM)。如果你想支持我們，請使用這個連結。🫶
+  - 🙋‍♂️ 如果你已預先安裝 docker、node 和 pnpm，這應該可在任何系統上運作
+
+### 快速開始
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+# 設定完成後，執行 `./start` 以啟動 OpenPanel
+```
+
+<Steps>
+
+<Step>
+### 複製
+
+將 repository 複製到你的 VPS，並 checkout self-hosting tag
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel.git
+```
+</Step>
+<Step>
+### 執行設定腳本
+
+設定腳本會做 3 件事
+
+1. 安裝 node（如果你接受）
+2. 安裝 docker（如果你接受）
+3. 執行一個 node script，會詢問你一些關於設定的問題
+
+> 設定時間會依你的 VPS 而定，約 30 秒到 2 分鐘
+
+```bash
+cd openpanel/self-hosting
+./setup
+```
+
+⚠️ 如果 `./setup` 腳本無法執行，你也可以手動完成。
+
+1. 安裝 docker
+2. 安裝 node
+3. 安裝 npm
+4. 在 self-hosting 資料夾內執行 `npm run quiz` 腳本
+
+</Step>
+<Step>
+### 啟動 🚀
+
+執行位於 self-hosting 資料夾內的 `./start` 腳本
+
+```bash
+./start
+```
+</Step>
+</Steps>
+
+## 需要知道的事項
+
+### 一律使用正確的 api url
+
+自架部署時，你在初始化 SDK 時需要提供 api url。
+
+路徑應為 `/api`，網域應為你的網域。
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    apiUrl: 'https://your-domain.com/api', // [!code highlight]
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+```js title="op.ts"
+import { OpenPanel } from '@openpanel/sdk';
+
+const op = new OpenPanel({
+  apiUrl: 'https://your-domain.com/api', // [!code highlight]
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+### E-mail
+
+OpenPanel 的部分功能需要 e-mail。我們預設使用 Resend 作為交易型 e-mail 供應商，但你也可以使用自己的 SMTP 伺服器。若要啟用 email 功能，請設定下方說明的相關環境變數。
+
+<Callout>這不是基本設定所必需的，但某些功能會需要。</Callout>
+
+需要 e-mail 的功能：
+
+- 重設密碼
+- 邀請
+- 之後會逐步增加更多功能
+
+#### 選項 A — Resend
+
+在 [resend.com](https://resend.com) 建立帳號、驗證你的寄件網域，並設定 `RESEND_API_KEY` 環境變數。
+
+```bash title=".env"
+RESEND_API_KEY=re_xxxxxxxxxxxxx
+EMAIL_SENDER=noreply@yourdomain.com
+```
+
+#### 選項 B — SMTP
+
+如果你偏好使用自己的 SMTP 伺服器，請設定 `SMTP_HOST`，OpenPanel 就會改用它而不是 Resend。
+
+```bash title=".env"
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=smtp-user@example.com
+SMTP_PASS=your-smtp-password
+EMAIL_SENDER=noreply@yourdomain.com
+```
+
+<Callout type="info">
+如果同時設定了 `SMTP_HOST` 和 `RESEND_API_KEY`，`SMTP_HOST` 會優先使用。如果兩者都未設定，系統會將 email 記錄到主控台，而不是送出。
+</Callout>
+
+如需 email 設定細節，請參閱 [Environment Variables 文件](/zh-TW/docs/self-hosting/environment-variables#email)。
+
+### AI 整合
+
+OpenPanel 內建 AI 驅動的分析助理，可協助你分析資料、建立報表，並回答關於分析的問題。它支援 OpenAI 與 Anthropic — 設定其中一個或兩個金鑰後，聊天中的模型選擇器只會顯示其提供者已設定金鑰的模型。
+
+#### 支援的模型
+
+- **OpenAI** — `GPT-4.1`, `GPT-4.1 mini`, `GPT-5.4 mini`
+- **Anthropic** — `Claude Haiku 4.5`, `Claude Sonnet 4.6`, `Claude Opus 4.6`
+
+#### 設定
+
+將下列其中一項或兩項加入 `self-hosting` 目錄中的 `.env` 檔案，然後重新啟動 API 服務：
+
+```bash title=".env"
+# OpenAI — get a key at platform.openai.com/api-keys
+OPENAI_API_KEY=sk-your-openai-api-key-here
+
+# Anthropic — get a key at console.anthropic.com
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
+```
+
+<Callout type="info">
+AI 助理是選用功能。若未設定任何金鑰，聊天抽屜仍會開啟，但會顯示設定提示——其他所有 OpenPanel 功能都會正常運作。
+</Callout>
+
+<Callout type="warn">
+AI 功能會依你的用量與所選模型產生成本。請透過供應商的儀表板監控 API 用量，避免意外費用。
+</Callout>
+
+完整的 AI 設定細節請參閱 [Environment Variables 文件](/zh-TW/docs/self-hosting/environment-variables#ai-features)。
+
+### 受管理的 Redis
+
+如果你使用受管理的 Redis 服務，可能需要手動設定 `notify-keyspace-events`。
+
+若未設定此項，我們將無法監聽過期 keys，而這是用來計算目前活躍訪客的。
+
+> 如果需要手動設定，你會在日誌中看到警告。
+
+### 註冊 / 邀請
+
+預設情況下，在建立第一位使用者後會停用註冊。
+
+你可以將 `ALLOW_REGISTRATION` 環境變數設為 `true` 來更改此行為。
+
+```bash title=".env"
+ALLOW_REGISTRATION=true
+```
+
+邀請功能預設為啟用。你也可以將 `ALLOW_INVITATION` 環境變數設為 `false` 來停用邀請。
+
+```bash title=".env"
+ALLOW_INVITATION=false
+```
+
+如需完整的環境變數參考，請參閱 [Environment Variables 文件](/zh-TW/docs/self-hosting/environment-variables)。
+
+## 實用腳本
+
+OpenPanel 內建多個實用腳本，協助你管理自架實例：
+
+### 基本操作
+
+```bash
+./start    # 啟動所有 OpenPanel 服務
+./stop     # 停止所有 OpenPanel 服務
+./logs     # 查看所有服務的即時日誌
+```
+
+### 維護
+
+```bash
+./rebuild <service-name>    # 重建並重新啟動特定服務
+                            # 範例：./rebuild op-dashboard
+```
+
+### 疑難排解
+
+```bash
+./danger_wipe_everything   # ⚠️ 移除所有容器、volumes 與資料
+                           # 只有在你想要重新開始時才使用！
+```
+
+<Callout>
+`danger_wipe_everything` 腳本會刪除你所有的 OpenPanel 資料，包括資料庫、設定與快取檔案。請極度小心使用！
+</Callout>
+
+所有這些腳本都應從 `self-hosting` 目錄內執行。請確認腳本具有可執行權限（如有需要，執行 `chmod +x script-name`）。
+
+## 更新
+
+若要取得 OpenPanel 的最新版本，只要在 self-hosting 資料夾內執行 `./update` 腳本即可。
+
+<Callout>
+  如果你沒有 `./update` 腳本，可以先執行 `git pull`，然後再執行 `./update`
+</Callout>
+
+另外也請閱讀 [changelog](/zh-TW/docs/self-hosting/changelog) 中的變更，並套用到你的實例。

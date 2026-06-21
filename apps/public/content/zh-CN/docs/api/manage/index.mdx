@@ -1,0 +1,28 @@
+---
+title: 管理 API 概览
+description: 在 OpenPanel 组织中以编程方式管理项目、客户端和引用。
+---
+
+## 身份验证
+
+Manage API 需要 **root** 客户端。Root 客户端拥有组织级访问权限，可管理所有资源。请参阅 [身份验证](/zh-CN/docs/api/authentication) 指南。
+
+## 基础 URL
+
+```
+https://api.openpanel.dev/manage
+```
+
+## 资源
+
+| 资源 | 说明 |
+|----------|-------------|
+| 项目 | 创建、更新和删除分析项目 |
+| 客户端 | 管理 API 客户端（read / write / root）及其密钥 |
+| 参考点 | 在分析时间线上标记重要日期或事件 |
+
+## 速率限制
+
+每个客户端每 10 秒 20 个请求。
+
+有关完整的端点模式，请参阅 [API 参考](/zh-CN/docs/api-reference)。

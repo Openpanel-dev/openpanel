@@ -1,0 +1,277 @@
+---
+title: "沒有 DPA 的自架分析：GDPR、HIPAA、CCPA 指南"
+description: "跳過 DPA、BAA 與同意橫幅。自架、無 Cookie 分析如何簡化 GDPR、HIPAA、CCPA 與 PECR 合規——並附上具體範例。"
+tag: Guide
+team: OpenPanel Team
+date: 2024-12-08
+updated: 2026-04-28
+cover: /content/compliance.jpg
+---
+
+現在到處都是隱私法規。歐洲有 GDPR，加州有 CCPA，醫療領域有 HIPAA，而且這份清單還在持續增加。如果你經營網站或 App，你大概也曾想過：「我真的有完全符合這些規範嗎？」
+
+好消息是：分析工具的合規不必又複雜又昂貴。壞消息是：多數傳統分析工具只會讓這件事變得更難。
+
+本指南會拆解主要合規框架，說明它們對你的分析設定有什麼影響，並展示 [OpenPanel](/) 如何在不增加負擔的情況下協助你維持合規。
+
+## 為什麼分析合規很重要
+
+當有人造訪你的網站時，你會收集他們的資料。也許包括所在地、瀏覽了哪些頁面、停留多久，或是點了哪些按鈕。依照多數隱私法，這些都算個人資料。
+
+合規出錯的後果是真實存在的。GDPR 的罰鍰最高可達 2,000 萬歐元或全球營收的 4%，以較高者為準。CCPA 違規每次可處以最高 7,988 美元的故意違規罰款。除了罰鍰之外，還有品牌聲譽受損與客戶信任流失。
+
+多數分析合規問題，大致都可歸結為幾個核心問題。
+
+**第三方資料分享。** 當你使用 Google Analytics 或類似工具時，訪客資料會經過他們的伺服器。這就造成了資料保管鏈的問題。即使資料是放在別人的基礎架構上，你仍然要對其後續處理負責。
+
+**Cookie 與同意。** 傳統分析工具高度依賴 Cookie。依照 GDPR、PECR 與類似法規，在放置大多數 Cookie 之前，你需要取得明確同意。這代表你得架設 Cookie 橫幅、管理同意流程，還要承受伴隨而來的摩擦。
+
+**跨境資料傳輸。** 如果你收集的是歐盟居民的資料，而資料最後流向美國伺服器，你就可能面臨合規問題。這也是為什麼 Google Analytics 在多個歐盟國家被裁定違法。
+
+解法有兩種：要嘛使用 [隱私優先的分析工具](/articles/cookieless-analytics) 來避開這些問題，要嘛自行架設分析系統，讓資料根本不會離開你的基礎架構。
+
+## GDPR：大家最熟悉的那一個
+
+一般資料保護規則（GDPR）是最重要的一項。它適用於任何處理歐盟居民個人資料的組織，不論該組織位於哪裡。所以只要你的網站有歐洲訪客，GDPR 就適用於你。
+
+### GDPR 對分析的要求
+
+GDPR 建立在幾項會直接影響分析方式的原則上。
+
+**處理的合法依據。** 你需要有法律理由來收集與處理個人資料。對分析來說，通常代表要取得同意，或證明「合法利益」。同意的做法較乾淨，但會需要那些 Cookie 橫幅。合法利益也可行，但需要文件與衡量測試。
+
+**資料最小化。** 只收集你需要的資料。如果你追蹤 50 個使用者屬性，但實際只看其中 5 個，那就是問題。
+
+**刪除權。** 使用者可以要求你刪除他們的資料。你必須真的做得到，而當資料放在第三方資料庫時，這件事就變得很棘手。
+
+**透明性。** 使用者需要知道你收集了什麼，以及為什麼收集。這表示你需要清楚的隱私權政策，而且在多數情況下也需要 Cookie 同意介面。
+
+### 為什麼 Google Analytics 一直被封殺
+
+奧地利、法國、義大利與其他歐盟國家的資料保護主管機關都已宣布 Google Analytics 不符合 GDPR。核心問題在於：GA 會將個人資料（包含 IP 位址）傳輸到美國伺服器，而美國情報機關可能可以存取這些資料。這違反了 GDPR 第 V 章，也就是管理國際資料傳輸的規定。
+
+即使啟用 IP 匿名化，資料在匿名化之前還是會先送到 Google 的伺服器。這本身就是問題。
+
+<WindowImage
+  srcDark="/screenshots/overview-dark.webp"
+  srcLight="/screenshots/overview-light.webp"
+  alt="OpenPanel 儀表板總覽"
+  caption="這是 OpenPanel 儀表板的樣子，自架版本具備雲端版本的所有功能。發布週期比雲端版本晚 2-3 個月。"
+/>
+
+### OpenPanel 如何處理 GDPR
+
+OpenPanel 採取的是不同的方法。我們從一開始就是以隱私為基礎來打造，而不是事後補救。
+
+**預設無 Cookie。** OpenPanel 不使用 Cookie 進行追蹤。沒有 Cookie，就不需要為基礎分析放置 Cookie 同意橫幅。你的訪客體驗更乾淨，你也不必管理同意流程。想了解更多，可參考我們的 [無 Cookie 分析指南](/articles/cookieless-analytics)。
+
+**不進行第三方資料分享。** 在 OpenPanel Cloud 中，你的資料會保留在我們位於歐盟的基礎架構內。若使用 [自架](/articles/how-to-self-host-openpanel)，資料根本不會離開你的伺服器。
+
+**內建資料匯出與刪除。** 需要處理資料當事人請求嗎？OpenPanel 的 [Export API](/docs/api/export) 可讓你輕鬆匯出使用者資料。你可以透過儀表板刪除整個專案資料；如果你需要刪除某個特定已識別的個人檔案，也可以向我們提出要求。
+
+**透明且開源。** 你可以 [自行審查程式碼](https://github.com/Openpanel-dev/openpanel)，精確了解收集了哪些資料，以及如何處理。
+
+## CCPA：加州的隱私法
+
+《加州消費者隱私法》（以及其修正案 CPRA）賦予加州居民對其個人資訊的特定權利。如果你在加州做生意，或收集加州居民的資料，這一項就很重要。
+
+### CCPA 的主要要求
+
+**知悉權。** 消費者可以詢問你收集了哪些個人資訊、來源為何，以及你與誰分享了這些資訊。
+
+**刪除權。** 和 GDPR 類似，消費者可以要求刪除其個人資訊。
+
+**拒絕權。** 這是分析最重要的一點。消費者可以拒絕其個人資訊被「出售」或「分享」。依 CCPA 規定，「分享」包含為跨情境行為廣告而向第三方提供資料，而這正是許多分析工具在做的事。
+
+**不得歧視。** 你不能因為消費者行使隱私權利，就對其採取不同對待。
+
+### 「Do Not Sell」問題
+
+許多傳統分析工具在技術上確實會與第三方「分享」你的使用者資料。當你使用 Google Analytics 時，使用者資料會流經 Google 的系統，並可能被用於其自身目的。依 CCPA 來看，這可能算是分享，這也代表你需要遵守「Do Not Sell or Share」要求。
+
+這在營運上是很大的負擔。你需要有系統追蹤拒絕請求、通知所有供應商，並確認他們確實遵守。
+
+### OpenPanel 如何簡化 CCPA
+
+使用 OpenPanel，就沒有任何分享需要被拒絕。
+
+當你使用 OpenPanel Cloud 時，資料只會為了你的分析用途而被處理。我們不會把資料賣給任何人，也不會與任何人分享。當你 [自架 OpenPanel](/docs/self-hosting/self-hosting) 時，你可完全掌控整條資料管線，根本不涉及任何第三方。
+
+這大幅降低了 CCPA 的複雜度。你仍然需要適當的隱私揭露，但不需要為你的分析資料管理供應商。
+
+## HIPAA：醫療產業的特殊規則
+
+如果你在醫療產業，或處理受保護健康資訊（PHI），HIPAA 會再增加一層要求。對傳統分析供應商來說，這往往意味著成本大幅上升。
+
+### BAA 要求
+
+HIPAA 規定，任何能存取 PHI 的第三方都必須簽署 Business Associate Agreement（BAA，商業夥伴協議），這是一份法律契約，會明確規範供應商可以與不可以如何處理健康資訊。
+
+問題是：多數分析供應商要嘛根本不提供 BAA，要嘛索取非常高的費用。這通常是企業級方案價格，一年可能高達數萬美元。
+
+Google Analytics 不提供 BAA。Mixpanel 有提供，但僅限企業方案。多數主要分析平台也都是如此。
+
+### 分析中的 PHI 什麼情況算數
+
+這是很多醫療組織最容易出錯的地方。PHI 不只是病歷而已。依 HHS 指引，當有人造訪醫療網站的登入後頁面時，若 IP 位址與其正在瀏覽健康相關內容這件事結合，就可能構成 PHI。
+
+所以如果你在病患入口網站或醫療 App 使用基於 Cookie 的追蹤，你可能在不知情的情況下，將 PHI 分享給你的分析供應商。
+
+### 自架解法
+
+自架會改變整個情況：如果你自己架設分析系統，就不需要 BAA。
+
+當你把 PHI 分享給商業夥伴時，才需要 BAA。但如果你在自己符合 HIPAA 規範的基礎架構上 [自架 OpenPanel](/articles/how-to-self-host-openpanel)，就不涉及任何第三方。資料不會離開你的環境，也不需要管理商業夥伴關係。
+
+這樣你就能在醫療應用中取得有價值的分析，而不用承擔企業級價格或法律複雜度。你可以使用 [Docker Compose](/docs/self-hosting/deploy-docker-compose)、[Kubernetes](/docs/self-hosting/deploy-kubernetes) 或你偏好的方式，把 OpenPanel 部署在既有的 HIPAA 合規伺服器上，然後就完成了。
+
+## PECR：英國的 Cookie 法
+
+如果你的訪客來自英國，你除了 UK GDPR 之外，還需要考慮 PECR（Privacy and Electronic Communications Regulations，隱私與電子通訊法規）。PECR 專門規範 Cookie 與類似的追蹤技術。
+
+### PECR 的要求
+
+PECR 的規則簡單但嚴格：在儲存或存取使用者裝置上的資訊之前，你需要先取得同意。這包括 Cookie、local storage 以及類似技術。
+
+只有兩種例外。「通訊例外」涵蓋傳輸通訊所必需的技術。「嚴格必要例外」涵蓋提供使用者明確要求之服務所必需的技術。
+
+重點是：**分析 Cookie 不在例外之列。** 英國資訊專員辦公室對此態度非常明確。如果你使用基於 Cookie 的分析，就需要同意。
+
+### 罰鍰正在提高
+
+PECR 的罰鍰過去上限是 50 萬英鎊。新的《資料（使用與存取）法》（Data (Use and Access) Act）已將 PECR 罰則與 UK GDPR 對齊，代表最高可罰 1,750 萬英鎊。ICO 也更積極地執行 Cookie 合規。
+
+### 無 Cookie 分析繞過 PECR
+
+因為 [OpenPanel 的追蹤是無 Cookie 的](/articles/cookieless-analytics)，所以 PECR 的同意要求不適用於基礎分析。你沒有在使用者裝置上儲存任何東西，因此也沒有需要同意的內容。
+
+這不代表你可以想追蹤什麼就追蹤什麼。UK GDPR 仍然適用於個人資料處理。但你可以跳過 PECR 原本會要求的 Cookie 橫幅與同意管理平台。
+
+## 自架的優勢
+
+我們前面多次提到自架，是有充分理由的。它是簡化幾乎所有法規下分析合規的最有效方式。
+
+### 自架到底是什麼意思
+
+當你自架 OpenPanel 時，你是在自己的基礎架構上運行整個分析平台。那可以是你自己的伺服器、你的雲端帳號（AWS、GCP、Azure 等等），或是一台簡單的 VPS。
+
+資料流與傳統分析工具完全不同。
+
+**傳統分析：** 使用者 → 你的網站 → 分析供應商的伺服器 → 供應商儀表板
+
+**自架分析：** 使用者 → 你的網站 → 你的伺服器 → 你的儀表板
+
+中間這一步就是關鍵。使用傳統分析時，你把資料分享給第三方；自架時，資料從未離開你的控制範圍。
+
+### 跨法規的合規好處
+
+**GDPR：** 若你在歐盟主機上部署，就沒有跨境資料傳輸問題。你對資料保留與刪除有完整控制權，也不需要管理第三方資料分享。
+
+**CCPA：** 依定義，不存在「出售」或「分享」。你沒有把資料提供給任何第三方。
+
+**HIPAA：** 不需要 BAA，因為沒有商業夥伴。PHI 會留在你的 HIPAA 合規環境內。
+
+**PECR：** 無 Cookie 追蹤代表基礎分析不需要同意。
+
+**SOC 2：** 當你控制分析基礎架構時，供應商風險管理更容易。你既有的安全控制也會適用。
+
+### 不只是合規
+
+自架不只是為了合規，還有實際上的好處。
+
+**成本可預測。** 沒有依事件計費帶來的驚喜。你的成本就是伺服器成本，而在規模化後通常遠低於 SaaS 分析價格。
+
+**沒有供應商綁定。** 你的資料就在你的資料庫中。你可以用任何方式查詢、整合到其他系統，或隨時遷移出去。
+
+**效能。** 資料離使用者更近。不需要擔心被廣告阻擋器封鎖的外部請求。
+
+**完全透明。** OpenPanel 是 [開源](https://github.com/Openpanel-dev/openpanel) 的。你可以精確審查收集了什麼資料，以及如何處理。
+
+### 開始自架
+
+我們已盡量讓自架變得簡單。基本流程如下：
+
+```bash
+git clone https://github.com/openpanel-dev/openpanel.git
+cd openpanel/self-hosting
+./setup
+./start
+```
+
+我們也針對不同部署方式提供詳細指南，包括 [Docker Compose](/docs/self-hosting/deploy-docker-compose)、[Coolify](/docs/self-hosting/deploy-coolify)、[Dokploy](/docs/self-hosting/deploy-dokploy) 與 [Kubernetes](/docs/self-hosting/deploy-kubernetes)。
+
+歡迎查看完整的 [自架指南](/articles/how-to-self-host-openpanel)，逐步了解整個流程。
+
+## 「免費」分析的隱藏成本
+
+以 Google Analytics 為例。它是免費的，這很棒。但這種「免費」常伴隨許多組織沒有算進去的合規成本。
+
+**Cookie 同意管理。** 你需要同意管理平台、持續維護，還可能因為使用者拒絕而導致資料品質變差。
+
+**隱私權政策與法務審查。** 你的法務團隊需要審查 GA 如何處理資料，並更新你的隱私文件。
+
+**供應商評估負擔。** 對於受監管產業，你需要持續評估 Google 的做法與合規狀態。
+
+**GDPR 風險。** 考慮到歐洲對 GA 持續進行的監管行動，你承擔的是難以量化的法律風險。
+
+**資料當事人請求。** 透過 GA 的工具處理刪除請求既麻煩又不完整。
+
+把這些加總起來，你會發現「免費」分析通常一點也不免費。像 [OpenPanel](/pricing) 這樣透明的付費工具，或自架架構，往往總成本更低，同時也更合規。
+
+## 其他值得了解的法規
+
+GDPR、CCPA、HIPAA 與 PECR 是最重要的，但依照你的受眾，還有其他法規也值得注意。
+
+**LGPD（巴西）：** 與 GDPR 類似，對同意、資料最小化與使用者權利都有要求。
+
+**PIPEDA（加拿大）：** 要求在蒐集與使用個人資訊時取得同意，但某些情況有例外。
+
+**美國州法：** 現在已有超過 20 個美國州擁有完整隱私法，包括維吉尼亞州、科羅拉多州、康乃狄克州等。多數都與 CCPA 的模式相近。
+
+好消息是：如果你已符合 GDPR 和 CCPA，通常也大致符合這些法規。而如果你使用無 Cookie、自架的分析工具，你在所有這些法規上都已超前部署。
+
+## 開始使用
+
+準備好簡化你的分析合規了嗎？使用 OpenPanel 你有兩條路可走。
+
+**OpenPanel Cloud** 是最快的開始方式。我們負責基礎架構，而你的資料會在符合 GDPR 與 CCPA 的前提下被處理。你只要用一段 [簡單的 script tag](/docs/get-started/install-openpanel) 就能在幾分鐘內上線。
+
+**自架 OpenPanel** 則提供最大的控制權與合規彈性。它很適合醫療組織、對資料駐留有嚴格要求的企業，或任何希望完整擁有自己分析資料的人。
+
+無論選哪一種，你都能獲得 [無 Cookie 追蹤](/articles/cookieless-analytics)、[即時儀表板](/docs)、[漏斗](/articles/how-to-create-a-funnel)、使用者檔案，以及你理解使用者所需的功能，同時不必面對合規複雜度。
+
+[開始使用 OpenPanel Cloud](https://dashboard.openpanel.dev/onboarding) 或查看我們的 [自架文件](/docs/self-hosting/self-hosting)。
+
+<Faqs>
+<FaqItem question="OpenPanel 會使用 Cookie 嗎？">
+不會。OpenPanel 預設使用無 Cookie 追蹤。這表示在多數隱私法規下，包括 GDPR 與 PECR，你不需要為基礎分析顯示 Cookie 同意橫幅。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 嗎？">
+是。OpenPanel 的設計就是為了符合 GDPR，具備無 Cookie 追蹤、資料最小化，以及完整支援資料當事人權利。若採用自架，你還能完全消除跨境資料傳輸的疑慮。
+</FaqItem>
+
+<FaqItem question="我需要 BAA 才能把 OpenPanel 用於醫療分析嗎？">
+如果你使用 OpenPanel Cloud，你需要和我們討論 BAA 的需求。不過，如果你把 OpenPanel 自架在自己的 HIPAA 合規基礎架構上，就不需要 BAA，因為資料不會離開你的環境。
+</FaqItem>
+
+<FaqItem question="我可以在沒有 Cookie 橫幅的情況下使用 OpenPanel 嗎？">
+可以。由於 OpenPanel 不使用 Cookie，你的分析不需要 Cookie 同意橫幅。不過，你仍然應該有一份隱私權政策，說明你收集了哪些資料。
+</FaqItem>
+
+<FaqItem question="OpenPanel Cloud 的資料儲存在哪裡？">
+OpenPanel Cloud 的基礎架構位於歐盟。若有特定的資料駐留要求，自架可讓你完全控制資料所在的位置。
+</FaqItem>
+
+<FaqItem question="自架如何幫助合規？">
+自架會消除第三方資料分享，因而簡化 GDPR、CCPA、HIPAA 與其他法規的合規要求。你的資料不會離開你的基礎架構，因此不需要管理供應商，也不用擔心跨境資料傳輸，且不需要 BAA。
+</FaqItem>
+
+<FaqItem question="我可以從 Google Analytics 轉換到 OpenPanel 嗎？">
+可以。OpenPanel 能取代 Google Analytics 滿足大多數使用情境。我們同時提供 [網站分析](/features/web-analytics) 與產品分析功能。歡迎查看我們與其他平台的比較，例如 [Google Analytics 替代方案](/compare/google-analytics-alternative) 頁面。
+</FaqItem>
+
+<FaqItem question="OpenPanel 是開源的嗎？">
+是。OpenPanel 完全開源，可在 GitHub 上取得。你可以審查程式碼、貢獻，或依自己的需求 fork。
+</FaqItem>
+</Faqs>

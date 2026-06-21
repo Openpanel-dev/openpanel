@@ -1,0 +1,220 @@
+---
+title: 使用 Coolify 部署
+description: 使用 Coolify 的一键服务部署 OpenPanel
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+[Coolify](https://coolify.io) 是一个开源、自托管的平台，可简化应用部署。OpenPanel 已作为 Coolify 中的一键服务提供，使部署快速且简单。
+
+## 前提条件
+
+- 已安装并运行的 Coolify 实例
+- 至少 2GB 内存的服务器（建议 4GB+）
+- 已在 Coolify 中配置域名（可选，但推荐）
+
+## 快速开始
+
+<Steps>
+<Step>
+### 创建新资源
+
+1. 登录你的 Coolify 仪表盘
+2. 进入你的项目
+3. 点击 **"New Resource"** 或 **"Add Service"**
+4. 选择 **"One-Click Services"** 或 **"Docker Compose"**
+</Step>
+
+<Step>
+### 选择 OpenPanel
+
+1. 在服务列表中搜索 **"OpenPanel"**
+2. 点击 **OpenPanel** 进行选择
+3. 服务模板会自动填充所需配置
+</Step>
+
+<Step>
+### 配置部署
+
+Coolify 会自动配置大部分设置，但你可能仍想自定义：
+
+- **Domain**：为仪表盘设置你的域名
+- **Environment Variables**：配置可选设置，例如：
+  - `ALLOW_REGISTRATION`：设为 `false` 可禁用公开注册
+  - `ALLOW_INVITATION`：设为 `true` 可允许用户邀请
+  - `RESEND_API_KEY`：用于邮件功能的 Resend API key
+  - `EMAIL_SENDER`：发件人邮箱地址
+  - `OPENAI_API_KEY` 和/或 `ANTHROPIC_API_KEY`：应用内 AI 聊天助手的 API key（可选——可设置其一或两者）
+
+<Callout>
+Coolify 会自动处理：
+- 数据库设置（PostgreSQL）
+- Redis 配置
+- ClickHouse 设置
+- SSL 证书
+- 服务健康检查
+- 自动重启
+</Callout>
+</Step>
+
+<Step>
+### 部署
+
+1. 检查你的配置
+2. 点击 **"Deploy"** 或 **"Save"**
+3. Coolify 将自动：
+   - 拉取所需的 Docker 镜像
+   - 启动所有服务
+   - 运行数据库迁移
+   - 设置 SSL 证书（如果已配置域名）
+
+等待所有服务变为健康状态。你可以在 Coolify 仪表盘中监控部署进度。
+</Step>
+
+<Step>
+### 访问你的仪表盘
+
+部署完成后，你可以通过已配置的域名访问 OpenPanel。第一个注册的用户将成为管理员账号。
+
+<Callout type="warn">
+默认情况下，在创建第一个用户后会禁用注册。请务必先注册你的管理员账号！
+</Callout>
+</Step>
+</Steps>
+
+## 服务结构
+
+Coolify 使用以下服务部署 OpenPanel：
+
+- **opapi**：OpenPanel API 服务器（处理 `/api` 路由）
+- **opdashboard**：OpenPanel 仪表盘（前端）
+- **opworker**：用于处理事件的后台 worker
+- **opdb**：PostgreSQL 数据库
+- **opkv**：Redis 缓存
+- **opch**：ClickHouse 分析数据库
+
+## 配置
+
+### 环境变量
+
+你可以在 Coolify 中通过环境变量配置 OpenPanel。Coolify 会自动设置所需的数据库和连接变量。
+
+有关所有可用环境变量的完整参考，请参阅 [Environment Variables 文档](/zh-CN/docs/self-hosting/environment-variables)。
+
+#### Coolify 特定说明
+
+Coolify 会自动处理这些变量：
+- `DATABASE_URL`：PostgreSQL 连接字符串
+- `REDIS_URL`：Redis 连接字符串
+- `CLICKHOUSE_URL`：ClickHouse 连接字符串
+- `API_URL`：API 端点 URL（通过 `SERVICE_FQDN_OPAPI` 设置）
+- `DASHBOARD_URL`：仪表盘 URL（通过 `SERVICE_FQDN_OPDASHBOARD` 设置）
+- `COOKIE_SECRET`：自动生成的密钥
+
+你可以通过 Coolify 的环境变量界面配置 `ALLOW_REGISTRATION`、`RESEND_API_KEY`、`OPENAI_API_KEY` 等可选变量。
+
+### 更新 OpenPanel
+
+要在 Coolify 中更新 OpenPanel：
+
+1. 进入你的 OpenPanel 服务
+2. 点击 **"Redeploy"** 或 **"Update"**
+3. Coolify 将拉取最新镜像并重启服务
+
+<Callout>
+数据库迁移会在 API 服务启动时自动运行，因此更新过程是无缝的。
+</Callout>
+
+### 扩容
+
+你可以在 Coolify 中扩展 worker 服务：
+
+1. 进入你的 OpenPanel 服务
+2. 编辑 `opworker` 服务配置
+3. 调整副本数量
+4. 保存并重新部署
+
+## 故障排除
+
+### 服务未启动
+
+1. 查看 Coolify 仪表盘中的服务日志
+2. 确认所有环境变量都已正确设置
+3. 确保服务器有足够资源（内存、磁盘空间）
+
+### 数据库连接问题
+
+1. 确认数据库服务（`opdb`）正在运行
+2. 检查 `DATABASE_URL` 格式是否正确
+3. 查看 Coolify 中的数据库日志
+
+### SSL 证书问题
+
+如果 SSL 证书未签发：
+
+1. 确认你的域名 DNS 已指向 Coolify
+2. 检查 Coolify 的 SSL/TLS 设置
+3. 查看 Coolify 日志中的 Let's Encrypt 错误
+
+### 健康检查失败
+
+如果健康检查失败：
+
+1. 查看服务日志中的错误
+2. 确认所有依赖都在运行
+3. 如有需要，增加健康检查超时时间
+
+## 使用自己的数据库
+
+如果你想使用外部 PostgreSQL 数据库：
+
+1. 在 Coolify 中创建新的 PostgreSQL 数据库，或使用外部服务
+2. 更新 OpenPanel 服务中的 `DATABASE_URL` 环境变量
+3. 将 `DATABASE_URL_DIRECT` 更新为匹配值
+4. 重新部署服务
+
+如果你想使用外部服务，Redis 和 ClickHouse 也同样适用。
+
+## 备份与恢复
+
+### 备份
+
+Coolify 提供内置备份功能：
+
+1. 进入你的数据库服务（`opdb`）
+2. 配置备份设置
+3. 设置备份计划
+4. 备份将按照你的 Coolify 配置存储
+
+### 手动备份
+
+你也可以创建手动备份：
+
+1. 使用 Coolify 的终端访问
+2. 导出数据库：
+   ```bash
+   docker exec opdb pg_dump -U postgres openpanel-db > backup.sql
+   ```
+
+### 恢复
+
+要从备份恢复：
+
+1. 使用 Coolify 的终端访问
+2. 恢复数据库：
+   ```bash
+   docker exec -i opdb psql -U postgres openpanel-db < backup.sql
+   ```
+
+## 后续步骤
+
+- [配置邮件设置](/zh-CN/docs/self-hosting/self-hosting#e-mail) 用于密码重置和邀请
+- [设置 AI 集成](/zh-CN/docs/self-hosting/self-hosting#ai-integration) 用于分析助手
+- [配置 SDK](/zh-CN/docs/self-hosting/self-hosting#always-use-correct-api-url) 以跟踪来自你应用的事件
+
+## 其他资源
+
+- [Coolify 文档](https://coolify.io/docs)
+- [Coolify 服务目录](https://coolify.io/docs/services)
+- [Coolify 上的 OpenPanel](https://coolify.io/docs/services/openpanel)

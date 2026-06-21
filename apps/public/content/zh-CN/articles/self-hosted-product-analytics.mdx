@@ -1,0 +1,381 @@
+---
+title: "自托管 Mixpanel 替代方案：5 款可替代它的产品分析工具（2026）"
+description: "使用自托管产品分析工具替代 Mixpanel、Amplitude 或 Heap。对比 OpenPanel、PostHog、Countly、Matomo 和 Mitzu——部署、功能与总体拥有成本。"
+tag: Comparison
+team: OpenPanel Team
+date: 2026-02-16
+updated: 2026-04-22
+cover: /content/self-hosted-analytics.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+
+产品分析会告诉你，用户在你的产品里*做了什么*——他们使用了哪些功能、在哪些地方流失、多久会回来，以及在转化前会经过哪些路径。它的区别在于，你不只是知道“我们获得了 10,000 次页面浏览”，而是知道“40% 开始注册流程的用户从未完成第 3 步”。
+
+如果你想获得这些洞察，同时又不把用户行为数据发送给第三方，那么自托管产品分析就是最佳选择。
+
+但问题在于：大多数自托管分析工具只覆盖**网站分析**——页面浏览、流量来源和引荐。像漏斗、留存、分群和用户识别这样的产品分析功能，需要的是另一类工具。
+
+我们对所有提供真正产品分析能力的自托管工具进行了比较。以下这些最值得关注。
+
+## 快速对比
+
+| 工具 | 侧重点 | 许可协议 | 自托管成本 | 云端价格（起） | 最适合 |
+|------|-------|---------|---------------|---------------------|----------|
+| [**OpenPanel**](#openpanel) | 网站 + 产品 | AGPL-3.0 | 免费 | $2.50/月 | 想要类似 Mixpanel 的分析、且需要自托管的团队 |
+| [**PostHog**](#posthog) | 产品 + 网站 | MIT | 免费 | $0 + 按使用量计费 | 需要分析 + 功能开关 + 实验的开发团队 |
+| [**Countly**](#countly) | 产品 + 移动端 | AGPL-3.0 | 免费（社区版） | 定制报价 | 以移动端为先的产品分析 |
+| [**Matomo**](#matomo) | 网站（+ 产品插件） | GPL-3.0 | 免费（核心） | €29/月 | 作为 Google Analytics 替代方案，并希望附加产品功能的团队 |
+| [**Mitzu**](#mitzu) | 产品 | 源代码可用 | 付费 | 定制报价 | 基于数仓的产品分析 |
+
+## 产品分析与网站分析有何不同
+
+网站分析回答的是关于你**网站流量**的问题：访客来自哪里、浏览了哪些页面、停留了多久。像 [Plausible](/compare/plausible-alternative)、[Umami](/compare/umami-alternative) 和 [GoatCounter](/compare/goatcounter-alternative) 这样的工具对此做得很好。
+
+产品分析则更深入。它回答的是关于**用户行为**的问题：
+
+- **漏斗**：有多少用户完成了注册？他们具体在哪一步流失？
+- **留存**：用户在第一次使用后一周、一个月后还会回来吗？
+- **用户旅程**：用户在升级到付费方案之前做了什么？
+- **分群分析**：移动端完成引导的新用户，是否比桌面端用户留存更好？
+- **事件跟踪**：哪些功能被使用了？使用频率如何？由谁使用？
+
+如果你正在构建 SaaS、移动应用，或任何需要理解用户行为的产品，那么你需要的是产品分析——不只是页面浏览次数。
+
+如果你想比较专注于网站分析的自托管工具，请参阅我们的[自托管网站分析指南](/zh-CN/articles/self-hosted-web-analytics)。
+
+---
+
+## OpenPanel
+
+**最适合：想要类似 Mixpanel 的产品分析，同时需要自托管选项的团队**
+
+[OpenPanel](/) 为你提供类似 [Mixpanel](/compare/mixpanel-alternative) 和 [Amplitude](/compare/amplitude-alternative) 的能力，同时不会把你的数据发送给第三方。它将网站分析和产品分析整合在一个平台中，支持无 Cookie 跟踪，并且自托管设置简单。
+
+![OpenPanel 仪表盘](/content/tools/openpanel.png)
+
+### 产品分析功能
+
+- **[漏斗](/features/funnels)**：使用任意事件构建多步骤转化漏斗。查看用户在哪些环节流失，并按属性细分。
+- **[留存](/features/retention)**：分析用户随着时间推移的回访情况。按分群、方案或获客渠道比较留存。
+- **[事件跟踪](/features/event-tracking)**：跟踪任何带属性的自定义事件。可用图表、表格和分解方式进行可视化。
+- **用户识别**：将事件关联到单个用户。查看完整的用户资料及其全部事件历史。
+- **[会话跟踪](/features/session-tracking)**：查看单个会话以及完整的事件和页面序列。
+- **实时仪表盘**：支持多种图表类型的自定义仪表盘，实时更新。
+
+### 部署
+
+四条命令即可自托管：
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+./start
+```
+
+基于 Docker Compose 运行，包含 ClickHouse、PostgreSQL 和 Redis。中端 VPS（4 vCPU、8 GB RAM）可处理数百万事件。安装向导会处理配置、数据库初始化和 SSL。
+
+完整指南：[如何自托管 OpenPanel](/zh-CN/articles/how-to-self-host-openpanel) | [自托管文档](/zh-CN/docs/self-hosting/self-hosting)
+
+### 定价
+
+自托管免费。包含全部功能——自托管版本与云端版本完全一致，没有功能限制。
+
+云计划起价为 $2.50/月（5,000 个事件），最高可扩展到 $90/月（100 万个事件）。所有层级都包含全部功能。
+
+### 优点
+- 在一个工具中同时提供完整的产品分析（漏斗、留存、用户资料）和网站分析
+- 在功能相当的工具中，自托管设置最简单
+- 无 Cookie 跟踪——无需同意横幅
+- 自托管版本与云端版本完全一致
+- 多种 SDK：JavaScript、React、Next.js、Vue、React Native、Flutter 等
+
+### 缺点
+- 项目较新——社区规模小于 PostHog 或 Matomo
+- 目前还没有内置热图
+- 没有内置功能开关或 A/B 测试
+
+---
+
+## PostHog
+
+**最适合：希望在一个平台中同时拥有分析、功能开关和实验能力的工程团队**
+
+[PostHog](https://posthog.com/) 是功能最丰富的自托管产品分析工具。它将产品分析与会话回放、功能开关、A/B 测试、问卷和错误跟踪打包在一起。如果你想要一个能覆盖产品开发全流程的工具，PostHog 是最完整的选择。
+
+![PostHog 仪表盘](/content/tools/posthog.png)
+
+### 产品分析功能
+
+- **漏斗**：支持按用户属性分解的多步骤漏斗分析
+- **留存**：基于分群的留存分析
+- **用户路径**：可视化用户如何在产品中导航
+- **分群**：按行为、属性或生命周期阶段对用户分组
+- **会话回放**：观看真实用户会话录像
+- **功能开关**：向特定用户群逐步开放功能
+- **A/B 测试**：运行实验并衡量对指标的影响
+- **问卷**：收集产品内反馈
+
+### 部署
+
+PostHog 自托管在小规模部署时使用 Docker Compose，生产环境则使用 Kubernetes（Helm charts）。基础设施栈包括 PostgreSQL、Redis、ClickHouse 和 Kafka——比其他选项复杂得多。
+
+要求：最低 4 vCPU、16 GB RAM、30 GB 以上存储。PostHog 建议仅在每月事件量不超过约 30 万时进行自托管。超过这一规模后，他们会引导你使用其云服务。
+
+### 定价
+
+在 MIT 许可下，自托管免费。云端免费层每月包含 100 万分析事件、5,000 次会话录制和 100 万次功能开关请求。超过后则按使用量计费（下一个百万事件约为每个事件 $0.00005）。
+
+### 优点
+- 在所有自托管分析工具中，功能最全面
+- MIT 许可——非常宽松
+- 云端免费层（100 万事件）可用于起步
+- 社区活跃，开发节奏快
+
+### 缺点
+- 自托管复杂，依赖多个基础设施组件
+- 资源消耗高——所需内存是更简单工具的 4 倍
+- 自托管版本与云端版本的功能并不完全一致
+- 可能让人不知所措——很多功能大多数团队都用不上
+- PostHog 明确不鼓励大规模自托管
+
+与 OpenPanel 对比：[PostHog vs OpenPanel](/zh-CN/compare/posthog-alternative)
+
+---
+
+## Countly
+
+**最适合：支持自托管的移动优先产品分析**
+
+[Countly](https://countly.com/) 是一个具有强大移动分析根基的产品分析平台。它通过 iOS、Android、React Native、Flutter 等 SDK 支持网站、移动端和桌面应用。社区版可在 AGPL-3.0 下自托管。
+
+### 产品分析功能
+
+- **漏斗**：定义转化漏斗并跟踪流失率
+- **留存**：支持可配置时间周期的分群留存分析
+- **用户资料**：带有事件历史的单个用户跟踪
+- **细分**：按属性和行为筛选与细分用户
+- **推送通知**：内置推送通知系统（移动端）
+- **崩溃报告**：移动应用崩溃分析
+
+### 部署
+
+Countly 可通过 Docker 或在 Linux 上手动安装进行自托管。它使用 MongoDB 作为主数据库。安装过程比较直接，但生产部署需要 MongoDB 方面的经验。
+
+要求：最低 4 vCPU、8 GB RAM。MongoDB 6+。高流量移动应用需要更多资源。
+
+### 定价
+
+社区版在 AGPL-3.0 下免费，但功能有限。企业版采用定制报价，包含高级分析、推送通知、崩溃报告和专属支持。企业版的费用预计会比较高。
+
+### 优点
+- 移动分析能力强，原生 SDK 覆盖所有主流平台
+- 内置推送通知和崩溃报告
+- 已建立起的成熟平台，并有企业客户
+- 适合移动优先或混合应用分析
+
+### 缺点
+- 社区版功能受限——大多数产品分析功能需要企业版
+- 企业版价格不透明且昂贵
+- 仅支持 MongoDB——没有 PostgreSQL 或 ClickHouse 选项
+- 界面相较于较新的工具显得过时
+- 开源社区规模小于 PostHog
+
+与 OpenPanel 对比：[Countly vs OpenPanel](/zh-CN/compare/countly-alternative)
+
+---
+
+## Matomo
+
+**最适合：想要 Google Analytics 替代方案，并可按需添加产品分析功能的组织**
+
+[Matomo](https://matomo.org/) 主要是一款网站分析工具，但它通过插件系统提供产品分析能力。热图、会话录制、A/B 测试和漏斗都可作为付费插件使用——即使是在自托管实例上也是如此。
+
+![Matomo 仪表盘](/content/tools/matomo.png)
+
+### 产品分析功能
+
+- **漏斗**（付费插件）：多步骤转化漏斗
+- **分群**（付费插件）：按行为对用户分组并随时间分析
+- **热图**（付费插件）：查看用户点击、滚动和悬停的位置
+- **会话录制**（付费插件）：观看用户会话录像
+- **A/B 测试**（付费插件）：在你的网站上运行实验
+- **自定义事件**：跟踪自定义事件和目标
+
+### 部署
+
+Matomo 运行在 PHP + MySQL/MariaDB 上。可部署在任何 LAMP 堆栈上，或使用他们的 Docker 镜像。与仅需 Docker 的工具相比更复杂，因为它需要 PHP 环境和 Web 服务器配置。
+
+完整细节请参阅我们的[开源网站分析对比](/zh-CN/articles/self-hosted-web-analytics#matomo)。
+
+### 定价
+
+核心平台在 GPL-3.0 下免费。产品分析插件需单独购买：
+- 漏斗：€199/年
+- 热图 + 会话录制：€249/年
+- A/B 测试：€199/年
+- 分群：€79/年
+
+这些费用会累积。一个完整的自托管 Matomo 产品分析方案每年插件许可费用可能达到 €500-700+。
+
+### 优点
+- 最成熟的自托管分析平台（自 2007 年起）
+- 与 Google Analytics 最接近的功能对等替代
+- 大型插件库
+- 合规记录良好
+
+### 缺点
+- 产品分析功能是付费附加项，不包含在核心功能中
+- 插件费用会显著累积
+- PHP 技术栈需要更多维护
+- 不是原生产品分析工具——本质上是网站分析加上附加的产品功能
+
+与 OpenPanel 对比：[Matomo vs OpenPanel](/zh-CN/compare/matomo-alternative)
+
+---
+
+## Mitzu
+
+**最适合：希望在现有数据仓库之上进行产品分析的数据团队**
+
+[Mitzu](https://www.mitzu.io/) 采用了不同的方法。它不会把数据导入自己的数据库，而是直接在你现有的数据仓库（BigQuery、Snowflake、Databricks 等）上运行分析查询。如果你的事件数据已经在数仓中，Mitzu 可以让你在不重复存储数据的情况下获得产品分析能力。
+
+### 产品分析功能
+
+- **漏斗**：在你的数仓上运行转化漏斗分析
+- **留存**：直接基于数仓数据进行分群留存分析
+- **细分**：按数仓中的任意属性筛选用户
+- **用户旅程**：基于数仓数据的路径分析
+- **收入分析**：将事件与收入数据关联起来
+
+### 部署
+
+Mitzu 作为 Web 应用部署，并连接到你现有的数仓。支持自托管，但需要付费许可。
+
+要求：已有数据仓库（BigQuery、Snowflake、Databricks、ClickHouse 或 PostgreSQL），并且事件数据已经持续进入其中。
+
+### 定价
+
+自托管需要付费许可（价格可按需咨询）。云计划也采用定制报价。自托管没有免费层。
+
+### 优点
+- 无需重复存储数据——直接查询你现有的数仓
+- 与你已有的数据基础设施兼容
+- 对以 SQL 和数仓为核心的数据团队很友好
+- 适合拥有复杂数据管道的组织
+
+### 缺点
+- 需要已有包含事件数据的数据仓库
+- 自托管需要付费许可
+- 不适合从零开始的团队
+- 社区较小，文档较少
+
+---
+
+## 自托管产品分析 vs 云端：何时选择自托管
+
+对于产品分析而言，自托管的理由甚至比网站分析更充分。产品分析涉及**用户级数据**——单个用户、他们的行为，以及他们在产品中的路径。与汇总的页面浏览数据相比，这类数据更敏感。
+
+### 在以下情况下自托管产品分析：
+
+- **你处理敏感用户数据。** 医疗（HIPAA）、金融，或任何对用户行为数据有监管要求的行业。自托管可完全消除第三方数据传输。参见我们的[合规指南](/zh-CN/articles/better-compliance-self-hosted-analytics)。
+- **你需要用户级数据控制。** 产品分析会跟踪单个用户。在 GDPR 下，这属于个人数据。自托管让你对保留、删除和访问拥有完全控制权。
+- **你希望成本可预测。** 云端产品分析的价格会随事件量和已识别用户数量增长。到了一定规模，成本会迅速上升。自托管的成本就是你的服务器成本。
+- **你有数据驻留要求。** 某些法规要求数据必须保留在特定地理区域内。自托管在你自己的基础设施上即可解决这一问题。
+
+### 在以下情况下使用云端：
+
+- **你刚开始接触产品分析。** 云端可以更快获得洞察。若后续验证工具确实适合你的需求，再切换到自托管。
+- **你没有运维能力。** 使用 ClickHouse 后端的产品分析工具需要一定的数据库维护知识。
+- **你需要有保障的正常运行时间。** 如果分析停机将直接影响产品决策，那么带 SLA 的托管服务可能值得其成本。
+
+使用 [OpenPanel](/pricing)，你可以先从云端开始，之后随时迁移到自托管。两个版本的功能完全一致。
+
+---
+
+## 如何开始使用
+
+### 1. 选择服务器
+
+对于自托管产品分析，你需要比基础网站分析稍多一些资源，因为产品分析涉及更复杂的查询（漏斗、留存计算）。
+
+建议起步配置：4 vCPU、8 GB RAM、80 GB SSD。这足以轻松应对大多数中小型产品。
+
+- **[Hetzner](https://hetzner.cloud/?ref=7Hq0H5mQh7tM)** —— CX31（4 vCPU、8 GB RAM），约 €8.50/月
+- **DigitalOcean** —— 对应的 droplet 约 $48/月
+- **Vultr** —— 与 DigitalOcean 定价相近
+
+### 2. 安装并配置
+
+对于 OpenPanel：
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+./start
+```
+
+安装向导会引导你完成域名配置、数据库设置、SSL 和 worker 设置。完整指南：[如何自托管 OpenPanel](/zh-CN/articles/how-to-self-host-openpanel)。
+
+### 3. 为你的产品接入埋点
+
+产品分析需要在代码库中进行事件跟踪。使用 OpenPanel 时，请安装适用于你框架的 SDK：
+
+```bash
+npm install @openpanel/nextjs
+# or @openpanel/react, @openpanel/vue, @openpanel/sdk
+```
+
+然后在事件发生时进行跟踪：
+
+```typescript
+import { op } from '@openpanel/nextjs';
+
+// 跟踪自定义事件
+op.track('signup_completed', {
+  plan: 'pro',
+  source: 'landing_page'
+});
+
+// 识别用户
+op.identify({
+  profileId: 'user_123',
+  email: 'user@example.com',
+  plan: 'pro'
+});
+```
+
+请参阅适用于你具体框架的[SDK 文档](/zh-CN/docs/get-started/install-openpanel)。
+
+### 4. 构建你的第一个漏斗
+
+一旦事件开始流入，就可以创建你的第一个转化漏斗。一个常见的起点是：**访问落地页 > 注册 > 完成引导 > 首个关键操作**。这会立刻显示用户在核心流程中的流失位置。
+
+---
+
+<Faqs>
+<FaqItem question="What is the best self-hosted product analytics tool?">
+对于大多数团队来说，OpenPanel 在产品分析功能、自托管简易度和成本之间提供了最佳平衡。PostHog 功能更丰富（功能开关、A/B 测试），但自托管要复杂得多。Countly 最适合移动优先的产品。
+</FaqItem>
+
+<FaqItem question="Can I self-host Mixpanel or Amplitude?">
+不可以。Mixpanel 和 Amplitude 都是仅云端平台，没有自托管选项。最接近的自托管替代方案是 OpenPanel（在产品分析功能上最像 Mixpanel）和 PostHog（功能更广但更复杂）。
+</FaqItem>
+
+<FaqItem question="What is the difference between product analytics and web analytics?">
+网站分析跟踪的是网站流量——页面浏览、引荐、设备和地理数据。产品分析跟踪的是用户行为——事件、漏斗、留存、分群和用户旅程。大多数自托管工具只提供网站分析。OpenPanel、PostHog 和 Countly 两者都提供。有关专注网站分析的工具，请参阅我们的[自托管网站分析对比](/zh-CN/articles/self-hosted-web-analytics)。
+</FaqItem>
+
+<FaqItem question="How much does self-hosted product analytics cost?">
+OpenPanel（AGPL-3.0）和 PostHog（MIT）的软件本身是免费的。你的成本主要是服务器基础设施——通常 VPS 约 $10-50/月，具体取决于流量。Countly 的企业版功能以及 Matomo 的产品分析插件除了服务器成本外还需要付费许可。
+</FaqItem>
+
+<FaqItem question="Do I need separate tools for web and product analytics?">
+不一定。OpenPanel 和 PostHog 都将网站分析和产品分析整合在一个平台中。这意味着只需要一个跟踪代码、一套仪表盘，以及统一的用户资料。如果你只需要网站分析，Plausible 或 Umami 这类更简单的工具会更合适。
+</FaqItem>
+
+<FaqItem question="Is self-hosted product analytics GDPR compliant?">
+自托管是实现 GDPR 合规的最强方式之一，因为用户数据不会离开你的基础设施。结合无 Cookie 跟踪（OpenPanel 可用），你可以在无需同意横幅的情况下运行产品分析，并且对数据保留和删除拥有完全控制权。
+</FaqItem>
+
+<FaqItem question="Can I start with cloud and migrate to self-hosting later?">
+使用 OpenPanel，可以。云端版和自托管版在功能上完全一致。你可以先用 Cloud 验证工具，再在准备好时迁移到自托管。PostHog 也支持两者，不过其云端版和自托管版之间存在一些功能差异。
+</FaqItem>
+</Faqs>

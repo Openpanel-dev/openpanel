@@ -1,0 +1,245 @@
+---
+title: "如何在你的网站上添加会话回放"
+description: "使用 OpenPanel 在几分钟内为任何网站添加以隐私为先的会话回放。准确查看用户做了什么，而无需录制敏感数据。"
+difficulty: beginner
+timeToComplete: 10
+date: 2026-02-27
+updated: 2026-02-27
+cover: /content/cover-default.jpg
+team: OpenPanel 团队
+steps:
+  - name: "安装 OpenPanel"
+    anchor: "install"
+  - name: "启用会话回放"
+    anchor: "enable"
+  - name: "配置隐私控制"
+    anchor: "privacy"
+  - name: "在控制面板中查看回放"
+    anchor: "view"
+---
+
+# 如何在你的网站上添加会话回放
+
+本指南将带你通过 OpenPanel 启用[会话回放](/features/session-replay)。完成后，你就可以录制真实用户会话，并在控制面板中回放，以准确了解用户做了什么。
+
+会话回放会将点击、滚动和交互作为结构化数据进行捕获，而不是视频。内置隐私控制，并且回放模块会异步加载，因此绝不会拖慢你的主分析流程。
+
+## 前提条件
+
+- 一个 OpenPanel 账户
+- 来自 [OpenPanel 控制面板](https://dashboard.openpanel.dev/onboarding) 的 Client ID
+- 已安装 `@openpanel/web` npm 包，或可在你的网站中添加 script 标签
+
+## 安装 OpenPanel [#install]
+
+如果你是从零开始，请将 OpenPanel 脚本标签添加到页面中。如果你已经安装了 OpenPanel，请跳到下一步。
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+或者使用 npm：
+
+```bash
+npm install @openpanel/web
+```
+
+查看 [Web SDK 文档](/docs/sdks/web) 或 [Script 标签文档](/docs/sdks/script) 以获取完整安装指南。
+
+## 启用会话回放 [#enable]
+
+会话回放默认**关闭**。在初始化配置中添加 `sessionReplay: { enabled: true }` 即可启用。
+
+### Script 标签
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    sessionReplay: {
+      enabled: true,
+    },
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+回放脚本（`op1-replay.js`）会与主脚本一起自动获取。由于它是异步加载的，因此不会影响页面加载时间，也不会增加主分析包的大小。
+
+### NPM 包
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  sessionReplay: {
+    enabled: true,
+  },
+});
+```
+
+使用 npm 包时，回放模块会作为由打包器解析的动态导入。它会自动从主包中拆分出去——如果你不启用回放，该模块就不会被包含进来。
+
+### Next.js
+
+对于 Next.js，请在你的 `OpenPanelComponent` 中启用回放：
+
+```tsx title="app/layout.tsx"
+import { OpenPanelComponent } from '@openpanel/nextjs';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <OpenPanelComponent
+          clientId="YOUR_CLIENT_ID"
+          trackScreenViews={true}
+          sessionReplay={{
+            enabled: true,
+          }}
+        />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+## 配置隐私控制 [#privacy]
+
+会话回放会捕获真实用户行为，因此控制记录内容非常重要。OpenPanel 提供了多层控制。
+
+### 输入内容遮罩（默认启用）
+
+所有表单输入值默认都会被遮罩。录制器会看到用户输入了内容，但看不到具体输入了什么。你无需为密码或信用卡字段添加特殊属性——它们会自动被遮罩。
+
+如果你需要为特定场景关闭遮罩：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  maskAllInputs: false,
+}
+```
+
+### 阻止敏感元素
+
+带有 `data-openpanel-replay-block` 的元素会在回放中被灰色占位符替代。该元素及其所有子元素都会被完全排除在录制之外。
+
+```html
+<!-- This section will appear as a placeholder in replays -->
+<div data-openpanel-replay-block>
+  <img src="user-avatar.jpg" alt="头像" />
+  <p>私密用户内容</p>
+</div>
+```
+
+你也可以配置 CSS 选择器或 class 来阻止录制，而无需为每个元素添加数据属性：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  blockSelector: '.payment-form, .user-profile-card',
+  blockClass: 'no-replay',
+}
+```
+
+### 遮罩特定文本
+
+若要在不阻止元素布局在回放中显示的情况下，对元素内的文本进行遮罩，请使用 `data-openpanel-replay-mask`：
+
+```html
+<p>
+  账户余额：
+  <span data-openpanel-replay-mask>$1,234.56</span>
+</p>
+```
+
+该 span 的文本在回放中会显示为 `***`，而周围布局保持可见。
+
+配置自定义选择器，避免为每个元素添加属性：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  maskTextSelector: '.balance, .account-number, [data-pii]',
+}
+```
+
+### 忽略交互
+
+使用 `ignoreSelector` 可防止记录特定元素上的交互。该元素仍会在回放中可见，但其上的点击和输入事件不会被记录。
+
+```ts
+sessionReplay: {
+  enabled: true,
+  ignoreSelector: '.internal-debug-toolbar',
+}
+```
+
+## 在控制面板中查看回放 [#view]
+
+前往你的 [OpenPanel 控制面板](https://dashboard.openpanel.dev) 并打开 Sessions 视图。任何已录制的会话都会显示一个回放按钮。点击它即可从头播放该会话。
+
+回放时间线会将所有事件与录制内容并列展示，因此你可以直接跳转到某次点击、表单提交或页面导航。
+
+回放也可以从用户资料中访问。打开任意用户的资料，在其历史记录中找到某个会话，然后点击进入回放。
+
+## 性能注意事项
+
+回放录制器会在本地缓冲事件，并每 10 秒分块发送到 OpenPanel（可通过 `flushIntervalMs` 配置）。在标签页关闭或页面隐藏时，任何剩余的缓冲事件都会立即刷新。
+
+默认分块大小限制为：
+- **每个分块 200 个事件**（`maxEventsPerChunk`）
+- **每个负载 1 MB**（`maxPayloadBytes`）
+
+这些默认值对大多数网站都很适用。如果你的网站页面 DOM 活动很多，可以降低 `maxEventsPerChunk` 以发送更小、更频繁的分块：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  flushIntervalMs: 5000,
+  maxEventsPerChunk: 100,
+}
+```
+
+## 下一步
+
+- 阅读 [会话回放文档](/docs/session-replay) 以查看完整选项参考
+- 了解 [会话跟踪](/features/session-tracking)，以理解在没有回放时可用哪些会话数据
+- 查看 [漏斗](/features/funnels) 与会话回放如何协同工作以诊断流失
+
+<Faqs>
+<FaqItem question="会话回放会影响页面加载速度吗？">
+不会。回放模块（`op1-replay.js`）会在页面和主分析脚本之后，作为单独的异步脚本加载。它不会阻塞渲染，也不会增加你的主包体积。
+</FaqItem>
+
+<FaqItem question="会话回放会为所有用户启用吗？">
+会，启用后默认会记录所有会话。如有需要，你可以使用 `sampleRate` 选项仅记录一定比例的会话。
+</FaqItem>
+
+<FaqItem question="密码和信用卡号码会被记录吗？">
+不会。所有输入字段值默认都会被遮罩（`maskAllInputs: true`）。录制器会捕获用户输入了内容，但不会记录实际字符。仅在有明确原因时才关闭此功能。
+</FaqItem>
+
+<FaqItem question="回放会保留多久？">
+回放会保留 30 天。已录制的会话数量没有限制。
+</FaqItem>
+
+<FaqItem question="我可以在自托管 OpenPanel 中使用会话回放吗？">
+可以。回放脚本会自动从你的自托管实例提供。你也可以使用 `scriptUrl` 选项从自定义 CDN 加载它。
+</FaqItem>
+</Faqs>

@@ -1,0 +1,593 @@
+{
+  "slug": "goatcounter-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026 年最佳 GoatCounter 替代方案 - 開源且免費",
+    "description": "正在尋找 GoatCounter 的替代方案嗎？OpenPanel 提供產品分析、使用者識別與行動裝置 SDK，同時保持開源與隱私優先。可免費自架。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 GoatCounter 替代方案",
+    "subheading": "喜歡 GoatCounter 的簡潔與隱私導向嗎？OpenPanel 在保持開源、無 Cookie 的同時，加入更深入的產品分析功能——使用者識別、漏斗、留存分析與行動裝置 SDK。",
+    "badges": [
+      "開源",
+      "隱私優先",
+      "產品分析",
+      "輕量"
+    ]
+  },
+  "competitor": {
+    "name": "GoatCounter",
+    "logo": "/logos/goatcounter.svg",
+    "url": "https://goatcounter.com",
+    "short_description": "由獨立開發者 Martin Tournoij 打造的極簡、隱私導向、自架式網站分析工具。",
+    "founded": 2019,
+    "headquarters": "荷蘭"
+  },
+  "overview": {
+    "title": "為什麼要考慮用 OpenPanel 取代 GoatCounter？",
+    "paragraphs": [
+      "GoatCounter 是一款迷人、極簡的網站分析工具，由獨立開發者 Martin Tournoij 建立並維護。它對公開網站完全免費、友善隱私，而且簡潔得令人耳目一新。對於只需要基本頁面瀏覽次數統計的個人部落格與小型專案來說，它幾乎無可挑剔。但它的功能集相當精簡，加上由單一開發者維護，並不是為擁有成長中分析需求的團隊而設計。",
+      "OpenPanel 承襲 GoatCounter 的開源精神與隱私導向，但加入成長型團隊所需的產品分析能力。使用者識別可讓你跨工作階段追蹤登入使用者，漏斗可幫助你理解轉換流程，而留存分析則能顯示使用者是否回訪。這些都是 GoatCounter 基於其極簡理念而刻意不提供的功能。",
+      "技術架構也有明顯差異。GoatCounter 將資料儲存在 SQLite 或 PostgreSQL 中，這對小型網站很適合，但並未針對大規模分析查詢做最佳化。OpenPanel 使用 ClickHouse——一個專為分析工作負載打造的欄式資料庫——即使資料成長到數百萬筆事件，查詢依然快速。",
+      "如果你已經超出 GoatCounter 只能做簡單頁面瀏覽統計的範圍，並且需要透過原生 SDK 的行動應用程式分析、漏斗分析或使用者層級洞察，OpenPanel 就能在保持開源與隱私友善的前提下，提供你所需的深度。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel 與 GoatCounter：哪個更適合你？",
+    "intro": "兩者都是重視隱私的開源分析工具。GoatCounter 極度精簡，適合簡單的網站統計。OpenPanel 則加入產品分析，追蹤使用者行為。",
+    "one_liner": "GoatCounter 是極簡網站分析；OpenPanel 則加入漏斗、留存與使用者識別等產品分析功能。",
+    "best_for_openpanel": [
+      "需要使用者層級分析與留存追蹤的 SaaS 產品",
+      "需要原生 iOS、Android、React Native SDK 的行動應用開發者",
+      "需要漏斗分析與轉換追蹤的團隊",
+      "需要 ClickHouse 在大規模下提供高效能分析的高流量需求"
+    ],
+    "best_for_competitor": [
+      "想要簡單統計的個人部落格與小型網站",
+      "想要最簡單自架方式（單一二進位檔 + SQLite）的開發者",
+      "追求極致隱私、完全不想做使用者識別的人",
+      "想要免費代管服務且沒有使用量限制的專案"
+    ]
+  },
+  "highlights": {
+    "title": "一眼看懂的主要差異",
+    "intro": "以下是 OpenPanel 與 GoatCounter 在關鍵面向上的比較。",
+    "items": [
+      {
+        "label": "使用者識別",
+        "openpanel": "有 - 追蹤個別使用者",
+        "competitor": "沒有 - 僅限匿名彙總",
+        "notes": "OpenPanel 可讓你跨工作階段識別並追蹤個別使用者。GoatCounter 為了最大化隱私，刻意使用匿名雜湊，不做持久性的使用者追蹤。"
+      },
+      {
+        "label": "漏斗分析",
+        "openpanel": "有 - 視覺化漏斗建立器",
+        "competitor": "沒有 - 不支援",
+        "notes": "OpenPanel 提供漏斗分析來追蹤轉換路徑。GoatCounter 專注於簡單的頁面檢視與訪客統計，沒有轉換漏斗功能。"
+      },
+      {
+        "label": "行動裝置 SDK",
+        "openpanel": "iOS、Android、React Native",
+        "competitor": "僅限網頁（JavaScript + tracking pixel）",
+        "notes": "OpenPanel 提供 iOS、Android 與 React Native 的原生行動裝置 SDK。GoatCounter 則是為網站分析而設計，只提供 JavaScript 與 tracking pixel 選項。"
+      },
+      {
+        "label": "開源授權",
+        "openpanel": "AGPL-3.0（著佐權）",
+        "competitor": "EUPL 1.2（著佐權）",
+        "notes": "兩者皆為著佐權開源授權：OpenPanel 使用 AGPL-3.0，GoatCounter 使用 EUPL 1.2。兩者都要求衍生作品在相容條件下維持開源。"
+      },
+      {
+        "label": "免費方案",
+        "openpanel": "免費、無限自架",
+        "competitor": "免費代管（合理使用）",
+        "notes": "GoatCounter 為個人網站與中小企業提供免費代管服務，只要在合理使用範圍內即可。OpenPanel 的雲端版提供 30 天免費試用（之後從每月 $2.50 起），但自架是免費且不限事件數。"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能比較",
+    "intro": "兩者都是開源且重視隱私，但能力深度不同。",
+    "groups": [
+      {
+        "group": "網站分析",
+        "features": [
+          {
+            "name": "頁面瀏覽與訪客",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "流量來源與推薦來源",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "地理資料",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 顯示國家層級的位置資料"
+          },
+          {
+            "name": "裝置與瀏覽器",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "螢幕尺寸",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "UTM 活動追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 支援 utm_campaign、utm_source 參數"
+          },
+          {
+            "name": "即時儀表板",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 每 10 秒更新一次統計"
+          },
+          {
+            "name": "工作階段追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 使用每 4 小時輪替的加鹽雜湊來處理工作階段"
+          }
+        ]
+      },
+      {
+        "group": "產品分析",
+        "features": [
+          {
+            "name": "自訂事件追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 可透過 data-goatcounter-click 屬性支援事件"
+          },
+          {
+            "name": "漏斗分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter 著重於不含漏斗的簡單指標"
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter 不會隨時間追蹤使用者留存"
+          },
+          {
+            "name": "使用者檔案",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter 刻意不追蹤個別使用者"
+          },
+          {
+            "name": "分群分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter 只提供彙總統計"
+          },
+          {
+            "name": "使用者路徑/旅程分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter 不追蹤使用者旅程"
+          },
+          {
+            "name": "使用者識別",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter 使用匿名雜湊，沒有持久性的使用者 ID"
+          }
+        ]
+      },
+      {
+        "group": "進階功能",
+        "features": [
+          {
+            "name": "A/B 測試",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter 只有分析功能，沒有實驗功能"
+          },
+          {
+            "name": "事件上的自訂屬性",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 支援事件上的 title 與 referrer"
+          },
+          {
+            "name": "公開儀表板",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 有獨特的公開統計分享功能"
+          },
+          {
+            "name": "CLI 儀表板",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter 有終端機式儀表板指令"
+          },
+          {
+            "name": "電子郵件報告",
+            "openpanel": false,
+            "competitor": false,
+            "notes": "兩者都不提供自動化電子郵件報告。OpenPanel 改為透過 Slack、Discord、webhook 與應用程式內通知發送即時警示。"
+          },
+          {
+            "name": "Tracking Pixel（無 JS）",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter 支援透過 1x1 GIF 進行無 JavaScript 追蹤"
+          },
+          {
+            "name": "日誌檔匯入",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter 可匯入 nginx、Apache、Caddy、CloudFront 日誌"
+          }
+        ]
+      },
+      {
+        "group": "隱私與法規遵循",
+        "features": [
+          {
+            "name": "預設無 Cookie",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 的設計不需要 GDPR 同意通知"
+          },
+          {
+            "name": "不儲存個人資料",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter 使用每 4 小時輪替的加鹽雜湊進行匿名化"
+          },
+          {
+            "name": "自架選項",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "資料匯出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 支援 CSV 匯出與完整 API 存取"
+          },
+          {
+            "name": "Bot 過濾",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 會忽略自我標識的 bot"
+          }
+        ]
+      },
+      {
+        "group": "SDK 與平台",
+        "features": [
+          {
+            "name": "JavaScript/瀏覽器",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "iOS SDK",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "Android SDK",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "React Native SDK",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "伺服器端 API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 有後端整合 API"
+          },
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 提供完整的 /api/v0 端點"
+          }
+        ]
+      },
+      {
+        "group": "部署",
+        "features": [
+          {
+            "name": "雲端代管",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Docker 支援",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter 可在 DockerHub 的 arp242/goatcounter 取得"
+          },
+          {
+            "name": "單一二進位檔部署",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter 是一個約 7MB 的靜態編譯二進位檔"
+          },
+          {
+            "name": "SQLite 支援",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter 可在簡單的 SQLite 資料庫上執行"
+          },
+          {
+            "name": "PostgreSQL 支援",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter 支援較大型網站使用 PostgreSQL"
+          },
+          {
+            "name": "內建 TLS/ACME",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter 內建自動的 Let's Encrypt 憑證"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技術比較",
+    "intro": "如果你是評估分析工具的開發者，以下是技術層面的拆解。",
+    "items": [
+      {
+        "label": "SDK 大小",
+        "openpanel": "2.3 KB（gzip 後）",
+        "competitor": "約 3.5 KB",
+        "notes": null
+      },
+      {
+        "label": "平台",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "Ruby",
+          "Java",
+          "Rust",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript（瀏覽器）",
+          "Tracking Pixel（無 JS）",
+          "後端 API",
+          "日誌檔匯入（nginx、Apache、Caddy、CloudFront）"
+        ],
+        "notes": null
+      },
+      {
+        "label": "開源",
+        "openpanel": "有 - AGPL-3.0（著佐權）",
+        "competitor": "有 - EUPL 1.2（著佐權）",
+        "notes": "兩者皆為著佐權：OpenPanel 使用 AGPL-3.0，GoatCounter 使用 EUPL 1.2。GoatCounter 在 GitHub 上有 5,200+ 顆星。"
+      },
+      {
+        "label": "自架",
+        "openpanel": "Docker Compose（ClickHouse、Postgres、Redis），附導引式設定精靈",
+        "competitor": "單一二進位檔（約 7MB）或 Docker。SQLite 或 PostgreSQL。內建 ACME/TLS 支援。",
+        "notes": null
+      },
+      {
+        "label": "資料庫",
+        "openpanel": "ClickHouse",
+        "competitor": "SQLite（預設，且建議多數情境使用）或 PostgreSQL（用於負載平衡）",
+        "notes": null
+      },
+      {
+        "label": "資料保留",
+        "openpanel": "無限制（自架），可設定（雲端）",
+        "competitor": "無限制（自架），無限制（免費代管）",
+        "notes": null
+      },
+      {
+        "label": "語言",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "Go（Golang）",
+        "notes": null
+      },
+      {
+        "label": "效能",
+        "openpanel": "ClickHouse 針對分析查詢最佳化",
+        "competitor": "在每月 $5 的 VPS 上約可處理 800 次請求/秒。99.9% 的請求可在約 2ms 內回應。",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "價格比較",
+    "intro": "GoatCounter 由捐款支持。OpenPanel 提供免費、無限制自架，以及代管雲端服務（30 天免費試用）。",
+    "openpanel": {
+      "model": "以事件計費，透明公開",
+      "description": "透明定價從每月 $2.50 起，包含 5,000 個事件，並提供 30 天免費試用。所有方案都包含全部功能。自架免費且不限事件數。"
+    },
+    "competitor": {
+      "model": "由捐款支持或免費自架",
+      "description": "代管版：合理的公開使用量內免費（個人網站、中小企業）。自架版：完全免費。鼓勵透過 GitHub Sponsors 捐款以維持營運。不是為高流量企業情境設計。",
+      "free_tier": "合理使用免費",
+      "pricing_url": null
+    }
+  },
+  "migration": {
+    "title": "從 GoatCounter 遷移到 OpenPanel",
+    "intro": "兩者都使用輕量化腳本與簡單事件追蹤，因此遷移很直接。",
+    "difficulty": "簡單",
+    "estimated_time": "30 分鐘到 1 小時",
+    "steps": [
+      {
+        "title": "安裝 OpenPanel SDK",
+        "description": "將 OpenPanel SDK 加入你的應用程式。兩者都使用輕量化腳本（GoatCounter 約 3.5KB、OpenPanel 約 2.3KB gzip 後），因此轉換很容易。"
+      },
+      {
+        "title": "對應自訂事件",
+        "description": "GoatCounter 使用 data-goatcounter-click 屬性的點擊事件，對應到 OpenPanel 的 op.track() 呼叫。請對應你的事件名稱與任何自訂屬性。"
+      },
+      {
+        "title": "新增使用者識別（新增）",
+        "description": "不同於使用匿名雜湊的 GoatCounter，OpenPanel 支援使用者識別。加入 op.identify() 呼叫即可啟用使用者檔案、留存分析與分群功能。"
+      },
+      {
+        "title": "設定漏斗與分析（新增）",
+        "description": "GoatCounter 沒有漏斗或留存分析。請在 OpenPanel 中設定這些功能，以取得你之前無法獲得的更深入產品洞察。"
+      },
+      {
+        "title": "移除 GoatCounter 腳本",
+        "description": "驗證完成後，移除 GoatCounter 追蹤腳本。兩者都不使用 Cookie，因此不需要變更同意流程。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "兩者都採用簡單的事件追蹤方式。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "GoatCounter 刻意將資料匿名化。多數團隊會在 OpenPanel 重新開始。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 GoatCounter 更適合的情境",
+    "intro": "當你需要超越簡單網站統計的產品分析時，請選擇 OpenPanel。",
+    "items": [
+      {
+        "title": "需要使用者識別的 SaaS 產品",
+        "description": "GoatCounter 設計上使用匿名雜湊。如果你需要追蹤登入使用者、理解個別客戶旅程，或分析使用者層級留存，OpenPanel 可在尊重隱私的同時提供這些能力。",
+        "icon": "user-check"
+      },
+      {
+        "title": "行動應用程式分析",
+        "description": "GoatCounter 是為網站分析而設計，只支援 JavaScript 與 tracking pixel。OpenPanel 則提供 iOS、Android 與 React Native 的原生 SDK，以及完整的產品分析能力。",
+        "icon": "smartphone"
+      },
+      {
+        "title": "需要漏斗分析的團隊",
+        "description": "GoatCounter 專注於頁面瀏覽、訪客與推薦來源等簡單指標，不含轉換漏斗。如果你需要追蹤使用者轉換路徑並找出流失點，OpenPanel 的漏斗分析能提供這些洞察。",
+        "icon": "filter"
+      },
+      {
+        "title": "需要留存分析的產品",
+        "description": "GoatCounter 不會隨時間追蹤使用者留存。如果你需要了解有多少使用者在註冊後回訪，或衡量數週與數月的參與度，OpenPanel 的留存分析可提供這些指標。",
+        "icon": "repeat"
+      },
+      {
+        "title": "大規模高流量分析",
+        "description": "GoatCounter 是一個為個人網站與中小企業最佳化的獨立專案。若你需要可處理數百萬事件的企業級分析，OpenPanel 的 ClickHouse 後端專為高流量工作負載而設計。",
+        "icon": "trending-up"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於從 GoatCounter 切換到 OpenPanel 的常見問題。",
+    "items": [
+      {
+        "question": "OpenPanel 跟 GoatCounter 一樣重視隱私嗎？",
+        "answer": "兩者預設都不使用 Cookie，且符合 GDPR。GoatCounter 使用每 4 小時輪替的加鹽雜湊以達到最大程度的匿名化。OpenPanel 則允許在產品分析中選擇性地進行使用者識別。你可以自行控制是否在 OpenPanel 中識別使用者。"
+      },
+      {
+        "question": "為什麼要從 GoatCounter 切換到 OpenPanel？",
+        "answer": "團隊通常在需要使用者識別、漏斗分析、留存追蹤或行動裝置 SDK 時切換。GoatCounter 擅長為內容網站與部落格提供簡單、隱私優先的網站分析。若產品需要更深入的使用者行為洞察，OpenPanel 能提供這些功能。"
+      },
+      {
+        "question": "GoatCounter 的價格與 OpenPanel 相比如何？",
+        "answer": "GoatCounter 對合理的公開使用是免費的（個人網站、中小企業），自架時也完全免費。它由捐款支持。OpenPanel 的雲端版提供 30 天免費試用，之後從每月 $2.50 起，包含 5,000 個事件。兩者都提供免費自架選項。"
+      },
+      {
+        "question": "哪個追蹤腳本比較小？",
+        "answer": "OpenPanel 的腳本稍小，gzip 後為 2.3KB；GoatCounter 約為 3.5KB。兩者都明顯小於 Google Analytics（45KB 以上）或 Mixpanel。GoatCounter 也提供不需 JavaScript 的 tracking pixel 選項。"
+      },
+      {
+        "question": "GoatCounter 可以追蹤行動應用程式嗎？",
+        "answer": "沒有原生 SDK。GoatCounter 是為網站分析而設計，使用 JavaScript 或 tracking pixel。它有後端 API 可做伺服器端追蹤，但沒有行動裝置 SDK。OpenPanel 則提供原生 iOS、Android 與 React Native SDK。"
+      },
+      {
+        "question": "GoatCounter 支援漏斗或留存分析嗎？",
+        "answer": "不支援。GoatCounter 專注於簡單指標：頁面瀏覽、訪客、推薦來源、瀏覽器、位置與活動。它刻意保持簡單，沒有漏斗、留存或分群等產品分析功能。"
+      },
+      {
+        "question": "自架的比較如何？",
+        "answer": "GoatCounter 的自架極為簡單：只要一個約 7MB 的靜態編譯 Go 二進位檔，預設資料庫是 SQLite。它還內建 TLS/ACME 憑證產生。OpenPanel 則執行一組 Docker Compose 堆疊（ClickHouse、Postgres、Redis），但仍然很簡單：只需一個指令的 ./setup 精靈會引導你完成設定，並在幾分鐘內把整個堆疊啟動。GoatCounter 更精簡；OpenPanel 的擴充性更好。"
+      },
+      {
+        "question": "GoatCounter 使用什麼授權？",
+        "answer": "GoatCounter 使用 EUPL 1.2（European Union Public License），這是一種著佐權授權，要求衍生作品使用相容授權。OpenPanel 使用 AGPL-3.0 授權，同樣屬於著佐權——透過網路部署的修改必須以開源形式提供。兩者都允許商業用途。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "網站分析設定",
+        "url": "/zh-TW/guides/website-analytics-setup"
+      },
+      {
+        "title": "從 Google Analytics 遷移",
+        "url": "/zh-TW/guides/migrate-from-google-analytics"
+      },
+      {
+        "title": "追蹤自訂事件",
+        "url": "/zh-TW/guides/track-custom-events"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳開源網站分析工具",
+        "url": "/zh-TW/articles/self-hosted-web-analytics"
+      },
+      {
+        "title": "自架網站分析",
+        "url": "/zh-TW/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Ackee",
+        "url": "/compare/ackee-alternative"
+      },
+      {
+        "name": "Umami",
+        "url": "/compare/umami-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "從 OpenPanel 開始",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

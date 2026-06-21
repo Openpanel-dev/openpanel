@@ -1,0 +1,208 @@
+---
+title: 群組
+description: 在帳戶、公司或團隊層級追蹤分析，而不只是單一使用者。
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+群組可讓你將使用者與共享實體關聯起來——例如公司、工作區或團隊——並在該層級分析行為。與其問「Jane 做了什麼？」，你可以問「Acme Inc 正在做什麼？」
+
+這對 B2B SaaS 產品特別有用，因為單一付費帳戶通常會有多個使用者。
+
+## 群組如何運作
+
+有兩個獨立概念：
+
+1. **群組實體** — 透過 `upsertGroup()` 建立／更新。儲存群組的中繼資料（名稱、方案等）。
+2. **群組成員關係** — 透過 `setGroup()` / `setGroups()` 設定。將使用者檔案連結到一個或多個群組，並自動把這些群組 ID 附加到之後每一次 `track()` 呼叫。
+
+## 建立或更新群組
+
+呼叫 `upsertGroup()` 來建立群組或更新其屬性。群組由其 `id` 和 `type` 識別。
+
+```typescript
+op.upsertGroup({
+  id: 'org_acme',        // 群組的唯一 ID
+  type: 'company',       // 群組類型（company、workspace、team 等）
+  name: 'Acme Inc',      // 顯示名稱
+  properties: {
+    plan: 'enterprise',
+    seats: 25,
+    industry: 'logistics',
+  },
+});
+```
+
+### 群組 payload
+
+| 欄位 | 類型 | 必填 | 說明 |
+|-------|------|----------|-------------|
+| `id` | `string` | 是 | 群組的唯一識別碼 |
+| `type` | `string` | 是 | 群組分類（例如 `"company"`、`"workspace"`） |
+| `name` | `string` | 是 | 可讀的顯示名稱 |
+| `properties` | `object` | 否 | 群組的自訂中繼資料 |
+
+## 在儀表板中管理群組
+
+建立、編輯與刪除群組最簡單的方式，是直接在 OpenPanel 儀表板中操作。前往你的專案並開啟 **Groups** 區段——在那裡你可以管理群組名稱、類型與屬性，而不需要修改任何程式碼。
+
+當你的群組屬性是**動態且由你自己的資料驅動**時，`upsertGroup()` 才是合適工具——例如在登入時，從後端同步客戶目前的方案、席位數或 MRR。
+
+<Callout>
+一個實用原則：在登入時，或群組屬性變更時呼叫 `upsertGroup()`——不要在每個請求或每次頁面瀏覽都呼叫。如果你發現自己一直用相同資料頻繁呼叫它，通常代表用儀表板來管理該群組會更好。
+</Callout>
+
+## 將使用者指派到群組
+
+在識別使用者之後，呼叫 `setGroup()` 將其連結到群組。這也會把群組 ID 附加到目前 session 的所有未來 `track()` 呼叫。
+
+```typescript
+// 登入後
+op.identify({ profileId: 'user_123' });
+
+// 將使用者連結到其組織
+op.setGroup('org_acme');
+```
+
+對於屬於多個群組的使用者：
+
+```typescript
+op.setGroups(['org_acme', 'team_engineering']);
+```
+
+<Callout>
+`setGroup()` 和 `setGroups()` 會將群組 ID 持久化在 SDK 實例上。除非呼叫 `clear()`，之後所有的 `track()` 呼叫都會自動包含這些群組 ID。
+</Callout>
+
+## 完整登入流程範例
+
+`setGroup()` 不需要群組事先存在。你可以只傳入 ID 來呼叫它——事件會帶上該群組 ID，而你之後可以在儀表板中或透過 `upsertGroup()` 再建立群組。
+
+```typescript
+// 1. 識別使用者
+op.identify({
+  profileId: 'user_123',
+  firstName: 'Jane',
+  email: 'jane@acme.com',
+});
+
+// 2. 將使用者指派到群組——群組此時不需要先存在
+op.setGroup('org_acme');
+
+// 3. 之後所有事件都會標記該群組
+op.track('dashboard_viewed');  // → includes groups: ['org_acme']
+op.track('report_exported');   // → includes groups: ['org_acme']
+```
+
+如果你想從自己的資料同步動態群組屬性（方案、席位數、MRR），請把 `upsertGroup()` 加到流程中：
+
+```typescript
+op.identify({ profileId: 'user_123', email: 'jane@acme.com' });
+
+// 從後端同步群組中繼資料
+op.upsertGroup({
+  id: 'org_acme',
+  type: 'company',
+  name: 'Acme Inc',
+  properties: { plan: 'pro' },
+});
+
+op.setGroup('org_acme');
+```
+
+## 單一事件的群組覆寫
+
+你可以把群組 ID 附加到特定事件，而不影響 SDK 的持久群組狀態：
+
+```typescript
+op.track('file_shared', {
+  filename: 'q4-report.pdf',
+  groups: ['org_acme', 'org_partner'], // 只套用於此事件
+});
+```
+
+傳入 `track()` 的群組會與 SDK 實例上已設定的任何群組**合併**。
+
+## 登出時清除群組
+
+`clear()` 會重設 profile、device、session 與所有群組。請務必在登出時呼叫它。
+
+```typescript
+function handleLogout() {
+  op.clear();
+  // redirect to login...
+}
+```
+
+## 常見模式
+
+### B2B SaaS — 公司帳戶
+
+```typescript
+// 登入時
+op.identify({ profileId: user.id, email: user.email });
+op.upsertGroup({
+  id: user.organizationId,
+  type: 'company',
+  name: user.organizationName,
+  properties: { plan: user.plan, mrr: user.mrr },
+});
+op.setGroup(user.organizationId);
+```
+
+### 多租戶 — 工作區
+
+```typescript
+// 當使用者切換工作區時
+op.upsertGroup({
+  id: workspace.id,
+  type: 'workspace',
+  name: workspace.name,
+});
+op.setGroup(workspace.id);
+```
+
+### 公司內的團隊
+
+```typescript
+// 使用者同時屬於公司與特定團隊
+op.setGroups([user.organizationId, user.teamId]);
+```
+
+## API 參考
+
+### `upsertGroup(payload)`
+
+如果群組不存在就建立，否則將屬性合併到既有群組。
+
+```typescript
+op.upsertGroup({
+  id: string;       // 必填
+  type: string;     // 必填
+  name: string;     // 必填
+  properties?: Record<string, unknown>;
+});
+```
+
+### `setGroup(groupId)`
+
+將單一群組 ID 加到 SDK 的內部群組清單，並送出 `assign_group` 事件，將目前 profile 連結到該群組。
+
+```typescript
+op.setGroup('org_acme');
+```
+
+### `setGroups(groupIds)`
+
+與 `setGroup()` 相同，但可一次設定多個群組 ID。
+
+```typescript
+op.setGroups(['org_acme', 'team_engineering']);
+```
+
+## 應避免的事項
+
+- **在每個事件或每次頁面瀏覽都呼叫 `upsertGroup()`** — 請在登入時或群組屬性真的變更時呼叫。若是靜態群組管理，請改用儀表板。
+- **在 `identify()` 後沒有呼叫 `setGroup()`** — 沒有它，事件不會被標記群組，你也不會在儀表板中看到群組層級資料。
+- **登出時忘記呼叫 `clear()`** — 群組會持續保留在 SDK 實例上，因此同一 session 中新登入的使用者可能會繼承前一位使用者的群組。
+- **用 `upsertGroup()` 來把使用者連結到群組** — `upsertGroup()` 只管理群組實體。請用 `setGroup()` 將使用者 profile 連結到它。

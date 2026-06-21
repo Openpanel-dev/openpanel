@@ -1,0 +1,389 @@
+---
+title: "自托管网站分析 2026 — Plausible vs Matomo vs Umami vs OpenPanel"
+description: "我们测试了 7 款自托管网站分析工具在部署、功能和成本方面的表现。Plausible、Matomo、Umami、GoatCounter、OpenPanel 横向对比——并为每种使用场景提供诚实的优缺点分析。"
+tag: Comparison
+team: OpenPanel Team
+date: 2024-11-14
+updated: 2026-04-28
+cover: /content/self-hosted-analytics.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+
+你已经决定要自托管你的网站分析工具。现在的问题是：你该部署哪一个？
+
+本文在可用于生产环境的自托管方案中进行正面对比——部署难度、规模化后的托管成本、实际运行需求。我们重点介绍四款使用最广泛的工具（Plausible、Matomo、Umami、OpenPanel），并在末尾涵盖三种更轻量的替代方案。
+
+这是一篇购买决策对比，不是调查综述。想了解更广泛的开源分析工具概览，包括云托管选项，以及 AGPL、MIT 和 source-available 许可之间的差异？请查看我们的[开源分析工具调研](/articles/open-source-web-analytics)。
+
+## 快速对比
+
+| 工具 | 类型 | 许可证 | 部署方式 | 云选项 | 最适合 |
+|------|------|---------|------------|-------------|----------|
+| [**OpenPanel**](#openpanel) | Web + 产品 | AGPL-3.0 | Docker Compose | 起价 $2.50/月 | 需要网站和产品分析的团队 |
+| [**Plausible**](#plausible) | Web | AGPL-3.0 | Docker Compose | 起价 $9/月 | 简单、隐私优先的页面浏览跟踪 |
+| [**Matomo**](#matomo) | Web | GPL-3.0 | PHP + MySQL | 起价 €29/月 | 完整的 Google Analytics 替代品 |
+| [**Umami**](#umami) | Web | MIT | Docker Compose | 免费套餐 | 轻量级自托管分析 |
+| [**GoatCounter**](#goatcounter) | Web | EUPL | 单一二进制文件 | 免费套餐 | 面向小型网站的极简分析 |
+| [**PostHog**](#posthog) | 产品 + Web | MIT | Docker/K8s | 免费套餐 | 需要分析 + 功能标记的开发团队 |
+| [**Ackee**](#ackee) | Web | MIT | Docker + MongoDB | 无 | 注重隐私的极简跟踪 |
+
+## 如何选择合适的自托管分析工具
+
+在选择工具之前，先想清楚你真正需要什么。
+
+**网站分析 vs 产品分析。** 如果你只需要页面浏览量、流量来源和引荐来源，一个像 Plausible 或 Umami 这样简单的工具就够了。如果你还需要[funnels](/features/funnels)、[retention analysis](/features/retention)、用户识别和[event tracking](/features/event-tracking)，那么你需要一款具备产品分析能力的工具。
+
+**部署复杂度。** 有些工具只需一个 Docker Compose 命令，5 分钟内即可部署完成。另一些则需要 Kubernetes 集群、多个数据库，或者 PHP 环境。要诚实评估你的运维能力。
+
+**维护负担。** 你需要自己负责更新、备份和扩容。GoatCounter 或 Umami 这类轻量工具只需要很少的维护。Matomo 或 PostHog 这类功能丰富的工具则需要更多关注。
+
+**规模化成本。** 一台 $5/月 的 VPS 足以支撑大多数中小型网站。高流量站点需要更多资源，但成本仍然可预测——你支付的是服务器，而不是事件数。
+
+---
+
+## OpenPanel
+
+**最适合：需要在一个自托管工具中同时拥有网站分析和产品分析的团队**
+
+[OpenPanel](/) 将[网站分析](/features/web-analytics)和产品分析整合在一个平台中。你可以同时获得页面浏览量、流量来源、漏斗、留存、用户旅程和事件跟踪。默认情况下采用无 Cookie 跟踪，因此不需要同意横幅。
+
+![OpenPanel 仪表盘](/content/tools/openpanel.png)
+
+### 部署
+
+OpenPanel 是最容易自托管的工具之一。四条命令即可运行：
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+./start
+```
+
+安装向导会处理 Docker、数据库配置和 SSL。它运行在单台带 Docker Compose 的 VPS 上。中端 VPS（4 vCPU，8 GB RAM）每月可处理数百万事件。
+
+详细说明请参见[自托管指南](/docs/self-hosting/self-hosting)。
+
+### 主要功能
+- 实时网站分析仪表盘，包含流量、引荐来源、页面和设备
+- 产品分析：漏斗、留存、用户识别、自定义事件
+- 默认无 Cookie 跟踪——无需 GDPR/CCPA 同意横幅
+- 多种 SDK（JavaScript、React、Next.js、Vue 等）
+- 自托管版本与云版本完全一致——无功能阉割
+
+### 定价
+自托管免费。云计划起价为每月 $2.50，最多 5,000 个事件，最高可扩展至每月 $90、100 万个事件。所有层级均包含全部功能。
+
+### 优点
+- 在这个价格区间内，唯一同时结合网站分析和产品分析的自托管工具
+- 简单的 Docker Compose 部署，带引导式安装
+- 默认无 Cookie——无需 Cookie 横幅
+- 开源（AGPL-3.0），云端与自托管之间没有功能差异
+
+### 缺点
+- 与 Matomo 或 PostHog 相比，项目较新，社区规模较小
+- 尚未内置热图
+- 自托管仍然需要服务器维护
+
+---
+
+## Plausible
+
+**最适合：设置最少、简单且优先隐私的页面浏览分析**
+
+[Plausible](https://plausible.io/self-hosted-web-analytics) 适合想要简单网站分析、又不想要复杂性的用户。它跟踪页面浏览量、引荐来源和目标，不使用 Cookie。仪表盘能装进单屏，所以几乎没有学习成本。
+
+![Plausible 仪表盘](/content/tools/plausible.png)
+
+### 部署
+
+Plausible 通过 Docker Compose 进行自托管。设置过程包括克隆他们的托管仓库、配置 `plausible-conf.env` 文件，并运行 `docker compose up`。
+
+要求：一台安装了 Docker 的服务器，至少 2 GB 内存。底层使用 PostgreSQL 和 ClickHouse。
+
+### 主要功能
+- 单屏仪表盘，提供实时数据
+- 无 Cookie 跟踪——无需同意横幅
+- 目标跟踪和自定义事件
+- Google Search Console 集成
+- 轻量脚本（约 1 KB）
+
+### 定价
+在 AGPL-3.0 许可下自托管免费。云计划起价为每月 $9，包含 10,000 次页面浏览。
+
+### 优点
+- 最简单的仪表盘之一——任何人都能用
+- 轻量级跟踪脚本，不会拖慢你的网站
+- 活跃的开源社区
+- 干净的 Docker Compose 部署
+
+### 缺点
+- 没有产品分析（没有漏斗、留存或用户级跟踪）
+- 没有会话回放或热图
+- 自托管版本需要手动更新
+- AGPL 许可证要求在修改并分发时披露源代码
+
+与 OpenPanel 对比：[Plausible vs OpenPanel](/compare/plausible-alternative)
+
+---
+
+## Matomo
+
+**最适合：需要完整 Google Analytics 替代品的组织**
+
+[Matomo](https://matomo.org/)（前身为 Piwik）自 2007 年以来一直存在，是功能最丰富的自托管网站分析工具。如果你要从 Google Analytics 迁移，并希望在自己的控制下获得类似体验，Matomo 是最接近的选择。
+
+![Matomo 仪表盘](/content/tools/matomo.png)
+
+### 部署
+
+Matomo 基于 PHP + MySQL/MariaDB 运行。你可以把它部署在任何 LAMP 架构上，也可以使用他们的 Docker 镜像。与纯 Docker 工具相比，设置更复杂——你需要 PHP、Web 服务器（Apache/Nginx）和数据库。
+
+要求：PHP 8.1+，MySQL 8+ 或 MariaDB 10.4+，至少 2 GB 内存。对于高流量（每月 100 万次以上页面浏览），建议将应用服务器和数据库服务器分开。
+
+### 主要功能
+- 完整的网站分析套件（流量、引荐来源、活动、目标、电商）
+- 热图和会话录制（付费插件）
+- A/B 测试（付费插件）
+- Google Analytics 数据导入
+- 大型插件库
+
+### 定价
+核心平台在 GPL-3.0 下可免费自托管。不过，热图、会话录制和 A/B 测试等高级功能即使在自托管实例中也需要购买付费插件订阅。云服务起价为每月 €29。
+
+### 优点
+- 最成熟、功能最丰富的自托管分析工具
+- 最接近 Google Analytics 的替代方案
+- 庞大的插件库
+- 合规记录良好（被政府和企业使用）
+
+### 缺点
+- PHP 技术栈的部署和维护比纯 Docker 工具更复杂
+- 即使自托管，付费插件也会增加成本
+- 与新工具相比，界面显得过时
+- 在大规模下资源消耗高
+
+与 OpenPanel 对比：[Matomo vs OpenPanel](/compare/matomo-alternative)
+
+---
+
+## Umami
+
+**最适合：想要轻量级、MIT 许可分析工具的开发者**
+
+[Umami](https://umami.is/) 是一款轻量、注重隐私的网站分析工具。它是最容易自托管和维护的工具之一。如果你想要最小开销的基础网站分析，Umami 表现出色。
+
+![Umami 仪表盘](/content/tools/umami.png)
+
+### 部署
+
+Umami 可通过 Docker Compose 或直接使用 Node.js 进行自托管。克隆仓库，配置数据库连接，然后启动。它支持 PostgreSQL 和 MySQL。
+
+要求：Node 18+，搭配 PostgreSQL 12+ 或 MySQL 8+。非常轻量——对于中小型网站，在 $5/月 的 VPS 上也能轻松运行。
+
+### 主要功能
+- 干净的仪表盘，提供实时数据
+- 页面浏览量、引荐来源、设备和基础事件
+- 无 Cookie 跟踪
+- 支持多个网站
+- 提供 API 便于自定义集成
+
+### 定价
+在 MIT 许可下自托管完全免费。Umami Cloud 提供免费套餐，每月 100 万事件，超出后每个额外事件收费 $0.00002。
+
+### 优点
+- MIT 许可证——在同类工具中最宽松
+- 轻量且易于维护
+- 使用 Docker Compose 即可轻松部署
+- 如果你想先试用再自托管，还有免费云套餐
+
+### 缺点
+- 仅限于基础网站指标
+- 没有漏斗、留存或产品分析
+- 功能少于 Plausible（没有 Google Search Console 集成）
+- 没有会话回放或热图
+
+与 OpenPanel 对比：[Umami vs OpenPanel](/compare/umami-alternative)
+
+---
+
+## GoatCounter
+
+**最适合：个人网站和博客的极简分析**
+
+[GoatCounter](https://goatcounter.com/) 将极简主义发挥到极致。它是一个单一的 Go 二进制文件，可在不使用 Cookie 的情况下跟踪页面浏览量。无需 Docker，无需复杂设置——下载并运行即可。
+
+### 部署
+
+GoatCounter 以单个二进制文件形式提供。下载它、运行它、把你的域名指向它。你也可以使用 SQLite（默认）或 PostgreSQL 运行它。虽然不是必需，但也提供 Docker 镜像。
+
+要求：极低。能在你能找到的最小 VPS 上运行。SQLite 模式几乎不占资源。
+
+### 主要功能
+- 无 Cookie 或 JavaScript 的页面浏览跟踪（可选）
+- 单二进制部署
+- SQLite 或 PostgreSQL 后端
+- 基础引荐来源和浏览器跟踪
+- 公开仪表盘选项
+
+### 定价
+在 EUPL 许可下自托管免费。托管服务对非商业用途免费，付费计划起价为每月 €5。
+
+### 优点
+- 所有分析工具中部署最简单的——单个二进制文件
+- 可在极低资源下运行
+- 可不使用 JavaScript（服务端计数）
+- 为个人网站提供免费托管套餐
+
+### 缺点
+- 功能集非常基础——仅页面浏览和引荐来源
+- 没有事件跟踪或自定义属性
+- 没有产品分析功能
+- 开发团队很小（主要是一个人）
+
+---
+
+## PostHog
+
+**最适合：需要在一个平台中同时拥有分析、功能标记和实验的开发团队**
+
+[PostHog](https://posthog.com/) 是一个一体化产品分析平台，集成网站分析、会话回放、功能标记、A/B 测试和问卷调查。它是这里功能最丰富的选项，但也是最复杂的自托管工具。
+
+![PostHog 仪表盘](/content/tools/posthog.png)
+
+### 部署
+
+PostHog 自托管在小规模部署中使用 Docker Compose，在生产环境中则通过 Helm charts 使用 Kubernetes。设置需要 PostgreSQL、Redis、ClickHouse 和 Kafka。与本列表中的其他工具相比，它明显更复杂。
+
+要求：最低 4 vCPU、16 GB 内存、30 GB 以上存储空间。团队建议仅自托管到每月约 30 万事件；超过这个规模后，PostHog Cloud 在扩展方面表现更好。
+
+### 主要功能
+- 产品分析：漏斗、留存和分群
+- 网站分析仪表盘
+- 会话回放
+- 功能标记和 A/B 测试
+- 问卷调查和错误跟踪
+
+### 定价
+在 MIT 许可下自托管免费。云端免费套餐包含每月 100 万分析事件和 5,000 次会话录制，之后按使用量计费。
+
+### 优点
+- 最全面的功能集——可替代多个工具
+- MIT 许可证
+- 云端免费套餐（100 万事件）
+- 活跃的社区和快速迭代
+
+### 缺点
+- 自托管设置复杂，涉及多个基础设施依赖
+- 资源消耗高——需要明显更多的服务器性能
+- 自托管版与云版并不具备完全相同的功能
+- 如果你只需要网站分析，这就过度了
+
+与 OpenPanel 对比：[PostHog vs OpenPanel](/compare/posthog-alternative)
+
+---
+
+## Ackee
+
+**最适合：面向小项目的注重隐私的极简跟踪**
+
+[Ackee](https://github.com/electerious/Ackee) 是一款专注于隐私和极简主义的自托管分析工具。它通过简洁、极简的界面跟踪页面浏览和基础事件。
+
+### 部署
+
+Ackee 基于 Node.js 和 MongoDB 运行。可使用 Docker Compose 部署，或直接在安装了 Node 和 MongoDB 的服务器上部署。
+
+要求：Node 18+，MongoDB 7+。资源占用较低。
+
+### 主要功能
+- 页面浏览和事件跟踪
+- 无 Cookie、匿名化跟踪
+- 用于自定义集成的 GraphQL API
+- 支持多个域名
+- 极简、干净的 UI
+
+### 定价
+在 MIT 许可下可完全免费自托管。团队不提供云服务。
+
+### 优点
+- MIT 许可下完全免费
+- 优先隐私，数据匿名化
+- GraphQL API，便于灵活查询
+- 非常简单且专注
+
+### 缺点
+- 需要 MongoDB（相比基于 PostgreSQL 的工具更复杂）
+- 功能集极简
+- 没有云选项
+- 近年来开发速度放缓
+
+与 OpenPanel 对比：[Ackee vs OpenPanel](/compare/ackee-alternative)
+
+---
+
+## 迁移路径：先用云端，之后再切换
+
+大多数自托管分析工具也提供云版本。通过[OpenPanel](/pricing)，你可以先使用 Cloud，之后再迁移到自托管——或者反过来——因为云端和自托管版本的功能完全一致。Plausible、Umami 和 Matomo 也是如此。PostHog 是例外：它的云端与自托管版本存在差异。
+
+想更深入了解什么时候适合自托管、什么时候适合云端，请参见[使用自托管分析获得更好的合规性](/articles/better-compliance-self-hosted-analytics)。
+
+## 如何开始使用自托管分析
+
+### 1. 选择一台服务器
+
+你需要一台 VPS。对于大多数自托管分析工具来说，一台 2-4 vCPU、4-8 GB RAM、40 GB SSD 的服务器就足以起步。
+
+推荐服务商：
+- **[Hetzner](https://hetzner.cloud/?ref=7Hq0H5mQh7tM)**——性价比最佳。CX31（4 vCPU，8 GB RAM）价格约为每月 €8.50。
+- **DigitalOcean**——易于使用，文档完善。Droplet 起价为每月 $6。
+- **Vultr**——与 DigitalOcean 类似，价格有竞争力。
+- **AWS/GCP**——更复杂，但如果你已经在那里运行服务，也很有用。
+
+### 2. 保护你的服务器安全
+
+在安装任何东西之前，先加固你的服务器。至少应做到：禁用 root 登录、设置 SSH 密钥、配置防火墙。我们有一份完整指南：[如何保护你的 Ubuntu 服务器安全](/articles/how-to-secure-ubuntu-server)。
+
+### 3. 安装你的分析工具
+
+每个工具都有自己的安装流程。以 OpenPanel 为例，只需四条命令：
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+./start
+```
+
+安装向导会处理一切——Docker、数据库、SSL 证书。完整演示：[如何自托管 OpenPanel](/articles/how-to-self-host-openpanel)。
+
+### 4. 将跟踪代码添加到你的网站
+
+在你的网站上安装跟踪脚本。使用 OpenPanel 时，你可以添加一小段 JavaScript 代码，或者使用框架专用的 SDK（React、Next.js、Vue 等）。请查看适用于你技术栈的[SDK 文档](/docs/get-started/install-openpanel)。
+
+---
+
+<Faqs>
+<FaqItem question="哪款自托管网站分析工具最好？">
+这取决于你的需求。若要同时进行网站分析和产品分析，OpenPanel 提供了最佳价值。若只是简单的页面浏览跟踪，Plausible 最受欢迎。若需要完整的 Google Analytics 替代品，Matomo 的功能最丰富。若想要最轻量的方案，GoatCounter 或 Umami 都很合适。
+</FaqItem>
+
+<FaqItem question="自托管分析是免费的吗？">
+对于大多数工具，软件本身是免费的（OpenPanel、Plausible、Matomo、Umami、GoatCounter、PostHog 和 Ackee 都提供免费自托管）。你的成本主要是服务器基础设施——通常根据流量大小，VPS 费用为每月 $5-50。
+</FaqItem>
+
+<FaqItem question="使用自托管分析还需要 Cookie 横幅吗？">
+如果你的工具使用无 Cookie 跟踪，就不需要。OpenPanel、Plausible、Umami、GoatCounter 和 Ackee 都是不使用 Cookie 进行跟踪，因此基础分析不需要 Cookie 同意横幅。Matomo 默认使用 Cookie，但也提供无 Cookie 模式。
+</FaqItem>
+
+<FaqItem question="我可以自托管分析并符合 GDPR 吗？">
+可以。自托管是符合 GDPR 的最强方案之一，因为你的数据不会离开你的基础设施。无需担心第三方数据传输，而且你可以完全控制数据保留和删除。像 OpenPanel 和 Plausible 这样的工具还叠加了无 Cookie 跟踪，使合规更简单。
+</FaqItem>
+
+<FaqItem question="自托管分析需要多少服务器资源？">
+对于大多数工具：2-4 vCPU、4-8 GB RAM 和 40 GB SSD 足以处理每月几十万次事件。PostHog 需要更多（最低 16 GB RAM）。GoatCounter 和 Ackee 可在极低资源下运行。随着流量增长再进行扩容。
+</FaqItem>
+
+<FaqItem question="自托管网站分析和产品分析有什么区别？">
+网站分析跟踪网站流量——页面浏览量、引荐来源、设备和地理数据。产品分析跟踪用户在产品中的行为——事件、漏斗、留存和用户旅程。像 OpenPanel 和 PostHog 这样的工具同时提供两者。大多数自托管工具（Plausible、Umami、GoatCounter）只专注于网站分析。有关覆盖产品侧的工具，请参见我们的[自托管产品分析](/articles/self-hosted-product-analytics)指南。
+</FaqItem>
+
+<FaqItem question="我可以从 Google Analytics 迁移到自托管工具吗？">
+可以。Matomo 提供直接的 Google Analytics 数据导入。OpenPanel 和 Plausible 等其他工具允许你使用它们的跟踪方式重新开始。你可以在过渡期间并行运行两者，以便在移除 GA 之前确认自己已经适应新工具。
+</FaqItem>
+</Faqs>

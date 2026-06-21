@@ -1,0 +1,179 @@
+---
+title: "如何为任意网站添加分析"
+description: "使用一个简单的脚本标签，在几分钟内为任意网站添加注重隐私的分析。支持 WordPress、Webflow、Squarespace 和纯 HTML。"
+difficulty: beginner
+timeToComplete: 5
+date: 2025-12-14
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "获取你的 Client ID"
+    anchor: "get-id"
+  - name: "添加脚本标签"
+    anchor: "script"
+  - name: "跟踪自定义事件"
+    anchor: "events"
+  - name: "验证你的设置"
+    anchor: "verify"
+---
+
+# 如何为任意网站添加分析
+
+为你的网站添加分析并不需要开发者专业知识。OpenPanel 的脚本标签适用于任何网站，无论你使用的是 WordPress、Webflow、Squarespace 还是纯 HTML。大约五分钟后，你的网站就能开始运行注重隐私的分析。
+
+OpenPanel 是一个开源分析平台，默认无需 Cookie。这意味着你可以在尊重隐私的同时跟踪有意义的用户行为，并且在大多数情况下无需显示 Cookie 同意横幅。
+
+## 前提条件
+
+- 任何平台上的一个网站
+- 一个 OpenPanel 账户（[免费注册](https://dashboard.openpanel.dev/onboarding)）
+- 访问你网站的 HTML header 或 footer
+
+## 获取你的 Client ID [#get-id]
+
+先在 [dashboard.openpanel.dev](https://dashboard.openpanel.dev/onboarding) 创建一个 OpenPanel 账户。登录后，创建一个新项目，并从项目设置中复制你的 Client ID。
+
+你的 Client ID 看起来会像 `cl_xxxxxxxxxxxxxxxx`。请将其妥善保存，因为下一步会用到。
+
+## 添加脚本标签 [#script]
+
+需要将 OpenPanel 脚本添加到你网站的每个页面。最佳方式取决于你的平台，但核心代码片段保持不变。
+
+下面是你将要添加的脚本标签。将 `YOUR_CLIENT_ID` 替换为你刚才复制的 Client ID。
+
+```html
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+`trackScreenViews` 选项会启用自动页面浏览量跟踪，因此你无需手动跟踪每个页面。`trackOutgoingLinks` 选项会捕获外部链接点击，这对于了解用户如何离开你的网站很有帮助。
+
+### 平台特定说明
+
+对于 WordPress 网站，最简单的方法是使用类似 "Insert Headers and Footers" 或 "Code Snippets" 的插件。安装插件后，将脚本标签粘贴到头部区域。如果你更喜欢直接编辑代码，也可以将脚本添加到主题的 `header.php` 文件中，并放在结束 `</head>` 标签之前。
+
+希望有更多控制权的 WordPress 用户也可以通过 `functions.php` 添加脚本。
+
+```php
+function add_openpanel_script() {
+    ?>
+    <script>
+      window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+      window.op('init', {
+        clientId: 'YOUR_CLIENT_ID',
+        trackScreenViews: true,
+        trackOutgoingLinks: true,
+        trackAttributes: true,
+      });
+    </script>
+    <script src="https://openpanel.dev/op1.js" defer async></script>
+    <?php
+}
+add_action('wp_head', 'add_openpanel_script');
+```
+
+对于 Webflow，进入你的项目设置并导航到 Custom Code。将脚本标签粘贴到 Head Code 区域，然后发布你的网站。脚本现在会在每个页面上加载。
+
+Squarespace 用户可以在 Settings > Advanced > Code Injection 中找到代码注入设置。将脚本添加到 Header 区域并保存更改。
+
+如果你使用 Google Tag Manager，请创建一个新的 Custom HTML 标记并粘贴脚本标签代码。将触发器设置为 All Pages，然后发布你的容器。
+
+## 跟踪自定义事件 [#events]
+
+页面浏览会被自动跟踪，但你很可能还想跟踪特定的用户操作，例如按钮点击、表单提交或视频播放。OpenPanel 提供了两种实现方式。
+
+最简单的方法是在 HTML 中直接使用 `data-track` 属性。当用户点击带有该属性的元素时，OpenPanel 会自动发送一个事件。
+
+```html
+<button data-track="button_clicked" data-button_name="signup">
+  注册
+</button>
+```
+
+元素上的任何 `data-` 属性（`data-track` 本身除外）都会作为事件属性包含进来。当你想在不编写 JavaScript 的情况下跟踪额外上下文时，这非常有用。
+
+对于更复杂的跟踪，你可以直接调用 `window.op` 函数。这能让你完全控制何时以及跟踪什么内容。
+
+```html
+<script>
+  document.querySelector('.signup-button').addEventListener('click', function() {
+    window.op('track', 'button_clicked', {
+      button_name: 'signup',
+      button_location: 'hero'
+    });
+  });
+</script>
+```
+
+表单提交是一个常见的跟踪场景。你可以使用 `onsubmit` 属性在行内跟踪它们。
+
+```html
+<form onsubmit="window.op('track', 'form_submitted', {form_name: 'contact'}); return true;">
+  <input type="email" name="email" placeholder="你的邮箱">
+  <button type="submit">提交</button>
+</form>
+```
+
+### 用户识别
+
+当用户登录或提供电子邮件地址时，你可以将他们的活动关联到一个资料档案。这可以通过 `identify` 方法完成。
+
+```html
+<script>
+  window.op('identify', {
+    profileId: 'user_123',
+    email: 'user@example.com',
+    firstName: 'John',
+    lastName: 'Doe'
+  });
+</script>
+```
+
+`profileId` 是必填项，应为你系统中的唯一标识符。一旦完成识别，后续所有事件都会关联到该用户，从而支持跨会话分析。
+
+## 验证你的设置 [#verify]
+
+在浏览器中打开你的网站并浏览几个页面。点击一些你已设置跟踪的按钮或链接。然后前往你的 [OpenPanel 仪表板](https://dashboard.openpanel.dev) 并查看实时视图。
+
+事件应会在几秒内出现。如果你没有看到任何数据，请打开浏览器的开发者控制台（F12）并查看是否有 JavaScript 错误。最常见的问题是 Client ID 不正确，或者广告拦截器阻止了脚本加载。
+
+广告拦截器可能会干扰分析脚本。如果这会影响你的受众，你可以通过你自己的域名代理 OpenPanel 脚本。[广告拦截器文档](/docs/adblockers) 说明了如何进行设置。
+
+## 下一步
+
+脚本标签已覆盖传统网站的大多数跟踪需求。若需要更高级的配置选项，请查看 [Script Tag SDK 参考](/docs/sdks/script)。如果你想更好地理解用户旅程，关于 [如何创建漏斗](/articles/how-to-create-a-funnel) 的文章会逐步讲解如何设置 [转化漏斗](/features/funnels)。
+
+对于带有后端逻辑或服务端渲染的网站，你可能需要将客户端跟踪与服务端事件结合使用。[Node.js 指南](/guides/nodejs-analytics) 和 [Python 指南](/guides/python-analytics) 涵盖了这些用例。
+
+如果你使用的是特定框架，可以查看我们针对框架的指南，了解更高级的设置：
+- [Next.js 分析指南](/guides/nextjs-analytics)，适用于 Next.js 应用
+- [React 分析指南](/guides/react-analytics)，适用于 React 应用
+- [Astro 分析指南](/guides/astro-analytics)，适用于 Astro 网站
+- [Vue 分析指南](/guides/vue-analytics)，适用于 Vue.js 应用
+
+<Faqs>
+<FaqItem question="OpenPanel 会使用 Cookie 吗？">
+不会。OpenPanel 默认使用无 Cookie 跟踪。这意味着在大多数隐私法规下，基础分析通常不需要 Cookie 同意横幅，包括 GDPR 和 PECR。
+</FaqItem>
+
+<FaqItem question="广告拦截器会阻止跟踪吗？">
+某些广告拦截器可能会阻止对 openpanel.dev 的请求。你可以通过将脚本经由自己的域名代理，或者自行托管 OpenPanel 来缓解这一问题。文档中介绍了这两种方法。
+</FaqItem>
+
+<FaqItem question="我可以将 OpenPanel 与 Google Tag Manager 一起使用吗？">
+可以。将 OpenPanel 脚本作为 Google Tag Manager 中的 Custom HTML 标记添加，并将触发器设为 All Pages。这样你就可以把 OpenPanel 与其他跟踪脚本一起管理。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 吗？">
+是的。OpenPanel 通过无 Cookie 跟踪、数据最小化以及对数据主体权利的支持，专为符合 GDPR 而设计。自行托管可完全消除国际数据传输方面的顾虑。更多详情请阅读 [无 Cookie 分析](/articles/cookieless-analytics)。
+</FaqItem>
+</Faqs>

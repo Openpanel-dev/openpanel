@@ -1,0 +1,1140 @@
+---
+title: 環境變數
+description: OpenPanel 所有環境變數的完整參考
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+本頁記錄 OpenPanel 使用的所有環境變數。變數依類別整理。大多數變數都是選用，且有合理的預設值。
+
+<Callout>
+部署相關的特定設定，請參考 [部署指南](/zh-TW/docs/self-hosting/deploy-docker-compose)。
+</Callout>
+
+## 資料庫與儲存
+
+### DATABASE_URL
+
+**類型**: `string`
+**是否必填**: 是
+**預設值**: 無
+
+主資料庫的 PostgreSQL 連線字串。
+
+**Example**:
+```bash
+DATABASE_URL=postgres://user:password@localhost:5432/openpanel?schema=public
+```
+
+### DATABASE_URL_DIRECT
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 同 `DATABASE_URL`
+
+直接 PostgreSQL 連線字串（繞過連線池）。用於 migrations 與管理操作。
+
+**Example**:
+```bash
+DATABASE_URL_DIRECT=postgres://user:password@localhost:5432/openpanel?schema=public
+```
+
+### DATABASE_URL_REPLICA
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 同 `DATABASE_URL`
+
+供讀取密集型操作使用的讀取複本連線字串。若未設定，則使用主資料庫。
+
+**Example**:
+```bash
+DATABASE_URL_REPLICA=postgres://user:password@replica-host:5432/openpanel?schema=public
+```
+
+### REDIS_URL
+
+**類型**: `string`
+**是否必填**: 是
+**預設值**: `redis://localhost:6379`
+
+用於快取與佇列管理的 Redis 連線字串。
+
+**Example**:
+```bash
+REDIS_URL=redis://localhost:6379
+# With password
+REDIS_URL=redis://:password@localhost:6379
+```
+
+### CLICKHOUSE_URL
+
+**類型**: `string`
+**是否必填**: 是
+**預設值**: `http://localhost:8123/openpanel`
+
+用於分析資料儲存的 ClickHouse HTTP 連線 URL。
+
+**Example**:
+```bash
+CLICKHOUSE_URL=http://localhost:8123/openpanel
+```
+
+### CLICKHOUSE_CLUSTER
+
+**類型**: `boolean`
+**是否必填**: 否
+**預設值**: `false`
+
+啟用 ClickHouse 叢集模式。若使用 ClickHouse 叢集，請設為 `true` 或 `1`。
+
+**Example**:
+```bash
+CLICKHOUSE_CLUSTER=true
+```
+
+### CLICKHOUSE_SETTINGS
+
+**類型**: `string` (JSON)
+**是否必填**: 否
+**預設值**: `{}`
+
+額外的 ClickHouse 設定，格式為 JSON 物件。
+
+**Example**:
+```bash
+CLICKHOUSE_SETTINGS='{"max_execution_time": 300}'
+```
+
+### CLICKHOUSE_SETTINGS_REMOVE_CONVERT_ANY_JOIN
+
+**類型**: `boolean`
+**是否必填**: 否
+**預設值**: `false`
+
+從 ClickHouse 設定中移除 `convert_any_join`。用於相容某些 ClickHouse 版本。若使用 25 以下的任何 clickhouse 版本，這個值需要設定！
+
+## 應用程式 URL
+
+### API_URL
+
+**類型**: `string`
+**是否必填**: 是
+**預設值**: 無
+
+提供給瀏覽器的公開 API URL。供 dashboard 前端與 API 服務使用。
+
+**Example**:
+```bash
+API_URL=https://analytics.example.com/api
+```
+
+### DASHBOARD_URL
+
+**類型**: `string`
+**是否必填**: 是
+**預設值**: 無
+
+提供給瀏覽器的公開 dashboard URL。供 dashboard 前端與 API 服務使用。
+
+**Example**:
+```bash
+DASHBOARD_URL=https://analytics.example.com
+```
+
+### API_CORS_ORIGINS
+
+**類型**: `string` (comma-separated)
+**是否必填**: 否
+**預設值**: 無
+
+允許 API 請求的額外 CORS origin。以逗號分隔的 origin 清單。
+
+**Example**:
+```bash
+API_CORS_ORIGINS=https://app.example.com,https://another-app.com
+```
+
+## 驗證與安全性
+
+### COOKIE_SECRET
+
+**類型**: `string`
+**是否必填**: 是
+**預設值**: 無
+
+用於加密 session cookie 的密鑰。請產生安全的隨機字串（32 個字元以上）。
+
+**Example**:
+```bash
+# Generate with: openssl rand -base64 32
+COOKIE_SECRET=your-random-secret-here
+```
+
+<Callout type="warn">
+正式環境絕對不要使用預設值！請務必產生唯一的密鑰。
+</Callout>
+
+### COOKIE_TLDS
+
+**類型**: `string` (comma-separated)
+**是否必填**: 否
+**預設值**: 無
+
+用於 cookie 網域處理的自訂多段 TLD。當部署在預設無法辨識的公共後綴網域上時使用（例如 `.my.id`、`.web.id`、`.co.id`）。
+
+**Example**:
+```bash
+# For domains like abc.my.id
+COOKIE_TLDS=my.id
+
+# Multiple TLDs
+COOKIE_TLDS=my.id,web.id,co.id
+```
+
+<Callout>
+當使用公共後綴型網域後綴（如 `.co.uk`）時，這是必需的。否則瀏覽器會拒絕驗證 cookie。常見例子包括印尼網域（`.my.id`、`.web.id`、`.co.id`）。
+</Callout>
+
+### CUSTOM_COOKIE_DOMAIN
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+覆寫自動 cookie 網域偵測，並為驗證 cookie 設定特定網域。當透過主網域代理 API，或需要精確控制 cookie 範圍時很有用。
+
+**Example**:
+```bash
+# Set cookies only on the main domain
+CUSTOM_COOKIE_DOMAIN=.example.com
+
+# Set cookies on a specific subdomain
+CUSTOM_COOKIE_DOMAIN=.app.example.com
+```
+
+<Callout>
+設定後，會完全略過自動網域解析邏輯。cookie 一律會設為 secure。請加入前導點號（`.`）以允許 cookie 在子網域間共用。
+</Callout>
+
+### DEMO_USER_ID
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+demo 模式的使用者 ID。設定後會建立 demo session 供測試使用。
+
+**Example**:
+```bash
+DEMO_USER_ID=user_1234567890
+```
+
+### ALLOW_REGISTRATION
+
+**類型**: `boolean`
+**是否必填**: 否
+**預設值**: `false` (建立第一個使用者後)
+
+允許新使用者註冊。設為 `true` 可啟用公開註冊。
+
+**Example**:
+```bash
+ALLOW_REGISTRATION=true
+```
+
+<Callout>
+在建立第一位使用者後，註冊會自動停用。將此設為 `true` 可重新啟用。
+</Callout>
+
+### ALLOW_INVITATION
+
+**類型**: `boolean`
+**是否必填**: 否
+**預設值**: `true`
+
+允許使用者邀請。設為 `false` 可停用邀請功能。
+
+**Example**:
+```bash
+ALLOW_INVITATION=false
+```
+
+## AI 功能
+
+內建 AI 聊天支援 **OpenAI** 與 **Anthropic** 模型。請在 API 服務上設定其中一個或兩個 provider key — 聊天 UI 的模型選擇器只會自動顯示已設定 key 的 provider 所對應模型。若兩者都未設定，聊天抽屜仍會開啟，但會顯示設定說明而不是建議內容。
+
+可用模型：
+
+- **OpenAI** — `GPT-4.1`, `GPT-4.1 mini`, `GPT-5.4 mini`
+- **Anthropic** — `Claude Haiku 4.5`, `Claude Sonnet 4.6`, `Claude Opus 4.6`
+
+<Callout type="info">
+AI 助理是選用功能。若未設定 `OPENAI_API_KEY` 或 `ANTHROPIC_API_KEY`，其他所有 OpenPanel 功能仍可正常運作。
+</Callout>
+
+### OPENAI_API_KEY
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+OpenAI API key。設定後，OpenAI 模型會出現在聊天模型選擇器中。
+
+**Example**:
+```bash
+OPENAI_API_KEY=sk-your-openai-api-key-here
+```
+
+### OPENAI_BASE_URL
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: OpenAI 預設 API base URL
+
+覆寫 OpenAI API base URL。適用於 proxy、gateway、Azure 相容端點，或自架 OpenAI 相容 provider。
+
+**Example**:
+```bash
+OPENAI_BASE_URL=https://your-openai-compatible-endpoint.example.com/v1
+```
+
+### OPENAI_PROJECT
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+可選的 OpenAI project 識別碼，會隨請求一併送出。
+
+**Example**:
+```bash
+OPENAI_PROJECT=proj_1234567890
+```
+
+### OPENAI_ORGANIZATION
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+可選的 OpenAI organization 識別碼，會隨請求一併送出。
+
+**Example**:
+```bash
+OPENAI_ORGANIZATION=org_1234567890
+```
+
+### ANTHROPIC_API_KEY
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+Anthropic API key。設定後，Claude 模型會出現在聊天模型選擇器中。
+
+**Example**:
+```bash
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
+```
+
+### ANTHROPIC_BASE_URL
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: Anthropic 預設 API base URL
+
+覆寫 Anthropic API base URL。適用於 proxy、gateway，或 Anthropic 相容端點。
+
+**Example**:
+```bash
+ANTHROPIC_BASE_URL=https://your-anthropic-endpoint.example.com
+```
+
+### ANTHROPIC_TOKEN
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+額外的驗證 token，會與 API key 一起送到 Anthropic provider。僅在你的 Anthropic 相容 gateway 需要時使用。
+
+**Example**:
+```bash
+ANTHROPIC_TOKEN=your-auth-token
+```
+
+### ANTHROPIC_VERSION
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: Provider 預設值
+
+覆寫隨請求送出的 Anthropic API version header。
+
+**Example**:
+```bash
+ANTHROPIC_VERSION=2023-06-01
+```
+
+## 電子郵件
+
+### RESEND_API_KEY
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+用於傳送交易性電子郵件（密碼重設、邀請等）的 Resend API key。
+
+**Example**:
+```bash
+RESEND_API_KEY=re_xxxxxxxxxxxxx
+```
+
+<Callout>
+請從 [resend.com](https://resend.com) 取得你的 API key。請確認寄件者 email 網域已完成驗證。
+</Callout>
+
+### EMAIL_SENDER
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: `hello@openpanel.dev`
+
+交易性電子郵件使用的寄件者地址。適用於 Resend 與 SMTP 傳輸。
+
+**Example**:
+```bash
+EMAIL_SENDER=noreply@yourdomain.com
+```
+
+### SMTP_HOST
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+SMTP 伺服器主機名稱。設定後，OpenPanel 會改用 SMTP 寄送 email，而不是 Resend。若兩者都已設定，SMTP 優先。
+
+**Example**:
+```bash
+SMTP_HOST=smtp.example.com
+```
+
+### SMTP_PORT
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `587`
+
+SMTP 伺服器連接埠。
+
+**Example**:
+```bash
+SMTP_PORT=587
+```
+
+### SMTP_SECURE
+
+**類型**: `boolean`
+**是否必填**: 否
+**預設值**: `false`
+
+SMTP 連線使用 TLS。當使用連接埠 `465` 時，設為 `true`。
+
+**Example**:
+```bash
+SMTP_SECURE=true
+```
+
+### SMTP_USER
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+SMTP 驗證使用者名稱。若伺服器不需要驗證，請留空。
+
+**Example**:
+```bash
+SMTP_USER=smtp-user@example.com
+```
+
+### SMTP_PASS
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+SMTP 驗證密碼。
+
+**Example**:
+```bash
+SMTP_PASS=your-smtp-password
+```
+
+<Callout>
+設定 `SMTP_HOST` 即可啟用 SMTP。若同時存在 `SMTP_HOST` 與 `RESEND_API_KEY`，SMTP 會優先。如果兩者都未設定，email 會記錄到主控台（適合開發環境）。
+若使用 Resend，寄件者 email 必須先在你的 Resend 帳號中完成驗證。
+</Callout>
+
+<Callout type="warn">
+如果已設定 `SMTP_HOST`，且 SMTP 傳送失敗，系統**不會**自動回退到 `RESEND_API_KEY` — 該 email 會被靜默捨棄。若要改用 Resend，請取消設定 `SMTP_HOST`。
+</Callout>
+
+## OAuth 與整合
+
+### SLACK_CLIENT_ID
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+Slack 整合的 Slack OAuth client ID。
+
+**Example**:
+```bash
+SLACK_CLIENT_ID=1234567890.1234567890
+```
+
+### SLACK_CLIENT_SECRET
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+Slack 整合的 Slack OAuth client secret。
+
+**Example**:
+```bash
+SLACK_CLIENT_SECRET=your-slack-client-secret
+```
+
+### SLACK_OAUTH_REDIRECT_URL
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+Slack OAuth redirect URL。必須與你在 Slack app 中設定的 redirect URI 相符。
+
+**Example**:
+```bash
+SLACK_OAUTH_REDIRECT_URL=https://analytics.example.com/api/integrations/slack/callback
+```
+
+### SLACK_STATE_SECRET
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+用於簽署 Slack OAuth state 參數的密鑰。
+
+**Example**:
+```bash
+SLACK_STATE_SECRET=your-state-secret
+```
+
+## 自架部署
+
+### SELF_HOSTED
+
+**類型**: `boolean`
+**是否必填**: 否
+**預設值**: `false`
+
+啟用自架模式。設為 `true` 或 `1` 可啟用自架功能。供 dashboard 前端與 API 服務使用。
+
+**Example**:
+```bash
+SELF_HOSTED=true
+```
+
+## Worker 與佇列
+
+### WORKER_PORT
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `3000`
+
+worker 服務監聽的連接埠。
+
+**Example**:
+```bash
+WORKER_PORT=3000
+```
+
+### DISABLE_BULLBOARD
+
+**類型**: `boolean`
+**是否必填**: 否
+**預設值**: `false`
+
+停用 BullMQ board UI。設為 `true` 或 `1` 可停用佇列監控 dashboard。
+
+**Example**:
+```bash
+DISABLE_BULLBOARD=true
+```
+
+### DISABLE_WORKERS
+
+**類型**: `boolean`
+**是否必填**: 否
+**預設值**: `false`
+
+停用所有 worker 程序。設為 `true` 或 `1` 可停用背景工作處理。
+
+**Example**:
+```bash
+DISABLE_WORKERS=true
+```
+
+### ENABLED_QUEUES
+
+**類型**: `string` (comma-separated)
+**是否必填**: 否
+**預設值**: 啟用所有佇列
+
+要啟用的佇列名稱清單，以逗號分隔。可用佇列：`events`、`events_kafka`、`sessions`、`cron`、`notification`、`misc`、`import`。
+
+**Example**:
+```bash
+ENABLED_QUEUES=events,sessions,cron
+```
+
+<Callout>
+啟用 `events_kafka` 以便與預設 `events` 佇列一起（或改為）執行基於 Kafka 的 events consumer。完整設定請參考 [Event Streaming (Kafka)](#event-streaming-kafka) 章節。常見的高吞吐量架構是使用一組 worker pool 設定 `ENABLED_QUEUES=events_kafka`，另一組處理其他所有佇列。
+</Callout>
+
+### EVENT_JOB_CONCURRENCY
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `10`
+
+每個 worker 可同時處理的 event job 數量。
+
+**Example**:
+```bash
+EVENT_JOB_CONCURRENCY=20
+```
+
+### EVENT_BLOCKING_TIMEOUT_SEC
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `1`
+
+event 佇列 worker 的阻塞逾時（秒）。
+
+**Example**:
+```bash
+EVENT_BLOCKING_TIMEOUT_SEC=2
+```
+
+### EVENTS_GROUP_QUEUES_SHARDS
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `1`
+
+events group queue 的分片數。提高此值可在高事件量時獲得更好效能。
+
+**Example**:
+```bash
+EVENTS_GROUP_QUEUES_SHARDS=4
+```
+
+### QUEUE_CLUSTER
+
+**類型**: `boolean`
+**是否必填**: 否
+**預設值**: `false`
+
+為佇列啟用 Redis cluster 模式。啟用後，佇列名稱會以 `{}` 包裹，用於 Redis cluster 分片。
+
+**Example**:
+```bash
+QUEUE_CLUSTER=true
+```
+
+### ORDERING_DELAY_MS
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `100`
+
+當事件亂序到達時，為了確保正確排序而延遲保留事件的毫秒數。
+
+**Example**:
+```bash
+ORDERING_DELAY_MS=200
+```
+
+<Callout type="warn">
+不應超過 500ms。較高的值可能導致事件處理延遲。
+</Callout>
+
+### AUTO_BATCH_MAX_WAIT_MS
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `0` (停用)
+
+自動批次處理事件的最大等待時間（毫秒）。實驗性功能。
+
+**Example**:
+```bash
+AUTO_BATCH_MAX_WAIT_MS=100
+```
+
+<Callout type="warn">
+⚠️ **Experimental**: 此功能屬於實驗性，且未用於 正式環境。除非你充分理解其影響與特定效能需求，否則不要使用。
+</Callout>
+
+### AUTO_BATCH_SIZE
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `0` (停用)
+
+自動批次處理事件的批次大小。實驗性功能。
+
+**Example**:
+```bash
+AUTO_BATCH_SIZE=100
+```
+
+<Callout type="warn">
+⚠️ **Experimental**: 此功能屬於實驗性，且未用於 正式環境。除非你充分理解其影響與特定效能需求，否則不要使用。
+</Callout>
+
+## Event Streaming (Kafka)
+
+OpenPanel 可選擇透過相容 Kafka 的 broker（Kafka 本身、Redpanda 等）來接收 events，取代預設的 Redis-backed events queue。這在高吞吐量情境很有用，因為多個 consumer instance 可以平行處理 partitions。
+
+路由是全有或全無：若設定了 `KAFKA_BROKERS`，所有 event 都會送到 Kafka topic；否則所有 event 都會留在預設的 Redis-backed `events` queue。請在應該從 Kafka 消費的 worker 上設定 `ENABLED_QUEUES=events_kafka`。
+
+<Callout>
+client 透過 [kafkajs](https://kafka.js.org/) 使用 Kafka wire protocol，因此任何相容 Kafka 的 broker 都可使用。內建的 [docker-compose.yml](/zh-TW/docs/self-hosting/deploy-docker-compose) 使用 [Redpanda](https://redpanda.com/) 作為輕量、單一 binary 的選項，但你也可以將 `KAFKA_BROKERS` 指向任何 Kafka 叢集。
+</Callout>
+
+### KAFKA_BROKERS
+
+**類型**: `string` (comma-separated)
+**是否必填**: 是 (用於啟用 Kafka 路徑)
+**預設值**: 無
+
+Kafka broker 位址清單，以逗號分隔。設定後，所有 event 都會送到 Kafka；未設定時，Kafka producer/consumer 會停用，所有 event 會回退到預設的 Redis-backed queue。
+
+**Example**:
+```bash
+KAFKA_BROKERS=redpanda:9092
+# Multiple brokers
+KAFKA_BROKERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
+```
+
+### KAFKA_EVENTS_TOPIC
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: `events`
+
+用於接收 events 的 Kafka topic 名稱。
+
+**Example**:
+```bash
+KAFKA_EVENTS_TOPIC=openpanel-events
+```
+
+### KAFKA_CONSUMER_GROUP
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: `openpanel-events`
+
+worker 使用的 Kafka consumer group ID。所有具有相同 group ID 的 worker replica 會共同分配 partitions。
+
+**Example**:
+```bash
+KAFKA_CONSUMER_GROUP=openpanel-events
+```
+
+### KAFKA_CLIENT_ID
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: `openpanel`
+
+producer 與 consumer 共用的 Kafka client ID。會出現在 broker logs 與 metrics 中。
+
+**Example**:
+```bash
+KAFKA_CLIENT_ID=openpanel-prod
+```
+
+### KAFKA_PARTITIONS_CONCURRENT
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `8`
+
+單一 consumer instance 可同時處理的最大 partitions 數量。若實際指派給此 consumer 的 partitions 數少於此值，則不會有額外影響。
+
+**Example**:
+```bash
+KAFKA_PARTITIONS_CONCURRENT=12
+```
+
+### KAFKA_MIN_MESSAGES
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `1`
+
+broker 在回應 fetch request 前應累積的最少訊息數量（每則訊息在內部假設約為 1 KiB）。值越高，batch 越大，但延遲也會略增。
+
+**Example**:
+```bash
+KAFKA_MIN_MESSAGES=16
+```
+
+### KAFKA_MAX_WAIT_MS
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `500`
+
+broker 為了滿足 `KAFKA_MIN_MESSAGES` 而等待的最長毫秒數，超時後才回傳 fetch response。在低流量下可限制端到端延遲。
+
+**Example**:
+```bash
+KAFKA_MAX_WAIT_MS=200
+```
+
+### KAFKA_MAX_MESSAGES_PER_PARTITION
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `256`
+
+每次 fetch request 每個 partition 回傳的最大訊息數（每則訊息在內部假設約為 1 KiB）。可在 backlog 回復期間限制記憶體中的 batch 大小，並界定 consumer 在單一 batch 上花費的最壞時間。
+
+**Example**:
+```bash
+KAFKA_MAX_MESSAGES_PER_PARTITION=512
+```
+
+### KAFKA_SESSION_TIMEOUT_MS
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `30000`
+
+consumer group session timeout（毫秒）。若 consumer 在此時間內未送出 heartbeat，broker 會視其為已離線並重新平衡其 partitions。
+
+**Example**:
+```bash
+KAFKA_SESSION_TIMEOUT_MS=45000
+```
+
+### KAFKA_HEARTBEAT_INTERVAL_MS
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `3000`
+
+consumer 向 broker 發送背景 heartbeat 的頻率（毫秒）。應明顯小於 `KAFKA_SESSION_TIMEOUT_MS`。
+
+**Example**:
+```bash
+KAFKA_HEARTBEAT_INTERVAL_MS=3000
+```
+
+## 緩衝區
+
+### SESSION_BUFFER_BATCH_SIZE
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: Buffer 專用預設值
+
+session buffer 操作的批次大小。
+
+**Example**:
+```bash
+SESSION_BUFFER_BATCH_SIZE=5000
+```
+
+### SESSION_BUFFER_CHUNK_SIZE
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: Buffer 專用預設值
+
+session buffer 操作的區塊大小。
+
+**Example**:
+```bash
+SESSION_BUFFER_CHUNK_SIZE=1000
+```
+
+### EVENT_BUFFER_BATCH_SIZE
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `4000`
+
+event buffer 操作的批次大小。
+
+**Example**:
+```bash
+EVENT_BUFFER_BATCH_SIZE=5000
+```
+
+### EVENT_BUFFER_CHUNK_SIZE
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `1000`
+
+event buffer 操作的區塊大小。
+
+**Example**:
+```bash
+EVENT_BUFFER_CHUNK_SIZE=2000
+```
+
+### PROFILE_BUFFER_BATCH_SIZE
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: Buffer 專用預設值
+
+profile buffer 操作的批次大小。
+
+**Example**:
+```bash
+PROFILE_BUFFER_BATCH_SIZE=5000
+```
+
+### PROFILE_BUFFER_CHUNK_SIZE
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: Buffer 專用預設值
+
+profile buffer 操作的區塊大小。
+
+**Example**:
+```bash
+PROFILE_BUFFER_CHUNK_SIZE=1000
+```
+
+### PROFILE_BUFFER_TTL_IN_SECONDS
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: Buffer 專用預設值
+
+profile buffer 項目的存活時間（秒）。
+
+**Example**:
+```bash
+PROFILE_BUFFER_TTL_IN_SECONDS=3600
+```
+
+### BOT_BUFFER_BATCH_SIZE
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: Buffer 專用預設值
+
+bot 偵測 buffer 操作的批次大小。
+
+**Example**:
+```bash
+BOT_BUFFER_BATCH_SIZE=1000
+```
+
+## 效能與調校
+
+### IMPORT_BATCH_SIZE
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `5000`
+
+資料匯入操作的批次大小。
+
+**Example**:
+```bash
+IMPORT_BATCH_SIZE=10000
+```
+
+### IP_HEADER_ORDER
+
+**類型**: `string` (comma-separated)
+**是否必填**: 否
+**預設值**: 見 [預設順序](https://github.com/Openpanel-dev/openpanel/blob/main/packages/common/server/get-client-ip.ts)
+
+檢查 client IP 位址時所使用的自訂 HTTP header 順序。當位於特定 proxy 或 CDN 之後時很有用。
+
+**Example**:
+```bash
+IP_HEADER_ORDER=cf-connecting-ip,x-real-ip,x-forwarded-for
+```
+
+<Callout>
+預設順序包含：`openpanel-client-ip`、`cf-connecting-ip`、`true-client-ip`、`x-client-ip`、`x-forwarded-for`、`x-real-ip` 等。完整預設清單請參考 [source code](https://github.com/Openpanel-dev/openpanel/blob/main/packages/common/server/get-client-ip.ts)。
+</Callout>
+
+### SHUTDOWN_GRACE_PERIOD_MS
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `5000`
+
+服務優雅關閉的寬限時間（毫秒）。
+
+**Example**:
+```bash
+SHUTDOWN_GRACE_PERIOD_MS=10000
+```
+
+### API_PORT
+
+**類型**: `number`
+**是否必填**: 否
+**預設值**: `3000`
+
+API 服務監聽的連接埠。
+
+**Example**:
+```bash
+API_PORT=3000
+```
+
+### API_HOST
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: `0.0.0.0` (正式環境) / `localhost` (開發環境)
+
+API 服務綁定的主機位址。設為 `::` 可啟用 IPv6 支援（對像 Railway 這類內部網路使用 IPv6 的平台很有用）。
+
+**Example**:
+```bash
+# Default IPv4 only
+API_HOST=0.0.0.0
+
+# IPv6 (dual-stack, accepts both IPv4 and IPv6)
+API_HOST=::
+```
+
+<Callout>
+在像 Railway 這類私有網路需要 IPv6 的平台上部署時，請使用 `API_HOST=::`。`::` 位址可啟用雙協定模式，在大多數系統上同時接受 IPv4 與 IPv6 連線。
+</Callout>
+
+## 日誌
+
+### LOG_LEVEL
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: `info`
+
+日誌等級。選項：`error`、`warn`、`info`、`debug`。
+
+**Example**:
+```bash
+LOG_LEVEL=debug
+```
+
+### LOG_SILENT
+
+**類型**: `boolean`
+**是否必填**: 否
+**預設值**: `false`
+
+停用所有日誌輸出。設為 `true` 可靜音日誌。
+
+**Example**:
+```bash
+LOG_SILENT=true
+```
+
+### LOG_PREFIX
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+日誌訊息前綴。適合用來識別不同服務的日誌。
+
+**Example**:
+```bash
+LOG_PREFIX=api
+```
+
+### HYPERDX_API_KEY
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+用於將日誌傳送到 HyperDX 進行監控與分析的 HyperDX API key。
+
+**Example**:
+```bash
+HYPERDX_API_KEY=your-hyperdx-api-key
+```
+
+## 地理位置
+
+### MAXMIND_LICENSE_KEY
+
+**類型**: `string`
+**是否必填**: 否
+**預設值**: 無
+
+用於下載 GeoIP 資料庫的 MaxMind GeoLite2 授權金鑰。
+
+**Example**:
+```bash
+MAXMIND_LICENSE_KEY=your-maxmind-license-key
+```
+
+<Callout>
+請從 [MaxMind](https://www.maxmind.com/en/accounts/current/license-key) 取得你的授權金鑰。下載 GeoIP 資料庫時必需。
+</Callout>
+
+## 快速參考
+
+### 必要變數
+
+對於基本的自架安裝，以下變數是必需的：
+
+- `DATABASE_URL` - PostgreSQL 連線
+- `REDIS_URL` - Redis 連線
+- `CLICKHOUSE_URL` - ClickHouse 連線
+- `API_URL` - API 端點 URL
+- `DASHBOARD_URL` - Dashboard URL
+- `COOKIE_SECRET` - Session 加密密鑰
+
+### 選用但建議
+
+- `RESEND_API_KEY` 或 `SMTP_HOST` - 用於電子郵件功能（二選一）
+- `EMAIL_SENDER` - 電子郵件寄件者地址
+- `OPENAI_API_KEY` 和/或 `ANTHROPIC_API_KEY` - 用於內建 AI 聊天助理
+
+### 另請參考
+
+- [以 Docker Compose 部署](/zh-TW/docs/self-hosting/deploy-docker-compose)
+- [以 Coolify 部署](/zh-TW/docs/self-hosting/deploy-coolify)
+- [以 Dokploy 部署](/zh-TW/docs/self-hosting/deploy-dokploy)
+- [在 Kubernetes 上部署](/zh-TW/docs/self-hosting/deploy-kubernetes)

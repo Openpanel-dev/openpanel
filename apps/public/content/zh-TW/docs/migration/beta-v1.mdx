@@ -1,0 +1,40 @@
+---
+title: Beta 到 V1
+description: 很高興宣布 Openpanel SDK 的 `v1` 版本正式發布。此版本包含許多 SDK 改進與變更。本指南將協助你從 `beta` 版本遷移到 `v1` 版本。
+---
+
+## 一般
+
+`Openpanel` 類別現在改名為 `OpenPanel`！
+
+## 選項
+
+- 重新命名：`api` 改為 `apiUrl`
+- 新增：`disabled`
+- 新增：`filter`
+
+## 方法
+- 重新命名：`event` 方法現在改為 `track`
+- 重新命名：`setProfile` 和 `setProfileId` 現在改為 `identify`（並已合併）
+- 變更：`increment('app_opened', 5)` 現在改為 `increment({ name: 'app_opened', value: 5, profileId: '123' })`。因此現在必須提供 profile ID。
+- 變更：`decrement('app_opened', 5)` 現在改為 `decrement({ name: 'app_opened', value: 5, profileId: '123' })`。因此現在必須提供 profile ID。
+- 改善：`screenView` 方法現在有 2 個參數。這個變更與 `@openpanel/react-native` 更一致。
+```ts
+screenView(properties?: TrackProperties): void;
+screenView(path: string, properties?: TrackProperties): void;
+
+// Example
+op.screenView('/home', { title: 'Home' }); // path will be "/home"
+op.screenView({ title: 'Home' }); // path will be what ever window.location.pathname is
+```
+
+## Script 標籤
+
+- 新增：應改用 `https://openpanel.dev/op1.js` 取代 `op.js`（注意檔名）
+- 重新命名：含屬性的追蹤方式已變更。請使用 `data-track="my_event"` 取代 `data-event="my_event"`
+
+## @openpanel/nextjs
+
+- 重新命名：`OpenpanelProvider` 改為 `OpenPanelComponent`
+- 移除：所有匯出方法（trackEvent 等）。請改用 `useOpenPanel` hook，因為這些僅適用於 client 端追蹤
+- 移動：`createNextRouteHandler` 已移至 `@openpanel/nextjs/server`

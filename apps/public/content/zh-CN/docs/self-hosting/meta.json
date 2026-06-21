@@ -1,0 +1,16 @@
+{
+  "title": "自托管",
+  "defaultOpen": true,
+  "pages": [
+    "[开始使用](/zh-CN/docs/self-hosting/self-hosting)",
+    "[使用 Docker Compose 部署](/zh-CN/docs/self-hosting/deploy-docker-compose)",
+    "[使用 Coolify 部署](/zh-CN/docs/self-hosting/deploy-coolify)",
+    "[使用 Dokploy 部署](/zh-CN/docs/self-hosting/deploy-dokploy)",
+    "[在 Kubernetes 上部署](/zh-CN/docs/self-hosting/deploy-kubernetes)",
+    "[反向代理设置](/zh-CN/docs/self-hosting/reverse-proxy)",
+    "[环境变量](/zh-CN/docs/self-hosting/environment-variables)",
+    "[高流量配置](/zh-CN/docs/self-hosting/high-volume)",
+    "supporter-access-latest-docker-images",
+    "changelog"
+  ]
+}

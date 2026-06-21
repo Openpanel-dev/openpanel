@@ -1,0 +1,73 @@
+---
+title: 2024 回顾
+description: 随着一年即将结束，我想分享一下这一年是如何展开的，以及一切是如何开始的。
+date: 2024-12-30
+updated: 2026-02-07
+tag: Article
+team: Carl-Gerhard Lindesvärd
+cover: /content/recap-2024.jpg
+---
+
+## 它是如何开始的
+
+在我的 Mixpanel 初创计划结束后，我于 2023 年底启动了 OpenPanel。也就是那时，我切身感受到了产品分析到底有多昂贵（这点我是付出了代价才学到的）。
+
+我在运营一个简单的食谱应用，大约有 1 万月活用户，每个月触发大约 20 万到 30 万个事件。对于这么多事件来说，Mixpanel 的账单简直离谱，尤其是因为我们根本没有从这个应用赚到钱。我去寻找 [Mixpanel 替代品](/articles/alternatives-to-mixpanel)，但没找到真正合适的。所以我想：“嘿，为什么不做一个简单但能完成任务的东西呢？”
+
+最初只是我的一个小副业项目，后来却变成了我想在任何地方都使用的产品。我的好朋友 [Pontus](https://twitter.com/pontusab)（[Midday.ai](https://midday.ai) 背后的大脑）推动我把它开源。
+
+于是就有了现在的 OpenPanel……
+
+## 灵感
+
+我一直是 Mixpanel 的粉丝——他们在产品分析方面做得非常出色。但我觉得他们在 [Web 分析](/features/web-analytics) 方面少了点什么。
+
+我也注意到，过去几年里涌现出许多注重隐私的 Web 分析工具，而这正是我喜欢的。OpenPanel 就是在这样的背景下诞生的。我想打造一个真正重视隐私、同时具备 Web 分析和产品分析能力、对原生应用有很好的支持，但即使你是分析领域的新手，也依然超级容易上手的产品。
+
+还有很多事情要做，但看到它走到今天这个程度，我真的非常兴奋。
+
+## 这一年
+
+今年 3 月，我以 beta 模式免费发布了 OpenPanel。这是一个很棒的决定，因为它让我能够积累用户并获得宝贵反馈。我们目前仍处于 beta 阶段，尚未向用户收费。
+
+我很感激所有在这一年中加入并一直与我们同行的用户。OpenPanel 遇到过一些挑战，但我们在产品稳定性和可靠性方面做出了很大改进。
+
+我认真听取了用户反馈，并据此添加了功能或进行了相应调整。
+
+从一开始，我的目标就是为每个人打造一项负担得起的服务，并在成本是问题时提供 [自托管](https://openpanel.dev/docs/self-hosting/self-hosting) 选项。
+
+将 OpenPanel 做成 [开源](https://git.new/openpanel) 和 [自托管](https://openpanel.dev/docs/self-hosting/self-hosting) 是一个很容易的决定。我相信，当一个社区围绕软件建立起来时，它会蓬勃发展。
+
+### 这一年的亮点
+
+- 将我们的基础设施迁移到 kubernetes
+- 将我们的 Clickhouse 迁移到集群（多个节点）
+- 不再使用 Clerk Auth，使自托管变得 MUCH 更容易
+- 添加了 swift 和 kotlin 的原生 sdks
+- 超过 1,000 个项目在使用 OpenPanel
+- 累计收集超过 10 亿个事件
+- 我们每天接收大约 700 万到 900 万个事件
+- OpenPanel 在 GitHub 上有 3.3k stars
+- 超过 1,000 次提交
+
+## 路线图
+
+2025 年将会有令人兴奋的新进展。以下是一些优先事项：
+
+- [收入追踪](/features/revenue-tracking)
+- 发布 Android 和 iOS 应用。
+- 改进报表创建。
+- 添加更多 [转化率](/features/conversion) 图表（转化是理解你的产品的最佳方式之一）。
+- 启用报表分享。
+- 自定义概览页面。
+- 增强实时视图。
+- 对 URL 进行分组和重写，例如将 `/article/1` 重写为 `/article/:id`。
+- 探索集成。
+- 改进导出 API。
+- ……以及更多！
+
+## 总结
+
+嘿，如果你已经看到这里——感谢你的陪伴！如果你还没有体验过 OpenPanel，现在正是最佳时机，因为它目前仍然免费。
+
+如果你有任何问题或反馈，请告诉我。我一直在寻找改进 OpenPanel 的方法。

@@ -1,0 +1,388 @@
+---
+title: "如何为 Remix 添加分析"
+description: "使用 OpenPanel 的 Web SDK 为你的 Remix 应用添加以隐私优先的分析。跟踪页面浏览、自定义事件和用户行为。"
+difficulty: beginner
+timeToComplete: 8
+date: 2025-12-14
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安装 SDK"
+    anchor: "install"
+  - name: "创建 OpenPanel 实例"
+    anchor: "setup"
+  - name: "跟踪页面浏览"
+    anchor: "pageviews"
+  - name: "跟踪自定义事件"
+    anchor: "events"
+  - name: "识别用户"
+    anchor: "identify"
+  - name: "验证你的设置"
+    anchor: "verify"
+---
+
+为你的 Remix 应用添加分析有助于你了解用户如何与你的应用交互。OpenPanel 的 Web SDK 与 Remix 的客户端导航无缝配合，提供自动页面浏览跟踪、自定义事件以及[用户识别](/features/identify-users)。
+
+OpenPanel 是 Mixpanel 和 Google Analytics 的开源替代方案。它在默认使用无 Cookie 跟踪的同时，提供强大的洞察，并尊重用户隐私。
+
+## 前提条件
+
+- 一个 Remix 项目
+- 一个 OpenPanel 账号（[免费注册](https://dashboard.openpanel.dev/onboarding)）
+- 来自 OpenPanel 控制台的 Client ID
+
+## 安装 SDK [#install]
+
+OpenPanel Web SDK 是一个轻量级包，可在任何 JavaScript 环境中运行。使用 npm 安装它，pnpm 或 yarn 的用法也相同。
+
+```bash
+npm install @openpanel/web
+```
+
+## 创建 OpenPanel 实例 [#setup]
+
+为你的 OpenPanel 实例创建一个独立文件。由于它会在浏览器中运行，请将其放在你的 app 目录中，并确保它只在客户端执行。
+
+```ts title="app/lib/op.client.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+`.client.ts` 后缀会告诉 Remix 该模块应仅在浏览器中运行。`trackScreenViews` 选项会在 URL 变化时自动跟踪页面浏览，这与 Remix 的客户端导航兼容。`trackAttributes` 选项启用使用 `data-track` 属性的声明式跟踪。
+
+### 使用环境变量
+
+对于生产应用，请使用 Remix 的 loader 模式将你的 Client ID 从服务器传递到客户端。
+
+```ts title="app/root.tsx"
+import { json } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  return json({
+    ENV: {
+      OPENPANEL_CLIENT_ID: process.env.OPENPANEL_CLIENT_ID,
+    },
+  });
+}
+```
+
+然后在客户端组件中使用环境变量初始化 OpenPanel。
+
+### 在 root.tsx 中初始化
+
+在你的根组件中导入并初始化 OpenPanel，使用 `useEffect` 钩子确保它只在客户端运行。
+
+```tsx title="app/root.tsx"
+import { useEffect } from 'react';
+import {
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  useLoaderData,
+} from '@remix-run/react';
+
+export default function App() {
+  const { ENV } = useLoaderData<typeof loader>();
+
+  useEffect(() => {
+    // 动态导入确保这里只在客户端运行
+    import('./lib/op.client').then(({ op }) => {
+      // OpenPanel 现在已初始化并开始跟踪
+    });
+  }, []);
+
+  return (
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <Meta />
+        <Links />
+      </head>
+      <body>
+        <Outlet />
+        <ScrollRestoration />
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+```
+
+## 跟踪页面浏览 [#pageviews]
+
+启用 `trackScreenViews: true` 后，OpenPanel 会在浏览器 URL 变化时自动跟踪页面浏览。这适用于使用 `<Link>` 组件的 Remix 客户端导航。
+
+如果你需要对页面浏览跟踪有更多控制，或者想包含额外的路由元数据，可以创建一个使用 Remix `useLocation` 钩子的组件。
+
+```tsx title="app/components/PageTracker.tsx"
+import { useEffect } from 'react';
+import { useLocation } from '@remix-run/react';
+
+export function PageTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    import('../lib/op.client').then(({ op }) => {
+      op.track('screen_view', {
+        path: location.pathname,
+        search: location.search,
+      });
+    });
+  }, [location.pathname, location.search]);
+
+  return null;
+}
+```
+
+将此组件添加到你的根布局中。如果你采用这种方式，请在 OpenPanel 配置中将 `trackScreenViews: false`，以避免重复跟踪。
+
+## 跟踪自定义事件 [#events]
+
+在组件中导入 OpenPanel 实例以跟踪事件。由于 SDK 只能在浏览器中运行，请使用动态导入，或者确保你的跟踪代码运行在 `useEffect` 钩子中。
+
+```tsx title="app/components/SignupButton.tsx"
+export function SignupButton() {
+  const handleClick = () => {
+    import('../lib/op.client').then(({ op }) => {
+      op.track('button_clicked', {
+        button_name: 'signup',
+        button_location: 'hero',
+      });
+    });
+  };
+
+  return (
+    <button type="button" onClick={handleClick}>
+      注册
+    </button>
+  );
+}
+```
+
+### 创建跟踪钩子
+
+为了让代码更简洁，创建一个处理动态导入的自定义钩子。
+
+```tsx title="app/hooks/useOpenPanel.ts"
+import { useCallback } from 'react';
+import type { OpenPanel } from '@openpanel/web';
+
+type TrackFn = OpenPanel['track'];
+type IdentifyFn = OpenPanel['identify'];
+
+export function useTrack() {
+  return useCallback<TrackFn>((name, properties) => {
+    import('../lib/op.client').then(({ op }) => {
+      op.track(name, properties);
+    });
+  }, []);
+}
+
+export function useIdentify() {
+  return useCallback<IdentifyFn>((payload) => {
+    import('../lib/op.client').then(({ op }) => {
+      op.identify(payload);
+    });
+  }, []);
+}
+```
+
+现在你的组件会更简洁。
+
+```tsx title="app/components/SignupButton.tsx"
+import { useTrack } from '../hooks/useOpenPanel';
+
+export function SignupButton() {
+  const track = useTrack();
+
+  const handleClick = () => {
+    track('button_clicked', {
+      button_name: 'signup',
+      button_location: 'hero',
+    });
+  };
+
+  return (
+    <button type="button" onClick={handleClick}>
+      注册
+    </button>
+  );
+}
+```
+
+### 跟踪表单提交
+
+Remix 鼓励使用 form action 来进行数据变更。你可以在 action 处理程序中或客户端跟踪表单提交。
+
+```tsx title="app/routes/contact.tsx"
+import { Form } from '@remix-run/react';
+import { useTrack } from '../hooks/useOpenPanel';
+
+export default function Contact() {
+  const track = useTrack();
+
+  const handleSubmit = () => {
+    track('form_submitted', {
+      form_name: 'contact',
+      form_location: 'contact-page',
+    });
+  };
+
+  return (
+    <Form method="post" onSubmit={handleSubmit}>
+      <input type="email" name="email" placeholder="你的邮箱" required />
+      <button type="submit">提交</button>
+    </Form>
+  );
+}
+```
+
+### 使用数据属性进行声明式跟踪
+
+Web SDK 支持使用 `data-track` 属性进行声明式跟踪。这对于无需编写 JavaScript 的简单点击跟踪很有用。
+
+```tsx
+<button
+  data-track="button_clicked"
+  data-track-button_name="signup"
+  data-track-button_location="hero"
+>
+  注册
+</button>
+```
+
+当用户点击这个按钮时，OpenPanel 会自动发送一个带有指定属性的 `button_clicked` 事件。这需要你在配置中启用 `trackAttributes: true`。
+
+## 识别用户 [#identify]
+
+当用户登录后，调用 `identify` 将其活动与某个资料关联起来。在 Remix 中，你通常可以从 loader 中获取用户数据。
+
+```tsx title="app/routes/dashboard.tsx"
+import { useEffect } from 'react';
+import { useLoaderData } from '@remix-run/react';
+import type { LoaderFunctionArgs } from '@remix-run/node';
+import { json } from '@remix-run/node';
+import { getUser } from '../lib/auth.server';
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const user = await getUser(request);
+  return json({ user });
+}
+
+export default function Dashboard() {
+  const { user } = useLoaderData<typeof loader>();
+
+  useEffect(() => {
+    if (user) {
+      import('../lib/op.client').then(({ op }) => {
+        op.identify({
+          profileId: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          properties: {
+            plan: user.plan,
+          },
+        });
+      });
+    }
+  }, [user]);
+
+  return <div>欢迎，{user?.firstName}！</div>;
+}
+```
+
+### 在退出登录时清除用户数据
+
+当用户退出登录时，清除已存储的资料数据，以确保后续事件不会与之前的用户关联。
+
+```tsx title="app/components/LogoutButton.tsx"
+import { Form } from '@remix-run/react';
+
+export function LogoutButton() {
+  const handleClick = () => {
+    import('../lib/op.client').then(({ op }) => {
+      op.clear();
+    });
+  };
+
+  return (
+    <Form method="post" action="/logout">
+      <button type="submit" onClick={handleClick}>
+        退出登录
+      </button>
+    </Form>
+  );
+}
+```
+
+## 服务端跟踪 [#server-side]
+
+如果要跟踪 loader、action 或 API 路由中的事件，请使用 `@openpanel/sdk` 包，而不是 web SDK。服务端跟踪需要 client secret。
+
+```ts title="app/lib/op.server.ts"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const op = new OpenPanel({
+  clientId: process.env.OPENPANEL_CLIENT_ID!,
+  clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+});
+```
+
+```ts title="app/routes/api.webhook.ts"
+import type { ActionFunctionArgs } from '@remix-run/node';
+import { json } from '@remix-run/node';
+import { op } from '../lib/op.server';
+
+export async function action({ request }: ActionFunctionArgs) {
+  const payload = await request.json();
+
+  op.track('webhook_received', {
+    source: payload.source,
+    event_type: payload.type,
+  });
+
+  return json({ success: true });
+}
+```
+
+## 验证你的设置 [#verify]
+
+在浏览器中打开你的 Remix 应用，并在几个页面之间导航。与你触发自定义事件的元素进行交互。然后打开你的[OpenPanel 控制台](https://dashboard.openpanel.dev)，查看实时视图，确认事件是否出现。
+
+如果没有看到事件，请检查浏览器控制台中的错误。验证你的 Client ID 是否正确，并确保广告拦截器没有阻止向 OpenPanel API 的请求。浏览器开发者工具中的 Network 选项卡可以帮助你确认请求是否已发送。
+
+## 下一步
+
+Web SDK 还有其他功能，例如属性递增和事件过滤。阅读完整的[Web SDK 文档](/docs/sdks/web)以获取完整的 API 参考。
+
+如需全面的服务端跟踪，请参阅[Node.js 分析指南](/guides/nodejs-analytics)，其中详细介绍了 `@openpanel/sdk` 包。
+
+<Faqs>
+<FaqItem question="OpenPanel 可以与 Remix 的 SSR 一起工作吗？">
+可以。OpenPanel 的客户端 SDK 会在 hydration 后在浏览器中跟踪事件。对于 loader 和 action 中的服务端事件，请使用带有你的 client secret 的 `@openpanel/sdk` 包。
+</FaqItem>
+
+<FaqItem question="为什么我在服务端跟踪时需要 client secret？">
+服务端跟踪需要认证，因为我们无法使用 CORS 头。client secret 可确保你的事件被正确认证，并防止未经授权的跟踪。
+</FaqItem>
+
+<FaqItem question="OpenPanel 会使用 Cookie 吗？">
+不会。OpenPanel 默认使用无 Cookie 跟踪。这意味着在大多数隐私法规下，包括 GDPR 和 PECR，你不需要为基础分析添加 Cookie 同意横幅。
+</FaqItem>
+
+<FaqItem question="OpenPanel 是否符合 GDPR？">
+是。OpenPanel 以符合 GDPR 为设计目标，采用无 Cookie 跟踪、数据最小化，并全面支持数据主体权利。通过自托管，你还可以完全消除国际数据传输方面的担忧。
+</FaqItem>
+</Faqs>

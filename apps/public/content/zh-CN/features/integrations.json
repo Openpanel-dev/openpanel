@@ -1,0 +1,168 @@
+{
+  "slug": "integrations",
+  "short_name": "集成",
+  "seo": {
+    "title": "集成 - Slack、Webhook 等更多功能",
+    "description": "将 OpenPanel 连接到 Slack、Discord、webhook 等更多服务。根据用户行为触发操作——发送提醒、同步到 Zapier，或将事件导出到 S3 和 BigQuery。",
+    "keywords": [
+      "分析集成",
+      "webhook 分析",
+      "Slack 通知分析",
+      "Zapier 分析集成",
+      "事件驱动 webhook",
+      "将事件导出到 s3",
+      "分析到 bigquery"
+    ]
+  },
+  "hero": {
+    "heading": "集成：连接到任何 webhook",
+    "subheading": "将数据从 OpenPanel 推送到 Slack、Discord 或任何 webhook。根据你选择的事件触发，无需轮询，也无需胶水代码。",
+    "badges": [
+      "Slack、Discord 和 webhook",
+      "在任何事件上触发",
+      "使用 JavaScript 自定义负载",
+      "即将支持 S3 和 GCS 导出"
+    ]
+  },
+  "definition": {
+    "title": "什么是集成？",
+    "text": "集成是 OpenPanel 与其他一切之间的桥梁。它们让你能将数据**导出**自 OpenPanel，并送入团队已经依赖的工具和工作流中。\n\n这个想法很简单：你创建一个**集成**（到外部服务的连接），然后将它附加到一个在满足你定义的条件时触发的**[通知规则](/features/notifications)**。就是这样——剩下的交给 OpenPanel 处理。\n\n举个例子：你想在有来自特定国家的新用户注册时收到 Slack 通知。你创建一个 Slack 集成，设置一个在 `signup` 事件上触发的通知规则，并使用类似 *\"来自 {{country}} 的新用户\"* 的模板。每次有人注册，消息都会发送到你的 Slack 频道——无需轮询、无需 cron 作业、无需胶水代码。\n\n它不只是提醒。借助**webhook**，你可以将事件数据推送到任何 URL——包括 **Zapier**、**Make** 或你自己的后端。这意味着你可以基于真实用户行为触发自定义工作流：当某人完成入门流程时发送欢迎邮件，当用户达到使用里程碑时通知销售，或将高价值事件记录到外部系统。\n\n你甚至可以在用户完成一个**漏斗**时触发集成——将 OpenPanel 的漏斗分析与实时操作结合起来。\n\n目前，OpenPanel 支持：\n\n- **Slack** - 当事件触发时向任意频道发布消息\n- **Discord** - 与 Slack 类似，但用于 Discord 服务器\n- **Webhooks** - 使用自定义请求头将事件负载发送到任意 URL，并通过 JavaScript 转换对负载结构进行完全控制\n\n即将推出：\n\n- **S3 兼容存储** - 自动将事件导出到 Amazon S3、MinIO、Cloudflare R2 或任何 S3 兼容存储\n- **Google Cloud Storage** - 导出到 GCS，方便导入 **BigQuery**、**Redshift** 或你的数据仓库\n\n这些存储集成将让你无需自定义 ETL 管道即可将 OpenPanel 事件导入数据仓库。"
+  },
+  "capabilities_section": {
+    "title": "集成可以做什么",
+    "intro": "从实时 Slack 提醒到即将推出的数据仓库导出——集成将 OpenPanel 与你的技术栈连接起来。"
+  },
+  "capabilities": [
+    {
+      "title": "Slack 和 Discord 通知",
+      "description": "连接你的 Slack 工作区或 Discord 服务器，并在通知规则触发时接收消息。非常适合在不离开聊天工具的情况下，随时掌握注册、错误或里程碑事件。"
+    },
+    {
+      "title": "发送到任意 URL 的 Webhook",
+      "description": "将事件数据发送到任何 HTTP 端点——你自己的 API、Zapier、Make 或任何自动化平台。定义自定义请求头，并使用 JavaScript 转换精确调整负载以符合接收服务所期望的格式。"
+    },
+    {
+      "title": "JavaScript 负载转换",
+      "description": "Webhook 集成包含内置的 JavaScript 编辑器。编写一个转换函数，接收原始负载并返回你需要的任意结构——重命名字段、过滤数据，或在发送前丰富负载内容。"
+    },
+    {
+      "title": "与通知规则配合使用",
+      "description": "集成不会自行触发——你需要将它们附加到通知规则上。单个规则可以同时触发多个集成，单个集成也可以被多个规则使用。"
+    },
+    {
+      "title": "基于漏斗和事件触发",
+      "description": "通知规则可以在带有属性筛选条件的特定事件上触发，也可以在用户完成整个漏斗时触发。这意味着你可以在某人完成入门流程时触发 webhook，而不仅仅是在他们查看某个页面时。"
+    },
+    {
+      "title": "S3 和 GCS 导出（即将推出）",
+      "description": "自动将你的事件导出到 S3 兼容存储或 Google Cloud Storage。然后可导入 BigQuery、Redshift 或任何数据仓库——无需自定义 ETL。"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-integrations.webp",
+      "alt": "可用集成，展示 Slack、Discord 和 Webhook 选项",
+      "caption": "浏览可用集成。只需几秒即可连接 Slack、Discord 或设置自定义 webhook。"
+    },
+    {
+      "src": "/features/feature-integrations-create.webp",
+      "alt": "创建一个包含 URL、请求头和 JavaScript 转换的 webhook 集成",
+      "caption": "使用自定义 URL、请求头和 JavaScript 转换创建 webhook 集成，以完全按照你的需求调整负载。"
+    }
+  ],
+  "how_it_works": {
+    "title": "集成如何工作",
+    "intro": "只需几分钟即可设置好一个集成，然后让通知规则处理剩下的事情。",
+    "steps": [
+      {
+        "title": "选择集成类型",
+        "description": "可从 Slack、Discord 或 Webhook 中选择。每种类型都有自己的配置方式——Slack 和 Discord 使用 OAuth，webhook 使用 URL + 请求头。"
+      },
+      {
+        "title": "配置连接",
+        "description": "对于 Slack/Discord，连接你的工作区或服务器。对于 webhooks，输入目标 URL，添加任何自定义请求头，并可选编写一个 JavaScript 转换来控制负载结构。"
+      },
+      {
+        "title": "创建通知规则",
+        "description": "在 Notifications 部分创建一条规则，定义集成何时触发——例如，当某个 screen_view 事件的 path 以 /onboarding 开头时。将一个或多个集成附加到该规则。"
+      },
+      {
+        "title": "事件自动触发操作",
+        "description": "当某个事件匹配规则时，OpenPanel 会实时将数据发送到每个已附加的集成。无需轮询，没有延迟。"
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "团队如何使用集成",
+    "intro": "从团队提醒到完整自动化流水线——集成让分析转化为行动。",
+    "items": [
+      {
+        "title": "实时团队提醒",
+        "description": "当有新用户注册、高价值购买发生或关键错误触发时，发布到 Slack 或 Discord。无需任何人查看仪表板，整个团队都能保持同步。"
+      },
+      {
+        "title": "Zapier 和自动化工作流",
+        "description": "将 webhook 负载发送到 Zapier 或 Make，以触发下游操作——发送欢迎邮件、更新 CRM、向电子表格添加一行，或启动入门滴灌营销活动。全部由真实用户行为驱动。"
+      },
+      {
+        "title": "自定义后端操作",
+        "description": "将 webhook 指向你自己的 API，在特定事件触发时运行自定义逻辑。给推荐奖励积分、标记可疑会话，或将分析数据同步到内部工具。"
+      },
+      {
+        "title": "数据仓库导出",
+        "description": "借助即将推出的 S3 和 GCS 集成，可将事件直接导出到你的数据仓库。加载到 BigQuery 或 Redshift 以进行高级 SQL 分析、与其他数据集交叉引用，或长期存储。"
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "notifications",
+      "title": "通知",
+      "description": "通知规则控制集成何时触发。定义事件、筛选条件和模板，然后附加集成以对其采取行动。"
+    },
+    {
+      "slug": "event-tracking",
+      "title": "事件跟踪",
+      "description": "集成由你跟踪的事件驱动。你的事件数据越丰富，触发条件就可以越精确。"
+    },
+    {
+      "slug": "funnels",
+      "title": "漏斗",
+      "description": "当用户完成整个漏斗时触发集成——而不仅仅是单个事件。"
+    }
+  ],
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于 OpenPanel 集成的常见问题。",
+    "items": [
+      {
+        "question": "集成和通知是如何协同工作的？",
+        "answer": "集成是目标位置（Slack 频道、webhook URL、Discord 服务器）。通知规则是触发器（当事件 X 发生且满足筛选条件 Y 时）。你需要同时创建两者，然后将集成附加到规则上。规则触发时，所有附加的集成都会接收数据。"
+      },
+      {
+        "question": "我可以将 webhooks 与 Zapier 一起使用吗？",
+        "answer": "可以。创建一个指向你的 Zapier webhook URL 的 webhook 集成。你可以使用 JavaScript 转换将负载调整为 Zap 所期望的任意格式。这让你能够基于 OpenPanel 中真实的用户事件触发任何 Zapier 工作流。"
+      },
+      {
+        "question": "JavaScript 转换有什么作用？",
+        "answer": "JavaScript 转换是一个函数，它接收原始事件负载并返回修改后的版本。你可以重命名字段、过滤属性、添加计算值，或完全重组数据。它在负载发送到 webhook URL 之前运行。"
+      },
+      {
+        "question": "S3 和 GCS 集成什么时候可用？",
+        "answer": "S3 兼容存储和 Google Cloud Storage 集成已在近期路线图中。这些功能将让你自动导出事件，以便导入 BigQuery、Redshift 或任何数据仓库，而无需构建自定义 ETL 管道。"
+      },
+      {
+        "question": "一个集成可以被多个通知规则使用吗？",
+        "answer": "可以。集成本质上只是与某个服务的连接。你可以将它附加到任意多个通知规则上。例如，一个 Slack 集成可以由注册、购买和错误规则触发——每个规则都有自己的模板和筛选条件。"
+      },
+      {
+        "question": "我可以创建的集成数量有限制吗？",
+        "answer": "没有硬性限制。根据你的工作流需要，创建任意数量的集成和通知规则即可。"
+      }
+    ]
+  },
+  "cta": {
+    "label": "设置你的第一个集成",
+    "href": "https://dashboard.openpanel.dev/onboarding"
+  }
+}

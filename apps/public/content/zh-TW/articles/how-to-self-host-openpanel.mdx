@@ -1,0 +1,186 @@
+---
+title: 如何自行架設 OpenPanel 分析平台
+description: 了解如何自行架設 OpenPanel 網站分析平台。這份逐步指南將帶你安裝並設定自己的分析伺服器，以獲得更好的隱私保護與成本節省。
+date: 2025-02-28
+updated: 2026-02-07
+cover: /content/how-to-self-host-openpanel.jpg
+tag: Guide
+team: OpenPanel Team
+---
+import { Callout } from 'fumadocs-ui/components/callout';
+
+## TLDR
+
+執行下面的腳本。你也可以觀看頁面底部的影片，我們會展示完整流程。
+
+```bash
+git clone https://github.com/openpanel-dev/openpanel.git
+cd openpanel/self-hosting
+./setup
+./start
+```
+
+## 為什麼要自行架設自己的分析平台？
+
+正在尋找 [Mixpanel 替代方案](/articles/alternatives-to-mixpanel)？自行架設自己的 [網站分析](/features/web-analytics) 與產品分析平台有幾個好處。以下是自行運行分析伺服器的優缺點。
+
+若要比較所有開源分析平台，請參考我們的 [開源網站分析工具指南](/articles/self-hosted-web-analytics)。
+
+### 成本優勢
+
+自行架設通常比雲端替代方案更便宜，尤其當你的流量成長時更是如此。這也是團隊選擇自行架設的主要原因之一。
+
+### 資料隱私與控制權
+
+當你自行架設 OpenPanel 時，你能完全掌控網站統計資料與訪客資料。這讓你更容易做到：
+
+- 確保符合 GDPR 與隱私規範
+- 將敏感的分析資料保留在你的基礎架構內
+- 完全擁有你的網站流量資料
+- 自訂資料保留政策
+
+### 以下情況很適合自行架設
+
+- 你能夠自在地管理伺服器
+- 你需要可自訂的網站流量監控
+- 你希望直接存取分析資料庫
+- 你偏好開源分析解決方案
+
+## 考慮雲端版本
+
+OpenPanel 也提供託管式雲端版本，讓你不必自行架設。若你不想管理自己的伺服器，這可能是更好的選擇。
+
+依照你的流量與伺服器供應商不同，成本也可能更低。
+
+## 先決條件
+
+在安裝你的自行架設分析平台之前，你需要：
+
+- 一台可供 OpenPanel 使用的伺服器。我們建議使用 Hetzner（[**使用我們的推薦連結**](https://hetzner.cloud/?ref=7Hq0H5mQh7tM)）來支持我們的工作，因為他們提供可靠且具成本效益的主機方案。
+- 一個指向你伺服器 IP 位址的網域名稱。如果你使用 Cloudflare 作為 DNS 供應商，請務必對你要用於 OpenPanel 的網域或子網域關閉代理模式（灰色雲朵），並使用僅 DNS 模式（橘色雲朵）。
+- 基本的命令列操作經驗
+
+## 如何自行架設 OpenPanel
+
+現在你已經有了伺服器與網域名稱，可以開始安裝流程了。
+
+### 步驟 1：透過 SSH 登入你的伺服器
+
+使用 SSH 連線到你的新伺服器（或既有伺服器）。如果是供應商剛建立的主機，請先加強其安全性。我們有一份 [如何加固你的伺服器](/articles/how-to-secure-ubuntu-server) 指南可供參考。
+
+```bash
+ssh root@your-server-ip
+```
+
+### 步驟 2：下載原始碼
+
+下載 OpenPanel 的原始碼，它是開源且可在 [GitHub](https://github.com/openpanel-dev/openpanel) 取得。
+
+```bash
+git clone https://github.com/openpanel-dev/openpanel.git
+```
+
+### 步驟 3：安裝
+
+下載原始碼後，你的伺服器上會有一個名為 `openpanel` 的資料夾。進入該資料夾，然後再進入 self-hosting 資料夾。
+
+```bash
+cd openpanel/self-hosting
+```
+
+所有安裝指令都從這個資料夾執行，無論你是要重新啟動某些服務，或是檢查更新。
+
+接著啟動安裝精靈，它會引導你完成安裝。它會先檢查你是否已安裝 docker 和 node，若沒有則會替你安裝。
+
+之後它會執行 `npm install` 和 `npm run quiz`，並詢問你一些關於安裝的問題。
+
+問題如下，應該都很容易理解。
+
+- **詢問你的網域名稱（必須以 http:// 或 https:// 開頭）**
+  - 你可透過此網域名稱存取 OpenPanel 實例。
+- **設定要安裝的相依套件（Clickhouse、Redis、PostgreSQL）**
+  - 你可以選擇全部安裝，或只安裝你需要的部分（如果你已經有其中一些服務在伺服器上執行，也可以重用它們）
+- **設定代理伺服器選項（Caddy with SSL 或自行提供）**
+  - 這會為你的 OpenPanel 實例設定代理伺服器選項。我們建議使用 Caddy with SSL 選項。
+- **設定處理用的 worker 數量**
+  - 這會設定你的 OpenPanel 實例使用多少 worker。通常設為 1-2 就足夠了（之後你可以在 docker-compose.yml 檔案中修改）
+- **設定 resend api token（選填）**
+  - 如果你留空，部分功能將會停用（電子郵件發送）
+- **為 worker 儀表板建立基本驗證憑證**
+  - 這會為 worker 儀表板（Bullboard）建立基本驗證憑證。
+
+```bash
+./setup
+```
+
+### 步驟 4：啟動 OpenPanel
+
+回答完問題後，使用以下指令啟動 OpenPanel。
+
+我們通常會接著執行 `./logs`，確認一切都在正常運作。
+
+```bash
+./start
+
+# 檢查一切是否正常運作
+./logs
+```
+
+### 步驟 5：存取 OpenPanel
+
+OpenPanel 執行後，請使用你在問答中選擇的網域名稱來存取它。
+
+
+## 可用指令
+
+OpenPanel 提供數個實用腳本來管理你的安裝：
+
+### 基本操作
+```bash
+./start                   # 啟動所有 OpenPanel 服務
+./stop                    # 停止所有 OpenPanel 服務
+./logs                    # 檢視所有服務的即時日誌
+./update                  # 下載最新變更並重新啟動服務
+./rebuild <service>       # 重建並重新啟動特定服務
+                          # 範例：./rebuild op-dashboard
+./danger_wipe_everything  # ⚠️ 移除所有容器、磁碟區與資料
+```
+
+## 環境變數
+
+<Callout>
+如果你變更了 `.env` 檔案，必須重新啟動服務，變更才會生效。
+</Callout>
+
+你可以透過編輯 self-hosting 目錄中的 `.env` 檔案來自訂你的 OpenPanel 安裝。
+
+通常你只需要修改以下兩項：
+
+```
+# 停用新使用者註冊（仍會永遠允許第一位使用者註冊）
+ALLOW_REGISTRATION="false"
+
+# 即使停用了註冊，仍允許透過邀請進行註冊
+ALLOW_INVITATION="true"
+```
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/R4yoddV5BGw?si=S6qPAz2QO6QJEB7T" title="YouTube 影片播放器" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+## 常見問題疑難排解
+
+### 連線問題
+如果你在安裝後無法存取分析儀表板：
+- 驗證你的網域 DNS 設定
+- 使用 `docker compose ps` 檢查所有 Docker 容器是否都在執行
+- 確認防火牆允許必要連接埠的流量
+
+### 效能最佳化
+對於高流量網站：
+- 調整 docker-compose.yml 中的 worker 數量
+- 監控資料庫效能
+
+### 更新與維護
+為了讓你的分析平台穩定運作：
+- 定期使用 `./update` 檢查更新
+- 監控磁碟使用量
+- 定期備份你的資料

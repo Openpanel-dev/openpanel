@@ -1,0 +1,232 @@
+---
+title: "使用 OpenPanel 进行同意管理"
+description: "了解如何在用户给予同意之前将分析事件和会话回放排队，然后通过一次调用一次性发送所有内容。"
+difficulty: beginner
+timeToComplete: 15
+date: 2026-03-02
+updated: 2026-03-02
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "使用 disabled: true 初始化"
+    anchor: "disable"
+  - name: "构建同意横幅"
+    anchor: "banner"
+  - name: "在同意时调用 ready()"
+    anchor: "ready"
+  - name: "处理拒绝"
+    anchor: "decline"
+  - name: "在页面加载之间持久化同意"
+    anchor: "persist"
+---
+
+# 使用 OpenPanel 进行同意管理
+
+GDPR 和 CCPA 等隐私法规要求你在跟踪行为或记录会话之前获得用户的明确同意。本指南将展示如何使用 OpenPanel 内置队列在用户做出选择之前暂存所有跟踪数据，然后一次性发送全部内容，或者在用户拒绝时静默丢弃。
+
+## 前提条件
+
+- 通过 `@openpanel/web` npm 包或 script 标签安装了 OpenPanel
+- 来自 [OpenPanel dashboard](https://dashboard.openpanel.dev/onboarding) 的 Client ID
+
+## 使用 `disabled: true` 初始化 [#disable]
+
+在创建 OpenPanel 实例时传入 `disabled: true`。所有跟踪调用（`track`、`identify`、`screenView`、会话回放分片）都会保存在内存队列中，而不是发送到 API。
+
+### Script tag
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    disabled: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+### NPM package
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  disabled: true,
+});
+```
+
+从这一刻起，你应用中其他位置的任何 `op.track(...)` 调用都会安全地排队，不会被传输。
+
+## 构建同意横幅 [#banner]
+
+UI 的构建方式由你决定。关键是在用户接受时调用 `op.ready()`，在用户拒绝时什么都不做（或调用 `op.clear()`）。
+
+```tsx title="ConsentBanner.tsx"
+import { op } from './op';
+
+export function ConsentBanner() {
+  function handleAccept() {
+    localStorage.setItem('consent', 'granted');
+    op.ready(); // 清空队列并启用所有后续跟踪
+    hideBanner();
+  }
+
+  function handleDecline() {
+    localStorage.setItem('consent', 'denied');
+    hideBanner(); // 队列会在页面卸载时被丢弃
+  }
+
+  return (
+    <div role="dialog" aria-label="Cookie 同意">
+      <p>
+        我们使用分析工具来改进产品。你是否同意匿名使用跟踪？
+      </p>
+      <button type="button" onClick={handleAccept}>接受</button>
+      <button type="button" onClick={handleDecline}>拒绝</button>
+    </div>
+  );
+}
+```
+
+## 在同意时调用 `ready()` [#ready]
+
+`op.ready()` 会做两件事：
+
+1. 清除 `disabled` 标志，这样所有未来事件都会立即发送
+2. 清空整个队列——自页面加载以来缓冲的每个事件和会话回放分片都会一次性发送
+
+这意味着你不会丢失用户做出选择之前发生的任何事件。用户落地页面时的页面浏览、横幅显示期间的任何点击——所有这些都会在用户同意的那一刻被捕获并发送。
+
+## 处理会话回放 [#replay]
+
+如果你启用了会话回放，记录器会在页面加载后立即开始捕获 DOM 变更（这样不会错过任何交互），但在调用 `ready()` 之前不会有任何数据离开浏览器。
+
+```ts title="op.ts"
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  disabled: true,
+  sessionReplay: {
+    enabled: true,
+  },
+});
+```
+
+在调用 `op.ready()` 时，缓冲的回放分片会与排队的事件一起被清空发送。页面加载开始以来的完整会话都会被保留。
+
+## 处理拒绝 [#decline]
+
+如果用户拒绝，就不要调用 `ready()`。队列只存在于内存中，并会在标签页关闭或页面跳转时自动丢弃。不会发送任何数据。
+
+如果你想显式处理，也可以立即清空队列：
+
+```ts
+function handleDecline() {
+  localStorage.setItem('consent', 'denied');
+  // op 仍保持禁用状态 —— 不会发送任何内容
+  // 内存队列将被垃圾回收
+}
+```
+
+## 在页面加载之间持久化同意 [#persist]
+
+`disabled` 标志会在每次页面加载时重置。你需要在初始化时检查已存储的同意选择，如果之前已经授予同意，则跳过 `disabled: true`。
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+const hasConsent = localStorage.getItem('consent') === 'granted';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  disabled: !hasConsent,
+});
+```
+
+在你的横幅组件中，仅当没有存储任何选择时才显示它：
+
+```tsx title="ConsentBanner.tsx"
+export function ConsentBanner() {
+  const stored = localStorage.getItem('consent');
+  if (stored) return null; // 已经决定，不显示
+
+  // ... 渲染横幅
+}
+```
+
+## 完整示例
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+const hasConsent = localStorage.getItem('consent') === 'granted';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  disabled: !hasConsent,
+  sessionReplay: {
+    enabled: true,
+  },
+});
+```
+
+```tsx title="ConsentBanner.tsx"
+import { op } from './op';
+
+export function ConsentBanner() {
+  if (localStorage.getItem('consent')) return null;
+
+  return (
+    <div role="dialog" aria-label="Cookie 同意">
+      <p>我们使用分析工具来改进产品。你是否同意？</p>
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.setItem('consent', 'granted');
+          op.ready();
+        }}
+      >
+        接受
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.setItem('consent', 'denied');
+        }}
+      >
+        拒绝
+      </button>
+    </div>
+  );
+}
+```
+
+## 相关内容
+
+- [同意管理文档](/zh-CN/docs/consent-management) — `disabled` 和 `waitForProfile` 的快速参考
+- [会话回放](/zh-CN/docs/session-replay) — 关于记录内容的隐私控制
+- [识别用户](/zh-CN/docs/get-started/identify-users) — 将事件关联到用户资料
+
+<Faqs>
+<FaqItem question="如果用户拒绝，事件会丢失吗？">
+如果用户拒绝并且你从不调用 `ready()`，则不会发送任何事件。队列保存在内存中，并会在页面卸载时丢弃。
+</FaqItem>
+
+<FaqItem question="在横幅出现之前跟踪的事件会怎样？">
+它们会留在队列中。如果用户稍后接受，它们都会被清空发送。如果用户拒绝，它们会被丢弃。
+</FaqItem>
+
+<FaqItem question="会话回放会在同意之前开始吗？">
+记录器会立即开始捕获 DOM 变更，因此可以重建完整会话，但在调用 `ready()` 之前不会传输任何内容。
+</FaqItem>
+
+<FaqItem question="脚本标签和 npm 方式需要不同处理吗？">
+不需要。`disabled` 选项和 `ready()` 方法在两种方式下都一样工作。
+</FaqItem>
+</Faqs>

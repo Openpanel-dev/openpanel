@@ -1,0 +1,252 @@
+---
+title: "如何從 Mixpanel 遷移到 OpenPanel"
+description: "使用這份逐步遷移指南，在不到 2 小時內從 Mixpanel 切換到 OpenPanel。"
+difficulty: intermediate
+timeToComplete: 90
+date: 2025-12-15
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "匯出 Mixpanel 資料"
+    anchor: "export"
+  - name: "安裝 OpenPanel SDK"
+    anchor: "install"
+  - name: "對應你的事件"
+    anchor: "map-events"
+  - name: "匯入歷史資料"
+    anchor: "import"
+  - name: "平行執行"
+    anchor: "parallel"
+  - name: "移除 Mixpanel"
+    anchor: "remove"
+---
+
+# 如何從 Mixpanel 遷移到 OpenPanel
+
+遷移分析工具聽起來很痛苦，但 OpenPanel 的 API 與 Mixpanel 的模式非常相似。大多數實作只需要極少的程式碼變更即可完成轉換。你會先對應現有事件，視需要匯入歷史資料，並在正式切換前讓兩個工具平行運作。
+
+OpenPanel 提供更完善的隱私控制，預設採用無 Cookie 追蹤、透明的定價且不會有意外超額費用，並且可選擇自行主機部署。一般來說，程式碼調整只需 1 到 2 小時，再加上 1 到 2 週的平行追蹤來驗證資料一致性。
+
+## 前置需求
+
+- 現有的 Mixpanel 實作
+- 一個 OpenPanel 帳號（[免費註冊](https://dashboard.openpanel.dev/onboarding)）
+- 存取 Mixpanel 專案設定以匯出資料的權限
+- 存取你的應用程式程式碼庫的權限
+
+## 匯出 Mixpanel 資料 [#export]
+
+在遷移之前，你會想先從 Mixpanel 匯出歷史資料。如果你可以接受從零開始，這一步是可選的，但多數團隊仍偏好保留歷史事件以便比對。
+
+Mixpanel 提供可回傳 JSON 格式事件的匯出 API。你需要從 Mixpanel 的專案設定中取得 API 憑證。
+
+```bash
+curl https://mixpanel.com/api/2.0/export \
+  -u YOUR_API_SECRET: \
+  -d 'from_date=2024-01-01' \
+  -d 'to_date=2024-12-15' \
+  -d 'event=["event1","event2"]' \
+  > mixpanel_export.json
+```
+
+或者，你也可以透過 Mixpanel 的儀表板匯出：前往 Data Management，然後選擇 Export。選取日期範圍與事件後下載檔案。請妥善保留這份匯出資料，以便稍後的匯入步驟使用。
+
+## 安裝 OpenPanel SDK [#install]
+
+在保留 Mixpanel 的同時安裝 OpenPanel SDK。等你確認遷移無誤後，再移除 Mixpanel。
+
+針對網頁應用程式，請安裝 web SDK。它會處理瀏覽器專屬功能，例如自動頁面瀏覽追蹤與外部連結追蹤。
+
+```bash
+npm install @openpanel/web
+```
+
+針對伺服器端應用程式或 Node.js，則改用核心 SDK。這個版本需要 client secret，適用於受信任的環境。
+
+```bash
+npm install @openpanel/sdk
+```
+
+如果你使用的是 Next.js，有一個專用套件可透過適當的元件整合，同時處理客戶端與伺服器端追蹤。請參考 [SDK 文件](/docs/sdks/nextjs) 進行框架專屬設定。
+
+## 對應你的事件 [#map-events]
+
+OpenPanel 的 API 與 Mixpanel 遵循相似模式，但命名慣例略有不同。Mixpanel 對事件與屬性使用 Title Case，而 OpenPanel 使用 snake_case。
+
+以下是基本的 [事件追蹤](/features/event-tracking) 對應方式。在 Mixpanel 中，你可能會像這樣追蹤按鈕點擊：
+
+```js
+mixpanel.track('Button Clicked', {
+  'Button Name': 'Sign Up',
+  'Button Location': 'Hero'
+});
+```
+
+在 OpenPanel 中，對應寫法會使用 snake_case 命名：
+
+```js
+op.track('button_clicked', {
+  button_name: 'Sign Up',
+  button_location: 'Hero'
+});
+```
+
+[使用者識別](/features/identify-users) 的運作方式也類似，但 OpenPanel 使用結構化物件，而不是分開的方法呼叫。Mixpanel 的模式會把 identify 與 people.set 分開：
+
+```js
+mixpanel.identify('user_123');
+mixpanel.people.set({
+  '$email': 'user@example.com',
+  '$name': 'John Doe',
+  'Plan': 'Premium'
+});
+```
+
+OpenPanel 則將這些整合成單一的 identify 呼叫，並為常見屬性提供內建欄位：
+
+```js
+op.identify({
+  profileId: 'user_123',
+  email: 'user@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+  properties: {
+    plan: 'Premium'
+  }
+});
+```
+
+對於 super properties（會附加到每個事件的全域屬性），Mixpanel 使用 `register` 或 `registerSuperProperties`。OpenPanel 則稱為 `setGlobalProperties`，但概念完全相同：
+
+```js
+op.setGlobalProperties({
+  app_version: '1.0.0',
+  environment: 'production'
+});
+```
+
+更新使用者屬性的方式也一樣，只是方法名稱不同：
+
+```js
+op.increment({
+  profileId: user.id,
+  property: 'login_count',
+  value: 1
+});
+```
+
+## 匯入歷史資料 [#import]
+
+OpenPanel 可以使用 SDK 的伺服器端用戶端匯入你的 Mixpanel 匯出資料。你需要稍微轉換 Mixpanel 的格式，因為 Mixpanel 使用 Unix 時間戳與不同的屬性名稱。
+
+```js
+import { OpenPanel } from '@openpanel/sdk';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET',
+});
+
+const mixpanelEvents = await loadMixpanelExport();
+
+for (const event of mixpanelEvents) {
+  op.track(event.event, event.properties, {
+    profileId: event.distinct_id,
+    timestamp: new Date(event.time * 1000),
+  });
+}
+```
+
+對於使用者檔案，請將 Mixpanel 以 dollar 符號開頭的屬性對應到 OpenPanel 的內建欄位：
+
+```js
+const mixpanelUsers = await loadMixpanelUsers();
+
+for (const user of mixpanelUsers) {
+  op.identify({
+    profileId: user.distinct_id,
+    email: user.$email,
+    firstName: user.$first_name,
+    lastName: user.$last_name,
+    properties: {
+      plan: user.Plan,
+      signupDate: user['Signup Date'],
+    },
+  });
+}
+```
+
+若是大型遷移，請聯絡支援團隊。OpenPanel 提供可協助批次匯入的工具。
+
+## 平行執行 [#parallel]
+
+在移除 Mixpanel 之前，請讓兩個工具同時執行 1 到 2 週。這樣你可以驗證事件數量是否一致，以及使用者識別是否正常運作。
+
+建立一個簡單的包裝函式，將事件同時送往兩個平台：
+
+```js
+function trackEvent(eventName, properties) {
+  if (typeof mixpanel !== 'undefined') {
+    mixpanel.track(eventName, properties);
+  }
+
+  if (op) {
+    op.track(eventName, properties);
+  }
+}
+
+trackEvent('button_clicked', { button_name: 'Sign Up' });
+```
+
+一週後，比較 Mixpanel 的 Live View 與 OpenPanel 的即時儀表板。確認事件數量接近（由於時間差，不會完全相同）、使用者檔案能正確建立，以及你設定的任何 [漏斗](/features/funnels) 都顯示相近的 [轉換率](/features/conversion)。
+
+## 移除 Mixpanel [#remove]
+
+在確認資料一致後，從專案中移除 Mixpanel SDK。若是 npm 套件，請解除安裝該相依項：
+
+```bash
+npm uninstall mixpanel-browser
+```
+
+接著搜尋你的程式碼庫中所有剩餘的 `mixpanel.*` 呼叫，並將它們替換成 OpenPanel 對應寫法。如果你在平行追蹤步驟中使用了包裝函式，現在就可以移除它，直接呼叫 OpenPanel。
+
+```js
+op.track('button_clicked', { button_name: 'Sign Up' });
+```
+
+如果你是透過 CDN 載入 Mixpanel SDK，也別忘了移除任何 Mixpanel script 標籤。
+
+## 驗證你的設定 [#verify]
+
+移除 Mixpanel 後，請持續監控 OpenPanel 幾天，以確保一切追蹤正常。查看即時畫面以確認事件正在流入，驗證使用者檔案顯示了預期屬性，並測試你已設定的任何漏斗或報表。
+
+如果事件沒有出現，請再次確認你使用的是正確的 client ID，並且 SDK 在任何追蹤呼叫之前已完成初始化。若追蹤正常，瀏覽器主控台會顯示對 `api.openpanel.dev` 的網路請求。
+
+## 下一步
+
+[SDK 文件](/docs) 涵蓋進階功能，例如自訂事件屬性、伺服器端追蹤，以及框架專屬整合。如果你是因為價格考量而從 Mixpanel 轉來，也可以探索 [自行主機部署](/articles/how-to-self-host-openpanel)，以完整掌控你的資料與成本。
+
+若需要框架專屬設定說明，請參考我們的指南：
+- [Next.js analytics guide](/guides/nextjs-analytics) 適用於 Next.js 應用程式
+- [React analytics guide](/guides/react-analytics) 適用於 React 應用程式
+- [Express analytics guide](/guides/express-analytics) 適用於 Express.js 應用程式
+- [Python analytics guide](/guides/python-analytics) 適用於 Python 應用程式
+
+<Faqs>
+<FaqItem question="我可以匯入我的 Mixpanel 歷史資料嗎？">
+可以。OpenPanel 可以使用 SDK 的伺服器端用戶端匯入 Mixpanel 匯出資料。若是有數百萬筆事件的大型遷移，請聯絡支援團隊以協助批次匯入。
+</FaqItem>
+
+<FaqItem question="我的 Mixpanel 漏斗在 OpenPanel 也能運作嗎？">
+你需要在 OpenPanel 的儀表板中重新建立漏斗，但概念是直接對應的。依序選擇相同事件，並設定日期範圍與篩選條件。轉換邏輯的運作方式相同。
+</FaqItem>
+
+<FaqItem question="完整遷移需要多久？">
+大多數遷移在程式碼變更上需要 1 到 2 小時。建議另外安排 1 到 2 週的平行追蹤，以在完全切換前驗證資料一致性。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 嗎？">
+是的。OpenPanel 預設使用無 Cookie 追蹤，這表示在多數隱私法規下，基本分析不需要 cookie 同意橫幅。若採用自行主機部署，你也能完全消除跨國資料傳輸的疑慮。
+</FaqItem>
+</Faqs>

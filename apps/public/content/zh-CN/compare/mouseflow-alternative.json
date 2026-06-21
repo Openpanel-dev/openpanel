@@ -1,0 +1,468 @@
+{
+  "slug": "mouseflow-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026年最佳 Mouseflow 替代方案 - 开源且免费",
+    "description": "在寻找 Mouseflow 替代方案？OpenPanel 提供漏斗、移动端 SDK 和自托管的产品分析——不只是可视化行为追踪。开源且可免费开始使用。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Mouseflow 替代方案",
+    "subheading": "需要超越热力图的产品分析？OpenPanel 提供基于事件的分析、移动端 SDK 和自托管——完全开源，定价透明。",
+    "badges": [
+      "开源",
+      "可自托管",
+      "移动端 SDK",
+      "基于事件的分析"
+    ]
+  },
+  "competitor": {
+    "name": "Mouseflow",
+    "logo": "/logos/mouseflow.svg",
+    "url": "https://mouseflow.com",
+    "short_description": "一个行为分析平台，提供会话回放、热力图、摩擦检测和表单分析，用于网站优化。",
+    "founded": 2009,
+    "headquarters": "丹麦哥本哈根"
+  },
+  "overview": {
+    "title": "为什么考虑用 OpenPanel 替代 Mouseflow？",
+    "paragraphs": [
+      "Mouseflow 是一个行为分析平台，在通过七种热力图、会话回放、摩擦检测和表单分析来优化网站可视化方面表现出色。它非常适合了解访客如何与网站上的特定页面互动。但 Mouseflow 仅支持 Web、专有、仅云端，并且更侧重于基于会话的观察，而非基于事件的产品分析。",
+      "OpenPanel 采用一种截然不同的方法，专为产品团队设计了基于事件的分析。它不只是通过查看会话录制来发现问题，而是定义与你业务相关的事件和漏斗，并进行定量衡量。留存分析可展示用户是否回访，分群分析可揭示行为模式，用户资料则能串联多个会话中的信息。",
+      "平台支持方面的差距非常明显。Mouseflow 只能用于网站，而 OpenPanel 除了 Web SDK 外，还为 iOS、Android、React Native 和 Flutter 提供原生 SDK。对于构建多平台产品的团队来说，这意味着只需要一个分析工具就能覆盖所有界面，而无需拼凑多个独立方案。",
+      "OpenPanel 还提供 Mouseflow 无法做到的能力：通过自托管实现完整的数据所有权，并在 AGPL-3.0 许可下保持开源透明。如果你需要超越可视化网站优化，并衡量 Web 和移动端的产品结果，OpenPanel 能为你提供所需的分析基础。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Mouseflow：哪个更适合你？",
+    "intro": "Mouseflow 通过热力图和会话回放在可视化网站优化方面表现出色。OpenPanel 则专注于带移动端支持的产品分析。",
+    "one_liner": "OpenPanel 面向带移动端 SDK 和自托管的产品分析；Mouseflow 面向使用热力图的可视化网站优化。",
+    "best_for_openpanel": [
+      "需要原生 SDK 的移动应用分析团队",
+      "专注产品分析（漏斗、留存、分群）",
+      "因数据所有权而需要自托管的组织",
+      "需要开源透明度的团队",
+      "跨平台跟踪用户级行为的团队"
+    ],
+    "best_for_competitor": [
+      "需要可视化行为分析的 UX 设计师",
+      "网站转化率优化团队",
+      "需要全面热力图和会话回放的团队",
+      "需要表单分析和反馈调研的场景",
+      "不需要移动应用支持的可视化优化"
+    ]
+  },
+  "highlights": {
+    "title": "关键差异一目了然",
+    "intro": "以下是 OpenPanel 和 Mouseflow 在最重要因素上的对比。",
+    "items": [
+      {
+        "label": "开源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "否（专有）"
+      },
+      {
+        "label": "自托管",
+        "openpanel": "是，支持 Docker Compose",
+        "competitor": "否（仅云端）"
+      },
+      {
+        "label": "移动端 SDK",
+        "openpanel": "iOS、Android、React Native、Flutter",
+        "competitor": "仅 Web"
+      },
+      {
+        "label": "热力图",
+        "openpanel": "不可用",
+        "competitor": "7 种热力图"
+      },
+      {
+        "label": "数据模型",
+        "openpanel": "基于事件",
+        "competitor": "基于会话"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能对比",
+    "intro": "OpenPanel 专注于产品分析；Mouseflow 专注于可视化网站行为。",
+    "groups": [
+      {
+        "group": "核心分析",
+        "features": [
+          {
+            "name": "事件追踪",
+            "openpanel": true,
+            "competitor": "有限",
+            "notes": null
+          },
+          {
+            "name": "漏斗",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "用户资料",
+            "openpanel": true,
+            "competitor": "有限",
+            "notes": null
+          },
+          {
+            "name": "分群",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "自定义仪表盘",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "实时数据",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "可视化分析",
+        "features": [
+          {
+            "name": "会话回放",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Mouseflow 的会话回放更先进，包含摩擦评分和表单分析"
+          },
+          {
+            "name": "点击热力图",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "滚动热力图",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "移动热力图",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "表单分析",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "摩擦评分",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "愤怒点击检测",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "反馈与调研",
+        "features": [
+          {
+            "name": "站内调研",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "NPS 调研",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "隐私与合规",
+        "features": [
+          {
+            "name": "自托管",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "开源",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "无 Cookie 选项",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "欧盟数据驻留",
+            "openpanel": "通过自托管",
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "集成与数据",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": "Growth 方案+",
+            "notes": null
+          },
+          {
+            "name": "数据导出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "移动端 SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Mouseflow 仅支持 Web"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技术对比",
+    "intro": "对于评估分析工具的开发者，以下是实现方式的对比。",
+    "items": [
+      {
+        "label": "SDK 大小（JS）",
+        "openpanel": "~2.3 KB gzipped",
+        "competitor": "更大（包含录制）",
+        "notes": null
+      },
+      {
+        "label": "支持的平台",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js"
+        ],
+        "competitor": [
+          "JavaScript（仅 Web）"
+        ],
+        "notes": null
+      },
+      {
+        "label": "开源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "否",
+        "notes": null
+      },
+      {
+        "label": "自托管部署",
+        "openpanel": "Docker Compose（ClickHouse、Postgres、Redis），带引导式设置向导",
+        "competitor": "不可用",
+        "notes": null
+      },
+      {
+        "label": "数据库",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "专有云",
+        "notes": null
+      },
+      {
+        "label": "数据保留",
+        "openpanel": "无限制（自托管）",
+        "competitor": "根据方案不同为 1-12 个月",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "价格对比",
+    "intro": "OpenPanel 提供基于事件的定价，并可免费自托管。Mouseflow 采用基于会话的定价。",
+    "openpanel": {
+      "model": "基于事件，透明定价",
+      "description": "5,000 个事件起价为每月 $2.50。可免费自托管，事件数无限。所有层级均包含全部功能。"
+    },
+    "competitor": {
+      "model": "基于会话",
+      "description": "免费：每月 500 个会话。Starter：每月 $31，5,000 个会话。Growth：每月 $109，15,000 个会话。Business：每月 $219，50,000 个会话。所有方案均包含全部功能。",
+      "free_tier": "是（每月 500 个会话）",
+      "pricing_url": "https://mouseflow.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "从 Mouseflow 迁移到 OpenPanel",
+    "intro": "从 Mouseflow 迁移意味着从可视化行为分析转向基于事件的产品分析。",
+    "difficulty": "中等",
+    "estimated_time": "2-4 小时",
+    "steps": [
+      {
+        "title": "了解功能差异",
+        "description": "Mouseflow 擅长可视化行为分析。如果你依赖热力图和会话回放，可以考虑搭配 Microsoft Clarity 等互补工具。"
+      },
+      {
+        "title": "创建 OpenPanel 账户或自托管",
+        "description": "注册 OpenPanel 云服务，或使用 Docker 部署自托管版本。配置你的项目设置。"
+      },
+      {
+        "title": "安装 OpenPanel SDK",
+        "description": "将 Mouseflow 代码片段替换为 OpenPanel 的 SDK。对于移动应用，请安装原生 SDK。"
+      },
+      {
+        "title": "映射事件和属性",
+        "description": "将 Mouseflow 的隐式追踪转换为 OpenPanel 的显式事件追踪。设置用户识别。"
+      },
+      {
+        "title": "构建分析仪表盘",
+        "description": "在 OpenPanel 中创建漏斗、留存图表和分群分析。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": false,
+      "notes": "追踪理念不同：Mouseflow 基于会话，OpenPanel 基于事件。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Mouseflow 的历史会话录制无法迁移。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 Mouseflow 更适合的场景",
+    "intro": "当你需要带移动端支持和数据所有权的产品分析时，OpenPanel 表现更出色。",
+    "items": [
+      {
+        "title": "移动应用分析",
+        "description": "Mouseflow 仅支持 Web。OpenPanel 为 iOS、Android、React Native 和 Flutter 提供原生 SDK。",
+        "icon": "smartphone"
+      },
+      {
+        "title": "产品分析与用户追踪",
+        "description": "通过漏斗、留存分析、分群和用户识别，在各个平台上跟踪用户行为。",
+        "icon": "chart"
+      },
+      {
+        "title": "数据所有权与自托管",
+        "description": "通过自托管实现完整的数据控制。一个命令 ./setup 向导会引导你完成配置，并在几分钟内启动整个 Docker Compose 技术栈。Mouseflow 仅支持云端。",
+        "icon": "server"
+      },
+      {
+        "title": "开源需求",
+        "description": "使用 AGPL-3.0 许可获得完全透明和可定制性。Mouseflow 是专有软件。",
+        "icon": "code"
+      },
+      {
+        "title": "无限数据保留",
+        "description": "自托管的 OpenPanel 支持无限保留。Mouseflow 会限制数据保留时长。",
+        "icon": "database"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于从 Mouseflow 切换到 OpenPanel 的常见问题。",
+    "items": [
+      {
+        "question": "OpenPanel 能替代 Mouseflow 的热力图和会话回放吗？",
+        "answer": "不能，OpenPanel 不提供热力图。如果你需要可视化行为分析，可以考虑将 Mouseflow 与 OpenPanel 一起使用，或者探索 Hotjar 或 Microsoft Clarity 等替代方案。"
+      },
+      {
+        "question": "Mouseflow 支持移动应用吗？",
+        "answer": "不支持，Mouseflow 仅支持 Web。OpenPanel 为 iOS、Android、React Native 和 Flutter 提供用于移动应用分析的原生 SDK。"
+      },
+      {
+        "question": "哪个工具更适合电商？",
+        "answer": "这取决于需求。Mouseflow 擅长可视化结账流程优化。OpenPanel 更适合跟踪客户旅程和留存。许多电商团队会同时使用两者。"
+      },
+      {
+        "question": "我可以自托管 Mouseflow 吗？",
+        "answer": "不可以，Mouseflow 仅支持云端。OpenPanel 同时提供云托管和通过 Docker 的自托管部署。"
+      },
+      {
+        "question": "价格如何比较？",
+        "answer": "Mouseflow 采用基于会话的定价，5,000 个会话起价为每月 $31。OpenPanel 采用分层的基于事件定价，5,000 个事件起价为每月 $2.50（30 天免费试用）。OpenPanel 的自托管选项完全免费，事件数无限。"
+      },
+      {
+        "question": "我可以同时使用这两个工具吗？",
+        "answer": "可以，而且通常也推荐这么做。使用 Mouseflow 做可视化行为分析，使用 OpenPanel 做产品分析。两者用途互补。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "网站分析设置",
+        "url": "/guides/website-analytics-setup"
+      },
+      {
+        "title": "追踪自定义事件",
+        "url": "/guides/track-custom-events"
+      },
+      {
+        "title": "电商事件追踪",
+        "url": "/guides/ecommerce-tracking"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳开源网站分析工具",
+        "url": "/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "FullStory",
+        "url": "/compare/fullstory-alternative"
+      },
+      {
+        "name": "Smartlook",
+        "url": "/compare/smartlook-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "从 OpenPanel 开始",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

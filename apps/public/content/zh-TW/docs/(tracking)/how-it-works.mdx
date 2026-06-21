@@ -1,0 +1,190 @@
+---
+title: 運作方式
+description: 了解 device ID、session ID、profile ID 與事件追蹤
+---
+
+## Device ID
+
+**device ID** 是為每個 device/browser 組合產生的唯一識別碼。它透過雜湊函式計算，結合以下資訊：
+
+- **User Agent**（瀏覽器/用戶端資訊）
+- **IP Address**
+- **Origin**（專案 ID）
+- **Salt**（輪替的密鑰）
+
+```typescript
+export function generateDeviceId({
+  salt,
+  ua,
+  ip,
+  origin,
+}: GenerateDeviceIdOptions) {
+  return createHash(`${ua}:${ip}:${origin}:${salt}`, 16);
+}
+```
+
+### Salt Rotation
+
+用於 device ID 產生的 salt 會在**每天午夜**（UTC）輪替。這表示：
+
+- device ID 在同一天內會保持一致
+- 為了隱私，device ID 每天都會重設
+- 系統會同時保留當前與前一天的 salt，以處理可能在午夜後稍晚才到達的事件
+
+```typescript
+// Salt rotation happens daily at midnight (pattern: '0 0 * * *')
+```
+
+當 salt 輪替時，所有 device ID 都會改變，等同於每日匿名化追蹤資料，同時仍可在 24 小時內維持 session 的連續性。
+
+## Session ID
+
+**session** 代表一段連續的使用者活動期間。Session 用來將相關事件分組，並了解使用者行為模式。
+
+### Session Duration
+
+Session 有 **30 分鐘逾時**。如果 30 分鐘內沒有收到任何事件，session 會自動結束。每個新事件都會重設這個 30 分鐘計時器。
+
+```typescript
+export const SESSION_TIMEOUT = 1000 * 60 * 30; // 30 minutes
+```
+
+### 工作階段建立規則
+
+Session **只會為用戶端事件建立**，不會為伺服器端事件建立。這表示：
+
+- 從瀏覽器、行動應用程式，或用戶端 SDK 發送的事件會建立 session
+- 從後端伺服器、腳本，或伺服器端 SDK 發送的事件**不會**建立 session
+- 如果你只追蹤後端事件，就不會建立 session
+
+此外，對於**超過 15 分鐘的舊事件**，也**不會建立** session。這可避免歷史資料匯入時產生人工 session。
+
+```typescript
+// Sessions are not created if:
+// 1. The event is from a server (uaInfo.isServer === true)
+// 2. The timestamp is from the past (isTimestampFromThePast === true)
+if (uaInfo.isServer || isTimestampFromThePast) {
+  // Event is attached to existing session or no session
+}
+```
+
+## 使用者資料 ID
+
+**使用者資料 ID** 是跨多個 device 與 session 的使用者持久識別碼。它可讓你在不同瀏覽器、裝置與時間區段中追蹤同一位使用者。
+
+### 使用者資料 ID 分配
+
+如果在追蹤事件時提供了 `profileId`，系統就會用它來識別使用者。不過，**如果沒有提供 `profileId`，預設會使用 `deviceId`**。
+
+這表示：
+- 未具名使用者（沒有使用者資料 ID）會以其 device ID 追蹤
+- 一旦你識別了使用者（透過提供使用者資料 ID），其所有事件都會關聯到該使用者資料
+- 同一位使用者可以透過相同的使用者資料 ID 在多個裝置間被追蹤
+
+```typescript
+// If no profileId is provided, it defaults to deviceId
+if (!payload.profileId && payload.deviceId) {
+  payload.profileId = payload.deviceId;
+}
+```
+
+## 用戶端事件與伺服器端事件
+
+OpenPanel 會根據 User-Agent header 區分**用戶端事件**與**伺服器端事件**。
+
+### 用戶端事件
+
+用戶端事件來自：
+- Web 瀏覽器（Chrome、Firefox、Safari 等）
+- 使用用戶端 SDK 的行動應用程式
+- 任何送出類似瀏覽器 User-Agent 的用戶端
+
+用戶端事件：
+- 建立 session
+- 產生 device ID
+- 支援完整的 [工作階段追蹤](/zh-TW/features/session-tracking)
+
+### 伺服器端事件
+
+當 User-Agent 符合伺服器端模式時，會判定為伺服器端事件，例如：
+- `Go-http-client/1.0`
+- `node-fetch/1.0`
+- 其他單一名稱/版本格式（例如 `LibraryName/1.0`）
+
+伺服器端事件：
+- **不會**建立 session
+- 若有既有 session，會附加到該 session
+- 適合用於不需要 session 管理的後端追蹤
+
+```typescript
+// Server events are detected by patterns like "Go-http-client/1.0"
+function isServer(res: UAParser.IResult) {
+  if (SINGLE_NAME_VERSION_REGEX.test(res.ua)) {
+    return true;
+  }
+  // ... additional checks
+}
+```
+
+這個區分是在事件處理管線中完成的：
+
+```typescript
+const uaInfo = parseUserAgent(userAgent, properties);
+
+// Only client events create sessions
+if (uaInfo.isServer || isTimestampFromThePast) {
+  // Server events or old events don't create new sessions
+}
+```
+
+## Timestamps
+
+事件可以包含自訂 timestamp，用來追蹤事件實際發生的時間，而不是伺服器收到的時間。
+
+### Setting Custom Timestamps
+
+你可以在事件屬性中使用 `__timestamp` 屬性提供自訂 timestamp：
+
+```javascript
+track('page_view', {
+  __timestamp: '2024-01-15T10:30:00Z'
+});
+```
+
+### Timestamp Validation
+
+系統會驗證 timestamp，以防止濫用並確保資料品質：
+
+1. **未來 timestamp**：如果 timestamp 比現在**超過 1 分鐘**，就會改用伺服器 timestamp
+2. **過去 timestamp**：如果 timestamp 比現在早**超過 15 分鐘**，會標記為 `isTimestampFromThePast: true`
+
+```typescript
+// Timestamp validation logic
+const ONE_MINUTE_MS = 60 * 1000;
+const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
+
+// Future check: more than 1 minute ahead
+if (clientTimestampNumber > safeTimestamp + ONE_MINUTE_MS) {
+  return { timestamp: safeTimestamp, isTimestampFromThePast: false };
+}
+
+// Past check: older than 15 minutes
+const isTimestampFromThePast =
+  clientTimestampNumber < safeTimestamp - FIFTEEN_MINUTES_MS;
+```
+
+### Timestamp Impact on Sessions
+
+**重要**：帶有超過 15 分鐘之前 timestamp 的事件（`isTimestampFromThePast: true`）**不會建立新 session**。這可避免歷史資料匯入在你的分析中產生人工 session。
+
+```typescript
+// Events from the past don't create sessions
+if (uaInfo.isServer || isTimestampFromThePast) {
+  // Attach to existing session or track without session
+}
+```
+
+這可確保：
+- 即時追蹤會建立正確的 session
+- 歷史資料匯入不會干擾 session 分析
+- 回填時間的事件仍會被追蹤，但不會影響 session 指標

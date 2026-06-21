@@ -1,0 +1,307 @@
+---
+title: Java
+description: OpenPanel Java SDK 允许你在 JVM 后端应用中跟踪用户行为。
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+OpenPanel Java SDK 允许你在 JVM 后端应用中跟踪用户行为。它面向 **Java 11+**，可与 Spring Boot、Quarkus、Micronaut、纯 Java 等一起使用。
+
+<Callout>
+查看 [GitHub 上的 Java SDK](https://github.com/idcapture/openpanel-java-sdk) 获取最新更新和源代码。
+</Callout>
+
+<Callout type="info">
+对于 Android/Kotlin 应用，请改用 [Kotlin SDK](/zh-CN/docs/sdks/kotlin)。
+</Callout>
+
+## 安装
+
+<Steps>
+### 步骤 1：添加依赖
+
+将 OpenPanel SDK 添加到项目依赖中：
+
+#### Maven
+
+```xml
+<dependency>
+    <groupId>fr.idcapture</groupId>
+    <artifactId>openpanel-java</artifactId>
+    <version>0.4.0</version>
+</dependency>
+```
+
+#### Gradle (Groovy)
+
+```groovy
+implementation 'fr.idcapture:openpanel-java:0.4.0'
+```
+
+#### Gradle (Kotlin DSL)
+
+```kotlin
+implementation("fr.idcapture:openpanel-java:0.4.0")
+```
+
+### 步骤 2：初始化
+
+导入 SDK，并使用你的 client ID 和 secret 初始化：
+
+```java
+import fr.idcapture.openpanel.OpenPanel;
+import fr.idcapture.openpanel.OpenPanelOptions;
+
+OpenPanel op = OpenPanel.create(
+    OpenPanelOptions.builder()
+        .clientId("YOUR_CLIENT_ID")
+        .clientSecret("YOUR_CLIENT_SECRET")
+        .build()
+);
+```
+
+### 配置选项
+
+<CommonSdkConfig />
+
+Java 特有的附加选项：
+
+- `apiUrl` - API 端点 URL（默认：`https://api.openpanel.dev`）
+- `disabled` - 设置为 `true` 可禁用所有 [事件跟踪](/zh-CN/docs/features/event-tracking)
+- `filter` - 发送事件前调用的函数。如果返回 `false`，则不会跟踪该事件
+- `connectTimeoutSeconds` - 连接超时时间，单位秒（默认：`10`）
+- `readTimeoutSeconds` - 读取超时时间，单位秒（默认：`30`）
+- `maxRetries` - 失败请求的最大重试次数（默认：`3`，设为 `0` 可禁用）
+- `initialRetryDelayMs` - 初始重试延迟，单位毫秒（默认：`500`，每次重试翻倍）
+- `verbose` - 设置为 `true` 可通过 `java.util.logging` 启用详细日志
+
+#### 完整配置示例
+
+```java
+OpenPanel op = OpenPanel.create(
+    OpenPanelOptions.builder()
+        .clientId("YOUR_CLIENT_ID")
+        .clientSecret("YOUR_CLIENT_SECRET")
+        .apiUrl("https://api.openpanel.dev")
+        .disabled(false)
+        .filter(name -> !name.startsWith("debug_"))
+        .connectTimeoutSeconds(10)
+        .readTimeoutSeconds(30)
+        .maxRetries(3)
+        .initialRetryDelayMs(500)
+        .verbose(false)
+        .build()
+);
+```
+
+</Steps>
+
+## 用法
+
+所有方法都会返回 `CompletableFuture<Void>`。你可以忽略该 future（fire-and-forget），也可以链式处理回调进行错误处理。
+
+### 跟踪事件
+
+跟踪事件：
+
+```java
+// 最小示例
+op.track("page_viewed");
+
+// 带属性
+op.track("button_clicked", Map.of("button_id", "submit_form"));
+
+// 带用户
+op.track("checkout_started", Map.of("cart_value", 149.99), "user123");
+
+// 带用户 + 分组
+op.track("report_exported",
+    Map.of("format", "pdf"),
+    "user123",
+    List.of("org_acme")
+);
+```
+
+### 标识用户
+
+标识用户：
+
+```java
+// 仅带自定义属性
+op.identify("user123", Map.of("plan", "enterprise"));
+
+// 带标准字段 + 自定义属性
+op.identify("user123", "John", "Doe", "john@example.com", Map.of("tier", "premium"));
+
+// 带头像
+op.identify("user123", "John", "Doe", "john@example.com",
+    "https://example.com/avatar.png", Map.of("tier", "premium"));
+```
+
+### 设置全局属性
+
+此处设置的属性会合并到每次 `track()` 调用中。调用方属性优先于全局属性。
+
+```java
+op.setGlobalProperties(Map.of(
+    "app_version", "2.1.0",
+    "env", "production"
+));
+
+// 之后所有 track() 调用都会自动包含 app_version 和 env
+op.track("feature_used", Map.of("feature", "export"));
+```
+
+### 增加属性值
+
+为用户资料中的数值属性增加值：
+
+```java
+op.increment("user123", "login_count", 1);
+```
+
+### 减少属性值
+
+为用户资料中的数值属性减少值：
+
+```java
+op.decrement("user123", "credits", 5);
+```
+
+### 跟踪收入
+
+跟踪收入事件：
+
+```java
+// 简单示例
+op.revenue(99.99);
+
+// 带用户
+op.revenue(99.99, "user123");
+
+// 带用户 + 附加属性
+op.revenue(49.99, "user123", Map.of("currency", "EUR", "plan", "pro"));
+```
+
+### Groups
+
+```java
+// 创建或更新 group
+op.group("org_acme", "company", "Acme Inc", Map.of("plan", "enterprise", "seats", 25));
+
+// 将用户分配到 groups
+op.assignGroup("user123", List.of("org_acme"));
+```
+
+<Callout>
+Groups **不会**自动附加到 track 事件。需要时请在每次 `track()` 调用中显式传入。
+</Callout>
+
+### 关闭
+
+当应用停止时，干净地关闭客户端：
+
+```java
+// 显式关闭
+op.close();
+
+// 或通过 try-with-resources
+try (OpenPanel op = OpenPanel.create(options)) {
+    op.track("startup");
+}
+```
+
+## 高级用法
+
+### 错误处理
+
+在 API 错误（4xx/5xx）时，`CompletableFuture` 会以 `HttpTracker.OpenPanelApiException` 异常完成，其中包含 HTTP 状态码：
+
+```java
+op.track("event")
+  .exceptionally(e -> {
+      if (e.getCause() instanceof HttpTracker.OpenPanelApiException apiEx) {
+          logger.warn("OpenPanel returned {}", apiEx.getStatusCode());
+      }
+      return null;
+  });
+```
+
+### 重试行为
+
+失败请求（5xx 和网络错误）会使用指数退避自动重试。默认值：重试 3 次，初始延迟 500ms（500ms → 1s → 2s）。客户端错误（4xx）不会重试。
+
+```java
+// 自定义重试行为
+OpenPanelOptions.builder()
+    .clientId("id")
+    .maxRetries(5)              // 更多重试
+    .initialRetryDelayMs(1000)  // 从 1s 开始
+    .build();
+
+// 完全禁用重试
+OpenPanelOptions.builder()
+    .clientId("id")
+    .maxRetries(0)
+    .build();
+```
+
+### 自定义事件过滤
+
+你可以在发送前按名称过滤事件：
+
+```java
+OpenPanelOptions.builder()
+    .clientId("YOUR_CLIENT_ID")
+    .filter(eventName -> !eventName.startsWith("internal_"))
+    .build();
+```
+
+### 禁用跟踪
+
+适用于本地开发或测试——不会发出任何 HTTP 调用：
+
+```java
+OpenPanelOptions.builder()
+    .clientId("YOUR_CLIENT_ID")
+    .disabled(true)
+    .build();
+```
+
+### 自托管 OpenPanel
+
+如果你运行的是自托管 OpenPanel 实例，请设置 `apiUrl`：
+
+```java
+OpenPanelOptions.builder()
+    .clientId("YOUR_CLIENT_ID")
+    .apiUrl("https://your-openpanel-instance.com")
+    .build();
+```
+
+### 调试日志
+
+启用详细模式，通过 `java.util.logging` 记录所有 HTTP 请求和响应：
+
+```java
+OpenPanelOptions.builder()
+    .clientId("YOUR_CLIENT_ID")
+    .verbose(true)
+    .build();
+```
+
+### Kotlin 互操作
+
+所有属性映射都使用 JetBrains `@Nullable` 类型使用注解（`Map<String, @Nullable Object>`），因此 Kotlin 可原生识别为 `Map<String, Any?>`——无需 `@Suppress("UNCHECKED_CAST")`。
+
+```kotlin
+op.track("checkout", mapOf("amount" to 49.99, "coupon" to null))
+```
+
+## 社区 SDK
+
+<Callout>
+Java SDK 是由 [idcapture](https://github.com/idcapture) 维护的社区 SDK。如需报告问题或功能请求，请在 [Java SDK GitHub 仓库](https://github.com/idcapture/openpanel-java-sdk) 提交 issue。
+</Callout>

@@ -1,0 +1,473 @@
+{
+  "slug": "fullstory-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "FullStory 替代方案 2026：$2.50/月 vs $12,000/年（开源）",
+    "description": "FullStory 的企业合同起价为每年 $12,000–$50,000。OpenPanel 仅需 $2.50/月即可提供事件、漏斗、留存和会话回放——或可免费自托管。开源，AGPL-3.0 许可，无需销售电话。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 FullStory 替代方案",
+    "subheading": "在不支付 FullStory 企业级定价的情况下，获得强大的产品分析能力。OpenPanel 提供漏斗分析、留存追踪和用户识别——完全开源、可自托管，并采用透明定价。",
+    "badges": [
+      "开源",
+      "可自托管",
+      "透明定价",
+      "产品分析"
+    ]
+  },
+  "competitor": {
+    "name": "FullStory",
+    "logo": "/logos/fullstory.svg",
+    "url": "https://www.fullstory.com",
+    "short_description": "以像素级精准会话回放和挫败信号检测而闻名的数字体验智能（DXI）平台。",
+    "founded": 2014,
+    "headquarters": "佐治亚州亚特兰大"
+  },
+  "overview": {
+    "title": "为什么考虑用 OpenPanel 替代 FullStory？",
+    "paragraphs": [
+      "FullStory 是一款高端数字体验智能平台，以像素级精准的会话回放和挫败信号检测而闻名。它是 UX 团队排查用户问题和优化转化流程的强大工具。但据报道，其企业定价起步为每年 $12,000 到 $50,000 甚至更多，而且没有公开价格页，因此对大多数团队来说门槛过高。",
+      "OpenPanel 专注于产品分析而非会话回放，以远低于 FullStory 的成本为你提供事件追踪、漏斗、留存分析、用户分群和用户画像。起价仅为每月 $2.50——或在自托管时完全免费——OpenPanel 以透明且可预测的价格，让各种规模的团队都能使用产品分析。",
+      "开源优势在这里非常明显。FullStory 完全是专有且仅云端的，这意味着你无法了解数据是如何被处理的，也无法选择在自己的基础设施上运行。OpenPanel 采用 AGPL-3.0 许可，并完整支持自托管，让你拥有完全的数据主权，并可审计每一行代码。",
+      "如果会话回放是你的主要需求，FullStory 在这一细分领域依然很强。但如果你需要的是产品分析——了解用户如何在漏斗中流动、衡量留存以及追踪用户行为——OpenPanel 能提供这些能力，而无需企业级预算或销售沟通。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs FullStory：哪个更适合你？",
+    "intro": "两个平台都提供分析和会话回放，但 FullStory 更侧重视觉调试，而 OpenPanel 更强调产品分析。",
+    "one_liner": "OpenPanel 是具有透明定价的开源产品分析工具；FullStory 则以企业级定价擅长会话回放。",
+    "best_for_openpanel": [
+      "需要开源分析以确保透明度的团队",
+      "需要为数据主权而自托管的组织",
+      "寻求透明定价、注重预算的团队",
+      "更关注产品分析而非可视化 UX 调试",
+      "希望避免供应商锁定的团队"
+    ],
+    "best_for_competitor": [
+      "需要像素级精准会话回放的团队",
+      "需要高级挫败检测的组织",
+      "有预算使用高端功能的企业团队",
+      "需要热图和 DevTools 集成的 UX 团队",
+      "需要 AI 驱动会话摘要的公司"
+    ]
+  },
+  "highlights": {
+    "title": "关键差异一览",
+    "intro": "以下是 OpenPanel 和 FullStory 在最重要因素上的对比。",
+    "items": [
+      {
+        "label": "开源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "否（专有）"
+      },
+      {
+        "label": "自托管",
+        "openpanel": "是，支持 Docker",
+        "competitor": "否（仅云端）"
+      },
+      {
+        "label": "透明定价",
+        "openpanel": "公开定价，30 天免费试用",
+        "competitor": "需销售联系定价"
+      },
+      {
+        "label": "会话回放",
+        "openpanel": "基础",
+        "competitor": "像素级精准并支持 DevTools"
+      },
+      {
+        "label": "热图",
+        "openpanel": "不可用",
+        "competitor": "点击、滚动、参与度"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能对比",
+    "intro": "OpenPanel 聚焦产品分析；FullStory 擅长会话回放和可视化调试。",
+    "groups": [
+      {
+        "group": "核心分析",
+        "features": [
+          {
+            "name": "事件追踪",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "FullStory 使用 autocapture"
+          },
+          {
+            "name": "漏斗",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "FullStory 仅在 Advanced/Enterprise 套餐中提供"
+          },
+          {
+            "name": "用户画像",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "分群",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "自定义仪表盘",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "实时数据",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "可视化分析",
+        "features": [
+          {
+            "name": "会话回放",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "FullStory 的核心优势"
+          },
+          {
+            "name": "热图",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "愤怒点击检测",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "挫败信号",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "FullStory 的专有功能"
+          },
+          {
+            "name": "DevTools 集成",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "AI 会话摘要",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "StoryAI"
+          }
+        ]
+      },
+      {
+        "group": "高级功能",
+        "features": [
+          {
+            "name": "A/B 测试",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "自动采集",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "数据导出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "FullStory Data Direct"
+          }
+        ]
+      },
+      {
+        "group": "隐私与合规",
+        "features": [
+          {
+            "name": "自托管",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "开源",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "GDPR 合规",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "无需 Cookie 选项",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "SOC 2 认证",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Type II"
+          }
+        ]
+      },
+      {
+        "group": "集成与数据",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "数据仓库同步",
+            "openpanel": "计划于 2026 年推出",
+            "competitor": true,
+            "notes": "OpenPanel 目前已通过其导出 API 提供原始数据，并计划在 2026 年推出原生数据仓库导出（S3/GCS）。"
+          },
+          {
+            "name": "移动端 SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技术对比",
+    "intro": "对于评估分析工具的开发者，以下是实现方式上的对比。",
+    "items": [
+      {
+        "label": "SDK 大小（JS）",
+        "openpanel": "~2.3 KB gzipped",
+        "competitor": "~10+ KB（autocapture）",
+        "notes": null
+      },
+      {
+        "label": "支持的平台",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript",
+          "iOS",
+          "Android",
+          "React Native",
+          "Flutter"
+        ],
+        "notes": null
+      },
+      {
+        "label": "开源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "否",
+        "notes": null
+      },
+      {
+        "label": "自托管部署",
+        "openpanel": "Docker Compose，带引导式设置向导",
+        "competitor": "不可用",
+        "notes": null
+      },
+      {
+        "label": "数据库",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "专有",
+        "notes": null
+      },
+      {
+        "label": "数据保留",
+        "openpanel": "无限制（自托管）",
+        "competitor": "2-60 个月，取决于套餐",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "价格对比",
+    "intro": "OpenPanel 提供透明定价。FullStory 则需要通过销售沟通并采用企业级定价。",
+    "openpanel": {
+      "model": "按事件计费，透明公开",
+      "description": "5,000 个事件起价 $2.50/月。自托管可免费且不限事件数量。所有套餐均包含全部功能。"
+    },
+    "competitor": {
+      "model": "按会话计费，需销售联系",
+      "description": "14 天试用，包含 5,000 次会话。Business/Advanced/Enterprise 套餐需要定制报价。据报道，大多数团队的价格起步为每年 $12,000-50,000+。",
+      "free_tier": "14 天试用（受限）",
+      "pricing_url": "https://www.fullstory.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "从 FullStory 迁移到 OpenPanel",
+    "intro": "切换意味着用开源、自托管和透明定价，取代会话回放功能。",
+    "difficulty": "中等",
+    "estimated_time": "2-4 小时",
+    "steps": [
+      {
+        "title": "安装 OpenPanel SDK",
+        "description": "将 OpenPanel SDK 添加到你的应用中。与 FullStory 的 autocapture 脚本相比，该 SDK 更轻量（约 2.3KB）。"
+      },
+      {
+        "title": "映射事件追踪",
+        "description": "FullStory 对大多数事件使用 autocapture。使用 OpenPanel 时，你需要通过 track() 调用显式定义事件追踪。"
+      },
+      {
+        "title": "迁移用户识别",
+        "description": "FullStory 的 identify() 对应 OpenPanel 的 identify()。迁移你的用户 ID 和自定义用户变量。"
+      },
+      {
+        "title": "设置漏斗和分析",
+        "description": "在 OpenPanel 中重建你的 FullStory 漏斗。为关键指标构建自定义仪表盘。"
+      },
+      {
+        "title": "移除 FullStory 脚本",
+        "description": "验证完成后，移除 FullStory 代码片段。注意：你将失去 FullStory 的高级热图、挫败信号和像素级精准回放功能。OpenPanel 包含基础会话回放。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "两者都支持相似的识别和事件追踪模式。主要区别是 autocapture 与显式追踪。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "FullStory 的会话数据是专有的。如果你需要数据迁移帮助，请联系我们。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 FullStory 更适合的场景",
+    "intro": "当你需要拥有数据控制权和透明定价的产品分析时，OpenPanel 更具优势。",
+    "items": [
+      {
+        "title": "需要开源分析的团队",
+        "description": "FullStory 是专有软件，无法访问源代码。OpenPanel 在 AGPL-3.0 许可下提供完整的源代码透明度。",
+        "icon": "code"
+      },
+      {
+        "title": "需要自托管",
+        "description": "FullStory 仅支持云端。OpenPanel 可部署在你自己的服务器上，实现完整的数据控制。",
+        "icon": "server"
+      },
+      {
+        "title": "注重预算的团队",
+        "description": "FullStory 的企业定价（据报道每年 $12,000-50,000+）成本高昂。OpenPanel 提供从 $2.50/月起的透明定价。",
+        "icon": "dollar"
+      },
+      {
+        "title": "以产品分析为重点",
+        "description": "如果你的主要需求是产品分析——漏斗、留存、分群——而不是视觉调试，那么 OpenPanel 能以远低于 FullStory 的成本提供这些功能。",
+        "icon": "chart"
+      },
+      {
+        "title": "避免供应商锁定",
+        "description": "FullStory 的专有平台会造成供应商锁定。OpenPanel 的开源属性可避免对单一供应商的依赖。",
+        "icon": "lock"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于从 FullStory 切换到 OpenPanel 的常见问题。",
+    "items": [
+      {
+        "question": "从 FullStory 切换到 OpenPanel 我会失去什么？",
+        "answer": "FullStory 的核心优势是会话回放、热图和挫败信号（愤怒点击、无效点击）。OpenPanel 具备基础会话回放，但缺少热图和 FullStory 那种高级挫败检测。如果可视化 UX 调试至关重要，可以考虑在该场景继续保留 FullStory。"
+      },
+      {
+        "question": "就产品分析而言，OpenPanel 和 FullStory 一样强大吗？",
+        "answer": "对于纯产品分析（漏斗、留存、分群、用户画像），OpenPanel 提供了可比的能力。FullStory 将产品分析与其 DXI 平台捆绑，但许多团队发现，他们支付了并不会大量使用的会话回放功能。"
+      },
+      {
+        "question": "价格对比如何？",
+        "answer": "FullStory 需要与销售沟通，价格据报道起步为每年 $12,000。OpenPanel 提供透明的分层定价，从 $2.50/月（5,000 个事件）起，例如 10 万事件为 $20/月，并提供 30 天免费试用——或可免费自托管。大多数团队使用 OpenPanel 可节省 80-90%。"
+      },
+      {
+        "question": "我可以自托管 FullStory 吗？",
+        "answer": "不可以。FullStory 是仅云端的 SaaS。OpenPanel 通过 Docker Compose 提供完整的自托管，实现完全的数据控制——只需一个命令 `./setup` 向导即可引导你完成配置，并在几分钟内启动整套系统。"
+      },
+      {
+        "question": "FullStory 是开源的吗？",
+        "answer": "不是。FullStory 是专有闭源软件。OpenPanel 在 AGPL-3.0 许可下完全开源。"
+      },
+      {
+        "question": "OpenPanel 有像 FullStory 那样的 autocapture 吗？",
+        "answer": "OpenPanel 使用显式事件追踪，而不是 FullStory 的 autocapture。这意味着埋点更有意图，同时数据更干净、噪声更少。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "追踪自定义事件",
+        "url": "/zh-CN/guides/track-custom-events"
+      },
+      {
+        "title": "React 分析设置",
+        "url": "/zh-CN/guides/react-analytics"
+      },
+      {
+        "title": "网站分析设置",
+        "url": "/zh-CN/guides/website-analytics-setup"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳开源网站分析工具",
+        "url": "/zh-CN/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "PostHog",
+        "url": "/compare/posthog-alternative"
+      },
+      {
+        "name": "Mixpanel",
+        "url": "/compare/mixpanel-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "开始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

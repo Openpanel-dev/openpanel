@@ -1,0 +1,248 @@
+---
+title: "BullMQ 替代方案：用 GroupMQ 進行序列化工作處理，避免競態條件"
+description: "受夠了 BullMQ 的競態條件嗎？GroupMQ 是一個免費、開源的替代方案，可序列化處理分組工作——不需要鎖，也不需要 Pro 授權。"
+date: 2025-10-31
+updated: 2026-02-12
+team: OpenPanel Team
+tag: Article
+cover: /content/bullmq-alternative.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+import { Figure } from '@/components/figure'
+
+工作佇列有助於管理工作負載、處理流量高峰，並讓系統保持可靠。但如果你的佇列系統本身反而成了複雜度的來源，該怎麼辦？
+
+在 OpenPanel，我們每天處理數百萬筆分析事件。每個事件都需要被有效率地排入佇列、處理與儲存。我們一開始使用的是 BullMQ，起初它運作得很好。不過，隨著流量成長，我們遇到了許多高吞吐量系統都會面臨的問題：在處理相關事件時出現競態條件。
+
+## 併發問題
+
+想像你正在追蹤網站上的使用者行為。單一使用者可能在幾毫秒內觸發多個事件：頁面檢視、點擊，以及表單提交。這些事件幾乎同時抵達你的佇列，如果由不同 worker 平行處理，就可能產生競態條件。
+
+傳統解法通常涉及複雜的鎖定機制、分散式鎖，或謹慎的交易管理。雖然這些方法可行，但也會增加複雜度，甚至變成瓶頸。我們需要更好的方案。
+
+理想的解法很明確：在維持整體系統吞吐量的同時，讓來自同一位使用者的事件按順序處理。這樣就能在架構層級消除競態條件，而不是試圖在應用程式碼中處理它們。
+
+## 為什麼不直接用 BullMQ Pro？
+
+BullMQ 其實透過他們的「Group」功能提供了這個精確的特性，但它只在 Pro 版本中提供。對商業 SaaS 產品來說，為 BullMQ Pro 付費非常合理。不過，OpenPanel 是開源且可自行架設的。
+
+要求使用者為核心相依套件購買商業授權，與我們的使命相違背。我們希望提供一套完整、開源的分析解決方案，讓任何人都能在沒有隱藏成本或專有相依性的情況下執行。
+
+因此，我們打造了 GroupMQ：一套開源佇列系統，將工作分組做成一等公民功能，而不是高級加購項目。
+
+## 介紹 GroupMQ
+
+<Figure
+  src="/content/groupmq-queue.png"
+  caption="GroupMQ 架構示意圖，展示工作如何依群組組織並在每個群組內依序處理"
+/>
+
+
+GroupMQ 是一套以 Redis 為基礎、靈感來自 BullMQ 的佇列系統，但從頭開始就把工作分組作為核心功能來設計。它可確保同一群組中的工作會依序處理，而不同群組則可平行執行。
+
+GroupMQ 的功能如下：
+
+**群組處理**：工作會自動依群組 ID 組織。系統保證任何時間點每個群組只會處理一個工作，從而消除相關操作的競態條件。
+
+**公平排程**：不同於天真的實作可能讓某個繁忙群組阻塞其他群組，GroupMQ 採用輪詢方式，讓所有群組都能獲得處理時間。這可避免單一群組壟斷 worker 資源。
+
+**熟悉的 API**：如果你用過 BullMQ，會很快上手。我們保留了相似的模式與慣例，讓遷移相當直接。主要差異是群組指派是強制性的，並內建於每次操作中。
+
+**Redis 原生效能**：GroupMQ 直接建立在 Redis 資料結構之上，使用 Redis 的原子操作來兼顧效能與可靠性。與其他基於 Redis 的佇列相比，沒有額外負擔。
+
+## 真實世界的使用情境
+
+GroupMQ 適合需要在相關操作中維持順序的情況：
+
+**分析處理**：將同一位使用者的事件依序處理，以維持準確的 [session tracking](/zh-TW/features/session-tracking) 並避免重複計算。
+
+**電商訂單**：處理同一訂單 ID 的訂單更新、付款處理與庫存變更，避免競態條件。
+
+**通知系統**：依序處理發送給同一收件人的通知，避免訊息順序錯亂。
+
+**多租戶應用程式**：將每個租戶的工作彼此隔離處理，同時維持整體系統吞吐量。
+
+**匯入/匯出作業**：處理檔案時，同一資源上的多個操作必須依序進行。
+
+## BullBoard 相容性
+
+BullMQ 的強項之一是其周邊工具，特別是用於佇列監控的 BullBoard。GroupMQ 透過一個 adapter 保持與 BullBoard 相容。
+
+<Figure
+  src="/content/bullboard.png"
+  caption="使用熟悉的 BullBoard 介面監控你的 GroupMQ 佇列"
+/>
+
+這表示你可以繼續使用既有的監控設定。像使用 BullMQ 一樣，查看工作數量、處理速率與失敗工作。唯一的差異是，現在工作會依群組組織，讓你更清楚看見分組處理模式。
+
+## 從 BullMQ 遷移
+
+從 BullMQ 遷移到 GroupMQ 需要做幾項變更：
+
+1. **新增群組 ID**：每個工作都必須有群組 ID。這通常可從既有資料推導出來（例如使用者 ID、訂單 ID 等）
+
+2. **更新加入工作方式**：更新 `queue.add()`，在 options 物件中包含 `groupId`
+
+3. **更新 Worker**：Worker 現在會接收同時包含 `data` 與 `groupId` 屬性的 job 物件
+
+以下是差異的快速範例：
+
+```javascript
+// BullMQ
+import { Queue, Worker } from 'bullmq';
+import IORedis from 'ioredis';
+
+const connection = new IORedis({ maxRetriesPerRequest: null });
+const queue = new Queue('events');
+
+await queue.add('process-event', { userId: 123, action: 'click' });
+
+const worker = new Worker(
+  'events',
+  async (job) => {
+    console.log(job.data); // { userId: 123, action: 'click' }
+  },
+  { connection }
+);
+
+// GroupMQ
+import Redis from 'ioredis';
+import { Queue, Worker } from 'groupmq';
+
+const redis = new Redis();
+const queue = new Queue({ redis, namespace: 'events' });
+
+await queue.add({
+  groupId: 'user-123',
+  data: { userId: 123, action: 'click' }
+});
+
+const worker = new Worker({
+  queue,
+  handler: async (job) => {
+    console.log(job.data); // { userId: 123, action: 'click' }
+    console.log(job.groupId); // 'user-123'
+  },
+});
+worker.run();
+```
+
+主要差異如下：
+- Queue 建構子：BullMQ 使用佇列名稱字串，GroupMQ 使用包含 `redis` 與 `namespace` 的 options 物件
+- 新增工作：BullMQ 將工作名稱與資料分開傳入，GroupMQ 則使用單一物件，包含 `groupId` 與 `data`
+- Workers：BullMQ 使用佇列名稱、handler 函式與 options。GroupMQ 使用包含 `queue` 與 `handler` 的 options 物件，之後還需要呼叫 `run()`
+- Job 物件：GroupMQ 的 jobs 同時包含 `job.data` 與 `job.groupId` 屬性
+
+## 效能特性
+
+GroupMQ 的效能特性與傳統佇列有所不同：
+
+**群組內序列化**：同一群組中的工作一次只處理一個。這看起來可能像限制，但正是它避免競態條件的原因。單一群組的吞吐量與單執行緒處理速度相當。
+
+**群組間平行化**：不同群組可平行處理。只要群組數量夠多，你就能像傳統佇列系統一樣充分利用所有可用 worker。
+
+**可預測的延遲**：由於各群組彼此獨立，一個群組中的慢工作不會影響其他群組。這種隔離讓效能更可預測。
+
+**記憶體效率**：Redis 中的群組組織已針對降低記憶體使用量進行最佳化，同時維持快速的存取模式。
+
+## 進階功能
+
+除了基本工作分組之外，GroupMQ 還包含：
+
+**延遲工作**：排程讓工作在特定延遲後執行，適合排程任務或重試退避。
+
+**重複性工作**：設定類似 cron 的模式，依排程建立週期性工作。
+
+**工作重試**：內建重試機制，支援可設定的嘗試次數與退避策略。失敗的工作可自動重試，或移至 dead letter 儲存區。
+
+**排序策略**：可根據你的使用情境，在不同排序方法（`'none'`、`'scheduler'` 或 `'in-memory'`）之間選擇，以處理亂序抵達的工作。
+
+**優雅關閉**：workers 在關閉前可先完成目前正在處理的工作，保持資料一致性。
+
+**BullBoard 整合**：可透過提供的 adapter 使用 BullBoard 介面監控你的佇列。
+
+## 何時該選擇 GroupMQ
+
+在以下情況下，GroupMQ 是合適的選擇：
+
+- 你需要將相關工作依序處理
+- 你的系統需要特別注意競態條件
+- 你想移除複雜的鎖定邏輯
+- 你的工作負載自然可分成彼此獨立的資料流
+- 你正在建立開源專案，並需要一個完全開放的佇列解決方案
+
+如果出現以下情況，它可能不是最佳選擇：
+
+- 你的工作彼此完全獨立
+- 你需要讓每個工作以最快速度處理，不論彼此關係為何
+- 你的資料中可自然分組的程度很少
+- 你已在使用 BullMQ Pro，且對它感到滿意
+
+## 開始使用
+
+安裝 GroupMQ：
+
+```npm
+npm install groupmq
+```
+
+基本用法：
+
+```javascript
+import Redis from 'ioredis';
+import { Queue, Worker } from 'groupmq';
+
+const redis = new Redis();
+const queue = new Queue({
+  redis,
+  namespace: 'events',
+});
+
+// 將工作加入群組
+await queue.add({
+  groupId: 'user-123',
+  data: { userId: 123, action: 'pageview' }
+});
+
+// 使用 worker 處理工作
+const worker = new Worker({
+  queue,
+  handler: async (job) => {
+    console.log(`Processing ${job.data.action} for ${job.groupId}`);
+    // 你的處理邏輯寫在這裡
+  },
+});
+worker.run();
+```
+
+## 開源理念
+
+GroupMQ 完全開源。它採用 MIT 授權，接受社群貢獻，且絕不會推出把必要功能鎖在後面的「pro」版本。
+
+我們打造 GroupMQ 是因為 OpenPanel 需要它，但我們將它作為獨立專案釋出，因為其他人也面臨同樣的問題。
+
+<Faqs>
+<FaqItem question="GroupMQ 與 BullMQ Pro 的 group 功能相比如何？">
+GroupMQ 提供與 BullMQ Pro 類似的群組處理能力，但它是一個完全開源的解決方案。雖然 BullMQ Pro 整體功能更多，但 GroupMQ 專注於分組工作處理，而且可免費使用，沒有任何授權限制。
+</FaqItem>
+
+<FaqItem question="我可以用 GroupMQ 搭配既有的 BullBoard 設定嗎？">
+可以！GroupMQ 包含一個 BullBoard adapter，可與既有的 BullBoard 安裝相容。你會看到工作依群組組織，且所有熟悉的指標與監控功能都會保留。
+</FaqItem>
+
+<FaqItem question="如果群組中的某個工作失敗，會發生什麼事？">
+失敗的工作會依你的重試設定進行重試。重點是，在重試期間該群組會保持「鎖定」狀態，避免該群組中的其他工作在失敗工作被解決或移至 dead letter queue 之前開始處理。
+</FaqItem>
+
+<FaqItem question="GroupMQ 可以同時跑多少個 worker？">
+你可以執行與要處理的群組數量相同的 worker。由於每個群組都是依序處理，因此 worker 數量超過目前啟用的群組數量並不會提升吞吐量。最佳數量取決於你的群組分布與處理需求。
+</FaqItem>
+
+<FaqItem question="GroupMQ 適合即時處理嗎？">
+GroupMQ 是為高吞吐量、近即時處理而設計。雖然同一群組內的工作是序列化處理，但系統可以同時處理數千個群組。若你有真正的即時需求、每毫秒都很重要，請評估分組處理是否符合你的需求。
+</FaqItem>
+
+<FaqItem question="如果需要，我可以從 GroupMQ 再遷回 BullMQ 嗎？">
+可以，API 的相似性讓反向遷移成為可能。你需要移除群組 ID 的要求，並可能重新調整併發處理方式，但核心工作處理邏輯仍然相容。
+</FaqItem>
+</Faqs>

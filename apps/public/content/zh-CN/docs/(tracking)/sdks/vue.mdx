@@ -1,0 +1,220 @@
+---
+title: Vue
+---
+
+import Link from 'next/link';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+import { DeviceIdWarning } from '@/components/device-id-warning';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+<Callout>
+需要分步教程？查看 [Vue 分析指南](/zh-CN/guides/vue-analytics)。
+</Callout>
+
+## 须知
+
+请注意，这里的所有跟踪都发生在客户端！
+
+对于 Vue SPA，你可以直接使用 `@openpanel/web`，无需单独的 Vue SDK。只需创建一个 OpenPanel 实例，并在整个应用中使用它。
+
+## 安装
+
+<Steps>
+### 第 1 步：安装
+
+```bash
+pnpm install @openpanel/web
+```
+
+### 第 2 步：初始化
+
+在项目中创建一个共享的 OpenPanel 实例：
+
+```ts title="src/openpanel.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+#### 选项
+
+<CommonSdkConfig />
+<WebSdkConfig />
+
+- `clientId` - 你的 OpenPanel client ID（必填）
+- `apiUrl` - 发送事件的 API URL（默认：`https://api.openpanel.dev`)
+- `trackScreenViews` - 自动跟踪页面视图（默认：`true`）
+- `trackOutgoingLinks` - 自动跟踪外链（默认：`true`）
+- `trackAttributes` - 自动跟踪带有 `data-track` 属性的元素（默认：`true`）
+- `trackHashChanges` - 跟踪 URL 中的 hash 变化（默认：`false`）
+- `disabled` - 禁用跟踪（默认：`false`）
+
+### 第 3 步：使用
+
+在 Vue 组件中导入并使用该实例：
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+function handleClick() {
+  op.track('button_click', { button: 'signup' });
+}
+</script>
+
+<template>
+  <button @click="handleClick">触发事件</button>
+</template>
+```
+
+</Steps>
+
+## 使用
+
+### 跟踪事件
+
+你可以通过两种方式跟踪事件：直接调用 `op.track()` 方法，或者为 HTML 元素添加 `data-track` 属性。
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+op.track('my_event', { foo: 'bar' });
+</script>
+```
+
+### 标识用户
+
+要标识用户，请使用唯一标识符调用 `op.identify()` 方法。
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+op.identify({
+  profileId: '123', // Required
+  firstName: 'Joe',
+  lastName: 'Doe',
+  email: 'joe@doe.com',
+  properties: {
+    tier: 'premium',
+  },
+});
+</script>
+```
+
+### 设置全局属性
+
+要设置会随每个事件发送的属性：
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+op.setGlobalProperties({
+  app_version: '1.0.2',
+  environment: 'production',
+});
+</script>
+```
+
+### 增加属性值
+
+为用户资料中的数值属性增加值。
+
+- `value` 是要增加的数量。如果不提供，则默认增加 1。
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+op.increment({
+  profileId: '1',
+  property: 'visits',
+  value: 1, // optional
+});
+</script>
+```
+
+### 减少属性值
+
+为用户资料中的数值属性减少值。
+
+- `value` 是要减少的数量。如果不提供，则默认减少 1。
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+op.decrement({
+  profileId: '1',
+  property: 'visits',
+  value: 1, // optional
+});
+</script>
+```
+
+### 清除用户数据
+
+清除当前用户的数据：
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+op.clear();
+</script>
+```
+
+### 收益跟踪
+
+跟踪收益事件：
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+// 立即跟踪收益
+await op.revenue(29.99, { currency: 'USD' });
+
+// 或先累积收益，稍后再刷新
+op.pendingRevenue(29.99, { currency: 'USD' });
+op.pendingRevenue(19.99, { currency: 'USD' });
+await op.flushRevenue(); // 发送两个收益事件
+
+// 清除待处理收益
+op.clearRevenue();
+</script>
+```
+
+### 可选：创建 Composable
+
+如果你更喜欢使用 composable 模式，可以自行创建包装器：
+
+```ts title="src/composables/useOpenPanel.ts"
+import { op } from '@/openpanel';
+
+export function useOpenPanel() {
+  return op;
+}
+```
+
+然后在组件中使用它：
+
+```vue
+<script setup>
+import { useOpenPanel } from '@/composables/useOpenPanel';
+
+const op = useOpenPanel();
+op.track('my_event', { foo: 'bar' });
+</script>
+```

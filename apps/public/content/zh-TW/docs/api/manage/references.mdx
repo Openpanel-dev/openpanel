@@ -1,0 +1,30 @@
+---
+title: 參考
+description: 管理 OpenPanel 專案的參考點。參考會在你的分析時間軸上標記重要日期或事件。
+---
+
+## 驗證
+
+需要 `root` 用戶端。請參閱 [驗證](/zh-TW/docs/api/authentication) 指南。
+
+## 基礎 URL
+
+```
+https://api.openpanel.dev/manage/references
+```
+
+## 什麼是 references？
+
+References 是你分析時間軸上的標記，可用於產品發布、活動開始日期、功能上線，或任何你想與指標變化對照的事件。
+
+## 端點
+
+| 方法 | 路徑 | 說明 |
+|--------|------|-------------|
+| `GET` | `/manage/references` | 列出所有 references（可選擇依 `projectId` 篩選） |
+| `GET` | `/manage/references/{id}` | 取得特定 reference |
+| `POST` | `/manage/references` | 建立新的 reference |
+| `PATCH` | `/manage/references/{id}` | 更新 reference |
+| `DELETE` | `/manage/references/{id}` | 刪除 reference |
+
+完整的請求/回應 schema 請參閱 [API 參考](/zh-TW/docs/api-reference)。

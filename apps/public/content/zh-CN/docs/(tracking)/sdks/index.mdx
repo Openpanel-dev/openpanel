@@ -1,0 +1,158 @@
+---
+title: SDK 概览
+description: 为你的项目选择合适的 OpenPanel SDK。我们支持 Web、移动端、服务端和特定框架集成。
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+OpenPanel 提供适用于多种平台和框架的 SDK，无论你的技术栈如何，都可以轻松将分析集成到应用中。
+
+## 快速开始
+
+对于大多数 Web 项目，我们建议从以下之一开始：
+
+- **[Script Tag](/zh-CN/docs/sdks/script)** - 最快的入门方式，无需构建步骤
+- **[Web SDK](/zh-CN/docs/sdks/web)** - 适用于 TypeScript 支持和更强控制
+- **[Next.js](/zh-CN/docs/sdks/nextjs)** - 针对 Next.js 应用优化 | [设置指南](/zh-CN/guides/nextjs-analytics)
+
+## Web 和浏览器 SDK
+
+### 简单集成
+
+- **[Script Tag](/zh-CN/docs/sdks/script)** - 使用简单的 `<script>` 标签添加分析
+  - ✅ 无需构建步骤
+  - ✅ 适用于任何网站
+  - ✅ 自动页面浏览跟踪
+
+### JavaScript 和 TypeScript
+
+- **[Web SDK](/zh-CN/docs/sdks/web)** - 功能完整、支持 TypeScript 的浏览器 SDK
+  - ✅ 类型安全 API
+  - ✅ 可 tree-shake
+  - ✅ 支持现代浏览器
+
+- **[JavaScript (Node / Generic)](/zh-CN/docs/sdks/javascript)** - 通用 JavaScript SDK
+  - ✅ 可在 Node.js 和浏览器中使用
+  - ✅ 与框架无关
+  - ✅ 完整 API 访问
+
+### 前端框架
+
+- **[Next.js](/zh-CN/docs/sdks/nextjs)** - 针对 Next.js 优化 | [设置指南](/zh-CN/guides/nextjs-analytics)
+  - ✅ 服务端和客户端跟踪
+  - ✅ 支持 App Router
+  - ✅ 自动路由跟踪
+
+- **[Astro](/zh-CN/docs/sdks/astro)** - Astro 框架集成 | [设置指南](/zh-CN/guides/astro-analytics)
+  - ✅ 支持静态站点和 SSR
+  - ✅ 基于组件的跟踪
+  - ✅ 兼容 Island 架构
+
+- **[React](/zh-CN/docs/sdks/react)** - React 集成
+  - 📝 目前请使用 Script Tag 或 Web SDK
+
+- **[Vue](/zh-CN/docs/sdks/vue)** - Vue.js 集成 | [设置指南](/zh-CN/guides/vue-analytics)
+  - 📝 目前请使用 Script Tag 或 Web SDK
+
+- **[Remix](/zh-CN/docs/sdks/remix)** - Remix 框架集成 | [设置指南](/zh-CN/guides/remix-analytics)
+  - 📝 目前请使用 Script Tag 或 Web SDK
+
+- **Svelte** - Svelte 集成
+  - 📝 目前请使用 [Script Tag](/zh-CN/docs/sdks/script) 或 [Web SDK](/zh-CN/docs/sdks/web)
+
+- **Angular** - Angular 集成
+  - 📝 目前请使用 [Script Tag](/zh-CN/docs/sdks/script) 或 [Web SDK](/zh-CN/docs/sdks/web)
+
+- **Solid.js** - Solid.js 集成
+  - 📝 目前请使用 [Script Tag](/zh-CN/docs/sdks/script) 或 [Web SDK](/zh-CN/docs/sdks/web)
+
+- **Nuxt** - Nuxt.js 集成
+  - 📝 目前请使用 [Script Tag](/zh-CN/docs/sdks/script) 或 [Web SDK](/zh-CN/docs/sdks/web)
+
+## 服务端 SDK
+
+- **[Node.js (Express)](/zh-CN/docs/sdks/express)** - Express.js 中间件 | [设置指南](/zh-CN/guides/express-analytics)
+  - ✅ 请求跟踪
+  - ✅ 错误跟踪
+  - ✅ 支持自定义中间件
+
+- **[Python](/zh-CN/docs/sdks/python)** - 用于服务端跟踪的 Python SDK | [设置指南](/zh-CN/guides/python-analytics)
+  - ✅ 线程安全
+  - ✅ 支持异步
+  - ✅ 兼容 Django 和 Flask
+
+- **[Rust](/zh-CN/docs/sdks/rust)** - 用于服务端跟踪的 Rust SDK
+  - ✅ 支持 async/await
+  - ✅ 类型安全 API
+  - ✅ 环境变量配置
+
+- **[Ruby](/zh-CN/docs/sdks/ruby)** - 用于服务端跟踪的 Ruby SDK
+  - ✅ Rails 集成
+  - ✅ 基于 Gem 安装
+  - ✅ 简单 API
+
+- **[Java](/zh-CN/docs/sdks/java)** - 面向 JVM 后端的 Java SDK（Java 11+）
+  - ✅ 兼容 Spring Boot、Quarkus、Micronaut
+  - ✅ 通过 `CompletableFuture` 实现异步
+  - ✅ 带指数退避的自动重试
+  - ✅ Maven Central
+
+## 移动端 SDK
+
+- **[React Native](/zh-CN/docs/sdks/react-native)** - 跨平台移动端分析 | [设置指南](/zh-CN/guides/react-native-analytics)
+  - ✅ 支持 iOS 和 Android
+  - ✅ 原生性能
+  - ✅ 离线支持
+
+- **[Swift](/zh-CN/docs/sdks/swift)** - 面向 iOS、macOS、tvOS 和 watchOS 的原生 SDK | [设置指南](/zh-CN/guides/swift-analytics)
+  - ✅ 支持 Apple 平台
+  - ✅ Swift Package Manager
+  - ✅ 线程安全 API
+  - ✅ 自动生命周期跟踪
+
+- **[Kotlin / Android](/zh-CN/docs/sdks/kotlin)** - 原生 Android SDK | [设置指南](/zh-CN/guides/kotlin-analytics)
+  - ✅ 支持 Android
+  - ✅ 系统信息采集
+  - ✅ 线程安全 API
+  - ⚠️ 尚未发布到 Maven
+
+## 需要帮助选择？
+
+<Callout>
+不确定该使用哪个 SDK？以下是一些建议：
+
+- **静态网站或 HTML？** → 使用 [Script Tag](/zh-CN/docs/sdks/script)
+- **React 应用？** → 使用 [Web SDK](/zh-CN/docs/sdks/web) 或 [Script Tag](/zh-CN/docs/sdks/script)
+- **Next.js 应用？** → 使用 [Next.js SDK](/zh-CN/docs/sdks/nextjs)
+- **服务端跟踪？** → 使用 [Python](/zh-CN/docs/sdks/python)、[Rust](/zh-CN/docs/sdks/rust)、[Ruby](/zh-CN/docs/sdks/ruby)、[Java](/zh-CN/docs/sdks/java) 或 [Node](/zh-CN/docs/sdks/javascript)
+- **移动应用？** → 使用 [React Native](/zh-CN/docs/sdks/react-native)、[Swift](/zh-CN/docs/sdks/swift) 或 [Kotlin](/zh-CN/docs/sdks/kotlin)
+</Callout>
+
+## 核心功能
+
+所有 OpenPanel SDK 都支持以下核心功能：
+
+### 事件跟踪
+使用属性跟踪自定义事件，以了解用户行为。
+
+### 用户标识
+将事件关联到特定用户，并构建用户画像。
+
+### 全局属性
+设置会自动随每个事件附带的属性。
+
+### 增加/减少
+更新用户画像上的数值属性。
+
+### 隐私优先
+所有 SDK 都以隐私为核心设计——无需 cookie，符合 GDPR。
+
+## API 参考
+
+如需高级集成，请查看我们的 [API 文档](/zh-CN/docs/api/track)，通过 HTTP 请求直接跟踪事件。
+
+## 社区与支持
+
+- 加入我们的 [Discord 社区](https://go.openpanel.dev/discord)
+- 在 [GitHub](https://github.com/Openpanel-dev/openpanel/issues) 上报告问题
+- 发送邮件至 [hello@openpanel.dev](mailto:hello@openpanel.dev)

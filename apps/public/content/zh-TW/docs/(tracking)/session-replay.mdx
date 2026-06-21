@@ -1,0 +1,185 @@
+---
+title: 會話重播
+description: 記錄並重播使用者會話，精準了解使用者做了什麼。以非同步方式載入，因此不會增加分析 bundle 的大小。
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+會話重播會擷取應用程式或網站中使用者操作內容的結構化記錄。你可以重播任何會話，查看哪些元素被點擊、表單如何填寫，以及使用者在哪裡遇到阻礙，而不必猜測。
+
+<Callout type="info">
+會話重播**預設未啟用**。你必須在每個專案明確啟用。停用時，重播腳本不會被下載，可保持分析 bundle 輕量。
+</Callout>
+
+## 運作方式
+
+OpenPanel session replay 建構於 [rrweb](https://www.rrweb.io/)，這是一個用於錄製與重播網頁會話的開源函式庫。它擷取 DOM 變動、滑鼠移動、捲動位置與互動，並以結構化資料記錄，而不是影片。
+
+重播模組會以**非同步**方式作為獨立腳本（`op1-replay.js`）載入。這表示：
+
+- 即使停用重播，你的主追蹤腳本（`op1.js`）仍保持輕量
+- 重播模組只會針對實際被錄製的會話下載
+- 停用重播時，不會影響頁面載入效能
+
+## 限制與保留期限
+
+- **不限重播數量** — 已錄製的會話數量沒有上限
+- **30 天保留** — 重播會儲存並可存取 30 天
+
+## 設定
+
+### Script tag
+
+在 `init` 呼叫中加入 `sessionReplay`。重播腳本會自同一個 CDN 自動載入，與主腳本相同。
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    sessionReplay: {
+      enabled: true,
+    },
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+### NPM 套件
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  sessionReplay: {
+    enabled: true,
+  },
+});
+```
+
+使用 npm 套件時，重播模組會以動態 import 形式由你的 bundler 做 code-splitting。當停用 session replay 時，它絕不會被包含進主 bundle。
+
+## 選項
+
+| 選項 | 類型 | 預設值 | 說明 |
+|---|---|---|---|
+| `enabled` | `boolean` | `false` | 啟用 session replay 錄製 |
+| `maskAllInputs` | `boolean` | `true` | 遮罩所有輸入欄位值 |
+| `maskAllText` | `boolean` | `true` | 遮罩記錄中的所有文字內容 |
+| `unmaskTextSelector` | `string` | — | 當 `maskAllText` 為 true 時，不應被遮罩的元素 CSS selector |
+| `blockSelector` | `string` | `[data-openpanel-replay-block]` | 要以 placeholder 取代的元素 CSS selector |
+| `blockClass` | `string` | — | 阻止元素被錄製的 class 名稱 |
+| `ignoreSelector` | `string` | — | 排除於互動追蹤之外的元素 CSS selector |
+| `flushIntervalMs` | `number` | `10000` | 錄製事件送到伺服器的頻率（ms） |
+| `maxEventsPerChunk` | `number` | `200` | 每個 payload chunk 的最大事件數 |
+| `maxPayloadBytes` | `number` | `1048576` | 最大 payload 大小（bytes，1 MB） |
+| `scriptUrl` | `string` | — | 重播腳本的自訂 URL（僅 script-tag 版本） |
+
+## 隱私控制
+
+Session replay 會擷取使用者互動。所有文字與輸入內容預設都會被遮罩——敏感內容在離開瀏覽器之前就會被替換成 `***`。
+
+### 文字遮罩（預設開啟）
+
+所有文字內容預設都會被遮罩（`maskAllText: true`）。這表示頁面上可見的文字、標籤與內容，除了輸入欄位之外，在重播中都會被替換成 `***`。
+
+這是最適合 GDPR 合規的安全預設，因為重播不會意外擷取頁面上可見的姓名、電子郵件或其他個人資料。
+
+### 選擇性取消遮罩文字
+
+如果你的頁面顯示的是你希望在重播中可見的非敏感內容，可使用 `unmaskTextSelector` 對特定元素取消遮罩：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  unmaskTextSelector: '[data-openpanel-unmask]',
+}
+```
+
+```html
+<h1 data-openpanel-unmask>Product Analytics</h1>
+<p data-openpanel-unmask>Welcome to the dashboard</p>
+<!-- This stays masked: -->
+<p>John Doe · john@example.com</p>
+```
+
+你也可以使用任何 CSS selector，依 class、tag 或屬性來指定元素：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  unmaskTextSelector: '.replay-safe, nav, footer',
+}
+```
+
+### 停用完整文字遮罩
+
+如果你想停用完整文字遮罩，改回以 selector 為基礎的遮罩方式，請將 `maskAllText` 設為 `false`。在此模式下，只有帶有 `data-openpanel-replay-mask` 的元素會被遮罩：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  maskAllText: false,
+}
+```
+
+```html
+<p data-openpanel-replay-mask>This will be masked</p>
+<p>This will be visible in replays</p>
+```
+
+<Callout type="warn">
+只有在你確定頁面不會顯示個人資料，或你已逐一遮罩所有敏感元素時，才應停用 `maskAllText`。你有責任確保使用 session replay 符合適用的隱私法規。
+</Callout>
+
+### 阻擋元素
+
+由 `blockSelector` 或 `blockClass` 匹配到的元素，會在重播中以同尺寸的灰色 placeholder 取代。該元素及其所有子元素都不會被錄製。
+
+```html
+<div data-openpanel-replay-block>
+  This section won't appear in replays at all
+</div>
+```
+
+或使用自訂 selector：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  blockSelector: '.payment-form, .user-avatar',
+  blockClass: 'no-replay',
+}
+```
+
+### 忽略互動
+
+使用 `ignoreSelector` 可排除特定元素不納入互動追蹤。該元素仍會顯示在重播中，但其上的點擊與輸入事件不會被記錄。
+
+```ts
+sessionReplay: {
+  enabled: true,
+  ignoreSelector: '.debug-panel',
+}
+```
+
+## 自行代管
+
+如果你自行代管 OpenPanel，重播腳本會自動從你的實例提供。你也可以在腳本是由其他位置代管時覆寫 script URL：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  scriptUrl: 'https://your-cdn.example.com/op1-replay.js',
+}
+```
+
+## 相關內容
+
+- [Session tracking](/zh-TW/features/session-tracking) — 無需完整重播也能了解會話
+- [Session replay feature overview](/zh-TW/features/session-replay) — session replay 提供的功能
+- [Web SDK](/zh-TW/docs/sdks/web) — 完整 Web SDK 參考
+- [Script tag](/zh-TW/docs/sdks/script) — 透過 script tag 使用 OpenPanel

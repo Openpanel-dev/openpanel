@@ -1,0 +1,156 @@
+---
+title: Javascript (Node / Generic)
+description: OpenPanel Web SDK 可讓你透過簡單的 script tag 在網站上追蹤使用者行為。本指南提供在專案中安裝與使用 Web SDK 的說明。
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+## 安裝
+
+<Steps>
+### 步驟 1：安裝
+
+```npm
+npm install @openpanel/sdk
+```
+
+### 步驟 2：初始化
+
+```js title="op.ts"
+import { OpenPanel } from '@openpanel/sdk';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET',
+});
+```
+
+#### 選項
+
+<CommonSdkConfig />
+
+### 步驟 3：使用方式
+
+```js title="main.ts"
+import { op } from './op.js';
+
+op.track('my_event', { foo: 'bar' });
+```
+</Steps>
+
+## 使用方式
+
+### 追蹤事件
+
+你可以用兩種不同方式追蹤事件：直接呼叫 `op.track(`，或在 HTML 元素上加上 `data-track` 屬性。
+
+```ts title="index.ts"
+import { op } from './op.ts';
+
+op.track('my_event', { foo: 'bar' });
+```
+
+### 識別使用者
+
+要識別使用者，請呼叫 `op.identify(` 方法並提供唯一識別碼。
+
+```js title="index.js"
+import { op } from './op.ts';
+
+op.identify({
+  profileId: '123', // Required
+  firstName: 'Joe',
+  lastName: 'Doe',
+  email: 'joe@doe.com',
+  properties: {
+    tier: 'premium',
+  },
+});
+```
+
+### 設定全域屬性
+
+設定會隨每個事件一起送出的屬性：
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.setGlobalProperties({
+  app_version: '1.0.2',
+  environment: 'production',
+});
+```
+
+### 遞增屬性
+
+為使用者資料中的數值屬性加值。
+
+- `value` 是要增加的數量。如果未提供，則該屬性會增加 1。
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.increment({
+  profileId: '1',
+  property: 'visits',
+  value: 1 // optional
+});
+```
+
+### 遞減屬性
+
+為使用者資料中的數值屬性減值。
+
+- `value` 是要減少的數量。如果未提供，則該屬性會減少 1。
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.decrement({
+  profileId: '1',
+  property: 'visits',
+  value: 1 // optional
+});
+```
+
+### 使用群組
+
+群組可讓你在帳號或公司層級追蹤分析。完整流程請參閱 [Groups 指南](/zh-TW/docs/get-started/groups)。
+
+**建立或更新群組：**
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.upsertGroup({
+  id: 'org_acme',
+  type: 'company',
+  name: 'Acme Inc',
+  properties: { plan: 'enterprise' },
+});
+```
+
+**將目前使用者指派到群組**（在 `identify` 之後呼叫）：
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.setGroup('org_acme');
+// or multiple groups:
+op.setGroups(['org_acme', 'team_eng']);
+```
+
+設定完成後，後續所有 `track()` 呼叫都會自動包含群組 ID。
+
+### 清除使用者資料
+
+清除目前使用者的資料（包含群組）：
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.clear()
+```

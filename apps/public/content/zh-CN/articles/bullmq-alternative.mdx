@@ -1,0 +1,248 @@
+---
+title: "BullMQ 替代方案：用于顺序任务处理且无竞态条件的 GroupMQ"
+description: "受 BullMQ 的竞态条件困扰？GroupMQ 是一个免费、开源的替代方案，可按组顺序处理任务——无需锁，也无需 Pro 许可证。"
+date: 2025-10-31
+updated: 2026-02-12
+team: OpenPanel Team
+tag: Article
+cover: /content/bullmq-alternative.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+import { Figure } from '@/components/figure'
+
+任务队列有助于管理工作负载、处理流量高峰，并保持系统可靠。但当你的队列系统本身成了复杂性的来源时，会发生什么？
+
+在 OpenPanel，我们每天处理数百万条分析事件。每个事件都需要被高效地入队、处理和存储。我们最初使用的是 BullMQ，它在一开始表现得很好。然而，随着流量增长，我们遇到了许多高吞吐系统都会面临的问题：在处理相关事件时出现竞态条件。
+
+## 并发问题
+
+想象一下，你正在追踪网站上的用户行为。单个用户可能会在毫秒内触发多个事件：页面浏览、点击和表单提交。这些事件几乎同时到达队列，如果由不同 worker 并行处理，就可能产生竞态条件。
+
+传统解决方案涉及复杂的锁机制、分布式锁，或者谨慎的事务管理。虽然这些方法可行，但会增加复杂度，而且它们本身也可能成为瓶颈。我们需要更好的方案。
+
+理想的解决方案很明确：在保持整体系统吞吐量的同时，对同一用户的事件按顺序处理。这样可以在架构层面消除竞态条件，而不是试图在应用代码中去应对它们。
+
+## 为什么不用 BullMQ Pro？
+
+BullMQ 其实通过他们的 “Group” 功能提供了这个确切能力，但它只在 Pro 版本中提供。对于商业 SaaS 产品来说，支付 BullMQ Pro 的费用完全合理。然而，OpenPanel 是开源且可自托管的。
+
+要求我们的用户为一个核心依赖购买商业许可证，会与我们的使命相矛盾。我们希望提供一个完整的、开源的分析解决方案，任何人都可以运行，而无需隐藏成本或专有依赖。
+
+因此，我们构建了 GroupMQ：一个开源队列系统，将任务分组作为一等特性，而不是高级附加功能。
+
+## 介绍 GroupMQ
+
+<Figure
+  src="/content/groupmq-queue.png"
+  caption="GroupMQ 架构展示了任务如何按组组织，并在每个组内顺序处理"
+/>
+
+
+GroupMQ 是一个基于 Redis 的队列系统，灵感来自 BullMQ，但从一开始就将任务分组作为核心特性来设计。它确保同一组内的任务按顺序处理，而不同组则并行运行。
+
+GroupMQ 的功能如下：
+
+**组处理**：任务会根据 group ID 自动组织。系统保证同一时间只处理每个组中的一个任务，这就消除了相关操作的竞态条件。
+
+**公平调度**：不同于可能让某个繁忙组阻塞其他组的简单实现，GroupMQ 采用轮询方式，让所有组都能获得处理时间。这可以防止任何单一组垄断 worker 资源。
+
+**熟悉的 API**：如果你用过 BullMQ，你会很快上手。我们保留了相似的模式和约定，使迁移变得直接。主要区别在于，组分配是强制性的，并内置于每个操作中。
+
+**Redis 原生性能**：GroupMQ 直接建立在 Redis 数据结构之上，使用 Redis 的原子操作来保证性能和可靠性。与其他基于 Redis 的队列相比，没有额外开销。
+
+## 真实世界使用场景
+
+GroupMQ 适用于需要在相关操作之间保持顺序的场景：
+
+**分析处理**：按顺序处理同一用户的事件，以保持准确的[会话跟踪](/features/session-tracking)并防止重复计数。
+
+**电商订单**：对同一订单 ID 的订单更新、支付处理和库存变更进行处理，避免竞态条件。
+
+**通知系统**：按顺序处理发给同一接收人的通知，防止消息乱序。
+
+**多租户应用**：在相互隔离的情况下处理每个租户的任务，同时保持整体系统吞吐量。
+
+**导入/导出操作**：处理同一资源上的多个操作必须按顺序执行的文件处理场景。
+
+## BullBoard 兼容性
+
+BullMQ 的优势之一是其工具生态，尤其是用于队列监控的 BullBoard。GroupMQ 通过适配器保持与 BullBoard 的兼容。
+
+<Figure
+  src="/content/bullboard.png"
+  caption="使用熟悉的 BullBoard 界面监控你的 GroupMQ 队列"
+/>
+
+这意味着你可以继续使用现有的监控设置。查看任务数量、处理速率和失败任务，就像使用 BullMQ 一样。唯一的区别是任务现在按组组织，为你的分组处理模式提供了更好的可见性。
+
+## 从 BullMQ 迁移
+
+从 BullMQ 迁移到 GroupMQ 需要做几处更改：
+
+1. **添加 Group ID**：每个任务都必须有一个 group ID。这通常可以从你现有的数据中派生出来（user ID、order ID 等）。
+
+2. **更新添加任务**：将 `queue.add()` 更新为在 options 对象中包含 `groupId`
+
+3. **更新 Worker**：worker 现在接收同时包含 `data` 和 `groupId` 属性的任务对象
+
+下面是差异的一个快速示例：
+
+```javascript
+// BullMQ
+import { Queue, Worker } from 'bullmq';
+import IORedis from 'ioredis';
+
+const connection = new IORedis({ maxRetriesPerRequest: null });
+const queue = new Queue('events');
+
+await queue.add('process-event', { userId: 123, action: 'click' });
+
+const worker = new Worker(
+  'events',
+  async (job) => {
+    console.log(job.data); // { userId: 123, action: 'click' }
+  },
+  { connection }
+);
+
+// GroupMQ
+import Redis from 'ioredis';
+import { Queue, Worker } from 'groupmq';
+
+const redis = new Redis();
+const queue = new Queue({ redis, namespace: 'events' });
+
+await queue.add({
+  groupId: 'user-123',
+  data: { userId: 123, action: 'click' }
+});
+
+const worker = new Worker({
+  queue,
+  handler: async (job) => {
+    console.log(job.data); // { userId: 123, action: 'click' }
+    console.log(job.groupId); // 'user-123'
+  },
+});
+worker.run();
+```
+
+主要区别如下：
+- 队列构造函数：BullMQ 接收一个队列名称字符串，GroupMQ 接收一个包含 `redis` 和 `namespace` 的 options 对象
+- 添加任务：BullMQ 将任务名称和数据作为独立参数，GroupMQ 接收一个包含 `groupId` 和 `data` 的单个对象
+- Worker：BullMQ 接收队列名称、处理函数和 options。GroupMQ 接收一个包含 `queue` 和 `handler` 的 options 对象，然后需要调用 `run()`
+- 任务对象：GroupMQ 任务同时包含 `job.data` 和 `job.groupId` 属性
+
+## 性能特征
+
+GroupMQ 的性能特征与传统队列不同：
+
+**组内顺序处理**：同一组内的任务一次处理一个。这看起来像是一个限制，但正是它防止了竞态条件。单个组的吞吐量与单线程处理速度一致。
+
+**组间并行**：不同组并行处理。只要组足够多，你就可以像传统队列系统一样用满所有可用 worker。
+
+**可预测延迟**：由于各组独立处理，一个组中的慢任务不会影响其他组。这种隔离使性能更可预测。
+
+**内存效率**：Redis 中的组组织经过优化，可在保持快速访问模式的同时尽量减少内存使用。
+
+## 高级特性
+
+除了基础任务分组之外，GroupMQ 还包括：
+
+**延迟任务**：安排任务在特定延迟后运行，适合计划任务或重试退避。
+
+**重复任务**：配置类似 cron 的模式，按计划创建周期性任务。
+
+**任务重试**：内置重试机制，可配置尝试次数和退避策略。失败任务可以自动重试，或移入死信存储。
+
+**排序策略**：可在不同排序方式（`'none'`、`'scheduler'` 或 `'in-memory'`）之间选择，以根据你的用例处理乱序到达的任务。
+
+**优雅关闭**：worker 可以在关闭前完成当前任务的处理，保持数据一致性。
+
+**BullBoard 集成**：通过提供的适配器，使用 BullBoard 界面监控你的队列。
+
+## 何时选择 GroupMQ
+
+以下情况下，GroupMQ 是合适的选择：
+
+- 你需要按顺序处理相关任务
+- 你的系统中竞态条件是一个问题
+- 你想消除复杂的锁逻辑
+- 你的工作负载天然分组为独立流
+- 你正在构建一个开源项目，并需要一个完全开放的队列方案
+
+以下情况下，它可能不是最佳选择：
+
+- 你的任务完全独立
+- 你希望每个任务尽可能快地处理，而不考虑彼此关系
+- 你的数据中天然分组很少
+- 你已经在使用 BullMQ Pro，并且对它很满意
+
+## 开始使用
+
+安装 GroupMQ：
+
+```npm
+npm install groupmq
+```
+
+基础用法：
+
+```javascript
+import Redis from 'ioredis';
+import { Queue, Worker } from 'groupmq';
+
+const redis = new Redis();
+const queue = new Queue({
+  redis,
+  namespace: 'events',
+});
+
+// Add a job to a group
+await queue.add({
+  groupId: 'user-123',
+  data: { userId: 123, action: 'pageview' }
+});
+
+// Process jobs with a worker
+const worker = new Worker({
+  queue,
+  handler: async (job) => {
+    console.log(`Processing ${job.data.action} for ${job.groupId}`);
+    // Your processing logic here
+  },
+});
+worker.run();
+```
+
+## 开源理念
+
+GroupMQ 完全开源。它采用 MIT 许可，接受社区贡献，并且永远不会有一个把关键功能锁在里面的 “pro” 版本。
+
+我们构建 GroupMQ 是因为 OpenPanel 需要它，但我们将其作为独立项目发布，因为还有其他人面临同样的问题。
+
+<Faqs>
+<FaqItem question="GroupMQ 与 BullMQ Pro 的 group 功能相比如何？">
+GroupMQ 提供了与 BullMQ Pro 类似的组处理能力，但它是一个完全开源的解决方案。虽然 BullMQ Pro 整体上提供了更多功能，但 GroupMQ 专注于分组任务处理，并且可以免费使用，无需任何许可证要求。
+</FaqItem>
+
+<FaqItem question="我可以将 GroupMQ 与现有的 BullBoard 设置一起使用吗？">
+可以！GroupMQ 包含一个 BullBoard 适配器，使其与现有的 BullBoard 安装兼容。你会看到任务按组组织，同时保留所有熟悉的指标和监控能力。
+</FaqItem>
+
+<FaqItem question="如果某个组中的任务失败，会发生什么？">
+失败任务会根据你的重试配置进行重试。重要的是，在重试期间，该组会保持“锁定”状态，防止该组中的其他任务处理，直到失败任务被解决或移入死信队列。
+</FaqItem>
+
+<FaqItem question="我可以运行多少个 GroupMQ worker？">
+你可以运行与待处理组数量相同的 worker。由于每个组都是顺序处理的，worker 数量超过活跃组数量并不会提高吞吐量。最佳数量取决于你的组分布和处理需求。
+</FaqItem>
+
+<FaqItem question="GroupMQ 适合实时处理吗？">
+GroupMQ 旨在用于高吞吐、近实时处理。虽然组内任务是顺序处理的，但系统可以并行处理数千个组。对于每毫秒都至关重要的真正实时需求，请考虑分组处理是否符合你的需要。
+</FaqItem>
+
+<FaqItem question="如果需要，我可以从 GroupMQ 迁回 BullMQ 吗？">
+可以，API 的相似性使反向迁移成为可能。你需要移除 group ID 要求，并可能重新调整并发处理方式，但核心任务处理逻辑仍然兼容。
+</FaqItem>
+</Faqs>

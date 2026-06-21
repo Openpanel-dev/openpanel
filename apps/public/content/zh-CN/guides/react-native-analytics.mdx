@@ -1,0 +1,216 @@
+---
+title: "如何为 React Native 添加分析"
+description: "使用 OpenPanel 为你的 React Native 应用添加隐私优先的分析。跨 iOS 和 Android 跟踪屏幕浏览、自定义事件和用户行为。"
+difficulty: intermediate
+timeToComplete: 10
+date: 2025-12-14
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安装 SDK"
+    anchor: "install"
+  - name: "初始化 OpenPanel"
+    anchor: "setup"
+  - name: "跟踪屏幕浏览"
+    anchor: "screenviews"
+  - name: "跟踪自定义事件"
+    anchor: "events"
+  - name: "识别用户"
+    anchor: "identify"
+  - name: "验证你的设置"
+    anchor: "verify"
+---
+
+# 如何为 React Native 添加分析
+
+为你的 React Native 应用添加分析，可以帮助你了解用户在 iOS 和 Android 上如何与你的产品交互。本指南将带你在大约十分钟内完成 OpenPanel 的设置，以跟踪屏幕浏览、自定义事件和用户行为。
+
+OpenPanel 与 React Native 配合良好，因为它会为你处理原生环境中的复杂性。SDK 会自动捕获应用版本、构建号以及 Android 上的安装来源。它还会在设备离线时排队事件，并在连接恢复后发送。
+
+## 前置条件
+
+- 一个 React Native 项目（Expo 或裸 React Native）
+- 一个 OpenPanel 账户（[免费注册](https://dashboard.openpanel.dev/onboarding)）
+- 来自 OpenPanel 仪表盘的 Client ID 和 Client Secret
+
+## 安装 SDK [#install]
+
+先添加 OpenPanel React Native 包及其 Expo 依赖。SDK 依赖 `expo-application` 获取版本信息，并依赖 `expo-constants` 获取 user-agent 数据。
+
+```bash
+npm install @openpanel/react-native
+npx expo install expo-application expo-constants
+```
+
+如果你更习惯，也可以使用 pnpm 或 yarn。Expo 包同时适用于 Expo 和裸 React Native 项目。
+
+## 初始化 OpenPanel [#setup]
+
+创建一个 OpenPanel 实例，供你在整个应用中使用。React Native 需要 `clientSecret` 进行身份验证，因为原生应用无法像网页浏览器那样使用 CORS 标头。
+
+```typescript
+import { OpenPanel } from '@openpanel/react-native';
+
+export const op = new OpenPanel({
+  clientId: 'your-client-id',
+  clientSecret: 'your-client-secret',
+});
+```
+
+把它放在像 `lib/op.ts` 这样的共享文件中，这样你就可以在应用的任何地方导入它。SDK 会自动设置应用状态变化监听，并配置版本和构建号等默认属性。
+
+## 跟踪屏幕浏览 [#screenviews]
+
+屏幕浏览跟踪需要接入你的导航库。具体方式会因你使用 Expo Router 还是 React Navigation 而略有不同。
+
+如果你使用 Expo Router，请将跟踪调用添加到根布局组件中。`usePathname` 钩子会给出当前路由，`useSegments` 则提供路由分段，这对于将动态路由分组在一起很有用。
+
+```typescript
+import { usePathname, useSegments } from 'expo-router';
+import { useEffect } from 'react';
+import { op } from '@/lib/op';
+
+export default function RootLayout() {
+  const pathname = usePathname();
+  const segments = useSegments();
+
+  useEffect(() => {
+    op.screenView(pathname, {
+      segments: segments.join('/'),
+    });
+  }, [pathname, segments]);
+
+  return (
+    // Your layout JSX
+  );
+}
+```
+
+对于 React Navigation，请使用导航容器的状态变化回调来跟踪屏幕变化。创建一个 navigation ref，并将处理器传递给 `onReady` 和 `onStateChange`。
+
+```tsx
+import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
+import { op } from '@/lib/op';
+
+const navigationRef = createNavigationContainerRef();
+
+export function App() {
+  const handleNavigationStateChange = () => {
+    const current = navigationRef.getCurrentRoute();
+    if (current) {
+      op.screenView(current.name, {
+        params: current.params,
+      });
+    }
+  };
+
+  return (
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={handleNavigationStateChange}
+      onStateChange={handleNavigationStateChange}
+    >
+      {/* Your navigators */}
+    </NavigationContainer>
+  );
+}
+```
+
+`onReady` 回调会在初始加载时触发，`onStateChange` 会在后续导航时触发。这样可以确保你捕获每一次屏幕浏览，包括第一次。
+
+## 跟踪自定义事件 [#events]
+
+除了屏幕浏览之外，你还需要跟踪对业务重要的具体交互。在需要记录用户操作的地方，调用带有事件名称和可选属性的 `op.track`。
+
+```tsx
+import { op } from '@/lib/op';
+
+function SignupButton() {
+  const handlePress = () => {
+    op.track('button_clicked', {
+      button_name: 'signup',
+      screen: 'home',
+    });
+    // Continue with signup logic
+  };
+
+  return <Button onPress={handlePress} title="注册" />;
+}
+```
+
+在代码库中保持事件名称一致。使用蛇形命名法和动词-名词模式，例如 `button_clicked` 或 `form_submitted`，可以让你之后更容易查询分析数据。
+
+你还可以设置会附加到每个事件的全局属性。这对于应用版本或用户套餐这类元数据很有用，你希望所有事件都包含这些信息，而不必每次手动传入。
+
+```tsx
+op.setGlobalProperties({
+  app_version: '1.0.0',
+  platform: Platform.OS,
+});
+```
+
+## 识别用户 [#identify]
+
+当用户登录时，将其活动关联到一个个人资料，这样你就可以跨会话和设备跟踪其行为。调用 `op.identify`，传入用户的 ID 以及你想存储的任何个人资料属性。
+
+```tsx
+import { useEffect } from 'react';
+import { op } from '@/lib/op';
+
+function UserProfile({ user }) {
+  useEffect(() => {
+    if (user) {
+      op.identify({
+        profileId: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        properties: {
+          plan: user.plan,
+        },
+      });
+    }
+  }, [user]);
+
+  return <Text>欢迎，{user?.firstName}！</Text>;
+}
+```
+
+当用户登出时，调用 `op.clear()` 以重置身份信息。这可以确保后续事件不会被错误地归因于前一个用户。
+
+```tsx
+function handleLogout() {
+  op.clear();
+  // Continue with logout logic
+}
+```
+
+## 验证你的设置 [#verify]
+
+运行你的应用并在几个屏幕之间切换，以触发屏幕浏览事件。与任何你添加了自定义跟踪的按钮或表单进行交互。然后打开你的 [OpenPanel 仪表盘](https://dashboard.openpanel.dev) 并查看实时视图。你应该会在几秒内看到事件出现。
+
+如果没有看到事件，请打开 React Native Debugger 或浏览器的开发者工具（如果使用 Expo web），并检查控制台中的错误。最常见的问题是 Client ID 或 Client Secret 不正确。确保这两个值与 OpenPanel 仪表盘中显示的内容一致，并记住 React Native 需要 client secret，而 web SDK 不需要。
+
+## 后续步骤
+
+[React Native SDK 参考](/zh-CN/docs/sdks/react-native)涵盖了更多配置选项。如果你也在为 web 开发，[JavaScript SDK](/zh-CN/docs/sdks/javascript) 使用相同的跟踪 API，因此你的事件命名可以在各个平台之间保持一致。
+
+如果你是在不使用 React Native 的情况下构建原生 iOS 或 Android 应用，请查看 iOS 应用的 [Swift 分析指南](/zh-CN/guides/swift-analytics) 或 Android 应用的 [Kotlin 分析指南](/zh-CN/guides/kotlin-analytics)。
+
+<Faqs>
+<FaqItem question="为什么 React Native 需要 client secret？">
+React Native 应用无法像网页浏览器那样使用 CORS 标头进行身份验证。client secret 提供服务端身份验证，以确保你的事件来自合法来源。请将它打包在应用二进制文件中，而不是从 API 中获取。
+</FaqItem>
+
+<FaqItem question="OpenPanel 支持 Expo 吗？">
+支持。SDK 使用 Expo 包获取版本信息和 user-agent 数据，但这些也适用于裸 React Native 项目。Expo 托管的工作流不需要特殊配置。
+</FaqItem>
+
+<FaqItem question="设备离线时会发生什么？">
+OpenPanel 会在本地排队事件，并在应用重新联网后发送。即使用户暂时失去连接，事件也不会丢失。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 吗？">
+是的。OpenPanel 的设计符合 GDPR，具有数据最小化和对数据主体权利的完整支持。通过自托管，你还可以消除国际数据传输方面的顾虑。了解更多关于 [无 Cookie 分析](/zh-CN/articles/cookieless-analytics) 的内容。
+</FaqItem>
+</Faqs>

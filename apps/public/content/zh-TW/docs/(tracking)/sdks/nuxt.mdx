@@ -1,0 +1,256 @@
+---
+title: Nuxt
+---
+
+import Link from 'next/link';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+import { DeviceIdWarning } from '@/components/device-id-warning';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+<Callout>
+在找逐步教學嗎？請參考 [Nuxt 分析指南](/zh-TW/guides/nuxt-analytics)。
+</Callout>
+
+## 須知
+
+請留意，這裡的所有追蹤都發生在用戶端！
+
+關於伺服器端追蹤，請參考 [Server Side Tracking](#track-server-events) 章節。
+
+## 安裝
+
+<Steps>
+### 安裝相依套件
+
+```bash
+pnpm install @openpanel/nuxt
+```
+
+### 初始化
+
+將模組加入你的 `nuxt.config.ts`：
+
+```typescript
+export default defineNuxtConfig({
+  modules: ['@openpanel/nuxt'],
+  openpanel: {
+    clientId: 'your-client-id',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  },
+});
+```
+
+#### 選項
+
+<CommonSdkConfig />
+<WebSdkConfig />
+
+##### Nuxt 選項
+
+- `clientId` - 你的 OpenPanel client ID（必填）
+- `apiUrl` - 傳送事件的 API URL（預設：`https://api.openpanel.dev`）
+- `trackScreenViews` - 自動追蹤畫面瀏覽（預設：`true`）
+- `trackOutgoingLinks` - 自動追蹤外部連結（預設：`true`）
+- `trackAttributes` - 自動追蹤帶有 `data-track` 屬性的元素（預設：`true`）
+- `trackHashChanges` - 追蹤 URL 中的 hash 變更（預設：`false`）
+- `disabled` - 停用追蹤（預設：`false`）
+- `proxy` - 啟用伺服器端 proxy 以避免 adblocker（預設：`false`）
+
+</Steps>
+
+## 使用方式
+
+### 使用 composable
+
+`useOpenPanel` composable 已自動匯入，因此你可以直接在任何元件中使用：
+
+```vue
+<script setup>
+const op = useOpenPanel(); // Auto-imported!
+
+function handleClick() {
+  op.track('button_click', { button: 'signup' });
+}
+</script>
+
+<template>
+  <button @click="handleClick">觸發事件</button>
+</template>
+```
+
+### 透過 useNuxtApp 存取
+
+你也可以直接透過 `useNuxtApp()` 存取 OpenPanel 實例：
+
+```vue
+<script setup>
+const { $openpanel } = useNuxtApp();
+
+$openpanel.track('my_event', { foo: 'bar' });
+</script>
+```
+
+### 追蹤事件
+
+你可以用兩種不同方式追蹤事件：直接呼叫 `op.track()` 方法，或是在 HTML 元素上加入 `data-track` 屬性。
+
+```vue
+<script setup>
+const op = useOpenPanel();
+op.track('my_event', { foo: 'bar' });
+</script>
+```
+
+### 識別使用者
+
+要識別使用者，請呼叫 `op.identify()` 方法並提供唯一識別碼。
+
+```vue
+<script setup>
+const op = useOpenPanel();
+
+op.identify({
+  profileId: '123', // Required
+  firstName: 'Joe',
+  lastName: 'Doe',
+  email: 'joe@doe.com',
+  properties: {
+    tier: 'premium',
+  },
+});
+</script>
+```
+
+### 設定全域屬性
+
+若要設定每個事件都會帶上的屬性：
+
+```vue
+<script setup>
+const op = useOpenPanel();
+
+op.setGlobalProperties({
+  app_version: '1.0.2',
+  environment: 'production',
+});
+</script>
+```
+
+### 增加屬性值
+
+用於增加使用者檔案上的數值屬性。
+
+- `value` 是要增加的數量。若未提供，屬性會增加 1。
+
+```vue
+<script setup>
+const op = useOpenPanel();
+
+op.increment({
+  profileId: '1',
+  property: 'visits',
+  value: 1, // optional
+});
+</script>
+```
+
+### 減少屬性值
+
+用於減少使用者檔案上的數值屬性。
+
+- `value` 是要減少的數量。若未提供，屬性會減少 1。
+
+```vue
+<script setup>
+const op = useOpenPanel();
+
+op.decrement({
+  profileId: '1',
+  property: 'visits',
+  value: 1, // optional
+});
+</script>
+```
+
+### 清除使用者資料
+
+要清除目前使用者的資料：
+
+```vue
+<script setup>
+const op = useOpenPanel();
+
+op.clear();
+</script>
+```
+
+## 伺服器端
+
+如果你想追蹤伺服器端事件，應建立我們 Javascript SDK 的實例。從 `@openpanel/sdk` 匯入 `OpenPanel`
+
+<Callout>
+使用伺服器事件時，務必使用密鑰來驗證請求。這是為了防止未授權請求，因為我們無法使用 cors headers。
+
+你可以使用相同的 clientId，但應將對應的 client secret 傳給 SDK。
+
+</Callout>
+
+```typescript
+import { OpenPanel } from '@openpanel/sdk';
+
+const opServer = new OpenPanel({
+  clientId: '{YOUR_CLIENT_ID}',
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+});
+
+opServer.track('my_server_event', { ok: '✅' });
+
+// Pass `profileId` to track events for a specific user
+opServer.track('my_server_event', { profileId: '123', ok: '✅' });
+```
+
+### Serverless 與 Edge Functions
+
+如果你在 serverless 環境中記錄事件，請務必 await 事件呼叫，確保函式結束前已完成。
+
+```typescript
+import { OpenPanel } from '@openpanel/sdk';
+
+const opServer = new OpenPanel({
+  clientId: '{YOUR_CLIENT_ID}',
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+});
+
+export default defineEventHandler(async (event) => {
+  // Await to ensure event is logged before function completes
+  await opServer.track('my_server_event', { foo: 'bar' });
+  return { message: 'Event logged!' };
+});
+```
+
+### Proxy events
+
+啟用 `proxy` 選項後，你可以將事件透過伺服器代理，這可確保所有事件都能被追蹤，因為許多 adblocker 會封鎖對第三方網域的請求。
+
+```typescript title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ['@openpanel/nuxt'],
+  openpanel: {
+    clientId: 'your-client-id',
+    proxy: true, // Enables proxy at /api/openpanel/*
+  },
+});
+```
+
+設定 `proxy: true` 後：
+- 模組會自動將 `apiUrl` 設為 `/api/openpanel`
+- 會在 `/api/openpanel/**` 註冊一個 server handler
+- 所有追蹤請求都會透過你的伺服器路由
+
+這有助於繞過可能封鎖對 `api.openpanel.dev` 請求的 adblocker。

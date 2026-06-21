@@ -1,0 +1,179 @@
+{
+  "slug": "developers",
+  "audience": "developers",
+  "seo": {
+    "title": "開發者分析工具 — 開源、API 優先、可自架",
+    "description": "OpenPanel 是為開發者打造的開源分析平台。16 個 SDK、REST API、Docker 自架、以 TypeScript 為核心。無需 Cookie 也能追蹤事件、漏斗與使用者。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "專為開發者打造的分析工具",
+    "subheading": "一個尊重你的技術棧與使用者隱私的開源分析平台。16 個 SDK、REST API、Docker Compose 自架，以及 2.3 KB 腳本。沒有 Cookie、沒有同意橫幅、沒有供應商鎖定。",
+    "badges": [
+      "開源（AGPL-3.0）",
+      "16 個 SDK",
+      "可用 Docker 自架",
+      "2.3 KB 腳本"
+    ]
+  },
+  "problem": {
+    "title": "為什麼開發者討厭他們的分析工具組合",
+    "intro": "大多數分析工具都是為行銷人員打造的。當你是重視效能、隱私，以及擁有自己基礎架構的開發者時，它們就會顯得格格不入。",
+    "items": [
+      {
+        "title": "Google Analytics 是個黑盒子",
+        "description": "你無法檢視的專有程式碼、拖慢網站的肥大腳本、你無法信任的抽樣資料，以及為習慣用「維度」和「指標」思考的行銷人員設計的介面。"
+      },
+      {
+        "title": "沒有自架選項",
+        "description": "大多數分析工具都只能用雲端版。你的資料存在別人的伺服器上。無法在自己的 VPC 中執行，無法存取原始資料，也無法控制保留或處理方式。"
+      },
+      {
+        "title": "笨重的 SDK 與緩慢的腳本",
+        "description": "平均一個分析腳本大小是 30–80 KB。這會在每次頁面載入時實際影響效能。再加上第三方網路請求與 Cookie 的額外負擔。"
+      },
+      {
+        "title": "Cookie 同意橫幅破壞使用者體驗",
+        "description": "基於 Cookie 的分析意味著每個頁面都要顯示同意橫幅。30–40% 的使用者會拒絕 Cookie，讓你拿到不完整的資料，也讓使用者體驗變差。"
+      }
+    ]
+  },
+  "features": {
+    "title": "按照開發者期待的方式打造",
+    "intro": "OpenPanel 以 TypeScript 為核心、API 驅動，並設計成能融入現代開發流程。",
+    "items": [
+      {
+        "title": "適用所有框架的 16 個 SDK",
+        "description": "JavaScript、React、Next.js、Vue、Nuxt、Astro、Remix、Express、React Native、Python、Ruby、Rust、Kotlin、Swift —— 另外還有 script 標籤與 REST API。"
+      },
+      {
+        "title": "2.3 KB 追蹤腳本",
+        "description": "網頁腳本非常小。沒有 Lighthouse 扣分，沒有效能影響，沒有 bundle 膨脹。預設非同步載入。"
+      },
+      {
+        "title": "萬用 REST API",
+        "description": "透過有文件的 REST API 來追蹤事件、查詢資料、管理專案與匯出分析資料。可建立自訂儀表板，或將資料輸送到你自己的系統。"
+      },
+      {
+        "title": "Docker Compose 自架",
+        "description": "一條指令即可部署。內含 PostgreSQL、ClickHouse 與 Redis。可執行在任何 VPS、你的 Kubernetes 叢集，或透過 Coolify/Dokploy 部署。"
+      },
+      {
+        "title": "預設無 Cookie",
+        "description": "沒有 Cookie 就沒有同意橫幅，也沒有被封鎖的請求。每位使用者都能被準確追蹤，並內建完整隱私合規。"
+      },
+      {
+        "title": "開源（AGPL-3.0）",
+        "description": "閱讀程式碼、回報錯誤、提交 PR。沒有專有黑盒子。自架版本與雲端版完全相同——沒有刻意限制功能。"
+      },
+      {
+        "title": "事件式資料模型",
+        "description": "可追蹤任何帶有任意屬性的事件。沒有預先定義的結構、沒有保留事件名稱、沒有屬性限制。你的資料模型，你的規則。"
+      },
+      {
+        "title": "即時事件串流",
+        "description": "事件一發生就能看到。透過觀察即時資料流經你的系統來除錯追蹤問題。沒有抽樣，沒有延遲。"
+      },
+      {
+        "title": "使用 data attributes 的宣告式追蹤",
+        "description": "在 HTML 元素上加入 data-track 屬性，即可實現零 JavaScript 的事件追蹤。非常適合靜態網站或伺服器端渲染頁面。"
+      }
+    ]
+  },
+  "benefits": {
+    "title": "開發者選擇 OpenPanel 的原因",
+    "intro": "符合你的工作流程，而不是與它對抗的分析工具。",
+    "items": [
+      {
+        "title": "完全掌握你的資料",
+        "description": "在你的基礎架構上自架。直接存取 ClickHouse 中的原始事件。任何資料都可透過 API 匯出。永遠沒有供應商鎖定。"
+      },
+      {
+        "title": "幾分鐘內完成追蹤，而非幾天",
+        "description": "npm install、加入你的 client ID，追蹤就開始了。內建自動頁面瀏覽追蹤。自訂事件只需要一行程式碼。"
+      },
+      {
+        "title": "不影響網站效能",
+        "description": "2.3 KB 的非同步腳本會在不阻塞渲染的情況下載入。沒有 Cookie 就沒有額外的 HTTP 負擔。你的 Lighthouse 分數保持完美。"
+      },
+      {
+        "title": "可配合你的部署流程",
+        "description": "本機開發用 Docker Compose、正式環境用 Kubernetes，或用 Coolify/Dokploy 做託管式自架。無論你如何部署，都能輕鬆配合。"
+      },
+      {
+        "title": "內建產品分析",
+        "description": "除了網站分析，還提供漏斗、留存、使用者檔案與分群分析。無需另外訂閱 Mixpanel 或 Amplitude。"
+      },
+      {
+        "title": "透明且可稽核",
+        "description": "每一行程式碼都在 GitHub 上。沒有你無法檢視的追蹤像素，也沒有你無法驗證的資料處理。"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "開發者在評估 OpenPanel 時提出的技術問題。",
+    "items": [
+      {
+        "question": "自架是如何運作的？",
+        "answer": "複製 repo、設定環境變數，然後執行 docker compose up。這套架構包含 PostgreSQL（設定）、ClickHouse（事件）與 Redis（快取／佇列）。一台 4 vCPU / 8 GB RAM 的 VPS 可以處理多數工作負載。已有 Docker Compose、Kubernetes、Coolify 與 Dokploy 的部署指南。"
+      },
+      {
+        "question": "資料架構是什麼？",
+        "answer": "OpenPanel 採用三資料庫策略：PostgreSQL 用於關聯式資料（使用者、專案、儀表板），ClickHouse 用於分析事件（OLAP、高量讀寫），Redis 用於快取、工作佇列與即時 pub/sub。事件經由 API 收集，排入 Redis，並由背景工作者批次寫入 ClickHouse。"
+      },
+      {
+        "question": "我可以存取原始事件資料嗎？",
+        "answer": "可以。自架使用者可直接用 SQL 查詢 ClickHouse。雲端使用者可透過 REST API 匯出資料。沒有資料抽樣——你看到的永遠是完整資料集。"
+      },
+      {
+        "question": "無 Cookie 追蹤是如何運作的？",
+        "answer": "OpenPanel 會結合雜湊化的 IP 位址、使用者代理程式與其他瀏覽器訊號來建立匿名工作階段識別碼。不會設定 Cookie、不使用本機儲存，也不儲存任何可識別個人身分的資訊。這種作法符合 GDPR，且不需要同意。"
+      },
+      {
+        "question": "有 TypeScript SDK 嗎？",
+        "answer": "有。所有 JavaScript/TypeScript SDK（web、React、Next.js、Vue、Nuxt、Astro、Express）都以 TypeScript 撰寫，並提供完整型別定義。若你擴充型別，追蹤 API 會具備型別安全，且事件名稱與屬性可自動完成。"
+      },
+      {
+        "question": "可以追蹤伺服器端事件嗎？",
+        "answer": "可以。可使用 Express SDK、Python/Ruby/Rust SDK，或直接從任何伺服器端語言呼叫 REST API。伺服器端追蹤適用於付款、API 使用量或背景工作完成等後端事件。"
+      },
+      {
+        "question": "OpenPanel 與 PostHog 對開發者來說有什麼不同？",
+        "answer": "PostHog 提供更多工具（功能旗標、實驗、錯誤追蹤），但自架所需基礎架構更多（至少 4 vCPU、16 GB RAM）。OpenPanel 專注於分析——事件、漏斗、留存——且資源占用更低、部署更簡單。若你需要一體化平台，選 PostHog；若你想要容易執行的專注型分析，選 OpenPanel。"
+      },
+      {
+        "question": "追蹤腳本有多大？",
+        "answer": "2.3 KB（gzip 後）。相比之下，Google Analytics 約 28 KB、Mixpanel 約 32 KB、PostHog 約 60 KB。腳本會非同步載入，不會阻塞頁面渲染。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "Next.js 分析設定", "url": "/zh-TW/guides/nextjs-analytics" },
+      { "title": "React 分析設定", "url": "/zh-TW/guides/react-analytics" },
+      { "title": "Node.js 分析設定", "url": "/zh-TW/guides/nodejs-analytics" },
+      { "title": "Python 分析設定", "url": "/zh-TW/guides/python-analytics" }
+    ],
+    "articles": [
+      { "title": "如何自架 OpenPanel", "url": "/zh-TW/articles/how-to-self-host-openpanel" },
+      { "title": "最佳開源分析工具", "url": "/zh-TW/articles/self-hosted-web-analytics" },
+      { "title": "無 Cookie 分析說明", "url": "/zh-TW/articles/cookieless-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel 與 PostHog 比較", "url": "/compare/posthog-alternative" },
+      { "title": "OpenPanel 與 Plausible 比較", "url": "/compare/plausible-alternative" },
+      { "title": "OpenPanel 與 Umami 比較", "url": "/compare/umami-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "免費試用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看原始碼",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

@@ -1,0 +1,701 @@
+---
+title: "开源分析工具：2026 年隐私优先方案调查"
+description: "2026 年开源分析工具概览。涵盖许可类型、托管模式，以及在 9 种方案中各工具适合哪些使用场景——包括云托管和可自托管选项。"
+date: 2024-11-10
+updated: 2026-04-28
+cover: /content/cover-best-web-analytics.jpg
+tag: 比较
+team: OpenPanel 团队
+---
+import { Faqs, FaqItem } from '@/components/faq';
+import { Figure } from '@/components/figure'
+
+这是对 2026 年开源网站和产品分析工具的调查。它涵盖了九种不同许可、托管模式和使用场景的方案——从极简页面浏览计数器到完整的产品分析平台。
+
+这是一份调查，而不是购买指南。合适的选择取决于你的需求。如果你已经决定自托管，并且希望在 4 款最适合生产环境的可自托管工具中做一对一比较，请查看我们的[自托管网站分析对比](/zh-CN/articles/self-hosted-web-analytics)。如果你正在替换 GA4，请查看我们的[Google Analytics 替代方案对比](/zh-CN/compare/google-analytics-alternative)和[迁移指南](/zh-CN/guides/migrate-from-google-analytics)。
+
+以下是这 9 款工具的快速对比：
+
+| 工具 | 类型 | 许可证 | 自托管 | 云端定价（起） | 最适合 |
+|------|------|---------|-----------|---------------------|----------|
+| [**OpenPanel**](#openpanel) | 网站 + 产品 | AGPL-3.0 | 免费 | $2.50/月 | 希望获得类似 Mixpanel 分析能力的团队，开源 |
+| [**PostHog**](#posthog) | 产品 + 网站 | MIT | 免费 | $0 + 按用量 | 需要分析 + 标记 + 实验的开发者 |
+| [**Plausible**](#plausible) | 网站 | AGPL-3.0 | 免费 | $9/月 | 简单、隐私优先的页面浏览分析 |
+| [**Matomo**](#matomo) | 网站 | GPL-3.0 | 免费 | €29/月 | 具有完整功能集的 Google Analytics 替代品 |
+| [**Fathom**](#fathom) | 网站 | 专有 | 许可 | $15/月 | 希望零维护的隐私优先团队 |
+| [**Umami**](#umami) | 网站 | MIT | 免费 | $0 + 按用量 | 想要轻量级、自托管分析的开发者 |
+| [**Ackee**](#ackee) | 网站 | MIT | 免费 | 无 | 极简自托管追踪 |
+| [**Pirsch**](#pirsch) | 网站 | AGPL-3.0 | 许可 | $6/月 | 无需 JavaScript 的服务器端分析 |
+| [**Swetrix**](#swetrix) | 网站 | AGPL-3.0 | 免费 | $5/月 | 兼具性能监控的无 Cookie 分析 |
+
+接下来我们逐一深入了解各工具。
+
+## “开源”在分析领域里到底是什么意思？
+
+“开源”涵盖了许可、治理模式和功能限制都差异很大的工具。选择前要看三点：
+
+**许可证。** 这里的工具分为宽松型（MIT：Umami、PostHog、Ackee）和版权共享型（AGPL：OpenPanel、Plausible、Pirsch、Swetrix；GPL：Matomo）。MIT 允许你在其基础上分叉并发布闭源产品。AGPL 要求如果你将修改后的工具作为网络服务提供，就必须公开修改内容。EUPL（GoatCounter）是另一种类似版权共享的许可。Fathom 在这里是一个受欢迎的替代品，但它完全是专有软件，没有公开源码。如果你在意许可义务，这一点非常重要。
+
+**单一厂商资助 vs 社区。** 这些项目大多是单一厂商项目：由一家公司资助开发并提供付费云版本。OpenPanel、Plausible、Matomo、PostHog、Umami、Pirsch 和 Swetrix 都是如此。Ackee 更接近社区项目。单一厂商项目推进更快，但“巴士系数”风险也更集中。
+
+**云端 vs 仅自托管。** 这里大多数工具都同时提供自托管和付费云端：OpenPanel、Plausible、Matomo、PostHog、Umami、Pirsch 和 Swetrix。Ackee 只提供自托管，没有官方云服务。Fathom 则相反——先是专有云服务，另有可购买的自托管许可。关于 PostHog 还有一点注记：完整自托管现在仅限社区构建版本，且缺少部分云端功能。
+
+**自托管与云端的功能一致性。** 这一点差异很大。OpenPanel、Plausible、Matomo 和 Umami 在自托管与云端之间功能一致。PostHog 不一致。Matomo 即使在自托管版本中，也会将高级功能（热图、A/B 测试）放在付费插件之后。不要默认“开源 = 功能完整”，一定要先确认。
+
+## 选择开源分析工具时要关注什么
+
+在选择工具之前，请考虑以下因素：
+
+- **网站分析 vs 产品分析** — 你只需要页面浏览量和流量来源，还是还需要事件追踪、漏斗、留存和用户路径？
+- **自托管 vs 云端** — 自托管能让你完全掌控数据，而且通常免费，但需要你维护服务器。云端更省事，但要花钱。
+- **隐私与合规** — 工具是否无需 Cookie 即可追踪？是否从设计上就符合 GDPR/CCPA？
+- **部署难易度** — 有些工具几分钟就能部署完成，有些则需要真正的 DevOps 工作。
+- **社区与维护** — 项目是否仍在积极维护？社区规模如何？
+- **定价模式** — 按事件、按页面浏览，还是固定费用？成本会如何随增长而变化？
+
+## OpenPanel
+
+<Figure
+  src="/content/tools/openpanel.png"
+  caption="OpenPanel 的概览页面，让你快速一览网站分析情况"
+/>
+
+### 概述
+OpenPanel 将网站分析和产品分析整合在一个开源工具中。你可以获得[事件追踪](/zh-CN/features/event-tracking)、可自定义图表、概览仪表盘、单个用户和会话视图、[漏斗](/zh-CN/features/funnels)、[留存分析](/zh-CN/features/retention)，以及面向主流框架的 SDK。采用 AGPL-3.0 许可证，无 Cookie 追踪，从设计上就符合 GDPR。自托管免费，或使用 OpenPanel Cloud，提供 30 天免费试用。（披露：这是我们的产品。我们已尽量公允地将其与下方替代方案进行比较，但在选择前请阅读所有选项。）
+
+- 首页：[**https://openpanel.dev**](https://openpanel.dev)
+- GitHub：[**https://github.com/Openpanel-dev/openpanel**](https://github.com/Openpanel-dev/openpanel)
+- 许可证：**AGPL-3.0**
+- 评分：**5/5**
+- 折扣：立减 30%（前 3 个月）：[使用折扣码 **GOOGLE**](https://dashboard.openpanel.dev/onboarding)
+
+### 定价
+
+OpenPanel Cloud 提供 30 天免费试用，无需信用卡。试用结束后，你可以选择匹配你每月事件量的套餐。自托管是免费的；基础设施由你自行提供。
+
+| 每月事件数 | 价格（USD/月） |
+| ---------------- | ----------------- |
+| 最多 5,000      | $2.50             |
+| 最多 10,000     | $5                |
+| 最多 100,000    | $20               |
+| 最多 250,000    | $30               |
+| 最多 500,000    | $50               |
+| 最多 1,000,000  | $90               |
+| 最多 2,500,000  | $180              |
+| 最多 5,000,000  | $250              |
+| 最多 10,000,000 | $350              |
+| 最多 20,000,000 | $530              |
+| 最多 30,000,000 | $680              |
+| 最多 40,000,000 | $800              |
+| 最多 50,000,000 | $900              |
+
+> 所有 Cloud 套餐都包含无限网站、无限仪表盘、无限团队成员、电子邮件与 Discord 支持，以及 5 年数据保留。无附加项，无隐藏费用。
+
+### 优点
+- 开源且可自托管——你掌控自己的数据
+- 将网站分析和产品分析整合在同一平台中（可同时替代 GA 和 Mixpanel）
+- 实时追踪，无处理延迟
+- 无 Cookie，设计上符合 GDPR/CCPA —— 无需同意横幅
+- 30 天免费试用，按使用量计费
+- 所有套餐都包含全部功能，无附加项
+
+### 缺点
+- 随着事件量增长，云端成本会上升
+- 自托管需要服务器部署和维护
+- 与 Matomo 或 PostHog 相比，项目较新、社区更小
+- 尚未内置热图
+
+### FAQ
+
+<Faqs>
+<FaqItem question="OpenPanel 在免费试用结束后如何计费？">
+在 30 天免费试用结束后，你需要选择一个覆盖你每月事件量的套餐。如果超出你套餐的上限，只需升级到下一档，或联系销售获取定制企业方案。所有功能在每个价格档位都包含在内。
+</FaqItem>
+<FaqItem question="OpenPanel 可以替代哪些工具？">
+OpenPanel 通过在一个注重隐私的平台中同时提供产品分析和网站分析，可以替代 Mixpanel、Amplitude 和 Google Analytics。它可追踪事件、页面浏览、用户路径、漏斗和留存——全部无需 Cookie。
+</FaqItem>
+<FaqItem question="OpenPanel 开源版本包含什么？">
+全部内容——自定义仪表盘、图表、实时视图、用户/会话下钻、漏斗、留存以及所有 SDK，均以 AGPL-3.0 许可证发布，没有功能限制。自托管版本与云端版本完全一致。
+</FaqItem>
+<FaqItem question="OpenPanel 的托管需求是什么？">
+对于大多数项目来说，一个中端 VPS（大约 4 vCPU、8 GB RAM、SSD）运行 Docker Compose 就足够了。随着事件量增长可纵向扩容。一个像样的 VPS 每月 $20-50，可处理数百万事件。
+</FaqItem>
+<FaqItem question="OpenPanel 有托管版吗？">
+有。OpenPanel Cloud 从 30 天免费试用开始（无需信用卡），之后切换到按使用量的套餐——例如，10 万事件每月 $20，100 万事件每月 $90。
+</FaqItem>
+</Faqs>
+
+### OpenPanel 的替代方案
+**Plausible Analytics**
+- 开源、注重隐私的网站分析，采用固定价格
+- 轻量、无 Cookie 追踪，配有简洁仪表盘
+- 价格可预测，起步价为 10,000 页面浏览量 $9/月
+- 适合只需要核心网站指标而不需要产品分析的场景
+
+## PostHog
+
+<Figure
+  src="/content/tools/posthog.png"
+  caption="PostHog"
+/>
+
+> 查看我们的详细对比：[OpenPanel vs PostHog](/zh-CN/compare/posthog-alternative)
+
+### 概述
+PostHog 是一个开源平台，集产品分析、会话回放、功能开关、A/B 测试、错误跟踪和问卷调查于一体。它面向开发者，同时提供自托管和免费云套餐（每月 100 万事件）。如果你想要一款能覆盖产品开发所需全部场景的工具，PostHog 的覆盖面最广。
+
+- 首页：[**https://posthog.com**](https://posthog.com)
+- GitHub：[**https://github.com/PostHog/posthog**](https://github.com/PostHog/posthog)
+- 许可证：**MIT**
+- 评分：**4/5**
+
+### 定价
+
+PostHog 的免费层包括每月 100 万分析事件，以及 5,000 次会话录制、100 万次功能开关请求等。超过免费额度后，价格采用按量递减的阶梯计费：
+
+| 每月事件数 | 单事件成本 | 每月示例成本 |
+|---------------|---------------|---------------------|
+| 前 100 万 | 免费 | $0 |
+| 100-200 万 | $0.00005 | ~$50 |
+| 200-1500 万 | $0.0000343 | ~$396（在 1200 万时） |
+| 1500-5000 万 | $0.0000295 | 费率递减 |
+| 5000-1 亿 | $0.0000218 | 费率递减 |
+| 1 亿-2.5 亿 | $0.000015 | 费率递减 |
+
+匿名事件比已识别事件便宜 55-80%，这能显著降低成本。
+
+### 优点
+- 开源且适合自托管——你保留完整数据控制权
+- 一体化套件：分析、回放、标记、实验、错误、问卷
+- 每月 100 万事件的免费层，适合小型项目
+- 活跃的开发者社区和频繁发布
+
+### 缺点
+- 按使用量计费，随着增长很难预测成本
+- 运行自托管实例需要真正的运维工作
+- 自托管和云端功能不一致
+- 功能很多，可能让小团队感到难以消化
+
+### FAQ
+
+<Faqs>
+<FaqItem question="PostHog 在免费层结束后如何计费？">
+PostHog 采用按量递减的阶梯定价。前 100 万事件免费，之后的 100 万事件每个事件收取 $0.00005，随着用量增加费率继续下降。每月发送 1200 万事件的公司大约需要支付 $393/月。
+</FaqItem>
+<FaqItem question="PostHog 和 OpenPanel 有什么区别？">
+当你的事件量超过 100 万后，OpenPanel 比 PostHog 更实惠，因此对增长中的项目而言更具成本效益。PostHog 提供更广泛的功能（功能开关、实验、问卷、错误跟踪），而 OpenPanel 更专注于网站和产品分析，自托管更简单，并且云端/自托管功能完全一致。
+</FaqItem>
+<FaqItem question="PostHog 可以替代哪些工具？">
+通过将产品分析、网站分析、会话回放、功能开关、实验、错误跟踪和问卷调查打包在一起，PostHog 可以在一个技术栈中替代 Mixpanel、Amplitude、Google Analytics、Hotjar/FullStory 和 LaunchDarkly。
+</FaqItem>
+<FaqItem question="开源版本包含什么？">
+PostHog 开源版（MIT）几乎包含所有功能，但每个实例仅限一个项目，并且不提供正常运行时间保证。它适合业余项目或概念验证使用。
+</FaqItem>
+<FaqItem question="自托管有什么要求？">
+团队建议至少 4 vCPU、16 GB RAM 和 30 GB 以上存储。自托管在每月约 30 万事件以内效果最好；超过这个规模后，PostHog Cloud 会帮你处理扩展。
+</FaqItem>
+<FaqItem question="有托管版吗？">
+有。PostHog Cloud 提供免费层（100 万事件、5000 次录制、100 万次标记 API 请求），支持美国或欧盟数据驻留，超出免费额度后按量付费。
+</FaqItem>
+</Faqs>
+
+## Plausible
+
+<Figure
+  src="/content/tools/plausible.png"
+  caption="Plausible"
+/>
+
+> 查看我们的详细对比：[OpenPanel vs Plausible](/zh-CN/compare/plausible-alternative)
+
+### 概述
+Plausible 是一款开源、注重隐私的网站分析工具，作为 Google Analytics 的轻量替代品而构建。它无需 Cookie 或个人数据即可跟踪页面浏览和自定义事件。你可以获得实时报告、目标、定制事件、电子邮件/Slack 报告，以及开箱即用的 GDPR/CCPA 合规性。如果你想要简单、无复杂性的分析工具，就选它。
+
+- 首页：[**https://plausible.io**](https://plausible.io)
+- GitHub：[**https://github.com/plausible/analytics**](https://github.com/plausible/analytics)
+- 许可证：**AGPL v3**
+- 评分：**4/5**
+
+### 定价
+
+Plausible 采用按流量计费的套餐，可按月或按年支付（年付可享 2 个月免费）。所有套餐都包含无限数据保留、无限团队成员、Google Analytics 导入以及所有核心功能。
+
+| 套餐 | 每月页面浏览量 | 月付价格 | 年付价格 | 网站数 | 数据保留 |
+|-----------|---------------------|-----------------|----------------|-------|----------------|
+| Starter   | 最多 10,000        | $9              | $90            | 1     | 无限      |
+| Growth    | 最多 100,000       | $14             | $140           | 3     | 无限      |
+| Business  | 最多 200,000       | $19             | $190           | 10    | 无限      |
+| Enterprise| 200,001+            | 定制          | 定制         | 10+   | 无限      |
+
+### 优点
+- 从设计上保护隐私——无 Cookie、无个人数据追踪
+- 仪表盘简洁，任何人都能看懂
+- 开源，提供免费自托管选项，定价清晰
+- 脚本轻量（约 1 KB），不会拖慢你的网站
+
+### 缺点
+- 除自托管外没有免费层
+- 随着流量增长，成本可能很快上升
+- 没有产品分析功能（没有[漏斗](/zh-CN/features/funnels)、留存或用户级追踪）
+- 没有会话回放或热图
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Plausible 和 OpenPanel 有什么区别？">
+两者都提供注重隐私、开源的网站分析，并且都易于自托管。OpenPanel 额外增加了产品分析——事件追踪、用户路径、漏斗和留存——因此既覆盖网站流量，也覆盖用户行为。如果你只想要最简单的分析，选 Plausible；如果你也需要产品分析，选 OpenPanel。
+</FaqItem>
+<FaqItem question="Plausible 如何保护用户隐私？">
+Plausible 不使用 Cookie，也不收集个人数据。所有追踪都是聚合且匿名化的，从设计上就符合 GDPR 和 CCPA。无需同意横幅。
+</FaqItem>
+<FaqItem question="Plausible 可以替代哪些工具？">
+Plausible 是 Google Analytics 和其他以页面浏览为重点的追踪工具的隐私优先替代品，可为你提供简洁仪表盘，而无需 Cookie 或个人数据收集。
+</FaqItem>
+<FaqItem question="开源版本包含什么？">
+Plausible Cloud 中看到的一切——实时仪表盘、目标、自定义事件、无限保留和团队成员——也都包含在自托管的 AGPL 构建版本中。
+</FaqItem>
+<FaqItem question="有托管版吗？">
+有。Plausible Cloud 起价为 10K 页面浏览量 $9/月，采用简单的按流量定价。提供 30 天免费试用。
+</FaqItem>
+</Faqs>
+
+### Plausible 的替代方案
+**Umami**
+- Umami 几乎是 Plausible 的 1:1 替代品，采用 MIT 许可证
+- 每月 100 万事件的免费云层
+
+**OpenPanel**
+- 与 Umami 和 Plausible 都相似，但还加入了产品分析
+
+## Matomo
+
+<Figure
+  src="/content/tools/matomo.png"
+  caption="Matomo"
+/>
+
+> 查看我们的详细对比：[OpenPanel vs Matomo](/zh-CN/compare/matomo-alternative)
+
+### 概述
+Matomo（原名 Piwik）是最成熟的开源网站分析平台，自 2007 年以来一直存在，并被定位为 Google Analytics 的替代品。你可以追踪网站和移动端访问、制作图表和仪表盘、设置目标、运行 A/B 测试、记录会话、查看热图等。你拥有全部数据，可以免费自托管，也可以使用 Matomo Cloud。
+
+- 首页：[**https://matomo.org**](https://matomo.org)
+- GitHub：[**https://github.com/matomo-org/matomo**](https://github.com/matomo-org/matomo)
+- 许可证：**GNU GPL v3**
+- 评分：**4/5**
+
+### 定价
+
+| 套餐 | 价格 | 每月 Hits | 支持 | 网站数 | 数据保留 |
+| ------------ | -------------------------------- | --------------------- | ------------------------------------------ | -------------- | -------------- |
+| On-Premise   | €0                               | 无限制             | 免费社区支持或付费订阅 | 无限制| 永久        |
+| Cloud (50K)  | €29/月 或 €290/年           | 最多 50,000          | 电子邮件支持与客户成功经理    | 30       | 24 个月      |
+
+更高用量（100K、300K、1M+ hits）请联系销售获取企业定价。
+
+### 优点
+- 最成熟的开源分析平台（自 2007 年起）
+- 完整的数据所有权和 GDPR/CCPA 合规性
+- 功能丰富：仪表盘、A/B 测试、热图、会话录制、漏斗
+- 免费自托管版本，对 hits 和用户数量没有限制
+- 大型插件库
+
+### 缺点
+- 自托管需要服务器部署、维护以及 PHP 知识
+- 超出基础 50K 套餐后，云端成本增长很快
+- 许多高级插件（A/B 测试、热图等）即使在自托管情况下也需要付费订阅
+- 与较新的工具相比，界面会显得有些过时
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Matomo Cloud 的 €29/月 套餐包含什么？">
+每月 €29（或 €290/年）可获得最多 50,000 hits、30 个网站、30 名团队成员、24 个月原始数据保留、电子邮件支持以及客户成功经理。
+</FaqItem>
+<FaqItem question="Matomo 可以替代哪些工具？">
+Matomo 的设计目标是作为 Google Analytics 4 的直接、符合 GDPR 的替代方案。它覆盖网站分析、电商追踪和基础产品分析。
+</FaqItem>
+<FaqItem question="开源版本包含什么？">
+自托管的 Matomo 覆盖用户和事件追踪、电商分析、细分以及可自定义仪表盘。不过，付费附加功能（A/B 测试、热图、会话录制）需要额外付费。
+</FaqItem>
+<FaqItem question="自托管有什么要求？">
+对于每月约 10 万页面浏览量：2 核 CPU、2 GB RAM 和 50 GB SSD。超过 100 万页面浏览量时，Matomo 建议将应用服务器和数据库服务器分开。
+</FaqItem>
+<FaqItem question="有托管版吗？">
+有。Matomo Cloud 按“每月 hits”收费，并默认包含所有付费附加功能。套餐从 50K hits 每月 €29 起。
+</FaqItem>
+</Faqs>
+
+### Matomo 的替代方案
+**Fathom Analytics**
+- 注重隐私、简单易用的分析工具，无 Cookie、无个人数据
+- 统一月费（起价 $15/月），支持无限网站
+- 设置简单，界面简洁，专注核心指标
+
+## Fathom
+
+<Figure
+  src="/content/tools/fathom.png"
+  caption="Fathom"
+/>
+
+> 查看我们的详细对比：[OpenPanel vs Fathom](/zh-CN/compare/fathom-alternative)
+
+### 概述
+Fathom 是一款注重隐私的网站分析工具，可在无需 Cookie 或个人数据的情况下追踪页面浏览和事件。你可以获得实时报告、无限数据保留、无限网站以及简洁仪表盘。Fathom 严格来说并不是开源软件（它是专有软件，但提供可购买的自托管许可），但由于它是很受欢迎的隐私优先替代品，因此在此列出。
+
+- 首页：[**https://usefathom.com**](https://usefathom.com)
+- GitHub：**没有公开仓库**（专有）
+- 许可证：**专有**（提供自托管许可）
+- 评分：**4/5**
+
+### 定价
+
+Fathom 按每月数据点（页面浏览 + 事件）计费。所有套餐都包含无限网站、数据保留、电子邮件报告、导出和支持。
+
+| 套餐                   | 每月数据点数 | 月付价格 | 年付价格（优惠 17%） |
+| ---------------------- | ------------------- | --------------- | ----------------------- |
+| Starter                | 最多 100,000       | $15             | $150/年                 |
+| Growth                 | 最多 200,000       | $25             | $250/年                 |
+| Business               | 最多 500,000       | $45             | $450/年                 |
+| Scale                  | 最多 1,000,000     | $60             | $600/年                 |
+| Scale+                 | 最多 2,000,000     | $100            | $1,000/年               |
+| Enterprise Small       | 最多 5,000,000     | $140            | $1,400/年               |
+| Enterprise Medium      | 最多 10,000,000    | $200            | $2,000/年               |
+| Enterprise Large       | 最多 15,000,000    | $290            | $2,900/年               |
+| Enterprise X-Large     | 最多 20,000,000    | $380            | $3,800/年               |
+| Enterprise Custom      | 超过 25,000,000     | 联系销售   | 联系销售           |
+
+### 优点
+- 从设计上不收集 Cookie 或个人数据
+- 实时、简洁的仪表盘，展示核心指标
+- 每个套餐都支持无限网站和数据保留
+- 提供 EU 隔离选项，便于符合 GDPR
+
+### 缺点
+- **不是开源的**——没有公开代码的专有平台
+- 随着流量增长，成本线性上升
+- 没有产品分析功能（没有漏斗、留存或用户追踪）
+- 没有会话回放或热图
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Fathom 在免费试用结束后如何计费？">
+Fathom 按数据点档位收费。你会从匹配你每月页面浏览和事件量的套餐开始，如果超出配额就升级到下一档。
+</FaqItem>
+<FaqItem question="Fathom 和 OpenPanel 有什么区别？">
+Fathom 是一家托管的专有服务，采用分层定价，只提供网站分析。OpenPanel 是开源且注重隐私的工具，同时提供网站和产品分析：实时视图、单个[会话追踪](/zh-CN/features/session-tracking)、漏斗、留存、图表、无 Cookie 的 GDPR 合规性，以及你可以免费自托管的多个 SDK。
+</FaqItem>
+</Faqs>
+
+### Fathom 的替代方案
+**Simple Analytics**
+- 注重隐私、无 Cookie 的分析，采用固定费用模式
+- 只追踪页面浏览，重点在于简单
+- 没有免费层，但按网站数量计费，价格可预测
+- 界面干净，设置简单，无需改代码
+
+## Umami
+
+<Figure
+  src="/content/tools/umami.png"
+  caption="Umami"
+/>
+
+> 查看我们的详细对比：[OpenPanel vs Umami](/zh-CN/compare/umami-alternative)
+
+### 概述
+Umami 是一款开源、注重隐私的网站分析工具。它无需 Cookie 或个人数据即可追踪页面浏览和基础事件。轻量脚本（约 2 KB）加载速度快，并默认符合 GDPR/CCPA。它是最容易自托管的开源工具之一，因此开发者常把它当作快速替代 Google Analytics 的方案。
+
+- 首页：[**https://umami.is**](https://umami.is)
+- GitHub：[**https://github.com/umami-software/umami**](https://github.com/umami-software/umami)
+- 许可证：**MIT**
+- 评分：**4/5**
+
+### 定价
+
+自托管 Umami 免费，网站和事件数量无限，由你自行管理并获得社区支持。
+
+Umami Cloud 前 100 万事件/月免费。超出后，每增加一个事件收费 $0.00002。
+
+| 套餐        | 价格                            | 每月免费额度 | 支持       | 保留期限  |
+| ----------- | -------------------------------- | ------------------- | ------------- | ---------- |
+| Self-host   | $0                               | 无限事件与网站 | 社区论坛 | 无限  |
+| Cloud       | $0 + 超过 100 万后每事件 $0.00002  | 1,000,000 events    | 电子邮件支持 | 5 年    |
+
+### 优点
+- 开源（MIT）；可自托管以完全掌控数据
+- 优先隐私——不收集 Cookie 或个人数据
+- 轻量追踪脚本，不会拖慢你的网站
+- 使用 Docker Compose 可轻松自托管
+
+### 缺点
+- 仅限基础网站指标；没有产品分析、会话回放或热图
+- 自己运行服务器意味着需要维护和更新
+- 高事件量下云端成本会累积
+- 与 OpenPanel 或 PostHog 相比，高级功能更少
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Umami 在免费层结束后如何计费？">
+每月前 100 万事件免费，之后 Umami Cloud 对每个额外事件收取 $0.00002。没有按网站或按用户收费。
+</FaqItem>
+<FaqItem question="Umami 和 OpenPanel 有什么区别？">
+Umami 是开源、无 Cookie 的网站分析工具，适合页面浏览和基础事件。OpenPanel 同样开源且注重隐私，但增加了产品分析：实时仪表盘、单个会话和用户追踪、漏斗、留存、事件图表以及多个 SDK，全部无 Cookie 且符合 GDPR。
+</FaqItem>
+<FaqItem question="Umami 可以替代哪些工具？">
+Umami 主要是面向希望以无 Cookie、隐私优先的方式进行页面浏览追踪且不想要复杂性的团队的 Google Analytics 替代品。
+</FaqItem>
+<FaqItem question="开源版本包含什么？">
+没有功能缺口——漏斗、用户路径、留存和自定义事件都包含在 MIT 许可版本中。
+</FaqItem>
+<FaqItem question="自托管有什么要求？">
+需要一台安装 Node 18+ 且配备 MySQL 8+ 或 PostgreSQL 12+ 的服务器。官方 Docker Compose 模板让部署变得很直接。
+</FaqItem>
+<FaqItem question="有托管版吗？">
+有。Umami Cloud 允许你每月免费追踪最多 100 万事件，之后每个事件收费 $0.00002。
+</FaqItem>
+</Faqs>
+
+### Umami 的替代方案
+**GoatCounter**
+- 开源、注重隐私的分析工具，提供简单的页面浏览和事件追踪
+- 可免费自托管，或使用从 €5/月起的托管套餐
+- 轻量脚本，无需 Cookie，符合 GDPR
+- 设置非常简单，固定价格可预测
+
+## Ackee
+
+<Figure
+  src="/content/tools/ackee.png"
+  caption="Ackee"
+/>
+
+> 查看我们的详细对比：[OpenPanel vs Ackee](/zh-CN/compare/ackee-alternative)
+
+### 概述
+Ackee 是一款开源、自托管的网站分析工具，专注于隐私和极简主义。它运行在你自己的 Node.js 和 MongoDB 服务器上，无需 Cookie 或个人数据即可追踪页面浏览和自定义事件，并以极简界面展示统计数据。它使用 GraphQL API，并默认对所有追踪数据进行匿名化处理。
+
+- 首页：[**https://ackee.electerious.com**](https://ackee.electerious.com)
+- GitHub：[**https://github.com/electerious/Ackee**](https://github.com/electerious/Ackee)
+- 许可证：**MIT**
+- 评分：**4/5**
+
+### 定价
+
+Ackee 完全可以免费自托管。你下载代码，在自己的服务器上运行即可，对网站数、页面浏览量、团队成员或数据保留没有任何限制。
+
+> _注意：没有官方的 Ackee 托管服务。一些第三方提供商（如 Elestio）提供托管 Ackee 服务，但价格因供应商而异。_
+
+### 优点
+- 开源且可免费自托管——你掌控所有数据
+- 优先隐私：无 Cookie、匿名化追踪、符合 GDPR/CCPA
+- 极简界面，加载速度快
+- 提供用于自定义集成和灵活查询的 GraphQL API
+
+### 缺点
+- 仅限基础指标（没有漏斗、会话回放或热图）
+- 需要服务器部署、维护和安全更新
+- 没有官方托管方案——托管服务取决于第三方
+- 极简功能集不适合需要高级分析的团队
+- 需要 MongoDB，增加复杂度
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Ackee 如何计费？">
+如果你自托管，Ackee 永久免费。核心软件没有付费层，也没有使用量费用。你唯一的成本是运行它的服务器基础设施。
+</FaqItem>
+<FaqItem question="Ackee 和 OpenPanel 有什么区别？">
+Ackee 是一款极简的自托管网站分析工具，可在无 Cookie 的情况下追踪页面浏览和基础事件。OpenPanel 同样开源且注重隐私，但增加了产品分析：实时仪表盘、单个会话和用户追踪、漏斗、留存、事件图表以及多个 SDK，可云端或自托管。
+</FaqItem>
+</Faqs>
+
+### Ackee 的替代方案
+**GoatCounter**
+- 开源且注重隐私，提供符合 GDPR 的无 Cookie 追踪
+- 可免费自托管，或使用从 €5/月起的托管套餐
+- 简单的页面浏览和基础事件指标，固定价格可预测
+
+## Pirsch
+
+<Figure
+  src="/content/tools/pirsch.png"
+  caption="Pirsch"
+/>
+
+> 查看我们的详细对比：[OpenPanel vs Pirsch](/zh-CN/compare/pirsch-analytics-alternative)
+
+### 概述
+Pirsch 是一款基于 Go 构建的服务器端、无 Cookie、注重隐私的网站分析工具。它会生成匿名化的访客指纹，即使在广告拦截器存在的情况下也能工作，并符合 GDPR、CCPA 和 PECR。由于追踪发生在服务器端，客户端拦截器不会影响它。
+
+- 首页：[**https://pirsch.io**](https://pirsch.io)
+- GitHub：[**https://github.com/pirsch-analytics/pirsch**](https://github.com/pirsch-analytics/pirsch)
+- 许可证：**AGPL-3.0**
+- 评分：**4/5**
+
+### 定价
+
+Pirsch 提供 30 天免费试用，无需信用卡。之后，套餐按每月页面浏览量计费：
+
+| 套餐            | 月付价格 | 年付价格 | 包含页面浏览量 | 网站数  |
+|-----------------|---------------|--------------|--------------------|-----------|
+| Standard        | $6            | $60          | 最多 10,000       | 最多 50  |
+| Plus            | $12           | $120         | 自定义             | 无限 |
+| Enterprise      | 定制        | 定制       | 定制             | 定制    |
+
+Plus 套餐增加了漏斗、A/B 测试、自定义域名/主题、白标、优先支持和事件目标。
+
+### 优点
+- 服务器端追踪可绕过广告拦截器——获得更完整的数据
+- 注重隐私，默认无 Cookie 且数据匿名化
+- 轻量级 Go 库和多个 SDK（JS、PHP、Laravel 等）
+- 托管在德国服务器上的欧盟环境（Hetzner）
+
+### 缺点
+- 自托管需要企业许可（不是免费的）
+- 使用量分档会随着流量增长而变贵
+- 没有会话回放或热图
+- 与 Plausible 或 Matomo 相比，社区更小
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Pirsch 在免费试用结束后如何计费？">
+30 天后，你需要选择与每月页面浏览量相匹配的套餐。如果超出套餐包含的页面浏览量，你需要升级到下一档，或联系销售获取企业方案。
+</FaqItem>
+<FaqItem question="Pirsch 和 OpenPanel 有什么区别？">
+Pirsch 是一项基于 Go 的服务器端服务，专注于抗广告拦截追踪和欧盟托管。OpenPanel 是开源、注重隐私且无 Cookie 的工具，同时提供网站和产品分析：实时仪表盘、单个会话/用户追踪、漏斗、留存，以及多个 SDK，你可以免费自托管。
+</FaqItem>
+</Faqs>
+
+### Pirsch 的替代方案
+**Plausible Analytics**
+- 开源、无 Cookie 的网站分析，采用固定价格模式
+- 简洁仪表盘、实时数据以及 GDPR/CCPA 合规
+- 可免费自托管，或使用从 10,000 页面浏览量 $9/月起的托管套餐
+
+
+## Swetrix
+
+<Figure
+  src="/content/tools/swetrix.png"
+  caption="Swetrix"
+/>
+
+### 概述
+Swetrix 是一款开源、无 Cookie 的网站分析平台，围绕隐私和易用性构建。你可以追踪页面浏览、自定义事件、用户流程和性能指标，全部无需 Cookie 横幅。它还包含网站性能监控，而这是这里大多数其他工具所不具备的。
+
+- 首页：[**https://swetrix.com**](https://swetrix.com)
+- GitHub：[**https://github.com/Swetrix/swetrix**](https://github.com/Swetrix/swetrix)
+- 许可证：**AGPL-3.0**
+- 评分：**4/5**
+
+### 定价
+
+Swetrix 提供 14 天免费试用，无需信用卡。之后，你可以根据每月事件量选择套餐：
+
+| 套餐               | 每月事件数 | 价格（USD/月） |
+| ------------------ | ---------------- | ----------------- |
+| Basic              | 最多 10,000     | $5                |
+| Growth             | 最多 100,000    | $15               |
+| Pro                | 最多 200,000    | $25               |
+| Business           | 最多 500,000    | $45               |
+| Premium            | 最多 1,000,000  | $59               |
+| Enterprise Small   | 最多 2,000,000  | $84               |
+| Enterprise Medium  | 最多 5,000,000  | $110              |
+| Enterprise Large   | 最多 10,000,000 | $150              |
+| Enterprise X-Large | 超过 10,000,000  | 联系销售     |
+
+### 优点
+- 开源且可自托管，便于完全掌控数据
+- 无 Cookie 追踪，从设计上就符合 GDPR/CCPA
+- 包含网站性能监控（页面加载时间、Core Web Vitals）
+- 简洁仪表盘，带用户流程、提醒和导出功能
+
+### 缺点
+- 托管套餐采用按使用量分级，流量增长会导致成本上升
+- 自托管需要部署、维护和托管基础设施
+- 没有会话回放或热图
+- 与更成熟的工具相比，社区较小
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Swetrix 在免费试用结束后如何计费？">
+在 14 天试用结束后，你需要选择覆盖你每月事件量的套餐。如果超出套餐上限，你需要升级到下一档，或联系销售获取定制企业方案。
+</FaqItem>
+<FaqItem question="Swetrix 和 OpenPanel 有什么区别？">
+Swetrix 是一款无 Cookie、开源的网站分析工具，适用于页面浏览、事件、性能监控和用户流程。OpenPanel 也提供网站分析，但还加入了产品分析：事件追踪、漏斗、留存、单个用户/会话视图和多个 SDK，全部无 Cookie 且符合 GDPR。
+</FaqItem>
+</Faqs>
+
+### Swetrix 的替代方案
+**Plausible Analytics**
+- 开源、隐私优先的网站分析，采用固定价格
+- 追踪页面浏览和目标，无需 Cookie
+- 可免费自托管，或从 10,000 页面浏览量 $9/月起使用托管套餐
+- 设置简单，成本可预测
+
+## 定价对比：9 款工具一览
+
+以下是在常见事件量下，各工具云端/托管定价的对比：
+
+| 每月事件数 | OpenPanel | PostHog | Plausible | Matomo Cloud | Fathom | Umami Cloud | Pirsch | Swetrix |
+|---------------|-----------|---------|-----------|-------------|--------|-------------|--------|---------|
+| 10K | $5 | $0 | $9 | €29 | $15 | $0 | $6 | $5 |
+| 100K | $20 | $0 | $14 | €29 | $15 | $0 | ~$12+ | $15 |
+| 500K | $50 | $0 | ~$19+ | Custom | $45 | $0 | Custom | $45 |
+| 1M | $90 | $0 | Custom | Custom | $60 | $0 | Custom | $59 |
+| 5M | $250 | ~$187 | Custom | Custom | $140 | ~$80 | Custom | $110 |
+| 10M | $350 | ~$393 | Custom | Custom | $200 | ~$180 | Custom | $150 |
+
+*PostHog 和 Umami 包含每月 100 万免费事件。Plausible 按页面浏览量而不是事件数计价。Matomo 按“hits”计价。准确价格会有所变化——请查看各供应商的最新费率。*
+
+## 如何选择合适的开源分析工具
+
+**如果你选择 OpenPanel**，适合你想以可承受的价格同时获得产品分析（漏斗、留存、用户追踪）和网站分析。最适合初创公司和成长型企业。
+
+**如果你选择 PostHog**，适合你需要一套包含分析、功能开关、实验、错误跟踪和问卷的一体化开发者平台。最适合工程驱动型团队。
+
+**如果你选择 Plausible**，适合你想要最简单的隐私优先网站分析。只有干净的流量数据。最适合博客、营销网站和简单的 Web 项目。
+
+**如果你选择 Matomo**，适合你需要一款成熟、功能完整的 Google Analytics 替代品，具备热图、会话录制和 A/B 测试。最适合从 GA4 迁出的企业。请查看我们的完整[Google Analytics 替代方案对比](/zh-CN/compare/google-analytics-alternative)以获取详细拆解。
+
+**如果你选择 Umami**，适合你想要一个轻量级、MIT 许可、可通过最少配置自行托管的工具。最适合希望在个人项目上获得基础分析的开发者。
+
+**如果你选择 Fathom**，适合你想要简单的隐私分析且不想自托管。最适合希望零维护的企业。
+
+**如果你选择 Pirsch**，适合你需要能绕过广告拦截器的服务器端追踪。最适合追踪准确性至关重要的网站。
+
+**如果你选择 Swetrix**，适合你想要把网站分析和性能监控整合在一个工具中。最适合关注网站性能的团队。
+
+**如果你选择 Ackee**，适合你想要最极简的自托管方案。最适合个人项目或希望维护负担最小的开发者。
+
+<Faqs>
+<FaqItem question="最好的开源网站分析工具是什么？">
+最好的开源网站分析工具取决于你的需求。对于网站和产品分析的组合，OpenPanel 提供了最佳价值。若追求简单，Plausible 很难被超越。若需要一体化的开发者平台，PostHog 是最全面的。若要成熟的 Google Analytics 替代品，Matomo 的历史最久。这四款都支持自托管并符合 GDPR。
+</FaqItem>
+
+<FaqItem question="最好的 Google Analytics 开源替代品是什么？">
+最好的 Google Analytics 开源替代品是 Matomo（功能最相似）、Plausible（最简单、最注重隐私）、OpenPanel（增加了产品分析）和 Umami（最轻量）。它们都符合 GDPR，并且可以免费自托管。Matomo 是最直接的替代方案，因为它追踪的指标与 GA4 类似。查看详细对比，请参见我们的[Google Analytics 替代方案页面](/zh-CN/compare/google-analytics-alternative)。准备迁移了吗？请按照我们的分步[迁移指南](/zh-CN/guides/migrate-from-google-analytics)操作。
+</FaqItem>
+
+<FaqItem question="我可以免费自托管开源分析工具吗？">
+可以。OpenPanel、PostHog、Plausible、Matomo、Umami、Ackee 和 Swetrix 都支持免费自托管。你唯一需要承担的成本是服务器基础设施，通常根据流量规模，VPS 每月费用在 $5-50 之间。自托管能让你完全拥有数据并掌控隐私。
+</FaqItem>
+
+<FaqItem question="最好的开源产品分析工具是什么？">
+对于开源产品分析（事件追踪、漏斗、留存、用户路径），首选是 OpenPanel 和 PostHog。OpenPanel 更实惠，自托管更简单，而 PostHog 提供了功能开关、实验和错误跟踪等额外能力。两者都支持免费自托管；云端方面，OpenPanel 提供 30 天免费试用，PostHog 提供每月 100 万事件的免费层。
+</FaqItem>
+
+<FaqItem question="哪些开源分析工具不使用 Cookie？">
+大多数现代开源分析工具从设计上就是无 Cookie 的。OpenPanel、Plausible、Umami、Pirsch、Fathom、Swetrix 和 Ackee 都是在不使用 Cookie 的情况下追踪的。Matomo 提供无 Cookie 追踪模式。PostHog 默认使用 Cookie，但可以配置为无 Cookie 追踪。无 Cookie 工具不需要同意横幅，这有助于改善用户体验并提高数据准确性。
+</FaqItem>
+
+<FaqItem question="开源分析安全吗？">
+开源分析可能比专有替代品更安全，因为代码可以公开审计。对于自托管方案，你的数据永远不会离开你的服务器。像 OpenPanel、Matomo 和 PostHog 这样的工具，从设计上就符合 GDPR 和 CCPA，并内置了 IP 匿名化和数据最小化等隐私功能。
+</FaqItem>
+</Faqs>

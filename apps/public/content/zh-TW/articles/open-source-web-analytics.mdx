@@ -1,0 +1,701 @@
+---
+title: "開源分析工具：2026 年隱私優先方案調查"
+description: "2026 年開源分析工具調查。比較 9 種選項的授權類型、託管模式，以及各工具最適合的使用情境——包含雲端託管與可自架版本。"
+date: 2024-11-10
+updated: 2026-04-28
+cover: /content/cover-best-web-analytics.jpg
+tag: 比較
+team: OpenPanel 團隊
+---
+import { Faqs, FaqItem } from '@/components/faq';
+import { Figure } from '@/components/figure'
+
+這是一份 2026 年的開源網站與產品分析工具調查。它涵蓋九種選項，具備不同的授權、託管模式與使用情境——從極簡的頁面瀏覽計數器到完整的產品分析平台。
+
+這是一份調查，不是購買指南。正確的選擇取決於你的需求。如果你已經決定要自架，並想在 4 款最適合正式上線的可自架工具中做比較，請參考我們的[自架網站分析比較](/zh-TW/articles/self-hosted-web-analytics)。如果你是在找 GA4 的替代方案，請參考我們的[Google Analytics 替代方案比較](/zh-TW/compare/google-analytics-alternative)與[遷移指南](/zh-TW/guides/migrate-from-google-analytics)。
+
+以下是所有 9 款工具的快速比較：
+
+| 工具 | 類型 | 授權 | 可自架 | 雲端價格（起） | 最適合 |
+|------|------|------|--------|----------------|--------|
+| [**OpenPanel**](#openpanel) | 網站 + 產品 | AGPL-3.0 | 免費 | $2.50/月 | 想要類似 Mixpanel 的分析、且偏好開源的團隊 |
+| [**PostHog**](#posthog) | 產品 + 網站 | MIT | 免費 | $0 + 用量 | 需要分析 + 標籤 + 實驗的開發者 |
+| [**Plausible**](#plausible) | 網站 | AGPL-3.0 | 免費 | $9/月 | 簡單、隱私優先的頁面瀏覽分析 |
+| [**Matomo**](#matomo) | 網站 | GPL-3.0 | 免費 | €29/月 | 功能完整的 Google Analytics 替代方案 |
+| [**Fathom**](#fathom) | 網站 | 專有 | 授權 | $15/月 | 想要零維護的隱私導向團隊 |
+| [**Umami**](#umami) | 網站 | MIT | 免費 | $0 + 用量 | 想要輕量、可自架分析的開發者 |
+| [**Ackee**](#ackee) | 網站 | MIT | 免費 | 無 | 極簡的自架追蹤 |
+| [**Pirsch**](#pirsch) | 網站 | AGPL-3.0 | 授權 | $6/月 | 無需 JavaScript 的伺服器端分析 |
+| [**Swetrix**](#swetrix) | 網站 | AGPL-3.0 | 免費 | $5/月 | 無 Cookie 且具效能監控的分析工具 |
+
+接下來，我們深入看每一款工具。
+
+## 「開源」在分析工具裡到底是什麼意思？
+
+「開源」涵蓋了授權、治理模式和功能限制都非常不同的工具。選擇前先確認三件事：
+
+**授權。** 這裡的工具分成寬鬆授權（MIT：Umami、PostHog、Ackee）與著作權相容授權（AGPL：OpenPanel、Plausible、Pirsch、Swetrix；GPL：Matomo）。MIT 允許你在其上分支並發佈閉源產品。AGPL 則要求你若將修改後的工具作為網路服務提供，就必須釋出修改內容。EUPL（GoatCounter）則是另一種授權，類似著作權相容授權。Fathom 之所以列在這裡，是因為它是常見的替代方案，但它完全是專有軟體，沒有公開原始碼。如果你在意授權義務，這點很重要。
+
+**單一供應商贊助 vs 社群。** 這些專案大多屬於單一供應商：由一家公司資助開發並提供付費雲端版本。OpenPanel、Plausible、Matomo、PostHog、Umami、Pirsch 和 Swetrix 都是如此。Ackee 則更接近社群專案。單一供應商專案推進較快，但 bus factor 風險也較集中。
+
+**託管 vs 只能自架。** 這裡大多數工具同時提供自架與付費雲端：OpenPanel、Plausible、Matomo、PostHog、Umami、Pirsch 和 Swetrix。Ackee 只提供自架，沒有官方雲端服務。Fathom 則相反——以專有雲端為主，另有可購買的自架授權。順帶一提 PostHog：完整自架目前僅有社群建置版本，且缺少部分雲端功能。
+
+**自架與雲端的功能一致性。** 這點差異很大。OpenPanel、Plausible、Matomo 和 Umami 在自架與雲端之間功能一致。PostHog 則不是。即使在自架版本中，Matomo 的進階功能（熱圖、A/B 測試）仍由付費外掛提供。不要因為「開源 = 功能完整」而直接下結論。
+
+## 選擇開源分析工具時要看什麼
+
+在挑選工具前，請考慮以下因素：
+
+- **網站分析 vs 產品分析** — 你只需要頁面瀏覽和流量來源，還是也需要事件追蹤、漏斗、留存與使用者旅程？
+- **自架 vs 雲端** — 自架能讓你完全掌控資料，而且通常免費，但你要維護伺服器。雲端更簡單，但要付費。
+- **隱私與合規** — 工具是否可在無 Cookie 下追蹤？是否從設計上就符合 GDPR/CCPA？
+- **部署難易度** — 有些工具幾分鐘就能上線，有些則需要真正的 DevOps 作業。
+- **社群與維護** — 專案是否持續維護？社群規模大不大？
+- **價格模式** — 依事件數、頁面瀏覽數，或固定費率？成本會如何隨成長而變化？
+
+## OpenPanel
+
+<Figure
+  src="/content/tools/openpanel.png"
+  caption="OpenPanel 的總覽頁面，讓你第一眼就能掌握網站分析狀況"
+/>
+
+### 摘要
+OpenPanel 將網站分析與產品分析整合在同一個開源工具中。你可以使用[event tracking](/zh-TW/features/event-tracking)、可自訂圖表、總覽儀表板、單一使用者與工作階段檢視、[funnels](/zh-TW/features/funnels)、[retention analysis](/zh-TW/features/retention)，以及適用於主流框架的 SDK。採用 AGPL-3.0 授權、無 Cookie 追蹤、從設計上就符合 GDPR。可免費自架，或使用 OpenPanel Cloud，並享有 30 天免費試用。（揭露：這是我們的產品。我們已盡量公平地與下方替代方案比較，但在選擇前仍建議你把所有選項都看完。）
+
+- 首頁：[**https://openpanel.dev**](https://openpanel.dev)
+- GitHub：[**https://github.com/Openpanel-dev/openpanel**](https://github.com/Openpanel-dev/openpanel)
+- 授權：**AGPL-3.0**
+- 評分：**5/5**
+- 折扣：首 3 個月 7 折：[使用折扣碼 **GOOGLE**](https://dashboard.openpanel.dev/onboarding)
+
+### 定價
+
+OpenPanel Cloud 提供 30 天免費試用，無需信用卡。試用結束後，你會根據每月事件量選擇對應方案。自架免費；基礎設施由你自行提供。
+
+| 每月事件數 | 價格（USD/月） |
+| ---------------- | ----------------- |
+| 最高 5,000      | $2.50             |
+| 最高 10,000     | $5                |
+| 最高 100,000    | $20               |
+| 最高 250,000    | $30               |
+| 最高 500,000    | $50               |
+| 最高 1,000,000  | $90               |
+| 最高 2,500,000  | $180              |
+| 最高 5,000,000  | $250              |
+| 最高 10,000,000 | $350              |
+| 最高 20,000,000 | $530              |
+| 最高 30,000,000 | $680              |
+| 最高 40,000,000 | $800              |
+| 最高 50,000,000 | $900              |
+
+> 所有 Cloud 方案都包含無限網站、無限儀表板、無限團隊成員、電子郵件與 Discord 支援，以及 5 年資料保留。不含加購項目或隱藏費用。
+
+### 優點
+- 開源且可自架——你掌控自己的資料
+- 將網站與產品分析整合在單一平台（同時取代 GA 與 Mixpanel）
+- 即時追蹤，沒有處理延遲
+- 無 Cookie、從設計上就符合 GDPR/CCPA——不需要同意橫幅
+- 30 天免費試用與依用量計費
+- 每個方案都包含全部功能，沒有加購限制
+
+### 缺點
+- 雲端成本會隨事件量增加
+- 自架需要伺服器設定與維護
+- 與 Matomo 或 PostHog 相比，專案較新、社群較小
+- 目前沒有內建熱圖
+
+### FAQ
+
+<Faqs>
+<FaqItem question="OpenPanel 在免費試用後的定價是怎麼運作的？">
+在 30 天免費試用期結束後，你會選擇涵蓋你每月事件量的方案。如果超過該方案上限，只要升級到下一級，或聯絡業務取得客製化企業方案即可。所有功能在每個價格層級都包含在內。
+</FaqItem>
+<FaqItem question="OpenPanel 可以取代哪些工具？">
+OpenPanel 可以透過在單一、隱私友善的平台中同時提供產品與網站分析，取代 Mixpanel、Amplitude 與 Google Analytics。它可追蹤事件、頁面瀏覽、使用者旅程、漏斗與留存，且完全不使用 Cookie。
+</FaqItem>
+<FaqItem question="OpenPanel 的開源版本包含哪些內容？">
+全部都有——自訂儀表板、圖表、即時檢視、使用者/工作階段下鑽、漏斗、留存，以及所有 SDK 都以 AGPL-3.0 授權釋出，沒有功能封鎖。自架版本與雲端版本完全一致。
+</FaqItem>
+<FaqItem question="OpenPanel 的主機需求是什麼？">
+對大多數專案而言，一台中階 VPS（約 4 vCPU、8 GB RAM、SSD）搭配 Docker Compose 就足夠。隨著事件量成長可垂直擴充。一台不錯的 VPS 每月約 $20-50，可處理數百萬次事件。
+</FaqItem>
+<FaqItem question="OpenPanel 有託管版本嗎？">
+有。OpenPanel Cloud 先提供 30 天免費試用（無需信用卡），之後切換為依用量分級——例如 10 萬事件每月 $20，或 100 萬事件每月 $90。
+</FaqItem>
+</Faqs>
+
+### OpenPanel 的替代方案
+**Plausible Analytics**
+- 開源、重視隱私的網站分析，採固定價格
+- 輕量、無 Cookie 追蹤與簡潔儀表板
+- 月費可預測，10,000 次頁面瀏覽起價 $9
+- 適合只需要核心網站指標、不需要產品分析的情境
+
+## PostHog
+
+<Figure
+  src="/content/tools/posthog.png"
+  caption="PostHog"
+/>
+
+> 查看詳細比較：[OpenPanel vs PostHog](/zh-TW/compare/posthog-alternative)
+
+### 摘要
+PostHog 是一個開源平台，把產品分析、工作階段重播、功能標籤、A/B 測試、錯誤追蹤與問卷調查全部整合在一起。它以開發者為核心，同時提供自架與免費雲端方案（每月 100 萬事件）。如果你想要一套能涵蓋產品開發所有需求的工具，PostHog 幾乎是最全面的選擇。
+
+- 首頁：[**https://posthog.com**](https://posthog.com)
+- GitHub：[**https://github.com/PostHog/posthog**](https://github.com/PostHog/posthog)
+- 授權：**MIT**
+- 評分：**4/5**
+
+### 定價
+
+PostHog 的免費方案包含每月 100 萬次分析事件、5,000 次工作階段錄影、100 萬次功能標籤請求等。超過免費額度後，採用依量遞減的計價方式：
+
+| 每月事件數 | 每事件成本 | 每月費用範例 |
+|---------------|---------------|---------------------|
+| 前 100 萬 | 免費 | $0 |
+| 100-200 萬 | $0.00005 | 約 $50 |
+| 200-1,500 萬 | $0.0000343 | 約 $396（以 1,200 萬計） |
+| 1,500-5,000 萬 | $0.0000295 | 費率遞減 |
+| 5,000-1 億 | $0.0000218 | 費率遞減 |
+| 1 億-2.5 億 | $0.000015 | 費率遞減 |
+
+匿名事件比已識別事件便宜 55-80%，可顯著降低成本。
+
+### 優點
+- 開源且適合自架——你保有完整資料控制權
+- 一站式套件：分析、重播、標籤、實驗、錯誤、問卷
+- 每月 100 萬事件的免費額度，適合小型專案
+- 活躍的開發者社群與頻繁版本更新
+
+### 缺點
+- 依用量計費，隨著規模成長較難預測
+- 自行營運自架實例需要真正的維運工作
+- 自架與雲端的功能並不一致
+- 功能多到可能讓小團隊感到負擔
+
+### FAQ
+
+<Faqs>
+<FaqItem question="PostHog 在免費額度之後如何計費？">
+PostHog 採用依量遞減的計價。前 100 萬事件免費，接下來每 100 萬事件每筆收費 $0.00005，之後隨著用量增加費率會再降低。每月傳送 1,200 萬事件的公司大約會支付 $393/月。
+</FaqItem>
+<FaqItem question="PostHog 和 OpenPanel 有什麼差別？">
+超過 100 萬事件後，OpenPanel 會比 PostHog 更划算，對成長中的專案來說是更具成本效益的選擇。PostHog 提供更廣泛的功能（標籤、實驗、問卷、錯誤追蹤），而 OpenPanel 則專注於網站與產品分析，具備更簡單的自架體驗，且雲端與自架功能完全一致。
+</FaqItem>
+<FaqItem question="PostHog 可以取代哪些工具？">
+透過整合產品分析、網站分析、工作階段重播、功能標籤、實驗、錯誤追蹤與問卷調查，PostHog 可以在同一套架構中取代 Mixpanel、Amplitude、Google Analytics、Hotjar/FullStory 與 LaunchDarkly。
+</FaqItem>
+<FaqItem question="開源版本包含哪些內容？">
+PostHog Open Source（MIT）幾乎包含所有功能，但每個實例僅限單一專案，且沒有正常運作保證。適合興趣專案或概念驗證。
+</FaqItem>
+<FaqItem question="自架有哪些需求？">
+團隊建議至少 4 vCPU、16 GB RAM 與 30 GB 以上儲存空間。自架最適合每月約 30 萬事件以下；超過後，PostHog Cloud 會替你處理擴充。
+</FaqItem>
+<FaqItem question="有託管版本嗎？">
+有。PostHog Cloud 提供免費方案（100 萬事件、5K 錄影、100 萬次標籤 API 請求），可選美國或歐盟資料駐留，超過免費額度後採用按量付費。
+</FaqItem>
+</Faqs>
+
+## Plausible
+
+<Figure
+  src="/content/tools/plausible.png"
+  caption="Plausible"
+/>
+
+> 查看詳細比較：[OpenPanel vs Plausible](/zh-TW/compare/plausible-alternative)
+
+### 摘要
+Plausible 是一個開源、重視隱私的網站分析工具，作為 Google Analytics 的輕量替代方案而設計。它在不使用 Cookie 或個人資料的情況下追蹤頁面瀏覽與自訂事件。你可以獲得即時報表、目標、自訂事件、電子郵件/Slack 報表，以及內建的 GDPR/CCPA 合規。若你想要簡單分析，而不想面對複雜性，這是很好的選擇。
+
+- 首頁：[**https://plausible.io**](https://plausible.io)
+- GitHub：[**https://github.com/plausible/analytics**](https://github.com/plausible/analytics)
+- 授權：**AGPL v3**
+- 評分：**4/5**
+
+### 定價
+
+Plausible 採用依流量計價，可按月或按年付款（年繳折抵 2 個月）。所有方案都包含無限資料保留、無限團隊成員、Google Analytics 匯入，以及所有核心功能。
+
+| 方案      | 每月頁面瀏覽數 | 月費 | 年費 | 網站數 | 資料保留 |
+|-----------|---------------------|-----------------|----------------|-------|----------------|
+| Starter   | 最高 10,000        | $9              | $90            | 1     | 無限      |
+| Growth    | 最高 100,000       | $14             | $140           | 3     | 無限      |
+| Business  | 最高 200,000       | $19             | $190           | 10    | 無限      |
+| Enterprise| 200,001+            | 客製化          | 客製化         | 10+   | 無限      |
+
+### 優點
+- 隱私優先——無 Cookie、無個人資料追蹤
+- 簡單儀表板，任何人都看得懂
+- 開源，提供免費自架選項與清楚定價
+- 輕量腳本（約 1 KB），不會拖慢網站
+
+### 缺點
+- 除了自架之外沒有免費方案
+- 流量增加時成本可能快速上升
+- 沒有產品分析功能（沒有[funnels](/zh-TW/features/funnels)、留存或使用者層級追蹤）
+- 沒有工作階段重播或熱圖
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Plausible 和 OpenPanel 有什麼差別？">
+兩者都提供重視隱私、開源、且容易自架的網站分析。OpenPanel 額外加入產品分析——事件追蹤、使用者旅程、漏斗與留存——因此同時涵蓋使用者行為與網站流量。如果你想要最簡單的分析，選 Plausible；如果你也需要產品分析，選 OpenPanel。
+</FaqItem>
+<FaqItem question="Plausible 如何保護使用者隱私？">
+Plausible 不使用 Cookie，也不收集個人資料。所有追蹤都經過彙總與匿名化處理，從設計上就符合 GDPR 與 CCPA。不需要同意橫幅。
+</FaqItem>
+<FaqItem question="Plausible 可以取代哪些工具？">
+Plausible 是 Google Analytics 與其他以頁面瀏覽為主追蹤工具的隱私優先替代方案，提供簡單儀表板，不會收集 Cookie 或個人資料。
+</FaqItem>
+<FaqItem question="開源版本包含哪些內容？">
+你在 Plausible Cloud 看到的一切——即時儀表板、目標、自訂事件、無限保留與團隊成員——也都包含在可自架的 AGPL 版本中。
+</FaqItem>
+<FaqItem question="有託管版本嗎？">
+有。Plausible Cloud 的 10K 頁面瀏覽方案每月 $9 起，採簡單、依流量計價。提供 30 天免費試用。
+</FaqItem>
+</Faqs>
+
+### Plausible 的替代方案
+**Umami**
+- Umami 幾乎是 Plausible 的 1 對 1 替代品，並採 MIT 授權
+- 每月 100 萬事件的免費雲端方案
+
+**OpenPanel**
+- 與 Umami 和 Plausible 類似，但同時加入產品分析
+
+## Matomo
+
+<Figure
+  src="/content/tools/matomo.png"
+  caption="Matomo"
+/>
+
+> 查看詳細比較：[OpenPanel vs Matomo](/zh-TW/compare/matomo-alternative)
+
+### 摘要
+Matomo（前稱 Piwik）是最成熟的開源網站分析平台，自 2007 年以來便持續發展，並被定位為 Google Analytics 的替代方案。你可以追蹤網站與行動裝置訪問、建立圖表與儀表板、設定目標、執行 A/B 測試、錄製工作階段、查看熱圖等。你完全擁有自己的資料，可免費自架或使用 Matomo Cloud。
+
+- 首頁：[**https://matomo.org**](https://matomo.org)
+- GitHub：[**https://github.com/matomo-org/matomo**](https://github.com/matomo-org/matomo)
+- 授權：**GNU GPL v3**
+- 評分：**4/5**
+
+### 定價
+
+| 方案         | 價格                            | 每月 hits 數        | 支援                                    | 網站數 | 資料保留 |
+| ------------ | -------------------------------- | --------------------- | ------------------------------------------ | -------- | -------------- |
+| On-Premise   | €0                               | 無限             | 免費社群支援或付費訂閱 | 無限| 永久        |
+| Cloud (50K)  | €29/月 或 €290/年           | 最高 50,000          | 電子郵件支援與 Customer Success Manager    | 30       | 24 個月      |
+
+更高用量（100K、300K、1M+ hits）請聯絡業務取得企業方案價格。
+
+### 優點
+- 最成熟的開源分析平台（自 2007 年起）
+- 完整資料所有權與 GDPR/CCPA 合規
+- 功能豐富：儀表板、A/B 測試、熱圖、工作階段錄影、漏斗
+- 免費自架方案，hits 與使用者數量無限制
+- 大型外掛生態系統
+
+### 缺點
+- 自架需要伺服器設定、維護，以及 PHP 知識
+- 雲端費用超過基本 50K 方案後會快速上升
+- 許多進階外掛（A/B 測試、熱圖等）即使在自架版本中也需要付費訂閱
+- 與新工具相比，介面可能顯得較舊
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Matomo Cloud 的 €29/月方案包含什麼？">
+每月 €29（或每年 €290）可獲得最高 50,000 hits、30 個網站、30 位團隊成員、24 個月原始資料保留、電子郵件支援與 Customer Success Manager。
+</FaqItem>
+<FaqItem question="Matomo 可以取代哪些工具？">
+Matomo 的設計目標是作為 Google Analytics 4 的直接、符合 GDPR 的替代方案。它涵蓋網站分析、電商追蹤與基本產品分析。
+</FaqItem>
+<FaqItem question="開源版本包含哪些內容？">
+自架版 Matomo 涵蓋使用者與事件追蹤、電商分析、區隔，以及可自訂儀表板。不過，進階加購項目（A/B 測試、熱圖、工作階段錄影）需額外付費。
+</FaqItem>
+<FaqItem question="自架需求是什麼？">
+每月約 100K 頁面瀏覽：2 CPU、2 GB RAM 與 50 GB SSD。超過 1M 頁面瀏覽時，Matomo 建議分開架設應用程式與資料庫伺服器。
+</FaqItem>
+<FaqItem question="有託管版本嗎？">
+有。Matomo Cloud 依「每月 hits」計費，並內建所有付費加購功能。方案從 50K hits 的 €29/月起。
+</FaqItem>
+</Faqs>
+
+### Matomo 的替代方案
+**Fathom Analytics**
+- 重視隱私、簡單、無 Cookie 或個人資料的分析
+- 固定月費（起價 $15/月），可追蹤無限網站
+- 設定容易，介面簡潔，聚焦核心指標
+
+## Fathom
+
+<Figure
+  src="/content/tools/fathom.png"
+  caption="Fathom"
+/>
+
+> 查看詳細比較：[OpenPanel vs Fathom](/zh-TW/compare/fathom-alternative)
+
+### 摘要
+Fathom 是一款重視隱私的網站分析工具，可在沒有 Cookie 或個人資料的情況下追蹤頁面瀏覽與事件。你可以獲得即時報表、無限資料保留、無限網站與簡潔儀表板。Fathom 並不是真正的開源工具（它是專有軟體，但可購買自架授權），之所以列在這裡，是因為它是相當受歡迎的隱私優先替代方案。
+
+- 首頁：[**https://usefathom.com**](https://usefathom.com)
+- GitHub：**沒有公開儲存庫**（專有）
+- 授權：**專有**（可購買自架授權）
+- 評分：**4/5**
+
+### 定價
+
+Fathom 依每月資料點數計費（頁面瀏覽 + 事件）。所有方案都包含無限網站、資料保留、電子郵件報表、匯出與支援。
+
+| 方案                   | 每月資料點數 | 月費 | 年費（省 17%） |
+| ---------------------- | ------------------- | --------------- | ----------------------- |
+| Starter                | 最高 100,000       | $15             | $150/年                 |
+| Growth                 | 最高 200,000       | $25             | $250/年                 |
+| Business               | 最高 500,000       | $45             | $450/年                 |
+| Scale                  | 最高 1,000,000     | $60             | $600/年                 |
+| Scale+                 | 最高 2,000,000     | $100            | $1,000/年               |
+| Enterprise Small       | 最高 5,000,000     | $140            | $1,400/年               |
+| Enterprise Medium      | 最高 10,000,000    | $200            | $2,000/年               |
+| Enterprise Large       | 最高 15,000,000    | $290            | $2,900/年               |
+| Enterprise X-Large     | 最高 20,000,000    | $380            | $3,800/年               |
+| Enterprise Custom      | 超過 25,000,000     | 聯絡業務   | 聯絡業務           |
+
+### 優點
+- 從設計上就不使用 Cookie，也不收集個人資料
+- 即時、簡潔的儀表板，聚焦核心指標
+- 每個方案都包含無限網站與資料保留
+- 提供 EU 隔離選項，利於 GDPR 合規
+
+### 缺點
+- **不是開源**——專有平台，沒有公開原始碼
+- 流量成長時成本線性上升
+- 沒有產品分析功能（沒有漏斗、留存或使用者追蹤）
+- 沒有工作階段重播或熱圖
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Fathom 在免費試用後怎麼計費？">
+Fathom 依資料點數分級計費。你會從符合你每月頁面瀏覽與事件量的方案開始，若超出配額就升級到下一級。
+</FaqItem>
+<FaqItem question="Fathom 和 OpenPanel 有什麼差別？">
+Fathom 是託管的專有服務，採分級定價，且只有網站分析。OpenPanel 則是開源且重視隱私，兼具網站與產品分析：即時檢視、個別[session tracking](/zh-TW/features/session-tracking)、漏斗、留存、圖表、無 Cookie 的 GDPR 合規，以及可免費自架的多種 SDK。
+</FaqItem>
+</Faqs>
+
+### Fathom 的替代方案
+**Simple Analytics**
+- 以固定費率提供隱私優先、無 Cookie 的分析
+- 只追蹤頁面瀏覽，重點在簡單易用
+- 沒有免費方案，但依網站數量計價可預期
+- 介面乾淨，設定容易，幾乎不用改程式碼
+
+## Umami
+
+<Figure
+  src="/content/tools/umami.png"
+  caption="Umami"
+/>
+
+> 查看詳細比較：[OpenPanel vs Umami](/zh-TW/compare/umami-alternative)
+
+### 摘要
+Umami 是一款開源、重視隱私的網站分析工具。它在沒有 Cookie 或個人資料的情況下追蹤頁面瀏覽與基本事件。其輕量腳本（約 2 KB）載入快速，預設即符合 GDPR/CCPA。它也是最簡單的自架開源工具之一，因此開發者常把它當成快速替代 Google Analytics 的方案。
+
+- 首頁：[**https://umami.is**](https://umami.is)
+- GitHub：[**https://github.com/umami-software/umami**](https://github.com/umami-software/umami)
+- 授權：**MIT**
+- 評分：**4/5**
+
+### 定價
+
+自架版 Umami 免費，網站與事件數量無限制，由你自行維護，並可透過社群取得支援。
+
+Umami Cloud 前 100 萬事件/月免費。超過後，每增加一筆事件收費 $0.00002。
+
+| 方案        | 價格                            | 每月免費額度 | 支援       | 保留期限  |
+| ----------- | -------------------------------- | ------------------- | ------------- | ---------- |
+| Self-host   | $0                               | 無限事件與網站 | 社群論壇 | 無限  |
+| Cloud       | $0 + 超過 100 萬事件後每筆 $0.00002  | 1,000,000 events    | 電子郵件支援 | 5 年    |
+
+### 優點
+- 開源（MIT）；可自架以完全掌控資料
+- 隱私優先——不使用 Cookie、不收集個人資料
+- 輕量追蹤腳本，不會拖慢網站
+- 使用 Docker Compose 很容易自架
+
+### 缺點
+- 僅限基本網站指標；沒有產品分析、工作階段重播或熱圖
+- 自行架設伺服器代表要負責維護與更新
+- 雲端在高事件量時成本會累積
+- 與 OpenPanel 或 PostHog 相比，進階功能較少
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Umami 在免費額度之後怎麼計費？">
+每月前 100 萬事件之後，Umami Cloud 對每個額外事件收取 $0.00002。沒有每網站或每使用者費用。
+</FaqItem>
+<FaqItem question="Umami 和 OpenPanel 有什麼差別？">
+Umami 是用於頁面瀏覽與基本事件的開源、無 Cookie 網站分析。OpenPanel 同樣開源且重視隱私，但還加入產品分析：即時儀表板、單一工作階段與使用者追蹤、漏斗、留存、事件圖表與多種 SDK，全部都無 Cookie 且符合 GDPR。
+</FaqItem>
+<FaqItem question="Umami 可以取代哪些工具？">
+Umami 主要是給想要無 Cookie、隱私優先的頁面瀏覽追蹤，而又不想要複雜性的團隊，作為 Google Analytics 的替代方案。
+</FaqItem>
+<FaqItem question="開源版本包含哪些內容？">
+沒有功能落差——漏斗、使用者路徑、留存與自訂事件都包含在 MIT 授權版本中。
+</FaqItem>
+<FaqItem question="自架需求是什麼？">
+需要一台安裝 Node 18+，並搭配 MySQL 8+ 或 PostgreSQL 12+ 的伺服器。官方 Docker Compose 範本讓部署更容易。
+</FaqItem>
+<FaqItem question="有託管版本嗎？">
+有。Umami Cloud 每月可免費追蹤最多 100 萬事件，之後每筆事件收費 $0.00002。
+</FaqItem>
+</Faqs>
+
+### Umami 的替代方案
+**GoatCounter**
+- 開源、重視隱私的分析工具，提供簡單的頁面瀏覽與事件追蹤
+- 可免費自架，或使用每月 €5 起的託管方案
+- 輕量腳本、不需要 Cookie、符合 GDPR
+- 設定非常簡單，固定費率可預測
+
+## Ackee
+
+<Figure
+  src="/content/tools/ackee.png"
+  caption="Ackee"
+/>
+
+> 查看詳細比較：[OpenPanel vs Ackee](/zh-TW/compare/ackee-alternative)
+
+### 摘要
+Ackee 是一款開源、可自架的網站分析工具，專注於隱私與極簡主義。它在你自己的伺服器上以 Node.js 和 MongoDB 運行，無 Cookie、無個人資料地追蹤頁面瀏覽與自訂事件，並以極簡介面呈現統計資料。它使用 GraphQL API，並預設將所有追蹤資料匿名化。
+
+- 首頁：[**https://ackee.electerious.com**](https://ackee.electerious.com)
+- GitHub：[**https://github.com/electerious/Ackee**](https://github.com/electerious/Ackee)
+- 授權：**MIT**
+- 評分：**4/5**
+
+### 定價
+
+Ackee 完全可以免費自架。你下載程式碼，在自己的伺服器上執行，網站數、頁面瀏覽數、團隊成員與資料保留都沒有限制。
+
+> _注意：沒有官方的 Ackee 託管服務。有些第三方供應商（例如 Elestio）提供代管 Ackee 主機，但價格依供應商而異。_
+
+### 優點
+- 開源且可免費自架——你掌控所有資料
+- 隱私優先：無 Cookie、匿名化追蹤、符合 GDPR/CCPA
+- 極簡 UI，載入速度快
+- GraphQL API，方便自訂整合與彈性查詢
+
+### 缺點
+- 只限基本指標（沒有漏斗、工作階段重播或熱圖）
+- 需要伺服器設定、維護與安全更新
+- 沒有官方託管方案——代管需仰賴第三方
+- 功能極少，不適合需要進階分析的團隊
+- 需要 MongoDB，增加複雜度
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Ackee 的定價怎麼算？">
+如果你自架，Ackee 永久免費。核心軟體沒有付費方案或用量費。你唯一的成本是執行它的伺服器基礎設施。
+</FaqItem>
+<FaqItem question="Ackee 和 OpenPanel 有什麼差別？">
+Ackee 是一款極簡、可自架的網站分析工具，可在無 Cookie 的情況下追蹤頁面瀏覽與基本事件。OpenPanel 同樣開源且重視隱私，但還加入產品分析：即時儀表板、單一工作階段與使用者追蹤、漏斗、留存、事件圖表與多種 SDK，並可在雲端或自架使用。
+</FaqItem>
+</Faqs>
+
+### Ackee 的替代方案
+**GoatCounter**
+- 開源且重視隱私，提供符合 GDPR、無 Cookie 的追蹤
+- 可免費自架，或使用每月 €5 起的託管方案
+- 簡單的頁面瀏覽與基本事件指標，固定費率可預測
+
+## Pirsch
+
+<Figure
+  src="/content/tools/pirsch.png"
+  caption="Pirsch"
+/>
+
+> 查看詳細比較：[OpenPanel vs Pirsch](/zh-TW/compare/pirsch-analytics-alternative)
+
+### 摘要
+Pirsch 是一款以 Go 開發的伺服器端、無 Cookie、重視隱私的網站分析工具。它會產生匿名化的訪客指紋，即使有廣告封鎖器也能運作，並符合 GDPR、CCPA 與 PECR。由於它是伺服器端追蹤，客戶端封鎖器不會影響它。
+
+- 首頁：[**https://pirsch.io**](https://pirsch.io)
+- GitHub：[**https://github.com/pirsch-analytics/pirsch**](https://github.com/pirsch-analytics/pirsch)
+- 授權：**AGPL-3.0**
+- 評分：**4/5**
+
+### 定價
+
+Pirsch 提供 30 天免費試用，無需信用卡。之後，方案會依每月頁面瀏覽數採用用量計價：
+
+| 方案            | 月費 | 年費 | 包含頁面瀏覽數 | 網站數  |
+|-----------------|---------------|--------------|--------------------|-----------|
+| Standard        | $6            | $60          | 最高 10,000       | 最高 50  |
+| Plus            | $12           | $120         | 客製化             | 無限 |
+| Enterprise      | 客製化        | 客製化       | 客製化             | 客製化    |
+
+Plus 方案新增漏斗、A/B 測試、自訂網域/主題、白標、優先支援與事件目標。
+
+### 優點
+- 伺服器端追蹤可繞過廣告封鎖器——取得更完整的資料
+- 隱私優先，預設不使用 Cookie 且資料匿名化
+- 輕量 Go 函式庫與多種 SDK（JS、PHP、Laravel 等）
+- 託管於德國伺服器上的歐盟地區（Hetzner）
+
+### 缺點
+- 自架需要企業授權（不是免費的）
+- 用量級距在流量成長時可能變得昂貴
+- 沒有工作階段重播或熱圖
+- 與 Plausible 或 Matomo 相比，社群較小
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Pirsch 在免費試用後怎麼計費？">
+30 天後，你會選擇符合你每月頁面瀏覽量的方案。如果超過包含的頁面瀏覽數，就升級到下一級，或聯絡業務取得企業選項。
+</FaqItem>
+<FaqItem question="Pirsch 和 OpenPanel 有什麼差別？">
+Pirsch 是以 Go 為基礎、伺服器端的服務，重點在於可抵抗廣告封鎖器的追蹤與歐盟託管。OpenPanel 則是開源、重視隱私且無 Cookie，兼具網站與產品分析：即時儀表板、單一工作階段/使用者追蹤、漏斗、留存，以及可免費自架的多種 SDK。
+</FaqItem>
+</Faqs>
+
+### Pirsch 的替代方案
+**Plausible Analytics**
+- 開源、無 Cookie 的網站分析，採固定定價模式
+- 簡單儀表板、即時資料與 GDPR/CCPA 合規
+- 可免費自架，或使用每月 $9 起、10,000 頁面瀏覽的託管方案
+
+
+## Swetrix
+
+<Figure
+  src="/content/tools/swetrix.png"
+  caption="Swetrix"
+/>
+
+### 摘要
+Swetrix 是一個以隱私與易用性為核心的開源、無 Cookie 網站分析平台。你可以追蹤頁面瀏覽、自訂事件、使用者流程與效能指標，而且完全不需要 Cookie 橫幅。它也包含網站效能監控，而這是這裡大多數其他工具所沒有的。
+
+- 首頁：[**https://swetrix.com**](https://swetrix.com)
+- GitHub：[**https://github.com/Swetrix/swetrix**](https://github.com/Swetrix/swetrix)
+- 授權：**AGPL-3.0**
+- 評分：**4/5**
+
+### 定價
+
+Swetrix 提供 14 天免費試用，無需信用卡。之後，你會根據每月事件數選擇方案：
+
+| 方案               | 每月事件數 | 價格（USD/月） |
+| ------------------ | ---------------- | ----------------- |
+| Basic              | 最高 10,000     | $5                |
+| Growth             | 最高 100,000    | $15               |
+| Pro                | 最高 200,000    | $25               |
+| Business           | 最高 500,000    | $45               |
+| Premium            | 最高 1,000,000  | $59               |
+| Enterprise Small   | 最高 2,000,000  | $84               |
+| Enterprise Medium  | 最高 5,000,000  | $110              |
+| Enterprise Large   | 最高 10,000,000 | $150              |
+| Enterprise X-Large | 超過 10,000,000  | 聯絡業務     |
+
+### 優點
+- 開源且可自架，完全掌控資料
+- 無 Cookie 追蹤，從設計上就符合 GDPR/CCPA
+- 內建網站效能監控（頁面載入時間、Core Web Vitals）
+- 簡單儀表板，包含使用者流程、警示與匯出功能
+
+### 缺點
+- 託管方案採用量計費，因此成本會隨流量上升
+- 自架需要設定、維護與主機基礎設施
+- 沒有工作階段重播或熱圖
+- 與較成熟工具相比，社群較小
+
+### FAQ
+
+<Faqs>
+<FaqItem question="Swetrix 在免費試用後怎麼計費？">
+14 天試用期結束後，你會選擇涵蓋你每月事件量的方案。如果超過方案上限，就升級到下一級，或聯絡業務取得客製化企業方案。
+</FaqItem>
+<FaqItem question="Swetrix 和 OpenPanel 有什麼差別？">
+Swetrix 是一款無 Cookie、開源的網站分析工具，提供頁面瀏覽、事件、效能監控與使用者流程。OpenPanel 也能做網站分析，但還加入產品分析：事件追蹤、漏斗、留存、單一使用者/工作階段檢視，以及多種 SDK，全部都無 Cookie 且符合 GDPR。
+</FaqItem>
+</Faqs>
+
+### Swetrix 的替代方案
+**Plausible Analytics**
+- 開源、隱私優先的網站分析，採固定定價
+- 追蹤頁面瀏覽與目標，不需要 Cookie
+- 可免費自架，或從每月 $9、10,000 頁面瀏覽的託管方案開始
+- 設定簡單、成本可預測
+
+## 定價比較：9 款工具一覽
+
+以下是在常見事件量下，各工具雲端/託管價格的比較：
+
+| 每月事件數 | OpenPanel | PostHog | Plausible | Matomo Cloud | Fathom | Umami Cloud | Pirsch | Swetrix |
+|---------------|-----------|---------|-----------|-------------|--------|-------------|--------|---------|
+| 10K | $5 | $0 | $9 | €29 | $15 | $0 | $6 | $5 |
+| 100K | $20 | $0 | $14 | €29 | $15 | $0 | ~$12+ | $15 |
+| 500K | $50 | $0 | ~$19+ | 客製化 | $45 | $0 | 客製化 | $45 |
+| 1M | $90 | $0 | 客製化 | 客製化 | $60 | $0 | 客製化 | $59 |
+| 5M | $250 | ~$187 | 客製化 | 客製化 | $140 | ~$80 | 客製化 | $110 |
+| 10M | $350 | ~$393 | 客製化 | 客製化 | $200 | ~$180 | 客製化 | $150 |
+
+*PostHog 和 Umami 都包含每月 100 萬免費事件。Plausible 以頁面瀏覽數計價，不是事件數。Matomo 以「hits」計價。實際價格可能不同——請向各供應商確認最新費率。*
+
+## 如何選擇適合的開源分析工具
+
+**如果你想要**以可負擔的價格同時擁有產品分析（漏斗、留存、使用者追蹤）與網站分析，**選 OpenPanel**。最適合新創與成長中的公司。
+
+**如果你需要**一套整合分析、功能標籤、實驗、錯誤追蹤與問卷調查的開發者平台，**選 PostHog**。最適合工程導向團隊。
+
+**如果你想要**最簡單的隱私優先網站分析，**選 Plausible**。只要乾淨的流量資料。最適合部落格、行銷網站與簡單的網頁專案。
+
+**如果你需要**成熟、功能完整的 Google Analytics 替代方案，並具備熱圖、工作階段錄影與 A/B 測試，**選 Matomo**。最適合從 GA4 轉移的大型企業。請參考我們完整的[Google Analytics 替代方案比較](/zh-TW/compare/google-analytics-alternative)以了解更詳細的差異。
+
+**如果你想要**一款輕量、MIT 授權、可最小化設定的自架工具，**選 Umami**。最適合只想在個人專案上取得基本分析的開發者。
+
+**如果你想要**不必自架、又簡單的隱私分析，**選 Fathom**。最適合想要零維護的商業用途。
+
+**如果你需要**能繞過廣告封鎖器的伺服器端追蹤，**選 Pirsch**。最適合追蹤準確性至關重要的網站。
+
+**如果你想要**把網站分析與效能監控整合在同一個工具中，**選 Swetrix**。最適合重視網站效能的團隊。
+
+**如果你想要**最極簡的自架方案，**選 Ackee**。最適合個人專案或只想降低維護成本的開發者。
+
+<Faqs>
+<FaqItem question="哪一款開源網站分析工具最好？">
+最好的開源網站分析工具取決於你的需求。若需要同時涵蓋網站與產品分析，OpenPanel 提供最高價值。若重視簡單，Plausible 很難被超越。若想要一個全方位的開發者平台，PostHog 最完整。若要成熟的 Google Analytics 替代方案，Matomo 的資歷最久。這四款都提供自架與 GDPR 合規。
+</FaqItem>
+
+<FaqItem question="Google Analytics 最好的開源替代方案是什麼？">
+Google Analytics 最好的開源替代方案包括 Matomo（功能最相近）、Plausible（最簡單且最重視隱私）、OpenPanel（加入產品分析）以及 Umami（最輕量）。它們都符合 GDPR，且可免費自架。Matomo 是最直接的替代品，因為它追蹤的指標與 GA4 類似。想看更詳細的比較，請參考我們的[Google Analytics 替代方案頁面](/zh-TW/compare/google-analytics-alternative)。準備切換了嗎？請依照我們逐步的[遷移指南](/zh-TW/guides/migrate-from-google-analytics)操作。
+</FaqItem>
+
+<FaqItem question="我可以免費自架開源分析工具嗎？">
+可以。OpenPanel、PostHog、Plausible、Matomo、Umami、Ackee 與 Swetrix 都提供免費自架。你唯一的成本是伺服器基礎設施，通常依流量量級，VPS 每月約 $5-50。自架能讓你完全擁有資料並掌控隱私。
+</FaqItem>
+
+<FaqItem question="最好的開源產品分析工具是什麼？">
+在開源產品分析（事件追蹤、漏斗、留存、使用者旅程）方面，首選是 OpenPanel 與 PostHog。OpenPanel 更實惠，也更容易自架；PostHog 則提供功能標籤、實驗與錯誤追蹤等額外功能。兩者都支援免費自架；雲端方面，OpenPanel 提供 30 天免費試用，PostHog 則有每月 100 萬事件的免費額度。
+</FaqItem>
+
+<FaqItem question="哪些開源分析工具不使用 Cookie？">
+大多數現代開源分析工具從設計上就是無 Cookie 的。OpenPanel、Plausible、Umami、Pirsch、Fathom、Swetrix 與 Ackee 都是在不使用 Cookie 的情況下追蹤。Matomo 提供無 Cookie 追蹤模式。PostHog 預設會使用 Cookie，但可以設定成無 Cookie 追蹤。無 Cookie 工具不需要同意橫幅，這有助於使用者體驗與資料準確度。
+</FaqItem>
+
+<FaqItem question="開源分析工具安全嗎？">
+開源分析工具通常比專有替代方案更安全，因為程式碼可公開審查。使用自架方案時，你的資料永遠不會離開自己的伺服器。OpenPanel、Matomo 與 PostHog 等工具從設計上就符合 GDPR 與 CCPA，並內建 IP 匿名化與資料最小化等隱私功能。
+</FaqItem>
+</Faqs>

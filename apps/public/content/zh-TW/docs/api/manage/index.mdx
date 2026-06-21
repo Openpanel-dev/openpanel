@@ -1,0 +1,28 @@
+---
+title: Manage API 總覽
+description: 以程式化方式管理 OpenPanel 組織中的專案、用戶端與參考點。
+---
+
+## 驗證
+
+Manage API 需要 **root** 用戶端。Root 用戶端具備整個組織的存取權限，並可管理所有資源。請參閱 [身分驗證](/zh-TW/docs/api/authentication) 指南。
+
+## 基礎 URL
+
+```
+https://api.openpanel.dev/manage
+```
+
+## 資源
+
+| 資源 | 說明 |
+|----------|-------------|
+| 專案 | 建立、更新與刪除分析專案 |
+| 用戶端 | 管理 API 用戶端（read / write / root）及其密鑰 |
+| 參考點 | 在分析時間軸上標記重要日期或事件 |
+
+## 速率限制
+
+每個用戶端每 10 秒 20 個請求。
+
+完整端點 schema 請參閱 [API 參考](/zh-TW/docs/api-reference)。

@@ -1,0 +1,245 @@
+---
+title: "如何將 session replay 加到你的網站"
+description: "使用 OpenPanel 在幾分鐘內為任何網站加入以隱私優先的 session replay。精準查看使用者做了什麼，同時不錄製敏感資料。"
+difficulty: beginner
+timeToComplete: 10
+date: 2026-02-27
+updated: 2026-02-27
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安裝 OpenPanel"
+    anchor: "install"
+  - name: "啟用 session replay"
+    anchor: "enable"
+  - name: "設定隱私控制"
+    anchor: "privacy"
+  - name: "在儀表板中查看回放"
+    anchor: "view"
+---
+
+# 如何將 session replay 加到你的網站
+
+本指南會帶你透過 OpenPanel 啟用 [session replay](/features/session-replay)。完成後，你就能錄製真實使用者的工作階段，並在儀表板中播放，精準理解使用者做了什麼。
+
+session replay 會以結構化資料記錄點擊、捲動與互動，而不是影片。內建隱私控制，而且 replay 模組會以非同步方式載入，因此不會拖慢你的主要分析功能。
+
+## 先決條件
+
+- OpenPanel 帳號
+- 來自 [OpenPanel 儀表板](https://dashboard.openpanel.dev/onboarding) 的 Client ID
+- 已安裝 `@openpanel/web` npm 套件，或可在你的網站加入 script tag
+
+## 安裝 OpenPanel [#install]
+
+如果你是從零開始，請把 OpenPanel script tag 加到你的頁面。如果你已經安裝 OpenPanel，請跳到下一步。
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+或者使用 npm：
+
+```bash
+npm install @openpanel/web
+```
+
+請參閱 [Web SDK 文件](/docs/sdks/web) 或 [Script tag 文件](/docs/sdks/script) 取得完整安裝指南。
+
+## 啟用 session replay [#enable]
+
+Session replay 預設是**關閉**的。請在初始化設定中加入 `sessionReplay: { enabled: true }` 來啟用。
+
+### Script tag
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    sessionReplay: {
+      enabled: true,
+    },
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+replay script (`op1-replay.js`) 會隨主程式自動抓取。因為它是非同步載入，所以不會影響頁面載入時間，也不會增加主要分析 bundle 的大小。
+
+### NPM 套件
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  sessionReplay: {
+    enabled: true,
+  },
+});
+```
+
+使用 npm 套件時，replay 模組會以由你的 bundler 解析的動態 import 方式載入。它會自動從主 bundle 中拆分出去——如果你沒有啟用 replay，這個模組就不會被包含。
+
+### Next.js
+
+對於 Next.js，請在你的 `OpenPanelComponent` 中啟用 replay：
+
+```tsx title="app/layout.tsx"
+import { OpenPanelComponent } from '@openpanel/nextjs';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <OpenPanelComponent
+          clientId="YOUR_CLIENT_ID"
+          trackScreenViews={true}
+          sessionReplay={{
+            enabled: true,
+          }}
+        />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+## 設定隱私控制 [#privacy]
+
+Session replay 會捕捉真實使用者行為，因此控制哪些內容會被記錄非常重要。OpenPanel 提供多層控制。
+
+### 輸入遮罩（預設啟用）
+
+所有表單輸入值預設都會被遮罩。錄製器只會知道使用者輸入了內容，但不會知道輸入了什麼。你不需要為密碼或信用卡欄位額外加特殊屬性——它們會自動被遮罩。
+
+如果你需要針對特定情境停用遮罩：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  maskAllInputs: false,
+}
+```
+
+### 封鎖敏感元素
+
+具有 `data-openpanel-replay-block` 的元素會在 replay 中以灰色佔位符取代。該元素及其所有子元素都會完全排除在錄製之外。
+
+```html
+<!-- 這個區塊會在 replays 中顯示為佔位符 -->
+<div data-openpanel-replay-block>
+  <img src="user-avatar.jpg" alt="個人照片" />
+  <p>私人使用者內容</p>
+</div>
+```
+
+你也可以設定 CSS selector 或 class 來封鎖，而不必為每個元素都加 data attribute：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  blockSelector: '.payment-form, .user-profile-card',
+  blockClass: 'no-replay',
+}
+```
+
+### 遮罩特定文字
+
+若想遮罩元素內的文字，但不想影響其在 replay 中的版面配置，可以使用 `data-openpanel-replay-mask`：
+
+```html
+<p>
+  帳戶餘額：
+  <span data-openpanel-replay-mask>$1,234.56</span>
+</p>
+```
+
+該 span 的文字會在 replay 中顯示為 `***`，而周圍版面仍會保留可見。
+
+你也可以設定自訂 selector，避免為每個元素都加屬性：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  maskTextSelector: '.balance, .account-number, [data-pii]',
+}
+```
+
+### 忽略互動
+
+使用 `ignoreSelector` 來防止特定元素的互動被捕捉。這些元素仍會顯示在 replay 中，但其上的點擊與輸入事件不會被記錄。
+
+```ts
+sessionReplay: {
+  enabled: true,
+  ignoreSelector: '.internal-debug-toolbar',
+}
+```
+
+## 在儀表板中查看回放 [#view]
+
+前往你的 [OpenPanel 儀表板](https://dashboard.openpanel.dev) 並開啟 Sessions 檢視。任何已錄製的工作階段都會顯示 replay 按鈕。點擊它即可從頭播放該工作階段。
+
+replay 時間軸會將所有事件與錄製內容並列顯示，讓你可以直接跳到某次點擊、表單提交或頁面導覽。
+
+你也可以從使用者個人資料中存取 replays。開啟任一使用者的個人資料，找到其歷史中的某個工作階段，然後點進 replay。
+
+## 效能考量
+
+replay 錄製器會先在本機緩衝事件，並每 10 秒分批送到 OpenPanel（可透過 `flushIntervalMs` 設定）。當分頁關閉或頁面隱藏時，任何尚未送出的緩衝事件都會立即送出。
+
+預設的分批大小限制為：
+- **每批 200 個事件**（`maxEventsPerChunk`）
+- **每個 payload 1 MB**（`maxPayloadBytes`）
+
+這些預設值對大多數網站都很適合。如果你的頁面 DOM 活動很頻繁，可以降低 `maxEventsPerChunk`，讓傳送的批次更小、頻率更高：
+
+```ts
+sessionReplay: {
+  enabled: true,
+  flushIntervalMs: 5000,
+  maxEventsPerChunk: 100,
+}
+```
+
+## 下一步
+
+- 閱讀 [session replay 文件](/docs/session-replay) 取得完整選項參考
+- 了解 [session tracking](/features/session-tracking)，掌握在不使用 replay 的情況下可取得哪些 session 資料
+- 查看 [funnel](/features/funnels) 與 session replay 如何一起運作來診斷流失
+
+<Faqs>
+<FaqItem question="Session replay 會影響我的頁面載入速度嗎？">
+不會。replay 模組（`op1-replay.js`）會在頁面與主分析 script 之後，以獨立的 async script 載入。它不會阻塞渲染，也不會增加你的主 bundle 大小。
+</FaqItem>
+
+<FaqItem question="所有使用者都會啟用 session replay 嗎？">
+是的，啟用後，預設會錄製所有工作階段。如有需要，你可以使用 `sampleRate` 選項只錄製部分百分比的工作階段。
+</FaqItem>
+
+<FaqItem question="密碼和信用卡號碼會被錄製嗎？">
+不會。所有輸入欄位值預設都會被遮罩（`maskAllInputs: true`）。錄製器只會捕捉到使用者輸入了內容，而不會記錄實際字元。只有在有明確理由時才應停用此功能。
+</FaqItem>
+
+<FaqItem question="replays 會保存多久？">
+replays 會保留 30 天。錄製的工作階段數量沒有限制。
+</FaqItem>
+
+<FaqItem question="我可以在自架的 OpenPanel 上使用 session replay 嗎？">
+可以。replay script 會自動從你的自架執行個體提供。你也可以使用 `scriptUrl` 選項，從自訂 CDN 載入。
+</FaqItem>
+</Faqs>

@@ -1,0 +1,217 @@
+---
+title: Ruby
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+OpenPanel Ruby SDK 可讓你在 Ruby 應用程式中追蹤使用者行為。本指南提供在專案中安裝與使用 Ruby SDK 的說明。
+
+<Callout>
+查看 [GitHub 上的 Ruby SDK](https://github.com/tstaetter/openpanel-ruby-sdk) 以取得最新更新與原始碼。
+</Callout>
+
+## 安裝
+
+<Steps>
+### 安裝相依套件
+
+如果你使用 Bundler，請加入到 `Gemfile`：
+
+```bash
+bundle add openpanel-sdk
+```
+
+或者直接安裝 gem：
+
+```bash
+gem install openpanel-sdk
+```
+
+### 設定環境變數
+
+在 `.env` 檔案中設定你的環境變數：
+
+```bash
+OPENPANEL_TRACK_URL=https://api.openpanel.dev/track
+OPENPANEL_CLIENT_ID=<YOUR_CLIENT_ID>
+OPENPANEL_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
+```
+
+### 初始化
+
+引入並初始化 OpenPanel SDK：
+
+```ruby
+require 'openpanel-sdk'
+
+tracker = OpenPanel::SDK::Tracker.new
+```
+
+### 設定選項
+
+<CommonSdkConfig />
+
+Ruby 相關的其他選項：
+
+- `disabled` - 設為 `true` 可停用所有 [事件追蹤](/zh-TW/features/event-tracking)
+- `env` - 環境名稱（例如 `Rails.env.to_s`）
+
+```ruby
+tracker = OpenPanel::SDK::Tracker.new(
+  { env: Rails.env.to_s },
+  disabled: Rails.env.development?
+)
+```
+
+</Steps>
+
+## 使用方式
+
+### 追蹤事件
+
+要追蹤事件，請使用 `track` 方法：
+
+```ruby
+tracker.track('test_event', payload: { name: 'test' })
+```
+
+### 識別使用者
+
+建立 `IdentifyUser` 物件並傳給 `identify` 方法：
+
+```ruby
+identify_user = OpenPanel::SDK::IdentifyUser.new
+identify_user.profile_id = 'user_123'
+identify_user.email = 'user@example.com'
+identify_user.first_name = 'John'
+identify_user.last_name = 'Doe'
+identify_user.properties = { tier: 'premium', company: 'Acme Inc' }
+
+response = tracker.identify(identify_user)
+```
+
+### 增加屬性值
+
+要增加使用者設定檔中的數值屬性：
+
+```ruby
+tracker.increment_property(identify_user, 'visits', 1)
+```
+
+### 減少屬性值
+
+要減少使用者設定檔中的數值屬性：
+
+```ruby
+tracker.decrement_property(identify_user, 'credits', 1)
+```
+
+### 篩選事件
+
+篩選器可用於在某些情況下避免將事件送到 OpenPanel。你可以將 `filter` lambda 傳給 `track` 方法來篩選事件：
+
+```ruby
+filter = lambda { |payload|
+  # 回傳 true 會送出事件，false 則略過
+  payload[:name] == 'test'
+}
+
+response = tracker.track('test_event', payload: { name: 'test' }, filter: filter)
+# 如果 filter 回傳 false，response 會是 nil
+```
+
+## Rails 整合
+
+### 設定 Tracker
+
+將以下內容加入你的 `application_controller.rb`：
+
+```ruby
+before_action :set_openpanel_tracker
+
+protected
+
+def set_openpanel_tracker
+  @openpanel_tracker = OpenPanel::SDK::Tracker.new(
+    { env: Rails.env.to_s },
+    disabled: Rails.env.development?
+  )
+  @openpanel_tracker.set_header 'x-client-ip', request.ip
+  @openpanel_tracker.set_header 'user-agent', request.user_agent
+end
+```
+
+### 在 Controllers 中追蹤事件
+
+在你的 controllers 中使用 `@openpanel_tracker` 來追蹤事件：
+
+```ruby
+def create
+  @user = User.create(user_params)
+  @openpanel_tracker.track('user_created', payload: { user_id: @user.id })
+  redirect_to @user
+end
+```
+
+### 識別使用者
+
+建立 helper method，將應用程式的 user model 轉換為 `IdentifyUser`：
+
+```ruby
+def identify_user_from_app_user(user, properties: {})
+  iu = OpenPanel::SDK::IdentifyUser.new
+  iu.profile_id = user.id.to_s
+  iu.email = user.email
+  iu.first_name = user.first_name
+  iu.last_name = user.last_name
+  iu.properties = properties
+  iu
+end
+
+# 在 controller 中的使用方式
+def show
+  iu = identify_user_from_app_user(current_user)
+  @openpanel_tracker.identify(iu)
+end
+```
+
+## 進階使用
+
+### 設定自訂標頭
+
+你可以為請求設定自訂標頭：
+
+```ruby
+tracker.set_header 'x-client-ip', request.ip
+tracker.set_header 'user-agent', request.user_agent
+```
+
+### 錯誤處理
+
+SDK 會回傳 `Faraday::Response` 物件。請檢查 response status：
+
+```ruby
+response = tracker.track('event', payload: { name: 'test' })
+if response&.status == 200
+  puts 'Event tracked successfully'
+else
+  puts "Failed to track event: #{response&.status}"
+end
+```
+
+### 停用追蹤
+
+你可以在初始化期間或特定環境中停用追蹤：
+
+```ruby
+# Disable during initialization
+tracker = OpenPanel::SDK::Tracker.new({}, disabled: true)
+
+# Or disable in development
+tracker = OpenPanel::SDK::Tracker.new(
+  { env: Rails.env.to_s },
+  disabled: Rails.env.development?
+)
+```

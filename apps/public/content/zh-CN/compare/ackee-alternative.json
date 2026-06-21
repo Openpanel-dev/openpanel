@@ -1,0 +1,554 @@
+{
+  "slug": "ackee-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026年最佳 Ackee 替代方案 - 开源且免费",
+    "description": "正在寻找 Ackee 替代方案？OpenPanel 提供更深入的产品分析，包括漏斗、留存和用户识别——还支持云端和自托管选项。开源且可免费开始使用。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Ackee 替代方案",
+    "subheading": "喜欢 Ackee 的隐私优先理念和简单的自托管方式？OpenPanel 在此基础上增加了产品分析能力——漏斗、用户群组、留存和用户识别——并采用为 масштаб 扩展而构建的现代架构。",
+    "badges": [
+      "开源",
+      "隐私优先",
+      "产品分析",
+      "可自托管"
+    ]
+  },
+  "competitor": {
+    "name": "Ackee",
+    "logo": "/logos/ackee.svg",
+    "url": "https://ackee.electerious.com",
+    "short_description": "极简、自托管、注重隐私的 Web 分析，支持匿名跟踪和简洁界面。",
+    "founded": 2016,
+    "headquarters": "德国"
+  },
+  "overview": {
+    "title": "为什么考虑用 OpenPanel 替代 Ackee？",
+    "paragraphs": [
+      "Ackee 是一款极简的自托管分析工具，强调匿名跟踪和简洁界面。它基于 MongoDB 构建，对于想在自己的服务器上获取基础 Web 指标、又不希望与第三方共享数据的开发者来说，是一个不错的选择。但这种刻意的极简也意味着：没有用户识别、没有产品分析，也没有云托管选项。",
+      "OpenPanel 提供了 Ackee 所有的能力——注重隐私、开源、可自托管——并加入了帮助你真正增长产品的产品分析功能。漏斗可帮助你了解用户在哪些环节流失，留存分析展示他们是否会回访，而用户识别则能在用户登录后把匿名访问关联到真实账号。",
+      "数据库架构是一个根本区别。Ackee 使用 MongoDB，适合小型站点，但并不是为分析查询而设计的。OpenPanel 使用 ClickHouse，这是一款为分析而生的列式数据库，即使面对数百万事件也能保持快速查询。并且，如果你不想管理服务器，OpenPanel 还提供托管云服务（30 天试用，之后每月起价 $2.50）——这是 Ackee 不提供的。",
+      "如果你欣赏 Ackee 的自托管简洁性，但需要通过原生 SDK 做移动应用分析、对用户行为有更深入的洞察，或者希望使用托管云服务，OpenPanel 就是自然的升级路径。自托管同样简单：只需一个命令的 `./setup` 向导即可引导你完成配置，并在几分钟内启动整个 Docker Compose 栈。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Ackee：哪个更适合你？",
+    "intro": "两者都是注重隐私的开源分析工具。Ackee 专注于带匿名跟踪的简单 Web 指标。OpenPanel 则加入了带用户识别的产品分析能力。",
+    "one_liner": "Ackee 是极简 Web 分析；OpenPanel 增加了漏斗、留存和用户识别等产品分析功能。",
+    "best_for_openpanel": [
+      "需要产品分析的团队（漏斗、留存、用户群组）",
+      "需要用户识别和跟踪的应用",
+      "需要借助 ClickHouse 架构扩展规模的项目",
+      "支持原生 iOS、Android、React Native SDK 的移动应用分析"
+    ],
+    "best_for_competitor": [
+      "想要简单统计信息的个人博客和小型站点",
+      "希望完全不进行用户识别的隐私极致主义者",
+      "熟悉 GraphQL API 自定义的开发者",
+      "可以在 MongoDB 上运行分析的站点"
+    ]
+  },
+  "highlights": {
+    "title": "关键差异一览",
+    "intro": "以下是 OpenPanel 和 Ackee 在最重要因素上的对比。",
+    "items": [
+      {
+        "label": "分析深度",
+        "openpanel": "Web + 产品分析",
+        "competitor": "仅 Web 分析",
+        "notes": "OpenPanel 将 Web 分析与产品分析结合起来——漏斗、留存、用户群组和用户画像。Ackee 提供页面浏览量、来源和停留时长等基础 Web 指标。"
+      },
+      {
+        "label": "用户识别",
+        "openpanel": "是 - 跟踪单个用户",
+        "competitor": "否 - 仅匿名汇总",
+        "notes": "OpenPanel 可在不同会话之间识别并跟踪单个用户。Ackee 会刻意匿名化所有数据，无法按单个页面追踪回访用户。"
+      },
+      {
+        "label": "数据库架构",
+        "openpanel": "ClickHouse（针对分析优化）",
+        "competitor": "MongoDB（通用型）",
+        "notes": "OpenPanel 使用 ClickHouse，专为分析查询而设计。Ackee 使用 MongoDB，适合小型站点，但在高流量分析负载下可能会吃力。"
+      },
+      {
+        "label": "部署选项",
+        "openpanel": "云端 + 自托管",
+        "competitor": "仅自托管",
+        "notes": "OpenPanel 同时提供托管云和自托管选项。Ackee 仅支持自托管——你必须运行自己的服务器和 MongoDB 实例。"
+      },
+      {
+        "label": "开源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "是（MIT 许可证）",
+        "notes": "OpenPanel 采用 AGPL-3.0；Ackee 采用 MIT——两者都完全开源，允许完整查看和修改代码。"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能对比",
+    "intro": "两者都是开源且注重隐私，但能力深度不同。",
+    "groups": [
+      {
+        "group": "Web 分析",
+        "features": [
+          {
+            "name": "页面浏览量",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "来源",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "访问时长",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee 通过持续更新记录来跟踪时长"
+          },
+          {
+            "name": "设备与浏览器",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee 需要启用“详细”模式才能获得完整设备信息"
+          },
+          {
+            "name": "屏幕尺寸",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee 需要启用“详细”模式"
+          },
+          {
+            "name": "实时仪表板",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee 会实时显示活跃访客"
+          }
+        ]
+      },
+      {
+        "group": "产品分析",
+        "features": [
+          {
+            "name": "自定义事件跟踪",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee 支持带键值数据的自定义事件"
+          },
+          {
+            "name": "漏斗分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee 没有漏斗可视化或分析功能"
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee 由于设计原因无法跟踪回访用户"
+          },
+          {
+            "name": "用户画像",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee 会刻意匿名化所有用户数据"
+          },
+          {
+            "name": "用户群组分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee 的匿名模型不支持用户群组"
+          },
+          {
+            "name": "用户路径分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee 无法重建用户浏览历史"
+          }
+        ]
+      },
+      {
+        "group": "高级功能",
+        "features": [
+          {
+            "name": "A/B 测试",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee 仅用于分析，不支持实验功能"
+          },
+          {
+            "name": "GraphQL API",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Ackee 的整个 UI 由其 GraphQL API 驱动"
+          },
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel 使用 REST；Ackee 仅使用 GraphQL"
+          },
+          {
+            "name": "邮件报告",
+            "openpanel": false,
+            "competitor": false,
+            "notes": "两者都不提供定时邮件报告。OpenPanel 通过 Slack、Discord、webhook 和站内消息发送实时提醒；Ackee 没有内置报告功能。"
+          },
+          {
+            "name": "多个域名",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都支持单实例管理无限域名"
+          },
+          {
+            "name": "忽略自身访问",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee 可以忽略已登录仪表板的访问"
+          }
+        ]
+      },
+      {
+        "group": "隐私与合规",
+        "features": [
+          {
+            "name": "默认无 Cookie",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者默认都不使用 Cookie"
+          },
+          {
+            "name": "无需同意横幅",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都声称基础分析不需要同意"
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee 使用每日轮换盐值哈希进行匿名化"
+          },
+          {
+            "name": "数据匿名化",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee 使用多步骤匿名化并每日轮换盐值"
+          },
+          {
+            "name": "可自托管选项",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee 仅支持自托管；OpenPanel 提供两种方式"
+          },
+          {
+            "name": "EU 数据驻留",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都可以托管在任何地方；Ackee 要求自托管"
+          }
+        ]
+      },
+      {
+        "group": "集成与 SDK",
+        "features": [
+          {
+            "name": "JavaScript SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "ackee-tracker 可通过 npm 或自托管方式使用"
+          },
+          {
+            "name": "React 集成",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "use-ackee React Hook 可用"
+          },
+          {
+            "name": "Vue/Nuxt 集成",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "nuxt-ackee 模块可用"
+          },
+          {
+            "name": "Gatsby 插件",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "gatsby-plugin-ackee-tracker 可用"
+          },
+          {
+            "name": "原生 iOS SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee 仅面向 Web"
+          },
+          {
+            "name": "原生 Android SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee 没有官方移动 SDK"
+          },
+          {
+            "name": "WordPress 插件",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "WordPress 可用 Soapberry 插件"
+          },
+          {
+            "name": "Flutter/Dart SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel 有社区 Flutter SDK；Ackee 有 ackee_dart 社区包"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技术对比",
+    "intro": "对于评估分析工具的开发者，以下是实现层面的对比。",
+    "items": [
+      {
+        "label": "SDK 大小",
+        "openpanel": "2.3 KB（gzipped）",
+        "competitor": "~6 KB（gzipped），由你的 Ackee 实例提供",
+        "notes": null
+      },
+      {
+        "label": "平台",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "Ruby",
+          "Java",
+          "Rust",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript（浏览器）",
+          "React（use-ackee）",
+          "Nuxt.js",
+          "Vue",
+          "Gatsby",
+          "Svelte",
+          "Angular",
+          "WordPress",
+          "Dart/Flutter"
+        ],
+        "notes": null
+      },
+      {
+        "label": "开源",
+        "openpanel": "是 - AGPL-3.0",
+        "competitor": "是 - MIT 许可证",
+        "notes": "OpenPanel 采用 AGPL-3.0；Ackee 采用 MIT。两者都完全开源。"
+      },
+      {
+        "label": "自托管",
+        "openpanel": "Docker Compose（ClickHouse + Postgres + Redis），带引导式安装向导",
+        "competitor": "需要 Docker 和 MongoDB，或与 MongoDB Atlas 一起部署到 Vercel/Netlify/Heroku",
+        "notes": null
+      },
+      {
+        "label": "数据库",
+        "openpanel": "ClickHouse（列式，针对分析优化）",
+        "competitor": "MongoDB（文档数据库）",
+        "notes": null
+      },
+      {
+        "label": "数据保留",
+        "openpanel": "无限制（自托管），可配置（云端）",
+        "competitor": "无限制（取决于你的 MongoDB 存储）",
+        "notes": null
+      },
+      {
+        "label": "语言",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "Node.js",
+        "notes": null
+      },
+      {
+        "label": "API",
+        "openpanel": "REST API",
+        "competitor": "GraphQL API",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "价格对比",
+    "intro": "两者都提供免费的自托管。OpenPanel 还提供托管云选项。",
+    "openpanel": {
+      "model": "基于事件，透明定价",
+      "description": "定价透明，每月 $2.50 起可处理 5,000 个事件，并提供 30 天免费试用。自托管可免费使用且不限事件量。所有层级都包含全部功能。"
+    },
+    "competitor": {
+      "model": "100% 免费（仅自托管）",
+      "description": "完全免费——没有付费层级。你只需为自己的基础设施付费（MongoDB 和服务器托管）。MongoDB Atlas 免费层（512MB）适合小型站点。",
+      "free_tier": "自托管：永久免费，无付费选项",
+      "pricing_url": null
+    }
+  },
+  "migration": {
+    "title": "从 Ackee 迁移到 OpenPanel",
+    "intro": "从 Ackee 切换到 OpenPanel 很简单。两者都很轻量，集成方式也相似。",
+    "difficulty": "容易",
+    "estimated_time": "30 分钟到 2 小时",
+    "steps": [
+      {
+        "title": "安装 OpenPanel SDK",
+        "description": "将 OpenPanel SDK 添加到你的应用中。用 OpenPanel 轻量级跟踪代码替换 ackee-tracker 脚本。"
+      },
+      {
+        "title": "将事件映射到 OpenPanel",
+        "description": "Ackee 事件可映射为 OpenPanel 事件。将 instance.action() 调用替换为 op.track() - 结构很相似。"
+      },
+      {
+        "title": "添加用户识别（新增）",
+        "description": "与 Ackee 不同，OpenPanel 可以识别用户。添加 op.identify() 调用即可解锁留存、用户群组和用户画像——这是对 Ackee 仅匿名模式的一次重大升级。"
+      },
+      {
+        "title": "配置仪表板",
+        "description": "设置你的 OpenPanel 仪表板。你现在将能够使用 Ackee 中无法实现的漏斗、留存图表和用户群组分析。"
+      },
+      {
+        "title": "移除 Ackee",
+        "description": "验证无误后，移除 Ackee 跟踪脚本，并可选择停用你的 Ackee 服务器和 MongoDB 实例。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "两者都使用简单的事件跟踪 API。Ackee 的 instance.action() 对应 OpenPanel 的 op.track()。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Ackee 会刻意匿名化数据，这使得历史导入具有挑战性。大多数团队会从 OpenPanel 重新开始。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 Ackee 更适合的场景",
+    "intro": "当你需要的不只是简单的 Web 统计时，选择 OpenPanel——包括漏斗、留存、用户识别和可扩展性。",
+    "items": [
+      {
+        "title": "超越 MongoDB 的扩展",
+        "description": "Ackee 使用 MongoDB，适合小型站点，但并未针对大规模分析查询进行优化。OpenPanel 的 ClickHouse 后端是为分析工作负载而设计的。",
+        "icon": "trending-up"
+      },
+      {
+        "title": "需要产品分析的团队",
+        "description": "Ackee 只提供基础 Web 指标。如果你需要漏斗、留存分析、用户群组细分或用户旅程映射，OpenPanel 在保持隐私的同时提供这些能力。",
+        "icon": "bar-chart"
+      },
+      {
+        "title": "想要云端选项",
+        "description": "Ackee 仅支持自托管，没有托管云选项。如果你想在不管理服务器、MongoDB 和备份的情况下使用分析，OpenPanel 提供带 30 天免费试用的托管云（之后每月起价 $2.50）。",
+        "icon": "cloud"
+      },
+      {
+        "title": "需要用户识别的应用",
+        "description": "Ackee 有意无法识别用户或跟踪回访访客。如果你需要了解单个用户行为或衡量留存，OpenPanel 提供这些功能。",
+        "icon": "user-check"
+      },
+      {
+        "title": "移动应用分析",
+        "description": "Ackee 只为网站设计，没有官方移动 SDK。OpenPanel 提供适用于 iOS、Android 和 React Native 的原生 SDK，并具备完整的产品分析能力。",
+        "icon": "smartphone"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于从 Ackee 切换到 OpenPanel 的常见问题。",
+    "items": [
+      {
+        "question": "OpenPanel 和 Ackee 一样注重隐私吗？",
+        "answer": "是的！两者默认都不使用 Cookie，并且在不使用同意横幅的情况下也可以符合 GDPR。关键区别在于：OpenPanel 允许可选的用户识别以支持产品分析，而 Ackee 则严格保持匿名。你可以在 OpenPanel 中自行控制是否识别用户。"
+      },
+      {
+        "question": "为什么要从 Ackee 切换到 OpenPanel？",
+        "answer": "团队通常会在需要以下内容时切换：产品分析（漏斗、留存、用户群组）、用户识别、托管云选项、移动 SDK，或针对分析优化的数据库。Ackee 在简单匿名 Web 统计方面表现出色，但缺少这些能力。"
+      },
+      {
+        "question": "Ackee 真的免费吗？",
+        "answer": "是的，Ackee 本身 100% 免费且开源。不过你需要为自己的托管付费——运行 Ackee 和 MongoDB 的服务器。使用免费层（Vercel + MongoDB Atlas 512MB），小型站点可以零成本运行 Ackee。"
+      },
+      {
+        "question": "OpenPanel 有像 Ackee 那样的 GraphQL API 吗？",
+        "answer": "没有，OpenPanel 使用 REST API，而 Ackee 使用 GraphQL。两种方式都可以构建自定义工具和集成。Ackee 的整个 UI 由其 GraphQL API 驱动，因此可扩展性很强。"
+      },
+      {
+        "question": "Ackee 能跟踪移动应用吗？",
+        "answer": "官方不支持。Ackee 是为 Web 分析设计的。虽然有一个社区维护的 Dart/Flutter 包，但没有官方的 iOS 或 Android SDK。OpenPanel 提供原生移动 SDK，并支持完整的产品分析。"
+      },
+      {
+        "question": "从 Ackee 切换后我会失去什么？",
+        "answer": "你会失去 Ackee 的 GraphQL API（OpenPanel 使用 REST）、在 Vercel/Netlify 等平台上以无服务器函数方式托管的能力，以及 Svelte 和 Angular 集成等社区插件。你将获得产品分析、用户识别和托管云选项。"
+      },
+      {
+        "question": "数据库对比如何？",
+        "answer": "Ackee 使用 MongoDB（通用文档数据库），而 OpenPanel 使用 ClickHouse（针对分析优化的列式数据库）。ClickHouse 在分析查询方面明显更快，尤其是在大规模场景下。"
+      },
+      {
+        "question": "Ackee 能跟踪独立访客吗？",
+        "answer": "可以，但有局限。Ackee 使用每日轮换的盐值哈希（IP + user-agent + 域名 + salt）来识别同一天内的访客。它无法跨天跟踪回访访客，也无法按页面跟踪唯一浏览量——这是出于隐私的设计。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "网站分析设置",
+        "url": "/guides/website-analytics-setup"
+      },
+      {
+        "title": "Node.js 分析设置",
+        "url": "/guides/nodejs-analytics"
+      },
+      {
+        "title": "从 Google Analytics 迁移",
+        "url": "/guides/migrate-from-google-analytics"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳开源 Web 分析工具",
+        "url": "/articles/self-hosted-web-analytics"
+      },
+      {
+        "title": "自托管 Web 分析",
+        "url": "/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Umami",
+        "url": "/compare/umami-alternative"
+      },
+      {
+        "name": "GoatCounter",
+        "url": "/compare/goatcounter-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "开始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

@@ -1,0 +1,353 @@
+---
+title: 使用 Docker Compose 部署
+description: 在您自己的伺服器上使用 Docker Compose 部署 OpenPanel
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+本指南將協助您使用 Docker Compose 部署 OpenPanel。這種方式讓您完全掌控部署，適合在 VPS 或專用伺服器上自行架設。
+
+## 前置需求
+
+- 一台 VPS 或伺服器（如有需要，會自動安裝 Docker 和 Node）
+- 至少 2GB RAM（建議 4GB 以上）
+- 指向您伺服器的網域名稱（選用，但建議）
+- 基本的命令列操作知識
+
+<Callout>
+🙋‍♂️ 這應該可在任何系統上運作。安裝腳本會在 Docker 和 Node 尚未安裝時自動安裝。
+</Callout>
+
+## 快速開始
+
+<Steps>
+<Step>
+### 複製儲存庫
+
+複製 OpenPanel 儲存庫並切換到 self-hosting 目錄：
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel.git
+cd openpanel/self-hosting
+```
+</Step>
+
+<Step>
+### 執行設定腳本
+
+設定腳本會引導您完成組態流程。它會：
+
+1. 安裝 Node.js（如果您同意且尚未安裝）
+2. 安裝 Docker（如果您同意且尚未安裝）
+3. 執行互動式測驗／精靈，詢問您的部署設定
+
+> 設定時間約 30 秒到 2 分鐘，視您的 VPS 而定
+
+```bash
+./setup
+```
+
+精靈會詢問您以下問題：
+- 您的網域名稱
+- 資料庫設定
+- 電子郵件設定（選用）
+- AI 整合（選用）
+- 註冊設定
+
+<Callout>
+⚠️ 如果 `./setup` 腳本無法執行，您可以手動操作：
+
+1. 安裝 Docker
+2. 安裝 Node.js
+3. 安裝 npm
+4. 在 self-hosting 資料夾內執行 `npm run quiz`
+</Callout>
+</Step>
+
+<Step>
+### 啟動服務
+
+設定完成後，啟動所有 OpenPanel 服務：
+
+```bash
+./start
+```
+
+這會啟動所有必要服務：
+- **op-db**：PostgreSQL 資料庫
+- **op-kv**：Redis 快取
+- **op-ch**：ClickHouse 分析資料庫
+- **op-api**：OpenPanel API 伺服器
+- **op-dashboard**：OpenPanel 控制台（前端）
+- **op-worker**：處理事件的背景工作程序
+</Step>
+
+<Step>
+### 驗證安裝
+
+確認所有容器都在執行中：
+
+```bash
+docker compose ps
+```
+
+所有服務都應顯示為 "healthy" 或 "running"。您也可以查看日誌：
+
+```bash
+docker compose logs -f
+```
+
+或者使用提供的日誌腳本：
+
+```bash
+./logs
+```
+
+當所有服務都正常後，您就可以透過您設定的網域存取 OpenPanel（如果尚未設定網域，則使用 `http://your-server-ip`）。
+</Step>
+</Steps>
+
+## 組態
+
+### 環境變數
+
+設定精靈會自動設定大部分環境變數。如有需要，您可以手動編輯 `self-hosting` 目錄中的 `.env` 檔案。
+
+如需所有可用環境變數的完整參考，請參閱 [Environment Variables 文件](/zh-TW/docs/self-hosting/environment-variables)。
+
+<Callout>
+如果您修改了 `.env` 檔案，需要重新啟動服務才能生效。請使用 `./stop` 和 `./start`，或 `docker compose restart`。
+</Callout>
+
+### 使用自訂 Docker 映像
+
+如果您想使用特定版本的映像，請編輯 `docker-compose.yml` 檔案並更新 image 標籤：
+
+```yaml
+op-api:
+  image: lindesvard/openpanel-api:2.0.0  # 指定版本
+```
+
+### 擴展 Workers
+
+若要擴展 worker 服務，請設定 `OP_WORKER_REPLICAS` 環境變數：
+
+```bash
+OP_WORKER_REPLICAS=3 docker compose up -d
+```
+
+或者編輯 `docker-compose.yml` 檔案：
+
+```yaml
+op-worker:
+  deploy:
+    replicas: 3
+```
+
+## 管理您的部署
+
+OpenPanel 提供多個實用腳本來協助管理您的部署。所有腳本都應在 `self-hosting` 目錄中執行。
+
+### 基本操作
+
+```bash
+./start    # 啟動所有 OpenPanel 服務
+./stop     # 停止所有 OpenPanel 服務
+./logs     # 查看所有服務的即時日誌
+```
+
+### 查看日誌
+
+查看所有服務的日誌：
+
+```bash
+./logs
+```
+
+或者直接使用 Docker Compose：
+
+```bash
+docker compose logs -f
+```
+
+查看特定服務的日誌：
+
+```bash
+docker compose logs -f op-api
+```
+
+### 停止服務
+
+停止所有服務：
+
+```bash
+./stop
+```
+
+或者使用 Docker Compose：
+
+```bash
+docker compose down
+```
+
+停止服務但保留 volumes（資料會保留）：
+
+```bash
+docker compose stop
+```
+
+### 重新啟動服務
+
+重新啟動所有服務：
+
+```bash
+./stop && ./start
+```
+
+或者使用 Docker Compose：
+
+```bash
+docker compose restart
+```
+
+重新啟動特定服務：
+
+```bash
+docker compose restart op-api
+```
+
+### 重建服務
+
+重建並重新啟動特定服務：
+
+```bash
+./rebuild op-dashboard
+```
+
+### 更新 OpenPanel
+
+若要更新到最新版本，請使用更新腳本：
+
+```bash
+./update
+```
+
+此腳本會：
+1. 從儲存庫拉取最新變更
+2. 拉取最新的 Docker 映像
+3. 重新啟動所有服務
+
+<Callout>
+如果您沒有 `./update` 腳本，也可以手動更新：
+
+```bash
+git pull
+docker compose pull
+docker compose up -d
+```
+</Callout>
+
+<Callout type="warn">
+更新前請務必先備份資料。API 容器啟動時會自動執行資料庫 migration。也請閱讀 [changelog](/zh-TW/docs/self-hosting/changelog) 中的任何變更，並套用到您的實例。
+</Callout>
+
+### 備份與還原
+
+#### 備份
+
+備份您的 PostgreSQL 資料庫：
+
+```bash
+docker compose exec op-db pg_dump -U postgres postgres > backup.sql
+```
+
+備份 volumes：
+
+```bash
+docker run --rm -v openpanel_op-db-data:/data -v $(pwd):/backup alpine tar czf /backup/db-backup.tar.gz /data
+```
+
+#### 還原
+
+還原 PostgreSQL 資料庫：
+
+```bash
+docker compose exec -T op-db psql -U postgres postgres < backup.sql
+```
+
+## 疑難排解
+
+### 服務無法啟動
+
+1. 檢查 Docker 與 Docker Compose 版本：
+   ```bash
+   docker --version
+   docker compose version
+   ```
+
+2. 檢查可用磁碟空間：
+   ```bash
+   df -h
+   ```
+
+3. 檢查錯誤日誌：
+   ```bash
+   docker compose logs
+   ```
+
+### 資料庫連線問題
+
+如果服務無法連線到資料庫：
+
+1. 確認資料庫狀態正常：
+   ```bash
+   docker compose ps op-db
+   ```
+
+2. 檢查資料庫日誌：
+   ```bash
+   docker compose logs op-db
+   ```
+
+3. 確認 `.env` 檔案中的 `DATABASE_URL` 與服務名稱 `op-db` 相符
+
+### 埠衝突
+
+如果 80 或 443 埠已被使用，您可以：
+
+1. 修改 `docker-compose.yml` 中的埠：
+   ```yaml
+   ports:
+     - "8080:80"
+     - "8443:443"
+   ```
+
+2. 或停止發生衝突的服務
+
+### 健康檢查失敗
+
+如果健康檢查失敗：
+
+1. 確認服務實際上是否正在執行：
+   ```bash
+   docker compose ps
+   ```
+
+2. 在 `docker-compose.yml` 中增加 health check timeout：
+   ```yaml
+   healthcheck:
+     interval: 30s
+     timeout: 10s
+     retries: 10
+   ```
+
+## 使用您自己的反向代理
+
+如果您想改用 NGINX、Traefik 或其他反向代理，而不是內建的 Caddy，或是在 Caddy 前方加上 TLS 終端，請參閱專門的 [反向代理設定](/zh-TW/docs/self-hosting/reverse-proxy) 指南。內容涵蓋可運作的 NGINX 設定、`Connection: upgrade` SSR 中斷陷阱，以及 Realtime 檢視所需的 WebSocket upgrade headers。
+
+## 下一步
+
+- [設定電子郵件設定](/zh-TW/docs/self-hosting/self-hosting#e-mail) 以支援密碼重設與邀請
+- [設定 AI 整合](/zh-TW/docs/self-hosting/self-hosting#ai-integration) 以使用分析助理
+- [設定 SDK](/zh-TW/docs/self-hosting/self-hosting#always-use-correct-api-url) 以追蹤您應用程式中的事件

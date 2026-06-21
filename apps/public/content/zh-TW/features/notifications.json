@@ -1,0 +1,167 @@
+{
+  "slug": "notifications",
+  "short_name": "通知",
+  "seo": {
+    "title": "通知 - 事件發生時立即採取行動",
+    "description": "設定通知規則，在特定事件發生時觸發。可依事件屬性篩選，使用含變數的範本，並將警示路由到 Slack、Discord 或任何 webhook。",
+    "keywords": [
+      "分析通知",
+      "事件型警示",
+      "即時使用者警示",
+      "通知規則分析",
+      "事件篩選通知",
+      "自訂警示範本"
+    ]
+  },
+  "hero": {
+    "heading": "事件一發生，就立即採取行動",
+    "subheading": "定義會監看特定事件並自動觸發的規則。可依屬性篩選、使用含變數的範本，並路由到 Slack、Discord 或任何 webhook。",
+    "badges": [
+      "事件型規則",
+      "屬性篩選",
+      "範本變數",
+      "多整合路由"
+    ]
+  },
+  "definition": {
+    "title": "什麼是通知規則？",
+    "text": "通知規則是 OpenPanel 中的**觸發層**。它們定義了 *何時* 應該發生某件事，而 **[整合](/features/integrations)** 則定義了 *送到哪裡*。\n\n一個通知規則有三個部分：\n\n1. **事件** - 要監看哪些事件（例如 `screen_view`、`purchase`、`signup`）\n2. **篩選條件** - 可選的屬性條件，用來縮小比對範圍（例如 path 以 `/onboarding` 開頭並以 `/verify` 結尾）\n3. **整合** - 規則觸發時，哪些已連接的服務應該接收通知\n\n你也可以使用 `{{country}}`、`{{browser}}`，或任何事件屬性來撰寫**範本**。當通知觸發時，範本會以真實值渲染，因此你的 Slack 訊息或 webhook 載荷會包含你需要的精確情境。\n\n下面是一個具體例子：你想知道新使用者何時造訪你的 onboarding 驗證頁面。你建立一個規則：\n\n- 監看 `screen_view` 事件\n- 篩選 **path** 以 `/onboarding` 開頭並以 `/verify` 結尾\n- 使用範本 *\"New user with their first event from {{country}}\"*\n- 路由到你的 Slack 工作區與一個 webhook 整合\n\n現在每當有人進入那個頁面，你的團隊就會在 Slack 看到一則包含使用者國家的訊息，而你的 webhook 也會觸發任何下游自動化流程。\n\nOpenPanel 中的通知頁面會顯示所有已觸發通知的動態清單 - 可搜尋、可依日期排序，並顯示每則通知的整合、國家、作業系統、瀏覽器與個人資料。你可以清楚看到發生了什麼，以及何時發生。\n\n通知規則把你追蹤的事件與你採取的動作連接起來。搭配整合，它們讓 OpenPanel 能根據你的資料採取行動，而不只是儲存資料。"
+  },
+  "capabilities_section": {
+    "title": "你可以用通知做什麼",
+    "intro": "從簡單提醒到複雜的事件驅動工作流程 - 規則讓你完全掌控。"
+  },
+  "capabilities": [
+    {
+      "title": "事件型觸發",
+      "description": "選擇規則要監看哪些事件 - screen_view、purchase、signup，或任何自訂事件。一個規則可以監看單一事件類型，並在每次符合時觸發。"
+    },
+    {
+      "title": "屬性篩選",
+      "description": "使用屬性條件縮小規則範圍。可依 path、country、device，或任何事件屬性進行篩選，並使用 'starts with'、'ends with'、'equals' 等運算子。可疊加多個篩選條件，精準匹配你關心的事件。"
+    },
+    {
+      "title": "範本變數",
+      "description": "使用 {{variable}} 語法撰寫通知範本。可使用任何事件屬性 - {{country}}、{{path}}、{{browser}}、{{os}}，或自訂屬性。當通知觸發時，範本會以真實值渲染。"
+    },
+    {
+      "title": "多整合路由",
+      "description": "將多個整合附加到單一規則。可同時觸發 Slack 訊息與 webhook。你可以依需求在不同規則之間自由混搭整合。"
+    },
+    {
+      "title": "通知動態",
+      "description": "每則已觸發的通知都會記錄在可搜尋的動態清單中。可查看每則通知的標題、整合、國家、作業系統、瀏覽器與個人資料。可篩選與排序，快速找到所需內容。"
+    },
+    {
+      "title": "規則管理",
+      "description": "透過專屬的 Rules 分頁建立、編輯與刪除規則。可一眼看出每個規則監看哪些事件、套用了哪些篩選條件，以及附加了哪些整合。"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-notifications.webp",
+      "alt": "通知動態顯示已觸發通知及其國家、作業系統、瀏覽器與個人資料詳情",
+      "caption": "每則觸發的通知都會記錄在可搜尋的動態清單中。可查看每個事件的國家、作業系統、瀏覽器與個人資料 - 可排序且可搜尋。"
+    },
+    {
+      "src": "/features/feature-notifications-rule.webp",
+      "alt": "編輯通知規則，包含事件類型、屬性篩選、範本與整合",
+      "caption": "使用事件篩選、範本變數與多整合路由來建立規則。此規則會在 path 符合 onboarding 驗證流程的 screen_view 事件時觸發。"
+    }
+  ],
+  "how_it_works": {
+    "title": "通知規則如何運作",
+    "intro": "規則很簡單：定義觸發條件、撰寫訊息、選擇目的地。",
+    "steps": [
+      {
+        "title": "選擇事件類型",
+        "description": "選擇規則應監看的事件 - screen_view、purchase、signup，或任何你追蹤的自訂事件。規則會針對此類型的每一筆新事件進行評估。"
+      },
+      {
+        "title": "新增屬性篩選",
+        "description": "可選擇性地使用屬性條件縮小規則範圍。例如，篩選 path 以 /onboarding 開頭並以 /verify 結尾。只有符合所有篩選條件的事件才會觸發規則。"
+      },
+      {
+        "title": "撰寫範本",
+        "description": "使用 {{variable}} 佔位符撰寫通知訊息。當規則觸發時，變數會被事件中的真實值取代 - 例如，\"New user with their first event from {{country}}\" 會變成 \"New user with their first event from US\"。"
+      },
+      {
+        "title": "附加整合",
+        "description": "選擇一個或多個整合來接收通知 - Slack、Discord、webhook，或任意組合。當相符事件到達時，每個整合都會同時觸發。"
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "團隊如何使用通知",
+    "intro": "從簡單的團隊提醒到事件驅動自動化 - 通知讓分析變得可執行。",
+    "items": [
+      {
+        "title": "新使用者提醒",
+        "description": "每當有新使用者註冊時，在 Slack 收到通知。可在訊息中包含其國家、來源或任何屬性。整個團隊都能即時看到新註冊，而不必查看儀表板。"
+      },
+      {
+        "title": "Onboarding 監控",
+        "description": "設定規則，當使用者達到關鍵 onboarding 里程碑時觸發 - 帳號建立、首次使用功能、驗證。可立即知道有人卡住，或已完成流程。"
+      },
+      {
+        "title": "營收與購買提醒",
+        "description": "每次 purchase 事件都觸發通知。可在範本中包含金額、方案或產品。路由到 Slack 以示慶祝，並送到 webhook 以進行 CRM 更新或履約觸發。"
+      },
+      {
+        "title": "錯誤與回歸偵測",
+        "description": "監看錯誤事件或非預期模式。當特定頁面或功能的錯誤率飆升時收到警示，讓你能在使用者抱怨之前先行應對。"
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "integrations",
+      "title": "整合",
+      "description": "整合是通知的目的地。連接 Slack、Discord 或 webhooks，然後將它們附加到規則上。"
+    },
+    {
+      "slug": "event-tracking",
+      "title": "事件追蹤",
+      "description": "通知規則建立在你追蹤的事件之上。你送出的事件越多，規則就能越精準。"
+    },
+    {
+      "slug": "funnels",
+      "title": "漏斗",
+      "description": "當使用者完成漏斗時觸發通知 - 結合逐步分析與即時行動。"
+    }
+  ],
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於 OpenPanel 中通知規則的常見問題。",
+    "items": [
+      {
+        "question": "通知和整合有什麼差別？",
+        "answer": "整合是連接到外部服務的連線（Slack、Discord、webhooks）。通知則是定義這些整合何時應該觸發的規則。你只需要建立一次整合，然後把它附加到任意多的通知規則上。"
+      },
+      {
+        "question": "我可以使用哪些範本變數？",
+        "answer": "你可以使用任何事件屬性作為範本變數，語法為 {{property}}。常見的包括 {{country}}、{{city}}、{{browser}}、{{os}}、{{path}}，以及你隨事件送出的任何自訂屬性。"
+      },
+      {
+        "question": "單一規則可以有多個篩選條件嗎？",
+        "answer": "可以。你可以在一個規則上疊加多個屬性篩選條件。規則必須符合所有條件才會觸發 - 它們是 AND 條件。例如，path 以 /onboarding 開頭 AND path 以 /verify 結尾。"
+      },
+      {
+        "question": "我可以從一個規則傳送到多個整合嗎？",
+        "answer": "可以。你可以為單一規則附加任意數量的整合。當規則觸發時，所有附加的整合都會同時觸發。例如，同時傳送到 Slack 和 webhook。"
+      },
+      {
+        "question": "事件和通知之間有延遲嗎？",
+        "answer": "沒有。通知會在事件到達時即時觸發。沒有批次處理或延遲 - 當事件符合規則時，附加的整合會立即觸發。"
+      },
+      {
+        "question": "我可以查看過去的通知嗎？",
+        "answer": "可以。Notifications 分頁會顯示所有已觸發通知的動態清單。你可以搜尋、依日期排序，並查看每則通知的使用整合、國家、作業系統、瀏覽器與個人資料等細節。"
+      }
+    ]
+  },
+  "cta": {
+    "label": "設定你的第一個通知規則",
+    "href": "https://dashboard.openpanel.dev/onboarding"
+  }
+}

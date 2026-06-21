@@ -1,0 +1,47 @@
+---
+title: 追蹤事件
+description: 了解如何追蹤自訂事件來衡量使用者行為。
+---
+
+事件是 OpenPanel 的核心。它們可讓你衡量使用者在網站上採取的特定動作，例如點擊按鈕、提交表單，或完成購買。
+
+## 追蹤事件
+
+要追蹤事件，只要使用事件名稱呼叫 `track` 方法即可。
+
+```javascript
+op.track('button_clicked');
+```
+
+## 新增屬性
+
+你可以透過傳入 properties 物件，為事件加入額外情境。這有助於你了解互動細節。
+
+```javascript
+op.track('signup_button_clicked', {
+  location: 'header',
+  color: 'blue',
+  variant: 'primary'
+});
+```
+
+### 常見屬性類型
+
+- **字串**：例如名稱、分類或 ID 這類文字值。
+- **數字**：例如價格、數量或分數這類數值。
+- **布林值**：true 或 false 值。
+
+## 使用資料屬性
+
+如果你不想寫 JavaScript，也可以使用資料屬性自動追蹤點擊。
+
+```html
+<button
+  data-track="signup_clicked"
+  data-location="header"
+>
+  Sign Up
+</button>
+```
+
+當使用者點擊這個按鈕時，OpenPanel 會自動追蹤一個 `signup_clicked` 事件，並帶有屬性 `location: 'header'`。

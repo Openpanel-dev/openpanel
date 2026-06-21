@@ -1,0 +1,232 @@
+---
+title: "使用 OpenPanel 進行同意管理"
+description: "了解如何在使用者給予同意之前先將分析事件與工作階段重播排入佇列，然後只用一次呼叫就一次全部送出。"
+difficulty: beginner
+timeToComplete: 15
+date: 2026-03-02
+updated: 2026-03-02
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "以 disabled: true 初始化"
+    anchor: "disable"
+  - name: "建立同意橫幅"
+    anchor: "banner"
+  - name: "在同意時呼叫 ready()"
+    anchor: "ready"
+  - name: "處理拒絕"
+    anchor: "decline"
+  - name: "在頁面載入之間保留同意狀態"
+    anchor: "persist"
+---
+
+# 使用 OpenPanel 進行同意管理
+
+GDPR 和 CCPA 等隱私法規要求你在追蹤行為或錄製工作階段之前，先取得使用者的明確同意。本指南會示範如何使用 OpenPanel 內建的佇列，在使用者做出選擇之前先暫存所有追蹤資料，然後在同意時一次全部送出——或在拒絕時靜默捨棄。
+
+## 先決條件
+
+- 已透過 `@openpanel/web` npm 套件或 script tag 安裝 OpenPanel
+- 你的 Client ID，來自 [OpenPanel 儀表板](https://dashboard.openpanel.dev/onboarding)
+
+## 以 `disabled: true` 初始化 [#disable]
+
+建立 OpenPanel 實例時傳入 `disabled: true`。所有追蹤呼叫（`track`、`identify`、`screenView`、工作階段重播區塊）都會保留在記憶體佇列中，而不會傳送到 API。
+
+### Script tag
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    disabled: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+### NPM 套件
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  disabled: true,
+});
+```
+
+從這一刻起，你應用程式其他地方的任何 `op.track(...)` 呼叫都會被安全地排入佇列，而不會傳送出去。
+
+## 建立同意橫幅 [#banner]
+
+UI 要怎麼做由你決定。重點是在使用者接受時呼叫 `op.ready()`，而在他們拒絕時什麼都不做（或呼叫 `op.clear()`）。
+
+```tsx title="ConsentBanner.tsx"
+import { op } from './op';
+
+export function ConsentBanner() {
+  function handleAccept() {
+    localStorage.setItem('consent', 'granted');
+    op.ready(); // 會清空佇列並啟用之後所有追蹤
+    hideBanner();
+  }
+
+  function handleDecline() {
+    localStorage.setItem('consent', 'denied');
+    hideBanner(); // 佇列會在頁面卸載時被捨棄
+  }
+
+  return (
+    <div role="dialog" aria-label="Cookie 同意">
+      <p>
+        我們使用分析工具來改善產品。你是否同意匿名使用追蹤？
+      </p>
+      <button type="button" onClick={handleAccept}>接受</button>
+      <button type="button" onClick={handleDecline}>拒絕</button>
+    </div>
+  );
+}
+```
+
+## 在同意時呼叫 `ready()` [#ready]
+
+`op.ready()` 會做兩件事：
+
+1. 清除 `disabled` 標記，讓之後所有事件立即送出
+2. 一次清空整個佇列——自頁面載入以來緩衝的每個事件與工作階段重播區塊都會一次送出
+
+這代表你不會遺失使用者做出選擇之前發生的任何事件。使用者進入頁面時的 screen view、橫幅顯示期間的任何點擊——全部都會在他們同意的那一刻被捕捉並送出。
+
+## 處理工作階段重播 [#replay]
+
+如果你啟用了工作階段重播，錄製器會在頁面載入後立即開始擷取 DOM 變更（因此不會漏掉任何互動），但在呼叫 `ready()` 之前，沒有任何資料會離開瀏覽器。
+
+```ts title="op.ts"
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  disabled: true,
+  sessionReplay: {
+    enabled: true,
+  },
+});
+```
+
+在呼叫 `op.ready()` 時，緩衝的重播區塊會與佇列中的事件一起送出。從頁面載入一開始的完整工作階段都會被保留下來。
+
+## 處理拒絕 [#decline]
+
+如果使用者拒絕，不要呼叫 `ready()`。佇列只存在於記憶體中，並且會在分頁關閉或頁面離開時自動捨棄。沒有任何資料會被送出。
+
+如果你想明確處理，也可以立即清空佇列：
+
+```ts
+function handleDecline() {
+  localStorage.setItem('consent', 'denied');
+  // op 仍保持停用狀態 — 不會送出任何內容
+  // 記憶體中的佇列會被垃圾回收
+}
+```
+
+## 在頁面載入之間保留同意狀態 [#persist]
+
+`disabled` 標記會在每次頁面載入時重設。你需要在初始化時檢查已儲存的同意選擇，若先前已同意，就不要使用 `disabled: true`。
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+const hasConsent = localStorage.getItem('consent') === 'granted';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  disabled: !hasConsent,
+});
+```
+
+然後在你的橫幅元件中，只有在尚未儲存任何選擇時才顯示它：
+
+```tsx title="ConsentBanner.tsx"
+export function ConsentBanner() {
+  const stored = localStorage.getItem('consent');
+  if (stored) return null; // 已經決定過了，不要顯示
+
+  // ... render banner
+}
+```
+
+## 完整範例
+
+```ts title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+const hasConsent = localStorage.getItem('consent') === 'granted';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  disabled: !hasConsent,
+  sessionReplay: {
+    enabled: true,
+  },
+});
+```
+
+```tsx title="ConsentBanner.tsx"
+import { op } from './op';
+
+export function ConsentBanner() {
+  if (localStorage.getItem('consent')) return null;
+
+  return (
+    <div role="dialog" aria-label="Cookie 同意">
+      <p>我們使用分析工具來改善產品。你是否同意？</p>
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.setItem('consent', 'granted');
+          op.ready();
+        }}
+      >
+        接受
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          localStorage.setItem('consent', 'denied');
+        }}
+      >
+        拒絕
+      </button>
+    </div>
+  );
+}
+```
+
+## 相關資源
+
+- [同意管理文件](/zh-TW/docs/consent-management) — `disabled` 和 `waitForProfile` 的快速參考
+- [工作階段重播](/zh-TW/docs/session-replay) — 針對會記錄哪些內容的隱私控制
+- [識別使用者](/zh-TW/docs/get-started/identify-users) — 將事件連結到使用者個人檔案
+
+<Faqs>
+<FaqItem question="如果使用者拒絕，事件會遺失嗎？">
+如果使用者拒絕且你從未呼叫 `ready()`，就不會送出任何事件。佇列存在於記憶體中，並會在頁面卸載時捨棄。
+</FaqItem>
+
+<FaqItem question="在橫幅出現之前追蹤的事件會怎麼樣？">
+它們會留在佇列中。如果使用者之後接受，所有事件都會一次送出。如果使用者拒絕，則會被捨棄。
+</FaqItem>
+
+<FaqItem question="工作階段重播會在同意前開始嗎？">
+錄製器會立即開始擷取 DOM 變更，以便能重建完整工作階段，但在呼叫 `ready()` 之前不會傳送任何資料。
+</FaqItem>
+
+<FaqItem question="script tag 與 npm 的處理方式需要不同嗎？">
+不用。`disabled` 選項與 `ready()` 方法在兩者中的運作方式相同。
+</FaqItem>
+</Faqs>

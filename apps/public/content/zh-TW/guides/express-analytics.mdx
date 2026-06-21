@@ -1,0 +1,220 @@
+---
+title: "如何為 Express 加入分析"
+description: "使用 OpenPanel middleware 為你的 Express 應用加入伺服器端分析。追蹤 API 請求、使用者動作與自訂事件。"
+difficulty: beginner
+timeToComplete: 8
+date: 2025-12-15
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安裝 SDK"
+    anchor: "install"
+  - name: "加入 middleware"
+    anchor: "middleware"
+  - name: "追蹤事件"
+    anchor: "events"
+  - name: "識別使用者"
+    anchor: "identify"
+  - name: "驗證你的設定"
+    anchor: "verify"
+---
+
+# 如何為 Express 加入分析
+
+伺服器端分析提供可靠的 [事件追蹤](/features/event-tracking)，不會被廣告攔截器或瀏覽器擴充功能阻擋。OpenPanel Express middleware 會包裝 JavaScript SDK，並將它附加到每個請求上，讓你能輕鬆在整個應用程式中追蹤事件。
+
+OpenPanel 是 Mixpanel 和 Amplitude 的開源替代方案。你可以在完全掌控資料的同時獲得強大的分析能力；如果你的隱私需求需要，你也可以 [自架](/articles/how-to-self-host-openpanel)。
+
+## 先決條件
+
+- 一個 Express 應用程式
+- 一個 OpenPanel 帳號（[免費註冊](https://dashboard.openpanel.dev/onboarding)）
+- 來自 OpenPanel 儀表板的 Client ID 與 Client Secret
+
+伺服器端追蹤需要 `clientSecret` 進行驗證，因為伺服器無法依賴瀏覽器的 CORS 標頭來驗證請求來源。
+
+## 安裝 SDK [#install]
+
+Express SDK 是一個輕量級 middleware，會為每個請求建立一個 OpenPanel 實例。使用 npm 安裝它（pnpm 和 yarn 也可以）。
+
+```bash
+npm install @openpanel/express
+```
+
+## 加入 middleware [#middleware]
+
+這個 middleware 會將 OpenPanel SDK 附加到每個請求上，並命名為 `req.op`。請儘早將它加入 middleware 鏈中，這樣它就能在所有路由處理器中使用。
+
+```ts
+import express from 'express';
+import createOpenpanelMiddleware from '@openpanel/express';
+
+const app = express();
+
+app.use(express.json());
+
+app.use(
+  createOpenpanelMiddleware({
+    clientId: 'YOUR_CLIENT_ID',
+    clientSecret: 'YOUR_CLIENT_SECRET',
+  })
+);
+
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
+});
+```
+
+你應該將憑證儲存在環境變數中，而不是直接寫死。這樣可以避免機密資訊進入版本控制，也能讓你在開發與正式環境中輕鬆使用不同的憑證。
+
+```ts
+app.use(
+  createOpenpanelMiddleware({
+    clientId: process.env.OPENPANEL_CLIENT_ID!,
+    clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+  })
+);
+```
+
+這個 middleware 也會轉送傳入請求的 client IP 位址與 user-agent，因此即使事件來自你的伺服器，地理與裝置資料也會是準確的。
+
+## 追蹤事件 [#events]
+
+一旦 middleware 就位，你就可以在任何路由處理器中呼叫 `req.op.track()` 來追蹤事件。第一個參數是事件名稱，第二個是你想附加的屬性物件。
+
+```ts
+app.post('/signup', async (req, res) => {
+  const { email, name } = req.body;
+
+  req.op.track('user_signed_up', {
+    email,
+    name,
+    source: 'website',
+  });
+
+  const user = await createUser({ email, name });
+  res.json({ success: true, user });
+});
+```
+
+你可以追蹤任何對你的業務重要的事件。常見範例包括表單送出、購買、功能使用情況，以及 API 錯誤。
+
+```ts
+app.post('/contact', async (req, res) => {
+  const { email, message } = req.body;
+
+  req.op.track('contact_form_submitted', {
+    email,
+    message_length: message.length,
+  });
+
+  await sendContactEmail(email, message);
+  res.json({ success: true });
+});
+```
+
+### 自動請求追蹤
+
+如果你提供 `trackRequest` 函式，middleware 可以自動追蹤每個請求。這對於監控 API 使用情況很有幫助，而不需要手動在每個路由加入追蹤呼叫。
+
+```ts
+app.use(
+  createOpenpanelMiddleware({
+    clientId: process.env.OPENPANEL_CLIENT_ID!,
+    clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+    trackRequest: (url) => url.startsWith('/api/'),
+  })
+);
+```
+
+當 `trackRequest` 回傳 true 時，middleware 會送出一個 `request` 事件，包含 URL、method 與查詢參數。
+
+## 識別使用者 [#identify]
+
+若要將事件關聯到特定使用者，請在 middleware 設定中使用 `getProfileId` 選項。這個函式會接收 request 物件，並應回傳使用者的 ID。
+
+```ts
+app.use(
+  createOpenpanelMiddleware({
+    clientId: process.env.OPENPANEL_CLIENT_ID!,
+    clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+    getProfileId: (req) => req.user?.id,
+  })
+);
+```
+
+你也可以使用 `req.op.identify()` 傳送使用者個人資料。這會在 OpenPanel 中更新使用者檔案，包含姓名、電子郵件與任何自訂屬性。
+
+```ts
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  const user = await authenticateUser(email, password);
+
+  req.op.identify({
+    profileId: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    properties: {
+      plan: user.plan,
+      signupDate: user.createdAt,
+    },
+  });
+
+  req.op.track('user_logged_in', { method: 'email' });
+  res.json({ success: true, user });
+});
+```
+
+### 遞增個人資料屬性
+
+如果你想在使用者個人資料上追蹤累計值，例如登入次數或總購買次數，請使用 `increment` 方法。
+
+```ts
+req.op.increment({
+  profileId: user.id,
+  property: 'login_count',
+  value: 1,
+});
+```
+
+## 驗證你的設定 [#verify]
+
+啟動你的 Express 伺服器，並透過對端點發送請求來觸發幾個事件。開啟 [OpenPanel 儀表板](https://dashboard.openpanel.dev)，然後前往即時視圖，查看事件抵達時的狀態。
+
+如果事件沒有出現，請檢查伺服器日誌中 OpenPanel 回傳的錯誤回應。確認 `clientId` 與 `clientSecret` 都正確，且 middleware 已加入在路由之前。
+
+## TypeScript 支援
+
+Express SDK 會自動擴充 `Request` 介面以包含 `req.op`。如果你的 TypeScript 設定沒有辨識到這點，你可以在宣告檔中手動擴充該介面。
+
+```ts
+import { OpenPanel } from '@openpanel/express';
+
+declare global {
+  namespace Express {
+    export interface Request {
+      op: OpenPanel;
+    }
+  }
+}
+```
+
+## 下一步
+
+[Express SDK 參考文件](/docs/sdks/express)涵蓋了所有可用選項與方法。如果你使用的是其他 Node.js 框架，[Node.js 追蹤指南](/guides/nodejs-analytics)說明如何直接使用基礎 SDK。若要比較 OpenPanel 與其他分析工具，請參考 [Mixpanel 替代方案](/compare/mixpanel-alternative)頁面。
+
+<Faqs>
+<FaqItem question="為什麼伺服器端追蹤需要 clientSecret？">
+伺服器端追蹤需要驗證，因為請求來自你的伺服器，而不是受 CORS 限制的瀏覽器。clientSecret 可確保事件被正確驗證，並防止來自其他來源的未授權追蹤。
+</FaqItem>
+
+<FaqItem question="我可以非同步追蹤事件嗎？">
+可以。OpenPanel SDK 預設會非同步傳送事件。事件會在背景中排隊並派送，因此追蹤呼叫不會阻塞你的路由處理器，也不會拖慢回應時間。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 嗎？">
+是的。OpenPanel 的設計符合 GDPR，具備無 cookie 追蹤與資料最小化。伺服器端追蹤讓你能完全掌控蒐集哪些資料。透過自架，你還可以完全消除跨國資料傳輸的疑慮。
+</FaqItem>
+</Faqs>

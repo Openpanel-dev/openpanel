@@ -1,0 +1,76 @@
+---
+title: 同意管理
+description: 在使用者同意之前先將所有追蹤事件排入佇列，然後用一次呼叫一次性送出全部資料。
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+某些司法管轄區要求在追蹤事件或記錄工作階段前，必須先取得使用者明確同意。OpenPanel 內建支援此需求：以 `disabled: true` 初始化，在呼叫 `ready()` 前不會傳送任何資料。
+
+## 運作方式
+
+當設定 `disabled: true` 時，所有對 `track`、`identify`、`screenView` 的呼叫，以及 session replay 區塊，都會先保留在記憶體佇列中，而不是送往 API。使用者同意後，呼叫 `ready()`，整個佇列會立即一次性送出。
+
+```ts
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  disabled: true, // 在呼叫 ready() 前不會送出任何資料
+});
+
+// 之後，當使用者接受你的同意橫幅時：
+op.ready();
+```
+
+如果使用者拒絕，只要不要呼叫 `ready()` 即可。頁面卸載時，佇列會被丟棄。
+
+## 搭配 session replay
+
+在 `disabled: true` 的期間，session replay 區塊也會被排入佇列。一旦呼叫 `ready()`，緩衝的 replay 區塊會連同任何已排隊的事件一起送出。
+
+```ts
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  disabled: true,
+  trackScreenViews: true,
+  sessionReplay: { enabled: true },
+});
+
+// 使用者同意：
+op.ready();
+```
+
+<Callout type="info">
+replay recorder 會在頁面載入後立即開始（因此不會漏掉任何互動），但在呼叫 `ready()` 前不會傳送任何資料。
+</Callout>
+
+## 等待使用者個人資料
+
+如果你想在確認使用者身分之前先暫存事件，而不是等待明確同意，請改用 `waitForProfile`。事件會一直排隊，直到呼叫帶有 `profileId` 的 `identify()`。
+
+```ts
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  waitForProfile: true,
+});
+
+// 事件會先排在這裡...
+op.track('page_view');
+
+// 一旦設定 profileId，就會清空佇列：
+op.identify({ profileId: 'user_123' });
+```
+
+如果使用者從未完成驗證，佇列就不會自動清空——不會送出任何事件。若要處理匿名使用者或訪客流程，當你知道使用者不會登入時，請明確呼叫 `ready()`：
+
+```ts
+// 使用者略過登入 — 在沒有 profileId 的情況下清空已排隊事件
+op.ready();
+```
+
+不論是否設定 `waitForProfile` 或 `disabled`，`ready()` 都會釋放佇列。
+
+## 相關內容
+
+- [同意管理指南](/zh-TW/guides/consent-management) — 搭配 cookie 橫幅範例的完整操作說明
+- [Session replay](/zh-TW/docs/session-replay) — replay 錄製的隱私控制
+- [識別使用者](/zh-TW/docs/get-started/identify-users) — 將事件連結到使用者個人資料

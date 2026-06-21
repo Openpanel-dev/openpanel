@@ -1,0 +1,30 @@
+---
+title: 洞察
+description: 查詢分析資料，包括指標、頁面、來源、裝置與地理區分。
+---
+
+## 驗證
+
+需要 `read` 或 `root` 用戶端，預設的 `write` 用戶端無法存取。請參閱 [身分驗證](/zh-TW/docs/api/authentication) 指南。
+
+## 基礎 URL
+
+```
+https://api.openpanel.dev/insights/{projectId}
+```
+
+## 可用端點
+
+| 端點 | 說明 |
+|----------|-------------|
+| `GET /metrics` | 訪客、工作階段、跳出率與互動 |
+| `GET /live` | 目前活躍訪客數 |
+| `GET /pages` | 依工作階段排序的熱門頁面 |
+| `GET /referrer` | 流量來源 |
+| `GET /country`, `/region`, `/city` | 地理區分 |
+| `GET /device`, `/browser`, `/os` | 裝置與技術區分 |
+| `GET /utm_source`, `/utm_campaign`, … | UTM 參數區分 |
+
+大多數端點接受 `startDate`、`endDate`、`range`、`filters`、`cursor` 與 `limit` 查詢參數。
+
+完整 schema 與所有可用端點請參閱 [API 參考](/zh-TW/docs/api-reference)。

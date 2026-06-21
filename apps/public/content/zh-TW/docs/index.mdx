@@ -1,0 +1,92 @@
+---
+title: OpenPanel 是什麼？
+description: OpenPanel 是一個開源的網站與產品分析平台，結合了 Mixpanel 的強大功能與 Plausible 的易用性。無論你是在追蹤網站訪客，還是分析應用程式中的使用者行為，OpenPanel 都能在不增加複雜度的情況下提供你所需的洞察。
+---
+
+import { UserIcon,HardDriveIcon } from 'lucide-react'
+
+## ✨ 主要功能
+
+- **🔍 進階分析**：[Funnels](/zh-TW/features/funnels)、cohort、使用者檔案與工作階段歷史
+- **🎬 工作階段重播**：[錄製並重播使用者工作階段](/zh-TW/features/session-replay)，內建隱私控制
+- **📊 即時儀表板**：即時資料更新與互動式圖表
+- **🎯 A/B 測試**：內建變體測試與詳細拆分
+- **🔔 智慧通知**：事件與 funnel 型警示
+- **🌍 隱私優先**：無 Cookie 追蹤與 GDPR 合規
+- **🚀 開發者友善**：完整 SDK 與 API 存取
+- **📦 自架**：完整掌控你的資料與基礎架構
+- **💸 透明定價**：沒有隱藏費用
+- **🛠️ 自訂儀表板**：彈性的圖表建立與[資料視覺化](/zh-TW/features/data-visualization)
+- **📱 多平台**：Web、行動裝置（iOS/Android）與伺服器端追蹤
+- **🤖 MCP Server**：[讓 AI 了解你的使用者](/zh-TW/features/mcp) — 連接 Claude、Cursor 或任何 MCP 用戶端
+- **💰 收入追蹤**：[監控購買與訂閱](/zh-TW/features/revenue-tracking)以及產品事件
+- **🔌 整合**：[Google Search Console](/zh-TW/features/integrations)等更多功能
+
+## 📊 分析平台比較
+
+| 功能                                   | OpenPanel | Mixpanel | GA4       | Plausible |
+|----------------------------------------|-----------|----------|-----------|-----------|
+| ✅ 開源                                | ✅         | ❌        | ❌        | ✅         |
+| 🧩 支援自架                            | ✅         | ❌        | ❌        | ✅         |
+| 🔒 預設無 Cookie                        | ✅         | ❌        | ❌        | ✅         |
+| 🔁 即時儀表板                          | ✅         | ✅        | ❌        | ✅         |
+| 🔍 Funnels 與 cohort 分析              | ✅         | ✅        | ✅*       | ✅***         |
+| 👤 使用者檔案與工作階段歷史            | ✅         | ✅        | ❌        | ❌         |
+| 🎬 工作階段重播                        | ✅         | ✅****    | ❌        | ❌         |
+| 📈 自訂儀表板與圖表                    | ✅         | ✅        | ✅        | ❌         |
+| 💬 事件與 funnel 通知                  | ✅         | ✅        | ❌        | ❌         |
+| 🌍 符合 GDPR 的追蹤                     | ✅         | ✅        | ❌**      | ✅         |
+| 📦 SDK（Web、Swift、Kotlin、ReactNative） | ✅      | ✅        | ✅        | ❌         |
+| 💸 透明定價                            | ✅         | ❌        | ✅*       | ✅         |
+| 🚀 為開發者而生                        | ✅         | ✅        | ❌        | ✅         |
+| 🔧 A/B 測試與變體拆分                  | ✅         | ✅        | ❌        | ❌         |
+
+✅* GA4 有免費方案，但通常需要 BigQuery（付費）才能存取原始資料。
+
+❌** 由於資料傳輸到位於美國的伺服器，GA4 在多個歐盟國家面臨 GDPR 禁令。
+
+✅*** Plausible 提供簡單的 goals
+
+✅**** Mixpanel 的 session replay 在免費方案每月限制 5k sessions，在付費方案限制 20k。OpenPanel 沒有上限。
+
+## 🚀 快速開始
+
+在開始追蹤你的事件之前，你需要建立帳號，或部署你自己的 OpenPanel 實例。
+
+<Cards>
+  <Card
+    href="https://dashboard.openpanel.dev/onboarding"
+    title="建立帳號"
+    icon={<UserIcon />}
+    description="建立你的帳號與工作區"
+  />
+  <Card
+    href="/zh-TW/docs/self-hosting/self-hosting"
+    title="自架 OpenPanel"
+    icon={<HardDriveIcon />}
+    description="取得完整控制權並開始自架"
+  />
+</Cards>
+
+1. **[安裝 OpenPanel](/zh-TW/docs/get-started/install-openpanel)** - 加入 script tag 或使用我們其中一個 SDK
+2. **[追蹤事件](/zh-TW/docs/get-started/track-events)** - 開始量測使用者行為
+3. **[識別使用者](/zh-TW/docs/get-started/identify-users)** - 將事件連結到特定使用者
+4. **[追蹤收入](/zh-TW/docs/revenue-tracking)** - 監控購買與訂閱
+
+## 🔒 隱私優先
+
+OpenPanel 的設計以隱私為核心：
+- **不需要 Cookie** - 預設無 Cookie 追蹤
+- **符合 GDPR 與 CCPA** - 為隱私法規而打造
+- **支援自架** - 完整掌控你的資料
+- **透明的資料處理** - 資料屬於你
+
+## 🌐 開源
+
+OpenPanel 完全開源，並可在 [GitHub](https://github.com/Openpanel-dev/openpanel) 取得。我們相信透明與社群驅動的開發。
+
+## 💬 需要幫助嗎？
+
+- 加入我們的 [Discord 社群](https://go.openpanel.dev/discord)
+- 查看我們的 [GitHub issues](https://github.com/Openpanel-dev/openpanel/issues)
+- 寫信給我們：[hello@openpanel.dev](mailto:hello@openpanel.dev)

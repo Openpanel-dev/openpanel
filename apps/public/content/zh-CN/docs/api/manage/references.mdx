@@ -1,0 +1,30 @@
+---
+title: 参考
+description: 管理 OpenPanel 项目的参考点。参考点用于在分析时间线上标记重要日期或事件。
+---
+
+## 身份验证
+
+需要 `root` 客户端。请参阅 [身份验证](/zh-CN/docs/api/authentication) 指南。
+
+## 基础 URL
+
+```
+https://api.openpanel.dev/manage/references
+```
+
+## 什么是参考点？
+
+参考点是分析时间线上的标记点，可用于产品发布、活动开始日期、功能上线，或任何你想与指标变化关联的事件。
+
+## 端点
+
+| 方法 | 路径 | 描述 |
+|--------|------|-------------|
+| `GET` | `/manage/references` | 列出所有参考点（可选按 `projectId` 过滤） |
+| `GET` | `/manage/references/{id}` | 获取指定参考点 |
+| `POST` | `/manage/references` | 创建新的参考点 |
+| `PATCH` | `/manage/references/{id}` | 更新参考点 |
+| `DELETE` | `/manage/references/{id}` | 删除参考点 |
+
+完整请求/响应 schema 请参阅 [API 参考](/zh-CN/docs/api-reference)。

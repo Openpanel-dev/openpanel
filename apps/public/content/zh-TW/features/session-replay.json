@@ -1,0 +1,166 @@
+{
+  "slug": "session-replay",
+  "short_name": "工作階段回放",
+  "seo": {
+    "title": "Session Replay - 觀察真實使用者的操作歷程 | OpenPanel",
+    "description": "重播真實使用者的工作階段，精準了解發生了什麼事。以隱私優先的工作階段重播，具備遮罩控制、無限錄製與 30 天保留。",
+    "keywords": [
+      "session replay",
+      "session recording",
+      "user session replay",
+      "hotjar alternative",
+      "privacy-first session replay"
+    ]
+  },
+  "hero": {
+    "heading": "精準看見使用者做了什麼",
+    "subheading": "重播任何使用者工作階段，查看點擊、捲動與互動。內建隱私控制。以非同步載入，絕不拖慢你的網站。",
+    "badges": [
+      "無限重播",
+      "30 天保留",
+      "內建隱私控制",
+      "非同步載入，不會增加 bundle 體積"
+    ]
+  },
+  "definition": {
+    "title": "什麼是 session replay？",
+    "text": "Session replay 讓你能觀看真實使用者在造訪你的網站或應用程式期間所做操作的結構化錄製。你可以看到每一次點擊、捲動、表單互動與頁面導覽，而且會依照實際發生順序播放。\n\n多數分析工具只會告訴你 **整體上發生了什麼**：有 40% 的使用者在第 2 步流失。Session replay 則讓你看見 **原因**：你可以看到有人卡在令人困惑的表單標籤、錯過按鈕，或碰到你根本不知道存在的錯誤狀態。\n\nOpenPanel 的 session replay 是建立在 [rrweb](https://www.rrweb.io/) 之上，這是一個開源錄製函式庫。它擷取的是 DOM 變動與使用者互動的結構化資料，而不是影片。這點很重要，因為：\n\n- **隱私更容易管理** — 你可以透過 CSS 選擇器精確控制記錄哪些內容，而不是寄望影片模糊效果夠準確\n- **儲存更有效率** — 結構化資料的壓縮率遠優於影片\n- **播放即時** — 不需要緩衝，也不必等待影片載入\n\nOpenPanel 的 session replay 採用 **預設關閉、需主動啟用**。停用時，重播腳本不會被載入，對頁面完全沒有任何額外位元組。啟用後，錄製器會以獨立的非同步腳本載入，因此無論如何都不會拖慢你的主分析 bundle。\n\n隱私控制是核心功能：\n\n- **所有輸入欄位預設遮罩** — 表單欄位值絕不會被記錄\n- **可封鎖任何元素**，透過 data 屬性或 CSS 選擇器\n- **可遮罩特定文字**，同時保留周圍版面配置\n- **可忽略敏感元素上的互動**\n\n重播會連結到工作階段、事件與使用者檔案。當使用者回報 bug 時，你可以在幾秒內叫出他的工作階段，直接看到實際發生的事情——不必再請他重現問題。"
+  },
+  "capabilities_section": {
+    "title": "使用 session replay 你能獲得什麼",
+    "intro": "從一開始就內建隱私控制，完整掌握真實使用者行為所需的一切。"
+  },
+  "capabilities": [
+    {
+      "title": "完整工作階段播放",
+      "description": "從頭到尾重播任何已錄製的工作階段。依照實際發生順序查看點擊、捲動、表單互動與導覽。"
+    },
+    {
+      "title": "連結到事件與個人檔案",
+      "description": "重播內容會綁定到使用者的工作階段、事件時間軸與個人檔案。可從漏斗流失點直接跳到對應重播，取得脈絡。"
+    },
+    {
+      "title": "輸入內容預設遮罩",
+      "description": "所有表單欄位值預設都會被遮罩。你會看到使用者有輸入內容，但看不到輸入了什麼。必要時可針對單一欄位停用。"
+    },
+    {
+      "title": "封鎖與遮罩控制",
+      "description": "可透過 data 屬性或 CSS 選擇器，將整個元素排除在錄製之外。也可遮罩特定文字，並忽略敏感區域的互動。"
+    },
+    {
+      "title": "非同步載入，不影響 bundle",
+      "description": "重播模組會以獨立的非同步腳本載入。當重播停用時，它完全不會被載入。啟用時，也不會阻擋主 bundle。"
+    },
+    {
+      "title": "無限重播，30 天保留",
+      "description": "錄製的工作階段數量沒有上限。每個重播都會保留 30 天，並可隨時播放。"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-sessions.webp",
+      "alt": "工作階段總覽，顯示使用者工作階段、進入頁面與持續時間",
+      "caption": "瀏覽所有工作階段。點擊任一項即可開啟重播。"
+    },
+    {
+      "src": "/features/feature-sessions-details.webp",
+      "alt": "工作階段詳細資訊檢視，依順序顯示事件",
+      "caption": "工作階段時間軸會在重播旁顯示每個事件。"
+    }
+  ],
+  "how_it_works": {
+    "title": "session replay 如何運作",
+    "intro": "只要啟用一次，之後符合條件的每個工作階段都會自動錄製。",
+    "steps": [
+      {
+        "title": "在 init 設定中啟用 replay",
+        "description": "在你的 OpenPanel init 選項中設定 `sessionReplay: { enabled: true }`。這就是開始錄製所需的全部設定。"
+      },
+      {
+        "title": "replay 腳本會非同步載入",
+        "description": "當工作階段開始時，OpenPanel 會把重播模組（`op1-replay.js`）以獨立的非同步腳本載入。它不會阻擋頁面載入，也不會膨脹你的主 bundle。"
+      },
+      {
+        "title": "互動會被擷取並分批傳送",
+        "description": "錄製器會擷取 DOM 變更與使用者互動，並每 10 秒以及在頁面卸載時，以小批次傳送到 OpenPanel。"
+      },
+      {
+        "title": "從儀表板重播任何工作階段",
+        "description": "在儀表板中開啟任一工作階段並按下播放。重播會重建使用者的完整體驗。你也可以從時間軸跳到特定事件。"
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "誰會使用 session replay",
+    "intro": "需要超越單看指標，去理解真實使用者行為的團隊。",
+    "items": [
+      {
+        "title": "產品團隊",
+        "description": "當數據顯示使用者在某個步驟流失時，session replay 會直接告訴你原因。你可以看到混淆、錯過的 CTA，以及你不知道存在的錯誤狀態。"
+      },
+      {
+        "title": "支援與成功團隊",
+        "description": "當使用者回報 bug 或體驗令人困惑時，只要幾秒就能叫出他的工作階段重播。你能看到他所看到的一切——不必再請他重現問題。"
+      },
+      {
+        "title": "重視隱私的團隊",
+        "description": "輸入內容預設就會被遮罩。你可以用 data 屬性封鎖敏感 UI。你能獲得行為洞察，同時不會記錄個人資料。"
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "session-tracking",
+      "title": "Session tracking",
+      "description": "結構化的工作階段資料——進入頁面、事件時間軸、持續時間——不需要重播也能取得。"
+    },
+    {
+      "slug": "event-tracking",
+      "title": "Event tracking",
+      "description": "自訂事件會與重播一起顯示在工作階段時間軸中。"
+    },
+    {
+      "slug": "funnels",
+      "title": "Funnels",
+      "description": "可從漏斗流失步驟直接跳到工作階段重播，理解背後原因。"
+    }
+  ],
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於 OpenPanel session replay 的常見問題。",
+    "items": [
+      {
+        "question": "session replay 預設有啟用嗎？",
+        "answer": "沒有。Session replay 是採用主動啟用模式。你可以在 init 設定中加入 `sessionReplay: { enabled: true }` 來啟用它。停用時，重播腳本不會被載入，且不會為你的頁面增加任何額外負擔。"
+      },
+      {
+        "question": "啟用 session replay 會拖慢我的網站嗎？",
+        "answer": "不會。重播模組會以獨立的非同步腳本（`op1-replay.js`）載入，與主追蹤 bundle（`op1.js`）分開。它會在頁面載入後才抓取，不會阻擋渲染或主分析腳本。"
+      },
+      {
+        "question": "這跟 Hotjar 或 FullStory 有什麼不同？",
+        "answer": "Hotjar 和 FullStory 會錄製類似影片的串流。OpenPanel 則使用 rrweb 擷取結構化的 DOM 事件。雖然在檢視器裡看起來類似，但結構化資料能提供更細緻的隱私控制（CSS 選擇器遮罩、元素封鎖），也更節省儲存空間。OpenPanel 也是開源的，而且可以自架。"
+      },
+      {
+        "question": "表單輸入內容會被錄製嗎？",
+        "answer": "不會。所有輸入欄位值預設都會被遮罩（`maskAllInputs: true`）。你會看到使用者有與欄位互動，但看不到他輸入了什麼。必要時可針對單一欄位停用。"
+      },
+      {
+        "question": "重播會保留多久？",
+        "answer": "重播會保留 30 天。錄製的工作階段數量沒有限制。"
+      },
+      {
+        "question": "我可以封鎖 UI 的特定部分不被錄製嗎？",
+        "answer": "可以。將 `data-openpanel-replay-block` 加到任何元素上，就會在重播中以佔位內容取代它。使用 `data-openpanel-replay-mask` 可以遮罩特定文字。這兩個屬性名稱以及它們所對應的 CSS 選擇器都可以設定。"
+      },
+      {
+        "question": "session replay 能和自架的 OpenPanel 一起使用嗎？",
+        "answer": "可以。當你自架時，重播腳本會自動從你的實例提供。若你把腳本託管在 CDN，也可以透過 `scriptUrl` 選項覆寫腳本 URL。"
+      }
+    ]
+  },
+  "cta": {
+    "label": "開始錄製工作階段",
+    "href": "https://dashboard.openpanel.dev/onboarding"
+  }
+}

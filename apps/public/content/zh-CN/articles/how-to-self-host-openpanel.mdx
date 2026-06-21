@@ -1,0 +1,186 @@
+---
+title: 如何自托管 OpenPanel 分析平台
+description: 了解如何自托管 OpenPanel Web 分析平台。通过分步指南安装并配置您自己的分析服务器，以获得更好的隐私保护和成本节省。
+date: 2025-02-28
+updated: 2026-02-07
+cover: /content/how-to-self-host-openpanel.jpg
+tag: 指南
+team: OpenPanel Team
+---
+import { Callout } from 'fumadocs-ui/components/callout';
+
+## TLDR
+
+运行下面的脚本。您也可以观看页面底部的视频，我们会在其中展示整个过程。
+
+```bash
+git clone https://github.com/openpanel-dev/openpanel.git
+cd openpanel/self-hosting
+./setup
+./start
+```
+
+## 为什么要自托管自己的分析平台？
+
+正在寻找 [Mixpanel 替代方案](/zh-CN/articles/alternatives-to-mixpanel)？自托管自己的 [Web 分析](/features/web-analytics) 和产品分析平台有一些好处。以下是运行您自己的分析服务器的优缺点。
+
+如需了解所有开源分析平台的对比，请参阅我们的 [开源 Web 分析工具指南](/zh-CN/articles/self-hosted-web-analytics)。
+
+### 成本优势
+
+自托管通常比基于云的替代方案更便宜，尤其是在流量增长时。这也是许多团队选择自托管的主要原因之一。
+
+### 数据隐私与控制
+
+当您自托管 OpenPanel 时，您可以完全掌控网站统计数据和访客数据。这使得以下操作更容易：
+
+- 确保符合 GDPR 和隐私合规要求
+- 将敏感分析数据保留在您的基础设施内
+- 完全拥有您的网站流量数据
+- 自定义数据保留策略
+
+### 如果您符合以下情况，自托管会很合适
+
+- 您能够熟练管理服务器
+- 您需要可自定义的 Web 流量监控
+- 您希望直接访问分析数据的数据库
+- 您更偏好开源分析解决方案
+
+## 考虑云托管
+
+OpenPanel 也提供托管云版本，您无需自行托管。如果您不想管理自己的服务器，这可能是更好的选择。
+
+根据您的流量和服务器提供商，这种方式也可能更便宜。
+
+## 前提条件
+
+在安装您自己的分析平台之前，您需要：
+
+- 一台用于托管 OpenPanel 的服务器。我们推荐使用 Hetzner（[**使用我们的推荐链接**](https://hetzner.cloud/?ref=7Hq0H5mQh7tM) 以支持我们的工作），因为他们提供可靠且高性价比的托管解决方案。
+- 一个指向您服务器 IP 地址的域名。如果您使用 Cloudflare 作为 DNS 提供商，请确保为您将用于 OpenPanel 的域名或子域名关闭代理模式（灰色云朵），并使用仅 DNS 模式（橙色云朵）。
+- 基本的命令行使用经验
+
+## 如何自托管 OpenPanel
+
+既然您已经有了服务器和域名，就可以开始安装过程了。
+
+### 第 1 步：通过 SSH 连接到您的服务器
+
+通过 SSH 连接到您的新服务器（或现有服务器）。如果它是刚从提供商那里创建的，请先进行安全加固。我们有一份 [如何加固您的服务器](/zh-CN/articles/how-to-secure-ubuntu-server) 指南可供您参考。
+
+```bash
+ssh root@your-server-ip
+```
+
+### 第 2 步：拉取源代码
+
+拉取 OpenPanel 的源代码，它是开源的，并可在 [GitHub](https://github.com/openpanel-dev/openpanel) 上获取。
+
+```bash
+git clone https://github.com/openpanel-dev/openpanel.git
+```
+
+### 第 3 步：安装
+
+拉取源代码后，您的服务器上会出现一个名为 `openpanel` 的文件夹。进入它，然后再进入 self-hosting 文件夹。
+
+```bash
+cd openpanel/self-hosting
+```
+
+之后，无论您需要重启某些服务还是检查更新，所有安装命令都在这个文件夹中执行。
+
+现在启动安装向导，它会引导您完成安装。它会先检查您是否已安装 docker 和 node，如果没有，会自动为您安装。
+
+之后它会运行 `npm install` 和 `npm run quiz`，并询问您一些有关安装的问题。
+
+问题如下，应该都很容易理解。
+
+- **询问您的域名（必须以 http:// 或 https:// 开头）**
+  - 您可以访问 OpenPanel 实例的域名。
+- **配置要安装的依赖项（Clickhouse、Redis、PostgreSQL）**
+  - 您可以选择全部安装，或仅安装您需要的部分（如果您服务器上已经运行了其中一些服务，您也可以复用它们）
+- **设置代理配置（带 SSL 的 Caddy 或自行提供）**
+  - 这将为您的 OpenPanel 实例设置代理配置。我们推荐使用带 SSL 的 Caddy 选项。
+- **配置处理用的 worker 数量**
+  - 这将为您的 OpenPanel 实例配置 worker 数量。通常设置为 1-2 就可以（您之后可以在 docker-compose.yml 文件中更改）
+- **设置 resend api token（可选）**
+  - 如果您留空，此处的一些功能将被禁用（邮件发送）
+- **为 worker 仪表板创建基本认证凭据**
+  - 这将为 worker 仪表板（Bullboard）创建基本认证凭据。
+
+```bash
+./setup
+```
+
+### 第 4 步：启动 OpenPanel
+
+回答完问题后，请使用以下命令启动 OpenPanel。
+
+我们通常会接着运行 `./logs` 来检查一切是否正常运行。
+
+```bash
+./start
+
+# 检查一切是否运行正常
+./logs
+```
+
+### 第 5 步：访问 OpenPanel
+
+在 OpenPanel 运行后，请使用您在问答中选择的域名访问它。
+
+
+## 可用命令
+
+OpenPanel 附带了多个实用脚本，用于管理您的安装：
+
+### 基本操作
+```bash
+./start                   # 启动所有 OpenPanel 服务
+./stop                    # 停止所有 OpenPanel 服务
+./logs                    # 查看所有服务的实时日志
+./update                  # 拉取最新更改并重启服务
+./rebuild <service>       # 重建并重启特定服务
+                          # 示例：./rebuild op-dashboard
+./danger_wipe_everything  # ⚠️ 移除所有容器、卷和数据
+```
+
+## 环境变量
+
+<Callout>
+如果您更改了 `.env` 文件，需要重启服务更改才会生效。
+</Callout>
+
+您可以通过编辑 self-hosting 目录中的 `.env` 文件来自定义 OpenPanel 安装。
+
+通常您只需要更改以下两个：
+
+```
+# Disable new user registration (will always allow the first user to register)
+ALLOW_REGISTRATION="false"
+
+# Allow registrations through invites even tho registration is disabled
+ALLOW_INVITATION="true"
+```
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/R4yoddV5BGw?si=S6qPAz2QO6QJEB7T" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+## 常见问题排查
+
+### 连接问题
+如果安装后您无法访问分析仪表板：
+- 验证您的域名 DNS 设置
+- 使用 `docker compose ps` 检查所有 Docker 容器是否正在运行
+- 确保防火墙允许必要端口的流量
+
+### 性能优化
+对于高流量网站：
+- 调整 docker-compose.yml 中的 worker 数量
+- 监控数据库性能
+
+### 更新和维护
+为了让您的分析平台平稳运行：
+- 定期使用 `./update` 检查更新
+- 监控磁盘使用情况
+- 定期备份您的数据

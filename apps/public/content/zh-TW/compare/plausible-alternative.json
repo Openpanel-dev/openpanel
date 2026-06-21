@@ -1,0 +1,526 @@
+{
+  "slug": "plausible-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026 年最佳 Plausible 替代方案 - 開源且免費",
+    "description": "正在尋找 Plausible 的替代方案？OpenPanel 在隱私優先的網站分析之外，加入產品分析、使用者識別與更深入的洞察。開源且可免費自行架設。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Plausible 替代方案",
+    "subheading": "喜歡 Plausible 的簡潔與隱私取向嗎？OpenPanel 在維持輕量且預設無 Cookie 的同時，加入產品分析能力——漏斗、分群、留存與使用者識別。",
+    "badges": [
+      "開源",
+      "隱私優先",
+      "產品分析",
+      "無 Cookie"
+    ]
+  },
+  "competitor": {
+    "name": "Plausible Analytics",
+    "logo": "/logos/plausible.svg",
+    "url": "https://plausible.io",
+    "short_description": "以隱私為重、輕量的 Google Analytics 替代方案，適用於網站，具備歐盟基礎的託管與簡潔儀表板。",
+    "founded": 2018,
+    "headquarters": "愛沙尼亞，塔爾圖"
+  },
+  "overview": {
+    "title": "為什麼要考慮 OpenPanel 而不是 Plausible？",
+    "paragraphs": [
+      "Plausible Analytics 以輕量、隱私優先的 Google Analytics 替代方案建立了良好聲譽。它簡單的儀表板與無 Cookie 追蹤，讓它成為部落格與內容型網站的好選擇，能在不增加複雜度的情況下取得基本流量指標。但當你的產品成長後，你很快就會碰到 Plausible 能提供功能的上限。",
+      "OpenPanel 與 Plausible 一樣重視隱私——無 Cookie 追蹤、無需同意橫幅、以及以歐盟為基礎的資料處理——但在完整的產品分析能力上更進一步。Plausible 提供的是頁面瀏覽、推薦來源與國家分布；OpenPanel 則增加漏斗、留存分析、分群明細、使用者檔案與 A/B 測試。它兼具兩者優點：Web 分析的 Plausible 式簡潔，加上產品分析的 Mixpanel 式深度。",
+      "自行架設是 OpenPanel 的另一個明顯優勢。Plausible Community Edition 需要你分別設定與管理 PostgreSQL 和 ClickHouse。OpenPanel 則提供一個指令即可完成的 Docker Compose 堆疊安裝腳本（ClickHouse、Postgres 與 Redis），讓部署與維護簡單許多。和 Plausible 一樣，OpenPanel 自行架設免費且無限制；其雲端方案在 30 天試用後，從每月 $2.50 / 5,000 事件起。",
+      "如果你已經超出簡單網站分析的需求，需要了解使用者實際如何與你的產品互動——而且不想再增加第二套分析工具——那麼 OpenPanel 會是從 Plausible 自然升級的下一步。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Plausible：哪個適合你？",
+    "intro": "兩者都是以隱私為重的分析平台。Plausible 專注於簡單的網站流量指標。OpenPanel 則加入了含使用者識別的產品分析。",
+    "one_liner": "Plausible 擅長簡單的網站分析；OpenPanel 則加入產品分析、使用者識別與更簡單的自行架設。",
+    "best_for_openpanel": [
+      "需要使用者層級分析與留存追蹤的 SaaS 產品",
+      "已超出簡單網站分析需求、需要產品功能的團隊",
+      "需要對已登入使用者進行識別的應用程式",
+      "需要原生 iOS、Android、React Native、Flutter SDK 的行動應用開發者"
+    ],
+    "best_for_competitor": [
+      "只想看流量統計的簡單內容網站與部落格",
+      "特別重視低於 1KB 指令碼大小的團隊",
+      "希望在儀表板中使用 Google Search Console 整合的使用者",
+      "優先選擇德國／歐盟境內資料託管的組織"
+    ]
+  },
+  "highlights": {
+    "title": "一眼看懂的主要差異",
+    "intro": "以下是 OpenPanel 與 Plausible 在關鍵因素上的比較。",
+    "items": [
+      {
+        "label": "分析深度",
+        "openpanel": "Web + 產品分析",
+        "competitor": "僅 Web 分析",
+        "notes": "OpenPanel 結合網站分析與產品分析——漏斗、留存、分群與使用者檔案。Plausible 則完全聚焦於網站流量指標。"
+      },
+      {
+        "label": "使用者識別",
+        "openpanel": "有 - 可追蹤個別使用者",
+        "competitor": "沒有 - 只有匿名彙總資料",
+        "notes": "OpenPanel 可跨工作階段識別並追蹤個別使用者。Plausible 有意不追蹤個人——所有資料都是匿名且彙總的。"
+      },
+      {
+        "label": "SDK 大小",
+        "openpanel": "2.3 KB",
+        "competitor": "< 1 KB",
+        "notes": "Plausible 的指令碼極為輕量，小於 1KB。OpenPanel 的 2.3KB SDK 仍然很輕，但功能更多。"
+      },
+      {
+        "label": "無 Cookie",
+        "openpanel": "有（預設）",
+        "competitor": "有（預設）",
+        "notes": "兩個平台預設都不使用 Cookie，且在基本分析情境下不需要 GDPR 同意橫幅。"
+      },
+      {
+        "label": "自行架設複雜度",
+        "openpanel": "Docker Compose 搭配一鍵安裝腳本",
+        "competitor": "Docker Compose 搭配 PostgreSQL + ClickHouse",
+        "notes": "兩者都是 Docker Compose 堆疊。OpenPanel 提供一鍵安裝腳本，可處理資料庫初始化、SSL 與設定——Plausible Community Edition 則需要手動設定 PostgreSQL + ClickHouse。"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能比較",
+    "intro": "兩者都重視隱私，但能力與深度不同。",
+    "groups": [
+      {
+        "group": "網站分析",
+        "features": [
+          {
+            "name": "頁面瀏覽與訪客",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "流量來源",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "地理資料",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都提供國家、地區與城市層級資料"
+          },
+          {
+            "name": "裝置與瀏覽器",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "UTM 行銷活動追蹤",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "即時儀表板",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "產品分析",
+        "features": [
+          {
+            "name": "自訂事件追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Plausible 稱這些為「Goals」"
+          },
+          {
+            "name": "漏斗分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Plausible 在 2022 年加入漏斗（2–8 步驟）"
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Plausible 專注於彙總指標，而不是使用者留存"
+          },
+          {
+            "name": "使用者檔案",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Plausible 有意不追蹤個別使用者"
+          },
+          {
+            "name": "分群分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Plausible 的匿名模型不支援分群"
+          },
+          {
+            "name": "使用者路徑分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Plausible 會顯示入口／離開頁面，但不提供使用者旅程"
+          }
+        ]
+      },
+      {
+        "group": "進階功能",
+        "features": [
+          {
+            "name": "A/B 測試",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Plausible 只做分析，不提供實驗功能"
+          },
+          {
+            "name": "營收追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Plausible 已加入電子商務的營收目標"
+          },
+          {
+            "name": "自訂屬性",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都支援自訂維度／屬性"
+          },
+          {
+            "name": "Email/Slack 報告",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都提供排程報告與警示"
+          },
+          {
+            "name": "Google Search Console",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Plausible 內建 GSC 整合"
+          },
+          {
+            "name": "Google Analytics 匯入",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Plausible 可匯入歷史 GA 資料"
+          }
+        ]
+      },
+      {
+        "group": "隱私與合規",
+        "features": [
+          {
+            "name": "預設無 Cookie",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者預設都不使用 Cookie"
+          },
+          {
+            "name": "無需同意橫幅",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都主張基本分析不需要同意"
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "EU 資料託管",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Plausible 託管於德國 Falkenstein（Hetzner）"
+          },
+          {
+            "name": "自行架設選項",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Plausible Community Edition 為免費且開源"
+          },
+          {
+            "name": "IP 匿名化",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Plausible 會將 IP 雜湊後用於計數，且從不儲存"
+          }
+        ]
+      },
+      {
+        "group": "整合功能",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Plausible 具有 Stats API 與 Events API"
+          },
+          {
+            "name": "資料匯出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都支援 CSV 匯出"
+          },
+          {
+            "name": "WordPress 外掛",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Plausible 有官方 WordPress 外掛"
+          },
+          {
+            "name": "NPM 套件",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "可用 plausible-tracker 套件"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技術比較",
+    "intro": "以下是給正在評估分析工具的開發者看的技術面拆解。",
+    "items": [
+      {
+        "label": "SDK 大小",
+        "openpanel": "2.3 KB（gzip 後）",
+        "competitor": "< 1 KB（gzip 後），可用模組化擴充功能",
+        "notes": null
+      },
+      {
+        "label": "支援平台",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Astro",
+          "Remix",
+          "React Native",
+          "Flutter",
+          "iOS（Swift）",
+          "Android（Kotlin）",
+          "Node.js",
+          "Python",
+          "Ruby",
+          "Rust",
+          "Java",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript（瀏覽器）",
+          "React（透過 npm）",
+          "Next.js",
+          "Vue",
+          "WordPress",
+          "Ghost",
+          "Wix",
+          "Squarespace",
+          "Webflow"
+        ],
+        "notes": null
+      },
+      {
+        "label": "開源",
+        "openpanel": "是 - AGPL-3.0",
+        "competitor": "是 - AGPL-3.0",
+        "notes": "兩者皆為開源，並採用 AGPL-3.0 授權。"
+      },
+      {
+        "label": "自行架設",
+        "openpanel": "Docker Compose，導引式設定精靈",
+        "competitor": "Docker Compose 搭配 PostgreSQL + ClickHouse（至少 2GB RAM）",
+        "notes": null
+      },
+      {
+        "label": "資料庫",
+        "openpanel": "ClickHouse（分析）+ PostgreSQL（設定）+ Redis",
+        "competitor": "PostgreSQL（使用者資料）+ ClickHouse（分析資料）",
+        "notes": null
+      },
+      {
+        "label": "資料保留",
+        "openpanel": "無限制（自行架設），可設定（雲端）",
+        "competitor": "雲端無限制，自行架設可設定",
+        "notes": null
+      },
+      {
+        "label": "語言",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "Elixir",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "價格比較",
+    "intro": "兩者都沒有免費雲端方案。兩者都可免費自行架設；OpenPanel 的雲端方案從每月 $2.50 起。",
+    "openpanel": {
+      "model": "依事件計費，透明公開",
+      "description": "價格透明，從 5,000 事件每月 $2.50 起，並提供 30 天免費試用。所有方案都包含全部功能。自行架設免費且事件數無上限。"
+    },
+    "competitor": {
+      "model": "依頁面瀏覽計費，含 30 天試用",
+      "description": "10K pageviews：每月 $9。100K：約 $19/月。1M：約 $69/月。10M：約 $299/月。所有功能皆包含。年繳可省 2 個月。雲端沒有免費方案（自行架設除外）。",
+      "free_tier": "沒有免費方案（僅 30 天試用）",
+      "pricing_url": "https://plausible.io/#pricing"
+    }
+  },
+  "migration": {
+    "title": "從 Plausible 遷移到 OpenPanel",
+    "intro": "兩者都使用輕量指令碼與類似的事件追蹤，因此遷移相當容易。",
+    "difficulty": "easy",
+    "estimated_time": "30 分鐘到 2 小時",
+    "steps": [
+      {
+        "title": "安裝 OpenPanel SDK",
+        "description": "將 OpenPanel SDK 加入你的應用程式。兩者都使用輕量指令碼，因此轉換成本很低。"
+      },
+      {
+        "title": "將你的 Goals 對應為事件",
+        "description": "Plausible 的「Goals」會對應成 OpenPanel 事件。自訂事件可直接轉換——plausible('signup') 會變成 op.track('signup')。"
+      },
+      {
+        "title": "設定使用者識別（新增）",
+        "description": "與 Plausible 不同，OpenPanel 可以識別使用者。加入 op.identify() 呼叫，即可啟用留存、分群與使用者檔案。"
+      },
+      {
+        "title": "設定漏斗與儀表板",
+        "description": "在 OpenPanel 中重建你的 Plausible 漏斗。你現在還能使用更多產品分析功能。"
+      },
+      {
+        "title": "移除 Plausible 指令碼",
+        "description": "驗證完成後，移除 Plausible 追蹤指令碼。兩者都無 Cookie，因此不需要更改同意設定。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "兩者都使用事件式追蹤，API 也很相似。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "大多數團隊會先從 OpenPanel 重新開始，並在短時間內讓兩個工具並行運作。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 Plausible 更適合的情境",
+    "intro": "當你需要超越簡單流量統計的產品分析時，選擇 OpenPanel。",
+    "items": [
+      {
+        "title": "需要使用者分析的 SaaS 產品",
+        "description": "Plausible 顯示的是網站流量彙總資料。如果你需要了解個別使用者旅程、留存與在產品中的行為，OpenPanel 可在保持隱私友善的同時提供這些能力。",
+        "icon": "users"
+      },
+      {
+        "title": "已超出簡單網站分析需求的團隊",
+        "description": "一開始因為 Plausible 的簡潔而採用它，但現在需要更多步驟的漏斗、分群分析或 A/B 測試嗎？OpenPanel 可提供這些功能，而且不會像企業級工具那樣複雜。",
+        "icon": "trending-up"
+      },
+      {
+        "title": "需要使用者識別的應用程式",
+        "description": "Plausible 有意不識別使用者。如果你需要追蹤已登入使用者、分析客戶區隔或衡量留存，OpenPanel 可以在尊重隱私的前提下完成。",
+        "icon": "user-check"
+      },
+      {
+        "title": "行動應用分析",
+        "description": "Plausible 主要是為網站設計。OpenPanel 提供 iOS、Android、React Native 與 Flutter 的原生 SDK，並具備完整的產品分析功能。",
+        "icon": "smartphone"
+      },
+      {
+        "title": "更簡單的自行架設",
+        "description": "Plausible CE 需要你分別設定 PostgreSQL 與 ClickHouse。OpenPanel 提供一個指令即可執行的 ./setup 精靈，引導你完成設定，並在幾分鐘內把整個 Docker Compose 堆疊啟動起來，讓自行架設更直接。",
+        "icon": "server"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於從 Plausible 轉換到 OpenPanel 的常見問題。",
+    "items": [
+      {
+        "question": "OpenPanel 跟 Plausible 一樣重視隱私嗎？",
+        "answer": "是的！兩者預設都不使用 Cookie，也不需要同意橫幅。主要差異在於 OpenPanel 允許選擇性地進行使用者識別，用於產品分析，而 Plausible 則是嚴格匿名。你可以自行決定是否在 OpenPanel 中識別使用者。"
+      },
+      {
+        "question": "為什麼要從 Plausible 轉換到 OpenPanel？",
+        "answer": "團隊通常在需要產品分析功能時轉換：使用者識別、留存分析、分群分析與詳細漏斗追蹤。Plausible 擅長簡單網站分析，但如果你正在打造產品並需要了解使用者行為，OpenPanel 能在維持隱私的同時提供這些功能。"
+      },
+      {
+        "question": "Plausible 有免費方案嗎？",
+        "answer": "沒有，Plausible Cloud 需要付費訂閱，從每月 $9 起。他們提供 30 天免費試用。自行架設的 Community Edition 雖然免費，但你需要自行管理 PostgreSQL 與 ClickHouse 基礎設施。OpenPanel 也是一樣：沒有免費雲端方案（30 天試用後，5,000 事件起每月 $2.50），但自行架設免費且無限使用。"
+      },
+      {
+        "question": "哪一個追蹤指令碼比較小？",
+        "answer": "這部分 Plausible 勝出，它的指令碼小於 1KB。OpenPanel 的 2.3KB 指令碼仍然非常輕量，但包含更多產品分析功能。兩者都明顯比 Google Analytics（45KB 以上）或 Mixpanel 更小。"
+      },
+      {
+        "question": "Plausible 可以追蹤行動應用嗎？",
+        "answer": "官方不行。Plausible 是為網站分析設計，沒有原生行動 SDK。你可以透過他們的 API 傳送事件，但沒有行動裝置專屬指標。OpenPanel 則提供原生 iOS、Android、React Native 與 Flutter SDK。"
+      },
+      {
+        "question": "從 Plausible 轉換時，我會失去什麼？",
+        "answer": "Plausible 的 Google Search Console 整合與 GA 匯入工具，是 OpenPanel 沒有的功能。如果你非常依賴這些功能，請先評估需求。不過，你會獲得 Plausible 沒有提供的產品分析能力。"
+      },
+      {
+        "question": "自行架設方面如何比較？",
+        "answer": "Plausible CE 需要使用 Docker Compose 搭配 PostgreSQL 與 ClickHouse（至少 2GB RAM）。OpenPanel 也使用 Docker Compose（ClickHouse、Postgres 與 Redis），但提供一鍵安裝腳本，可處理資料庫初始化、SSL 與設定。兩者都使用 ClickHouse 進行分析查詢。"
+      },
+      {
+        "question": "Plausible 或 OpenPanel 哪個更適合部落格／內容網站？",
+        "answer": "對於只需要流量統計的簡單內容網站來說，Plausible 的簡潔性非常出色。如果你經營的是 SaaS、電子商務，或任何需要了解使用者行為的產品，OpenPanel 的產品分析功能會更有價值。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "從 Google Analytics 遷移",
+        "url": "/guides/migrate-from-google-analytics"
+      },
+      {
+        "title": "網站分析設定",
+        "url": "/guides/website-analytics-setup"
+      },
+      {
+        "title": "追蹤自訂事件",
+        "url": "/guides/track-custom-events"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳開源網站分析工具",
+        "url": "/articles/self-hosted-web-analytics"
+      },
+      {
+        "title": "無 Cookie 分析",
+        "url": "/articles/cookieless-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Umami",
+        "url": "/compare/umami-alternative"
+      },
+      {
+        "name": "Fathom",
+        "url": "/compare/fathom-alternative"
+      },
+      {
+        "name": "Matomo",
+        "url": "/compare/matomo-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "開始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

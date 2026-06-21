@@ -1,0 +1,171 @@
+---
+title: "如何为 Astro 添加分析"
+description: "使用 OpenPanel 为您的 Astro 网站添加注重隐私的分析。无需 cookies 即可跟踪页面浏览、 自定义事件和用户行为。"
+difficulty: beginner
+timeToComplete: 5
+date: 2025-12-14
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安装 SDK"
+    anchor: "install"
+  - name: "将组件添加到布局中"
+    anchor: "setup"
+  - name: "跟踪自定义事件"
+    anchor: "events"
+  - name: "识别用户"
+    anchor: "identify"
+  - name: "验证您的设置"
+    anchor: "verify"
+---
+
+# 如何为 Astro 添加分析
+
+为您的 Astro 网站添加分析有助于您了解访客如何与您的内容互动。本指南将带您在大约五分钟内完成 OpenPanel 的设置，用于跟踪页面浏览、自定义事件和用户行为。
+
+OpenPanel 非常适合 Astro，因为它是一个轻量级脚本，会异步加载且不会阻塞网站渲染。它会自动跟踪静态页面和服务端渲染页面的页面浏览，并且这种基于组件的 API 与 Astro 的架构自然契合。
+
+## 前提条件
+
+- 一个 Astro 项目
+- 一个 OpenPanel 账户（[免费注册](https://dashboard.openpanel.dev/onboarding)）
+- 来自 OpenPanel 控制台的 Client ID
+
+## 安装 SDK [#install]
+
+首先，将 OpenPanel Astro 包添加到您的项目中。该包提供用于初始化和跟踪的 Astro 组件。
+
+```bash
+npm install @openpanel/astro
+```
+
+如果您更习惯，也可以使用 pnpm 或 yarn。
+
+## 将组件添加到布局中 [#setup]
+
+`OpenPanelComponent` 会初始化跟踪，应该放在您的根布局中，以便它在每个页面上加载。将其添加到 `<head>` 标签内，以确保它在任何用户交互之前初始化。
+
+```astro
+---
+import { OpenPanelComponent } from '@openpanel/astro';
+---
+
+<html>
+  <head>
+    <OpenPanelComponent
+      clientId="your-client-id"
+      trackScreenViews={true}
+      trackOutgoingLinks={true}
+    />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+```
+
+`trackScreenViews` 选项会在有人导航到新页面时自动记录一次页面浏览事件。`trackOutgoingLinks` 选项会跟踪访客点击跳转到外部网站的链接。这两个选项都是可选的，但对大多数网站都推荐开启。
+
+如果您在渲染时已经知道用户身份，也可以传入 `profileId` 属性；还可以传入 `globalProperties`，为每个事件附加元数据。
+
+## 跟踪自定义事件 [#events]
+
+除了自动页面浏览之外，您通常还需要跟踪与业务相关的特定交互。OpenPanel 提供了一个全局 `op` 函数，您可以在任何事件处理器中调用它。
+
+```astro
+<button onclick="window.op('track', 'button_clicked', {button_name: 'signup'})">
+  注册
+</button>
+```
+
+第一个参数始终是 `'track'`，第二个是您的事件名称，第三个是一个可选对象，用于附加到事件上的属性。请在整个代码库中保持事件名称一致，使用 snake_case 是一个很好的约定。
+
+对于不想写 JavaScript 的元素，您可以改用数据属性。任何带有 `data-track` 属性的元素在被点击时都会自动触发一个事件。
+
+```astro
+<button data-track="button_clicked" data-button-name="signup">
+  注册
+</button>
+```
+
+属性会从元素上的任何 `data-*` 属性中提取。`data-track` 的值会成为事件名称，而其他数据属性会成为事件属性。
+
+### 跟踪表单提交
+
+表单是常见的跟踪目标。您可以在 `onsubmit` 处理器中触发事件，同时仍然允许表单正常提交。
+
+```astro
+<form onsubmit="window.op('track', 'form_submitted', {form_name: 'contact'}); return true;">
+  <input type="email" name="email" placeholder="您的邮箱" required />
+  <button type="submit">提交</button>
+</form>
+```
+
+`return true` 可确保在跟踪调用之后表单提交继续进行。
+
+## 识别用户 [#identify]
+
+当用户登录或您以其他方式获知其身份时，您可以将其活动与某个资料关联起来。`IdentifyComponent` 以声明式方式处理这一点。
+
+```astro
+---
+import { IdentifyComponent } from '@openpanel/astro';
+
+const user = await getCurrentUser();
+---
+
+<IdentifyComponent
+  profileId={user.id}
+  firstName={user.firstName}
+  lastName={user.lastName}
+  email={user.email}
+  properties={{
+    plan: user.plan,
+  }}
+/>
+```
+
+将此组件放在用户已通过身份验证的页面上。一旦完成识别，此浏览器会话中的后续所有事件都会关联到该资料，直到他们清除浏览器数据，或者您显式清除身份。
+
+### 设置全局属性
+
+有时您希望为每个事件附加相同的属性，例如应用版本或环境。`SetGlobalPropertiesComponent` 允许您只设置一次，而不必在每次跟踪调用中重复。
+
+```astro
+---
+import { SetGlobalPropertiesComponent } from '@openpanel/astro';
+---
+
+<SetGlobalPropertiesComponent
+  properties={{
+    app_version: '1.0.2',
+    environment: import.meta.env.MODE,
+  }}
+/>
+```
+
+这些属性会与您传递给单独跟踪调用的任何事件特定属性合并。
+
+## 验证您的设置 [#verify]
+
+在浏览器中打开您的 Astro 网站，并在几个页面之间导航。然后打开您的 [OpenPanel 控制台](https://dashboard.openpanel.dev) 并查看实时视图。您应该会在几秒钟内看到页面浏览事件出现。
+
+如果事件没有显示，请打开浏览器的开发者控制台并查看错误。最常见的问题是 Client ID 不正确，或者广告拦截器阻止了跟踪脚本加载。您还可以检查 Network 面板，确认请求是否已发送到 OpenPanel 的服务器。
+
+## 后续步骤
+
+[Astro SDK 参考](/zh-CN/docs/sdks/astro) 介绍了更多配置选项，例如过滤事件和自定义 CDN URL。如果您有兴趣在自己的基础设施上运行 OpenPanel，[自托管指南](/zh-CN/articles/how-to-self-host-openpanel) 将带您完成设置流程。
+
+<Faqs>
+<FaqItem question="OpenPanel 可以与 Astro Islands 一起使用吗？">
+可以。OpenPanelComponent 是一个客户端脚本，会独立于您的 island 组件进行 hydration。无论页面中哪些部分被 hydration，它都会跟踪整个页面上的交互。
+</FaqItem>
+
+<FaqItem question="我可以在 Astro 的 SSR 模式下使用 OpenPanel 吗？">
+可以。OpenPanel 同时适用于静态和服务端渲染的 Astro 网站。无论页面是如何渲染的，跟踪脚本都会在浏览器中运行。
+</FaqItem>
+
+<FaqItem question="OpenPanel 使用 cookies 吗？">
+不使用。OpenPanel 默认使用无 cookie 跟踪，这意味着在大多数隐私法规（包括 GDPR）下，基础分析通常不需要 cookie 同意横幅。了解更多关于[无 cookie 分析](/zh-CN/articles/cookieless-analytics)的信息。
+</FaqItem>
+</Faqs>

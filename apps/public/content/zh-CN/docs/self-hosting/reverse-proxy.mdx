@@ -1,0 +1,185 @@
+---
+title: 反向代理设置
+description: 在你自己的反向代理后运行 OpenPanel，或放在随附的 Caddy 上游。本页涵盖路由、WebSockets，以及每次都会踩到的坑。
+---
+
+OpenPanel 随附一个 Caddy 容器，负责 TLS 和路由。只需两行配置，就能直接工作。如果你更喜欢 NGINX、Traefik、HAProxy，或者要在 Caddy 前面再放一个 TLS 终止器，本页会说明如何配置，以及——更重要的是——过程中会坏掉什么。
+
+## 什么时候需要这个？
+
+- **用 NGINX/Traefik/HAProxy 替换 Caddy** — 跳到 [你自己的反向代理](#your-own-reverse-proxy)。
+- **在随附的 Caddy 上游放置 TLS 终止器**（云负载均衡、边缘 VM）— 参见 [Caddy 上游终止 TLS](#tls-terminated-upstream-of-caddy)。
+- **只使用随附的 Caddy** — 你不需要本页。`./setup` + `./start` 就完成了。
+
+## 随附的 Caddy 如何工作
+
+随附的 Caddy 配置刻意保持很小。本页其余内容，都是把它翻译成你选择的代理的写法：
+
+```text title="self-hosting/caddy/Caddyfile.template"
+$DOMAIN_NAME {$SSL_CONFIG
+    encode gzip
+
+    handle_path /api* {
+        reverse_proxy op-api:3000
+    }
+
+    reverse_proxy /* op-dashboard:3000
+}
+```
+
+就是这样。两条规则：
+
+- `/api/*` → `op-api:3000`，并去掉 `/api` 前缀
+- `/*` → `op-dashboard:3000`
+
+**API 自己处理 CORS** — 你的代理不需要添加 `Access-Control-*` 头，也没有特殊的 `/track` 路由。`/api/` 下的一切（包括 `/api/track`、`/api/live/*`、`/api/export`，等等）都会命中 API 容器。
+
+## 你自己的反向代理
+
+接入你自己的代理，最简单的方式是在同一个 Docker 网络里把它作为另一个容器运行：在 `docker-compose.yml` 中注释掉 `op-proxy`，添加你的代理服务，并按服务名指向 `op-api:3000` / `op-dashboard:3000` —— 和 Caddy 的做法一样。应用容器不需要绑定主机端口。
+
+下面每个片段都是**模板**，不是完整配置。TLS、日志、限流、请求体大小限制，以及你的部署真正需要的其他内容——都需要你自己处理。
+
+### NGINX
+
+```nginx
+# 仅当客户端请求升级时，才转发 Connection: upgrade。
+# 无条件 "upgrade" 会破坏 dashboard 的 SSR —— 见注意事项。
+map $http_upgrade $connection_upgrade {
+    default keep-alive;
+    websocket upgrade;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name openpanel.example.com;
+
+    # ssl_certificate / ssl_certificate_key — 你的 TLS 配置在这里
+
+    # /api/* → API（去掉前缀）
+    location /api/ {
+        proxy_pass         http://op-api:3000/;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade           $http_upgrade;
+        proxy_set_header   Connection        $connection_upgrade;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 24h;  # 保持空闲的 /api/live/* WebSockets 存活
+    }
+
+    # /* → dashboard
+    location / {
+        proxy_pass         http://op-dashboard:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade           $http_upgrade;
+        proxy_set_header   Connection        $connection_upgrade;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Caddy 只需两行就能完成。NGINX 要写更多样板配置，才能达到同样的行为——用于条件升级的 `map` 块、显式的 `X-Forwarded-*` 头、为 WebSockets 设置较长的 `proxy_read_timeout`。参见 [注意事项](#gotchas)。
+
+### Traefik
+
+```yaml
+op-api:
+  labels:
+    - traefik.enable=true
+    - traefik.http.routers.op-api.rule=Host(`openpanel.example.com`) && PathPrefix(`/api`)
+    - traefik.http.middlewares.op-api-strip.stripprefix.prefixes=/api
+    - traefik.http.routers.op-api.middlewares=op-api-strip
+    - traefik.http.services.op-api.loadbalancer.server.port=3000
+
+op-dashboard:
+  labels:
+    - traefik.enable=true
+    - traefik.http.routers.op-dashboard.rule=Host(`openpanel.example.com`)
+    - traefik.http.services.op-dashboard.loadbalancer.server.port=3000
+```
+
+Traefik 默认会转发 WebSocket 升级，因此 Realtime 视图无需额外配置即可工作。
+
+## 在 Caddy 上游终止 TLS
+
+如果你在云负载均衡器或另一台 VM 上终止 TLS，然后向随附的 Caddy 发送纯 HTTP，你会在登录页遇到混合内容错误——dashboard 以为自己运行在 HTTP，因为内部的 Caddy 没有看到转发的 scheme。
+
+在 Caddy 侧修复——告诉它信任上游的 `X-Forwarded-*` 头：
+
+```
+{
+    auto_https off
+    admin off
+    servers {
+        trusted_proxies static private_ranges
+    }
+}
+```
+
+`private_ranges` 信任 RFC1918 地址——这是 LB 位于同一 VPC 内时的常见情况。没有这个设置，Caddy 会忽略来自上游的 `X-Forwarded-Proto: https`，而 dashboard 会构建 `http://` URL。
+
+在上游终止器上，转发 scheme：
+
+```
+X-Forwarded-Proto: https
+```
+
+并在 `.env` 中设置公共 URL，这样 dashboard + API 在各处都会使用正确的 scheme：
+
+```bash title=".env"
+DASHBOARD_URL=https://openpanel.example.com
+API_URL=https://openpanel.example.com/api
+CORS_ORIGIN=https://openpanel.example.com
+```
+
+## 注意事项
+
+这些才是真正会踩坑的地方。那些会让你盯着 “Something went wrong” 看一个小时的坑。
+
+### `Connection: upgrade` 会破坏 dashboard SSR
+
+在每个请求上都无条件转发 `Connection: upgrade`——这是“添加 WebSocket 支持”时常见的复制粘贴做法——会用一个不明确的 `fetch failed` 破坏 dashboard 的服务端渲染。
+
+**原因：** dashboard 在 SSR 期间会向 API 发起服务端 tRPC 调用。Node 的 `undici` 会拒绝任何带有 `Connection: upgrade` 的 `fetch()`，报 `UND_ERR_INVALID_ARG` → `TypeError: fetch failed` → 浏览器显示 “Something went wrong / fetch failed”。
+
+**修复：** 只有在客户端请求升级时才转发升级头。上面的 NGINX 片段通过 `map $http_upgrade $connection_upgrade` 块实现了这一点。Caddy 和 Traefik 开箱即正确处理。
+
+### `/api/live/*` 需要 WebSocket 升级
+
+Realtime 视图和实时通知使用位于 `/api/live/events/:projectId` 和 `/api/live/notifications/:projectId` 的 WebSockets。如果你的代理丢弃了 `Upgrade` / `Connection` 头，页面虽然会加载完成（来自 SSR 快照），但永远不会更新。DevTools → Network → WS 会显示连接失败。
+
+对 NGINX，你需要两者都配置：
+
+```nginx
+proxy_set_header Upgrade    $http_upgrade;
+proxy_set_header Connection $connection_upgrade;
+proxy_read_timeout          24h;
+```
+
+较长的 `proxy_read_timeout` 可阻止代理在事件间关闭空闲连接。
+
+### CORS 由 API 处理——不要在代理里重新添加
+
+API 会按路径动态处理 CORS（dashboard 路由是 origin 锁定的；`/api/track` 是宽松的）。如果你的代理也添加 `Access-Control-Allow-Origin: *` 头，浏览器会看到两个头并拒绝响应。让 API 来处理。
+
+### 上游 TLS 终止器后面的混合内容
+
+参见 [Caddy 上游终止 TLS](#tls-terminated-upstream-of-caddy)。简而言之：内部 Caddy 配置 `trusted_proxies`，上游发送 `X-Forwarded-Proto: https`，并在 `.env` 中设置 `DASHBOARD_URL=https://...`。
+
+### SDK `apiUrl` 必须与浏览器加载的地址一致
+
+无论你的最终公共 URL 是什么，SDK 的 `apiUrl` 都必须匹配——包括 `/api` 路径：
+
+```ts
+new OpenPanel({
+  apiUrl: 'https://openpanel.example.com/api',
+  clientId: 'YOUR_CLIENT_ID',
+});
+```
+
+参见 [始终使用正确的 API URL](/zh-CN/docs/self-hosting/self-hosting#always-use-correct-api-url)。

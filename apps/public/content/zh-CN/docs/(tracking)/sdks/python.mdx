@@ -1,0 +1,177 @@
+---
+title: Python
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+OpenPanel Python SDK 允许你在 Python 应用中跟踪用户行为。本指南提供在项目中安装和使用 Python SDK 的说明。
+
+<Callout>
+想要一步一步的教程？查看 [Python 分析指南](/zh-CN/guides/python-analytics)。
+</Callout>
+
+## 安装
+
+<Steps>
+### 安装依赖
+
+```bash
+pip install openpanel
+```
+
+### 初始化
+
+使用你的凭据导入并初始化 OpenPanel SDK：
+
+```python
+from openpanel import OpenPanel
+
+op = OpenPanel(
+    client_id="YOUR_CLIENT_ID",
+    client_secret="YOUR_CLIENT_SECRET"
+)
+```
+
+### 配置选项
+
+<CommonSdkConfig />
+
+Python 特有的附加选项：
+
+- `filter` - 在跟踪事件之前会调用的函数。如果返回 false，则不会跟踪该事件
+- `disabled` - 设置为 `True` 以禁用所有 [事件跟踪](/zh-CN/features/event-tracking)
+- `global_properties` - 每个事件都会携带发送的属性字典
+
+#### Filter 函数示例
+
+```python
+def my_filter(event):
+    # 跳过名为 'my_event' 的事件
+    return event.get('name') != 'my_event'
+
+op = OpenPanel(
+    client_id="YOUR_CLIENT_ID",
+    client_secret="YOUR_CLIENT_SECRET",
+    filter=my_filter
+)
+```
+
+</Steps>
+
+## 使用
+
+### 跟踪事件
+
+要跟踪事件，请使用 `track` 方法：
+
+```python
+# 跟踪一个简单事件
+op.track("button_clicked")
+
+# 跟踪带属性的事件
+op.track("purchase_completed", {
+    "product_id": "123",
+    "price": 99.99,
+    "currency": "USD"
+})
+
+# 为特定用户跟踪
+op.track("login_successful", {
+    "method": "google"
+}, profile_id="user_123")
+```
+
+### 标识用户
+
+要标识用户，请使用 `identify` 方法，将 profile ID 作为第一个参数，将 traits 字典作为第二个参数：
+
+```python
+op.identify("user123", {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com",
+    "tier": "premium",
+    "company": "Acme Inc"
+})
+```
+
+### 设置全局属性
+
+要设置每个事件都会携带发送的属性：
+
+```python
+op.set_global_properties({
+    "app_version": "1.0.2",
+    "environment": "production",
+    "deployment": "us-east-1"
+})
+```
+
+### 增加属性值
+
+要增加用户资料上的数值属性：
+
+```python
+op.increment({
+    "profile_id": "1",
+    "property": "visits",
+    "value": 1  # 可选，默认为 1
+})
+```
+
+### 减少属性值
+
+要减少用户资料上的数值属性：
+
+```python
+op.decrement({
+    "profile_id": "1",
+    "property": "credits",
+    "value": 1  # 可选，默认为 1
+})
+```
+
+### 清除用户数据
+
+要清除当前用户的数据：
+
+```python
+op.clear()
+```
+
+## 高级用法
+
+### 线程安全
+
+<Callout>
+OpenPanel SDK 是线程安全的。你可以在应用中安全地跨多个线程使用同一个实例。
+</Callout>
+
+### 错误处理
+
+SDK 内置错误处理，在正常运行期间不会抛出异常。不过，你仍然可以将 SDK 调用包裹在 try-except 块中以提高安全性：
+
+```python
+try:
+    op.track("important_event", {"critical": True})
+except Exception as e:
+    logger.error(f"Failed to track event: {e}")
+```
+
+### 禁用跟踪
+
+你可以临时禁用所有跟踪：
+
+```python
+# 在初始化期间禁用
+op = OpenPanel(
+    client_id="YOUR_CLIENT_ID",
+    client_secret="YOUR_CLIENT_SECRET",
+    disabled=True
+)
+
+# 或在初始化后禁用
+op.disabled = True
+```

@@ -1,0 +1,29 @@
+---
+title: 身份验证
+description: 如何对 OpenPanel API 进行身份验证
+---
+
+## 客户端 ID 与密钥
+
+OpenPanel 使用客户端凭据进行身份验证。每个 API 客户端都有一个 **客户端 ID** 和一个 **客户端密钥**，你可以在控制台中生成。
+
+在请求头中传入它们：
+
+```http
+openpanel-client-id: <clientId>
+openpanel-client-secret: <secret>
+```
+
+## API 客户端类型
+
+| 类型 | 说明 |
+| --- | --- |
+| `write` | 可写入事件和用户资料更新 |
+| `read` | 可查询分析数据（insights、export 等） |
+| `root` | 完整访问权限，仅用于服务端管理场景 |
+
+## 创建客户端
+
+前往控制台的 **设置 -> API 客户端**，创建所需类型的客户端。请立即复制密钥，它只会显示一次。
+
+更多身份验证、权限和安全最佳实践，请查看 [身份验证指南](/zh-CN/docs/api/authentication)。

@@ -1,0 +1,46 @@
+---
+title: 识别用户
+description: 将匿名事件关联到特定用户。
+---
+
+默认情况下，OpenPanel 会匿名跟踪访客。要将这些事件关联到数据库中的特定用户，需要先识别他们。
+
+## 工作原理
+
+当用户登录或注册时，应调用 `identify` 方法。这会将其当前会话和所有未来事件与系统中的唯一 ID 关联起来。
+
+```javascript
+op.identify({
+  profileId: 'user_123'
+});
+```
+
+## 添加用户属性
+
+识别用户时，也可以传入用户属性（如姓名、邮箱或套餐类型）。这些属性会显示在仪表盘中的用户资料里。
+
+```javascript
+op.identify({
+  profileId: 'user_123',
+  firstName: 'Jane',
+  lastName: 'Doe',
+  email: 'jane@example.com',
+  company: 'Acme Inc'
+});
+```
+
+### 标准属性
+
+建议对常见用户信息使用这些标准键，以便它们在 OpenPanel 仪表盘中正确显示：
+
+- `firstName`
+- `lastName`
+- `email`
+- `phone`
+- `avatar`
+
+## 最佳实践
+
+1.  **登录时调用**：用户登录后应立即识别。
+2.  **更新时调用**：如果用户更新了资料，请使用新信息再次调用 identify。
+3.  **唯一 ID**：使用数据库中稳定且唯一的 ID（如 UUID），不要使用可能变更的邮箱地址或用户名。

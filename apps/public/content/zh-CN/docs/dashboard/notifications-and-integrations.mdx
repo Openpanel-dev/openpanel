@@ -1,0 +1,138 @@
+---
+title: "如何设置通知和集成"
+description: "当用户完成事件或漏斗时，通过 Slack、Discord 或 webhook 接收通知。了解如何在 OpenPanel 中连接集成并配置通知规则。"
+difficulty: beginner
+timeToComplete: 10
+date: 2026-02-27
+updated: 2026-02-27
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "创建集成"
+    anchor: "create-integration"
+  - name: "创建通知规则"
+    anchor: "create-rule"
+  - name: "事件规则"
+    anchor: "event-rules"
+  - name: "漏斗规则"
+    anchor: "funnel-rules"
+  - name: "查看通知"
+    anchor: "view-notifications"
+---
+
+## 工作原理
+
+开始之前，需要先了解两个独立概念：
+
+- **集成** 是与 Slack、Discord 或自定义 webhook 等外部服务的连接。它们位于工作区/组织级别，可在所有项目中复用。
+- **通知规则** 是触发通知的条件。规则位于单个项目内，并引用一个或多个集成。规则在关联集成之前不会生效，而集成在被规则使用之前也不会生效。
+- **通知** 是规则被触发时发送的消息。通知可以作为 json 对象发送，也可以作为带变量的模板发送。
+
+## 第 1 步：创建集成 [#create-integration]
+
+前往工作区设置并打开 **集成** 部分。点击 **添加集成**，然后选择要连接的服务。
+
+OpenPanel 目前支持：
+
+- **Slack** — 通过 OAuth 认证并选择频道
+- **Discord** — 粘贴某个频道的 Discord webhook URL
+- **Webhook** — 向你控制的任意 URL 发送 HTTP POST
+
+填写所需信息并保存。该集成现在可供工作区中的所有项目使用。
+
+<Figure
+  src="/screenshots/integrations-create.webp"
+  caption="为 Slack、Discord 或自定义 webhook 创建新的集成。"
+/>
+
+<Callout>很快我们会提供用于 S3 和 GCS 的集成，将你的事件导出到自己的存储中。</Callout>
+
+## 第 2 步：前往项目的通知规则 [#create-rule]
+
+仅有集成并不会产生任何效果。要开始接收告警，请打开要监控的项目，点击左侧边栏中的 **通知**，然后切换到 **规则** 选项卡。
+
+点击 **添加规则**，在屏幕右侧打开规则编辑器。
+
+为规则命名，然后选择 **类型**。共有两种类型：
+
+| 类型 | 触发时机 |
+|------|---------|
+| **事件** | 匹配事件接收后立即触发 |
+| **漏斗** | 会话结束后，且漏斗中的所有步骤都按顺序完成后触发 |
+
+## 事件规则 [#event-rules]
+
+事件规则实时触发。当 OpenPanel 接收到符合筛选条件的事件时，就会发送通知。
+
+<Figure
+  src="/screenshots/notifications-event-rule.webp"
+  caption="名为 'Onboarding user' 的事件规则：当 screen_view 事件发生且路径过滤条件匹配 onboarding 流程时触发。"
+/>
+
+在规则编辑器中：
+
+1. 将 **类型** 设置为 **事件**
+2. 从 **事件** 列表中添加一个或多个事件。你可以按事件属性筛选每个事件（例如，仅在 `path` 以 `/onboarding` 开头时触发）
+3. 为通知消息编写 **模板**。使用 `{{property_name}}` 动态插入事件属性，例如：`来自 {{country}} 的新用户，其首个事件已触发`
+4. 在 **集成** 下，选择应接收通知的集成
+
+点击 **更新** 保存规则。
+
+<Callout>如果你的集成中配置了 Javascript transformer，则不会使用模板。</Callout>
+
+## 漏斗规则 [#funnel-rules]
+
+漏斗规则可用于跟踪多步骤流程，并仅在用户按正确顺序完成每个步骤时通知你，例如：`session_start` → `subscription_checkout` → `subscription_created`。
+
+<Figure
+  src="/screenshots/notifications-funnel-rule.webp"
+  caption="名为 'Subscribe funnel' 的漏斗规则：当某个会话按顺序完成全部三个步骤时发出通知。"
+/>
+
+在规则编辑器中：
+
+1. 将 **类型** 设置为 **漏斗**
+2. 按漏斗中步骤必须发生的顺序添加每个事件。你也可以为每个步骤添加属性过滤条件
+3. 为通知消息编写 **模板**
+4. 选择你的 **集成**
+
+点击 **更新** 保存。
+
+<Callout type="warning">**重要：** 漏斗规则通知会在会话结束后发送，而不是在最后一步触发时立即发送。OpenPanel 会等到会话完成后再评估漏斗序列。</Callout>
+<Callout>如果你的集成中配置了 Javascript transformer，则不会使用模板。</Callout>
+
+## 查看通知 [#view-notifications]
+
+切换到 **通知** 选项卡（默认视图）即可查看项目中触发过的所有通知。每一行都会显示通知标题，以及触发该通知的用户所在国家/地区、OS、浏览器和 profile。
+
+<Figure
+  src="/screenshots/notifications-list.webp"
+  caption="通知选项卡会显示所有已触发通知的实时流，并包含国家/地区、OS 和浏览器等用户上下文。"
+/>
+
+你可以按创建日期过滤列表，或按标题搜索以查找特定事件。
+
+
+## 常见问题
+
+<Faqs>
+<FaqItem question="Can I use the same integration across multiple projects?">
+可以。集成是在工作区级别创建的，因此组织中的任何项目都可以在其通知规则中引用它们。
+</FaqItem>
+
+<FaqItem question="Why haven't I received any funnel notifications?">
+漏斗规则会在会话结束后触发，而不是在最后一个事件触发时立即触发。如果用户会话仍处于活动状态，通知会排队，直到会话关闭。请确保完整漏斗序列是在同一个会话中完成的。
+</FaqItem>
+
+<FaqItem question="Can I filter event rules to only fire for specific users or properties?">
+可以。对于规则中的每个事件，点击筛选图标添加属性条件——例如，仅在 `plan` 等于 `enterprise` 或 `country` 等于 `US` 时触发。
+</FaqItem>
+
+<FaqItem question="What integrations are supported?">
+目前支持 Slack、Discord 和自定义 webhooks。更多集成即将推出。
+</FaqItem>
+
+<FaqItem question="Can I have multiple integrations on one rule?">
+可以。每条规则上的集成选择器允许你选择多个目标。一次触发的规则会同时向所有选中的集成发送通知。
+</FaqItem>
+</Faqs>

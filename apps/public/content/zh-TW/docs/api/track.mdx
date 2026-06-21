@@ -1,0 +1,43 @@
+---
+title: 追蹤
+description: 如何透過 HTTP API 傳送事件、識別使用者，以及管理群組。
+---
+
+## 須知
+
+- 傳入 `x-client-ip` 標頭以啟用地理位置追蹤
+- 傳入 `user-agent` 標頭以啟用裝置偵測
+
+## 驗證
+
+所有請求都需要 `write` 或 `root` 用戶端。請參閱 [身分驗證](/zh-TW/docs/api/authentication) 指南。
+
+```bash
+-H "openpanel-client-id: YOUR_CLIENT_ID" \
+-H "openpanel-client-secret: YOUR_CLIENT_SECRET"
+```
+
+## 基礎 URL
+
+```
+https://api.openpanel.dev
+```
+
+## 事件類型
+
+`/track` 端點接受 `type` 欄位，用來決定要記錄的內容：
+
+| 類型 | 說明 |
+|------|-------------|
+| `track` | 記錄具名事件，可選擇附加屬性 |
+| `identify` | 建立或更新使用者檔案 |
+| `increment` | 遞增數值型檔案屬性 |
+| `decrement` | 遞減數值型檔案屬性 |
+| `group` | 建立或更新群組 |
+| `assign_group` | 將檔案連結至一或多個群組 |
+
+### 群組與事件
+
+群組不會自動填入事件中——即使在 `assign_group` 之後也是如此。當你需要群組資料時，請在每次 `track` 呼叫中明確傳入 `groups`。
+
+如需每種事件類型完整的請求/回應 schema，請參閱 [API 參考](/zh-TW/docs/api-reference/track/track/post)。

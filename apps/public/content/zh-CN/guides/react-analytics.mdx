@@ -1,0 +1,296 @@
+---
+title: "如何为 React 添加分析"
+description: "使用 OpenPanel 的 Web SDK 为你的 React 应用添加以隐私优先的分析。跟踪页面浏览、自定义事件和用户行为。"
+difficulty: beginner
+timeToComplete: 8
+date: 2025-12-14
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安装 SDK"
+    anchor: "install"
+  - name: "创建 OpenPanel 实例"
+    anchor: "setup"
+  - name: "跟踪页面浏览"
+    anchor: "pageviews"
+  - name: "跟踪自定义事件"
+    anchor: "events"
+  - name: "识别用户"
+    anchor: "identify"
+  - name: "验证你的设置"
+    anchor: "verify"
+---
+
+为你的 React 应用添加分析功能，可以帮助你了解用户如何与你的应用交互。OpenPanel 的 Web SDK 可与 React 和 React Router 无缝协作，为你提供页面浏览跟踪、自定义事件以及[用户识别](/features/identify-users)，而无需专门的 React 绑定所带来的复杂性。
+
+OpenPanel 是 Mixpanel 和 Google Analytics 的开源替代方案。它在默认采用无 Cookie 跟踪的同时，依然提供强大的洞察能力，并尊重用户隐私。
+
+## 前置条件
+
+- 一个 React 项目（Create React App、Vite 或类似项目）
+- 一个 OpenPanel 账户（[免费注册](https://dashboard.openpanel.dev/onboarding)）
+- 来自 OpenPanel 仪表板的 Client ID
+
+## 安装 SDK [#install]
+
+OpenPanel Web SDK 是一个轻量级包，可在任何 JavaScript 环境中使用，包括 React。使用 npm 安装即可，pnpm 或 yarn 的用法相同。
+
+```bash
+npm install @openpanel/web
+```
+
+## 创建 OpenPanel 实例 [#setup]
+
+为你的 OpenPanel 实例创建一个专用文件。这样可以将分析配置集中管理，并让你在整个应用中轻松导入该实例。
+
+```ts title="src/lib/op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+`trackScreenViews` 选项会在 URL 变化时自动跟踪页面浏览。这适用于 React Router、TanStack Router 以及其他基于客户端路由的解决方案。`trackAttributes` 选项支持在 HTML 元素上使用 `data-track` 属性进行声明式跟踪。
+
+### 使用环境变量
+
+对于生产环境应用，请将你的 Client ID 存储在环境变量中。Vite 和 Create React App 的处理方式不同。
+
+```ts title="src/lib/op.ts (Vite)"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: import.meta.env.VITE_OPENPANEL_CLIENT_ID,
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+```ts title="src/lib/op.ts (Create React App)"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: process.env.REACT_APP_OPENPANEL_CLIENT_ID,
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+### 在应用加载时初始化
+
+在应用的入口文件中导入 OpenPanel 实例，以确保应用加载时完成初始化。这样就足以开始自动跟踪页面浏览。
+
+```tsx title="src/main.tsx"
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './lib/op'; // 初始化 OpenPanel
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+```
+
+## 跟踪页面浏览 [#pageviews]
+
+启用 `trackScreenViews: true` 后，OpenPanel 会在浏览器 URL 变化时自动跟踪页面浏览。这可以与 React Router 以及其他使用 History API 的路由库开箱即用地配合。
+
+如果你需要手动跟踪页面浏览，或者希望更精细地控制每次浏览发送的数据，可以创建一个监听路由变化的组件。
+
+```tsx title="src/components/PageTracker.tsx"
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { op } from '../lib/op';
+
+export function PageTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    op.track('screen_view', {
+      path: location.pathname,
+      search: location.search,
+    });
+  }, [location.pathname, location.search]);
+
+  return null;
+}
+```
+
+将此组件添加到应用根部附近，并放在你的路由上下文内。请注意，如果你使用这种方式，应在 OpenPanel 配置中将 `trackScreenViews: false`，以避免重复跟踪。
+
+## 跟踪自定义事件 [#events]
+
+在需要跟踪事件的任何位置导入 OpenPanel 实例。`track` 方法接收一个事件名称和一个可选的属性对象。
+
+```tsx title="src/components/SignupButton.tsx"
+import { op } from '../lib/op';
+
+export function SignupButton() {
+  const handleClick = () => {
+    op.track('button_clicked', {
+      button_name: 'signup',
+      button_location: 'hero',
+    });
+  };
+
+  return (
+    <button type="button" onClick={handleClick}>
+      注册
+    </button>
+  );
+}
+```
+
+### 跟踪表单提交
+
+表单跟踪可以帮助你了解[转化率](/features/conversion)，并识别用户在哪些环节流失。
+
+```tsx title="src/components/ContactForm.tsx"
+import { useState } from 'react';
+import { op } from '../lib/op';
+
+export function ContactForm() {
+  const [email, setEmail] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    op.track('form_submitted', {
+      form_name: 'contact',
+      form_location: 'homepage',
+    });
+
+    // 你的表单提交逻辑
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="输入你的邮箱"
+      />
+      <button type="submit">提交</button>
+    </form>
+  );
+}
+```
+
+### 使用 data 属性进行声明式跟踪
+
+Web SDK 支持使用 `data-track` 属性进行声明式跟踪。这对于不需要编写 JavaScript 的简单点击跟踪非常有用。
+
+```tsx
+<button
+  data-track="button_clicked"
+  data-track-button_name="signup"
+  data-track-button_location="hero"
+>
+  注册
+</button>
+```
+
+当用户点击此按钮时，OpenPanel 会自动发送一个带有所指定属性的 `button_clicked` 事件。这要求你的配置中启用 `trackAttributes: true`。
+
+## 识别用户 [#identify]
+
+当用户登录或提供身份信息后，调用 `identify` 将其活动关联到一个资料档案。这可以启用用户级分析和群组分析。
+
+```tsx title="src/hooks/useAuth.ts"
+import { useEffect } from 'react';
+import { op } from '../lib/op';
+
+export function useAuth(user: User | null) {
+  useEffect(() => {
+    if (user) {
+      op.identify({
+        profileId: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        properties: {
+          plan: user.plan,
+          signupDate: user.createdAt,
+        },
+      });
+    }
+  }, [user]);
+}
+```
+
+### 在用户登出时清除用户数据
+
+当用户登出时，清除已存储的资料数据，以确保后续事件不会关联到之前的用户。
+
+```tsx title="src/components/LogoutButton.tsx"
+import { op } from '../lib/op';
+
+export function LogoutButton({ onLogout }: { onLogout: () => void }) {
+  const handleLogout = () => {
+    op.clear();
+    onLogout();
+  };
+
+  return <button onClick={handleLogout}>登出</button>;
+}
+```
+
+### 设置全局属性
+
+通过 `setGlobalProperties` 设置的属性会包含在每个事件中。这对于应用版本跟踪、功能开关或 A/B 测试变体非常有用。
+
+```tsx title="src/App.tsx"
+import { useEffect } from 'react';
+import { op } from './lib/op';
+
+export default function App() {
+  useEffect(() => {
+    op.setGlobalProperties({
+      app_version: '1.0.0',
+      environment: import.meta.env.MODE,
+    });
+  }, []);
+
+  return <div>{/* 你的应用 */}</div>;
+}
+```
+
+## 验证你的设置 [#verify]
+
+在浏览器中打开你的 React 应用，并在多个页面之间导航。与触发自定义事件的元素交互。然后打开你的[OpenPanel 仪表板](https://dashboard.openpanel.dev)，查看实时视图，确认事件是否出现。
+
+如果事件没有出现，请检查浏览器控制台是否有错误。验证你的 Client ID 是否正确，并确保广告拦截器没有阻止到 OpenPanel API 的请求。浏览器开发者工具中的 Network 标签页可以帮助你确认请求是否已发送。
+
+## 后续步骤
+
+Web SDK 还提供诸如属性递增和事件过滤等其他功能。阅读完整的[Web SDK 文档](/docs/sdks/web)，查看完整 API 参考。
+
+如需在你的 React 应用 API 路由中进行服务端跟踪，请参阅[Node.js 分析指南](/guides/nodejs-analytics)，其中涵盖了 `@openpanel/sdk` 包。
+
+<Faqs>
+<FaqItem question="OpenPanel 可以与 React Router 一起使用吗？">
+可以。OpenPanel 会在 URL 变化时自动跟踪页面浏览，这适用于 React Router 以及其他使用 History API 的路由库。在你的配置中设置 `trackScreenViews: true`。
+</FaqItem>
+
+<FaqItem question="我可以在类组件中使用 OpenPanel 吗？">
+可以。直接导入 OpenPanel 实例并调用其方法即可。该实例与框架无关，可在任何 JavaScript 上下文中使用。
+</FaqItem>
+
+<FaqItem question="OpenPanel 使用 Cookie 吗？">
+不使用。OpenPanel 默认采用无 Cookie 跟踪。这意味着在大多数隐私法规下，包括 GDPR 和 PECR，你都不需要为基础分析功能展示 Cookie 同意横幅。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 吗？">
+是的。OpenPanel 通过无 Cookie 跟踪、数据最小化以及对数据主体权利的全面支持，专为符合 GDPR 而设计。使用自托管时，你还可以完全消除国际数据传输方面的顾虑。
+</FaqItem>
+</Faqs>

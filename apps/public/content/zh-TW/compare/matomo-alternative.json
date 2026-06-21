@@ -1,0 +1,516 @@
+{
+  "slug": "matomo-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026 年最佳 Matomo 替代方案 - 開源且免費",
+    "description": "正在尋找 Matomo 的替代方案？OpenPanel 提供更簡單的設定、真正免 Cookie 追蹤，以及現代化介面——沒有付費外掛成本。開源且可免費自架。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Matomo 替代方案",
+    "subheading": "OpenPanel 是一款現代化的開源 Matomo 替代方案。以更簡潔的介面、預設真正免 Cookie 追蹤，並且核心功能不需任何付費外掛，取得強大的網站與產品分析能力。",
+    "badges": [
+      "開源",
+      "免 Cookie",
+      "僅限 EU 託管",
+      "可自架"
+    ]
+  },
+  "competitor": {
+    "name": "Matomo",
+    "logo": "/logos/matomo.svg",
+    "url": "https://matomo.org",
+    "short_description": "一個開源網站分析平台，提供自架與雲端選項，重視隱私與資料所有權，全球已有超過 140 萬個網站使用。",
+    "founded": 2007,
+    "headquarters": "紐西蘭，威靈頓"
+  },
+  "overview": {
+    "title": "為什麼要考慮用 OpenPanel 取代 Matomo？",
+    "paragraphs": [
+      "Matomo 是最成熟的開源分析平台之一，全球有超過 140 萬個網站在使用。它同時提供自架與雲端選項，並高度重視隱私與資料所有權。不過，Matomo 的介面已顯得有些老舊，而像漏斗分析、A/B 測試與熱圖等許多必備功能，都被鎖在每年 229 美元的付費外掛後面。",
+      "OpenPanel 是一款現代化的開源替代方案，在每個方案層級都包含完整功能——沒有付費外掛，也沒有加購推銷。漏斗、分群、留存分析、A/B 測試與使用者檔案，在所有付費方案與自架情境下都可使用。介面乾淨現代，是為今日的產品團隊而設計，而不是一個老式儀表板。",
+      "一個關鍵差異是免 Cookie 追蹤。雖然 Matomo 可以設定為無 Cookie 模式，但預設仍會使用 Cookie，而且在多數 GDPR 情境下仍需要同意橫幅。OpenPanel 從一開始就是真正免 Cookie，完全不需要額外設定。自架也簡單得多——只要一個指令的 ./setup 精靈就能引導您完成設定，並在幾分鐘內啟動整個 Docker Compose 堆疊；相較之下，Matomo 需要 PHP、MySQL 與網頁伺服器的整套架構。",
+      "對於重視 Matomo 開源理念，但又想要現代化體驗、完整功能、較輕量的追蹤程式（2.3 KB 對 20 KB）與更簡單部署的團隊來說——OpenPanel 能實現 Matomo 所承諾的一切，而且沒有隱藏成本。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Matomo：哪個更適合您？",
+    "intro": "兩個平台都是開源且重視隱私。主要差異在於現代化 UI、真正免 Cookie 追蹤、SDK 大小，以及功能是內含還是需購買付費外掛。",
+    "one_liner": "OpenPanel 現代且簡單，所有功能都已包含；Matomo 成熟且穩定，但進階功能需要付費外掛。",
+    "best_for_openpanel": [
+      "想要現代化 UI/UX、又不想承受舊式複雜性的團隊",
+      "需要真正免 Cookie 追蹤、且不想做額外設定的開發者",
+      "希望漏斗、分群與留存分析不需額外費用的公司",
+      "尋找更輕量 SDK 與更快設定速度的新創與中小企業"
+    ],
+    "best_for_competitor": [
+      "已深度投入 Matomo 生態系的組織",
+      "需要經 CNIL 核准、可免同意的分析功能的企業",
+      "需要熱圖與表單分析的團隊",
+      "已有 PHP/MySQL 基礎架構的大型自架部署"
+    ]
+  },
+  "highlights": {
+    "title": "重點差異一覽",
+    "intro": "以下是 OpenPanel 與 Matomo 在最重要面向上的比較。",
+    "items": [
+      {
+        "label": "價格",
+        "openpanel": "每月 $2.50 起（或免費自架）",
+        "competitor": "免費自架，雲端版每月 $19 起"
+      },
+      {
+        "label": "是否需要 Cookie",
+        "openpanel": "否（預設免 Cookie）",
+        "competitor": "是，預設會使用（需設定才可無 Cookie）"
+      },
+      {
+        "label": "是否需要同意橫幅",
+        "openpanel": "否",
+        "competitor": "是（除非設定為 CNIL 免除）"
+      },
+      {
+        "label": "資料位置",
+        "openpanel": "僅限 EU（或您自己的伺服器）",
+        "competitor": "法蘭克福（雲端版）或自架"
+      },
+      {
+        "label": "開源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "是（GPL-3.0）"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能比較",
+    "intro": "OpenPanel 以一個方案包含所有分析功能。Matomo 的進階功能則需要另外購買付費外掛。",
+    "groups": [
+      {
+        "group": "網站分析",
+        "features": [
+          {
+            "name": "頁面瀏覽與訪客",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都提供未抽樣資料"
+          },
+          {
+            "name": "流量來源",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "地理資料",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Matomo 提供城市層級地理定位"
+          },
+          {
+            "name": "裝置與瀏覽器統計",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "UTM／活動追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "即時儀表板",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "產品分析",
+        "features": [
+          {
+            "name": "自訂事件追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "漏斗",
+            "openpanel": true,
+            "competitor": "premium",
+            "notes": "Matomo Funnels 是付費外掛"
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "使用者檔案",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Matomo 有 Visitor Log"
+          },
+          {
+            "name": "分群",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "透過分群篩選"
+          },
+          {
+            "name": "電子商務追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都有電子商務分析"
+          }
+        ]
+      },
+      {
+        "group": "進階功能",
+        "features": [
+          {
+            "name": "A/B 測試",
+            "openpanel": true,
+            "competitor": "premium",
+            "notes": "Matomo A/B Testing 是付費外掛"
+          },
+          {
+            "name": "熱圖",
+            "openpanel": false,
+            "competitor": "premium",
+            "notes": "Matomo 外掛需另付費"
+          },
+          {
+            "name": "工作階段錄製",
+            "openpanel": true,
+            "competitor": "premium",
+            "notes": "OpenPanel 內建工作階段回放（rrweb，需使用者選擇加入）；Matomo 的則是付費外掛"
+          },
+          {
+            "name": "自訂儀表板",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "表單分析",
+            "openpanel": false,
+            "competitor": "premium",
+            "notes": "Matomo Form Analytics 為付費功能"
+          },
+          {
+            "name": "標籤管理器",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Matomo Tag Manager 是免費的"
+          }
+        ]
+      },
+      {
+        "group": "隱私與法規遵循",
+        "features": [
+          {
+            "name": "預設免 Cookie",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Matomo 除非另行設定，否則會使用 Cookie"
+          },
+          {
+            "name": "不需要同意橫幅",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Matomo 可透過設定達成 CNIL 免同意"
+          },
+          {
+            "name": "IP 匿名化",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "GDPR 合規",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都符合 GDPR"
+          },
+          {
+            "name": "自架選項",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都可自架"
+          },
+          {
+            "name": "EU 資料託管",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Matomo Cloud 位於德國法蘭克福"
+          }
+        ]
+      },
+      {
+        "group": "整合",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Matomo 有完整 API"
+          },
+          {
+            "name": "資料匯出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都支援資料匯出"
+          },
+          {
+            "name": "WordPress 外掛",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Matomo 有專用 WordPress 版本"
+          },
+          {
+            "name": "電子商務平台",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Matomo：WooCommerce、Shopify、Magento、PrestaShop"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技術比較",
+    "intro": "對評估分析工具的開發者來說，以下是 SDK 與技術實作的比較。",
+    "items": [
+      {
+        "label": "SDK 大小（JS）",
+        "openpanel": "~2.3 KB gzip 後",
+        "competitor": "~20 KB gzip 後（未壓縮 60 KB）",
+        "notes": "OpenPanel 的 SDK 明顯更輕量"
+      },
+      {
+        "label": "支援的平台",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Node.js",
+          "Python",
+          "Swift",
+          "Kotlin",
+          "React Native",
+          "Flutter",
+          "Astro",
+          "Remix",
+          "Express",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript",
+          "PHP",
+          "iOS",
+          "Android",
+          "React Native",
+          "Flutter",
+          "Java",
+          "Python",
+          "C#",
+          "WordPress"
+        ],
+        "notes": "Matomo 對 CMS 平台有更多原生整合"
+      },
+      {
+        "label": "開源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "是（GPL-3.0），付費外掛為專有授權",
+        "notes": "Matomo 核心是開源的，但付費功能需另外購買"
+      },
+      {
+        "label": "自架部署",
+        "openpanel": "Docker Compose，含引導式設定精靈",
+        "competitor": "PHP/MySQL 架構，設定較複雜",
+        "notes": "OpenPanel 以 Docker 為基礎的部署更簡單"
+      },
+      {
+        "label": "資料庫",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "MySQL/MariaDB",
+        "notes": "ClickHouse 在分析查詢上效能更佳"
+      },
+      {
+        "label": "資料保留",
+        "openpanel": "無限制（自架）或依方案而定",
+        "competitor": "無限制（可設定），雲端版原始資料有限制",
+        "notes": "兩者都提供彈性的保留政策"
+      }
+    ]
+  },
+  "pricing": {
+    "title": "價格比較",
+    "intro": "兩者都提供免費自架選項。雲端定價不同，而 Matomo 的付費外掛會增加不少成本。",
+    "openpanel": {
+      "model": "以事件計費，透明清楚",
+      "description": "簡單定價從每月 $2.50 可追蹤 5,000 個事件開始。100,000 個事件每月 $20。自架可免費使用，事件數無上限。所有方案都包含完整功能。"
+    },
+    "competitor": {
+      "model": "以點擊數計費（雲端）加上付費外掛",
+      "description": "On-Premise：免費（核心功能），但像 Heatmaps（每年 $229）、A/B Testing（每年 $229）、Funnels（每年 $229）等付費外掛會迅速累積成本。Cloud：50,000 hits 每月 $19 起，擴展到 1 億 hits 時每月 $16,900。Premium Bundle 可為外掛節省最多 45%。",
+      "free_tier": "有（On-Premise 免費，但功能有限）",
+      "pricing_url": "https://matomo.org/pricing/"
+    }
+  },
+  "migration": {
+    "title": "從 Matomo 遷移到 OpenPanel",
+    "intro": "從 Matomo 切換到 OpenPanel 很直接。兩者都使用事件型追蹤，而且在轉換期間可以並行運行兩個工具。",
+    "difficulty": "easy",
+    "estimated_time": "1-3 hours",
+    "steps": [
+      {
+        "title": "安裝 OpenPanel SDK",
+        "description": "將輕量級的 OpenPanel SDK 加入您的應用程式。只有 2.3 KB，遠小於 Matomo 20 KB 的追蹤器。"
+      },
+      {
+        "title": "對應您的追蹤事件",
+        "description": "檢視您在 Matomo 的追蹤，並將事件對應到 OpenPanel。事件追蹤語法很相似：_paq.push(['trackEvent', ...]) 會變成 op.track('event', ...)。"
+      },
+      {
+        "title": "設定使用者識別",
+        "description": "在 OpenPanel 中設定使用者識別。將 Matomo 的 setUserId 換成 OpenPanel 的 identify 方法。"
+      },
+      {
+        "title": "設定您的儀表板",
+        "description": "在 OpenPanel 建立關鍵報表。您會直接獲得漏斗與分群，不需要額外購買付費外掛。"
+      },
+      {
+        "title": "移除 Matomo 同意橫幅",
+        "description": "由於 OpenPanel 免 Cookie，您可以移除原本為 Matomo 所需的 Cookie 同意橫幅（除非其他工具仍需要）。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "兩者都使用事件型追蹤。Matomo 的 _paq.push(['trackEvent', 'category', 'action']) 會變成 op.track('action', {category: 'category'})。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Matomo 資料可以匯出，但沒有直接匯入的途徑。大多數團隊會在 OpenPanel 上重新開始。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 Matomo 更適合的情境",
+    "intro": "OpenPanel 很適合想要現代化分析、又不想管理 PHP 基礎架構或為付費外掛付費的團隊。",
+    "items": [
+      {
+        "title": "現代產品團隊",
+        "description": "獲得乾淨、現代的介面，為今日工作流程而設計。沒有舊式 UI 的怪異感，也沒有 PHP 時代的設計模式。",
+        "icon": "sparkles"
+      },
+      {
+        "title": "所有功能都不加價",
+        "description": "漏斗、分群與 A/B 測試都已包含。使用 Matomo 時，這些都是每年 229 美元的付費外掛。",
+        "icon": "package"
+      },
+      {
+        "title": "真正免 Cookie 追蹤",
+        "description": "OpenPanel 預設免 Cookie。Matomo 則需要變更設定，而且在某些司法管轄區仍需同意。",
+        "icon": "shield"
+      },
+      {
+        "title": "更簡單的自架",
+        "description": "幾分鐘內即可用 Docker Compose 部署。沒有 PHP/MySQL 堆疊需要管理，也沒有外掛相容性問題要排查。",
+        "icon": "server"
+      },
+      {
+        "title": "更快的網站",
+        "description": "OpenPanel 的 2.3 KB SDK 相較於 Matomo 20 KB 的追蹤器，代表更好的效能與更佳的 Core Web Vitals。",
+        "icon": "zap"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於從 Matomo 切換到 OpenPanel 的常見問題。",
+    "items": [
+      {
+        "question": "Matomo 是免費的嗎？",
+        "answer": "Matomo On-Premise（自架）是免費且開源的。不過，像 Heatmaps、Session Recordings、A/B Testing、Funnels 與 Form Analytics 等許多重要功能，都需要購買付費外掛（每年每個 $33-549 美元）。Matomo Cloud 方案從每月 $19 可追蹤 50,000 hits 起。"
+      },
+      {
+        "question": "為什麼要從 Matomo 轉換？",
+        "answer": "常見原因包括：基本功能所需的付費外掛加總很快、PHP/MySQL 堆疊需要維護、與現代工具相比介面顯得過時，以及設定真正的無 Cookie 追蹤相當複雜。OpenPanel 提供更簡單的體驗，並且包含所有功能。"
+      },
+      {
+        "question": "我在 Matomo 需要 Cookie 同意橫幅嗎？",
+        "answer": "預設情況下需要。Matomo 使用第一方 Cookie，並在 GDPR 下需要取得同意。它可以在法國及部分 EU 國家設定為 CNIL 免除（免同意），但這需要特定設定，且會限制部分功能。OpenPanel 預設就是免 Cookie。"
+      },
+      {
+        "question": "Matomo 可以不使用 Cookie 嗎？",
+        "answer": "可以，但需要設定。您需要啟用無 Cookie 追蹤、匿名化 IP，並停用像 User ID 追蹤這類功能。即便如此，在某些司法管轄區仍可能需要同意。OpenPanel 的無 Cookie 做法預設即可運作，且不需妥協。"
+      },
+      {
+        "question": "我會失去哪些 Matomo 功能？",
+        "answer": "OpenPanel 沒有熱圖、表單分析或標籤管理器。如果您高度依賴這些工具，Matomo 可能仍是較好的選擇。不過，OpenPanel 內建工作階段回放，而且您會獲得更簡單的設定與包含所有核心分析功能的方案。"
+      },
+      {
+        "question": "Matomo 符合 GDPR 嗎？",
+        "answer": "是的，Matomo 符合 GDPR，而且歐洲委員會也有使用。Matomo Cloud 的資料儲存在德國法蘭克福。然而，符合 GDPR 並不代表一定可以跳過同意——這取決於您的具體設定與所在地法規。"
+      },
+      {
+        "question": "自架的比較如何？",
+        "answer": "Matomo 需要 PHP 7.2.5+ 與 MySQL/MariaDB，且在大規模情境下還需要額外效能設定。OpenPanel 使用 Docker Compose 與 ClickHouse 來處理分析查詢，對大多數情境提供更簡單的部署與更好的查詢效能。"
+      },
+      {
+        "question": "OpenPanel 的成熟度跟 Matomo 一樣嗎？",
+        "answer": "Matomo 自 2007 年開始就已存在，並被 140 多萬個網站使用。OpenPanel 雖然較新，但提供現代化架構、更簡單的設定，以及包含所有功能。對大多數分析需求而言，OpenPanel 以更低複雜度提供同等或更好的功能。"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "開始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "從 Google Analytics 遷移",
+        "url": "/zh-TW/guides/migrate-from-google-analytics"
+      },
+      {
+        "title": "網站分析設定",
+        "url": "/zh-TW/guides/website-analytics-setup"
+      },
+      {
+        "title": "追蹤自訂事件",
+        "url": "/zh-TW/guides/track-custom-events"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳開源網站分析工具",
+        "url": "/zh-TW/articles/self-hosted-web-analytics"
+      },
+      {
+        "title": "自架網站分析",
+        "url": "/zh-TW/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Plausible",
+        "url": "/compare/plausible-alternative"
+      },
+      {
+        "name": "PostHog",
+        "url": "/compare/posthog-alternative"
+      }
+    ]
+  }
+}

@@ -1,0 +1,210 @@
+---
+title: "如何為 Python 加入分析"
+description: "使用 OpenPanel 的 Python SDK，為您的 Python 應用程式加入伺服器端分析。"
+type: guide
+difficulty: beginner
+timeToComplete: 7
+date: 2025-12-15
+updated: 2026-02-07
+lastUpdated: 2025-12-15
+team: OpenPanel Team
+steps:
+  - name: "安裝 SDK"
+    anchor: "install"
+  - name: "初始化 OpenPanel"
+    anchor: "initialize"
+  - name: "追蹤事件"
+    anchor: "track-events"
+  - name: "識別使用者"
+    anchor: "identify-users"
+  - name: "驗證您的設定"
+    anchor: "verify"
+---
+
+# 如何為 Python 加入分析
+
+本指南將帶您為任何 Python 應用程式加入伺服器端分析。您將安裝 OpenPanel SDK、使用您的憑證進行設定、追蹤自訂事件，以及[識別使用者](/zh-TW/features/identify-users)。
+
+伺服器端追蹤可讓您完全掌控要收集哪些資料，並確保事件不會被瀏覽器擴充功能或廣告攔截器阻擋。Python SDK 可搭配 Django、Flask、FastAPI，以及任何其他 Python 框架或腳本使用。
+
+## 先決條件
+
+- 一個 Python 專案
+- 一個 OpenPanel 帳號
+- 您在儀表板中的 Client ID 與 Client Secret
+
+## 安裝 SDK [#install]
+
+先從 PyPI 安裝 OpenPanel 套件。
+
+```bash
+pip install openpanel
+```
+
+如果您使用 Poetry，也可以改用 `poetry add openpanel`。
+
+## 初始化 OpenPanel [#initialize]
+
+為您的 OpenPanel 實例建立一個共用模組。這種做法可讓您在應用程式各處匯入同一個已設定好的實例。
+
+```python
+# lib/op.py
+import os
+from openpanel import OpenPanel
+
+op = OpenPanel(
+    client_id=os.getenv("OPENPANEL_CLIENT_ID"),
+    client_secret=os.getenv("OPENPANEL_CLIENT_SECRET")
+)
+```
+
+伺服器端追蹤需要同時使用 client ID 與 client secret 進行驗證。請將它們加入您的環境變數。
+
+```bash
+# .env
+OPENPANEL_CLIENT_ID=your-client-id
+OPENPANEL_CLIENT_SECRET=your-client-secret
+```
+
+您也可以在初始化時傳入全域屬性。這些屬性會自動包含在每個事件中。
+
+```python
+op = OpenPanel(
+    client_id=os.getenv("OPENPANEL_CLIENT_ID"),
+    client_secret=os.getenv("OPENPANEL_CLIENT_SECRET"),
+    global_properties={
+        "app_version": "1.0.0",
+        "environment": os.getenv("ENVIRONMENT", "production")
+    }
+)
+```
+
+## 追蹤事件 [#track-events]
+
+使用 `track` 方法來記錄事件。第一個參數是事件名稱，第二個則是可選的屬性字典。
+
+```python
+from lib.op import op
+
+# 追蹤簡單事件
+op.track("button_clicked")
+
+# 搭配屬性追蹤
+op.track("purchase_completed", {
+    "product_id": "123",
+    "price": 99.99,
+    "currency": "USD"
+})
+```
+
+在請求處理器中追蹤事件時，通常會從請求中取得資料，並將其與業務邏輯一併追蹤。以下是 Django 視圖的範例。
+
+```python
+from lib.op import op
+
+def signup_view(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        name = request.POST.get('name')
+
+        user = create_user(email, name)
+
+        op.track("user_signed_up", {
+            "email": email,
+            "source": "website"
+        })
+
+        return JsonResponse({"success": True})
+```
+
+在 Flask 和 FastAPI 中也適用相同模式。匯入您的 OpenPanel 實例，並在需要記錄事件的地方呼叫 `track`。
+
+您也可以從背景工作中追蹤事件。這對監控非同步工作、電子郵件傳送以及排程任務很有幫助。
+
+```python
+from celery import shared_task
+from lib.op import op
+
+@shared_task
+def send_email_task(user_id, email_type):
+    try:
+        send_email(user_id, email_type)
+        op.track("email_sent", {
+            "user_id": user_id,
+            "email_type": email_type
+        })
+    except Exception as e:
+        op.track("email_failed", {
+            "user_id": user_id,
+            "error": str(e)
+        })
+```
+
+## 識別使用者 [#identify-users]
+
+`identify` 方法會將使用者檔案與其 ID 關聯起來。請在驗證通過後呼叫此方法，以便將後續事件連結到該使用者。
+
+```python
+from lib.op import op
+
+def login_view(request):
+    user = authenticate_user(request)
+
+    op.identify(user.id, {
+        "firstName": user.first_name,
+        "lastName": user.last_name,
+        "email": user.email,
+        "tier": user.plan
+    })
+
+    op.track("user_logged_in", {"method": "email"})
+
+    return JsonResponse({"success": True})
+```
+
+若要為特定使用者追蹤事件，但不先呼叫 identify，請將 `profile_id` 參數傳入 track 方法。
+
+```python
+op.track("purchase_completed", {
+    "product_id": "123",
+    "amount": 99.99
+}, profile_id="user_456")
+```
+
+您可以增加使用者檔案上的數值屬性。這對登入次數或總購買次數等計數器很有幫助。
+
+```python
+op.increment({
+    "profile_id": "user_456",
+    "property": "login_count",
+    "value": 1
+})
+```
+
+## 驗證您的設定 [#verify]
+
+執行您的 Python 應用程式並觸發幾個事件。開啟您的 [OpenPanel 儀表板](https://dashboard.openpanel.dev) 並前往即時檢視。您應該會在幾秒內看到事件出現。
+
+如果事件沒有顯示，請檢查您的 client ID 與 client secret 是否正確。沒有 client secret，伺服器端追蹤將無法運作。請查看您的應用程式記錄，確認 SDK 是否有任何錯誤訊息。
+
+## 下一步
+
+[Python SDK 參考文件](/zh-TW/docs/sdks/python)涵蓋更多設定選項，例如事件篩選與停用追蹤。如果您也在追蹤客戶端事件，您可能會想閱讀[無 Cookie 分析](/zh-TW/articles/cookieless-analytics)，了解 OpenPanel 如何在不使用 Cookie 的情況下處理隱私。
+
+<Faqs>
+<FaqItem question="為什麼伺服器端追蹤需要 client secret？">
+伺服器端追蹤無法依賴像 CORS 標頭這類瀏覽器端驗證。client secret 會驗證您的請求，並防止未授權的人員將事件傳送到您的專案。
+</FaqItem>
+
+<FaqItem question="這個 SDK 是執行緒安全的嗎？">
+是的。OpenPanel Python SDK 是執行緒安全的，您可以在多個執行緒之間使用單一實例。這使它適合用於多執行緒的網頁伺服器與背景工作執行器。
+</FaqItem>
+
+<FaqItem question="OpenPanel 支援非同步 Python 嗎？">
+是的。這個 SDK 預設會非同步追蹤事件，因此不會阻塞您的非同步請求處理器。事件會被排入佇列並在背景傳送。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 嗎？">
+是的。OpenPanel 的設計符合 GDPR，具備無 Cookie 追蹤、資料最小化，以及支援資料當事人權利。伺服器端追蹤可讓您完全掌控要收集哪些資料。
+</FaqItem>
+</Faqs>

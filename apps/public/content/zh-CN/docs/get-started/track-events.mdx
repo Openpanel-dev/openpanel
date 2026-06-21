@@ -1,0 +1,47 @@
+---
+title: 跟踪事件
+description: 了解如何跟踪自定义事件以衡量用户操作。
+---
+
+事件是 OpenPanel 的核心。它们可帮助你衡量用户在站点上的具体操作，例如点击按钮、提交表单或完成购买。
+
+## 跟踪事件
+
+要跟踪事件，只需使用事件名称调用 `track` 方法。
+
+```javascript
+op.track('button_clicked');
+```
+
+## 添加属性
+
+你可以通过传入 properties 对象为事件添加更多上下文。这有助于你了解交互细节。
+
+```javascript
+op.track('signup_button_clicked', {
+  location: 'header',
+  color: 'blue',
+  variant: 'primary'
+});
+```
+
+### 常见属性类型
+
+- **字符串**：如名称、类别或 ID 之类的文本值。
+- **数字**：如价格、数量或评分之类的数值。
+- **布尔值**：true 或 false 值。
+
+## 使用 Data Attributes
+
+如果你不想写 JavaScript，可以使用 data attributes 自动跟踪点击。
+
+```html
+<button
+  data-track="signup_clicked"
+  data-location="header"
+>
+  Sign Up
+</button>
+```
+
+当用户点击此按钮时，OpenPanel 会自动跟踪一个 `signup_clicked` 事件，并带有属性 `location: 'header'`。

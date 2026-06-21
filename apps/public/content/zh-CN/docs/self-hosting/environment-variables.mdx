@@ -1,0 +1,1140 @@
+---
+title: 环境变量
+description: OpenPanel 所有环境变量的完整参考
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+本页记录 OpenPanel 使用的所有环境变量。变量按类别组织。大多数变量是可选的，并带有合理默认值。
+
+<Callout>
+如需部署相关配置，请参阅[部署指南](/zh-CN/docs/self-hosting/deploy-docker-compose)。
+</Callout>
+
+## 数据库与存储
+
+### DATABASE_URL
+
+**类型**: `string`
+**是否必需**: 是
+**默认值**: 无
+
+主数据库的 PostgreSQL 连接字符串。
+
+**Example**:
+```bash
+DATABASE_URL=postgres://user:password@localhost:5432/openpanel?schema=public
+```
+
+### DATABASE_URL_DIRECT
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 同 `DATABASE_URL`
+
+直接 PostgreSQL 连接字符串（绕过连接池）。用于迁移和管理操作。
+
+**Example**:
+```bash
+DATABASE_URL_DIRECT=postgres://user:password@localhost:5432/openpanel?schema=public
+```
+
+### DATABASE_URL_REPLICA
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 同 `DATABASE_URL`
+
+用于高读取负载操作的只读副本连接字符串。未设置时使用主数据库。
+
+**Example**:
+```bash
+DATABASE_URL_REPLICA=postgres://user:password@replica-host:5432/openpanel?schema=public
+```
+
+### REDIS_URL
+
+**类型**: `string`
+**是否必需**: 是
+**默认值**: `redis://localhost:6379`
+
+用于缓存和队列管理的 Redis 连接字符串。
+
+**Example**:
+```bash
+REDIS_URL=redis://localhost:6379
+# With password
+REDIS_URL=redis://:password@localhost:6379
+```
+
+### CLICKHOUSE_URL
+
+**类型**: `string`
+**是否必需**: 是
+**默认值**: `http://localhost:8123/openpanel`
+
+用于分析数据存储的 ClickHouse HTTP 连接 URL。
+
+**Example**:
+```bash
+CLICKHOUSE_URL=http://localhost:8123/openpanel
+```
+
+### CLICKHOUSE_CLUSTER
+
+**类型**: `boolean`
+**是否必需**: 否
+**默认值**: `false`
+
+启用 ClickHouse 集群模式。如果使用 ClickHouse 集群，设置为 `true` 或 `1`。
+
+**Example**:
+```bash
+CLICKHOUSE_CLUSTER=true
+```
+
+### CLICKHOUSE_SETTINGS
+
+**类型**: `string` (JSON)
+**是否必需**: 否
+**默认值**: `{}`
+
+作为 JSON 对象的额外 ClickHouse 设置。
+
+**Example**:
+```bash
+CLICKHOUSE_SETTINGS='{"max_execution_time": 300}'
+```
+
+### CLICKHOUSE_SETTINGS_REMOVE_CONVERT_ANY_JOIN
+
+**类型**: `boolean`
+**是否必需**: 否
+**默认值**: `false`
+
+从 ClickHouse 设置中移除 `convert_any_join`。用于兼容某些 ClickHouse 版本。如果使用 25 以下的任何 clickhouse 版本，需要设置此项！
+
+## 应用 URL
+
+### API_URL
+
+**类型**: `string`
+**是否必需**: 是
+**默认值**: 无
+
+向浏览器公开的公共 API URL。供 dashboard 前端和 API 服务使用。
+
+**Example**:
+```bash
+API_URL=https://analytics.example.com/api
+```
+
+### DASHBOARD_URL
+
+**类型**: `string`
+**是否必需**: 是
+**默认值**: 无
+
+向浏览器公开的公共 dashboard URL。供 dashboard 前端和 API 服务使用。
+
+**Example**:
+```bash
+DASHBOARD_URL=https://analytics.example.com
+```
+
+### API_CORS_ORIGINS
+
+**类型**: `string` (comma-separated)
+**是否必需**: 否
+**默认值**: 无
+
+允许用于 API 请求的额外 CORS 来源。以逗号分隔的来源列表。
+
+**Example**:
+```bash
+API_CORS_ORIGINS=https://app.example.com,https://another-app.com
+```
+
+## 身份验证与安全
+
+### COOKIE_SECRET
+
+**类型**: `string`
+**是否必需**: 是
+**默认值**: 无
+
+用于加密会话 cookie 的密钥。生成一个安全随机字符串（32+ 字符）。
+
+**Example**:
+```bash
+# Generate with: openssl rand -base64 32
+COOKIE_SECRET=your-random-secret-here
+```
+
+<Callout type="warn">
+切勿在生产环境中使用默认值！始终生成唯一密钥。
+</Callout>
+
+### COOKIE_TLDS
+
+**类型**: `string` (comma-separated)
+**是否必需**: 否
+**默认值**: 无
+
+用于 cookie 域处理的自定义多段 TLD。部署在默认无法识别的公共后缀域名上时使用此项（例如 `.my.id`、`.web.id`、`.co.id`）。
+
+**Example**:
+```bash
+# For domains like abc.my.id
+COOKIE_TLDS=my.id
+
+# Multiple TLDs
+COOKIE_TLDS=my.id,web.id,co.id
+```
+
+<Callout>
+当使用公共后缀类型的域名后缀（如 `.co.uk`）时，这是必需的。否则浏览器会拒绝身份验证 cookie。常见示例包括印度尼西亚域名（`.my.id`、`.web.id`、`.co.id`）。
+</Callout>
+
+### CUSTOM_COOKIE_DOMAIN
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+覆盖自动 cookie 域检测，并为身份验证 cookie 设置指定域。当通过主域代理 API，或需要精确控制 cookie 作用域时很有用。
+
+**Example**:
+```bash
+# Set cookies only on the main domain
+CUSTOM_COOKIE_DOMAIN=.example.com
+
+# Set cookies on a specific subdomain
+CUSTOM_COOKIE_DOMAIN=.app.example.com
+```
+
+<Callout>
+设置后将完全绕过自动域解析逻辑。cookie 始终会被设置为 secure。包含前导点（`.`）可允许 cookie 在子域之间共享。
+</Callout>
+
+### DEMO_USER_ID
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+演示模式的用户 ID。设置后会创建一个用于测试的演示会话。
+
+**Example**:
+```bash
+DEMO_USER_ID=user_1234567890
+```
+
+### ALLOW_REGISTRATION
+
+**类型**: `boolean`
+**是否必需**: 否
+**默认值**: `false` (创建第一个用户后)
+
+允许新用户注册。设置为 `true` 可启用公开注册。
+
+**Example**:
+```bash
+ALLOW_REGISTRATION=true
+```
+
+<Callout>
+首次创建用户后，注册会自动禁用。设置为 `true` 可重新启用。
+</Callout>
+
+### ALLOW_INVITATION
+
+**类型**: `boolean`
+**是否必需**: 否
+**默认值**: `true`
+
+允许用户邀请。设置为 `false` 可禁用邀请功能。
+
+**Example**:
+```bash
+ALLOW_INVITATION=false
+```
+
+## AI 功能
+
+应用内 AI 聊天支持 **OpenAI** 和 **Anthropic** 模型。在 API 服务上设置一个或两个提供商密钥——聊天 UI 中的模型选择器会自动只显示已配置密钥的提供商对应模型。如果两者都未设置，聊天抽屉仍会打开，但会显示设置说明而不是建议。
+
+可用模型：
+
+- **OpenAI** — `GPT-4.1`, `GPT-4.1 mini`, `GPT-5.4 mini`
+- **Anthropic** — `Claude Haiku 4.5`, `Claude Sonnet 4.6`, `Claude Opus 4.6`
+
+<Callout type="info">
+AI 助手是可选的。未设置 `OPENAI_API_KEY` 或 `ANTHROPIC_API_KEY` 时，OpenPanel 其他所有功能仍可正常工作。
+</Callout>
+
+### OPENAI_API_KEY
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+OpenAI API key。设置后，OpenAI 模型会出现在聊天模型选择器中。
+
+**Example**:
+```bash
+OPENAI_API_KEY=sk-your-openai-api-key-here
+```
+
+### OPENAI_BASE_URL
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: OpenAI 默认 API base URL
+
+覆盖 OpenAI API base URL。适用于代理、网关、Azure 兼容端点或自托管的 OpenAI 兼容提供商。
+
+**Example**:
+```bash
+OPENAI_BASE_URL=https://your-openai-compatible-endpoint.example.com/v1
+```
+
+### OPENAI_PROJECT
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+要随请求发送的可选 OpenAI project 标识符。
+
+**Example**:
+```bash
+OPENAI_PROJECT=proj_1234567890
+```
+
+### OPENAI_ORGANIZATION
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+要随请求发送的可选 OpenAI organization 标识符。
+
+**Example**:
+```bash
+OPENAI_ORGANIZATION=org_1234567890
+```
+
+### ANTHROPIC_API_KEY
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+Anthropic API key。设置后，Claude 模型会出现在聊天模型选择器中。
+
+**Example**:
+```bash
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
+```
+
+### ANTHROPIC_BASE_URL
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: Anthropic 默认 API base URL
+
+覆盖 Anthropic API base URL。适用于代理、网关或 Anthropic 兼容端点。
+
+**Example**:
+```bash
+ANTHROPIC_BASE_URL=https://your-anthropic-endpoint.example.com
+```
+
+### ANTHROPIC_TOKEN
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+除 API key 外，额外发送给 Anthropic provider 的可选认证 token。仅当你的 Anthropic 兼容网关要求时使用。
+
+**Example**:
+```bash
+ANTHROPIC_TOKEN=your-auth-token
+```
+
+### ANTHROPIC_VERSION
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: Provider 默认值
+
+覆盖随请求发送的 Anthropic API version header。
+
+**Example**:
+```bash
+ANTHROPIC_VERSION=2023-06-01
+```
+
+## 邮件
+
+### RESEND_API_KEY
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+用于发送事务性邮件（密码重置、邀请等）的 Resend API key。
+
+**Example**:
+```bash
+RESEND_API_KEY=re_xxxxxxxxxxxxx
+```
+
+<Callout>
+从 [resend.com](https://resend.com) 获取你的 API key。请确保验证发件人邮箱域名。
+</Callout>
+
+### EMAIL_SENDER
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: `hello@openpanel.dev`
+
+用于事务性邮件发件人的邮箱地址。适用于 Resend 和 SMTP 传输。
+
+**Example**:
+```bash
+EMAIL_SENDER=noreply@yourdomain.com
+```
+
+### SMTP_HOST
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+SMTP 服务器主机名。设置后，OpenPanel 使用 SMTP 发送邮件而不是 Resend。若两者都配置，则优先使用 `RESEND_API_KEY`。
+
+**Example**:
+```bash
+SMTP_HOST=smtp.example.com
+```
+
+### SMTP_PORT
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `587`
+
+SMTP 服务器端口。
+
+**Example**:
+```bash
+SMTP_PORT=587
+```
+
+### SMTP_SECURE
+
+**类型**: `boolean`
+**是否必需**: 否
+**默认值**: `false`
+
+对 SMTP 连接使用 TLS。使用端口 `465` 时设置为 `true`。
+
+**Example**:
+```bash
+SMTP_SECURE=true
+```
+
+### SMTP_USER
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+SMTP 认证用户名。如果服务器不需要认证，保持未设置。
+
+**Example**:
+```bash
+SMTP_USER=smtp-user@example.com
+```
+
+### SMTP_PASS
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+SMTP 认证密码。
+
+**Example**:
+```bash
+SMTP_PASS=your-smtp-password
+```
+
+<Callout>
+设置 `SMTP_HOST` 以启用 SMTP。如果同时存在 `SMTP_HOST` 和 `RESEND_API_KEY`，将优先使用 SMTP。如果两者都未设置，邮件会记录到控制台（适用于开发）。
+使用 Resend 时，发件人邮箱必须在你的 Resend 账户中完成验证。
+</Callout>
+
+<Callout type="warn">
+如果设置了 `SMTP_HOST` 且 SMTP 发送失败，系统**不会**自动回退到 `RESEND_API_KEY`——邮件将被静默丢弃。要改用 Resend，请取消设置 `SMTP_HOST`。
+</Callout>
+
+## OAuth 与集成
+
+### SLACK_CLIENT_ID
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+用于 Slack 集成的 Slack OAuth client ID。
+
+**Example**:
+```bash
+SLACK_CLIENT_ID=1234567890.1234567890
+```
+
+### SLACK_CLIENT_SECRET
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+用于 Slack 集成的 Slack OAuth client secret。
+
+**Example**:
+```bash
+SLACK_CLIENT_SECRET=your-slack-client-secret
+```
+
+### SLACK_OAUTH_REDIRECT_URL
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+Slack OAuth 重定向 URL。必须与 Slack 应用中配置的 redirect URI 匹配。
+
+**Example**:
+```bash
+SLACK_OAUTH_REDIRECT_URL=https://analytics.example.com/api/integrations/slack/callback
+```
+
+### SLACK_STATE_SECRET
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+用于签名 Slack OAuth state 参数的密钥。
+
+**Example**:
+```bash
+SLACK_STATE_SECRET=your-state-secret
+```
+
+## 自托管
+
+### SELF_HOSTED
+
+**类型**: `boolean`
+**是否必需**: 否
+**默认值**: `false`
+
+启用自托管模式。设置为 `true` 或 `1` 可启用自托管功能。由 dashboard 前端和 API 服务共同使用。
+
+**Example**:
+```bash
+SELF_HOSTED=true
+```
+
+## Worker 与队列
+
+### WORKER_PORT
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `3000`
+
+worker 服务监听端口。
+
+**Example**:
+```bash
+WORKER_PORT=3000
+```
+
+### DISABLE_BULLBOARD
+
+**类型**: `boolean`
+**是否必需**: 否
+**默认值**: `false`
+
+禁用 BullMQ board UI。设置为 `true` 或 `1` 可禁用队列监控 dashboard。
+
+**Example**:
+```bash
+DISABLE_BULLBOARD=true
+```
+
+### DISABLE_WORKERS
+
+**类型**: `boolean`
+**是否必需**: 否
+**默认值**: `false`
+
+禁用所有 worker 进程。设置为 `true` 或 `1` 可禁用后台任务处理。
+
+**Example**:
+```bash
+DISABLE_WORKERS=true
+```
+
+### ENABLED_QUEUES
+
+**类型**: `string` (comma-separated)
+**是否必需**: 否
+**默认值**: 启用所有队列
+
+要启用的队列名称，以逗号分隔。可用队列：`events`、`events_kafka`、`sessions`、`cron`、`notification`、`misc`、`import`。
+
+**Example**:
+```bash
+ENABLED_QUEUES=events,sessions,cron
+```
+
+<Callout>
+启用 `events_kafka` 可让基于 Kafka 的 events consumer 与默认 `events` 队列并行（或替代其）运行。完整配置请参阅[事件流（Kafka）](#event-streaming-kafka)部分。常见的高吞吐部署方式是运行一个 `ENABLED_QUEUES=events_kafka` 的 worker 池，以及另一个包含其余所有队列的 worker 池。
+</Callout>
+
+### EVENT_JOB_CONCURRENCY
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `10`
+
+每个 worker 并发处理的事件任务数量。
+
+**Example**:
+```bash
+EVENT_JOB_CONCURRENCY=20
+```
+
+### EVENT_BLOCKING_TIMEOUT_SEC
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `1`
+
+事件队列 worker 的阻塞超时时间（秒）。
+
+**Example**:
+```bash
+EVENT_BLOCKING_TIMEOUT_SEC=2
+```
+
+### EVENTS_GROUP_QUEUES_SHARDS
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `1`
+
+events group queue 的分片数量。高事件量场景下可提高性能。
+
+**Example**:
+```bash
+EVENTS_GROUP_QUEUES_SHARDS=4
+```
+
+### QUEUE_CLUSTER
+
+**类型**: `boolean`
+**是否必需**: 否
+**默认值**: `false`
+
+为队列启用 Redis 集群模式。启用后，队列名称会用 `{}` 包裹以适配 Redis cluster 分片。
+
+**Example**:
+```bash
+QUEUE_CLUSTER=true
+```
+
+### ORDERING_DELAY_MS
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `100`
+
+当事件乱序到达时，为保证正确顺序而保留事件的延迟时间（毫秒）。
+
+**Example**:
+```bash
+ORDERING_DELAY_MS=200
+```
+
+<Callout type="warn">
+不应超过 500ms。更高的值可能导致事件处理延迟。
+</Callout>
+
+### AUTO_BATCH_MAX_WAIT_MS
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `0` (禁用)
+
+自动批处理事件的最大等待时间（毫秒）。实验性功能。
+
+**Example**:
+```bash
+AUTO_BATCH_MAX_WAIT_MS=100
+```
+
+<Callout type="warn">
+⚠️ **Experimental**: 此功能为实验性功能，未在生产环境中使用。除非你充分了解其影响和具体性能要求，否则不要使用。
+</Callout>
+
+### AUTO_BATCH_SIZE
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `0` (禁用)
+
+自动批处理事件的批大小。实验性功能。
+
+**Example**:
+```bash
+AUTO_BATCH_SIZE=100
+```
+
+<Callout type="warn">
+⚠️ **Experimental**: 此功能为实验性功能，未在生产环境中使用。除非你充分了解其影响和具体性能要求，否则不要使用。
+</Callout>
+
+## 事件流（Kafka）
+
+OpenPanel 可选择通过兼容 Kafka 的 broker（Kafka 本身、Redpanda 等）摄取事件，而不是默认的基于 Redis 的 events 队列。这在高吞吐场景下很有用，可让多个 consumer 实例并行处理分区。
+
+路由是全有或全无：如果设置了 `KAFKA_BROKERS`，所有事件都会发送到 Kafka topic；否则所有事件都会保留在默认的基于 Redis 的 `events` 队列中。在应从 Kafka 消费的 worker 上设置 `ENABLED_QUEUES=events_kafka`。
+
+<Callout>
+客户端通过 [kafkajs](https://kafka.js.org/) 使用 Kafka wire protocol，因此任何兼容 Kafka 的 broker 都可使用。随附的 `docker-compose.yml` 使用 [Redpanda](https://redpanda.com/) 作为轻量级单二进制选项，但你也可以将 `KAFKA_BROKERS` 指向任何 Kafka 集群。
+</Callout>
+
+### KAFKA_BROKERS
+
+**类型**: `string` (comma-separated)
+**是否必需**: 是 (用于启用 Kafka 路径)
+**默认值**: 无
+
+Kafka broker 地址列表，以逗号分隔。设置后，所有事件都会发送到 Kafka；未设置时，Kafka producer/consumer 会被禁用，所有事件回退到默认的基于 Redis 的队列。
+
+**Example**:
+```bash
+KAFKA_BROKERS=redpanda:9092
+# Multiple brokers
+KAFKA_BROKERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
+```
+
+### KAFKA_EVENTS_TOPIC
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: `events`
+
+用于接收入站事件的 Kafka topic 名称。
+
+**Example**:
+```bash
+KAFKA_EVENTS_TOPIC=openpanel-events
+```
+
+### KAFKA_CONSUMER_GROUP
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: `openpanel-events`
+
+worker 使用的 Kafka consumer group ID。具有相同 group ID 的所有 worker 副本会协作共享分区分配。
+
+**Example**:
+```bash
+KAFKA_CONSUMER_GROUP=openpanel-events
+```
+
+### KAFKA_CLIENT_ID
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: `openpanel`
+
+producer 和 consumer 共同使用的 Kafka client ID。会显示在 broker 日志和指标中。
+
+**Example**:
+```bash
+KAFKA_CLIENT_ID=openpanel-prod
+```
+
+### KAFKA_PARTITIONS_CONCURRENT
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `8`
+
+单个 consumer 实例可并发处理的最大分区数。超出实际分配给该 consumer 的分区数后不再生效。
+
+**Example**:
+```bash
+KAFKA_PARTITIONS_CONCURRENT=12
+```
+
+### KAFKA_MIN_MESSAGES
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `1`
+
+broker 在响应 fetch 请求前应累计的最少消息数（每条消息内部按约 1 KiB 计算）。更高的值会生成更大的批次，但会略微增加延迟。
+
+**Example**:
+```bash
+KAFKA_MIN_MESSAGES=16
+```
+
+### KAFKA_MAX_WAIT_MS
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `500`
+
+broker 在返回 fetch 响应前等待满足 `KAFKA_MIN_MESSAGES` 的最长时间（毫秒）。可在低流量下限制端到端延迟。
+
+**Example**:
+```bash
+KAFKA_MAX_WAIT_MS=200
+```
+
+### KAFKA_MAX_MESSAGES_PER_PARTITION
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `256`
+
+每次 fetch 请求每个分区返回的最大消息数（每条消息内部按约 1 KiB 计算）。可在积压恢复期间限制内存中批次大小，并限定 consumer 在单个批次上花费的最坏时间。
+
+**Example**:
+```bash
+KAFKA_MAX_MESSAGES_PER_PARTITION=512
+```
+
+### KAFKA_SESSION_TIMEOUT_MS
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `30000`
+
+consumer group 会话超时时间（毫秒）。如果 consumer 在此时间窗口内没有发送 heartbeat，broker 会认为其已死亡并重新平衡其分区。
+
+**Example**:
+```bash
+KAFKA_SESSION_TIMEOUT_MS=45000
+```
+
+### KAFKA_HEARTBEAT_INTERVAL_MS
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `3000`
+
+consumer 向 broker 发送后台 heartbeat 的间隔（毫秒）。应显著小于 `KAFKA_SESSION_TIMEOUT_MS`。
+
+**Example**:
+```bash
+KAFKA_HEARTBEAT_INTERVAL_MS=3000
+```
+
+## 缓冲区
+
+### SESSION_BUFFER_BATCH_SIZE
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: Buffer 专用默认值
+
+会话缓冲区操作的批大小。
+
+**Example**:
+```bash
+SESSION_BUFFER_BATCH_SIZE=5000
+```
+
+### SESSION_BUFFER_CHUNK_SIZE
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: Buffer 专用默认值
+
+会话缓冲区操作的 chunk 大小。
+
+**Example**:
+```bash
+SESSION_BUFFER_CHUNK_SIZE=1000
+```
+
+### EVENT_BUFFER_BATCH_SIZE
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `4000`
+
+事件缓冲区操作的批大小。
+
+**Example**:
+```bash
+EVENT_BUFFER_BATCH_SIZE=5000
+```
+
+### EVENT_BUFFER_CHUNK_SIZE
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `1000`
+
+事件缓冲区操作的 chunk 大小。
+
+**Example**:
+```bash
+EVENT_BUFFER_CHUNK_SIZE=2000
+```
+
+### PROFILE_BUFFER_BATCH_SIZE
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: Buffer 专用默认值
+
+画像缓冲区操作的批大小。
+
+**Example**:
+```bash
+PROFILE_BUFFER_BATCH_SIZE=5000
+```
+
+### PROFILE_BUFFER_CHUNK_SIZE
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: Buffer 专用默认值
+
+画像缓冲区操作的 chunk 大小。
+
+**Example**:
+```bash
+PROFILE_BUFFER_CHUNK_SIZE=1000
+```
+
+### PROFILE_BUFFER_TTL_IN_SECONDS
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: Buffer 专用默认值
+
+画像缓冲区条目的存活时间（秒）。
+
+**Example**:
+```bash
+PROFILE_BUFFER_TTL_IN_SECONDS=3600
+```
+
+### BOT_BUFFER_BATCH_SIZE
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: Buffer 专用默认值
+
+机器人检测缓冲区操作的批大小。
+
+**Example**:
+```bash
+BOT_BUFFER_BATCH_SIZE=1000
+```
+
+## 性能与调优
+
+### IMPORT_BATCH_SIZE
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `5000`
+
+数据导入操作的批大小。
+
+**Example**:
+```bash
+IMPORT_BATCH_SIZE=10000
+```
+
+### IP_HEADER_ORDER
+
+**类型**: `string` (comma-separated)
+**是否必需**: 否
+**默认值**: 见 [默认顺序](https://github.com/Openpanel-dev/openpanel/blob/main/packages/common/server/get-client-ip.ts)
+
+检查客户端 IP 地址时使用的 HTTP header 自定义顺序。适用于位于特定代理或 CDN 之后的场景。
+
+**Example**:
+```bash
+IP_HEADER_ORDER=cf-connecting-ip,x-real-ip,x-forwarded-for
+```
+
+<Callout>
+默认顺序包括：`openpanel-client-ip`、`cf-connecting-ip`、`true-client-ip`、`x-client-ip`、`x-forwarded-for`、`x-real-ip` 等。完整默认列表请参阅[源代码](https://github.com/Openpanel-dev/openpanel/blob/main/packages/common/server/get-client-ip.ts)。
+</Callout>
+
+### SHUTDOWN_GRACE_PERIOD_MS
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `5000`
+
+服务优雅关闭的宽限期（毫秒）。
+
+**Example**:
+```bash
+SHUTDOWN_GRACE_PERIOD_MS=10000
+```
+
+### API_PORT
+
+**类型**: `number`
+**是否必需**: 否
+**默认值**: `3000`
+
+API 服务监听端口。
+
+**Example**:
+```bash
+API_PORT=3000
+```
+
+### API_HOST
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: `0.0.0.0` (生产) / `localhost` (开发)
+
+API 服务绑定的主机地址。设置为 `::` 可启用 IPv6 支持（适用于像 Railway 这样在内部网络中使用 IPv6 的平台）。
+
+**Example**:
+```bash
+# Default IPv4 only
+API_HOST=0.0.0.0
+
+# IPv6 (dual-stack, accepts both IPv4 and IPv6)
+API_HOST=::
+```
+
+<Callout>
+在像 Railway 这样私有网络需要 IPv6 的平台上部署时，请使用 `API_HOST=::`。`::` 地址可启用双栈模式，在大多数系统上同时接受 IPv4 和 IPv6 连接。
+</Callout>
+
+## 日志
+
+### LOG_LEVEL
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: `info`
+
+日志级别。可选项：`error`、`warn`、`info`、`debug`。
+
+**Example**:
+```bash
+LOG_LEVEL=debug
+```
+
+### LOG_SILENT
+
+**类型**: `boolean`
+**是否必需**: 否
+**默认值**: `false`
+
+禁用所有日志输出。设置为 `true` 可静默日志。
+
+**Example**:
+```bash
+LOG_SILENT=true
+```
+
+### LOG_PREFIX
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+日志消息前缀。适用于区分不同服务的日志。
+
+**Example**:
+```bash
+LOG_PREFIX=api
+```
+
+### HYPERDX_API_KEY
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+用于将日志发送到 HyperDX 进行监控和分析的 HyperDX API key。
+
+**Example**:
+```bash
+HYPERDX_API_KEY=your-hyperdx-api-key
+```
+
+## 地理位置
+
+### MAXMIND_LICENSE_KEY
+
+**类型**: `string`
+**是否必需**: 否
+**默认值**: 无
+
+用于下载 GeoIP 数据库的 MaxMind GeoLite2 license key。
+
+**Example**:
+```bash
+MAXMIND_LICENSE_KEY=your-maxmind-license-key
+```
+
+<Callout>
+从 [MaxMind](https://www.maxmind.com/en/accounts/current/license-key) 获取你的 license key。下载 GeoIP 数据库时必需。
+</Callout>
+
+## 快速参考
+
+### 必需变量
+
+对于基础自托管安装，需要以下变量：
+
+- `DATABASE_URL` - PostgreSQL 连接
+- `REDIS_URL` - Redis 连接
+- `CLICKHOUSE_URL` - ClickHouse 连接
+- `API_URL` - API 端点 URL
+- `DASHBOARD_URL` - Dashboard URL
+- `COOKIE_SECRET` - 会话加密密钥
+
+### 可选但推荐
+
+- `RESEND_API_KEY` 或 `SMTP_HOST` - 邮件功能所需（二选一）
+- `EMAIL_SENDER` - 发件人邮箱地址
+- `OPENAI_API_KEY` 和/或 `ANTHROPIC_API_KEY` - 应用内 AI 聊天助手所需
+
+### 另请参阅
+
+- [使用 Docker Compose 部署](/zh-CN/docs/self-hosting/deploy-docker-compose)
+- [使用 Coolify 部署](/zh-CN/docs/self-hosting/deploy-coolify)
+- [使用 Dokploy 部署](/zh-CN/docs/self-hosting/deploy-dokploy)
+- [在 Kubernetes 上部署](/zh-CN/docs/self-hosting/deploy-kubernetes)

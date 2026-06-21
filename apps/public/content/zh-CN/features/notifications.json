@@ -1,0 +1,167 @@
+{
+  "slug": "notifications",
+  "short_name": "通知",
+  "seo": {
+    "title": "通知 - 当事件发生时采取行动",
+    "description": "设置通知规则，在特定事件发生时触发。按事件属性筛选，使用变量模板，并将提醒路由到 Slack、Discord 或任何 webhook。",
+    "keywords": [
+      "分析通知",
+      "基于事件的提醒",
+      "实时用户提醒",
+      "通知规则分析",
+      "事件筛选通知",
+      "自定义提醒模板"
+    ]
+  },
+  "hero": {
+    "heading": "事件发生时，立即采取行动",
+    "subheading": "定义规则来监控特定事件并自动触发。按属性筛选，使用变量模板，并路由到 Slack、Discord 或任何 webhook。",
+    "badges": [
+      "基于事件的规则",
+      "属性筛选",
+      "模板变量",
+      "多集成路由"
+    ]
+  },
+  "definition": {
+    "title": "什么是通知规则？",
+    "text": "通知规则是 OpenPanel 中的**触发层**。它们定义*何时*发生某事，而**[集成](/features/integrations)**定义*发送到哪里*。\n\n通知规则由三部分组成：\n\n1. **事件** - 要监控哪些事件（例如 `screen_view`、`purchase`、`signup`）\n2. **筛选器** - 可选的属性条件，用于缩小匹配范围（例如路径以 `/onboarding` 开头并以 `/verify` 结尾）\n3. **集成** - 当规则触发时，哪些已连接的服务应接收通知\n\n你还可以使用 `{{country}}`、`{{browser}}` 或任何事件属性编写**模板**。通知触发时，模板会用真实值渲染，因此你的 Slack 消息或 webhook 负载会包含你需要的确切上下文。\n\n下面是一个具体示例：你想知道新用户何时访问了你的 onboarding 验证页面。你创建一条规则：\n\n- 监控 `screen_view` 事件\n- 筛选 **path** 以 `/onboarding` 开头并以 `/verify` 结尾\n- 使用模板 *\"来自 {{country}} 的首次事件新用户\"*\n- 路由到你的 Slack 工作区和一个 webhook 集成\n\n现在，每当有人访问该页面时，你的团队都会在 Slack 中看到一条包含用户国家/地区的消息，同时 webhook 也会触发任何下游自动化流程。\n\nOpenPanel 中的通知页面会显示所有已触发通知的动态流——可搜索、可按日期排序，并展示每条通知对应的集成、国家/地区、操作系统、浏览器和用户画像。你可以准确看到发生了什么以及何时发生。\n\n通知规则将你跟踪的事件与你执行的操作连接起来。借助集成，它们让 OpenPanel 不只是存储数据，而是能基于你的数据采取行动。"
+  },
+  "capabilities_section": {
+    "title": "你可以用通知做什么",
+    "intro": "从简单提醒到复杂的事件驱动工作流——规则让你完全掌控。"
+  },
+  "capabilities": [
+    {
+      "title": "基于事件的触发",
+      "description": "选择规则要监控哪些事件——screen_view、purchase、signup，或任何自定义事件。单条规则可以监控一种事件类型，并在每次匹配时触发。"
+    },
+    {
+      "title": "属性筛选",
+      "description": "用属性条件缩小规则范围。可按路径、国家/地区、设备或任何事件属性进行筛选，使用 'starts with'、'ends with'、'equals' 等运算符。叠加多个筛选条件，精确匹配你关心的事件。"
+    },
+    {
+      "title": "模板变量",
+      "description": "使用 {{variable}} 语法编写通知模板。可使用任何事件属性——{{country}}、{{path}}、{{browser}}、{{os}} 或自定义属性。通知触发时，模板会用真实值渲染。"
+    },
+    {
+      "title": "多集成路由",
+      "description": "为单条规则附加多个集成。可同时触发一条 Slack 消息和一个 webhook。按你想要的方式在不同规则之间自由组合各种集成。"
+    },
+    {
+      "title": "通知动态流",
+      "description": "每条触发的通知都会记录在可搜索的动态流中。查看每条通知的标题、集成、国家/地区、操作系统、浏览器和用户画像。通过筛选和排序，精确找到你需要的内容。"
+    },
+    {
+      "title": "规则管理",
+      "description": "通过专门的 Rules 选项卡创建、编辑和删除规则。一目了然地查看每条规则监控哪些事件、应用了哪些筛选器，以及附加了哪些集成。"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-notifications.webp",
+      "alt": "通知动态流显示已触发的通知以及国家/地区、操作系统、浏览器和用户画像详情",
+      "caption": "每条触发的通知都会记录在可搜索的动态流中。可查看每个事件的国家/地区、操作系统、浏览器和用户画像——支持排序和搜索。"
+    },
+    {
+      "src": "/features/feature-notifications-rule.webp",
+      "alt": "编辑通知规则，包含事件类型、属性筛选、模板和集成",
+      "caption": "使用事件筛选器、模板变量和多集成路由创建规则。此规则会在路径匹配 onboarding 验证流程的 screen_view 事件上触发。"
+    }
+  ],
+  "how_it_works": {
+    "title": "通知规则如何工作",
+    "intro": "规则很简单：定义触发条件，编写消息，选择目标。",
+    "steps": [
+      {
+        "title": "选择事件类型",
+        "description": "选择规则应监控的事件——screen_view、purchase、signup，或你跟踪的任何自定义事件。规则会评估该类型的每个传入事件。"
+      },
+      {
+        "title": "添加属性筛选器",
+        "description": "可选地用属性条件缩小规则范围。例如，筛选 path 以 /onboarding 开头并以 /verify 结尾。只有匹配所有筛选器的事件才会触发规则。"
+      },
+      {
+        "title": "编写模板",
+        "description": "使用 {{variable}} 占位符编写通知消息。当规则触发时，变量会被事件中的真实值替换——例如，\"来自 {{country}} 的首次事件新用户\" 会变成 \"来自 US 的首次事件新用户\"。"
+      },
+      {
+        "title": "附加集成",
+        "description": "选择一个或多个集成来接收通知——Slack、Discord、webhook，或任意组合。当匹配的事件到达时，每个集成都会同时触发。"
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "团队如何使用通知",
+    "intro": "从简单的团队提醒到事件驱动自动化——通知让分析变得可执行。",
+    "items": [
+      {
+        "title": "新用户提醒",
+        "description": "每当有新用户注册时，在 Slack 中收到通知。在消息中包含他们的国家/地区、来源或任何属性。整个团队无需查看仪表板，就能实时看到新注册。"
+      },
+      {
+        "title": "Onboarding 监控",
+        "description": "设置规则，在用户完成关键 onboarding 里程碑时触发——账户创建、首次使用功能、验证。立即知道有人卡住了，或者已完成流程。"
+      },
+      {
+        "title": "收入和购买提醒",
+        "description": "在每次 purchase 事件发生时触发通知。在模板中包含金额、方案或产品。路由到 Slack 进行庆祝，并路由到 webhook 用于 CRM 更新或履约触发。"
+      },
+      {
+        "title": "错误和回归检测",
+        "description": "监控错误事件或异常模式。当特定页面或功能的错误率飙升时收到提醒，这样你就能在用户抱怨之前做出响应。"
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "integrations",
+      "title": "集成",
+      "description": "集成是通知的目标端点。连接 Slack、Discord 或 webhooks，然后将它们附加到规则上。"
+    },
+    {
+      "slug": "event-tracking",
+      "title": "事件跟踪",
+      "description": "通知规则建立在你跟踪的事件之上。你发送的事件越多，规则就可以越精确。"
+    },
+    {
+      "slug": "funnels",
+      "title": "漏斗",
+      "description": "当用户完成漏斗时触发通知——将逐步分析与实时行动结合起来。"
+    }
+  ],
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于 OpenPanel 中通知规则的常见问题。",
+    "items": [
+      {
+        "question": "通知和集成有什么区别？",
+        "answer": "集成是与外部服务（Slack、Discord、webhooks）的连接。通知是定义这些集成何时应触发的规则。你只需创建一次集成，然后可以将其附加到任意多个通知规则上。"
+      },
+      {
+        "question": "我可以使用哪些模板变量？",
+        "answer": "你可以使用任何事件属性作为模板变量，语法为 {{property}}。常见的有 {{country}}、{{city}}、{{browser}}、{{os}}、{{path}}，以及你随事件发送的任何自定义属性。"
+      },
+      {
+        "question": "单条规则可以设置多个筛选器吗？",
+        "answer": "可以。你可以为一条规则叠加多个属性筛选器。规则触发前必须匹配所有筛选器——它们以 AND 条件工作。例如，path 以 /onboarding 开头 AND path 以 /verify 结尾。"
+      },
+      {
+        "question": "一条规则可以发送到多个集成吗？",
+        "answer": "可以。你可以为一条规则附加任意多个集成。当规则触发时，所有附加的集成都会同时触发。例如，同时发送到 Slack 和一个 webhook。"
+      },
+      {
+        "question": "事件和通知之间有延迟吗？",
+        "answer": "没有。通知会随着事件到达实时触发。没有批处理或延迟——当某个事件匹配规则时，附加的集成会立即触发。"
+      },
+      {
+        "question": "我可以查看过去的通知吗？",
+        "answer": "可以。Notifications 选项卡会显示所有已触发通知的动态流。你可以搜索、按日期排序，并查看每条通知的集成、国家/地区、操作系统、浏览器和用户画像等详细信息。"
+      }
+    ]
+  },
+  "cta": {
+    "label": "设置你的第一条通知规则",
+    "href": "https://dashboard.openpanel.dev/onboarding"
+  }
+}

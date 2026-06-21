@@ -1,0 +1,78 @@
+---
+title: 身份验证
+description: 了解如何使用客户端凭据对 OpenPanel API 进行身份验证。
+---
+
+## 身份验证
+
+要对 OpenPanel API 进行身份验证，你需要使用 `clientId` 和 `clientSecret`。不同的 API 端点可能需要不同的访问级别：
+
+- **Track API**: 默认客户端可在 `write` 模式下使用
+- **Export API**: 需要 `read` 或 `root` 模式
+- **Insights API**: 需要 `read` 或 `root` 模式
+- **Manage API**: 仅需要 `root` 模式
+
+默认客户端（随项目创建）具有 `write` 模式，不能访问 Export、Insights 或 Manage API。你需要创建具有相应访问级别的其他客户端。
+
+## 标头
+
+在 API 请求中包含以下标头：
+
+- `openpanel-client-id`: 你的 OpenPanel 客户端 ID
+- `openpanel-client-secret`: 你的 OpenPanel 客户端密钥
+
+## 示例
+
+```bash
+curl 'https://api.openpanel.dev/insights/{projectId}/metrics' \
+  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+```
+
+## 安全最佳实践
+
+1. **安全存储凭据**：不要在客户端代码中暴露 `clientId` 和 `clientSecret`
+2. **使用 HTTPS**：始终使用 HTTPS 以确保安全通信
+3. **轮换凭据**：定期轮换你的 API 凭据
+4. **限制访问**：为你的用例使用最低所需访问级别
+
+## 错误响应
+
+如果身份验证失败，你会收到 `401 Unauthorized` 响应：
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid client credentials"
+}
+```
+
+常见身份验证错误：
+- 无效的客户端 ID 或密钥
+- 客户端没有所需权限（例如，尝试使用非 root 客户端访问 Manage API）
+- 客户端 ID 格式错误（必须是有效的 UUIDv4）
+- 客户端类型不匹配（例如，`write` 客户端尝试访问 Export API）
+
+## 客户端类型
+
+OpenPanel 支持三种具有不同访问级别的客户端类型：
+
+| 类型 | 描述 | 访问权限 |
+|------|-------------|--------|
+| `write` | 写入访问 | 仅 Track API |
+| `read` | 只读访问 | Export API、Insights API |
+| `root` | 完全访问 | 包括 Manage API 在内的所有 API |
+
+**注意**：root 客户端拥有组织级访问权限，可以管理所有资源。请谨慎使用 root 客户端并安全存储其凭据。
+
+## 速率限制
+
+API 实现了速率限制以防止滥用。速率限制因端点而异：
+
+- **Track API**: [事件跟踪](/zh-CN/features/event-tracking) 具有更高限制
+- **Export/Insights APIs**: 每 10 秒 100 个请求
+- **Manage API**: 每 10 秒 20 个请求
+
+如果超过速率限制，你会收到 `429 Too Many Requests` 响应。重试时请实现指数退避。
+
+请记得将 `YOUR_CLIENT_ID` 和 `YOUR_CLIENT_SECRET` 替换为你的实际 OpenPanel API 凭据。

@@ -1,0 +1,483 @@
+{
+  "slug": "heap-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026年最佳 Heap 替代方案 — Contentsquare 收购之后",
+    "description": "Heap 于 2023 年被 Contentsquare 收购。如果你正在重新评估，OpenPanel 是一个开源替代方案，价格透明，起价每月 $2.50，支持完整自托管，无需销售电话。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Heap 替代方案",
+    "subheading": "想要 Heap 的产品分析能力，却不想要黑盒式定价和厂商锁定？OpenPanel 提供透明的按事件计费、完整自托管，以及 AGPL-3.0 许可的开源代码——让你完全掌控自己的分析数据。",
+    "badges": [
+      "开源",
+      "价格透明",
+      "可自托管",
+      "无厂商锁定"
+    ]
+  },
+  "competitor": {
+    "name": "Heap",
+    "logo": "/logos/heap.svg",
+    "url": "https://heap.io",
+    "short_description": "以自动采集技术著称的产品分析平台，可自动跟踪所有用户交互。现已成为 Contentsquare 的一部分。",
+    "founded": 2013,
+    "headquarters": "美国加利福尼亚州旧金山"
+  },
+  "overview": {
+    "title": "为什么考虑用 OpenPanel 替代 Heap？",
+    "paragraphs": [
+      "Heap 于 2023 年 9 月被 Contentsquare 收购。对许多团队来说，这次收购引发了现实问题：价格会变吗？产品路线图是否会转向服务 Contentsquare 的企业客户？独立支持是否还能继续？这些担忧，加上 Heap 模糊的定价模式和仅云端架构，促使许多团队开始评估替代方案。",
+      "OpenPanel 采用不同的方法，使用显式事件跟踪，让你精确控制要衡量什么以及如何衡量。虽然你会失去 Heap 的回溯分析能力，但你会获得透明度——无论是在数据收集还是成本方面。OpenPanel 的价格公开列出，按事件计费，起价仅为每月 $2.50，而 Heap 据报道需要先联系销售，起价为每年 $3,600。并且与 Heap 不同，OpenPanel 完全支持自托管并且开源——任何收购都无法改变这一点。",
+      "对于重视数据主权的团队，OpenPanel 通过简单的 Docker Compose 部署提供完整自托管——一个命令 ./setup 向导会引导你完成配置，并在几分钟内启动整个堆栈，这是 Heap 完全无法提供的。采用 AGPL-3.0 许可证的开源模式意味着你可以审查每一行代码、贡献改进，并避免 Heap 这种专有、现已归 Contentsquare 所有的平台所带来的厂商锁定风险。",
+      "如果你更喜欢有意图、可控的分析，而不是全量自动采集；如果你想要无需销售电话的透明定价；如果你还需要自托管选项——OpenPanel 可以为你提供扎实的产品分析，并让你完全拥有自己的数据。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Heap：哪个更适合你？",
+    "intro": "两个平台都提供产品分析，但理念不同。Heap 的自动采集会自动记录一切；OpenPanel 使用显式跟踪以获得更好的控制。",
+    "one_liner": "OpenPanel 透明、可自托管且开源；Heap 提供自动采集和回溯分析，但企业定价不透明。",
+    "best_for_openpanel": [
+      "需要透明、可预测定价且无需销售电话的团队",
+      "需要出于数据主权而进行自托管的组织",
+      "出于透明性和可审计性要求开源的团队",
+      "希望在不过度臃肿的情况下控制数据收集的团队",
+      "在 Contentsquare 收购后希望避免厂商锁定的初创公司"
+    ],
+    "best_for_competitor": [
+      "希望通过自动采集避免手动事件跟踪的团队",
+      "需要对新事件进行回溯分析的组织",
+      "需要可视化事件定义工具的公司",
+      "有预算购买高级功能的企业团队",
+      "需要热图的团队（Heap 的增值功能；OpenPanel 有会话回放，但没有热图）"
+    ]
+  },
+  "highlights": {
+    "title": "关键差异一览",
+    "intro": "以下是 OpenPanel 和 Heap 在最重要因素上的对比。",
+    "items": [
+      {
+        "label": "定价透明度",
+        "openpanel": "公开的按事件计费",
+        "competitor": "不透明（需要销售电话）"
+      },
+      {
+        "label": "自托管",
+        "openpanel": "支持，完全免费",
+        "competitor": "不支持（仅云端）"
+      },
+      {
+        "label": "开源",
+        "openpanel": "支持（AGPL-3.0）",
+        "competitor": "不支持（专有）"
+      },
+      {
+        "label": "自动采集",
+        "openpanel": "手动事件跟踪",
+        "competitor": "自动采集"
+      },
+      {
+        "label": "回溯分析",
+        "openpanel": "仅已跟踪事件",
+        "competitor": "完整历史分析"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能对比",
+    "intro": "OpenPanel 覆盖核心产品分析，而 Heap 进一步扩展到自动采集和可视化分析工具。",
+    "groups": [
+      {
+        "group": "核心分析",
+        "features": [
+          {
+            "name": "页面浏览量与会话",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "事件跟踪",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "漏斗",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "用户画像",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "分群",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "自定义仪表盘",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "实时数据",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "高级功能",
+        "features": [
+          {
+            "name": "自动采集",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Heap 会自动捕获所有交互"
+          },
+          {
+            "name": "回溯分析",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Heap 可以分析新事件的历史数据"
+          },
+          {
+            "name": "可视化事件定义",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Heap 的无代码事件创建"
+          },
+          {
+            "name": "A/B 测试",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "会话回放",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel 包含基于 rrweb 的会话回放（可选择启用）；Heap 将其作为付费增值功能提供"
+          },
+          {
+            "name": "热图",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Heap 作为付费增值功能提供；OpenPanel 不支持热图"
+          },
+          {
+            "name": "路径分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "隐私与部署",
+        "features": [
+          {
+            "name": "自托管",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "开源",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "数据导出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "欧盟数据驻留",
+            "openpanel": "通过自托管实现",
+            "competitor": "仅 Premier 计划",
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "集成与数据",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "数据仓库导出",
+            "openpanel": "2026 年推出",
+            "competitor": true,
+            "notes": "Heap Connect 可导出到主流数仓。OpenPanel 现在已提供导出 API，原生数据仓库导出（S3/GCS）已列入 2026 年路线图。"
+          },
+          {
+            "name": "Segment 集成",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "OpenPanel 没有 Segment 集成（仅支持 Slack/Discord/webhook + 导出 API）。"
+          },
+          {
+            "name": "100+ 集成",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技术对比",
+    "intro": "对于评估分析工具的开发者，以下是 SDK 和技术实现方式的对比。",
+    "items": [
+      {
+        "label": "SDK 大小（JS）",
+        "openpanel": "~2.3 KB gzip 后",
+        "competitor": "更大（自动采集开销）",
+        "notes": "OpenPanel 更轻量的 SDK 意味着更快的页面加载"
+      },
+      {
+        "label": "支持的平台",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Astro",
+          "Remix",
+          "Express",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "Ruby",
+          "Java",
+          "Rust",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript",
+          "iOS",
+          "Android",
+          "React Native",
+          "Flutter"
+        ],
+        "notes": null
+      },
+      {
+        "label": "开源",
+        "openpanel": "支持（AGPL-3.0）",
+        "competitor": "不支持",
+        "notes": null
+      },
+      {
+        "label": "自托管部署",
+        "openpanel": "Docker Compose，引导式设置向导",
+        "competitor": "不可用",
+        "notes": null
+      },
+      {
+        "label": "数据库",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "专有",
+        "notes": null
+      },
+      {
+        "label": "跟踪方式",
+        "openpanel": "显式事件跟踪",
+        "competitor": "自动采集一切",
+        "notes": "数据收集理念不同"
+      }
+    ]
+  },
+  "pricing": {
+    "title": "价格对比",
+    "intro": "OpenPanel 提供透明定价。Heap 对于免费层以上的任何方案都需要销售电话。",
+    "openpanel": {
+      "model": "按事件计费，透明公开",
+      "description": "简单定价，5,000 次事件起价每月 $2.50。通过自托管可免费使用且事件无限制。所有层级都包含全部功能。"
+    },
+    "competitor": {
+      "model": "按会话计费，不透明",
+      "description": "免费层：每月 1 万会话，数据保留 6 个月。Growth/Pro/Premier 方案需要销售提供定制报价。据报道，Growth 方案起价约为每年 $3,600。",
+      "free_tier": "是（每月 1 万会话）",
+      "pricing_url": "https://heap.io/pricing"
+    }
+  },
+  "migration": {
+    "title": "从 Heap 迁移到 OpenPanel",
+    "intro": "从 Heap 切换需要重新思考跟踪策略，因为 OpenPanel 不会自动采集。",
+    "difficulty": "中等",
+    "estimated_time": "2-8 小时，取决于事件复杂度",
+    "steps": [
+      {
+        "title": "审计你的 Heap 事件",
+        "description": "查看你在 Heap 仪表盘和漏斗中实际使用了哪些事件。识别关键事件，因为 OpenPanel 不会自动采集所有内容。"
+      },
+      {
+        "title": "安装 OpenPanel SDK",
+        "description": "将 Heap 的代码片段替换为 OpenPanel 的轻量级 SDK。该 SDK 更小，不会自动采集。"
+      },
+      {
+        "title": "实现事件跟踪",
+        "description": "与 Heap 的自动采集不同，OpenPanel 需要显式事件跟踪。使用 op.track() 调用为你识别出的关键事件埋点。"
+      },
+      {
+        "title": "设置用户识别",
+        "description": "将 heap.identify() 替换为 OpenPanel 的 identify() 方法。两个平台都支持类似的用户识别模式。"
+      },
+      {
+        "title": "重建漏斗和报表",
+        "description": "在 OpenPanel 中构建你的转化漏斗、留存图表和仪表盘。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": false,
+      "notes": "跟踪理念不同：Heap 自动采集一切，OpenPanel 需要显式跟踪。请计划为你的关键事件埋点。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Heap 的专有数据格式使历史迁移变得复杂。如果你需要帮助，请联系我们。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 Heap 更适合的场景",
+    "intro": "OpenPanel 在重视透明度、控制力以及避免厂商锁定的团队中表现出色。",
+    "items": [
+      {
+        "title": "需要透明定价的团队",
+        "description": "Heap 的定价不透明，而且需要销售电话。OpenPanel 提供透明的按事件计费，让你始终清楚自己会支付多少。",
+        "icon": "dollar"
+      },
+      {
+        "title": "自托管和数据主权",
+        "description": "Heap 仅支持云端。OpenPanel 可通过 Docker Compose 完全自托管，将所有数据保留在你自己的基础设施中。",
+        "icon": "server"
+      },
+      {
+        "title": "开源需求",
+        "description": "Heap 完全是专有软件。OpenPanel 依据 AGPL-3.0 许可证完全开源，允许审查和修改。",
+        "icon": "code"
+      },
+      {
+        "title": "受控的数据收集",
+        "description": "Heap 的自动采集默认会收集一切。OpenPanel 让你可以显式控制收集哪些数据。",
+        "icon": "shield"
+      },
+      {
+        "title": "避免厂商锁定",
+        "description": "Heap 已被 Contentsquare 收购。OpenPanel 的开源模式可以防止厂商锁定和价格不确定性。",
+        "icon": "lock"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于从 Heap 切换到 OpenPanel 的常见问题。",
+    "items": [
+      {
+        "question": "什么是 Heap 的自动采集，为什么我可能不想要它？",
+        "answer": "Heap 的自动采集会在没有手动埋点代码的情况下自动记录每次用户交互。虽然方便，但它可能导致数据膨胀、成本更高、隐私顾虑（意外捕获敏感数据），以及难以管理实际追踪的内容。OpenPanel 的显式跟踪让你完全控制数据收集。"
+      },
+      {
+        "question": "我可以自托管 Heap 吗？",
+        "answer": "不可以。Heap 仅支持云端，没有自托管选项。你的数据始终存放在 Heap/Contentsquare 的基础设施上。OpenPanel 通过 Docker Compose 提供完整自托管，实现完全的数据所有权。"
+      },
+      {
+        "question": "Heap 是开源的吗？",
+        "answer": "不是。Heap 完全是专有软件，代码不开源。OpenPanel 依据 AGPL-3.0 许可证完全开源。"
+      },
+      {
+        "question": "为什么 Heap 的价格不公开？",
+        "answer": "Heap 只公开其免费层。Growth、Pro 和 Premier 计划都需要联系销售获取定制报价。据报道，Growth 计划起价约为每年 $3,600，而且随着使用量提升，费用会显著增加。"
+      },
+      {
+        "question": "Heap 怎么了？它被收购了吗？",
+        "answer": "是的。Contentsquare 于 2023 年 9 月收购了 Heap。Heap 现在是 Contentsquare 体验智能平台的一部分。这次收购可能会影响 Heap 的产品方向、定价和独立性。"
+      },
+      {
+        "question": "OpenPanel 有像 Heap 那样的回溯分析吗？",
+        "answer": "没有。Heap 的自动采集支持回溯分析。OpenPanel 只分析明确跟踪的事件。这是一个权衡：Heap 更灵活，但会带来数据膨胀；OpenPanel 更可控，但需要提前规划。"
+      },
+      {
+        "question": "OpenPanel 有会话回放吗？",
+        "answer": "有。OpenPanel 包含基于 rrweb 的会话回放（通过 sessionReplay: { enabled: true } 选择启用），提供无限录制和 30 天保留期。Heap 将会话回放作为 Pro 和 Premier 计划的增值功能。不过，OpenPanel 没有热图。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "跟踪自定义事件",
+        "url": "/zh-CN/guides/track-custom-events"
+      },
+      {
+        "title": "React 分析设置",
+        "url": "/zh-CN/guides/react-analytics"
+      },
+      {
+        "title": "Next.js 分析设置",
+        "url": "/zh-CN/guides/nextjs-analytics"
+      }
+    ],
+    "articles": [
+      {
+        "title": "2026 年最佳产品分析工具",
+        "url": "/zh-CN/articles/mixpanel-alternatives"
+      },
+      {
+        "title": "9 款最佳开源 Web 分析工具",
+        "url": "/zh-CN/articles/open-source-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Mixpanel",
+        "url": "/zh-CN/compare/mixpanel-alternative"
+      },
+      {
+        "name": "PostHog",
+        "url": "/zh-CN/compare/posthog-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "开始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

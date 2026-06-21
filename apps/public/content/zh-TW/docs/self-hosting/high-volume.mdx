@@ -1,0 +1,251 @@
+---
+title: 高流量設定
+description: 調校 OpenPanel 以支援高事件吞吐量
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+預設的 Docker Compose 設定對大多數部署都很適合。當你開始遇到高事件吞吐量——每秒數千個事件，或數十個 worker replica——就需要調整幾個地方。
+
+## 使用 PGBouncer 的連線池
+
+PostgreSQL 對開啟的連線數有硬性上限。每個 worker 與 API replica 都會開自己的連線池，因此總數會很快成長。若不做 pooling，在高負載下你會開始看到 `too many connections` 錯誤。
+
+PGBouncer 位於 PostgreSQL 前方，維持一小組真正的資料庫連線，並在其上多工處理大量應用程式連線。
+
+### 將 PGBouncer 加入 docker-compose.yml
+
+新增 `op-pgbouncer` 服務，並更新 `op-api` 與 `op-worker` 的相依性：
+
+```yaml
+op-pgbouncer:
+  image: edoburu/pgbouncer:v1.25.1-p0
+  restart: always
+  depends_on:
+    op-db:
+      condition: service_healthy
+  environment:
+    - DB_HOST=op-db
+    - DB_PORT=5432
+    - DB_USER=postgres
+    - DB_PASSWORD=postgres
+    - DB_NAME=postgres
+    - AUTH_TYPE=scram-sha-256
+    - POOL_MODE=transaction
+    - MAX_CLIENT_CONN=1000
+    - DEFAULT_POOL_SIZE=20
+    - MIN_POOL_SIZE=5
+    - RESERVE_POOL_SIZE=5
+  healthcheck:
+    test: ["CMD-SHELL", "PGPASSWORD=postgres psql -h 127.0.0.1 -p 5432 -U postgres pgbouncer -c 'SHOW VERSION;' -q || exit 1"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+```
+
+接著更新 `op-api` 與 `op-worker`，讓它們依賴 `op-pgbouncer` 而不是 `op-db`：
+
+```yaml
+op-api:
+  depends_on:
+    op-pgbouncer:
+      condition: service_healthy
+    op-ch:
+      condition: service_healthy
+    op-kv:
+      condition: service_healthy
+
+op-worker:
+  depends_on:
+    op-pgbouncer:
+      condition: service_healthy
+    op-api:
+      condition: service_healthy
+```
+
+### 更新 DATABASE_URL
+
+Prisma 需要知道它連的是 pooler。將 `DATABASE_URL` 指向 `op-pgbouncer`，並加上 `&pgbouncer=true`：
+
+```bash
+# Before
+DATABASE_URL=postgresql://postgres:postgres@op-db:5432/postgres?schema=public
+
+# After
+DATABASE_URL=postgresql://postgres:postgres@op-pgbouncer:5432/postgres?schema=public&pgbouncer=true
+```
+
+讓 `DATABASE_URL_DIRECT` 直接指向 `op-db`，不要加 `pgbouncer=true` 旗標。migration 會使用直連，無法透過 transaction-mode pooler 運作。
+
+```bash
+DATABASE_URL_DIRECT=postgresql://postgres:postgres@op-db:5432/postgres?schema=public
+```
+
+<Callout type="warn">
+PGBouncer 以 transaction mode 執行。Prisma migrations 與互動式 transaction 需要直接連線。請務必將 `DATABASE_URL_DIRECT` 設為 `op-db` 位址。
+</Callout>
+
+### 調整 pool 大小
+
+大致原則：`DEFAULT_POOL_SIZE` 不應超過你的 PostgreSQL `max_connections` 除以不同 database/user pair 的數量。PostgreSQL 預設值是 100。如果你在 Postgres 提高 `max_connections`，就可以按比例提高 `DEFAULT_POOL_SIZE`。
+
+---
+
+## Buffer 調校
+
+events、sessions 與 profiles 會先經過 Redis 的 in-memory buffer，再以批次寫入 ClickHouse。預設值偏保守。在高負載下，你會想要更大的批次，以減少 ClickHouse insert 次數並提升吞吐量。
+
+### Event buffer
+
+event buffer 會在 Redis 中收集進來的 events，並依 cron 排程 flush 到 ClickHouse。
+
+| 變數 | 預設值 | 控制項目 |
+|---|---|---|
+| `EVENT_BUFFER_BATCH_SIZE` | `4000` | 每次 flush 從 Redis 讀取並送往 ClickHouse 的 events 數量 |
+| `EVENT_BUFFER_CHUNK_SIZE` | `1000` | 單次 ClickHouse insert 呼叫送出的 events 數量 |
+| `EVENT_BUFFER_MICRO_BATCH_MS` | `10` | 在寫入 Redis 前，於記憶體中累積 events 的時間長度（ms） |
+| `EVENT_BUFFER_MICRO_BATCH_SIZE` | `100` | 觸發強制寫入 Redis 前可累積的最大 events 數 |
+
+在高吞吐量情境下，增加 `EVENT_BUFFER_BATCH_SIZE`，讓每次 flush 處理更多 events。`EVENT_BUFFER_CHUNK_SIZE` 保持等於或小於 `EVENT_BUFFER_BATCH_SIZE`。
+
+```bash
+EVENT_BUFFER_BATCH_SIZE=10000
+EVENT_BUFFER_CHUNK_SIZE=2000
+```
+
+### Session buffer
+
+sessions 會在每個 event 時更新，並另外 flush 到 ClickHouse。
+
+| 變數 | 預設值 | 控制項目 |
+|---|---|---|
+| `SESSION_BUFFER_BATCH_SIZE` | `1000` | 每次 flush 讀取的 events 數量 |
+| `SESSION_BUFFER_CHUNK_SIZE` | `1000` | 每次 ClickHouse insert 的 events 數量 |
+
+```bash
+SESSION_BUFFER_BATCH_SIZE=5000
+SESSION_BUFFER_CHUNK_SIZE=2000
+```
+
+### Profile buffer
+
+profiles 在寫入前會先與既有資料合併。預設 batch size 較小，因為每個 profile 可能都需要一次 ClickHouse lookup。
+
+| 變數 | 預設值 | 控制項目 |
+|---|---|---|
+| `PROFILE_BUFFER_BATCH_SIZE` | `200` | 每次 flush 處理的 profiles 數量 |
+| `PROFILE_BUFFER_CHUNK_SIZE` | `1000` | 每次 ClickHouse insert 的 profiles 數量 |
+| `PROFILE_BUFFER_TTL_IN_SECONDS` | `3600` | profile 在 Redis 中快取的時間長度 |
+
+如果 profile 處理成為瓶頸，就提高 `PROFILE_BUFFER_BATCH_SIZE`。數值越高，flush 次數越少，但每次 flush 佔用的記憶體也越多。
+
+```bash
+PROFILE_BUFFER_BATCH_SIZE=500
+PROFILE_BUFFER_CHUNK_SIZE=1000
+```
+
+---
+
+## 擴充 ingestion
+
+如果 event queue 的成長速度比 worker 清除的速度更快，你有幾個選項。
+
+先做垂直擴充，再做水平擴充。每增加一個 worker replica 都會帶來額外開銷：更多 Redis 連線、更多 ClickHouse 連線、更多記憶體。提高既有 replica 的 concurrency 幾乎總是比再新增一個 replica 更便宜也更有效。
+
+### 提高 job concurrency（先做這個）
+
+每個 worker 會平行處理多個 job。預設每個 replica 為 `10`。
+
+```bash
+EVENT_JOB_CONCURRENCY=20
+```
+
+請分階段提高並觀察 queue depth。限制因素是記憶體，不是邏輯——在 RAM 足夠的硬體上，`500`、`1000`，甚至 `2000+` 都有可能。每個並行 job 都會在記憶體中保留 event data，因此提高數值時請監控使用量。只有當單靠提高 concurrency 已經無效時，才再增加更多 replica。
+
+### 增加更多 worker replicas
+
+如果你已經把 concurrency 拉滿，而 queue 仍然落後，就增加更多 replicas。
+
+在 `docker-compose.yml` 中：
+
+```yaml
+op-worker:
+  deploy:
+    replicas: 8
+```
+
+或在執行時：
+
+```bash
+docker compose up -d --scale op-worker=8
+```
+
+### 將 events queue 分片
+
+<Callout type="warn">
+**實驗性功能。** Queue 分片需要 Redis Cluster 或 Dragonfly。Dragonfly 的測試非常少，而 Redis Cluster 完全沒有測試過。請勿直接在 production 使用，先在你的環境中驗證。
+</Callout>
+
+Redis 是單執行緒，因此單一 queue instance 在極高事件速率下可能成為瓶頸。Queue 分片會把 queue 拆到多個彼此獨立的 shard 上來解決這個問題。每個 shard 都可以由自己的 Redis instance 支援，因此吞吐量會隨 instance 數量擴充，而不是被單一核心限制。
+
+events 會依 project ID 分散到各個 shard，因此同一個 project 內的順序會被保留。
+
+```bash
+EVENTS_GROUP_QUEUES_SHARDS=4
+QUEUE_CLUSTER=true
+```
+
+<Callout type="warn">
+在 queue 上有 live traffic 之前就先設定 `EVENTS_GROUP_QUEUES_SHARDS`。若在 job 仍待處理時變更這個值，這些 job 會被查到錯誤的 shard，直到 shard 數量恢復前都不會被處理。
+</Callout>
+
+### 調整 ordering delay
+
+到達順序不一致的 events 會先暫時保留再處理。預設為 `100ms`。
+
+```bash
+ORDERING_DELAY_MS=100
+```
+
+調低這個值可降低延遲，但會增加寫入 ClickHouse 順序錯亂的機率。此值不應超過 `500ms`。
+
+---
+
+## 綜合設定
+
+高流量 `.env` 的起始設定：
+
+```bash
+# Route app traffic through PGBouncer
+DATABASE_URL=postgresql://postgres:postgres@op-pgbouncer:5432/postgres?schema=public&pgbouncer=true
+# Keep direct connection for migrations
+DATABASE_URL_DIRECT=postgresql://postgres:postgres@op-db:5432/postgres?schema=public
+
+# Event buffer
+EVENT_BUFFER_BATCH_SIZE=10000
+EVENT_BUFFER_CHUNK_SIZE=2000
+
+# Session buffer
+SESSION_BUFFER_BATCH_SIZE=5000
+SESSION_BUFFER_CHUNK_SIZE=2000
+
+# Profile buffer
+PROFILE_BUFFER_BATCH_SIZE=500
+
+# Queue
+EVENTS_GROUP_QUEUES_SHARDS=4
+EVENT_JOB_CONCURRENCY=20
+```
+
+接著先以更多 worker 啟動：
+
+```bash
+docker compose up -d --scale op-worker=8
+```
+
+在調校時，請監控 Redis queue depth 與 ClickHouse insert latency。合適的數值取決於你的硬體、event 形狀與流量模式。

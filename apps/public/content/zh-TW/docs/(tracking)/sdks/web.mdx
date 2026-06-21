@@ -1,0 +1,49 @@
+---
+title: Javascript (Web)
+description: OpenPanel Web SDK 讓您能透過簡單的 script tag 追蹤網站上的使用者行為。本指南提供在專案中安裝與使用 Web SDK 的說明。
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+## 安裝
+
+<Steps>
+### 步驟 1：安裝
+
+```npm
+npm install @openpanel/web
+```
+
+### 步驟 2：初始化
+
+```js title="op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+#### 選項
+
+<CommonSdkConfig />
+<WebSdkConfig />
+
+### 步驟 3：使用
+
+```js title="main.ts"
+import { op } from './op.js';
+
+op.track('my_event', { foo: 'bar' });
+```
+</Steps>
+
+## 使用方式
+
+請參考 [Javascript SDK](/zh-TW/docs/sdks/javascript#usage) 的使用說明。

@@ -1,0 +1,555 @@
+{
+  "slug": "microsoft-clarity-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "Microsoft Clarity 替代方案 2026 — 具備真實隱私的 Session Replay",
+    "description": "Microsoft Clarity 雖然免費，但 session 資料由 Microsoft 擁有。OpenPanel 補上 Clarity 缺少的產品分析功能——漏斗、留存、分群——以及你可自架的 session replay。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Microsoft Clarity 替代方案",
+    "subheading": "Clarity 免費，但每段 session 錄製都存放在 Microsoft 的伺服器上——而且沒有事件追蹤、沒有漏斗、沒有留存。OpenPanel 在 session replay 之上加入產品分析，讓你同時理解使用者做了什麼，以及為什麼留存會變動。可自架部署，完整擁有資料。",
+    "badges": [
+      "Session replay",
+      "漏斗與留存",
+      "可自架",
+      "開源"
+    ]
+  },
+  "competitor": {
+    "name": "Microsoft Clarity",
+    "logo": "/logos/microsoft-clarity.svg",
+    "url": "https://clarity.microsoft.com",
+    "short_description": "來自 Microsoft 的免費行為分析工具，提供 session 錄製、熱圖與洞察。",
+    "founded": 2020,
+    "headquarters": "美國華盛頓州雷德蒙德"
+  },
+  "overview": {
+    "title": "為什麼要考慮用 OpenPanel 取代 Microsoft Clarity？",
+    "paragraphs": [
+      "Microsoft Clarity 是一款完全免費的行為分析工具，提供不限量的 session 錄製、熱圖，以及由 AI 驅動的洞察。這個價格——永久免費且沒有限制——很難挑剔，也因此成為 Google Analytics 的熱門搭配工具。但 Clarity 的設計目的是觀察行為，不是衡量成果。它沒有事件追蹤、沒有漏斗、沒有留存分析，也沒有分群分析。",
+      "OpenPanel 補上了 Clarity 缺少的那一塊。Clarity 能讓你看到單一 session 的錄影和彙總熱圖，而 OpenPanel 則提供結構化分析，讓你理解模式：哪些功能帶來留存、使用者在哪些轉換流程中流失，以及不同分群的使用者如何隨時間行為變化。這些才是推動產品決策的洞察。",
+      "自架部署與資料擁有權是重要差異。Clarity 完全運行在 Microsoft 的 Azure 雲端上，沒有替代方案，而你的 session 錄製資料也存放在他們的伺服器上。OpenPanel 可以部署在你自己的基礎架構上，實現完整的資料主權；其開源 AGPL-3.0 授權也代表你可以審查每一行處理使用者資料的程式碼。",
+      "許多團隊會發現 Clarity 與 OpenPanel 搭配使用效果很好——Clarity 負責視覺化 session 錄製，OpenPanel 負責結構化產品分析。但如果你只能選一個工具來理解並改善產品，OpenPanel 能提供單靠行為觀察無法取得的可行動指標。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Microsoft Clarity：哪個適合你？",
+    "intro": "Clarity 著重行為分析（session 錄製、熱圖）。OpenPanel 著重產品分析（事件、留存、分群）。不同需求，適合不同工具。",
+    "one_liner": "Clarity 擅長行為觀察（錄製、熱圖）；OpenPanel 擅長產品分析（留存、分群、漏斗）。",
+    "best_for_openpanel": [
+      "需要留存與分群分析的 SaaS 產品",
+      "需要自架以符合資料主權的團隊",
+      "需要使用者識別與個人檔案的產品",
+      "想要 A/B 測試能力的團隊"
+    ],
+    "best_for_competitor": [
+      "需要 session 錄製與熱圖的團隊（完全免費）",
+      "用視覺方式除錯使用者挫折點（rage click、dead click）",
+      "能接受 Microsoft 雲端託管的組織",
+      "想要 AI 驅動 session 洞察（Copilot）的團隊"
+    ]
+  },
+  "highlights": {
+    "title": "一眼看懂主要差異",
+    "intro": "以下是 OpenPanel 與 Microsoft Clarity 在關鍵面向上的比較。",
+    "items": [
+      {
+        "label": "分析重點",
+        "openpanel": "產品分析",
+        "competitor": "行為分析",
+        "notes": "OpenPanel 聚焦產品分析——漏斗、留存、分群與使用者旅程。Clarity 聚焦行為分析——session 錄製與熱圖。不同需求，適合不同工具。"
+      },
+      {
+        "label": "自架部署",
+        "openpanel": "有 — Docker Compose、引導式安裝精靈",
+        "competitor": "無 - 僅限雲端",
+        "notes": "OpenPanel 可透過 Docker Compose 自架（ClickHouse、Postgres、Redis）。只需一個命令的 ./setup 精靈會引導你完成設定，幾分鐘內即可啟動整套堆疊。Microsoft Clarity 僅限雲端，資料儲存在 Microsoft Azure 伺服器上。"
+      },
+      {
+        "label": "Session 錄製",
+        "openpanel": "有 — 內建 Session replay",
+        "competitor": "有 - 不限量免費錄製",
+        "notes": "兩者都提供 session replay。Clarity 將錄製存放在 Microsoft Azure 上（預設保留 30 天）；OpenPanel 的 session replay 可自架，且保留期限不限。"
+      },
+      {
+        "label": "留存與分群分析",
+        "openpanel": "有 - 內建",
+        "competitor": "無",
+        "notes": "OpenPanel 提供留存分析與分群追蹤，協助你理解使用者行為如何隨時間變化。Clarity 沒有這些產品分析功能。"
+      },
+      {
+        "label": "價格",
+        "openpanel": "每月 $2.50 起，或免費自架",
+        "competitor": "永久 100% 免費",
+        "notes": "Microsoft Clarity 完全免費，沒有付費方案、沒有流量限制，也沒有任何限制。OpenPanel 雲端版在 30 天免費試用後，5,000 事件起每月 $2.50，或可免費自架且不限事件。"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能比較",
+    "intro": "Clarity 和 OpenPanel 的用途不同——行為分析 vs 產品分析。",
+    "groups": [
+      {
+        "group": "行為分析",
+        "features": [
+          {
+            "name": "Session 錄製",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel 內建 session replay。Clarity 預設保留 30 天（標記後可達 13 個月）；OpenPanel 自架版沒有保留上限。"
+          },
+          {
+            "name": "點擊熱圖",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "OpenPanel 不會產生熱圖。如果熱圖很重要，可以將 OpenPanel 與 Clarity 搭配使用（Clarity 免費）。"
+          },
+          {
+            "name": "捲動熱圖",
+            "openpanel": false,
+            "competitor": true
+          },
+          {
+            "name": "Rage Click 偵測",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Clarity 會自動偵測挫折訊號，例如 rage clicks"
+          },
+          {
+            "name": "Dead Click 偵測",
+            "openpanel": false,
+            "competitor": true
+          },
+          {
+            "name": "JavaScript 錯誤追蹤",
+            "openpanel": false,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "產品分析",
+        "features": [
+          {
+            "name": "自訂事件追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Clarity 將這些稱為 Smart Events"
+          },
+          {
+            "name": "漏斗分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Clarity 在 2024 年加入漏斗功能"
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Clarity 著重 session 層級資料，而非隨時間變化的留存"
+          },
+          {
+            "name": "分群分析",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "使用者檔案",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Clarity 有自訂識別碼，但沒有完整的使用者檔案"
+          },
+          {
+            "name": "使用者路徑分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Clarity 會顯示 session 旅程，但不會提供彙總的使用者路徑"
+          },
+          {
+            "name": "A/B 測試",
+            "openpanel": true,
+            "competitor": false
+          }
+        ]
+      },
+      {
+        "group": "網站分析",
+        "features": [
+          {
+            "name": "頁面瀏覽與訪客",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "流量來源",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "地理資料",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "裝置與瀏覽器",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "即時儀表板",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Clarity 提供即時 session 檢視"
+          },
+          {
+            "name": "UTM 廣告活動追蹤",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "隱私與合規",
+        "features": [
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都需要同意才能完整追蹤"
+          },
+          {
+            "name": "符合 CCPA",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "資料遮罩",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Clarity 會在錄製中自動遮罩敏感內容"
+          },
+          {
+            "name": "可自架",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Clarity 資料儲存在 Microsoft Azure"
+          },
+          {
+            "name": "無 Cookie 選項",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Clarity 會使用第一方 cookie 進行 session 追蹤"
+          },
+          {
+            "name": "開源",
+            "openpanel": true,
+            "competitor": "partial",
+            "notes": "Clarity 的追蹤程式碼在 GitHub 上是開源的"
+          }
+        ]
+      },
+      {
+        "group": "整合與 SDK",
+        "features": [
+          {
+            "name": "JavaScript SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "React/Next.js",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "iOS SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Clarity iOS SDK 於 2024 年 7 月推出"
+          },
+          {
+            "name": "Android SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Flutter SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Clarity Flutter SDK 於 2025 年 6 月推出；OpenPanel 有社群維護的 Flutter SDK"
+          },
+          {
+            "name": "React Native SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Google Analytics 整合",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Clarity 有原生 GA4 整合"
+          },
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技術比較",
+    "intro": "如果你是開發者，正在評估分析工具，以下是技術層面的拆解。",
+    "items": [
+      {
+        "label": "SDK 大小",
+        "openpanel": "2.3 KB（gzip 後）",
+        "competitor": "輕量級非同步腳本，行動端 SDK 約 400-900 KB",
+        "notes": null
+      },
+      {
+        "label": "平台",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js",
+          "PHP",
+          "Python",
+          "Ruby",
+          "Rust",
+          "Java"
+        ],
+        "competitor": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "iOS",
+          "Android",
+          "Flutter",
+          "React Native",
+          "Cordova",
+          "Ionic",
+          "WordPress",
+          "Shopify",
+          "Wix"
+        ],
+        "notes": null
+      },
+      {
+        "label": "開源",
+        "openpanel": "有 - AGPL-3.0",
+        "competitor": "部分 - 僅追蹤程式碼",
+        "notes": "Clarity 的追蹤程式碼在 GitHub 上是開源的。後端是專有的。"
+      },
+      {
+        "label": "自架",
+        "openpanel": "Docker Compose（ClickHouse、Postgres、Redis）、引導式安裝精靈",
+        "competitor": "不可用 - 僅限雲端（Microsoft Azure）",
+        "notes": null
+      },
+      {
+        "label": "資料庫",
+        "openpanel": "ClickHouse",
+        "competitor": "Microsoft Azure（專有）",
+        "notes": null
+      },
+      {
+        "label": "資料保留",
+        "openpanel": "不限（自架）、可設定（雲端）",
+        "competitor": "錄製 30 天（標記後 13 個月）、熱圖 13 個月",
+        "notes": null
+      },
+      {
+        "label": "語言",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "TypeScript（追蹤程式碼）、專有後端",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "價格比較",
+    "intro": "Microsoft Clarity 完全免費。OpenPanel 提供透明的依事件計費方案，並支援免費自架。",
+    "openpanel": {
+      "model": "依事件計費、透明公開",
+      "description": "價格透明，5,000 事件每月 $2.50 起，並提供 30 天免費試用。所有方案都包含完整功能。可免費自架且不限事件。"
+    },
+    "competitor": {
+      "model": "永久 100% 免費",
+      "description": "不限 session、不限熱圖、每天最多 100,000 個 session，且包含所有功能。Session 錄製、熱圖、洞察、Copilot AI、行動端 SDK、GA 整合——全部免費。Microsoft 將其作為免費工具，用來與 Hotjar 競爭並推動 Microsoft 生態系採用。",
+      "free_tier": "不限量 - 沒有流量限制",
+      "pricing_url": null
+    }
+  },
+  "migration": {
+    "title": "從 Microsoft Clarity 遷移到 OpenPanel",
+    "intro": "如果你只需要 session replay，OpenPanel 可以直接取代 Clarity。如果你需要熱圖，可以兩者並用——Clarity 持續免費提供熱圖；OpenPanel 處理 session replay、漏斗與留存。多數遷移可在兩小時內完成。",
+    "difficulty": "easy",
+    "estimated_time": "30 分鐘到 2 小時",
+    "steps": [
+      {
+        "title": "先決定：取代還是搭配？",
+        "description": "如果你的使用情境是 session replay + 產品分析（事件、漏斗、留存），OpenPanel 可以完全取代 Clarity。如果你依賴 Clarity 的點擊/捲動熱圖或 rage-click 偵測，就保留 Clarity 供熱圖使用（它依然免費），並用 OpenPanel 處理其他所有項目。大多數團隊會選擇取代——熱圖本身很少單獨改變產品決策。"
+      },
+      {
+        "title": "安裝 OpenPanel SDK（取代 clarity.js）",
+        "description": "移除 Clarity 追蹤片段，改為加入 @openpanel/web（或你的框架 SDK）。Web SDK 壓縮後只有 2.3 KB，相較於 Clarity 的約 10 KB。可用 SDK：React、Next.js、Vue、Astro、Remix、React Native、Flutter、iOS（Swift）、Android（Kotlin）、Node.js、PHP、Python、Ruby、Rust、Java。"
+      },
+      {
+        "title": "將 Clarity Smart Events 對應到 OpenPanel events",
+        "description": "Clarity Smart Events 會根據點擊/捲動模式觸發。在 OpenPanel 中，於相同觸發點呼叫 op.track('event_name', { property: value })。Clarity 自動擷取的事件（rage clicks、dead clicks、quick backs）沒有直接對應功能——如果你仰賴它們，請透過現有的 click handler 手動記錄。多數團隊後來發現自己其實從未針對這些自動擷取事件採取行動。"
+      },
+      {
+        "title": "加入使用者識別（Clarity 最大的缺口）",
+        "description": "Clarity 有自訂 ID，但沒有真正的使用者檔案。登入時呼叫 op.identify({ profileId, email, plan, ... })。這樣每個事件、session replay 與漏斗都會對應到真實使用者——你可以查看任何單一使用者的完整時間軸，這是 Clarity 做不到的。"
+      },
+      {
+        "title": "啟用 session replay",
+        "description": "Session replay 預設未啟用。將 sessionReplay: { enabled: true } 加到你的 SDK 初始化設定中（script tag 或 @openpanel/web）。replay 模組會在下一次頁面載入時非同步載入，因此主追蹤 bundle 仍保持精簡。可錄製不限量 session；replay 會保留 30 天。"
+      },
+      {
+        "title": "建立 Clarity 沒有的漏斗與留存報表",
+        "description": "Clarity 是以 session 為範圍——沒有跨 session 的留存或分群分析。在儀表板中建立你的第一個漏斗（註冊 → 啟用 → 升級）。再加入一張留存圖，顯示第 1 週動作與第 8 週留存之間的關聯。這些才是驅動產品決策、而 Clarity 無法產出的報表。"
+      },
+      {
+        "title": "先平行執行 1 週，再切換",
+        "description": "讓 Clarity 與 OpenPanel 並行運作一週，以驗證事件量是否一致。當 OpenPanel 的漏斗與你從 Clarity session 資料預期的結果相符（約 5% 內）後，移除 Clarity 片段。許多團隊會一直保留 Clarity，只為了熱圖，因為它不會產生成本。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": false,
+      "notes": "Clarity 使用 clarity('event', name, value) 來處理 Smart Events；OpenPanel 使用 op.track(name, properties)。對應方式：clarity('event', 'signup') → op.track('signup')。clarity('set', 'planType', 'pro') → op.identify({ planType: 'pro' })。clarity('identify', userId) → op.identify({ profileId: userId })。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Clarity 不會匯出歷史 session 資料。你在 OpenPanel 會從全新開始。如果你需要保留 Clarity 錄製，請讓 Clarity 透過獨立片段持續運作，直到你想停止保存存檔為止（預設保留 30 天適用）。"
+    }
+  },
+  "use_cases": {
+    "title": "在哪些情境下 OpenPanel 比 Microsoft Clarity 更適合",
+    "intro": "當你需要超越行為觀察的產品分析時，選擇 OpenPanel。",
+    "items": [
+      {
+        "title": "需要留存分析的 SaaS 產品",
+        "description": "Clarity 會顯示單一 session 錄製，但不會追蹤隨時間變化的留存。如果你需要了解使用者每週如何回訪你的產品，OpenPanel 的留存分析能提供這些洞察。",
+        "icon": "repeat"
+      },
+      {
+        "title": "需要自架的團隊",
+        "description": "Clarity 僅限雲端，資料存放在 Microsoft Azure。如果你的資料主權、合規要求或隱私政策需要自架，OpenPanel 可部署在你自己的基礎架構上。",
+        "icon": "server"
+      },
+      {
+        "title": "需要使用者識別的產品",
+        "description": "Clarity 有自訂識別碼，但無法建立完整的使用者檔案。OpenPanel 讓你能跨 session 追蹤個別使用者，並分析他們與產品的完整旅程。",
+        "icon": "user-check"
+      },
+      {
+        "title": "想要 A/B 測試的團隊",
+        "description": "Clarity 著重觀察（看使用者做了什麼），而不是實驗。OpenPanel 內建 A/B 測試能力，可衡量變更帶來的影響。",
+        "icon": "git-branch"
+      },
+      {
+        "title": "兩種工具一起用",
+        "description": "因為 Clarity 免費，很多團隊會兩者並用：Clarity 負責視覺化 session 錄製與熱圖，OpenPanel 負責產品分析、漏斗、留存與分群。兩者搭配相當互補。",
+        "icon": "layers"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於 Microsoft Clarity 與 OpenPanel 的常見問題。",
+    "items": [
+      {
+        "question": "Microsoft Clarity 真的免費嗎？",
+        "answer": "是的，Microsoft Clarity 永久 100% 免費，沒有付費方案、沒有流量限制，也沒有強制升級。Microsoft 將其作為免費工具，用來與 Hotjar 競爭並推動 Microsoft 生態系採用。"
+      },
+      {
+        "question": "為什麼我要選擇 OpenPanel，而不是像 Clarity 這樣的免費工具？",
+        "answer": "Clarity 與 OpenPanel 解決的是不同問題。Clarity 是做行為分析——看 session 錄製與熱圖。OpenPanel 是做產品分析——追蹤事件、分析留存、建立分群，以及識別使用者。如果你需要產品分析功能，OpenPanel 有提供，而 Clarity 沒有。"
+      },
+      {
+        "question": "我可以自架 Microsoft Clarity 嗎？",
+        "answer": "不行。Microsoft Clarity 僅限雲端，資料存放在 Microsoft Azure 伺服器上。如果你因資料主權或合規需要自架，OpenPanel 提供完整的 Docker Compose 自架部署。"
+      },
+      {
+        "question": "Clarity 有留存與分群分析嗎？",
+        "answer": "沒有。Clarity 著重於 session 層級的行為分析（錄製、熱圖、rage clicks）。它不提供留存分析，也不提供隨時間的分群追蹤。OpenPanel 則包含這些產品分析功能。"
+      },
+      {
+        "question": "Clarity 會保留我的資料多久？",
+        "answer": "Clarity 會保留 session 錄製 30 天（若標記或加入收藏則為 13 個月）。熱圖資料則保留 13 個月。OpenPanel 的自架選項提供不限期限的保留。"
+      },
+      {
+        "question": "Clarity 有 A/B 測試嗎？",
+        "answer": "沒有。Clarity 是一個觀察工具——它可以告訴你使用者做了什麼，但無法協助你針對變更進行實驗。OpenPanel 內建 A/B 測試能力。"
+      },
+      {
+        "question": "我應該同時使用 Clarity 和 OpenPanel 嗎？",
+        "answer": "很多團隊都這麼做！因為 Clarity 免費，你可以用它做 session 錄製與熱圖，同時用 OpenPanel 做產品分析、留存、分群與使用者檔案。兩者相輔相成。"
+      },
+      {
+        "question": "Clarity 是開源的嗎？",
+        "answer": "部分是。Clarity 的追蹤程式碼在 GitHub 上是開源的，但後端與儀表板是 Microsoft 的專有服務。OpenPanel 則在 AGPL-3.0 授權下完全開源。"
+      },
+      {
+        "question": "我要如何把 Microsoft Clarity Smart Events 移到 OpenPanel？",
+        "answer": "Clarity Smart Events 會根據點擊/捲動模式觸發，語法是 `clarity('event', 'event_name')`。OpenPanel 對應的寫法是在相同觸發點呼叫 `op.track('event_name', { property: value })`。對於使用者屬性，`clarity('set', 'planType', 'pro')` 會變成 `op.identify({ planType: 'pro' })`。對於使用者 ID，`clarity('identify', userId)` 會變成 `op.identify({ profileId: userId })`。自動擷取的事件（rage clicks、dead clicks、quick backs）沒有直接對應項目——如果你會用到它們，就手動記錄；多數團隊發現自己其實不會。"
+      },
+      {
+        "question": "Microsoft Clarity 是免費的——相比之下 OpenPanel 要多少錢？",
+        "answer": "Clarity 確實免費，沒有流量限制，所以成本不是轉換的主要驅動因素。當你需要 Clarity 沒有提供的產品分析（漏斗、留存、分群、真實使用者檔案），或當 Microsoft 的資料擁有權變成合規問題時，就該切換到 OpenPanel。OpenPanel 以 30 天免費試用開始，5,000 事件每月 $2.50 起，高用量可達每月 $900——或者免費自架（你只需支付伺服器費用）。如果只是單純需要 session replay，Clarity 仍然是更便宜的選擇。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "網站分析設定",
+        "url": "/zh-TW/guides/website-analytics-setup"
+      },
+      {
+        "title": "從 Google Analytics 遷移",
+        "url": "/zh-TW/guides/migrate-from-google-analytics"
+      },
+      {
+        "title": "追蹤自訂事件",
+        "url": "/zh-TW/guides/track-custom-events"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 個最佳開源網站分析工具",
+        "url": "/zh-TW/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Crazy Egg",
+        "url": "/compare/crazy-egg-alternative"
+      },
+      {
+        "name": "FullStory",
+        "url": "/compare/fullstory-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "從 OpenPanel 開始",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

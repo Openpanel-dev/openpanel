@@ -1,0 +1,334 @@
+---
+title: 使用副本解决读后写一致性
+description: 了解我们如何在 OpenPanel 中使用 WAL LSN 跟踪和 AsyncLocalStorage 解决读后写一致性问题，确保用户始终能看到最新的更改。
+tag: Engineering
+date: 2025-10-31
+team: OpenPanel Team
+cover: /content/read-after-write.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+
+当你通过读副本扩展数据库时，虽然能提升性能，却会引入一个微妙的问题：用户可能看不到他们刚刚创建的数据。在这篇文章中，我们将讲解我们在 OpenPanel 中如何解决读后写一致性挑战，包括我们构建的理想方案，以及最终不得不采用的实际折中方案。
+
+## 读后写问题
+
+设想这样一个场景：用户在 OpenPanel 中创建了一个新的仪表板。写入请求发送到了主数据库，然后他们立即被重定向去查看自己创建的内容。但读取请求命中了一个尚未同步完成的副本。结果呢？他们刚创建的东西却返回了令人困惑的 404 错误。
+
+之所以会发生这种情况，是因为数据库复制本身存在延迟。PostgreSQL 复制速度很快，通常只需几毫秒，但即便是很小的延迟，在错误的时刻发生，也会带来糟糕的用户体验。
+
+对于 OpenPanel 来说，用户会不断创建和修改仪表板、图表和报表，这种不一致是不可接受的。我们需要保证用户始终能立即看到自己的写入结果。
+
+## WAL LSN：完美的解决方案（理论上）
+
+PostgreSQL 会维护一个预写日志（WAL），其中的日志序列号（LSN）会随着每次数据库变更而递增。你可以把 LSN 看作数据库状态的精确时间戳。通过比较主库和副本之间的 LSN 值，你可以准确判断某个副本是否已经接收到了特定更改。
+
+LSN 跟踪的工作方式如下：
+
+```sql
+-- 在主库写入之后
+SELECT pg_current_wal_lsn() AS lsn;
+-- 返回类似：0/3000148
+
+-- 在副本上，检查它的位置
+SELECT pg_last_wal_receive_lsn() AS lsn;
+-- 返回类似：0/3000140
+```
+
+如果副本的 LSN 等于或大于写入时的 LSN，那么读取就是安全的。否则，你需要等待，或者路由到主库。
+
+我们构建了这个方案的完整实现，包括：
+- 在每次写入后捕获 LSN
+- 按会话缓存 LSN
+- 使用正确的 BigInt 处理方式比较 LSN 值
+- 指数退避重试逻辑
+
+下面是我们实现的 LSN 比较逻辑：
+
+```typescript
+function compareWalLsn(lsn1: string, lsn2: string): number {
+  // LSN 格式为 "X/Y"，其中 X 和 Y 是十六进制
+  const [x1, y1] = lsn1.split('/').map((x) => BigInt(`0x${x}`));
+  const [x2, y2] = lsn2.split('/').map((x) => BigInt(`0x${x}`));
+
+  // 合并为单个 64 位值用于比较
+  const v1 = ((x1 ?? 0n) << 32n) + (y1 ?? 0n);
+  const v2 = ((x2 ?? 0n) << 32n) + (y2 ?? 0n);
+
+  if (v1 < v2) return -1;
+  if (v1 > v2) return 1;
+  return 0;
+}
+```
+
+## Prisma 的限制
+
+理论走到现实这里就遇到了障碍。我们的实现碰到了一个根本性限制：Prisma 的 `readReplicas` 扩展在执行查询之前，不会暴露将要使用的是哪个副本。
+
+理想流程应该是：
+1. 用户向主库写入，我们捕获 LSN
+2. 用户发起读取请求
+3. 在我们的中间件里：“Prisma 即将把这个请求路由到副本 X”
+4. 检查副本 X 的当前 LSN
+5. 如果副本 X 已经追上，就继续查询
+6. 如果没有，使用指数退避重试，或者路由到主库
+
+但 Prisma 的扩展并不提供这种粒度的控制。当我们的扩展中间件运行时，我们可以检查某个副本的 LSN，但我们无法知道这是否就是 Prisma 实际会路由查询到的那个副本。在有多个副本且各自复制位置可能不同的情况下，只检查其中一个并不能说明其他副本的情况。
+
+我们已经构建好了所有 LSN 比较逻辑、缓存和重试机制。但由于不知道 Prisma 会使用哪个副本，我们无法基于那个特定副本的状态做出智能路由决策。
+
+如果你对数据库连接路由拥有完全控制权，并实现了自定义的副本选择，那么 LSN 跟踪绝对是最佳方案。但在 Prisma 的约束下，我们需要更简单的方法。
+
+## 我们的实际方案（目前）：基于会话的主库路由
+
+我们没有去检查精确的复制位置，而是简化为：如果某个会话最近刚写入过，就把它的所有读取都路由到主库。工作方式如下：
+
+1. 在任何写入操作之后，捕获当前 WAL LSN
+2. 将该 LSN 与会话 ID 一起缓存（TTL 为 5 秒）
+3. 对读取操作，检查该会话是否有缓存的 LSN
+4. 如果有，就强制该读取走主数据库
+
+这个方法偏保守，但很有效。我们不去判断副本是否已经追上，而是假设它们还没有，并选择更稳妥的做法。目前我们直接跳过 LSN 检查，统一路由到主库。我们的最终目标，是在对 Prisma 路由拥有更多控制权之后，对真实副本实施正确的 LSN 检查，或者迁移到一个能够暴露将使用哪个副本的自定义连接池。
+
+```typescript
+// 写入后：缓存 LSN
+if (isWriteOperation(operation) && sessionId) {
+  const result = await query(args);
+  const lsn = await getCurrentWalLsn(client);
+  if (lsn) {
+    await cacheWalLsnForSession(sessionId, lsn);
+  }
+  return result;
+}
+
+// 读取前：检查是否有缓存的 LSN
+if (isReadOperation(operation) && sessionId) {
+  const cachedLsn = await getCachedWalLsn(sessionId);
+  if (cachedLsn) {
+    // 强制走主库 - 我们知道这个会话最近有写入
+    __internalParams.transaction = true;
+  }
+}
+```
+
+5 秒 TTL 是我们的安全缓冲。在测试中，副本通常会在 100-500ms 内追上，但我们宁可保守一些。这个窗口理论上还可以缩短，但目前的设置已经被证明足够可靠。
+
+## AsyncLocalStorage：避免属性层层传递
+
+最大的实现挑战并不是一致性逻辑，而是如何让会话信息在整个应用栈中可用。我们需要在 Prisma 扩展深处拿到会话 ID，而不必修改每个函数签名。
+
+AsyncLocalStorage 优雅地解决了这个问题。你可以把它看作后端里的 React Context——它会在异步操作中为你的代码创建一个隐式上下文。
+
+如果没有 AsyncLocalStorage，你就得在各层之间不断传递参数：
+
+```typescript
+// 费劲的方式 - 在每一层传递 sessionId
+async function getUser(userId: string, sessionId: string) {
+  return db.user.findUnique({
+    where: { id: userId },
+    // 想办法把 sessionId 传给 Prisma...
+  });
+}
+
+async function getDashboard(id: string, userId: string, sessionId: string) {
+  const user = await getUser(userId, sessionId); // 一路向下传
+  // 继续传递 sessionId...
+}
+```
+
+使用 AsyncLocalStorage 后，上下文就是隐式的：
+
+```typescript
+// 在你的中间件中
+runWithAlsSession(sessionId, async () => {
+  // 这条异步链中的所有代码都可以访问 sessionId
+  await handleRequest();
+});
+
+// 在 Prisma 扩展深处
+const sessionId = getAlsSessionId(); // 神奇！不需要层层传递
+```
+
+只要你保持异步链不断开，这个方式就能稳定工作。那些没有被 await 的“悬空” Promise 会丢失上下文，所以一定要始终 await 你的异步操作。
+
+## 完整实现
+
+让我来逐一说明我们方案的关键组件。
+
+### AsyncLocalStorage 设置
+
+```typescript
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+type Ctx = { sessionId: string | null };
+const als = new AsyncLocalStorage<Ctx>();
+
+export const runWithAlsSession = <T>(
+  sessionId: string | null | undefined,
+  fn: () => Promise<T>,
+) => als.run({ sessionId: sessionId || null }, fn);
+
+export const getAlsSessionId = () => als.getStore()?.sessionId ?? null;
+```
+
+### TRPC 中间件集成
+
+```typescript
+const sessionScopeMiddleware = t.middleware(async ({ ctx, next }) => {
+  const sessionId = ctx.session?.id ?? null;
+  return runWithAlsSession(sessionId, async () => {
+    return next();
+  });
+});
+```
+
+### Prisma 扩展
+
+下面是我们的完整会话一致性扩展：
+
+```typescript
+export function sessionConsistency() {
+  return Prisma.defineExtension((client) =>
+    client.$extends({
+      name: 'session-consistency',
+      query: {
+        $allOperations: async ({
+          operation,
+          model,
+          args,
+          query,
+          __internalParams, // 未文档化，但必需
+        }) => {
+          const sessionId = getAlsSessionId();
+
+          // 处理写入操作
+          if (isWriteOperation(operation)) {
+            const result = await query(args);
+
+            if (sessionId) {
+              const lsn = await getCurrentWalLsn(client);
+              if (lsn) {
+                await cacheWalLsnForSession(sessionId, lsn);
+                logger.debug('写入后已缓存 WAL LSN', {
+                  sessionId,
+                  lsn,
+                  operation,
+                  model,
+                });
+              }
+            }
+
+            return result;
+          }
+
+          // 处理读取操作
+          if (
+            isReadOperation(operation) &&
+            sessionId &&
+            (await getCachedWalLsn(sessionId))
+          ) {
+            // 通过假装我们在事务中，强制走主库
+            // readReplicas 扩展会始终把事务路由到主库
+            __internalParams.transaction = true;
+          }
+
+          return query(args);
+        },
+      },
+    }),
+  );
+}
+```
+
+### 应用这些扩展
+
+在应用 Prisma 扩展时，顺序很重要：
+
+```typescript
+export const prisma = new PrismaClient()
+  .$extends(sessionConsistency()) // 必须先应用！
+  .$extends(readReplicas({
+    url: process.env.DATABASE_REPLICA_URL,
+  }));
+```
+
+## 为什么这样效果很好
+
+我们的方案看起来像是一种折中，但它有几个优点：
+
+**务实**：理想方案应该是在必要时才检查每个副本的 LSN，以便只在需要时路由。我们已经构建了那部分逻辑，但 Prisma 的 `readReplicas` 扩展不会暴露实际会使用哪个副本。所以我们在写入后保守地路由到主库——在 Prisma 的约束下，这样更容易实现，尽管这意味着一些本可以安全使用副本的读取请求也会落到主库。
+
+**可靠**：我们不会猜测复制延迟，也不依赖时序。缓存的 LSN 证明写入发生过，而我们知道这些读取需要被谨慎处理。
+
+**性能**：只有真正执行过写入的会话才会受影响。以读取为主的用户会自动继续使用副本。5 秒窗口虽然保守，但也意味着大多数流量仍然能受益于副本。
+
+**可维护**：逻辑都封装在一个 Prisma 扩展里。代码库的其他地方无需改动。如果 Prisma 将来增加副本选择 API，我们就可以在不触碰应用代码的情况下升级到真正的 LSN 检查。
+
+## 监控与洞察
+
+我们跟踪了多个指标，以确保系统表现良好：
+
+- 会话 LSN 的缓存命中率
+- 路由到主库与副本的读取比例
+- 每个会话中，从写入到下一次读取之间的时间分布
+
+这些指标确认了大多数读取仍然会走副本。只有刚刚执行过写入的活跃用户才会命中主库，这正是我们希望的结果。
+
+## 未来改进
+
+虽然我们当前的方案运行良好，但我们仍看到了进一步优化的空间：
+
+**动态 TTL**：根据测得的复制延迟调整缓存 TTL。如果副本一直很快，就缩短这个窗口。
+
+**按操作的一致性**：有些读取并不需要立即一致。我们可以为特定查询添加提示，跳过一致性检查。
+
+**副本健康状态跟踪**：监控实际复制延迟，并动态调整路由。
+
+如果 Prisma 最终支持自定义副本选择逻辑，我们很愿意实现真正的 LSN 检查。在那之前，我们的方法能够以很低的复杂度提供出色的一致性保障。
+
+## 关键结论
+
+构建读后写一致性让我们学到了很多宝贵经验：
+
+**先追求理想，再接受现实。** 我们在意识到 Prisma 限制之前，先构建了完整的 LSN 跟踪。更简单的方案对用户来说同样有效。
+
+**AsyncLocalStorage 是一项超能力。** 它消除了层层传参，让代码更整洁。只要记住维护好异步链即可。
+
+**保守默认值通常是好默认值。** 5 秒的主库路由窗口也许有点过于保守，但从未引发问题。
+
+**一切都要度量。** 没有指标，你只是在猜。跟踪主库/副本的分布情况，确保没有把主库压垮。
+
+如果你正在寻找一个真正重视数据一致性的分析平台，欢迎查看 [OpenPanel](https://openpanel.dev)。
+
+<Faqs>
+<FaqItem question="为什么不直接把所有请求都用主数据库？">
+虽然这样可以解决一致性问题，但也失去了读副本的意义。在像 OpenPanel 这样的读多型应用中，副本可以大幅减轻主数据库压力并提升整体性能。我们的方案兼顾两者：需要一致性时保证一致性，大多数读取操作则享受副本带来的性能。
+</FaqItem>
+
+<FaqItem question="如果我的缓存（Redis）宕机了会怎样？">
+如果缓存不可用，系统会采用开放式失败策略——读取会继续走副本。这意味着你可能会暂时看到读后写不一致，但应用仍然可以正常运行。由于复制延迟通常低于 500ms，大多数用户不会察觉。这是为了系统韧性所做的有意权衡。
+</FaqItem>
+
+<FaqItem question="这适用于多个读副本吗？">
+可以！我们方案的优势在于，Prisma 选择哪个副本并不重要。当某个会话有缓存的 LSN 时，无论你有多少副本，或者它们各自的延迟状态如何，所有读取都会被强制路由到主库。
+</FaqItem>
+
+<FaqItem question="我可以在 Prisma 以外的 ORM 中使用这种方法吗？">
+当然可以！核心概念——用 AsyncLocalStorage 管理上下文、缓存 LSN，以及路由逻辑——适用于任何 ORM 或数据库客户端。你只需要根据自己使用的工具的中间件/插件系统进行适配，但策略本身是相同的。
+</FaqItem>
+
+<FaqItem question="为什么是 5 秒？这不会太保守了吗？">
+确实很保守！我们在自己的基础设施里测得典型复制延迟为 100-500ms。5 秒 TTL 为偶发网络抖动或复制延迟峰值提供了充足的安全余量。你完全可以根据自己的测量结果进行调整——前提是先监控真实的延迟模式。
+</FaqItem>
+
+<FaqItem question="对于来自外部来源的写入操作（后台任务、webhook 等）怎么办？">
+外部写入没有用户会话，因此不会触发一致性机制。这通常没问题——后台操作一般不需要立即的读后写一致性。如果确实需要，你可以显式查询主库，或者使用不同的上下文标识符实现类似的 LSN 缓存机制。
+</FaqItem>
+
+<FaqItem question="AsyncLocalStorage 有性能开销吗？">
+开销可以忽略不计——AsyncLocalStorage 在 Node.js 中经过高度优化。真正需要考虑的性能影响，是写入后的额外主库查询（LSN 检查）以及更多读取被路由到主库。实际上，这只会影响正在积极写入的会话，而这只占总流量中很小的一部分。
+</FaqItem>
+
+<FaqItem question="我可以实现按查询的一致性提示吗？">
+可以！你可以扩展 AsyncLocalStorage 上下文，加入 `skipConsistencyCheck` 标志，或者检查查询中的特定模式。例如，聚合历史数据的分析查询并不需要立即一致性。这也是我们计划中的未来改进之一。
+</FaqItem>
+</Faqs>

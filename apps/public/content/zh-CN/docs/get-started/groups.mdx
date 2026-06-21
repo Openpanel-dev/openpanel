@@ -1,0 +1,208 @@
+---
+title: 群组
+description: 在账户、公司或团队层级跟踪分析，而不只是单个用户。
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+群组可让你将用户关联到一个共享实体——例如公司、工作区或团队——并在该层级分析行为。与其问“Jane 做了什么？”，你可以问“Acme Inc 在做什么？”
+
+这对 B2B SaaS 产品尤其有用，因为一个付费账户通常包含多个用户。
+
+## 群组如何工作
+
+这里有两个独立概念：
+
+1. **群组实体** —— 使用 `upsertGroup()` 创建/更新。存储群组的元数据（名称、方案等）。
+2. **群组成员关系** —— 使用 `setGroup()` / `setGroups()` 设置。将用户资料关联到一个或多个群组，并自动把这些群组 ID 附加到后续每次 `track()` 调用中。
+
+## 创建或更新群组
+
+调用 `upsertGroup()` 创建群组或更新其属性。群组通过其 `id` 和 `type` 标识。
+
+```typescript
+op.upsertGroup({
+  id: 'org_acme',        // 你的群组唯一 ID
+  type: 'company',       // 群组类型（company、workspace、team 等）
+  name: 'Acme Inc',      // 显示名称
+  properties: {
+    plan: 'enterprise',
+    seats: 25,
+    industry: 'logistics',
+  },
+});
+```
+
+### 群组载荷
+
+| 字段 | 类型 | 必填 | 描述 |
+|-------|------|------|-------------|
+| `id` | `string` | 是 | 群组的唯一标识符 |
+| `type` | `string` | 是 | 群组类别（例如 `"company"`、`"workspace"`） |
+| `name` | `string` | 是 | 人类可读的显示名称 |
+| `properties` | `object` | 否 | 群组的自定义元数据 |
+
+## 在仪表板中管理群组
+
+创建、编辑和删除群组最简单的方式是直接在 OpenPanel 仪表板中操作。进入你的项目并打开 **Groups** 区域——在那里你无需改动任何代码，就能管理群组名称、类型和属性。
+
+当你的群组属性是**动态的，并由你自己的数据驱动**时，`upsertGroup()` 是合适的工具——例如在登录时从后端同步客户当前的方案、席位数或 MRR。
+
+<Callout>
+一个实用经验法则：在登录时或群组属性发生变化时调用 `upsertGroup()`——不要在每个请求或页面浏览时都调用。如果你发现自己用相同数据频繁调用它，那么在仪表板中管理该群组可能更合适。
+</Callout>
+
+## 将用户分配到群组
+
+识别用户后，调用 `setGroup()` 将其关联到某个群组。这也会把群组 ID 附加到当前会话后续所有 `track()` 调用中。
+
+```typescript
+// 登录后
+op.identify({ profileId: 'user_123' });
+
+// 将用户关联到其组织
+op.setGroup('org_acme');
+```
+
+对于属于多个群组的用户：
+
+```typescript
+op.setGroups(['org_acme', 'team_engineering']);
+```
+
+<Callout>
+`setGroup()` 和 `setGroups()` 会在 SDK 实例上持久保存群组 ID。除非调用 `clear()`，后续所有 `track()` 调用都会自动包含这些群组 ID。
+</Callout>
+
+## 完整登录流程示例
+
+`setGroup()` 不要求群组必须先存在。你可以只传入一个 ID 调用它——事件会被标记上该群组 ID，你之后可以在仪表板中或通过 `upsertGroup()` 再创建群组。
+
+```typescript
+// 1. 识别用户
+op.identify({
+  profileId: 'user_123',
+  firstName: 'Jane',
+  email: 'jane@acme.com',
+});
+
+// 2. 将用户分配到群组——该群组暂时不必存在
+op.setGroup('org_acme');
+
+// 3. 之后的所有事件都会被标记上该群组
+op.track('dashboard_viewed');  // → includes groups: ['org_acme']
+op.track('report_exported');   // → includes groups: ['org_acme']
+```
+
+如果你想从自己的数据（方案、席位数、MRR）同步动态群组属性，请将 `upsertGroup()` 加入流程：
+
+```typescript
+op.identify({ profileId: 'user_123', email: 'jane@acme.com' });
+
+// 从后端同步群组元数据
+op.upsertGroup({
+  id: 'org_acme',
+  type: 'company',
+  name: 'Acme Inc',
+  properties: { plan: 'pro' },
+});
+
+op.setGroup('org_acme');
+```
+
+## 单事件群组覆盖
+
+你可以为某个特定事件附加群组 ID，而不会影响 SDK 的持久群组状态：
+
+```typescript
+op.track('file_shared', {
+  filename: 'q4-report.pdf',
+  groups: ['org_acme', 'org_partner'], // 仅适用于此事件
+});
+```
+
+在 `track()` 中传入的群组会与 SDK 实例上已设置的群组**合并**。
+
+## 登出时清除群组
+
+`clear()` 会重置资料、设备、会话和所有群组。请务必在登出时调用它。
+
+```typescript
+function handleLogout() {
+  op.clear();
+  // 重定向到登录页...
+}
+```
+
+## 常见模式
+
+### B2B SaaS — 公司账户
+
+```typescript
+// 登录时
+op.identify({ profileId: user.id, email: user.email });
+op.upsertGroup({
+  id: user.organizationId,
+  type: 'company',
+  name: user.organizationName,
+  properties: { plan: user.plan, mrr: user.mrr },
+});
+op.setGroup(user.organizationId);
+```
+
+### 多租户 — 工作区
+
+```typescript
+// 用户切换工作区时
+op.upsertGroup({
+  id: workspace.id,
+  type: 'workspace',
+  name: workspace.name,
+});
+op.setGroup(workspace.id);
+```
+
+### 公司内的团队
+
+```typescript
+// 用户属于一个公司和一个特定团队
+op.setGroups([user.organizationId, user.teamId]);
+```
+
+## API 参考
+
+### `upsertGroup(payload)`
+
+如果群组不存在则创建，否则将属性合并到现有群组中。
+
+```typescript
+op.upsertGroup({
+  id: string;       // 必填
+  type: string;     // 必填
+  name: string;     // 必填
+  properties?: Record<string, unknown>;
+});
+```
+
+### `setGroup(groupId)`
+
+将单个群组 ID 添加到 SDK 的内部群组列表，并发送 `assign_group` 事件，将当前资料关联到该群组。
+
+```typescript
+op.setGroup('org_acme');
+```
+
+### `setGroups(groupIds)`
+
+与 `setGroup()` 相同，但一次可设置多个群组 ID。
+
+```typescript
+op.setGroups(['org_acme', 'team_engineering']);
+```
+
+## 应避免的做法
+
+- **在每个事件或页面浏览时调用 `upsertGroup()`** —— 应在登录时或群组属性实际变化时调用。对于静态群组管理，请改用仪表板。
+- **在 `identify()` 后不调用 `setGroup()`** —— 如果不调用，事件不会带上群组，你也不会在仪表板中看到群组级数据。
+- **登出时忘记调用 `clear()`** —— 群组会保留在 SDK 实例上，因此同一会话中登录的新用户可能继承前一个用户的群组。
+- **用 `upsertGroup()` 来把用户关联到群组** —— `upsertGroup()` 只管理群组实体本身。请使用 `setGroup()` 将用户资料关联到该群组。

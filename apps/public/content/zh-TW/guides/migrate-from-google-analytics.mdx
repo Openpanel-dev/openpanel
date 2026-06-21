@@ -1,0 +1,233 @@
+---
+title: "如何從 Google Analytics 遷移到 OpenPanel"
+description: "在一小時內從 Google Analytics 切換到 OpenPanel。了解如何對應 GA4 事件、設置平行追蹤，並獲得以隱私為優先的開源分析。"
+difficulty: intermediate
+timeToComplete: 45
+date: 2025-12-15
+updated: 2026-02-25
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安裝 OpenPanel"
+    anchor: "install"
+  - name: "對應你的 GA4 事件"
+    anchor: "map-events"
+  - name: "執行平行追蹤"
+    anchor: "parallel"
+  - name: "驗證並比較資料"
+    anchor: "verify"
+  - name: "移除 Google Analytics"
+    anchor: "remove"
+---
+
+# 如何從 Google Analytics 遷移到 OpenPanel
+
+對大多數網站來說，從 Google Analytics 遷移到 OpenPanel 大約只需要 45 分鐘。你最後會得到以隱私為優先、無需 cookie 同意橫幅的分析工具、比 GA4 更簡潔的介面，以及對資料的完整擁有權。詳見我們完整的 [Google Analytics 與 OpenPanel 比較](/compare/google-analytics-alternative)，了解兩者差異的詳細分析。
+
+OpenPanel 採用與 GA4 類似的事件式追蹤模型，讓遷移過程相當直接。最大的不同在於，OpenPanel 從一開始就以隱私為設計核心，使用不依賴 cookie 的追蹤，在多數隱私法規下都不需要取得同意。
+
+## 先決條件
+
+- 既有的 Google Analytics 4（GA4）設定
+- 一個 OpenPanel 帳號（[免費註冊](https://dashboard.openpanel.dev/onboarding)）
+- 可存取你網站原始碼或 Google Tag Manager 的權限
+
+## 安裝 OpenPanel [#install]
+
+第一步是將 OpenPanel 與你現有的 Google Analytics 安裝並行加入網站。遷移期間兩者會同時運行，以確保不會遺失任何資料。
+
+將 OpenPanel 指令碼加入你網站的 HTML 中，並將 `YOUR_CLIENT_ID` 替換為 OpenPanel 控制台中的 client ID。
+
+```html
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+`trackScreenViews` 選項會自動追蹤頁面瀏覽，類似 GA4 的自動頁面瀏覽追蹤。`trackOutgoingLinks` 選項會追蹤對外部網域的點擊，而 `trackAttributes` 則可透過 HTML 元素上的 `data-track` 屬性啟用宣告式追蹤。
+
+如果你使用 Google Tag Manager，請建立一個新的 Custom HTML 標籤，貼上上方程式碼，將觸發條件設為 All Pages，然後發佈你的容器。
+
+如果你的專案使用建置系統，也可以用 `npm install @openpanel/web` 安裝 npm 套件。詳見完整的 [Script Tag SDK 文件](/docs/sdks/script)，了解更詳細的設定選項。
+
+## 對應你的 GA4 事件 [#map-events]
+
+OpenPanel 使用的 `track()` API 與 GA4 的事件結構非常相似。你現有的大部分 [事件追蹤](/features/event-tracking) 幾乎都可以不費力地遷移過來。
+
+### 頁面瀏覽
+
+GA4 會自動追蹤頁面瀏覽，當你設定 `trackScreenViews: true` 時，OpenPanel 也會如此。如果你需要在單頁應用程式或特定情境下手動追蹤頁面瀏覽，請使用 `screen_view` 事件。
+
+```js
+window.op('track', 'screen_view', {
+  path: window.location.pathname,
+  title: document.title,
+});
+```
+
+### 自訂事件
+
+GA4 與 OpenPanel 之間，自訂事件的語法幾乎完全相同。像這樣的 GA4 事件：
+
+```js
+gtag('event', 'button_click', {
+  button_name: 'signup',
+  button_location: 'hero'
+});
+```
+
+在 OpenPanel 中會變成：
+
+```js
+window.op('track', 'button_click', {
+  button_name: 'signup',
+  button_location: 'hero'
+});
+```
+
+事件名稱與屬性會直接沿用。OpenPanel 沒有 GA4 那種保留事件限制，因此你可以使用任何對應你的應用程式而言合理的事件名稱。
+
+### 使用者識別
+
+GA4 使用 `set user_properties` 進行 [使用者識別](/features/identify-users)，而 OpenPanel 則使用專用的 `identify` 方法。這能讓你擁有更豐富的使用者設定檔與工作階段歷史。
+
+```js
+window.op('identify', {
+  profileId: 'user_123', // 必填
+  firstName: 'Joe',
+  lastName: 'Doe',
+  email: 'joe@doe.com',
+  properties: {
+    tier: 'premium',
+  },
+});
+```
+
+`profileId` 是必填欄位，應該是使用者的唯一識別碼，通常會是你資料庫中的使用者 ID。
+
+### 電子商務事件
+
+GA4 的電子商務事件，例如 `purchase` 和 `add_to_cart`，可直接對應到 OpenPanel。屬性結構保持不變。
+
+```js
+window.op('track', 'purchase', {
+  transaction_id: 'T12345',
+  value: 99.99,
+  currency: 'USD',
+  items: [{
+    item_id: 'SKU123',
+    item_name: 'Widget',
+    price: 99.99,
+    quantity: 1
+  }]
+});
+```
+
+你可以沿用目前在 GA4 中使用的相同事件名稱與屬性結構，或趁這個機會簡化你的命名規則。
+
+## 執行平行追蹤 [#parallel]
+
+讓兩個分析工具同時運行一到兩週，可以讓你比較資料，並在完全遷移前找出任何缺漏。建立一個同時將事件送往兩個平台的包裝函式。
+
+```js
+function trackEvent(eventName, properties) {
+  // 傳送到 GA4
+  if (typeof gtag !== 'undefined') {
+    gtag('event', eventName, properties);
+  }
+
+  // 傳送到 OpenPanel
+  if (window.op) {
+    window.op('track', eventName, properties);
+  }
+}
+
+// 所有事件追蹤都使用這個包裝函式
+trackEvent('button_click', { button_name: 'signup' });
+```
+
+將你現有的 `gtag()` 呼叫替換成這個包裝函式。這種做法可確保你在兩個系統中捕捉到相同的事件，並讓最終遷移只需簡單修改這個包裝函式即可。
+
+## 驗證並比較資料 [#verify]
+
+在平行追蹤一週後，比較 GA4 與 OpenPanel 之間的資料，確認一切都被正確捕捉。檢查兩個系統的即時檢視，確認事件有正常進來。
+
+在 OpenPanel 中，前往即時檢視查看事件即時發生的情況。將事件數量與屬性值對照 GA4 的 Realtime 報表。些微差異（5-10% 以內）屬於正常，因為各平台處理機器人過濾與工作階段歸因的方式不同。
+
+請特別注意自訂事件與使用者識別。在 OpenPanel 中打開幾個使用者設定檔，確認 `identify` 呼叫是否能正確跨工作階段連結事件。
+
+如果你看到明顯差異，請檢查你的包裝函式是否在所有地方都有被呼叫、是否有 JavaScript 錯誤阻止追蹤，以及兩個指令碼是否都已在所有頁面載入。
+
+## 移除 Google Analytics [#remove]
+
+在確認 OpenPanel 已正確追蹤且你對資料感到滿意後，將網站上的 Google Analytics 移除。
+
+如果你是直接將 GA4 指令碼加入 HTML，請移除 gtag.js 指令碼與初始化程式碼。
+
+```html
+<!-- 移除整個區塊 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
+```
+
+如果你使用 Google Tag Manager，請停用或刪除 GA4 Configuration 標籤，然後發佈你的容器。如有需要，你仍然可以保留 GTM 用於其他用途。
+
+更新你的包裝函式，使其只傳送到 OpenPanel。
+
+```js
+function trackEvent(eventName, properties) {
+  if (window.op) {
+    window.op('track', eventName, properties);
+  }
+}
+```
+
+由於 OpenPanel 預設不使用 cookie，你可能可以完全移除 cookie 同意橫幅。不過這取決於你是否還有其他需要同意的 cookie 或追蹤指令碼。請參考 [無 cookie 分析指南](/articles/cookieless-analytics)，了解在沒有 cookie 橫幅的情況下符合 GDPR 的細節。
+
+## 遷移後會有哪些變化
+
+從 GA4 轉到 OpenPanel，代表你會獲得一些東西，也會失去一些東西。你將擁有不依賴 cookie 的以隱私為優先追蹤、對資料的完整擁有權（特別是如果你選擇 [自行架設](/articles/how-to-self-host-openpanel)）、以及更簡潔的日常分析介面。
+
+另一方面，由於 Google 沒有提供簡單的匯出機制，你無法從 GA4 匯入歷史資料。如果你高度依賴 Google Ads 的 [轉換追蹤](/features/conversion)，你需要要麼讓 GA4 持續運行於這個特定用途，要麼改用 Google Ads 獨立的轉換追蹤像素。
+
+GA4 的歸因模型比 OpenPanel 更複雜，因此如果你在廣告支出優化上依賴多點接觸歸因，請在完全遷移前仔細評估你的需求。
+
+## 下一步
+
+當你已經開始使用 OpenPanel 後，可以探索 [漏斗分析](/articles/how-to-create-a-funnel) 功能，追蹤使用者在轉換路徑中的旅程。如果你重視最大的資料隱私與擁有權，這份 [自行架設指南](/articles/how-to-self-host-openpanel) 會帶你了解如何在自己的基礎架構上執行 OpenPanel。若要查看完整的功能比較，請參閱我們的 [Google Analytics 替代方案](/compare/google-analytics-alternative) 頁面。
+
+如需特定框架的設定說明，請參考我們的指南：
+- [Next.js 分析指南](/guides/nextjs-analytics)，適用於 Next.js 應用程式
+- [React 分析指南](/guides/react-analytics)，適用於 React 應用程式
+- [Node.js 分析指南](/guides/nodejs-analytics)，適用於伺服器端追蹤
+- [Python 分析指南](/guides/python-analytics)，適用於 Python 應用程式
+
+<Faqs>
+<FaqItem question="我可以從 Google Analytics 匯入歷史資料嗎？">
+Google Analytics 沒有提供簡單的方式來匯出歷史事件資料。大多數團隊會直接從 OpenPanel 重新開始，這樣能讓你之後取得更乾淨、符合隱私規範的資料。你的 GA4 資料仍會在 Google Analytics 中於你設定的保留期間內可供存取。
+</FaqItem>
+
+<FaqItem question="我要如何處理 GA4 自訂維度？">
+OpenPanel 使用屬性而不是維度。將你的 GA4 自訂維度直接對應到 OpenPanel 事件屬性。例如，如果你在 GA4 中有一個 `user_type` 自訂維度，請在 track 呼叫中將它作為屬性加入：`window.op('track', 'event_name', { user_type: 'premium' })`。
+</FaqItem>
+
+<FaqItem question="OpenPanel 會使用 cookie 嗎？">
+不會。OpenPanel 預設使用不依賴 cookie 的追蹤。這表示在多數隱私法規下，包括 GDPR 與 PECR，你都不需要為基本分析顯示 cookie 同意橫幅。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 規範嗎？">
+是的。OpenPanel 以符合 GDPR 為設計目標，具備不依賴 cookie 的追蹤、資料最小化，以及對資料主體權利的完整支援。若採用自行架設，你也能完全消除跨國資料傳輸的疑慮。
+</FaqItem>
+</Faqs>

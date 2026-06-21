@@ -1,0 +1,364 @@
+---
+title: 收入追蹤
+description: 了解如何使用 OpenPanel 輕鬆追蹤收入，以及如何直接將其顯示在儀表板中。
+---
+
+import { FlowStep } from '@/components/flow-step';
+
+[收入追蹤](/zh-TW/features/revenue-tracking) 是更了解最佳收入來源的好方法。本頁將說明如何開始。
+
+在開始前，我們需要先了解 OpenPanel 與你的金流服務商如何運作，以及我們如何將付款連結到訪客。
+
+### 金流服務商
+
+通常，你會從後端建立結帳流程，然後回傳一個付款連結，讓訪客重新導向過去。建立結帳連結時，通常會加入額外欄位，例如 metadata、客戶資訊或訂單細節。我們會把 device ID 資訊加到這個 metadata 欄位中，讓付款可以對應到某位訪客。
+
+### OpenPanel
+
+OpenPanel 是不使用 cookie 的分析工具，會用 `device_id` 來識別訪客。要把付款連結到訪客，你需要在他們完成結帳前擷取 `device_id`。這個 `device_id` 會儲存在你的金流服務商 metadata 中，當付款 webhook 到達時，你就能用它把收入關聯到正確的訪客。
+
+## 幾個常見流程
+
+- [從後端進行收入追蹤（未識別）](#revenue-tracking-from-your-backend-webhook)
+- [從後端進行收入追蹤（已識別）](#revenue-tracking-from-your-backend-webhook-identified)
+- [從前端進行收入追蹤](#revenue-tracking-from-your-frontend)
+- [不將收入連結到身分或裝置進行追蹤](#revenue-tracking-without-linking-it-to-an-identity-or-device)
+
+### 從後端進行收入追蹤（webhook）
+
+這是最常見、也最安全的流程。你的後端會接收金流服務商送來的 webhooks，這也是做收入追蹤的最佳時機。
+
+<FlowStep step={1} actor="Visitor" description="造訪你的網站" icon="visitor" />
+
+<FlowStep step={2} actor="Visitor" description="完成購買" icon="visitor" />
+
+<FlowStep step={3} actor="Your website" description="發出 POST 請求以取得結帳 URL" icon="website">
+建立結帳時，你應先呼叫 `op.getDeviceId()`，它會回傳訪客目前的 `deviceId`。把這個值傳到你的結帳端點。
+
+```javascript
+fetch('https://domain.com/api/checkout', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    deviceId: op.getDeviceId(), // ✅ 因為這裡有 deviceId，我們現在就能把付款連結起來
+    // ... other checkout data
+  }),
+})
+  .then(response => response.json())
+  .then(data => {
+    // Handle checkout response, e.g., redirect to payment link
+    window.location.href = data.paymentUrl;
+  })
+```
+</FlowStep>
+
+<FlowStep step={4} actor="Your backend" description="會產生並回傳結帳 URL" icon="backend">
+```javascript
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export async function POST(req: Request) {
+  const { deviceId, amount, currency } = await req.json();
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    line_items: [
+      {
+        price_data: {
+          currency: currency,
+          product_data: { name: 'Product Name' },
+          unit_amount: amount * 100, // Convert to cents
+        },
+        quantity: 1,
+      },
+    ],
+    mode: 'payment',
+    metadata: {
+      deviceId: deviceId, // ✅ 因為這裡有 deviceId，我們現在就能把付款連結起來
+    },
+    success_url: 'https://domain.com/success',
+    cancel_url: 'https://domain.com/cancel',
+  });
+
+  return Response.json({
+    paymentUrl: session.url,
+  });
+}
+```
+</FlowStep>
+
+<FlowStep step={5} actor="Visitor" description="被重新導向到付款連結" icon="visitor" />
+
+<FlowStep step={6} actor="Visitor" description="在你的金流服務商完成付款" icon="payment" />
+
+<FlowStep step={7} actor="Your backend" description="接收成功付款的 webhook" icon="backend">
+```javascript
+export async function POST(req: Request) {
+  const event = await req.json();
+
+  // Stripe sends events with type and data.object structure
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const deviceId = session.metadata.deviceId;
+    const amount = session.amount_total;
+
+    op.revenue(amount, { deviceId }); // ✅ 因為這裡有 deviceId，我們現在就能把付款連結起來
+  }
+
+  return Response.json({ received: true });
+}
+```
+</FlowStep>
+
+<FlowStep step={8} actor="Visitor" description="帶著付款確認被重新導向回你的網站" icon="success" isLast />
+
+---
+
+### 從後端進行收入追蹤（webhook）- 已識別使用者
+
+如果你的訪客已被識別（也就是你已用 `profileId` 呼叫過 `identify`），這個流程會更簡單一些。建立結帳時不需要傳 `deviceId`，而且你只需要在收入呼叫中提供 `profileId`（在後端）。
+
+<FlowStep step={1} actor="Visitor" description="造訪你的網站" icon="visitor" />
+
+<FlowStep step={2} actor="Your website" description="識別訪客" icon="website">
+當訪客登入或被識別時，使用其唯一的 `profileId` 呼叫 `op.identify()`。
+
+```javascript
+op.identify({
+  profileId: 'user-123', // 此使用者的唯一識別碼
+  email: 'user@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+});
+```
+</FlowStep>
+
+<FlowStep step={3} actor="Visitor" description="完成購買" icon="visitor" />
+
+<FlowStep step={4} actor="Your website" description="發出 POST 請求以取得結帳 URL" icon="website">
+由於訪客已經被識別，你不需要抓取或傳遞 `deviceId`。只要送出結帳資料即可。
+
+```javascript
+fetch('https://domain.com/api/checkout', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    // ✅ 不需要 deviceId - 使用者已經被識別
+    // ... other checkout data
+  }),
+})
+  .then(response => response.json())
+  .then(data => {
+    // Handle checkout response, e.g., redirect to payment link
+    window.location.href = data.paymentUrl;
+  })
+```
+</FlowStep>
+
+<FlowStep step={5} actor="Your backend" description="會產生並回傳結帳 URL" icon="backend">
+由於使用者已驗證，你可以從 session 取得他的 `profileId`，並將其存入 metadata，方便在 webhook 中取回。
+
+```javascript
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export async function POST(req: Request) {
+  const { amount, currency } = await req.json();
+
+  // Get profileId from authenticated session
+  const profileId = req.session.userId; // or however you get the user ID
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    line_items: [
+      {
+        price_data: {
+          currency: currency,
+          product_data: { name: 'Product Name' },
+          unit_amount: amount * 100, // Convert to cents
+        },
+        quantity: 1,
+      },
+    ],
+    mode: 'payment',
+    metadata: {
+      profileId: profileId, // ✅ Store profileId instead of deviceId
+    },
+    success_url: 'https://domain.com/success',
+    cancel_url: 'https://domain.com/cancel',
+  });
+
+  return Response.json({
+    paymentUrl: session.url,
+  });
+}
+```
+</FlowStep>
+
+<FlowStep step={6} actor="Visitor" description="被重新導向到付款連結" icon="visitor" />
+
+<FlowStep step={7} actor="Visitor" description="在你的金流服務商完成付款" icon="payment" />
+
+<FlowStep step={8} actor="Your backend" description="接收成功付款的 webhook" icon="backend">
+在 webhook 處理器中，從 session metadata 取回 `profileId`。
+
+```javascript
+export async function POST(req: Request) {
+  const event = await req.json();
+
+  // Stripe sends events with type and data.object structure
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const profileId = session.metadata.profileId;
+    const amount = session.amount_total;
+
+    op.revenue(amount, { profileId }); // ✅ 使用 profileId，而不是 deviceId
+  }
+
+  return Response.json({ received: true });
+}
+```
+</FlowStep>
+
+<FlowStep step={9} actor="Visitor" description="帶著付款確認被重新導向回你的網站" icon="success" isLast />
+
+---
+
+### 從前端進行收入追蹤
+
+這個流程會直接從前端追蹤收入。由於成功頁面無法取得付款金額（付款是在 Stripe 端完成），我們會在結帳開始時追蹤收入，然後在成功頁面確認它。
+
+<FlowStep step={1} actor="Visitor" description="造訪你的網站" icon="visitor" />
+
+<FlowStep step={2} actor="Visitor" description="點擊購買" icon="visitor" />
+
+<FlowStep step={3} actor="Your website" description="在結帳啟動時追蹤收入" icon="website">
+當訪客點擊結帳按鈕時，使用金額追蹤收入。
+
+```javascript
+async function handleCheckout() {
+  const amount = 2000; // Amount in cents
+
+  // Create a pending revenue (stored in sessionStorage)
+  op.pendingRevenue(amount, {
+    productId: '123',
+    // ... other properties
+  });
+
+  // Redirect to Stripe checkout
+  window.location.href = 'https://checkout.stripe.com/...';
+}
+```
+</FlowStep>
+
+<FlowStep step={4} actor="Visitor" description="被重新導向到付款連結" icon="visitor" />
+
+<FlowStep step={5} actor="Visitor" description="在你的金流服務商完成付款" icon="payment" />
+
+<FlowStep step={6} actor="Visitor" description="被重新導回你的成功頁面" icon="visitor" />
+
+<FlowStep step={7} actor="Your website" description="在成功頁面確認/送出收入" icon="website" isLast>
+在你的成功頁面上，送出所有待處理的收入事件。這會把結帳期間追蹤到的所有待處理收入送出，並從 sessionStorage 中清除。
+
+```javascript
+// Flush all pending revenues
+await op.flushRevenue();
+
+// Or if you want to clear without sending (e.g., payment was cancelled)
+op.clearRevenue();
+```
+</FlowStep>
+
+#### 優點：
+- 快速上手
+- 不需要後端
+- 結帳開始時即可立即追蹤收入
+
+#### 缺點：
+- 準確度較低（訪客可能未完成付款）
+- 安全性較低，代表任何人都可能提交收入資料
+
+---
+
+### 不將收入連結到身分或裝置進行追蹤
+
+如果你只是想追蹤收入總額，而不想將付款連結到特定訪客或裝置，你可以直接從後端呼叫 `op.revenue()`，不提供 `deviceId` 或 `profileId`。這是最簡單的方法，適合只需要彙總收入資料的情境。
+
+<FlowStep step={1} actor="Visitor" description="完成購買" icon="visitor" />
+
+<FlowStep step={2} actor="Visitor" description="在你的金流服務商完成付款" icon="payment" />
+
+<FlowStep step={3} actor="Your backend" description="接收成功付款的 webhook" icon="backend" isLast>
+只要用金額呼叫 `op.revenue()` 即可。不需要 `deviceId` 或 `profileId`。
+
+```javascript
+export async function POST(req: Request) {
+  const event = await req.json();
+
+  // Stripe sends events with type and data.object structure
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const amount = session.amount_total;
+
+    op.revenue(amount); // ✅ 不連結到訪客的簡單收入追蹤
+  }
+
+  return Response.json({ received: true });
+}
+```
+</FlowStep>
+
+#### 優點：
+- 實作最簡單
+- 不需要擷取或傳遞 device ID
+- 適合彙總收入追蹤
+
+#### 缺點：
+- **你無法深入分析這筆收入來自哪裡。** 例如，你無法看到哪個來源帶來最佳收入、哪些廣告活動最有利潤，或哪些訪客是最高價值客戶。
+- 收入事件不會關聯到特定使用者旅程或 session
+
+## 可用方法
+
+### Revenue
+
+revenue 方法會建立一個收入事件。請注意，若你的 OpenPanel 執行個體未收到 client secret，這個方法將無法運作（基於安全性考量）。你可以在專案設定中啟用前端收入追蹤。
+
+```javascript
+op.revenue(amount: number, properties: Record<string, unknown>): Promise<void>
+```
+
+### 新增待處理收入
+
+這個方法會建立一筆待處理收入項目並儲存在 sessionStorage 中。直到你呼叫 `flushRevenue()` 前，它不會送到 OpenPanel。SDK 初始化時，待處理收入會自動從 sessionStorage 還原。
+
+```javascript
+op.pendingRevenue(amount: number, properties?: Record<string, unknown>): void
+```
+
+### 傳送所有待處理收入
+
+這個方法會將所有待處理收入送到 OpenPanel，然後從 sessionStorage 中清除。回傳一個 Promise，會在所有收入都送出後 resolve。
+
+```javascript
+await op.flushRevenue(): Promise<void>
+```
+
+### 清除任何待處理收入
+
+這個方法會從記憶體與 sessionStorage 中清除所有待處理收入，而不會送到 OpenPanel。若付款已取消，或你想捨棄待處理收入，這很有用。
+
+```javascript
+op.clearRevenue(): void
+```
+
+### 取得目前使用者的 device id
+
+```javascript
+op.getDeviceId(): string
+```

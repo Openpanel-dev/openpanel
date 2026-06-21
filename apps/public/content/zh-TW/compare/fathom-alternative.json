@@ -1,0 +1,520 @@
+{
+  "slug": "fathom-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026 年最佳 Fathom 替代方案 - 開源且免費",
+    "description": "正在尋找 Fathom 的替代方案？OpenPanel 將產品分析、使用者識別與免費自架功能，帶入重視隱私的網站分析。開源且無資料限制。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Fathom 替代方案",
+    "subheading": "喜歡 Fathom 的簡潔與隱私導向嗎？OpenPanel 加上了產品分析能力——漏斗、同群分析、留存與使用者識別——另外還提供免費自架。",
+    "badges": [
+      "開源",
+      "隱私優先",
+      "可自架",
+      "免費自架"
+    ]
+  },
+  "competitor": {
+    "name": "Fathom Analytics",
+    "logo": "/logos/fathom.svg",
+    "url": "https://usefathom.com",
+    "short_description": "重視隱私、簡潔的 Google Analytics 替代方案，適用於網站，擁有美觀儀表板與位於歐盟的主機託管。",
+    "founded": 2018,
+    "headquarters": "加拿大"
+  },
+  "overview": {
+    "title": "為什麼要考慮用 OpenPanel 取代 Fathom Analytics？",
+    "paragraphs": [
+      "Fathom Analytics 是一款備受推崇、重視隱私的分析工具，以乾淨的介面與免 Cookie 追蹤聞名。對於只需要簡單流量指標、不想要 Google Analytics 那種複雜度的網站來說，它是個不錯的選擇。但 Fathom 刻意只限於網站分析——沒有使用者識別、沒有漏斗、沒有留存分析，也沒有自架選項。",
+      "OpenPanel 延續了 Fathom 對隱私與簡潔的承諾，但功能遠遠超出基本網站指標。你可以獲得完整的產品分析能力，包括漏斗分析、留存追蹤、同群分析，以及個別使用者檔案。這表示你不只能追蹤有多少訪客，還能了解他們如何轉換、在哪裡流失，以及是否會回訪。",
+      "定價是另一個重要差異。Fathom 沒有免費方案——方案從每月 15 美元起，而且除了短暫試用外，沒有其他方式可以先試用產品。OpenPanel 雲端方案在 30 天免費試用後，從每月 2.50 美元起可處理 5,000 個事件，而自架則完全免費且事件數無上限。自架可透過簡單的 Docker Compose 部署，讓團隊能完全掌握資料，這是 Fathom 只提供雲端服務的模式所無法做到的。",
+      "如果你喜歡 Fathom 以隱私為先的做法，但又需要更深入的分析來理解使用者行為並成長你的產品，OpenPanel 能在保持簡單與實惠的同時，提供你所需要的深度。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Fathom：哪個更適合你？",
+    "intro": "兩者都是重視隱私的分析平台。Fathom 專注於簡單的網站流量指標。OpenPanel 則加入使用者識別與自架的產品分析功能。",
+    "one_liner": "Fathom 擅長簡單的網站分析；OpenPanel 則加入產品分析、自架，以及免費自架。",
+    "best_for_openpanel": [
+      "需要使用者層級分析與留存追蹤的 SaaS 產品",
+      "希望自架以完全掌控資料的團隊",
+      "需要實惠分析工具來起步的新創公司",
+      "需要原生 iOS、Android、React Native、Flutter SDK 的行動應用開發者"
+    ],
+    "best_for_competitor": [
+      "只想要流量統計的簡單內容網站與部落格",
+      "重視 Fathom 美觀、極簡儀表板設計的團隊",
+      "想要優秀的 Google Analytics 匯入工具的使用者",
+      "願意付費支持永續軟體的組織"
+    ]
+  },
+  "highlights": {
+    "title": "一眼看懂關鍵差異",
+    "intro": "以下是 OpenPanel 與 Fathom 在各項關鍵因素上的比較。",
+    "items": [
+      {
+        "label": "分析深度",
+        "openpanel": "網站 + 產品分析",
+        "competitor": "僅網站分析",
+        "notes": "OpenPanel 將網站分析與產品分析結合，包括漏斗、留存、同群分析與使用者檔案。Fathom 則專注於簡單的網站流量指標與轉換。"
+      },
+      {
+        "label": "自架",
+        "openpanel": "可完整自架",
+        "competitor": "僅雲端（無自架選項）",
+        "notes": "OpenPanel 透過 Docker Compose 提供完整自架，並支援一條指令完成設定。Fathom 僅提供雲端；其舊版開源版本（Fathom Lite）使用 Cookie，且已不再積極開發。"
+      },
+      {
+        "label": "雲端價格",
+        "openpanel": "每月 2.50 美元起（30 天試用）",
+        "competitor": "每月 15 美元起（7 天試用）",
+        "notes": "兩者都沒有免費雲端方案。OpenPanel 雲端從每月 2.50 美元起（5,000 個事件），並提供 30 天試用；Fathom 從每月 15 美元起，並提供 7 天試用。OpenPanel 也提供免費且無限制的自架。"
+      },
+      {
+        "label": "使用者識別",
+        "openpanel": "有 - 可追蹤個別使用者",
+        "competitor": "沒有 - 只有匿名彙總",
+        "notes": "OpenPanel 可讓你在不同工作階段中識別並追蹤個別使用者。Fathom 使用匿名化處理，不會追蹤個人。"
+      },
+      {
+        "label": "免 Cookie",
+        "openpanel": "有（預設）",
+        "competitor": "有（預設）",
+        "notes": "兩個平台預設都不使用 Cookie，且基本分析在 GDPR 下不需要同意橫幅。"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能比較",
+    "intro": "兩者都重視隱私，但在能力與深度上有所不同。",
+    "groups": [
+      {
+        "group": "網站分析",
+        "features": [
+          {
+            "name": "頁面瀏覽與訪客",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "流量來源",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "地理資料",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都提供國家與地區層級的資料"
+          },
+          {
+            "name": "裝置與瀏覽器",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "UTM 行銷活動追蹤",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "即時儀表板",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "產品分析",
+        "features": [
+          {
+            "name": "自訂事件追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Fathom 的事件會計入頁面瀏覽配額"
+          },
+          {
+            "name": "漏斗分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Fathom 追蹤簡單轉換，但沒有多步驟漏斗"
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Fathom 的匿名模型不支援留存"
+          },
+          {
+            "name": "使用者檔案",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Fathom 刻意不追蹤個別使用者"
+          },
+          {
+            "name": "同群分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Fathom 只提供彙總資料"
+          },
+          {
+            "name": "使用者路徑分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Fathom 顯示熱門頁面，但不顯示使用者旅程"
+          }
+        ]
+      },
+      {
+        "group": "進階功能",
+        "features": [
+          {
+            "name": "A/B 測試",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Fathom 只提供分析，不提供實驗功能"
+          },
+          {
+            "name": "營收追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Fathom 支援以美分為單位的事件值"
+          },
+          {
+            "name": "電子郵件報告",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Fathom 提供排程電子郵件報告。OpenPanel 沒有——但會透過 Slack、Discord、webhook 與應用程式內發送即時提醒。"
+          },
+          {
+            "name": "儀表板分享",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都支援公開與私密的儀表板分享"
+          },
+          {
+            "name": "Google Analytics 匯入",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Fathom 有備受好評的 GA 匯入工具"
+          },
+          {
+            "name": "廣告攔截器繞過",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都支援使用自訂網域來繞過攔截器"
+          }
+        ]
+      },
+      {
+        "group": "隱私與合規",
+        "features": [
+          {
+            "name": "預設免 Cookie",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者預設都不使用 Cookie"
+          },
+          {
+            "name": "不需要同意橫幅",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都聲稱基本分析不需要取得同意"
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "EU 資料駐留",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Fathom 對所有客戶預設啟用 EU Isolation"
+          },
+          {
+            "name": "自架選項",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Fathom 僅提供雲端；Fathom Lite 為舊版且使用 Cookie"
+          },
+          {
+            "name": "資料處理協議",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "整合",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Fathom 有完整的 API"
+          },
+          {
+            "name": "資料匯出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都支援 CSV 匯出"
+          },
+          {
+            "name": "WordPress 外掛",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Fathom 有官方 WordPress 外掛"
+          },
+          {
+            "name": "NPM 套件",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "可使用 fathom-client 套件"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技術比較",
+    "intro": "給正在評估分析工具的開發者，以下是技術層面的拆解。",
+    "items": [
+      {
+        "label": "SDK 大小",
+        "openpanel": "2.3 KB（gzipped）",
+        "competitor": "約 2 KB（gzipped）",
+        "notes": null
+      },
+      {
+        "label": "平台",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Astro",
+          "Remix",
+          "React Native",
+          "Flutter",
+          "iOS（Swift）",
+          "Android（Kotlin）",
+          "Node.js",
+          "Python",
+          "Ruby",
+          "Rust",
+          "Java",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript（瀏覽器）",
+          "WordPress",
+          "Webflow",
+          "Next.js",
+          "Vue.js",
+          "Ghost",
+          "ConvertKit",
+          "各種 CMS 整合"
+        ],
+        "notes": null
+      },
+      {
+        "label": "開源",
+        "openpanel": "有 - AGPL-3.0",
+        "competitor": "沒有 - 封閉原始碼",
+        "notes": "Fathom Analytics 是封閉原始碼。Fathom Lite（舊版）是開源的，但功能有限且使用 Cookie。"
+      },
+      {
+        "label": "自架",
+        "openpanel": "Docker Compose、引導式設定精靈",
+        "competitor": "無法使用（僅雲端服務）",
+        "notes": null
+      },
+      {
+        "label": "資料庫",
+        "openpanel": "ClickHouse",
+        "competitor": "專有雲端基礎架構（AWS 上的無伺服器架構）",
+        "notes": null
+      },
+      {
+        "label": "資料保留",
+        "openpanel": "無上限（自架），可設定（雲端）",
+        "competitor": "永久（只要你是客戶）",
+        "notes": null
+      },
+      {
+        "label": "語言",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "未知（封閉原始碼）",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "價格比較",
+    "intro": "Fathom 沒有免費方案。OpenPanel 提供免費自架與實惠的雲端價格。",
+    "openpanel": {
+      "model": "以事件為基礎，透明定價",
+      "description": "透明定價從每月 2.50 美元起，可處理 5,000 個事件，並提供 30 天免費試用。所有方案都包含全部功能。自架免費且事件數無上限。"
+    },
+    "competitor": {
+      "model": "以頁面瀏覽計費，含 7 天試用",
+      "description": "10 萬頁面瀏覽：每月 15 美元（每年 150 美元）。最多包含 50 個網站。包含全部功能。自訂事件會計入頁面瀏覽數。年繳可省 2 個月。Fathom 沒有免費方案，而且從不提供折扣。",
+      "free_tier": "沒有免費方案（僅 7 天試用）",
+      "pricing_url": "https://usefathom.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "從 Fathom 遷移到 OpenPanel",
+    "intro": "兩者都使用輕量腳本與簡單事件追蹤，因此遷移相當直覺。",
+    "steps": [
+      {
+        "title": "安裝 OpenPanel SDK",
+        "description": "將 OpenPanel SDK 加入你的應用程式。兩者都使用輕量腳本，因此轉換相當直接。"
+      },
+      {
+        "title": "對應事件",
+        "description": "Fathom 的 trackEvent() 會變成 OpenPanel 的 op.track()。事件值可直接對應。"
+      },
+      {
+        "title": "設定使用者識別（新）",
+        "description": "不同於 Fathom，OpenPanel 可以識別使用者。加入 op.identify() 呼叫，即可啟用留存、同群分析與使用者檔案。"
+      },
+      {
+        "title": "設定產品分析（新）",
+        "description": "設定漏斗、留存報告與同群分析。這些功能在 Fathom 中不存在。"
+      },
+      {
+        "title": "移除 Fathom 腳本",
+        "description": "驗證完成後，移除 Fathom 追蹤腳本。兩者都不使用 Cookie，因此不需要調整同意設定。"
+      }
+    ],
+    "difficulty": "簡單",
+    "estimated_time": "30 分鐘到 2 小時",
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "兩者都使用簡單的事件追蹤 API。Fathom 的 trackEvent() 會變成 OpenPanel 的 op.track()。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "多數團隊會先從 OpenPanel 開始，並短暫讓兩個工具平行運作。"
+    }
+  },
+  "use_cases": {
+    "title": "哪些情境下 OpenPanel 比 Fathom 更適合",
+    "intro": "當你需要超越單純網站流量的產品分析時，請選擇 OpenPanel。",
+    "items": [
+      {
+        "title": "需要使用者分析的 SaaS 產品",
+        "description": "Fathom 顯示的是彙總網站流量。如果你需要了解產品中的個別使用者旅程、留存與行為，OpenPanel 在保持隱私友善的同時，提供了這些能力。",
+        "icon": "users"
+      },
+      {
+        "title": "想要自架的團隊",
+        "description": "Fathom 只有雲端服務，沒有自架選項。如果資料主權或合規需求要求你自行主機託管分析工具，OpenPanel 透過 Docker Compose 提供完整自架。一個指令的 ./setup 精靈會帶你完成設定，並在幾分鐘內啟動整個堆疊。",
+        "icon": "server"
+      },
+      {
+        "title": "需要實惠分析工具的新創公司",
+        "description": "Fathom 沒有免費方案，最低需承諾每月 15 美元。OpenPanel 可免費自架且事件無上限，或在 30 天試用後，雲端方案每月只要 2.50 美元起（5,000 個事件）——非常適合早期產品或副業專案。",
+        "icon": "trending-up"
+      },
+      {
+        "title": "行動應用分析",
+        "description": "Fathom 是為網站設計的，沒有原生行動 SDK。OpenPanel 提供原生 iOS、Android、React Native 與 Flutter SDK，並具備完整的產品分析能力。",
+        "icon": "smartphone"
+      },
+      {
+        "title": "需要漏斗分析的團隊",
+        "description": "Fathom 會追蹤簡單轉換，但不提供多步驟漏斗分析。如果了解轉換路徑很重要，OpenPanel 可提供詳細的漏斗視覺化。",
+        "icon": "filter"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於從 Fathom 切換到 OpenPanel 的常見問題。",
+    "items": [
+      {
+        "question": "OpenPanel 和 Fathom 一樣重視隱私嗎？",
+        "answer": "是的！兩者預設都不使用 Cookie，也不需要同意橫幅。主要差異在於 OpenPanel 允許選擇性使用者識別來做產品分析，而 Fathom 則是嚴格匿名。你可以自行控制是否在 OpenPanel 中識別使用者。"
+      },
+      {
+        "question": "為什麼要從 Fathom 切換到 OpenPanel？",
+        "answer": "團隊通常會在需要以下功能時切換：1）產品分析（漏斗、留存、同群），2）使用者識別，3）自架選項，或 4）適合起步的實惠價格（免費自架，或雲端從每月 2.50 美元起）。Fathom 擅長簡單網站分析，但不提供這些能力。"
+      },
+      {
+        "question": "Fathom 有免費方案嗎？",
+        "answer": "沒有。Fathom 提供 7 天免費試用，之後最低需訂閱每月 15 美元。他們刻意不提供免費方案或折扣。OpenPanel 也沒有免費雲端方案（30 天試用，之後每月 2.50 美元起可處理 5,000 個事件），但自架免費且事件無上限。"
+      },
+      {
+        "question": "我可以自架 Fathom 嗎？",
+        "answer": "不行。Fathom Analytics 只提供雲端服務。他們的舊版開源版本（Fathom Lite）雖然存在，但使用 Cookie、功能有限，且已不再積極開發。OpenPanel 透過 Docker Compose 提供完整自架，並支援一條指令完成設定。"
+      },
+      {
+        "question": "哪個追蹤腳本更小？",
+        "answer": "兩者差不多。Fathom 的腳本約 2KB，OpenPanel 的腳本是 2.3KB。兩者都明顯比 Google Analytics（45KB 以上）或其他企業級工具小很多。"
+      },
+      {
+        "question": "Fathom 可以追蹤行動應用嗎？",
+        "answer": "原生上不行。Fathom 是為網站分析設計的，沒有提供行動 SDK。你可以透過它們的 API 傳送事件，但沒有行動專用功能。OpenPanel 則提供原生 iOS、Android、React Native 與 Flutter SDK。"
+      },
+      {
+        "question": "從 Fathom 轉換過去我會失去什麼？",
+        "answer": "如果你要遷移歷史資料，Fathom 的 Google Analytics 匯入工具評價不錯。他們的 EU Isolation 功能對所有客戶預設啟用。不過，你會獲得 Fathom 沒有的產品分析、自架選項與免費自架功能。"
+      },
+      {
+        "question": "部落格／內容網站用 Fathom 還是 OpenPanel 比較好？",
+        "answer": "對於只需要流量統計的簡單內容網站，Fathom 的簡潔性非常好，而且它的 GA 匯入工具有助於轉換。如果你經營的是 SaaS、電商，或任何需要理解使用者行為的產品，OpenPanel 的產品分析功能會更有價值。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "網站分析設定",
+        "url": "/zh-TW/guides/website-analytics-setup"
+      },
+      {
+        "title": "從 Google Analytics 遷移",
+        "url": "/zh-TW/guides/migrate-from-google-analytics"
+      },
+      {
+        "title": "Astro 分析設定",
+        "url": "/zh-TW/guides/astro-analytics"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 個最佳開源網站分析工具",
+        "url": "/zh-TW/articles/self-hosted-web-analytics"
+      },
+      {
+        "title": "免 Cookie 分析",
+        "url": "/zh-TW/articles/cookieless-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Plausible",
+        "url": "/zh-TW/compare/plausible-alternative"
+      },
+      {
+        "name": "Simple Analytics",
+        "url": "/zh-TW/compare/simple-analytics-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "開始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

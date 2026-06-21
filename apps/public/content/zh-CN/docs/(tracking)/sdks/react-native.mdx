@@ -1,0 +1,153 @@
+---
+title: React Native
+---
+
+import Link from 'next/link';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { DeviceIdWarning } from '@/components/device-id-warning';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+<Callout>
+在找分步教程？查看 [React Native analytics 指南](/zh-CN/guides/react-native-analytics)。
+</Callout>
+
+## 安装
+
+<Steps>
+### 安装依赖
+
+我们依赖 `expo-application` 提供 `buildNumber`、`versionNumber`（以及 android 上的 `referrer`），并依赖 `expo-constants` 获取 `user-agent`。
+
+```npm
+npm install @openpanel/react-native
+npx expo install expo-application expo-constants
+```
+
+### 初始化
+
+在原生端，我们使用 `clientSecret` 认证应用。
+
+```typescript
+import { OpenPanel } from '@openpanel/react-native';
+
+const op = new OpenPanel({
+  clientId: '{YOUR_CLIENT_ID}',
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+});
+```
+
+#### 选项
+
+<CommonSdkConfig />
+</Steps>
+
+## 用法
+
+### 跟踪事件
+
+```typescript
+op.track('my_event', { foo: 'bar' });
+```
+
+### 导航 / 页面视图
+
+<Tabs items={['expo-router', 'react-navigation (simple)']}>
+  <Tab value="expo-router">
+    ```typescript
+    import { usePathname, useSegments } from 'expo-router';
+
+    const op = new Openpanel({ /* ... */ })
+
+    function RootLayout() {
+      // ...
+      const pathname = usePathname()
+      // Segments 是可选的，但如果你想将路由分组，保留它会很有用
+      // pathname = /posts/123
+      // segements = ['posts', '[id]']
+      const segments = useSegments()
+
+      useEffect(() => {
+        // 简单用法
+        op.screenView(pathname)
+
+        // 带额外数据
+        op.screenView(pathname, {
+          // segments 是可选的，但保留它会更好
+          segments: segments.join('/'),
+          // 你想随页面视图一起发送的其他可选数据
+        })
+      }, [pathname,segments])
+      // ...
+    }
+    ```
+
+  </Tab>
+  <Tab value="react-navigation (simple)">
+    ```tsx
+      import { createNavigationContainerRef } from '@react-navigation/native'
+      import { Openpanel } from '@openpanel/react-native'
+
+      const op = new Openpanel({ /* ... */ })
+      const navigationRef = createNavigationContainerRef()
+
+      export function NavigationRoot() {
+        const handleNavigationStateChange = () => {
+          const current = navigationRef.getCurrentRoute()
+          if (current) {
+            op.screenView(current.name, {
+              params: current.params,
+            })
+          }
+        }
+
+        return (
+          <NavigationContainer
+            ref={navigationRef}
+            onReady={handleNavigationStateChange}
+            onStateChange={handleNavigationStateChange}
+          >
+            <Stack.Navigator />
+          </NavigationContainer>
+        )
+      }
+    ```
+  </Tab>
+</Tabs>
+
+有关如何使用该 SDK 的更多信息，请查看 [Javascript SDK](/zh-CN/docs/sdks/javascript#usage)。
+
+## 离线支持
+
+当设备离线时，SDK 可以缓冲事件，并在恢复连接后刷新发送。事件在触发时会带上 `__timestamp`，因此即使稍后才送达，也会按正确时间记录。
+
+要启用此功能，需要两个可选的 peer dependency：
+
+```npm
+npm install @react-native-async-storage/async-storage @react-native-community/netinfo
+```
+
+将它们传入构造函数：
+
+```typescript
+import { OpenPanel } from '@openpanel/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
+
+const op = new OpenPanel({
+  clientId: '{YOUR_CLIENT_ID}',
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+  // 在应用重启之间持久化事件队列
+  storage: AsyncStorage,
+  // 设备重新联网时自动刷新队列
+  networkInfo: NetInfo,
+});
+```
+
+这两个选项彼此独立——你可以只用其中一个，也可以同时使用：
+
+- **`storage`** — 将队列持久化到磁盘，使事件在离线期间仍能跨应用重启保留。
+- **`networkInfo`** — 在连接恢复时自动刷新队列。没有它时，队列会在应用下次进入活动状态时刷新。

@@ -1,0 +1,139 @@
+{
+  "slug": "event-tracking",
+  "short_name": "事件追蹤",
+  "seo": {
+    "title": "事件追蹤 - 產品分析的基礎",
+    "description": "不需 Google Analytics 也能追蹤產品事件。簡單、以隱私為先的事件追蹤，支援漏斗、留存與使用者資料檔。幾分鐘內即可開始使用。",
+    "keywords": [
+      "事件追蹤軟體",
+      "產品事件追蹤",
+      "自訂事件追蹤"
+    ]
+  },
+  "hero": {
+    "heading": "簡單的事件追蹤",
+    "subheading": "透過簡單的 API 追蹤點擊、瀏覽與轉換。沒有 Cookie，沒有多餘負擔——只有你需要用來了解使用者行為的事件。",
+    "badges": [
+      "追蹤任何使用者操作",
+      "自訂屬性",
+      "即時匯入",
+      "一個 API 支援所有報表"
+    ]
+  },
+  "definition": {
+    "title": "什麼是事件追蹤？",
+    "text": "事件追蹤是產品分析的基礎。不同於依賴頁面瀏覽次數或工作階段計時器，你可以將離散動作——點擊、頁面瀏覽、註冊、購買——以帶有屬性的結構化事件形式捕捉下來。\n\n每一次互動都會成為可供查詢、篩選與視覺化的資料點。這就是你回答以下問題的方法：\n\n- **本週有多少使用者完成了導覽？**\n- **付費客戶最常使用哪些功能？**\n- **使用者在哪個註冊流程階段流失？**\n\n傳統分析工具（例如 Google Analytics）是以工作階段與頁面瀏覽為核心。這對行銷很有用，但在你需要理解**產品行為**時就顯得不足：使用者在你的應用程式內實際做了什麼、他們如何在流程中前進，以及哪些行為與留存有關。\n\nOpenPanel 採取不同的做法。你可以透過輕量級 SDK 或 API 從你的應用程式或網站送出事件。每個事件都有名稱（例如 `signup_completed`、`feature_used`）與可選屬性（例如 `plan: pro`、`source: google`）。OpenPanel 會儲存這些事件，並讓你在其上建立**漏斗**、**留存圖表**和**使用者資料檔**——不必承受企業級分析工具的複雜度。\n\n由於 OpenPanel **以隱私為先**，你可以在不使用 Cookie、也不將個人資料傳送給第三方的情況下執行。可自行架設或使用我們的雲端服務——資料始終屬於你。"
+  },
+  "capabilities_section": {
+    "title": "你可以追蹤什麼",
+    "intro": "從基本的頁面瀏覽到自訂轉換事件，你都能完整掌握使用者操作。"
+  },
+  "capabilities": [
+    {
+      "title": "頁面瀏覽與畫面瀏覽",
+      "description": "追蹤使用者造訪哪些頁面或畫面，並自動附帶 URL、referrer 和裝置等屬性。"
+    },
+    {
+      "title": "點擊與互動",
+      "description": "只需一行程式碼即可捕捉按鈕點擊、表單送出與任何自訂互動。"
+    },
+    {
+      "title": "自訂事件與轉換",
+      "description": "定義你自己的事件（例如 signup、purchase、feature_used），並附加屬性以供篩選與分析。"
+    },
+    {
+      "title": "使用者與工作階段脈絡",
+      "description": "事件會連結到匿名或已識別的使用者與工作階段，因此你可以分析隨時間變化的行為。"
+    },
+    {
+      "title": "即時匯入",
+      "description": "事件會在數秒內出現在你的儀表板中。沒有批次延遲，也不需要隔夜處理。"
+    },
+    {
+      "title": "漏斗、留存與資料檔",
+      "description": "使用相同的事件建立轉換漏斗、留存 cohort，以及每位使用者的活動時間軸。"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/features/feature-events-list.webp",
+      "alt": "OpenPanel 中顯示已追蹤使用者操作的事件清單",
+      "caption": "瀏覽產品送出的每一個事件。可依名稱、使用者或屬性篩選。"
+    },
+    {
+      "src": "/features/feature-events-stats.webp",
+      "alt": "事件統計與隨時間變化的趨勢",
+      "caption": "一眼查看事件量與趨勢。及早發現異常，避免演變成問題。"
+    },
+    {
+      "src": "/features/feature-events-details.webp",
+      "alt": "帶有屬性的單一事件詳細檢視",
+      "caption": "深入查看任何事件以了解完整脈絡：使用者、工作階段、屬性與時間戳記。"
+    }
+  ],
+  "how_it_works": {
+    "title": "事件追蹤如何運作",
+    "intro": "三個步驟，從零開始到完整掌握產品可視性。",
+    "steps": [
+      {
+        "title": "安裝 SDK 或使用 API",
+        "description": "將我們輕量級的腳本加入你的網站，或使用適用於 React、Next.js 或其他框架的 SDK。可自行架設或使用雲端服務——由你選擇。"
+      },
+      {
+        "title": "從產品送出事件",
+        "description": "自動追蹤頁面瀏覽，並透過我們的 API 送出自訂事件（signup、purchase、feature_used），可附帶選用屬性。"
+      },
+      {
+        "title": "在儀表板、漏斗與留存中分析",
+        "description": "事件會流入漏斗、留存圖表與使用者資料檔。無需額外設定——一層追蹤即可驅動一切。"
+      }
+    ]
+  },
+  "use_cases": {
+    "title": "誰在使用事件追蹤",
+    "intro": "產品與成長團隊使用事件來回答具體問題。",
+    "items": [
+      {
+        "title": "產品經理",
+        "description": "了解哪些功能被使用、使用者在哪裡流失，以及不同區隔之間的行為差異。"
+      },
+      {
+        "title": "成長與行銷",
+        "description": "衡量從註冊到啟用、從造訪到購買的轉換率。根據真實事件優化活動。"
+      },
+      {
+        "title": "支援與客戶成功",
+        "description": "在通話或工單前查看使用者的事件時間軸。不必再問「你點了什麼？」——你都看得到。"
+      }
+    ]
+  },
+  "related_features": [
+    {
+      "slug": "funnels",
+      "title": "漏斗",
+      "description": "查看使用者在註冊、啟用與轉換流程中的流失位置。"
+    }
+  ],
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於使用 OpenPanel 進行事件追蹤的常見問題。",
+    "items": [
+      {
+        "question": "事件追蹤需要使用 Cookie 嗎？",
+        "answer": "不需要。OpenPanel 可以在不使用 Cookie 的情況下運作。只有在你啟用它以獲得更好的工作階段連續性時，我們才會使用第一方 Cookie。許多團隊完全不使用 Cookie，仍然可以獲得準確的漏斗與留存資料。"
+      },
+      {
+        "question": "這和 Google Analytics 有什麼不同？",
+        "answer": "Google Analytics 是為行銷與流量分析而設計，資料模型也較複雜。OpenPanel 則是為產品與轉換而設計：以可直接對應使用者操作的簡單事件為核心。你可以在沒有 GA 學習曲線的情況下獲得漏斗、留存與使用者資料檔。"
+      },
+      {
+        "question": "我可以追蹤自訂事件嗎？",
+        "answer": "可以。你可以送出任何事件名稱，並附加選用屬性（例如 plan、value、feature_name）。自訂事件在漏斗、留存與使用者資料檔中的運作方式，與內建事件相同。"
+      }
+    ]
+  },
+  "cta": {
+    "label": "幾分鐘內即可追蹤事件",
+    "href": "https://dashboard.openpanel.dev/onboarding"
+  }
+}

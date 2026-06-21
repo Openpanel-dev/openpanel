@@ -1,0 +1,156 @@
+---
+title: Javascript（Node / 通用）
+description: OpenPanel Web SDK 允许你通过一个简单的 script 标签在网站上跟踪用户行为。本指南提供了在项目中安装和使用 Web SDK 的说明。
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+## 安装
+
+<Steps>
+### 步骤 1：安装
+
+```npm
+npm install @openpanel/sdk
+```
+
+### 步骤 2：初始化
+
+```js title="op.ts"
+import { OpenPanel } from '@openpanel/sdk';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET',
+});
+```
+
+#### 选项
+
+<CommonSdkConfig />
+
+### 步骤 3：使用
+
+```js title="main.ts"
+import { op } from './op.js';
+
+op.track('my_event', { foo: 'bar' });
+```
+</Steps>
+
+## 使用
+
+### 跟踪事件
+
+你可以通过两种方式跟踪事件：直接调用 `op.track(`，或向 HTML 元素添加 `data-track` 属性。
+
+```ts title="index.ts"
+import { op } from './op.ts';
+
+op.track('my_event', { foo: 'bar' });
+```
+
+### 识别用户
+
+要识别用户，请使用带唯一标识符的 `op.identify(` 方法。
+
+```js title="index.js"
+import { op } from './op.ts';
+
+op.identify({
+  profileId: '123', // Required
+  firstName: 'Joe',
+  lastName: 'Doe',
+  email: 'joe@doe.com',
+  properties: {
+    tier: 'premium',
+  },
+});
+```
+
+### 设置全局属性
+
+为每个事件设置要发送的属性：
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.setGlobalProperties({
+  app_version: '1.0.2',
+  environment: 'production',
+});
+```
+
+### 增加属性
+
+为用户资料中的数值属性增加值。
+
+- `value` 是要增加的数量。如果未提供，则默认增加 1。
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.increment({
+  profileId: '1',
+  property: 'visits',
+  value: 1 // optional
+});
+```
+
+### 减少属性
+
+为用户资料中的数值属性减少值。
+
+- `value` 是要减少的数量。如果未提供，则默认减少 1。
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.decrement({
+  profileId: '1',
+  property: 'visits',
+  value: 1 // optional
+});
+```
+
+### 使用 Groups
+
+Groups 可用于在账户或公司级别跟踪分析数据。完整流程请参阅 [Groups 指南](/zh-CN/docs/get-started/groups)。
+
+**创建或更新 group：**
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.upsertGroup({
+  id: 'org_acme',
+  type: 'company',
+  name: 'Acme Inc',
+  properties: { plan: 'enterprise' },
+});
+```
+
+**将当前用户分配到 group**（在 `identify` 之后调用）：
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.setGroup('org_acme');
+// or multiple groups:
+op.setGroups(['org_acme', 'team_eng']);
+```
+
+设置后，后续所有 `track()` 调用都会自动包含 group ID。
+
+### 清除用户数据
+
+清除当前用户的数据（包括 groups）：
+
+```js title="index.js"
+import { op } from './op.ts'
+
+op.clear()
+```

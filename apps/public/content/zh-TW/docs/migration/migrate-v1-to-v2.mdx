@@ -1,0 +1,101 @@
+---
+title: v1 到 v2 的遷移
+description: 我們終於覺得已準備好為所有 self-hosting 釋出 v2。這是一個大版本！
+---
+
+## v2 新功能
+
+- **重新設計的儀表板** - 使用 Tanstack 建置的新 UI
+- **[收益追蹤](/zh-TW/features/revenue-tracking)** - 連同分析一起追蹤收益
+- **Sessions** - 檢視個別使用者工作階段
+- **即時檢視** - 即時事件串流
+- **可自訂儀表板** - Grafana 風格的小工具版面配置
+- **改良的報表建置器** - 更快、更彈性
+- **一般改進** - 我們也修正了許多錯誤、做了多項小幅改進，還有更多內容
+
+## 從 v1 遷移
+
+### 確認你在 self-hosting 分支上
+
+有時候我們會新增一些 helper scripts 之類的東西。繼續之前，請務必確認你在最新 commit 上。
+
+```bash
+cd ./self-hosting
+git fetch origin
+git checkout self-hosting
+git pull origin self-hosting
+```
+
+### Envs
+
+由於我們已從 nextjs 遷移到 tanstack，首先需要更新 envs。我們已為 [環境變數](/zh-TW/docs/self-hosting/environment-variables) 新增專頁。
+
+```js title=".env"
+NEXT_PUBLIC_DASHBOARD_URL="..." // [!code --]
+NEXT_PUBLIC_API_URL="..." // [!code --]
+NEXT_PUBLIC_SELF_HOSTED="..." // [!code --]
+
+DASHBOARD_URL="..." // [!code ++]
+API_URL="..." // [!code ++]
+SELF_HOSTED="..." // [!code ++]
+```
+
+### Clickhouse 24 -> 25
+
+我們已將 Clickhouse 更新到 25，這一點很重要，不能略過，否則你的 OpenPanel 實例將無法運作。
+
+你應該編輯 `./self-hosting/docker-compose.yml`
+
+```js title="./self-hosting/docker-compose.yml"
+services:
+  op-ch:
+    image: clickhouse/clickhouse-server:24.3.2-alpine // [!code --]
+    image: clickhouse/clickhouse-server:25.10.2.65 // [!code ++]
+```
+
+從 25 版開始，clickhouse 預設啟用了使用者設定，這表示我們需要將其停用以避免連線問題。使用這個設定，我們仍然可以在沒有使用者的情況下（內部）存取 clickhouse 實例。
+
+```
+services:
+  op-ch:
+    environment:
+      - CLICKHOUSE_SKIP_USER_SETUP=1
+```
+
+### 使用我們最新的 docker images
+
+最後一步是開始使用我們最新的 docker images。
+
+> 注意：之前你可能使用的是 latest tag，這不建議。請改為實際的最新版本。
+
+```js title="./self-hosting/docker-compose.yml"
+services:
+  op-api:
+    image: lindesvard/openpanel-api:latest // [!code --]
+    image: lindesvard/openpanel-api:2.0.0 // [!code ++]
+
+  op-worker:
+    image: lindesvard/openpanel-worker:latest // [!code --]
+    image: lindesvard/openpanel-worker:2.0.0 // [!code ++]
+
+  op-dashboard:
+    image: lindesvard/openpanel-dashboard:latest // [!code --]
+    image: lindesvard/openpanel-dashboard:2.0.0 // [!code ++]
+```
+
+### 完成了嗎？
+
+當你完成以上步驟後，應該需要重新啟動所有服務。這會花一些時間，取決於你的硬體以及你有多少事件。由於我們對資料庫結構和資料做了重大變更，因此需要執行 migrations。
+
+```bash
+./stop
+./start
+```
+
+## 使用 Coolify？
+
+如果你使用 Coolify 並運行 OpenPanel v1，你需要套用上述變更。你可以參考我們的 [Coolify PR](https://github.com/coollabsio/coolify/pull/7653)，其中會展示你需要修改的內容。
+
+## migration 有任何問題嗎？
+
+如果你在 migration 過程中遇到任何問題，請在 [Discord](https://discord.gg/openpanel) 聯絡我們，我們會盡力協助你。

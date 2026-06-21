@@ -1,0 +1,158 @@
+{
+  "slug": "shopify",
+  "audience": "shopify",
+  "seo": {
+    "title": "Shopify 分析 — 无需同意横幅的无 Cookie 跟踪",
+    "description": "为你的 Shopify 商店添加产品分析，无需 GDPR 同意横幅。OpenPanel 默认无 Cookie——可跟踪事件、漏斗和收入，月费从 $2.50 起，或可免费自托管。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "真正有效的 Shopify 分析",
+    "subheading": "大多数分析工具在 Shopify 上都会失效：Cookie 同意会阻止跟踪，GA4 会丢失归因，而 Shopify 内置报表又无法回答真正重要的问题。OpenPanel 无需 Cookie 即可跟踪每个事件，因此你的数据更完整，结账转化也不会因同意横幅而受损。",
+    "badges": [
+      "无 Cookie 跟踪",
+      "无需同意横幅",
+      "收入跟踪",
+      "低至 $2.50/月"
+    ]
+  },
+  "problem": {
+    "title": "为什么 Shopify 上的分析会失效",
+    "intro": "每一种主流分析工具都会给 Shopify 商店带来不同的问题。以下是你真正面临的情况。",
+    "items": [
+      {
+        "title": "GA4 同意模式会破坏你的数据",
+        "description": "Cookie 同意要求意味着 30-50% 的访客会选择退出。GA4 的“同意模式”会用建模数据填补空缺——你基于的是估算值，而不是现实。"
+      },
+      {
+        "title": "Shopify 内置分析过于浅显",
+        "description": "虽然有页面浏览量和销售数据，但你无法构建漏斗、分析商品页的流失，或查看哪个获客渠道最能留住客户。"
+      },
+      {
+        "title": "事件跟踪需要开发者",
+        "description": "要在 Shopify 上正确安装 GA4，并配置购买事件、加入购物车和结账步骤，需要自定义代码或昂贵的第三方应用。"
+      },
+      {
+        "title": "Cookie 横幅会伤害转化",
+        "description": "在结账前弹出同意窗口会扼杀转化。任何使用 Cookie 的分析工具都会迫使你在数据和收入之间做选择。"
+      }
+    ]
+  },
+  "features": {
+    "title": "了解你的 Shopify 商店所需的一切",
+    "intro": "OpenPanel 的设计目标是让你完整洞察商店表现——同时避免隐私合规带来的麻烦。",
+    "items": [
+      {
+        "title": "通过 script tag 安装——无需开发者",
+        "description": "在 Shopify 的主题设置中添加一个 script tag。页面浏览自动跟踪会立即开始。无需 Shopify 应用或编程。"
+      },
+      {
+        "title": "默认无 Cookie 跟踪",
+        "description": "没有 Cookie 就没有同意横幅。你的分析数据 100% 完整——不是建模值，不是估算值，也不会因选择退出而被过滤。"
+      },
+      {
+        "title": "购买与收入跟踪",
+        "description": "跟踪加入购物车、开始结账和购买事件，并记录收入值。精确查看哪些活动和页面真正带来收入，而不只是点击。"
+      },
+      {
+        "title": "漏斗分析",
+        "description": "构建从商品页 → 加入购物车 → 结账 → 购买的漏斗。准确查看客户流失在哪里，并加以修复。"
+      },
+      {
+        "title": "UTM 活动归因",
+        "description": "跟踪每个付费广告、邮件活动和网红链接。查看哪个流量来源真正转化为买家，而不只是访客。"
+      },
+      {
+        "title": "用户画像",
+        "description": "查看任意客户的完整旅程——访问过的页面、浏览过的商品、购买历史。识别高价值客户行为模式。"
+      },
+      {
+        "title": "实时仪表板",
+        "description": "实时观察你的商店。发起促销或发送邮件，立即看到流量激增。"
+      },
+      {
+        "title": "EU 数据驻留",
+        "description": "所有数据都存储在 EU。不会传输到美国服务器。无需复杂的法律流程即可满足 GDPR 合规。"
+      }
+    ]
+  },
+  "benefits": {
+    "title": "为什么 Shopify 商店主选择 OpenPanel",
+    "intro": "OpenPanel 的构建目标，就是解决困扰 Shopify 分析的那些具体问题。",
+    "items": [
+      {
+        "title": "数据完整，无需同意",
+        "description": "无 Cookie 跟踪意味着每位访客都会被计入。没有同意模式建模，没有采样，也没有因选择退出而造成的数据缺口。"
+      },
+      {
+        "title": "比 Shopify 分析应用更便宜",
+        "description": "大多数 Shopify 分析应用每月收费 $50–200。OpenPanel 起价仅 $2.50/月，并包含全部功能。"
+      },
+      {
+        "title": "替代 GA4 和你的分析应用",
+        "description": "一个工具同时覆盖网页分析（流量、引荐来源、UTM）和产品分析（漏斗、留存、收入）。取消两个订阅。"
+      },
+      {
+        "title": "开箱即用的隐私优先",
+        "description": "EU 托管、无 Cookie、无指纹识别。在你的商店中使用 OpenPanel 无需合规团队介入。"
+      },
+      {
+        "title": "免费自托管",
+        "description": "对于高流量商店，自托管可彻底消除按事件计费成本。一次 Docker 部署，无限事件。"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "Shopify 商店主在评估 OpenPanel 时常见的问题。",
+    "items": [
+      {
+        "question": "如何在 Shopify 上安装 OpenPanel？",
+        "answer": "通过 Shopify 管理后台 → 在线商店 → 主题 → 编辑代码 → theme.liquid 添加 OpenPanel script tag。将代码片段粘贴到 </head> 之前。自动页面浏览会立即开始跟踪。对于购买事件，请在订单确认页添加几行代码。"
+      },
+      {
+        "question": "OpenPanel 可以在没有 Cookie 同意横幅的情况下工作吗？",
+        "answer": "可以。OpenPanel 默认无 Cookie，且不收集个人数据。仅用于分析时，在 GDPR 或 CCPA 下不需要同意横幅。"
+      },
+      {
+        "question": "我可以跟踪 Shopify 购买事件吗？",
+        "answer": "可以。在订单确认页使用一小段脚本即可将购买金额、订单 ID 和商品数据发送到 OpenPanel。无需 Shopify 应用。"
+      },
+      {
+        "question": "OpenPanel 与 Lucky Orange 或 Hotjar 在 Shopify 上相比如何？",
+        "answer": "Lucky Orange 和 Hotjar 主要聚焦热力图和会话回放。OpenPanel 关注事件分析、漏斗和留存——理解用户做了什么，而不是观看录屏。如果你两者都需要，它们可以互补。"
+      },
+      {
+        "question": "OpenPanel 会影响我的 Shopify 商店页面速度吗？",
+        "answer": "OpenPanel 的 JavaScript SDK 仅 2.3 KB gzip 后大小——是目前最轻量的分析跟踪器之一。GA4 超过 50 KB。性能影响几乎可以忽略不计。"
+      },
+      {
+        "question": "OpenPanel 支持 Shopify Plus 吗？",
+        "answer": "支持。OpenPanel 适用于任何 Shopify 方案，包括 Plus。script tag 安装方式在所有方案中都完全一致。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "电商跟踪设置", "url": "/guides/ecommerce-tracking" }
+    ],
+    "articles": [
+      { "title": "无 Cookie 分析详解", "url": "/articles/cookieless-analytics" },
+      { "title": "最佳开源分析工具", "url": "/articles/self-hosted-web-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },
+      { "title": "OpenPanel vs Plausible", "url": "/compare/plausible-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "免费试用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看源代码",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

@@ -1,0 +1,354 @@
+---
+title: "如何为 Nuxt 添加分析"
+description: "使用 OpenPanel 官方 Nuxt 模块，在 5 分钟内为你的 Nuxt 应用添加隐私优先的分析。"
+difficulty: beginner
+timeToComplete: 5
+date: 2025-01-07
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安装模块"
+    anchor: "install"
+  - name: "配置模块"
+    anchor: "setup"
+  - name: "跟踪自定义事件"
+    anchor: "events"
+  - name: "识别用户"
+    anchor: "identify"
+  - name: "设置服务端跟踪"
+    anchor: "server"
+  - name: "验证你的设置"
+    anchor: "verify"
+---
+
+# 如何为 Nuxt 添加分析
+
+本指南将带你将 OpenPanel 添加到 Nuxt 3 应用中。官方 `@openpanel/nuxt` 模块通过自动导入的 composable、自动页面浏览量跟踪，以及内置的代理选项来绕过广告拦截器，让集成变得轻而易举。
+
+OpenPanel 是 Mixpanel 和 Google Analytics 的开源替代方案。它默认使用无 Cookie 跟踪，因此你无需为基础分析添加 Cookie 同意横幅。
+
+## 先决条件
+
+- 一个 Nuxt 3 项目
+- 一个 OpenPanel 账号（[免费注册](https://dashboard.openpanel.dev/onboarding)）
+- 你在 OpenPanel 仪表盘中的 Client ID
+
+## 安装模块 [#install]
+
+首先安装 OpenPanel Nuxt 模块。这个包包含客户端跟踪所需的一切，包括自动导入的 `useOpenPanel` composable。
+
+```bash
+npm install @openpanel/nuxt
+```
+
+如果你更喜欢 pnpm 或 yarn，也同样可以。
+
+## 配置模块 [#setup]
+
+将模块添加到你的 `nuxt.config.ts` 中，并使用你的 Client ID 进行配置。该模块会自动设置页面浏览量跟踪，并让 `useOpenPanel` composable 在你的应用中随处可用。
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ['@openpanel/nuxt'],
+  openpanel: {
+    clientId: 'your-client-id',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  },
+});
+```
+
+就是这样。现在，当用户在你的应用中导航时，页面浏览量会被自动跟踪。
+
+### 配置选项
+
+| 选项 | 默认值 | 说明 |
+|--------|---------|-------------|
+| `clientId` | — | 你的 OpenPanel client ID（必需） |
+| `apiUrl` | `https://api.openpanel.dev` | 发送事件的 API URL |
+| `trackScreenViews` | `true` | 自动跟踪页面浏览量 |
+| `trackOutgoingLinks` | `true` | 跟踪外部链接点击 |
+| `trackAttributes` | `true` | 跟踪带有 `data-track` 属性的元素 |
+| `trackHashChanges` | `false` | 跟踪 URL 中的 hash 变化 |
+| `disabled` | `false` | 禁用所有跟踪 |
+| `proxy` | `false` | 通过你的服务器路由事件 |
+
+### 使用环境变量
+
+对于生产应用，将你的 Client ID 存储在环境变量中。
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ['@openpanel/nuxt'],
+  openpanel: {
+    clientId: process.env.NUXT_PUBLIC_OPENPANEL_CLIENT_ID,
+    trackScreenViews: true,
+  },
+});
+```
+
+```bash title=".env"
+NUXT_PUBLIC_OPENPANEL_CLIENT_ID=your-client-id
+```
+
+## 跟踪自定义事件 [#events]
+
+页面浏览量只能说明部分情况。要了解用户如何与你的产品互动，请跟踪按钮点击、表单提交或功能使用等自定义事件。
+
+### 使用 composable
+
+`useOpenPanel` composable 会被自动导入，因此你可以直接在任何组件中使用它，无需导入任何内容。
+
+```vue title="components/SignupButton.vue"
+<script setup>
+const op = useOpenPanel();
+
+function handleClick() {
+  op.track('button_clicked', {
+    button_name: 'signup',
+    button_location: 'hero',
+  });
+}
+</script>
+
+<template>
+  <button type="button" @click="handleClick">注册</button>
+</template>
+```
+
+### 通过 useNuxtApp 访问
+
+如果你愿意，也可以通过 `useNuxtApp()` 访问 OpenPanel 实例。
+
+```vue
+<script setup>
+const { $openpanel } = useNuxtApp();
+
+$openpanel.track('my_event', { foo: 'bar' });
+</script>
+```
+
+### 跟踪表单提交
+
+表单跟踪可以帮助你了解[转化率](/zh-CN/features/conversion)并识别用户在哪些地方流失。
+
+```vue title="components/ContactForm.vue"
+<script setup>
+const op = useOpenPanel();
+const email = ref('');
+
+async function handleSubmit() {
+  op.track('form_submitted', {
+    form_name: 'contact',
+    form_location: 'homepage',
+  });
+
+  // 你的表单提交逻辑
+}
+</script>
+
+<template>
+  <form @submit.prevent="handleSubmit">
+    <input v-model="email" type="email" placeholder="输入你的邮箱" />
+    <button type="submit">提交</button>
+  </form>
+</template>
+```
+
+### 使用数据属性进行声明式跟踪
+
+SDK 支持使用 `data-track` 属性进行声明式跟踪。这对于无需编写 JavaScript 的简单点击跟踪很有用。
+
+```vue
+<template>
+  <button
+    data-track="button_clicked"
+    data-track-button_name="signup"
+    data-track-button_location="hero"
+  >
+    注册
+  </button>
+</template>
+```
+
+当用户点击此按钮时，OpenPanel 会自动发送一个带有指定属性的 `button_clicked` 事件。这需要你在配置中启用 `trackAttributes: true`。
+
+## 识别用户 [#identify]
+
+匿名跟踪很有用，但识别用户可以解锁更有价值的洞察。你可以跨会话跟踪行为、按属性细分用户，并构建用户群组分析。
+
+在用户登录后或你拿到他们的信息时调用 `identify`。
+
+```vue title="components/UserProfile.vue"
+<script setup>
+const op = useOpenPanel();
+const props = defineProps(['user']);
+
+watch(() => props.user, (user) => {
+  if (user) {
+    op.identify({
+      profileId: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      properties: {
+        plan: user.plan,
+        signupDate: user.createdAt,
+      },
+    });
+  }
+}, { immediate: true });
+</script>
+
+<template>
+  <div>欢迎，{{ user?.firstName }}！</div>
+</template>
+```
+
+### 设置全局属性
+
+使用 `setGlobalProperties` 设置的属性会包含在每个事件中。这对于应用版本跟踪、功能开关或 A/B 测试变体很有用。
+
+```vue title="app.vue"
+<script setup>
+const op = useOpenPanel();
+
+onMounted(() => {
+  op.setGlobalProperties({
+    app_version: '1.0.0',
+    environment: useRuntimeConfig().public.environment,
+  });
+});
+</script>
+```
+
+### 登出时清除用户数据
+
+当用户登出时，清除已存储的个人资料数据，以确保后续事件不会与前一个用户关联。
+
+```vue title="components/LogoutButton.vue"
+<script setup>
+const op = useOpenPanel();
+
+function handleLogout() {
+  op.clear();
+  navigateTo('/login');
+}
+</script>
+
+<template>
+  <button @click="handleLogout">登出</button>
+</template>
+```
+
+## 设置服务端跟踪 [#server]
+
+对于在服务端路由、API 端点或服务端中间件中跟踪事件，请使用 `@openpanel/sdk` 包。服务端跟踪需要使用 client secret 进行身份验证。
+
+### 安装 SDK
+
+```bash
+npm install @openpanel/sdk
+```
+
+### 创建服务端实例
+
+```ts title="server/utils/op.ts"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const op = new OpenPanel({
+  clientId: process.env.OPENPANEL_CLIENT_ID!,
+  clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+});
+```
+
+### 在服务端路由中跟踪事件
+
+```ts title="server/api/webhook.post.ts"
+export default defineEventHandler(async (event) => {
+  const body = await readBody(event);
+
+  await op.track('webhook_received', {
+    source: body.source,
+    event_type: body.type,
+  });
+
+  return { success: true };
+});
+```
+
+切勿在客户端暴露你的 client secret。请将其保留在仅限服务端的代码中。
+
+### 在无服务器环境中等待完成
+
+如果你部署到 Vercel 或 Netlify 之类的无服务器平台，请务必等待跟踪调用完成，以确保函数在终止前已执行完毕。
+
+```ts
+export default defineEventHandler(async (event) => {
+  // 在无服务器环境中始终要等待
+  await op.track('my_server_event', { foo: 'bar' });
+  return { message: '事件已记录！' };
+});
+```
+
+## 通过代理绕过广告拦截器 [#proxy]
+
+许多广告拦截器会阻止发送到第三方分析域名的请求。Nuxt 模块包含内置代理，可将事件通过你自己的服务器路由。
+
+在配置中启用代理选项：
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ['@openpanel/nuxt'],
+  openpanel: {
+    clientId: 'your-client-id',
+    proxy: true, // 将事件通过 /api/openpanel/* 路由
+  },
+});
+```
+
+当设置 `proxy: true` 时：
+- 模块会自动将 `apiUrl` 设置为 `/api/openpanel`
+- 会在 `/api/openpanel/**` 注册一个服务端处理程序
+- 所有跟踪请求都会通过你的 Nuxt 服务器路由
+
+这会让跟踪请求对阻止第三方分析的浏览器扩展不可见。
+
+## 验证你的设置 [#verify]
+
+在浏览器中打开你的 Nuxt 应用并在几个页面之间导航。与会触发自定义事件的元素进行交互。然后打开你的 [OpenPanel 仪表盘](https://dashboard.openpanel.dev)，查看实时视图，确认事件会在几秒内出现。
+
+如果事件没有显示，请检查浏览器控制台是否有错误。最常见的问题有：
+- Client ID 不正确
+- 广告拦截器拦截了请求（启用代理选项）
+- 在仅限服务端的代码中暴露了 Client ID
+
+浏览器开发者工具中的 Network 标签页可以帮助你确认请求是否已发送。
+
+## 下一步
+
+[Nuxt SDK 参考](/zh-CN/docs/sdks/nuxt)涵盖了更多功能，例如递增用户属性和事件过滤。如果你想了解 OpenPanel 如何处理隐私，请阅读我们关于[无 Cookie 分析](/zh-CN/articles/cookieless-analytics)的文章。
+
+<Faqs>
+<FaqItem question="OpenPanel 是否支持 Nuxt 3 和 Nuxt 4？">
+支持。`@openpanel/nuxt` 模块同时支持 Nuxt 3 和 Nuxt 4。它使用 Nuxt 的模块系统和自动导入，因此在任一版本下都能无缝工作。
+</FaqItem>
+
+<FaqItem question="useOpenPanel composable 会自动导入吗？">
+会。该模块会自动注册 `useOpenPanel` composable，因此你可以在任何组件中直接使用它，而无需导入。你也可以通过 `useNuxtApp().$openpanel` 访问该实例。
+</FaqItem>
+
+<FaqItem question="OpenPanel 会使用 Cookie 吗？">
+不会。OpenPanel 默认使用无 Cookie 跟踪。这意味着在大多数隐私法规下，包括 GDPR 和 PECR，你都不需要为基础分析添加 Cookie 同意横幅。
+</FaqItem>
+
+<FaqItem question="我该如何避开广告拦截器？">
+在配置中启用 `proxy: true` 选项。这会将所有跟踪请求通过你的 Nuxt 服务器路由到 `/api/openpanel/*`，而广告拦截器通常不会阻止该路径。
+</FaqItem>
+
+<FaqItem question="OpenPanel 是否符合 GDPR？">
+是的。OpenPanel 采用无 Cookie 跟踪、数据最小化，并全面支持数据主体权利，旨在符合 GDPR。使用自托管时，你还可以彻底消除国际数据传输方面的顾虑。
+</FaqItem>
+</Faqs>

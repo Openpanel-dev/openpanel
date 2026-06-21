@@ -1,0 +1,525 @@
+{
+  "slug": "simple-analytics-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026年最佳 Simple Analytics 替代方案 - 开源且免费",
+    "description": "在寻找 Simple Analytics 替代方案吗？OpenPanel 提供产品分析、用户识别和自托管，并支持更长的数据保留期。开源、隐私优先，且可免费开始使用。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Simple Analytics 替代方案",
+    "subheading": "喜欢 Simple Analytics 对隐私的重视和简洁的仪表盘？OpenPanel 增加了产品分析能力——漏斗、留存、分群和用户识别——并提供可免费自托管、完整且无限的数据保留。",
+    "badges": [
+      "开源",
+      "隐私优先",
+      "可自托管",
+      "产品分析"
+    ]
+  },
+  "competitor": {
+    "name": "Simple Analytics",
+    "logo": "/logos/simple-analytics.svg",
+    "url": "https://simpleanalytics.com",
+    "short_description": "以隐私为重点的网页分析，带有 AI 助手、简洁设计以及位于荷兰的托管。",
+    "founded": 2018,
+    "headquarters": "荷兰阿姆斯特丹"
+  },
+  "overview": {
+    "title": "为什么考虑用 OpenPanel 替代 Simple Analytics？",
+    "paragraphs": [
+      "Simple Analytics 名副其实——它是一款简洁、注重隐私的网页分析工具，总部位于荷兰，并带有一个贴心的 AI 助手功能。对于只需要基础流量指标且对隐私有强要求的团队来说，它表现不错。但它只专注于网页场景，而且免费层的数据保留期有限（只有 30 天），这会给那些在构建产品而非内容站点的团队留下缺口。",
+      "OpenPanel 提供相同的隐私优先基础——无 Cookie 跟踪、无需同意横幅、欧盟数据处理——同时补足了 Simple Analytics 所缺少的产品分析深度。漏斗、留存分析、分群拆分和单个用户画像，让你不仅能了解流量规模，还能理解用户随着时间如何实际与你的产品互动。",
+      "数据保留是 OpenPanel 更进一步的另一个方面。Simple Analytics 对免费用户只保留 30 天历史数据，而 OpenPanel 在所有付费方案中都提供完整的数据保留——自托管时还可免费获得无限保留。自托管是一个关键差异点——Simple Analytics 只能使用云服务，而 OpenPanel 可以通过 Docker Compose 部署到你自己的基础设施上，实现完全的数据所有权。",
+      "如果你一直对 Simple Analytics 的隐私方式很满意，但现在需要更深入的用户行为洞察、通过原生 SDK 支持移动应用，或者希望通过免费自托管获得无限数据保留，那么 OpenPanel 是一个自然的升级选择。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Simple Analytics：哪个更适合你？",
+    "intro": "两者都是注重隐私的分析平台。Simple Analytics 专注于简单的网页流量指标。OpenPanel 则增加了带用户识别和自托管的产品分析能力。",
+    "one_liner": "Simple Analytics 擅长借助 AI 助手提供简单的网页统计；OpenPanel 则增加了产品分析、自托管，以及在自托管时的无限数据保留。",
+    "best_for_openpanel": [
+      "需要用户级分析和留存跟踪的 SaaS 产品",
+      "希望通过自托管实现完整数据控制的团队",
+      "需要通过免费自托管获得无限数据保留（而不是 30 天）的项目",
+      "需要原生 iOS、Android、React Native、Flutter SDK 的移动应用开发者"
+    ],
+    "best_for_competitor": [
+      "只想要流量统计的简单内容站点和博客",
+      "重视 AI 助手、希望通过对话方式查询分析数据的团队",
+      "希望使用 Mini Websites 功能查看确切来源页面的用户",
+      "优先考虑仅在荷兰/欧盟托管数据的组织"
+    ]
+  },
+  "highlights": {
+    "title": "关键差异一览",
+    "intro": "以下是 OpenPanel 和 Simple Analytics 在关键因素上的对比。",
+    "items": [
+      {
+        "label": "分析深度",
+        "openpanel": "网页 + 产品分析",
+        "competitor": "仅网页分析",
+        "notes": "OpenPanel 将网页分析与产品分析结合在一起，包括漏斗、留存、分群和用户画像。Simple Analytics 专注于简单的网站流量指标和基础目标跟踪。"
+      },
+      {
+        "label": "自托管",
+        "openpanel": "支持完整自托管",
+        "competitor": "仅云端（无自托管选项）",
+        "notes": "OpenPanel 通过 Docker Compose 提供完整自托管，并支持一条命令完成设置。Simple Analytics 仅提供云服务，没有自托管选项。"
+      },
+      {
+        "label": "数据保留",
+        "openpanel": "无限（自托管），付费云端为完整保留",
+        "competitor": "免费层仅保留 30 天",
+        "notes": "OpenPanel 在自托管时保留无限数据（免费），并在每个付费云方案中提供完整保留。Simple Analytics 的免费层会自动删除 30 天前的数据。"
+      },
+      {
+        "label": "用户识别",
+        "openpanel": "是 - 跟踪单个用户",
+        "competitor": "否 - 仅匿名汇总",
+        "notes": "OpenPanel 允许你跨会话识别并跟踪单个用户。Simple Analytics 使用匿名化，不跟踪个人。"
+      },
+      {
+        "label": "AI 助手",
+        "openpanel": "即将推出",
+        "competitor": "是 - 可与分析数据对话",
+        "notes": "Simple Analytics 提供 AI 助手，可通过对话与你的分析数据交互并获取洞察。OpenPanel 正在开发类似功能。"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能对比",
+    "intro": "两者都注重隐私，但能力和功能集不同。",
+    "groups": [
+      {
+        "group": "网页分析",
+        "features": [
+          {
+            "name": "页面浏览量和访客",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "流量来源",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都跟踪引荐来源和流量来源"
+          },
+          {
+            "name": "地理数据",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Simple Analytics 使用时区而不是 IP 进行定位"
+          },
+          {
+            "name": "设备与浏览器",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "UTM 活动跟踪",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "实时仪表盘",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "产品分析",
+        "features": [
+          {
+            "name": "自定义事件跟踪",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都支持自定义事件"
+          },
+          {
+            "name": "漏斗分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics 只有基础目标，没有多步骤漏斗"
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics 的匿名模型不支持留存"
+          },
+          {
+            "name": "用户画像",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics 有意不跟踪单个用户"
+          },
+          {
+            "name": "分群分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics 仅提供汇总数据"
+          },
+          {
+            "name": "用户路径分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics 显示热门页面，但不显示用户旅程"
+          }
+        ]
+      },
+      {
+        "group": "高级功能",
+        "features": [
+          {
+            "name": "A/B 测试",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics 仅用于分析，不提供实验功能"
+          },
+          {
+            "name": "AI 聊天助手",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Simple Analytics AI 可让你与分析数据对话"
+          },
+          {
+            "name": "邮件报告",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Simple Analytics 提供定时邮件报告。OpenPanel 不提供——它通过 Slack、Discord、webhook 和应用内发送实时提醒。"
+          },
+          {
+            "name": "仪表盘分享",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都支持公开和私有仪表盘分享"
+          },
+          {
+            "name": "Google Analytics 导入",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Simple Analytics 提供 GA 导入工具"
+          },
+          {
+            "name": "广告拦截器绕过",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Simple Analytics 需要 Team 方案才能使用该功能"
+          }
+        ]
+      },
+      {
+        "group": "隐私与合规",
+        "features": [
+          {
+            "name": "默认无 Cookie",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者默认都不使用 Cookie"
+          },
+          {
+            "name": "无需同意横幅",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都声称基础分析无需同意"
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都按 GDPR 合规要求设计"
+          },
+          {
+            "name": "欧盟数据托管",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Simple Analytics 的数据从不离开荷兰/欧盟"
+          },
+          {
+            "name": "自托管选项",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics 仅提供云服务"
+          },
+          {
+            "name": "符合 HIPAA",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Simple Analytics 声称符合 HIPAA（不收集 PHI）"
+          }
+        ]
+      },
+      {
+        "group": "集成",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Simple Analytics 提供 Stats API 和 Export API"
+          },
+          {
+            "name": "数据导出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都支持 CSV 导出"
+          },
+          {
+            "name": "WordPress 插件",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都有 WordPress 集成"
+          },
+          {
+            "name": "NPM/JavaScript SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都提供 JavaScript 集成选项"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技术对比",
+    "intro": "对于评估分析工具的开发者，这里是技术层面的拆解。",
+    "items": [
+      {
+        "label": "SDK 大小",
+        "openpanel": "2.3 KB（gzip 后）",
+        "competitor": "1.9 KB（light）/ 3.7 KB（full）gzip 后",
+        "notes": null
+      },
+      {
+        "label": "平台",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Astro",
+          "Remix",
+          "React Native",
+          "Flutter",
+          "iOS (Swift)",
+          "Android (Kotlin)",
+          "Node.js",
+          "Python",
+          "Ruby",
+          "Rust",
+          "Java",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript（浏览器）",
+          "WordPress",
+          "Webflow",
+          "Squarespace",
+          "WIX",
+          "Ghost",
+          "Cloudflare",
+          "Google Tag Manager",
+          "Looker Studio",
+          "Power BI"
+        ],
+        "notes": null
+      },
+      {
+        "label": "开源",
+        "openpanel": "是 - AGPL-3.0",
+        "competitor": "否 - 闭源（仅跟踪脚本为 MIT）",
+        "notes": "Simple Analytics 是闭源的（仅其 GitHub 上的跟踪脚本采用 MIT 许可证）"
+      },
+      {
+        "label": "自托管",
+        "openpanel": "Docker Compose，引导式设置向导",
+        "competitor": "不可用（仅云服务）",
+        "notes": null
+      },
+      {
+        "label": "数据库",
+        "openpanel": "ClickHouse",
+        "competitor": "专有（托管在荷兰的 Worldstream/Leaseweb 服务器上）",
+        "notes": null
+      },
+      {
+        "label": "数据保留",
+        "openpanel": "无限（自托管），可配置（云端）",
+        "competitor": "30 天（免费），3 年（Simple），5 年（Team）",
+        "notes": null
+      },
+      {
+        "label": "语言",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "未知（闭源）",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "价格对比",
+    "intro": "Simple Analytics 有免费层，但数据保留有限。OpenPanel 提供免费自托管和完整保留，以及实惠的云端定价。",
+    "openpanel": {
+      "model": "基于事件，透明定价",
+      "description": "透明定价从每月 2.50 美元起，可处理 5,000 个事件，并提供 30 天免费试用。每个层级都包含所有功能。可免费自托管，支持无限事件和完整数据保留。"
+    },
+    "competitor": {
+      "model": "基于数据点，免费层有限",
+      "description": "免费：无限页面浏览量、30 天保留、5 个站点、1 个用户。Simple（每月 15 美元）：10 个站点、3 年保留。Team（每月 40 美元）：20 个站点、5 年保留、2 名以上用户、导出 API。非营利组织享受 50% 折扣。",
+      "free_tier": "永久免费 - 无限页面浏览量（公平使用）、30 天保留",
+      "pricing_url": "https://simpleanalytics.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "从 Simple Analytics 迁移到 OpenPanel",
+    "intro": "两者都使用轻量脚本和简单事件跟踪，因此迁移很直接。",
+    "difficulty": "easy",
+    "estimated_time": "30 分钟到 2 小时",
+    "steps": [
+      {
+        "title": "安装 OpenPanel SDK",
+        "description": "将 OpenPanel SDK 添加到你的应用中。两者都使用轻量脚本，因此切换很顺畅。"
+      },
+      {
+        "title": "映射事件",
+        "description": "Simple Analytics 的自定义事件可以直接转换为 OpenPanel 的 op.track() 调用。"
+      },
+      {
+        "title": "设置用户识别（新增）",
+        "description": "与 Simple Analytics 不同，OpenPanel 可以识别用户。添加 op.identify() 调用，即可解锁留存、分群和用户画像。"
+      },
+      {
+        "title": "配置产品分析（新增）",
+        "description": "设置漏斗、留存报告和分群。这些功能在 Simple Analytics 中不可用。"
+      },
+      {
+        "title": "移除 Simple Analytics 脚本",
+        "description": "验证完成后，移除 Simple Analytics 跟踪脚本。两者都不使用 Cookie，因此无需更改同意设置。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "两者都使用简单的事件跟踪 API。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "大多数团队会先从 OpenPanel 重新开始，并在短时间内让两个工具并行运行。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 Simple Analytics 更适合的场景",
+    "intro": "当你需要产品分析、自托管，或通过免费自托管获得无限数据保留时，选择 OpenPanel。",
+    "items": [
+      {
+        "title": "需要用户分析的 SaaS 产品",
+        "description": "Simple Analytics 只显示汇总的网站流量。如果你需要了解产品内的单个用户旅程、留存和行为，OpenPanel 在保持隐私友好的同时补足了这些能力。",
+        "icon": "users"
+      },
+      {
+        "title": "想要自托管的团队",
+        "description": "Simple Analytics 仅提供云服务，没有自托管选项。如果数据主权或合规要求意味着你需要自己托管分析系统，OpenPanel 通过 Docker Compose 提供完整自托管：一个命令的 ./setup 向导会引导你完成配置，并在几分钟内把整套系统启动起来。",
+        "icon": "server"
+      },
+      {
+        "title": "需要更长数据保留的项目",
+        "description": "Simple Analytics 的免费层只保留 30 天数据。如果你需要在预算有限的情况下保留历史数据进行趋势分析，OpenPanel 通过免费自托管提供无限保留，并在每个付费云方案中提供完整保留。",
+        "icon": "database"
+      },
+      {
+        "title": "移动应用分析",
+        "description": "Simple Analytics 面向网站设计，不提供原生移动 SDK。OpenPanel 提供原生 iOS、Android、React Native 和 Flutter SDK，并具备完整的产品分析能力。",
+        "icon": "smartphone"
+      },
+      {
+        "title": "需要漏斗分析的团队",
+        "description": "Simple Analytics 只有基础目标，不提供多步骤漏斗分析。如果理解转化路径很重要，OpenPanel 可提供详细的漏斗可视化。",
+        "icon": "filter"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于从 Simple Analytics 切换到 OpenPanel 的常见问题。",
+    "items": [
+      {
+        "question": "OpenPanel 和 Simple Analytics 一样注重隐私吗？",
+        "answer": "是的！两者默认都不使用 Cookie，也不需要同意横幅。关键区别在于 OpenPanel 允许为产品分析进行可选的用户识别，而 Simple Analytics 严格匿名。你可以控制是否在 OpenPanel 中识别用户。"
+      },
+      {
+        "question": "为什么要从 Simple Analytics 切换到 OpenPanel？",
+        "answer": "团队通常在需要以下能力时切换：1）产品分析（漏斗、留存、分群），2）用户识别，3）自托管选项，4）通过免费自托管获得无限数据保留，或 5）原生移动 SDK。Simple Analytics 在简单网页分析方面很优秀，但不提供这些能力。"
+      },
+      {
+        "question": "Simple Analytics 有免费层吗？",
+        "answer": "有，但有一定限制。Simple Analytics 提供永久免费方案，支持无限页面浏览量（公平使用），但只有 30 天数据保留和基础功能。OpenPanel 没有免费的云端方案（30 天试用期，之后从每月 2.50 美元起，支持 5,000 个事件），但可免费自托管，提供无限事件、完整数据保留和所有功能。"
+      },
+      {
+        "question": "我可以自托管 Simple Analytics 吗？",
+        "answer": "不可以。Simple Analytics 是云服务，没有自托管选项。他们将所有数据托管在荷兰的欧盟服务器上。如果你需要完全的数据控制，OpenPanel 通过 Docker Compose 提供完整自托管，并支持一条命令完成设置。"
+      },
+      {
+        "question": "哪个跟踪脚本更小？",
+        "answer": "Simple Analytics 提供两个脚本版本：'light' 版本为 1.9KB，完整版本为 3.7KB（gzip 后）。OpenPanel 的脚本为 2.3KB。它们都比 Google Analytics（45KB+）小得多。"
+      },
+      {
+        "question": "Simple Analytics 能跟踪移动应用吗？",
+        "answer": "原生上不行。Simple Analytics 是为网页分析设计的，不提供移动 SDK。他们有一个 iOS 应用用于查看仪表盘，但不能用于跟踪移动应用用户。OpenPanel 提供原生 iOS、Android、React Native 和 Flutter SDK。"
+      },
+      {
+        "question": "从 Simple Analytics 切换后我会失去什么？",
+        "answer": "Simple Analytics 有一个 AI 聊天助手，可让你通过对话方式查询分析数据——OpenPanel 目前还没有这个功能。他们还有 Google Analytics 导入工具、显示引荐页面的 'Mini Websites' 功能，以及用于查看仪表盘的 iOS 应用。不过，你会获得 Simple Analytics 不提供的产品分析、自托管和用户识别能力。"
+      },
+      {
+        "question": "对于博客/内容站点，Simple Analytics 和 OpenPanel 哪个更好？",
+        "answer": "对于只需要流量统计的简单内容站点，Simple Analytics 的简洁性和 AI 助手非常出色。他们的 Mini Websites 功能也很独特，可以准确查看哪些推文或页面链接到了你。如果你在运营 SaaS、电商或任何需要理解用户行为的产品，OpenPanel 的产品分析功能会更有价值。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "网站分析设置",
+        "url": "/zh-CN/guides/website-analytics-setup"
+      },
+      {
+        "title": "从 Google Analytics 迁移",
+        "url": "/zh-CN/guides/migrate-from-google-analytics"
+      },
+      {
+        "title": "Next.js 分析设置",
+        "url": "/zh-CN/guides/nextjs-analytics"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳开源网页分析工具",
+        "url": "/zh-CN/articles/self-hosted-web-analytics"
+      },
+      {
+        "title": "无 Cookie 分析",
+        "url": "/zh-CN/articles/cookieless-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Plausible",
+        "url": "/compare/plausible-alternative"
+      },
+      {
+        "name": "Fathom",
+        "url": "/compare/fathom-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "开始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

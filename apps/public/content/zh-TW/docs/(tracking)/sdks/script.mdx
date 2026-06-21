@@ -1,0 +1,200 @@
+---
+title: Script Tag（腳本標籤）
+description: OpenPanel Web SDK 可讓你透過簡單的 script 標籤來追蹤網站上的使用者行為。本指南提供在專案中安裝與使用 Web SDK 的說明。
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+
+## 安裝
+
+只要插入這段片段，並將 `YOUR_CLIENT_ID` 替換為你的 client id 即可。
+
+```html title="index.html" /clientId: 'YOUR_CLIENT_ID'/
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+#### 選項
+
+<CommonSdkConfig />
+<WebSdkConfig />
+
+## 使用方式
+
+### 追蹤事件
+
+你可以透過兩種不同方式追蹤事件：直接呼叫 `window.op('track')`，或是在 HTML 元素上加上 `data-track` 屬性。
+
+```html title="index.html"
+<button type="button" onclick="window.op('track', 'my_event', { foo: 'bar' })">
+  追蹤事件
+</button>
+```
+
+```html title="index.html"
+<button type="button" data-track="my_event" data-foo="bar">追蹤事件</button>
+```
+
+### 識別使用者
+
+要識別使用者，請使用唯一識別碼呼叫 `window.op('identify')` 方法。
+
+```js title="main.js"
+window.op('identify', {
+  profileId: '123', // 必填
+  firstName: 'Joe',
+  lastName: 'Doe',
+  email: 'joe@doe.com',
+  properties: {
+    tier: 'premium',
+  },
+});
+```
+
+### 設定全域屬性
+
+設定會隨每個事件一起送出的屬性：
+
+```js title="main.js"
+window.op('setGlobalProperties', {
+  app_version: '1.0.2',
+  environment: 'production',
+});
+```
+
+### 遞增屬性
+
+對使用者 profile 上的數值屬性做遞增。
+
+- `value` 是要遞增的數值。如果未提供，該屬性會遞增 1。
+
+```js title="main.js"
+window.op('increment', {
+  profileId: '1',
+  property: 'visits',
+  value: 1 // optional
+});
+```
+
+### 遞減屬性
+
+對使用者 profile 上的數值屬性做遞減。
+
+- `value` 是要遞減的數值。如果未提供，該屬性會遞減 1。
+
+```js title="main.js"
+window.op('decrement', {
+  profileId: '1',
+  property: 'visits',
+  value: 1 // optional
+});
+```
+
+### 清除使用者資料
+
+清除目前使用者的資料：
+
+```js title="main.js"
+window.op('clear');
+```
+
+## 進階使用
+
+### 過濾事件
+
+你可以在 `init` 方法中加入 `filter` 屬性來過濾事件。
+
+以下範例示範如何停用那些在 local storage 中有 `disable_tracking` 項目的使用者追蹤。
+
+```js title="main.js"
+window.op('init', {
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+  filter: () => localStorage.getItem('disable_tracking') === undefined,
+});
+```
+
+### 搭配 NPM 使用 Web SDK
+
+<Steps>
+#### 步驟 1：安裝 SDK
+
+```npm
+npm install @openpanel/web
+```
+
+#### 步驟 2：初始化 SDK
+
+```js title="op.js"
+import { OpenPanel } from '@openpanel/web';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+#### 步驟 3：使用 SDK
+
+```js title="main.js"
+import { op } from './op.js';
+
+op.track('my_event', { foo: 'bar' });
+```
+</Steps>
+
+### Typescript
+
+使用 SDK 時遇到 ts 錯誤嗎？你可以在專案中加入自訂型別定義檔。
+
+#### 簡單做法
+
+直接把這段程式碼貼到任一 `.d.ts` 檔案中。
+
+```ts title="op.d.ts"
+declare global {
+  interface Window {
+    op: {
+      q?: string[][];
+      (...args: [
+        'init' | 'track' | 'identify' | 'setGlobalProperties' | 'increment' | 'decrement' | 'clear',
+        ...any[]
+      ]): void;
+    };
+  }
+}
+```
+
+#### 嚴格型別（來自 sdk）
+
+<Steps>
+##### 步驟 1：安裝 SDK
+
+```npm
+npm install @openpanel/web
+```
+
+##### 步驟 2：建立型別定義檔
+
+建立一個 `op.d.ts` 檔案，並貼上以下程式碼：
+
+```ts title="op.d.ts"
+/// <reference types="@openpanel/web" />
+```
+</Steps>

@@ -1,0 +1,36 @@
+---
+title: 用戶端
+description: 管理 OpenPanel 專案的 API 用戶端。使用不同存取層級建立、讀取、更新與刪除用戶端。
+---
+
+## 身分驗證
+
+需要 `root` 用戶端。請參閱 [身分驗證](/zh-TW/docs/api/authentication) 指南。
+
+## 基礎 URL
+
+```
+https://api.openpanel.dev/manage/clients
+```
+
+## 用戶端類型
+
+| 類型 | 說明 |
+|------|-------------|
+| `write` | 匯入事件與使用者資料更新 |
+| `read` | 查詢分析資料（insights、export） |
+| `root` | 完整存取權 — 管理 API、讀取與寫入 |
+
+## 端點
+
+| 方法 | 路徑 | 說明 |
+|--------|------|-------------|
+| `GET` | `/manage/clients` | 列出所有用戶端（可選擇依 `projectId` 篩選） |
+| `GET` | `/manage/clients/{id}` | 取得特定用戶端 |
+| `POST` | `/manage/clients` | 建立新的用戶端 |
+| `PATCH` | `/manage/clients/{id}` | 更新用戶端名稱 |
+| `DELETE` | `/manage/clients/{id}` | 永久刪除用戶端 |
+
+用戶端密鑰只會在建立時回傳一次，之後無法再次取得。
+
+完整的請求/回應 schema 請參閱 [API 參考](/zh-TW/docs/api-reference)。

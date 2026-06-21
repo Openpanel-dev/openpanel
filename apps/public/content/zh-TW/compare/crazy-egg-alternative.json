@@ -1,0 +1,462 @@
+{
+  "slug": "crazy-egg-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026 年最佳 Crazy Egg 替代方案 - 開源且免費",
+    "description": "正在尋找 Crazy Egg 的替代方案嗎？OpenPanel 不只提供熱點圖，還具備完整的產品分析、漏斗、留存與行動裝置 SDK。開源、可自架，且可免費開始使用。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Crazy Egg 替代方案",
+    "subheading": "取得超越熱點圖的完整產品分析能力。OpenPanel 提供漏斗分析、留存追蹤、行動裝置 SDK 與使用者識別——完全開源且可自架。",
+    "badges": [
+      "開源",
+      "可自架",
+      "行動裝置 SDK",
+      "產品分析"
+    ]
+  },
+  "competitor": {
+    "name": "Crazy Egg",
+    "logo": "/logos/crazy-egg.svg",
+    "url": "https://www.crazyegg.com",
+    "short_description": "具備熱點圖、A/B 測試、問卷與工作階段錄製功能的網站優化平台。由 Neil Patel 與 Hiten Shah 於 2005 年創立。",
+    "founded": 2005,
+    "headquarters": "La Mirada, CA"
+  },
+  "overview": {
+    "title": "為什麼要考慮用 OpenPanel 取代 Crazy Egg？",
+    "paragraphs": [
+      "Crazy Egg 由 Neil Patel 與 Hiten Shah 於 2005 年創立，率先推出網站熱點圖，之後擴展到 A/B 測試、工作階段錄製與問卷。它是知名的視覺化網站優化工具——可了解訪客點擊的位置、捲動的深度，以及哪些頁面元素帶來互動。不過，Crazy Egg 只支援網頁，屬於專有軟體，且專注於視覺優化，而不是產品分析。",
+      "OpenPanel 則滿足不同但可互補的需求。Crazy Egg 幫助你透過視覺回饋優化單一頁面，而 OpenPanel 則透過事件式產品分析，幫助你理解整個使用者旅程。漏斗可以顯示使用者在哪個多步驟流程中流失，留存分析可看出他們是否會回訪，而使用者檔案則讓你追蹤跨工作階段的個別行為。",
+      "對於成長中的團隊來說，技術差異相當顯著。Crazy Egg 只能在雲端使用，沒有自架選項，並且按頁面瀏覽量計費。OpenPanel 則採用 AGPL-3.0 授權的開源模式，透過 Docker 提供完整自架部署，並透過原生 SDK 支援 iOS、Android、React Native 與 Flutter 行動應用程式——這些都是 Crazy Egg 不提供的能力。",
+      "如果你需要的不只是熱點圖，而是想了解使用者實際如何在產品中流動，尤其是在網頁與行動平台之間，OpenPanel 提供的是事件式分析基礎，這是像 Crazy Egg 這類視覺優化工具無法比擬的。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel 與 Crazy Egg：哪個更適合你？",
+    "intro": "Crazy Egg 專注於透過熱點圖與 A/B 測試進行視覺化網站優化。OpenPanel 則專注於支援行動裝置的產品分析。",
+    "one_liner": "OpenPanel 適合產品分析，具備行動裝置 SDK 與自架能力；Crazy Egg 則適合透過熱點圖進行視覺化網站優化。",
+    "best_for_openpanel": [
+      "需要原生 SDK 來分析行動應用程式的團隊",
+      "專注於產品分析（漏斗、留存、分群）",
+      "需要自架以掌握資料所有權的組織",
+      "要求開源以提升透明度",
+      "需要跨平台的使用者層級分析"
+    ],
+    "best_for_competitor": [
+      "需要完整熱點圖來進行視覺分析的團隊",
+      "以 A/B 測試進行網站轉換優化",
+      "網站內問卷與意見回饋蒐集",
+      "建立與管理彈出式 CTA",
+      "不需要行動裝置支援的視覺化網站優化"
+    ]
+  },
+  "highlights": {
+    "title": "重要差異一覽",
+    "intro": "以下是 OpenPanel 與 Crazy Egg 在最重要因素上的比較。",
+    "items": [
+      {
+        "label": "開源",
+        "openpanel": "有（AGPL-3.0）",
+        "competitor": "無（專有）"
+      },
+      {
+        "label": "自架",
+        "openpanel": "有，使用 Docker",
+        "competitor": "無（僅雲端）"
+      },
+      {
+        "label": "行動裝置 SDK",
+        "openpanel": "iOS、Android、React Native、Flutter",
+        "competitor": "僅網頁"
+      },
+      {
+        "label": "熱點圖",
+        "openpanel": "不提供",
+        "competitor": "點擊、捲動、confetti、overlay"
+      },
+      {
+        "label": "A/B 測試",
+        "openpanel": "未內建",
+        "competitor": "具視覺化編輯器與優化功能"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能比較",
+    "intro": "OpenPanel 專注於產品分析；Crazy Egg 專注於視覺化網站優化。",
+    "groups": [
+      {
+        "group": "核心分析",
+        "features": [
+          {
+            "name": "事件追蹤",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Crazy Egg 以頁面瀏覽為主"
+          },
+          {
+            "name": "漏斗",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "使用者檔案",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "分群",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "自訂儀表板",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "即時資料",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "視覺化網站優化",
+        "features": [
+          {
+            "name": "熱點圖",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Crazy Egg 的旗艦功能"
+          },
+          {
+            "name": "捲動圖",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Confetti 報表",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "A/B 測試",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "視覺化編輯器"
+          },
+          {
+            "name": "工作階段錄製",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "彈出式 CTA",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "回饋與問卷",
+        "features": [
+          {
+            "name": "網站內問卷",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "NPS 評分",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "隱私與合規",
+        "features": [
+          {
+            "name": "自架",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "開源",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "免 Cookie 選項",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "符合 HIPAA",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "整合與資料",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Crazy Egg 的 API 有所限制"
+          },
+          {
+            "name": "資料匯出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "行動裝置 SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Crazy Egg 僅支援網頁"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技術比較",
+    "intro": "對於評估分析工具的開發者來說，以下是實作方式的比較。",
+    "items": [
+      {
+        "label": "SDK 大小（JS）",
+        "openpanel": "~2.3 KB gzip 後",
+        "competitor": "非同步 script（影響極小）",
+        "notes": null
+      },
+      {
+        "label": "支援平台",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js"
+        ],
+        "competitor": [
+          "JavaScript（僅網頁）"
+        ],
+        "notes": null
+      },
+      {
+        "label": "開源",
+        "openpanel": "有（AGPL-3.0）",
+        "competitor": "無",
+        "notes": null
+      },
+      {
+        "label": "自架部署",
+        "openpanel": "Docker Compose、引導式安裝精靈",
+        "competitor": "不提供",
+        "notes": null
+      },
+      {
+        "label": "資料庫",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "專有",
+        "notes": null
+      },
+      {
+        "label": "資料保留",
+        "openpanel": "無限制（自架）",
+        "competitor": "6 個月到 2 年",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "價格比較",
+    "intro": "兩種不同的定價模式——OpenPanel 透明的分級事件計費（提供 30 天免費試用或免費自架）vs Crazy Egg 以頁面瀏覽量計費的方案。",
+    "openpanel": {
+      "model": "以事件計費、透明定價",
+      "description": "每月 $2.50 起可追蹤 5,000 個事件。若自架則可免費使用且事件數無上限。每個方案都包含所有功能。"
+    },
+    "competitor": {
+      "model": "以頁面瀏覽量計費、按年付款",
+      "description": "提供功能受限的免費方案。Starter：每月 $29，可追蹤 5,000 次頁面瀏覽。Plus：每月 $99，可追蹤 150,000 次頁面瀏覽，含 A/B 測試。Enterprise：每月 $599，可追蹤 100 萬次頁面瀏覽。",
+      "free_tier": "有（功能受限）",
+      "pricing_url": "https://www.crazyegg.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "從 Crazy Egg 遷移到 OpenPanel",
+    "intro": "在切換前，請先評估熱點圖與 A/B 測試是否為關鍵需求，因為這些是 Crazy Egg 的核心優勢。",
+    "difficulty": "easy",
+    "estimated_time": "1-2 小時",
+    "steps": [
+      {
+        "title": "安裝 OpenPanel SDK",
+        "description": "將 OpenPanel SDK 加入你的網站。此 SDK 輕量且會以非同步方式載入。"
+      },
+      {
+        "title": "定義事件追蹤策略",
+        "description": "不同於 Crazy Egg 以頁面瀏覽為主，OpenPanel 追蹤的是自訂事件。請使用 `track()` 呼叫定義關鍵動作。"
+      },
+      {
+        "title": "設定使用者識別",
+        "description": "Crazy Egg 追蹤的是匿名工作階段。使用 OpenPanel 時，請透過 `identify()` 識別使用者，以追蹤個別旅程。"
+      },
+      {
+        "title": "建立漏斗與儀表板",
+        "description": "將 Crazy Egg 的轉換追蹤重建為 OpenPanel 漏斗。"
+      },
+      {
+        "title": "移除 Crazy Egg script",
+        "description": "驗證完成後，移除 Crazy Egg 追蹤程式碼。注意：你將失去熱點圖、A/B 測試與問卷功能。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": false,
+      "notes": "追蹤哲學不同：Crazy Egg 偏向頁面瀏覽／視覺化，OpenPanel 則是事件式。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Crazy Egg 資料匯出取決於你的方案。歷史熱點圖資料無法移轉。"
+    }
+  },
+  "use_cases": {
+    "title": "哪些情境下 OpenPanel 比 Crazy Egg 更適合",
+    "intro": "當你需要超越視覺化網站優化的產品分析時，OpenPanel 更能發揮。",
+    "items": [
+      {
+        "title": "行動應用程式分析",
+        "description": "Crazy Egg 只支援網頁。OpenPanel 提供 iOS、Android、React Native 與 Flutter 的原生 SDK。",
+        "icon": "smartphone"
+      },
+      {
+        "title": "超越熱點圖的產品分析",
+        "description": "OpenPanel 提供漏斗分析、留存分群、使用者檔案與路徑分析。",
+        "icon": "chart"
+      },
+      {
+        "title": "需要自架",
+        "description": "Crazy Egg 只能雲端使用。OpenPanel 提供 Docker Compose 部署，讓你完整掌控資料——只要一個指令 `./setup` 的精靈就能引導你完成設定，幾分鐘內啟動整個堆疊。",
+        "icon": "server"
+      },
+      {
+        "title": "需要開源",
+        "description": "在 AGPL-3.0 授權下提供完整原始碼透明度。Crazy Egg 為專有軟體。",
+        "icon": "code"
+      },
+      {
+        "title": "使用者層級分析",
+        "description": "追蹤單一使用者及其跨工作階段的完整旅程。Crazy Egg 專注於彙總的頁面瀏覽資料。",
+        "icon": "users"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於從 Crazy Egg 切換到 OpenPanel 的常見問題。",
+    "items": [
+      {
+        "question": "從 Crazy Egg 換到 OpenPanel 會失去什麼？",
+        "answer": "Crazy Egg 的核心功能是熱點圖、A/B 測試、網站內問卷與彈出式 CTA。OpenPanel 不提供這些功能——它專注於產品分析。"
+      },
+      {
+        "question": "OpenPanel 有像 Crazy Egg 那樣的熱點圖嗎？",
+        "answer": "沒有。OpenPanel 專注於事件式產品分析（漏斗、留存、使用者識別），而不是視覺化網站優化。"
+      },
+      {
+        "question": "價格怎麼比較？",
+        "answer": "Crazy Egg 的價格從每月 $29 起，可追蹤 5,000 次頁面瀏覽（按年付款）。OpenPanel 提供分級定價，從每月 $2.50 起可追蹤 5,000 個事件，例如 10 萬事件每月 $20，並提供 30 天免費試用——或可免費自架。以類似流量來看，OpenPanel 通常更划算。"
+      },
+      {
+        "question": "我可以用 Crazy Egg 追蹤行動應用程式嗎？",
+        "answer": "不行。Crazy Egg 是專為網站分析設計。OpenPanel 則提供 iOS、Android、React Native 與 Flutter 的原生 SDK。"
+      },
+      {
+        "question": "OpenPanel 有像 Crazy Egg 那樣的 A/B 測試嗎？",
+        "answer": "沒有。Crazy Egg 將視覺化 A/B 測試編輯器作為核心功能。OpenPanel 專注於分析，而不是實驗。"
+      },
+      {
+        "question": "Crazy Egg 是開源的嗎？",
+        "answer": "不是。Crazy Egg 是專有閉源軟體。OpenPanel 則在 AGPL-3.0 授權下完全開源。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "網站分析設定",
+        "url": "/zh-TW/guides/website-analytics-setup"
+      },
+      {
+        "title": "追蹤自訂事件",
+        "url": "/zh-TW/guides/track-custom-events"
+      },
+      {
+        "title": "電商事件追蹤",
+        "url": "/zh-TW/guides/ecommerce-tracking"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳開源網站分析工具",
+        "url": "/zh-TW/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Microsoft Clarity",
+        "url": "/zh-TW/compare/microsoft-clarity-alternative"
+      },
+      {
+        "name": "FullStory",
+        "url": "/zh-TW/compare/fullstory-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "開始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

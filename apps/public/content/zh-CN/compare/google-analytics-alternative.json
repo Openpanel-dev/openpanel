@@ -1,0 +1,590 @@
+{
+  "slug": "google-analytics-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026 年最佳开源 Google Analytics 替代方案 - 免费且隐私友好",
+    "description": "从 Google Analytics 切换到 OpenPanel——开源、无 Cookie、符合 GDPR 的分析工具，支持欧盟数据托管。无需同意横幅。可免费自托管，或从每月 2.50 美元起开始使用。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "开源的 Google Analytics 替代方案",
+    "subheading": "OpenPanel 是一款开源、隐私优先的 Google Analytics 替代方案，将网站分析与产品分析集成在一个工具中。无 Cookie 跟踪、欧盟数据托管，以及不会拖慢你网站速度的 2.3 KB SDK。",
+    "badges": [
+      "开源（AGPL-3.0）",
+      "无 Cookie 跟踪",
+      "仅欧盟数据托管",
+      "可免费自托管",
+      "2.3 KB SDK"
+    ]
+  },
+  "competitor": {
+    "name": "Google Analytics",
+    "logo": "/logos/google-analytics.svg",
+    "url": "https://analytics.google.com",
+    "short_description": "来自 Google 的免费网站分析平台，可跟踪网站流量、用户行为和转化，并与 Google 广告生态系统深度集成。",
+    "founded": 2005,
+    "headquarters": "Mountain View, CA"
+  },
+  "overview": {
+    "title": "为什么团队正在从 Google Analytics 切换到 OpenPanel",
+    "paragraphs": [
+      "自 2005 年以来，Google Analytics 一直是默认的分析工具。但强制迁移到 GA4 从根本上改变了这款产品——新的基于事件的模型学习曲线陡峭，对大多数用户来说界面都很混乱，而且免费套餐的数据保留期被缩短到了仅 14 个月。与此同时，GDPR 和《电子隐私指令》等隐私法规意味着 GA4 需要 Cookie 同意横幅，这会损害转化率并惹恼访客。",
+      "OpenPanel 是为 GA4 之后的时代而构建的。它在 AGPL-3.0 许可下完全开源，这意味着你可以检查、修改并自托管整个代码库。与 Google Analytics 不同，OpenPanel 在不使用 Cookie 的情况下跟踪访客——无需同意横幅，并且开箱即符合 GDPR 要求。你的数据保留在瑞典的欧盟服务器上，或者你也可以在自己的基础设施上自托管，实现完全的数据主权。",
+      "GA4 将功能拆分在免费版和企业版之间（GA4 360 每年 50,000 美元以上），而 OpenPanel 将所有功能打包在一起：实时仪表盘、漏斗分析、留存分析、分群、用户档案、自定义事件和收入跟踪。其 SDK 仅 2.3 KB（gzip 后）——比 Google 的 gtag.js 小 13 倍以上——可直接提升你的 Core Web Vitals 和页面加载速度。",
+      "OpenPanel 还超越了 GA4 免费版提供的能力：内置 A/B 测试、无限数据保留（自托管时）、不进行数据抽样，以及可通过 ClickHouse 直接用 SQL 访问分析数据。如果你不高度依赖 Google Ads 归因，OpenPanel 能以极低的复杂度为你带来更好的分析和更好的隐私保护。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Google Analytics：哪个更适合你？",
+    "intro": "Google Analytics 和 OpenPanel 采用了截然不同的方法。GA4 更重视与 Google Ads 的集成和营销归因；OpenPanel 则优先考虑隐私、简洁性和数据所有权。",
+    "one_liner": "OpenPanel 是开源且隐私优先的；Google Analytics 虽然免费，但会把你的数据发送给 Google，并且需要 Cookie。",
+    "best_for_openpanel": [
+      "重视隐私、希望在不使用 Cookie 或同意横幅的情况下获得分析能力的团队",
+      "需要符合 GDPR 且在欧洲托管数据的欧盟企业",
+      "想要完全自托管并完全拥有分析数据的开发者",
+      "对 GA4 复杂性感到困扰、希望获得更简单且可执行洞察的团队",
+      "关注性能的网站——2.3 KB SDK vs Google 的 30+ KB",
+      "需要在一个工具中同时获得网站分析和产品分析的团队"
+    ],
+    "best_for_competitor": [
+      "深度使用 Google Ads、需要原生转化跟踪和归因的团队",
+      "拥有专门分析团队、运行复杂多触点归因模型的大型企业",
+      "使用完整 Google Marketing Platform（Search Console、Ads、Tag Manager）的组织",
+      "完全没有分析预算、并接受 Google 隐私权衡以换取免费产品的团队"
+    ]
+  },
+  "highlights": {
+    "title": "关键差异一览",
+    "intro": "以下是 OpenPanel 与 Google Analytics 在选择分析平台时最重要的因素上的对比。",
+    "items": [
+      {
+        "label": "开源",
+        "openpanel": "是——AGPL-3.0 许可，完整源代码在 GitHub 上",
+        "competitor": "否——Google 的专有闭源产品"
+      },
+      {
+        "label": "价格",
+        "openpanel": "云端起价每月 2.50 美元，或免费自托管且事件数无限",
+        "competitor": "有限制的免费套餐，GA4 360 起价每年 50,000 美元"
+      },
+      {
+        "label": "Cookie",
+        "openpanel": "默认无 Cookie——无需同意横幅",
+        "competitor": "在 GDPR 下需要第一方 Cookie 和同意横幅"
+      },
+      {
+        "label": "数据托管",
+        "openpanel": "仅欧盟服务器（瑞典）或可在任何地方自托管",
+        "competitor": "在 Google 的美国服务器上处理"
+      },
+      {
+        "label": "SDK 大小",
+        "openpanel": "2.3 KB（gzip 后）——对页面速度影响极小",
+        "competitor": "30+ KB（gzip 后）——影响 Core Web Vitals"
+      },
+      {
+        "label": "数据保留",
+        "openpanel": "无限制（自托管）或按方案（云端）",
+        "competitor": "免费套餐 2–14 个月，GA4 360 最多 50 个月"
+      },
+      {
+        "label": "数据抽样",
+        "openpanel": "从不——每个事件都被准确计数",
+        "competitor": "是——免费套餐在高流量情况下会抽样数据"
+      },
+      {
+        "label": "自托管",
+        "openpanel": "是——Docker Compose、引导式设置向导",
+        "competitor": "不可用"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "按功能对比",
+    "intro": "OpenPanel 结合了网站分析与产品分析。Google Analytics 侧重于 Google 生态中的营销归因和流量分析。",
+    "groups": [
+      {
+        "group": "网站分析",
+        "features": [
+          {
+            "name": "页面浏览量与访客",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "流量来源与引荐",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "地理数据",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "设备与浏览器细分",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "UTM 活动跟踪",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "实时仪表盘",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel 显示实时事件；GA4 实时数据仅限最近 30 分钟"
+          },
+          {
+            "name": "外链跟踪",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel 可通过 trackOutgoingLinks 选项自动跟踪"
+          }
+        ]
+      },
+      {
+        "group": "产品分析",
+        "features": [
+          {
+            "name": "自定义事件跟踪",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel 使用更简单的 track() API，而不是 GA4 的 gtag 事件模型"
+          },
+          {
+            "name": "漏斗分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GA4 的漏斗需要通过 Explorations；OpenPanel 内置漏斗构建器"
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "用户档案与识别",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel 具有丰富的用户档案和会话历史；GA4 使用 User Properties"
+          },
+          {
+            "name": "分群分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "收入与电商跟踪",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "转化跟踪",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "高级功能",
+        "features": [
+          {
+            "name": "A/B 测试",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Google Optimize 已于 2023 年 9 月停止服务——没有内置替代品"
+          },
+          {
+            "name": "自定义仪表盘",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GA4 使用复杂的 Explorations；OpenPanel 具有拖放式仪表盘构建器"
+          },
+          {
+            "name": "AI 洞察",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "归因建模",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GA4 具备数据驱动归因——这是其对广告主最强的优势"
+          },
+          {
+            "name": "警报与通知",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel 支持 Webhook、Slack、Discord 和电子邮件提醒"
+          },
+          {
+            "name": "原始数据的 SQL 访问",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel 提供直接的 ClickHouse SQL 访问；GA4 需要 BigQuery 导出（50k+ 套餐）"
+          }
+        ]
+      },
+      {
+        "group": "隐私与合规",
+        "features": [
+          {
+            "name": "无 Cookie 跟踪",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GA4 需要第一方 Cookie 才能进行会话和用户跟踪"
+          },
+          {
+            "name": "无需同意横幅",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GA4 在 GDPR 和《电子隐私指令》下需要同意"
+          },
+          {
+            "name": "欧盟数据驻留",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel 托管在瑞典；GA4 在美国服务器上处理数据"
+          },
+          {
+            "name": "IP 匿名化",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都会匿名化 IP；OpenPanel 使用每日轮换盐值以增强隐私"
+          },
+          {
+            "name": "自托管选项",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "在你的基础设施上自托管时可实现完全的数据主权"
+          },
+          {
+            "name": "开源代码",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel 采用 AGPL-3.0；你可以审计每一行代码"
+          },
+          {
+            "name": "可提供 DPA",
+            "openpanel": "按需提供",
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "集成与生态系统",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "数据导出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GA4 需要 360（50k+）才能完整导出到 BigQuery；OpenPanel 可自由导出"
+          },
+          {
+            "name": "Google Ads 集成",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GA4 最强的功能——原生 Google Ads 转化跟踪"
+          },
+          {
+            "name": "Google Search Console",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "两者都可与 Google Search Console 集成以获取搜索数据"
+          },
+          {
+            "name": "Webhooks",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "向任何端点发送实时事件数据"
+          },
+          {
+            "name": "WordPress 插件",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel 提供官方 WordPress 插件，便于快速设置"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "开发者技术对比",
+    "intro": "对于评估分析工具的开发者来说，OpenPanel 与 Google Analytics 在技术实现上的差异非常显著。",
+    "items": [
+      {
+        "label": "SDK 大小（JavaScript）",
+        "openpanel": "~2.3 KB（gzip 后）",
+        "competitor": "~30+ KB（gzip 后）（gtag.js + analytics.js）",
+        "notes": "OpenPanel 的 SDK 小 13 倍——可直接提升 Core Web Vitals 和页面加载速度"
+      },
+      {
+        "label": "支持的 SDK",
+        "openpanel": [
+          "JavaScript/Script tag",
+          "React",
+          "Next.js",
+          "Vue",
+          "Astro",
+          "Remix",
+          "Node.js",
+          "Express",
+          "Python",
+          "Swift (iOS)",
+          "Kotlin (Android)",
+          "React Native"
+        ],
+        "competitor": [
+          "JavaScript (gtag.js)",
+          "iOS（通过 Firebase SDK）",
+          "Android（通过 Firebase SDK）",
+          "Flutter",
+          "Unity",
+          "AMP",
+          "Google Tag Manager"
+        ],
+        "notes": "OpenPanel 为现代框架提供原生 SDK；GA4 移动端跟踪需要体积较大的 Firebase SDK"
+      },
+      {
+        "label": "开源",
+        "openpanel": "是——AGPL-3.0，完整源代码在 GitHub 上",
+        "competitor": "否——Google 的专有产品",
+        "notes": "OpenPanel 可被审计、分叉和自托管"
+      },
+      {
+        "label": "自托管部署",
+        "openpanel": "Docker Compose、引导式设置向导",
+        "competitor": "不可用",
+        "notes": "使用我们的设置脚本，自托管 OpenPanel 大约需要 15 分钟"
+      },
+      {
+        "label": "数据库与数据访问",
+        "openpanel": "ClickHouse（分析）+ PostgreSQL（配置）——可直接 SQL 访问",
+        "competitor": "Google 的专有基础设施——无直接访问",
+        "notes": "OpenPanel 让你可以直接通过 SQL 访问原始事件数据"
+      },
+      {
+        "label": "数据保留",
+        "openpanel": "自托管时无限制，云端按方案而定",
+        "competitor": "2–14 个月（免费套餐），最多 50 个月（GA4 360，每年 50k+ 美元）",
+        "notes": "GA4 严格的数据保留限制是团队迁移的常见原因"
+      },
+      {
+        "label": "数据抽样",
+        "openpanel": "从不——100% 准确的数据",
+        "competitor": "是——GA4 免费套餐在高流量情况下会抽样",
+        "notes": "数据抽样意味着你的报告可能无法反映实际数字"
+      }
+    ]
+  },
+  "pricing": {
+    "title": "价格对比",
+    "intro": "Google Analytics 以你访客的数据作为交换，宣称是“免费”的。OpenPanel 提供透明定价，并支持免费自托管选项。",
+    "openpanel": {
+      "model": "基于事件的透明定价",
+      "description": "云托管起价为每月 2.50 美元，可处理 5,000 个事件。100,000 个事件的费用为每月 20 美元。可免费自托管，事件数无限制且无任何限制。任何套餐都不限制用户、仪表盘、项目或数据保留。"
+    },
+    "competitor": {
+      "model": "免费增值与企业版套餐",
+      "description": "GA4 免费套餐有明显限制：高流量时会进行数据抽样，最长数据保留期为 14 个月，Explorations 功能有限，且无法导出到 BigQuery。GA4 360（企业版）起价每年 50,000 美元，可获得更高的限制、无抽样数据和支持。所谓“免费”套餐由 Google 的广告业务补贴——你的访客数据就是产品本身。",
+      "free_tier": "是（有重大限制和隐私权衡）",
+      "pricing_url": "https://marketingplatform.google.com/about/analytics/"
+    }
+  },
+  "migration": {
+    "title": "如何从 Google Analytics 迁移到 OpenPanel",
+    "intro": "对于大多数网站来说，从 Google Analytics 切换到 OpenPanel 大约需要 45 分钟。OpenPanel 使用与 GA4 类似的基于事件模型，因此迁移非常直接。",
+    "difficulty": "easy",
+    "estimated_time": "30-60 minutes",
+    "steps": [
+      {
+        "title": "将 OpenPanel 脚本与 GA4 并行添加",
+        "description": "在你的网站上安装轻量级的 2.3 KB OpenPanel 脚本。与 GA4 并行运行，这样你可以比较数据。它可以是一个脚本标签，也可以是一个 npm 包。"
+      },
+      {
+        "title": "将你的 GA4 事件映射到 OpenPanel",
+        "description": "OpenPanel 的 track() API 与 GA4 的事件结构非常相似。大多数事件都可以直接转换：gtag('event', 'purchase', {...}) 变为 op.track('purchase', {...})。"
+      },
+      {
+        "title": "设置用户识别",
+        "description": "将 GA4 的 set user_properties 替换为 OpenPanel 的 identify() 方法，以获得更丰富的用户档案、会话历史和属性。"
+      },
+      {
+        "title": "配置仪表盘和漏斗",
+        "description": "在 OpenPanel 的可视化仪表盘构建器中设置你的报告。它比 GA4 的 Explorations 更简单——大多数团队几分钟内就能完成设置。"
+      },
+      {
+        "title": "验证数据并移除 GA4",
+        "description": "在并行跟踪 1-2 周后，对比数据。确认无误后，移除 GA4 脚本。如果同意横幅仅用于分析，你也可以将其移除。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "OpenPanel 的 track() API 与 GA4 的 gtag 事件模型非常接近。自定义事件、电商事件和页面浏览都只需极少修改即可迁移。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Google Analytics 不提供简单的数据导出机制，因此无法直接迁移历史数据。大多数团队会让 OpenPanel 与 GA4 并行运行 1-2 周以验证数据，然后完全切换。你在 Google Analytics 中的历史 GA4 数据会在你配置的保留期内继续可用。"
+    }
+  },
+  "use_cases": {
+    "title": "何时选择 OpenPanel 而不是 Google Analytics",
+    "intro": "对于将隐私、简洁性和数据所有权置于 Google 广告生态系统之上的团队，OpenPanel 是更好的选择。",
+    "items": [
+      {
+        "title": "无需同意横幅的 GDPR 合规分析",
+        "description": "无 Cookie 跟踪和仅欧盟数据托管意味着完全符合 GDPR 和《电子隐私指令》要求，同时不会用令人烦恼、影响转化率的同意横幅打扰你的用户。",
+        "icon": "shield"
+      },
+      {
+        "title": "开源透明性与控制权",
+        "description": "OpenPanel 的每一行代码都在 GitHub 上——平台本身采用 AGPL-3.0，客户端 SDK 采用 MIT。你可以审计代码、验证隐私声明并贡献改进。没有黑箱式数据处理。",
+        "icon": "code"
+      },
+      {
+        "title": "自托管以实现完全的数据主权",
+        "description": "使用一条命令的 Docker Compose 设置将 OpenPanel 部署到你自己的服务器上。你的分析数据永远不会离开你的基础设施——这对医疗、金融和政府行业至关重要。",
+        "icon": "server"
+      },
+      {
+        "title": "通过精简 SDK 加快网站速度",
+        "description": "OpenPanel 的 SDK 仅 2.3 KB，比 Google 的 gtag.js 小 13 倍。更少的 JavaScript 意味着更快的页面加载、更好的 Core Web Vitals，以及更好的 SEO 排名。",
+        "icon": "zap"
+      },
+      {
+        "title": "一个工具同时提供网站分析 + 产品分析",
+        "description": "在一个工具中同时获得类似 Plausible 的网站分析和类似 Mixpanel 的产品分析（漏斗、留存、分群、用户档案），而不是为两个工具付费。",
+        "icon": "layers"
+      },
+      {
+        "title": "对 GA4 复杂性感到沮丧的团队",
+        "description": "如果你的团队在使用 GA4 时被其混乱的界面、复杂的事件模型和受限的 Explorations 所困扰——OpenPanel 能在没有陡峭学习曲线的情况下为你提供所需洞察。",
+        "icon": "chart"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "关于从 Google Analytics 切换到开源替代方案的常见问题。",
+    "items": [
+      {
+        "question": "Google Analytics 是开源的吗？",
+        "answer": "不是。Google Analytics 是 Google 拥有的专有闭源产品。你无法检查跟踪代码、验证数据如何被处理，也无法自托管。OpenPanel 在 AGPL-3.0 许可下完全开源——完整源代码在 GitHub 上，任何人都可以审计、修改或自托管。"
+      },
+      {
+        "question": "Google Analytics 真的免费吗？",
+        "answer": "GA4 可以免费使用，但代价是你访客的隐私——数据会在 Google 的美国服务器上处理，并在 Google 的广告生态系统中使用。它还有明显的功能限制：14 个月的数据保留、高流量时的数据抽样，以及无法导出到 BigQuery。GA4 360 可以移除这些限制，但费用每年 50,000 美元以上。OpenPanel 提供没有限制的免费自托管选项，或者从每月 2.50 美元起的云托管。"
+      },
+      {
+        "question": "为什么人们正在离开 Google Analytics？",
+        "answer": "团队从 GA4 迁移的主要原因有：1）隐私担忧——数据发送到 Google 的美国服务器会带来 GDPR 合规问题，2）Cookie 同意横幅——GA4 需要它们，会损害用户体验和转化率，3）GA4 复杂性——新的界面和事件模型学习曲线陡峭，4）数据限制——免费套餐中的抽样、短保留期和有限导出，5）性能——30+ KB 的 gtag.js 脚本会影响页面加载速度。"
+      },
+      {
+        "question": "使用 OpenPanel 还需要 Cookie 同意横幅吗？",
+        "answer": "不需要。OpenPanel 默认使用无 Cookie 跟踪。它不会存储 Cookie 或收集个人数据，因此根据 GDPR、《电子隐私指令》或 PECR 不需要同意横幅。这可以改善用户体验，并且与带有同意横幅的网站相比，转化率可提升 2-5%。"
+      },
+      {
+        "question": "OpenPanel 符合 GDPR 吗？",
+        "answer": "是的。OpenPanel 位于瑞典（欧盟），使用无 Cookie 跟踪，通过每日轮换盐值对 IP 地址进行哈希处理，数据仅存储在欧盟服务器上，并提供自托管以实现完全的数据主权。我们还可按需提供 DPA 协议。"
+      },
+      {
+        "question": "我可以自托管 OpenPanel 吗？",
+        "answer": "可以。OpenPanel 可使用 Docker Compose 自托管（ClickHouse、Postgres 和 Redis）。一个命令的 ./setup 向导会引导你完成配置，然后 ./start 会在几分钟内启动整个技术栈——整个过程大约需要 15 分钟。自托管后，你可以获得无限事件、无限数据保留以及对数据的完全控制——无需使用费用。源代码可在 AGPL-3.0 许可下获取。"
+      },
+      {
+        "question": "我可以将 Google Analytics 数据导入 OpenPanel 吗？",
+        "answer": "Google Analytics 没有提供简单的数据导出机制，因此无法直接迁移历史数据。大多数团队会让 OpenPanel 与 GA4 并行运行 1-2 周以验证数据，然后完全切换。你在 Google Analytics 中的历史 GA4 数据会在你配置的保留期内继续可访问。"
+      },
+      {
+        "question": "OpenPanel 与 Plausible 或 Matomo 等其他 GA 替代方案相比如何？",
+        "answer": "OpenPanel 的独特之处在于，它将网站分析（类似 Plausible）与产品分析（类似 Mixpanel）集成在一个开源工具中。Plausible 更简单，但缺少漏斗、分群和用户档案。Matomo 功能丰富，但需要 Cookie 且部署更重。OpenPanel 以精简的 2.3 KB SDK 为你提供两全其美的方案。"
+      },
+      {
+        "question": "OpenPanel 与 Google Ads 集成吗？",
+        "answer": "不集成。如果你高度依赖 Google Ads 转化跟踪和多触点归因，那么在这个特定用例下，GA4 仍然是更好的选择。OpenPanel 侧重于为不需要深度 Google Ads 集成的团队提供隐私优先的分析。"
+      },
+      {
+        "question": "SDK 大小会如何影响我网站的性能？",
+        "answer": "OpenPanel 的 JavaScript SDK 仅 2.3 KB（gzip 后），而 Google Analytics 超过 30 KB。这个 13 倍的差异会直接影响你的 Core Web Vitals 评分、页面加载时间，并可能影响 SEO 排名。对于在较慢连接上使用移动设备的用户来说，这种差异会更加明显。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "从 Google Analytics 迁移",
+        "url": "/guides/migrate-from-google-analytics"
+      },
+      {
+        "title": "网站分析设置",
+        "url": "/guides/website-analytics-setup"
+      },
+      {
+        "title": "跟踪自定义事件",
+        "url": "/guides/track-custom-events"
+      }
+    ],
+    "articles": [
+      {
+        "title": "2026 年 9 款最佳开源网站分析工具",
+        "url": "/articles/self-hosted-web-analytics"
+      },
+      {
+        "title": "无 Cookie 分析：最佳工具及其工作原理",
+        "url": "/articles/cookieless-analytics"
+      },
+      {
+        "title": "自托管网站分析工具对比",
+        "url": "/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Plausible",
+        "url": "/compare/plausible-alternative"
+      },
+      {
+        "name": "Matomo",
+        "url": "/compare/matomo-alternative"
+      },
+      {
+        "name": "Umami",
+        "url": "/compare/umami-alternative"
+      },
+      {
+        "name": "PostHog",
+        "url": "/compare/posthog-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "免费试用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看源代码",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

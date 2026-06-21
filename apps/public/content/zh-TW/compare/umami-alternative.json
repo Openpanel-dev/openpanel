@@ -1,0 +1,553 @@
+{
+  "slug": "umami-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026 年最佳 Umami 替代方案 - 開源且免費",
+    "description": "正在尋找 Umami 的替代方案嗎？OpenPanel 提供更深入的產品分析、使用者識別與行動版 SDK，同時維持開源與隱私優先。免費自架部署。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Umami 替代方案",
+    "subheading": "喜歡 Umami 的簡潔與隱私導向嗎？OpenPanel 在維持開源、無 Cookie 的同時，加入更深入的產品分析——使用者識別、行動版 SDK、A/B 測試與詳細的使用者檔案。",
+    "badges": [
+      "開源",
+      "隱私優先",
+      "使用者識別",
+      "行動版 SDK"
+    ]
+  },
+  "competitor": {
+    "name": "Umami Analytics",
+    "logo": "/logos/umami.svg",
+    "url": "https://umami.is",
+    "short_description": "以隱私為導向的開源網站分析工具，具有輕量腳本與對開發者友善的設定流程。",
+    "founded": 2020,
+    "headquarters": "美國舊金山灣區"
+  },
+  "overview": {
+    "title": "為什麼要考慮用 OpenPanel 取代 Umami？",
+    "paragraphs": [
+      "Umami Analytics 是一款廣受歡迎的開源網站分析工具，以簡潔介面、輕量腳本與隱私友善設計聞名。對於想要簡單、匿名網站數據的開發者來說，它是很棒的選擇。但當你的產品超越單純網站時，Umami 只支援匿名的模式，以及缺乏產品分析功能的限制就會浮現。",
+      "OpenPanel 建立在相同的開源、隱私優先基礎上，但加入了 Umami 沒有的產品分析層。使用者識別可讓你跨工作階段追蹤登入使用者，而漏斗、留存分析與 cohort 分析可幫助你了解人們實際如何使用你的產品——不只是他們曾造訪你的網站。",
+      "行動 App 分析是 OpenPanel 更勝一籌的另一個領域。Umami 只支援網頁，沒有原生行動版 SDK；而 OpenPanel 提供 iOS、Android、React Native 與 Flutter 的第一方 SDK。OpenPanel 也內建 A/B 測試功能可用於實驗，而這是 Umami 完全沒有提供的。",
+      "OpenPanel 採用 AGPL-3.0 授權，Umami 則是 MIT——兩者都是開源且支援自架部署，所以你不必犧牲讓 Umami 受到青睞的開源價值。如果你需要超越匿名頁面瀏覽次數統計，並真正了解你的使用者，OpenPanel 就是從 Umami 升級的自然選擇。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel 與 Umami：哪個適合你？",
+    "intro": "兩者都是開源、以隱私為導向的分析工具。Umami 專注於匿名網站分析。OpenPanel 則加入使用者識別與產品分析。",
+    "one_liner": "Umami 擅長匿名網站分析；OpenPanel 則加入使用者識別、產品分析與行動版 SDK。",
+    "best_for_openpanel": [
+      "需要使用者識別與留存追蹤的 SaaS 產品",
+      "需要原生 iOS、Android、React Native、Flutter SDK 的行動 App 開發者",
+      "需要 A/B 測試與實驗能力的團隊",
+      "需要工作階段層級分析與使用者行為追蹤的產品"
+    ],
+    "best_for_competitor": [
+      "想要匿名流量統計的簡單內容網站與部落格",
+      "偏好 PostgreSQL 而非 ClickHouse 的開發者",
+      "重視極為寬裕免費方案（每月 100 萬事件）的團隊",
+      "希望追蹤腳本盡可能輕量的專案"
+    ]
+  },
+  "highlights": {
+    "title": "關鍵差異一覽",
+    "intro": "以下是 OpenPanel 與 Umami 在關鍵因素上的比較。",
+    "items": [
+      {
+        "label": "使用者識別",
+        "openpanel": "有 - 可追蹤個別使用者",
+        "competitor": "沒有 - 僅限匿名彙總",
+        "notes": "OpenPanel 可讓你跨工作階段識別並追蹤個別使用者。Umami 為了最大化隱私，刻意將所有資料匿名化，且不支援使用者識別。"
+      },
+      {
+        "label": "行動版 SDK",
+        "openpanel": "iOS、Android、React Native、Flutter",
+        "competitor": "僅限網頁（後端可用 API）",
+        "notes": "OpenPanel 提供 iOS、Android、React Native 與 Flutter 的行動版 SDK。Umami 是為網站分析而設計，任何伺服器端追蹤都需要 API 呼叫。"
+      },
+      {
+        "label": "A/B 測試",
+        "openpanel": "內建實驗功能",
+        "competitor": "不可用",
+        "notes": "OpenPanel 內建 A/B 測試功能。Umami 只專注於分析，沒有實驗功能。"
+      },
+      {
+        "label": "免費自架部署",
+        "openpanel": "有 - 無限事件，自架免費",
+        "competitor": "每月 100 萬事件（雲端）",
+        "notes": "Umami Cloud 提供非常寬裕的免費方案，每月 100 萬事件。OpenPanel Cloud 有 30 天免費試用，之後方案從每月 2.50 美元起，但自架部署免費且事件無上限。"
+      },
+      {
+        "label": "開源授權",
+        "openpanel": "AGPL-3.0",
+        "competitor": "MIT 授權",
+        "notes": "OpenPanel 採用 AGPL-3.0；Umami 採用 MIT——兩者都是開源且可自架。商業用途在兩種授權下都允許。"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能比較",
+    "intro": "兩者都是開源且以隱私為導向，但分析能力的深度不同。",
+    "groups": [
+      {
+        "group": "網站分析",
+        "features": [
+          {
+            "name": "頁面瀏覽與訪客",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "流量來源與推薦來源",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "地理資料",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都提供國家、地區與城市層級資料"
+          },
+          {
+            "name": "裝置與瀏覽器",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "UTM 活動追蹤",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "即時儀表板",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "跳出率",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "產品分析",
+        "features": [
+          {
+            "name": "自訂事件追蹤",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "漏斗分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami 於 2023 年加入漏斗功能，支援 URL 與自訂事件"
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami v3 加入了留存報表"
+          },
+          {
+            "name": "使用者檔案",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Umami 刻意不追蹤個別使用者"
+          },
+          {
+            "name": "cohort 分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami v3 加入了 cohort 分析"
+          },
+          {
+            "name": "使用者路徑/旅程分析",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami v3 加入了旅程報表"
+          },
+          {
+            "name": "使用者識別",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Umami 有唯一 ID，但沒有真正的使用者識別"
+          }
+        ]
+      },
+      {
+        "group": "進階功能",
+        "features": [
+          {
+            "name": "A/B 測試",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Umami 只做分析，沒有實驗功能"
+          },
+          {
+            "name": "事件上的自訂屬性",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "分群",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami v3 加入了儲存的篩選分群"
+          },
+          {
+            "name": "可分享的儀表板",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都支援公開/私人可分享連結"
+          },
+          {
+            "name": "電子郵件報告",
+            "openpanel": false,
+            "competitor": false,
+            "notes": "OpenPanel 不提供排程電子郵件報告——它會透過 Slack、Discord、webhook 與應用內傳送即時通知。Umami 的電子郵件報告僅限雲端/付費方案。"
+          },
+          {
+            "name": "追蹤像素",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Umami v3 加入了電子郵件用的隱形追蹤像素"
+          },
+          {
+            "name": "連結追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami v3 加入了短網址連結追蹤"
+          }
+        ]
+      },
+      {
+        "group": "隱私與合規",
+        "features": [
+          {
+            "name": "預設無 Cookie",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "不需要同意橫幅",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者都宣稱基本分析不需要同意"
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "符合 CCPA",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "IP 匿名化",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "可自架部署",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "整合與 SDK",
+        "features": [
+          {
+            "name": "JavaScript SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "React SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "兩者皆可透過 npm 套件使用"
+          },
+          {
+            "name": "Next.js SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "iOS SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Umami 以網頁為主，沒有原生行動版 SDK"
+          },
+          {
+            "name": "Android SDK",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "React Native SDK",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "Python SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "PyPI 上有 umami-analytics 套件"
+          },
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "資料匯出",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami v3 加入了透過 UI 的資料匯出"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技術比較",
+    "intro": "對於評估分析工具的開發者，以下是技術層面的拆解。",
+    "items": [
+      {
+        "label": "SDK 大小",
+        "openpanel": "2.3 KB（gzipped）",
+        "competitor": "~2 KB（~1.5 KB gzipped）",
+        "notes": null
+      },
+      {
+        "label": "平台",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "Ruby",
+          "Java",
+          "Rust",
+          "PHP"
+        ],
+        "competitor": [
+          "JavaScript（瀏覽器）",
+          "React（透過 npm）",
+          "Next.js",
+          "Vue",
+          "Python（umami-analytics）",
+          "REST API"
+        ],
+        "notes": null
+      },
+      {
+        "label": "開源",
+        "openpanel": "有 - AGPL-3.0",
+        "competitor": "有 - MIT 授權",
+        "notes": "OpenPanel 採用 AGPL-3.0；Umami 採用 MIT。兩者都是開源。Umami 在 GitHub 上有 23,000+ 顆星。"
+      },
+      {
+        "label": "自架部署",
+        "openpanel": "Docker Compose、引導式設定精靈",
+        "competitor": "使用 PostgreSQL 的 Docker Compose（需要 Node.js 18.18+）",
+        "notes": null
+      },
+      {
+        "label": "資料庫",
+        "openpanel": "ClickHouse",
+        "competitor": "PostgreSQL（v3 已移除 MySQL 支援）",
+        "notes": null
+      },
+      {
+        "label": "資料保留",
+        "openpanel": "無上限（自架）、可設定（雲端）",
+        "competitor": "5 年（雲端）、無上限（自架）",
+        "notes": null
+      },
+      {
+        "label": "語言",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "React/Next.js/Node.js",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "價格比較",
+    "intro": "Umami 提供非常寬裕的雲端免費方案。OpenPanel 的雲端提供 30 天免費試用、簡單的事件計價且包含所有功能，另外也提供免費且無上限的自架部署。",
+    "openpanel": {
+      "model": "依事件量計費的固定月費，透明清楚",
+      "description": "透明定價從每月 2.50 美元、5,000 事件起，並提供 30 天免費試用。所有方案都包含完整功能。自架部署免費且事件無上限。"
+    },
+    "competitor": {
+      "model": "依事件計費，且免費方案非常寬裕",
+      "description": "每月 100 萬事件免費。超過免費額度後每事件 $0.00002。網站數量無上限、團隊成員無上限、資料保留 5 年。自架版完全免費且沒有任何限制。",
+      "free_tier": "每月 1,000,000 事件免費",
+      "pricing_url": "https://umami.is/pricing"
+    }
+  },
+  "migration": {
+    "title": "從 Umami 遷移到 OpenPanel",
+    "intro": "兩者都使用輕量腳本且事件追蹤相似，因此遷移相當簡單。",
+    "difficulty": "容易",
+    "estimated_time": "30 分鐘到 2 小時",
+    "steps": [
+      {
+        "title": "安裝 OpenPanel SDK",
+        "description": "將 OpenPanel SDK 加入你的應用程式。兩者都使用大小相近（約 2KB）的輕量腳本，因此轉換很容易。"
+      },
+      {
+        "title": "對應自訂事件",
+        "description": "Umami 的自訂事件可直接對應到 OpenPanel。umami.track('signup', {plan: 'pro'}) 會變成 op.track('signup', {plan: 'pro'})."
+      },
+      {
+        "title": "加入使用者識別（新增）",
+        "description": "與完全匿名的 Umami 不同，OpenPanel 支援使用者識別。加入 op.identify() 呼叫即可解鎖使用者檔案、依使用者的留存，以及 cohort 分析。"
+      },
+      {
+        "title": "重建漏斗與報表",
+        "description": "在 OpenPanel 中設定你的漏斗。你將可使用 Umami 沒有提供的額外產品分析功能，例如使用者層級分析。"
+      },
+      {
+        "title": "移除 Umami 腳本",
+        "description": "驗證完成後，移除 Umami 追蹤腳本。兩者都無 Cookie，因此不需要變更同意流程。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "兩者都採用事件式追蹤，API 也很相似。umami.track() 會變成 op.track()。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "多數團隊會先從 OpenPanel 重新開始，並短暫讓兩個工具平行運作。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 Umami 更適合的情境",
+    "intro": "當你需要使用者識別、行動版 SDK 或 A/B 測試時，請選擇 OpenPanel。",
+    "items": [
+      {
+        "title": "需要使用者識別的 SaaS 產品",
+        "description": "Umami 設計上會將所有訪客匿名化。如果你需要追蹤登入使用者、了解個別客戶旅程，或分析使用者層級留存，OpenPanel 在尊重隱私的同時提供這些能力。",
+        "icon": "user-check"
+      },
+      {
+        "title": "行動 App 分析",
+        "description": "Umami 是為網站分析設計，沒有原生行動版 SDK。OpenPanel 提供原生 iOS、Android、React Native 與 Flutter SDK，並具備完整產品分析能力。",
+        "icon": "smartphone"
+      },
+      {
+        "title": "需要 A/B 測試的團隊",
+        "description": "Umami 只專注分析，沒有實驗功能。如果你需要執行 A/B 測試並衡量其影響，OpenPanel 內建實驗功能。",
+        "icon": "git-branch"
+      },
+      {
+        "title": "打造資料管線的公司",
+        "description": "雖然 Umami 提供 API 存取與資料匯出，但 OpenPanel 的 ClickHouse 後端針對高流量分析查詢進行最佳化，原始資料可透過匯出 API 取得（原生資料倉儲匯出將於 2026 年推出）。",
+        "icon": "database"
+      },
+      {
+        "title": "需要工作階段層級分析的產品",
+        "description": "Umami 提供彙總指標，但不會詳細追蹤個別工作階段。OpenPanel 讓你能分析特定使用者工作階段與行為。",
+        "icon": "activity"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於從 Umami 轉換到 OpenPanel 的常見問題。",
+    "items": [
+      {
+        "question": "OpenPanel 跟 Umami 一樣重視隱私嗎？",
+        "answer": "兩者預設都無 Cookie，且符合 GDPR。關鍵差異在於 OpenPanel 允許可選的使用者識別，用於產品分析；而 Umami 則是從設計上嚴格匿名。你可以自行決定是否在 OpenPanel 中識別使用者。"
+      },
+      {
+        "question": "為什麼要從 Umami 轉換到 OpenPanel？",
+        "answer": "團隊通常在需要使用者識別、行動版 SDK 或 A/B 測試時轉換。Umami 擅長匿名網站分析，但如果你正在打造產品，並需要了解跨工作階段的個別使用者行為，OpenPanel 就能提供這些能力。"
+      },
+      {
+        "question": "Umami 的免費方案和 OpenPanel 相比如何？",
+        "answer": "Umami Cloud 提供每月 100 萬事件免費，已經非常寬裕。OpenPanel Cloud 則提供 30 天免費試用，之後方案從每月 2.50 美元起，或可免費無限自架部署。Umami 與 OpenPanel 的自架版本都完全免費且沒有任何限制。"
+      },
+      {
+        "question": "哪一個追蹤腳本比較小？",
+        "answer": "兩者非常接近——Umami 的腳本約 2KB（1.5KB gzipped），OpenPanel 則是 2.3KB。兩者都明顯比 Google Analytics（45KB 以上）或 Mixpanel 小得多。"
+      },
+      {
+        "question": "Umami 可以追蹤行動 App 嗎？",
+        "answer": "沒有原生 SDK。不過 Umami 是為網站分析設計，任何非瀏覽器追蹤都需要 API 呼叫。OpenPanel 則提供原生 iOS、Android、React Native 與 Flutter SDK。"
+      },
+      {
+        "question": "Umami 支援熱點圖或工作階段重播嗎？",
+        "answer": "不支援。Umami 專注於隱私優先的分析，不提供工作階段錄製或熱點圖。OpenPanel 也沒有——兩者都優先保護隱私，而非侵入式追蹤方式。"
+      },
+      {
+        "question": "自架部署的比較如何？",
+        "answer": "Umami 需要搭配 PostgreSQL 的 Docker（最低 Node.js 18.18+）。Umami v3 已移除 MySQL 支援。OpenPanel 使用 Docker Compose（ClickHouse、Postgres 與 Redis），而且單一指令的 ./setup 精靈會引導你完成設定，並在幾分鐘內把整套環境啟動起來。"
+      },
+      {
+        "question": "對於簡單內容網站來說，Umami 還是 OpenPanel 比較好？",
+        "answer": "如果是只需要流量統計、不要使用者識別的簡單部落格或內容網站，Umami 的寬裕免費方案與簡潔性非常出色。若是產品、SaaS 或 App，需要了解使用者行為，OpenPanel 的產品分析功能更有價值。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "網站分析設定",
+        "url": "/zh-TW/guides/website-analytics-setup"
+      },
+      {
+        "title": "Node.js 分析設定",
+        "url": "/zh-TW/guides/nodejs-analytics"
+      },
+      {
+        "title": "從 Google Analytics 遷移",
+        "url": "/zh-TW/guides/migrate-from-google-analytics"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 款最佳開源網站分析工具",
+        "url": "/zh-TW/articles/self-hosted-web-analytics"
+      },
+      {
+        "title": "自架網站分析",
+        "url": "/zh-TW/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Plausible",
+        "url": "/compare/plausible-alternative"
+      },
+      {
+        "name": "Ackee",
+        "url": "/compare/ackee-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "從 OpenPanel 開始",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

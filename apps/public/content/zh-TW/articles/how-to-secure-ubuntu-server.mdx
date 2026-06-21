@@ -1,0 +1,237 @@
+---
+title: 如何保護你的 Ubuntu 伺服器
+description: 了解保護 Ubuntu 伺服器的基本步驟，包括使用者管理、防火牆設定、SSH 強化，以及維持良好安全態勢的做法。
+tag: Hosting
+team: OpenPanel Team
+date: 2024-11-14
+updated: 2026-02-12
+cover: /content/secure-server.jpg
+---
+
+保護你的 Ubuntu 伺服器，是當你擁有自己的伺服器（VPS）時最重要的事情之一。關於有人伺服器被駭、資料被竊的恐怖故事多不勝數。
+
+安全是一個廣泛且難以全面涵蓋的主題，而駭客最常利用的入口，通常其實不是你的伺服器，而是你的軟體（你的程式碼）。
+
+在這篇文章中，我們會介紹一些保護 Ubuntu 伺服器的基本步驟。
+
+## 1. 更新你的系統
+
+請始終保持系統為最新版本。可以用簡單的指令完成：
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+## 2. 建立新使用者
+
+建立一個具有 sudo 權限的新使用者。這樣你就能管理伺服器，而不必提供完整的 root 存取權。為了確保安全，你也應該停用透過 SSH 的 root 登入。
+
+```bash
+sudo adduser <username>
+sudo usermod -aG sudo <username>
+```
+
+## 3. 強化你的 SSH
+
+強化 SSH 就像強化你的大門一樣。你要確保它始終上鎖，而且只有你信任的人才能存取。由於 SSH 是你存取伺服器的方式，你會希望它盡可能安全。
+
+我們會停用 root 登入，並且只允許使用 SSH 金鑰存取。
+
+```bash
+sudo nano /etc/ssh/sshd_config
+```
+
+找到 `PermitRootLogin yes` 這一行，並將它改成 `PermitRootLogin no`。
+
+另外也找到或新增以下幾行，停用密碼驗證，並且只允許 SSH 金鑰：
+
+```bash
+PasswordAuthentication no
+PubkeyAuthentication yes
+```
+
+然後重新啟動 SSH 服務：
+
+```bash
+sudo systemctl restart ssh
+```
+
+### 3.1 變更 SSH 埠號
+
+你可以變更 SSH 埠號，讓暴力破解你的伺服器變得更困難。
+
+### 3.2 加入 fail2ban
+
+Fail2ban 是一個能幫助你防禦暴力破解攻擊的工具。它會監控你的 SSH 記錄，並封鎖顯示可疑活動的 IP。搭配這個工具與良好的 SSH 金鑰，你應該會相當安全。
+
+```bash
+sudo apt install -y fail2ban
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+```
+
+### 3.3 雙因素驗證
+
+加入雙因素驗證是個好主意。市面上有許多工具可以做到這件事，但一個簡單的選擇是 Google Authenticator。你可以用這個指令安裝它：
+
+```bash
+sudo apt install -y libpam-google-authenticator
+sudo sed -i 's/^#*\s*KbdInteractiveAuthentication\s.*$/KbdInteractiveAuthentication yes/' /etc/ssh/sshd_config
+sudo echo 'AuthenticationMethods publickey,password publickey,keyboard-interactive' | sudo tee -a /etc/ssh/sshd_config
+echo "auth required pam_google_authenticator.so" | sudo tee -a /etc/pam.d/sshd
+echo "auth required pam_permit.so" | sudo tee -a /etc/pam.d/sshd
+sudo sed -i '/^@include common-auth/s/^/#/' /etc/pam.d/sshd
+sudo runuser -l "CHANGE_THIS_TO_YOUR_USERNAME" -c 'google-authenticator -t -d -f -r 3 -R 30 -W'
+sudo systemctl restart ssh
+```
+
+## 啟用你的防火牆
+
+雖然這可能不言而喻，但你應該始終啟用防火牆，並且只允許必要埠號上的流量。
+
+**常見埠號**
+
+- SSH: 22
+- HTTP: 80
+- HTTPS: 443
+- FTP: 21
+- SFTP: 2222
+
+```bash
+sudo ufw enable
+sudo ufw allow OpenSSH # Allow SSH
+sudo ufw allow 80,443/tcp; # Allow HTTP and HTTPS traffic
+```
+
+## 易於使用的程式碼片段
+
+建立一個名為 `secure.sh` 的檔案，並加入下面的程式碼。接著用 `sudo bash secure.sh` 執行它。它會提示你輸入使用者名稱，並為你產生密碼與 SSH 金鑰。
+
+```bash
+#!/bin/bash
+
+# Update and upgrade system
+echo "Updating and upgrading the system..."
+sudo apt update && sudo apt upgrade -y
+
+# Install necessary packages
+echo "Installing necessary packages..."
+sudo apt install -y whois  # For mkpasswd
+sudo apt install -y libpam-google-authenticator fail2ban ufw
+
+# Create a new user with sudo access
+read -p "Enter the new username: " username
+if id "$username" &>/dev/null; then
+    echo "User $username already exists!"
+    exit 1
+else
+    # Generate a random password
+    password=$(openssl rand -base64 12)
+
+    # Create the user and assign the password
+    sudo adduser --gecos "" "$username" --disabled-password
+    echo "$username:$password" | sudo chpasswd
+    sudo usermod -aG sudo "$username"
+    echo "User $username created with sudo access."
+    echo "Generated password for $username: $password"
+
+    # Generate SSH key for the new user
+    sudo -u "$username" mkdir -p /home/"$username"/.ssh
+    sudo -u "$username" ssh-keygen -t rsa -b 4096 -f /home/"$username"/.ssh/id_rsa -q -N ""
+    echo "SSH key generated for $username."
+
+    # Copy the existing authorized_keys from root or initial user to the new user's .ssh directory
+    if [ -f /root/.ssh/authorized_keys ]; then
+        sudo cp /root/.ssh/authorized_keys /home/"$username"/.ssh/
+    fi
+    sudo chown -R "$username":"$username" /home/"$username"/.ssh
+    if [ -f /home/"$username"/.ssh/authorized_keys ]; then
+		    sudo chmod 600 /home/"$username"/.ssh/authorized_keys
+		fi
+    echo "Authorized keys copied to new user's .ssh directory."
+
+    # Outputs the public key
+    public_key=$(cat /home/"$username"/.ssh/id_rsa.pub)
+fi
+
+# Set up SSH to use keys only (disable password login)
+echo "Configuring SSH to use keys only..."
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+sudo sed -ri 's/^(#)?PasswordAuthentication\s+.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo sed -ri 's/^(#)?PermitRootLogin\s+.*/PermitRootLogin no/' /etc/ssh/sshd_config
+# Enables Google Authenticator
+sudo sed -i 's/^#*\s*KbdInteractiveAuthentication\s.*$/KbdInteractiveAuthentication yes/' /etc/ssh/sshd_config
+sudo echo 'AuthenticationMethods publickey,password publickey,keyboard-interactive' | sudo tee -a /etc/ssh/sshd_config
+sudo systemctl restart ssh
+
+# Enable and configure the firewall
+echo "Enabling and configuring the firewall..."
+sudo ufw allow OpenSSH
+# sudo ufw allow 80,443,3000,996,7946,4789,2377/tcp;
+# sudo ufw allow 7946,4789,2377/udp;
+sudo ufw allow 80,443,3000/tcp;
+sudo ufw enable
+
+# Configure Google Authenticator
+echo "Configuring Google Authenticator for the user..."
+sudo cp /etc/pam.d/sshd /etc/pam.d/sshd.bak
+echo "auth required pam_google_authenticator.so" | sudo tee -a /etc/pam.d/sshd
+echo "auth required pam_permit.so" | sudo tee -a /etc/pam.d/sshd
+sudo sed -i '/^@include common-auth/s/^/#/' /etc/pam.d/sshd
+sudo runuser -l "$username" -c 'google-authenticator -t -d -f -r 3 -R 30 -W'
+sudo systemctl restart ssh
+
+# Configure Fail2Ban
+echo "Configuring Fail2Ban..."
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+
+# Check if Docker is installed
+if ! command -v docker &> /dev/null
+then
+    echo "Docker is not installed. Installing Docker..."
+    # Install required packages
+    sudo apt-get install -y \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release \
+        apt-transport-https
+    # Add Docker’s official GPG key
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    # Set Up Docker’s Stable Repository
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    # Update the package index
+    sudo apt update
+    # Install Docker
+    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    # Check if Docker is running
+    sudo systemctl is-active docker
+    # Add current user to the Docker group
+    sudo usermod -aG docker $USER
+    sudo usermod -aG docker $username
+		# Check if the script is being run interactively, then change group without needing re-login
+		if tty -s; then
+		    newgrp docker
+		fi
+    echo "Docker installed successfully."
+else
+    echo "Docker is already installed."
+fi
+
+echo "Server security enhancement is complete."
+echo ""
+echo "------------"
+echo "Host:       $(hostname)"
+echo "Username:   $username"
+echo "Password:   $password"
+echo "------------"
+echo "Public key: $public_key"
+echo "------------"
+echo "2FA:        $(cat /home/"$username"/.google_authenticator)"
+echo "------------"
+```
+
+## 結論
+
+這是保護你的 Ubuntu 伺服器的一個良好起點。你還可以做許多其他事情來加強伺服器安全，但這應該已經能為你打下良好的基礎。

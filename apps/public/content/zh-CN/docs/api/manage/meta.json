@@ -1,0 +1,5 @@
+{
+  "title": "管理",
+  "pages": ["projects", "clients", "references"],
+  "defaultOpen": false
+}

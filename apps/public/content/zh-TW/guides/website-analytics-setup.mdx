@@ -1,0 +1,179 @@
+---
+title: "如何為任何網站加入分析工具"
+description: "使用簡單的 script 標籤，在幾分鐘內為任何網站加入以隱私為優先的分析工具。可搭配 WordPress、Webflow、Squarespace 與純 HTML 使用。"
+difficulty: beginner
+timeToComplete: 5
+date: 2025-12-14
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "取得你的 Client ID"
+    anchor: "get-id"
+  - name: "加入 script 標籤"
+    anchor: "script"
+  - name: "追蹤自訂事件"
+    anchor: "events"
+  - name: "驗證你的設定"
+    anchor: "verify"
+---
+
+# 如何為任何網站加入分析工具
+
+為你的網站加入分析工具不需要開發者專業知識。OpenPanel 的 script 標籤可搭配任何網站使用，無論你使用的是 WordPress、Webflow、Squarespace，或是純 HTML。大約五分鐘內，你就能在網站上啟用以隱私為優先的分析工具。
+
+OpenPanel 是一個預設不使用 Cookie 的開源分析平台。這表示你可以在尊重隱私、且多數情況下避免 Cookie 同意橫幅的前提下，追蹤有意義的使用者行為。
+
+## 先決條件
+
+- 任何平台上的網站
+- 一個 OpenPanel 帳號（[免費註冊](https://dashboard.openpanel.dev/onboarding)）
+- 可存取網站 HTML 的 header 或 footer
+
+## 取得你的 Client ID [#get-id]
+
+先到 [dashboard.openpanel.dev](https://dashboard.openpanel.dev/onboarding) 建立 OpenPanel 帳號。登入後，建立一個新專案，並從專案設定中複製你的 Client ID。
+
+你的 Client ID 看起來會像 `cl_xxxxxxxxxxxxxxxx`。請先把它備妥，下一步會用到。
+
+## 加入 script 標籤 [#script]
+
+需要將 OpenPanel script 加入你網站的每一個頁面。最佳做法取決於你的平台，但核心程式片段是一樣的。
+
+以下是你要加入的 script 標籤。請將 `YOUR_CLIENT_ID` 替換成你剛剛複製的 Client ID。
+
+```html
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+`trackScreenViews` 選項會啟用自動頁面瀏覽追蹤，因此你不需要手動追蹤每個頁面。`trackOutgoingLinks` 選項會記錄外部連結的點擊，這對於了解使用者如何離開你的網站很有幫助。
+
+### 平台專屬指引
+
+對於 WordPress 網站，最簡單的方式是使用像是 "Insert Headers and Footers" 或 "Code Snippets" 這類外掛。安裝外掛後，將 script 標籤貼到 header 區段。如果你偏好直接編輯程式碼，也可以把 script 直接加入主題的 `header.php` 檔案，放在結尾的 `</head>` 標籤前。
+
+想要更多控制權的 WordPress 使用者，也可以改用 `functions.php` 加入 script。
+
+```php
+function add_openpanel_script() {
+    ?>
+    <script>
+      window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+      window.op('init', {
+        clientId: 'YOUR_CLIENT_ID',
+        trackScreenViews: true,
+        trackOutgoingLinks: true,
+        trackAttributes: true,
+      });
+    </script>
+    <script src="https://openpanel.dev/op1.js" defer async></script>
+    <?php
+}
+add_action('wp_head', 'add_openpanel_script');
+```
+
+如果是 Webflow，請前往專案設定並進入 Custom Code。將 script 標籤貼到 Head Code 區段，然後發佈網站。這樣 script 就會在每個頁面載入。
+
+Squarespace 使用者可以在 Settings > Advanced > Code Injection 找到程式碼注入設定。將 script 加入 Header 區段並儲存變更。
+
+如果你使用 Google Tag Manager，請建立一個新的 Custom HTML tag 並貼上 script 標籤程式碼。將觸發條件設為 All Pages，然後發佈容器。
+
+## 追蹤自訂事件 [#events]
+
+頁面瀏覽會自動追蹤，但你通常也會想追蹤特定使用者行為，例如按鈕點擊、表單提交或影片播放。OpenPanel 提供兩種方式來完成這件事。
+
+最簡單的方法是直接在 HTML 中使用 `data-track` 屬性。當使用者點擊帶有此屬性的元素時，OpenPanel 會自動送出事件。
+
+```html
+<button data-track="button_clicked" data-button_name="signup">
+  註冊
+</button>
+```
+
+元素上的任何 `data-` 屬性（`data-track` 本身除外）都會被包含為事件屬性。當你想在不撰寫 JavaScript 的情況下追蹤更多情境資訊時，這會非常有用。
+
+若要進行更複雜的追蹤，你可以直接呼叫 `window.op` 函式。這讓你能完全掌控何時以及追蹤哪些內容。
+
+```html
+<script>
+  document.querySelector('.signup-button').addEventListener('click', function() {
+    window.op('track', 'button_clicked', {
+      button_name: 'signup',
+      button_location: 'hero'
+    });
+  });
+</script>
+```
+
+表單提交是常見的追蹤情境。你可以使用 `onsubmit` 屬性直接在行內追蹤。
+
+```html
+<form onsubmit="window.op('track', 'form_submitted', {form_name: 'contact'}); return true;">
+  <input type="email" name="email" placeholder="你的電子郵件">
+  <button type="submit">送出</button>
+</form>
+```
+
+### 識別使用者
+
+當使用者登入或提供電子郵件時，你可以將他們的活動關聯到某個個人資料。這是透過 `identify` 方法完成的。
+
+```html
+<script>
+  window.op('identify', {
+    profileId: 'user_123',
+    email: 'user@example.com',
+    firstName: 'John',
+    lastName: 'Doe'
+  });
+</script>
+```
+
+`profileId` 為必要欄位，且應該是你系統中的唯一識別碼。一旦完成識別，之後的所有事件都會與這位使用者關聯，進而啟用跨工作階段分析。
+
+## 驗證你的設定 [#verify]
+
+在瀏覽器中開啟你的網站，並瀏覽幾個頁面。點擊幾個你已設定追蹤的按鈕或連結。接著前往你的 [OpenPanel 儀表板](https://dashboard.openpanel.dev) 並查看即時視圖。
+
+事件應該會在幾秒內出現。如果你沒有看到任何資料，請開啟瀏覽器的開發者主控台（F12）並查看 JavaScript 錯誤。最常見的問題是 Client ID 錯誤，或是廣告攔截器阻止了 script 載入。
+
+廣告攔截器可能會干擾分析 script。如果這對你的受眾來說是個問題，你可以透過自己的網域代理 OpenPanel script。[廣告攔截器說明文件](/zh-TW/docs/adblockers) 會說明如何設定。
+
+## 後續步驟
+
+script 標籤已涵蓋傳統網站的大多數追蹤需求。若想要更進階的設定選項，請參考 [Script Tag SDK 參考文件](/zh-TW/docs/sdks/script)。如果你想更深入了解使用者旅程，關於 [如何建立漏斗](/zh-TW/articles/how-to-create-a-funnel) 的文章會逐步說明如何設定 [轉換漏斗](/features/funnels)。
+
+對於有後端邏輯或伺服器端渲染的網站，你可能會想把前端追蹤與伺服器端事件結合使用。[Node.js 指南](/zh-TW/guides/nodejs-analytics) 和 [Python 指南](/zh-TW/guides/python-analytics) 有涵蓋這些使用情境。
+
+如果你使用特定框架，請查看我們針對各框架的指南，了解更進階的設定：
+- [Next.js 分析指南](/zh-TW/guides/nextjs-analytics) 適用於 Next.js 應用程式
+- [React 分析指南](/zh-TW/guides/react-analytics) 適用於 React 應用程式
+- [Astro 分析指南](/zh-TW/guides/astro-analytics) 適用於 Astro 網站
+- [Vue 分析指南](/zh-TW/guides/vue-analytics) 適用於 Vue.js 應用程式
+
+<Faqs>
+<FaqItem question="OpenPanel 會使用 Cookie 嗎？">
+不會。OpenPanel 預設使用無 Cookie 追蹤。這表示在大多數隱私法規下，基本分析通常不需要 Cookie 同意橫幅，包括 GDPR 和 PECR。
+</FaqItem>
+
+<FaqItem question="廣告攔截器會阻止追蹤嗎？">
+有些廣告攔截器可能會封鎖對 openpanel.dev 的請求。你可以透過自己的網域代理 script，或自行架設 OpenPanel 來降低影響。文件中有說明這兩種做法。
+</FaqItem>
+
+<FaqItem question="我可以將 OpenPanel 搭配 Google Tag Manager 使用嗎？">
+可以。將 OpenPanel script 作為 Google Tag Manager 中的 Custom HTML tag，並設定 All Pages 觸發條件。這樣你就能把 OpenPanel 與其他追蹤 script 一起管理。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 嗎？">
+是。OpenPanel 的設計符合 GDPR，具備無 Cookie 追蹤、資料最小化，以及支援資料主體權利。自行架設可完全消除跨國資料傳輸的疑慮。關於 [無 Cookie 分析](/zh-TW/articles/cookieless-analytics) 的細節，請參閱更多資訊。
+</FaqItem>
+</Faqs>

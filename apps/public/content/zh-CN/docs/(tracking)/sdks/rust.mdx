@@ -1,0 +1,203 @@
+---
+title: Rust
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+OpenPanel Rust SDK 可让你在 Rust 应用中跟踪用户行为。本指南说明如何在项目中安装和使用 Rust SDK。
+
+<Callout>
+查看 [GitHub 上的 Rust SDK](https://github.com/tstaetter/openpanel-rust-sdk/) 获取最新更新和源代码。
+</Callout>
+
+## 安装
+
+<Steps>
+### 安装依赖
+
+将以下内容添加到你的 `Cargo.toml`：
+
+```toml
+[dependencies]
+openpanel-sdk = "0.1.0"
+```
+
+或者通过 cargo 安装：
+
+```bash
+cargo add openpanel-sdk
+```
+
+### 设置环境变量
+
+在 `.env` 文件中设置环境变量：
+
+```bash
+OPENPANEL_TRACK_URL=https://api.openpanel.dev/track
+OPENPANEL_CLIENT_ID=<YOUR_CLIENT_ID>
+OPENPANEL_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
+```
+
+### 初始化
+
+导入并初始化 OpenPanel SDK：
+
+```rust
+use openpanel_sdk::sdk::Tracker;
+
+let tracker = Tracker::try_new_from_env()?.with_default_headers()?;
+```
+
+### 配置选项
+
+<CommonSdkConfig />
+
+</Steps>
+
+## 使用
+
+### 跟踪事件
+
+要跟踪事件，使用 `track` 方法：
+
+```rust
+use std::collections::HashMap;
+use openpanel_sdk::sdk::Tracker;
+
+let mut properties = HashMap::new();
+properties.insert("name".to_string(), "rust".to_string());
+
+let response = tracker
+    .track("test_event".to_string(), Some(properties), None)
+    .await?;
+```
+
+### 标识用户
+
+要标识用户，需要通过实现 `From` trait 将你的用户结构体转换为 `user::IdentifyUser`：
+
+```rust
+use std::collections::HashMap;
+use openpanel_sdk::sdk::Tracker;
+use openpanel_sdk::user;
+
+struct Address {
+    pub street: String,
+    pub city: String,
+    pub zip: String,
+}
+
+struct AppUser {
+    pub id: String,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub address: Address,
+}
+
+impl From<Address> for HashMap<String, String> {
+    fn from(address: Address) -> Self {
+        let mut properties = HashMap::new();
+        properties.insert("street".to_string(), address.street);
+        properties.insert("city".to_string(), address.city);
+        properties.insert("zip".to_string(), address.zip);
+        properties
+    }
+}
+
+impl From<AppUser> for user::IdentifyUser {
+    fn from(app_user: AppUser) -> Self {
+        Self {
+            profile_id: app_user.id,
+            email: app_user.email,
+            first_name: app_user.first_name,
+            last_name: app_user.last_name,
+            properties: app_user.address.into(),
+        }
+    }
+}
+
+// Usage
+let user = AppUser { /* ... */ };
+let response = tracker.identify(user.into()).await?;
+```
+
+### 增加属性
+
+要增加用户资料中的数值属性：
+
+```rust
+let response = tracker
+    .increment_property(profile_id, "visits", 1)
+    .await?;
+```
+
+### 减少属性
+
+要减少用户资料中的数值属性：
+
+```rust
+let response = tracker
+    .decrement_property(profile_id, "credits", 1)
+    .await?;
+```
+
+### 过滤事件
+
+过滤器用于在某些情况下阻止将事件发送到 OpenPanel。你可以通过向 `track` 方法传入 `filter` 函数来过滤事件：
+
+```rust
+use std::collections::HashMap;
+
+let filter = |properties: HashMap<String, String>| {
+    // 返回 true 表示发送事件，返回 false 表示跳过
+    properties.contains_key("required_key")
+};
+
+let mut properties = HashMap::new();
+properties.insert("name".to_string(), "rust".to_string());
+
+let response = tracker
+    .track("test_event".to_string(), Some(properties), Some(&filter))
+    .await;
+
+// 如果 filter 返回 false，事件不会被发送，并返回 Err
+match response {
+    Ok(_) => println!("Event sent successfully"),
+    Err(_) => println!("Event was filtered out"),
+}
+```
+
+## 高级用法
+
+### 错误处理
+
+该 SDK 使用 Rust 的 `Result` 类型进行错误处理。请始终正确处理错误：
+
+```rust
+match tracker.track("event".to_string(), Some(properties), None).await {
+    Ok(response) => {
+        if response.status() == 200 {
+            println!("Event tracked successfully");
+        }
+    }
+    Err(e) => {
+        eprintln!("Failed to track event: {}", e);
+    }
+}
+```
+
+### 异步运行时
+
+该 SDK 使用 async/await。请确保在异步运行时中运行，例如 Tokio：
+
+```rust
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let tracker = Tracker::try_new_from_env()?.with_default_headers()?;
+    // ... use tracker
+    Ok(())
+}
+```

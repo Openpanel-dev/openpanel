@@ -1,0 +1,157 @@
+{
+  "slug": "wordpress",
+  "audience": "wordpress",
+  "seo": {
+    "title": "WordPress 无 Cookie 分析 —— Google Analytics 替代方案",
+    "description": "为您的 WordPress 网站添加以隐私为先的分析，无需 cookie 同意横幅。OpenPanel 无 cookie、开源，起价仅为 $2.50/月 —— 是 WordPress 上比 GA4 更好的替代方案。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "无需 cookie 横幅的 WordPress 分析",
+    "subheading": "在 WordPress 上使用 Google Analytics 意味着 cookie 同意弹窗、GDPR 复杂性，以及将访客数据发送到美国服务器。OpenPanel 是一款无 cookie 的 WordPress 分析插件，可为您提供页面浏览、事件和用户行为数据，开箱即符合 GDPR 要求，且没有任何隐私困扰。",
+    "badges": [
+      "无需 cookie 横幅",
+      "符合 GDPR",
+      "开源",
+      "轻量级 — 2.3 KB"
+    ]
+  },
+  "problem": {
+    "title": "为什么在 WordPress 上使用 Google Analytics 会带来问题",
+    "intro": "WordPress 支撑着 40% 的互联网，但 GA4 并不是按照 WordPress 的隐私需求来设计的。",
+    "items": [
+      {
+        "title": "Google Analytics 在 WordPress 上需要 cookie 同意",
+        "description": "在 WordPress 网站上安装 GA4，意味着每位访客都会看到一个同意弹窗。根据 GDPR，您不能在未明确选择加入的情况下设置 GA4 cookie。这个横幅会降低转化率，并污染您的数据。"
+      },
+      {
+        "title": "GA4 会将数据发送到美国服务器",
+        "description": "Google Analytics 会将访客数据传输到美国服务器。对于欧洲网站而言，这会在 Schrems II 案例下带来法律风险，而 WordPress 网站所有者越来越无法忽视这一点。"
+      },
+      {
+        "title": "WordPress 分析插件过于臃肿",
+        "description": "大多数 GA4 WordPress 插件都会给您的网站增加明显负担。页面速度受影响，Core Web Vitals 评分下降，而您仍然需要处理 cookie。"
+      },
+      {
+        "title": "您只能看到页面浏览量，看不到用户行为",
+        "description": "GA4 只告诉您有多少人访问了网站。OpenPanel 告诉您他们做了什么：点击了哪些 CTA，在哪些地方流失了，哪些博客文章能带来注册。"
+      }
+    ]
+  },
+  "features": {
+    "title": "面向 WordPress 的隐私优先分析",
+    "intro": "OpenPanel 为 WordPress 网站所有者提供完整可见性，同时无需面对 cookie 合规难题。",
+    "items": [
+      {
+        "title": "官方 WordPress 插件",
+        "description": "直接从 WordPress 插件目录安装 OpenPanel WordPress 插件。激活后，粘贴您的 Client ID，页面浏览跟踪就会立即开始——无需代码。"
+      },
+      {
+        "title": "自动页面浏览跟踪",
+        "description": "每个 WordPress 页面、文章和自定义文章类型都会自动被跟踪。标准页面浏览分析无需任何配置。"
+      },
+      {
+        "title": "默认无 cookie",
+        "description": "没有 cookie，就不需要同意横幅。无需任何配置即可符合 GDPR、CCPA 和 ePrivacy。"
+      },
+      {
+        "title": "自定义事件跟踪",
+        "description": "只需一行 JavaScript 调用即可跟踪点击、表单提交和转化。了解哪些 CTA 和表单带来了最多线索。"
+      },
+      {
+        "title": "UTM 活动跟踪",
+        "description": "准确查看哪些邮件、广告和社交帖子为您的 WordPress 网站带来了流量，以及哪些真正促成了转化。"
+      },
+      {
+        "title": "轻量脚本 — 2.3 KB",
+        "description": "OpenPanel 的跟踪脚本比 GA4 小 20 倍。对 Core Web Vitals 或 PageSpeed 评分没有影响。"
+      },
+      {
+        "title": "可在您自己的服务器上自托管",
+        "description": "在您自己的基础设施上运行 OpenPanel。您的 WordPress 访客数据永远不会离开您的服务器。"
+      }
+    ]
+  },
+  "benefits": {
+    "title": "为什么 WordPress 网站所有者会转向 OpenPanel",
+    "intro": "OpenPanel 在不牺牲功能的前提下替代 Google Analytics——并修复了 GA4 带来的隐私问题。",
+    "items": [
+      {
+        "title": "无需同意横幅",
+        "description": "无 cookie 跟踪意味着您无需弹窗即可符合 GDPR。没有转化流失，也不会因退出选择而导致数据分散。"
+      },
+      {
+        "title": "替代 Google Analytics 且不丢失功能",
+        "description": "页面浏览、来源、国家、设备、UTM 活动——全部都有。还有 GA4 需要复杂配置才能支持的事件和漏斗。"
+      },
+      {
+        "title": "您的数据不会落入 Google 之手",
+        "description": "OpenPanel 托管于欧盟境内，不共享数据。非常适合欧洲网站、出版商，以及任何希望避开 Google 数据垄断的人。"
+      },
+      {
+        "title": "开源且可审计",
+        "description": "不同于 GA4，OpenPanel 的代码是公开的。您可以清楚看到收集了哪些数据，以及这些数据如何被处理。"
+      },
+      {
+        "title": "价格实惠",
+        "description": "适用于小型 WordPress 网站的价格低至 $2.50/月。如果您愿意，也可以免费自托管——功能完全一致，没有事件限制。"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "WordPress 网站所有者在评估 OpenPanel 时最常提出的问题。",
+    "items": [
+      {
+        "question": "如何在 WordPress 上安装 OpenPanel？",
+        "answer": "通过主题的 header.php、子主题，或任何“header scripts”插件，将 OpenPanel 脚本标签添加到您的 WordPress 网站中。将代码片段粘贴到 </head> 之前。自动页面浏览跟踪会立即开始——无需额外配置。"
+      },
+      {
+        "question": "使用 OpenPanel 还需要 cookie 同意横幅吗？",
+        "answer": "不需要。OpenPanel 使用无 cookie 跟踪，默认不会收集个人数据。根据 GDPR，只有在您实际使用 cookie 时才需要 cookie 同意。OpenPanel 不使用 cookie，因此不需要横幅。"
+      },
+      {
+        "question": "有 OpenPanel 的 WordPress 插件吗？",
+        "answer": "有。官方 OpenPanel 插件可在 WordPress 插件目录中找到。在 Plugins → Add New 中搜索“OpenPanel”，安装后粘贴您的 Client ID 即可。如果您愿意，也可以通过主题的 header.php 或任何“add code to header”插件手动添加脚本标签。"
+      },
+      {
+        "question": "OpenPanel 与 MonsterInsights 或 Analytify 相比如何？",
+        "answer": "这些插件本质上都是 Google Analytics 的包装器——它们仍然会把数据发送给 Google，并且仍然需要 cookie。OpenPanel 是一个独立的分析平台，默认无 cookie，并将数据存储在欧盟。"
+      },
+      {
+        "question": "可以跟踪 WooCommerce 事件吗？",
+        "answer": "可以。您可以通过在 WooCommerce 模板中添加几行 JavaScript，或使用 WordPress hooks 来跟踪加入购物车、结账和购买事件。无需专门的 WooCommerce 插件。"
+      },
+      {
+        "question": "OpenPanel 会影响 WordPress 网站速度吗？",
+        "answer": "OpenPanel 的脚本 gzip 后只有 2.3 KB。相比之下，GA4 会增加 50+ KB。从 GA4 切换到 OpenPanel，很可能会提升您的 Core Web Vitals 分数。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "电商跟踪设置", "url": "/zh-CN/guides/ecommerce-tracking" },
+      { "title": "网站分析设置", "url": "/zh-CN/guides/website-analytics-setup" },
+      { "title": "OpenPanel WordPress 插件", "url": "https://sv.wordpress.org/plugins/openpanel/" }
+    ],
+    "articles": [
+      { "title": "无 cookie 分析详解", "url": "/zh-CN/articles/cookieless-analytics" },
+      { "title": "如何自托管 OpenPanel", "url": "/zh-CN/articles/self-hosted-web-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel vs Google Analytics", "url": "/zh-CN/compare/google-analytics-alternative" },
+      { "title": "OpenPanel vs Plausible", "url": "/zh-CN/compare/plausible-alternative" },
+      { "title": "OpenPanel vs Matomo", "url": "/zh-CN/compare/matomo-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "免费试用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看源代码",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

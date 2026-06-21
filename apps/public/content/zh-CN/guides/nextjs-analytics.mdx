@@ -1,0 +1,256 @@
+---
+title: "如何为 Next.js 添加分析"
+description: "使用 OpenPanel 在 5 分钟内为你的 Next.js 应用添加隐私优先的分析。"
+difficulty: beginner
+timeToComplete: 8
+date: 2025-12-15
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "安装 SDK"
+    anchor: "install"
+  - name: "将 OpenPanel 添加到你的布局"
+    anchor: "setup"
+  - name: "跟踪自定义事件"
+    anchor: "events"
+  - name: "识别用户"
+    anchor: "identify"
+  - name: "验证你的配置"
+    anchor: "verify"
+---
+
+# 如何为 Next.js 添加分析
+
+本指南将带你了解如何将 OpenPanel 添加到 Next.js 应用中。完成后，你将获得自动页面浏览跟踪、自定义[事件跟踪](/features/event-tracking)以及[用户识别](/features/identify-users)功能，并在你的应用中正常工作。
+
+OpenPanel 同时支持 App Router 和 Pages Router。它默认使用无 cookie 跟踪，因此基础分析无需 cookie 同意横幅。如果你正在寻找 Mixpanel 或 Google Analytics 的隐私优先替代方案，这是一种直接的集成方式。
+
+## 前提条件
+
+- 一个 Next.js 项目（App Router 或 Pages Router）
+- 一个 OpenPanel 账户
+- 来自 [OpenPanel 控制台](https://dashboard.openpanel.dev/onboarding) 的 Client ID
+
+## 安装 SDK [#install]
+
+首先安装 OpenPanel Next.js 包。这个 SDK 是 OpenPanel 核心库的轻量封装，并提供了 Next.js 专用组件，便于集成。
+
+```bash
+npm install @openpanel/nextjs
+```
+
+如果你更喜欢 pnpm 或 yarn，也同样可以使用。
+
+## 将 OpenPanel 添加到你的布局 [#setup]
+
+在跟踪任何内容之前，你需要将 OpenPanelComponent 添加到应用的根部。这会加载跟踪脚本，并让 SDK 在整个应用中可用。
+
+对于 App Router 项目，请将该组件添加到根布局文件中。组件应放在 body 标签内部，将 `trackScreenViews` 设为 true 可在用户浏览应用时启用自动页面浏览跟踪。
+
+```tsx
+// app/layout.tsx
+import { OpenPanelComponent } from '@openpanel/nextjs';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <OpenPanelComponent
+          clientId="your-client-id"
+          trackScreenViews={true}
+        />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+对于 Pages Router 项目，配置几乎相同。改为将该组件添加到 `_app.tsx` 文件中。
+
+```tsx
+// pages/_app.tsx
+import { OpenPanelComponent } from '@openpanel/nextjs';
+import type { AppProps } from 'next/app';
+
+export default function App({ Component, pageProps }: AppProps) {
+  return (
+    <>
+      <OpenPanelComponent
+        clientId="your-client-id"
+        trackScreenViews={true}
+      />
+      <Component {...pageProps} />
+    </>
+  );
+}
+```
+
+你还可以启用 `trackOutgoingLinks` 来自动跟踪用户点击外部链接，或者启用 `trackAttributes` 来跟踪带有 data 属性的元素。
+
+## 跟踪自定义事件 [#events]
+
+页面浏览只能说明一部分情况。要了解用户如何与你的产品交互，你需要跟踪诸如按钮点击、表单提交或功能使用之类的自定义事件。
+
+在客户端组件中，使用 `useOpenPanel` hook。这让你可以在组件树中的任意位置访问跟踪方法。
+
+```tsx
+'use client';
+
+import { useOpenPanel } from '@openpanel/nextjs';
+
+export function SignupButton() {
+  const op = useOpenPanel();
+
+  return (
+    <button
+      type="button"
+      onClick={() => op.track('signup_clicked', { location: 'header' })}
+    >
+      注册
+    </button>
+  );
+}
+```
+
+对于服务端跟踪，你需要使用你的 client secret 创建一个 SDK 实例。这对于在 API 路由、webhook 或 server actions 中跟踪事件很有用。
+
+```tsx
+// lib/op.ts
+import { OpenPanel } from '@openpanel/nextjs';
+
+export const op = new OpenPanel({
+  clientId: 'your-client-id',
+  clientSecret: 'your-client-secret',
+});
+```
+
+切勿在客户端暴露你的 client secret。请将其保留在仅服务端代码中。
+
+创建实例后，你可以在服务端的任何位置跟踪事件。
+
+```tsx
+// app/api/webhook/route.ts
+import { op } from '@/lib/op';
+
+export async function POST(request: Request) {
+  const data = await request.json();
+
+  op.track('webhook_received', {
+    source: data.source,
+    event_type: data.type,
+  });
+
+  return Response.json({ success: true });
+}
+```
+
+如果你运行在 Vercel 或其他无服务器平台上，请用 `waitUntil` 包裹你的跟踪调用，以确保在函数终止前事件已发送。
+
+## 识别用户 [#identify]
+
+匿名跟踪很有用，但识别用户可以解锁更有价值的洞察。你可以跨会话跟踪行为，根据属性对用户进行分组，并构建 cohort 分析。
+
+在客户端组件中，在用户登录后或当你拿到其信息时调用 `identify`。
+
+```tsx
+'use client';
+
+import { useOpenPanel } from '@openpanel/nextjs';
+import { useEffect } from 'react';
+
+export function UserProfile({ user }) {
+  const op = useOpenPanel();
+
+  useEffect(() => {
+    op.identify({
+      profileId: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      properties: {
+        plan: user.plan,
+      },
+    });
+  }, [user]);
+
+  return <div>欢迎，{user.firstName}！</div>;
+}
+```
+
+如果你已经在服务端拥有用户数据，`IdentifyComponent` 是一种更简洁的方式。它不会渲染任何可见内容，但会在组件挂载时处理识别。
+
+```tsx
+// app/dashboard/layout.tsx
+import { IdentifyComponent } from '@openpanel/nextjs';
+
+export default async function DashboardLayout({ children }) {
+  const user = await getCurrentUser();
+
+  return (
+    <>
+      <IdentifyComponent
+        profileId={user.id}
+        firstName={user.firstName}
+        lastName={user.lastName}
+        email={user.email}
+        properties={{
+          plan: user.plan,
+        }}
+      />
+      {children}
+    </>
+  );
+}
+```
+
+## 验证你的配置 [#verify]
+
+在浏览器中打开你的 Next.js 应用并在几个页面之间切换。然后打开你的 [OpenPanel 控制台](https://dashboard.openpanel.dev) 并查看实时视图。你应该会在几秒内看到页面浏览事件出现。
+
+如果事件没有显示，请检查浏览器控制台是否有错误。最常见的问题是 client ID 不正确，或者广告拦截器拦截了请求。你可以通过将事件代理到自己的服务器来解决广告拦截器问题。
+
+要设置代理，请创建一个可捕获所有请求的 API 路由，将请求转发到 OpenPanel。
+
+```tsx
+// app/api/[...op]/route.ts
+import { createRouteHandler } from '@openpanel/nextjs/server';
+
+export const { GET, POST } = createRouteHandler();
+```
+
+然后更新你的 OpenPanelComponent 以使用代理端点。
+
+```tsx
+<OpenPanelComponent
+  apiUrl="/api/op"
+  scriptUrl="/api/op/op1.js"
+  clientId="your-client-id"
+  trackScreenViews={true}
+/>
+```
+
+这样会将所有跟踪请求经由你的域名路由，使其对阻止第三方分析的浏览器扩展不可见。
+
+## 下一步
+
+[Next.js SDK 参考文档](/docs/sdks/nextjs) 介绍了更多功能，例如全局属性、事件过滤和递增用户属性。如果你想了解 OpenPanel 如何处理隐私，请阅读我们关于[无 cookie 分析](/articles/cookieless-analytics)的文章。
+
+<Faqs>
+<FaqItem question="OpenPanel 同时支持 App Router 和 Pages Router 吗？">
+支持。两种方式的配置几乎相同。对于 App Router，将 OpenPanelComponent 添加到根布局；对于 Pages Router，将其添加到 _app.tsx。无论你使用哪种路由器，所有跟踪功能都能以相同方式工作。
+</FaqItem>
+
+<FaqItem question="OpenPanel 使用 cookie 吗？">
+不使用。OpenPanel 默认使用无 cookie 跟踪。这意味着在大多数隐私法规下，包括 GDPR 和 PECR，你都不需要为基础分析显示 cookie 同意横幅。
+</FaqItem>
+
+<FaqItem question="OpenPanel 符合 GDPR 吗？">
+是的。OpenPanel 的设计符合 GDPR 要求，采用无 cookie 跟踪、数据最小化，并完整支持数据主体权利。如果自托管，你还可以完全消除国际数据传输方面的担忧。
+</FaqItem>
+
+<FaqItem question="如何避免广告拦截器？">
+按照验证部分所示设置代理路由处理器。这样会将跟踪请求经由你自己的域名路由，而广告拦截器通常不会拦截这一类请求。
+</FaqItem>
+</Faqs>

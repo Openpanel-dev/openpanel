@@ -1,0 +1,71 @@
+---
+title: 自架版更新紀錄
+description: 這是自架版設定中所有變更的清單。
+---
+
+## 2.0.0
+
+我們已發布 OpenPanel v2 的第一個穩定版本。這是個大版本！
+
+在我們的[遷移指南](/zh-TW/docs/migration/migrate-v1-to-v2)中閱讀更多。
+
+TLDR;
+
+- Clickhouse 從 24.3.2-alpine 升級到 25.10.2.65
+- 將 `CLICKHOUSE_SKIP_USER_SETUP=1` 加入 op-ch 服務
+- `NEXT_PUBLIC_DASHBOARD_URL` -> `DASHBOARD_URL`
+- `NEXT_PUBLIC_API_URL` -> `API_URL`
+- `NEXT_PUBLIC_SELF_HOSTED` -> `SELF_HOSTED`
+
+## 1.2.0
+
+我們已將 `SELF_HOSTED` 重新命名為 `NEXT_PUBLIC_SELF_HOSTED`。在升級到這個版本之前，請務必先重新命名這個環境變數。
+
+## 1.1.1
+
+自第一個穩定版釋出以來，加入了許多新功能。
+
+## 1.0.0 (stable)
+
+OpenPanel 自架版現在已進入穩定狀態，未來應該不會有破壞性變更。
+
+如果你是從先前版本升級，請留意日誌，因為它會告訴你是否需要採取任何動作。這不是強制性的，但建議這樣做，因為之後可能會踩雷。
+
+### 新增環境變數。
+
+<Callout>
+如果你是從先前版本升級，且想使用這些新變數，就需要編輯你的 `.env` 檔案。
+</Callout>
+
+- `ALLOW_REGISTRATION` - 若設為 `false`，新使用者將無法註冊（只有第一位使用者可以註冊）。
+- `ALLOW_INVITATION` - 若設為 `false`，新使用者將無法被邀請。
+- `RESEND_API_KEY` - 若有設定，系統會使用 Resend 寄送電子郵件。
+- `EMAIL_SENDER` - 用於寄送電子郵件的寄件者地址。
+
+### 移除 Clickhouse Keeper
+
+在 0.0.6 中，我們為 Clickhouse 引入了叢集模式。這是一個錯誤，我們已將其移除。
+
+從 services 和 volumes 中移除 op-zk
+
+```
+services:
+  op-zk:
+    image: clickhouse/clickhouse-server:24.3.2-alpine
+    volumes:
+      - op-zk-data:/var/lib/clickhouse
+      - ./clickhouse/clickhouse-keeper-config.xml:/etc/clickhouse-server/config.xml
+    command: [ 'clickhouse-keeper', '--config-file', '/etc/clickhouse-server/config.xml' ]
+    restart: always
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+volumes:
+  op-zk-data:
+    driver: local
+```
+
+## 0.0.6
+
+移除了 Clerk.com，並加入自架驗證。更多資訊請閱讀我們的[從 clerk 遷移](/zh-TW/docs/self-hosting/migrating-from-clerk)

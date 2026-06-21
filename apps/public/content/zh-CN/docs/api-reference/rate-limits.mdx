@@ -1,0 +1,30 @@
+---
+title: 速率限制
+description: 请求限制以及如何处理超限
+---
+
+## 限制
+
+| 端点组 | 限制 |
+| --- | --- |
+| Insights | 每 10 秒 100 个请求 |
+| Export | 每 10 秒 100 个请求 |
+| Manage | 每 10 秒 20 个请求 |
+
+限制按 **客户端 ID** 计算。
+
+Track、Profile 和 Import 端点当前不应用速率限制。
+
+## 处理 429
+
+超过限制时，API 会返回 `429 Too Many Requests`：
+
+```json
+{
+  "status": 429,
+  "error": "Too Many Requests",
+  "message": "You have exceeded the rate limit for this endpoint."
+}
+```
+
+等待当前速率限制窗口重置后再重试。

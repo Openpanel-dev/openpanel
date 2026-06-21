@@ -1,0 +1,25 @@
+---
+title: 导出
+description: 从你的项目中检索原始事件和聚合图表数据。
+---
+
+## 身份验证
+
+需要 `read` 或 `root` 客户端 — 默认的 `write` 客户端没有访问权限。请参阅 [身份验证](/zh-CN/docs/api/authentication) 指南。
+
+## 端点
+
+| 端点 | 说明 |
+|----------|-------------|
+| `GET /export/events` | 带分页的原始事件列表，支持可选过滤 |
+| `GET /export/charts` | 带拆分维度的聚合时间序列数据 |
+
+### 过滤事件
+
+`/export/events` 端点接受过滤器、分页，以及一个 `includes` 参数，用于附加相关数据（profile、meta、properties、geo、device、referrer）。
+
+### 图表序列
+
+`/export/charts` 端点接受一个 `series` 数组，其中每一项都可以指定事件名称、过滤器和分段类型（`event`、`user`、`session`、`property_sum` 等）。
+
+完整的查询参数和响应 schema 请参阅 [API 参考](/zh-CN/docs/api-reference)。

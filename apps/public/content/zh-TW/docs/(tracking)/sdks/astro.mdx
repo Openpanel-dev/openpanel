@@ -1,0 +1,139 @@
+---
+title: Astro
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+<Callout>
+想要逐步教學嗎？請查看 [Astro 分析指南](/zh-TW/guides/astro-analytics)。
+</Callout>
+
+## 安裝
+
+<Steps>
+### 安裝相依套件
+
+```bash
+pnpm install @openpanel/astro
+```
+
+### 初始化
+
+將 `OpenPanelComponent` 加到你的根版面配置元件中。
+
+```astro
+---
+import { OpenPanelComponent } from '@openpanel/astro';
+---
+
+<html>
+  <head>
+    <OpenPanelComponent
+      clientId="your-client-id"
+      trackScreenViews={true}
+      // trackAttributes={true}
+      // trackOutgoingLinks={true}
+      // If you have a user id, you can pass it here to identify the user
+      // profileId={'123'}
+    />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+```
+
+#### 選項
+
+<CommonSdkConfig />
+<WebSdkConfig />
+
+##### Astro 選項
+
+- `profileId` - 如果你有使用者 ID，可以在這裡傳入以識別使用者
+- `cdnUrl` (deprecated) - OpenPanel SDK 的 URL（預設：`https://openpanel.dev/op1.js`）
+- `scriptUrl` - OpenPanel SDK 的 URL（預設：`https://openpanel.dev/op1.js`）
+- `filter` - 這是一個會在追蹤事件前呼叫的函式。如果回傳 false，該事件將不會被追蹤。[閱讀更多](#filter)
+- `globalProperties` - 這是一個會隨每個事件一起送出的屬性物件。
+
+##### `filter`
+
+這個選項需要是字串化的函式，且無法存取函式外的任何變數。
+
+```astro
+<OpenPanelComponent
+  clientId="your-client-id"
+  filter={`
+    function filter(event) {
+      return event.name !== 'my_event';
+    }
+  `}
+/>
+```
+
+若要利用 typescript，可以這樣做。_注意 `toString`_
+```ts
+import { type TrackHandlerPayload } from '@openpanel/astro';
+
+const opFilter = ((event: TrackHandlerPayload) => {
+  return event.type === 'track' && event.payload.name === 'my_event';
+}).toString();
+
+<OpenPanelComponent
+  clientId="your-client-id"
+  filter={opFilter}
+/>
+```
+
+</Steps>
+
+## 使用方式
+
+### 客戶端追蹤
+
+你可以使用全域 `op` 函式來追蹤事件，或使用資料屬性。
+
+```astro
+<button onclick="window.op('track', 'clicky')">Click me</button>
+<button data-track="clicky" data-prop1="prop1" data-prop2="prop2">Click me</button>
+```
+
+### 識別使用者
+
+若要識別使用者，你可以使用 `identify` 函式或 `IdentifyComponent`。
+
+```astro
+---
+import { IdentifyComponent } from '@openpanel/astro';
+---
+
+<IdentifyComponent
+  profileId="123"
+  firstName="Joe"
+  lastName="Doe"
+  email="joe@doe.com"
+  properties={{
+    tier: 'premium',
+  }}
+/>
+```
+
+### 設定全域屬性
+
+你可以使用 `setGlobalProperties` 函式或 `SetGlobalPropertiesComponent`，來設定會隨每個事件一起送出的全域屬性。
+
+```astro
+---
+import { SetGlobalPropertiesComponent } from '@openpanel/astro';
+---
+
+<SetGlobalPropertiesComponent
+  properties={{
+    app_version: '1.0.2',
+    environment: 'production',
+  }}
+/>
+```

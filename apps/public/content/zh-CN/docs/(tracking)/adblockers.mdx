@@ -1,0 +1,104 @@
+---
+title: 使用代理避免 adblockers
+description: 了解为什么 adblockers 会拦截分析，以及如何通过代理事件来避免。
+---
+
+在本文中，我们需要讨论 adblockers、它们存在的原因、工作方式，以及如何避免它们。
+
+adblockers 最初的主要用途是屏蔽广告，但后来也开始拦截跟踪脚本。这主要出于隐私原因，虽然我们尊重这一点，但了解访客行为也有正当用途。OpenPanel 设计为隐私友好、无 cookie 的分析工具，不会跨站点跟踪用户，但通用黑名单通常会不加区分地拦截所有分析工具。
+
+避免 adblockers 的最佳方式是通过你自己的域名代理事件。adblockers 通常无法阻止发往你自己域名的请求（第一方请求），而不会破坏网站本身的功能。
+
+## 内置支持
+
+目前，我们的 Next.js SDK 和 WordPress 插件都内置支持代理：
+- **WordPress**：自动完成。
+- **Next.js**：通过 route handler 可轻松配置。
+
+## 为任意框架实现代理
+
+如果你没有使用 Next.js 或 WordPress，可以在任何后端框架中实现代理。关键是在你的域名上设置一个 API 端点（例如 `api.domain.com` 或 `domain.com/api`），把请求转发到 OpenPanel。
+
+下面是使用 [Hono](https://hono.dev/) 服务器设置代理的示例。此实现模拟了我们在 Next.js SDK 中使用的逻辑。
+
+> 你始终可以在我们的 [repository](https://github.com/Openpanel-dev/openpanel/blob/main/packages/sdks/nextjs/createNextRouteHandler.ts) 中查看 Next.js 实现的样子。
+
+### Hono 示例
+
+```typescript
+import { Hono } from 'hono'
+
+const app = new Hono()
+
+// 1. 代理脚本文件
+app.get('/op1.js', async (c) => {
+  const scriptUrl = 'https://openpanel.dev/op1.js'
+  try {
+    const res = await fetch(scriptUrl)
+    const text = await res.text()
+
+    c.header('Content-Type', 'text/javascript')
+    // 可选：缓存 24 小时
+    c.header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=86400')
+    return c.body(text)
+  } catch (e) {
+     return c.json({ error: 'Failed to fetch script' }, 500)
+  }
+})
+
+// 2. 代理 track 事件
+app.post('/track', async (c) => {
+  const body = await c.req.json()
+
+  // 转发客户端 IP 地址（请根据你的基础设施选择正确的 IP）
+  const ip = c.req.header('cf-connecting-ip') ??
+             c.req.header('x-forwarded-for')?.split(',')[0]
+
+  const headers = new Headers()
+  headers.set('Content-Type', 'application/json')
+  headers.set('Origin', c.req.header('origin') ?? '')
+  headers.set('User-Agent', c.req.header('user-agent') ?? '')
+  headers.set('openpanel-client-id', c.req.header('openpanel-client-id') ?? '')
+
+  if (ip) {
+    headers.set('openpanel-client-ip', ip)
+  }
+
+  try {
+    const res = await fetch('https://api.openpanel.dev/track', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    })
+    return c.json(await res.text(), res.status)
+  } catch (e) {
+    return c.json(e, 500)
+  }
+})
+
+export default app
+```
+
+此脚本设置了两个端点：
+1. `GET /op1.js`：获取 OpenPanel 脚本并通过你的域名提供。
+2. `POST /track`：接收来自前端的事件，添加必要的标头（User-Agent、Origin、Content-Type、openpanel-client-id、openpanel-client-ip），并将它们转发到 OpenPanel 的 API。
+
+## 前端配置
+
+代理运行后，你需要在前端把 OpenPanel 脚本配置为使用你的代理端点，而不是默认端点。
+
+```html
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    apiUrl: 'https://api.domain.com'
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://api.domain.com/op1.js" defer async></script>
+```
+
+这样，所有请求都会先发送到你的域名，从而绕过那些查找第三方跟踪域名的 adblockers。

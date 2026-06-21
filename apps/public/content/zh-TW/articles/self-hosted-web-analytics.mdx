@@ -1,0 +1,389 @@
+---
+title: "自架設網站分析 2026 — Plausible vs Matomo vs Umami vs OpenPanel"
+description: "我們測試了 7 款自架設網站分析工具的部署、功能與成本。Plausible、Matomo、Umami、GoatCounter、OpenPanel 逐一比較——並針對各種使用情境提供誠實的優缺點分析。"
+tag: 比較
+team: OpenPanel Team
+date: 2024-11-14
+updated: 2026-04-28
+cover: /content/self-hosted-analytics.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+
+你已經決定要自架設你的網站分析工具了。現在的問題是：你要部署哪一個？
+
+這篇文章會在可自架設、且已可投入正式環境的選項中做正面比較——部署難度、規模化後的主機成本、實際執行需求。我們聚焦於最常用的四款工具（Plausible、Matomo、Umami、OpenPanel），並在最後補充三個較輕量的替代方案。
+
+這是一篇採購比較，不是市場調查。若你想看更廣泛的開源分析工具調查，包括雲端託管選項，以及 AGPL、MIT 與 source-available 授權的差異，請參考我們的 [開源分析工具調查](/articles/open-source-web-analytics)。
+
+## 快速比較
+
+| 工具 | 類型 | 授權 | 部署方式 | 雲端方案 | 最適合 |
+|------|------|---------|------------|-------------|----------|
+| [**OpenPanel**](#openpanel) | 網站 + 產品 | AGPL-3.0 | Docker Compose | 從 $2.50/月起 | 需要網站與產品分析的團隊 |
+| [**Plausible**](#plausible) | 網站 | AGPL-3.0 | Docker Compose | 從 $9/月起 | 簡單、重視隱私的頁面瀏覽追蹤 |
+| [**Matomo**](#matomo) | 網站 | GPL-3.0 | PHP + MySQL | 從 €29/月起 | 完整的 Google Analytics 替代方案 |
+| [**Umami**](#umami) | 網站 | MIT | Docker Compose | 免費方案 | 輕量級自架設分析 |
+| [**GoatCounter**](#goatcounter) | 網站 | EUPL | 單一二進位檔 | 免費方案 | 給小型網站的極簡分析 |
+| [**PostHog**](#posthog) | 產品 + 網站 | MIT | Docker/K8s | 免費方案 | 需要分析 + 功能旗標的開發團隊 |
+| [**Ackee**](#ackee) | 網站 | MIT | Docker + MongoDB | 無 | 重視隱私的極簡追蹤 |
+
+## 如何選擇合適的自架設分析工具
+
+在挑工具之前，先想想你實際需要的是什麼。
+
+**網站分析 vs 產品分析。** 如果你只需要頁面瀏覽、流量來源和引薦連結，像 Plausible 或 Umami 這種簡單工具就夠了。如果你還需要 [漏斗](/features/funnels)、[留存分析](/features/retention)、使用者識別，以及 [事件追蹤](/features/event-tracking)，你就需要具備產品分析能力的工具。
+
+**部署複雜度。** 有些工具用一條 Docker Compose 指令，5 分鐘內就能完成部署。其他工具則需要 Kubernetes 叢集、多個資料庫，或 PHP 環境。請務實評估你的維運能力。
+
+**維護負擔。** 你必須自行處理更新、備份與擴充。像 GoatCounter 或 Umami 這類輕量工具幾乎不需要太多維護。功能豐富的工具如 Matomo 或 PostHog 則需要更多關注。
+
+**規模化成本。** 每月 $5 的 VPS 足以支撐大多數中小型網站。高流量網站需要更多資源，但成本仍然可預期——你付的是伺服器費用，不是按事件計費。
+
+---
+
+## OpenPanel
+
+**最適合：需要把網站分析與產品分析整合在同一個自架設工具中的團隊**
+
+[OpenPanel](/) 把 [網站分析](/features/web-analytics) 與產品分析整合在同一個平台。你可以同時取得頁面瀏覽與流量來源，以及漏斗、留存、使用者旅程和事件追蹤。預設採無 Cookie 追蹤，因此不需要同意橫幅。
+
+![OpenPanel Dashboard](/content/tools/openpanel.png)
+
+### 部署
+
+OpenPanel 是最容易自架設的工具之一。只要四個指令就能開始執行：
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+./start
+```
+
+安裝精靈會處理 Docker、資料庫設定與 SSL。它可在單一 VPS 上透過 Docker Compose 執行。中階 VPS（4 vCPU、8 GB RAM）即可處理每月數百萬事件。
+
+如需詳細說明，請參考 [自架設指南](/docs/self-hosting/self-hosting)。
+
+### 主要功能
+- 即時網站分析儀表板，包含流量、引薦、頁面與裝置
+- 產品分析：漏斗、留存、使用者識別、自訂事件
+- 無 Cookie 追蹤——無需同意橫幅即可符合 GDPR/CCPA
+- 多種 SDK（JavaScript、React、Next.js、Vue 等）
+- 自架設版本與雲端版本完全一致——沒有功能分級
+
+### 價格
+自架設免費。雲端方案從每月 $2.50 起，最高可支援 5,000 個事件；到 100 萬事件則為每月 $90。所有方案都包含完整功能。
+
+### 優點
+- 這個價位下，唯一同時整合網站與產品分析的自架設工具
+- 以 Docker Compose 簡單部署，並提供引導式設定
+- 預設無 Cookie——不需要 Cookie 橫幅
+- 開源（AGPL-3.0），雲端與自架設之間沒有功能差異
+
+### 缺點
+- 相較於 Matomo 或 PostHog，社群較小、專案較新
+- 目前尚未內建熱區圖
+- 自架設仍需要伺服器維護
+
+---
+
+## Plausible
+
+**最適合：簡單、以隱私為先的頁面瀏覽分析，且希望安裝設定最少**
+
+如果你想要簡單、不複雜的網站分析，[Plausible](https://plausible.io/self-hosted-web-analytics) 會是首選。它追蹤頁面瀏覽、引薦與目標，且不使用 Cookie。儀表板一個畫面就能看完，幾乎不用學習成本。
+
+![Plausible Dashboard](/content/tools/plausible.png)
+
+### 部署
+
+Plausible 可透過 Docker Compose 自架設。流程包括複製其 hosting repo、設定 `plausible-conf.env` 檔案，然後執行 `docker compose up`。
+
+需求：一台已安裝 Docker 的伺服器，至少 2 GB RAM。底層使用 PostgreSQL 與 ClickHouse。
+
+### 主要功能
+- 單一畫面的儀表板，包含即時資料
+- 無 Cookie 追蹤——不需要同意橫幅
+- 目標追蹤與自訂事件
+- Google Search Console 整合
+- 輕量腳本（約 1 KB）
+
+### 價格
+依 AGPL-3.0 授權，自架設免費。雲端方案從每月 $9 起，提供 10,000 次頁面瀏覽。
+
+### 優點
+- 介面是最簡單的其中之一——任何人都能上手
+- 輕量追蹤腳本，不會拖慢你的網站
+- 活躍的開源社群
+- 乾淨俐落的 Docker Compose 部署
+
+### 缺點
+- 沒有產品分析（沒有漏斗、留存或使用者層級追蹤）
+- 沒有 session replay 或熱區圖
+- 自架設版本需要手動更新
+- AGPL 授權若你修改並散布，就需要公開原始碼
+
+與 OpenPanel 比較：[Plausible vs OpenPanel](/compare/plausible-alternative)
+
+---
+
+## Matomo
+
+**最適合：需要完整 Google Analytics 替代方案的組織**
+
+[Matomo](https://matomo.org/)（前身為 Piwik）自 2007 年以來就已存在，是功能最完整的自架設網站分析工具。如果你正從 Google Analytics 遷移，並希望在自己的控制範圍內獲得類似體驗，Matomo 是最接近的選擇。
+
+![Matomo Dashboard](/content/tools/matomo.png)
+
+### 部署
+
+Matomo 執行於 PHP + MySQL/MariaDB。你可以在任何 LAMP 架構上部署，也可以使用它們的 Docker 映像。設定流程比純 Docker 工具更繁瑣——你需要 PHP、網頁伺服器（Apache/Nginx）以及資料庫。
+
+需求：PHP 8.1+、MySQL 8+ 或 MariaDB 10.4+、至少 2 GB RAM。若流量較高（每月 100 萬以上頁面瀏覽），建議將應用程式與資料庫分開部署。
+
+### 主要功能
+- 完整網站分析套件（流量、引薦、行銷活動、目標、電子商務）
+- 熱區圖與 session recordings（付費外掛）
+- A/B 測試（付費外掛）
+- Google Analytics 資料匯入
+- 大量外掛庫
+
+### 價格
+核心平台可依 GPL-3.0 免費自架設。不過，即使在自架設環境中，熱區圖、session recordings 與 A/B 測試等進階功能仍需要付費外掛訂閱。雲端方案從每月 €29 起。
+
+### 優點
+- 最成熟、功能最完整的自架設分析工具
+- 最接近 Google Analytics 的替代方案
+- 大型外掛庫
+- 合規紀錄強（政府與企業都有採用）
+
+### 缺點
+- PHP 架構比純 Docker 工具更複雜，部署與維護成本更高
+- 即使是自架設，進階外掛仍會增加費用
+- 相較新工具，介面感覺較舊
+- 在大規模下資源消耗高
+
+與 OpenPanel 比較：[Matomo vs OpenPanel](/compare/matomo-alternative)
+
+---
+
+## Umami
+
+**最適合：想要輕量、採 MIT 授權的分析工具的開發者**
+
+[Umami](https://umami.is/) 是一款輕量、重視隱私的網站分析工具。它是最容易自架設與維護的工具之一。如果你想要低負擔的基本網站分析，Umami 是很好的選擇。
+
+![Umami Dashboard](/content/tools/umami.png)
+
+### 部署
+
+Umami 可透過 Docker Compose 自架設，也可以直接用 Node.js 部署。複製 repository、設定資料庫連線，然後啟動即可。它支援 PostgreSQL 與 MySQL。
+
+需求：Node 18+ 搭配 PostgreSQL 12+ 或 MySQL 8+。非常輕量——小型到中型網站在每月 $5 的 VPS 上也能順暢運行。
+
+### 主要功能
+- 乾淨的儀表板，包含即時資料
+- 頁面瀏覽、引薦、裝置與基本事件
+- 無 Cookie 追蹤
+- 支援多網站
+- 提供 API 供自訂整合
+
+### 價格
+依 MIT 授權，自架設完全免費。Umami Cloud 提供免費方案，每月 100 萬事件；之後每增加一個事件收費 $0.00002。
+
+### 優點
+- MIT 授權——在同類工具中最寬鬆
+- 輕量且容易維護
+- 使用 Docker Compose 即可簡單部署
+- 若你想先試用再自架設，雲端有免費方案
+
+### 缺點
+- 功能僅限於基本網站指標
+- 沒有漏斗、留存或產品分析
+- 比 Plausible 少一些功能（沒有 Google Search Console 整合）
+- 沒有 session replay 或熱區圖
+
+與 OpenPanel 比較：[Umami vs OpenPanel](/compare/umami-alternative)
+
+---
+
+## GoatCounter
+
+**最適合：個人網站與部落格的極簡分析**
+
+[GoatCounter](https://goatcounter.com/) 把極簡主義發揮到極致。它是一個單一 Go 二進位檔，能在不使用 Cookie 的情況下追蹤頁面瀏覽。沒有 Docker，也沒有複雜設定——下載後直接執行即可。
+
+### 部署
+
+GoatCounter 以單一二進位檔提供。下載、執行、把你的網域指向它即可。它也可以使用 SQLite（預設）或 PostgreSQL。雖然有 Docker 映像，但不需要 Docker。
+
+需求：很低。可在你找得到的最小 VPS 上執行。SQLite 模式幾乎不需要資源。
+
+### 主要功能
+- 不使用 Cookie 或 JavaScript 的頁面瀏覽追蹤（可選）
+- 單一二進位檔部署
+- SQLite 或 PostgreSQL 後端
+- 基本引薦與瀏覽器追蹤
+- 可選公開儀表板
+
+### 價格
+依 EUPL 授權，自架設免費。託管服務對非商業用途免費，付費方案從每月 €5 起。
+
+### 優點
+- 所有分析工具中部署最簡單——單一二進位檔
+- 在極低資源下也能運行
+- 可不使用 JavaScript 運作（伺服器端計數）
+- 個人網站可用免費託管方案
+
+### 缺點
+- 功能非常基本——只有頁面瀏覽與引薦
+- 沒有事件追蹤或自訂屬性
+- 沒有產品分析功能
+- 開發團隊很小（主要就一個人）
+
+---
+
+## PostHog
+
+**最適合：需要分析、功能旗標與實驗整合在同一平台的開發團隊**
+
+[PostHog](https://posthog.com/) 是一個一體化產品分析平台，包含網站分析、session replay、功能旗標、A/B 測試與調查。它是這裡功能最豐富的選項，但也是最複雜的自架設方案。
+
+![PostHog Dashboard](/content/tools/posthog.png)
+
+### 部署
+
+PostHog 的自架設在小型部署時使用 Docker Compose，正式環境則可透過 Helm charts 在 Kubernetes 上部署。設定需要 PostgreSQL、Redis、ClickHouse 與 Kafka。它比這份清單中的其他工具複雜得多。
+
+需求：至少 4 vCPU、16 GB RAM、30 GB 以上儲存空間。團隊建議只自架設到每月約 30 萬事件以內；超過這個規模，PostHog Cloud 的擴充能力更好。
+
+### 主要功能
+- 產品分析，包含漏斗、留存與 cohort
+- 網站分析儀表板
+- session replay
+- 功能旗標與 A/B 測試
+- 調查與錯誤追蹤
+
+### 價格
+依 MIT 授權，自架設免費。雲端免費方案包含每月 100 萬分析事件與 5 千次 session recordings，之後依用量計費。
+
+### 優點
+- 功能最完整——可取代多個工具
+- MIT 授權
+- 雲端免費方案（100 萬事件）
+- 活躍社群與快速開發
+
+### 缺點
+- 自架設設定複雜，且依賴多種基礎設施
+- 資源消耗高——需要明顯更多伺服器效能
+- 自架設與雲端版本的功能不完全相同
+- 如果你只需要網站分析，這會太大材小用
+
+與 OpenPanel 比較：[PostHog vs OpenPanel](/compare/posthog-alternative)
+
+---
+
+## Ackee
+
+**最適合：小型專案上重視隱私的極簡追蹤**
+
+[Ackee](https://github.com/electerious/Ackee) 是一款專注於隱私與極簡主義的自架設分析工具。它以乾淨、極簡的介面追蹤頁面瀏覽與基本事件。
+
+### 部署
+
+Ackee 執行於 Node.js 與 MongoDB。可用 Docker Compose 部署，或直接在安裝好 Node 與 MongoDB 的伺服器上執行。
+
+需求：Node 18+、MongoDB 7+。資源需求低。
+
+### 主要功能
+- 頁面瀏覽與事件追蹤
+- 無 Cookie、匿名化追蹤
+- 供自訂整合使用的 GraphQL API
+- 支援多網域
+- 極簡、乾淨的 UI
+
+### 價格
+依 MIT 授權，自架設完全免費。團隊沒有提供雲端服務。
+
+### 優點
+- MIT 授權，完全免費
+- 以隱私優先，資料經過匿名化
+- GraphQL API，便於彈性查詢
+- 非常簡單、專注
+
+### 缺點
+- 需要 MongoDB（相較 PostgreSQL 架構的工具更複雜）
+- 功能非常精簡
+- 沒有雲端方案
+- 近年開發速度放緩
+
+與 OpenPanel 比較：[Ackee vs OpenPanel](/compare/ackee-alternative)
+
+---
+
+## 遷移路徑：先用雲端，之後再切換
+
+大多數自架設分析工具也都有雲端版本。使用 [OpenPanel](/pricing) 時，你可以先從 Cloud 開始，之後再遷移到自架設——或反過來也可以——因為雲端與自架設版本的功能完全一致。Plausible、Umami 與 Matomo 也同樣如此。PostHog 是例外：它的雲端與自架設版本有差異。
+
+若想更深入了解何時適合自架設、何時適合雲端，請參考 [自架設分析如何帶來更好的合規性](/articles/better-compliance-self-hosted-analytics)。
+
+## 如何開始使用自架設分析
+
+### 1. 選擇伺服器
+
+你需要一台 VPS。對於大多數自架設分析工具來說，2-4 vCPU、4-8 GB RAM、40 GB SSD 的伺服器就足以開始。
+
+推薦供應商：
+- **[Hetzner](https://hetzner.cloud/?ref=7Hq0H5mQh7tM)** — 最佳性價比。CX31（4 vCPU、8 GB RAM）大約每月 €8.50。
+- **DigitalOcean** — 易於使用，文件完善。Droplet 每月從 $6 起。
+- **Vultr** — 類似 DigitalOcean，價格具競爭力。
+- **AWS/GCP** — 較複雜，但如果你本來就有在那裡營運，會很實用。
+
+### 2. 強化伺服器安全
+
+在安裝任何東西之前，先把伺服器鎖好。至少要做到：停用 root 登入、設定 SSH 金鑰、配置防火牆。我們有完整指南：[如何保護你的 Ubuntu 伺服器](/articles/how-to-secure-ubuntu-server)。
+
+### 3. 安裝你的分析工具
+
+每個工具都有自己的安裝流程。以 OpenPanel 為例，只要四個指令：
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+./start
+```
+
+安裝精靈會處理一切——Docker、資料庫、SSL 憑證。完整教學：[如何自架設 OpenPanel](/articles/how-to-self-host-openpanel)。
+
+### 4. 在你的網站加入追蹤程式碼
+
+把追蹤腳本安裝到你的網站上。使用 OpenPanel 時，你只需要加入一小段 JavaScript，或使用其中一個框架專用的 SDK（React、Next.js、Vue 等）。請查看適合你技術棧的 [SDK 文件](/docs/get-started/install-openpanel)。
+
+---
+
+<Faqs>
+<FaqItem question="哪一款自架設網站分析工具最好？">
+這取決於你的需求。若你需要同時整合網站分析與產品分析，OpenPanel 的整體價值最高。若你只要簡單的頁面瀏覽追蹤，Plausible 最受歡迎。若你想要完整替代 Google Analytics，Matomo 的功能最多。若你要最輕量的方案，GoatCounter 或 Umami 都很適合。
+</FaqItem>
+
+<FaqItem question="自架設分析是免費的嗎？">
+對大多數工具來說，軟體本身是免費的（OpenPanel、Plausible、Matomo、Umami、GoatCounter、PostHog 和 Ackee 都提供免費自架設）。你的成本主要是伺服器基礎設施——通常依流量大小，VPS 每月約 $5-50。
+</FaqItem>
+
+<FaqItem question="使用自架設分析還需要 Cookie 橫幅嗎？">
+如果你的工具使用無 Cookie 追蹤，就不需要。OpenPanel、Plausible、Umami、GoatCounter 和 Ackee 都是不靠 Cookie 追蹤，因此基本分析不需要 Cookie 同意橫幅。Matomo 預設使用 Cookie，但也提供無 Cookie 模式。
+</FaqItem>
+
+<FaqItem question="我可以自架設分析並符合 GDPR 嗎？">
+可以。自架設是符合 GDPR 最有力的方法之一，因為你的資料不會離開你的基礎設施。你不必擔心第三方資料傳輸，而且能完全掌控資料保留與刪除。像 OpenPanel 和 Plausible 這類工具再加上無 Cookie 追蹤，讓合規變得更簡單。
+</FaqItem>
+
+<FaqItem question="自架設分析需要多少伺服器資源？">
+對大多數工具來說：2-4 vCPU、4-8 GB RAM、40 GB SSD 就能支援每月數十萬事件。PostHog 需要更多（至少 16 GB RAM）。GoatCounter 和 Ackee 則可在極低資源下執行。流量成長時再往上擴充即可。
+</FaqItem>
+
+<FaqItem question="自架設網站分析和產品分析有什麼差別？">
+網站分析追蹤的是網站流量——頁面瀏覽、引薦、裝置與地理資料。產品分析追蹤的是產品內的使用者行為——事件、漏斗、留存與使用者旅程。像 OpenPanel 和 PostHog 這類工具會同時提供兩者。大多數自架設工具（Plausible、Umami、GoatCounter）只專注在網站分析。若你想看涵蓋產品面向的工具，請參考我們的 [自架設產品分析](/articles/self-hosted-product-analytics) 指南。
+</FaqItem>
+
+<FaqItem question="我可以從 Google Analytics 遷移到自架設工具嗎？">
+可以。Matomo 提供直接匯入 Google Analytics 資料的功能。其他工具如 OpenPanel 與 Plausible 也讓你可以用新的追蹤方式重新開始。你可以在過渡期間同時並行兩套系統，確定自己已熟悉新工具後，再移除 GA。
+</FaqItem>
+</Faqs>

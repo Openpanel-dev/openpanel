@@ -1,0 +1,29 @@
+---
+title: 身分驗證
+description: 如何對 OpenPanel API 進行身分驗證
+---
+
+## 用戶端 ID 與密鑰
+
+OpenPanel 使用用戶端憑證進行身分驗證。每個 API 用戶端都有一組 **用戶端 ID** 和 **用戶端密鑰**，可在控制台中產生。
+
+在請求標頭中傳入它們：
+
+```http
+openpanel-client-id: <clientId>
+openpanel-client-secret: <secret>
+```
+
+## API 用戶端類型
+
+| 類型 | 說明 |
+| --- | --- |
+| `write` | 可寫入事件和使用者資料更新 |
+| `read` | 可查詢分析資料（insights、export 等） |
+| `root` | 完整存取權限，僅用於伺服器端管理場景 |
+
+## 建立用戶端
+
+前往控制台的 **設定 -> API 用戶端**，建立所需類型的用戶端。請立即複製密鑰，它只會顯示一次。
+
+更多身分驗證、權限與安全最佳實務，請查看 [身分驗證指南](/zh-TW/docs/api/authentication)。

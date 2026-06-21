@@ -1,0 +1,450 @@
+{
+  "slug": "smartlook-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "2026 年 Smartlook 替代方案 — 開源且可自架",
+    "description": "要從 Smartlook 轉移嗎？OpenPanel 取代 session replay、事件追蹤、漏斗與留存分析——開源、可自架、無 Cookie，且每月只要 $2.50（或可免費自架）。沒有 Cisco 綁定。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "最佳 Smartlook 替代方案",
+    "subheading": "OpenPanel 是 Smartlook 的開源替代方案，提供以事件為基礎的產品分析、session replay、漏斗與留存分析——支援自架、透明定價，且沒有 Cisco 供應商綁定。",
+    "badges": [
+      "開源",
+      "可自架",
+      "無 session 限制",
+      "產品分析"
+    ]
+  },
+  "competitor": {
+    "name": "Smartlook",
+    "logo": "/logos/smartlook.svg",
+    "url": "https://www.smartlook.com",
+    "short_description": "結合產品分析與視覺洞察的平台，提供 session recording、熱圖與事件追蹤。於 2023 年被 Cisco 收購。",
+    "founded": 2016,
+    "headquarters": "捷克共和國布爾諾"
+  },
+  "overview": {
+    "title": "為什麼要考慮用 OpenPanel 取代 Smartlook？",
+    "paragraphs": [
+      "Smartlook 將產品分析與視覺洞察結合——在同一平台中提供 session recording、熱圖與事件追蹤。自 2023 年被 Cisco 收購後，它定位為可供企業使用的分析與觀測工具。但企業所有權往往代表企業級定價、專有綁定，以及僅限雲端、無法自架的基礎架構。",
+      "OpenPanel 提供事件追蹤、漏斗分析、留存分析、分群分析與 session replay，並將這些功能整合在一個聚焦、開源的套件中。結果是一款同時涵蓋產品分析與視覺化 session 檢視的工具——成本卻低得多，且採透明的事件計費，起價每月 $2.50。",
+      "OpenPanel 採用 AGPL-3.0 授權且為開源，帶來 Smartlook 這種 Cisco 旗下專有平台無法匹敵的優勢。你可以在自己的基礎架構上自架，完全掌控資料主權，檢查原始碼以符合安全合規需求，並避開收購頻繁的平台所帶來的供應商綁定風險。自架也代表可無限保留資料，相較於 Smartlook 依方案而定的限制更具彈性。",
+      "如果你需要進階熱圖或 Unity／遊戲分析，Smartlook 會更有優勢。但如果你的團隊想要產品分析加上 session replay，同時重視開源透明、自架部署與可預測的定價，OpenPanel 能在沒有 Cisco 企業級複雜性的前提下提供更高價值。"
+    ]
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Smartlook：哪個更適合你？",
+    "intro": "兩個平台都提供產品分析與 session replay。Smartlook 額外提供熱圖與挫折訊號；OpenPanel 則提供自架、開源與更簡單的定價。",
+    "one_liner": "OpenPanel 為開源方案，具備自架、產品分析與 session replay；Smartlook 則額外提供熱圖與更深入的視覺行為工具。",
+    "best_for_openpanel": [
+      "需要自架以滿足資料所有權與合規需求的團隊",
+      "需要開源以確保透明與可稽核性的需求",
+      "想要產品分析加 session replay，且不受 Cisco 供應商綁定影響的團隊",
+      "希望在自架情境下享有無限資料保留的團隊",
+      "需要後端追蹤的伺服器端 SDK"
+    ],
+    "best_for_competitor": [
+      "需要完整熱圖（點擊、捲動、移動）的 UX 設計師",
+      "需要與 session recording 串聯的行動應用程式當機報告",
+      "需要 Unity 遊戲分析的團隊",
+      "需要 Cisco/AppDynamics 生態系整合的團隊"
+    ]
+  },
+  "highlights": {
+    "title": "關鍵差異一覽",
+    "intro": "以下是 OpenPanel 與 Smartlook 在最重要因素上的比較。",
+    "items": [
+      {
+        "label": "開源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "否（專有，Cisco 旗下）"
+      },
+      {
+        "label": "自架",
+        "openpanel": "可以，使用 Docker Compose",
+        "competitor": "否（僅限雲端）"
+      },
+      {
+        "label": "Session replay",
+        "openpanel": "有",
+        "competitor": "有，並提供熱圖與摩擦偵測"
+      },
+      {
+        "label": "熱圖",
+        "openpanel": "無",
+        "competitor": "點擊、捲動、移動"
+      },
+      {
+        "label": "定價模式",
+        "openpanel": "依事件計費／免費自架",
+        "competitor": "依 session 計費，起價 $55/月"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "功能比較",
+    "intro": "OpenPanel 專注於產品分析；Smartlook 則把分析與視覺行為洞察結合。",
+    "groups": [
+      {
+        "group": "核心分析",
+        "features": [
+          {
+            "name": "事件追蹤",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "漏斗",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "留存分析",
+            "openpanel": true,
+            "competitor": "基礎",
+            "notes": null
+          },
+          {
+            "name": "使用者檔案",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "分群",
+            "openpanel": true,
+            "competitor": "受限",
+            "notes": null
+          },
+          {
+            "name": "自訂儀表板",
+            "openpanel": true,
+            "competitor": "受限",
+            "notes": null
+          },
+          {
+            "name": "即時資料",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "視覺行為分析",
+        "features": [
+          {
+            "name": "Session recordings",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Smartlook 另外會將錄影連結到當機報告與熱圖"
+          },
+          {
+            "name": "點擊熱圖",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "捲動熱圖",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "移動熱圖",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "可回放的當機報告",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Smartlook 會將當機報告連結到錄影"
+          }
+        ]
+      },
+      {
+        "group": "隱私與合規",
+        "features": [
+          {
+            "name": "自架",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "開源",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "符合 GDPR",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "無 Cookie 追蹤",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "SOC 2 認證",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Type II"
+          },
+          {
+            "name": "EU 資料駐留",
+            "openpanel": "透過自架",
+            "competitor": "是"
+          }
+        ]
+      },
+      {
+        "group": "整合與資料",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": "僅限 Pro 方案",
+            "notes": null
+          },
+          {
+            "name": "資料匯出",
+            "openpanel": true,
+            "competitor": "CSV（Pro+）",
+            "notes": null
+          },
+          {
+            "name": "Webhooks",
+            "openpanel": true,
+            "competitor": "受限",
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "技術比較",
+    "intro": "對於評估分析工具的開發者，以下是實作方式的比較。",
+    "items": [
+      {
+        "label": "SDK 大小（JS）",
+        "openpanel": "~2.3 KB gzip 後",
+        "competitor": "較大（包含錄製功能）",
+        "notes": "Smartlook 的 SDK 包含 session replay 程式碼"
+      },
+      {
+        "label": "支援的平台",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "Flutter",
+          "iOS",
+          "Android",
+          "Node.js"
+        ],
+        "competitor": [
+          "JavaScript",
+          "iOS",
+          "Android",
+          "React Native",
+          "Flutter",
+          "Unity",
+          "Cordova",
+          "Xamarin"
+        ],
+        "notes": null
+      },
+      {
+        "label": "開源",
+        "openpanel": "是（AGPL-3.0）",
+        "competitor": "否",
+        "notes": null
+      },
+      {
+        "label": "自架部署",
+        "openpanel": "Docker Compose（ClickHouse、Postgres、Redis），含引導式設定精靈",
+        "competitor": "無法使用",
+        "notes": null
+      },
+      {
+        "label": "資料庫",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "AWS 雲端基礎架構",
+        "notes": null
+      },
+      {
+        "label": "資料保留",
+        "openpanel": "無限（自架）",
+        "competitor": "基本 1-3 個月，最高 12 個月",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "價格比較",
+    "intro": "OpenPanel 提供依事件計費與免費自架。Smartlook 則採依 session 計費。",
+    "openpanel": {
+      "model": "依事件計費、透明",
+      "description": "5,000 個事件起價每月 $2.50。自架可免費使用且無限事件。所有方案都包含全部功能。"
+    },
+    "competitor": {
+      "model": "依 session 計費",
+      "description": "免費方案：每月 3,000 個 session，含基本功能。Pro：每月 $55 可獲得 5,000 個 session，並有延長保留與匯出功能。Enterprise：50,000 個以上 session 採客製化報價。",
+      "free_tier": "有（每月 3,000 個 session）",
+      "pricing_url": "https://www.smartlook.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "從 Smartlook 遷移到 OpenPanel",
+    "intro": "從 Smartlook 轉到 OpenPanel，代表你能保留 session replay 與產品分析，同時獲得自架、開源與更簡單的定價。",
+    "difficulty": "中等",
+    "estimated_time": "2-4 小時",
+    "steps": [
+      {
+        "title": "了解功能差異",
+        "description": "OpenPanel 包含 session replay 與以事件為基礎的產品分析。如果你依賴熱圖或 Unity 分析，可以考慮搭配 Microsoft Clarity 之類的工具來補足熱圖需求。"
+      },
+      {
+        "title": "建立 OpenPanel 帳號或自架",
+        "description": "註冊 OpenPanel 雲端服務，或使用 Docker 部署自架版本。設定你的專案。"
+      },
+      {
+        "title": "安裝 OpenPanel SDK",
+        "description": "將 Smartlook 的程式片段替換為 OpenPanel 的 SDK。可透過 npm 安裝或使用 CDN。若是行動應用程式，請安裝對應的原生 SDK。"
+      },
+      {
+        "title": "對應事件與屬性",
+        "description": "將 Smartlook 的事件追蹤轉換為 OpenPanel 的事件結構。使用 identify() 設定使用者識別，以便跨 session 追蹤使用者。"
+      },
+      {
+        "title": "建立分析儀表板",
+        "description": "在 OpenPanel 中建立漏斗、留存圖表與分群分析，以取代 Smartlook 的分析功能。"
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "兩者使用相似的事件追蹤 API。主要差異在於 OpenPanel 不會自動錄製 session。"
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Smartlook 的歷史 session recordings 無法遷移。事件資料是否可匯出，取決於你的 Smartlook 方案。"
+    }
+  },
+  "use_cases": {
+    "title": "OpenPanel 比 Smartlook 更適合的情境",
+    "intro": "當你需要具備資料所有權的產品分析，且不需要視覺回放功能時，OpenPanel 會特別出色。",
+    "items": [
+      {
+        "title": "產品分析與成長",
+        "description": "深入的事件型分析，包含漏斗、留存分析與分群。留存與分群能力比 Smartlook 更強。",
+        "icon": "chart"
+      },
+      {
+        "title": "資料所有權與自架",
+        "description": "透過自架完整掌控資料。只需一個指令的 ./setup 精靈會引導你完成設定，並在幾分鐘內將整個 Docker Compose 堆疊啟動。Smartlook 僅提供雲端服務，沒有自架選項。",
+        "icon": "server"
+      },
+      {
+        "title": "開源需求",
+        "description": "採用 AGPL-3.0 授權，具備完整透明度與可自訂性。Smartlook 則是專有軟體（現為 Cisco 旗下）。",
+        "icon": "code"
+      },
+      {
+        "title": "無限資料保留",
+        "description": "自架的 OpenPanel 具備無限保留。即使是付費方案，Smartlook 仍限制資料保留時間。",
+        "icon": "database"
+      },
+      {
+        "title": "高流量下更具成本效益",
+        "description": "依事件計費或可免費自架。Smartlook 的依 session 計費模式，費用會很快攀升。",
+        "icon": "dollar"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "關於從 Smartlook 轉換到 OpenPanel 的常見問題。",
+    "items": [
+      {
+        "question": "OpenPanel 可以取代 Smartlook 的 session recordings 嗎？",
+        "answer": "可以，針對 session replay 而言——OpenPanel 現在包含 session recording。不過，如果你需要熱圖（點擊、捲動、移動）、挫折訊號或 Unity 遊戲分析，Smartlook 在這些項目上仍較有優勢。"
+      },
+      {
+        "question": "哪個工具的漏斗分析更好？",
+        "answer": "兩個工具都提供漏斗分析。使用 OpenPanel，你也可以觀看流失使用者的 session recordings，而且 OpenPanel 提供更進階的漏斗自訂與分群分析。"
+      },
+      {
+        "question": "我可以自架 Smartlook 嗎？",
+        "answer": "不行，Smartlook 只提供雲端代管服務（現為 Cisco 旗下的一部分）。OpenPanel 同時提供雲端代管與透過 Docker 的自架部署，讓你完整擁有資料。"
+      },
+      {
+        "question": "Cisco 收購 Smartlook 後發生了什麼事？",
+        "answer": "Cisco 已於 2023 年 6 月完成對 Smartlook 的收購。Smartlook 正被整合進 Cisco 的 AppDynamics 平台。Smartlook 產品本身仍持續獨立運作。"
+      },
+      {
+        "question": "價格怎麼比較？",
+        "answer": "Smartlook 採依 session 計費，免費方案每月 3,000 個 session，付費方案起價每月 $55。OpenPanel 採分級的依事件計費，5,000 個事件起價每月 $2.50（提供 30 天免費試用）。OpenPanel 的自架方案完全免費，且無限事件。"
+      },
+      {
+        "question": "OpenPanel 支援行動應用程式嗎？",
+        "answer": "有。兩個平台都提供行動 SDK。OpenPanel 支援 iOS、Android、React Native 與 Flutter，並提供事件追蹤。Smartlook 另外也支援 Unity、Cordova 與 Xamarin，並具備 session replay 功能。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      {
+        "title": "追蹤自訂事件",
+        "url": "/guides/track-custom-events"
+      },
+      {
+        "title": "React Native 分析設定",
+        "url": "/guides/react-native-analytics"
+      },
+      {
+        "title": "Swift/iOS 分析設定",
+        "url": "/guides/swift-analytics"
+      }
+    ],
+    "articles": [
+      {
+        "title": "9 個最佳開源網站分析工具",
+        "url": "/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Mouseflow",
+        "url": "/compare/mouseflow-alternative"
+      },
+      {
+        "name": "FullStory",
+        "url": "/compare/fullstory-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "開始使用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

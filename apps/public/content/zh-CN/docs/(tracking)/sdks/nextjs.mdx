@@ -1,0 +1,322 @@
+---
+title: Next.js
+---
+
+import Link from 'next/link';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+import { DeviceIdWarning } from '@/components/device-id-warning';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+<Callout>
+在找分步教程吗？查看 [Next.js 分析指南](/zh-CN/guides/nextjs-analytics)。
+</Callout>
+
+## 了解前提
+
+请注意，这里的所有跟踪都发生在客户端！
+
+关于服务端跟踪的更多信息，请参阅 [Server Side Tracking](#track-server-events) 部分。
+
+## 安装
+
+<Steps>
+### 安装依赖
+
+```bash
+pnpm install @openpanel/nextjs
+```
+
+### 初始化
+
+将 `OpenPanelComponent` 添加到根布局组件中。
+
+```tsx
+import { OpenPanelComponent } from '@openpanel/nextjs';
+
+export default function RootLayout({ children }) {
+  return (
+    <>
+      <OpenPanelComponent
+        clientId="your-client-id"
+        trackScreenViews={true}
+        // trackAttributes={true}
+        // trackOutgoingLinks={true}
+        // 如果你有 user id，可以在这里传入以识别用户
+        // profileId={'123'}
+      />
+      {children}
+    </>
+  )
+}
+```
+
+#### 选项
+
+<CommonSdkConfig />
+<WebSdkConfig />
+
+##### NextJS 选项
+
+- `profileId` - 如果你有 user id，可以在这里传入以识别用户
+- `cdnUrl`（已弃用）- OpenPanel SDK 的 URL（默认：`https://openpanel.dev/op1.js`）
+- `scriptUrl` - OpenPanel SDK 的 URL（默认：`https://openpanel.dev/op1.js`）
+- `filter` - 这是一个在跟踪事件前调用的函数。如果返回 false，则不会跟踪该事件。[了解更多](#filter)
+- `globalProperties` - 这是一个对象，会随每个事件一起发送。
+
+##### `filter`
+
+此选项需要是字符串化后的函数，且不能访问函数外部的任何变量。
+
+```tsx
+<OpenPanelComponent
+  clientId="your-client-id"
+  filter={`
+    function filter(event) {
+      return event.name !== 'my_event';
+    }
+  `}
+/>
+```
+
+如果想利用 typescript，可以按下面这样做。_注意 `toString`_
+```tsx /.toString();/
+import { type TrackHandlerPayload } from '@openpanel/nextjs';
+
+const opFilter = ((event: TrackHandlerPayload) => {
+  return event.type === 'track' && event.payload.name === 'my_event';
+}).toString();
+
+<OpenPanelComponent
+  clientId="your-client-id"
+  filter={opFilter}
+/>
+```
+
+</Steps>
+
+## 使用
+
+### 客户端组件
+
+对于客户端组件，你可以直接使用 `useOpenPanel` hook。
+
+```tsx
+import { useOpenPanel } from '@openpanel/nextjs';
+
+function YourComponent() {
+  const op = useOpenPanel();
+
+  return <button type="button" onClick={() => op.track('my_event', { foo: 'bar' })}>Trigger event</button>
+}
+```
+
+### 服务端组件
+
+由于不能在服务端组件中使用 hooks，你需要创建 SDK 实例。该实例从 `@openpanel/nextjs` 导出。
+
+<Callout>请记住，这里会暴露你的 client secret，所以不要在客户端使用它。</Callout>
+
+```tsx title="utils/op.ts"
+import { OpenPanel } from '@openpanel/nextjs';
+
+export const op = new OpenPanel({
+  clientId: 'your-client-id',
+  clientSecret: 'your-client-secret',
+});
+
+// 现在你可以使用 `op` 来跟踪事件
+op.track('my_event', { foo: 'bar' });
+```
+
+使用说明请参阅 [Javascript SDK](/zh-CN/docs/sdks/javascript#usage)。
+
+### 跟踪事件
+
+你可以通过两种方式跟踪事件：直接调用 `op.track(`，或向 HTML 元素添加 `data-track` 属性。
+
+```ts title="index.ts"
+useOpenPanel().track('my_event', { foo: 'bar' });
+```
+
+### 识别用户
+
+要识别用户，请调用 `op.identify(` 方法，并传入唯一标识符。
+
+```js title="index.js"
+useOpenPanel().identify({
+  profileId: '123', // 必填
+  firstName: 'Joe',
+  lastName: 'Doe',
+  email: 'joe@doe.com',
+  properties: {
+    tier: 'premium',
+  },
+});
+```
+
+#### 对于服务端组件
+
+对于服务端组件，你可以使用从 `@openpanel/nextjs` 导出的 `IdentifyComponent` 组件。
+
+> 如果你在服务端已有用户数据，这个组件很适合使用。
+
+```tsx title="app/nested/layout.tsx"
+import { IdentifyComponent } from '@openpanel/nextjs';
+
+export default function Layout({ children }) {
+  const user = await getCurrentUser()
+
+  return (
+    <>
+      <IdentifyComponent
+        profileId={user.id}
+        firstName={user.firstName}
+        lastName={user.lastName}
+        email={user.email}
+        properties={{
+          tier: 'premium',
+        }}
+      />
+      {children}
+    </>
+  )
+}
+```
+
+
+### 设置全局属性
+
+要设置会随每个事件发送的属性：
+
+```js title="index.js"
+useOpenPanel().setGlobalProperties({
+  app_version: '1.0.2',
+  environment: 'production',
+});
+```
+
+### 增加属性值
+
+用于增加用户资料上的数值属性。
+
+- `value` 是要增加的数值。如果不提供，则默认加 1。
+
+```js title="index.js"
+useOpenPanel().increment({
+  profileId: '1',
+  property: 'visits',
+  value: 1 // optional
+});
+```
+
+### 减少属性值
+
+用于减少用户资料上的数值属性。
+
+- `value` 是要减少的数值。如果不提供，则默认减 1。
+
+```js title="index.js"
+useOpenPanel().decrement({
+  profileId: '1',
+  property: 'visits',
+  value: 1 // optional
+});
+```
+
+### 使用分组
+
+分组可让你在账户或公司级别跟踪分析数据。完整流程请参阅 [Groups guide](/zh-CN/docs/get-started/groups)。
+
+**创建或更新分组：**
+
+```tsx title="app/login/page.tsx"
+useOpenPanel().upsertGroup({
+  id: 'org_acme',
+  type: 'company',
+  name: 'Acme Inc',
+  properties: { plan: 'enterprise' },
+});
+```
+
+**将当前用户分配到分组**（在 `identify` 之后调用）：
+
+```tsx title="app/login/page.tsx"
+useOpenPanel().setGroup('org_acme');
+```
+
+设置后，后续所有 `track()` 调用都会自动包含 group IDs。
+
+### 清除用户数据
+
+清除当前用户的数据（包括分组）：
+
+```js title="index.js"
+useOpenPanel().clear()
+```
+
+## 服务端
+
+如果你想跟踪服务端事件，应创建我们 Javascript SDK 的实例。它从 `@openpanel/nextjs` 导出
+
+<Callout>
+使用服务端事件时，务必使用 secret 对请求进行身份验证。这样可以防止未经授权的请求，因为我们无法使用 cors headers。
+
+你可以使用相同的 clientId，但需要向 SDK 传入关联的 client secret。
+
+</Callout>
+
+```typescript
+import { OpenpanelSdk } from '@openpanel/nextjs';
+
+const opServer = new OpenpanelSdk({
+  clientId: '{YOUR_CLIENT_ID}',
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+});
+
+opServer.event('my_server_event', { ok: '✅' });
+
+// 传入 `profileId` 以跟踪特定用户的事件
+opServer.event('my_server_event', { profileId: '123', ok: '✅' });
+```
+
+### Serverless & Vercel
+
+如果你在像 Vercel 这样的 serverless 环境中记录事件，可以使用 `waitUntil`，以确保在函数结束前完成事件记录。
+
+否则，函数可能会在事件记录前关闭。更多信息请查看 [here](https://vercel.com/docs/functions/functions-api-reference#waituntil)。
+
+```typescript
+import { waitUntil } from '@vercel/functions';
+import { opServer } from 'path/to/your-sdk-instance';
+
+export function GET() {
+  // 立即返回响应，同时保持函数存活
+  waitUntil(opServer.event('my_server_event', { foo: 'bar' }));
+  return new Response(`You're event has been logged!`);
+}
+```
+
+### 代理事件
+
+使用 `createRouteHandler` 可以将事件通过你的服务器代理，这样可以确保所有事件都被跟踪，因为有很多广告拦截器会阻止对第三方域名的请求。该 handler 会根据路径自动路由请求，支持 API endpoint（如 `/track` 和 `/track/device-id`）以及跟踪脚本（`/op1.js`）。
+
+```typescript title="/app/api/[...op]/route.ts"
+import { createRouteHandler } from '@openpanel/nextjs/server';
+
+export const { GET, POST } = createRouteHandler();
+```
+
+记得将 `OpenPanelComponent` 中的 `apiUrl` 和 `scriptUrl` 改为你自己的服务器。
+
+```tsx
+<OpenPanelComponent
+  apiUrl="/api/op" // [!code highlight]
+  scriptUrl="/api/op/op1.js" // [!code highlight]
+  clientId="your-client-id"
+  trackScreenViews={true}
+/>
+```

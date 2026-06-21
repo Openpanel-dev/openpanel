@@ -1,0 +1,168 @@
+{
+  "slug": "ecommerce",
+  "audience": "ecommerce",
+  "seo": {
+    "title": "电商分析 — 面向 Shopify、WooCommerce、Stripe 的无 Cookie 跟踪",
+    "description": "无需同意横幅的电商分析。跟踪 Shopify、WooCommerce 和 Stripe 结账流程中的收入、漏斗和客户。从每月 $2.50 起，或可免费自托管。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "经得起 Cookie 同意影响的电商分析",
+    "subheading": "GA4 会因同意横幅损失 30-50% 的数据。Mixpanel 和 Heap 按事件收费，规模一大每月费用轻松飙到数千美元。OpenPanel 无需 Cookie 即可跟踪每一次加购、结账和购买，确保归因保持完整，而你的 CFO 也不会收到意外账单。",
+    "badges": [
+      "无 Cookie 跟踪",
+      "无需同意横幅",
+      "收入 + 漏斗跟踪",
+      "Shopify、WooCommerce、Stripe"
+    ]
+  },
+  "problem": {
+    "title": "为什么 2026 年的电商分析依然失灵",
+    "intro": "每款分析工具在在线商店场景下都有不同的失效方式。以下是实际会出问题的地方。",
+    "items": [
+      {
+        "title": "Cookie 同意毁掉 GA4 数据",
+        "description": "在 GDPR 下，分析 Cookie 需要明确同意。大约 30-50% 的欧盟购物者会点击拒绝。GA4 用建模数据填补缺口——你优化广告支出依赖的是估算值，而不是真实转化。"
+      },
+      {
+        "title": "按事件计费的分析工具会迅速涨到数千美元",
+        "description": "Mixpanel 和 Heap 按事件收费。一个中等活跃的商店，每次会话触发 50 个事件，20K 次会话就会达到 100 万事件。那意味着在你基于这些数据做出任何业务决策之前，就已经要支付 $300-500/月。"
+      },
+      {
+        "title": "Shopify 和 WooCommerce 原生报表过于浅显",
+        "description": "页面浏览和订单虽然都有，但你无法构建从商品页 → 加入购物车 → 结账的漏斗，也不能按获客渠道分群，或比较不同 SKU 的留存。原生报表告诉你发生了什么，却不会告诉你为什么。"
+      },
+      {
+        "title": "购物车放弃再营销依赖的归因会失效",
+        "description": "当三分之一的购物者拒绝 Cookie，而其余用户又被 ITP 和跟踪防护清除时，最后一次点击归因就变成了虚构。你在为已经不存在的数据投放广告。"
+      }
+    ]
+  },
+  "features": {
+    "title": "在线商店所需的一切",
+    "intro": "这些功能覆盖完整的电商漏斗，同时不牺牲隐私或价格优势。",
+    "items": [
+      {
+        "title": "默认无 Cookie 跟踪",
+        "description": "没有 Cookie，没有同意横幅，也没有建模数据。每位访客都会被计数，每个事件都会进入数据库，你的转化数据也不会被退出率过滤。"
+      },
+      {
+        "title": "收入与订单跟踪",
+        "description": "发送包含收入、货币、订单 ID 和商品属性的购买事件。无需把 GA4 和 Stripe 数据拼接在一起，就能构建按渠道统计的收入报表。"
+      },
+      {
+        "title": "SKU 级漏斗分析",
+        "description": "构建从商品页 → 加入购物车 → 结账 → 购买的漏斗，并按 SKU、品类或活动拆分。精准查看每个商品在哪一步流失了客户。"
+      },
+      {
+        "title": "适用于 Shopify、WooCommerce、Stripe 和自定义技术栈",
+        "description": "在 Shopify 主题中放入脚本标签，在 WooCommerce 事件中接入，或通过 Stripe Webhook 触发购买事件，也可以为自定义的 Next.js 或 Remix 商店埋点。所有场景采用相同的跟踪模型。"
+      },
+      {
+        "title": "仅限欧盟的数据驻留",
+        "description": "所有云端数据都存储在欧盟基础设施中。不会传输到美国服务器。默认符合 GDPR——无需 DPA、无需传输影响评估，也无需维护标准合同条款。"
+      },
+      {
+        "title": "客户档案和生命周期价值",
+        "description": "查看每位客户的完整旅程：他们来自哪个广告，看过哪些产品，何时购买，何时回访。无需把数据导出到数据仓库，也能计算 LTV 和复购率。"
+      },
+      {
+        "title": "实时仪表盘",
+        "description": "进行闪购或发送邮件后，即可实时看到流量和收入进入系统。没有像 GA4 那样的 24 小时处理延迟。"
+      },
+      {
+        "title": "自托管即可获得无限事件",
+        "description": "使用 Docker Compose 将 OpenPanel 部署到你自己的基础设施上，以固定托管成本运行——没有按事件收费。安装脚本只需一条命令。云端版和自托管版功能完全一致。"
+      }
+    ]
+  },
+  "benefits": {
+    "title": "为什么电商团队会切换到 OpenPanel",
+    "intro": "在其他工具上会破坏电商分析的那些权衡——同意流失、价格失控、报表浅薄——在这里都不成立。",
+    "items": [
+      {
+        "title": "真实归因，而非建模估算",
+        "description": "无 Cookie 跟踪意味着 100% 的访客都会被计数。没有 GA4 同意模式缺口，也没有 Mixpanel 抽样。你的广告支出决策基于真实数据。"
+      },
+      {
+        "title": "随着规模增长，成本仍然可预测",
+        "description": "5K 事件时每月 $2.50。100K 事件时每月 $20。1M 事件时每月 $90。自托管则无限免费。黑五流量暴增后也不会出现用量计费的惊喜账单。"
+      },
+      {
+        "title": "一个工具替代 GA4 + 产品分析 + 热图订阅",
+        "description": "一个工具即可提供 Web 分析、漏斗、留存和收入跟踪。顺便还能取消两到三个订阅。"
+      },
+      {
+        "title": "合规从架构层面就已处理",
+        "description": "欧盟托管、无 Cookie、无第三方数据共享。无需同意平台，也无需和供应商谈 DPA。隐私工作在你注册之前就已经完成。"
+      },
+      {
+        "title": "适用于所有平台",
+        "description": "Shopify、WooCommerce、BigCommerce、Magento、Squarespace、自定义 Next.js、Remix、Astro，或直接基于 Stripe 的结账。脚本标签和 SDK 的设置方式完全相同。"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常见问题",
+    "intro": "正在评估 OpenPanel 的电商团队常问的问题。",
+    "items": [
+      {
+        "question": "OpenPanel 可以替代在线商店的 GA4 吗？",
+        "answer": "可以。OpenPanel 覆盖了 GA4 的所有核心电商报表功能——页面浏览、流量来源、UTM 归因、转化事件、收入跟踪、漏斗——并补充了 GA4 缺乏的产品分析功能（分群、留存、客户档案）。最大的区别是 OpenPanel 无需 Cookie，因此你可以去掉同意横幅，而且数据是完整的。"
+      },
+      {
+        "question": "如何在 Shopify 上安装 OpenPanel？",
+        "answer": "在 Shopify 管理后台 → 在线商店 → 主题 → 编辑代码 → theme.liquid 中，将 OpenPanel 脚本标签放在 </head> 之前即可。页面浏览会自动跟踪。对于购买事件，可在订单确认页添加一小段脚本，触发 op.track('Purchase', {revenue, currency, orderId, products})。完整步骤请参见我们的 [Shopify 分析页面](/zh-CN/for/shopify)。"
+      },
+      {
+        "question": "如何在 WooCommerce 上安装 OpenPanel？",
+        "answer": "有两种方式。最简单的是安装 OpenPanel WordPress 插件（或 Site Kit 替代方案）。手动方式：挂钩 WooCommerce 的 woocommerce_thankyou 动作，在传入订单对象时触发 op.track('Purchase')，并将 OpenPanel 脚本添加到主题头部。add_to_cart 和 product_view 等 WooCommerce 事件也可作为原生钩子使用。"
+      },
+      {
+        "question": "OpenPanel 可以与 Stripe Checkout 或 Payment Links 配合使用吗？",
+        "answer": "可以。当客户点击购买按钮时，在商品页触发 op.track('CheckoutStarted')，然后在 Stripe webhook 处理器中于 checkout.session.completed 触发时发送 op.track('Purchase', {revenue, currency, orderId})。这适用于 Stripe Checkout、Payment Links、订阅以及自定义 Stripe Elements 集成。"
+      },
+      {
+        "question": "在我的商店中使用 OpenPanel 还需要 Cookie 同意横幅吗？",
+        "answer": "分析用途不需要。OpenPanel 无需 Cookie，也不处理个人数据——根据 GDPR 或 CCPA，分析跟踪不需要同意横幅。如果你使用营销像素（Meta、Google Ads），它们可能仍然需要同意横幅，但如果只是分析用途，可以去掉。"
+      },
+      {
+        "question": "OpenPanel 会拖慢我的结账流程吗？",
+        "answer": "OpenPanel 的 JavaScript SDK 仅 2.3 KB gzip 后大小。GA4 是 50 KB。Mixpanel 是 60 KB。对结账性能的影响可以忽略不计——远低于影响 Core Web Vitals 或转化率的阈值。"
+      },
+      {
+        "question": "OpenPanel 的价格与 Mixpanel 相比，适合繁忙商店吗？",
+        "answer": "一个每月有 20K 次会话、每次会话 50 个事件的商店，会触发 100 万事件。Mixpanel 在这个量级大约收费 $200-300/月。Heap 也差不多。OpenPanel 的云端版在 100 万事件时只需 $90/月，或者自托管则 $0/月。在黑五流量激增时差距更大——Mixpanel 会按超量计费，而 OpenPanel 仍保持同一个月费档位。"
+      },
+      {
+        "question": "我可以跟踪多店铺部署吗（例如 Shopify Plus 的多个店铺）？",
+        "answer": "可以。OpenPanel 支持每个账户拥有无限项目，因此你可以将每个店铺作为独立项目进行跟踪，也可以把它们汇总到一个项目中并按 store_id 进行分段。这两种模式都可行——选择最符合你报表需求的方式即可。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "电商跟踪设置", "url": "/guides/ecommerce-tracking" },
+      { "title": "跟踪自定义事件", "url": "/guides/track-custom-events" }
+    ],
+    "articles": [
+      { "title": "无 Cookie 分析详解", "url": "/articles/cookieless-analytics" },
+      { "title": "开源分析工具调研", "url": "/articles/self-hosted-web-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel vs Google Analytics", "url": "/compare/google-analytics-alternative" },
+      { "title": "OpenPanel vs Mixpanel", "url": "/compare/mixpanel-alternative" },
+      { "title": "OpenPanel vs Plausible", "url": "/compare/plausible-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "免费试用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看源代码",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

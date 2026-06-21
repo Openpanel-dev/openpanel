@@ -1,0 +1,264 @@
+---
+title: "如何为 Swift 应用添加分析"
+description: "使用 OpenPanel 的 Swift SDK，为你的 iOS、macOS、tvOS 和 watchOS 应用添加隐私优先的分析。"
+difficulty: beginner
+timeToComplete: 10
+date: 2025-12-15
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "添加 Swift package"
+    anchor: "install"
+  - name: "初始化 OpenPanel"
+    anchor: "setup"
+  - name: "跟踪事件"
+    anchor: "events"
+  - name: "识别用户"
+    anchor: "identify"
+  - name: "跟踪屏幕视图"
+    anchor: "screenviews"
+  - name: "验证你的设置"
+    anchor: "verify"
+---
+
+
+## 简介
+
+要理解用户如何与你的原生 Apple 应用交互，需要可靠的分析。OpenPanel 的 Swift SDK 为 iOS、macOS、tvOS 和 watchOS 平台提供 [事件跟踪](/features/event-tracking)、[用户识别](/features/identify-users) 和屏幕视图分析。
+
+由于原生应用无法像 Web 应用那样依赖 CORS header 进行身份验证，Swift SDK 使用 client secret 进行安全的服务端身份验证。这使它适合需要可靠、尊重隐私的分析的生产应用。OpenPanel 是 Mixpanel 和 Amplitude 的开源替代方案，你可以自行托管以完全掌控数据。
+
+## 先决条件
+
+- 已设置好 Xcode 项目（iOS 13.0+ / macOS 10.15+ / tvOS 13.0+ / watchOS 6.0+）
+- OpenPanel 账户（[免费注册](https://dashboard.openpanel.dev/onboarding)）
+- 来自 OpenPanel 控制台的 Client ID 和 Client Secret
+
+> **重要：** 原生应用跟踪需要 `clientSecret` 进行身份验证。
+
+## 第 1 步：添加 Swift package
+
+OpenPanel Swift SDK 通过 Swift Package Manager 分发。打开你在 Xcode 中的项目，然后前往 File 并选择 Add Packages。输入仓库 URL，然后点击 Add Package。
+
+```
+https://github.com/Openpanel-dev/swift-sdk
+```
+
+如果你是直接使用 `Package.swift` 文件，则改为将 OpenPanel 添加为依赖项。
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/Openpanel-dev/swift-sdk")
+]
+```
+
+## 第 2 步：初始化 OpenPanel
+
+在跟踪任何事件之前，你需要在应用启动时初始化 SDK。这应尽早在应用生命周期中进行，以便 SDK 能够在整个应用中可用。
+
+对于 UIKit 应用，请将初始化添加到 AppDelegate 的 `application(_:didFinishLaunchingWithOptions:)` 方法中。
+
+```swift title="AppDelegate.swift"
+import UIKit
+import OpenPanel
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+    ) -> Bool {
+        OpenPanel.initialize(options: .init(
+            clientId: "YOUR_CLIENT_ID",
+            clientSecret: "YOUR_CLIENT_SECRET"
+        ))
+
+        return true
+    }
+}
+```
+
+对于 SwiftUI 应用，请在 App struct 的初始化器中初始化 SDK。
+
+```swift title="MyApp.swift"
+import SwiftUI
+import OpenPanel
+
+@main
+struct MyApp: App {
+    init() {
+        OpenPanel.initialize(options: .init(
+            clientId: "YOUR_CLIENT_ID",
+            clientSecret: "YOUR_CLIENT_SECRET"
+        ))
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+### 自动生命周期跟踪
+
+你可以通过设置 `automaticTracking: true` 来启用自动生命周期跟踪。这将为你跟踪 `app_opened` 和 `app_closed` 事件。
+
+```swift
+OpenPanel.initialize(options: .init(
+    clientId: "YOUR_CLIENT_ID",
+    clientSecret: "YOUR_CLIENT_SECRET",
+    automaticTracking: true
+))
+```
+
+## 第 3 步：跟踪事件
+
+初始化完成后，你可以在应用中的任何位置调用 `OpenPanel.track` 来跟踪事件。每个事件都有一个名称，以及可选的属性，用于提供更多上下文。
+
+```swift title="SignupButton.swift"
+import SwiftUI
+import OpenPanel
+
+struct SignupButton: View {
+    var body: some View {
+        Button("注册") {
+            OpenPanel.track(
+                name: "button_clicked",
+                properties: [
+                    "button_name": "signup",
+                    "button_location": "hero"
+                ]
+            )
+        }
+    }
+}
+```
+
+属性可以是与事件相关的任意键值对。常见做法包括跟踪表单提交、购买和功能使用情况。通过使用 snake_case 并清晰描述发生了什么操作，来保持应用中的事件名称一致。
+
+### 设置全局属性
+
+如果有些属性需要随每个事件一起发送，可以使用 `setGlobalProperties` 一次性设置。它适用于应用版本、构建号或设备信息。
+
+```swift
+OpenPanel.setGlobalProperties([
+    "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "",
+    "platform": UIDevice.current.systemName
+])
+```
+
+## 第 4 步：识别用户
+
+当用户登录时，调用 `identify` 将其事件关联到其个人资料。这使你能够跨会话跟踪用户旅程，并了解单个用户的行为。
+
+```swift title="AuthService.swift"
+OpenPanel.identify(payload: IdentifyPayload(
+    profileId: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    properties: [
+        "plan": user.plan,
+        "signup_date": user.createdAt.ISO8601Format()
+    ]
+))
+```
+
+`profileId` 应该是用户的唯一标识符，通常来自你的身份验证系统。`firstName`、`lastName` 和 `email` 等附加属性有助于你在控制台中识别用户。
+
+### 在用户登出时清除用户数据
+
+当用户登出时，调用 `clear` 来重置本地状态。这可确保后续事件不会错误地归因于前一个用户。
+
+```swift
+func logout() {
+    OpenPanel.clear()
+}
+```
+
+### 增加用户属性值
+
+你也可以增加用户资料上的数值属性。这对于跟踪登录次数或购买次数之类的计数很有用，而无需先获取并更新当前值。
+
+```swift
+OpenPanel.increment(payload: IncrementPayload(
+    profileId: user.id,
+    property: "login_count"
+))
+```
+
+## 第 5 步：跟踪屏幕视图
+
+跟踪屏幕视图有助于你了解用户如何在应用中导航。在 SwiftUI 中，使用 `onAppear` 修饰符来跟踪视图何时变为可见。
+
+```swift title="HomeView.swift"
+struct HomeView: View {
+    var body: some View {
+        VStack {
+            Text("首页")
+        }
+        .onAppear {
+            OpenPanel.track(
+                name: "screen_view",
+                properties: ["screen_name": "HomeScreen"]
+            )
+        }
+    }
+}
+```
+
+在 UIKit 中，重写视图控制器中的 `viewDidAppear`。
+
+```swift title="HomeViewController.swift"
+class HomeViewController: UIViewController {
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+
+        OpenPanel.track(
+            name: "screen_view",
+            properties: [
+                "screen_name": "HomeScreen",
+                "screen_class": String(describing: type(of: self))
+            ]
+        )
+    }
+}
+```
+
+OpenPanel SDK 经过设计，具有线程安全性。你可以从任何线程调用其方法，而无需额外同步。
+
+## 验证你的设置
+
+在模拟器或真机上运行你的应用并执行一些操作。在屏幕之间切换并点击几个按钮来生成事件。然后打开你的 [OpenPanel 控制台](https://dashboard.openpanel.dev) 并查看实时视图。
+
+**没有看到事件？**
+
+- 检查 Xcode 控制台中的任何错误信息
+- 验证你的 Client ID 和 Client Secret 是否正确
+- 确认你包含了 `clientSecret` 参数（原生应用必需）
+- 先使用稳定的网络连接进行测试
+
+## 下一步
+
+[Swift SDK 参考文档](/docs/sdks/swift) 介绍了更多配置选项，例如事件过滤和禁用跟踪。如果你正在构建跨平台移动应用，[React Native 分析指南](/guides/react-native-analytics) 展示了如何在该环境中设置 OpenPanel。
+
+## 常见问题
+
+### 为什么原生应用需要 clientSecret？
+
+原生应用无法像 Web 应用那样使用 CORS header 进行身份验证。clientSecret 为你的事件提供安全的服务端身份验证，确保它们在记录之前被正确验证。
+
+### OpenPanel 同时支持 SwiftUI 和 UIKit 吗？
+
+是的。OpenPanel 同时支持 UIKit 和 SwiftUI。在 SwiftUI 视图中使用 `.onAppear` 修饰符，或在 UIKit 视图控制器中使用 `viewDidAppear` 等生命周期方法来跟踪屏幕视图和其他事件。
+
+### 用户离线时还能跟踪事件吗？
+
+OpenPanel 会在本地排队事件，并在网络连接恢复后发送。即使用户暂时离线，事件也不会丢失。
+
+### OpenPanel 符合 GDPR 吗？
+
+是的。OpenPanel 的设计符合 GDPR，具备数据最小化和支持数据主体权利的能力。通过自行托管，你还可以完全消除国际数据传输方面的担忧。有关更多详细信息，请参阅 [无 Cookie 分析文章](/articles/cookieless-analytics)。

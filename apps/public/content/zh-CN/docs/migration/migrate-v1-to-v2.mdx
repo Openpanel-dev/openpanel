@@ -1,0 +1,101 @@
+---
+title: 从 v1 迁移到 v2
+description: 终于，我们觉得已经可以为所有自托管版本发布 v2 了。这是一次重大更新！
+---
+
+## v2 中的新内容
+
+- **重新设计的仪表盘** - 基于 Tanstack 构建的新 UI
+- **[收入跟踪](/zh-CN/features/revenue-tracking)** - 在分析数据旁跟踪收入
+- **Sessions** - 查看单个用户会话
+- **实时视图** - 实时事件流
+- **可自定义仪表盘** - Grafana 风格的小部件布局
+- **改进的报告构建器** - 更快、更灵活
+- **常规改进** - 我们还修复了大量错误，并带来了许多小幅改进等
+
+## 从 v1 迁移
+
+### 确保你在 self-hosting 分支上
+
+有时我们会添加新的辅助脚本等内容。继续之前，请务必确保你在最新提交上。
+
+```bash
+cd ./self-hosting
+git fetch origin
+git checkout self-hosting
+git pull origin self-hosting
+```
+
+### 环境变量
+
+由于我们已从 nextjs 迁移到 tanstack，首先需要更新环境变量。我们已为[环境变量](/zh-CN/docs/self-hosting/environment-variables)单独添加了页面。
+
+```js title=".env"
+NEXT_PUBLIC_DASHBOARD_URL="..." // [!code --]
+NEXT_PUBLIC_API_URL="..." // [!code --]
+NEXT_PUBLIC_SELF_HOSTED="..." // [!code --]
+
+DASHBOARD_URL="..." // [!code ++]
+API_URL="..." // [!code ++]
+SELF_HOSTED="..." // [!code ++]
+```
+
+### Clickhouse 24 -> 25
+
+我们已将 Clickhouse 更新到 25，这一步很重要，不能跳过，否则你的 OpenPanel 实例将无法工作。
+
+你应该编辑 `./self-hosting/docker-compose.yml`
+
+```js title="./self-hosting/docker-compose.yml"
+services:
+  op-ch:
+    image: clickhouse/clickhouse-server:24.3.2-alpine // [!code --]
+    image: clickhouse/clickhouse-server:25.10.2.65 // [!code ++]
+```
+
+从 25 版本开始，clickhouse 默认启用了用户设置，这意味着我们需要将其禁用以避免连接问题。使用此设置后，我们仍然可以（在内部）访问 clickhouse 实例，而无需用户。
+
+```
+services:
+  op-ch:
+    environment:
+      - CLICKHOUSE_SKIP_USER_SETUP=1
+```
+
+### 使用我们最新的 docker 镜像
+
+最后一步是开始使用我们最新的 docker 镜像。
+
+> 注意：你之前可能使用的是 latest 标签，这不推荐。请改为实际的最新版本。
+
+```js title="./self-hosting/docker-compose.yml"
+services:
+  op-api:
+    image: lindesvard/openpanel-api:latest // [!code --]
+    image: lindesvard/openpanel-api:2.0.0 // [!code ++]
+
+  op-worker:
+    image: lindesvard/openpanel-worker:latest // [!code --]
+    image: lindesvard/openpanel-worker:2.0.0 // [!code ++]
+
+  op-dashboard:
+    image: lindesvard/openpanel-dashboard:latest // [!code --]
+    image: lindesvard/openpanel-dashboard:2.0.0 // [!code ++]
+```
+
+### 完成了吗？
+
+完成以上步骤后，你应该需要重启所有服务。根据你的硬件和事件数量，这会花费相当长的时间。由于我们对数据库架构和数据做了重大更改，因此需要运行迁移。
+
+```bash
+./stop
+./start
+```
+
+## 使用 Coolify？
+
+如果你使用 Coolify 并运行 OpenPanel v1，你需要应用上述更改。你可以查看我们的 [Coolify PR](https://github.com/coollabsio/coolify/pull/7653)，其中展示了你需要修改的内容。
+
+## 迁移有任何问题？
+
+如果你在迁移过程中遇到任何问题，请通过 [Discord](https://discord.gg/openpanel) 联系我们，我们会尽力帮助你。

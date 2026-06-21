@@ -1,0 +1,201 @@
+---
+title: "如何跟踪电商事件和收入"
+description: "使用 OpenPanel 跟踪产品浏览、购物车活动和购买情况，了解你的电商漏斗和收入。"
+difficulty: intermediate
+timeToComplete: 10
+date: 2025-12-15
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "跟踪产品浏览"
+    anchor: "track-product-views"
+  - name: "跟踪购物车活动"
+    anchor: "track-cart-activity"
+  - name: "跟踪购买和收入"
+    anchor: "track-purchases-and-revenue"
+  - name: "验证你的设置"
+    anchor: "verify"
+---
+
+# 如何跟踪电商事件和收入
+
+电商跟踪可以让你清楚了解用户如何与你的产品互动，以及是什么推动了购买。到本指南结束时，你将能在商店中正常使用产品浏览、购物车事件和[收入跟踪](/features/revenue-tracking)。
+
+OpenPanel 使用专门的 `revenue()` 方法来跟踪收入，并将支付与访客会话关联起来。这样你就可以看到哪些流量来源、活动和页面带来了最多收入。你可以从前端跟踪以快速完成设置，也可以通过后端 webhook 跟踪以获得更准确的数据。
+
+## 前提条件
+
+- 一个 OpenPanel 账户
+- 来自[仪表盘](https://dashboard.openpanel.dev)的 Client ID
+- 已在项目中安装 OpenPanel SDK
+
+## 跟踪产品浏览 [#track-product-views]
+
+产品浏览跟踪可以帮助你了解哪些商品更吸引注意力。当用户进入产品页面时，触发一个包含产品详情的事件，这样你之后就能分析哪些产品被浏览了但没有被购买。
+
+```tsx
+function ProductPage({ product }) {
+  const op = useOpenPanel();
+
+  useEffect(() => {
+    op.track('product_viewed', {
+      product_id: product.id,
+      product_name: product.name,
+      product_category: product.category,
+      product_price: product.price,
+      currency: 'USD',
+    });
+  }, [product.id]);
+
+  return <div>{product.name}</div>;
+}
+```
+
+在所有产品事件中保持属性一致。始终使用相同的 `product_id` 格式，可以轻松构建将浏览与购买关联起来的报表。
+
+## 跟踪购物车活动 [#track-cart-activity]
+
+购物车事件可以揭示用户在购买流程中流失的位置。跟踪添加和移除操作，以了解购物车放弃模式。
+
+当用户添加商品时，连同当前购物车总额一起捕获产品详情。这能让你了解漏斗不同阶段的订单规模。
+
+```tsx
+function ProductCard({ product, cart }) {
+  const op = useOpenPanel();
+
+  const handleAddToCart = () => {
+    op.track('product_added_to_cart', {
+      product_id: product.id,
+      product_name: product.name,
+      product_price: product.price,
+      quantity: 1,
+      cart_value: cart.total + product.price,
+      currency: 'USD',
+    });
+
+    addToCart(product);
+  };
+
+  return (
+    <button onClick={handleAddToCart}>加入购物车</button>
+  );
+}
+```
+
+移除操作也同样跟踪。添加和移除事件之间的对称性，让计算购物车净变化变得很简单。
+
+```tsx
+const handleRemoveFromCart = (item) => {
+  op.track('product_removed_from_cart', {
+    product_id: item.id,
+    product_name: item.name,
+    product_price: item.price,
+    quantity: item.quantity,
+    currency: 'USD',
+  });
+
+  removeFromCart(item);
+};
+```
+
+## 跟踪购买和收入 [#track-purchases-and-revenue]
+
+收入跟踪是电商分析变得可操作的关键。OpenPanel 提供了专门的收入方法，可以将支付与访客会话关联起来，因此你可以看到哪些流量来源带来了最多价值。
+
+对于前端跟踪，在跳转到结账页之前使用 `pendingRevenue()`，然后在成功页面上调用 `flushRevenue()`。如果你想在不改动后端的情况下快速上手，这种方式非常适合。
+
+```tsx
+async function handleCheckout(cart) {
+  const op = useOpenPanel();
+
+  op.pendingRevenue(cart.total, {
+    order_items: cart.items.length,
+    currency: 'USD',
+  });
+
+  window.location.href = await createCheckoutUrl(cart);
+}
+```
+
+在成功页面上，刷新待处理收入并将其发送到 OpenPanel。
+
+```tsx
+function SuccessPage() {
+  const op = useOpenPanel();
+
+  useEffect(() => {
+    op.flushRevenue();
+  }, []);
+
+  return <div>感谢你的购买！</div>;
+}
+```
+
+如果想要更准确的跟踪，请在后端 webhook 中处理收入。这样可以确保你只记录已完成的支付。在创建结账时传递访客的 `deviceId`，以便将支付关联回他们的会话。
+
+```tsx
+// 前端：开始结账时包含 deviceId
+const deviceId = op.getDeviceId();
+
+const response = await fetch('/api/checkout', {
+  method: 'POST',
+  body: JSON.stringify({
+    deviceId,
+    items: cart.items,
+  }),
+});
+```
+
+在你的 webhook 处理器中，使用该 `deviceId` 来归因收入。
+
+```javascript
+// 后端：webhook 处理器
+export async function POST(req) {
+  const event = await req.json();
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+
+    op.revenue(session.amount_total, {
+      deviceId: session.metadata.deviceId,
+    });
+  }
+
+  return Response.json({ received: true });
+}
+```
+
+如果你的用户已登录，你可以使用 `profileId` 替代 `deviceId`。这样会简化流程，因为你不需要在结账过程中捕获 device ID。
+
+## 验证你的设置 [#verify]
+
+打开你的 OpenPanel 仪表盘并手动触发几个事件。向购物车添加一个产品，然后检查实时事件视图，确认这些事件是否带着正确的属性到达。
+
+对于收入跟踪，你可以用一笔小额交易进行测试，或者使用支付提供商的测试模式。请在仪表盘中查找你的收入事件，并验证金额是否与你的预期一致。
+
+如果事件没有出现，请检查你的 Client ID 是否正确，以及广告拦截器是否有干扰。浏览器的网络标签页可以帮助你确认请求是否已发送。
+
+## 下一步
+
+一旦基础电商跟踪正常工作，你就可以构建购买[漏斗](/features/funnels)来可视化每一步的[转化率](/features/conversion)。[收入跟踪文档](/docs/revenue-tracking)涵盖了订阅跟踪和退款等高级模式。若想更深入理解归因，请阅读 OpenPanel 的[无 Cookie 跟踪](/articles/cookieless-analytics)是如何工作的。
+
+想进一步了解如何跟踪自定义事件，请查看[跟踪自定义事件指南](/guides/track-custom-events)，其中涵盖了事件结构、属性和常见模式。
+
+<Faqs>
+<FaqItem question="OpenPanel 会自动计算收入指标吗？">
+会。只要你使用 `revenue()` 或 `flushRevenue()` 方法跟踪收入，OpenPanel 就会自动计算总收入、平均值以及按来源拆分的数据。你可以在仪表盘的收入部分查看这些内容。
+</FaqItem>
+
+<FaqItem question="我应该在前端还是后端跟踪收入？">
+通过 webhook 进行后端跟踪更准确，因为它只记录已完成的支付。前端跟踪实现更快，但可能会把放弃的结账也算进去。对于生产环境中的商店，建议使用后端跟踪。
+</FaqItem>
+
+<FaqItem question="我可以跟踪订阅收入吗？">
+可以。像跟踪其他收入事件一样跟踪订阅事件，并包含计划名称和计费周期等属性。收入跟踪文档详细介绍了订阅相关的模式。
+</FaqItem>
+
+<FaqItem question="我该如何处理退款？">
+将退款作为单独的事件进行跟踪，并记录退款金额。这样你就可以在报表中通过从总收入中减去退款来计算净收入。
+</FaqItem>
+</Faqs>

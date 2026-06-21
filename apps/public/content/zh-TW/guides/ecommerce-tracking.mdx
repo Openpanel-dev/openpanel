@@ -1,0 +1,201 @@
+---
+title: "如何追蹤電商事件與營收"
+description: "使用 OpenPanel 追蹤商品瀏覽、購物車活動與購買行為，了解你的電商漏斗與營收。"
+difficulty: intermediate
+timeToComplete: 10
+date: 2025-12-15
+updated: 2026-02-07
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "追蹤商品瀏覽"
+    anchor: "track-product-views"
+  - name: "追蹤購物車活動"
+    anchor: "track-cart-activity"
+  - name: "追蹤購買與營收"
+    anchor: "track-purchases-and-revenue"
+  - name: "驗證你的設定"
+    anchor: "verify"
+---
+
+# 如何追蹤電商事件與營收
+
+電商追蹤能讓你看見使用者如何與你的商品互動，以及是什麼驅動了購買。讀完本指南後，你將能在商店中運作商品瀏覽、購物車事件與 [營收追蹤](/features/revenue-tracking)。
+
+OpenPanel 透過專用的 `revenue()` 方法來追蹤營收，將付款與訪客工作階段連結起來。這能讓你看出哪些流量來源、活動與頁面帶來最多營收。你可以從前端追蹤以快速設定，或透過 webhook 從後端追蹤以取得更精確的資料。
+
+## 先決條件
+
+- 一個 OpenPanel 帳號
+- 來自 [dashboard](https://dashboard.openpanel.dev) 的 Client ID
+- 已在專案中安裝 OpenPanel SDK
+
+## 追蹤商品瀏覽 [#track-product-views]
+
+商品瀏覽追蹤能幫助你了解哪些品項吸引注意。當使用者進入商品頁時，送出一個包含商品詳細資訊的事件，之後你就能分析哪些商品被瀏覽但沒有被購買。
+
+```tsx
+function ProductPage({ product }) {
+  const op = useOpenPanel();
+
+  useEffect(() => {
+    op.track('product_viewed', {
+      product_id: product.id,
+      product_name: product.name,
+      product_category: product.category,
+      product_price: product.price,
+      currency: 'USD',
+    });
+  }, [product.id]);
+
+  return <div>{product.name}</div>;
+}
+```
+
+請在所有商品事件中保持一致的屬性。到處都使用相同的 `product_id` 格式，能讓你更容易建立把瀏覽與購買串起來的報表。
+
+## 追蹤購物車活動 [#track-cart-activity]
+
+購物車事件可以揭露使用者在哪個購買流程階段流失。請同時追蹤加入與移除，以了解購物車放棄的模式。
+
+當使用者加入商品時，請連同目前的購物車價值一起擷取商品詳細資訊。這能讓你掌握漏斗不同階段的訂單規模脈絡。
+
+```tsx
+function ProductCard({ product, cart }) {
+  const op = useOpenPanel();
+
+  const handleAddToCart = () => {
+    op.track('product_added_to_cart', {
+      product_id: product.id,
+      product_name: product.name,
+      product_price: product.price,
+      quantity: 1,
+      cart_value: cart.total + product.price,
+      currency: 'USD',
+    });
+
+    addToCart(product);
+  };
+
+  return (
+    <button onClick={handleAddToCart}>加入購物車</button>
+  );
+}
+```
+
+以相同方式追蹤移除。加入與移除事件之間的對稱性，讓計算購物車淨變化變得很直觀。
+
+```tsx
+const handleRemoveFromCart = (item) => {
+  op.track('product_removed_from_cart', {
+    product_id: item.id,
+    product_name: item.name,
+    product_price: item.price,
+    quantity: item.quantity,
+    currency: 'USD',
+  });
+
+  removeFromCart(item);
+};
+```
+
+## 追蹤購買與營收 [#track-purchases-and-revenue]
+
+營收追蹤正是電商分析變得可執行的地方。OpenPanel 提供專用的營收方法，將付款回連到訪客工作階段，因此你可以看出哪些流量來源帶來最多價值。
+
+若要以前端追蹤，請在重新導向到結帳前使用 `pendingRevenue()`，然後在成功頁面上使用 `flushRevenue()`。這種方式很適合想快速開始、且不想修改後端的情境。
+
+```tsx
+async function handleCheckout(cart) {
+  const op = useOpenPanel();
+
+  op.pendingRevenue(cart.total, {
+    order_items: cart.items.length,
+    currency: 'USD',
+  });
+
+  window.location.href = await createCheckoutUrl(cart);
+}
+```
+
+在成功頁面上，將待處理的營收送出到 OpenPanel。
+
+```tsx
+function SuccessPage() {
+  const op = useOpenPanel();
+
+  useEffect(() => {
+    op.flushRevenue();
+  }, []);
+
+  return <div>感謝您的購買！</div>;
+}
+```
+
+若要更精確地追蹤，請在後端 webhook 中處理營收。這可確保你只記錄已完成的付款。建立結帳時傳入訪客的 `deviceId`，以便將付款連回他的工作階段。
+
+```tsx
+// 前端：開始結帳時包含 deviceId
+const deviceId = op.getDeviceId();
+
+const response = await fetch('/api/checkout', {
+  method: 'POST',
+  body: JSON.stringify({
+    deviceId,
+    items: cart.items,
+  }),
+});
+```
+
+在 webhook 處理器中，使用該 `deviceId` 來歸因營收。
+
+```javascript
+// 後端：webhook 處理器
+export async function POST(req) {
+  const event = await req.json();
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+
+    op.revenue(session.amount_total, {
+      deviceId: session.metadata.deviceId,
+    });
+  }
+
+  return Response.json({ received: true });
+}
+```
+
+如果你的使用者已登入，你可以使用 `profileId` 代替 `deviceId`。這會簡化流程，因為你不需要在結帳時擷取 device ID。
+
+## 驗證你的設定 [#verify]
+
+打開你的 OpenPanel 儀表板，手動觸發幾個事件。將商品加入購物車，然後查看即時事件檢視，確認事件是否帶著正確的屬性送達。
+
+對於營收追蹤，你可以用小額交易測試，或使用金流服務商的測試模式。在儀表板中找到你的營收事件，並確認金額符合預期。
+
+如果事件沒有出現，請檢查你的 Client ID 是否正確，以及是否有廣告阻擋器干擾。瀏覽器的 network 分頁可以幫助你確認請求是否有送出。
+
+## 下一步
+
+當基本的電商追蹤開始運作後，你可以建立購買 [漏斗](/features/funnels) 來視覺化每個步驟的 [轉換率](/features/conversion)。[營收追蹤文件](/docs/revenue-tracking) 會涵蓋訂閱追蹤與退款等進階模式。若想更深入了解歸因，請閱讀 OpenPanel 的 [無 Cookie 追蹤](/articles/cookieless-analytics) 運作方式。
+
+若要進一步了解一般的自訂事件追蹤，請查看 [追蹤自訂事件指南](/guides/track-custom-events)，其中涵蓋事件結構、屬性與常見模式。
+
+<Faqs>
+<FaqItem question="OpenPanel 會自動計算營收指標嗎？">
+會。只要你使用 `revenue()` 或 `flushRevenue()` 方法追蹤營收，OpenPanel 就會自動計算總額、平均值，以及依來源拆分的數據。你可以在儀表板的營收區段中查看這些資訊。
+</FaqItem>
+
+<FaqItem question="我應該從前端還是後端追蹤營收？">
+透過 webhook 的後端追蹤會更精確，因為它只會記錄已完成的付款。前端追蹤實作更快，但可能會把未完成的結帳也算進去。對正式上線的商店來說，建議使用後端追蹤。
+</FaqItem>
+
+<FaqItem question="我可以追蹤訂閱營收嗎？">
+可以。你可以像追蹤其他營收事件一樣追蹤訂閱事件，包括方案名稱與計費週期等屬性。營收追蹤文件會詳細說明訂閱專用的模式。
+</FaqItem>
+
+<FaqItem question="我要如何處理退款？">
+請將退款作為獨立事件追蹤，並帶上退款金額。這樣你就能在報表中用總營收減去退款，計算淨營收。
+</FaqItem>
+</Faqs>

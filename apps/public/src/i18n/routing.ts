@@ -3,7 +3,7 @@ import type { Locale } from 'next-intl';
 export type AppLocale = Locale;
 
 export const defaultLocale = 'en';
-export const locales = ['en'] as const;
+export const locales = ['en', 'zh-CN', 'zh-TW'] as const;
 export const localizedLocales = locales.filter(
   (locale) => locale !== defaultLocale,
 );
@@ -80,11 +80,11 @@ export function getLocaleSwitchHref(
 }
 
 export function getHtmlLang(locale: AppLocale) {
-  return 'en';
+  return locale === 'zh-CN' ? 'zh-CN' : locale === 'zh-TW' ? 'zh-TW' : 'en';
 }
 
 export const languageItems = locales.map((locale) => ({
   locale,
-  label: 'English',
-  shortLabel: 'EN',
+  label: locale === 'en' ? 'English' : locale === 'zh-CN' ? '简体中文' : '繁體中文',
+  shortLabel: locale === 'en' ? 'EN' : locale === 'zh-CN' ? '简' : '繁',
 }));

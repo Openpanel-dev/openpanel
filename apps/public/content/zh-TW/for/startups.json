@@ -1,0 +1,178 @@
+{
+  "slug": "startups",
+  "audience": "startups",
+  "seo": {
+    "title": "新創公司的分析工具 — 開源且價格實惠",
+    "description": "OpenPanel 為新創公司提供產品分析，無需企業級定價。從每月 $2.50 起即可追蹤事件、漏斗、留存與使用者行為，或免費自行架設。無 Cookie，符合 GDPR。",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "新創公司的分析工具",
+    "subheading": "以你需要的產品分析來成長，而且不用付企業級價格。OpenPanel 以每月 $2.50 起提供事件、漏斗、留存與使用者資料。當預算吃緊時，也可免費自行架設。",
+    "badges": [
+      "每月 $2.50 起",
+      "免費自行架設",
+      "不需要 Cookie",
+      "開源"
+    ]
+  },
+  "problem": {
+    "title": "為什麼大多數分析工具都不適合新創公司",
+    "intro": "具備你需要功能的工具，通常以企業客戶為定價對象。價格親民的工具，則缺乏驅動真正產品決策所需的深度。",
+    "items": [
+      {
+        "title": "Mixpanel 和 Amplitude 很快就變貴",
+        "description": "按事件計費在 1 萬筆事件時看起來還好，但新創公司會快速成長。到了 100 萬筆事件，你可能要付每月 $300–800——這筆錢更適合投入產品開發。"
+      },
+      {
+        "title": "Google Analytics 看不到使用者行為",
+        "description": "GA4 會追蹤瀏覽量與工作階段，但無法告訴你哪些使用者完成了 onboarding、他們在哪個漏斗步驟流失，或留存為何下降。"
+      },
+      {
+        "title": "隱私法規遵循很麻煩",
+        "description": "Cookie 同意橫幅會傷害轉換率。對早期公司來說，GDPR 罰鍰可能是攸關生存的問題。多數分析工具把合規責任丟給你，而不是他們自己。"
+      },
+      {
+        "title": "供應商鎖定限制你的選擇",
+        "description": "封閉原始碼工具掌握你的資料。想要遷移出去，就代表會失去歷史分析資料。沒有匯出途徑，你只能繼續支付他們開出的任何價格。"
+      }
+    ]
+  },
+  "features": {
+    "title": "了解使用者所需的一切",
+    "intro": "OpenPanel 將網站分析與產品分析整合在同一個工具中，不必再付兩套平台的費用。",
+    "items": [
+      {
+        "title": "事件追蹤",
+        "description": "透過簡單的 API 呼叫追蹤任何使用者動作。按鈕點擊、註冊、購買——每個事件只要一行程式碼。"
+      },
+      {
+        "title": "漏斗分析",
+        "description": "查看使用者在哪裡從註冊流程、onboarding 或結帳流程中流失。找出最影響轉換的步驟。"
+      },
+      {
+        "title": "留存分析",
+        "description": "衡量有多少使用者在第 1 天、第 1 週與第 1 個月後回訪。及早發現留存問題，避免拖垮成長。"
+      },
+      {
+        "title": "使用者資料",
+        "description": "查看特定使用者觸發的每個事件、完整工作階段歷史與其屬性。透過重現他們的體驗來除錯。"
+      },
+      {
+        "title": "即時儀表板",
+        "description": "事件發生時即時查看。推出新功能後立刻看到採用情況。執行行銷活動時，即時觀察轉換。"
+      },
+      {
+        "title": "網站分析",
+        "description": "瀏覽量、來源、UTM 活動、裝置、國家——你預期的標準網站分析功能，開箱即用。"
+      },
+      {
+        "title": "營收追蹤",
+        "description": "在事件中傳送金額，以追蹤每位使用者、每個活動或每個功能的營收。清楚知道到底是什麼在賺錢。"
+      },
+      {
+        "title": "無 Cookie 追蹤",
+        "description": "不使用 Cookie 就不需要同意橫幅。帶來更好的轉換率、更乾淨的資料，以及自動符合 GDPR/CCPA。"
+      },
+      {
+        "title": "可自行架設選項",
+        "description": "當雲端成本很重要時，可在每月 $20 的 VPS 上執行 OpenPanel。功能與雲端版完全一致，沒有任何人為限制。"
+      }
+    ]
+  },
+  "benefits": {
+    "title": "為什麼新創公司選擇 OpenPanel",
+    "intro": "專為需要從資料中找到答案、又不想太快燒光資金跑道的團隊而打造。",
+    "items": [
+      {
+        "title": "可預測、隨成長而調整的定價",
+        "description": "固定分級方案從每月 $2.50 到 $900。沒有按座位收費，也沒有意外超額費。隨著規模擴大，你可以精準知道要付多少。"
+      },
+      {
+        "title": "每個方案都包含完整功能",
+        "description": "漏斗、留存、使用者資料、即時功能——從第一天起全部可用。沒有加價推銷，也沒有功能門檻。"
+      },
+      {
+        "title": "自行架設，成本降到接近零",
+        "description": "自行架設版本與雲端版完全相同。當你需要把支出降到最低時，可在自己的基礎架構上執行。"
+      },
+      {
+        "title": "開源代表沒有鎖定風險",
+        "description": "採用 AGPL-3.0 授權。你的資料就是你的資料。可以 fork、擴充，或是遷移離開——你永遠不會被綁住。"
+      },
+      {
+        "title": "10 分鐘內即可完成設定",
+        "description": "加入 script tag 或安裝 SDK 即可。自動頁面瀏覽追蹤會立刻開始。把分析工具上線，然後回去繼續打造產品。"
+      },
+      {
+        "title": "預設即以隱私優先",
+        "description": "無 Cookie 追蹤與僅歐盟託管，讓你不需要找律師才能搞懂 GDPR 合規。"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "常見問題",
+    "intro": "新創團隊在評估 OpenPanel 時常見的問題。",
+    "items": [
+      {
+        "question": "一般新創公司使用 OpenPanel 要多少錢？",
+        "answer": "大多數早期新創公司的費用落在每月 $2.50–$20 的範圍。每月 10 萬筆事件（種子輪階段常見）時，費用為每月 $20。自行架設完全免費——你唯一的成本是伺服器。"
+      },
+      {
+        "question": "可以從 Mixpanel 或 Amplitude 轉換過來嗎？",
+        "answer": "可以。OpenPanel 採用類似的事件式追蹤模型。API 幾乎相同——在多數情況下，遷移只需要把 gtag() 或 mixpanel.track() 改成 window.op('track')。我們也提供最常見平台的遷移指南。"
+      },
+      {
+        "question": "當我超出免費自行架設版本的規模時會怎樣？",
+        "answer": "不會發生任何事——自行架設版本沒有使用量限制。隨著流量成長，你可能需要擴充伺服器，但 OpenPanel 本身不會因為使用量而向自行架設收費。"
+      },
+      {
+        "question": "OpenPanel 符合 GDPR 規範嗎？",
+        "answer": "是的。OpenPanel 預設使用無 Cookie 追蹤，這表示你不需要在 GDPR 下顯示 Cookie 同意橫幅。雲端資料儲存在歐盟。自行架設則讓你可完全掌控資料位置。"
+      },
+      {
+        "question": "OpenPanel 和 PostHog 相比如何？",
+        "answer": "PostHog 提供更多功能（功能旗標、實驗、錯誤追蹤），但也更複雜，而且在規模擴大時更昂貴。OpenPanel 專注於核心分析——事件、漏斗、留存與使用者資料——成本只是其一小部分。如果你需要一把瑞士刀，選 PostHog；如果你需要聚焦的產品分析，選 OpenPanel。"
+      },
+      {
+        "question": "我需要同時使用 Google Analytics 和 OpenPanel 嗎？",
+        "answer": "不需要。OpenPanel 同時包含網站分析（瀏覽量、來源、UTM 活動、裝置、國家）與產品分析。對大多數新創公司來說，OpenPanel 可同時取代 GA4 與像 Mixpanel 這類的產品分析工具。"
+      },
+      {
+        "question": "有哪些 SDK 可用？",
+        "answer": "OpenPanel 提供 JavaScript、React、Next.js、Vue、Nuxt、Astro、Express、React Native、Python、Ruby、Rust、Kotlin 和 Swift 的 SDK。另有供零建置設定使用的 script tag，以及其他情境可用的 REST API。"
+      },
+      {
+        "question": "可以追蹤行動 app 嗎？",
+        "answer": "可以。OpenPanel 提供 React Native、Kotlin（Android）與 Swift（iOS）的原生 SDK。相同的事件、漏斗與使用者資料可跨網站與行動裝置使用。"
+      }
+    ]
+  },
+  "related_links": {
+    "guides": [
+      { "title": "Next.js 分析設定", "url": "/zh-TW/guides/nextjs-analytics" },
+      { "title": "React 分析設定", "url": "/zh-TW/guides/react-analytics" },
+      { "title": "從 Google Analytics 遷移", "url": "/zh-TW/guides/migrate-from-google-analytics" }
+    ],
+    "articles": [
+      { "title": "最佳開源分析工具", "url": "/zh-TW/articles/self-hosted-web-analytics" },
+      { "title": "如何建立漏斗", "url": "/zh-TW/articles/how-to-create-a-funnel" },
+      { "title": "無 Cookie 分析指南", "url": "/zh-TW/articles/cookieless-analytics" }
+    ],
+    "comparisons": [
+      { "title": "OpenPanel vs Mixpanel", "url": "/compare/mixpanel-alternative" },
+      { "title": "OpenPanel vs PostHog", "url": "/compare/posthog-alternative" },
+      { "title": "OpenPanel vs Amplitude", "url": "/compare/amplitude-alternative" }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "免費試用 OpenPanel",
+      "href": "https://dashboard.openpanel.dev/onboarding"
+    },
+    "secondary": {
+      "label": "在 GitHub 上查看原始碼",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}
