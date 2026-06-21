@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
     "postinstall": "fumadocs-mdx",
+    "check:compare-content": "node scripts/ensure-compare-content.mjs",
     "lint": "biome check",
     "format": "biome format --write",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
