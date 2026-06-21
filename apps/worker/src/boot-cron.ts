@@ -44,6 +44,11 @@ export async function bootCron() {
       type: 'customAlerts',
       pattern: '*/15 * * * *',
     },
+    {
+      name: 'firstEvent',
+      type: 'firstEvent',
+      pattern: '0 * * * *',
+    },
   ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {

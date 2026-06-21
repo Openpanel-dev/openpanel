@@ -119,6 +119,16 @@ export type CronQueuePayloadCustomAlerts = {
   type: 'customAlerts';
   payload: undefined;
 };
+export type CronQueuePayloadMaterializeColumns = {
+  type: 'materializeColumns';
+  payload: undefined;
+  dryRun?: boolean;
+  threshold?: number;
+};
+export type CronQueuePayloadFirstEvent = {
+  type: 'firstEvent';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
@@ -127,7 +137,9 @@ export type CronQueuePayload =
   | CronQueuePayloadFlushProfiles
   | CronQueuePayloadPing
   | CronQueuePayloadProject
-  | CronQueuePayloadCustomAlerts;
+  | CronQueuePayloadCustomAlerts
+  | CronQueuePayloadMaterializeColumns
+  | CronQueuePayloadFirstEvent;
 
 export type MiscQueuePayloadTrialEndingSoon = {
   type: 'trialEndingSoon';

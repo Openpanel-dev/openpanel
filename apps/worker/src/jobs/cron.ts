@@ -10,6 +10,7 @@ import type { CronQueuePayload } from '@openpanel/queue';
 
 import { customAlerts } from './cron.custom-alerts';
 import { jobdeleteProjects } from './cron.delete-projects';
+import { firstEvent } from './cron.first-event';
 import { materializeColumns } from './cron.materialize-columns';
 import { ping } from './cron.ping';
 import { salt } from './cron.salt';
@@ -45,6 +46,9 @@ export async function cronJob(job: Job<CronQueuePayload>) {
     }
     case 'customAlerts': {
       return await customAlerts();
+    }
+    case 'firstEvent': {
+      return await firstEvent();
     }
   }
 }
