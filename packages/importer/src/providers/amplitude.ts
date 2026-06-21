@@ -7,9 +7,14 @@ import {
   getReferrerWithQuery,
   parseReferrer,
 } from '@openpanel/common/server';
-import { formatClickhouseDate, type IClickhouseEvent } from '@openpanel/db';
+import {
+  formatClickhouseDate,
+  type IClickhouseEvent,
+  type IClickhouseProfile,
+} from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';
 import type { IAmplitudeImportConfig } from '@openpanel/validation';
+import unzipper from 'unzipper';
 import { z } from 'zod';
 import { BaseImportProvider } from '../base-provider';
 import { toCountryCode } from './country-codes';
@@ -61,12 +66,27 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
   provider = 'amplitude';
   version = '1.0.0';
 
+  /**
+   * Amplitude Export API base URLs by data region. The export endpoint lives at
+   * `${base}/api/2/export`. See https://amplitude.com/docs/apis/analytics/export
+   */
+  private static readonly dataResidencyUrls: Record<string, string> = {
+    us: 'https://amplitude.com',
+    eu: 'https://analytics.eu.amplitude.com',
+  };
+
+  private readonly exportBaseUrl: string;
+
   constructor(
     private readonly projectId: string,
     private readonly config: IAmplitudeImportConfig,
     private readonly logger?: ILogger
   ) {
     super();
+    const residency = config.dataResidency ?? 'us';
+    this.exportBaseUrl =
+      AmplitudeProvider.dataResidencyUrls[residency] ??
+      AmplitudeProvider.dataResidencyUrls.us!;
   }
 
   async getTotalEventsCount(): Promise<number> {
@@ -82,37 +102,137 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
     return true;
   }
 
-  async *parseSource(): AsyncGenerator<AmplitudeRawEvent, void, unknown> {
-    yield* this.parseRemoteFile(this.config.fileUrl);
+  /**
+   * Pull events from the Amplitude Export API. The date range is split into
+   * daily chunks (Export API caps a single request at ~4GB) and each chunk is
+   * downloaded as a ZIP of gzipped newline-delimited JSON files.
+   */
+  async *parseSource(
+    overrideFrom?: string
+  ): AsyncGenerator<AmplitudeRawEvent, void, unknown> {
+    const { from, to } = this.config;
+    const dateChunks = this.getDateChunks(overrideFrom ?? from, to);
+
+    for (const [chunkFrom, chunkTo] of dateChunks) {
+      // Amplitude expects YYYYMMDDTHH (hour inclusive on both ends).
+      const start = `${chunkFrom.replaceAll('-', '')}T00`;
+      const end = `${chunkTo.replaceAll('-', '')}T23`;
+
+      const response = await this.fetchExportWithRetry(start, end);
+      if (!response) {
+        // 404 → no data in this window, skip it.
+        continue;
+      }
+
+      yield* this.streamExportZip(response, `${start}-${end}`);
+    }
   }
 
   /**
-   * Stream a remote newline-delimited JSON file.
-   *
-   * Note: we do NOT inspect the Content-Encoding/Content-Type headers to decide
-   * whether to decompress. fetch/undici already transparently decompresses
-   * transport-level gzip/br (e.g. a dev server that gzips responses on the fly),
-   * yet leaves the Content-Encoding header in place. Trusting it would gunzip
-   * already-plain JSON and throw "incorrect header check". Instead we detect a
-   * genuinely-gzipped file by its magic bytes (see streamNdjson).
+   * Fetch a single export window with retries. Returns the response on success,
+   * or null when Amplitude reports no data (404) for the window. Throws after
+   * exhausting retries for retryable failures (429 / 5xx / network).
    */
-  private async *parseRemoteFile(
-    url: string
-  ): AsyncGenerator<AmplitudeRawEvent, void, unknown> {
-    const controller = new AbortController();
-    const res = await fetch(url, { signal: controller.signal });
-    if (!(res.ok && res.body)) {
-      throw new Error(
-        `Failed to fetch remote file: ${res.status} ${res.statusText}`
+  private async fetchExportWithRetry(
+    start: string,
+    end: string
+  ): Promise<Response | null> {
+    const url = `${this.exportBaseUrl}/api/2/export?start=${start}&end=${end}`;
+    const auth = Buffer.from(
+      `${this.config.apiKey}:${this.config.secretKey}`
+    ).toString('base64');
+    const maxRetries = 6;
+    let retries = 0;
+
+    while (true) {
+      let response: Response;
+      try {
+        this.logger?.info({ url, start, end }, 'Fetching Amplitude export');
+        response = await fetch(url, {
+          headers: { Authorization: `Basic ${auth}` },
+        });
+      } catch (error) {
+        retries++;
+        if (retries > maxRetries) {
+          throw new Error(
+            `Failed to fetch Amplitude export for ${start}-${end} after ${maxRetries} retries: ${(error as Error).message}`
+          );
+        }
+        const delay = Math.min(1000 * 2 ** (retries - 1), 60_000);
+        this.logger?.warn(
+          { err: error, start, end, attempt: retries, delay },
+          'Network error fetching Amplitude export, retrying'
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // No data available for this window.
+      if (response.status === 404) {
+        this.logger?.info(
+          { start, end },
+          'No Amplitude data for window, skipping'
+        );
+        return null;
+      }
+
+      if (response.ok) {
+        if (!response.body) {
+          throw new Error('No response body from Amplitude export');
+        }
+        return response;
+      }
+
+      const retryable = response.status === 429 || response.status >= 500;
+      retries++;
+      if (!retryable || retries > maxRetries) {
+        const text = await response.text().catch(() => '');
+        throw new Error(
+          `Failed to fetch Amplitude export for ${start}-${end}: ${response.status} ${response.statusText} ${text.slice(0, 300)}`
+        );
+      }
+
+      let delay: number;
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        delay = retryAfter
+          ? Number(retryAfter) * 1000
+          : Math.min(60_000 * 2 ** (retries - 1), 300_000);
+      } else {
+        delay = Math.min(1000 * 2 ** (retries - 1), 60_000);
+      }
+      this.logger?.warn(
+        { status: response.status, start, end, attempt: retries, delay },
+        'Retryable error fetching Amplitude export, retrying'
       );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  /**
+   * Stream an Amplitude export ZIP. Each entry is a gzipped newline-delimited
+   * JSON file; we feed each one through streamNdjson (which sniffs gzip magic
+   * bytes) and yield its events. Non-matching entries are drained so the ZIP
+   * parser can advance.
+   */
+  private async *streamExportZip(
+    response: Response,
+    window: string
+  ): AsyncGenerator<AmplitudeRawEvent, void, unknown> {
+    const body = Readable.fromWeb(response.body as any);
+    const zip = body.pipe(unzipper.Parse({ forceStream: true }));
+
+    for await (const entry of zip) {
+      const isDataFile =
+        entry.type === 'File' && /\.json(\.gz)?$/i.test(entry.path);
+      if (isDataFile) {
+        yield* this.streamNdjson(entry as unknown as Readable, entry.path);
+      } else {
+        entry.autodrain();
+      }
     }
 
-    const body = Readable.fromWeb(res.body as any);
-    try {
-      yield* this.streamNdjson(body, url);
-    } finally {
-      controller.abort(); // tear down the fetch stream
-    }
+    this.logger?.info({ window }, 'Finished streaming Amplitude export window');
   }
 
   /**
@@ -271,6 +391,77 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
         ? `${this.provider} (${raw.library})`
         : this.provider,
       sdk_version: this.version,
+      groups: [],
+    };
+  }
+
+  /**
+   * Derive an OpenPanel profile from a single Amplitude event. Amplitude has no
+   * profile export API, so identity lives inside each event's user_properties.
+   * Returns null for anonymous events (no user_id, or user_id === device_id) so
+   * we don't create profiles for purely-device-scoped traffic.
+   *
+   * The caller (import worker) dedupes these in a bounded map and relies on the
+   * profiles table's ReplacingMergeTree(last_seen_at) to keep the latest row per
+   * id, so this method stays stateless.
+   */
+  transformEventToProfile(
+    _rawEvent: AmplitudeRawEvent
+  ): IClickhouseProfile | null {
+    const raw = zAmplitudeRawEvent.parse(_rawEvent);
+    const deviceId = raw.device_id || String(raw.amplitude_id ?? '');
+    const userId = raw.user_id;
+    if (!userId || userId === deviceId) {
+      return null;
+    }
+
+    const up = (raw.user_properties ?? {}) as Record<string, unknown>;
+    const timestamp = formatClickhouseDate(
+      this.parseTimestamp(raw.event_time || raw.client_event_time)
+    );
+
+    const pick = (...keys: string[]): string => {
+      for (const key of keys) {
+        const value = up[key];
+        if (value != null && value !== '') {
+          return String(value);
+        }
+      }
+      return '';
+    };
+
+    const known = new Set([
+      'email',
+      '$email',
+      'first_name',
+      'firstName',
+      '$first_name',
+      'last_name',
+      'lastName',
+      '$last_name',
+      'avatar',
+      '$avatar',
+    ]);
+    const properties: Record<string, string> = {};
+    for (const [key, value] of Object.entries(up)) {
+      if (known.has(key) || value == null) {
+        continue;
+      }
+      properties[key] =
+        typeof value === 'object' ? JSON.stringify(value) : String(value);
+    }
+
+    return {
+      id: String(userId),
+      project_id: this.projectId,
+      first_name: pick('first_name', 'firstName', '$first_name'),
+      last_name: pick('last_name', 'lastName', '$last_name'),
+      email: pick('email', '$email'),
+      avatar: pick('avatar', '$avatar'),
+      properties,
+      created_at: timestamp,
+      last_seen_at: timestamp,
+      is_external: true,
       groups: [],
     };
   }

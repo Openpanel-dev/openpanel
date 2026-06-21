@@ -30,9 +30,9 @@ export const IMPORT_PROVIDERS: ImportProviderMeta[] = [
   {
     id: 'amplitude',
     name: 'Amplitude',
-    description: 'Import your analytics data from an Amplitude export',
+    description: 'Import your analytics data from the Amplitude Export API',
     logo: 'https://cdn.brandfetch.io/idnYrZGER0/theme/dark/symbol.svg?c=1dxbfHSJFAPEGdCLU4o5B',
     backgroundColor: '#fff',
-    types: ['file'],
+    types: ['api'],
   },
 ];

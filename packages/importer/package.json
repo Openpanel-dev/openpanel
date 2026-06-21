@@ -20,6 +20,7 @@
     "@openpanel/validation": "workspace:*",
     "csv-parse": "^6.1.0",
     "ramda": "^0.29.1",
+    "unzipper": "^0.12.3",
     "uuid": "^9.0.1",
     "zod": "catalog:"
   },
@@ -27,6 +28,7 @@
     "@openpanel/logger": "workspace:*",
     "@types/node": "^20.0.0",
     "@types/ramda": "^0.31.1",
+    "@types/unzipper": "^0.10.10",
     "@types/uuid": "^9.0.7",
     "bullmq": "^5.8.7",
     "typescript": "^5.0.0",

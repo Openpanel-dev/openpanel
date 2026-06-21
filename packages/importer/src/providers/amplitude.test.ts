@@ -18,9 +18,11 @@ async function collect(
 
 const baseConfig = {
   provider: 'amplitude' as const,
-  type: 'file' as const,
-  fileUrl: 'https://example.com/export.json',
-  projectMapper: [],
+  type: 'api' as const,
+  apiKey: 'test-api-key',
+  secretKey: 'test-secret-key',
+  from: '2025-02-01',
+  to: '2025-02-28',
 };
 
 function loadFixture(): AmplitudeRawEvent[] {
@@ -137,7 +139,10 @@ describe('amplitude', () => {
     )}\n`;
 
     const events = await collect(
-      provider.streamNdjson(Readable.from(Buffer.from(ndjson)), baseConfig.fileUrl)
+      provider.streamNdjson(
+        Readable.from(Buffer.from(ndjson)),
+        'https://example.com/export.json'
+      )
     );
 
     expect(events.map((e) => e.event_type)).toEqual(['A', 'B']);
@@ -169,6 +174,65 @@ describe('amplitude', () => {
     );
 
     expect(events.map((e) => e.event_type)).toEqual(['A']);
+  });
+
+  it('derives a profile from an event with a user_id', () => {
+    const provider = new AmplitudeProvider('pid', baseConfig);
+    const profile = provider.transformEventToProfile({
+      event_type: 'Custom',
+      event_properties: {},
+      user_properties: {
+        email: 'jane@example.com',
+        firstName: 'Jane',
+        last_name: 'Doe',
+        plan: 'pro',
+        nested: { a: 1 },
+      },
+      device_id: 'd1',
+      user_id: 'user-001',
+      event_time: '2025-02-05 22:58:30.568000',
+    } as AmplitudeRawEvent);
+
+    expect(profile).not.toBeNull();
+    expect(profile).toMatchObject({
+      id: 'user-001',
+      project_id: 'pid',
+      email: 'jane@example.com',
+      first_name: 'Jane',
+      last_name: 'Doe',
+      is_external: true,
+      created_at: '2025-02-05 22:58:30',
+      last_seen_at: '2025-02-05 22:58:30',
+      properties: { plan: 'pro', nested: '{"a":1}' },
+    });
+    // known identity keys are not duplicated into the properties bag
+    expect(profile?.properties.email).toBeUndefined();
+    expect(profile?.properties.firstName).toBeUndefined();
+  });
+
+  it('returns null for anonymous events (no user_id or user_id === device_id)', () => {
+    const provider = new AmplitudeProvider('pid', baseConfig);
+
+    expect(
+      provider.transformEventToProfile({
+        event_type: 'Custom',
+        event_properties: {},
+        user_properties: {},
+        device_id: 'd1',
+        event_time: '2025-02-05 22:58:30.568000',
+      } as AmplitudeRawEvent)
+    ).toBeNull();
+
+    expect(
+      provider.transformEventToProfile({
+        event_type: 'Custom',
+        event_properties: {},
+        user_properties: {},
+        device_id: 'd1',
+        user_id: 'd1',
+        event_time: '2025-02-05 22:58:30.568000',
+      } as AmplitudeRawEvent)
+    ).toBeNull();
   });
 
   it('maps Amplitude country names to ISO alpha-2 (FixedString(2) safe)', () => {

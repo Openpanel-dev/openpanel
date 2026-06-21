@@ -34,6 +34,40 @@ function yieldToEventLoop(): Promise<void> {
 
 const RESUMABLE_STEPS = ['creating_sessions', 'moving', 'backfilling_sessions'];
 
+/**
+ * Merge a freshly-derived profile into the bounded dedup map: keep the earliest
+ * created_at (first seen), advance last_seen_at to the latest activity, and fill
+ * identity fields/properties, preferring the newer row.
+ */
+function mergeProfileInto(
+  map: Map<string, IClickhouseProfile>,
+  incoming: IClickhouseProfile
+): void {
+  const existing = map.get(incoming.id);
+  if (!existing) {
+    map.set(incoming.id, incoming);
+    return;
+  }
+
+  const createdAt =
+    existing.created_at < incoming.created_at
+      ? existing.created_at
+      : incoming.created_at;
+  const isIncomingNewer = incoming.last_seen_at >= existing.last_seen_at;
+  const base = isIncomingNewer ? incoming : existing;
+  const other = isIncomingNewer ? existing : incoming;
+
+  map.set(incoming.id, {
+    ...base,
+    created_at: createdAt,
+    first_name: base.first_name || other.first_name,
+    last_name: base.last_name || other.last_name,
+    email: base.email || other.email,
+    avatar: base.avatar || other.avatar,
+    properties: { ...other.properties, ...base.properties },
+  });
+}
+
 export async function importJob(job: Job<ImportQueuePayload>) {
   const { importId } = job.data.payload;
 
@@ -73,6 +107,33 @@ export async function importJob(job: Job<ImportQueuePayload>) {
       let processedEvents = 0;
       const eventBatch: IClickhouseEvent[] = [];
 
+      // Profiles derived inline from events (e.g. Amplitude, which has no
+      // profile export API). A bounded dedup map keeps memory flat regardless of
+      // event volume; the profiles table's ReplacingMergeTree(last_seen_at)
+      // collapses any duplicate rows that span flush boundaries to the latest
+      // activity per id.
+      const canProfileFromEvents =
+        typeof (providerInstance as AmplitudeProvider)
+          .transformEventToProfile === 'function';
+      const PROFILE_MAP_CAP = 50_000;
+      const profileMap = new Map<string, IClickhouseProfile>();
+      let processedProfiles = 0;
+
+      const flushProfiles = async () => {
+        if (profileMap.size === 0) {
+          return;
+        }
+        const values = Array.from(profileMap.values());
+        await insertProfilesBatch(values, record.projectId);
+        processedProfiles += values.length;
+        profileMap.clear();
+        await updateImportStatus(jobLogger, job, importId, {
+          step: 'loading_profiles',
+          processedProfiles,
+        });
+        await yieldToEventLoop();
+      };
+
       for await (const rawEvent of providerInstance.parseSource()) {
         if (
           !providerInstance.validate(
@@ -92,6 +153,21 @@ export async function importJob(job: Job<ImportQueuePayload>) {
         // Session IDs for providers that need them (e.g. Mixpanel) are generated
         // in generateGapBasedSessionIds after loading, using gap-based logic.
         eventBatch.push(transformed);
+
+        if (canProfileFromEvents) {
+          const profile = (
+            providerInstance as AmplitudeProvider
+          ).transformEventToProfile(
+            // @ts-expect-error -- provider-specific raw type
+            rawEvent
+          );
+          if (profile) {
+            mergeProfileInto(profileMap, profile);
+            if (profileMap.size >= PROFILE_MAP_CAP) {
+              await flushProfiles();
+            }
+          }
+        }
 
         if (eventBatch.length >= BATCH_SIZE) {
           await insertImportBatch(eventBatch, importId);
@@ -131,6 +207,15 @@ export async function importJob(job: Job<ImportQueuePayload>) {
       }
 
       jobLogger.info({ processedEvents }, 'Loading complete');
+
+      // Phase 1a: Flush profiles derived inline from events (Amplitude)
+      if (canProfileFromEvents) {
+        await flushProfiles();
+        jobLogger.info(
+          { processedProfiles },
+          'Inline profile derivation complete'
+        );
+      }
 
       // Phase 1b: Load user profiles (Mixpanel only)
       const profileBatchSize = 5000;

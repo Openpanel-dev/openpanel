@@ -262,32 +262,35 @@ interface AmplitudeImportProps {
   organizationId: string;
 }
 
-function AmplitudeImport({
-  onSubmit,
-  isPending,
-  organizationId,
-}: AmplitudeImportProps) {
-  const trpc = useTRPC();
-  const { data: projects = [] } = useQuery(
-    trpc.project.list.queryOptions({
-      organizationId,
-    }),
-  );
-
+function AmplitudeImport({ onSubmit, isPending }: AmplitudeImportProps) {
   const form = useForm<AmplitudeFormData>({
     resolver: zodResolver(zAmplitudeImportConfig),
     defaultValues: {
       provider: 'amplitude',
-      type: 'file',
-      fileUrl: '',
-      projectMapper: [],
+      type: 'api',
+      apiKey: '',
+      secretKey: '',
+      from: '',
+      to: '',
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: 'projectMapper',
-  });
+  const handleDateRangeSelect = () => {
+    pushModal('DateRangerPicker', {
+      startDate: form.getValues('from')
+        ? new Date(form.getValues('from'))
+        : undefined,
+      endDate: form.getValues('to')
+        ? new Date(form.getValues('to'))
+        : undefined,
+      onChange: ({ startDate, endDate }) => {
+        form.setValue('from', format(startDate, 'yyyy-MM-dd'));
+        form.setValue('to', format(endDate, 'yyyy-MM-dd'));
+        form.trigger('from');
+        form.trigger('to');
+      },
+    });
+  };
 
   const handleSubmit = form.handleSubmit((data) => {
     onSubmit(data);
@@ -297,22 +300,78 @@ function AmplitudeImport({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-4 py-4">
         <InputWithLabel
-          label="File URL"
-          placeholder="https://example.com/export.json"
-          error={form.formState.errors.fileUrl?.message}
-          info="Provide a publicly accessible URL to your Amplitude export (newline-delimited JSON, optionally gzipped)."
-          {...form.register('fileUrl')}
+          label="API Key"
+          placeholder="Your Amplitude API key"
+          error={form.formState.errors.apiKey?.message}
+          info="Settings → Projects → General in Amplitude."
+          {...form.register('apiKey')}
         />
 
-        <ProjectMapper
-          fields={fields}
-          append={append}
-          remove={remove}
-          projects={projects}
-          register={form.register}
-          watch={form.watch}
-          setValue={form.setValue}
+        <InputWithLabel
+          label="Secret Key"
+          type="password"
+          placeholder="Your Amplitude secret key"
+          error={form.formState.errors.secretKey?.message}
+          {...form.register('secretKey')}
         />
+
+        <WithLabel
+          label="Date Range"
+          info={
+            !form.getValues('from') || !form.getValues('to')
+              ? 'Select the date range for importing data'
+              : undefined
+          }
+        >
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              'w-full justify-start text-left font-normal',
+              (!form.getValues('from') || !form.getValues('to')) &&
+                'text-muted-foreground',
+            )}
+            onClick={handleDateRangeSelect}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {form.getValues('from') && form.getValues('to') ? (
+              <>
+                {format(new Date(form.getValues('from')), 'LLL dd, y')} -{' '}
+                {format(new Date(form.getValues('to')), 'LLL dd, y')}
+              </>
+            ) : (
+              <span>Pick a date range</span>
+            )}
+          </Button>
+        </WithLabel>
+
+        <InputWithLabel
+          label="Screen View Property"
+          placeholder="Enter the name of the property that contains the screen name"
+          info="Leave empty if not applicable"
+          error={form.formState.errors.mapScreenViewProperty?.message}
+          {...form.register('mapScreenViewProperty')}
+        />
+
+        <WithLabel
+          label="Data Residency"
+          info="Select the Amplitude data region your project uses"
+        >
+          <Select
+            value={form.watch('dataResidency') ?? 'us'}
+            onValueChange={(value) =>
+              form.setValue('dataResidency', value as 'us' | 'eu')
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="US (default)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="us">US (default)</SelectItem>
+              <SelectItem value="eu">EU</SelectItem>
+            </SelectContent>
+          </Select>
+        </WithLabel>
       </div>
 
       <div className="flex justify-between">
