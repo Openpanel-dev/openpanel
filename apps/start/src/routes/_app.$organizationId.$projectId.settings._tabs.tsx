@@ -8,6 +8,7 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/settings/_tabs'
@@ -34,19 +35,20 @@ export const Route = createFileRoute(
 });
 
 function ProjectDashboard() {
+  const { t } = useTranslation();
   const router = useRouter();
   const location = useLocation();
   const tab = location.pathname.split('/').pop();
 
   const settingsTabs = [
-    { id: 'details', label: 'Details' },
-    { id: 'events', label: 'Events' },
-    { id: 'clients', label: 'Clients / API keys' },
-    { id: 'tracking', label: 'Tracking script' },
-    { id: 'mcp', label: 'MCP' },
-    { id: 'widgets', label: 'Widgets' },
-    { id: 'imports', label: 'Imports' },
-    { id: 'gsc', label: 'Google Search' },
+    { id: 'details', label: t('settings.tab_details') },
+    { id: 'events', label: t('settings.tab_events') },
+    { id: 'clients', label: t('settings.tab_clients_api_keys') },
+    { id: 'tracking', label: t('settings.tab_tracking_script') },
+    { id: 'mcp', label: t('settings.tab_mcp') },
+    { id: 'widgets', label: t('settings.tab_widgets') },
+    { id: 'imports', label: t('settings.tab_imports') },
+    { id: 'gsc', label: t('settings.tab_google_search') },
   ];
 
   const handleTabChange = (tabId: string) => {
@@ -59,8 +61,8 @@ function ProjectDashboard() {
   return (
     <div className="container p-8">
       <PageHeader
-        description="Manage your project settings here"
-        title="Project settings"
+        description={t('settings.project_settings_description')}
+        title={t('settings.project_settings_title')}
       />
 
       <Tabs className="mt-2 mb-8" onValueChange={handleTabChange} value={tab}>

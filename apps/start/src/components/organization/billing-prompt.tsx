@@ -2,6 +2,7 @@ import type { IServiceOrganization } from '@openpanel/db';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CheckIcon } from 'lucide-react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button, LinkButton } from '@/components/ui/button';
@@ -10,28 +11,28 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { formatDate } from '@/utils/date';
 import { op } from '@/utils/op';
 
-const FEATURES = [
-  'Plans start at $2.5/month',
-  'Unlimited reports, members and projects',
-  'Advanced funnels and conversions',
-  'Real-time analytics',
-  'Track KPIs and custom events',
-  'Privacy-focused and GDPR compliant',
-  'Revenue tracking',
-  'Google Search Console integration',
+const FEATURE_KEYS = [
+  'prompt_feature_plans_start',
+  'prompt_feature_unlimited',
+  'prompt_feature_funnels',
+  'prompt_feature_realtime',
+  'prompt_feature_kpis',
+  'prompt_feature_privacy',
+  'prompt_feature_revenue',
+  'prompt_feature_gsc',
 ];
 
 type BadgeVariant = 'secondary' | 'warning' | 'info';
 
 interface CopyVariant {
-  badge: { label: string; variant: BadgeVariant };
+  badge: { labelKey: string; variant: BadgeVariant };
   gradient: string;
-  title: string;
-  lead: string;
-  dateLabel: string;
+  titleKey: string;
+  leadKey: string;
+  dateLabelKey: string;
   action: 'checkout' | 'portal';
-  cta: (plan: string, price: string) => string;
-  note: string | null;
+  ctaKey: string;
+  noteKey: string | null;
 }
 
 const COPY: Record<
@@ -39,44 +40,44 @@ const COPY: Record<
   CopyVariant
 > = {
   trialEnded: {
-    badge: { label: 'Trial ended', variant: 'secondary' },
+    badge: { labelKey: 'prompt_trial_ended_badge', variant: 'secondary' },
     gradient: 'rgb(16 185 129)',
-    title: 'Your 30 days are up',
-    lead: 'Thanks for trying OpenPanel. Everything you set up is still here: your projects, your reports, and every event you tracked. Pick a plan and your dashboards are live again in about a minute.',
-    dateLabel: 'Trial ended',
+    titleKey: 'prompt_trial_ended_title',
+    leadKey: 'prompt_trial_ended_lead',
+    dateLabelKey: 'prompt_trial_ended_date_label',
     action: 'checkout',
-    cta: (plan, price) => `Continue with ${plan} for ${price}/month`,
-    note: 'We keep collecting your incoming events for now, so nothing is lost while you decide.',
+    ctaKey: 'prompt_trial_ended_cta',
+    noteKey: 'prompt_trial_ended_note',
   },
   expired: {
-    badge: { label: 'Subscription ended', variant: 'info' },
+    badge: { labelKey: 'prompt_expired_badge', variant: 'info' },
     gradient: 'rgb(59 130 246)',
-    title: 'Your data is right where you left it',
-    lead: "Your subscription ended, but we haven't deleted anything. Reactivate and your dashboards, reports, and events are back immediately.",
-    dateLabel: 'Subscription ended',
+    titleKey: 'prompt_expired_title',
+    leadKey: 'prompt_expired_lead',
+    dateLabelKey: 'prompt_expired_date_label',
     action: 'checkout',
-    cta: (plan, price) => `Reactivate with ${plan} for ${price}/month`,
-    note: null,
+    ctaKey: 'prompt_expired_cta',
+    noteKey: null,
   },
   unpaid: {
-    badge: { label: 'Payment issue', variant: 'warning' },
+    badge: { labelKey: 'prompt_unpaid_badge', variant: 'warning' },
     gradient: 'rgb(245 158 11)',
-    title: "Your last payment didn't go through",
-    lead: "Usually it's an expired card or a bank block, and it takes a minute to fix. Update your payment method and your dashboards come straight back. Your data hasn't gone anywhere.",
-    dateLabel: 'Paid through',
+    titleKey: 'prompt_unpaid_title',
+    leadKey: 'prompt_unpaid_lead',
+    dateLabelKey: 'prompt_unpaid_date_label',
     action: 'portal',
-    cta: () => 'Update payment method',
-    note: null,
+    ctaKey: 'prompt_unpaid_cta',
+    noteKey: null,
   },
   freePlan: {
-    badge: { label: 'Plan change', variant: 'secondary' },
+    badge: { labelKey: 'prompt_free_plan_badge', variant: 'secondary' },
     gradient: 'rgb(16 185 129)',
-    title: 'We retired the free plan',
-    lead: "We'd rather run a small, sustainable service than a free one we can't support properly. Paid plans start at $2.5/month and your data carries over as-is.",
-    dateLabel: 'Subscription ended',
+    titleKey: 'prompt_free_plan_title',
+    leadKey: 'prompt_free_plan_lead',
+    dateLabelKey: 'prompt_free_plan_date_label',
     action: 'checkout',
-    cta: (plan, price) => `Continue with ${plan} for ${price}/month`,
-    note: null,
+    ctaKey: 'prompt_free_plan_cta',
+    noteKey: null,
   },
 };
 
@@ -87,6 +88,7 @@ export default function BillingPrompt({
   organization: IServiceOrganization;
   type: keyof typeof COPY;
 }) {
+  const { t } = useTranslation();
   const number = useNumber();
   const trpc = useTRPC();
   const copy = COPY[type];
@@ -101,8 +103,8 @@ export default function BillingPrompt({
         if (data?.url) {
           window.location.href = data.url;
         } else {
-          toast.success('Subscription updated', {
-            description: 'It might take a few seconds to update',
+          toast.success(t('billing.toast_subscription_updated'), {
+            description: t('billing.toast_subscription_updated_description'),
           });
         }
       },
@@ -164,7 +166,7 @@ export default function BillingPrompt({
           }}
           size="lg"
         >
-          {copy.cta('', '')}
+          {t(`billing.${copy.ctaKey}`)}
         </Button>
       );
     }
@@ -173,7 +175,7 @@ export default function BillingPrompt({
       return (
         <Button asChild className="w-full" loading={isLoadingProducts} size="lg">
           <a href="mailto:hello@openpanel.dev?subject=Custom plan">
-            Get a custom plan
+            {t('billing.prompt_custom_plan_cta')}
           </a>
         </Button>
       );
@@ -198,7 +200,7 @@ export default function BillingPrompt({
         }}
         size="lg"
       >
-        {copy.cta(bestProductFit.name, price)}
+        {t(`billing.${copy.ctaKey}`, { plan: bestProductFit.name, price })}
       </Button>
     );
   };
@@ -214,9 +216,15 @@ export default function BillingPrompt({
         />
 
         <div className="col gap-3 p-6 md:p-8">
-          <Badge variant={copy.badge.variant}>{copy.badge.label}</Badge>
-          <h1 className="font-semibold text-2xl">{copy.title}</h1>
-          <p className="text-muted-foreground leading-relaxed">{copy.lead}</p>
+          <Badge variant={copy.badge.variant}>
+            {t(`billing.${copy.badge.labelKey}`)}
+          </Badge>
+          <h1 className="font-semibold text-2xl">
+            {t(`billing.${copy.titleKey}`)}
+          </h1>
+          <p className="text-muted-foreground leading-relaxed">
+            {t(`billing.${copy.leadKey}`)}
+          </p>
         </div>
 
         <div className="row gap-3 px-6 md:px-8">
@@ -225,7 +233,7 @@ export default function BillingPrompt({
               {number.short(eventsCount)}
             </div>
             <div className="text-muted-foreground text-sm">
-              Events tracked, all safe and stored
+              {t('billing.prompt_events_tracked_label')}
             </div>
           </div>
           {organization.subscriptionEndsAt && (
@@ -234,7 +242,7 @@ export default function BillingPrompt({
                 {formatDate(organization.subscriptionEndsAt)}
               </div>
               <div className="text-muted-foreground text-sm">
-                {copy.dateLabel}
+                {t(`billing.${copy.dateLabelKey}`)}
               </div>
             </div>
           )}
@@ -244,25 +252,29 @@ export default function BillingPrompt({
           {copy.action === 'checkout' &&
             (bestProductFit ? (
               <p className="text-muted-foreground text-sm">
-                Based on your usage, the{' '}
+                {t('billing.prompt_usage_recommendation_prefix')}{' '}
                 <strong className="text-foreground">
                   {bestProductFit.name}
                 </strong>{' '}
-                plan covers you: up to{' '}
-                {number.short(Number(bestProductFit.metadata.eventsLimit))}{' '}
-                events per month for {price}.
+                {t('billing.prompt_usage_recommendation_suffix', {
+                  events: number.short(
+                    Number(bestProductFit.metadata.eventsLimit)
+                  ),
+                  price,
+                })}
               </p>
             ) : (
               !isLoadingProducts && (
                 <p className="text-muted-foreground text-sm">
-                  Your usage is above our standard plans, so let's set you up
-                  with a custom one.
+                  {t('billing.prompt_custom_plan_description')}
                 </p>
               )
             ))}
           {renderCta()}
-          {copy.note && (
-            <p className="text-muted-foreground text-sm">{copy.note}</p>
+          {copy.noteKey && (
+            <p className="text-muted-foreground text-sm">
+              {t(`billing.${copy.noteKey}`)}
+            </p>
           )}
           <div className="row items-center justify-between gap-2">
             <LinkButton
@@ -270,23 +282,25 @@ export default function BillingPrompt({
               to="/$organizationId/billing"
               variant="outline"
             >
-              See all plans
+              {t('billing.prompt_see_all_plans')}
             </LinkButton>
             <a
               className="text-muted-foreground text-sm hover:underline"
               href="mailto:hello@openpanel.dev"
             >
-              Questions? Email us
+              {t('billing.prompt_questions_email')}
             </a>
           </div>
         </div>
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-        {FEATURES.map((feature) => (
-          <div className="row items-center gap-2" key={feature}>
+        {FEATURE_KEYS.map((featureKey) => (
+          <div className="row items-center gap-2" key={featureKey}>
             <CheckIcon className="size-4 shrink-0 text-emerald-500" />
-            <span className="text-muted-foreground text-sm">{feature}</span>
+            <span className="text-muted-foreground text-sm">
+              {t(`billing.${featureKey}`)}
+            </span>
           </div>
         ))}
       </div>

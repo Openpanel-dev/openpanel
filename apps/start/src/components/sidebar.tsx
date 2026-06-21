@@ -3,8 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from '@tanstack/react-router';
 import { MenuIcon, SparklesIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useChatState } from './chat/chat-context';
 import { FeedbackButton } from './feedback-button';
+import { LanguageToggle } from './language-toggle';
 import { LogoSquare } from './logo';
 import { ProfileToggle } from './profile-toggle';
 import ProjectSelector from './project-selector';
@@ -20,6 +22,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
 export function Sidebar() {
+  const { t } = useTranslation();
   const { organizationId, projectId } = useParams({ strict: false });
   const trpc = useTRPC();
 
@@ -57,7 +60,9 @@ export function Sidebar() {
   return (
     <SidebarContainer organizations={organizations} projects={projects}>
       <ActionOrganizationCTAButton />
-      <div className="mb-2 font-medium text-muted-foreground">Organization</div>
+      <div className="mb-2 font-medium text-muted-foreground">
+        {t('sidebar.organization')}
+      </div>
       <SidebarOrganizationMenu
         organization={organizations.find((o) => o.id === organizationId)!}
       />
@@ -76,6 +81,7 @@ export function SidebarContainer({
   projects,
   children,
 }: SidebarContainerProps) {
+  const { t } = useTranslation();
   const [active, setActive] = useState(false);
   const location = useLocation();
   const { isSelfHosted } = useAppContext();
@@ -143,7 +149,7 @@ export function SidebarContainer({
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                Docs
+                {t('sidebar.docs')}
               </a>
               {projectId && (
                 <button
@@ -152,12 +158,13 @@ export function SidebarContainer({
                     chatOpen ? closeChat() : openChatForContext()
                   }
                   className="flex h-12 w-12 items-center justify-center border-border border-r font-medium text-muted-foreground text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-                  title="Open AI chat (⌘J)"
-                  aria-label="Open AI chat"
+                  title={`${t('sidebar.open_ai_chat')} (⌘J)`}
+                  aria-label={t('sidebar.open_ai_chat')}
                 >
                   <SparklesIcon size={16} />
                 </button>
               )}
+              <LanguageToggle className="h-12 flex-1 border-border border-r text-muted-foreground hover:bg-accent hover:text-accent-foreground" />
               <ProfileToggle className="h-12 flex-1 rounded-none hover:bg-accent hover:text-accent-foreground" />
             </div>
             {isSelfHosted && (
@@ -165,8 +172,8 @@ export function SidebarContainer({
                 className="center-center flex h-12 cursor-pointer gap-2 border-border border-t px-4 font-medium text-muted-foreground text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
                 href="https://openpanel.dev/supporter"
               >
-                <span>Support Us</span>
-                <span>Pay What You Want</span>
+                <span>{t('sidebar.support_us')}</span>
+                <span>{t('sidebar.pay_what_you_want')}</span>
               </a>
             )}
           </div>

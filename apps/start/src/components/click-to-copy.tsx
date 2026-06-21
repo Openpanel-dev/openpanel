@@ -1,4 +1,5 @@
 import { clipboard } from '@/utils/clipboard';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Tooltiper } from './ui/tooltip';
@@ -10,14 +11,16 @@ type Props = {
 };
 
 const ClickToCopy = ({ children, value }: Props) => {
+  const { t } = useTranslation();
+
   return (
     <Tooltiper
-      content="Click to copy"
+      content={t('ui.click_to_copy')}
       asChild
       className="cursor-pointer"
       onClick={() => {
         clipboard(value);
-        toast('Copied to clipboard');
+        toast(t('ui.copied_to_clipboard'));
       }}
     >
       {children}

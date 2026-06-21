@@ -7,11 +7,13 @@ import type { IServiceOrganization } from '@openpanel/db';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addHours, format, startOfHour } from 'date-fns';
 import { TrashIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type Props = { organization: IServiceOrganization };
 
 export default function DeleteOrganization({ organization }: Props) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data: myAccess } = useQuery(
@@ -24,7 +26,7 @@ export default function DeleteOrganization({ organization }: Props) {
     trpc.organization.cancelDeletion.mutationOptions({
       onError: handleError,
       onSuccess: () => {
-        toast.success('Organization deletion cancelled');
+        toast.success(t('settings.delete_organization_cancelled_toast'));
         queryClient.invalidateQueries(
           trpc.organization.get.queryFilter({
             organizationId: organization.id,
@@ -46,34 +48,36 @@ export default function DeleteOrganization({ organization }: Props) {
   return (
     <Widget className="max-w-screen-md w-full">
       <WidgetHead>
-        <span className="title">Delete Organization</span>
+        <span className="title">
+          {t('settings.delete_organization_title')}
+        </span>
       </WidgetHead>
       <WidgetBody className="space-y-4">
-        <p>
-          Deleting this organization will remove it and all of its projects and
-          their data. It will be permanently deleted after 24 hours.
-        </p>
+        <p>{t('settings.delete_organization_description')}</p>
         {organization.deleteAt && (
           <Alert variant="destructive">
-            <AlertTitle>Organization scheduled for deletion</AlertTitle>
+            <AlertTitle>
+              {t('settings.delete_organization_scheduled_title')}
+            </AlertTitle>
             <AlertDescription>
-              This organization will be deleted on{' '}
+              {t('settings.delete_organization_scheduled_prefix')}{' '}
               <span className="font-medium">
                 {format(
                   startOfHour(addHours(organization.deleteAt, 1)),
                   'yyyy-MM-dd HH:mm:ss',
                 )}
               </span>
-              . All of its projects and their events will be deleted.
+              . {t('settings.delete_organization_scheduled_suffix')}
             </AlertDescription>
           </Alert>
         )}
         {blockDeletion && !organization.deleteAt && (
           <Alert variant="destructive">
-            <AlertTitle>Cancel your subscription first</AlertTitle>
+            <AlertTitle>
+              {t('settings.delete_organization_subscription_block_title')}
+            </AlertTitle>
             <AlertDescription>
-              This organization has an active subscription. Cancel it from the
-              billing settings before you delete the organization.
+              {t('settings.delete_organization_subscription_block_description')}
             </AlertDescription>
           </Alert>
         )}
@@ -88,7 +92,7 @@ export default function DeleteOrganization({ organization }: Props) {
               }}
               variant="outline"
             >
-              Cancel deletion
+              {t('settings.delete_project_cancel_button')}
             </Button>
           )}
           <Button
@@ -102,7 +106,7 @@ export default function DeleteOrganization({ organization }: Props) {
             }}
             variant="destructive"
           >
-            Delete Organization
+            {t('settings.delete_organization_title')}
           </Button>
         </div>
       </WidgetBody>

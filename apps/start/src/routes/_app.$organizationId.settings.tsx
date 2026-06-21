@@ -12,6 +12,7 @@ import { zEditOrganization } from '@openpanel/validation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
@@ -33,6 +34,7 @@ export const Route = createFileRoute('/_app/$organizationId/settings')({
 });
 
 function Component() {
+  const { t } = useTranslation();
   const { organizationId } = Route.useParams();
   const trpc = useTRPC();
   const {
@@ -50,7 +52,7 @@ function Component() {
   }
 
   if (!organization) {
-    return <FullPageEmptyState title="Organization not found" />;
+    return <FullPageEmptyState title={t('organization.not_found')} />;
   }
 
   const { register, handleSubmit, formState, reset, control } = useForm<IForm>({
@@ -64,8 +66,8 @@ function Component() {
   const mutation = useMutation(
     trpc.organization.update.mutationOptions({
       onSuccess(res) {
-        toast('Organization updated', {
-          description: 'Your organization has been updated.',
+        toast(t('organization.toast_updated'), {
+          description: t('organization.toast_updated_description'),
         });
         reset({
           ...res,
@@ -80,8 +82,8 @@ function Component() {
   return (
     <div className="container p-8">
       <PageHeader
-        title="Workspace settings"
-        description="Manage your workspace settings here"
+        title={t('organization.settings_page_title')}
+        description={t('organization.settings_page_description')}
         className="mb-8"
       />
 
@@ -92,12 +94,12 @@ function Component() {
       >
         <Widget>
           <WidgetHead className="flex items-center justify-between">
-            <span className="title">Details</span>
+            <span className="title">{t('organization.details_title')}</span>
           </WidgetHead>
           <WidgetBody className="gap-4 col">
             <InputWithLabel
               className="flex-1"
-              label="Name"
+              label={t('organization.name_label')}
               {...register('name')}
               defaultValue={organization?.name}
             />
@@ -105,9 +107,9 @@ function Component() {
               name="timezone"
               control={control}
               render={({ field }) => (
-                <WithLabel label="Timezone">
+                <WithLabel label={t('organization.timezone_label')}>
                   <Combobox
-                    placeholder="Select timezone"
+                    placeholder={t('organization.timezone_placeholder')}
                     items={Intl.supportedValuesOf('timeZone').map((item) => ({
                       value: item,
                       label: item,
@@ -125,7 +127,7 @@ function Component() {
               disabled={!formState.isDirty}
               className="self-end"
             >
-              Save
+              {t('common.save')}
             </Button>
           </WidgetBody>
         </Widget>

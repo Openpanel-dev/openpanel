@@ -6,8 +6,10 @@ import { pushModal } from '@/modals';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { TrashIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function DeleteAccount() {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const { data: blockers = [] } = useQuery(
     trpc.user.deletionBlockers.queryOptions(),
@@ -18,20 +20,17 @@ export default function DeleteAccount() {
   return (
     <Widget className="max-w-screen-md w-full">
       <WidgetHead>
-        <span className="title">Delete account</span>
+        <span className="title">{t('settings.delete_account_title')}</span>
       </WidgetHead>
       <WidgetBody className="space-y-4">
-        <p>
-          Deleting your account will permanently remove your personal data.
-          Organizations you created that have no other admin will also be
-          deleted, along with their projects and events.
-        </p>
+        <p>{t('settings.delete_account_description')}</p>
         {blocked && (
           <Alert variant="destructive">
-            <AlertTitle>Cancel your subscriptions first</AlertTitle>
+            <AlertTitle>
+              {t('settings.delete_account_subscription_block_title')}
+            </AlertTitle>
             <AlertDescription>
-              These organizations you created have an active subscription. Cancel
-              each one before deleting your account:
+              {t('settings.delete_account_subscription_block_description')}
               <ul className="mt-2 list-disc pl-5">
                 {blockers.map((organization) => (
                   <li key={organization.id}>
@@ -57,7 +56,7 @@ export default function DeleteAccount() {
             }}
             variant="destructive"
           >
-            Delete account
+            {t('settings.delete_account_title')}
           </Button>
         </div>
       </WidgetBody>

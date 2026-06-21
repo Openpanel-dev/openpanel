@@ -2,8 +2,10 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
-import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
+import i18n from '@/i18n';
+import { createOrganizationTitle } from '@/utils/title';
 import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/integrations/_tabs',
@@ -22,7 +24,7 @@ export const Route = createFileRoute(
       meta: [
         {
           title: createOrganizationTitle(
-            PAGE_TITLES.INTEGRATIONS,
+            i18n.t('integrations.page_title'),
             loaderData?.organization?.name,
           ),
         },
@@ -34,10 +36,11 @@ export const Route = createFileRoute(
 
 function Component() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const { activeTab, tabs } = usePageTabs([
-    { id: 'installed', label: 'Installed' },
-    { id: 'available', label: 'Available' },
+    { id: 'installed', label: t('integrations.tab_installed') },
+    { id: 'available', label: t('integrations.tab_available') },
   ]);
 
   const handleTabChange = (tabId: string) => {
@@ -50,8 +53,8 @@ function Component() {
   return (
     <div className="container p-8">
       <PageHeader
-        title="Integrations"
-        description="Manage your integrations here"
+        title={t('integrations.page_title')}
+        description={t('integrations.page_description')}
       />
 
       <Tabs

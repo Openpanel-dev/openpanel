@@ -10,6 +10,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PencilRulerIcon, PlusIcon } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/notifications/_tabs/rules',
@@ -26,6 +27,7 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t } = useTranslation();
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const query = useQuery(
@@ -41,11 +43,11 @@ function Component() {
 
   if (!isLoading && data.length === 0) {
     return (
-      <FullPageEmptyState title="No rules yet" icon={PencilRulerIcon}>
-        <p>
-          You have not created any rules yet. Create a rule to start getting
-          notifications.
-        </p>
+      <FullPageEmptyState
+        title={t('notifications.rules_empty_title')}
+        icon={PencilRulerIcon}
+      >
+        <p>{t('notifications.rules_empty_description')}</p>
         <Button
           className="mt-8"
           variant="outline"
@@ -55,7 +57,7 @@ function Component() {
             })
           }
         >
-          Add Rule
+          {t('notifications.action_add_rule')}
         </Button>
       </FullPageEmptyState>
     );
@@ -73,7 +75,7 @@ function Component() {
             })
           }
         >
-          Add Rule
+          {t('notifications.action_add_rule')}
         </Button>
       </div>
       <div className="col gap-4 w-full grid md:grid-cols-2">

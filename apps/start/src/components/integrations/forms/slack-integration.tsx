@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { zCreateSlackIntegration } from '@openpanel/validation';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
@@ -19,6 +20,7 @@ export function SlackIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const { organizationId } = useAppParams();
 
   const form = useForm<IForm>({
@@ -37,7 +39,7 @@ export function SlackIntegrationForm({
         onSuccess();
       },
       onError() {
-        toast.error('Failed to create integration');
+        toast.error(t('integrations.error_create_failed'));
       },
     }),
   );
@@ -47,7 +49,7 @@ export function SlackIntegrationForm({
   };
 
   const handleError = () => {
-    toast.error('Validation error');
+    toast.error(t('integrations.error_validation'));
   };
 
   return (
@@ -56,12 +58,12 @@ export function SlackIntegrationForm({
       className="col gap-4"
     >
       <InputWithLabel
-        label="Name"
-        placeholder="Eg. My personal slack"
+        label={t('integrations.field_name')}
+        placeholder={t('integrations.slack_name_placeholder')}
         {...form.register('name')}
         error={form.formState.errors.name?.message}
       />
-      <Button type="submit">Create</Button>
+      <Button type="submit">{t('integrations.action_create')}</Button>
     </form>
   );
 }

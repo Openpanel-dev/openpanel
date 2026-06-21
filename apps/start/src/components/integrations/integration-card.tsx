@@ -50,10 +50,12 @@ export function IntegrationCardHeaderButtons({
 export function IntegrationCardLogoImage({
   src,
   backgroundColor,
+  alt,
   className,
 }: {
   src: string;
   backgroundColor: string;
+  alt: string;
   className?: string;
 }) {
   return (
@@ -63,7 +65,7 @@ export function IntegrationCardLogoImage({
         backgroundColor,
       }}
     >
-      <img src={src} alt="Integration Logo" />
+      <img src={src} alt={alt} />
     </IntegrationCardLogo>
   );
 }

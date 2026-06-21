@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { CopyIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Syntax from '@/components/syntax';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -31,6 +32,7 @@ interface Props {
 }
 
 const ConnectWeb = ({ clients }: Props) => {
+  const { t } = useTranslation();
   const [client, setClient] = useState<IServiceClient | null>(null);
   useEffect(() => {
     if (!client && clients && clients.length > 0) {
@@ -63,7 +65,7 @@ const ConnectWeb = ({ clients }: Props) => {
             onChange={(id) =>
               setClient(clients.find((c) => c.id === id) ?? null)
             }
-            placeholder="Select client"
+            placeholder={t('settings.tracking_select_client_placeholder')}
             searchable
             value={client?.id ?? null}
           />
@@ -72,14 +74,14 @@ const ConnectWeb = ({ clients }: Props) => {
             onClick={() => clipboard(code, null)}
             variant="outline"
           >
-            Copy
+            {t('settings.tracking_copy_button')}
           </Button>
         </div>
         <Syntax className="border" code={code} copyable={false} />
       </div>
       <div className="col gap-4">
         <p className="text-center text-muted-foreground text-sm">
-          Or pick a framework below to get started.
+          {t('settings.tracking_framework_prompt')}
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           {frameworks.map((framework) => (
@@ -102,12 +104,12 @@ const ConnectWeb = ({ clients }: Props) => {
           ))}
         </div>
         <p className="text-center text-muted-foreground text-sm">
-          Missing a framework?{' '}
+          {t('settings.tracking_missing_framework')}{' '}
           <a
             className="text-foreground underline"
             href="mailto:hello@openpanel.dev"
           >
-            Let us know!
+            {t('settings.tracking_let_us_know')}
           </a>
         </p>
       </div>

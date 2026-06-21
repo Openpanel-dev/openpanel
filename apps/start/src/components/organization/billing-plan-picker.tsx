@@ -8,6 +8,7 @@ import {
   ShuffleIcon,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useNumber } from '@/hooks/use-numer-formatter';
@@ -32,6 +33,7 @@ export default function BillingPlanPicker({
   currentProduct,
   onComplete,
 }: Props) {
+  const { t } = useTranslation();
   const number = useNumber();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -74,8 +76,8 @@ export default function BillingPlanPicker({
               organizationId: organization.id,
             }),
           );
-          toast.success('Subscription updated', {
-            description: 'It might take a few seconds to update',
+          toast.success(t('billing.toast_subscription_updated'), {
+            description: t('billing.toast_subscription_updated_description'),
           });
           onComplete?.();
         }
@@ -100,8 +102,8 @@ export default function BillingPlanPicker({
             organizationId: organization.id,
           }),
         );
-        toast.success('Subscription canceled', {
-          description: 'It might take a few seconds to update',
+        toast.success(t('billing.toast_subscription_canceled'), {
+          description: t('billing.toast_subscription_updated_description'),
         });
         onComplete?.();
       },
@@ -178,7 +180,7 @@ export default function BillingPlanPicker({
           size="lg"
           onClick={handleCancelSubscription}
         >
-          Cancel subscription
+          {t('billing.plan_cancel_subscription')}
         </Button>
       );
     }
@@ -190,15 +192,15 @@ export default function BillingPlanPicker({
         organization.isExpired
       ) {
         return isCurrentProduct
-          ? 'Reactivate subscription'
-          : 'Change subscription';
+          ? t('billing.plan_reactivate_subscription')
+          : t('billing.plan_change_subscription');
       }
 
       if (currentProduct) {
-        return 'Change subscription';
+        return t('billing.plan_change_subscription');
       }
 
-      return 'Pay with Polar';
+      return t('billing.plan_pay_with_polar');
     })();
 
     return (
@@ -256,25 +258,24 @@ export default function BillingPlanPicker({
       <div className="col gap-4 shrink-0">
         {currentProduct && (
           <div className="font-medium">
-            Your current usage is{' '}
-            {number.format(organization.subscriptionPeriodEventsCount)} out of{' '}
-            {number.format(Number(currentProduct?.metadata.eventsLimit))}{' '}
-            events.{' '}
+            {t('billing.plan_current_usage', {
+              count: number.format(organization.subscriptionPeriodEventsCount),
+              limit: number.format(Number(currentProduct?.metadata.eventsLimit)),
+            })}{' '}
             <span className="text-muted-foreground">
-              You cannot downgrade if your usage exceeds the limit of the new
-              plan.
+              {t('billing.plan_downgrade_limit_notice')}
             </span>
           </div>
         )}
         <div className="row items-center justify-between gap-2 -mb-2">
           <div className="font-medium">
             {recurringInterval === 'year' ? (
-              'Switch to monthly'
+              t('billing.plan_switch_to_monthly')
             ) : (
               <>
-                Switch to yearly and get{' '}
+                {t('billing.plan_switch_to_yearly_prefix')}{' '}
                 <span className="underline text-emerald-500">
-                  2 months for free
+                  {t('billing.plan_switch_to_yearly_discount')}
                 </span>
               </>
             )}
@@ -286,7 +287,9 @@ export default function BillingPlanPicker({
               setRecurringInterval((p) => (p === 'year' ? 'month' : 'year'))
             }
           >
-            {recurringInterval === 'year' ? 'Monthly' : 'Yearly'}
+            {recurringInterval === 'year'
+              ? t('billing.plan_monthly')
+              : t('billing.plan_yearly')}
             <ShuffleIcon className="size-4 ml-2" />
           </Button>
         </div>

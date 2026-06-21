@@ -9,6 +9,7 @@ import { zCreateDiscordIntegration } from '@openpanel/validation';
 import { useMutation } from '@tanstack/react-query';
 import { path, mergeDeepRight } from 'ramda';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
@@ -21,6 +22,7 @@ export function DiscordIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const { organizationId } = useAppParams();
   const form = useForm<IForm>({
     defaultValues: mergeDeepRight(
@@ -42,7 +44,7 @@ export function DiscordIntegrationForm({
     trpc.integration.createOrUpdate.mutationOptions({
       onSuccess,
       onError() {
-        toast.error('Failed to create integration');
+        toast.error(t('integrations.error_create_failed'));
       },
     }),
   );
@@ -52,19 +54,19 @@ export function DiscordIntegrationForm({
   };
 
   const handleError = () => {
-    toast.error('Validation error');
+    toast.error(t('integrations.error_validation'));
   };
 
   const handleTest = async () => {
     const webhookUrl = form.getValues('config.url');
     if (!webhookUrl) {
-      return toast.error('Webhook URL is required');
+      return toast.error(t('integrations.error_webhook_url_required'));
     }
     const res = await sendTestDiscordNotification(webhookUrl);
     if (res.ok) {
-      toast.success('Test notification sent');
+      toast.success(t('integrations.success_test_notification_sent'));
     } else {
-      toast.error('Failed to send test notification');
+      toast.error(t('integrations.error_test_notification_failed'));
     }
   };
 
@@ -74,22 +76,22 @@ export function DiscordIntegrationForm({
       className="col gap-4"
     >
       <InputWithLabel
-        label="Name"
-        placeholder="Eg. My personal discord"
+        label={t('integrations.field_name')}
+        placeholder={t('integrations.discord_name_placeholder')}
         {...form.register('name')}
         error={form.formState.errors.name?.message}
       />
       <InputWithLabel
-        label="Discord Webhook URL"
+        label={t('integrations.field_discord_webhook_url')}
         {...form.register('config.url')}
         error={path(['config', 'url', 'message'], form.formState.errors)}
       />
       <div className="row gap-4">
         <Button type="button" variant="outline" onClick={handleTest}>
-          Test connection
+          {t('integrations.action_test_connection')}
         </Button>
         <Button type="submit" className="flex-1">
-          Create
+          {t('integrations.action_create')}
         </Button>
       </div>
     </form>

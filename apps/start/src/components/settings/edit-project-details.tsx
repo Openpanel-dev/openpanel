@@ -15,6 +15,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SaveIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
@@ -31,6 +32,7 @@ const validator = zProject.pick({
 type IForm = z.infer<typeof validator>;
 
 export default function EditProjectDetails({ project }: Props) {
+  const { t } = useTranslation();
   const [hasDomain, setHasDomain] = useState(project.domain !== null);
   const form = useForm<IForm>({
     resolver: zodResolver(validator),
@@ -49,7 +51,7 @@ export default function EditProjectDetails({ project }: Props) {
     trpc.project.update.mutationOptions({
       onError: handleError,
       onSuccess: () => {
-        toast.success('Project updated');
+        toast.success(t('settings.details_updated_toast'));
         queryClient.invalidateQueries(
           trpc.project.list.queryFilter({
             organizationId: project.organizationId,
@@ -70,7 +72,7 @@ export default function EditProjectDetails({ project }: Props) {
       if (values.cors.length === 0) {
         form.setError('cors', {
           type: 'required',
-          message: 'Please add at least one cors domain',
+          message: t('settings.details_cors_required'),
         });
         error = true;
       }
@@ -78,7 +80,7 @@ export default function EditProjectDetails({ project }: Props) {
       if (!values.domain) {
         form.setError('domain', {
           type: 'required',
-          message: 'Please add a domain',
+          message: t('settings.details_domain_required'),
         });
         error = true;
       }
@@ -94,18 +96,18 @@ export default function EditProjectDetails({ project }: Props) {
   return (
     <Widget className="max-w-screen-md w-full">
       <WidgetHead>
-        <span className="title">Details</span>
+        <span className="title">{t('settings.details_title')}</span>
       </WidgetHead>
       <WidgetBody>
         <form onSubmit={form.handleSubmit(onSubmit)} className="col gap-4">
           <InputWithLabel
-            label="Name"
+            label={t('settings.details_name_label')}
             {...form.register('name')}
             defaultValue={project.name}
           />
 
           <div className="-mb-2 flex gap-2 items-center justify-between">
-            <Label className="mb-0">Domain</Label>
+            <Label className="mb-0">{t('settings.details_domain_label')}</Label>
             <Switch checked={hasDomain} onCheckedChange={setHasDomain} />
           </div>
           <AnimateHeight open={hasDomain}>
@@ -122,16 +124,16 @@ export default function EditProjectDetails({ project }: Props) {
               control={form.control}
               render={({ field }) => (
                 <WithLabel
-                  label="Allowed domains"
+                  label={t('settings.details_allowed_domains_label')}
                   error={form.formState.errors.cors?.message}
                 >
                   <TagInput
                     {...field}
                     error={form.formState.errors.cors?.message}
-                    placeholder="Add a domain"
+                    placeholder={t('settings.details_add_domain_placeholder')}
                     value={field.value ?? []}
                     renderTag={(tag) =>
-                      tag === '*' ? 'Allow all domains' : tag
+                      tag === '*' ? t('settings.details_allow_all_domains') : tag
                     }
                     onChange={(newValue) => {
                       field.onChange(
@@ -157,16 +159,19 @@ export default function EditProjectDetails({ project }: Props) {
               control={form.control}
               render={({ field }) => {
                 return (
-                  <WithLabel label="Cross domain support" className="mt-4">
+                  <WithLabel
+                    label={t('settings.details_cross_domain_label')}
+                    className="mt-4"
+                  >
                     <CheckboxInput
                       ref={field.ref}
                       onBlur={field.onBlur}
                       defaultChecked={field.value}
                       onCheckedChange={field.onChange}
                     >
-                      <div>Enable cross domain support</div>
+                      <div>{t('settings.details_cross_domain_enable')}</div>
                       <div className="font-normal text-muted-foreground">
-                        This will let you track users across multiple domains
+                        {t('settings.details_cross_domain_description')}
                       </div>
                     </CheckboxInput>
                   </WithLabel>
@@ -180,16 +185,16 @@ export default function EditProjectDetails({ project }: Props) {
             control={form.control}
             render={({ field }) => {
               return (
-                <WithLabel label="Revenue tracking">
+                <WithLabel label={t('settings.details_revenue_tracking_label')}>
                   <CheckboxInput
                     ref={field.ref}
                     onBlur={field.onBlur}
                     defaultChecked={field.value}
                     onCheckedChange={field.onChange}
                   >
-                    <div>Allow "unsafe" revenue tracking</div>
+                    <div>{t('settings.details_unsafe_revenue_enable')}</div>
                     <div className="font-normal text-muted-foreground">
-                      With this enabled, you can track revenue from client code.
+                      {t('settings.details_unsafe_revenue_description')}
                     </div>
                   </CheckboxInput>
                 </WithLabel>
@@ -203,7 +208,7 @@ export default function EditProjectDetails({ project }: Props) {
             icon={SaveIcon}
             className="self-start"
           >
-            Save
+            {t('common.save')}
           </Button>
         </form>
       </WidgetBody>

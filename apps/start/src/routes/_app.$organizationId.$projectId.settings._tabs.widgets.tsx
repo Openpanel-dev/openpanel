@@ -16,6 +16,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ExternalLinkIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute(
@@ -25,6 +26,7 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t } = useTranslation();
   const { projectId, organizationId } = useAppParams();
   const { dashboardUrl } = useAppContext();
   const trpc = useTRPC();
@@ -45,10 +47,14 @@ function Component() {
         queryClient.invalidateQueries(
           trpc.widget.get.queryFilter({ projectId, type: variables.type }),
         );
-        toast.success(variables.enabled ? 'Widget enabled' : 'Widget disabled');
+        toast.success(
+          variables.enabled
+            ? t('settings.widgets_enabled_toast')
+            : t('settings.widgets_disabled_toast'),
+        );
       },
       onError: (error) => {
-        toast.error(error.message || 'Failed to update widget');
+        toast.error(error.message || t('settings.widgets_update_failed_toast'));
       },
     }),
   );
@@ -60,10 +66,12 @@ function Component() {
         queryClient.invalidateQueries(
           trpc.widget.get.queryFilter({ projectId, type: 'realtime' }),
         );
-        toast.success('Widget options updated');
+        toast.success(t('settings.widgets_options_updated_toast'));
       },
       onError: (error) => {
-        toast.error(error.message || 'Failed to update options');
+        toast.error(
+          error.message || t('settings.widgets_options_update_failed_toast'),
+        );
       },
     }),
   );
@@ -137,6 +145,7 @@ function RealtimeWidgetSection({
   onToggle,
   onUpdateOptions,
 }: RealtimeWidgetSectionProps) {
+  const { t } = useTranslation();
   const isEnabled = widget?.public ?? false;
   const widgetUrl =
     isEnabled && widget?.id
@@ -178,11 +187,9 @@ function RealtimeWidgetSection({
     <Widget className="max-w-screen-md w-full">
       <WidgetHead className="row items-center justify-between gap-6">
         <div className="space-y-2">
-          <span className="title">Realtime Widget</span>
+          <span className="title">{t('settings.widgets_realtime_title')}</span>
           <p className="text-muted-foreground">
-            Embed a realtime visitor counter widget on your website. The widget
-            shows live visitor count, activity histogram, top countries,
-            referrers and paths.
+            {t('settings.widgets_realtime_description')}
           </p>
         </div>
         <Switch
@@ -194,11 +201,13 @@ function RealtimeWidgetSection({
       {isEnabled && (
         <WidgetBody className="space-y-6">
           <div className="space-y-4">
-            <h3 className="text-sm font-medium">Widget Options</h3>
+            <h3 className="text-sm font-medium">
+              {t('settings.widgets_options_title')}
+            </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label htmlFor="referrers" className="text-sm">
-                  Show Referrers
+                  {t('settings.widgets_show_referrers')}
                 </Label>
                 <Switch
                   id="referrers"
@@ -211,7 +220,7 @@ function RealtimeWidgetSection({
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="countries" className="text-sm">
-                  Show Countries
+                  {t('settings.widgets_show_countries')}
                 </Label>
                 <Switch
                   id="countries"
@@ -224,7 +233,7 @@ function RealtimeWidgetSection({
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="paths" className="text-sm">
-                  Show Paths
+                  {t('settings.widgets_show_paths')}
                 </Label>
                 <Switch
                   id="paths"
@@ -238,25 +247,29 @@ function RealtimeWidgetSection({
             </div>
           </div>
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Widget URL</h3>
+            <h3 className="text-sm font-medium">
+              {t('settings.widgets_url_title')}
+            </h3>
             <CopyInput label="" value={widgetUrl!} className="w-full" />
             <p className="text-xs text-muted-foreground">
-              Direct link to the widget. You can open this in a new tab or embed
-              it.
+              {t('settings.widgets_realtime_url_description')}
             </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Embed Code</h3>
+            <h3 className="text-sm font-medium">
+              {t('settings.widgets_embed_code_title')}
+            </h3>
             <Syntax code={embedCode!} language="bash" />
             <p className="text-xs text-muted-foreground">
-              Copy this code and paste it into your website HTML where you want
-              the widget to appear.
+              {t('settings.widgets_embed_code_description')}
             </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Preview</h3>
+            <h3 className="text-sm font-medium">
+              {t('settings.widgets_preview_title')}
+            </h3>
             <div className="border rounded-lg overflow-hidden">
               <iframe
                 key={widgetChecksum}
@@ -264,7 +277,7 @@ function RealtimeWidgetSection({
                 width="100%"
                 height="600"
                 className="border-0"
-                title="Realtime Widget Preview"
+                title={t('settings.widgets_realtime_preview_title')}
               />
             </div>
             <div className="flex gap-2">
@@ -276,7 +289,7 @@ function RealtimeWidgetSection({
                   window.open(widgetUrl!, '_blank', 'noopener,noreferrer')
                 }
               >
-                Open in new tab
+                {t('settings.widgets_open_new_tab')}
               </Button>
             </div>
           </div>
@@ -302,6 +315,7 @@ function CounterWidgetSection({
   isToggling,
   onToggle,
 }: CounterWidgetSectionProps) {
+  const { t } = useTranslation();
   const isEnabled = widget?.public ?? false;
   const counterUrl =
     isEnabled && widget?.id
@@ -315,10 +329,9 @@ function CounterWidgetSection({
     <Widget className="max-w-screen-md w-full">
       <WidgetHead className="row items-center justify-between gap-6">
         <div className="space-y-2">
-          <span className="title">Counter Widget</span>
+          <span className="title">{t('settings.widgets_counter_title')}</span>
           <p className="text-muted-foreground">
-            A compact live visitor counter badge you can embed anywhere. Shows
-            the current number of unique visitors with a live indicator.
+            {t('settings.widgets_counter_description')}
           </p>
         </div>
         <Switch
@@ -330,30 +343,35 @@ function CounterWidgetSection({
       {isEnabled && counterUrl && (
         <WidgetBody className="space-y-6">
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Widget URL</h3>
+            <h3 className="text-sm font-medium">
+              {t('settings.widgets_url_title')}
+            </h3>
             <CopyInput label="" value={counterUrl} className="w-full" />
             <p className="text-xs text-muted-foreground">
-              Direct link to the counter widget.
+              {t('settings.widgets_counter_url_description')}
             </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Embed Code</h3>
+            <h3 className="text-sm font-medium">
+              {t('settings.widgets_embed_code_title')}
+            </h3>
             <Syntax code={counterEmbedCode!} language="bash" />
             <p className="text-xs text-muted-foreground">
-              Copy this code and paste it into your website HTML where you want
-              the counter to appear.
+              {t('settings.widgets_embed_code_description')}
             </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Preview</h3>
+            <h3 className="text-sm font-medium">
+              {t('settings.widgets_preview_title')}
+            </h3>
             <div className="border rounded-lg p-4 bg-muted/30">
               <iframe
                 src={counterUrl}
                 height="32"
                 className="border-0"
-                title="Counter Widget Preview"
+                title={t('settings.widgets_counter_preview_title')}
               />
             </div>
             <div className="flex gap-2">
@@ -365,7 +383,7 @@ function CounterWidgetSection({
                   window.open(counterUrl, '_blank', 'noopener,noreferrer')
                 }
               >
-                Open in new tab
+                {t('settings.widgets_open_new_tab')}
               </Button>
             </div>
           </div>
@@ -384,6 +402,7 @@ interface BadgeWidgetSectionProps {
 }
 
 function BadgeWidgetSection({ widget, dashboardUrl }: BadgeWidgetSectionProps) {
+  const { t } = useTranslation();
   const isEnabled = widget?.public ?? false;
   const badgeUrl =
     isEnabled && widget?.id
@@ -403,33 +422,37 @@ function BadgeWidgetSection({ widget, dashboardUrl }: BadgeWidgetSectionProps) {
     <Widget className="max-w-screen-md w-full">
       <WidgetHead className="row items-center justify-between gap-6">
         <div className="space-y-2">
-          <span className="title">Analytics Badge</span>
+          <span className="title">{t('settings.widgets_badge_title')}</span>
           <p className="text-muted-foreground">
-            A Product Hunt-style badge showing your 30-day unique visitor count.
-            Perfect for showcasing your analytics powered by OpenPanel.
+            {t('settings.widgets_badge_description')}
           </p>
         </div>
       </WidgetHead>
       <WidgetBody className="space-y-6">
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Widget URL</h3>
+          <h3 className="text-sm font-medium">
+            {t('settings.widgets_url_title')}
+          </h3>
           <CopyInput label="" value={badgeUrl} className="w-full" />
           <p className="text-xs text-muted-foreground">
-            Direct link to the analytics badge widget.
+            {t('settings.widgets_badge_url_description')}
           </p>
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Embed Code</h3>
+          <h3 className="text-sm font-medium">
+            {t('settings.widgets_embed_code_title')}
+          </h3>
           <Syntax code={badgeEmbedCode!} language="bash" />
           <p className="text-xs text-muted-foreground">
-            Copy this code and paste it into your website HTML where you want
-            the badge to appear.
+            {t('settings.widgets_embed_code_description')}
           </p>
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Preview</h3>
+          <h3 className="text-sm font-medium">
+            {t('settings.widgets_preview_title')}
+          </h3>
           <div className="border rounded-lg p-4 bg-muted/30">
             <a
               href="https://openpanel.dev"
@@ -446,7 +469,7 @@ function BadgeWidgetSection({ widget, dashboardUrl }: BadgeWidgetSectionProps) {
                 height="48"
                 width="250"
                 className="border-0 pointer-events-none"
-                title="Analytics Badge Preview"
+                title={t('settings.widgets_badge_preview_title')}
               />
             </a>
           </div>
@@ -459,7 +482,7 @@ function BadgeWidgetSection({ widget, dashboardUrl }: BadgeWidgetSectionProps) {
                 window.open(badgeUrl, '_blank', 'noopener,noreferrer')
               }
             >
-              Open in new tab
+              {t('settings.widgets_open_new_tab')}
             </Button>
           </div>
         </div>

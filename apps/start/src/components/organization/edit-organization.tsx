@@ -5,6 +5,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { handleError } from '@/trpc/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
@@ -21,6 +22,7 @@ interface EditOrganizationProps {
 export default function EditOrganization({
   organization,
 }: EditOrganizationProps) {
+  const { t } = useTranslation();
   const { register, handleSubmit, formState, reset, control } = useForm<IForm>({
     defaultValues: {
       id: organization.id,
@@ -34,8 +36,8 @@ export default function EditOrganization({
   const mutation = useMutation(
     trpc.organization.update.mutationOptions({
       onSuccess(res: any) {
-        toast('Organization updated', {
-          description: 'Your organization has been updated.',
+        toast(t('organization.toast_updated'), {
+          description: t('organization.toast_updated_description'),
         });
         reset({
           ...res,
@@ -53,14 +55,14 @@ export default function EditOrganization({
         mutation.mutate(values);
       })}
     >
-      <Widget>
-        <WidgetHead className="flex items-center justify-between">
-          <span className="title">Details</span>
+        <Widget>
+          <WidgetHead className="flex items-center justify-between">
+          <span className="title">{t('organization.details_title')}</span>
         </WidgetHead>
         <WidgetBody className="gap-4 col">
           <InputWithLabel
             className="flex-1"
-            label="Name"
+            label={t('organization.name_label')}
             {...register('name')}
             defaultValue={organization?.name}
           />
@@ -68,9 +70,9 @@ export default function EditOrganization({
             name="timezone"
             control={control}
             render={({ field }) => (
-              <WithLabel label="Timezone">
+              <WithLabel label={t('organization.timezone_label')}>
                 <Combobox
-                  placeholder="Select timezone"
+                  placeholder={t('organization.timezone_placeholder')}
                   items={Intl.supportedValuesOf('timeZone').map((item) => ({
                     value: item,
                     label: item,
@@ -88,7 +90,7 @@ export default function EditOrganization({
             disabled={!formState.isDirty}
             className="self-end"
           >
-            Save
+            {t('common.save')}
           </Button>
         </WidgetBody>
       </Widget>

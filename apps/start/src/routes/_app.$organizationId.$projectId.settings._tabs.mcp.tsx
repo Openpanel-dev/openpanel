@@ -12,6 +12,8 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/settings/_tabs/mcp',
@@ -31,7 +33,7 @@ type AiClient = {
   snippet: (mcpUrl: string) => string;
 };
 
-const buildClients = (mcpEndpoint: string): AiClient[] => {
+const buildClients = (mcpEndpoint: string, t: TFunction): AiClient[] => {
   const url = `${mcpEndpoint}?token=${TOKEN_PLACEHOLDER}`;
 
   return [
@@ -40,8 +42,10 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'Claude Desktop',
       description: (
         <>
-          Add the following block to <code>claude_desktop_config.json</code>.
-          You can open it from <strong>Settings → Developer → Edit Config</strong>.
+          {t('settings.mcp_claude_desktop_description_prefix')}{' '}
+          <code>claude_desktop_config.json</code>.{' '}
+          {t('settings.mcp_claude_desktop_description_suffix')}{' '}
+          <strong>{t('settings.mcp_claude_desktop_settings_path')}</strong>.
         </>
       ),
       configFile:
@@ -66,8 +70,8 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'Claude Code (CLI)',
       description: (
         <>
-          Run this once in your terminal. The token can also be passed as a
-          header via <code>--header "Authorization: Bearer BASE64_TOKEN"</code>.
+          {t('settings.mcp_claude_code_description_prefix')}{' '}
+          <code>--header "Authorization: Bearer BASE64_TOKEN"</code>.
         </>
       ),
       language: 'bash',
@@ -78,8 +82,10 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'Cursor',
       description: (
         <>
-          Add the server to your global config at <code>~/.cursor/mcp.json</code>{' '}
-          or your project config at <code>.cursor/mcp.json</code>.
+          {t('settings.mcp_cursor_description_prefix')}{' '}
+          <code>~/.cursor/mcp.json</code>{' '}
+          {t('settings.mcp_cursor_description_suffix')}{' '}
+          <code>.cursor/mcp.json</code>.
         </>
       ),
       configFile: '~/.cursor/mcp.json',
@@ -103,8 +109,11 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'Windsurf',
       description: (
         <>
-          Add the server to <code>~/.codeium/windsurf/mcp_config.json</code>.
-          Windsurf accepts both <code>serverUrl</code> and <code>url</code>.
+          {t('settings.mcp_windsurf_description_prefix')}{' '}
+          <code>~/.codeium/windsurf/mcp_config.json</code>.{' '}
+          {t('settings.mcp_windsurf_description_suffix')}{' '}
+          <code>serverUrl</code>{' '}
+          {t('settings.mcp_windsurf_url_connector')} <code>url</code>.
         </>
       ),
       configFile: '~/.codeium/windsurf/mcp_config.json',
@@ -127,8 +136,9 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'VS Code (Copilot)',
       description: (
         <>
-          Add the server to <code>.vscode/mcp.json</code> in your workspace, or
-          to your user-level MCP config.
+          {t('settings.mcp_vscode_description_prefix')}{' '}
+          <code>.vscode/mcp.json</code>{' '}
+          {t('settings.mcp_vscode_description_suffix')}
         </>
       ),
       configFile: '.vscode/mcp.json',
@@ -152,8 +162,9 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'Raycast',
       description: (
         <>
-          Copy the JSON below, then run the <strong>Install Server</strong>{' '}
-          command in Raycast — it auto-fills the form from your clipboard.
+          {t('settings.mcp_raycast_description_prefix')}{' '}
+          <strong>{t('settings.mcp_raycast_install_server')}</strong>{' '}
+          {t('settings.mcp_raycast_description_suffix')}
         </>
       ),
       language: 'json',
@@ -172,49 +183,54 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
 };
 
 function Component() {
+  const { t } = useTranslation();
   const { apiUrl } = useAppContext();
   const mcpEndpoint = `${apiUrl}/mcp`;
   const fullUrl = `${mcpEndpoint}?token=${TOKEN_PLACEHOLDER}`;
-  const clients = buildClients(mcpEndpoint);
+  const clients = buildClients(mcpEndpoint, t);
 
   return (
     <div className="col gap-6">
       <div className="col gap-2">
-        <h2 className="font-semibold text-lg">MCP Server</h2>
+        <h2 className="font-semibold text-lg">{t('settings.mcp_title')}</h2>
         <p className="text-muted-foreground text-sm">
-          Connect any MCP-compatible AI client (Claude, Cursor, Windsurf, …) to
-          your OpenPanel data. The server is read-only and exposes 38 tools for
-          querying events, sessions, profiles, funnels, retention and more.
+          {t('settings.mcp_description')}
         </p>
       </div>
 
       <div className="col gap-2">
-        <CopyInput label="Endpoint" value={fullUrl} />
+        <CopyInput label={t('settings.mcp_endpoint_label')} value={fullUrl} />
         <p className="text-muted-foreground text-xs">
-          Replace <code>{TOKEN_PLACEHOLDER}</code> with{' '}
-          <code>base64(clientId:clientSecret)</code>. You can also pass it as an{' '}
-          <code>Authorization: Bearer</code> header instead of a query param.
+          {t('settings.mcp_token_help_prefix')}{' '}
+          <code>{TOKEN_PLACEHOLDER}</code>{' '}
+          {t('settings.mcp_token_help_middle')}{' '}
+          <code>base64(clientId:clientSecret)</code>.{' '}
+          {t('settings.mcp_token_help_suffix')}{' '}
+          <code>Authorization: Bearer</code>{' '}
+          {t('settings.mcp_token_help_suffix_2')}
         </p>
       </div>
 
       <div className="col gap-3 rounded-lg border bg-def-200 p-4">
         <div className="col gap-1">
-          <div className="font-medium">Need a token?</div>
+          <div className="font-medium">{t('settings.mcp_need_token_title')}</div>
           <p className="text-muted-foreground text-sm">
-            Only <code>read</code> and <code>root</code> clients can authenticate
-            with MCP. Create one and copy the MCP token from the success screen
-            — it's only shown once.
+            {t('settings.mcp_need_token_description_prefix')}{' '}
+            <code>read</code> {t('settings.mcp_need_token_description_middle')}{' '}
+            <code>root</code> {t('settings.mcp_need_token_description_suffix')}
           </p>
         </div>
         <div>
           <Button icon={PlusIcon} onClick={() => pushModal('AddClient')}>
-            Create MCP client
+            {t('settings.mcp_create_client_button')}
           </Button>
         </div>
       </div>
 
       <div className="col gap-2">
-        <div className="font-medium">Configure your AI client</div>
+        <div className="font-medium">
+          {t('settings.mcp_configure_client_title')}
+        </div>
         <Accordion className="rounded-lg border" collapsible type="single">
           {clients.map((client) => (
             <AccordionItem
@@ -229,7 +245,9 @@ function Component() {
                 </p>
                 {client.configFile && (
                   <p className="text-muted-foreground text-xs">
-                    <span className="font-medium">Config file:</span>{' '}
+                    <span className="font-medium">
+                      {t('settings.mcp_config_file_label')}
+                    </span>{' '}
                     <code>{client.configFile}</code>
                   </p>
                 )}
@@ -251,7 +269,7 @@ function Component() {
         target="_blank"
       >
         <ExternalLinkIcon className="h-4 w-4" />
-        Read the full MCP docs
+        {t('settings.mcp_read_docs_button')}
       </a>
     </div>
   );

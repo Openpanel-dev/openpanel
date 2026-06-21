@@ -21,6 +21,7 @@ import {
 import { useAppParams } from '@/hooks/use-app-params';
 import { useOrganizationAccess } from '@/hooks/use-organization-access';
 import { pushModal } from '@/modals';
+import { useTranslation } from 'react-i18next';
 
 interface ProjectSelectorProps {
   projects: Array<{ id: string; name: string; organizationId: string }>;
@@ -37,6 +38,7 @@ export default function ProjectSelector({
   const { organizationId, projectId } = useAppParams();
   const { isAdmin } = useOrganizationAccess(organizationId);
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
 
   const changeProject = (newProjectId: string) => {
     if (organizationId && projectId) {
@@ -84,13 +86,13 @@ export default function ProjectSelector({
               ? projects.find((p) => p.id === projectId)?.name
               : organizationId
                 ? organizations?.find((o) => o.id === organizationId)?.name
-                : 'Select project'}
+                : t('projects.select_project')}
           </span>
           <ChevronsUpDownIcon className="ml-auto h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={align} className="w-[200px]">
-        <DropdownMenuLabel>Projects</DropdownMenuLabel>
+        <DropdownMenuLabel>{t('projects.projects')}</DropdownMenuLabel>
         <DropdownMenuGroup>
           {projects.slice(0, 10).map((project) => (
             <DropdownMenuItem
@@ -113,7 +115,7 @@ export default function ProjectSelector({
                 }}
                 to={'/$organizationId'}
               >
-                All projects
+                {t('projects.all_projects')}
               </Link>
             </DropdownMenuItem>
           )}
@@ -124,7 +126,7 @@ export default function ProjectSelector({
                 pushModal('AddProject');
               }}
             >
-              Create new project
+              {t('projects.create_new_project')}
               <DropdownMenuShortcut>
                 <PlusIcon size={16} />
               </DropdownMenuShortcut>
@@ -134,7 +136,7 @@ export default function ProjectSelector({
         {!!organizations && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('projects.organizations')}</DropdownMenuLabel>
             <DropdownMenuGroup>
               {organizations.map((organization) => (
                 <DropdownMenuItem
@@ -152,7 +154,7 @@ export default function ProjectSelector({
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link to={'/onboarding/project'}>
-                  New organization
+                  {t('projects.new_organization')}
                   <DropdownMenuShortcut>
                     <PlusIcon size={16} />
                   </DropdownMenuShortcut>

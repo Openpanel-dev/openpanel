@@ -10,24 +10,26 @@ import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { clipboard } from '@/utils/clipboard';
+import { useTranslation } from 'react-i18next';
 
 export function useColumns() {
+  const { t } = useTranslation();
   const columns: ColumnDef<RouterOutputs['client']['list'][number]>[] = [
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: t('clients.column_name'),
       cell: ({ row }) => {
         return <div className="font-medium">{row.original.name}</div>;
       },
     },
     {
       accessorKey: 'id',
-      header: 'Client ID',
+      header: t('clients.field_client_id'),
       cell: ({ row }) => <CopyInput label={null} value={row.original.id} />,
     },
     {
       accessorKey: 'createdAt',
-      header: 'Created at',
+      header: t('clients.column_created_at'),
       size: ColumnCreatedAt.size,
       cell: ({ row }) => {
         const item = row.original;
@@ -41,9 +43,8 @@ export function useColumns() {
       const deletion = useMutation(
         trpc.client.remove.mutationOptions({
           onSuccess() {
-            toast('Success', {
-              description:
-                'Client revoked, incoming requests will be rejected.',
+            toast(t('clients.revoke_success_title'), {
+              description: t('clients.revoke_success_description'),
             });
             queryClient.invalidateQueries(trpc.client.list.pathFilter());
           },
@@ -53,21 +54,21 @@ export function useColumns() {
       return (
         <>
           <DropdownMenuItem onClick={() => clipboard(client.id)}>
-            Copy client ID
+            {t('clients.action_copy_client_id')}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
               pushModal('EditClient', client);
             }}
           >
-            Edit
+            {t('clients.action_edit')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => {
               showConfirm({
-                title: 'Revoke client',
-                text: 'Are you sure you want to revoke this client? This action cannot be undone.',
+                title: t('clients.revoke_confirm_title'),
+                text: t('clients.revoke_confirm_description'),
                 onConfirm() {
                   deletion.mutate({
                     id: client.id,
@@ -77,7 +78,7 @@ export function useColumns() {
             }}
             variant="destructive"
           >
-            Revoke
+            {t('clients.action_revoke')}
           </DropdownMenuItem>
         </>
       );

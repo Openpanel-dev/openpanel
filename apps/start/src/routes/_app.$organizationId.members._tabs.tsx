@@ -8,6 +8,7 @@ import {
   redirect,
   useRouter,
 } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute('/_app/$organizationId/members/_tabs')({
   component: Component,
@@ -36,10 +37,11 @@ export const Route = createFileRoute('/_app/$organizationId/members/_tabs')({
 });
 
 function Component() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { activeTab, tabs } = usePageTabs([
-    { id: 'members', label: 'Members' },
-    { id: 'invitations', label: 'Invitations' },
+    { id: 'members', label: t('members.tab_members') },
+    { id: 'invitations', label: t('members.tab_invitations') },
   ]);
 
   const handleTabChange = (tabId: string) => {
@@ -51,7 +53,10 @@ function Component() {
 
   return (
     <div className="container p-8">
-      <PageHeader title="Members" description="Manage your members here" />
+      <PageHeader
+        title={t('members.page_title')}
+        description={t('members.page_description')}
+      />
 
       <Tabs
         value={activeTab}
