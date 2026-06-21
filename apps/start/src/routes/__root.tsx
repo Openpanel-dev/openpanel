@@ -13,6 +13,8 @@ import type { QueryClient } from '@tanstack/react-query';
 import { TRPCClientError } from '@trpc/client';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 import { LockIcon } from 'lucide-react';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import appCss from '../styles.css?url';
 import type { ConfigResonse } from './api/config';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
@@ -23,6 +25,7 @@ import { ThemeScriptOnce } from '@/components/theme-provider';
 import { LinkButton } from '@/components/ui/button';
 import { getCookiesFn } from '@/hooks/use-cookie-store';
 import { useSessionExtension } from '@/hooks/use-session-extension';
+import { normalizeLanguage } from '@/i18n/locales';
 import type { RouterOutputs } from '@/trpc/client';
 import { op } from '@/utils/op';
 
@@ -67,6 +70,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   }),
   shellComponent: RootDocument,
   errorComponent: ({ error }) => {
+    const { t } = useTranslation();
+
     // Authorization failures (403) surface as a friendly "no access" page
     // instead of a scary error. 401s never reach here — handleUnauthorized
     // hard-redirects them to /login.
@@ -75,18 +80,18 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         <FullPageEmptyState
           description={error.message}
           icon={LockIcon}
-          title="No access"
+          title={t('errors.no_access')}
         >
-          <LinkButton href="/">Go back to home</LinkButton>
+          <LinkButton href="/">{t('common.go_back_home')}</LinkButton>
         </FullPageEmptyState>
       );
     }
     return (
       <FullPageErrorState
         description={error.message}
-        title={'Something went wrong'}
+        title={t('errors.something_went_wrong')}
       >
-        <LinkButton href="/">Go back to home</LinkButton>
+        <LinkButton href="/">{t('common.go_back_home')}</LinkButton>
       </FullPageErrorState>
     );
   },
@@ -95,9 +100,15 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   useSessionExtension();
+  const { i18n } = useTranslation();
+  const language = normalizeLanguage(i18n.resolvedLanguage ?? i18n.language);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={language} suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

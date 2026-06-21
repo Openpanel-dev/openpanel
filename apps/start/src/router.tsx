@@ -1,5 +1,6 @@
 import { createRouter as createTanstackRouter } from '@tanstack/react-router';
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';
+import { useTranslation } from 'react-i18next';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { LinkButton } from '@/components/ui/button';
 import * as TanstackQuery from './integrations/tanstack-query/root-provider';
@@ -23,15 +24,19 @@ export const getRouter = async () => {
       },
     },
     defaultPreload: 'intent',
-    defaultNotFoundComponent: () => (
-      <FullPageEmptyState
-        title="Page not found"
-        description="The page you're looking for doesn't exist or has moved."
-        className="min-h-screen"
-      >
-        <LinkButton href="/">Go to home</LinkButton>
-      </FullPageEmptyState>
-    ),
+    defaultNotFoundComponent: () => {
+      const { t } = useTranslation();
+
+      return (
+        <FullPageEmptyState
+          title={t('errors.page_not_found')}
+          description={t('errors.page_not_found_description')}
+          className="min-h-screen"
+        >
+          <LinkButton href="/">{t('common.go_home')}</LinkButton>
+        </FullPageEmptyState>
+      );
+    },
     Wrap: (props: { children: React.ReactNode }) => {
       return (
         <TanstackQuery.Provider {...rqContext} apiUrl={envs.apiUrl}>

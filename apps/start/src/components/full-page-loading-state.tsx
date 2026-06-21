@@ -1,17 +1,20 @@
 import type { LucideIcon } from 'lucide-react';
 import { Loader2Icon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { FullPageEmptyState } from './full-page-empty-state';
 
 const FullPageLoadingState = ({
-  title = 'Fetching...',
-  description = 'Please wait while we fetch your data...',
+  title,
+  description,
 }: { title?: string; description?: string }) => {
+  const { t } = useTranslation();
+
   return (
     <FullPageEmptyState
       className="min-h-[calc(100vh-theme(spacing.16))]"
-      title={title}
-      description={description}
+      title={title ?? t('ui.fetching')}
+      description={description ?? t('ui.fetching_description')}
       icon={
         ((props) => (
           <Loader2Icon {...props} className="animate-spin" />
