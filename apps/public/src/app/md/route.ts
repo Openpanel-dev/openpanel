@@ -1,5 +1,18 @@
 import { OPENPANEL_BASE_URL } from '@/lib/openpanel-brand';
-import { articleSource, guideSource, pageSource, source } from '@/lib/source';
+import type { Locale } from 'next-intl';
+import {
+  CONTENT_LOCALE_HEADER,
+  defaultLocale,
+  isLocale,
+  toAppLocale,
+} from '@/i18n/routing';
+import {
+  getArticlePage,
+  getContentPage,
+  getDocsPage,
+  getGuidePage,
+  parseDocsUrlSegments,
+} from '@/lib/source';
 import { NextResponse } from 'next/server';
 
 const ALLOWED_PAGE_PATHS = new Set([
@@ -14,6 +27,15 @@ export const runtime = 'nodejs';
 
 function stubMarkdown(canonicalUrl: string, path: string): string {
   return `# ${path}\n\nThis page is available at: [${canonicalUrl}](${canonicalUrl})\n`;
+}
+
+function parseContentPath(path: string, preferredLocale: Locale) {
+  const segments = path.split('/').filter(Boolean);
+  const hasLocalePrefix = isLocale(segments[0]);
+  const locale = hasLocalePrefix ? segments[0] : preferredLocale;
+  const rest = hasLocalePrefix ? segments.slice(1) : segments;
+
+  return { locale, segments: rest };
 }
 
 async function getProcessedText(page: {
@@ -33,6 +55,9 @@ async function getProcessedText(page: {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
+  const requestLocale = toAppLocale(
+    request.headers.get(CONTENT_LOCALE_HEADER) ?? undefined,
+  );
 
   // Rewrites preserve the original request URL, so pathname is e.g. /docs/foo.md
   // Derive path from pathname when present; otherwise use query (e.g. /md?path=...)
@@ -46,12 +71,14 @@ export async function GET(request: Request) {
 
   const path = pathParam.startsWith('/') ? pathParam : `/${pathParam}`;
 
-  if (path.startsWith('/docs')) {
-    const slug = path
-      .replace(/^\/docs\/?/, '')
-      .split('/')
-      .filter(Boolean);
-    const page = source.getPage(slug);
+  const pathSegments = path.split('/').filter(Boolean);
+  const docsPath = parseDocsUrlSegments(pathSegments);
+
+  if (docsPath) {
+    const hasLocalePrefix = isLocale(pathSegments[0]);
+    const locale = hasLocalePrefix ? docsPath.locale : requestLocale;
+    const { slugs } = docsPath;
+    const page = getDocsPage(slugs, locale);
     if (!page) {
       return new NextResponse('Not found', { status: 404 });
     }
@@ -63,14 +90,13 @@ export async function GET(request: Request) {
     });
   }
 
-  if (path.startsWith('/articles')) {
-    const slug = path
-      .replace(/^\/articles\/?/, '')
-      .split('/')
-      .filter(Boolean);
+  const contentPath = parseContentPath(path, requestLocale);
+
+  if (contentPath.segments[0] === 'articles') {
+    const slug = contentPath.segments.slice(1);
     if (slug.length === 0)
       return new NextResponse('Not found', { status: 404 });
-    const page = articleSource.getPage(slug);
+    const page = getArticlePage(slug, contentPath.locale as Locale);
     if (!page) {
       return new NextResponse('Not found', { status: 404 });
     }
@@ -84,14 +110,11 @@ export async function GET(request: Request) {
     });
   }
 
-  if (path.startsWith('/guides')) {
-    const slug = path
-      .replace(/^\/guides\/?/, '')
-      .split('/')
-      .filter(Boolean);
+  if (contentPath.segments[0] === 'guides') {
+    const slug = contentPath.segments.slice(1);
     if (slug.length === 0)
       return new NextResponse('Not found', { status: 404 });
-    const page = guideSource.getPage(slug);
+    const page = getGuidePage(slug, contentPath.locale as Locale);
     if (!page) {
       return new NextResponse('Not found', { status: 404 });
     }
@@ -106,12 +129,14 @@ export async function GET(request: Request) {
   }
 
   if (
-    path === '/' ||
-    (path.startsWith('/') && path.split('/').filter(Boolean).length === 1)
+    contentPath.segments.length === 0 ||
+    contentPath.segments.length === 1
   ) {
-    const segment = path.replace(/^\//, '');
+    const segment = contentPath.segments[0] ?? '';
     const slug = segment ? [segment] : [];
-    const page = slug.length ? pageSource.getPage(slug) : null;
+    const page = slug.length
+      ? getContentPage(slug, contentPath.locale as Locale)
+      : null;
     if (page) {
       try {
         const getText = (

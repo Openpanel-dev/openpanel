@@ -1,5 +1,8 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import type { Locale } from 'next-intl';
+import { defaultLocale, locales } from '@/i18n/routing';
+import { getLocalizedContentUrl } from './content-locale';
 
 export interface FeatureSeo {
   title: string;
@@ -100,18 +103,23 @@ export interface FeatureData {
   cta: FeatureCta;
 }
 
-const contentDir = join(process.cwd(), 'content', 'features');
+const contentDir = join(process.cwd(), 'content');
+
+function getContentDir(locale: Locale = defaultLocale) {
+  return join(contentDir, locale, 'features');
+}
 
 export async function getFeatureData(
   slug: string,
+  locale: Locale = defaultLocale,
 ): Promise<FeatureData | null> {
   try {
-    const filePath = join(contentDir, `${slug}.json`);
+    const filePath = join(getContentDir(locale), `${slug}.json`);
     const fileContents = readFileSync(filePath, 'utf8');
     const data = JSON.parse(fileContents) as Omit<FeatureData, 'url'>;
     return {
       ...data,
-      url: `/features/${slug}`,
+      url: getLocalizedContentUrl(`/features/${slug}`, locale),
     };
   } catch (error) {
     console.error(`Error loading feature data for ${slug}:`, error);
@@ -119,9 +127,11 @@ export async function getFeatureData(
   }
 }
 
-export async function getAllFeatureSlugs(): Promise<string[]> {
+export async function getAllFeatureSlugs(
+  locale: Locale = defaultLocale,
+): Promise<string[]> {
   try {
-    const files = readdirSync(contentDir);
+    const files = readdirSync(getContentDir(locale));
     return files
       .filter((file) => file.endsWith('.json'))
       .map((file) => file.replace('.json', ''));
@@ -142,21 +152,34 @@ export async function loadFeatureSource(): Promise<FeatureData[]> {
 }
 
 /** Sync loader for use in source.ts (same pattern as compareSource). */
-export function loadFeatureSourceSync(): FeatureData[] {
+export function loadFeatureSourceSync(
+  locale: Locale = defaultLocale,
+): FeatureData[] {
   try {
-    const files = readdirSync(contentDir);
+    const files = readdirSync(getContentDir(locale));
     return files
       .filter((file) => file.endsWith('.json'))
       .map((file) => {
         const slug = file.replace('.json', '');
-        const filePath = join(contentDir, file);
+        const filePath = join(getContentDir(locale), file);
         const fileContents = readFileSync(filePath, 'utf8');
         const data = JSON.parse(fileContents) as Omit<FeatureData, 'url'>;
-        return { ...data, url: `/features/${slug}` };
+        return {
+          ...data,
+          url: getLocalizedContentUrl(`/features/${slug}`, locale),
+        };
       });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
     console.error('Error loading feature source:', error);
     return [];
   }
+}
+
+export function getAllLocalizedFeatureParams() {
+  return locales.flatMap((locale) =>
+    readdirSync(getContentDir(locale))
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => ({ slug: file.replace('.json', ''), locale })),
+  );
 }

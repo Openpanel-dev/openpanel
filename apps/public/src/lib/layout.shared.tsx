@@ -1,4 +1,6 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
+import { defaultLocale, type AppLocale } from '@/i18n/routing';
+import { FumadocsThemeControls } from '@/components/fumadocs-theme-controls';
 import { OPENPANEL_BASE_URL, OPENPANEL_NAME } from './openpanel-brand';
 
 export const siteName = OPENPANEL_NAME;
@@ -14,10 +16,14 @@ export const url = (path: string) => {
   return `${baseUrl}${path}`;
 };
 
-export function baseOptions(): BaseLayoutProps {
+export function baseOptions(locale: AppLocale = defaultLocale): BaseLayoutProps {
   return {
+    i18n: false,
     nav: {
       title: siteName,
+    },
+    slots: {
+      themeSwitch: FumadocsThemeControls,
     },
     links: [],
   };

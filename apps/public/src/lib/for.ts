@@ -1,5 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { Locale } from 'next-intl';
+import { defaultLocale, locales } from '@/i18n/routing';
+import { getLocalizedContentUrl } from './content-locale';
 
 export interface ForSeo {
   title: string;
@@ -84,16 +87,23 @@ export interface ForData {
   };
 }
 
-const contentDir = join(process.cwd(), 'content', 'for');
+const contentDir = join(process.cwd(), 'content');
 
-export async function getForData(slug: string): Promise<ForData | null> {
+function getContentDir(locale: Locale = defaultLocale) {
+  return join(contentDir, locale, 'for');
+}
+
+export async function getForData(
+  slug: string,
+  locale: Locale = defaultLocale,
+): Promise<ForData | null> {
   try {
-    const filePath = join(contentDir, `${slug}.json`);
+    const filePath = join(getContentDir(locale), `${slug}.json`);
     const fileContents = readFileSync(filePath, 'utf8');
     const data = JSON.parse(fileContents) as ForData;
     return {
       ...data,
-      url: `/for/${slug}`,
+      url: getLocalizedContentUrl(`/for/${slug}`, locale),
     };
   } catch (error) {
     console.error(`Error loading for data for ${slug}:`, error);
@@ -101,9 +111,11 @@ export async function getForData(slug: string): Promise<ForData | null> {
   }
 }
 
-export async function getAllForSlugs(): Promise<string[]> {
+export async function getAllForSlugs(
+  locale: Locale = defaultLocale,
+): Promise<string[]> {
   try {
-    const files = readdirSync(contentDir);
+    const files = readdirSync(getContentDir(locale));
     return files
       .filter((file) => file.endsWith('.json'))
       .map((file) => file.replace('.json', ''));
@@ -111,4 +123,12 @@ export async function getAllForSlugs(): Promise<string[]> {
     console.error('Error reading for directory:', error);
     return [];
   }
+}
+
+export function getAllLocalizedForParams() {
+  return locales.flatMap((locale) =>
+    readdirSync(getContentDir(locale))
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => ({ slug: file.replace('.json', ''), locale })),
+  );
 }

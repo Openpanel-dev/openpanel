@@ -6,14 +6,33 @@ import * as FilesComponents from 'fumadocs-ui/components/files';
 import * as TabsComponents from 'fumadocs-ui/components/tabs';
 import defaultMdxComponents from 'fumadocs-ui/mdx';
 import * as icons from 'lucide-react';
+import Link from 'next/link';
+import type { AnchorHTMLAttributes } from 'react';
+import { localizedHref, type AppLocale } from '@/i18n/routing';
 import type { MDXComponents } from 'mdx/types';
 
-export function getMDXComponents(components?: MDXComponents) {
+function LocalizedAnchor({
+  href,
+  locale,
+  ...props
+}: AnchorHTMLAttributes<HTMLAnchorElement> & { locale?: AppLocale }) {
+  if (!href) {
+    return <a {...props} />;
+  }
+
+  return <Link href={locale ? localizedHref(href, locale) : href} {...props} />;
+}
+
+export function getMDXComponents(
+  components?: MDXComponents,
+  locale?: AppLocale,
+) {
   return {
     ...(icons as unknown as MDXComponents),
     ...defaultMdxComponents,
     ...TabsComponents,
     ...FilesComponents,
+    a: (props) => <LocalizedAnchor locale={locale} {...props} />,
     Accordion,
     Accordions,
     ...components,

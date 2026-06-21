@@ -1,9 +1,17 @@
 import { ImageResponse } from 'next/og';
 import type { NextRequest } from 'next/server';
+import { defaultLocale, isLocale } from '@/i18n/routing';
 import { getCompareData } from '@/lib/compare';
 import { getFeatureData } from '@/lib/features';
 import { url as baseUrl } from '@/lib/layout.shared';
-import { articleSource, guideSource, pageSource, source } from '@/lib/source';
+import {
+  getArticlePage,
+  getContentPage,
+  getDocsPage,
+  getGuidePage,
+  parseDocsPath,
+  parseDocsUrlSegments,
+} from '@/lib/source';
 
 // Truncate text helper
 function truncateText(text: string, maxLength: number): string {
@@ -16,7 +24,20 @@ function truncateText(text: string, maxLength: number): string {
 async function getOgData(
   segments: string[]
 ): Promise<{ title: string; description?: string }> {
-  switch (segments[0]) {
+  const locale = isLocale(segments[0]) ? segments[0] : defaultLocale;
+  const localizedSegments =
+    locale === defaultLocale ? segments : segments.slice(1);
+  const docsPath = parseDocsUrlSegments(segments);
+  if (docsPath) {
+    const data = await getDocsPage(docsPath.slugs, docsPath.locale);
+    return {
+      title: data?.data.title ?? 'Page Not Found',
+      description:
+        data?.data.description || 'Whooops, could not find this page',
+    };
+  }
+
+  switch (localizedSegments[0]) {
     case 'default':
       return {
         title: 'Home',
@@ -44,8 +65,8 @@ async function getOgData(
       };
     }
     case 'articles': {
-      if (segments.length > 1) {
-        const data = await articleSource.getPage(segments.slice(1));
+      if (localizedSegments.length > 1) {
+        const data = getArticlePage(localizedSegments.slice(1), locale);
         return {
           title: data?.data.title ?? 'Article Not Found',
           description:
@@ -59,22 +80,22 @@ async function getOgData(
       };
     }
     case 'compare': {
-      const slug = segments[1];
+      const slug = localizedSegments[1];
       if (!slug) {
         return {
           title: 'Compare alternatives',
           description: 'Compare OpenPanel with other analytics tools',
         };
       }
-      const data = await getCompareData(slug);
+      const data = await getCompareData(slug, locale);
       return {
         title: data?.seo.title || data?.hero.heading || 'Compare',
         description: data?.seo.description || data?.hero.subheading,
       };
     }
     case 'guides': {
-      if (segments.length > 1) {
-        const data = await guideSource.getPage(segments.slice(1));
+      if (localizedSegments.length > 1) {
+        const data = getGuidePage(localizedSegments.slice(1), locale);
         return {
           title: data?.data.title ?? 'Guide Not Found',
           description:
@@ -87,7 +108,7 @@ async function getOgData(
       };
     }
     case 'features': {
-      const slug = segments[1];
+      const slug = localizedSegments[1];
       if (!slug) {
         return {
           title: 'Product analytics features',
@@ -95,7 +116,7 @@ async function getOgData(
             'Explore OpenPanel features: event tracking, funnels, retention, user profiles, and more.',
         };
       }
-      const featureData = await getFeatureData(slug);
+      const featureData = await getFeatureData(slug, locale);
       return {
         title: featureData?.seo.title ?? 'Feature Not Found',
         description:
@@ -103,7 +124,8 @@ async function getOgData(
       };
     }
     case 'docs': {
-      const data = await source.getPage(segments.slice(1));
+      const docsInfo = parseDocsPath(localizedSegments.slice(1));
+      const data = await getDocsPage(docsInfo.slugs, docsInfo.locale);
       return {
         title: data?.data.title ?? 'Page Not Found',
         description:
@@ -111,8 +133,8 @@ async function getOgData(
       };
     }
     case 'tools': {
-      if (segments.length > 1) {
-        const tool = segments[1];
+      if (localizedSegments.length > 1) {
+        const tool = localizedSegments[1];
         switch (tool) {
           case 'ip-lookup':
             return {
@@ -139,7 +161,7 @@ async function getOgData(
       };
     }
     default: {
-      const data = await pageSource.getPage(segments);
+      const data = getContentPage(localizedSegments, locale);
       return {
         title: data?.data.title || 'Page Not Found',
         description:

@@ -3,10 +3,12 @@ import NumberFlow from '@number-flow/react';
 
 import { cn } from '@/lib/utils';
 import { PRICING } from '@openpanel/payments/prices';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Slider } from './ui/slider';
 
 export function PricingSlider() {
+  const t = useTranslations();
   const [index, setIndex] = useState(2);
   const match = PRICING[index];
   const formatNumber = (value: number) => value.toLocaleString();
@@ -19,8 +21,8 @@ export function PricingSlider() {
         step={1}
         tooltip={
           match
-            ? `${formatNumber(match.events)} events per month`
-            : `More than ${formatNumber(PRICING[PRICING.length - 1].events)} events`
+            ? `${formatNumber(match.events)} ${t('pages.pricing_events_per_month')}`
+            : `${t('pages.pricing_slider_more_than')} ${formatNumber(PRICING[PRICING.length - 1].events)} ${t('pages.pricing_events_per_month')}`
         }
         onValueChange={(value) => setIndex(value[0])}
       />
@@ -39,7 +41,9 @@ export function PricingSlider() {
               }}
               locales={'en-US'}
             />
-            <span className="text-sm text-muted-foreground ml-2">/ month</span>
+            <span className="text-sm text-muted-foreground ml-2">
+              / {t('home.pricing_per_month').toLowerCase()}
+            </span>
           </div>
           <span
             className={cn(
@@ -47,16 +51,16 @@ export function PricingSlider() {
               match.price === 0 && 'opacity-0',
             )}
           >
-            + VAT if applicable
+            {t('home.pricing_vat')}
           </span>
         </div>
       ) : (
         <div className="text-lg">
-          Contact us at{' '}
+          {t('home.pricing_custom_quote_prefix')}{' '}
           <a className="underline" href="mailto:hello@openpanel.dev">
             hello@openpanel.dev
           </a>{' '}
-          to get a custom quote.
+          {t('home.pricing_custom_quote_suffix')}
         </div>
       )}
     </>

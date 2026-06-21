@@ -3,22 +3,25 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { MenuIcon, MoonIcon, SunIcon, XIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { FeatureCardContainer } from './feature-card';
 import { GithubButton } from './github-button';
+import { LanguageSwitcher } from './language-switcher';
 import { Logo } from './logo';
 import { SignUpButton } from './sign-up-button';
 import { Button } from './ui/button';
+import { localizedHref, toAppLocale } from '@/i18n/routing';
 import { baseOptions, siteName } from '@/lib/layout.shared';
 import { cn } from '@/lib/utils';
 
 const LINKS = [
   {
-    text: 'Home',
+    key: 'home',
     url: '/',
   },
   {
-    text: 'Pricing',
+    key: 'pricing',
     url: '/pricing',
   },
   // {
@@ -26,16 +29,18 @@ const LINKS = [
   //   url: '/supporter',
   // },
   {
-    text: 'Docs',
+    key: 'docs',
     url: '/docs',
   },
   {
-    text: 'Articles',
+    key: 'articles',
     url: '/articles',
   },
-];
+] as const;
 
 const Navbar = () => {
+  const locale = toAppLocale(useLocale());
+  const t = useTranslations('nav');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navbarRef = useRef<HTMLDivElement>(null);
@@ -73,7 +78,10 @@ const Navbar = () => {
         <div className={cn('flex items-center justify-between')}>
           {/* Logo */}
           <div className="shrink-0">
-            <Link className="row items-center font-medium" href="/">
+            <Link
+              className="row items-center font-medium"
+              href={localizedHref('/', locale)}
+            >
               <Logo className="h-6" />
               <span className="hidden [@media(min-width:850px)]:block">
                 {siteName}
@@ -88,10 +96,10 @@ const Navbar = () => {
                 return (
                   <Link
                     className="font-medium text-foreground/80 hover:text-foreground"
-                    href={link.url!}
+                    href={localizedHref(link.url, locale)}
                     key={link.url}
                   >
-                    {link.text}
+                    {t(link.key)}
                   </Link>
                 );
               })}
@@ -102,8 +110,10 @@ const Navbar = () => {
               <GithubButton />
               {/* Sign in button */}
               <SignUpButton />
-              <ThemeToggle />
+              <LanguageSwitcher label={t('switch_language')} locale={locale} />
+              <ThemeToggle label={t('toggle_theme')} />
               <Button
+                aria-label={t('open_menu')}
                 className="-my-2 md:hidden"
                 onClick={() => {
                   setIsMobileMenuOpen((p) => !p);
@@ -138,18 +148,24 @@ const Navbar = () => {
                   return (
                     <Link
                       className="p-4 px-0 font-semibold text-foreground/80 text-lg hover:text-foreground"
-                      href={link.url!}
+                      href={localizedHref(link.url, locale)}
                       key={link.url}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      {link.text}
+                      {t(link.key)}
                     </Link>
                   );
                 })}
               </FeatureCardContainer>
               <div className="row absolute top-3 right-4 items-center gap-2">
-                <ThemeToggle className="flex!" />
+                <LanguageSwitcher
+                  compact
+                  label={t('switch_language')}
+                  locale={locale}
+                />
+                <ThemeToggle className="flex!" label={t('toggle_theme')} />
                 <Button
+                  aria-label={t('close_menu')}
                   onClick={() => setIsMobileMenuOpen(false)}
                   size="icon"
                   variant="outline"
@@ -167,7 +183,13 @@ const Navbar = () => {
 
 export default Navbar;
 
-function ThemeToggle({ className }: { className?: string }) {
+function ThemeToggle({
+  className,
+  label,
+}: {
+  className?: string;
+  label: string;
+}) {
   const theme = useTheme();
   return (
     <Button
@@ -204,7 +226,7 @@ function ThemeToggle({ className }: { className?: string }) {
           </motion.div>
         )}
       </AnimatePresence>
-      <span className="sr-only">Toggle theme</span>
+      <span className="sr-only">{label}</span>
     </Button>
   );
 }

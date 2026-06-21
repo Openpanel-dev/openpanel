@@ -1,5 +1,8 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import type { Locale } from 'next-intl';
+import { defaultLocale } from '@/i18n/routing';
+import { getLocalizedContentUrl } from './content-locale';
 
 export interface CompareSeo {
   title: string;
@@ -200,18 +203,23 @@ export interface CompareData {
   };
 }
 
-const contentDir = join(process.cwd(), 'content', 'compare');
+const contentDir = join(process.cwd(), 'content');
+
+function getContentDir(locale: Locale = defaultLocale) {
+  return join(contentDir, locale, 'compare');
+}
 
 export async function getCompareData(
   slug: string,
+  locale: Locale = defaultLocale,
 ): Promise<CompareData | null> {
   try {
-    const filePath = join(contentDir, `${slug}.json`);
+    const filePath = join(getContentDir(locale), `${slug}.json`);
     const fileContents = readFileSync(filePath, 'utf8');
     const data = JSON.parse(fileContents) as CompareData;
     return {
       ...data,
-      url: `/compare/${slug}`,
+      url: getLocalizedContentUrl(`/compare/${slug}`, locale),
     };
   } catch (error) {
     console.error(`Error loading compare data for ${slug}:`, error);
@@ -219,9 +227,11 @@ export async function getCompareData(
   }
 }
 
-export async function getAllCompareSlugs(): Promise<string[]> {
+export async function getAllCompareSlugs(
+  locale: Locale = defaultLocale,
+): Promise<string[]> {
   try {
-    const files = readdirSync(contentDir);
+    const files = readdirSync(getContentDir(locale));
     return files
       .filter((file) => file.endsWith('.json'))
       .map((file) => file.replace('.json', ''));

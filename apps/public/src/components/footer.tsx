@@ -1,16 +1,26 @@
 import { MailIcon } from 'lucide-react';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { Logo } from './logo';
-import { TOOLS } from '@/app/tools/tools';
+import { TOOLS } from '@/app/[locale]/tools/tools';
+import { localizedHref, toAppLocale, type AppLocale } from '@/i18n/routing';
+import { getAppLocale } from '@/i18n/server';
 import { getAllForSlugs, getForData } from '@/lib/for';
-import { articleSource, compareSource, featureSource } from '@/lib/source';
+import {
+  getArticlePages,
+  getCompareSource,
+  getFeatureSource,
+} from '@/lib/source';
 export async function Footer() {
-  const articles = (await articleSource.getPages()).sort(
+  const locale = toAppLocale(await getAppLocale());
+  const t = await getTranslations('footer');
+  const pages = await getTranslations('pages');
+  const articles = getArticlePages(locale).sort(
     (a, b) => b.data.date.getTime() - a.data.date.getTime()
   );
-  const forSlugs = await getAllForSlugs();
+  const forSlugs = await getAllForSlugs(locale);
   const forPages = (
-    await Promise.all(forSlugs.map((slug) => getForData(slug)))
+    await Promise.all(forSlugs.map((slug) => getForData(slug, locale)))
   ).filter((p): p is NonNullable<typeof p> => p !== null);
   const year = new Date().getFullYear();
 
@@ -23,28 +33,30 @@ export async function Footer() {
         </div>
         <div className="container relative grid grid-cols-1 gap-12 md:grid-cols-4 md:gap-8">
           <div className="col gap-3">
-            <h3 className="font-medium">Useful links</h3>
+            <h3 className="font-medium">{t('useful_links')}</h3>
             <Links
+              locale={locale}
               data={[
-                { title: 'About', url: '/about' },
-                { title: 'Contact', url: '/contact' },
-                { title: 'Become a supporter', url: '/supporter' },
+                { title: t('about'), url: '/about' },
+                { title: t('contact'), url: '/contact' },
+                { title: t('supporter'), url: '/supporter' },
                 {
-                  title: 'Free analytics for open source projects',
+                  title: t('free_open_source'),
                   url: '/open-source',
                 },
                 {
-                  title: 'Open source analytics',
+                  title: t('open_source_analytics'),
                   url: '/articles/self-hosted-web-analytics',
                 },
               ]}
             />
             <div className="h-5" />
-            <h3 className="font-medium">Features</h3>
+            <h3 className="font-medium">{t('features')}</h3>
             <Links
+              locale={locale}
               data={[
-                { title: 'All features', url: '/features' },
-                ...featureSource.map((item) => ({
+                { title: t('all_features'), url: '/features' },
+                ...getFeatureSource(locale).map((item) => ({
                   title: item.short_name,
                   url: item.url,
                 })),
@@ -53,22 +65,24 @@ export async function Footer() {
           </div>
 
           <div className="col gap-3">
-            <h3 className="font-medium">Resources</h3>
+            <h3 className="font-medium">{t('resources')}</h3>
             <Links
+              locale={locale}
               data={[
-                { title: 'Pricing', url: '/pricing' },
-                { title: 'Documentation', url: '/docs' },
-                { title: 'SDKs', url: '/docs/sdks' },
-                { title: 'Guides', url: '/guides' },
-                { title: 'Articles', url: '/articles' },
-                { title: 'Compare', url: '/compare' },
+                { title: t('pricing'), url: '/pricing' },
+                { title: t('documentation'), url: '/docs' },
+                { title: t('sdks'), url: '/docs/sdks' },
+                { title: t('guides'), url: '/guides' },
+                { title: t('articles'), url: '/articles' },
+                { title: t('compare'), url: '/compare' },
               ]}
             />
             <div className="h-5" />
-            <h3 className="font-medium">Solutions</h3>
+            <h3 className="font-medium">{t('solutions')}</h3>
             <Links
+              locale={locale}
               data={[
-                { title: 'All use cases', url: '/for' },
+                { title: t('all_use_cases'), url: '/for' },
                 ...forPages.map((page) => ({
                   title: page.hero.heading,
                   url: page.url,
@@ -76,19 +90,29 @@ export async function Footer() {
               ]}
             />
             <div className="h-5" />
-            <h3 className="font-medium">Tools</h3>
+            <h3 className="font-medium">{t('tools')}</h3>
             <Links
-              data={TOOLS.map((tool) => ({
-                title: tool.name,
-                url: tool.url,
-              }))}
+              locale={locale}
+              data={TOOLS.map((tool) => {
+                const title =
+                  tool.url === '/tools/url-checker'
+                    ? pages('tools_url_checker_name')
+                    : tool.url === '/tools/ip-lookup'
+                      ? pages('tools_ip_lookup_name')
+                      : tool.name;
+                return {
+                  title,
+                  url: tool.url,
+                };
+              })}
             />
           </div>
 
           <div className="col gap-3">
-            <h3 className="font-medium">Compare</h3>
+            <h3 className="font-medium">{t('compare')}</h3>
             <Links
-              data={compareSource.map((item) => ({
+              locale={locale}
+              data={getCompareSource(locale).map((item) => ({
                 url: item.url,
                 title: item?.hero?.heading,
               }))}
@@ -96,8 +120,9 @@ export async function Footer() {
           </div>
 
           <div className="col gap-3">
-            <h3 className="font-medium">Latest articles</h3>
+            <h3 className="font-medium">{t('latest_articles')}</h3>
             <Links
+              locale={locale}
               data={articles.slice(0, 10).map((article) => ({
                 title: article.data.title,
                 url: article.url,
@@ -132,16 +157,32 @@ export async function Footer() {
                 />
               </a>
             </div>
-            <Social />
+            <Social
+              labels={{
+                discord: t('discord'),
+                email: t('email'),
+                github: t('github'),
+                operational: t('operational'),
+                x: t('x'),
+              }}
+            />
           </div>
           <div className="md:row container flex flex-col-reverse justify-between gap-8">
-            <div>Copyright © {year} OpenPanel. All rights reserved.</div>
+            <div>
+              Copyright © {year} OpenPanel. {t('copyright')}
+            </div>
             <div className="col lg:row gap-2 md:gap-4">
-              <Link href="/sitemap.xml">Sitemap</Link>
-              <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/terms">Terms of Service</Link>
-              <Link href="/dpa">DPA</Link>
-              <Link href="/cookies">Cookie Policy (just kidding)</Link>
+              <Link href="/sitemap.xml">{t('sitemap')}</Link>
+              <Link href={localizedHref('/privacy', locale)}>
+                {t('privacy')}
+              </Link>
+              <Link href={localizedHref('/terms', locale)}>
+                {t('terms')}
+              </Link>
+              <Link href={localizedHref('/dpa', locale)}>DPA</Link>
+              <Link href={localizedHref('/cookies', locale)}>
+                {t('cookies')}
+              </Link>
             </div>
           </div>
         </div>
@@ -150,14 +191,20 @@ export async function Footer() {
   );
 }
 
-function Links({ data }: { data: { title: string; url: string }[] }) {
+function Links({
+  data,
+  locale,
+}: {
+  data: { title: string; url: string }[];
+  locale: AppLocale;
+}) {
   return (
     <ul className="col gap-2 text-muted-foreground">
       {data.map((item) => (
         <li className="truncate" key={item.url}>
           <Link
             className="transition-colors hover:text-foreground"
-            href={item.url}
+            href={localizedHref(item.url, locale)}
             title={item.title}
           >
             {item.title}
@@ -168,14 +215,24 @@ function Links({ data }: { data: { title: string; url: string }[] }) {
   );
 }
 
-function Social() {
+function Social({
+  labels,
+}: {
+  labels: {
+    github: string;
+    x: string;
+    discord: string;
+    email: string;
+    operational: string;
+  };
+}) {
   return (
     <div className="col gap-4 md:items-end">
       <div className="row gap-4 [&_svg]:size-6">
         <Link
           href="https://github.com/Openpanel-dev/openpanel"
           rel="noreferrer noopener nofollow"
-          title="Go to GitHub"
+          title={labels.github}
         >
           <svg
             className="fill-current"
@@ -190,7 +247,7 @@ function Social() {
         <Link
           href="https://x.com/openpaneldev"
           rel="noreferrer noopener nofollow"
-          title="Go to X"
+          title={labels.x}
         >
           <svg
             className="fill-current"
@@ -205,7 +262,7 @@ function Social() {
         <Link
           href="https://go.openpanel.dev/discord"
           rel="noreferrer noopener nofollow"
-          title="Join Discord"
+          title={labels.discord}
         >
           <svg
             className="fill-current"
@@ -220,7 +277,7 @@ function Social() {
         <Link
           href="mailto:hello@openpanel.dev"
           rel="noreferrer noopener nofollow"
-          title="Send an email"
+          title={labels.email}
         >
           <MailIcon className="size-6" />
         </Link>
@@ -230,7 +287,7 @@ function Social() {
           rel="noreferrer noopener nofollow"
           target="_blank"
         >
-          <span>Operational</span>
+          <span>{labels.operational}</span>
           <div className="size-2 rounded-full bg-emerald-500" />
         </a>
       </div>

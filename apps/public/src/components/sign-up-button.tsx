@@ -1,19 +1,25 @@
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 
 export function SignUpButton() {
+  const t = useTranslations('nav');
   const [isSignedIn, setIsSignedIn] = useState(false);
 
   useEffect(() => {
     const check = async () => {
-      const response = await fetch(
-        'https://api.openpanel.dev/trpc/auth.session',
-        { credentials: 'include', mode: 'cors' }
-      );
-      const data = await response.json();
-      const session = data?.result?.data?.json?.session;
-      setIsSignedIn(session !== null);
+      try {
+        const response = await fetch(
+          'https://api.openpanel.dev/trpc/auth.session',
+          { credentials: 'include', mode: 'cors' },
+        );
+        const data = await response.json();
+        const session = data?.result?.data?.json?.session;
+        setIsSignedIn(session !== null);
+      } catch {
+        setIsSignedIn(false);
+      }
     };
     check();
   }, []);
@@ -24,7 +30,7 @@ export function SignUpButton() {
         className="hidden md:flex"
         href={`https://dashboard.openpanel.dev${isSignedIn ? '/' : '/onboarding'}`}
       >
-        {isSignedIn ? 'Dashboard' : 'Sign up'}
+        {isSignedIn ? t('dashboard') : t('sign_up')}
       </Link>
     </Button>
   );

@@ -3,24 +3,8 @@ import {
   defineConfig,
   defineDocs,
   frontmatterSchema,
-  metaSchema,
 } from 'fumadocs-mdx/config';
 import { z } from 'zod';
-
-// You can customise Zod schemas for frontmatter and `meta.json` here
-// see https://fumadocs.dev/docs/mdx/collections
-export const docs = defineDocs({
-  dir: 'content/docs',
-  docs: {
-    schema: frontmatterSchema,
-    postprocess: {
-      includeProcessedMarkdown: true,
-    },
-  },
-  meta: {
-    schema: metaSchema,
-  },
-});
 
 const zArticle = z.object({
   title: z.string().min(1),
@@ -53,45 +37,45 @@ const zGuide = z.object({
   ),
 });
 
-export const articleCollection = defineCollections({
-  type: 'doc',
-  dir: './content/articles',
-  schema: zArticle,
+export const docsCollection = defineDocs({
+  dir: './content',
+  docs: {
+    files: ['*/docs/**/*.mdx'],
+    schema: frontmatterSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
+  },
+  meta: {
+    files: ['*/docs/**/meta.json'],
+  },
 });
 
-export const articleMeta = defineCollections({
-  type: 'meta',
-  dir: './content/articles',
+export const articleCollection = defineCollections({
+  type: 'doc',
+  dir: './content',
+  files: ['*/articles/**/*.mdx'],
   schema: zArticle,
 });
 
 export const pageCollection = defineCollections({
   type: 'doc',
-  dir: './content/pages',
-  schema: zPage,
-});
-
-export const pageMeta = defineCollections({
-  type: 'meta',
-  dir: './content/pages',
+  dir: './content',
+  files: ['*/pages/**/*.mdx'],
   schema: zPage,
 });
 
 export const guideCollection = defineCollections({
   type: 'doc',
-  dir: './content/guides',
-  schema: zGuide,
-});
-
-export const guideMeta = defineCollections({
-  type: 'meta',
-  dir: './content/guides',
+  dir: './content',
+  files: ['*/guides/**/*.mdx'],
   schema: zGuide,
 });
 
 export const apiRefCollection = defineCollections({
   type: 'doc',
-  dir: './content/docs/api-reference',
+  dir: './content',
+  files: ['*/docs/api-reference/*.mdx'],
   schema: frontmatterSchema,
 });
 
