@@ -16,6 +16,7 @@ import { SerieIcon } from '../report-chart/common/serie-icon';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getChartColor } from '@/utils/theme';
+import { useTranslation } from 'react-i18next';
 
 interface RealtimeLiveHistogramProps {
   projectId: string;
@@ -24,6 +25,7 @@ interface RealtimeLiveHistogramProps {
 export function RealtimeLiveHistogram({
   projectId,
 }: RealtimeLiveHistogramProps) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const number = useNumber();
 
@@ -39,7 +41,7 @@ export function RealtimeLiveHistogram({
 
   if (isLoading) {
     return (
-      <Wrapper count={0}>
+      <Wrapper count={0} title={t('realtime.unique_visitors_last_30_min')}>
         <div className="h-full w-full animate-pulse rounded bg-def-200" />
       </Wrapper>
     );
@@ -55,6 +57,7 @@ export function RealtimeLiveHistogram({
   return (
     <Wrapper
       count={totalVisitors}
+      title={t('realtime.unique_visitors_last_30_min')}
       // icons={
       //   liveData.referrers && liveData.referrers.length > 0 ? (
       //     <div className="row shrink-0 gap-2">
@@ -77,7 +80,14 @@ export function RealtimeLiveHistogram({
           margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
         >
           <Tooltip
-            content={CustomTooltip}
+            content={(props) => (
+              <CustomTooltip
+                {...props}
+                activeUsersLabel={t('realtime.active_users')}
+                moreLabel={t('realtime.more')}
+                referrersLabel={t('realtime.referrers_label')}
+              />
+            )}
             cursor={{
               fill: 'var(--def-200)',
             }}
@@ -99,14 +109,15 @@ interface WrapperProps {
   children: React.ReactNode;
   count: number;
   icons?: React.ReactNode;
+  title: string;
 }
 
-function Wrapper({ children, count, icons }: WrapperProps) {
+function Wrapper({ children, count, icons, title }: WrapperProps) {
   return (
     <div className="flex flex-col">
       <div className="row justify-between gap-2">
         <div className="relative font-medium text-muted-foreground text-sm leading-normal">
-          Unique visitors last 30 min
+          {title}
         </div>
         <div>{icons}</div>
       </div>
@@ -121,7 +132,13 @@ function Wrapper({ children, count, icons }: WrapperProps) {
 }
 
 // Custom tooltip component that uses portals to escape overflow hidden
-const CustomTooltip = ({ active, payload, coordinate }: any) => {
+const CustomTooltip = ({
+  active,
+  payload,
+  activeUsersLabel,
+  referrersLabel,
+  moreLabel,
+}: any) => {
   const number = useNumber();
   const [position, setPosition] = useState<{ x: number; y: number } | null>(
     null
@@ -197,7 +214,7 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
             style={{ background: getChartColor(0) }}
           />
           <div className="col flex-1 gap-1">
-            <div className="flex items-center gap-1">Active users</div>
+            <div className="flex items-center gap-1">{activeUsersLabel}</div>
             <div className="flex justify-between gap-8 font-medium font-mono">
               <div className="row gap-1">
                 {number.formatWithUnit(data.visitorCount)}
@@ -207,7 +224,9 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
         </div>
         {data.referrers && data.referrers.length > 0 && (
           <div className="mt-2 border-border border-t pt-2">
-            <div className="mb-2 text-muted-foreground text-xs">Referrers:</div>
+            <div className="mb-2 text-muted-foreground text-xs">
+              {referrersLabel}
+            </div>
             <div className="space-y-1">
               {data.referrers.slice(0, 3).map((ref: any, index: number) => (
                 <div
@@ -228,7 +247,7 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
               ))}
               {data.referrers.length > 3 && (
                 <div className="text-muted-foreground text-xs">
-                  +{data.referrers.length - 3} more
+                  +{data.referrers.length - 3} {moreLabel}
                 </div>
               )}
             </div>

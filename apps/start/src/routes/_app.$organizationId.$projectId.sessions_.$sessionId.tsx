@@ -21,6 +21,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { formatDateTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
 import { createProjectTitle } from '@/utils/title';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/sessions_/$sessionId'
@@ -67,6 +68,7 @@ function sessionToFakeEvent(session: IServiceSession): IServiceEvent {
 }
 
 function VisitedRoutes({ paths }: { paths: string[] }) {
+  const { t } = useTranslation();
   const counted = paths.reduce<Record<string, number>>((acc, p) => {
     acc[p] = (acc[p] ?? 0) + 1;
     return acc;
@@ -81,7 +83,7 @@ function VisitedRoutes({ paths }: { paths: string[] }) {
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <WidgetTitle>Visited pages</WidgetTitle>
+        <WidgetTitle>{t('sessions.detail_visited_pages')}</WidgetTitle>
       </WidgetHead>
       <div className="flex flex-col gap-1 p-1">
         {sorted.map(([path, count]) => (
@@ -102,6 +104,7 @@ function VisitedRoutes({ paths }: { paths: string[] }) {
 }
 
 function EventDistribution({ events }: { events: IServiceEvent[] }) {
+  const { t } = useTranslation();
   const counted = events.reduce<Record<string, number>>((acc, e) => {
     acc[e.name] = (acc[e.name] ?? 0) + 1;
     return acc;
@@ -116,7 +119,7 @@ function EventDistribution({ events }: { events: IServiceEvent[] }) {
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <WidgetTitle>Event distribution</WidgetTitle>
+        <WidgetTitle>{t('sessions.detail_event_distribution')}</WidgetTitle>
       </WidgetHead>
       <div className="flex flex-col gap-1 p-1">
         {sorted.map(([name, count]) => (
@@ -138,6 +141,7 @@ function EventDistribution({ events }: { events: IServiceEvent[] }) {
 
 function Component() {
   const { projectId, sessionId, organizationId } = Route.useParams();
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const number = useNumber();
 
@@ -193,7 +197,7 @@ function Component() {
 
   return (
     <PageContainer className="col gap-8">
-      <PageHeader title={`Session: ${session.id}`}>
+      <PageHeader title={t('sessions.detail_title', { id: session.id })}>
         <div className="row mb-6 gap-4">
           {session.country && (
             <div className="row items-center gap-2">
@@ -241,7 +245,7 @@ function Component() {
           {/* Session info */}
           <Widget className="w-full">
             <WidgetHead>
-              <WidgetTitle>Session info</WidgetTitle>
+              <WidgetTitle>{t('sessions.detail_session_info')}</WidgetTitle>
             </WidgetHead>
             <KeyValueGrid
               className="border-0"
@@ -256,7 +260,7 @@ function Component() {
                 { name: 'endedAt', value: session.endedAt },
                 { name: 'screenViews', value: session.screenViewCount },
                 { name: 'events', value: session.eventCount },
-                { name: 'bounce', value: session.isBounce ? 'Yes' : 'No' },
+                { name: 'bounce', value: session.isBounce ? t('sessions.yes') : t('sessions.no') },
                 ...(session.entryPath
                   ? [{ name: 'entryPath', value: session.entryPath }]
                   : []),
@@ -320,7 +324,7 @@ function Component() {
           {isIdentified && profile && (
             <Widget className="w-full">
               <WidgetHead>
-                <WidgetTitle>Profile</WidgetTitle>
+                <WidgetTitle>{t('sessions.detail_profile')}</WidgetTitle>
               </WidgetHead>
               <WidgetBody className="p-0">
                 <Link
@@ -352,7 +356,7 @@ function Component() {
           {sessionGroups && sessionGroups.length > 0 && (
             <Widget className="w-full">
               <WidgetHead>
-                <WidgetTitle>Groups</WidgetTitle>
+                <WidgetTitle>{t('sessions.detail_groups')}</WidgetTitle>
               </WidgetHead>
               <WidgetBody className="p-0">
                 {sessionGroups.map((group) => (
@@ -393,7 +397,7 @@ function Component() {
           {/* Events list */}
           <Widget className="w-full">
             <WidgetHead>
-              <WidgetTitle>Events</WidgetTitle>
+              <WidgetTitle>{t('sessions.detail_events')}</WidgetTitle>
             </WidgetHead>
             <div className="divide-y">
               {events.map((event) => (
@@ -416,7 +420,7 @@ function Component() {
               ))}
               {events.length === 0 && (
                 <div className="py-8 text-center text-muted-foreground text-sm">
-                  No events found
+                  {t('sessions.detail_no_events')}
                 </div>
               )}
             </div>

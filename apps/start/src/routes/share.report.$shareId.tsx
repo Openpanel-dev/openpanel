@@ -10,6 +10,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
 import { z } from 'zod';
+import i18n from '@/i18n';
 
 const shareSearchSchema = z.object({
   header: z.optional(z.number().or(z.string().or(z.boolean()))),
@@ -36,7 +37,7 @@ export const Route = createFileRoute('/share/report/$shareId')({
       return {
         meta: [
           {
-            title: 'Share not found - OpenPanel.dev',
+            title: `${i18n.t('share.not_found_title')} - OpenPanel.dev`,
           },
         ],
       };
@@ -45,7 +46,7 @@ export const Route = createFileRoute('/share/report/$shareId')({
     return {
       meta: [
         {
-          title: `${loaderData.share.report.name || 'Report'} - ${loaderData.share.organization?.name} - OpenPanel.dev`,
+          title: `${loaderData.share.report.name || i18n.t('share.report')} - ${loaderData.share.organization?.name} - OpenPanel.dev`,
         },
       ],
     };
@@ -53,8 +54,8 @@ export const Route = createFileRoute('/share/report/$shareId')({
   pendingComponent: FullPageLoadingState,
   errorComponent: () => (
     <FullPageEmptyState
-      title="Share not found"
-      description="The report you are looking for does not exist."
+      title={i18n.t('share.not_found_title')}
+      description={i18n.t('share.report_not_found_description')}
       className="min-h-[calc(100vh-theme(spacing.16))]"
     />
   ),

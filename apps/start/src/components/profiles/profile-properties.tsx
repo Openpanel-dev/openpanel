@@ -3,6 +3,7 @@ import { Widget } from '@/components/widget';
 import { cn } from '@/utils/cn';
 import { formatDateTime } from '@/utils/date';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
+import { useTranslation } from 'react-i18next';
 
 import type { IServiceEvent, IServiceProfile } from '@openpanel/db';
 import { FullPageEmptyState } from '../full-page-empty-state';
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export const ProfileProperties = ({ profile }: Props) => {
+  const { t } = useTranslation();
   const [tab, setTab] = useQueryState(
     'tab',
     parseAsStringEnum(['profile', 'properties']).withDefault('profile'),
@@ -21,16 +23,16 @@ export const ProfileProperties = ({ profile }: Props) => {
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <div className="title">Profile Information</div>
+        <div className="title">{t('profiles.profile_information')}</div>
         <WidgetButtons>
           {[
             {
               key: 'profile',
-              btn: 'Profile',
+              btn: t('profiles.tab_profile'),
             },
             {
               key: 'properties',
-              btn: 'Properties',
+              btn: t('profiles.tab_properties'),
             },
           ].map((w) => (
             <button
@@ -55,7 +57,10 @@ export const ProfileProperties = ({ profile }: Props) => {
             { name: 'firstName', value: profile.firstName },
             { name: 'lastName', value: profile.lastName },
             { name: 'email', value: profile.email },
-            { name: 'isExternal', value: profile.isExternal ? 'Yes' : 'No' },
+            {
+              name: 'isExternal',
+              value: profile.isExternal ? t('profiles.yes') : t('profiles.no'),
+            },
             {
               name: 'createdAt',
               value: formatDateTime(new Date(profile.createdAt)),
@@ -115,7 +120,7 @@ export const ProfileProperties = ({ profile }: Props) => {
         />
       )}
       {(!profile || !profile.properties) && (
-        <FullPageEmptyState title="No properties found" />
+        <FullPageEmptyState title={t('profiles.no_properties_found')} />
       )}
     </Widget>
   );

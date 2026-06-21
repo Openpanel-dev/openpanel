@@ -4,6 +4,7 @@ import { useNavigate } from '@tanstack/react-router';
 import type { PaginationState, Table, Updater } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useColumns } from './columns';
 import { TableFilterPills } from '@/components/filters/TableFilterPills';
 import { DataTable } from '@/components/ui/data-table/data-table';
@@ -33,6 +34,7 @@ const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceProfile[];
 
 export const ProfilesTable = memo(
   ({ type, query, pageSize = PAGE_SIZE }: Props) => {
+    const { t } = useTranslation();
     const { data, isLoading } = query;
     const columns = useColumns(type);
     const navigate = useNavigate();
@@ -96,8 +98,8 @@ export const ProfilesTable = memo(
         <ProfileTableToolbar table={table} />
         <DataTable
           empty={{
-            title: 'No profiles',
-            description: "Looks like you haven't identified any profiles yet.",
+            title: t('profiles.empty_title'),
+            description: t('profiles.empty_description'),
           }}
           loading={isLoading}
           onRowClick={handleRowClick}
@@ -110,6 +112,7 @@ export const ProfilesTable = memo(
 );
 
 function ProfileTableToolbar({ table }: { table: Table<IServiceProfile> }) {
+  const { t } = useTranslation();
   const { search, setSearch } = useSearchQueryState();
 
   return (
@@ -117,13 +120,13 @@ function ProfileTableToolbar({ table }: { table: Table<IServiceProfile> }) {
       <div className="flex flex-1 flex-wrap items-center gap-2">
         <AnimatedSearchInput
           onChange={setSearch}
-          placeholder="Search profiles"
+          placeholder={t('profiles.search_placeholder')}
           value={search}
         />
         <TableFilterPills
           urlKey="f"
           categories={['profile', 'group', 'cohort']}
-          title="Profile filters"
+          title={t('profiles.filters_title')}
         />
       </div>
       <DataTableViewOptions table={table} />

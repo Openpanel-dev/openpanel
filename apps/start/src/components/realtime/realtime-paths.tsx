@@ -6,12 +6,14 @@ import { prop, uniqBy } from 'ramda';
 import { OverviewWidgetTable } from '../overview/overview-widget-table';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Tooltiper } from '../ui/tooltip';
+import { useTranslation } from 'react-i18next';
 
 interface RealtimePathsProps {
   projectId: string;
 }
 
 export function RealtimePaths({ projectId }: RealtimePathsProps) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const query = useQuery(
     trpc.realtime.paths.queryOptions({
@@ -31,7 +33,7 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
   return (
     <div className="col h-full card">
       <div className="row justify-between items-center p-4 pb-0">
-        <div className="font-medium text-muted-foreground">Paths</div>
+        <div className="font-medium text-muted-foreground">{t('realtime.paths_title')}</div>
         <div className="row gap-1">
           {unique.map((item) => (
             <Tooltiper key={item.origin} content={item.origin}>
@@ -46,7 +48,7 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
         getColumnPercentage={(item) => item.count / maxCount}
         columns={[
           {
-            name: 'Path',
+            name: t('realtime.column_path'),
             width: 'w-full',
             responsive: { priority: 1 },
             render(item) {
@@ -59,7 +61,7 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
                 >
                   <div className="row items-center gap-2 min-w-0 relative">
                     <SerieIcon name={item.origin} />
-                    <span className="truncate">{item.path || '(Not set)'}</span>
+                    <span className="truncate">{item.path || t('realtime.not_set')}</span>
                     {item.origin && (
                       <a
                         href={item.origin + item.path}
@@ -75,7 +77,7 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
             },
           },
           {
-            name: 'Duration',
+            name: t('realtime.column_duration'),
             width: '75px',
             responsive: { priority: 7 },
             render(item) {
@@ -83,7 +85,7 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
             },
           },
           {
-            name: 'Events',
+            name: t('realtime.column_events'),
             width: '60px',
             responsive: { priority: 4 },
             render(item) {
@@ -97,7 +99,7 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
             },
           },
           {
-            name: 'Sessions',
+            name: t('realtime.column_sessions'),
             width: '82px',
             responsive: { priority: 2 },
             render(item) {

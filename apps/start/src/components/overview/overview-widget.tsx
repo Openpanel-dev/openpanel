@@ -3,6 +3,7 @@ import { cn } from '@/utils/cn';
 import { ChevronsUpDownIcon, type LucideIcon, SearchIcon } from 'lucide-react';
 import { last } from 'ramda';
 import { Children, useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   DropdownMenu,
@@ -73,6 +74,7 @@ export function WidgetButtons({
   children,
   ...props
 }: WidgetHeadProps) {
+  const { t } = useTranslation();
   const container = useRef<HTMLDivElement>(null);
   const sizes = useRef<number[]>([]);
   const [slice, setSlice] = useState(3); // Show 3 buttons by default
@@ -152,7 +154,7 @@ export function WidgetButtons({
               sizes.current.length - 1 === slice ? hidden : 'opacity-50',
             )}
           >
-            More <ChevronsUpDownIcon size={12} />
+            {t('overview.more')} <ChevronsUpDownIcon size={12} />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="[&_button]:w-full">
@@ -192,8 +194,9 @@ export function WidgetHeadSearchable<T extends string>({
   onTabChange,
   searchValue,
   onSearchChange,
-  searchPlaceholder = 'Search',
+  searchPlaceholder,
 }: WidgetHeadSearchableProps<T>) {
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftGradient, setShowLeftGradient] = useState(false);
   const [showRightGradient, setShowRightGradient] = useState(false);
@@ -281,7 +284,7 @@ export function WidgetHeadSearchable<T extends string>({
           <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder={searchPlaceholder}
+            placeholder={searchPlaceholder ?? t('overview.search')}
             value={searchValue ?? ''}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9 bg-transparent border-0 text-sm rounded-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0 border-y"

@@ -17,12 +17,14 @@ import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { getChartColor } from '@/utils/theme';
 import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
   data: { date: string; count: number }[];
 };
 
 function Tooltip(props: any) {
+  const { t } = useTranslation();
   const number = useNumber();
   const formatDate = useFormatDateInterval({ interval: 'day', short: false });
   const payload = props.payload?.[0]?.payload;
@@ -40,7 +42,9 @@ function Tooltip(props: any) {
           style={{ background: getChartColor(0) }}
         />
         <div className="col gap-1">
-          <div className="text-muted-foreground text-sm">Events</div>
+          <div className="text-muted-foreground text-sm">
+            {t('cohorts.events')}
+          </div>
           <div
             className="font-semibold text-lg"
             style={{ color: getChartColor(0) }}
@@ -54,6 +58,7 @@ function Tooltip(props: any) {
 }
 
 export function CohortEventsChart({ data }: Props) {
+  const { t } = useTranslation();
   const xAxisProps = useXAxisProps({ interval: 'day' });
   const yAxisProps = useYAxisProps({});
   const color = getChartColor(0);
@@ -71,13 +76,15 @@ export function CohortEventsChart({ data }: Props) {
     <Widget className="w-full">
       <WidgetHead>
         <WidgetTitle icon={ActivityIcon}>
-          Events last 30 days ({total.toLocaleString()})
+          {t('cohorts.events_last_30_days', {
+            count: total.toLocaleString(),
+          })}
         </WidgetTitle>
       </WidgetHead>
       <WidgetBody>
         {total === 0 ? (
           <p className="py-4 text-center text-muted-foreground text-sm">
-            No events yet
+            {t('cohorts.no_events_yet')}
           </p>
         ) : (
           <div className="h-[200px] w-full">

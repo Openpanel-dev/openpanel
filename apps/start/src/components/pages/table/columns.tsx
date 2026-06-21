@@ -1,6 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { ExternalLinkIcon } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PageSparkline } from '@/components/pages/page-sparkline';
 import { createHeaderColumn } from '@/components/ui/data-table/data-table-helpers';
 import { useAppContext } from '@/hooks/use-app-context';
@@ -20,6 +21,7 @@ export function useColumns({
   isGscConnected: boolean;
   previousMap?: Map<string, number>;
 }): ColumnDef<PageRow>[] {
+  const { t } = useTranslation();
   const number = useNumber();
   const { apiUrl } = useAppContext();
 
@@ -28,7 +30,7 @@ export function useColumns({
       {
         id: 'page',
         accessorFn: (row) => `${row.origin}${row.path} ${row.title ?? ''}`,
-        header: createHeaderColumn('Page'),
+        header: createHeaderColumn(t('pages.column_page')),
         size: 400,
         meta: { bold: true },
         cell: ({ row }) => {
@@ -71,7 +73,7 @@ export function useColumns({
       },
       {
         id: 'trend',
-        header: 'Trend',
+        header: t('pages.column_trend'),
         enableSorting: false,
         size: 96,
         cell: ({ row }) => (
@@ -84,7 +86,7 @@ export function useColumns({
       },
       {
         accessorKey: 'pageviews',
-        header: createHeaderColumn('Views'),
+        header: createHeaderColumn(t('pages.column_views')),
         size: 80,
         cell: ({ row }) => (
           <span className="font-mono text-sm tabular-nums">
@@ -94,7 +96,7 @@ export function useColumns({
       },
       {
         accessorKey: 'sessions',
-        header: createHeaderColumn('Sessions'),
+        header: createHeaderColumn(t('pages.column_sessions')),
         size: 90,
         cell: ({ row }) => {
           const prev = previousMap?.get(
@@ -109,7 +111,7 @@ export function useColumns({
                 <span className="font-mono text-sm tabular-nums">
                   {number.short(row.original.sessions)}
                 </span>
-                <span className="text-muted-foreground">new</span>
+                <span className="text-muted-foreground">{t('pages.new_label')}</span>
               </div>
             );
           }
@@ -134,7 +136,7 @@ export function useColumns({
       },
       {
         accessorKey: 'bounce_rate',
-        header: createHeaderColumn('Bounce'),
+        header: createHeaderColumn(t('pages.column_bounce')),
         size: 80,
         cell: ({ row }) => (
           <span className="font-mono text-sm tabular-nums">
@@ -144,7 +146,7 @@ export function useColumns({
       },
       {
         accessorKey: 'avg_duration',
-        header: createHeaderColumn('Duration'),
+        header: createHeaderColumn(t('pages.column_duration')),
         size: 90,
         cell: ({ row }) => (
           <span className="whitespace-nowrap font-mono text-sm tabular-nums">
@@ -159,7 +161,7 @@ export function useColumns({
         {
           id: 'gsc_impressions',
           accessorFn: (row) => row.gsc?.impressions ?? 0,
-          header: createHeaderColumn('Impr.'),
+          header: createHeaderColumn(t('pages.column_impressions')),
           size: 80,
           cell: ({ row }) =>
             row.original.gsc ? (
@@ -173,7 +175,7 @@ export function useColumns({
         {
           id: 'gsc_ctr',
           accessorFn: (row) => row.gsc?.ctr ?? 0,
-          header: createHeaderColumn('CTR'),
+          header: createHeaderColumn(t('pages.column_ctr')),
           size: 70,
           cell: ({ row }) =>
             row.original.gsc ? (
@@ -187,7 +189,7 @@ export function useColumns({
         {
           id: 'gsc_clicks',
           accessorFn: (row) => row.gsc?.clicks ?? 0,
-          header: createHeaderColumn('Clicks'),
+          header: createHeaderColumn(t('pages.column_clicks')),
           size: 80,
           cell: ({ row }) =>
             row.original.gsc ? (
@@ -202,5 +204,5 @@ export function useColumns({
     }
 
     return cols;
-  }, [isGscConnected, number, apiUrl, projectId, previousMap]);
+  }, [isGscConnected, number, apiUrl, projectId, previousMap, t]);
 }

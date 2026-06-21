@@ -21,6 +21,7 @@ import {
 } from '@openpanel/validation';
 import { FilterIcon, X } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
+import { useTranslation } from 'react-i18next';
 
 interface OverviewFiltersButtonsProps {
   className?: string;
@@ -28,6 +29,8 @@ interface OverviewFiltersButtonsProps {
 }
 
 export function OverviewFilterButton(props: OverviewFiltersProps) {
+  const { t } = useTranslation();
+
   return (
     <Button
       variant="outline"
@@ -39,7 +42,7 @@ export function OverviewFilterButton(props: OverviewFiltersProps) {
         })
       }
     >
-      Filters
+      {t('overview.filters')}
     </Button>
   );
 }
@@ -67,6 +70,7 @@ function CohortFilterPill({
   onChangeOperator,
   onChangeCohorts,
 }: CohortFilterPillProps) {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const cohorts = useCohorts({ projectId, includeCount: false });
   const selectedIds = getCohortIds(filter);
@@ -84,21 +88,23 @@ function CohortFilterPill({
         onClick={() => pushModal('OverviewFilters', { nuqsOptions })}
         className="px-2 hover:bg-accent transition-colors cursor-pointer"
       >
-        Cohort
+        {t('overview.cohort')}
       </button>
       <DropdownMenuComposed
         onChange={onChangeOperator}
         items={[
-          { value: 'inCohort', label: 'In cohort' },
-          { value: 'notInCohort', label: 'Not in cohort' },
+          { value: 'inCohort', label: t('overview.in_cohort') },
+          { value: 'notInCohort', label: t('overview.not_in_cohort') },
         ]}
-        label="Operator"
+        label={t('overview.operator')}
       >
         <button
           type="button"
           className="px-2 opacity-50 lowercase hover:opacity-100 hover:bg-accent transition-colors border-l cursor-pointer"
         >
-          {filter.operator === 'inCohort' ? 'in cohort' : 'not in cohort'}
+          {filter.operator === 'inCohort'
+            ? t('overview.in_cohort')
+            : t('overview.not_in_cohort')}
         </button>
       </DropdownMenuComposed>
       <ComboboxAdvanced
@@ -115,7 +121,9 @@ function CohortFilterPill({
           className="px-2 font-semibold hover:bg-accent transition-colors border-l cursor-pointer max-w-40 truncate"
         >
           {valueLabel || (
-            <span className="opacity-40 font-normal italic">pick cohort</span>
+            <span className="opacity-40 font-normal italic">
+              {t('overview.pick_cohort')}
+            </span>
           )}
         </button>
       </ComboboxAdvanced>
@@ -123,7 +131,7 @@ function CohortFilterPill({
         type="button"
         onClick={onRemove}
         className="px-2 hover:bg-destructive hover:text-destructive-foreground transition-colors border-l cursor-pointer"
-        aria-label="Remove filter"
+        aria-label={t('overview.remove_filter')}
       >
         <X className="size-3" />
       </button>
@@ -138,6 +146,7 @@ function FilterPill({
   onChangeOperator,
   onChangeValue,
 }: FilterPillProps) {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const potentialValues = usePropertyValues({
     event: '*',
@@ -183,7 +192,9 @@ function FilterPill({
             {filter.value.length > 0 ? (
               filter.value.join(', ')
             ) : (
-              <span className="opacity-40 font-normal italic">pick value</span>
+              <span className="opacity-40 font-normal italic">
+                {t('overview.pick_value')}
+              </span>
             )}
           </button>
         </ComboboxAdvanced>
@@ -194,7 +205,7 @@ function FilterPill({
         type="button"
         onClick={onRemove}
         className="px-2 hover:bg-destructive hover:text-destructive-foreground transition-colors border-l cursor-pointer"
-        aria-label="Remove filter"
+        aria-label={t('overview.remove_filter')}
       >
         <X className="size-3" />
       </button>

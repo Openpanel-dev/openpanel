@@ -9,13 +9,15 @@ import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { pushModal } from '@/modals';
 import { getProfileName } from '@/utils/getters';
+import { useTranslation } from 'react-i18next';
 
 export function useColumns() {
+  const { t } = useTranslation();
   const number = useNumber();
   const columns: ColumnDef<IServiceEvent>[] = [
     {
       accessorKey: 'createdAt',
-      header: 'Created at',
+      header: t('events.column_created_at'),
       size: ColumnCreatedAt.size,
       cell: ({ row }) => {
         const session = row.original;
@@ -25,7 +27,7 @@ export function useColumns() {
     {
       size: 300,
       accessorKey: 'name',
-      header: 'Name',
+      header: t('events.column_name'),
       cell({ row }) {
         const { name, path, revenue } = row.original;
         const fullTitle =
@@ -43,7 +45,9 @@ export function useColumns() {
 
             return (
               <>
-                <span className="text-muted-foreground">Screen: </span>
+                <span className="text-muted-foreground">
+                  {t('events.screen_label')}{' '}
+                </span>
                 {path}
               </>
             );
@@ -95,7 +99,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'profileId',
-      header: 'Profile',
+      header: t('events.column_profile'),
       cell({ row }) {
         const { profile, profileId, deviceId } = row.original;
         if (profile) {
@@ -116,7 +120,7 @@ export function useColumns() {
               className="whitespace-nowrap font-medium hover:underline"
               href={`/profiles/${encodeURIComponent(profileId)}`}
             >
-              Unknown
+              {t('events.unknown_profile')}
             </ProjectLink>
           );
         }
@@ -127,7 +131,7 @@ export function useColumns() {
               className="whitespace-nowrap font-medium hover:underline"
               href={`/profiles/${encodeURIComponent(deviceId)}`}
             >
-              Anonymous
+              {t('events.anonymous_profile')}
             </ProjectLink>
           );
         }
@@ -137,7 +141,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'sessionId',
-      header: 'Session ID',
+      header: t('events.column_session_id'),
       size: 100,
       meta: {
         hidden: true,
@@ -156,7 +160,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'deviceId',
-      header: 'Device ID',
+      header: t('events.column_device_id'),
       size: 320,
       meta: {
         hidden: true,
@@ -164,7 +168,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'country',
-      header: 'Country',
+      header: t('events.column_country'),
       size: 150,
       cell({ row }) {
         const { country, city } = row.original;
@@ -178,7 +182,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'os',
-      header: 'OS',
+      header: t('events.column_os'),
       size: 130,
       cell({ row }) {
         const { os } = row.original;
@@ -192,7 +196,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'browser',
-      header: 'Browser',
+      header: t('events.column_browser'),
       size: 110,
       cell({ row }) {
         const { browser } = row.original;
@@ -206,7 +210,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'groups',
-      header: 'Groups',
+      header: t('events.column_groups'),
       size: 200,
       meta: {
         hidden: true,
@@ -232,7 +236,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'properties',
-      header: 'Properties',
+      header: t('events.column_properties'),
       size: 400,
       meta: {
         hidden: true,
@@ -253,7 +257,9 @@ export function useColumns() {
         if (items.length > limit) {
           data.push({
             name: '',
-            value: `${items.length - limit} more item${items.length - limit === 1 ? '' : 's'}`,
+            value: t('events.more_properties_count', {
+              count: items.length - limit,
+            }),
           });
         }
 

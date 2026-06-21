@@ -26,6 +26,7 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { pushModal } from '@/modals';
 import type { RouterInputs, RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
   query: UseInfiniteQueryResult<
@@ -141,6 +142,7 @@ const VirtualizedEventsTable = ({
   isLoading,
   onRowClick,
 }: VirtualizedEventsTableProps & { onRowClick?: (row: any) => void }) => {
+  const { t } = useTranslation();
   const parentRef = useRef<HTMLDivElement>(null);
 
   const headerColumns = table.getAllLeafColumns().filter((col) => {
@@ -195,8 +197,8 @@ const VirtualizedEventsTable = ({
 
       {!isLoading && data.length === 0 && (
         <FullPageEmptyState
-          description={"Start sending events and you'll see them here"}
-          title="No events"
+          description={t('events.empty_description')}
+          title={t('events.empty_title')}
         />
       )}
 
@@ -335,6 +337,7 @@ function EventsTableToolbar({
   table: Table<IServiceEvent>;
   showEventListener: boolean;
 }) {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const [startDate, setStartDate] = useQueryState(
     'startDate',
@@ -365,7 +368,7 @@ function EventsTableToolbar({
         >
           {startDate && endDate
             ? `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`
-            : 'Date range'}
+            : t('events.date_range')}
         </Button>
         <OverviewFilterButton enableEventsFilter />
         <OverviewFiltersButtons className="justify-end p-0" />

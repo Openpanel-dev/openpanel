@@ -3,6 +3,7 @@ import { useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bar } from '../charts/bar';
 import { BarChart } from '../charts/bar-chart';
 import {
@@ -32,6 +33,7 @@ export function OverviewLiveHistogram({
   projectId,
   shareId,
 }: OverviewLiveHistogramProps) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const number = useNumber();
 
@@ -69,7 +71,9 @@ export function OverviewLiveHistogram({
   }));
   const totalSessions = liveData.totalSessions ?? 0;
   const displayCount = hover.point?.sessionCount ?? totalSessions;
-  const displayLabel = hover.point ? hover.point.time : 'Last 30 min';
+  const displayLabel = hover.point
+    ? hover.point.time
+    : t('overview.last_30_min');
   const referrers = liveData.referrers ?? [];
 
   return (
@@ -77,7 +81,7 @@ export function OverviewLiveHistogram({
       <div className="px-3 pt-2.5">
         <div className="flex items-start justify-between gap-2">
           <span className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Live · 30 min
+            {t('overview.live_30_min')}
           </span>
           <span className="relative flex h-2 w-2 items-center justify-center">
             <span

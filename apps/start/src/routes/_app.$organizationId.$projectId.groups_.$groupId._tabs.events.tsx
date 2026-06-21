@@ -1,6 +1,7 @@
 import { EventsTable } from '@/components/events/table';
 import { useReadColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
 import { useEventQueryNamesFilter } from '@/hooks/use-event-query-filters';
+import i18n from '@/i18n';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle } from '@/utils/title';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -12,7 +13,7 @@ export const Route = createFileRoute(
 )({
   component: Component,
   head: () => ({
-    meta: [{ title: createProjectTitle('Group events') }],
+    meta: [{ title: createProjectTitle(i18n.t('groups.group_events_title')) }],
   }),
 });
 

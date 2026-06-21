@@ -1093,6 +1093,7 @@
     "decreasing": "Decreasing",
     "flat": "Flat",
     "sort_placeholder": "Sort by",
+    "sort_relevance": "Relevance (AI)",
     "sort_impact_high_low": "Impact (High → Low)",
     "sort_impact_low_high": "Impact (Low → High)",
     "sort_severity_high_low": "Severity (High → Low)",

@@ -2,6 +2,7 @@ import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { Globe2Icon } from 'lucide-react';
 import { parseAsBoolean, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
@@ -27,30 +28,31 @@ export default function OverviewTopPages({
   projectId,
   shareId,
 }: OverviewTopPagesProps) {
+  const { t } = useTranslation();
   const { interval, range, startDate, endDate } = useOverviewOptions();
   const [filters] = useEventQueryFilters();
   const [domain, setDomain] = useQueryState('d', parseAsBoolean);
   const [searchQuery, setSearchQuery] = useState('');
   const [widget, setWidget, widgets] = useOverviewWidgetV2('pages', {
     page: {
-      title: 'Top pages',
-      btn: 'Pages',
+      title: t('overview.top_pages'),
+      btn: t('overview.pages'),
     },
     entry: {
-      title: 'Entry Pages',
-      btn: 'Entries',
+      title: t('overview.entry_pages'),
+      btn: t('overview.entries'),
       meta: {
         columns: {
-          sessions: 'Entries',
+          sessions: t('overview.entries'),
         },
       },
     },
     exit: {
-      title: 'Exit Pages',
-      btn: 'Exits',
+      title: t('overview.exit_pages'),
+      btn: t('overview.exits'),
       meta: {
         columns: {
-          sessions: 'Exits',
+          sessions: t('overview.exits'),
         },
       },
     },
@@ -96,7 +98,9 @@ export default function OverviewTopPages({
           onTabChange={setWidget}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          searchPlaceholder={t('overview.search_column', {
+            column: widget.btn.toLowerCase(),
+          })}
           className="border-b-0 pb-2"
         />
         <WidgetBody className="p-0">
@@ -131,7 +135,7 @@ export default function OverviewTopPages({
             }}
             icon={Globe2Icon}
           >
-            {domain ? 'Hide domain' : 'Show domain'}
+            {domain ? t('overview.hide_domain') : t('overview.show_domain')}
           </Button>
         </WidgetFooter>
       </Widget>

@@ -1,6 +1,7 @@
 import { ReportChart } from '@/components/report-chart';
 import { Widget, WidgetBody } from '@/components/widget';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { IReport } from '@openpanel/validation';
 import { WidgetHead } from '../overview/overview-widget';
@@ -12,6 +13,7 @@ type Props = {
 
 export const ProfileCharts = memo(
   ({ profileId, projectId }: Props) => {
+    const { t } = useTranslation();
     const pageViewsChart: IReport = {
       projectId,
       chartType: 'linear',
@@ -29,7 +31,7 @@ export const ProfileCharts = memo(
           ],
           id: 'A',
           name: 'screen_view',
-          displayName: 'Events',
+          displayName: t('profiles.events'),
         },
       ],
       breakdowns: [
@@ -40,7 +42,7 @@ export const ProfileCharts = memo(
       ],
       lineType: 'monotone',
       interval: 'day',
-      name: 'Events',
+      name: t('profiles.events'),
       range: '30d',
       previous: false,
       metric: 'sum',
@@ -63,7 +65,7 @@ export const ProfileCharts = memo(
           ],
           id: 'A',
           name: '*',
-          displayName: 'Events',
+          displayName: t('profiles.events'),
         },
       ],
       breakdowns: [
@@ -74,7 +76,7 @@ export const ProfileCharts = memo(
       ],
       lineType: 'monotone',
       interval: 'day',
-      name: 'Events',
+      name: t('profiles.events'),
       range: '30d',
       previous: false,
       metric: 'sum',
@@ -84,7 +86,7 @@ export const ProfileCharts = memo(
       <>
         <Widget className="col-span-6 md:col-span-3">
           <WidgetHead>
-            <span className="title">Page views</span>
+            <span className="title">{t('profiles.page_views')}</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChart report={pageViewsChart} />
@@ -92,7 +94,7 @@ export const ProfileCharts = memo(
         </Widget>
         <Widget className="col-span-6 md:col-span-3">
           <WidgetHead>
-            <span className="title">Events per day</span>
+            <span className="title">{t('profiles.events_per_day')}</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChart report={eventsChart} />

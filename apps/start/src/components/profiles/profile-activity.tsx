@@ -13,6 +13,7 @@ import {
 } from 'date-fns';
 import { ActivityIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   WidgetAbsoluteButtons,
   WidgetHead,
@@ -38,7 +39,13 @@ const MonthCalendar = ({
   month,
   data,
   maxCount,
-}: { month: Date; data: Props['data']; maxCount: number }) => (
+  t,
+}: {
+  month: Date;
+  data: Props['data'];
+  maxCount: number;
+  t: ReturnType<typeof useTranslation>['t'];
+}) => (
   <div>
     <div className="mb-2 text-sm">{format(month, 'MMMM yyyy')}</div>
     <div className="-m-1 grid grid-cols-7 gap-1 p-1">
@@ -59,10 +66,14 @@ const MonthCalendar = ({
                 <div className="font-medium">{format(date, 'EEEE, MMM d')}</div>
                 {hit ? (
                   <div className="text-muted-foreground">
-                    {hit.count} {hit.count === 1 ? 'event' : 'events'}
+                    {t('profiles.activity_events_count', {
+                      count: hit.count,
+                    })}
                   </div>
                 ) : (
-                  <div className="text-muted-foreground">No activity</div>
+                  <div className="text-muted-foreground">
+                    {t('profiles.no_activity')}
+                  </div>
                 )}
               </div>
             }
@@ -92,13 +103,14 @@ const MonthCalendar = ({
 );
 
 export const ProfileActivity = ({ data }: Props) => {
+  const { t } = useTranslation();
   const [startDate, setStartDate] = useState(startOfMonth(new Date()));
   const maxCount = Math.max(...data.map((item) => item.count), 0);
 
   return (
     <Widget className="w-full">
       <WidgetHead className="row justify-between relative">
-        <WidgetTitle icon={ActivityIcon}>Activity</WidgetTitle>
+        <WidgetTitle icon={ActivityIcon}>{t('profiles.activity')}</WidgetTitle>
         <WidgetAbsoluteButtons>
           <Button
             variant="outline"
@@ -125,6 +137,7 @@ export const ProfileActivity = ({ data }: Props) => {
               month={subMonths(startDate, offset)}
               data={data}
               maxCount={maxCount}
+              t={t}
             />
           ))}
         </div>

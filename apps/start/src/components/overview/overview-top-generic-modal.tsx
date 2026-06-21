@@ -4,10 +4,11 @@ import { useTRPC } from '@/integrations/trpc/react';
 import type { IGetTopGenericInput } from '@openpanel/db';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRightIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import {
-  OVERVIEW_COLUMNS_NAME,
-  OVERVIEW_COLUMNS_NAME_PLURAL,
+  getOverviewColumnName,
+  getOverviewColumnNamePlural,
 } from './overview-constants';
 import { OverviewListModal } from './overview-list-modal';
 import { useOverviewOptions } from './useOverviewOptions';
@@ -21,6 +22,7 @@ export default function OverviewTopGenericModal({
   projectId,
   column,
 }: OverviewTopGenericModalProps) {
+  const { t } = useTranslation();
   const [_filters, setFilter] = useEventQueryFilters();
   const { startDate, endDate, range } = useOverviewOptions();
   const trpc = useTRPC();
@@ -35,13 +37,15 @@ export default function OverviewTopGenericModal({
     }),
   );
 
-  const columnNamePlural = OVERVIEW_COLUMNS_NAME_PLURAL[column];
-  const columnName = OVERVIEW_COLUMNS_NAME[column];
+  const columnNamePlural = getOverviewColumnNamePlural(t, column);
+  const columnName = getOverviewColumnName(t, column);
 
   return (
     <OverviewListModal
-      title={`Top ${columnNamePlural}`}
-      searchPlaceholder={`Search ${columnNamePlural.toLowerCase()}...`}
+      title={t('overview.top_column', { column: columnNamePlural })}
+      searchPlaceholder={t('overview.search_column', {
+        column: columnNamePlural.toLowerCase(),
+      })}
       data={query.data ?? []}
       keyExtractor={(item) => (item.prefix ?? '') + item.name}
       searchFilter={(item, query) =>
@@ -66,7 +70,7 @@ export default function OverviewTopGenericModal({
                 <ChevronRightIcon className="size-3" />
               </span>
             )}
-            {item.name || 'Not set'}
+            {item.name || t('overview.not_set')}
           </button>
         </div>
       )}

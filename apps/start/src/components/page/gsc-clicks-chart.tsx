@@ -21,6 +21,8 @@ import { Skeleton } from '@/components/skeleton';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getChartColor } from '@/utils/theme';
+import i18n from '@/i18n';
+import { useTranslation } from 'react-i18next';
 
 interface ChartData {
   date: string;
@@ -43,13 +45,13 @@ const { TooltipProvider, Tooltip } = createChartTooltip<
       </ChartTooltipHeader>
       <ChartTooltipItem color={getChartColor(0)}>
         <div className="flex justify-between gap-8 font-medium font-mono">
-          <span>Clicks</span>
+          <span>{i18n.t('seo.metric_clicks')}</span>
           <span>{item.clicks.toLocaleString()}</span>
         </div>
       </ChartTooltipItem>
       <ChartTooltipItem color={getChartColor(1)}>
         <div className="flex justify-between gap-8 font-medium font-mono">
-          <span>Impressions</span>
+          <span>{i18n.t('seo.metric_impressions')}</span>
           <span>{item.impressions.toLocaleString()}</span>
         </div>
       </ChartTooltipItem>
@@ -68,6 +70,7 @@ export function GscClicksChart({
   value,
   type,
 }: GscClicksChartProps) {
+  const { t } = useTranslation();
   const { range, startDate, endDate, interval } = useOverviewOptions();
   const trpc = useTRPC();
   const yAxisProps = useYAxisProps();
@@ -110,21 +113,23 @@ export function GscClicksChart({
   return (
     <div className="card p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-medium text-sm">Clicks & Impressions</h3>
+        <h3 className="font-medium text-sm">
+          {t('seo.chart_clicks_impressions')}
+        </h3>
         <div className="flex items-center gap-4 text-muted-foreground text-xs">
           <span className="flex items-center gap-1.5">
             <span
               className="h-0.5 w-3 rounded-full"
               style={{ backgroundColor: getChartColor(0) }}
             />
-            Clicks
+            {t('seo.metric_clicks')}
           </span>
           <span className="flex items-center gap-1.5">
             <span
               className="h-0.5 w-3 rounded-full"
               style={{ backgroundColor: getChartColor(1) }}
             />
-            Impressions
+            {t('seo.metric_impressions')}
           </span>
         </div>
       </div>

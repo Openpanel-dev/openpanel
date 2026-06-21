@@ -9,9 +9,11 @@ import { PopularRoutes } from '@/components/profiles/popular-routes';
 import { ProfileActivity } from '@/components/profiles/profile-activity';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import { Widget } from '@/components/widget';
+import i18n from '@/i18n';
 import { useTRPC } from '@/integrations/trpc/react';
 import { formatDateTime } from '@/utils/date';
 import { createProjectTitle } from '@/utils/title';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/groups_/$groupId/_tabs/'
@@ -29,11 +31,12 @@ export const Route = createFileRoute(
   },
   pendingComponent: FullPageLoadingState,
   head: () => ({
-    meta: [{ title: createProjectTitle('Group') }],
+    meta: [{ title: createProjectTitle(i18n.t('groups.group_page_title')) }],
   }),
 });
 
 function Component() {
+  const { t } = useTranslation();
   const { projectId, groupId } = Route.useParams();
   const trpc = useTRPC();
 
@@ -75,7 +78,7 @@ function Component() {
               data={[]}
               id="totalEvents"
               isLoading={false}
-              label="Total Events"
+              label={t('groups.total_events')}
               metric={{ current: m.totalEvents, previous: null }}
               unit=""
             />
@@ -83,7 +86,7 @@ function Component() {
               data={[]}
               id="uniqueMembers"
               isLoading={false}
-              label="Unique Members"
+              label={t('groups.unique_members')}
               metric={{ current: m.uniqueProfiles, previous: null }}
               unit=""
             />
@@ -91,7 +94,7 @@ function Component() {
               data={[]}
               id="firstSeen"
               isLoading={false}
-              label="First Seen"
+              label={t('groups.first_seen')}
               metric={{
                 current: m.firstSeen ? new Date(m.firstSeen).getTime() : 0,
                 previous: null,
@@ -102,7 +105,7 @@ function Component() {
               data={[]}
               id="lastSeen"
               isLoading={false}
-              label="Last Seen"
+              label={t('groups.last_seen')}
               metric={{
                 current: m.lastSeen ? new Date(m.lastSeen).getTime() : 0,
                 previous: null,
@@ -117,18 +120,18 @@ function Component() {
       <div className="col-span-1 md:col-span-2">
         <Widget className="w-full">
           <WidgetHead>
-            <div className="title">Group Information</div>
+            <div className="title">{t('groups.group_information')}</div>
           </WidgetHead>
           <KeyValueGrid
             className="border-0"
             columns={3}
             copyable
             data={[
-              { name: 'id', value: g.id },
-              { name: 'name', value: g.name },
-              { name: 'type', value: g.type },
+              { name: t('groups.field_id'), value: g.id },
+              { name: t('groups.field_name'), value: g.name },
+              { name: t('groups.field_type'), value: g.type },
               {
-                name: 'createdAt',
+                name: t('groups.field_created_at'),
                 value: formatDateTime(new Date(g.createdAt)),
               },
               ...Object.entries(properties)

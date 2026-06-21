@@ -17,6 +17,7 @@ import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import type { RouterOutputs } from '@/trpc/client';
 import { arePropsEqual } from '@/utils/are-props-equal';
+import { useTranslation } from 'react-i18next';
 
 const PAGE_SIZE = 50;
 
@@ -30,6 +31,7 @@ const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceGroupWithSt
 
 export const GroupsTable = memo(
   ({ query, pageSize = PAGE_SIZE, toolbarLeft }: Props) => {
+    const { t } = useTranslation();
     const { data, isLoading } = query;
     const columns = useGroupColumns();
 
@@ -77,9 +79,8 @@ export const GroupsTable = memo(
         <GroupsTableToolbar table={table} toolbarLeft={toolbarLeft} />
         <DataTable
           empty={{
-            title: 'No groups found',
-            description:
-              'Groups represent companies, teams, or other entities that events belong to.',
+            title: t('groups.empty_title'),
+            description: t('groups.empty_description'),
           }}
           loading={isLoading}
           table={table}
@@ -97,6 +98,7 @@ function GroupsTableToolbar({
   table: Table<IServiceGroupWithStats>;
   toolbarLeft?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   const { search, setSearch } = useSearchQueryState();
   return (
     <DataTableToolbarContainer>
@@ -104,7 +106,7 @@ function GroupsTableToolbar({
         {toolbarLeft}
         <AnimatedSearchInput
           onChange={setSearch}
-          placeholder="Search groups..."
+          placeholder={t('groups.search_placeholder')}
           value={search}
         />
       </div>

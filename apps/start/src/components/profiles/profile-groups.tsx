@@ -2,6 +2,7 @@ import { ProjectLink } from '@/components/links';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { UsersIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   profileId: string;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export const ProfileGroups = ({ projectId, groups }: Props) => {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const query = useQuery(
     trpc.group.listByIds.queryOptions({
@@ -26,7 +28,7 @@ export const ProfileGroups = ({ projectId, groups }: Props) => {
     <div className="flex flex-wrap items-center gap-2">
       <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground text-xs">
         <UsersIcon className="size-3.5" />
-        Groups
+        {t('profiles.groups')}
       </span>
       {query.data.map((group) => (
         <ProjectLink

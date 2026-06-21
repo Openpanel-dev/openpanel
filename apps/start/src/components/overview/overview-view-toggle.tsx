@@ -1,5 +1,6 @@
 import { LineChartIcon, TableIcon } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '../ui/button';
 
@@ -14,6 +15,7 @@ export function OverviewViewToggle({
   defaultView = 'table',
   className,
 }: OverviewViewToggleProps) {
+  const { t } = useTranslation();
   const [view, setView] = useQueryState<ViewType>(
     'view',
     parseAsStringEnum(['table', 'chart'])
@@ -29,7 +31,11 @@ export function OverviewViewToggle({
         onClick={() => {
           setView(view === 'table' ? 'chart' : 'table');
         }}
-        title={view === 'table' ? 'Switch to chart view' : 'Switch to table view'}
+        title={
+          view === 'table'
+            ? t('overview.switch_to_chart_view')
+            : t('overview.switch_to_table_view')
+        }
       >
         {view === 'table' ? (
           <LineChartIcon size={16} />
@@ -51,4 +57,3 @@ export function useOverviewView() {
 
   return [view, setView] as const;
 }
-

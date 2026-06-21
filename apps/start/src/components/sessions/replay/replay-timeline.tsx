@@ -8,6 +8,7 @@ import {
 import type { IServiceEvent } from '@openpanel/db';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { EventIcon } from '@/components/events/event-icon';
 import { cn } from '@/lib/utils';
@@ -15,6 +16,7 @@ import { ReplayPlayPauseButton } from './replay-controls';
 import { formatDuration, getEventOffsetMs } from './replay-utils';
 
 export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
+  const { t } = useTranslation();
   const { currentTimeRef, duration, startTime, isReady, seek, subscribeToCurrentTime } =
     useReplayContext();
   // currentTime as React state is only needed for keyboard seeks (low frequency).
@@ -227,7 +229,17 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
                         e.stopPropagation();
                         seek(first.offsetMs);
                       }}
-                      aria-label={isGroup ? `${group.items.length} events at ${formatDuration(first.offsetMs)}` : `${first.event.name} at ${formatDuration(first.offsetMs)}`}
+                      aria-label={
+                        isGroup
+                          ? t('sessions.replay_events_at_time', {
+                              count: group.items.length,
+                              time: formatDuration(first.offsetMs),
+                            })
+                          : t('sessions.replay_event_at_time', {
+                              event: first.event.name,
+                              time: formatDuration(first.offsetMs),
+                            })
+                      }
                     >
                       <EventIcon name={first.event.name} meta={first.event.meta} size="sm" />
                       {isGroup && (

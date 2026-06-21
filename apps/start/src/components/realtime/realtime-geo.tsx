@@ -6,12 +6,14 @@ import { prop, uniqBy } from 'ramda';
 import { OverviewWidgetTable } from '../overview/overview-widget-table';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Tooltiper } from '../ui/tooltip';
+import { useTranslation } from 'react-i18next';
 
 interface RealtimeGeoProps {
   projectId: string;
 }
 
 export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const query = useQuery(
     trpc.realtime.geo.queryOptions({
@@ -31,7 +33,7 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
   return (
     <div className="col h-full card">
       <div className="row justify-between items-center p-4 pb-0">
-        <div className="font-medium text-muted-foreground">Geo</div>
+        <div className="font-medium text-muted-foreground">{t('realtime.geo_title')}</div>
         <div className="row gap-1">
           {unique.map((item) => (
             <Tooltiper
@@ -49,7 +51,7 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
         getColumnPercentage={(item) => item.count / maxCount}
         columns={[
           {
-            name: 'Country / City',
+            name: t('realtime.column_country_city'),
             width: 'w-full',
             responsive: { priority: 1 },
             render(item) {
@@ -61,14 +63,14 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
                 >
                   <div className="row items-center gap-2 min-w-0 relative">
                     <SerieIcon name={item.country} />
-                    {item.city || '(Not set)'}
+                    {item.city || t('realtime.not_set')}
                   </div>
                 </Tooltiper>
               );
             },
           },
           {
-            name: 'Duration',
+            name: t('realtime.column_duration'),
             width: '75px',
             responsive: { priority: 7 },
             render(item) {
@@ -76,7 +78,7 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
             },
           },
           {
-            name: 'Events',
+            name: t('realtime.column_events'),
             width: '60px',
             responsive: { priority: 4 },
             render(item) {
@@ -90,7 +92,7 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
             },
           },
           {
-            name: 'Sessions',
+            name: t('realtime.column_sessions'),
             width: '82px',
             responsive: { priority: 2 },
             render(item) {

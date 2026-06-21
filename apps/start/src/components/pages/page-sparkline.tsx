@@ -3,6 +3,7 @@ import { Tooltiper } from '../ui/tooltip';
 import { LazyComponent } from '@/components/lazy-component';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { useTRPC } from '@/integrations/trpc/react';
+import { useTranslation } from 'react-i18next';
 
 interface SparklineBarsProps {
   data: { date: string; pageviews: number }[];
@@ -33,6 +34,7 @@ function getTrendDirection(data: { pageviews: number }[]): '↑' | '↓' | '→'
 }
 
 function SparklineBars({ data }: SparklineBarsProps) {
+  const { t } = useTranslation();
   if (!data.length) {
     return <div style={{ height, width }} />;
   }
@@ -49,6 +51,12 @@ function SparklineBars({ data }: SparklineBarsProps) {
     barW = 1;
   }
   const trend = getTrendDirection(data);
+  const trendLabel =
+    trend === '↑'
+      ? t('pages.trend_upward')
+      : trend === '↓'
+        ? t('pages.trend_downward')
+        : t('pages.trend_stable');
   const trendColor =
     trend === '↑'
       ? 'text-emerald-500'
@@ -58,7 +66,14 @@ function SparklineBars({ data }: SparklineBarsProps) {
 
   return (
     <div className="flex items-center gap-1.5">
-      <svg className="shrink-0" height={height} width={width}>
+      <svg
+        aria-label={trendLabel}
+        className="shrink-0"
+        height={height}
+        role="img"
+        width={width}
+      >
+        <title>{trendLabel}</title>
         {data.map((d, i) => {
           const barH = Math.max(
             2,
@@ -79,11 +94,7 @@ function SparklineBars({ data }: SparklineBarsProps) {
       </svg>
       <Tooltiper
         content={
-          trend === '↑'
-            ? 'Upward trend'
-            : trend === '↓'
-              ? 'Downward trend'
-              : 'Stable trend'
+          trendLabel
         }
       >
         <span className={`shrink-0 font-medium text-xs ${trendColor}`}>

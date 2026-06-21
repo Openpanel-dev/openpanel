@@ -5,12 +5,14 @@ import { ColumnCreatedAt } from '@/components/column-created-at';
 import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { getProfileName } from '@/utils/getters';
+import { useTranslation } from 'react-i18next';
 
 export function useColumns(type: 'profiles' | 'power-users') {
+  const { t } = useTranslation();
   const columns: ColumnDef<IServiceProfile>[] = [
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: t('profiles.column_name'),
       cell: ({ row }) => {
         const profile = row.original;
         return (
@@ -27,7 +29,7 @@ export function useColumns(type: 'profiles' | 'power-users') {
     },
     {
       accessorKey: 'referrer',
-      header: 'Referrer',
+      header: t('profiles.column_referrer'),
       cell({ row }) {
         const { referrer, referrer_name } = row.original.properties;
         const ref = referrer_name || referrer;
@@ -41,7 +43,7 @@ export function useColumns(type: 'profiles' | 'power-users') {
     },
     {
       accessorKey: 'country',
-      header: 'Country',
+      header: t('profiles.column_country'),
       cell({ row }) {
         const { country, city } = row.original.properties;
         return (
@@ -54,7 +56,7 @@ export function useColumns(type: 'profiles' | 'power-users') {
     },
     {
       accessorKey: 'os',
-      header: 'OS',
+      header: t('profiles.column_os'),
       cell({ row }) {
         const { os } = row.original.properties;
         return (
@@ -67,7 +69,7 @@ export function useColumns(type: 'profiles' | 'power-users') {
     },
     {
       accessorKey: 'browser',
-      header: 'Browser',
+      header: t('profiles.column_browser'),
       cell({ row }) {
         const { browser } = row.original.properties;
         return (
@@ -80,7 +82,7 @@ export function useColumns(type: 'profiles' | 'power-users') {
     },
     {
       accessorKey: 'model',
-      header: 'Model',
+      header: t('profiles.column_model'),
       cell({ row }) {
         const { model, brand } = row.original.properties;
         return (
@@ -95,7 +97,7 @@ export function useColumns(type: 'profiles' | 'power-users') {
     },
     {
       accessorKey: 'createdAt',
-      header: 'First seen',
+      header: t('profiles.column_first_seen'),
       size: ColumnCreatedAt.size,
       cell: ({ row }) => {
         const item = row.original;
@@ -104,7 +106,7 @@ export function useColumns(type: 'profiles' | 'power-users') {
     },
     {
       accessorKey: 'lastSeenAt',
-      header: 'Last seen',
+      header: t('profiles.column_last_seen'),
       size: ColumnCreatedAt.size,
       cell: ({ row }) => {
         const item = row.original;
@@ -113,7 +115,7 @@ export function useColumns(type: 'profiles' | 'power-users') {
     },
     {
       accessorKey: 'groups',
-      header: 'Groups',
+      header: t('profiles.column_groups'),
       size: 200,
       meta: {
         hidden: true,
@@ -143,7 +145,7 @@ export function useColumns(type: 'profiles' | 'power-users') {
   if (type === 'power-users') {
     columns.unshift({
       accessorKey: 'count',
-      header: 'Events',
+      header: t('profiles.column_events'),
       cell: ({ row }) => {
         const profile = row.original;
         // @ts-expect-error

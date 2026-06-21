@@ -17,6 +17,8 @@ import {
 } from '@/components/report-chart/common/axis';
 import { Skeleton } from '@/components/skeleton';
 import { getChartColor } from '@/utils/theme';
+import i18n from '@/i18n';
+import { useTranslation } from 'react-i18next';
 
 interface ChartData {
   date: string;
@@ -36,7 +38,7 @@ const { TooltipProvider, Tooltip } = createChartTooltip<
       </ChartTooltipHeader>
       <ChartTooltipItem color={getChartColor(2)}>
         <div className="flex justify-between gap-8 font-medium font-mono">
-          <span>Avg Position</span>
+          <span>{i18n.t('seo.metric_avg_position')}</span>
           <span>{item.position.toFixed(1)}</span>
         </div>
       </ChartTooltipItem>
@@ -50,6 +52,7 @@ interface GscPositionChartProps {
 }
 
 export function GscPositionChart({ data, isLoading }: GscPositionChartProps) {
+  const { t } = useTranslation();
   const yAxisProps = useYAxisProps();
 
   const chartData: ChartData[] = data.map((r) => ({
@@ -64,8 +67,10 @@ export function GscPositionChart({ data, isLoading }: GscPositionChartProps) {
   return (
     <div className="card p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-medium text-sm">Avg Position</h3>
-        <span className="text-muted-foreground text-xs">Lower is better</span>
+        <h3 className="font-medium text-sm">{t('seo.metric_avg_position')}</h3>
+        <span className="text-muted-foreground text-xs">
+          {t('seo.lower_is_better')}
+        </span>
       </div>
       {isLoading ? (
         <Skeleton className="h-40 w-full" />

@@ -3,12 +3,14 @@ import { ReplayEventItem } from '@/components/sessions/replay/replay-event-item'
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { IServiceEvent } from '@openpanel/db';
 import { useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BrowserChrome } from './browser-chrome';
 import { getEventOffsetMs } from './replay-utils';
 
 type EventWithOffset = { event: IServiceEvent; offsetMs: number };
 
 export function ReplayEventFeed({ events, replayLoading }: { events: IServiceEvent[]; replayLoading: boolean }) {
+  const { t } = useTranslation();
   const { startTime, isReady, seek } = useReplayContext();
   const currentTime = useCurrentTime(100);
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -61,7 +63,7 @@ export function ReplayEventFeed({ events, replayLoading }: { events: IServiceEve
   return (
     <BrowserChrome
       url={false}
-      controls={<span className="text-lg font-medium">Timeline</span>}
+      controls={<span className="text-lg font-medium">{t('sessions.replay_timeline')}</span>}
       className="h-full"
     >
       <ScrollArea className="flex-1 min-h-0" ref={viewportRef}>
@@ -80,7 +82,7 @@ export function ReplayEventFeed({ events, replayLoading }: { events: IServiceEve
           ))}
           {!replayLoading && visibleEvents.length === 0 && (
             <div className="py-8 text-center text-sm text-muted-foreground">
-              Events will appear as the replay plays.
+              {t('sessions.replay_events_empty')}
             </div>
           )}
           {replayLoading &&

@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { ActivityIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { EventListItem } from '../events/event-list-item';
 import {
   WidgetAbsoluteButtons,
@@ -24,6 +25,7 @@ export const LatestEvents = ({
   projectId,
   organizationId,
 }: Props) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const trpc = useTRPC();
   const query = useQuery(
@@ -55,10 +57,10 @@ export const LatestEvents = ({
   return (
     <Widget className="w-full overflow-hidden h-full" ref={ref}>
       <WidgetHead>
-        <WidgetTitle icon={ActivityIcon}>Latest Events</WidgetTitle>
+        <WidgetTitle icon={ActivityIcon}>{t('profiles.latest_events')}</WidgetTitle>
         <WidgetAbsoluteButtons>
           <Button variant="outline" size="sm" onClick={handleShowMore}>
-            All
+            {t('profiles.all')}
           </Button>
         </WidgetAbsoluteButtons>
       </WidgetHead>

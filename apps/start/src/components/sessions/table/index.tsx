@@ -44,6 +44,7 @@ import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
 import { Loader2Icon } from 'lucide-react';
 import { last } from 'ramda';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useInViewport } from 'react-in-viewport';
 import { TableFilterPills } from '@/components/filters/TableFilterPills';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
@@ -171,6 +172,7 @@ const VirtualizedSessionsTable = ({
   isLoading,
   onRowClick,
 }: VirtualizedSessionsTableProps & { onRowClick?: (row: any) => void }) => {
+  const { t } = useTranslation();
   const parentRef = useRef<HTMLDivElement>(null);
 
   const headerColumns = table.getAllLeafColumns().filter((col) => {
@@ -226,8 +228,8 @@ const VirtualizedSessionsTable = ({
 
       {!isLoading && data.length === 0 && (
         <FullPageEmptyState
-          description="Looks like you haven't inserted any events yet."
-          title="No sessions found"
+          description={t('sessions.empty_description')}
+          title={t('sessions.empty_title')}
         />
       )}
 
@@ -357,6 +359,7 @@ export const SessionsTable = ({ query }: Props) => {
 };
 
 function SessionTableToolbar({ table }: { table: Table<IServiceSession> }) {
+  const { t } = useTranslation();
   const { search, setSearch } = useSearchQueryState();
 
   return (
@@ -364,13 +367,13 @@ function SessionTableToolbar({ table }: { table: Table<IServiceSession> }) {
       <div className="flex flex-1 flex-wrap items-center gap-2">
         <AnimatedSearchInput
           onChange={setSearch}
-          placeholder="Search sessions by path, referrer..."
+          placeholder={t('sessions.search_placeholder')}
           value={search}
         />
         <TableFilterPills
           urlKey="f"
           categories={['profile', 'group', 'cohort', 'session']}
-          title="Session filters"
+          title={t('sessions.filters_title')}
         />
       </div>
       <DataTableViewOptions table={table} />

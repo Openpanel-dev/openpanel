@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { IServiceGroup } from '@openpanel/db';
+import { useTranslation } from 'react-i18next';
 
 export type IServiceGroupWithStats = IServiceGroup & {
   memberCount: number;
@@ -11,12 +12,13 @@ export type IServiceGroupWithStats = IServiceGroup & {
 };
 
 export function useGroupColumns(): ColumnDef<IServiceGroupWithStats>[] {
+  const { t } = useTranslation();
   const { organizationId, projectId } = useAppParams();
 
   return [
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: t('groups.column_name'),
       cell: ({ row }) => {
         const group = row.original;
         return (
@@ -32,7 +34,7 @@ export function useGroupColumns(): ColumnDef<IServiceGroupWithStats>[] {
     },
     {
       accessorKey: 'id',
-      header: 'ID',
+      header: t('groups.column_id'),
       cell: ({ row }) => (
         <span className="font-mono text-muted-foreground text-xs">
           {row.original.id}
@@ -41,21 +43,21 @@ export function useGroupColumns(): ColumnDef<IServiceGroupWithStats>[] {
     },
     {
       accessorKey: 'type',
-      header: 'Type',
+      header: t('groups.column_type'),
       cell: ({ row }) => (
         <Badge variant="outline">{row.original.type}</Badge>
       ),
     },
     {
       accessorKey: 'memberCount',
-      header: 'Members',
+      header: t('groups.column_members'),
       cell: ({ row }) => (
         <span className="tabular-nums">{row.original.memberCount}</span>
       ),
     },
     {
       accessorKey: 'lastActiveAt',
-      header: 'Last active',
+      header: t('groups.column_last_active'),
       size: ColumnCreatedAt.size,
       cell: ({ row }) =>
         row.original.lastActiveAt ? (
@@ -66,7 +68,7 @@ export function useGroupColumns(): ColumnDef<IServiceGroupWithStats>[] {
     },
     {
       accessorKey: 'createdAt',
-      header: 'Created',
+      header: t('groups.column_created'),
       size: ColumnCreatedAt.size,
       cell: ({ row }) => (
         <ColumnCreatedAt>{row.original.createdAt}</ColumnCreatedAt>

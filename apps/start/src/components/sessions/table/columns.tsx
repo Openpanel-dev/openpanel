@@ -7,6 +7,7 @@ import { ProjectLink } from '@/components/links';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { getProfileName } from '@/utils/getters';
+import { useTranslation } from 'react-i18next';
 
 function formatDuration(milliseconds: number): string {
   const seconds = milliseconds / 1000;
@@ -26,10 +27,11 @@ function formatDuration(milliseconds: number): string {
 }
 
 export function useColumns() {
+  const { t } = useTranslation();
   const columns: ColumnDef<IServiceSession>[] = [
     {
       accessorKey: 'createdAt',
-      header: 'Started',
+      header: t('sessions.column_started'),
       size: ColumnCreatedAt.size,
       cell: ({ row }) => {
         const item = row.original;
@@ -38,7 +40,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'id',
-      header: 'Session ID',
+      header: t('sessions.column_session_id'),
       size: 120,
       cell: ({ row }) => {
         const session = row.original;
@@ -53,10 +55,10 @@ export function useColumns() {
             </ProjectLink>
             {session.hasReplay && (
               <ProjectLink
-                aria-label="View replay"
+                aria-label={t('sessions.view_replay')}
                 className="text-muted-foreground hover:text-foreground"
                 href={`/sessions/${session.id}#replay`}
-                title="View replay"
+                title={t('sessions.view_replay')}
               >
                 <Video className="size-4" />
               </ProjectLink>
@@ -67,7 +69,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'profileId',
-      header: 'Profile',
+      header: t('sessions.column_profile'),
       size: 150,
       cell: ({ row }) => {
         const session = row.original;
@@ -94,7 +96,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'entryPath',
-      header: 'Entry Page',
+      header: t('sessions.column_entry_page'),
       size: 200,
       cell: ({ row }) => {
         const session = row.original;
@@ -107,7 +109,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'exitPath',
-      header: 'Exit Page',
+      header: t('sessions.column_exit_page'),
       size: 200,
       cell: ({ row }) => {
         const session = row.original;
@@ -122,7 +124,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'duration',
-      header: 'Duration',
+      header: t('sessions.column_duration'),
       size: 100,
       cell: ({ row }) => {
         const session = row.original;
@@ -133,16 +135,16 @@ export function useColumns() {
     },
     {
       accessorKey: 'isBounce',
-      header: 'Bounce',
+      header: t('sessions.column_bounce'),
       size: 80,
       cell: ({ row }) => {
         const session = row.original;
         return (
           <div className="text-center">
             {session.isBounce ? (
-              <span className="text-orange-600">Yes</span>
+              <span className="text-orange-600">{t('sessions.yes')}</span>
             ) : (
-              <span className="text-green-600">No</span>
+              <span className="text-green-600">{t('sessions.no')}</span>
             )}
           </div>
         );
@@ -150,7 +152,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'referrerName',
-      header: 'Referrer',
+      header: t('sessions.column_referrer'),
       size: 150,
       cell: ({ row }) => {
         const session = row.original;
@@ -165,7 +167,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'country',
-      header: 'Location',
+      header: t('sessions.column_location'),
       size: 150,
       cell: ({ row }) => {
         const session = row.original;
@@ -179,7 +181,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'os',
-      header: 'OS',
+      header: t('sessions.column_os'),
       size: 120,
       cell: ({ row }) => {
         const session = row.original;
@@ -193,7 +195,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'browser',
-      header: 'Browser',
+      header: t('sessions.column_browser'),
       size: 120,
       cell: ({ row }) => {
         const session = row.original;
@@ -207,7 +209,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'device',
-      header: 'Device',
+      header: t('sessions.column_device'),
       size: 150,
       cell: ({ row }) => {
         const session = row.original;
@@ -228,7 +230,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'screenViewCount',
-      header: 'Page views',
+      header: t('sessions.column_page_views'),
       size: 100,
       cell: ({ row }) => {
         const session = row.original;
@@ -241,7 +243,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'eventCount',
-      header: 'Events',
+      header: t('sessions.column_events'),
       size: 90,
       cell: ({ row }) => {
         const session = row.original;
@@ -252,7 +254,7 @@ export function useColumns() {
     },
     {
       accessorKey: 'revenue',
-      header: 'Revenue',
+      header: t('sessions.column_revenue'),
       size: 100,
       cell: ({ row }) => {
         const session = row.original;
@@ -267,12 +269,12 @@ export function useColumns() {
     },
     {
       accessorKey: 'deviceId',
-      header: 'Device ID',
+      header: t('sessions.column_device_id'),
       size: 120,
     },
     {
       accessorKey: 'groups',
-      header: 'Groups',
+      header: t('sessions.column_groups'),
       size: 200,
       cell: ({ row }) => {
         const { groups } = row.original;

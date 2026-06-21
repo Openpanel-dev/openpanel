@@ -11,12 +11,14 @@ import { pushModal } from '@/modals';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { EyeIcon, Globe2Icon, LockIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface OverviewShareProps {
   projectId: string;
 }
 
 export function OverviewShare({ projectId }: OverviewShareProps) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const query = useQuery(
     trpc.share.overview.queryOptions(
@@ -45,7 +47,7 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
           responsive
           loading={query.isLoading}
         >
-          {data?.public ? 'Public' : 'Private'}
+          {data?.public ? t('overview.public') : t('overview.private')}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -53,7 +55,7 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
           {(!data || data.public === false) && (
             <DropdownMenuItem onClick={() => pushModal('ShareOverviewModal')}>
               <Globe2Icon size={16} className="mr-2" />
-              Make public
+              {t('overview.make_public')}
             </DropdownMenuItem>
           )}
           {data?.public && (
@@ -63,7 +65,7 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
                 params={{ shareId: data.id }}
               >
                 <EyeIcon size={16} className="mr-2" />
-                View
+                {t('overview.view')}
               </Link>
             </DropdownMenuItem>
           )}
@@ -78,7 +80,7 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
               }}
             >
               <LockIcon size={16} className="mr-2" />
-              Make private
+              {t('overview.make_private')}
             </DropdownMenuItem>
           )}
         </DropdownMenuGroup>

@@ -1093,6 +1093,7 @@
     "decreasing": "下降",
     "flat": "持平",
     "sort_placeholder": "排序方式",
+    "sort_relevance": "相关性（AI）",
     "sort_impact_high_low": "影响（高 → 低）",
     "sort_impact_low_high": "影响（低 → 高）",
     "sort_severity_high_low": "严重程度（高 → 低）",

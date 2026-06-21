@@ -8,6 +8,7 @@ import { useAppContext } from '@/hooks/use-app-context';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
+import { useTranslation } from 'react-i18next';
 
 interface GscCannibalizationProps {
   projectId: string;
@@ -24,6 +25,7 @@ export function GscCannibalization({
   startDate,
   endDate,
 }: GscCannibalizationProps) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const { apiUrl } = useAppContext();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -90,7 +92,9 @@ export function GscCannibalization({
       <div className="border-b">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <h3 className="font-medium text-sm">Keyword Cannibalization</h3>
+            <h3 className="font-medium text-sm">
+              {t('seo.keyword_cannibalization')}
+            </h3>
             {items.length > 0 && (
               <span className="rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground text-xs">
                 {items.length}
@@ -101,8 +105,12 @@ export function GscCannibalization({
             <div className="flex shrink-0 items-center gap-2">
               <span className="whitespace-nowrap text-muted-foreground text-xs">
                 {items.length === 0
-                  ? '0 results'
-                  : `${rangeStart}-${rangeEnd} of ${items.length}`}
+                  ? t('seo.zero_results')
+                  : t('seo.results_range', {
+                      start: rangeStart,
+                      end: rangeEnd,
+                      total: items.length,
+                    })}
               </span>
               <Pagination
                 canNextPage={page < pageCount - 1}
@@ -122,7 +130,7 @@ export function GscCannibalization({
               setSearch(e.target.value);
               setPage(0);
             }}
-            placeholder="Search keywords"
+            placeholder={t('seo.search_keywords')}
             type="search"
             value={search}
           />
@@ -156,7 +164,7 @@ export function GscCannibalization({
                     )}
                   >
                     <AlertCircleIcon className="size-3" />
-                    {item.pages.length} pages
+                    {t('seo.pages_count', { count: item.pages.length })}
                   </div>
                   <span className="truncate font-medium text-sm">
                     {item.query}
@@ -164,8 +172,10 @@ export function GscCannibalization({
                 </div>
                 <div className="flex shrink-0 items-center gap-4">
                   <span className="whitespace-nowrap font-mono text-muted-foreground text-xs">
-                    {item.totalImpressions.toLocaleString()} impr ·{' '}
-                    {(avgCtr * 100).toFixed(1)}% avg CTR
+                    {t('seo.impressions_avg_ctr_summary', {
+                      impressions: item.totalImpressions.toLocaleString(),
+                      ctr: (avgCtr * 100).toFixed(1),
+                    })}
                   </span>
                   <ChevronsUpDownIcon
                     className={cn(
@@ -179,12 +189,11 @@ export function GscCannibalization({
               {isOpen && (
                 <div className="border-t bg-muted/20 px-4 py-3">
                   <p className="mb-3 text-muted-foreground text-xs leading-normal">
-                    These pages all rank for{' '}
+                    {t('seo.cannibalization_advice_prefix')}{' '}
                     <span className="font-medium text-foreground">
                       "{item.query}"
                     </span>
-                    . Consider consolidating weaker pages into the top-ranking
-                    one to concentrate link equity and avoid splitting clicks.
+                    {t('seo.cannibalization_advice_suffix')}
                   </p>
                   <div className="space-y-1.5">
                     {item.pages.map((page, idx) => {
@@ -236,9 +245,11 @@ export function GscCannibalization({
                             </span>
                           )}
                           <span className="shrink-0 whitespace-nowrap font-mono text-muted-foreground text-xs">
-                            pos {page.position.toFixed(1)} ·{' '}
-                            {(page.ctr * 100).toFixed(1)}% CTR ·{' '}
-                            {page.impressions.toLocaleString()} impr
+                            {t('seo.page_metrics_summary', {
+                              position: page.position.toFixed(1),
+                              ctr: (page.ctr * 100).toFixed(1),
+                              impressions: page.impressions.toLocaleString(),
+                            })}
                           </span>
                         </button>
                       );

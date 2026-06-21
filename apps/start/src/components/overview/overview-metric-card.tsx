@@ -5,6 +5,7 @@ import { timeWindows } from '@openpanel/constants';
 import { getPreviousMetric } from '@openpanel/common';
 import type { IInterval } from '@openpanel/validation';
 import { type ReactNode, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bar } from '../charts/bar';
 import { BarChart } from '../charts/bar-chart';
 import {
@@ -55,6 +56,7 @@ export function OverviewMetricCard({
   interval = 'day',
   range,
 }: MetricCardProps) {
+  const { t } = useTranslation();
   const formatDate = useFormatDateInterval({ interval, short: false });
   const [hover, setHover] = useState<
     OPStatHoverState<{ date: string; current: number; previous?: number }>
@@ -67,7 +69,8 @@ export function OverviewMetricCard({
     : (metric.previous ?? null);
   const displayLabel = hovered
     ? formatDate(new Date(hovered.date))
-    : (range ? timeWindows[range]?.label : 'Total') || 'Total';
+    : (range ? timeWindows[range]?.label : t('overview.total')) ||
+      t('overview.total');
 
   const diff = getPreviousMetric(displayValue, displayPrev);
 

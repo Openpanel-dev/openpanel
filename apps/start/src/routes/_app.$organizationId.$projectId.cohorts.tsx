@@ -21,6 +21,7 @@ import {
   TrashIcon,
   UsersIcon,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute(
@@ -42,6 +43,7 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t } = useTranslation();
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const query = useQuery(
@@ -57,7 +59,9 @@ function Component() {
       onError: handleError,
       onSuccess() {
         query.refetch();
-        toast('Success', { description: 'Cohort deleted.' });
+        toast(t('cohorts.success'), {
+          description: t('cohorts.cohort_deleted'),
+        });
       },
     }),
   );
@@ -67,7 +71,9 @@ function Component() {
       onError: handleError,
       onSuccess() {
         query.refetch();
-        toast('Success', { description: 'Cohort refresh queued.' });
+        toast(t('cohorts.success'), {
+          description: t('cohorts.cohort_refresh_queued'),
+        });
       },
     }),
   );
@@ -82,20 +88,20 @@ function Component() {
       const csv = cohortMembersToCSV(result.profileIds);
       downloadCSV(csv, `${cohortName}-members.csv`);
     } catch {
-      toast.error('Failed to download cohort members');
+      toast.error(t('cohorts.download_members_failed'));
     }
   }
 
   if (cohorts.length === 0) {
     return (
-      <FullPageEmptyState title="No cohorts" icon={UsersIcon}>
-        <p>You have not created any cohorts for this project yet</p>
+      <FullPageEmptyState title={t('cohorts.empty_title')} icon={UsersIcon}>
+        <p>{t('cohorts.empty_description')}</p>
         <Button
           onClick={() => pushModal('AddCohort')}
           className="mt-14"
           icon={PlusIcon}
         >
-          Create cohort
+          {t('cohorts.create_cohort')}
         </Button>
       </FullPageEmptyState>
     );
@@ -104,13 +110,13 @@ function Component() {
   return (
     <PageContainer>
       <PageHeader
-        title="Cohorts"
-        description="Create and manage user segments based on events and properties"
+        title={t('cohorts.title')}
+        description={t('cohorts.description')}
         className="mb-8"
         actions={
           <Button icon={PlusIcon} onClick={() => pushModal('AddCohort')}>
-            <span className="max-sm:hidden">Create cohort</span>
-            <span className="sm:hidden">Cohort</span>
+            <span className="max-sm:hidden">{t('cohorts.create_cohort')}</span>
+            <span className="sm:hidden">{t('cohorts.cohort')}</span>
           </Button>
         }
       />
@@ -137,19 +143,20 @@ function Component() {
                       <UsersIcon size={14} />
                       <span>
                         {displayCount.toLocaleString()}{' '}
-                        {displayCount === 1 ? 'member' : 'members'}
+                        {t('cohorts.member_count', { count: displayCount })}
                       </span>
                     </div>
                     {cohort.lastComputedAt && (
                       <div className={cn('text-xs')}>
-                        Updated{' '}
-                        {format(cohort.lastComputedAt, 'MMM d, HH:mm')}
+                        {t('cohorts.updated_at', {
+                          date: format(cohort.lastComputedAt, 'MMM d, HH:mm'),
+                        })}
                       </div>
                     )}
                   </div>
                   {cohort.isStatic && (
                     <div className="mt-1 inline-flex w-fit rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-                      Static
+                      {t('cohorts.static')}
                     </div>
                   )}
                 </div>
@@ -162,7 +169,7 @@ function Component() {
                     onClick={() => handleDownload(cohort.id, cohort.name)}
                   >
                     <DownloadIcon size={16} />
-                    Download
+                    {t('cohorts.download')}
                   </button>
                 </CardActionsItem>
                 {!cohort.isStatic && (
@@ -174,7 +181,7 @@ function Component() {
                       }}
                     >
                       <RefreshCwIcon size={16} />
-                      Refresh
+                      {t('cohorts.refresh')}
                     </button>
                   </CardActionsItem>
                 )}
@@ -192,7 +199,7 @@ function Component() {
                     }}
                   >
                     <PencilIcon size={16} />
-                    Edit
+                    {t('cohorts.edit')}
                   </button>
                 </CardActionsItem>
                 <CardActionsItem className="w-full text-destructive" asChild>
@@ -200,14 +207,14 @@ function Component() {
                     type="button"
                     onClick={() => {
                       showConfirm({
-                        title: 'Delete cohort',
-                        text: 'Are you sure you want to delete this cohort? This action cannot be undone.',
+                        title: t('cohorts.delete_cohort'),
+                        text: t('cohorts.delete_confirm_description'),
                         onConfirm: () => deletion.mutate({ id: cohort.id }),
                       });
                     }}
                   >
                     <TrashIcon size={16} />
-                    Delete
+                    {t('cohorts.delete')}
                   </button>
                 </CardActionsItem>
               </CardActions>

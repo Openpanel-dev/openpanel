@@ -2,6 +2,7 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { eventQueryFiltersParser } from '@/hooks/use-event-query-filters';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
@@ -25,6 +26,7 @@ export default function OverviewTopEvents({
   projectId,
   shareId,
 }: OverviewTopEventsProps) {
+  const { t } = useTranslation();
   const { range, startDate, endDate } = useOverviewOptions();
   const [filters] = useEventQueryFilters();
   const { organizationId } = useAppParams();
@@ -37,23 +39,23 @@ export default function OverviewTopEvents({
 
   const [widget, setWidget, widgets] = useOverviewWidgetV2('ev', {
     your: {
-      title: 'Events',
-      btn: 'Events',
+      title: t('overview.events'),
+      btn: t('overview.events'),
       meta: {
         type: 'events' as const,
       },
     },
     conversions: {
-      title: 'Conversions',
-      btn: 'Conversions',
+      title: t('overview.conversions'),
+      btn: t('overview.conversions'),
       hide: !conversions || conversions.length === 0,
       meta: {
         type: 'conversions' as const,
       },
     },
     link_out: {
-      title: 'Link out',
-      btn: 'Link out',
+      title: t('overview.link_out'),
+      btn: t('overview.link_out'),
       meta: {
         type: 'linkOut' as const,
       },
@@ -157,7 +159,9 @@ export default function OverviewTopEvents({
           onTabChange={setWidget}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          searchPlaceholder={t('overview.search_column', {
+            column: widget.btn.toLowerCase(),
+          })}
           className="border-b-0 pb-2"
         />
         <WidgetBody className="p-0">

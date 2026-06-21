@@ -16,6 +16,7 @@ import {
   TargetIcon,
   Trash2Icon,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
@@ -44,6 +45,7 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { projectId, organizationId, cohortId } = Route.useParams();
   const trpc = useTRPC();
@@ -70,7 +72,9 @@ function Component() {
   const refreshMutation = useMutation(
     trpc.cohort.refresh.mutationOptions({
       onSuccess() {
-        toast('Success', { description: 'Cohort refresh queued.' });
+        toast(t('cohorts.success'), {
+          description: t('cohorts.cohort_refresh_queued'),
+        });
         queryClient.invalidateQueries(trpc.cohort.get.pathFilter());
       },
       onError: handleError,
@@ -86,17 +90,17 @@ function Component() {
       const csv = cohortMembersToCSV(result.profileIds);
       downloadCSV(csv, `${c.name}-members.csv`);
     } catch {
-      toast.error('Failed to download cohort members');
+      toast.error(t('cohorts.download_members_failed'));
     }
   }
 
   const { activeTab, tabs } = usePageTabs([
     {
       id: '/$organizationId/$projectId/cohorts/$cohortId',
-      label: 'Overview',
+      label: t('cohorts.overview'),
     },
-    { id: 'members', label: 'Members' },
-    { id: 'events', label: 'Events' },
+    { id: 'members', label: t('cohorts.members') },
+    { id: 'events', label: t('cohorts.events') },
   ]);
 
   const handleTabChange = (tabId: string) => {
@@ -113,7 +117,7 @@ function Component() {
       <PageContainer>
         <div className="flex flex-col items-center justify-center gap-3 py-24 text-muted-foreground">
           <TargetIcon className="size-10 opacity-30" />
-          <p className="text-sm">Cohort not found</p>
+          <p className="text-sm">{t('cohorts.not_found')}</p>
         </div>
       </PageContainer>
     );
@@ -130,7 +134,7 @@ function Component() {
               variant="outline"
             >
               <DownloadIcon className="mr-2 size-4" />
-              Download
+              {t('cohorts.download')}
             </Button>
             {!c.isStatic && (
               <Button
@@ -140,7 +144,7 @@ function Component() {
                 variant="outline"
               >
                 <RefreshCwIcon className="mr-2 size-4" />
-                Refresh
+                {t('cohorts.refresh')}
               </Button>
             )}
             <Button
@@ -157,13 +161,15 @@ function Component() {
               variant="outline"
             >
               <PencilIcon className="mr-2 size-4" />
-              Edit
+              {t('cohorts.edit')}
             </Button>
             <Button
               onClick={() =>
                 showConfirm({
-                  title: 'Delete cohort',
-                  text: `Are you sure you want to delete "${c.name}"? This action cannot be undone.`,
+                  title: t('cohorts.delete_cohort'),
+                  text: t('cohorts.delete_named_confirm_description', {
+                    name: c.name,
+                  }),
                   onConfirm: () => deleteMutation.mutate({ id: c.id }),
                 })
               }
@@ -171,7 +177,7 @@ function Component() {
               variant="outline"
             >
               <Trash2Icon className="mr-2 size-4" />
-              Delete
+              {t('cohorts.delete')}
             </Button>
           </div>
         }
@@ -182,7 +188,7 @@ function Component() {
             <span className="truncate">{c.name}</span>
             {c.isStatic && (
               <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-                Static
+                {t('cohorts.static')}
               </span>
             )}
           </div>

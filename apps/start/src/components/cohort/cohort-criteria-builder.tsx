@@ -13,6 +13,7 @@ import type {
   PropertyBasedCohortDefinition,
 } from '@openpanel/validation';
 import { PlusIcon, TrashIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { PureFilterItem } from '../report/sidebar/filters/FilterItem';
 import { PropertiesCombobox } from '../report/sidebar/PropertiesCombobox';
 
@@ -25,6 +26,7 @@ export function CohortCriteriaBuilder({
   definition,
   onChange,
 }: CohortCriteriaBuilderProps) {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const eventNames = useEventNames({ projectId });
 
@@ -51,7 +53,7 @@ export function CohortCriteriaBuilder({
           onClick={() => handleTypeChange('event')}
           className="flex-1"
         >
-          Event-based
+          {t('cohorts.event_based')}
         </Button>
         <Button
           type="button"
@@ -59,7 +61,7 @@ export function CohortCriteriaBuilder({
           onClick={() => handleTypeChange('property')}
           className="flex-1"
         >
-          Property-based
+          {t('cohorts.property_based')}
         </Button>
       </div>
 
@@ -89,6 +91,7 @@ function EventBasedBuilder({
   onChange,
   eventNames: eventNamesArray,
 }: EventBasedBuilderProps) {
+  const { t } = useTranslation();
   const eventNames = eventNamesArray.map((event) => ({
     value: event.name,
     label: event.name,
@@ -145,17 +148,17 @@ function EventBasedBuilder({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Match</span>
+        <span className="text-sm text-muted-foreground">{t('cohorts.match')}</span>
         <DropdownMenuComposed
           onChange={updateOperator}
           items={[
-            { value: 'or', label: 'Any of these events' },
-            { value: 'and', label: 'All of these events' },
+            { value: 'or', label: t('cohorts.any_of_these_events') },
+            { value: 'and', label: t('cohorts.all_of_these_events') },
           ]}
-          label="Operator"
+          label={t('cohorts.operator')}
         >
           <Button variant="outline" size="sm">
-            {definition.criteria.operator === 'or' ? 'Any' : 'All'}
+            {definition.criteria.operator === 'or' ? t('cohorts.any') : t('cohorts.all')}
           </Button>
         </DropdownMenuComposed>
       </div>
@@ -176,7 +179,7 @@ function EventBasedBuilder({
         onClick={addEventCriteria}
         icon={PlusIcon}
       >
-        Add event criteria
+        {t('cohorts.add_event_criteria')}
       </Button>
     </div>
   );
@@ -195,6 +198,7 @@ function EventCriteriaItem({
   onRemove,
   eventNames,
 }: EventCriteriaItemProps) {
+  const { t } = useTranslation();
   const addFilter = (propertyName: string) => {
     onChange({
       ...criteria,
@@ -247,14 +251,14 @@ function EventCriteriaItem({
     <div className="rounded border p-4">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="flex-1">
-          <label className="mb-1 block text-sm font-medium">Event</label>
+          <label className="mb-1 block text-sm font-medium">{t('cohorts.event')}</label>
           <ComboboxAdvanced
             items={eventNames}
             value={criteria.name ? [criteria.name] : []}
             onChange={(values) =>
               onChange({ ...criteria, name: String(values[0] ?? '') })
             }
-            placeholder="Select event..."
+            placeholder={t('cohorts.select_event_placeholder')}
             className="w-full"
           />
         </div>
@@ -270,7 +274,7 @@ function EventCriteriaItem({
       </div>
 
       <div className="mb-3">
-        <label className="mb-1 block text-sm font-medium">Frequency</label>
+        <label className="mb-1 block text-sm font-medium">{t('cohorts.frequency')}</label>
         <div className="flex gap-2">
           <DropdownMenuComposed
             onChange={(operator) =>
@@ -283,16 +287,16 @@ function EventCriteriaItem({
               })
             }
             items={[
-              { value: 'gte', label: 'At least' },
-              { value: 'eq', label: 'Exactly' },
-              { value: 'lte', label: 'At most' },
+              { value: 'gte', label: t('cohorts.at_least') },
+              { value: 'eq', label: t('cohorts.exactly') },
+              { value: 'lte', label: t('cohorts.at_most') },
             ]}
-            label="Operator"
+            label={t('cohorts.operator')}
           >
             <Button variant="outline" size="sm">
-              {criteria.frequency?.operator === 'gte' && 'At least'}
-              {criteria.frequency?.operator === 'eq' && 'Exactly'}
-              {criteria.frequency?.operator === 'lte' && 'At most'}
+              {criteria.frequency?.operator === 'gte' && t('cohorts.at_least')}
+              {criteria.frequency?.operator === 'eq' && t('cohorts.exactly')}
+              {criteria.frequency?.operator === 'lte' && t('cohorts.at_most')}
             </Button>
           </DropdownMenuComposed>
           <input
@@ -311,13 +315,13 @@ function EventCriteriaItem({
             className="w-20 rounded border px-2 py-1 text-sm"
           />
           <span className="flex items-center text-sm text-muted-foreground">
-            times
+            {t('cohorts.times')}
           </span>
         </div>
       </div>
 
       <div className="mb-3">
-        <label className="mb-1 block text-sm font-medium">Timeframe</label>
+        <label className="mb-1 block text-sm font-medium">{t('cohorts.timeframe')}</label>
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
             <DropdownMenuComposed
@@ -353,19 +357,19 @@ function EventCriteriaItem({
                 }
               }}
               items={[
-                { value: 'relative', label: 'Last' },
-                { value: 'since', label: 'Since' },
-                { value: 'between', label: 'Between' },
+                { value: 'relative', label: t('cohorts.last') },
+                { value: 'since', label: t('cohorts.since') },
+                { value: 'between', label: t('cohorts.between') },
               ]}
-              label="Type"
+              label={t('cohorts.type')}
             >
               <Button variant="outline" size="sm">
                 {criteria.timeframe.type === 'relative'
-                  ? 'Last'
+                  ? t('cohorts.last')
                   : criteria.timeframe.type === 'absolute' &&
                       !criteria.timeframe.end
-                    ? 'Since'
-                    : 'Between'}
+                    ? t('cohorts.since')
+                    : t('cohorts.between')}
               </Button>
             </DropdownMenuComposed>
             {criteria.timeframe.type === 'relative' ? (
@@ -377,20 +381,20 @@ function EventCriteriaItem({
                   })
                 }
                 items={[
-                  { value: '7d', label: '7 days' },
-                  { value: '30d', label: '30 days' },
-                  { value: '90d', label: '90 days' },
-                  { value: '180d', label: '180 days' },
-                  { value: '365d', label: '365 days' },
+                  { value: '7d', label: t('cohorts.period_7_days') },
+                  { value: '30d', label: t('cohorts.period_30_days') },
+                  { value: '90d', label: t('cohorts.period_90_days') },
+                  { value: '180d', label: t('cohorts.period_180_days') },
+                  { value: '365d', label: t('cohorts.period_365_days') },
                 ]}
-                label="Period"
+                label={t('cohorts.period')}
               >
                 <Button variant="outline" size="sm">
-                  {criteria.timeframe.value === '7d' && '7 days'}
-                  {criteria.timeframe.value === '30d' && '30 days'}
-                  {criteria.timeframe.value === '90d' && '90 days'}
-                  {criteria.timeframe.value === '180d' && '180 days'}
-                  {criteria.timeframe.value === '365d' && '365 days'}
+                  {criteria.timeframe.value === '7d' && t('cohorts.period_7_days')}
+                  {criteria.timeframe.value === '30d' && t('cohorts.period_30_days')}
+                  {criteria.timeframe.value === '90d' && t('cohorts.period_90_days')}
+                  {criteria.timeframe.value === '180d' && t('cohorts.period_180_days')}
+                  {criteria.timeframe.value === '365d' && t('cohorts.period_365_days')}
                 </Button>
               </DropdownMenuComposed>
             ) : !criteria.timeframe.end ? (
@@ -427,7 +431,7 @@ function EventCriteriaItem({
                   }
                   className="flex-1 rounded border px-2 py-1 text-sm"
                 />
-                <span className="text-sm text-muted-foreground">to</span>
+                <span className="text-sm text-muted-foreground">{t('cohorts.to')}</span>
                 <input
                   type="date"
                   value={criteria.timeframe.end}
@@ -454,7 +458,7 @@ function EventCriteriaItem({
       {criteria.filters.length > 0 && (
         <div className="mb-2">
           <label className="mb-2 block text-sm font-medium">
-            Event Filters
+            {t('cohorts.event_filters')}
           </label>
           <div className="space-y-2">
             {criteria.filters.map((filter) => (
@@ -488,7 +492,7 @@ function EventCriteriaItem({
             icon={PlusIcon}
             disabled={!criteria.name}
           >
-            Add filter
+            {t('filters.add_filter')}
           </Button>
         )}
       </PropertiesCombobox>
@@ -505,6 +509,7 @@ function PropertyBasedBuilder({
   definition,
   onChange,
 }: PropertyBasedBuilderProps) {
+  const { t } = useTranslation();
   const addPropertyFilter = (propertyName: string) => {
     onChange({
       ...definition,
@@ -577,17 +582,17 @@ function PropertyBasedBuilder({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Match</span>
+        <span className="text-sm text-muted-foreground">{t('cohorts.match')}</span>
         <DropdownMenuComposed
           onChange={updateOperator}
           items={[
-            { value: 'or', label: 'Any of these properties' },
-            { value: 'and', label: 'All of these properties' },
+            { value: 'or', label: t('cohorts.any_of_these_properties') },
+            { value: 'and', label: t('cohorts.all_of_these_properties') },
           ]}
-          label="Operator"
+          label={t('cohorts.operator')}
         >
           <Button variant="outline" size="sm">
-            {definition.criteria.operator === 'or' ? 'Any' : 'All'}
+            {definition.criteria.operator === 'or' ? t('cohorts.any') : t('cohorts.all')}
           </Button>
         </DropdownMenuComposed>
       </div>
@@ -621,7 +626,7 @@ function PropertyBasedBuilder({
             onClick={() => setOpen(true)}
             icon={PlusIcon}
           >
-            Add property filter
+            {t('cohorts.add_property_filter')}
           </Button>
         )}
       </PropertiesCombobox>

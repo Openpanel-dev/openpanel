@@ -1,6 +1,7 @@
 import { useReplayContext } from '@/components/sessions/replay/replay-context';
 import type { ReplayPlayerInstance } from '@/components/sessions/replay/replay-context';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import 'rrweb-player/dist/style.css';
 
@@ -37,6 +38,7 @@ export function ReplayPlayer({
 }: {
   events: Array<{ type: number; data: unknown; timestamp: number }>;
 }) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<ReplayPlayerInstance | null>(null);
   const {
@@ -167,7 +169,7 @@ export function ReplayPlayer({
   if (importError) {
     return (
       <div className="flex h-[320px] items-center justify-center bg-black text-sm text-muted-foreground">
-        Failed to load replay player.
+        {t('sessions.replay_player_load_failed')}
       </div>
     );
   }

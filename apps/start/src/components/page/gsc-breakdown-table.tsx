@@ -3,6 +3,7 @@ import { OverviewWidgetTable } from '@/components/overview/overview-widget-table
 import { Skeleton } from '@/components/skeleton';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 interface GscBreakdownTableProps {
   projectId: string;
@@ -11,6 +12,7 @@ interface GscBreakdownTableProps {
 }
 
 export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableProps) {
+  const { t } = useTranslation();
   const { range, startDate, endDate } = useOverviewOptions();
   const trpc = useTRPC();
 
@@ -42,8 +44,9 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
       : ((queryQuery.data as { pages?: unknown[] } | undefined)?.pages ?? []) as Record<string, string | number>[];
 
   const breakdownKey = type === 'page' ? 'query' : 'page';
-  const breakdownLabel = type === 'page' ? 'Query' : 'Page';
-  const pluralLabel = type === 'page' ? 'queries' : 'pages';
+  const breakdownLabel = type === 'page' ? t('seo.key_query') : t('seo.key_page');
+  const pluralLabel =
+    type === 'page' ? t('seo.top_queries') : t('seo.top_pages');
 
   const maxClicks = Math.max(
     ...(breakdownRows as { clicks: number }[]).map((r) => r.clicks),
@@ -53,7 +56,7 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
   return (
     <div className="card overflow-hidden">
       <div className="border-b p-4">
-        <h3 className="font-medium text-sm">Top {pluralLabel}</h3>
+        <h3 className="font-medium text-sm">{pluralLabel}</h3>
       </div>
       {isLoading ? (
         <OverviewWidgetTable
@@ -62,10 +65,10 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
           getColumnPercentage={() => 0}
           columns={[
             { name: breakdownLabel, width: 'w-full', render: () => <Skeleton className="h-4 w-2/3" /> },
-            { name: 'Clicks', width: '70px', render: () => <Skeleton className="h-4 w-10" /> },
-            { name: 'Impr.', width: '70px', render: () => <Skeleton className="h-4 w-10" /> },
-            { name: 'CTR', width: '60px', render: () => <Skeleton className="h-4 w-8" /> },
-            { name: 'Pos.', width: '55px', render: () => <Skeleton className="h-4 w-8" /> },
+            { name: t('seo.metric_clicks'), width: '70px', render: () => <Skeleton className="h-4 w-10" /> },
+            { name: t('seo.metric_impressions_short'), width: '70px', render: () => <Skeleton className="h-4 w-10" /> },
+            { name: t('seo.metric_ctr'), width: '60px', render: () => <Skeleton className="h-4 w-8" /> },
+            { name: t('seo.metric_position_short'), width: '55px', render: () => <Skeleton className="h-4 w-8" /> },
           ]}
         />
       ) : (
@@ -88,7 +91,7 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
               },
             },
             {
-              name: 'Clicks',
+              name: t('seo.metric_clicks'),
               width: '70px',
               getSortValue: (item) => item.clicks as number,
               render(item) {
@@ -100,7 +103,7 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
               },
             },
             {
-              name: 'Impr.',
+              name: t('seo.metric_impressions_short'),
               width: '70px',
               getSortValue: (item) => item.impressions as number,
               render(item) {
@@ -112,7 +115,7 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
               },
             },
             {
-              name: 'CTR',
+              name: t('seo.metric_ctr'),
               width: '60px',
               getSortValue: (item) => item.ctr as number,
               render(item) {
@@ -124,7 +127,7 @@ export function GscBreakdownTable({ projectId, value, type }: GscBreakdownTableP
               },
             },
             {
-              name: 'Pos.',
+              name: t('seo.metric_position_short'),
               width: '55px',
               getSortValue: (item) => item.position as number,
               render(item) {

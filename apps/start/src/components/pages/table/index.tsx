@@ -13,6 +13,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type PageRow, useColumns } from './columns';
 
 interface PagesTableProps {
@@ -20,6 +21,7 @@ interface PagesTableProps {
 }
 
 export function PagesTable({ projectId }: PagesTableProps) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const { range, interval, startDate, endDate } = useOverviewOptions();
   const { debouncedSearch, setSearch, search } = useSearchQueryState();
@@ -107,7 +109,7 @@ export function PagesTable({ projectId }: PagesTableProps) {
     <>
       <DataTableToolbarContainer>
         <AnimatedSearchInput
-          placeholder="Search pages"
+          placeholder={t('pages.search_placeholder')}
           value={search ?? ''}
           onChange={setSearch}
         />
@@ -121,10 +123,10 @@ export function PagesTable({ projectId }: PagesTableProps) {
         table={table}
         loading={pagesQuery.isLoading}
         empty={{
-          title: 'No pages',
+          title: t('pages.empty_title'),
           description: debouncedSearch
-            ? `No pages found matching "${debouncedSearch}"`
-            : 'Integrate our web SDK to your site to get pages here.',
+            ? t('pages.empty_search_description', { search: debouncedSearch })
+            : t('pages.empty_description'),
         }}
         onRowClick={(row) => {
           if (!isGscConnected) {

@@ -8,6 +8,7 @@ import { MostEvents } from '@/components/profiles/most-events';
 import { PopularRoutes } from '@/components/profiles/popular-routes';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/cohorts_/$cohortId/_tabs/'
@@ -42,6 +43,7 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t } = useTranslation();
   const { projectId, cohortId } = Route.useParams();
   const trpc = useTRPC();
 
@@ -69,19 +71,14 @@ function Component() {
       {notComputed && (
         <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-blue-900 text-sm">
           <InfoIcon className="size-4 shrink-0" />
-          <span>
-            This cohort hasn&apos;t been computed yet. Membership will appear
-            within a minute.
-          </span>
+          <span>{t('cohorts.not_computed_notice')}</span>
         </div>
       )}
 
       {isCapped && (
         <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
           <InfoIcon className="size-4 shrink-0" />
-          <span>
-            Capped at 10,000 members — consider narrowing the criteria.
-          </span>
+          <span>{t('cohorts.capped_notice')}</span>
         </div>
       )}
 
@@ -90,7 +87,7 @@ function Component() {
           data={[]}
           id="profileCount"
           isLoading={false}
-          label="Members"
+          label={t('cohorts.members')}
           metric={{ current: c.profileCount, previous: null }}
           unit=""
         />
@@ -98,7 +95,7 @@ function Component() {
           data={[]}
           id="lastComputedAt"
           isLoading={false}
-          label="Last computed"
+          label={t('cohorts.last_computed')}
           metric={{
             current: c.lastComputedAt
               ? new Date(c.lastComputedAt).getTime()
@@ -111,7 +108,7 @@ function Component() {
           data={[]}
           id="createdAt"
           isLoading={false}
-          label="Created"
+          label={t('cohorts.created')}
           metric={{
             current: new Date(c.createdAt).getTime(),
             previous: null,
