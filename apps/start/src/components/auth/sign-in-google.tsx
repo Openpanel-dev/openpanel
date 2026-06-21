@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 
@@ -11,9 +12,10 @@ export function SignInGoogle({
   inviteId?: string;
   isLastUsed?: boolean;
 }) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const mutation = useMutation(
-    trpc.auth.signInOAuth.mutationOptions({
+    trpc.auth.sign_inOAuth.mutationOptions({
       onSuccess(res) {
         if (res.url) {
           window.location.href = res.url;
@@ -23,10 +25,10 @@ export function SignInGoogle({
   );
   const title = () => {
     if (type === 'sign-in') {
-      return 'Sign in with Google';
+      return t('auth.sign_in_with_google');
     }
     if (type === 'sign-up') {
-      return 'Sign up with Google';
+      return t('auth.sign_up_with_google');
     }
   };
   return (
@@ -67,7 +69,7 @@ export function SignInGoogle({
       </Button>
       {isLastUsed && (
         <span className="absolute -top-2 right-3 rounded-full bg-highlight px-1.5 py-0.5 font-medium text-[10px] text-white leading-none">
-          Used last time
+          {t('auth.used_last_time')}
         </span>
       )}
     </div>

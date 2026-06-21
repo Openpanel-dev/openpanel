@@ -8,14 +8,21 @@ import ConnectWeb from '@/components/onboarding/connect-web';
 import Syntax from '@/components/syntax';
 import { Button, LinkButton } from '@/components/ui/button';
 import { useClientSecret } from '@/hooks/use-client-secret';
+import i18n from '@/i18n';
 import { useTRPC } from '@/integrations/trpc/react';
 import { clipboard } from '@/utils/clipboard';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
   head: () => ({
     meta: [
-      { title: createEntityTitle('Connect data', PAGE_TITLES.ONBOARDING) },
+      {
+        title: createEntityTitle(
+          i18n.t('onboarding.step_connect_data'),
+          PAGE_TITLES.ONBOARDING
+        ),
+      },
     ],
   }),
   beforeLoad: ({ context }) => {
@@ -35,6 +42,7 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
 });
 
 function Component() {
+  const { t } = useTranslation();
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const { data: project } = useQuery(
@@ -46,9 +54,9 @@ function Component() {
   if (!client) {
     return (
       <FullPageEmptyState
-        description="The project you are looking for does not exist. Please reload the page."
+        description={t('onboarding.connect_project_missing_description')}
         icon={XIcon}
-        title="No project found"
+        title={t('onboarding.connect_project_missing_title')}
       />
     );
   }
@@ -72,7 +80,7 @@ function Component() {
             <div className="row items-center justify-between gap-4">
               <div className="flex items-center gap-2 font-bold text-xl capitalize">
                 <LockIcon className="size-4" />
-                Client credentials
+                {t('onboarding.connect_client_credentials_title')}
               </div>
               <div className="row gap-2">
                 <Button
@@ -80,14 +88,14 @@ function Component() {
                   onClick={() => clipboard(credentials)}
                   variant="outline"
                 >
-                  Copy
+                  {t('onboarding.action_copy')}
                 </Button>
                 <Button
                   icon={DownloadIcon}
                   onClick={() => download()}
                   variant="outline"
                 >
-                  Save
+                  {t('onboarding.action_save')}
                 </Button>
               </div>
             </div>
@@ -110,7 +118,7 @@ function Component() {
           params={{ projectId }}
           size="lg"
         >
-          Next
+          {t('onboarding.action_next')}
         </LinkButton>
       </ButtonContainer>
     </div>

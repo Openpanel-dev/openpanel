@@ -25,14 +25,27 @@ import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
 import { useClientSecret } from '@/hooks/use-client-secret';
+import i18n from '@/i18n';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
+import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
+import { useTranslation } from 'react-i18next';
 
 const validateSearch = z.object({
   inviteId: z.string().optional(),
 });
 export const Route = createFileRoute('/_steps/onboarding/project')({
   component: Component,
+  head: () => ({
+    meta: [
+      {
+        title: createEntityTitle(
+          i18n.t('onboarding.step_create_project'),
+          PAGE_TITLES.ONBOARDING
+        ),
+      },
+    ],
+  }),
   validateSearch,
   beforeLoad: ({ context }) => {
     if (!context.session?.session) {
@@ -63,6 +76,7 @@ export const Route = createFileRoute('/_steps/onboarding/project')({
 type IForm = z.infer<typeof zOnboardingProject>;
 
 function Component() {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data: organizations } = useQuery(
@@ -158,7 +172,7 @@ function Component() {
             onClick={() => setCreateNewOrg(true)}
             type="button"
           >
-            Create new workspace
+            {t('onboarding.project_create_new_workspace')}
           </button>
           <button
             className={cn(
@@ -174,7 +188,7 @@ function Component() {
             onClick={() => setCreateNewOrg(false)}
             type="button"
           >
-            Use existing workspace
+            {t('onboarding.project_use_existing_workspace')}
           </button>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
@@ -182,16 +196,16 @@ function Component() {
             <>
               <InputWithLabel
                 error={form.formState.errors.organization?.message}
-                info="This is the name of your workspace. It can be anything you like."
-                label="Workspace name"
-                placeholder="Eg. The Music Company"
+                info={t('onboarding.project_workspace_name_help')}
+                label={t('onboarding.field_workspace_name')}
+                placeholder={t('onboarding.project_workspace_name_placeholder')}
                 {...form.register('organization')}
               />
               <Controller
                 control={form.control}
                 name="timezone"
                 render={({ field }) => (
-                  <WithLabel label="Timezone">
+                  <WithLabel label={t('onboarding.field_timezone')}>
                     <Combobox
                       className="w-full"
                       items={Intl.supportedValuesOf('timeZone').map((item) => ({
@@ -199,7 +213,7 @@ function Component() {
                         label: item,
                       }))}
                       onChange={field.onChange}
-                      placeholder="Select timezone"
+                      placeholder={t('onboarding.project_select_timezone')}
                       searchable
                       value={field.value}
                     />
@@ -229,7 +243,7 @@ function Component() {
                 name="organizationId"
                 render={({ field, formState }) => {
                   return (
-                    <WithLabel label="Workspace">
+                    <WithLabel label={t('onboarding.field_workspace')}>
                       <Combobox
                         className="w-full"
                         error={formState.errors.organizationId?.message}
@@ -243,7 +257,7 @@ function Component() {
                             })) ?? []
                         }
                         onChange={field.onChange}
-                        placeholder="Select workspace"
+                        placeholder={t('onboarding.project_select_workspace')}
                         value={field.value}
                       />
                     </WithLabel>
@@ -267,31 +281,31 @@ function Component() {
           )}
           <InputWithLabel
             error={form.formState.errors.project?.message}
-            label="Your first project name"
-            placeholder="Eg. The Music App"
+            label={t('onboarding.field_first_project_name')}
+            placeholder={t('onboarding.project_name_placeholder')}
             {...form.register('project')}
             className="col-span-2"
           />
         </div>
         <div className="mt-4">
-          <Label className="mb-2">What are you tracking?</Label>
+          <Label className="mb-2">{t('onboarding.project_tracking_label')}</Label>
           <div className="grid grid-cols-3 gap-3">
             {[
               {
                 key: 'website' as const,
-                label: 'Website',
+                label: t('onboarding.project_type_website'),
                 Icon: MonitorIcon,
                 active: isWebsite,
               },
               {
                 key: 'app' as const,
-                label: 'App',
+                label: t('onboarding.project_type_app'),
                 Icon: SmartphoneIcon,
                 active: isApp,
               },
               {
                 key: 'backend' as const,
-                label: 'Backend / API',
+                label: t('onboarding.project_type_backend'),
                 Icon: ServerIcon,
                 active: isBackend,
               },
@@ -318,13 +332,13 @@ function Component() {
             form.formState.errors.app?.message ||
             form.formState.errors.backend?.message) && (
             <p className="mt-2 text-destructive text-sm">
-              At least one type must be selected
+              {t('onboarding.project_tracking_required')}
             </p>
           )}
           <AnimateHeight open={isWebsite}>
             <div className="mt-4">
               <InputWithLabel
-                label="Domain"
+                label={t('onboarding.field_domain')}
                 placeholder="example.com"
                 {...form.register('domain')}
                 error={form.formState.errors.domain?.message}
@@ -351,11 +365,11 @@ function Component() {
                     onClick={() => setShowCorsInput((open) => !open)}
                     type="button"
                   >
-                    All events from{' '}
+                    {t('onboarding.project_domain_allowed_prefix')}{' '}
                     <span className="font-medium text-foreground">
                       {domain}
                     </span>{' '}
-                    will be allowed. Do you want to allow any other?
+                    {t('onboarding.project_domain_allowed_suffix')}
                   </button>
                   <AnimateHeight open={showCorsInput}>
                     <div className="mt-3">
@@ -363,7 +377,7 @@ function Component() {
                         control={form.control}
                         name="cors"
                         render={({ field }) => (
-                          <WithLabel label="Allowed domains">
+                          <WithLabel label={t('onboarding.field_allowed_domains')}>
                             <TagInput
                               {...field}
                               error={form.formState.errors.cors?.message}
@@ -382,10 +396,12 @@ function Component() {
                                   })
                                 );
                               }}
-                              placeholder="Accept events from these domains"
+                              placeholder={t(
+                                'onboarding.allowed_domains_placeholder'
+                              )}
                               renderTag={(tag: string) =>
                                 tag === '*'
-                                  ? 'Accept events from any domains'
+                                  ? t('onboarding.allowed_domains_any_tag')
                                   : tag
                               }
                               value={field.value ?? []}
@@ -410,7 +426,7 @@ function Component() {
           size="lg"
           type="submit"
         >
-          Next
+          {t('onboarding.action_next')}
         </Button>
       </ButtonContainer>
     </form>

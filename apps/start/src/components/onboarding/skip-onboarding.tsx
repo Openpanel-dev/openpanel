@@ -6,10 +6,12 @@ import { Link } from '@tanstack/react-router';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { ChevronLastIcon, LogInIcon } from 'lucide-react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const PUBLIC_SEGMENTS = [['onboarding']];
 
 export const SkipOnboarding = () => {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,7 +38,7 @@ export const SkipOnboarding = () => {
         to="/login"
         className="flex items-center gap-2  text-muted-foreground"
       >
-        Login
+        {t('onboarding.action_login')}
         <LogInIcon size={16} />
       </Link>
     );
@@ -54,8 +56,8 @@ export const SkipOnboarding = () => {
           navigate({ to: '/' });
         } else {
           showConfirm({
-            title: 'Skip onboarding?',
-            text: 'Are you sure you want to skip onboarding? Since you do not have any projects, you will be logged out.',
+            title: t('onboarding.skip_confirm_title'),
+            text: t('onboarding.skip_confirm_description'),
             onConfirm() {
               logout.mutate();
             },
@@ -64,7 +66,7 @@ export const SkipOnboarding = () => {
       }}
       className="flex items-center gap-2  text-muted-foreground"
     >
-      Skip onboarding
+      {t('onboarding.action_skip_onboarding')}
       <ChevronLastIcon size={16} />
     </button>
   );

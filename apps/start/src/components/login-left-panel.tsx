@@ -5,62 +5,35 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import { useTranslation } from 'react-i18next';
 import { SellingPoint } from './selling-points';
 
 const sellingPoints = [
   {
-    key: 'welcome',
-    render: () => (
-      <SellingPoint
-        bgImage="/img-1.webp"
-        title="Best open-source alternative"
-        description="Mixpanel too expensive, Google Analytics has no privacy, Amplitude old and boring"
-      />
-    ),
+    key: 'alternative',
+    bgImage: '/img-1.webp',
   },
   {
-    key: 'selling-point-2',
-    render: () => (
-      <SellingPoint
-        bgImage="/img-2.webp"
-        title="Fast and reliable"
-        description="Never miss a beat with our real-time analytics"
-      />
-    ),
+    key: 'reliable',
+    bgImage: '/img-2.webp',
   },
   {
-    key: 'selling-point-3',
-    render: () => (
-      <SellingPoint
-        bgImage="/img-3.webp"
-        title="Easy to use"
-        description="Compared to other tools we have kept it simple"
-      />
-    ),
+    key: 'simple',
+    bgImage: '/img-3.webp',
   },
   {
-    key: 'selling-point-4',
-    render: () => (
-      <SellingPoint
-        bgImage="/img-4.webp"
-        title="Privacy by default"
-        description="We have built our platform with privacy at its heart"
-      />
-    ),
+    key: 'privacy',
+    bgImage: '/img-4.webp',
   },
   {
-    key: 'selling-point-5',
-    render: () => (
-      <SellingPoint
-        bgImage="/img-5.webp"
-        title="Open source"
-        description="You can inspect the code and self-host if you choose"
-      />
-    ),
+    key: 'open_source',
+    bgImage: '/img-5.webp',
   },
 ];
 
 export function LoginLeftPanel() {
+  const { t } = useTranslation();
+
   return (
     <div className="relative h-screen overflow-hidden">
       {/* Carousel */}
@@ -79,7 +52,11 @@ export function LoginLeftPanel() {
                 className="p-8 pb-32 pt-0"
               >
                 <div className="rounded-xl min-h-full h-full overflow-hidden bg-card border border-border shadow-lg">
-                  {point.render()}
+                  <SellingPoint
+                    bgImage={point.bgImage}
+                    title={t(`auth.login_panel_${point.key}_title`)}
+                    description={t(`auth.login_panel_${point.key}_description`)}
+                  />
                 </div>
               </CarouselItem>
             ))}

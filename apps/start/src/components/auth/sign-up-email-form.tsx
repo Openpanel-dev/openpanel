@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useRouter } from '@tanstack/react-router';
 import { type SubmitHandler, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { InputWithLabel } from '../forms/input-with-label';
@@ -16,11 +17,12 @@ type IForm = z.infer<typeof validator>;
 export function SignUpEmailForm({
   inviteId,
 }: { inviteId: string | undefined }) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signUpEmail.mutationOptions({
       async onSuccess() {
-        toast.success('Successfully signed up');
+        toast.success(t('auth.successfully_signed_up'));
         window.location.href = '/';
       },
       onError(error) {
@@ -41,14 +43,14 @@ export function SignUpEmailForm({
     <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
       <div className="row gap-4 w-full flex-1">
         <InputWithLabel
-          label="First name"
+          label={t('auth.first_name')}
           className="flex-1"
           type="text"
           {...form.register('firstName')}
           error={form.formState.errors.firstName?.message}
         />
         <InputWithLabel
-          label="Last name"
+          label={t('auth.last_name')}
           className="flex-1"
           type="text"
           {...form.register('lastName')}
@@ -56,7 +58,7 @@ export function SignUpEmailForm({
         />
       </div>
       <InputWithLabel
-        label="Email"
+        label={t('auth.email')}
         className="w-full"
         type="email"
         {...form.register('email')}
@@ -64,14 +66,14 @@ export function SignUpEmailForm({
       />
       <div className="row gap-4 w-full">
         <InputWithLabel
-          label="Password"
+          label={t('auth.password')}
           className="flex-1"
           type="password"
           {...form.register('password')}
           error={form.formState.errors.password?.message}
         />
         <InputWithLabel
-          label="Confirm password"
+          label={t('auth.confirm_password')}
           className="flex-1"
           type="password"
           {...form.register('confirmPassword')}
@@ -79,7 +81,7 @@ export function SignUpEmailForm({
         />
       </div>
       <Button type="submit" className="w-full" size="lg">
-        Create account
+        {t('auth.create_account')}
       </Button>
     </form>
   );

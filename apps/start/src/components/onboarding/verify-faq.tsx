@@ -16,12 +16,14 @@ import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useClientSecret } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
+import { useTranslation } from 'react-i18next';
 
 export function VerifyFaq({
   project,
 }: {
   project: IServiceProjectWithClients;
 }) {
+  const { t } = useTranslation();
   const context = useAppContext();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -36,7 +38,7 @@ export function VerifyFaq({
             projectId: project.id,
           })
         );
-        toast.success('Allowed domains updated');
+        toast.success(t('onboarding.verify_allowed_domains_updated'));
       },
     })
   );
@@ -99,44 +101,46 @@ export function VerifyFaq({
       <Accordion collapsible type="single">
         <AccordionItem value="item-1">
           <AccordionTrigger className="px-6">
-            No events received?
+            {t('onboarding.verify_faq_no_events_title')}
           </AccordionTrigger>
           <AccordionContent className="col gap-4 p-6 pt-2">
-            <p>
-              Don't worry, this happens to everyone. Here are a few things you
-              can check:
-            </p>
+            <p>{t('onboarding.verify_faq_intro')}</p>
             <div className="col gap-2">
               <Alert>
                 <UserIcon size={16} />
-                <AlertTitle>Ensure client ID is correct</AlertTitle>
+                <AlertTitle>
+                  {t('onboarding.verify_faq_client_id_title')}
+                </AlertTitle>
                 <AlertDescription className="col gap-2">
                   <span>
-                    For web tracking, the <code>clientId</code> in your snippet
-                    must match this project. Copy it here if needed:
+                    {t('onboarding.verify_faq_client_id_prefix')}{' '}
+                    <code>clientId</code>{' '}
+                    {t('onboarding.verify_faq_client_id_suffix')}
                   </span>
                   <CopyInput
                     className="[&_.font-mono]:text-sm"
-                    label="Client ID"
+                    label={t('onboarding.field_client_id')}
                     value={client.id}
                   />
                 </AlertDescription>
               </Alert>
               <Alert>
                 <GlobeIcon size={16} />
-                <AlertTitle>Correct domain configured</AlertTitle>
+                <AlertTitle>
+                  {t('onboarding.verify_faq_domain_title')}
+                </AlertTitle>
                 <AlertDescription className="col gap-2">
-                  <span>
-                    For websites it&apos;s important that the domain is
-                    correctly configured. We authenticate requests based on the
-                    domain. Update allowed domains below:
-                  </span>
-                  <WithLabel label="Allowed domains">
+                  <span>{t('onboarding.verify_faq_domain_description')}</span>
+                  <WithLabel label={t('onboarding.field_allowed_domains')}>
                     <TagInput
                       onChange={handleCorsChange}
-                      placeholder="Accept events from these domains"
+                      placeholder={t(
+                        'onboarding.allowed_domains_placeholder'
+                      )}
                       renderTag={(tag: string) =>
-                        tag === '*' ? 'Accept events from any domains' : tag
+                        tag === '*'
+                          ? t('onboarding.allowed_domains_any_tag')
+                          : tag
                       }
                       value={project.cors ?? []}
                     />
@@ -145,18 +149,19 @@ export function VerifyFaq({
               </Alert>
               <Alert>
                 <KeyIcon size={16} />
-                <AlertTitle>Wrong client secret</AlertTitle>
+                <AlertTitle>
+                  {t('onboarding.verify_faq_client_secret_title')}
+                </AlertTitle>
                 <AlertDescription className="col gap-2">
                   <span>
-                    For app and backend events you need the correct{' '}
-                    <code>clientSecret</code>. Copy it here if needed. Never use
-                    the client secret in web or client-side code—it would expose
-                    your credentials.
+                    {t('onboarding.verify_faq_client_secret_prefix')}{' '}
+                    <code>clientSecret</code>
+                    {t('onboarding.verify_faq_client_secret_suffix')}
                   </span>
                   {showSecret && (
                     <CopyInput
                       className="[&_.font-mono]:text-sm"
-                      label="Client secret"
+                      label={t('onboarding.field_client_secret')}
                       value={secret}
                     />
                   )}
@@ -164,21 +169,21 @@ export function VerifyFaq({
               </Alert>
             </div>
             <p>
-              Still have issues? Join our{' '}
+              {t('onboarding.verify_support_prefix')}{' '}
               <a className="underline" href="https://go.openpanel.dev/discord">
-                discord channel
+                {t('onboarding.verify_support_discord')}
               </a>{' '}
-              give us an email at{' '}
+              {t('onboarding.verify_support_email_prefix')}{' '}
               <a className="underline" href="mailto:hello@openpanel.dev">
                 hello@openpanel.dev
               </a>{' '}
-              and we&apos;ll help you out.
+              {t('onboarding.verify_support_suffix')}
             </p>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="item-2">
           <AccordionTrigger className="px-6">
-            Personal curl example
+            {t('onboarding.verify_personal_curl_title')}
           </AccordionTrigger>
           <AccordionContent className="p-0">
             <Syntax code={code} language="bash" />

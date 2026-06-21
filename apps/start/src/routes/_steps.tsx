@@ -1,12 +1,21 @@
 import { createFileRoute, Outlet, useMatchRoute } from '@tanstack/react-router';
 import { SkeletonDashboard } from '@/components/skeleton-dashboard';
+import i18n from '@/i18n';
 import { cn } from '@/utils/cn';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute('/_steps')({
   component: OnboardingLayout,
   head: () => ({
-    meta: [{ title: createEntityTitle('Project', PAGE_TITLES.ONBOARDING) }],
+    meta: [
+      {
+        title: createEntityTitle(
+          i18n.t('onboarding.project_title'),
+          PAGE_TITLES.ONBOARDING
+        ),
+      },
+    ],
   }),
 });
 
@@ -30,17 +39,18 @@ function OnboardingLayout() {
 }
 
 function Progress() {
+  const { t } = useTranslation();
   const steps = [
     {
-      name: 'Create project',
+      name: t('onboarding.step_create_project'),
       match: '/onboarding/project',
     },
     {
-      name: 'Connect data',
+      name: t('onboarding.step_connect_data'),
       match: '/onboarding/$projectId/connect',
     },
     {
-      name: 'Verify',
+      name: t('onboarding.step_verify'),
       match: '/onboarding/$projectId/verify',
     },
   ];
@@ -56,7 +66,9 @@ function Progress() {
 
   return (
     <div className="row w-full flex-shrink-0 items-center justify-between gap-4 p-4">
-      <div className="font-bold">{currentStep?.name ?? 'Onboarding'}</div>
+      <div className="font-bold">
+        {currentStep?.name ?? t('onboarding.page_title')}
+      </div>
       <div className="row gap-4">
         {steps.map((step) => (
           <div
