@@ -2,6 +2,7 @@ import { Skeleton } from '@/components/skeleton';
 import { cn } from '@/utils/cn';
 import { AlertCircleIcon, CheckIcon, SparklesIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getToolPhrase } from './tool-labels';
 
 /**
@@ -23,6 +24,8 @@ export function ToolStateGuard({
   pending?: ReactNode;
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
+
   if (state === 'input-streaming' || state === 'input-available') {
     return pending ?? <ToolActivityBadge toolName={toolName} />;
   }
@@ -30,7 +33,7 @@ export function ToolStateGuard({
     return (
       <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
         <AlertCircleIcon className="size-3.5 mt-0.5 shrink-0" />
-        <span>{errorText ?? 'Tool failed'}</span>
+        <span>{errorText ?? t('chat.tool_failed')}</span>
       </div>
     );
   }
@@ -45,7 +48,10 @@ export function ToolStateGuard({
  * while a tool's input is streaming or it's executing on the server.
  */
 export function ToolActivityBadge({ toolName }: { toolName?: string }) {
-  const label = toolName ? getToolPhrase(toolName, 'active') : 'Working';
+  const { t } = useTranslation();
+  const label = toolName
+    ? getToolPhrase(toolName, 'active', t)
+    : t('chat.tool_working');
   return (
     <div className="flex items-center gap-2 py-1.5 text-sm">
       <SparklesIcon className="size-3.5 text-muted-foreground shrink-0" />
@@ -66,12 +72,14 @@ export function ToolDoneBadge({
   toolName: string;
   children?: ReactNode;
 }) {
+  const { t } = useTranslation();
+
   return (
     <details className="group rounded-md border bg-card text-sm">
       <summary className="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 list-none [&::-webkit-details-marker]:hidden">
         <CheckIcon className="size-3 text-emerald-500 shrink-0" />
         <span className="font-medium text-foreground/80">
-          {getToolPhrase(toolName, 'done')}
+          {getToolPhrase(toolName, 'done', t)}
         </span>
       </summary>
       {children && <div className="border-t px-2.5 py-2">{children}</div>}

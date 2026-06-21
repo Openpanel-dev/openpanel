@@ -1,20 +1,22 @@
 import { useDispatch, useSelector } from '@/redux';
 import { shortId } from '@openpanel/common';
 import { FilterIcon, type LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { addGlobalFilter } from '../reportSlice';
 import { PropertiesCombobox } from './PropertiesCombobox';
 import { GlobalFilterItem } from './filters/GlobalFilterItem';
 
 export function ReportGlobalFilters() {
+  const { t } = useTranslation();
   const globalFilters = useSelector((state) => state.report.globalFilters);
   const dispatch = useDispatch();
 
   return (
     <div>
-      <h3 className="mb-2 font-medium">Global filters</h3>
+      <h3 className="mb-2 font-medium">{t('reports.global_filters')}</h3>
       <p className="mb-2 text-sm text-muted-foreground">
-        Applied to every series in this report.
+        {t('reports.global_filters_description')}
       </p>
       <div className="rounded-lg border bg-def-100">
         <div className="flex gap-2 p-2">
@@ -57,7 +59,7 @@ export function ReportGlobalFilters() {
                 onClick={() => setOpen((p) => !p)}
                 icon={FilterIcon}
               >
-                Add filter
+                {t('reports.add_filter')}
               </SmallButton>
             )}
           </PropertiesCombobox>

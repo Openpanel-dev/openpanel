@@ -1,5 +1,6 @@
 import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
@@ -103,10 +104,11 @@ function Empty() {
 }
 
 function Disabled() {
+  const { t } = useTranslation();
   return (
     <AspectContainer>
-      <ReportChartEmpty title="Select 2 events">
-        We need two events to determine the retention rate.
+      <ReportChartEmpty title={t('report_chart.select_two_events')}>
+        {t('report_chart.retention_requires_two_events')}
       </ReportChartEmpty>
     </AspectContainer>
   );

@@ -11,6 +11,7 @@ import type {
   IChartEventFilterOperator,
   IChartEventFilterValue,
 } from '@openpanel/validation';
+import { useTranslation } from 'react-i18next';
 
 interface FiltersBuilderProps {
   value: IChartEventFilter[];
@@ -34,9 +35,10 @@ export function FiltersBuilder({
   onChange,
   categories = ['event', 'profile', 'group', 'cohort'],
   eventName = '',
-  addLabel = 'Add filter',
+  addLabel,
   className,
 }: FiltersBuilderProps) {
+  const { t } = useTranslation();
   const setFilter = (updated: IChartEventFilter) => {
     onChange(value.map((f) => (f.id === updated.id ? updated : f)));
   };
@@ -140,7 +142,7 @@ export function FiltersBuilder({
               icon={FilterIcon}
               onClick={() => setOpen((p) => !p)}
             >
-              {addLabel}
+              {addLabel ?? t('filters.add_filter')}
             </Button>
           )}
         </PropertiesCombobox>

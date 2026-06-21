@@ -3,6 +3,7 @@ import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { filterValueTypes } from '@openpanel/constants';
 import type { IChartFilterValueType } from '@openpanel/validation';
 import { mapKeys } from '@openpanel/validation';
+import { useTranslation } from 'react-i18next';
 
 interface FilterTypeSelectProps {
   value: IChartFilterValueType | undefined;
@@ -18,6 +19,7 @@ export function FilterTypeSelect({
   onChange,
   children,
 }: FilterTypeSelectProps) {
+  const { t } = useTranslation();
   const trigger = children ?? (
     <Button variant="outline" className="whitespace-nowrap">
       {filterValueTypes[value ?? 'string']}
@@ -31,7 +33,7 @@ export function FilterTypeSelect({
         value: key,
         label: filterValueTypes[key],
       }))}
-      label="Value type"
+      label={t('reports.value_type')}
     >
       {trigger}
     </DropdownMenuComposed>

@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { type ChatModelOption, getModelLabel } from '@/agents/models';
 import { CheckIcon, ChevronDownIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useChatState } from './chat-context';
 
 /**
@@ -17,6 +18,7 @@ import { useChatState } from './chat-context';
  * different agent name on the next render.
  */
 export function ModelPicker() {
+  const { t } = useTranslation();
   const { agentName, setAgent, models } = useChatState();
 
   const grouped = models.reduce<Record<string, ChatModelOption[]>>(
@@ -34,8 +36,8 @@ export function ModelPicker() {
           variant="ghost"
           size="sm"
           className="h-7 px-2 text-xs gap-1 text-muted-foreground"
-          aria-label="Select model"
-          title="Select model"
+          aria-label={t('chat.select_model')}
+          title={t('chat.select_model')}
         >
           <span className="truncate max-w-[140px]">
             {getModelLabel(agentName)}

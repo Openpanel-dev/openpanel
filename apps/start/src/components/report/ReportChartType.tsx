@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/cn';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { changeChartType } from './reportSlice';
 
@@ -41,6 +42,7 @@ export function ReportChartType({
   value,
   onChange,
 }: ReportChartTypeProps) {
+  const { t } = useTranslation();
   const items = objectToZodEnums(chartTypes).map((key) => ({
     label: chartTypes[key],
     value: key,
@@ -74,7 +76,7 @@ export function ReportChartType({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel>Available charts</DropdownMenuLabel>
+        <DropdownMenuLabel>{t('reports.available_charts')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>

@@ -1,6 +1,7 @@
 import { timeWindows } from '@openpanel/constants';
 import { CheckIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ToolResultProps } from './types';
 
 /**
@@ -17,6 +18,7 @@ import type { ToolResultProps } from './types';
  */
 
 export function ApplyFiltersResult({ part }: ToolResultProps) {
+  const { t } = useTranslation();
   const input = (part.input ?? {}) as {
     range?: string;
     startDate?: string;
@@ -25,18 +27,28 @@ export function ApplyFiltersResult({ part }: ToolResultProps) {
   };
   const parts: string[] = [];
   if (input.startDate && input.endDate) {
-    parts.push(`date range: ${input.startDate} → ${input.endDate}`);
+    parts.push(
+      t('chat.ui_apply_date_range_summary', {
+        value: `${input.startDate} → ${input.endDate}`,
+      }),
+    );
   } else if (input.range) {
-    parts.push(`date range: ${formatRange(input.range)}`);
+    parts.push(
+      t('chat.ui_apply_date_range_summary', {
+        value: formatRange(input.range),
+      }),
+    );
   }
   if (input.interval) {
-    parts.push(`interval: ${input.interval}`);
+    parts.push(t('chat.ui_apply_interval_summary', { value: input.interval }));
   }
-  const summary = parts.length > 0 ? parts.join(' · ') : 'filters';
-  return <AppliedChip>Applied {summary}</AppliedChip>;
+  const summary =
+    parts.length > 0 ? parts.join(' · ') : t('chat.ui_apply_filters_summary');
+  return <AppliedChip>{t('chat.ui_apply_applied_summary', { summary })}</AppliedChip>;
 }
 
 export function SetPropertyFiltersResult({ part }: ToolResultProps) {
+  const { t } = useTranslation();
   const input = (part.input ?? {}) as {
     filters?: Array<{
       name?: string;
@@ -46,7 +58,7 @@ export function SetPropertyFiltersResult({ part }: ToolResultProps) {
   };
   const filters = Array.isArray(input.filters) ? input.filters : [];
   if (filters.length === 0) {
-    return <AppliedChip>Cleared property filters</AppliedChip>;
+    return <AppliedChip>{t('chat.ui_apply_cleared_property_filters')}</AppliedChip>;
   }
   const summary = filters
     .map((f) => {
@@ -55,18 +67,22 @@ export function SetPropertyFiltersResult({ part }: ToolResultProps) {
       return `${f.name}${op}${value ? ` = ${value}` : ''}`;
     })
     .join(' · ');
-  return <AppliedChip>Applied filters: {summary}</AppliedChip>;
+  return <AppliedChip>{t('chat.ui_apply_applied_filters', { summary })}</AppliedChip>;
 }
 
 export function SetEventNamesFilterResult({ part }: ToolResultProps) {
+  const { t } = useTranslation();
   const input = (part.input ?? {}) as { eventNames?: string[] };
   const names = Array.isArray(input.eventNames) ? input.eventNames : [];
   if (names.length === 0) {
-    return <AppliedChip>Cleared event-name filter</AppliedChip>;
+    return <AppliedChip>{t('chat.ui_apply_cleared_event_filter')}</AppliedChip>;
   }
   return (
     <AppliedChip>
-      Filtered to {names.length === 1 ? 'event' : 'events'}: {names.join(', ')}
+      {t('chat.ui_apply_filtered_events', {
+        count: names.length,
+        names: names.join(', '),
+      })}
     </AppliedChip>
   );
 }

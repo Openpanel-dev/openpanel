@@ -1,6 +1,7 @@
 import { Command as CommandPrimitive } from 'cmdk';
 import { SearchIcon } from 'lucide-react';
 import type * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   Dialog,
@@ -28,8 +29,8 @@ function Command({
 }
 
 function CommandDialog({
-  title = 'Command Palette',
-  description = 'Search for a command to run...',
+  title,
+  description,
   children,
   className,
   showCloseButton = true,
@@ -40,11 +41,16 @@ function CommandDialog({
   className?: string;
   showCloseButton?: boolean;
 }) {
+  const { t } = useTranslation();
+  const dialogTitle = title ?? t('ui.command_palette');
+  const dialogDescription =
+    description ?? t('ui.command_palette_description');
+
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
+        <DialogTitle>{dialogTitle}</DialogTitle>
+        <DialogDescription>{dialogDescription}</DialogDescription>
       </DialogHeader>
       <DialogContent
         className={cn('overflow-hidden p-0', className)}

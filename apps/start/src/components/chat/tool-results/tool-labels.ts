@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next';
+
 /**
  * Humanizes raw tool names into action-phrase labels for the UI.
  *
@@ -10,21 +12,21 @@
  * ("get_" → "Loading", "list_" → "Looking up", "find_" → "Finding").
  */
 
-const VERB_PREFIXES: Array<[string, string]> = [
-  ['list_', 'Looking up'],
-  ['get_', 'Loading'],
-  ['find_', 'Finding'],
-  ['query_', 'Querying'],
-  ['analyze_', 'Analyzing'],
-  ['compare_', 'Comparing'],
-  ['correlate_', 'Correlating'],
-  ['explain_', 'Explaining'],
-  ['suggest_', 'Suggesting'],
-  ['preview_', 'Previewing'],
-  ['generate_', 'Generating'],
-  ['apply_', 'Applying'],
-  ['set_', 'Updating'],
-  ['gsc_', 'Loading SEO'],
+const VERB_PREFIXES: Array<[string, string, string]> = [
+  ['list_', 'list', 'Looking up'],
+  ['get_', 'get', 'Loading'],
+  ['find_', 'find', 'Finding'],
+  ['query_', 'query', 'Querying'],
+  ['analyze_', 'analyze', 'Analyzing'],
+  ['compare_', 'compare', 'Comparing'],
+  ['correlate_', 'correlate', 'Correlating'],
+  ['explain_', 'explain', 'Explaining'],
+  ['suggest_', 'suggest', 'Suggesting'],
+  ['preview_', 'preview', 'Previewing'],
+  ['generate_', 'generate', 'Generating'],
+  ['apply_', 'apply', 'Applying'],
+  ['set_', 'set', 'Updating'],
+  ['gsc_', 'gsc', 'Loading SEO'],
 ];
 
 const PHRASES: Record<
@@ -258,13 +260,24 @@ const PHRASES: Record<
 
 export type ToolPhrasePhase = 'active' | 'done';
 
-export function getToolPhrase(toolName: string, phase: ToolPhrasePhase): string {
+export function getToolPhrase(
+  toolName: string,
+  phase: ToolPhrasePhase,
+  t?: TFunction,
+): string {
   const explicit = PHRASES[toolName];
-  if (explicit) return explicit[phase];
+  if (explicit) {
+    const fallback = explicit[phase];
+    return t?.(`chat.tool_${toolName}_${phase}`, fallback) ?? fallback;
+  }
 
   const matchedPrefix = VERB_PREFIXES.find(([p]) => toolName.startsWith(p));
   const verb = matchedPrefix?.[0] ?? '';
-  const verbLabel = matchedPrefix?.[1] ?? 'Running';
+  const verbKey = matchedPrefix?.[1] ?? 'running';
+  const verbLabel =
+    t?.(`chat.tool_fallback_verb_${verbKey}`, matchedPrefix?.[2] ?? 'Running') ??
+    matchedPrefix?.[2] ??
+    'Running';
 
   const noun = humanizeNoun(toolName.slice(verb.length) || toolName);
   return phase === 'active' ? `${verbLabel} ${noun.toLowerCase()}` : noun;

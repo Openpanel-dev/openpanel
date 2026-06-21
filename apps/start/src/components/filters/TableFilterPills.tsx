@@ -14,6 +14,8 @@ import {
   getCohortIds,
   type IChartEventFilter,
 } from '@openpanel/validation';
+import { type TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 
 interface TableFilterPillsProps {
   /** URL key the filters live under. Sessions tables use `f`. */
@@ -27,37 +29,42 @@ interface TableFilterPillsProps {
   nuqsOptions?: NuqsOptions;
 }
 
-/** Friendly labels for the hard-coded session.* filter family. */
-const SESSION_LABELS: Record<string, string> = {
-  'session.is_bounce': 'Bounced',
-  'session.screen_view_count': 'Screen views',
-  'session.event_count': 'Events',
-  'session.duration': 'Duration',
-  'session.revenue': 'Revenue',
-  'session.performed_event': 'Performed event',
-};
-
-function humanizeFilterName(name: string): string {
-  if (name === 'cohort' || name.startsWith('cohort:')) return 'Cohort';
-  if (SESSION_LABELS[name]) return SESSION_LABELS[name]!;
+function humanizeFilterName(name: string, t: TFunction): string {
+  if (name === 'cohort' || name.startsWith('cohort:')) {
+    return t('filters.cohort');
+  }
+  if (name === 'session.is_bounce') return t('filters.session_bounced');
+  if (name === 'session.screen_view_count') {
+    return t('filters.session_screen_views');
+  }
+  if (name === 'session.event_count') return t('filters.session_events');
+  if (name === 'session.duration') return t('filters.session_duration');
+  if (name === 'session.revenue') return t('filters.session_revenue');
+  if (name === 'session.performed_event') {
+    return t('filters.session_performed_event');
+  }
   if (name.startsWith('profile.')) {
     const rest = name.replace(/^profile\./, '');
-    return `Profile · ${rest.replace(/^properties\./, '')}`;
+    return t('filters.profile_property', {
+      property: rest.replace(/^properties\./, ''),
+    });
   }
   if (name.startsWith('group.')) {
     const rest = name.replace(/^group\./, '');
-    return `Group · ${rest.replace(/^properties\./, '')}`;
+    return t('filters.group_property', {
+      property: rest.replace(/^properties\./, ''),
+    });
   }
   return getPropertyLabel(name);
 }
 
-function formatFilterValue(filter: IChartEventFilter): string {
+function formatFilterValue(filter: IChartEventFilter, t: TFunction): string {
   if (filter.name === 'session.is_bounce') {
     const v = filter.value[0];
     if (v === undefined) return '';
     const truthy =
       typeof v === 'boolean' ? v : String(v).toLowerCase() === 'true';
-    return truthy ? 'Yes' : 'No';
+    return truthy ? t('filters.yes') : t('filters.no');
   }
   return filter.value
     .filter((v) => v !== null && v !== undefined && v !== '')
@@ -72,6 +79,7 @@ export function TableFilterPills({
   className,
   nuqsOptions,
 }: TableFilterPillsProps) {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const [filters, setFilters] = useTableFilters(urlKey, nuqsOptions);
   const cohorts = useCohorts(
@@ -100,7 +108,7 @@ export function TableFilterPills({
         icon={FilterIcon}
         onClick={openSheet}
       >
-        Filters
+        {t('filters.filters')}
         {filters.length > 0 && (
           <Badge className="ml-2 rounded-full px-1.5 py-0 text-xs">
             {filters.length}
@@ -117,8 +125,8 @@ export function TableFilterPills({
                 (id) => cohortNames.get(id) ?? cohortNames.get(id.replace(/^cohort:/, '')),
               )
               .filter(Boolean)
-              .join(', ') || 'pick cohort'
-          : formatFilterValue(filter);
+              .join(', ') || t('filters.pick_cohort')
+          : formatFilterValue(filter, t);
 
         return (
           <div
@@ -130,7 +138,7 @@ export function TableFilterPills({
               onClick={openSheet}
               className="px-2 hover:bg-accent transition-colors cursor-pointer"
             >
-              {humanizeFilterName(filter.name)}
+              {humanizeFilterName(filter.name, t)}
             </button>
             <button
               type="button"
@@ -152,7 +160,7 @@ export function TableFilterPills({
               type="button"
               onClick={() => removeAt(index)}
               className="px-2 hover:bg-destructive hover:text-destructive-foreground transition-colors border-l cursor-pointer"
-              aria-label="Remove filter"
+              aria-label={t('filters.remove_filter')}
             >
               <X className="size-3" />
             </button>

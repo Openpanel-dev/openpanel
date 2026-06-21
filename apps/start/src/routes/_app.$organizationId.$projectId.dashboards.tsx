@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
 import { pushModal, showConfirm } from '@/modals';
 import { cn } from '@/utils/cn';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
+import { createProjectTitle } from '@/utils/title';
 import { format } from 'date-fns';
 import {
   AreaChartIcon,
@@ -31,6 +31,8 @@ import { PageHeader } from '@/components/page-header';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
+import i18n from '@/i18n';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/dashboards',
@@ -40,7 +42,7 @@ export const Route = createFileRoute(
     return {
       meta: [
         {
-          title: createProjectTitle('Dashboards'),
+          title: createProjectTitle(i18n.t('dashboards.page_title')),
         },
       ],
     };
@@ -56,6 +58,7 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t } = useTranslation();
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -70,7 +73,7 @@ function Component() {
       onError: (error, variables) => {
         return handleErrorToastOptions({
           action: {
-            label: 'Force delete',
+            label: t('dashboards.force_delete'),
             onClick: () => {
               deletion.mutate({
                 forceDelete: true,
@@ -83,8 +86,8 @@ function Component() {
       onSuccess() {
         queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
         query.refetch();
-        toast('Success', {
-          description: 'Dashboard deleted.',
+        toast(t('dashboards.success'), {
+          description: t('dashboards.delete_success'),
         });
       },
     }),
@@ -92,14 +95,14 @@ function Component() {
 
   if (dashboards.length === 0) {
     return (
-      <FullPageEmptyState title="No dashboards" icon={LayoutPanelTopIcon}>
-        <p>You have not created any dashboards for this project yet</p>
+      <FullPageEmptyState title={t('dashboards.empty_title')} icon={LayoutPanelTopIcon}>
+        <p>{t('dashboards.empty_description')}</p>
         <Button
           onClick={() => pushModal('AddDashboard')}
           className="mt-14"
           icon={PlusIcon}
         >
-          Create dashboard
+          {t('dashboards.create_dashboard')}
         </Button>
       </FullPageEmptyState>
     );
@@ -108,13 +111,13 @@ function Component() {
   return (
     <PageContainer>
       <PageHeader
-        title="Dashboards"
-        description="Access all your dashboards here"
+        title={t('dashboards.page_title')}
+        description={t('dashboards.page_description')}
         className="mb-8"
         actions={
           <Button icon={PlusIcon} onClick={() => pushModal('AddDashboard')}>
-            <span className="max-sm:hidden">Create dashboard</span>
-            <span className="sm:hidden">Dashboard</span>
+            <span className="max-sm:hidden">{t('dashboards.create_dashboard')}</span>
+            <span className="sm:hidden">{t('dashboards.dashboard')}</span>
           </Button>
         }
       />
@@ -175,7 +178,7 @@ function Component() {
                       <div className="row items-center gap-2 rounded-md bg-def-100 p-4 py-2">
                         <PlusIcon size={24} />
                         <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm">
-                          {item.reports.length - 5} more
+                          {item.reports.length - 5} {t('dashboards.more')}
                         </div>
                       </div>
                     )}
@@ -198,7 +201,7 @@ function Component() {
                     }}
                   >
                     <Pencil size={16} />
-                    Edit
+                    {t('dashboards.edit')}
                   </button>
                 </CardActionsItem>
                 <CardActionsItem className="w-full text-destructive" asChild>
@@ -206,14 +209,14 @@ function Component() {
                     type="button"
                     onClick={() => {
                       showConfirm({
-                        title: 'Delete dashboard',
-                        text: 'Are you sure you want to delete this dashboard? All your reports will be deleted!',
+                        title: t('dashboards.delete_dashboard'),
+                        text: t('dashboards.delete_dashboard_confirm'),
                         onConfirm: () => deletion.mutate({ id: item.id }),
                       });
                     }}
                   >
                     <Trash size={16} />
-                    Delete
+                    {t('dashboards.delete')}
                   </button>
                 </CardActionsItem>
               </CardActions>

@@ -2,6 +2,7 @@ import { DefaultToolResult } from './default-tool-result';
 import { normalizeTableOutput, type TableRow } from './output-types';
 import { ResultCard, ToolStateGuard } from './shared';
 import type { ToolResultProps } from './types';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Generic compact table for top-pages / top-referrers / breakdowns / etc.
@@ -36,6 +37,7 @@ export function ChatTableResult(props: ToolResultProps) {
 }
 
 function ChatTableInner({ output }: { output: unknown }) {
+  const { t } = useTranslation();
   const { rows, total, truncated } = normalizeTableOutput(output);
   // Empty case is handled at the wrapper level (falls through to
   // DefaultToolResult) — this function only runs with rows present.
@@ -86,8 +88,11 @@ function ChatTableInner({ output }: { output: unknown }) {
       </table>
       {rows.length > 15 && (
         <div className="border-t px-3 py-1 text-[11px] text-muted-foreground">
-          Showing 15 of {total ?? rows.length}
-          {truncated && ' (truncated)'}
+          {t('chat.table_showing_limited_rows', {
+            shown: 15,
+            total: total ?? rows.length,
+          })}
+          {truncated && ` ${t('chat.table_truncated_suffix')}`}
         </div>
       )}
     </ResultCard>

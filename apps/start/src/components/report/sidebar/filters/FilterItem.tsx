@@ -21,6 +21,7 @@ import type {
 } from '@openpanel/validation';
 
 import { SlidersHorizontal, Trash } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { changeEvent } from '../../reportSlice';
 
 // Client-side sanity check: can this raw value possibly match the chosen cast
@@ -29,20 +30,25 @@ import { changeEvent } from '../../reportSlice';
 function validateFilterValue(
   value: string,
   type: IChartFilterValueType | undefined,
+  t: (key: string) => string,
 ): string | undefined {
   if (!value) {
     return undefined;
   }
   switch (type) {
     case 'number':
-      return Number.isFinite(Number(value)) ? undefined : 'Not a valid number';
+      return Number.isFinite(Number(value))
+        ? undefined
+        : t('reports.invalid_number');
     case 'date':
     case 'datetime':
-      return Number.isNaN(Date.parse(value)) ? 'Not a valid date' : undefined;
+      return Number.isNaN(Date.parse(value))
+        ? t('reports.invalid_date')
+        : undefined;
     case 'boolean':
       return value === 'true' || value === 'false'
         ? undefined
-        : 'Use "true" or "false"';
+        : t('reports.invalid_boolean');
     default:
       return undefined;
   }
@@ -184,11 +190,6 @@ export function FilterItem({ filter, event }: FilterProps) {
   );
 }
 
-const BOOLEAN_VALUE_ITEMS = [
-  { value: 'true', label: 'Yes' },
-  { value: 'false', label: 'No' },
-];
-
 export function PureFilterItem({
   filter,
   eventName,
@@ -199,7 +200,12 @@ export function PureFilterItem({
   className,
   immediateInput,
 }: PureFilterProps) {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
+  const booleanValueItems = [
+    { value: 'true', label: t('reports.yes') },
+    { value: 'false', label: t('reports.no') },
+  ];
 
   const isBooleanSessionFilter = filter.name === 'session.is_bounce';
   const isPerformedEventFilter = filter.name === 'session.performed_event';
@@ -218,6 +224,7 @@ export function PureFilterItem({
     ? validateFilterValue(
         filter.value[0] != null ? String(filter.value[0]) : '',
         filter.type,
+        t,
       )
     : undefined;
 
@@ -264,12 +271,12 @@ export function PureFilterItem({
       return (
         <Combobox
           className="flex-1"
-          items={BOOLEAN_VALUE_ITEMS}
+          items={booleanValueItems}
           value={
             filter.value[0] === undefined ? null : String(filter.value[0])
           }
           onChange={(v) => changeFilterValue([v])}
-          placeholder="Yes / No"
+          placeholder={t('reports.yes_no')}
         />
       );
     }
@@ -281,7 +288,7 @@ export function PureFilterItem({
           items={eventNames}
           value={filter.value[0] ? String(filter.value[0]) : null}
           onChange={(v: string) => changeFilterValue([v])}
-          placeholder="Select event"
+          placeholder={t('reports.select_event')}
           searchable
         />
       );
@@ -294,7 +301,7 @@ export function PureFilterItem({
           value={filter.value}
           className="flex-1"
           onChange={changeFilterValue}
-          placeholder="Select..."
+          placeholder={t('reports.select')}
         />
       );
     }

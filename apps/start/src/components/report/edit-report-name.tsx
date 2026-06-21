@@ -1,6 +1,7 @@
 import { useDispatch, useSelector } from '@/redux';
 import { PencilIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '../ui/input';
 import { setName } from './reportSlice';
 
@@ -9,6 +10,7 @@ type Props = {
 };
 
 const EditReportName = ({ name }: Props) => {
+  const { t } = useTranslation();
   const reportName = useSelector((state) => state.report.name);
   const dispatch = useDispatch();
   const [isEditing, setIsEditing] = useState(false);
@@ -65,7 +67,7 @@ const EditReportName = ({ name }: Props) => {
       className="flex cursor-pointer select-none items-center gap-2 text-xl font-medium h-8 group"
       onClick={() => setIsEditing(true)}
     >
-      {newName || 'Unnamed Report'}
+      {newName || t('reports.unnamed_report')}
       <PencilIcon
         size={16}
         className="opacity-0 group-hover:opacity-100 transition-opacity"

@@ -1,6 +1,7 @@
 import { useAppParams } from '@/hooks/use-app-params';
 import { useResizableDrawer } from '@/hooks/use-resizable-drawer';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useChatState } from './chat-context';
 import { ChatDrawerBody } from './chat-drawer-body';
 import { ChatDrawerNotConfigured } from './chat-drawer-empty';
@@ -25,6 +26,7 @@ const MAX_WIDTH = 720;
  * thin `useChatState()` context (conversation list, new chat button).
  */
 export function ChatDrawer() {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const {
     agentName,
@@ -82,7 +84,7 @@ export function ChatDrawer() {
       >
         <div
           className="absolute top-0 left-0 z-10 w-1 h-full cursor-ew-resize hover:bg-border transition-colors"
-          aria-label="Resize chat drawer"
+          aria-label={t('chat.resize_drawer')}
           {...dragHandleProps}
         />
         <ChatDrawerHeader projectId={projectId} onClose={closeChat} />

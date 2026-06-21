@@ -24,6 +24,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/use-app-params';
 import { pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
+import { useTranslation } from 'react-i18next';
 
 interface ReportEditorProps {
   report: IServiceReport | null;
@@ -32,6 +33,7 @@ interface ReportEditorProps {
 export default function ReportEditor({
   report: initialReport,
 }: ReportEditorProps) {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const dispatch = useDispatch();
   const report = useSelector((state) => state.report);
@@ -62,7 +64,7 @@ export default function ReportEditor({
               }
               variant="outline"
             >
-              Share
+              {t('reports.share')}
             </Button>
           )}
         </div>
@@ -73,7 +75,7 @@ export default function ReportEditor({
               icon={GanttChartSquareIcon}
               variant="cta"
             >
-              Pick events
+              {t('reports.pick_events')}
             </Button>
           </SheetTrigger>
           <div className="col-span-4 grid grid-cols-2 gap-2 md:grid-cols-4">

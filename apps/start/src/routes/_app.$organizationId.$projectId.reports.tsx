@@ -1,5 +1,6 @@
 import ReportEditor from '@/components/report-chart/report-editor';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
+import i18n from '@/i18n';
+import { createProjectTitle } from '@/utils/title';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 
@@ -11,7 +12,7 @@ export const Route = createFileRoute(
     return {
       meta: [
         {
-          title: createProjectTitle(PAGE_TITLES.REPORTS),
+          title: createProjectTitle(i18n.t('reports.page_title')),
         },
       ],
     };

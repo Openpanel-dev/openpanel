@@ -9,12 +9,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { CopyIcon, MoreHorizontal, TrashIcon } from 'lucide-react';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface ReportEventMoreProps {
   onClick: (action: 'remove' | 'duplicate') => void;
 }
 
 export function ReportEventMore({ onClick }: ReportEventMoreProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -28,7 +30,7 @@ export function ReportEventMore({ onClick }: ReportEventMoreProps) {
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => onClick('duplicate')}>
             <CopyIcon className="mr-2 h-4 w-4" />
-            Duplicate
+            {t('reports.duplicate')}
             <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -36,7 +38,7 @@ export function ReportEventMore({ onClick }: ReportEventMoreProps) {
             onClick={() => onClick('remove')}
           >
             <TrashIcon className="mr-2 h-4 w-4" />
-            Delete
+            {t('reports.delete')}
             <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>

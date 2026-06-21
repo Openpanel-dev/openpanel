@@ -9,12 +9,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Trash } from 'lucide-react';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface ReportBreakdownMoreProps {
   onClick: (action: 'remove') => void;
 }
 
 export function ReportBreakdownMore({ onClick }: ReportBreakdownMoreProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -31,7 +33,7 @@ export function ReportBreakdownMore({ onClick }: ReportBreakdownMoreProps) {
             onClick={() => onClick('remove')}
           >
             <Trash className="mr-2 h-4 w-4" />
-            Delete
+            {t('reports.delete')}
             <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>

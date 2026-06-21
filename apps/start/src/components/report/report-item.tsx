@@ -12,6 +12,7 @@ import { CopyIcon, MoreHorizontal, Trash } from 'lucide-react';
 import { timeWindows } from '@openpanel/constants';
 
 import { useRouter } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
 export function ReportItemSkeleton() {
   return (
@@ -52,6 +53,7 @@ export function ReportItem({
   onDelete: (reportId: string) => void;
   onDuplicate: (reportId: string) => void;
 }) {
+  const { t } = useTranslation();
   const router = useRouter();
   const chartRange = report.range;
 
@@ -106,7 +108,7 @@ export function ReportItem({
                 {timeWindows[chartRange as keyof typeof timeWindows]?.label}
               </span>
               {startDate && endDate ? (
-                <span>Custom dates</span>
+                <span>{t('reports.custom_dates')}</span>
               ) : (
                 range !== null &&
                 chartRange !== range && (
@@ -147,7 +149,7 @@ export function ReportItem({
                 }}
               >
                 <CopyIcon size={16} className="mr-2" />
-                Duplicate
+                {t('reports.duplicate')}
               </DropdownMenuItem>
               <DropdownMenuGroup>
                 <DropdownMenuItem
@@ -158,7 +160,7 @@ export function ReportItem({
                   }}
                 >
                   <Trash size={16} className="mr-2" />
-                  Delete
+                  {t('reports.delete')}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
@@ -200,6 +202,7 @@ export function ReportItemReadOnly({
   endDate: any;
   interval: any;
 }) {
+  const { t } = useTranslation();
   const chartRange = report.range;
 
   return (
@@ -220,7 +223,7 @@ export function ReportItemReadOnly({
                 {timeWindows[chartRange as keyof typeof timeWindows]?.label}
               </span>
               {startDate && endDate ? (
-                <span>Custom dates</span>
+                <span>{t('reports.custom_dates')}</span>
               ) : (
                 range !== null &&
                 chartRange !== range && (

@@ -4,6 +4,7 @@ import { shortId } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
 import type { IChartEvent, IChartEventItem } from '@openpanel/validation';
 import { DatabaseIcon, FilterIcon, type LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ReportSegment } from '../ReportSegment';
 import { changeEvent } from '../reportSlice';
 import { PropertiesCombobox } from './PropertiesCombobox';
@@ -28,6 +29,7 @@ export function ReportSeriesItem({
   renderDragHandle,
   ...props
 }: ReportSeriesItemProps) {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
 
   // Normalize event to have type field
@@ -113,7 +115,7 @@ export function ReportSeriesItem({
                   onClick={() => setOpen((p) => !p)}
                   icon={FilterIcon}
                 >
-                  Add filter
+                  {t('reports.add_filter')}
                 </SmallButton>
               )}
             </PropertiesCombobox>
@@ -139,8 +141,10 @@ export function ReportSeriesItem({
                   onClick={() => setOpen((p) => !p)}
                 >
                   {chartEvent.property
-                    ? `Property: ${chartEvent.property}`
-                    : 'Select property'}
+                    ? t('reports.property_value', {
+                        property: chartEvent.property,
+                      })
+                    : t('reports.select_property')}
                 </SmallButton>
               )}
             </PropertiesCombobox>

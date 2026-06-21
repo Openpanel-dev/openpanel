@@ -2,6 +2,7 @@ import { cn } from '@/utils/cn';
 import type { UIMessage } from '@better-agent/client';
 import { ChevronRightIcon } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChatMarkdown } from './chat-markdown';
 import { chatToolRenderers, DefaultToolResult } from './tool-results/registry';
 import type { ToolResultPart } from './tool-results/types';
@@ -30,6 +31,7 @@ export function ChatMessage({
    */
   runStillActive?: boolean;
 }) {
+  const { t } = useTranslation();
   const isUser = message.role === 'user';
 
   // Index tool results by callId so we can attach them to their call.
@@ -113,7 +115,9 @@ export function ChatMessage({
                   key={part.callId}
                   className="flex items-center gap-2 py-1.5 text-sm"
                 >
-                  <span className="op-shimmer font-medium">Thinking…</span>
+                  <span className="op-shimmer font-medium">
+                    {t('chat.thinking')}
+                  </span>
                 </div>
               );
             }
@@ -127,7 +131,7 @@ export function ChatMessage({
               input: part.args ? safeParse(part.args) : undefined,
               output: matched?.result,
               errorText:
-                matched?.status === 'error' ? 'Tool failed' : undefined,
+                matched?.status === 'error' ? t('chat.tool_failed') : undefined,
             };
             return (
               <div key={part.callId} className="w-full max-w-full">
@@ -160,6 +164,7 @@ function ReasoningBlock({
   text: string;
   complete: boolean;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const trimmed = text.trim();
   // Latest non-empty line for the live preview.
@@ -174,7 +179,7 @@ function ReasoningBlock({
     return (
       <div className="w-full max-w-full">
         <div className="flex items-center gap-2 text-sm">
-          <span className="op-shimmer font-medium">Thinking…</span>
+          <span className="op-shimmer font-medium">{t('chat.thinking')}</span>
         </div>
         {latestLine && (
           <div className="mt-1 text-sm text-muted-foreground/80 italic line-clamp-1">
@@ -195,7 +200,7 @@ function ReasoningBlock({
         <ChevronRightIcon
           className={cn('size-3 transition-transform', open && 'rotate-90')}
         />
-        <span>Thought</span>
+        <span>{t('chat.thought')}</span>
       </button>
       {open && (
         <div className="mt-2">

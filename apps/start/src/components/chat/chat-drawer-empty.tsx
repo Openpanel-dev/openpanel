@@ -1,6 +1,8 @@
 import CopyInput from '@/components/forms/copy-input';
 import { usePageContextValue } from '@/contexts/page-context';
+import type { TFunction } from 'i18next';
 import { ExternalLinkIcon, KeyRoundIcon, SparklesIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useChatRuntime } from './chat-runtime';
 
 /**
@@ -11,9 +13,10 @@ import { useChatRuntime } from './chat-runtime';
  * it doesn't depend on an agent being available.
  */
 export function ChatDrawerEmpty() {
+  const { t } = useTranslation();
   const ctx = usePageContextValue();
   const { send } = useChatRuntime();
-  const suggestions = getSuggestionsForContext(ctx);
+  const suggestions = getSuggestionsForContext(ctx, t);
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8 text-center">
@@ -43,18 +46,24 @@ export function ChatDrawerEmpty() {
 }
 
 export function ChatDrawerNotConfigured() {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8 text-center">
       <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <KeyRoundIcon className="size-5" />
       </div>
       <div className="max-w-xs">
-        <h3 className="font-semibold text-xl mb-2">AI chat isn't configured</h3>
+        <h3 className="font-semibold text-xl mb-2">
+          {t('chat.ai_not_configured')}
+        </h3>
         <p className="mt-1.5 text-muted-foreground leading-[1.5]">
-          Set <code className="font-mono text-sm">OPENAI_API_KEY</code> and/or{' '}
-          <code className="font-mono text-sm">ANTHROPIC_API_KEY</code> on the
-          API service to enable AI chat, then restart it. The model picker
-          shows only providers with a configured key.
+          {t('chat.ai_not_configured_setup_prefix')}{' '}
+          <code className="font-mono text-sm">OPENAI_API_KEY</code>{' '}
+          {t('chat.ai_not_configured_setup_between')}{' '}
+          <code className="font-mono text-sm">ANTHROPIC_API_KEY</code>{' '}
+          {t('chat.ai_not_configured_setup_suffix')}{' '}
+          {t('chat.ai_not_configured_description')}
         </p>
       </div>
       <div className="flex w-full max-w-xs flex-col gap-2">
@@ -67,7 +76,7 @@ export function ChatDrawerNotConfigured() {
         rel="noopener"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
-        View setup docs
+        {t('chat.view_setup_docs')}
         <ExternalLinkIcon className="size-3.5" />
       </a>
     </div>
@@ -82,16 +91,16 @@ type Suggestions = {
 
 function getSuggestionsForContext(
   ctx: ReturnType<typeof usePageContextValue>,
+  t: TFunction,
 ): Suggestions {
   if (!ctx) {
     return {
-      headline: 'Ask about your data',
-      description:
-        'I can answer questions about your analytics, generate reports, and dig into users, sessions, or pages.',
+      headline: t('chat.empty_no_context_headline'),
+      description: t('chat.empty_no_context_description'),
       prompts: [
-        'What happened yesterday?',
-        'Show me last 7 days of traffic',
-        'Which pages have the highest bounce rate?',
+        t('chat.empty_no_context_prompt_what_happened_yesterday'),
+        t('chat.empty_no_context_prompt_last_seven_days_traffic'),
+        t('chat.empty_no_context_prompt_highest_bounce_rate'),
       ],
     };
   }
@@ -99,142 +108,131 @@ function getSuggestionsForContext(
   switch (ctx.page) {
     case 'overview':
       return {
-        headline: 'Ask about this overview',
-        description:
-          'I can explain trends, compare periods, or filter the page. Try a question or pick a starter.',
+        headline: t('chat.empty_overview_headline'),
+        description: t('chat.empty_overview_description'),
         prompts: [
-          'What changed compared to the previous period?',
-          'Filter to mobile only',
-          'Show me last 7 days of traffic',
-          'Which referrers drove the most sessions?',
+          t('chat.empty_overview_prompt_compare_previous_period'),
+          t('chat.empty_overview_prompt_filter_mobile_only'),
+          t('chat.empty_overview_prompt_last_seven_days_traffic'),
+          t('chat.empty_overview_prompt_top_referrers'),
         ],
       };
 
     case 'insights':
       return {
-        headline: 'Explore your insights',
-        description:
-          'I can explain why an insight fired, find related ones, or walk you through the most important.',
+        headline: t('chat.empty_insights_headline'),
+        description: t('chat.empty_insights_description'),
         prompts: [
-          'What are the most important insights right now?',
-          'Explain the biggest anomaly this week',
-          'Any insights related to device trends?',
+          t('chat.empty_insights_prompt_most_important'),
+          t('chat.empty_insights_prompt_biggest_anomaly'),
+          t('chat.empty_insights_prompt_device_trends'),
         ],
       };
 
     case 'pages':
       return {
-        headline: 'Ask about your pages',
-        description:
-          'I can rank pages by performance, find declining ones, or identify entry/exit patterns.',
+        headline: t('chat.empty_pages_headline'),
+        description: t('chat.empty_pages_description'),
         prompts: [
-          'Which pages are declining vs last month?',
-          'Show pages with the highest bounce rate',
-          'Top entry pages in the last 7 days',
-          'Find pages with underperforming SEO',
+          t('chat.empty_pages_prompt_declining_pages'),
+          t('chat.empty_pages_prompt_highest_bounce_rate'),
+          t('chat.empty_pages_prompt_top_entry_pages'),
+          t('chat.empty_pages_prompt_underperforming_seo'),
         ],
       };
 
     case 'seo':
       return {
-        headline: 'Dig into your SEO',
-        description:
-          'I can surface high-opportunity queries, check for cannibalization, and correlate SEO with on-site engagement.',
+        headline: t('chat.empty_seo_headline'),
+        description: t('chat.empty_seo_description'),
         prompts: [
-          'Queries on page 2 with high impressions (easy wins)',
-          'Any query cannibalization I should fix?',
-          'Which pages bring GSC clicks but bounce hard?',
-          'Top SEO queries last 30 days',
+          t('chat.empty_seo_prompt_page_two_queries'),
+          t('chat.empty_seo_prompt_query_cannibalization'),
+          t('chat.empty_seo_prompt_gsc_clicks_bounce_hard'),
+          t('chat.empty_seo_prompt_top_seo_queries'),
         ],
       };
 
     case 'events':
       return {
-        headline: 'Analyze your events',
-        description:
-          'I can analyze distribution, correlate events, and drill into properties.',
+        headline: t('chat.empty_events_headline'),
+        description: t('chat.empty_events_description'),
         prompts: [
-          'Which events often happen together?',
-          'Analyze event distribution by country',
-          'Filter to signup events only',
-          'What are the most common event properties?',
+          t('chat.empty_events_prompt_events_together'),
+          t('chat.empty_events_prompt_distribution_by_country'),
+          t('chat.empty_events_prompt_signup_events_only'),
+          t('chat.empty_events_prompt_common_properties'),
         ],
       };
 
     case 'profileDetail':
       return {
-        headline: 'Ask about this user',
-        description:
-          'I can summarize this profile, build a journey, or compare them to the average user.',
+        headline: t('chat.empty_profile_detail_headline'),
+        description: t('chat.empty_profile_detail_description'),
         prompts: [
-          "Tell me about this user's journey",
-          'How does this user compare to average?',
-          'What was their last session?',
-          'Do they have unusual behavior?',
+          t('chat.empty_profile_detail_prompt_user_journey'),
+          t('chat.empty_profile_detail_prompt_compare_average'),
+          t('chat.empty_profile_detail_prompt_last_session'),
+          t('chat.empty_profile_detail_prompt_unusual_behavior'),
         ],
       };
 
     case 'sessionDetail':
       return {
-        headline: 'Ask about this session',
-        description:
-          'I can walk through the path, compare to typical sessions, or explain the referrer context.',
+        headline: t('chat.empty_session_detail_headline'),
+        description: t('chat.empty_session_detail_description'),
         prompts: [
-          'Walk me through this session',
-          'How does this compare to typical sessions?',
-          'Where did this traffic come from?',
-          'Are there similar sessions today?',
+          t('chat.empty_session_detail_prompt_walk_through'),
+          t('chat.empty_session_detail_prompt_compare_typical'),
+          t('chat.empty_session_detail_prompt_traffic_source'),
+          t('chat.empty_session_detail_prompt_similar_sessions'),
         ],
       };
 
     case 'groupDetail':
       return {
-        headline: 'Ask about this group',
-        description:
-          'I can show metrics, list members, and compare to peer groups.',
+        headline: t('chat.empty_group_detail_headline'),
+        description: t('chat.empty_group_detail_description'),
         prompts: [
-          "Summarize this group's activity",
-          'Compare to other groups',
-          'Who are the most active members?',
-          "What's this group's engagement trend?",
+          t('chat.empty_group_detail_prompt_summarize_activity'),
+          t('chat.empty_group_detail_prompt_compare_groups'),
+          t('chat.empty_group_detail_prompt_active_members'),
+          t('chat.empty_group_detail_prompt_engagement_trend'),
         ],
       };
 
     case 'reportEditor':
       return {
-        headline: 'Edit this report with me',
-        description:
-          'I can preview changes, suggest breakdowns, or compare to the previous period.',
+        headline: t('chat.empty_report_editor_headline'),
+        description: t('chat.empty_report_editor_description'),
         prompts: [
-          'Suggest useful breakdowns for this report',
-          'Compare to the previous period',
-          'Find anomalies in the current data',
-          'Add a country breakdown',
+          t('chat.empty_report_editor_prompt_useful_breakdowns'),
+          t('chat.empty_report_editor_prompt_compare_previous_period'),
+          t('chat.empty_report_editor_prompt_find_anomalies'),
+          t('chat.empty_report_editor_prompt_country_breakdown'),
         ],
       };
 
     case 'dashboard':
       return {
-        headline: 'Ask about this dashboard',
-        description:
-          'I can summarize every report on this dashboard at once, flag what changed, or zoom into a single chart.',
+        headline: t('chat.empty_dashboard_headline'),
+        description: t('chat.empty_dashboard_description'),
         prompts: [
-          'Summarize this dashboard',
-          "What's underperforming here?",
-          'Compare this dashboard to the previous period',
-          'Which report has the biggest change?',
+          t('chat.empty_dashboard_prompt_summarize_dashboard'),
+          t('chat.empty_dashboard_prompt_underperforming'),
+          t('chat.empty_dashboard_prompt_compare_previous_period'),
+          t('chat.empty_dashboard_prompt_biggest_change'),
         ],
       };
 
     default:
       return {
-        headline: 'Ask about your data',
-        description:
-          'I can answer questions about the page you\'re viewing, generate reports, and dig into specific users, sessions, or pages.',
+        headline: t('chat.empty_default_context_headline'),
+        description: t('chat.empty_default_context_description'),
         prompts: [
-          "What's our visitor count this week?",
-          'Top traffic sources right now',
-          'Show me top pages by bounce rate',
+          t('chat.empty_default_context_prompt_visitor_count'),
+          t('chat.empty_default_context_prompt_top_traffic_sources'),
+          t('chat.empty_default_context_prompt_top_pages_bounce_rate'),
         ],
       };
   }

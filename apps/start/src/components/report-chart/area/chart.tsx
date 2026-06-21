@@ -11,6 +11,7 @@ import { isSameDay, isSameHour, isSameMonth, isSameWeek } from 'date-fns';
 import { BookmarkIcon, UsersIcon } from 'lucide-react';
 import { last } from 'ramda';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Area,
   CartesianGrid,
@@ -43,6 +44,7 @@ interface Props {
 }
 
 export function Chart({ data }: Props) {
+  const { t } = useTranslation();
   const {
     report: {
       previous,
@@ -148,7 +150,7 @@ export function Chart({ data }: Props) {
       // View Users - only show if we have projectId
       if (projectId) {
         items.push({
-          label: 'View Users',
+          label: t('report_chart.view_users'),
           icon: <UsersIcon size={16} />,
           onClick: () => {
             pushModal('ViewChartUsers', {
@@ -174,7 +176,7 @@ export function Chart({ data }: Props) {
 
       // Add Reference - always show
       items.push({
-        label: 'Add Reference',
+        label: t('report_chart.add_reference'),
         icon: <BookmarkIcon size={16} />,
         onClick: () => {
           pushModal('AddReference', {
@@ -195,6 +197,7 @@ export function Chart({ data }: Props) {
       endDate,
       range,
       previous,
+      t,
     ],
   );
 

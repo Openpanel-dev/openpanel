@@ -18,6 +18,7 @@ import { PopoverPortal } from '@radix-ui/react-popover';
 import { CheckIcon, ChevronsUpDown, GanttChartIcon } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { EventIcon } from '../events/event-icon';
 
 /**
@@ -77,6 +78,7 @@ export function ComboboxEvents<
   multiple = false as TMultiple,
   maxDisplayItems = 2,
 }: ComboboxProps<T, TMultiple>) {
+  const { t } = useTranslation();
   const number = useNumber();
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
@@ -170,13 +172,13 @@ export function ComboboxEvents<
           <Command shouldFilter={false}>
             {searchable === true && (
               <CommandInput
-                placeholder="Search event..."
+                placeholder={t('ui.search_event')}
                 value={search}
                 onValueChange={setSearch}
               />
             )}
 
-            <CommandEmpty>Nothing selected</CommandEmpty>
+            <CommandEmpty>{t('ui.nothing_selected')}</CommandEmpty>
             <VirtualList
               height={300}
               data={items.filter((item) => {
@@ -206,7 +208,7 @@ export function ComboboxEvents<
                       <EventIcon name={item.name} meta={item.meta} size="sm" />
                     )}
                     <span className="font-medium flex-1 truncate">
-                      {item.name === '*' ? 'Any events' : item.name}
+                      {item.name === '*' ? t('ui.any_events') : item.name}
                     </span>
                     <span className="text-muted-foreground font-mono font-medium">
                       {number.short(item.count)}

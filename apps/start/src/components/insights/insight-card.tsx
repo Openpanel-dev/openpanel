@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { last } from 'ramda';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DeltaChip } from '../delta-chip';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Badge } from '../ui/badge';
@@ -40,6 +41,7 @@ export function InsightCard({
   className,
   onFilter,
 }: InsightCardProps) {
+  const { t } = useTranslation();
   const payload = insight.payload;
   const dimensions = payload?.dimensions;
   const availableMetrics = Object.entries(payload?.metrics ?? {});
@@ -73,7 +75,11 @@ export function InsightCard({
 
   // Get the metric label
   const metricKeyToLabel = (key: string) =>
-    key === 'share' ? 'Share' : key === 'pageviews' ? 'Pageviews' : 'Sessions';
+    key === 'share'
+      ? t('insights.metric_share')
+      : key === 'pageviews'
+        ? t('insights.metric_pageviews')
+        : t('insights.metric_sessions');
 
   const metricLabel = metricKeyToLabel(currentMetricKey);
 

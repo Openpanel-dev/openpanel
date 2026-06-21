@@ -20,6 +20,7 @@ import { getChartColor } from '@/utils/theme';
 import { DropdownMenuPortal } from '@radix-ui/react-dropdown-menu';
 import { SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { round } from '@openpanel/common';
 import { NOT_SET_VALUE } from '@openpanel/constants';
@@ -43,6 +44,7 @@ interface Props {
 }
 
 export function Chart({ data }: Props) {
+  const { t } = useTranslation();
   const [isOpen, setOpen] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('count-desc');
@@ -124,7 +126,7 @@ export function Chart({ data }: Props) {
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
               type="text"
-              placeholder="Filter by name"
+              placeholder={t('report_chart.filter_by_name')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -139,15 +141,23 @@ export function Chart({ data }: Props) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="count-desc">Count (High → Low)</SelectItem>
-              <SelectItem value="count-asc">Count (Low → High)</SelectItem>
-              <SelectItem value="name-asc">Name (A → Z)</SelectItem>
-              <SelectItem value="name-desc">Name (Z → A)</SelectItem>
+              <SelectItem value="count-desc">
+                {t('report_chart.sort_count_high_low')}
+              </SelectItem>
+              <SelectItem value="count-asc">
+                {t('report_chart.sort_count_low_high')}
+              </SelectItem>
+              <SelectItem value="name-asc">
+                {t('report_chart.sort_name_a_z')}
+              </SelectItem>
+              <SelectItem value="name-desc">
+                {t('report_chart.sort_name_z_a')}
+              </SelectItem>
               <SelectItem value="percent-desc">
-                Percentage (High → Low)
+                {t('report_chart.sort_percentage_high_low')}
               </SelectItem>
               <SelectItem value="percent-asc">
-                Percentage (Low → High)
+                {t('report_chart.sort_percentage_low_high')}
               </SelectItem>
             </SelectContent>
           </Select>

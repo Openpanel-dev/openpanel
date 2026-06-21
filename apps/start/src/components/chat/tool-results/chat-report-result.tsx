@@ -1,8 +1,10 @@
 import { ReportChart } from '@/components/report-chart';
 import { Button } from '@/components/ui/button';
 import { pushModal } from '@/modals';
+import type { TFunction } from 'i18next';
 import type { IReport, IReportInput } from '@openpanel/validation';
 import { SaveIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { asReportOutput } from './output-types';
 import { ResultCard, ToolStateGuard } from './shared';
 import type { ToolResultProps } from './types';
@@ -42,12 +44,13 @@ function ChatReportInner({
   input: unknown;
   toolType: string;
 }) {
+  const { t } = useTranslation();
   const value = asReportOutput(output);
   if (!value || value.error) {
     return (
       <ResultCard>
         <div className="px-3 py-2 text-sm text-muted-foreground">
-          {value?.error ?? 'No data'}
+          {value?.error ?? t('chat.result_no_data')}
         </div>
       </ResultCard>
     );
@@ -56,9 +59,9 @@ function ChatReportInner({
   const report = value.report;
   if (!report || !report.chartType) {
     return (
-      <ResultCard title={value.name ?? 'Report'}>
+      <ResultCard title={value.name ?? t('chat.result_report')}>
         <div className="px-3 py-2 text-sm text-muted-foreground">
-          Report data returned but no renderable config.
+          {t('chat.result_no_renderable_report_config')}
         </div>
       </ResultCard>
     );
@@ -66,8 +69,10 @@ function ChatReportInner({
 
   const title =
     value.name ??
-    deriveTitleFromInput(toolType, input) ??
-    `${humanizeChartType(String(report.chartType))} report`;
+    deriveTitleFromInput(toolType, input, t) ??
+    t('chat.result_chart_report_title', {
+      chart: humanizeChartType(String(report.chartType), t),
+    });
 
   return (
     <ResultCard title={title}>
@@ -91,7 +96,7 @@ function ChatReportInner({
             rel="noopener noreferrer"
             className="text-sm text-muted-foreground hover:underline"
           >
-            Open in dashboard →
+            {t('chat.result_open_in_dashboard')}
           </a>
           {!report.id && (
             <Button
@@ -106,7 +111,7 @@ function ChatReportInner({
               }
             >
               <SaveIcon className="size-3 mr-1" />
-              Save
+              {t('common.save')}
             </Button>
           )}
         </div>
@@ -121,7 +126,11 @@ function ChatReportInner({
  * — we can do better than `"LINEAR chart"` by reading what the
  * user actually asked for.
  */
-function deriveTitleFromInput(toolType: string, input: unknown): string | null {
+function deriveTitleFromInput(
+  toolType: string,
+  input: unknown,
+  t: TFunction,
+): string | null {
   if (!input || typeof input !== 'object') return null;
   const args = input as {
     steps?: unknown;
@@ -135,16 +144,25 @@ function deriveTitleFromInput(toolType: string, input: unknown): string | null {
     case 'tool-get_funnel': {
       if (Array.isArray(args.steps) && args.steps.length > 0) {
         const names = args.steps.filter((s): s is string => typeof s === 'string');
-        if (names.length > 0) return `Funnel: ${names.join(' → ')}`;
+        if (names.length > 0) {
+          return t('chat.result_funnel_title', { steps: names.join(' → ') });
+        }
       }
-      return 'Funnel';
+      return t('chat.result_chart_type_funnel');
     }
 
     case 'tool-get_rolling_active_users': {
       const w = args.windowDays ?? 1;
-      const label = w === 1 ? 'DAU' : w === 7 ? 'WAU' : w === 30 ? 'MAU' : `${w}-day active users`;
+      const label =
+        w === 1
+          ? 'DAU'
+          : w === 7
+            ? 'WAU'
+            : w === 30
+              ? 'MAU'
+              : t('chat.result_day_active_users', { count: w });
       const days = args.days ?? 30;
-      return `${label} — last ${days} days`;
+      return t('chat.result_active_users_title', { label, count: days });
     }
 
     case 'tool-generate_report': {
@@ -154,8 +172,8 @@ function deriveTitleFromInput(toolType: string, input: unknown): string | null {
             .filter((n): n is string => typeof n === 'string' && n.length > 0)
         : [];
       const kind = args.chartType
-        ? humanizeChartType(args.chartType)
-        : 'Report';
+        ? humanizeChartType(args.chartType, t)
+        : t('chat.result_report');
       if (events.length === 0) return kind;
       if (events.length === 1) return `${kind}: ${events[0]}`;
       return `${kind}: ${events.join(', ')}`;
@@ -166,30 +184,30 @@ function deriveTitleFromInput(toolType: string, input: unknown): string | null {
   }
 }
 
-function humanizeChartType(type: string): string {
+function humanizeChartType(type: string, t: TFunction): string {
   switch (type) {
     case 'linear':
-      return 'Line chart';
+      return t('chat.result_chart_type_linear');
     case 'bar':
-      return 'Bar chart';
+      return t('chat.result_chart_type_bar');
     case 'area':
-      return 'Area chart';
+      return t('chat.result_chart_type_area');
     case 'pie':
-      return 'Pie chart';
+      return t('chat.result_chart_type_pie');
     case 'funnel':
-      return 'Funnel';
+      return t('chat.result_chart_type_funnel');
     case 'metric':
-      return 'Metric';
+      return t('chat.result_chart_type_metric');
     case 'retention':
-      return 'Retention';
+      return t('chat.result_chart_type_retention');
     case 'histogram':
-      return 'Histogram';
+      return t('chat.result_chart_type_histogram');
     case 'sankey':
-      return 'Sankey';
+      return t('chat.result_chart_type_sankey');
     case 'map':
-      return 'Map';
+      return t('chat.result_chart_type_map');
     case 'conversion':
-      return 'Conversion';
+      return t('chat.result_chart_type_conversion');
     default:
       return type.charAt(0).toUpperCase() + type.slice(1);
   }

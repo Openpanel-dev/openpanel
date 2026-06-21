@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
 import { ArrowUpIcon, SparklesIcon } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useChatState } from './chat-context';
 
 /**
@@ -17,6 +18,7 @@ import { useChatState } from './chat-context';
  * pending message once `useAgent` is ready.
  */
 export function SidebarChatComposer() {
+  const { t } = useTranslation();
   const { setPendingMessage, openNewChat } = useChatState();
   const [text, setText] = useState('');
   const hasText = text.trim().length > 0;
@@ -43,7 +45,7 @@ export function SidebarChatComposer() {
         type="text"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Ask AI anything…"
+        placeholder={t('chat.ask_ai_placeholder')}
         className={cn(
           'min-w-0 flex-1 bg-transparent py-2 text-[13px] font-medium text-foreground',
           'placeholder:font-normal placeholder:text-muted-foreground',
@@ -63,7 +65,7 @@ export function SidebarChatComposer() {
           size="icon"
           variant="default"
           className="size-6 shrink-0 rounded-sm"
-          aria-label="Send to AI"
+          aria-label={t('chat.send_to_ai')}
         >
           <ArrowUpIcon className="size-3.5" />
         </Button>
@@ -73,7 +75,7 @@ export function SidebarChatComposer() {
             'shrink-0 rounded border border-border bg-def-200 px-1.5 py-0.5 font-mono text-[11px]',
             'text-muted-foreground cursor-pointer',
           )}
-          aria-label="Keyboard shortcut: Cmd+J"
+          aria-label={t('chat.keyboard_shortcut')}
           onClick={() => openNewChat()}
         >
           ⌘J
