@@ -85,10 +85,12 @@ export async function firstEvent() {
           project_id: c.project_id,
           session_id: c.session_id,
           created_at: c.first_ts,
-          properties: JSON.stringify({
+          // properties is a Map column — pass a raw object, NOT JSON.stringify
+          // (a stringified value serializes as "{...}" and CH rejects it).
+          properties: {
             deviceUID: c.device_id,
             is_synthetic: 'true',
-          }),
+          },
           os: '',
           os_version: '',
           country: '',
