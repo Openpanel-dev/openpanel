@@ -6,11 +6,15 @@ import { logger as baseLogger } from '@/utils/logger';
 const logger = baseLogger.child({ job: 'weekly-digest' });
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MIN_EVENTS = 10_000;
+const MIN_EVENTS = 5000;
 const MAX_INSIGHTS = 5;
 
 type DigestData = EmailData<'weekly-digest'>;
-type ProjectRow = { id: string; name: string; organizationId: string };
+interface ProjectRow {
+  id: string;
+  name: string;
+  organizationId: string;
+}
 
 function formatCount(n: number): string {
   return Math.round(n).toLocaleString();
@@ -18,9 +22,11 @@ function formatCount(n: number): string {
 
 function pctDelta(
   current: number,
-  previous: number,
+  previous: number
 ): { delta?: string; direction: 'up' | 'down' | 'flat' } {
-  if (previous <= 0) return { direction: 'flat' };
+  if (previous <= 0) {
+    return { direction: 'flat' };
+  }
   const pct = ((current - previous) / previous) * 100;
   const direction = pct > 0.5 ? 'up' : pct < -0.5 ? 'down' : 'flat';
   const sign = pct >= 0 ? '+' : '';
@@ -29,7 +35,7 @@ function pctDelta(
 
 function ppDelta(
   current: number,
-  previous: number,
+  previous: number
 ): { delta?: string; direction: 'up' | 'down' | 'flat' } {
   const diff = current - previous;
   const direction = diff > 0.5 ? 'up' : diff < -0.5 ? 'down' : 'flat';
@@ -53,7 +59,7 @@ function formatRange(startMs: number, endMs: number): string {
  */
 async function buildDigestData(
   project: ProjectRow,
-  opts: { force?: boolean } = {},
+  opts: { force?: boolean } = {}
 ): Promise<{ skipped?: string; data?: DigestData }> {
   const now = Date.now();
   const curStart = now - 7 * DAY_MS;
@@ -110,7 +116,7 @@ async function buildDigestData(
       projectId: project.id,
       state: 'active',
       emailWorthy: true,
-      windowKind: { in: ['rolling_7d', 'rolling_30d'] },
+      windowKind: { in: ['rolling_7d'] },
     },
     orderBy: [
       { relevanceScore: { sort: 'desc', nulls: 'last' } },
@@ -133,10 +139,27 @@ async function buildDigestData(
       projectName: project.name,
       dateRange,
       stats: [
-        { label: 'visitors', current: c.unique_visitors, previous: p.unique_visitors },
-        { label: 'sessions', current: c.total_sessions, previous: p.total_sessions },
-        { label: 'pageviews', current: c.total_screen_views, previous: p.total_screen_views },
-        { label: 'bounce rate', current: c.bounce_rate, previous: p.bounce_rate, unit: '%' },
+        {
+          label: 'visitors',
+          current: c.unique_visitors,
+          previous: p.unique_visitors,
+        },
+        {
+          label: 'sessions',
+          current: c.total_sessions,
+          previous: p.total_sessions,
+        },
+        {
+          label: 'pageviews',
+          current: c.total_screen_views,
+          previous: p.total_screen_views,
+        },
+        {
+          label: 'bounce rate',
+          current: c.bounce_rate,
+          previous: p.bounce_rate,
+          unit: '%',
+        },
       ],
       insights,
     });
@@ -172,22 +195,43 @@ async function recipientsForOrg(organizationId: string): Promise<string[]> {
  * `sendEmail` skips anyone unsubscribed from the `weekly_digest` category.
  */
 export async function weeklyDigestCronJob() {
+  // Prefilter on the raw status column (computed fields can't be used in
+  // `where`), then refine with the canonical subscription state below.
   const projects = await db.project.findMany({
     where: {
       deleteAt: null,
       eventsCount: { gt: MIN_EVENTS },
-      organization: { subscriptionStatus: 'active' },
+      organization: { subscriptionStatus: { in: ['active', 'trialing'] } },
     },
-    select: { id: true, name: true, organizationId: true },
+    select: {
+      id: true,
+      name: true,
+      organizationId: true,
+      organization: { select: { subscriptionState: true } },
+    },
   });
 
   let sent = 0;
   for (const project of projects) {
     try {
+      // Single source of truth (`getSubscriptionState`): mail paid orgs and
+      // live trials (the digest nudges trial→paid conversion), but skip
+      // `trial_expired` — a 30-day trial that lapsed weeks ago is an abandoned
+      // org we shouldn't keep emailing. `trialing` already implies the trial
+      // end date is still in the future.
+      const state = project.organization.subscriptionState;
+      if (state !== 'active' && state !== 'trialing') {
+        continue;
+      }
+
       const { skipped, data } = await buildDigestData(project);
-      if (skipped || !data) continue;
+      if (skipped || !data) {
+        continue;
+      }
       const emails = await recipientsForOrg(project.organizationId);
-      if (emails.length === 0) continue;
+      if (emails.length === 0) {
+        continue;
+      }
       for (const to of emails) {
         await sendEmail('weekly-digest', { to, data });
       }
@@ -208,7 +252,7 @@ export async function weeklyDigestCronJob() {
  */
 export async function previewWeeklyDigestForProject(
   projectId: string,
-  opts: { to?: string; force?: boolean } = {},
+  opts: { to?: string; force?: boolean } = {}
 ): Promise<{
   sent: boolean;
   to?: string;
@@ -219,10 +263,16 @@ export async function previewWeeklyDigestForProject(
     where: { id: projectId },
     select: { id: true, name: true, organizationId: true },
   });
-  if (!project) return { sent: false, skipped: 'project not found' };
+  if (!project) {
+    return { sent: false, skipped: 'project not found' };
+  }
 
-  const { skipped, data } = await buildDigestData(project, { force: opts.force });
-  if (skipped || !data) return { sent: false, skipped, data };
+  const { skipped, data } = await buildDigestData(project, {
+    force: opts.force,
+  });
+  if (skipped || !data) {
+    return { sent: false, skipped, data };
+  }
 
   if (opts.to) {
     await sendEmail('weekly-digest', { to: opts.to, data });
