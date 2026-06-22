@@ -29,11 +29,11 @@ import { toast } from 'sonner';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
+import { Input } from '@/components/ui/input';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/dashboards',
@@ -124,7 +124,7 @@ function Component() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer fluid>
       <PageHeader
         title="Dashboards"
         description="Access all your dashboards here"
@@ -153,121 +153,121 @@ function Component() {
           <p>No dashboards match "{searchQuery}"</p>
         </FullPageEmptyState>
       ) : (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-        {dashboards.map((item) => {
-          const visibleReports = item.reports.slice(
-            0,
-            item.reports.length > 6 ? 5 : 6,
-          );
-          return (
-            <Card key={item.id} hover>
-              <div>
-                <Link
-                  from={Route.fullPath}
-                  to={`${item.id}`}
-                  className="flex flex-col p-4 @container"
-                >
-                  <div className="col gap-2">
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {format(item.updatedAt, 'HH:mm · MMM d')}
-                    </div>
-                  </div>
-                  <div
-                    className={cn(
-                      'mt-4 grid gap-2',
-                      'grid-cols-1 @sm:grid-cols-2',
-                    )}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+          {dashboards.map((item) => {
+            const visibleReports = item.reports.slice(
+              0,
+              item.reports.length > 6 ? 5 : 6,
+            );
+            return (
+              <Card key={item.id} hover>
+                <div>
+                  <Link
+                    from={Route.fullPath}
+                    to={`${item.id}`}
+                    className="flex flex-col p-4 @container"
                   >
-                    {visibleReports.map((report) => {
-                      const Icon = {
-                        bar: BarChartHorizontalIcon,
-                        linear: LineChartIcon,
-                        pie: PieChartIcon,
-                        metric: HashIcon,
-                        map: Globe2Icon,
-                        histogram: BarChart3Icon,
-                        funnel: ConeIcon,
-                        area: AreaChartIcon,
-                        retention: ChartScatterIcon,
-                        conversion: TrendingUpIcon,
-                        distribution: BarChart3Icon,
-                      }[report.chartType];
+                    <div className="col gap-2">
+                      <div className="font-medium">{item.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {format(item.updatedAt, 'HH:mm · MMM d')}
+                      </div>
+                    </div>
+                    <div
+                      className={cn(
+                        'mt-4 grid gap-2',
+                        'grid-cols-1 @sm:grid-cols-2',
+                      )}
+                    >
+                      {visibleReports.map((report) => {
+                        const Icon = {
+                          bar: BarChartHorizontalIcon,
+                          linear: LineChartIcon,
+                          pie: PieChartIcon,
+                          metric: HashIcon,
+                          map: Globe2Icon,
+                          histogram: BarChart3Icon,
+                          funnel: ConeIcon,
+                          area: AreaChartIcon,
+                          retention: ChartScatterIcon,
+                          conversion: TrendingUpIcon,
+                          distribution: BarChart3Icon,
+                        }[report.chartType];
 
-                      return (
-                        <div
-                          className="row items-center gap-2 rounded-md bg-def-200 p-4 py-2"
-                          key={report.id}
-                        >
-                          <Icon size={24} />
+                        return (
+                          <div
+                            className="row items-center gap-2 rounded-md bg-def-200 p-4 py-2"
+                            key={report.id}
+                          >
+                            <Icon size={24} />
+                            <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm">
+                              {report.name}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {item.reports.length > 6 && (
+                        <div className="row items-center gap-2 rounded-md bg-def-100 p-4 py-2">
+                          <PlusIcon size={24} />
                           <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm">
-                            {report.name}
+                            {item.reports.length - 5} more
                           </div>
                         </div>
-                      );
-                    })}
-                    {item.reports.length > 6 && (
-                      <div className="row items-center gap-2 rounded-md bg-def-100 p-4 py-2">
-                        <PlusIcon size={24} />
-                        <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm">
-                          {item.reports.length - 5} more
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  {/* <span className="overflow-hidden text-ellipsis whitespace-nowrap  text-muted-foreground">
+                      )}
+                    </div>
+                    {/* <span className="overflow-hidden text-ellipsis whitespace-nowrap  text-muted-foreground">
                     <span className="mr-2 font-medium">
                       {item.reports.length} reports
                     </span>
                     {item.reports.map((item) => item.name).join(', ')}
                   </span> */}
-                </Link>
-              </div>
+                  </Link>
+                </div>
 
-              <CardActions>
-                <CardActionsItem className="w-full" asChild>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      pushModal('EditDashboard', item);
-                    }}
-                  >
-                    <Pencil size={16} />
-                    Edit
-                  </button>
-                </CardActionsItem>
-                <CardActionsItem className="w-full" asChild>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      toast('Duplicating dashboard...');
-                      duplication.mutate({ id: item.id });
-                    }}
-                  >
-                    <CopyIcon size={16} />
-                    Duplicate
-                  </button>
-                </CardActionsItem>
-                <CardActionsItem className="w-full text-destructive" asChild>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      showConfirm({
-                        title: 'Delete dashboard',
-                        text: 'Are you sure you want to delete this dashboard? All your reports will be deleted!',
-                        onConfirm: () => deletion.mutate({ id: item.id }),
-                      });
-                    }}
-                  >
-                    <Trash size={16} />
-                    Delete
-                  </button>
-                </CardActionsItem>
-              </CardActions>
-            </Card>
-          );
-        })}
-      </div>
+                <CardActions>
+                  <CardActionsItem className="w-full" asChild>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        pushModal('EditDashboard', item);
+                      }}
+                    >
+                      <Pencil size={16} />
+                      Edit
+                    </button>
+                  </CardActionsItem>
+                  <CardActionsItem className="w-full" asChild>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toast('Duplicating dashboard...');
+                        duplication.mutate({ id: item.id });
+                      }}
+                    >
+                      <CopyIcon size={16} />
+                      Duplicate
+                    </button>
+                  </CardActionsItem>
+                  <CardActionsItem className="w-full text-destructive" asChild>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        showConfirm({
+                          title: 'Delete dashboard',
+                          text: 'Are you sure you want to delete this dashboard? All your reports will be deleted!',
+                          onConfirm: () => deletion.mutate({ id: item.id }),
+                        });
+                      }}
+                    >
+                      <Trash size={16} />
+                      Delete
+                    </button>
+                  </CardActionsItem>
+                </CardActions>
+              </Card>
+            );
+          })}
+        </div>
       )}
     </PageContainer>
   );

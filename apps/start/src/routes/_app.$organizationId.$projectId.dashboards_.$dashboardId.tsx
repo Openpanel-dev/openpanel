@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/utils/cn';
 import { createProjectTitle } from '@/utils/title';
 import {
@@ -21,7 +22,6 @@ import {
   Trash,
   TrashIcon,
 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 import FullPageLoadingState from '@/components/full-page-loading-state';
@@ -350,11 +350,13 @@ function Component() {
 
   // Convert reports to grid layout format for all breakpoints
   const layouts = useMemo(() => {
+    // Default to 3 reports per row (each 4 of 12 cols wide). Reports with a
+    // saved layout keep their own size/position.
     const baseLayout = reports.map((report, index) => ({
       i: report.id,
-      x: report.layout?.x ?? (index % 2) * 6,
-      y: report.layout?.y ?? Math.floor(index / 2) * 4,
-      w: report.layout?.w ?? 6,
+      x: report.layout?.x ?? (index % 3) * 4,
+      y: report.layout?.y ?? Math.floor(index / 3) * 4,
+      w: report.layout?.w ?? 4,
       h: report.layout?.h ?? 4,
       minW: 2,
       minH: 2,
@@ -531,7 +533,7 @@ function Component() {
           <p>No reports match "{searchQuery}"</p>
         </FullPageEmptyState>
       ) : !isGridReady || reportsQuery.isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <ReportSkeleton />
           <ReportSkeleton />
           <ReportSkeleton />

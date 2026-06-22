@@ -61,7 +61,7 @@ function OrganizationPage() {
   }
 
   return (
-    <div className="container p-8">
+    <div className="w-full p-8">
       <PageHeader
         title="Projects"
         description="All your projects in this workspace"
