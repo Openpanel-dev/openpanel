@@ -1,6 +1,6 @@
 import { usePageContextValue } from '@/contexts/page-context';
 import { cn } from '@/utils/cn';
-import { timeWindows } from '@openpanel/constants';
+import { getTimeWindowLabelKey } from '@/utils/time-window-label';
 import {
   Building2Icon,
   GanttChartIcon,
@@ -14,6 +14,7 @@ import {
   UsersIcon,
   WallpaperIcon,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Small banner shown at the top of the chat body explaining what
@@ -23,6 +24,7 @@ import {
  * Renders nothing when there's no useful context to surface.
  */
 export function ChatContextWidget() {
+  const { t } = useTranslation();
   const ctx = usePageContextValue();
   if (!ctx) return null;
 
@@ -37,7 +39,7 @@ export function ChatContextWidget() {
   if (range === 'custom' && ctx.filters?.startDate && ctx.filters?.endDate) {
     chips.push(`${ctx.filters.startDate} → ${ctx.filters.endDate}`);
   } else if (range) {
-    chips.push(formatRange(range));
+    chips.push(formatRange(range, t));
   }
 
   // Event-name filter
@@ -123,6 +125,7 @@ const PAGE_META: Record<
   dashboard: { label: 'Dashboard', icon: LayoutDashboardIcon },
 };
 
-function formatRange(range: string): string {
-  return timeWindows[range as keyof typeof timeWindows]?.label ?? range;
+function formatRange(range: string, t: (key: string) => string): string {
+  const key = getTimeWindowLabelKey(range);
+  return key ? t(key) : range;
 }

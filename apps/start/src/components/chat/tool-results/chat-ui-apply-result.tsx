@@ -1,8 +1,8 @@
-import { timeWindows } from '@openpanel/constants';
 import { CheckIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ToolResultProps } from './types';
+import { getTimeWindowLabelKey } from '@/utils/time-window-label';
 
 /**
  * Renderers for the client-side UI-mutator tools:
@@ -35,7 +35,7 @@ export function ApplyFiltersResult({ part }: ToolResultProps) {
   } else if (input.range) {
     parts.push(
       t('chat.ui_apply_date_range_summary', {
-        value: formatRange(input.range),
+        value: formatRange(input.range, t),
       }),
     );
   }
@@ -96,6 +96,7 @@ function AppliedChip({ children }: { children: ReactNode }) {
   );
 }
 
-function formatRange(range: string): string {
-  return timeWindows[range as keyof typeof timeWindows]?.label ?? range;
+function formatRange(range: string, t: (key: string) => string): string {
+  const key = getTimeWindowLabelKey(range);
+  return key ? t(key) : range;
 }

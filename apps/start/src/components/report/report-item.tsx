@@ -10,6 +10,7 @@ import { cn } from '@/utils/cn';
 import { CopyIcon, MoreHorizontal, Trash } from 'lucide-react';
 
 import { timeWindows } from '@openpanel/constants';
+import { getTimeWindowLabelKey } from '@/utils/time-window-label';
 
 import { useRouter } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
@@ -105,7 +106,7 @@ export function ReportItem({
                     : ''
                 }
               >
-                {timeWindows[chartRange as keyof typeof timeWindows]?.label}
+                {getReportRangeLabel(chartRange, t)}
               </span>
               {startDate && endDate ? (
                 <span>{t('reports.custom_dates')}</span>
@@ -113,7 +114,7 @@ export function ReportItem({
                 range !== null &&
                 chartRange !== range && (
                   <span>
-                    {timeWindows[range as keyof typeof timeWindows]?.label}
+                    {getReportRangeLabel(range, t)}
                   </span>
                 )
               )}
@@ -220,7 +221,7 @@ export function ReportItemReadOnly({
                     : ''
                 }
               >
-                {timeWindows[chartRange as keyof typeof timeWindows]?.label}
+                {getReportRangeLabel(chartRange, t)}
               </span>
               {startDate && endDate ? (
                 <span>{t('reports.custom_dates')}</span>
@@ -228,7 +229,7 @@ export function ReportItemReadOnly({
                 range !== null &&
                 chartRange !== range && (
                   <span>
-                    {timeWindows[range as keyof typeof timeWindows]?.label}
+                    {getReportRangeLabel(range, t)}
                   </span>
                 )
               )}
@@ -255,4 +256,9 @@ export function ReportItemReadOnly({
       </div>
     </div>
   );
+}
+
+function getReportRangeLabel(range: string, t: (key: string) => string): string {
+  const key = getTimeWindowLabelKey(range);
+  return key ? t(key) : timeWindows[range as keyof typeof timeWindows]?.label ?? range;
 }

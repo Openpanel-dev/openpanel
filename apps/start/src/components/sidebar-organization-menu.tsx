@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAppContext } from '@/hooks/use-app-context';
+import { getSubscriptionBadgeLabel } from '@/components/organization/subscription-i18n';
 import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 import { useOrganizationAccess } from '@/hooks/use-organization-access';
 import { pushModal } from '@/modals';
@@ -82,8 +83,13 @@ export default function SidebarOrganizationMenu({
                 canceledAt: organization.subscriptionCanceledAt,
               }
             ).badge;
+            const label = getSubscriptionBadgeLabel(
+              organization.subscriptionState,
+            );
             return badge ? (
-              <Badge variant={badge.variant}>{badge.label}</Badge>
+              <Badge variant={badge.variant}>
+                {label ? t(label.key, label.values) : badge.label}
+              </Badge>
             ) : null;
           })()}
         </Link>

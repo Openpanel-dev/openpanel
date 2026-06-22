@@ -12,6 +12,7 @@ import {
 } from '@/hooks/use-event-query-filters';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Inline AI command bar. Calls the `overview.runFilterCommand`
@@ -23,6 +24,7 @@ import { cn } from '@/utils/cn';
  * page header, `w-full` inside a filter sheet).
  */
 export function OverviewAICommand({ className }: { className?: string }) {
+  const { t } = useTranslation();
   const { projectId, organizationId } = useAppParams();
   const { range, startDate, endDate, interval } = useOverviewOptions();
   const [eventNames] = useEventQueryNamesFilter();
@@ -125,7 +127,7 @@ export function OverviewAICommand({ className }: { className?: string }) {
             submit();
           }
         }}
-        placeholder='Try: "last 7 days, mobile only"'
+        placeholder={t('overview.ai_command_placeholder')}
         value={value}
       />
     </div>

@@ -7,6 +7,7 @@ import { formatDateTime, formatTime } from '@/utils/date';
 import type { IServiceEvent } from '@openpanel/db';
 import { isToday } from 'date-fns';
 import { CopyIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 
 export interface KeyValueItem {
@@ -40,6 +41,8 @@ export function KeyValueGrid({
   onItemClick,
   copyable = false,
 }: KeyValueGridProps) {
+  const { t } = useTranslation();
+
   const defaultRenderKey = (item: KeyValueItem) => {
     const splitKey = item.name.split('.');
     return (
@@ -138,7 +141,7 @@ export function KeyValueGrid({
 
       {data.length === 0 && (
         <div className="text-center text-muted-foreground py-8 col-span-full">
-          No data available
+          {t('ui.no_data_available')}
         </div>
       )}
     </div>

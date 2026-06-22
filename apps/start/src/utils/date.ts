@@ -17,13 +17,13 @@ export function getLocale() {
 }
 
 export function formatDate(date: Date) {
-  const day = date.getDate();
-  const month = new Intl.DateTimeFormat(getLocale(), { month: 'short' })
+  return new Intl.DateTimeFormat(getLocale(), {
+    day: 'numeric',
+    month: 'short',
+  })
     .format(date)
     .replace('.', '')
     .toLowerCase();
-
-  return `${day} ${month}`;
 }
 
 export function formatDateTime(date: Date) {

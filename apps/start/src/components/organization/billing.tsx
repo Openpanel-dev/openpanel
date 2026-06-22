@@ -18,7 +18,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, useOnPushModal } from '@/modals';
 import { formatDate } from '@/utils/date';
 import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
-import type { SubscriptionState } from '@openpanel/payments/subscription-state';
+import { getSubscriptionStatusLine } from './subscription-i18n';
 
 type Props = {
   organization: IServiceOrganization;
@@ -267,73 +267,4 @@ export default function Billing({ organization }: Props) {
       </div>
     </div>
   );
-}
-
-type SubscriptionStatusLine =
-  | {
-      key: string;
-      values?: { date: string };
-    }
-  | null;
-
-function getSubscriptionStatusLine(
-  state: SubscriptionState,
-  {
-    endsAt,
-    canceledAt,
-  }: {
-    endsAt: string | null;
-    canceledAt: string | null;
-  }
-): SubscriptionStatusLine {
-  switch (state) {
-    case 'self_hosted':
-    case 'active':
-      return endsAt
-        ? {
-            key: 'billing.status_subscription_renews_on',
-            values: { date: endsAt },
-          }
-        : null;
-    case 'trialing':
-      return endsAt
-        ? {
-            key: 'billing.status_trial_ends_on',
-            values: { date: endsAt },
-          }
-        : null;
-    case 'trial_expired':
-      return { key: 'billing.status_trial_ended' };
-    case 'canceling':
-      return endsAt
-        ? {
-            key: 'billing.status_subscription_will_cancel_on',
-            values: { date: endsAt },
-          }
-        : null;
-    case 'canceled':
-      return canceledAt
-        ? {
-            key: 'billing.status_subscription_canceled_on',
-            values: { date: canceledAt },
-          }
-        : { key: 'billing.status_subscription_canceled' };
-    case 'past_due':
-      return { key: 'billing.status_payment_failed' };
-    case 'unpaid':
-      return { key: 'billing.status_subscription_unpaid' };
-    case 'incomplete':
-      return { key: 'billing.status_subscription_incomplete' };
-    case 'expired':
-      return endsAt
-        ? {
-            key: 'billing.status_subscription_expired_on',
-            values: { date: endsAt },
-          }
-        : { key: 'billing.status_subscription_expired' };
-    default: {
-      const _exhaustive: never = state;
-      return _exhaustive;
-    }
-  }
 }

@@ -38,6 +38,7 @@ import {
   Settings2Icon,
 } from 'lucide-react';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>;
@@ -52,6 +53,7 @@ function SortableColumnItem({
   column,
   onToggleVisibility,
 }: SortableColumnItemProps) {
+  const { t } = useTranslation();
   const {
     attributes,
     listeners,
@@ -83,7 +85,8 @@ function SortableColumnItem({
       <span className="truncate flex-1">
         {typeof column.columnDef.header === 'string'
           ? column.columnDef.header
-          : (column.columnDef.meta?.label ?? column.id)}
+          : (column.columnDef.meta?.label ??
+            t(`table.columns.${column.id}`, { defaultValue: column.id }))}
       </span>
       <Check
         className={cn(
@@ -98,6 +101,7 @@ function SortableColumnItem({
 export function DataTableViewOptions<TData>({
   table,
 }: DataTableViewOptionsProps<TData>) {
+  const { t } = useTranslation();
   const allColumns = table.getAllColumns();
   const filterableColumns = allColumns.filter(
     (column) => typeof column.accessorFn !== 'undefined' && column.getCanHide(),
@@ -173,22 +177,22 @@ export function DataTableViewOptions<TData>({
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          aria-label="Toggle columns"
+          aria-label={t('ui.toggle_columns')}
           role="combobox"
           variant="outline"
           size="sm"
           className="ml-auto hidden h-8 lg:flex"
         >
           <Settings2Icon className="size-4 mr-2" />
-          View
+          {t('ui.view')}
           <ChevronsUpDown className="opacity-50 ml-2 size-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-52 p-0">
         <Command>
-          <CommandInput placeholder="Search columns..." />
+          <CommandInput placeholder={t('ui.search_columns')} />
           <CommandList>
-            <CommandEmpty>No columns found.</CommandEmpty>
+            <CommandEmpty>{t('ui.no_columns_found')}</CommandEmpty>
             <CommandGroup>
               <DndContext
                 sensors={sensors}
@@ -217,7 +221,7 @@ export function DataTableViewOptions<TData>({
                 className="text-muted-foreground"
               >
                 <RotateCcw className="size-4 mr-2" />
-                Reset to default
+                {t('ui.reset_to_default')}
               </CommandItem>
             </CommandGroup>
           </CommandList>

@@ -9,8 +9,17 @@ import {
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
 import { useProfileValues } from '@/hooks/use-profile-values';
-import { FilterIcon, GanttChartIcon, GlobeIcon, LucideIcon, SlidersHorizontal, SparklesIcon, XIcon } from 'lucide-react';
+import {
+  FilterIcon,
+  GanttChartIcon,
+  GlobeIcon,
+  type LucideIcon,
+  SlidersHorizontal,
+  SparklesIcon,
+  XIcon,
+} from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
+import { useTranslation } from 'react-i18next';
 
 import type {
   IChartEventFilter,
@@ -32,13 +41,17 @@ export interface OverviewFiltersProps {
   mode?: 'events' | 'profile';
 }
 
-const Seperator = () => <div className="h-px bg-border -mx-6" />
-const Heading = ({ title, icon: Icon }: { title: string, icon: LucideIcon }) => (
+const Seperator = () => <div className="h-px bg-border -mx-6" />;
+const Heading = ({
+  title,
+  icon: Icon,
+}: {
+  title: string;
+  icon: LucideIcon;
+}) => (
   <div className="row items-center gap-2">
     <Icon className="size-4" />
-    <h2 className="text-sm font-medium">
-      {title}
-    </h2>
+    <h2 className="text-sm font-medium">{title}</h2>
   </div>
 );
 
@@ -47,6 +60,7 @@ export default function OverviewFilters({
   enableEventsFilter,
   mode,
 }: OverviewFiltersProps) {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const [filters, setFilter, setFilters, removeFilter] =
     useEventQueryFilters(nuqsOptions);
@@ -75,42 +89,38 @@ export default function OverviewFilters({
   };
   return (
     <SheetContent className="[&>button.absolute]:hidden">
-      <ModalHeader title="Filters" />
+      <ModalHeader title={t('filters.filters')} />
       <div className="flex flex-col gap-4">
-        <Heading icon={SparklesIcon} title="Ask AI" />
+        <Heading icon={SparklesIcon} title={t('filters.ask_ai')} />
         <OverviewAICommand className="w-full" />
         <Seperator />
-        <Heading icon={GlobeIcon} title="Origins" />
+        <Heading icon={GlobeIcon} title={t('filters.origins')} />
         <OriginFilter />
         <Seperator />
         {enableEventsFilter && (
           <>
-        <Heading icon={GanttChartIcon} title="Events" />
-          <ComboboxEvents
-            size="lg"
-            className="w-full"
-            value={event}
-            onChange={setEvent}
-            multiple
-            items={eventNames}
-            placeholder="Select event"
-            maxDisplayItems={2}
-            searchable
+            <Heading icon={GanttChartIcon} title={t('filters.events')} />
+            <ComboboxEvents
+              size="lg"
+              className="w-full"
+              value={event}
+              onChange={setEvent}
+              multiple
+              items={eventNames}
+              placeholder={t('notifications.select_event')}
+              maxDisplayItems={2}
+              searchable
             />
             <Seperator />
           </>
         )}
       </div>
-        <Heading icon={SlidersHorizontal} title="Filters" />
+      <Heading icon={SlidersHorizontal} title={t('filters.filters')} />
       <div className="flex flex-col gap-2">
-        <div
-          className={cn(
-            'bg-card rounded-lg border',
-          )}
-        >
+        <div className={cn('bg-card rounded-lg border')}>
           {selectedFilters.length === 0 && (
             <div className="p-4 text-center text-sm text-muted-foreground">
-              No filters selected
+              {t('filters.no_filters_selected')}
             </div>
           )}
           {selectedFilters.map((filter) => {
@@ -201,7 +211,7 @@ export default function OverviewFilters({
               className="w-full"
               icon={FilterIcon}
             >
-              Add filter
+              {t('filters.add_filter')}
             </Button>
           )}
         </PropertiesCombobox>
@@ -222,6 +232,7 @@ export function FilterOptionProfile({
     operator: IChartEventFilterOperator,
   ) => void;
 }) {
+  const { t } = useTranslation();
   const values = useProfileValues(projectId, filter.name);
 
   return (
@@ -230,7 +241,7 @@ export function FilterOptionProfile({
       <Combobox
         className="flex-1"
         onChange={(value) => setFilter(filter.name, value, filter.operator)}
-        placeholder={'Select a value'}
+        placeholder={t('filters.select_value')}
         items={values.map((value) => ({
           value,
           label: value,

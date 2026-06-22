@@ -20,6 +20,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { useTranslation } from 'react-i18next';
 
 interface ReportIntervalProps {
   className?: string;
@@ -39,6 +40,7 @@ export function ReportInterval({
   startDate,
   endDate,
 }: ReportIntervalProps) {
+  const { t } = useTranslation();
   if (
     chartType !== 'linear' &&
     chartType !== 'histogram' &&
@@ -58,21 +60,21 @@ export function ReportInterval({
   const items = [
     {
       value: 'minute',
-      label: 'Minute',
+      label: t('reports.interval_minute'),
       disabled: !isMinuteIntervalEnabledByRange(range),
     },
     {
       value: 'hour',
-      label: 'Hour',
+      label: t('reports.interval_hour'),
       disabled: !isHourIntervalEnabled,
     },
     {
       value: 'day',
-      label: 'Day',
+      label: t('reports.interval_day'),
     },
     {
       value: 'week',
-      label: 'Week',
+      label: t('reports.interval_week'),
       disabled:
         range === 'today' ||
         range === 'lastHour' ||
@@ -82,7 +84,7 @@ export function ReportInterval({
     },
     {
       value: 'month',
-      label: 'Month',
+      label: t('reports.interval_month'),
       disabled:
         range === 'today' ||
         range === 'lastHour' ||
@@ -101,12 +103,13 @@ export function ReportInterval({
           icon={ClockIcon}
           className={cn('justify-start', className)}
         >
-          {items.find((item) => item.value === interval)?.label || 'Interval'}
+          {items.find((item) => item.value === interval)?.label ||
+            t('reports.interval')}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
         <DropdownMenuLabel className="row items-center justify-between">
-          Select interval
+          {t('reports.select_interval')}
           {!!selectedItem && (
             <CommandShortcut>{selectedItem?.label}</CommandShortcut>
           )}

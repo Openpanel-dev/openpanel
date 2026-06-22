@@ -30,6 +30,7 @@ import {
 import { cn } from '@/utils/cn';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
+import { getChartTypeLabelKey } from './chart-labels';
 import { changeChartType } from './reportSlice';
 
 interface ReportChartTypeProps {
@@ -44,7 +45,7 @@ export function ReportChartType({
 }: ReportChartTypeProps) {
   const { t } = useTranslation();
   const items = objectToZodEnums(chartTypes).map((key) => ({
-    label: chartTypes[key],
+    label: t(getChartTypeLabelKey(key)),
     value: key,
   }));
 

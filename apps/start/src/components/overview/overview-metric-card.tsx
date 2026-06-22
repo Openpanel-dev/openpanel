@@ -15,6 +15,7 @@ import {
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
 import { Skeleton } from '../skeleton';
 import { formatDate as formatAbsoluteDate, timeAgo } from '@/utils/date';
+import { getTimeWindowLabelKey } from '@/utils/time-window-label';
 
 const PRIMARY_COLOR = 'var(--chart-0)';
 
@@ -67,10 +68,10 @@ export function OverviewMetricCard({
   const displayPrev = hovered
     ? (hovered.previous ?? null)
     : (metric.previous ?? null);
+  const rangeLabelKey = range ? getTimeWindowLabelKey(range) : null;
   const displayLabel = hovered
     ? formatDate(new Date(hovered.date))
-    : (range ? timeWindows[range]?.label : t('overview.total')) ||
-      t('overview.total');
+    : (rangeLabelKey ? t(rangeLabelKey) : t('overview.total'));
 
   const diff = getPreviousMetric(displayValue, displayPrev);
 

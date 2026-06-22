@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CohortDefinition } from '@openpanel/validation';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -27,6 +28,7 @@ const validator = z.object({
 type IForm = z.infer<typeof validator>;
 
 export default function AddCohort() {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -50,7 +52,9 @@ export default function AddCohort() {
   const mutation = useMutation(
     trpc.cohort.create.mutationOptions({
       onSuccess() {
-        toast('Success', { description: 'Cohort created.' });
+        toast(t('common.success'), {
+          description: t('cohorts.cohort_created'),
+        });
         queryClient.invalidateQueries(trpc.cohort.pathFilter());
         popModal();
       },
@@ -60,7 +64,7 @@ export default function AddCohort() {
 
   return (
     <ModalContent className="max-w-3xl">
-      <ModalHeader title="Create cohort" />
+      <ModalHeader title={t('cohorts.create_cohort')} />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit((data) => {
@@ -72,14 +76,14 @@ export default function AddCohort() {
         })}
       >
         <InputWithLabel
-          label="Name"
-          placeholder="Name of the cohort"
+          label={t('common.name')}
+          placeholder={t('cohorts.name_placeholder')}
           {...register('name')}
         />
 
-        <WithLabel label="Description">
+        <WithLabel label={t('common.description')}>
           <Textarea
-            placeholder="Optional description"
+            placeholder={t('cohorts.description_placeholder')}
             {...register('description')}
           />
         </WithLabel>
@@ -97,12 +101,12 @@ export default function AddCohort() {
             )}
           />
           <Label htmlFor="isStatic" className="cursor-pointer text-sm mb-0">
-            Freeze snapshot (don&apos;t auto-refresh)
+            {t('cohorts.freeze_snapshot')}
           </Label>
         </div>
 
         <div>
-          <Label className="mb-2 block">Cohort Criteria</Label>
+          <Label className="mb-2 block">{t('cohorts.cohort_criteria')}</Label>
           <Controller
             name="definition"
             control={control}
@@ -117,10 +121,10 @@ export default function AddCohort() {
 
         <ButtonContainer>
           <Button type="button" variant="outline" onClick={() => popModal()}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={!formState.isDirty}>
-            Create
+            {t('common.create')}
           </Button>
         </ButtonContainer>
       </form>
