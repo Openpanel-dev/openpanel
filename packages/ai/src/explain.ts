@@ -29,12 +29,26 @@ export interface BreakdownComparison {
   baseline: { name: string | null; sessions: number }[];
 }
 
+// Per-day sessions for the insight's own segment, so the model can read the
+// *shape* of the change (one-off spike on a date vs sustained growth) rather
+// than just current-vs-baseline totals.
+export interface DailyPoint {
+  date: string;
+  sessions: number;
+}
+
 export interface ExplainInsightInput {
   insight: {
     title: string;
     dimension: string;
     window: string;
     summary?: string;
+  };
+  // The insight metric's daily series for its own segment.
+  dailySeries?: {
+    metric: string;
+    current: DailyPoint[];
+    baseline: DailyPoint[];
   };
   breakdowns: BreakdownComparison[];
   references: { title: string; date: string }[];
@@ -66,15 +80,21 @@ const explanationJsonSchema = z.toJSONSchema(explanationSchema, {
 
 const INSTRUCTION = `You explain WHY an analytics metric changed for a website/product owner.
 
-You receive: the insight (what changed), a decomposition of the change across dimensions (referrer, country, device, utm_source) as current-window vs baseline-window session breakdowns, and any manual references (off-platform events the owner logged) near the window.
+You receive: the insight (what changed); a dailySeries — the segment's own per-day values for the current window vs the baseline window; a decomposition of the change across dimensions (referrer, country, device, utm_source) as current-vs-baseline session breakdowns; and any manual references (off-platform events the owner logged) near the window.
+
+Read the dailySeries FIRST — it tells you the *shape* of the change, which the totals alone hide:
+- A one-off spike: most of the change is concentrated in one or a few days, then it returns toward baseline. Say so explicitly and name the peak date(s) and the peak value. A single-day spike inflating a window total is NOT sustained growth — do not describe it as "grew to X" as if it held.
+- A step change: it jumps to a new level and stays there.
+- Sustained/gradual growth or decline: it moves steadily across the window.
+If the series is flat except for a spike, lead with the spike.
 
 Produce:
-- summary: 1-2 plain sentences answering "why did this happen", grounded in the decomposition. Name the sub-segment(s) that account for most of the change (e.g. "most of the lift came from reddit.com referrals").
-- drivers: the concrete contributors, each a short label + a one-line detail with the numbers.
-- relatedReference: the title of a reference that plausibly explains the change, or "" if none fits. Do not force a connection.
-- confidence: low | medium | high — how clearly the decomposition explains the change.
+- summary: 1-2 plain sentences answering "why did this happen", grounded in the data. State the shape (spike / step / sustained) with the peak date when it's a spike, then name the sub-segment(s) that account for most of the change (e.g. "a one-off spike on May 28 — ~60 sessions vs a ~5/day baseline — drove the lift; traffic has since returned to baseline").
+- drivers: the concrete contributors, each a short label + a one-line detail with the numbers (include the peak date/value when relevant).
+- relatedReference: the title of a reference whose date lines up with the spike/change date, or "" if none fits. Prefer a reference dated on or just before the peak day. Do not force a connection.
+- confidence: low | medium | high — how clearly the data explains the change.
 
-Be honest and precise. You can only see what's in the data: explain the internal decomposition (which segment moved), not external causes you can't observe. If the breakdown doesn't clearly explain it, say so and set confidence low. Never invent numbers.`;
+Be honest and precise. You can only see what's in the data: explain the shape and the internal decomposition (which segment moved, when), not external causes you can't observe. If the data doesn't clearly explain it, say so and set confidence low. Never invent numbers or dates.`;
 
 let _app: ReturnType<typeof betterAgent> | null = null;
 function getApp() {

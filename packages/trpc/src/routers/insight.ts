@@ -1,11 +1,21 @@
 import { generateInsightExplanation } from '@openpanel/ai';
-import { db, getTrafficBreakdownCore } from '@openpanel/db';
+import {
+  db,
+  getSegmentDailySeriesCore,
+  getTrafficBreakdownCore,
+} from '@openpanel/db';
+import { getRedisCache } from '@openpanel/redis';
+import type { InsightPayload } from '@openpanel/validation';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
 import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+// The explanation is a paid LLM call. Cache it keyed by the insight's
+// lastUpdatedAt so repeat clicks within the window are free, while any recompute
+// that changes the insight produces a new key and a fresh explanation.
+const EXPLAIN_CACHE_TTL_SEC = 24 * 60 * 60;
 const EXPLAIN_COLUMNS = [
   'referrer_name',
   'country',
@@ -117,7 +127,8 @@ export const insightRouter = createTRPCRouter({
 
   // Phase 5: the "why". Decompose the insight's change across referrer/country/
   // device/utm (current vs baseline window), pull nearby references, and have
-  // the AI explain which sub-segment drove it. On-demand (a button), not cached.
+  // the AI explain which sub-segment drove it. On-demand (a button); the result
+  // is cached per insight version so repeat clicks don't re-bill the LLM.
   explain: protectedProcedure
     .input(z.object({ insightId: z.string() }))
     .mutation(async ({ input: { insightId }, ctx }) => {
@@ -132,6 +143,8 @@ export const insightRouter = createTRPCRouter({
           windowKind: true,
           windowStart: true,
           windowEnd: true,
+          payload: true,
+          lastUpdatedAt: true,
         },
       });
 
@@ -142,6 +155,16 @@ export const insightRouter = createTRPCRouter({
 
       if (!access) {
         throw new TRPCForbiddenError('You do not have access to this project');
+      }
+
+      // Serve a cached explanation if the insight hasn't changed since we
+      // computed it. Skips both the ClickHouse queries and the LLM call.
+      const cacheKey = `insight-explain:${insightId}:${insight.lastUpdatedAt.getTime()}`;
+      const cached = await getRedisCache().get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached) as Awaited<
+          ReturnType<typeof generateInsightExplanation>
+        >;
       }
 
       // Current window from the insight; baseline = same span immediately before.
@@ -178,6 +201,54 @@ export const insightRouter = createTRPCRouter({
         }),
       );
 
+      // Daily series for the insight's own segment, so the model can read the
+      // shape of the change (a one-off spike vs sustained growth) instead of
+      // only the current-vs-baseline totals. Best-effort: skip on page/entry
+      // insights (events-table metrics) or anything we can't resolve.
+      const payload = insight.payload as InsightPayload | null;
+      const segment = payload?.dimensions?.[0];
+      const primaryMetric = payload?.primaryMetric ?? 'sessions';
+      let dailySeries:
+        | {
+            metric: string;
+            current: { date: string; sessions: number }[];
+            baseline: { date: string; sessions: number }[];
+          }
+        | undefined;
+
+      if (segment?.key && segment.value) {
+        const [curSeries, baseSeries] = await Promise.all([
+          getSegmentDailySeriesCore({
+            projectId: insight.projectId,
+            column: segment.key,
+            value: segment.value,
+            startDate: iso(start),
+            endDate: iso(end),
+          }),
+          getSegmentDailySeriesCore({
+            projectId: insight.projectId,
+            column: segment.key,
+            value: segment.value,
+            startDate: iso(baseStart),
+            endDate: iso(baseEnd),
+          }),
+        ]);
+
+        const toMetric = (points: typeof curSeries) =>
+          points.map((p) => ({
+            date: p.date.slice(0, 10),
+            sessions: primaryMetric === 'pageviews' ? p.pageviews : p.sessions,
+          }));
+
+        if (curSeries.length > 0) {
+          dailySeries = {
+            metric: primaryMetric,
+            current: toMetric(curSeries),
+            baseline: toMetric(baseSeries),
+          };
+        }
+      }
+
       const references = await db.reference.findMany({
         where: {
           projectId: insight.projectId,
@@ -191,18 +262,31 @@ export const insightRouter = createTRPCRouter({
         select: { title: true, date: true },
       });
 
-      return generateInsightExplanation({
+      const explanation = await generateInsightExplanation({
         insight: {
           title: insight.aiSummary ?? insight.title,
           dimension: insight.dimensionKey,
           window: insight.windowKind,
           summary: insight.summary ?? undefined,
         },
+        dailySeries,
         breakdowns,
         references: references.map((r) => ({
           title: r.title,
           date: r.date.toISOString().slice(0, 10),
         })),
       });
+
+      // Only cache a successful explanation — a null is a transient LLM failure
+      // and should be retried on the next click.
+      if (explanation) {
+        await getRedisCache().setex(
+          cacheKey,
+          EXPLAIN_CACHE_TTL_SEC,
+          JSON.stringify(explanation),
+        );
+      }
+
+      return explanation;
     }),
 });

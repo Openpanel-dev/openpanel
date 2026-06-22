@@ -1538,6 +1538,72 @@ export async function getTrafficBreakdownCore(input: {
   });
 }
 
+// Columns whose daily series we can derive from the sessions table. Page/entry
+// insights (path/origin) live on the events table and aren't covered here — the
+// caller degrades to no series for those.
+const SEGMENT_SERIES_COLUMNS: ReadonlySet<string> = new Set<TrafficColumn>([
+  'referrer',
+  'referrer_name',
+  'referrer_type',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'country',
+  'region',
+  'city',
+  'device',
+  'browser',
+  'os',
+]);
+
+export interface SegmentDailyPoint {
+  date: string;
+  sessions: number;
+  pageviews: number;
+}
+
+// Daily breakdown for a single segment value (e.g. the "Twitter" referrer),
+// so the explainer can see the *shape* of a change (one-off spike vs sustained
+// growth) instead of only current-vs-baseline totals. Returns one point per day
+// with zero-filled gaps; empty when the column isn't session-derived or the
+// value never appears in the window.
+export async function getSegmentDailySeriesCore(input: {
+  projectId: string;
+  column: string;
+  value: string;
+  startDate: string;
+  endDate: string;
+}): Promise<SegmentDailyPoint[]> {
+  if (!SEGMENT_SERIES_COLUMNS.has(input.column)) {
+    return [];
+  }
+
+  const { timezone } = await getSettingsForProject(input.projectId);
+  const { items } = await overviewService.getTopGenericSeries({
+    projectId: input.projectId,
+    filters: [],
+    startDate: input.startDate,
+    endDate: input.endDate,
+    column: input.column as TrafficColumn,
+    interval: 'day',
+    timezone,
+  });
+
+  // getTopGenericSeries reports empty values as null name; insights store the
+  // empty referrer as "direct". Match the segment leniently.
+  const target = input.value.toLowerCase();
+  const matched = items.find((item) => {
+    const name = (item.name ?? '').toLowerCase();
+    return name === target || (name === '' && target === 'direct');
+  });
+
+  return (matched?.data ?? []).map((point) => ({
+    date: point.date,
+    sessions: Number(point.sessions ?? 0),
+    pageviews: Number(point.pageviews ?? 0),
+  }));
+}
+
 export interface GetAnalyticsOverviewInput {
   projectId: string;
   startDate: string;
