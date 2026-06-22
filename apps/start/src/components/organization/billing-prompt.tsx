@@ -2,7 +2,7 @@ import type { IServiceOrganization } from '@openpanel/db';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CheckIcon } from 'lucide-react';
 import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button, LinkButton } from '@/components/ui/button';
@@ -12,15 +12,15 @@ import { formatDate } from '@/utils/date';
 import { op } from '@/utils/op';
 
 const FEATURE_KEYS = [
-  'prompt_feature_plans_start',
-  'prompt_feature_unlimited',
-  'prompt_feature_funnels',
-  'prompt_feature_realtime',
-  'prompt_feature_kpis',
-  'prompt_feature_privacy',
-  'prompt_feature_revenue',
-  'prompt_feature_gsc',
-];
+  'billing.prompt_feature_plans_start',
+  'billing.prompt_feature_unlimited',
+  'billing.prompt_feature_funnels',
+  'billing.prompt_feature_realtime',
+  'billing.prompt_feature_kpis',
+  'billing.prompt_feature_privacy',
+  'billing.prompt_feature_revenue',
+  'billing.prompt_feature_gsc',
+] as const;
 
 type BadgeVariant = 'secondary' | 'warning' | 'info';
 
@@ -40,43 +40,43 @@ const COPY: Record<
   CopyVariant
 > = {
   trialEnded: {
-    badge: { labelKey: 'prompt_trial_ended_badge', variant: 'secondary' },
+    badge: { labelKey: 'billing.prompt_trial_ended_badge', variant: 'secondary' },
     gradient: 'rgb(16 185 129)',
-    titleKey: 'prompt_trial_ended_title',
-    leadKey: 'prompt_trial_ended_lead',
-    dateLabelKey: 'prompt_trial_ended_date_label',
+    titleKey: 'billing.prompt_trial_ended_title',
+    leadKey: 'billing.prompt_trial_ended_lead',
+    dateLabelKey: 'billing.prompt_trial_ended_date_label',
     action: 'checkout',
-    ctaKey: 'prompt_trial_ended_cta',
-    noteKey: 'prompt_trial_ended_note',
+    ctaKey: 'billing.prompt_trial_ended_cta',
+    noteKey: 'billing.prompt_trial_ended_note',
   },
   expired: {
-    badge: { labelKey: 'prompt_expired_badge', variant: 'info' },
+    badge: { labelKey: 'billing.prompt_expired_badge', variant: 'info' },
     gradient: 'rgb(59 130 246)',
-    titleKey: 'prompt_expired_title',
-    leadKey: 'prompt_expired_lead',
-    dateLabelKey: 'prompt_expired_date_label',
+    titleKey: 'billing.prompt_expired_title',
+    leadKey: 'billing.prompt_expired_lead',
+    dateLabelKey: 'billing.prompt_expired_date_label',
     action: 'checkout',
-    ctaKey: 'prompt_expired_cta',
+    ctaKey: 'billing.prompt_expired_cta',
     noteKey: null,
   },
   unpaid: {
-    badge: { labelKey: 'prompt_unpaid_badge', variant: 'warning' },
+    badge: { labelKey: 'billing.prompt_unpaid_badge', variant: 'warning' },
     gradient: 'rgb(245 158 11)',
-    titleKey: 'prompt_unpaid_title',
-    leadKey: 'prompt_unpaid_lead',
-    dateLabelKey: 'prompt_unpaid_date_label',
+    titleKey: 'billing.prompt_unpaid_title',
+    leadKey: 'billing.prompt_unpaid_lead',
+    dateLabelKey: 'billing.prompt_unpaid_date_label',
     action: 'portal',
-    ctaKey: 'prompt_unpaid_cta',
+    ctaKey: 'billing.prompt_unpaid_cta',
     noteKey: null,
   },
   freePlan: {
-    badge: { labelKey: 'prompt_free_plan_badge', variant: 'secondary' },
+    badge: { labelKey: 'billing.prompt_free_plan_badge', variant: 'secondary' },
     gradient: 'rgb(16 185 129)',
-    titleKey: 'prompt_free_plan_title',
-    leadKey: 'prompt_free_plan_lead',
-    dateLabelKey: 'prompt_free_plan_date_label',
+    titleKey: 'billing.prompt_free_plan_title',
+    leadKey: 'billing.prompt_free_plan_lead',
+    dateLabelKey: 'billing.prompt_free_plan_date_label',
     action: 'checkout',
-    ctaKey: 'prompt_free_plan_cta',
+    ctaKey: 'billing.prompt_free_plan_cta',
     noteKey: null,
   },
 };
@@ -166,7 +166,7 @@ export default function BillingPrompt({
           }}
           size="lg"
         >
-          {t(`billing.${copy.ctaKey}`)}
+          {t(copy.ctaKey)}
         </Button>
       );
     }
@@ -200,7 +200,7 @@ export default function BillingPrompt({
         }}
         size="lg"
       >
-        {t(`billing.${copy.ctaKey}`, { plan: bestProductFit.name, price })}
+        {t(copy.ctaKey, { plan: bestProductFit.name, price })}
       </Button>
     );
   };
@@ -217,13 +217,13 @@ export default function BillingPrompt({
 
         <div className="col gap-3 p-6 md:p-8">
           <Badge variant={copy.badge.variant}>
-            {t(`billing.${copy.badge.labelKey}`)}
+            {t(copy.badge.labelKey)}
           </Badge>
           <h1 className="font-semibold text-2xl">
-            {t(`billing.${copy.titleKey}`)}
+            {t(copy.titleKey)}
           </h1>
           <p className="text-muted-foreground leading-relaxed">
-            {t(`billing.${copy.leadKey}`)}
+            {t(copy.leadKey)}
           </p>
         </div>
 
@@ -242,7 +242,7 @@ export default function BillingPrompt({
                 {formatDate(organization.subscriptionEndsAt)}
               </div>
               <div className="text-muted-foreground text-sm">
-                {t(`billing.${copy.dateLabelKey}`)}
+                {t(copy.dateLabelKey)}
               </div>
             </div>
           )}
@@ -252,16 +252,19 @@ export default function BillingPrompt({
           {copy.action === 'checkout' &&
             (bestProductFit ? (
               <p className="text-muted-foreground text-sm">
-                {t('billing.prompt_usage_recommendation_prefix')}{' '}
-                <strong className="text-foreground">
-                  {bestProductFit.name}
-                </strong>{' '}
-                {t('billing.prompt_usage_recommendation_suffix', {
-                  events: number.short(
-                    Number(bestProductFit.metadata.eventsLimit)
-                  ),
-                  price,
-                })}
+                <Trans
+                  components={{
+                    plan: <strong className="text-foreground" />,
+                  }}
+                  i18nKey="billing.prompt_usage_recommendation"
+                  values={{
+                    events: number.short(
+                      Number(bestProductFit.metadata.eventsLimit)
+                    ),
+                    plan: bestProductFit.name,
+                    price,
+                  }}
+                />
               </p>
             ) : (
               !isLoadingProducts && (
@@ -273,7 +276,7 @@ export default function BillingPrompt({
           {renderCta()}
           {copy.noteKey && (
             <p className="text-muted-foreground text-sm">
-              {t(`billing.${copy.noteKey}`)}
+              {t(copy.noteKey)}
             </p>
           )}
           <div className="row items-center justify-between gap-2">
@@ -299,7 +302,7 @@ export default function BillingPrompt({
           <div className="row items-center gap-2" key={featureKey}>
             <CheckIcon className="size-4 shrink-0 text-emerald-500" />
             <span className="text-muted-foreground text-sm">
-              {t(`billing.${featureKey}`)}
+              {t(featureKey)}
             </span>
           </div>
         ))}

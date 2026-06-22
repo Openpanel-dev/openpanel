@@ -352,16 +352,6 @@ function SeoPage() {
             isLoading={pagesQuery.isLoading}
             keyField="page"
             keyLabel={t('seo.key_page')}
-            labels={{
-              clicks: t('seo.metric_clicks'),
-              ctr: t('seo.metric_ctr'),
-              impressions: t('seo.metric_impressions_short'),
-              position: t('seo.metric_position_short'),
-              resultsRange: (start, end, total) =>
-                t('seo.results_range', { end, start, total }),
-              search: t('seo.search'),
-              zeroResults: t('seo.zero_results'),
-            }}
             maxClicks={Math.max(...paginatedPages.map((p) => p.clicks), 1)}
             onNextPage={() =>
               setPagesPage((p) => Math.min(pagesPageCount - 1, p + 1))
@@ -387,16 +377,6 @@ function SeoPage() {
             isLoading={queriesQuery.isLoading}
             keyField="query"
             keyLabel={t('seo.key_query')}
-            labels={{
-              clicks: t('seo.metric_clicks'),
-              ctr: t('seo.metric_ctr'),
-              impressions: t('seo.metric_impressions_short'),
-              position: t('seo.metric_position_short'),
-              resultsRange: (start, end, total) =>
-                t('seo.results_range', { end, start, total }),
-              search: t('seo.search'),
-              zeroResults: t('seo.zero_results'),
-            }}
             maxClicks={Math.max(...paginatedQueries.map((q) => q.clicks), 1)}
             onNextPage={() =>
               setQueriesPage((p) => Math.min(queriesPageCount - 1, p + 1))
@@ -656,7 +636,6 @@ function GscTable({
   rows,
   keyField,
   keyLabel,
-  labels,
   maxClicks,
   isLoading,
   onRowClick,
@@ -674,15 +653,6 @@ function GscTable({
   rows: GscTableRow[];
   keyField: string;
   keyLabel: string;
-  labels: {
-    clicks: string;
-    ctr: string;
-    impressions: string;
-    position: string;
-    resultsRange: (start: number, end: number, total: number) => string;
-    search: string;
-    zeroResults: string;
-  };
   maxClicks: number;
   isLoading: boolean;
   onRowClick?: (value: string) => void;
@@ -696,6 +666,7 @@ function GscTable({
   onPreviousPage?: () => void;
   onNextPage?: () => void;
 }) {
+  const { t } = useTranslation();
   const showPagination =
     totalCount != null &&
     pageSize != null &&
@@ -724,22 +695,22 @@ function GscTable({
               render: () => <Skeleton className="h-4 w-2/3" />,
             },
             {
-              name: labels.clicks,
+              name: t('seo.metric_clicks'),
               width: '70px',
               render: () => <Skeleton className="h-4 w-10" />,
             },
             {
-              name: labels.impressions,
+              name: t('seo.metric_impressions_short'),
               width: '70px',
               render: () => <Skeleton className="h-4 w-10" />,
             },
             {
-              name: labels.ctr,
+              name: t('seo.metric_ctr'),
               width: '60px',
               render: () => <Skeleton className="h-4 w-8" />,
             },
             {
-              name: labels.position,
+              name: t('seo.metric_position_short'),
               width: '55px',
               render: () => <Skeleton className="h-4 w-8" />,
             },
@@ -761,8 +732,12 @@ function GscTable({
             <div className="flex shrink-0 items-center gap-2">
               <span className="whitespace-nowrap text-muted-foreground text-xs">
                 {totalCount === 0
-                  ? labels.zeroResults
-                  : labels.resultsRange(rangeStart, rangeEnd, totalCount)}
+                  ? t('seo.zero_results')
+                  : t('seo.results_range', {
+                      end: rangeEnd,
+                      start: rangeStart,
+                      total: totalCount,
+                    })}
               </span>
               <Pagination
                 canNextPage={canNextPage}
@@ -780,7 +755,7 @@ function GscTable({
             <Input
               className="rounded-none border-0 border-t bg-transparent pl-9 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0"
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={searchPlaceholder ?? labels.search}
+              placeholder={searchPlaceholder ?? t('seo.search')}
               type="search"
               value={searchValue ?? ''}
             />
@@ -807,7 +782,7 @@ function GscTable({
             },
           },
           {
-            name: labels.clicks,
+            name: t('seo.metric_clicks'),
             width: '70px',
             getSortValue: (item) => item.clicks,
             render(item) {
@@ -819,7 +794,7 @@ function GscTable({
             },
           },
           {
-            name: labels.impressions,
+            name: t('seo.metric_impressions_short'),
             width: '70px',
             getSortValue: (item) => item.impressions,
             render(item) {
@@ -831,7 +806,7 @@ function GscTable({
             },
           },
           {
-            name: labels.ctr,
+            name: t('seo.metric_ctr'),
             width: '60px',
             getSortValue: (item) => item.ctr,
             render(item) {
@@ -843,7 +818,7 @@ function GscTable({
             },
           },
           {
-            name: labels.position,
+            name: t('seo.metric_position_short'),
             width: '55px',
             getSortValue: (item) => item.position,
             render(item) {

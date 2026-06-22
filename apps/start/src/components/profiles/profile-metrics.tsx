@@ -8,91 +8,91 @@ type Props = {
 
 const PROFILE_METRICS = [
   {
-    labelKey: 'metric_total_events',
+    labelKey: 'profiles.metric_total_events',
     key: 'totalEvents',
     unit: '',
     inverted: false,
     hideOnZero: false,
   },
   {
-    labelKey: 'metric_sessions',
+    labelKey: 'profiles.metric_sessions',
     key: 'sessions',
     unit: '',
     inverted: false,
     hideOnZero: false,
   },
   {
-    labelKey: 'metric_page_views',
+    labelKey: 'profiles.metric_page_views',
     key: 'screenViews',
     unit: '',
     inverted: false,
     hideOnZero: false,
   },
   {
-    labelKey: 'metric_avg_events_per_session',
+    labelKey: 'profiles.metric_avg_events_per_session',
     key: 'avgEventsPerSession',
     unit: '',
     inverted: false,
     hideOnZero: false,
   },
   {
-    labelKey: 'metric_bounce_rate',
+    labelKey: 'profiles.metric_bounce_rate',
     key: 'bounceRate',
     unit: '%',
     inverted: true,
     hideOnZero: false,
   },
   {
-    labelKey: 'metric_session_duration_avg',
+    labelKey: 'profiles.metric_session_duration_avg',
     key: 'durationAvg',
     unit: 'min',
     inverted: false,
     hideOnZero: false,
   },
   {
-    labelKey: 'metric_session_duration_p90',
+    labelKey: 'profiles.metric_session_duration_p90',
     key: 'durationP90',
     unit: 'min',
     inverted: false,
     hideOnZero: false,
   },
   {
-    labelKey: 'metric_first_seen',
+    labelKey: 'profiles.metric_first_seen',
     key: 'firstSeen',
     unit: 'timeAgo',
     inverted: false,
     hideOnZero: false,
   },
   {
-    labelKey: 'metric_last_seen',
+    labelKey: 'profiles.metric_last_seen',
     key: 'lastSeen',
     unit: 'timeAgo',
     inverted: false,
     hideOnZero: false,
   },
   {
-    labelKey: 'metric_days_active',
+    labelKey: 'profiles.metric_days_active',
     key: 'uniqueDaysActive',
     unit: '',
     inverted: false,
     hideOnZero: false,
   },
   {
-    labelKey: 'metric_conversion_events',
+    labelKey: 'profiles.metric_conversion_events',
     key: 'conversionEvents',
     unit: '',
     inverted: false,
     hideOnZero: false,
   },
   {
-    labelKey: 'metric_avg_time_between_sessions',
+    labelKey: 'profiles.metric_avg_time_between_sessions',
     key: 'avgTimeBetweenSessions',
     unit: 'min',
     inverted: false,
     hideOnZero: false,
   },
   {
-    labelKey: 'metric_revenue',
+    labelKey: 'profiles.metric_revenue',
     key: 'revenue',
     unit: 'currency',
     inverted: false,
@@ -117,7 +117,7 @@ export const ProfileMetrics = ({ data }: Props) => {
             inverted={metric.inverted}
             isLoading={false}
             key={metric.key}
-            label={t(`profiles.${metric.labelKey}`)}
+            label={t(metric.labelKey)}
             metric={{
               current:
                 metric.unit === 'timeAgo' && data[metric.key]

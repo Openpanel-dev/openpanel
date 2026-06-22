@@ -1,5 +1,4 @@
 import type { IGetTopGenericInput } from '@openpanel/db';
-import type { TFunction } from 'i18next';
 
 export const OVERVIEW_COLUMN_LABEL_KEYS: Record<
   IGetTopGenericInput['column'],
@@ -49,16 +48,14 @@ export const OVERVIEW_COLUMN_PLURAL_LABEL_KEYS: Record<
   utm_content: 'overview.column_utm_contents',
 };
 
-export function getOverviewColumnName(
-  t: TFunction,
+export function getOverviewColumnNameKey(
   column: IGetTopGenericInput['column'],
 ) {
-  return t(OVERVIEW_COLUMN_LABEL_KEYS[column]);
+  return OVERVIEW_COLUMN_LABEL_KEYS[column];
 }
 
-export function getOverviewColumnNamePlural(
-  t: TFunction,
+export function getOverviewColumnNamePluralKey(
   column: IGetTopGenericInput['column'],
 ) {
-  return t(OVERVIEW_COLUMN_PLURAL_LABEL_KEYS[column]);
+  return OVERVIEW_COLUMN_PLURAL_LABEL_KEYS[column];
 }

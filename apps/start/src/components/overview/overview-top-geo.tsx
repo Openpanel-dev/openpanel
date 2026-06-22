@@ -12,7 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronRightIcon } from 'lucide-react';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
-import { getOverviewColumnName } from './overview-constants';
+import { getOverviewColumnNameKey } from './overview-constants';
 import OverviewDetailsButton from './overview-details-button';
 import {
   OverviewLineChart,
@@ -150,7 +150,7 @@ export default function OverviewTopGeo({
             <OverviewWidgetTableGeneric
               data={filteredData}
               column={{
-                name: getOverviewColumnName(t, widget.key),
+                name: t(getOverviewColumnNameKey(widget.key)),
                 render(item) {
                   return (
                     <div className="row items-center gap-2 min-w-0 relative">

@@ -10,26 +10,31 @@ import { SellingPoint } from './selling-points';
 
 const sellingPoints = [
   {
-    key: 'alternative',
+    titleKey: 'auth.login_panel_alternative_title',
+    descriptionKey: 'auth.login_panel_alternative_description',
     bgImage: '/img-1.webp',
   },
   {
-    key: 'reliable',
+    titleKey: 'auth.login_panel_reliable_title',
+    descriptionKey: 'auth.login_panel_reliable_description',
     bgImage: '/img-2.webp',
   },
   {
-    key: 'simple',
+    titleKey: 'auth.login_panel_simple_title',
+    descriptionKey: 'auth.login_panel_simple_description',
     bgImage: '/img-3.webp',
   },
   {
-    key: 'privacy',
+    titleKey: 'auth.login_panel_privacy_title',
+    descriptionKey: 'auth.login_panel_privacy_description',
     bgImage: '/img-4.webp',
   },
   {
-    key: 'open_source',
+    titleKey: 'auth.login_panel_open_source_title',
+    descriptionKey: 'auth.login_panel_open_source_description',
     bgImage: '/img-5.webp',
   },
-];
+] as const;
 
 export function LoginLeftPanel() {
   const { t } = useTranslation();
@@ -48,14 +53,14 @@ export function LoginLeftPanel() {
           <CarouselContent className="h-full">
             {sellingPoints.map((point, index) => (
               <CarouselItem
-                key={`selling-point-${point.key}`}
+                key={point.titleKey}
                 className="p-8 pb-32 pt-0"
               >
                 <div className="rounded-xl min-h-full h-full overflow-hidden bg-card border border-border shadow-lg">
                   <SellingPoint
                     bgImage={point.bgImage}
-                    title={t(`auth.login_panel_${point.key}_title`)}
-                    description={t(`auth.login_panel_${point.key}_description`)}
+                    title={t(point.titleKey)}
+                    description={t(point.descriptionKey)}
                   />
                 </div>
               </CarouselItem>

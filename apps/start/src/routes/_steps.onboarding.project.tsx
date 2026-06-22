@@ -9,6 +9,7 @@ import {
   SmartphoneIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Trans } from 'react-i18next';
 import {
   Controller,
   type SubmitHandler,
@@ -365,11 +366,13 @@ function Component() {
                     onClick={() => setShowCorsInput((open) => !open)}
                     type="button"
                   >
-                    {t('onboarding.project_domain_allowed_prefix')}{' '}
-                    <span className="font-medium text-foreground">
-                      {domain}
-                    </span>{' '}
-                    {t('onboarding.project_domain_allowed_suffix')}
+                    <Trans
+                      components={{
+                        domain: <span className="font-medium text-foreground" />,
+                      }}
+                      i18nKey="onboarding.project_domain_allowed"
+                      values={{ domain }}
+                    />
                   </button>
                   <AnimateHeight open={showCorsInput}>
                     <div className="mt-3">

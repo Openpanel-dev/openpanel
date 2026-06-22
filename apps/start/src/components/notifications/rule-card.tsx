@@ -5,7 +5,7 @@ import type { NotificationRule } from '@openpanel/db';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { FilterIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ColorSquare } from '../color-square';
 import {
@@ -68,11 +68,13 @@ export function RuleCard({
       case 'events':
         return (
           <div className="row gap-2 items-baseline flex-wrap">
-            <div>{t('notifications.rule_events_prefix')}</div>
-            {rule.config.events.map((event) => (
-              <EventBadge key={event.id} event={event} />
-            ))}
-            <div>{t('notifications.rule_events_suffix')}</div>
+            <Trans i18nKey="notifications.rule_events_description">
+              <span className="contents">
+                {rule.config.events.map((event) => (
+                  <EventBadge key={event.id} event={event} />
+                ))}
+              </span>
+            </Trans>
           </div>
         );
       case 'funnel':

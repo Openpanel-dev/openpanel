@@ -80,14 +80,7 @@ export function RealtimeLiveHistogram({
           margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
         >
           <Tooltip
-            content={(props) => (
-              <CustomTooltip
-                {...props}
-                activeUsersLabel={t('realtime.active_users')}
-                moreLabel={t('realtime.more')}
-                referrersLabel={t('realtime.referrers_label')}
-              />
-            )}
+            content={CustomTooltip}
             cursor={{
               fill: 'var(--def-200)',
             }}
@@ -135,10 +128,8 @@ function Wrapper({ children, count, icons, title }: WrapperProps) {
 const CustomTooltip = ({
   active,
   payload,
-  activeUsersLabel,
-  referrersLabel,
-  moreLabel,
 }: any) => {
+  const { t } = useTranslation();
   const number = useNumber();
   const [position, setPosition] = useState<{ x: number; y: number } | null>(
     null
@@ -214,7 +205,9 @@ const CustomTooltip = ({
             style={{ background: getChartColor(0) }}
           />
           <div className="col flex-1 gap-1">
-            <div className="flex items-center gap-1">{activeUsersLabel}</div>
+            <div className="flex items-center gap-1">
+              {t('realtime.active_users')}
+            </div>
             <div className="flex justify-between gap-8 font-medium font-mono">
               <div className="row gap-1">
                 {number.formatWithUnit(data.visitorCount)}
@@ -225,7 +218,7 @@ const CustomTooltip = ({
         {data.referrers && data.referrers.length > 0 && (
           <div className="mt-2 border-border border-t pt-2">
             <div className="mb-2 text-muted-foreground text-xs">
-              {referrersLabel}
+              {t('realtime.referrers_label')}
             </div>
             <div className="space-y-1">
               {data.referrers.slice(0, 3).map((ref: any, index: number) => (
@@ -247,7 +240,7 @@ const CustomTooltip = ({
               ))}
               {data.referrers.length > 3 && (
                 <div className="text-muted-foreground text-xs">
-                  +{data.referrers.length - 3} {moreLabel}
+                  +{data.referrers.length - 3} {t('realtime.more')}
                 </div>
               )}
             </div>

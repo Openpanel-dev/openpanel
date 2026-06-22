@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { formatDistanceToNow } from 'date-fns';
-import { enUS, zhCN, zhTW } from 'date-fns/locale';
 import { CheckCircleIcon, Loader2Icon, XCircleIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
+import { getDateFnsLocale } from '@/utils/date-fns-locale';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/settings/_tabs/gsc'
@@ -84,12 +84,7 @@ function GscSettings() {
   );
 
   const connection = connectionQuery.data;
-  const dateLocale =
-    (i18n.resolvedLanguage ?? i18n.language) === 'zh-CN'
-      ? zhCN
-      : (i18n.resolvedLanguage ?? i18n.language) === 'zh-TW'
-        ? zhTW
-        : enUS;
+  const dateLocale = getDateFnsLocale(i18n.resolvedLanguage ?? i18n.language);
 
   if (connectionQuery.isLoading) {
     return (

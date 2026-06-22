@@ -381,20 +381,25 @@ function EventCriteriaItem({
                   })
                 }
                 items={[
-                  { value: '7d', label: t('cohorts.period_7_days') },
-                  { value: '30d', label: t('cohorts.period_30_days') },
-                  { value: '90d', label: t('cohorts.period_90_days') },
-                  { value: '180d', label: t('cohorts.period_180_days') },
-                  { value: '365d', label: t('cohorts.period_365_days') },
+                  { value: '7d', label: t('cohorts.period_days', { count: 7 }) },
+                  { value: '30d', label: t('cohorts.period_days', { count: 30 }) },
+                  { value: '90d', label: t('cohorts.period_days', { count: 90 }) },
+                  { value: '180d', label: t('cohorts.period_days', { count: 180 }) },
+                  { value: '365d', label: t('cohorts.period_days', { count: 365 }) },
                 ]}
                 label={t('cohorts.period')}
               >
                 <Button variant="outline" size="sm">
-                  {criteria.timeframe.value === '7d' && t('cohorts.period_7_days')}
-                  {criteria.timeframe.value === '30d' && t('cohorts.period_30_days')}
-                  {criteria.timeframe.value === '90d' && t('cohorts.period_90_days')}
-                  {criteria.timeframe.value === '180d' && t('cohorts.period_180_days')}
-                  {criteria.timeframe.value === '365d' && t('cohorts.period_365_days')}
+                  {criteria.timeframe.value === '7d' &&
+                    t('cohorts.period_days', { count: 7 })}
+                  {criteria.timeframe.value === '30d' &&
+                    t('cohorts.period_days', { count: 30 })}
+                  {criteria.timeframe.value === '90d' &&
+                    t('cohorts.period_days', { count: 90 })}
+                  {criteria.timeframe.value === '180d' &&
+                    t('cohorts.period_days', { count: 180 })}
+                  {criteria.timeframe.value === '365d' &&
+                    t('cohorts.period_days', { count: 365 })}
                 </Button>
               </DropdownMenuComposed>
             ) : !criteria.timeframe.end ? (

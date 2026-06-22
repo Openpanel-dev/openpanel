@@ -3,7 +3,6 @@ import {
   CarouselContent,
   CarouselItem,
 } from '@/components/ui/carousel';
-import type { TFunction } from 'i18next';
 import Autoplay from 'embla-carousel-autoplay';
 import { QuoteIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -50,19 +49,19 @@ const testimonials: Testimonial[] = [
 
 function TestimonialSlide({
   bgImage,
-  quote,
+  quoteKey,
   author,
   authorKey,
   site,
-  t,
 }: {
   bgImage: string;
-  quote: string;
+  quoteKey: string;
   author?: string;
   authorKey?: string;
   site?: string;
-  t: TFunction;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="relative flex flex-col justify-end h-full p-10 select-none">
       <img
@@ -74,7 +73,7 @@ function TestimonialSlide({
       <div className="relative z-10 flex flex-col gap-4">
         <QuoteIcon className="size-10 text-white/40 stroke-1" />
         <blockquote className="text-3xl font-medium text-white leading-relaxed">
-          {quote}
+          {t(quoteKey)}
         </blockquote>
         <figcaption className="text-white/60 text-sm">
           — {authorKey ? t(authorKey) : author}
@@ -86,8 +85,6 @@ function TestimonialSlide({
 }
 
 export function OnboardingLeftPanel() {
-  const { t } = useTranslation();
-
   return (
     <div className="sticky top-0 h-screen overflow-hidden">
       <div className="flex items-center justify-center h-full mt-24">
@@ -102,11 +99,10 @@ export function OnboardingLeftPanel() {
                 <div className="rounded-xl min-h-full h-full overflow-hidden bg-card border border-border shadow-lg">
                   <TestimonialSlide
                     bgImage={testimonial.bgImage}
-                    quote={t(testimonial.quoteKey)}
+                    quoteKey={testimonial.quoteKey}
                     author={testimonial.author}
                     authorKey={testimonial.authorKey}
                     site={testimonial.site}
-                    t={t}
                   />
                 </div>
               </CarouselItem>

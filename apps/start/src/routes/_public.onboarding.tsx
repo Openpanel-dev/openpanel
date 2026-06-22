@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { MailIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { Or } from '@/components/auth/or';
 import { SignInGithub } from '@/components/auth/sign-in-github';
@@ -68,25 +68,27 @@ function Component() {
           {t('auth.start_tracking')}
         </h1>
         <p className="text-muted-foreground">
-          {t('auth.accept_terms_prefix')}{' '}
-          <a
-            className="underline transition-colors hover:text-foreground"
-            href="https://openpanel.dev/terms"
-            rel="noreferrer"
-            target="_blank"
-          >
-            {t('auth.terms_of_service')}
-          </a>{' '}
-          {t('auth.terms_connector')}{' '}
-          <a
-            className="underline transition-colors hover:text-foreground"
-            href="https://openpanel.dev/privacy"
-            rel="noreferrer"
-            target="_blank"
-          >
-            {t('auth.privacy_policy')}
-          </a>
-          .
+          <Trans
+            components={{
+              privacy: (
+                <a
+                  className="underline transition-colors hover:text-foreground"
+                  href="https://openpanel.dev/privacy"
+                  rel="noreferrer"
+                  target="_blank"
+                />
+              ),
+              terms: (
+                <a
+                  className="underline transition-colors hover:text-foreground"
+                  href="https://openpanel.dev/terms"
+                  rel="noreferrer"
+                  target="_blank"
+                />
+              ),
+            }}
+            i18nKey="auth.accept_terms"
+          />
         </p>
         <p className="mt-3 text-muted-foreground">
           {t('auth.already_have_account')}{' '}

@@ -8,7 +8,7 @@ import {
   ShuffleIcon,
 } from 'lucide-react';
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useNumber } from '@/hooks/use-numer-formatter';
@@ -272,12 +272,12 @@ export default function BillingPlanPicker({
             {recurringInterval === 'year' ? (
               t('billing.plan_switch_to_monthly')
             ) : (
-              <>
-                {t('billing.plan_switch_to_yearly_prefix')}{' '}
-                <span className="underline text-emerald-500">
-                  {t('billing.plan_switch_to_yearly_discount')}
-                </span>
-              </>
+              <Trans
+                components={{
+                  discount: <span className="underline text-emerald-500" />,
+                }}
+                i18nKey="billing.plan_switch_to_yearly"
+              />
             )}
           </div>
 

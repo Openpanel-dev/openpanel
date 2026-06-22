@@ -1,7 +1,6 @@
 import { cn } from '@/lib/utils';
 import { useLocation } from '@tanstack/react-router';
 import { CheckCheckIcon } from 'lucide-react';
-import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 
 type Step = {
@@ -14,7 +13,8 @@ type Props = {
   className?: string;
 };
 
-function useSteps(path: string, t: TFunction) {
+function useSteps(path: string) {
+  const { t } = useTranslation();
   const steps: Step[] = [
     {
       name: t('onboarding.step_create_account'),
@@ -58,7 +58,7 @@ export const OnboardingSteps = ({ className }: Props) => {
   const { t } = useTranslation();
   const location = useLocation();
   const path = location.pathname;
-  const steps = useSteps(path, t);
+  const steps = useSteps(path);
   const currentIndex = steps.findIndex((i) => i.status === 'current');
   return (
     <div className="relative">

@@ -16,33 +16,33 @@ import { useCookieStore } from '@/hooks/use-cookie-store';
 const PERKS = [
   {
     icon: RocketIcon,
-    textKey: 'supporter_perk_docker_title',
-    descriptionKey: 'supporter_perk_docker_description',
+    textKey: 'organization.supporter_perk_docker_title',
+    descriptionKey: 'organization.supporter_perk_docker_description',
   },
   {
     icon: MessageCircleIcon,
-    textKey: 'supporter_perk_support_title',
-    descriptionKey: 'supporter_perk_support_description',
+    textKey: 'organization.supporter_perk_support_title',
+    descriptionKey: 'organization.supporter_perk_support_description',
   },
   {
     icon: SparklesIcon,
-    textKey: 'supporter_perk_requests_title',
-    descriptionKey: 'supporter_perk_requests_description',
+    textKey: 'organization.supporter_perk_requests_title',
+    descriptionKey: 'organization.supporter_perk_requests_description',
   },
   {
     icon: AwardIcon,
-    textKey: 'supporter_perk_discord_role_title',
-    descriptionKey: 'supporter_perk_discord_role_description',
+    textKey: 'organization.supporter_perk_discord_role_title',
+    descriptionKey: 'organization.supporter_perk_discord_role_description',
   },
   {
     icon: ZapIcon,
-    textKey: 'supporter_perk_early_access_title',
-    descriptionKey: 'supporter_perk_early_access_description',
+    textKey: 'organization.supporter_perk_early_access_title',
+    descriptionKey: 'organization.supporter_perk_early_access_description',
   },
   {
     icon: HeartIcon,
-    textKey: 'supporter_perk_impact_title',
-    descriptionKey: 'supporter_perk_impact_description',
+    textKey: 'organization.supporter_perk_impact_title',
+    descriptionKey: 'organization.supporter_perk_impact_description',
   },
 ] as const;
 
@@ -62,10 +62,10 @@ function PerkPoint({
       <Icon className="size-4" />
       <div className="col min-w-0 flex-1 gap-1.5">
         <h3 className="font-medium text-sm">
-          {t(`organization.${textKey}`)}
+          {t(textKey)}
         </h3>
         <p className="text-muted-foreground text-xs">
-          {t(`organization.${descriptionKey}`)}
+          {t(descriptionKey)}
         </p>
       </div>
     </div>

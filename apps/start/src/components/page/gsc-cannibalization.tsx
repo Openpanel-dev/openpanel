@@ -2,6 +2,7 @@ import type { IChartRange, IInterval } from '@openpanel/validation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { AlertCircleIcon, ChevronsUpDownIcon, SearchIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Trans } from 'react-i18next';
 import { Pagination } from '@/components/pagination';
 import { Input } from '@/components/ui/input';
 import { useAppContext } from '@/hooks/use-app-context';
@@ -189,11 +190,13 @@ export function GscCannibalization({
               {isOpen && (
                 <div className="border-t bg-muted/20 px-4 py-3">
                   <p className="mb-3 text-muted-foreground text-xs leading-normal">
-                    {t('seo.cannibalization_advice_prefix')}{' '}
-                    <span className="font-medium text-foreground">
-                      "{item.query}"
-                    </span>
-                    {t('seo.cannibalization_advice_suffix')}
+                    <Trans
+                      components={{
+                        query: <span className="font-medium text-foreground" />,
+                      }}
+                      i18nKey="seo.cannibalization_advice"
+                      values={{ query: item.query }}
+                    />
                   </p>
                   <div className="space-y-1.5">
                     {item.pages.map((page, idx) => {

@@ -1,13 +1,26 @@
 import { ReportChart } from '@/components/report-chart';
 import { Button } from '@/components/ui/button';
 import { pushModal } from '@/modals';
-import type { TFunction } from 'i18next';
 import type { IReport, IReportInput } from '@openpanel/validation';
 import { SaveIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { asReportOutput } from './output-types';
 import { ResultCard, ToolStateGuard } from './shared';
 import type { ToolResultProps } from './types';
+
+const CHART_TYPE_LABEL_KEYS = {
+  linear: 'chat.result_chart_type_linear',
+  bar: 'chat.result_chart_type_bar',
+  area: 'chat.result_chart_type_area',
+  pie: 'chat.result_chart_type_pie',
+  funnel: 'chat.result_chart_type_funnel',
+  metric: 'chat.result_chart_type_metric',
+  retention: 'chat.result_chart_type_retention',
+  histogram: 'chat.result_chart_type_histogram',
+  sankey: 'chat.result_chart_type_sankey',
+  map: 'chat.result_chart_type_map',
+  conversion: 'chat.result_chart_type_conversion',
+} as const;
 
 /**
  * Renders the result of `get_report_data` / `generate_report` /
@@ -67,11 +80,29 @@ function ChatReportInner({
     );
   }
 
+  const translateTitleLabel = (label: TitleLabel | null): string | null => {
+    if (!label) return null;
+    if ('text' in label) return label.text;
+    if ('suffix' in label) {
+      const kind = translateTitleLabel(label.kind);
+      return kind ? `${kind}: ${label.suffix}` : label.suffix;
+    }
+    const values: Record<string, string | number | null> = Object.fromEntries(
+      Object.entries(label.values ?? {}).map(([key, value]) => [
+        key,
+        typeof value === 'object' && value !== null
+          ? translateTitleLabel(value)
+          : value,
+      ]),
+    );
+    return t(label.key, values);
+  };
+
   const title =
     value.name ??
-    deriveTitleFromInput(toolType, input, t) ??
+    translateTitleLabel(deriveTitleFromInput(toolType, input)) ??
     t('chat.result_chart_report_title', {
-      chart: humanizeChartType(String(report.chartType), t),
+      chart: translateTitleLabel(humanizeChartType(String(report.chartType))),
     });
 
   return (
@@ -126,11 +157,15 @@ function ChatReportInner({
  * — we can do better than `"LINEAR chart"` by reading what the
  * user actually asked for.
  */
-function deriveTitleFromInput(
-  toolType: string,
-  input: unknown,
-  t: TFunction,
-): string | null {
+type TitleLabel =
+  | {
+      key: string;
+      values?: Record<string, string | number | TitleLabel>;
+    }
+  | { text: string }
+  | { kind: TitleLabel; suffix: string };
+
+function deriveTitleFromInput(toolType: string, input: unknown): TitleLabel | null {
   if (!input || typeof input !== 'object') return null;
   const args = input as {
     steps?: unknown;
@@ -145,10 +180,13 @@ function deriveTitleFromInput(
       if (Array.isArray(args.steps) && args.steps.length > 0) {
         const names = args.steps.filter((s): s is string => typeof s === 'string');
         if (names.length > 0) {
-          return t('chat.result_funnel_title', { steps: names.join(' → ') });
+          return {
+            key: 'chat.result_funnel_title',
+            values: { steps: names.join(' → ') },
+          };
         }
       }
-      return t('chat.result_chart_type_funnel');
+      return { key: 'chat.result_chart_type_funnel' };
     }
 
     case 'tool-get_rolling_active_users': {
@@ -160,9 +198,12 @@ function deriveTitleFromInput(
             ? 'WAU'
             : w === 30
               ? 'MAU'
-              : t('chat.result_day_active_users', { count: w });
+              : { key: 'chat.result_day_active_users', values: { count: w } };
       const days = args.days ?? 30;
-      return t('chat.result_active_users_title', { label, count: days });
+      return {
+        key: 'chat.result_active_users_title',
+        values: { label: typeof label === 'string' ? label : label, count: days },
+      };
     }
 
     case 'tool-generate_report': {
@@ -172,11 +213,10 @@ function deriveTitleFromInput(
             .filter((n): n is string => typeof n === 'string' && n.length > 0)
         : [];
       const kind = args.chartType
-        ? humanizeChartType(args.chartType, t)
-        : t('chat.result_report');
+        ? humanizeChartType(args.chartType)
+        : { key: 'chat.result_report' };
       if (events.length === 0) return kind;
-      if (events.length === 1) return `${kind}: ${events[0]}`;
-      return `${kind}: ${events.join(', ')}`;
+      return { kind, suffix: events.join(', ') };
     }
 
     default:
@@ -184,31 +224,12 @@ function deriveTitleFromInput(
   }
 }
 
-function humanizeChartType(type: string, t: TFunction): string {
-  switch (type) {
-    case 'linear':
-      return t('chat.result_chart_type_linear');
-    case 'bar':
-      return t('chat.result_chart_type_bar');
-    case 'area':
-      return t('chat.result_chart_type_area');
-    case 'pie':
-      return t('chat.result_chart_type_pie');
-    case 'funnel':
-      return t('chat.result_chart_type_funnel');
-    case 'metric':
-      return t('chat.result_chart_type_metric');
-    case 'retention':
-      return t('chat.result_chart_type_retention');
-    case 'histogram':
-      return t('chat.result_chart_type_histogram');
-    case 'sankey':
-      return t('chat.result_chart_type_sankey');
-    case 'map':
-      return t('chat.result_chart_type_map');
-    case 'conversion':
-      return t('chat.result_chart_type_conversion');
-    default:
-      return type.charAt(0).toUpperCase() + type.slice(1);
+function humanizeChartType(type: string): TitleLabel {
+  const key =
+    CHART_TYPE_LABEL_KEYS[type as keyof typeof CHART_TYPE_LABEL_KEYS];
+  if (key) {
+    return { key };
   }
+
+  return { text: type.charAt(0).toUpperCase() + type.slice(1) };
 }

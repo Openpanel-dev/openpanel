@@ -1,7 +1,7 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { DownloadIcon, RocketIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 import CopyInput from '../forms/copy-input';
 
@@ -50,16 +50,19 @@ export function CreateClientSuccess({ id, secret, type }: Props) {
         <RocketIcon className="h-4 w-4" />
         <AlertTitle>{t('clients.get_started_title')}</AlertTitle>
         <AlertDescription>
-          {t('clients.get_started_read_our')}{' '}
-          <a
-            target="_blank"
-            href="https://openpanel.dev/docs"
-            className="underline"
-            rel="noreferrer"
-          >
-            {t('sidebar.docs')}
-          </a>{' '}
-          {t('clients.get_started_suffix')}
+          <Trans
+            components={{
+              docs: (
+                <a
+                  target="_blank"
+                  href="https://openpanel.dev/docs"
+                  className="underline"
+                  rel="noreferrer"
+                />
+              ),
+            }}
+            i18nKey="clients.get_started_description"
+          />
         </AlertDescription>
       </Alert>
     </div>

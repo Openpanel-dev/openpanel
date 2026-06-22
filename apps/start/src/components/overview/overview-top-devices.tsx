@@ -10,7 +10,7 @@ import { pushModal } from '@/modals';
 import { useQuery } from '@tanstack/react-query';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
-import { getOverviewColumnName } from './overview-constants';
+import { getOverviewColumnNameKey } from './overview-constants';
 import OverviewDetailsButton from './overview-details-button';
 import {
   OverviewLineChart,
@@ -425,7 +425,7 @@ export default function OverviewTopDevices({
             <OverviewWidgetTableGeneric
               data={filteredData}
               column={{
-                name: getOverviewColumnName(t, widget.key),
+                name: t(getOverviewColumnNameKey(widget.key)),
                 render(item) {
                   return (
                     <div className="row items-center gap-2 min-w-0 relative">

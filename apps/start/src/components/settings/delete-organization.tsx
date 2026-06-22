@@ -7,7 +7,7 @@ import type { IServiceOrganization } from '@openpanel/db';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addHours, format, startOfHour } from 'date-fns';
 import { TrashIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type Props = { organization: IServiceOrganization };
@@ -60,14 +60,18 @@ export default function DeleteOrganization({ organization }: Props) {
               {t('settings.delete_organization_scheduled_title')}
             </AlertTitle>
             <AlertDescription>
-              {t('settings.delete_organization_scheduled_prefix')}{' '}
-              <span className="font-medium">
-                {format(
-                  startOfHour(addHours(organization.deleteAt, 1)),
-                  'yyyy-MM-dd HH:mm:ss',
-                )}
-              </span>
-              . {t('settings.delete_organization_scheduled_suffix')}
+              <Trans
+                components={{
+                  date: <span className="font-medium" />,
+                }}
+                i18nKey="settings.delete_organization_scheduled_description"
+                values={{
+                  date: format(
+                    startOfHour(addHours(organization.deleteAt, 1)),
+                    'yyyy-MM-dd HH:mm:ss',
+                  ),
+                }}
+              />
             </AlertDescription>
           </Alert>
         )}

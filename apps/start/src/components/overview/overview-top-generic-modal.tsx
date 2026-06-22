@@ -7,8 +7,8 @@ import { ChevronRightIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import {
-  getOverviewColumnName,
-  getOverviewColumnNamePlural,
+  getOverviewColumnNameKey,
+  getOverviewColumnNamePluralKey,
 } from './overview-constants';
 import { OverviewListModal } from './overview-list-modal';
 import { useOverviewOptions } from './useOverviewOptions';
@@ -37,8 +37,8 @@ export default function OverviewTopGenericModal({
     }),
   );
 
-  const columnNamePlural = getOverviewColumnNamePlural(t, column);
-  const columnName = getOverviewColumnName(t, column);
+  const columnNamePlural = t(getOverviewColumnNamePluralKey(column));
+  const columnName = t(getOverviewColumnNameKey(column));
 
   return (
     <OverviewListModal

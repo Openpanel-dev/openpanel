@@ -16,7 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useClientSecret } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 export function VerifyFaq({
   project,
@@ -113,9 +113,12 @@ export function VerifyFaq({
                 </AlertTitle>
                 <AlertDescription className="col gap-2">
                   <span>
-                    {t('onboarding.verify_faq_client_id_prefix')}{' '}
-                    <code>clientId</code>{' '}
-                    {t('onboarding.verify_faq_client_id_suffix')}
+                    <Trans
+                      components={{
+                        code: <code />,
+                      }}
+                      i18nKey="onboarding.verify_faq_client_id_description"
+                    />
                   </span>
                   <CopyInput
                     className="[&_.font-mono]:text-sm"
@@ -154,9 +157,12 @@ export function VerifyFaq({
                 </AlertTitle>
                 <AlertDescription className="col gap-2">
                   <span>
-                    {t('onboarding.verify_faq_client_secret_prefix')}{' '}
-                    <code>clientSecret</code>
-                    {t('onboarding.verify_faq_client_secret_suffix')}
+                    <Trans
+                      components={{
+                        code: <code />,
+                      }}
+                      i18nKey="onboarding.verify_faq_client_secret_description"
+                    />
                   </span>
                   {showSecret && (
                     <CopyInput
@@ -169,15 +175,20 @@ export function VerifyFaq({
               </Alert>
             </div>
             <p>
-              {t('onboarding.verify_support_prefix')}{' '}
-              <a className="underline" href="https://go.openpanel.dev/discord">
-                {t('onboarding.verify_support_discord')}
-              </a>{' '}
-              {t('onboarding.verify_support_email_prefix')}{' '}
-              <a className="underline" href="mailto:hello@openpanel.dev">
-                hello@openpanel.dev
-              </a>{' '}
-              {t('onboarding.verify_support_suffix')}
+              <Trans
+                components={{
+                  discord: (
+                    <a
+                      className="underline"
+                      href="https://go.openpanel.dev/discord"
+                    />
+                  ),
+                  email: (
+                    <a className="underline" href="mailto:hello@openpanel.dev" />
+                  ),
+                }}
+                i18nKey="onboarding.verify_support_description"
+              />
             </p>
           </AccordionContent>
         </AccordionItem>

@@ -52,17 +52,19 @@ type SortOption =
   | 'severity-asc'
   | 'recent';
 
-function getModuleDisplayName(moduleKey: string, t: (key: string) => string): string {
-  const displayNames: Record<string, string> = {
-    geo: t('insights.module_geo'),
-    devices: t('insights.module_devices'),
-    referrers: t('insights.module_referrers'),
-    'entry-pages': t('insights.module_entry_pages'),
-    'page-trends': t('insights.module_page_trends'),
-    'exit-pages': t('insights.module_exit_pages'),
-    'traffic-anomalies': t('insights.module_traffic_anomalies'),
+function getModuleDisplayName(moduleKey: string) {
+  const displayNameKeys: Record<string, string> = {
+    geo: 'insights.module_geo',
+    devices: 'insights.module_devices',
+    referrers: 'insights.module_referrers',
+    'entry-pages': 'insights.module_entry_pages',
+    'page-trends': 'insights.module_page_trends',
+    'exit-pages': 'insights.module_exit_pages',
+    'traffic-anomalies': 'insights.module_traffic_anomalies',
   };
-  return displayNames[moduleKey] || moduleKey.replace('-', ' ');
+  return displayNameKeys[moduleKey]
+    ? { key: displayNameKeys[moduleKey] }
+    : { text: moduleKey.replace('-', ' ') };
 }
 
 function Component() {
@@ -387,7 +389,10 @@ function Component() {
             <div key={moduleKey} className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold capitalize">
-                  {getModuleDisplayName(moduleKey, t)}
+                  {(() => {
+                    const label = getModuleDisplayName(moduleKey);
+                    return 'text' in label ? label.text : t(label.key);
+                  })()}
                 </h2>
                 <span className="text-sm text-muted-foreground">
                   {moduleInsights.length}{' '}

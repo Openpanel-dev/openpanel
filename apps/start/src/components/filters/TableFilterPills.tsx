@@ -14,7 +14,6 @@ import {
   getCohortIds,
   type IChartEventFilter,
 } from '@openpanel/validation';
-import { type TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 
 interface TableFilterPillsProps {
@@ -29,42 +28,48 @@ interface TableFilterPillsProps {
   nuqsOptions?: NuqsOptions;
 }
 
-function humanizeFilterName(name: string, t: TFunction): string {
+type FilterNameLabel =
+  | { key: string; values?: Record<string, string> }
+  | { text: string };
+
+function humanizeFilterName(name: string): FilterNameLabel {
   if (name === 'cohort' || name.startsWith('cohort:')) {
-    return t('filters.cohort');
+    return { key: 'filters.cohort' };
   }
-  if (name === 'session.is_bounce') return t('filters.session_bounced');
+  if (name === 'session.is_bounce') return { key: 'filters.session_bounced' };
   if (name === 'session.screen_view_count') {
-    return t('filters.session_screen_views');
+    return { key: 'filters.session_screen_views' };
   }
-  if (name === 'session.event_count') return t('filters.session_events');
-  if (name === 'session.duration') return t('filters.session_duration');
-  if (name === 'session.revenue') return t('filters.session_revenue');
+  if (name === 'session.event_count') return { key: 'filters.session_events' };
+  if (name === 'session.duration') return { key: 'filters.session_duration' };
+  if (name === 'session.revenue') return { key: 'filters.session_revenue' };
   if (name === 'session.performed_event') {
-    return t('filters.session_performed_event');
+    return { key: 'filters.session_performed_event' };
   }
   if (name.startsWith('profile.')) {
     const rest = name.replace(/^profile\./, '');
-    return t('filters.profile_property', {
-      property: rest.replace(/^properties\./, ''),
-    });
+    return {
+      key: 'filters.profile_property',
+      values: { property: rest.replace(/^properties\./, '') },
+    };
   }
   if (name.startsWith('group.')) {
     const rest = name.replace(/^group\./, '');
-    return t('filters.group_property', {
-      property: rest.replace(/^properties\./, ''),
-    });
+    return {
+      key: 'filters.group_property',
+      values: { property: rest.replace(/^properties\./, '') },
+    };
   }
-  return getPropertyLabel(name);
+  return { text: getPropertyLabel(name) };
 }
 
-function formatFilterValue(filter: IChartEventFilter, t: TFunction): string {
+function formatFilterValue(filter: IChartEventFilter): string | { key: string } {
   if (filter.name === 'session.is_bounce') {
     const v = filter.value[0];
     if (v === undefined) return '';
     const truthy =
       typeof v === 'boolean' ? v : String(v).toLowerCase() === 'true';
-    return truthy ? t('filters.yes') : t('filters.no');
+    return { key: truthy ? 'filters.yes' : 'filters.no' };
   }
   return filter.value
     .filter((v) => v !== null && v !== undefined && v !== '')
@@ -119,6 +124,7 @@ export function TableFilterPills({
         const isCohort =
           filter.operator === 'inCohort' || filter.operator === 'notInCohort';
         const cohortIds = isCohort ? getCohortIds(filter) : [];
+        const nameLabel = humanizeFilterName(filter.name);
         const valueText = isCohort
           ? cohortIds
               .map(
@@ -126,7 +132,9 @@ export function TableFilterPills({
               )
               .filter(Boolean)
               .join(', ') || t('filters.pick_cohort')
-          : formatFilterValue(filter, t);
+          : formatFilterValue(filter);
+        const renderedValueText =
+          typeof valueText === 'string' ? valueText : t(valueText.key);
 
         return (
           <div
@@ -138,7 +146,9 @@ export function TableFilterPills({
               onClick={openSheet}
               className="px-2 hover:bg-accent transition-colors cursor-pointer"
             >
-              {humanizeFilterName(filter.name, t)}
+              {'text' in nameLabel
+                ? nameLabel.text
+                : t(nameLabel.key, nameLabel.values)}
             </button>
             <button
               type="button"
@@ -147,13 +157,13 @@ export function TableFilterPills({
             >
               {operators[filter.operator] ?? filter.operator}
             </button>
-            {valueText && (
+            {renderedValueText && (
               <button
                 type="button"
                 onClick={openSheet}
                 className="px-2 font-semibold hover:bg-accent transition-colors border-l cursor-pointer max-w-40 truncate"
               >
-                {valueText}
+                {renderedValueText}
               </button>
             )}
             <button

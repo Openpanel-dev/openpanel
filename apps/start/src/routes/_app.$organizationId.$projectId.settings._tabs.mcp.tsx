@@ -12,8 +12,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
-import type { TFunction } from 'i18next';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/settings/_tabs/mcp',
@@ -33,7 +32,7 @@ type AiClient = {
   snippet: (mcpUrl: string) => string;
 };
 
-const buildClients = (mcpEndpoint: string, t: TFunction): AiClient[] => {
+const buildClients = (mcpEndpoint: string): AiClient[] => {
   const url = `${mcpEndpoint}?token=${TOKEN_PLACEHOLDER}`;
 
   return [
@@ -41,12 +40,13 @@ const buildClients = (mcpEndpoint: string, t: TFunction): AiClient[] => {
       id: 'claude-desktop',
       name: 'Claude Desktop',
       description: (
-        <>
-          {t('settings.mcp_claude_desktop_description_prefix')}{' '}
-          <code>claude_desktop_config.json</code>.{' '}
-          {t('settings.mcp_claude_desktop_description_suffix')}{' '}
-          <strong>{t('settings.mcp_claude_desktop_settings_path')}</strong>.
-        </>
+        <Trans
+          components={{
+            config: <code />,
+            settings: <strong />,
+          }}
+          i18nKey="settings.mcp_claude_desktop_description"
+        />
       ),
       configFile:
         'macOS: ~/Library/Application Support/Claude/claude_desktop_config.json',
@@ -69,10 +69,12 @@ const buildClients = (mcpEndpoint: string, t: TFunction): AiClient[] => {
       id: 'claude-code',
       name: 'Claude Code (CLI)',
       description: (
-        <>
-          {t('settings.mcp_claude_code_description_prefix')}{' '}
-          <code>--header "Authorization: Bearer BASE64_TOKEN"</code>.
-        </>
+        <Trans
+          components={{
+            header: <code />,
+          }}
+          i18nKey="settings.mcp_claude_code_description"
+        />
       ),
       language: 'bash',
       snippet: () => `claude mcp add --transport http openpanel "${url}"`,
@@ -81,12 +83,13 @@ const buildClients = (mcpEndpoint: string, t: TFunction): AiClient[] => {
       id: 'cursor',
       name: 'Cursor',
       description: (
-        <>
-          {t('settings.mcp_cursor_description_prefix')}{' '}
-          <code>~/.cursor/mcp.json</code>{' '}
-          {t('settings.mcp_cursor_description_suffix')}{' '}
-          <code>.cursor/mcp.json</code>.
-        </>
+        <Trans
+          components={{
+            global: <code />,
+            project: <code />,
+          }}
+          i18nKey="settings.mcp_cursor_description"
+        />
       ),
       configFile: '~/.cursor/mcp.json',
       language: 'json',
@@ -108,13 +111,14 @@ const buildClients = (mcpEndpoint: string, t: TFunction): AiClient[] => {
       id: 'windsurf',
       name: 'Windsurf',
       description: (
-        <>
-          {t('settings.mcp_windsurf_description_prefix')}{' '}
-          <code>~/.codeium/windsurf/mcp_config.json</code>.{' '}
-          {t('settings.mcp_windsurf_description_suffix')}{' '}
-          <code>serverUrl</code>{' '}
-          {t('settings.mcp_windsurf_url_connector')} <code>url</code>.
-        </>
+        <Trans
+          components={{
+            config: <code />,
+            serverUrl: <code />,
+            url: <code />,
+          }}
+          i18nKey="settings.mcp_windsurf_description"
+        />
       ),
       configFile: '~/.codeium/windsurf/mcp_config.json',
       language: 'json',
@@ -135,11 +139,12 @@ const buildClients = (mcpEndpoint: string, t: TFunction): AiClient[] => {
       id: 'vscode',
       name: 'VS Code (Copilot)',
       description: (
-        <>
-          {t('settings.mcp_vscode_description_prefix')}{' '}
-          <code>.vscode/mcp.json</code>{' '}
-          {t('settings.mcp_vscode_description_suffix')}
-        </>
+        <Trans
+          components={{
+            config: <code />,
+          }}
+          i18nKey="settings.mcp_vscode_description"
+        />
       ),
       configFile: '.vscode/mcp.json',
       language: 'json',
@@ -161,11 +166,12 @@ const buildClients = (mcpEndpoint: string, t: TFunction): AiClient[] => {
       id: 'raycast',
       name: 'Raycast',
       description: (
-        <>
-          {t('settings.mcp_raycast_description_prefix')}{' '}
-          <strong>{t('settings.mcp_raycast_install_server')}</strong>{' '}
-          {t('settings.mcp_raycast_description_suffix')}
-        </>
+        <Trans
+          components={{
+            command: <strong />,
+          }}
+          i18nKey="settings.mcp_raycast_description"
+        />
       ),
       language: 'json',
       snippet: () =>
@@ -187,7 +193,7 @@ function Component() {
   const { apiUrl } = useAppContext();
   const mcpEndpoint = `${apiUrl}/mcp`;
   const fullUrl = `${mcpEndpoint}?token=${TOKEN_PLACEHOLDER}`;
-  const clients = buildClients(mcpEndpoint, t);
+  const clients = buildClients(mcpEndpoint);
 
   return (
     <div className="col gap-6">
@@ -201,13 +207,14 @@ function Component() {
       <div className="col gap-2">
         <CopyInput label={t('settings.mcp_endpoint_label')} value={fullUrl} />
         <p className="text-muted-foreground text-xs">
-          {t('settings.mcp_token_help_prefix')}{' '}
-          <code>{TOKEN_PLACEHOLDER}</code>{' '}
-          {t('settings.mcp_token_help_middle')}{' '}
-          <code>base64(clientId:clientSecret)</code>.{' '}
-          {t('settings.mcp_token_help_suffix')}{' '}
-          <code>Authorization: Bearer</code>{' '}
-          {t('settings.mcp_token_help_suffix_2')}
+          <Trans
+            components={{
+              encoded: <code />,
+              header: <code />,
+              token: <code />,
+            }}
+            i18nKey="settings.mcp_token_help"
+          />
         </p>
       </div>
 
@@ -215,9 +222,13 @@ function Component() {
         <div className="col gap-1">
           <div className="font-medium">{t('settings.mcp_need_token_title')}</div>
           <p className="text-muted-foreground text-sm">
-            {t('settings.mcp_need_token_description_prefix')}{' '}
-            <code>read</code> {t('settings.mcp_need_token_description_middle')}{' '}
-            <code>root</code> {t('settings.mcp_need_token_description_suffix')}
+            <Trans
+              components={{
+                read: <code />,
+                root: <code />,
+              }}
+              i18nKey="settings.mcp_need_token_description"
+            />
           </p>
         </div>
         <div>

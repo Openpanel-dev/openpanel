@@ -3,7 +3,7 @@ import { cn } from '@/utils/cn';
 import { AlertCircleIcon, CheckIcon, SparklesIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getToolPhrase } from './tool-labels';
+import { getToolPhrase, type ToolPhraseLabel } from './tool-labels';
 
 /**
  * Wrapper that handles the tool-part state machine. Shows a shimmer
@@ -49,8 +49,9 @@ export function ToolStateGuard({
  */
 export function ToolActivityBadge({ toolName }: { toolName?: string }) {
   const { t } = useTranslation();
+  const translateToolPhrase = useToolPhraseTranslator();
   const label = toolName
-    ? getToolPhrase(toolName, 'active', t)
+    ? translateToolPhrase(getToolPhrase(toolName, 'active'))
     : t('chat.tool_working');
   return (
     <div className="flex items-center gap-2 py-1.5 text-sm">
@@ -72,14 +73,14 @@ export function ToolDoneBadge({
   toolName: string;
   children?: ReactNode;
 }) {
-  const { t } = useTranslation();
+  const translateToolPhrase = useToolPhraseTranslator();
 
   return (
     <details className="group rounded-md border bg-card text-sm">
       <summary className="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 list-none [&::-webkit-details-marker]:hidden">
         <CheckIcon className="size-3 text-emerald-500 shrink-0" />
         <span className="font-medium text-foreground/80">
-          {getToolPhrase(toolName, 'done', t)}
+          {translateToolPhrase(getToolPhrase(toolName, 'done'))}
         </span>
       </summary>
       {children && <div className="border-t px-2.5 py-2">{children}</div>}
@@ -127,3 +128,25 @@ export function ResultValue({ children, mono = true }: { children: ReactNode; mo
 }
 
 export { Skeleton };
+
+export function useToolPhraseTranslator() {
+  const { t } = useTranslation();
+
+  const translateToolPhrase = (label: ToolPhraseLabel): string => {
+    if ('text' in label) return label.text;
+    const values: Record<string, string> = Object.fromEntries(
+      Object.entries(label.values ?? {}).map(([key, value]) => [
+        key,
+        typeof value === 'object' && value !== null
+          ? translateToolPhrase(value)
+          : value,
+      ]),
+    );
+    return t(label.key, {
+      defaultValue: label.fallback,
+      ...values,
+    });
+  };
+
+  return translateToolPhrase;
+}

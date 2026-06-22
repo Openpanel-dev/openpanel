@@ -18,14 +18,15 @@ void i18n
       'zh-CN': { translation: zhCN },
       'zh-TW': { translation: zhTW },
     },
+    lng: defaultLanguage,
     fallbackLng: defaultLanguage,
     load: 'currentOnly',
     interpolation: {
       escapeValue: false,
     },
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
+      order: ['htmlTag', 'localStorage', 'navigator'],
+      caches: [],
       lookupLocalStorage: 'openpanel-language',
       convertDetectedLanguage: normalizeLanguage,
     },

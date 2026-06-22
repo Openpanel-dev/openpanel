@@ -7,7 +7,7 @@ import type { IServiceProjectWithClients } from '@openpanel/db';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addHours, format, startOfHour } from 'date-fns';
 import { TrashIcon } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type Props = { project: IServiceProjectWithClients };
@@ -66,18 +66,18 @@ export default function DeleteProject({ project }: Props) {
               {t('settings.delete_project_scheduled_title')}
             </AlertTitle>
             <AlertDescription>
-              {t('settings.delete_project_scheduled_prefix')}{' '}
-              <span className="font-medium">
-                {
-                  // add 1 hour and round to the nearest hour
-                  // Since we run cron once an hour
-                  format(
+              <Trans
+                components={{
+                  date: <span className="font-medium" />,
+                }}
+                i18nKey="settings.delete_project_scheduled_description"
+                values={{
+                  date: format(
                     startOfHour(addHours(project.deleteAt, 1)),
                     'yyyy-MM-dd HH:mm:ss',
-                  )
-                }
-              </span>
-              . {t('settings.delete_project_scheduled_suffix')}
+                  ),
+                }}
+              />
               {isOrgScheduledForDeletion && (
                 <>
                   {' '}

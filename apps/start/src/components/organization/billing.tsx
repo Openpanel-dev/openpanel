@@ -81,8 +81,16 @@ export default function Billing({ organization }: Props) {
       endsAt: organization.subscriptionEndsAt,
       canceledAt: organization.subscriptionCanceledAt,
     });
+    const statusLine = getSubscriptionStatusLine(organization.subscriptionState, {
+      endsAt: organization.subscriptionEndsAt
+        ? formatDate(organization.subscriptionEndsAt)
+        : null,
+      canceledAt: organization.subscriptionCanceledAt
+        ? formatDate(organization.subscriptionCanceledAt)
+        : null,
+    });
 
-    if (!meta.statusLine) {
+    if (!meta.statusLine || !statusLine) {
       return null;
     }
 
@@ -92,15 +100,7 @@ export default function Billing({ organization }: Props) {
           meta.statusLine.tone === 'destructive' ? 'text-destructive' : undefined
         }
       >
-        {getSubscriptionStatusLine(organization.subscriptionState, {
-          t,
-          endsAt: organization.subscriptionEndsAt
-            ? formatDate(organization.subscriptionEndsAt)
-            : null,
-          canceledAt: organization.subscriptionCanceledAt
-            ? formatDate(organization.subscriptionCanceledAt)
-            : null,
-        })}
+        {t(statusLine.key, statusLine.values)}
       </p>
     );
   };
@@ -269,48 +269,68 @@ export default function Billing({ organization }: Props) {
   );
 }
 
+type SubscriptionStatusLine =
+  | {
+      key: string;
+      values?: { date: string };
+    }
+  | null;
+
 function getSubscriptionStatusLine(
   state: SubscriptionState,
   {
-    t,
     endsAt,
     canceledAt,
   }: {
-    t: ReturnType<typeof useTranslation>['t'];
     endsAt: string | null;
     canceledAt: string | null;
   }
-) {
+): SubscriptionStatusLine {
   switch (state) {
     case 'self_hosted':
     case 'active':
       return endsAt
-        ? t('billing.status_subscription_renews_on', { date: endsAt })
+        ? {
+            key: 'billing.status_subscription_renews_on',
+            values: { date: endsAt },
+          }
         : null;
     case 'trialing':
       return endsAt
-        ? t('billing.status_trial_ends_on', { date: endsAt })
+        ? {
+            key: 'billing.status_trial_ends_on',
+            values: { date: endsAt },
+          }
         : null;
     case 'trial_expired':
-      return t('billing.status_trial_ended');
+      return { key: 'billing.status_trial_ended' };
     case 'canceling':
       return endsAt
-        ? t('billing.status_subscription_will_cancel_on', { date: endsAt })
+        ? {
+            key: 'billing.status_subscription_will_cancel_on',
+            values: { date: endsAt },
+          }
         : null;
     case 'canceled':
       return canceledAt
-        ? t('billing.status_subscription_canceled_on', { date: canceledAt })
-        : t('billing.status_subscription_canceled');
+        ? {
+            key: 'billing.status_subscription_canceled_on',
+            values: { date: canceledAt },
+          }
+        : { key: 'billing.status_subscription_canceled' };
     case 'past_due':
-      return t('billing.status_payment_failed');
+      return { key: 'billing.status_payment_failed' };
     case 'unpaid':
-      return t('billing.status_subscription_unpaid');
+      return { key: 'billing.status_subscription_unpaid' };
     case 'incomplete':
-      return t('billing.status_subscription_incomplete');
+      return { key: 'billing.status_subscription_incomplete' };
     case 'expired':
       return endsAt
-        ? t('billing.status_subscription_expired_on', { date: endsAt })
-        : t('billing.status_subscription_expired');
+        ? {
+            key: 'billing.status_subscription_expired_on',
+            values: { date: endsAt },
+          }
+        : { key: 'billing.status_subscription_expired' };
     default: {
       const _exhaustive: never = state;
       return _exhaustive;
