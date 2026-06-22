@@ -19,6 +19,9 @@ async function createOrGetOrganization(
   }
 
   const TRIAL_DURATION_IN_DAYS = 30;
+  // Generous trial allowance so trialing orgs never get flagged as
+  // "limit exceeded" (the limit defaults to 0, which trips on the first event).
+  const TRIAL_EVENTS_LIMIT = 10_000_000;
 
   if (input.organization) {
     const organizationId = await getId('organization', input.organization);
@@ -34,6 +37,7 @@ async function createOrGetOrganization(
           createdByUserId: user.id,
           subscriptionEndsAt: addDays(new Date(), TRIAL_DURATION_IN_DAYS),
           subscriptionStatus: 'trialing',
+          subscriptionPeriodEventsLimit: TRIAL_EVENTS_LIMIT,
           timezone: input.timezone,
           onboarding: '',
         },
