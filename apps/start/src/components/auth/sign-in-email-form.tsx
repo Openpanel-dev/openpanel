@@ -21,7 +21,7 @@ export function SignInEmailForm({
   const { t } = useTranslation();
   const trpc = useTRPC();
   const mutation = useMutation(
-    trpc.auth.sign_inEmail.mutationOptions({
+    trpc.auth.signInEmail.mutationOptions({
       async onSuccess(data) {
         if (data.type === 'totp_required') {
           window.location.href = '/verify';

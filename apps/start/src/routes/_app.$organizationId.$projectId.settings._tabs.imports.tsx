@@ -142,6 +142,7 @@ function ImportsSettings() {
               )}
               icon={
                 <IntegrationCardLogoImage
+                  alt={provider.name}
                   backgroundColor={provider.backgroundColor}
                   className="p-4"
                   src={provider.logo}

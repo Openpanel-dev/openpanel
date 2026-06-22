@@ -59,7 +59,6 @@ export const Metric = ({
 );
 
 export function Summary({ data }: { data: RouterOutputs['chart']['funnel'] }) {
-  const { t } = useTranslation();
   const number = useNumber();
   const highestConversion = data.current
     .slice(0)
@@ -128,6 +127,7 @@ export function Tables({
   },
   noTopBorderRadius,
 }: Props) {
+  const { t } = useTranslation();
   const number = useNumber();
   const hasHeader = breakdowns.length > 0;
   const {

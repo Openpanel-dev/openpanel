@@ -15,7 +15,7 @@ export function SignInGoogle({
   const { t } = useTranslation();
   const trpc = useTRPC();
   const mutation = useMutation(
-    trpc.auth.sign_inOAuth.mutationOptions({
+    trpc.auth.signInOAuth.mutationOptions({
       onSuccess(res) {
         if (res.url) {
           window.location.href = res.url;

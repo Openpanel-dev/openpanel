@@ -30,7 +30,7 @@ function VerifyPage() {
   const [code, setCode] = useState('');
 
   const mutation = useMutation(
-    trpc.auth.sign_inTotp.mutationOptions({
+    trpc.auth.signInTotp.mutationOptions({
       onSuccess() {
         toast.success(t('auth.signed_in'));
         window.location.href = '/';

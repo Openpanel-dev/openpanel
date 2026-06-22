@@ -19,7 +19,7 @@ export function ShareEnterPassword({
   const { t } = useTranslation();
   const trpc = useTRPC();
   const mutation = useMutation(
-    trpc.auth.sign_inShare.mutationOptions({
+    trpc.auth.signInShare.mutationOptions({
       onSuccess() {
         window.location.reload();
       },
@@ -55,7 +55,9 @@ export function ShareEnterPassword({
   return (
     <PublicPageCard
       title={t('auth.share_locked_title', { type: typeLabel })}
-      description={t('auth.share_password_description', { type: typeLabel })}
+      description={t('auth.share_password_description', {
+        type: typeLabel.toLowerCase(),
+      })}
     >
       <form onSubmit={onSubmit} className="col gap-4">
         <Input
