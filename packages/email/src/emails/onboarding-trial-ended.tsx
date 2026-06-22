@@ -3,6 +3,7 @@ import React from 'react';
 import { z } from 'zod';
 import { Button } from '../components/button';
 import { Layout } from '../components/layout';
+import { withUtm } from '../utm';
 
 export const zOnboardingTrialEnded = z.object({
   firstName: z.string().optional(),
@@ -25,11 +26,6 @@ export function OnboardingTrialEnded({
   eventsCount,
   unsubscribeUrl,
 }: Props & { unsubscribeUrl?: string }) {
-  const newUrl = new URL(billingUrl);
-  newUrl.searchParams.set('utm_source', 'email');
-  newUrl.searchParams.set('utm_medium', 'email');
-  newUrl.searchParams.set('utm_campaign', 'onboarding-trial-ended');
-
   if (!hasData) {
     return (
       <Layout unsubscribeUrl={unsubscribeUrl}>
@@ -65,7 +61,9 @@ export function OnboardingTrialEnded({
           : 'Plans start at $2.50 a month.'}
       </Text>
       <Text>
-        <Button href={newUrl.toString()}>Upgrade</Button>
+        <Button href={withUtm(billingUrl, 'onboarding-trial-ended')}>
+          Upgrade
+        </Button>
       </Text>
       <Text>
         If you don't upgrade, the workspace is eventually removed along with

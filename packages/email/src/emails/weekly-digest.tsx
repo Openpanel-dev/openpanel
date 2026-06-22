@@ -3,6 +3,7 @@ import React from 'react';
 import { z } from 'zod';
 import { Layout } from '../components/layout';
 import { List } from '../components/list';
+import { withUtm } from '../utm';
 
 export const zWeeklyDigest = z.object({
   projectName: z.string(),
@@ -86,7 +87,9 @@ export function WeeklyDigest({
       )}
 
       <Section className="mt-6">
-        <Link href={dashboardUrl}>Open your dashboard →</Link>
+        <Link href={withUtm(dashboardUrl, 'weekly-digest')}>
+          Open your dashboard →
+        </Link>
       </Section>
     </Layout>
   );
