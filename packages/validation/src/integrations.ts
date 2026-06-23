@@ -270,10 +270,16 @@ export function descriptorsByKind(kind: IIntegrationKind) {
 }
 
 export function isKind(
-  config: Pick<IIntegrationConfig, 'type'>,
+  config: Pick<IIntegrationConfig, 'type'> | { type?: string },
   kind: IIntegrationKind,
 ): boolean {
-  return getDescriptor(config.type).kinds.includes(kind);
+  // Lenient lookup: used as a filter predicate over all integrations, including
+  // rows whose config is still empty (e.g. a Slack integration before its OAuth
+  // callback fills the config). Unknown/undefined types are simply not of `kind`.
+  const descriptor = descriptorByType.get(config.type as IIntegrationType);
+  return descriptor
+    ? (descriptor.kinds as readonly IIntegrationKind[]).includes(kind)
+    : false;
 }
 
 // Runtime parser for any integration config. A plain union (not
