@@ -22,7 +22,7 @@ interface Props {
   type: IIntegrationConfig['type'];
 }
 export default function AddIntegration(props: Props) {
-  const { organizationId } = useAppParams();
+  const { organizationId, projectId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
     trpc.integration.get.queryOptions(
@@ -58,9 +58,10 @@ export default function AddIntegration(props: Props) {
       trpc.integration.get.queryFilter({ id: props.id }),
     );
     navigate({
-      to: '/$organizationId/integrations/installed',
+      to: '/$organizationId/$projectId/integrations/installed',
       params: {
         organizationId,
+        projectId,
       },
     });
   };

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronDownIcon,
@@ -7,7 +7,6 @@ import {
   LayoutListIcon,
   PlusIcon,
   UsersIcon,
-  WorkflowIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Badge } from './ui/badge';
@@ -98,22 +97,11 @@ export default function SidebarOrganizationMenu({
           <div className="flex-1">Members</div>
         </Link>
       )}
-      <Link
-        className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
-        )}
-        from="/$organizationId"
-        to="/$organizationId/integrations"
-      >
-        <WorkflowIcon size={20} />
-        <div className="flex-1">Integrations</div>
-      </Link>
     </>
   );
 }
 
 export function ActionCTAButton() {
-  const navigate = useNavigate();
   const { organizationId } = useParams({ strict: false });
   const { isAdmin } = useOrganizationAccess(organizationId);
 
@@ -132,15 +120,6 @@ export function ActionCTAButton() {
           },
         ]
       : []),
-    {
-      label: 'Add integration',
-      icon: WorkflowIcon,
-      onClick: () =>
-        navigate({
-          to: '/$organizationId/integrations',
-          from: '/$organizationId',
-        }),
-    },
   ];
 
   const [currentActionIndex, setCurrentActionIndex] = useState(0);

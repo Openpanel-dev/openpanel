@@ -90,14 +90,27 @@ export async function flushExportsJob(_job: Job<CronQueuePayload>) {
     return;
   }
 
-  // Integrations are org-scoped, so every active project in the org exports
-  // independently (each gets its own watermark + object path).
+  // Project-scoped integrations export exactly their one project. Legacy
+  // org-wide integrations (projectId == null) still fan out across every active
+  // project in the org. Either way each (project, integration) pair gets its own
+  // watermark + object path.
   const items: Array<{
     projectId: string;
     integrationId: string;
     config: ExportConfig;
   }> = [];
   for (const integration of exportIntegrations) {
+    const config = integration.config as ExportConfig;
+
+    if (integration.projectId) {
+      items.push({
+        projectId: integration.projectId,
+        integrationId: integration.id,
+        config,
+      });
+      continue;
+    }
+
     const projects = await db.project.findMany({
       where: { organizationId: integration.organizationId, deleteAt: null },
       select: { id: true },
@@ -106,7 +119,7 @@ export async function flushExportsJob(_job: Job<CronQueuePayload>) {
       items.push({
         projectId: project.id,
         integrationId: integration.id,
-        config: integration.config as ExportConfig,
+        config,
       });
     }
   }

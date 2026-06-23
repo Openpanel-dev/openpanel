@@ -254,6 +254,7 @@ model Project {
   gscConnection     GscConnection?
   cohorts           Cohort[]
   exportWatermarks  ExportWatermark[]
+  integrations      Integration[]
 
   // When deleteAt > now(), the project will be deleted
   deleteAt DateTime?
@@ -583,12 +584,19 @@ model Integration {
   config            Json
   organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId    String
+  // When set, the integration is scoped to a single project; null = legacy
+  // org-wide (applies to every project in the org). organizationId is kept
+  // (derived from the project on create) so org-level queries/cascades still work.
+  project           Project?           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId         String?
   notificationRules NotificationRule[]
   notifications     Notification[]
   exportWatermarks  ExportWatermark[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @default(now()) @updatedAt
 
+  @@index([organizationId])
+  @@index([projectId])
   @@map("integrations")
 }
 

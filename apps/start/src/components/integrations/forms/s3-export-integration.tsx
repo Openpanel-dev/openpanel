@@ -46,12 +46,12 @@ export function S3ExportIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
-  const { organizationId } = useAppParams();
+  const { projectId } = useAppParams();
   const form = useForm<IForm>({
     defaultValues: mergeDeepRight(
       {
         id: defaultValues?.id,
-        organizationId,
+        projectId,
         name: '',
         config: {
           type: 's3_export' as const,
