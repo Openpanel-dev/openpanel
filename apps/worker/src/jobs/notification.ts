@@ -47,6 +47,13 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
         return new Error('Invalid payload');
       }
 
+      // An integration whose config is still empty (e.g. a Slack integration
+      // before its OAuth callback fills the config) has no type yet — nothing
+      // to deliver to.
+      if (!integration.config?.type) {
+        return;
+      }
+
       // Generic registry dispatch — no per-type switch. A new notification
       // integration just registers a `notification.deliver` plugin.
       const plugin = getServerIntegration(integration.config.type);
