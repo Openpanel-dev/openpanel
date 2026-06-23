@@ -216,10 +216,20 @@ export class FunnelService {
   resolveFunnelGroup(
     funnelGroup: string | undefined | null,
     fromClause: string,
+    resolveAliases = false,
   ): [string, string] {
-    return funnelGroup === 'session_id'
-      ? [`${fromClause}.session_id`, 'session_id']
-      : [`COALESCE(nullIf(s.pid, ''), ${fromClause}.profile_id)`, 'profile_id'];
+    if (funnelGroup === 'session_id') {
+      return [`${fromClause}.session_id`, 'session_id'];
+    }
+    // Base: session-stitched profile_id (an event's session may already carry the
+    // identified profile_id). Identity-merge layers on top — resolve the event's
+    // profile_id to its canonical via the `al` CTE so a user's anon + identified
+    // events collapse to one id across sessions. No-op when `al` is empty.
+    const base = `COALESCE(nullIf(s.pid, ''), ${fromClause}.profile_id)`;
+    const expr = resolveAliases
+      ? `coalesce(nullIf(al.canonical, ''), ${base})`
+      : base;
+    return [expr, 'profile_id'];
   }
 
   buildFunnelCte({
@@ -462,8 +472,16 @@ export class FunnelService {
         eventsSourceSelectColumns,
       );
 
+    // Identity-merge: resolve anon profile_id -> canonical via profile_aliases so a
+    // user's anon + identified events collapse into one funnel subject across
+    // sessions. No-op for projects with no aliases (coalesce keeps the raw id), so
+    // no gating needed. Profile-level only; skipped for cohorts (cohort joins match
+    // raw profile_id). Custom events are fine — resolution is applied at the group
+    // level after the union, not inside the per-event CTEs.
+    const resolveAliases = funnelGroup !== 'session_id' && cohortIds.length === 0;
+
     // Determine group column using the actual fromClause (not hardcoded table name)
-    const group = this.resolveFunnelGroup(funnelGroup, fromClause);
+    const group = this.resolveFunnelGroup(funnelGroup, fromClause, resolveAliases);
 
     // Create the funnel CTE
     // Pull breakdown value from step 1's qualifying events only via anyIf().
@@ -611,6 +629,21 @@ export class FunnelService {
       funnelQuery.with('sessions', sessionsCte);
     }
 
+    // Identity-merge alias map: join the event's profile_id to its canonical so the
+    // group expression (resolveFunnelGroup) can collapse anon -> identified. One
+    // scan of profile_aliases per query; empty for projects with no aliases.
+    if (resolveAliases) {
+      funnelCte.leftJoin('al', `al.alias = ${fromClause}.profile_id`);
+      funnelQuery.with(
+        'al',
+        clix(this.client, timezone)
+          .select(['alias', 'argMax(profile_id, created_at) AS canonical'])
+          .from(TABLE_NAMES.alias)
+          .where('project_id', '=', projectId)
+          .groupBy(['alias']),
+      );
+    }
+
     funnelQuery.with('funnel', funnelCte);
 
     funnelQuery
@@ -736,32 +769,52 @@ export class FunnelService {
 
       const toStartOf = clix.toStartOf('fs.first_ts', interval || 'day');
 
+      // Identity-merge: resolve profile_id -> canonical in both step CTEs so the
+      // first/last-step JOIN stitches a user's anon and identified events. Mirrors
+      // the main funnel; `gid` avoids shadowing the raw profile_id column. No-op
+      // when the alias map is empty.
+      const ttcAliasCte = resolveAliases
+        ? `al AS (
+          SELECT alias, argMax(profile_id, created_at) AS canonical
+          FROM ${TABLE_NAMES.alias}
+          WHERE project_id = ${sqlstring.escape(projectId)}
+          GROUP BY alias
+        ),
+        `
+        : '';
+      const ttcAliasJoin = resolveAliases
+        ? '\n          LEFT JOIN al ON al.alias = profile_id'
+        : '';
+      const ttcGid = resolveAliases
+        ? `coalesce(nullIf(al.canonical, ''), profile_id)`
+        : 'profile_id';
+
       const ttcQuery = `
         WITH
-        first_step_events AS (
-          SELECT profile_id, min(created_at) AS first_ts
-          FROM ${TABLE_NAMES.events}
+        ${ttcAliasCte}first_step_events AS (
+          SELECT ${ttcGid} AS gid, min(created_at) AS first_ts
+          FROM ${TABLE_NAMES.events}${ttcAliasJoin}
           PREWHERE project_id = ${sqlstring.escape(projectId)}
             AND name = ${sqlstring.escape(firstEvent.name)}
             AND created_at >= toDateTime('${formatClickhouseDate(startDate)}')
             AND created_at <= toDateTime('${formatClickhouseDate(endDate)}')${firstEventWhere}
-          GROUP BY profile_id
+          GROUP BY gid
         ),
         last_step_events AS (
-          SELECT profile_id, min(created_at) AS last_ts
-          FROM ${TABLE_NAMES.events}
+          SELECT ${ttcGid} AS gid, min(created_at) AS last_ts
+          FROM ${TABLE_NAMES.events}${ttcAliasJoin}
           PREWHERE project_id = ${sqlstring.escape(projectId)}
             AND name = ${sqlstring.escape(lastEventItem.name)}
             AND created_at >= toDateTime('${formatClickhouseDate(startDate)}')
             AND created_at <= toDateTime('${extendedEndDate}')${lastEventWhere}
-          GROUP BY profile_id
+          GROUP BY gid
         ),
         matched AS (
           SELECT
             ${toStartOf} AS event_day,
             dateDiff('second', fs.first_ts, ls.last_ts) AS time_diff_seconds
           FROM first_step_events fs
-          JOIN last_step_events ls ON ls.profile_id = fs.profile_id
+          JOIN last_step_events ls ON ls.gid = fs.gid
             AND ls.last_ts >= fs.first_ts
             AND ls.last_ts <= fs.first_ts + INTERVAL ${funnelWindowSeconds} SECOND
         )

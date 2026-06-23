@@ -66,6 +66,7 @@ export class ConversionService {
     extraColumns: string[] = [],
     groupCol: string,
     preFilterCte?: string,
+    resolveProfile = false,
   ): Promise<string> {
     // Check if this is a custom event
     const customEvent = await getCustomEventByName(event.name, projectId);
@@ -116,13 +117,39 @@ export class ConversionService {
         const profileColumns = [...new Set(
           profileFilters.map(f => f.name.replace('profile.', '').split('.')[0])
         )];
-        profileJoinClause = `\n        LEFT JOIN (SELECT id, ${profileColumns.join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = '${projectId}') AS profile ON profile.id = profile_id`;
+        profileJoinClause = `\n        LEFT JOIN (SELECT id, ${profileColumns.join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = '${projectId}') AS profile ON profile.id = ${TABLE_NAMES.events}.profile_id`;
       }
 
       // Minimal SELECT: only the columns actually needed downstream
       const baseColumns = ['profile_id', 'session_id', 'created_at'];
       const selectColumns = [...new Set([...baseColumns, ...extraColumns])];
-      const selectList = selectColumns.map(quoteCol).join(', ');
+
+      // Identity-merge resolution (allowlisted projects only — see getConversion).
+      // Resolve profile_id -> canonical via the `al` CTE so an anon-start /
+      // identified-end funnel stitches. `coalesce(nullIf(...))` guards CH's empty
+      // -string LEFT JOIN default. When off, this is byte-identical to before.
+      // Qualify the raw column as `events.profile_id` wherever it feeds the
+      // resolution: an unqualified `profile_id` in the JOIN ON / coalesce binds to
+      // the SELECT output alias (also `profile_id`), yielding a circular join key
+      // (al.alias = coalesce(al.canonical, profile_id)) that ClickHouse rejects.
+      const rawProfileId = `${TABLE_NAMES.events}.profile_id`;
+      const aliasJoin = resolveProfile
+        ? `\n        LEFT JOIN al ON al.alias = ${rawProfileId}`
+        : '';
+      const profileIdExpr = resolveProfile
+        ? `coalesce(nullIf(al.canonical, ''), ${rawProfileId})`
+        : null;
+      const selectList = selectColumns
+        .map((c) =>
+          profileIdExpr && c === 'profile_id'
+            ? `${profileIdExpr} AS \`profile_id\``
+            : quoteCol(c),
+        )
+        .join(', ');
+      // The prefilter (end ⊆ start) must compare RESOLVED ids on both sides:
+      // start_events_raw already emits resolved profile_id, so the end CTE's LHS
+      // must resolve too — otherwise raw-end never matches canonical-start.
+      const preFilterLhs = profileIdExpr ?? groupCol;
 
       // project_id / name / created_at go into PREWHERE so ClickHouse can skip
       // granules using the sort key before loading other columns. The rest of
@@ -131,12 +158,12 @@ export class ConversionService {
       // or depend on the profile LEFT JOIN executed after PREWHERE.
       return `${cteName} AS (
         SELECT ${selectList}
-        FROM ${TABLE_NAMES.events}${profileJoinClause}
+        FROM ${TABLE_NAMES.events}${profileJoinClause}${aliasJoin}
         PREWHERE project_id = '${projectId}'
           AND name = '${event.name}'
           AND created_at >= toDateTime('${formatClickhouseDate(startDate)}')
           AND created_at <= toDateTime('${formatClickhouseDate(endDate)}')
-        WHERE ${groupCol} != ''${filterWhere}${preFilterCte ? `\n          AND ${groupCol} IN (SELECT ${groupCol} FROM ${preFilterCte})` : ''}
+        WHERE ${groupCol} != ''${filterWhere}${preFilterCte ? `\n          AND ${preFilterLhs} IN (SELECT ${groupCol} FROM ${preFilterCte})` : ''}
       )`;
     }
   }
@@ -326,6 +353,30 @@ export class ConversionService {
     // Build CTEs for start and end events
     const ctes: string[] = [];
 
+    // Identity-merge: resolve anon profile_id -> canonical via profile_aliases so
+    // an anon-start / identified-end funnel stitches into one user. This is a no-op
+    // for projects with no aliases (coalesce keeps the raw id), so it needs no
+    // project gating. Profile-level only (session-level already stitches within a
+    // session); skipped for custom events (can't resolve — would mix raw/resolved)
+    // and cohorts (cohort joins match raw profile_id). `al` is pushed first so the
+    // event CTEs can join it.
+    let resolveAliases = false;
+    if (groupCol === 'profile_id' && cohortIds.length === 0) {
+      const [startCustom, endCustom] = await Promise.all([
+        getCustomEventByName(firstEvent.name, projectId),
+        getCustomEventByName(lastEvent.name, projectId),
+      ]);
+      resolveAliases = !startCustom && !endCustom;
+    }
+    if (resolveAliases) {
+      ctes.push(`al AS (
+      SELECT alias, argMax(profile_id, created_at) AS canonical
+      FROM ${TABLE_NAMES.alias}
+      WHERE project_id = '${projectId}'
+      GROUP BY alias
+    )`);
+    }
+
     // Start events CTE — named _raw so we can wrap it with deduplication below
     const startEventCte = await this.buildSingleEventCte(
       firstEvent,
@@ -335,6 +386,8 @@ export class ConversionService {
       endDate,
       startExtraCols,
       groupCol,
+      undefined,
+      resolveAliases,
     );
     ctes.push(startEventCte);
 
@@ -374,6 +427,7 @@ export class ConversionService {
       endExtraCols,
       groupCol,
       'start_events_raw',
+      resolveAliases,
     );
     ctes.push(endEventCte);
 
