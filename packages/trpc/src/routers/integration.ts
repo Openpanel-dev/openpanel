@@ -16,10 +16,41 @@ import {
   zCreateSlackIntegration,
   zCreateWebhookIntegration,
 } from '@openpanel/validation';
-import { getOrganizationAccess } from '../access';
+import { getOrganizationAccess, getProjectAccess } from '../access';
 import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 import { validate as validateJavaScriptTemplate } from '@openpanel/js-runtime';
+
+// Assert the user can access the project, and return the project's
+// organizationId (still stored on the integration for org-level queries/cascades).
+async function assertProjectAccessAndGetOrg(userId: string, projectId: string) {
+  const access = await getProjectAccess({ userId, projectId });
+  if (!access) {
+    throw new TRPCForbiddenError('You do not have access to this project');
+  }
+  const project = await db.project.findUniqueOrThrow({
+    where: { id: projectId },
+    select: { organizationId: true },
+  });
+  return project.organizationId;
+}
+
+// Access check for an existing integration of either scope: project-scoped rows
+// check project access; legacy org-wide rows (projectId null) check org access.
+async function assertIntegrationAccess(
+  userId: string,
+  integration: { projectId: string | null; organizationId: string },
+) {
+  const access = integration.projectId
+    ? await getProjectAccess({ userId, projectId: integration.projectId })
+    : await getOrganizationAccess({
+        userId,
+        organizationId: integration.organizationId,
+      });
+  if (!access) {
+    throw new TRPCForbiddenError('You do not have access to this integration');
+  }
+}
 
 export const integrationRouter = createTRPCRouter({
   get: protectedProcedure
@@ -31,23 +62,27 @@ export const integrationRouter = createTRPCRouter({
         },
       });
 
-      const access = await getOrganizationAccess({
-        userId: ctx.session.userId,
-        organizationId: integration.organizationId,
-      });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
+      await assertIntegrationAccess(ctx.session.userId, integration);
 
       return integration;
     }),
   list: protectedProcedure
-    .input(z.object({ organizationId: z.string() }))
-    .query(async ({ input }) => {
+    .input(z.object({ projectId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const organizationId = await assertProjectAccessAndGetOrg(
+        ctx.session.userId,
+        input.projectId,
+      );
+
       const integrations = await db.integration.findMany({
         where: {
-          organizationId: input.organizationId,
+          // The project's own integrations, plus legacy org-wide integrations
+          // (projectId null) so they stay visible/selectable during the
+          // transition off org-scoping.
+          OR: [
+            { projectId: input.projectId },
+            { projectId: null, organizationId },
+          ],
           config: {
             not: {},
           },
@@ -58,49 +93,51 @@ export const integrationRouter = createTRPCRouter({
     }),
   createOrUpdateSlack: protectedProcedure
     .input(zCreateSlackIntegration)
-    .mutation(async ({ input }) => {
-      if (input.id) {
-        const res = await db.integration.update({
-          where: {
-            id: input.id,
-            organizationId: input.organizationId,
-          },
-          data: {
-            name: input.name,
-            // This is empty and will be filled by the webhook
-            config: {} as ISlackConfig,
-          },
-        });
+    .mutation(async ({ input, ctx }) => {
+      const organizationId = await assertProjectAccessAndGetOrg(
+        ctx.session.userId,
+        input.projectId,
+      );
 
-        return {
-          ...res,
-          slackInstallUrl: await getSlackInstallUrl({
-            integrationId: res.id,
-            organizationId: input.organizationId,
-          }),
-        };
-      }
-
-      const res = await db.integration.create({
-        data: {
-          name: input.name,
-          organizationId: input.organizationId,
-          // This is empty and will be filled by the webhook
-          config: {} as ISlackConfig,
-        },
-      });
+      const res = input.id
+        ? await db.integration.update({
+            where: {
+              id: input.id,
+              organizationId,
+            },
+            data: {
+              name: input.name,
+              // This is empty and will be filled by the webhook
+              config: {} as ISlackConfig,
+            },
+          })
+        : await db.integration.create({
+            data: {
+              name: input.name,
+              organizationId,
+              projectId: input.projectId,
+              // This is empty and will be filled by the webhook
+              config: {} as ISlackConfig,
+            },
+          });
 
       return {
         ...res,
         slackInstallUrl: await getSlackInstallUrl({
           integrationId: res.id,
-          organizationId: input.organizationId,
+          organizationId,
+          projectId: input.projectId,
         }),
       };
     }),
   createOrUpdate: protectedProcedure
     .input(z.union([zCreateDiscordIntegration, zCreateWebhookIntegration]))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const organizationId = await assertProjectAccessAndGetOrg(
+        ctx.session.userId,
+        input.projectId,
+      );
+
       // Validate JavaScript template if mode is javascript
       if (
         input.config.type === 'webhook' &&
@@ -121,7 +158,7 @@ export const integrationRouter = createTRPCRouter({
         return db.integration.update({
           where: {
             id: input.id,
-            organizationId: input.organizationId,
+            organizationId,
           },
           data: {
             name: input.name,
@@ -132,7 +169,8 @@ export const integrationRouter = createTRPCRouter({
       return db.integration.create({
         data: {
           name: input.name,
-          organizationId: input.organizationId,
+          organizationId,
+          projectId: input.projectId,
           config: input.config,
         },
       });
@@ -141,7 +179,12 @@ export const integrationRouter = createTRPCRouter({
     .input(
       z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const organizationId = await assertProjectAccessAndGetOrg(
+        ctx.session.userId,
+        input.projectId,
+      );
+
       // Test connection before saving (using unencrypted credentials)
       if (input.config.type === 's3_export') {
         const adapter = createS3Adapter(input.config);
@@ -179,7 +222,7 @@ export const integrationRouter = createTRPCRouter({
         return db.integration.update({
           where: {
             id: input.id,
-            organizationId: input.organizationId,
+            organizationId,
           },
           data: {
             name: input.name,
@@ -190,7 +233,8 @@ export const integrationRouter = createTRPCRouter({
       return db.integration.create({
         data: {
           name: input.name,
-          organizationId: input.organizationId,
+          organizationId,
+          projectId: input.projectId,
           config: configToSave,
         },
       });
@@ -219,14 +263,7 @@ export const integrationRouter = createTRPCRouter({
         },
       });
 
-      const access = await getOrganizationAccess({
-        userId: ctx.session.userId,
-        organizationId: integration.organizationId,
-      });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
+      await assertIntegrationAccess(ctx.session.userId, integration);
 
       return db.integration.delete({
         where: {

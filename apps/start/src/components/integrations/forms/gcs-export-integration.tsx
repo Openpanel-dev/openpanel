@@ -27,12 +27,12 @@ export function GCSExportIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
-  const { organizationId } = useAppParams();
+  const { projectId } = useAppParams();
   const form = useForm<IForm>({
     defaultValues: mergeDeepRight(
       {
         id: defaultValues?.id,
-        organizationId,
+        projectId,
         name: '',
         config: {
           type: 'gcs_export' as const,

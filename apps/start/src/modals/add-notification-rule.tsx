@@ -38,7 +38,7 @@ type IForm = z.infer<typeof zCreateNotificationRule>;
 
 export default function AddNotificationRule({ rule }: Props) {
   const client = useQueryClient();
-  const { organizationId, projectId } = useAppParams();
+  const { projectId } = useAppParams();
   const form = useForm<IForm>({
     resolver: zodResolver(zCreateNotificationRule),
     defaultValues: {
@@ -80,7 +80,7 @@ export default function AddNotificationRule({ rule }: Props) {
   );
   const integrationsQuery = useQuery(
     trpc.integration.list.queryOptions({
-      organizationId: organizationId!,
+      projectId: projectId!,
     })
   );
 

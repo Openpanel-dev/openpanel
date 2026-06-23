@@ -17,11 +17,11 @@ import {
 import { INTEGRATIONS } from './integrations';
 
 export function ActiveIntegrations() {
-  const { organizationId } = useAppParams();
+  const { projectId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
     trpc.integration.list.queryOptions({
-      organizationId: organizationId!,
+      projectId: projectId!,
     }),
   );
   const client = useQueryClient();
@@ -30,7 +30,7 @@ export function ActiveIntegrations() {
       onSuccess() {
         client.refetchQueries(
           trpc.integration.list.queryFilter({
-            organizationId,
+            projectId,
           }),
         );
       },

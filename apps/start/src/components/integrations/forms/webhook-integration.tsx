@@ -55,7 +55,7 @@ export function WebhookIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
-  const { organizationId } = useAppParams();
+  const { projectId } = useAppParams();
 
   // Convert headers from Record to array format for form UI
   const defaultHeaders =
@@ -67,7 +67,7 @@ export function WebhookIntegrationForm({
     defaultValues: mergeDeepRight(
       {
         id: defaultValues?.id,
-        organizationId,
+        projectId,
         config: {
           type: 'webhook' as const,
           url: '',
