@@ -2,11 +2,7 @@ import type { Job } from 'bullmq';
 
 import { Prisma, db } from '@openpanel/db';
 import { sendEmail } from '@openpanel/email';
-import { sendDiscordNotification } from '@openpanel/integrations/src/discord';
-import { postWebhook } from '@openpanel/integrations/src/fetcher';
-import { safeWebhookFetcher } from '@openpanel/integrations/src/safe-fetcher';
-import { sendSlackNotification } from '@openpanel/integrations/src/slack';
-import { execute as executeJavaScriptTemplate } from '@openpanel/js-runtime';
+import { getServerIntegration } from '@openpanel/integrations/src/registry';
 import type { NotificationQueuePayload } from '@openpanel/queue';
 import { publishEvent } from '@openpanel/redis';
 
@@ -26,6 +22,7 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
     case 'sendNotification': {
       const { notification } = job.data.payload;
 
+      // App + email are pseudo-integrations dispatched by flags, not real rows.
       if (notification.sendToApp) {
         publishEvent('notification', 'created', notification);
         return;
@@ -80,63 +77,23 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
         return new Error('Invalid payload');
       }
 
-      switch (integration.config.type) {
-        case 'webhook': {
-          let body: unknown;
-
-          if (integration.config.mode === 'javascript') {
-            // We only transform event payloads for now (not funnel)
-            if (
-              integration.config.javascriptTemplate &&
-              payload.type === 'event'
-            ) {
-              const result = executeJavaScriptTemplate(
-                integration.config.javascriptTemplate,
-                payload.event,
-              );
-              body = result;
-            } else {
-              body = payload;
-            }
-          } else {
-            body = {
-              title: notification.title,
-              message: notification.message,
-            };
-          }
-
-          // The webhook URL, its headers and (in javascript mode) its body are
-          // all user-controlled, and this runs inside our network. Re-validate
-          // the destination on every send rather than trusting it from when it
-          // was saved.
-          return postWebhook(
-            safeWebhookFetcher,
-            integration.config.url,
-            body,
-            integration.config.headers ?? {},
-          );
-        }
-        case 'discord': {
-          return sendDiscordNotification({
-            fetcher: safeWebhookFetcher,
-            webhookUrl: integration.config.url,
-            message: [
-              `🔔 **${notification.title}**`,
-              notification.message,
-            ].join('\n'),
-          });
-        }
-
-        case 'slack': {
-          return sendSlackNotification({
-            fetcher: safeWebhookFetcher,
-            webhookUrl: integration.config.incoming_webhook.url,
-            message: [`🔔 *${notification.title}*`, notification.message].join(
-              '\n',
-            ),
-          });
-        }
+      // Generic registry dispatch — no per-type switch. A new notification
+      // integration just registers a `notification.deliver` plugin.
+      const plugin = getServerIntegration(integration.config.type);
+      if (!plugin.notification) {
+        throw new Error(
+          `Integration ${integration.config.type} is not a notification sink`,
+        );
       }
+
+      return plugin.notification.deliver({
+        config: integration.config,
+        notification: {
+          title: notification.title,
+          message: notification.message,
+        },
+        payload,
+      });
     }
   }
 }
