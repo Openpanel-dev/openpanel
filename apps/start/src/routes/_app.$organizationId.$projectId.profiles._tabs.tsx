@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/profiles/_tabs',
@@ -20,12 +21,13 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   const { activeTab, tabs } = usePageTabs([
-    { id: 'identified', label: 'Identified' },
-    { id: 'anonymous', label: 'Anonymous' },
-    { id: 'power-users', label: 'Power users' },
+    { id: 'identified', label: t('profiles.tab_identified') },
+    { id: 'anonymous', label: t('profiles.tab_anonymous') },
+    { id: 'power-users', label: t('profiles.tab_power_users') },
   ]);
 
   const handleTabChange = (tabId: string) => {
@@ -39,8 +41,8 @@ function Component() {
   return (
     <div className="container p-8">
       <PageHeader
-        title="Profiles"
-        description="If you haven't called identify your profiles will be anonymous"
+        title={t('profiles.page_title')}
+        description={t('profiles.page_description')}
       />
 
       <Tabs

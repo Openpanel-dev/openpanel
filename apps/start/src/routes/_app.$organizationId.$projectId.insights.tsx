@@ -27,6 +27,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/insights',
@@ -51,20 +52,23 @@ type SortOption =
   | 'severity-asc'
   | 'recent';
 
-function getModuleDisplayName(moduleKey: string): string {
-  const displayNames: Record<string, string> = {
-    geo: 'Geographic',
-    devices: 'Devices',
-    referrers: 'Referrers',
-    'entry-pages': 'Entry Pages',
-    'page-trends': 'Page Trends',
-    'exit-pages': 'Exit Pages',
-    'traffic-anomalies': 'Anomalies',
+function getModuleDisplayName(moduleKey: string) {
+  const displayNameKeys: Record<string, string> = {
+    geo: 'insights.module_geo',
+    devices: 'insights.module_devices',
+    referrers: 'insights.module_referrers',
+    'entry-pages': 'insights.module_entry_pages',
+    'page-trends': 'insights.module_page_trends',
+    'exit-pages': 'insights.module_exit_pages',
+    'traffic-anomalies': 'insights.module_traffic_anomalies',
   };
-  return displayNames[moduleKey] || moduleKey.replace('-', ' ');
+  return displayNameKeys[moduleKey]
+    ? { key: displayNameKeys[moduleKey] }
+    : { text: moduleKey.replace('-', ' ') };
 }
 
 function Component() {
+  const { t } = useTranslation();
   const { projectId } = Route.useParams();
   useRangePageContext('insights');
   const trpc = useTRPC();
@@ -261,7 +265,7 @@ function Component() {
   if (isLoading) {
     return (
       <PageContainer>
-        <PageHeader title="Insights" className="mb-8" />
+        <PageHeader title={t('insights.page_title')} className="mb-8" />
         <div className="space-y-8">
           {Array.from({ length: 3 }, (_, i) => `section-${i}`).map((key) => (
             <div key={key} className="space-y-4">
@@ -290,13 +294,13 @@ function Component() {
   return (
     <PageContainer>
       <PageHeader
-        title="Insights"
-        description="Discover trends and changes in your analytics"
+        title={t('insights.page_title')}
+        description={t('insights.page_description')}
         className="mb-8"
       />
       <TableButtons className="mb-8">
         <Input
-          placeholder="Search insights..."
+          placeholder={t('insights.search_placeholder')}
           value={search ?? ''}
           onChange={(e) => void setSearch(e.target.value || null)}
           className="max-w-xs"
@@ -308,13 +312,13 @@ function Component() {
           }
         >
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Time Window" />
+            <SelectValue placeholder={t('insights.time_window_placeholder')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Windows</SelectItem>
-            <SelectItem value="yesterday">Yesterday</SelectItem>
-            <SelectItem value="rolling_7d">7 Days</SelectItem>
-            <SelectItem value="rolling_30d">30 Days</SelectItem>
+            <SelectItem value="all">{t('insights.all_windows')}</SelectItem>
+            <SelectItem value="yesterday">{t('insights.yesterday')}</SelectItem>
+            <SelectItem value="rolling_7d">{t('insights.seven_days')}</SelectItem>
+            <SelectItem value="rolling_30d">{t('insights.thirty_days')}</SelectItem>
           </SelectContent>
         </Select>
         <Select
@@ -324,14 +328,14 @@ function Component() {
           }
         >
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Severity" />
+            <SelectValue placeholder={t('insights.severity_placeholder')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Severity</SelectItem>
-            <SelectItem value="severe">Severe</SelectItem>
-            <SelectItem value="moderate">Moderate</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-            <SelectItem value="none">No Severity</SelectItem>
+            <SelectItem value="all">{t('insights.all_severity')}</SelectItem>
+            <SelectItem value="severe">{t('insights.severe')}</SelectItem>
+            <SelectItem value="moderate">{t('insights.moderate')}</SelectItem>
+            <SelectItem value="low">{t('insights.low')}</SelectItem>
+            <SelectItem value="none">{t('insights.no_severity')}</SelectItem>
           </SelectContent>
         </Select>
         <Select
@@ -341,13 +345,13 @@ function Component() {
           }
         >
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Direction" />
+            <SelectValue placeholder={t('insights.direction_placeholder')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Directions</SelectItem>
-            <SelectItem value="up">Increasing</SelectItem>
-            <SelectItem value="down">Decreasing</SelectItem>
-            <SelectItem value="flat">Flat</SelectItem>
+            <SelectItem value="all">{t('insights.all_directions')}</SelectItem>
+            <SelectItem value="up">{t('insights.increasing')}</SelectItem>
+            <SelectItem value="down">{t('insights.decreasing')}</SelectItem>
+            <SelectItem value="flat">{t('insights.flat')}</SelectItem>
           </SelectContent>
         </Select>
         <Select
@@ -355,26 +359,26 @@ function Component() {
           onValueChange={(v) => void setSortBy(v as SortOption)}
         >
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Sort by" />
+            <SelectValue placeholder={t('insights.sort_placeholder')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="relevance">Relevance (AI)</SelectItem>
-            <SelectItem value="impact-desc">Impact (High → Low)</SelectItem>
-            <SelectItem value="impact-asc">Impact (Low → High)</SelectItem>
-            <SelectItem value="severity-desc">Severity (High → Low)</SelectItem>
-            <SelectItem value="severity-asc">Severity (Low → High)</SelectItem>
-            <SelectItem value="recent">Most Recent</SelectItem>
+            <SelectItem value="relevance">{t('insights.sort_relevance')}</SelectItem>
+            <SelectItem value="impact-desc">{t('insights.sort_impact_high_low')}</SelectItem>
+            <SelectItem value="impact-asc">{t('insights.sort_impact_low_high')}</SelectItem>
+            <SelectItem value="severity-desc">{t('insights.sort_severity_high_low')}</SelectItem>
+            <SelectItem value="severity-asc">{t('insights.sort_severity_low_high')}</SelectItem>
+            <SelectItem value="recent">{t('insights.sort_most_recent')}</SelectItem>
           </SelectContent>
         </Select>
       </TableButtons>
 
       {filteredAndSorted.length === 0 && !isLoading && (
         <FullPageEmptyState
-          title="No insights found"
+          title={t('insights.empty_title')}
           description={
             search || moduleFilter !== 'all' || windowKindFilter !== 'all'
-              ? 'Try adjusting your filters to see more insights.'
-              : 'Insights will appear here as trends are detected in your analytics.'
+              ? t('insights.empty_filtered_description')
+              : t('insights.empty_description')
           }
         />
       )}
@@ -385,11 +389,14 @@ function Component() {
             <div key={moduleKey} className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold capitalize">
-                  {getModuleDisplayName(moduleKey)}
+                  {(() => {
+                    const label = getModuleDisplayName(moduleKey);
+                    return 'text' in label ? label.text : t(label.key);
+                  })()}
                 </h2>
                 <span className="text-sm text-muted-foreground">
                   {moduleInsights.length}{' '}
-                  {moduleInsights.length === 1 ? 'insight' : 'insights'}
+                  {t(moduleInsights.length === 1 ? 'insights.count_one' : 'insights.count_other')}
                 </span>
               </div>
               <div className="-mx-8">
@@ -442,7 +449,7 @@ function Component() {
 
       {filteredAndSorted.length > 0 && (
         <div className="mt-8 text-sm text-muted-foreground text-center">
-          Showing {filteredAndSorted.length} of {insights?.length ?? 0} insights
+          {t('insights.showing_count', { count: filteredAndSorted.length, total: insights?.length ?? 0 })}
         </div>
       )}
     </PageContainer>

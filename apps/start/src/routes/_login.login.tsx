@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { Or } from '@/components/auth/or';
 import { SignInEmailForm } from '@/components/auth/sign-in-email-form';
@@ -25,6 +26,7 @@ export const Route = createFileRoute('/_login/login')({
 });
 
 function LoginPage() {
+  const { t } = useTranslation();
   const { error, correlationId, inviteId } = Route.useSearch();
   const [lastProvider] = useCookieStore<null | string>(
     'last-auth-provider',
@@ -34,14 +36,16 @@ function LoginPage() {
   return (
     <div className="col w-full gap-8 text-left">
       <div>
-        <h1 className="mb-2 font-bold text-3xl text-foreground">Sign in</h1>
+        <h1 className="mb-2 font-bold text-3xl text-foreground">
+          {t('auth.sign_in')}
+        </h1>
         <p className="text-muted-foreground">
-          Don't have an account?{' '}
+          {t('auth.no_account')}{' '}
           <a
             className="font-medium text-foreground underline"
             href="/onboarding"
           >
-            Create one today
+            {t('auth.create_one_today')}
           </a>
         </p>
       </div>
@@ -51,14 +55,14 @@ function LoginPage() {
           variant="destructive"
         >
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>{t('auth.error')}</AlertTitle>
           <AlertDescription>
             <p>{error}</p>
             {correlationId && (
               <>
-                <p>Correlation ID: {correlationId}</p>
+                <p>{t('auth.correlation_id', { id: correlationId })}</p>
                 <p className="mt-2">
-                  Contact us if you have any issues.{' '}
+                  {t('auth.contact_support')}{' '}
                   <a
                     className="font-medium underline"
                     href={`mailto:hello@openpanel.dev?subject=Login%20Issue%20-%20Correlation%20ID%3A%20${correlationId}`}

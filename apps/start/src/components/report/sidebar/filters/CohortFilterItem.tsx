@@ -13,6 +13,7 @@ import {
   type IChartEventFilterOperator,
 } from '@openpanel/validation';
 import { SlidersHorizontal, Trash } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { changeEvent } from '../../reportSlice';
 
 interface CohortFilterItemProps {
@@ -99,6 +100,7 @@ export function PureCohortFilterItem({
   onChangeCohort,
   className,
 }: PureCohortFilterItemProps) {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
 
   const cohorts = useCohorts({ projectId, includeCount: false });
@@ -153,13 +155,15 @@ export function PureCohortFilterItem({
         <DropdownMenuComposed
           onChange={changeFilterOperator}
           items={[
-            { value: 'inCohort', label: 'In cohort' },
-            { value: 'notInCohort', label: 'Not in cohort' },
+            { value: 'inCohort', label: t('reports.in_cohort') },
+            { value: 'notInCohort', label: t('reports.not_in_cohort') },
           ]}
-          label="Operator"
+          label={t('reports.operator')}
         >
           <Button variant="outline" className="whitespace-nowrap">
-            {filter.operator === 'inCohort' ? 'In cohort' : 'Not in cohort'}
+            {filter.operator === 'inCohort'
+              ? t('reports.in_cohort')
+              : t('reports.not_in_cohort')}
           </Button>
         </DropdownMenuComposed>
         <ComboboxAdvanced
@@ -167,7 +171,7 @@ export function PureCohortFilterItem({
           value={selectedIds}
           className="flex-1"
           onChange={changeCohort}
-          placeholder="Select cohorts..."
+          placeholder={t('reports.select_cohorts')}
         />
       </div>
     </div>

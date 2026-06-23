@@ -25,6 +25,7 @@ import {
   WallpaperIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SidebarLink } from './sidebar-link';
 import {
   DropdownMenu,
@@ -44,59 +45,102 @@ interface SidebarProjectMenuProps {
 export default function SidebarProjectMenu({
   dashboards,
 }: SidebarProjectMenuProps) {
+  const { t } = useTranslation();
+
   return (
     <>
       <SidebarChatComposer />
       <div className="mb-2 font-medium text-muted-foreground text-sm">
-        Analytics
+        {t('sidebar.analytics')}
       </div>
-      <SidebarLink href={'/'} icon={WallpaperIcon} label="Overview" />
+      <SidebarLink
+        href={'/'}
+        icon={WallpaperIcon}
+        label={t('sidebar.overview')}
+      />
       <SidebarLink
         href={'/dashboards'}
         icon={LayoutPanelTopIcon}
-        label="Dashboards"
+        label={t('sidebar.dashboards')}
       />
       <SidebarLink
         href={'/insights'}
         icon={TrendingUpDownIcon}
-        label="Insights"
+        label={t('sidebar.insights')}
       />
-      <SidebarLink href={'/pages'} icon={LayersIcon} label="Pages" />
-      <SidebarLink href={'/seo'} icon={SearchIcon} label="SEO" />
-      <SidebarLink href={'/realtime'} icon={Globe2Icon} label="Realtime" />
-      <SidebarLink href={'/events'} icon={GanttChartIcon} label="Events" />
-      <SidebarLink href={'/sessions'} icon={UsersIcon} label="Sessions" />
-      <SidebarLink href={'/profiles'} icon={UserCircleIcon} label="Profiles" />
-      <SidebarLink href={'/groups'} icon={Building2Icon} label="Groups" />
-      <SidebarLink href={'/cohorts'} icon={TargetIcon} label="Cohorts" />
+      <SidebarLink
+        href={'/pages'}
+        icon={LayersIcon}
+        label={t('sidebar.pages')}
+      />
+      <SidebarLink href={'/seo'} icon={SearchIcon} label={t('sidebar.seo')} />
+      <SidebarLink
+        href={'/realtime'}
+        icon={Globe2Icon}
+        label={t('sidebar.realtime')}
+      />
+      <SidebarLink
+        href={'/events'}
+        icon={GanttChartIcon}
+        label={t('sidebar.events')}
+      />
+      <SidebarLink
+        href={'/sessions'}
+        icon={UsersIcon}
+        label={t('sidebar.sessions')}
+      />
+      <SidebarLink
+        href={'/profiles'}
+        icon={UserCircleIcon}
+        label={t('sidebar.profiles')}
+      />
+      <SidebarLink
+        href={'/groups'}
+        icon={Building2Icon}
+        label={t('sidebar.groups')}
+      />
+      <SidebarLink
+        href={'/cohorts'}
+        icon={TargetIcon}
+        label={t('sidebar.cohorts')}
+      />
       <div className="mt-4 mb-2 font-medium text-muted-foreground text-sm">
-        Manage
+        {t('sidebar.manage')}
       </div>
       <SidebarLink
         exact={false}
         href={'/settings'}
         icon={CogIcon}
-        label="Settings"
+        label={t('sidebar.settings')}
       />
-      <SidebarLink href={'/references'} icon={GridIcon} label="References" />
+      <SidebarLink
+        href={'/references'}
+        icon={GridIcon}
+        label={t('sidebar.references')}
+      />
       <SidebarLink
         exact={false}
         href={'/notifications'}
         icon={BellIcon}
-        label="Notifications"
+        label={t('sidebar.notifications')}
       />
-      <SidebarLink href={'..'} icon={UndoDotIcon} label="Back to workspace" />
+      <SidebarLink
+        href={'..'}
+        icon={UndoDotIcon}
+        label={t('sidebar.back_to_workspace')}
+      />
     </>
   );
 }
 
 export function ActionCTAButton() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { openChatForContext } = useChatState();
 
   const ACTIONS = [
     {
-      label: 'Create report',
+      label: t('sidebar.action_create_report'),
       icon: ChartLineIcon,
       onClick: () =>
         navigate({
@@ -105,22 +149,22 @@ export function ActionCTAButton() {
         }),
     },
     {
-      label: 'Create reference',
+      label: t('sidebar.action_create_reference'),
       icon: BookOpenIcon,
       onClick: () => pushModal('AddReference'),
     },
     {
-      label: 'Ask AI',
+      label: t('sidebar.action_ask_ai'),
       icon: SparklesIcon,
       onClick: () => openChatForContext(),
     },
     {
-      label: 'Create dashboard',
+      label: t('sidebar.action_create_dashboard'),
       icon: LayoutDashboardIcon,
       onClick: () => pushModal('AddDashboard'),
     },
     {
-      label: 'Create notification rule',
+      label: t('sidebar.action_create_notification_rule'),
       icon: BellIcon,
       onClick: () =>
         navigate({

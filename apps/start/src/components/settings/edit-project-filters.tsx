@@ -22,6 +22,7 @@ import { zProjectFilterEvent } from '@openpanel/validation';
 import { useMutation } from '@tanstack/react-query';
 import { PlusIcon, SaveIcon, Trash2Icon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -51,6 +52,7 @@ function EventRuleItem({
   onChange,
   onRemove,
 }: EventRuleItemProps) {
+  const { t } = useTranslation();
   const eventNames = useEventNames({ projectId, anyEvents: true });
 
   const addFilter = (action: {
@@ -105,7 +107,7 @@ function EventRuleItem({
       <div className="flex items-center gap-2 p-4">
         <div className="flex-1">
           <ComboboxEvents
-            placeholder="Select event name..."
+            placeholder={t('settings.filters_select_event_placeholder')}
             items={eventNames}
             value={rule.name}
             onChange={(name) => onChange({ ...rule, name })}
@@ -143,7 +145,7 @@ function EventRuleItem({
               onClick={() => setOpen(true)}
               icon={PlusIcon}
             >
-              Add property filter
+              {t('settings.filters_add_property_filter')}
             </Button>
           )}
         </PropertiesCombobox>
@@ -153,6 +155,7 @@ function EventRuleItem({
 }
 
 export default function EditProjectFilters({ project }: Props) {
+  const { t } = useTranslation();
   const form = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
@@ -181,7 +184,7 @@ export default function EditProjectFilters({ project }: Props) {
     trpc.project.update.mutationOptions({
       onError: handleError,
       onSuccess: () => {
-        toast.success('Project filters updated');
+        toast.success(t('settings.filters_updated_toast'));
       },
     }),
   );
@@ -230,9 +233,9 @@ export default function EditProjectFilters({ project }: Props) {
   return (
     <Widget className="max-w-screen-md w-full">
       <WidgetHead className="space-y-2">
-        <span className="title">Exclude events</span>
+        <span className="title">{t('settings.filters_title')}</span>
         <p className="text-muted-foreground">
-          Exclude events from being tracked by adding filters.
+          {t('settings.filters_description')}
         </p>
       </WidgetHead>
       <WidgetBody>
@@ -249,12 +252,12 @@ export default function EditProjectFilters({ project }: Props) {
             name="ips"
             control={form.control}
             render={({ field }) => (
-              <WithLabel label="IP addresses">
+              <WithLabel label={t('settings.filters_ip_addresses_label')}>
                 <TagInput
                   {...field}
                   id="IP addresses"
                   error={form.formState.errors.ips?.message}
-                  placeholder="Exclude IP addresses"
+                  placeholder={t('settings.filters_ip_addresses_placeholder')}
                   value={field.value}
                   onChange={field.onChange}
                 />
@@ -266,12 +269,12 @@ export default function EditProjectFilters({ project }: Props) {
             name="profileIds"
             control={form.control}
             render={({ field }) => (
-              <WithLabel label="Profile IDs">
+              <WithLabel label={t('settings.filters_profile_ids_label')}>
                 <TagInput
                   {...field}
                   id="Profile IDs"
                   error={form.formState.errors.profileIds?.message}
-                  placeholder="Exclude Profile IDs"
+                  placeholder={t('settings.filters_profile_ids_placeholder')}
                   value={field.value}
                   onChange={field.onChange}
                 />
@@ -279,7 +282,7 @@ export default function EditProjectFilters({ project }: Props) {
             )}
           />
 
-          <WithLabel label="Event rules">
+          <WithLabel label={t('settings.filters_event_rules_label')}>
             <div className="space-y-3">
               {eventRules.map((rule, index) => (
                 <EventRuleItem
@@ -298,7 +301,7 @@ export default function EditProjectFilters({ project }: Props) {
                 onClick={addEventRule}
                 icon={PlusIcon}
               >
-                Add event rule
+                {t('settings.filters_add_event_rule')}
               </Button>
             </div>
           </WithLabel>
@@ -309,7 +312,7 @@ export default function EditProjectFilters({ project }: Props) {
             icon={SaveIcon}
             className="self-end"
           >
-            Save
+            {t('common.save')}
           </Button>
         </form>
       </WidgetBody>

@@ -1,6 +1,7 @@
 import { useCurrentTime, useReplayContext } from '@/components/sessions/replay/replay-context';
 import { Button } from '@/components/ui/button';
 import { Pause, Play } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { formatDuration } from './replay-utils';
 
 export function ReplayTime() {
@@ -15,6 +16,7 @@ export function ReplayTime() {
 }
 
 export function ReplayPlayPauseButton() {
+  const { t } = useTranslation();
   const { isPlaying, isReady, toggle } = useReplayContext();
 
   if (!isReady) return null;
@@ -25,7 +27,7 @@ export function ReplayPlayPauseButton() {
       variant={isPlaying ? 'outline' : 'default'}
       size="icon"
       onClick={toggle}
-      aria-label={isPlaying ? 'Pause' : 'Play'}
+      aria-label={isPlaying ? t('sessions.replay_pause') : t('sessions.replay_play')}
     >
       {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
     </Button>

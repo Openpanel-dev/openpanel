@@ -7,6 +7,7 @@ import { formatTimeAgoOrDateTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
 import type { IServiceEvent } from '@openpanel/db';
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Skeleton } from '../../skeleton';
 import { EventIcon } from '../event-icon';
 
@@ -18,6 +19,7 @@ interface EventItemProps {
 
 export const EventItem = memo<EventItemProps>(
   ({ event, viewOptions, className }) => {
+    const { t } = useTranslation();
     let url: string | null = '';
     if (event.path && event.origin) {
       if (viewOptions.origin !== false && event.origin) {
@@ -81,7 +83,9 @@ export const EventItem = memo<EventItemProps>(
             <span className="min-w-0 whitespace-break-spaces wrap-break-word break-all text-sm leading-normal">
               {event.name === 'screen_view' ? (
                 <>
-                  <span className="text-muted-foreground mr-2">Visit:</span>
+                  <span className="text-muted-foreground mr-2">
+                    {t('events.visit_label')}
+                  </span>
                   <span className="font-medium min-w-0">
                     {url ? url : event.path}
                   </span>

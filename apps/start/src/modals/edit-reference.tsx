@@ -7,6 +7,7 @@ import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -35,6 +36,7 @@ export default function EditReference({
   description,
   date,
 }: EditReferenceProps) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const { handleSubmit, register, control, formState, reset } = useForm<IForm>({
     resolver: zodResolver(validator),
@@ -50,7 +52,9 @@ export default function EditReference({
   const mutation = useMutation(
     trpc.reference.update.mutationOptions({
       onSuccess() {
-        toast('Success', { description: 'Reference updated.' });
+        toast(t('common.success'), {
+          description: t('references.toast_updated'),
+        });
         reset();
         queryClient.invalidateQueries(
           trpc.reference.getReferences.pathFilter(),
@@ -66,28 +70,31 @@ export default function EditReference({
 
   return (
     <ModalContent>
-      <ModalHeader title="Edit reference" />
+      <ModalHeader title={t('references.edit_reference')} />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit((values) => {
           mutation.mutate(values);
         })}
       >
-        <InputWithLabel label="Title" {...register('title')} />
-        <InputWithLabel label="Description" {...register('description')} />
+        <InputWithLabel label={t('references.title')} {...register('title')} />
+        <InputWithLabel
+          label={t('references.description')}
+          {...register('description')}
+        />
         <Controller
           control={control}
           name="datetime"
           render={({ field }) => (
-            <InputDateTime {...field} label="Date and time" />
+            <InputDateTime {...field} label={t('references.date_and_time')} />
           )}
         />
         <ButtonContainer>
           <Button type="button" variant="outline" onClick={() => popModal()}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={!formState.isDirty}>
-            Update
+            {t('common.update')}
           </Button>
         </ButtonContainer>
       </form>

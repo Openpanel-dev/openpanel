@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/cn';
+import { useTranslation } from 'react-i18next';
 
 interface ReportChartTypeProps {
   className?: string;
@@ -36,6 +37,7 @@ export function ReportSegment({
   value,
   onChange,
 }: ReportChartTypeProps) {
+  const { t } = useTranslation();
   const items = mapKeys(chartSegments).map((key) => ({
     label: chartSegments[key],
     value: key,
@@ -66,7 +68,7 @@ export function ReportSegment({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel>Available charts</DropdownMenuLabel>
+        <DropdownMenuLabel>{t('reports.available_metrics')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>

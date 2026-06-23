@@ -2,6 +2,7 @@ import { getPreviousMetric } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
 import { ChevronRightIcon, InfoIcon, UsersIcon } from 'lucide-react';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Bar,
   BarChart,
@@ -126,6 +127,7 @@ export function Tables({
   },
   noTopBorderRadius,
 }: Props) {
+  const { t } = useTranslation();
   const number = useNumber();
   const hasHeader = breakdowns.length > 0;
   const {
@@ -213,7 +215,7 @@ export function Tables({
                 />
               )
             }
-            label="Completed"
+            label={t('report_chart.completed')}
             value={number.format(lastStep?.count)}
           />
           {!!mostDropoffsStep && (
@@ -226,8 +228,7 @@ export function Tables({
                       <span className="font-semibold">
                         {mostDropoffsStep?.dropoffCount}
                       </span>{' '}
-                      dropped after this event. Improve this step and your
-                      conversion rate will likely increase.
+                      {t('report_chart.dropoff_hint')}
                     </span>
                   }
                   tooltipClassName="max-w-xs"
@@ -235,7 +236,7 @@ export function Tables({
                   <InfoIcon className="size-3" />
                 </Tooltiper>
               }
-              label="Most dropoffs after"
+              label={t('report_chart.most_dropoffs_after')}
               value={mostDropoffsStep?.event?.displayName}
             />
           )}
@@ -247,7 +248,7 @@ export function Tables({
           columnClassName="px-2 group/row items-center"
           columns={[
             {
-              name: 'Event',
+              name: t('report_chart.event'),
               render: (item, index) => (
                 <div className="row relative min-w-0 items-center gap-2">
                   <ColorSquare color={getChartColor(index)}>
@@ -260,13 +261,13 @@ export function Tables({
               className: 'text-left font-mono font-semibold',
             },
             {
-              name: 'Completed',
+              name: t('report_chart.completed'),
               render: (item) => number.format(item.count),
               className: 'text-right font-mono hidden @xl:block',
               width: '82px',
             },
             {
-              name: 'Dropped after',
+              name: t('report_chart.dropped_after'),
               render: (item) =>
                 item.dropoffCount !== null && item.dropoffPercent !== null
                   ? number.format(item.dropoffCount)
@@ -275,7 +276,7 @@ export function Tables({
               width: '110px',
             },
             {
-              name: 'Conversion',
+              name: t('report_chart.conversion'),
               render: (item) => number.formatWithUnit(item.percent / 100, '%'),
               className: 'text-right font-mono font-semibold',
               width: '90px',
@@ -293,7 +294,7 @@ export function Tables({
                     handleInspectStep(item, stepIndex);
                   }}
                   size="sm"
-                  title="View users who completed this step"
+                  title={t('report_chart.view_users_completed_step')}
                   variant="ghost"
                 >
                   <UsersIcon size={16} />
@@ -629,6 +630,7 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
     hasBreakdowns: boolean;
   }
 >(({ data: dataArray, context, ...props }) => {
+  const { t } = useTranslation();
   const data = dataArray[0];
   const number = useNumber();
   if (!data) {
@@ -671,7 +673,9 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
         <div className="text-muted-foreground">{data.name}</div>
         <div className="col gap-1.5">
           <div className="flex justify-between gap-8 font-medium font-mono">
-            <span className="text-muted-foreground">Current</span>
+            <span className="text-muted-foreground">
+              {t('report_chart.current')}
+            </span>
             <span>
               {number.format(currentVariant.step.count)} (
               {number.formatWithUnit(currentVariant.step.percent / 100, '%')})
@@ -679,7 +683,7 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
           </div>
           {previousVariant?.step && (
             <div className="flex justify-between gap-8 font-medium font-mono text-muted-foreground">
-              <span>Previous</span>
+              <span>{t('report_chart.previous')}</span>
               <span>
                 {number.format(previousVariant.step.count)} (
                 {number.formatWithUnit(previousVariant.step.percent / 100, '%')}
@@ -691,10 +695,10 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
             <div className="mt-0.5 flex items-center justify-between gap-8 border-border border-t pt-1.5">
               <span className="font-medium text-sm">
                 {metric.state === 'positive'
-                  ? 'Improvement'
+                  ? t('report_chart.improvement')
                   : metric.state === 'negative'
-                    ? 'Decline'
-                    : 'No change'}
+                    ? t('report_chart.decline')
+                    : t('report_chart.no_change')}
               </span>
               <PreviousDiffIndicatorPure {...metric} size="xs" />
             </div>

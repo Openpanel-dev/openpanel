@@ -13,12 +13,14 @@ import {
 } from '@tanstack/react-query';
 
 import { useParams } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { resetDirty } from './reportSlice';
 
 interface ReportSaveButtonProps {
   className?: string;
 }
 export function ReportSaveButton({ className }: ReportSaveButtonProps) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const fetching = [
     useIsFetching(trpc.chart.chart.pathFilter()),
@@ -31,8 +33,8 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
     trpc.report.update.mutationOptions({
       onSuccess(res) {
         dispatch(resetDirty());
-        toast('Success', {
-          description: 'Report updated.',
+        toast(t('reports.success'), {
+          description: t('reports.report_updated'),
         });
         queryClient.invalidateQueries(
           trpc.report.list.queryFilter({
@@ -61,7 +63,7 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
         }}
         icon={SaveIcon}
       >
-        Update
+      {t('reports.update')}
       </Button>
     );
   }
@@ -77,7 +79,7 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
       icon={SaveIcon}
       loading={isLoading}
     >
-      Save
+      {t('reports.save')}
     </Button>
   );
 }

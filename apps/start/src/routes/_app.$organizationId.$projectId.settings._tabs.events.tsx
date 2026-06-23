@@ -4,6 +4,7 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/settings/_tabs/events',
@@ -12,6 +13,7 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
@@ -23,7 +25,7 @@ function Component() {
   }
 
   if (!query.data) {
-    return <div>Project not found</div>;
+    return <div>{t('settings.project_not_found')}</div>;
   }
 
   return <EditProjectFilters project={query.data} />;

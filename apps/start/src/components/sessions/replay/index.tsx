@@ -2,6 +2,7 @@ import type { IServiceEvent } from '@openpanel/db';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BrowserChrome } from './browser-chrome';
 import { ReplayTime } from './replay-controls';
 import { ReplayTimeline } from './replay-timeline';
@@ -99,6 +100,7 @@ function FullscreenButton({
 }: {
   containerRef: React.RefObject<HTMLDivElement | null>;
 }) {
+  const { t } = useTranslation();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -120,7 +122,11 @@ function FullscreenButton({
 
   return (
     <button
-      aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+      aria-label={
+        isFullscreen
+          ? t('sessions.exit_fullscreen')
+          : t('sessions.enter_fullscreen')
+      }
       className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-foreground"
       onClick={toggle}
       type="button"
@@ -141,6 +147,7 @@ function ReplayContent({
   sessionId: string;
   projectId: string;
 }) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -173,7 +180,7 @@ function ReplayContent({
       return (
         <div className="col h-[320px] items-center justify-center gap-4 bg-background">
           <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
-          <div>Loading session replay</div>
+          <div>{t('sessions.loading_session_replay')}</div>
         </div>
       );
     }
@@ -182,7 +189,7 @@ function ReplayContent({
     }
     return (
       <div className="flex h-[320px] items-center justify-center bg-background text-muted-foreground text-sm">
-        No replay data available for this session.
+        {t('sessions.no_replay_data')}
       </div>
     );
   }

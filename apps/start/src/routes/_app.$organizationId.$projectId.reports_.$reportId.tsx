@@ -1,6 +1,7 @@
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import ReportEditor from '@/components/report-chart/report-editor';
 import { useReportEditorContext } from '@/hooks/use-page-context-helpers';
+import i18n from '@/i18n';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle } from '@/utils/title';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -15,7 +16,7 @@ export const Route = createFileRoute(
     return {
       meta: [
         {
-          title: createProjectTitle('Report'),
+          title: createProjectTitle(i18n.t('reports.report')),
         },
       ],
     };

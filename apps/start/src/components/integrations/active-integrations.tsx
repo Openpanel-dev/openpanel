@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BoxSelectIcon } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PingBadge } from '../ping';
 import { Button } from '../ui/button';
 import {
@@ -14,9 +15,11 @@ import {
   IntegrationCardLogo,
   IntegrationCardSkeleton,
 } from './integration-card';
-import { INTEGRATIONS } from './integrations';
+import { useIntegrations } from './integrations';
 
 export function ActiveIntegrations() {
+  const { t } = useTranslation();
+  const integrations = useIntegrations();
   const { organizationId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
@@ -40,7 +43,7 @@ export function ActiveIntegrations() {
   const data = useMemo(() => {
     return (query.data || [])
       .map((item) => {
-        const integration = INTEGRATIONS.find(
+        const integration = integrations.find(
           (integration) => integration.type === item.config.type,
         )!;
         return {
@@ -49,7 +52,7 @@ export function ActiveIntegrations() {
         };
       })
       .filter((item) => item.integration);
-  }, [query.data]);
+  }, [integrations, query.data]);
 
   const isLoading = query.isLoading;
 
@@ -69,8 +72,8 @@ export function ActiveIntegrations() {
               <BoxSelectIcon className="size-10" strokeWidth={1} />
             </IntegrationCardLogo>
           }
-          name="No integrations yet"
-          description="Integrations allow you to connect your systems to OpenPanel. You can add them in the available integrations section."
+          name={t('integrations.empty_installed_title')}
+          description={t('integrations.empty_installed_description')}
         />
       )}
       <AnimatePresence mode="popLayout">
@@ -79,15 +82,17 @@ export function ActiveIntegrations() {
             <motion.div key={item.id} layout="position">
               <IntegrationCard {...item.integration} name={item.name}>
                 <IntegrationCardFooter className="row justify-between items-center">
-                  <PingBadge>Connected</PingBadge>
+                  <PingBadge>{t('integrations.status_connected')}</PingBadge>
                   <div className="row gap-2">
                     <Button
                       variant="ghost"
                       className="text-destructive"
                       onClick={() => {
                         showConfirm({
-                          title: `Delete ${item.name}?`,
-                          text: 'This action cannot be undone.',
+                          title: t('integrations.delete_confirm_title', {
+                            name: item.name,
+                          }),
+                          text: t('integrations.delete_confirm_description'),
                           onConfirm: () => {
                             deletion.mutate({
                               id: item.id,
@@ -96,7 +101,7 @@ export function ActiveIntegrations() {
                         });
                       }}
                     >
-                      Delete
+                      {t('integrations.action_delete')}
                     </Button>
                     <Button
                       variant="ghost"
@@ -107,7 +112,7 @@ export function ActiveIntegrations() {
                         });
                       }}
                     >
-                      Edit
+                      {t('integrations.action_edit')}
                     </Button>
                   </div>
                 </IntegrationCardFooter>

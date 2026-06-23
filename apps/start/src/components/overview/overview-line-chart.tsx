@@ -14,6 +14,7 @@ import { SerieIcon } from '../report-chart/common/serie-icon';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
+import { useTranslation } from 'react-i18next';
 
 type SeriesData =
   RouterOutputs['overview']['topGenericSeries']['items'][number];
@@ -80,6 +81,7 @@ export function OverviewLineChart({
   searchQuery,
   className,
 }: OverviewLineChartProps) {
+  const { t } = useTranslation();
   const visibleSeries: SeriesMeta[] = useMemo(() => {
     const filtered = searchQuery
       ? data.items.filter((item) => {
@@ -111,7 +113,9 @@ export function OverviewLineChart({
         className={cn('flex h-[358px] items-center justify-center', className)}
       >
         <div className="text-muted-foreground text-sm">
-          {searchQuery ? 'No results found' : 'No data available'}
+          {searchQuery
+            ? t('overview.no_results_found')
+            : t('overview.no_data_available')}
         </div>
       </div>
     );
@@ -154,7 +158,7 @@ export function OverviewLineChart({
               }
               return (
                 <div className="text-muted-foreground text-sm">
-                  and {hidden} more {hidden === 1 ? 'item' : 'items'}
+                  {t('overview.and_more_items', { count: hidden })}
                 </div>
               );
             }}
@@ -190,22 +194,22 @@ export function OverviewLineChart({
                         <span className="mx-1">/</span>
                       </>
                     )}
-                    {series.name || 'Not set'}
+                    {series.name || t('overview.not_set')}
                   </>
                 ),
                 sub: [
                   ...(revenue !== undefined && revenue > 0
                     ? [
                         {
-                          label: 'Revenue',
+                          label: t('overview.revenue'),
                           value: revenue,
                           unit: 'currency' as const,
                           color: 'var(--chart-8)',
                         },
                       ]
                     : []),
-                  { label: 'Pageviews', value: pageviews },
-                  { label: 'Sessions', value: sessions },
+                  { label: t('overview.pageviews'), value: pageviews },
+                  { label: t('overview.sessions'), value: sessions },
                 ],
               }));
             }}
@@ -222,6 +226,7 @@ export function OverviewLineChart({
 }
 
 function LegendScrollable({ items }: { items: SeriesMeta[] }) {
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftGradient, setShowLeftGradient] = useState(false);
   const [showRightGradient, setShowRightGradient] = useState(false);
@@ -289,7 +294,7 @@ function LegendScrollable({ items }: { items: SeriesMeta[] }) {
                   <span className="mx-1">/</span>
                 </>
               )}
-              {series.name || 'Not set'}
+              {series.name || t('overview.not_set')}
             </span>
           </div>
         ))}
@@ -310,21 +315,27 @@ export function OverviewLineChartLoading({
 }: {
   className?: string;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div
       className={cn('flex h-[358px] items-center justify-center', className)}
     >
-      <div className="text-muted-foreground text-sm">Loading...</div>
+      <div className="text-muted-foreground text-sm">{t('common.loading')}...</div>
     </div>
   );
 }
 
 export function OverviewLineChartEmpty({ className }: { className?: string }) {
+  const { t } = useTranslation();
+
   return (
     <div
       className={cn('flex h-[358px] items-center justify-center', className)}
     >
-      <div className="text-muted-foreground text-sm">No data available</div>
+      <div className="text-muted-foreground text-sm">
+        {t('overview.no_data_available')}
+      </div>
     </div>
   );
 }

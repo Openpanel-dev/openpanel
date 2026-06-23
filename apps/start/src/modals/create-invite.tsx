@@ -15,6 +15,7 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SendIcon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
@@ -26,6 +27,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 type IForm = z.infer<typeof zInviteUser>;
 
 export default function CreateInvite() {
+  const { t } = useTranslation();
   const { organizationId } = useAppParams();
   const trpc = useTRPC();
   const projectsQuery = useQuery(
@@ -49,14 +51,14 @@ export default function CreateInvite() {
   const mutation = useMutation(
     trpc.organization.inviteUser.mutationOptions({
       onSuccess() {
-        toast.success('User has been invited');
+        toast.success(t('members.invite_success'));
         reset();
         queryClient.invalidateQueries(
           trpc.organization.invitations.queryFilter({ organizationId }),
         );
       },
       onError(error) {
-        toast.error('Failed to invite user', {
+        toast.error(t('members.invite_failed'), {
           description: error.message,
         });
       },
@@ -68,30 +70,27 @@ export default function CreateInvite() {
       {mutation.isSuccess ? (
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>User has been invited</SheetTitle>
+            <SheetTitle>{t('members.invite_success')}</SheetTitle>
           </SheetHeader>
           <div className="prose dark:prose-invert">
             {mutation.data.type === 'is_member' ? (
               <>
                 <p>
-                  Since the user already has an account we have added him/her to
-                  your organization. This means you will not see this user in
-                  the list of invites.
+                  {t('members.invite_existing_user_description')}
                 </p>
-                <p>We have also notified the user by email about this.</p>
+                <p>{t('members.invite_existing_user_email_notice')}</p>
               </>
             ) : (
               <p>
-                We have sent an email with instructions to join the
-                organization.
+                {t('members.invite_email_sent_description')}
               </p>
             )}
             <div className="row gap-4 mt-8">
               <Button onClick={() => mutation.reset()}>
-                Invite another user
+                {t('members.invite_another_user')}
               </Button>
               <Button variant="outline" onClick={() => closeSheet()}>
-                Close
+                {t('common.close')}
               </Button>
             </div>
           </div>
@@ -100,10 +99,9 @@ export default function CreateInvite() {
         <SheetContent>
           <SheetHeader>
             <div>
-              <SheetTitle>Invite a user</SheetTitle>
+              <SheetTitle>{t('members.invite_user')}</SheetTitle>
               <SheetDescription>
-                Invite users to your organization. They will receive an email
-                will instructions.
+                {t('members.invite_user_description')}
               </SheetDescription>
             </div>
           </SheetHeader>
@@ -113,13 +111,13 @@ export default function CreateInvite() {
           >
             <InputWithLabel
               className="w-full max-w-sm"
-              label="Email"
+              label={t('members.email')}
               error={formState.errors.email?.message}
-              placeholder="Who do you want to invite?"
+              placeholder={t('members.invite_email_placeholder')}
               {...register('email')}
             />
             <div>
-              <Label>What role?</Label>
+              <Label>{t('members.what_role')}</Label>
               <Controller
                 name="role"
                 control={control}
@@ -134,13 +132,13 @@ export default function CreateInvite() {
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="org:member" id="member" />
                       <Label className="mb-0" htmlFor="member">
-                        Member
+                        {t('members.role_member')}
                       </Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="org:admin" id="admin" />
                       <Label className="mb-0" htmlFor="admin">
-                        Admin
+                        {t('members.role_admin')}
                       </Label>
                     </div>
                   </RadioGroup>
@@ -152,9 +150,9 @@ export default function CreateInvite() {
               control={control}
               render={({ field }) => (
                 <div>
-                  <Label>Restrict access</Label>
+                  <Label>{t('members.restrict_access')}</Label>
                   <ComboboxAdvanced
-                    placeholder="Restrict access to projects"
+                    placeholder={t('members.restrict_access_placeholder')}
                     value={field.value}
                     onChange={field.onChange}
                     items={projects.map((item) => ({
@@ -163,7 +161,7 @@ export default function CreateInvite() {
                     }))}
                   />
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Leave empty to give access to all projects
+                    {t('members.restrict_access_description')}
                   </p>
                 </div>
               )}
@@ -174,7 +172,7 @@ export default function CreateInvite() {
                 type="submit"
                 loading={mutation.isPending}
               >
-                Invite user
+                {t('members.invite_user')}
               </Button>
             </SheetFooter>
           </form>

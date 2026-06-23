@@ -3,6 +3,7 @@ import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { ExternalLinkIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Tooltiper } from '../ui/tooltip';
 import { OverviewListModal } from './overview-list-modal';
@@ -15,6 +16,7 @@ interface OverviewTopPagesProps {
 export default function OverviewTopPagesModal({
   projectId,
 }: OverviewTopPagesProps) {
+  const { t } = useTranslation();
   const [filters, setFilter] = useEventQueryFilters();
   const { startDate, endDate, range } = useOverviewOptions();
   const trpc = useTRPC();
@@ -31,15 +33,15 @@ export default function OverviewTopPagesModal({
 
   return (
     <OverviewListModal
-      title="Top Pages"
-      searchPlaceholder="Search pages..."
+      title={t('overview.top_pages')}
+      searchPlaceholder={t('overview.search_pages')}
       data={query.data ?? []}
       keyExtractor={(item) => item.path + item.origin}
       searchFilter={(item, query) =>
         item.path.toLowerCase().includes(query) ||
         item.origin.toLowerCase().includes(query)
       }
-      columnName="Path"
+      columnName={t('overview.path')}
       renderItem={(item) => (
         <Tooltiper asChild content={item.origin + item.path} side="left">
           <div className="flex items-center gap-2 min-w-0">
@@ -52,7 +54,9 @@ export default function OverviewTopPagesModal({
                 setFilter('origin', item.origin);
               }}
             >
-              {item.path || <span className="opacity-40">Not set</span>}
+              {item.path || (
+                <span className="opacity-40">{t('overview.not_set')}</span>
+              )}
             </button>
             <a
               href={item.origin + item.path}

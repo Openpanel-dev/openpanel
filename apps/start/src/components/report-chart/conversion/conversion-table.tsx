@@ -8,6 +8,7 @@ import { getChartColor } from '@/utils/theme';
 import { getPreviousMetric } from '@openpanel/common';
 import type { SortingState } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
 import { ReportTableToolbar } from '../common/report-table-toolbar';
 import { SerieIcon } from '../common/serie-icon';
@@ -24,6 +25,7 @@ export function ConversionTable({
   visibleSeries,
   setVisibleSeries,
 }: ConversionTableProps) {
+  const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const number = useNumber();
@@ -73,7 +75,9 @@ export function ConversionTable({
         id: serie.id,
         serieId: serie.id,
         serieName:
-          serie.breakdowns.length > 0 ? serie.breakdowns : ['Conversion'],
+          serie.breakdowns.length > 0
+            ? serie.breakdowns
+            : [t('report_chart.conversion')],
         breakdownValues: serie.breakdowns,
         avgRate,
         prevAvgRate,
@@ -327,7 +331,7 @@ export function ConversionTable({
                   boxShadow: '2px 0 4px -2px var(--border)',
                 }}
               >
-                <div className="flex items-center">Serie</div>
+                <div className="flex items-center">{t('report_chart.serie')}</div>
               </th>
               <th
                 className="text-right h-10 px-4 text-[10px] uppercase font-semibold min-w-[100px] cursor-pointer hover:bg-muted/50 select-none border-r border-border whitespace-nowrap"
@@ -340,7 +344,7 @@ export function ConversionTable({
                 }}
               >
                 <div className="flex items-center justify-end gap-1.5">
-                  Avg Rate
+                  {t('report_chart.avg_rate')}
                   <span className="text-muted-foreground">
                     {getSortIcon('metric-avgRate')}
                   </span>
@@ -357,7 +361,7 @@ export function ConversionTable({
                 }}
               >
                 <div className="flex items-center justify-end gap-1.5">
-                  Total
+                  {t('report_chart.total')}
                   <span className="text-muted-foreground">
                     {getSortIcon('metric-total')}
                   </span>
@@ -374,7 +378,7 @@ export function ConversionTable({
                 }}
               >
                 <div className="flex items-center justify-end gap-1.5">
-                  Conversions
+                  {t('report_chart.conversions')}
                   <span className="text-muted-foreground">
                     {getSortIcon('metric-conversions')}
                   </span>

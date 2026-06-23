@@ -18,6 +18,8 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
 import { z } from 'zod';
+import i18n from '@/i18n';
+import { useTranslation } from 'react-i18next';
 
 const shareSearchSchema = z.object({
   header: z.optional(z.number().or(z.string().or(z.boolean()))),
@@ -40,7 +42,7 @@ export const Route = createFileRoute('/share/overview/$shareId')({
       return {
         meta: [
           {
-            title: 'Share not found - OpenPanel.dev',
+            title: `${i18n.t('share.not_found_title')} - OpenPanel.dev`,
           },
         ],
       };
@@ -57,14 +59,15 @@ export const Route = createFileRoute('/share/overview/$shareId')({
   pendingComponent: FullPageLoadingState,
   errorComponent: () => (
     <FullPageEmptyState
-      title="Share not found"
-      description="The overview you are looking for does not exist."
+      title={i18n.t('share.not_found_title')}
+      description={i18n.t('share.overview_not_found_description')}
       className="min-h-[calc(100vh-theme(spacing.16))]"
     />
   ),
 });
 
 function RouteComponent() {
+  const { t } = useTranslation();
   const { shareId } = Route.useParams();
   const { header } = useSearch({ from: '/share/overview/$shareId' });
   const trpc = useTRPC();
@@ -77,7 +80,7 @@ function RouteComponent() {
   const hasAccess = shareQuery.data?.hasAccess;
   // Check if share exists and is public
   if (shareQuery.isLoading) {
-    return <div>Loading...</div>;
+    return <div>{t('common.loading')}...</div>;
   }
 
   if (!shareQuery.data) {

@@ -9,6 +9,7 @@ import {
   Loader2Icon,
   XCircleIcon,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import {
@@ -31,6 +32,7 @@ import { Tooltiper } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
+import { getDateFnsLocale } from '@/utils/date-fns-locale';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/settings/_tabs/imports'
@@ -39,6 +41,7 @@ export const Route = createFileRoute(
 });
 
 function ImportsSettings() {
+  const { i18n, t } = useTranslation();
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -56,8 +59,8 @@ function ImportsSettings() {
   const deleteImport = useMutation(
     trpc.import.delete.mutationOptions({
       onSuccess: () => {
-        toast.success('Import deleted', {
-          description: 'The import has been successfully deleted.',
+        toast.success(t('settings.imports_deleted_toast'), {
+          description: t('settings.imports_deleted_description'),
         });
         queryClient.invalidateQueries(trpc.import.list.pathFilter());
       },
@@ -67,8 +70,8 @@ function ImportsSettings() {
   const retryImport = useMutation(
     trpc.import.retry.mutationOptions({
       onSuccess: () => {
-        toast.success('Import retried', {
-          description: 'The import has been queued for processing again.',
+        toast.success(t('settings.imports_retried_toast'), {
+          description: t('settings.imports_retried_description'),
         });
         queryClient.invalidateQueries(trpc.import.list.pathFilter());
       },
@@ -121,15 +124,20 @@ function ImportsSettings() {
     );
   };
 
+  const dateLocale = getDateFnsLocale(i18n.resolvedLanguage ?? i18n.language);
+
   return (
     <div className="space-y-8">
       <div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {IMPORT_PROVIDERS.map((provider) => (
             <IntegrationCard
-              description={provider.description}
+              description={t(
+                `settings.imports_provider_${provider.id}_description`,
+              )}
               icon={
                 <IntegrationCardLogoImage
+                  alt={provider.name}
                   backgroundColor={provider.backgroundColor}
                   className="p-4"
                   src={provider.logo}
@@ -144,7 +152,7 @@ function ImportsSettings() {
                   variant="ghost"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Import Data
+                  {t('settings.imports_import_data_button')}
                 </Button>
               </IntegrationCardFooter>
             </IntegrationCard>
@@ -153,18 +161,22 @@ function ImportsSettings() {
       </div>
 
       <div>
-        <h3 className="mb-4 font-medium text-lg">Import History</h3>
+        <h3 className="mb-4 font-medium text-lg">
+          {t('settings.imports_history_title')}
+        </h3>
 
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Provider</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Config</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('settings.imports_provider_column')}</TableHead>
+                <TableHead>{t('settings.imports_created_column')}</TableHead>
+                <TableHead>{t('settings.imports_status_column')}</TableHead>
+                <TableHead>{t('settings.imports_progress_column')}</TableHead>
+                <TableHead>{t('settings.imports_config_column')}</TableHead>
+                <TableHead className="text-right">
+                  {t('settings.imports_actions_column')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -172,8 +184,8 @@ function ImportsSettings() {
                 <TableRow>
                   <TableCell colSpan={6}>
                     <FullPageEmptyState
-                      description="Your import history will appear here."
-                      title="No imports yet"
+                      description={t('settings.imports_empty_description')}
+                      title={t('settings.imports_empty_title')}
                     />
                   </TableCell>
                 </TableRow>
@@ -214,6 +226,7 @@ function ImportsSettings() {
                   <TableCell>
                     {formatDistanceToNow(new Date(imp.createdAt), {
                       addSuffix: true,
+                      locale: dateLocale,
                     })}
                   </TableCell>
                   <TableCell>
@@ -233,7 +246,9 @@ function ImportsSettings() {
                           {imp.processedEvents.toLocaleString()}
                           {' / '}
                           <Tooltiper
-                            content="Estimated number of events. Can be inaccurate depending on the provider."
+                            content={t(
+                              'settings.imports_estimated_events_tooltip',
+                            )}
                             tooltipClassName="max-w-xs"
                           >
                             {imp.totalEvents.toLocaleString()}{' '}
@@ -271,7 +286,7 @@ function ImportsSettings() {
                       }
                       tooltipClassName="max-w-xs"
                     >
-                      <Badge>Config</Badge>
+                      <Badge>{t('settings.imports_config_badge')}</Badge>
                     </Tooltiper>
                   </TableCell>
                   <TableCell className="space-x-2 text-right">
@@ -281,7 +296,7 @@ function ImportsSettings() {
                         size="sm"
                         variant="outline"
                       >
-                        Retry
+                        {t('settings.imports_retry_button')}
                       </Button>
                     )}
                     <Button
@@ -289,7 +304,7 @@ function ImportsSettings() {
                       size="sm"
                       variant="ghost"
                     >
-                      Delete
+                      {t('settings.imports_delete_button')}
                     </Button>
                   </TableCell>
                 </TableRow>

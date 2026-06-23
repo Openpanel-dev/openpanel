@@ -7,6 +7,7 @@ import type { IServiceProject } from '@openpanel/db';
 
 import { cn } from '@/utils/cn';
 import { SettingsIcon, TrendingDownIcon, TrendingUpIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { FadeIn } from '../fade-in';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Skeleton } from '../skeleton';
@@ -102,6 +103,7 @@ function Metric({ value, label, className }: { value: React.ReactNode; label: st
 }
 
 function ProjectMetrics({ id }: { id: string }) {
+  const { t } = useTranslation();
   const number = useNumber();
   const trpc = useTRPC();
   const { data } = useQuery(
@@ -114,7 +116,7 @@ function ProjectMetrics({ id }: { id: string }) {
     <FadeIn className="row flex-wrap gap-3 flex-1">
         {typeof data?.trend?.percentage === 'number' && (
           <Metric
-            label="3M DIFF"
+            label={t('projects.metric_three_month_diff')}
             value={
               <span
                 className={cn(
@@ -140,15 +142,15 @@ function ProjectMetrics({ id }: { id: string }) {
         )}
         {!!data?.metrics?.revenue && (
           <Metric
-            label="Revenue"
+            label={t('projects.metric_revenue')}
             value={number.currency(data?.metrics?.revenue / 100, {
               short: true,
             })}
           />
         )}
-      <Metric label="3M" value={number.short(data?.metrics?.months_3 ?? 0)} className="ml-auto" />
-        <Metric label="30D" value={number.short(data?.metrics?.month ?? 0)} />
-        <Metric label="24H" value={number.short(data?.metrics?.day ?? 0)} />
+      <Metric label={t('projects.metric_three_months')} value={number.short(data?.metrics?.months_3 ?? 0)} className="ml-auto" />
+        <Metric label={t('projects.metric_thirty_days')} value={number.short(data?.metrics?.month ?? 0)} />
+        <Metric label={t('projects.metric_twenty_four_hours')} value={number.short(data?.metrics?.day ?? 0)} />
     </FadeIn>
   );
 }

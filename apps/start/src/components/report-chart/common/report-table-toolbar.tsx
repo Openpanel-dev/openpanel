@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { List, Rows3, Search, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface ReportTableToolbarProps {
   grouped?: boolean;
@@ -17,13 +18,14 @@ export function ReportTableToolbar({
   onSearchChange,
   onUnselectAll,
 }: ReportTableToolbarProps) {
+  const { t } = useTranslation();
   return (
     <div className="col md:row md:items-center gap-2 p-2 border-b md:justify-between">
       {onSearchChange && (
         <div className="relative flex-1 w-full md:max-w-sm">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            placeholder="Search..."
+            placeholder={t('report_chart.search_placeholder')}
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-8"
@@ -38,12 +40,12 @@ export function ReportTableToolbar({
             onClick={onToggleGrouped}
             icon={grouped ? Rows3 : List}
           >
-            {grouped ? 'Grouped' : 'Flat'}
+            {grouped ? t('report_chart.grouped') : t('report_chart.flat')}
           </Button>
         )}
         {onUnselectAll && (
           <Button variant="outline" size="sm" onClick={onUnselectAll} icon={X}>
-            Unselect All
+            {t('report_chart.unselect_all')}
           </Button>
         )}
       </div>

@@ -2,6 +2,7 @@ import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import WorldMap from 'react-svg-worldmap';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { useOverviewOptions } from './useOverviewOptions';
@@ -12,6 +13,7 @@ interface OverviewMapProps {
 }
 
 export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
+  const { t } = useTranslation();
   const { range, startDate, endDate } = useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
   const trpc = useTRPC();
@@ -47,7 +49,7 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
   if (query.isLoading) {
     return (
       <div className="h-full w-full flex items-center justify-center">
-        <div className="text-muted-foreground">Loading map...</div>
+        <div className="text-muted-foreground">{t('overview.loading_map')}</div>
       </div>
     );
   }
@@ -55,7 +57,9 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
   if (query.isError) {
     return (
       <div className="h-full w-full flex items-center justify-center">
-        <div className="text-muted-foreground">Error loading map</div>
+        <div className="text-muted-foreground">
+          {t('overview.error_loading_map')}
+        </div>
       </div>
     );
   }
@@ -63,7 +67,9 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
   if (!query.data || mapData.length === 0) {
     return (
       <div className="h-full w-full flex items-center justify-center">
-        <div className="text-muted-foreground">No data available</div>
+        <div className="text-muted-foreground">
+          {t('overview.no_data_available')}
+        </div>
       </div>
     );
   }

@@ -11,6 +11,7 @@ import {
   useForm,
   useWatch,
 } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { popModal } from '.';
@@ -37,6 +38,7 @@ interface Props {
 type IForm = z.infer<typeof zCreateNotificationRule>;
 
 export default function AddNotificationRule({ rule }: Props) {
+  const { t } = useTranslation();
   const client = useQueryClient();
   const { organizationId, projectId } = useAppParams();
   const form = useForm<IForm>({
@@ -67,7 +69,9 @@ export default function AddNotificationRule({ rule }: Props) {
     trpc.notification.createOrUpdateRule.mutationOptions({
       onSuccess() {
         toast.success(
-          rule ? 'Notification rule updated' : 'Notification rule created'
+          rule
+            ? t('notifications.rule_updated')
+            : t('notifications.rule_created'),
         );
         client.refetchQueries(
           trpc.notification.rules.queryFilter({
@@ -91,7 +95,7 @@ export default function AddNotificationRule({ rule }: Props) {
 
   const onSubmit: SubmitHandler<IForm> = (data) => {
     if (!data.config.events[0]?.name) {
-      toast.error('At least one event is required');
+      toast.error(t('notifications.event_required'));
       return;
     }
     mutation.mutate(data);
@@ -101,19 +105,23 @@ export default function AddNotificationRule({ rule }: Props) {
 
   return (
     <SheetContent className="[&>button.absolute]:hidden">
-      <ModalHeader title={rule ? 'Edit rule' : 'Create rule'} />
+      <ModalHeader
+        title={
+          rule ? t('notifications.edit_rule') : t('notifications.create_rule')
+        }
+      />
       <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
         <InputWithLabel
           error={form.formState.errors.name?.message}
-          label="Rule name"
-          placeholder="Eg. Sign ups on android"
+          label={t('notifications.rule_name')}
+          placeholder={t('notifications.rule_name_placeholder')}
           {...form.register('name')}
         />
 
         <WithLabel
           // @ts-expect-error
           error={form.formState.errors.config?.type.message}
-          label="Type"
+          label={t('notifications.type')}
         >
           <Controller
             control={form.control}
@@ -126,20 +134,20 @@ export default function AddNotificationRule({ rule }: Props) {
                 error={form.formState.errors.config?.type.message}
                 items={[
                   {
-                    label: 'Events',
+                    label: t('notifications.type_events'),
                     value: 'events',
                   },
                   {
-                    label: 'Funnel',
+                    label: t('notifications.type_funnel'),
                     value: 'funnel',
                   },
                 ]}
-                placeholder="Select type"
+                placeholder={t('notifications.select_type')}
               />
             )}
           />
         </WithLabel>
-        <WithLabel label="Events">
+        <WithLabel label={t('notifications.events')}>
           <div className="col gap-2">
             {eventsArray.fields.map((field, index) => {
               return (
@@ -163,7 +171,7 @@ export default function AddNotificationRule({ rule }: Props) {
               }
               variant={'outline'}
             >
-              Add event
+              {t('notifications.add_event')}
             </Button>
           </div>
         </WithLabel>
@@ -171,29 +179,28 @@ export default function AddNotificationRule({ rule }: Props) {
         <WithLabel
           info={
             <div className="prose dark:prose-invert">
-              <p>
-                Customize your notification message. You can grab any property
-                from your event.
-              </p>
+              <p>{t('notifications.template_help_description')}</p>
 
               <ul>
                 <li>
-                  <code>{'{{name}}'}</code> - The name of the event
+                  <code>{'{{name}}'}</code> -{' '}
+                  {t('notifications.template_help_name')}
                 </li>
                 <li>
-                  <code>{'{{rule_name}}'}</code> - The name of the rule
+                  <code>{'{{rule_name}}'}</code> -{' '}
+                  {t('notifications.template_help_rule_name')}
                 </li>
                 <li>
-                  <code>{'{{properties.your.property}}'}</code> - Get the value
-                  of a custom property
+                  <code>{'{{properties.your.property}}'}</code> -{' '}
+                  {t('notifications.template_help_custom_property')}
                 </li>
                 <li>
-                  <code>{'{{profile.firstName}}'}</code> - Get the value of a
-                  profile property
+                  <code>{'{{profile.firstName}}'}</code> -{' '}
+                  {t('notifications.template_help_profile_property')}
                 </li>
                 <li>
                   <div className="flex flex-wrap gap-x-2">
-                    And many more...
+                    {t('notifications.template_help_more')}
                     <code>profileId</code>
                     <code>createdAt</code>
                     <code>country</code>
@@ -215,11 +222,11 @@ export default function AddNotificationRule({ rule }: Props) {
               </ul>
             </div>
           }
-          label="Template"
+          label={t('notifications.template')}
         >
           <Textarea
             {...form.register('template')}
-            placeholder="You received a new '$EVENT_NAME' event"
+            placeholder={t('notifications.template_placeholder')}
           />
         </WithLabel>
 
@@ -227,7 +234,7 @@ export default function AddNotificationRule({ rule }: Props) {
           control={form.control}
           name="integrations"
           render={({ field }) => (
-            <WithLabel label="Integrations">
+            <WithLabel label={t('notifications.integrations')}>
               <ComboboxAdvanced
                 {...field}
                 className="w-full"
@@ -235,7 +242,7 @@ export default function AddNotificationRule({ rule }: Props) {
                   label: integration.name,
                   value: integration.id,
                 }))}
-                placeholder="Pick integrations"
+                placeholder={t('notifications.pick_integrations')}
                 value={field.value ?? []}
               />
             </WithLabel>
@@ -243,7 +250,7 @@ export default function AddNotificationRule({ rule }: Props) {
         />
 
         <Button icon={SaveIcon} type="submit">
-          {rule ? 'Update' : 'Create'}
+          {rule ? t('common.update') : t('common.create')}
         </Button>
       </form>
     </SheetContent>
@@ -259,6 +266,7 @@ function EventField({
   index: number;
   remove: () => void;
 }) {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const eventNames = useEventNames({ projectId });
   const filtersArray = useFieldArray({
@@ -283,7 +291,7 @@ function EventField({
               className="flex-1"
               items={eventNames}
               onChange={field.onChange}
-              placeholder="Select event"
+              placeholder={t('notifications.select_event')}
               searchable
               value={field.value}
             />
@@ -302,7 +310,7 @@ function EventField({
               value: [],
             });
           }}
-          placeholder="Select a filter"
+          placeholder={t('notifications.select_filter')}
           searchable
           value=""
         >

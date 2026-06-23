@@ -31,6 +31,7 @@ import type {
   IChartFormula,
 } from '@openpanel/validation';
 import { HandIcon, PiIcon, PlusIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   addSerie,
   changeEvent,
@@ -116,6 +117,7 @@ function SortableReportSeriesItem({
 }
 
 export function ReportSeries() {
+  const { t } = useTranslation();
   const selectedSeries = useSelector((state) => state.report.series);
   const chartType = useSelector((state) => state.report.chartType);
   const dispatch = useDispatch();
@@ -199,7 +201,7 @@ export function ReportSeries() {
 
   return (
     <div>
-      <h3 className="mb-2 font-medium">Metrics</h3>
+      <h3 className="mb-2 font-medium">{t('reports.metrics')}</h3>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -229,7 +231,7 @@ export function ReportSeries() {
                     <>
                       <div className="flex-1 flex flex-col gap-2">
                         <InputEnter
-                          placeholder="eg: A+B"
+                          placeholder={t('reports.formula_placeholder')}
                           value={event.formula}
                           onChangeValue={(value) => {
                             dispatchChangeFormula({
@@ -289,7 +291,9 @@ export function ReportSeries() {
                                         );
                                       }}
                                     />
-                                    Hide series {alphaId} from chart
+                                    {t('reports.hide_series_from_chart', {
+                                      series: alphaId,
+                                    })}
                                   </label>
                                 );
                               })}
@@ -345,14 +349,14 @@ export function ReportSeries() {
                           );
                         }}
                         items={eventNames}
-                        placeholder="Select event"
+                        placeholder={t('reports.select_event')}
                       />
                       {showDisplayNameInput && (
                         <Input
                           placeholder={
                             (event as IChartEventItem & { type: 'event' }).name
                               ? `${(event as IChartEventItem & { type: 'event' }).name} (${alphabetIds[index]})`
-                              : 'Display name'
+                              : t('reports.display_name')
                           }
                           defaultValue={
                             (event as IChartEventItem & { type: 'event' })
@@ -408,7 +412,7 @@ export function ReportSeries() {
                     );
                   }
                 }}
-                placeholder="Select event"
+                placeholder={t('reports.select_event')}
                 items={eventNames}
               />
               {showFormula && (
@@ -427,7 +431,7 @@ export function ReportSeries() {
                     );
                   }}
                 >
-                  Add Formula
+                  {t('reports.add_formula')}
                   <PlusIcon className="size-4 ml-auto text-muted-foreground" />
                 </Button>
               )}

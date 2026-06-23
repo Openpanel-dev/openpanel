@@ -11,6 +11,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MessageSquarePlusIcon, Trash2Icon, XIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useChatState } from './chat-context';
 
 /**
@@ -28,6 +29,7 @@ export function ChatDrawerHeader({
   projectId: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { conversationId, switchConversation, newConversation, streamingTitle } =
@@ -55,7 +57,7 @@ export function ChatDrawerHeader({
   //   3. "New chat" fallback when nothing is known yet
   const persistedTitle =
     conversations?.find((c) => c.id === conversationId)?.title ?? null;
-  const activeTitle = streamingTitle ?? persistedTitle ?? 'New chat';
+  const activeTitle = streamingTitle ?? persistedTitle ?? t('chat.new_chat');
 
   return (
     <header className="flex items-center justify-between gap-2 border-b px-3 py-2">
@@ -74,11 +76,11 @@ export function ChatDrawerHeader({
             align="start"
             className="w-72 max-h-96 overflow-y-auto"
           >
-            <DropdownMenuLabel>Conversations</DropdownMenuLabel>
+            <DropdownMenuLabel>{t('chat.conversations')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {(!conversations || conversations.length === 0) && (
               <div className="px-2 py-3 text-sm text-muted-foreground">
-                No conversations yet. Start typing to create one.
+                {t('chat.no_conversations')}
               </div>
             )}
             {conversations?.map((c) => (
@@ -87,7 +89,9 @@ export function ChatDrawerHeader({
                 className="flex items-center justify-between gap-2"
                 onSelect={() => switchConversation(c.id)}
               >
-                <span className="truncate">{c.title ?? 'Untitled chat'}</span>
+                <span className="truncate">
+                  {c.title ?? t('chat.untitled_chat')}
+                </span>
                 <InlineDeleteButton
                   onConfirm={() => deleteMutation.mutate({ id: c.id })}
                 />
@@ -101,8 +105,8 @@ export function ChatDrawerHeader({
           variant="ghost"
           size="sm"
           onClick={() => newConversation()}
-          aria-label="New conversation"
-          title="New conversation"
+          aria-label={t('chat.new_conversation')}
+          title={t('chat.new_conversation')}
         >
           <MessageSquarePlusIcon className="size-4" />
         </Button>
@@ -110,7 +114,7 @@ export function ChatDrawerHeader({
           variant="ghost"
           size="sm"
           onClick={onClose}
-          aria-label="Close chat"
+          aria-label={t('chat.close_chat')}
         >
           <XIcon className="size-4" />
         </Button>
@@ -128,6 +132,7 @@ export function ChatDrawerHeader({
  * time-based auto-revert applies.
  */
 function InlineDeleteButton({ onConfirm }: { onConfirm: () => void }) {
+  const { t } = useTranslation();
   const [armed, setArmed] = useState(false);
   const timerRef = useRef<number | null>(null);
 
@@ -167,8 +172,8 @@ function InlineDeleteButton({ onConfirm }: { onConfirm: () => void }) {
           ? 'shrink-0 rounded bg-destructive p-1 text-white hover:bg-destructive/90 transition-colors'
           : 'shrink-0 rounded p-0.5 text-muted-foreground hover:text-destructive transition-colors'
       }
-      aria-label={armed ? 'Confirm delete' : 'Delete conversation'}
-      title={armed ? 'Click again to confirm' : 'Delete'}
+      aria-label={armed ? t('chat.confirm_delete') : t('chat.delete_conversation')}
+      title={armed ? t('chat.click_again_to_confirm') : t('chat.delete')}
     >
       {armed ? (
         <Trash2Icon className="size-3" />

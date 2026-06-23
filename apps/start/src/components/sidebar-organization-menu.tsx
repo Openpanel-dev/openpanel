@@ -10,6 +10,7 @@ import {
   WorkflowIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from './ui/badge';
 import {
   DropdownMenu,
@@ -18,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAppContext } from '@/hooks/use-app-context';
+import { getSubscriptionBadgeLabel } from '@/components/organization/subscription-i18n';
 import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 import { useOrganizationAccess } from '@/hooks/use-organization-access';
 import { pushModal } from '@/modals';
@@ -30,6 +32,7 @@ export default function SidebarOrganizationMenu({
 }: {
   organization: RouterOutputs['organization']['list'][number];
 }) {
+  const { t } = useTranslation();
   const { isSelfHosted } = useAppContext();
   const { organizationId } = useParams({ strict: false });
   const { isAdmin } = useOrganizationAccess(organizationId);
@@ -45,7 +48,7 @@ export default function SidebarOrganizationMenu({
         to="/$organizationId"
       >
         <LayoutListIcon size={20} />
-        <div className="flex-1">Projects</div>
+        <div className="flex-1">{t('sidebar.projects')}</div>
       </Link>
       <Link
         activeOptions={{ exact: true }}
@@ -56,7 +59,7 @@ export default function SidebarOrganizationMenu({
         to="/$organizationId/settings"
       >
         <CogIcon size={20} />
-        <div className="flex-1">Settings</div>
+        <div className="flex-1">{t('sidebar.settings')}</div>
       </Link>
       {isAdmin && !isSelfHosted && (
         <Link
@@ -68,7 +71,7 @@ export default function SidebarOrganizationMenu({
           to="/$organizationId/billing"
         >
           <CreditCardIcon size={20} />
-          <div className="flex-1">Billing</div>
+          <div className="flex-1">{t('sidebar.billing')}</div>
           {(() => {
             if (!organization) {
               return null;
@@ -80,8 +83,13 @@ export default function SidebarOrganizationMenu({
                 canceledAt: organization.subscriptionCanceledAt,
               }
             ).badge;
+            const label = getSubscriptionBadgeLabel(
+              organization.subscriptionState,
+            );
             return badge ? (
-              <Badge variant={badge.variant}>{badge.label}</Badge>
+              <Badge variant={badge.variant}>
+                {label ? t(label.key, label.values) : badge.label}
+              </Badge>
             ) : null;
           })()}
         </Link>
@@ -93,10 +101,10 @@ export default function SidebarOrganizationMenu({
           )}
           from="/$organizationId"
           to="/$organizationId/members"
-        >
-          <UsersIcon size={20} />
-          <div className="flex-1">Members</div>
-        </Link>
+      >
+        <UsersIcon size={20} />
+        <div className="flex-1">{t('sidebar.members')}</div>
+      </Link>
       )}
       <Link
         className={cn(
@@ -106,13 +114,14 @@ export default function SidebarOrganizationMenu({
         to="/$organizationId/integrations"
       >
         <WorkflowIcon size={20} />
-        <div className="flex-1">Integrations</div>
+        <div className="flex-1">{t('sidebar.integrations')}</div>
       </Link>
     </>
   );
 }
 
 export function ActionCTAButton() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { organizationId } = useParams({ strict: false });
   const { isAdmin } = useOrganizationAccess(organizationId);
@@ -121,19 +130,19 @@ export function ActionCTAButton() {
     ...(isAdmin
       ? [
           {
-            label: 'Create a project',
+            label: t('sidebar.action_create_project'),
             icon: PlusIcon,
             onClick: () => pushModal('AddProject'),
           },
           {
-            label: 'Invite a user',
+            label: t('sidebar.action_invite_user'),
             icon: UsersIcon,
             onClick: () => pushModal('CreateInvite'),
           },
         ]
       : []),
     {
-      label: 'Add integration',
+      label: t('sidebar.action_add_integration'),
       icon: WorkflowIcon,
       onClick: () =>
         navigate({

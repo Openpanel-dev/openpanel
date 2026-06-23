@@ -5,12 +5,14 @@ import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PencilRulerIcon, PlusIcon } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FullPageEmptyState } from '../full-page-empty-state';
 import { IntegrationCardSkeleton } from '../integrations/integration-card';
 import { Button } from '../ui/button';
 import { RuleCard } from './rule-card';
 
 export function NotificationRules() {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
@@ -26,11 +28,11 @@ export function NotificationRules() {
 
   if (!isLoading && data.length === 0) {
     return (
-      <FullPageEmptyState title="No rules yet" icon={PencilRulerIcon}>
-        <p>
-          You have not created any rules yet. Create a rule to start getting
-          notifications.
-        </p>
+      <FullPageEmptyState
+        title={t('notifications.rules_empty_title')}
+        icon={PencilRulerIcon}
+      >
+        <p>{t('notifications.rules_empty_description')}</p>
         <Button
           className="mt-8"
           variant="outline"
@@ -40,7 +42,7 @@ export function NotificationRules() {
             })
           }
         >
-          Add Rule
+          {t('notifications.action_add_rule')}
         </Button>
       </FullPageEmptyState>
     );
@@ -58,7 +60,7 @@ export function NotificationRules() {
             })
           }
         >
-          Add Rule
+          {t('notifications.action_add_rule')}
         </Button>
       </div>
       <div className="col gap-4 w-full grid md:grid-cols-2">

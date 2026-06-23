@@ -6,6 +6,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { SearchIcon } from 'lucide-react';
 import type React from 'react';
 import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '../ui/input';
 
 const ROW_HEIGHT = 36;
@@ -80,17 +81,18 @@ interface OverviewListModalProps<T extends OverviewListItem> {
 
 export function OverviewListModal<T extends OverviewListItem>({
   title,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder,
   data,
   keyExtractor,
   searchFilter,
   renderItem,
   footer,
   headerContent,
-  columnName = 'Name',
+  columnName,
   showPageviews = true,
   showSessions = true,
 }: OverviewListModalProps<T>) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const number = useNumber();
@@ -142,7 +144,7 @@ export function OverviewListModal<T extends OverviewListItem>({
             <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder={searchPlaceholder}
+              placeholder={searchPlaceholder ?? t('overview.search_ellipsis')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -159,10 +161,18 @@ export function OverviewListModal<T extends OverviewListItem>({
               `1fr ${hasRevenue ? '100px' : ''} ${hasPageviews ? '80px' : ''} ${showSessions ? '80px' : ''}`.trim(),
           }}
         >
-          <div className="text-left truncate">{columnName}</div>
-          {hasRevenue && <div className="text-right">Revenue</div>}
-          {hasPageviews && <div className="text-right">Views</div>}
-          {showSessions && <div className="text-right">Sessions</div>}
+          <div className="text-left truncate">
+            {columnName ?? t('overview.column_name')}
+          </div>
+          {hasRevenue && (
+            <div className="text-right">{t('overview.revenue')}</div>
+          )}
+          {hasPageviews && (
+            <div className="text-right">{t('overview.views')}</div>
+          )}
+          {showSessions && (
+            <div className="text-right">{t('overview.sessions')}</div>
+          )}
         </div>
       </div>
 
@@ -256,7 +266,9 @@ export function OverviewListModal<T extends OverviewListItem>({
         {/* Empty state */}
         {filteredData.length === 0 && (
           <div className="flex items-center justify-center h-32 text-muted-foreground">
-            {searchQuery ? 'No results found' : 'No data available'}
+            {searchQuery
+              ? t('overview.no_results_found')
+              : t('overview.no_data_available')}
           </div>
         )}
       </div>

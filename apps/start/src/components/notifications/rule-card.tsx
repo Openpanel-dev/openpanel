@@ -5,6 +5,7 @@ import type { NotificationRule } from '@openpanel/db';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { FilterIcon } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ColorSquare } from '../color-square';
 import {
@@ -19,6 +20,8 @@ import { Tooltiper } from '../ui/tooltip';
 function EventBadge({
   event,
 }: { event: NotificationRule['config']['events'][number] }) {
+  const { t } = useTranslation();
+
   return (
     <Tooltiper
       disabled={!event.filters.length}
@@ -33,7 +36,7 @@ function EventBadge({
       }
     >
       <Badge variant="outline" className="inline-flex">
-        {event.name === '*' ? 'Any event' : event.name}
+        {event.name === '*' ? t('notifications.rule_any_event') : event.name}
         {Boolean(event.filters.length) && (
           <FilterIcon className="size-2 ml-1" />
         )}
@@ -45,12 +48,13 @@ function EventBadge({
 export function RuleCard({
   rule,
 }: { rule: RouterOutputs['notification']['rules'][number] }) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const client = useQueryClient();
   const deletion = useMutation(
     trpc.notification.deleteRule.mutationOptions({
       onSuccess() {
-        toast.success('Rule deleted');
+        toast.success(t('notifications.rule_deleted_success'));
         client.refetchQueries(
           trpc.notification.rules.queryOptions({
             projectId: rule.projectId,
@@ -64,17 +68,19 @@ export function RuleCard({
       case 'events':
         return (
           <div className="row gap-2 items-baseline flex-wrap">
-            <div>Get notified when</div>
-            {rule.config.events.map((event) => (
-              <EventBadge key={event.id} event={event} />
-            ))}
-            <div>occurs</div>
+            <Trans i18nKey="notifications.rule_events_description">
+              <span className="contents">
+                {rule.config.events.map((event) => (
+                  <EventBadge key={event.id} event={event} />
+                ))}
+              </span>
+            </Trans>
           </div>
         );
       case 'funnel':
         return (
           <div className="col gap-4">
-            <div>Get notified when a session has completed this funnel</div>
+            <div>{t('notifications.rule_funnel_description')}</div>
             <div className="col gap-2">
               {rule.config.events.map((event, index) => (
                 <div
@@ -108,8 +114,10 @@ export function RuleCard({
             className="text-destructive"
             onClick={() => {
               showConfirm({
-                title: `Delete ${rule.name}?`,
-                text: 'This action cannot be undone.',
+                title: t('notifications.delete_rule_confirm_title', {
+                  name: rule.name,
+                }),
+                text: t('notifications.delete_rule_confirm_description'),
                 onConfirm: () => {
                   deletion.mutate({
                     id: rule.id,
@@ -118,7 +126,7 @@ export function RuleCard({
               });
             }}
           >
-            Delete
+            {t('notifications.action_delete')}
           </Button>
           <Button
             variant="ghost"
@@ -128,7 +136,7 @@ export function RuleCard({
               });
             }}
           >
-            Edit
+            {t('notifications.action_edit')}
           </Button>
         </div>
       </IntegrationCardFooter>

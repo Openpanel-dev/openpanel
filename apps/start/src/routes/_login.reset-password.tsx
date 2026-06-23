@@ -2,6 +2,7 @@ import { ResetPasswordForm } from '@/components/auth/reset-password-form';
 import { FullPageErrorState } from '@/components/full-page-error-state';
 import { PAGE_TITLES, createTitle } from '@/utils/title';
 import { createFileRoute } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 export const Route = createFileRoute('/_login/reset-password')({
@@ -15,10 +16,13 @@ export const Route = createFileRoute('/_login/reset-password')({
   validateSearch: z.object({
     token: z.string(),
   }),
-  errorComponent: () => (
-    <FullPageErrorState description="Missing reset password token" />
-  ),
+  errorComponent: ResetPasswordError,
 });
+
+function ResetPasswordError() {
+  const { t } = useTranslation();
+  return <FullPageErrorState description={t('auth.missing_reset_password_token')} />;
+}
 
 function Component() {
   const { token } = Route.useSearch();

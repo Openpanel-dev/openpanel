@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { popModal } from '.';
@@ -28,6 +29,7 @@ const validator = zOnboardingProject;
 type IForm = z.infer<typeof validator>;
 
 export default function AddProject() {
+  const { t } = useTranslation();
   const { organizationId } = useAppParams();
   const navigate = useNavigate();
   const form = useForm<IForm>({
@@ -52,10 +54,10 @@ export default function AddProject() {
         queryClient.invalidateQueries(
           trpc.project.list.queryFilter({ organizationId })
         );
-        toast.success('Project created', {
+        toast.success(t('projects.toast_created'), {
           description: `${res.name}`,
           action: {
-            label: 'View project',
+            label: t('projects.view_project'),
             onClick: () =>
               navigate({
                 to: '/$organizationId/$projectId',
@@ -104,23 +106,26 @@ export default function AddProject() {
     <ModalContent>
       {mutation.isSuccess ? (
         <>
-          <ModalHeader text={'Your project is created'} title="Success" />
+          <ModalHeader
+            text={t('projects.created_success_description')}
+            title={t('common.success')}
+          />
           {mutation.data.client && (
             <CreateClientSuccess {...mutation.data.client} />
           )}
           <ButtonContainer className="justify-end">
             <Button className="flex-1" onClick={() => popModal()}>
-              Close
+              {t('common.close')}
             </Button>
           </ButtonContainer>
         </>
       ) : (
         <>
-          <ModalHeader title="Create project" />
+          <ModalHeader title={t('projects.create_project')} />
           <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
             <InputWithLabel
-              label="Project name"
-              placeholder="Eg. My music site"
+              label={t('projects.project_name')}
+              placeholder={t('projects.project_name_placeholder')}
               {...form.register('project')}
               error={form.formState.errors.project?.message}
             />
@@ -131,18 +136,18 @@ export default function AddProject() {
                 name="website"
                 render={({ field }) => (
                   <CheckboxItem
-                    description="Track events and conversion for your website"
+                    description={t('projects.website_description')}
                     disabled={isApp}
                     error={form.formState.errors.website?.message}
                     Icon={MonitorIcon}
-                    label="Website"
+                    label={t('projects.website')}
                     {...field}
                   >
                     <AnimateHeight open={isWebsite && !isApp}>
                       <div className="p-4 pl-14">
                         <InputWithLabel
-                          label="Domain"
-                          placeholder="Your website address"
+                          label={t('projects.domain')}
+                          placeholder={t('projects.domain_placeholder')}
                           {...form.register('domain')}
                           className="mb-4"
                           error={form.formState.errors.domain?.message}
@@ -162,7 +167,7 @@ export default function AddProject() {
                           control={form.control}
                           name="cors"
                           render={({ field }) => (
-                            <WithLabel label="Allowed domains">
+                            <WithLabel label={t('projects.allowed_domains')}>
                               <TagInput
                                 {...field}
                                 error={form.formState.errors.cors?.message}
@@ -181,10 +186,12 @@ export default function AddProject() {
                                     })
                                   );
                                 }}
-                                placeholder="Accept events from these domains"
+                                placeholder={t(
+                                  'projects.allowed_domains_placeholder',
+                                )}
                                 renderTag={(tag) =>
                                   tag === '*'
-                                    ? 'Accept events from any domains'
+                                    ? t('projects.accept_events_any_domain')
                                     : tag
                                 }
                                 value={field.value ?? []}
@@ -202,11 +209,11 @@ export default function AddProject() {
                 name="app"
                 render={({ field }) => (
                   <CheckboxItem
-                    description="Track events and conversion for your app"
+                    description={t('projects.app_description')}
                     disabled={isWebsite}
                     error={form.formState.errors.app?.message}
                     Icon={SmartphoneIcon}
-                    label="App"
+                    label={t('projects.app')}
                     {...field}
                   />
                 )}
@@ -216,10 +223,10 @@ export default function AddProject() {
                 name="backend"
                 render={({ field }) => (
                   <CheckboxItem
-                    description="Track events and conversion for your backend / API"
+                    description={t('projects.backend_description')}
                     error={form.formState.errors.backend?.message}
                     Icon={ServerIcon}
-                    label="Backend / API"
+                    label={t('projects.backend_api')}
                     {...field}
                   />
                 )}
@@ -232,7 +239,7 @@ export default function AddProject() {
                 loading={mutation.isPending}
                 type="submit"
               >
-                Create project
+                {t('projects.create_project')}
               </Button>
             </ButtonContainer>
           </form>

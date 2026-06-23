@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { useLocation } from '@tanstack/react-router';
 import { CheckCheckIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type Step = {
   name: string;
@@ -13,24 +14,25 @@ type Props = {
 };
 
 function useSteps(path: string) {
+  const { t } = useTranslation();
   const steps: Step[] = [
     {
-      name: 'Create an account',
+      name: t('onboarding.step_create_account'),
       status: 'pending',
       match: '/onboarding',
     },
     {
-      name: 'Create a project',
+      name: t('onboarding.step_create_project'),
       status: 'pending',
       match: '/onboarding/project',
     },
     {
-      name: 'Connect your data',
+      name: t('onboarding.step_connect_data'),
       status: 'pending',
       match: '/onboarding/(.+)/connect',
     },
     {
-      name: 'Verify',
+      name: t('onboarding.step_verify'),
       status: 'pending',
       match: '/onboarding/(.+)/verify',
     },
@@ -53,6 +55,7 @@ function useSteps(path: string) {
 }
 
 export const OnboardingSteps = ({ className }: Props) => {
+  const { t } = useTranslation();
   const location = useLocation();
   const path = location.pathname;
   const steps = useSteps(path);

@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '../table';
 import { getCommonPinningStyles } from './data-table-helpers';
+import { useTranslation } from 'react-i18next';
 
 export interface DataTableProps<TData> {
   table: ITable<TData>;
@@ -37,12 +38,15 @@ export function DataTable<TData>({
   loading,
   className,
   onRowClick,
-  empty = {
-    title: 'No data',
-    description: 'We could not find any data here yet',
-  },
+  empty,
   ...props
 }: DataTableProps<TData>) {
+  const { t } = useTranslation();
+  const emptyState = empty ?? {
+    title: t('ui.no_data'),
+    description: t('ui.no_data_description'),
+  };
+
   return (
     <div
       className={cn('flex w-full flex-col gap-2.5 overflow-auto', className)}
@@ -114,8 +118,8 @@ export function DataTable<TData>({
                   className="h-24 text-center"
                 >
                   <FullPageEmptyState
-                    title={empty.title}
-                    description={empty.description}
+                    title={emptyState.title}
+                    description={emptyState.description}
                   />
                 </TableCell>
               </TableRow>

@@ -5,6 +5,7 @@ import { SerieIcon } from '../report-chart/common/serie-icon';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { formatTimeAgoOrDateTime } from '@/utils/date';
+import { useTranslation } from 'react-i18next';
 
 interface RealtimeActiveSessionsProps {
   projectId: string;
@@ -17,6 +18,7 @@ export function RealtimeActiveSessions({
   limit = 10,
   className,
 }: RealtimeActiveSessionsProps) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const { data: sessions = [] } = useQuery(
     trpc.realtime.activeSessions.queryOptions(
@@ -30,6 +32,11 @@ export function RealtimeActiveSessions({
       <div className="hide-scrollbar h-full overflow-y-auto">
         <AnimatePresence initial={false} mode="popLayout">
           <div className="col divide-y">
+            {sessions.length === 0 && (
+              <div className="p-4 text-sm text-muted-foreground">
+                {t('realtime.no_active_sessions')}
+              </div>
+            )}
             {sessions.slice(0, limit).map((session) => (
               <motion.div
                 animate={{ opacity: 1, x: 0, scale: 1 }}

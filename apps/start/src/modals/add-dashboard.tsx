@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -21,6 +22,7 @@ const validator = z.object({
 type IForm = z.infer<typeof validator>;
 
 export default function AddDashboard() {
+  const { t } = useTranslation();
   const { projectId, organizationId } = useAppParams();
   const router = useRouter();
   const trpc = useTRPC();
@@ -44,8 +46,8 @@ export default function AddDashboard() {
             dashboardId: res.id,
           },
         });
-        toast('Success', {
-          description: 'Dashboard created.',
+        toast(t('common.success'), {
+          description: t('dashboards.toast_created'),
         });
         queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
         popModal();
@@ -56,7 +58,7 @@ export default function AddDashboard() {
 
   return (
     <ModalContent>
-      <ModalHeader title="Add dashboard" />
+      <ModalHeader title={t('dashboards.add_dashboard')} />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit(({ name }) => {
@@ -67,16 +69,16 @@ export default function AddDashboard() {
         })}
       >
         <InputWithLabel
-          label="Name"
-          placeholder="Name of the dashboard"
+          label={t('common.name')}
+          placeholder={t('dashboards.name_placeholder')}
           {...register('name')}
         />
         <ButtonContainer>
           <Button type="button" variant="outline" onClick={() => popModal()}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={!formState.isDirty}>
-            Create
+            {t('common.create')}
           </Button>
         </ButtonContainer>
       </form>

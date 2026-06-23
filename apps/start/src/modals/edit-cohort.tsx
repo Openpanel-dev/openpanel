@@ -10,6 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CohortDefinition } from '@openpanel/validation';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -34,6 +35,7 @@ interface EditCohortProps {
 }
 
 export default function EditCohort(props: EditCohortProps) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
@@ -50,7 +52,9 @@ export default function EditCohort(props: EditCohortProps) {
   const mutation = useMutation(
     trpc.cohort.update.mutationOptions({
       onSuccess() {
-        toast('Success', { description: 'Cohort updated.' });
+        toast(t('common.success'), {
+          description: t('cohorts.cohort_updated'),
+        });
         queryClient.invalidateQueries(trpc.cohort.pathFilter());
         popModal();
       },
@@ -60,7 +64,7 @@ export default function EditCohort(props: EditCohortProps) {
 
   return (
     <ModalContent className="max-w-3xl">
-      <ModalHeader title="Edit cohort" />
+      <ModalHeader title={t('cohorts.edit_cohort')} />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit((data) => {
@@ -74,14 +78,14 @@ export default function EditCohort(props: EditCohortProps) {
         })}
       >
         <InputWithLabel
-          label="Name"
-          placeholder="Name of the cohort"
+          label={t('common.name')}
+          placeholder={t('cohorts.name_placeholder')}
           {...register('name')}
         />
 
-        <WithLabel label="Description">
+        <WithLabel label={t('common.description')}>
           <Textarea
-            placeholder="Optional description"
+            placeholder={t('cohorts.description_placeholder')}
             {...register('description')}
           />
         </WithLabel>
@@ -99,12 +103,12 @@ export default function EditCohort(props: EditCohortProps) {
             )}
           />
           <Label htmlFor="isStatic" className="cursor-pointer text-sm mb-0">
-            Freeze snapshot (don&apos;t auto-refresh)
+            {t('cohorts.freeze_snapshot')}
           </Label>
         </div>
 
         <div>
-          <Label className="mb-2 block">Cohort Criteria</Label>
+          <Label className="mb-2 block">{t('cohorts.cohort_criteria')}</Label>
           <Controller
             name="definition"
             control={control}
@@ -119,10 +123,10 @@ export default function EditCohort(props: EditCohortProps) {
 
         <ButtonContainer>
           <Button type="button" variant="outline" onClick={() => popModal()}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={!formState.isDirty}>
-            Save changes
+            {t('common.save_changes')}
           </Button>
         </ButtonContainer>
       </form>

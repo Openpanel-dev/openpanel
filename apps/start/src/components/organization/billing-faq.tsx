@@ -5,51 +5,47 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Widget, WidgetHead } from '@/components/widget';
-
-const questions = [
-  {
-    question: 'Does OpenPanel have a free tier?',
-    answer: [
-      'For our Cloud plan we offer a 30 days free trial, this is mostly for you to be able to try out OpenPanel before committing to a paid plan.',
-      'OpenPanel is also open-source and you can self-host it for free!',
-      '',
-      'Why does OpenPanel not have a free tier?',
-      'We want to make sure that OpenPanel is used by people who are serious about using it. We also need to invest time and resources to maintain the platform and provide support to our users.',
-    ],
-  },
-  {
-    question: 'What happens if my site exceeds the limit?',
-    answer: [
-      "You will not see any new events in OpenPanel until your next billing period. If this happens 2 months in a row, we'll advice you to upgrade your plan.",
-    ],
-  },
-  {
-    question: 'What happens if I cancel my subscription?',
-    answer: [
-      'If you cancel your subscription, you will still have access to OpenPanel until the end of your current billing period. You can reactivate your subscription at any time.',
-      'After your current billing period ends, you will not get access to new data.',
-      "NOTE: If your account has been inactive for 3 months, we'll delete your events.",
-    ],
-  },
-  {
-    question: 'How do I change my billing information?',
-    answer: [
-      'You can change your billing information by clicking the "Customer portal" button in the billing section.',
-    ],
-  },
-  {
-    question: 'We need a custom plan, can you help us?',
-    answer: [
-      'Yes, we can help you with that. Please contact us at hello@openpanel.dev to request a quote.',
-    ],
-  },
-];
+import { useTranslation } from 'react-i18next';
 
 export function BillingFaq() {
+  const { t } = useTranslation();
+  const questions = [
+    {
+      question: t('billing.faq_free_tier_question'),
+      answer: [
+        t('billing.faq_free_tier_answer_trial'),
+        t('billing.faq_free_tier_answer_self_host'),
+        '',
+        t('billing.faq_free_tier_answer_why_title'),
+        t('billing.faq_free_tier_answer_why_body'),
+      ],
+    },
+    {
+      question: t('billing.faq_exceeds_limit_question'),
+      answer: [t('billing.faq_exceeds_limit_answer')],
+    },
+    {
+      question: t('billing.faq_cancel_subscription_question'),
+      answer: [
+        t('billing.faq_cancel_subscription_answer_access'),
+        t('billing.faq_cancel_subscription_answer_data'),
+        t('billing.faq_cancel_subscription_answer_note'),
+      ],
+    },
+    {
+      question: t('billing.faq_billing_information_question'),
+      answer: [t('billing.faq_billing_information_answer')],
+    },
+    {
+      question: t('billing.faq_custom_plan_question'),
+      answer: [t('billing.faq_custom_plan_answer')],
+    },
+  ];
+
   return (
     <Widget className="w-full">
       <WidgetHead className="flex items-center justify-between">
-        <span className="title">Frequently asked questions</span>
+        <span className="title">{t('billing.faq_title')}</span>
       </WidgetHead>
       <Accordion
         className="w-full max-w-screen-md self-center"

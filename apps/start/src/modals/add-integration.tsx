@@ -4,13 +4,13 @@ import { DiscordIntegrationForm } from '@/components/integrations/forms/discord-
 import { SlackIntegrationForm } from '@/components/integrations/forms/slack-integration';
 import { WebhookIntegrationForm } from '@/components/integrations/forms/webhook-integration';
 import { IntegrationCardContent } from '@/components/integrations/integration-card';
-import { INTEGRATIONS } from '@/components/integrations/integrations';
+import { useIntegrations } from '@/components/integrations/integrations';
 import { SheetContent } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/use-app-params';
 import type { IIntegrationConfig } from '@openpanel/validation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { useQueryState } from 'nuqs';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { popModal } from '.';
 import { ModalHeader } from './Modal/Container';
@@ -20,6 +20,8 @@ interface Props {
   type: IIntegrationConfig['type'];
 }
 export default function AddIntegration(props: Props) {
+  const { t } = useTranslation();
+  const integrations = useIntegrations();
   const { organizationId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
@@ -33,7 +35,7 @@ export default function AddIntegration(props: Props) {
     ),
   );
 
-  const integration = INTEGRATIONS.find((i) => i.type === props.type);
+  const integration = integrations.find((i) => i.type === props.type);
 
   const renderCard = () => {
     if (!integration) {
@@ -49,7 +51,7 @@ export default function AddIntegration(props: Props) {
   const navigate = useNavigate();
   const client = useQueryClient();
   const handleSuccess = () => {
-    toast.success('Integration created');
+    toast.success(t('integrations.success_integration_saved'));
     popModal();
     client.invalidateQueries(trpc.integration.list.pathFilter());
     client.invalidateQueries(
@@ -97,7 +99,7 @@ export default function AddIntegration(props: Props) {
 
   return (
     <SheetContent className="[&>button.absolute]:hidden">
-      <ModalHeader title="Create an integration" />
+      <ModalHeader title={t('integrations.modal_title')} />
       {renderCard()}
       {renderForm()}
     </SheetContent>

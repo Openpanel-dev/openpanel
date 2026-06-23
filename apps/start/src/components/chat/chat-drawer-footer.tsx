@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
 import { ArrowUpIcon, StopCircleIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useChatRuntime } from './chat-runtime';
 import { ModelPicker } from './model-picker';
 
@@ -13,6 +14,7 @@ import { ModelPicker } from './model-picker';
  * input state — `useChat` v5+ doesn't manage input.
  */
 export function ChatDrawerFooter() {
+  const { t } = useTranslation();
   const { send, stop, status } = useChatRuntime();
   const [text, setText] = useState('');
   const isStreaming = status === 'streaming' || status === 'submitted';
@@ -61,7 +63,7 @@ export function ChatDrawerFooter() {
           ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Ask anything about your data…"
+          placeholder={t('chat.ask_anything_placeholder')}
           rows={2}
           className={cn(
             'block w-full bg-transparent text-sm leading-[1.5] text-foreground',
@@ -86,7 +88,7 @@ export function ChatDrawerFooter() {
               variant="secondary"
               className="size-7 rounded-md shrink-0"
               onClick={stop}
-              aria-label="Stop generating"
+              aria-label={t('chat.stop_generating')}
             >
               <StopCircleIcon className="size-3.5" />
             </Button>
@@ -97,7 +99,7 @@ export function ChatDrawerFooter() {
               variant="default"
               className="size-7 rounded-md shrink-0"
               disabled={!text.trim()}
-              aria-label="Send message"
+              aria-label={t('chat.send_message')}
             >
               <ArrowUpIcon className="size-3.5" />
             </Button>

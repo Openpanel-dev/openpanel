@@ -17,12 +17,14 @@ import { Widget, WidgetBody } from '@/components/widget';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { getChartColor } from '@/utils/theme';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
   data: { date: string; count: number }[];
 };
 
 function Tooltip(props: any) {
+  const { t } = useTranslation();
   const number = useNumber();
   const formatDate = useFormatDateInterval({ interval: 'day', short: false });
   const payload = props.payload?.[0]?.payload;
@@ -42,7 +44,9 @@ function Tooltip(props: any) {
           style={{ background: getChartColor(0) }}
         />
         <div className="col gap-1">
-          <div className="text-muted-foreground text-sm">Total members</div>
+          <div className="text-muted-foreground text-sm">
+            {t('groups.total_members')}
+          </div>
           <div
             className="font-semibold text-lg"
             style={{ color: getChartColor(0) }}
@@ -53,7 +57,9 @@ function Tooltip(props: any) {
       </div>
       {payload.count > 0 && (
         <div className="text-muted-foreground text-xs">
-          +{number.format(payload.count)} new
+          {t('groups.new_members_count', {
+            count: number.format(payload.count),
+          })}
         </div>
       )}
     </div>
@@ -61,6 +67,7 @@ function Tooltip(props: any) {
 }
 
 export function GroupMemberGrowth({ data }: Props) {
+  const { t } = useTranslation();
   const xAxisProps = useXAxisProps({ interval: 'day' });
   const yAxisProps = useYAxisProps({});
   const color = getChartColor(0);
@@ -81,12 +88,14 @@ export function GroupMemberGrowth({ data }: Props) {
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <WidgetTitle icon={TrendingUpIcon}>New members last 30 days</WidgetTitle>
+        <WidgetTitle icon={TrendingUpIcon}>
+          {t('groups.new_members_last_30_days')}
+        </WidgetTitle>
       </WidgetHead>
       <WidgetBody>
         {data.length === 0 ? (
           <p className="py-4 text-center text-muted-foreground text-sm">
-            No data yet
+            {t('groups.no_data_yet')}
           </p>
         ) : (
           <div className="h-[200px] w-full">

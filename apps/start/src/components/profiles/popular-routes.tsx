@@ -1,4 +1,5 @@
 import { RouteIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Widget, WidgetEmptyState } from '@/components/widget';
 import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
 
@@ -7,14 +8,18 @@ type Props = {
 };
 
 export const PopularRoutes = ({ data }: Props) => {
+  const { t } = useTranslation();
   const max = data.length > 0 ? Math.max(...data.map((item) => item.count)) : 0;
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <WidgetTitle>Most visted pages</WidgetTitle>
+        <WidgetTitle>{t('profiles.most_visited_pages')}</WidgetTitle>
       </WidgetHead>
       {data.length === 0 ? (
-        <WidgetEmptyState icon={RouteIcon} text="No pages visited yet" />
+        <WidgetEmptyState
+          icon={RouteIcon}
+          text={t('profiles.no_pages_visited_yet')}
+        />
       ) : (
         <div className="flex flex-col gap-1 p-1">
           {data.slice(0, 5).map((item) => (

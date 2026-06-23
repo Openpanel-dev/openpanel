@@ -1,5 +1,6 @@
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { IChartType } from '@openpanel/validation';
 
@@ -11,7 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronRightIcon } from 'lucide-react';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
-import { OVERVIEW_COLUMNS_NAME } from './overview-constants';
+import { getOverviewColumnNameKey } from './overview-constants';
 import OverviewDetailsButton from './overview-details-button';
 import {
   OverviewLineChart,
@@ -39,6 +40,7 @@ export default function OverviewTopGeo({
   projectId,
   shareId,
 }: OverviewTopGeoProps) {
+  const { t } = useTranslation();
   const { interval, range, previous, startDate, endDate } =
     useOverviewOptions();
   const [chartType, setChartType] = useState<IChartType>('bar');
@@ -47,16 +49,16 @@ export default function OverviewTopGeo({
   const isPageFilter = filters.find((filter) => filter.name === 'path');
   const [widget, setWidget, widgets] = useOverviewWidgetV2('geo', {
     country: {
-      title: 'Top countries',
-      btn: 'Countries',
+      title: t('overview.top_countries'),
+      btn: t('overview.countries'),
     },
     region: {
-      title: 'Top regions',
-      btn: 'Regions',
+      title: t('overview.top_regions'),
+      btn: t('overview.regions'),
     },
     city: {
-      title: 'Top cities',
-      btn: 'Cities',
+      title: t('overview.top_cities'),
+      btn: t('overview.cities'),
     },
   });
 
@@ -123,7 +125,9 @@ export default function OverviewTopGeo({
           onTabChange={setWidget}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          searchPlaceholder={t('overview.search_column', {
+            column: widget.btn.toLowerCase(),
+          })}
           className="border-b-0 pb-2"
         />
         <WidgetBody className="p-0">
@@ -146,7 +150,7 @@ export default function OverviewTopGeo({
             <OverviewWidgetTableGeneric
               data={filteredData}
               column={{
-                name: OVERVIEW_COLUMNS_NAME[widget.key],
+                name: t(getOverviewColumnNameKey(widget.key)),
                 render(item) {
                   return (
                     <div className="row items-center gap-2 min-w-0 relative">
@@ -179,7 +183,7 @@ export default function OverviewTopGeo({
                         )}
                         {(countries[item.name as keyof typeof countries] ??
                           item.name) ||
-                          'Not set'}
+                          t('overview.not_set')}
                       </button>
                     </div>
                   );
@@ -200,7 +204,7 @@ export default function OverviewTopGeo({
           <div className="flex-1" />
           <OverviewViewToggle />
           <span className="text-sm text-muted-foreground pr-2 ml-2">
-            Geo data provided by{' '}
+            {t('overview.geo_data_provided_by')}{' '}
             <a
               href="https://ipdata.co"
               target="_blank"
@@ -214,7 +218,7 @@ export default function OverviewTopGeo({
       </Widget>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHead>
-          <div className="title">Map</div>
+          <div className="title">{t('overview.map')}</div>
         </WidgetHead>
         <WidgetBody>
           <OverviewMap projectId={projectId} shareId={shareId} />

@@ -7,13 +7,22 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import VerifyListener from '@/components/onboarding/onboarding-verify-listener';
 import { VerifyFaq } from '@/components/onboarding/verify-faq';
 import { LinkButton } from '@/components/ui/button';
+import i18n from '@/i18n';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/lib/utils';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute('/_steps/onboarding/$projectId/verify')({
   head: () => ({
-    meta: [{ title: createEntityTitle('Verify', PAGE_TITLES.ONBOARDING) }],
+    meta: [
+      {
+        title: createEntityTitle(
+          i18n.t('onboarding.step_verify'),
+          PAGE_TITLES.ONBOARDING
+        ),
+      },
+    ],
   }),
   beforeLoad: ({ context }) => {
     if (!context.session?.session) {
@@ -32,6 +41,7 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/verify')({
 });
 
 function Component() {
+  const { t } = useTranslation();
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const { data: events } = useQuery(
@@ -49,13 +59,21 @@ function Component() {
 
   if (!project) {
     return (
-      <FullPageEmptyState icon={BoxSelectIcon} title="Project not found" />
+      <FullPageEmptyState
+        icon={BoxSelectIcon}
+        title={t('onboarding.verify_project_not_found')}
+      />
     );
   }
 
   const client = project.clients[0];
   if (!client) {
-    return <FullPageEmptyState icon={BoxSelectIcon} title="Client not found" />;
+    return (
+      <FullPageEmptyState
+        icon={BoxSelectIcon}
+        title={t('onboarding.verify_client_not_found')}
+      />
+    );
   }
 
   return (
@@ -74,7 +92,7 @@ function Component() {
           size="lg"
           variant={'secondary'}
         >
-          Back
+          {t('onboarding.action_back')}
         </LinkButton>
 
         <div className="flex items-center gap-8">
@@ -87,7 +105,7 @@ function Component() {
               }}
               to={'/$organizationId/$projectId'}
             >
-              Skip for now
+              {t('onboarding.action_skip_for_now')}
             </Link>
           )}
 
@@ -103,7 +121,7 @@ function Component() {
             size="lg"
             to={'/$organizationId/$projectId'}
           >
-            Your dashboard
+            {t('onboarding.action_your_dashboard')}
           </LinkButton>
         </div>
       </ButtonContainer>

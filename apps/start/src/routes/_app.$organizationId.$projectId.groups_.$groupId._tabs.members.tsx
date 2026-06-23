@@ -1,6 +1,7 @@
 import { ProfilesTable } from '@/components/profiles/table';
 import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
+import i18n from '@/i18n';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle } from '@/utils/title';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
@@ -11,7 +12,7 @@ export const Route = createFileRoute(
 )({
   component: Component,
   head: () => ({
-    meta: [{ title: createProjectTitle('Group members') }],
+    meta: [{ title: createProjectTitle(i18n.t('groups.group_members_title')) }],
   }),
 });
 

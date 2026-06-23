@@ -2,6 +2,7 @@ import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { max, min } from '@openpanel/common';
+import { useTranslation } from 'react-i18next';
 import { useReportChartContext } from '../context';
 
 type CohortData = RouterOutputs['chart']['cohort'];
@@ -11,6 +12,7 @@ type CohortTableProps = {
 };
 
 const CohortTable: React.FC<CohortTableProps> = ({ data }) => {
+  const { t } = useTranslation();
   const {
     report: { unit, interval },
   } = useReportChartContext();
@@ -55,10 +57,14 @@ const CohortTable: React.FC<CohortTableProps> = ({ data }) => {
               <tr>
                 <th className={cn(thClassName, 'sticky left-0 z-10')}>
                   <div className="bg-def-100">
-                    <div className="h-10 center-center -mt-3">Date</div>
+                    <div className="h-10 center-center -mt-3">
+                      {t('report_chart.date')}
+                    </div>
                   </div>
                 </th>
-                <th className={cn(thClassName, 'pr-1')}>Total profiles</th>
+                <th className={cn(thClassName, 'pr-1')}>
+                  {t('report_chart.total_profiles')}
+                </th>
                 {data[0]?.values.map((column, index) => (
                   <th
                     key={index.toString()}

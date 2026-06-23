@@ -14,18 +14,19 @@ import {
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { formatDate } from '@/utils/date';
 import { average, sum } from '@openpanel/common';
+import { useTranslation } from 'react-i18next';
 import { useReportChartContext } from '../context';
 
 const SUMMARY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  Flow: GitBranch,
-  'Average conversion rate': Percent,
-  'Total conversions': Target,
-  'Previous period average conversion rate': Percent,
-  'Previous period total conversions': Hash,
-  'Best breakdown (avg)': Trophy,
-  'Worst breakdown (avg)': ArrowDownRight,
-  'Best conversion rate': ArrowUpRight,
-  'Worst conversion rate': ArrowDownRight,
+  flow: GitBranch,
+  average_conversion_rate: Percent,
+  total_conversions: Target,
+  previous_average_conversion_rate: Percent,
+  previous_total_conversions: Hash,
+  best_breakdown_average: Trophy,
+  worst_breakdown_average: ArrowDownRight,
+  best_conversion_rate: ArrowUpRight,
+  worst_conversion_rate: ArrowDownRight,
 };
 
 interface Props {
@@ -33,6 +34,7 @@ interface Props {
 }
 
 export function Summary({ data }: Props) {
+  const { t } = useTranslation();
   const number = useNumber();
   const { report } = useReportChartContext();
 
@@ -132,57 +134,94 @@ export function Summary({ data }: Props) {
       .filter((item) => item.type === 'event')
       .map((e) => e.displayName || e.name)
       .join(' → ');
-    const items: { name: string; value: React.ReactNode }[] = [
-      { name: 'Flow', value: flowLabel },
+    const items: { id: string; name: string; value: React.ReactNode }[] = [
+      { id: 'flow', name: t('report_chart.summary_flow'), value: flowLabel },
       {
-        name: 'Average conversion rate',
+        id: 'average_conversion_rate',
+        name: t('report_chart.summary_average_conversion_rate'),
         value: number.formatWithUnit(averageConversionRate / 100, '%'),
       },
-      { name: 'Total conversions', value: sumConversions },
+      {
+        id: 'total_conversions',
+        name: t('report_chart.summary_total_conversions'),
+        value: sumConversions,
+      },
     ];
     if (data.previous != null) {
       items.push(
         {
-          name: 'Previous period average conversion rate',
+          id: 'previous_average_conversion_rate',
+          name: t('report_chart.summary_previous_average_conversion_rate'),
           value: number.formatWithUnit(
             averageConversionRatePrevious / 100,
             '%',
           ),
         },
         {
-          name: 'Previous period total conversions',
+          id: 'previous_total_conversions',
+          name: t('report_chart.summary_previous_total_conversions'),
           value: sumConversionsPrevious ?? 0,
         },
       );
     }
     if (hasManySeries && bestAverageConversionRateMatch) {
       items.push({
-        name: 'Best breakdown (avg)',
-        value: `${bestAverageConversionRateMatch.serie?.breakdowns.join(', ')} with ${number.formatWithUnit(bestAverageConversionRateMatch.averageRate / 100, '%')}`,
+        id: 'best_breakdown_average',
+        name: t('report_chart.summary_best_breakdown_average'),
+        value: t('report_chart.summary_breakdown_with_rate', {
+          breakdown: bestAverageConversionRateMatch.serie?.breakdowns.join(', '),
+          rate: number.formatWithUnit(
+            bestAverageConversionRateMatch.averageRate / 100,
+            '%',
+          ),
+        }),
       });
     }
     if (hasManySeries && worstAverageConversionRateMatch) {
       items.push({
-        name: 'Worst breakdown (avg)',
-        value: `${worstAverageConversionRateMatch.serie?.breakdowns.join(', ')} with ${number.formatWithUnit(worstAverageConversionRateMatch.averageRate / 100, '%')}`,
+        id: 'worst_breakdown_average',
+        name: t('report_chart.summary_worst_breakdown_average'),
+        value: t('report_chart.summary_breakdown_with_rate', {
+          breakdown: worstAverageConversionRateMatch.serie?.breakdowns.join(', '),
+          rate: number.formatWithUnit(
+            worstAverageConversionRateMatch.averageRate / 100,
+            '%',
+          ),
+        }),
       });
     }
     if (bestConversionRate) {
       const breakdowns = bestConversionRate.serie.breakdowns.join(', ');
       items.push({
-        name: 'Best conversion rate',
+        id: 'best_conversion_rate',
+        name: t('report_chart.summary_best_conversion_rate'),
         value: breakdowns
-          ? `${number.formatWithUnit(bestConversionRate.rate / 100, '%')} on ${breakdowns} at ${formatDate(new Date(bestConversionRate.date))}`
-          : `${number.formatWithUnit(bestConversionRate.rate / 100, '%')} at ${formatDate(new Date(bestConversionRate.date))}`,
+          ? t('report_chart.summary_rate_on_breakdown_at_date', {
+              rate: number.formatWithUnit(bestConversionRate.rate / 100, '%'),
+              breakdown: breakdowns,
+              date: formatDate(new Date(bestConversionRate.date)),
+            })
+          : t('report_chart.summary_rate_at_date', {
+              rate: number.formatWithUnit(bestConversionRate.rate / 100, '%'),
+              date: formatDate(new Date(bestConversionRate.date)),
+            }),
       });
     }
     if (worstConversionRate) {
       const breakdowns = worstConversionRate.serie.breakdowns.join(', ');
       items.push({
-        name: 'Worst conversion rate',
+        id: 'worst_conversion_rate',
+        name: t('report_chart.summary_worst_conversion_rate'),
         value: breakdowns
-          ? `${number.formatWithUnit(worstConversionRate.rate / 100, '%')} on ${breakdowns} at ${formatDate(new Date(worstConversionRate.date))}`
-          : `${number.formatWithUnit(worstConversionRate.rate / 100, '%')} at ${formatDate(new Date(worstConversionRate.date))}`,
+          ? t('report_chart.summary_rate_on_breakdown_at_date', {
+              rate: number.formatWithUnit(worstConversionRate.rate / 100, '%'),
+              breakdown: breakdowns,
+              date: formatDate(new Date(worstConversionRate.date)),
+            })
+          : t('report_chart.summary_rate_at_date', {
+              rate: number.formatWithUnit(worstConversionRate.rate / 100, '%'),
+              date: formatDate(new Date(worstConversionRate.date)),
+            }),
       });
     }
     return items;
@@ -199,16 +238,17 @@ export function Summary({ data }: Props) {
     bestConversionRate,
     worstConversionRate,
     number,
+    t,
   ]);
 
   return (
     <div className="my-4 space-y-3">
       <div className="row flex-wrap gap-2">
         {keyValueData.map((item) => {
-          const Icon = SUMMARY_ICONS[item.name];
+          const Icon = SUMMARY_ICONS[item.id];
           return (
             <div
-              key={item.name}
+              key={item.id}
               className="card row items-center justify-between p-4 py-3 font-medium gap-4"
             >
               <span className="text-muted-foreground row items-center gap-2">

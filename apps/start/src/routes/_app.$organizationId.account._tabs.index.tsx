@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { SaveIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -25,6 +26,7 @@ export const Route = createFileRoute('/_app/$organizationId/account/_tabs/')({
 });
 
 function Component() {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const session = useSuspenseQuery(trpc.auth.session.queryOptions());
@@ -40,8 +42,8 @@ function Component() {
   const mutation = useMutation(
     trpc.user.update.mutationOptions({
       onSuccess: (data) => {
-        toast('Profile updated', {
-          description: 'Your profile has been updated.',
+        toast(t('account.toast_profile_updated'), {
+          description: t('account.toast_profile_updated_description'),
         });
         queryClient.invalidateQueries(trpc.auth.session.pathFilter());
         reset({
@@ -66,22 +68,22 @@ function Component() {
       >
         <Widget className="max-w-screen-md w-full">
         <WidgetHead>
-          <span className="title">Profile</span>
+          <span className="title">{t('account.profile_title')}</span>
         </WidgetHead>
         <WidgetBody className="gap-4 col">
           <InputWithLabel
-            label="Email"
+            label={t('account.email_label')}
             value={user.email}
             disabled
             readOnly
           />
           <InputWithLabel
-            label="First name"
+            label={t('account.first_name_label')}
             {...register('firstName')}
             defaultValue={user.firstName ?? ''}
           />
           <InputWithLabel
-            label="Last name"
+            label={t('account.last_name_label')}
             {...register('lastName')}
             defaultValue={user.lastName ?? ''}
           />
@@ -93,7 +95,7 @@ function Component() {
             icon={SaveIcon}
             loading={mutation.isPending}
           >
-            Save
+            {t('common.save')}
           </Button>
         </WidgetBody>
       </Widget>

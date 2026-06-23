@@ -7,6 +7,7 @@ import {
   SparklesIcon,
   ZapIcon,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { PromptCard } from '@/components/organization/prompt-card';
 import { LinkButton } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
@@ -15,57 +16,64 @@ import { useCookieStore } from '@/hooks/use-cookie-store';
 const PERKS = [
   {
     icon: RocketIcon,
-    text: 'Latest Docker Images',
-    description: 'Bleeding-edge builds on every commit',
+    textKey: 'organization.supporter_perk_docker_title',
+    descriptionKey: 'organization.supporter_perk_docker_description',
   },
   {
     icon: MessageCircleIcon,
-    text: 'Prioritized Support',
-    description: 'Get help faster with priority Discord support',
+    textKey: 'organization.supporter_perk_support_title',
+    descriptionKey: 'organization.supporter_perk_support_description',
   },
   {
     icon: SparklesIcon,
-    text: 'Feature Requests',
-    description: 'Your ideas get prioritized in our roadmap',
+    textKey: 'organization.supporter_perk_requests_title',
+    descriptionKey: 'organization.supporter_perk_requests_description',
   },
   {
     icon: AwardIcon,
-    text: 'Exclusive Discord Role',
-    description: 'Special badge and recognition in our community',
+    textKey: 'organization.supporter_perk_discord_role_title',
+    descriptionKey: 'organization.supporter_perk_discord_role_description',
   },
   {
     icon: ZapIcon,
-    text: 'Early Access',
-    description: 'Try new features before public release',
+    textKey: 'organization.supporter_perk_early_access_title',
+    descriptionKey: 'organization.supporter_perk_early_access_description',
   },
   {
     icon: HeartIcon,
-    text: 'Direct Impact',
-    description: 'Your support directly funds development',
+    textKey: 'organization.supporter_perk_impact_title',
+    descriptionKey: 'organization.supporter_perk_impact_description',
   },
 ] as const;
 
 function PerkPoint({
   icon: Icon,
-  text,
-  description,
+  textKey,
+  descriptionKey,
 }: {
   icon: LucideIcon;
-  text: string;
-  description: string;
+  textKey: string;
+  descriptionKey: string;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="row items-center gap-4">
       <Icon className="size-4" />
       <div className="col min-w-0 flex-1 gap-1.5">
-        <h3 className="font-medium text-sm">{text}</h3>
-        <p className="text-muted-foreground text-xs">{description}</p>
+        <h3 className="font-medium text-sm">
+          {t(textKey)}
+        </h3>
+        <p className="text-muted-foreground text-xs">
+          {t(descriptionKey)}
+        </p>
       </div>
     </div>
   );
 }
 
 export default function SupporterPrompt() {
+  const { t } = useTranslation();
   const { isSelfHosted, isDemo } = useAppContext();
   const [supporterPromptClosed, setSupporterPromptClosed] = useCookieStore(
     'supporter-prompt-closed',
@@ -81,16 +89,16 @@ export default function SupporterPrompt() {
       gradientColor="rgb(16 185 129)"
       onClose={() => setSupporterPromptClosed(true)}
       show={!supporterPromptClosed}
-      subtitle="Help us build the future of open analytics"
-      title="Support OpenPanel"
+      subtitle={t('organization.supporter_prompt_subtitle')}
+      title={t('organization.supporter_prompt_title')}
     >
       <div className="col gap-3 px-6">
         {PERKS.map((perk) => (
           <PerkPoint
-            description={perk.description}
+            descriptionKey={perk.descriptionKey}
             icon={perk.icon}
-            key={perk.text}
-            text={perk.text}
+            key={perk.textKey}
+            textKey={perk.textKey}
           />
         ))}
       </div>
@@ -100,17 +108,17 @@ export default function SupporterPrompt() {
           className="w-full"
           href="https://buy.polar.sh/polar_cl_Az1CruNFzQB2bYdMOZmGHqTevW317knWqV44W1FqZmV"
         >
-          Become a Supporter
+          {t('organization.supporter_prompt_cta')}
         </LinkButton>
         <p className="mt-4 text-center text-muted-foreground text-xs">
-          Starting at $20/month • Cancel anytime •{' '}
+          {t('organization.supporter_prompt_footer')}{' '}
           <a
             className="text-primary underline-offset-4 hover:underline"
             href="https://openpanel.dev/supporter"
             rel="noreferrer"
             target="_blank"
           >
-            Learn more
+            {t('organization.supporter_prompt_learn_more')}
           </a>
         </p>
       </div>

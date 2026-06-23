@@ -9,6 +9,7 @@ import type {
   IChartEventFilterOperator,
   IChartFilterValueType,
 } from '@openpanel/validation';
+import { useTranslation } from 'react-i18next';
 
 interface FilterOperatorSelectProps {
   value: IChartEventFilterOperator;
@@ -25,6 +26,7 @@ export function FilterOperatorSelect({
   type,
   children,
 }: FilterOperatorSelectProps) {
+  const { t } = useTranslation();
   const trigger = children ?? (
     <Button variant="outline" className="whitespace-nowrap">
       {operatorsShort[value]}
@@ -42,7 +44,7 @@ export function FilterOperatorSelect({
         description:
           operatorsShort[key] === operators[key] ? undefined : operators[key],
       }))}
-      label="Operator"
+      label={t('reports.operator')}
     >
       {trigger}
     </DropdownMenuComposed>

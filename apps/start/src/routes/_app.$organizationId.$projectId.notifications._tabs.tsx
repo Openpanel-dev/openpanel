@@ -1,8 +1,10 @@
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
+import i18n from '@/i18n';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/notifications/_tabs',
@@ -12,7 +14,7 @@ export const Route = createFileRoute(
     return {
       meta: [
         {
-          title: createProjectTitle(PAGE_TITLES.NOTIFICATIONS),
+          title: createProjectTitle(i18n.t('notifications.page_title')),
         },
       ],
     };
@@ -20,11 +22,12 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   const { activeTab, tabs } = usePageTabs([
-    { id: 'notifications', label: 'Notifications' },
-    { id: 'rules', label: 'Rules' },
+    { id: 'notifications', label: t('notifications.tab_notifications') },
+    { id: 'rules', label: t('notifications.tab_rules') },
   ]);
 
   const handleTabChange = (tabId: string) => {
@@ -38,8 +41,8 @@ function Component() {
   return (
     <div className="container p-8">
       <PageHeader
-        title="Notifications"
-        description="See notifications and manage your rules when to get notifications"
+        title={t('notifications.page_title')}
+        description={t('notifications.page_description')}
       />
 
       <Tabs

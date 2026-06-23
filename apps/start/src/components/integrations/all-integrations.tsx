@@ -1,13 +1,17 @@
 import { Button } from '@/components/ui/button';
 import { pushModal } from '@/modals';
 import { PlugIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { IntegrationCard, IntegrationCardFooter } from './integration-card';
-import { INTEGRATIONS } from './integrations';
+import { useIntegrations } from './integrations';
 
 export function AllIntegrations() {
+  const { t } = useTranslation();
+  const integrations = useIntegrations();
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      {INTEGRATIONS.map((integration) => (
+      {integrations.map((integration) => (
         <IntegrationCard
           key={integration.name}
           icon={integration.icon}
@@ -24,7 +28,7 @@ export function AllIntegrations() {
               }}
             >
               <PlugIcon className="size-4 mr-2" />
-              Connect
+              {t('integrations.action_connect')}
             </Button>
           </IntegrationCardFooter>
         </IntegrationCard>

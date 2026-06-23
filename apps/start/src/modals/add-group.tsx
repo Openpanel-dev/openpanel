@@ -3,6 +3,7 @@ import { zCreateGroup } from '@openpanel/validation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { popModal } from '.';
@@ -19,6 +20,7 @@ const zForm = zCreateGroup.omit({ projectId: true, properties: true }).extend({
 type IForm = z.infer<typeof zForm>;
 
 export default function AddGroup() {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const queryClient = useQueryClient();
   const trpc = useTRPC();
@@ -43,7 +45,7 @@ export default function AddGroup() {
       onSuccess() {
         queryClient.invalidateQueries(trpc.group.list.pathFilter());
         queryClient.invalidateQueries(trpc.group.types.pathFilter());
-        toast('Success', { description: 'Group created.' });
+        toast(t('common.success'), { description: t('groups.group_created') });
         popModal();
       },
       onError: handleError,
@@ -52,7 +54,7 @@ export default function AddGroup() {
 
   return (
     <ModalContent>
-      <ModalHeader title="Add group" />
+      <ModalHeader title={t('groups.add_group')} />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit(({ properties, ...values }) => {
@@ -65,28 +67,30 @@ export default function AddGroup() {
         })}
       >
         <InputWithLabel
-          label="ID"
-          placeholder="acme-corp"
+          label={t('groups.id')}
+          placeholder={t('groups.id_placeholder')}
           {...register('id')}
           autoFocus
           error={formState.errors.id?.message}
         />
         <InputWithLabel
-          label="Name"
-          placeholder="Acme Corp"
+          label={t('common.name')}
+          placeholder={t('groups.name_placeholder')}
           {...register('name')}
           error={formState.errors.name?.message}
         />
         <InputWithLabel
-          label="Type"
-          placeholder="company"
+          label={t('groups.type')}
+          placeholder={t('groups.type_placeholder')}
           {...register('type')}
           error={formState.errors.type?.message}
         />
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-sm">Properties</span>
+            <span className="font-medium text-sm">
+              {t('groups.properties')}
+            </span>
             <Button
               onClick={() => append({ key: '', value: '' })}
               size="sm"
@@ -94,19 +98,19 @@ export default function AddGroup() {
               variant="outline"
             >
               <PlusIcon className="mr-1 size-3" />
-              Add
+              {t('common.add')}
             </Button>
           </div>
           {fields.map((field, index) => (
             <div className="flex gap-2" key={field.id}>
               <input
                 className="h-9 flex-1 rounded-md border bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                placeholder="key"
+                placeholder={t('groups.property_key')}
                 {...register(`properties.${index}.key`)}
               />
               <input
                 className="h-9 flex-1 rounded-md border bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                placeholder="value"
+                placeholder={t('groups.property_value')}
                 {...register(`properties.${index}.value`)}
               />
               <Button
@@ -124,13 +128,13 @@ export default function AddGroup() {
 
         <ButtonContainer>
           <Button onClick={() => popModal()} type="button" variant="outline">
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             disabled={!formState.isDirty || mutation.isPending}
             type="submit"
           >
-            Create
+            {t('common.create')}
           </Button>
         </ButtonContainer>
       </form>

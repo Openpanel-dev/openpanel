@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PromptCard } from '@/components/organization/prompt-card';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
@@ -8,6 +9,7 @@ import { op } from '@/utils/op';
 const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 
 export default function FeedbackPrompt() {
+  const { t } = useTranslation();
   const { isSelfHosted, isDemo } = useAppContext();
   const [feedbackPromptSeen, setFeedbackPromptSeen] = useCookieStore(
     'feedback-prompt-seen',
@@ -67,17 +69,16 @@ export default function FeedbackPrompt() {
       gradientColor="rgb(59 130 246)"
       onClose={handleClose}
       show={shouldShow}
-      subtitle="Help us improve OpenPanel with your insights"
-      title="Share Your Feedback"
+      subtitle={t('organization.feedback_prompt_subtitle')}
+      title={t('organization.feedback_prompt_title')}
     >
       <div className="col gap-4 px-6">
         <p className="text-foreground text-sm leading-normal">
-          Your feedback helps us build features you actually need. Share your
-          thoughts, report bugs, or suggest improvements
+          {t('organization.feedback_prompt_description')}
         </p>
 
         <Button className="self-start" onClick={handleGiveFeedback}>
-          Give Feedback
+          {t('organization.feedback_prompt_cta')}
         </Button>
       </div>
     </PromptCard>

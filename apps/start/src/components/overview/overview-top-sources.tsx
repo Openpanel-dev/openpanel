@@ -1,5 +1,6 @@
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
@@ -7,7 +8,7 @@ import { NOT_SET_VALUE } from '@openpanel/constants';
 import { useQuery } from '@tanstack/react-query';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
-import { OVERVIEW_COLUMNS_NAME } from './overview-constants';
+import { getOverviewColumnNameKey } from './overview-constants';
 import OverviewDetailsButton from './overview-details-button';
 import {
   OverviewLineChart,
@@ -30,42 +31,43 @@ export default function OverviewTopSources({
   projectId,
   shareId,
 }: OverviewTopSourcesProps) {
+  const { t } = useTranslation();
   const { interval, range, startDate, endDate } = useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
   const [searchQuery, setSearchQuery] = useState('');
   const [view] = useOverviewView();
   const [widget, setWidget, widgets] = useOverviewWidgetV2('sources', {
     referrer_name: {
-      title: 'Top sources',
-      btn: 'Refs',
+      title: t('overview.top_sources'),
+      btn: t('overview.refs'),
     },
     referrer: {
-      title: 'Top urls',
-      btn: 'Urls',
+      title: t('overview.top_urls'),
+      btn: t('overview.urls'),
     },
     referrer_type: {
-      title: 'Top types',
-      btn: 'Types',
+      title: t('overview.top_types'),
+      btn: t('overview.types'),
     },
     utm_source: {
-      title: 'UTM Source',
-      btn: 'Source',
+      title: t('overview.utm_source'),
+      btn: t('overview.source'),
     },
     utm_medium: {
-      title: 'UTM Medium',
-      btn: 'Medium',
+      title: t('overview.utm_medium'),
+      btn: t('overview.medium'),
     },
     utm_campaign: {
-      title: 'UTM Campaign',
-      btn: 'Campaign',
+      title: t('overview.utm_campaign'),
+      btn: t('overview.campaign'),
     },
     utm_term: {
-      title: 'UTM Term',
-      btn: 'Term',
+      title: t('overview.utm_term'),
+      btn: t('overview.term'),
     },
     utm_content: {
-      title: 'UTM Content',
-      btn: 'Content',
+      title: t('overview.utm_content'),
+      btn: t('overview.content'),
     },
   });
   const trpc = useTRPC();
@@ -123,7 +125,9 @@ export default function OverviewTopSources({
           onTabChange={setWidget}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          searchPlaceholder={t('overview.search_column', {
+            column: widget.btn.toLowerCase(),
+          })}
           className="border-b-0 pb-2"
         />
         <WidgetBody className="p-0">
@@ -146,7 +150,7 @@ export default function OverviewTopSources({
             <OverviewWidgetTableGeneric
               data={filteredData}
               column={{
-                name: OVERVIEW_COLUMNS_NAME[widget.key],
+                name: t(getOverviewColumnNameKey(widget.key)),
                 render(item) {
                   return (
                     <div className="row items-center gap-2 min-w-0 relative">
@@ -165,7 +169,7 @@ export default function OverviewTopSources({
                           }
                         }}
                       >
-                        {(item.name || 'Direct / Not set')
+                        {(item.name || t('overview.direct_not_set'))
                           .replace(/https?:\/\//, '')
                           .replace('www.', '')}
                       </button>

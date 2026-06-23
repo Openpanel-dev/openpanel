@@ -1,4 +1,5 @@
 import { ZapIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Widget, WidgetEmptyState } from '@/components/widget';
 import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
 
@@ -7,14 +8,15 @@ type Props = {
 };
 
 export const MostEvents = ({ data }: Props) => {
+  const { t } = useTranslation();
   const max = data.length > 0 ? Math.max(...data.map((item) => item.count)) : 0;
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <WidgetTitle>Popular events</WidgetTitle>
+        <WidgetTitle>{t('profiles.popular_events')}</WidgetTitle>
       </WidgetHead>
       {data.length === 0 ? (
-        <WidgetEmptyState icon={ZapIcon} text="No events yet" />
+        <WidgetEmptyState icon={ZapIcon} text={t('profiles.no_events_yet')} />
       ) : (
         <div className="flex flex-col gap-1 p-1">
           {data.slice(0, 5).map((item) => (

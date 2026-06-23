@@ -12,6 +12,7 @@ import {
 import type { IChartEventItem } from '@openpanel/validation';
 
 import { createFileRoute } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/events/_tabs/stats',
@@ -20,6 +21,7 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t } = useTranslation();
   const { projectId } = Route.useParams();
   const [filters] = useEventQueryFilters();
   const [events] = useEventQueryNamesFilter();
@@ -27,7 +29,7 @@ function Component() {
     {
       id: 'A',
       name: '*',
-      displayName: 'All events',
+      displayName: t('events.all_events'),
       segment: 'event',
       filters: filters ?? [],
       type: 'event',
@@ -43,7 +45,7 @@ function Component() {
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Events per day</span>
+            <span className="title">{t('events.events_per_day')}</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
@@ -67,7 +69,7 @@ function Component() {
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Event distribution</span>
+            <span className="title">{t('events.event_distribution')}</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
@@ -99,7 +101,7 @@ function Component() {
                       {
                         id: 'A',
                         name: '*',
-                        displayName: 'All events',
+                        displayName: t('events.all_events'),
                         segment: 'event',
                         filters: filters ?? [],
                         type: 'event',
@@ -111,7 +113,7 @@ function Component() {
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Event distribution</span>
+            <span className="title">{t('events.event_distribution')}</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
@@ -143,7 +145,7 @@ function Component() {
                       {
                         id: 'A',
                         name: '*',
-                        displayName: 'All events',
+                        displayName: t('events.all_events'),
                         segment: 'event',
                         filters: filters ?? [],
                         type: 'event',
@@ -155,7 +157,7 @@ function Component() {
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Event distribution</span>
+            <span className="title">{t('events.event_distribution')}</span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
@@ -187,7 +189,7 @@ function Component() {
                       {
                         id: 'A',
                         name: '*',
-                        displayName: 'All events',
+                        displayName: t('events.all_events'),
                         segment: 'event',
                         filters: filters ?? [],
                         type: 'event',

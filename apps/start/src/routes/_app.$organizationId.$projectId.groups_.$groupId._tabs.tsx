@@ -17,9 +17,11 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEntityPageContext } from '@/hooks/use-page-context-helpers';
 import { usePageTabs } from '@/hooks/use-page-tabs';
+import i18n from '@/i18n';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { createProjectTitle } from '@/utils/title';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/groups_/$groupId/_tabs'
@@ -43,11 +45,12 @@ export const Route = createFileRoute(
   },
   pendingComponent: FullPageLoadingState,
   head: () => ({
-    meta: [{ title: createProjectTitle('Group') }],
+    meta: [{ title: createProjectTitle(i18n.t('groups.group_page_title')) }],
   }),
 });
 
 function Component() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { projectId, organizationId, groupId } = Route.useParams();
   const trpc = useTRPC();
@@ -83,9 +86,9 @@ function Component() {
   );
 
   const { activeTab, tabs } = usePageTabs([
-    { id: '/$organizationId/$projectId/groups/$groupId', label: 'Overview' },
-    { id: 'members', label: 'Members' },
-    { id: 'events', label: 'Events' },
+    { id: '/$organizationId/$projectId/groups/$groupId', label: t('groups.tab_overview') },
+    { id: 'members', label: t('groups.tab_members') },
+    { id: 'events', label: t('groups.tab_events') },
   ]);
 
   const handleTabChange = (tabId: string) => {
@@ -102,7 +105,7 @@ function Component() {
       <PageContainer>
         <div className="flex flex-col items-center justify-center gap-3 py-24 text-muted-foreground">
           <Building2Icon className="size-10 opacity-30" />
-          <p className="text-sm">Group not found</p>
+          <p className="text-sm">{t('groups.group_not_found')}</p>
         </div>
       </PageContainer>
     );
@@ -127,13 +130,13 @@ function Component() {
               variant="outline"
             >
               <PencilIcon className="mr-2 size-4" />
-              Edit
+              {t('groups.edit')}
             </Button>
             <Button
               onClick={() =>
                 showConfirm({
-                  title: 'Delete group',
-                  text: `Are you sure you want to delete "${g.name}"? This action cannot be undone.`,
+                  title: t('groups.delete_group'),
+                  text: t('groups.delete_group_confirm', { name: g.name }),
                   onConfirm: () =>
                     deleteMutation.mutate({ id: g.id, projectId }),
                 })
@@ -142,7 +145,7 @@ function Component() {
               variant="outline"
             >
               <Trash2Icon className="mr-2 size-4" />
-              Delete
+              {t('groups.delete')}
             </Button>
           </div>
         }

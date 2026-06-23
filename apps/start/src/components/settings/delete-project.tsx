@@ -5,15 +5,15 @@ import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { showConfirm } from '@/modals';
 import type { IServiceProjectWithClients } from '@openpanel/db';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from '@tanstack/react-router';
 import { addHours, format, startOfHour } from 'date-fns';
 import { TrashIcon } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 type Props = { project: IServiceProjectWithClients };
 
 export default function DeleteProject({ project }: Props) {
-  const router = useRouter();
+  const { t } = useTranslation();
   const trpc = useTRPC();
 
   const queryClient = useQueryClient();
@@ -29,7 +29,7 @@ export default function DeleteProject({ project }: Props) {
     trpc.project.delete.mutationOptions({
       onError: handleError,
       onSuccess: () => {
-        toast.success('Project is scheduled for deletion');
+        toast.success(t('settings.delete_project_scheduled_toast'));
         queryClient.invalidateQueries(
           trpc.project.getProjectWithClients.queryFilter({
             projectId: project.id,
@@ -43,7 +43,7 @@ export default function DeleteProject({ project }: Props) {
     trpc.project.cancelDeletion.mutationOptions({
       onError: handleError,
       onSuccess: () => {
-        toast.success('Project deletion cancelled');
+        toast.success(t('settings.delete_project_cancelled_toast'));
         queryClient.invalidateQueries(
           trpc.project.getProjectWithClients.queryFilter({
             projectId: project.id,
@@ -56,34 +56,32 @@ export default function DeleteProject({ project }: Props) {
   return (
     <Widget className="max-w-screen-md w-full">
       <WidgetHead>
-        <span className="title">Delete Project</span>
+        <span className="title">{t('settings.delete_project_title')}</span>
       </WidgetHead>
       <WidgetBody className="space-y-4">
-        <p>
-          Deleting your project will remove it from your organization and all of
-          its data. It'll be permanently deleted after 24 hours.
-        </p>
+        <p>{t('settings.delete_project_description')}</p>
         {project?.deleteAt && (
           <Alert variant="destructive">
-            <AlertTitle>Project scheduled for deletion</AlertTitle>
+            <AlertTitle>
+              {t('settings.delete_project_scheduled_title')}
+            </AlertTitle>
             <AlertDescription>
-              This project will be deleted on{' '}
-              <span className="font-medium">
-                {
-                  // add 1 hour and round to the nearest hour
-                  // Since we run cron once an hour
-                  format(
+              <Trans
+                components={{
+                  date: <span className="font-medium" />,
+                }}
+                i18nKey="settings.delete_project_scheduled_description"
+                values={{
+                  date: format(
                     startOfHour(addHours(project.deleteAt, 1)),
                     'yyyy-MM-dd HH:mm:ss',
-                  )
-                }
-              </span>
-              . Any event associated with this project will be deleted.
+                  ),
+                }}
+              />
               {isOrgScheduledForDeletion && (
                 <>
                   {' '}
-                  The whole organization is scheduled for deletion. To keep this
-                  project, cancel the deletion from the organization settings.
+                  {t('settings.delete_project_org_scheduled_notice')}
                 </>
               )}
             </AlertDescription>
@@ -99,7 +97,7 @@ export default function DeleteProject({ project }: Props) {
               }}
               loading={cancelDeletionMutation.isPending}
             >
-              Cancel deletion
+              {t('settings.delete_project_cancel_button')}
             </Button>
           )}
           <Button
@@ -109,15 +107,15 @@ export default function DeleteProject({ project }: Props) {
             loading={mutation.isPending}
             onClick={() => {
               showConfirm({
-                title: 'Delete Project',
-                text: 'Are you sure you want to delete this project?',
+                title: t('settings.delete_project_title'),
+                text: t('settings.delete_project_confirm_text'),
                 onConfirm: () => {
                   mutation.mutate({ projectId: project.id });
                 },
               });
             }}
           >
-            Delete Project
+            {t('settings.delete_project_title')}
           </Button>
         </div>
       </WidgetBody>

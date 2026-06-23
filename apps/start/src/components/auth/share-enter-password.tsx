@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { type ISignInShare, zSignInShare } from '@openpanel/validation';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PublicPageCard } from '../public-page-card';
 import { Button } from '../ui/button';
@@ -15,6 +16,7 @@ export function ShareEnterPassword({
   shareId: string;
   shareType?: 'overview' | 'dashboard' | 'report';
 }) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInShare.mutationOptions({
@@ -22,7 +24,7 @@ export function ShareEnterPassword({
         window.location.reload();
       },
       onError() {
-        toast.error('Incorrect password');
+        toast.error(t('auth.incorrect_password'));
       },
     }),
   );
@@ -45,24 +47,26 @@ export function ShareEnterPassword({
 
   const typeLabel =
     shareType === 'dashboard'
-      ? 'Dashboard'
+      ? t('auth.share_type_dashboard')
       : shareType === 'report'
-        ? 'Report'
-        : 'Overview';
+        ? t('auth.share_type_report')
+        : t('auth.share_type_overview');
 
   return (
     <PublicPageCard
-      title={`${typeLabel} is locked`}
-      description={`Please enter correct password to access this ${typeLabel.toLowerCase()}`}
+      title={t('auth.share_locked_title', { type: typeLabel })}
+      description={t('auth.share_password_description', {
+        type: typeLabel.toLowerCase(),
+      })}
     >
       <form onSubmit={onSubmit} className="col gap-4">
         <Input
           {...form.register('password')}
           type="password"
-          placeholder="Enter your password"
+          placeholder={t('auth.enter_password')}
           size="large"
         />
-        <Button type="submit">Get access</Button>
+        <Button type="submit">{t('auth.get_access')}</Button>
       </form>
     </PublicPageCard>
   );

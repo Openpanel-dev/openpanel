@@ -4,6 +4,7 @@ import { zResetPassword } from '@openpanel/validation';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { InputWithLabel } from '../forms/input-with-label';
@@ -13,12 +14,13 @@ const validator = zResetPassword;
 type IForm = z.infer<typeof validator>;
 
 export function ResetPasswordForm({ token }: { token: string }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.resetPassword.mutationOptions({
       onSuccess() {
-        toast.success('Password reset successfully');
+        toast.success(t('auth.password_reset_successfully'));
         navigate({
           to: '/login',
         });
@@ -45,23 +47,23 @@ export function ResetPasswordForm({ token }: { token: string }) {
     <div className="col gap-8">
       <div>
         <h1 className="text-3xl font-bold text-foreground mb-2">
-          Reset your password
+          {t('auth.reset_your_password')}
         </h1>
         <p className="text-muted-foreground">
-          Already have an account?{' '}
+          {t('auth.already_have_account')}{' '}
           <a href="/login" className="underline">
-            Sign in
+            {t('auth.sign_in')}
           </a>
         </p>
       </div>
       <form onSubmit={onSubmit} className="col gap-6">
         <InputWithLabel
-          label="New password"
-          placeholder="New password"
+          label={t('auth.new_password')}
+          placeholder={t('auth.new_password')}
           type="password"
           {...form.register('password')}
         />
-        <Button type="submit">Reset password</Button>
+        <Button type="submit">{t('auth.reset_password')}</Button>
       </form>
     </div>
   );

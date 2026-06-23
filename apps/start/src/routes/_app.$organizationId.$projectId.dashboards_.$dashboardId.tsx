@@ -36,11 +36,13 @@ import {
 } from '@/components/report/report-item';
 import { Input } from '@/components/ui/input';
 import { useDashboardPageContext } from '@/hooks/use-page-context-helpers';
+import i18n from '@/i18n';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/dashboards_/$dashboardId',
@@ -50,7 +52,7 @@ export const Route = createFileRoute(
     return {
       meta: [
         {
-          title: createProjectTitle('Dashboard'),
+          title: createProjectTitle(i18n.t('dashboards.dashboard')),
         },
       ],
     };
@@ -85,6 +87,7 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { organizationId, dashboardId, projectId } = Route.useParams();
   const trpc = useTRPC();
@@ -110,7 +113,7 @@ function Component() {
       onError: handleErrorToastOptions({}),
       onSuccess() {
         queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
-        toast('Dashboard deleted');
+        toast(t('dashboards.delete_success'));
         router.navigate({
           to: '/$organizationId/$projectId/dashboards',
           params: {
@@ -153,7 +156,7 @@ function Component() {
       onSuccess() {
         queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
         reportsQuery.refetch();
-        toast('Report deleted');
+        toast(t('dashboards.report_delete_success'));
       },
     }),
   );
@@ -164,7 +167,7 @@ function Component() {
       onSuccess() {
         queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
         reportsQuery.refetch();
-        toast('Report duplicated');
+        toast(t('dashboards.report_duplicate_success'));
       },
     }),
   );
@@ -183,7 +186,7 @@ function Component() {
     trpc.report.resetLayout.mutationOptions({
       onError: handleErrorToastOptions({}),
       onSuccess() {
-        toast('Layout reset to default');
+        toast(t('dashboards.layout_reset_success'));
         reportsQuery.refetch();
       },
     }),
@@ -285,7 +288,7 @@ function Component() {
     <PageContainer>
       <PageHeader
         title={dashboard.name}
-        description="View and manage your reports"
+        description={t('dashboards.detail_description')}
         className="mb-4"
         actions={
           <>
@@ -294,7 +297,7 @@ function Component() {
                 <SearchIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <Input
                   type="search"
-                  placeholder="Search reports..."
+                  placeholder={t('dashboards.search_reports_placeholder')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-8 w-[180px] sm:w-[220px]"
@@ -308,8 +311,8 @@ function Component() {
               to={'/$organizationId/$projectId/reports'}
               icon={PlusIcon}
             >
-              <span className="max-sm:hidden">Create report</span>
-              <span className="sm:hidden">Report</span>
+              <span className="max-sm:hidden">{t('dashboards.create_report')}</span>
+              <span className="sm:hidden">{t('dashboards.report')}</span>
             </LinkButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -325,34 +328,34 @@ function Component() {
                     }
                   >
                     <ShareIcon className="mr-2 size-4" />
-                    Share dashboard
+                    {t('dashboards.share_dashboard')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
                       showConfirm({
-                        title: 'Reset layout',
-                        text: 'Are you sure you want to reset the layout to default? This will clear all custom positioning and sizing.',
+                        title: t('dashboards.reset_layout'),
+                        text: t('dashboards.reset_layout_confirm'),
                         onConfirm: () =>
                           resetLayout.mutate({ dashboardId, projectId }),
                       })
                     }
                   >
                     <RotateCcw className="mr-2 size-4" />
-                    Reset layout
+                    {t('dashboards.reset_layout')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={() =>
                       showConfirm({
-                        title: 'Delete dashboard',
-                        text: 'Are you sure you want to delete this dashboard? All your reports will be deleted!',
+                        title: t('dashboards.delete_dashboard'),
+                        text: t('dashboards.delete_dashboard_confirm'),
                         onConfirm: () =>
                           dashboardDeletion.mutate({ id: dashboardId }),
                       })
                     }
                   >
                     <TrashIcon className="mr-2 size-4" />
-                    Delete dashboard
+                    {t('dashboards.delete_dashboard')}
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
@@ -362,15 +365,15 @@ function Component() {
       />
 
       {reports.length === 0 ? (
-        <FullPageEmptyState title="No reports" icon={LayoutPanelTopIcon}>
-          <p>You can visualize your data with a report</p>
+        <FullPageEmptyState title={t('dashboards.no_reports_title')} icon={LayoutPanelTopIcon}>
+          <p>{t('dashboards.no_reports_description')}</p>
           <LinkButton
             from={Route.fullPath}
             to={'/$organizationId/$projectId/reports'}
             className="mt-14"
             icon={PlusIcon}
           >
-            Create report
+            {t('dashboards.create_report')}
           </LinkButton>
         </FullPageEmptyState>
       ) : !isGridReady || reportsQuery.isLoading ? (
@@ -383,8 +386,8 @@ function Component() {
           <ReportItemSkeleton />
         </div>
       ) : filteredReports.length === 0 ? (
-        <FullPageEmptyState title="No matching reports" icon={SearchIcon}>
-          <p>No reports match "{search}". Try a different search.</p>
+        <FullPageEmptyState title={t('dashboards.no_matching_reports_title')} icon={SearchIcon}>
+          <p>{t('dashboards.no_matching_reports_description', { search })}</p>
         </FullPageEmptyState>
       ) : (
         <GrafanaGrid

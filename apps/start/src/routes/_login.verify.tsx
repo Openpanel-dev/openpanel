@@ -10,6 +10,7 @@ import { createTitle, PAGE_TITLES } from '@/utils/title';
 import { useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute('/_login/verify')({
@@ -23,6 +24,7 @@ export const Route = createFileRoute('/_login/verify')({
 });
 
 function VerifyPage() {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const [mode, setMode] = useState<'totp' | 'recovery'>('totp');
   const [code, setCode] = useState('');
@@ -30,7 +32,7 @@ function VerifyPage() {
   const mutation = useMutation(
     trpc.auth.signInTotp.mutationOptions({
       onSuccess() {
-        toast.success('Signed in');
+        toast.success(t('auth.signed_in'));
         window.location.href = '/';
       },
       onError(error) {
@@ -53,12 +55,12 @@ function VerifyPage() {
     <form onSubmit={handleSubmit} className="col w-full gap-8 text-left">
       <div>
         <h1 className="mb-2 font-bold text-3xl text-foreground">
-          Two-factor authentication
+          {t('auth.two_factor_authentication')}
         </h1>
         <p className="text-muted-foreground">
           {mode === 'totp'
-            ? 'Enter the 6-digit code from your authenticator app.'
-            : 'Enter one of your recovery codes. Each code can be used only once.'}
+            ? t('auth.totp_description')
+            : t('auth.recovery_code_description')}
         </p>
       </div>
 
@@ -103,7 +105,7 @@ function VerifyPage() {
         disabled={!canSubmit}
         loading={mutation.isPending}
       >
-        Verify
+        {t('auth.verify')}
       </Button>
 
       <button
@@ -115,14 +117,14 @@ function VerifyPage() {
         className="text-sm text-muted-foreground hover:text-highlight hover:underline transition-colors duration-200 text-center"
       >
         {mode === 'totp'
-          ? 'Use a recovery code instead'
-          : 'Use authenticator app instead'}
+          ? t('auth.use_recovery_code')
+          : t('auth.use_authenticator_app')}
       </button>
       <a
         href="/login"
         className="text-xs text-muted-foreground hover:underline text-center"
       >
-        Sign in with a different account
+        {t('auth.sign_in_with_different_account')}
       </a>
     </form>
   );

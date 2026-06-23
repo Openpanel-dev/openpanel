@@ -8,12 +8,14 @@ import { ChevronsUpDownIcon, SplitIcon } from 'lucide-react';
 import type { IChartBreakdown } from '@openpanel/validation';
 
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 import { addBreakdown, changeBreakdown, removeBreakdown } from '../reportSlice';
 import { PropertiesCombobox } from './PropertiesCombobox';
 import { ReportBreakdownMore } from './ReportBreakdownMore';
 import type { ReportEventMoreProps } from './ReportEventMore';
 
 export function ReportBreakdowns() {
+  const { t } = useTranslation();
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
   const dispatch = useDispatch();
 
@@ -31,7 +33,7 @@ export function ReportBreakdowns() {
 
   return (
     <div>
-      <h3 className="mb-2 font-medium">Breakdown</h3>
+      <h3 className="mb-2 font-medium">{t('reports.breakdown')}</h3>
       <div className="flex flex-col gap-4">
         {selectedBreakdowns.map((item, index) => {
           return (
@@ -59,7 +61,7 @@ export function ReportBreakdowns() {
                     >
                       <div className="row w-full gap-2 items-center">
                         <SplitIcon className="size-4" />
-                        {item.name === 'cohort' ? 'Cohorts' : item.name}
+                        {item.name === 'cohort' ? t('reports.cohorts') : item.name}
                       </div>
                       <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -91,7 +93,7 @@ export function ReportBreakdowns() {
             >
               <div className="row w-full gap-2 items-center">
                 <SplitIcon className="size-4" />
-                Select breakdown
+                {t('reports.select_breakdown')}
               </div>
               <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>

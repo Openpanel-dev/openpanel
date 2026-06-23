@@ -17,6 +17,7 @@ import {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useTRPC } from '@/integrations/trpc/react';
 import { truncate } from '@/utils/truncate';
@@ -162,6 +163,7 @@ export default function OverviewUserJourney({
   projectId,
   shareId,
 }: OverviewUserJourneyProps) {
+  const { t } = useTranslation();
   const { range, startDate, endDate } = useOverviewOptions();
   const [filters] = useEventQueryFilters();
   const [steps, setSteps] = useQueryState(
@@ -222,7 +224,7 @@ export default function OverviewUserJourney({
   return (
     <Widget className="col-span-6">
       <WidgetHead>
-        <div className="title">User Journey</div>
+        <div className="title">{t('overview.user_journey')}</div>
         <WidgetButtons>
           {stepOptions.map((option) => (
             <button
@@ -231,7 +233,7 @@ export default function OverviewUserJourney({
               onClick={() => setSteps(option)}
               className={cn((steps ?? 5) === option && 'active')}
             >
-              {option} Steps
+              {t('overview.steps_count', { count: option })}
             </button>
           ))}
         </WidgetButtons>
@@ -239,12 +241,14 @@ export default function OverviewUserJourney({
       <WidgetBody>
         {query.isLoading ? (
           <div className="flex items-center justify-center h-96">
-            <div className="text-sm text-muted-foreground">Loading...</div>
+            <div className="text-sm text-muted-foreground">
+              {t('common.loading')}...
+            </div>
           </div>
         ) : sankeyData.nodes.length === 0 ? (
           <div className="flex items-center justify-center h-96">
             <div className="text-sm text-muted-foreground">
-              No journey data available
+              {t('overview.no_journey_data_available')}
             </div>
           </div>
         ) : (
@@ -292,17 +296,21 @@ export default function OverviewUserJourney({
                         </div>
                         {typeof step === 'number' && (
                           <div className="shrink-0 text-muted-foreground">
-                            Step {step}
+                            {t('overview.step_number', { step })}
                           </div>
                         )}
                       </ChartTooltipHeader>
                       <ChartTooltipItem color={color} innerClassName="gap-2">
                         <div className="flex items-center justify-between gap-8 font-mono font-medium">
-                          <div className="text-muted-foreground">Sessions</div>
+                          <div className="text-muted-foreground">
+                            {t('overview.sessions')}
+                          </div>
                           <div>{number.format(value)}</div>
                         </div>
                         <div className="flex items-center justify-between gap-8 font-mono font-medium">
-                          <div className="text-muted-foreground">Share</div>
+                          <div className="text-muted-foreground">
+                            {t('overview.share')}
+                          </div>
                           <div>{number.format(round(pct, 1))} %</div>
                         </div>
                       </ChartTooltipItem>
@@ -369,18 +377,20 @@ export default function OverviewUserJourney({
 
                       <ChartTooltipItem color={color} innerClassName="gap-2">
                         <div className="flex items-center justify-between gap-8 font-mono font-medium">
-                          <div className="text-muted-foreground">Sessions</div>
+                          <div className="text-muted-foreground">
+                            {t('overview.sessions')}
+                          </div>
                           <div>{number.format(value)}</div>
                         </div>
                         <div className="flex items-center justify-between gap-8 font-mono text-sm">
                           <div className="text-muted-foreground">
-                            % of total
+                            {t('overview.percent_of_total')}
                           </div>
                           <div>{number.format(round(pctOfTotal, 1))} %</div>
                         </div>
                         <div className="flex items-center justify-between gap-8 font-mono text-sm">
                           <div className="text-muted-foreground">
-                            % of source
+                            {t('overview.percent_of_source')}
                           </div>
                           <div>{number.format(round(pctOfSource, 1))} %</div>
                         </div>
@@ -403,7 +413,7 @@ export default function OverviewUserJourney({
       </WidgetBody>
       <WidgetFooter>
         <div className="text-xs text-muted-foreground">
-          Shows the most common paths users take through your application
+          {t('overview.user_journey_description')}
         </div>
       </WidgetFooter>
     </Widget>

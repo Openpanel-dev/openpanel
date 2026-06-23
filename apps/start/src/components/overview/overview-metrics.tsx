@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { curveMonotoneX } from '@visx/curve';
 import { DollarSignIcon } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Area } from '../charts/area';
 import { ComposedChart } from '../charts/composed-chart';
 import { Grid } from '../charts/grid';
@@ -38,43 +39,43 @@ const PREV_LINE_COLOR = 'oklch(from var(--foreground) l c h / 0.4)';
 
 const TITLES = [
   {
-    title: 'Unique Visitors',
+    labelKey: 'overview.unique_visitors',
     key: 'unique_visitors',
     unit: '',
     inverted: false,
   },
   {
-    title: 'Sessions',
+    labelKey: 'overview.sessions',
     key: 'total_sessions',
     unit: '',
     inverted: false,
   },
   {
-    title: 'Pageviews',
+    labelKey: 'overview.pageviews',
     key: 'total_screen_views',
     unit: '',
     inverted: false,
   },
   {
-    title: 'Pages per session',
+    labelKey: 'overview.pages_per_session',
     key: 'views_per_session',
     unit: '',
     inverted: false,
   },
   {
-    title: 'Bounce Rate',
+    labelKey: 'overview.bounce_rate',
     key: 'bounce_rate',
     unit: '%',
     inverted: true,
   },
   {
-    title: 'Session Duration',
+    labelKey: 'overview.session_duration',
     key: 'avg_session_duration',
     unit: 'min',
     inverted: false,
   },
   {
-    title: 'Revenue',
+    labelKey: 'overview.revenue',
     key: 'total_revenue',
     unit: 'currency',
     inverted: false,
@@ -85,6 +86,7 @@ export default function OverviewMetrics({
   projectId,
   shareId,
 }: OverviewMetricsProps) {
+  const { t } = useTranslation();
   const { range, interval, metric, setMetric, startDate, endDate } =
     useOverviewOptions();
   const [filters] = useEventQueryFilters();
@@ -126,7 +128,7 @@ export default function OverviewMetrics({
             inverted={title.inverted}
             isLoading={overviewQuery.isLoading}
             key={title.key}
-            label={title.title}
+            label={t(title.labelKey)}
             metric={{
               current: overviewQuery.data?.metrics[title.key] ?? 0,
               previous: overviewQuery.data?.metrics[`prev_${title.key}`],
@@ -143,7 +145,7 @@ export default function OverviewMetrics({
       <div className="card p-4">
         <div className="-mt-1 flex items-center justify-between">
           <div className="font-medium text-muted-foreground text-sm">
-            {activeMetric.title}
+            {t(activeMetric.labelKey)}
           </div>
           {import.meta.env.DEV && (
             <button
@@ -154,11 +156,13 @@ export default function OverviewMetrics({
                   : 'border-border text-muted-foreground hover:bg-def-100'
               )}
               onClick={() => setMockRevenue((p) => !p)}
-              title="Toggle mock revenue (dev only)"
+              title={t('overview.toggle_mock_revenue')}
               type="button"
             >
               <DollarSignIcon className="size-3" />
-              {mockRevenue ? 'Mock revenue on' : 'Mock revenue'}
+              {mockRevenue
+                ? t('overview.mock_revenue_on')
+                : t('overview.mock_revenue')}
             </button>
           )}
         </div>
@@ -232,6 +236,7 @@ function Chart({
   shareId?: string;
 }) {
   const { range, startDate, endDate } = useOverviewOptions();
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const isRevenueTab = activeMetric.key === 'total_revenue';
 
@@ -400,7 +405,7 @@ function Chart({
           const rows = [
             {
               color: primaryColor,
-              label: activeMetric.title,
+              label: t(activeMetric.labelKey),
               value: primaryVal,
               previous: primaryPrev,
               inverted: activeMetric.inverted,
@@ -415,7 +420,7 @@ function Chart({
             if (revenue > 0) {
               rows.push({
                 color: REVENUE_COLOR,
-                label: 'Revenue',
+                label: t('overview.revenue'),
                 value: revenue,
                 previous: prevRevenue > 0 ? prevRevenue : undefined,
                 inverted: false,

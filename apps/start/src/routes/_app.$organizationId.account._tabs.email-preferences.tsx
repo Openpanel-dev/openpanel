@@ -8,6 +8,7 @@ import {
 import { createFileRoute } from '@tanstack/react-router';
 import { SaveIcon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import FullPageLoadingState from '@/components/full-page-loading-state';
@@ -21,6 +22,17 @@ const validator = z.object({
 });
 
 type IForm = z.infer<typeof validator>;
+
+const EMAIL_CATEGORY_LABEL_KEYS = {
+  onboarding: {
+    label: 'account.email_category_onboarding',
+    description: 'account.email_category_onboarding_description',
+  },
+  weekly_digest: {
+    label: 'account.email_category_weekly_digest',
+    description: 'account.email_category_weekly_digest_description',
+  },
+} as const;
 
 function buildCategoryDefaults(
   savedPreferences?: Record<string, boolean>
@@ -42,6 +54,7 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
@@ -59,8 +72,10 @@ function Component() {
   const mutation = useMutation(
     trpc.email.updatePreferences.mutationOptions({
       onSuccess: async () => {
-        toast('Email preferences updated', {
-          description: 'Your email preferences have been saved.',
+        toast(t('account.toast_email_preferences_updated'), {
+          description: t(
+            'account.toast_email_preferences_updated_description'
+          ),
         });
         await queryClient.invalidateQueries(
           trpc.email.getPreferences.pathFilter()
@@ -84,38 +99,50 @@ function Component() {
     >
       <Widget className="w-full max-w-screen-md">
         <WidgetHead>
-          <span className="title">Email Preferences</span>
+          <span className="title">{t('account.email_preferences_title')}</span>
         </WidgetHead>
         <WidgetBody className="col gap-4">
           <p className="mb-4 text-muted-foreground text-sm">
-            Choose which types of emails you want to receive. Uncheck a category
-            to stop receiving those emails.
+            {t('account.email_preferences_description')}
           </p>
 
           <div className="space-y-4">
             {Object.entries(emailCategories).map(
-              ([category, { label, description }]) => (
-                <Controller
-                  control={control}
-                  key={category}
-                  name={`categories.${category}`}
-                  render={({ field }) => (
-                    <div className="flex items-center justify-between gap-4 rounded-md border border-border px-4 py-4 transition-colors hover:bg-def-200">
-                      <div className="flex-1">
-                        <div className="font-medium">{label}</div>
-                        <div className="text-muted-foreground text-sm">
-                          {description}
+              ([category, { label, description }]) => {
+                const categoryKeys =
+                  EMAIL_CATEGORY_LABEL_KEYS[
+                    category as keyof typeof EMAIL_CATEGORY_LABEL_KEYS
+                  ];
+
+                return (
+                  <Controller
+                    control={control}
+                    key={category}
+                    name={`categories.${category}`}
+                    render={({ field }) => (
+                      <div className="flex items-center justify-between gap-4 rounded-md border border-border px-4 py-4 transition-colors hover:bg-def-200">
+                        <div className="flex-1">
+                          <div className="font-medium">
+                            {categoryKeys
+                              ? t(categoryKeys.label)
+                              : label}
+                          </div>
+                          <div className="text-muted-foreground text-sm">
+                            {categoryKeys
+                              ? t(categoryKeys.description)
+                              : description}
+                          </div>
                         </div>
+                        <Switch
+                          checked={field.value}
+                          disabled={mutation.isPending}
+                          onCheckedChange={field.onChange}
+                        />
                       </div>
-                      <Switch
-                        checked={field.value}
-                        disabled={mutation.isPending}
-                        onCheckedChange={field.onChange}
-                      />
-                    </div>
-                  )}
-                />
-              ),
+                    )}
+                  />
+                );
+              },
             )}
           </div>
 
@@ -127,7 +154,7 @@ function Component() {
             size="sm"
             type="submit"
           >
-            Save
+            {t('common.save')}
           </Button>
         </WidgetBody>
       </Widget>

@@ -7,6 +7,7 @@ import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/sessions'
@@ -25,6 +26,7 @@ export const Route = createFileRoute(
 
 function Component() {
   const { projectId } = Route.useParams();
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const { debouncedSearch } = useSearchQueryState();
   const [filters, setFilters] = useTableFilters('f');
@@ -47,8 +49,8 @@ function Component() {
     <PageContainer>
       <PageHeader
         className="mb-8"
-        description="Access all your sessions here"
-        title="Sessions"
+        description={t('sessions.page_description')}
+        title={t('sessions.page_title')}
       />
       <SessionsTable query={query} />
     </PageContainer>

@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventProperties } from '@/hooks/use-event-properties';
 import { useTRPC } from '@/integrations/trpc/react';
+import { useTranslation } from 'react-i18next';
 
 export type PropertiesComboboxAction = {
   value: string;
@@ -54,39 +55,6 @@ interface PropertiesComboboxProps {
  * dimensions. These map to the `session.*` filter prefix handled by the DB
  * filter-where utility.
  */
-const SESSION_ACTIONS: PropertiesComboboxAction[] = [
-  {
-    value: 'session.is_bounce',
-    label: 'Bounced',
-    description: 'Single-pageview session',
-  },
-  {
-    value: 'session.screen_view_count',
-    label: 'Screen views',
-    description: 'Number of screen views in the session',
-  },
-  {
-    value: 'session.event_count',
-    label: 'Events',
-    description: 'Total events in the session',
-  },
-  {
-    value: 'session.duration',
-    label: 'Duration',
-    description: 'Session length in milliseconds',
-  },
-  {
-    value: 'session.revenue',
-    label: 'Revenue',
-    description: 'Revenue attributed to the session',
-  },
-  {
-    value: 'session.performed_event',
-    label: 'Performed event',
-    description: 'Session contains an event named X',
-  },
-];
-
 const DEFAULT_CATEGORIES: PropertiesComboboxCategory[] = [
   'event',
   'profile',
@@ -96,10 +64,12 @@ const DEFAULT_CATEGORIES: PropertiesComboboxCategory[] = [
 function SearchHeader({
   onBack,
   onSearch,
+  searchPlaceholder,
   value,
 }: {
   onBack?: () => void;
   onSearch: (value: string) => void;
+  searchPlaceholder: string;
   value: string;
 }) {
   return (
@@ -112,7 +82,7 @@ function SearchHeader({
       <Input
         autoFocus
         onChange={(e) => onSearch(e.target.value)}
-        placeholder="Search"
+        placeholder={searchPlaceholder}
         value={value}
       />
     </div>
@@ -127,6 +97,7 @@ export function PropertiesCombobox({
   exclude = [],
   include = [],
 }: PropertiesComboboxProps) {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const [open, setOpen] = useState(false);
@@ -204,7 +175,39 @@ export function PropertiesCombobox({
       label: property.split('.').pop() ?? property,
       description: property.split('.').slice(0, -1).join('.'),
     }));
-  const sessionActions = SESSION_ACTIONS.filter((a) =>
+  const sessionActions: PropertiesComboboxAction[] = [
+    {
+      value: 'session.is_bounce',
+      label: t('reports.session_bounced'),
+      description: t('reports.session_bounced_description'),
+    },
+    {
+      value: 'session.screen_view_count',
+      label: t('reports.session_screen_views'),
+      description: t('reports.session_screen_views_description'),
+    },
+    {
+      value: 'session.event_count',
+      label: t('reports.session_events'),
+      description: t('reports.session_events_description'),
+    },
+    {
+      value: 'session.duration',
+      label: t('reports.session_duration'),
+      description: t('reports.session_duration_description'),
+    },
+    {
+      value: 'session.revenue',
+      label: t('reports.session_revenue'),
+      description: t('reports.session_revenue_description'),
+    },
+    {
+      value: 'session.performed_event',
+      label: t('reports.session_performed_event'),
+      description: t('reports.session_performed_event_description'),
+    },
+  ];
+  const filteredSessionActions = sessionActions.filter((a) =>
     shouldShowProperty(a.value),
   );
 
@@ -231,7 +234,7 @@ export function PropertiesCombobox({
               handleStateChange('event');
             }}
           >
-            Event properties
+            {t('reports.event_properties')}
             <DatabaseIcon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
           </DropdownMenuItem>
         )}
@@ -243,7 +246,7 @@ export function PropertiesCombobox({
               handleStateChange('profile');
             }}
           >
-            Profile properties
+            {t('reports.profile_properties')}
             <UserIcon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
           </DropdownMenuItem>
         )}
@@ -255,7 +258,7 @@ export function PropertiesCombobox({
               handleStateChange('group');
             }}
           >
-            Group properties
+            {t('reports.group_properties')}
             <Building2Icon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
           </DropdownMenuItem>
         )}
@@ -266,12 +269,12 @@ export function PropertiesCombobox({
               e.preventDefault();
               handleSelect({
                 value: 'cohort',
-                label: 'Cohorts',
-                description: 'All cohorts',
+                label: t('reports.cohorts'),
+                description: t('reports.all_cohorts'),
               });
             }}
           >
-            Cohorts
+            {t('reports.cohorts')}
             <TargetIcon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
           </DropdownMenuItem>
         )}
@@ -283,7 +286,7 @@ export function PropertiesCombobox({
               handleStateChange('session');
             }}
           >
-            Session metrics
+            {t('reports.session_metrics')}
             <ActivityIcon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
           </DropdownMenuItem>
         )}
@@ -306,6 +309,7 @@ export function PropertiesCombobox({
         <SearchHeader
           onBack={showBackButton ? () => handleStateChange('index') : undefined}
           onSearch={setSearch}
+          searchPlaceholder={t('reports.search')}
           value={search}
         />
         <DropdownMenuSeparator />
@@ -395,7 +399,7 @@ export function PropertiesCombobox({
               key="session"
               transition={{ duration: 0.05 }}
             >
-              {renderActionList(sessionActions)}
+              {renderActionList(filteredSessionActions)}
             </motion.div>
           )}
         </AnimatePresence>

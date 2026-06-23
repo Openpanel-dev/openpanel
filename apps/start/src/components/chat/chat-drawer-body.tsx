@@ -6,6 +6,7 @@ import {
   StickToBottom,
   useStickToBottomContext,
 } from 'use-stick-to-bottom';
+import { useTranslation } from 'react-i18next';
 import { ChatContextWidget } from './chat-context-widget';
 import { ChatDrawerEmpty } from './chat-drawer-empty';
 import { ChatMessage } from './chat-message';
@@ -20,6 +21,7 @@ import { useChatRuntime } from './chat-runtime';
  * up — courtesy of `use-stick-to-bottom`. Zero refs, zero effects.
  */
 export function ChatDrawerBody() {
+  const { t } = useTranslation();
   const { messages, isLoading, isStreaming, status, error } = useChatRuntime();
 
   const hasContext = usePageContextValue();
@@ -66,14 +68,16 @@ export function ChatDrawerBody() {
           ))}
           {isLoading && !isStreaming && (
             <div className="flex items-center gap-2 text-sm">
-              <span className="op-shimmer font-medium">Thinking…</span>
+              <span className="op-shimmer font-medium">
+                {t('chat.thinking')}
+              </span>
             </div>
           )}
           {status === 'error' && (
             <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
               <AlertCircleIcon className="size-4 shrink-0 mt-0.5" />
               <span className="leading-[1.5]">
-                {error?.message ?? 'Something went wrong. Try again.'}
+                {error?.message ?? t('chat.generic_error')}
               </span>
             </div>
           )}
@@ -85,6 +89,7 @@ export function ChatDrawerBody() {
 }
 
 function ScrollToBottomButton() {
+  const { t } = useTranslation();
   const { isAtBottom, scrollToBottom } = useStickToBottomContext();
   if (isAtBottom) return null;
   return (
@@ -94,10 +99,10 @@ function ScrollToBottomButton() {
       variant="secondary"
       className="absolute bottom-3 left-1/2 -translate-x-1/2 h-7 px-2 shadow-md gap-1"
       onClick={() => scrollToBottom()}
-      aria-label="Scroll to bottom"
+      aria-label={t('chat.scroll_to_bottom')}
     >
       <ArrowDownIcon className="size-3" />
-      <span className="text-sm">Latest</span>
+      <span className="text-sm">{t('chat.latest')}</span>
     </Button>
   );
 }

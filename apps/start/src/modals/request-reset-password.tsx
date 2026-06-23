@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from '@tanstack/react-router';
 import { SendIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
@@ -23,6 +24,7 @@ type Props = {
 };
 
 export default function RequestPasswordReset({ email }: Props) {
+  const { t } = useTranslation();
   const router = useRouter();
   const form = useForm<IForm>({
     resolver: zodResolver(validation),
@@ -34,7 +36,7 @@ export default function RequestPasswordReset({ email }: Props) {
   const mutation = useMutation(
     trpc.auth.requestResetPassword.mutationOptions({
       onSuccess() {
-        toast.success('You should receive an email shortly!');
+        toast.success(t('auth.reset_email_sent'));
         popModal();
       },
       onError: handleError,
@@ -49,11 +51,11 @@ export default function RequestPasswordReset({ email }: Props) {
 
   return (
     <ModalContent>
-      <ModalHeader title="Request password reset" />
+      <ModalHeader title={t('auth.request_password_reset')} />
       <form className="flex flex-col gap-4" onSubmit={onSubmit}>
         <InputWithLabel
-          label="Email"
-          placeholder="Your email address"
+          label={t('auth.email')}
+          placeholder={t('auth.your_email_address')}
           error={form.formState.errors.email?.message}
           {...form.register('email')}
         />
@@ -64,10 +66,10 @@ export default function RequestPasswordReset({ email }: Props) {
             variant={'secondary'}
             onClick={() => popModal()}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" icon={SendIcon} loading={mutation.isPending}>
-            Continue
+            {t('common.continue')}
           </Button>
         </DialogFooter>
       </form>

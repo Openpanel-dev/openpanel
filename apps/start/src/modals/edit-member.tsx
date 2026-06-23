@@ -5,6 +5,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { handleError } from '@/integrations/trpc/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import type { IServiceMember } from '@openpanel/db';
@@ -15,6 +16,7 @@ import { ModalContent, ModalHeader } from './Modal/Container';
 type EditMemberProps = IServiceMember;
 
 export default function EditMember(member: EditMemberProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const trpc = useTRPC();
 
@@ -57,7 +59,7 @@ export default function EditMember(member: EditMemberProps) {
 
       <div className="col gap-4">
         <ComboboxAdvanced
-          placeholder="Restrict access to projects"
+          placeholder={t('members.restrict_access_placeholder')}
           value={access}
           onChange={(newAccess) => setAccess(newAccess as string[])}
           items={projects.map((p) => ({ label: p.name, value: p.id }))}
@@ -65,7 +67,7 @@ export default function EditMember(member: EditMemberProps) {
 
         <ButtonContainer>
           <Button type="button" variant="outline" onClick={() => popModal()}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={() =>
@@ -77,7 +79,7 @@ export default function EditMember(member: EditMemberProps) {
             }
             disabled={mutation.isPending}
           >
-            Save
+            {t('common.save')}
           </Button>
         </ButtonContainer>
       </div>

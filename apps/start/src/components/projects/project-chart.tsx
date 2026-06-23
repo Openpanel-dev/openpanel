@@ -7,6 +7,7 @@ import { useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Bar,
   Cell,
@@ -41,6 +42,7 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
     const { color } = context;
     const data = dataArray[0];
     const number = useNumber();
+    const { t } = useTranslation();
 
     if (!data) {
       return null;
@@ -69,12 +71,16 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
           color={getColorValue()}
           innerClassName="row justify-between"
         >
-          <div className="flex items-center gap-1">Sessions</div>
+          <div className="flex items-center gap-1">
+            {t('projects.chart_sessions')}
+          </div>
           <div className="font-mono font-bold">{number.format(data.value)}</div>
         </ChartTooltipItem>
         {data.revenue > 0 && (
           <ChartTooltipItem color="#3ba974">
-            <div className="flex items-center gap-1">Revenue</div>
+            <div className="flex items-center gap-1">
+              {t('projects.chart_revenue')}
+            </div>
             <div className="font-mono font-medium">
               {number.currency(data.revenue / 100)}
             </div>
@@ -94,6 +100,7 @@ export function ProjectChart({
   color?: 'blue' | 'green' | 'red';
   data: { value: number; date: Date; revenue: number }[];
 }) {
+  const { t } = useTranslation();
   const [activeBar, setActiveBar] = useState(-1);
   
   const yAxisProps = useYAxisProps({
@@ -135,9 +142,11 @@ export function ProjectChart({
           </div>
 
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center">
-            <p className="text-sm font-medium text-foreground/85">No activity yet</p>
+            <p className="text-sm font-medium text-foreground/85">
+              {t('projects.chart_no_activity_title')}
+            </p>
             <p className="text-xs text-muted-foreground">
-              Sessions will show up here once tracking starts.
+              {t('projects.chart_no_activity_description')}
             </p>
           </div>
       </div>

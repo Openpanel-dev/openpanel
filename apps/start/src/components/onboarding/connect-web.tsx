@@ -6,12 +6,14 @@ import Syntax from '@/components/syntax';
 import { useAppContext } from '@/hooks/use-app-context';
 import { pushModal } from '@/modals';
 import { clipboard } from '@/utils/clipboard';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   client: IServiceClient | null;
 }
 
 const ConnectWeb = ({ client }: Props) => {
+  const { t } = useTranslation();
   const context = useAppContext();
   const code = `<script>
   window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
@@ -32,7 +34,7 @@ const ConnectWeb = ({ client }: Props) => {
         <div className="row items-center justify-between gap-4">
           <div className="flex items-center gap-2 font-bold text-xl capitalize">
             <PlugIcon className="size-4" />
-            Quick start
+            {t('onboarding.connect_quick_start_title')}
           </div>
           <div className="row gap-2">
             <Button
@@ -40,7 +42,7 @@ const ConnectWeb = ({ client }: Props) => {
               onClick={() => clipboard(code, null)}
               variant="outline"
             >
-              Copy
+              {t('onboarding.action_copy')}
             </Button>
           </div>
         </div>
@@ -48,7 +50,7 @@ const ConnectWeb = ({ client }: Props) => {
       </div>
       <div className="col gap-4">
         <p className="text-center text-muted-foreground text-sm">
-          Or pick a framework below to get started.
+          {t('onboarding.connect_pick_framework')}
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           {frameworks.map((framework) => (
@@ -71,12 +73,12 @@ const ConnectWeb = ({ client }: Props) => {
           ))}
         </div>
         <p className="text-center text-muted-foreground text-sm">
-          Missing a framework?{' '}
+          {t('onboarding.connect_missing_framework')}{' '}
           <a
             className="text-foreground underline"
             href="mailto:hello@openpanel.dev"
           >
-            Let us know!
+            {t('onboarding.connect_let_us_know')}
           </a>
         </p>
       </div>

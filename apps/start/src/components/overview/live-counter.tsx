@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { AnimatedNumber } from '../animated-number';
 import { TooltipComplete } from '@/components/tooltip-complete';
@@ -12,18 +13,21 @@ export interface LiveCounterProps {
 }
 
 export function LiveCounter({ projectId, shareId }: LiveCounterProps) {
+  const { t } = useTranslation();
   const client = useQueryClient();
   const onRefresh = useCallback(() => {
-    toast('Refreshed data');
+    toast(t('overview.refreshed_data'));
     client.refetchQueries({
       type: 'active',
     });
-  }, [client]);
+  }, [client, t]);
   const counter = useLiveCounter({ projectId, shareId, onRefresh });
 
   return (
     <TooltipComplete
-      content={`${counter.debounced} unique visitors last 5 minutes`}
+      content={t('overview.unique_visitors_last_5_minutes', {
+        count: counter.debounced,
+      })}
     >
       <div className="flex h-8 items-center gap-2 rounded border border-border px-3 font-medium leading-none">
         <div className="relative">

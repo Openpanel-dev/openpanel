@@ -18,6 +18,7 @@ import {
   duplicateEvent,
   removeEvent,
 } from '../reportSlice';
+import { useTranslation } from 'react-i18next';
 import type { ReportEventMoreProps } from './ReportEventMore';
 import { ReportEventMore } from './ReportEventMore';
 import { ReportSeriesItem } from './ReportSeriesItem';
@@ -27,6 +28,7 @@ export function ReportFixedEvents({
 }: {
   numberOfEvents: number;
 }) {
+  const { t } = useTranslation();
   const selectedSeries = useSelector((state) => state.report.series);
   const chartType = useSelector((state) => state.report.chartType);
   const dispatch = useDispatch();
@@ -76,7 +78,7 @@ export function ReportFixedEvents({
 
   return (
     <div>
-      <h3 className="mb-2 font-medium">Metrics</h3>
+      <h3 className="mb-2 font-medium">{t('reports.metrics')}</h3>
       <div className="flex flex-col gap-4">
         {Array.from({ length: numberOfEvents }, (_, index) => ({
           slotId: `fixed-event-slot-${index}`,
@@ -125,7 +127,7 @@ export function ReportFixedEvents({
                       }
                     }}
                     items={eventNames}
-                    placeholder="Select event"
+                    placeholder={t('reports.select_event')}
                   />
                 </div>
               </div>
@@ -191,14 +193,14 @@ export function ReportFixedEvents({
                   );
                 }}
                 items={eventNames}
-                placeholder="Select event"
+                placeholder={t('reports.select_event')}
               />
               {showDisplayNameInput && (
                 <Input
                   placeholder={
                     (event as IChartEventItem & { type: 'event' }).name
                       ? `${(event as IChartEventItem & { type: 'event' }).name} (${alphabetIds[index]})`
-                      : 'Display name'
+                      : t('reports.display_name')
                   }
                   defaultValue={
                     (event as IChartEventItem & { type: 'event' }).displayName

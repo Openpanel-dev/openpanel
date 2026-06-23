@@ -13,6 +13,7 @@ import {
   TrendingUpIcon,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useReportChartContext } from '../context';
 
 const icons = [
@@ -29,6 +30,7 @@ const icons = [
 ];
 
 export function ReportChartLoading({ things }: { things?: boolean }) {
+  const { t } = useTranslation();
   const { isEditMode } = useReportChartContext();
   const [currentIconIndex, setCurrentIconIndex] = React.useState(0);
   const [isSlow, setSlow] = useState(false);
@@ -80,7 +82,7 @@ export function ReportChartLoading({ things }: { things?: boolean }) {
             isSlow && 'opacity-100',
           )}
         >
-          Stay calm, its coming 🙄
+          {t('report_chart.loading_slow')}
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { Command, CommandInput, CommandItem } from '@/components/ui/command';
 import { ChevronsUpDownIcon } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button, type ButtonProps } from './button';
 import { DumpCheckbox } from './checkbox';
@@ -43,6 +44,7 @@ export function ComboboxAdvanced({
   size,
   children,
 }: ComboboxAdvancedProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState('');
 
@@ -88,7 +90,7 @@ export function ComboboxAdvanced({
         : [
             {
               value: inputValue,
-              label: `Pick '${inputValue}'`,
+              label: t('ui.pick_value', { value: inputValue }),
             },
           ]),
       ...value.map((val) => {
@@ -124,7 +126,7 @@ export function ComboboxAdvanced({
         <PopoverContent className="w-full max-w-md p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Search"
+              placeholder={t('ui.search')}
               value={inputValue}
               onValueChange={setInputValue}
             />

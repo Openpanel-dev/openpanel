@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LoginNavbar } from './login-navbar';
 import { LogoSquare } from './logo';
 
@@ -15,6 +16,8 @@ export function PublicPageCard({
   children,
   showFooter = true,
 }: PublicPageCardProps) {
+  const { t } = useTranslation();
+
   return (
     <div>
       <LoginNavbar />
@@ -34,13 +37,13 @@ export function PublicPageCard({
         {showFooter && (
           <div className="p-6 text-sm max-w-sm col gap-1 text-muted-foreground">
             <p>
-              Powered by{' '}
+              {t('ui.powered_by')}{' '}
               <a href="https://openpanel.dev" className="font-medium">
                 OpenPanel.dev
               </a>
               {' · '}
               <a href="https://dashboard.openpanel.dev/onboarding">
-                Try it for free today!
+                {t('ui.try_it_for_free_today')}
               </a>
             </p>
           </div>

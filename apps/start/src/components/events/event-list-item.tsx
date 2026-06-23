@@ -7,10 +7,12 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
+import { useTranslation } from 'react-i18next';
 
 type EventListItemProps = IServiceEventMinimal | IServiceEvent;
 
 export function EventListItem(props: EventListItemProps) {
+  const { t } = useTranslation();
   const { organizationId, projectId } = useAppParams();
   const { createdAt, name, path, meta } = props;
   const profile = 'profile' in props ? props.profile : null;
@@ -21,7 +23,7 @@ export function EventListItem(props: EventListItemProps) {
         return path;
       }
 
-      return `Route: ${path}`;
+      return t('events.route_name', { path });
     }
 
     return name.replace(/_/g, ' ');

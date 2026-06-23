@@ -17,7 +17,9 @@ import {
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
+import i18n from '@/i18n';
 import { createProjectTitle } from '@/utils/title';
+import { useTranslation } from 'react-i18next';
 
 const PAGE_SIZE = 50;
 
@@ -25,12 +27,13 @@ export const Route = createFileRoute('/_app/$organizationId/$projectId/groups')(
   {
     component: Component,
     head: () => ({
-      meta: [{ title: createProjectTitle('Groups') }],
+      meta: [{ title: createProjectTitle(i18n.t('groups.page_title')) }],
     }),
   }
 );
 
 function Component() {
+  const { t } = useTranslation();
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const { debouncedSearch } = useSearchQueryState();
@@ -63,12 +66,12 @@ function Component() {
         actions={
           <Button onClick={() => pushModal('AddGroup')}>
             <PlusIcon className="mr-2 size-4" />
-            Add group
+            {t('groups.add_group')}
           </Button>
         }
         className="mb-8"
-        description="Groups represent companies, teams, or other entities that events belong to."
-        title="Groups"
+        description={t('groups.page_description')}
+        title={t('groups.page_title')}
       />
 
       <GroupsTable
@@ -81,10 +84,10 @@ function Component() {
               value={typeFilter || 'all'}
             >
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="All types" />
+                <SelectValue placeholder={t('groups.all_types')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="all">{t('groups.all_types')}</SelectItem>
                 {types.map((t) => (
                   <SelectItem key={t} value={t}>
                     {t}

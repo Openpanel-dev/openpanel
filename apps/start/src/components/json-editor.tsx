@@ -11,6 +11,7 @@ import {
 } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from './theme-provider';
 
 interface JsonEditorProps {
@@ -32,6 +33,7 @@ export function JsonEditor({
   language = 'json',
   onValidate,
 }: JsonEditorProps) {
+  const { t } = useTranslation();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const themeCompartmentRef = useRef<Compartment | null>(null);
@@ -58,7 +60,7 @@ export function JsonEditor({
       } catch (e) {
         setIsValid(false);
         const errorMsg =
-          e instanceof Error ? e.message : 'Invalid JSON syntax';
+          e instanceof Error ? e.message : t('ui.json_editor_invalid_json_syntax');
         setError(errorMsg);
         onValidate?.(false, errorMsg);
       }
@@ -210,7 +212,10 @@ export function JsonEditor({
       />
       {!isValid && (
         <p className="mt-1 text-sm text-destructive">
-          {error || `Invalid ${language === 'javascript' ? 'JavaScript' : 'JSON'}. Please check your syntax.`}
+          {error ||
+            t('ui.json_editor_invalid_syntax', {
+              language: language === 'javascript' ? 'JavaScript' : 'JSON',
+            })}
         </p>
       )}
     </div>

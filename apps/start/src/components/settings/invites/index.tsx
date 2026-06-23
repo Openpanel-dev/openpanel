@@ -7,6 +7,7 @@ import { useTable } from '@/components/ui/data-table/use-table';
 import { pushModal } from '@/modals';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { PlusIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useColumns } from './columns';
 type CommonProps = {
   query: UseQueryResult<RouterOutputs['organization']['invitations'], unknown>;
@@ -15,6 +16,7 @@ type CommonProps = {
 type Props = CommonProps;
 
 export const InvitesTable = ({ query }: Props) => {
+  const { t } = useTranslation();
   const columns = useColumns();
   const { data, isLoading } = query;
   const { table } = useTable({
@@ -33,7 +35,7 @@ export const InvitesTable = ({ query }: Props) => {
             pushModal('CreateInvite');
           }}
         >
-          Invite user
+          {t('settings.invite_user_button')}
         </Button>
       </DataTableToolbar>
       <DataTable table={table} loading={isLoading} />

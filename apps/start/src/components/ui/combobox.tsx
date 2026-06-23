@@ -17,6 +17,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface ComboboxProps<T> {
   placeholder: string;
@@ -63,6 +64,7 @@ export function Combobox<T extends string>({
   error,
   disabled,
 }: ComboboxProps<T>) {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
   function find(value: string) {
@@ -90,7 +92,7 @@ export function Combobox<T extends string>({
             <div className="flex min-w-0 items-center">
               {Icon ? <Icon size={16} className="mr-2 shrink-0" /> : null}
               <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                {value ? (find(value)?.label ?? 'No match') : placeholder}
+                {value ? (find(value)?.label ?? t('ui.no_match')) : placeholder}
               </span>
             </div>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -106,7 +108,7 @@ export function Combobox<T extends string>({
           <Command shouldFilter={false}>
             {searchable === true && (
               <CommandInput
-                placeholder="Search item..."
+                placeholder={t('ui.search_item')}
                 value={search}
                 onValueChange={setSearch}
               />
@@ -120,11 +122,11 @@ export function Combobox<T extends string>({
                     setOpen(false);
                   }}
                 >
-                  Create &quot;{search}&quot;
+                  {t('ui.create_value', { value: search })}
                 </Button>
               </CommandEmpty>
             ) : (
-              <CommandEmpty>Nothing selected</CommandEmpty>
+              <CommandEmpty>{t('ui.nothing_selected')}</CommandEmpty>
             )}
             <VirtualList
               height={Math.min(items.length * 32, 300)}

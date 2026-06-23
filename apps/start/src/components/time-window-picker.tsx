@@ -4,6 +4,7 @@ import { bind } from 'bind-event-listener';
 import { addDays, endOfDay, format, startOfDay, subDays } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,6 +20,7 @@ import { InputEnter } from '@/components/ui/input-enter';
 import { pushModal, useOnPushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { shouldIgnoreKeypress } from '@/utils/should-ignore-keypress';
+import { timeWindowLabelKeys } from '@/utils/time-window-label';
 
 interface Props {
   value: IChartRange;
@@ -40,11 +42,14 @@ export function TimeWindowPicker({
   onIntervalChange,
   className,
 }: Props) {
+  const { t } = useTranslation();
   const isDateRangerPickerOpen = useRef(false);
   useOnPushModal('DateRangerPicker', (open) => {
     isDateRangerPickerOpen.current = open;
   });
   const timeWindow = timeWindows[value ?? '30d'];
+  const getTimeWindowLabel = (key: keyof typeof timeWindows) =>
+    t(timeWindowLabelKeys[key]);
   const [open, setOpen] = useState(false);
   const [customDaysKey, setCustomDaysKey] = useState(0);
 
@@ -118,40 +123,40 @@ export function TimeWindowPicker({
           icon={CalendarIcon}
           variant="outline"
         >
-          {timeWindow?.label}
+          {timeWindow ? getTimeWindowLabel(timeWindow.key) : undefined}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel>Time window</DropdownMenuLabel>
+        <DropdownMenuLabel>{t('ui.time_window')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => onChange(timeWindows['30min'].key)}>
-            {timeWindows['30min'].label}
+            {getTimeWindowLabel(timeWindows['30min'].key)}
             <DropdownMenuShortcut>
               {timeWindows['30min'].shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows.lastHour.key)}>
-            {timeWindows.lastHour.label}
+            {getTimeWindowLabel(timeWindows.lastHour.key)}
             <DropdownMenuShortcut>
               {timeWindows.lastHour.shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows.last24h.key)}>
-            {timeWindows.last24h.label}
+            {getTimeWindowLabel(timeWindows.last24h.key)}
             <DropdownMenuShortcut>
               {timeWindows.last24h.shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows.today.key)}>
-            {timeWindows.today.label}
+            {getTimeWindowLabel(timeWindows.today.key)}
             <DropdownMenuShortcut>
               {timeWindows.today.shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows.yesterday.key)}>
-            {timeWindows.yesterday.label}
+            {getTimeWindowLabel(timeWindows.yesterday.key)}
             <DropdownMenuShortcut>
               {timeWindows.yesterday.shortcut}
             </DropdownMenuShortcut>
@@ -162,31 +167,31 @@ export function TimeWindowPicker({
 
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => onChange(timeWindows['7d'].key)}>
-            {timeWindows['7d'].label}
+            {getTimeWindowLabel(timeWindows['7d'].key)}
             <DropdownMenuShortcut>
               {timeWindows['7d'].shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows['30d'].key)}>
-            {timeWindows['30d'].label}
+            {getTimeWindowLabel(timeWindows['30d'].key)}
             <DropdownMenuShortcut>
               {timeWindows['30d'].shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows['3m'].key)}>
-            {timeWindows['3m'].label}
+            {getTimeWindowLabel(timeWindows['3m'].key)}
             <DropdownMenuShortcut>
               {timeWindows['3m'].shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows['6m'].key)}>
-            {timeWindows['6m'].label}
+            {getTimeWindowLabel(timeWindows['6m'].key)}
             <DropdownMenuShortcut>
               {timeWindows['6m'].shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows['12m'].key)}>
-            {timeWindows['12m'].label}
+            {getTimeWindowLabel(timeWindows['12m'].key)}
             <DropdownMenuShortcut>
               {timeWindows['12m'].shortcut}
             </DropdownMenuShortcut>
@@ -199,13 +204,13 @@ export function TimeWindowPicker({
           <DropdownMenuItem
             onClick={() => onChange(timeWindows.monthToDate.key)}
           >
-            {timeWindows.monthToDate.label}
+            {getTimeWindowLabel(timeWindows.monthToDate.key)}
             <DropdownMenuShortcut>
               {timeWindows.monthToDate.shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows.lastMonth.key)}>
-            {timeWindows.lastMonth.label}
+            {getTimeWindowLabel(timeWindows.lastMonth.key)}
             <DropdownMenuShortcut>
               {timeWindows.lastMonth.shortcut}
             </DropdownMenuShortcut>
@@ -218,13 +223,13 @@ export function TimeWindowPicker({
           <DropdownMenuItem
             onClick={() => onChange(timeWindows.yearToDate.key)}
           >
-            {timeWindows.yearToDate.label}
+            {getTimeWindowLabel(timeWindows.yearToDate.key)}
             <DropdownMenuShortcut>
               {timeWindows.yearToDate.shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange(timeWindows.lastYear.key)}>
-            {timeWindows.lastYear.label}
+            {getTimeWindowLabel(timeWindows.lastYear.key)}
             <DropdownMenuShortcut>
               {timeWindows.lastYear.shortcut}
             </DropdownMenuShortcut>
@@ -241,16 +246,16 @@ export function TimeWindowPicker({
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >
-            <span className="whitespace-nowrap">Last days</span>
+            <span className="whitespace-nowrap">{t('ui.last_days')}</span>
             <InputEnter
-              aria-label="Number of days for custom date filter"
+              aria-label={t('ui.custom_date_filter_days_aria_label')}
               className="h-7 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               inputMode="numeric"
               key={customDaysKey}
               max={365}
               min={1}
               onChangeValue={handleCustomDays}
-              placeholder="X days"
+              placeholder={t('ui.x_days')}
               step={1}
               type="number"
               value=""
@@ -260,7 +265,7 @@ export function TimeWindowPicker({
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => handleCustom()}>
-            {timeWindows.custom.label}
+            {getTimeWindowLabel(timeWindows.custom.key)}
             <DropdownMenuShortcut>
               {timeWindows.custom.shortcut}
             </DropdownMenuShortcut>

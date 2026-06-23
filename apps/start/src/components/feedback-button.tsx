@@ -1,8 +1,10 @@
 import { useRouteContext } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { op } from '@/utils/op';
 
 export function FeedbackButton({ className }: { className?: string }) {
+  const { t } = useTranslation();
   const context = useRouteContext({ strict: false });
   return (
     <button
@@ -22,7 +24,7 @@ export function FeedbackButton({ className }: { className?: string }) {
       }}
       type="button"
     >
-      Give feedback
+      {t('sidebar.give_feedback')}
     </button>
   );
 }

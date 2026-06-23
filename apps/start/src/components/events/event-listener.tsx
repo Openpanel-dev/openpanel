@@ -8,12 +8,14 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useDebounceState } from '@/hooks/use-debounce-state';
 import useWS from '@/hooks/use-ws';
 import { cn } from '@/utils/cn';
+import { useTranslation } from 'react-i18next';
 
 export default function EventListener({
   onRefresh,
 }: {
   onRefresh: () => void;
 }) {
+  const { t } = useTranslation();
   const { projectId } = useAppParams();
   const counter = useDebounceState(0, 1000);
   useWS<{ count: number }>(
@@ -53,16 +55,19 @@ export default function EventListener({
             />
           </div>
           {counter.debounced === 0 ? (
-            'Listening'
+            t('events.listening')
           ) : (
-            <AnimatedNumber suffix=" new events" value={counter.debounced} />
+            <AnimatedNumber
+              suffix={` ${t('events.new_events_suffix')}`}
+              value={counter.debounced}
+            />
           )}
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
         {counter.debounced === 0
-          ? 'Listening to new events'
-          : 'Click to refresh'}
+          ? t('events.listening_to_new_events')
+          : t('events.click_to_refresh')}
       </TooltipContent>
     </Tooltip>
   );

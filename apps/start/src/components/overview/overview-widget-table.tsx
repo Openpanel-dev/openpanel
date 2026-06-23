@@ -4,6 +4,7 @@ import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { ChevronDown, ChevronUp, ExternalLinkIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Skeleton } from '../skeleton';
 import { Tooltiper } from '../ui/tooltip';
@@ -226,6 +227,8 @@ export function OverviewWidgetTableLoading({
 }: {
   className?: string;
 }) {
+  const { t } = useTranslation();
+
   return (
     <OverviewWidgetTable
       className={className}
@@ -234,12 +237,12 @@ export function OverviewWidgetTableLoading({
       getColumnPercentage={() => 0}
       columns={[
         {
-          name: 'Path',
+          name: t('overview.path'),
           render: () => <Skeleton className="h-4 w-1/3" />,
           width: 'w-full',
         },
         {
-          name: 'Sessions',
+          name: t('overview.sessions'),
           render: () => <Skeleton className="h-4 w-[30px]" />,
           width: '84px',
         },
@@ -277,6 +280,7 @@ export function OverviewWidgetTablePages({
 }) {
   const [_filters, setFilter] = useEventQueryFilters();
   const number = useNumber();
+  const { t } = useTranslation();
   const maxSessions = Math.max(...data.map((item) => item.sessions));
   const totalRevenue = data.reduce((sum, item) => sum + (item.revenue ?? 0), 0);
   const hasRevenue = data.some((item) => (item.revenue ?? 0) > 0);
@@ -288,7 +292,7 @@ export function OverviewWidgetTablePages({
       getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
         {
-          name: 'Path',
+          name: t('overview.path'),
           width: 'w-full',
           responsive: { priority: 1 }, // Always visible
           render(item) {
@@ -316,7 +320,9 @@ export function OverviewWidgetTablePages({
                         )}
                       </>
                     ) : (
-                      <span className="opacity-40">Not set</span>
+                      <span className="opacity-40">
+                        {t('overview.not_set')}
+                      </span>
                     )}
                   </button>
                   <a
@@ -334,7 +340,7 @@ export function OverviewWidgetTablePages({
         ...(hasRevenue
           ? [
               {
-                name: 'Revenue',
+                name: t('overview.revenue'),
                 width: '100px',
                 responsive: { priority: 3 }, // Always show if possible
                 getSortValue: (item: (typeof data)[number]) =>
@@ -359,7 +365,7 @@ export function OverviewWidgetTablePages({
             ]
           : []),
         {
-          name: 'Views',
+          name: t('overview.views'),
           width: '84px',
           responsive: { priority: 2 }, // Always show if possible
           getSortValue: (item: (typeof data)[number]) => item.pageviews,
@@ -374,7 +380,7 @@ export function OverviewWidgetTablePages({
           },
         },
         {
-          name: 'Sess.',
+          name: t('overview.sessions_short'),
           width: '84px',
           responsive: { priority: 2 }, // Always show if possible
           getSortValue: (item: (typeof data)[number]) => item.sessions,
@@ -412,6 +418,7 @@ export function OverviewWidgetTableEntries({
 }) {
   const [_filters, setFilter] = useEventQueryFilters();
   const number = useNumber();
+  const { t } = useTranslation();
   const maxSessions = Math.max(...data.map((item) => item.sessions));
   const totalRevenue = data.reduce((sum, item) => sum + (item.revenue ?? 0), 0);
   const hasRevenue = data.some((item) => (item.revenue ?? 0) > 0);
@@ -423,7 +430,7 @@ export function OverviewWidgetTableEntries({
       getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
         {
-          name: 'Path',
+          name: t('overview.path'),
           width: 'w-full',
           responsive: { priority: 1 }, // Always visible
           render(item) {
@@ -451,7 +458,9 @@ export function OverviewWidgetTableEntries({
                         )}
                       </>
                     ) : (
-                      <span className="opacity-40">Not set</span>
+                      <span className="opacity-40">
+                        {t('overview.not_set')}
+                      </span>
                     )}
                   </button>
                   <a
@@ -469,7 +478,7 @@ export function OverviewWidgetTableEntries({
         ...(hasRevenue
           ? [
               {
-                name: 'Revenue',
+                name: t('overview.revenue'),
                 width: '100px',
                 responsive: { priority: 3 }, // Always show if possible
                 getSortValue: (item: (typeof data)[number]) =>
@@ -529,6 +538,7 @@ export function OverviewWidgetTableBots({
 }) {
   const [filters, setFilter] = useEventQueryFilters();
   const number = useNumber();
+  const { t } = useTranslation();
   const maxSessions = Math.max(...data.map((item) => item.sessions));
   return (
     <OverviewWidgetTable
@@ -538,7 +548,7 @@ export function OverviewWidgetTableBots({
       getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
         {
-          name: 'Path',
+          name: t('overview.path'),
           width: 'w-full',
           render(item) {
             return (
@@ -567,7 +577,7 @@ export function OverviewWidgetTableBots({
           },
         },
         {
-          name: 'Bot',
+          name: t('overview.bot'),
           width: '60px',
           render(item) {
             return (
@@ -578,7 +588,7 @@ export function OverviewWidgetTableBots({
           },
         },
         {
-          name: 'Date',
+          name: t('overview.date'),
           width: '60px',
           render(item) {
             return (
@@ -608,6 +618,7 @@ export function OverviewWidgetTableGeneric({
   };
 }) {
   const number = useNumber();
+  const { t } = useTranslation();
   const maxSessions = Math.max(...data.map((item) => item.sessions));
   const totalRevenue = data.reduce((sum, item) => sum + (item.revenue ?? 0), 0);
   const hasRevenue = data.some((item) => (item.revenue ?? 0) > 0);
@@ -627,7 +638,7 @@ export function OverviewWidgetTableGeneric({
         ...(hasRevenue
           ? [
               {
-                name: 'Revenue',
+                name: t('overview.revenue'),
                 width: '100px',
                 responsive: { priority: 3 },
                 getSortValue: (
@@ -657,7 +668,7 @@ export function OverviewWidgetTableGeneric({
         ...(hasPageviews
           ? [
               {
-                name: 'Views',
+                name: t('overview.views'),
                 width: '84px',
                 responsive: { priority: 2 },
                 getSortValue: (
@@ -676,7 +687,7 @@ export function OverviewWidgetTableGeneric({
             ]
           : []),
         {
-          name: 'Sess.',
+          name: t('overview.sessions_short'),
           width: '84px',
           responsive: { priority: 2 },
           getSortValue: (
@@ -713,6 +724,7 @@ export function OverviewWidgetTableEvents({
   onItemClick?: (name: string) => void;
 }) {
   const number = useNumber();
+  const { t } = useTranslation();
   const maxCount = Math.max(...data.map((item) => item.count), 1);
   return (
     <OverviewWidgetTable
@@ -722,7 +734,7 @@ export function OverviewWidgetTableEvents({
       getColumnPercentage={(item) => item.count / maxCount}
       columns={[
         {
-          name: 'Event',
+          name: t('overview.event'),
           width: 'w-full',
           responsive: { priority: 1 },
           render(item) {
@@ -734,14 +746,14 @@ export function OverviewWidgetTableEvents({
                   className="truncate"
                   onClick={() => onItemClick?.(item.name)}
                 >
-                  {item.name || 'Not set'}
+                  {item.name || t('overview.not_set')}
                 </button>
               </div>
             );
           },
         },
         {
-          name: 'Count',
+          name: t('overview.count'),
           width: '84px',
           responsive: { priority: 2 },
           getSortValue: (item: EventTableItem) => item.count,

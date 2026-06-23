@@ -1,5 +1,6 @@
 import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
+import { useTranslation } from 'react-i18next';
 import { useReportChartContext } from '../context';
 
 type Props = {
@@ -9,6 +10,7 @@ type Props = {
   }>;
 };
 export function RetentionTooltip({ active, payload }: Props) {
+  const { t } = useTranslation();
   const {
     report: { interval },
   } = useReportChartContext();
@@ -29,17 +31,23 @@ export function RetentionTooltip({ active, payload }: Props) {
         {interval} {days}
       </h3>
       <div className="flex justify-between">
-        <span className="text-muted-foreground">Retention Rate:</span>
+        <span className="text-muted-foreground">
+          {t('report_chart.retention_rate')}:
+        </span>
         <span className="font-medium">
           {number.formatWithUnit(percentage / 100, '%')}
         </span>
       </div>
       <div className="flex justify-between">
-        <span className="text-muted-foreground">Retained Users:</span>
+        <span className="text-muted-foreground">
+          {t('report_chart.retained_users')}:
+        </span>
         <span className="font-medium">{number.format(value)}</span>
       </div>
       <div className="flex justify-between">
-        <span className="text-muted-foreground">Total Users:</span>
+        <span className="text-muted-foreground">
+          {t('report_chart.total_users')}:
+        </span>
         <span className="font-medium">{number.format(sum)}</span>
       </div>
     </div>

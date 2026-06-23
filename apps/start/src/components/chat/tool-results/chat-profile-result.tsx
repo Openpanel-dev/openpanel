@@ -3,6 +3,7 @@ import {
   isProfileFullError,
   type ProfileFullSuccess,
 } from './output-types';
+import { useTranslation } from 'react-i18next';
 import {
   ResultCard,
   ResultLabel,
@@ -29,12 +30,13 @@ export function ChatProfileFullResult({ part }: ToolResultProps) {
 }
 
 function Inner({ output }: { output: unknown }) {
+  const { t } = useTranslation();
   const value = asProfileFullOutput(output);
   if (!value) {
     return (
       <ResultCard>
         <div className="px-3 py-2 text-sm text-muted-foreground">
-          No profile
+          {t('chat.result_no_profile')}
         </div>
       </ResultCard>
     );
@@ -54,6 +56,7 @@ function Inner({ output }: { output: unknown }) {
 }
 
 function SuccessCard({ value }: { value: ProfileFullSuccess }) {
+  const { t } = useTranslation();
   const { profile, metrics, dashboard_url } = value;
   const title =
     profile &&
@@ -62,32 +65,35 @@ function SuccessCard({ value }: { value: ProfileFullSuccess }) {
       profile.id);
 
   return (
-    <ResultCard title={title || 'Profile'}>
+    <ResultCard title={title || t('chat.result_profile')}>
       {metrics && (
         <div className="border-b">
           {typeof metrics.sessions === 'number' && (
             <ResultRow>
-              <ResultLabel>Sessions</ResultLabel>
+              <ResultLabel>{t('chat.result_sessions')}</ResultLabel>
               <ResultValue>{metrics.sessions}</ResultValue>
             </ResultRow>
           )}
           {typeof metrics.totalEvents === 'number' && (
             <ResultRow>
-              <ResultLabel>Total events</ResultLabel>
+              <ResultLabel>{t('chat.result_total_events')}</ResultLabel>
               <ResultValue>{metrics.totalEvents}</ResultValue>
             </ResultRow>
           )}
           {typeof metrics.avgSessionDurationMin === 'number' && (
             <ResultRow>
-              <ResultLabel>Avg session</ResultLabel>
+              <ResultLabel>{t('chat.result_avg_session')}</ResultLabel>
               <ResultValue>
-                {metrics.avgSessionDurationMin.toFixed(1)} min
+                {t('chat.result_minutes', {
+                  count: metrics.avgSessionDurationMin,
+                  value: metrics.avgSessionDurationMin.toFixed(1),
+                })}
               </ResultValue>
             </ResultRow>
           )}
           {typeof metrics.bounceRate === 'number' && (
             <ResultRow>
-              <ResultLabel>Bounce rate</ResultLabel>
+              <ResultLabel>{t('chat.result_bounce_rate')}</ResultLabel>
               <ResultValue>
                 {(metrics.bounceRate * 100).toFixed(0)}%
               </ResultValue>
@@ -95,7 +101,7 @@ function SuccessCard({ value }: { value: ProfileFullSuccess }) {
           )}
           {typeof metrics.revenue === 'number' && metrics.revenue > 0 && (
             <ResultRow>
-              <ResultLabel>Revenue</ResultLabel>
+              <ResultLabel>{t('chat.result_revenue')}</ResultLabel>
               <ResultValue>${metrics.revenue.toFixed(2)}</ResultValue>
             </ResultRow>
           )}
@@ -108,7 +114,7 @@ function SuccessCard({ value }: { value: ProfileFullSuccess }) {
           rel="noopener noreferrer"
           className="block px-3 py-1.5 text-sm text-muted-foreground hover:underline"
         >
-          Open profile →
+          {t('chat.result_open_profile')}
         </a>
       )}
     </ResultCard>

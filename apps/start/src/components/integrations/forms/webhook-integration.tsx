@@ -14,6 +14,7 @@ import { path, mergeDeepRight } from 'ramda';
 import { useEffect } from 'react';
 import { Controller, useFieldArray, useWatch } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
@@ -55,6 +56,7 @@ export function WebhookIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const { organizationId } = useAppParams();
 
   // Convert headers from Record to array format for form UI
@@ -122,7 +124,8 @@ export function WebhookIntegrationForm({
       onError(error) {
         // Handle validation errors from tRPC
         if (error.data?.code === 'BAD_REQUEST') {
-          const errorMessage = error.message || 'Invalid JavaScript template';
+          const errorMessage =
+            error.message || t('integrations.error_invalid_javascript_template');
           toast.error(errorMessage);
           // Set form error if it's a JavaScript template error
           if (errorMessage.includes('JavaScript template')) {
@@ -132,7 +135,7 @@ export function WebhookIntegrationForm({
             });
           }
         } else {
-          toast.error('Failed to create integration');
+          toast.error(t('integrations.error_create_failed'));
         }
       },
     }),
@@ -143,7 +146,7 @@ export function WebhookIntegrationForm({
   };
 
   const handleError = () => {
-    toast.error('Validation error');
+    toast.error(t('integrations.error_validation'));
   };
 
   return (
@@ -152,31 +155,31 @@ export function WebhookIntegrationForm({
       className="col gap-4"
     >
       <InputWithLabel
-        label="Name"
-        placeholder="Eg. Zapier webhook"
+        label={t('integrations.field_name')}
+        placeholder={t('integrations.webhook_name_placeholder')}
         {...form.register('name')}
         error={form.formState.errors.name?.message}
       />
       <InputWithLabel
-        label="URL"
+        label={t('integrations.field_url')}
         {...form.register('config.url')}
         error={path(['config', 'url', 'message'], form.formState.errors)}
       />
 
       <WithLabel
-        label="Headers"
-        info="Add custom HTTP headers to include with webhook requests"
+        label={t('integrations.field_headers')}
+        info={t('integrations.headers_help')}
       >
         <div className="col gap-2">
           {headersArray.fields.map((field, index) => (
             <div key={field.id} className="row gap-2">
               <Input
-                placeholder="Header Name"
+                placeholder={t('integrations.header_name_placeholder')}
                 {...headersForm.register(`headers.${index}.key`)}
                 className="flex-1"
               />
               <Input
-                placeholder="Header Value"
+                placeholder={t('integrations.header_value_placeholder')}
                 {...headersForm.register(`headers.${index}.value`)}
                 className="flex-1"
               />
@@ -198,7 +201,7 @@ export function WebhookIntegrationForm({
             className="self-start"
             icon={PlusIcon}
           >
-            Add Header
+            {t('integrations.action_add_header')}
           </Button>
         </div>
       </WithLabel>
@@ -208,20 +211,20 @@ export function WebhookIntegrationForm({
         name="config.mode"
         render={({ field }) => (
           <WithLabel
-            label="Payload Format"
-            info="Choose how to format the webhook payload"
+            label={t('integrations.field_payload_format')}
+            info={t('integrations.payload_format_help')}
           >
             <Combobox
               {...field}
               className="w-full"
-              placeholder="Select format"
+              placeholder={t('integrations.payload_format_placeholder')}
               items={[
                 {
-                  label: 'Message',
+                  label: t('integrations.payload_format_message'),
                   value: 'message' as const,
                 },
                 {
-                  label: 'JavaScript',
+                  label: t('integrations.payload_format_javascript'),
                   value: 'javascript' as const,
                 },
               ]}
@@ -238,33 +241,38 @@ export function WebhookIntegrationForm({
           name="config.javascriptTemplate"
           render={({ field }) => (
             <WithLabel
-              label="JavaScript Transform"
+              label={t('integrations.field_javascript_transform')}
               info={
                 <div className="prose dark:prose-invert max-w-none">
                   <p>
-                    Write a JavaScript function that transforms the event
-                    payload. The function receives <code>payload</code> as a
-                    parameter and should return an object.
+                    <Trans
+                      i18nKey="integrations.javascript_transform_help"
+                      components={{ code: <code /> }}
+                    />
                   </p>
                   <p className="text-sm font-semibold mt-2">
-                    Available in payload:
+                    {t('integrations.available_payload_title')}
                   </p>
                   <ul className="text-sm">
                     <li>
-                      <code>payload.name</code> - Event name
+                      <code>payload.name</code> -{' '}
+                      {t('integrations.payload_name_description')}
                     </li>
                     <li>
-                      <code>payload.profileId</code> - User profile ID
+                      <code>payload.profileId</code> -{' '}
+                      {t('integrations.payload_profile_id_description')}
                     </li>
                     <li>
-                      <code>payload.properties</code> - Full properties object
+                      <code>payload.properties</code> -{' '}
+                      {t('integrations.payload_properties_description')}
                     </li>
                     <li>
-                      <code>payload.properties.your.property</code> - Nested
-                      property value
+                      <code>payload.properties.your.property</code> -{' '}
+                      {t('integrations.payload_nested_property_description')}
                     </li>
                     <li>
-                      <code>payload.profile.firstName</code> - Profile property
+                      <code>payload.profile.firstName</code> -{' '}
+                      {t('integrations.payload_profile_property_description')}
                     </li>
                     <li>
                       <div className="flex gap-x-2 flex-wrap mt-1">
@@ -275,12 +283,12 @@ export function WebhookIntegrationForm({
                         <code>browser</code>
                         <code>path</code>
                         <code>createdAt</code>
-                        and more...
+                        {t('integrations.payload_more_fields')}
                       </div>
                     </li>
                   </ul>
                   <p className="text-sm font-semibold mt-2">
-                    Available helpers:
+                    {t('integrations.available_helpers_title')}
                   </p>
                   <ul className="text-sm">
                     <li>
@@ -290,7 +298,7 @@ export function WebhookIntegrationForm({
                     </li>
                   </ul>
                   <p className="text-sm mt-2">
-                    <strong>Example:</strong>
+                    <strong>{t('integrations.example_title')}</strong>
                   </p>
                   <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-x-auto">
                     {`(payload) => ({
@@ -302,8 +310,8 @@ export function WebhookIntegrationForm({
 })`}
                   </pre>
                   <p className="text-sm mt-2 text-yellow-600 dark:text-yellow-400">
-                    <strong>Security:</strong> Network calls, file system
-                    access, and other dangerous operations are blocked.
+                    <strong>{t('integrations.security_title')}</strong>{' '}
+                    {t('integrations.security_description')}
                   </p>
                 </div>
               }
@@ -331,7 +339,11 @@ export function WebhookIntegrationForm({
         />
       )}
 
-      <Button type="submit">{defaultValues?.id ? 'Update' : 'Create'}</Button>
+      <Button type="submit">
+        {defaultValues?.id
+          ? t('integrations.action_update')
+          : t('integrations.action_create')}
+      </Button>
     </form>
   );
 }

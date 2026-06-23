@@ -1,5 +1,6 @@
 import { useParams, useRouter } from '@tanstack/react-router';
 import { CheckIcon, UserIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { themeConfig } from './theme-provider';
 import {
   DropdownMenu,
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function ProfileToggle({ className }: Props) {
+  const { t } = useTranslation();
   const router = useRouter();
   const { organizationId } = useParams({ strict: false });
   const { setTheme, userTheme, themes } = useTheme();
@@ -45,15 +47,17 @@ export function ProfileToggle({ className }: Props) {
           type="button"
         >
           <UserIcon className="size-4" />
-          <span className="sr-only">Profile</span>
+          <span className="sr-only">{t('common.profile')}</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="w-56">
-        <DropdownMenuItem onClick={goToAccount}>Account</DropdownMenuItem>
+        <DropdownMenuItem onClick={goToAccount}>
+          {t('common.account')}
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="flex w-full items-center justify-between">
-            Theme
+            {t('common.theme')}
             <DropdownMenuShortcut>
               <span className="mr-2">{themeConfig[userTheme].icon}</span>
               {themeConfig[userTheme].label}
@@ -80,7 +84,7 @@ export function ProfileToggle({ className }: Props) {
           className="text-red-600"
           onClick={() => logout.mutate()}
         >
-          Logout
+          {t('common.logout')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

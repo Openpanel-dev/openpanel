@@ -3,6 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { FilterIcon, XIcon } from 'lucide-react';
 import { omit } from 'ramda';
 import { Suspense, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { popModal } from '.';
 import { ModalContent } from './Modal/Container';
 import { ProjectLink } from '@/components/links';
@@ -65,16 +66,17 @@ export default function EventDetails(props: Props) {
 }
 
 function EventDetailsContent({ id, createdAt, projectId }: Props) {
+  const { t } = useTranslation();
   const [, setEvents] = useEventQueryNamesFilter();
   const [, setFilter] = useEventQueryFilters();
   const TABS = {
     essentials: {
       id: 'essentials',
-      title: 'Essentials',
+      title: t('events.essentials'),
     },
     detailed: {
       id: 'detailed',
-      title: 'Detailed',
+      title: t('events.detailed'),
     },
   };
   const [widget, setWidget] = useState(TABS.essentials);
@@ -261,9 +263,14 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
             </div>
             {!!session && (
               <div className="text-sm">
-                This session has {session.screenViewCount} screen views and{' '}
-                {session.eventCount} events. Visit duration is{' '}
-                {fancyMinutes(session.duration / 1000)}.
+                <Trans
+                  i18nKey="events.session_summary"
+                  values={{
+                    screenViewCount: session.screenViewCount,
+                    eventCount: session.eventCount,
+                    duration: fancyMinutes(session.duration / 1000),
+                  }}
+                />
               </div>
             )}
           </ProjectLink>
@@ -272,7 +279,7 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
         {properties.length > 0 && (
           <section>
             <div className="mb-2 flex justify-between font-medium">
-              <div>Properties</div>
+              <div>{t('groups.properties')}</div>
               <button
                 type="button"
                 onClick={() =>
@@ -280,7 +287,9 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
                 }
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
-                {propertiesMode === 'table' ? 'View JSON' : 'View Table'}
+                {propertiesMode === 'table'
+                  ? t('events.view_json')
+                  : t('events.view_table')}
               </button>
             </div>
             {propertiesMode === 'table' && (

@@ -1,8 +1,10 @@
 import { cn } from '@/utils/cn';
 import { ServerCrashIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useReportChartContext } from '../context';
 
 export function ReportChartError() {
+  const { t } = useTranslation();
   const { isEditMode } = useReportChartContext();
   return (
     <div
@@ -16,7 +18,7 @@ export function ReportChartError() {
         className="mb-4 size-10 animate-pulse text-muted-foreground"
       />
       <div className="text-sm font-medium text-muted-foreground">
-        There was an error loading this chart.
+        {t('report_chart.chart_load_error')}
       </div>
     </div>
   );

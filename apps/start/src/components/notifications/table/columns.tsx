@@ -8,6 +8,7 @@ import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { createHeaderColumn } from '@/components/ui/data-table/data-table-helpers';
 import type { RouterOutputs } from '@/trpc/client';
 import type { INotificationPayload } from '@openpanel/db';
+import { useTranslation } from 'react-i18next';
 
 function getEventFromPayload(payload: INotificationPayload | null) {
   if (payload?.type === 'event') {
@@ -20,10 +21,12 @@ function getEventFromPayload(payload: INotificationPayload | null) {
 }
 
 export function useColumns() {
+  const { t } = useTranslation();
+
   const columns: ColumnDef<RouterOutputs['notification']['list'][number]>[] = [
     {
       accessorKey: 'title',
-      header: 'Title',
+      header: t('notifications.column_title'),
       cell({ row }) {
         const { title } = row.original;
         return (
@@ -35,13 +38,13 @@ export function useColumns() {
       },
       meta: {
         variant: 'text',
-        placeholder: 'Search',
-        label: 'Title',
+        placeholder: t('notifications.search_placeholder'),
+        label: t('notifications.column_title'),
       },
     },
     {
       accessorKey: 'message',
-      header: 'Message',
+      header: t('notifications.column_message'),
       cell({ row }) {
         const { message } = row.original;
         return (
@@ -51,36 +54,36 @@ export function useColumns() {
         );
       },
       meta: {
-        label: 'Message',
+        label: t('notifications.column_message'),
         hidden: true,
       },
     },
     {
       accessorKey: 'integration',
-      header: 'Integration',
+      header: t('notifications.column_integration'),
       cell({ row }) {
         const integration = row.original.integration;
         return <div>{integration?.name}</div>;
       },
       meta: {
-        label: 'Integration',
+        label: t('notifications.column_integration'),
       },
     },
     {
       accessorKey: 'notificationRule',
-      header: 'Rule',
+      header: t('notifications.column_rule'),
       cell({ row }) {
         const rule = row.original.notificationRule;
         return <div>{rule?.name}</div>;
       },
       meta: {
-        label: 'Rule',
+        label: t('notifications.column_rule'),
         hidden: true,
       },
     },
     {
       accessorKey: 'country',
-      header: 'Country',
+      header: t('notifications.column_country'),
       cell({ row }) {
         const { payload } = row.original;
         const event = getEventFromPayload(payload);
@@ -95,7 +98,7 @@ export function useColumns() {
         );
       },
       meta: {
-        label: 'Country',
+        label: t('notifications.column_country'),
       },
     },
     {
@@ -115,12 +118,12 @@ export function useColumns() {
         );
       },
       meta: {
-        label: 'OS',
+        label: t('notifications.column_os'),
       },
     },
     {
       accessorKey: 'browser',
-      header: 'Browser',
+      header: t('notifications.column_browser'),
       cell({ row }) {
         const { payload } = row.original;
         const event = getEventFromPayload(payload);
@@ -135,12 +138,12 @@ export function useColumns() {
         );
       },
       meta: {
-        label: 'Browser',
+        label: t('notifications.column_browser'),
       },
     },
     {
       accessorKey: 'profile',
-      header: createHeaderColumn('Profile'),
+      header: createHeaderColumn(t('notifications.column_profile')),
       cell({ row }) {
         const { payload } = row.original;
         const event = getEventFromPayload(payload);
@@ -157,12 +160,12 @@ export function useColumns() {
         );
       },
       meta: {
-        label: 'Profile',
+        label: t('notifications.column_profile'),
       },
     },
     {
       accessorKey: 'createdAt',
-      header: 'Created at',
+      header: t('notifications.column_created_at'),
       size: ColumnCreatedAt.size,
       cell: ({ row }) => {
         const item = row.original;
@@ -171,8 +174,8 @@ export function useColumns() {
       filterFn: 'isWithinRange',
       meta: {
         variant: 'dateRange',
-        placeholder: 'Created at',
-        label: 'Created at',
+        placeholder: t('notifications.column_created_at'),
+        label: t('notifications.column_created_at'),
       },
     },
   ];

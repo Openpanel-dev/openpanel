@@ -2,6 +2,7 @@ import { sum } from '@openpanel/common';
 import type { IServiceOrganization } from '@openpanel/db';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2Icon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   Bar,
   BarChart,
@@ -35,6 +36,7 @@ function Card({ title, value }: { title: string; value: string }) {
 }
 
 export default function BillingUsage({ organization }: Props) {
+  const { t } = useTranslation();
   const number = useNumber();
   const trpc = useTRPC();
   const usageQuery = useQuery(
@@ -67,7 +69,7 @@ export default function BillingUsage({ organization }: Props) {
   const wrapper = (node: React.ReactNode) => (
     <Widget className="w-full">
       <WidgetHead className="flex items-center justify-between">
-        <span className="title">Usage</span>
+        <span className="title">{t('billing.usage_title')}</span>
       </WidgetHead>
       <WidgetBody>{node}</WidgetBody>
     </Widget>
@@ -84,7 +86,7 @@ export default function BillingUsage({ organization }: Props) {
   if (usageQuery.isError) {
     return wrapper(
       <div className="center-center p-8 font-medium">
-        Issues loading usage data
+        {t('billing.usage_loading_error')}
       </div>
     );
   }
@@ -94,7 +96,9 @@ export default function BillingUsage({ organization }: Props) {
     !usageQuery.data?.some((item) => item.count !== 0)
   ) {
     return wrapper(
-      <div className="center-center p-8 font-medium">No usage data yet</div>
+      <div className="center-center p-8 font-medium">
+        {t('billing.usage_empty')}
+      </div>
     );
   }
 
@@ -173,7 +177,7 @@ export default function BillingUsage({ organization }: Props) {
         {organization.hasSubscription ? (
           <>
             <Card
-              title="Period"
+              title={t('billing.usage_period')}
               value={
                 organization.subscriptionCurrentPeriodStart &&
                 organization.subscriptionCurrentPeriodEnd
@@ -182,7 +186,7 @@ export default function BillingUsage({ organization }: Props) {
               }
             />
             <Card
-              title="Left to use"
+              title={t('billing.usage_left_to_use')}
               value={
                 subscriptionPeriodEventsLimit === 0
                   ? '👀'
@@ -195,22 +199,25 @@ export default function BillingUsage({ organization }: Props) {
               }
             />
             <Card
-              title="Events count"
+              title={t('billing.usage_events_count')}
               value={number.format(subscriptionPeriodEventsCount)}
             />
             <Card
-              title="Limit"
+              title={t('billing.usage_limit')}
               value={number.format(subscriptionPeriodEventsLimit)}
             />
           </>
         ) : (
           <>
             <div className="col-span-2">
-              <Card title="Subscription" value={'No active subscription'} />
+              <Card
+                title={t('billing.usage_subscription')}
+                value={t('billing.usage_no_active_subscription')}
+              />
             </div>
             <div className="col-span-2">
               <Card
-                title="Events from last 30 days"
+                title={t('billing.usage_events_last_30_days')}
                 value={number.format(
                   sum(usageQuery.data?.map((item) => item.count) ?? [])
                 )}
@@ -222,7 +229,9 @@ export default function BillingUsage({ organization }: Props) {
       {/* Events Chart */}
       <div className="space-y-2">
         <h3 className="font-medium text-muted-foreground text-sm">
-          {useWeeklyIntervals ? 'Weekly Events' : 'Daily Events'}
+          {useWeeklyIntervals
+            ? t('billing.usage_weekly_events')
+            : t('billing.usage_daily_events')}
         </h3>
         <div className="h-[250px] max-h-[300px] w-full p-4">
           <ResponsiveContainer>
@@ -257,6 +266,7 @@ export default function BillingUsage({ organization }: Props) {
 }
 
 function EventsTooltip({ useWeekly, ...props }: { useWeekly: boolean } & any) {
+  const { t } = useTranslation();
   const number = useNumber();
   const payload = props.payload?.[0]?.payload;
 
@@ -268,16 +278,18 @@ function EventsTooltip({ useWeekly, ...props }: { useWeekly: boolean } & any) {
     <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3 shadow-xl">
       <div className="text-muted-foreground text-sm">
         {useWeekly && payload.weekRange
-          ? payload.weekRange
-          : payload?.date
-            ? formatDate(new Date(payload.date))
-            : 'Unknown date'}
+            ? payload.weekRange
+            : payload?.date
+              ? formatDate(new Date(payload.date))
+              : t('billing.usage_unknown_date')}
       </div>
       <div className="flex items-center gap-2">
         <div className="h-10 w-1 rounded-full bg-chart-0" />
         <div className="col gap-1">
           <div className="text-muted-foreground text-sm">
-            Events {useWeekly ? 'this week' : 'this day'}
+            {useWeekly
+              ? t('billing.usage_events_this_week')
+              : t('billing.usage_events_this_day')}
           </div>
           <div className="font-semibold text-chart-0 text-lg">
             {number.format(payload.count)}
@@ -289,6 +301,7 @@ function EventsTooltip({ useWeekly, ...props }: { useWeekly: boolean } & any) {
 }
 
 function TotalTooltip(props: any) {
+  const { t } = useTranslation();
   const number = useNumber();
   const payload = props.payload?.[0]?.payload;
 
@@ -298,11 +311,15 @@ function TotalTooltip(props: any) {
 
   return (
     <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3 shadow-xl">
-      <div className="text-muted-foreground text-sm">Total Events</div>
+      <div className="text-muted-foreground text-sm">
+        {t('billing.usage_total_events')}
+      </div>
       <div className="flex items-center gap-2">
         <div className="h-10 w-1 rounded-full bg-chart-2" />
         <div className="col gap-1">
-          <div className="text-muted-foreground text-sm">Your events count</div>
+          <div className="text-muted-foreground text-sm">
+            {t('billing.usage_your_events_count')}
+          </div>
           <div className="font-semibold text-chart-2 text-lg">
             {number.format(payload.count)}
           </div>
@@ -312,7 +329,9 @@ function TotalTooltip(props: any) {
         <div className="flex items-center gap-2">
           <div className="h-10 w-1 rounded-full border-2 border-chart-1 border-dashed" />
           <div className="col gap-1">
-            <div className="text-muted-foreground text-sm">Your tier limit</div>
+            <div className="text-muted-foreground text-sm">
+              {t('billing.usage_your_tier_limit')}
+            </div>
             <div className="font-semibold text-chart-1 text-lg">
               {number.format(payload.limit)}
             </div>

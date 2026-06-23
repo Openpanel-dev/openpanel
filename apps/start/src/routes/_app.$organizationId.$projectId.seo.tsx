@@ -42,11 +42,13 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { getChartColor } from '@/utils/theme';
 import { createProjectTitle } from '@/utils/title';
+import i18n from '@/i18n';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute('/_app/$organizationId/$projectId/seo')({
   component: SeoPage,
   head: () => ({
-    meta: [{ title: createProjectTitle('SEO') }],
+    meta: [{ title: createProjectTitle(i18n.t('seo.page_title')) }],
   }),
 });
 
@@ -71,13 +73,13 @@ const { TooltipProvider, Tooltip: GscTooltip } = createChartTooltip<
       </ChartTooltipHeader>
       <ChartTooltipItem color={getChartColor(0)}>
         <div className="flex justify-between gap-8 font-medium font-mono">
-          <span>Clicks</span>
+          <span>{i18n.t('seo.metric_clicks')}</span>
           <span>{item.clicks.toLocaleString()}</span>
         </div>
       </ChartTooltipItem>
       <ChartTooltipItem color={getChartColor(1)}>
         <div className="flex justify-between gap-8 font-medium font-mono">
-          <span>Impressions</span>
+          <span>{i18n.t('seo.metric_impressions')}</span>
           <span>{item.impressions.toLocaleString()}</span>
         </div>
       </ChartTooltipItem>
@@ -86,6 +88,7 @@ const { TooltipProvider, Tooltip: GscTooltip } = createChartTooltip<
 });
 
 function SeoPage() {
+  const { t } = useTranslation();
   const { projectId, organizationId } = useAppParams();
   useRangePageContext('seo');
   const trpc = useTRPC();
@@ -192,7 +195,7 @@ function SeoPage() {
   if (connectionQuery.isLoading) {
     return (
       <PageContainer>
-        <PageHeader description="Google Search Console data" title="SEO" />
+        <PageHeader description={t('seo.page_description')} title={t('seo.page_title')} />
         <div className="mt-8 space-y-4">
           <Skeleton className="h-64 w-full" />
           <Skeleton className="h-96 w-full" />
@@ -205,9 +208,9 @@ function SeoPage() {
     return (
       <FullPageEmptyState
         className="pt-[20vh]"
-        description="Connect Google Search Console to track your search impressions, clicks, and keyword rankings."
+        description={t('seo.empty_description')}
         icon={SearchIcon}
-        title="No SEO data yet"
+        title={t('seo.empty_title')}
       >
         <Button
           onClick={() =>
@@ -217,7 +220,7 @@ function SeoPage() {
             })
           }
         >
-          Connect Google Search Console
+          {t('seo.connect_gsc')}
         </Button>
       </FullPageEmptyState>
     );
@@ -251,8 +254,8 @@ function SeoPage() {
             <OverviewInterval />
           </>
         }
-        description={`Search performance for ${connection.siteUrl}`}
-        title="SEO"
+        description={t('seo.performance_description', { siteUrl: connection.siteUrl })}
+        title={t('seo.page_title')}
       />
 
       <div className="mt-8 space-y-8">
@@ -262,7 +265,7 @@ function SeoPage() {
               data={overview.map((r) => ({ current: r.clicks, date: r.date }))}
               id="clicks"
               isLoading={overviewQuery.isLoading}
-              label="Clicks"
+              label={t('seo.metric_clicks')}
               metric={{ current: totals.clicks, previous: prevTotals.clicks }}
             />
             <OverviewMetricCard
@@ -272,7 +275,7 @@ function SeoPage() {
               }))}
               id="impressions"
               isLoading={overviewQuery.isLoading}
-              label="Impressions"
+              label={t('seo.metric_impressions')}
               metric={{
                 current: totals.impressions,
                 previous: prevTotals.impressions,
@@ -285,7 +288,7 @@ function SeoPage() {
               }))}
               id="ctr"
               isLoading={overviewQuery.isLoading}
-              label="Avg CTR"
+              label={t('seo.metric_avg_ctr')}
               metric={{
                 current: (totals.ctr / n) * 100,
                 previous: (prevTotals.ctr / pn) * 100,
@@ -300,7 +303,7 @@ function SeoPage() {
               id="position"
               inverted
               isLoading={overviewQuery.isLoading}
-              label="Avg Position"
+              label={t('seo.metric_avg_position')}
               metric={{
                 current: totals.position / n,
                 previous: prevTotals.position / pn,
@@ -309,19 +312,29 @@ function SeoPage() {
           </div>
           <SearchEngines
             engines={searchEnginesQuery.data?.engines ?? []}
+            emptyMessage={t('seo.no_search_traffic')}
             isLoading={searchEnginesQuery.isLoading}
+            otherLabel={t('seo.other_source')}
             previousTotal={searchEnginesQuery.data?.previousTotal ?? 0}
+            title={t('seo.search_engines')}
             total={searchEnginesQuery.data?.total ?? 0}
           />
           <AiEngines
             engines={aiEnginesQuery.data?.engines ?? []}
+            emptyMessage={t('seo.no_ai_traffic')}
             isLoading={aiEnginesQuery.isLoading}
+            otherLabel={t('seo.other_source')}
             previousTotal={aiEnginesQuery.data?.previousTotal ?? 0}
+            title={t('seo.ai_referrals')}
             total={aiEnginesQuery.data?.total ?? 0}
           />
         </div>
 
-        <GscChart data={overview} isLoading={overviewQuery.isLoading} />
+        <GscChart
+          data={overview}
+          isLoading={overviewQuery.isLoading}
+          title={t('seo.chart_clicks_impressions')}
+        />
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <GscPositionChart
@@ -338,7 +351,7 @@ function SeoPage() {
           <GscTable
             isLoading={pagesQuery.isLoading}
             keyField="page"
-            keyLabel="Page"
+            keyLabel={t('seo.key_page')}
             maxClicks={Math.max(...paginatedPages.map((p) => p.clicks), 1)}
             onNextPage={() =>
               setPagesPage((p) => Math.min(pagesPageCount - 1, p + 1))
@@ -355,15 +368,15 @@ function SeoPage() {
             pageIndex={pagesPage}
             pageSize={pageSize}
             rows={paginatedPages}
-            searchPlaceholder="Search pages"
+            searchPlaceholder={t('seo.search_pages')}
             searchValue={pagesSearch}
-            title="Top pages"
+            title={t('seo.top_pages')}
             totalCount={filteredPages.length}
           />
           <GscTable
             isLoading={queriesQuery.isLoading}
             keyField="query"
-            keyLabel="Query"
+            keyLabel={t('seo.key_query')}
             maxClicks={Math.max(...paginatedQueries.map((q) => q.clicks), 1)}
             onNextPage={() =>
               setQueriesPage((p) => Math.min(queriesPageCount - 1, p + 1))
@@ -380,9 +393,9 @@ function SeoPage() {
             pageIndex={queriesPage}
             pageSize={pageSize}
             rows={paginatedQueries}
-            searchPlaceholder="Search queries"
+            searchPlaceholder={t('seo.search_queries')}
             searchValue={queriesSearch}
-            title="Top queries"
+            title={t('seo.top_queries')}
             totalCount={filteredQueries.length}
           />
         </div>
@@ -409,6 +422,7 @@ function TrafficSourceWidget({
   previousTotal,
   isLoading,
   emptyMessage,
+  otherLabel,
 }: {
   title: string;
   engines: Array<{ name: string; sessions: number }>;
@@ -416,13 +430,14 @@ function TrafficSourceWidget({
   previousTotal: number;
   isLoading: boolean;
   emptyMessage: string;
+  otherLabel: string;
 }) {
   const displayed =
     engines.length > 8
       ? [
           ...engines.slice(0, 7),
           {
-            name: 'Others',
+            name: otherLabel,
             sessions: engines.slice(7).reduce((s, d) => s + d.sessions, 0),
           },
         ]
@@ -506,14 +521,11 @@ function SearchEngines(props: {
   total: number;
   previousTotal: number;
   isLoading: boolean;
+  title: string;
+  emptyMessage: string;
+  otherLabel: string;
 }) {
-  return (
-    <TrafficSourceWidget
-      {...props}
-      emptyMessage="No search traffic in this period"
-      title="Search engines"
-    />
-  );
+  return <TrafficSourceWidget {...props} />;
 }
 
 function AiEngines(props: {
@@ -521,29 +533,28 @@ function AiEngines(props: {
   total: number;
   previousTotal: number;
   isLoading: boolean;
+  title: string;
+  emptyMessage: string;
+  otherLabel: string;
 }) {
-  return (
-    <TrafficSourceWidget
-      {...props}
-      emptyMessage="No AI traffic in this period"
-      title="AI referrals"
-    />
-  );
+  return <TrafficSourceWidget {...props} />;
 }
 
 function GscChart({
   data,
   isLoading,
+  title,
 }: {
   data: Array<{ date: string; clicks: number; impressions: number }>;
   isLoading: boolean;
+  title: string;
 }) {
   const color = getChartColor(0);
   const yAxisProps = useYAxisProps();
 
   return (
     <div className="card p-4">
-      <h3 className="mb-4 font-medium text-sm">Clicks & Impressions</h3>
+      <h3 className="mb-4 font-medium text-sm">{title}</h3>
       {isLoading ? (
         <Skeleton className="h-48 w-full" />
       ) : (
@@ -655,6 +666,7 @@ function GscTable({
   onPreviousPage?: () => void;
   onNextPage?: () => void;
 }) {
+  const { t } = useTranslation();
   const showPagination =
     totalCount != null &&
     pageSize != null &&
@@ -683,22 +695,22 @@ function GscTable({
               render: () => <Skeleton className="h-4 w-2/3" />,
             },
             {
-              name: 'Clicks',
+              name: t('seo.metric_clicks'),
               width: '70px',
               render: () => <Skeleton className="h-4 w-10" />,
             },
             {
-              name: 'Impr.',
+              name: t('seo.metric_impressions_short'),
               width: '70px',
               render: () => <Skeleton className="h-4 w-10" />,
             },
             {
-              name: 'CTR',
+              name: t('seo.metric_ctr'),
               width: '60px',
               render: () => <Skeleton className="h-4 w-8" />,
             },
             {
-              name: 'Pos.',
+              name: t('seo.metric_position_short'),
               width: '55px',
               render: () => <Skeleton className="h-4 w-8" />,
             },
@@ -720,8 +732,12 @@ function GscTable({
             <div className="flex shrink-0 items-center gap-2">
               <span className="whitespace-nowrap text-muted-foreground text-xs">
                 {totalCount === 0
-                  ? '0 results'
-                  : `${rangeStart}-${rangeEnd} of ${totalCount}`}
+                  ? t('seo.zero_results')
+                  : t('seo.results_range', {
+                      end: rangeEnd,
+                      start: rangeStart,
+                      total: totalCount,
+                    })}
               </span>
               <Pagination
                 canNextPage={canNextPage}
@@ -739,7 +755,7 @@ function GscTable({
             <Input
               className="rounded-none border-0 border-t bg-transparent pl-9 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0"
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={searchPlaceholder ?? 'Search'}
+              placeholder={searchPlaceholder ?? t('seo.search')}
               type="search"
               value={searchValue ?? ''}
             />
@@ -766,7 +782,7 @@ function GscTable({
             },
           },
           {
-            name: 'Clicks',
+            name: t('seo.metric_clicks'),
             width: '70px',
             getSortValue: (item) => item.clicks,
             render(item) {
@@ -778,7 +794,7 @@ function GscTable({
             },
           },
           {
-            name: 'Impr.',
+            name: t('seo.metric_impressions_short'),
             width: '70px',
             getSortValue: (item) => item.impressions,
             render(item) {
@@ -790,7 +806,7 @@ function GscTable({
             },
           },
           {
-            name: 'CTR',
+            name: t('seo.metric_ctr'),
             width: '60px',
             getSortValue: (item) => item.ctr,
             render(item) {
@@ -802,7 +818,7 @@ function GscTable({
             },
           },
           {
-            name: 'Pos.',
+            name: t('seo.metric_position_short'),
             width: '55px',
             getSortValue: (item) => item.position,
             render(item) {

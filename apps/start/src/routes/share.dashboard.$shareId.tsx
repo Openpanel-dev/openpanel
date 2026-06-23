@@ -18,6 +18,7 @@ import { timeWindows } from '@openpanel/constants';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
 import { z } from 'zod';
+import i18n from '@/i18n';
 
 const shareSearchSchema = z.object({
   header: z.optional(z.number().or(z.string().or(z.boolean()))),
@@ -40,7 +41,7 @@ export const Route = createFileRoute('/share/dashboard/$shareId')({
       return {
         meta: [
           {
-            title: 'Share not found - OpenPanel.dev',
+            title: `${i18n.t('share.not_found_title')} - OpenPanel.dev`,
           },
         ],
       };
@@ -57,8 +58,8 @@ export const Route = createFileRoute('/share/dashboard/$shareId')({
   pendingComponent: FullPageLoadingState,
   errorComponent: () => (
     <FullPageEmptyState
-      title="Share not found"
-      description="The dashboard you are looking for does not exist."
+      title={i18n.t('share.not_found_title')}
+      description={i18n.t('share.dashboard_not_found_description')}
       className="min-h-[calc(100vh-theme(spacing.16))]"
     />
   ),
@@ -135,7 +136,7 @@ function RouteComponent() {
             <ReportItemSkeleton />
           </div>
         ) : reports.length === 0 ? (
-          <FullPageEmptyState title="No reports" />
+          <FullPageEmptyState title={i18n.t('share.no_reports')} />
         ) : (
           <GrafanaGrid layouts={layouts}>
             {reports.map((report) => (

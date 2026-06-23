@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   changeCriteria,
   changeFunnelGroup,
@@ -22,6 +23,7 @@ import {
 } from '../reportSlice';
 
 export function ReportSettings() {
+  const { t } = useTranslation();
   const chartType = useSelector((state) => state.report.chartType);
   const previous = useSelector((state) => state.report.previous);
   const unit = useSelector((state) => state.report.unit);
@@ -78,12 +80,12 @@ export function ReportSettings() {
 
   return (
     <div>
-      <h3 className="mb-2 font-medium">Settings</h3>
+      <h3 className="mb-2 font-medium">{t('reports.settings')}</h3>
       <div className="col rounded-lg border bg-card p-4 gap-4">
         {fields.includes('previous') && (
           <Label className="flex items-center justify-between mb-0">
             <span className="whitespace-nowrap">
-              Compare to previous period
+              {t('reports.compare_to_previous_period')}
             </span>
             <Switch
               checked={previous}
@@ -94,20 +96,20 @@ export function ReportSettings() {
         {fields.includes('criteria') && (
           <div className="flex items-center justify-between gap-4">
             <Label className="whitespace-nowrap font-medium mb-0">
-              Criteria
+              {t('reports.criteria')}
             </Label>
             <Combobox
               align="end"
-              placeholder="Select criteria"
+              placeholder={t('reports.select_criteria')}
               value={criteria}
               onChange={(val) => dispatch(changeCriteria(val))}
               items={[
                 {
-                  label: 'On or After',
+                  label: t('reports.criteria_on_or_after'),
                   value: 'on_or_after',
                 },
                 {
-                  label: 'On',
+                  label: t('reports.criteria_on'),
                   value: 'on',
                 },
               ]}
@@ -116,17 +118,19 @@ export function ReportSettings() {
         )}
         {fields.includes('unit') && (
           <div className="flex items-center justify-between gap-4">
-            <Label className="whitespace-nowrap font-medium mb-0">Unit</Label>
+            <Label className="whitespace-nowrap font-medium mb-0">
+              {t('reports.unit')}
+            </Label>
             <Combobox
               align="end"
-              placeholder="Unit"
+              placeholder={t('reports.unit')}
               value={unit || 'count'}
               onChange={(val) => {
                 dispatch(changeUnit(val === 'count' ? undefined : val));
               }}
               items={[
                 {
-                  label: 'Count',
+                  label: t('reports.unit_count'),
                   value: 'count',
                 },
                 {
@@ -140,11 +144,11 @@ export function ReportSettings() {
         {fields.includes('funnelGroup') && (
           <div className="flex items-center justify-between gap-4">
             <Label className="whitespace-nowrap font-medium mb-0">
-              Funnel Group
+              {t('reports.funnel_group')}
             </Label>
             <Combobox
               align="end"
-              placeholder="Default: Session"
+              placeholder={t('reports.default_session')}
               value={funnelGroup || 'session_id'}
               onChange={(val) => {
                 dispatch(
@@ -153,11 +157,11 @@ export function ReportSettings() {
               }}
               items={[
                 {
-                  label: 'Session',
+                  label: t('reports.session'),
                   value: 'session_id',
                 },
                 {
-                  label: 'Profile',
+                  label: t('reports.profile'),
                   value: 'profile_id',
                 },
               ]}
@@ -167,12 +171,12 @@ export function ReportSettings() {
         {fields.includes('funnelWindow') && (
           <div className="flex items-center justify-between gap-4">
             <Label className="whitespace-nowrap font-medium mb-0">
-              Funnel Window
+              {t('reports.funnel_window')}
             </Label>
             <InputEnter
               type="number"
               value={funnelWindow ? String(funnelWindow) : ''}
-              placeholder="Default: 24h"
+              placeholder={t('reports.default_24h')}
               onChangeValue={(value) => {
                 const parsed = Number.parseFloat(value);
                 if (Number.isNaN(parsed)) {
@@ -186,10 +190,12 @@ export function ReportSettings() {
         )}
         {fields.includes('sankeyMode') && options?.type === 'sankey' && (
           <div className="flex items-center justify-between gap-4">
-            <Label className="whitespace-nowrap font-medium mb-0">Mode</Label>
+            <Label className="whitespace-nowrap font-medium mb-0">
+              {t('reports.mode')}
+            </Label>
             <Combobox
               align="end"
-              placeholder="Select mode"
+              placeholder={t('reports.select_mode')}
               value={options?.mode || 'after'}
               onChange={(val) => {
                 dispatch(
@@ -198,15 +204,15 @@ export function ReportSettings() {
               }}
               items={[
                 {
-                  label: 'After',
+                  label: t('reports.mode_after'),
                   value: 'after',
                 },
                 {
-                  label: 'Before',
+                  label: t('reports.mode_before'),
                   value: 'before',
                 },
                 {
-                  label: 'Between',
+                  label: t('reports.mode_between'),
                   value: 'between',
                 },
               ]}
@@ -215,11 +221,13 @@ export function ReportSettings() {
         )}
         {fields.includes('sankeySteps') && options?.type === 'sankey' && (
           <div className="flex items-center justify-between gap-4">
-            <Label className="whitespace-nowrap font-medium mb-0">Steps</Label>
+            <Label className="whitespace-nowrap font-medium mb-0">
+              {t('reports.steps')}
+            </Label>
             <InputEnter
               type="number"
               value={options?.steps ? String(options.steps) : '5'}
-              placeholder="Default: 5"
+              placeholder={t('reports.default_5')}
               onChangeValue={(value) => {
                 const parsed = Number.parseInt(value, 10);
                 if (Number.isNaN(parsed) || parsed < 2 || parsed > 10) {
@@ -234,7 +242,7 @@ export function ReportSettings() {
         {fields.includes('sankeyExclude') && options?.type === 'sankey' && (
           <div className="flex flex-col">
             <Label className="whitespace-nowrap font-medium">
-              Exclude Events
+              {t('reports.exclude_events')}
             </Label>
             <ComboboxEvents
               multiple
@@ -244,14 +252,14 @@ export function ReportSettings() {
                 dispatch(changeSankeyExclude(value));
               }}
               items={eventNames.filter((item) => item.name !== '*')}
-              placeholder="Select events to exclude"
+              placeholder={t('reports.select_events_to_exclude')}
             />
           </div>
         )}
         {fields.includes('sankeyInclude') && options?.type === 'sankey' && (
           <div className="flex flex-col">
             <Label className="whitespace-nowrap font-medium">
-              Include events
+              {t('reports.include_events')}
             </Label>
             <ComboboxEvents
               multiple
@@ -263,13 +271,13 @@ export function ReportSettings() {
                 );
               }}
               items={eventNames.filter((item) => item.name !== '*')}
-              placeholder="Leave empty to include all"
+              placeholder={t('reports.leave_empty_to_include_all')}
             />
           </div>
         )}
         {fields.includes('stacked') && (
           <Label className="flex items-center justify-between mb-0">
-            <span className="whitespace-nowrap">Stack series</span>
+            <span className="whitespace-nowrap">{t('reports.stack_series')}</span>
             <Switch
               checked={stacked}
               onCheckedChange={(val) => dispatch(changeStacked(!!val))}

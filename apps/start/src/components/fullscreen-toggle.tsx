@@ -3,6 +3,7 @@ import { bind } from 'bind-event-listener';
 import { ChevronLeftIcon, FullscreenIcon } from 'lucide-react';
 import { parseAsBoolean, useQueryState } from 'nuqs';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDebounce } from 'usehooks-ts';
 
 import { Button } from './ui/button';
@@ -37,12 +38,13 @@ export const Fullscreen = (props: Props) => {
 };
 
 export const FullscreenOpen = () => {
+  const { t } = useTranslation();
   const [fullscreen, setIsFullscreen] = useFullscreen();
   if (fullscreen) {
     return null;
   }
   return (
-    <Tooltiper content="Toggle fullscreen" asChild>
+    <Tooltiper content={t('ui.toggle_fullscreen')} asChild>
       <Button
         variant="outline"
         size="icon"
@@ -57,6 +59,7 @@ export const FullscreenOpen = () => {
 };
 
 export const FullscreenClose = () => {
+  const { t } = useTranslation();
   const [fullscreen, setIsFullscreen] = useFullscreen();
   const isFullscreenDebounced = useDebounce(fullscreen, 1000);
   const [visible, setVisible] = useState(false);
@@ -89,7 +92,7 @@ export const FullscreenClose = () => {
 
   return (
     <div className="fixed bottom-0 top-0 z-50 flex items-center">
-      <Tooltiper content="Exit full screen" asChild>
+      <Tooltiper content={t('ui.exit_full_screen')} asChild>
         <button
           type="button"
           ref={ref}

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { differenceInDays } from 'date-fns';
 import { useQueryState } from 'nuqs';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Progress } from '../ui/progress';
 import { Widget, WidgetBody, WidgetHead } from '../widget';
@@ -17,12 +18,14 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, useOnPushModal } from '@/modals';
 import { formatDate } from '@/utils/date';
 import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
+import { getSubscriptionStatusLine } from './subscription-i18n';
 
 type Props = {
   organization: IServiceOrganization;
 };
 
 export default function Billing({ organization }: Props) {
+  const { t } = useTranslation();
   const [success, setSuccess] = useQueryState('customer_session_token');
   const queryClient = useQueryClient();
   const trpc = useTRPC();
@@ -78,8 +81,16 @@ export default function Billing({ organization }: Props) {
       endsAt: organization.subscriptionEndsAt,
       canceledAt: organization.subscriptionCanceledAt,
     });
+    const statusLine = getSubscriptionStatusLine(organization.subscriptionState, {
+      endsAt: organization.subscriptionEndsAt
+        ? formatDate(organization.subscriptionEndsAt)
+        : null,
+      canceledAt: organization.subscriptionCanceledAt
+        ? formatDate(organization.subscriptionCanceledAt)
+        : null,
+    });
 
-    if (!meta.statusLine) {
+    if (!meta.statusLine || !statusLine) {
       return null;
     }
 
@@ -89,7 +100,7 @@ export default function Billing({ organization }: Props) {
           meta.statusLine.tone === 'destructive' ? 'text-destructive' : undefined
         }
       >
-        {meta.statusLine.text}
+        {t(statusLine.key, statusLine.values)}
       </p>
     );
   };
@@ -122,7 +133,9 @@ export default function Billing({ organization }: Props) {
                 </span>
                 <span className="text-muted-foreground">
                   {' / '}
-                  {recurringInterval === 'year' ? 'year' : 'month'}
+                  {recurringInterval === 'year'
+                    ? t('billing.interval_year')
+                    : t('billing.interval_month')}
                 </span>
               </div>
             </WidgetHead>
@@ -171,7 +184,7 @@ export default function Billing({ organization }: Props) {
                         </clipPath>
                       </defs>
                     </svg>
-                    Customer portal
+                    {t('billing.customer_portal')}
                   </Button>
                   <Button
                     onClick={() =>
@@ -183,8 +196,8 @@ export default function Billing({ organization }: Props) {
                     size="sm"
                   >
                     {organization.isWillBeCanceled
-                      ? 'Reactivate subscription'
-                      : 'Change subscription'}
+                      ? t('billing.plan_reactivate_subscription')
+                      : t('billing.plan_change_subscription')}
                   </Button>
                 </div>
               </div>
@@ -212,17 +225,21 @@ export default function Billing({ organization }: Props) {
         <WidgetBody className="col gap-2">
           <div className="row items-center gap-2">
             <Badge variant={organization.isTrial ? 'secondary' : 'destructive'}>
-              {organization.isTrial ? 'Free trial' : 'No active plan'}
+              {organization.isTrial
+                ? t('billing.free_trial_badge')
+                : t('billing.no_active_plan_badge')}
             </Badge>
             {organization.isTrial && daysLeft !== null && (
-              <span className="font-semibold">{daysLeft} days left</span>
+              <span className="font-semibold">
+                {t('billing.days_left', { count: daysLeft })}
+              </span>
             )}
           </div>
           {organization.isTrial && organization.subscriptionEndsAt ? (
             <p className="text-muted-foreground">
-              Your trial ends on {formatDate(organization.subscriptionEndsAt)}.
-              When it ends, your dashboards pause until you choose a plan — your
-              data keeps flowing in.
+              {t('billing.trial_ends_description', {
+                date: formatDate(organization.subscriptionEndsAt),
+              })}
             </p>
           ) : (
             renderStatus()
@@ -233,7 +250,7 @@ export default function Billing({ organization }: Props) {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <Widget className="w-full self-start">
           <WidgetHead>
-            <div className="title">Choose a plan</div>
+            <div className="title">{t('billing.choose_plan_title')}</div>
           </WidgetHead>
           <WidgetBody className="col gap-4">
             <BillingPlanPicker

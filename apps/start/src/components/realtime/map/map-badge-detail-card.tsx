@@ -13,6 +13,7 @@ import { ProjectLink } from '@/components/links';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useTRPC } from '@/integrations/trpc/react';
+import { useTranslation } from 'react-i18next';
 
 export function MapBadgeDetailCard({
   marker,
@@ -27,6 +28,7 @@ export function MapBadgeDetailCard({
   projectId: string;
   size: { width: number; height: number };
 }) {
+  const { t } = useTranslation();
   const trpc = useTRPC();
   const input = {
     detailScope: marker.detailScope,
@@ -66,7 +68,7 @@ export function MapBadgeDetailCard({
         <div className="flex items-start justify-between gap-4 border-b p-4">
           <div className="min-w-0">
             <div className="mb-2 text-muted-foreground text-xs uppercase tracking-wide">
-              Realtime cluster
+              {t('realtime.map_cluster_title')}
             </div>
             <div className="truncate text-lg" style={{ fontWeight: 600 }}>
               {marker.label}
@@ -75,9 +77,13 @@ export function MapBadgeDetailCard({
               className="mt-1 text-muted-foreground"
               style={{ fontSize: 13 }}
             >
-              {query.data?.summary.totalSessions ?? marker.count} sessions
+              {t('realtime.map_sessions_count', {
+                count: query.data?.summary.totalSessions ?? marker.count,
+              })}
               {query.data?.summary.totalProfiles
-                ? ` • ${query.data.summary.totalProfiles} profiles`
+                ? ` • ${t('realtime.map_profiles_count', {
+                    count: query.data.summary.totalProfiles,
+                  })}`
                 : ''}
             </div>
           </div>
@@ -92,19 +98,25 @@ export function MapBadgeDetailCard({
 
         <div className="grid grid-cols-3 gap-2 border-b p-4 text-sm">
           <div className="col gap-1 rounded-lg bg-def-200 p-3">
-            <div className="text-muted-foreground text-xs">Locations</div>
+            <div className="text-muted-foreground text-xs">
+              {t('realtime.map_locations')}
+            </div>
             <div className="font-semibold">
               {query.data?.summary.totalLocations ?? marker.members.length}
             </div>
           </div>
           <div className="col gap-1 rounded-lg bg-def-200 p-3">
-            <div className="text-muted-foreground text-xs">Countries</div>
+            <div className="text-muted-foreground text-xs">
+              {t('realtime.map_countries')}
+            </div>
             <div className="font-semibold">
               {query.data?.summary.totalCountries ?? 0}
             </div>
           </div>
           <div className="col gap-1 rounded-lg bg-def-200 p-3">
-            <div className="text-muted-foreground text-xs">Cities</div>
+            <div className="text-muted-foreground text-xs">
+              {t('realtime.map_cities')}
+            </div>
             <div className="font-semibold">
               {query.data?.summary.totalCities ?? 0}
             </div>
@@ -122,7 +134,9 @@ export function MapBadgeDetailCard({
             <>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-xl border p-3">
-                  <div className="mb-2 font-medium text-sm">Top referrers</div>
+                  <div className="mb-2 font-medium text-sm">
+                    {t('realtime.map_top_referrers')}
+                  </div>
                   <div className="space-y-2">
                     {query.data.topReferrers.length > 0 ? (
                       query.data.topReferrers.map((item) => (
@@ -136,7 +150,8 @@ export function MapBadgeDetailCard({
                               {item.referrerName
                                 .replaceAll('https://', '')
                                 .replaceAll('http://', '')
-                                .replaceAll('www.', '') || '(Not set)'}
+                                .replaceAll('www.', '') ||
+                                t('realtime.not_set')}
                             </span>
                           </div>
                           <span className="font-mono">{item.count}</span>
@@ -144,14 +159,16 @@ export function MapBadgeDetailCard({
                       ))
                     ) : (
                       <div className="text-muted-foreground text-sm">
-                        No data
+                        {t('realtime.no_data')}
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div className="rounded-xl border p-3">
-                  <div className="mb-2 font-medium text-sm">Top events</div>
+                  <div className="mb-2 font-medium text-sm">
+                    {t('realtime.map_top_events')}
+                  </div>
                   <div className="space-y-2">
                     {query.data.topEvents.length > 0 ? (
                       query.data.topEvents.map((item) => (
@@ -165,14 +182,16 @@ export function MapBadgeDetailCard({
                       ))
                     ) : (
                       <div className="text-muted-foreground text-sm">
-                        No data
+                        {t('realtime.no_data')}
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div className="col-span-2 rounded-xl border p-3">
-                  <div className="mb-2 font-medium text-sm">Top paths</div>
+                  <div className="mb-2 font-medium text-sm">
+                    {t('realtime.map_top_paths')}
+                  </div>
                   <div className="space-y-2">
                     {query.data.topPaths.length > 0 ? (
                       query.data.topPaths.map((item) => (
@@ -181,14 +200,14 @@ export function MapBadgeDetailCard({
                           key={`${item.origin}${item.path}`}
                         >
                           <span className="truncate">
-                            {item.path || '(Not set)'}
+                            {item.path || t('realtime.not_set')}
                           </span>
                           <span className="font-mono">{item.count}</span>
                         </div>
                       ))
                     ) : (
                       <div className="text-muted-foreground text-sm">
-                        No data
+                        {t('realtime.no_data')}
                       </div>
                     )}
                   </div>
@@ -196,7 +215,9 @@ export function MapBadgeDetailCard({
               </div>
 
               <div className="rounded-xl border p-3">
-                <div className="mb-3 font-medium text-sm">Recent sessions</div>
+                <div className="mb-3 font-medium text-sm">
+                  {t('realtime.map_recent_sessions')}
+                </div>
                 <div className="space-y-3">
                   {query.data.recentProfiles.length > 0 ? (
                     query.data.recentProfiles.map((profile) => {
@@ -241,7 +262,7 @@ export function MapBadgeDetailCard({
                             <div>
                               {[profile.city, profile.country]
                                 .filter(Boolean)
-                                .join(', ') || 'Unknown'}
+                                .join(', ') || t('realtime.unknown_location')}
                             </div>
                           </div>
                         </ProjectLink>
@@ -249,7 +270,7 @@ export function MapBadgeDetailCard({
                     })
                   ) : (
                     <div className="text-muted-foreground text-sm">
-                      No recent sessions
+                      {t('realtime.no_recent_sessions')}
                     </div>
                   )}
                 </div>
@@ -257,7 +278,7 @@ export function MapBadgeDetailCard({
             </>
           ) : (
             <div className="text-muted-foreground text-sm">
-              Could not load badge details.
+              {t('realtime.map_details_load_failed')}
             </div>
           )}
         </div>

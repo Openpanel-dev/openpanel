@@ -16,6 +16,7 @@ import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { BoxSelectIcon, PlusIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute('/_app/$organizationId/')({
   component: OrganizationPage,
@@ -39,6 +40,7 @@ export const Route = createFileRoute('/_app/$organizationId/')({
 });
 
 function OrganizationPage() {
+  const { t } = useTranslation();
   const { organizationId } = Route.useParams();
   const trpc = useTRPC();
   const { data: projects } = useQuery(
@@ -52,17 +54,17 @@ function OrganizationPage() {
   if (!projects?.length) {
     return (
       <FullPageEmptyState
-        title="No projects found"
+        title={t('organization.projects_empty_title')}
         description={
           isAdmin
-            ? 'Create your first project to get started with analytics.'
-            : 'You do not have access to any projects in this organization yet. Ask an admin to grant you access.'
+            ? t('organization.projects_empty_admin_description')
+            : t('organization.projects_empty_member_description')
         }
         icon={BoxSelectIcon}
       >
         {isAdmin && (
           <Button icon={PlusIcon} onClick={() => pushModal('AddProject')}>
-            Create project
+            {t('organization.create_project')}
           </Button>
         )}
       </FullPageEmptyState>
@@ -72,14 +74,14 @@ function OrganizationPage() {
   return (
     <div className="container p-8">
       <PageHeader
-        title="Projects"
-        description="All your projects in this workspace"
+        title={t('organization.projects_page_title')}
+        description={t('organization.projects_page_description')}
         className="mb-8"
       />
 
       <TableButtons>
         <AnimatedSearchInput
-          placeholder="Search projects"
+          placeholder={t('organization.search_projects')}
           value={search}
           onChange={setSearch}
         />

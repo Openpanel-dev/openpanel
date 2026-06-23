@@ -1,12 +1,14 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { DownloadIcon, RocketIcon } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 
 import CopyInput from '../forms/copy-input';
 
 type Props = { id: string; secret: string; type?: 'read' | 'write' | 'root' };
 
 export function CreateClientSuccess({ id, secret, type }: Props) {
+  const { t } = useTranslation();
   const mcpToken = btoa(`${id}:${secret}`);
   const showMcpToken = type === 'root' || type === 'read';
 
@@ -24,41 +26,43 @@ export function CreateClientSuccess({ id, secret, type }: Props) {
 
   return (
     <div className="grid min-w-0 gap-4 [&>*]:min-w-0">
-      <CopyInput label="Client ID" value={id} />
+      <CopyInput label={t('clients.field_client_id')} value={id} />
       {secret && (
         <div className="w-full min-w-0">
-          <CopyInput label="Secret" value={secret} />
+          <CopyInput label={t('clients.field_secret')} value={secret} />
           <p className="mt-1 text-sm text-muted-foreground">
-            You will only need the secret if you want to send server events.
+            {t('clients.secret_help')}
           </p>
         </div>
       )}
       {secret && showMcpToken && (
         <div className="w-full min-w-0">
-          <CopyInput label="MCP Token" value={mcpToken} />
+          <CopyInput label={t('clients.field_mcp_token')} value={mcpToken} />
           <p className="mt-1 text-sm text-muted-foreground">
-            Use this token to authenticate with the MCP server (base64 encoded
-            client ID and secret).
+            {t('clients.mcp_token_help')}
           </p>
         </div>
       )}
       <Button variant="outline" icon={DownloadIcon} onClick={download}>
-        Save credentials
+        {t('clients.action_save_credentials')}
       </Button>
       <Alert>
         <RocketIcon className="h-4 w-4" />
-        <AlertTitle>Get started!</AlertTitle>
+        <AlertTitle>{t('clients.get_started_title')}</AlertTitle>
         <AlertDescription>
-          Read our{' '}
-          <a
-            target="_blank"
-            href="https://openpanel.dev/docs"
-            className="underline"
-            rel="noreferrer"
-          >
-            documentation
-          </a>{' '}
-          to get started. Easy peasy!
+          <Trans
+            components={{
+              docs: (
+                <a
+                  target="_blank"
+                  href="https://openpanel.dev/docs"
+                  className="underline"
+                  rel="noreferrer"
+                />
+              ),
+            }}
+            i18nKey="clients.get_started_description"
+          />
         </AlertDescription>
       </Alert>
     </div>

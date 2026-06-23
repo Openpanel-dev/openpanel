@@ -1,5 +1,6 @@
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IChartType } from '@openpanel/validation';
@@ -9,7 +10,7 @@ import { pushModal } from '@/modals';
 import { useQuery } from '@tanstack/react-query';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
-import { OVERVIEW_COLUMNS_NAME } from './overview-constants';
+import { getOverviewColumnNameKey } from './overview-constants';
 import OverviewDetailsButton from './overview-details-button';
 import {
   OverviewLineChart,
@@ -32,6 +33,7 @@ export default function OverviewTopDevices({
   projectId,
   shareId,
 }: OverviewTopDevicesProps) {
+  const { t } = useTranslation();
   const { interval, range, previous, startDate, endDate } =
     useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
@@ -40,11 +42,14 @@ export default function OverviewTopDevices({
   const isPageFilter = filters.find((filter) => filter.name === 'path');
   const [widget, setWidget, widgets] = useOverviewWidget('tech', {
     device: {
-      title: 'Top devices',
-      btn: 'Devices',
+      title: t('overview.top_devices'),
+      btn: t('overview.devices'),
       chart: {
         options: {
-          columns: ['Device', isPageFilter ? 'Views' : 'Sessions'],
+          columns: [
+            t('overview.device'),
+            isPageFilter ? t('overview.views') : t('overview.sessions'),
+          ],
         },
         report: {
           limit: 10,
@@ -77,11 +82,14 @@ export default function OverviewTopDevices({
       },
     },
     browser: {
-      title: 'Top browser',
-      btn: 'Browser',
+      title: t('overview.top_browser'),
+      btn: t('overview.browser'),
       chart: {
         options: {
-          columns: ['Browser', isPageFilter ? 'Views' : 'Sessions'],
+          columns: [
+            t('overview.browser'),
+            isPageFilter ? t('overview.views') : t('overview.sessions'),
+          ],
         },
         report: {
           limit: 10,
@@ -114,11 +122,14 @@ export default function OverviewTopDevices({
       },
     },
     browser_version: {
-      title: 'Top Browser Version',
-      btn: 'Browser Version',
+      title: t('overview.top_browser_version'),
+      btn: t('overview.browser_version'),
       chart: {
         options: {
-          columns: ['Version', isPageFilter ? 'Views' : 'Sessions'],
+          columns: [
+            t('overview.version'),
+            isPageFilter ? t('overview.views') : t('overview.sessions'),
+          ],
           renderSerieName(name) {
             return name[1] || NOT_SET_VALUE;
           },
@@ -158,11 +169,14 @@ export default function OverviewTopDevices({
       },
     },
     os: {
-      title: 'Top OS',
-      btn: 'OS',
+      title: t('overview.top_os'),
+      btn: t('overview.os'),
       chart: {
         options: {
-          columns: ['OS', isPageFilter ? 'Views' : 'Sessions'],
+          columns: [
+            t('overview.os'),
+            isPageFilter ? t('overview.views') : t('overview.sessions'),
+          ],
         },
         report: {
           limit: 10,
@@ -195,11 +209,14 @@ export default function OverviewTopDevices({
       },
     },
     os_version: {
-      title: 'Top OS version',
-      btn: 'OS Version',
+      title: t('overview.top_os_version'),
+      btn: t('overview.os_version'),
       chart: {
         options: {
-          columns: ['Version', isPageFilter ? 'Views' : 'Sessions'],
+          columns: [
+            t('overview.version'),
+            isPageFilter ? t('overview.views') : t('overview.sessions'),
+          ],
           renderSerieName(name) {
             return name[1] || NOT_SET_VALUE;
           },
@@ -239,11 +256,14 @@ export default function OverviewTopDevices({
       },
     },
     brand: {
-      title: 'Top Brands',
-      btn: 'Brands',
+      title: t('overview.top_brands'),
+      btn: t('overview.brands'),
       chart: {
         options: {
-          columns: ['Brand', isPageFilter ? 'Views' : 'Sessions'],
+          columns: [
+            t('overview.brand'),
+            isPageFilter ? t('overview.views') : t('overview.sessions'),
+          ],
         },
         report: {
           limit: 10,
@@ -276,11 +296,14 @@ export default function OverviewTopDevices({
       },
     },
     model: {
-      title: 'Top Models',
-      btn: 'Models',
+      title: t('overview.top_models'),
+      btn: t('overview.models'),
       chart: {
         options: {
-          columns: ['Model', isPageFilter ? 'Views' : 'Sessions'],
+          columns: [
+            t('overview.model'),
+            isPageFilter ? t('overview.views') : t('overview.sessions'),
+          ],
           renderSerieName(name) {
             return name[1] || NOT_SET_VALUE;
           },
@@ -377,7 +400,9 @@ export default function OverviewTopDevices({
           onTabChange={setWidget}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          searchPlaceholder={t('overview.search_column', {
+            column: widget.btn.toLowerCase(),
+          })}
           className="border-b-0 pb-2"
         />
         <WidgetBody className="p-0">
@@ -400,7 +425,7 @@ export default function OverviewTopDevices({
             <OverviewWidgetTableGeneric
               data={filteredData}
               column={{
-                name: OVERVIEW_COLUMNS_NAME[widget.key],
+                name: t(getOverviewColumnNameKey(widget.key)),
                 render(item) {
                   return (
                     <div className="row items-center gap-2 min-w-0 relative">
@@ -412,7 +437,7 @@ export default function OverviewTopDevices({
                           setFilter(widget.key, item.name);
                         }}
                       >
-                        {item.name || 'Not set'}
+                        {item.name || t('overview.not_set')}
                       </button>
                     </div>
                   );

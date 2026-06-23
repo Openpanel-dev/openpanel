@@ -2,9 +2,11 @@ import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import FeedbackPrompt from '@/components/organization/feedback-prompt';
 import SupporterPrompt from '@/components/organization/supporter-prompt';
+import { getSubscriptionBannerCopy } from '@/components/organization/subscription-i18n';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
+import { formatDate } from '@/utils/date';
 import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 import { subscriptionBlocksDashboard } from '@openpanel/payments/subscription-state';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -17,6 +19,7 @@ import {
 } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { Building2Icon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const IGNORE_ORGANIZATION_IDS = ['.well-known', 'onboarding', 'assets'];
 
@@ -111,6 +114,7 @@ function Alert({
 }
 
 function Component() {
+  const { t } = useTranslation();
   const { organizationId } = Route.useParams();
   const trpc = useTRPC();
   const { data: organization } = useSuspenseQuery(
@@ -136,13 +140,26 @@ function Component() {
   const hideBannerForPrompt =
     isProjectRoute &&
     subscriptionBlocksDashboard(organization.subscriptionState);
+  const endsAt = organization.subscriptionEndsAt
+    ? formatDate(organization.subscriptionEndsAt)
+    : null;
+  const canceledAt = organization.subscriptionCanceledAt
+    ? formatDate(organization.subscriptionCanceledAt)
+    : null;
+  const bannerCopy = getSubscriptionBannerCopy(organization.subscriptionState, {
+    endsAt,
+    canceledAt,
+  });
 
   return (
     <>
-      {stateMeta.banner && !hideBannerForPrompt && (
+      {stateMeta.banner && bannerCopy && !hideBannerForPrompt && (
         <Alert
-          title={stateMeta.banner.title}
-          description={stateMeta.banner.description}
+          title={t(bannerCopy.title.key, bannerCopy.title.values)}
+          description={t(
+            bannerCopy.description.key,
+            bannerCopy.description.values,
+          )}
         >
           <LinkButton
             to="/$organizationId/billing"
@@ -150,15 +167,17 @@ function Component() {
               organizationId: organizationId,
             }}
           >
-            {stateMeta.banner.cta}
+            {t(bannerCopy.cta.key, bannerCopy.cta.values)}
           </LinkButton>
         </Alert>
       )}
       {organization.subscriptionPeriodEventsCountExceededAt &&
         organization.isActive && (
           <Alert
-            title="Events limit exceeded"
-            description={`Your subscription has exceeded the limit on ${format(organization.subscriptionPeriodEventsCountExceededAt, 'PPP')}`}
+            title={t('billing.events_limit_exceeded_title')}
+            description={t('billing.events_limit_exceeded_description', {
+              date: format(organization.subscriptionPeriodEventsCountExceededAt, 'PPP'),
+            })}
           >
             <LinkButton
               to="/$organizationId/billing"
@@ -166,7 +185,7 @@ function Component() {
                 organizationId: organizationId,
               }}
             >
-              Upgrade now
+              {t('billing.events_limit_exceeded_cta')}
             </LinkButton>
           </Alert>
         )}

@@ -1,6 +1,12 @@
 import { ChevronRightIcon } from 'lucide-react';
 import { useState } from 'react';
-import { ResultCard, ToolDoneBadge, ToolStateGuard } from './shared';
+import { useTranslation } from 'react-i18next';
+import {
+  ResultCard,
+  ToolDoneBadge,
+  ToolStateGuard,
+  useToolPhraseTranslator,
+} from './shared';
 import { getToolPhrase } from './tool-labels';
 import type { ToolResultProps } from './types';
 
@@ -29,13 +35,15 @@ function DefaultInner({
   toolName: string;
   output: unknown;
 }) {
+  const { t } = useTranslation();
+  const translateToolPhrase = useToolPhraseTranslator();
   const [expanded, setExpanded] = useState(false);
 
   if (output == null) {
     return (
-      <ResultCard title={getToolPhrase(toolName, 'done')}>
+      <ResultCard title={translateToolPhrase(getToolPhrase(toolName, 'done'))}>
         <div className="px-3 py-2 text-sm text-muted-foreground">
-          No result.
+          {t('chat.tool_result_empty')}
         </div>
       </ResultCard>
     );
@@ -43,7 +51,7 @@ function DefaultInner({
 
   if (typeof output === 'string') {
     return (
-      <ResultCard title={getToolPhrase(toolName, 'done')}>
+      <ResultCard title={translateToolPhrase(getToolPhrase(toolName, 'done'))}>
         <div className="px-3 py-2 text-sm whitespace-pre-wrap">{output}</div>
       </ResultCard>
     );
@@ -64,8 +72,8 @@ function DefaultInner({
         />
         <span className="truncate">
           {Array.isArray(output)
-            ? `${output.length} item${output.length === 1 ? '' : 's'}`
-            : 'View raw output'}
+            ? t('chat.tool_result_item_count', { count: output.length })
+            : t('chat.tool_result_view_raw_output')}
         </span>
       </button>
       {expanded && (

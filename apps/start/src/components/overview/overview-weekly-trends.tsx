@@ -9,6 +9,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Tooltip,
   TooltipContent,
@@ -32,24 +33,32 @@ type MetricKey =
   | 'views_per_session'
   | 'avg_session_duration';
 
-const METRICS: { key: MetricKey; label: string; unit: string }[] = [
-  { key: 'unique_visitors', label: 'Unique Visitors', unit: '' },
-  { key: 'total_sessions', label: 'Sessions', unit: '' },
-  { key: 'total_screen_views', label: 'Pageviews', unit: '' },
-  { key: 'bounce_rate', label: 'Bounce Rate', unit: 'pct' },
-  { key: 'views_per_session', label: 'Pages / Session', unit: '' },
-  { key: 'avg_session_duration', label: 'Session Duration', unit: 'min' },
+const METRICS: { key: MetricKey; labelKey: string; unit: string }[] = [
+  { key: 'unique_visitors', labelKey: 'overview.unique_visitors', unit: '' },
+  { key: 'total_sessions', labelKey: 'overview.sessions', unit: '' },
+  { key: 'total_screen_views', labelKey: 'overview.pageviews', unit: '' },
+  { key: 'bounce_rate', labelKey: 'overview.bounce_rate', unit: 'pct' },
+  { key: 'views_per_session', labelKey: 'overview.pages_per_session', unit: '' },
+  { key: 'avg_session_duration', labelKey: 'overview.session_duration', unit: 'min' },
 ];
 
-const SHORT_DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const LONG_DAY_NAMES = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
+const SHORT_DAY_NAME_KEYS = [
+  'overview.day_mon_short',
+  'overview.day_tue_short',
+  'overview.day_wed_short',
+  'overview.day_thu_short',
+  'overview.day_fri_short',
+  'overview.day_sat_short',
+  'overview.day_sun_short',
+];
+const LONG_DAY_NAME_KEYS = [
+  'overview.day_monday',
+  'overview.day_tuesday',
+  'overview.day_wednesday',
+  'overview.day_thursday',
+  'overview.day_friday',
+  'overview.day_saturday',
+  'overview.day_sunday',
 ];
 
 function formatHourRange(hour: number) {
@@ -75,6 +84,7 @@ export default function OverviewWeeklyTrends({
   projectId,
   shareId,
 }: OverviewWeeklyTrendsProps) {
+  const { t } = useTranslation();
   const { range, startDate, endDate } = useOverviewOptions();
   const [filters] = useEventQueryFilters();
   const [metric, setMetric] = useState<MetricKey>('unique_visitors');
@@ -142,18 +152,18 @@ export default function OverviewWeeklyTrends({
   return (
     <Widget className="col-span-6">
       <WidgetHeadSearchable
-        tabs={METRICS.map((m) => ({ key: m.key, label: m.label }))}
+        tabs={METRICS.map((m) => ({ key: m.key, label: t(m.labelKey) }))}
         activeTab={metric}
         onTabChange={setMetric}
       />
       <WidgetBody>
         {query.isLoading ? (
           <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-            Loading...
+            {t('common.loading')}...
           </div>
         ) : !heatmap ? (
           <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-            No data available
+            {t('overview.no_data_available')}
           </div>
         ) : (
           <div className="flex">
@@ -177,12 +187,12 @@ export default function OverviewWeeklyTrends({
             <div className="flex-1 min-w-0">
               {/* Day labels */}
               <div className="flex h-6">
-                {SHORT_DAY_NAMES.map((day) => (
+                {SHORT_DAY_NAME_KEYS.map((dayKey) => (
                   <div
-                    key={day}
+                    key={dayKey}
                     className="flex-1 text-center text-[11px] text-muted-foreground"
                   >
-                    {day}
+                    {t(dayKey)}
                   </div>
                 ))}
               </div>
@@ -221,13 +231,13 @@ export default function OverviewWeeklyTrends({
                           <ChartTooltipContainer>
                             <ChartTooltipHeader>
                               <div className="text-sm font-medium">
-                                {LONG_DAY_NAMES[day]}, {formatHourRange(hour)}
+                                {t(LONG_DAY_NAME_KEYS[day]!)}, {formatHourRange(hour)}
                               </div>
                             </ChartTooltipHeader>
                             <ChartTooltipItem color="#10b981">
                               <div className="flex items-center justify-between gap-6 font-mono font-medium text-sm">
                                 <div className="text-muted-foreground">
-                                  {activeMetric.label}
+                                  {t(activeMetric.labelKey)}
                                 </div>
                                 <div>
                                   {activeMetric.unit === 'pct'
