@@ -1,12 +1,10 @@
 import { useTRPC } from '@/integrations/trpc/react';
 
-import { DiscordIntegrationForm } from '@/components/integrations/forms/discord-integration';
-import { GCSExportIntegrationForm } from '@/components/integrations/forms/gcs-export-integration';
-import { S3ExportIntegrationForm } from '@/components/integrations/forms/s3-export-integration';
-import { SlackIntegrationForm } from '@/components/integrations/forms/slack-integration';
-import { WebhookIntegrationForm } from '@/components/integrations/forms/webhook-integration';
 import { IntegrationCardContent } from '@/components/integrations/integration-card';
-import { INTEGRATIONS } from '@/components/integrations/integrations';
+import {
+  CLIENT_INTEGRATIONS,
+  INTEGRATIONS,
+} from '@/components/integrations/integrations';
 import { SheetContent } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/use-app-params';
 import type { IIntegrationConfig } from '@openpanel/validation';
@@ -71,45 +69,11 @@ export default function AddIntegration(props: Props) {
       return null;
     }
 
-    switch (integration?.type) {
-      case 'webhook':
-        return (
-          <WebhookIntegrationForm
-            defaultValues={query.data}
-            onSuccess={handleSuccess}
-          />
-        );
-      case 'discord':
-        return (
-          <DiscordIntegrationForm
-            defaultValues={query.data}
-            onSuccess={handleSuccess}
-          />
-        );
-      case 'slack':
-        return (
-          <SlackIntegrationForm
-            defaultValues={query.data}
-            onSuccess={handleSuccess}
-          />
-        );
-      case 's3_export':
-        return (
-          <S3ExportIntegrationForm
-            defaultValues={query.data}
-            onSuccess={handleSuccess}
-          />
-        );
-      case 'gcs_export':
-        return (
-          <GCSExportIntegrationForm
-            defaultValues={query.data}
-            onSuccess={handleSuccess}
-          />
-        );
-      default:
-        return null;
+    const Form = CLIENT_INTEGRATIONS[props.type]?.Form;
+    if (!Form) {
+      return null;
     }
+    return <Form defaultValues={query.data} onSuccess={handleSuccess} />;
   };
 
   return (

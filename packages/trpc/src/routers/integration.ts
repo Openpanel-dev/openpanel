@@ -1,25 +1,20 @@
 import { z } from 'zod';
 
 import { BASE_INTEGRATIONS, db } from '@openpanel/db';
-import { encryptCredential } from '@openpanel/common/server';
 
-import {
-  createS3Adapter,
-  createGCSAdapter,
-} from '@openpanel/integrations/src/object-store';
+import { getServerIntegration } from '@openpanel/integrations/src/registry';
 import { getSlackInstallUrl } from '@openpanel/integrations/src/slack';
 import {
+  type IIntegrationConfig,
   type ISlackConfig,
-  zCreateDiscordIntegration,
   zCreateGCSExportIntegration,
   zCreateS3ExportIntegration,
   zCreateSlackIntegration,
-  zCreateWebhookIntegration,
+  zIntegrationConfig,
 } from '@openpanel/validation';
 import { getOrganizationAccess, getProjectAccess } from '../access';
 import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
-import { validate as validateJavaScriptTemplate } from '@openpanel/js-runtime';
 
 // Assert the user can access the project, and return the project's
 // organizationId (still stored on the integration for org-level queries/cascades).
@@ -33,6 +28,53 @@ async function assertProjectAccessAndGetOrg(userId: string, projectId: string) {
     select: { organizationId: true },
   });
   return project.organizationId;
+}
+
+// Shared create/update path for any form-configured integration. All per-type
+// behavior (validation, connection test, credential encryption) is delegated to
+// the integration's server plugin — adding a new integration needs no change here.
+async function upsertIntegration(
+  userId: string,
+  input: {
+    id?: string;
+    name: string;
+    projectId: string;
+    config: IIntegrationConfig;
+  },
+) {
+  const organizationId = await assertProjectAccessAndGetOrg(
+    userId,
+    input.projectId,
+  );
+  const plugin = getServerIntegration(input.config.type);
+
+  const validation = plugin.validateConfig?.(input.config);
+  if (validation && !validation.valid) {
+    throw new TRPCBadRequestError(`Invalid config: ${validation.error}`);
+  }
+
+  // Test the connection with the unencrypted credentials before saving.
+  const testResult = await plugin.testConnection?.(input.config);
+  if (testResult && !testResult.success) {
+    throw new TRPCBadRequestError(`Failed to connect: ${testResult.error}`);
+  }
+
+  const config = plugin.encryptCredentials?.(input.config) ?? input.config;
+
+  if (input.id) {
+    return db.integration.update({
+      where: { id: input.id, organizationId },
+      data: { name: input.name, config },
+    });
+  }
+  return db.integration.create({
+    data: {
+      name: input.name,
+      organizationId,
+      projectId: input.projectId,
+      config,
+    },
+  });
 }
 
 // Access check for an existing integration of either scope: project-scoped rows
@@ -130,130 +172,42 @@ export const integrationRouter = createTRPCRouter({
         }),
       };
     }),
+  // Generic create/update for any form-configured integration. Per-type
+  // behavior lives in the server plugin; no switch here.
   createOrUpdate: protectedProcedure
-    .input(z.union([zCreateDiscordIntegration, zCreateWebhookIntegration]))
-    .mutation(async ({ input, ctx }) => {
-      const organizationId = await assertProjectAccessAndGetOrg(
-        ctx.session.userId,
-        input.projectId,
-      );
-
-      // Validate JavaScript template if mode is javascript
-      if (
-        input.config.type === 'webhook' &&
-        input.config.mode === 'javascript' &&
-        input.config.javascriptTemplate
-      ) {
-        const validation = validateJavaScriptTemplate(
-          input.config.javascriptTemplate,
-        );
-        if (!validation.valid) {
-          throw new TRPCBadRequestError(
-            `Invalid JavaScript template: ${validation.error}`,
-          );
-        }
-      }
-
-      if (input.id) {
-        return db.integration.update({
-          where: {
-            id: input.id,
-            organizationId,
-          },
-          data: {
-            name: input.name,
-            config: input.config,
-          },
-        });
-      }
-      return db.integration.create({
-        data: {
-          name: input.name,
-          organizationId,
-          projectId: input.projectId,
-          config: input.config,
-        },
-      });
-    }),
+    .input(
+      z.object({
+        id: z.string().optional(),
+        name: z.string().min(1),
+        projectId: z.string().min(1),
+        config: zIntegrationConfig,
+      }),
+    )
+    .mutation(({ input, ctx }) => upsertIntegration(ctx.session.userId, input)),
+  // Back-compat alias for the export forms; delegates to the same generic path.
+  // TODO: remove once the dashboard calls `createOrUpdate` directly.
   createOrUpdateExport: protectedProcedure
-    .input(
-      z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]),
-    )
-    .mutation(async ({ input, ctx }) => {
-      const organizationId = await assertProjectAccessAndGetOrg(
-        ctx.session.userId,
-        input.projectId,
-      );
-
-      // Test connection before saving (using unencrypted credentials)
-      if (input.config.type === 's3_export') {
-        const adapter = createS3Adapter(input.config);
-        const testResult = await adapter.testConnection();
-        if (!testResult.success) {
-          throw new TRPCBadRequestError(
-            `Failed to connect to S3: ${testResult.error}`,
-          );
-        }
-      } else if (input.config.type === 'gcs_export') {
-        const adapter = createGCSAdapter(input.config);
-        const testResult = await adapter.testConnection();
-        if (!testResult.success) {
-          throw new TRPCBadRequestError(
-            `Failed to connect to GCS: ${testResult.error}`,
-          );
-        }
-      }
-
-      // Encrypt sensitive credentials before storing
-      let configToSave = input.config;
-      if (input.config.type === 's3_export' && input.config.authMode === 'access_key') {
-        configToSave = {
-          ...input.config,
-          secretAccessKey: encryptCredential(input.config.secretAccessKey),
-        };
-      } else if (input.config.type === 'gcs_export') {
-        configToSave = {
-          ...input.config,
-          serviceAccountKey: encryptCredential(input.config.serviceAccountKey),
-        };
-      }
-
-      if (input.id) {
-        return db.integration.update({
-          where: {
-            id: input.id,
-            organizationId,
-          },
-          data: {
-            name: input.name,
-            config: configToSave,
-          },
-        });
-      }
-      return db.integration.create({
-        data: {
-          name: input.name,
-          organizationId,
-          projectId: input.projectId,
-          config: configToSave,
-        },
-      });
-    }),
+    .input(z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]))
+    .mutation(({ input, ctx }) => upsertIntegration(ctx.session.userId, input)),
+  // Generic, registry-driven connection test.
+  testConnection: protectedProcedure
+    .input(z.object({ config: zIntegrationConfig }))
+    .mutation(
+      async ({ input }) =>
+        (await getServerIntegration(input.config.type).testConnection?.(
+          input.config,
+        )) ?? { success: true },
+    ),
+  // Back-compat alias for the export forms.
+  // TODO: remove once the dashboard calls `testConnection` directly.
   testExportConnection: protectedProcedure
-    .input(
-      z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]),
-    )
-    .mutation(async ({ input }) => {
-      if (input.config.type === 's3_export') {
-        const adapter = createS3Adapter(input.config);
-        return adapter.testConnection();
-      }
-      if (input.config.type === 'gcs_export') {
-        const adapter = createGCSAdapter(input.config);
-        return adapter.testConnection();
-      }
-      return { success: false, error: 'Unknown export type' };
-    }),
+    .input(z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]))
+    .mutation(
+      async ({ input }) =>
+        (await getServerIntegration(input.config.type).testConnection?.(
+          input.config,
+        )) ?? { success: false, error: 'Unknown export type' },
+    ),
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input: { id }, ctx }) => {

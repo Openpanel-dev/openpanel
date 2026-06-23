@@ -13,17 +13,15 @@ import {
   serializeManifest,
   TABLE_NAMES,
 } from '@openpanel/db';
-import {
-  createGCSAdapter,
-  createS3Adapter,
-  type IObjectStoreAdapter,
-} from '@openpanel/integrations/src/object-store';
+import type { IObjectStoreAdapter } from '@openpanel/integrations/src/object-store';
+import { getServerIntegration } from '@openpanel/integrations/src/registry';
 import { createLogger } from '@openpanel/logger';
 import type { CronQueuePayload } from '@openpanel/queue';
-import type {
-  IGCSExportConfig,
-  IIntegrationConfig,
-  IS3ExportConfig,
+import {
+  type IGCSExportConfig,
+  type IIntegrationConfig,
+  type IS3ExportConfig,
+  isKind,
 } from '@openpanel/validation';
 import type { Job } from 'bullmq';
 
@@ -67,7 +65,8 @@ interface Cursor {
 }
 
 function isExportConfig(config: IIntegrationConfig): config is ExportConfig {
-  return config.type === 's3_export' || config.type === 'gcs_export';
+  // Capability comes from the integration registry, not a hardcoded type list.
+  return isKind(config, 'export');
 }
 
 const formatCh = (date: Date): string =>
@@ -146,10 +145,12 @@ async function processExport(
   config: ExportConfig
 ): Promise<void> {
   let cursor = await loadCursor(projectId, integrationId);
-  const adapter: IObjectStoreAdapter =
-    config.type === 's3_export'
-      ? createS3Adapter(config)
-      : createGCSAdapter(config);
+  const adapter: IObjectStoreAdapter | undefined = getServerIntegration(
+    config.type
+  ).export?.createAdapter(config);
+  if (!adapter) {
+    throw new Error(`Integration ${config.type} has no export adapter`);
+  }
   const prefix = config.prefix || 'openpanel-exports';
   const format = config.format || 'jsonl_gzip';
 
