@@ -1,9 +1,8 @@
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { useRef } from 'react';
-import { popModal } from '..';
 import { Button } from '@/components/ui/button';
-import { DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/utils/cn';
 
 interface ModalContentProps extends DialogContentProps {
@@ -83,15 +82,12 @@ export function ModalHeader({
           )}
         </div>
         {onClose !== false && (
-          <Button
-            className="-mt-2"
-            onClick={() => (onClose ? onClose() : popModal())}
-            size="sm"
-            variant="ghost"
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </Button>
+          <DialogClose asChild onClick={() => onClose?.()}>
+            <Button className="-mt-2" size="sm" variant="ghost">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </DialogClose>
         )}
       </div>
     </div>
