@@ -258,6 +258,135 @@ export class ConversionService {
     };
   }
 
+  /**
+   * Single-scan array-aggregate SQL for the simple 2-event conversion case.
+   * Mirrors PostHog's aggregate_funnel pattern in pure CH SQL — single
+   * events scan with per-step arrays, arrayJoin for per-day cohort
+   * attribution, arrayExists for in-window match (cross-day safe).
+   */
+  private buildArrayPatternSql({
+    projectId,
+    firstEvent,
+    lastEvent,
+    startDate,
+    endDate,
+    extendedEndDate,
+    funnelWindowSeconds,
+    interval,
+  }: {
+    projectId: string;
+    firstEvent: IChartEvent;
+    lastEvent: IChartEvent;
+    startDate: string;
+    endDate: string;
+    extendedEndDate: string;
+    funnelWindowSeconds: number;
+    interval?: 'minute' | 'hour' | 'day' | 'week' | 'month';
+  }): string {
+    const startTs = `toDateTime('${formatClickhouseDate(startDate)}')`;
+    const endTs = `toDateTime('${formatClickhouseDate(endDate)}')`;
+    const extendedEndTs = `toDateTime('${formatClickhouseDate(extendedEndDate)}')`;
+    const projectLiteral = projectId.replace(/'/g, "''");
+    const firstNameLiteral = firstEvent.name.replace(/'/g, "''");
+    const lastNameLiteral = lastEvent.name.replace(/'/g, "''");
+    const toStartOf = clix.toStartOf('toDateTime(open_day)', interval || 'day');
+
+    // Hoist event filters to a `filtered_profiles` pre-CTE so proj_funnel
+    // stays selected for the main scan. Filters in groupArrayIf force CH
+    // off proj_funnel for column reads (country isn't in the projection)
+    // — measured 42s vs 4.4s for a 30-day country='US' funnel.
+    //
+    // Semantic: broader than per-event strict (a user with start event
+    // matching AND end event not matching is included). This matches the
+    // backend-country attribution case where backend events get pod-IP
+    // country. Day-level counts can differ by ~0-1%.
+    const collectFilterClauses = (event: IChartEvent): string[] => {
+      const filters = event.filters ?? [];
+      if (filters.length === 0) return [];
+      return Object.values(getEventFiltersWhereClause(filters, projectId));
+    };
+
+    const firstFilterClauses = collectFilterClauses(firstEvent);
+    const lastFilterClauses = collectFilterClauses(lastEvent);
+    const allFilterClauses = [
+      ...new Set([...firstFilterClauses, ...lastFilterClauses]),
+    ];
+
+    const filteredProfilesCte =
+      allFilterClauses.length > 0
+        ? `filtered_profiles AS (
+        SELECT DISTINCT profile_id
+        FROM ${TABLE_NAMES.events}
+        WHERE project_id = '${projectLiteral}'
+          AND created_at >= ${startTs}
+          AND created_at <= ${extendedEndTs}
+          AND profile_id != ''
+          AND ${allFilterClauses.join(' AND ')}
+      ),`
+        : '';
+
+    const filteredProfilesJoin =
+      allFilterClauses.length > 0
+        ? `\n          AND ${TABLE_NAMES.events}.profile_id IN (SELECT profile_id FROM filtered_profiles)`
+        : '';
+
+    return `
+      WITH ${filteredProfilesCte}
+      al AS (
+        SELECT alias, argMax(profile_id, created_at) AS canonical
+        FROM ${TABLE_NAMES.alias}
+        WHERE project_id = '${projectLiteral}'
+        GROUP BY alias
+      ),
+      user_events AS (
+        SELECT
+          coalesce(nullIf(al.canonical, ''), ${TABLE_NAMES.events}.profile_id) AS resolved_pid,
+          groupArrayIf(
+            toDateTime64(created_at, 3),
+            name = '${firstNameLiteral}' AND created_at <= ${endTs}
+          ) AS opens,
+          groupArrayIf(
+            toDateTime64(created_at, 3),
+            name = '${lastNameLiteral}'
+          ) AS finishes
+        FROM ${TABLE_NAMES.events}
+        LEFT JOIN al ON al.alias = ${TABLE_NAMES.events}.profile_id
+        WHERE project_id = '${projectLiteral}'
+          AND name IN ('${firstNameLiteral}', '${lastNameLiteral}')
+          AND created_at >= ${startTs}
+          AND created_at <= ${extendedEndTs}
+          AND ${TABLE_NAMES.events}.profile_id != ''${filteredProfilesJoin}
+        GROUP BY resolved_pid
+        HAVING length(opens) > 0
+      ),
+      per_user_per_day AS (
+        SELECT
+          resolved_pid,
+          arrayJoin(arrayDistinct(arrayMap(o -> toDate(o), opens))) AS open_day,
+          arrayMin(arrayFilter(o -> toDate(o) = open_day, opens)) AS first_open,
+          finishes
+        FROM user_events
+      )
+      SELECT
+        ${toStartOf} AS event_day,
+        count() AS total_first,
+        countIf(arrayExists(
+          f -> f >= first_open AND f <= first_open + INTERVAL ${funnelWindowSeconds} SECOND,
+          finishes
+        )) AS conversions,
+        round(
+          100.0 * countIf(arrayExists(
+            f -> f >= first_open AND f <= first_open + INTERVAL ${funnelWindowSeconds} SECOND,
+            finishes
+          )) / count(),
+          2
+        ) AS conversion_rate_percentage
+      FROM per_user_per_day
+      GROUP BY event_day
+      ORDER BY event_day ASC
+    `;
+  }
+
   async getConversion({
     projectId,
     startDate,
@@ -324,6 +453,76 @@ export class ConversionService {
 
     // Ensure materialized columns cache is warm so getSelectPropertyKey works synchronously
     await getMaterializedColumns('events');
+
+    // Single-scan array-aggregate fast path. 3-7x speedup vs the multi-CTE
+    // ASOF JOIN path below. Anything unsupported (breakdowns, holds,
+    // cohorts, custom events, session group, TTC, profile.* filters) falls
+    // through unchanged.
+    const hasIncompatibleFilters = (event: IChartEvent) =>
+      (event.filters ?? []).some(
+        (f) =>
+          f.name.startsWith('profile.') ||
+          f.operator === 'inCohort' ||
+          f.operator === 'notInCohort',
+      );
+
+    const canUseArrayPath =
+      events.length === 2 &&
+      funnelGroup !== 'session_id' &&
+      cohortIds.length === 0 &&
+      breakdowns.length === 0 &&
+      holdProperties.length === 0 &&
+      measuring === 'conversion_rate' &&
+      !hasIncompatibleFilters(firstEvent) &&
+      !hasIncompatibleFilters(lastEvent);
+
+    if (canUseArrayPath) {
+      const [startCustom, endCustom] = await Promise.all([
+        getCustomEventByName(firstEvent.name, projectId),
+        getCustomEventByName(lastEvent.name, projectId),
+      ]);
+
+      if (!startCustom && !endCustom) {
+        const arraySql = this.buildArrayPatternSql({
+          projectId,
+          firstEvent,
+          lastEvent,
+          startDate,
+          endDate,
+          extendedEndDate,
+          funnelWindowSeconds,
+          interval,
+        });
+
+        const rawResult = await this.client.query({
+          query: arraySql,
+          clickhouse_settings: { session_timezone: timezone },
+        });
+        const json = (await rawResult.json()) as {
+          data: {
+            event_day: string;
+            total_first: number;
+            conversions: number;
+            conversion_rate_percentage: number;
+          }[];
+        };
+
+        const results = json.data;
+        const resultSeries = this.toSeries(results, breakdowns);
+
+        return resultSeries.map((serie, serieIndex) => ({
+          ...serie,
+          data: serie.data.map((d, index) => ({
+            ...d,
+            timestamp: new Date(d.date).getTime(),
+            serieIndex,
+            index,
+            serie: omit(['data'], serie),
+          })),
+        }));
+      }
+    }
+    // ── End array-pattern fast path ───────────────────────────────────
 
     // Determine which event-property columns are needed from start_events
     // (profile.* and cohort breakdowns are handled separately via JOINs)
