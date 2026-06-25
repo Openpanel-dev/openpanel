@@ -1,13 +1,16 @@
 import type {
   DeprecatedPostEventPayload,
+  ITrackBatchHandlerPayload,
   ITrackHandlerPayload,
 } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { isDuplicatedEvent } from '@/utils/deduplicate';
 
+type TrackBody = ITrackHandlerPayload | ITrackBatchHandlerPayload;
+
 export async function duplicateHook(
   req: FastifyRequest<{
-    Body: ITrackHandlerPayload | DeprecatedPostEventPayload;
+    Body: TrackBody | DeprecatedPostEventPayload;
   }>,
   reply: FastifyReply
 ) {
@@ -16,8 +19,12 @@ export async function duplicateHook(
   const clientId = req.headers['openpanel-client-id'];
   const body = req?.body;
   const isTrackPayload = getIsTrackPayload(req);
-  const isReplay = isTrackPayload && req.body.type === 'replay';
-  const shouldCheck = ip && origin && clientId && !isReplay;
+  // Replays stream chunked payloads and offline-first SDKs retry whole
+  // batches — neither should be dropped by the 100 ms body-hash dedup.
+  const skipDedup =
+    isTrackPayload &&
+    (req.body.type === 'replay' || req.body.type === 'batch');
+  const shouldCheck = ip && origin && clientId && !skipDedup;
   const isDuplicate = shouldCheck
     ? await isDuplicatedEvent({
         ip,
@@ -34,10 +41,10 @@ export async function duplicateHook(
 
 function getIsTrackPayload(
   req: FastifyRequest<{
-    Body: ITrackHandlerPayload | DeprecatedPostEventPayload;
+    Body: TrackBody | DeprecatedPostEventPayload;
   }>
 ): req is FastifyRequest<{
-  Body: ITrackHandlerPayload;
+  Body: TrackBody;
 }> {
   if (req.method !== 'POST') {
     return false;
