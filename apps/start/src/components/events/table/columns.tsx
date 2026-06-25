@@ -9,19 +9,11 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import type { IServiceEvent } from '@openpanel/db';
+import { ChevronRightIcon } from 'lucide-react';
 
 export function useColumns() {
   const number = useNumber();
   const columns: ColumnDef<IServiceEvent>[] = [
-    {
-      accessorKey: 'createdAt',
-      header: 'Created at',
-      size: ColumnCreatedAt.size,
-      cell: ({ row }) => {
-        const session = row.original;
-        return <ColumnCreatedAt>{session.createdAt}</ColumnCreatedAt>;
-      },
-    },
     {
       size: 300,
       accessorKey: 'name',
@@ -63,10 +55,12 @@ export function useColumns() {
 
         return (
           <div className="flex items-center gap-2">
+            <ChevronRightIcon className="size-3 shrink-0 text-muted-foreground transition-transform group-data-[expanded=true]/exp:rotate-90" />
             <button
               type="button"
               className="transition-transform hover:scale-105"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 pushModal('EditEvent', {
                   id: row.original.id,
                 });
@@ -79,23 +73,20 @@ export function useColumns() {
               />
             </button>
             <span className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  pushModal('EventDetails', {
-                    id: row.original.id,
-                    createdAt: row.original.createdAt,
-                    projectId: row.original.projectId,
-                  });
-                }}
-                className="font-medium"
-              >
-                {renderName()}
-              </button>
+              <span className="font-medium">{renderName()}</span>
               {renderDuration()}
             </span>
           </div>
         );
+      },
+    },
+    {
+      accessorKey: 'createdAt',
+      header: 'Created at',
+      size: ColumnCreatedAt.size,
+      cell: ({ row }) => {
+        const session = row.original;
+        return <ColumnCreatedAt>{session.createdAt}</ColumnCreatedAt>;
       },
     },
     {
@@ -107,6 +98,7 @@ export function useColumns() {
           return (
             <ProjectLink
               href={`/profiles/${profile.id}`}
+              onClick={(e) => e.stopPropagation()}
               className="whitespace-nowrap font-medium hover:underline"
             >
               {getProfileName(profile)}
@@ -118,6 +110,7 @@ export function useColumns() {
           return (
             <ProjectLink
               href={`/profiles/${profileId}`}
+              onClick={(e) => e.stopPropagation()}
               className="whitespace-nowrap font-medium hover:underline"
             >
               Unknown
@@ -129,6 +122,7 @@ export function useColumns() {
           return (
             <ProjectLink
               href={`/profiles/${deviceId}`}
+              onClick={(e) => e.stopPropagation()}
               className="whitespace-nowrap font-medium hover:underline"
             >
               Anonymous

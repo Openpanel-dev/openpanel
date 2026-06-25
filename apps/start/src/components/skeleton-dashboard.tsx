@@ -3,7 +3,7 @@ export function SkeletonDashboard() {
     <div className="fixed inset-0 bg-gradient-to-br from-def-100 to-def-200 overflow-hidden">
       <div className="inset-0 fixed backdrop-blur-xs bg-background/10 z-10" />
       {/* Sidebar Skeleton */}
-      <div className="fixed left-0 top-0 w-72 h-full bg-background/80 border-r border-def-300/50 backdrop-blur-sm">
+      <div className="fixed left-0 top-0 w-52 h-full bg-background/80 border-r border-def-300/50 backdrop-blur-sm">
         {/* Logo area */}
         <div className="h-16 border-b border-def-300/50 flex items-center px-4">
           <div className="w-8 h-8 bg-def-300/60 rounded-lg" />

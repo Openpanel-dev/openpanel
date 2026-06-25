@@ -22,10 +22,11 @@ import { format } from 'date-fns';
 import { CalendarIcon, FilterIcon, Loader2Icon } from 'lucide-react';
 import { parseAsIsoDateTime, useQueryState } from 'nuqs';
 import { last } from 'ramda';
-import { memo, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useInViewport } from 'react-in-viewport';
 import EventListener from '../event-listener';
 import { useColumns } from './columns';
+import { EventRowDetails } from './event-row-details';
 
 type Props = {
   query: UseInfiniteQueryResult<
@@ -44,6 +45,8 @@ interface VirtualizedEventsTableProps {
   table: Table<IServiceEvent>;
   data: IServiceEvent[];
   isLoading: boolean;
+  expandedId: string | null;
+  onToggle: (id: string) => void;
 }
 
 interface VirtualRowProps {
@@ -53,6 +56,8 @@ interface VirtualRowProps {
   scrollMargin: number;
   isLoading: boolean;
   headerColumnsHash: string;
+  isExpanded: boolean;
+  onToggle: (id: string) => void;
 }
 
 const VirtualRow = memo(
@@ -62,58 +67,95 @@ const VirtualRow = memo(
     headerColumns,
     scrollMargin,
     isLoading,
+    isExpanded,
+    onToggle,
   }: VirtualRowProps) {
     return (
       <div
         key={virtualRow.key}
         data-index={virtualRow.index}
+        data-expanded={isExpanded}
         ref={virtualRow.measureElement}
-        className="absolute top-0 left-0 w-full border-b hover:bg-muted/50 transition-colors group/row"
+        className="absolute top-0 left-0 w-full border-b transition-colors group/exp"
         style={{
           transform: `translateY(${virtualRow.start - scrollMargin}px)`,
-          display: 'grid',
-          gridTemplateColumns: headerColumns
-            .map((col) => `${col.getSize()}px`)
-            .join(' '),
           minWidth: 'fit-content',
-          minHeight: ROW_HEIGHT,
         }}
       >
-        {row.getVisibleCells().map((cell: any) => {
-          const width = `${cell.column.getSize()}px`;
-          return (
-            <div
-              key={cell.id}
-              className="flex items-center p-2 px-4 align-middle whitespace-nowrap"
-              style={{
-                width,
-                overflow: 'hidden',
-              }}
-            >
-              {isLoading ? (
-                <Skeleton className="h-4 w-3/5" />
-              ) : cell.column.columnDef.cell ? (
-                typeof cell.column.columnDef.cell === 'function' ? (
-                  cell.column.columnDef.cell(cell.getContext())
+        <div
+          role="button"
+          tabIndex={isLoading ? undefined : 0}
+          onClick={() => {
+            if (!isLoading && row.original?.id) {
+              onToggle(row.original.id);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (
+              (e.key === 'Enter' || e.key === ' ') &&
+              e.target === e.currentTarget &&
+              !isLoading &&
+              row.original?.id
+            ) {
+              e.preventDefault();
+              onToggle(row.original.id);
+            }
+          }}
+          className={cn(
+            'outline-none transition-colors focus-visible:bg-muted/50',
+            isExpanded ? 'bg-muted/50' : 'hover:bg-muted/50',
+            !isLoading && 'cursor-pointer',
+          )}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: headerColumns
+              .map((col) => `${col.getSize()}px`)
+              .join(' '),
+            minWidth: 'fit-content',
+            minHeight: ROW_HEIGHT,
+          }}
+        >
+          {row.getVisibleCells().map((cell: any) => {
+            const width = `${cell.column.getSize()}px`;
+            return (
+              <div
+                key={cell.id}
+                className="flex items-center p-2 px-4 align-middle whitespace-nowrap"
+                style={{
+                  width,
+                  overflow: 'hidden',
+                }}
+              >
+                {isLoading ? (
+                  <Skeleton className="h-4 w-3/5" />
+                ) : cell.column.columnDef.cell ? (
+                  typeof cell.column.columnDef.cell === 'function' ? (
+                    cell.column.columnDef.cell(cell.getContext())
+                  ) : (
+                    cell.column.columnDef.cell
+                  )
                 ) : (
-                  cell.column.columnDef.cell
-                )
-              ) : (
-                (cell.getValue() as React.ReactNode)
-              )}
-            </div>
-          );
-        })}
+                  (cell.getValue() as React.ReactNode)
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {isExpanded && !isLoading && row.original?.id && (
+          <EventRowDetails event={row.original} />
+        )}
       </div>
     );
   },
   (prevProps, nextProps) => {
     return (
       prevProps.row.id === nextProps.row.id &&
+      prevProps.row.original === nextProps.row.original &&
       prevProps.virtualRow.index === nextProps.virtualRow.index &&
       prevProps.virtualRow.start === nextProps.virtualRow.start &&
       prevProps.virtualRow.size === nextProps.virtualRow.size &&
       prevProps.isLoading === nextProps.isLoading &&
+      prevProps.isExpanded === nextProps.isExpanded &&
       prevProps.headerColumnsHash === nextProps.headerColumnsHash
     );
   },
@@ -123,6 +165,8 @@ const VirtualizedEventsTable = ({
   table,
   data,
   isLoading,
+  expandedId,
+  onToggle,
 }: VirtualizedEventsTableProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -137,6 +181,9 @@ const VirtualizedEventsTable = ({
     scrollMargin: parentRef.current?.offsetTop ?? 0,
   });
 
+  // Re-measure only when the column set changes. Row expansion is handled
+  // locally by each row's measureElement ResizeObserver — calling measure()
+  // here would reset the whole size cache and jump the scroll position.
   useEffect(() => {
     rowVirtualizer.measure();
   }, [headerColumns.length]);
@@ -208,6 +255,8 @@ const VirtualizedEventsTable = ({
               headerColumnsHash={headerColumnsHash}
               scrollMargin={rowVirtualizer.options.scrollMargin}
               isLoading={isLoading}
+              isExpanded={!isLoading && row.original?.id === expandedId}
+              onToggle={onToggle}
             />
           );
         })}
@@ -219,6 +268,10 @@ const VirtualizedEventsTable = ({
 export const EventsTable = ({ query }: Props) => {
   const { isLoading } = query;
   const columns = useColumns();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const onToggle = useCallback((id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }, []);
 
   const data = useMemo(() => {
     if (isLoading) {
@@ -273,7 +326,13 @@ export const EventsTable = ({ query }: Props) => {
   return (
     <>
       <EventsTableToolbar query={query} table={table} />
-      <VirtualizedEventsTable table={table} data={data} isLoading={isLoading} />
+      <VirtualizedEventsTable
+        table={table}
+        data={data}
+        isLoading={isLoading}
+        expandedId={expandedId}
+        onToggle={onToggle}
+      />
       <div className="w-full h-10 center-center pt-4" ref={inViewportRef}>
         <div
           className={cn(

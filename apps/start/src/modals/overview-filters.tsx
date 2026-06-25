@@ -46,7 +46,7 @@ export default function OverviewFilters({
   } = useEventNames({ projectId });
   const selectedFilters = filters.filter((filter) => filter.value[0] !== null);
   return (
-    <SheetContent className="[&>button.absolute]:hidden">
+    <SheetContent side="left" className="[&>button.absolute]:hidden">
       <ModalHeader title="Filters" />
       <div className="flex flex-col gap-4">
         <OriginFilter />

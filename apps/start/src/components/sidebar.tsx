@@ -107,8 +107,8 @@ export function SidebarContainer({
       />
       <div
         className={cn(
-          'group/sidebar fixed left-0 top-0 z-40 flex h-screen w-72 flex-col border-r border-border bg-card transition-transform duration-150',
-          '-translate-x-72 lg:-translate-x-0', // responsive
+          'group/sidebar fixed left-0 top-0 z-40 flex h-screen w-52 flex-col border-r border-border bg-card transition-transform duration-150',
+          '-translate-x-52 lg:-translate-x-0', // responsive
           active && 'translate-x-0', // force active on mobile
           'data-[collapsed=true]:lg:w-16', // icon rail (lg+)
         )}

@@ -965,10 +965,12 @@ class EventService {
     projectId,
     id,
     createdAt,
+    withProfile = true,
   }: {
     projectId: string;
     id: string;
     createdAt?: Date;
+    withProfile?: boolean;
   }) {
     const [event, metas] = await Promise.all([
       clix(this.client)
@@ -996,7 +998,7 @@ class EventService {
       getEventMetasCached(projectId),
     ]);
 
-    if (event?.profileId) {
+    if (withProfile && event?.profileId) {
       const profile = await getProfileById(event?.profileId, projectId);
       if (profile) {
         event.profile = profile;

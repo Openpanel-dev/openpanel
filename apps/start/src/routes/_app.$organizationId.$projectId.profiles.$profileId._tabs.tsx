@@ -1,12 +1,9 @@
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import { ProfileAvatar } from '@/components/profiles/profile-avatar';
-import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { ProfilePane } from '@/components/profiles/profile-pane';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
 import { useTRPC } from '@/integrations/trpc/react';
-import { getProfileName } from '@/utils/getters';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
 
@@ -38,10 +35,6 @@ function Component() {
   );
 
   const { activeTab, tabs } = usePageTabs([
-    {
-      id: '/$organizationId/$projectId/profiles/$profileId',
-      label: 'Overview',
-    },
     { id: 'events', label: 'Events' },
     { id: 'sessions', label: 'Sessions' },
   ]);
@@ -55,72 +48,28 @@ function Component() {
 
   return (
     <PageContainer>
-      <PageHeader
-        title={
-          <div className="row items-center gap-4 min-w-0">
-            <ProfileAvatar {...profile.data} />
-            <span className="truncate">
-              {profile.data
-                ? getProfileName(profile.data, false)
-                : 'User not identified'}
-            </span>
-          </div>
-        }
-      >
-        <div className="row gap-4 mb-6 flex-wrap">
-          {profile.data?.properties.country && (
-            <div className="row gap-2 items-center">
-              <SerieIcon name={profile.data.properties.country} />
-              <span>
-                {profile.data.properties.country}
-                {profile.data.properties.city &&
-                  ` / ${profile.data.properties.city}`}
-              </span>
-            </div>
-          )}
-          {profile.data?.properties.device && (
-            <div className="row gap-2 items-center">
-              <SerieIcon name={profile.data.properties.device} />
-              <span className="capitalize">
-                {profile.data.properties.device}
-              </span>
-            </div>
-          )}
-          {profile.data?.properties.os && (
-            <div className="row gap-2 items-center">
-              <SerieIcon name={profile.data.properties.os} />
-              <span>{profile.data.properties.os}</span>
-            </div>
-          )}
-          {profile.data?.properties.model && (
-            <div className="row gap-2 items-center">
-              <SerieIcon name={profile.data.properties.model} />
-              <span>{profile.data.properties.model}</span>
-            </div>
-          )}
-          {profile.data?.properties.browser && (
-            <div className="row gap-2 items-center">
-              <SerieIcon name={profile.data.properties.browser} />
-              <span>{profile.data.properties.browser}</span>
-            </div>
-          )}
-        </div>
-      </PageHeader>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <aside className="self-start lg:sticky lg:top-6 lg:flex lg:max-h-[calc(100vh-3rem)] lg:flex-col">
+          <ProfilePane profile={profile.data!} />
+        </aside>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
-        className="mt-2 mb-8"
-      >
-        <TabsList>
-          {tabs.map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-      <Outlet />
+        <div className="min-w-0">
+          <Tabs
+            value={activeTab}
+            onValueChange={handleTabChange}
+            className="mb-6"
+          >
+            <TabsList>
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab.id} value={tab.id}>
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          <Outlet />
+        </div>
+      </div>
     </PageContainer>
   );
 }

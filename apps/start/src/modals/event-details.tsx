@@ -1,9 +1,6 @@
-import { ReportChartShortcut } from '@/components/report-chart/shortcut';
-import {
-  useEventQueryFilters,
-  useEventQueryNamesFilter,
-} from '@/hooks/use-event-query-filters';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 
+import { filterable } from '@/components/events/table/event-row-details';
 import { ProjectLink } from '@/components/links';
 import {
   WidgetButtons,
@@ -13,11 +10,10 @@ import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { Button } from '@/components/ui/button';
 import { FieldValue, KeyValueGrid } from '@/components/ui/key-value-grid';
 import { Widget, WidgetBody } from '@/components/widget';
-import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
-import type { IClickhouseEvent, IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/db';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { FilterIcon, XIcon } from 'lucide-react';
 import { omit } from 'ramda';
@@ -30,27 +26,6 @@ interface Props {
   createdAt?: Date;
   projectId: string;
 }
-
-const filterable: Partial<Record<keyof IServiceEvent, keyof IClickhouseEvent>> =
-  {
-    name: 'name',
-    referrer: 'referrer',
-    referrerName: 'referrer_name',
-    referrerType: 'referrer_type',
-    brand: 'brand',
-    model: 'model',
-    browser: 'browser',
-    browserVersion: 'browser_version',
-    os: 'os',
-    osVersion: 'os_version',
-    city: 'city',
-    region: 'region',
-    country: 'country',
-    device: 'device',
-    properties: 'properties',
-    path: 'path',
-    origin: 'origin',
-  };
 
 export default function EventDetails(props: Props) {
   return (
@@ -65,7 +40,6 @@ export default function EventDetails(props: Props) {
 }
 
 function EventDetailsContent({ id, createdAt, projectId }: Props) {
-  const [, setEvents] = useEventQueryNamesFilter();
   const [, setFilter] = useEventQueryFilters();
   const TABS = {
     essentials: {
@@ -80,14 +54,14 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
   const [widget, setWidget] = useState(TABS.essentials);
   const trpc = useTRPC();
   const query = useSuspenseQuery(
-    trpc.event.details.queryOptions({
+    trpc.event.byId.queryOptions({
       id,
       projectId,
       createdAt,
     }),
   );
 
-  const { event, session } = query.data;
+  const event = query.data;
 
   const profile = event.profile;
 
@@ -171,7 +145,7 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
     });
   })();
 
-  const properties = Object.entries(event.properties)
+  const properties = Object.entries(event.properties ?? {})
     .filter(([name]) => !name.startsWith('__'))
     .map(([name, value]) => ({
       name,
@@ -258,13 +232,6 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
                 </div>
               </div>
             </div>
-            {!!session && (
-              <div className="text-sm">
-                This session has {session.screenViewCount} screen views and{' '}
-                {session.eventCount} events. Visit duration is{' '}
-                {fancyMinutes(session.duration / 1000)}.
-              </div>
-            )}
           </ProjectLink>
         )}
 
@@ -323,37 +290,6 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
               }
             }}
           />
-        </section>
-        <section>
-          <div className="mb-2 flex justify-between font-medium">
-            <div>All events for {event.name}</div>
-            <button
-              type="button"
-              className="text-muted-foreground hover:underline"
-              onClick={() => {
-                setEvents([event.name]);
-                popModal();
-              }}
-            >
-              Show all
-            </button>
-          </div>
-          <div className="card p-4">
-            <ReportChartShortcut
-              projectId={event.projectId}
-              chartType="linear"
-              series={[
-                {
-                  id: 'A',
-                  name: event.name,
-                  displayName: 'Similar events',
-                  segment: 'event',
-                  filters: [],
-                  type: 'event',
-                },
-              ]}
-            />
-          </div>
         </section>
       </WidgetBody>
     </>

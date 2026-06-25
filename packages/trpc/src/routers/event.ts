@@ -4,7 +4,6 @@ import { z } from 'zod';
 
 import {
   type IServiceProfile,
-  type IServiceSession,
   TABLE_NAMES,
   chQuery,
   convertClickhouseDateToJs,
@@ -16,7 +15,6 @@ import {
   getEventMetasCached,
   getSettingsForProject,
   overviewService,
-  sessionService,
 } from '@openpanel/db';
 import {
   zChartEventFilter,
@@ -62,13 +60,15 @@ export const eventRouter = createTRPCRouter({
         id: z.string(),
         projectId: z.string(),
         createdAt: z.date().optional(),
+        withProfile: z.boolean().optional(),
       }),
     )
-    .query(async ({ input: { id, projectId, createdAt } }) => {
+    .query(async ({ input: { id, projectId, createdAt, withProfile } }) => {
       const res = await eventService.getById({
         projectId,
         id,
         createdAt,
+        withProfile,
       });
 
       if (!res) {
@@ -79,41 +79,6 @@ export const eventRouter = createTRPCRouter({
       }
 
       return res;
-    }),
-
-  details: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        projectId: z.string(),
-        createdAt: z.date().optional(),
-      }),
-    )
-    .query(async ({ input: { id, projectId, createdAt } }) => {
-      const res = await eventService.getById({
-        projectId,
-        id,
-        createdAt,
-      });
-
-      if (!res) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Event not found',
-        });
-      }
-
-      let session: IServiceSession | undefined;
-      if (res?.sessionId) {
-        session = await sessionService
-          .byId(res?.sessionId, projectId)
-          .catch(() => undefined);
-      }
-
-      return {
-        event: res,
-        session,
-      };
     }),
 
   events: protectedProcedure

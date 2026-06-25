@@ -15,7 +15,7 @@ export function PageContainer({
 }: PageContainerProps) {
   return (
     <div
-      className={cn(fluid ? 'w-full p-8' : 'container p-8', className)}
+      className={cn(fluid ? 'w-full p-6' : 'container p-6', className)}
       {...props}
     >
       {children}

@@ -52,9 +52,9 @@ export default function SidebarProjectMenu({
         label="Dashboards"
         href={'/dashboards'}
       />
+      <SidebarLink icon={GanttChartIcon} label="Events" href={'/events'} />
       <SidebarLink icon={LayersIcon} label="Pages" href={'/pages'} />
       <SidebarLink icon={Globe2Icon} label="Realtime" href={'/realtime'} />
-      <SidebarLink icon={GanttChartIcon} label="Events" href={'/events'} />
       <SidebarLink icon={UsersRoundIcon} label="Sessions" href={'/sessions'} />
       <SidebarLink
         icon={CircleUserRoundIcon}
@@ -96,7 +96,7 @@ export function ActionCTAButton() {
 
   const ACTIONS = [
     {
-      label: 'Create report',
+      label: 'Report',
       icon: ChartLineIcon,
       onClick: () =>
         navigate({
@@ -105,7 +105,7 @@ export function ActionCTAButton() {
         }),
     },
     {
-      label: 'Create reference',
+      label: 'Reference',
       icon: BookOpenIcon,
       onClick: () => pushModal('AddReference'),
     },
@@ -119,12 +119,12 @@ export function ActionCTAButton() {
         }),
     },
     {
-      label: 'Create dashboard',
+      label: 'Dashboard',
       icon: LayoutDashboardIcon,
       onClick: () => pushModal('AddDashboard'),
     },
     {
-      label: 'Create notification rule',
+      label: 'Notification rule',
       icon: BellIcon,
       onClick: () =>
         navigate({
