@@ -4,7 +4,6 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { sendTestDiscordNotification } from '@openpanel/integrations/src/discord';
 import { zCreateDiscordIntegration } from '@openpanel/validation';
 import { useMutation } from '@tanstack/react-query';
 import { path, mergeDeepRight } from 'ramda';
@@ -21,12 +20,12 @@ export function DiscordIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
-  const { organizationId } = useAppParams();
+  const { projectId } = useAppParams();
   const form = useForm<IForm>({
     defaultValues: mergeDeepRight(
       {
         id: defaultValues?.id,
-        organizationId,
+        projectId,
         config: {
           type: 'discord' as const,
           url: '',
@@ -55,13 +54,19 @@ export function DiscordIntegrationForm({
     toast.error('Validation error');
   };
 
+  const testMutation = useMutation(
+    trpc.integration.testConnection.mutationOptions(),
+  );
+
   const handleTest = async () => {
-    const webhookUrl = form.getValues('config.url');
-    if (!webhookUrl) {
+    const url = form.getValues('config.url');
+    if (!url) {
       return toast.error('Webhook URL is required');
     }
-    const res = await sendTestDiscordNotification(webhookUrl);
-    if (res.ok) {
+    const res = await testMutation.mutateAsync({
+      config: { type: 'discord', url },
+    });
+    if (res.success) {
       toast.success('Test notification sent');
     } else {
       toast.error('Failed to send test notification');

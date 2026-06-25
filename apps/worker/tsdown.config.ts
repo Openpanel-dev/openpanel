@@ -10,6 +10,10 @@ const options: Options = {
     'pino',
     'pino-pretty',
     '@node-rs/argon2',
+    // integrations package
+    '@aws-sdk/client-s3',
+    '@aws-sdk/client-sts',
+    '@google-cloud/storage',
   ],
   sourcemap: true,
   platform: 'node',

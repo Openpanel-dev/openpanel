@@ -49,6 +49,7 @@ export const BASE_INTEGRATIONS: Integration[] = [
       type: APP_NOTIFICATION_INTEGRATION_ID,
     },
     organizationId: '',
+    projectId: null,
   },
   // {
   //   id: EMAIL_NOTIFICATION_INTEGRATION_ID,

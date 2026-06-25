@@ -393,84 +393,8 @@ export const zOnboardingProject = z
     }
   });
 
-export const zSlackAuthResponse = z.object({
-  ok: z.literal(true),
-  app_id: z.string(),
-  authed_user: z.object({
-    id: z.string(),
-  }),
-  scope: z.string(),
-  token_type: z.literal('bot'),
-  access_token: z.string(),
-  bot_user_id: z.string(),
-  team: z.object({
-    id: z.string(),
-    name: z.string(),
-  }),
-  incoming_webhook: z.object({
-    channel: z.string(),
-    channel_id: z.string(),
-    configuration_url: z.string().url(),
-    url: z.string().url(),
-  }),
-});
 
-export const zSlackConfig = z
-  .object({
-    type: z.literal('slack'),
-  })
-  .extend(zSlackAuthResponse.shape);
-
-export type ISlackConfig = z.infer<typeof zSlackConfig>;
-
-export const zWebhookConfig = z.object({
-  type: z.literal('webhook'),
-  url: z.string().url(),
-  headers: z.record(z.string(), z.string()),
-  payload: z.record(z.string(), z.unknown()).optional(),
-  mode: z.enum(['message', 'javascript']).default('message'),
-  javascriptTemplate: z.string().optional(),
-});
-export type IWebhookConfig = z.infer<typeof zWebhookConfig>;
-
-export const zDiscordConfig = z.object({
-  type: z.literal('discord'),
-  url: z.string().url(),
-});
-export type IDiscordConfig = z.infer<typeof zDiscordConfig>;
-
-export const zAppConfig = z.object({
-  type: z.literal('app'),
-});
-export type IAppConfig = z.infer<typeof zAppConfig>;
-
-export const zEmailConfig = z.object({
-  type: z.literal('email'),
-});
-export type IEmailConfig = z.infer<typeof zEmailConfig>;
-
-export type IIntegrationConfig =
-  | ISlackConfig
-  | IDiscordConfig
-  | IWebhookConfig
-  | IAppConfig
-  | IEmailConfig;
-
-const zCreateIntegration = z.object({
-  id: z.string().optional(),
-  name: z.string().min(1),
-  organizationId: z.string().min(1),
-});
-
-export const zCreateSlackIntegration = zCreateIntegration;
-
-export const zCreateWebhookIntegration = zCreateIntegration.extend({
-  config: zWebhookConfig,
-});
-
-export const zCreateDiscordIntegration = zCreateIntegration.extend({
-  config: zDiscordConfig,
-});
+export * from './integrations';
 
 export const zNotificationRuleEventConfig = z.object({
   type: z.literal('events'),
