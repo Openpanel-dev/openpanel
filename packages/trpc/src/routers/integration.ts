@@ -42,10 +42,21 @@ async function upsertIntegration(
     config: IIntegrationConfig;
   },
 ) {
-  const organizationId = await assertProjectAccessAndGetOrg(
-    userId,
-    input.projectId,
-  );
+  // Authorize first. For an update, authorize against the EXISTING integration's
+  // scope — not the attacker-controlled input.projectId — so a user with access
+  // to one project can't update another project's integration in the same org.
+  let organizationId: string;
+  if (input.id) {
+    const existing = await db.integration.findUniqueOrThrow({
+      where: { id: input.id },
+      select: { projectId: true, organizationId: true },
+    });
+    await assertIntegrationAccess(userId, existing);
+    organizationId = existing.organizationId;
+  } else {
+    organizationId = await assertProjectAccessAndGetOrg(userId, input.projectId);
+  }
+
   const plugin = getServerIntegration(input.config.type);
 
   const validation = plugin.validateConfig?.(input.config);
@@ -136,10 +147,22 @@ export const integrationRouter = createTRPCRouter({
   createOrUpdateSlack: protectedProcedure
     .input(zCreateSlackIntegration)
     .mutation(async ({ input, ctx }) => {
-      const organizationId = await assertProjectAccessAndGetOrg(
-        ctx.session.userId,
-        input.projectId,
-      );
+      // For an update, authorize against the existing integration's scope so a
+      // user can't clear/re-install another project's Slack integration.
+      let organizationId: string;
+      if (input.id) {
+        const existing = await db.integration.findUniqueOrThrow({
+          where: { id: input.id },
+          select: { projectId: true, organizationId: true },
+        });
+        await assertIntegrationAccess(ctx.session.userId, existing);
+        organizationId = existing.organizationId;
+      } else {
+        organizationId = await assertProjectAccessAndGetOrg(
+          ctx.session.userId,
+          input.projectId,
+        );
+      }
 
       const res = input.id
         ? await db.integration.update({
