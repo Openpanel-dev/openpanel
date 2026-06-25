@@ -105,10 +105,14 @@ export async function slackWebhook(
 
     const dashboardUrl =
       process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL;
+    // Integrations are project-scoped; the org-level integrations route no longer
+    // exists. Newer installs carry projectId in their metadata. Older in-flight
+    // installs (started before the project-scoped routes shipped) may lack it —
+    // fall back to the org landing page rather than a now-404 integrations URL.
     return reply.redirect(
       projectId
         ? `${dashboardUrl}/${organizationId}/${projectId}/integrations/installed`
-        : `${dashboardUrl}/${organizationId}/integrations/installed`
+        : `${dashboardUrl}/${organizationId}`
     );
   } catch (err) {
     request.log.error(err);
