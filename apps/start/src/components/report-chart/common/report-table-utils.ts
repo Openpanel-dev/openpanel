@@ -407,6 +407,20 @@ function getBreakdownPropertyNames(
   return Array.from({ length: breakdownCount }, (_, i) => `Breakdown ${i + 1}`);
 }
 
+function getBreakdownPropertyKeys(
+  series: IChartData['series'],
+  breakdowns: Array<{ name: string }>,
+): string[] {
+  if (breakdowns.length > 0) {
+    return breakdowns.map((b, index) => `${b.name}#${index}`);
+  }
+
+  if (series.length === 0) return [];
+  const firstSerie = series[0];
+  const breakdownCount = firstSerie.names.length - 1;
+  return Array.from({ length: breakdownCount }, (_, i) => `breakdown-${i + 1}`);
+}
+
 /**
  * Transform series into flat table rows
  */
@@ -659,9 +673,14 @@ export function transformToTableData(
   rows: TableRow[] | GroupedTableRow[];
   dates: string[];
   breakdownPropertyNames: string[];
+  breakdownPropertyKeys: string[];
 } {
   const dates = getUniqueDates(data.series);
   const originalBreakdownPropertyNames = getBreakdownPropertyNames(
+    data.series,
+    breakdowns,
+  );
+  const originalBreakdownPropertyKeys = getBreakdownPropertyKeys(
     data.series,
     breakdowns,
   );
@@ -669,6 +688,9 @@ export function transformToTableData(
   // Reorder breakdowns by unique count (fewest first)
   const { reorderedNames: breakdownPropertyNames, reorderMap } =
     reorderBreakdownsByUniqueCount(data.series, originalBreakdownPropertyNames);
+  const breakdownPropertyKeys = reorderMap.map(
+    (oldIndex) => originalBreakdownPropertyKeys[oldIndex] ?? `breakdown-${oldIndex + 1}`,
+  );
 
   // Reorder breakdown values in series before creating rows
   const reorderedSeries = data.series.map((serie) => {
@@ -695,6 +717,7 @@ export function transformToTableData(
     rows,
     dates,
     breakdownPropertyNames,
+    breakdownPropertyKeys,
   };
 }
 
@@ -709,9 +732,14 @@ export function transformToHierarchicalGroups(
   groups: Array<GroupedItem<TableRow>>;
   dates: string[];
   breakdownPropertyNames: string[];
+  breakdownPropertyKeys: string[];
 } {
   const dates = getUniqueDates(data.series);
   const originalBreakdownPropertyNames = getBreakdownPropertyNames(
+    data.series,
+    breakdowns,
+  );
+  const originalBreakdownPropertyKeys = getBreakdownPropertyKeys(
     data.series,
     breakdowns,
   );
@@ -719,6 +747,9 @@ export function transformToHierarchicalGroups(
   // Reorder breakdowns by unique count (fewest first)
   const { reorderedNames: breakdownPropertyNames, reorderMap } =
     reorderBreakdownsByUniqueCount(data.series, originalBreakdownPropertyNames);
+  const breakdownPropertyKeys = reorderMap.map(
+    (oldIndex) => originalBreakdownPropertyKeys[oldIndex] ?? `breakdown-${oldIndex + 1}`,
+  );
 
   // Reorder breakdown values in series before creating rows
   const reorderedSeries = data.series.map((serie) => {
@@ -738,5 +769,6 @@ export function transformToHierarchicalGroups(
     groups,
     dates,
     breakdownPropertyNames,
+    breakdownPropertyKeys,
   };
 }
