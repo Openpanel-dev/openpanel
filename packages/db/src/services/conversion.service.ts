@@ -318,6 +318,7 @@ export class ConversionService {
         SELECT DISTINCT profile_id
         FROM ${TABLE_NAMES.events}
         WHERE project_id = '${projectLiteral}'
+          AND name IN ('${firstNameLiteral}', '${lastNameLiteral}')
           AND created_at >= ${startTs}
           AND created_at <= ${extendedEndTs}
           AND profile_id != ''
