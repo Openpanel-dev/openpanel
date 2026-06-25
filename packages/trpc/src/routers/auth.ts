@@ -68,9 +68,6 @@ export async function getIsRegistrationAllowed(inviteId?: string | null) {
 
   // 2. If there is an invite, check if it is valid
   if (inviteId) {
-    if (process.env.ALLOW_INVITATION === 'false') {
-      return false;
-    }
 
     const invite = await db.invite.findUnique({
       where: {
