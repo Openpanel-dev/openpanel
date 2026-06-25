@@ -6,7 +6,8 @@ import { getProfileName } from '@/utils/getters';
 import type { IServiceProfile } from '@openpanel/db';
 
 type Props = {
-  profile: IServiceProfile;
+  profile: IServiceProfile | null;
+  profileId: string;
 };
 
 /**
@@ -14,8 +15,8 @@ type Props = {
  * card. Renders entirely from the already-fetched `profile.byId` data — no
  * extra queries.
  */
-export function ProfilePane({ profile }: Props) {
-  const p = profile.properties ?? {};
+export function ProfilePane({ profile, profileId }: Props) {
+  const p = profile?.properties ?? {};
   const chips = [
     p.country && {
       name: p.country,
@@ -31,20 +32,20 @@ export function ProfilePane({ profile }: Props) {
     <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1">
       <div className="card col gap-3 p-4 lg:shrink-0">
         <div className="row min-w-0 items-center gap-3">
-          <ProfileAvatar size="lg" {...profile} />
+          <ProfileAvatar size="lg" {...(profile ?? { id: profileId })} />
           <div className="min-w-0">
             <div className="truncate font-medium">
-              {profile ? getProfileName(profile, false) : 'User not identified'}
+              {profile ? getProfileName(profile, false) : 'Anonymous'}
             </div>
             <span
               className={cn(
                 'mt-1 inline-block rounded-full px-2 py-0.5 text-xs',
-                profile.isExternal
+                profile?.isExternal
                   ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                   : 'bg-muted text-muted-foreground',
               )}
             >
-              {profile.isExternal ? 'Identified' : 'Anonymous'}
+              {profile?.isExternal ? 'Identified' : 'Anonymous'}
             </span>
           </div>
         </div>
@@ -68,7 +69,7 @@ export function ProfilePane({ profile }: Props) {
         )}
       </div>
 
-      <ProfileProperties profile={profile} />
+      <ProfileProperties profile={profile} profileId={profileId} />
     </div>
   );
 }

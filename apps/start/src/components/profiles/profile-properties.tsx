@@ -7,7 +7,9 @@ import { CopyIcon } from 'lucide-react';
 import { WidgetHead } from '../overview/overview-widget';
 
 type Props = {
-  profile: IServiceProfile;
+  profile: IServiceProfile | null;
+  // Used as the fallback ID when no profile row exists (anonymous visitor).
+  profileId: string;
 };
 
 // Property keys already surfaced above (as the header chips) — hidden from the
@@ -29,8 +31,8 @@ function formatValue(value: unknown): string {
   return String(value);
 }
 
-export const ProfileProperties = ({ profile }: Props) => {
-  const props = profile.properties ?? {};
+export const ProfileProperties = ({ profile, profileId }: Props) => {
+  const props = profile?.properties ?? {};
 
   // `city` is only surfaced as a chip when `country` is present — only de-dup it
   // from the properties list in that case, otherwise it would be hidden entirely.
@@ -41,13 +43,13 @@ export const ProfileProperties = ({ profile }: Props) => {
   // Profile params (the first-class profile columns) on top. `isExternal` is
   // omitted here — it's already shown as the Identified/Anonymous header badge.
   const profileItems = [
-    { name: 'id', value: profile.id },
-    { name: 'firstName', value: profile.firstName },
-    { name: 'lastName', value: profile.lastName },
-    { name: 'email', value: profile.email },
+    { name: 'id', value: profile?.id ?? profileId },
+    { name: 'firstName', value: profile?.firstName },
+    { name: 'lastName', value: profile?.lastName },
+    { name: 'email', value: profile?.email },
     {
       name: 'createdAt',
-      value: profile.createdAt
+      value: profile?.createdAt
         ? formatDateTime(new Date(profile.createdAt))
         : '',
     },

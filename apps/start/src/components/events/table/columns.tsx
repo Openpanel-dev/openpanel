@@ -3,7 +3,7 @@ import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { pushModal } from '@/modals';
-import { getProfileName } from '@/utils/getters';
+import { getProfileName, shortenId } from '@/utils/getters';
 import type { ColumnDef } from '@tanstack/react-table';
 
 import { ColumnCreatedAt } from '@/components/column-created-at';
@@ -101,7 +101,9 @@ export function useColumns() {
               onClick={(e) => e.stopPropagation()}
               className="whitespace-nowrap font-medium hover:underline"
             >
-              {getProfileName(profile)}
+              {profile.isExternal
+                ? getProfileName(profile)
+                : shortenId(profile.id)}
             </ProjectLink>
           );
         }
@@ -125,7 +127,7 @@ export function useColumns() {
               onClick={(e) => e.stopPropagation()}
               className="whitespace-nowrap font-medium hover:underline"
             >
-              Anonymous
+              {shortenId(deviceId)}
             </ProjectLink>
           );
         }

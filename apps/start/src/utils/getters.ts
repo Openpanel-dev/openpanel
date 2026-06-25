@@ -1,5 +1,9 @@
 import type { IServiceProfile } from '@openpanel/db';
 
+export function shortenId(id: string) {
+  return id.length > 10 ? `${id.slice(0, 4)}...${id.slice(-4)}` : id;
+}
+
 export type GetProfileNameProps = Partial<
   Pick<
     IServiceProfile,

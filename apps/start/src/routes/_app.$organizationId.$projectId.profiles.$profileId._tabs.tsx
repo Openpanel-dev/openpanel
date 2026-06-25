@@ -50,7 +50,7 @@ function Component() {
     <PageContainer>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="self-start lg:sticky lg:top-6 lg:flex lg:max-h-[calc(100vh-3rem)] lg:flex-col">
-          <ProfilePane profile={profile.data!} />
+          <ProfilePane profile={profile.data} profileId={profileId} />
         </aside>
 
         <div className="min-w-0">
