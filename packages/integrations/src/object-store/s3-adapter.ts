@@ -5,7 +5,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
-import { decryptCredential } from '@openpanel/common/server';
+import { assertSafeUrl, decryptCredential } from '@openpanel/common/server';
 import { createLogger } from '@openpanel/logger';
 import type { IS3ExportConfig } from '@openpanel/validation';
 
@@ -44,6 +44,11 @@ export class S3Adapter implements IObjectStoreAdapter {
    * Get or create an S3 client based on auth mode
    */
   private async getClient(): Promise<S3Client> {
+    // A custom endpoint is tenant-controlled; SSRF-guard the resolved host
+    // before connecting (no-op on self-hosted). Default AWS endpoints are safe.
+    if (this.config.endpoint) {
+      await assertSafeUrl(this.config.endpoint);
+    }
     if (this.config.authMode === 'iam_role') {
       return this.getClientWithAssumedRole();
     }

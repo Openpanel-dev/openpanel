@@ -1,4 +1,4 @@
-import { encryptCredential } from '@openpanel/common/server';
+import { assertSafeUrl, encryptCredential } from '@openpanel/common/server';
 import {
   execute as executeJavaScriptTemplate,
   validate as validateJavaScriptTemplate,
@@ -111,7 +111,10 @@ const webhookServer: IServerIntegration<'webhook'> = {
     return { valid: true };
   },
   notification: {
-    deliver: ({ config, notification, payload }) => {
+    deliver: async ({ config, notification, payload }) => {
+      // SSRF guard before any outbound request.
+      await assertSafeUrl(config.url);
+
       let body: unknown;
       if (config.mode === 'javascript') {
         // We only transform event payloads for now (not funnel)
