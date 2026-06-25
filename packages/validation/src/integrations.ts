@@ -253,22 +253,6 @@ const descriptorByType = new Map(
   INTEGRATION_DESCRIPTORS.map((d) => [d.type, d] as const),
 );
 
-export function getDescriptor(type: IIntegrationType): IIntegrationDescriptor {
-  const descriptor = descriptorByType.get(type);
-  if (!descriptor) {
-    throw new Error(`Unknown integration type: ${type}`);
-  }
-  return descriptor;
-}
-
-export function descriptorsByKind(kind: IIntegrationKind) {
-  // kinds is a readonly literal tuple per descriptor; widen for `.includes`
-  // (the union of literal tuples otherwise narrows the arg type to never).
-  return INTEGRATION_DESCRIPTORS.filter((d) =>
-    (d.kinds as readonly IIntegrationKind[]).includes(kind),
-  );
-}
-
 export function isKind(
   config: Pick<IIntegrationConfig, 'type'> | { type?: string },
   kind: IIntegrationKind,
@@ -304,14 +288,6 @@ const zCreateIntegrationBase = z.object({
   name: z.string().min(1),
   projectId: z.string().min(1),
 });
-
-// Generic create input used by the registry-driven tRPC procedure. oauth
-// integrations (slack) create with no config (filled by the callback), so
-// config is optional here and narrowed/validated per-plugin server-side.
-export const zCreateIntegration = zCreateIntegrationBase.extend({
-  config: zIntegrationConfig.optional(),
-});
-export type ICreateIntegration = z.infer<typeof zCreateIntegration>;
 
 export const zCreateSlackIntegration = zCreateIntegrationBase;
 
