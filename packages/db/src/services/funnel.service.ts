@@ -42,7 +42,13 @@ export class FunnelService {
   getFunnelConditions(events: IChartEvent[] = [], projectId?: string): string[] {
     return events.map((event) => {
       const { sb, getWhere } = createSqlBuilder();
-      sb.where = getEventFiltersWhereClause(event.filters, projectId);
+      // Qualify with 'events' so event-level `properties[...]` becomes
+      // `events.properties[...]` — required because the funnel CTE may join
+      // the profiles table (which also exposes a `properties` column).
+      // Without the qualifier ClickHouse fails with "ambiguous identifier
+      // 'properties'" whenever a step filters on properties.X while another
+      // step filters on profile.properties.Y.
+      sb.where = getEventFiltersWhereClause(event.filters, projectId, 'events');
       sb.where.name = `events.name = ${sqlstring.escape(event.name)}`;
       return getWhere().replace('WHERE ', '');
     });
