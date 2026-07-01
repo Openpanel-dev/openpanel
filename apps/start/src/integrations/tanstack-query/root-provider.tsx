@@ -21,14 +21,34 @@ function shouldRetryQuery(failureCount: number, error: unknown) {
 }
 
 function handleUnauthorized(error: unknown) {
-  if (typeof window === 'undefined') return;
-  if (!(error instanceof TRPCClientError)) return;
-  if (error.data?.httpStatus !== 401) return;
-  if (window.location.pathname.startsWith('/login')) return;
+  if (typeof window === 'undefined') {
+    return;
+  }
+  if (!(error instanceof TRPCClientError)) {
+    return;
+  }
+  if (error.data?.httpStatus !== 401) {
+    return;
+  }
+  if (window.location.pathname.startsWith('/login')) {
+    return;
+  }
   // Hard navigation tears down in-flight refetches and WS subscriptions so
   // the stale tab stops hammering the API after the session is gone.
   window.location.assign('/login');
 }
+
+// Resolve the tRPC base URL per environment. During SSR the server can reach
+// the API over an internal address (e.g. a Docker/K8s service name) that the
+// browser can't resolve, so `API_URL_SSR` overrides the public `apiUrl`
+// server-side only. The client always uses the public `apiUrl` it was given.
+const getSsrApiUrlOverride = createIsomorphicFn()
+  .server(() => {
+    console.log('ENVS', process.env);
+    console.log('API_URL_SSR', process.env.API_URL_SSR);
+    return process.env.API_URL_SSR || undefined;
+  })
+  .client(() => undefined);
 
 export const getIsomorphicHeaders = createIsomorphicFn()
   .server(() => {
@@ -50,11 +70,13 @@ export const getIsomorphicHeaders = createIsomorphicFn()
 
 // Create a function that returns a tRPC client with optional cookies
 export function createTRPCClientWithHeaders(apiUrl: string) {
+  const baseUrl = getSsrApiUrlOverride() || apiUrl;
+  console.log('baseUrl', baseUrl);
   return createTRPCClient<AppRouter>({
     links: [
       httpLink({
         transformer: superjson,
-        url: `${apiUrl}/trpc`,
+        url: `${baseUrl}/trpc`,
         headers: () => getIsomorphicHeaders(),
         fetch: async (url, options) => {
           try {

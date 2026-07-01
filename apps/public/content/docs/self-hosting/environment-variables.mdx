@@ -129,6 +129,29 @@ Public API URL exposed to the browser. Used by the dashboard frontend and API se
 API_URL=https://analytics.example.com/api
 ```
 
+### API_URL_SSR
+
+**Type**: `string`  
+**Required**: No  
+**Default**: Same as `API_URL`
+
+Internal API URL used **only** for the dashboard's server-side rendering (SSR) requests. Set this when the dashboard server can't resolve or reach the public `API_URL` and needs an internal address instead — for example a Docker Compose service name or a Kubernetes cluster-internal address.
+
+The browser always keeps using the public `API_URL`; only requests made from the dashboard server during SSR use `API_URL_SSR`. If unset, SSR falls back to `API_URL`.
+
+**Example**:
+```bash
+# Docker Compose: reach the API service directly over the internal network
+API_URL_SSR=http://api:3000
+
+# Kubernetes: cluster-internal service DNS
+API_URL_SSR=http://openpanel-api.default.svc.cluster.local:3000
+```
+
+<Callout>
+This only affects the dashboard's server-side requests. It does not change the API service itself, CORS, or any browser-facing URLs — those still use `API_URL`.
+</Callout>
+
 ### DASHBOARD_URL
 
 **Type**: `string`  
