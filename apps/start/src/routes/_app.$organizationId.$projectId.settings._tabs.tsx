@@ -1,6 +1,7 @@
 import {
   createFileRoute,
   Outlet,
+  redirect,
   useLocation,
   useRouter,
 } from '@tanstack/react-router';
@@ -21,6 +22,22 @@ export const Route = createFileRoute(
         },
       ],
     };
+  },
+  beforeLoad: async ({ params, context }) => {
+    const access = await context.queryClient.fetchQuery(
+      context.trpc.organization.myAccess.queryOptions({
+        organizationId: params.organizationId,
+      })
+    );
+    if (access?.role !== 'org:admin') {
+      throw redirect({
+        to: '/$organizationId/$projectId',
+        params: {
+          organizationId: params.organizationId,
+          projectId: params.projectId,
+        },
+      });
+    }
   },
   loader: async ({ context, params }) => {
     const { trpc, queryClient } = context;

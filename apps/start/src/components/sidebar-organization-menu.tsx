@@ -98,16 +98,18 @@ export default function SidebarOrganizationMenu({
           <div className="flex-1">Members</div>
         </Link>
       )}
-      <Link
-        className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
-        )}
-        from="/$organizationId"
-        to="/$organizationId/integrations"
-      >
-        <WorkflowIcon size={20} />
-        <div className="flex-1">Integrations</div>
-      </Link>
+      {isAdmin && (
+        <Link
+          className={cn(
+            'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
+          )}
+          from="/$organizationId"
+          to="/$organizationId/integrations"
+        >
+          <WorkflowIcon size={20} />
+          <div className="flex-1">Integrations</div>
+        </Link>
+      )}
     </>
   );
 }
@@ -132,26 +134,37 @@ export function ActionCTAButton() {
           },
         ]
       : []),
-    {
-      label: 'Add integration',
-      icon: WorkflowIcon,
-      onClick: () =>
-        navigate({
-          to: '/$organizationId/integrations',
-          from: '/$organizationId',
-        }),
-    },
+    ...(isAdmin
+      ? [
+          {
+            label: 'Add integration',
+            icon: WorkflowIcon,
+            onClick: () =>
+              navigate({
+                to: '/$organizationId/integrations',
+                from: '/$organizationId',
+              }),
+          },
+        ]
+      : []),
   ];
 
   const [currentActionIndex, setCurrentActionIndex] = useState(0);
 
   useEffect(() => {
+    if (ACTIONS.length === 0) {
+      return;
+    }
     const interval = setInterval(() => {
       setCurrentActionIndex((prevIndex) => (prevIndex + 1) % ACTIONS.length);
     }, 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [ACTIONS.length]);
+
+  if (ACTIONS.length === 0) {
+    return null;
+  }
 
   return (
     <div className="mb-4">

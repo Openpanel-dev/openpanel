@@ -1,5 +1,5 @@
 import type { IServiceDashboards } from '@openpanel/db';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useParams } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BellIcon,
@@ -34,6 +34,7 @@ import {
 } from './ui/dropdown-menu';
 import { useChatState } from '@/components/chat/chat-context';
 import { SidebarChatComposer } from '@/components/chat/sidebar-chat-composer';
+import { useOrganizationAccess } from '@/hooks/use-organization-access';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 
@@ -44,6 +45,9 @@ interface SidebarProjectMenuProps {
 export default function SidebarProjectMenu({
   dashboards,
 }: SidebarProjectMenuProps) {
+  const { organizationId } = useParams({ strict: false });
+  const { isAdmin } = useOrganizationAccess(organizationId);
+
   return (
     <>
       <SidebarChatComposer />
@@ -72,12 +76,14 @@ export default function SidebarProjectMenu({
       <div className="mt-4 mb-2 font-medium text-muted-foreground text-sm">
         Manage
       </div>
-      <SidebarLink
-        exact={false}
-        href={'/settings'}
-        icon={CogIcon}
-        label="Settings"
-      />
+      {isAdmin && (
+        <SidebarLink
+          exact={false}
+          href={'/settings'}
+          icon={CogIcon}
+          label="Settings"
+        />
+      )}
       <SidebarLink href={'/references'} icon={GridIcon} label="References" />
       <SidebarLink
         exact={false}

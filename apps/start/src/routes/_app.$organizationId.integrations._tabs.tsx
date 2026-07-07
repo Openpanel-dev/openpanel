@@ -3,12 +3,30 @@ import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
 import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
-import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
+import {
+  Outlet,
+  createFileRoute,
+  redirect,
+  useRouter,
+} from '@tanstack/react-router';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/integrations/_tabs',
 )({
   component: Component,
+  beforeLoad: async ({ params, context }) => {
+    const access = await context.queryClient.fetchQuery(
+      context.trpc.organization.myAccess.queryOptions({
+        organizationId: params.organizationId,
+      }),
+    );
+    if (access?.role !== 'org:admin') {
+      throw redirect({
+        to: '/$organizationId',
+        params: { organizationId: params.organizationId },
+      });
+    }
+  },
   loader: async ({ context, params }) => {
     const organization = await context.queryClient.fetchQuery(
       context.trpc.organization.get.queryOptions({
