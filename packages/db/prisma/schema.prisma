@@ -130,6 +130,8 @@ model User {
   conversations        Conversation[]
   totp                 UserTotp?
   twoFactorChallenges  TwoFactorChallenge[]
+  dashboards           Dashboard[]
+  dashboardAccess      DashboardAccess[]
 
   @@map("users")
 }
@@ -358,19 +360,42 @@ enum ChartType {
 }
 
 model Dashboard {
-  id             String          @id @default(dbgenerated("gen_random_uuid()"))
+  id             String            @id @default(dbgenerated("gen_random_uuid()"))
   name           String
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
   projectId      String
-  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   reports        Report[]
   share          ShareDashboard?
+  createdById    String
+  createdBy      User              @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  access         DashboardAccess[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("dashboards")
+}
+
+enum DashboardAccessLevel {
+  view
+  edit
+}
+
+model DashboardAccess {
+  id          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dashboard   Dashboard            @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  dashboardId String
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  level       DashboardAccessLevel
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([dashboardId, userId])
+  @@map("dashboard_access")
 }
 
 enum Metric {

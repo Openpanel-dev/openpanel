@@ -28,6 +28,7 @@ import EditReport from './edit-report';
 import EventDetails from './event-details';
 import InsightDetails from './insight-details';
 import Instructions from './Instructions';
+import ManageDashboardAccess from './manage-dashboard-access';
 import OverviewChartDetails from './overview-chart-details';
 import OverviewFilters from './overview-filters';
 import TableFilters from './table-filters';
@@ -37,9 +38,7 @@ import RequestPasswordReset from './request-reset-password';
 import SaveReport from './save-report';
 import SelectBillingPlan from './select-billing-plan';
 import SetupTwoFactor from './setup-two-factor';
-import ShareDashboardModal from './share-dashboard-modal';
 import ShareOverviewModal from './share-overview-modal';
-import ShareReportModal from './share-report-modal';
 import ViewChartUsers from './view-chart-users';
 import OverviewTopGenericModal from '@/components/overview/overview-top-generic-modal';
 import OverviewTopPagesModal from '@/components/overview/overview-top-pages-modal';
@@ -68,11 +67,10 @@ const modals = {
   SaveReport,
   AddDashboard,
   EditDashboard,
+  ManageDashboardAccess,
   EditReport,
   EditReference,
   ShareOverviewModal,
-  ShareDashboardModal,
-  ShareReportModal,
   AddReference,
   ViewChartUsers,
   Instructions,

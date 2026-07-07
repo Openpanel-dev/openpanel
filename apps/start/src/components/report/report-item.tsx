@@ -35,6 +35,7 @@ export function ReportItem({
   report,
   organizationId,
   projectId,
+  canEdit = true,
   range,
   startDate,
   endDate,
@@ -45,6 +46,7 @@ export function ReportItem({
   report: any;
   organizationId: string;
   projectId: string;
+  canEdit?: boolean;
   range: any;
   startDate: any;
   endDate: any;
@@ -119,22 +121,25 @@ export function ReportItem({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <div className="drag-handle cursor-move p-2 hover:bg-muted rounded">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              className="opacity-30 hover:opacity-100"
-            >
-              <circle cx="4" cy="4" r="1.5" />
-              <circle cx="4" cy="8" r="1.5" />
-              <circle cx="4" cy="12" r="1.5" />
-              <circle cx="12" cy="4" r="1.5" />
-              <circle cx="12" cy="8" r="1.5" />
-              <circle cx="12" cy="12" r="1.5" />
-            </svg>
-          </div>
+          {canEdit && (
+            <div className="drag-handle cursor-move p-2 hover:bg-muted rounded">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                className="opacity-30 hover:opacity-100"
+              >
+                <circle cx="4" cy="4" r="1.5" />
+                <circle cx="4" cy="8" r="1.5" />
+                <circle cx="4" cy="12" r="1.5" />
+                <circle cx="12" cy="4" r="1.5" />
+                <circle cx="12" cy="8" r="1.5" />
+                <circle cx="12" cy="12" r="1.5" />
+              </svg>
+            </div>
+          )}
+          {canEdit && (
           <DropdownMenu>
             <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded hover:border">
               <MoreHorizontal size={16} />
@@ -163,6 +168,7 @@ export function ReportItem({
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+          )}
         </div>
       </div>
       <div

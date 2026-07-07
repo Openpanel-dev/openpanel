@@ -28,6 +28,38 @@ export async function getProjectById(id: string) {
 /** L1 LRU (60s) + L2 Redis. clear() invalidates Redis + local LRU; other nodes may serve stale from LRU for up to 60s. */
 export const getProjectByIdCached = cacheable(getProjectById, 60 * 60 * 24);
 
+export async function getProjectMembers(projectId: string) {
+  const project = await getProjectById(projectId);
+
+  if (!project) {
+    return [];
+  }
+
+  const [members, access] = await Promise.all([
+    db.member.findMany({
+      where: {
+        organizationId: project.organizationId,
+        userId: { not: null },
+      },
+      include: { user: true },
+    }),
+    db.projectAccess.findMany({
+      where: { organizationId: project.organizationId },
+    }),
+  ]);
+
+  return members
+    .filter((member) => {
+      const explicit = access.filter((a) => a.userId === member.userId);
+      return (
+        explicit.length === 0 ||
+        explicit.some((a) => a.projectId === projectId)
+      );
+    })
+    .map((member) => member.user)
+    .filter((user): user is NonNullable<typeof user> => user != null);
+}
+
 export async function getProjectWithClients(id: string) {
   const res = await db.project.findUnique({
     where: {

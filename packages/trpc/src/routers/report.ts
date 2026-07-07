@@ -8,7 +8,7 @@ import {
 } from '@openpanel/db';
 import { zReport } from '@openpanel/validation';
 
-import { getProjectAccess } from '../access';
+import { canEditDashboard, getDashboardAccess } from '../access';
 import { TRPCForbiddenError, TRPCNotFoundError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -20,7 +20,16 @@ export const reportRouter = createTRPCRouter({
         projectId: z.string(),
       }),
     )
-    .query(async ({ input: { dashboardId, projectId } }) => {
+    .query(async ({ input: { dashboardId, projectId }, ctx }) => {
+      const access = await getDashboardAccess({
+        dashboardId,
+        userId: ctx.session.userId,
+      });
+
+      if (!access) {
+        throw new TRPCNotFoundError('Dashboard not found');
+      }
+
       const dashboard = await getDashboardById(dashboardId, projectId);
       if (!dashboard) {
         throw new TRPCNotFoundError('Dashboard not found');
@@ -41,13 +50,13 @@ export const reportRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      const access = await getDashboardAccess({
+        dashboardId,
         userId: ctx.session.userId,
-        projectId: dashboard.projectId,
       });
 
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
+      if (!access || !canEditDashboard(access.role)) {
+        throw new TRPCForbiddenError('You do not have access to this dashboard');
       }
 
       return db.report.create({
@@ -87,13 +96,13 @@ export const reportRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      const access = await getDashboardAccess({
+        dashboardId: dbReport.dashboardId,
         userId: ctx.session.userId,
-        projectId: dbReport.projectId,
       });
 
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
+      if (!access || !canEditDashboard(access.role)) {
+        throw new TRPCForbiddenError('You do not have access to this dashboard');
       }
 
       return db.report.update({
@@ -133,13 +142,13 @@ export const reportRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      const access = await getDashboardAccess({
+        dashboardId: report.dashboardId,
         userId: ctx.session.userId,
-        projectId: report.projectId,
       });
 
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
+      if (!access || !canEditDashboard(access.role)) {
+        throw new TRPCForbiddenError('You do not have access to this dashboard');
       }
 
       return db.report.delete({
@@ -161,13 +170,13 @@ export const reportRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      const access = await getDashboardAccess({
+        dashboardId: report.dashboardId,
         userId: ctx.session.userId,
-        projectId: report.projectId,
       });
 
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
+      if (!access || !canEditDashboard(access.role)) {
+        throw new TRPCForbiddenError('You do not have access to this dashboard');
       }
 
       return db.report.create({
@@ -200,18 +209,27 @@ export const reportRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input: { reportId }, ctx }) => {
+      const dbReport = await db.report.findUnique({
+        where: { id: reportId },
+        select: { dashboardId: true },
+      });
+      if (!dbReport) {
+        throw new TRPCNotFoundError('Report not found');
+      }
+
+      const access = await getDashboardAccess({
+        dashboardId: dbReport.dashboardId,
+        userId: ctx.session.userId,
+      });
+      if (!access) {
+        throw new TRPCNotFoundError('Report not found');
+      }
+
       const report = await getReportById(reportId);
       if (!report) {
         throw new TRPCNotFoundError('Report not found');
       }
-      const access = await getProjectAccess({
-        userId: ctx.session.userId,
-        projectId: report.projectId,
-      });
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
-      return report;
+      return { ...report, role: access.role };
     }),
   updateLayout: protectedProcedure
     .input(
@@ -236,13 +254,13 @@ export const reportRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      const access = await getDashboardAccess({
+        dashboardId: report.dashboardId,
         userId: ctx.session.userId,
-        projectId: report.projectId,
       });
 
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
+      if (!access || !canEditDashboard(access.role)) {
+        throw new TRPCForbiddenError('You do not have access to this dashboard');
       }
 
       // Upsert the layout (create if doesn't exist, update if it does)
@@ -280,14 +298,14 @@ export const reportRouter = createTRPCRouter({
         projectId: z.string(),
       }),
     )
-    .query(async ({ input: { dashboardId, projectId }, ctx }) => {
-      const access = await getProjectAccess({
+    .query(async ({ input: { dashboardId }, ctx }) => {
+      const access = await getDashboardAccess({
+        dashboardId,
         userId: ctx.session.userId,
-        projectId: projectId,
       });
 
       if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
+        throw new TRPCNotFoundError('Dashboard not found');
       }
 
       return db.reportLayout.findMany({
@@ -308,14 +326,14 @@ export const reportRouter = createTRPCRouter({
         projectId: z.string(),
       }),
     )
-    .mutation(async ({ input: { dashboardId, projectId }, ctx }) => {
-      const access = await getProjectAccess({
+    .mutation(async ({ input: { dashboardId }, ctx }) => {
+      const access = await getDashboardAccess({
+        dashboardId,
         userId: ctx.session.userId,
-        projectId: projectId,
       });
 
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
+      if (!access || !canEditDashboard(access.role)) {
+        throw new TRPCForbiddenError('You do not have access to this dashboard');
       }
 
       // Delete all layout data for reports in this dashboard

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { createProjectTitle } from '@/utils/title';
 import {
+  CopyIcon,
   LayoutPanelTopIcon,
   MoreHorizontal,
   PlusIcon,
@@ -116,6 +117,24 @@ function Component() {
           params: {
             organizationId,
             projectId,
+          },
+        });
+      },
+    }),
+  );
+
+  const copyToMine = useMutation(
+    trpc.dashboard.copyToMine.mutationOptions({
+      onError: handleErrorToastOptions({}),
+      onSuccess(newDashboard) {
+        queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
+        toast('Dashboard cloned');
+        router.navigate({
+          to: '/$organizationId/$projectId/dashboards/$dashboardId',
+          params: {
+            organizationId,
+            projectId,
+            dashboardId: newDashboard.id,
           },
         });
       },
@@ -281,6 +300,12 @@ function Component() {
     return null; // Loading handled by suspense
   }
 
+  const canEdit =
+    dashboard.role === 'owner' ||
+    dashboard.role === 'admin' ||
+    dashboard.role === 'edit';
+  const canManage = dashboard.role === 'owner' || dashboard.role === 'admin';
+
   return (
     <PageContainer>
       <PageHeader
@@ -303,14 +328,16 @@ function Component() {
             )}
             <OverviewRange />
             <OverviewInterval />
-            <LinkButton
-              from={Route.fullPath}
-              to={'/$organizationId/$projectId/reports'}
-              icon={PlusIcon}
-            >
-              <span className="max-sm:hidden">Create report</span>
-              <span className="sm:hidden">Report</span>
-            </LinkButton>
+            {canEdit && (
+              <LinkButton
+                from={Route.fullPath}
+                to={'/$organizationId/$projectId/reports'}
+                icon={PlusIcon}
+              >
+                <span className="max-sm:hidden">Create report</span>
+                <span className="sm:hidden">Report</span>
+              </LinkButton>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
@@ -319,41 +346,58 @@ function Component() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[200px]">
                 <DropdownMenuGroup>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      pushModal('ShareDashboardModal', { dashboardId })
-                    }
-                  >
-                    <ShareIcon className="mr-2 size-4" />
-                    Share dashboard
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      showConfirm({
-                        title: 'Reset layout',
-                        text: 'Are you sure you want to reset the layout to default? This will clear all custom positioning and sizing.',
-                        onConfirm: () =>
-                          resetLayout.mutate({ dashboardId, projectId }),
-                      })
-                    }
-                  >
-                    <RotateCcw className="mr-2 size-4" />
-                    Reset layout
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onClick={() =>
-                      showConfirm({
-                        title: 'Delete dashboard',
-                        text: 'Are you sure you want to delete this dashboard? All your reports will be deleted!',
-                        onConfirm: () =>
-                          dashboardDeletion.mutate({ id: dashboardId }),
-                      })
-                    }
-                  >
-                    <TrashIcon className="mr-2 size-4" />
-                    Delete dashboard
-                  </DropdownMenuItem>
+                  {canManage && (
+                    <DropdownMenuItem
+                      onClick={() =>
+                        pushModal('ManageDashboardAccess', {
+                          dashboardId,
+                          projectId,
+                        })
+                      }
+                    >
+                      <ShareIcon className="mr-2 size-4" />
+                      Share dashboard
+                    </DropdownMenuItem>
+                  )}
+                  {dashboard.role !== 'owner' && (
+                    <DropdownMenuItem
+                      onClick={() => copyToMine.mutate({ id: dashboardId })}
+                    >
+                      <CopyIcon className="mr-2 size-4" />
+                      Clone
+                    </DropdownMenuItem>
+                  )}
+                  {canEdit && (
+                    <DropdownMenuItem
+                      onClick={() =>
+                        showConfirm({
+                          title: 'Reset layout',
+                          text: 'Are you sure you want to reset the layout to default? This will clear all custom positioning and sizing.',
+                          onConfirm: () =>
+                            resetLayout.mutate({ dashboardId, projectId }),
+                        })
+                      }
+                    >
+                      <RotateCcw className="mr-2 size-4" />
+                      Reset layout
+                    </DropdownMenuItem>
+                  )}
+                  {canManage && (
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() =>
+                        showConfirm({
+                          title: 'Delete dashboard',
+                          text: 'Are you sure you want to delete this dashboard? All your reports will be deleted!',
+                          onConfirm: () =>
+                            dashboardDeletion.mutate({ id: dashboardId }),
+                        })
+                      }
+                    >
+                      <TrashIcon className="mr-2 size-4" />
+                      Delete dashboard
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -364,14 +408,16 @@ function Component() {
       {reports.length === 0 ? (
         <FullPageEmptyState title="No reports" icon={LayoutPanelTopIcon}>
           <p>You can visualize your data with a report</p>
-          <LinkButton
-            from={Route.fullPath}
-            to={'/$organizationId/$projectId/reports'}
-            className="mt-14"
-            icon={PlusIcon}
-          >
-            Create report
-          </LinkButton>
+          {canEdit && (
+            <LinkButton
+              from={Route.fullPath}
+              to={'/$organizationId/$projectId/reports'}
+              className="mt-14"
+              icon={PlusIcon}
+            >
+              Create report
+            </LinkButton>
+          )}
         </FullPageEmptyState>
       ) : !isGridReady || reportsQuery.isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -393,8 +439,8 @@ function Component() {
           onLayoutChange={handleLayoutChange}
           onDragStop={handleDragStop}
           onResizeStop={handleResizeStop}
-          isDraggable={!search}
-          isResizable={!search}
+          isDraggable={canEdit && !search}
+          isResizable={canEdit && !search}
         >
           {filteredReports.map((report) => (
             <div key={report.id}>
@@ -402,6 +448,7 @@ function Component() {
                 report={report}
                 organizationId={organizationId}
                 projectId={projectId}
+                canEdit={canEdit}
                 range={range}
                 startDate={startDate}
                 endDate={endDate}

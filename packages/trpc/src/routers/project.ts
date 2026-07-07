@@ -7,6 +7,7 @@ import {
   getId,
   getOrganizationAccess,
   getProjectByIdCached,
+  getProjectMembers,
   getProjects,
   getProjectWithClients,
   type Prisma,
@@ -36,6 +37,25 @@ export const projectRouter = createTRPCRouter({
       }
 
       return getProjectWithClients(projectId);
+    }),
+
+  members: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+      })
+    )
+    .query(async ({ input: { projectId }, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+      });
+
+      if (!access) {
+        throw new TRPCForbiddenError('You do not have access to this project');
+      }
+
+      return getProjectMembers(projectId);
     }),
 
   list: protectedProcedure

@@ -58,6 +58,66 @@ export const getOrganizationAccess = cacheable(
   60 * 5
 );
 
+export type DashboardRole = 'owner' | 'admin' | 'edit' | 'view';
+
+export async function getDashboardAccess({
+  userId,
+  dashboardId,
+}: {
+  userId: string;
+  dashboardId: string;
+}): Promise<{
+  role: DashboardRole;
+  projectId: string;
+  organizationId: string;
+} | null> {
+  const dashboard = await db.dashboard.findUnique({
+    where: { id: dashboardId },
+    select: { projectId: true, organizationId: true, createdById: true },
+  });
+
+  if (!dashboard) {
+    return null;
+  }
+
+  const projectAccess = await getProjectAccess({
+    userId,
+    projectId: dashboard.projectId,
+  });
+
+  if (!projectAccess) {
+    return null;
+  }
+
+  const base = {
+    projectId: dashboard.projectId,
+    organizationId: dashboard.organizationId,
+  };
+
+  if (dashboard.createdById === userId) {
+    return { ...base, role: 'owner' };
+  }
+
+  const member = await getOrganizationAccess({
+    userId,
+    organizationId: dashboard.organizationId,
+  });
+
+  if (member?.role === 'org:admin') {
+    return { ...base, role: 'admin' };
+  }
+
+  const access = await db.dashboardAccess.findUnique({
+    where: { dashboardId_userId: { dashboardId, userId } },
+  });
+
+  if (access) {
+    return { ...base, role: access.level };
+  }
+
+  return null;
+}
+
 export async function getClientAccess({
   userId,
   clientId,
