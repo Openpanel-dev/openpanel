@@ -167,7 +167,17 @@ export function bootWorkers() {
     worker.on('completed', markEventsActivity);
     worker.on('drained', markEventsActivity);
 
-    worker.run();
+    // Fail loud on startup — silent stuck shard otherwise.
+    // Runtime errors are handled by the shared workers.forEach listener below.
+    worker.run().catch((err) => {
+      logger.error(
+        { shard: index, queueName, err },
+        'Worker startup failed — exiting',
+      );
+      // setTimeout+unref to let the logger flush before exit (matches the
+      // pattern used by uncaughtException/unhandledRejection handlers below).
+      setTimeout(() => process.exit(1), 1000).unref();
+    });
     workers.push(worker);
     logger.info({ concurrency }, `Started worker for ${queueName}`);
   }
