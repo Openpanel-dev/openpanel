@@ -139,7 +139,7 @@ RUN set -eux; \
             > "${node_modules}/esm-env/package.json"; \
     fi; \
     cd /app/apps/start/.output/server; \
-    node --input-type=module -e 'import("esm-env").then((env) => { if (env.BROWSER !== false || env.NODE !== true) process.exit(1); })'
+    node --input-type=module -e 'const assert = await import("node:assert/strict"); const env = await import("esm-env"); assert.equal(env.BROWSER, false, "esm-env BROWSER should be false in the Node SSR runtime"); assert.equal(env.NODE, true, "esm-env NODE should be true in the Node SSR runtime"); assert.equal(env.DEV, false, "esm-env DEV should be false in the production runtime");'
 
 # Copy necessary packages
 COPY --from=build /app/packages/db ./packages/db
