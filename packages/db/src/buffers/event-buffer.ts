@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { getRedisCache, publishEvent } from '@openpanel/redis';
 import { ch, chQuery } from '../clickhouse/client';
 import type { IClickhouseEvent } from '../services/event.service';
@@ -173,6 +174,24 @@ export class EventBuffer extends BaseBuffer {
     return this.queueKey;
   }
 
+  /**
+   * Deterministic idempotency token for a chunk of raw JSONEachRow lines.
+   * The same chunk content always hashes to the same token, so if the exact
+   * chunk is inserted twice — e.g. a lock-expiry double-flush, or a retry
+   * after a partial batch failure — ClickHouse can reject the duplicate
+   * block via `insert_deduplication_token`. This is defense-in-depth on top
+   * of the per-chunk commit below; on replicated tables it also covers a
+   * race where two replicas flush the same queue slice.
+   */
+  private deduplicationToken(lines: string[]): string {
+    const hash = createHash('sha256');
+    for (const line of lines) {
+      hash.update(line);
+      hash.update('\n');
+    }
+    return hash.digest('hex');
+  }
+
   async processBuffer() {
     const redis = getRedisCache();
 
@@ -189,64 +208,70 @@ export class EventBuffer extends BaseBuffer {
       return;
     }
 
-    // We don't need to JSON.parse the events at all — they're already
-    // valid JSONEachRow lines (one stringified event per Redis entry).
-    // The client's custom `json.stringify` (set in CLICKHOUSE_OPTIONS)
-    // passes strings through unchanged, so the bytes go straight from
-    // Redis → CH HTTP body. This skips:
-    //   - JSON.parse × N (50–300ms for N=100k)
-    //   - The @clickhouse/client's internal JSON.stringify × N (same)
-    //   - All the intermediate object allocations (saves ~200MB heap)
+    // Process chunks in queue order, committing each one before the next.
+    // A chunk is trimmed from the front of the queue only AFTER its insert
+    // succeeds, and its per-project realtime notification is published only
+    // then. If a chunk insert throws, we stop and let the error propagate to
+    // tryFlush: already-committed chunks stay trimmed, and only the untrimmed
+    // remainder is retried on the next cycle. Previously every chunk was
+    // inserted and the whole slice was trimmed in a single `ltrim` at the
+    // very end, so a failure on a later chunk replayed the already-inserted
+    // earlier chunks on retry — duplicate rows, since the `events` table has
+    // no dedup key.
     //
-    // We still need `project_id` per row for the per-project pub/sub.
-    // extractProjectId() does an indexOf-based fast path that's ~50×
-    // faster than JSON.parse, and falls back to a real parse on the
-    // rare line where `project_id` appears more than once (e.g. a
-    // user-supplied `properties.project_id`) — so the count is always
-    // attributed to the top-level field, never a nested one.
-    const countByProject = new Map<string, number>();
-    const yieldEvery = this.getYieldInterval(queueEvents.length, {
-      min: 1000,
-      max: 5000,
-    });
-    for (let i = 0; i < queueEvents.length; i++) {
-      const projectId = extractProjectId(queueEvents[i]!);
-      if (projectId) {
-        countByProject.set(
-          projectId,
-          (countByProject.get(projectId) ?? 0) + 1,
-        );
+    // We never JSON.parse the events: they're already valid JSONEachRow lines
+    // (one stringified event per Redis entry), and the client's custom
+    // `json.stringify` (set in CLICKHOUSE_OPTIONS) passes strings through
+    // unchanged, so the bytes go straight from Redis → CH HTTP body.
+    // `project_id` for the pub/sub is pulled with extractProjectId()'s
+    // indexOf fast path (falls back to JSON.parse only on the rare line where
+    // `project_id` appears more than once).
+    const chunks = this.chunks(queueEvents, this.chunkSize);
+    let rowsProcessed = 0;
+    let chInsertMs = 0;
+    let trimMs = 0;
+
+    for (const chunk of chunks) {
+      const chStart = performance.now();
+      await ch.insert({
+        table: 'events',
+        // Stream the raw JSONEachRow lines straight through — already
+        // serialized in Redis, no client-side parse/stringify needed.
+        values: this.jsonEachRowStream(chunk),
+        format: 'JSONEachRow',
+        clickhouse_settings: {
+          ...this.getClickhouseSettings(),
+          insert_deduplication_token: this.deduplicationToken(chunk),
+        },
+      });
+      chInsertMs += performance.now() - chStart;
+
+      // Commit this chunk: remove exactly the entries we just inserted from
+      // the front of the queue. Order is preserved because we always insert
+      // and trim the head chunk first.
+      const trimStart = performance.now();
+      await redis.ltrim(this.queueKey, chunk.length, -1);
+      trimMs += performance.now() - trimStart;
+
+      const countByProject = new Map<string, number>();
+      for (const line of chunk) {
+        const projectId = extractProjectId(line);
+        if (projectId) {
+          countByProject.set(
+            projectId,
+            (countByProject.get(projectId) ?? 0) + 1,
+          );
+        }
       }
-      if ((i + 1) % yieldEvery === 0) {
-        await this.yieldToEventLoop();
+      for (const [projectId, count] of countByProject) {
+        publishEvent('events', 'batch', { projectId, count });
       }
+
+      rowsProcessed += chunk.length;
     }
-
-    const chStart = performance.now();
-    await this.parallelLimit(
-      this.chunks(queueEvents, this.chunkSize),
-      (chunk) =>
-        ch.insert({
-          table: 'events',
-          // Stream the raw JSONEachRow lines straight through — already
-          // serialized in Redis, no client-side parse/stringify needed.
-          values: this.jsonEachRowStream(chunk),
-          format: 'JSONEachRow',
-          clickhouse_settings: this.getClickhouseSettings(),
-        }),
-    );
-    const chInsertMs = performance.now() - chStart;
-
-    for (const [projectId, count] of countByProject) {
-      publishEvent('events', 'batch', { projectId, count });
-    }
-
-    const trimStart = performance.now();
-    await redis.ltrim(this.queueKey, queueEvents.length, -1);
-    const trimMs = performance.now() - trimStart;
 
     this.reportFlushStats({
-      rowsProcessed: queueEvents.length,
+      rowsProcessed,
       phases: { lrangeMs, chInsertMs, trimMs },
     });
   }

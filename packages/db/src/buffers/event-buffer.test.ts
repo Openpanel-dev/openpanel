@@ -305,6 +305,103 @@ describe('EventBuffer', () => {
     expect(await eventBuffer.getBufferSize()).toBe(5);
   });
 
+  it('does not replay already-committed chunks when a later chunk fails', async () => {
+    const prev = process.env.EVENT_BUFFER_CHUNK_SIZE;
+    process.env.EVENT_BUFFER_CHUNK_SIZE = '2';
+    const eb = new EventBuffer();
+
+    for (let i = 0; i < 4; i++) {
+      eb.add({
+        project_id: 'p13',
+        name: `event${i}`,
+        created_at: new Date(Date.now() + i).toISOString(),
+      } as any);
+    }
+    await eb.flush();
+    expect(await eb.getBufferSize()).toBe(4);
+
+    // First chunk inserts fine; the second chunk fails mid-batch.
+    const insertSpy = vi
+      .spyOn(ch, 'insert')
+      .mockResolvedValueOnce(undefined as any)
+      .mockRejectedValueOnce(new Error('ClickHouse unavailable'));
+
+    await expect(eb.processBuffer()).rejects.toThrow('ClickHouse unavailable');
+
+    // The committed chunk is trimmed; the failed chunk is retained. Crucially
+    // the committed chunk is NOT left in the queue, so it cannot be replayed.
+    expect(insertSpy).toHaveBeenCalledTimes(2);
+    expect(await eb.getBufferSize()).toBe(2);
+
+    // Retry: only the remaining chunk is inserted — committed events are never
+    // re-sent, so no duplicate rows.
+    insertSpy.mockReset();
+    insertSpy.mockResolvedValue(undefined as any);
+
+    await eb.processBuffer();
+
+    expect(insertSpy).toHaveBeenCalledTimes(1);
+    const retryLines = await streamToLines(
+      insertSpy.mock.calls[0]![0].values as Readable
+    );
+    const retryNames = retryLines.map((line) => JSON.parse(line).name);
+    expect(retryNames).toEqual(['event2', 'event3']);
+    expect(await eb.getBufferSize()).toBe(0);
+
+    if (prev === undefined) {
+      delete process.env.EVENT_BUFFER_CHUNK_SIZE;
+    } else {
+      process.env.EVENT_BUFFER_CHUNK_SIZE = prev;
+    }
+    insertSpy.mockRestore();
+  });
+
+  it('sends a deterministic dedup token so retried inserts are idempotent', async () => {
+    const makeEvents = () =>
+      [
+        {
+          project_id: 'p14',
+          name: 'event_a',
+          created_at: new Date(1000).toISOString(),
+        },
+        {
+          project_id: 'p14',
+          name: 'event_b',
+          created_at: new Date(2000).toISOString(),
+        },
+      ] as any[];
+
+    const insertSpy = vi
+      .spyOn(ch, 'insert')
+      .mockResolvedValue(undefined as any);
+
+    const eb1 = new EventBuffer();
+    eb1.bulkAdd(makeEvents());
+    await eb1.flush();
+    await eb1.processBuffer();
+
+    const token1 = (insertSpy.mock.calls[0]![0] as any).clickhouse_settings
+      ?.insert_deduplication_token as string;
+
+    insertSpy.mockClear();
+
+    // Same content queued again (e.g. a lock-expiry double-flush): the token
+    // must match so ClickHouse can reject the duplicate insert.
+    const eb2 = new EventBuffer();
+    eb2.bulkAdd(makeEvents());
+    await eb2.flush();
+    await eb2.processBuffer();
+
+    const token2 = (insertSpy.mock.calls[0]![0] as any).clickhouse_settings
+      ?.insert_deduplication_token as string;
+
+    expect(typeof token1).toBe('string');
+    expect(token1.length).toBeGreaterThan(0);
+    expect(token1).toBe(token2);
+
+    insertSpy.mockRestore();
+  });
+
   it('retains events in queue when ClickHouse insert fails', async () => {
     eventBuffer.add({
       project_id: 'p12',

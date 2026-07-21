@@ -59,7 +59,15 @@ export class BaseBuffer {
   name: string;
   logger: ILogger;
   lockKey: string;
-  lockTimeout = 60;
+  // Flush-lock TTL, in seconds. It MUST comfortably exceed the maximum time a
+  // flush can spend inserting into ClickHouse, otherwise the lock can expire
+  // mid-flush and a second worker replica acquires it and re-flushes the same
+  // still-queued rows -> duplicate inserts (the `events` table has no dedup
+  // key). The server-side insert ceiling is max_execution_time = 300s (see
+  // INSERT_DEFAULT_SETTINGS in clickhouse/client.ts), and a flush inserts
+  // several chunks in sequence, so 60s was far too short. 360s keeps the lock
+  // held past the worst-case insert while still self-healing if a worker dies.
+  lockTimeout = 360;
   onFlush: () => Promise<void> | void;
   enableParallelProcessing: boolean;
 
