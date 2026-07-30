@@ -1,5 +1,5 @@
 import type { IServiceEvent, IServiceSession } from '@openpanel/db';
-import { useSuspenseQuery, useQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { EventIcon } from '@/components/events/event-icon';
 import FullPageLoadingState from '@/components/full-page-loading-state';
@@ -279,7 +279,12 @@ function Component() {
                   ? [{ name: 'utmCampaign', value: session.utmCampaign }]
                   : []),
                 ...(session.revenue > 0
-                  ? [{ name: 'revenue', value: `$${session.revenue}` }]
+                  ? [
+                      {
+                        name: 'revenue',
+                        value: number.currency(session.revenue / 100),
+                      },
+                    ]
                   : []),
                 { name: 'country', value: session.country, event: fakeEvent },
                 ...(session.city

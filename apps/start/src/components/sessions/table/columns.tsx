@@ -6,6 +6,7 @@ import { ColumnCreatedAt } from '@/components/column-created-at';
 import { ProjectLink } from '@/components/links';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { getProfileName } from '@/utils/getters';
 
 function formatDuration(milliseconds: number): string {
@@ -26,6 +27,7 @@ function formatDuration(milliseconds: number): string {
 }
 
 export function useColumns() {
+  const number = useNumber();
   const columns: ColumnDef<IServiceSession>[] = [
     {
       accessorKey: 'createdAt',
@@ -258,7 +260,7 @@ export function useColumns() {
         const session = row.original;
         return session.revenue > 0 ? (
           <div className="font-medium text-green-600">
-            ${session.revenue.toFixed(2)}
+            {number.currency(session.revenue / 100)}
           </div>
         ) : (
           <div className="text-muted-foreground">-</div>
