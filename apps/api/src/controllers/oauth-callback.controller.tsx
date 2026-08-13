@@ -2,8 +2,10 @@ import {
   Arctic,
   createSession,
   generateSessionToken,
+  getOAuthAllowedDomains,
   github,
   google,
+  isOAuthUserAllowedByDomain,
   type OAuth2Tokens,
   setLastAuthProviderCookie,
   setSessionTokenCookie,
@@ -51,6 +53,28 @@ interface OAuthUser {
   email: string;
   firstName: string;
   lastName?: string;
+  hostedDomain?: string;
+}
+
+function assertOAuthUserAllowed(oauthUser: OAuthUser, provider: Provider) {
+  const allowedDomains = getOAuthAllowedDomains(provider);
+  if (
+    isOAuthUserAllowedByDomain(
+      {
+        email: oauthUser.email,
+        provider,
+        hostedDomain: oauthUser.hostedDomain,
+      },
+      allowedDomains
+    )
+  ) {
+    return;
+  }
+
+  throw new LogError('OAuth email domain is not allowed', {
+    provider,
+    allowedDomains,
+  });
 }
 
 // Shared utility functions
@@ -137,10 +161,25 @@ async function handleNewUser({
     );
   }
 
-  // Enforce the self-hosting registration policy here rather than before the
-  // IdP redirect — this is the first point where we know the user is new, so
-  // returning users are never caught by it.
-  if (!(await getIsRegistrationAllowed(inviteId))) {
+  const allowedDomains = getOAuthAllowedDomains(providerName);
+  const isRegistrationAllowed = await getIsRegistrationAllowed(inviteId);
+  const isDomainRestrictedOAuthAllowed =
+    allowedDomains.length > 0 &&
+    isOAuthUserAllowedByDomain(
+      {
+        email: oauthUser.email,
+        provider: providerName,
+        hostedDomain: oauthUser.hostedDomain,
+      },
+      allowedDomains
+    );
+
+  // Enforce new-user registration policy here rather than before the IdP
+  // redirect — this is the first point where we know the user is new, so
+  // returning users are never caught by it. A matching OAuth allowlist is also
+  // enough, so self-hosted installs can permit company-domain OAuth signups
+  // while keeping public registration disabled.
+  if (!(isRegistrationAllowed || isDomainRestrictedOAuthAllowed)) {
     // Deliberately no `oauthUser` here — this rejects people who are not users,
     // so their email and name shouldn't land in application logs. The redirect
     // carries `correlationId` (the request id), which is what ties a user's
@@ -169,11 +208,14 @@ async function handleNewUser({
     try {
       await connectUserToOrganization({ user, inviteId });
     } catch (error) {
-      reply.log.error({
-        error,
-        inviteId,
-        user,
-      }, 'error connecting user to organization');
+      reply.log.error(
+        {
+          error,
+          inviteId,
+          user,
+        },
+        'error connecting user to organization'
+      );
     }
   }
 
@@ -238,6 +280,7 @@ async function fetchGoogleUser(tokens: OAuth2Tokens): Promise<OAuthUser> {
     email_verified: z.boolean(),
     given_name: z.string().optional(),
     family_name: z.string().optional(),
+    hd: z.string().optional(),
   });
 
   const claimsResult = claimsSchema.safeParse(claims);
@@ -257,6 +300,7 @@ async function fetchGoogleUser(tokens: OAuth2Tokens): Promise<OAuthUser> {
     email: claimsResult.data.email,
     firstName: claimsResult.data.given_name || '',
     lastName: claimsResult.data.family_name || '',
+    hostedDomain: claimsResult.data.hd,
   };
 }
 
@@ -321,6 +365,7 @@ export async function githubCallback(req: FastifyRequest, reply: FastifyReply) {
     const inviteId = req.cookies.inviteId;
     const tokens = await github.validateAuthorizationCode(code);
     const githubUser = await fetchGithubUser(tokens.accessToken());
+    assertOAuthUserAllowed(githubUser, 'github');
     const account = await db.account.findFirst({
       where: {
         OR: [
@@ -364,6 +409,7 @@ export async function googleCallback(req: FastifyRequest, reply: FastifyReply) {
     const codeVerifier = req.cookies.google_code_verifier!;
     const tokens = await google.validateAuthorizationCode(code, codeVerifier);
     const googleUser = await fetchGoogleUser(tokens);
+    assertOAuthUserAllowed(googleUser, 'google');
     const existingUser = await db.account.findFirst({
       where: {
         OR: [

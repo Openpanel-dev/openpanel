@@ -499,7 +499,7 @@ export const authRouter = createTRPCRouter({
         windowMs: 60_000,
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const { token, password } = input;
 
       const resetPassword = await db.resetPassword.findUnique({
@@ -538,7 +538,7 @@ export const authRouter = createTRPCRouter({
       })
     )
     .input(zRequestResetPassword)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const user = await getUserAccount({
         email: input.email,
         provider: 'email',

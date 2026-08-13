@@ -283,6 +283,25 @@ Allow user invitations. Set to `false` to disable invitation functionality.
 ALLOW_INVITATION=false
 ```
 
+### OAUTH_ALLOWED_DOMAINS
+
+**Type**: `string`
+**Required**: No
+**Default**: None
+
+Comma-separated list of email domains allowed to sign in or sign up through OAuth providers. When set, the OAuth callback rejects users whose verified email domain is not on the allowlist. Matching OAuth users can sign up even if `ALLOW_REGISTRATION=false`, while users outside the allowlist cannot sign in or create accounts.
+
+For Google OAuth, OpenPanel also validates the Google ID token hosted-domain (`hd`) claim against the same allowlist.
+
+**Example**:
+```bash
+OAUTH_ALLOWED_DOMAINS=example.com,example.org
+```
+
+<Callout>
+`OAUTH_ALLOWED_DOMAINS` applies to every OAuth provider. For Google-only restrictions, use `GOOGLE_ALLOWED_DOMAINS` or `GOOGLE_ALLOWED_DOMAIN` instead.
+</Callout>
+
 ## AI Features
 
 The in-app AI chat supports **OpenAI** and **Anthropic** models. Set one or both provider keys on the API service — the model picker in the chat UI automatically shows only the models whose provider has a key configured. If neither is set, the chat drawer still opens but shows setup instructions instead of suggestions.
@@ -1154,6 +1173,7 @@ For a basic self-hosted installation, these variables are required:
 - `RESEND_API_KEY` or `SMTP_HOST` - For email features (pick one)
 - `EMAIL_SENDER` - Email sender address
 - `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY` - For the in-app AI chat assistant
+- `OAUTH_ALLOWED_DOMAINS` - For domain-restricted OAuth sign-in
 
 ### See Also
 
@@ -1161,4 +1181,3 @@ For a basic self-hosted installation, these variables are required:
 - [Deploy with Coolify](/docs/self-hosting/deploy-coolify)
 - [Deploy with Dokploy](/docs/self-hosting/deploy-dokploy)
 - [Deploy on Kubernetes](/docs/self-hosting/deploy-kubernetes)
-
