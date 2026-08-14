@@ -28,6 +28,35 @@ interface KeyValueGridProps {
   copyable?: boolean;
 }
 
+/**
+ * The value cell truncates, so the full value is only reachable through the native
+ * tooltip and the copy button. Both need a string, and objects render as JSON here,
+ * so stringify them rather than leaving the value unreadable.
+ */
+export function toStringValue(value: unknown): string | undefined {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return undefined;
+    }
+  }
+
+  return String(value);
+}
+
 export function KeyValueGrid({
   data,
   columns = 1,
@@ -102,18 +131,7 @@ export function KeyValueGrid({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (typeof item.value === 'object') {
-                  try {
-                    const value = JSON.stringify(item.value);
-                    clipboard(value);
-                  }
-                  catch {
-                    clipboard(item.value);
-                  }
-                }
-                else {
-                  clipboard(item.value);
-                }
+                clipboard(toStringValue(item.value) ?? item.value);
               }}
               type="button"
               className="absolute left-2 top-1/2 -translate-y-1/2 -translate-x-full opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 ease-out bg-background border border-border rounded p-1 shadow-sm z-10"
@@ -129,7 +147,7 @@ export function KeyValueGrid({
               'text-right text-sm font-mono truncate min-w-0 max-w-[60%]',
               valueClassName,
             )}
-            title={typeof item.value === 'string' ? item.value : undefined}
+            title={toStringValue(item.value)}
           >
             {renderValue ? renderValue(item) : defaultRenderValue(item)}
           </div>
