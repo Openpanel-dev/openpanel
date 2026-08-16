@@ -90,7 +90,7 @@ You can find the how to [here](https://openpanel.dev/docs/self-hosting/self-host
 
 **Give us a star if you like it!**
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Openpanel-dev/openpanel&type=Date)](https://star-history.com/#Openpanel-dev/openpanel&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=Openpanel-dev/openpanel&type=Date)](https://star-history.dera.page/#Openpanel-dev/openpanel&Date)
 
 ## Development
 
