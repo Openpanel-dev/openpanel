@@ -1,5 +1,9 @@
 import { ifNaN } from '@openpanel/common';
-import type { IChartEvent, IReportInput } from '@openpanel/validation';
+import type {
+  IChartBreakdown,
+  IChartEvent,
+  IReportInput,
+} from '@openpanel/validation';
 import { last, reverse, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import { ch } from '../clickhouse/client';
@@ -13,6 +17,7 @@ import {
   fetchCohortsMetadata,
   getEventFiltersWhereClause,
   getSelectPropertyKey,
+  isAllCohortsBreakdown,
   isKnownEventField,
 } from './chart.service';
 import { mergeGlobalFilters, onlyReportEvents } from './reports.service';
@@ -209,47 +214,66 @@ export class FunnelService {
     );
   }
 
-  async getFunnel({
+  /**
+   * Builds everything the funnel chart and the funnel profile list share: the
+   * normalized event series and breakdowns, the `session_funnel` CTE with all
+   * of its joins wired up, and the outer query those CTEs are registered on.
+   *
+   * This exists because the two used to be written out twice and drifted. A
+   * breakdown expression only works if the join it references was added, and
+   * the joins depend on the breakdowns — so building the selects in one place
+   * and the joins in another is exactly the bug waiting to happen. Callers add
+   * their own `funnel` CTE and final projection on top.
+   */
+  async buildFunnelBase({
     projectId,
     startDate,
     endDate,
     series,
     globalFilters,
-    options,
-    breakdowns = [],
-    limit,
-    timezone = 'UTC',
-  }: IReportInput & { timezone: string; events?: IChartEvent[] }) {
-    if (!startDate || !endDate) {
-      throw new Error('startDate and endDate are required');
-    }
-
-    series = mergeGlobalFilters(series, globalFilters);
-
-    const funnelOptions = options?.type === 'funnel' ? options : undefined;
-    const funnelWindow = funnelOptions?.funnelWindow ?? 24;
-    const funnelGroup = funnelOptions?.funnelGroup;
-
+    breakdowns: initialBreakdowns = [],
+    funnelWindow = 24,
+    funnelGroup,
+    timezone,
+  }: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    series: IReportInput['series'];
+    globalFilters?: IReportInput['globalFilters'];
+    breakdowns?: IChartBreakdown[];
+    funnelWindow?: number;
+    funnelGroup?: string;
+    timezone: string;
+  }) {
     // Drop breakdowns that don't resolve to a known events column, properties
-    // path, profile path, group path, or cohort. The funnel CTE inlines each
-    // breakdown's name directly via getSelectPropertyKey — a saved report with
-    // breakdown `cohort` (intended for the chart's all-cohorts feature; the
-    // funnel doesn't support it) used to produce `cohort as b_0 FROM events
-    // GROUP BY b_0`, failing parse.
-    breakdowns = breakdowns.filter((b) => isKnownEventField(b.name));
+    // path, profile path, group path, or specific cohort. The funnel CTE
+    // inlines each breakdown's name directly via getSelectPropertyKey, so
+    // anything that doesn't resolve leaks into the SQL verbatim.
+    //
+    // `isKnownEventField` accepts the bare `cohort` breakdown because the
+    // chart's all-cohorts feature uses it, but the funnel has no equivalent —
+    // it renders as `cohort as b_0 FROM events`, which fails with
+    // UNKNOWN_IDENTIFIER for the chart and the profile list alike. Exclude it
+    // explicitly rather than relying on the generic check.
+    const breakdowns = initialBreakdowns.filter(
+      (b) => isKnownEventField(b.name) && !isAllCohortsBreakdown(b.name),
+    );
 
-    const eventSeries = onlyReportEvents(series);
+    const eventSeries = onlyReportEvents(
+      mergeGlobalFilters(series, globalFilters),
+    );
 
     if (eventSeries.length === 0) {
       throw new Error('events are required');
     }
 
-    const funnelWindowSeconds = funnelWindow * 3600;
-    const funnelWindowMilliseconds = funnelWindowSeconds * 1000;
+    const funnelWindowMilliseconds = funnelWindow * 3600 * 1000;
     const group = this.getFunnelGroup(funnelGroup);
+
     const profileFilters = this.getProfileFilters(eventSeries);
     const anyFilterOnProfile = profileFilters.length > 0;
-    const anyBreakdownOnProfile = breakdowns.some((b) =>
+    const profileBreakdowns = breakdowns.filter((b) =>
       b.name.startsWith('profile.'),
     );
     const anyFilterOnGroup = eventSeries.some((e) =>
@@ -264,13 +288,12 @@ export class FunnelService {
     const cohortIds = collectBreakdownCohortIds(breakdowns);
     const cohortMetadata = await fetchCohortsMetadata(cohortIds);
 
-    // Create the funnel CTE (session-level)
     const breakdownSelects = breakdowns.map((b, index) => {
       const bId = extractCohortId(b.name);
       const bName = bId ? cohortMetadata.get(bId)?.name : undefined;
       return `${getSelectPropertyKey(b.name, projectId, bId ?? undefined, bName)} as b_${index}`;
     });
-    const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
+    const breakdownGroupBy = breakdowns.map((_, index) => `b_${index}`);
 
     const funnelCte = this.buildFunnelCte({
       projectId,
@@ -284,13 +307,15 @@ export class FunnelService {
       group,
     });
 
-    if (anyFilterOnProfile || anyBreakdownOnProfile) {
-      // Collect profile columns needed for filters and breakdowns (same as conversion.service)
+    // The profile join has to cover breakdowns as well as filters — a
+    // `profile.*` breakdown renders `profile.properties[...]` into the select,
+    // so the alias must exist in scope even when no filter touches profiles.
+    if (anyFilterOnProfile || profileBreakdowns.length > 0) {
       const profileFields = new Set<string>(['id']);
       for (const f of profileFilters) {
         profileFields.add(f.split('.')[0]!);
       }
-      for (const b of breakdowns.filter((x) => x.name.startsWith('profile.'))) {
+      for (const b of profileBreakdowns) {
         const fieldName = b.name.replace('profile.', '').split('.')[0];
         if (fieldName === 'properties') {
           profileFields.add('properties');
@@ -319,21 +344,58 @@ export class FunnelService {
       funnelCte.rawJoin('LEFT ANY JOIN _g ON _g.id = _group_id');
     }
 
+    // A cohort breakdown renders `cohort_<id>.profile_id`, so every cohort
+    // referenced by a breakdown needs its join.
     for (const cohortId of cohortIds) {
       funnelCte.rawJoin(buildInlineCohortJoin(cohortId, projectId, 'events'));
     }
 
-    // Base funnel query with CTEs
-    const funnelQuery = clix(this.client, timezone);
+    const query = clix(this.client, timezone);
 
     if (needsGroupArrayJoin) {
-      funnelQuery.with(
+      query.with(
         '_g',
         `SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}`,
       );
     }
 
-    funnelQuery.with('session_funnel', funnelCte);
+    query.with('session_funnel', funnelCte);
+
+    return { query, eventSeries, breakdowns, group };
+  }
+
+  async getFunnel({
+    projectId,
+    startDate,
+    endDate,
+    series,
+    globalFilters,
+    options,
+    breakdowns: initialBreakdowns = [],
+    limit,
+    timezone = 'UTC',
+  }: IReportInput & { timezone: string; events?: IChartEvent[] }) {
+    if (!startDate || !endDate) {
+      throw new Error('startDate and endDate are required');
+    }
+
+    const funnelOptions = options?.type === 'funnel' ? options : undefined;
+
+    const {
+      query: funnelQuery,
+      eventSeries,
+      breakdowns,
+    } = await this.buildFunnelBase({
+      projectId,
+      startDate,
+      endDate,
+      series,
+      globalFilters,
+      breakdowns: initialBreakdowns,
+      funnelWindow: funnelOptions?.funnelWindow,
+      funnelGroup: funnelOptions?.funnelGroup,
+      timezone,
+    });
 
     // windowFunnel is computed per the primary key (profile_id or session_id),
     // so we just filter out level=0 rows — no re-aggregation needed.
