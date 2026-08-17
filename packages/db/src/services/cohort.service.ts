@@ -599,21 +599,25 @@ export async function getProfilesInCohort(
   return new Set(profileIds);
 }
 
+/**
+ * Enqueue a recompute for a cohort.
+ *
+ * Uses `deduplication` rather than a fixed `jobId`. A fixed jobId makes BullMQ
+ * short-circuit `add` for as long as *any* record for that id exists in Redis —
+ * and `removeOnComplete: { age }` is not a TTL, it only trims on some other
+ * job in the queue finishing. That deadlocks: nothing can be added because the
+ * completed record is still there, and the record is never collected because
+ * nothing gets added. The deduplication key, in contrast, is released by
+ * `moveToFinished` on both completion and terminal failure, so it only collapses
+ * a compute that is genuinely still in flight.
+ */
 export async function enqueueCohortCompute(cohortId: string): Promise<void> {
   await cohortComputeQueue.add(
     'cohortCompute',
     { cohortId },
     {
-      jobId: `cohort-${cohortId}`,
-      removeOnComplete: { age: 3600 },
-      removeOnFail: { age: 86400 },
+      deduplication: { id: `cohort-${cohortId}` },
     },
-  );
-}
-
-export async function removeCohortComputeJob(cohortId: string): Promise<void> {
-  await cohortComputeQueue.remove(
-    `cohort-${cohortId}`,
   );
 }
 
