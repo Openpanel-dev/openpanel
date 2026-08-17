@@ -13,7 +13,7 @@ import {
   getEventFiltersWhereClause,
   getEventMetasCached,
   getGroupPropertySelect,
-  getProfilePropertyKeys,
+  getProfilePropertyKeysCached,
   getProfilePropertySelect,
   getProfilesCached,
   getReportById,
@@ -243,9 +243,9 @@ export const chartRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { projectId, event } }) => {
-      const profileProperties = (await getProfilePropertyKeys(projectId)).map(
-        (key) => `profile.properties.${key}`
-      );
+      const profileProperties = (
+        await getProfilePropertyKeysCached(projectId)
+      ).map((key) => `profile.properties.${key}`);
 
       const query = clix(ch)
         .select<{ property_key: string; created_at: string }>([
@@ -257,8 +257,11 @@ export const chartRouter = createTRPCRouter({
         .groupBy(['property_key'])
         // Order by recency, not by key length. The cap has to drop *something*
         // on projects with very many distinct keys, and dropping the longest
-        // keys first meant losing the most descriptive ones.
+        // keys first meant losing the most descriptive ones. `property_key`
+        // breaks ties so the cap can't cut an arbitrary side of a tied group —
+        // an unstable list is the bug this whole change is about.
         .orderBy('created_at', 'DESC')
+        .orderBy('property_key', 'ASC')
         .limit(EVENT_PROPERTY_KEY_LIMIT);
 
       if (event && event !== '*') {

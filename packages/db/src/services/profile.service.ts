@@ -562,3 +562,14 @@ export async function getProfilePropertyKeys(
   `);
   return rows.map((r) => r.key).sort();
 }
+
+/**
+ * Cached by projectId only. The picker's tRPC-level cache keys on the whole
+ * input, which includes `event` — so without this the full profile scan would
+ * repeat once per event within the same window, even though the profile keys
+ * don't depend on the event at all.
+ */
+export const getProfilePropertyKeysCached = cacheable(
+  getProfilePropertyKeys,
+  60,
+);
