@@ -58,7 +58,11 @@ export function MetricCard({
   const number = useNumber();
 
   const renderValue = (value: number | undefined, unitClassName?: string) => {
-    if (!value) {
+    // A genuine 0 is a real value, not a missing one — `min` is 0 whenever the
+    // range contains an empty bucket. Only absent metrics render as N/A, which
+    // still matters: getAggregateChartSql never selects total_count, so `count`
+    // really is undefined for bar/pie series.
+    if (value === undefined || value === null) {
       return <div className="text-muted-foreground">N/A</div>;
     }
 

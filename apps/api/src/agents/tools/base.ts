@@ -258,7 +258,13 @@ export const generateReport = chatTool(
         )
         .default([])
         .optional(),
-      metric: z.enum(['sum', 'count', 'average']).default('sum').optional(),
+      metric: z
+        .enum(['sum', 'count', 'average', 'min', 'max'])
+        .default('sum')
+        .optional()
+        .describe(
+          'How a series is aggregated for display. Only the metric and map chart types read this; `count` is unique profiles.',
+        ),
       previous: z
         .boolean()
         .optional()
