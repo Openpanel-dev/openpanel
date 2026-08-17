@@ -539,3 +539,26 @@ export async function getProfileMetricsCore(input: {
     revenue: raw.revenue,
   };
 }
+
+/**
+ * Every distinct key present in any external profile's `properties` map.
+ *
+ * Aggregated across all profiles rather than sampled — a `LIMIT n` sample with
+ * no `ORDER BY` returns whichever rows ClickHouse's scheduler happens to
+ * produce, so the key set varied between requests and properties set on a small
+ * fraction of profiles were usually missing from the picker entirely.
+ *
+ * `FINAL` isn't needed: older row versions can only contribute keys that
+ * genuinely existed at some point.
+ */
+export async function getProfilePropertyKeys(
+  projectId: string,
+): Promise<string[]> {
+  const rows = await chQuery<{ key: string }>(`
+    SELECT DISTINCT arrayJoin(mapKeys(properties)) as key
+    FROM ${TABLE_NAMES.profiles}
+    WHERE project_id = ${sqlstring.escape(projectId)}
+      AND is_external = true
+  `);
+  return rows.map((r) => r.key).sort();
+}
