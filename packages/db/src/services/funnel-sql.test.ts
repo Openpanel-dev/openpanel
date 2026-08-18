@@ -107,13 +107,12 @@ afterAll(() => {
   vi.restoreAllMocks();
 });
 
+// Reports as skipped rather than passed when CH is unreachable — a test that
+// returns before asserting anything should not read as green.
 const itCH = (name: string, fn: () => Promise<void>) =>
-  it(name, async () => {
+  it(name, async (ctx) => {
     if (!chReachable) {
-      console.warn(
-        '[funnel-sql] skipping: ClickHouse not reachable at CLICKHOUSE_URL',
-      );
-      return;
+      ctx.skip('ClickHouse not reachable at CLICKHOUSE_URL');
     }
     await fn();
   });
