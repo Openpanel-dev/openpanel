@@ -113,6 +113,11 @@ export async function bootCron() {
       type: 'weeklyDigest',
       pattern: '0 8 * * 1', // Mondays 08:00 UTC — weekly analytics digest email
     },
+    {
+      name: 'flushExports',
+      type: 'flushExports',
+      pattern: 1000 * 60, // Every 1 minute — drains export buffers to S3/GCS
+    },
   ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {

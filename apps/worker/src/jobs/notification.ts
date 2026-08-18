@@ -1,9 +1,7 @@
 import type { Job } from 'bullmq';
 
 import { Prisma, db } from '@openpanel/db';
-import { sendDiscordNotification } from '@openpanel/integrations/src/discord';
-import { sendSlackNotification } from '@openpanel/integrations/src/slack';
-import { execute as executeJavaScriptTemplate } from '@openpanel/js-runtime';
+import { getServerIntegration } from '@openpanel/integrations/src/registry';
 import type { NotificationQueuePayload } from '@openpanel/queue';
 import { publishEvent } from '@openpanel/redis';
 
@@ -23,6 +21,7 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
     case 'sendNotification': {
       const { notification } = job.data.payload;
 
+      // App + email are pseudo-integrations dispatched by flags, not real rows.
       if (notification.sendToApp) {
         publishEvent('notification', 'created', notification);
         return;
@@ -48,59 +47,30 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
         return new Error('Invalid payload');
       }
 
-      switch (integration.config.type) {
-        case 'webhook': {
-          let body: unknown;
-
-          if (integration.config.mode === 'javascript') {
-            // We only transform event payloads for now (not funnel)
-            if (
-              integration.config.javascriptTemplate &&
-              payload.type === 'event'
-            ) {
-              const result = executeJavaScriptTemplate(
-                integration.config.javascriptTemplate,
-                payload.event,
-              );
-              body = result;
-            } else {
-              body = payload;
-            }
-          } else {
-            body = {
-              title: notification.title,
-              message: notification.message,
-            };
-          }
-
-          return fetch(integration.config.url, {
-            method: 'POST',
-            headers: {
-              ...(integration.config.headers ?? {}),
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-          });
-        }
-        case 'discord': {
-          return sendDiscordNotification({
-            webhookUrl: integration.config.url,
-            message: [
-              `🔔 **${notification.title}**`,
-              notification.message,
-            ].join('\n'),
-          });
-        }
-
-        case 'slack': {
-          return sendSlackNotification({
-            webhookUrl: integration.config.incoming_webhook.url,
-            message: [`🔔 *${notification.title}*`, notification.message].join(
-              '\n',
-            ),
-          });
-        }
+      // An integration whose config is still empty (e.g. a Slack integration
+      // before its OAuth callback fills the config) has no type yet — nothing
+      // to deliver to.
+      if (!integration.config?.type) {
+        return;
       }
+
+      // Generic registry dispatch — no per-type switch. A new notification
+      // integration just registers a `notification.deliver` plugin.
+      const plugin = getServerIntegration(integration.config.type);
+      if (!plugin.notification) {
+        throw new Error(
+          `Integration ${integration.config.type} is not a notification sink`,
+        );
+      }
+
+      return plugin.notification.deliver({
+        config: integration.config,
+        notification: {
+          title: notification.title,
+          message: notification.message,
+        },
+        payload,
+      });
     }
   }
 }

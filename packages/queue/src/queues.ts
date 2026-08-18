@@ -160,6 +160,10 @@ export type CronQueuePayloadWeeklyDigest = {
   type: 'weeklyDigest';
   payload: undefined;
 };
+export type CronQueuePayloadFlushExports = {
+  type: 'flushExports';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
@@ -168,6 +172,7 @@ export type CronQueuePayload =
   | CronQueuePayloadFlushProfileBackfill
   | CronQueuePayloadFlushReplay
   | CronQueuePayloadFlushGroups
+  | CronQueuePayloadFlushExports
   | CronQueuePayloadPing
   | CronQueuePayloadDelete
   | CronQueuePayloadInsightsDaily
