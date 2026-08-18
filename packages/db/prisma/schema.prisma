@@ -378,6 +378,9 @@ enum Metric {
   average
   min
   max
+  // Appended last to match what `ALTER TYPE ... ADD VALUE` does in the DB,
+  // so `prisma migrate` reports no drift.
+  count
 }
 
 model Report {

@@ -7,11 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
+import type { IChartMetric } from '@openpanel/validation';
 import { useMemo } from 'react';
 import {
   changeCriteria,
   changeFunnelGroup,
   changeFunnelWindow,
+  changeMetric,
   changePrevious,
   changeSankeyExclude,
   changeSankeyInclude,
@@ -25,6 +27,7 @@ export function ReportSettings() {
   const chartType = useSelector((state) => state.report.chartType);
   const previous = useSelector((state) => state.report.previous);
   const unit = useSelector((state) => state.report.unit);
+  const metric = useSelector((state) => state.report.metric);
   const options = useSelector((state) => state.report.options);
 
   const retentionOptions = options?.type === 'retention' ? options : undefined;
@@ -67,6 +70,11 @@ export function ReportSettings() {
 
     if (chartType === 'histogram') {
       fields.push('stacked');
+    }
+
+    // `map` already reads report.metric; it just never had a way to set it.
+    if (chartType === 'metric' || chartType === 'map') {
+      fields.push('metric');
     }
 
     return fields;
@@ -133,6 +141,27 @@ export function ReportSettings() {
                   label: '%',
                   value: '%',
                 },
+              ]}
+            />
+          </div>
+        )}
+        {fields.includes('metric') && (
+          <div className="flex items-center justify-between gap-4">
+            <Label className="whitespace-nowrap font-medium mb-0">
+              Aggregation
+            </Label>
+            <Combobox
+              align="end"
+              placeholder="Aggregation"
+              value={metric}
+              onChange={(val) => dispatch(changeMetric(val as IChartMetric))}
+              // Same labels the report table uses for these columns.
+              items={[
+                { label: 'Unique', value: 'count' },
+                { label: 'Sum', value: 'sum' },
+                { label: 'Average', value: 'average' },
+                { label: 'Min', value: 'min' },
+                { label: 'Max', value: 'max' },
               ]}
             />
           </div>

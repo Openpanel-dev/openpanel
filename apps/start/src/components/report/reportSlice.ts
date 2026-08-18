@@ -13,6 +13,7 @@ import type {
   IChartEventFilter,
   IChartEventItem,
   IChartLineType,
+  IChartMetric,
   IChartRange,
   IChartType,
   IInterval,
@@ -209,6 +210,14 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.chartType = action.payload;
 
+      // The Metric card has always shown the total unique count. Existing
+      // reports are backfilled to 'count' by migration, so default a newly
+      // switched one the same way rather than leaving old and new metric
+      // reports showing different aggregations. The picker overrides it.
+      if (action.payload === 'metric') {
+        state.metric = 'count';
+      }
+
       // Initialize sankey options if switching to sankey
       if (action.payload === 'sankey' && !state.options) {
         state.options = {
@@ -299,6 +308,11 @@ export const reportSlice = createSlice({
     changeUnit(state, action: PayloadAction<string | undefined>) {
       state.dirty = true;
       state.unit = action.payload || undefined;
+    },
+
+    changeMetric(state, action: PayloadAction<IChartMetric>) {
+      state.dirty = true;
+      state.metric = action.payload;
     },
 
     changeFunnelGroup(state, action: PayloadAction<string | undefined>) {
@@ -445,6 +459,7 @@ export const {
   changePrevious,
   changeCriteria,
   changeUnit,
+  changeMetric,
   changeFunnelGroup,
   changeFunnelWindow,
   changeOptions,

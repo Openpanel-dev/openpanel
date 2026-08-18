@@ -258,7 +258,15 @@ export const generateReport = chatTool(
         )
         .default([])
         .optional(),
-      metric: z.enum(['sum', 'count', 'average']).default('sum').optional(),
+      // No `.default()` here on purpose: it would make an omitted metric
+      // indistinguishable from an explicit `sum`, and the fallback depends on
+      // the chart type (see below).
+      metric: z
+        .enum(['sum', 'count', 'average', 'min', 'max'])
+        .optional()
+        .describe(
+          'How a series is aggregated for display. Only the metric and map chart types read this; `count` is unique profiles. Omit it unless the user asked for a specific aggregation — metric cards then default to unique profiles.',
+        ),
       previous: z
         .boolean()
         .optional()
@@ -338,7 +346,11 @@ export const generateReport = chatTool(
         }),
       ),
       range: 'custom' as const,
-      metric: input.metric ?? 'sum',
+      // A metric card has always shown the total unique count, so an
+      // unspecified metric must stay `count` there — `sum` would silently turn
+      // "1.2k users" into "45k events".
+      metric:
+        input.metric ?? (input.chartType === 'metric' ? 'count' : 'sum'),
       previous: input.previous ?? false,
       ...(input.lineType ? { lineType: input.lineType } : {}),
       ...(input.limit ? { limit: input.limit } : {}),
