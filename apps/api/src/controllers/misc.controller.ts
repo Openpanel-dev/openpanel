@@ -1,8 +1,14 @@
 import crypto from 'node:crypto';
 import { logger } from '@/utils/logger';
 import { parseUrlMeta } from '@/utils/parseUrlMeta';
+import {
+  ALLOWED_IMAGE_CONTENT_TYPES,
+  normalizeContentType,
+  processImage,
+  processOgImage,
+} from '@/utils/image-proxy';
+import { BlockedUrlError, assertPublicUrl, safeFetch } from '@/utils/safe-fetch';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import sharp from 'sharp';
 
 import {
   DEFAULT_IP_HEADER_ORDER,
@@ -24,9 +30,17 @@ const USER_AGENT = 'OpenPanel-FaviconProxy/1.0 (+https://openpanel.dev)';
 // Helper functions
 function createCacheKey(url: string, prefix = 'favicon'): string {
   const hash = crypto.createHash('sha256').update(url).digest('hex');
-  return `${prefix}:v2:${hash}`;
+  // v3: entries written before the SVG/raw-passthrough fix could hold
+  // attacker-controlled bytes with an attacker-chosen content type, so the
+  // old namespace is abandoned rather than served from.
+  return `${prefix}:v3:${hash}`;
 }
 
+/**
+ * Shape check only. The destination is validated by `assertPublicUrl` /
+ * `safeFetch` right before each outbound request, because a hostname can
+ * resolve differently between validation and connection.
+ */
 function validateUrl(raw?: string): URL | null {
   try {
     if (!raw) throw new Error('Missing ?url');
@@ -66,158 +80,63 @@ async function setToCacheBinary(
   ]);
 }
 
-// Fetch image with timeout and size limits
+// Fetch image with SSRF protection, timeout and size limits
 async function fetchImage(
   url: URL,
 ): Promise<{ buffer: Buffer; contentType: string; status: number }> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 1000); // 10s timeout
-
   try {
-    const response = await fetch(url.toString(), {
-      redirect: 'follow',
-      signal: controller.signal,
+    // `safeFetch` validates and pins every hop, so a redirect cannot be used
+    // to reach an internal address after the initial URL checks out.
+    const result = await safeFetch(url, {
+      timeoutMs: 10_000,
+      maxBytes: MAX_BYTES,
       headers: {
         'user-agent': USER_AGENT,
         accept: 'image/*,*/*;q=0.8',
       },
     });
 
-    clearTimeout(timeout);
-
-    if (!response.ok) {
+    if (result.status !== 200) {
       return {
         buffer: Buffer.alloc(0),
         contentType: 'text/plain',
-        status: response.status,
+        status: result.status,
       };
     }
 
-    // Size guard
-    const contentLength = Number(response.headers.get('content-length') ?? '0');
-    if (contentLength > MAX_BYTES) {
-      throw new Error(`Remote file too large: ${contentLength} bytes`);
+    const contentType = normalizeContentType(
+      result.headers.get('content-type'),
+    );
+    if (!ALLOWED_IMAGE_CONTENT_TYPES.has(contentType)) {
+      logger.debug(
+        { url: url.toString(), contentType },
+        'Refusing non-image response',
+      );
+      return { buffer: Buffer.alloc(0), contentType: 'text/plain', status: 415 };
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Additional size check for actual content
-    if (buffer.length > MAX_BYTES) {
-      throw new Error('Remote file exceeded size limit');
-    }
-
-    const contentType =
-      response.headers.get('content-type') || 'application/octet-stream';
-    return { buffer, contentType, status: 200 };
+    return { buffer: result.body, contentType, status: 200 };
   } catch (error) {
-    clearTimeout(timeout);
+    if (error instanceof BlockedUrlError) {
+      logger.warn(
+        { url: url.toString(), reason: error.message },
+        'Blocked image fetch',
+      );
+    }
     return { buffer: Buffer.alloc(0), contentType: 'text/plain', status: 500 };
   }
 }
 
-// Check if URL is an ICO file
-function isIcoFile(url: string, contentType?: string): boolean {
-  return (
-    url.toLowerCase().endsWith('.ico') ||
-    contentType === 'image/x-icon' ||
-    contentType === 'image/vnd.microsoft.icon'
-  );
-}
-function isSvgFile(url: string, contentType?: string): boolean {
-  return url.toLowerCase().endsWith('.svg') || contentType === 'image/svg+xml';
-}
-
-// Process image with Sharp (resize to 30x30 PNG)
-async function processImage(
-  buffer: Buffer,
-  originalUrl?: string,
-  contentType?: string,
-): Promise<Buffer> {
-  // If it's an ICO file, just return it as-is (no conversion needed)
-  if (originalUrl && isIcoFile(originalUrl, contentType)) {
-    logger.debug(
-      { originalUrl, bufferSize: buffer.length },
-      'Serving ICO file directly',
-    );
-    return buffer;
-  }
-
-  if (originalUrl && isSvgFile(originalUrl, contentType)) {
-    logger.debug(
-      { originalUrl, bufferSize: buffer.length },
-      'Serving SVG file directly',
-    );
-    return buffer;
-  }
-
-  // If buffer isnt to big just return it as well
-  if (buffer.length < 5000) {
-    logger.debug(
-      { originalUrl, bufferSize: buffer.length },
-      'Serving image directly without processing',
-    );
-    return buffer;
-  }
-
-  try {
-    // For other formats, process with Sharp
-    return await sharp(buffer)
-      .resize(30, 30, {
-        fit: 'cover',
-      })
-      .png()
-      .toBuffer();
-  } catch (error) {
-    logger.warn(
-      {
-        err: error,
-        originalUrl,
-        bufferSize: buffer.length,
-      },
-      'Sharp failed to process image, trying fallback',
-    );
-
-    throw error;
-  }
-}
-
-// Process OG image with Sharp (resize to 300px width)
-async function processOgImage(
-  buffer: Buffer,
-  originalUrl?: string,
-  contentType?: string,
-): Promise<Buffer> {
-  // If buffer is small enough, return it as-is
-  if (buffer.length < 10000) {
-    logger.debug(
-      { originalUrl, bufferSize: buffer.length },
-      'Serving OG image directly without processing',
-    );
-    return buffer;
-  }
-
-  try {
-    // For OG images, process with Sharp to 300px width, maintaining aspect ratio
-    return await sharp(buffer)
-      .resize(300, null, {
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
-      .png()
-      .toBuffer();
-  } catch (error) {
-    logger.warn(
-      {
-        err: error,
-        originalUrl,
-        bufferSize: buffer.length,
-      },
-      'Sharp failed to process OG image, trying fallback',
-    );
-
-    throw error;
-  }
+/**
+ * These bytes come from a third-party server, so make sure a browser treats
+ * them strictly as an image: no MIME sniffing, no scripts, no embedding
+ * privileges on the API origin.
+ */
+function setImageSecurityHeaders(reply: FastifyReply, contentType: string) {
+  reply.header('Content-Type', contentType);
+  reply.header('X-Content-Type-Options', 'nosniff');
+  reply.header('Content-Security-Policy', "default-src 'none'; sandbox");
+  reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
 }
 
 // Check if URL is a direct image
@@ -245,12 +164,16 @@ export async function getFavicon(
         .send('Not found');
     }
 
+    // Check the destination before anything else, so a blocked host is not
+    // leaked to the DuckDuckGo fallback below either.
+    await assertPublicUrl(url);
+
     const cacheKey = createCacheKey(url.toString());
 
     // Check cache first
     const cached = await getFromCacheBinary(cacheKey);
     if (cached) {
-      reply.header('Content-Type', cached.contentType);
+      setImageSecurityHeaders(reply, cached.contentType);
       reply.header('Cache-Control', 'public, max-age=604800, immutable');
       return reply.send(cached.buffer);
     }
@@ -354,33 +277,31 @@ export async function getFavicon(
       'Favicon processing result',
     );
 
-    // Determine the correct content type for caching and response
-    const isIco = isIcoFile(imageUrl.toString(), contentType);
-    const isSvg = isSvgFile(imageUrl.toString(), contentType);
-    let responseContentType = contentType;
-
-    if (isIco) {
-      responseContentType = 'image/x-icon';
-    } else if (isSvg) {
-      responseContentType = 'image/svg+xml';
-    } else if (
-      processedBuffer.length < 5000 &&
-      buffer.length === processedBuffer.length
-    ) {
-      // Image was returned as-is, keep original content type
-      responseContentType = contentType;
-    } else {
-      // Image was processed by Sharp, it's now a PNG
-      responseContentType = 'image/png';
-    }
+    // `processImage` either passed an ICO through untouched or rasterized to
+    // PNG, so the response type is derived from what we produced rather than
+    // from whatever the upstream server claimed.
+    const responseContentType =
+      processedBuffer === buffer ? 'image/x-icon' : 'image/png';
 
     // Cache the result with correct content type
     await setToCacheBinary(cacheKey, processedBuffer, responseContentType);
 
-    reply.header('Content-Type', responseContentType);
+    setImageSecurityHeaders(reply, responseContentType);
     reply.header('Cache-Control', 'public, max-age=3600, immutable');
     return reply.send(processedBuffer);
   } catch (error: any) {
+    if (error instanceof BlockedUrlError) {
+      logger.warn(
+        { url: request.query.url, reason: error.message },
+        'Blocked favicon fetch',
+      );
+      reply.header('Cache-Control', 'no-store');
+      return reply
+        .status(400)
+        .header('Content-Type', 'text/plain')
+        .send('Bad request');
+    }
+
     logger.error(
       { err: error, url: request.query.url },
       'Favicon fetch error',
@@ -525,12 +446,14 @@ export async function getOgImage(
     if (!url) {
       return getFavicon(request, reply);
     }
+    await assertPublicUrl(url);
+
     const cacheKey = createCacheKey(url.toString(), 'og');
 
     // Check cache first
     const cached = await getFromCacheBinary(cacheKey);
     if (cached) {
-      reply.header('Content-Type', cached.contentType);
+      setImageSecurityHeaders(reply, cached.contentType);
       reply.header('Cache-Control', 'public, max-age=604800, immutable');
       return reply.send(cached.buffer);
     }
@@ -552,26 +475,34 @@ export async function getOgImage(
     }
 
     // Fetch the image
-    const { buffer, contentType, status } = await fetchImage(imageUrl);
+    const { buffer, status } = await fetchImage(imageUrl);
 
     if (status !== 200 || buffer.length === 0) {
       return getFavicon(request, reply);
     }
 
-    // Process the image (resize to 1200x630 for OG standards, or serve as-is if reasonable size)
-    const processedBuffer = await processOgImage(
-      buffer,
-      imageUrl.toString(),
-      contentType,
-    );
+    // Rasterize to a 300px-wide PNG
+    const processedBuffer = await processOgImage(buffer, imageUrl.toString());
 
     // Cache the result
     await setToCacheBinary(cacheKey, processedBuffer, 'image/png');
 
-    reply.header('Content-Type', 'image/png');
+    setImageSecurityHeaders(reply, 'image/png');
     reply.header('Cache-Control', 'public, max-age=3600, immutable');
     return reply.send(processedBuffer);
   } catch (error: any) {
+    if (error instanceof BlockedUrlError) {
+      logger.warn(
+        { url: request.query.url, reason: error.message },
+        'Blocked OG image fetch',
+      );
+      reply.header('Cache-Control', 'no-store');
+      return reply
+        .status(400)
+        .header('Content-Type', 'text/plain')
+        .send('Bad request');
+    }
+
     logger.error(
       { err: error, url: request.query.url },
       'OG image fetch error',

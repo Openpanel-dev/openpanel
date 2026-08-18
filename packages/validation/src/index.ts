@@ -11,6 +11,14 @@ import {
   timeWindows,
 } from '@openpanel/constants';
 
+/**
+ * Chart formulas are plain arithmetic over series references (A, B, C, ...).
+ * The API validates the parsed expression tree as well; this charset guard
+ * rejects the obviously hostile shapes (assignment, indexing, object/array
+ * literals, statement separators) at the edge, in the browser and on the API.
+ */
+const CHART_FORMULA_PATTERN = /^[A-Za-z0-9_ .,+\-*/()%^]*$/;
+
 export function objectToZodEnums<K extends string>(
   obj: Record<K, any>,
 ): [K, ...K[]] {
@@ -107,7 +115,14 @@ export const zChartFormula = z.object({
     .optional()
     .describe('Unique identifier for the formula configuration'),
   type: z.literal('formula'),
-  formula: z.string().describe('The formula expression (e.g., A+B, A/B)'),
+  formula: z
+    .string()
+    .max(1000)
+    .regex(
+      CHART_FORMULA_PATTERN,
+      'Formula may only contain series references, numbers and arithmetic operators',
+    )
+    .describe('The formula expression (e.g., A+B, A/B)'),
   displayName: z
     .string()
     .optional()

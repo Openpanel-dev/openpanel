@@ -290,10 +290,19 @@ export const reportRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this project');
       }
 
+      // The access check above only proves the caller owns `projectId`. Bind
+      // the caller-supplied `dashboardId` to that project as well, otherwise a
+      // dashboard from another organization can be read through this handler.
+      const dashboard = await getDashboardById(dashboardId, projectId);
+      if (!dashboard) {
+        throw new TRPCNotFoundError('Dashboard not found');
+      }
+
       return db.reportLayout.findMany({
         where: {
           report: {
             dashboardId: dashboardId,
+            projectId,
           },
         },
         include: {
@@ -318,11 +327,19 @@ export const reportRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this project');
       }
 
+      // Same as `getLayouts`: bind the dashboard to the access-checked project
+      // before deleting anything, so a foreign dashboard cannot be wiped.
+      const dashboard = await getDashboardById(dashboardId, projectId);
+      if (!dashboard) {
+        throw new TRPCNotFoundError('Dashboard not found');
+      }
+
       // Delete all layout data for reports in this dashboard
       return db.reportLayout.deleteMany({
         where: {
           report: {
             dashboardId: dashboardId,
+            projectId,
           },
         },
       });
