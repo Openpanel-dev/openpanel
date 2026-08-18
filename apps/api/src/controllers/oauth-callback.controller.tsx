@@ -8,7 +8,12 @@ import {
   setLastAuthProviderCookie,
   setSessionTokenCookie,
 } from '@openpanel/auth';
-import { type Account, connectUserToOrganization, db } from '@openpanel/db';
+import {
+  type Account,
+  connectUserToOrganization,
+  db,
+  getIsRegistrationAllowed,
+} from '@openpanel/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { LogError } from '@/utils/errors';
@@ -130,6 +135,20 @@ async function handleNewUser({
         providerName,
       }
     );
+  }
+
+  // Enforce the self-hosting registration policy here rather than before the
+  // IdP redirect — this is the first point where we know the user is new, so
+  // returning users are never caught by it.
+  if (!(await getIsRegistrationAllowed(inviteId))) {
+    // Deliberately no `oauthUser` here — this rejects people who are not users,
+    // so their email and name shouldn't land in application logs. The redirect
+    // carries `correlationId` (the request id), which is what ties a user's
+    // error page back to this log line if an operator needs to investigate.
+    throw new LogError('Registrations are not allowed', {
+      providerName,
+      inviteId,
+    });
   }
 
   const user = await db.user.create({
