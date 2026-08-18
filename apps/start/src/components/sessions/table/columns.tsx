@@ -46,7 +46,8 @@ export function useColumns() {
           <div className="row items-center gap-2">
             <ProjectLink
               className="font-medium"
-              href={`/sessions/${session.id}`}
+              to="/sessions/$sessionId"
+              params={{ sessionId: session.id }}
               title={session.id}
             >
               {session.id.slice(0, 8)}...
@@ -55,7 +56,9 @@ export function useColumns() {
               <ProjectLink
                 aria-label="View replay"
                 className="text-muted-foreground hover:text-foreground"
-                href={`/sessions/${session.id}#replay`}
+                to="/sessions/$sessionId"
+                params={{ sessionId: session.id }}
+                hash="replay"
                 title="View replay"
               >
                 <Video className="size-4" />
@@ -75,7 +78,8 @@ export function useColumns() {
           return (
             <ProjectLink
               className="row items-center gap-2 font-medium hover:underline"
-              href={`/profiles/${encodeURIComponent(session.profile.id)}`}
+              to="/profiles/$profileId"
+              params={{ profileId: session.profile.id }}
             >
               <ProfileAvatar size="sm" {...session.profile} />
               {getProfileName(session.profile)}
@@ -85,7 +89,8 @@ export function useColumns() {
         return (
           <ProjectLink
             className="font-medium font-mono"
-            href={`/profiles/${encodeURIComponent(session.profileId)}`}
+            to="/profiles/$profileId"
+            params={{ profileId: session.profileId }}
           >
             {session.profileId}
           </ProjectLink>

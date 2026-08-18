@@ -102,7 +102,8 @@ export function useColumns() {
           return (
             <ProjectLink
               className="group row items-center gap-2 whitespace-nowrap font-medium hover:underline"
-              href={`/profiles/${encodeURIComponent(profile.id)}`}
+              to="/profiles/$profileId"
+              params={{ profileId: profile.id }}
             >
               <ProfileAvatar size="sm" {...profile} />
               {getProfileName(profile)}
@@ -114,7 +115,8 @@ export function useColumns() {
           return (
             <ProjectLink
               className="whitespace-nowrap font-medium hover:underline"
-              href={`/profiles/${encodeURIComponent(profileId)}`}
+              to="/profiles/$profileId"
+              params={{ profileId }}
             >
               Unknown
             </ProjectLink>
@@ -125,7 +127,8 @@ export function useColumns() {
           return (
             <ProjectLink
               className="whitespace-nowrap font-medium hover:underline"
-              href={`/profiles/${encodeURIComponent(deviceId)}`}
+              to="/profiles/$profileId"
+              params={{ profileId: deviceId }}
             >
               Anonymous
             </ProjectLink>
@@ -147,7 +150,8 @@ export function useColumns() {
         return (
           <ProjectLink
             className="whitespace-nowrap font-medium hover:underline"
-            href={`/sessions/${encodeURIComponent(sessionId)}`}
+            to="/sessions/$sessionId"
+            params={{ sessionId }}
           >
             {sessionId.slice(0, 6)}
           </ProjectLink>
