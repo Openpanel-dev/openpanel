@@ -554,12 +554,12 @@ export async function getProfileMetricsCore(input: {
 export async function getProfilePropertyKeys(
   projectId: string,
 ): Promise<string[]> {
-  const rows = await chQuery<{ key: string }>(`
-    SELECT DISTINCT arrayJoin(mapKeys(properties)) as key
-    FROM ${TABLE_NAMES.profiles}
-    WHERE project_id = ${sqlstring.escape(projectId)}
-      AND is_external = true
-  `);
+  const rows = await clix(ch)
+    .select<{ key: string }>(['DISTINCT arrayJoin(mapKeys(properties)) as key'])
+    .from(TABLE_NAMES.profiles)
+    .where('project_id', '=', projectId)
+    .where('is_external', '=', true)
+    .execute();
   return rows.map((r) => r.key).sort();
 }
 
