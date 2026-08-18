@@ -823,7 +823,7 @@ export const chartRouter = createTRPCRouter({
         showDropoffs = false,
         funnelWindow,
         funnelGroup,
-        breakdowns = [],
+        breakdowns: inputBreakdowns = [],
         breakdownValues = [],
       } = input;
 
@@ -832,94 +832,27 @@ export const chartRouter = createTRPCRouter({
       // stepIndex is 0-based, but level is 1-based, so we need level >= stepIndex + 1
       const targetLevel = stepIndex + 1;
 
-      const eventSeries = onlyReportEvents(series);
-
-      if (eventSeries.length === 0) {
-        throw new Error('At least one event series is required');
-      }
-
-      const funnelWindowSeconds = (funnelWindow || 24) * 3600;
-      const funnelWindowMilliseconds = funnelWindowSeconds * 1000;
-
-      // Get the grouping strategy (profile_id or session_id)
-      const group = funnelService.getFunnelGroup(funnelGroup);
-
-      const anyFilterOnGroup = (eventSeries as IChartEvent[]).some((e) =>
-        e.filters?.some((f) => f.name.startsWith('group.'))
-      );
-      const anyBreakdownOnGroup = breakdowns.some((b) =>
-        b.name.startsWith('group.')
-      );
-      const needsGroupArrayJoin = anyFilterOnGroup || anyBreakdownOnGroup;
-
-      // Breakdown selects/groupBy so we can filter by specific breakdown values
-      const breakdownSelects = breakdowns.map(
-        (b, index) => `${getSelectPropertyKey(b.name, projectId)} as b_${index}`
-      );
-      const breakdownGroupBy = breakdowns.map((_, index) => `b_${index}`);
-
-      // Create funnel CTE using funnel service
-      const funnelCte = funnelService.buildFunnelCte({
+      // Reuse the chart's own funnel builder rather than re-deriving the CTE
+      // here. The two copies used to drift — breakdown expressions referencing
+      // a `profile` or `cohort_<id>` alias whose join this side never added,
+      // which failed with UNKNOWN_IDENTIFIER and surfaced as "No users found".
+      const { query, breakdowns } = await funnelService.buildFunnelBase({
         projectId,
         startDate,
         endDate,
-        eventSeries: eventSeries as IChartEvent[],
-        funnelWindowMilliseconds,
+        series,
+        breakdowns: inputBreakdowns,
+        funnelWindow,
+        funnelGroup,
         timezone,
-        additionalSelects: breakdownSelects,
-        additionalGroupBy: breakdownGroupBy,
-        group,
       });
 
-      // Profile JOIN must cover both profile filters AND profile breakdowns —
-      // breakdownSelects reference `profile.properties[...]` etc. via
-      // getSelectPropertyKey, so the alias has to exist in scope even when
-      // no filter touches the profiles table. Mirrors the same guard in
-      // funnelService.getFunnel.
-      const profileFilters = funnelService.getProfileFilters(
-        eventSeries as IChartEvent[]
-      );
-      const profileBreakdownNames = breakdowns
-        .filter((b) => b.name.startsWith('profile.'))
-        .map((b) => b.name.replace('profile.', ''));
-      if (profileFilters.length > 0 || profileBreakdownNames.length > 0) {
-        const fieldsToSelect = uniq([
-          ...profileFilters.map((f) => f.split('.')[0]!),
-          ...profileBreakdownNames.map((f) => f.split('.')[0]!),
-        ]).join(', ');
-        funnelCte.leftJoin(
-          `(SELECT id, ${fieldsToSelect} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
-          'profile.id = events.profile_id'
-        );
-      }
-
-      if (needsGroupArrayJoin) {
-        funnelCte.rawJoin('ARRAY JOIN groups AS _group_id');
-        funnelCte.rawJoin('LEFT ANY JOIN _g ON _g.id = _group_id');
-      }
-
-      // Build main query
-      const query = clix(ch, timezone);
-      if (needsGroupArrayJoin) {
-        query.with(
-          '_g',
-          `SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}`
-        );
-      }
-      query.with('session_funnel', funnelCte);
-
-      if (group === 'profile_id') {
-        const breakdownAggregates =
-          breakdowns.length > 0
-            ? `, ${breakdowns.map((_, index) => `any(b_${index}) AS b_${index}`).join(', ')}`
-            : '';
-        query.with(
-          'funnel',
-          `SELECT profile_id, max(level) AS level${breakdownAggregates} FROM (SELECT * FROM session_funnel WHERE level != 0) GROUP BY profile_id`
-        );
-      } else {
-        query.with('funnel', 'SELECT * FROM session_funnel WHERE level != 0');
-      }
+      // Same shape as the chart's `funnel` CTE: windowFunnel is already
+      // computed per primary key, so drop level=0 and select distinct
+      // profiles. Re-aggregating with max(level)/any(b_0) here would collapse
+      // the breakdown column and make the breakdownValues filter pick an
+      // arbitrary value for profiles that appear under more than one.
+      query.with('funnel', 'SELECT * FROM session_funnel WHERE level != 0');
 
       query.select(['DISTINCT profile_id']).from('funnel');
 
