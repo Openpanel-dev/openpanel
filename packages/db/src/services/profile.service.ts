@@ -539,3 +539,37 @@ export async function getProfileMetricsCore(input: {
     revenue: raw.revenue,
   };
 }
+
+/**
+ * Every distinct key present in any external profile's `properties` map.
+ *
+ * Aggregated across all profiles rather than sampled — a `LIMIT n` sample with
+ * no `ORDER BY` returns whichever rows ClickHouse's scheduler happens to
+ * produce, so the key set varied between requests and properties set on a small
+ * fraction of profiles were usually missing from the picker entirely.
+ *
+ * `FINAL` isn't needed: older row versions can only contribute keys that
+ * genuinely existed at some point.
+ */
+export async function getProfilePropertyKeys(
+  projectId: string,
+): Promise<string[]> {
+  const rows = await clix(ch)
+    .select<{ key: string }>(['DISTINCT arrayJoin(mapKeys(properties)) as key'])
+    .from(TABLE_NAMES.profiles)
+    .where('project_id', '=', projectId)
+    .where('is_external', '=', true)
+    .execute();
+  return rows.map((r) => r.key).sort();
+}
+
+/**
+ * Cached by projectId only. The picker's tRPC-level cache keys on the whole
+ * input, which includes `event` — so without this the full profile scan would
+ * repeat once per event within the same window, even though the profile keys
+ * don't depend on the event at all.
+ */
+export const getProfilePropertyKeysCached = cacheable(
+  getProfilePropertyKeys,
+  60,
+);

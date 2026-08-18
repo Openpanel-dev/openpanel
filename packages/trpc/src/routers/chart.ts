@@ -13,6 +13,7 @@ import {
   getEventFiltersWhereClause,
   getEventMetasCached,
   getGroupPropertySelect,
+  getProfilePropertyKeysCached,
   getProfilePropertySelect,
   getProfilesCached,
   getReportById,
@@ -50,6 +51,12 @@ import {
 } from '../trpc';
 
 const cacher = cacheMiddleware(60);
+
+/**
+ * Cap on distinct event property keys returned to the picker. Projects in the
+ * 8k range exist, so the previous 10k was reachable in normal use.
+ */
+const EVENT_PROPERTY_KEY_LIMIT = 50_000;
 
 const chartProcedure = publicProcedure.use(
   async ({ ctx, next, getRawInput }) => {
@@ -225,6 +232,10 @@ export const chartRouter = createTRPCRouter({
     }),
 
   properties: protectedProcedure
+    // Aggregating every profile's property keys costs more than the old
+    // 10k-row sample. It's still sub-second on millions of profiles, and this
+    // list barely moves, so a short cache absorbs it.
+    .use(cacheMiddleware(60))
     .input(
       z.object({
         event: z.string().optional(),
@@ -232,21 +243,9 @@ export const chartRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { projectId, event } }) => {
-      const profiles = await clix(ch, 'UTC')
-        .select<Pick<IServiceProfile, 'properties'>>(['properties'])
-        .from(TABLE_NAMES.profiles)
-        .where('project_id', '=', projectId)
-        .where('is_external', '=', true)
-        .limit(10_000)
-        .execute();
-
-      const profileProperties = [
-        ...new Set(
-          profiles.flatMap((p) =>
-            Object.keys(p.properties).map((k) => `profile.properties.${k}`)
-          )
-        ),
-      ];
+      const profileProperties = (
+        await getProfilePropertyKeysCached(projectId)
+      ).map((key) => `profile.properties.${key}`);
 
       const query = clix(ch)
         .select<{ property_key: string; created_at: string }>([
@@ -256,9 +255,14 @@ export const chartRouter = createTRPCRouter({
         .from(TABLE_NAMES.event_property_values_mv)
         .where('project_id', '=', projectId)
         .groupBy(['property_key'])
-        .orderBy('length(property_key)', 'ASC')
+        // Order by recency, not by key length. The cap has to drop *something*
+        // on projects with very many distinct keys, and dropping the longest
+        // keys first meant losing the most descriptive ones. `property_key`
+        // breaks ties so the cap can't cut an arbitrary side of a tied group —
+        // an unstable list is the bug this whole change is about.
         .orderBy('created_at', 'DESC')
-        .limit(10_000);
+        .orderBy('property_key', 'ASC')
+        .limit(EVENT_PROPERTY_KEY_LIMIT);
 
       if (event && event !== '*') {
         query.where('name', '=', event);
