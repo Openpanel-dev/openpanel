@@ -320,8 +320,11 @@ export const cohortComputeQueue = new Queue<CohortComputePayload>(
     defaultJobOptions: {
       attempts: 3,
       backoff: { type: 'exponential', delay: 5000 },
-      removeOnComplete: { age: 3600 },
-      removeOnFail: { age: 86400 },
+      // `age` alone only trims when another job in this queue finishes, so pair
+      // it with a count bound to keep the completed/failed sets from growing
+      // unbounded during quiet periods.
+      removeOnComplete: { age: 3600, count: 100 },
+      removeOnFail: { age: 86400, count: 100 },
     },
   },
 );

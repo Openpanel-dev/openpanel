@@ -1,5 +1,4 @@
-import { db } from '@openpanel/db';
-import { cohortComputeQueue } from '@openpanel/queue';
+import { db, enqueueCohortCompute } from '@openpanel/db';
 
 export async function cohortRefreshCronJob() {
   const cohorts = await db.cohort.findMany({
@@ -7,17 +6,5 @@ export async function cohortRefreshCronJob() {
     select: { id: true },
   });
 
-  await Promise.all(
-    cohorts.map((cohort) =>
-      cohortComputeQueue.add(
-        'cohortCompute',
-        { cohortId: cohort.id },
-        {
-          jobId: `cohort-${cohort.id}`,
-          removeOnComplete: { age: 3600 },
-          removeOnFail: { age: 86400 },
-        },
-      ),
-    ),
-  );
+  await Promise.all(cohorts.map((cohort) => enqueueCohortCompute(cohort.id)));
 }
