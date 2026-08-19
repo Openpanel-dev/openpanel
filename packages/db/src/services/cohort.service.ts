@@ -24,7 +24,19 @@ import {
   type IServiceProfile,
 } from './profile.service';
 
-export const COHORT_MATERIALIZE_LIMIT = 10000;
+// Max members materialized into cohort_members per compute. Cohorts larger
+// than this are silently truncated to an arbitrary subset, so deployments
+// with bigger cohorts need to raise it — env-tunable to avoid an image
+// rebuild for what is really a sizing knob.
+const COHORT_MATERIALIZE_LIMIT_RAW = Number.parseInt(
+  process.env.COHORT_MATERIALIZE_LIMIT ?? '',
+  10,
+);
+export const COHORT_MATERIALIZE_LIMIT = Number.isNaN(
+  COHORT_MATERIALIZE_LIMIT_RAW,
+)
+  ? 10000
+  : COHORT_MATERIALIZE_LIMIT_RAW;
 
 function buildTimeConstraint(timeframe: Timeframe): string {
   if (timeframe.type === 'relative') {
