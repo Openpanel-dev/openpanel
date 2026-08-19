@@ -344,7 +344,10 @@ export async function withRoundRobinRetry<T>(
         },
         errClass === 'node-down'
           ? 'CH node unreachable; sin-binning and retrying on next'
-          : 'CH transient socket error; retrying on next'
+          : // `transient` covers socket-level failures AND retriable server
+            // overload rejections (TOO_MANY_SIMULTANEOUS_QUERIES) — the
+            // err/code fields above identify which.
+            'CH transient error; retrying on next'
       );
       await new Promise((r) => setTimeout(r, delay));
     }
