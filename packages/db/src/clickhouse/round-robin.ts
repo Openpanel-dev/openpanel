@@ -102,7 +102,7 @@ const CH_SERVER_ERROR_PREFIX = /^Code:\s*\d+/;
  *  retrying those either can't help or piles more load on a struggling
  *  cluster. Matched by @clickhouse/client's parsed fields (code/type) and
  *  by message text for errors that arrive re-wrapped. */
-const RETRIABLE_CH_ERROR_CODE = '202';
+const RETRIABLE_CH_ERROR_CODE = 202;
 const RETRIABLE_CH_ERROR_NAME = 'TOO_MANY_SIMULTANEOUS_QUERIES';
 const RETRIABLE_CH_MESSAGE = 'Too many simultaneous queries';
 
@@ -111,6 +111,9 @@ function isRetriableChServerError(
   msg: string
 ): boolean {
   return (
+    // @clickhouse/client parses the code as a string ('202'); accept the
+    // numeric form too for errors re-wrapped by other layers.
+    e.code === String(RETRIABLE_CH_ERROR_CODE) ||
     e.code === RETRIABLE_CH_ERROR_CODE ||
     e.type === RETRIABLE_CH_ERROR_NAME ||
     msg.includes(RETRIABLE_CH_ERROR_NAME) ||

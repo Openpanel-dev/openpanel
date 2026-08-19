@@ -283,6 +283,11 @@ describe('isRetriableConnectionError', () => {
         expected: 'transient',
       },
       {
+        label: 'CH TOO_MANY_SIMULTANEOUS_QUERIES (numeric code from a re-wrapping layer)',
+        err: Object.assign(new Error('query rejected'), { code: 202 }),
+        expected: 'transient',
+      },
+      {
         label: 'CH TOO_MANY_PARTS stays non-retriable (code 252 ≠ 202)',
         err: new Error(
           'Code: 252. DB::Exception: Too many parts (300). (TOO_MANY_PARTS)'
