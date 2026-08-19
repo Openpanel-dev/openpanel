@@ -93,6 +93,34 @@ const TRANSIENT_BARE_CODE_REGEX = /\b(ECONNRESET|EPIPE)\b/;
  *  all of them. */
 const CH_SERVER_ERROR_PREFIX = /^Code:\s*\d+/;
 
+/** The one CH *server* error worth retrying: TOO_MANY_SIMULTANEOUS_QUERIES
+ *  (code 202). The query is fine — the node just hit its concurrent-query
+ *  cap at that instant, so another node (or the same one after backoff) can
+ *  absorb it, which is exactly what this retry loop provides. Deliberately
+ *  a single-entry allow-list: every other CH server error (SQL, auth,
+ *  MEMORY_LIMIT_EXCEEDED, ...) still propagates immediately, because
+ *  retrying those either can't help or piles more load on a struggling
+ *  cluster. Matched by @clickhouse/client's parsed fields (code/type) and
+ *  by message text for errors that arrive re-wrapped. */
+const RETRIABLE_CH_ERROR_CODE = 202;
+const RETRIABLE_CH_ERROR_NAME = 'TOO_MANY_SIMULTANEOUS_QUERIES';
+const RETRIABLE_CH_MESSAGE = 'Too many simultaneous queries';
+
+function isRetriableChServerError(
+  e: { code?: unknown; type?: unknown },
+  msg: string
+): boolean {
+  return (
+    // @clickhouse/client parses the code as a string ('202'); accept the
+    // numeric form too for errors re-wrapped by other layers.
+    e.code === String(RETRIABLE_CH_ERROR_CODE) ||
+    e.code === RETRIABLE_CH_ERROR_CODE ||
+    e.type === RETRIABLE_CH_ERROR_NAME ||
+    msg.includes(RETRIABLE_CH_ERROR_NAME) ||
+    msg.includes(RETRIABLE_CH_MESSAGE)
+  );
+}
+
 export function classifyError(err: unknown): ErrorClass {
   if (!err || typeof err !== 'object') {
     return 'other';
@@ -104,6 +132,14 @@ export function classifyError(err: unknown): ErrorClass {
     type?: unknown;
   };
   const msg = String(e.message ?? '');
+
+  // ── Allow-list: overload rejections retry as transient ────────────────
+  // Checked before the server-error deny below. `transient` (not
+  // `node-down`): the node is healthy, just briefly saturated — sin-binning
+  // it would shrink the pool exactly when capacity is scarcest.
+  if (isRetriableChServerError(e, msg)) {
+    return 'transient';
+  }
 
   // ── Deny: ClickHouse server errors ────────────────────────────────────
   if (CH_SERVER_ERROR_PREFIX.test(msg)) {
@@ -308,7 +344,10 @@ export async function withRoundRobinRetry<T>(
         },
         errClass === 'node-down'
           ? 'CH node unreachable; sin-binning and retrying on next'
-          : 'CH transient socket error; retrying on next'
+          : // `transient` covers socket-level failures AND retriable server
+            // overload rejections (TOO_MANY_SIMULTANEOUS_QUERIES) — the
+            // err/code fields above identify which.
+            'CH transient error; retrying on next'
       );
       await new Promise((r) => setTimeout(r, delay));
     }

@@ -2,12 +2,20 @@ import * as dns from 'node:dns/promises';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { getClientIpFromHeaders } from '@openpanel/common/server/get-client-ip';
+import {
+  BlockedUrlError,
+  assertPublicHostname,
+  assertPublicUrl,
+  isBlockedIp,
+  safeFetch,
+} from '@/utils/safe-fetch';
 import { getGeoLocation } from '@openpanel/geo';
 import * as cheerio from 'cheerio';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 const TIMEOUT_MS = 10000;
 const MAX_REDIRECTS = 10;
+const MAX_HTML_BYTES = 5_000_000;
 
 interface RedirectHop {
   url: string;
@@ -138,24 +146,21 @@ async function checkRobotsTxt(
   path: string,
 ): Promise<'allowed' | 'blocked' | 'error'> {
   try {
-    const robotsUrl = new URL('/robots.txt', baseUrl).toString();
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const robotsUrl = new URL('/robots.txt', baseUrl);
 
-    const response = await fetch(robotsUrl, {
-      signal: controller.signal,
+    const response = await safeFetch(robotsUrl, {
+      timeoutMs: 5000,
+      maxBytes: 1_000_000,
       headers: {
         'User-Agent': 'OpenPanel-SiteChecker/1.0',
       },
     });
 
-    clearTimeout(timeout);
-
-    if (!response.ok) {
+    if (response.status < 200 || response.status >= 300) {
       return 'error';
     }
 
-    const text = await response.text();
+    const text = response.body.toString('utf8');
     const rules = text.split('\n').filter((line) => {
       const trimmed = line.trim();
       return trimmed && !trimmed.startsWith('#');
@@ -178,19 +183,17 @@ async function checkRobotsTxt(
 
 async function checkSitemap(baseUrl: string): Promise<boolean> {
   try {
-    const sitemapUrl = new URL('/sitemap.xml', baseUrl).toString();
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
+    const sitemapUrl = new URL('/sitemap.xml', baseUrl);
 
-    const response = await fetch(sitemapUrl, {
-      signal: controller.signal,
+    const response = await safeFetch(sitemapUrl, {
+      timeoutMs: 3000,
+      maxBytes: 1_000_000,
       headers: {
         'User-Agent': 'OpenPanel-SiteChecker/1.0',
       },
     });
 
-    clearTimeout(timeout);
-    return response.ok;
+    return response.status >= 200 && response.status < 300;
   } catch {
     return false;
   }
@@ -199,10 +202,19 @@ async function checkSitemap(baseUrl: string): Promise<boolean> {
 async function getSSLInfo(
   hostname: string,
 ): Promise<SiteCheckResult['technical']['ssl'] | null> {
+  // Raw TLS handshakes are as good a probe as an HTTP request, so the host has
+  // to clear the same check, and we connect to the address we validated.
+  let address: string;
+  try {
+    [address] = (await assertPublicHostname(hostname)) as [string];
+  } catch {
+    return null;
+  }
+
   return new Promise((resolve) => {
     const socket = tls.connect(
       {
-        host: hostname,
+        host: address,
         port: 443,
         servername: hostname,
         rejectUnauthorized: false,
@@ -251,7 +263,8 @@ interface IPInfo {
 }
 
 async function getIPInfo(ip: string): Promise<IPInfo> {
-  if (!ip || ip === '127.0.0.1' || ip === '::1') {
+  // Don't hand internal addresses to a third-party lookup service.
+  if (!ip || isBlockedIp(ip)) {
     return { isp: null, asn: null, organization: null };
   }
 
@@ -295,12 +308,21 @@ async function measureConnectionTime(
   hostname: string,
   port: number,
 ): Promise<{ connectTime: number; tlsTime: number }> {
+  // Without this check the timing measurement doubles as an internal port
+  // scanner, since open and closed ports are trivially distinguishable.
+  let address: string;
+  try {
+    [address] = (await assertPublicHostname(hostname)) as [string];
+  } catch {
+    return { connectTime: 0, tlsTime: 0 };
+  }
+
   return new Promise((resolve) => {
     const start = Date.now();
     let connectTime = 0;
     let tlsTime = 0;
 
-    const socket = net.createConnection(port, hostname, () => {
+    const socket = net.createConnection(port, address, () => {
       connectTime = Date.now() - start;
 
       if (port === 443) {
@@ -372,7 +394,7 @@ async function fetchWithRedirects(
         : 80;
 
     const dnsStart = Date.now();
-    await dns.resolve4(hostname).catch(() => {});
+    await assertPublicHostname(hostname);
     dnsTime = Date.now() - dnsStart;
 
     if (port === 443 || port === 80) {
@@ -387,18 +409,19 @@ async function fetchWithRedirects(
   let firstRequestStartTime = 0;
 
   for (let i = 0; i < maxRedirects; i++) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
     try {
       const hopStartTime = Date.now();
       if (i === 0) {
         firstRequestStartTime = hopStartTime;
       }
 
-      const response = await fetch(currentUrl, {
-        signal: controller.signal,
-        redirect: 'manual',
+      // `followRedirects: false` keeps the hop-by-hop timing this endpoint
+      // reports, while still validating and pinning each hop individually —
+      // a redirect cannot hand us off to an internal address.
+      const response = await safeFetch(currentUrl, {
+        followRedirects: false,
+        timeoutMs: TIMEOUT_MS,
+        maxBytes: MAX_HTML_BYTES,
         headers: {
           'User-Agent':
             'Mozilla/5.0 (compatible; OpenPanel-SiteChecker/1.0; +https://openpanel.dev)',
@@ -408,7 +431,6 @@ async function fetchWithRedirects(
         },
       });
 
-      clearTimeout(timeout);
       const hopResponseTime = Date.now() - hopStartTime;
 
       if (i === 0 && ttfbTime === 0) {
@@ -434,12 +456,11 @@ async function fetchWithRedirects(
         }
       }
 
-      finalHtml = await response.text();
+      finalHtml = response.body.toString('utf8');
       finalHeaders = response.headers;
       finalStatusCode = response.status;
       break;
     } catch (error) {
-      clearTimeout(timeout);
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('Request timeout');
       }
@@ -514,6 +535,18 @@ export async function siteChecker(
 
   if (!url.protocol || !url.protocol.startsWith('http')) {
     url = new URL(`https://${urlParam}`);
+  }
+
+  // Reject non-public destinations before any outbound connection is made.
+  // Each hop and each auxiliary probe re-checks independently, since a
+  // hostname can resolve differently between this check and the connection.
+  try {
+    await assertPublicUrl(url);
+  } catch (error) {
+    if (error instanceof BlockedUrlError) {
+      return reply.status(400).send({ error: 'Invalid URL' });
+    }
+    throw error;
   }
 
   try {
@@ -652,6 +685,10 @@ export async function siteChecker(
     return reply.send(result);
   } catch (error) {
     request.log.error({ err: error }, 'Site checker error');
+    if (error instanceof BlockedUrlError) {
+      return reply.status(400).send({ error: 'Invalid URL' });
+    }
+
     return reply.status(500).send({
       error:
         error instanceof Error ? error.message : 'Failed to analyze site',

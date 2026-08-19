@@ -45,7 +45,7 @@ export const ProfilesTable = memo(
           params: {
             organizationId,
             projectId,
-            profileId: encodeURIComponent(row.original.id),
+            profileId: row.original.id,
           },
         });
       },

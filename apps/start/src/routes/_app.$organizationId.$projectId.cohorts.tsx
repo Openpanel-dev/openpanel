@@ -122,7 +122,8 @@ function Component() {
           return (
             <Card key={cohort.id} hover>
               <ProjectLink
-                href={`/cohorts/${cohort.id}`}
+                to="/cohorts/$cohortId"
+                params={{ cohortId: cohort.id }}
                 className="flex flex-col p-4 outline-none"
               >
                 <div className="col gap-2">

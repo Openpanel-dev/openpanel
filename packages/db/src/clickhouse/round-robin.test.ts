@@ -262,6 +262,38 @@ describe('isRetriableConnectionError', () => {
         err: new Error('Code: 159, DB::Exception: Timeout exceeded'),
         expected: 'ch-server',
       },
+      // ── ch-server allow-list: overload rejections retry ──────────────
+      // TOO_MANY_SIMULTANEOUS_QUERIES means the node hit its concurrency
+      // cap at that instant, not that the query is wrong — another node
+      // (or a backoff) absorbs it. Transient, so the node is NOT
+      // sin-binned: it's healthy, just briefly saturated.
+      {
+        label: 'CH TOO_MANY_SIMULTANEOUS_QUERIES (raw HTTP message)',
+        err: new Error(
+          'Code: 202. DB::Exception: Too many simultaneous queries. Maximum: 100. (TOO_MANY_SIMULTANEOUS_QUERIES)'
+        ),
+        expected: 'transient',
+      },
+      {
+        label: 'CH TOO_MANY_SIMULTANEOUS_QUERIES (@clickhouse/client parsed shape)',
+        err: Object.assign(
+          new Error('Too many simultaneous queries. Maximum: 100.'),
+          { code: '202', type: 'TOO_MANY_SIMULTANEOUS_QUERIES' }
+        ),
+        expected: 'transient',
+      },
+      {
+        label: 'CH TOO_MANY_SIMULTANEOUS_QUERIES (numeric code from a re-wrapping layer)',
+        err: Object.assign(new Error('query rejected'), { code: 202 }),
+        expected: 'transient',
+      },
+      {
+        label: 'CH TOO_MANY_PARTS stays non-retriable (code 252 ≠ 202)',
+        err: new Error(
+          'Code: 252. DB::Exception: Too many parts (300). (TOO_MANY_PARTS)'
+        ),
+        expected: 'ch-server',
+      },
       // ── cause-chain preserves classification ─────────────────────────
       {
         label: 'wrapped error: outer is opaque, cause is ECONNRESET',

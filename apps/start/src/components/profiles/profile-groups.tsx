@@ -31,7 +31,8 @@ export const ProfileGroups = ({ projectId, groups }: Props) => {
       {query.data.map((group) => (
         <ProjectLink
           key={group.id}
-          href={`/groups/${encodeURIComponent(group.id)}`}
+          to="/groups/$groupId"
+          params={{ groupId: group.id }}
           className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-2.5 py-1 text-xs transition-colors hover:bg-muted"
         >
           <span className="font-medium">{group.name}</span>

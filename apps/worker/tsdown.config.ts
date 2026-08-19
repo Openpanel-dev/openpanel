@@ -10,6 +10,7 @@ const options: Options = {
     'pino',
     'pino-pretty',
     '@node-rs/argon2',
+    '@aws-sdk/client-s3',
   ],
   sourcemap: true,
   platform: 'node',

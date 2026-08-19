@@ -1,7 +1,7 @@
 import { round } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
 import type { IChartFormula } from '@openpanel/validation';
-import * as mathjs from 'mathjs';
+import { evaluateFormula } from './formula';
 import type { ConcreteSeries } from './types';
 
 /**
@@ -110,19 +110,12 @@ export function compute(
       });
 
       // Evaluate formula for total_count
-      let formulaTotalCount: number | undefined;
-      try {
-        const result = mathjs
-          .parse(formula.formula)
-          .compile()
-          .evaluate(totalCountScope) as number;
-        formulaTotalCount =
-          Number.isNaN(result) || !Number.isFinite(result)
-            ? undefined
-            : round(result, 2);
-      } catch (error) {
-        formulaTotalCount = undefined;
-      }
+      const totalCountResult = evaluateFormula(
+        formula.formula,
+        totalCountScope,
+      );
+      const formulaTotalCount =
+        totalCountResult === undefined ? undefined : round(totalCountResult, 2);
 
       // Calculate formula for each date
       const formulaData = sortedDates.map((date) => {
@@ -160,22 +153,11 @@ export function compute(
         });
 
         // Evaluate formula
-        let count: number;
-        try {
-          count = mathjs
-            .parse(formula.formula)
-            .compile()
-            .evaluate(scope) as number;
-        } catch (error) {
-          count = 0;
-        }
+        const result = evaluateFormula(formula.formula, scope);
 
         return {
           date,
-          count:
-            Number.isNaN(count) || !Number.isFinite(count)
-              ? 0
-              : round(count, 2),
+          count: result === undefined ? 0 : round(result, 2),
           total_count: formulaTotalCount,
         };
       });
