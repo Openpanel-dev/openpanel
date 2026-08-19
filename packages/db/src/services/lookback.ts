@@ -10,13 +10,18 @@
  * of its window, and a multi-year ceiling turns one page view into minutes
  * of scanning.
  *
- * MAX_LOOKBACK_DAYS replaces the callers' built-in ceilings with a single
- * human-sized value (1 / 7 / 365 / ...). Unset or invalid (non-numeric,
- * zero, negative) keeps each caller's own default — behavior is unchanged
- * unless the variable is set.
+ * Each list has its own variable (EVENT_LIST_MAX_LOOKBACK_DAYS,
+ * SESSION_LIST_MAX_LOOKBACK_DAYS) because their built-in ceilings differ —
+ * the surfaces have different cost profiles and a shared knob would couple
+ * them. Values are human-sized day counts (1 / 7 / 365 / ...); unset or
+ * invalid (non-integer, zero, negative) keeps the caller's default, so
+ * behavior is unchanged unless a variable is set.
  */
-export function resolveMaxLookbackDays(defaultDays: number): number {
-  const raw = process.env.MAX_LOOKBACK_DAYS;
+export function resolveMaxLookbackDays(
+  envName: string,
+  defaultDays: number
+): number {
+  const raw = process.env[envName];
   if (!raw || !/^\d+$/.test(raw)) {
     return defaultDays;
   }

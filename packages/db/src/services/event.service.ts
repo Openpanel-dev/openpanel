@@ -501,7 +501,10 @@ export async function getEventList(options: GetEventListOptions) {
   const { sb, getSql, join } = createSqlBuilder();
 
   // Deployment-tunable ceiling for the empty-result lookback (see lookback.ts).
-  const MAX_DATE_INTERVAL_IN_DAYS = resolveMaxLookbackDays(365 * 5);
+  const MAX_DATE_INTERVAL_IN_DAYS = resolveMaxLookbackDays(
+    'EVENT_LIST_MAX_LOOKBACK_DAYS',
+    365 * 5,
+  );
   // Cap the date interval to prevent infinity
   const safeDateIntervalInDays = Math.min(
     dateIntervalInDays,

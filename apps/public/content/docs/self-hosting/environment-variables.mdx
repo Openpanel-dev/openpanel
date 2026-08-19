@@ -986,17 +986,30 @@ BOT_BUFFER_BATCH_SIZE=1000
 
 ## Performance & Tuning
 
-### MAX_LOOKBACK_DAYS
+### EVENT_LIST_MAX_LOOKBACK_DAYS
 
-**Type**: `number` (days)  
+**Type**: `number` (whole days, positive integer)  
 **Required**: No  
-**Default**: unset (event list: 1825, session list: 365)
+**Default**: `1825` (5 years)
 
-Ceiling for the empty-result lookback on the event and session lists. When a page's cursor window matches nothing, the window doubles and retries until it reaches this many days. With filters that no index can prune (e.g. a properties value) each retry is a full scan of its window, so large deployments can bound the worst case with a small, human-sized value.
+Ceiling for the empty-result lookback on the event list. When a page's cursor window matches nothing, the window doubles and retries until it reaches this many days. With filters that no index can prune (e.g. a properties value) each retry is a full scan of its window, so large deployments can bound the worst case with a small, human-sized value. Invalid values (non-integer, zero, negative) keep the default.
 
 **Example**:
 ```bash
-MAX_LOOKBACK_DAYS=7
+EVENT_LIST_MAX_LOOKBACK_DAYS=7
+```
+
+### SESSION_LIST_MAX_LOOKBACK_DAYS
+
+**Type**: `number` (whole days, positive integer)  
+**Required**: No  
+**Default**: `365`
+
+Same ceiling for the session list, which has its own default. Invalid values keep the default.
+
+**Example**:
+```bash
+SESSION_LIST_MAX_LOOKBACK_DAYS=7
 ```
 
 ### IMPORT_BATCH_SIZE

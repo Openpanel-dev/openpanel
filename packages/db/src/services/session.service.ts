@@ -174,7 +174,10 @@ export async function getSessionList(options: GetSessionListOptions) {
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
 
   // Deployment-tunable ceiling for the empty-result lookback (see lookback.ts).
-  const MAX_DATE_INTERVAL_IN_DAYS = resolveMaxLookbackDays(365);
+  const MAX_DATE_INTERVAL_IN_DAYS = resolveMaxLookbackDays(
+    'SESSION_LIST_MAX_LOOKBACK_DAYS',
+    365,
+  );
   // Cap the date interval to prevent infinity
   const safeDateIntervalInDays = Math.min(
     dateIntervalInDays,
