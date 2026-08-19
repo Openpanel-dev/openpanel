@@ -93,8 +93,13 @@ export async function getProjects({
 }
 
 export const getProjectEventsCount = async (projectId: string) => {
+  // `name NOT IN (...)` is a negation, so it can't prune with idx_name and
+  // scans the project's whole events slice — and this runs from the sessions
+  // job on every batch. distinct_event_names_mv already accumulates
+  // `count() AS event_count` per (project_id, name) insert block, so summing
+  // it returns the same total from a few thousand pre-aggregated rows.
   const res = await chQuery<{ count: number }>(
-    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`
+    `SELECT sum(event_count) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`
   );
   return res[0]?.count;
 };
