@@ -232,12 +232,16 @@ describe('funnel.service / buildFunnelBase — breakdown attribution', () => {
     await explain(sql);
   });
 
-  itCH('keeps per-row grouping for group breakdowns (fan-out is intended)', async () => {
+  it('keeps per-row grouping for group breakdowns (fan-out is intended)', async () => {
     // A user in three groups should appear in all three funnels, so group.*
     // breakdowns keep the ARRAY JOIN fan-out and per-row GROUP BY.
     const sql = await buildChartSql([breakdown('group.plan')]);
     expect(sql).not.toContain('argMinIf');
     expect(sql).toMatch(/GROUP BY session_id, b_0/);
+  });
+
+  itCH('group-breakdown SQL parses and resolves', async () => {
+    const sql = await buildChartSql([breakdown('group.plan')]);
     await explain(sql);
   });
 });

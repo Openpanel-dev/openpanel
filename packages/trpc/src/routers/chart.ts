@@ -871,17 +871,21 @@ export const chartRouter = createTRPCRouter({
       // shown as EMPTY_BREAKDOWN_LABEL (see toSeries/normalizeBreakdownValue)
       // — so match against the same normalization, not the raw column, or
       // "Not set" rows and values with stray whitespace return no users.
+      // toString/ifNull make the comparison safe for numeric breakdown
+      // columns (trim on a number is a type error) and for Nullable ones
+      // (trim(NULL) = '' is NULL, never true).
       breakdowns.forEach((_, index) => {
         const value = breakdownValues[index];
         if (value === undefined) {
           return;
         }
+        const normalized = `trim(ifNull(toString(b_${index}), ''))`;
         if (value === EMPTY_BREAKDOWN_LABEL) {
           query.rawWhere(
-            `(trim(b_${index}) = '' OR trim(b_${index}) = ${sqlstring.escape(EMPTY_BREAKDOWN_LABEL)})`
+            `(${normalized} = '' OR ${normalized} = ${sqlstring.escape(EMPTY_BREAKDOWN_LABEL)})`
           );
         } else {
-          query.rawWhere(`trim(b_${index}) = ${sqlstring.escape(value)}`);
+          query.rawWhere(`${normalized} = ${sqlstring.escape(value)}`);
         }
       });
 
