@@ -649,3 +649,67 @@ describe('chart.service / profile-property narrowing', () => {
     await explain(sql);
   });
 });
+
+describe('chart.service / single-pass total_count', () => {
+  const base = {
+    interval: 'day',
+    startDate: START,
+    endDate: END,
+    projectId: PROJECT_ID,
+    timezone: 'UTC',
+  };
+
+  it('scans events exactly once and merges uniq states globally (no breakdown)', async () => {
+    const sql = await getChartSql({ event: event(), breakdowns: [], ...base });
+    expect(sql).not.toContain('_uc AS (');
+    expect(sql).toContain('uniqState(profile_id) as _uc_state');
+    expect(sql).toContain('uniqMerge(_uc_state) OVER () as total_count');
+    expect(sql).toContain('* EXCEPT (_uc_state)');
+    // exactly one scan of the events table
+    expect(sql.match(/FROM events e/g)).toHaveLength(1);
+  });
+
+  it('partitions the merged uniq states by breakdown labels', async () => {
+    const sql = await getChartSql({
+      event: event(),
+      breakdowns: [breakdown('properties.experiment')],
+      ...base,
+    });
+    expect(sql).not.toContain('_uc AS (');
+    expect(sql).not.toContain('LEFT ANY JOIN _uc');
+    expect(sql).toContain(
+      'uniqMerge(_uc_state) OVER (PARTITION BY label_1) as total_count',
+    );
+    expect(sql.match(/FROM events e/g)).toHaveLength(1);
+  });
+
+  it('keeps ORDER BY and WITH FILL outside the aggregation subquery', async () => {
+    const sql = await getChartSql({ event: event(), breakdowns: [], ...base });
+    // GROUP BY belongs to the inner scan; ORDER BY/FILL follow its closing paren
+    expect(sql).toMatch(/GROUP BY[^)]*\)\s*ORDER BY date ASC/);
+    expect(sql).toContain('WITH FILL');
+  });
+
+  itCH('single-pass chart SQL parses and resolves (no breakdown)', async () => {
+    const sql = await getChartSql({ event: event(), breakdowns: [], ...base });
+    await explain(sql);
+  });
+
+  itCH('single-pass chart SQL parses and resolves (breakdown + cohort + profile)', async () => {
+    const sql = await getChartSql({
+      event: event({
+        filters: [
+          {
+            id: 'f1',
+            name: 'profile.properties.plan',
+            operator: 'is' as const,
+            value: ['pro'],
+          },
+        ],
+      }),
+      breakdowns: [breakdown('properties.experiment')],
+      ...base,
+    });
+    await explain(sql);
+  });
+});
