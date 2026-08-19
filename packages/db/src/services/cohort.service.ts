@@ -28,15 +28,21 @@ import {
 // than this are silently truncated to an arbitrary subset, so deployments
 // with bigger cohorts need to raise it — env-tunable to avoid an image
 // rebuild for what is really a sizing knob.
-const COHORT_MATERIALIZE_LIMIT_RAW = Number.parseInt(
-  process.env.COHORT_MATERIALIZE_LIMIT ?? '',
-  10,
-);
-export const COHORT_MATERIALIZE_LIMIT = Number.isNaN(
-  COHORT_MATERIALIZE_LIMIT_RAW,
-)
-  ? 10000
-  : COHORT_MATERIALIZE_LIMIT_RAW;
+//
+// Strictly a positive safe integer: anything else falls back to the
+// default. Number.parseInt would accept '5000junk' or '-1' (LIMIT -1 is a
+// query error), and 0 is falsy at the `limit ? LIMIT ... : ''` call sites,
+// which would silently remove the cap entirely.
+const COHORT_MATERIALIZE_LIMIT_RAW = process.env.COHORT_MATERIALIZE_LIMIT;
+const COHORT_MATERIALIZE_LIMIT_PARSED =
+  COHORT_MATERIALIZE_LIMIT_RAW && /^\d+$/.test(COHORT_MATERIALIZE_LIMIT_RAW)
+    ? Number(COHORT_MATERIALIZE_LIMIT_RAW)
+    : Number.NaN;
+export const COHORT_MATERIALIZE_LIMIT =
+  Number.isSafeInteger(COHORT_MATERIALIZE_LIMIT_PARSED) &&
+  COHORT_MATERIALIZE_LIMIT_PARSED > 0
+    ? COHORT_MATERIALIZE_LIMIT_PARSED
+    : 10000;
 
 function buildTimeConstraint(timeframe: Timeframe): string {
   if (timeframe.type === 'relative') {
