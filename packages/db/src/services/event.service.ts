@@ -16,6 +16,7 @@ import { clix, type Query } from '../clickhouse/query-builder';
 import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder, type SqlBuilderObject } from '../sql-builder';
+import { resolveMaxLookbackDays } from './lookback';
 import { getEventFiltersWhereClause } from './chart.service';
 import { buildFilterWhere } from './filter-where.service';
 import type { IServiceProfile, IServiceUpsertProfile } from './profile.service';
@@ -499,7 +500,8 @@ export async function getEventList(options: GetEventListOptions) {
   } = options;
   const { sb, getSql, join } = createSqlBuilder();
 
-  const MAX_DATE_INTERVAL_IN_DAYS = 365 * 5;
+  // Deployment-tunable ceiling for the empty-result lookback (see lookback.ts).
+  const MAX_DATE_INTERVAL_IN_DAYS = resolveMaxLookbackDays(365 * 5);
   // Cap the date interval to prevent infinity
   const safeDateIntervalInDays = Math.min(
     dateIntervalInDays,

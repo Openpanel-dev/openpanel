@@ -11,6 +11,7 @@ import {
 } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import { createSqlBuilder } from '../sql-builder';
+import { resolveMaxLookbackDays } from './lookback';
 import { buildFilterWhere } from './filter-where.service';
 import { getProfilesCached, type IServiceProfile } from './profile.service';
 
@@ -172,7 +173,8 @@ export async function getSessionList(options: GetSessionListOptions) {
   sb.limit = take;
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
 
-  const MAX_DATE_INTERVAL_IN_DAYS = 365;
+  // Deployment-tunable ceiling for the empty-result lookback (see lookback.ts).
+  const MAX_DATE_INTERVAL_IN_DAYS = resolveMaxLookbackDays(365);
   // Cap the date interval to prevent infinity
   const safeDateIntervalInDays = Math.min(
     dateIntervalInDays,
