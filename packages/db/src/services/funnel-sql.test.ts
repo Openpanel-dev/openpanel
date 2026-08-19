@@ -213,35 +213,54 @@ describe('funnel.service / buildFunnelCte — step pre-filter', () => {
   // funnel CTE must not feed rows that share a step's event name but fail
   // its filters into the aggregation. The step conditions therefore appear
   // twice: inside windowFunnel and as a row-level pre-filter.
+  // Each step's COMPLETE condition must appear exactly twice: once inside
+  // windowFunnel and once in the row-level pre-filter. Counting the full
+  // condition (not a substring) catches a regression that drops a step from
+  // either clause.
+  const countOccurrences = (sql: string, needle: string) =>
+    sql.split(needle).length - 1;
+
   it('filters the scan to rows matching at least one step condition', async () => {
     const sql = await buildChartSql([]);
     expect(sql).toContain(
       "((events.name = 'screen_view') OR (events.name = 'sign_up'))",
     );
-    expect(sql.match(/events\.name = 'screen_view'/g)).toHaveLength(2);
+    for (const condition of funnelService.getFunnelConditions(
+      SERIES as never,
+      PROJECT_ID,
+    )) {
+      expect(countOccurrences(sql, condition)).toBe(2);
+    }
   });
 
   it('includes each step\'s own filters in the pre-filter', async () => {
+    const series = [
+      event({
+        filters: [
+          { id: 'f', name: 'path', operator: 'is', value: ['/pricing'] },
+        ],
+      }),
+      event({ id: 'B', name: 'sign_up' }),
+    ];
     const { query } = await funnelService.buildFunnelBase({
       projectId: PROJECT_ID,
       startDate: START,
       endDate: END,
-      series: [
-        event({
-          filters: [
-            { id: 'f', name: 'path', operator: 'is', value: ['/pricing'] },
-          ],
-        }),
-        event({ id: 'B', name: 'sign_up' }),
-      ],
+      series,
       funnelWindow: 24,
       timezone: 'UTC',
     });
     query.with('funnel', 'SELECT * FROM session_funnel WHERE level != 0');
     query.select(['DISTINCT profile_id']).from('funnel');
     const sql = query.toSQL();
-    // The path filter must gate the scan, not only the windowFunnel arm.
-    expect(sql.match(/\/pricing/g)!.length).toBeGreaterThanOrEqual(2);
+    // The full filtered condition (path AND name) must gate the scan, not
+    // only the windowFunnel arm — and so must the unfiltered second step.
+    for (const condition of funnelService.getFunnelConditions(
+      series as never,
+      PROJECT_ID,
+    )) {
+      expect(countOccurrences(sql, condition)).toBe(2);
+    }
   });
 
   itCH('pre-filtered funnel SQL still parses and resolves', async () => {
