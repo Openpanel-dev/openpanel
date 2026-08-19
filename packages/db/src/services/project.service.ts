@@ -97,7 +97,16 @@ export const getProjectEventsCount = async (projectId: string) => {
   // scans the project's whole events slice — and this runs from the sessions
   // job on every batch. distinct_event_names_mv already accumulates
   // `count() AS event_count` per (project_id, name) insert block, so summing
-  // it returns the same total from a few thousand pre-aggregated rows.
+  // it returns a fast approximate total from a few thousand pre-aggregated
+  // rows instead of billions of raw ones.
+  //
+  // Approximate because event_count is a plain UInt64, not an aggregate
+  // state: MV counter rows whose (project_id, name, created_at) sort key
+  // collides collapse on merge keeping only one block's count. Live
+  // ingestion rarely ties on the ms timestamp; bulk imports with coarse
+  // timestamps are where collisions come from. The error is strictly
+  // downward (measured 0.0011% low on a 1.46B-event project) — acceptable
+  // for this display/onboarding counter.
   const res = await chQuery<{ count: number }>(
     `SELECT sum(event_count) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`
   );
