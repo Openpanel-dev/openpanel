@@ -984,6 +984,21 @@ Batch size for bot detection buffer operations.
 BOT_BUFFER_BATCH_SIZE=1000
 ```
 
+## Analytics Behavior
+
+### FUNNEL_NON_STRICT_ORDERING
+
+**Type**: `boolean` (`1` or `true`)  
+**Required**: No  
+**Default**: unset (strict ordering)
+
+Funnels use ClickHouse's `windowFunnel` in `strict_increase` mode by default: every step's timestamp must be strictly greater than the previous step's. Setting this variable switches funnels to non-strict ordering (`>=`), where steps sharing the same timestamp still count as an ordered sequence — matching how Mixpanel and Amplitude evaluate funnels. Useful for server-side senders, batched SDKs, or imported data with coarse timestamps.
+
+**Example**:
+```bash
+FUNNEL_NON_STRICT_ORDERING=1
+```
+
 ## Performance & Tuning
 
 ### IMPORT_BATCH_SIZE

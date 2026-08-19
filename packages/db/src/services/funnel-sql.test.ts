@@ -309,6 +309,32 @@ describe('funnel.service / buildFunnelBase — breakdown attribution', () => {
   });
 });
 
+describe('funnel.service / buildFunnelCte — windowFunnel ordering', () => {
+  afterAll(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('defaults to strict_increase (unchanged behavior)', async () => {
+    vi.unstubAllEnvs();
+    const sql = await buildChartSql([]);
+    expect(sql).toContain("'strict_increase'");
+  });
+
+  it('drops strict_increase when FUNNEL_NON_STRICT_ORDERING is set', async () => {
+    vi.stubEnv('FUNNEL_NON_STRICT_ORDERING', '1');
+    const sql = await buildChartSql([]);
+    expect(sql).not.toContain('strict_increase');
+    expect(sql).toMatch(/windowFunnel\(\d+\)\(/);
+  });
+
+  itCH('non-strict funnel SQL parses and resolves', async () => {
+    vi.stubEnv('FUNNEL_NON_STRICT_ORDERING', 'true');
+    const sql = await buildChartSql([]);
+    expect(sql).not.toContain('strict_increase');
+    await explain(sql);
+  });
+});
+
 describe('funnel.service / buildFunnelBase — group breakdowns', () => {
   itCH('adds the group array join for a group breakdown', async () => {
     const sql = await buildProfilesSql([breakdown('group.plan')]);
