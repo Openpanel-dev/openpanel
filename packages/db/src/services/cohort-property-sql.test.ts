@@ -70,8 +70,34 @@ describe('buildPropertyBasedCohortQuery', () => {
     expect(sql).not.toContain('FINAL');
     expect(sql).toContain('GROUP BY id');
     expect(sql).toContain(
-      "argMax(profiles.properties['experiment'], tuple(last_seen_at, profiles.properties['experiment']))",
+      "argMax(profiles.properties['experiment'], tuple(last_seen_at, tuple(profiles.properties['experiment'])))",
     );
+  });
+
+  it('orders every aggregate by ONE shared row key', () => {
+    // Per-column tie-breaking lets equal-version rows with conflicting
+    // fields each win a different column — an AND cohort could then match a
+    // synthetic combination no stored row contains. The shared key makes
+    // all aggregates read the same winning row.
+    const sql = buildSql({
+      operator: 'and',
+      properties: [
+        mapFilter,
+        {
+          id: 'b',
+          name: 'profile.email',
+          operator: 'is' as const,
+          value: ['x@y.z'],
+        },
+      ],
+    });
+
+    const sharedKey =
+      "tuple(last_seen_at, tuple(profiles.properties['experiment'], profiles.email))";
+    expect(sql).toContain(
+      `argMax(profiles.properties['experiment'], ${sharedKey})`,
+    );
+    expect(sql).toContain(`argMax(profiles.email, ${sharedKey})`);
   });
 
   it('filters aggregates in HAVING, not WHERE', () => {

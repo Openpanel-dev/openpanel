@@ -214,12 +214,35 @@ export function buildEventCriteriaQuery(
   `;
 }
 
+// SQL for a profile filter's column: either a properties Map lookup or a
+// plain column, qualified with the table name.
+function profileColumnAccess(name: string): string {
+  const normalizedName = name.replace(/^profile\./, 'profiles.');
+  if (normalizedName.startsWith('profiles.properties.')) {
+    const propKey = normalizedName.replace('profiles.properties.', '');
+    return `profiles.properties['${propKey}']`;
+  }
+  return normalizedName;
+}
+
 function buildProfileCohortHavingClause(
   definition: PropertyBasedCohortDefinition,
 ): string | null {
   const { properties, operator } = definition.criteria;
+
+  // Every argMax below must order the candidate rows IDENTICALLY, or
+  // equal-version rows with conflicting fields could each win a different
+  // column — matching an AND cohort against a synthetic combination no
+  // stored row contains. One shared key — the version column, tie-broken by
+  // the tuple of every referenced column — makes all aggregates pick their
+  // value from the same winning row, deterministically.
+  const referencedColumns = Array.from(
+    new Set(properties.map((f) => profileColumnAccess(f.name))),
+  );
+  const latestRowKey = `tuple(last_seen_at, tuple(${referencedColumns.join(', ')}))`;
+
   const filterWhere = getProfileFiltersWhereClause(properties, {
-    latestPerProfile: true,
+    latestPerProfileKey: latestRowKey,
   });
   const filterClauses = Object.values(filterWhere);
 
@@ -299,7 +322,7 @@ export async function countEventBasedCohort(
 
 function getProfileFiltersWhereClause(
   filters: IChartEventFilter[],
-  { latestPerProfile = false }: { latestPerProfile?: boolean } = {},
+  { latestPerProfileKey }: { latestPerProfileKey?: string } = {},
 ): Record<string, string> {
   const where: Record<string, string> = {};
 
@@ -315,24 +338,20 @@ function getProfileFiltersWhereClause(
       return;
     }
 
-    const normalizedName = name.replace(/^profile\./, 'profiles.');
-    let columnAccess: string;
+    let columnAccess = profileColumnAccess(name);
 
-    if (normalizedName.startsWith('profiles.properties.')) {
-      const propKey = normalizedName.replace('profiles.properties.', '');
-      columnAccess = `profiles.properties['${propKey}']`;
-    } else {
-      columnAccess = normalizedName;
-    }
-
-    if (latestPerProfile) {
+    if (latestPerProfileKey) {
       // Resolve the profile's newest row inside a GROUP BY instead of
-      // reading through FINAL. last_seen_at is the table's version column
-      // but it is not unique — duplicate rows can share one — so it is
-      // paired with the value itself to break ties deterministically.
-      // FINAL breaks the same ties by part order, which is not derivable
-      // from the data and can shift under a background merge.
-      columnAccess = `argMax(${columnAccess}, tuple(last_seen_at, ${columnAccess}))`;
+      // reading through FINAL. The key is shared by every wrapped column
+      // (see buildProfileCohortHavingClause), so all aggregates read the
+      // SAME winning row: last_seen_at is the table's version column but is
+      // not unique, and per-column tie-breaking would let equal-version
+      // rows with conflicting fields produce a synthetic combination no
+      // stored row contains. FINAL breaks the same ties by part order,
+      // which is not derivable from the data and can shift under a
+      // background merge — the shared value-tuple tie-break is
+      // deterministic instead.
+      columnAccess = `argMax(${columnAccess}, ${latestPerProfileKey})`;
     }
 
     switch (operator) {
