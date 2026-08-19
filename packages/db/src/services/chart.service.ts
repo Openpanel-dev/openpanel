@@ -394,21 +394,30 @@ const PROFILE_PROP_PREFIX = 'profile.properties.';
 
 export function collectProfilePropertyKeys(refs: { name: string }[]): {
   keys: string[];
-  hasWildcard: boolean;
+  needsFullMap: boolean;
 } {
   const keys = new Set<string>();
-  let hasWildcard = false;
+  let needsFullMap = false;
   for (const { name } of refs) {
     if (!name.startsWith(PROFILE_PROP_PREFIX)) {
       continue;
     }
+    // Wildcard refs render as mapExtractKeyLike over the whole Map.
     if (name.includes('*')) {
-      hasWildcard = true;
+      needsFullMap = true;
       continue;
     }
-    keys.add(name.slice(PROFILE_PROP_PREFIX.length));
+    const key = name.slice(PROFILE_PROP_PREFIX.length);
+    // A backtick or backslash in the key can't be embedded in the
+    // backtick-quoted scalar alias. Such keys are never narrowed: the full
+    // Map stays selected and their refs keep the original Map access.
+    if (/[`\\]/.test(key)) {
+      needsFullMap = true;
+      continue;
+    }
+    keys.add(key);
   }
-  return { keys: Array.from(keys), hasWildcard };
+  return { keys: Array.from(keys), needsFullMap };
 }
 
 // The profile-CTE SELECT expression for the `properties` field: one scalar
@@ -416,12 +425,12 @@ export function collectProfilePropertyKeys(refs: { name: string }[]): {
 // it (or when nothing specific was referenced).
 export function profilePropertiesCteSelect(
   keys: string[],
-  hasWildcard: boolean,
+  needsFullMap: boolean,
 ): string {
   const cols = keys.map(
     (k) => `properties[${sqlstring.escape(k)}] as \`profile.properties.${k}\``,
   );
-  if (hasWildcard || cols.length === 0) {
+  if (needsFullMap || cols.length === 0) {
     cols.push('properties as "profile.properties"');
   }
   return cols.join(', ');
@@ -492,6 +501,9 @@ export async function getChartSql({
   const profileProps = collectProfilePropertyKeys([
     ...event.filters,
     ...breakdowns,
+    // Math metrics (property_sum/avg/min/max) reference event.property too —
+    // missing it here would strip the Map the metric still reads from.
+    ...(event.property ? [{ name: event.property }] : []),
   ]);
 
   // Add CTE + JOIN for "all cohorts" breakdown
@@ -628,7 +640,7 @@ export async function getChartSql({
       if (field === 'properties') {
         return profilePropertiesCteSelect(
           profileProps.keys,
-          profileProps.hasWildcard,
+          profileProps.needsFullMap,
         );
       }
       if (field === 'email') {
@@ -924,6 +936,9 @@ export async function getAggregateChartSql({
   const profileProps = collectProfilePropertyKeys([
     ...event.filters,
     ...breakdowns,
+    // Math metrics (property_sum/avg/min/max) reference event.property too —
+    // missing it here would strip the Map the metric still reads from.
+    ...(event.property ? [{ name: event.property }] : []),
   ]);
 
   // Add CTE + JOIN for "all cohorts" breakdown
@@ -1048,7 +1063,7 @@ export async function getAggregateChartSql({
       if (field === 'properties') {
         return profilePropertiesCteSelect(
           profileProps.keys,
-          profileProps.hasWildcard,
+          profileProps.needsFullMap,
         );
       }
       if (field === 'email') {

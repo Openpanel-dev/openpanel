@@ -520,6 +520,70 @@ describe('chart.service / profile-property narrowing', () => {
     expect(sql).toContain('properties as "profile.properties"');
   });
 
+  it('never narrows identifier-unsafe keys (backtick falls back to the Map)', async () => {
+    const sql = await getChartSql({
+      event: event({
+        filters: [
+          {
+            id: 'f1',
+            name: 'profile.properties.plan`tier',
+            operator: 'is' as const,
+            value: ['a'],
+          },
+        ],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+
+    // The unsafe key keeps its original Map access against the full Map —
+    // it must never be embedded in a backtick-quoted alias.
+    expect(sql).toContain('properties as "profile.properties"');
+    expect(sql).not.toContain('as `profile.properties.plan`tier`');
+  });
+
+  it('collects the math-metric property too', async () => {
+    const sql = await getChartSql({
+      event: event({
+        segment: 'property_average',
+        property: 'profile.properties.age',
+        filters: [profileFilter],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+
+    // The metric's key must be narrowed alongside the filter's — otherwise
+    // the metric keeps reading the Map that narrowing just removed.
+    expect(sql).toContain("properties['age'] as `profile.properties.age`");
+    expect(sql).not.toContain("profile.properties['age']");
+  });
+
+  itCH('math metric on a narrowed profile property parses and resolves', async () => {
+    const sql = await getChartSql({
+      event: event({
+        segment: 'property_average',
+        property: 'profile.properties.age',
+        filters: [profileFilter],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+    await explain(sql);
+  });
+
   itCH('narrowed chart SQL parses and resolves', async () => {
     const sql = await getChartSql({
       event: event({ filters: [profileFilter] }),

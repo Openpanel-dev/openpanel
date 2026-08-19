@@ -397,7 +397,7 @@ export class FunnelService {
         selectColumns.push(
           profilePropertiesCteSelect(
             profileProps.keys,
-            profileProps.hasWildcard,
+            profileProps.needsFullMap,
           ),
         );
       }
