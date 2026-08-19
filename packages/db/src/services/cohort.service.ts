@@ -220,7 +220,9 @@ function profileColumnAccess(name: string): string {
   const normalizedName = name.replace(/^profile\./, 'profiles.');
   if (normalizedName.startsWith('profiles.properties.')) {
     const propKey = normalizedName.replace('profiles.properties.', '');
-    return `profiles.properties['${propKey}']`;
+    // Escaped: cohort definitions come from the API, so the key is
+    // user-controlled — a quote in it must not terminate the literal.
+    return `profiles.properties[${sqlstring.escape(propKey)}]`;
   }
   return normalizedName;
 }

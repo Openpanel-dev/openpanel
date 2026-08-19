@@ -145,6 +145,24 @@ describe('buildPropertyBasedCohortQuery', () => {
     );
   });
 
+  it('escapes quotes in user-controlled property keys', () => {
+    const sql = buildSql({
+      operator: 'and',
+      properties: [
+        {
+          id: 'q',
+          name: "profile.properties.pl'an",
+          operator: 'is' as const,
+          value: ['x'],
+        },
+      ],
+    });
+
+    // The raw quote must never appear inside the literal unescaped.
+    expect(sql).toContain("profiles.properties['pl\\'an']");
+    expect(sql).not.toContain("properties['pl'an']");
+  });
+
   it('applies the limit', () => {
     const sql = buildSql({ operator: 'and', properties: [mapFilter] }, 10);
     expect(sql).toContain('LIMIT 10');
