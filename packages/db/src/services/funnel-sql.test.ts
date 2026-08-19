@@ -315,7 +315,9 @@ describe('funnel.service / buildFunnelCte — windowFunnel ordering', () => {
   });
 
   it('defaults to strict_increase (unchanged behavior)', async () => {
-    vi.unstubAllEnvs();
+    // Stub to '' rather than unstubbing: unstubAllEnvs restores the HOST
+    // environment, so a dev shell with the variable set would flip this test.
+    vi.stubEnv('FUNNEL_NON_STRICT_ORDERING', '');
     const sql = await buildChartSql([]);
     expect(sql).toContain("'strict_increase'");
   });
