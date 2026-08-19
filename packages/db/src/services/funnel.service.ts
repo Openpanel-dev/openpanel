@@ -104,6 +104,13 @@ export class FunnelService {
         'IN',
         eventSeries.map((e) => e.name),
       )
+      // Only rows matching at least one step can advance windowFunnel, so
+      // rows that share a step's event name but fail its filters are dead
+      // weight — with filtered steps (e.g. screen_view + a path filter) they
+      // can be the vast majority of what the name IN(...) lets through.
+      // Dropping them here shrinks the aggregation input; windowFunnel
+      // ignores non-matching rows either way, so levels are unchanged.
+      .rawWhere(`(${funnels.map((f) => `(${f})`).join(' OR ')})`)
       .groupBy([primaryKey, ...additionalGroupBy]);
   }
 
