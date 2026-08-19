@@ -22,6 +22,7 @@ vi.mock('../prisma-client', () => ({
 
 import { ch } from '../clickhouse/client';
 import { funnelService } from './funnel.service';
+import { onlyReportEvents } from './reports.service';
 
 const PROJECT_ID = 'test-sql-validation';
 const COHORT_ID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
@@ -226,7 +227,8 @@ describe('funnel.service / buildFunnelCte — step pre-filter', () => {
       "((events.name = 'screen_view') OR (events.name = 'sign_up'))",
     );
     for (const condition of funnelService.getFunnelConditions(
-      SERIES as never,
+      // The same checked narrowing buildFunnelBase applies internally.
+      onlyReportEvents(SERIES),
       PROJECT_ID,
     )) {
       expect(countOccurrences(sql, condition)).toBe(2);
@@ -256,7 +258,7 @@ describe('funnel.service / buildFunnelCte — step pre-filter', () => {
     // The full filtered condition (path AND name) must gate the scan, not
     // only the windowFunnel arm — and so must the unfiltered second step.
     for (const condition of funnelService.getFunnelConditions(
-      series as never,
+      onlyReportEvents(series),
       PROJECT_ID,
     )) {
       expect(countOccurrences(sql, condition)).toBe(2);
