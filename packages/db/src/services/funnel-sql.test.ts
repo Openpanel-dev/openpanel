@@ -122,8 +122,10 @@ describe('funnel.service / buildFunnelBase — profile breakdowns', () => {
   itCH('adds the profiles join for a profile.properties breakdown', async () => {
     const sql = await buildProfilesSql([breakdown('profile.properties.plan')]);
 
-    // The breakdown renders `profile.properties['plan']`, so the alias must exist.
-    expect(sql).toContain("profile.properties['plan']");
+    // The breakdown is narrowed to a scalar alias selected by the profile
+    // join, so both the join and the aliased column must exist.
+    expect(sql).toContain("properties['plan'] as `profile.properties.plan`");
+    expect(sql).toContain('`profile.properties.plan`');
     expect(sql).toMatch(/as profile/);
     expect(sql).toContain('profile.id = events.profile_id');
     await explain(sql);
@@ -203,10 +205,10 @@ describe('funnel.service / buildFunnelBase — unknown breakdowns', () => {
     // Both sides must resolve the same breakdown to the same b_N index,
     // otherwise the breakdownValues filter targets the wrong column.
     expect(chartSql).toContain(
-      "argMinIf(profile.properties['plan'], created_at,",
+      'argMinIf(`profile.properties.plan`, created_at,',
     );
     expect(profilesSql).toContain(
-      "argMinIf(profile.properties['plan'], created_at,",
+      'argMinIf(`profile.properties.plan`, created_at,',
     );
     await explain(chartSql);
     await explain(profilesSql);
@@ -315,5 +317,75 @@ describe('funnel.service / buildFunnelBase — group breakdowns', () => {
     expect(sql).toContain('ARRAY JOIN groups AS _group_id');
     expect(sql).toContain('LEFT ANY JOIN _g ON _g.id = _group_id');
     await explain(sql);
+  });
+});
+
+describe('funnel.service / profile-property narrowing', () => {
+  const seriesWithProfileFilter = [
+    event({
+      filters: [
+        {
+          id: 'f1',
+          name: 'profile.properties.plan',
+          operator: 'is' as const,
+          value: ['pro'],
+        },
+      ],
+    }),
+    event({ id: 'B', name: 'sign_up' }),
+  ];
+
+  it('joins scalar columns instead of the whole properties Map', async () => {
+    const { query } = await funnelService.buildFunnelBase({
+      projectId: PROJECT_ID,
+      startDate: START,
+      endDate: END,
+      series: seriesWithProfileFilter,
+      breakdowns: [breakdown('profile.properties.experiment')],
+      funnelWindow: 24,
+      timezone: 'UTC',
+    });
+    query.with('funnel', 'SELECT * FROM session_funnel WHERE level != 0');
+    query.select(['DISTINCT profile_id']).from('funnel');
+    const sql = query.toSQL();
+
+    expect(sql).toContain("properties['plan'] as `profile.properties.plan`");
+    expect(sql).toContain(
+      "properties['experiment'] as `profile.properties.experiment`",
+    );
+    expect(sql).not.toContain('properties as "profile.properties"');
+    // Conditions (windowFunnel + pre-filter) and the breakdown expression are
+    // rewritten to the scalar aliases.
+    expect(sql).not.toContain("profile.properties['plan']");
+    expect(sql).not.toContain("profile.properties['experiment']");
+  });
+
+  it('leaves funnels without profile-property refs untouched', async () => {
+    const sql = await buildChartSql([]);
+    expect(sql).not.toContain('`profile.properties.');
+  });
+
+  itCH('narrowed funnel SQL parses and resolves', async () => {
+    const { query, breakdowns: resolved } = await funnelService.buildFunnelBase(
+      {
+        projectId: PROJECT_ID,
+        startDate: START,
+        endDate: END,
+        series: seriesWithProfileFilter,
+        breakdowns: [breakdown('profile.properties.experiment')],
+        funnelWindow: 24,
+        timezone: 'UTC',
+      },
+    );
+    query.with('funnel', 'SELECT * FROM session_funnel WHERE level != 0');
+    query
+      .select([
+        'level',
+        ...resolved.map((_, index) => `b_${index}`),
+        'count() as count',
+      ])
+      .from('funnel')
+      .groupBy(['level', ...resolved.map((_, index) => `b_${index}`)]);
+    await explain(query.toSQL());
   });
 });
