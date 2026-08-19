@@ -6,6 +6,7 @@ import {
   clix,
   conversionService,
   createSqlBuilder,
+  EMPTY_BREAKDOWN_LABEL,
   formatClickhouseDate,
   funnelService,
   getChartPrevStartEndDate,
@@ -852,10 +853,9 @@ export const chartRouter = createTRPCRouter({
       });
 
       // Same shape as the chart's `funnel` CTE: windowFunnel is already
-      // computed per primary key, so drop level=0 and select distinct
-      // profiles. Re-aggregating with max(level)/any(b_0) here would collapse
-      // the breakdown column and make the breakdownValues filter pick an
-      // arbitrary value for profiles that appear under more than one.
+      // computed per primary key (with breakdowns attributed at the entry
+      // step, so each group carries one deterministic b_N value), so drop
+      // level=0 and select distinct profiles.
       query.with('funnel', 'SELECT * FROM session_funnel WHERE level != 0');
 
       query.select(['DISTINCT profile_id']).from('funnel');
@@ -866,11 +866,22 @@ export const chartRouter = createTRPCRouter({
         query.where('level', '>=', targetLevel);
       }
 
-      // Filter by specific breakdown values when a breakdown row was clicked
+      // Filter by specific breakdown values when a breakdown row was clicked.
+      // The clicked row carries DISPLAY labels — trimmed, with empty/null
+      // shown as EMPTY_BREAKDOWN_LABEL (see toSeries/normalizeBreakdownValue)
+      // — so match against the same normalization, not the raw column, or
+      // "Not set" rows and values with stray whitespace return no users.
       breakdowns.forEach((_, index) => {
         const value = breakdownValues[index];
-        if (value !== undefined) {
-          query.where(`b_${index}`, '=', value);
+        if (value === undefined) {
+          return;
+        }
+        if (value === EMPTY_BREAKDOWN_LABEL) {
+          query.rawWhere(
+            `(trim(b_${index}) = '' OR trim(b_${index}) = ${sqlstring.escape(EMPTY_BREAKDOWN_LABEL)})`
+          );
+        } else {
+          query.rawWhere(`trim(b_${index}) = ${sqlstring.escape(value)}`);
         }
       });
 
