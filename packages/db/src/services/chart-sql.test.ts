@@ -567,6 +567,44 @@ describe('chart.service / profile-property narrowing', () => {
     expect(sql).not.toContain("profile.properties['age']");
   });
 
+  it('creates the profile join for a metric-only profile property', async () => {
+    // No profile filter or breakdown — the metric alone must still create
+    // the CTE and join, or its scalar alias resolves against nothing.
+    const sql = await getChartSql({
+      event: event({
+        segment: 'property_average',
+        property: 'profile.properties.age',
+        filters: [],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+
+    expect(sql).toContain('LEFT ANY JOIN profile ON profile.id = profile_id');
+    expect(sql).toContain("properties['age'] as `profile.properties.age`");
+  });
+
+  itCH('metric-only profile property parses and resolves', async () => {
+    const sql = await getChartSql({
+      event: event({
+        segment: 'property_average',
+        property: 'profile.properties.age',
+        filters: [],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+    await explain(sql);
+  });
+
   itCH('math metric on a narrowed profile property parses and resolves', async () => {
     const sql = await getChartSql({
       event: event({

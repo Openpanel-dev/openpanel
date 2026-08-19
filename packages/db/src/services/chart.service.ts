@@ -539,6 +539,10 @@ export async function getChartSql({
   const anyBreakdownOnProfile = breakdowns.some((breakdown) =>
     breakdown.name.startsWith('profile.')
   );
+  // Math metrics (property_sum/avg/min/max) can target a profile property
+  // too — the join must exist for the metric alone, not only for filters
+  // and breakdowns.
+  const anyMetricOnProfile = !!event.property?.startsWith('profile.');
   const anyFilterOnGroup = event.filters.some((filter) =>
     filter.name.startsWith('group.')
   );
@@ -621,17 +625,36 @@ export async function getChartSql({
         }
       });
 
+    // Collect from the math metric
+    if (event.property?.startsWith('profile.')) {
+      const fieldName = event.property.replace('profile.', '').split('.')[0];
+      if (fieldName && fieldName === 'properties') {
+        fields.add('properties');
+      } else if (
+        fieldName &&
+        [
+          'email',
+          'first_name',
+          'last_name',
+          'created_at',
+          'last_seen_at',
+        ].includes(fieldName)
+      ) {
+        fields.add(fieldName);
+      }
+    }
+
     return Array.from(fields);
   };
 
   // Create profiles CTE if profiles are needed (to avoid duplicating the heavy profile join)
   // Only select the fields that are actually used
   const profilesJoinRef =
-    anyFilterOnProfile || anyBreakdownOnProfile
+    anyFilterOnProfile || anyBreakdownOnProfile || anyMetricOnProfile
       ? 'LEFT ANY JOIN profile ON profile.id = profile_id'
       : '';
 
-  if (anyFilterOnProfile || anyBreakdownOnProfile) {
+  if (anyFilterOnProfile || anyBreakdownOnProfile || anyMetricOnProfile) {
     const profileFields = getProfileFields();
     const selectFields = profileFields.map((field) => {
       if (field === 'id') {
@@ -974,6 +997,10 @@ export async function getAggregateChartSql({
   const anyBreakdownOnProfile = breakdowns.some((breakdown) =>
     breakdown.name.startsWith('profile.')
   );
+  // Math metrics (property_sum/avg/min/max) can target a profile property
+  // too — the join must exist for the metric alone, not only for filters
+  // and breakdowns.
+  const anyMetricOnProfile = !!event.property?.startsWith('profile.');
   const anyFilterOnGroup = event.filters.some((filter) =>
     filter.name.startsWith('group.')
   );
@@ -1045,16 +1072,35 @@ export async function getAggregateChartSql({
         }
       });
 
+    // Collect from the math metric
+    if (event.property?.startsWith('profile.')) {
+      const fieldName = event.property.replace('profile.', '').split('.')[0];
+      if (fieldName && fieldName === 'properties') {
+        fields.add('properties');
+      } else if (
+        fieldName &&
+        [
+          'email',
+          'first_name',
+          'last_name',
+          'created_at',
+          'last_seen_at',
+        ].includes(fieldName)
+      ) {
+        fields.add(fieldName);
+      }
+    }
+
     return Array.from(fields);
   };
 
   // Create profiles CTE if profiles are needed
   const profilesJoinRef =
-    anyFilterOnProfile || anyBreakdownOnProfile
+    anyFilterOnProfile || anyBreakdownOnProfile || anyMetricOnProfile
       ? 'LEFT ANY JOIN profile ON profile.id = profile_id'
       : '';
 
-  if (anyFilterOnProfile || anyBreakdownOnProfile) {
+  if (anyFilterOnProfile || anyBreakdownOnProfile || anyMetricOnProfile) {
     const profileFields = getProfileFields();
     const selectFields = profileFields.map((field) => {
       if (field === 'id') {
