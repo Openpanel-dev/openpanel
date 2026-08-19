@@ -288,12 +288,42 @@ export class FunnelService {
     const cohortIds = collectBreakdownCohortIds(breakdowns);
     const cohortMetadata = await fetchCohortsMetadata(cohortIds);
 
+    // Attribute each breakdown to its value at the user's FIRST funnel step,
+    // as a per-group aggregate (argMinIf) — not by adding it to the
+    // windowFunnel GROUP BY. Grouping the sequence by a per-row value splits
+    // a user's steps across buckets whenever the value isn't identical on
+    // every step (e.g. an experiment tag set on the entry event but absent
+    // on the conversion event): the later step lands in a separate bucket,
+    // the windowFunnel sequence never connects, and downstream steps show 0.
+    // Reading the entry-step value keeps each sequence intact in one bucket
+    // and matches standard funnel-breakdown semantics (segment by entry
+    // attribute).
+    //
+    // `group.*` breakdowns are the exception: their ARRAY JOIN fans each
+    // event out per group, and grouping by the group value is intentional —
+    // a user in three groups should appear in all three funnels. Those keep
+    // the per-row GROUP BY.
+    const firstStepCondition = this.getFunnelConditions(
+      eventSeries,
+      projectId,
+    )[0]!;
     const breakdownSelects = breakdowns.map((b, index) => {
       const bId = extractCohortId(b.name);
       const bName = bId ? cohortMetadata.get(bId)?.name : undefined;
-      return `${getSelectPropertyKey(b.name, projectId, bId ?? undefined, bName)} as b_${index}`;
+      const expr = getSelectPropertyKey(
+        b.name,
+        projectId,
+        bId ?? undefined,
+        bName,
+      );
+      if (b.name.startsWith('group.')) {
+        return `${expr} as b_${index}`;
+      }
+      return `argMinIf(${expr}, created_at, ${firstStepCondition}) as b_${index}`;
     });
-    const breakdownGroupBy = breakdowns.map((_, index) => `b_${index}`);
+    const breakdownGroupBy = breakdowns.flatMap((b, index) =>
+      b.name.startsWith('group.') ? [`b_${index}`] : [],
+    );
 
     const funnelCte = this.buildFunnelCte({
       projectId,

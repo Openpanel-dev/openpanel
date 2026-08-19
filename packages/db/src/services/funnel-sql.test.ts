@@ -201,10 +201,48 @@ describe('funnel.service / buildFunnelBase — unknown breakdowns', () => {
 
     // Both sides must resolve the same breakdown to the same b_N index,
     // otherwise the breakdownValues filter targets the wrong column.
-    expect(chartSql).toContain("profile.properties['plan'] as b_0");
-    expect(profilesSql).toContain("profile.properties['plan'] as b_0");
+    expect(chartSql).toContain(
+      "argMinIf(profile.properties['plan'], created_at,",
+    );
+    expect(profilesSql).toContain(
+      "argMinIf(profile.properties['plan'], created_at,",
+    );
     await explain(chartSql);
     await explain(profilesSql);
+  });
+});
+
+describe('funnel.service / buildFunnelBase — breakdown attribution', () => {
+  // The breakdown value must be read at the user's FIRST funnel step, not
+  // used as a windowFunnel GROUP BY key. Per-row grouping splits a user's
+  // steps across buckets whenever the property isn't identical on every
+  // step, so the sequence never connects and downstream steps show 0.
+  it('attributes event-property breakdowns at the entry step', async () => {
+    const sql = await buildChartSql([breakdown('properties.experiment')]);
+    expect(sql).toContain("argMinIf(properties['experiment'], created_at,");
+    // The windowFunnel aggregation groups by the primary key only; b_0 is an
+    // aggregate, not a grouping key. (The outer chart GROUP BY level, b_0 is
+    // unaffected.)
+    expect(sql).toMatch(/GROUP BY session_id\b/);
+    expect(sql).not.toMatch(/GROUP BY session_id, b_0/);
+  });
+
+  itCH('entry-step attribution parses and resolves', async () => {
+    const sql = await buildChartSql([breakdown('properties.experiment')]);
+    await explain(sql);
+  });
+
+  it('keeps per-row grouping for group breakdowns (fan-out is intended)', async () => {
+    // A user in three groups should appear in all three funnels, so group.*
+    // breakdowns keep the ARRAY JOIN fan-out and per-row GROUP BY.
+    const sql = await buildChartSql([breakdown('group.plan')]);
+    expect(sql).not.toContain('argMinIf');
+    expect(sql).toMatch(/GROUP BY session_id, b_0/);
+  });
+
+  itCH('group-breakdown SQL parses and resolves', async () => {
+    const sql = await buildChartSql([breakdown('group.plan')]);
+    await explain(sql);
   });
 });
 
