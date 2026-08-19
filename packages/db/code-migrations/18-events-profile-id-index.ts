@@ -15,9 +15,14 @@ import { getIsCluster } from './helpers';
  *
  * This migration only ADDs the index — a cheap, metadata-level, idempotent
  * operation that applies to newly written parts. For a deployment whose
- * events table already holds data, existing parts must also be built with
+ * events table already holds data, existing parts must also be built —
+ * targeting the same table this migration alters:
  *
+ * Non-clustered:
  *   ALTER TABLE events MATERIALIZE INDEX idx_profile_id;
+ *
+ * Clustered:
+ *   ALTER TABLE events_replicated ON CLUSTER '{cluster}' MATERIALIZE INDEX idx_profile_id;
  *
  * which is a heavy one-time mutation (it reads the whole profile_id column,
  * though it only writes small .idx files — unlike a projection it does not
