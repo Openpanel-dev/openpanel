@@ -999,6 +999,19 @@ Batch size for data import operations.
 IMPORT_BATCH_SIZE=10000
 ```
 
+### EVENT_PROPERTY_VALUE_LIMIT
+
+**Type**: `number` (positive integer)  
+**Required**: No  
+**Default**: `500`
+
+Cap on distinct values returned per event property to the filter autocomplete. High-cardinality keys (ids, urls, tokens) can hold millions of distinct values; the most recent ones win. Invalid values keep the default.
+
+**Example**:
+```bash
+EVENT_PROPERTY_VALUE_LIMIT=1000
+```
+
 ### IP_HEADER_ORDER
 
 **Type**: `string` (comma-separated)  
