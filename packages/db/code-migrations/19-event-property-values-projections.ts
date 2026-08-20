@@ -43,8 +43,11 @@ import { getIsCluster } from './helpers';
  *    with a very large MV that want to control WHEN the backfill runs can
  *    apply the setting + ADD PROJECTION + MATERIALIZE PROJECTION statements
  *    manually before upgrading (off-peak), against the storage table. The
- *    migration detects pre-applied projections via SHOW CREATE TABLE and
- *    skips re-materializing them.
+ *    migration skips re-materializing a projection only when it already
+ *    exists AND system.mutations records a completed MATERIALIZE for it —
+ *    presence alone could be a crashed earlier attempt's ADD, and if
+ *    mutation state can't be read the migration materializes anyway
+ *    (idempotent; redundant work beats a silent skip).
  */
 
 const MV = TABLE_NAMES.event_property_values_mv;
@@ -78,7 +81,7 @@ async function resolveStorageTable(isClustered: boolean): Promise<string> {
   return rows[0].t;
 }
 
-async function preAppliedProjections(storage: string): Promise<Set<string>> {
+async function existingProjections(storage: string): Promise<Set<string>> {
   const res = await chMigrationClient.query({
     query: `SHOW CREATE TABLE \`${storage}\``,
     format: 'JSONEachRow',
@@ -91,16 +94,39 @@ async function preAppliedProjections(storage: string): Promise<Set<string>> {
   );
 }
 
+async function materializedProjections(storage: string): Promise<Set<string>> {
+  try {
+    const res = await chMigrationClient.query({
+      query: `SELECT command FROM system.mutations
+              WHERE database = currentDatabase() AND table = '${storage}'
+                AND command LIKE '%MATERIALIZE PROJECTION%'
+                AND is_done = 1`,
+      format: 'JSONEachRow',
+    });
+    const rows = await res.json<{ command: string }>();
+    return new Set(
+      PROJECTIONS.filter((p) =>
+        rows.some((r) => r.command.includes(p.name)),
+      ).map((p) => p.name),
+    );
+  } catch {
+    // Can't verify (e.g. no grant on system.mutations) — materialize; the
+    // mutations are idempotent and redundant work beats a silent skip.
+    return new Set();
+  }
+}
+
 export async function up() {
   const isClustered = getIsCluster();
   const storage = await resolveStorageTable(isClustered);
   const tbl = `\`${storage}\``;
   const onCluster = isClustered ? " ON CLUSTER '{cluster}'" : '';
 
-  // Pre-existing projections mean the deployment applied ADD + MATERIALIZE
-  // manually ahead of the upgrade (see header) — don't rewrite every part's
-  // projection data again.
-  const preApplied = await preAppliedProjections(storage);
+  // Skip a projection's backfill only when it exists AND a completed
+  // MATERIALIZE mutation is on record (a manual pre-apply, see header) —
+  // presence alone could be a crashed earlier attempt's ADD.
+  const existing = await existingProjections(storage);
+  const materialized = await materializedProjections(storage);
 
   await runClickhouseMigrationCommands([
     `ALTER TABLE ${tbl}${onCluster} MODIFY SETTING deduplicate_merge_projection_mode = 'rebuild'`,
@@ -108,7 +134,9 @@ export async function up() {
       (p) =>
         `ALTER TABLE ${tbl}${onCluster} ADD PROJECTION IF NOT EXISTS ${p.name} (${p.def})`,
     ),
-    ...PROJECTIONS.filter((p) => !preApplied.has(p.name)).map(
+    ...PROJECTIONS.filter(
+      (p) => !(existing.has(p.name) && materialized.has(p.name)),
+    ).map(
       (p) => `ALTER TABLE ${tbl}${onCluster} MATERIALIZE PROJECTION ${p.name}`,
     ),
   ]);
