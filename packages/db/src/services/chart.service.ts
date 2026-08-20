@@ -380,6 +380,76 @@ export function getSelectPropertyKey(
   return `${aliasPrefix}${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
 }
 
+
+// --- profile-property CTE narrowing (perf) ---------------------------------
+// profile.properties.<key> refs render as Map lookups `profile.properties['<key>']`.
+// Pulling the whole `properties` Map into the profile CTE makes the LEFT ANY
+// JOIN hash carry the full Map per profile — roughly a kilobyte each on real
+// data — and OOMs at scale. Instead we project ONLY the referenced keys as
+// scalar columns in the CTE and rewrite the refs to those columns — identical
+// results at a fraction of the memory. Wildcard refs (mapExtractKeyLike) still
+// need the full Map, so those fall back to selecting it.
+
+const PROFILE_PROP_PREFIX = 'profile.properties.';
+
+export function collectProfilePropertyKeys(refs: { name: string }[]): {
+  keys: string[];
+  needsFullMap: boolean;
+} {
+  const keys = new Set<string>();
+  let needsFullMap = false;
+  for (const { name } of refs) {
+    if (!name.startsWith(PROFILE_PROP_PREFIX)) {
+      continue;
+    }
+    // Wildcard refs render as mapExtractKeyLike over the whole Map.
+    if (name.includes('*')) {
+      needsFullMap = true;
+      continue;
+    }
+    const key = name.slice(PROFILE_PROP_PREFIX.length);
+    // A backtick or backslash in the key can't be embedded in the
+    // backtick-quoted scalar alias. Such keys are never narrowed: the full
+    // Map stays selected and their refs keep the original Map access.
+    if (/[`\\]/.test(key)) {
+      needsFullMap = true;
+      continue;
+    }
+    keys.add(key);
+  }
+  return { keys: Array.from(keys), needsFullMap };
+}
+
+// The profile-CTE SELECT expression for the `properties` field: one scalar
+// column per referenced key, plus the full Map only when a wildcard ref needs
+// it (or when nothing specific was referenced).
+export function profilePropertiesCteSelect(
+  keys: string[],
+  needsFullMap: boolean,
+): string {
+  const cols = keys.map(
+    (k) => `properties[${sqlstring.escape(k)}] as \`profile.properties.${k}\``,
+  );
+  if (needsFullMap || cols.length === 0) {
+    cols.push('properties as "profile.properties"');
+  }
+  return cols.join(', ');
+}
+
+// Rewrite `profile.properties['<key>']` -> `` `profile.properties.<key>` ``
+// for the narrowed keys. Matches the raw render from getSelectPropertyKey /
+// the filter builders; never matches the CTE's own `properties['<key>']`,
+// which has no `profile.` prefix. No-op when keys is empty.
+export function rewriteProfilePropertyRefs(sql: string, keys: string[]): string {
+  let out = sql;
+  for (const k of keys) {
+    out = out
+      .split(`profile.properties['${k}']`)
+      .join(`\`profile.properties.${k}\``);
+  }
+  return out;
+}
+
 export async function getChartSql({
   event,
   breakdowns: initialBreakdowns,
@@ -428,6 +498,14 @@ export async function getChartSql({
   const cohortIds = collectBreakdownCohortIds(breakdowns);
   const cohortMetadata = await fetchCohortsMetadata(cohortIds);
 
+  const profileProps = collectProfilePropertyKeys([
+    ...event.filters,
+    ...breakdowns,
+    // Math metrics (property_sum/avg/min/max) reference event.property too —
+    // missing it here would strip the Map the metric still reads from.
+    ...(event.property ? [{ name: event.property }] : []),
+  ]);
+
   // Add CTE + JOIN for "all cohorts" breakdown
   if (hasAllCohortsBreakdown) {
     addCte('_all_cohorts', buildAllCohortsMembershipQuery(projectId));
@@ -461,6 +539,10 @@ export async function getChartSql({
   const anyBreakdownOnProfile = breakdowns.some((breakdown) =>
     breakdown.name.startsWith('profile.')
   );
+  // Math metrics (property_sum/avg/min/max) can target a profile property
+  // too — the join must exist for the metric alone, not only for filters
+  // and breakdowns.
+  const anyMetricOnProfile = !!event.property?.startsWith('profile.');
   const anyFilterOnGroup = event.filters.some((filter) =>
     filter.name.startsWith('group.')
   );
@@ -543,24 +625,46 @@ export async function getChartSql({
         }
       });
 
+    // Collect from the math metric
+    if (event.property?.startsWith('profile.')) {
+      const fieldName = event.property.replace('profile.', '').split('.')[0];
+      if (fieldName && fieldName === 'properties') {
+        fields.add('properties');
+      } else if (
+        fieldName &&
+        [
+          'email',
+          'first_name',
+          'last_name',
+          'created_at',
+          'last_seen_at',
+        ].includes(fieldName)
+      ) {
+        fields.add(fieldName);
+      }
+    }
+
     return Array.from(fields);
   };
 
   // Create profiles CTE if profiles are needed (to avoid duplicating the heavy profile join)
   // Only select the fields that are actually used
   const profilesJoinRef =
-    anyFilterOnProfile || anyBreakdownOnProfile
+    anyFilterOnProfile || anyBreakdownOnProfile || anyMetricOnProfile
       ? 'LEFT ANY JOIN profile ON profile.id = profile_id'
       : '';
 
-  if (anyFilterOnProfile || anyBreakdownOnProfile) {
+  if (anyFilterOnProfile || anyBreakdownOnProfile || anyMetricOnProfile) {
     const profileFields = getProfileFields();
     const selectFields = profileFields.map((field) => {
       if (field === 'id') {
         return 'id as "profile.id"';
       }
       if (field === 'properties') {
-        return 'properties as "profile.properties"';
+        return profilePropertiesCteSelect(
+          profileProps.keys,
+          profileProps.needsFullMap,
+        );
       }
       if (field === 'email') {
         return 'email as "profile.email"';
@@ -719,7 +823,10 @@ export async function getChartSql({
     // "Unknown identifier `e.name`". Clear it.
     sb.where = {};
 
-    const sql = `${getWith()}${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
+    const sql = rewriteProfilePropertyRefs(
+      `${getWith()}${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`,
+      profileProps.keys,
+    );
     console.log('-- Report --');
     console.log(sql.replaceAll(/[\n\r]/g, ' '));
     console.log('-- End --');
@@ -805,7 +912,10 @@ export async function getChartSql({
       '(SELECT total_count FROM _uc) as total_count';
   }
 
-  const sql = `${getWith()}${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
+  const sql = rewriteProfilePropertyRefs(
+      `${getWith()}${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`,
+      profileProps.keys,
+    );
   console.log('-- Report --');
   console.log(sql.replaceAll(/[\n\r]/g, ' '));
   console.log('-- End --');
@@ -846,6 +956,14 @@ export async function getAggregateChartSql({
   const cohortIds = collectBreakdownCohortIds(breakdowns);
   const cohortMetadata = await fetchCohortsMetadata(cohortIds);
 
+  const profileProps = collectProfilePropertyKeys([
+    ...event.filters,
+    ...breakdowns,
+    // Math metrics (property_sum/avg/min/max) reference event.property too —
+    // missing it here would strip the Map the metric still reads from.
+    ...(event.property ? [{ name: event.property }] : []),
+  ]);
+
   // Add CTE + JOIN for "all cohorts" breakdown
   if (hasAllCohortsBreakdown) {
     addCte('_all_cohorts', buildAllCohortsMembershipQuery(projectId));
@@ -879,6 +997,10 @@ export async function getAggregateChartSql({
   const anyBreakdownOnProfile = breakdowns.some((breakdown) =>
     breakdown.name.startsWith('profile.')
   );
+  // Math metrics (property_sum/avg/min/max) can target a profile property
+  // too — the join must exist for the metric alone, not only for filters
+  // and breakdowns.
+  const anyMetricOnProfile = !!event.property?.startsWith('profile.');
   const anyFilterOnGroup = event.filters.some((filter) =>
     filter.name.startsWith('group.')
   );
@@ -950,23 +1072,45 @@ export async function getAggregateChartSql({
         }
       });
 
+    // Collect from the math metric
+    if (event.property?.startsWith('profile.')) {
+      const fieldName = event.property.replace('profile.', '').split('.')[0];
+      if (fieldName && fieldName === 'properties') {
+        fields.add('properties');
+      } else if (
+        fieldName &&
+        [
+          'email',
+          'first_name',
+          'last_name',
+          'created_at',
+          'last_seen_at',
+        ].includes(fieldName)
+      ) {
+        fields.add(fieldName);
+      }
+    }
+
     return Array.from(fields);
   };
 
   // Create profiles CTE if profiles are needed
   const profilesJoinRef =
-    anyFilterOnProfile || anyBreakdownOnProfile
+    anyFilterOnProfile || anyBreakdownOnProfile || anyMetricOnProfile
       ? 'LEFT ANY JOIN profile ON profile.id = profile_id'
       : '';
 
-  if (anyFilterOnProfile || anyBreakdownOnProfile) {
+  if (anyFilterOnProfile || anyBreakdownOnProfile || anyMetricOnProfile) {
     const profileFields = getProfileFields();
     const selectFields = profileFields.map((field) => {
       if (field === 'id') {
         return 'id as "profile.id"';
       }
       if (field === 'properties') {
-        return 'properties as "profile.properties"';
+        return profilePropertiesCteSelect(
+          profileProps.keys,
+          profileProps.needsFullMap,
+        );
       }
       if (field === 'email') {
         return 'email as "profile.email"';
@@ -1086,7 +1230,7 @@ export async function getAggregateChartSql({
       ) as subQuery`;
     sb.joins = {};
 
-    const sql = getSql();
+    const sql = rewriteProfilePropertyRefs(getSql(), profileProps.keys);
     console.log('-- Aggregate Chart --');
     console.log(sql.replaceAll(/[\n\r]/g, ' '));
     console.log('-- End --');
@@ -1101,7 +1245,7 @@ export async function getAggregateChartSql({
     sb.limit = limit;
   }
 
-  const sql = getSql();
+  const sql = rewriteProfilePropertyRefs(getSql(), profileProps.keys);
   console.log('-- Aggregate Chart --');
   console.log(sql.replaceAll(/[\n\r]/g, ' '));
   console.log('-- End --');

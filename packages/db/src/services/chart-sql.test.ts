@@ -464,3 +464,188 @@ describe('overview.service / getRawWhereClause (UTM remapping)', () => {
     );
   });
 });
+
+describe('chart.service / profile-property narrowing', () => {
+  const profileFilter = {
+    id: 'f1',
+    name: 'profile.properties.plan',
+    operator: 'is' as const,
+    value: ['pro'],
+  };
+
+  it('projects only the referenced keys as scalar columns in the profile CTE', async () => {
+    const sql = await getChartSql({
+      event: event({ filters: [profileFilter] }),
+      breakdowns: [breakdown('profile.properties.experiment')],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+
+    // The CTE selects one scalar column per referenced key...
+    expect(sql).toContain("properties['plan'] as `profile.properties.plan`");
+    expect(sql).toContain(
+      "properties['experiment'] as `profile.properties.experiment`",
+    );
+    // ...instead of every profile's whole Map...
+    expect(sql).not.toContain('properties as "profile.properties"');
+    // ...and every ref in the query is rewritten to the scalar alias.
+    expect(sql).not.toContain("profile.properties['plan']");
+    expect(sql).not.toContain("profile.properties['experiment']");
+  });
+
+  it('falls back to the full Map for wildcard refs', async () => {
+    const sql = await getChartSql({
+      event: event({
+        filters: [
+          {
+            id: 'f1',
+            name: 'profile.properties.experiments.*.name',
+            operator: 'is' as const,
+            value: ['a'],
+          },
+        ],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+
+    // mapExtractKeyLike needs the whole Map, so it must stay selected.
+    expect(sql).toContain('properties as "profile.properties"');
+  });
+
+  it('never narrows identifier-unsafe keys (backtick falls back to the Map)', async () => {
+    const sql = await getChartSql({
+      event: event({
+        filters: [
+          {
+            id: 'f1',
+            name: 'profile.properties.plan`tier',
+            operator: 'is' as const,
+            value: ['a'],
+          },
+        ],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+
+    // The unsafe key keeps its original Map access against the full Map —
+    // it must never be embedded in a backtick-quoted alias.
+    expect(sql).toContain('properties as "profile.properties"');
+    expect(sql).not.toContain('as `profile.properties.plan`tier`');
+  });
+
+  it('collects the math-metric property too', async () => {
+    const sql = await getChartSql({
+      event: event({
+        segment: 'property_average',
+        property: 'profile.properties.age',
+        filters: [profileFilter],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+
+    // The metric's key must be narrowed alongside the filter's — otherwise
+    // the metric keeps reading the Map that narrowing just removed.
+    expect(sql).toContain("properties['age'] as `profile.properties.age`");
+    expect(sql).not.toContain("profile.properties['age']");
+  });
+
+  it('creates the profile join for a metric-only profile property', async () => {
+    // No profile filter or breakdown — the metric alone must still create
+    // the CTE and join, or its scalar alias resolves against nothing.
+    const sql = await getChartSql({
+      event: event({
+        segment: 'property_average',
+        property: 'profile.properties.age',
+        filters: [],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+
+    expect(sql).toContain('LEFT ANY JOIN profile ON profile.id = profile_id');
+    expect(sql).toContain("properties['age'] as `profile.properties.age`");
+  });
+
+  itCH('metric-only profile property parses and resolves', async () => {
+    const sql = await getChartSql({
+      event: event({
+        segment: 'property_average',
+        property: 'profile.properties.age',
+        filters: [],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+    await explain(sql);
+  });
+
+  itCH('math metric on a narrowed profile property parses and resolves', async () => {
+    const sql = await getChartSql({
+      event: event({
+        segment: 'property_average',
+        property: 'profile.properties.age',
+        filters: [profileFilter],
+      }),
+      breakdowns: [],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+    await explain(sql);
+  });
+
+  itCH('narrowed chart SQL parses and resolves', async () => {
+    const sql = await getChartSql({
+      event: event({ filters: [profileFilter] }),
+      breakdowns: [breakdown('profile.properties.experiment')],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+    await explain(sql);
+  });
+
+  itCH('narrowed aggregate chart SQL parses and resolves', async () => {
+    const sql = await getAggregateChartSql({
+      event: event({ filters: [profileFilter] }),
+      breakdowns: [breakdown('profile.properties.experiment')],
+      interval: 'day',
+      startDate: START,
+      endDate: END,
+      projectId: PROJECT_ID,
+      timezone: 'UTC',
+    });
+    expect(sql).not.toContain("profile.properties['plan']");
+    await explain(sql);
+  });
+});
