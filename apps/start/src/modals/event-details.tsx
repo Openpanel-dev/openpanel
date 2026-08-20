@@ -287,6 +287,7 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
             {propertiesMode === 'table' && (
             <KeyValueGrid
               columns={1}
+              copyable
               data={properties}
               onItemClick={(item) => {
                 popModal();
@@ -311,6 +312,7 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
           </div>
           <KeyValueGrid
             columns={1}
+            copyable
             data={data}
             onItemClick={(item) => {
               const isFilterable = item.value && (filterable as any)[item.name];
