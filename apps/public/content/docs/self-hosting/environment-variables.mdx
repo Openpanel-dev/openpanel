@@ -986,6 +986,32 @@ BOT_BUFFER_BATCH_SIZE=1000
 
 ## Performance & Tuning
 
+### COHORT_QUERY_MEMORY_LIMIT_BYTES
+
+**Type**: `number` (bytes, positive integer)  
+**Required**: No  
+**Default**: unset (server defaults govern)
+
+Hard memory cap applied to property-cohort queries, which aggregate every profile row for a project and are the one cohort query that can outgrow the server's headroom. When set without `COHORT_QUERY_SPILL_BYTES`, the spill threshold is derived as a third of this limit so the query spills to disk before it can be killed. Unset (together with the spill variable) applies no per-query settings at all. Invalid values are ignored.
+
+**Example**:
+```bash
+COHORT_QUERY_MEMORY_LIMIT_BYTES=1400000000
+```
+
+### COHORT_QUERY_SPILL_BYTES
+
+**Type**: `number` (bytes, positive integer)  
+**Required**: No  
+**Default**: unset (derived as `COHORT_QUERY_MEMORY_LIMIT_BYTES / 3` when that is set)
+
+Point past which a property-cohort GROUP BY spills to disk instead of growing in memory. Must sit below the memory limit — a threshold at or above the kill limit means the query dies before it ever spills, so inverted pairs are re-derived. Invalid values are ignored.
+
+**Example**:
+```bash
+COHORT_QUERY_SPILL_BYTES=314572800
+```
+
 ### IMPORT_BATCH_SIZE
 
 **Type**: `number`  

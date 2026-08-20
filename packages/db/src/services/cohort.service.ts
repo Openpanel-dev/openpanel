@@ -45,38 +45,55 @@ export const COHORT_MATERIALIZE_LIMIT =
     ? COHORT_MATERIALIZE_LIMIT_PARSED
     : 10000;
 
-// Property cohorts aggregate every profile row for the project, so they are
-// the one cohort query that can outgrow the server's memory headroom. Past
-// this many bytes the GROUP BY spills to disk instead of growing; raising it
-// buys very little time because the volume spilled is set by the data, not
-// the threshold (measured on 8.3M profiles: ~281MB spilled at a 300MB, 512MB
-// or 768MB threshold, 6.9s/6.7s/6.0s, while peak memory climbs
-// 410MiB/695MiB/893MiB). Same strict validation as the materialize limit.
-const COHORT_QUERY_SPILL_BYTES_RAW = process.env.COHORT_QUERY_SPILL_BYTES;
-const COHORT_QUERY_SPILL_BYTES_PARSED =
-  COHORT_QUERY_SPILL_BYTES_RAW && /^\d+$/.test(COHORT_QUERY_SPILL_BYTES_RAW)
-    ? Number(COHORT_QUERY_SPILL_BYTES_RAW)
-    : Number.NaN;
-const COHORT_QUERY_SPILL_BYTES =
-  Number.isSafeInteger(COHORT_QUERY_SPILL_BYTES_PARSED) &&
-  COHORT_QUERY_SPILL_BYTES_PARSED > 0
-    ? COHORT_QUERY_SPILL_BYTES_PARSED
-    : 314_572_800;
+// Strictly a positive safe integer, or undefined — same validation rationale
+// as COHORT_MATERIALIZE_LIMIT above.
+function parsePositiveIntEnv(name: string): number | undefined {
+  const raw = process.env[name];
+  if (!raw || !/^\d+$/.test(raw)) {
+    return undefined;
+  }
+  const parsed = Number(raw);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
 
-// A GROUP BY only starts spilling once it crosses the threshold, so the hard
-// memory limit has to stay ABOVE it — otherwise the query is killed before it
-// ever writes to disk. That inversion is exactly what ClickHouse Cloud ships
-// by default (a 4GiB spill threshold against a ceiling reached earlier), and
-// it is why these queries OOM'd instead of spilling. Derived from the
-// threshold so retuning the env var cannot reintroduce the inversion.
-const COHORT_QUERY_MEMORY_LIMIT_BYTES = Math.max(
-  1_400_000_000,
-  COHORT_QUERY_SPILL_BYTES * 3,
+// Property cohorts aggregate every profile row for the project, so they are
+// the one cohort query that can outgrow the server's memory headroom. Two
+// opt-in knobs bound them; with NEITHER set, no per-query settings are
+// applied and the server's own defaults govern — upstream behavior is
+// unchanged.
+//
+//   COHORT_QUERY_MEMORY_LIMIT_BYTES  hard cap for these queries
+//   COHORT_QUERY_SPILL_BYTES         GROUP BY spills to disk past this
+//
+// A GROUP BY only starts spilling once it crosses the threshold, so the
+// spill threshold must sit BELOW the memory limit — inverted, the query is
+// killed before it ever writes to disk (ClickHouse Cloud ships exactly that
+// inversion by default, which is how these queries OOM'd instead of
+// spilling). When only the limit is set — or the pair is inverted — the
+// threshold derives as limit/3. Spilling early costs little: the volume
+// spilled is set by the data, not the threshold (measured on 8.3M profiles,
+// ~281MB spilled whether the threshold was 300, 512 or 768MB, at
+// 6.9s/6.7s/6.0s, while peak memory climbed 410/695/893MiB).
+const COHORT_QUERY_MEMORY_LIMIT_BYTES = parsePositiveIntEnv(
+  'COHORT_QUERY_MEMORY_LIMIT_BYTES',
 );
+const COHORT_QUERY_SPILL_BYTES_RAW = parsePositiveIntEnv(
+  'COHORT_QUERY_SPILL_BYTES',
+);
+const COHORT_QUERY_SPILL_BYTES =
+  COHORT_QUERY_MEMORY_LIMIT_BYTES !== undefined &&
+  (COHORT_QUERY_SPILL_BYTES_RAW === undefined ||
+    COHORT_QUERY_SPILL_BYTES_RAW >= COHORT_QUERY_MEMORY_LIMIT_BYTES)
+    ? Math.floor(COHORT_QUERY_MEMORY_LIMIT_BYTES / 3)
+    : COHORT_QUERY_SPILL_BYTES_RAW;
 
 export const PROFILE_COHORT_QUERY_SETTINGS: ClickHouseSettings = {
-  max_bytes_before_external_group_by: String(COHORT_QUERY_SPILL_BYTES),
-  max_memory_usage: String(COHORT_QUERY_MEMORY_LIMIT_BYTES),
+  ...(COHORT_QUERY_SPILL_BYTES !== undefined
+    ? { max_bytes_before_external_group_by: String(COHORT_QUERY_SPILL_BYTES) }
+    : {}),
+  ...(COHORT_QUERY_MEMORY_LIMIT_BYTES !== undefined
+    ? { max_memory_usage: String(COHORT_QUERY_MEMORY_LIMIT_BYTES) }
+    : {}),
 };
 
 function buildTimeConstraint(timeframe: Timeframe): string {

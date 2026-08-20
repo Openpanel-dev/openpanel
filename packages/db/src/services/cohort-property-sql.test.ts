@@ -185,16 +185,60 @@ describe('buildPropertyBasedCohortQuery', () => {
     expect(sql).not.toContain('argMax');
   });
 
-  it('keeps the spill threshold below the hard memory limit', () => {
-    // A GROUP BY only starts spilling once it crosses the threshold, so the
-    // kill limit must sit above it — the inverted default is why these
-    // queries OOM'd instead of spilling.
-    const spill = Number(
-      PROFILE_COHORT_QUERY_SETTINGS.max_bytes_before_external_group_by,
-    );
-    const limit = Number(PROFILE_COHORT_QUERY_SETTINGS.max_memory_usage);
-    expect(spill).toBeGreaterThan(0);
-    expect(limit).toBeGreaterThan(spill);
+  describe('PROFILE_COHORT_QUERY_SETTINGS', () => {
+    const loadSettings = async (env: Record<string, string>) => {
+      vi.resetModules();
+      vi.stubEnv('COHORT_QUERY_MEMORY_LIMIT_BYTES', env.limit ?? '');
+      vi.stubEnv('COHORT_QUERY_SPILL_BYTES', env.spill ?? '');
+      const mod = await import('./cohort.service');
+      return mod.PROFILE_COHORT_QUERY_SETTINGS;
+    };
+
+    afterAll(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it('applies NO settings when neither variable is set (upstream defaults govern)', async () => {
+      expect(await loadSettings({})).toEqual({});
+    });
+
+    it('derives the spill threshold as limit/3 when only the limit is set', async () => {
+      expect(await loadSettings({ limit: '3000000000' })).toEqual({
+        max_bytes_before_external_group_by: '1000000000',
+        max_memory_usage: '3000000000',
+      });
+    });
+
+    it('respects both values when both are set', async () => {
+      expect(
+        await loadSettings({ limit: '2000000000', spill: '500000000' }),
+      ).toEqual({
+        max_bytes_before_external_group_by: '500000000',
+        max_memory_usage: '2000000000',
+      });
+    });
+
+    it('applies only the spill threshold when only it is set', async () => {
+      expect(await loadSettings({ spill: '500000000' })).toEqual({
+        max_bytes_before_external_group_by: '500000000',
+      });
+    });
+
+    it('re-derives an inverted pair (spill >= limit would never spill)', async () => {
+      // A GROUP BY only starts spilling once it crosses the threshold, so a
+      // threshold at/above the kill limit means the query dies before it
+      // ever writes to disk — the exact inversion ClickHouse Cloud ships.
+      expect(
+        await loadSettings({ limit: '900000000', spill: '900000000' }),
+      ).toEqual({
+        max_bytes_before_external_group_by: '300000000',
+        max_memory_usage: '900000000',
+      });
+    });
+
+    it('ignores malformed values', async () => {
+      expect(await loadSettings({ limit: '2gb', spill: '-1' })).toEqual({});
+    });
   });
 
   itCH('parses and resolves against ClickHouse', async () => {
