@@ -110,8 +110,11 @@ async function materializedProjections(
     const source = isClustered
       ? `clusterAllReplicas('{cluster}', system.mutations)`
       : 'system.mutations';
+    // (hostName(), tcpPort()) rather than hostName() alone: multiple
+    // replicas on one machine share a hostname, and collapsing them could
+    // count an incomplete replica as done.
     const res = await chMigrationClient.query({
-      query: `SELECT hostName() AS host, command FROM ${source}
+      query: `SELECT concat(hostName(), ':', toString(tcpPort())) AS host, command FROM ${source}
               WHERE database = currentDatabase() AND table = '${storage}'
                 AND command LIKE '%MATERIALIZE PROJECTION%'
                 AND is_done = 1`,
@@ -122,7 +125,7 @@ async function materializedProjections(
     let totalHosts = 1;
     if (isClustered) {
       const hostsRes = await chMigrationClient.query({
-        query: `SELECT countDistinct(hostName()) AS c FROM clusterAllReplicas('{cluster}', system.one)`,
+        query: `SELECT countDistinct((hostName(), tcpPort())) AS c FROM clusterAllReplicas('{cluster}', system.one)`,
         format: 'JSONEachRow',
       });
       const [hostsRow] = await hostsRes.json<{ c: string | number }>();
@@ -181,9 +184,13 @@ export async function down() {
   const tbl = `\`${storage}\``;
   const onCluster = isClustered ? " ON CLUSTER '{cluster}'" : '';
 
-  await runClickhouseMigrationCommands(
-    PROJECTIONS.map(
+  await runClickhouseMigrationCommands([
+    ...PROJECTIONS.map(
       (p) => `ALTER TABLE ${tbl}${onCluster} DROP PROJECTION IF EXISTS ${p.name}`,
     ),
-  );
+    // Restore the engine default ('throw'). Safe here because this down()
+    // just dropped the only projections on the table; if you've added your
+    // own projections to it, keep 'rebuild'.
+    `ALTER TABLE ${tbl}${onCluster} MODIFY SETTING deduplicate_merge_projection_mode = 'throw'`,
+  ]);
 }
