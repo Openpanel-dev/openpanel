@@ -118,11 +118,17 @@ export class ConversionService {
 
     const eventA = events[0]!;
     const eventB = events[1]!;
+    // Qualify with 'events' so event-level `properties[...]` becomes
+    // `events.properties[...]` — required when the conversion query also
+    // joins the profiles table (which exposes a `properties` column).
+    // Without the qualifier ClickHouse fails with "ambiguous identifier
+    // 'properties'" whenever a step filters on properties.X while a
+    // breakdown is on profile.properties.Y.
     const whereA = Object.values(
-      getEventFiltersWhereClause(eventA.filters, projectId),
+      getEventFiltersWhereClause(eventA.filters, projectId, 'events'),
     ).join(' AND ');
     const whereB = Object.values(
-      getEventFiltersWhereClause(eventB.filters, projectId),
+      getEventFiltersWhereClause(eventB.filters, projectId, 'events'),
     ).join(' AND ');
 
     const funnelWindowSeconds = funnelWindow * 3600;
