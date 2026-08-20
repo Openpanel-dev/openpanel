@@ -35,8 +35,13 @@ import { getIsCluster } from './helpers';
  * Clustered:
  *   ... events_replicated ON CLUSTER '{cluster}' ...
  *
- * The migration detects the pre-applied index and skips re-materializing.
- * Fresh installs have no existing parts, so the mutation is a no-op.
+ * The migration skips re-materializing only when BOTH hold: the index
+ * already exists AND system.mutations records a completed MATERIALIZE for
+ * it. Index presence alone doesn't prove the backfill happened (a crashed
+ * earlier attempt may have run ADD without MATERIALIZE), and if mutation
+ * state can't be read the migration materializes anyway — the mutation is
+ * idempotent, so the failure direction is redundant work, never silently
+ * missing index files. Fresh installs have no existing parts; no-op.
  */
 
 const INDEX_NAME = 'idx_profile_id';
@@ -50,20 +55,39 @@ async function hasIndex(table: string): Promise<boolean> {
   return !!row?.statement.includes(INDEX_NAME);
 }
 
+async function hasCompletedMaterialization(table: string): Promise<boolean> {
+  try {
+    const res = await chMigrationClient.query({
+      query: `SELECT count() AS c FROM system.mutations
+              WHERE database = currentDatabase() AND table = '${table}'
+                AND command LIKE '%MATERIALIZE INDEX%${INDEX_NAME}%'
+                AND is_done = 1`,
+      format: 'JSONEachRow',
+    });
+    const [row] = await res.json<{ c: string | number }>();
+    return Number(row?.c ?? 0) > 0;
+  } catch {
+    // Can't verify (e.g. no grant on system.mutations) — materialize; the
+    // mutation is idempotent and redundant work beats a silent skip.
+    return false;
+  }
+}
+
 export async function up() {
   const isClustered = getIsCluster();
   const table = isClustered ? 'events_replicated' : 'events';
   const onCluster = isClustered ? " ON CLUSTER '{cluster}'" : '';
 
-  // A pre-existing index means the deployment ran ADD + MATERIALIZE manually
-  // ahead of the upgrade (see header) — don't submit a redundant rebuild of
-  // every part's index files.
-  const preApplied = await hasIndex(table);
+  // Skip the backfill only when the index exists AND a completed
+  // MATERIALIZE mutation is on record (a manual pre-apply, see header).
+  // Index presence alone could be a crashed earlier attempt's ADD.
+  const backfilled =
+    (await hasIndex(table)) && (await hasCompletedMaterialization(table));
 
   const sqls = [
     `ALTER TABLE ${table}${onCluster} ADD INDEX IF NOT EXISTS ${INDEX_NAME} profile_id TYPE bloom_filter(0.01) GRANULARITY 1`,
   ];
-  if (!preApplied) {
+  if (!backfilled) {
     sqls.push(
       `ALTER TABLE ${table}${onCluster} MATERIALIZE INDEX ${INDEX_NAME}`,
     );
