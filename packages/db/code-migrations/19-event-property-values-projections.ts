@@ -31,16 +31,20 @@ import { getIsCluster } from './helpers';
  *  - AggregatingMergeTree refuses ADD PROJECTION while
  *    deduplicate_merge_projection_mode is 'throw' (the default);
  *    'rebuild' keeps projections correct across dedup merges.
- *  - This migration only ADDs the projections, which populate for newly
- *    written parts (and for old parts as background merges rewrite them).
- *    Queries stay correct over mixed parts — ClickHouse uses the projection
- *    where it exists and the base table elsewhere — so coverage improves
- *    over time on its own. To backfill existing parts immediately, run the
- *    heavy one-time mutations manually (they rewrite projection data for
- *    every part; off-peak, watch system.mutations until is_done = 1):
+ *  - The migration ADDs the projections and submits MATERIALIZE PROJECTION
+ *    for existing parts by default. The mutations are asynchronous (the
+ *    migration doesn't block on them) and idempotent; queries stay correct
+ *    over mixed parts while they run — ClickHouse uses the projection where
+ *    it exists and the base table elsewhere. Fresh installs no-op. Progress:
  *
- *      ALTER TABLE <storage> MATERIALIZE PROJECTION epv_keys;
- *      ALTER TABLE <storage> MATERIALIZE PROJECTION epv_values;
+ *      SELECT * FROM system.mutations WHERE command LIKE '%epv_%';
+ *
+ *  - These mutations rewrite projection data for every part, so deployments
+ *    with a very large MV that want to control WHEN the backfill runs can
+ *    apply the setting + ADD PROJECTION + MATERIALIZE PROJECTION statements
+ *    manually before upgrading (off-peak), against the storage table. The
+ *    migration detects pre-applied projections via SHOW CREATE TABLE and
+ *    skips re-materializing them.
  */
 
 const MV = TABLE_NAMES.event_property_values_mv;
@@ -74,17 +78,38 @@ async function resolveStorageTable(isClustered: boolean): Promise<string> {
   return rows[0].t;
 }
 
+async function preAppliedProjections(storage: string): Promise<Set<string>> {
+  const res = await chMigrationClient.query({
+    query: `SHOW CREATE TABLE \`${storage}\``,
+    format: 'JSONEachRow',
+  });
+  const [row] = await res.json<{ statement: string }>();
+  return new Set(
+    PROJECTIONS.filter((p) =>
+      row?.statement.includes(`PROJECTION ${p.name}`),
+    ).map((p) => p.name),
+  );
+}
+
 export async function up() {
   const isClustered = getIsCluster();
   const storage = await resolveStorageTable(isClustered);
   const tbl = `\`${storage}\``;
   const onCluster = isClustered ? " ON CLUSTER '{cluster}'" : '';
 
+  // Pre-existing projections mean the deployment applied ADD + MATERIALIZE
+  // manually ahead of the upgrade (see header) — don't rewrite every part's
+  // projection data again.
+  const preApplied = await preAppliedProjections(storage);
+
   await runClickhouseMigrationCommands([
     `ALTER TABLE ${tbl}${onCluster} MODIFY SETTING deduplicate_merge_projection_mode = 'rebuild'`,
     ...PROJECTIONS.map(
       (p) =>
         `ALTER TABLE ${tbl}${onCluster} ADD PROJECTION IF NOT EXISTS ${p.name} (${p.def})`,
+    ),
+    ...PROJECTIONS.filter((p) => !preApplied.has(p.name)).map(
+      (p) => `ALTER TABLE ${tbl}${onCluster} MATERIALIZE PROJECTION ${p.name}`,
     ),
   ]);
 }
