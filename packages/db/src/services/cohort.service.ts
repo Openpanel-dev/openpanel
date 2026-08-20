@@ -84,7 +84,10 @@ const COHORT_QUERY_SPILL_BYTES =
   COHORT_QUERY_MEMORY_LIMIT_BYTES !== undefined &&
   (COHORT_QUERY_SPILL_BYTES_RAW === undefined ||
     COHORT_QUERY_SPILL_BYTES_RAW >= COHORT_QUERY_MEMORY_LIMIT_BYTES)
-    ? Math.floor(COHORT_QUERY_MEMORY_LIMIT_BYTES / 3)
+    ? // Clamped to 1: a (nonsensical) limit below 3 would derive 0, and
+      // max_bytes_before_external_group_by = 0 means spilling DISABLED —
+      // the exact inversion this derivation exists to prevent.
+      Math.max(1, Math.floor(COHORT_QUERY_MEMORY_LIMIT_BYTES / 3))
     : COHORT_QUERY_SPILL_BYTES_RAW;
 
 export const PROFILE_COHORT_QUERY_SETTINGS: ClickHouseSettings = {

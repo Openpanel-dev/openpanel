@@ -236,6 +236,15 @@ describe('buildPropertyBasedCohortQuery', () => {
       });
     });
 
+    it('never derives a zero spill threshold (0 would DISABLE spilling)', async () => {
+      for (const limit of ['1', '2', '3']) {
+        const settings = await loadSettings({ limit });
+        expect(
+          Number(settings.max_bytes_before_external_group_by),
+        ).toBeGreaterThanOrEqual(1);
+      }
+    });
+
     it('ignores malformed values', async () => {
       expect(await loadSettings({ limit: '2gb', spill: '-1' })).toEqual({});
     });
