@@ -11,6 +11,7 @@ import {
 } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import { createSqlBuilder } from '../sql-builder';
+import { resolveMaxLookbackDays } from './lookback';
 import { buildFilterWhere } from './filter-where.service';
 import { getProfilesCached, type IServiceProfile } from './profile.service';
 
@@ -172,7 +173,11 @@ export async function getSessionList(options: GetSessionListOptions) {
   sb.limit = take;
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
 
-  const MAX_DATE_INTERVAL_IN_DAYS = 365;
+  // Deployment-tunable ceiling for the empty-result lookback (see lookback.ts).
+  const MAX_DATE_INTERVAL_IN_DAYS = resolveMaxLookbackDays(
+    'SESSION_LIST_MAX_LOOKBACK_DAYS',
+    365,
+  );
   // Cap the date interval to prevent infinity
   const safeDateIntervalInDays = Math.min(
     dateIntervalInDays,
@@ -243,7 +248,7 @@ export async function getSessionList(options: GetSessionListOptions) {
   });
 
   sb.select.has_replay = `toBool(src.session_id != '') as hasReplay`;
-  sb.joins.has_replay = `LEFT JOIN (SELECT DISTINCT session_id FROM ${TABLE_NAMES.session_replay_chunks} WHERE project_id = ${sqlstring.escape(projectId)} AND started_at > now() - INTERVAL ${dateIntervalInDays} DAY) AS src ON src.session_id = id`;
+  sb.joins.has_replay = `LEFT JOIN (SELECT DISTINCT session_id FROM ${TABLE_NAMES.session_replay_chunks} WHERE project_id = ${sqlstring.escape(projectId)} AND started_at > now() - INTERVAL ${safeDateIntervalInDays} DAY) AS src ON src.session_id = id`;
 
   const sql = getSql();
   const data = await chQuery<

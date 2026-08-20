@@ -15,8 +15,8 @@ For deployment-specific configuration, see the [deployment guides](/docs/self-ho
 
 ### DATABASE_URL
 
-**Type**: `string`  
-**Required**: Yes  
+**Type**: `string`
+**Required**: Yes
 **Default**: None
 
 PostgreSQL connection string for the main database.
@@ -28,8 +28,8 @@ DATABASE_URL=postgres://user:password@localhost:5432/openpanel?schema=public
 
 ### DATABASE_URL_DIRECT
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: Same as `DATABASE_URL`
 
 Direct PostgreSQL connection string (bypasses connection pooling). Used for migrations and administrative operations.
@@ -41,8 +41,8 @@ DATABASE_URL_DIRECT=postgres://user:password@localhost:5432/openpanel?schema=pub
 
 ### DATABASE_URL_REPLICA
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: Same as `DATABASE_URL`
 
 Read replica connection string for read-heavy operations. If not set, uses the main database.
@@ -54,8 +54,8 @@ DATABASE_URL_REPLICA=postgres://user:password@replica-host:5432/openpanel?schema
 
 ### REDIS_URL
 
-**Type**: `string`  
-**Required**: Yes  
+**Type**: `string`
+**Required**: Yes
 **Default**: `redis://localhost:6379`
 
 Redis connection string for caching and queue management.
@@ -69,8 +69,8 @@ REDIS_URL=redis://:password@localhost:6379
 
 ### CLICKHOUSE_URL
 
-**Type**: `string`  
-**Required**: Yes  
+**Type**: `string`
+**Required**: Yes
 **Default**: `http://localhost:8123/openpanel`
 
 ClickHouse HTTP connection URL for analytics data storage.
@@ -82,8 +82,8 @@ CLICKHOUSE_URL=http://localhost:8123/openpanel
 
 ### CLICKHOUSE_CLUSTER
 
-**Type**: `boolean`  
-**Required**: No  
+**Type**: `boolean`
+**Required**: No
 **Default**: `false`
 
 Enable ClickHouse cluster mode. Set to `true` or `1` if using a ClickHouse cluster.
@@ -95,8 +95,8 @@ CLICKHOUSE_CLUSTER=true
 
 ### CLICKHOUSE_SETTINGS
 
-**Type**: `string` (JSON)  
-**Required**: No  
+**Type**: `string` (JSON)
+**Required**: No
 **Default**: `{}`
 
 Additional ClickHouse settings as a JSON object.
@@ -108,8 +108,8 @@ CLICKHOUSE_SETTINGS='{"max_execution_time": 300}'
 
 ### CLICKHOUSE_SETTINGS_REMOVE_CONVERT_ANY_JOIN
 
-**Type**: `boolean`  
-**Required**: No  
+**Type**: `boolean`
+**Required**: No
 **Default**: `false`
 
 Remove `convert_any_join` from ClickHouse settings. Used for compatibility with certain ClickHouse versions. This needs to be set if you use any clickhouse version below 25!
@@ -118,8 +118,8 @@ Remove `convert_any_join` from ClickHouse settings. Used for compatibility with 
 
 ### API_URL
 
-**Type**: `string`  
-**Required**: Yes  
+**Type**: `string`
+**Required**: Yes
 **Default**: None
 
 Public API URL exposed to the browser. Used by the dashboard frontend and API service.
@@ -131,8 +131,8 @@ API_URL=https://analytics.example.com/api
 
 ### API_URL_SSR
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: Same as `API_URL`
 
 Internal API URL used **only** for the dashboard's server-side rendering (SSR) requests. Set this when the dashboard server can't resolve or reach the public `API_URL` and needs an internal address instead — for example a Docker Compose service name or a Kubernetes cluster-internal address.
@@ -154,8 +154,8 @@ This only affects the dashboard's server-side requests. It does not change the A
 
 ### DASHBOARD_URL
 
-**Type**: `string`  
-**Required**: Yes  
+**Type**: `string`
+**Required**: Yes
 **Default**: None
 
 Public dashboard URL exposed to the browser. Used by the dashboard frontend and API service.
@@ -167,8 +167,8 @@ DASHBOARD_URL=https://analytics.example.com
 
 ### API_CORS_ORIGINS
 
-**Type**: `string` (comma-separated)  
-**Required**: No  
+**Type**: `string` (comma-separated)
+**Required**: No
 **Default**: None
 
 Additional CORS origins allowed for API requests. Comma-separated list of origins.
@@ -182,8 +182,8 @@ API_CORS_ORIGINS=https://app.example.com,https://another-app.com
 
 ### COOKIE_SECRET
 
-**Type**: `string`  
-**Required**: Yes  
+**Type**: `string`
+**Required**: Yes
 **Default**: None
 
 Secret key for encrypting session cookies. Generate a secure random string (32+ characters).
@@ -200,8 +200,8 @@ Never use the default value in production! Always generate a unique secret.
 
 ### COOKIE_TLDS
 
-**Type**: `string` (comma-separated)  
-**Required**: No  
+**Type**: `string` (comma-separated)
+**Required**: No
 **Default**: None
 
 Custom multi-part TLDs for cookie domain handling. Use this when deploying on domains with public suffixes that aren't recognized by default (e.g., `.my.id`, `.web.id`, `.co.id`).
@@ -221,8 +221,8 @@ This is required when using domain suffixes that are public suffixes (like `.co.
 
 ### CUSTOM_COOKIE_DOMAIN
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 Override the automatic cookie domain detection and set a specific domain for authentication cookies. Useful when proxying the API through your main domain or when you need precise control over cookie scope.
@@ -242,8 +242,8 @@ When set, this completely bypasses the automatic domain parsing logic. The cooki
 
 ### DEMO_USER_ID
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 User ID for demo mode. When set, creates a demo session for testing.
@@ -255,8 +255,8 @@ DEMO_USER_ID=user_1234567890
 
 ### ALLOW_REGISTRATION
 
-**Type**: `boolean`  
-**Required**: No  
+**Type**: `boolean`
+**Required**: No
 **Default**: `false` (after first user is created)
 
 Allow new user registrations. Set to `true` to enable public registration.
@@ -272,8 +272,8 @@ Registration is automatically disabled after the first user is created. Set this
 
 ### ALLOW_INVITATION
 
-**Type**: `boolean`  
-**Required**: No  
+**Type**: `boolean`
+**Required**: No
 **Default**: `true`
 
 Allow user invitations. Set to `false` to disable invitation functionality.
@@ -298,8 +298,8 @@ The AI assistant is optional. Without `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` se
 
 ### OPENAI_API_KEY
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 OpenAI API key. When set, the OpenAI models appear in the chat model picker.
@@ -311,8 +311,8 @@ OPENAI_API_KEY=sk-your-openai-api-key-here
 
 ### OPENAI_BASE_URL
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: OpenAI default API base URL
 
 Override the OpenAI API base URL. Useful for proxies, gateways, Azure-compatible endpoints, or self-hosted OpenAI-compatible providers.
@@ -324,8 +324,8 @@ OPENAI_BASE_URL=https://your-openai-compatible-endpoint.example.com/v1
 
 ### OPENAI_PROJECT
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 Optional OpenAI project identifier to send with requests.
@@ -337,8 +337,8 @@ OPENAI_PROJECT=proj_1234567890
 
 ### OPENAI_ORGANIZATION
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 Optional OpenAI organization identifier to send with requests.
@@ -350,8 +350,8 @@ OPENAI_ORGANIZATION=org_1234567890
 
 ### ANTHROPIC_API_KEY
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 Anthropic API key. When set, the Claude models appear in the chat model picker.
@@ -363,8 +363,8 @@ ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
 
 ### ANTHROPIC_BASE_URL
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: Anthropic default API base URL
 
 Override the Anthropic API base URL. Useful for proxies, gateways, or Anthropic-compatible endpoints.
@@ -376,8 +376,8 @@ ANTHROPIC_BASE_URL=https://your-anthropic-endpoint.example.com
 
 ### ANTHROPIC_TOKEN
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 Optional auth token sent to the Anthropic provider in addition to the API key. Use this only if your Anthropic-compatible gateway requires it.
@@ -389,8 +389,8 @@ ANTHROPIC_TOKEN=your-auth-token
 
 ### ANTHROPIC_VERSION
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: Provider default
 
 Override the Anthropic API version header sent with requests.
@@ -404,8 +404,8 @@ ANTHROPIC_VERSION=2023-06-01
 
 ### RESEND_API_KEY
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 Resend API key for sending transactional emails (password resets, invitations, etc.).
@@ -421,8 +421,8 @@ Get your API key from [resend.com](https://resend.com). Make sure to verify your
 
 ### EMAIL_SENDER
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: `hello@openpanel.dev`
 
 Email address used as the sender for transactional emails. Applies to both Resend and SMTP transports.
@@ -434,8 +434,8 @@ EMAIL_SENDER=noreply@yourdomain.com
 
 ### SMTP_HOST
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 SMTP server hostname. When set, OpenPanel uses SMTP to send emails instead of Resend. Takes priority over `RESEND_API_KEY` if both are configured.
@@ -447,8 +447,8 @@ SMTP_HOST=smtp.example.com
 
 ### SMTP_PORT
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `587`
 
 SMTP server port.
@@ -460,8 +460,8 @@ SMTP_PORT=587
 
 ### SMTP_SECURE
 
-**Type**: `boolean`  
-**Required**: No  
+**Type**: `boolean`
+**Required**: No
 **Default**: `false`
 
 Use TLS for the SMTP connection. Set to `true` when using port `465`.
@@ -473,8 +473,8 @@ SMTP_SECURE=true
 
 ### SMTP_USER
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 SMTP authentication username. Leave unset if your server does not require authentication.
@@ -486,8 +486,8 @@ SMTP_USER=smtp-user@example.com
 
 ### SMTP_PASS
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 SMTP authentication password.
@@ -510,8 +510,8 @@ If `SMTP_HOST` is set and an SMTP send attempt fails, the system will **not** au
 
 ### SLACK_CLIENT_ID
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 Slack OAuth client ID for Slack integration.
@@ -523,8 +523,8 @@ SLACK_CLIENT_ID=1234567890.1234567890
 
 ### SLACK_CLIENT_SECRET
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 Slack OAuth client secret for Slack integration.
@@ -536,8 +536,8 @@ SLACK_CLIENT_SECRET=your-slack-client-secret
 
 ### SLACK_OAUTH_REDIRECT_URL
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 Slack OAuth redirect URL. Must match the redirect URI configured in your Slack app.
@@ -549,8 +549,8 @@ SLACK_OAUTH_REDIRECT_URL=https://analytics.example.com/api/integrations/slack/ca
 
 ### SLACK_STATE_SECRET
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 Secret for signing Slack OAuth state parameter.
@@ -564,8 +564,8 @@ SLACK_STATE_SECRET=your-state-secret
 
 ### SELF_HOSTED
 
-**Type**: `boolean`  
-**Required**: No  
+**Type**: `boolean`
+**Required**: No
 **Default**: `false`
 
 Enable self-hosted mode. Set to `true` or `1` to enable self-hosting features. Used by both the dashboard frontend and API service.
@@ -579,8 +579,8 @@ SELF_HOSTED=true
 
 ### WORKER_PORT
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `3000`
 
 Port for the worker service to listen on.
@@ -592,8 +592,8 @@ WORKER_PORT=3000
 
 ### DISABLE_BULLBOARD
 
-**Type**: `boolean`  
-**Required**: No  
+**Type**: `boolean`
+**Required**: No
 **Default**: `false`
 
 Disable BullMQ board UI. Set to `true` or `1` to disable the queue monitoring dashboard.
@@ -605,8 +605,8 @@ DISABLE_BULLBOARD=true
 
 ### DISABLE_WORKERS
 
-**Type**: `boolean`  
-**Required**: No  
+**Type**: `boolean`
+**Required**: No
 **Default**: `false`
 
 Disable all worker processes. Set to `true` or `1` to disable background job processing.
@@ -618,8 +618,8 @@ DISABLE_WORKERS=true
 
 ### ENABLED_QUEUES
 
-**Type**: `string` (comma-separated)  
-**Required**: No  
+**Type**: `string` (comma-separated)
+**Required**: No
 **Default**: All queues enabled
 
 Comma-separated list of queue names to enable. Available queues: `events`, `events_kafka`, `sessions`, `cron`, `notification`, `misc`, `import`.
@@ -635,8 +635,8 @@ Enable `events_kafka` to run the Kafka-based events consumer alongside (or inste
 
 ### EVENT_JOB_CONCURRENCY
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `10`
 
 Number of concurrent event processing jobs per worker.
@@ -648,8 +648,8 @@ EVENT_JOB_CONCURRENCY=20
 
 ### EVENT_BLOCKING_TIMEOUT_SEC
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `1`
 
 Blocking timeout in seconds for event queue workers.
@@ -661,8 +661,8 @@ EVENT_BLOCKING_TIMEOUT_SEC=2
 
 ### EVENTS_GROUP_QUEUES_SHARDS
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `1`
 
 Number of shards for the events group queue. Increase for better performance with high event volume.
@@ -674,8 +674,8 @@ EVENTS_GROUP_QUEUES_SHARDS=4
 
 ### QUEUE_CLUSTER
 
-**Type**: `boolean`  
-**Required**: No  
+**Type**: `boolean`
+**Required**: No
 **Default**: `false`
 
 Enable Redis cluster mode for queues. When enabled, queue names are wrapped with `{}` for Redis cluster sharding.
@@ -687,8 +687,8 @@ QUEUE_CLUSTER=true
 
 ### ORDERING_DELAY_MS
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `100`
 
 Delay in milliseconds to hold events for correct ordering when events arrive out of order.
@@ -704,8 +704,8 @@ Should not exceed 500ms. Higher values may cause delays in event processing.
 
 ### AUTO_BATCH_MAX_WAIT_MS
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `0` (disabled)
 
 Maximum wait time in milliseconds for auto-batching events. Experimental feature.
@@ -721,8 +721,8 @@ AUTO_BATCH_MAX_WAIT_MS=100
 
 ### AUTO_BATCH_SIZE
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `0` (disabled)
 
 Batch size for auto-batching events. Experimental feature.
@@ -882,8 +882,8 @@ KAFKA_HEARTBEAT_INTERVAL_MS=3000
 
 ### SESSION_BUFFER_BATCH_SIZE
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: Buffer-specific default
 
 Batch size for session buffer operations.
@@ -895,8 +895,8 @@ SESSION_BUFFER_BATCH_SIZE=5000
 
 ### SESSION_BUFFER_CHUNK_SIZE
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: Buffer-specific default
 
 Chunk size for session buffer operations.
@@ -908,8 +908,8 @@ SESSION_BUFFER_CHUNK_SIZE=1000
 
 ### EVENT_BUFFER_BATCH_SIZE
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `4000`
 
 Batch size for event buffer operations.
@@ -921,8 +921,8 @@ EVENT_BUFFER_BATCH_SIZE=5000
 
 ### EVENT_BUFFER_CHUNK_SIZE
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `1000`
 
 Chunk size for event buffer operations.
@@ -934,8 +934,8 @@ EVENT_BUFFER_CHUNK_SIZE=2000
 
 ### PROFILE_BUFFER_BATCH_SIZE
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: Buffer-specific default
 
 Batch size for profile buffer operations.
@@ -947,8 +947,8 @@ PROFILE_BUFFER_BATCH_SIZE=5000
 
 ### PROFILE_BUFFER_CHUNK_SIZE
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: Buffer-specific default
 
 Chunk size for profile buffer operations.
@@ -960,8 +960,8 @@ PROFILE_BUFFER_CHUNK_SIZE=1000
 
 ### PROFILE_BUFFER_TTL_IN_SECONDS
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: Buffer-specific default
 
 Time-to-live in seconds for profile buffer entries.
@@ -973,8 +973,8 @@ PROFILE_BUFFER_TTL_IN_SECONDS=3600
 
 ### BOT_BUFFER_BATCH_SIZE
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: Buffer-specific default
 
 Batch size for bot detection buffer operations.
@@ -984,12 +984,53 @@ Batch size for bot detection buffer operations.
 BOT_BUFFER_BATCH_SIZE=1000
 ```
 
+## Analytics Behavior
+
+### FUNNEL_NON_STRICT_ORDERING
+
+**Type**: `boolean` (`1` or `true`)
+**Required**: No
+**Default**: unset (strict ordering)
+
+Funnels use ClickHouse's `windowFunnel` in `strict_increase` mode by default: every step's timestamp must be strictly greater than the previous step's. Setting this variable switches funnels to non-strict ordering (`>=`), where steps sharing the same timestamp still count as an ordered sequence — matching how Mixpanel and Amplitude evaluate funnels. Useful for server-side senders, batched SDKs, or imported data with coarse timestamps.
+
+**Example**:
+```bash
+FUNNEL_NON_STRICT_ORDERING=1
+```
+
 ## Performance & Tuning
+
+### EVENT_LIST_MAX_LOOKBACK_DAYS
+
+**Type**: `number` (whole days, positive integer)
+**Required**: No
+**Default**: `1825` (5 years)
+
+Ceiling for the empty-result lookback on the event list. When a page's cursor window matches nothing, the window doubles and retries until it reaches this many days. With filters that no index can prune (e.g. a properties value) each retry is a full scan of its window, so large deployments can bound the worst case with a small, human-sized value. Invalid values (non-integer, zero, negative) keep the default.
+
+**Example**:
+```bash
+EVENT_LIST_MAX_LOOKBACK_DAYS=7
+```
+
+### SESSION_LIST_MAX_LOOKBACK_DAYS
+
+**Type**: `number` (whole days, positive integer)
+**Required**: No
+**Default**: `365`
+
+Same ceiling for the session list, which has its own default. Invalid values keep the default.
+
+**Example**:
+```bash
+SESSION_LIST_MAX_LOOKBACK_DAYS=7
+```
 
 ### COHORT_QUERY_MEMORY_LIMIT_BYTES
 
-**Type**: `number` (bytes, positive integer)  
-**Required**: No  
+**Type**: `number` (bytes, positive integer)
+**Required**: No
 **Default**: unset (server defaults govern)
 
 Hard memory cap applied to property-cohort queries, which aggregate every profile row for a project and are the one cohort query that can outgrow the server's headroom. When set without `COHORT_QUERY_SPILL_BYTES`, the spill threshold is derived as a third of this limit so the query spills to disk before it can be killed. Unset (together with the spill variable) applies no per-query settings at all. Invalid values are ignored.
@@ -1001,8 +1042,8 @@ COHORT_QUERY_MEMORY_LIMIT_BYTES=1400000000
 
 ### COHORT_QUERY_SPILL_BYTES
 
-**Type**: `number` (bytes, positive integer)  
-**Required**: No  
+**Type**: `number` (bytes, positive integer)
+**Required**: No
 **Default**: unset (derived as `COHORT_QUERY_MEMORY_LIMIT_BYTES / 3` when that is set)
 
 Point past which a property-cohort GROUP BY spills to disk instead of growing in memory. Must sit below the memory limit — a threshold at or above the kill limit means the query dies before it ever spills, so inverted pairs are re-derived. Invalid values are ignored.
@@ -1014,8 +1055,8 @@ COHORT_QUERY_SPILL_BYTES=314572800
 
 ### IMPORT_BATCH_SIZE
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `5000`
 
 Batch size for data import operations.
@@ -1027,8 +1068,8 @@ IMPORT_BATCH_SIZE=10000
 
 ### IP_HEADER_ORDER
 
-**Type**: `string` (comma-separated)  
-**Required**: No  
+**Type**: `string` (comma-separated)
+**Required**: No
 **Default**: See [default order](https://github.com/Openpanel-dev/openpanel/blob/main/packages/common/server/get-client-ip.ts)
 
 Custom order of HTTP headers to check for client IP address. Useful when behind specific proxies or CDNs.
@@ -1044,8 +1085,8 @@ The default order includes: `openpanel-client-ip`, `cf-connecting-ip`, `true-cli
 
 ### SHUTDOWN_GRACE_PERIOD_MS
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `5000`
 
 Grace period in milliseconds for graceful shutdown of services.
@@ -1057,8 +1098,8 @@ SHUTDOWN_GRACE_PERIOD_MS=10000
 
 ### API_PORT
 
-**Type**: `number`  
-**Required**: No  
+**Type**: `number`
+**Required**: No
 **Default**: `3000`
 
 Port for the API service to listen on.
@@ -1070,8 +1111,8 @@ API_PORT=3000
 
 ### API_HOST
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: `0.0.0.0` (production) / `localhost` (development)
 
 Host address for the API service to bind to. Set to `::` to enable IPv6 support (useful for platforms like Railway that use IPv6 for internal networking).
@@ -1093,8 +1134,8 @@ Use `API_HOST=::` when deploying on platforms like Railway where private network
 
 ### LOG_LEVEL
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: `info`
 
 Logging level. Options: `error`, `warn`, `info`, `debug`.
@@ -1106,8 +1147,8 @@ LOG_LEVEL=debug
 
 ### LOG_SILENT
 
-**Type**: `boolean`  
-**Required**: No  
+**Type**: `boolean`
+**Required**: No
 **Default**: `false`
 
 Disable all logging output. Set to `true` to silence logs.
@@ -1119,8 +1160,8 @@ LOG_SILENT=true
 
 ### LOG_PREFIX
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 Prefix for log messages. Useful for identifying logs from different services.
@@ -1132,8 +1173,8 @@ LOG_PREFIX=api
 
 ### HYPERDX_API_KEY
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 HyperDX API key for sending logs to HyperDX for monitoring and analysis.
@@ -1147,8 +1188,8 @@ HYPERDX_API_KEY=your-hyperdx-api-key
 
 ### MAXMIND_LICENSE_KEY
 
-**Type**: `string`  
-**Required**: No  
+**Type**: `string`
+**Required**: No
 **Default**: None
 
 MaxMind GeoLite2 license key for downloading GeoIP databases.
@@ -1187,4 +1228,3 @@ For a basic self-hosted installation, these variables are required:
 - [Deploy with Coolify](/docs/self-hosting/deploy-coolify)
 - [Deploy with Dokploy](/docs/self-hosting/deploy-dokploy)
 - [Deploy on Kubernetes](/docs/self-hosting/deploy-kubernetes)
-
