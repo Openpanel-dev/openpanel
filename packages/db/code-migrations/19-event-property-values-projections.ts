@@ -81,6 +81,11 @@ async function resolveStorageTable(isClustered: boolean): Promise<string> {
   return rows[0].t;
 }
 
+// Token-boundary match so a similarly named projection (epv_keys_v2) can
+// never satisfy the checks — substring/LIKE matching would.
+const nameBoundary = (name: string) =>
+  new RegExp(`${name}([^A-Za-z0-9_]|$)`);
+
 async function existingProjections(storage: string): Promise<Set<string>> {
   const res = await chMigrationClient.query({
     query: `SHOW CREATE TABLE \`${storage}\``,
@@ -89,29 +94,57 @@ async function existingProjections(storage: string): Promise<Set<string>> {
   const [row] = await res.json<{ statement: string }>();
   return new Set(
     PROJECTIONS.filter((p) =>
-      row?.statement.includes(`PROJECTION ${p.name}`),
+      nameBoundary(`PROJECTION ${p.name}`).test(row?.statement ?? ''),
     ).map((p) => p.name),
   );
 }
 
-async function materializedProjections(storage: string): Promise<Set<string>> {
+async function materializedProjections(
+  storage: string,
+  isClustered: boolean,
+): Promise<Set<string>> {
   try {
+    // Clustered: a completed mutation on the connected host doesn't prove
+    // the other hosts finished (or even received) theirs — require every
+    // host in the cluster to report one, per projection.
+    const source = isClustered
+      ? `clusterAllReplicas('{cluster}', system.mutations)`
+      : 'system.mutations';
     const res = await chMigrationClient.query({
-      query: `SELECT command FROM system.mutations
+      query: `SELECT hostName() AS host, command FROM ${source}
               WHERE database = currentDatabase() AND table = '${storage}'
                 AND command LIKE '%MATERIALIZE PROJECTION%'
                 AND is_done = 1`,
       format: 'JSONEachRow',
     });
-    const rows = await res.json<{ command: string }>();
+    const rows = await res.json<{ host: string; command: string }>();
+
+    let totalHosts = 1;
+    if (isClustered) {
+      const hostsRes = await chMigrationClient.query({
+        query: `SELECT countDistinct(hostName()) AS c FROM clusterAllReplicas('{cluster}', system.one)`,
+        format: 'JSONEachRow',
+      });
+      const [hostsRow] = await hostsRes.json<{ c: string | number }>();
+      totalHosts = Number(hostsRow?.c ?? 0);
+      if (totalHosts === 0) {
+        return new Set();
+      }
+    }
+
     return new Set(
-      PROJECTIONS.filter((p) =>
-        rows.some((r) => r.command.includes(p.name)),
-      ).map((p) => p.name),
+      PROJECTIONS.filter((p) => {
+        const matcher = nameBoundary(`MATERIALIZE PROJECTION ${p.name}`);
+        const hosts = new Set(
+          rows.filter((r) => matcher.test(r.command)).map((r) => r.host),
+        );
+        return hosts.size >= totalHosts;
+      }).map((p) => p.name),
     );
   } catch {
-    // Can't verify (e.g. no grant on system.mutations) — materialize; the
-    // mutations are idempotent and redundant work beats a silent skip.
+    // Can't verify (e.g. no grant on system.mutations / cluster functions) —
+    // materialize; the mutations are idempotent and redundant work beats a
+    // silent skip.
     return new Set();
   }
 }
@@ -126,7 +159,7 @@ export async function up() {
   // MATERIALIZE mutation is on record (a manual pre-apply, see header) —
   // presence alone could be a crashed earlier attempt's ADD.
   const existing = await existingProjections(storage);
-  const materialized = await materializedProjections(storage);
+  const materialized = await materializedProjections(storage, isClustered);
 
   await runClickhouseMigrationCommands([
     `ALTER TABLE ${tbl}${onCluster} MODIFY SETTING deduplicate_merge_projection_mode = 'rebuild'`,
