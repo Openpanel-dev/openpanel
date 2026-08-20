@@ -46,29 +46,56 @@ import { getIsCluster } from './helpers';
 
 const INDEX_NAME = 'idx_profile_id';
 
+// Token-boundary match so a similarly named index (idx_profile_id_v2) can
+// never satisfy the check — LIKE's % and _ wildcards would.
+const NAME_BOUNDARY = '($|[^A-Za-z0-9_])';
+
 async function hasIndex(table: string): Promise<boolean> {
   const res = await chMigrationClient.query({
     query: `SHOW CREATE TABLE ${table}`,
     format: 'JSONEachRow',
   });
   const [row] = await res.json<{ statement: string }>();
-  return !!row?.statement.includes(INDEX_NAME);
+  return new RegExp(`INDEX ${INDEX_NAME}([^A-Za-z0-9_]|$)`).test(
+    row?.statement ?? '',
+  );
 }
 
-async function hasCompletedMaterialization(table: string): Promise<boolean> {
+async function hasCompletedMaterialization(
+  table: string,
+  isClustered: boolean,
+): Promise<boolean> {
+  const matchExpr = `match(command, 'MATERIALIZE INDEX ${INDEX_NAME}${NAME_BOUNDARY}') AND is_done = 1`;
   try {
+    if (!isClustered) {
+      const res = await chMigrationClient.query({
+        query: `SELECT count() AS c FROM system.mutations
+                WHERE database = currentDatabase() AND table = '${table}'
+                  AND ${matchExpr}`,
+        format: 'JSONEachRow',
+      });
+      const [row] = await res.json<{ c: string | number }>();
+      return Number(row?.c ?? 0) > 0;
+    }
+
+    // Clustered: a completed mutation on the connected host doesn't prove
+    // the other hosts finished (or even received) theirs — require every
+    // host in the cluster to report one.
     const res = await chMigrationClient.query({
-      query: `SELECT count() AS c FROM system.mutations
+      query: `SELECT
+                (SELECT countDistinct(hostName()) FROM clusterAllReplicas('{cluster}', system.one)) AS total,
+                countDistinct(hostName()) AS done
+              FROM clusterAllReplicas('{cluster}', system.mutations)
               WHERE database = currentDatabase() AND table = '${table}'
-                AND command LIKE '%MATERIALIZE INDEX%${INDEX_NAME}%'
-                AND is_done = 1`,
+                AND ${matchExpr}`,
       format: 'JSONEachRow',
     });
-    const [row] = await res.json<{ c: string | number }>();
-    return Number(row?.c ?? 0) > 0;
+    const [row] = await res.json<{ total: string | number; done: string | number }>();
+    return Number(row?.total ?? 0) > 0 && Number(row?.done ?? 0) >= Number(row?.total ?? 0);
   } catch {
-    // Can't verify (e.g. no grant on system.mutations) — materialize; the
-    // mutation is idempotent and redundant work beats a silent skip.
+    // Can't verify (e.g. no grant on system.mutations / cluster functions) —
+    // materialize; the mutation is idempotent and redundant work beats a
+    // silent skip.
     return false;
   }
 }
@@ -82,7 +109,8 @@ export async function up() {
   // MATERIALIZE mutation is on record (a manual pre-apply, see header).
   // Index presence alone could be a crashed earlier attempt's ADD.
   const backfilled =
-    (await hasIndex(table)) && (await hasCompletedMaterialization(table));
+    (await hasIndex(table)) &&
+    (await hasCompletedMaterialization(table, isClustered));
 
   const sqls = [
     `ALTER TABLE ${table}${onCluster} ADD INDEX IF NOT EXISTS ${INDEX_NAME} profile_id TYPE bloom_filter(0.01) GRANULARITY 1`,
