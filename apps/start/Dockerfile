@@ -120,6 +120,27 @@ COPY --from=build /app/apps/start/.output ./apps/start/.output
 COPY --from=build /app/apps/start/dist ./apps/start/dist
 COPY --from=build /app/apps/start/package.json ./apps/start/
 
+# The standalone Nitro output preserves the target package name for the pnpm
+# esm-env -> esm-env-runtime override. @number-flow/react imports "esm-env"
+# at runtime, so keep that package name resolvable inside the SSR bundle.
+RUN set -eux; \
+    node_modules="/app/apps/start/.output/server/node_modules"; \
+    test -d "${node_modules}/esm-env-runtime"; \
+    if [ ! -d "${node_modules}/esm-env" ]; then \
+        mkdir -p "${node_modules}/esm-env"; \
+        cp "${node_modules}/esm-env-runtime/node.js" "${node_modules}/esm-env/index.js"; \
+        printf '%s\n' \
+            '{' \
+            '  "name": "esm-env",' \
+            '  "version": "1.1.4",' \
+            '  "type": "module",' \
+            '  "exports": "./index.js"' \
+            '}' \
+            > "${node_modules}/esm-env/package.json"; \
+    fi; \
+    cd /app/apps/start/.output/server; \
+    node --input-type=module -e 'const assert = await import("node:assert/strict"); const env = await import("esm-env"); assert.equal(env.BROWSER, false, "esm-env BROWSER should be false in the Node SSR runtime"); assert.equal(env.NODE, true, "esm-env NODE should be true in the Node SSR runtime"); assert.equal(env.DEV, false, "esm-env DEV should be false in the production runtime");'
+
 # Copy necessary packages
 COPY --from=build /app/packages/db ./packages/db
 COPY --from=build /app/packages/trpc ./packages/trpc
