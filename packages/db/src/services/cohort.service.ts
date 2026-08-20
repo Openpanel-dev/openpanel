@@ -10,6 +10,7 @@ import type {
 } from '@openpanel/validation';
 
 import { cohortComputeQueue } from '@openpanel/queue';
+import type { ClickHouseSettings } from '@clickhouse/client';
 import {
   TABLE_NAMES,
   ch,
@@ -43,6 +44,60 @@ export const COHORT_MATERIALIZE_LIMIT =
   COHORT_MATERIALIZE_LIMIT_PARSED > 0
     ? COHORT_MATERIALIZE_LIMIT_PARSED
     : 10000;
+
+// Strictly a positive safe integer, or undefined — same validation rationale
+// as COHORT_MATERIALIZE_LIMIT above.
+function parsePositiveIntEnv(name: string): number | undefined {
+  const raw = process.env[name];
+  if (!raw || !/^\d+$/.test(raw)) {
+    return undefined;
+  }
+  const parsed = Number(raw);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+// Property cohorts aggregate every profile row for the project, so they are
+// the one cohort query that can outgrow the server's memory headroom. Two
+// opt-in knobs bound them; with NEITHER set, no per-query settings are
+// applied and the server's own defaults govern — upstream behavior is
+// unchanged.
+//
+//   COHORT_QUERY_MEMORY_LIMIT_BYTES  hard cap for these queries
+//   COHORT_QUERY_SPILL_BYTES         GROUP BY spills to disk past this
+//
+// A GROUP BY only starts spilling once it crosses the threshold, so the
+// spill threshold must sit BELOW the memory limit — inverted, the query is
+// killed before it ever writes to disk (ClickHouse Cloud ships exactly that
+// inversion by default, which is how these queries OOM'd instead of
+// spilling). When only the limit is set — or the pair is inverted — the
+// threshold derives as limit/3. Spilling early costs little: the volume
+// spilled is set by the data, not the threshold (measured on 8.3M profiles,
+// ~281MB spilled whether the threshold was 300, 512 or 768MB, at
+// 6.9s/6.7s/6.0s, while peak memory climbed 410/695/893MiB).
+const COHORT_QUERY_MEMORY_LIMIT_BYTES = parsePositiveIntEnv(
+  'COHORT_QUERY_MEMORY_LIMIT_BYTES',
+);
+const COHORT_QUERY_SPILL_BYTES_RAW = parsePositiveIntEnv(
+  'COHORT_QUERY_SPILL_BYTES',
+);
+const COHORT_QUERY_SPILL_BYTES =
+  COHORT_QUERY_MEMORY_LIMIT_BYTES !== undefined &&
+  (COHORT_QUERY_SPILL_BYTES_RAW === undefined ||
+    COHORT_QUERY_SPILL_BYTES_RAW >= COHORT_QUERY_MEMORY_LIMIT_BYTES)
+    ? // Clamped to 1: a (nonsensical) limit below 3 would derive 0, and
+      // max_bytes_before_external_group_by = 0 means spilling DISABLED —
+      // the exact inversion this derivation exists to prevent.
+      Math.max(1, Math.floor(COHORT_QUERY_MEMORY_LIMIT_BYTES / 3))
+    : COHORT_QUERY_SPILL_BYTES_RAW;
+
+export const PROFILE_COHORT_QUERY_SETTINGS: ClickHouseSettings = {
+  ...(COHORT_QUERY_SPILL_BYTES !== undefined
+    ? { max_bytes_before_external_group_by: String(COHORT_QUERY_SPILL_BYTES) }
+    : {}),
+  ...(COHORT_QUERY_MEMORY_LIMIT_BYTES !== undefined
+    ? { max_memory_usage: String(COHORT_QUERY_MEMORY_LIMIT_BYTES) }
+    : {}),
+};
 
 function buildTimeConstraint(timeframe: Timeframe): string {
   if (timeframe.type === 'relative') {
@@ -179,27 +234,74 @@ export function buildEventCriteriaQuery(
   `;
 }
 
-export function buildPropertyBasedCohortQuery(
-  projectId: string,
+// SQL for a profile filter's column: either a properties Map lookup or a
+// plain column, qualified with the table name.
+function profileColumnAccess(name: string): string {
+  const normalizedName = name.replace(/^profile\./, 'profiles.');
+  if (normalizedName.startsWith('profiles.properties.')) {
+    const propKey = normalizedName.replace('profiles.properties.', '');
+    // Escaped: cohort definitions come from the API, so the key is
+    // user-controlled — a quote in it must not terminate the literal.
+    return `profiles.properties[${sqlstring.escape(propKey)}]`;
+  }
+  return normalizedName;
+}
+
+function buildProfileCohortHavingClause(
   definition: PropertyBasedCohortDefinition,
-): string {
+): string | null {
   const { properties, operator } = definition.criteria;
-  const filterWhere = getProfileFiltersWhereClause(properties);
+
+  // Every argMax below must order the candidate rows IDENTICALLY, or
+  // equal-version rows with conflicting fields could each win a different
+  // column — matching an AND cohort against a synthetic combination no
+  // stored row contains. One shared key — the version column, tie-broken by
+  // a hash of every referenced column — makes all aggregates pick their
+  // value from the same winning row, deterministically. The hash (rather
+  // than the raw value tuple) keeps the per-group comparison state at a
+  // fixed 8 bytes: measured on 8.8M profiles, the raw-tuple key cost ~40%
+  // extra query time while the hashed key is free. A wrong tie-break would
+  // need a version tie AND a 64-bit collision between different rows — and
+  // even then every aggregate in the query still elects the same row.
+  const referencedColumns = Array.from(
+    new Set(properties.map((f) => profileColumnAccess(f.name))),
+  );
+  const latestRowKey = `tuple(last_seen_at, cityHash64(${referencedColumns.join(', ')}))`;
+
+  const filterWhere = getProfileFiltersWhereClause(properties, {
+    latestPerProfileKey: latestRowKey,
+  });
   const filterClauses = Object.values(filterWhere);
 
   if (filterClauses.length === 0) {
-    return `SELECT id as profile_id FROM ${TABLE_NAMES.profiles} FINAL WHERE 1=0`;
+    return null;
   }
 
-  const filterClause = filterClauses.join(
-    operator === 'and' ? ' AND ' : ' OR ',
-  );
+  return filterClauses.join(operator === 'and' ? ' AND ' : ' OR ');
+}
 
+export function buildPropertyBasedCohortQuery(
+  projectId: string,
+  definition: PropertyBasedCohortDefinition,
+  limit?: number,
+): string {
+  const havingClause = buildProfileCohortHavingClause(definition);
+
+  if (!havingClause) {
+    return `SELECT id as profile_id FROM ${TABLE_NAMES.profiles} WHERE 1=0`;
+  }
+
+  // Resolve each profile's newest row with GROUP BY + argMax instead of
+  // FINAL: FINAL cannot spill to disk, so on wide projects the dedup itself
+  // is what runs out of memory. The aggregate shape spills normally under
+  // PROFILE_COHORT_QUERY_SETTINGS, and filters on aggregates move to HAVING.
   return `
     SELECT id as profile_id
-    FROM ${TABLE_NAMES.profiles} FINAL
+    FROM ${TABLE_NAMES.profiles}
     WHERE project_id = ${sqlstring.escape(projectId)}
-      AND (${filterClause})
+    GROUP BY id
+    HAVING (${havingClause})
+    ${limit ? `LIMIT ${limit}` : ''}
   `;
 }
 
@@ -247,6 +349,7 @@ export async function countEventBasedCohort(
 
 function getProfileFiltersWhereClause(
   filters: IChartEventFilter[],
+  { latestPerProfileKey }: { latestPerProfileKey?: string } = {},
 ): Record<string, string> {
   const where: Record<string, string> = {};
 
@@ -262,14 +365,20 @@ function getProfileFiltersWhereClause(
       return;
     }
 
-    const normalizedName = name.replace(/^profile\./, 'profiles.');
-    let columnAccess: string;
+    let columnAccess = profileColumnAccess(name);
 
-    if (normalizedName.startsWith('profiles.properties.')) {
-      const propKey = normalizedName.replace('profiles.properties.', '');
-      columnAccess = `profiles.properties['${propKey}']`;
-    } else {
-      columnAccess = normalizedName;
+    if (latestPerProfileKey) {
+      // Resolve the profile's newest row inside a GROUP BY instead of
+      // reading through FINAL. The key is shared by every wrapped column
+      // (see buildProfileCohortHavingClause), so all aggregates read the
+      // SAME winning row: last_seen_at is the table's version column but is
+      // not unique, and per-column tie-breaking would let equal-version
+      // rows with conflicting fields produce a synthetic combination no
+      // stored row contains. FINAL breaks the same ties by part order,
+      // which is not derivable from the data and can shift under a
+      // background merge — the shared value-tuple tie-break is
+      // deterministic instead.
+      columnAccess = `argMax(${columnAccess}, ${latestPerProfileKey})`;
     }
 
     switch (operator) {
@@ -372,27 +481,14 @@ export async function computePropertyBasedCohort(
   definition: PropertyBasedCohortDefinition,
   limit?: number,
 ): Promise<string[]> {
-  const { properties, operator } = definition.criteria;
-  const filterWhere = getProfileFiltersWhereClause(properties);
-  const filterClauses = Object.values(filterWhere);
-
-  if (filterClauses.length === 0) {
+  if (!buildProfileCohortHavingClause(definition)) {
     return [];
   }
 
-  const filterClause = filterClauses.join(
-    operator === 'and' ? ' AND ' : ' OR ',
+  const results = await chQuery<{ profile_id: string }>(
+    buildPropertyBasedCohortQuery(projectId, definition, limit),
+    PROFILE_COHORT_QUERY_SETTINGS,
   );
-
-  const query = `
-    SELECT id as profile_id
-    FROM ${TABLE_NAMES.profiles} FINAL
-    WHERE project_id = ${sqlstring.escape(projectId)}
-      AND (${filterClause})
-    ${limit ? `LIMIT ${limit}` : ''}
-  `;
-
-  const results = await chQuery<{ profile_id: string }>(query);
   return results.map((r) => r.profile_id);
 }
 
@@ -400,26 +496,14 @@ export async function countPropertyBasedCohort(
   projectId: string,
   definition: PropertyBasedCohortDefinition,
 ): Promise<number> {
-  const { properties, operator } = definition.criteria;
-  const filterWhere = getProfileFiltersWhereClause(properties);
-  const filterClauses = Object.values(filterWhere);
-
-  if (filterClauses.length === 0) {
+  if (!buildProfileCohortHavingClause(definition)) {
     return 0;
   }
 
-  const filterClause = filterClauses.join(
-    operator === 'and' ? ' AND ' : ' OR ',
+  const results = await chQuery<{ count: number }>(
+    `SELECT count() as count FROM (${buildPropertyBasedCohortQuery(projectId, definition)})`,
+    PROFILE_COHORT_QUERY_SETTINGS,
   );
-
-  const query = `
-    SELECT count() as count
-    FROM ${TABLE_NAMES.profiles} FINAL
-    WHERE project_id = ${sqlstring.escape(projectId)}
-      AND (${filterClause})
-  `;
-
-  const results = await chQuery<{ count: number }>(query);
   return results[0]?.count ?? 0;
 }
 
