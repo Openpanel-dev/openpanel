@@ -565,16 +565,6 @@ export async function getChartSql({
     sb.joins.groups_table = 'LEFT ANY JOIN _g ON _g.id = _group_id';
   }
 
-  // Build WHERE clause without the bar filter (for use in subqueries and CTEs)
-  // Define this early so we can use it in CTE definitions
-  const getWhereWithoutBar = () => {
-    const whereWithoutBar = { ...sb.where };
-    delete whereWithoutBar.bar;
-    return Object.keys(whereWithoutBar).length
-      ? `WHERE ${join(whereWithoutBar, ' AND ')}`
-      : '';
-  };
-
   // Collect all profile fields used in filters and breakdowns
   // Extract top-level field names (e.g., 'properties' from 'profile.properties.os')
   const getProfileFields = () => {
@@ -833,89 +823,26 @@ export async function getChartSql({
     return sql;
   }
 
-  // Note: The profile CTE (if it exists) is available in subqueries, so we can reference it directly.
-  // Cohort CTEs cannot be referenced from nested CTEs in ClickHouse, so we inline them.
-  const subqueryGroupJoins = needsGroupArrayJoin
-    ? 'ARRAY JOIN groups AS _group_id LEFT ANY JOIN _g ON _g.id = _group_id '
-    : '';
-  const inlineCohortJoinsSql = cohortIds
-    .map((id) => buildInlineCohortJoin(id, projectId, 'e'))
-    .join(' ');
-  // Inline all-cohorts join for use in _uc CTE (can't reference CTEs from nested CTEs)
-  const inlineAllCohortsJoin = hasAllCohortsBreakdown
-    ? `INNER JOIN (${buildAllCohortsMembershipQuery(projectId)}) AS _all_cohorts ON _all_cohorts.profile_id = e.profile_id `
-    : '';
+  // Single-pass total_count: aggregate uniqState(profile_id) alongside the
+  // series in the same scan, then merge the per-group states with a window
+  // aggregate in an outer select — PARTITION BY the breakdown labels, or an
+  // empty partition for the global total. The previous shape re-ran the
+  // chart's entire WHERE in a second full scan (a `_uc` CTE joined back per
+  // label / injected as a scalar subquery), doubling every chart's read
+  // cost. uniq states merge losslessly, so the result matches the two-scan
+  // form exactly. (The old _uc scan nominally excluded a `bar` filter, but
+  // nothing sets sb.where.bar anymore — the exclusion was dead code.)
+  sb.select.uc_state = 'uniqState(profile_id) as _uc_state';
 
-  if (breakdowns.length > 0) {
-    // Pre-compute unique counts per breakdown group in a CTE, then JOIN it.
-    // We can't use a correlated subquery because:
-    // 1. ClickHouse expands label_X aliases to their underlying expressions,
-    //    which resolve in the subquery's scope, making the condition a tautology.
-    // 2. Correlated subqueries aren't supported on distributed/remote tables.
-    const ucSelectParts: string[] = breakdowns.map((breakdown, index) => {
-      if (isAllCohortsBreakdown(breakdown.name)) {
-        return `${buildAllCohortsLabelExpr(allCohorts)} as _uc_label_${index + 1}`;
-      }
-      const bId = extractCohortId(breakdown.name);
-      const bName = bId ? cohortMetadata.get(bId)?.name : undefined;
-      const propertyKey = getSelectPropertyKey(
-        breakdown.name,
-        projectId,
-        bId ?? undefined,
-        bName,
-        'e',
-      );
-      return `${propertyKey} as _uc_label_${index + 1}`;
-    });
-    ucSelectParts.push('uniq(profile_id) as total_count');
-
-    const ucGroupByParts = breakdowns.map(
-      (_, index) => `_uc_label_${index + 1}`
-    );
-
-    const ucWhere = getWhereWithoutBar();
-
-    addCte(
-      '_uc',
-      `SELECT ${ucSelectParts.join(', ')} FROM ${TABLE_NAMES.events} e ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${inlineCohortJoinsSql ? `${inlineCohortJoinsSql} ` : ''}${inlineAllCohortsJoin}${ucWhere} GROUP BY ${ucGroupByParts.join(', ')}`
-    );
-
-    const ucJoinConditions = breakdowns
-      .map((b, index) => {
-        if (isAllCohortsBreakdown(b.name)) {
-          return `_uc._uc_label_${index + 1} = ${buildAllCohortsLabelExpr(allCohorts)}`;
-        }
-        const bId = extractCohortId(b.name);
-        const bName = bId ? cohortMetadata.get(bId)?.name : undefined;
-        const propertyKey = getSelectPropertyKey(
-          b.name,
-          projectId,
-          bId ?? undefined,
-          bName,
-          'e',
-        );
-        return `_uc._uc_label_${index + 1} = ${propertyKey}`;
-      })
-      .join(' AND ');
-
-    sb.joins.unique_counts = `LEFT ANY JOIN _uc ON ${ucJoinConditions}`;
-    sb.select.total_unique_count = 'any(_uc.total_count) as total_count';
-  } else {
-    const ucWhere = getWhereWithoutBar();
-
-    addCte(
-      '_uc',
-      `SELECT uniq(profile_id) as total_count FROM ${TABLE_NAMES.events} e ${subqueryGroupJoins}${profilesJoinRef ? `${profilesJoinRef} ` : ''}${inlineCohortJoinsSql ? `${inlineCohortJoinsSql} ` : ''}${ucWhere}`
-    );
-
-    sb.select.total_unique_count =
-      '(SELECT total_count FROM _uc) as total_count';
-  }
+  const totalCountPartition = breakdowns
+    .map((_, index) => `label_${index + 1}`)
+    .join(', ');
+  const totalCountSelect = `uniqMerge(_uc_state) OVER (${totalCountPartition ? `PARTITION BY ${totalCountPartition}` : ''}) as total_count`;
 
   const sql = rewriteProfilePropertyRefs(
-      `${getWith()}${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`,
-      profileProps.keys,
-    );
+    `${getWith()}SELECT * EXCEPT (_uc_state), ${totalCountSelect} FROM (${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()}) ${getOrderBy()} ${getFill()}`,
+    profileProps.keys,
+  );
   console.log('-- Report --');
   console.log(sql.replaceAll(/[\n\r]/g, ' '));
   console.log('-- End --');
