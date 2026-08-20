@@ -11,6 +11,7 @@ import {
   ToolStateGuard,
 } from './shared';
 import type { ToolResultProps } from './types';
+import { useNumber } from '@/hooks/use-numer-formatter';
 
 /**
  * Renders the result of `get_profile_full` — profile + metrics + recent
@@ -54,6 +55,7 @@ function Inner({ output }: { output: unknown }) {
 }
 
 function SuccessCard({ value }: { value: ProfileFullSuccess }) {
+  const number = useNumber();
   const { profile, metrics, dashboard_url } = value;
   const title =
     profile &&
@@ -96,7 +98,7 @@ function SuccessCard({ value }: { value: ProfileFullSuccess }) {
           {typeof metrics.revenue === 'number' && metrics.revenue > 0 && (
             <ResultRow>
               <ResultLabel>Revenue</ResultLabel>
-              <ResultValue>${metrics.revenue.toFixed(2)}</ResultValue>
+              <ResultValue>{number.currency(metrics.revenue / 100)}</ResultValue>
             </ResultRow>
           )}
         </div>
