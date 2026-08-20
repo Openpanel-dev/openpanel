@@ -91,10 +91,21 @@ export class FunnelService {
     );
     const primaryKey = group === 'profile_id' ? 'profile_id' : 'session_id';
 
+    // windowFunnel's 'strict_increase' mode requires every step's timestamp
+    // to be strictly greater than the previous step's, so same-timestamp
+    // sequences (server-side senders, batched SDKs, imported data with
+    // coarse timestamps) never connect. Mixpanel/Amplitude count those as
+    // ordered, so deployments migrating from them can opt into the default
+    // (>=) mode; strict stays the default here.
+    const nonStrictOrdering =
+      process.env.FUNNEL_NON_STRICT_ORDERING === '1' ||
+      process.env.FUNNEL_NON_STRICT_ORDERING === 'true';
+    const windowFunnelMode = nonStrictOrdering ? '' : ", 'strict_increase'";
+
     return clix(this.client, timezone)
       .select([
         primaryKey,
-        `windowFunnel(${funnelWindowMilliseconds}, 'strict_increase')(toUInt64(toUnixTimestamp64Milli(created_at)), ${funnels.join(', ')}) AS level`,
+        `windowFunnel(${funnelWindowMilliseconds}${windowFunnelMode})(toUInt64(toUnixTimestamp64Milli(created_at)), ${funnels.join(', ')}) AS level`,
         ...(group === 'session_id'
           ? ['argMax(profile_id, created_at) AS profile_id']
           : []),

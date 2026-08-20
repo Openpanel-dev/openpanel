@@ -984,7 +984,48 @@ Batch size for bot detection buffer operations.
 BOT_BUFFER_BATCH_SIZE=1000
 ```
 
+## Analytics Behavior
+
+### FUNNEL_NON_STRICT_ORDERING
+
+**Type**: `boolean` (`1` or `true`)  
+**Required**: No  
+**Default**: unset (strict ordering)
+
+Funnels use ClickHouse's `windowFunnel` in `strict_increase` mode by default: every step's timestamp must be strictly greater than the previous step's. Setting this variable switches funnels to non-strict ordering (`>=`), where steps sharing the same timestamp still count as an ordered sequence — matching how Mixpanel and Amplitude evaluate funnels. Useful for server-side senders, batched SDKs, or imported data with coarse timestamps.
+
+**Example**:
+```bash
+FUNNEL_NON_STRICT_ORDERING=1
+```
+
 ## Performance & Tuning
+
+### EVENT_LIST_MAX_LOOKBACK_DAYS
+
+**Type**: `number` (whole days, positive integer)  
+**Required**: No  
+**Default**: `1825` (5 years)
+
+Ceiling for the empty-result lookback on the event list. When a page's cursor window matches nothing, the window doubles and retries until it reaches this many days. With filters that no index can prune (e.g. a properties value) each retry is a full scan of its window, so large deployments can bound the worst case with a small, human-sized value. Invalid values (non-integer, zero, negative) keep the default.
+
+**Example**:
+```bash
+EVENT_LIST_MAX_LOOKBACK_DAYS=7
+```
+
+### SESSION_LIST_MAX_LOOKBACK_DAYS
+
+**Type**: `number` (whole days, positive integer)  
+**Required**: No  
+**Default**: `365`
+
+Same ceiling for the session list, which has its own default. Invalid values keep the default.
+
+**Example**:
+```bash
+SESSION_LIST_MAX_LOOKBACK_DAYS=7
+```
 
 ### IMPORT_BATCH_SIZE
 

@@ -60,3 +60,7 @@ We treat security research done in good faith under this policy as authorized, a
 We publicly thank researchers who report valid vulnerabilities, with their permission. If you'd like to be listed, tell us in your report how you want to be credited.
 
 - [@geo-chen](https://github.com/geo-chen) — broken object-level authorization in saved reports (June 2026)
+- [@CyberKareem](https://github.com/CyberKareem) — stored XSS in the favicon proxy, SSRF in the site checker, and cross-tenant access to dashboard layouts (June 2026)
+- [@hotplugin0x01](https://github.com/hotplugin0x01) — SSRF in the favicon and OG image proxy (July 2026)
+- [@tonghuaroot](https://github.com/tonghuaroot) — SSRF in the site checker and cross-tenant access to dashboard layouts (July–August 2026)
+- [@dstours](https://github.com/dstours) — remote code execution through chart formulas (August 2026)
