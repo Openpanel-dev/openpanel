@@ -70,7 +70,7 @@ describe('buildPropertyBasedCohortQuery', () => {
     expect(sql).not.toContain('FINAL');
     expect(sql).toContain('GROUP BY id');
     expect(sql).toContain(
-      "argMax(profiles.properties['experiment'], tuple(last_seen_at, tuple(profiles.properties['experiment'])))",
+      "argMax(profiles.properties['experiment'], tuple(last_seen_at, cityHash64(profiles.properties['experiment'])))",
     );
   });
 
@@ -93,7 +93,7 @@ describe('buildPropertyBasedCohortQuery', () => {
     });
 
     const sharedKey =
-      "tuple(last_seen_at, tuple(profiles.properties['experiment'], profiles.email))";
+      "tuple(last_seen_at, cityHash64(profiles.properties['experiment'], profiles.email))";
     expect(sql).toContain(
       `argMax(profiles.properties['experiment'], ${sharedKey})`,
     );

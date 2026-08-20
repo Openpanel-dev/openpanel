@@ -253,12 +253,17 @@ function buildProfileCohortHavingClause(
   // equal-version rows with conflicting fields could each win a different
   // column — matching an AND cohort against a synthetic combination no
   // stored row contains. One shared key — the version column, tie-broken by
-  // the tuple of every referenced column — makes all aggregates pick their
-  // value from the same winning row, deterministically.
+  // a hash of every referenced column — makes all aggregates pick their
+  // value from the same winning row, deterministically. The hash (rather
+  // than the raw value tuple) keeps the per-group comparison state at a
+  // fixed 8 bytes: measured on 8.8M profiles, the raw-tuple key cost ~40%
+  // extra query time while the hashed key is free. A wrong tie-break would
+  // need a version tie AND a 64-bit collision between different rows — and
+  // even then every aggregate in the query still elects the same row.
   const referencedColumns = Array.from(
     new Set(properties.map((f) => profileColumnAccess(f.name))),
   );
-  const latestRowKey = `tuple(last_seen_at, tuple(${referencedColumns.join(', ')}))`;
+  const latestRowKey = `tuple(last_seen_at, cityHash64(${referencedColumns.join(', ')}))`;
 
   const filterWhere = getProfileFiltersWhereClause(properties, {
     latestPerProfileKey: latestRowKey,
