@@ -81,10 +81,13 @@ async function hasCompletedMaterialization(
     // Clustered: a completed mutation on the connected host doesn't prove
     // the other hosts finished (or even received) theirs — require every
     // host in the cluster to report one.
+    // (hostName(), tcpPort()) rather than hostName() alone: multiple
+    // replicas on one machine share a hostname, and collapsing them could
+    // count an incomplete replica as done.
     const res = await chMigrationClient.query({
       query: `SELECT
-                (SELECT countDistinct(hostName()) FROM clusterAllReplicas('{cluster}', system.one)) AS total,
-                countDistinct(hostName()) AS done
+                (SELECT countDistinct((hostName(), tcpPort())) FROM clusterAllReplicas('{cluster}', system.one)) AS total,
+                countDistinct((hostName(), tcpPort())) AS done
               FROM clusterAllReplicas('{cluster}', system.mutations)
               WHERE database = currentDatabase() AND table = '${table}'
                 AND ${matchExpr}`,
