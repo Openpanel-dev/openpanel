@@ -6,48 +6,73 @@ import {
 import { getIsCluster } from './helpers';
 
 /**
- * Aggregating projections for the property autocomplete dropdowns.
+ * Aggregating projection for the property-key autocomplete dropdown.
  *
- * The property-key and property-value pickers read
- * event_property_values_mv, which is ORDER BY
- * (project_id, name, property_key, property_value). Neither picker query
- * can seek on that key: the project-wide key list has no `name` filter, and
- * the value lookup filters property_key, which sits behind `name`. Both
- * therefore scan the project's whole MV slice — on our deployment, 1.57B
- * rows read to return ~6.4K distinct keys.
+ * The key picker reads event_property_values_mv, which is ORDER BY
+ * (project_id, name, property_key, property_value). Two shapes exist:
  *
- * Two aggregating projections give those queries a key they can seek:
+ *   no event selected  -> WHERE project_id ... GROUP BY property_key
+ *   event selected     -> WHERE project_id AND name ... GROUP BY property_key
  *
- *   epv_keys   -> (project_id, property_key)                 max(created_at)
- *   epv_values -> (project_id, property_key, property_value) max(created_at)
+ * Neither is cheap on that sort key. The first can seek only to project_id
+ * and must then aggregate the project's whole slice (on our deployment,
+ * 1.57B rows to return ~6.4K distinct keys). The second prunes to the
+ * event's slice, but that slice still holds every key AND every value for
+ * the event — measured 120M rows read on average, p95 15.9s.
  *
- * The optimizer rewrites the picker queries onto them transparently — no
- * application change, reads drop to a few thousand rows.
+ * One aggregating projection answers both:
+ *
+ *   epv_keys -> (project_id, name, property_key), max(created_at)
+ *
+ * With an event selected, (project_id, name) is a seekable prefix, so the
+ * read prunes to that event's keys. With no event, the query's GROUP BY is
+ * a subset of the projection's, so the optimizer still substitutes it and
+ * aggregates over the (tiny) projection instead of the table — verified
+ * with EXPLAIN for both shapes. The optimizer rewrites the existing picker
+ * queries transparently; no application change.
+ *
+ * Sizing: the projection is one row per (project, event, key) — 30,212 rows
+ * against a 1.637B-row MV on our deployment. Including `name` costs ~3.4x
+ * the rows of a (project_id, property_key)-only projection while covering
+ * the event-selected shape that one cannot serve at all (a projection is
+ * only substitutable when it contains EVERY column the query references,
+ * so any filter on `name` disqualifies a projection that lacks it).
+ *
+ * NOT included: a (project_id, property_key, property_value) projection for
+ * the value picker. Its grain is 95.4% of the MV's row count — a near-
+ * complete second copy of the table — and it can only serve value lookups
+ * with no event selected, since the event-selected shape already gets a
+ * full three-column prefix seek on the base table. Measured on our
+ * deployment: 2 such queries in 30 days.
  *
  * Notes:
- *  - The projections live on the MV's STORAGE table: the implicit
+ *  - The projection lives on the MV's STORAGE table: the implicit
  *    `.inner_id.<uuid>` table on a single node, `<mv>_replicated` when
  *    clustered.
  *  - AggregatingMergeTree refuses ADD PROJECTION while
  *    deduplicate_merge_projection_mode is 'throw' (the default);
  *    'rebuild' keeps projections correct across dedup merges.
- *  - The migration ADDs the projections and submits MATERIALIZE PROJECTION
- *    for existing parts by default. The mutations are asynchronous (the
- *    migration doesn't block on them) and idempotent; queries stay correct
- *    over mixed parts while they run — ClickHouse uses the projection where
- *    it exists and the base table elsewhere. Fresh installs no-op. Progress:
+ *  - The migration ADDs the projection and submits MATERIALIZE PROJECTION
+ *    for existing parts by default. The mutation is asynchronous (the
+ *    migration doesn't block on it) and idempotent; queries stay correct
+ *    over mixed parts while it runs — ClickHouse reads the projection from
+ *    parts that have it and the base table from those that don't (observed
+ *    in EXPLAIN as two read nodes). Fresh installs no-op. Progress:
  *
  *      SELECT * FROM system.mutations WHERE command LIKE '%epv_%';
  *
- *  - These mutations rewrite projection data for every part, so deployments
+ *  - The mutation rewrites projection data for every part, so deployments
  *    with a very large MV that want to control WHEN the backfill runs can
  *    apply the setting + ADD PROJECTION + MATERIALIZE PROJECTION statements
  *    manually before upgrading (off-peak), against the storage table. The
- *    migration skips re-materializing a projection only when it already
+ *    migration skips re-materializing only when the projection already
  *    exists AND system.mutations records a completed MATERIALIZE for it —
  *    presence alone could be a crashed earlier attempt's ADD, and if
  *    mutation state can't be read the migration materializes anyway
- *    (idempotent; redundant work beats a silent skip).
+ *    (idempotent; redundant work beats a silent skip). Note that because
+ *    ADD uses IF NOT EXISTS, a manual pre-apply must use the definition
+ *    below verbatim — a same-named projection with a different grain would
+ *    be kept as-is.
  */
 
 const MV = TABLE_NAMES.event_property_values_mv;
@@ -55,11 +80,7 @@ const MV = TABLE_NAMES.event_property_values_mv;
 const PROJECTIONS = [
   {
     name: 'epv_keys',
-    def: 'SELECT project_id, property_key, max(created_at) AS created_at GROUP BY project_id, property_key',
-  },
-  {
-    name: 'epv_values',
-    def: 'SELECT project_id, property_key, property_value, max(created_at) AS created_at GROUP BY project_id, property_key, property_value',
+    def: 'SELECT project_id, name, property_key, max(created_at) AS created_at GROUP BY project_id, name, property_key',
   },
 ];
 
