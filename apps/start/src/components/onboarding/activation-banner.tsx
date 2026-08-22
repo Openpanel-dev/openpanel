@@ -132,10 +132,26 @@ export default function ActivationBanner() {
     setDismissed(true);
   };
 
+  const actions = (
+    <>
+      <Button onClick={current.go} size="sm">
+        {current.key === 'first-event'
+          ? 'Set up tracking'
+          : current.key === 'first-report'
+            ? 'Create a report'
+            : 'Invite'}
+      </Button>
+      <Button onClick={dismiss} size="sm" variant="ghost">
+        Skip setup
+      </Button>
+    </>
+  );
+
   return (
     // Container queries, not viewport breakpoints: the banner sits beside the
     // sidebar, so its own width — not the window's — decides when the
-    // three-column row fits.
+    // three-column row fits. In the stacked layout the actions move up to the
+    // headline row (top-right corner) instead of dangling below the funnel.
     <div className="@container relative overflow-hidden border-b bg-card">
       <div
         className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full opacity-20 blur-3xl"
@@ -145,18 +161,24 @@ export default function ActivationBanner() {
         }}
       />
 
-      <div className="@5xl:row col relative gap-6 p-4 @5xl:items-center @5xl:justify-between @5xl:gap-10 @5xl:p-6 @5xl:px-8">
-        <div className="col min-w-0 gap-1">
-          <div className="row items-center gap-2 font-mono text-muted-foreground text-xs uppercase tracking-widest">
-            Setup funnel
-            <span className="text-emerald-600 dark:text-emerald-500">
-              {doneCount}/{steps.length}
-            </span>
+      <div className="@5xl:row col relative @5xl:items-center @5xl:justify-between @5xl:gap-10 gap-6 @5xl:p-6 p-4 @5xl:px-8">
+        <div className="row @5xl:contents min-w-0 flex-wrap items-start justify-between gap-4">
+          <div className="col min-w-0 gap-1">
+            <div className="row items-center gap-2 font-mono text-muted-foreground text-xs uppercase tracking-widest">
+              Setup funnel
+              <span className="text-emerald-600 dark:text-emerald-500">
+                {doneCount}/{steps.length}
+              </span>
+            </div>
+            <div className="font-medium text-lg leading-tight">
+              {headline.title}
+            </div>
+            <div className="text-muted-foreground text-sm">{headline.sub}</div>
           </div>
-          <div className="font-medium text-lg leading-tight">
-            {headline.title}
+
+          <div className="row @5xl:hidden shrink-0 items-center gap-2">
+            {actions}
           </div>
-          <div className="text-muted-foreground text-sm">{headline.sub}</div>
         </div>
 
         <div className="row min-w-0 max-w-xl flex-1 items-center gap-0">
@@ -222,17 +244,8 @@ export default function ActivationBanner() {
           })}
         </div>
 
-        <div className="@5xl:self-auto row shrink-0 items-center gap-2 self-end">
-          <Button onClick={current.go} size="sm">
-            {current.key === 'first-event'
-              ? 'Set up tracking'
-              : current.key === 'first-report'
-                ? 'Create a report'
-                : 'Invite'}
-          </Button>
-          <Button onClick={dismiss} size="sm" variant="ghost">
-            Skip setup
-          </Button>
+        <div className="@5xl:flex hidden shrink-0 items-center gap-2">
+          {actions}
         </div>
       </div>
     </div>
