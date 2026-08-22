@@ -1,10 +1,12 @@
 import { cacheable } from '@openpanel/redis';
 import sqlstring from 'sqlstring';
 import {
+  ch,
   chQuery,
   convertClickhouseDateToJs,
   TABLE_NAMES,
 } from '../clickhouse/client';
+import { clix } from '../clickhouse/query-builder';
 import { ClientType, type Prisma, type Project } from '../prisma-client';
 import { db } from '../prisma-client';
 
@@ -131,9 +133,14 @@ export const getProjectEventsCount = async (projectId: string) => {
  * from the map.
  */
 export const getLastEventPerProject = async (): Promise<Map<string, Date>> => {
-  const res = await chQuery<{ project_id: string; last_event_at: string }>(
-    `SELECT project_id, max(created_at) as last_event_at FROM ${TABLE_NAMES.event_names_mv} GROUP BY project_id`
-  );
+  const res = await clix(ch)
+    .select<{ project_id: string; last_event_at: string }>([
+      'project_id',
+      'max(created_at) AS last_event_at',
+    ])
+    .from(TABLE_NAMES.event_names_mv)
+    .groupBy(['project_id'])
+    .execute();
   return new Map(
     res.map((row) => [
       row.project_id,

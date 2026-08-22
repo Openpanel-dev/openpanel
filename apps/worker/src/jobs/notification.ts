@@ -57,7 +57,7 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
               title: notification.title,
               message: notification.message,
               projectName: project.name,
-              dashboardUrl: `${process.env.DASHBOARD_URL}/${project.organizationId}/${notification.projectId}`,
+              dashboardUrl: `${process.env.DASHBOARD_URL ?? 'https://dashboard.openpanel.dev'}/${project.organizationId}/${notification.projectId}`,
             },
           });
         }
