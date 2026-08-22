@@ -22,6 +22,7 @@ import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
+import { ONBOARDING_SECRET_KEY } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = zOnboardingProject;
@@ -113,9 +114,24 @@ export default function AddProject() {
               Close
             </Button>
             {/* Route through the same connect -> verify steps as onboarding so
-                a second project doesn't skip the install instructions. */}
+                a second project doesn't skip the install instructions. The
+                connect page reads the secret from sessionStorage — seed it
+                here, since this is the only moment the plain secret exists. */}
             <Button asChild className="flex-1">
-              <a href={`/onboarding/${mutation.data.id}/connect`}>
+              <a
+                href={`/onboarding/${mutation.data.id}/connect`}
+                onClick={() => {
+                  const secret = mutation.data.client?.secret;
+                  if (secret) {
+                    try {
+                      sessionStorage.setItem(ONBOARDING_SECRET_KEY, secret);
+                    } catch {
+                      // Storage unavailable — connect falls back to its
+                      // secret-already-shown notice.
+                    }
+                  }
+                }}
+              >
                 Set up tracking
               </a>
             </Button>
