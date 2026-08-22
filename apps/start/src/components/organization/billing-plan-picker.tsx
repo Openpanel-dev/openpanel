@@ -132,7 +132,9 @@ export default function BillingPlanPicker({
     op.track('cancel_flow_opened', {
       organizationId: organization.id,
     });
-    pushModal('CancelSubscription', { organization });
+    // Forward onComplete so a finished cancel flow also closes the modal that
+    // opened the picker (SelectBillingPlan passes popModal).
+    pushModal('CancelSubscription', { organization, onComplete });
   };
 
   const renderAction = () => {
