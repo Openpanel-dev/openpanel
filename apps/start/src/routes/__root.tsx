@@ -2,7 +2,9 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Scripts,
+  useRouteContext,
 } from '@tanstack/react-router';
+import { useEffect } from 'react';
 
 import 'flag-icons/css/flag-icons.min.css';
 import 'katex/dist/katex.min.css';
@@ -93,6 +95,26 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   pendingComponent: FullPageLoadingState,
 });
 
+// Tie dashboard events to the signed-in user so activation funnels
+// (signup -> project created -> first event -> report) can be measured.
+function OpIdentify() {
+  const context = useRouteContext({ strict: false });
+  const user = context.session?.user;
+
+  useEffect(() => {
+    if (user?.id) {
+      op.identify({
+        profileId: user.id,
+        email: user.email,
+        firstName: user.firstName ?? undefined,
+        lastName: user.lastName ?? undefined,
+      });
+    }
+  }, [user?.id, user?.email, user?.firstName, user?.lastName]);
+
+  return null;
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   useSessionExtension();
 
@@ -102,6 +124,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="grainy min-h-screen bg-def-100 font-sans text-base leading-normal antialiased">
+        <OpIdentify />
         <Providers>{children}</Providers>
         <ThemeScriptOnce />
         <Scripts />

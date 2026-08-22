@@ -50,16 +50,16 @@ export const BASE_INTEGRATIONS: Integration[] = [
     },
     organizationId: '',
   },
-  // {
-  //   id: EMAIL_NOTIFICATION_INTEGRATION_ID,
-  //   name: 'Email',
-  //   createdAt: new Date(),
-  //   updatedAt: new Date(),
-  //   config: {
-  //     type: EMAIL_NOTIFICATION_INTEGRATION_ID,
-  //   },
-  //   organizationId: '',
-  // },
+  {
+    id: EMAIL_NOTIFICATION_INTEGRATION_ID,
+    name: 'Email',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    config: {
+      type: EMAIL_NOTIFICATION_INTEGRATION_ID,
+    },
+    organizationId: '',
+  },
 ];
 
 export const isBaseIntegration = (id: string) =>

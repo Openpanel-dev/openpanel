@@ -2,6 +2,7 @@ import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import FeedbackPrompt from '@/components/organization/feedback-prompt';
 import SupporterPrompt from '@/components/organization/supporter-prompt';
+import YearlySwitchPrompt from '@/components/organization/yearly-switch-prompt';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
@@ -122,6 +123,7 @@ function Component() {
   const stateMeta = getSubscriptionStateMeta(organization.subscriptionState, {
     endsAt: organization.subscriptionEndsAt,
     canceledAt: organization.subscriptionCanceledAt,
+    resumesAt: organization.subscriptionResumesAt,
   });
 
   // Project routes show the full-screen BillingPrompt for blocking states;
@@ -137,8 +139,14 @@ function Component() {
     isProjectRoute &&
     subscriptionBlocksDashboard(organization.subscriptionState);
 
+  const location = useLocation();
+  const isBillingPage = /\/.+\/billing/.test(location.pathname);
+
   return (
     <>
+      {!stateMeta.banner && !isBillingPage && (
+        <YearlySwitchPrompt organization={organization} />
+      )}
       {stateMeta.banner && !hideBannerForPrompt && (
         <Alert
           title={stateMeta.banner.title}
@@ -154,12 +162,31 @@ function Component() {
           </LinkButton>
         </Alert>
       )}
+      {organization.isActive &&
+        !organization.isExceeded &&
+        organization.subscriptionPeriodEventsLimit > 0 &&
+        organization.subscriptionPeriodEventsCount >=
+          organization.subscriptionPeriodEventsLimit * 0.8 && (
+          <Alert
+            title="Approaching your events limit"
+            description={`You've used ${Math.round((organization.subscriptionPeriodEventsCount / organization.subscriptionPeriodEventsLimit) * 100)}% of your ${organization.subscriptionPeriodEventsLimit.toLocaleString()} monthly events. If you go over, we keep collecting your events but charts pause until you upgrade.`}
+          >
+            <LinkButton
+              to="/$organizationId/billing"
+              params={{
+                organizationId: organizationId,
+              }}
+            >
+              See plans
+            </LinkButton>
+          </Alert>
+        )}
       {organization.subscriptionPeriodEventsCountExceededAt &&
         organization.isActive &&
         organization.isExceeded && (
           <Alert
             title="Events limit exceeded"
-            description={`Your subscription has exceeded the limit on ${format(organization.subscriptionPeriodEventsCountExceededAt, 'PPP')}`}
+            description={`You hit your monthly events limit on ${format(organization.subscriptionPeriodEventsCountExceededAt, 'PPP')}. We're still collecting your events — nothing is lost — but charts won't show new data until you upgrade or your next cycle starts.`}
           >
             <LinkButton
               to="/$organizationId/billing"

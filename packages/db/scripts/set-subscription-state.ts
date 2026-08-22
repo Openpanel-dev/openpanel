@@ -23,62 +23,95 @@ type Recipe = {
   subscriptionCanceledAt: Date | null;
   subscriptionStartsAt: Date | null;
   subscriptionEndsAt: Date | null;
+  subscriptionPauseAtPeriodEnd: boolean;
+  subscriptionResumesAt: Date | null;
 };
+
+const base = {
+  subscriptionPauseAtPeriodEnd: false,
+  subscriptionResumesAt: null,
+} as const;
 
 const recipes: Record<string, () => Recipe> = {
   trialing: () => ({
+    ...base,
     subscriptionStatus: null,
     subscriptionCanceledAt: null,
     subscriptionStartsAt: null,
     subscriptionEndsAt: future(),
   }),
   trial_expired: () => ({
+    ...base,
     subscriptionStatus: null,
     subscriptionCanceledAt: null,
     subscriptionStartsAt: null,
     subscriptionEndsAt: past(),
   }),
   active: () => ({
+    ...base,
     subscriptionStatus: 'active',
     subscriptionCanceledAt: null,
     subscriptionStartsAt: new Date(),
     subscriptionEndsAt: future(),
   }),
   canceling: () => ({
+    ...base,
     subscriptionStatus: 'active',
     subscriptionCanceledAt: new Date(),
     subscriptionStartsAt: new Date(),
     subscriptionEndsAt: future(),
   }),
   canceled: () => ({
+    ...base,
     subscriptionStatus: 'canceled',
     subscriptionCanceledAt: past(),
     subscriptionStartsAt: monthAgo(),
     subscriptionEndsAt: past(),
   }),
   past_due: () => ({
+    ...base,
     subscriptionStatus: 'past_due',
     subscriptionCanceledAt: null,
     subscriptionStartsAt: monthAgo(),
     subscriptionEndsAt: future(),
   }),
   unpaid: () => ({
+    ...base,
     subscriptionStatus: 'unpaid',
     subscriptionCanceledAt: null,
     subscriptionStartsAt: monthAgo(),
     subscriptionEndsAt: future(),
   }),
   incomplete: () => ({
+    ...base,
     subscriptionStatus: 'incomplete',
     subscriptionCanceledAt: null,
     subscriptionStartsAt: new Date(),
     subscriptionEndsAt: future(),
   }),
   expired: () => ({
+    ...base,
     subscriptionStatus: 'active',
     subscriptionCanceledAt: null,
     subscriptionStartsAt: monthAgo(),
     subscriptionEndsAt: past(),
+  }),
+  pausing: () => ({
+    ...base,
+    subscriptionStatus: 'active',
+    subscriptionCanceledAt: null,
+    subscriptionStartsAt: new Date(),
+    subscriptionEndsAt: future(),
+    subscriptionPauseAtPeriodEnd: true,
+    subscriptionResumesAt: new Date(Date.now() + 60 * DAY),
+  }),
+  paused: () => ({
+    ...base,
+    subscriptionStatus: 'paused',
+    subscriptionCanceledAt: null,
+    subscriptionStartsAt: monthAgo(),
+    subscriptionEndsAt: past(),
+    subscriptionResumesAt: new Date(Date.now() + 30 * DAY),
   }),
 };
 

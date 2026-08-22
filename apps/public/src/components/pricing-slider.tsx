@@ -49,6 +49,9 @@ export function PricingSlider() {
           >
             + VAT if applicable
           </span>
+          <div className="mt-1 text-emerald-600 text-sm dark:text-emerald-500">
+            Pay yearly and get 2 months free
+          </div>
         </div>
       ) : (
         <div className="text-lg">
