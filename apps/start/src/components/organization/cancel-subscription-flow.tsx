@@ -79,7 +79,7 @@ export default function CancelSubscriptionFlow({
         invalidate();
         toast.success('Discount applied', {
           description:
-            '30% off your next 12 invoices, starting with the next billing cycle.',
+            '30% off for the next 12 months, starting with your next billing cycle.',
         });
         onComplete();
       },
@@ -250,7 +250,7 @@ export default function CancelSubscriptionFlow({
   return (
     <>
       <ModalHeader
-        text="We'd love to keep you around. Stay on your current plan and get 30% off every invoice for the next 12 months, starting with your next billing cycle."
+        text="We'd love to keep you around. Stay on your current plan and get 30% off for the next 12 months, starting with your next billing cycle."
         title="One last thing — 30% off for a year"
       />
       <div className="scrollbar-thin col min-h-0 flex-1 overflow-y-auto">
@@ -259,7 +259,7 @@ export default function CancelSubscriptionFlow({
             −30%
           </span>
           <span className="text-muted-foreground">
-            on every invoice for the next 12 months
+            for the next 12 months
           </span>
         </div>
       </div>
