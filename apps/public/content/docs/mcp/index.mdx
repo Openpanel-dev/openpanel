@@ -107,8 +107,23 @@ claude mcp add --transport http openpanel "https://api.openpanel.dev/mcp?token=Y
 | Tool | Description |
 |------|-------------|
 | `list_dashboards` | List all dashboards for a project. |
+| `get_dashboard` | Get a dashboard with its complete report configurations and saved layouts. |
 | `list_reports` | List all reports in a dashboard with their chart types and tracked events. |
 | `get_report_data` | Execute a saved report and return its data (time-series, funnel, metric, etc.). |
+
+### Dashboard management (root clients)
+
+| Tool | Description |
+|------|-------------|
+| `create_dashboard` | Create a dashboard in a project. |
+| `update_dashboard` | Rename a dashboard. |
+| `delete_dashboard` | Delete an empty dashboard, or delete it with its reports using `forceDelete`. |
+| `create_report` | Add a saved chart to a dashboard. |
+| `update_report` | Replace a saved chart's configuration. |
+| `delete_report` | Delete a saved chart. |
+| `duplicate_report` | Duplicate a saved chart in its dashboard. |
+| `update_report_layout` | Set a saved chart's dashboard grid position and dimensions. |
+| `reset_dashboard_layout` | Remove all saved chart layouts from a dashboard. |
 
 ### Discovery
 

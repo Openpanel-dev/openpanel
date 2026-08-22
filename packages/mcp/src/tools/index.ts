@@ -24,6 +24,7 @@ import { registerGscOverviewTools } from './gsc/overview';
 import { registerGscPageTools } from './gsc/pages';
 import { registerGscQueryTools } from './gsc/queries';
 import { registerDashboardLinkTools } from './dashboard-links';
+import { registerDashboardManagementTools } from './dashboard-management';
 import { registerProjectTools } from './projects';
 
 export function registerAllTools(
@@ -33,6 +34,7 @@ export function registerAllTools(
   // Project access — always call first to discover available projects
   registerProjectTools(server, context);
   registerDashboardLinkTools(server, context);
+  registerDashboardManagementTools(server, context);
   registerReportTools(server, context);
 
   // Analytics — discovery (call these first to understand the data)
