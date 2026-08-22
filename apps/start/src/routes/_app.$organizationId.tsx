@@ -162,12 +162,31 @@ function Component() {
           </LinkButton>
         </Alert>
       )}
+      {organization.isActive &&
+        !organization.isExceeded &&
+        organization.subscriptionPeriodEventsLimit > 0 &&
+        organization.subscriptionPeriodEventsCount >=
+          organization.subscriptionPeriodEventsLimit * 0.8 && (
+          <Alert
+            title="Approaching your events limit"
+            description={`You've used ${Math.round((organization.subscriptionPeriodEventsCount / organization.subscriptionPeriodEventsLimit) * 100)}% of your ${organization.subscriptionPeriodEventsLimit.toLocaleString()} monthly events. If you go over, we keep collecting your events but charts pause until you upgrade.`}
+          >
+            <LinkButton
+              to="/$organizationId/billing"
+              params={{
+                organizationId: organizationId,
+              }}
+            >
+              See plans
+            </LinkButton>
+          </Alert>
+        )}
       {organization.subscriptionPeriodEventsCountExceededAt &&
         organization.isActive &&
         organization.isExceeded && (
           <Alert
             title="Events limit exceeded"
-            description={`Your subscription has exceeded the limit on ${format(organization.subscriptionPeriodEventsCountExceededAt, 'PPP')}`}
+            description={`You hit your monthly events limit on ${format(organization.subscriptionPeriodEventsCountExceededAt, 'PPP')}. We're still collecting your events — nothing is lost — but charts won't show new data until you upgrade or your next cycle starts.`}
           >
             <LinkButton
               to="/$organizationId/billing"

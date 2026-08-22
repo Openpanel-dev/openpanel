@@ -1,6 +1,10 @@
 import { cacheable } from '@openpanel/redis';
 import sqlstring from 'sqlstring';
-import { chQuery, TABLE_NAMES } from '../clickhouse/client';
+import {
+  chQuery,
+  convertClickhouseDateToJs,
+  TABLE_NAMES,
+} from '../clickhouse/client';
 import { ClientType, type Prisma, type Project } from '../prisma-client';
 import { db } from '../prisma-client';
 
@@ -117,6 +121,25 @@ export const getProjectEventsCount = async (projectId: string) => {
     `SELECT sum(event_count) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`
   );
   return res[0]?.count;
+};
+
+/**
+ * Newest event timestamp per project, for the whole instance in one query.
+ * Reads the same pre-aggregated MV as getProjectEventsCount (it stores
+ * max(created_at) per (project_id, name) block), so this scans thousands of
+ * rows instead of the raw events table. Projects with no events are absent
+ * from the map.
+ */
+export const getLastEventPerProject = async (): Promise<Map<string, Date>> => {
+  const res = await chQuery<{ project_id: string; last_event_at: string }>(
+    `SELECT project_id, max(created_at) as last_event_at FROM ${TABLE_NAMES.event_names_mv} GROUP BY project_id`
+  );
+  return new Map(
+    res.map((row) => [
+      row.project_id,
+      convertClickhouseDateToJs(row.last_event_at),
+    ])
+  );
 };
 
 /**

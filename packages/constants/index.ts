@@ -606,6 +606,11 @@ export const emailCategories = {
     label: 'Weekly digest',
     description: 'A weekly summary of your analytics with AI-surfaced insights',
   },
+  product_alerts: {
+    label: 'Product alerts',
+    description:
+      'Important notices about your projects: tracking stopped sending data, event limits, and alerts from your notification rules',
+  },
 } as const;
 
 export type EmailCategory = keyof typeof emailCategories;

@@ -1,6 +1,7 @@
 import type { Job } from 'bullmq';
 
 import { Prisma, db } from '@openpanel/db';
+import { sendEmail } from '@openpanel/email';
 import { sendDiscordNotification } from '@openpanel/integrations/src/discord';
 import { sendSlackNotification } from '@openpanel/integrations/src/slack';
 import { execute as executeJavaScriptTemplate } from '@openpanel/js-runtime';
@@ -29,6 +30,35 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
       }
 
       if (notification.sendToEmail) {
+        const project = await db.project.findUniqueOrThrow({
+          where: { id: notification.projectId },
+          select: { name: true, organizationId: true },
+        });
+        const members = await db.member.findMany({
+          where: {
+            organizationId: project.organizationId,
+            user: { deletedAt: null },
+          },
+          include: { user: { select: { email: true } } },
+        });
+        const emails = new Set(
+          members.flatMap((member) =>
+            member.user?.email ? [member.user.email] : [],
+          ),
+        );
+        for (const to of emails) {
+          // Per-recipient unsubscribe (product_alerts category) is handled
+          // inside sendEmail.
+          await sendEmail('notification-rule', {
+            to,
+            data: {
+              title: notification.title,
+              message: notification.message,
+              projectName: project.name,
+              dashboardUrl: `${process.env.DASHBOARD_URL}/${project.organizationId}/${notification.projectId}`,
+            },
+          });
+        }
         return;
       }
 
