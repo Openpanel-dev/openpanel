@@ -32,7 +32,8 @@ async function promptForInput() {
       message: 'Enter your Polar organization ID:',
     },
     {
-      type: 'string',
+      type: 'password',
+      mask: '*',
       name: 'polarApiKey',
       message: 'Enter your Polar API key:',
       validate: (input: string) => {
@@ -55,10 +56,18 @@ async function main() {
     server: input.isProduction ? 'production' : 'sandbox',
   });
 
-  const existing = await polar.discounts.list({ limit: 100 });
-  const match = existing.result.items.find(
-    (discount) => discount.name === DISCOUNT_NAME
-  );
+  // The list response is a page iterator — walk every page so an existing
+  // discount beyond the first page doesn't get duplicated.
+  let match: { id: string; name: string } | undefined;
+  const pages = await polar.discounts.list({ limit: 100 });
+  for await (const page of pages) {
+    match = page.result.items.find(
+      (discount) => discount.name === DISCOUNT_NAME,
+    );
+    if (match) {
+      break;
+    }
+  }
 
   if (match) {
     console.log('Save discount already exists:');

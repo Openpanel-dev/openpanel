@@ -59,6 +59,10 @@ describe('getSubscriptionState', () => {
     // Pause-at-period-end keeps status active while the flag is set
     { name: 'active + pause scheduled (pausing)', status: 'active', canceledAt: null, endsAt: future, pauseAtPeriodEnd: true, expected: 'pausing' },
     { name: 'cancel wins over scheduled pause', status: 'active', canceledAt: past, endsAt: future, pauseAtPeriodEnd: true, expected: 'canceling' },
+    // Stale data: period ended but status wasn't flipped (missed webhook).
+    // Must resolve to paused (blocks dashboard), never a lingering pausing.
+    { name: 'pause scheduled, period already ended', status: 'active', canceledAt: null, endsAt: past, pauseAtPeriodEnd: true, expected: 'paused' },
+    { name: 'pause scheduled, no end date', status: 'active', canceledAt: null, endsAt: null, pauseAtPeriodEnd: true, expected: 'paused' },
     { name: 'paused', status: 'paused', canceledAt: null, endsAt: past, expected: 'paused' },
     { name: 'paused ignores stale pause flag', status: 'paused', canceledAt: null, endsAt: past, pauseAtPeriodEnd: true, expected: 'paused' },
 

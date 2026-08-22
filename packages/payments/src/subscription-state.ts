@@ -57,9 +57,12 @@ export function getSubscriptionState(
         return 'canceling';
       }
       // Pause-at-period-end works the same way: status stays `active` with the
-      // flag set until the period ends, then Polar flips it to `paused`.
+      // flag set until the period ends, then Polar flips it to `paused`. If the
+      // period already ended and our status is stale (missed webhook), fail
+      // safe to `paused` — `pausing` would keep dashboard access open past the
+      // paid period.
       if (subscriptionPauseAtPeriodEnd) {
-        return 'pausing';
+        return endsInFuture ? 'pausing' : 'paused';
       }
       return subscriptionEndsAt && subscriptionEndsAt <= now
         ? 'expired'

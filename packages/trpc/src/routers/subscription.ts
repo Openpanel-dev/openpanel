@@ -66,14 +66,16 @@ export const subscriptionRouter = createTRPCRouter({
         }),
       ]);
 
-      // A paused subscription still exists in Polar — a checkout here would
-      // create a second one. Resume first, then change plans.
+      // A paused (or pause-scheduled) subscription still exists in Polar — a
+      // checkout here would create a second one, and a plan change would race
+      // the pending pause. Resume first, then change plans.
       if (
         organization.subscriptionId &&
-        organization.subscriptionStatus === 'paused'
+        (organization.subscriptionStatus === 'paused' ||
+          organization.subscriptionPauseAtPeriodEnd)
       ) {
         throw new TRPCBadRequestError(
-          'Your subscription is paused — resume it before changing plans',
+          'Your subscription is paused or scheduled to pause — resume it before changing plans',
         );
       }
 
@@ -207,6 +209,14 @@ export const subscriptionRouter = createTRPCRouter({
       if (!organization.subscriptionId) {
         throw new TRPCBadRequestError('Organization has no subscription');
       }
+      // Only a plain active subscription can be paused — this rejects paused,
+      // pause-scheduled (pausing), canceling, canceled, unpaid, etc. before we
+      // hit Polar with a nonsensical update.
+      if (organization.subscriptionState !== 'active') {
+        throw new TRPCBadRequestError(
+          'Only an active subscription can be paused',
+        );
+      }
       if (!organization.subscriptionEndsAt) {
         throw new TRPCBadRequestError('Subscription has no current period end');
       }
@@ -274,20 +284,36 @@ export const subscriptionRouter = createTRPCRouter({
       if (!organization.subscriptionId) {
         throw new TRPCBadRequestError('Organization has no subscription');
       }
-      if (organization.subscriptionSaveDiscountAppliedAt) {
+
+      // Claim the one-time offer atomically BEFORE calling Polar: a
+      // conditional update lets exactly one concurrent request through. Roll
+      // the claim back if Polar rejects, so a transient failure doesn't burn
+      // the offer.
+      const claimed = await db.organization.updateMany({
+        where: {
+          id: input.organizationId,
+          subscriptionSaveDiscountAppliedAt: null,
+        },
+        data: { subscriptionSaveDiscountAppliedAt: new Date() },
+      });
+      if (claimed.count === 0) {
         throw new TRPCBadRequestError(
           'The save discount has already been used',
         );
       }
 
-      await applySubscriptionDiscount(organization.subscriptionId, discountId);
-
-      await db.organization.update({
-        where: { id: input.organizationId },
-        data: {
-          subscriptionSaveDiscountAppliedAt: new Date(),
-        },
-      });
+      try {
+        await applySubscriptionDiscount(
+          organization.subscriptionId,
+          discountId,
+        );
+      } catch (error) {
+        await db.organization.updateMany({
+          where: { id: input.organizationId },
+          data: { subscriptionSaveDiscountAppliedAt: null },
+        });
+        throw error;
+      }
 
       return { success: true };
     }),

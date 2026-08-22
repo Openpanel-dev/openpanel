@@ -17,6 +17,9 @@ import { op } from '@/utils/op';
 
 export interface CancelSubscriptionProps {
   organization: IServiceOrganization;
+  // Runs after a successful outcome (pause, discount, or cancel) so the modal
+  // that opened the flow (e.g. SelectBillingPlan) can close itself too.
+  onComplete?: () => void;
 }
 
 const REASONS: { value: ICancellationReason; label: string }[] = [
@@ -36,6 +39,7 @@ type Step = 'reason' | 'pause' | 'discount';
 
 export default function CancelSubscription({
   organization,
+  onComplete,
 }: CancelSubscriptionProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -51,6 +55,11 @@ export default function CancelSubscription({
     queryClient.invalidateQueries(trpc.subscription.pathFilter());
   };
 
+  const finish = () => {
+    popModal('CancelSubscription');
+    onComplete?.();
+  };
+
   const pauseMutation = useMutation(
     trpc.subscription.pauseSubscription.mutationOptions({
       onSuccess(data) {
@@ -58,7 +67,7 @@ export default function CancelSubscription({
         toast.success('Subscription paused', {
           description: `Billing stops at the end of your current period and resumes on ${formatDate(data.resumesAt)}. Your events keep flowing in.`,
         });
-        popModal('CancelSubscription');
+        finish();
       },
       onError(error) {
         toast.error(error.message);
@@ -74,7 +83,7 @@ export default function CancelSubscription({
           description:
             '30% off your next 12 invoices, starting with the next billing cycle.',
         });
-        popModal('CancelSubscription');
+        finish();
       },
       onError(error) {
         toast.error(error.message);
@@ -91,7 +100,7 @@ export default function CancelSubscription({
             ? `Your subscription stays active until ${formatDate(organization.subscriptionEndsAt)}.`
             : 'It might take a few seconds to update',
         });
-        popModal('CancelSubscription');
+        finish();
       },
       onError(error) {
         toast.error(error.message);
