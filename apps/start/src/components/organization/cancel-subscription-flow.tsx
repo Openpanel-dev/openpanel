@@ -1,25 +1,27 @@
 import type { IServiceOrganization } from '@openpanel/db';
 import type { ICancellationReason } from '@openpanel/validation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { CheckIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { popModal } from '.';
-import { ModalContent, ModalHeader } from './Modal/Container';
 import { ButtonContainer } from '@/components/button-container';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { useTRPC } from '@/integrations/trpc/react';
+import { ModalHeader } from '@/modals/Modal/Container';
 import { cn } from '@/utils/cn';
 import { formatDate } from '@/utils/date';
 import { op } from '@/utils/op';
 
-export interface CancelSubscriptionProps {
+// The cancel flow lives inside the SelectBillingPlan modal as internal views
+// (no stacked modals): reason -> pause offer -> discount offer -> cancel.
+
+interface Props {
   organization: IServiceOrganization;
-  // Runs after a successful outcome (pause, discount, or cancel) so the modal
-  // that opened the flow (e.g. SelectBillingPlan) can close itself too.
-  onComplete?: () => void;
+  // Back to the plan picker view.
+  onBack: () => void;
+  // A flow outcome happened (paused, discounted, or canceled) — close the modal.
+  onComplete: () => void;
 }
 
 const REASONS: { value: ICancellationReason; label: string }[] = [
@@ -37,10 +39,11 @@ const PAUSE_MONTHS = [1, 2, 3] as const;
 
 type Step = 'reason' | 'pause' | 'discount';
 
-export default function CancelSubscription({
+export default function CancelSubscriptionFlow({
   organization,
+  onBack,
   onComplete,
-}: CancelSubscriptionProps) {
+}: Props) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>('reason');
@@ -55,11 +58,6 @@ export default function CancelSubscription({
     queryClient.invalidateQueries(trpc.subscription.pathFilter());
   };
 
-  const finish = () => {
-    popModal('CancelSubscription');
-    onComplete?.();
-  };
-
   const pauseMutation = useMutation(
     trpc.subscription.pauseSubscription.mutationOptions({
       onSuccess(data) {
@@ -67,7 +65,7 @@ export default function CancelSubscription({
         toast.success('Subscription paused', {
           description: `Billing stops at the end of your current period and resumes on ${formatDate(data.resumesAt)}. Your events keep flowing in.`,
         });
-        finish();
+        onComplete();
       },
       onError(error) {
         toast.error(error.message);
@@ -83,7 +81,7 @@ export default function CancelSubscription({
           description:
             '30% off your next 12 invoices, starting with the next billing cycle.',
         });
-        finish();
+        onComplete();
       },
       onError(error) {
         toast.error(error.message);
@@ -100,7 +98,7 @@ export default function CancelSubscription({
             ? `Your subscription stays active until ${formatDate(organization.subscriptionEndsAt)}.`
             : 'It might take a few seconds to update',
         });
-        finish();
+        onComplete();
       },
       onError(error) {
         toast.error(error.message);
@@ -130,40 +128,41 @@ export default function CancelSubscription({
 
   if (step === 'reason') {
     return (
-      <ModalContent>
+      <>
         <ModalHeader
           text="Before you go — what's the main reason? It genuinely helps us improve."
           title="Cancel subscription"
         />
-        <RadioGroup
-          className="col gap-2"
-          onValueChange={(value) => setReason(value as ICancellationReason)}
-          value={reason ?? undefined}
-        >
-          {REASONS.map((item) => (
-            <Label
-              className={cn(
-                'row cursor-pointer items-center gap-3 rounded-md border p-3 font-normal transition-colors hover:bg-def-100',
-                reason === item.value && 'border-foreground/30 bg-def-100'
-              )}
-              key={item.value}
-            >
-              <RadioGroupItem value={item.value} />
-              {item.label}
-            </Label>
-          ))}
-        </RadioGroup>
-        <Textarea
-          className="mt-4"
-          onChange={(event) => setComment(event.target.value)}
-          placeholder="Anything you want to add? (optional)"
-          value={comment}
-        />
-        <ButtonContainer>
-          <Button
-            onClick={() => popModal('CancelSubscription')}
-            variant="outline"
-          >
+        <div className="scrollbar-thin col min-h-0 flex-1 gap-4 overflow-y-auto">
+          <div className="col shrink-0 divide-y divide-border overflow-hidden rounded-lg border">
+            {REASONS.map((item) => (
+              <button
+                className={cn(
+                  'row shrink-0 items-center justify-between p-4 py-3 text-left transition-colors hover:bg-def-100',
+                  reason === item.value && 'bg-def-100'
+                )}
+                key={item.value}
+                onClick={() => setReason(item.value)}
+                type="button"
+              >
+                <span className="font-medium">{item.label}</span>
+                {reason === item.value && (
+                  <div className="center-center size-4 shrink-0 rounded-full bg-emerald-600 text-primary-foreground">
+                    <CheckIcon className="size-2" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+          <Textarea
+            className="shrink-0"
+            onChange={(event) => setComment(event.target.value)}
+            placeholder="Anything you want to add? (optional)"
+            value={comment}
+          />
+        </div>
+        <ButtonContainer className="shrink-0 gap-2 [&>*]:flex-1">
+          <Button onClick={onBack} variant="outline">
             Never mind
           </Button>
           <Button
@@ -180,34 +179,36 @@ export default function CancelSubscription({
             Continue
           </Button>
         </ButtonContainer>
-      </ModalContent>
+      </>
     );
   }
 
   if (step === 'pause') {
     return (
-      <ModalContent>
+      <>
         <ModalHeader
           text="Pause your subscription: billing stops at the end of your current period, we keep collecting your events, and everything is exactly where you left it when you come back."
           title="Take a break instead?"
         />
-        <div className="row gap-2">
-          {PAUSE_MONTHS.map((months) => (
-            <Button
-              className="flex-1"
-              key={months}
-              onClick={() => setPauseMonths(months)}
-              variant={pauseMonths === months ? 'default' : 'outline'}
-            >
-              {months} {months === 1 ? 'month' : 'months'}
-            </Button>
-          ))}
+        <div className="scrollbar-thin col min-h-0 flex-1 gap-3 overflow-y-auto">
+          <div className="row shrink-0 gap-2">
+            {PAUSE_MONTHS.map((months) => (
+              <Button
+                className="flex-1"
+                key={months}
+                onClick={() => setPauseMonths(months)}
+                variant={pauseMonths === months ? 'default' : 'outline'}
+              >
+                {months} {months === 1 ? 'month' : 'months'}
+              </Button>
+            ))}
+          </div>
+          <p className="shrink-0 text-muted-foreground text-sm">
+            Billing automatically resumes after the pause — or resume earlier
+            any time from the billing page. You pay nothing while paused.
+          </p>
         </div>
-        <p className="mt-2 text-muted-foreground text-sm">
-          Billing automatically resumes after the pause — or resume earlier any
-          time from the billing page. You pay nothing while paused.
-        </p>
-        <ButtonContainer>
+        <ButtonContainer className="shrink-0 gap-2 [&>*]:flex-1">
           <Button
             disabled={isPending}
             onClick={() => {
@@ -242,17 +243,27 @@ export default function CancelSubscription({
             Pause for {pauseMonths} {pauseMonths === 1 ? 'month' : 'months'}
           </Button>
         </ButtonContainer>
-      </ModalContent>
+      </>
     );
   }
 
   return (
-    <ModalContent>
+    <>
       <ModalHeader
         text="We'd love to keep you around. Stay on your current plan and get 30% off every invoice for the next 12 months, starting with your next billing cycle."
         title="One last thing — 30% off for a year"
       />
-      <ButtonContainer>
+      <div className="scrollbar-thin col min-h-0 flex-1 overflow-y-auto">
+        <div className="row shrink-0 items-baseline gap-2 rounded-lg border bg-def-100 p-4">
+          <span className="font-bold font-mono text-3xl text-emerald-600 dark:text-emerald-500">
+            −30%
+          </span>
+          <span className="text-muted-foreground">
+            on every invoice for the next 12 months
+          </span>
+        </div>
+      </div>
+      <ButtonContainer className="shrink-0 gap-2 [&>*]:flex-1">
         <Button
           disabled={isPending}
           loading={cancelMutation.isPending}
@@ -280,6 +291,6 @@ export default function CancelSubscription({
           Apply 30% discount
         </Button>
       </ButtonContainer>
-    </ModalContent>
+    </>
   );
 }

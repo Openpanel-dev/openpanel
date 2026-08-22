@@ -9,7 +9,6 @@ import AddNotificationRule from './add-notification-rule';
 import AddProject from './add-project';
 import AddReference from './add-reference';
 import BillingSuccess from './billing-success';
-import CancelSubscription from './cancel-subscription';
 import type { ConfirmProps } from './confirm';
 import Confirm from './confirm';
 import ConfirmDeleteAccount from './confirm-delete-account';
@@ -27,11 +26,10 @@ import EditMember from './edit-member';
 import EditReference from './edit-reference';
 import EditReport from './edit-report';
 import EventDetails from './event-details';
-import InsightDetails from './insight-details';
 import Instructions from './Instructions';
+import InsightDetails from './insight-details';
 import OverviewChartDetails from './overview-chart-details';
 import OverviewFilters from './overview-filters';
-import TableFilters from './table-filters';
 import PageDetails from './page-details';
 import RegenerateRecoveryCodes from './regenerate-recovery-codes';
 import RequestPasswordReset from './request-reset-password';
@@ -41,6 +39,7 @@ import SetupTwoFactor from './setup-two-factor';
 import ShareDashboardModal from './share-dashboard-modal';
 import ShareOverviewModal from './share-overview-modal';
 import ShareReportModal from './share-report-modal';
+import TableFilters from './table-filters';
 import ViewChartUsers from './view-chart-users';
 import OverviewTopGenericModal from '@/components/overview/overview-top-generic-modal';
 import OverviewTopPagesModal from '@/components/overview/overview-top-pages-modal';
@@ -87,7 +86,6 @@ const modals = {
   CreateInvite,
   SelectBillingPlan,
   BillingSuccess,
-  CancelSubscription,
   SetupTwoFactor,
   DisableTwoFactor,
   RegenerateRecoveryCodes,
