@@ -118,6 +118,8 @@ model Organization {
   // usage counter (or the limit is raised), so each cycle can warn once.
   usageWarningSentAt                      DateTime?
   usageExceededSentAt                     DateTime?
+  /// [IPrismaSubscriptionDiscount]
+  subscriptionDiscount                    Json?
 
   // When deleteAt > now(), the organization will be deleted
   deleteAt DateTime?
