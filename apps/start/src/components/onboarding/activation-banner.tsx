@@ -133,7 +133,10 @@ export default function ActivationBanner() {
   };
 
   return (
-    <div className="relative overflow-hidden border-b bg-card">
+    // Container queries, not viewport breakpoints: the banner sits beside the
+    // sidebar, so its own width — not the window's — decides when the
+    // three-column row fits.
+    <div className="@container relative overflow-hidden border-b bg-card">
       <div
         className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full opacity-20 blur-3xl"
         style={{
@@ -142,7 +145,7 @@ export default function ActivationBanner() {
         }}
       />
 
-      <div className="col lg:row relative gap-6 p-4 lg:items-center lg:justify-between lg:gap-10 lg:p-6 lg:px-8">
+      <div className="@5xl:row col relative gap-6 p-4 @5xl:items-center @5xl:justify-between @5xl:gap-10 @5xl:p-6 @5xl:px-8">
         <div className="col min-w-0 gap-1">
           <div className="row items-center gap-2 font-mono text-muted-foreground text-xs uppercase tracking-widest">
             Setup funnel
@@ -156,7 +159,7 @@ export default function ActivationBanner() {
           <div className="text-muted-foreground text-sm">{headline.sub}</div>
         </div>
 
-        <div className="row min-w-0 flex-1 items-center gap-0 lg:max-w-xl">
+        <div className="row min-w-0 max-w-xl flex-1 items-center gap-0">
           {steps.map((step, index) => {
             const isCurrent = step.key === current.key;
             return (
@@ -219,7 +222,7 @@ export default function ActivationBanner() {
           })}
         </div>
 
-        <div className="row shrink-0 items-center gap-2 self-end lg:self-auto">
+        <div className="@5xl:self-auto row shrink-0 items-center gap-2 self-end">
           <Button onClick={current.go} size="sm">
             {current.key === 'first-event'
               ? 'Set up tracking'
