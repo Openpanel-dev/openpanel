@@ -124,7 +124,7 @@ export async function dataHealthCronJob() {
         continue;
       }
 
-      const dashboardUrl = `${process.env.DASHBOARD_URL}/${alert.organizationId}`;
+      const dashboardUrl = `${process.env.DASHBOARD_URL ?? 'https://dashboard.openpanel.dev'}/${alert.organizationId}`;
 
       if (alert.noData.length > 0) {
         for (const [to, firstName] of recipients) {

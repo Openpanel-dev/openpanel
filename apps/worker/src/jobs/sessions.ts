@@ -122,68 +122,97 @@ async function sendUsageAlerts(organization: Organization, count: number) {
     count <= limit &&
     !organization.usageWarningSentAt;
 
-  if (!exceeded && !nearLimit) {
+  if (!(exceeded || nearLimit)) {
     return;
   }
 
-  const admins = await db.member.findMany({
+  // Claim the alert atomically BEFORE sending: session jobs for different
+  // projects of the same org can run concurrently, and both would otherwise
+  // read null markers and double-send. Marking the warning together with the
+  // exceeded notice keeps a both-thresholds-in-one-jump crossing from queueing
+  // a redundant warning afterwards. Rolled back if every send fails.
+  const claimedAt = new Date();
+  const claimed = await db.organization.updateMany({
     where: {
-      organizationId: organization.id,
-      role: 'org:admin',
-      user: { deletedAt: null },
+      id: organization.id,
+      ...(exceeded
+        ? { usageExceededSentAt: null }
+        : { usageWarningSentAt: null }),
     },
-    include: { user: { select: { email: true, firstName: true } } },
+    data: exceeded
+      ? { usageExceededSentAt: claimedAt, usageWarningSentAt: claimedAt }
+      : { usageWarningSentAt: claimedAt },
   });
-
-  const billingUrl = `${process.env.DASHBOARD_URL}/${organization.id}/billing`;
-  const recipients = new Map(
-    admins
-      .filter((member) => member.user?.email)
-      .map((member) => [member.user!.email, member.user!.firstName ?? undefined])
-  );
-
-  for (const [email, firstName] of recipients) {
-    if (exceeded) {
-      await sendEmail('usage-limit-exceeded', {
-        to: email,
-        data: {
-          firstName,
-          organizationName: organization.name,
-          billingUrl,
-          eventsLimit: limit,
-        },
-      });
-    } else {
-      await sendEmail('usage-near-limit', {
-        to: email,
-        data: {
-          firstName,
-          organizationName: organization.name,
-          billingUrl,
-          eventsCount: count,
-          eventsLimit: limit,
-        },
-      });
-    }
+  if (claimed.count === 0) {
+    return;
   }
 
-  await db.organization.update({
-    where: { id: organization.id },
-    data: exceeded
-      ? // Mark the warning as sent too — crossing both thresholds between two
-        // runs must not queue a redundant warning after the exceeded notice.
-        { usageExceededSentAt: new Date(), usageWarningSentAt: new Date() }
-      : { usageWarningSentAt: new Date() },
-  });
+  try {
+    const admins = await db.member.findMany({
+      where: {
+        organizationId: organization.id,
+        role: 'org:admin',
+        user: { deletedAt: null },
+      },
+      include: { user: { select: { email: true, firstName: true } } },
+    });
 
-  logger.info(
-    {
-      organizationId: organization.id,
-      count,
-      limit,
-      kind: exceeded ? 'exceeded' : 'near-limit',
-      recipients: recipients.size,
-    },
-    'Sent usage alert emails'
-  );
+    const billingUrl = `${process.env.DASHBOARD_URL ?? 'https://dashboard.openpanel.dev'}/${organization.id}/billing`;
+    const recipients = new Map(
+      admins
+        .filter((member) => member.user?.email)
+        .map((member) => [
+          member.user!.email,
+          member.user!.firstName ?? undefined,
+        ])
+    );
+
+    for (const [email, firstName] of recipients) {
+      if (exceeded) {
+        await sendEmail('usage-limit-exceeded', {
+          to: email,
+          data: {
+            firstName,
+            organizationName: organization.name,
+            billingUrl,
+            eventsLimit: limit,
+          },
+        });
+      } else {
+        await sendEmail('usage-near-limit', {
+          to: email,
+          data: {
+            firstName,
+            organizationName: organization.name,
+            billingUrl,
+            eventsCount: count,
+            eventsLimit: limit,
+          },
+        });
+      }
+    }
+
+    logger.info(
+      {
+        organizationId: organization.id,
+        count,
+        limit,
+        kind: exceeded ? 'exceeded' : 'near-limit',
+        recipients: recipients.size,
+      },
+      'Sent usage alert emails'
+    );
+  } catch (error) {
+    // Release the claim so the next usage update retries the alert.
+    await db.organization.updateMany({
+      where: { id: organization.id },
+      data: exceeded
+        ? {
+            usageExceededSentAt: null,
+            usageWarningSentAt: organization.usageWarningSentAt,
+          }
+        : { usageWarningSentAt: null },
+    });
+    throw error;
+  }
 }
