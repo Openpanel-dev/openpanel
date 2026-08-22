@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 import { tryCatch } from '@openpanel/common';
-import { db, getOrganizationByProjectIdCached } from '@openpanel/db';
+import { db, getOrganizationByProjectIdCached, Prisma } from '@openpanel/db';
 import {
   sendSlackNotification,
   slackInstaller,
@@ -174,6 +174,34 @@ function parseCancellationReason(
     : null;
 }
 
+type PolarSubscriptionDiscount = PolarSubscriptionData['discount'];
+
+// Compact summary of Polar's embedded discount object so the dashboard can
+// show that a discount is active (save offer or any Polar discount code).
+export function toSubscriptionDiscount(
+  discount: PolarSubscriptionDiscount
+): PrismaJson.IPrismaSubscriptionDiscount | null {
+  if (!discount) {
+    return null;
+  }
+  return {
+    id: discount.id,
+    name: discount.name,
+    type: discount.type === 'fixed' ? 'fixed' : 'percentage',
+    basisPoints: 'basisPoints' in discount ? discount.basisPoints : null,
+    amount: 'amount' in discount ? discount.amount : null,
+    currency: 'currency' in discount ? discount.currency : null,
+    duration:
+      discount.duration === 'repeating'
+        ? 'repeating'
+        : discount.duration === 'forever'
+          ? 'forever'
+          : 'once',
+    durationInMonths:
+      'durationInMonths' in discount ? discount.durationInMonths : null,
+  };
+}
+
 const normalizeLogValue = (value: unknown) =>
   value instanceof Date ? value.toISOString() : (value ?? null);
 
@@ -303,6 +331,8 @@ async function syncSubscriptionToOrg(
     subscriptionCancelComment: data.customerCancellationComment ?? null,
     subscriptionPauseAtPeriodEnd: data.pauseAtPeriodEnd,
     subscriptionResumesAt: data.resumesAt,
+    subscriptionDiscount:
+      toSubscriptionDiscount(data.discount) ?? Prisma.DbNull,
     // Stable tenure anchor: keep the stored value while the subscription id is
     // unchanged; a new subscription (re-subscribe) restarts tenure.
     subscriptionFirstStartedAt:

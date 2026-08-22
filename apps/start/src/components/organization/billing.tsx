@@ -1,4 +1,5 @@
 import type { IServiceOrganization } from '@openpanel/db';
+import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { differenceInDays } from 'date-fns';
 import { useQueryState } from 'nuqs';
@@ -16,7 +17,6 @@ import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, useOnPushModal } from '@/modals';
 import { formatDate } from '@/utils/date';
-import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 
 type Props = {
   organization: IServiceOrganization;
@@ -96,6 +96,36 @@ export default function Billing({ organization }: Props) {
     p.amountType === 'fixed' ? [p] : []
   )[0];
 
+  // Synced from Polar — covers the cancel-flow save offer and any discount
+  // code the customer redeemed. Without this line the card shows the full
+  // list price and an applied discount is invisible outside Polar's portal.
+  const discount = organization.subscriptionDiscount;
+  const renderDiscount = () => {
+    if (!discount) {
+      return null;
+    }
+    const value =
+      discount.type === 'percentage' && discount.basisPoints
+        ? `−${discount.basisPoints / 100}%`
+        : discount.amount
+          ? `−${number.currency(discount.amount / 100)}`
+          : null;
+    if (!value) {
+      return null;
+    }
+    const duration =
+      discount.duration === 'repeating' && discount.durationInMonths
+        ? `for the next ${discount.durationInMonths} months`
+        : discount.duration === 'forever'
+          ? 'on every invoice'
+          : 'on your next invoice';
+    return (
+      <p className="mt-1 text-emerald-600 dark:text-emerald-500">
+        {value} ({discount.name}) {duration}
+      </p>
+    );
+  };
+
   const renderStatus = () => {
     const meta = getSubscriptionStateMeta(organization.subscriptionState, {
       endsAt: organization.subscriptionEndsAt,
@@ -110,7 +140,9 @@ export default function Billing({ organization }: Props) {
     return (
       <p
         className={
-          meta.statusLine.tone === 'destructive' ? 'text-destructive' : undefined
+          meta.statusLine.tone === 'destructive'
+            ? 'text-destructive'
+            : undefined
         }
       >
         {meta.statusLine.text}
@@ -152,6 +184,7 @@ export default function Billing({ organization }: Props) {
             </WidgetHead>
             <WidgetBody>
               {renderStatus()}
+              {renderDiscount()}
               <div className="col mt-4">
                 <div className="mb-2 font-semibold">
                   {number.format(organization.subscriptionPeriodEventsCount)} /{' '}
