@@ -114,6 +114,10 @@ model Organization {
   // subscriptionStartsAt (overwritten with each period start on renewal) this
   // is stable, so it can measure tenure (e.g. the switch-to-yearly prompt).
   subscriptionFirstStartedAt              DateTime?
+  // Usage-alert dedupe markers — cleared when a new billing cycle resets the
+  // usage counter (or the limit is raised), so each cycle can warn once.
+  usageWarningSentAt                      DateTime?
+  usageExceededSentAt                     DateTime?
 
   // When deleteAt > now(), the organization will be deleted
   deleteAt DateTime?
@@ -251,6 +255,12 @@ model Project {
   allowUnsafeRevenueTracking Boolean       @default(false)
   /// [IPrismaProjectFilters]
   filters                    Json          @default("[]")
+  // Data-health notice markers set by the dataHealth cron. `noDataNotifiedAt`:
+  // told the org this project never received events. `dataStoppedNotifiedAt`:
+  // told them the event flow stalled — compared against the last event time, so
+  // a resume followed by a new stall notifies again without clearing.
+  noDataNotifiedAt           DateTime?
+  dataStoppedNotifiedAt      DateTime?
 
   clients           Client[]
   reports           Report[]

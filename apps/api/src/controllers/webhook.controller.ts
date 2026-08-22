@@ -319,6 +319,12 @@ async function syncSubscriptionToOrg(
       organization.subscriptionPeriodEventsLimit < subscriptionPeriodEventsLimit
         ? null
         : undefined,
+    // A raised limit re-arms the usage alerts for the new headroom.
+    ...(typeof subscriptionPeriodEventsLimit === 'number' &&
+    typeof organization.subscriptionPeriodEventsLimit === 'number' &&
+    organization.subscriptionPeriodEventsLimit < subscriptionPeriodEventsLimit
+      ? { usageWarningSentAt: null, usageExceededSentAt: null }
+      : {}),
   };
 
   const changes = diffOrganizationFields(
@@ -446,6 +452,9 @@ export async function polarWebhook(
           data: {
             subscriptionPeriodEventsCount: 0,
             subscriptionPeriodEventsCountExceededAt: null,
+            // New cycle — the usage alerts may fire again.
+            usageWarningSentAt: null,
+            usageExceededSentAt: null,
           },
         });
 

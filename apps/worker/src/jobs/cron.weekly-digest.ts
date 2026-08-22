@@ -6,7 +6,11 @@ import { logger as baseLogger } from '@/utils/logger';
 const logger = baseLogger.child({ job: 'weekly-digest' });
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MIN_EVENTS = 5000;
+// Keep this low: the digest is our main "value without logging in" touchpoint,
+// and the old 5000 gate excluded customers on smaller plans — exactly the ones
+// who benefit most from the reminder. Zero-visitor weeks are still skipped per
+// send, so quiet projects don't get empty emails.
+const MIN_EVENTS = 100;
 const MAX_INSIGHTS = 5;
 
 type DigestData = EmailData<'weekly-digest'>;
