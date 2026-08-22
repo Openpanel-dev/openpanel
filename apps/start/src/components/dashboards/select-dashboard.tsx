@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeftIcon, PlusIcon, SaveIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 export function SelectDashboard({
   value,
@@ -21,6 +21,8 @@ export function SelectDashboard({
   const queryClient = useQueryClient();
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [newDashboardName, setNewDashboardName] = useState('');
+  const [previousValue, setPreviousValue] = useState('');
+  const newDashboardNameId = useId();
 
   const dashboardQuery = useQuery(
     trpc.dashboard.list.queryOptions({
@@ -59,7 +61,9 @@ export function SelectDashboard({
 
   return (
     <div className="space-y-3">
-      <Label>Dashboard</Label>
+      <Label htmlFor={isCreatingNew ? newDashboardNameId : undefined}>
+        Dashboard
+      </Label>
 
       {!isCreatingNew ? (
         <div className="row gap-2 flex-wrap">
@@ -78,6 +82,7 @@ export function SelectDashboard({
             type="button"
             variant="outline"
             onClick={() => {
+              setPreviousValue(value);
               setIsCreatingNew(true);
               onChange('');
             }}
@@ -93,12 +98,15 @@ export function SelectDashboard({
             variant="outline"
             size="icon"
             icon={ArrowLeftIcon}
+            aria-label="Back to dashboard selection"
             onClick={() => {
               setIsCreatingNew(false);
               setNewDashboardName('');
+              onChange(previousValue);
             }}
           />
           <Input
+            id={newDashboardNameId}
             placeholder="Enter dashboard name"
             value={newDashboardName}
             onChange={(e) => setNewDashboardName(e.target.value)}
