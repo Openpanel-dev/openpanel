@@ -72,8 +72,11 @@ async function createEventAndNotify(
   const [event] = await Promise.all([
     createEvent(payload),
     checkNotificationRulesForEvent(payload).catch(() => null),
-    markFirstEvent(projectId, logger).catch(() => null),
   ]);
+  // Only after the event is accepted — recording the first event before a
+  // failed createEvent would leave the activation checklist claiming data
+  // arrived that was never persisted.
+  await markFirstEvent(projectId, logger).catch(() => null);
   return event;
 }
 

@@ -7,8 +7,7 @@ import {
   TABLE_NAMES,
 } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
-import { ClientType, type Prisma, type Project } from '../prisma-client';
-import { db } from '../prisma-client';
+import { db, type Prisma, type Project } from '../prisma-client';
 
 export type IServiceProject = Project;
 export type IServiceProjectWithClients = Prisma.ProjectGetPayload<{
@@ -139,6 +138,9 @@ export const getLastEventPerProject = async (): Promise<Map<string, Date>> => {
       'max(created_at) AS last_event_at',
     ])
     .from(TABLE_NAMES.event_names_mv)
+    // Session rows are worker-generated (the reaper can emit session_end after
+    // tracking already stopped) — only real tracking activity should count.
+    .where('name', 'NOT IN', ['session_start', 'session_end'])
     .groupBy(['project_id'])
     .execute();
   return new Map(
@@ -177,7 +179,9 @@ export async function resolveClientProjectId({
   }
 
   if (!inputProjectId) {
-    throw new Error('projectId is required when using a root (organization-level) client');
+    throw new Error(
+      'projectId is required when using a root (organization-level) client'
+    );
   }
 
   const project = await db.project.findFirst({
@@ -186,7 +190,9 @@ export async function resolveClientProjectId({
   });
 
   if (!project) {
-    throw new Error('Project not found or does not belong to your organization');
+    throw new Error(
+      'Project not found or does not belong to your organization'
+    );
   }
 
   return inputProjectId;

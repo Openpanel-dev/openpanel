@@ -32,13 +32,17 @@ type PolarSubscriptionStatus =
   | 'active'
   | 'past_due'
   | 'canceled'
-  | 'unpaid';
+  | 'unpaid'
+  | 'paused';
 
 const ACTIVE_LIKE_STATUSES: PolarSubscriptionStatus[] = [
   'active',
   'trialing',
   'past_due',
   'unpaid',
+  // Paused subs still exist in Polar and must stay synchronized (pause state,
+  // tenure, discount) so the dashboard can offer resume.
+  'paused',
 ];
 const IGNORED_PRODUCT_IDS = new Set(['ac5fe58b-0a89-4851-ae41-67be34ae696f']);
 const IGNORED_ORGANIZATION_IDS = new Set(['openpanel-dev']);
@@ -85,6 +89,7 @@ function resolveStatus(
     'past_due',
     'canceled',
     'unpaid',
+    'paused',
   ];
 
   return values.includes(status as PolarSubscriptionStatus)
@@ -109,7 +114,9 @@ function calculateSubscriptionEndsAt(subscription: {
   return subscription.canceledAt;
 }
 
-function toComparable(value: Date | string | number | null | undefined) {
+function toComparable(
+  value: Date | string | number | boolean | null | undefined
+) {
   if (value instanceof Date) {
     return value.toISOString();
   }
@@ -314,6 +321,8 @@ async function main() {
         organization.subscriptionId === subscription.id
           ? (organization.subscriptionFirstStartedAt ?? subscription.createdAt)
           : subscription.createdAt,
+      subscriptionPauseAtPeriodEnd: subscription.pauseAtPeriodEnd,
+      subscriptionResumesAt: subscription.resumesAt,
       subscriptionDiscount:
         toSubscriptionDiscount(subscription.discount) ?? Prisma.DbNull,
       subscriptionPeriodEventsLimit:
@@ -341,6 +350,8 @@ async function main() {
       'subscriptionCreatedByUserId',
       'subscriptionInterval',
       'subscriptionFirstStartedAt',
+      'subscriptionPauseAtPeriodEnd',
+      'subscriptionResumesAt',
       'subscriptionPeriodEventsLimit',
     ] as const;
 

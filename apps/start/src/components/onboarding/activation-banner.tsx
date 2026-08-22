@@ -23,7 +23,10 @@ const readDismissed = (projectId: string) => {
   try {
     return localStorage.getItem(dismissKey(projectId)) === '1';
   } catch {
-    return true;
+    // Storage unavailable: show the checklist — new users in storage-blocked
+    // browsers should still get onboarding help, at the cost of the dismissal
+    // only lasting the session.
+    return false;
   }
 };
 

@@ -132,15 +132,24 @@ export async function dataHealthCronJob() {
 
       if (alert.noData.length > 0) {
         for (const [to, firstName] of recipients) {
-          await sendEmail('tracking-no-data', {
-            to,
-            data: {
-              firstName,
-              projectNames: alert.noData.map((p) => p.name),
-              dashboardUrl,
-            },
-          });
-          emailsSent++;
+          // Per-recipient guard: one bad address must not block the marker
+          // update below — that would re-email everyone tomorrow.
+          try {
+            await sendEmail('tracking-no-data', {
+              to,
+              data: {
+                firstName,
+                projectNames: alert.noData.map((p) => p.name),
+                dashboardUrl,
+              },
+            });
+            emailsSent++;
+          } catch (err) {
+            logger.error(
+              { err, organizationId: alert.organizationId, recipient: to },
+              'Failed to send no-data alert to recipient'
+            );
+          }
         }
         await db.project.updateMany({
           where: { id: { in: alert.noData.map((p) => p.id) } },
@@ -153,19 +162,26 @@ export async function dataHealthCronJob() {
           .map((p) => p.lastEventAt)
           .sort((a, b) => b.getTime() - a.getTime())[0];
         for (const [to, firstName] of recipients) {
-          await sendEmail('tracking-data-stopped', {
-            to,
-            data: {
-              firstName,
-              projectNames: alert.stalled.map((p) => p.name),
-              lastEventDate: newestLastEvent?.toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-              }),
-              dashboardUrl,
-            },
-          });
-          emailsSent++;
+          try {
+            await sendEmail('tracking-data-stopped', {
+              to,
+              data: {
+                firstName,
+                projectNames: alert.stalled.map((p) => p.name),
+                lastEventDate: newestLastEvent?.toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                }),
+                dashboardUrl,
+              },
+            });
+            emailsSent++;
+          } catch (err) {
+            logger.error(
+              { err, organizationId: alert.organizationId, recipient: to },
+              'Failed to send data-stopped alert to recipient'
+            );
+          }
         }
         await db.project.updateMany({
           where: { id: { in: alert.stalled.map((p) => p.id) } },

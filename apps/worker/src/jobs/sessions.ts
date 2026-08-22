@@ -1,17 +1,15 @@
-import type { Job } from 'bullmq';
-
-import type { SessionsQueuePayload } from '@openpanel/queue';
-
-import { logger } from '@/utils/logger';
+import type { Organization } from '@openpanel/db';
 import {
   db,
   getOrganizationBillingEventsCount,
   getProjectEventsCount,
 } from '@openpanel/db';
-import type { Organization } from '@openpanel/db';
 import { sendEmail } from '@openpanel/email';
+import type { SessionsQueuePayload } from '@openpanel/queue';
 import { cacheable } from '@openpanel/redis';
+import type { Job } from 'bullmq';
 import { createSessionEnd } from './events.create-session-end';
+import { logger } from '@/utils/logger';
 
 const INT4_MAX = 2_147_483_647;
 const USAGE_WARNING_THRESHOLD = 0.8;
@@ -27,7 +25,7 @@ export async function sessionsJob(job: Job<SessionsQueuePayload>) {
 }
 
 const updateEventsCount = cacheable(async function updateEventsCount(
-  projectId: string,
+  projectId: string
 ) {
   const organization = await db.organization.findFirst({
     where: {
@@ -77,7 +75,7 @@ const updateEventsCount = cacheable(async function updateEventsCount(
       data: {
         subscriptionPeriodEventsCount: Math.min(
           organizationEventsCount,
-          INT4_MAX,
+          INT4_MAX
         ),
         subscriptionPeriodEventsCountExceededAt: isSelfHosted
           ? null
@@ -167,28 +165,39 @@ async function sendUsageAlerts(organization: Organization, count: number) {
         ])
     );
 
+    let failedRecipients = 0;
     for (const [email, firstName] of recipients) {
-      if (exceeded) {
-        await sendEmail('usage-limit-exceeded', {
-          to: email,
-          data: {
-            firstName,
-            organizationName: organization.name,
-            billingUrl,
-            eventsLimit: limit,
-          },
-        });
-      } else {
-        await sendEmail('usage-near-limit', {
-          to: email,
-          data: {
-            firstName,
-            organizationName: organization.name,
-            billingUrl,
-            eventsCount: count,
-            eventsLimit: limit,
-          },
-        });
+      // Per-recipient guard: one bad address must not abort the loop or roll
+      // back the claim — that would re-email the recipients that succeeded.
+      try {
+        if (exceeded) {
+          await sendEmail('usage-limit-exceeded', {
+            to: email,
+            data: {
+              firstName,
+              organizationName: organization.name,
+              billingUrl,
+              eventsLimit: limit,
+            },
+          });
+        } else {
+          await sendEmail('usage-near-limit', {
+            to: email,
+            data: {
+              firstName,
+              organizationName: organization.name,
+              billingUrl,
+              eventsCount: count,
+              eventsLimit: limit,
+            },
+          });
+        }
+      } catch (error) {
+        failedRecipients++;
+        logger.error(
+          { err: error, organizationId: organization.id, recipient: email },
+          'Failed to send usage alert to recipient'
+        );
       }
     }
 
@@ -199,6 +208,7 @@ async function sendUsageAlerts(organization: Organization, count: number) {
         limit,
         kind: exceeded ? 'exceeded' : 'near-limit',
         recipients: recipients.size,
+        failedRecipients,
       },
       'Sent usage alert emails'
     );
