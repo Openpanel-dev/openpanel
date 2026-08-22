@@ -276,7 +276,7 @@ export default function CancelSubscriptionFlow({
           }}
           variant="outline"
         >
-          No thanks, cancel my subscription
+          Cancel subscription
         </Button>
         <Button
           loading={discountMutation.isPending}
