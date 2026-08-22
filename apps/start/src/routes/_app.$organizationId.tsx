@@ -122,6 +122,7 @@ function Component() {
   const stateMeta = getSubscriptionStateMeta(organization.subscriptionState, {
     endsAt: organization.subscriptionEndsAt,
     canceledAt: organization.subscriptionCanceledAt,
+    resumesAt: organization.subscriptionResumesAt,
   });
 
   // Project routes show the full-screen BillingPrompt for blocking states;

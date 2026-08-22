@@ -101,6 +101,15 @@ model Organization {
   subscriptionPeriodEventsCountExceededAt DateTime?
   subscriptionPeriodEventsLimit           Int       @default(0)
   subscriptionInterval                    String?
+  /// [IPrismaCancellationReason]
+  subscriptionCancelReason                String?
+  subscriptionCancelComment               String?
+  // When the one-time save-offer discount was applied; guards re-offering it.
+  subscriptionSaveDiscountAppliedAt       DateTime?
+  // Pause-at-period-end mirrors Polar: status stays `active` with this flag set
+  // until the period ends, then flips to `paused`.
+  subscriptionPauseAtPeriodEnd            Boolean   @default(false)
+  subscriptionResumesAt                   DateTime?
 
   // When deleteAt > now(), the organization will be deleted
   deleteAt DateTime?

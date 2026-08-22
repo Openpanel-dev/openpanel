@@ -143,9 +143,35 @@ const TRACKED_SUBSCRIPTION_FIELDS = [
   'subscriptionStartsAt',
   'subscriptionEndsAt',
   'subscriptionCanceledAt',
+  'subscriptionCancelReason',
   'subscriptionInterval',
   'subscriptionPeriodEventsLimit',
+  'subscriptionPauseAtPeriodEnd',
+  'subscriptionResumesAt',
 ] as const;
+
+const CANCELLATION_REASONS = [
+  'too_expensive',
+  'missing_features',
+  'switched_service',
+  'unused',
+  'customer_service',
+  'low_quality',
+  'too_complex',
+  'other',
+] as const;
+
+type CancellationReason = (typeof CANCELLATION_REASONS)[number];
+
+// Polar types the reason as an open enum (unknown strings can appear); only
+// store values our own union knows about.
+function parseCancellationReason(
+  reason: string | null | undefined
+): CancellationReason | null {
+  return CANCELLATION_REASONS.includes(reason as CancellationReason)
+    ? (reason as CancellationReason)
+    : null;
+}
 
 const normalizeLogValue = (value: unknown) =>
   value instanceof Date ? value.toISOString() : (value ?? null);
@@ -267,6 +293,15 @@ async function syncSubscriptionToOrg(
         : data.canceledAt
       : data.currentPeriodEnd,
     subscriptionInterval: data.recurringInterval,
+    // Cancellation feedback + pause state mirror Polar so portal-driven cancels
+    // and pauses are captured too (our in-app flows also set them via the API,
+    // which just echoes back through here).
+    subscriptionCancelReason: parseCancellationReason(
+      data.customerCancellationReason
+    ),
+    subscriptionCancelComment: data.customerCancellationComment ?? null,
+    subscriptionPauseAtPeriodEnd: data.pauseAtPeriodEnd,
+    subscriptionResumesAt: data.resumesAt,
     subscriptionPeriodEventsLimit,
     subscriptionPeriodEventsCountExceededAt:
       typeof subscriptionPeriodEventsLimit === 'number' &&
@@ -419,6 +454,9 @@ export async function polarWebhook(
       // All subscription lifecycle events carry the same Subscription object;
       // sync them through a single path (new subs, cancellations, revokes,
       // reactivations, plan changes, payment-state changes).
+      // Pause/resume transitions arrive via `subscription.updated` (the SDK's
+      // webhook union has no dedicated paused/reactivated payloads yet) and are
+      // reflected in `status` / `pauseAtPeriodEnd` / `resumesAt` below.
       case 'subscription.created':
       case 'subscription.active':
       case 'subscription.updated':

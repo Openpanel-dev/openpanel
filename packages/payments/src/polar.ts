@@ -76,12 +76,30 @@ export async function createCheckout({
   });
 }
 
-export async function cancelSubscription(subscriptionId: string) {
+export type ICancellationReason =
+  | 'too_expensive'
+  | 'missing_features'
+  | 'switched_service'
+  | 'unused'
+  | 'customer_service'
+  | 'low_quality'
+  | 'too_complex'
+  | 'other';
+
+export async function cancelSubscription(
+  subscriptionId: string,
+  cancellation?: {
+    reason?: ICancellationReason;
+    comment?: string;
+  }
+) {
   try {
     return await polar.subscriptions.update({
       id: subscriptionId,
       subscriptionUpdate: {
         cancelAtPeriodEnd: true,
+        customerCancellationReason: cancellation?.reason ?? null,
+        customerCancellationComment: cancellation?.comment ?? null,
       },
     });
   } catch (error) {
@@ -94,6 +112,61 @@ export async function cancelSubscription(subscriptionId: string) {
 
     throw error;
   }
+}
+
+/**
+ * Pause an active subscription at the end of the current period. Billing stops
+ * but the subscription (and its payment method) is kept, so the customer can
+ * come back without a new checkout. `resumesAt` must be after the current
+ * period end; omitted means paused until manually resumed.
+ */
+export function pauseSubscription(subscriptionId: string, resumesAt?: Date) {
+  return polar.subscriptions.update({
+    id: subscriptionId,
+    subscriptionUpdate: {
+      pauseAtPeriodEnd: true,
+      resumesAt: resumesAt ?? null,
+    },
+  });
+}
+
+/** Cancel a scheduled pause while the subscription is still active. */
+export function unpauseSubscription(subscriptionId: string) {
+  return polar.subscriptions.update({
+    id: subscriptionId,
+    subscriptionUpdate: {
+      pauseAtPeriodEnd: false,
+    },
+  });
+}
+
+/**
+ * Resume an already-paused subscription immediately — starts a new billing
+ * period and charges the customer.
+ */
+export function resumeSubscription(subscriptionId: string) {
+  return polar.subscriptions.update({
+    id: subscriptionId,
+    subscriptionUpdate: {
+      resume: true,
+    },
+  });
+}
+
+/**
+ * Attach a discount to an active subscription. Polar applies it starting with
+ * the next billing cycle.
+ */
+export function applySubscriptionDiscount(
+  subscriptionId: string,
+  discountId: string
+) {
+  return polar.subscriptions.update({
+    id: subscriptionId,
+    subscriptionUpdate: {
+      discountId,
+    },
+  });
 }
 
 export function reactivateSubscription(subscriptionId: string) {

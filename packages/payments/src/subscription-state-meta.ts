@@ -22,7 +22,7 @@ export type SubscriptionStateMeta = {
   /** Inline status line on the billing page, or null. */
   statusLine: { text: string; tone: Tone } | null;
   /** BillingPrompt copy key when this state blocks the dashboard. */
-  blockType: 'expired' | 'trialEnded' | 'unpaid' | null;
+  blockType: 'expired' | 'trialEnded' | 'unpaid' | 'paused' | null;
 };
 
 const fmt = (date: Date | null | undefined) =>
@@ -35,10 +35,15 @@ const fmt = (date: Date | null | undefined) =>
  */
 export function getSubscriptionStateMeta(
   state: SubscriptionState,
-  opts: { endsAt?: Date | null; canceledAt?: Date | null }
+  opts: {
+    endsAt?: Date | null;
+    canceledAt?: Date | null;
+    resumesAt?: Date | null;
+  }
 ): SubscriptionStateMeta {
   const endsAt = fmt(opts.endsAt);
   const canceledAt = fmt(opts.canceledAt);
+  const resumesAt = fmt(opts.resumesAt);
 
   switch (state) {
     case 'self_hosted':
@@ -121,6 +126,49 @@ export function getSubscriptionStateMeta(
           tone: 'destructive',
         },
         blockType: 'expired',
+      };
+
+    case 'pausing':
+      return {
+        badge: { label: 'Pausing', variant: 'warning' },
+        banner: {
+          title: 'Subscription will be paused',
+          description: endsAt
+            ? `Your subscription pauses on ${endsAt}. We keep collecting your events while it's paused${resumesAt ? `, and billing resumes on ${resumesAt}` : ''}.`
+            : `Your subscription is scheduled to pause at the end of the current period. We keep collecting your events while it's paused.`,
+          cta: 'Keep subscription',
+          tone: 'warning',
+        },
+        statusLine: endsAt
+          ? {
+              text: `Your subscription will be paused on ${endsAt}`,
+              tone: 'warning',
+            }
+          : {
+              text: 'Your subscription will be paused at the end of the current period',
+              tone: 'warning',
+            },
+        blockType: null,
+      };
+
+    case 'paused':
+      return {
+        badge: { label: 'Paused', variant: 'warning' },
+        banner: {
+          title: 'Subscription paused',
+          description: resumesAt
+            ? `Your subscription is paused and resumes on ${resumesAt}. Your events are still being collected.`
+            : 'Your subscription is paused. Your events are still being collected — resume any time to pick up where you left off.',
+          cta: 'Resume subscription',
+          tone: 'warning',
+        },
+        statusLine: {
+          text: resumesAt
+            ? `Your subscription is paused until ${resumesAt}`
+            : 'Your subscription is paused',
+          tone: 'warning',
+        },
+        blockType: 'paused',
       };
 
     case 'past_due':

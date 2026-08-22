@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
+import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { op } from '@/utils/op';
 
@@ -87,30 +88,6 @@ export default function BillingPlanPicker({
     }),
   );
 
-  const cancelSubscription = useMutation(
-    trpc.subscription.cancelSubscription.mutationOptions({
-      onSuccess() {
-        queryClient.invalidateQueries(
-          trpc.organization.get.queryOptions({
-            organizationId: organization.id,
-          }),
-        );
-        queryClient.invalidateQueries(
-          trpc.subscription.getCurrent.queryOptions({
-            organizationId: organization.id,
-          }),
-        );
-        toast.success('Subscription canceled', {
-          description: 'It might take a few seconds to update',
-        });
-        onComplete?.();
-      },
-      onError(error) {
-        toast.error(error.message);
-      },
-    }),
-  );
-
   const startCheckout = (product: IPolarProduct) => {
     setPendingProductId(product.id);
     op.track('subscription_checkout_started', {
@@ -152,15 +129,10 @@ export default function BillingPlanPicker({
   };
 
   const handleCancelSubscription = () => {
-    if (!selectedProduct) return;
-    op.track('subscription_canceled', {
-      organizationId: organization.id,
-      limit: selectedProduct.metadata.eventsLimit,
-      price: getPrice(selectedProduct),
-    });
-    cancelSubscription.mutate({
+    op.track('cancel_flow_opened', {
       organizationId: organization.id,
     });
+    pushModal('CancelSubscription', { organization });
   };
 
   const renderAction = () => {
@@ -294,7 +266,9 @@ export default function BillingPlanPicker({
       <div className="col divide-y divide-border border rounded-lg overflow-y-auto min-h-0">
         {products
           .filter((product) =>
-            product.prices.some((p) => p.amountType !== 'free'),
+            // `free` no longer exists in the SDK's amountType union, but
+            // retired free-plan products can still come back from Polar's API.
+            product.prices.some((p) => (p.amountType as string) !== 'free'),
           )
           .filter((product) => product.metadata.eventsLimit)
           .filter((product) => product.recurringInterval === recurringInterval)

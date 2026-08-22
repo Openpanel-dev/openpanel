@@ -40,6 +40,17 @@ declare global {
       | 'active'
       | 'past_due'
       | 'canceled'
-      | 'unpaid';
+      | 'unpaid'
+      | 'paused';
+    // Mirrors Polar's CustomerCancellationReason enum.
+    type IPrismaCancellationReason =
+      | 'too_expensive'
+      | 'missing_features'
+      | 'switched_service'
+      | 'unused'
+      | 'customer_service'
+      | 'low_quality'
+      | 'too_complex'
+      | 'other';
   }
 }

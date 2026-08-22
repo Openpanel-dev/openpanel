@@ -53,6 +53,25 @@ export default function Billing({ organization }: Props) {
     })
   );
 
+  const resumeMutation = useMutation(
+    trpc.subscription.resumeSubscription.mutationOptions({
+      onSuccess() {
+        queryClient.invalidateQueries(trpc.organization.pathFilter());
+        queryClient.invalidateQueries(trpc.subscription.pathFilter());
+        toast.success('Subscription resumed', {
+          description: 'It might take a few seconds to update',
+        });
+      },
+      onError(error) {
+        toast.error(error.message);
+      },
+    })
+  );
+
+  const isPauseState =
+    organization.subscriptionState === 'pausing' ||
+    organization.subscriptionState === 'paused';
+
   useWS(`/live/organization/${organization.id}`, () => {
     queryClient.invalidateQueries(trpc.organization.pathFilter());
     queryClient.invalidateQueries(trpc.subscription.pathFilter());
@@ -65,7 +84,11 @@ export default function Billing({ organization }: Props) {
   const products = useMemo(() => {
     return (productsQuery.data || [])
       .filter((product) => product.recurringInterval === recurringInterval)
-      .filter((product) => product.prices.some((p) => p.amountType !== 'free'));
+      .filter((product) =>
+        // `free` no longer exists in the SDK's amountType union, but retired
+        // free-plan products can still come back from Polar's API.
+        product.prices.some((p) => (p.amountType as string) !== 'free')
+      );
   }, [productsQuery.data, recurringInterval]);
 
   const currentProduct = currentProductQuery.data ?? null;
@@ -77,6 +100,7 @@ export default function Billing({ organization }: Props) {
     const meta = getSubscriptionStateMeta(organization.subscriptionState, {
       endsAt: organization.subscriptionEndsAt,
       canceledAt: organization.subscriptionCanceledAt,
+      resumesAt: organization.subscriptionResumesAt,
     });
 
     if (!meta.statusLine) {
@@ -173,19 +197,37 @@ export default function Billing({ organization }: Props) {
                     </svg>
                     Customer portal
                   </Button>
-                  <Button
-                    onClick={() =>
-                      pushModal('SelectBillingPlan', {
-                        organization,
-                        currentProduct,
-                      })
-                    }
-                    size="sm"
-                  >
-                    {organization.isWillBeCanceled
-                      ? 'Reactivate subscription'
-                      : 'Change subscription'}
-                  </Button>
+                  <div className="row gap-2">
+                    {isPauseState && (
+                      <Button
+                        loading={resumeMutation.isPending}
+                        onClick={() =>
+                          resumeMutation.mutate({
+                            organizationId: organization.id,
+                          })
+                        }
+                        size="sm"
+                      >
+                        {organization.subscriptionState === 'paused'
+                          ? 'Resume subscription'
+                          : 'Keep subscription'}
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() =>
+                        pushModal('SelectBillingPlan', {
+                          organization,
+                          currentProduct,
+                        })
+                      }
+                      size="sm"
+                      variant={isPauseState ? 'outline' : 'default'}
+                    >
+                      {organization.isWillBeCanceled
+                        ? 'Reactivate subscription'
+                        : 'Change subscription'}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </WidgetBody>

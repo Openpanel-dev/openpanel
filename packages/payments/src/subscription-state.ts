@@ -14,6 +14,8 @@ export type SubscriptionState =
   | 'active' // paid, renewing
   | 'canceling' // active but scheduled to cancel at period end
   | 'canceled' // fully canceled / revoked (access ended)
+  | 'pausing' // active but scheduled to pause at period end
+  | 'paused' // paused — billing stopped, data still collected
   | 'past_due' // payment failed, in dunning (still has access)
   | 'unpaid' // payment failed terminally
   | 'incomplete' // initial checkout not completed
@@ -23,6 +25,7 @@ export interface SubscriptionStateInput {
   subscriptionStatus: string | null;
   subscriptionCanceledAt: Date | null;
   subscriptionEndsAt: Date | null;
+  subscriptionPauseAtPeriodEnd: boolean;
 }
 
 export function getSubscriptionState(
@@ -33,7 +36,12 @@ export function getSubscriptionState(
   }
 
   const now = new Date();
-  const { subscriptionStatus, subscriptionCanceledAt, subscriptionEndsAt } = org;
+  const {
+    subscriptionStatus,
+    subscriptionCanceledAt,
+    subscriptionEndsAt,
+    subscriptionPauseAtPeriodEnd,
+  } = org;
   const endsInFuture = Boolean(subscriptionEndsAt && subscriptionEndsAt > now);
 
   switch (subscriptionStatus) {
@@ -43,12 +51,21 @@ export function getSubscriptionState(
     case 'active':
       // Cancel-at-period-end keeps the Polar status as `active` while
       // `canceledAt` is set; the subscription stays usable until it expires.
+      // Cancellation wins over a scheduled pause — Polar clears the pause flag
+      // on cancel, but a stale combination must not hide that it's ending.
       if (subscriptionCanceledAt) {
         return 'canceling';
+      }
+      // Pause-at-period-end works the same way: status stays `active` with the
+      // flag set until the period ends, then Polar flips it to `paused`.
+      if (subscriptionPauseAtPeriodEnd) {
+        return 'pausing';
       }
       return subscriptionEndsAt && subscriptionEndsAt <= now
         ? 'expired'
         : 'active';
+    case 'paused':
+      return 'paused';
     case 'past_due':
       return 'past_due';
     case 'unpaid':
@@ -75,6 +92,9 @@ export function subscriptionBlocksDashboard(state: SubscriptionState): boolean {
     case 'expired':
     case 'unpaid':
     case 'canceled':
+    // Paused blocks the dashboard too (billing has stopped), but with its own
+    // prompt: data is still collected and one click resumes the subscription.
+    case 'paused':
       return true;
     default:
       return false;
