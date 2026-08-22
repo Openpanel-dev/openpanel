@@ -111,10 +111,15 @@ export function SelectDashboard({
             value={newDashboardName}
             onChange={(e) => setNewDashboardName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleCreateDashboard();
+              if (e.key !== 'Enter') {
+                return;
               }
+              // Enter confirms an IME candidate, it should not submit.
+              if (e.nativeEvent.isComposing || e.keyCode === 229) {
+                return;
+              }
+              e.preventDefault();
+              handleCreateDashboard();
             }}
           />
           <Button
