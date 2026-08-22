@@ -10,19 +10,38 @@ export const isRealClientSecret = (
   secret: string | null | undefined
 ): secret is string => !!secret && secret !== DEFAULT_SECRET;
 
+// Storage can throw (blocked cookies/site data, some private modes); a missing
+// secret must degrade to the placeholder flow, never crash the page.
+const safeRead = () => {
+  try {
+    return sessionStorage.getItem(ONBOARDING_SECRET_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const safeWrite = (value: string) => {
+  try {
+    sessionStorage.setItem(ONBOARDING_SECRET_KEY, value);
+  } catch {
+    // Unavailable — the connect page falls back to its secret-already-shown
+    // notice.
+  }
+};
+
 export function useClientSecret() {
   const [clientSecret, setClientSecret] = useState<string>(DEFAULT_SECRET);
 
   useEffect(() => {
     if (clientSecret && DEFAULT_SECRET !== clientSecret) {
-      sessionStorage.setItem(ONBOARDING_SECRET_KEY, clientSecret);
+      safeWrite(clientSecret);
     }
   }, [clientSecret]);
 
   useEffect(() => {
-    const clientSecret = sessionStorage.getItem(ONBOARDING_SECRET_KEY);
-    if (clientSecret) {
-      setClientSecret(clientSecret);
+    const stored = safeRead();
+    if (stored) {
+      setClientSecret(stored);
     }
   }, []);
 

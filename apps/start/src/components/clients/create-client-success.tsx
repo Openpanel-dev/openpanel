@@ -2,19 +2,21 @@ import { CopyIcon, DownloadIcon, RocketIcon } from 'lucide-react';
 import CopyInput from '../forms/copy-input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { isRealClientSecret } from '@/hooks/use-client-secret';
 import { clipboard } from '@/utils/clipboard';
 
 type Props = { id: string; secret: string; type?: 'read' | 'write' | 'root' };
 
 export function CreateClientSuccess({ id, secret, type }: Props) {
-  // Only derive the MCP token from a real secret — deriving it from an empty
-  // value would render a valid-looking but broken token.
-  const mcpToken = secret ? btoa(`${id}:${secret}`) : null;
+  // Only derive credentials from a real secret — the '[CLIENT_SECRET]'
+  // placeholder is truthy and would render a valid-looking but broken token.
+  const hasSecret = isRealClientSecret(secret);
+  const mcpToken = hasSecret ? btoa(`${id}:${secret}`) : null;
   const showMcpToken = !!mcpToken && (type === 'root' || type === 'read');
 
   const credentials = [
     `CLIENT_ID=${id}`,
-    secret && `CLIENT_SECRET=${secret}`,
+    hasSecret && `CLIENT_SECRET=${secret}`,
     showMcpToken && `MCP_TOKEN=${mcpToken}`,
   ]
     .filter(Boolean)
@@ -32,7 +34,7 @@ export function CreateClientSuccess({ id, secret, type }: Props) {
   return (
     <div className="grid min-w-0 gap-4 [&>*]:min-w-0">
       <CopyInput label="Client ID" value={id} />
-      {secret && (
+      {hasSecret && (
         <div className="w-full min-w-0">
           <CopyInput label="Secret" value={secret} />
           <p className="mt-1 text-muted-foreground text-sm">

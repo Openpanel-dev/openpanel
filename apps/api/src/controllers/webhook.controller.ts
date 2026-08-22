@@ -397,7 +397,10 @@ export async function polarWebhook(
   }>,
   reply: FastifyReply
 ) {
-  request.log.info({ body: request.body }, 'polar webhook received');
+  // Don't log the raw body: it can carry customer free text (e.g. the
+  // cancellation comment) that the logger's redaction patterns don't cover.
+  // `eventCtx` is logged right after validation instead.
+  request.log.info('polar webhook received');
 
   const validation = await tryCatch(async () =>
     validatePolarEvent(

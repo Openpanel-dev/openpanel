@@ -57,12 +57,19 @@ async function main() {
   });
 
   // The list response is a page iterator — walk every page so an existing
-  // discount beyond the first page doesn't get duplicated.
+  // discount beyond the first page doesn't get duplicated. Scoped to the same
+  // organization we'd create in, so a same-named discount from another org
+  // can't be picked up.
   let match: { id: string; name: string } | undefined;
-  const pages = await polar.discounts.list({ limit: 100 });
+  const pages = await polar.discounts.list({
+    limit: 100,
+    organizationId: input.polarApiKey.includes('_oat_')
+      ? undefined
+      : input.polarOrganizationId,
+  });
   for await (const page of pages) {
     match = page.result.items.find(
-      (discount) => discount.name === DISCOUNT_NAME,
+      (discount) => discount.name === DISCOUNT_NAME
     );
     if (match) {
       break;

@@ -17,16 +17,15 @@ import {
   resumeSubscription,
   unpauseSubscription,
 } from '@openpanel/payments';
+import { getCache } from '@openpanel/redis';
 import {
   zCancelSubscription,
   zCheckout,
   zPauseSubscription,
 } from '@openpanel/validation';
-
-import { getCache } from '@openpanel/redis';
 import { addMonths, subDays } from 'date-fns';
 import { z } from 'zod';
-import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
+import { TRPCBadRequestError, TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 async function requireAdmin(userId: string, organizationId: string) {
@@ -75,7 +74,7 @@ export const subscriptionRouter = createTRPCRouter({
           organization.subscriptionPauseAtPeriodEnd)
       ) {
         throw new TRPCBadRequestError(
-          'Your subscription is paused or scheduled to pause — resume it before changing plans',
+          'Your subscription is paused or scheduled to pause — resume it before changing plans'
         );
       }
 
@@ -145,7 +144,7 @@ export const subscriptionRouter = createTRPCRouter({
     .input(
       z.object({
         organizationId: z.string(),
-      }),
+      })
     )
     .query(async ({ input }) => {
       const organization = await db.organization.findUniqueOrThrow({
@@ -188,13 +187,19 @@ export const subscriptionRouter = createTRPCRouter({
         comment: input.comment,
       });
 
-      // The webhook echoes these back, but persist immediately so the reason
-      // is never lost to a missed/delayed webhook delivery.
+      // The webhook echoes these back, but persist immediately so a missed or
+      // delayed delivery can't lose the reason — or leave `canceledAt` unset,
+      // which would make the plan-change path skip reactivation and silently
+      // keep the cancellation scheduled.
       await db.organization.update({
         where: { id: input.organizationId },
         data: {
           subscriptionCancelReason: input.reason,
           subscriptionCancelComment: input.comment ?? null,
+          subscriptionCanceledAt: res.canceledAt,
+          subscriptionEndsAt: res.cancelAtPeriodEnd
+            ? res.currentPeriodEnd
+            : (res.canceledAt ?? organization.subscriptionEndsAt),
         },
       });
 
@@ -214,7 +219,7 @@ export const subscriptionRouter = createTRPCRouter({
       // hit Polar with a nonsensical update.
       if (organization.subscriptionState !== 'active') {
         throw new TRPCBadRequestError(
-          'Only an active subscription can be paused',
+          'Only an active subscription can be paused'
         );
       }
       if (!organization.subscriptionEndsAt) {
@@ -224,7 +229,7 @@ export const subscriptionRouter = createTRPCRouter({
       // Polar pauses at period end; the resume date counts from there.
       const resumesAt = addMonths(
         organization.subscriptionEndsAt,
-        input.months,
+        input.months
       );
 
       await pauseSubscription(organization.subscriptionId, resumesAt);
@@ -298,14 +303,14 @@ export const subscriptionRouter = createTRPCRouter({
       });
       if (claimed.count === 0) {
         throw new TRPCBadRequestError(
-          'The save discount has already been used',
+          'The save discount has already been used'
         );
       }
 
       try {
         await applySubscriptionDiscount(
           organization.subscriptionId,
-          discountId,
+          discountId
         );
       } catch (error) {
         await db.organization.updateMany({
