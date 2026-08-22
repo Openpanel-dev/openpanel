@@ -53,12 +53,15 @@ export function SelectDashboard({
   );
 
   const handleCreateDashboard = () => {
-    if (newDashboardName.trim()) {
-      dashboardMutation.mutate({
-        name: newDashboardName.trim(),
-        projectId,
-      });
+    const name = newDashboardName.trim();
+    if (!name || dashboardMutation.isPending) {
+      return;
     }
+
+    dashboardMutation.mutate({
+      name,
+      projectId,
+    });
   };
 
   const dashboards = (dashboardQuery.data ?? []).filter(
