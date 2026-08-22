@@ -277,6 +277,10 @@ async function main() {
       subscriptionCreatedByUserId:
         metadataUserId ?? organization.subscriptionCreatedByUserId,
       subscriptionInterval: subscription.recurringInterval,
+      subscriptionFirstStartedAt:
+        organization.subscriptionId === subscription.id
+          ? (organization.subscriptionFirstStartedAt ?? subscription.createdAt)
+          : subscription.createdAt,
       subscriptionPeriodEventsLimit:
         subscriptionPeriodEventsLimit ?? organization.subscriptionPeriodEventsLimit,
       subscriptionPeriodEventsCountExceededAt:
@@ -299,6 +303,7 @@ async function main() {
       'subscriptionEndsAt',
       'subscriptionCreatedByUserId',
       'subscriptionInterval',
+      'subscriptionFirstStartedAt',
       'subscriptionPeriodEventsLimit',
     ] as const;
 

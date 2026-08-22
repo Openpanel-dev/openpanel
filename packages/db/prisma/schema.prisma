@@ -110,6 +110,10 @@ model Organization {
   // until the period ends, then flips to `paused`.
   subscriptionPauseAtPeriodEnd            Boolean   @default(false)
   subscriptionResumesAt                   DateTime?
+  // When the current Polar subscription was first created. Unlike
+  // subscriptionStartsAt (overwritten with each period start on renewal) this
+  // is stable, so it can measure tenure (e.g. the switch-to-yearly prompt).
+  subscriptionFirstStartedAt              DateTime?
 
   // When deleteAt > now(), the organization will be deleted
   deleteAt DateTime?

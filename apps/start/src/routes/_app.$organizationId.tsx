@@ -2,6 +2,7 @@ import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import FeedbackPrompt from '@/components/organization/feedback-prompt';
 import SupporterPrompt from '@/components/organization/supporter-prompt';
+import YearlySwitchPrompt from '@/components/organization/yearly-switch-prompt';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
@@ -138,8 +139,14 @@ function Component() {
     isProjectRoute &&
     subscriptionBlocksDashboard(organization.subscriptionState);
 
+  const location = useLocation();
+  const isBillingPage = /\/.+\/billing/.test(location.pathname);
+
   return (
     <>
+      {!stateMeta.banner && !isBillingPage && (
+        <YearlySwitchPrompt organization={organization} />
+      )}
       {stateMeta.banner && !hideBannerForPrompt && (
         <Alert
           title={stateMeta.banner.title}

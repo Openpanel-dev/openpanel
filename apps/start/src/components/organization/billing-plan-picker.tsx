@@ -20,6 +20,7 @@ interface Props {
   organization: IServiceOrganization;
   currentProduct: IPolarProduct | null;
   onComplete?: () => void;
+  defaultInterval?: 'year' | 'month';
 }
 
 const getPrice = (product: IPolarProduct) => {
@@ -32,6 +33,7 @@ export default function BillingPlanPicker({
   organization,
   currentProduct,
   onComplete,
+  defaultInterval,
 }: Props) {
   const number = useNumber();
   const trpc = useTRPC();
@@ -41,8 +43,11 @@ export default function BillingPlanPicker({
       organizationId: organization.id,
     }),
   );
+  // Yearly is the default for new subscribers — it churns far less and saves
+  // them 2 months. Existing subscribers land on their current interval.
   const [recurringInterval, setRecurringInterval] = useState<'year' | 'month'>(
-    (organization.subscriptionInterval as 'year' | 'month') || 'month',
+    defaultInterval ??
+      ((organization.subscriptionInterval as 'year' | 'month') || 'year'),
   );
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     organization.subscriptionProductId || null,
@@ -243,7 +248,13 @@ export default function BillingPlanPicker({
         <div className="row items-center justify-between gap-2 -mb-2">
           <div className="font-medium">
             {recurringInterval === 'year' ? (
-              'Switch to monthly'
+              <>
+                Yearly billing —{' '}
+                <span className="text-emerald-500">2 months free</span>{' '}
+                <span className="text-muted-foreground font-normal">
+                  (pay for 10 months, get 12)
+                </span>
+              </>
             ) : (
               <>
                 Switch to yearly and get{' '}
@@ -310,7 +321,12 @@ export default function BillingPlanPicker({
               >
                 <span className={'font-medium'}>{product.name}</span>
                 <div className="row items-center gap-2">
-                  <span className="font-bold">{number.currency(price)}</span>
+                  <span className="font-bold">
+                    {number.currency(price)}
+                    <span className="font-normal text-muted-foreground">
+                      /{recurringInterval === 'year' ? 'yr' : 'mo'}
+                    </span>
+                  </span>
                   {renderRowIndicator(product)}
                 </div>
               </button>
