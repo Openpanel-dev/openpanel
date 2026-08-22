@@ -7,7 +7,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/cn';
-import { CopyIcon, MoreHorizontal, Trash } from 'lucide-react';
+import {
+  CopyIcon,
+  LayoutPanelTopIcon,
+  MoreHorizontal,
+  Trash,
+} from 'lucide-react';
 
 import { timeWindows } from '@openpanel/constants';
 
@@ -41,6 +46,7 @@ export function ReportItem({
   interval,
   onDelete,
   onDuplicate,
+  onMove,
 }: {
   report: any;
   organizationId: string;
@@ -51,6 +57,7 @@ export function ReportItem({
   interval: any;
   onDelete: (reportId: string) => void;
   onDuplicate: (reportId: string) => void;
+  onMove?: (reportId: string) => void;
 }) {
   const router = useRouter();
   const chartRange = report.range;
@@ -149,6 +156,17 @@ export function ReportItem({
                 <CopyIcon size={16} className="mr-2" />
                 Duplicate
               </DropdownMenuItem>
+              {onMove && (
+                <DropdownMenuItem
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onMove(report.id);
+                  }}
+                >
+                  <LayoutPanelTopIcon size={16} className="mr-2" />
+                  Move to dashboard
+                </DropdownMenuItem>
+              )}
               <DropdownMenuGroup>
                 <DropdownMenuItem
                   className="text-destructive"

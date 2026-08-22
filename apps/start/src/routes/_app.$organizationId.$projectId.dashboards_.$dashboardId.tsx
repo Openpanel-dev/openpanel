@@ -412,6 +412,9 @@ function Component() {
                 onDuplicate={(reportId) => {
                   reportDuplicate.mutate({ reportId });
                 }}
+                onMove={(reportId) => {
+                  pushModal('MoveReport', { reportId, dashboardId });
+                }}
               />
             </div>
           ))}
