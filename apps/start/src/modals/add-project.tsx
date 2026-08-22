@@ -109,8 +109,15 @@ export default function AddProject() {
             <CreateClientSuccess {...mutation.data.client} />
           )}
           <ButtonContainer className="justify-end">
-            <Button className="flex-1" onClick={() => popModal()}>
+            <Button onClick={() => popModal()} variant="outline">
               Close
+            </Button>
+            {/* Route through the same connect -> verify steps as onboarding so
+                a second project doesn't skip the install instructions. */}
+            <Button asChild className="flex-1">
+              <a href={`/onboarding/${mutation.data.id}/connect`}>
+                Set up tracking
+              </a>
             </Button>
           </ButtonContainer>
         </>

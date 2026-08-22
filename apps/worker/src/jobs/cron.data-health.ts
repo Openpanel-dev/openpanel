@@ -65,7 +65,9 @@ export async function dataHealthCronJob() {
       organizationId: true,
       noDataNotifiedAt: true,
       dataStoppedNotifiedAt: true,
-      organization: { select: { id: true, subscriptionState: true } },
+      organization: {
+        select: { id: true, subscriptionState: true, onboarding: true },
+      },
     },
   });
 
@@ -81,10 +83,12 @@ export async function dataHealthCronJob() {
 
     if (!lastEventAt) {
       // Never received an event. One notice per project, after the grace
-      // period. (The onboarding drip already nudges brand-new orgs, so this
-      // mainly catches additional projects and broken installs.)
+      // period. Orgs still in the onboarding email drip are excluded — its
+      // day-2/6 emails already carry "stuck on the install?" variants, so this
+      // notice targets post-onboarding orgs and additional projects.
+      const inOnboardingDrip = project.organization.onboarding !== 'completed';
       const oldEnough = now - project.createdAt.getTime() > NO_DATA_AFTER_MS;
-      if (oldEnough && !project.noDataNotifiedAt) {
+      if (oldEnough && !project.noDataNotifiedAt && !inOnboardingDrip) {
         const entry = byOrg.get(project.organizationId) ?? {
           organizationId: project.organizationId,
           noData: [],

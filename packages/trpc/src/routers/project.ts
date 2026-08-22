@@ -38,6 +38,44 @@ export const projectRouter = createTRPCRouter({
       return getProjectWithClients(projectId);
     }),
 
+  // Powers the activation checklist on the project overview: has the project
+  // received data, built a report, and invited a teammate yet?
+  activationStatus: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+      })
+    )
+    .query(async ({ input: { projectId }, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+      });
+
+      if (!access) {
+        throw new TRPCForbiddenError('You do not have access to this project');
+      }
+
+      const project = await db.project.findUniqueOrThrow({
+        where: { id: projectId },
+        select: { firstEventAt: true, organizationId: true, createdAt: true },
+      });
+
+      const [reportCount, memberCount] = await Promise.all([
+        db.report.count({ where: { projectId } }),
+        db.member.count({
+          where: { organizationId: project.organizationId },
+        }),
+      ]);
+
+      return {
+        firstEventAt: project.firstEventAt,
+        projectCreatedAt: project.createdAt,
+        hasReport: reportCount > 0,
+        hasTeammate: memberCount > 1,
+      };
+    }),
+
   list: protectedProcedure
     .input(
       z.object({

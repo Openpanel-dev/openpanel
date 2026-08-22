@@ -4,6 +4,7 @@ import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
 import {
   checkNotificationRulesForEvent,
   createEvent,
+  db,
   getProjectByIdCached,
   matchEvent,
   sessionBuffer,
@@ -35,6 +36,24 @@ async function isEventExcludedByProjectFilter(
   return eventExcludeFilters.some((filter) => matchEvent(payload, filter));
 }
 
+/**
+ * Records the project's first-ever event timestamp exactly once. The cached
+ * project read makes this a no-op on every event after the first; the
+ * conditional update keeps concurrent workers idempotent.
+ */
+async function markFirstEvent(projectId: string, logger: ILogger) {
+  const project = await getProjectByIdCached(projectId);
+  if (!project || project.firstEventAt) {
+    return;
+  }
+  await db.project.updateMany({
+    where: { id: projectId, firstEventAt: null },
+    data: { firstEventAt: new Date() },
+  });
+  await getProjectByIdCached.clear(projectId);
+  logger.info({ projectId }, 'Project received its first event');
+}
+
 async function createEventAndNotify(
   payload: IServiceCreateEventPayload,
   logger: ILogger,
@@ -53,6 +72,7 @@ async function createEventAndNotify(
   const [event] = await Promise.all([
     createEvent(payload),
     checkNotificationRulesForEvent(payload).catch(() => null),
+    markFirstEvent(projectId, logger).catch(() => null),
   ]);
   return event;
 }

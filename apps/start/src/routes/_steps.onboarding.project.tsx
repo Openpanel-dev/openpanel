@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { useClientSecret } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
+import { op } from '@/utils/op';
 
 const validateSearch = z.object({
   inviteId: z.string().optional(),
@@ -74,6 +75,7 @@ function Component() {
     trpc.onboarding.project.mutationOptions({
       onError: handleError,
       onSuccess(res) {
+        op.track('onboarding_project_created', { projectId: res.projectId });
         queryClient.invalidateQueries(trpc.organization.list.queryFilter());
         setSecret(res.secret);
         navigate({

@@ -76,11 +76,15 @@ export const templates = {
         : 'Your OpenPanel trial ends soon',
     Component: OnboardingTrialEnding,
     schema: zOnboardingTrialEnding,
+    // Without a category these bypassed unsubscribe entirely (no suppression
+    // check, no List-Unsubscribe header).
+    category: 'onboarding' as const,
   },
   'onboarding-trial-ended': {
     subject: () => 'Your trial ended, dashboard is locked',
     Component: OnboardingTrialEnded,
     schema: zOnboardingTrialEnded,
+    category: 'onboarding' as const,
   },
   'weekly-digest': {
     subject: (data: z.infer<typeof zWeeklyDigest>) =>
