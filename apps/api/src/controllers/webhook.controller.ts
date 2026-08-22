@@ -150,6 +150,7 @@ const TRACKED_SUBSCRIPTION_FIELDS = [
   'subscriptionPeriodEventsLimit',
   'subscriptionPauseAtPeriodEnd',
   'subscriptionResumesAt',
+  'subscriptionFirstStartedAt',
 ] as const;
 
 const CANCELLATION_REASONS = [
@@ -304,6 +305,12 @@ async function syncSubscriptionToOrg(
     subscriptionCancelComment: data.customerCancellationComment ?? null,
     subscriptionPauseAtPeriodEnd: data.pauseAtPeriodEnd,
     subscriptionResumesAt: data.resumesAt,
+    // Stable tenure anchor: keep the stored value while the subscription id is
+    // unchanged; a new subscription (re-subscribe) restarts tenure.
+    subscriptionFirstStartedAt:
+      organization.subscriptionId === data.id
+        ? (organization.subscriptionFirstStartedAt ?? data.createdAt)
+        : data.createdAt,
     subscriptionPeriodEventsLimit,
     subscriptionPeriodEventsCountExceededAt:
       typeof subscriptionPeriodEventsLimit === 'number' &&
