@@ -137,9 +137,12 @@ export default function Billing({ organization }: Props) {
         : discount.duration === 'forever'
           ? 'on every invoice'
           : 'on your next invoice';
+    // Deliberately no discount name here: names are often the redeemable code
+    // itself, and the save offer's name would advertise what the cancel flow
+    // grants. The value + duration is all the customer needs.
     return (
       <p className="mt-1 text-emerald-600 dark:text-emerald-500">
-        {value} ({discount.name}) {duration}
+        {value} {duration}
       </p>
     );
   };
