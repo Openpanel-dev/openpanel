@@ -59,6 +59,27 @@ const cacher = cacheMiddleware(60);
  */
 const EVENT_PROPERTY_KEY_LIMIT = 50_000;
 
+/**
+ * Cap on distinct values returned per event property to the filter
+ * autocomplete. High-cardinality keys (ids, urls, session tokens) can hold
+ * millions of distinct values — returning them all is useless for a picker
+ * and heavy for ClickHouse and the browser alike. Most recent values win.
+ * Env-tunable via EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT (positive
+ * integer; invalid values keep the default).
+ */
+const EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_RAW =
+  process.env.EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT;
+const EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_PARSED =
+  EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_RAW &&
+  /^\d+$/.test(EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_RAW)
+    ? Number(EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_RAW)
+    : Number.NaN;
+const EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT =
+  Number.isSafeInteger(EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_PARSED) &&
+  EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_PARSED > 0
+    ? EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_PARSED
+    : 500;
+
 const chartProcedure = publicProcedure.use(
   async ({ ctx, next, getRawInput }) => {
     const rawInput = (await getRawInput()) as {
@@ -344,7 +365,11 @@ export const chartRouter = createTRPCRouter({
           .where('project_id', '=', projectId)
           .where('property_key', '=', property.replace(/^properties\./, ''))
           .groupBy(['property_value'])
-          .orderBy('created_at', 'DESC');
+          // Recency + key tie-break for a stable list under the cap — same
+          // rationale as the key picker above.
+          .orderBy('created_at', 'DESC')
+          .orderBy('property_value', 'ASC')
+          .limit(EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT);
 
         if (event && event !== '*') {
           query.where('name', '=', event);
