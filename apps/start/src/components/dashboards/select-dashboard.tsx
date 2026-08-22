@@ -2,12 +2,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeftIcon, PlusIcon, SaveIcon } from 'lucide-react';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 
 export function SelectDashboard({
   value,
@@ -25,13 +22,6 @@ export function SelectDashboard({
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [newDashboardName, setNewDashboardName] = useState('');
 
-  const form = useForm({
-    resolver: zodResolver(z.object({ name: z.string().min(1, 'Required') })),
-    defaultValues: {
-      name: '',
-    },
-  });
-
   const dashboardQuery = useQuery(
     trpc.dashboard.list.queryOptions({
       projectId,
@@ -47,7 +37,6 @@ export function SelectDashboard({
         onChange(res.id);
         setIsCreatingNew(false);
         setNewDashboardName('');
-        form.reset();
       },
     }),
   );
@@ -79,6 +68,7 @@ export function SelectDashboard({
               type="button"
               key={dashboard.id}
               variant={value === dashboard.id ? 'default' : 'outline'}
+              aria-pressed={value === dashboard.id}
               onClick={() => onChange(dashboard.id)}
             >
               {dashboard.name}
@@ -106,7 +96,6 @@ export function SelectDashboard({
             onClick={() => {
               setIsCreatingNew(false);
               setNewDashboardName('');
-              form.reset();
             }}
           />
           <Input
