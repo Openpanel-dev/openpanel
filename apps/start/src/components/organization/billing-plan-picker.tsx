@@ -54,8 +54,14 @@ export default function BillingPlanPicker({
   );
   const [pendingProductId, setPendingProductId] = useState<string | null>(null);
   const products = productsQuery.data || [];
+  // Only treat a product as selected while it belongs to the displayed
+  // interval. Opening the picker preset to yearly for a monthly subscriber
+  // (or toggling the interval) must not keep the monthly plan "selected" —
+  // that would render the cancel action under a list it isn't part of.
   const selectedProduct = products.find(
-    (product) => product.id === selectedProductId,
+    (product) =>
+      product.id === selectedProductId &&
+      product.recurringInterval === recurringInterval,
   );
 
   // No current plan to compare against → a plan row is the buy button (straight
