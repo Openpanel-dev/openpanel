@@ -62,7 +62,12 @@ export const projectRouter = createTRPCRouter({
 
       const project = await db.project.findUniqueOrThrow({
         where: { id: projectId },
-        select: { firstEventAt: true, organizationId: true, createdAt: true },
+        select: {
+          firstEventAt: true,
+          eventsCount: true,
+          organizationId: true,
+          createdAt: true,
+        },
       });
 
       const [reportCount, memberCount] = await Promise.all([
@@ -73,6 +78,9 @@ export const projectRouter = createTRPCRouter({
       ]);
 
       return {
+        // firstEventAt only exists for projects created after the column was
+        // added; the lifetime counter covers everything older.
+        hasFirstEvent: !!project.firstEventAt || project.eventsCount > 0,
         firstEventAt: project.firstEventAt,
         projectCreatedAt: project.createdAt,
         hasReport: reportCount > 0,

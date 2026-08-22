@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { LazyComponent } from '@/components/lazy-component';
-import ActivationChecklist from '@/components/onboarding/activation-checklist';
+import ActivationBanner from '@/components/onboarding/activation-banner';
 import { useRangePageContext } from '@/hooks/use-page-context-helpers';
 import {
   OverviewFilterButton,
@@ -40,6 +40,7 @@ function ProjectDashboard() {
   useRangePageContext('overview');
   return (
     <div>
+      <ActivationBanner />
       <div className="sticky-header -top-px!">
         <div className="col gap-2 p-4">
           <div className="flex justify-between gap-2">
@@ -58,7 +59,6 @@ function ProjectDashboard() {
         </div>
       </div>
       <div className="grid grid-cols-6 gap-4 p-4 pt-0">
-        <ActivationChecklist />
         <OverviewMetrics projectId={projectId} />
         <OverviewInsights projectId={projectId} />
         <OverviewTopSources projectId={projectId} />
