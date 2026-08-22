@@ -254,7 +254,7 @@ export default function CancelSubscriptionFlow({
         title="One last thing — 30% off for a year"
       />
       <div className="scrollbar-thin col min-h-0 flex-1 overflow-y-auto">
-        <div className="row shrink-0 items-baseline gap-2 rounded-lg border bg-def-100 p-4">
+        <div className="row shrink-0 items-center gap-3 rounded-lg border bg-def-100 p-4">
           <span className="font-bold font-mono text-3xl text-emerald-600 dark:text-emerald-500">
             −30%
           </span>
