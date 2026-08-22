@@ -9,6 +9,7 @@ import AddNotificationRule from './add-notification-rule';
 import AddProject from './add-project';
 import AddReference from './add-reference';
 import BillingSuccess from './billing-success';
+import CancelSubscription from './cancel-subscription';
 import type { ConfirmProps } from './confirm';
 import Confirm from './confirm';
 import ConfirmDeleteAccount from './confirm-delete-account';
@@ -88,6 +89,7 @@ const modals = {
   CreateInvite,
   SelectBillingPlan,
   BillingSuccess,
+  CancelSubscription,
   SetupTwoFactor,
   DisableTwoFactor,
   RegenerateRecoveryCodes,

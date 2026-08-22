@@ -8,6 +8,7 @@ const subscriptionStateNeeds = {
   subscriptionStatus: true,
   subscriptionCanceledAt: true,
   subscriptionEndsAt: true,
+  subscriptionPauseAtPeriodEnd: true,
 } as const;
 
 const getPrismaClient = () => {
@@ -54,6 +55,8 @@ const getPrismaClient = () => {
             return (
               state === 'active' ||
               state === 'canceling' ||
+              state === 'pausing' ||
+              state === 'paused' ||
               state === 'past_due' ||
               state === 'unpaid' ||
               state === 'incomplete'
