@@ -96,6 +96,24 @@ export default function Billing({ organization }: Props) {
     p.amountType === 'fixed' ? [p] : []
   )[0];
 
+  // What the customer actually pays while a recurring discount applies. A
+  // `once` discount only hits the next invoice, so the header keeps the list
+  // price and the discount line below explains it.
+  const listPrice = currentPrice ? currentPrice.priceAmount / 100 : null;
+  const discountedPrice = (() => {
+    const active = organization.subscriptionDiscount;
+    if (!active || listPrice === null || active.duration === 'once') {
+      return null;
+    }
+    if (active.type === 'percentage' && active.basisPoints) {
+      return listPrice * (1 - active.basisPoints / 10_000);
+    }
+    if (active.type === 'fixed' && active.amount) {
+      return Math.max(0, listPrice - active.amount / 100);
+    }
+    return null;
+  })();
+
   // Synced from Polar — covers the cancel-flow save offer and any discount
   // code the customer redeemed. Without this line the card shows the full
   // list price and an applied discount is invisible outside Polar's portal.
@@ -173,8 +191,15 @@ export default function Billing({ organization }: Props) {
             <WidgetHead className="flex items-center justify-between gap-4">
               <div className="title flex-1 truncate">{currentProduct.name}</div>
               <div className="text-lg">
+                {discountedPrice !== null && (
+                  <span className="mr-2 text-muted-foreground line-through">
+                    {number.currency(currentPrice.priceAmount / 100)}
+                  </span>
+                )}
                 <span className="font-bold">
-                  {number.currency(currentPrice.priceAmount / 100)}
+                  {number.currency(
+                    discountedPrice ?? currentPrice.priceAmount / 100
+                  )}
                 </span>
                 <span className="text-muted-foreground">
                   {' / '}
