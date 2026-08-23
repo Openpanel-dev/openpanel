@@ -2,7 +2,7 @@ import type { IServiceOrganization } from '@openpanel/db';
 import type { ICancellationReason } from '@openpanel/validation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ButtonContainer } from '@/components/button-container';
 import { Button } from '@/components/ui/button';
@@ -53,6 +53,40 @@ export default function CancelSubscriptionFlow({
 
   const discountAvailable = !organization.subscriptionSaveDiscountAppliedAt;
 
+  // Funnel instrumentation. Every step render emits a step_viewed event, and
+  // the unmount cleanup emits cancel_flow_abandoned when the flow closes with
+  // no recorded outcome (X, esc, click-outside, navigation) — that's the
+  // silent drop-off a decisions-only funnel can't see. Refs so the cleanup
+  // reads the latest values.
+  const outcomeRef = useRef<
+    'paused' | 'discounted' | 'canceled' | 'kept' | null
+  >(null);
+  const stepRef = useRef<Step>('reason');
+  stepRef.current = step;
+  const reasonRef = useRef<ICancellationReason | null>(null);
+  reasonRef.current = reason;
+
+  useEffect(() => {
+    op.track('cancel_flow_step_viewed', {
+      organizationId: organization.id,
+      step,
+      reason: reasonRef.current,
+    });
+  }, [step, organization.id]);
+
+  useEffect(
+    () => () => {
+      if (!outcomeRef.current) {
+        op.track('cancel_flow_abandoned', {
+          organizationId: organization.id,
+          step: stepRef.current,
+          reason: reasonRef.current,
+        });
+      }
+    },
+    [organization.id]
+  );
+
   const invalidate = () => {
     queryClient.invalidateQueries(trpc.organization.pathFilter());
     queryClient.invalidateQueries(trpc.subscription.pathFilter());
@@ -61,6 +95,7 @@ export default function CancelSubscriptionFlow({
   const pauseMutation = useMutation(
     trpc.subscription.pauseSubscription.mutationOptions({
       onSuccess(data) {
+        outcomeRef.current = 'paused';
         invalidate();
         toast.success('Subscription paused', {
           description: `Billing stops at the end of your current period and resumes on ${formatDate(data.resumesAt)}. Your events keep flowing in.`,
@@ -76,6 +111,7 @@ export default function CancelSubscriptionFlow({
   const discountMutation = useMutation(
     trpc.subscription.applySaveDiscount.mutationOptions({
       onSuccess() {
+        outcomeRef.current = 'discounted';
         invalidate();
         toast.success('Discount applied', {
           description:
@@ -92,6 +128,7 @@ export default function CancelSubscriptionFlow({
   const cancelMutation = useMutation(
     trpc.subscription.cancelSubscription.mutationOptions({
       onSuccess() {
+        outcomeRef.current = 'canceled';
         invalidate();
         toast.success('Subscription canceled', {
           description: organization.subscriptionEndsAt
@@ -162,7 +199,18 @@ export default function CancelSubscriptionFlow({
           />
         </div>
         <ButtonContainer className="shrink-0 gap-2 [&>*]:flex-1">
-          <Button onClick={onBack} variant="outline">
+          <Button
+            onClick={() => {
+              outcomeRef.current = 'kept';
+              op.track('cancel_flow_dismissed', {
+                organizationId: organization.id,
+                step: 'reason',
+                reason,
+              });
+              onBack();
+            }}
+            variant="outline"
+          >
             Never mind
           </Button>
           <Button
@@ -258,9 +306,7 @@ export default function CancelSubscriptionFlow({
           <span className="font-bold font-mono text-3xl text-emerald-600 dark:text-emerald-500">
             −30%
           </span>
-          <span className="text-muted-foreground">
-            for the next 12 months
-          </span>
+          <span className="text-muted-foreground">for the next 12 months</span>
         </div>
       </div>
       <ButtonContainer className="shrink-0 gap-2 [&>*]:flex-1">
