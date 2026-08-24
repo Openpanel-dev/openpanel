@@ -4,6 +4,14 @@ packages:
   - "tooling/*"
   - "admin"
 
+# pnpm 11 no longer reads the "pnpm" field in package.json — these moved here.
+patchedDependencies:
+  nuqs: patches/nuqs.patch
+
+overrides:
+  rolldown: 1.0.0-beta.43
+  esm-env: npm:esm-env-runtime@^0.1.0
+
 # Define a catalog of version ranges.
 catalog:
   zod: ^4.1.8
@@ -17,3 +25,20 @@ catalog:
   pino: ^10.3.1
   pino-pretty: ^13.1.3
   "@hyperdx/node-opentelemetry": ^0.10.3
+
+# pnpm 11 replacement for build-script approval. true = matches the intent of
+# the old root "trustedDependencies" list; false = keep the previous
+# (ignored) behavior.
+allowBuilds:
+  '@biomejs/biome': true
+  '@parcel/watcher': false
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@tailwindcss/oxide': false
+  esbuild: true
+  msgpackr-extract: true
+  prisma: true
+  protobufjs: true
+  sharp: true
+  simple-git-hooks: false
+  workerd: false

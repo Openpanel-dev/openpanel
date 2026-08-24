@@ -78,11 +78,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          # Matches ARG NODE_VERSION in apps/*/Dockerfile. Must stay >=22.19.0:
+          # .nvmrc is the source of truth; keep ARG NODE_VERSION in
+          # apps/*/Dockerfile in sync with it. Must stay >=22.19.0:
           # undici@8 fails at import on older Node with
           # "webidl.util.markAsUncloneable is not a function".
-          # TODO: make this a single source of truth (.nvmrc + engines).
-          node-version: "22.20.0"
+          node-version-file: ".nvmrc"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4

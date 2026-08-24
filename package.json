@@ -5,7 +5,7 @@
   "private": true,
   "license": "MIT",
   "author": "Carl-Gerhard Lindesvärd",
-  "packageManager": "pnpm@10.6.2",
+  "packageManager": "pnpm@11.23.0",
   "scripts": {
     "test": "vitest run",
     "gen:bots": "pnpm -r --filter api gen:bots",
@@ -53,14 +53,5 @@
     "simple-git-hooks": "^2.12.1",
     "ultracite": "7.2.0",
     "vitest": "^3.0.4"
-  },
-  "pnpm": {
-    "patchedDependencies": {
-      "nuqs": "patches/nuqs.patch"
-    },
-    "overrides": {
-      "rolldown": "1.0.0-beta.43",
-      "esm-env": "npm:esm-env-runtime@^0.1.0"
-    }
   }
 }
