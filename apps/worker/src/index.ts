@@ -1,3 +1,5 @@
+import './utils/intercept-output';
+
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
@@ -160,7 +162,7 @@ async function start() {
   });
 
   app.listen(PORT, () => {
-    console.log(`For the UI, open http://localhost:${PORT}/`);
+    logger.info(`For the UI, open http://localhost:${PORT}/`);
   });
 
   if (process.env.DISABLE_WORKERS === undefined) {

@@ -1,5 +1,6 @@
 import { getSubscriptionState } from '@openpanel/payments/subscription-state';
 import { PrismaClient } from './generated/prisma/client';
+import { logger } from './logger';
 
 export * from './generated/prisma/client';
 
@@ -10,9 +11,24 @@ const subscriptionStateNeeds = {
 } as const;
 
 const getPrismaClient = () => {
-  const prisma = new PrismaClient({
-    log: ['error'],
-  }).$extends({
+  // emit: 'event' keeps the engine from writing prisma:error lines straight
+  // to stderr, so they flow through pino to the OTLP pipeline instead.
+  const client = new PrismaClient({
+    log: [
+      { emit: 'event', level: 'error' },
+      { emit: 'event', level: 'warn' },
+    ],
+  });
+
+  // $on only exists on the base client — keep it before $extends.
+  client.$on('error', (event) => {
+    logger.error({ target: event.target }, `prisma: ${event.message}`);
+  });
+  client.$on('warn', (event) => {
+    logger.warn({ target: event.target }, `prisma: ${event.message}`);
+  });
+
+  const prisma = client.$extends({
     result: {
       organization: {
         subscriptionState: {

@@ -1,5 +1,6 @@
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { rawStderrWrite } from '@openpanel/logger';
 import {
   cohortComputeQueue,
   cronQueue,
@@ -403,13 +404,22 @@ export function bootWorkers() {
 
   // uncaughtException / unhandledRejection: process state is corrupt.
   // Don't try to drain — log and exit fast so Docker respawns us.
+  // Mirror fatals to the real stderr (bypassing the output interceptor, so
+  // nothing ships twice) — the OTLP flush window can be lost on the way
+  // down, and `docker logs` must always show why we died.
   process.on('uncaughtException', (error) => {
     logger.fatal({ err: error }, 'Uncaught exception — exiting');
+    rawStderrWrite(`Uncaught exception — exiting: ${error?.stack ?? error}\n`);
     setShuttingDown(true);
     setTimeout(() => process.exit(1), 1000).unref();
   });
   process.on('unhandledRejection', (reason, promise) => {
     logger.fatal({ reason, promise }, 'Unhandled rejection — exiting');
+    rawStderrWrite(
+      `Unhandled rejection — exiting: ${
+        reason instanceof Error ? reason.stack : String(reason)
+      }\n`,
+    );
     setShuttingDown(true);
     setTimeout(() => process.exit(1), 1000).unref();
   });

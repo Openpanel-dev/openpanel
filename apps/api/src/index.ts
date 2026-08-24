@@ -1,6 +1,9 @@
 /** biome-ignore-all lint/suspicious/useAwait: fastify need async or done callbacks */
 process.env.TZ = 'UTC';
 
+import './utils/intercept-output';
+
+import { rawStderrWrite } from '@openpanel/logger';
 import sourceMapSupport from 'source-map-support';
 import { buildApp } from './app';
 import { shutdown } from './utils/graceful-shutdown';
@@ -29,14 +32,25 @@ const startServer = async () => {
       // exit immediately so Docker can respawn the container. Anything
       // slower than this lets bad requests keep hitting a poisoned process
       // and risks blocking past Docker's stop_grace_period (→ SIGKILL).
+      // Mirror fatals to the real stderr (bypassing the output interceptor,
+      // so nothing ships twice) — the OTLP flush window can be lost on the
+      // way down, and `docker logs` must always show why we died.
       process.on('uncaughtException', (error) => {
         logger.fatal({ err: error }, 'Uncaught exception — exiting');
+        rawStderrWrite(
+          `Uncaught exception — exiting: ${error?.stack ?? error}\n`,
+        );
         // Flush pino, then hard-exit. unref() so the safety net doesn't
         // keep the loop alive on its own.
         setTimeout(() => process.exit(1), 1000).unref();
       });
       process.on('unhandledRejection', (reason, promise) => {
         logger.fatal({ reason, promise }, 'Unhandled rejection — exiting');
+        rawStderrWrite(
+          `Unhandled rejection — exiting: ${
+            reason instanceof Error ? reason.stack : String(reason)
+          }\n`,
+        );
         setTimeout(() => process.exit(1), 1000).unref();
       });
     }
