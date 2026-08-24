@@ -192,7 +192,7 @@ export function buildEventCriteriaQuery(
       const frequencyOp = getFrequencyOperator(frequency);
       return `
         SELECT profile_id
-        FROM ${TABLE_NAMES.profile_event_property_summary_mv}
+        FROM ${TABLE_NAMES.event_property_profile_summary_mv}
         WHERE project_id = ${sqlstring.escape(projectId)}
           AND name = ${sqlstring.escape(name)}
           AND ${timeConstraint.replace('created_at', 'event_date')}
@@ -204,7 +204,7 @@ export function buildEventCriteriaQuery(
 
     return `
       SELECT DISTINCT profile_id
-      FROM ${TABLE_NAMES.profile_event_property_summary_mv}
+      FROM ${TABLE_NAMES.event_property_profile_summary_mv}
       WHERE project_id = ${sqlstring.escape(projectId)}
         AND name = ${sqlstring.escape(name)}
         AND ${timeConstraint.replace('created_at', 'event_date')}
@@ -216,7 +216,7 @@ export function buildEventCriteriaQuery(
     const frequencyOp = getFrequencyOperator(frequency);
     return `
       SELECT profile_id
-      FROM ${TABLE_NAMES.profile_event_summary_mv}
+      FROM ${TABLE_NAMES.event_profile_summary_mv}
       WHERE project_id = ${sqlstring.escape(projectId)}
         AND name = ${sqlstring.escape(name)}
         AND ${timeConstraint.replace('created_at', 'event_date')}
@@ -227,7 +227,7 @@ export function buildEventCriteriaQuery(
 
   return `
     SELECT DISTINCT profile_id
-    FROM ${TABLE_NAMES.profile_event_summary_mv}
+    FROM ${TABLE_NAMES.event_profile_summary_mv}
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND name = ${sqlstring.escape(name)}
       AND ${timeConstraint.replace('created_at', 'event_date')}

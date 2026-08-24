@@ -67,6 +67,11 @@ export const TABLE_NAMES = {
   cohort_members: 'cohort_members',
   cohort_metadata: 'cohort_metadata',
   profile_event_summary_mv: 'profile_event_summary_mv',
+  // Same content as the two MVs above, keyed for the cohort criteria that
+  // read them (event + window first, profile last) rather than by profile.
+  // See migration 20.
+  event_profile_summary_mv: 'event_profile_summary_mv',
+  event_property_profile_summary_mv: 'event_property_profile_summary_mv',
   profile_event_property_summary_mv: 'profile_event_property_summary_mv',
 };
 
