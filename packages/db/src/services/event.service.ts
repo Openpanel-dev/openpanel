@@ -1251,14 +1251,23 @@ export async function listEventPropertiesCore(input: {
   columns: readonly string[];
   properties: Array<{ property_key: string; event_name: string }>;
 }> {
+  // GROUP BY rather than DISTINCT: both return the same set of
+  // (property_key, name) pairs, but a multi-column DISTINCT cannot be matched
+  // against the epv_keys aggregating projection, so it degrades to a full scan
+  // of the project's MV slice. `name` is a tie-breaker for the ORDER BY —
+  // without it the LIMIT slices an arbitrary subset of the rows sharing a
+  // property_key, which is also what made the two spellings return different
+  // windows.
   const builder = clix(ch)
     .select<{ property_key: string; event_name: string }>([
-      'distinct property_key',
+      'property_key',
       'name as event_name',
     ])
     .from(TABLE_NAMES.event_property_values_mv)
     .where('project_id', '=', input.projectId)
+    .groupBy(['property_key', 'name'])
     .orderBy('property_key', 'ASC')
+    .orderBy('name', 'ASC')
     .limit(500);
 
   if (input.eventName) {

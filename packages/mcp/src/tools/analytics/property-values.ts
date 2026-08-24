@@ -26,14 +26,20 @@ export function registerPropertyValueTools(
     async ({ projectId: inputProjectId, eventName }) =>
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
+        // GROUP BY rather than DISTINCT so the epv_keys projection can serve
+        // this (a multi-column DISTINCT cannot be matched against an
+        // aggregating projection); `name` tie-breaks the ORDER BY so the
+        // LIMIT window is deterministic. See listEventPropertiesCore.
         const builder = clix(ch)
           .select<{ property_key: string; event_name: string }>([
-            'distinct property_key',
+            'property_key',
             'name as event_name',
           ])
           .from(TABLE_NAMES.event_property_values_mv)
           .where('project_id', '=', projectId)
+          .groupBy(['property_key', 'name'])
           .orderBy('property_key', 'ASC')
+          .orderBy('name', 'ASC')
           .limit(500);
 
         if (eventName) {
