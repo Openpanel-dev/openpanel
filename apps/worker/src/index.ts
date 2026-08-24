@@ -1,4 +1,4 @@
-import './utils/intercept-output';
+import './utils/observability';
 
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';

@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/useAwait: fastify need async or done callbacks */
 process.env.TZ = 'UTC';
 
-import './utils/intercept-output';
+import './utils/observability';
 
 import { rawStderrWrite } from '@openpanel/logger';
 import sourceMapSupport from 'source-map-support';

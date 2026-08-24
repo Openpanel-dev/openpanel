@@ -81,10 +81,16 @@ function redactSensitive(value: unknown, depth = 0): unknown {
   return result;
 }
 
-export function createLogger({ name }: { name: string }): ILogger {
-  const service = [process.env.LOG_PREFIX, name, process.env.NODE_ENV ?? 'dev']
+// Shared by logs and traces so both signals land under the same service
+// name in ClickStack (e.g. new-api-production).
+export function getServiceName(name: string): string {
+  return [process.env.LOG_PREFIX, name, process.env.NODE_ENV ?? 'dev']
     .filter(Boolean)
     .join('-');
+}
+
+export function createLogger({ name }: { name: string }): ILogger {
+  const service = getServiceName(name);
 
   const useHyperDX = logExporter === 'otlp' && !!process.env.HYPERDX_API_KEY;
   const usePretty = !useHyperDX && process.env.NODE_ENV !== 'production';
