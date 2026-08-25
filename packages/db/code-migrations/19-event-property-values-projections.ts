@@ -46,9 +46,11 @@ import { getIsCluster } from './helpers';
  * deployment: 2 such queries in 30 days.
  *
  * Notes:
- *  - The projection lives on the MV's STORAGE table: the implicit
- *    `.inner_id.<uuid>` table on a single node, `<mv>_replicated` when
- *    clustered.
+ *  - The projection lives on the MV's STORAGE table — the implicit
+ *    `.inner_id.<uuid>` table — in every topology. Clustered, neither
+ *    created name is alterable: `<mv>` is a Distributed table and
+ *    `<mv>_replicated` is itself a MaterializedView, which rejects
+ *    MODIFY SETTING / ADD PROJECTION with NOT_IMPLEMENTED.
  *  - AggregatingMergeTree refuses ADD PROJECTION while
  *    deduplicate_merge_projection_mode is 'throw' (the default);
  *    'rebuild' keeps projections correct across dedup merges.
@@ -61,12 +63,21 @@ import { getIsCluster } from './helpers';
  *
  *      SELECT * FROM system.mutations WHERE command LIKE '%epv_%';
  *
+ *    (mutations are recorded against `.inner_id.<uuid>`, not the MV name)
+ *
  *  - The mutation rewrites projection data for every part, so deployments
  *    with a very large MV that want to control WHEN the backfill runs can
  *    apply the setting + ADD PROJECTION + MATERIALIZE PROJECTION statements
- *    manually before upgrading (off-peak), against the storage table. The
- *    migration skips re-materializing only when the projection already
- *    exists AND system.mutations records a completed MATERIALIZE for it —
+ *    manually before upgrading (off-peak), against the storage table —
+ *    the `.inner_id.<uuid>` table, resolvable with
+ *
+ *      SELECT concat('.inner_id.', toString(uuid)) FROM system.tables
+ *      WHERE database = currentDatabase()
+ *        AND name = 'event_property_values_mv_replicated'; -- drop the
+ *                    suffix when not clustered
+ *
+ *    The migration skips re-materializing only when the projection
+ *    already exists AND system.mutations records a completed MATERIALIZE —
  *    presence alone could be a crashed earlier attempt's ADD, and if
  *    mutation state can't be read the migration materializes anyway
  *    (idempotent; redundant work beats a silent skip). Note that because
@@ -84,20 +95,25 @@ const PROJECTIONS = [
   },
 ];
 
-// The projection lives on the MV's storage table: the implicit inner table
-// (`.inner_id.<uuid>`) on a single node, or `<mv>_replicated` when clustered.
+// The projection lives on the MV's storage table, which is always the
+// implicit `.inner_id.<uuid>` table — never the name we CREATE'd. Clustered,
+// `<mv>_replicated` is itself a MATERIALIZED VIEW (and `<mv>` a Distributed
+// table), so ALTERing either fails with NOT_IMPLEMENTED. Resolve the view's
+// uuid and address its inner table instead.
+//
+// `CREATE ... ON CLUSTER` propagates the initiator's uuid, so the inner
+// table has the same name on every node and a single ON CLUSTER ALTER
+// reaches all of them (verified on our deployment: 4 hosts, one uuid).
 async function resolveStorageTable(isClustered: boolean): Promise<string> {
-  if (isClustered) {
-    return `${MV}_replicated`;
-  }
+  const view = isClustered ? `${MV}_replicated` : MV;
   const res = await chMigrationClient.query({
     query: `SELECT concat('.inner_id.', toString(uuid)) AS t
-            FROM system.tables WHERE database = currentDatabase() AND name = '${MV}'`,
+            FROM system.tables WHERE database = currentDatabase() AND name = '${view}'`,
     format: 'JSONEachRow',
   });
   const rows = await res.json<{ t: string }>();
   if (!rows[0]?.t) {
-    throw new Error(`${MV}: inner storage table not found`);
+    throw new Error(`${view}: inner storage table not found`);
   }
   return rows[0].t;
 }
