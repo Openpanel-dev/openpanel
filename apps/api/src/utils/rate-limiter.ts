@@ -1,3 +1,4 @@
+import { getTrustedIpFromHeaders } from '@openpanel/common/server/get-client-ip';
 import { getRedisCache } from '@openpanel/redis';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
@@ -31,15 +32,27 @@ export async function activateRateLimiter<T extends FastifyRequest>({
           return key;
         }
       }
-      return (req.headers['openpanel-client-id'] ||
-        req.headers['x-real-ip'] ||
-        req.headers['x-client-ip'] ||
-        req.headers['x-forwarded-for']) as string;
+      // Only trusted headers - `x-client-ip` / `x-forwarded-for` are set by the
+      // caller, so keying on them hands out a fresh bucket per request.
+      return (
+        (req.headers['openpanel-client-id'] as string) ||
+        getTrustedIpFromHeaders(req.headers, req.socket?.remoteAddress).ip
+      );
     },
-    onExceeded: (req, reply) => {
+    onExceeded: (req) => {
+      const { ip, header } = getTrustedIpFromHeaders(
+        req.headers,
+        req.socket?.remoteAddress,
+      );
       req.log.warn(
-        { clientId: req.headers['openpanel-client-id'] },
-        'Rate limit exceeded',
+        {
+          clientId: req.headers['openpanel-client-id'],
+          ip,
+          ipHeader: header,
+          url: req.url,
+          userAgent: req.headers['user-agent'],
+        },
+        'rate limit exceeded',
       );
     },
   });

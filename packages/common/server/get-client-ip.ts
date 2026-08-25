@@ -146,3 +146,76 @@ export function getClientIpFromHeaders(
 
   return { ip: '', header: '' };
 }
+
+/**
+ * Headers that may be trusted for *security* decisions (rate limiting,
+ * blocking, abuse tracking).
+ *
+ * `getClientIpFromHeaders` above deliberately prefers client-forwarded
+ * headers (`openpanel-client-ip`, `x-client-ip`, `x-forwarded-for`) because an
+ * SDK running on a customer's server forwards the end-user IP that way. That
+ * trust is correct for analytics attribution and fatal for rate limiting:
+ * anyone can send `x-client-ip: <random>` on every request and get an endless
+ * supply of fresh buckets.
+ *
+ * This order only contains headers written by infrastructure we sit behind.
+ * Cloudflare overwrites `cf-connecting-ip` on every request, so a forged value
+ * never survives the edge. `x-real-ip` is written by the reverse proxy for
+ * self-hosters running without Cloudflare.
+ */
+export const TRUSTED_IP_HEADER_ORDER = [
+  'cf-connecting-ip',
+  'x-real-ip',
+  'x-forwarded-for',
+];
+
+/**
+ * Resolve the client IP for security decisions. Never returns an IP a client
+ * could have picked for itself.
+ *
+ * The order can be narrowed per deployment with `TRUSTED_IP_HEADER_ORDER`
+ * (comma separated) - set it to the single header your edge guarantees.
+ */
+export function getTrustedIpFromHeaders(
+  headers: Record<string, string | string[] | undefined> | Headers,
+  socketIp?: string,
+): { ip: string; header: string } {
+  const headerOrder = process.env.TRUSTED_IP_HEADER_ORDER
+    ? process.env.TRUSTED_IP_HEADER_ORDER.split(',').map((h) => h.trim())
+    : TRUSTED_IP_HEADER_ORDER;
+
+  for (const headerName of headerOrder) {
+    let value: string | null = null;
+
+    if (headers instanceof Headers) {
+      value = headers.get(headerName);
+    } else {
+      const headerValue = headers[headerName];
+      value = (Array.isArray(headerValue) ? headerValue[0] : headerValue) || null;
+    }
+
+    if (!value) continue;
+
+    // A proxy chain appends as it goes, so the *last* entry is the one written
+    // by the hop closest to us - the only entry a client cannot forge. This is
+    // the opposite of what `getClientIpFromHeaders` wants, which is why the two
+    // functions do not share this branch.
+    const candidate =
+      headerName === 'x-forwarded-for'
+        ? value.split(',').pop()?.trim()
+        : value.trim();
+
+    if (candidate && isValidIp(candidate)) {
+      return { ip: candidate, header: headerName };
+    }
+  }
+
+  // Direct connection (local dev, or an edge that strips everything). The
+  // socket address is by definition not client-controlled, so it is safe to
+  // use even when private.
+  if (socketIp) {
+    return { ip: socketIp, header: 'socket' };
+  }
+
+  return { ip: '', header: '' };
+}

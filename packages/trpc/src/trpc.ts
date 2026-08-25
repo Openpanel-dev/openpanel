@@ -8,28 +8,9 @@ import { COOKIE_OPTIONS, type SessionValidationResult } from '@openpanel/auth';
 import { runWithAlsSession } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 import type { ISetCookie } from '@openpanel/validation';
-import {
-  createTrpcRedisLimiter,
-  defaultFingerPrint,
-} from '@trpc-limiter/redis';
+import { type RateLimitOptions, enforceRateLimit } from './rate-limit';
 import { getOrganizationAccess, requireProjectAccess } from './access';
 import { TRPCForbiddenError } from './errors';
-
-export const rateLimitMiddleware = ({
-  max,
-  windowMs,
-}: {
-  max: number;
-  windowMs: number;
-}) =>
-  createTrpcRedisLimiter<typeof t>({
-    fingerprint: (ctx) => defaultFingerPrint(ctx.req),
-    message: (hitInfo) =>
-      `Too many requests, please try again later. ${hitInfo}`,
-    max,
-    windowMs,
-    redisClient: getRedisCache(),
-  });
 
 export async function createContext({ req, res }: CreateFastifyContextOptions) {
   const cookies = (req as any).cookies as Record<string, string | undefined>;
@@ -145,6 +126,17 @@ const enforceAccess = t.middleware(async ({ ctx, next, type, meta, getRawInput }
 });
 
 export const createTRPCRouter = t.router;
+
+/**
+ * Throttle a procedure by client IP, with an exponentially growing lockout for
+ * repeat offenders. See `./rate-limit` for the escalation rules and for the log
+ * line (`rate limit blocked`) that carries the offending IP.
+ */
+export const rateLimitMiddleware = (options: RateLimitOptions) =>
+  t.middleware(async ({ ctx, next, path }) => {
+    await enforceRateLimit({ req: ctx.req, path, ...options });
+    return next();
+  });
 
 const loggerMiddleware = t.middleware(
   async ({ ctx, next, getRawInput, path, input, type }) => {

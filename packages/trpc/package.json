@@ -21,7 +21,6 @@
     "@openpanel/redis": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@openpanel/queue": "workspace:*",
-    "@trpc-limiter/redis": "^0.0.2",
     "@trpc/client": "^11.17.0",
     "@trpc/server": "^11.17.0",
     "date-fns": "^3.3.1",

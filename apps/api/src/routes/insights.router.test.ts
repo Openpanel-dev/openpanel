@@ -29,8 +29,8 @@ vi.mock('@openpanel/common/server', async (importOriginal) => {
 });
 
 // Bypass Redis caching — no real ioredis connections in tests.
-// getRedisCache must return a truthy object so that @trpc-limiter/redis's
-// RateLimiterRedis constructor doesn't throw "storeClient is not set".
+// getRedisCache must return a truthy object; the rate limiter falls back to its
+// in-process counter when the fake client cannot serve a pipeline.
 vi.mock('@openpanel/redis', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@openpanel/redis')>();
   const fakeRedisClient = new Proxy(

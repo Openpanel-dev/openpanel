@@ -137,6 +137,12 @@ export const authRouter = createTRPCRouter({
       };
     }),
   signUpEmail: publicProcedure
+    .use(
+      rateLimitMiddleware({
+        max: 5,
+        windowMs: 60_000,
+      })
+    )
     .input(zSignUpEmail)
     .mutation(async ({ input, ctx }) => {
       const isRegistrationAllowed = await getIsRegistrationAllowed(

@@ -1912,9 +1912,6 @@ importers:
       '@openpanel/validation':
         specifier: workspace:*
         version: link:../validation
-      '@trpc-limiter/redis':
-        specifier: ^0.0.2
-        version: 0.0.2(@trpc/client@11.17.0(@trpc/server@11.17.0(typescript@5.9.3))(typescript@5.9.3))(@trpc/server@11.17.0(typescript@5.9.3))(redis@4.7.0)
       '@trpc/client':
         specifier: ^11.17.0
         version: 11.17.0(@trpc/server@11.17.0(typescript@5.9.3))(typescript@5.9.3)
@@ -9418,21 +9415,6 @@ packages:
         optional: true
       '@types/react-dom':
         optional: true
-
-  '@trpc-limiter/core@1.0.0':
-    resolution: {integrity: sha512-Wjq2oTCmCdwNbZKRfKpzpl1Um9QXGE8OHXOab+EUSj5Wk+26I/V6Vs2p0VBFAz6eEsBn36982cCC/vaaznA8+Q==}
-    engines: {node: '>=16'}
-    peerDependencies:
-      '@trpc/client': next
-      '@trpc/server': next
-
-  '@trpc-limiter/redis@0.0.2':
-    resolution: {integrity: sha512-Cfrk3YAC78yUJMl6eFl6TrU+nYYesJH7TXG+H1VH8UuT3kY3Ad/Wik/jdXyEMRg9VLSBsKhVYX6oD6jI+TTDTA==}
-    engines: {node: '>=16'}
-    peerDependencies:
-      '@trpc/client': next
-      '@trpc/server': next
-      redis: ^4.6.13
 
   '@trpc/client@11.17.0':
     resolution: {integrity: sha512-KpJBFrbKTDeVCFv/3ckL1XBBH5Yssn8hethI/rUy7GIpTj+VzjtPjykDqJpzobuVOz+d26cXCSu1t4I6MYI5Zg==}
@@ -29978,19 +29960,6 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.7
       '@types/react-dom': 19.2.3(@types/react@19.2.7)
-
-  '@trpc-limiter/core@1.0.0(@trpc/client@11.17.0(@trpc/server@11.17.0(typescript@5.9.3))(typescript@5.9.3))(@trpc/server@11.17.0(typescript@5.9.3))':
-    dependencies:
-      '@trpc/client': 11.17.0(@trpc/server@11.17.0(typescript@5.9.3))(typescript@5.9.3)
-      '@trpc/server': 11.17.0(typescript@5.9.3)
-
-  '@trpc-limiter/redis@0.0.2(@trpc/client@11.17.0(@trpc/server@11.17.0(typescript@5.9.3))(typescript@5.9.3))(@trpc/server@11.17.0(typescript@5.9.3))(redis@4.7.0)':
-    dependencies:
-      '@trpc-limiter/core': 1.0.0(@trpc/client@11.17.0(@trpc/server@11.17.0(typescript@5.9.3))(typescript@5.9.3))(@trpc/server@11.17.0(typescript@5.9.3))
-      '@trpc/client': 11.17.0(@trpc/server@11.17.0(typescript@5.9.3))(typescript@5.9.3)
-      '@trpc/server': 11.17.0(typescript@5.9.3)
-      rate-limiter-flexible: 5.0.4
-      redis: 4.7.0
 
   '@trpc/client@11.17.0(@trpc/server@11.17.0(typescript@5.9.3))(typescript@5.9.3)':
     dependencies:

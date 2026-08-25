@@ -11,6 +11,7 @@ import {
   validateSessionToken,
 } from '@openpanel/auth';
 import { generateId } from '@openpanel/common';
+import { getTrustedIpFromHeaders } from '@openpanel/common/server/get-client-ip';
 import { type IServiceClientWithProject, runWithAlsSession } from '@openpanel/db';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';
@@ -175,16 +176,33 @@ export async function buildApp(
           if (ctx.error.code === 'UNAUTHORIZED' && ctx.path === 'organization.list') {
             return;
           }
-          ctx.req.log.error(
-            {
-              err: ctx.error,
-              path: ctx.path,
-              input: ctx.input,
-              type: ctx.type,
-              session: ctx.ctx?.session,
-            },
-            'trpc error',
+
+          // The IP is resolved from trusted headers only (see
+          // `getTrustedIpFromHeaders`), so it is the address to hand to
+          // Cloudflare when an abuser needs blocking at the edge.
+          const { ip, header } = getTrustedIpFromHeaders(
+            ctx.req.headers,
+            ctx.req.socket?.remoteAddress,
           );
+          const payload = {
+            err: ctx.error,
+            path: ctx.path,
+            input: ctx.input,
+            type: ctx.type,
+            session: ctx.ctx?.session,
+            ip,
+            ipHeader: header,
+            userAgent: ctx.req.headers['user-agent'],
+          };
+
+          // Being rate limited is the system working, not an error - logging it
+          // as one buried the real errors under 15k lines a day.
+          if (ctx.error.code === 'TOO_MANY_REQUESTS') {
+            ctx.req.log.warn(payload, 'trpc rate limited');
+            return;
+          }
+
+          ctx.req.log.error(payload, 'trpc error');
         },
       } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
     });
