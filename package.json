@@ -35,18 +35,6 @@
     "semver": "^7.5.4",
     "typescript": "catalog:"
   },
-  "trustedDependencies": [
-    "@biomejs/biome",
-    "@prisma/client",
-    "@prisma/engines",
-    "bcrypt",
-    "esbuild",
-    "lodepng",
-    "msgpackr-extract",
-    "prisma",
-    "protobufjs",
-    "sharp"
-  ],
   "devDependencies": {
     "@biomejs/biome": "2.3.15",
     "depcheck": "^1.4.7",

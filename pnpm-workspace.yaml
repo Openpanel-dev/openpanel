@@ -8,6 +8,15 @@ packages:
 patchedDependencies:
   nuqs: patches/nuqs.patch
 
+# nuqs is an apps/start dependency, but the api and worker images install a
+# subset of the workspace (their Dockerfiles copy only their own and their
+# backend packages' package.json). The patch then matches nothing, and pnpm 11
+# turned that from a warning into ERR_PNPM_UNUSED_PATCH, breaking both builds.
+# This only tolerates a patch matching nothing — patch application FAILURES
+# still always error in v11 (ignorePatchFailures was removed), so the start
+# build still fails loudly if nuqs.patch stops applying cleanly.
+allowUnusedPatches: true
+
 overrides:
   rolldown: 1.0.0-beta.43
   esm-env: npm:esm-env-runtime@^0.1.0
@@ -26,19 +35,34 @@ catalog:
   pino-pretty: ^13.1.3
   "@hyperdx/node-opentelemetry": ^0.10.3
 
-# pnpm 11 replacement for build-script approval. true = matches the intent of
-# the old root "trustedDependencies" list; false = keep the previous
-# (ignored) behavior.
+# pnpm 11 replacement for build-script approval.
+#
+# These are all false on purpose — it is what the images have always shipped.
+# The root package.json "trustedDependencies" list these were modelled on is a
+# Bun/Yarn field that pnpm has never read, and pnpm 10 stopped running
+# dependency build scripts unless allowlisted via onlyBuiltDependencies, which
+# this repo never set. So under pnpm 10.6.2 not one of these scripts ran, and
+# the images worked anyway (prebuilt binaries + the explicit `pnpm rebuild` and
+# `pnpm codegen` steps in the Dockerfiles do the real work).
+#
+# Flipping them to true was a live behavior change smuggled into the version
+# bump, and it broke the dashboard build: the prod stage sets
+# npm_config_build_from_source=true, so sharp's newly-running install script
+# tried to compile via node-gyp and failed with "Please add node-gyp to your
+# dependencies". msgpackr-extract/esbuild/prisma are the same class of risk in
+# that stage.
+#
+# Enable one only with a build that proves it is needed.
 allowBuilds:
-  '@biomejs/biome': true
+  '@biomejs/biome': false
   '@parcel/watcher': false
-  '@prisma/client': true
-  '@prisma/engines': true
+  '@prisma/client': false
+  '@prisma/engines': false
   '@tailwindcss/oxide': false
-  esbuild: true
-  msgpackr-extract: true
-  prisma: true
-  protobufjs: true
-  sharp: true
+  esbuild: false
+  msgpackr-extract: false
+  prisma: false
+  protobufjs: false
+  sharp: false
   simple-git-hooks: false
   workerd: false
