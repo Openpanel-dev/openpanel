@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -17,9 +18,10 @@ interface OverviewShareProps {
 }
 
 export function OverviewShare({ projectId }: OverviewShareProps) {
+  const { organizationId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
-    trpc.share.overview.queryOptions(
+    trpc.share.overviewSettings.queryOptions(
       {
         projectId,
       },
@@ -71,7 +73,8 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
             <DropdownMenuItem
               onClick={() => {
                 mutation.mutate({
-                  ...data,
+                  organizationId,
+                  projectId,
                   public: false,
                   password: null,
                 });

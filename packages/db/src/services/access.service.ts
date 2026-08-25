@@ -1,15 +1,47 @@
+import type { AccessLevel } from '../generated/prisma/client';
 import { cacheable } from '@openpanel/redis';
 import { db } from '../prisma-client';
 import { getProjectById } from './project.service';
 
+export type IProjectAccess = { level: AccessLevel };
+
+/** Access levels that may mutate. `admin` is a superset of `write`. */
+const WRITE_LEVELS: ReadonlySet<AccessLevel> = new Set<AccessLevel>([
+  'write',
+  'admin',
+]);
+
+export function canWriteProject(access: IProjectAccess | null): boolean {
+  return !!access && WRITE_LEVELS.has(access.level);
+}
+
+/**
+ * Resolve a user's access to one project.
+ *
+ * Returns a single shape - `{ level }` or `null` - on purpose. This used to
+ * return `true` for members with no explicit ProjectAccess rows and the row
+ * itself otherwise, which forced every caller into a `typeof access !==
+ * 'boolean'` dance. 26 of 29 mutating procedures skipped the level check
+ * entirely as a result (GHSA-f9rx-pxgw-c6rg); with one shape, omitting the
+ * check is a type error rather than a silent grant.
+ *
+ * NOTE: the cache key is versioned. Changing the return shape without renaming
+ * it would serve old-shape entries for up to 5 minutes across a rolling deploy.
+ */
 export const getProjectAccess = cacheable(
-  'getProjectAccess',
-  async ({ userId, projectId }: { userId: string; projectId: string }) => {
+  'getProjectAccessV2',
+  async ({
+    userId,
+    projectId,
+  }: {
+    userId: string;
+    projectId: string;
+  }): Promise<IProjectAccess | null> => {
     try {
       // Check if user has access to the project
       const project = await getProjectById(projectId);
       if (!project?.organizationId) {
-        return false;
+        return null;
       }
 
       const [projectAccess, member] = await Promise.all([
@@ -27,13 +59,21 @@ export const getProjectAccess = cacheable(
         }),
       ]);
 
-      if (projectAccess.length === 0 && member) {
-        return true;
+      if (!member) {
+        return null;
       }
 
-      return projectAccess.find((item) => item.projectId === projectId);
+      // No explicit per-project grants means org-wide default access, and the
+      // default is write.
+      if (projectAccess.length === 0) {
+        return { level: 'write' };
+      }
+
+      const row = projectAccess.find((item) => item.projectId === projectId);
+
+      return row ? { level: row.level } : null;
     } catch (err) {
-      return false;
+      return null;
     }
   },
   60 * 5

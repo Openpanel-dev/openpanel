@@ -5,7 +5,7 @@ import type { Prisma } from '@openpanel/db';
 import { db } from '@openpanel/db';
 
 import { hashPassword } from '@openpanel/common/server';
-import { getClientAccess } from '../access';
+import { getClientAccess, requireOrganizationAdmin } from '../access';
 import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -58,7 +58,15 @@ export const clientRouter = createTRPCRouter({
         type: z.enum(['read', 'write', 'root']).optional(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Minting an ingestion credential - a `root` one at the caller's choosing
+      // - is admin-tier, not something any org member should be able to do.
+      await requireOrganizationAdmin({
+        userId: ctx.session.userId,
+        organizationId: input.organizationId,
+        message: 'Only organization admins can create API clients',
+      });
+
       const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
       const data: Prisma.ClientCreateArgs['data'] = {
         organizationId: input.organizationId,
@@ -82,14 +90,21 @@ export const clientRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const access = await getClientAccess({
-        userId: ctx.session.userId,
-        clientId: input.id,
+      const client = await db.client.findUnique({
+        where: { id: input.id },
+        select: { organizationId: true },
       });
 
-      if (!access) {
+      if (!client?.organizationId) {
         throw new TRPCForbiddenError('You do not have access to this client');
       }
+
+      // Revoking a credential breaks ingestion for whoever is using it.
+      await requireOrganizationAdmin({
+        userId: ctx.session.userId,
+        organizationId: client.organizationId,
+        message: 'Only organization admins can delete API clients',
+      });
 
       await db.client.delete({
         where: {

@@ -119,18 +119,19 @@ function AccessCell({
 
   return (
     <>
-      {access.map((id) => {
-        const project = projects.find((p) => p.id === id);
+      {access.map((grant) => {
+        const project = projects.find((p) => p.id === grant.projectId);
         if (!project) {
           return (
-            <Badge key={id} className="mr-1">
+            <Badge key={grant.projectId} className="mr-1">
               Unknown
             </Badge>
           );
         }
         return (
-          <Badge key={id} color="blue" className="mr-1">
+          <Badge key={grant.projectId} color="blue" className="mr-1">
             {project.name}
+            {grant.level === 'read' ? ' (read-only)' : ''}
           </Badge>
         );
       })}

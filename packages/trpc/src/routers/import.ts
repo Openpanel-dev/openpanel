@@ -4,7 +4,7 @@ import { db } from '@openpanel/db';
 import { importQueue } from '@openpanel/queue';
 import { zCreateImport } from '@openpanel/validation';
 
-import { getProjectAccess } from '../access';
+import { getProjectAccess, requireProjectAccess } from '../access';
 import {
   TRPCForbiddenError,
   TRPCBadRequestError,
@@ -62,16 +62,11 @@ export const importRouter = createTRPCRouter({
   create: protectedProcedure
     .input(zCreateImport)
     .mutation(async ({ input, ctx }) => {
-      const access = await getProjectAccess({
-        projectId: input.projectId,
+      await requireProjectAccess({
         userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
       });
-
-      if (!access || (typeof access !== 'boolean' && access.level === 'read')) {
-        throw new TRPCForbiddenError(
-          'You do not have permission to create imports for this project',
-        );
-      }
 
       const organization = await db.organization.findFirst({
         where: {
@@ -133,16 +128,11 @@ export const importRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
-        projectId: importRecord.projectId,
+      await requireProjectAccess({
         userId: ctx.session.userId,
+        projectId: importRecord.projectId,
+        level: 'write',
       });
-
-      if (!access || (typeof access !== 'boolean' && access.level === 'read')) {
-        throw new TRPCForbiddenError(
-          'You do not have permission to delete imports for this project',
-        );
-      }
 
       if (importRecord.jobId) {
         const job = await importQueue.getJob(importRecord.jobId);
@@ -167,16 +157,11 @@ export const importRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
-        projectId: importRecord.projectId,
+      await requireProjectAccess({
         userId: ctx.session.userId,
+        projectId: importRecord.projectId,
+        level: 'write',
       });
-
-      if (!access || (typeof access !== 'boolean' && access.level === 'read')) {
-        throw new TRPCForbiddenError(
-          'You do not have permission to retry imports for this project',
-        );
-      }
 
       // Only allow retry for failed imports
       if (importRecord.status !== 'failed') {

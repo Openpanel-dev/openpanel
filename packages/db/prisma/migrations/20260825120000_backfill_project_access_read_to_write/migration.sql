@@ -1,0 +1,21 @@
+-- Until now `ProjectAccess.level` was read by exactly three procedures (the
+-- import ones) and ignored by the other 26 mutating procedures, so the value
+-- was effectively inert. Two code paths wrote it and they disagreed:
+--
+--   * accepting an invite  -> level = 'write'
+--       (packages/db/src/services/organization.service.ts)
+--   * editing a member     -> level = 'read', hardcoded
+--       (organization.updateMemberAccess)
+--
+-- `updateMemberAccess` took a bare list of project ids: the admin chose WHICH
+-- projects, never WHAT level. No UI has ever offered a level choice, so every
+-- stored 'read' row is that hardcoded constant rather than anyone's intent.
+--
+-- Enforcement of the level starts with this release. Without this backfill,
+-- every member who was ever edited through the members modal would silently
+-- become read-only on every project the moment it deploys.
+--
+-- Lossless: no deliberate read grant can exist yet. Read-only access becomes
+-- expressible from this release onward, via the level selector on the invite
+-- and edit-member modals.
+UPDATE "project_access" SET "level" = 'write' WHERE "level" = 'read';

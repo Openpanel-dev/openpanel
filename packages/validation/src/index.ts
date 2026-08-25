@@ -322,11 +322,29 @@ export const zReport = zReportInput.extend({
 // Alias for backward compatibility
 export const zChartInput = zReportInput;
 
+/**
+ * A per-project grant. `read` means exactly that: the member can look at the
+ * project but no mutation will be accepted for it. `admin` is not offered here
+ * - destructive operations hang off the organization role instead, so a third
+ * project level would be a second way to say `write`.
+ */
+export const zProjectAccessGrant = z.object({
+  projectId: z.string(),
+  level: z.enum(['read', 'write']),
+});
+export type IProjectAccessGrant = z.infer<typeof zProjectAccessGrant>;
+
 export const zInviteUser = z.object({
   email: z.string().email(),
   organizationId: z.string(),
   role: z.enum(['org:admin', 'org:member']),
-  access: z.array(z.string()),
+  access: z.array(zProjectAccessGrant),
+});
+
+export const zUpdateMemberAccess = z.object({
+  userId: z.string(),
+  organizationId: z.string(),
+  access: z.array(zProjectAccessGrant),
 });
 
 export const zShareOverview = z.object({
@@ -671,11 +689,33 @@ const zProjectMapper = z.object({
   to: z.string().min(1),
 });
 
+/**
+ * `z.string().url()` alone accepts `file:`, `gopher:` and friends. Restricting
+ * the scheme here gives the user an immediate form error instead of a job that
+ * fails later. It is NOT the SSRF control - the value is stored and fetched
+ * afterwards, so the destination is re-validated at fetch time by
+ * `safeFetchStream`.
+ */
+export const zHttpUrl = z
+  .string()
+  .url()
+  .refine(
+    (value) => {
+      try {
+        const { protocol } = new URL(value);
+        return protocol === 'http:' || protocol === 'https:';
+      } catch {
+        return false;
+      }
+    },
+    { message: 'Only http and https URLs are allowed' },
+  );
+
 const createFileImportConfig = <T extends string>(provider: T) =>
   z.object({
     provider: z.literal(provider),
     type: z.literal('file'),
-    fileUrl: z.string().url(),
+    fileUrl: zHttpUrl,
   });
 
 // Import configs

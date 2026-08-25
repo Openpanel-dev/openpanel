@@ -8,7 +8,7 @@ import {
 } from '@openpanel/db';
 import { zReport } from '@openpanel/validation';
 
-import { getProjectAccess } from '../access';
+import { getProjectAccess, requireProjectAccess } from '../access';
 import {
   TRPCBadRequestError,
   TRPCForbiddenError,
@@ -45,14 +45,11 @@ export const reportRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      await requireProjectAccess({
         userId: ctx.session.userId,
         projectId: dashboard.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       return db.report.create({
         data: {
@@ -91,14 +88,11 @@ export const reportRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      await requireProjectAccess({
         userId: ctx.session.userId,
         projectId: dbReport.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       return db.report.update({
         where: {
@@ -138,14 +132,11 @@ export const reportRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      await requireProjectAccess({
         userId: ctx.session.userId,
         projectId: report.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       if (report.dashboardId === dashboardId) {
         throw new TRPCBadRequestError('Report is already on this dashboard');
@@ -200,14 +191,11 @@ export const reportRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      await requireProjectAccess({
         userId: ctx.session.userId,
         projectId: report.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       return db.report.delete({
         where: {
@@ -228,14 +216,11 @@ export const reportRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      await requireProjectAccess({
         userId: ctx.session.userId,
         projectId: report.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       return db.report.create({
         data: {
@@ -303,14 +288,11 @@ export const reportRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      await requireProjectAccess({
         userId: ctx.session.userId,
         projectId: report.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       // Upsert the layout (create if doesn't exist, update if it does)
       return db.reportLayout.upsert({
@@ -385,14 +367,11 @@ export const reportRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input: { dashboardId, projectId }, ctx }) => {
-      const access = await getProjectAccess({
+      await requireProjectAccess({
         userId: ctx.session.userId,
         projectId: projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       // Same as `getLayouts`: bind the dashboard to the access-checked project
       // before deleting anything, so a foreign dashboard cannot be wiped.

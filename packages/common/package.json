@@ -6,7 +6,8 @@
   "exports": {
     ".": "./index.ts",
     "./server": "./server/index.ts",
-    "./server/get-client-ip": "./server/get-client-ip.ts"
+    "./server/get-client-ip": "./server/get-client-ip.ts",
+    "./server/safe-fetch": "./server/safe-fetch.ts"
   },
   "scripts": {
     "test": "vitest",
@@ -16,6 +17,7 @@
   "dependencies": {
     "@openpanel/constants": "workspace:*",
     "date-fns": "^3.3.1",
+    "ipaddr.js": "^2.5.0",
     "lru-cache": "^11.2.4",
     "luxon": "^3.7.2",
     "mathjs": "^12.3.2",
@@ -24,6 +26,7 @@
     "slugify": "^1.6.6",
     "superjson": "^1.13.3",
     "ua-parser-js": "^2.0.6",
+    "undici": "^8.10.0",
     "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {

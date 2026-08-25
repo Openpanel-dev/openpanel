@@ -33,7 +33,7 @@ export default function ShareOverviewModal() {
 
   // Fetch current share status
   const shareQuery = useQuery(
-    trpc.share.overview.queryOptions({
+    trpc.share.overviewSettings.queryOptions({
       projectId,
     }),
   );
@@ -48,7 +48,7 @@ export default function ShareOverviewModal() {
     resolver: zodResolver(validator),
     defaultValues: {
       public: true,
-      password: existingShare?.password ? '••••••••' : '',
+      password: existingShare?.hasPassword ? '••••••••' : '',
       projectId,
       organizationId,
     },
@@ -60,7 +60,7 @@ export default function ShareOverviewModal() {
     trpc.share.createOverview.mutationOptions({
       onError: handleError,
       onSuccess(res) {
-        queryClient.invalidateQueries(trpc.share.overview.pathFilter());
+        queryClient.invalidateQueries(trpc.share.overviewSettings.pathFilter());
         toast('Success', {
           description: `Your overview is now ${
             res.public ? 'public' : 'private'

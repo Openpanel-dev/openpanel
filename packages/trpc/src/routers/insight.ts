@@ -7,7 +7,7 @@ import {
 import { getRedisCache } from '@openpanel/redis';
 import type { InsightPayload } from '@openpanel/validation';
 import { z } from 'zod';
-import { getProjectAccess } from '../access';
+import { getProjectAccess, requireProjectAccess } from '../access';
 import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -148,14 +148,13 @@ export const insightRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      // Reads an existing insight and explains it. Nothing about the project
+      // changes, so a read-level member may do it.
+      await requireProjectAccess({
         userId: ctx.session.userId,
         projectId: insight.projectId,
+        level: 'read',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       // Serve a cached explanation if the insight hasn't changed since we
       // computed it. Skips both the ClickHouse queries and the LLM call.

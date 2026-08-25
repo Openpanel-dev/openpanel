@@ -1,6 +1,5 @@
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
-import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
@@ -18,6 +17,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
+import { ProjectAccessGrants } from '@/components/settings/project-access-grants';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { IServiceProject } from '@openpanel/db';
 import { zInviteUser } from '@openpanel/validation';
@@ -153,14 +153,10 @@ export default function CreateInvite() {
               render={({ field }) => (
                 <div>
                   <Label>Restrict access</Label>
-                  <ComboboxAdvanced
-                    placeholder="Restrict access to projects"
+                  <ProjectAccessGrants
                     value={field.value}
                     onChange={field.onChange}
-                    items={projects.map((item) => ({
-                      label: item.name,
-                      value: item.id,
-                    }))}
+                    projects={projects}
                   />
                   <p className="mt-1 text-sm text-muted-foreground">
                     Leave empty to give access to all projects

@@ -7,6 +7,7 @@ const __dirname = dirname(__filename);
 
 import { tryCatch } from '@openpanel/common';
 import { db, getOrganizationByProjectIdCached } from '@openpanel/db';
+import { safeWebhookFetcher } from '@openpanel/integrations/src/safe-fetcher';
 import {
   sendSlackNotification,
   slackInstaller,
@@ -80,6 +81,7 @@ export async function slackWebhook(
 
     // Send a notification first to confirm the connection
     await sendSlackNotification({
+      fetcher: safeWebhookFetcher,
       webhookUrl: parsedJson.data.incoming_webhook.url,
       message:
         '👋 Hello. You have successfully connected OpenPanel.dev to your Slack workspace.',

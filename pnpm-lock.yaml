@@ -223,9 +223,6 @@ importers:
       groupmq:
         specifier: 'catalog:'
         version: 2.0.0-next.6(ioredis@5.8.2)
-      ipaddr.js:
-        specifier: ^2.5.0
-        version: 2.5.0
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -253,9 +250,6 @@ importers:
       svix:
         specifier: ^1.24.0
         version: 1.24.0
-      undici:
-        specifier: ^8.10.0
-        version: 8.10.0
       url-metadata:
         specifier: ^5.4.1
         version: 5.4.1
@@ -1178,6 +1172,9 @@ importers:
       date-fns:
         specifier: ^3.3.1
         version: 3.3.1
+      ipaddr.js:
+        specifier: ^2.5.0
+        version: 2.5.0
       lru-cache:
         specifier: ^11.2.4
         version: 11.2.4
@@ -1202,6 +1199,9 @@ importers:
       ua-parser-js:
         specifier: ^2.0.6
         version: 2.0.6
+      undici:
+        specifier: ^8.10.0
+        version: 8.10.0
       unique-names-generator:
         specifier: ^4.7.1
         version: 4.7.1
@@ -1462,6 +1462,9 @@ importers:
 
   packages/integrations:
     dependencies:
+      '@openpanel/common':
+        specifier: workspace:*
+        version: link:../common
       '@slack/bolt':
         specifier: ^3.18.0
         version: 3.21.4

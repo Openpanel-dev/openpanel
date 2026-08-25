@@ -189,14 +189,18 @@ export async function connectUserToOrganization({
   });
 
   if (invite.projectAccess.length > 0) {
-    for (const projectId of invite.projectAccess) {
-      await getProjectAccess.clear({ userId: user.id, projectId });
+    for (const grant of invite.projectAccess) {
+      await getProjectAccess.clear({
+        userId: user.id,
+        projectId: grant.projectId,
+      });
       await db.projectAccess.create({
         data: {
-          projectId,
+          projectId: grant.projectId,
           userId: user.id,
           organizationId: invite.organizationId,
-          level: 'write',
+          // The level the inviting admin chose, not a hardcoded default.
+          level: grant.level,
         },
       });
     }

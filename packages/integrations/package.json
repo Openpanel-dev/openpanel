@@ -8,7 +8,8 @@
   },
   "dependencies": {
     "@slack/bolt": "^3.18.0",
-    "@slack/oauth": "^3.0.0"
+    "@slack/oauth": "^3.0.0",
+    "@openpanel/common": "workspace:*"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",

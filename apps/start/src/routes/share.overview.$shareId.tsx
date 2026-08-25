@@ -36,7 +36,9 @@ export const Route = createFileRoute('/share/overview/$shareId')({
     return { share };
   },
   head: ({ loaderData }) => {
-    if (!loaderData || !loaderData.share) {
+    const share = loaderData?.share;
+
+    if (!share) {
       return {
         meta: [
           {
@@ -49,7 +51,7 @@ export const Route = createFileRoute('/share/overview/$shareId')({
     return {
       meta: [
         {
-          title: `${loaderData.share.project?.name} - ${loaderData.share.organization?.name} - OpenPanel.dev`,
+          title: `${share.project?.name} - ${share.organization?.name} - OpenPanel.dev`,
         },
       ],
     };
@@ -74,27 +76,23 @@ function RouteComponent() {
     }),
   );
 
-  const hasAccess = shareQuery.data?.hasAccess;
-  // Check if share exists and is public
   if (shareQuery.isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (!shareQuery.data) {
-    throw notFound();
-  }
-
-  if (!shareQuery.data.public) {
-    throw notFound();
-  }
-
   const share = shareQuery.data;
-  const projectId = share.projectId;
 
-  // Handle password protection
-  if (share.password && !hasAccess) {
+  if (!share) {
+    throw notFound();
+  }
+
+  // The server refuses non-public shares outright and withholds projectId
+  // until the password cookie is present, so this only picks the UI.
+  if (share.requiresPassword) {
     return <ShareEnterPassword shareId={share.id} />;
   }
+
+  const projectId = share.projectId;
 
   const isHeaderVisible =
     header !== '0' && header !== 0 && header !== 'false' && header !== false;

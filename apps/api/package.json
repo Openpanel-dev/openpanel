@@ -50,7 +50,6 @@
     "fastify-raw-body": "^5.0.0",
     "fastify-zod-openapi": "^5.6.1",
     "groupmq": "catalog:",
-    "ipaddr.js": "^2.5.0",
     "jsonwebtoken": "^9.0.2",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
@@ -60,7 +59,6 @@
     "sqlstring": "^2.3.3",
     "superjson": "^1.13.3",
     "svix": "^1.24.0",
-    "undici": "^8.10.0",
     "url-metadata": "^5.4.1",
     "uuid": "^9.0.1",
     "zod": "catalog:"

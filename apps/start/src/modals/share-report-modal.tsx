@@ -33,7 +33,8 @@ export default function ShareReportModal({ reportId }: { reportId: string }) {
 
   // Fetch current share status
   const shareQuery = useQuery(
-    trpc.share.report.queryOptions({
+    trpc.share.reportSettings.queryOptions({
+      projectId,
       reportId,
     }),
   );
@@ -48,7 +49,7 @@ export default function ShareReportModal({ reportId }: { reportId: string }) {
     resolver: zodResolver(validator),
     defaultValues: {
       public: true,
-      password: existingShare?.password ? '••••••••' : '',
+      password: existingShare?.hasPassword ? '••••••••' : '',
       projectId,
       organizationId,
       reportId,
@@ -61,7 +62,7 @@ export default function ShareReportModal({ reportId }: { reportId: string }) {
     trpc.share.createReport.mutationOptions({
       onError: handleError,
       onSuccess(res) {
-        queryClient.invalidateQueries(trpc.share.report.pathFilter());
+        queryClient.invalidateQueries(trpc.share.reportSettings.pathFilter());
         toast('Success', {
           description: `Your report is now ${res.public ? 'public' : 'private'}`,
           action: res.public

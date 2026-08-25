@@ -37,7 +37,8 @@ export default function ShareDashboardModal({
 
   // Fetch current share status
   const shareQuery = useQuery(
-    trpc.share.dashboard.queryOptions({
+    trpc.share.dashboardSettings.queryOptions({
+      projectId,
       dashboardId,
     }),
   );
@@ -52,7 +53,7 @@ export default function ShareDashboardModal({
     resolver: zodResolver(validator),
     defaultValues: {
       public: true,
-      password: existingShare?.password ? '••••••••' : '',
+      password: existingShare?.hasPassword ? '••••••••' : '',
       projectId,
       organizationId,
       dashboardId,
@@ -65,7 +66,7 @@ export default function ShareDashboardModal({
     trpc.share.createDashboard.mutationOptions({
       onError: handleError,
       onSuccess(res) {
-        queryClient.invalidateQueries(trpc.share.dashboard.pathFilter());
+        queryClient.invalidateQueries(trpc.share.dashboardSettings.pathFilter());
         toast('Success', {
           description: `Your dashboard is now ${
             res.public ? 'public' : 'private'

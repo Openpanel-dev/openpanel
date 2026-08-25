@@ -32,7 +32,9 @@ export const Route = createFileRoute('/share/report/$shareId')({
     return { share };
   },
   head: ({ loaderData }) => {
-    if (!loaderData || !loaderData.share) {
+    const share = loaderData?.share;
+
+    if (!share) {
       return {
         meta: [
           {
@@ -42,10 +44,21 @@ export const Route = createFileRoute('/share/report/$shareId')({
       };
     }
 
+    // A locked share deliberately carries no report, so title it by owner only.
+    if (share.requiresPassword) {
+      return {
+        meta: [
+          {
+            title: `${share.organization?.name} - OpenPanel.dev`,
+          },
+        ],
+      };
+    }
+
     return {
       meta: [
         {
-          title: `${loaderData.share.report.name || 'Report'} - ${loaderData.share.organization?.name} - OpenPanel.dev`,
+          title: `${share.report.name || 'Report'} - ${share.organization?.name} - OpenPanel.dev`,
         },
       ],
     };
@@ -71,20 +84,15 @@ function RouteComponent() {
     }),
   );
 
-  const hasAccess = shareQuery.data?.hasAccess;
-
-  if (!shareQuery.data) {
-    throw notFound();
-  }
-
-  if (!shareQuery.data.public) {
-    throw notFound();
-  }
-
   const share = shareQuery.data;
 
-  // Handle password protection
-  if (share.password && !hasAccess) {
+  if (!share) {
+    throw notFound();
+  }
+
+  // The server refuses non-public shares outright and withholds the report
+  // until the password cookie is present, so this only picks the UI.
+  if (share.requiresPassword) {
     return <ShareEnterPassword shareId={share.id} shareType="report" />;
   }
 

@@ -9,7 +9,11 @@ import {
   getOrganizationById,
   getOrganizations,
 } from '@openpanel/db';
-import { zEditOrganization, zInviteUser } from '@openpanel/validation';
+import {
+  zEditOrganization,
+  zInviteUser,
+  zUpdateMemberAccess,
+} from '@openpanel/validation';
 
 import { generateSecureId } from '@openpanel/common/server';
 import { sendEmail } from '@openpanel/email';
@@ -211,7 +215,7 @@ export const organizationRouter = createTRPCRouter({
           organizationId: input.organizationId,
           role: input.role,
           createdById: ctx.session.userId,
-          projectAccess: input.access || [],
+          projectAccess: input.access ?? [],
           expiresAt: addDays(new Date(), 3),
         },
         include: {
@@ -324,13 +328,7 @@ export const organizationRouter = createTRPCRouter({
     }),
 
   updateMemberAccess: protectedProcedure
-    .input(
-      z.object({
-        userId: z.string(),
-        organizationId: z.string(),
-        access: z.array(z.string()),
-      }),
-    )
+    .input(zUpdateMemberAccess)
     .mutation(async ({ input, ctx }) => {
       if (input.userId === ctx.session.userId) {
         throw new TRPCForbiddenError('You cannot update your own access');
@@ -353,11 +351,14 @@ export const organizationRouter = createTRPCRouter({
           },
         }),
         db.projectAccess.createMany({
-          data: input.access.map((projectId) => ({
+          // The level comes from the admin's choice. This used to be hardcoded
+          // to 'read', which was harmless only because nothing enforced the
+          // level (GHSA-f9rx-pxgw-c6rg).
+          data: input.access.map((grant) => ({
             userId: input.userId,
             organizationId: input.organizationId,
-            projectId: projectId,
-            level: 'read',
+            projectId: grant.projectId,
+            level: grant.level,
           })),
         }),
       ]);

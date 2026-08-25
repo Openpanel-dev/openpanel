@@ -10,7 +10,7 @@ import {
 } from '@openpanel/db';
 import { zCreateNotificationRule } from '@openpanel/validation';
 
-import { getProjectAccess } from '../access';
+import { requireProjectAccess } from '../access';
 import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -87,16 +87,11 @@ export const notificationRouter = createTRPCRouter({
           },
         });
 
-        const access = await getProjectAccess({
+        await requireProjectAccess({
           userId: ctx.session.userId,
           projectId: existing.projectId,
+          level: 'write',
         });
-
-        if (!access) {
-          throw new TRPCForbiddenError(
-            'You do not have access to this project',
-          );
-        }
 
         return db.notificationRule.update({
           where: {
@@ -151,14 +146,11 @@ export const notificationRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      await requireProjectAccess({
         userId: ctx.session.userId,
         projectId: rule.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       return db.notificationRule.delete({
         where: {

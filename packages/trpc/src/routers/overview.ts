@@ -62,12 +62,23 @@ const overviewProcedure = publicProcedure.use(
     };
 
     if (rawInput.shareId) {
-      await validateOverviewShareAccess(rawInput.shareId, rawInput.projectId, {
-        cookies: ctx.cookies,
-        session: ctx.session?.userId
-          ? { userId: ctx.session.userId }
-          : undefined,
-      });
+      // validateOverviewShareAccess only throws for missing/non-public shares.
+      // A password-protected share without the unlock cookie comes back as
+      // `{ isValid: false }`, so ignoring the result leaves the data open to
+      // anyone holding the link. The chart path does the same check.
+      const shareValidation = await validateOverviewShareAccess(
+        rawInput.shareId,
+        rawInput.projectId,
+        {
+          cookies: ctx.cookies,
+          session: ctx.session?.userId
+            ? { userId: ctx.session.userId }
+            : undefined,
+        }
+      );
+      if (!shareValidation.isValid) {
+        throw new TRPCForbiddenError('You do not have access to this share');
+      }
     } else {
       if (!ctx.session?.userId) {
         throw new TRPCAccessError('Authentication required');
@@ -502,6 +513,8 @@ export const overviewRouter = createTRPCRouter({
   // last year") into structured filter changes the dashboard can apply
   // through the same handlers the chat panel uses.
   runFilterCommand: protectedProcedure
+    // Computes filter changes for the caller's own UI; changes no project state.
+    .meta({ readOnlyMutation: true })
     .input(
       z.object({
         projectId: z.string(),

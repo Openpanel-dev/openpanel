@@ -9,7 +9,7 @@ import {
   upsertConversationTitle,
 } from '@openpanel/db';
 
-import { getProjectAccess } from '../access';
+import { getProjectAccess, requireProjectAccess } from '../access';
 import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -55,6 +55,9 @@ export const conversationRouter = createTRPCRouter({
     }),
 
   rename: protectedProcedure
+    // A conversation belongs to the caller, not to the project - titling your
+    // own chat is not a project mutation. Ownership is enforced below.
+    .meta({ readOnlyMutation: true })
     .input(
       z.object({
         id: z.string(),
@@ -82,13 +85,11 @@ export const conversationRouter = createTRPCRouter({
           });
         }
       } else {
-        const access = await getProjectAccess({
-          projectId: input.projectId,
+        await requireProjectAccess({
           userId: ctx.session.userId,
+          projectId: input.projectId,
+          level: 'read',
         });
-        if (!access) {
-          throw new TRPCForbiddenError('You do not have access to this project');
-        }
       }
       // Derive organizationId from the project — we never trust a
       // client-supplied value here, even if the caller has access to

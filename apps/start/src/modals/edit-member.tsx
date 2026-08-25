@@ -1,6 +1,6 @@
 import { ButtonContainer } from '@/components/button-container';
 import { Button } from '@/components/ui/button';
-import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
+import { ProjectAccessGrants } from '@/components/settings/project-access-grants';
 import { useTRPC } from '@/integrations/trpc/react';
 import { handleError } from '@/integrations/trpc/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import type { IServiceMember } from '@openpanel/db';
+import type { IProjectAccessGrant } from '@openpanel/validation';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
@@ -18,9 +19,14 @@ export default function EditMember(member: EditMemberProps) {
   const queryClient = useQueryClient();
   const trpc = useTRPC();
 
-  const [access, setAccess] = useState<string[]>(
-    member.access?.map((a) => a.projectId) ?? [],
-  );
+  const toGrants = (): IProjectAccessGrant[] =>
+    member.access?.map((a) => ({
+      projectId: a.projectId,
+      // `admin` is not offered per project - it collapses to write here.
+      level: a.level === 'read' ? ('read' as const) : ('write' as const),
+    })) ?? [];
+
+  const [access, setAccess] = useState<IProjectAccessGrant[]>(toGrants);
 
   const projectsQuery = useQuery(
     trpc.project.list.queryOptions({ organizationId: member.organizationId }),
@@ -30,7 +36,7 @@ export default function EditMember(member: EditMemberProps) {
     trpc.organization.updateMemberAccess.mutationOptions({
       onError(error) {
         handleError(error);
-        setAccess(member.access?.map((a) => a.projectId) ?? []);
+        setAccess(toGrants());
       },
       onSuccess() {
         toast.success('Access updated');
@@ -56,11 +62,10 @@ export default function EditMember(member: EditMemberProps) {
       />
 
       <div className="col gap-4">
-        <ComboboxAdvanced
-          placeholder="Restrict access to projects"
+        <ProjectAccessGrants
           value={access}
-          onChange={(newAccess) => setAccess(newAccess as string[])}
-          items={projects.map((p) => ({ label: p.name, value: p.id }))}
+          onChange={setAccess}
+          projects={projects}
         />
 
         <ButtonContainer>

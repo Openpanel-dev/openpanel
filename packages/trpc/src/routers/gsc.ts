@@ -16,7 +16,7 @@ import {
 import { gscQueue } from '@openpanel/queue';
 import { zRange, zTimeInterval } from '@openpanel/validation';
 import { z } from 'zod';
-import { getProjectAccess } from '../access';
+import { getProjectAccess, requireProjectAccess } from '../access';
 import { TRPCForbiddenError, TRPCNotFoundError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -76,13 +76,11 @@ export const gscRouter = createTRPCRouter({
   initiateOAuth: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const access = await getProjectAccess({
-        projectId: input.projectId,
+      await requireProjectAccess({
         userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
       });
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       const state = Arctic.generateState();
       const codeVerifier = Arctic.generateCodeVerifier();
@@ -116,13 +114,11 @@ export const gscRouter = createTRPCRouter({
   selectSite: protectedProcedure
     .input(z.object({ projectId: z.string(), siteUrl: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const access = await getProjectAccess({
-        projectId: input.projectId,
+      await requireProjectAccess({
         userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
       });
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       const conn = await db.gscConnection.findUnique({
         where: { projectId: input.projectId },
@@ -150,13 +146,11 @@ export const gscRouter = createTRPCRouter({
   disconnect: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const access = await getProjectAccess({
-        projectId: input.projectId,
+      await requireProjectAccess({
         userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
       });
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       await db.gscConnection.deleteMany({
         where: { projectId: input.projectId },

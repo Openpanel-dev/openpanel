@@ -19,7 +19,7 @@ import {
   zCohortUpdate,
 } from '@openpanel/validation';
 import { z } from 'zod';
-import { getProjectAccess } from '../access';
+import { getProjectAccess, requireProjectAccess } from '../access';
 import { TRPCForbiddenError, TRPCNotFoundError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -97,14 +97,11 @@ export const cohortRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Cohort not found');
       }
 
-      const access = await getProjectAccess({
-        projectId: existingCohort.projectId,
+      await requireProjectAccess({
         userId: ctx.session.userId!,
+        projectId: existingCohort.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this cohort');
-      }
 
       const cohort = await db.cohort.update({
         where: { id },
@@ -134,14 +131,11 @@ export const cohortRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Cohort not found');
       }
 
-      const access = await getProjectAccess({
-        projectId: cohort.projectId,
+      await requireProjectAccess({
         userId: ctx.session.userId!,
+        projectId: cohort.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this cohort');
-      }
 
       await db.cohort.delete({ where: { id: input.id } });
 
@@ -280,14 +274,11 @@ export const cohortRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Cohort not found');
       }
 
-      const access = await getProjectAccess({
-        projectId: cohort.projectId,
+      await requireProjectAccess({
         userId: ctx.session.userId!,
+        projectId: cohort.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this cohort');
-      }
 
       if (cohort.isStatic) {
         throw new Error(

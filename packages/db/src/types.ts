@@ -1,6 +1,7 @@
 import type {
   CohortDefinition,
   IImportConfig,
+  IProjectAccessGrant,
   IIntegrationConfig,
   INotificationRuleConfig,
   IProjectFilters,
@@ -21,6 +22,7 @@ declare global {
     type IPrismaIntegrationConfig = IIntegrationConfig;
     type IPrismaNotificationPayload = INotificationPayload;
     type IPrismaProjectFilters = IProjectFilters[];
+    type IPrismaInviteProjectAccess = IProjectAccessGrant[];
     type IPrismaProjectInsightPayload = InsightPayload;
     type IPrismaWidgetOptions = IWidgetOptions;
     type IPrismaClickhouseEvent = IClickhouseEvent;

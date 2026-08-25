@@ -10,7 +10,7 @@ import {
 } from '@openpanel/db';
 import type { Prisma } from '@openpanel/db';
 
-import { getProjectAccess } from '../access';
+import { getProjectAccess, requireProjectAccess } from '../access';
 import { TRPCForbiddenError, TRPCNotFoundError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -57,14 +57,11 @@ export const dashboardRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const access = await getProjectAccess({
-        projectId: input.projectId,
+      await requireProjectAccess({
         userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       const project = await getProjectById(input.projectId);
 
@@ -95,14 +92,11 @@ export const dashboardRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
-        projectId: dashboard.projectId,
+      await requireProjectAccess({
         userId: ctx.session.userId,
+        projectId: dashboard.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this dashboard');
-      }
 
       return db.dashboard.update({
         where: {
@@ -127,14 +121,11 @@ export const dashboardRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
-        projectId: dashboard.projectId,
+      await requireProjectAccess({
         userId: ctx.session.userId,
+        projectId: dashboard.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this dashboard');
-      }
 
       try {
         if (input.forceDelete) {

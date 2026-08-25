@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db, getChartStartEndDate, getSettingsForProject } from '@openpanel/db';
 import { zCreateReference, zRange } from '@openpanel/validation';
 
-import { getProjectAccess } from '../access';
+import { getProjectAccess, requireProjectAccess } from '../access';
 import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
@@ -62,14 +62,11 @@ export const referenceRouter = createTRPCRouter({
         where: { id: input.id },
       });
 
-      const access = await getProjectAccess({
+      await requireProjectAccess({
         userId: ctx.session.userId,
         projectId: existing.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       return db.reference.update({
         where: { id: input.id },
@@ -89,14 +86,11 @@ export const referenceRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccess({
+      await requireProjectAccess({
         userId: ctx.session.userId,
         projectId: reference.projectId,
+        level: 'write',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
 
       return db.reference.delete({
         where: {

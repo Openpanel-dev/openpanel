@@ -2,6 +2,8 @@ import type { Job } from 'bullmq';
 
 import { Prisma, db } from '@openpanel/db';
 import { sendDiscordNotification } from '@openpanel/integrations/src/discord';
+import { postWebhook } from '@openpanel/integrations/src/fetcher';
+import { safeWebhookFetcher } from '@openpanel/integrations/src/safe-fetcher';
 import { sendSlackNotification } from '@openpanel/integrations/src/slack';
 import { execute as executeJavaScriptTemplate } from '@openpanel/js-runtime';
 import type { NotificationQueuePayload } from '@openpanel/queue';
@@ -73,17 +75,20 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
             };
           }
 
-          return fetch(integration.config.url, {
-            method: 'POST',
-            headers: {
-              ...(integration.config.headers ?? {}),
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-          });
+          // The webhook URL, its headers and (in javascript mode) its body are
+          // all user-controlled, and this runs inside our network. Re-validate
+          // the destination on every send rather than trusting it from when it
+          // was saved.
+          return postWebhook(
+            safeWebhookFetcher,
+            integration.config.url,
+            body,
+            integration.config.headers ?? {},
+          );
         }
         case 'discord': {
           return sendDiscordNotification({
+            fetcher: safeWebhookFetcher,
             webhookUrl: integration.config.url,
             message: [
               `🔔 **${notification.title}**`,
@@ -94,6 +99,7 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
 
         case 'slack': {
           return sendSlackNotification({
+            fetcher: safeWebhookFetcher,
             webhookUrl: integration.config.incoming_webhook.url,
             message: [`🔔 *${notification.title}*`, notification.message].join(
               '\n',

@@ -1,7 +1,12 @@
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { BlockedUrlError, isBlockedIp, safeFetch } from './safe-fetch';
+import {
+  BlockedUrlError,
+  isBlockedIp,
+  safeFetch,
+  safeFetchStream,
+} from './safe-fetch';
 
 describe('isBlockedIp', () => {
   it('blocks the ranges an SSRF payload aims at', () => {
@@ -109,6 +114,81 @@ describe('safeFetch', () => {
 
   it('refuses non-http schemes', async () => {
     await expect(safeFetch('file:///etc/passwd')).rejects.toBeInstanceOf(
+      BlockedUrlError,
+    );
+  });
+});
+
+describe('safeFetchStream', () => {
+  let secretServer: http.Server;
+  let redirectServer: http.Server;
+  let secretPort: number;
+  let redirectPort: number;
+
+  beforeAll(async () => {
+    secretServer = http.createServer((_req, res) => {
+      res.writeHead(200, { 'content-type': 'text/csv' });
+      res.end('INTERNAL-SECRET');
+    });
+    await new Promise<void>((resolve) =>
+      secretServer.listen(0, '127.0.0.1', resolve),
+    );
+    secretPort = (secretServer.address() as AddressInfo).port;
+
+    redirectServer = http.createServer((_req, res) => {
+      res.writeHead(302, {
+        location: `http://127.0.0.1:${secretPort}/export.csv`,
+      });
+      res.end();
+    });
+    await new Promise<void>((resolve) =>
+      redirectServer.listen(0, '127.0.0.1', resolve),
+    );
+    redirectPort = (redirectServer.address() as AddressInfo).port;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve) => secretServer.close(() => resolve()));
+    await new Promise<void>((resolve) => redirectServer.close(() => resolve()));
+  });
+
+  // The streaming variant is what the importer uses, so it has to hold the
+  // same line as safeFetch - a second implementation that forgot one of these
+  // is exactly how the importer ended up unguarded in the first place.
+  it('refuses to fetch a loopback address directly', async () => {
+    await expect(
+      safeFetchStream(`http://127.0.0.1:${secretPort}/export.csv`, {
+        timeoutMs: 3000,
+      }),
+    ).rejects.toBeInstanceOf(BlockedUrlError);
+  });
+
+  it('refuses to fetch a hostname that resolves to loopback', async () => {
+    await expect(
+      safeFetchStream(`http://localhost:${secretPort}/export.csv`, {
+        timeoutMs: 3000,
+      }),
+    ).rejects.toBeInstanceOf(BlockedUrlError);
+  });
+
+  it('refuses a redirect that points at an internal address', async () => {
+    await expect(
+      safeFetchStream(`http://127.0.0.1:${redirectPort}/export.csv`, {
+        timeoutMs: 3000,
+      }),
+    ).rejects.toBeInstanceOf(BlockedUrlError);
+  });
+
+  it('refuses cloud instance metadata', async () => {
+    await expect(
+      safeFetchStream('http://169.254.169.254/latest/meta-data/', {
+        timeoutMs: 3000,
+      }),
+    ).rejects.toBeInstanceOf(BlockedUrlError);
+  });
+
+  it('refuses non-http schemes', async () => {
+    await expect(safeFetchStream('file:///etc/passwd')).rejects.toBeInstanceOf(
       BlockedUrlError,
     );
   });

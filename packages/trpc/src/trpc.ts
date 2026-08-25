@@ -12,7 +12,7 @@ import {
   createTrpcRedisLimiter,
   defaultFingerPrint,
 } from '@trpc-limiter/redis';
-import { getOrganizationAccess, getProjectAccess } from './access';
+import { getOrganizationAccess, requireProjectAccess } from './access';
 import { TRPCForbiddenError } from './errors';
 
 export const rateLimitMiddleware = ({
@@ -60,7 +60,19 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
 }
 export type Context = Awaited<ReturnType<typeof createContext>>;
 
-const t = initTRPC.context<Context>().create({
+/**
+ * Per-procedure metadata consulted by `enforceAccess`.
+ *
+ * A tRPC mutation is not always a mutation of project *state* - the AI helpers
+ * are one-shot compute that happen to be modelled as mutations. Those may run
+ * at read level. The default is write, so forgetting to set this fails closed.
+ */
+export interface Meta {
+  /** This mutation does not change project state; read access is enough. */
+  readOnlyMutation?: boolean;
+}
+
+const t = initTRPC.context<Context>().meta<Meta>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
     return {
@@ -95,7 +107,7 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
 });
 
 // Only used on protected routes
-const enforceAccess = t.middleware(async ({ ctx, next, type, getRawInput }) => {
+const enforceAccess = t.middleware(async ({ ctx, next, type, meta, getRawInput }) => {
   const sessionId = ctx.session?.session?.id ?? null;
   return runWithAlsSession(sessionId, async () => {
     const rawInput = await getRawInput();
@@ -104,14 +116,17 @@ const enforceAccess = t.middleware(async ({ ctx, next, type, getRawInput }) => {
     }
 
     if (has('projectId', rawInput)) {
-      const access = await getProjectAccess({
+      // Fails closed: any procedure that takes a top-level projectId requires
+      // write access to mutate, including ones added later. Procedures that
+      // resolve the project from a reportId/dashboardId/etc. are invisible to
+      // this check and call requireProjectAccess in the handler instead.
+      const needsWrite = type === 'mutation' && !meta?.readOnlyMutation;
+
+      await requireProjectAccess({
         userId: ctx.session.userId!,
         projectId: rawInput.projectId as string,
+        level: needsWrite ? 'write' : 'read',
       });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
     }
 
     if (has('organizationId', rawInput)) {
