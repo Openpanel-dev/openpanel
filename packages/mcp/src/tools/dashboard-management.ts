@@ -169,10 +169,24 @@ async function requireReport(projectId: string, reportId: string) {
 function withDashboardUrl(
   organizationId: string,
   projectId: string,
-  dashboard: { id: string },
+  dashboard: {
+    id: string;
+    name: string;
+    projectId: string;
+    organizationId: string;
+    createdAt: Date;
+    updatedAt: Date;
+  },
 ) {
+  // Explicit fields: getDashboardById includes the full project row, which is
+  // more than this tool should hand back.
   return {
-    ...dashboard,
+    id: dashboard.id,
+    name: dashboard.name,
+    projectId: dashboard.projectId,
+    organizationId: dashboard.organizationId,
+    createdAt: dashboard.createdAt,
+    updatedAt: dashboard.updatedAt,
     dashboard_url: dashboardUrl(organizationId, projectId, dashboard.id),
   };
 }
@@ -243,12 +257,9 @@ export function registerDashboardManagementTools(
         const projectId = await resolveProjectId(context, inputProjectId);
         const dashboard = await requireDashboard(projectId, dashboardId);
         const reports = await db.report.findMany({
-          where: { dashboardId },
+          where: { dashboardId, projectId },
           include: { layout: true },
         });
-        if (reports.some((report) => report.projectId !== projectId)) {
-          throw new Error('Dashboard contains a report from another project');
-        }
         const reportsWithUrls = reports.map((report) => ({
           id: report.id,
           report: canonicalReportConfig(report),
@@ -342,43 +353,36 @@ export function registerDashboardManagementTools(
         const dashboard = await requireDashboard(projectId, dashboardId);
 
         try {
-          await db.$transaction(
-            async (transaction) => {
-              const lockedDashboard = await transaction.dashboard.findFirst({
-                where: { id: dashboardId, projectId },
+          await db.$transaction(async (transaction) => {
+            const current = await transaction.dashboard.findFirst({
+              where: { id: dashboardId, projectId },
+            });
+            if (!current) {
+              throw new Error('Dashboard not found');
+            }
+
+            const reports = await transaction.report.findMany({
+              where: { dashboardId, projectId },
+              select: { id: true },
+            });
+            if (reports.length > 0 && !forceDelete) {
+              throw new Error('Cannot delete dashboard with associated reports');
+            }
+
+            if (forceDelete && reports.length > 0) {
+              const reportIds = reports.map((report) => report.id);
+              // Layouts hold the foreign key to reports, so they go first —
+              // this order stays correct even if that cascade ever changes.
+              await transaction.reportLayout.deleteMany({
+                where: { reportId: { in: reportIds } },
               });
-              if (!lockedDashboard) {
-                throw new Error('Dashboard not found');
-              }
-
-              const reports = await transaction.report.findMany({
-                where: { dashboardId },
-                select: { id: true, projectId: true },
+              await transaction.report.deleteMany({
+                where: { id: { in: reportIds } },
               });
-              if (reports.some((report) => report.projectId !== projectId)) {
-                throw new Error('Dashboard contains a report from another project');
-              }
-              if (reports.length > 0 && !forceDelete) {
-                throw new Error('Cannot delete dashboard with associated reports');
-              }
+            }
 
-              if (forceDelete && reports.length > 0) {
-                const reportIds = reports.map((report) => report.id);
-                await transaction.report.deleteMany({
-                  where: { id: { in: reportIds } },
-                });
-                // Keep this explicit even though the current schema cascades
-                // layouts from reports, so forced deletion cannot leave state
-                // behind if that relationship changes.
-                await transaction.reportLayout.deleteMany({
-                  where: { reportId: { in: reportIds } },
-                });
-              }
-
-              await transaction.dashboard.delete({ where: { id: dashboardId } });
-            },
-            { isolationLevel: 'Serializable' },
-          );
+            await transaction.dashboard.delete({ where: { id: dashboardId } });
+          });
         } catch (error) {
           if (
             typeof error === 'object' &&
@@ -432,7 +436,7 @@ export function registerDashboardManagementTools(
     'Update a saved chart report after verifying it belongs to the resolved project.',
     {
       projectId: projectIdSchema(context),
-      reportId: z.string().describe('The report ID to update'),
+      reportId: z.string().uuid().describe('The report ID to update'),
       report: reportSchema.describe('The complete saved report configuration'),
     },
     async ({ projectId: inputProjectId, reportId, report }) =>
@@ -455,7 +459,7 @@ export function registerDashboardManagementTools(
     'Delete a saved chart report after verifying it belongs to the resolved project.',
     {
       projectId: projectIdSchema(context),
-      reportId: z.string().describe('The report ID to delete'),
+      reportId: z.string().uuid().describe('The report ID to delete'),
     },
     async ({ projectId: inputProjectId, reportId }) =>
       withErrorHandling(async () => {
@@ -475,7 +479,7 @@ export function registerDashboardManagementTools(
     'Duplicate a saved report in its existing dashboard.',
     {
       projectId: projectIdSchema(context),
-      reportId: z.string().describe('The report ID to duplicate'),
+      reportId: z.string().uuid().describe('The report ID to duplicate'),
     },
     async ({ projectId: inputProjectId, reportId }) =>
       withErrorHandling(async () => {
@@ -497,7 +501,7 @@ export function registerDashboardManagementTools(
             previous: report.previous,
             unit: report.unit,
             metric: report.metric,
-            options: report.options,
+            options: report.options ?? Prisma.DbNull,
             visibleSeries: report.visibleSeries,
             startDate: report.startDate,
             endDate: report.endDate,
@@ -515,7 +519,7 @@ export function registerDashboardManagementTools(
     'Save or update the grid layout for a report in the resolved project.',
     {
       projectId: projectIdSchema(context),
-      reportId: z.string().describe('The report ID whose layout should change'),
+      reportId: z.string().uuid().describe('The report ID whose layout should change'),
       layout: layoutSchema.describe('The report grid layout'),
     },
     async ({ projectId: inputProjectId, reportId, layout }) =>
@@ -553,7 +557,6 @@ export function registerDashboardManagementTools(
         return {
           dashboardId,
           count: result.count,
-          deletedLayouts: result.count,
           dashboard_url: dashboardUrl(context.organizationId, projectId, dashboardId),
         };
       }),

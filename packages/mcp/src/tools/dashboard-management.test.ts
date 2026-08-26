@@ -44,6 +44,7 @@ vi.mock('@openpanel/db', () => ({
   ),
 }));
 
+import type { McpAuthContext } from '../auth';
 import { registerDashboardManagementTools } from './dashboard-management';
 
 type Handler = (input: any) => Promise<any>;
@@ -98,7 +99,7 @@ const DASHBOARD = {
 };
 
 const REPORT = {
-  id: 'report-1',
+  id: '11111111-1111-4111-8111-111111111111',
   projectId: 'project-1',
   dashboardId: 'dashboard-1',
   name: 'Signups',
@@ -159,7 +160,7 @@ beforeEach(() => {
   mockDb.$transaction.mockImplementation(async (callback) => callback(mockDb));
 });
 
-function register(context = ROOT_CONTEXT) {
+function register(context: McpAuthContext = ROOT_CONTEXT) {
   const server = makeServer();
   registerDashboardManagementTools(server as any, context);
   return server;
@@ -252,9 +253,21 @@ describe('dashboard management project binding', () => {
 
     expect(mockGetDashboardById).toHaveBeenCalledWith('dashboard-1', 'project-1');
     expect(mockDb.report.findMany).toHaveBeenCalledWith({
-      where: { dashboardId: 'dashboard-1' },
+      where: { dashboardId: 'dashboard-1', projectId: 'project-1' },
       include: { layout: true },
     });
+  });
+
+  it('rejects a report id that is not a uuid before touching the database', async () => {
+    const server = register();
+
+    await expect(
+      server.invoke('delete_report', {
+        projectId: 'project-1',
+        reportId: 'dashboard-1',
+      }),
+    ).rejects.toThrow();
+    expect(mockDb.report.findFirst).not.toHaveBeenCalled();
   });
 
   it('does not mutate a report from another project', async () => {
@@ -263,13 +276,13 @@ describe('dashboard management project binding', () => {
 
     const result = await server.invoke('delete_report', {
       projectId: 'project-1',
-      reportId: 'foreign-report',
+      reportId: '22222222-2222-4222-8222-222222222222',
     });
 
     expect(result.error).toContain('Report not found');
     expect(mockDb.report.delete).not.toHaveBeenCalled();
     expect(mockDb.report.findFirst).toHaveBeenCalledWith({
-      where: { id: 'foreign-report', projectId: 'project-1' },
+      where: { id: '22222222-2222-4222-8222-222222222222', projectId: 'project-1' },
     });
   });
 });
@@ -305,12 +318,12 @@ describe('dashboard management behavior', () => {
 
     await server.invoke('update_report', {
       projectId: 'project-1',
-      reportId: 'report-1',
+      reportId: '11111111-1111-4111-8111-111111111111',
       report: validReport(),
     });
 
     expect(mockDb.report.update).toHaveBeenCalledWith({
-      where: { id: 'report-1' },
+      where: { id: '11111111-1111-4111-8111-111111111111' },
       data: expect.objectContaining({
         formula: null,
         unit: null,
@@ -348,12 +361,12 @@ describe('dashboard management behavior', () => {
     const rootServer = register();
     await rootServer.invoke('update_report', {
       projectId: 'project-1',
-      reportId: 'report-1',
+      reportId: '11111111-1111-4111-8111-111111111111',
       report: configuration,
     });
 
     expect(mockDb.report.update).toHaveBeenCalledWith({
-      where: { id: 'report-1' },
+      where: { id: '11111111-1111-4111-8111-111111111111' },
       data: expect.objectContaining({
         events: report.events,
         globalFilters: report.globalFilters,
@@ -363,7 +376,7 @@ describe('dashboard management behavior', () => {
 
   it('rejects a non-empty dashboard atomically without force', async () => {
     mockDb.report.findMany.mockResolvedValue([
-      { id: 'report-1', projectId: 'project-1' },
+      { id: '11111111-1111-4111-8111-111111111111', projectId: 'project-1' },
     ]);
     const server = register();
 
@@ -379,7 +392,7 @@ describe('dashboard management behavior', () => {
 
   it('force deletes reports and their layouts in one transaction', async () => {
     mockDb.report.findMany.mockResolvedValue([
-      { id: 'report-1', projectId: 'project-1' },
+      { id: '11111111-1111-4111-8111-111111111111', projectId: 'project-1' },
     ]);
     const server = register();
 
@@ -390,11 +403,14 @@ describe('dashboard management behavior', () => {
     });
 
     expect(mockDb.report.deleteMany).toHaveBeenCalledWith({
-      where: { id: { in: ['report-1'] } },
+      where: { id: { in: ['11111111-1111-4111-8111-111111111111'] } },
     });
     expect(mockDb.reportLayout.deleteMany).toHaveBeenCalledWith({
-      where: { reportId: { in: ['report-1'] } },
+      where: { reportId: { in: ['11111111-1111-4111-8111-111111111111'] } },
     });
+    expect(
+      mockDb.reportLayout.deleteMany.mock.invocationCallOrder[0]!,
+    ).toBeLessThan(mockDb.report.deleteMany.mock.invocationCallOrder[0]!);
     expect(mockDb.dashboard.delete).toHaveBeenCalledWith({
       where: { id: 'dashboard-1' },
     });
@@ -412,7 +428,7 @@ describe('dashboard management behavior', () => {
 
     await server.invoke('duplicate_report', {
       projectId: 'project-1',
-      reportId: 'report-1',
+      reportId: '11111111-1111-4111-8111-111111111111',
     });
 
     expect(mockDb.report.create).toHaveBeenCalledWith({
@@ -446,7 +462,7 @@ describe('dashboard management behavior', () => {
     await expect(
       server.invoke('update_report_layout', {
         projectId: 'project-1',
-        reportId: 'report-1',
+        reportId: '11111111-1111-4111-8111-111111111111',
         layout: { x: -1, y: 0, w: 4, h: 3 },
       }),
     ).rejects.toThrow();
@@ -454,13 +470,13 @@ describe('dashboard management behavior', () => {
 
     await server.invoke('update_report_layout', {
       projectId: 'project-1',
-      reportId: 'report-1',
+      reportId: '11111111-1111-4111-8111-111111111111',
       layout: { x: 1, y: 2, w: 4, h: 3, minW: 2, minH: 2, maxW: 8, maxH: 8 },
     });
     expect(mockDb.reportLayout.upsert).toHaveBeenCalledWith({
-      where: { reportId: 'report-1' },
+      where: { reportId: '11111111-1111-4111-8111-111111111111' },
       create: {
-        reportId: 'report-1',
+        reportId: '11111111-1111-4111-8111-111111111111',
         x: 1,
         y: 2,
         w: 4,
