@@ -64,6 +64,7 @@ export function DiscordIntegrationForm({
       return toast.error('Webhook URL is required');
     }
     const res = await testMutation.mutateAsync({
+      projectId,
       config: { type: 'discord', url },
     });
     if (res.success) {

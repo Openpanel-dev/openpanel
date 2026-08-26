@@ -12,17 +12,23 @@ import {
   zCreateSlackIntegration,
   zIntegrationConfig,
 } from '@openpanel/validation';
-import { getOrganizationAccess, getProjectAccess } from '../access';
+import {
+  getOrganizationAccess,
+  requireOrganizationAdmin,
+  requireProjectAccess,
+} from '../access';
 import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
-// Assert the user can access the project, and return the project's
+// Assert the user can act on the project at `level`, and return the project's
 // organizationId (still stored on the integration for org-level queries/cascades).
-async function assertProjectAccessAndGetOrg(userId: string, projectId: string) {
-  const access = await getProjectAccess({ userId, projectId });
-  if (!access) {
-    throw new TRPCForbiddenError('You do not have access to this project');
-  }
+async function assertProjectAccessAndGetOrg(
+  userId: string,
+  projectId: string,
+  level: 'read' | 'write',
+) {
+  await requireProjectAccess({ userId, projectId, level });
+
   const project = await db.project.findUniqueOrThrow({
     where: { id: projectId },
     select: { organizationId: true },
@@ -51,10 +57,14 @@ async function upsertIntegration(
       where: { id: input.id },
       select: { projectId: true, organizationId: true },
     });
-    await assertIntegrationAccess(userId, existing);
+    await assertIntegrationAccess(userId, existing, 'write');
     organizationId = existing.organizationId;
   } else {
-    organizationId = await assertProjectAccessAndGetOrg(userId, input.projectId);
+    organizationId = await assertProjectAccessAndGetOrg(
+      userId,
+      input.projectId,
+      'write',
+    );
   }
 
   const plugin = getServerIntegration(input.config.type);
@@ -88,18 +98,37 @@ async function upsertIntegration(
   });
 }
 
-// Access check for an existing integration of either scope: project-scoped rows
-// check project access; legacy org-wide rows (projectId null) check org access.
+// Access check for an existing integration of either scope. Project-scoped rows
+// go through the project ladder; legacy org-wide rows (projectId null) have no
+// project access level to consult, so a write to one — it is shared by every
+// project in the org — is admin-tier, while a read only needs membership.
 async function assertIntegrationAccess(
   userId: string,
   integration: { projectId: string | null; organizationId: string },
+  level: 'read' | 'write',
 ) {
-  const access = integration.projectId
-    ? await getProjectAccess({ userId, projectId: integration.projectId })
-    : await getOrganizationAccess({
-        userId,
-        organizationId: integration.organizationId,
-      });
+  if (integration.projectId) {
+    await requireProjectAccess({
+      userId,
+      projectId: integration.projectId,
+      level,
+    });
+    return;
+  }
+
+  if (level === 'write') {
+    await requireOrganizationAdmin({
+      userId,
+      organizationId: integration.organizationId,
+      message: 'Only organization admins can change an org-wide integration',
+    });
+    return;
+  }
+
+  const access = await getOrganizationAccess({
+    userId,
+    organizationId: integration.organizationId,
+  });
   if (!access) {
     throw new TRPCForbiddenError('You do not have access to this integration');
   }
@@ -115,7 +144,7 @@ export const integrationRouter = createTRPCRouter({
         },
       });
 
-      await assertIntegrationAccess(ctx.session.userId, integration);
+      await assertIntegrationAccess(ctx.session.userId, integration, 'read');
 
       return integration;
     }),
@@ -125,6 +154,7 @@ export const integrationRouter = createTRPCRouter({
       const organizationId = await assertProjectAccessAndGetOrg(
         ctx.session.userId,
         input.projectId,
+        'read',
       );
 
       const integrations = await db.integration.findMany({
@@ -155,12 +185,13 @@ export const integrationRouter = createTRPCRouter({
           where: { id: input.id },
           select: { projectId: true, organizationId: true },
         });
-        await assertIntegrationAccess(ctx.session.userId, existing);
+        await assertIntegrationAccess(ctx.session.userId, existing, 'write');
         organizationId = existing.organizationId;
       } else {
         organizationId = await assertProjectAccessAndGetOrg(
           ctx.session.userId,
           input.projectId,
+          'write',
         );
       }
 
@@ -212,25 +243,47 @@ export const integrationRouter = createTRPCRouter({
   createOrUpdateExport: protectedProcedure
     .input(z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]))
     .mutation(({ input, ctx }) => upsertIntegration(ctx.session.userId, input)),
-  // Generic, registry-driven connection test.
+  // Generic, registry-driven connection test. Gated on project write access:
+  // it makes the server connect outbound to a caller-supplied destination with
+  // caller-supplied credentials, so it must not be reachable by anyone who
+  // merely holds a session.
   testConnection: protectedProcedure
-    .input(z.object({ config: zIntegrationConfig }))
-    .mutation(
-      async ({ input }) =>
+    .input(
+      z.object({
+        projectId: z.string().min(1),
+        config: zIntegrationConfig,
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      await requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
+      });
+
+      return (
         (await getServerIntegration(input.config.type).testConnection?.(
           input.config,
-        )) ?? { success: true },
-    ),
-  // Back-compat alias for the export forms.
+        )) ?? { success: true }
+      );
+    }),
+  // Back-compat alias for the export forms; same gate as `testConnection`.
   // TODO: remove once the dashboard calls `testConnection` directly.
   testExportConnection: protectedProcedure
     .input(z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]))
-    .mutation(
-      async ({ input }) =>
+    .mutation(async ({ input, ctx }) => {
+      await requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'write',
+      });
+
+      return (
         (await getServerIntegration(input.config.type).testConnection?.(
           input.config,
-        )) ?? { success: false, error: 'Unknown export type' },
-    ),
+        )) ?? { success: false, error: 'Unknown export type' }
+      );
+    }),
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input: { id }, ctx }) => {
@@ -240,7 +293,7 @@ export const integrationRouter = createTRPCRouter({
         },
       });
 
-      await assertIntegrationAccess(ctx.session.userId, integration);
+      await assertIntegrationAccess(ctx.session.userId, integration, 'write');
 
       return db.integration.delete({
         where: {
