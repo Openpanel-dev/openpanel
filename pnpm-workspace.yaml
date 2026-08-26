@@ -17,9 +17,60 @@ patchedDependencies:
 # build still fails loudly if nuqs.patch stops applying cleanly.
 allowUnusedPatches: true
 
+# pnpm 11 verifies that node_modules matches the workspace before running a
+# script, and silently re-installs when it does not. pnpm 10 just ran the
+# script. That is a live behavior change, not a version bump:
+#
+# apps/start/Dockerfile installs a SUBSET of the workspace (the base stage
+# copies ~10 package.json files; packages/sdks/nuxt is not one of them), then
+# `COPY packages ./packages` materializes every importer, and only then runs
+# the build. Under pnpm 11 that build step re-resolves the whole graph from
+# scratch - it does not honour --frozen-lockfile and it rewrites pnpm-lock.yaml
+# inside the image. packages/sdks/nuxt drags in nuxt -> @nuxt/vite-builder ->
+# seroval@1.4.0, and because @tanstack/router-core asks for `seroval: ^1.3.2`
+# and `seroval-plugins: ^1.3.2`, the re-resolve deduped it onto
+# seroval@1.4.0 + seroval-plugins@1.3.3. seroval 1.4.0 dropped
+# createEffectfulFunction from the serializer context class that
+# seroval-plugins <=1.3.3 calls, so every SSR render died with
+# "r.createEffectfulFunction is not a function" - the whole dashboard 500'd on
+# every route, /login included, while api and worker were fine.
+#
+# false = the pnpm 10 behavior these images have always been built with.
+verifyDepsBeforeRun: false
+
 overrides:
   rolldown: 1.0.0-beta.43
   esm-env: npm:esm-env-runtime@^0.1.0
+
+  # seroval 1.4.0 dropped createEffectfulFunction from the serializer context
+  # class, which seroval-plugins <=1.3.3 calls from its plugin serialize(). The
+  # two are simply not compatible, and seroval shipped it as a minor - so any
+  # resolution that pairs them produces a dashboard where every SSR render
+  # throws "r.createEffectfulFunction is not a function".
+  #
+  # @tanstack/router-core is the edge that can drift: it asks for
+  # `seroval: ^1.3.2` + `seroval-plugins: ^1.3.2`, and ^ reaches 1.4.0. It is
+  # also the only package in the dashboard graph that pairs the two. Pinning
+  # here makes the broken combination unrepresentable no matter what order pnpm
+  # resolves in. solid-js needs no pin - it asks for ~1.3.0 and cannot reach 1.4.
+  #
+  # @nuxt/vite-builder (via packages/sdks/nuxt) is the only thing that wanted
+  # 1.4.0, and it is exempted rather than forced down. It only imports
+  # `serialize`, which exists in both, so 1.3.2 would very likely work - but it
+  # declares ^1.4.0, it never reaches the dashboard bundle, and a future nuxt
+  # bump that does need a 1.4 API should fail loudly in the Nuxt SDK build
+  # rather than be silently held back by an override set for another package.
+  seroval: 1.3.2
+  seroval-plugins: 1.3.2
+  "@nuxt/vite-builder>seroval": 1.4.0
+
+  # Same shape of peer drift as seroval above. apps/start pins
+  # embla-carousel-react at 8.0.0-rc22 but takes embla-carousel-autoplay at
+  # ^8.6.0, and autoplay's `embla-carousel` peer is free to resolve to its own
+  # newer copy. When it does, AutoplayType (8.6.0) stops being assignable to
+  # CreatePluginType (8.0.0-rc22) and apps/start fails to typecheck. Pin the
+  # peer to the copy embla-carousel-react actually uses.
+  embla-carousel: 8.0.0-rc22
 
 # Define a catalog of version ranges.
 catalog:

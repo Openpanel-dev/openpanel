@@ -187,11 +187,60 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  # Boots the images this run produced and asserts they actually serve traffic.
+  # Gates every merge-* job below, so a broken image never gets a pullable tag.
+  smoke:
+    permissions:
+      packages: read
+      contents: read
+    needs: [build-api, build-worker, build-dashboard]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # build-* pushed by digest but has not tagged anything yet, so pull the
+      # exact amd64 digests this run produced.
+      - name: Download amd64 digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/smoke-digests
+          pattern: digests-*-linux-amd64
+
+      - name: Resolve images
+        run: |
+          set -euo pipefail
+          for app in api worker dashboard; do
+            dir="/tmp/smoke-digests/digests-${app}-linux-amd64"
+            digest="$(ls "$dir" | head -1)"
+            if [ -z "$digest" ]; then
+              echo "::error::no digest artifact for $app"
+              exit 1
+            fi
+            image="ghcr.io/${{ env.repo_owner }}/${app}@sha256:${digest}"
+            echo "$app -> $image"
+            echo "OP_$(echo "$app" | tr '[:lower:]' '[:upper:]')_IMAGE=$image" >> "$GITHUB_ENV"
+          done
+
+      - name: Smoke test the stack
+        run: .github/smoke/smoke.sh
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f .github/smoke/docker-compose.yml down -v || true
+
   merge-api:
     permissions:
       packages: write
       contents: write
-    needs: build-api
+    needs: [build-api, smoke]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -310,7 +359,7 @@ jobs:
     permissions:
       packages: write
       contents: write
-    needs: build-worker
+    needs: [build-worker, smoke]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -429,7 +478,7 @@ jobs:
     permissions:
       packages: write
       contents: write
-    needs: build-dashboard
+    needs: [build-dashboard, smoke]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
