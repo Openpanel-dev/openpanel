@@ -11,6 +11,9 @@ import type {
 
 const logger = createLogger({ name: 'gcs-adapter' });
 
+/** Object written by `testConnection`; named so it is obvious in a bucket. */
+const CONNECTION_TEST_FILENAME = '.openpanel-connection-test';
+
 /**
  * GCS Adapter for uploading export batches to Google Cloud Storage
  * Uses service account credentials for authentication
@@ -39,9 +42,20 @@ export class GCSAdapter implements IObjectStoreAdapter {
       // Parse the service account key JSON
       const credentials = JSON.parse(this.config.serviceAccountKey);
 
+      // Endpoint override. Real GCS needs none (the SDK resolves it), but
+      // pointing the client at a local fake-gcs-server is the only way to
+      // exercise this adapter without live Google credentials — the same
+      // escape hatch the S3 adapter has via `endpoint`.
+      //
+      // Deliberately NOT the SDK's own `STORAGE_EMULATOR_HOST`: in v7 that var
+      // is applied to the JSON API base but not the upload base, so metadata
+      // reads and uploads can't both resolve. `apiEndpoint` sets both.
+      const apiEndpoint = process.env.GCS_API_ENDPOINT;
+
       this.storage = new Storage({
         credentials,
         projectId: credentials.project_id,
+        ...(apiEndpoint ? { apiEndpoint } : {}),
       });
 
       logger.debug(
@@ -80,14 +94,15 @@ export class GCSAdapter implements IObjectStoreAdapter {
         },
       });
 
-      // Get file metadata to retrieve the generation (similar to etag)
-      const [metadata] = await file.getMetadata();
+      // `save` populates `file.metadata` from the upload response, so re-reading
+      // it with getMetadata() would double the request count of every export.
+      const metadata = file.metadata;
 
       logger.debug(
         {
           bucket: options.bucket,
           key: options.key,
-          generation: metadata.generation,
+          generation: metadata?.generation,
         },
         'File uploaded to GCS',
       );
@@ -95,7 +110,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
       return {
         bucket: options.bucket,
         key: options.key,
-        etag: metadata.etag || undefined,
+        etag: metadata?.etag || undefined,
         location: `gs://${options.bucket}/${options.key}`,
       };
     } catch (error) {
@@ -132,28 +147,49 @@ export class GCSAdapter implements IObjectStoreAdapter {
   }
 
   /**
-   * Test the connection to GCS bucket
+   * Test the connection by writing a probe object.
+   *
+   * Deliberately not `bucket.exists()`: reading bucket metadata needs
+   * `storage.buckets.get`, which the least-privilege grant for an export target
+   * (roles/storage.objectCreator, roles/storage.objectAdmin) does NOT include.
+   * That check fails with a 403 on a correctly configured bucket while the
+   * export itself would work fine. Writing an object exercises exactly the
+   * permission the export needs, so a pass here means a pass at flush time.
    */
   async testConnection(): Promise<{ success: boolean; error?: string }> {
     try {
       const storage = this.getStorage();
       const bucket = storage.bucket(this.config.bucket);
+      const prefix = this.config.prefix || 'openpanel-exports';
+      const file = bucket.file(`${prefix}/${CONNECTION_TEST_FILENAME}`);
 
-      // Check if bucket exists and we have access
-      const [exists] = await bucket.exists();
+      await file.save(Buffer.from('openpanel connection test\n'), {
+        contentType: 'text/plain',
+        resumable: false,
+      });
 
-      if (!exists) {
-        return {
-          success: false,
-          error: `Bucket '${this.config.bucket}' does not exist or is not accessible`,
-        };
-      }
+      // Best effort: objectCreator can write but not delete, and a stray
+      // zero-value probe object must not turn a working setup into a failure.
+      await file.delete().catch(() => undefined);
 
       return { success: true };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      return { success: false, error: message };
+      return { success: false, error: this.describeError(error) };
     }
+  }
+
+  /** Turn an SDK error into something a user can act on. */
+  private describeError(error: unknown): string {
+    const code = (error as { code?: number } | null)?.code;
+
+    if (code === 404) {
+      return `Bucket '${this.config.bucket}' does not exist or is not accessible`;
+    }
+    if (code === 401 || code === 403) {
+      return `The service account cannot write to bucket '${this.config.bucket}'. Grant it roles/storage.objectAdmin (or objectCreator) on the bucket.`;
+    }
+
+    return error instanceof Error ? error.message : 'Unknown error';
   }
 }
 

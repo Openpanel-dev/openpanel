@@ -1500,6 +1500,9 @@ importers:
       '@openpanel/js-runtime':
         specifier: workspace:*
         version: link:../js-runtime
+      '@openpanel/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@openpanel/validation':
         specifier: workspace:*
         version: link:../validation
@@ -1510,9 +1513,6 @@ importers:
         specifier: ^3.0.0
         version: 3.0.1(debug@4.4.3(supports-color@10.2.0))
     devDependencies:
-      '@openpanel/logger':
-        specifier: workspace:*
-        version: link:../logger
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -35360,7 +35360,7 @@ snapshots:
 
   is-core-module@2.16.1:
     dependencies:
-      hasown: 2.0.2
+      hasown: 2.0.4
 
   is-data-view@1.0.1:
     dependencies:

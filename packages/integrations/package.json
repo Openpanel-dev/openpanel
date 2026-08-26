@@ -12,13 +12,12 @@
     "@google-cloud/storage": "^7.18.0",
     "@openpanel/common": "workspace:*",
     "@openpanel/js-runtime": "workspace:*",
+    "@openpanel/logger": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@slack/bolt": "^3.18.0",
-    "@slack/oauth": "^3.0.0",
-    "@openpanel/common": "workspace:*"
+    "@slack/oauth": "^3.0.0"
   },
   "devDependencies": {
-    "@openpanel/logger": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
