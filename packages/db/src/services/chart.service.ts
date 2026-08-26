@@ -284,6 +284,8 @@ export function getGroupPropertySelect(property: string): string {
 
 // Returns the SELECT expression when querying the profiles table directly (no join alias).
 // Use for fetching distinct values for profile.* properties.
+// Lists the same profiles columns as PROFILE_COLUMNS in filter-where.service.ts,
+// which resolves profile.* on the filter side; keep the two in sync.
 export function getProfilePropertySelect(property: string): string {
   const withoutPrefix = property.replace(/^profile\./, '');
   if (withoutPrefix === 'id') {
