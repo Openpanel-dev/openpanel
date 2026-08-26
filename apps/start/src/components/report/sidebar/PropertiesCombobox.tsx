@@ -93,6 +93,27 @@ const DEFAULT_CATEGORIES: PropertiesComboboxCategory[] = [
   'group',
 ];
 
+// Built-in ("reserved") properties — the geo/device/session columns and the
+// built-in profile fields — carry no `properties.` / `profile.properties.`
+// prefix. A client-sent property can share the same name (built-in geo-IP
+// `country` vs a `properties.country` the SDK sends), so both render as just
+// "country" with no way to tell them apart. Mark the built-ins with a leading
+// `$` (the reserved-property convention). Display only — the selected `value`,
+// and the filter it produces, is the raw property, unchanged.
+function toPropertyAction(property: string): PropertiesComboboxAction {
+  const reserved =
+    !property.startsWith('properties.') &&
+    !property.startsWith('profile.properties.');
+  const name = property.split('.').pop() ?? property;
+  return {
+    value: property,
+    label: reserved ? `$${name}` : name,
+    description: reserved
+      ? 'OpenPanel'
+      : property.split('.').slice(0, -1).join('.'),
+  };
+}
+
 function SearchHeader({
   onBack,
   onSearch,
@@ -189,21 +210,13 @@ export function PropertiesCombobox({
       (property) =>
         property.startsWith('profile') && shouldShowProperty(property)
     )
-    .map((property) => ({
-      value: property,
-      label: property.split('.').pop() ?? property,
-      description: property.split('.').slice(0, -1).join('.'),
-    }));
+    .map(toPropertyAction);
   const eventActions = allProperties
     .filter(
       (property) =>
         !property.startsWith('profile') && shouldShowProperty(property)
     )
-    .map((property) => ({
-      value: property,
-      label: property.split('.').pop() ?? property,
-      description: property.split('.').slice(0, -1).join('.'),
-    }));
+    .map(toPropertyAction);
   const sessionActions = SESSION_ACTIONS.filter((a) =>
     shouldShowProperty(a.value),
   );
