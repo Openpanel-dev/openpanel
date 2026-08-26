@@ -30,6 +30,7 @@ const CRON_TYPES = [
   'sessionVacuum',
   'insightCleanup',
   'weeklyDigest',
+  'dataHealth',
 ] as const satisfies readonly CronQueueType[];
 
 function escapeHtml(value: string) {

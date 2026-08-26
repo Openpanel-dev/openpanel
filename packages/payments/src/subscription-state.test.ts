@@ -14,6 +14,7 @@ type Case = {
   status: string | null;
   canceledAt: Date | null;
   endsAt: Date | null;
+  pauseAtPeriodEnd?: boolean;
   expected: SubscriptionState;
 };
 
@@ -55,6 +56,16 @@ describe('getSubscriptionState', () => {
     { name: 'incomplete', status: 'incomplete', canceledAt: null, endsAt: future, expected: 'incomplete' },
     { name: 'incomplete_expired', status: 'incomplete_expired', canceledAt: null, endsAt: past, expected: 'expired' },
 
+    // Pause-at-period-end keeps status active while the flag is set
+    { name: 'active + pause scheduled (pausing)', status: 'active', canceledAt: null, endsAt: future, pauseAtPeriodEnd: true, expected: 'pausing' },
+    { name: 'cancel wins over scheduled pause', status: 'active', canceledAt: past, endsAt: future, pauseAtPeriodEnd: true, expected: 'canceling' },
+    // Stale data: period ended but status wasn't flipped (missed webhook).
+    // Must resolve to paused (blocks dashboard), never a lingering pausing.
+    { name: 'pause scheduled, period already ended', status: 'active', canceledAt: null, endsAt: past, pauseAtPeriodEnd: true, expected: 'paused' },
+    { name: 'pause scheduled, no end date', status: 'active', canceledAt: null, endsAt: null, pauseAtPeriodEnd: true, expected: 'paused' },
+    { name: 'paused', status: 'paused', canceledAt: null, endsAt: past, expected: 'paused' },
+    { name: 'paused ignores stale pause flag', status: 'paused', canceledAt: null, endsAt: past, pauseAtPeriodEnd: true, expected: 'paused' },
+
     // Fully canceled / revoked
     { name: 'canceled', status: 'canceled', canceledAt: past, endsAt: past, expected: 'canceled' },
 
@@ -69,6 +80,7 @@ describe('getSubscriptionState', () => {
           subscriptionStatus: c.status,
           subscriptionCanceledAt: c.canceledAt,
           subscriptionEndsAt: c.endsAt,
+          subscriptionPauseAtPeriodEnd: c.pauseAtPeriodEnd ?? false,
         })
       ).toBe(c.expected);
     });
@@ -81,6 +93,7 @@ describe('getSubscriptionState', () => {
         subscriptionStatus: 'canceled',
         subscriptionCanceledAt: past,
         subscriptionEndsAt: past,
+        subscriptionPauseAtPeriodEnd: false,
       })
     ).toBe('self_hosted');
   });
@@ -92,12 +105,14 @@ describe('subscriptionBlocksDashboard', () => {
     'expired',
     'unpaid',
     'canceled',
+    'paused',
   ];
   const allowed: SubscriptionState[] = [
     'self_hosted',
     'trialing',
     'active',
     'canceling',
+    'pausing',
     'past_due',
     'incomplete',
   ];

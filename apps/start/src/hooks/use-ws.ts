@@ -1,5 +1,5 @@
 import debounce from 'lodash.debounce';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket';
 
 import { getSuperJson } from '@openpanel/json';
@@ -21,12 +21,22 @@ export default function useWS<T>(
   const ws = context.apiUrl.replace(/^https/, 'wss').replace(/^http/, 'ws');
   const [baseUrl, setBaseUrl] = useState(`${ws}${path}`);
 
+  // Always call the latest onMessage. The memoized (debounced) wrapper below
+  // otherwise captures the first render's callback — if the path changes
+  // without unmounting (e.g. switching projects), the socket would reconnect
+  // but keep invoking a handler closed over the old path's state.
+  const onMessageRef = useRef(onMessage);
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  });
+
   const debouncedOnMessage = useMemo(() => {
+    const invokeLatest = (event: T) => onMessageRef.current(event);
     if (options?.debounce) {
-      return debounce(onMessage, options.debounce.delay, options.debounce);
+      return debounce(invokeLatest, options.debounce.delay, options.debounce);
     }
-    return onMessage;
-  }, [options?.debounce?.delay]);
+    return invokeLatest;
+  }, [options?.debounce?.delay, options?.debounce?.maxWait]);
 
   useEffect(() => {
     if (baseUrl === `${ws}${path}`) return;

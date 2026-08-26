@@ -42,6 +42,31 @@ declare global {
       | 'active'
       | 'past_due'
       | 'canceled'
-      | 'unpaid';
+      | 'unpaid'
+      | 'paused';
+    // Compact summary of the discount applied to the subscription, synced
+    // from Polar's embedded discount object so the dashboard can show it.
+    type IPrismaSubscriptionDiscount = {
+      id: string;
+      name: string;
+      type: 'percentage' | 'fixed';
+      // Set for percentage discounts (3000 = 30%).
+      basisPoints: number | null;
+      // Set for fixed discounts (minor units + currency).
+      amount: number | null;
+      currency: string | null;
+      duration: 'once' | 'forever' | 'repeating';
+      durationInMonths: number | null;
+    };
+    // Mirrors Polar's CustomerCancellationReason enum.
+    type IPrismaCancellationReason =
+      | 'too_expensive'
+      | 'missing_features'
+      | 'switched_service'
+      | 'unused'
+      | 'customer_service'
+      | 'low_quality'
+      | 'too_complex'
+      | 'other';
   }
 }

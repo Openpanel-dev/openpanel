@@ -1,8 +1,13 @@
 import { cacheable } from '@openpanel/redis';
 import sqlstring from 'sqlstring';
-import { chQuery, TABLE_NAMES } from '../clickhouse/client';
-import { ClientType, type Prisma, type Project } from '../prisma-client';
-import { db } from '../prisma-client';
+import {
+  ch,
+  chQuery,
+  convertClickhouseDateToJs,
+  TABLE_NAMES,
+} from '../clickhouse/client';
+import { clix } from '../clickhouse/query-builder';
+import { db, type Prisma, type Project } from '../prisma-client';
 
 export type IServiceProject = Project;
 export type IServiceProjectWithClients = Prisma.ProjectGetPayload<{
@@ -120,6 +125,33 @@ export const getProjectEventsCount = async (projectId: string) => {
 };
 
 /**
+ * Newest event timestamp per project, for the whole instance in one query.
+ * Reads the same pre-aggregated MV as getProjectEventsCount (it stores
+ * max(created_at) per (project_id, name) block), so this scans thousands of
+ * rows instead of the raw events table. Projects with no events are absent
+ * from the map.
+ */
+export const getLastEventPerProject = async (): Promise<Map<string, Date>> => {
+  const res = await clix(ch)
+    .select<{ project_id: string; last_event_at: string }>([
+      'project_id',
+      'max(created_at) AS last_event_at',
+    ])
+    .from(TABLE_NAMES.event_names_mv)
+    // Session rows are worker-generated (the reaper can emit session_end after
+    // tracking already stopped) — only real tracking activity should count.
+    .where('name', 'NOT IN', ['session_start', 'session_end'])
+    .groupBy(['project_id'])
+    .execute();
+  return new Map(
+    res.map((row) => [
+      row.project_id,
+      convertClickhouseDateToJs(row.last_event_at),
+    ])
+  );
+};
+
+/**
  * Resolve and validate a projectId for an API client.
  *
  * - Read clients: returns the fixed projectId from the client (ignores any supplied value).
@@ -147,7 +179,9 @@ export async function resolveClientProjectId({
   }
 
   if (!inputProjectId) {
-    throw new Error('projectId is required when using a root (organization-level) client');
+    throw new Error(
+      'projectId is required when using a root (organization-level) client'
+    );
   }
 
   const project = await db.project.findFirst({
@@ -156,7 +190,9 @@ export async function resolveClientProjectId({
   });
 
   if (!project) {
-    throw new Error('Project not found or does not belong to your organization');
+    throw new Error(
+      'Project not found or does not belong to your organization'
+    );
   }
 
   return inputProjectId;

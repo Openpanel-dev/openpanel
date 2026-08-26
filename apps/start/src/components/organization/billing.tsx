@@ -1,4 +1,5 @@
 import type { IServiceOrganization } from '@openpanel/db';
+import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { differenceInDays } from 'date-fns';
 import { useQueryState } from 'nuqs';
@@ -16,7 +17,6 @@ import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, useOnPushModal } from '@/modals';
 import { formatDate } from '@/utils/date';
-import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 
 type Props = {
   organization: IServiceOrganization;
@@ -53,6 +53,25 @@ export default function Billing({ organization }: Props) {
     })
   );
 
+  const resumeMutation = useMutation(
+    trpc.subscription.resumeSubscription.mutationOptions({
+      onSuccess() {
+        queryClient.invalidateQueries(trpc.organization.pathFilter());
+        queryClient.invalidateQueries(trpc.subscription.pathFilter());
+        toast.success('Subscription resumed', {
+          description: 'It might take a few seconds to update',
+        });
+      },
+      onError(error) {
+        toast.error(error.message);
+      },
+    })
+  );
+
+  const isPauseState =
+    organization.subscriptionState === 'pausing' ||
+    organization.subscriptionState === 'paused';
+
   useWS(`/live/organization/${organization.id}`, () => {
     queryClient.invalidateQueries(trpc.organization.pathFilter());
     queryClient.invalidateQueries(trpc.subscription.pathFilter());
@@ -65,7 +84,11 @@ export default function Billing({ organization }: Props) {
   const products = useMemo(() => {
     return (productsQuery.data || [])
       .filter((product) => product.recurringInterval === recurringInterval)
-      .filter((product) => product.prices.some((p) => p.amountType !== 'free'));
+      .filter((product) =>
+        // `free` no longer exists in the SDK's amountType union, but retired
+        // free-plan products can still come back from Polar's API.
+        product.prices.some((p) => (p.amountType as string) !== 'free')
+      );
   }, [productsQuery.data, recurringInterval]);
 
   const currentProduct = currentProductQuery.data ?? null;
@@ -73,10 +96,62 @@ export default function Billing({ organization }: Props) {
     p.amountType === 'fixed' ? [p] : []
   )[0];
 
+  // What the customer actually pays while a recurring discount applies. A
+  // `once` discount only hits the next invoice, so the header keeps the list
+  // price and the discount line below explains it.
+  const listPrice = currentPrice ? currentPrice.priceAmount / 100 : null;
+  const discountedPrice = (() => {
+    const active = organization.subscriptionDiscount;
+    if (!active || listPrice === null || active.duration === 'once') {
+      return null;
+    }
+    if (active.type === 'percentage' && active.basisPoints) {
+      return listPrice * (1 - active.basisPoints / 10_000);
+    }
+    if (active.type === 'fixed' && active.amount) {
+      return Math.max(0, listPrice - active.amount / 100);
+    }
+    return null;
+  })();
+
+  // Synced from Polar — covers the cancel-flow save offer and any discount
+  // code the customer redeemed. Without this line the card shows the full
+  // list price and an applied discount is invisible outside Polar's portal.
+  const discount = organization.subscriptionDiscount;
+  const renderDiscount = () => {
+    if (!discount) {
+      return null;
+    }
+    const value =
+      discount.type === 'percentage' && discount.basisPoints
+        ? `−${discount.basisPoints / 100}%`
+        : discount.amount
+          ? `−${number.currency(discount.amount / 100)}`
+          : null;
+    if (!value) {
+      return null;
+    }
+    const duration =
+      discount.duration === 'repeating' && discount.durationInMonths
+        ? `for the next ${discount.durationInMonths} months`
+        : discount.duration === 'forever'
+          ? 'on every invoice'
+          : 'on your next invoice';
+    // Deliberately no discount name here: names are often the redeemable code
+    // itself, and the save offer's name would advertise what the cancel flow
+    // grants. The value + duration is all the customer needs.
+    return (
+      <p className="mt-1 text-emerald-600 dark:text-emerald-500">
+        {value} {duration}
+      </p>
+    );
+  };
+
   const renderStatus = () => {
     const meta = getSubscriptionStateMeta(organization.subscriptionState, {
       endsAt: organization.subscriptionEndsAt,
       canceledAt: organization.subscriptionCanceledAt,
+      resumesAt: organization.subscriptionResumesAt,
     });
 
     if (!meta.statusLine) {
@@ -86,7 +161,9 @@ export default function Billing({ organization }: Props) {
     return (
       <p
         className={
-          meta.statusLine.tone === 'destructive' ? 'text-destructive' : undefined
+          meta.statusLine.tone === 'destructive'
+            ? 'text-destructive'
+            : undefined
         }
       >
         {meta.statusLine.text}
@@ -117,8 +194,15 @@ export default function Billing({ organization }: Props) {
             <WidgetHead className="flex items-center justify-between gap-4">
               <div className="title flex-1 truncate">{currentProduct.name}</div>
               <div className="text-lg">
+                {discountedPrice !== null && (
+                  <span className="mr-2 text-muted-foreground line-through">
+                    {number.currency(currentPrice.priceAmount / 100)}
+                  </span>
+                )}
                 <span className="font-bold">
-                  {number.currency(currentPrice.priceAmount / 100)}
+                  {number.currency(
+                    discountedPrice ?? currentPrice.priceAmount / 100
+                  )}
                 </span>
                 <span className="text-muted-foreground">
                   {' / '}
@@ -128,6 +212,7 @@ export default function Billing({ organization }: Props) {
             </WidgetHead>
             <WidgetBody>
               {renderStatus()}
+              {renderDiscount()}
               <div className="col mt-4">
                 <div className="mb-2 font-semibold">
                   {number.format(organization.subscriptionPeriodEventsCount)} /{' '}
@@ -173,19 +258,37 @@ export default function Billing({ organization }: Props) {
                     </svg>
                     Customer portal
                   </Button>
-                  <Button
-                    onClick={() =>
-                      pushModal('SelectBillingPlan', {
-                        organization,
-                        currentProduct,
-                      })
-                    }
-                    size="sm"
-                  >
-                    {organization.isWillBeCanceled
-                      ? 'Reactivate subscription'
-                      : 'Change subscription'}
-                  </Button>
+                  <div className="row gap-2">
+                    {isPauseState && (
+                      <Button
+                        loading={resumeMutation.isPending}
+                        onClick={() =>
+                          resumeMutation.mutate({
+                            organizationId: organization.id,
+                          })
+                        }
+                        size="sm"
+                      >
+                        {organization.subscriptionState === 'paused'
+                          ? 'Resume subscription'
+                          : 'Keep subscription'}
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() =>
+                        pushModal('SelectBillingPlan', {
+                          organization,
+                          currentProduct,
+                        })
+                      }
+                      size="sm"
+                      variant={isPauseState ? 'outline' : 'default'}
+                    >
+                      {organization.isWillBeCanceled
+                        ? 'Reactivate subscription'
+                        : 'Change subscription'}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </WidgetBody>

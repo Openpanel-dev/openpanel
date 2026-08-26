@@ -5,20 +5,27 @@ import {
   getOrganizationById,
 } from '@openpanel/db';
 import {
+  applySubscriptionDiscount,
   cancelSubscription,
   changeSubscription,
   createCheckout,
   createPortal,
   getProduct,
   getProducts,
+  pauseSubscription,
   reactivateSubscription,
+  resumeSubscription,
+  unpauseSubscription,
 } from '@openpanel/payments';
-import { zCheckout } from '@openpanel/validation';
-
 import { getCache } from '@openpanel/redis';
-import { subDays } from 'date-fns';
+import {
+  zCancelSubscription,
+  zCheckout,
+  zPauseSubscription,
+} from '@openpanel/validation';
+import { addMonths, subDays } from 'date-fns';
 import { z } from 'zod';
-import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
+import { TRPCBadRequestError, TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 async function requireAdmin(userId: string, organizationId: string) {
@@ -57,6 +64,19 @@ export const subscriptionRouter = createTRPCRouter({
           },
         }),
       ]);
+
+      // A paused (or pause-scheduled) subscription still exists in Polar — a
+      // checkout here would create a second one, and a plan change would race
+      // the pending pause. Resume first, then change plans.
+      if (
+        organization.subscriptionId &&
+        (organization.subscriptionStatus === 'paused' ||
+          organization.subscriptionPauseAtPeriodEnd)
+      ) {
+        throw new TRPCBadRequestError(
+          'Your subscription is paused or scheduled to pause — resume it before changing plans'
+        );
+      }
 
       // An organization has at most one Polar subscription (we have no free
       // tier in Polar — the free plan is handled on our side). So an upgrade or
@@ -124,7 +144,7 @@ export const subscriptionRouter = createTRPCRouter({
     .input(
       z.object({
         organizationId: z.string(),
-      }),
+      })
     )
     .query(async ({ input }) => {
       const organization = await db.organization.findUniqueOrThrow({
@@ -154,6 +174,79 @@ export const subscriptionRouter = createTRPCRouter({
     }),
 
   cancelSubscription: protectedProcedure
+    .input(zCancelSubscription)
+    .mutation(async ({ input, ctx }) => {
+      await requireAdmin(ctx.session.userId, input.organizationId);
+      const organization = await getOrganizationById(input.organizationId);
+      if (!organization.subscriptionId) {
+        throw new TRPCBadRequestError('Organization has no subscription');
+      }
+
+      const res = await cancelSubscription(organization.subscriptionId, {
+        reason: input.reason,
+        comment: input.comment,
+      });
+
+      // The webhook echoes these back, but persist immediately so a missed or
+      // delayed delivery can't lose the reason — or leave `canceledAt` unset,
+      // which would make the plan-change path skip reactivation and silently
+      // keep the cancellation scheduled.
+      await db.organization.update({
+        where: { id: input.organizationId },
+        data: {
+          subscriptionCancelReason: input.reason,
+          subscriptionCancelComment: input.comment ?? null,
+          subscriptionCanceledAt: res.canceledAt,
+          subscriptionEndsAt: res.cancelAtPeriodEnd
+            ? res.currentPeriodEnd
+            : (res.canceledAt ?? organization.subscriptionEndsAt),
+        },
+      });
+
+      return res;
+    }),
+
+  pauseSubscription: protectedProcedure
+    .input(zPauseSubscription)
+    .mutation(async ({ input, ctx }) => {
+      await requireAdmin(ctx.session.userId, input.organizationId);
+      const organization = await getOrganizationById(input.organizationId);
+      if (!organization.subscriptionId) {
+        throw new TRPCBadRequestError('Organization has no subscription');
+      }
+      // Only a plain active subscription can be paused — this rejects paused,
+      // pause-scheduled (pausing), canceling, canceled, unpaid, etc. before we
+      // hit Polar with a nonsensical update.
+      if (organization.subscriptionState !== 'active') {
+        throw new TRPCBadRequestError(
+          'Only an active subscription can be paused'
+        );
+      }
+      if (!organization.subscriptionEndsAt) {
+        throw new TRPCBadRequestError('Subscription has no current period end');
+      }
+
+      // Polar pauses at period end; the resume date counts from there.
+      const resumesAt = addMonths(
+        organization.subscriptionEndsAt,
+        input.months
+      );
+
+      await pauseSubscription(organization.subscriptionId, resumesAt);
+
+      // Optimistic mirror — the subscription.updated webhook confirms it.
+      await db.organization.update({
+        where: { id: input.organizationId },
+        data: {
+          subscriptionPauseAtPeriodEnd: true,
+          subscriptionResumesAt: resumesAt,
+        },
+      });
+
+      return { resumesAt };
+    }),
+
+  resumeSubscription: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       await requireAdmin(ctx.session.userId, input.organizationId);
@@ -162,9 +255,72 @@ export const subscriptionRouter = createTRPCRouter({
         throw new TRPCBadRequestError('Organization has no subscription');
       }
 
-      const res = await cancelSubscription(organization.subscriptionId);
+      if (organization.subscriptionStatus === 'paused') {
+        // Already paused — resuming starts a new billing period immediately.
+        await resumeSubscription(organization.subscriptionId);
+      } else if (organization.subscriptionPauseAtPeriodEnd) {
+        // Pause is only scheduled — just clear it.
+        await unpauseSubscription(organization.subscriptionId);
+      } else {
+        throw new TRPCBadRequestError('Subscription is not paused');
+      }
 
-      return res;
+      await db.organization.update({
+        where: { id: input.organizationId },
+        data: {
+          subscriptionPauseAtPeriodEnd: false,
+          subscriptionResumesAt: null,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  applySaveDiscount: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      await requireAdmin(ctx.session.userId, input.organizationId);
+      const discountId = process.env.POLAR_SAVE_DISCOUNT_ID;
+      if (!discountId) {
+        throw new TRPCBadRequestError('Save discount is not configured');
+      }
+
+      const organization = await getOrganizationById(input.organizationId);
+      if (!organization.subscriptionId) {
+        throw new TRPCBadRequestError('Organization has no subscription');
+      }
+
+      // Claim the one-time offer atomically BEFORE calling Polar: a
+      // conditional update lets exactly one concurrent request through. Roll
+      // the claim back if Polar rejects, so a transient failure doesn't burn
+      // the offer.
+      const claimed = await db.organization.updateMany({
+        where: {
+          id: input.organizationId,
+          subscriptionSaveDiscountAppliedAt: null,
+        },
+        data: { subscriptionSaveDiscountAppliedAt: new Date() },
+      });
+      if (claimed.count === 0) {
+        throw new TRPCBadRequestError(
+          'The save discount has already been used'
+        );
+      }
+
+      try {
+        await applySubscriptionDiscount(
+          organization.subscriptionId,
+          discountId
+        );
+      } catch (error) {
+        await db.organization.updateMany({
+          where: { id: input.organizationId },
+          data: { subscriptionSaveDiscountAppliedAt: null },
+        });
+        throw error;
+      }
+
+      return { success: true };
     }),
 
   portal: protectedProcedure

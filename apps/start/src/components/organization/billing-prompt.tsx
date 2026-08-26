@@ -1,5 +1,5 @@
 import type { IServiceOrganization } from '@openpanel/db';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
@@ -29,13 +29,13 @@ interface CopyVariant {
   title: string;
   lead: string;
   dateLabel: string;
-  action: 'checkout' | 'portal';
+  action: 'checkout' | 'portal' | 'resume';
   cta: (plan: string, price: string) => string;
   note: string | null;
 }
 
 const COPY: Record<
-  'expired' | 'trialEnded' | 'unpaid' | 'freePlan',
+  'expired' | 'trialEnded' | 'unpaid' | 'freePlan' | 'paused',
   CopyVariant
 > = {
   trialEnded: {
@@ -67,6 +67,16 @@ const COPY: Record<
     action: 'portal',
     cta: () => 'Update payment method',
     note: null,
+  },
+  paused: {
+    badge: { label: 'Paused', variant: 'secondary' },
+    gradient: 'rgb(16 185 129)',
+    title: 'Your subscription is on a break',
+    lead: "You paused your subscription, so billing is stopped — but we're still collecting every event. Resume whenever you're ready and your dashboards are back immediately, right where you left them.",
+    dateLabel: 'Billing resumes',
+    action: 'resume',
+    cta: () => 'Resume subscription now',
+    note: 'Resuming starts a new billing period right away. Your events keep being collected while paused, so nothing is lost.',
   },
   freePlan: {
     badge: { label: 'Plan change', variant: 'secondary' },
@@ -120,6 +130,21 @@ export default function BillingPrompt({
       },
     })
   );
+  const queryClient = useQueryClient();
+  const resume = useMutation(
+    trpc.subscription.resumeSubscription.mutationOptions({
+      onSuccess() {
+        queryClient.invalidateQueries(trpc.organization.pathFilter());
+        queryClient.invalidateQueries(trpc.subscription.pathFilter());
+        toast.success('Welcome back!', {
+          description: 'It might take a few seconds to update',
+        });
+      },
+      onError(error) {
+        toast.error(error.message);
+      },
+    })
+  );
 
   const eventsCount = organization.subscriptionPeriodEventsCount ?? 0;
   const bestProductFit = products
@@ -150,6 +175,25 @@ export default function BillingPrompt({
   }, [type]);
 
   const renderCta = () => {
+    if (copy.action === 'resume') {
+      return (
+        <Button
+          className="w-full"
+          loading={resume.isPending}
+          onClick={() => {
+            op.track('billing_prompt_upgrade_clicked', {
+              type,
+              cta: 'resume',
+            });
+            resume.mutate({ organizationId: organization.id });
+          }}
+          size="lg"
+        >
+          {copy.cta('', '')}
+        </Button>
+      );
+    }
+
     if (copy.action === 'portal') {
       return (
         <Button
@@ -238,16 +282,26 @@ export default function BillingPrompt({
               Events tracked, all safe and stored
             </div>
           </div>
-          {organization.subscriptionEndsAt && (
-            <div className="col flex-1 gap-1 rounded-md bg-def-200 p-4">
-              <div className="font-bold font-mono text-2xl">
-                {formatDate(organization.subscriptionEndsAt)}
+          {(() => {
+            // Paused shows the automatic resume date instead of the period end.
+            const date =
+              type === 'paused'
+                ? organization.subscriptionResumesAt
+                : organization.subscriptionEndsAt;
+            if (!date) {
+              return null;
+            }
+            return (
+              <div className="col flex-1 gap-1 rounded-md bg-def-200 p-4">
+                <div className="font-bold font-mono text-2xl">
+                  {formatDate(date)}
+                </div>
+                <div className="text-muted-foreground text-sm">
+                  {copy.dateLabel}
+                </div>
               </div>
-              <div className="text-muted-foreground text-sm">
-                {copy.dateLabel}
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         <div className="col gap-3 p-6 md:p-8">

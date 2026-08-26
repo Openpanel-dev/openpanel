@@ -1,5 +1,29 @@
-import { db } from '@openpanel/db';
+import { db, Prisma } from '@openpanel/db';
 import { Polar } from '@polar-sh/sdk';
+import type { Subscription } from '@polar-sh/sdk/dist/esm/models/components/subscription';
+
+// Mirrors toSubscriptionDiscount in apps/api webhook.controller.ts — a compact
+// summary of Polar's embedded discount so the dashboard can show it.
+function toSubscriptionDiscount(discount: Subscription['discount']) {
+  if (!discount) {
+    return null;
+  }
+  return {
+    id: discount.id,
+    name: discount.name,
+    type:
+      discount.type === 'fixed' ? ('fixed' as const) : ('percentage' as const),
+    basisPoints: 'basisPoints' in discount ? discount.basisPoints : null,
+    amount: 'amount' in discount ? discount.amount : null,
+    currency: 'currency' in discount ? discount.currency : null,
+    duration:
+      discount.duration === 'repeating' || discount.duration === 'forever'
+        ? discount.duration
+        : ('once' as const),
+    durationInMonths:
+      'durationInMonths' in discount ? discount.durationInMonths : null,
+  };
+}
 
 type PolarSubscriptionStatus =
   | 'incomplete'
@@ -8,17 +32,19 @@ type PolarSubscriptionStatus =
   | 'active'
   | 'past_due'
   | 'canceled'
-  | 'unpaid';
+  | 'unpaid'
+  | 'paused';
 
 const ACTIVE_LIKE_STATUSES: PolarSubscriptionStatus[] = [
   'active',
   'trialing',
   'past_due',
   'unpaid',
+  // Paused subs still exist in Polar and must stay synchronized (pause state,
+  // tenure, discount) so the dashboard can offer resume.
+  'paused',
 ];
-const IGNORED_PRODUCT_IDS = new Set([
-  'ac5fe58b-0a89-4851-ae41-67be34ae696f',
-]);
+const IGNORED_PRODUCT_IDS = new Set(['ac5fe58b-0a89-4851-ae41-67be34ae696f']);
 const IGNORED_ORGANIZATION_IDS = new Set(['openpanel-dev']);
 
 const isDryRun = process.argv.includes('--dry');
@@ -49,7 +75,7 @@ function getServer() {
 }
 
 function resolveStatus(
-  status: string | null | undefined,
+  status: string | null | undefined
 ): PolarSubscriptionStatus | null {
   if (!status) {
     return null;
@@ -63,6 +89,7 @@ function resolveStatus(
     'past_due',
     'canceled',
     'unpaid',
+    'paused',
   ];
 
   return values.includes(status as PolarSubscriptionStatus)
@@ -87,7 +114,9 @@ function calculateSubscriptionEndsAt(subscription: {
   return subscription.canceledAt;
 }
 
-function toComparable(value: Date | string | number | null | undefined) {
+function toComparable(
+  value: Date | string | number | boolean | null | undefined
+) {
   if (value instanceof Date) {
     return value.toISOString();
   }
@@ -95,8 +124,11 @@ function toComparable(value: Date | string | number | null | undefined) {
 }
 
 async function getAllSubscriptions(polar: Polar) {
-  const all: Array<Awaited<ReturnType<typeof polar.subscriptions.list>>['result']['items'][number]> =
-    [];
+  const all: Array<
+    Awaited<
+      ReturnType<typeof polar.subscriptions.list>
+    >['result']['items'][number]
+  > = [];
   const limit = 100;
   let page = 1;
 
@@ -122,7 +154,7 @@ async function getAllSubscriptions(polar: Polar) {
 async function main() {
   if (!process.env.POLAR_ACCESS_TOKEN) {
     throw new Error(
-      'POLAR_ACCESS_TOKEN is missing. Add it to your env before running this script.',
+      'POLAR_ACCESS_TOKEN is missing. Add it to your env before running this script.'
     );
   }
 
@@ -137,7 +169,10 @@ async function main() {
     : await getAllSubscriptions(polar);
 
   const scopedSubscriptions = subscriptions.filter((subscription) => {
-    if (subscription.productId && IGNORED_PRODUCT_IDS.has(subscription.productId)) {
+    if (
+      subscription.productId &&
+      IGNORED_PRODUCT_IDS.has(subscription.productId)
+    ) {
       return false;
     }
 
@@ -154,7 +189,7 @@ async function main() {
   });
 
   console.log(
-    `Found ${subscriptions.length} total subscriptions (${scopedSubscriptions.length} in scope).`,
+    `Found ${subscriptions.length} total subscriptions (${scopedSubscriptions.length} in scope).`
   );
   if (targetSubscriptionId) {
     console.log(`Filtering by subscription ID: ${targetSubscriptionId}`);
@@ -175,7 +210,10 @@ async function main() {
   };
 
   for (const subscription of subscriptions) {
-    if (subscription.productId && IGNORED_PRODUCT_IDS.has(subscription.productId)) {
+    if (
+      subscription.productId &&
+      IGNORED_PRODUCT_IDS.has(subscription.productId)
+    ) {
       stats.skippedIgnoredProduct += 1;
       continue;
     }
@@ -186,7 +224,7 @@ async function main() {
       continue;
     }
 
-    if (!includeCanceled && !ACTIVE_LIKE_STATUSES.includes(status)) {
+    if (!(includeCanceled || ACTIVE_LIKE_STATUSES.includes(status))) {
       continue;
     }
 
@@ -226,7 +264,7 @@ async function main() {
     if (!organization) {
       stats.skippedNoOrg += 1;
       console.warn(
-        `Skipping ${subscription.id} (${status}) - no organization match found.`,
+        `Skipping ${subscription.id} (${status}) - no organization match found.`
       );
       continue;
     }
@@ -239,11 +277,13 @@ async function main() {
     let subscriptionPeriodEventsLimit: number | undefined;
     if (subscription.productId) {
       if (!productEventsLimit.has(subscription.productId)) {
-        const product = await polar.products.get({ id: subscription.productId });
+        const product = await polar.products.get({
+          id: subscription.productId,
+        });
         const eventsLimit = product.metadata?.eventsLimit;
         productEventsLimit.set(
           subscription.productId,
-          typeof eventsLimit === 'number' ? eventsLimit : null,
+          typeof eventsLimit === 'number' ? eventsLimit : null
         );
       }
 
@@ -277,12 +317,22 @@ async function main() {
       subscriptionCreatedByUserId:
         metadataUserId ?? organization.subscriptionCreatedByUserId,
       subscriptionInterval: subscription.recurringInterval,
+      subscriptionFirstStartedAt:
+        organization.subscriptionId === subscription.id
+          ? (organization.subscriptionFirstStartedAt ?? subscription.createdAt)
+          : subscription.createdAt,
+      subscriptionPauseAtPeriodEnd: subscription.pauseAtPeriodEnd,
+      subscriptionResumesAt: subscription.resumesAt,
+      subscriptionDiscount:
+        toSubscriptionDiscount(subscription.discount) ?? Prisma.DbNull,
       subscriptionPeriodEventsLimit:
-        subscriptionPeriodEventsLimit ?? organization.subscriptionPeriodEventsLimit,
+        subscriptionPeriodEventsLimit ??
+        organization.subscriptionPeriodEventsLimit,
       subscriptionPeriodEventsCountExceededAt:
         typeof subscriptionPeriodEventsLimit === 'number' &&
         organization.subscriptionPeriodEventsCountExceededAt &&
-        organization.subscriptionPeriodEventsLimit < subscriptionPeriodEventsLimit
+        organization.subscriptionPeriodEventsLimit <
+          subscriptionPeriodEventsLimit
           ? null
           : undefined,
     };
@@ -299,6 +349,9 @@ async function main() {
       'subscriptionEndsAt',
       'subscriptionCreatedByUserId',
       'subscriptionInterval',
+      'subscriptionFirstStartedAt',
+      'subscriptionPauseAtPeriodEnd',
+      'subscriptionResumesAt',
       'subscriptionPeriodEventsLimit',
     ] as const;
 
@@ -316,7 +369,7 @@ async function main() {
       stats.unchanged += 1;
       if (isDryRun) {
         console.log(
-          `[dry] No changes for organization ${organization.id} from subscription ${subscription.id}.`,
+          `[dry] No changes for organization ${organization.id} from subscription ${subscription.id}.`
         );
       }
       continue;
@@ -325,7 +378,7 @@ async function main() {
     try {
       if (isDryRun) {
         console.log(
-          `[dry] Changes for organization ${organization.id} from subscription ${subscription.id}:`,
+          `[dry] Changes for organization ${organization.id} from subscription ${subscription.id}:`
         );
         for (const change of changes) {
           console.log(`  - ${change.field}:`, change.from, '=>', change.to);
@@ -342,13 +395,13 @@ async function main() {
       }
       stats.updated += 1;
       console.log(
-        `${isDryRun ? '[dry] ' : ''}Synced organization ${organization.id} from subscription ${subscription.id} (${status}).`,
+        `${isDryRun ? '[dry] ' : ''}Synced organization ${organization.id} from subscription ${subscription.id} (${status}).`
       );
     } catch (error) {
       stats.failed += 1;
       console.error(
         `Failed syncing organization ${organization.id} from subscription ${subscription.id}:`,
-        error,
+        error
       );
     }
   }
