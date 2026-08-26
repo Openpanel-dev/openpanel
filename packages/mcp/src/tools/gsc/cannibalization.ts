@@ -1,14 +1,14 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getGscCannibalization } from '@openpanel/db';
-import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,
   resolveDateRange,
-
+  resolveProjectId,
+  table,
   withErrorHandling,
   zDateRange,
-  resolveProjectId
+  zLimit,
 } from '../shared';
 
 // Cap pages per query in the MCP response. The core function keeps the
@@ -16,6 +16,12 @@ import {
 // response size for sites with heavy cannibalization (100KB+).
 const DEFAULT_PAGES_PER_QUERY = 5;
 const MAX_PAGES_PER_QUERY = 20;
+const DEFAULT_QUERY_LIMIT = 25;
+/** The core function already caps its own output at 50 queries. */
+const MAX_QUERY_LIMIT = 50;
+
+/** Column order for the nested per-page tuples, declared once for the response. */
+const PAGE_COLUMNS = ['page', 'clicks', 'impressions', 'ctr', 'position'] as const;
 
 export function registerGscCannibalizationTools(
   server: McpServer,
@@ -23,40 +29,48 @@ export function registerGscCannibalizationTools(
 ) {
   server.tool(
     'gsc_get_cannibalization',
-    `Identify keyword cannibalization: search queries where multiple pages on your site compete against each other in Google. Returns queries where 2+ pages rank, sorted by total impressions (capped at 50 queries). Each query's pages list is truncated to the top ${DEFAULT_PAGES_PER_QUERY} by position. High cannibalization can hurt rankings.`,
+    `Identify keyword cannibalization: search queries where multiple pages on your site compete against each other in Google. Returns queries where 2+ pages rank, sorted by total impressions. Each row's \`pages\` cell is a list of tuples in the order given by the top-level \`page_columns\`, capped at the top ${DEFAULT_PAGES_PER_QUERY} pages by position. High cannibalization can hurt rankings.`,
     {
       projectId: projectIdSchema(context),
       ...zDateRange,
-      pagesPerQuery: z
-        .number()
-        .int()
-        .min(1)
-        .max(MAX_PAGES_PER_QUERY)
-        .optional()
-        .describe(
-          `Max pages to include per query (default ${DEFAULT_PAGES_PER_QUERY}, max ${MAX_PAGES_PER_QUERY}). Each query can rank many pages; this trims the tail to keep the response small.`,
-        ),
+      pagesPerQuery: zLimit(DEFAULT_PAGES_PER_QUERY, MAX_PAGES_PER_QUERY),
+      limit: zLimit(DEFAULT_QUERY_LIMIT, MAX_QUERY_LIMIT),
     },
     async ({
       projectId: inputProjectId,
       startDate: sd,
       endDate: ed,
       pagesPerQuery,
+      limit,
     }) =>
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
-        const cap = pagesPerQuery ?? DEFAULT_PAGES_PER_QUERY;
+        const pageCap = pagesPerQuery ?? DEFAULT_PAGES_PER_QUERY;
         const rows = await getGscCannibalization(projectId, startDate, endDate);
-        return rows.map((row) => {
-          if (row.pages.length <= cap) return row;
-          return {
-            ...row,
-            pages: row.pages.slice(0, cap),
-            pagesTruncated: true,
-            totalPages: row.pages.length,
-          };
-        });
+
+        // Positional tuples rather than page objects: the five keys are stated
+        // once in `page_columns` instead of on every page of every query.
+        const shaped = rows.map((row) => ({
+          query: row.query,
+          totalImpressions: row.totalImpressions,
+          totalClicks: row.totalClicks,
+          page_count: row.pages.length,
+          pages: row.pages
+            .slice(0, pageCap)
+            .map((page) => PAGE_COLUMNS.map((column) => page[column])),
+        }));
+
+        return {
+          page_columns: PAGE_COLUMNS,
+          ...table(shaped, {
+            limit: limit ?? DEFAULT_QUERY_LIMIT,
+            columns: ['query', 'totalImpressions', 'totalClicks', 'page_count', 'pages'],
+            sum: ['totalImpressions', 'totalClicks'],
+            sortedBy: 'totalImpressions',
+            unit: 'queries',
+          }),
+        };
       })
   );
 }

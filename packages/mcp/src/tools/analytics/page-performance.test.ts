@@ -31,6 +31,13 @@ function makeServer() {
 
 const READ_CTX = { projectId: 'proj-1', organizationId: 'org-1', clientType: 'read' as const };
 
+/** Re-hydrate the columnar table the tool returns into row objects. */
+function rowsOf(result: { columns: string[]; rows: unknown[][] }): any[] {
+  return result.rows.map((row) =>
+    Object.fromEntries(result.columns.map((column, i) => [column, row[i]])),
+  );
+}
+
 function makePage(overrides: Record<string, unknown> = {}) {
   return {
     path: '/page',
@@ -48,8 +55,8 @@ beforeEach(() => {
   mockGetSettingsForProject.mockResolvedValue({ timezone: 'UTC' });
 });
 
-describe('get_page_performance — seo_signals annotation', () => {
-  it('marks high_bounce when bounce_rate > 70', async () => {
+describe('get_page_performance — seo thresholds', () => {
+  it('states the classification rules once instead of per row', async () => {
     mockGetTopPages.mockResolvedValue([makePage({ bounce_rate: 80 })]);
 
     const server = makeServer() as any;
@@ -57,55 +64,29 @@ describe('get_page_performance — seo_signals annotation', () => {
     const result = await server.invoke({ projectId: READ_CTX.projectId }) as any;
     const content = JSON.parse(result.content[0].text);
 
-    expect(content.pages[0].seo_signals.high_bounce).toBe(true);
-    expect(content.pages[0].seo_signals.low_engagement).toBe(false);
-    expect(content.pages[0].seo_signals.good_landing_page).toBe(false);
+    expect(content.seo_thresholds).toEqual({
+      high_bounce: 'bounce_rate > 70',
+      low_engagement: 'avg_duration < 1 (minutes)',
+      good_landing_page: 'bounce_rate < 40 AND avg_duration > 2',
+    });
   });
 
-  it('does not mark high_bounce when bounce_rate is exactly 70', async () => {
-    mockGetTopPages.mockResolvedValue([makePage({ bounce_rate: 70 })]);
+  it('returns the raw inputs the thresholds are applied to', async () => {
+    mockGetTopPages.mockResolvedValue([
+      makePage({ bounce_rate: 80, avg_duration: 0.5 }),
+    ]);
 
     const server = makeServer() as any;
     registerPagePerformanceTools(server, READ_CTX);
     const result = await server.invoke({ projectId: READ_CTX.projectId }) as any;
     const content = JSON.parse(result.content[0].text);
 
-    expect(content.pages[0].seo_signals.high_bounce).toBe(false);
-  });
-
-  it('marks low_engagement when avg_duration < 1', async () => {
-    mockGetTopPages.mockResolvedValue([makePage({ avg_duration: 0.5, bounce_rate: 30 })]);
-
-    const server = makeServer() as any;
-    registerPagePerformanceTools(server, READ_CTX);
-    const result = await server.invoke({ projectId: READ_CTX.projectId }) as any;
-    const content = JSON.parse(result.content[0].text);
-
-    expect(content.pages[0].seo_signals.low_engagement).toBe(true);
-  });
-
-  it('marks good_landing_page when bounce_rate < 40 and avg_duration > 2', async () => {
-    mockGetTopPages.mockResolvedValue([makePage({ bounce_rate: 25, avg_duration: 3 })]);
-
-    const server = makeServer() as any;
-    registerPagePerformanceTools(server, READ_CTX);
-    const result = await server.invoke({ projectId: READ_CTX.projectId }) as any;
-    const content = JSON.parse(result.content[0].text);
-
-    expect(content.pages[0].seo_signals.good_landing_page).toBe(true);
-    expect(content.pages[0].seo_signals.high_bounce).toBe(false);
-    expect(content.pages[0].seo_signals.low_engagement).toBe(false);
-  });
-
-  it('does not mark good_landing_page when bounce_rate is exactly 40', async () => {
-    mockGetTopPages.mockResolvedValue([makePage({ bounce_rate: 40, avg_duration: 3 })]);
-
-    const server = makeServer() as any;
-    registerPagePerformanceTools(server, READ_CTX);
-    const result = await server.invoke({ projectId: READ_CTX.projectId }) as any;
-    const content = JSON.parse(result.content[0].text);
-
-    expect(content.pages[0].seo_signals.good_landing_page).toBe(false);
+    // The booleans were pure functions of these two columns, so the columns
+    // are all the reader needs.
+    expect(rowsOf(content)[0]).toMatchObject({
+      bounce_rate: 80,
+      avg_duration: 0.5,
+    });
   });
 });
 
@@ -123,7 +104,7 @@ describe('get_page_performance — sorting', () => {
     registerPagePerformanceTools(server, READ_CTX);
     const result = await server.invoke({ projectId: READ_CTX.projectId }) as any;
     const content = JSON.parse(result.content[0].text);
-    const paths = content.pages.map((p: any) => p.path);
+    const paths = rowsOf(content).map((p) => p.path);
 
     expect(paths).toEqual(['/b', '/c', '/a']);
   });
@@ -135,7 +116,7 @@ describe('get_page_performance — sorting', () => {
     registerPagePerformanceTools(server, READ_CTX);
     const result = await server.invoke({ projectId: READ_CTX.projectId, sortBy: 'bounce_rate', sortOrder: 'desc' }) as any;
     const content = JSON.parse(result.content[0].text);
-    const paths = content.pages.map((p: any) => p.path);
+    const paths = rowsOf(content).map((p) => p.path);
 
     expect(paths).toEqual(['/b', '/c', '/a']);
   });
@@ -147,7 +128,7 @@ describe('get_page_performance — sorting', () => {
     registerPagePerformanceTools(server, READ_CTX);
     const result = await server.invoke({ projectId: READ_CTX.projectId, sortBy: 'bounce_rate', sortOrder: 'asc' }) as any;
     const content = JSON.parse(result.content[0].text);
-    const paths = content.pages.map((p: any) => p.path);
+    const paths = rowsOf(content).map((p) => p.path);
 
     expect(paths).toEqual(['/a', '/c', '/b']);
   });
@@ -160,14 +141,15 @@ describe('get_page_performance — sorting', () => {
     const result = await server.invoke({ projectId: READ_CTX.projectId, limit: 2 }) as any;
     const content = JSON.parse(result.content[0].text);
 
-    expect(content.pages).toHaveLength(2);
-    expect(content.shown).toBe(2);
-    expect(content.total_pages).toBe(3);
+    // 2 kept rows plus the "(other)" rollup for the third.
+    expect(content.rows).toHaveLength(3);
+    expect(content.total_rows).toBe(3);
+    expect(content.rows[2][0]).toBe('(other: 1 pages)');
   });
 });
 
 describe('get_page_performance — metadata', () => {
-  it('returns total_pages and shown counts', async () => {
+  it('reports the true total and rolls the tail up so sessions reconcile', async () => {
     const manyPages = Array.from({ length: 10 }, (_, i) =>
       makePage({ path: `/page-${i}` }),
     );
@@ -178,8 +160,14 @@ describe('get_page_performance — metadata', () => {
     const result = await server.invoke({ projectId: READ_CTX.projectId, limit: 5 }) as any;
     const content = JSON.parse(result.content[0].text);
 
-    expect(content.total_pages).toBe(10);
-    expect(content.shown).toBe(5);
+    expect(content.total_rows).toBe(10);
+    // 5 kept rows plus the rollup.
+    expect(content.rows).toHaveLength(6);
+    const totalSessions = content.rows.reduce(
+      (acc: number, row: unknown[]) => acc + (row[2] as number),
+      0,
+    );
+    expect(totalSessions).toBe(10 * 100);
   });
 
   it('returns empty pages array when no data', async () => {
@@ -190,7 +178,7 @@ describe('get_page_performance — metadata', () => {
     const result = await server.invoke({ projectId: READ_CTX.projectId }) as any;
     const content = JSON.parse(result.content[0].text);
 
-    expect(content.pages).toEqual([]);
-    expect(content.total_pages).toBe(0);
+    expect(content.rows).toEqual([]);
+    expect(content.total_rows).toBe(0);
   });
 });

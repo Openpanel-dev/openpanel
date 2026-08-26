@@ -2,9 +2,21 @@ import { getGroupById, getGroupList, getGroupMemberProfiles, getGroupTypes } fro
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
-import { projectIdSchema,  withErrorHandling,
-  resolveProjectId
+import {
+  projectIdSchema,
+  resolveProjectId,
+  table,
+  withErrorHandling,
+  zLimit,
 } from '../shared';
+
+const DEFAULT_GROUP_LIMIT = 20;
+const MAX_GROUP_LIMIT = 100;
+const DEFAULT_MEMBER_LIMIT = 10;
+const MAX_MEMBER_LIMIT = 50;
+
+const GROUP_COLUMNS = ['id', 'type', 'name', 'createdAt', 'properties'] as const;
+const MEMBER_COLUMNS = ['id', 'firstName', 'lastName', 'email', 'lastSeenAt'] as const;
 
 export function registerGroupTools(
   server: McpServer,
@@ -26,7 +38,7 @@ export function registerGroupTools(
 
   server.tool(
     'find_groups',
-    'Search for groups (companies, teams, accounts) by name, ID, or type. Groups are B2B entities that profiles (users) belong to.',
+    `Search for groups (companies, teams, accounts) by name, ID, or type. Groups are B2B entities that profiles (users) belong to. Defaults to ${DEFAULT_GROUP_LIMIT} groups.`,
     {
       projectId: projectIdSchema(context),
       type: z
@@ -37,19 +49,19 @@ export function registerGroupTools(
         .string()
         .optional()
         .describe('Partial match against group name or ID'),
-      limit: z
-        .number()
-        .int()
-        .min(1)
-        .max(100)
-        .default(20)
-        .optional()
-        .describe('Maximum number of groups to return (default 20)'),
+      limit: zLimit(DEFAULT_GROUP_LIMIT, MAX_GROUP_LIMIT),
     },
     async ({ projectId: inputProjectId, type, search, limit }) =>
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
-        return getGroupList({ projectId, type, search, take: limit ?? 20 });
+        const take = limit ?? DEFAULT_GROUP_LIMIT;
+        const groups = await getGroupList({ projectId, type, search, take: take + 1 });
+        return table(groups.slice(0, take), {
+          limit: take,
+          columns: GROUP_COLUMNS,
+          unit: 'groups',
+          moreAvailable: groups.length > take,
+        });
       }),
   );
 
@@ -59,24 +71,18 @@ export function registerGroupTools(
     {
       projectId: projectIdSchema(context),
       groupId: z.string().describe('The group ID to look up'),
-      memberLimit: z
-        .number()
-        .int()
-        .min(1)
-        .max(50)
-        .default(10)
-        .optional()
-        .describe('Max number of member profiles to include (default 10)'),
+      memberLimit: zLimit(DEFAULT_MEMBER_LIMIT, MAX_MEMBER_LIMIT),
     },
     async ({ projectId: inputProjectId, groupId, memberLimit }) =>
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
+        const take = memberLimit ?? DEFAULT_MEMBER_LIMIT;
         const [group, members] = await Promise.all([
           getGroupById(groupId, projectId),
           getGroupMemberProfiles({
             projectId,
             groupId,
-            take: memberLimit ?? 10,
+            take,
           }),
         ]);
 
@@ -87,7 +93,13 @@ export function registerGroupTools(
         return {
           group,
           member_count: members.count,
-          members: members.data,
+          members: table(members.data, {
+            limit: take,
+            columns: MEMBER_COLUMNS,
+            unit: 'members',
+            // `count` is the true total; the fetched page is capped at `take`.
+            moreAvailable: members.count > members.data.length,
+          }),
         };
       }),
   );

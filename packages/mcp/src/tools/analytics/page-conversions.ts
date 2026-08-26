@@ -5,15 +5,20 @@ import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,
   resolveDateRange,
+  resolveProjectId,
+  table,
   withErrorHandling,
   zDateRange,
-  resolveProjectId,
+  zLimit,
 } from '../shared';
+
+const DEFAULT_CONVERSION_LIMIT = 25;
+const MAX_CONVERSION_LIMIT = 500;
 
 export function registerPageConversionTools(server: McpServer, context: McpAuthContext) {
   server.tool(
     'get_page_conversions',
-    'Find which pages drive the most conversions. Given a conversion event (e.g. "sign_up", "purchase"), returns pages ranked by how many unique visitors went on to convert within a configurable time window after the page view. Includes total_visitors and conversion_rate per page. Useful for identifying high-value content and optimizing landing pages.',
+    `Find which pages drive the most conversions. Given a conversion event (e.g. "sign_up", "purchase"), returns pages ranked by how many unique visitors went on to convert within a configurable time window after the page view. Includes total_visitors and conversion_rate per page. Useful for identifying high-value content and optimizing landing pages. Defaults to the top ${DEFAULT_CONVERSION_LIMIT} pages.`,
     {
       projectId: projectIdSchema(context),
       ...zDateRange,
@@ -31,15 +36,7 @@ export function registerPageConversionTools(server: McpServer, context: McpAuthC
         .describe(
           'How many hours after a page view a conversion still counts (default: 24). Use 1 for same-session, 168 for 7-day window.',
         ),
-      limit: z
-        .number()
-        .min(1)
-        .max(500)
-        .default(50)
-        .optional()
-        .describe(
-          'Maximum pages to return, sorted by unique_converters descending (default: 50)',
-        ),
+      limit: zLimit(DEFAULT_CONVERSION_LIMIT, MAX_CONVERSION_LIMIT),
     },
     async ({
       projectId: inputProjectId,
@@ -52,19 +49,27 @@ export function registerPageConversionTools(server: McpServer, context: McpAuthC
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
+        const take = limit ?? DEFAULT_CONVERSION_LIMIT;
         const pages = await getPageConversionsCore({
           projectId,
           startDate,
           endDate,
           conversionEvent,
           windowHours: windowHours ?? 24,
-          limit: limit ?? 50,
+          limit: take + 1,
         });
         return {
           conversion_event: conversionEvent,
           window_hours: windowHours ?? 24,
-          total_pages: pages.length,
-          pages,
+          // SQL-limited, so there's no countable tail to roll up — the extra
+          // fetched row just flags that more pages exist.
+          ...table(pages.slice(0, take), {
+            limit: take,
+            columns: ['path', 'origin', 'unique_converters', 'total_visitors', 'conversion_rate'],
+            sortedBy: 'unique_converters',
+            unit: 'pages',
+            moreAvailable: pages.length > take,
+          }),
         };
       }),
   );

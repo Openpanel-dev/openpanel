@@ -6,42 +6,62 @@ import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,
   resolveDateRange,
-  
+  resolveProjectId,
+  table,
   withErrorHandling,
   zDateRange,
-  resolveProjectId
+  zLimit,
 } from '../shared';
 
-const DEFAULT_PAGE_LIMIT = 50;
+const DEFAULT_PAGE_LIMIT = 25;
 const MAX_PAGE_LIMIT = 500;
+
+type PageRow = {
+  origin: string;
+  path: string;
+  sessions: number;
+  pageviews: number;
+  revenue?: number;
+};
+
+/**
+ * Both page queries push their limit into ClickHouse, so we can't count the
+ * tail to roll it up. Fetch one extra row instead: its presence is enough to
+ * tell the model the list is capped, which stops it reporting "you have 25
+ * pages" for a site with three thousand.
+ */
+function pageTable(rows: PageRow[], limit: number) {
+  const hasRevenue = rows.some((row) => row.revenue !== undefined);
+  return table(rows.slice(0, limit), {
+    limit,
+    columns: ['path', 'origin', 'sessions', 'pageviews', ...(hasRevenue ? (['revenue'] as const) : [])],
+    sortedBy: 'sessions',
+    unit: 'pages',
+    moreAvailable: rows.length > limit,
+  });
+}
 
 export function registerPageTools(server: McpServer, context: McpAuthContext) {
   server.tool(
     'get_top_pages',
-    `Get the most visited pages ranked by page views, with unique visitor counts and other engagement metrics. Defaults to the top ${DEFAULT_PAGE_LIMIT} pages.`,
+    `Get the most visited pages ranked by sessions, with pageview counts. Defaults to the top ${DEFAULT_PAGE_LIMIT} pages.`,
     {
       projectId: projectIdSchema(context),
       ...zDateRange,
-      limit: z
-        .number()
-        .int()
-        .min(1)
-        .max(MAX_PAGE_LIMIT)
-        .optional()
-        .describe(
-          `Max pages to return (default ${DEFAULT_PAGE_LIMIT}, max ${MAX_PAGE_LIMIT}). Lower this if you're hitting response-size limits.`,
-        ),
+      limit: zLimit(DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT),
     },
     async ({ projectId: inputProjectId, startDate: sd, endDate: ed, limit }) =>
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
-        return getTopPagesCore({
+        const take = limit ?? DEFAULT_PAGE_LIMIT;
+        const rows = await getTopPagesCore({
           projectId,
           startDate,
           endDate,
-          limit: limit ?? DEFAULT_PAGE_LIMIT,
+          limit: take + 1,
         });
+        return pageTable(rows as PageRow[], take);
       }),
   );
 
@@ -56,15 +76,7 @@ export function registerPageTools(server: McpServer, context: McpAuthContext) {
         .describe(
           '"entry" for pages visitors land on first, "exit" for pages they leave from',
         ),
-      limit: z
-        .number()
-        .int()
-        .min(1)
-        .max(MAX_PAGE_LIMIT)
-        .optional()
-        .describe(
-          `Max pages to return (default ${DEFAULT_PAGE_LIMIT}, max ${MAX_PAGE_LIMIT}). Lower this if you're hitting response-size limits.`,
-        ),
+      limit: zLimit(DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT),
     },
     async ({
       projectId: inputProjectId,
@@ -76,13 +88,15 @@ export function registerPageTools(server: McpServer, context: McpAuthContext) {
       withErrorHandling(async () => {
         const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
-        return getEntryExitPagesCore({
+        const take = limit ?? DEFAULT_PAGE_LIMIT;
+        const rows = await getEntryExitPagesCore({
           projectId,
           startDate,
           endDate,
           mode,
-          limit: limit ?? DEFAULT_PAGE_LIMIT,
+          limit: take + 1,
         });
+        return { mode, ...pageTable(rows as PageRow[], take) };
       }),
   );
 }

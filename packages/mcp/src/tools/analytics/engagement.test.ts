@@ -70,15 +70,38 @@ describe('get_user_last_seen_distribution — bucketing', () => {
     expect(content.summary.churned_60_plus_days).toBe(0);
   });
 
-  it('passes raw distribution alongside the summary', async () => {
-    const raw = [{ days: 1, users: 5 }];
-    mockGetRetentionLastSeenSeries.mockResolvedValue(raw);
+  it('omits the raw distribution unless it is asked for', async () => {
+    mockGetRetentionLastSeenSeries.mockResolvedValue([{ days: 1, users: 5 }]);
 
     const server = makeServer() as any;
     registerEngagementTools(server, READ_CTX);
     const result = await server.invoke({ projectId: READ_CTX.projectId }) as any;
     const content = JSON.parse(result.content[0].text);
 
-    expect(content.distribution).toEqual(raw);
+    // One row per distinct "days ago" is unbounded; the buckets answer the
+    // question, so the histogram is opt-in.
+    expect(content.distribution).toBeUndefined();
+    expect(content.summary.active_last_7_days).toBe(5);
+  });
+
+  it('returns the raw distribution as a table when includeDistribution is set', async () => {
+    mockGetRetentionLastSeenSeries.mockResolvedValue([
+      { days: 1, users: 5 },
+      { days: 40, users: 2 },
+    ]);
+
+    const server = makeServer() as any;
+    registerEngagementTools(server, READ_CTX);
+    const result = await server.invoke({
+      projectId: READ_CTX.projectId,
+      includeDistribution: true,
+    }) as any;
+    const content = JSON.parse(result.content[0].text);
+
+    expect(content.distribution.columns).toEqual(['days', 'users']);
+    expect(content.distribution.rows).toEqual([
+      [1, 5],
+      [40, 2],
+    ]);
   });
 });

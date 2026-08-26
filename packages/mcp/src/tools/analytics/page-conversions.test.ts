@@ -31,6 +31,13 @@ function makeServer() {
 
 const READ_CTX = { projectId: 'proj-1', organizationId: 'org-1', clientType: 'read' as const };
 
+/** Re-hydrate the columnar table the tool returns into row objects. */
+function rowsOf(result: { columns: string[]; rows: unknown[][] }): any[] {
+  return result.rows.map((row) =>
+    Object.fromEntries(result.columns.map((column, i) => [column, row[i]])),
+  );
+}
+
 function makePage(overrides: Record<string, unknown> = {}) {
   return {
     path: '/pricing',
@@ -58,7 +65,7 @@ describe('get_page_conversions — output structure', () => {
     })) as any;
     const content = JSON.parse(result.content[0].text);
 
-    expect(content.pages[0]).toMatchObject({
+    expect(rowsOf(content)[0]).toMatchObject({
       path: '/pricing',
       origin: 'https://example.com',
       unique_converters: 10,
@@ -80,7 +87,7 @@ describe('get_page_conversions — output structure', () => {
 
     expect(content.conversion_event).toBe('purchase');
     expect(content.window_hours).toBe(24);
-    expect(content.total_pages).toBe(1);
+    expect(content.total_rows).toBe(1);
   });
 
   it('returns empty pages array when no conversions found', async () => {
@@ -94,8 +101,8 @@ describe('get_page_conversions — output structure', () => {
     })) as any;
     const content = JSON.parse(result.content[0].text);
 
-    expect(content.pages).toEqual([]);
-    expect(content.total_pages).toBe(0);
+    expect(content.rows).toEqual([]);
+    expect(content.total_rows).toBe(0);
   });
 });
 
@@ -153,7 +160,7 @@ describe('get_page_conversions — arguments forwarding', () => {
     expect(content.window_hours).toBe(168);
   });
 
-  it('defaults limit to 50 when not provided', async () => {
+  it('defaults limit to 25, fetching one extra row to detect a tail', async () => {
     mockGetPageConversionsCore.mockResolvedValue([]);
 
     const server = makeServer() as any;
@@ -164,7 +171,7 @@ describe('get_page_conversions — arguments forwarding', () => {
     });
 
     expect(mockGetPageConversionsCore).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 50 }),
+      expect.objectContaining({ limit: 26 }),
     );
   });
 
@@ -199,7 +206,7 @@ describe('get_page_conversions — total_pages count', () => {
     })) as any;
     const content = JSON.parse(result.content[0].text);
 
-    expect(content.total_pages).toBe(7);
-    expect(content.pages).toHaveLength(7);
+    expect(content.total_rows).toBe(7);
+    expect(rowsOf(content)).toHaveLength(7);
   });
 });

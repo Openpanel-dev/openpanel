@@ -76,6 +76,21 @@ function makeServer() {
   };
 }
 
+/**
+ * Re-hydrate a columnar TableResult into row objects.
+ *
+ * Tools return `{ columns, rows }` so column names are stated once instead of
+ * on every row; assertions read better against objects, so we invert it here.
+ */
+function rowsOf(result: {
+  columns: string[];
+  rows: unknown[][];
+}): any[] {
+  return result.rows.map((row) =>
+    Object.fromEntries(result.columns.map((column, i) => [column, row[i]]))
+  );
+}
+
 // ─── Discovery ────────────────────────────────────────────────────────────────
 
 describe('list_event_names', () => {
@@ -128,7 +143,7 @@ describe('query_events', () => {
       startDate: '2000-01-01',
       endDate: '2099-01-01',
     });
-    expect(res.length).toBe(8);
+    expect(rowsOf(res).length).toBe(8);
   });
 
   it('filters by eventName — only returns purchase events', async () => {
@@ -140,10 +155,11 @@ describe('query_events', () => {
       endDate: '2099-01-01',
       eventNames: ['purchase'],
     });
-    expect(res.length).toBe(1);
-    expect(res[0].name).toBe('purchase');
-    expect(res[0].profile_id).toBe(FIXTURE.profiles.charlie);
-    expect(res[0].revenue).toBe(9900);
+    const events = rowsOf(res);
+    expect(events.length).toBe(1);
+    expect(events[0].name).toBe('purchase');
+    expect(events[0].profile_id).toBe(FIXTURE.profiles.charlie);
+    expect(events[0].revenue).toBe(9900);
   });
 
   it('filters by profileId — returns only alice events', async () => {
@@ -155,10 +171,11 @@ describe('query_events', () => {
       endDate: '2099-01-01',
       profileId: FIXTURE.profiles.alice,
     });
-    expect(res.length).toBe(3);
-    expect(res.every((e: any) => e.profile_id === FIXTURE.profiles.alice)).toBe(
-      true
-    );
+    const events = rowsOf(res);
+    expect(events.length).toBe(3);
+    expect(
+      events.every((e) => e.profile_id === FIXTURE.profiles.alice)
+    ).toBe(true);
   });
 
   it('filters by browser', async () => {
@@ -170,8 +187,9 @@ describe('query_events', () => {
       endDate: '2099-01-01',
       browser: 'Firefox',
     });
-    expect(res.length).toBe(5);
-    expect(res.every((e: any) => e.browser === 'Firefox')).toBe(true);
+    const events = rowsOf(res);
+    expect(events.length).toBe(5);
+    expect(events.every((e) => e.browser === 'Firefox')).toBe(true);
   });
 
   // Note: read-context resolveProjectId ignores the input projectId and always
@@ -187,7 +205,7 @@ describe('query_sessions', () => {
       startDate: '2000-01-01',
       endDate: '2099-01-01',
     });
-    expect(res.length).toBe(3);
+    expect(rowsOf(res).length).toBe(3);
   });
 
   it('filters by profileId — charlie has 2 sessions', async () => {
@@ -199,9 +217,10 @@ describe('query_sessions', () => {
       endDate: '2099-01-01',
       profileId: FIXTURE.profiles.charlie,
     });
-    expect(res.length).toBe(2);
+    const sessions = rowsOf(res);
+    expect(sessions.length).toBe(2);
     expect(
-      res.every((s: any) => s.profile_id === FIXTURE.profiles.charlie)
+      sessions.every((s) => s.profile_id === FIXTURE.profiles.charlie)
     ).toBe(true);
   });
 
@@ -214,8 +233,9 @@ describe('query_sessions', () => {
       endDate: '2099-01-01',
       browser: 'Chrome',
     });
-    expect(res.length).toBe(1);
-    expect(res[0].profile_id).toBe(FIXTURE.profiles.alice);
+    const sessions = rowsOf(res);
+    expect(sessions.length).toBe(1);
+    expect(sessions[0].profile_id).toBe(FIXTURE.profiles.alice);
   });
 });
 
@@ -228,7 +248,7 @@ describe('find_profiles', () => {
     const res = await server.invoke('find_profiles', {
       projectId: TEST_PROJECT_ID,
     });
-    expect(res.length).toBe(3);
+    expect(rowsOf(res).length).toBe(3);
   });
 
   it('filters by email partial match', async () => {
@@ -238,8 +258,9 @@ describe('find_profiles', () => {
       projectId: TEST_PROJECT_ID,
       email: 'alice@',
     });
-    expect(res.length).toBe(1);
-    expect(res[0].email).toBe('alice@example.com');
+    const profiles = rowsOf(res);
+    expect(profiles.length).toBe(1);
+    expect(profiles[0].email).toBe('alice@example.com');
   });
 
   it('filters by name — matches first_name and last_name', async () => {
@@ -249,15 +270,15 @@ describe('find_profiles', () => {
       projectId: TEST_PROJECT_ID,
       name: 'Charlie',
     });
-    expect(byFirst.length).toBe(1);
-    expect(byFirst[0].first_name).toBe('Charlie');
+    expect(rowsOf(byFirst).length).toBe(1);
+    expect(rowsOf(byFirst)[0].first_name).toBe('Charlie');
 
     const byLast = await server.invoke('find_profiles', {
       projectId: TEST_PROJECT_ID,
       name: 'Smith',
     });
-    expect(byLast.length).toBe(1);
-    expect(byLast[0].last_name).toBe('Smith');
+    expect(rowsOf(byLast).length).toBe(1);
+    expect(rowsOf(byLast)[0].last_name).toBe('Smith');
   });
 
   it('filters by country property', async () => {
@@ -267,8 +288,9 @@ describe('find_profiles', () => {
       projectId: TEST_PROJECT_ID,
       country: 'SE',
     });
-    expect(res.length).toBe(1);
-    expect(res[0].email).toBe('bob@example.com');
+    const profiles = rowsOf(res);
+    expect(profiles.length).toBe(1);
+    expect(profiles[0].email).toBe('bob@example.com');
   });
 
   it('inactiveDays=7 excludes alice (active 2 days ago) but includes bob (no events)', async () => {
@@ -278,7 +300,7 @@ describe('find_profiles', () => {
       projectId: TEST_PROJECT_ID,
       inactiveDays: 7,
     });
-    const emails = res.map((p: any) => p.email);
+    const emails = rowsOf(res).map((p) => p.email);
     expect(emails).not.toContain('alice@example.com');
     expect(emails).not.toContain('charlie@example.com');
     expect(emails).toContain('bob@example.com');
@@ -291,8 +313,9 @@ describe('find_profiles', () => {
       projectId: TEST_PROJECT_ID,
       minSessions: 2,
     });
-    expect(res.length).toBe(1);
-    expect(res[0].first_name).toBe('Charlie');
+    const profiles = rowsOf(res);
+    expect(profiles.length).toBe(1);
+    expect(profiles[0].first_name).toBe('Charlie');
   });
 
   it('performedEvent=purchase returns only charlie', async () => {
@@ -302,8 +325,9 @@ describe('find_profiles', () => {
       projectId: TEST_PROJECT_ID,
       performedEvent: 'purchase',
     });
-    expect(res.length).toBe(1);
-    expect(res[0].first_name).toBe('Charlie');
+    const profiles = rowsOf(res);
+    expect(profiles.length).toBe(1);
+    expect(profiles[0].first_name).toBe('Charlie');
   });
 
   // Note: read-context resolveProjectId ignores the input projectId and always
@@ -320,8 +344,7 @@ describe('get_profile', () => {
     });
     expect(res.profile.first_name).toBe('Charlie');
     expect(res.profile.email).toBe('charlie@example.com');
-    expect(Array.isArray(res.recent_events)).toBe(true);
-    expect(res.recent_events.length).toBe(5); // all charlie events
+    expect(rowsOf(res.recent_events).length).toBe(5); // all charlie events
   });
 });
 
@@ -333,9 +356,10 @@ describe('get_profile_sessions', () => {
       projectId: TEST_PROJECT_ID,
       profileId: FIXTURE.profiles.charlie,
     });
-    expect(res.sessions.length).toBe(2);
+    const sessions = rowsOf(res);
+    expect(sessions.length).toBe(2);
     expect(
-      res.sessions.every((s: any) => s.profile_id === FIXTURE.profiles.charlie)
+      sessions.every((s) => s.profile_id === FIXTURE.profiles.charlie)
     ).toBe(true);
   });
 });
@@ -390,13 +414,14 @@ describe('list_group_types', () => {
 });
 
 describe('find_groups', () => {
-  it('returns empty array (no groups in fixtures)', async () => {
+  it('returns an empty table (no groups in fixtures)', async () => {
     const server = makeServer();
     registerGroupTools(server as any, CTX);
     const res = await server.invoke('find_groups', {
       projectId: TEST_PROJECT_ID,
     });
-    expect(Array.isArray(res)).toBe(true);
+    expect(rowsOf(res)).toEqual([]);
+    expect(res.total_rows).toBe(0);
   });
 });
 
@@ -425,8 +450,7 @@ describe('get_analytics_overview', () => {
       endDate: '2099-01-01',
     });
     expect(res).toHaveProperty('summary');
-    expect(res).toHaveProperty('series');
-    expect(Array.isArray(res.series)).toBe(true);
+    expect(Array.isArray(rowsOf(res.series))).toBe(true);
   });
 });
 
@@ -439,8 +463,7 @@ describe('get_top_pages', () => {
       startDate: '2000-01-01',
       endDate: '2099-01-01',
     });
-    expect(Array.isArray(res)).toBe(true);
-    const paths = res.map((p: any) => p.path);
+    const paths = rowsOf(res).map((p) => p.path);
     // getTopPages queries screen_view events only — Charlie's /shop appears;
     // Alice's /home is a page_view (not screen_view) so it won't show here.
     expect(paths).toContain('/shop');
@@ -457,7 +480,8 @@ describe('get_entry_exit_pages', () => {
       endDate: '2099-01-01',
       mode: 'entry',
     });
-    expect(Array.isArray(res)).toBe(true);
+    expect(res.mode).toBe('entry');
+    expect(Array.isArray(rowsOf(res))).toBe(true);
   });
 
   it('returns exit pages array', async () => {
@@ -469,12 +493,13 @@ describe('get_entry_exit_pages', () => {
       endDate: '2099-01-01',
       mode: 'exit',
     });
-    expect(Array.isArray(res)).toBe(true);
+    expect(res.mode).toBe('exit');
+    expect(Array.isArray(rowsOf(res))).toBe(true);
   });
 });
 
 describe('get_page_performance', () => {
-  it('returns pages array with seo_signals on each page', async () => {
+  it('returns a page table plus the shared seo thresholds', async () => {
     const server = makeServer();
     registerPagePerformanceTools(server as any, CTX);
     const res = await server.invoke('get_page_performance', {
@@ -482,20 +507,20 @@ describe('get_page_performance', () => {
       startDate: '2000-01-01',
       endDate: '2099-01-01',
     });
-    expect(typeof res.total_pages).toBe('number');
-    expect(typeof res.shown).toBe('number');
-    expect(Array.isArray(res.pages)).toBe(true);
-    for (const page of res.pages) {
-      expect(page).toHaveProperty('seo_signals');
-      expect(typeof page.seo_signals.high_bounce).toBe('boolean');
-      expect(typeof page.seo_signals.low_engagement).toBe('boolean');
-      expect(typeof page.seo_signals.good_landing_page).toBe('boolean');
+    // The thresholds are stated once instead of re-derived onto every row.
+    expect(res.seo_thresholds).toHaveProperty('high_bounce');
+    expect(res.seo_thresholds).toHaveProperty('low_engagement');
+    expect(res.seo_thresholds).toHaveProperty('good_landing_page');
+    expect(typeof res.total_rows).toBe('number');
+    for (const page of rowsOf(res)) {
+      expect(typeof page.bounce_rate).toBe('number');
+      expect(typeof page.avg_duration).toBe('number');
     }
   });
 });
 
 describe('get_top_referrers', () => {
-  it('returns array', async () => {
+  it('returns a columnar table', async () => {
     const server = makeServer();
     registerTrafficTools(server as any, CTX);
     const res = await server.invoke('get_top_referrers', {
@@ -503,7 +528,9 @@ describe('get_top_referrers', () => {
       startDate: '2000-01-01',
       endDate: '2099-01-01',
     });
-    expect(Array.isArray(res)).toBe(true);
+    expect(res.columns).toContain('name');
+    expect(res.columns).toContain('sessions');
+    expect(Array.isArray(res.rows)).toBe(true);
   });
 });
 
@@ -516,9 +543,8 @@ describe('get_country_breakdown', () => {
       startDate: '2000-01-01',
       endDate: '2099-01-01',
     });
-    expect(Array.isArray(res)).toBe(true);
     // getTopGeneric returns { name, sessions, pageviews } — field is 'name'
-    const countries = res.map((r: any) => r.name);
+    const countries = rowsOf(res).map((r) => r.name);
     expect(countries).toContain('US');
   });
 });
@@ -532,9 +558,8 @@ describe('get_device_breakdown', () => {
       startDate: '2000-01-01',
       endDate: '2099-01-01',
     });
-    expect(Array.isArray(res)).toBe(true);
     // getTopGeneric returns { name, sessions, pageviews } — field is 'name'
-    const devices = res.map((r: any) => r.name);
+    const devices = rowsOf(res).map((r) => r.name);
     expect(devices).toContain('desktop');
   });
 });
@@ -592,8 +617,8 @@ describe('get_user_flow', () => {
     });
     expect(res.mode).toBe('after');
     expect(res.startEvent).toBe('session_start');
-    expect(Array.isArray(res.nodes)).toBe(true);
-    expect(Array.isArray(res.links)).toBe(true);
+    expect(Array.isArray(rowsOf(res.nodes))).toBe(true);
+    expect(Array.isArray(rowsOf(res.links))).toBe(true);
     expect(typeof res.node_count).toBe('number');
     expect(typeof res.link_count).toBe('number');
   });
@@ -623,7 +648,7 @@ describe('get_rolling_active_users', () => {
     });
     expect(res.label).toBe('DAU');
     expect(res.window_days).toBe(1);
-    expect(Array.isArray(res.series)).toBe(true);
+    expect(Array.isArray(rowsOf(res.series))).toBe(true);
   });
 
   it('uses correct label for WAU and MAU', async () => {
@@ -649,12 +674,12 @@ describe('get_weekly_retention_series', () => {
     const res = await server.invoke('get_weekly_retention_series', {
       projectId: TEST_PROJECT_ID,
     });
-    expect(Array.isArray(res)).toBe(true);
-    if (res.length > 0) {
-      expect(res[0]).toHaveProperty('date');
-      expect(res[0]).toHaveProperty('active_users');
-      expect(res[0]).toHaveProperty('retained_users');
-      expect(res[0]).toHaveProperty('retention');
+    const weeks = rowsOf(res);
+    if (weeks.length > 0) {
+      expect(weeks[0]).toHaveProperty('date');
+      expect(weeks[0]).toHaveProperty('active_users');
+      expect(weeks[0]).toHaveProperty('retained_users');
+      expect(weeks[0]).toHaveProperty('retention');
     }
   });
 });
@@ -692,6 +717,19 @@ describe('get_user_last_seen_distribution', () => {
     expect(res.summary.active_last_7_days).toBe(2);
     expect(res.summary.active_8_to_14_days).toBe(0);
     expect(res.summary.churned_60_plus_days).toBe(0);
-    expect(Array.isArray(res.distribution)).toBe(true);
+    // The raw per-day histogram is opt-in — the buckets above answer the
+    // question in a fraction of the size.
+    expect(res.distribution).toBeUndefined();
+  });
+
+  it('returns the raw histogram when includeDistribution is set', async () => {
+    const server = makeServer();
+    registerEngagementTools(server as any, CTX);
+    const res = await server.invoke('get_user_last_seen_distribution', {
+      projectId: TEST_PROJECT_ID,
+      includeDistribution: true,
+    });
+    expect(res.distribution.columns).toEqual(['days', 'users']);
+    expect(Array.isArray(res.distribution.rows)).toBe(true);
   });
 });
