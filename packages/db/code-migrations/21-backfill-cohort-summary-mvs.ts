@@ -38,19 +38,16 @@ import { getIsCluster } from './helpers';
  *
  * The tradeoff a rebuild makes is visibility: while a month is being
  * rebuilt its partition is incomplete, so a cohort computed in that window
- * under-counts that month. It converges as soon as the month finishes.
+ * under-counts that month. Nothing needs doing about it, the cohortRefresh
+ * cron recomputes every non-static cohort every 30 minutes. Months are
+ * rebuilt newest first so the ones cohorts actually read, which mostly use
+ * relative timeframes, are correct soonest.
  *
  * AUTOMATIC BY DEFAULT
  * This runs as a normal migration so a new install ends up with working
  * cohorts without anyone reading this file. Because the rebuild is
  * idempotent, an evicted migration pod is safe: the migration is not
  * recorded, and the next boot redoes it.
- *
- * Rebuilding the full history of a large events table is not something to
- * start unattended, though, so it steps aside above
- * COHORT_BACKFILL_MAX_EVENTS rows (default 100,000,000, roughly the point
- * where this stops being minutes) and prints the command to run by hand.
- * Raise the variable, or pass --force, to run it anyway.
  *
  * MANUAL USE
  * The same file is the supervised tool. Run it directly to control when
@@ -60,7 +57,6 @@ import { getIsCluster } from './helpers';
  *
  * Flags:
  *   --dry              Print the plan and the first batch; run nothing.
- *   --force            Ignore COHORT_BACKFILL_MAX_EVENTS.
  *   --from=YYYYMM      First month (default: month of min(created_at)).
  *   --to=YYYYMM        Last month (default: current month).
  *   --until=DATETIME   Fixed upper bound on created_at for every month
@@ -78,7 +74,6 @@ import { getIsCluster } from './helpers';
 
 const DEFAULT_BATCH_DAYS = 2;
 const DEFAULT_PARALLEL = 2;
-const DEFAULT_MAX_EVENTS = 100_000_000;
 
 // Spill the per-batch GROUP BY rather than OOM on the ARRAY JOIN fan-out;
 // max_insert_threads parallelises the part-building stage, which is
@@ -242,15 +237,9 @@ async function scalar(query: string): Promise<string | undefined> {
 export async function up() {
   const isClustered = getIsCluster();
   const isDry = process.argv.includes('--dry');
-  const force = process.argv.includes('--force');
   const only = getArg('only');
   const batchDays = getPositiveInt(getArg('batch-days'), DEFAULT_BATCH_DAYS);
   const parallel = getPositiveInt(getArg('parallel'), DEFAULT_PARALLEL);
-  const maxEvents = getPositiveInt(
-    process.env.COHORT_BACKFILL_MAX_EVENTS,
-    DEFAULT_MAX_EVENTS,
-  );
-
   const totalEvents = Number(
     (await scalar(`SELECT count() AS c FROM ${TABLE_NAMES.events}`)) ?? 0,
   );
@@ -258,24 +247,6 @@ export async function up() {
     console.log('📦 Cohort summary MVs: no events to aggregate, nothing to do');
     return;
   }
-  if (totalEvents > maxEvents && !force && !isDry) {
-    console.log('');
-    console.log(
-      `⏭️  Cohort summary MVs: skipping the automatic rebuild (${totalEvents.toLocaleString()} events > COHORT_BACKFILL_MAX_EVENTS=${maxEvents.toLocaleString()}).`,
-    );
-    console.log(
-      '   Cohorts compute from partial history until this is run. Run it when it suits you:',
-    );
-    console.log(
-      '     CLICKHOUSE_URL=... jiti packages/db/code-migrations/21-backfill-cohort-summary-mvs.ts',
-    );
-    console.log(
-      '   It rebuilds month by month and is safe to interrupt and re-run.',
-    );
-    console.log('');
-    return;
-  }
-
   // A fixed --until applies to every month. Without one, each month takes its
   // own bound straight after its drop (see the header) so a long run cannot
   // lose the rows the trigger wrote while it was running. Read from
@@ -322,10 +293,14 @@ export async function up() {
     });
   }
 
+  // Newest first: cohort criteria mostly use relative timeframes, so the
+  // recent months are the ones that make cohorts correct again. It also means
+  // an interrupted run leaves the useful end done.
   const months: number[] = [];
   for (let m = fromMonth; m <= toMonth; m = nextMonth(m)) {
     months.push(m);
   }
+  months.reverse();
 
   console.log('');
   console.log('📦 Cohort summary MV rebuild');
