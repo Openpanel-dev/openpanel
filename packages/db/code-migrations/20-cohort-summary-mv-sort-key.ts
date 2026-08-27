@@ -35,16 +35,8 @@ import { getIsCluster } from './helpers';
  * unchanged, so the new tables hold exactly the same rows as the old ones.
  * Only the physical order differs.
  *
- * populate: false — these index events inserted after CREATE. History must
- * be backfilled with the companion script, which is deliberately not a
- * numbered migration so it cannot run inside the migration container:
- *
- *   packages/db/code-migrations/backfill-cohort-summary-mvs.ts
- *
- * These are AggregatingMergeTree tables, so re-running an already-populated
- * range double counts; the script is month-partition-aligned with an
- * explicit --replace path for retries. Until it completes, cohorts with
- * relative timeframes compute from partial history, so run it promptly.
+ * populate: false — these index events inserted after CREATE. History is
+ * filled by migration 21, which rebuilds them month by month from events.
  *
  * The old MVs are left in place and keep receiving inserts. Once the new
  * ones are verified, dropping them is a one-line follow-up migration.
