@@ -5,11 +5,13 @@ import { fetchDeviceId, handler } from '@/controllers/track.controller';
 import { clientHook } from '@/hooks/client.hook';
 import { duplicateHook } from '@/hooks/duplicate.hook';
 import { isBotHook } from '@/hooks/is-bot.hook';
+import { subscriptionHook } from '@/hooks/subscription.hook';
 
 const trackRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
   fastify.addHook('preValidation', duplicateHook);
   fastify.addHook('preHandler', clientHook);
   fastify.addHook('preHandler', isBotHook);
+  fastify.addHook('preHandler', subscriptionHook);
 
   await fastify.route({
     method: 'POST',

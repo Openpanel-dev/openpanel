@@ -58,6 +58,14 @@ declare global {
       duration: 'once' | 'forever' | 'repeating';
       durationInMonths: number | null;
     };
+    // Steps of the wind-down sequence, in order. The column stores the last
+    // step whose email was sent; `blocked` and `final_warning` also mean
+    // ingestion is rejected. See apps/worker/src/jobs/cron.wind-down.ts.
+    type IPrismaWindDownStep =
+      | 'expired_notice'
+      | 'stopping_soon'
+      | 'blocked'
+      | 'final_warning';
     // Mirrors Polar's CustomerCancellationReason enum.
     type IPrismaCancellationReason =
       | 'too_expensive'

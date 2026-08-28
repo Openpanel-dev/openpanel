@@ -118,6 +118,11 @@ export async function bootCron() {
       type: 'dataHealth',
       pattern: '30 7 * * *', // Daily 07:30 UTC — no-data / data-stopped rescue emails
     },
+    {
+      name: 'windDown',
+      type: 'windDown',
+      pattern: '0 * * * *', // Hourly — expired-trial wind-down emails, block, delete
+    },
   ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {

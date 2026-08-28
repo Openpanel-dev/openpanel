@@ -1,18 +1,32 @@
 import type { Job } from 'bullmq';
-import { differenceInDays, format } from 'date-fns';
+import { format } from 'date-fns';
 
 import { db, getOrganizationEventsCount } from '@openpanel/db';
-import {
-  type EmailData,
-  type EmailTemplate,
-  sendEmail,
-} from '@openpanel/email';
 import type { CronQueuePayload } from '@openpanel/queue';
 
 import { getRecommendedPlan } from '@openpanel/payments';
+import {
+  type SequenceStep,
+  type SequenceSubject,
+  runSequence,
+  step,
+} from './lib/email-sequence';
 import { logger } from '../utils/logger';
 
-// Types for the onboarding email system
+/**
+ * The getting-started drip, from signup to a few days before the trial ends.
+ *
+ * It stops at day 26. What happens *after* the trial expires belongs to
+ * cron.wind-down.ts, which is anchored on the expiry rather than on signup —
+ * see that file. The old day-30 'onboarding-trial-ended' step moved there as
+ * 'wind-down-expired'.
+ *
+ * The `onboarding` column stores the last sent step, and step names are equal
+ * to template names for historical reasons: in-flight orgs already hold those
+ * values. Renaming one strands every org sitting on it (the runner completes
+ * them rather than replaying the sequence, but they still stop early).
+ */
+
 const orgQuery = {
   include: {
     createdBy: {
@@ -35,29 +49,17 @@ type OrgWithCreator = Awaited<
   ReturnType<typeof db.organization.findMany<typeof orgQuery>>
 >[number];
 
-type OnboardingUsage = {
+interface OnboardingUsage {
   eventsCount: number;
   hasData: boolean;
 };
 
-type OnboardingContext = {
+interface OnboardingContext {
   org: OrgWithCreator;
   user: NonNullable<OrgWithCreator['createdBy']>;
   // Lazy + memoized: only emails past the day gate pay for the ClickHouse count.
   getUsage: () => Promise<OnboardingUsage>;
 };
-
-type OnboardingEmail<T extends EmailTemplate = EmailTemplate> = {
-  day: number;
-  template: T;
-  shouldSend?: (ctx: OnboardingContext) => Promise<boolean | 'complete'>;
-  data: (ctx: OnboardingContext) => EmailData<T> | Promise<EmailData<T>>;
-};
-
-// Helper to create type-safe email entries with correlated template/data types
-function email<T extends EmailTemplate>(config: OnboardingEmail<T>) {
-  return config;
-}
 
 function createUsageGetter(org: OrgWithCreator) {
   let promise: Promise<OnboardingUsage> | null = null;
@@ -95,10 +97,10 @@ const getters = {
   },
 } as const;
 
-// Declarative email schedule - easy to add, remove, or reorder
-const ONBOARDING_EMAILS = [
-  email({
+export const ONBOARDING_EMAILS: SequenceStep<OnboardingContext>[] = [
+  step<OnboardingContext, 'onboarding-welcome'>({
     day: 0,
+    step: 'onboarding-welcome',
     template: 'onboarding-welcome',
     data: async (ctx) => ({
       firstName: getters.firstName(ctx),
@@ -106,8 +108,9 @@ const ONBOARDING_EMAILS = [
       hasData: (await ctx.getUsage()).hasData,
     }),
   }),
-  email({
+  step<OnboardingContext, 'onboarding-what-to-track'>({
     day: 2,
+    step: 'onboarding-what-to-track',
     template: 'onboarding-what-to-track',
     data: async (ctx) => {
       const usage = await ctx.getUsage();
@@ -118,8 +121,9 @@ const ONBOARDING_EMAILS = [
       };
     },
   }),
-  email({
+  step<OnboardingContext, 'onboarding-dashboards'>({
     day: 6,
+    step: 'onboarding-dashboards',
     template: 'onboarding-dashboards',
     data: async (ctx) => {
       const usage = await ctx.getUsage();
@@ -131,16 +135,18 @@ const ONBOARDING_EMAILS = [
       };
     },
   }),
-  email({
+  step<OnboardingContext, 'onboarding-feature-request'>({
     day: 14,
+    step: 'onboarding-feature-request',
     template: 'onboarding-feature-request',
     data: async (ctx) => ({
       firstName: getters.firstName(ctx),
       hasData: (await ctx.getUsage()).hasData,
     }),
   }),
-  email({
+  step<OnboardingContext, 'onboarding-trial-ending'>({
     day: 26,
+    step: 'onboarding-trial-ending',
     template: 'onboarding-trial-ending',
     shouldSend: async ({ org }) => {
       if (org.subscriptionStatus === 'active') {
@@ -160,29 +166,9 @@ const ONBOARDING_EMAILS = [
       };
     },
   }),
-  email({
-    day: 30,
-    template: 'onboarding-trial-ended',
-    shouldSend: async ({ org }) => {
-      if (org.subscriptionStatus === 'active') {
-        return 'complete';
-      }
-      return true;
-    },
-    data: async (ctx) => {
-      const usage = await ctx.getUsage();
-      return {
-        firstName: getters.firstName(ctx),
-        billingUrl: getters.billingUrl(ctx),
-        recommendedPlan: await getters.recommendedPlan(ctx),
-        hasData: usage.hasData,
-        eventsCount: usage.eventsCount,
-      };
-    },
-  }),
 ];
 
-export async function onboardingJob(job: Job<CronQueuePayload>) {
+export async function onboardingJob(_job: Job<CronQueuePayload>) {
   if (process.env.SELF_HOSTED === 'true') {
     return null;
   }
@@ -203,127 +189,51 @@ export async function onboardingJob(job: Job<CronQueuePayload>) {
 
   logger.info(`Found ${orgs.length} organizations in onboarding`);
 
-  let emailsSent = 0;
-  let orgsCompleted = 0;
-  let orgsSkipped = 0;
+  const contactable = orgs.filter(
+    (org) => org.createdBy && !org.createdBy.deletedAt,
+  );
+  const withoutCreator = orgs.length - contactable.length;
 
-  for (const org of orgs) {
-    // Skip if no creator or creator is deleted
-    if (!org.createdBy || org.createdBy.deletedAt) {
-      orgsSkipped++;
-      continue;
-    }
-
-    const user = org.createdBy;
-    const ctx: OnboardingContext = {
-      org,
-      user,
-      getUsage: createUsageGetter(org),
-    };
-    const daysSinceOrgCreation = differenceInDays(new Date(), org.createdAt);
-
-    // Find the next email to send
-    // If org.onboarding is null or empty string, they haven't received any email yet
-    const lastSentIndex = org.onboarding
-      ? ONBOARDING_EMAILS.findIndex((e) => e.template === org.onboarding)
-      : -1;
-    const nextEmailIndex = lastSentIndex + 1;
-
-    // No more emails to send
-    if (nextEmailIndex >= ONBOARDING_EMAILS.length) {
-      await db.organization.update({
-        where: { id: org.id },
-        data: { onboarding: 'completed' },
-      });
-      orgsCompleted++;
-      logger.info(
-        `Completed onboarding for organization ${org.id} (all emails sent)`,
-      );
-      continue;
-    }
-
-    const nextEmail = ONBOARDING_EMAILS[nextEmailIndex];
-    if (!nextEmail) {
-      continue;
-    }
-
-    logger.info(
-      {
-        daysSinceOrgCreation,
-        nextEmailDay: nextEmail.day,
-        orgCreatedAt: org.createdAt,
-        today: new Date(),
-      },
-      `Checking if enough days have passed for organization ${org.id}`,
-    );
-    // Check if enough days have passed
-    if (daysSinceOrgCreation < nextEmail.day) {
-      orgsSkipped++;
-      continue;
-    }
-
-    // Check shouldSend callback if defined
-    if (nextEmail.shouldSend) {
-      const result = await nextEmail.shouldSend(ctx);
-
-      if (result === 'complete') {
-        await db.organization.update({
-          where: { id: org.id },
-          data: { onboarding: 'completed' },
-        });
-        orgsCompleted++;
-        logger.info(
-          `Completed onboarding for organization ${org.id} (shouldSend returned complete)`,
-        );
-        continue;
-      }
-
-      if (result === false) {
-        orgsSkipped++;
-        continue;
-      }
-    }
-
-    try {
-      const emailData = await nextEmail.data(ctx);
-
-      await sendEmail(nextEmail.template, {
-        to: user.email,
-        data: emailData as never,
-      });
-
-      // Update onboarding to the template name we just sent
-      await db.organization.update({
-        where: { id: org.id },
-        data: { onboarding: nextEmail.template },
-      });
-
-      emailsSent++;
-      logger.info(
-        `Sent onboarding email "${nextEmail.template}" to organization ${org.id} (user ${user.id})`,
-      );
-    } catch (error) {
-      logger.error(
-        { err: error, template: nextEmail.template },
-        `Failed to send onboarding email to organization ${org.id}`,
-      );
-    }
-  }
-
-  logger.info(
-    {
-      totalOrgs: orgs.length,
-      emailsSent,
-      orgsCompleted,
-      orgsSkipped,
+  const subjects: SequenceSubject<OnboardingContext>[] = contactable.map(
+    (org) => {
+      const user = org.createdBy as NonNullable<OrgWithCreator['createdBy']>;
+      return {
+        id: org.id,
+        email: user.email,
+        anchor: org.createdAt,
+        pointer: org.onboarding,
+        ctx: { org, user, getUsage: createUsageGetter(org) },
+      };
     },
-    'Completed onboarding email job',
   );
 
-  return {
+  const result = await runSequence({
+    name: 'onboarding',
+    steps: ONBOARDING_EMAILS,
+    subjects,
+    logger,
+    onAdvance: async (subject, stepName) => {
+      await db.organization.update({
+        where: { id: subject.id },
+        data: { onboarding: stepName },
+      });
+    },
+    onComplete: async (subject) => {
+      await db.organization.update({
+        where: { id: subject.id },
+        data: { onboarding: 'completed' },
+      });
+    },
+  });
+
+  const summary = {
     totalOrgs: orgs.length,
-    emailsSent,
-    orgsCompleted,
-    orgsSkipped,
+    emailsSent: result.emailsSent,
+    orgsCompleted: result.completed,
+    orgsSkipped: result.deferred + result.stepsSkipped + withoutCreator,
   };
+
+  logger.info(summary, 'Completed onboarding email job');
+
+  return summary;
 }

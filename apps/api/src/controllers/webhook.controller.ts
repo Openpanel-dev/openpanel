@@ -355,6 +355,15 @@ async function syncSubscriptionToOrg(
     organization.subscriptionPeriodEventsLimit < subscriptionPeriodEventsLimit
       ? { usageWarningSentAt: null, usageExceededSentAt: null }
       : {}),
+    // Reaching checkout takes the org out of the wind-down population for good
+    // — that sequence only targets trials that never had a subscription — so
+    // release the ingestion block and any scheduled deletion. Guarded on the
+    // org actually being in wind-down so we never clear a `deleteAt` the owner
+    // set themselves. The wind-down cron re-checks this too, for the webhook we
+    // never receive.
+    ...(organization.windDownStartedAt
+      ? { windDownStartedAt: null, windDownStep: null, deleteAt: null }
+      : {}),
   };
 
   const changes = diffOrganizationFields(

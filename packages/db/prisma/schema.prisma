@@ -121,12 +121,22 @@ model Organization {
   /// [IPrismaSubscriptionDiscount]
   subscriptionDiscount                    Json?
 
+  // Wind-down: trial expired -> ingestion blocked -> data deleted.
+  // Anchored on windDownStartedAt (stamped when the org enters the sequence)
+  // rather than subscriptionEndsAt: existing trial_expired orgs have an expiry
+  // hundreds of days in the past, so anchoring there would skip every email and
+  // delete them on the first tick.
+  windDownStartedAt DateTime?
+  /// [IPrismaWindDownStep]
+  windDownStep      String?
+
   // When deleteAt > now(), the organization will be deleted
   deleteAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
+  @@index([windDownStartedAt])
   @@map("organizations")
 }
 

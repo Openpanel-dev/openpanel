@@ -2,10 +2,12 @@ import type { FastifyPluginAsyncZodOpenApi } from 'fastify-zod-openapi';
 import * as controller from '@/controllers/profile.controller';
 import { clientHook } from '@/hooks/client.hook';
 import { isBotHook } from '@/hooks/is-bot.hook';
+import { subscriptionHook } from '@/hooks/subscription.hook';
 
 const profileRouter: FastifyPluginAsyncZodOpenApi = async (fastify) => {
   fastify.addHook('preHandler', clientHook);
   fastify.addHook('preHandler', isBotHook);
+  fastify.addHook('preHandler', subscriptionHook);
 
   fastify.route({
     method: 'POST',

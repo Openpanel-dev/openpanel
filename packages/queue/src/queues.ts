@@ -181,6 +181,10 @@ export type CronQueuePayloadDataHealth = {
   type: 'dataHealth';
   payload: undefined;
 };
+export type CronQueuePayloadWindDown = {
+  type: 'windDown';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
@@ -199,7 +203,8 @@ export type CronQueuePayload =
   | CronQueuePayloadSessionVacuum
   | CronQueuePayloadInsightCleanup
   | CronQueuePayloadWeeklyDigest
-  | CronQueuePayloadDataHealth;
+  | CronQueuePayloadDataHealth
+  | CronQueuePayloadWindDown;
 
 export type CronQueueType = CronQueuePayload['type'];
 

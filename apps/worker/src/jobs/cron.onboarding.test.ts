@@ -161,6 +161,27 @@ describe('onboardingJob', () => {
   it('marks onboarding completed once every email has been sent', async () => {
     dbMock.organization.findMany.mockResolvedValue([
       org({
+        onboarding: 'onboarding-trial-ending',
+        createdAt: subDays(new Date(), 31),
+      }),
+    ]);
+
+    const result = await onboardingJob(job);
+
+    expect(result).toMatchObject({ emailsSent: 0, orgsCompleted: 1 });
+    expect(dbMock.organization.update).toHaveBeenCalledWith({
+      where: { id: 'org-1' },
+      data: { onboarding: 'completed' },
+    });
+  });
+
+  it('completes orgs left on the retired trial-ended pointer', async () => {
+    // The day-30 'onboarding-trial-ended' step moved to the wind-down sequence.
+    // Orgs still holding that pointer must finish the drip, not restart it from
+    // the welcome email. Code migration 21 settles these, but the runner has to
+    // be safe on its own for any that slip through.
+    dbMock.organization.findMany.mockResolvedValue([
+      org({
         onboarding: 'onboarding-trial-ended',
         createdAt: subDays(new Date(), 31),
       }),
@@ -169,6 +190,7 @@ describe('onboardingJob', () => {
     const result = await onboardingJob(job);
 
     expect(result).toMatchObject({ emailsSent: 0, orgsCompleted: 1 });
+    expect(sendEmailMock).not.toHaveBeenCalled();
     expect(dbMock.organization.update).toHaveBeenCalledWith({
       where: { id: 'org-1' },
       data: { onboarding: 'completed' },

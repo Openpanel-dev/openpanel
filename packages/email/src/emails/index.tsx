@@ -9,9 +9,6 @@ import OnboardingDashboards, {
 import OnboardingFeatureRequest, {
   zOnboardingFeatureRequest,
 } from './onboarding-feature-request';
-import OnboardingTrialEnded, {
-  zOnboardingTrialEnded,
-} from './onboarding-trial-ended';
 import OnboardingTrialEnding, {
   zOnboardingTrialEnding,
 } from './onboarding-trial-ending';
@@ -29,6 +26,14 @@ import UsageLimitExceeded, {
 } from './usage-limit-exceeded';
 import UsageNearLimit, { zUsageNearLimit } from './usage-near-limit';
 import WeeklyDigest, { zWeeklyDigest } from './weekly-digest';
+import WindDownBlocked, { zWindDownBlocked } from './wind-down-blocked';
+import WindDownExpired, { zWindDownExpired } from './wind-down-expired';
+import WindDownFinalWarning, {
+  zWindDownFinalWarning,
+} from './wind-down-final-warning';
+import WindDownStoppingSoon, {
+  zWindDownStoppingSoon,
+} from './wind-down-stopping-soon';
 
 export const templates = {
   invite: {
@@ -80,11 +85,40 @@ export const templates = {
     // check, no List-Unsubscribe header).
     category: 'onboarding' as const,
   },
-  'onboarding-trial-ended': {
-    subject: () => 'Your trial ended, dashboard is locked',
-    Component: OnboardingTrialEnded,
-    schema: zOnboardingTrialEnded,
-    category: 'onboarding' as const,
+  'wind-down-expired': {
+    subject: (data: z.infer<typeof zWindDownExpired>) =>
+      data.stillTracking
+        ? "You're still sending events, but your trial ended"
+        : 'Your trial ended, dashboard is locked',
+    Component: WindDownExpired,
+    schema: zWindDownExpired,
+    category: 'account_lifecycle' as const,
+  },
+  'wind-down-stopping-soon': {
+    subject: (data: z.infer<typeof zWindDownStoppingSoon>) =>
+      `We stop recording your events on ${data.blockDate}`,
+    Component: WindDownStoppingSoon,
+    schema: zWindDownStoppingSoon,
+    category: 'account_lifecycle' as const,
+  },
+  'wind-down-blocked': {
+    subject: (data: z.infer<typeof zWindDownBlocked>) =>
+      data.stillTracking
+        ? 'Your events are no longer being recorded'
+        : 'Event tracking paused for your projects',
+    Component: WindDownBlocked,
+    schema: zWindDownBlocked,
+    category: 'account_lifecycle' as const,
+  },
+  'wind-down-final-warning': {
+    subject: (data: z.infer<typeof zWindDownFinalWarning>) =>
+      `Final notice: your data is deleted on ${data.deleteDate}`,
+    Component: WindDownFinalWarning,
+    schema: zWindDownFinalWarning,
+    // Deliberately uncategorised, which makes it transactional: no suppression
+    // check and no unsubscribe link. Telling someone their data is about to be
+    // erased is a service notice, not marketing, and it must not be silenced
+    // by an earlier opt-out.
   },
   'weekly-digest': {
     subject: (data: z.infer<typeof zWeeklyDigest>) =>
