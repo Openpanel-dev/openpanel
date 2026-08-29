@@ -90,6 +90,113 @@ describe('config secret handling', () => {
     expect(findMissingSecretFields(s3IamRole)).toEqual([]);
   });
 
+  it('redacts a nested secret without disturbing its siblings', () => {
+    const slack = {
+      type: 'slack',
+      access_token: 'xoxb-super-secret',
+      team: { id: 'T1', name: 'Acme' },
+      incoming_webhook: {
+        channel: '#alerts',
+        channel_id: 'C1',
+        configuration_url: 'https://acme.slack.com/services/B1',
+        url: 'https://hooks.slack.com/services/T1/B1/secret',
+      },
+    };
+    const redacted = redactConfigSecrets(slack);
+
+    expect(redacted.access_token).toBe('');
+    expect(redacted.incoming_webhook.url).toBe('');
+    // Everything the UI needs stays intact.
+    expect(redacted.incoming_webhook.channel).toBe('#alerts');
+    expect(redacted.incoming_webhook.configuration_url).toBe(
+      'https://acme.slack.com/services/B1',
+    );
+    expect(redacted.team).toEqual({ id: 'T1', name: 'Acme' });
+    // The original is untouched — the worker reads the stored row, not this.
+    expect(slack.incoming_webhook.url).toBe(
+      'https://hooks.slack.com/services/T1/B1/secret',
+    );
+  });
+
+  it('redacts webhook header values but keeps the keys visible', () => {
+    const redacted = redactConfigSecrets({
+      type: 'webhook',
+      url: 'https://acme.test/hook',
+      mode: 'message',
+      headers: { Authorization: 'Bearer sk-live-123', 'X-Env': 'prod' },
+    });
+
+    expect(redacted.headers).toEqual({ Authorization: '', 'X-Env': '' });
+    // The destination URL is not redacted: the user typed it and must be able
+    // to edit it.
+    expect(redacted.url).toBe('https://acme.test/hook');
+  });
+
+  it('carries header values over per key, so an edit keeps the others', () => {
+    const stored = {
+      type: 'webhook',
+      url: 'https://acme.test/hook',
+      mode: 'message',
+      headers: { Authorization: 'Bearer sk-live-123', 'X-Env': 'prod' },
+    };
+    const submitted = carryOverConfigSecrets(
+      {
+        ...stored,
+        url: 'https://acme.test/hook-v2',
+        // Authorization came back blank (redacted, untouched); X-Env retyped;
+        // a third header added; nothing removed.
+        headers: { Authorization: '', 'X-Env': 'staging', 'X-New': 'v' },
+      },
+      stored,
+    );
+
+    expect(submitted.headers).toEqual({
+      Authorization: 'Bearer sk-live-123',
+      'X-Env': 'staging',
+      'X-New': 'v',
+    });
+    expect(submitted.url).toBe('https://acme.test/hook-v2');
+  });
+
+  it('lets a removed header stay removed', () => {
+    const stored = {
+      type: 'webhook',
+      url: 'https://acme.test/hook',
+      mode: 'message',
+      headers: { Authorization: 'Bearer sk-live-123' },
+    };
+    const submitted = carryOverConfigSecrets(
+      { ...stored, headers: {} },
+      stored,
+    );
+    expect(submitted.headers).toEqual({});
+  });
+
+  it('does not encrypt redact-only secrets', () => {
+    // The notification senders read these raw; encrypting without decrypting at
+    // use would break delivery.
+    const slack = encryptConfigSecrets({
+      type: 'slack',
+      access_token: 'xoxb-super-secret',
+      incoming_webhook: { url: 'https://hooks.slack.com/x' },
+    });
+    expect(slack.access_token).toBe('xoxb-super-secret');
+    expect(slack.incoming_webhook.url).toBe('https://hooks.slack.com/x');
+  });
+
+  it('only flags a replayed ciphertext on encrypted fields', () => {
+    // A redact-only value is stored in plaintext, so a header that happens to
+    // start with "enc:" is just a string, not a replay.
+    expect(
+      findEncryptedSecretField({
+        type: 'webhook',
+        url: 'https://acme.test/hook',
+        mode: 'message',
+        headers: { Authorization: 'enc:not-really' },
+      }),
+    ).toBeUndefined();
+  });
+
   it('detects a replayed ciphertext on the input path', () => {
     // A client is never given a ciphertext, so one arriving is an attempt to
     // replay a secret lifted from another integration.

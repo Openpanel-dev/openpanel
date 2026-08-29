@@ -131,23 +131,44 @@ export async function assertPublicHostname(
 }
 
 /**
+ * A `lookup` that resolves every hostname to `address`, so a socket cannot end
+ * up anywhere other than the address we just validated. Shared by the undici
+ * dispatcher below and by clients whose transport we don't own (the AWS SDK),
+ * which otherwise re-resolve the hostname themselves and can be steered
+ * elsewhere by a DNS answer that changes after the check (rebinding).
+ *
+ * Signature-compatible with both `net.LookupFunction` and undici's connect
+ * `lookup`; the two type it slightly differently, so call sites cast.
+ */
+export function createPinnedLookup(address: string) {
+  const family = net.isIPv6(address) ? 6 : 4;
+  return (
+    _hostname: string,
+    options: { all?: boolean },
+    callback: (
+      err: null,
+      addressOrList: string | { address: string; family: number }[],
+      family?: number,
+    ) => void,
+  ) => {
+    if (options.all) {
+      callback(null, [{ address, family }]);
+      return;
+    }
+    callback(null, address, family);
+  };
+}
+
+/**
  * A dispatcher that only ever connects to `address`, so the socket cannot end
  * up somewhere other than the address we just validated.
  */
 export function createPinnedAgent(address: string): Agent {
-  const family = net.isIPv6(address) ? 6 : 4;
   return new Agent({
     connect: {
-      lookup: (_hostname, options, callback) => {
-        if (options.all) {
-          (callback as unknown as (
-            err: null,
-            addresses: { address: string; family: number }[],
-          ) => void)(null, [{ address, family }]);
-          return;
-        }
-        callback(null, address, family);
-      },
+      // undici types this as net.LookupFunction; the shared implementation is
+      // signature-compatible but typed loosely so node's Agent can use it too.
+      lookup: createPinnedLookup(address) as unknown as net.LookupFunction,
     },
   });
 }

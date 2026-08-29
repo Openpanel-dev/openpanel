@@ -176,7 +176,11 @@ export function WebhookIntegrationForm({
                 className="flex-1"
               />
               <Input
-                placeholder="Header Value"
+                placeholder={
+                  defaultValues?.id ? 'Unchanged' : 'Header Value'
+                }
+                // Header values are never sent back to the browser, so an edit
+                // starts blank and blank means "keep the stored value".
                 {...headersForm.register(`headers.${index}.value`)}
                 className="flex-1"
               />
