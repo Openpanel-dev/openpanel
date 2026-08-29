@@ -66,7 +66,9 @@ const zS3ExportConfigBase = z.object({
   prefix: z.string().default('openpanel-exports'),
   region: z.string().min(1, 'Region is required'),
   endpoint: z.string().url().optional(), // For R2, MinIO, etc.
-  format: z.enum(['jsonl_gzip', 'parquet']).default('jsonl_gzip'),
+  // Only jsonl_gzip is implemented; adding a format here without a
+  // `createBatch` branch persists a config whose exports can never run.
+  format: z.enum(['jsonl_gzip']).default('jsonl_gzip'),
   // Optional encryption settings (S3-side encryption)
   encryption: z.enum(['SSE-S3', 'SSE-KMS', 'none']).default('SSE-S3'),
   kmsKeyId: z.string().optional(),
@@ -107,7 +109,9 @@ export const zGCSExportConfig = z.object({
   type: z.literal('gcs_export'),
   bucket: z.string().min(1, 'Bucket name is required'),
   prefix: z.string().default('openpanel-exports'),
-  format: z.enum(['jsonl_gzip', 'parquet']).default('jsonl_gzip'),
+  // Only jsonl_gzip is implemented; adding a format here without a
+  // `createBatch` branch persists a config whose exports can never run.
+  format: z.enum(['jsonl_gzip']).default('jsonl_gzip'),
   // Service account credentials (JSON key as string)
   serviceAccountKey: z.string().min(1, 'Service account key is required'),
 });

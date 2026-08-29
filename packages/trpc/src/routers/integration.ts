@@ -180,6 +180,10 @@ export const integrationRouter = createTRPCRouter({
       // For an update, authorize against the existing integration's scope so a
       // user can't clear/re-install another project's Slack integration.
       let organizationId: string;
+      // Carried into the OAuth metadata and the post-callback redirect, so it
+      // has to be the row's own project — not whatever `input` asked for, which
+      // on an update is unauthorized and may point at a different project.
+      let projectId: string;
       if (input.id) {
         const existing = await db.integration.findUniqueOrThrow({
           where: { id: input.id },
@@ -187,12 +191,14 @@ export const integrationRouter = createTRPCRouter({
         });
         await assertIntegrationAccess(ctx.session.userId, existing, 'write');
         organizationId = existing.organizationId;
+        projectId = existing.projectId ?? input.projectId;
       } else {
         organizationId = await assertProjectAccessAndGetOrg(
           ctx.session.userId,
           input.projectId,
           'write',
         );
+        projectId = input.projectId;
       }
 
       const res = input.id
@@ -222,7 +228,7 @@ export const integrationRouter = createTRPCRouter({
         slackInstallUrl: await getSlackInstallUrl({
           integrationId: res.id,
           organizationId,
-          projectId: input.projectId,
+          projectId,
         }),
       };
     }),

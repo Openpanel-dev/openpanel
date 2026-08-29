@@ -17,7 +17,12 @@ import { assertPublicUrl } from './safe-fetch';
  * private/metadata URLs and hostnames pointing at internal IPs).
  */
 export async function assertSafeUrl(rawUrl: string): Promise<void> {
-  if (process.env.SELF_HOSTED) {
+  // Compare explicitly: bare truthiness would treat SELF_HOSTED="false" as
+  // self-hosted and silently drop the guard on the cloud.
+  if (
+    process.env.SELF_HOSTED === 'true' ||
+    process.env.SELF_HOSTED === '1'
+  ) {
     return;
   }
 

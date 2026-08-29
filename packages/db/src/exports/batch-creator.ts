@@ -11,7 +11,7 @@ const logger = createLogger({ name: 'batch-creator' });
 /**
  * Supported export formats
  */
-export type ExportFormat = 'jsonl_gzip' | 'parquet';
+export type ExportFormat = 'jsonl_gzip';
 
 /**
  * Batch metadata for tracking
@@ -78,8 +78,6 @@ export function getFileExtension(format: ExportFormat): string {
   switch (format) {
     case 'jsonl_gzip':
       return 'jsonl.gz';
-    case 'parquet':
-      return 'parquet';
   }
 }
 
@@ -90,8 +88,6 @@ export function getContentType(format: ExportFormat): string {
   switch (format) {
     case 'jsonl_gzip':
       return 'application/gzip';
-    case 'parquet':
-      return 'application/vnd.apache.parquet';
   }
 }
 
@@ -195,10 +191,6 @@ export async function createBatch(
         contentType: getContentType(format),
       });
       break;
-    }
-    case 'parquet': {
-      // Parquet support to be implemented later
-      throw new Error('Parquet format not yet implemented');
     }
   }
 

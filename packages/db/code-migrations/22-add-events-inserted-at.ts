@@ -28,6 +28,16 @@ export async function up() {
     ? `ALTER TABLE events_replicated ON CLUSTER '{cluster}' ${indexExpr}`
     : `ALTER TABLE events ${indexExpr}`;
 
+  // ADD INDEX is metadata-only: it covers newly written parts, so without this
+  // the export scan keeps reading every historical granule until unrelated
+  // merges happen to rewrite them. MATERIALIZE INDEX submits an async mutation
+  // that backfills the existing parts (same pattern as
+  // 18-events-profile-id-index.ts); it returns immediately and the mutation
+  // progresses in the background.
+  const materializeIndexSql = isClustered
+    ? `ALTER TABLE events_replicated ON CLUSTER '{cluster}' MATERIALIZE INDEX ${indexName}`
+    : `ALTER TABLE events MATERIALIZE INDEX ${indexName}`;
+
   const sqls: string[] = [
     ...addColumns(
       'events',
@@ -35,6 +45,7 @@ export async function up() {
       isClustered,
     ),
     indexSql,
+    materializeIndexSql,
   ];
 
   fs.writeFileSync(

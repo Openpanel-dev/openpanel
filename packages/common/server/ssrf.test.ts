@@ -4,7 +4,13 @@ import { assertSafeUrl } from './ssrf';
 describe('assertSafeUrl', () => {
   const original = process.env.SELF_HOSTED;
   afterEach(() => {
-    process.env.SELF_HOSTED = original;
+    // Assigning undefined would leave the string "undefined" behind, which is
+    // truthy — restore by deleting instead.
+    if (original === undefined) {
+      delete process.env.SELF_HOSTED;
+    } else {
+      process.env.SELF_HOSTED = original;
+    }
   });
 
   it('rejects non-http(s) schemes on the cloud', async () => {

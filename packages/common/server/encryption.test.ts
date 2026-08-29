@@ -36,4 +36,12 @@ describe('encryption (single ENCRYPTION_KEY)', () => {
   it('decryptCredential passes plaintext through (test-connection flow)', () => {
     expect(decryptCredential('plaintext')).toBe('plaintext');
   });
+
+  it('decrypt round-trips multi-byte UTF-8 across cipher chunk boundaries', () => {
+    // GCM is a stream cipher: update() can return a chunk ending mid-character,
+    // so decoding per chunk instead of after concatenation corrupts the value.
+    const secret = `${'ä'.repeat(500)}🔐日本語`;
+    expect(decrypt(encrypt(secret))).toBe(secret);
+    expect(decryptCredential(encryptCredential(secret))).toBe(secret);
+  });
 });

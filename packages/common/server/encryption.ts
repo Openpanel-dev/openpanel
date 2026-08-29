@@ -53,7 +53,12 @@ export function decrypt(ciphertext: string): string {
   const encrypted = buf.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
   const decipher = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(tag);
-  return decipher.update(encrypted) + decipher.final('utf8');
+  // Concatenate first, decode once: GCM is a stream cipher, so update() can end
+  // mid-way through a multi-byte UTF-8 sequence and a per-chunk toString would
+  // turn the split character into replacement chars.
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString(
+    'utf8',
+  );
 }
 
 // ---------------------------------------------------------------------------

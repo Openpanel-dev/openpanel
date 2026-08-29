@@ -8,7 +8,7 @@ import {
   getNotificationRulesByProjectId,
   isBaseIntegration,
 } from '@openpanel/db';
-import { zCreateNotificationRule } from '@openpanel/validation';
+import { isKind, zCreateNotificationRule } from '@openpanel/validation';
 
 import { requireProjectAccess } from '../access';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../errors';
@@ -100,7 +100,12 @@ export const notificationRouter = createTRPCRouter({
       if (integrationIds.length > 0) {
         const integrations = await db.integration.findMany({
           where: { id: { in: integrationIds } },
-          select: { id: true, projectId: true, organizationId: true },
+          select: {
+            id: true,
+            projectId: true,
+            organizationId: true,
+            config: true,
+          },
         });
         if (integrations.length !== integrationIds.length) {
           throw new TRPCBadRequestError(
@@ -115,6 +120,14 @@ export const notificationRouter = createTRPCRouter({
           if (!sameProject && !orgWideSameOrg) {
             throw new TRPCForbiddenError(
               'Integration does not belong to this project',
+            );
+          }
+          // Export-only integrations (s3_export, gcs_export) have no
+          // notification handler in the registry — attaching one to a rule
+          // would only surface later as a throw in the notification worker.
+          if (!isKind(integration.config, 'notification')) {
+            throw new TRPCBadRequestError(
+              'Integration cannot be used to deliver notifications',
             );
           }
         }
