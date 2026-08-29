@@ -77,11 +77,13 @@ and a human pushes them later. Never try to add a remote or authenticate to one.
 
 ## Code style
 
-- **Formatting and linting: ultracite** (the Biome preset), always — for new
-  code, ported code, and CI. Do not hand-format against it, do not disable its
-  rules to make a task pass, and do not run repo-wide format sweeps in a task
-  commit (format-only churn hides the real diff; the repo rule against bulk
-  format runs stands).
+- **Formatting and linting: ultracite** (the Biome preset) — but **only ever on
+  the files you changed**, named explicitly (`npx ultracite fix <files...>` or
+  `biome check --write <files...>`). NEVER run it bare or on `.`: the repo has
+  never been bulk-formatted, so an unscoped run rewrites thousands of files,
+  buries your real diff, and fails the task. (This is why format-on-save hooks
+  are disabled here.) Do not hand-format against it, and do not disable its
+  rules to make a task pass.
 
 - **Constants over magic numbers** — named, descriptive, at the top of the file
   or in the module's `<name>.constants.ts`.
