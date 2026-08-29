@@ -84,9 +84,13 @@ and a human pushes them later. Never try to add a remote or authenticate to one.
   keep it very short. APIs, non-obvious side effects and invariants excepted.
 - **Single responsibility** — small, focused functions; if it needs a comment
   to explain what it does, split it.
-- **DRY** — single sources of truth. But within this rewrite, share only inside
-  a module or via `shared/`; do not invent cross-module abstractions to
-  deduplicate two call sites.
+- **DRY** — single sources of truth, shared at the narrowest level that fits:
+  inside the module first; `core/shared/` when several backend modules need it;
+  a **dedicated package** when anything beyond the backend (frontend, SDKs,
+  other apps) needs it — core is not a grab-bag for cross-app code. Exception,
+  by accepted decision: module `*.constants.ts` files are consumed by the
+  frontend via deep paths into core, not via a package. Never invent a
+  cross-module abstraction just to deduplicate two call sites.
 - **Clean structure & encapsulation** — related code together, implementation
   hidden, nested conditionals extracted into well-named functions.
 - **Leave the code you touch cleaner than you found it — inside the task's
