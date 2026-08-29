@@ -128,6 +128,43 @@ describe('parseUserAgent', () => {
       model: 'Custom Model',
     });
   });
+
+  it('should apply overrides on a non-browser sdk user agent', () => {
+    // A native SDK sends a plain name/version UA, which the server heuristic
+    // matches, but it also states what the device is. The overrides win.
+    const ua = 'my-sdk/1.0.0';
+    const overrides = {
+      __os: 'Android',
+      __osVersion: '13',
+      __device: 'mobile',
+      __brand: 'Acme',
+      __model: 'A105',
+    };
+
+    expect(parseUserAgent(ua, overrides)).toEqual({
+      isServer: false,
+      device: 'mobile',
+      os: 'Android',
+      osVersion: '13',
+      browser: undefined,
+      browserVersion: undefined,
+      brand: 'Acme',
+      model: 'A105',
+    });
+  });
+
+  it('should still be a server when a non-browser user agent sends no device overrides', () => {
+    expect(parseUserAgent('my-sdk/1.0.0', { __ip: '1.2.3.4' })).toEqual({
+      isServer: true,
+      device: 'server',
+      os: '',
+      osVersion: '',
+      browser: '',
+      browserVersion: '',
+      brand: '',
+      model: '',
+    });
+  });
 });
 
 describe('getDevice', () => {
