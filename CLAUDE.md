@@ -77,6 +77,12 @@ and a human pushes them later. Never try to add a remote or authenticate to one.
 
 ## Code style
 
+- **Formatting and linting: ultracite** (the Biome preset), always — for new
+  code, ported code, and CI. Do not hand-format against it, do not disable its
+  rules to make a task pass, and do not run repo-wide format sweeps in a task
+  commit (format-only churn hides the real diff; the repo rule against bulk
+  format runs stands).
+
 - **Constants over magic numbers** — named, descriptive, at the top of the file
   or in the module's `<name>.constants.ts`.
 - **Meaningful names** — reveal purpose; no abbreviations unless universal.
