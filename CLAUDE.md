@@ -5,17 +5,12 @@ anything.
 
 ## Safety
 
-Never access, read, or modify:
+Your world is exactly two directories: this repository and
+`/data/apps/rewrite-openpanel` (the controller). Do not read, list, or modify
+anything else on this machine.
 
-```
-/data/apps/openpanel        <- PRODUCTION OpenPanel
-/data/apps/lb
-/data/apps/docker-proxy
-/data/apps/sales
-/data/apps/mock
-```
-
-Never use production credentials. Local Postgres / ClickHouse / Redis only.
+Never use production credentials — production does not exist on this machine,
+and nothing here should reach it. Local Postgres / ClickHouse / Redis only.
 
 ## Environment
 
@@ -39,6 +34,17 @@ pnpm test
 `typecheck` and `test` fail until `.env` exists and `pnpm codegen` has run. If a
 task depends on them and they are not ready, report `BLOCKED` rather than
 inventing a workaround.
+
+## ClickHouse
+
+Never commit ClickHouse SQL you have not executed. Run it against the local
+server (`http://127.0.0.1:8123`, database `openpanel`) and report timing and row
+count. When replacing a query, diff the old and new result sets on the same data.
+
+Local is a single node; production is 2 shards x 2 replicas. Before editing any
+query against a `Distributed` table read
+`/data/apps/rewrite-openpanel/docs/ENVIRONMENT.md` - a plain `IN (subquery)` on a
+distributed table silently returns per-shard results.
 
 ## Architecture
 
@@ -68,6 +74,24 @@ The orchestrator owns task state and owns the definition of "passing".
 Do not commit. The orchestrator manages commits and the `rewrite/v2` branch.
 There are no push credentials on this machine, by design - all commits are local
 and a human pushes them later. Never try to add a remote or authenticate to one.
+
+## Code style
+
+- **Constants over magic numbers** — named, descriptive, at the top of the file
+  or in the module's `<name>.constants.ts`.
+- **Meaningful names** — reveal purpose; no abbreviations unless universal.
+- **Smart comments** — never narrate what code does; comment only the why, and
+  keep it very short. APIs, non-obvious side effects and invariants excepted.
+- **Single responsibility** — small, focused functions; if it needs a comment
+  to explain what it does, split it.
+- **DRY** — single sources of truth. But within this rewrite, share only inside
+  a module or via `shared/`; do not invent cross-module abstractions to
+  deduplicate two call sites.
+- **Clean structure & encapsulation** — related code together, implementation
+  hidden, nested conditionals extracted into well-named functions.
+- **Leave the code you touch cleaner than you found it — inside the task's
+  scope only.** Refactoring outside scope is a task of its own; propose it,
+  don't do it. Same for technical debt you notice: record it, move on.
 
 ## Scope
 
