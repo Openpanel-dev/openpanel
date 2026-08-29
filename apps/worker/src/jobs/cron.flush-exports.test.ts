@@ -37,10 +37,14 @@ async function emulatorReachable(): Promise<boolean> {
 
 const available = await emulatorReachable();
 
+// A structurally complete service account document. fake-gcs-server does no
+// auth, but the adapter pins the credential type and requires the fields a real
+// key has before it will build a client.
 const KEY = JSON.stringify({
   type: 'service_account',
   project_id: 'openpanel-test',
   client_email: 'e@x.iam.gserviceaccount.com',
+  private_key: 'test-private-key',
 });
 
 const chEvent = (i: number) =>

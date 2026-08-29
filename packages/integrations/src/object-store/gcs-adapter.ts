@@ -1,7 +1,7 @@
 import { Storage } from '@google-cloud/storage';
 import { decryptCredential } from '@openpanel/common/server';
 import { createLogger } from '@openpanel/logger';
-import type { IGCSExportConfig } from '@openpanel/validation';
+import { type IGCSExportConfig, parseServiceAccountKey } from '@openpanel/validation';
 
 import type {
   IObjectStoreAdapter,
@@ -38,10 +38,26 @@ export class GCSAdapter implements IObjectStoreAdapter {
       return this.storage;
     }
 
-    try {
-      // Parse the service account key JSON
-      const credentials = JSON.parse(this.config.serviceAccountKey);
+    // Parse and pin the credential document BEFORE it reaches the SDK.
+    //
+    // `new Storage({ credentials })` forwards the raw object to GoogleAuth,
+    // which dispatches on its `type`: an `external_account` document would be
+    // routed to ExternalAccountClient, whose `credential_source` gives the
+    // document's author arbitrary local file reads and unguarded outbound
+    // requests, with the result POSTed to an attacker-chosen `token_url`. The
+    // config is tenant-supplied, so that dispatch must be unreachable.
+    //
+    // The zod schema rejects non-service-account documents on the way in; this
+    // is the load-bearing check, covering rows written before that schema and
+    // any future caller that skips it.
+    const parsed = parseServiceAccountKey(this.config.serviceAccountKey);
+    if (!parsed.ok) {
+      logger.error({ reason: parsed.error }, 'Rejected GCS credential document');
+      throw new Error(`Invalid service account key: ${parsed.error}`);
+    }
+    const { credentials } = parsed;
 
+    try {
       // Endpoint override. Real GCS needs none (the SDK resolves it), but
       // pointing the client at a local fake-gcs-server is the only way to
       // exercise this adapter without live Google credentials — the same
@@ -53,7 +69,19 @@ export class GCSAdapter implements IObjectStoreAdapter {
       const apiEndpoint = process.env.GCS_API_ENDPOINT;
 
       this.storage = new Storage({
-        credentials,
+        // Allowlisted fields only, and deliberately WITHOUT `type`: with no
+        // recognised type GoogleAuth can only fall through to its JWT branch,
+        // which needs exactly client_email + private_key.
+        credentials: {
+          client_email: credentials.client_email,
+          private_key: credentials.private_key,
+          ...(credentials.private_key_id
+            ? { private_key_id: credentials.private_key_id }
+            : {}),
+          ...(credentials.universe_domain
+            ? { universe_domain: credentials.universe_domain }
+            : {}),
+        },
         projectId: credentials.project_id,
         ...(apiEndpoint ? { apiEndpoint } : {}),
       });
@@ -68,7 +96,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
       return this.storage;
     } catch (error) {
       logger.error({ error }, 'Failed to create GCS client');
-      throw new Error('Invalid service account key JSON');
+      throw new Error('Failed to create GCS client');
     }
   }
 

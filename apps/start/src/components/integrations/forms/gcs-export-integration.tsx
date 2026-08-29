@@ -141,7 +141,13 @@ export function GCSExportIntegrationForm({
         </label>
         <textarea
           className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring min-h-32 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-          placeholder='{"type": "service_account", "project_id": "...", ...}'
+          placeholder={
+            defaultValues?.id
+              ? 'Leave blank to keep the current key'
+              : '{"type": "service_account", "project_id": "...", ...}'
+          }
+          // Stored secrets are never sent back to the browser, so an edit starts
+          // blank and blank means "keep the stored key".
           {...form.register('config.serviceAccountKey')}
         />
         {!!path(
@@ -158,8 +164,9 @@ export function GCSExportIntegrationForm({
           </p>
         )}
         <p className="text-muted-foreground text-xs">
-          Paste the contents of your GCS service account JSON key file. The
-          service account needs write access to the specified bucket.
+          Paste the contents of your GCS service account JSON key file (a
+          document with <code>"type": "service_account"</code>). The service
+          account needs write access to the specified bucket.
         </p>
       </div>
 

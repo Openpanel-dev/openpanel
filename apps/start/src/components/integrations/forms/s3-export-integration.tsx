@@ -261,7 +261,13 @@ export function S3ExportIntegrationForm({
             <InputWithLabel
               label="Secret Access Key"
               type="password"
-              placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+              placeholder={
+                defaultValues?.id
+                  ? 'Leave blank to keep the current key'
+                  : 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+              }
+              // Stored secrets are never sent back to the browser, so an edit
+              // starts blank and blank means "keep the stored key".
               {...form.register('config.secretAccessKey')}
               error={path(['config', 'secretAccessKey', 'message'], form.formState.errors)}
             />

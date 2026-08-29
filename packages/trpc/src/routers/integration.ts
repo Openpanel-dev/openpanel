@@ -2,7 +2,14 @@ import { z } from 'zod';
 
 import { BASE_INTEGRATIONS, db } from '@openpanel/db';
 
-import { getServerIntegration } from '@openpanel/integrations/src/registry';
+import {
+  carryOverConfigSecrets,
+  encryptConfigSecrets,
+  findEncryptedSecretField,
+  findMissingSecretFields,
+  getServerIntegration,
+  redactConfigSecrets,
+} from '@openpanel/integrations/src/registry';
 import { getSlackInstallUrl } from '@openpanel/integrations/src/slack';
 import {
   type IIntegrationConfig,
@@ -36,6 +43,28 @@ async function assertProjectAccessAndGetOrg(
   return project.organizationId;
 }
 
+// Credentials are write-only: they are encrypted at rest and never travel back
+// to a client. `read` on a project is bare membership, so returning the stored
+// ciphertext would hand every project member the org's object-store keys — and
+// because `decryptCredential` accepts any `enc:` blob under the single global
+// key, that ciphertext is a replayable bearer token, not an opaque handle.
+function redactIntegration<T extends { config: unknown }>(integration: T): T {
+  const config = redactConfigSecrets(integration.config);
+  return config === integration.config ? integration : { ...integration, config };
+}
+
+// A client never legitimately holds a ciphertext (see redactIntegration), so
+// one arriving on the wire is an attempt to replay a secret lifted from another
+// integration into an attacker-chosen destination.
+function rejectEncryptedSecrets(config: unknown) {
+  const field = findEncryptedSecretField(config);
+  if (field) {
+    throw new TRPCBadRequestError(
+      `\`${field}\` looks like a stored, already-encrypted value. Paste the real credential, or leave it blank to keep the current one.`,
+    );
+  }
+}
+
 // Shared create/update path for any form-configured integration. All per-type
 // behavior (validation, connection test, credential encryption) is delegated to
 // the integration's server plugin — adding a new integration needs no change here.
@@ -51,14 +80,18 @@ async function upsertIntegration(
   // Authorize first. For an update, authorize against the EXISTING integration's
   // scope — not the attacker-controlled input.projectId — so a user with access
   // to one project can't update another project's integration in the same org.
+  rejectEncryptedSecrets(input.config);
+
   let organizationId: string;
+  let storedConfig: unknown;
   if (input.id) {
     const existing = await db.integration.findUniqueOrThrow({
       where: { id: input.id },
-      select: { projectId: true, organizationId: true },
+      select: { projectId: true, organizationId: true, config: true },
     });
     await assertIntegrationAccess(userId, existing, 'write');
     organizationId = existing.organizationId;
+    storedConfig = existing.config;
   } else {
     organizationId = await assertProjectAccessAndGetOrg(
       userId,
@@ -67,20 +100,35 @@ async function upsertIntegration(
     );
   }
 
-  const plugin = getServerIntegration(input.config.type);
+  // A blank secret means "keep the stored one" — the client can't resubmit what
+  // it was never given. On create there is nothing to fall back to.
+  const submitted = input.id
+    ? carryOverConfigSecrets(input.config, storedConfig)
+    : input.config;
 
-  const validation = plugin.validateConfig?.(input.config);
+  const missing = findMissingSecretFields(submitted);
+  if (missing.length > 0) {
+    throw new TRPCBadRequestError(
+      `Missing credential${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`,
+    );
+  }
+
+  const plugin = getServerIntegration(submitted.type);
+
+  const validation = plugin.validateConfig?.(submitted);
   if (validation && !validation.valid) {
     throw new TRPCBadRequestError(`Invalid config: ${validation.error}`);
   }
 
-  // Test the connection with the unencrypted credentials before saving.
-  const testResult = await plugin.testConnection?.(input.config);
+  // Test the connection with the real credentials before saving. `submitted`
+  // may carry a still-encrypted value forward from the stored row; the adapters
+  // decrypt on construction, so this works for both new and carried-over keys.
+  const testResult = await plugin.testConnection?.(submitted);
   if (testResult && !testResult.success) {
     throw new TRPCBadRequestError(`Failed to connect: ${testResult.error}`);
   }
 
-  const config = plugin.encryptCredentials?.(input.config) ?? input.config;
+  const config = encryptConfigSecrets(submitted);
 
   if (input.id) {
     return db.integration.update({
@@ -146,7 +194,7 @@ export const integrationRouter = createTRPCRouter({
 
       await assertIntegrationAccess(ctx.session.userId, integration, 'read');
 
-      return integration;
+      return redactIntegration(integration);
     }),
   list: protectedProcedure
     .input(z.object({ projectId: z.string() }))
@@ -172,7 +220,7 @@ export const integrationRouter = createTRPCRouter({
         },
       });
 
-      return [...BASE_INTEGRATIONS, ...integrations];
+      return [...BASE_INTEGRATIONS, ...integrations.map(redactIntegration)];
     }),
   createOrUpdateSlack: protectedProcedure
     .input(zCreateSlackIntegration)
@@ -266,6 +314,7 @@ export const integrationRouter = createTRPCRouter({
         projectId: input.projectId,
         level: 'write',
       });
+      rejectEncryptedSecrets(input.config);
 
       return (
         (await getServerIntegration(input.config.type).testConnection?.(
@@ -283,6 +332,7 @@ export const integrationRouter = createTRPCRouter({
         projectId: input.projectId,
         level: 'write',
       });
+      rejectEncryptedSecrets(input.config);
 
       return (
         (await getServerIntegration(input.config.type).testConnection?.(
