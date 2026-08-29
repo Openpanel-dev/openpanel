@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { shortId } from '@openpanel/common';
-import { zCreateNotificationRule } from '@openpanel/validation';
+import { isKind, zCreateNotificationRule } from '@openpanel/validation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FilterIcon, PlusIcon, SaveIcon, TrashIcon } from 'lucide-react';
 import {
@@ -38,7 +38,7 @@ type IForm = z.infer<typeof zCreateNotificationRule>;
 
 export default function AddNotificationRule({ rule }: Props) {
   const client = useQueryClient();
-  const { organizationId, projectId } = useAppParams();
+  const { projectId } = useAppParams();
   const form = useForm<IForm>({
     resolver: zodResolver(zCreateNotificationRule),
     defaultValues: {
@@ -80,7 +80,7 @@ export default function AddNotificationRule({ rule }: Props) {
   );
   const integrationsQuery = useQuery(
     trpc.integration.list.queryOptions({
-      organizationId: organizationId!,
+      projectId: projectId!,
     })
   );
 
@@ -97,7 +97,11 @@ export default function AddNotificationRule({ rule }: Props) {
     mutation.mutate(data);
   };
 
-  const integrations = integrationsQuery.data ?? [];
+  // Only notification sinks belong in a rule — export integrations (S3/GCS)
+  // come back from the same list endpoint but have nothing to deliver to.
+  const integrations = (integrationsQuery.data ?? []).filter((integration) =>
+    isKind(integration.config, 'notification'),
+  );
 
   return (
     <SheetContent className="[&>button.absolute]:hidden">

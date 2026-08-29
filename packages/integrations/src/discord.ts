@@ -28,9 +28,13 @@ export function sendDiscordNotification({
   });
 }
 
-export function sendTestDiscordNotification(webhookUrl: string) {
+export function sendTestDiscordNotification(
+  webhookUrl: string,
+  fetcher: WebhookFetcher = browserFetcher,
+) {
   return sendDiscordNotification({
     webhookUrl,
+    fetcher,
     message:
       '**🧪 Test [OpenPanel.dev](<https://openpanel.dev/>)**\nIf you can read this, your Slack webhook is functioning correctly!\n',
   });

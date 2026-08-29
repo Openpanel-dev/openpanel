@@ -19,12 +19,12 @@ export function SlackIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
-  const { organizationId } = useAppParams();
+  const { projectId } = useAppParams();
 
   const form = useForm<IForm>({
     defaultValues: {
       id: defaultValues?.id,
-      organizationId,
+      projectId,
       name: defaultValues?.name ?? '',
     },
     resolver: zodResolver(zCreateSlackIntegration),

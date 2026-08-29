@@ -26,6 +26,7 @@
     "@openpanel/payments": "workspace:*",
     "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
+    "@openpanel/validation": "workspace:*",
     "bullmq": "^5.63.0",
     "date-fns": "^3.3.1",
     "express": "^4.18.2",
@@ -47,5 +48,10 @@
     "@types/uuid": "^9.0.8",
     "tsdown": "0.14.2",
     "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "@aws-sdk/client-s3": "^3.974.0",
+    "@aws-sdk/client-sts": "^3.974.0",
+    "@google-cloud/storage": "^7.18.0"
   }
 }

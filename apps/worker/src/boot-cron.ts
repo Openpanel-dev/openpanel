@@ -123,6 +123,11 @@ export async function bootCron() {
       type: 'windDown',
       pattern: '0 * * * *', // Hourly — expired-trial wind-down emails, block, delete
     },
+    {
+      name: 'flushExports',
+      type: 'flushExports',
+      pattern: 1000 * 60, // Every 1 minute — drains export buffers to S3/GCS
+    },
   ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {

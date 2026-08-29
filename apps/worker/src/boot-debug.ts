@@ -32,6 +32,7 @@ const CRON_TYPES = [
   'weeklyDigest',
   'dataHealth',
   'windDown',
+  'flushExports',
 ] as const satisfies readonly CronQueueType[];
 
 function escapeHtml(value: string) {

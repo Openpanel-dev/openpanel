@@ -2,7 +2,7 @@ import { ActiveIntegrations } from '@/components/integrations/active-integration
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/integrations/_tabs/installed',
+  '/_app/$organizationId/$projectId/integrations/_tabs/installed',
 )({
   component: Component,
 });

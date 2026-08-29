@@ -55,7 +55,7 @@ export function WebhookIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
-  const { organizationId } = useAppParams();
+  const { projectId } = useAppParams();
 
   // Convert headers from Record to array format for form UI
   const defaultHeaders =
@@ -67,7 +67,7 @@ export function WebhookIntegrationForm({
     defaultValues: mergeDeepRight(
       {
         id: defaultValues?.id,
-        organizationId,
+        projectId,
         config: {
           type: 'webhook' as const,
           url: '',
@@ -176,7 +176,11 @@ export function WebhookIntegrationForm({
                 className="flex-1"
               />
               <Input
-                placeholder="Header Value"
+                placeholder={
+                  defaultValues?.id ? 'Unchanged' : 'Header Value'
+                }
+                // Header values are never sent back to the browser, so an edit
+                // starts blank and blank means "keep the stored value".
                 {...headersForm.register(`headers.${index}.value`)}
                 className="flex-1"
               />

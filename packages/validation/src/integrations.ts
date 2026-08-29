@@ -1,0 +1,467 @@
+import { z } from 'zod';
+
+// ---------------------------------------------------------------------------
+// Secret handling
+// ---------------------------------------------------------------------------
+
+/**
+ * Prefix marking an at-rest ciphertext. Mirrors ENCRYPTION_PREFIX in
+ * `@openpanel/common/server/encryption.ts`, duplicated because this package is
+ * bundled for the browser and must not pull in the node-only crypto module.
+ *
+ * Credentials are WRITE-ONLY: the API redacts them on read, so a client never
+ * legitimately holds one. Refusing the prefix on input stops a caller from
+ * replaying a ciphertext lifted from another integration — `decryptCredential`
+ * accepts any `enc:` blob under the single global key, so an accepted ciphertext
+ * would be a portable bearer token.
+ */
+export const ENCRYPTED_SECRET_PREFIX = 'enc:';
+
+export function looksEncrypted(value: string): boolean {
+  return value.startsWith(ENCRYPTED_SECRET_PREFIX);
+}
+
+/**
+ * A secret the client writes but never reads back. Empty means "keep whatever
+ * is already stored" (enforced server-side: required on create, carried over on
+ * update). An `enc:` value is always rejected — see ENCRYPTED_SECRET_PREFIX.
+ */
+const zWriteOnlySecret = (label: string) =>
+  z.string().refine((value) => !looksEncrypted(value), {
+    message: `${label} looks like a stored, already-encrypted value. Paste the real credential, or leave it blank to keep the current one.`,
+  });
+
+// ---------------------------------------------------------------------------
+// Google service-account credentials
+// ---------------------------------------------------------------------------
+
+/** The only credential document shape we accept for GCS. */
+export interface IServiceAccountKey {
+  type: 'service_account';
+  project_id: string;
+  client_email: string;
+  private_key: string;
+  private_key_id?: string;
+  universe_domain?: string;
+}
+
+export type IServiceAccountKeyResult =
+  | { ok: true; credentials: IServiceAccountKey }
+  | { ok: false; error: string };
+
+/**
+ * Parse and PIN a Google credential document to `type: "service_account"`.
+ *
+ * google-auth-library dispatches on the document's `type` field, and the other
+ * branches are dangerous with tenant-supplied input: an `external_account`
+ * document turns `credentials` into an arbitrary-file-read and SSRF primitive
+ * (`credential_source.file` / `.url`, exfiltrated to an attacker-chosen
+ * `token_url`, none of which the library validates). Never hand an unvalidated
+ * document to the SDK — parse it here first, and pass only the allowlisted
+ * fields on.
+ */
+export function parseServiceAccountKey(raw: string): IServiceAccountKeyResult {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { ok: false, error: 'not valid JSON' };
+  }
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    return { ok: false, error: 'not a JSON object' };
+  }
+
+  const doc = parsed as Record<string, unknown>;
+
+  if (doc.type !== 'service_account') {
+    return {
+      ok: false,
+      error: `unsupported credential type ${JSON.stringify(doc.type ?? null)} — only "service_account" keys are accepted`,
+    };
+  }
+
+  for (const field of ['project_id', 'client_email', 'private_key'] as const) {
+    if (typeof doc[field] !== 'string' || doc[field] === '') {
+      return { ok: false, error: `missing "${field}"` };
+    }
+  }
+
+  return {
+    ok: true,
+    credentials: {
+      type: 'service_account',
+      project_id: doc.project_id as string,
+      client_email: doc.client_email as string,
+      private_key: doc.private_key as string,
+      ...(typeof doc.private_key_id === 'string'
+        ? { private_key_id: doc.private_key_id }
+        : {}),
+      ...(typeof doc.universe_domain === 'string'
+        ? { universe_domain: doc.universe_domain }
+        : {}),
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Per-type config schemas
+// ---------------------------------------------------------------------------
+
+export const zSlackAuthResponse = z.object({
+  ok: z.literal(true),
+  app_id: z.string(),
+  authed_user: z.object({
+    id: z.string(),
+  }),
+  scope: z.string(),
+  token_type: z.literal('bot'),
+  access_token: z.string(),
+  bot_user_id: z.string(),
+  team: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+  incoming_webhook: z.object({
+    channel: z.string(),
+    channel_id: z.string(),
+    configuration_url: z.string().url(),
+    url: z.string().url(),
+  }),
+});
+
+export const zSlackConfig = z
+  .object({
+    type: z.literal('slack'),
+  })
+  .extend(zSlackAuthResponse.shape);
+export type ISlackConfig = z.infer<typeof zSlackConfig>;
+
+export const zWebhookConfig = z.object({
+  type: z.literal('webhook'),
+  url: z.string().url(),
+  headers: z.record(z.string(), z.string()),
+  payload: z.record(z.string(), z.unknown()).optional(),
+  mode: z.enum(['message', 'javascript']).default('message'),
+  javascriptTemplate: z.string().optional(),
+});
+export type IWebhookConfig = z.infer<typeof zWebhookConfig>;
+
+export const zDiscordConfig = z.object({
+  type: z.literal('discord'),
+  url: z.string().url(),
+});
+export type IDiscordConfig = z.infer<typeof zDiscordConfig>;
+
+export const zAppConfig = z.object({
+  type: z.literal('app'),
+});
+export type IAppConfig = z.infer<typeof zAppConfig>;
+
+export const zEmailConfig = z.object({
+  type: z.literal('email'),
+});
+export type IEmailConfig = z.infer<typeof zEmailConfig>;
+
+// S3 Export Integration Config - Base fields shared by both auth modes
+const zS3ExportConfigBase = z.object({
+  type: z.literal('s3_export'),
+  bucket: z.string().min(1, 'Bucket name is required'),
+  prefix: z.string().default('openpanel-exports'),
+  region: z.string().min(1, 'Region is required'),
+  endpoint: z.string().url().optional(), // For R2, MinIO, etc.
+  // Only jsonl_gzip is implemented; adding a format here without a
+  // `createBatch` branch persists a config whose exports can never run.
+  format: z.enum(['jsonl_gzip']).default('jsonl_gzip'),
+  // Optional encryption settings (S3-side encryption)
+  encryption: z.enum(['SSE-S3', 'SSE-KMS', 'none']).default('SSE-S3'),
+  kmsKeyId: z.string().optional(),
+});
+
+// Auth mode: IAM Role assumption (AWS best practice)
+const zS3AuthIamRole = z.object({
+  authMode: z.literal('iam_role'),
+  roleArn: z.string().min(1, 'IAM Role ARN is required'),
+  externalId: z.string().optional(),
+});
+
+// Auth mode: Access Keys (for R2, MinIO, DigitalOcean Spaces, etc.)
+const zS3AuthAccessKey = z.object({
+  authMode: z.literal('access_key'),
+  accessKeyId: z.string().min(1, 'Access Key ID is required'),
+  // Write-only. Blank on update = keep the stored key (see zWriteOnlySecret).
+  secretAccessKey: zWriteOnlySecret('Secret Access Key'),
+});
+
+// S3 config with IAM role auth
+export const zS3ExportConfigIamRole = zS3ExportConfigBase.merge(zS3AuthIamRole);
+export type IS3ExportConfigIamRole = z.infer<typeof zS3ExportConfigIamRole>;
+
+// S3 config with access key auth
+export const zS3ExportConfigAccessKey =
+  zS3ExportConfigBase.merge(zS3AuthAccessKey);
+export type IS3ExportConfigAccessKey = z.infer<typeof zS3ExportConfigAccessKey>;
+
+// Combined discriminated union
+export const zS3ExportConfig = z.discriminatedUnion('authMode', [
+  zS3ExportConfigIamRole,
+  zS3ExportConfigAccessKey,
+]);
+export type IS3ExportConfig = z.infer<typeof zS3ExportConfig>;
+
+// GCS Export Integration Config
+export const zGCSExportConfig = z.object({
+  type: z.literal('gcs_export'),
+  bucket: z.string().min(1, 'Bucket name is required'),
+  prefix: z.string().default('openpanel-exports'),
+  // Only jsonl_gzip is implemented; adding a format here without a
+  // `createBatch` branch persists a config whose exports can never run.
+  format: z.enum(['jsonl_gzip']).default('jsonl_gzip'),
+  // Service account credentials (JSON key as string). Write-only; blank on
+  // update = keep the stored key. Non-blank must be a real service-account
+  // document — see parseServiceAccountKey for why the type is pinned.
+  serviceAccountKey: zWriteOnlySecret('Service account key').superRefine(
+    (value, ctx) => {
+      if (value === '') {
+        return;
+      }
+      const result = parseServiceAccountKey(value);
+      if (!result.ok) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Invalid service account key: ${result.error}`,
+        });
+      }
+    },
+  ),
+});
+export type IGCSExportConfig = z.infer<typeof zGCSExportConfig>;
+
+// ---------------------------------------------------------------------------
+// The explicit discriminated union — the SOURCE OF TRUTH for narrowing.
+// Do NOT derive this from the registry: deriving via z.infer over a registry
+// array can silently widen a member to { type: string } and break every
+// config.type narrow downstream (incl. Prisma's IPrismaIntegrationConfig).
+// The registry below is forced to MATCH this union via `satisfies`, never the
+// other way round.
+// ---------------------------------------------------------------------------
+
+export type IIntegrationConfig =
+  | ISlackConfig
+  | IDiscordConfig
+  | IWebhookConfig
+  | IAppConfig
+  | IEmailConfig
+  | IS3ExportConfig
+  | IGCSExportConfig;
+
+export type IIntegrationType = IIntegrationConfig['type'];
+
+// ---------------------------------------------------------------------------
+// Plugin descriptor registry (core layer). Each integration declares its
+// capabilities, setup style, config schema and catalog metadata once. The
+// server (packages/integrations) and client (apps/start) registries are keyed
+// by the same `type` literal and are forced to cover this union.
+// ---------------------------------------------------------------------------
+
+export type IIntegrationKind = 'notification' | 'export';
+
+export interface IIntegrationDescriptor<
+  TType extends IIntegrationType = IIntegrationType,
+  TSchema extends z.ZodTypeAny = z.ZodTypeAny,
+> {
+  type: TType;
+  kinds: readonly IIntegrationKind[];
+  // 'form' renders a config form; 'oauth' renders an install button and fills
+  // the config via an OAuth callback.
+  setup: 'form' | 'oauth';
+  configSchema: TSchema;
+  catalog: {
+    name: string;
+    description: string;
+    // Pseudo-integrations (app/email) are dispatched by flags, not user-added.
+    hidden?: boolean;
+  };
+}
+
+export const slackDescriptor = {
+  type: 'slack',
+  kinds: ['notification'],
+  setup: 'oauth',
+  configSchema: zSlackConfig,
+  catalog: {
+    name: 'Slack',
+    description:
+      'Connect your Slack workspace to get notified when new issues are created.',
+  },
+} as const satisfies IIntegrationDescriptor<'slack', typeof zSlackConfig>;
+
+export const discordDescriptor = {
+  type: 'discord',
+  kinds: ['notification'],
+  setup: 'form',
+  configSchema: zDiscordConfig,
+  catalog: {
+    name: 'Discord',
+    description:
+      'Connect your Discord server to get notified when new issues are created.',
+  },
+} as const satisfies IIntegrationDescriptor<'discord', typeof zDiscordConfig>;
+
+export const webhookDescriptor = {
+  type: 'webhook',
+  kinds: ['notification'],
+  setup: 'form',
+  configSchema: zWebhookConfig,
+  catalog: {
+    name: 'Webhook',
+    description:
+      'Create a webhook to take actions in your own systems when new events are created.',
+  },
+} as const satisfies IIntegrationDescriptor<'webhook', typeof zWebhookConfig>;
+
+export const appDescriptor = {
+  type: 'app',
+  kinds: ['notification'],
+  setup: 'form',
+  configSchema: zAppConfig,
+  catalog: { name: 'Website', description: 'In-app notifications', hidden: true },
+} as const satisfies IIntegrationDescriptor<'app', typeof zAppConfig>;
+
+export const emailDescriptor = {
+  type: 'email',
+  kinds: ['notification'],
+  setup: 'form',
+  configSchema: zEmailConfig,
+  catalog: { name: 'Email', description: 'Email notifications', hidden: true },
+} as const satisfies IIntegrationDescriptor<'email', typeof zEmailConfig>;
+
+export const s3ExportDescriptor = {
+  type: 's3_export',
+  kinds: ['export'],
+  setup: 'form',
+  configSchema: zS3ExportConfig,
+  catalog: {
+    name: 'S3 Export',
+    description:
+      'Export events to Amazon S3 for loading into Redshift, Snowflake, Athena, or other data warehouses.',
+  },
+} as const satisfies IIntegrationDescriptor<'s3_export', typeof zS3ExportConfig>;
+
+export const gcsExportDescriptor = {
+  type: 'gcs_export',
+  kinds: ['export'],
+  setup: 'form',
+  configSchema: zGCSExportConfig,
+  catalog: {
+    name: 'GCS Export',
+    description:
+      'Export events to Google Cloud Storage for loading into BigQuery or other data warehouses.',
+  },
+} as const satisfies IIntegrationDescriptor<
+  'gcs_export',
+  typeof zGCSExportConfig
+>;
+
+export const INTEGRATION_DESCRIPTORS = [
+  slackDescriptor,
+  discordDescriptor,
+  webhookDescriptor,
+  appDescriptor,
+  emailDescriptor,
+  s3ExportDescriptor,
+  gcsExportDescriptor,
+] as const;
+
+const descriptorByType = new Map(
+  INTEGRATION_DESCRIPTORS.map((d) => [d.type, d] as const),
+);
+
+export function isKind(
+  config: Pick<IIntegrationConfig, 'type'> | { type?: string },
+  kind: IIntegrationKind,
+): boolean {
+  // Lenient lookup: used as a filter predicate over all integrations, including
+  // rows whose config is still empty (e.g. a Slack integration before its OAuth
+  // callback fills the config). Unknown/undefined types are simply not of `kind`.
+  const descriptor = descriptorByType.get(config.type as IIntegrationType);
+  return descriptor
+    ? (descriptor.kinds as readonly IIntegrationKind[]).includes(kind)
+    : false;
+}
+
+// Runtime parser for any integration config. A plain union (not
+// discriminatedUnion) because the s3 schema is itself a union on `authMode`.
+// Static narrowing always comes from the explicit IIntegrationConfig above.
+export const zIntegrationConfig = z.union([
+  zSlackConfig,
+  zWebhookConfig,
+  zDiscordConfig,
+  zAppConfig,
+  zEmailConfig,
+  zS3ExportConfig,
+  zGCSExportConfig,
+]);
+
+// ---------------------------------------------------------------------------
+// Create-integration input schemas
+// ---------------------------------------------------------------------------
+
+const zCreateIntegrationBase = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1),
+  projectId: z.string().min(1),
+});
+
+export const zCreateSlackIntegration = zCreateIntegrationBase;
+
+export const zCreateWebhookIntegration = zCreateIntegrationBase.extend({
+  config: zWebhookConfig,
+});
+
+export const zCreateDiscordIntegration = zCreateIntegrationBase.extend({
+  config: zDiscordConfig,
+});
+
+export const zCreateS3ExportIntegration = zCreateIntegrationBase.merge(
+  z.object({
+    config: zS3ExportConfig,
+  }),
+);
+
+export const zCreateGCSExportIntegration = zCreateIntegrationBase.merge(
+  z.object({
+    config: zGCSExportConfig,
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Compile-time guards (the type-safety gate). These are type aliases, so they
+// add no runtime and don't trip unused-locals, but they fail `tsc` if the
+// invariant breaks.
+// ---------------------------------------------------------------------------
+
+type Assert<T extends true> = T;
+type Equal<A, B> = [A] extends [B]
+  ? [B] extends [A]
+    ? true
+    : false
+  : false;
+
+// Every member of the union must keep a *literal* `type` discriminant. If any
+// widens to { type: string }, this drops it and the equality fails.
+type LiteralDiscriminant<U> = U extends { type: infer T }
+  ? string extends T
+    ? never
+    : U
+  : never;
+type _AssertLiteralDiscriminant = Assert<
+  Equal<IIntegrationConfig, LiteralDiscriminant<IIntegrationConfig>>
+>;
+
+// The descriptor registry must cover exactly the union's types — no missing,
+// no extra. Add a config variant but forget its descriptor → compile error.
+type _DescriptorTypes = (typeof INTEGRATION_DESCRIPTORS)[number]['type'];
+type _AssertDescriptorCoverage = Assert<
+  Equal<IIntegrationType, _DescriptorTypes>
+>;

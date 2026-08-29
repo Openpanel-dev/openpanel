@@ -31,7 +31,8 @@ export const slackInstaller = SLACK_CLIENT_ID
 export const getSlackInstallUrl = ({
   integrationId,
   organizationId,
-}: { integrationId: string; organizationId: string }) => {
+  projectId,
+}: { integrationId: string; organizationId: string; projectId: string }) => {
   if (!SLACK_CLIENT_ID) {
     throw new Error('SLACK_CLIENT_ID is not set (slack.ts)');
   }
@@ -43,7 +44,7 @@ export const getSlackInstallUrl = ({
       'team:read',
     ],
     redirectUri: SLACK_OAUTH_REDIRECT_URL,
-    metadata: JSON.stringify({ integrationId, organizationId }),
+    metadata: JSON.stringify({ integrationId, organizationId, projectId }),
   });
 };
 
