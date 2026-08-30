@@ -2,7 +2,6 @@ packages:
   - "apps/*"
   - "packages/**"
   - "tooling/*"
-  - "admin"
 
 # pnpm 11 no longer reads the "pnpm" field in package.json — these moved here.
 patchedDependencies:
