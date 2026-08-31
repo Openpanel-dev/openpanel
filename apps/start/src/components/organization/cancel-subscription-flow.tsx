@@ -259,6 +259,7 @@ export default function CancelSubscriptionFlow({
         <ButtonContainer className="shrink-0 gap-2 [&>*]:flex-1">
           <Button
             disabled={isPending}
+            loading={cancelMutation.isPending}
             onClick={() => {
               op.track('cancel_pause_declined', {
                 organizationId: organization.id,
@@ -275,6 +276,7 @@ export default function CancelSubscriptionFlow({
             {discountAvailable ? 'No thanks' : 'No thanks, cancel'}
           </Button>
           <Button
+            disabled={isPending}
             loading={pauseMutation.isPending}
             onClick={() => {
               op.track('cancel_pause_accepted', {
@@ -325,6 +327,7 @@ export default function CancelSubscriptionFlow({
           Cancel subscription
         </Button>
         <Button
+          disabled={isPending}
           loading={discountMutation.isPending}
           onClick={() => {
             op.track('cancel_discount_accepted', {

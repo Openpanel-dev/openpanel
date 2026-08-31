@@ -228,6 +228,7 @@ export default function Billing({ organization }: Props) {
                 />
                 <div className="row mt-4 justify-between">
                   <Button
+                    loading={portalMutation.isPending}
                     onClick={() =>
                       portalMutation.mutate({ organizationId: organization.id })
                     }

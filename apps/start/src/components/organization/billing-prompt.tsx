@@ -116,6 +116,9 @@ export default function BillingPrompt({
           });
         }
       },
+      onError(error) {
+        toast.error(error.message);
+      },
     })
   );
   const portal = useMutation(
