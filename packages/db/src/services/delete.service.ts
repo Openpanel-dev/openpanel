@@ -49,8 +49,6 @@ export async function deleteFromClickhouse(projectIds: string[]) {
     TABLE_NAMES.event_property_values_mv,
     TABLE_NAMES.cohort_members,
     TABLE_NAMES.cohort_metadata,
-    TABLE_NAMES.profile_event_summary_mv,
-    TABLE_NAMES.profile_event_property_summary_mv,
     TABLE_NAMES.event_profile_summary_mv,
     TABLE_NAMES.event_property_profile_summary_mv,
   ];
