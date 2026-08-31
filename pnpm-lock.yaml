@@ -197,9 +197,6 @@ importers:
       groupmq:
         specifier: 'catalog:'
         version: 2.0.0-next.6(ioredis@5.8.2(supports-color@10.2.0))
-      jsonwebtoken:
-        specifier: ^9.0.2
-        version: 9.0.2
       pino:
         specifier: 'catalog:'
         version: 10.3.1
@@ -215,15 +212,6 @@ importers:
       source-map-support:
         specifier: ^0.5.21
         version: 0.5.21
-      sqlstring:
-        specifier: ^2.3.3
-        version: 2.3.3
-      superjson:
-        specifier: ^1.13.3
-        version: 1.13.3
-      svix:
-        specifier: ^1.24.0
-        version: 1.24.0
       url-metadata:
         specifier: ^5.4.1
         version: 5.4.1
@@ -243,18 +231,12 @@ importers:
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
-      '@types/jsonwebtoken':
-        specifier: ^9.0.9
-        version: 9.0.9
       '@types/ramda':
         specifier: ^0.30.2
         version: 0.30.2
       '@types/source-map-support':
         specifier: ^0.5.10
         version: 0.5.10
-      '@types/sqlstring':
-        specifier: ^2.3.2
-        version: 2.3.2
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
@@ -999,9 +981,6 @@ importers:
       '@openpanel/js-runtime':
         specifier: workspace:*
         version: link:../../packages/js-runtime
-      '@openpanel/json':
-        specifier: workspace:*
-        version: link:../../packages/json
       '@openpanel/logger':
         specifier: workspace:*
         version: link:../../packages/logger
@@ -1044,12 +1023,6 @@ importers:
       source-map-support:
         specifier: ^0.5.21
         version: 0.5.21
-      sqlstring:
-        specifier: ^2.3.3
-        version: 2.3.3
-      uuid:
-        specifier: ^9.0.1
-        version: 9.0.1
     devDependencies:
       '@openpanel/tsconfig':
         specifier: workspace:*
@@ -1063,12 +1036,6 @@ importers:
       '@types/source-map-support':
         specifier: ^0.5.10
         version: 0.5.10
-      '@types/sqlstring':
-        specifier: ^2.3.2
-        version: 2.3.2
-      '@types/uuid':
-        specifier: ^9.0.8
-        version: 9.0.8
       tsdown:
         specifier: 0.14.2
         version: 0.14.2(@emnapi/core@1.7.1)(@emnapi/runtime@1.7.1)(oxc-resolver@11.19.1(@emnapi/core@1.7.1)(@emnapi/runtime@1.7.1))(supports-color@10.2.0)(typescript@5.9.3)
@@ -11009,10 +10976,6 @@ packages:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
     engines: {node: '>=10'}
 
-  chalk@5.4.1:
-    resolution: {integrity: sha512-zgVZuo2WcZgfUEmsn6eO3kINexW8RAE4maiQ8QNs8CtpPCSyMiYsULR3HQYkm3w8FIA3SberyMJMSldGsW+U3w==}
-    engines: {node: ^12.17.0 || ^14.13 || >=16.0.0}
-
   chalk@5.6.2:
     resolution: {integrity: sha512-7NzBL0rN6fMUW+f7A6Io4h40qQlG+xGmtMxfbnH/K7TAtt8JQWVQK+6g0UXKMeVJoyV5EkkNsErQ8pVD3bLHbA==}
     engines: {node: ^12.17.0 || ^14.13 || >=16.0.0}
@@ -12261,9 +12224,6 @@ packages:
     resolution: {integrity: sha512-w+5mJ3GuFL+NjVtJlvydShqE1eN3h3PbI7/5LAsYJP/2qtuMXjfL2LpHSRqo4b4eSF5K/DH1JXKUAHSB2UW50g==}
     engines: {node: '>= 0.4'}
 
-  es6-promise@4.2.8:
-    resolution: {integrity: sha512-HJDGx5daxeIvxdBxvG2cb9g4tEvwIk3i8+nhX0yGrYmZUzbkdg8QbDevheDB8gd0//uPj4c1EQua8Q+MViT0/w==}
-
   esast-util-from-estree@2.0.0:
     resolution: {integrity: sha512-4CyanoAudUSBAn5K13H4JhsMH6L9ZP7XbLVe/dKybkxMO7eDyLsT8UHl9TRNrU2Gr9nz+FovfSIjuXWJ81uVwQ==}
 
@@ -13090,10 +13050,6 @@ packages:
   fuse.js@7.1.0:
     resolution: {integrity: sha512-trLf4SzuuUxfusZADLINj+dE8clK1frKdmqiJNb1Es75fmI5oY6X2mxLVUciLLjxqw/xr72Dhy+lER6dGd02FQ==}
     engines: {node: '>=10'}
-
-  fuzzy@0.1.3:
-    resolution: {integrity: sha512-/gZffu4ykarLrCiP3Ygsa86UAo1E5vEVlvTrpkKywXSbP9Xhln3oSp9QSV57gEq3JFFpGJ4GZ+5zdEp3FcUh4w==}
-    engines: {node: '>= 0.6.0'}
 
   gaxios@6.7.1:
     resolution: {integrity: sha512-LDODD4TMYx7XXdpwxAVRAIAuB0bzv0s+ywFonY46k126qzQHT9ygyoa9tncmOiQmmDrik65UYsEkv3lbfqQ3yQ==}
@@ -16550,9 +16506,6 @@ packages:
   quansync@0.2.11:
     resolution: {integrity: sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA==}
 
-  querystringify@2.2.0:
-    resolution: {integrity: sha512-FIqgj2EUvTa7R50u0rGsyTftzjYmv/a3hO345bZNrqabNqjtgiDMgmo4mkUjd+nzU5oF3dClKqFIPUKybUyqoQ==}
-
   queue-cb@1.5.0:
     resolution: {integrity: sha512-D4QWxO66oOMNXLbayJNZiBll/jyOnByN73QqIyE1P16Hytlb4FXzZcKXypPbqbSm3b56Rcr5DZRz49deN9QSwQ==}
     engines: {node: '>=0.8'}
@@ -17131,9 +17084,6 @@ packages:
   requireg@0.2.2:
     resolution: {integrity: sha512-nYzyjnFcPNGR3lx9lwPPPnuQxv6JWEZd2Ci0u9opN7N5zUEPIhY/GbL3vMGOr2UXwEg9WwSyV9X9Y/kLFgPsOg==}
     engines: {node: '>= 4.0.0'}
-
-  requires-port@1.0.0:
-    resolution: {integrity: sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ==}
 
   reselect@5.1.1:
     resolution: {integrity: sha512-K/BG6eIky/SBpzfHZv/dd+9JBFiS4SWV7FIujVyJRux6e45+73RaUHXLmIR1f7WOMaQ0U1km6qwklRQxpJJY0w==}
@@ -18028,12 +17978,6 @@ packages:
     resolution: {integrity: sha512-XDpWUOPC6FEibaLzjfe0ucaV0YrOjYotGJO1WpF0Zd+n6ZGEQUsSugaoLq9QkEZtAfQIxT42UChcssDVPP3+/w==}
     engines: {node: '>=16'}
     hasBin: true
-
-  svix-fetch@3.0.0:
-    resolution: {integrity: sha512-rcADxEFhSqHbraZIsjyZNh4TF6V+koloX1OzZ+AQuObX9mZ2LIMhm1buZeuc5BIZPftZpJCMBsSiBaeszo9tRw==}
-
-  svix@1.24.0:
-    resolution: {integrity: sha512-TEznBskvdvEJElo/j7BiIZAoaQEWyj/NCmwiV0izlVRf5DnCBFdowkEXERDA3JgUlAYoAJi0S7atWit7nkTMtw==}
 
   symbol-tree@3.2.4:
     resolution: {integrity: sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==}
@@ -18951,9 +18895,6 @@ packages:
   url-metadata@5.4.1:
     resolution: {integrity: sha512-Q2QZSnnN75DyccBMsi4jEldGk/kdz/IwU8yKKyAJyzDok4QhAadc2x2/orZB5zFoH0cFlawk+TacU+w1TpumWA==}
     engines: {node: '>=6.0.0'}
-
-  url-parse@1.5.10:
-    resolution: {integrity: sha512-WypcfiRhfeUP9vvF0j6rw0J3hrWrw6iZv3+22h6iRMJ/8z1Tj6XfLP4DsUix5MhMPnXpiHDoKyoZ/bdCkwBCiQ==}
 
   urlpattern-polyfill@10.1.0:
     resolution: {integrity: sha512-IGjKp/o0NL3Bso1PymYURCJxMPNAf/ILOpendP9f5B6e1rTJgdgiOvgfoT8VxCAdY+Wisb9uhGaJJf3yZ2V9nw==}
@@ -31778,8 +31719,6 @@ snapshots:
       ansi-styles: 4.3.0
       supports-color: 7.2.0
 
-  chalk@5.4.1: {}
-
   chalk@5.6.2: {}
 
   character-entities-html4@2.1.0: {}
@@ -33199,8 +33138,6 @@ snapshots:
       is-date-object: 1.1.0
       is-symbol: 1.1.1
 
-  es6-promise@4.2.8: {}
-
   esast-util-from-estree@2.0.0:
     dependencies:
       '@types/estree-jsx': 1.0.5
@@ -34452,8 +34389,6 @@ snapshots:
   functions-have-names@1.2.3: {}
 
   fuse.js@7.1.0: {}
-
-  fuzzy@0.1.3: {}
 
   gaxios@6.7.1(supports-color@10.2.0):
     dependencies:
@@ -38837,8 +38772,6 @@ snapshots:
 
   quansync@0.2.11: {}
 
-  querystringify@2.2.0: {}
-
   queue-cb@1.5.0: {}
 
   queue-microtask@1.2.3: {}
@@ -39693,8 +39626,6 @@ snapshots:
       nested-error-stacks: 2.0.1
       rc: 1.2.8
       resolve: 1.7.1
-
-  requires-port@1.0.0: {}
 
   reselect@5.1.1: {}
 
@@ -40804,23 +40735,6 @@ snapshots:
       picocolors: 1.1.1
       sax: 1.6.0
 
-  svix-fetch@3.0.0:
-    dependencies:
-      node-fetch: 2.7.0
-      whatwg-fetch: 3.6.20
-    transitivePeerDependencies:
-      - encoding
-
-  svix@1.24.0:
-    dependencies:
-      '@stablelib/base64': 1.0.1
-      es6-promise: 4.2.8
-      fast-sha256: 1.3.0
-      svix-fetch: 3.0.0
-      url-parse: 1.5.10
-    transitivePeerDependencies:
-      - encoding
-
   symbol-tree@3.2.4: {}
 
   system-architecture@0.1.0: {}
@@ -41729,11 +41643,6 @@ snapshots:
       request-filtering-agent: 2.0.1
     transitivePeerDependencies:
       - encoding
-
-  url-parse@1.5.10:
-    dependencies:
-      querystringify: 2.2.0
-      requires-port: 1.0.0
 
   urlpattern-polyfill@10.1.0: {}
 

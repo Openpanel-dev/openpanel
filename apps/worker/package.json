@@ -21,7 +21,6 @@
     "@openpanel/importer": "workspace:*",
     "@openpanel/integrations": "workspace:^",
     "@openpanel/js-runtime": "workspace:*",
-    "@openpanel/json": "workspace:*",
     "@openpanel/logger": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/queue": "workspace:*",
@@ -35,17 +34,13 @@
     "pino-pretty": "catalog:",
     "prom-client": "^15.1.3",
     "ramda": "^0.29.1",
-    "source-map-support": "^0.5.21",
-    "sqlstring": "^2.3.3",
-    "uuid": "^9.0.1"
+    "source-map-support": "^0.5.21"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@types/express": "^4.17.21",
     "@types/ramda": "^0.29.6",
     "@types/source-map-support": "^0.5.10",
-    "@types/sqlstring": "^2.3.2",
-    "@types/uuid": "^9.0.8",
     "tsdown": "0.14.2",
     "typescript": "catalog:"
   },
