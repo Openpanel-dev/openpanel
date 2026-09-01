@@ -1,0 +1,26 @@
+{
+  "name": "@openpanel/core",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./modules/*.constants": "./src/modules/*.constants.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test --isolate"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "1.4.2",
+    "@elysiajs/openapi": "1.4.15",
+    "@trpc/server": "^11.17.0",
+    "elysia": "1.4.30",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "bun-types": "1.4.0",
+    "typescript": "catalog:"
+  }
+}
