@@ -247,7 +247,10 @@ export function parseUserAgent(
   if (!ua) return parsedServerUa;
   const res = parse(ua);
 
-  if (isServer(res)) {
+  // A native SDK sends a plain name/version UA, which the server heuristic
+  // matches, but it also states what device it is running on. Trust that over
+  // the heuristic, otherwise the overrides are silently dropped.
+  if (isServer(res) && !hasDeviceOverrides(overrides)) {
     return parsedServerUa;
   }
 
@@ -285,6 +288,15 @@ export function parseUserAgent(
     model,
     isServer: false,
   } as const;
+}
+
+const DEVICE_OVERRIDE_KEYS = ['__os', '__device', '__brand', '__model'] as const;
+
+function hasDeviceOverrides(overrides?: Record<string, unknown>) {
+  if (!overrides) return false;
+  return DEVICE_OVERRIDE_KEYS.some(
+    (key) => typeof overrides[key] === 'string' && overrides[key] !== '',
+  );
 }
 
 function isServer(res: UAParser.IResult) {
