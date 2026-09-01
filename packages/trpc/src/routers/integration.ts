@@ -48,7 +48,15 @@ async function assertProjectAccessAndGetOrg(
 // ciphertext would hand every project member the org's object-store keys — and
 // because `decryptCredential` accepts any `enc:` blob under the single global
 // key, that ciphertext is a replayable bearer token, not an opaque handle.
-function redactIntegration<T extends { config: unknown }>(integration: T): T {
+//
+// Every procedure that returns an integration row — here and in the
+// notification router, which embeds the rows attached to each rule — goes
+// through this. Returning a row straight from Prisma is how the Slack bot token,
+// the Slack incoming-webhook url and webhook header values reached any client
+// that could list notification rules.
+export function redactIntegration<T extends { config: unknown }>(
+  integration: T,
+): T {
   const config = redactConfigSecrets(integration.config);
   return config === integration.config ? integration : { ...integration, config };
 }
@@ -130,20 +138,24 @@ async function upsertIntegration(
 
   const config = encryptConfigSecrets(submitted);
 
-  if (input.id) {
-    return db.integration.update({
-      where: { id: input.id, organizationId },
-      data: { name: input.name, config },
-    });
-  }
-  return db.integration.create({
-    data: {
-      name: input.name,
-      organizationId,
-      projectId: input.projectId,
-      config,
-    },
-  });
+  // The stored row holds more than the caller sent: secrets carried over from
+  // the previous config, and the encrypted ones as ciphertext. Neither may go
+  // back out.
+  const row = input.id
+    ? await db.integration.update({
+        where: { id: input.id, organizationId },
+        data: { name: input.name, config },
+      })
+    : await db.integration.create({
+        data: {
+          name: input.name,
+          organizationId,
+          projectId: input.projectId,
+          config,
+        },
+      });
+
+  return redactIntegration(row);
 }
 
 // Access check for an existing integration of either scope. Project-scoped rows
@@ -351,10 +363,14 @@ export const integrationRouter = createTRPCRouter({
 
       await assertIntegrationAccess(ctx.session.userId, integration, 'write');
 
-      return db.integration.delete({
+      await db.integration.delete({
         where: {
           id,
         },
       });
+
+      // The deleted row still carries its config; the client only needs to
+      // know which id is gone.
+      return { id };
     }),
 });
