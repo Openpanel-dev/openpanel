@@ -42,6 +42,52 @@ end
 return 1
 `;
 
+const PERSIST_KEY_COUNT = 5;
+
+// Atomic session write-back: blob + wallclock entry + project registration +
+// optional profile pointer + the ClickHouse rows, in one round trip. Returns
+// the buffer list length so the caller can decide on a flush without a second
+// call.
+//
+// Redis does not undo a script's completed writes when a later command fails,
+// so every key is type-checked before the first write — a wrong-type key then
+// aborts the script with nothing written, rather than half of it.
+const PERSIST_LUA = `
+local blobKey, wallclockKey, projectsKey, profileKey, bufferKey =
+  KEYS[1], KEYS[2], KEYS[3], KEYS[4], KEYS[5]
+local session, wallclockScore, deviceId, projectId =
+  ARGV[1], ARGV[2], ARGV[3], ARGV[4]
+
+local function assertType(key, expected)
+  if key == '' then
+    return
+  end
+  local actual = redis.call('TYPE', key)['ok']
+  if actual ~= 'none' and actual ~= expected then
+    error({ err = 'WRONGTYPE ' .. key .. ' holds ' .. actual .. ', expected ' .. expected })
+  end
+end
+
+assertType(blobKey, 'string')
+assertType(wallclockKey, 'zset')
+assertType(projectsKey, 'set')
+assertType(profileKey, 'string')
+assertType(bufferKey, 'list')
+
+redis.call('SET', blobKey, session)
+redis.call('ZADD', wallclockKey, wallclockScore, deviceId)
+redis.call('SADD', projectsKey, projectId)
+if profileKey ~= '' then
+  redis.call('SET', profileKey, deviceId)
+end
+
+local bufferLength = redis.call('LLEN', bufferKey)
+for i = 5, #ARGV do
+  bufferLength = redis.call('RPUSH', bufferKey, ARGV[i])
+end
+return bufferLength
+`;
+
 export type SessionIngestResult =
   | { kind: 'new'; current: IClickhouseSession }
   | { kind: 'extend'; current: IClickhouseSession }
@@ -334,7 +380,7 @@ export class SessionBuffer extends BaseBuffer {
 
   /**
    * Atomic write-back: session blob + wallclock ZSET + projects SET +
-   * profile index + ClickHouse buffer rows + counter.
+   * profile index + ClickHouse buffer rows, in a single Lua script.
    *
    * No TTLs on the blob or profile index — they are removed exclusively by
    * `cleanup()` after `session_end` emission. This guarantees the reaper
@@ -347,23 +393,26 @@ export class SessionBuffer extends BaseBuffer {
   ) {
     const projectId = current.project_id;
     const deviceId = current.device_id;
-    const wallClockMs = Date.now();
+    const pointerKey =
+      current.profile_id && current.profile_id !== current.device_id
+        ? profileIndexKey(projectId, current.profile_id)
+        : '';
 
-    const multi = this.redis.multi();
-    multi.set(sessionKey(projectId, deviceId), JSON.stringify(current));
-    multi.zadd(wallclockSetKey(projectId), wallClockMs.toString(), deviceId);
-    multi.sadd(PROJECTS_SET_KEY, projectId);
+    const bufferLength = (await this.redis.eval(
+      PERSIST_LUA,
+      PERSIST_KEY_COUNT,
+      sessionKey(projectId, deviceId),
+      wallclockSetKey(projectId),
+      PROJECTS_SET_KEY,
+      pointerKey,
+      this.redisKey,
+      JSON.stringify(current),
+      Date.now().toString(),
+      deviceId,
+      projectId,
+      ...chRows.map((row) => JSON.stringify(row))
+    )) as number;
 
-    if (current.profile_id && current.profile_id !== current.device_id) {
-      multi.set(profileIndexKey(projectId, current.profile_id), deviceId);
-    }
-
-    for (const row of chRows) {
-      multi.rpush(this.redisKey, JSON.stringify(row));
-    }
-    await multi.exec();
-
-    const bufferLength = await this.getBufferSize();
     if (bufferLength >= this.batchSize) {
       await this.tryFlush();
     }

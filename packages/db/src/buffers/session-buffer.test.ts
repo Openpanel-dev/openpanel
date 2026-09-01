@@ -1,5 +1,13 @@
 import { getRedisCache } from '@openpanel/redis';
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { ch } from '../clickhouse/client';
 
 vi.mock('../clickhouse/client', () => ({
@@ -373,5 +381,54 @@ describe('SessionBuffer', () => {
     expect(await sessionBuffer.getBufferSize()).toBe(1);
 
     insertSpy.mockRestore();
+  });
+
+  // persist() is one Lua script, so a failure part-way through must leave the
+  // four session keys and the buffer list exactly as they were. A wrong-type
+  // key is the cheapest way to force that failure from outside.
+  describe('persist atomicity', () => {
+    // These tests poison shared keys on the local Redis on purpose. Clear them
+    // here too — beforeEach only protects this file, not a concurrently
+    // running stack.
+    afterEach(async () => {
+      await redis.del('session-buffer', `session:wallclock:${projectId}`);
+    });
+
+    async function expectNothingWritten() {
+      expect(await redis.get(`session:${projectId}:${deviceId}`)).toBeNull();
+      expect(
+        await redis.get(`session:profile:${projectId}:profile-1`)
+      ).toBeNull();
+      expect(await redis.sismember('session:projects', projectId)).toBe(0);
+    }
+
+    it('writes no key when the wallclock set holds the wrong type', async () => {
+      await redis.set(`session:wallclock:${projectId}`, 'not-a-zset');
+
+      const result = await sessionBuffer.ingest(makePayload());
+
+      expect(result).toBeNull();
+      await expectNothingWritten();
+      expect(await redis.llen('session-buffer')).toBe(0);
+      expect(await redis.get(`session:wallclock:${projectId}`)).toBe(
+        'not-a-zset'
+      );
+    });
+
+    it('writes no key when the buffer list holds the wrong type', async () => {
+      // The buffer list is written last, so without an up-front type check
+      // the blob, wallclock entry and project registration would already be
+      // committed by the time this fails — Redis does not roll them back.
+      await redis.set('session-buffer', 'not-a-list');
+
+      const result = await sessionBuffer.ingest(makePayload());
+
+      expect(result).toBeNull();
+      await expectNothingWritten();
+      expect(
+        await redis.zscore(`session:wallclock:${projectId}`, deviceId)
+      ).toBeNull();
+      expect(await redis.get('session-buffer')).toBe('not-a-list');
+    });
   });
 });
