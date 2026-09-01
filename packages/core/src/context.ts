@@ -4,6 +4,7 @@
 // edge reaches the query, the enqueue and the job that enqueue causes
 // (ADR-007 decision 18, ADR-018 R1).
 
+import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
 import { createServices, type Services } from './services';
 import type { CookieOptions } from './shared/cookie';
@@ -18,19 +19,6 @@ export type ClickHouseClient = unknown;
 export type RedisClient = unknown;
 export type ServiceClients = unknown;
 export type Buffers = unknown;
-
-// Replaced by jobs.registry.ts (P2-004). `scope` is real here because
-// createCtx calls it.
-export type QueueProducers = unknown;
-
-/** The envelope meta a scoped producer stamps on everything it enqueues. */
-export interface ProducerScope {
-  requestId: string;
-}
-
-export interface ProducerHandle {
-  scope(meta: ProducerScope): QueueProducers;
-}
 
 // Elysia's cookie primitive, wrapped (P2-007), and the resolved session
 // (P6 auth).
@@ -50,7 +38,7 @@ export interface AppDeps {
   redis: RedisClient;
   clients: ServiceClients;
   buffers: Buffers;
-  producers: ProducerHandle;
+  producers: QueueProducerHandle;
   logger: Logger;
   config: RuntimeFlags;
 }

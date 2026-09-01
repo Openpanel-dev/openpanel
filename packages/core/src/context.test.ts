@@ -1,5 +1,9 @@
 import { beforeAll, expect, mock, test } from 'bun:test';
-import type { AppDeps, Ctx, ProducerScope } from './context';
+import type { AppDeps, Ctx } from './context';
+import type { JobMeta } from './jobs/envelope';
+import { createRecordingProducers } from './jobs/testing';
+import type { QueueProducers } from './jobs.registry';
+import { queues } from './jobs.registry';
 import type { Logger } from './logger';
 import type { ServiceDeps, Services } from './services';
 
@@ -36,10 +40,18 @@ function stubLogger(): Logger {
   return logger;
 }
 
-function stubDeps(): { deps: AppDeps; scopes: ProducerScope[] } {
-  const scopes: ProducerScope[] = [];
+function stubDeps(): {
+  deps: AppDeps;
+  scopes: JobMeta[];
+  scoped: QueueProducers[];
+} {
+  const scopes: JobMeta[] = [];
+  const scoped: QueueProducers[] = [];
+  const producers = createRecordingProducers(queues);
+
   return {
     scopes,
+    scoped,
     deps: {
       db: {},
       ch: {},
@@ -47,9 +59,12 @@ function stubDeps(): { deps: AppDeps; scopes: ProducerScope[] } {
       clients: {},
       buffers: {},
       producers: {
+        ...producers,
         scope(meta) {
           scopes.push(meta);
-          return { scopedFor: meta.requestId };
+          const surface = producers.scope(meta);
+          scoped.push(surface);
+          return surface;
         },
       },
       logger: stubLogger(),
@@ -58,13 +73,19 @@ function stubDeps(): { deps: AppDeps; scopes: ProducerScope[] } {
   };
 }
 
-function build(): { ctx: Ctx; deps: AppDeps; scopes: ProducerScope[] } {
-  const { deps, scopes } = stubDeps();
+function build(): {
+  ctx: Ctx;
+  deps: AppDeps;
+  scopes: JobMeta[];
+  scoped: QueueProducers[];
+} {
+  const { deps, scopes, scoped } = stubDeps();
   const logger = deps.logger.child({ requestId: REQUEST_ID });
   return {
     ctx: createCtx(deps, { requestId: REQUEST_ID, logger }),
     deps,
     scopes,
+    scoped,
   };
 }
 
@@ -103,11 +124,11 @@ test('the services graph is built from the scoped ctx, not from boot deps', () =
 });
 
 test('the requestId reaches the producer scope and the ctx', () => {
-  const { ctx, scopes } = build();
+  const { ctx, scopes, scoped } = build();
 
   expect(scopes).toEqual([{ requestId: REQUEST_ID }]);
   expect(ctx.requestId).toBe(REQUEST_ID);
-  expect(ctx.queues).toEqual({ scopedFor: REQUEST_ID });
+  expect(ctx.queues).toBe(scoped[0] as QueueProducers);
 });
 
 test('the logger is the caller-bound child, unwrapped', () => {
