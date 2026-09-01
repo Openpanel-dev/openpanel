@@ -13,6 +13,7 @@ import { isKind, zCreateNotificationRule } from '@openpanel/validation';
 import { requireProjectAccess } from '../access';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
+import { redactIntegration } from './integration';
 
 export const notificationRouter = createTRPCRouter({
   list: protectedProcedure
@@ -68,7 +69,9 @@ export const notificationRouter = createTRPCRouter({
                       rule.sendToEmail)
                   );
                 }),
-                ...rule.integrations,
+                // The attached rows carry the credentials the worker delivers
+                // with; the dashboard only reads id, name and config.type.
+                ...rule.integrations.map(redactIntegration),
               ],
             };
           });
