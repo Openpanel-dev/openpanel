@@ -52,6 +52,31 @@ services:
       timeout: 5s
       retries: 24
 
+  # Mirrors self-hosting/docker-compose.template.yml's op-rp: same image, same
+  # single-node sizing (not the root docker-compose.yml's 1G dev cap). Bootstrap
+  # config is the checked-in dev file (partitions=24, same as cloud) rather than
+  # the self-host setup script's generated one, which doesn't exist until
+  # ./setup has run — keeps this stack reproducible from this file alone.
+  op-rp:
+    image: redpandadata/redpanda:v25.1.4
+    command:
+      - redpanda
+      - start
+      - --kafka-addr=internal://0.0.0.0:9092
+      - --advertise-kafka-addr=internal://op-rp:9092
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=op-rp:33145
+      - --smp=1
+      - --memory=2G
+      - --default-log-level=info
+    volumes:
+      - ../../docker/redpanda/bootstrap.yaml:/etc/redpanda/.bootstrap.yaml:ro
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health", "--exit-when-healthy"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+
   op-api:
     image: ${OP_API_IMAGE:-openpanel-smoke-image-unset}
     command: >
@@ -79,6 +104,8 @@ services:
       COOKIE_SECRET: smoke-test-cookie-secret-not-a-real-secret
       EMAIL_SENDER: smoke@example.com
       RESEND_API_KEY: re_smoke_test_key
+      KAFKA_BROKERS: op-rp:9092
+      KAFKA_EVENTS_TOPIC_PARTITIONS: "24"
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
       interval: 5s
@@ -90,6 +117,8 @@ services:
       op-ch:
         condition: service_healthy
       op-kv:
+        condition: service_healthy
+      op-rp:
         condition: service_healthy
 
   op-dashboard:
@@ -124,4 +153,6 @@ services:
       retries: 36
     depends_on:
       op-api:
+        condition: service_healthy
+      op-rp:
         condition: service_healthy

@@ -11,7 +11,7 @@ This guide will help you deploy OpenPanel using Docker Compose. This method give
 ## Prerequisites
 
 - A VPS or server (Docker and Node will be installed automatically if needed)
-- At least 2GB RAM (4GB+ recommended)
+- At least 4GB RAM (6GB+ recommended) — the stack now includes Redpanda alongside Postgres, Redis and ClickHouse
 - Domain name pointing to your server (optional but recommended)
 - Basic knowledge of command line
 
@@ -78,6 +78,7 @@ This will start all required services:
 - **op-db**: PostgreSQL database
 - **op-kv**: Redis cache
 - **op-ch**: ClickHouse analytics database
+- **op-rp**: Redpanda (Kafka-compatible event broker, see [Event Streaming](/docs/self-hosting/environment-variables#event-streaming-kafka))
 - **op-api**: OpenPanel API server
 - **op-dashboard**: OpenPanel dashboard (frontend)
 - **op-worker**: Background worker for processing events

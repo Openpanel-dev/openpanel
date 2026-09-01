@@ -28,7 +28,7 @@ fail() {
   echo "::error::$*"
   echo "--- container status ---"
   docker compose ps || true
-  for svc in op-api op-worker op-dashboard; do
+  for svc in op-api op-worker op-dashboard op-rp; do
     echo "--- $svc logs ---"
     docker compose logs --no-color --tail=200 "$svc" || true
   done

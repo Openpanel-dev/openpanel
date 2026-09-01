@@ -1,3 +1,4 @@
 .env
 docker-compose.yml
 caddy/Caddyfile
+redpanda/bootstrap.yaml

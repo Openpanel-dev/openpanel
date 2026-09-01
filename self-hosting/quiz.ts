@@ -5,6 +5,15 @@ import bcrypt from 'bcrypt';
 import inquirer from 'inquirer';
 import yaml from 'js-yaml';
 
+// Cloud runs 24 (docs/ANSWERS.md §1.1). Override by exporting
+// KAFKA_EVENTS_TOPIC_PARTITIONS before running ./setup — see the footgun
+// warning in redpanda/bootstrap.template.yaml before changing this after
+// first boot.
+const KAFKA_EVENTS_TOPIC_PARTITIONS_DEFAULT = 24;
+const KAFKA_EVENTS_TOPIC_PARTITIONS =
+  process.env.KAFKA_EVENTS_TOPIC_PARTITIONS ||
+  String(KAFKA_EVENTS_TOPIC_PARTITIONS_DEFAULT);
+
 let envs = {
   CLICKHOUSE_URL: '',
   REDIS_URL: '',
@@ -13,6 +22,7 @@ let envs = {
   COOKIE_SECRET: generatePassword(32),
   RESEND_API_KEY: '',
   EMAIL_SENDER: '',
+  KAFKA_EVENTS_TOPIC_PARTITIONS,
 };
 
 type EnvVars = typeof envs;
@@ -152,7 +162,8 @@ function writeEnvFile(envs: EnvVars) {
     .replace('$DASHBOARD_URL', stripTrailingSlash(envs.DOMAIN_NAME))
     .replace('$API_URL', `${stripTrailingSlash(envs.DOMAIN_NAME)}/api`)
     .replace('$RESEND_API_KEY', envs.RESEND_API_KEY)
-    .replace('$EMAIL_SENDER', envs.EMAIL_SENDER);
+    .replace('$EMAIL_SENDER', envs.EMAIL_SENDER)
+    .replace('$KAFKA_EVENTS_TOPIC_PARTITIONS', envs.KAFKA_EVENTS_TOPIC_PARTITIONS);
 
   fs.writeFileSync(
     envPath,
@@ -162,6 +173,25 @@ function writeEnvFile(envs: EnvVars) {
         return !line.includes('=""');
       })
       .join('\n'),
+  );
+}
+
+// Mirrors the partition count into the Redpanda bootstrap config so the
+// broker's default_topic_partitions can never drift from what .env declares
+// — see the footgun warning in redpanda/bootstrap.template.yaml.
+function writeRedpandaBootstrap(partitions: string) {
+  const templatePath = path.resolve(
+    __dirname,
+    'redpanda',
+    'bootstrap.template.yaml',
+  );
+  const bootstrapPath = path.resolve(__dirname, 'redpanda', 'bootstrap.yaml');
+
+  fs.writeFileSync(
+    bootstrapPath,
+    fs
+      .readFileSync(templatePath, 'utf-8')
+      .replaceAll('$KAFKA_EVENTS_TOPIC_PARTITIONS', partitions),
   );
 }
 
@@ -384,7 +414,11 @@ async function initiateOnboarding() {
     COOKIE_SECRET: envs.COOKIE_SECRET,
     RESEND_API_KEY: envs.RESEND_API_KEY || '',
     EMAIL_SENDER: envs.EMAIL_SENDER || '',
+    KAFKA_EVENTS_TOPIC_PARTITIONS: envs.KAFKA_EVENTS_TOPIC_PARTITIONS,
   });
+
+  console.log('Writing Redpanda bootstrap config...\n');
+  writeRedpandaBootstrap(envs.KAFKA_EVENTS_TOPIC_PARTITIONS);
 
   console.log('Updating docker-compose.yml file...\n');
   fs.copyFileSync(

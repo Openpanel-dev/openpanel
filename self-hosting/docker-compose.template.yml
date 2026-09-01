@@ -89,6 +89,43 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Required stateful service (ADR-004): /track always produces to Kafka, no
+  # fallback transport. Sizing here is a sane single-node starting point, NOT
+  # the --memory=1G/--mode=dev-container cap the root docker-compose.yml uses
+  # for local dev — that cap was never measured against real ingest traffic
+  # and is not a production baseline. Tune --memory to what the host can
+  # spare.
+  op-rp:
+    image: redpandadata/redpanda:v25.1.4
+    restart: always
+    command:
+      - redpanda
+      - start
+      - --kafka-addr=internal://0.0.0.0:9092
+      - --advertise-kafka-addr=internal://op-rp:9092
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=op-rp:33145
+      - --smp=1
+      - --memory=2G
+      - --default-log-level=info
+    volumes:
+      - op-rp-data:/var/lib/redpanda/data
+      - ./redpanda/bootstrap.yaml:/etc/redpanda/.bootstrap.yaml:ro
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health", "--exit-when-healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Uncomment to reach the Kafka API from the host
+    # ports:
+    #   - 19092:9092
+
   op-api:
     image: lindesvard/openpanel-api:2
     restart: always
@@ -110,6 +147,8 @@ services:
       op-ch:
         condition: service_healthy
       op-kv:
+        condition: service_healthy
+      op-rp:
         condition: service_healthy
     env_file:
       - .env
@@ -145,6 +184,8 @@ services:
     depends_on:
       op-api:
         condition: service_healthy
+      op-rp:
+        condition: service_healthy
     env_file:
       - .env
     healthcheck:
@@ -167,6 +208,8 @@ volumes:
   op-kv-data:
     driver: local
   op-ch-data:
+    driver: local
+  op-rp-data:
     driver: local
   op-proxy-data:
     driver: local

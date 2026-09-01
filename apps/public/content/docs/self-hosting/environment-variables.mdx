@@ -743,7 +743,7 @@ OpenPanel can optionally ingest events through a Kafka-compatible broker (Kafka 
 Routing is all-or-nothing: if `KAFKA_BROKERS` is set, every event is produced to the Kafka topic; otherwise all events stay on the default Redis-backed `events` queue. Set `ENABLED_QUEUES=events_kafka` on the worker(s) that should consume from Kafka.
 
 <Callout>
-The client speaks the Kafka wire protocol via [kafkajs](https://kafka.js.org/), so any Kafka-compatible broker works. The bundled `docker-compose.yml` uses [Redpanda](https://redpanda.com/) as a lightweight, single-binary option, but you can point `KAFKA_BROKERS` at any Kafka cluster.
+The client speaks the Kafka wire protocol via [kafkajs](https://kafka.js.org/), so any Kafka-compatible broker works. `self-hosting/docker-compose.template.yml` ships an `op-rp` service running [Redpanda](https://redpanda.com/) — a lightweight, single-binary broker — by default, with `KAFKA_BROKERS` already pointed at it. You can instead point `KAFKA_BROKERS` at any Kafka cluster of your own.
 </Callout>
 
 ### KAFKA_BROKERS
@@ -773,6 +773,23 @@ Name of the Kafka topic used for incoming events.
 ```bash
 KAFKA_EVENTS_TOPIC=openpanel-events
 ```
+
+### KAFKA_EVENTS_TOPIC_PARTITIONS
+
+**Type**: `number`
+**Required**: No
+**Default**: `24`
+
+Number of partitions the bundled Redpanda service creates the `KAFKA_EVENTS_TOPIC` topic with on first boot (matches the partition count OpenPanel Cloud runs). Only takes effect on an empty data volume — it does not repartition a topic that already exists.
+
+**Example**:
+```bash
+KAFKA_EVENTS_TOPIC_PARTITIONS=48
+```
+
+<Callout type="warn">
+Set this once, before the first `./start`. The Kafka/Redpanda partitioner is `murmur2(key) % numPartitions`, so raising the partition count after the topic already has data reshuffles where every key lands — it silently breaks per-key event ordering and the mutual exclusion the session buffer relies on for events produced before the change. To raise it later: stop producers, let consumers fully drain the backlog, delete the `events` topic, then restart so it's recreated with the new count.
+</Callout>
 
 ### KAFKA_CONSUMER_GROUP
 

@@ -1,0 +1,20 @@
+# Redpanda cluster bootstrap config — applied ONCE, when the data volume is
+# empty on first boot. `default_topic_partitions` governs topics created
+# after that point (including an auto-created `events` topic); it does not
+# repartition anything that already exists.
+#
+# Generated as redpanda/bootstrap.yaml by ./setup from this template — do not
+# edit the generated file directly, it is overwritten on the next setup run.
+#
+# FOOTGUN (ADR-004 risk 6): the producer partitions by
+# murmur2(key) % numPartitions, so raising this value after the `events`
+# topic already exists reshuffles every key — it silently breaks per-key
+# ordering and mutual exclusion for events produced before the change. Set it
+# once at install. To change it later: stop producers, let consumers drain
+# the backlog fully, delete the `events` topic, then restart so it is
+# recreated with the new partition count.
+default_topic_partitions: $KAFKA_EVENTS_TOPIC_PARTITIONS
+default_topic_replications: 1
+auto_create_topics_enabled: true
+log_compression_type: lz4
+log_retention_ms: 172800000
