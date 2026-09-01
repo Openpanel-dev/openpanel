@@ -60,3 +60,14 @@ export function serializeCookie(
 
   return header;
 }
+
+/**
+ * The read half of a request's cookies, transport-agnostic.
+ *
+ * `HttpCtx.cookies` is this and not Elysia's cookie record: a module reads a
+ * cookie by name and nothing else, so the framework's proxy stays behind
+ * `http/context.ts` and a `Ctx` never carries an Elysia type.
+ */
+export interface CookieJar {
+  get(name: string): string | undefined;
+}

@@ -76,7 +76,7 @@ export function stubHttpCtx(
     {
       headers: new Headers(),
       ip: '',
-      cookies: {},
+      cookies: { get: () => undefined },
       session: () => {
         stub.sessionCalls++;
         return Promise.resolve(session);

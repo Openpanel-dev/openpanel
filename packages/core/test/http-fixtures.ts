@@ -1,0 +1,51 @@
+// Stubs shared by the http tests. Not a test file (no `*.test.ts` suffix), so
+// the runner does not pick it up.
+
+import type { AppDeps } from '../src/context';
+import { createRecordingProducers } from '../src/jobs/testing';
+import { queues } from '../src/jobs.registry';
+import { type CapturedLogger, capturingLogger } from './rpc-fixtures';
+
+export interface AppDepsStub {
+  deps: AppDeps;
+  logger: CapturedLogger;
+  /** One per `createCtx` — it scopes the producers exactly once. */
+  scopeCalls: () => number;
+  childCalls: () => Record<string, unknown>[];
+}
+
+export function stubAppDeps(): AppDepsStub {
+  const producers = createRecordingProducers(queues);
+  const scope = producers.scope.bind(producers);
+  let scopeCalls = 0;
+  producers.scope = (meta) => {
+    scopeCalls++;
+    return scope(meta);
+  };
+
+  const childCalls: Record<string, unknown>[] = [];
+  const base = capturingLogger();
+  const logger: CapturedLogger = {
+    ...base,
+    child: (bindings) => {
+      childCalls.push(bindings);
+      return logger;
+    },
+  };
+
+  return {
+    logger,
+    scopeCalls: () => scopeCalls,
+    childCalls: () => childCalls,
+    deps: {
+      db: {},
+      ch: {},
+      redis: {},
+      clients: {},
+      buffers: {},
+      producers,
+      logger,
+      config: { selfHosted: false },
+    },
+  };
+}

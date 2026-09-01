@@ -7,7 +7,7 @@
 import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
 import { createServices, type Services } from './services';
-import type { CookieOptions } from './shared/cookie';
+import type { CookieJar, CookieOptions } from './shared/cookie';
 
 // Handles core does not own yet. Each real type arrives with the phase that
 // builds it (db/ch/redis P3, clients P4, buffers P8); they are named now so
@@ -20,9 +20,8 @@ export type RedisClient = unknown;
 export type ServiceClients = unknown;
 export type Buffers = unknown;
 
-// Elysia's cookie primitive, wrapped (P2-007), and the resolved session
-// (P6 auth).
-export type CookieJar = unknown;
+// The resolved session (P6 auth). `CookieJar` is already real — it lives in
+// shared/cookie.ts, wrapped over Elysia's primitive by http/context.ts.
 export type Session = unknown;
 
 /** The env-derived flags core needs. apps/api's config/env.ts is the sole
