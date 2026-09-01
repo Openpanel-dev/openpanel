@@ -54,6 +54,46 @@ import {
 const cacher = cacheMiddleware(60);
 
 /**
+ * `chart.values` for a top-level event column (country, os, city, device…) has
+ * no MV, so it ran `SELECT DISTINCT <col> FROM events WHERE created_at >
+ * now() - 6 MONTH` — a full multi-billion-row scan on high-volume projects that
+ * hits max_execution_time and returns nothing, then a dashboard tab left open
+ * on such a filter re-fires it on every window focus (React Query staleTime=0).
+ *
+ * These columns are session-level (geo/device/referrer denormalised onto every
+ * event), so for an all-events (`*`) value dropdown we read the distinct set
+ * from the far smaller `sessions` table (one row per session) instead — same
+ * values, orders of magnitude fewer rows. `path`/`origin` are per-pageview (not
+ * on `sessions`) and keep using `events`. A specific-event query also stays on
+ * `events` since `sessions` has no `name` column (the name filter bounds it).
+ */
+const SESSION_LEVEL_VALUE_COLUMNS = new Set([
+  'country',
+  'region',
+  'city',
+  'os',
+  'os_version',
+  'browser',
+  'browser_version',
+  'device',
+  'brand',
+  'model',
+  'referrer',
+  'referrer_name',
+  'referrer_type',
+]);
+
+/**
+ * Lookback for the `events` fallback of the filter-value dropdown. A value
+ * picker only needs recently-seen values, so clamp the scan (default 30d)
+ * instead of the old 6-month full scan. Env-tunable.
+ */
+const VALUES_LOOKBACK_DAYS = Number.parseInt(
+  process.env.CHART_VALUES_LOOKBACK_DAYS || '30',
+  10,
+);
+
+/**
  * Cap on distinct event property keys returned to the picker. Projects in the
  * 8k range exist, so the previous 10k was reachable in normal use.
  */
@@ -422,17 +462,26 @@ export const chartRouter = createTRPCRouter({
         if (!isKnownEventField(resolvedProperty)) {
           return { values: [] };
         }
+        // Session-level columns (geo/device/referrer) come from the small
+        // `sessions` table, not a billions-row `events` scan. Only for
+        // all-events (`*`): `sessions` has no `name` column to filter on.
+        const useSessions =
+          event === '*' && SESSION_LEVEL_VALUE_COLUMNS.has(resolvedProperty);
         const query = clix(ch)
           .select<{ values: string[] }>([
             `distinct ${getSelectPropertyKey(resolvedProperty)} as values`,
           ])
-          .from(TABLE_NAMES.events)
+          .from(useSessions ? TABLE_NAMES.sessions : TABLE_NAMES.events)
           .where('project_id', '=', projectId)
-          .where('created_at', '>', clix.exp('now() - INTERVAL 6 MONTH'))
+          .where(
+            'created_at',
+            '>',
+            clix.exp(`now() - INTERVAL ${VALUES_LOOKBACK_DAYS} DAY`),
+          )
           .orderBy('created_at', 'DESC')
           .limit(100_000);
 
-        if (event !== '*') {
+        if (!useSessions && event !== '*') {
           query.where('name', '=', event);
         }
 
