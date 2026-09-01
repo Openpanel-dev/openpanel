@@ -23,6 +23,7 @@
     "typecheck": "pnpm -r --no-bail typecheck",
     "update-simple-git-hooks": "npx simple-git-hooks",
     "check:workspace": "pnpm dlx sherif@latest",
+    "check:deps": "NODE_PATH=$PWD/node_modules pnpm dlx --package dependency-cruiser@18.2.0 depcruise --config .dependency-cruiser.cjs --output-type err apps/start packages",
     "check": "ultracite check",
     "fix": "ultracite fix"
   },
