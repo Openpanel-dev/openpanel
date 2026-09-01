@@ -29,10 +29,15 @@ export const zRelativeTimeframe = z.object({
   value: z.enum(['7d', '30d', '90d', '180d', '365d']),
 });
 
+// toDate() in the cohort query builder only understands plain calendar dates.
+const zDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a date in YYYY-MM-DD format');
+
 export const zAbsoluteTimeframe = z.object({
   type: z.literal('absolute'),
-  start: z.string(),
-  end: z.string().optional(),
+  start: zDate,
+  end: zDate.optional(),
 });
 
 export const zTimeframe = z.discriminatedUnion('type', [

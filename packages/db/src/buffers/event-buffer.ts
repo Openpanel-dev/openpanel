@@ -1,4 +1,5 @@
 import { getRedisCache, publishEvent } from '@openpanel/redis';
+import sqlstring from 'sqlstring';
 import { ch, chQuery } from '../clickhouse/client';
 import type { IClickhouseEvent } from '../services/event.service';
 import { BaseBuffer } from './base-buffer';
@@ -255,7 +256,7 @@ export class EventBuffer extends BaseBuffer {
     const rows = await chQuery<{ count: number }>(
       `SELECT uniq(profile_id) AS count
        FROM events
-       WHERE project_id = '${projectId}'
+       WHERE project_id = ${sqlstring.escape(projectId)}
          AND profile_id != ''
          AND created_at >= now() - INTERVAL 5 MINUTE`
     );
