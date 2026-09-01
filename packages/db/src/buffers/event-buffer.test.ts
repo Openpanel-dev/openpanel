@@ -254,6 +254,20 @@ describe('EventBuffer', () => {
     querySpy.mockRestore();
   });
 
+  it('escapes the project id in the active visitor query', async () => {
+    const querySpy = vi
+      .spyOn(chClient, 'chQuery')
+      .mockResolvedValueOnce([{ count: 0 }] as any);
+
+    await eventBuffer.getActiveVisitorCount("p9' OR 1=1 --");
+
+    const sql = querySpy.mock.calls[0]![0];
+    expect(sql).toContain("project_id = 'p9\\' OR 1=1 --'");
+    expect(sql).not.toContain("project_id = 'p9' OR");
+
+    querySpy.mockRestore();
+  });
+
   it('handles multiple sessions independently — all events go to buffer', async () => {
     const t0 = Date.now();
     const count1 = await eventBuffer.getBufferSize();

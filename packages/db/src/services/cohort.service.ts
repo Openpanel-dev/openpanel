@@ -36,11 +36,11 @@ function buildTimeConstraint(timeframe: Timeframe): string {
     return `created_at >= toDate(now() - INTERVAL ${days} DAY)`;
   }
 
-  const start = timeframe.start;
+  const start = sqlstring.escape(timeframe.start);
   if (timeframe.end) {
-    return `created_at BETWEEN toDate('${start}') AND toDate('${timeframe.end}')`;
+    return `created_at BETWEEN toDate(${start}) AND toDate(${sqlstring.escape(timeframe.end)})`;
   }
-  return `created_at >= toDate('${start}')`;
+  return `created_at >= toDate(${start})`;
 }
 
 function getFrequencyOperator(frequency: Frequency): string {
