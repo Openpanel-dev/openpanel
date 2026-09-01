@@ -129,6 +129,45 @@ function getFrequencyOperator(frequency: Frequency): string {
   }
 }
 
+// "Exactly 0" and "at most 0" both mean the profile never did the event.
+// Neither can be expressed as a HAVING on the summary MVs: those hold a row
+// only for a (project, profile, event, day) that actually happened, so every
+// group that reaches the HAVING already has countMerge(event_count) >= 1 and
+// the criterion returns nothing. The query has to be inverted instead.
+//
+// `gte 0` is not "never" — it matches every profile — and zFrequency rejects
+// it, so it stays on the ordinary HAVING path.
+function isNeverFrequency(frequency: Frequency): boolean {
+  return (
+    frequency.count === 0 &&
+    (frequency.operator === 'eq' || frequency.operator === 'lte')
+  );
+}
+
+// Every profile in the project except the ones the summary MV knows about.
+// The timeframe stays inside the subquery, so "never did X in the last 30
+// days" keeps including someone who did X 60 days ago, matching how the
+// timeframe control reads for a positive criterion.
+//
+// DISTINCT rather than FINAL: profiles is a ReplacingMergeTree and FINAL
+// cannot spill to disk, so on wide projects the dedup is what runs out of
+// memory (same reason buildPropertyBasedCohortQuery groups instead of reading
+// through FINAL). Only the id is needed here, so deduplicating it is enough —
+// and the other branches of this function also emit one row per profile, which
+// the INTERSECT / UNION DISTINCT combination in computeEventBasedCohort
+// depends on.
+function buildNeverDidEventQuery(
+  projectId: string,
+  didEventQuery: string,
+): string {
+  return `
+    SELECT DISTINCT id AS profile_id
+    FROM ${TABLE_NAMES.profiles}
+    WHERE project_id = ${sqlstring.escape(projectId)}
+      AND id NOT IN (${didEventQuery})
+  `;
+}
+
 export function buildEventCriteriaQuery(
   projectId: string,
   criteria: EventCriteria,
@@ -189,6 +228,23 @@ export function buildEventCriteriaQuery(
       .join(' OR ');
 
     if (frequency) {
+      if (isNeverFrequency(frequency)) {
+        // "Never did X where plan = pro" reads as "has no matching (event,
+        // property) row", so the property predicates go inside the exclusion:
+        // someone who did the event with plan = free is a member.
+        return buildNeverDidEventQuery(
+          projectId,
+          `
+            SELECT profile_id
+            FROM ${TABLE_NAMES.event_property_profile_summary_mv}
+            WHERE project_id = ${sqlstring.escape(projectId)}
+              AND name = ${sqlstring.escape(name)}
+              AND ${timeConstraint.replace('created_at', 'event_date')}
+              AND (${propertyConditions})
+          `,
+        );
+      }
+
       const frequencyOp = getFrequencyOperator(frequency);
       return `
         SELECT profile_id
@@ -213,6 +269,19 @@ export function buildEventCriteriaQuery(
   }
 
   if (frequency) {
+    if (isNeverFrequency(frequency)) {
+      return buildNeverDidEventQuery(
+        projectId,
+        `
+          SELECT profile_id
+          FROM ${TABLE_NAMES.event_profile_summary_mv}
+          WHERE project_id = ${sqlstring.escape(projectId)}
+            AND name = ${sqlstring.escape(name)}
+            AND ${timeConstraint.replace('created_at', 'event_date')}
+        `,
+      );
+    }
+
     const frequencyOp = getFrequencyOperator(frequency);
     return `
       SELECT profile_id
@@ -305,23 +374,40 @@ export function buildPropertyBasedCohortQuery(
   `;
 }
 
-export async function computeEventBasedCohort(
+// Every criterion emits one row per matching profile under the column name
+// profile_id, which is what lets them be combined as sets.
+export function buildEventBasedCohortQuery(
   projectId: string,
   definition: EventBasedCohortDefinition,
-  limit?: number,
-): Promise<string[]> {
+): string {
   const { events, operator } = definition.criteria;
 
   const queries = events.map((eventCriteria) =>
     buildEventCriteriaQuery(projectId, eventCriteria),
   );
 
-  const combinedQuery =
-    operator === 'and'
-      ? queries.join(' INTERSECT ')
-      : queries.join(' UNION DISTINCT ');
+  return operator === 'and'
+    ? queries.join(' INTERSECT ')
+    : queries.join(' UNION DISTINCT ');
+}
 
-  const finalQuery = limit ? `${combinedQuery} LIMIT ${limit}` : combinedQuery;
+export async function computeEventBasedCohort(
+  projectId: string,
+  definition: EventBasedCohortDefinition,
+  limit?: number,
+): Promise<string[]> {
+  const combinedQuery = buildEventBasedCohortQuery(projectId, definition);
+
+  // The LIMIT has to wrap the combination, not trail it: appended to an
+  // INTERSECT / UNION chain, ClickHouse applies it to the last SELECT alone.
+  // That was survivable while every operand was a narrow event-derived set;
+  // a "never did X" operand is most of the project's profiles, so limiting it
+  // before the INTERSECT would cut the cohort down to an arbitrary slice —
+  // and at the preview's limit of 10, almost always to nothing. The count
+  // query below already wraps for the same reason.
+  const finalQuery = limit
+    ? `SELECT profile_id FROM (${combinedQuery}) LIMIT ${limit}`
+    : combinedQuery;
 
   const results = await chQuery<{ profile_id: string }>(finalQuery);
   return results.map((r) => r.profile_id);
@@ -331,22 +417,17 @@ export async function countEventBasedCohort(
   projectId: string,
   definition: EventBasedCohortDefinition,
 ): Promise<number> {
-  const { events, operator } = definition.criteria;
-
-  const queries = events.map((eventCriteria) =>
-    buildEventCriteriaQuery(projectId, eventCriteria),
-  );
-
-  const combinedQuery =
-    operator === 'and'
-      ? queries.join(' INTERSECT ')
-      : queries.join(' UNION DISTINCT ');
+  const combinedQuery = buildEventBasedCohortQuery(projectId, definition);
 
   const countQuery = `SELECT count() as count FROM (${combinedQuery})`;
   const results = await chQuery<{ count: number }>(countQuery);
   return results[0]?.count ?? 0;
 }
 
+// Known gap, not fixed here: the switch below has no case for 'inCohort' or
+// 'notInCohort', so one of those inside a cohort definition is dropped without
+// an error and the cohort silently widens. The same operators do work at
+// report level — see buildCohortClause in filter-where.service.ts.
 function getProfileFiltersWhereClause(
   filters: IChartEventFilter[],
   { latestPerProfileKey }: { latestPerProfileKey?: string } = {},
