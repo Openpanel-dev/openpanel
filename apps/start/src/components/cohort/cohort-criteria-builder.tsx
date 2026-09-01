@@ -308,11 +308,17 @@ function EventCriteriaItem({
               // rewrote a typed 0 back to 1 and "never did this event" could
               // not be entered.
               const parsed = Number.parseInt(e.target.value, 10);
+              const operator = criteria.frequency?.operator ?? 'gte';
               onChange({
                 ...criteria,
                 frequency: {
-                  operator: criteria.frequency?.operator ?? 'gte',
-                  count: Number.isNaN(parsed) ? 1 : parsed,
+                  operator,
+                  // Same "At least 0 matches everyone" clamp as the
+                  // operator-change handler above.
+                  count:
+                    Number.isNaN(parsed) || (operator === 'gte' && parsed === 0)
+                      ? 1
+                      : parsed,
                 },
               });
             }}
