@@ -16,6 +16,8 @@
     "@elysiajs/openapi": "1.4.15",
     "@trpc/server": "^11.17.0",
     "elysia": "1.4.30",
+    "nanoid": "^5.1.6",
+    "superjson": "^1.13.3",
     "zod": "catalog:"
   },
   "devDependencies": {
