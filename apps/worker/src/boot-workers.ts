@@ -33,27 +33,70 @@ const workerOptions: WorkerOptions = {
   connection: getRedisQueue(),
 };
 
-type QueueName = string; // Can be: events_kafka, sessions, cron, notification, import, insights, gsc, cohortCompute
+// The Kafka events consumer's token. Renamed from `events_kafka` (ADR-004
+// rec 5/6 + docs/ANSWERS.md §1.3): there is one events transport now, so
+// there is one token for it.
+const KAFKA_QUEUE_NAME = 'events';
+
+// The seven BullMQ registry queues (ADR-005). Kept in sync with
+// packages/core/src/jobs.registry.ts by hand until the worker merges into
+// core at P9.
+const REGISTRY_QUEUE_NAMES = [
+  'sessions',
+  'cron',
+  'notification',
+  'import',
+  'insights',
+  'gsc',
+  'cohortCompute',
+] as const;
+
+const KNOWN_QUEUE_NAMES = [KAFKA_QUEUE_NAME, ...REGISTRY_QUEUE_NAMES] as const;
+
+type QueueName = (typeof KNOWN_QUEUE_NAMES)[number];
+
+const RENAMED_QUEUE_TOKENS: Record<string, string> = {
+  events_kafka: KAFKA_QUEUE_NAME,
+};
+
+/**
+ * Fails boot loudly on an unknown ENABLED_QUEUES token, instead of V1's
+ * silent ignore (docs/ANSWERS.md §1.3 ruling). `events_kafka` gets a message
+ * naming the rename; anything else names the offending value and the
+ * accepted set.
+ */
+export function assertKnownQueue(value: string): void {
+  if ((KNOWN_QUEUE_NAMES as readonly string[]).includes(value)) {
+    return;
+  }
+
+  const renamedTo = RENAMED_QUEUE_TOKENS[value];
+  if (renamedTo) {
+    logger.fatal(
+      { value, renamedTo, accepted: KNOWN_QUEUE_NAMES },
+      `ENABLED_QUEUES: "${value}" was renamed to "${renamedTo}" — update ENABLED_QUEUES to use the new name.`
+    );
+    process.exit(1);
+    return;
+  }
+
+  logger.fatal(
+    { value, accepted: KNOWN_QUEUE_NAMES },
+    `ENABLED_QUEUES: unknown queue "${value}". Accepted values: ${KNOWN_QUEUE_NAMES.join(', ')}.`
+  );
+  process.exit(1);
+}
 
 /**
  * Parses the ENABLED_QUEUES environment variable and returns an array of queue names to start.
  * If no env var is provided, returns all queues.
  */
-function getEnabledQueues(): QueueName[] {
+export function getEnabledQueues(): QueueName[] {
   const enabledQueuesEnv = process.env.ENABLED_QUEUES?.trim();
 
   if (!enabledQueuesEnv) {
     logger.info('No ENABLED_QUEUES specified, starting all queues');
-    return [
-      'events_kafka',
-      'sessions',
-      'cron',
-      'notification',
-      'import',
-      'insights',
-      'gsc',
-      'cohortCompute',
-    ];
+    return [...KNOWN_QUEUE_NAMES];
   }
 
   const queues = enabledQueuesEnv
@@ -61,8 +104,12 @@ function getEnabledQueues(): QueueName[] {
     .map((q) => q.trim())
     .filter(Boolean);
 
+  for (const queue of queues) {
+    assertKnownQueue(queue);
+  }
+
   logger.info({ queues }, 'Starting queues from ENABLED_QUEUES');
-  return queues;
+  return queues as QueueName[];
 }
 
 /**
@@ -90,7 +137,7 @@ export function bootWorkers() {
   const extraStops: Array<() => Promise<unknown>> = [];
 
   // Start Kafka events consumer — the sole events transport (ADR-004).
-  if (enabledQueues.includes('events_kafka')) {
+  if (enabledQueues.includes(KAFKA_QUEUE_NAME)) {
     enableEventsHeartbeat();
     let handle: KafkaConsumerHandle | null = null;
     const startPromise = startKafkaEventsConsumer()

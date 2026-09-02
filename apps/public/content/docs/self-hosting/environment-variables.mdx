@@ -622,7 +622,7 @@ DISABLE_WORKERS=true
 **Required**: No
 **Default**: All queues enabled
 
-Comma-separated list of queue names to enable. Available queues: `events`, `events_kafka`, `sessions`, `cron`, `notification`, `misc`, `import`.
+Comma-separated list of queue names to enable. Accepted queues: `events`, `sessions`, `cron`, `notification`, `import`, `insights`, `gsc`, `cohortCompute`. An unknown value (including the old `events_kafka` name, see below) fails startup with a non-zero exit rather than being silently ignored.
 
 **Example**:
 ```bash
@@ -630,7 +630,7 @@ ENABLED_QUEUES=events,sessions,cron
 ```
 
 <Callout>
-Enable `events_kafka` to run the Kafka-based events consumer alongside (or instead of) the default `events` queue. See the [Event Streaming (Kafka)](#event-streaming-kafka) section for the full configuration. A common high-throughput layout is to run one worker pool with `ENABLED_QUEUES=events_kafka` and another pool with everything else.
+`events` is the Kafka-based events consumer — there is only one events transport now, so there is no separate `events_kafka` queue name. If you're upgrading from a version that used `ENABLED_QUEUES=events_kafka`, rename it to `ENABLED_QUEUES=events`; the old name is now rejected at boot. See the [Event Streaming (Kafka)](#event-streaming-kafka) section for the full configuration. A common high-throughput layout is to run one worker pool with `ENABLED_QUEUES=events` and another pool with everything else.
 </Callout>
 
 ### EVENT_JOB_CONCURRENCY
@@ -740,7 +740,7 @@ AUTO_BATCH_SIZE=100
 
 OpenPanel can optionally ingest events through a Kafka-compatible broker (Kafka itself, Redpanda, etc.) instead of the default Redis-backed events queue. This is useful at high throughput, where many consumer instances can process partitions in parallel.
 
-Routing is all-or-nothing: if `KAFKA_BROKERS` is set, every event is produced to the Kafka topic; otherwise all events stay on the default Redis-backed `events` queue. Set `ENABLED_QUEUES=events_kafka` on the worker(s) that should consume from Kafka.
+Routing is all-or-nothing: if `KAFKA_BROKERS` is set, every event is produced to the Kafka topic; otherwise all events stay on the default Redis-backed `events` queue. Set `ENABLED_QUEUES=events` on the worker(s) that should consume from Kafka.
 
 <Callout>
 The client speaks the Kafka wire protocol via [kafkajs](https://kafka.js.org/), so any Kafka-compatible broker works. `self-hosting/docker-compose.template.yml` ships an `op-rp` service running [Redpanda](https://redpanda.com/) — a lightweight, single-binary broker — by default, with `KAFKA_BROKERS` already pointed at it. You can instead point `KAFKA_BROKERS` at any Kafka cluster of your own.
