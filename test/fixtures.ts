@@ -24,13 +24,12 @@
 
 import { createClient } from '../packages/db/src/clickhouse/client';
 import { PrismaClient } from '../packages/db/src/generated/prisma/client';
+import { TEST_CLICKHOUSE_URL, TEST_DATABASE_URL } from './databases';
 
 // Lazily create a Prisma client so DATABASE_URL is read at call time,
 // not at module-import time (globalSetup runs before env is configured).
 function getDb() {
-  const url =
-    process.env.DATABASE_URL ??
-    'postgresql://postgres:postgres@localhost:5432/postgres?schema=public';
+  const url = process.env.DATABASE_URL ?? TEST_DATABASE_URL;
   return new PrismaClient({ datasources: { db: { url } } });
 }
 
@@ -72,7 +71,7 @@ export const FIXTURE = {
 type ChClient = ReturnType<typeof createClient>;
 
 function getClient() {
-  const url = process.env.CLICKHOUSE_URL ?? 'http://localhost:8123';
+  const url = process.env.CLICKHOUSE_URL ?? TEST_CLICKHOUSE_URL;
   return createClient({ url });
 }
 
@@ -183,7 +182,7 @@ async function insertFixtures(client: ChClient, projectId: string) {
   const now = new Date();
 
   await client.insert({
-    table: 'openpanel.profiles',
+    table: 'profiles',
     values: [
       {
         id: FIXTURE.profiles.alice,
@@ -234,7 +233,7 @@ async function insertFixtures(client: ChClient, projectId: string) {
   // Charlie: session_start → screen_view → page_view → purchase → session_end (5 days ago, spaced 5 min apart)
   // Events are spaced so windowFunnel strict_increase mode works correctly.
   await client.insert({
-    table: 'openpanel.events',
+    table: 'events',
     values: [
       buildEvent(
         now,
@@ -329,7 +328,7 @@ async function insertFixtures(client: ChClient, projectId: string) {
   });
 
   await client.insert({
-    table: 'openpanel.sessions',
+    table: 'sessions',
     values: [
       buildSession(
         now,
@@ -376,16 +375,16 @@ async function insertFixtures(client: ChClient, projectId: string) {
 async function deleteFixtures(client: ChClient, projectId: string) {
   await Promise.all([
     client.command({
-      query: `DELETE FROM openpanel.profiles WHERE project_id = '${projectId}'`,
+      query: `DELETE FROM profiles WHERE project_id = '${projectId}'`,
     }),
     client.command({
-      query: `DELETE FROM openpanel.events WHERE project_id = '${projectId}'`,
+      query: `DELETE FROM events WHERE project_id = '${projectId}'`,
     }),
     client.command({
-      query: `DELETE FROM openpanel.sessions WHERE project_id = '${projectId}'`,
+      query: `DELETE FROM sessions WHERE project_id = '${projectId}'`,
     }),
     client.command({
-      query: `ALTER TABLE openpanel.distinct_event_names_mv DELETE WHERE project_id = '${projectId}'`,
+      query: `ALTER TABLE distinct_event_names_mv DELETE WHERE project_id = '${projectId}'`,
     }),
   ]);
 }

@@ -34,6 +34,7 @@
  */
 
 import { createClient } from '../packages/db/src/clickhouse/client';
+import { TEST_CLICKHOUSE_URL } from './databases';
 
 // ---------------------------------------------------------------------------
 // Well-known ids + absolute dates
@@ -116,7 +117,7 @@ export const RETENTION_BLUEPRINT = {
 type ChClient = ReturnType<typeof createClient>;
 
 function getClient(): ChClient {
-  const url = process.env.CLICKHOUSE_URL ?? 'http://localhost:8123';
+  const url = process.env.CLICKHOUSE_URL ?? TEST_CLICKHOUSE_URL;
   return createClient({ url });
 }
 
@@ -213,15 +214,15 @@ function buildCohortMembers(projectId: string) {
 async function deleteFixtures(client: ChClient, projectId: string) {
   await Promise.all([
     client.command({
-      query: `DELETE FROM openpanel.events WHERE project_id = '${projectId}'`,
+      query: `DELETE FROM events WHERE project_id = '${projectId}'`,
     }),
     // Materialized views are NOT touched by DELETE FROM events; mutate them too
     // so reruns stay clean.
     client.command({
-      query: `ALTER TABLE openpanel.cohort_events_mv DELETE WHERE project_id = '${projectId}'`,
+      query: `ALTER TABLE cohort_events_mv DELETE WHERE project_id = '${projectId}'`,
     }),
     client.command({
-      query: `DELETE FROM openpanel.cohort_members WHERE project_id = '${projectId}'`,
+      query: `DELETE FROM cohort_members WHERE project_id = '${projectId}'`,
     }),
   ]);
 }
@@ -231,12 +232,12 @@ export async function setupRetentionFixtures(projectId: string): Promise<void> {
   try {
     await deleteFixtures(client, projectId);
     await client.insert({
-      table: 'openpanel.events',
+      table: 'events',
       values: buildEvents(projectId),
       format: 'JSONEachRow',
     });
     await client.insert({
-      table: 'openpanel.cohort_members',
+      table: 'cohort_members',
       values: buildCohortMembers(projectId),
       format: 'JSONEachRow',
     });
