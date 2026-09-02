@@ -34,6 +34,11 @@ const guardQueue = <
 export interface EventsQueuePayloadIncomingEvent {
   type: 'incomingEvent';
   payload: {
+    // Minted by the producer (/track, /event) so a Kafka redelivery becomes an
+    // identical-id row instead of a new one. Optional on the wire: a V1
+    // producer omits it and a V1 consumer ignores it, so the topic payload
+    // stays readable across a rolling deploy.
+    id?: string;
     projectId: string;
     event: ITrackPayload & {
       timestamp: string | number;

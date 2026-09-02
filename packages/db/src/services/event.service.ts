@@ -196,6 +196,13 @@ export type IServiceCreateEventPayload = Omit<
   IServiceEvent,
   'id' | 'importedAt' | 'profile' | 'meta'
 >;
+/**
+ * A create payload whose id was already minted upstream (the ingest producer).
+ * Reusing it means a redelivered Kafka message lands as an identical-id row.
+ */
+export type IServiceCreateEventPayloadWithId = IServiceCreateEventPayload & {
+  id?: string;
+};
 export type IServiceImportedEventPayload = Omit<
   IServiceEvent,
   'profile' | 'meta'
@@ -371,13 +378,13 @@ export async function getEvents(
  * else (session_start, session_end) the session-row update is correctly a
  * no-op anyway.
  */
-export async function createEvent(payload: IServiceCreateEventPayload) {
+export async function createEvent(payload: IServiceCreateEventPayloadWithId) {
   if (!payload.profileId && payload.deviceId) {
     payload.profileId = payload.deviceId;
   }
 
   const event: IClickhouseEvent = {
-    id: uuid(),
+    id: payload.id ?? uuid(),
     name: payload.name,
     device_id: payload.deviceId,
     profile_id: payload.profileId ? String(payload.profileId) : '',

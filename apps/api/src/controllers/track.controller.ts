@@ -32,6 +32,7 @@ import type {
 } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr, pick } from 'ramda';
+import { v4 as uuid } from 'uuid';
 import { applyBotSuspicion, stripBotProperties } from '@/bots/suspicion';
 import { HttpError } from '@/utils/errors';
 import { getDeviceId } from '@/utils/ids';
@@ -250,6 +251,9 @@ async function handleTrack(
   }
 
   const queueData: EventsQueuePayloadIncomingEvent['payload'] = {
+    // The id of the ClickHouse row this event becomes, minted here so a
+    // redelivered Kafka message is a duplicate we can recognise.
+    id: uuid(),
     projectId,
     headers,
     event: {

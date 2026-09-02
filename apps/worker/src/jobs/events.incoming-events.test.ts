@@ -35,6 +35,8 @@ vi.mock('@openpanel/db', async () => {
 const projectId = 'test-project';
 const deviceId = 'device-123';
 const newSessionId = 'a1b2c3d4-e5f6-4789-a012-345678901234';
+// What the producer (/track) would have minted for one request.
+const producedEventId = '11111111-2222-4333-8444-555555555555';
 const geo = {
   country: 'US',
   city: 'New York',
@@ -318,6 +320,65 @@ describe('incomingEvent', () => {
     });
   });
 
+  it('re-creates the same row id when Kafka redelivers the message', async () => {
+    const session = makeSession({ id: newSessionId });
+    vi.mocked(sessionBuffer.ingest)
+      .mockResolvedValueOnce({ kind: 'new', current: session })
+      .mockResolvedValueOnce({ kind: 'extend', current: session });
+
+    // Same message, delivered twice: identical payload, identical offset.
+    const jobData = buildJobData({ id: producedEventId });
+    const delivery = { partition: 3, offset: '42' };
+    await incomingEvent(jobData, delivery);
+    await incomingEvent(jobData, delivery);
+
+    const eventCalls = (createEvent as Mock).mock.calls.filter(
+      ([a]) => a?.name === 'test_event'
+    );
+    expect(eventCalls).toHaveLength(2);
+    expect(eventCalls[0]![0].id).toBe(producedEventId);
+    expect(eventCalls[1]![0].id).toBe(producedEventId);
+
+    // The derived session_start row must NOT reuse the event's id.
+    const sessionStartCalls = (createEvent as Mock).mock.calls.filter(
+      ([a]) => a?.name === 'session_start'
+    );
+    expect(sessionStartCalls).toHaveLength(1);
+    expect(sessionStartCalls[0]![0].id).toBeUndefined();
+  });
+
+  it('carries the producer-minted id on server-side events', async () => {
+    vi.mocked(sessionBuffer.getExistingSession).mockResolvedValueOnce(null);
+
+    await incomingEvent(
+      buildJobData({
+        id: producedEventId,
+        event: {
+          name: 'server_event',
+          timestamp: new Date().toISOString(),
+          isTimestampFromThePast: false,
+          profileId: 'profile-123',
+        },
+        uaInfo: uaInfoServer,
+        deviceId: '',
+        sessionId: '',
+      })
+    );
+
+    expect((createEvent as Mock).mock.calls[0]![0].id).toBe(producedEventId);
+  });
+
+  it('leaves the id undefined for a payload produced without one', async () => {
+    vi.mocked(sessionBuffer.ingest).mockResolvedValueOnce({
+      kind: 'extend',
+      current: makeSession(),
+    });
+
+    await incomingEvent(buildJobData());
+
+    expect((createEvent as Mock).mock.calls[0]![0].id).toBeUndefined();
+  });
+
   it('emits session_start only once across 3 rapid events (new → extend → extend)', async () => {
     const session = makeSession({ id: newSessionId });
     vi.mocked(sessionBuffer.ingest)
@@ -325,9 +386,36 @@ describe('incomingEvent', () => {
       .mockResolvedValueOnce({ kind: 'extend', current: session })
       .mockResolvedValueOnce({ kind: 'extend', current: session });
 
-    await incomingEvent(buildJobData({ event: { name: 'e1', timestamp: new Date().toISOString(), isTimestampFromThePast: false, properties: { __path: 'https://example.com/test' } } }));
-    await incomingEvent(buildJobData({ event: { name: 'e2', timestamp: new Date().toISOString(), isTimestampFromThePast: false, properties: { __path: 'https://example.com/test' } } }));
-    await incomingEvent(buildJobData({ event: { name: 'e3', timestamp: new Date().toISOString(), isTimestampFromThePast: false, properties: { __path: 'https://example.com/test' } } }));
+    await incomingEvent(
+      buildJobData({
+        event: {
+          name: 'e1',
+          timestamp: new Date().toISOString(),
+          isTimestampFromThePast: false,
+          properties: { __path: 'https://example.com/test' },
+        },
+      })
+    );
+    await incomingEvent(
+      buildJobData({
+        event: {
+          name: 'e2',
+          timestamp: new Date().toISOString(),
+          isTimestampFromThePast: false,
+          properties: { __path: 'https://example.com/test' },
+        },
+      })
+    );
+    await incomingEvent(
+      buildJobData({
+        event: {
+          name: 'e3',
+          timestamp: new Date().toISOString(),
+          isTimestampFromThePast: false,
+          properties: { __path: 'https://example.com/test' },
+        },
+      })
+    );
 
     const sessionStartCalls = (createEvent as Mock).mock.calls.filter(
       ([a]) => a?.name === 'session_start'

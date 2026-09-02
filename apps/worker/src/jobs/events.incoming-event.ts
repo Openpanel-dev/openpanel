@@ -1,6 +1,10 @@
 import { getTime, isSameDomain, parsePath } from '@openpanel/common';
 import { getReferrerWithQuery, parseReferrer } from '@openpanel/common/server';
-import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
+import type {
+  IServiceCreateEventPayload,
+  IServiceCreateEventPayloadWithId,
+  IServiceEvent,
+} from '@openpanel/db';
 import {
   checkNotificationRulesForEvent,
   createEvent,
@@ -55,7 +59,7 @@ async function markFirstEvent(projectId: string, logger: ILogger) {
 }
 
 async function createEventAndNotify(
-  payload: IServiceCreateEventPayload,
+  payload: IServiceCreateEventPayloadWithId,
   logger: ILogger,
   projectId: string
 ) {
@@ -109,6 +113,10 @@ export async function incomingEvent(
     deviceId,
     sessionId,
     uaInfo,
+    // Producer-minted; a redelivered message re-creates the same row id.
+    // Absent on messages produced before the field existed — createEvent then
+    // falls back to a fresh uuid.
+    id: eventId,
   } = jobPayload;
   const properties = body.properties ?? {};
   const reqId = headers['request-id'] ?? 'unknown';
@@ -212,7 +220,11 @@ export async function incomingEvent(
       latitude: session?.latitude ?? baseEvent.latitude,
     };
 
-    return createEventAndNotify(payload as IServiceEvent, logger, projectId);
+    return createEventAndNotify(
+      { ...(payload as IServiceEvent), id: eventId },
+      logger,
+      projectId
+    );
   }
 
   if (await isEventExcludedByProjectFilter(baseEvent, projectId)) {
@@ -248,6 +260,8 @@ export async function incomingEvent(
 
   if (session?.kind === 'new' || session?.kind === 'boundary') {
     sessionsStarted.inc({ kind: session.kind });
+    // No `id` here: session_start is a second, derived row and must not share
+    // the producer-minted id of the event that triggered it.
     await createEventAndNotify(
       {
         ...baseEvent,
@@ -277,5 +291,9 @@ export async function incomingEvent(
       } as Partial<IServiceCreateEventPayload>)
     : baseEvent;
 
-  return createEventAndNotify(finalPayload, logger, projectId);
+  return createEventAndNotify(
+    { ...finalPayload, id: eventId },
+    logger,
+    projectId
+  );
 }

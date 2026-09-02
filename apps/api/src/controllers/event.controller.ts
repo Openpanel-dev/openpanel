@@ -8,6 +8,7 @@ import {
 } from '@openpanel/queue';
 import type { DeprecatedPostEventPayload } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { v4 as uuid } from 'uuid';
 import { getStringHeaders, getTimestamp } from './track.controller';
 import { applyBotSuspicion } from '@/bots/suspicion';
 import { getDeviceId } from '@/utils/ids';
@@ -59,6 +60,8 @@ export async function postEvent(
     ? `${projectId}:${request.body?.profileId ?? generateId()}`
     : deviceId;
   const queueData: EventsQueuePayloadIncomingEvent['payload'] = {
+    // See track.controller: the producer mints the event id.
+    id: uuid(),
     projectId,
     headers,
     event: {
