@@ -4,9 +4,20 @@
 // module's HTTP half is one `.use()` on the surface it belongs to; most
 // modules touch exactly one.
 
+import { openapi } from '@elysiajs/openapi';
 import { Elysia } from 'elysia';
 import type { AppDeps } from './context';
+import { registry } from './metrics';
 import { healthRoutes } from './modules/health/health.routes';
+
+// ADR-002/ADR-003 pin: @elysiajs/openapi at the 1.4.15 fallback (2.0 is
+// NO-GO per spike 6). `specPath` is set explicitly rather than taking the
+// plugin's `${path}/json` default, because the ops surface's contract is
+// exactly `/openapi.json`.
+const OPENAPI_SPEC_PATH = '/openapi.json';
+// `/metrics` is prometheus text exposition, not an OpenAPI-describable JSON
+// endpoint (ADR-003: "the transform that hides /metrics from the spec").
+const OPENAPI_EXCLUDED_PATHS = ['/metrics'];
 
 // No module lands on either surface yet — the 35 modules' HTTP halves land
 // with their waves (P5-P8). Both still take `deps` now so a module addition
@@ -20,6 +31,20 @@ export const dashboardRoutes = (_deps: AppDeps) =>
   new Elysia({ name: 'core/dashboard-routes' });
 
 // healthz/metrics/misc share V1's ops surface (http/context.ts's
-// UNLOGGED_PATH_PREFIXES) — unauthenticated, uncorsed, unlogged.
+// UNLOGGED_PATH_PREFIXES) — unauthenticated, uncorsed, unlogged. /metrics and
+// /openapi.json are the M3 gate's ops surface: the one core registry's
+// prometheus exposition, and the OpenAPI reference built from the same zod
+// schemas the routes validate against.
 export const opsRoutes = (deps: AppDeps) =>
-  new Elysia({ name: 'core/ops-routes' }).use(healthRoutes(deps));
+  new Elysia({ name: 'core/ops-routes' })
+    .use(healthRoutes(deps))
+    .use(
+      openapi({
+        specPath: OPENAPI_SPEC_PATH,
+        exclude: { paths: OPENAPI_EXCLUDED_PATHS },
+      })
+    )
+    .get('/metrics', async ({ set }) => {
+      set.headers['content-type'] = registry.contentType;
+      return await registry.metrics();
+    });

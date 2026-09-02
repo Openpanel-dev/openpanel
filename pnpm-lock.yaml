@@ -1213,6 +1213,9 @@ importers:
       nanoid:
         specifier: ^5.1.6
         version: 5.1.6
+      prom-client:
+        specifier: ^15.1.3
+        version: 15.1.3
       superjson:
         specifier: ^1.13.3
         version: 1.13.3
