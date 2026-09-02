@@ -321,29 +321,33 @@ async function adjustProfileProperty(
 ): Promise<void> {
   const { profileId, property, value } = payload;
   const profile = await getProfileById(String(profileId), projectId);
-  if (!profile) {
-    throw new HttpError('Profile not found', { status: 404 });
-  }
+
+  // A missing profile is not an error. An increment/decrement legitimately
+  // fires before the profile's first event or identify has landed (a common
+  // race), or for an anonymous/transient id. Follow Mixpanel `$add`/`$subtract`
+  // semantics — treat the current value as 0 and upsert — so the delta is
+  // preserved and the profile is created, instead of dropping the operation.
+  const properties = profile?.properties ?? {};
 
   const parsed = Number.parseInt(
-    pathOr<string>('0', property.split('.'), profile.properties),
+    pathOr<string>('0', property.split('.'), properties),
     10
   );
 
+  // An existing value that isn't a number can't be adjusted; skip rather than
+  // rejecting the request (and never overwrite it with a NaN).
   if (Number.isNaN(parsed)) {
-    throw new HttpError('Property value is not a number', { status: 400 });
+    return;
   }
 
-  profile.properties = assocPath(
-    property.split('.'),
-    parsed + direction * (value || 1),
-    profile.properties
-  );
-
   await upsertProfile({
-    id: profile.id,
+    id: profile?.id ?? String(profileId),
     projectId,
-    properties: profile.properties,
+    properties: assocPath(
+      property.split('.'),
+      parsed + direction * (value || 1),
+      properties
+    ),
     isExternal: true,
   });
 }
