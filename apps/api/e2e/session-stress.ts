@@ -11,7 +11,8 @@
  *   SESSION_TIMEOUT_MS=4000 pnpm --filter @openpanel/api e2e:sessions:stress
  *
  * Tunables (env): E2E_SESSIONS (500), E2E_CONCURRENCY (25),
- *   E2E_EVENTS_PER_SESSION (3), E2E_DRAIN_TIMEOUT_MS (120000).
+ *   E2E_EVENTS_PER_SESSION (3), E2E_DRAIN_TIMEOUT_MS (120000),
+ *   E2E_RECONCILE_TIMEOUT_MS (30000).
  */
 
 import {
@@ -52,6 +53,21 @@ const DRAIN_TIMEOUT_MS = Number.parseInt(
   process.env.E2E_DRAIN_TIMEOUT_MS || '120000',
   10
 );
+
+// drain() exits on session_end + a clean Redis, which says nothing about the
+// run's trailing regular events — those can still sit in the event buffer.
+const RECONCILE_TIMEOUT_MS = Number.parseInt(
+  process.env.E2E_RECONCILE_TIMEOUT_MS || '30000',
+  10
+);
+const RECONCILE_INTERVAL_MS = 1500;
+// Consecutive samples with no new rows before we call the buffer drained and
+// let the assertion report whatever is actually there.
+const RECONCILE_STABLE_SAMPLES = 3;
+// The reconcile window opens this far before the run starts: a session_start
+// is backdated 100ms from the event that opened it, and the first requests
+// leave within milliseconds of the captured start.
+const RECONCILE_WINDOW_LEAD_MS = 2000;
 
 type Session = { sessionId: string; deviceId: string };
 
@@ -189,16 +205,56 @@ async function drain(sessions: Session[]) {
   check('redis: no session blobs leaked (sampled)', leaked === 0, `${leaked}/${sample.length} leaked`);
 }
 
-async function reconcile(sessions: Session[]) {
-  scenario('reconcile: ClickHouse event counts');
-  const ids = sessions.map((s) => s.sessionId);
-  const n = ids.length;
-  const inList = ids.map((id) => `'${id}'`).join(',');
+/**
+ * Count this run's rows by event name, scoped to the run's DEVICES rather than
+ * to the session ids `/track` echoed back.
+ *
+ * Why the device: until the worker has persisted the session blob, the API
+ * answers from a session id that is deterministic per SESSION_TIMEOUT_MS-wide
+ * time bucket (apps/api/src/utils/ids.ts). At the harness's compressed 4s
+ * window a bucket boundary falls inside the emit ramp, so an in-flight
+ * session's next event is told a different id — the row still lands, under a
+ * session id the harness was never given. The device is the stable identity
+ * for "what this run sent"; `since` keeps earlier runs' rows out, because a
+ * device id repeats across runs whenever the ip/ua/salt triple does.
+ */
+async function countEventsByName(deviceIds: string[], since: Date) {
+  const inList = deviceIds.map((id) => `'${id}'`).join(',');
+  const from = new Date(since.getTime() - RECONCILE_WINDOW_LEAD_MS)
+    .toISOString()
+    .replace('T', ' ')
+    .replace('Z', '');
   const rows = await chQuery<{ name: string; c: string }>(
-    `SELECT name, count() AS c FROM events WHERE project_id = '${PROJECT_ID}' AND session_id IN (${inList}) GROUP BY name ORDER BY c DESC`
+    `SELECT name, count() AS c FROM events WHERE project_id = '${PROJECT_ID}' AND device_id IN (${inList}) AND created_at >= toDateTime64('${from}', 3) GROUP BY name ORDER BY c DESC`
   );
   const byName = new Map(rows.map((r) => [r.name, Number(r.c)]));
   const total = [...byName.values()].reduce((a, b) => a + b, 0);
+  return { rows, byName, total };
+}
+
+async function reconcile(sessions: Session[], since: Date) {
+  scenario('reconcile: ClickHouse event counts');
+  const devices = sessions.map((s) => s.deviceId);
+  const n = sessions.length;
+  const expectedTotal = n * (EVENTS_PER_SESSION + 2);
+
+  let counts = await countEventsByName(devices, since);
+  const deadline = Date.now() + RECONCILE_TIMEOUT_MS;
+  let stableSamples = 0;
+  while (
+    counts.total < expectedTotal &&
+    stableSamples < RECONCILE_STABLE_SAMPLES &&
+    Date.now() < deadline
+  ) {
+    console.log(`   …events ${counts.total}/${expectedTotal}, flushing`);
+    await triggerCron('flushEvents');
+    await sleep(RECONCILE_INTERVAL_MS);
+    const next = await countEventsByName(devices, since);
+    stableSamples = next.total > counts.total ? 0 : stableSamples + 1;
+    counts = next;
+  }
+
+  const { rows, byName, total } = counts;
   console.log(`   event breakdown: ${rows.map((r) => `${r.name}=${r.c}`).join(' ')}`);
 
   const starts = byName.get('session_start') ?? 0;
@@ -208,8 +264,8 @@ async function reconcile(sessions: Session[]) {
   check('session_end == sessions', ends === n, `${ends} vs ${n}`);
   check(
     'total events == sessions × (events + start + end)',
-    total === n * (EVENTS_PER_SESSION + 2),
-    `${total} vs ${n * (EVENTS_PER_SESSION + 2)}`
+    total === expectedTotal,
+    `${total} vs ${expectedTotal}`
   );
 }
 
@@ -221,10 +277,13 @@ async function main() {
   await preflight();
   await ensureFixtures();
 
+  // Captured before the first event so the reconcile window covers every row
+  // of this run, including session_start (backdated 100ms).
+  const runStartedAt = new Date();
   const sessions = await emit();
   await settle(sessions);
   await drain(sessions);
-  await reconcile(sessions);
+  await reconcile(sessions, runStartedAt);
 
   await shutdown(summarize());
 }
