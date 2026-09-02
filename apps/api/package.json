@@ -31,6 +31,7 @@
     "@openpanel/auth": "workspace:^",
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",
+    "@openpanel/core": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/geo": "workspace:*",
     "@openpanel/integrations": "workspace:^",

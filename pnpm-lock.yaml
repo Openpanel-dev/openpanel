@@ -137,6 +137,9 @@ importers:
       '@openpanel/constants':
         specifier: workspace:*
         version: link:../../packages/constants
+      '@openpanel/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@openpanel/db':
         specifier: workspace:*
         version: link:../../packages/db
