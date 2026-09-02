@@ -9,6 +9,7 @@ import { createLogger } from '@openpanel/logger';
 import type { IInterval } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
 import { RoundRobinPicker, withRoundRobinRetry } from './round-robin';
+import { type SqlFragment, toStatement } from './sql';
 
 export { createClient } from '@clickhouse/client';
 
@@ -324,16 +325,27 @@ export const ch = new Proxy(chTarget as unknown as ClickHouseClient, {
   },
 }) as ClickHouseClient;
 
+/**
+ * A query is either finished SQL text or a `sql` fragment carrying its own
+ * bound params (ADR-013 R1). Both go through the same round-robin/retry path.
+ */
+export type ChQueryInput = string | SqlFragment;
+
 export async function chQueryWithMeta<T extends Record<string, any>>(
-  query: string,
+  query: ChQueryInput,
   clickhouseSettings?: ClickHouseSettings
 ): Promise<ResponseJSON<T>> {
   const start = Date.now();
   let host: string | undefined;
+  const statement = toStatement(query);
+  const paramNames = Object.keys(statement.query_params);
+  const hasParams = paramNames.length > 0;
+  const queryParams = hasParams ? statement.query_params : undefined;
   const res = await withRetry((client, ctx) => {
     host = urlHostname(ctx.url);
     return client.query({
-      query,
+      query: statement.query,
+      query_params: queryParams,
       clickhouse_settings: clickhouseSettings,
     });
   });
@@ -358,7 +370,9 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
   logger.info(
     {
       host,
-      query: cleanQuery(query),
+      query: cleanQuery(statement.query),
+      // Names only: bound values are user data and must not reach the logs.
+      queryParams: hasParams ? paramNames : undefined,
       rows: json.rows,
       stats: response.statistics,
       elapsed: Date.now() - start,
@@ -371,7 +385,7 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
 }
 
 export async function chQuery<T extends Record<string, any>>(
-  query: string,
+  query: ChQueryInput,
   clickhouseSettings?: ClickHouseSettings
 ): Promise<T[]> {
   return (await chQueryWithMeta<T>(query, clickhouseSettings)).data;

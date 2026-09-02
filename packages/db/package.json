@@ -10,6 +10,7 @@
     "migrate:deploy:db": "pnpm with-env prisma migrate deploy",
     "migrate:deploy": "pnpm migrate:deploy:db && pnpm migrate:deploy:code",
     "duplicate-events": "pnpm with-env jiti ./scripts/find-duplicate-events.ts",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ../../.env -c --"
   },
