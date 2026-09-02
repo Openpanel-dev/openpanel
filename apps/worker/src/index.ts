@@ -6,9 +6,9 @@ import { ExpressAdapter } from '@bull-board/express';
 import { tryCatch } from '@openpanel/common';
 import { chQuery, createInitialSalts, db } from '@openpanel/db';
 import {
+  assertKafkaConfigured,
   cohortComputeQueue,
   cronQueue,
-  eventsGroupQueues,
   gscQueue,
   importQueue,
   insightsQueue,
@@ -17,7 +17,6 @@ import {
 } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import express from 'express';
-import { BullBoardGroupMQAdapter } from 'groupmq';
 import client from 'prom-client';
 import sourceMapSupport from 'source-map-support';
 import { bootCron } from './boot-cron';
@@ -31,6 +30,15 @@ import { getEventsHeartbeat } from './utils/worker-heartbeat';
 const EVENTS_HEARTBEAT_STALE_MS = 60_000;
 
 sourceMapSupport.install();
+
+// Kafka/Redpanda is the sole events transport (ADR-004) — a missing broker list
+// must kill boot, not surface as a failing consumer nobody notices.
+try {
+  assertKafkaConfigured();
+} catch (error) {
+  logger.fatal({ err: error }, 'Refusing to start');
+  process.exit(1);
+}
 
 async function start() {
   const collectDefaultMetrics = client.collectDefaultMetrics;
@@ -53,9 +61,6 @@ async function start() {
     serverAdapter.setBasePath('/');
     createBullBoard({
       queues: [
-        ...eventsGroupQueues.map(
-          (queue) => new BullBoardGroupMQAdapter(queue) as any
-        ),
         new BullMQAdapter(sessionsQueue),
         new BullMQAdapter(cronQueue),
         new BullMQAdapter(notificationQueue),

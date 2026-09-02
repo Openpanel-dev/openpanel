@@ -4,13 +4,23 @@ process.env.TZ = 'UTC';
 import './utils/observability';
 
 import { rawStderrWrite } from '@openpanel/logger';
+import { assertKafkaConfigured } from '@openpanel/queue';
+import { getRedisPub } from '@openpanel/redis';
 import sourceMapSupport from 'source-map-support';
 import { buildApp } from './app';
 import { shutdown } from './utils/graceful-shutdown';
 import { logger } from './utils/logger';
-import { getRedisPub } from '@openpanel/redis';
 
 sourceMapSupport.install();
+
+// Kafka/Redpanda is the sole events transport (ADR-004) — a missing broker list
+// must kill boot, not surface as a 5xx on the first tracked event.
+try {
+  assertKafkaConfigured();
+} catch (error) {
+  logger.fatal({ err: error }, 'Refusing to start');
+  process.exit(1);
+}
 
 const port = Number.parseInt(process.env.API_PORT || '3000', 10);
 const host =

@@ -29,7 +29,6 @@
     "bullmq": "^5.63.0",
     "date-fns": "^3.3.1",
     "express": "^4.18.2",
-    "groupmq": "catalog:",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
     "prom-client": "^15.1.3",

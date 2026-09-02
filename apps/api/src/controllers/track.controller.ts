@@ -18,9 +18,7 @@ import {
 } from '@openpanel/geo';
 import {
   type EventsQueuePayloadIncomingEvent,
-  getEventsGroupQueueShard,
   produceIncomingEvent,
-  shouldUseKafka,
 } from '@openpanel/queue';
 import type {
   IAssignGroupPayload,
@@ -268,17 +266,7 @@ async function handleTrack(
 
   const partitionKey = groupId || generateId();
 
-  if (shouldUseKafka()) {
-    promises.push(produceIncomingEvent(queueData, partitionKey));
-  } else {
-    promises.push(
-      getEventsGroupQueueShard(partitionKey).add({
-        orderMs: timestamp.value,
-        data: queueData,
-        groupId,
-      })
-    );
-  }
+  promises.push(produceIncomingEvent(queueData, partitionKey));
 
   await Promise.all(promises);
 }

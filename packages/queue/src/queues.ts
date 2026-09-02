@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type {
   IClickhouseSession,
   IServiceCreateEventPayload,
@@ -6,25 +5,12 @@ import type {
   Prisma,
 } from '@openpanel/db';
 import { createLogger } from '@openpanel/logger';
-import { getRedisGroupQueue, getRedisQueue } from '@openpanel/redis';
+import { getRedisQueue } from '@openpanel/redis';
 import { Queue } from 'bullmq';
-import { Queue as GroupQueue } from 'groupmq';
 import type { ITrackPayload } from '../../validation';
-
-export const EVENTS_GROUP_QUEUES_SHARDS = Number.parseInt(
-  process.env.EVENTS_GROUP_QUEUES_SHARDS || '1',
-  10
-);
 
 export const getQueueName = (name: string) =>
   process.env.QUEUE_CLUSTER ? `{${name}}` : name;
-
-function pickShard(projectId: string) {
-  const h = createHash('sha1').update(projectId).digest(); // 20 bytes
-  // take first 4 bytes as unsigned int
-  const x = h.readUInt32BE(0);
-  return x % EVENTS_GROUP_QUEUES_SHARDS; // 0..n-1
-}
 
 export const queueLogger = createLogger({ name: 'queue' });
 
@@ -213,49 +199,6 @@ export type CronQueuePayload =
 
 export type CronQueueType = CronQueuePayload['type'];
 
-const orderingDelayMs = Number.parseInt(
-  process.env.ORDERING_DELAY_MS || '100',
-  10
-);
-
-const autoBatchMaxWaitMs = Number.parseInt(
-  process.env.AUTO_BATCH_MAX_WAIT_MS || '0',
-  10
-);
-const autoBatchSize = Number.parseInt(process.env.AUTO_BATCH_SIZE || '0', 10);
-
-export const eventsGroupQueues = Array.from({
-  length: EVENTS_GROUP_QUEUES_SHARDS,
-}).map(
-  (_, index, list) =>
-    new GroupQueue<EventsQueuePayloadIncomingEvent['payload']>({
-      logger: process.env.NODE_ENV === 'production' ? queueLogger : undefined,
-      namespace: getQueueName(
-        list.length === 1 ? 'group_events' : `group_events_${index}`
-      ),
-      redis: getRedisGroupQueue(),
-      keepCompleted: 1,
-      keepFailed: 10_000,
-      orderingDelayMs,
-      autoBatch:
-        autoBatchMaxWaitMs && autoBatchSize
-          ? {
-              maxWaitMs: autoBatchMaxWaitMs,
-              size: autoBatchSize,
-            }
-          : undefined,
-    })
-);
-
-export const getEventsGroupQueueShard = (groupId: string) => {
-  const shard = pickShard(groupId);
-  const queue = eventsGroupQueues[shard];
-  if (!queue) {
-    throw new Error(`Queue not found for group ${groupId}`);
-  }
-  return queue;
-};
-
 export const sessionsQueue = guardQueue(
   new Queue<SessionsQueuePayload>(getQueueName('sessions'), {
     connection: getRedisQueue(),
@@ -361,7 +304,7 @@ export const cohortComputeQueue = guardQueue(
       // it with a count bound to keep the completed/failed sets from growing
       // unbounded during quiet periods.
       removeOnComplete: { age: 3600, count: 100 },
-      removeOnFail: { age: 86400, count: 100 },
+      removeOnFail: { age: 86_400, count: 100 },
     },
   }),
   'cohortCompute'

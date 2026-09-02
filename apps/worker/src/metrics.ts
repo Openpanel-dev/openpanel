@@ -7,7 +7,7 @@ import {
   replayBuffer,
   sessionBuffer,
 } from '@openpanel/db';
-import { cronQueue, eventsGroupQueues, sessionsQueue } from '@openpanel/queue';
+import { cronQueue, sessionsQueue } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import client from 'prom-client';
 
@@ -15,7 +15,7 @@ const Registry = client.Registry;
 
 export const register = new Registry();
 
-const queues = [sessionsQueue, cronQueue, ...eventsGroupQueues];
+const queues = [sessionsQueue, cronQueue];
 
 export const eventsGroupJobDuration = new client.Histogram({
   name: 'job_duration_ms',
@@ -54,12 +54,8 @@ queues.forEach((queue) => {
       name: `${queue.name.replace(/[{}]/g, '')}_delayed_count`,
       help: 'Delayed count',
       async collect() {
-        if ('getDelayedCount' in queue) {
-          const metric = await queue.getDelayedCount();
-          this.set(metric);
-        } else {
-          this.set(0);
-        }
+        const metric = await queue.getDelayedCount();
+        this.set(metric);
       },
     })
   );

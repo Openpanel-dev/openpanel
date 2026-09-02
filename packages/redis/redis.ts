@@ -110,21 +110,6 @@ export function getRedisQueue() {
   return redisQueue;
 }
 
-let redisGroupQueue: ExtendedRedis;
-export function getRedisGroupQueue() {
-  if (!redisGroupQueue) {
-    // Dedicated Redis connection for GroupWorker to avoid blocking BullMQ
-    redisGroupQueue = createRedisClient('redis-group-queue', REDIS_URL, {
-      ...options,
-      enableReadyCheck: false,
-      maxRetriesPerRequest: null,
-      enableOfflineQueue: true,
-    });
-  }
-
-  return redisGroupQueue;
-}
-
 export async function getLock(key: string, value: string, timeout: number) {
   const lock = await getRedisCache().set(key, value, 'PX', timeout, 'NX');
   return lock === 'OK';

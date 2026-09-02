@@ -78,17 +78,20 @@ const KAFKA_MIN_BYTES = KAFKA_MIN_MESSAGES * KAFKA_BYTES_PER_MESSAGE;
 const KAFKA_MAX_BYTES_PER_PARTITION =
   KAFKA_MAX_MESSAGES_PER_PARTITION * KAFKA_BYTES_PER_MESSAGE;
 
-export const isKafkaConfigured = (): boolean => KAFKA_BROKERS.length > 0;
-
-export const shouldUseKafka = (): boolean => isKafkaConfigured();
+// Kafka/Redpanda is the sole events transport (ADR-004): there is no fallback,
+// so an unset KAFKA_BROKERS must fail loudly at boot rather than quietly at the
+// first event.
+export const assertKafkaConfigured = (): void => {
+  if (KAFKA_BROKERS.length === 0) {
+    throw new Error(
+      'KAFKA_BROKERS is not set. Kafka/Redpanda is the only events transport — set KAFKA_BROKERS to a comma-separated broker list.'
+    );
+  }
+};
 
 let kafka: Kafka | null = null;
 const getKafka = (): Kafka => {
-  if (!isKafkaConfigured()) {
-    throw new Error(
-      'KAFKA_BROKERS env var is not set; cannot create Kafka client'
-    );
-  }
+  assertKafkaConfigured();
   if (!kafka) {
     kafka = new Kafka({
       clientId: process.env.KAFKA_CLIENT_ID || 'openpanel',

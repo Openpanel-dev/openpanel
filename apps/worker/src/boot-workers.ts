@@ -4,24 +4,17 @@ import { rawStderrWrite } from '@openpanel/logger';
 import {
   cohortComputeQueue,
   cronQueue,
-  EVENTS_GROUP_QUEUES_SHARDS,
-  type EventsQueuePayloadIncomingEvent,
-  eventsGroupQueues,
   gscQueue,
   importQueue,
   insightsQueue,
-  isKafkaConfigured,
   notificationQueue,
-  queueLogger,
   sessionsQueue,
 } from '@openpanel/queue';
 import { getRedisQueue } from '@openpanel/redis';
 import type { Queue, WorkerOptions } from 'bullmq';
 import { Worker } from 'bullmq';
-import { Worker as GroupWorker } from 'groupmq';
 import { cohortComputeJob } from './jobs/cohort.compute';
 import { cronJob } from './jobs/cron';
-import { incomingEvent } from './jobs/events.incoming-event';
 import {
   type KafkaConsumerHandle,
   startKafkaEventsConsumer,
@@ -34,36 +27,24 @@ import { sessionsJob } from './jobs/sessions';
 import { eventsGroupJobDuration } from './metrics';
 import { setShuttingDown } from './utils/graceful-shutdown';
 import { logger } from './utils/logger';
-import {
-  enableEventsHeartbeat,
-  markEventsActivity,
-} from './utils/worker-heartbeat';
+import { enableEventsHeartbeat } from './utils/worker-heartbeat';
 
 const workerOptions: WorkerOptions = {
   connection: getRedisQueue(),
 };
 
-type QueueName = string; // Can be: events, events_N (where N is 0 to shards-1), sessions, cron, notification
+type QueueName = string; // Can be: events_kafka, sessions, cron, notification, import, insights, gsc, cohortCompute
 
 /**
  * Parses the ENABLED_QUEUES environment variable and returns an array of queue names to start.
  * If no env var is provided, returns all queues.
- *
- * Supported queue names:
- * - events - All event shards (events_0, events_1, ..., events_N)
- * - events_N - Individual event shard (where N is 0 to EVENTS_GROUP_QUEUES_SHARDS-1)
- * - sessions, cron, notification
  */
 function getEnabledQueues(): QueueName[] {
   const enabledQueuesEnv = process.env.ENABLED_QUEUES?.trim();
 
   if (!enabledQueuesEnv) {
-    logger.info(
-      { totalEventShards: EVENTS_GROUP_QUEUES_SHARDS },
-      'No ENABLED_QUEUES specified, starting all queues'
-    );
+    logger.info('No ENABLED_QUEUES specified, starting all queues');
     return [
-      'events',
       'events_kafka',
       'sessions',
       'cron',
@@ -80,16 +61,13 @@ function getEnabledQueues(): QueueName[] {
     .map((q) => q.trim())
     .filter(Boolean);
 
-  logger.info(
-    { queues, totalEventShards: EVENTS_GROUP_QUEUES_SHARDS },
-    'Starting queues from ENABLED_QUEUES'
-  );
+  logger.info({ queues }, 'Starting queues from ENABLED_QUEUES');
   return queues;
 }
 
 /**
  * Gets the concurrency setting for a queue from environment variables.
- * Env var format: {QUEUE_NAME}_CONCURRENCY (e.g., EVENTS_0_CONCURRENCY=32)
+ * Env var format: {QUEUE_NAME}_CONCURRENCY (e.g., SESSIONS_CONCURRENCY=32)
  */
 function getConcurrencyFor(queueName: string, defaultValue = 1): number {
   const envKey = `${queueName.toUpperCase().replace(/[^A-Z0-9]/g, '_')}_CONCURRENCY`;
@@ -108,84 +86,11 @@ function getConcurrencyFor(queueName: string, defaultValue = 1): number {
 export function bootWorkers() {
   const enabledQueues = getEnabledQueues();
 
-  const workers: (Worker | GroupWorker<any>)[] = [];
+  const workers: Worker[] = [];
   const extraStops: Array<() => Promise<unknown>> = [];
 
-  // Start event workers based on enabled queues.
-  // When Kafka is configured the producer routes every event to Kafka, so the
-  // GroupMQ event shards would only poll an empty queue — skip them entirely
-  // and let the Kafka consumer handle ingestion.
-  const eventQueuesToStart: number[] = [];
-
-  if (isKafkaConfigured()) {
-    logger.info('Kafka is configured, skipping GroupMQ event workers');
-  } else if (enabledQueues.includes('events')) {
-    // Start all event shards
-    for (let i = 0; i < EVENTS_GROUP_QUEUES_SHARDS; i++) {
-      eventQueuesToStart.push(i);
-    }
-  } else {
-    // Start specific event shards (events_0, events_1, etc.)
-    for (let i = 0; i < EVENTS_GROUP_QUEUES_SHARDS; i++) {
-      if (enabledQueues.includes(`events_${i}`)) {
-        eventQueuesToStart.push(i);
-      }
-    }
-  }
-
-  if (eventQueuesToStart.length > 0) {
-    enableEventsHeartbeat();
-  }
-
-  for (const index of eventQueuesToStart) {
-    const queue = eventsGroupQueues[index];
-    if (!queue) {
-      continue;
-    }
-
-    const queueName = `events_${index}`;
-    const concurrency = getConcurrencyFor(
-      queueName,
-      Number.parseInt(process.env.EVENT_JOB_CONCURRENCY || '10', 10)
-    );
-
-    const worker = new GroupWorker<EventsQueuePayloadIncomingEvent['payload']>({
-      queue,
-      concurrency,
-      logger: process.env.NODE_ENV === 'production' ? queueLogger : undefined,
-      blockingTimeoutSec: Number.parseFloat(
-        process.env.EVENT_BLOCKING_TIMEOUT_SEC || '1'
-      ),
-      handler: async (job) => {
-        return await incomingEvent(job.data);
-      },
-    });
-
-    // Consumer-loop heartbeat for the readiness probe. `completed` fires after
-    // each processed job; `drained` fires on each poll cycle that finds the
-    // queue empty. Together they refresh the timestamp every poll cycle while
-    // the consumer is alive — busy or idle.
-    worker.on('completed', markEventsActivity);
-    worker.on('drained', markEventsActivity);
-
-    // Fail loud on startup — silent stuck shard otherwise.
-    // Runtime errors are handled by the shared workers.forEach listener below.
-    worker.run().catch((err) => {
-      logger.error(
-        { shard: index, queueName, err },
-        'Worker startup failed — exiting',
-      );
-      // setTimeout+unref to let the logger flush before exit (matches the
-      // pattern used by uncaughtException/unhandledRejection handlers below).
-      setTimeout(() => process.exit(1), 1000).unref();
-    });
-    workers.push(worker);
-    logger.info({ concurrency }, `Started worker for ${queueName}`);
-  }
-
-  // Start Kafka events consumer. When Kafka is configured this fully replaces
-  // the GroupMQ event workers (which are skipped above).
-  if (enabledQueues.includes('events_kafka') && isKafkaConfigured()) {
+  // Start Kafka events consumer — the sole events transport (ADR-004).
+  if (enabledQueues.includes('events_kafka')) {
     enableEventsHeartbeat();
     let handle: KafkaConsumerHandle | null = null;
     const startPromise = startKafkaEventsConsumer()
@@ -293,19 +198,19 @@ export function bootWorkers() {
   }
 
   workers.forEach((worker) => {
-    (worker as Worker).on('error', (error) => {
+    worker.on('error', (error) => {
       logger.error({ err: error, worker: worker.name }, 'worker error');
     });
 
-    (worker as Worker).on('closed', () => {
+    worker.on('closed', () => {
       logger.info({ worker: worker.name }, 'worker closed');
     });
 
-    (worker as Worker).on('ready', () => {
+    worker.on('ready', () => {
       logger.info({ worker: worker.name }, 'worker ready');
     });
 
-    (worker as Worker).on('failed', (job) => {
+    worker.on('failed', (job) => {
       if (job) {
         if (job.processedOn && job.finishedOn) {
           const elapsed = job.finishedOn - job.processedOn;
@@ -327,7 +232,7 @@ export function bootWorkers() {
       }
     });
 
-    (worker as Worker).on('ioredis:close', () => {
+    worker.on('ioredis:close', () => {
       logger.error(
         { worker: worker.name },
         'worker closed due to ioredis:close'
@@ -348,9 +253,7 @@ export function bootWorkers() {
     // before Docker's stop_grace_period elapses. Without this the
     // container sits in "Stopping" until SIGKILL (exit 137) and looks
     // like a real crash to the swarm.
-    const forceExitMs = Number(
-      process.env.SHUTDOWN_FORCE_EXIT_MS || '20000'
-    );
+    const forceExitMs = Number(process.env.SHUTDOWN_FORCE_EXIT_MS || '20000');
     const exitCode = Number.isNaN(+evtOrExitCodeOrError)
       ? 1
       : +evtOrExitCodeOrError;
@@ -418,7 +321,7 @@ export function bootWorkers() {
     rawStderrWrite(
       `Unhandled rejection — exiting: ${
         reason instanceof Error ? reason.stack : String(reason)
-      }\n`,
+      }\n`
     );
     setShuttingDown(true);
     setTimeout(() => process.exit(1), 1000).unref();

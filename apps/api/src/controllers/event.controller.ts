@@ -4,9 +4,7 @@ import { getSalts } from '@openpanel/db';
 import { getAsnInfo, getGeoLocation } from '@openpanel/geo';
 import {
   type EventsQueuePayloadIncomingEvent,
-  getEventsGroupQueueShard,
   produceIncomingEvent,
-  shouldUseKafka,
 } from '@openpanel/queue';
 import type { DeprecatedPostEventPayload } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -74,15 +72,7 @@ export async function postEvent(
     sessionId: sessionId ?? '',
   };
 
-  if (shouldUseKafka()) {
-    await produceIncomingEvent(queueData, groupId);
-  } else {
-    await getEventsGroupQueueShard(groupId).add({
-      orderMs: new Date(timestamp).getTime(),
-      data: queueData,
-      groupId,
-    });
-  }
+  await produceIncomingEvent(queueData, groupId);
 
   reply.status(202).send('ok');
 }
