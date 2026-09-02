@@ -1331,9 +1331,7 @@ export interface QueryEventsInput {
   limit?: number;
 }
 
-export async function queryEventsCore(
-  input: QueryEventsInput
-): Promise<IClickhouseEvent[]> {
+export function buildQueryEventsQuery(input: QueryEventsInput) {
   const builder = clix(ch)
     .select<IClickhouseEvent>([])
     .from(TABLE_NAMES.events)
@@ -1434,5 +1432,13 @@ export async function queryEventsCore(
     }
   }
 
-  return builder.limit(input.limit ?? 20).execute();
+  // Without an explicit order ClickHouse returns whatever it reads first, so a
+  // bare LIMIT hands back an arbitrary slice of the window, not the newest.
+  return builder.orderBy('created_at', 'DESC').limit(input.limit ?? 20);
+}
+
+export async function queryEventsCore(
+  input: QueryEventsInput
+): Promise<IClickhouseEvent[]> {
+  return buildQueryEventsQuery(input).execute();
 }
