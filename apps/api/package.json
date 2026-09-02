@@ -51,6 +51,7 @@
     "fastify-zod-openapi": "^5.6.1",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
+    "prom-client": "^15.1.3",
     "ramda": "^0.29.1",
     "sharp": "^0.33.5",
     "source-map-support": "^0.5.21",
