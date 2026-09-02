@@ -1,8 +1,14 @@
 import { createLogger } from '@openpanel/logger';
-import { type Consumer, Kafka, logLevel, type Producer } from 'kafkajs';
+import {
+  type Consumer,
+  type IHeaders,
+  Kafka,
+  logLevel,
+  type Producer,
+} from 'kafkajs';
 import type { EventsQueuePayloadIncomingEvent } from './queues';
 
-export type { KafkaMessage } from 'kafkajs';
+export type { EachBatchPayload, KafkaMessage } from 'kafkajs';
 
 export const kafkaLogger = createLogger({ name: 'kafka' });
 
@@ -18,6 +24,11 @@ const parseBrokers = (raw: string | undefined): string[] => {
 
 export const KAFKA_BROKERS = parseBrokers(process.env.KAFKA_BROKERS);
 export const KAFKA_EVENTS_TOPIC = process.env.KAFKA_EVENTS_TOPIC || 'events';
+// Dead-letter topic for messages the consumer could not handle (ADR-004
+// delivery semantics). Kept on the same broker so a poison message is retained
+// and countable instead of dropped.
+export const KAFKA_EVENTS_DLQ_TOPIC =
+  process.env.KAFKA_EVENTS_DLQ_TOPIC || `${KAFKA_EVENTS_TOPIC}-dlq`;
 export const KAFKA_CONSUMER_GROUP =
   process.env.KAFKA_CONSUMER_GROUP || 'openpanel-events';
 export const KAFKA_PARTITIONS_CONCURRENT = Number.parseInt(
@@ -71,6 +82,22 @@ export const KAFKA_PRODUCER_INITIAL_RETRY_MS = Number.parseInt(
 );
 export const KAFKA_PRODUCER_MAX_RETRY_MS = Number.parseInt(
   process.env.KAFKA_PRODUCER_MAX_RETRY_MS || '1000',
+  10
+);
+
+// In-consumer retry for handler exceptions (ADR-004: at-least-once). Bounded
+// so the worst case stays far inside KAFKA_SESSION_TIMEOUT_MS — a batch that
+// out-waits the session timeout is a rebalance, which is worse than a DLQ.
+export const KAFKA_HANDLER_MAX_ATTEMPTS = Number.parseInt(
+  process.env.KAFKA_HANDLER_MAX_ATTEMPTS || '3',
+  10
+);
+export const KAFKA_HANDLER_RETRY_INITIAL_MS = Number.parseInt(
+  process.env.KAFKA_HANDLER_RETRY_INITIAL_MS || '100',
+  10
+);
+export const KAFKA_HANDLER_RETRY_MAX_MS = Number.parseInt(
+  process.env.KAFKA_HANDLER_RETRY_MAX_MS || '1000',
   10
 );
 
@@ -186,21 +213,19 @@ const resetProducer = (broken: Producer): void => {
   });
 };
 
-export const produceIncomingEvent = async (
-  payload: EventsQueuePayloadIncomingEvent['payload'],
-  partitionKey: string
-): Promise<void> => {
+interface OutgoingMessage {
+  key: Buffer | null;
+  value: Buffer | null;
+  headers?: IHeaders;
+}
+
+const send = async (topic: string, message: OutgoingMessage): Promise<void> => {
   const p = await getProducer();
   try {
     await p.send({
-      topic: KAFKA_EVENTS_TOPIC,
+      topic,
       timeout: KAFKA_REQUEST_TIMEOUT_MS,
-      messages: [
-        {
-          key: Buffer.from(partitionKey),
-          value: Buffer.from(JSON.stringify(payload)),
-        },
-      ],
+      messages: [message],
     });
   } catch (err) {
     if (isFatalProducerError(err)) {
@@ -213,6 +238,46 @@ export const produceIncomingEvent = async (
     throw err;
   }
 };
+
+export const produceIncomingEvent = async (
+  payload: EventsQueuePayloadIncomingEvent['payload'],
+  partitionKey: string
+): Promise<void> =>
+  send(KAFKA_EVENTS_TOPIC, {
+    key: Buffer.from(partitionKey),
+    value: Buffer.from(JSON.stringify(payload)),
+  });
+
+// Why the reason/error/coordinates travel as headers and not in the value: the
+// value stays the producer's original bytes, so a DLQ message can be replayed
+// onto the events topic unchanged.
+export interface DeadLetterMessage {
+  key: Buffer | null;
+  value: Buffer | null;
+  headers?: IHeaders;
+  topic: string;
+  partition: number;
+  offset: string;
+  reason: string;
+  error: string;
+}
+
+export const produceDeadLetterEvent = async (
+  message: DeadLetterMessage
+): Promise<void> =>
+  send(KAFKA_EVENTS_DLQ_TOPIC, {
+    key: message.key,
+    value: message.value,
+    headers: {
+      ...message.headers,
+      'dlq-source-topic': message.topic,
+      'dlq-source-partition': String(message.partition),
+      'dlq-source-offset': message.offset,
+      'dlq-reason': message.reason,
+      'dlq-error': message.error,
+      'dlq-at': new Date().toISOString(),
+    },
+  });
 
 const consumers = new Set<Consumer>();
 

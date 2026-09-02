@@ -37,6 +37,37 @@ export const kafkaReprocessedTotal = new client.Counter({
 
 register.registerMetric(kafkaReprocessedTotal);
 
+// Handler exceptions on the Kafka ingest path, counted per attempt — retries
+// included, so the series shows real failure pressure and not just the
+// messages that ran out of attempts.
+export const kafkaHandlerFailuresTotal = new client.Counter({
+  name: 'kafka_events_handler_failures_total',
+  help: 'Kafka event handler exceptions (each attempt, retries included)',
+  labelNames: ['partition'],
+});
+
+register.registerMetric(kafkaHandlerFailuresTotal);
+
+// Messages written to the dead-letter topic after their attempts were
+// exhausted (or after they failed to parse). One increment per message.
+export const kafkaDeadLetteredTotal = new client.Counter({
+  name: 'kafka_events_dead_lettered_total',
+  help: 'Kafka event messages produced to the dead-letter topic',
+  labelNames: ['partition', 'reason'],
+});
+
+register.registerMetric(kafkaDeadLetteredTotal);
+
+// The dead-letter produce itself failed. The offset is then left unresolved
+// and the message is redelivered, so this is a stuck partition, not a loss.
+export const kafkaDeadLetterFailedTotal = new client.Counter({
+  name: 'kafka_events_dead_letter_failed_total',
+  help: 'Failed attempts to produce a Kafka event message to the dead-letter topic',
+  labelNames: ['partition'],
+});
+
+register.registerMetric(kafkaDeadLetterFailedTotal);
+
 queues.forEach((queue) => {
   register.registerMetric(
     new client.Gauge({
