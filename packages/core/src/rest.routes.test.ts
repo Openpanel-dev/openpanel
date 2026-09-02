@@ -61,7 +61,12 @@ test('/metrics serves the one core registry, prometheus text exposition', async 
   registry.removeSingleMetric(probeName);
 });
 
-test('/openapi.json serves the OpenAPI document with health routes present, /metrics hidden', async () => {
+// V1 hides /healthz/live, /healthz/ready and /healthcheck from its OpenAPI
+// document (apps/api/src/app.ts: `schema: { hide: true }` — liveness probes
+// aren't public API); V2 ports that with `detail: { hide: true }`
+// (health.routes.ts), which is what verification/golden/openapi's
+// migrated-route gate pins /healthz to against V1's captured document.
+test('/openapi.json hides both /healthz/live and /metrics', async () => {
   const { deps } = stubAppDeps();
 
   const app = new Elysia().use(requestContext(deps)).use(opsRoutes(deps));
@@ -75,28 +80,7 @@ test('/openapi.json serves the OpenAPI document with health routes present, /met
   const document = (await response.json()) as {
     paths: Record<string, unknown>;
   };
-  const liveRoute = document.paths['/healthz/live'] as {
-    get: {
-      responses: {
-        200: {
-          content: {
-            'application/json': {
-              schema: {
-                properties: Record<string, unknown>;
-                required: string[];
-              };
-            };
-          };
-        };
-      };
-    };
-  };
 
-  const liveSchema =
-    liveRoute.get.responses[200].content['application/json'].schema;
-  expect(liveSchema.properties).toEqual({
-    live: { const: true, type: 'boolean' },
-  });
-  expect(liveSchema.required).toEqual(['live']);
+  expect(document.paths['/healthz/live']).toBeUndefined();
   expect(document.paths['/metrics']).toBeUndefined();
 });

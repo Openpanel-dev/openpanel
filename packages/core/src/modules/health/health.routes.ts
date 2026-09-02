@@ -14,8 +14,14 @@ import { defineRoutes } from '../../http/define';
 // no `io` argument and would collapse the input/output split the ADR requires.
 const healthLiveResponseSchema = z.object({ live: z.literal(true) });
 
+// Hidden from the OpenAPI document — ported from V1's `schema: { hide: true }`
+// on `/healthz/live`, `/healthz/ready` and `/healthcheck`
+// (healthcheck.controller.ts): liveness probes are not part of the public API
+// contract. See verification/golden/openapi's migrated-route gate, which pins
+// `/healthz` to an empty `paths` object against V1's golden document.
 export const healthRoutes = defineRoutes((app) =>
   app.get('/healthz/live', () => ({ live: true as const }), {
     response: healthLiveResponseSchema,
+    detail: { hide: true },
   })
 );
