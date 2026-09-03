@@ -1,4 +1,4 @@
-import { IMPORT_PROVIDERS } from '@openpanel/importer/providers';
+import { IMPORT_PROVIDERS } from '@openpanel/core/modules/import/import.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { formatDistanceToNow } from 'date-fns';

@@ -135,3 +135,15 @@ test('the cron queue carries the cohort module cron fragment', () => {
     name: 'cohortRefresh',
   });
 });
+
+// M5-004: the import module's own job. No cron fragment — imports are always
+// user-triggered (import.rpc.ts's create/retry), unlike gsc/cohort/insight.
+// legacyCompat.import already discriminates on this exact name
+// (jobs/compat.ts), so this pins the two in agreement.
+test('the import queue carries the import module job', () => {
+  expect(Object.keys(queues.import.jobs)).toEqual(['import']);
+  expect(queues.import.jobs.import).toMatchObject({
+    queue: 'import',
+    name: 'import',
+  });
+});

@@ -16,6 +16,7 @@ import { defineQueue } from './jobs/define';
 import type { ProducerHandle } from './jobs/producers';
 import { cohortCronJobs, cohortQueueJobs } from './modules/cohort/cohort.jobs';
 import { gscCronJobs, gscQueueJobs } from './modules/gsc/gsc.jobs';
+import { importQueueJobs } from './modules/import/import.jobs';
 import {
   insightCronJobs,
   insightQueueJobs,
@@ -71,7 +72,9 @@ const importQueue = defineQueue('import', {
   defaults: { removeOnComplete: 10, removeOnFail: 50 },
   worker: { concurrency: CONCURRENCY.import },
   compat: legacyCompat.import,
-  jobs: {},
+  jobs: {
+    ...importQueueJobs,
+  },
 });
 
 const insights = defineQueue('insights', {

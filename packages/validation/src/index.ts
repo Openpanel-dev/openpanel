@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 import {
   chartSegments,
   chartTypes,
@@ -10,6 +8,7 @@ import {
   operators,
   timeWindows,
 } from '@openpanel/constants';
+import { z } from 'zod';
 
 /**
  * Chart formulas are plain arithmetic over series references (A, B, C, ...).
@@ -20,7 +19,7 @@ import {
 const CHART_FORMULA_PATTERN = /^[A-Za-z0-9_ .,+\-*/()%^]*$/;
 
 export function objectToZodEnums<K extends string>(
-  obj: Record<K, any>,
+  obj: Record<K, any>
 ): [K, ...K[]] {
   const [firstKey, ...otherKeys] = Object.keys(obj) as K[];
   return [firstKey!, ...otherKeys];
@@ -42,21 +41,21 @@ export const zChartEventFilter = z.object({
     .optional()
     .describe(
       'Cast type for the column/value in equality & comparison operators ' +
-        '(string/number/date/datetime/boolean). Absent = legacy behavior.',
+        '(string/number/date/datetime/boolean). Absent = legacy behavior.'
     ),
   cohortId: z
     .string()
     .optional()
     .describe(
       'DEPRECATED: legacy single-cohort id, kept for saved reports. ' +
-        'New code reads cohortIds via getCohortIds(filter).',
+        'New code reads cohortIds via getCohortIds(filter).'
     ),
   cohortIds: z
     .array(z.string())
     .optional()
     .describe(
       'Cohort IDs for inCohort/notInCohort. Multiple ids OR-match ' +
-        '(matches profiles in any of the listed cohorts).',
+        '(matches profiles in any of the listed cohorts).'
     ),
 });
 
@@ -100,7 +99,7 @@ export const zChartEvent = z.object({
     .string()
     .optional()
     .describe(
-      'Optional property of the event used for specific segment calculations (e.g., value for property_sum/average)',
+      'Optional property of the event used for specific segment calculations (e.g., value for property_sum/average)'
     ),
   segment: zChartEventSegment,
   filters: z
@@ -120,7 +119,7 @@ export const zChartFormula = z.object({
     .max(1000)
     .regex(
       CHART_FORMULA_PATTERN,
-      'Formula may only contain series references, numbers and arithmetic operators',
+      'Formula may only contain series references, numbers and arithmetic operators'
     )
     .describe('The formula expression (e.g., A+B, A/B)'),
   displayName: z
@@ -131,7 +130,7 @@ export const zChartFormula = z.object({
     .array(z.string())
     .optional()
     .describe(
-      'Alpha IDs (e.g. ["A", "B"]) of series referenced by this formula that should be hidden from the chart while still being used in the formula computation',
+      'Alpha IDs (e.g. ["A", "B"]) of series referenced by this formula that should be hidden from the chart while still being used in the formula computation'
     ),
 });
 
@@ -153,7 +152,7 @@ export const zChartBreakdown = z.object({
 export const zChartSeries = z
   .array(zChartEventItem)
   .describe(
-    'Array of series (events or formulas) to be tracked and displayed in the chart',
+    'Array of series (events or formulas) to be tracked and displayed in the chart'
   );
 
 export const zChartBreakdowns = z.array(zChartBreakdown);
@@ -238,10 +237,10 @@ export const zReportInput = z.object({
   interval: zTimeInterval
     .default('day')
     .describe(
-      'The time interval for data aggregation (e.g., day, week, month)',
+      'The time interval for data aggregation (e.g., day, week, month)'
     ),
   series: zChartSeries.describe(
-    'Array of series (events or formulas) to be tracked and displayed in the chart',
+    'Array of series (events or formulas) to be tracked and displayed in the chart'
   ),
   breakdowns: zChartBreakdowns
     .default([])
@@ -250,7 +249,7 @@ export const zReportInput = z.object({
     .array(zChartEventFilter)
     .optional()
     .describe(
-      'Filters applied to ALL event series in this report (combined with each series own filters using AND)',
+      'Filters applied to ALL event series in this report (combined with each series own filters using AND)'
     ),
   range: zRange
     .default('30d')
@@ -259,13 +258,13 @@ export const zReportInput = z.object({
     .string()
     .nullish()
     .describe(
-      'Custom start date for the data range (overrides range if provided)',
+      'Custom start date for the data range (overrides range if provided)'
     ),
   endDate: z
     .string()
     .nullish()
     .describe(
-      'Custom end date for the data range (overrides range if provided)',
+      'Custom end date for the data range (overrides range if provided)'
     ),
   previous: z
     .boolean()
@@ -278,7 +277,7 @@ export const zReportInput = z.object({
   metric: zMetric
     .default('sum')
     .describe(
-      'The aggregation method for the metric (e.g., sum, count, average)',
+      'The aggregation method for the metric (e.g., sum, count, average)'
     ),
   limit: z
     .number()
@@ -304,7 +303,7 @@ export const zReportInput = z.object({
     .string()
     .optional()
     .describe(
-      "Optional unit of measurement for the chart's Y-axis (e.g., $, %, users)",
+      "Optional unit of measurement for the chart's Y-axis (e.g., $, %, users)"
     ),
 });
 
@@ -390,7 +389,7 @@ export const zOnboardingProject = z
     timezone: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    if (!data.organization && !data.organizationId) {
+    if (!(data.organization || data.organizationId)) {
       ctx.addIssue({
         code: 'custom',
         message: 'Organization is required',
@@ -425,7 +424,6 @@ export const zOnboardingProject = z
       }
     }
   });
-
 
 export * from './integrations';
 
@@ -608,7 +606,7 @@ export const zGroupId = z
   .min(1)
   .regex(
     /^[a-z0-9_-]+$/,
-    'ID must only contain lowercase letters, digits, hyphens, or underscores',
+    'ID must only contain lowercase letters, digits, hyphens, or underscores'
   );
 
 export const zCreateGroup = z.object({
@@ -635,103 +633,10 @@ export const zEditOrganization = z.object({
   timezone: z.string().min(1),
 });
 
-const zProjectMapper = z.object({
-  from: z.string().min(1),
-  to: z.string().min(1),
-});
-
-/**
- * `z.string().url()` alone accepts `file:`, `gopher:` and friends. Restricting
- * the scheme here gives the user an immediate form error instead of a job that
- * fails later. It is NOT the SSRF control - the value is stored and fetched
- * afterwards, so the destination is re-validated at fetch time by
- * `safeFetchStream`.
- */
-export const zHttpUrl = z
-  .string()
-  .url()
-  .refine(
-    (value) => {
-      try {
-        const { protocol } = new URL(value);
-        return protocol === 'http:' || protocol === 'https:';
-      } catch {
-        return false;
-      }
-    },
-    { message: 'Only http and https URLs are allowed' },
-  );
-
-const createFileImportConfig = <T extends string>(provider: T) =>
-  z.object({
-    provider: z.literal(provider),
-    type: z.literal('file'),
-    fileUrl: zHttpUrl,
-  });
-
-// Import configs
-export const zUmamiImportConfig = createFileImportConfig('umami').extend({
-  projectMapper: z.array(zProjectMapper),
-});
-
-export type IUmamiImportConfig = z.infer<typeof zUmamiImportConfig>;
-
-export const zPlausibleImportConfig = createFileImportConfig('plausible');
-export type IPlausibleImportConfig = z.infer<typeof zPlausibleImportConfig>;
-
-export const zAmplitudeDataResidency = z.enum(['us', 'eu']);
-export type IAmplitudeDataResidency = z.infer<typeof zAmplitudeDataResidency>;
-
-export const zAmplitudeImportConfig = z.object({
-  provider: z.literal('amplitude'),
-  type: z.literal('api'),
-  apiKey: z.string().min(1),
-  secretKey: z.string().min(1),
-  from: z.string().min(1),
-  to: z.string().min(1),
-  mapScreenViewProperty: z.string().optional(),
-  dataResidency: zAmplitudeDataResidency.optional(),
-});
-export type IAmplitudeImportConfig = z.infer<typeof zAmplitudeImportConfig>;
-
-export const zMixpanelDataResidency = z.enum(['us', 'eu', 'in']);
-export type IMixpanelDataResidency = z.infer<typeof zMixpanelDataResidency>;
-
-export const zMixpanelImportConfig = z.object({
-  provider: z.literal('mixpanel'),
-  type: z.literal('api'),
-  serviceAccount: z.string().min(1),
-  serviceSecret: z.string().min(1),
-  projectId: z.string().min(1),
-  from: z.string().min(1),
-  to: z.string().min(1),
-  mapScreenViewProperty: z.string().optional(),
-  dataResidency: zMixpanelDataResidency.optional(),
-});
-export type IMixpanelImportConfig = z.infer<typeof zMixpanelImportConfig>;
-
-export type IImportConfig =
-  | IUmamiImportConfig
-  | IPlausibleImportConfig
-  | IMixpanelImportConfig
-  | IAmplitudeImportConfig;
-
-export const zCreateImport = z.object({
-  projectId: z.string().min(1),
-  provider: z.enum(['umami', 'plausible', 'mixpanel', 'amplitude']),
-  config: z.union([
-    zUmamiImportConfig,
-    zPlausibleImportConfig,
-    zMixpanelImportConfig,
-    zAmplitudeImportConfig,
-  ]),
-});
-
-export type ICreateImport = z.infer<typeof zCreateImport>;
-
-export * from './types.insights';
-export * from './types.validation';
-export * from './track.validation';
-export * from './event-blocklist';
 export * from './chat';
 export * from './cohort.validation';
+export * from './event-blocklist';
+export * from './import.validation';
+export * from './track.validation';
+export * from './types.insights';
+export * from './types.validation';

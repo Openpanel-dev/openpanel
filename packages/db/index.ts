@@ -22,7 +22,6 @@ export * from './src/services/funnel.service';
 export * from './src/services/group.service';
 export * from './src/services/gsc.service';
 export * from './src/services/id.service';
-export * from './src/services/import.service';
 export * from './src/services/notification.service';
 export * from './src/services/organization.service';
 export * from './src/services/overview.service';

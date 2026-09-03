@@ -33,7 +33,7 @@
     "@number-flow/react": "0.5.10",
     "@openpanel/common": "workspace:^",
     "@openpanel/constants": "workspace:^",
-    "@openpanel/importer": "workspace:^",
+    "@openpanel/core": "workspace:^",
     "@openpanel/json": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/sdk-info": "workspace:^",

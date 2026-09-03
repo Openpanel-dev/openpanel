@@ -33,6 +33,7 @@ function stubJobCtx(cohort: Partial<CohortService>, jobName = 'test'): JobCtx {
     auth: {} as Services['auth'],
     insight: {} as Services['insight'],
     gsc: {} as Services['gsc'],
+    import: {} as Services['import'],
     cohort: cohort as CohortService,
   };
   return {

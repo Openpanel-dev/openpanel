@@ -3,18 +3,24 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createBrotliDecompress, createGunzip } from 'node:zlib';
 import { isSameDomain, parsePath, toDots } from '@openpanel/common';
-import {
-  generateDeviceId,
-  getReferrerWithQuery,
-  type ILogger,
-  parseReferrer,
-  safeFetchStream,
-} from '@openpanel/core';
-import { formatClickhouseDate, type IClickhouseEvent } from '@openpanel/db';
-import type { IUmamiImportConfig } from '@openpanel/validation';
+// Deep imports, not @openpanel/db's full barrel: the barrel's
+// `export * from './src/services/notification.service'` /
+// `'./src/buffers'` eagerly reach @openpanel/queue, which constructs a
+// pino-pretty transport at import time — fatal under bun:test's
+// `--isolate` worker threads (AGENTS.md's eager-barrel-chain hazard).
+import { formatClickhouseDate } from '@openpanel/db/src/clickhouse/client';
+import type { IClickhouseEvent } from '@openpanel/db/src/services/event.service';
 import { parse } from 'csv-parse';
 import { assocPath } from 'ramda';
 import { z } from 'zod';
+import type { Logger } from '../../../../logger';
+import {
+  getReferrerWithQuery,
+  parseReferrer,
+} from '../../../../shared/parse-referrer';
+import { generateDeviceId } from '../../../../shared/profileId';
+import { safeFetchStream } from '../../../../shared/safe-fetch';
+import type { IUmamiImportConfig } from '../../import.constants';
 import { BaseImportProvider } from '../base-provider';
 
 /**
@@ -77,7 +83,7 @@ export class UmamiProvider extends BaseImportProvider<UmamiRawEvent> {
   constructor(
     private readonly projectId: string,
     private readonly config: IUmamiImportConfig,
-    private readonly logger?: ILogger
+    private readonly logger?: Logger
   ) {
     super();
   }
@@ -275,7 +281,7 @@ export class UmamiProvider extends BaseImportProvider<UmamiRawEvent> {
           .filter(Boolean)
           .join('')}`
       : '';
-    const { path, hash, query, origin } = parsePath(url);
+    const { path, query, origin } = parsePath(url);
     // Extract referrer information - use same logic as real-time events
     const referrerUrl = rawEvent.referrer_domain
       ? `https://${rawEvent.referrer_domain}${rawEvent.referrer_path || ''}`

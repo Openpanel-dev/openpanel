@@ -209,6 +209,34 @@ export {
   selectGscSite,
   syncGscData,
 } from './modules/gsc/gsc.service';
+// Dissolved from @openpanel/db's services/import.service.ts +
+// apps/worker's job file + apps/api's /import controller (M5-004) —
+// apps/worker's import job file and apps/api's import controller call these
+// directly, the same way V1 reaches every other dissolved service here.
+// packages/db/src/services/import.service.ts is deleted outright: nothing
+// else reached it through @openpanel/db's barrel (same as cohort, M5-003).
+export type {
+  ImportJobProgress,
+  ImportService,
+  ImportStageResult,
+  ImportSteps,
+  InsertRawEventsResult,
+  UpdateImportStatusOptions,
+} from './modules/import/import.service';
+export {
+  backfillSessionsToProduction,
+  cleanupSessionStartEndEvents,
+  cleanupStagingData,
+  createSessionsStartEndEvents,
+  generateGapBasedSessionIds,
+  getImportDateBounds,
+  insertImportBatch,
+  insertProfilesBatch,
+  insertRawEventsBatch,
+  moveImportsToProduction,
+  runImportJob,
+  updateImportStatus,
+} from './modules/import/import.service';
 // Dissolved from @openpanel/db's services/insights* + referrer-spikes.service
 // (M5-001) — apps/worker's insight job files and packages/trpc's insight
 // router call these directly, the same way V1 reaches every other dissolved

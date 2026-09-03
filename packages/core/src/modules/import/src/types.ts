@@ -1,8 +1,4 @@
-import type {
-  IImportedEvent,
-  IServiceCreateEventPayload,
-  IServiceImportedEventPayload,
-} from '@openpanel/db';
+import type { IServiceImportedEventPayload } from '@openpanel/db';
 
 export interface ImportConfig {
   projectId: string;

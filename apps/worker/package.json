@@ -18,7 +18,6 @@
     "@openpanel/core": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/email": "workspace:*",
-    "@openpanel/importer": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",

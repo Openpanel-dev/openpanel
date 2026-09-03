@@ -22,11 +22,12 @@ mock.module('@openpanel/db/src/prisma-client', () => ({
   db: { $executeRaw },
 }));
 
-// `originalCh`/`chQuery`/`TABLE_NAMES`/`getReplicatedTableName` are unused
-// here but included because `mock.module` replaces this specifier
-// process-wide (bun runs every test file in one shared module registry
-// without `--isolate` — see AGENTS.md) — gsc.service.test.ts and
-// cohort.service.test.ts mock the same path, so every factory must be a
+// `originalCh`/`chQuery`/`TABLE_NAMES`/`getReplicatedTableName`/
+// `formatClickhouseDate`/`convertClickhouseDateToJs` are unused here but
+// included because `mock.module` replaces this specifier process-wide (bun
+// runs every test file in one shared module registry without `--isolate` —
+// see AGENTS.md) — gsc.service.test.ts, cohort.service.test.ts and
+// import.service.test.ts mock the same path, so every factory must be a
 // superset of every consumer's needs, whichever one ends up registered last.
 mock.module('@openpanel/db/src/clickhouse/client', () => ({
   ch: {
@@ -39,7 +40,19 @@ mock.module('@openpanel/db/src/clickhouse/client', () => ({
   },
   chQuery: mock(async () => []),
   getReplicatedTableName: mock((table: string) => table),
-  TABLE_NAMES: { sessions: 'sessions' },
+  TABLE_NAMES: {
+    events: 'events',
+    events_imports: 'events_imports',
+    profiles: 'profiles',
+    sessions: 'sessions',
+  },
+  formatClickhouseDate: (date: Date | string) =>
+    new Date(date)
+      .toISOString()
+      .replace('T', ' ')
+      .replace(/(\.\d{3})?Z+$/, ''),
+  convertClickhouseDateToJs: (date: string) =>
+    new Date(`${date.replace(' ', 'T')}Z`),
 }));
 
 const spikesQuery = mock(async () => [

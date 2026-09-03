@@ -12,7 +12,7 @@ export abstract class BaseImportProvider<
    * This should be implemented as an async generator to handle large files efficiently
    */
   abstract parseSource(
-    overrideFrom?: string,
+    overrideFrom?: string
   ): AsyncGenerator<TRawEvent, void, unknown>;
 
   /**
@@ -45,7 +45,7 @@ export abstract class BaseImportProvider<
   /**
    * Optional hook: Custom error handling
    */
-  async onError?(error: Error, context?: ErrorContext): Promise<void> {
+  async onError?(error: Error, _context?: ErrorContext): Promise<void> {
     // Default: re-throw
     throw error;
   }
@@ -80,9 +80,9 @@ export abstract class BaseImportProvider<
     to: string,
     options?: {
       chunkSizeDays?: number;
-    },
-  ): Array<[string, string]> {
-    const chunks: Array<[string, string]> = [];
+    }
+  ): [string, string][] {
+    const chunks: [string, string][] = [];
 
     const startDate = new Date(from);
     const endDate = new Date(to);
@@ -113,7 +113,9 @@ export abstract class BaseImportProvider<
       // Move cursor to the next chunk start (after the current chunk)
       cursor.setDate(cursor.getDate() + chunkSizeDays);
 
-      if (cursor > endDate) break;
+      if (cursor > endDate) {
+        break;
+      }
     }
 
     return chunks;

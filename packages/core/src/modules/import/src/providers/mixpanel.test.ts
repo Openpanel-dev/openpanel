@@ -1,5 +1,5 @@
+import { describe, expect, it } from 'bun:test';
 import { omit } from 'ramda';
-import { describe, expect, it } from 'vitest';
 import { MixpanelProvider } from './mixpanel';
 
 describe('mixpanel', () => {
@@ -330,9 +330,15 @@ describe('mixpanel', () => {
     };
 
     // All valid values should construct without throwing
-    expect(() => new MixpanelProvider('pid', { ...base, dataResidency: 'us' })).not.toThrow();
-    expect(() => new MixpanelProvider('pid', { ...base, dataResidency: 'eu' })).not.toThrow();
-    expect(() => new MixpanelProvider('pid', { ...base, dataResidency: 'in' })).not.toThrow();
+    expect(
+      () => new MixpanelProvider('pid', { ...base, dataResidency: 'us' })
+    ).not.toThrow();
+    expect(
+      () => new MixpanelProvider('pid', { ...base, dataResidency: 'eu' })
+    ).not.toThrow();
+    expect(
+      () => new MixpanelProvider('pid', { ...base, dataResidency: 'in' })
+    ).not.toThrow();
 
     // Undefined defaults to 'us' without throwing
     expect(() => new MixpanelProvider('pid', { ...base })).not.toThrow();

@@ -7,6 +7,7 @@
 import { cohortRouter } from './modules/cohort/cohort.rpc';
 import { gscRouter } from './modules/gsc/gsc.rpc';
 import { healthRouter } from './modules/health/health.rpc';
+import { importRouter } from './modules/import/import.rpc';
 import { insightRouter } from './modules/insight/insight.rpc';
 import { createTRPCRouter } from './rpc/base';
 
@@ -15,6 +16,7 @@ export const appRouter = createTRPCRouter({
   insight: insightRouter,
   gsc: gscRouter,
   cohort: cohortRouter,
+  import: importRouter,
 });
 
 export type AppRouter = typeof appRouter;

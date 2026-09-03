@@ -1,16 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import { isSameDomain, parsePath, toDots } from '@openpanel/common';
+// Deep imports, not @openpanel/db's full barrel — see umami.ts's header.
+import { formatClickhouseDate } from '@openpanel/db/src/clickhouse/client';
+import type { IClickhouseEvent } from '@openpanel/db/src/services/event.service';
+import type { IClickhouseProfile } from '@openpanel/db/src/services/profile.service';
+import { z } from 'zod';
+import type { Logger } from '../../../../logger';
 import {
   getReferrerWithQuery,
-  type ILogger,
   parseReferrer,
+} from '../../../../shared/parse-referrer';
+import {
   parseUserAgent,
   type UserAgentInfo,
-} from '@openpanel/core';
-import type { IClickhouseProfile } from '@openpanel/db';
-import { formatClickhouseDate, type IClickhouseEvent } from '@openpanel/db';
-import type { IMixpanelImportConfig } from '@openpanel/validation';
-import { z } from 'zod';
+} from '../../../../shared/parser-user-agent';
+import type { IMixpanelImportConfig } from '../../import.constants';
 import { BaseImportProvider } from '../base-provider';
 
 export const zMixpanelRawEvent = z.object({
@@ -68,7 +72,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
   constructor(
     private readonly projectId: string,
     private readonly config: IMixpanelImportConfig,
-    private readonly logger?: ILogger
+    private readonly logger?: Logger
   ) {
     super();
     const residency = config.dataResidency ?? 'us';

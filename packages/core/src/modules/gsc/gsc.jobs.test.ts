@@ -29,6 +29,7 @@ function stubJobCtx(gsc: Partial<GscService>, jobName = 'test'): JobCtx {
     auth: {} as Services['auth'],
     insight: {} as Services['insight'],
     cohort: {} as Services['cohort'],
+    import: {} as Services['import'],
     gsc: gsc as GscService,
   };
   return {
@@ -120,6 +121,7 @@ test('gscSync fans out one gscProjectSync enqueue per connected project', async 
       auth: {} as Services['auth'],
       insight: {} as Services['insight'],
       cohort: {} as Services['cohort'],
+      import: {} as Services['import'],
       gsc: {
         listConnectionsForSync: async () => [
           { projectId: 'p1' },

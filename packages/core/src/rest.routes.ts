@@ -10,6 +10,7 @@ import type { AppDeps } from './context';
 import { registry } from './metrics';
 import { gscRoutes } from './modules/gsc/gsc.routes';
 import { healthRoutes } from './modules/health/health.routes';
+import { importRoutes } from './modules/import/import.routes';
 
 // ADR-002/ADR-003 pin: @elysiajs/openapi at the 1.4.15 fallback (2.0 is
 // NO-GO per spike 6). `specPath` is set explicitly rather than taking the
@@ -20,12 +21,17 @@ const OPENAPI_SPEC_PATH = '/openapi.json';
 // endpoint (ADR-003: "the transform that hides /metrics from the spec").
 const OPENAPI_EXCLUDED_PATHS = ['/metrics'];
 
-// Both surfaces still take `deps` even where unused so a module addition
-// never changes the factory's signature, only its body. Return types are
-// left inferred, as `defineRoutes`'s `RouteApp` is: `.use()`'d plugins widen
-// Elysia's type parameters in a way the bare `Elysia` type cannot express.
-export const publicApiRoutes = (_deps: AppDeps) =>
-  new Elysia({ name: 'core/public-api-routes' });
+// A factory always takes `deps` even where its body is empty so a module
+// addition never changes the signature. Return types are left inferred, as
+// `defineRoutes`'s `RouteApp` is: `.use()`'d plugins widen Elysia's type
+// parameters in a way the bare `Elysia` type cannot express.
+//
+// import's /import/events is the first module to land here (M5-004). It is
+// not yet reachable: the clientAuth macro's authenticator is a P8 stub that
+// always returns null (import.routes.ts's header), and main.ts does not
+// mount `publicApiRoutes` until a real `AppDeps` exists (P3/P4/P8).
+export const publicApiRoutes = (deps: AppDeps) =>
+  new Elysia({ name: 'core/public-api-routes' }).use(importRoutes(deps));
 
 // gsc's callback is the first module to land here (M5-002). It is not yet
 // reachable in production: main.ts only mounts `dashboardRoutes` once a real

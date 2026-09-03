@@ -1,15 +1,66 @@
+// Moved from packages/db/src/services/import.service.ts (the ClickHouse
+// staging/session pipeline) + apps/worker/src/jobs/import.ts (the job body
+// and provider dispatch) + apps/api/src/controllers/import.controller.ts
+// (the /import/events bulk-insert path) — M5-004, ADR-008's module map:
+// import owns "S". packages/db/src/services/import.service.ts is deleted
+// outright: nothing outside the worker job file it moves with reached it
+// through @openpanel/db's barrel (same as cohort.service.ts, M5-003).
+//
+// db/ch access is LAZY (`load*` below), not a static top-level import — see
+// gsc.service.ts's header for the full reasoning (jobs.registry.ts and
+// services.ts pull this module into the eager barrel chain nearly every core
+// test file reaches). The provider classes are behind a dynamic `import()`
+// for the same reason: they eagerly import `formatClickhouseDate` from
+// @openpanel/db's clickhouse client, which constructs a real pino transport
+// at import time.
+//
+// ClickHouse queries here still go through raw `ch`/`chQuery` calls, not the
+// `sql` tag: ADR-013 converts the analytics read path one query per P7 task,
+// and this module's queries haven't been converted yet.
+
 import { createHash } from 'node:crypto';
-import {
-  ch,
-  convertClickhouseDateToJs,
-  formatClickhouseDate,
-  getReplicatedTableName,
-  TABLE_NAMES,
-} from '../clickhouse/client';
-import type { ILogger } from '../logger';
-import { db, type Prisma } from '../prisma-client';
-import type { IClickhouseEvent } from './event.service';
-import type { IClickhouseProfile } from './profile.service';
+import { toDots } from '@openpanel/common';
+import type { IClickhouseEvent, IClickhouseProfile } from '@openpanel/db';
+import type { Prisma } from '@openpanel/db/src/prisma-client';
+import { createLogger, type ILogger } from '../../clients/logger';
+import type { Logger } from '../../logger';
+import type { ServiceDeps } from '../../services';
+import type { IImportConfig } from './import.constants';
+
+const BATCH_SIZE = Number.parseInt(process.env.IMPORT_BATCH_SIZE || '5000', 10);
+const SESSION_BATCH_SIZE = 5000;
+const PROFILE_BATCH_SIZE = 5000;
+// Profiles derived inline from events (Amplitude, which has no profile export
+// API) are deduped in a bounded map so memory stays flat regardless of event
+// volume; the profiles table's ReplacingMergeTree(last_seen_at) collapses any
+// duplicate rows that span flush boundaries to the latest activity per id.
+const PROFILE_MAP_CAP = 50_000;
+const RESUMABLE_STEPS = ['creating_sessions', 'moving', 'backfilling_sessions'];
+
+let _logger: ILogger | undefined;
+function getLogger(): ILogger {
+  _logger ??= createLogger({ name: 'core:import' });
+  return _logger;
+}
+
+function loadDb() {
+  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+}
+
+function loadChClient() {
+  return import('@openpanel/db/src/clickhouse/client');
+}
+
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 100);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// ClickHouse staging pipeline — moved from packages/db/src/services/
+// import.service.ts.
+// ---------------------------------------------------------------------------
 
 export interface ImportStageResult {
   importId: string;
@@ -17,21 +68,94 @@ export interface ImportStageResult {
   insertedEvents: number;
 }
 
-const SESSION_GAP_MS = 30 * 60 * 1000; // 30 minutes
+/**
+ * Insert a batch of events into the imports staging table
+ */
+export async function insertImportBatch(
+  events: IClickhouseEvent[],
+  importId: string
+): Promise<ImportStageResult> {
+  if (events.length === 0) {
+    return { importId, totalEvents: 0, insertedEvents: 0 };
+  }
+
+  const { ch, TABLE_NAMES, formatClickhouseDate } = await loadChClient();
+  const now = formatClickhouseDate(new Date());
+  const rows = events.map((event) => ({
+    ...event,
+    import_id: importId,
+    import_status: 'pending',
+    imported_at: event.imported_at || now,
+    imported_at_meta: now,
+  }));
+
+  await ch.insert({
+    table: TABLE_NAMES.events_imports,
+    values: rows,
+    format: 'JSONEachRow',
+  });
+
+  return {
+    importId,
+    totalEvents: events.length,
+    insertedEvents: events.length,
+  };
+}
+
+/**
+ * Insert a batch of profiles into the production profiles table.
+ * Used by Mixpanel (and other providers) to import user profiles during an import job.
+ */
+export async function insertProfilesBatch(
+  profiles: IClickhouseProfile[],
+  projectId: string
+): Promise<{ inserted: number }> {
+  if (profiles.length === 0) {
+    return { inserted: 0 };
+  }
+
+  const { ch, TABLE_NAMES } = await loadChClient();
+  const normalized = profiles.map((p) => ({
+    id: p.id,
+    project_id: projectId,
+    first_name: p.first_name ?? '',
+    last_name: p.last_name ?? '',
+    email: p.email ?? '',
+    avatar: p.avatar ?? '',
+    is_external: p.is_external ?? true,
+    properties: Object.fromEntries(
+      Object.entries(p.properties || {}).filter(
+        (kv): kv is [string, string] => kv[1] != null && kv[1] !== ''
+      )
+    ) as Record<string, string>,
+    created_at: p.created_at,
+    last_seen_at: p.last_seen_at ?? p.created_at,
+  }));
+
+  await ch.insert({
+    table: TABLE_NAMES.profiles,
+    values: normalized,
+    format: 'JSONEachRow',
+  });
+
+  return { inserted: normalized.length };
+}
 
 /**
  * Generate gap-based session IDs for events that have none.
  * Streams events from staging (sorted by device_id, created_at), assigns a new
  * session when gap > 30 min, re-inserts with session_id, then deletes old rows.
  */
+const SESSION_GAP_MS = 30 * 60 * 1000; // 30 minutes
+
 export async function generateGapBasedSessionIds(
   importId: string
 ): Promise<void> {
+  const { ch, TABLE_NAMES, getReplicatedTableName } = await loadChClient();
   let currentDeviceId = '';
   let currentSessionId = '';
   let currentLastTime = 0;
   let currentCounter = -1;
-  const BATCH_SIZE = 5000;
   const batch: IClickhouseEvent[] = [];
 
   const result = await ch.query({
@@ -75,7 +199,7 @@ export async function generateGapBasedSessionIds(
       event.session_id = currentSessionId;
 
       batch.push(event);
-      if (batch.length >= BATCH_SIZE) {
+      if (batch.length >= SESSION_BATCH_SIZE) {
         await insertImportBatch(batch, importId);
         batch.length = 0;
       }
@@ -103,81 +227,11 @@ export async function generateGapBasedSessionIds(
 }
 
 /**
- * Insert a batch of events into the imports staging table
- */
-export async function insertImportBatch(
-  events: IClickhouseEvent[],
-  importId: string
-): Promise<ImportStageResult> {
-  if (events.length === 0) {
-    return { importId, totalEvents: 0, insertedEvents: 0 };
-  }
-
-  const now = formatClickhouseDate(new Date());
-  const rows = events.map((event) => ({
-    ...event,
-    import_id: importId,
-    import_status: 'pending',
-    imported_at: event.imported_at || now,
-    imported_at_meta: now,
-  }));
-
-  await ch.insert({
-    table: TABLE_NAMES.events_imports,
-    values: rows,
-    format: 'JSONEachRow',
-  });
-
-  return {
-    importId,
-    totalEvents: events.length,
-    insertedEvents: events.length,
-  };
-}
-
-/**
- * Insert a batch of profiles into the production profiles table.
- * Used by Mixpanel (and other providers) to import user profiles during an import job.
- */
-export async function insertProfilesBatch(
-  profiles: IClickhouseProfile[],
-  projectId: string
-): Promise<{ inserted: number }> {
-  if (profiles.length === 0) {
-    return { inserted: 0 };
-  }
-
-  const normalized = profiles.map((p) => ({
-    id: p.id,
-    project_id: projectId,
-    first_name: p.first_name ?? '',
-    last_name: p.last_name ?? '',
-    email: p.email ?? '',
-    avatar: p.avatar ?? '',
-    is_external: p.is_external ?? true,
-    properties: Object.fromEntries(
-      Object.entries(p.properties || {}).filter(
-        (kv): kv is [string, string] => kv[1] != null && kv[1] !== ''
-      )
-    ) as Record<string, string>,
-    created_at: p.created_at,
-    last_seen_at: p.last_seen_at ?? p.created_at,
-  }));
-
-  await ch.insert({
-    table: TABLE_NAMES.profiles,
-    values: normalized,
-    format: 'JSONEachRow',
-  });
-
-  return { inserted: normalized.length };
-}
-
-/**
  * Delete all staging data for an import. Used to get a clean slate on retry
  * when the failure happened before moving data to production.
  */
 export async function cleanupStagingData(importId: string): Promise<void> {
+  const { ch, TABLE_NAMES, getReplicatedTableName } = await loadChClient();
   const mutationTableName = getReplicatedTableName(TABLE_NAMES.events_imports);
   await ch.command({
     query: `ALTER TABLE ${mutationTableName} DELETE WHERE import_id = {importId:String}`,
@@ -194,6 +248,7 @@ export async function cleanupStagingData(importId: string): Promise<void> {
 export async function cleanupSessionStartEndEvents(
   importId: string
 ): Promise<void> {
+  const { ch, TABLE_NAMES, getReplicatedTableName } = await loadChClient();
   const mutationTableName = getReplicatedTableName(TABLE_NAMES.events_imports);
   await ch.command({
     query: `ALTER TABLE ${mutationTableName} DELETE WHERE import_id = {importId:String} AND name IN ('session_start', 'session_end')`,
@@ -218,7 +273,8 @@ export async function cleanupSessionStartEndEvents(
 export async function createSessionsStartEndEvents(
   importId: string
 ): Promise<void> {
-  const SESSION_BATCH_SIZE = 5000;
+  const { ch, TABLE_NAMES, convertClickhouseDateToJs, formatClickhouseDate } =
+    await loadChClient();
   let lastSessionId = '';
 
   const baseWhere = [
@@ -441,6 +497,7 @@ export async function moveImportsToProduction(
   importId: string,
   from: string
 ): Promise<void> {
+  const { ch, TABLE_NAMES } = await loadChClient();
   let whereClause = 'import_id = {importId:String}';
 
   if (from) {
@@ -485,7 +542,7 @@ export async function moveImportsToProduction(
 export async function backfillSessionsToProduction(
   importId: string
 ): Promise<void> {
-  const SESSION_BATCH_SIZE = 5000;
+  const { ch, TABLE_NAMES } = await loadChClient();
   let lastSessionId = '';
 
   while (true) {
@@ -520,7 +577,7 @@ export async function backfillSessionsToProduction(
         utm_medium, utm_source, utm_campaign, utm_content, utm_term,
         referrer, referrer_name, referrer_type
       )
-      SELECT 
+      SELECT
         any(e.session_id) as id,
         any(e.project_id) as project_id,
         if(any(nullIf(e.profile_id, e.device_id)) IS NULL, any(e.profile_id), any(nullIf(e.profile_id, e.device_id))) as profile_id,
@@ -563,7 +620,7 @@ export async function backfillSessionsToProduction(
         argMinIf(e.referrer_name, e.created_at, e.name = 'session_start') as referrer_name,
         argMinIf(e.referrer_type, e.created_at, e.name = 'session_start') as referrer_type
       FROM ${TABLE_NAMES.events_imports} e
-      WHERE 
+      WHERE
         e.import_id = {importId:String}
         AND e.session_id > {lastSessionId:String}
         AND e.session_id <= {maxSessionId:String}
@@ -594,6 +651,7 @@ export async function getImportDateBounds(
   importId: string,
   fromCreatedAt?: string
 ): Promise<{ min: string | null; max: string | null }> {
+  const { ch, TABLE_NAMES } = await loadChClient();
   const res = await ch.query({
     query: `
       SELECT min(created_at) AS min, max(created_at) AS max
@@ -616,6 +674,20 @@ export async function getImportDateBounds(
       }
     : { min: null, max: null };
 }
+
+/**
+ * Reports progress on a running import. Wraps V1's `job.updateProgress` — a
+ * BullMQ `Job` satisfies this structurally, so the V1 worker delegate passes
+ * its real job straight through. Core's own job runner (import.jobs.ts) has
+ * no BullMQ job object to hand over (`JobCtx.job` is the erased
+ * `{id, attempt, queue, name}`, not the live BullMQ handle), so it falls back
+ * to the no-op default.
+ */
+export interface ImportJobProgress {
+  updateProgress(progress: Record<string, unknown>): unknown;
+}
+
+const NOOP_PROGRESS: ImportJobProgress = { updateProgress: () => undefined };
 
 export type UpdateImportStatusOptions =
   | {
@@ -655,13 +727,12 @@ export type UpdateImportStatusOptions =
 export type ImportSteps = UpdateImportStatusOptions['step'];
 
 export async function updateImportStatus(
-  jobLogger: ILogger,
-  job: {
-    updateProgress: (progress: Record<string, any>) => void;
-  },
+  jobLogger: Logger,
+  progress: ImportJobProgress,
   importId: string,
   options: UpdateImportStatusOptions
 ): Promise<void> {
+  const db = await loadDb();
   const data: Prisma.ImportUpdateInput = {};
   switch (options.step) {
     case 'loading':
@@ -721,10 +792,450 @@ export async function updateImportStatus(
 
   jobLogger.info({ data }, 'Import status update');
 
-  await job.updateProgress(data);
+  await progress.updateProgress(data);
 
   await db.import.update({
     where: { id: importId },
     data,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Provider dispatch + job body — moved from apps/worker/src/jobs/import.ts.
+// ---------------------------------------------------------------------------
+
+/**
+ * Merge a freshly-derived profile into the bounded dedup map: keep the earliest
+ * created_at (first seen), advance last_seen_at to the latest activity, and fill
+ * identity fields/properties, preferring the newer row.
+ */
+function mergeProfileInto(
+  map: Map<string, IClickhouseProfile>,
+  incoming: IClickhouseProfile
+): void {
+  const existing = map.get(incoming.id);
+  if (!existing) {
+    map.set(incoming.id, incoming);
+    return;
+  }
+
+  const createdAt =
+    existing.created_at < incoming.created_at
+      ? existing.created_at
+      : incoming.created_at;
+  const isIncomingNewer = incoming.last_seen_at >= existing.last_seen_at;
+  const base = isIncomingNewer ? incoming : existing;
+  const other = isIncomingNewer ? existing : incoming;
+
+  map.set(incoming.id, {
+    ...base,
+    created_at: createdAt,
+    first_name: base.first_name || other.first_name,
+    last_name: base.last_name || other.last_name,
+    email: base.email || other.email,
+    avatar: base.avatar || other.avatar,
+    properties: { ...other.properties, ...base.properties },
+  });
+}
+
+/** Structural subset of a provider instance the job body actually drives. */
+interface RunnableProvider {
+  shouldGenerateSessionIds(): boolean;
+  getTotalEventsCount(): Promise<number>;
+  parseSource(): AsyncGenerator<unknown, void, unknown>;
+  validate(rawEvent: unknown): boolean;
+  transformEvent(rawEvent: unknown): IClickhouseEvent;
+  transformEventToProfile?(rawEvent: unknown): IClickhouseProfile | null;
+  streamProfiles?(): AsyncGenerator<unknown, void, unknown>;
+  transformProfile?(rawProfile: unknown): IClickhouseProfile;
+}
+
+/** Dynamic import keeps @openpanel/db's clickhouse client off this file's eager path (see header). */
+async function createImportProvider(
+  projectId: string,
+  config: IImportConfig,
+  jobLogger: Logger
+): Promise<RunnableProvider> {
+  switch (config.provider) {
+    case 'umami': {
+      const { UmamiProvider } = await import('./src/providers/umami');
+      return new UmamiProvider(projectId, config, jobLogger);
+    }
+    case 'mixpanel': {
+      const { MixpanelProvider } = await import('./src/providers/mixpanel');
+      return new MixpanelProvider(projectId, config, jobLogger);
+    }
+    case 'amplitude': {
+      const { AmplitudeProvider } = await import('./src/providers/amplitude');
+      return new AmplitudeProvider(projectId, config, jobLogger);
+    }
+    default:
+      throw new Error(
+        `Unknown provider: ${(config as { provider: string }).provider}`
+      );
+  }
+}
+
+/**
+ * The `import` queue job body. Ported verbatim from apps/worker/src/jobs/
+ * import.ts's `importJob`, with the BullMQ `Job` split into `importId` +
+ * `progress` (see `ImportJobProgress`'s header) so the same body serves V1's
+ * worker delegate and core's own (not yet live) `import` queue worker.
+ */
+export async function runImportJob(
+  importId: string,
+  progress: ImportJobProgress = NOOP_PROGRESS,
+  logger: Logger = getLogger()
+): Promise<{ success: true }> {
+  const db = await loadDb();
+  const record = await db.import.findUniqueOrThrow({
+    where: { id: importId },
+    include: { project: true },
+  });
+
+  const jobLogger = logger.child({ importId, config: record.config });
+  jobLogger.info('Starting import job');
+
+  const providerInstance = await createImportProvider(
+    record.projectId,
+    record.config,
+    jobLogger
+  );
+  const shouldGenerateSessionIds = providerInstance.shouldGenerateSessionIds();
+
+  try {
+    const isRetry = record.currentStep !== null;
+    const canResume =
+      isRetry && RESUMABLE_STEPS.includes(record.currentStep as string);
+
+    // -------------------------------------------------------
+    // STAGING PHASE: clean slate on failure, run from scratch
+    // -------------------------------------------------------
+    if (!canResume) {
+      if (isRetry) {
+        jobLogger.info(
+          'Retry detected before resumable phase — cleaning staging data'
+        );
+        await cleanupStagingData(importId);
+      }
+
+      // Phase 1: Load events into staging
+      await updateImportStatus(jobLogger, progress, importId, {
+        step: 'loading',
+      });
+
+      const totalEvents = await providerInstance
+        .getTotalEventsCount()
+        .catch(() => -1);
+      let processedEvents = 0;
+      const eventBatch: IClickhouseEvent[] = [];
+
+      const canProfileFromEvents =
+        typeof providerInstance.transformEventToProfile === 'function';
+      const profileMap = new Map<string, IClickhouseProfile>();
+      let processedProfiles = 0;
+
+      const flushProfiles = async () => {
+        if (profileMap.size === 0) {
+          return;
+        }
+        const values = Array.from(profileMap.values());
+        await insertProfilesBatch(values, record.projectId);
+        processedProfiles += values.length;
+        profileMap.clear();
+        await updateImportStatus(jobLogger, progress, importId, {
+          step: 'loading_profiles',
+          processedProfiles,
+        });
+        await yieldToEventLoop();
+      };
+
+      for await (const rawEvent of providerInstance.parseSource()) {
+        if (!providerInstance.validate(rawEvent)) {
+          jobLogger.warn({ rawEvent }, 'Skipping invalid event');
+          continue;
+        }
+
+        const transformed = providerInstance.transformEvent(rawEvent);
+
+        // Session IDs for providers that need them (e.g. Mixpanel) are generated
+        // in generateGapBasedSessionIds after loading, using gap-based logic.
+        eventBatch.push(transformed);
+
+        if (canProfileFromEvents) {
+          const profile = providerInstance.transformEventToProfile?.(rawEvent);
+          if (profile) {
+            mergeProfileInto(profileMap, profile);
+            if (profileMap.size >= PROFILE_MAP_CAP) {
+              await flushProfiles();
+            }
+          }
+        }
+
+        if (eventBatch.length >= BATCH_SIZE) {
+          await insertImportBatch(eventBatch, importId);
+          processedEvents += eventBatch.length;
+
+          const batchDate = new Date(eventBatch[0]?.created_at || '')
+            .toISOString()
+            .split('T')[0];
+
+          await updateImportStatus(jobLogger, progress, importId, {
+            step: 'loading',
+            batch: batchDate,
+            totalEvents,
+            processedEvents,
+          });
+
+          eventBatch.length = 0;
+          await yieldToEventLoop();
+        }
+      }
+
+      if (eventBatch.length > 0) {
+        await insertImportBatch(eventBatch, importId);
+        processedEvents += eventBatch.length;
+
+        const batchDate = new Date(eventBatch[0]?.created_at || '')
+          .toISOString()
+          .split('T')[0];
+
+        await updateImportStatus(jobLogger, progress, importId, {
+          step: 'loading',
+          batch: batchDate,
+          totalEvents,
+          processedEvents,
+        });
+        eventBatch.length = 0;
+      }
+
+      jobLogger.info({ processedEvents }, 'Loading complete');
+
+      // Phase 1a: Flush profiles derived inline from events (Amplitude)
+      if (canProfileFromEvents) {
+        await flushProfiles();
+        jobLogger.info(
+          { processedProfiles },
+          'Inline profile derivation complete'
+        );
+      }
+
+      // Phase 1b: Load user profiles (Mixpanel only)
+      if (typeof providerInstance.streamProfiles === 'function') {
+        await updateImportStatus(jobLogger, progress, importId, {
+          step: 'loading_profiles',
+        });
+
+        const profileBatch: IClickhouseProfile[] = [];
+        let profilesLoaded = 0;
+
+        for await (const rawProfile of providerInstance.streamProfiles()) {
+          const profile = providerInstance.transformProfile?.(rawProfile);
+          if (!profile) {
+            continue;
+          }
+          profileBatch.push(profile);
+
+          if (profileBatch.length >= PROFILE_BATCH_SIZE) {
+            await insertProfilesBatch(profileBatch, record.projectId);
+            profilesLoaded += profileBatch.length;
+            await updateImportStatus(jobLogger, progress, importId, {
+              step: 'loading_profiles',
+              processedProfiles: profilesLoaded,
+            });
+            profileBatch.length = 0;
+            await yieldToEventLoop();
+          }
+        }
+
+        if (profileBatch.length > 0) {
+          await insertProfilesBatch(profileBatch, record.projectId);
+          profilesLoaded += profileBatch.length;
+          await updateImportStatus(jobLogger, progress, importId, {
+            step: 'loading_profiles',
+            processedProfiles: profilesLoaded,
+            totalProfiles: profilesLoaded,
+          });
+        }
+
+        jobLogger.info(
+          { processedProfiles: profilesLoaded },
+          'Profile loading complete'
+        );
+      }
+
+      // Phase 2: Generate gap-based session IDs (Mixpanel etc.)
+      if (shouldGenerateSessionIds) {
+        await updateImportStatus(jobLogger, progress, importId, {
+          step: 'generating_sessions',
+        });
+        await generateGapBasedSessionIds(importId);
+        await yieldToEventLoop();
+        jobLogger.info('Session ID generation complete');
+      }
+    }
+
+    // -------------------------------------------------------
+    // SESSION CREATION PHASE: resumable by cleaning session_start/end
+    // -------------------------------------------------------
+    const skipSessionCreation =
+      canResume && record.currentStep !== 'creating_sessions';
+
+    if (!skipSessionCreation) {
+      if (canResume && record.currentStep === 'creating_sessions') {
+        jobLogger.info(
+          'Retry at creating_sessions — cleaning existing session_start/end events'
+        );
+        await cleanupSessionStartEndEvents(importId);
+      }
+
+      await updateImportStatus(jobLogger, progress, importId, {
+        step: 'creating_sessions',
+        batch: 'all sessions',
+      });
+      await createSessionsStartEndEvents(importId);
+      await yieldToEventLoop();
+
+      jobLogger.info('Session event creation complete');
+    }
+
+    // -------------------------------------------------------
+    // PRODUCTION PHASE: resume-safe, track progress per batch
+    // -------------------------------------------------------
+
+    // Phase 3: Move staging events to production (per-day)
+    const resumeMovingFrom =
+      canResume && record.currentStep === 'moving'
+        ? (record.currentBatch ?? undefined)
+        : undefined;
+
+    // currentBatch is the last successfully completed day — resume from the next day to avoid re-inserting it
+    const moveFromDate = (() => {
+      if (!resumeMovingFrom) {
+        return undefined;
+      }
+      const next = new Date(`${resumeMovingFrom}T12:00:00Z`);
+      next.setUTCDate(next.getUTCDate() + 1);
+      return next.toISOString().split('T')[0]!;
+    })();
+
+    const bounds = await getImportDateBounds(importId, moveFromDate);
+    if (bounds.min && bounds.max) {
+      const startDate = bounds.min.split(' ')[0]!;
+      const endDate = bounds.max.split(' ')[0]!;
+      const cursor = new Date(`${startDate}T12:00:00Z`);
+      const end = new Date(`${endDate}T12:00:00Z`);
+
+      while (cursor <= end) {
+        const dateStr = cursor.toISOString().split('T')[0]!;
+
+        await moveImportsToProduction(importId, dateStr);
+        await updateImportStatus(jobLogger, progress, importId, {
+          step: 'moving',
+          batch: dateStr,
+        });
+
+        await yieldToEventLoop();
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+      }
+    }
+
+    jobLogger.info('Move to production complete');
+
+    // Phase 4: Backfill sessions table
+    await updateImportStatus(jobLogger, progress, importId, {
+      step: 'backfilling_sessions',
+      batch: 'all sessions',
+    });
+    await backfillSessionsToProduction(importId);
+    await yieldToEventLoop();
+
+    jobLogger.info('Session backfill complete');
+
+    // Done
+    await updateImportStatus(jobLogger, progress, importId, {
+      step: 'completed',
+    });
+    jobLogger.info('Import completed');
+
+    return { success: true };
+  } catch (error) {
+    jobLogger.error({ err: error }, 'Import job failed');
+
+    try {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      await updateImportStatus(jobLogger, progress, importId, {
+        step: 'failed',
+        errorMessage: errorMsg,
+      });
+    } catch (markError) {
+      jobLogger.error(
+        { err: error, markError },
+        'Failed to mark import as failed'
+      );
+    }
+
+    throw error;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// /import/events — moved from apps/api/src/controllers/import.controller.ts.
+// Bulk-inserts already-shaped events straight into production; unrelated to
+// the provider/staging pipeline above (no Import record, no ClickHouse
+// staging table).
+// ---------------------------------------------------------------------------
+
+export interface InsertRawEventsResult {
+  writtenRows: number;
+}
+
+export async function insertRawEventsBatch(
+  projectId: string,
+  events: IClickhouseEvent[],
+  logger: Logger = getLogger()
+): Promise<InsertRawEventsResult> {
+  const { ch, TABLE_NAMES, formatClickhouseDate } = await loadChClient();
+  const importedAt = formatClickhouseDate(new Date());
+  const values: IClickhouseEvent[] = events.map((event) => ({
+    ...event,
+    properties: toDots(event.properties),
+    project_id: projectId,
+    created_at: formatClickhouseDate(event.created_at),
+    imported_at: importedAt,
+  }));
+
+  const res = await ch.insert({
+    table: TABLE_NAMES.events,
+    values,
+    format: 'JSONEachRow',
+  });
+
+  // ClickHouse's insert summary reports written_rows as a string.
+  const writtenRows = Number(res.summary?.written_rows ?? 0);
+  logger.info({ writtenRows, projectId }, 'events imported');
+  return { writtenRows };
+}
+
+// ---------------------------------------------------------------------------
+// `ctx.services.import` binding.
+// ---------------------------------------------------------------------------
+
+export interface ImportService {
+  run(
+    importId: string,
+    progress?: ImportJobProgress
+  ): Promise<{ success: true }>;
+  /** Enqueues the `import` job and returns its BullMQ job id, for `Import.jobId`. */
+  enqueue(importId: string): Promise<string>;
+}
+
+/** `ctx.services.import` — a thin binding of the job body above to a Ctx's queues. */
+export function createImportService(deps: ServiceDeps): ImportService {
+  const logger = deps.logger.child({ module: 'import' });
+
+  return {
+    run: (importId, progress) => runImportJob(importId, progress, logger),
+    enqueue: (importId) => deps.queues.import.import.add({ importId }),
+  };
 }

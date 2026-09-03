@@ -1,39 +1,28 @@
+import { insertRawEventsBatch } from '@openpanel/core';
+import type { IClickhouseEvent } from '@openpanel/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { toDots } from '@openpanel/common';
-import type { IClickhouseEvent } from '@openpanel/db';
-import { TABLE_NAMES, ch, formatClickhouseDate } from '@openpanel/db';
-
+// Dissolved into @openpanel/core's import module (M5-004): the
+// toDots/project_id/imported_at stamping and the ClickHouse insert moved to
+// import.service.ts's `insertRawEventsBatch`. This controller stays
+// (DELEGATE PATTERN) — it is the live Fastify handler, a thin wrapper
+// resolving `request.client` and translating the result into a Fastify
+// reply.
 export async function importEvents(
   request: FastifyRequest<{
     Body: IClickhouseEvent[];
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const projectId = request.client?.projectId;
   if (!projectId) {
     throw new Error('Project ID is required');
   }
 
-  const importedAt = formatClickhouseDate(new Date());
-  const values: IClickhouseEvent[] = request.body.map((event) => {
-    return {
-      ...event,
-      properties: toDots(event.properties),
-      project_id: projectId,
-      created_at: formatClickhouseDate(event.created_at),
-      imported_at: importedAt,
-    };
-  });
-
   try {
-    const res = await ch.insert({
-      table: TABLE_NAMES.events,
-      values,
-      format: 'JSONEachRow',
-    });
+    const { writtenRows } = await insertRawEventsBatch(projectId, request.body);
 
-    console.log(res.summary?.written_rows, 'events imported');
+    console.log(writtenRows, 'events imported');
     reply.send('OK');
   } catch (e) {
     console.error(e);

@@ -1,8 +1,8 @@
+import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { gzipSync } from 'node:zlib';
-import { describe, expect, it } from 'vitest';
 import { AmplitudeProvider, type AmplitudeRawEvent } from './amplitude';
 import { toCountryCode } from './country-codes';
 
@@ -154,7 +154,10 @@ describe('amplitude', () => {
     const gz = gzipSync(Buffer.from(ndjson));
 
     const events = await collect(
-      provider.streamNdjson(Readable.from(gz), 'https://example.com/export.json.gz')
+      provider.streamNdjson(
+        Readable.from(gz),
+        'https://example.com/export.json.gz'
+      )
     );
 
     expect(events.map((e) => e.event_type)).toEqual(['A']);

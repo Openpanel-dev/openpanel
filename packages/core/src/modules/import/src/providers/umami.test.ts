@@ -1,6 +1,6 @@
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { UmamiProvider } from './umami';
 
 /**
@@ -24,7 +24,7 @@ describe('umami remote file SSRF guard', () => {
       res.end('INTERNAL_ONLY_SECRET\n');
     });
     await new Promise<void>((resolve) =>
-      internalServer.listen(0, '127.0.0.1', resolve),
+      internalServer.listen(0, '127.0.0.1', resolve)
     );
     internalPort = (internalServer.address() as AddressInfo).port;
   });
@@ -50,7 +50,7 @@ describe('umami remote file SSRF guard', () => {
     hits = [];
 
     await expect(
-      drain(`http://127.0.0.1:${internalPort}/secret.csv`),
+      drain(`http://127.0.0.1:${internalPort}/secret.csv`)
     ).rejects.toThrow();
 
     expect(hits).toEqual([]);
@@ -58,7 +58,7 @@ describe('umami remote file SSRF guard', () => {
 
   it('refuses cloud instance metadata', async () => {
     await expect(
-      drain('http://169.254.169.254/latest/meta-data/'),
+      drain('http://169.254.169.254/latest/meta-data/')
     ).rejects.toThrow();
   });
 
@@ -66,9 +66,10 @@ describe('umami remote file SSRF guard', () => {
     hits = [];
     const target = `http://127.0.0.1:${internalPort}/secret.csv`;
 
-    const error = await drain(target).catch((err: unknown) => err as Error);
+    const caught = await drain(target).catch((err: unknown) => err as Error);
 
-    expect(error).toBeInstanceOf(Error);
+    expect(caught).toBeInstanceOf(Error);
+    const error = caught as Error;
     // The old message was `Failed to fetch remote file: 418 I'm a Teapot`.
     expect(error.message).not.toContain('418');
     expect(error.message).not.toContain('Teapot');
