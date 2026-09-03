@@ -527,7 +527,7 @@ export async function getEventList(options: GetEventListOptions) {
     sb.where.cursor = `created_at < ${sqlstring.escape(formatClickhouseDate(cursor))}`;
   }
 
-  if (!(cursor || (startDate && endDate))) {
+  if (!(cursor || startDate || endDate)) {
     sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(new Date()))}, 3) - INTERVAL ${safeDateIntervalInDays} DAY`;
   }
 
@@ -665,8 +665,11 @@ export async function getEventList(options: GetEventListOptions) {
     sb.where.cohortId = `profile_id IN (SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL WHERE cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)})`;
   }
 
-  if (startDate && endDate) {
-    sb.where.created_at = `toDate(created_at) BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}')`;
+  if (startDate) {
+    sb.where.startDate = `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`;
+  }
+  if (endDate) {
+    sb.where.endDate = `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
   }
 
   if (events && events.length > 0) {
@@ -749,8 +752,11 @@ export async function getEventsCount({
     sb.where.cohortId = `profile_id IN (SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL WHERE cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)})`;
   }
 
-  if (startDate && endDate) {
-    sb.where.created_at = `toDate(created_at) BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}')`;
+  if (startDate) {
+    sb.where.startDate = `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`;
+  }
+  if (endDate) {
+    sb.where.endDate = `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
   }
 
   if (events && events.length > 0) {
