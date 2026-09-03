@@ -490,6 +490,11 @@ export interface GetEventListOptions {
   dateIntervalInDays?: number;
 }
 
+/**
+ * Fetches a page of events matching the given filters/date range, ordered
+ * newest first. Falls back to a default recent-days cursor window when no
+ * cursor or explicit date bound is provided.
+ */
 export async function getEventList(options: GetEventListOptions) {
   const {
     cursor,
@@ -728,6 +733,10 @@ export async function getEventList(options: GetEventListOptions) {
   return data;
 }
 
+/**
+ * Counts events matching the given filters/date range, using the same
+ * where-clause construction as getEventList.
+ */
 export async function getEventsCount({
   projectId,
   profileId,
