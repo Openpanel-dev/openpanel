@@ -29,7 +29,8 @@ export const runId = Date.now();
 export { chQuery };
 
 // ── Redis key helpers ───────────────────────────────────────────────────────
-export const sessionKey = (deviceId: string) => `session:${PROJECT_ID}:${deviceId}`;
+export const sessionKey = (deviceId: string) =>
+  `session:${PROJECT_ID}:${deviceId}`;
 export const wallclockKey = `session:wallclock:${PROJECT_ID}`;
 export const profileKey = (profileId: string) =>
   `session:profile:${PROJECT_ID}:${profileId}`;
@@ -55,8 +56,12 @@ export async function pollUntil<T>(
   // biome-ignore lint/nursery/noConstantCondition: poll loop
   while (true) {
     const value = await fn();
-    if (value) return value;
-    if (Date.now() >= deadline) return null;
+    if (value) {
+      return value;
+    }
+    if (Date.now() >= deadline) {
+      return null;
+    }
     await sleep(intervalMs);
   }
 }
@@ -72,40 +77,114 @@ export function scenario(name: string) {
 }
 export function check(name: string, ok: boolean, detail?: string) {
   results.push({ scenario: currentScenario, name, ok, detail });
-  console.log(`   ${ok ? '✓' : '✗'} ${name}${detail && !ok ? ` — ${detail}` : ''}`);
+  console.log(
+    `   ${ok ? '✓' : '✗'} ${name}${detail && !ok ? ` — ${detail}` : ''}`
+  );
 }
 /** Print the summary and return the number of failed checks. */
 export function summarize(): number {
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${'─'.repeat(60)}`);
-  console.log(`${results.length - failed.length}/${results.length} checks passed`);
+  console.log(
+    `${results.length - failed.length}/${results.length} checks passed`
+  );
   if (failed.length) {
     console.log('\nFailures:');
     for (const f of failed) {
-      console.log(`  ✗ [${f.scenario}] ${f.name}${f.detail ? ` — ${f.detail}` : ''}`);
+      console.log(
+        `  ✗ [${f.scenario}] ${f.name}${f.detail ? ` — ${f.detail}` : ''}`
+      );
     }
   }
   return failed.length;
+}
+/** Total checks recorded so far, independent of summarize()'s printing. */
+export function checkCount(): number {
+  return results.length;
 }
 
 // ── HTTP ────────────────────────────────────────────────────────────────────
 export type TrackResponse = { deviceId: string; sessionId: string };
 
+// Set by beginLatencyRecording()/endLatencyRecording() around the phase whose
+// per-request latency matters (the emit phase) — track() pushes into it
+// whenever it's non-null, everywhere else stays a no-op.
+let latencySink: number[] | null = null;
+
+/** Start recording every subsequent track() round-trip's latency, in ms. */
+export function beginLatencyRecording(): number[] {
+  const samples: number[] = [];
+  latencySink = samples;
+  return samples;
+}
+export function endLatencyRecording() {
+  latencySink = null;
+}
+
 export async function track(body: unknown, ip: string): Promise<TrackResponse> {
-  const res = await fetch(`${API_URL}/track`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'openpanel-client-id': CLIENT_ID,
-      'user-agent': UA,
-      'x-client-ip': ip,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    throw new Error(`POST /track ${res.status}: ${await res.text()}`);
+  const startedAt = performance.now();
+  try {
+    const res = await fetch(`${API_URL}/track`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'openpanel-client-id': CLIENT_ID,
+        'user-agent': UA,
+        'x-client-ip': ip,
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      throw new Error(`POST /track ${res.status}: ${await res.text()}`);
+    }
+    return (await res.json()) as TrackResponse;
+  } finally {
+    latencySink?.push(performance.now() - startedAt);
   }
-  return (await res.json()) as TrackResponse;
+}
+
+// ── Latency percentiles ─────────────────────────────────────────────────────
+export interface LatencyStats {
+  count: number;
+  p50: number;
+  p95: number;
+  p99: number;
+  mean: number;
+}
+
+function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) {
+    return 0;
+  }
+  const rank = (p / 100) * (sorted.length - 1);
+  const lo = Math.floor(rank);
+  const hi = Math.ceil(rank);
+  if (lo === hi) {
+    return sorted[lo] ?? 0;
+  }
+  const weight = rank - lo;
+  return (sorted[lo] ?? 0) * (1 - weight) + (sorted[hi] ?? 0) * weight;
+}
+
+export function summarizeLatencies(samplesMs: number[]): LatencyStats {
+  if (samplesMs.length === 0) {
+    return { count: 0, p50: 0, p95: 0, p99: 0, mean: 0 };
+  }
+  const sorted = [...samplesMs].sort((a, b) => a - b);
+  return {
+    count: sorted.length,
+    p50: percentile(sorted, 50),
+    p95: percentile(sorted, 95),
+    p99: percentile(sorted, 99),
+    mean: sorted.reduce((a, b) => a + b, 0) / sorted.length,
+  };
+}
+
+export function formatLatencyStats(s: LatencyStats): string {
+  return (
+    `latency (${s.count} requests): ` +
+    `P50=${s.p50.toFixed(1)}ms P95=${s.p95.toFixed(1)}ms P99=${s.p99.toFixed(1)}ms mean=${s.mean.toFixed(1)}ms`
+  );
 }
 
 export const screenView = (
@@ -139,13 +218,15 @@ export const triggerReaper = () => triggerCron('sessionReaper');
 
 // ── ClickHouse counting (scoped to a set of session ids for run isolation) ──
 const quoteList = (ids: string[]) =>
-  ids.map((id) => `'${id.replace(/'/g, "")}'`).join(',');
+  ids.map((id) => `'${id.replace(/'/g, '')}'`).join(',');
 
 export async function countByName(
   sessionIds: string[],
   name: string
 ): Promise<number> {
-  if (sessionIds.length === 0) return 0;
+  if (sessionIds.length === 0) {
+    return 0;
+  }
   const rows = await chQuery<{ c: string }>(
     `SELECT count() AS c FROM events WHERE project_id = '${PROJECT_ID}' AND name = '${name}' AND session_id IN (${quoteList(sessionIds)})`
   );
@@ -197,7 +278,7 @@ export async function preflight() {
     .then((r) => r.ok)
     .catch(() => false);
   check(`worker debug reachable at ${WORKER_URL}`, !!worker);
-  if (!api || !worker) {
+  if (!(api && worker)) {
     throw new Error('Stack not reachable — start it with `pnpm dev` first.');
   }
   if (SESSION_TIMEOUT_MS > 60_000) {
@@ -215,13 +296,18 @@ export async function runPool<T>(
   fn: (item: T, index: number) => Promise<void>
 ): Promise<void> {
   let next = 0;
-  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
-    while (true) {
-      const i = next++;
-      if (i >= items.length) return;
-      await fn(items[i]!, i);
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    async () => {
+      while (true) {
+        const i = next++;
+        if (i >= items.length) {
+          return;
+        }
+        await fn(items[i]!, i);
+      }
     }
-  });
+  );
   await Promise.all(workers);
 }
 

@@ -1,5 +1,6 @@
 import { createLogger } from '@openpanel/logger';
 import {
+  type Admin,
   type Consumer,
   type IHeaders,
   Kafka,
@@ -8,7 +9,7 @@ import {
 } from 'kafkajs';
 import type { EventsQueuePayloadIncomingEvent } from './queues';
 
-export type { EachBatchPayload, KafkaMessage } from 'kafkajs';
+export type { Admin, EachBatchPayload, KafkaMessage } from 'kafkajs';
 
 export const kafkaLogger = createLogger({ name: 'kafka' });
 
@@ -295,6 +296,65 @@ export const createKafkaEventsConsumer = (options?: {
   });
   consumers.add(consumer);
   return consumer;
+};
+
+// ── Consumer-group lag (backpressure visibility) ────────────────────────────
+// A fast producer can hide a lagging consumer entirely — throughput numbers
+// alone don't show it. `sampleConsumerGroupLag` reads the same end-offset-
+// minus-committed-offset a broker-side tool (e.g. `rpk group describe`) would
+// report, via the admin API this package already depends on, so a caller can
+// poll it on an interval without shelling out to broker tooling.
+export interface PartitionLag {
+  partition: number;
+  endOffset: number;
+  committedOffset: number;
+  lag: number;
+}
+
+export interface ConsumerGroupLag {
+  sampledAt: number;
+  totalLag: number;
+  partitions: PartitionLag[];
+}
+
+export const createKafkaAdmin = (): Admin => getKafka().admin();
+
+export const sampleConsumerGroupLag = async (
+  admin: Admin,
+  topic: string = KAFKA_EVENTS_TOPIC,
+  groupId: string = KAFKA_CONSUMER_GROUP
+): Promise<ConsumerGroupLag> => {
+  const [endOffsets, committedByTopic] = await Promise.all([
+    admin.fetchTopicOffsets(topic),
+    admin.fetchOffsets({ groupId, topics: [topic] }),
+  ]);
+  const committed = new Map<number, number>();
+  for (const p of committedByTopic[0]?.partitions ?? []) {
+    committed.set(p.partition, Number(p.offset));
+  }
+  const partitions: PartitionLag[] = endOffsets.map((eo) => {
+    const endOffset = Number(eo.offset);
+    const lowWatermark = Number(eo.low);
+    const rawCommitted = committed.get(eo.partition);
+    // -1 means the group has never committed on this partition; treat the
+    // whole backlog down to the low watermark as lag rather than computing
+    // a bogus `endOffset - (-1)`.
+    const committedOffset =
+      rawCommitted === undefined || rawCommitted < 0
+        ? lowWatermark
+        : rawCommitted;
+    return {
+      partition: eo.partition,
+      endOffset,
+      committedOffset,
+      lag: Math.max(0, endOffset - committedOffset),
+    };
+  });
+  return {
+    sampledAt: Date.now(),
+    totalLag: partitions.reduce((sum, p) => sum + p.lag, 0),
+    partitions,
+  };
 };
 
 export const disconnectKafka = async (): Promise<void> => {
