@@ -1,4 +1,7 @@
-import { TABLE_NAMES, formatClickhouseDate } from '../../../clickhouse/client';
+import {
+  formatClickhouseDate,
+  TABLE_NAMES,
+} from '@openpanel/db/src/clickhouse/client';
 import type {
   ComputeContext,
   ComputeResult,
@@ -62,7 +65,7 @@ async function fetchPageTrendAggregates(ctx: ComputeContext): Promise<{
         .clix()
         .select<{ cur_total: number }>([
           ctx.clix.exp(
-            `countIf(created_at BETWEEN '${formatClickhouseDate(ctx.window.start)}' AND '${formatClickhouseDate(getEndOfDay(ctx.window.end))}') as cur_total`,
+            `countIf(created_at BETWEEN '${formatClickhouseDate(ctx.window.start)}' AND '${formatClickhouseDate(getEndOfDay(ctx.window.end))}') as cur_total`
           ),
         ])
         .from(TABLE_NAMES.events)
@@ -77,20 +80,20 @@ async function fetchPageTrendAggregates(ctx: ComputeContext): Promise<{
 
     const currentMap = buildLookupMap(
       currentResults,
-      (r) => `${r.origin || ''}${DELIMITER}${r.path || '/'}`,
+      (r) => `${r.origin || ''}${DELIMITER}${r.path || '/'}`
     );
 
     const targetWeekday = getWeekday(ctx.window.start);
     const baselineMap = computeWeekdayMedians(
       baselineResults,
       targetWeekday,
-      (r) => `${r.origin || ''}${DELIMITER}${r.path || '/'}`,
+      (r) => `${r.origin || ''}${DELIMITER}${r.path || '/'}`
     );
 
     const totalCurrent = totals[0]?.cur_total ?? 0;
     const totalBaseline = Array.from(baselineMap.values()).reduce(
       (sum, val) => sum + val,
-      0,
+      0
     );
 
     return { currentMap, baselineMap, totalCurrent, totalBaseline };
@@ -108,10 +111,10 @@ async function fetchPageTrendAggregates(ctx: ComputeContext): Promise<{
         'origin',
         'path',
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur`,
+          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur`
         ),
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base`,
+          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base`
         ),
       ])
       .from(TABLE_NAMES.events)
@@ -127,10 +130,10 @@ async function fetchPageTrendAggregates(ctx: ComputeContext): Promise<{
       .clix()
       .select<{ cur_total: number; base_total: number }>([
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur_total`,
+          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur_total`
         ),
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base_total`,
+          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base_total`
         ),
       ])
       .from(TABLE_NAMES.events)
@@ -146,13 +149,13 @@ async function fetchPageTrendAggregates(ctx: ComputeContext): Promise<{
   const currentMap = buildLookupMap(
     results,
     (r) => `${r.origin || ''}${DELIMITER}${r.path || '/'}`,
-    (r) => Number(r.cur ?? 0),
+    (r) => Number(r.cur ?? 0)
   );
 
   const baselineMap = buildLookupMap(
     results,
     (r) => `${r.origin || ''}${DELIMITER}${r.path || '/'}`,
-    (r) => Number(r.base ?? 0),
+    (r) => Number(r.base ?? 0)
   );
 
   const totalCurrent = totals[0]?.cur_total ?? 0;
@@ -178,7 +181,7 @@ export const pageTrendsModule: InsightModule = {
     const topDims = selectTopDimensions(
       currentMap,
       baselineMap,
-      this.thresholds?.maxDims ?? 100,
+      this.thresholds?.maxDims ?? 100
     );
     return topDims.map((dim) => `page:${dim}`);
   },
@@ -189,7 +192,9 @@ export const pageTrendsModule: InsightModule = {
     const results: ComputeResult[] = [];
 
     for (const dimKey of dimensionKeys) {
-      if (!dimKey.startsWith('page:')) continue;
+      if (!dimKey.startsWith('page:')) {
+        continue;
+      }
       const originPath = dimKey.replace('page:', '');
 
       const pageviewsCurrent = currentMap.get(originPath) ?? 0;
@@ -202,8 +207,8 @@ export const pageTrendsModule: InsightModule = {
 
       // Use share values in basis points (100 = 1%) for thresholding
       // This makes thresholds intuitive: minAbsDelta=50 means 0.5pp shift
-      const currentShareBp = currentShare * 10000;
-      const compareShareBp = compareShare * 10000;
+      const currentShareBp = currentShare * 10_000;
+      const compareShareBp = compareShare * 10_000;
 
       const shareShiftPp = (currentShare - compareShare) * 100;
       // changePct is relative change in share, not absolute pageviews

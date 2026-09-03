@@ -14,6 +14,10 @@ import { legacyCompat } from './jobs/compat';
 import type { Producers } from './jobs/define';
 import { defineQueue } from './jobs/define';
 import type { ProducerHandle } from './jobs/producers';
+import {
+  insightCronJobs,
+  insightQueueJobs,
+} from './modules/insight/insight.jobs';
 
 const HOUR_IN_SECONDS = 3600;
 const DAY_IN_SECONDS = 86_400;
@@ -46,7 +50,10 @@ const cron = defineQueue('cron', {
   defaults: { removeOnComplete: 10 },
   worker: { concurrency: CONCURRENCY.cron },
   compat: legacyCompat.cron,
-  jobs: {},
+  // Every module's cron fragment spreads in here (ADR-005: "no cron module").
+  jobs: {
+    ...insightCronJobs,
+  },
 });
 
 const notification = defineQueue('notification', {
@@ -67,7 +74,9 @@ const insights = defineQueue('insights', {
   defaults: { removeOnComplete: 100 },
   worker: { concurrency: CONCURRENCY.insights },
   compat: legacyCompat.insights,
-  jobs: {},
+  jobs: {
+    ...insightQueueJobs,
+  },
 });
 
 const gsc = defineQueue('gsc', {

@@ -5,10 +5,12 @@
 // land with their module waves (P5-P8).
 
 import { healthRouter } from './modules/health/health.rpc';
+import { insightRouter } from './modules/insight/insight.rpc';
 import { createTRPCRouter } from './rpc/base';
 
 export const appRouter = createTRPCRouter({
   health: healthRouter,
+  insight: insightRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1,9 +1,4 @@
-import type {
-  InsightDimension,
-  InsightMetricEntry,
-  InsightMetricKey,
-  InsightPayload,
-} from '@openpanel/validation';
+import type { InsightPayload } from '@openpanel/validation';
 
 export type Cadence = 'daily';
 
@@ -78,7 +73,7 @@ export interface InsightModule {
   /** Preferred path: batch compute many dimensions in one go. */
   computeMany(
     ctx: ComputeContext,
-    dimensionKeys: string[],
+    dimensionKeys: string[]
   ): Promise<ComputeResult[]>;
   /** Must not do DB reads; just format output. */
   render(result: ComputeResult, ctx: ComputeContext): RenderedCard;
@@ -87,7 +82,7 @@ export interface InsightModule {
   /** Optional: compute "drivers" for AI explain step */
   drivers?(
     result: ComputeResult,
-    ctx: ComputeContext,
+    ctx: ComputeContext
   ): Promise<Record<string, unknown>>;
 }
 

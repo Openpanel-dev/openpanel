@@ -7,6 +7,10 @@ import {
   type AuthService,
   createAuthService,
 } from './modules/auth/auth.service';
+import {
+  createInsightService,
+  type InsightService,
+} from './modules/insight/insight.service';
 
 /** What every service factory receives — derived from Ctx, so it cannot drift. */
 export type ServiceDeps = Pick<
@@ -25,6 +29,7 @@ export type ServiceDeps = Pick<
 //    typecheck fails with ts7022/ts7023 naming the method.
 export interface Services {
   auth: AuthService;
+  insight: InsightService;
 }
 
 export function createServices(deps: ServiceDeps): Services {
@@ -33,5 +38,6 @@ export function createServices(deps: ServiceDeps): Services {
   // call each other without a cycle.
   return {
     auth: createAuthService(deps),
+    insight: createInsightService(deps),
   };
 }

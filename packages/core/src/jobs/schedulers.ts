@@ -5,6 +5,7 @@
 // locking of our own needed.
 
 import type { Logger } from '../logger';
+import { insightCronSchedules } from '../modules/insight/insight.jobs';
 import { wrap } from './envelope';
 
 export type RepeatSchedule = { pattern: string } | { every: number };
@@ -61,17 +62,15 @@ export const CRON_SCHEDULES: readonly SchedulerDefinition[] = [
   { id: 'flushProfileBackfill', schedule: { every: 30_000 } },
   { id: 'flushReplay', schedule: { every: 10_000 } },
   { id: 'flushGroups', schedule: { every: 10_000 } },
-  { id: 'insightsDaily', schedule: { pattern: '0 2 * * *' } },
   { id: 'onboarding', schedule: { pattern: '0 * * * *' } },
   { id: 'gscSync', schedule: { pattern: '0 3 * * *' } },
   { id: 'cohortRefresh', schedule: { pattern: '*/30 * * * *' } },
   { id: 'sessionReaper', schedule: { every: 5 * MINUTE_MS } },
   // Daily 04:00 UTC — backstop for cleanup leaks.
   { id: 'sessionVacuum', schedule: { pattern: '0 4 * * *' } },
-  // Daily 04:30 UTC — prunes stale insights/events.
-  { id: 'insightCleanup', schedule: { pattern: '30 4 * * *' } },
-  // Mondays 08:00 UTC — weekly analytics digest email.
-  { id: 'weeklyDigest', schedule: { pattern: '0 8 * * 1' } },
+  // insightsDaily / insightCleanup / weeklyDigest — owned by the insight
+  // module, declared next to its jobs (modules/insight/insight.jobs.ts).
+  ...insightCronSchedules,
   // Daily 07:30 UTC — no-data / data-stopped rescue emails. Owner: misc
   // (ADR-005 acceptance note completes the ownership map).
   { id: 'dataHealth', schedule: { pattern: '30 7 * * *' } },

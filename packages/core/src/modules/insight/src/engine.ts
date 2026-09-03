@@ -42,7 +42,7 @@ export interface EngineConfig {
 function passesThresholds(
   r: ComputeResult,
   mod: InsightModule,
-  cfg: EngineConfig,
+  cfg: EngineConfig
 ): boolean {
   const t = mod.thresholds ?? {};
   const minTotal = t.minTotal ?? cfg.globalThresholds.minTotal;
@@ -53,16 +53,26 @@ function passesThresholds(
   const total = cur + cmp;
   const absDelta = Math.abs(cur - cmp);
   const pct = Math.abs(r.changePct ?? 0);
-  if (total < minTotal) return false;
-  if (absDelta < minAbsDelta) return false;
-  if (pct < minPct) return false;
+  if (total < minTotal) {
+    return false;
+  }
+  if (absDelta < minAbsDelta) {
+    return false;
+  }
+  if (pct < minPct) {
+    return false;
+  }
   return true;
 }
 
 function chunk<T>(arr: T[], size: number): T[][] {
-  if (size <= 0) return [arr];
+  if (size <= 0) {
+    return [arr];
+  }
   const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  for (let i = 0; i < arr.length; i += size) {
+    out.push(arr.slice(i, i + size));
+  }
   return out;
 }
 
@@ -78,9 +88,11 @@ export function createEngine(args: {
 
   function isProjectOldEnoughForWindow(
     projectCreatedAt: Date | null | undefined,
-    baselineStart: Date,
+    baselineStart: Date
   ): boolean {
-    if (!projectCreatedAt) return true; // best-effort; don't block if unknown
+    if (!projectCreatedAt) {
+      return true; // best-effort; don't block if unknown
+    }
     return projectCreatedAt.getTime() <= baselineStart.getTime();
   }
 
@@ -147,7 +159,9 @@ export function createEngine(args: {
           continue;
         }
         const maxDims = mod.thresholds?.maxDims ?? 25;
-        if (dims.length > maxDims) dims = dims.slice(0, maxDims);
+        if (dims.length > maxDims) {
+          dims = dims.slice(0, maxDims);
+        }
 
         if (dims.length === 0) {
           // Still do lifecycle close / suppression based on "nothing emitted"
@@ -189,14 +203,20 @@ export function createEngine(args: {
           }
 
           for (const r of results) {
-            if (!r?.ok) continue;
-            if (!r.dimensionKey) continue;
+            if (!r?.ok) {
+              continue;
+            }
+            if (!r.dimensionKey) {
+              continue;
+            }
 
             // Sanitize dimensionKey to remove null bytes that PostgreSQL can't handle
             r.dimensionKey = sanitizeForPostgres(r.dimensionKey);
 
             // 3) gate noise
-            if (!passesThresholds(r, mod, config)) continue;
+            if (!passesThresholds(r, mod, config)) {
+              continue;
+            }
 
             // 4) score
             const impact = mod.score

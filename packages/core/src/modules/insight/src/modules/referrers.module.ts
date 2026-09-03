@@ -1,4 +1,7 @@
-import { TABLE_NAMES, formatClickhouseDate } from '../../../clickhouse/client';
+import {
+  formatClickhouseDate,
+  TABLE_NAMES,
+} from '@openpanel/db/src/clickhouse/client';
 import type {
   ComputeContext,
   ComputeResult,
@@ -9,13 +12,13 @@ import {
   buildLookupMap,
   computeChangePct,
   computeDirection,
-  computeMedian,
+  computeWeekdayMedians,
   getEndOfDay,
   getWeekday,
   selectTopDimensions,
 } from '../utils';
 
-async function fetchDeviceAggregates(ctx: ComputeContext): Promise<{
+async function fetchReferrerAggregates(ctx: ComputeContext): Promise<{
   currentMap: Map<string, number>;
   baselineMap: Map<string, number>;
   totalCurrent: number;
@@ -25,7 +28,10 @@ async function fetchDeviceAggregates(ctx: ComputeContext): Promise<{
     const [currentResults, baselineResults, totals] = await Promise.all([
       ctx
         .clix()
-        .select<{ device: string; cnt: number }>(['device', 'count(*) as cnt'])
+        .select<{ referrer_name: string; cnt: number }>([
+          'referrer_name',
+          'count(*) as cnt',
+        ])
         .from(TABLE_NAMES.sessions)
         .where('project_id', '=', ctx.projectId)
         .where('sign', '=', 1)
@@ -33,13 +39,13 @@ async function fetchDeviceAggregates(ctx: ComputeContext): Promise<{
           ctx.window.start,
           getEndOfDay(ctx.window.end),
         ])
-        .groupBy(['device'])
+        .groupBy(['referrer_name'])
         .execute(),
       ctx
         .clix()
-        .select<{ date: string; device: string; cnt: number }>([
+        .select<{ date: string; referrer_name: string; cnt: number }>([
           'toDate(created_at) as date',
-          'device',
+          'referrer_name',
           'count(*) as cnt',
         ])
         .from(TABLE_NAMES.sessions)
@@ -49,13 +55,13 @@ async function fetchDeviceAggregates(ctx: ComputeContext): Promise<{
           ctx.window.baselineStart,
           getEndOfDay(ctx.window.baselineEnd),
         ])
-        .groupBy(['date', 'device'])
+        .groupBy(['date', 'referrer_name'])
         .execute(),
       ctx
         .clix()
         .select<{ cur_total: number }>([
           ctx.clix.exp(
-            `countIf(created_at BETWEEN '${formatClickhouseDate(ctx.window.start)}' AND '${formatClickhouseDate(getEndOfDay(ctx.window.end))}') as cur_total`,
+            `countIf(created_at BETWEEN '${formatClickhouseDate(ctx.window.start)}' AND '${formatClickhouseDate(getEndOfDay(ctx.window.end))}') as cur_total`
           ),
         ])
         .from(TABLE_NAMES.sessions)
@@ -68,40 +74,23 @@ async function fetchDeviceAggregates(ctx: ComputeContext): Promise<{
         .execute(),
     ]);
 
-    const currentMap = buildLookupMap(currentResults, (r) => r.device);
+    const currentMap = buildLookupMap(
+      currentResults,
+      (r) => r.referrer_name || 'direct'
+    );
 
     const targetWeekday = getWeekday(ctx.window.start);
-    const aggregated = new Map<string, { date: string; cnt: number }[]>();
-    for (const r of baselineResults) {
-      if (!aggregated.has(r.device)) {
-        aggregated.set(r.device, []);
-      }
-      const entries = aggregated.get(r.device)!;
-      const existing = entries.find((e) => e.date === r.date);
-      if (existing) {
-        existing.cnt += Number(r.cnt ?? 0);
-      } else {
-        entries.push({ date: r.date, cnt: Number(r.cnt ?? 0) });
-      }
-    }
-
-    const baselineMap = new Map<string, number>();
-    for (const [deviceType, entries] of aggregated) {
-      const sameWeekdayValues = entries
-        .filter((e) => getWeekday(new Date(e.date)) === targetWeekday)
-        .map((e) => e.cnt)
-        .sort((a, b) => a - b);
-
-      if (sameWeekdayValues.length > 0) {
-        baselineMap.set(deviceType, computeMedian(sameWeekdayValues));
-      }
-    }
+    const baselineMap = computeWeekdayMedians(
+      baselineResults,
+      targetWeekday,
+      (r) => r.referrer_name || 'direct'
+    );
 
     const totalCurrent = totals[0]?.cur_total ?? 0;
-    const totalBaseline =
-      baselineMap.size > 0
-        ? Array.from(baselineMap.values()).reduce((sum, val) => sum + val, 0)
-        : 0;
+    const totalBaseline = Array.from(baselineMap.values()).reduce(
+      (sum, val) => sum + val,
+      0
+    );
 
     return { currentMap, baselineMap, totalCurrent, totalBaseline };
   }
@@ -114,13 +103,13 @@ async function fetchDeviceAggregates(ctx: ComputeContext): Promise<{
   const [results, totals] = await Promise.all([
     ctx
       .clix()
-      .select<{ device: string; cur: number; base: number }>([
-        'device',
+      .select<{ referrer_name: string; cur: number; base: number }>([
+        'referrer_name',
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur`,
+          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur`
         ),
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base`,
+          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base`
         ),
       ])
       .from(TABLE_NAMES.sessions)
@@ -130,16 +119,16 @@ async function fetchDeviceAggregates(ctx: ComputeContext): Promise<{
         ctx.window.baselineStart,
         getEndOfDay(ctx.window.end),
       ])
-      .groupBy(['device'])
+      .groupBy(['referrer_name'])
       .execute(),
     ctx
       .clix()
       .select<{ cur_total: number; base_total: number }>([
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur_total`,
+          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur_total`
         ),
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base_total`,
+          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base_total`
         ),
       ])
       .from(TABLE_NAMES.sessions)
@@ -154,14 +143,14 @@ async function fetchDeviceAggregates(ctx: ComputeContext): Promise<{
 
   const currentMap = buildLookupMap(
     results,
-    (r) => r.device,
-    (r) => Number(r.cur ?? 0),
+    (r) => r.referrer_name || 'direct',
+    (r) => Number(r.cur ?? 0)
   );
 
   const baselineMap = buildLookupMap(
     results,
-    (r) => r.device,
-    (r) => Number(r.base ?? 0),
+    (r) => r.referrer_name || 'direct',
+    (r) => Number(r.base ?? 0)
   );
 
   const totalCurrent = totals[0]?.cur_total ?? 0;
@@ -170,32 +159,34 @@ async function fetchDeviceAggregates(ctx: ComputeContext): Promise<{
   return { currentMap, baselineMap, totalCurrent, totalBaseline };
 }
 
-export const devicesModule: InsightModule = {
-  key: 'devices',
+export const referrersModule: InsightModule = {
+  key: 'referrers',
   cadence: ['daily'],
-  thresholds: { minTotal: 100, minAbsDelta: 0, minPct: 0.08, maxDims: 5 },
+  thresholds: { minTotal: 100, minAbsDelta: 20, minPct: 0.15, maxDims: 50 },
 
   async enumerateDimensions(ctx) {
-    const { currentMap, baselineMap } = await fetchDeviceAggregates(ctx);
+    const { currentMap, baselineMap } = await fetchReferrerAggregates(ctx);
     const topDims = selectTopDimensions(
       currentMap,
       baselineMap,
-      this.thresholds?.maxDims ?? 5,
+      this.thresholds?.maxDims ?? 50
     );
-    return topDims.map((dim) => `device:${dim}`);
+    return topDims.map((dim) => `referrer:${dim}`);
   },
 
   async computeMany(ctx, dimensionKeys): Promise<ComputeResult[]> {
     const { currentMap, baselineMap, totalCurrent, totalBaseline } =
-      await fetchDeviceAggregates(ctx);
+      await fetchReferrerAggregates(ctx);
     const results: ComputeResult[] = [];
 
     for (const dimKey of dimensionKeys) {
-      if (!dimKey.startsWith('device:')) continue;
-      const deviceType = dimKey.replace('device:', '');
+      if (!dimKey.startsWith('referrer:')) {
+        continue;
+      }
+      const referrerName = dimKey.replace('referrer:', '');
 
-      const currentValue = currentMap.get(deviceType) ?? 0;
-      const compareValue = baselineMap.get(deviceType) ?? 0;
+      const currentValue = currentMap.get(referrerName) ?? 0;
+      const compareValue = baselineMap.get(referrerName) ?? 0;
 
       const currentShare = totalCurrent > 0 ? currentValue / totalCurrent : 0;
       const compareShare = totalBaseline > 0 ? compareValue / totalBaseline : 0;
@@ -215,6 +206,8 @@ export const devicesModule: InsightModule = {
           shareShiftPp,
           currentShare,
           compareShare,
+          isNew: compareValue === 0 && currentValue > 0,
+          isGone: currentValue === 0 && compareValue > 0,
         },
       });
     }
@@ -223,9 +216,14 @@ export const devicesModule: InsightModule = {
   },
 
   render(result, ctx): RenderedCard {
-    const device = result.dimensionKey.replace('device:', '');
-    const changePct = result.changePct ?? 0;
-    const isIncrease = changePct >= 0;
+    const referrer = result.dimensionKey.replace('referrer:', '');
+    const pct = ((result.changePct ?? 0) * 100).toFixed(1);
+    const isIncrease = (result.changePct ?? 0) >= 0;
+    const isNew = result.extra?.isNew as boolean | undefined;
+
+    const title = isNew
+      ? `New traffic source: ${referrer}`
+      : `Traffic from ${referrer} ${isIncrease ? '↑' : '↓'} ${Math.abs(Number(pct))}%`;
 
     const sessionsCurrent = result.currentValue ?? 0;
     const sessionsCompare = result.compareValue ?? 0;
@@ -233,12 +231,18 @@ export const devicesModule: InsightModule = {
     const shareCompare = Number(result.extra?.compareShare ?? 0);
 
     return {
-      title: `${device} ${isIncrease ? '↑' : '↓'} ${Math.abs(changePct * 100).toFixed(0)}%`,
-      summary: `${ctx.window.label}. Device traffic change.`,
-      displayName: device,
+      title,
+      summary: `${ctx.window.label}. Sessions ${sessionsCurrent} vs ${sessionsCompare}.`,
+      displayName: referrer,
       payload: {
         kind: 'insight_v1',
-        dimensions: [{ key: 'device', value: device, displayName: device }],
+        dimensions: [
+          {
+            key: 'referrer_name',
+            value: referrer,
+            displayName: referrer,
+          },
+        ],
         primaryMetric: 'sessions',
         metrics: {
           sessions: {
@@ -267,7 +271,8 @@ export const devicesModule: InsightModule = {
           },
         },
         extra: {
-          // keep module-specific flags/fields if needed later
+          isNew: result.extra?.isNew,
+          isGone: result.extra?.isGone,
         },
       },
     };

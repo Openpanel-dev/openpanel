@@ -1,9 +1,9 @@
 import crypto from 'node:crypto';
 import type { ClickHouseClient } from '@clickhouse/client';
 import {
-  type Query,
   clix as originalClix,
-} from '../../clickhouse/query-builder';
+  type Query,
+} from '@openpanel/db/src/clickhouse/query-builder';
 
 /**
  * Creates a cached wrapper around clix that automatically caches query results
@@ -17,7 +17,7 @@ import {
 export function createCachedClix(
   client: ClickHouseClient,
   cache?: Map<string, any>,
-  timezone?: string,
+  timezone?: string
 ) {
   function clixCached(): Query {
     const query = originalClix(client, timezone);

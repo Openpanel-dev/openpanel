@@ -8,11 +8,17 @@ export function defaultImpactScore(r: ComputeResult): number {
 }
 
 export function severityBand(
-  changePct?: number | null,
+  changePct?: number | null
 ): 'low' | 'moderate' | 'severe' | null {
   const p = Math.abs(changePct ?? 0);
-  if (p < 0.1) return null;
-  if (p < 0.5) return 'low';
-  if (p < 1) return 'moderate';
+  if (p < 0.1) {
+    return null;
+  }
+  if (p < 0.5) {
+    return 'low';
+  }
+  if (p < 1) {
+    return 'moderate';
+  }
   return 'severe';
 }

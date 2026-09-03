@@ -145,6 +145,29 @@ export {
   verifyPasswordHash,
   verifyTotpCode,
 } from './modules/auth/auth.service';
+// Dissolved from @openpanel/db's services/insights* + referrer-spikes.service
+// (M5-001) — apps/worker's insight job files and packages/trpc's insight
+// router call these directly, the same way V1 reaches every other dissolved
+// service here.
+export type {
+  DailyInsightCandidate,
+  GetReferrerSpikesInput,
+  ReferrerSpikeCluster,
+  WeeklyDigestPreview,
+  WeeklyDigestResult,
+} from './modules/insight/insight.service';
+export {
+  cleanupStaleInsights,
+  explainInsight,
+  getReferrerSpikes,
+  listAllInsights,
+  listDailyInsightCandidates,
+  listInsights,
+  previewWeeklyDigest,
+  runProjectInsights,
+  scanLegacyInsights,
+  sendWeeklyDigests,
+} from './modules/insight/insight.service';
 export { dashboardRoutes, opsRoutes, publicApiRoutes } from './rest.routes';
 // The RPC base is on the barrel because it is the seam `@openpanel/trpc`
 // builds its 28 routers on: ONE tRPC instance, mounted by V1's Fastify

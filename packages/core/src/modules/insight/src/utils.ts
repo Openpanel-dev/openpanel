@@ -13,7 +13,9 @@ export function getWeekday(date: Date): number {
  * Compute median of a sorted array of numbers
  */
 export function computeMedian(sortedValues: number[]): number {
-  if (sortedValues.length === 0) return 0;
+  if (sortedValues.length === 0) {
+    return 0;
+  }
   const mid = Math.floor(sortedValues.length / 2);
   return sortedValues.length % 2 === 0
     ? ((sortedValues[mid - 1] ?? 0) + (sortedValues[mid] ?? 0)) / 2
@@ -32,14 +34,16 @@ export function computeMedian(sortedValues: number[]): number {
 export function computeWeekdayMedians<T>(
   data: T[],
   targetWeekday: number,
-  getDimension: (row: T) => string,
+  getDimension: (row: T) => string
 ): Map<string, number> {
   // Group by dimension, filtered to target weekday
   const byDimension = new Map<string, number[]>();
 
   for (const row of data) {
     const rowWeekday = getWeekday(new Date((row as any).date));
-    if (rowWeekday !== targetWeekday) continue;
+    if (rowWeekday !== targetWeekday) {
+      continue;
+    }
 
     const dim = getDimension(row);
     const values = byDimension.get(dim) ?? [];
@@ -62,7 +66,7 @@ export function computeWeekdayMedians<T>(
  */
 export function computeChangePct(
   currentValue: number,
-  compareValue: number,
+  compareValue: number
 ): number {
   return compareValue > 0
     ? (currentValue - compareValue) / compareValue
@@ -76,7 +80,7 @@ export function computeChangePct(
  */
 export function computeDirection(
   changePct: number,
-  threshold = 0.05,
+  threshold = 0.05
 ): 'up' | 'down' | 'flat' {
   return changePct > threshold
     ? 'up'
@@ -107,7 +111,7 @@ export function getEndOfDay(date: Date): Date {
 export function buildLookupMap<T>(
   results: T[],
   getKey: (row: T) => string,
-  getCount: (row: T) => number = (row) => Number((row as any).cnt ?? 0),
+  getCount: (row: T) => number = (row) => Number((row as any).cnt ?? 0)
 ): Map<string, number> {
   const map = new Map<string, number>();
   for (const row of results) {
@@ -130,12 +134,16 @@ export function buildLookupMap<T>(
 export function selectTopDimensions(
   currentMap: Map<string, number>,
   baselineMap: Map<string, number>,
-  maxDims: number,
+  maxDims: number
 ): string[] {
   // Merge all dimensions from both maps
   const allDims = new Set<string>();
-  for (const dim of currentMap.keys()) allDims.add(dim);
-  for (const dim of baselineMap.keys()) allDims.add(dim);
+  for (const dim of currentMap.keys()) {
+    allDims.add(dim);
+  }
+  for (const dim of baselineMap.keys()) {
+    allDims.add(dim);
+  }
 
   // Rank by greatest(current, baseline)
   const ranked = Array.from(allDims)

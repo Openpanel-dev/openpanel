@@ -1,4 +1,7 @@
-import { TABLE_NAMES, formatClickhouseDate } from '../../../clickhouse/client';
+import {
+  formatClickhouseDate,
+  TABLE_NAMES,
+} from '@openpanel/db/src/clickhouse/client';
 import type {
   ComputeContext,
   ComputeResult,
@@ -67,7 +70,7 @@ async function fetchEntryPageAggregates(ctx: ComputeContext): Promise<{
         .clix()
         .select<{ cur_total: number }>([
           ctx.clix.exp(
-            `countIf(created_at BETWEEN '${formatClickhouseDate(ctx.window.start)}' AND '${formatClickhouseDate(getEndOfDay(ctx.window.end))}') as cur_total`,
+            `countIf(created_at BETWEEN '${formatClickhouseDate(ctx.window.start)}' AND '${formatClickhouseDate(getEndOfDay(ctx.window.end))}') as cur_total`
           ),
         ])
         .from(TABLE_NAMES.sessions)
@@ -82,20 +85,20 @@ async function fetchEntryPageAggregates(ctx: ComputeContext): Promise<{
 
     const currentMap = buildLookupMap(
       currentResults,
-      (r) => `${r.entry_origin || ''}${DELIMITER}${r.entry_path || '/'}`,
+      (r) => `${r.entry_origin || ''}${DELIMITER}${r.entry_path || '/'}`
     );
 
     const targetWeekday = getWeekday(ctx.window.start);
     const baselineMap = computeWeekdayMedians(
       baselineResults,
       targetWeekday,
-      (r) => `${r.entry_origin || ''}${DELIMITER}${r.entry_path || '/'}`,
+      (r) => `${r.entry_origin || ''}${DELIMITER}${r.entry_path || '/'}`
     );
 
     const totalCurrent = totals[0]?.cur_total ?? 0;
     const totalBaseline = Array.from(baselineMap.values()).reduce(
       (sum, val) => sum + val,
-      0,
+      0
     );
 
     return { currentMap, baselineMap, totalCurrent, totalBaseline };
@@ -118,10 +121,10 @@ async function fetchEntryPageAggregates(ctx: ComputeContext): Promise<{
         'entry_origin',
         'entry_path',
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur`,
+          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur`
         ),
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base`,
+          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base`
         ),
       ])
       .from(TABLE_NAMES.sessions)
@@ -137,10 +140,10 @@ async function fetchEntryPageAggregates(ctx: ComputeContext): Promise<{
       .clix()
       .select<{ cur_total: number; base_total: number }>([
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur_total`,
+          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur_total`
         ),
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base_total`,
+          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base_total`
         ),
       ])
       .from(TABLE_NAMES.sessions)
@@ -156,13 +159,13 @@ async function fetchEntryPageAggregates(ctx: ComputeContext): Promise<{
   const currentMap = buildLookupMap(
     results,
     (r) => `${r.entry_origin || ''}${DELIMITER}${r.entry_path || '/'}`,
-    (r) => Number(r.cur ?? 0),
+    (r) => Number(r.cur ?? 0)
   );
 
   const baselineMap = buildLookupMap(
     results,
     (r) => `${r.entry_origin || ''}${DELIMITER}${r.entry_path || '/'}`,
-    (r) => Number(r.base ?? 0),
+    (r) => Number(r.base ?? 0)
   );
 
   const totalCurrent = totals[0]?.cur_total ?? 0;
@@ -181,7 +184,7 @@ export const entryPagesModule: InsightModule = {
     const topDims = selectTopDimensions(
       currentMap,
       baselineMap,
-      this.thresholds?.maxDims ?? 100,
+      this.thresholds?.maxDims ?? 100
     );
     return topDims.map((dim) => `entry:${dim}`);
   },
@@ -192,7 +195,9 @@ export const entryPagesModule: InsightModule = {
     const results: ComputeResult[] = [];
 
     for (const dimKey of dimensionKeys) {
-      if (!dimKey.startsWith('entry:')) continue;
+      if (!dimKey.startsWith('entry:')) {
+        continue;
+      }
       const originPath = dimKey.replace('entry:', '');
 
       const currentValue = currentMap.get(originPath) ?? 0;

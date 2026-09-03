@@ -1,3 +1,5 @@
+// Dissolved into @openpanel/core's insight module (M5-001).
+import { getReferrerSpikes } from '@openpanel/core';
 import {
   ch,
   clix,
@@ -6,7 +8,6 @@ import {
   getChartStartEndDate,
   getConversionEventNames,
   getOrganizationSubscriptionChartEndDate,
-  getReferrerSpikes,
   getSettingsForProject,
   overviewService,
   TABLE_NAMES,

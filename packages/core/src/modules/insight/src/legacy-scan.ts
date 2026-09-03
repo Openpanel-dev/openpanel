@@ -1,5 +1,5 @@
 import type { ClickHouseClient } from '@clickhouse/client';
-import { clix } from '../clickhouse/query-builder';
+import { clix } from '@openpanel/db/src/clickhouse/query-builder';
 
 export interface Insight {
   type: string;
@@ -70,7 +70,7 @@ interface EventCompletionResult {
 }
 
 export class InsightsService {
-  constructor(private client: ClickHouseClient) {}
+  constructor(private readonly client: ClickHouseClient) {}
 
   private async getTrafficSpikes(projectId: string): Promise<Insight[]> {
     const query = clix(this.client)
@@ -84,7 +84,7 @@ export class InsightsService {
       .where(
         'created_at',
         '>=',
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       )
       .where('project_id', '=', projectId)
       .groupBy(['referrer_name', 'date'])
@@ -110,7 +110,7 @@ export class InsightsService {
       .where(
         'created_at',
         '>=',
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       )
       .where('project_id', '=', projectId)
       .groupBy(['date'])
@@ -136,7 +136,7 @@ export class InsightsService {
       .where(
         'created_at',
         '>=',
-        new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
       )
       .where('project_id', '=', projectId)
       .where('is_new', '=', true)
@@ -153,7 +153,7 @@ export class InsightsService {
   }
 
   private async getReferralSourceHighlights(
-    projectId: string,
+    projectId: string
   ): Promise<Insight[]> {
     const query = clix(this.client)
       .select([
@@ -177,7 +177,7 @@ export class InsightsService {
   }
 
   private async getSessionDurationChanges(
-    projectId: string,
+    projectId: string
   ): Promise<Insight[]> {
     const query = clix(this.client)
       .select([
@@ -189,7 +189,7 @@ export class InsightsService {
       .where(
         'created_at',
         '>=',
-        new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
       )
       .where('project_id', '=', projectId)
       .groupBy(['week'])
@@ -215,7 +215,7 @@ export class InsightsService {
       .where(
         'created_at',
         '>=',
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       )
       .where('project_id', '=', projectId)
       .groupBy(['path'])
@@ -231,7 +231,7 @@ export class InsightsService {
   }
 
   private async getBounceRateImprovements(
-    projectId: string,
+    projectId: string
   ): Promise<Insight[]> {
     const query = clix(this.client)
       .select([
@@ -243,7 +243,7 @@ export class InsightsService {
       .where(
         'created_at',
         '>=',
-        new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
       )
       .where('project_id', '=', projectId)
       .groupBy(['month'])
@@ -259,7 +259,7 @@ export class InsightsService {
   }
 
   private async getReturningVisitorTrends(
-    projectId: string,
+    projectId: string
   ): Promise<Insight[]> {
     const query = clix(this.client)
       .select([
@@ -271,7 +271,7 @@ export class InsightsService {
       .where(
         'created_at',
         '>=',
-        new Date(Date.now() - 180 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() - 180 * 24 * 60 * 60 * 1000)
       )
       .where('project_id', '=', projectId)
       .where('is_returning', '=', true)
@@ -288,7 +288,7 @@ export class InsightsService {
   }
 
   private async getGeographicInterestShifts(
-    projectId: string,
+    projectId: string
   ): Promise<Insight[]> {
     const query = clix(this.client)
       .select([
@@ -300,7 +300,7 @@ export class InsightsService {
       .where(
         'created_at',
         '>=',
-        new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
       )
       .where('project_id', '=', projectId)
       .groupBy(['country', 'toWeek(created_at)'])
@@ -316,7 +316,7 @@ export class InsightsService {
   }
 
   private async getEventCompletionChanges(
-    projectId: string,
+    projectId: string
   ): Promise<Insight[]> {
     const query = clix(this.client)
       .select([
@@ -329,7 +329,7 @@ export class InsightsService {
       .where(
         'created_at',
         '>=',
-        new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
       )
       .where('project_id', '=', projectId)
       .where('status', '=', 'completed')
@@ -384,10 +384,10 @@ export class InsightsService {
     ].sort((a, b) => {
       // Sort by most recent data first
       const dateA = new Date(
-        a.data.date || a.data.month || a.data.week || a.data.quarter,
+        a.data.date || a.data.month || a.data.week || a.data.quarter
       );
       const dateB = new Date(
-        b.data.date || b.data.month || b.data.week || b.data.quarter,
+        b.data.date || b.data.month || b.data.week || b.data.quarter
       );
       return dateB.getTime() - dateA.getTime();
     });

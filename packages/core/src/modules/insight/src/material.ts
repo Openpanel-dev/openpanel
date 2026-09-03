@@ -6,7 +6,7 @@ export function materialDecision(
   next: {
     changePct?: number;
     direction?: 'up' | 'down' | 'flat';
-  },
+  }
 ): MaterialDecision {
   const nextBand = band(next.changePct);
   if (!prev) {

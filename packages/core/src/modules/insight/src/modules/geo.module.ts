@@ -1,5 +1,8 @@
 import { getCountry } from '@openpanel/constants';
-import { TABLE_NAMES, formatClickhouseDate } from '../../../clickhouse/client';
+import {
+  formatClickhouseDate,
+  TABLE_NAMES,
+} from '@openpanel/db/src/clickhouse/client';
 import type {
   ComputeContext,
   ComputeResult,
@@ -59,7 +62,7 @@ async function fetchGeoAggregates(ctx: ComputeContext): Promise<{
         .clix()
         .select<{ cur_total: number }>([
           ctx.clix.exp(
-            `countIf(created_at BETWEEN '${formatClickhouseDate(ctx.window.start)}' AND '${formatClickhouseDate(getEndOfDay(ctx.window.end))}') as cur_total`,
+            `countIf(created_at BETWEEN '${formatClickhouseDate(ctx.window.start)}' AND '${formatClickhouseDate(getEndOfDay(ctx.window.end))}') as cur_total`
           ),
         ])
         .from(TABLE_NAMES.sessions)
@@ -74,20 +77,20 @@ async function fetchGeoAggregates(ctx: ComputeContext): Promise<{
 
     const currentMap = buildLookupMap(
       currentResults,
-      (r) => r.country || 'unknown',
+      (r) => r.country || 'unknown'
     );
 
     const targetWeekday = getWeekday(ctx.window.start);
     const baselineMap = computeWeekdayMedians(
       baselineResults,
       targetWeekday,
-      (r) => r.country || 'unknown',
+      (r) => r.country || 'unknown'
     );
 
     const totalCurrent = totals[0]?.cur_total ?? 0;
     const totalBaseline = Array.from(baselineMap.values()).reduce(
       (sum, val) => sum + val,
-      0,
+      0
     );
 
     return { currentMap, baselineMap, totalCurrent, totalBaseline };
@@ -104,10 +107,10 @@ async function fetchGeoAggregates(ctx: ComputeContext): Promise<{
       .select<{ country: string; cur: number; base: number }>([
         'country',
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur`,
+          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur`
         ),
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base`,
+          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base`
         ),
       ])
       .from(TABLE_NAMES.sessions)
@@ -123,10 +126,10 @@ async function fetchGeoAggregates(ctx: ComputeContext): Promise<{
       .clix()
       .select<{ cur_total: number; base_total: number }>([
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur_total`,
+          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur_total`
         ),
         ctx.clix.exp(
-          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base_total`,
+          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base_total`
         ),
       ])
       .from(TABLE_NAMES.sessions)
@@ -142,13 +145,13 @@ async function fetchGeoAggregates(ctx: ComputeContext): Promise<{
   const currentMap = buildLookupMap(
     results,
     (r) => r.country || 'unknown',
-    (r) => Number(r.cur ?? 0),
+    (r) => Number(r.cur ?? 0)
   );
 
   const baselineMap = buildLookupMap(
     results,
     (r) => r.country || 'unknown',
-    (r) => Number(r.base ?? 0),
+    (r) => Number(r.base ?? 0)
   );
 
   const totalCurrent = totals[0]?.cur_total ?? 0;
@@ -167,7 +170,7 @@ export const geoModule: InsightModule = {
     const topDims = selectTopDimensions(
       currentMap,
       baselineMap,
-      this.thresholds?.maxDims ?? 30,
+      this.thresholds?.maxDims ?? 30
     );
     return topDims.map((dim) => `country:${dim}`);
   },
@@ -178,7 +181,9 @@ export const geoModule: InsightModule = {
     const results: ComputeResult[] = [];
 
     for (const dimKey of dimensionKeys) {
-      if (!dimKey.startsWith('country:')) continue;
+      if (!dimKey.startsWith('country:')) {
+        continue;
+      }
       const country = dimKey.replace('country:', '');
 
       const currentValue = currentMap.get(country) ?? 0;
@@ -232,9 +237,7 @@ export const geoModule: InsightModule = {
       displayName,
       payload: {
         kind: 'insight_v1',
-        dimensions: [
-          { key: 'country', value: country, displayName: displayName },
-        ],
+        dimensions: [{ key: 'country', value: country, displayName }],
         primaryMetric: 'sessions',
         metrics: {
           sessions: {

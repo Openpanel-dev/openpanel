@@ -65,3 +65,28 @@ test('every queue has a compat hook — the cutover has no drain step', () => {
     expect(typeof definition.compat).toBe('function');
   }
 });
+
+// M5-001: the insight module's job — the BullMQ job *name* IS the registry
+// key (defineQueue stamps it), and legacyCompat.insights already discriminates
+// on this exact name (jobs/compat.ts), so this pins the two in agreement.
+test('the insights queue carries the insight module job', () => {
+  expect(Object.keys(queues.insights.jobs)).toEqual(['insightsProject']);
+  expect(queues.insights.jobs.insightsProject).toMatchObject({
+    queue: 'insights',
+    name: 'insightsProject',
+  });
+});
+
+// The insight module's cron fragment (insight.jobs.ts), spread into the ONE
+// cron queue (ADR-005: "no cron module"). legacyCompat.cron maps a legacy
+// job's `type` straight onto its name, so these three ids double as job names.
+test('the cron queue carries the insight module cron fragment', () => {
+  expect(Object.keys(queues.cron.jobs).sort()).toEqual(
+    ['insightCleanup', 'insightsDaily', 'weeklyDigest'].sort()
+  );
+  for (const name of ['insightsDaily', 'insightCleanup', 'weeklyDigest']) {
+    expect(
+      queues.cron.jobs[name as keyof typeof queues.cron.jobs]
+    ).toMatchObject({ queue: 'cron', name });
+  }
+});

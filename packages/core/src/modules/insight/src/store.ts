@@ -1,15 +1,15 @@
-import { Prisma, db } from '../../prisma-client';
+import { db, Prisma } from '@openpanel/db/src/prisma-client';
 import type {
   Cadence,
   InsightStore,
   PersistedInsight,
-  RenderedCard,
   WindowKind,
-  WindowRange,
 } from './types';
 
 export const insightStore: InsightStore = {
-  async listProjectIdsForCadence(cadence: Cadence): Promise<string[]> {
+  // `cadence` isn't read — there is only one today ('daily') — but it stays
+  // on the signature because InsightStore's contract names it (V1 parity).
+  async listProjectIdsForCadence(_cadence: Cadence): Promise<string[]> {
     const projects = await db.project.findMany({
       where: {
         deleteAt: null,
@@ -48,7 +48,9 @@ export const insightStore: InsightStore = {
       },
     });
 
-    if (!insight) return null;
+    if (!insight) {
+      return null;
+    }
 
     return {
       id: insight.id,
@@ -176,12 +178,12 @@ export const insightStore: InsightStore = {
     };
   },
 
+  // projectId/moduleKey/dimensionKey/windowKind aren't persisted here — the
+  // insight_events row is scoped by insightId alone, they're derivable from
+  // the parent (V1 parity) — but the engine passes them for identity/logging
+  // symmetry with the store's other methods, so they stay on the signature.
   async insertEvent({
-    projectId,
     insightId,
-    moduleKey,
-    dimensionKey,
-    windowKind,
     eventKind,
     changeFrom,
     changeTo,

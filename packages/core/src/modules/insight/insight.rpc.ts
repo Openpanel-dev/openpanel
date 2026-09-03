@@ -1,17 +1,30 @@
-// Dissolved into @openpanel/core's insight module (M5-001): the business
-// logic — the query/detection engine, the AI enrich/explain/narrative calls,
-// the digest and cleanup jobs — moved to
-// packages/core/src/modules/insight/insight.service.ts. This router stays
-// (DELEGATE PATTERN): it keeps V1's protectedProcedure stack (session/access/
-// logger/rate-limit middleware) untouched and delegates each handler body to
-// the core service.
-import { explainInsight, listAllInsights, listInsights } from '@openpanel/core';
-import { db } from '@openpanel/db';
+// Ported from packages/trpc/src/routers/insight.ts (M5-001).
+//
+// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
+// stack — lands in core with auth (rpc/base.ts: "those need the resolved
+// Session shape and the access rules, so they land with auth (P6)"). Until
+// then this router does its own minimal "is anyone logged in" check inline,
+// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
+// through packages/trpc's own `protectedProcedure` (full stack included) and
+// delegates its handler bodies to `ctx.services.insight` (DELEGATE PATTERN),
+// so nothing here is a live regression.
+//
+// The per-project access ladder itself IS shared: `./src/access.ts` binds
+// core's shared/access.ts ladder to @openpanel/db's real lookups, the same
+// way packages/trpc/src/access.ts does for V1.
+
 import type { InsightPayload } from '@openpanel/validation';
 import { z } from 'zod';
-import { getProjectAccess, requireProjectAccess } from '../access';
-import { TRPCForbiddenError } from '../errors';
-import { createTRPCRouter, protectedProcedure } from '../trpc';
+import { createTRPCRouter, procedure } from '../../rpc/base';
+import { TRPCAccessError } from '../../rpc/errors';
+
+// Lazy, deliberately: ./src/access reaches @openpanel/db's real lookups,
+// which (like insight.service.ts's db/ch access) construct a real pino
+// logger — with a transport worker thread — at import time. See
+// insight.service.ts's header for the full reasoning.
+function loadAccessChecks() {
+  return import('./src/access');
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPLAIN_COLUMNS = [
@@ -21,8 +34,15 @@ const EXPLAIN_COLUMNS = [
   'utm_source',
 ] as const;
 
+function requireLogin(userId: string | null | undefined): string {
+  if (!userId) {
+    throw new TRPCAccessError('Not authenticated');
+  }
+  return userId;
+}
+
 export const insightRouter = createTRPCRouter({
-  list: protectedProcedure
+  list: procedure
     .input(
       z.object({
         projectId: z.string(),
@@ -30,19 +50,14 @@ export const insightRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { projectId, limit }, ctx }) => {
-      const access = await getProjectAccess({
-        userId: ctx.session.userId,
-        projectId,
-      });
+      const userId = requireLogin(ctx.session.userId);
+      const { requireProjectAccess } = await loadAccessChecks();
+      await requireProjectAccess({ userId, projectId, level: 'read' });
 
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
-
-      // Fetch more insights than needed to account for deduplication.
-      // AI relevanceScore leads (un-enriched insights sort last via nulls:last),
-      // with the statistical impactScore as the tiebreaker / fallback.
-      const allInsights = await listInsights({
+      // Fetch more than needed to account for deduplication. AI
+      // relevanceScore leads (un-enriched insights sort last via
+      // nulls:last), with the statistical impactScore as the tiebreaker.
+      const allInsights = await ctx.services.insight.listInsights({
         projectId,
         limit: limit * 3,
       });
@@ -54,7 +69,8 @@ export const insightRouter = createTRPCRouter({
         rolling_30d: 3,
       };
 
-      // Group by moduleKey + dimensionKey, keep only highest priority windowKind
+      // Group by moduleKey + dimensionKey, keep only the highest-priority
+      // windowKind.
       const deduplicated = new Map<string, (typeof allInsights)[0]>();
       for (const insight of allInsights) {
         const key = `${insight.moduleKey}:${insight.dimensionKey}`;
@@ -64,27 +80,22 @@ export const insightRouter = createTRPCRouter({
           ? (windowKindPriority[existing.windowKind] ?? 999)
           : 999;
 
-        // Keep if no existing, or if current has higher priority (lower number)
         if (!existing || currentPriority < existingPriority) {
           deduplicated.set(key, insight);
         }
       }
 
-      // Convert back to array, sort by relevanceScore (impactScore fallback),
-      // and limit
-      const insights = Array.from(deduplicated.values())
+      return Array.from(deduplicated.values())
         .sort(
           (a, b) =>
             (b.relevanceScore ?? -1) - (a.relevanceScore ?? -1) ||
             (b.impactScore ?? 0) - (a.impactScore ?? 0)
         )
         .slice(0, limit)
-        .map(({ impactScore, ...rest }) => rest); // Remove impactScore from response
-
-      return insights;
+        .map(({ impactScore, ...rest }) => rest); // strip impactScore from the response
     }),
 
-  listAll: protectedProcedure
+  listAll: procedure
     .input(
       z.object({
         projectId: z.string(),
@@ -92,25 +103,28 @@ export const insightRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { projectId, limit }, ctx }) => {
-      const access = await getProjectAccess({
-        userId: ctx.session.userId,
-        projectId,
-      });
+      const userId = requireLogin(ctx.session.userId);
+      const { requireProjectAccess } = await loadAccessChecks();
+      await requireProjectAccess({ userId, projectId, level: 'read' });
 
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
-
-      return listAllInsights({ projectId, limit });
+      return ctx.services.insight.listAllInsights({ projectId, limit });
     }),
 
-  // Phase 5: the "why". Decompose the insight's change across referrer/country/
-  // device/utm (current vs baseline window), pull nearby references, and have
-  // the AI explain which sub-segment drove it. On-demand (a button); the result
-  // is cached per insight version so repeat clicks don't re-bill the LLM.
-  explain: protectedProcedure
+  // Phase 5: the "why". Decompose the insight's change across referrer/
+  // country/device/utm (current vs baseline window), pull nearby references,
+  // and have the AI explain which sub-segment drove it. Cached per insight
+  // version so repeat clicks don't re-bill the LLM.
+  explain: procedure
     .input(z.object({ insightId: z.string() }))
     .mutation(async ({ input: { insightId }, ctx }) => {
+      const userId = requireLogin(ctx.session.userId);
+
+      // `overview` hasn't moved to core yet — deep-imported like the rest of
+      // @openpanel/db's internals until it does.
+      const { db } = await import('@openpanel/db/src/prisma-client');
+      const { getSegmentDailySeriesCore, getTrafficBreakdownCore } =
+        await import('@openpanel/db/src/services/overview.service');
+
       const insight = await db.projectInsight.findUniqueOrThrow({
         where: { id: insightId },
         select: {
@@ -129,22 +143,21 @@ export const insightRouter = createTRPCRouter({
 
       // Reads an existing insight and explains it. Nothing about the project
       // changes, so a read-level member may do it.
+      const { requireProjectAccess } = await loadAccessChecks();
       await requireProjectAccess({
-        userId: ctx.session.userId,
+        userId,
         projectId: insight.projectId,
         level: 'read',
       });
 
-      // Current window from the insight; baseline = same span immediately before.
+      const cacheKey = `insight-explain:${insightId}:${insight.lastUpdatedAt.getTime()}`;
+
       const end = insight.windowEnd ?? new Date();
       const start = insight.windowStart ?? new Date(end.getTime() - 7 * DAY_MS);
       const spanMs = Math.max(end.getTime() - start.getTime(), DAY_MS);
       const baseEnd = new Date(start.getTime());
       const baseStart = new Date(start.getTime() - spanMs);
       const iso = (d: Date) => d.toISOString();
-
-      const { getSegmentDailySeriesCore, getTrafficBreakdownCore } =
-        await import('@openpanel/db');
 
       const breakdowns = await Promise.all(
         EXPLAIN_COLUMNS.map(async (column) => {
@@ -171,10 +184,9 @@ export const insightRouter = createTRPCRouter({
         })
       );
 
-      // Daily series for the insight's own segment, so the model can read the
-      // shape of the change (a one-off spike vs sustained growth) instead of
-      // only the current-vs-baseline totals. Best-effort: skip on page/entry
-      // insights (events-table metrics) or anything we can't resolve.
+      // Daily series for the insight's own segment, so the model can read
+      // the shape of the change (a one-off spike vs sustained growth)
+      // instead of only current-vs-baseline totals. Best-effort.
       const payload = insight.payload as InsightPayload | null;
       const segment = payload?.dimensions?.[0];
       const primaryMetric = payload?.primaryMetric ?? 'sessions';
@@ -232,11 +244,7 @@ export const insightRouter = createTRPCRouter({
         select: { title: true, date: true },
       });
 
-      // `explainInsight` owns the cache-aside (keyed by insight id +
-      // lastUpdatedAt, so a recompute invalidates it automatically).
-      const cacheKey = `insight-explain:${insightId}:${insight.lastUpdatedAt.getTime()}`;
-
-      return explainInsight(
+      return ctx.services.insight.explainInsight(
         {
           insight: {
             title: insight.aiSummary ?? insight.title,

@@ -1114,9 +1114,18 @@ importers:
       '@openpanel/common':
         specifier: workspace:*
         version: link:../common
+      '@openpanel/constants':
+        specifier: workspace:*
+        version: link:../constants
+      '@openpanel/db':
+        specifier: workspace:*
+        version: link:../db
       '@openpanel/email':
         specifier: workspace:*
         version: link:../email
+      '@openpanel/redis':
+        specifier: workspace:*
+        version: link:../redis
       '@openpanel/validation':
         specifier: workspace:*
         version: link:../validation
@@ -1181,9 +1190,9 @@ importers:
         specifier: 'catalog:'
         version: 4.3.6
     devDependencies:
-      '@openpanel/db':
-        specifier: workspace:*
-        version: link:../db
+      '@clickhouse/client':
+        specifier: ^1.18.5
+        version: 1.18.5
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript

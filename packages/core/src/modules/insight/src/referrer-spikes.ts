@@ -1,11 +1,13 @@
-import type { IChartEventFilter, IInterval } from '@openpanel/validation';
 import {
-  TABLE_NAMES,
   ch,
   convertClickhouseDateToJs,
-} from '../clickhouse/client';
-import { clix } from '../clickhouse/query-builder';
-import { overviewService } from './overview.service';
+  TABLE_NAMES,
+} from '@openpanel/db/src/clickhouse/client';
+import { clix } from '@openpanel/db/src/clickhouse/query-builder';
+// `overview` hasn't moved to core yet (a later wave) — deep-imported like the
+// rest of @openpanel/db's internals until it does.
+import { overviewService } from '@openpanel/db/src/services/overview.service';
+import type { IChartEventFilter, IInterval } from '@openpanel/validation';
 
 // Spike detection thresholds. Conservative defaults — markers should be rare
 // and obviously meaningful when they appear. Tune here if real usage shows
@@ -71,7 +73,7 @@ export interface GetReferrerSpikesInput {
 }
 
 export async function getReferrerSpikes(
-  input: GetReferrerSpikesInput,
+  input: GetReferrerSpikesInput
 ): Promise<ReferrerSpikeCluster[]> {
   const { projectId, filters, startDate, endDate, interval, timezone } = input;
   const filtersWhere = overviewService.getRawWhereClause('sessions', filters);
@@ -158,7 +160,7 @@ export async function getReferrerSpikes(
   }
 
   const bucketTotalByDate = new Map(
-    bucketTotalRows.map((r) => [r.date, r.total]),
+    bucketTotalRows.map((r) => [r.date, r.total])
   );
 
   const rowsByReferrer = new Map<
@@ -190,15 +192,19 @@ export async function getReferrerSpikes(
     const p75 = percentile(sorted, 0.75);
     const ratioThreshold = Math.max(
       median * RATIO_MULTIPLIER,
-      p75 * P75_MULTIPLIER,
+      p75 * P75_MULTIPLIER
     );
 
     for (const row of rows) {
-      if (row.sessions < MIN_SESSIONS_FLOOR) continue;
+      if (row.sessions < MIN_SESSIONS_FLOOR) {
+        continue;
+      }
 
       const total = bucketTotalByDate.get(row.date) ?? row.sessions;
       const share = total > 0 ? row.sessions / total : 0;
-      if (share < MIN_SHARE) continue;
+      if (share < MIN_SHARE) {
+        continue;
+      }
 
       const baseline = isNewReferrer ? 0 : median;
       const ratio = isNewReferrer
@@ -206,7 +212,9 @@ export async function getReferrerSpikes(
         : row.sessions / Math.max(median, 1);
 
       const isSpike = isNewReferrer || row.sessions >= ratioThreshold;
-      if (!isSpike) continue;
+      if (!isSpike) {
+        continue;
+      }
 
       candidates.push({
         date: row.date,
@@ -239,7 +247,9 @@ export async function getReferrerSpikes(
   for (const [date, arr] of byBucket) {
     arr.sort((a, b) => b.score - a.score);
     const top = arr[0];
-    if (!top) continue;
+    if (!top) {
+      continue;
+    }
     perBucketSpikes.push({
       date,
       top,
@@ -290,12 +300,18 @@ export async function getReferrerSpikes(
 }
 
 function percentile(sortedAsc: number[], p: number): number {
-  if (sortedAsc.length === 0) return 0;
-  if (sortedAsc.length === 1) return sortedAsc[0]!;
+  if (sortedAsc.length === 0) {
+    return 0;
+  }
+  if (sortedAsc.length === 1) {
+    return sortedAsc[0]!;
+  }
   const idx = (sortedAsc.length - 1) * p;
   const lo = Math.floor(idx);
   const hi = Math.ceil(idx);
-  if (lo === hi) return sortedAsc[lo]!;
+  if (lo === hi) {
+    return sortedAsc[lo]!;
+  }
   return sortedAsc[lo]! * (hi - idx) + sortedAsc[hi]! * (idx - lo);
 }
 
