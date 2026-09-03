@@ -21,6 +21,10 @@ import {
   type InsightService,
 } from './modules/insight/insight.service';
 import {
+  createOnboardingService,
+  type OnboardingService,
+} from './modules/onboarding/onboarding.service';
+import {
   createOrganizationService,
   type OrganizationService,
 } from './modules/organization/organization.service';
@@ -47,6 +51,7 @@ export interface Services {
   cohort: CohortService;
   import: ImportService;
   organization: OrganizationService;
+  onboarding: OnboardingService;
 }
 
 export function createServices(deps: ServiceDeps): Services {
@@ -60,5 +65,6 @@ export function createServices(deps: ServiceDeps): Services {
     cohort: createCohortService(deps),
     import: createImportService(deps),
     organization: createOrganizationService(deps),
+    onboarding: createOnboardingService(deps),
   };
 }

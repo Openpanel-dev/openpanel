@@ -88,6 +88,7 @@ test('the cron queue carries the insight module cron fragment', () => {
       'gscSync',
       'insightCleanup',
       'insightsDaily',
+      'onboarding',
       'weeklyDigest',
     ].sort()
   );
@@ -143,6 +144,14 @@ test('the cron queue carries the organization module cron fragment', () => {
   expect(queues.cron.jobs.delete).toMatchObject({
     queue: 'cron',
     name: 'delete',
+  });
+});
+
+// M6-003: the onboarding module's own cron fragment.
+test('the cron queue carries the onboarding module cron fragment', () => {
+  expect(queues.cron.jobs.onboarding).toMatchObject({
+    queue: 'cron',
+    name: 'onboarding',
   });
 });
 

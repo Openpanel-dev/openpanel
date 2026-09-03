@@ -36,6 +36,7 @@ function stubJobCtx(cohort: Partial<CohortService>, jobName = 'test'): JobCtx {
     import: {} as Services['import'],
     cohort: cohort as CohortService,
     organization: {} as Services['organization'],
+    onboarding: {} as Services['onboarding'],
   };
   return {
     db: {},

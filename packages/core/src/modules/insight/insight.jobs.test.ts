@@ -43,6 +43,7 @@ function stubJobCtx(
     cohort: {} as Services['cohort'],
     import: {} as Services['import'],
     organization: {} as Services['organization'],
+    onboarding: {} as Services['onboarding'],
   };
   return {
     db: {},
@@ -124,6 +125,7 @@ test('insightsDaily fans out one insightsProject enqueue per candidate, jobId de
       cohort: {} as Services['cohort'],
       import: {} as Services['import'],
       organization: {} as Services['organization'],
+      onboarding: {} as Services['onboarding'],
     },
     requestId: 'req_1',
     job: { id: 'job_1', attempt: 0, queue: 'cron', name: 'insightsDaily' },

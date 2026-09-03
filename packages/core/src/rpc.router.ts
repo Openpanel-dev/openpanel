@@ -5,6 +5,7 @@
 // land with their module waves (P5-P8).
 
 import { chatRouter } from './modules/assistant/assistant.rpc';
+import { authRouter } from './modules/auth/auth.rpc';
 import { clientRouter } from './modules/client/client.rpc';
 import { cohortRouter } from './modules/cohort/cohort.rpc';
 import { conversationRouter } from './modules/conversation/conversation.rpc';
@@ -12,6 +13,7 @@ import { gscRouter } from './modules/gsc/gsc.rpc';
 import { healthRouter } from './modules/health/health.rpc';
 import { importRouter } from './modules/import/import.rpc';
 import { insightRouter } from './modules/insight/insight.rpc';
+import { onboardingRouter } from './modules/onboarding/onboarding.rpc';
 import { organizationRouter } from './modules/organization/organization.rpc';
 import { projectRouter } from './modules/project/project.rpc';
 import { userRouter } from './modules/user/user.rpc';
@@ -29,6 +31,8 @@ export const appRouter = createTRPCRouter({
   user: userRouter,
   project: projectRouter,
   client: clientRouter,
+  auth: authRouter,
+  onboarding: onboardingRouter,
 });
 
 export type AppRouter = typeof appRouter;

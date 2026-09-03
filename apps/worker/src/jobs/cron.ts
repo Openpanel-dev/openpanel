@@ -13,13 +13,13 @@ import { dataHealthCronJob } from './cron.data-health';
 import { jobDelete } from './cron.delete';
 import { flushExportsJob } from './cron.flush-exports';
 import { insightCleanupCronJob } from './cron.insight-cleanup';
-import { weeklyDigestCronJob } from './cron.weekly-digest';
-import { windDownCronJob } from './cron.wind-down';
 import { onboardingJob } from './cron.onboarding';
 import { ping } from './cron.ping';
 import { salt } from './cron.salt';
 import { sessionReaperCronJob } from './cron.session-reaper';
 import { sessionVacuumCronJob } from './cron.session-vacuum';
+import { weeklyDigestCronJob } from './cron.weekly-digest';
+import { windDownCronJob } from './cron.wind-down';
 import { gscSyncAllJob } from './gsc';
 import { insightsDailyJob } from './insights';
 import { logger } from '@/utils/logger';
@@ -58,7 +58,7 @@ export async function cronJob(job: Job<CronQueuePayload>) {
       return await insightsDailyJob(job);
     }
     case 'onboarding': {
-      return await onboardingJob(job);
+      return await onboardingJob();
     }
     case 'gscSync': {
       return await gscSyncAllJob();

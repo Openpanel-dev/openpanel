@@ -376,55 +376,12 @@ export const zCreateReference = z.object({
   datetime: z.string(),
 });
 
-export const zOnboardingProject = z
-  .object({
-    organization: z.string().optional(),
-    organizationId: z.string().optional(),
-    project: z.string().min(3),
-    domain: z.string().url().or(z.literal('').or(z.null())),
-    cors: z.array(z.string()).default([]),
-    website: z.boolean(),
-    app: z.boolean(),
-    backend: z.boolean(),
-    timezone: z.string().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (!(data.organization || data.organizationId)) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Organization is required',
-        path: ['organization'],
-      });
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Organization is required',
-        path: ['organizationId'],
-      });
-    }
-
-    if (data.website && !data.domain) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Domain is required for website tracking',
-        path: ['domain'],
-      });
-    }
-
-    if (
-      data.website === false &&
-      data.app === false &&
-      data.backend === false
-    ) {
-      for (const key of ['app', 'backend', 'website']) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'At least one type must be selected',
-          path: [key],
-        });
-      }
-    }
-  });
-
+// Moved into @openpanel/core's onboarding module (M6-003, ADR-008's module
+// map: onboarding owns "C"). Re-exported here for existing
+// @openpanel/validation importers (packages/trpc's onboarding/project
+// routers, apps/start's onboarding flow) — same shape as
+// ./cohort.validation.ts since M5-003.
+export * from '@openpanel/core/modules/onboarding/onboarding.constants';
 export * from './integrations';
 
 export const zNotificationRuleEventConfig = z.object({
@@ -509,62 +466,11 @@ export const zProjectUpdate = z.object({
 });
 export type IProjectUpdate = z.infer<typeof zProjectUpdate>;
 
-export const zPassword = z.string().min(8);
-
-export const zSignInEmail = z.object({
-  email: z.string().email().min(1),
-  password: zPassword,
-  inviteId: z.string().nullish(),
-});
-export type ISignInEmail = z.infer<typeof zSignInEmail>;
-
-export const zSignUpEmail = z
-  .object({
-    firstName: z.string().min(1),
-    lastName: z.string().min(1),
-    email: z.string().email(),
-    password: zPassword,
-    confirmPassword: zPassword,
-    inviteId: z.string().nullish(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    path: ['confirmPassword'],
-    message: 'Passwords do not match',
-  });
-export type ISignUpEmail = z.infer<typeof zSignUpEmail>;
-
-export const zResetPassword = z.object({
-  token: z.string(),
-  password: z.string().min(8),
-});
-export type IResetPassword = z.infer<typeof zResetPassword>;
-
-export const zRequestResetPassword = z.object({
-  email: z.string().email(),
-});
-export type IRequestResetPassword = z.infer<typeof zRequestResetPassword>;
-
-export const zTotpCode = z
-  .string()
-  .transform((v) => v.replace(/\s+/g, ''))
-  .refine((v) => /^\d{6}$/.test(v), { message: 'Enter a 6-digit code' });
-export type ITotpCode = z.infer<typeof zTotpCode>;
-
-export const zTotpOrRecoveryCode = z
-  .string()
-  .min(1)
-  .transform((v) => v.trim());
-export type ITotpOrRecoveryCode = z.infer<typeof zTotpOrRecoveryCode>;
-
-export const zSignInShare = z.object({
-  password: z.string().min(1),
-  shareId: z.string().min(1),
-  shareType: z
-    .enum(['overview', 'dashboard', 'report'])
-    .optional()
-    .default('overview'),
-});
-export type ISignInShare = z.infer<typeof zSignInShare>;
+// Moved into @openpanel/core's auth module (M6-003, ADR-008's module map:
+// auth owns "C"). Re-exported here for existing @openpanel/validation
+// importers (packages/trpc's auth router, apps/start's sign-in/sign-up
+// forms) — same shape as ./cohort.validation.ts since M5-003.
+export * from '@openpanel/core/modules/auth/auth.constants';
 
 export const zCheckout = z.object({
   productPriceId: z.string(),

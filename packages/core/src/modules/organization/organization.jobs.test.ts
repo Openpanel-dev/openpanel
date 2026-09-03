@@ -38,6 +38,7 @@ function stubJobCtx(
     import: {} as Services['import'],
     cohort: {} as Services['cohort'],
     organization: organization as OrganizationService,
+    onboarding: {} as Services['onboarding'],
   };
   return {
     db: {},

@@ -8,6 +8,7 @@ import type { Logger } from '../logger';
 import { cohortCronSchedules } from '../modules/cohort/cohort.jobs';
 import { gscCronSchedules } from '../modules/gsc/gsc.jobs';
 import { insightCronSchedules } from '../modules/insight/insight.jobs';
+import { onboardingCronSchedules } from '../modules/onboarding/onboarding.jobs';
 import { organizationCronSchedules } from '../modules/organization/organization.jobs';
 import { wrap } from './envelope';
 
@@ -67,7 +68,9 @@ export const CRON_SCHEDULES: readonly SchedulerDefinition[] = [
   { id: 'flushProfileBackfill', schedule: { every: 30_000 } },
   { id: 'flushReplay', schedule: { every: 10_000 } },
   { id: 'flushGroups', schedule: { every: 10_000 } },
-  { id: 'onboarding', schedule: { pattern: '0 * * * *' } },
+  // onboarding — owned by the onboarding module, declared next to its jobs
+  // (modules/onboarding/onboarding.jobs.ts).
+  ...onboardingCronSchedules,
   // gscSync — owned by the gsc module, declared next to its jobs
   // (modules/gsc/gsc.jobs.ts).
   ...gscCronSchedules,

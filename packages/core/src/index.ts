@@ -167,20 +167,46 @@ export async function runFilterCommand(input: {
 // way they reach the other dissolved leaf packages here. `hashPassword` is
 // renamed on the way out: `./shared/crypto` already owns that name for the
 // (unrelated) scrypt hash client secrets use.
-export type { AuthService, OAuth2Tokens } from './modules/auth/auth.service';
+//
+// The sign-up/sign-in/TOTP/reset-password/share/OAuth-callback half (M6-003)
+// joined it here — packages/trpc's auth router and
+// apps/api/src/controllers/oauth-callback.controller.tsx call these
+// directly, the same way V1 reaches every other dissolved service here.
+export type {
+  AuthProvider,
+  AuthService,
+  CompleteOAuthCallbackInput,
+  OAuth2Tokens,
+  OAuthUser,
+  SignInEmailInput,
+  SignInEmailResult,
+  SignInShareInput,
+  SignInTotpInput,
+  SignUpEmailInput,
+  StartOAuthSignInInput,
+  StartOAuthSignInResult,
+} from './modules/auth/auth.service';
 export {
   Arctic,
+  assertOAuthState,
   buildOtpauthUrl,
   COOKIE_MAX_AGE,
   COOKIE_OPTIONS,
+  completeOAuthCallback,
   consumeRecoveryCode,
   createAuthService,
   decodeSessionToken,
   deleteSessionTokenCookie,
+  disableTotp,
+  enableTotp,
+  extendSessionCookie,
+  fetchGithubOAuthUser,
+  fetchGoogleOAuthUser,
   generateQrDataUrl,
   generateRecoveryCodes,
   generateSessionToken,
   generateTotpSecret,
+  getTotpStatus,
   github,
   google,
   googleGsc,
@@ -188,9 +214,20 @@ export {
   hashRecoveryCodes,
   hashSessionToken,
   normalizeRecoveryCode,
+  OAuthCallbackError,
   parseCookieDomain,
+  regenerateTotpRecoveryCodes,
+  requestPasswordReset,
+  resetPasswordWithToken,
   setLastAuthProviderCookie,
   setSessionTokenCookie,
+  setupTotp,
+  signInToShare,
+  signInWithEmail,
+  signInWithTotp,
+  signOutUser,
+  signUpWithEmail,
+  startOAuthSignIn,
   verifyPasswordHash,
   verifyTotpCode,
 } from './modules/auth/auth.service';
@@ -295,6 +332,22 @@ export {
   selectGscSite,
   syncGscData,
 } from './modules/gsc/gsc.service';
+// New module (M6-003) — the onboarding-project mutation and the onboarding
+// email drip, neither of which had a packages/db/src/services/* home to move
+// from. packages/trpc's onboarding router and apps/worker's onboarding cron
+// job call these directly, the same way V1 reaches every other dissolved
+// service here.
+export type {
+  CreateOnboardingProjectResult,
+  OnboardingCronSummary,
+  OnboardingService,
+} from './modules/onboarding/onboarding.service';
+export {
+  canSkipOnboarding,
+  createOnboardingProject,
+  createOnboardingService,
+  runOnboardingCron,
+} from './modules/onboarding/onboarding.service';
 // Dissolved from @openpanel/db's services/organization.service.ts +
 // services/delete.service.ts (M6-001, folded together per the module map) —
 // packages/trpc's organization router, apps/worker's delete cron job and
@@ -375,7 +428,7 @@ export {
   updateProjectForOrganization,
 } from './modules/project/project.service';
 // Dissolved from @openpanel/db's services/user.service.ts (M6-001) —
-// packages/trpc's auth/onboarding routers still call `getUserById`/
+// packages/trpc's auth/onboarding routers call `getUserById`/
 // `getUserAccount` directly through @openpanel/db's re-export shim, the same
 // way they reach every other dissolved service here.
 export type { IServiceUser } from './modules/user/user.service';
@@ -520,6 +573,18 @@ export {
   hashPassword,
   verifyPassword,
 } from './shared/crypto';
+// Moved from apps/worker/src/jobs/lib/email-sequence.ts (M6-003) — shared by
+// the onboarding module and, until it moves too, apps/worker's own
+// cron.wind-down.ts, which reaches it through this barrel (same shape as
+// every other still-live V1 consumer here).
+export type {
+  RunSequenceOptions,
+  SequenceResult,
+  SequenceStep,
+  SequenceSubject,
+  StepResult,
+} from './shared/email-sequence';
+export { runSequence, step } from './shared/email-sequence';
 export {
   decrypt,
   decryptCredential,

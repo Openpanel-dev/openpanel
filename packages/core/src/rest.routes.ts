@@ -9,6 +9,7 @@ import { Elysia } from 'elysia';
 import type { AppDeps } from './context';
 import { registry } from './metrics';
 import { assistantRoutes } from './modules/assistant/assistant.routes';
+import { authRoutes } from './modules/auth/auth.routes';
 import { clientRoutes } from './modules/client/client.routes';
 import { gscRoutes } from './modules/gsc/gsc.routes';
 import { healthRoutes } from './modules/health/health.routes';
@@ -43,17 +44,20 @@ export const publicApiRoutes = (deps: AppDeps) =>
     .use(clientRoutes(deps));
 
 // gsc's callback was the first module to land here (M5-002); assistant's
-// `/ai/agents/*` (M5-005) and mcp's `/mcp` (M5-007) joined it. None is
-// reachable in production yet: main.ts only mounts `dashboardRoutes` once a
-// real `AppDeps` exists (P3/P4/P8) — see each module's own routes.ts header
-// for its named gap. `/gsc` and `/mcp` are dashboard-scope routes absent from
-// the CORS delegator's `corsPaths` allowlist (ADR-002 rule 4) — a quirk to
-// port verbatim when app.ts wires CORS, not something to fix here.
+// `/ai/agents/*` (M5-005), mcp's `/mcp` (M5-007) and auth's `/oauth/*`
+// callbacks (M6-003) joined it. None is reachable in production yet: main.ts
+// only mounts `dashboardRoutes` once a real `AppDeps` exists (P3/P4/P8) — see
+// each module's own routes.ts header for its named gap. `/gsc` and `/mcp` are
+// dashboard-scope routes absent from the CORS delegator's `corsPaths`
+// allowlist (ADR-002 rule 4) and get `origin: '*'`; `/oauth` IS in
+// `corsPaths` — a quirk to port verbatim when app.ts wires CORS, not
+// something to fix here.
 export const dashboardRoutes = (deps: AppDeps) =>
   new Elysia({ name: 'core/dashboard-routes' })
     .use(gscRoutes(deps))
     .use(assistantRoutes(deps))
-    .use(mcpRoutes(deps));
+    .use(mcpRoutes(deps))
+    .use(authRoutes(deps));
 
 // healthz/metrics/misc share V1's ops surface (http/context.ts's
 // UNLOGGED_PATH_PREFIXES) — unauthenticated, uncorsed, unlogged. /metrics and
