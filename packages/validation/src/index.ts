@@ -346,28 +346,11 @@ export const zUpdateMemberAccess = z.object({
   access: z.array(zProjectAccessGrant),
 });
 
-export const zShareOverview = z.object({
-  organizationId: z.string(),
-  projectId: z.string(),
-  password: z.string().nullable(),
-  public: z.boolean(),
-});
-
-export const zShareDashboard = z.object({
-  organizationId: z.string(),
-  projectId: z.string(),
-  dashboardId: z.string(),
-  password: z.string().nullable(),
-  public: z.boolean(),
-});
-
-export const zShareReport = z.object({
-  organizationId: z.string(),
-  projectId: z.string(),
-  reportId: z.string(),
-  password: z.string().nullable(),
-  public: z.boolean(),
-});
+// Moved into @openpanel/core's share module (M6-004, ADR-008's module map:
+// share owns "C"). Re-exported here for existing @openpanel/validation
+// importers (packages/trpc's share router, apps/start's share modals) — same
+// shape as ./onboarding.constants.ts re-export since M6-003.
+export * from '@openpanel/core/modules/share/share.constants';
 
 export const zCreateReference = z.object({
   title: z.string(),

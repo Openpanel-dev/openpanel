@@ -289,6 +289,13 @@ export {
   listConversations,
   upsertConversationTitle,
 } from './modules/conversation/conversation.service';
+// R + C only (M6-004): the router's three bodies are three small
+// `db.emailUnsubscribe` calls, small enough to live inline in
+// `email.rpc.ts` rather than a dedicated `email.service.ts` — see that
+// file's header. `emailCategories` moved from @openpanel/constants (ADR-008's
+// module map: email owns "C"); @openpanel/constants keeps a re-export shim.
+export type { EmailCategory } from './modules/email/email.constants';
+export { emailCategories } from './modules/email/email.constants';
 // Dissolved from @openpanel/db's src/gsc.ts + services/gsc.service.ts
 // (M5-002) — apps/worker's gsc job file, apps/api's gsc OAuth callback
 // controller and packages/trpc's gsc router call these directly, the same
@@ -427,6 +434,54 @@ export {
   scheduleProjectDeletion,
   updateProjectForOrganization,
 } from './modules/project/project.service';
+// Moved from packages/db/src/services/reference.service.ts, plus the
+// query/mutation bodies packages/trpc/src/routers/reference.ts held inline
+// (M6-004) — packages/trpc's reference router calls these directly, the same
+// way V1 reaches every other dissolved service here. packages/db keeps a
+// re-export shim.
+export type { IServiceReference } from './modules/reference/reference.service';
+export {
+  createReference,
+  deleteReference,
+  getChartReferences,
+  getReferenceById,
+  getReferenceByIdOrThrow,
+  listReferences,
+  updateReference,
+} from './modules/reference/reference.service';
+// Moved from packages/db/src/services/share.service.ts, plus the
+// query/mutation bodies packages/trpc/src/routers/share.ts held inline
+// (M6-004, ADR-008's module map: share owns "C") — packages/trpc's share
+// router calls these directly, the same way V1 reaches every other dissolved
+// service here. packages/db keeps a re-export shim: auth.service.ts's
+// signInToShare and packages/trpc's chart/overview routers still reach
+// validateShareAccess/validateOverviewShareAccess through it.
+export {
+  zShareDashboard,
+  zShareOverview,
+  zShareReport,
+} from './modules/share/share.constants';
+export {
+  createShareDashboard,
+  createShareOverview,
+  createShareReport,
+  getShareByProjectId,
+  getShareDashboard,
+  getShareDashboardById,
+  getShareDashboardByDashboardId,
+  getShareDashboardReports,
+  getShareDashboardSettings,
+  getShareOverview,
+  getShareOverviewById,
+  getShareOverviewSettings,
+  getShareReport,
+  getShareReportById,
+  getShareReportByReportId,
+  getShareReportSettings,
+  validateOverviewShareAccess,
+  validateReportAccess,
+  validateShareAccess,
+} from './modules/share/share.service';
 // Dissolved from @openpanel/db's services/user.service.ts (M6-001) —
 // packages/trpc's auth/onboarding routers call `getUserById`/
 // `getUserAccount` directly through @openpanel/db's re-export shim, the same

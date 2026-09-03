@@ -135,7 +135,10 @@ export function createAuthService(_deps: ServiceDeps): AuthService {
 // import — see user.service.ts's header for the full reasoning, and because
 // a static import of @openpanel/db here specifically WOULD be a cycle
 // (this file's own header, above: db already depends on core for
-// `hashSessionToken`).
+// `hashSessionToken`). `loadShare` points at `../share/share.service`
+// directly since M6-004 — share.service.ts statically imports this file's
+// own `hashPassword`, so the two are mutually lazy/eager by design, not a
+// live cycle.
 //
 // None of these functions take a `TrpcContext`/`Ctx`: they take exactly the
 // primitives they touch (`setCookie`, `cookies.get`, `logger`), so this file
@@ -176,7 +179,7 @@ function loadRegistration() {
 }
 
 function loadShare() {
-  return import('@openpanel/db/src/services/share.service');
+  return import('../share/share.service');
 }
 
 function dashboardUrl(): string {

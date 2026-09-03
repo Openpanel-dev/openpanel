@@ -9,6 +9,7 @@ import { authRouter } from './modules/auth/auth.rpc';
 import { clientRouter } from './modules/client/client.rpc';
 import { cohortRouter } from './modules/cohort/cohort.rpc';
 import { conversationRouter } from './modules/conversation/conversation.rpc';
+import { emailRouter } from './modules/email/email.rpc';
 import { gscRouter } from './modules/gsc/gsc.rpc';
 import { healthRouter } from './modules/health/health.rpc';
 import { importRouter } from './modules/import/import.rpc';
@@ -16,6 +17,8 @@ import { insightRouter } from './modules/insight/insight.rpc';
 import { onboardingRouter } from './modules/onboarding/onboarding.rpc';
 import { organizationRouter } from './modules/organization/organization.rpc';
 import { projectRouter } from './modules/project/project.rpc';
+import { referenceRouter } from './modules/reference/reference.rpc';
+import { shareRouter } from './modules/share/share.rpc';
 import { userRouter } from './modules/user/user.rpc';
 import { createTRPCRouter } from './rpc/base';
 
@@ -33,6 +36,9 @@ export const appRouter = createTRPCRouter({
   client: clientRouter,
   auth: authRouter,
   onboarding: onboardingRouter,
+  reference: referenceRouter,
+  share: shareRouter,
+  email: emailRouter,
 });
 
 export type AppRouter = typeof appRouter;

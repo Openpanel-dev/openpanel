@@ -1,4 +1,11 @@
-import { emailCategories } from '@openpanel/constants';
+// Dissolved into @openpanel/core's email module (M6-004): `emailCategories`
+// moved to packages/core/src/modules/email/email.constants.ts. This router
+// stays (DELEGATE PATTERN) — it keeps V1's protectedProcedure stack and its
+// own db calls (core's email module is R + C only, no service — see
+// core's email.rpc.ts header), reading the same `emailCategories` core now
+// owns instead of @openpanel/constants' copy.
+
+import { emailCategories } from '@openpanel/core';
 import { db } from '@openpanel/db';
 import { verifyUnsubscribeToken } from '@openpanel/email';
 import { z } from 'zod';

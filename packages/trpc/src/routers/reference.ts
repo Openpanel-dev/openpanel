@@ -1,53 +1,46 @@
-import { z } from 'zod';
+// Dissolved into @openpanel/core's reference module (M6-004): the
+// query/mutation bodies moved to
+// packages/core/src/modules/reference/reference.service.ts. This router
+// stays (DELEGATE PATTERN) — it keeps V1's protectedProcedure stack
+// (session/access/logger middleware) and delegates every handler body to
+// core's reference functions, same as organization's router does (M6-001).
+// `create` has no access check here either — same gap core's own router has
+// (ported verbatim, not fixed).
 
-import { db, getChartStartEndDate, getSettingsForProject } from '@openpanel/db';
+import {
+  createReference,
+  deleteReference,
+  getChartReferences,
+  getReferenceByIdOrThrow,
+  listReferences,
+  updateReference,
+} from '@openpanel/core';
 import { zCreateReference, zRange } from '@openpanel/validation';
-
+import { z } from 'zod';
 import { getProjectAccess, requireProjectAccess } from '../access';
 import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 export const referenceRouter = createTRPCRouter({
   getReferences: protectedProcedure
-    .input(
-      z.object({
-        projectId: z.string(),
-        cursor: z.number().optional(),
-      }),
-    )
-    .query(async ({ input: { projectId, cursor }, ctx }) => {
+    .input(z.object({ projectId: z.string(), cursor: z.number().optional() }))
+    .query(async ({ input, ctx }) => {
       const access = await getProjectAccess({
         userId: ctx.session.userId,
-        projectId,
+        projectId: input.projectId,
       });
 
       if (!access) {
         throw new TRPCForbiddenError('You do not have access to this project');
       }
 
-      return db.reference.findMany({
-        where: {
-          projectId,
-        },
-        take: 50,
-        skip: cursor ? cursor * 50 : 0,
-      });
+      return listReferences(input);
     }),
 
   create: protectedProcedure
     .input(zCreateReference)
-    .mutation(
-      async ({ input: { title, description, datetime, projectId } }) => {
-        return db.reference.create({
-          data: {
-            title,
-            description,
-            projectId,
-            date: new Date(datetime),
-          },
-        });
-      },
-    ),
+    .mutation(({ input }) => createReference(input)),
+
   update: protectedProcedure
     .input(
       z.object({
@@ -55,12 +48,10 @@ export const referenceRouter = createTRPCRouter({
         title: z.string(),
         description: z.string().nullish(),
         datetime: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
-      const existing = await db.reference.findUniqueOrThrow({
-        where: { id: input.id },
-      });
+      const existing = await getReferenceByIdOrThrow(input.id);
 
       await requireProjectAccess({
         userId: ctx.session.userId,
@@ -68,23 +59,13 @@ export const referenceRouter = createTRPCRouter({
         level: 'write',
       });
 
-      return db.reference.update({
-        where: { id: input.id },
-        data: {
-          title: input.title,
-          description: input.description ?? null,
-          date: new Date(input.datetime),
-        },
-      });
+      return updateReference(input);
     }),
+
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input: { id }, ctx }) => {
-      const reference = await db.reference.findUniqueOrThrow({
-        where: {
-          id,
-        },
-      });
+      const reference = await getReferenceByIdOrThrow(id);
 
       await requireProjectAccess({
         userId: ctx.session.userId,
@@ -92,12 +73,9 @@ export const referenceRouter = createTRPCRouter({
         level: 'write',
       });
 
-      return db.reference.delete({
-        where: {
-          id,
-        },
-      });
+      return deleteReference(id);
     }),
+
   getChartReferences: publicProcedure
     .input(
       z.object({
@@ -105,19 +83,7 @@ export const referenceRouter = createTRPCRouter({
         startDate: z.string().nullish(),
         endDate: z.string().nullish(),
         range: zRange,
-      }),
+      })
     )
-    .query(async ({ input: { projectId, ...input } }) => {
-      const { timezone } = await getSettingsForProject(projectId);
-      const { startDate, endDate } = getChartStartEndDate(input, timezone);
-      return db.reference.findMany({
-        where: {
-          projectId,
-          date: {
-            gte: new Date(startDate),
-            lte: new Date(endDate),
-          },
-        },
-      });
-    }),
+    .query(({ input }) => getChartReferences(input)),
 });

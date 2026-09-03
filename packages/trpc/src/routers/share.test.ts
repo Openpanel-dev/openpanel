@@ -11,23 +11,41 @@ const {
   shareOverviewFindUnique: vi.fn(),
 }));
 
+// The share business logic itself moved to @openpanel/core (M6-004); share.ts
+// now only delegates to it. `@openpanel/db` is still mocked for `../access`'s
+// and `trpc.ts`'s own imports (unrelated to this file's assertions) — the
+// deep `@openpanel/db/src/*` paths below are what core's share functions
+// actually read through (lazy `await import(...)`, so vi.mock still applies
+// to the dynamic form).
 vi.mock('@openpanel/db', () => ({
-  db: {
-    shareReport: { findUnique: shareReportFindUnique },
-    shareDashboard: { findUnique: shareDashboardFindUnique },
-    shareOverview: { findUnique: shareOverviewFindUnique },
-  },
-  transformReport: (report: unknown) => report,
-  getDashboardById: vi.fn(),
-  getReportById: vi.fn(),
-  getReportsByDashboardId: vi.fn(),
-  getShareDashboardById: vi.fn(),
   getProjectById: vi.fn(),
   getProjectAccess: vi.fn(),
   getOrganizationAccess: vi.fn(),
   getClientAccess: vi.fn(),
   canWriteProject: vi.fn(),
   runWithAlsSession: (_id: unknown, fn: () => unknown) => fn(),
+}));
+
+vi.mock('@openpanel/db/src/prisma-client', () => ({
+  db: {
+    shareReport: { findUnique: shareReportFindUnique },
+    shareDashboard: { findUnique: shareDashboardFindUnique },
+    shareOverview: { findUnique: shareOverviewFindUnique },
+  },
+}));
+
+vi.mock('@openpanel/db/src/services/reports.service', () => ({
+  transformReport: (report: unknown) => report,
+  getReportById: vi.fn(),
+  getReportsByDashboardId: vi.fn(),
+}));
+
+vi.mock('@openpanel/db/src/services/dashboard.service', () => ({
+  getDashboardById: vi.fn(),
+}));
+
+vi.mock('@openpanel/db/src/services/access.service', () => ({
+  getProjectAccess: vi.fn(),
 }));
 
 import { shareRouter } from './share';
