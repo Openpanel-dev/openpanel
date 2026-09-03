@@ -274,6 +274,37 @@ export {
   selectGscSite,
   syncGscData,
 } from './modules/gsc/gsc.service';
+
+// packages/mcp absorbed whole (M5-007) — apps/api's mcp.router.ts is the one
+// external caller, delegating the streamable-HTTP POST protocol here
+// (DELEGATE PATTERN). ADR-015 entry 2: stateless-only, so there is no
+// SessionManager to manage.
+//
+// Loaded via dynamic import, NOT a static re-export, for the same reason
+// `getChatApp`/`runFilterCommand` above are: `mcp.service` reaches
+// `@openpanel/db` (auth's client lookup, every analytics tool), and
+// `@openpanel/db/src/buffers/base-buffer.ts` already imports `@openpanel/core`
+// eagerly. A static export here would make this barrel's own evaluation
+// re-enter `@openpanel/db` mid-evaluation — observed as a `PagesService` TDZ
+// ReferenceError two modules away, in a tool file that never otherwise runs
+// at import time.
+let _mcp: Promise<typeof import('./modules/mcp/mcp.service')> | undefined;
+function loadMcp() {
+  if (!_mcp) {
+    _mcp = import('./modules/mcp/mcp.service');
+  }
+  return _mcp;
+}
+
+export async function handleMcpRequest(
+  query: Record<string, unknown>,
+  authHeader: string | undefined,
+  body: unknown
+): Promise<{ status: number; body: unknown }> {
+  const { extractToken, handleStatelessMcpRequest } = await loadMcp();
+  const token = extractToken(query, authHeader);
+  return handleStatelessMcpRequest(token, body);
+}
 // Dissolved from @openpanel/db's services/import.service.ts +
 // apps/worker's job file + apps/api's /import controller (M5-004) —
 // apps/worker's import job file and apps/api's import controller call these
@@ -368,8 +399,9 @@ export type {
 } from './shared/access';
 export { createAccessChecks } from './shared/access';
 // Dissolved from @openpanel/common/server (M4-003) — a still-live V1 package
-// (db, importer, mcp, queue, apps/worker) reaches these the same way apps/api
-// and core itself do, until its own module lands.
+// (db, queue, apps/worker) reaches these the same way apps/api and core
+// itself do, until its own module lands. mcp reaches it as an internal
+// relative import now that it lives inside core (M5-007).
 export {
   createHash,
   generateSalt,

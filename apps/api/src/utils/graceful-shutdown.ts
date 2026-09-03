@@ -13,7 +13,6 @@ import {
 } from '@openpanel/redis';
 import type { FastifyInstance } from 'fastify';
 import { logger } from './logger';
-import { mcpSessionManager } from '@/routes/mcp.router';
 
 let shuttingDown = false;
 
@@ -48,7 +47,7 @@ export async function shutdown(
   const forceExit = setTimeout(() => {
     logger.error(
       { signal, forceExitMs },
-      'Graceful shutdown timed out — forcing exit',
+      'Graceful shutdown timed out — forcing exit'
     );
     process.exit(exitCode);
   }, forceExitMs);
@@ -66,15 +65,7 @@ export async function shutdown(
     logger.error({ err: error }, 'Error closing Fastify server');
   }
 
-  // Step 3: Destroy MCP sessions
-  try {
-    await mcpSessionManager.destroy();
-    logger.info('MCP sessions closed');
-  } catch (error) {
-    logger.error({ err: error }, 'Error closing MCP sessions');
-  }
-
-  // Step 4: Close database connections
+  // Step 3: Close database connections
   try {
     await db.$disconnect();
     logger.info('Database connection closed');
@@ -82,7 +73,7 @@ export async function shutdown(
     logger.error({ err: error }, 'Error closing database connection');
   }
 
-  // Step 5: Close ClickHouse connections
+  // Step 4: Close ClickHouse connections
   try {
     await ch.close();
     logger.info('ClickHouse connections closed');
@@ -90,7 +81,7 @@ export async function shutdown(
     logger.error({ err: error }, 'Error closing ClickHouse connections');
   }
 
-  // Step 6: Close Bull queues (graceful shutdown of queue state)
+  // Step 5: Close Bull queues (graceful shutdown of queue state)
   try {
     await Promise.all([
       sessionsQueue.close(),
@@ -102,7 +93,7 @@ export async function shutdown(
     logger.error({ err: error }, 'Error closing queue state');
   }
 
-  // Step 6.5: Disconnect Kafka producer (no-op if never initialized)
+  // Step 5.5: Disconnect Kafka producer (no-op if never initialized)
   try {
     await disconnectKafka();
     logger.info('Kafka producer disconnected');
@@ -110,7 +101,7 @@ export async function shutdown(
     logger.error({ err: error }, 'Error disconnecting Kafka producer');
   }
 
-  // Step 7: Close Redis connections
+  // Step 6: Close Redis connections
   try {
     const redisConnections = [
       getRedisCache(),

@@ -4,7 +4,7 @@
 // mock below is registered before the subject's first call, not before its
 // (side-effect-free) import.
 
-import { beforeAll, expect, mock, test } from 'bun:test';
+import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
 
 process.env.ENCRYPTION_KEY = 'a'.repeat(64);
 
@@ -86,7 +86,11 @@ const project = {
   ),
 };
 
+// Spread the real module — see the clickhouse/client mock below for why a
+// partial factory here is a process-wide hazard, not a local one.
+const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
 mock.module('@openpanel/db/src/prisma-client', () => ({
+  ...actualPrismaClient,
   db: { gscConnection, project },
 }));
 
@@ -95,36 +99,45 @@ const originalCh = {
   query: mock(async () => ({ json: async () => [] as unknown[] })),
   insert: mock(async () => undefined),
 };
-// `ch`/`getReplicatedTableName`/`formatClickhouseDate`/
-// `convertClickhouseDateToJs` and the extra TABLE_NAMES keys are unused here
-// but included because `mock.module` replaces this specifier process-wide
-// (bun runs every test file in one shared module registry without
-// `--isolate` — see AGENTS.md) — insight.service.test.ts,
-// cohort.service.test.ts and import.service.test.ts mock the same path, so
-// every factory must be a superset of every consumer's needs, whichever one
-// ends up registered last.
+// Spread the real module rather than hand-listing every export: `mock.module`
+// replaces this specifier process-wide (bun runs every test file in one
+// shared module registry without `--isolate` — see AGENTS.md), so a partial
+// factory here silently breaks unrelated consumers (insight/cohort/import
+// tests and now the mcp module's) that import an export this file never
+// overrides. `ch` itself is one such export: gsc.service.ts never calls it
+// (it goes through `originalCh`/`chQuery` — see the file's header), so it is
+// spread wholesale rather than replaced, keeping `query` intact for every
+// *other* consumer of this same live-bound singleton (e.g. `@openpanel/db`'s
+// `OverviewService`/`PagesService`, constructed once at that module's own
+// load time) for the rest of the process.
+// A plain-object snapshot, not the live import binding: once `mock.module`
+// below swaps this specifier, `actualClickhouseClient.chQuery` (a namespace
+// binding) reflects the *mocked* value too, so restoring via
+// `actualClickhouseClient` itself in `afterAll` is a no-op — it just spreads
+// back whatever is currently mocked. Snapshotting into a plain object first
+// keeps a real, frozen-in-time copy to restore to.
+const actualClickhouseClient = await import(
+  '@openpanel/db/src/clickhouse/client'
+);
+const realClickhouseClient = { ...actualClickhouseClient };
 mock.module('@openpanel/db/src/clickhouse/client', () => ({
-  ch: {
-    insert: mock(async () => undefined),
-    command: mock(async () => undefined),
-  },
+  ...realClickhouseClient,
   originalCh,
   chQuery,
-  getReplicatedTableName: mock((table: string) => table),
-  TABLE_NAMES: {
-    events: 'events',
-    events_imports: 'events_imports',
-    profiles: 'profiles',
-    sessions: 'sessions',
-  },
-  formatClickhouseDate: (date: Date | string) =>
-    new Date(date)
-      .toISOString()
-      .replace('T', ' ')
-      .replace(/(\.\d{3})?Z+$/, ''),
-  convertClickhouseDateToJs: (date: string) =>
-    new Date(`${date.replace(' ', 'T')}Z`),
 }));
+
+// `chQuery` above is a fake stuck in place for the rest of the process once
+// this file's tests finish (`mock.module` has no per-file scope without
+// `--isolate` — see AGENTS.md): the mcp module's integration suite calls the
+// real `chQuery` against a live ClickHouse and silently got `[]` back from
+// this file's leftover mock. Restore the real snapshot so whichever file
+// runs next sees real behavior again.
+afterAll(() => {
+  mock.module(
+    '@openpanel/db/src/clickhouse/client',
+    () => realClickhouseClient
+  );
+});
 
 // Bypasses the Redis cache-aside entirely — `getGscCannibalization`'s own
 // logic is exercised directly, its caching is @openpanel/redis's concern.
@@ -149,7 +162,13 @@ mock.module('../auth/auth.service', () => ({
 }));
 
 const getSettingsForProject = mock(async () => ({ timezone: 'UTC' }));
+// Spread the real module — see the clickhouse/client mock above for why a
+// partial factory here is a process-wide hazard, not a local one.
+const actualOrganizationService = await import(
+  '@openpanel/db/src/services/organization.service'
+);
 mock.module('@openpanel/db/src/services/organization.service', () => ({
+  ...actualOrganizationService,
   getSettingsForProject,
 }));
 
@@ -157,7 +176,13 @@ const getChartStartEndDate = mock(() => ({
   startDate: '2026-09-01T00:00:00.000Z',
   endDate: '2026-09-03T00:00:00.000Z',
 }));
+// Spread the real module — see the clickhouse/client mock above for why a
+// partial factory here is a process-wide hazard, not a local one.
+const actualDateService = await import(
+  '@openpanel/db/src/services/date.service'
+);
 mock.module('@openpanel/db/src/services/date.service', () => ({
+  ...actualDateService,
   getChartStartEndDate,
 }));
 

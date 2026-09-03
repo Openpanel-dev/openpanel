@@ -101,7 +101,9 @@ const conversation = {
   }),
 };
 
+const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
 mock.module('@openpanel/db/src/prisma-client', () => ({
+  ...actualPrismaClient,
   db: { conversation },
 }));
 

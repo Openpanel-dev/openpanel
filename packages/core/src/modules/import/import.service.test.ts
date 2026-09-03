@@ -26,30 +26,29 @@ function stubLogger(): Logger {
 const chInsert = mock(async (_opts: { values: unknown[] }) => ({
   summary: { written_rows: '2' },
 }));
-// `ch.command`/`originalCh`/`chQuery`/`getReplicatedTableName`/
-// `convertClickhouseDateToJs` and the extra TABLE_NAMES keys are unused here
-// but included because `mock.module` replaces this specifier process-wide
-// (bun runs every test file in one shared module registry without
-// `--isolate` — see AGENTS.md) — gsc.service.test.ts, cohort.service.test.ts
-// and insight.service.test.ts mock the same path, so every factory must be a
-// superset of every consumer's needs, whichever one ends up registered last.
+// Spread the real module rather than hand-listing every export: `mock.module`
+// replaces this specifier process-wide (bun runs every test file in one
+// shared module registry without `--isolate` — see AGENTS.md), so a partial
+// factory here silently breaks unrelated consumers (gsc/cohort/insight tests
+// and now the mcp module's) that import an export this file never overrides.
+// `ch` itself is one such export: only `insert` is what import.service.ts
+// exercises, so `command` is stubbed and every other method (`query`, ...) is
+// spread from the real client — a bare `{ insert, command }` replacement
+// previously stripped `query` from every *other* consumer of this same
+// live-bound singleton (e.g. `@openpanel/db`'s `OverviewService`/
+// `PagesService`, constructed once at that module's own load time) for the
+// rest of the process.
+const actualClickhouseClient = await import(
+  '@openpanel/db/src/clickhouse/client'
+);
 mock.module('@openpanel/db/src/clickhouse/client', () => ({
+  ...actualClickhouseClient,
   ch: {
+    ...actualClickhouseClient.ch,
     insert: chInsert,
     command: mock(async () => undefined),
   },
-  originalCh: {
-    query: mock(async () => ({ json: async () => [] as unknown[] })),
-    insert: mock(async () => undefined),
-  },
-  chQuery: mock(async () => [] as unknown[]),
   getReplicatedTableName: mock((table: string) => table),
-  TABLE_NAMES: {
-    events: 'events',
-    events_imports: 'events_imports',
-    profiles: 'profiles',
-    sessions: 'sessions',
-  },
   formatClickhouseDate: (date: Date | string) =>
     new Date(date)
       .toISOString()
@@ -62,7 +61,9 @@ mock.module('@openpanel/db/src/clickhouse/client', () => ({
 const importUpdate = mock(
   async (_opts: { where: { id: string }; data: unknown }) => undefined
 );
+const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
 mock.module('@openpanel/db/src/prisma-client', () => ({
+  ...actualPrismaClient,
   db: { import: { update: importUpdate } },
 }));
 

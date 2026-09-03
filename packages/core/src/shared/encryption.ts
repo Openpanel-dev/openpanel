@@ -51,6 +51,14 @@ export function decrypt(ciphertext: string): string {
   const iv = buf.subarray(0, IV_LENGTH);
   const tag = buf.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
   const encrypted = buf.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
+  // Bun's setAuthTag validates the tag length up front (Node defers to
+  // final()), so a too-short/malformed ciphertext needs an explicit guard
+  // here to produce the same "malformed input" failure on both runtimes.
+  if (tag.length !== AUTH_TAG_LENGTH) {
+    throw new Error(
+      `Invalid encrypted value: expected a ${AUTH_TAG_LENGTH}-byte auth tag, got ${tag.length}`
+    );
+  }
   const decipher = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(tag);
   // Concatenate first, decode once: GCM is a stream cipher, so update() can end

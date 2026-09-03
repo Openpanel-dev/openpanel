@@ -9,7 +9,7 @@
 // file, src/cohort-sql.test.ts, and need none of this — they take no
 // ClickHouse connection.
 
-import { beforeAll, expect, mock, test } from 'bun:test';
+import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
 
 interface FakeCohort {
   id: string;
@@ -52,7 +52,9 @@ const cohort = {
   ),
 };
 
+const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
 mock.module('@openpanel/db/src/prisma-client', () => ({
+  ...actualPrismaClient,
   db: { cohort },
 }));
 
@@ -60,36 +62,47 @@ const chQuery = mock(async () => [] as unknown[]);
 const chInsert = mock(async (_args: { table: string }) => undefined);
 const chCommand = mock(async (_args: { query: string }) => undefined);
 const getReplicatedTableName = mock((table: string) => table);
-// `originalCh`/`TABLE_NAMES`/`formatClickhouseDate`/
-// `convertClickhouseDateToJs` and the extra TABLE_NAMES keys are unused here
-// but included because `mock.module` replaces this specifier process-wide
-// (bun runs every test file in one shared module registry without
-// `--isolate` — see AGENTS.md) — gsc.service.test.ts,
-// insight.service.test.ts and import.service.test.ts mock the same path, so
-// every factory must be a superset of every consumer's needs, whichever one
-// ends up registered last.
+// Spread the real module rather than hand-listing every export: `mock.module`
+// replaces this specifier process-wide (bun runs every test file in one
+// shared module registry without `--isolate` — see AGENTS.md), so a partial
+// factory here silently breaks unrelated consumers (gsc/insight/import tests
+// and now the mcp module's) that import an export this file never overrides.
+// `ch` itself is one such export: only `insert`/`command` are what
+// cohort.service.ts exercises, so those two are overridden and every other
+// method (`query`, ...) is spread from the real client — a bare `{ insert,
+// command }` replacement previously stripped `query` from every *other*
+// consumer of this same live-bound singleton (e.g. `@openpanel/db`'s
+// `OverviewService`/`PagesService`, constructed once at that module's own
+// load time) for the rest of the process.
+// A plain-object snapshot, not the live import binding: once `mock.module`
+// below swaps this specifier, `actualClickhouseClient.chQuery` (a namespace
+// binding) reflects the *mocked* value too, so restoring via
+// `actualClickhouseClient` itself in `afterAll` is a no-op — it just spreads
+// back whatever is currently mocked. Snapshotting into a plain object first
+// keeps a real, frozen-in-time copy to restore to.
+const actualClickhouseClient = await import(
+  '@openpanel/db/src/clickhouse/client'
+);
+const realClickhouseClient = { ...actualClickhouseClient };
 mock.module('@openpanel/db/src/clickhouse/client', () => ({
-  ch: { insert: chInsert, command: chCommand },
-  originalCh: {
-    query: mock(async () => ({ json: async () => [] as unknown[] })),
-    insert: mock(async () => undefined),
-  },
+  ...realClickhouseClient,
+  ch: { ...realClickhouseClient.ch, insert: chInsert, command: chCommand },
   chQuery,
   getReplicatedTableName,
-  TABLE_NAMES: {
-    events: 'events',
-    events_imports: 'events_imports',
-    profiles: 'profiles',
-    sessions: 'sessions',
-  },
-  formatClickhouseDate: (date: Date | string) =>
-    new Date(date)
-      .toISOString()
-      .replace('T', ' ')
-      .replace(/(\.\d{3})?Z+$/, ''),
-  convertClickhouseDateToJs: (date: string) =>
-    new Date(`${date.replace(' ', 'T')}Z`),
 }));
+
+// `chQuery`/`ch.insert`/`ch.command` above are fakes stuck in place for the
+// rest of the process once this file's tests finish (`mock.module` has no
+// per-file scope without `--isolate` — see AGENTS.md): the mcp module's
+// integration suite calls the real `chQuery` against a live ClickHouse and
+// silently got `[]` back from this file's leftover mock. Restore the real
+// snapshot so whichever file runs next sees real behavior again.
+afterAll(() => {
+  mock.module(
+    '@openpanel/db/src/clickhouse/client',
+    () => realClickhouseClient
+  );
+});
 
 let subject: typeof import('./cohort.service');
 beforeAll(async () => {

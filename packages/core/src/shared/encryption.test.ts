@@ -44,4 +44,18 @@ describe('encryption (single ENCRYPTION_KEY)', () => {
     expect(decrypt(encrypt(secret))).toBe(secret);
     expect(decryptCredential(encryptCredential(secret))).toBe(secret);
   });
+
+  it('decrypt throws a guarded error for a too-short/malformed ciphertext', () => {
+    // Shorter than IV_LENGTH + AUTH_TAG_LENGTH: the tag slice comes back
+    // empty. Bun's setAuthTag validates the length up front and throws a
+    // bare TypeError before this guard existed; the guard normalizes that
+    // to the same descriptive error on both runtimes.
+    const tooShort = Buffer.from('short').toString('base64');
+    expect(() => decrypt(tooShort)).toThrow(
+      'Invalid encrypted value: expected a 16-byte auth tag, got 0'
+    );
+    expect(() => decrypt('')).toThrow(
+      'Invalid encrypted value: expected a 16-byte auth tag, got 0'
+    );
+  });
 });

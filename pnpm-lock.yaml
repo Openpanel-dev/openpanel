@@ -142,9 +142,6 @@ importers:
       '@openpanel/json':
         specifier: workspace:*
         version: link:../../packages/json
-      '@openpanel/mcp':
-        specifier: workspace:*
-        version: link:../../packages/mcp
       '@openpanel/payments':
         specifier: workspace:*
         version: link:../../packages/payments
@@ -1105,6 +1102,9 @@ importers:
       '@maxmind/geoip2-node':
         specifier: ^6.1.0
         version: 6.1.0
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.12.0
+        version: 1.27.1(supports-color@10.2.0)(zod@4.3.6)
       '@node-rs/argon2':
         specifier: ^2.0.2
         version: 2.0.2
@@ -1388,43 +1388,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
-
-  packages/mcp:
-    dependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.12.0
-        version: 1.27.1(supports-color@10.2.0)(zod@4.3.6)
-      '@openpanel/common':
-        specifier: workspace:*
-        version: link:../common
-      '@openpanel/core':
-        specifier: workspace:*
-        version: link:../core
-      '@openpanel/db':
-        specifier: workspace:*
-        version: link:../db
-      '@openpanel/redis':
-        specifier: workspace:*
-        version: link:../redis
-      '@openpanel/validation':
-        specifier: workspace:*
-        version: link:../validation
-      zod:
-        specifier: 'catalog:'
-        version: 4.3.6
-    devDependencies:
-      '@openpanel/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.10.1
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-      vitest:
-        specifier: ^1.0.0
-        version: 1.6.1(@types/node@24.10.1)(jsdom@26.1.0(supports-color@10.2.0))(lightningcss@1.30.2)(supports-color@10.2.0)(terser@5.27.1)
 
   packages/payments:
     dependencies:

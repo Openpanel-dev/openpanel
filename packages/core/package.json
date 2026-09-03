@@ -26,6 +26,7 @@
     "@google-cloud/storage": "^7.18.0",
     "@hyperdx/node-opentelemetry": "catalog:",
     "@maxmind/geoip2-node": "^6.1.0",
+    "@modelcontextprotocol/sdk": "^1.12.0",
     "@node-rs/argon2": "^2.0.2",
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",

@@ -18,42 +18,18 @@ const $executeRaw = mock((..._args: unknown[]) => {
   executeRawCalls.push(_args);
   return Promise.resolve(executeRawReturns.shift() ?? 0);
 });
+const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
 mock.module('@openpanel/db/src/prisma-client', () => ({
+  ...actualPrismaClient,
   db: { $executeRaw },
 }));
 
-// `originalCh`/`chQuery`/`TABLE_NAMES`/`getReplicatedTableName`/
-// `formatClickhouseDate`/`convertClickhouseDateToJs` are unused here but
-// included because `mock.module` replaces this specifier process-wide (bun
-// runs every test file in one shared module registry without `--isolate` —
-// see AGENTS.md) — gsc.service.test.ts, cohort.service.test.ts and
-// import.service.test.ts mock the same path, so every factory must be a
-// superset of every consumer's needs, whichever one ends up registered last.
-mock.module('@openpanel/db/src/clickhouse/client', () => ({
-  ch: {
-    insert: mock(async () => undefined),
-    command: mock(async () => undefined),
-  },
-  originalCh: {
-    query: mock(async () => ({ json: async () => [] })),
-    insert: mock(async () => undefined),
-  },
-  chQuery: mock(async () => []),
-  getReplicatedTableName: mock((table: string) => table),
-  TABLE_NAMES: {
-    events: 'events',
-    events_imports: 'events_imports',
-    profiles: 'profiles',
-    sessions: 'sessions',
-  },
-  formatClickhouseDate: (date: Date | string) =>
-    new Date(date)
-      .toISOString()
-      .replace('T', ' ')
-      .replace(/(\.\d{3})?Z+$/, ''),
-  convertClickhouseDateToJs: (date: string) =>
-    new Date(`${date.replace(' ', 'T')}Z`),
-}));
+// insight.service.ts never touches ClickHouse directly (it's PG-only, via
+// $executeRaw above), so unlike gsc/cohort/import there is nothing here to
+// mock — and no reason to register a factory for this specifier at all: a
+// hand-rolled one, even a well-intentioned superset, is a standing risk of
+// becoming the partial factory those files warn about the moment someone
+// edits it without re-checking every other consumer.
 
 const spikesQuery = mock(async () => [
   { anchorDate: '2026-09-01', spikes: [] },
@@ -89,11 +65,16 @@ const getRedisCache = mock(() => ({
     return Promise.resolve();
   }),
 }));
-// `cacheable` is unused here but included for the same cross-file
-// mock.module reason as the clickhouse/client mock above.
+// Spread the real module rather than hand-listing every export: `mock.module`
+// replaces this specifier process-wide (bun runs every test file in one
+// shared module registry without `--isolate` — see AGENTS.md), so a partial
+// factory here (this barrel also carries `getCache`, the pub/sub publisher
+// and the run-every helpers) would silently break any other consumer sharing
+// this process — e.g. the mcp module's auth.ts, which calls `getCache`.
+const actualRedis = await import('@openpanel/redis');
 mock.module('@openpanel/redis', () => ({
+  ...actualRedis,
   getRedisCache,
-  cacheable: <T>(fn: T) => fn,
 }));
 
 let subject: typeof import('./insight.service');
