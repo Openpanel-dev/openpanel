@@ -9,8 +9,8 @@
  *      mark real end users as bots.
  */
 
-import { describe, expect, it } from 'vitest';
-import { parseAsnList } from '../scripts/get-datacenter-asns';
+import { describe, expect, it } from 'bun:test';
+import { parseAsnList } from '../../scripts/get-datacenter-asns';
 import datacenterAsns from './datacenter-asns';
 
 describe('datacenter ASN list', () => {
@@ -18,14 +18,14 @@ describe('datacenter ASN list', () => {
 
   describe('classifies known hosting providers as datacenters', () => {
     const hosting: Record<string, number> = {
-      Google: 15169,
-      Amazon: 16509,
+      Google: 15_169,
+      Amazon: 16_509,
       Azure: 8075,
-      OVH: 16276,
-      Hetzner: 24940,
-      DigitalOcean: 14061,
-      Linode: 63949,
-      Vultr: 20473,
+      OVH: 16_276,
+      Hetzner: 24_940,
+      DigitalOcean: 14_061,
+      Linode: 63_949,
+      Vultr: 20_473,
     };
 
     for (const [name, asn] of Object.entries(hosting)) {
@@ -71,7 +71,7 @@ describe('parseAsnList', () => {
       'AS15169',
     ].join('\n');
 
-    expect(parseAsnList(raw)).toEqual([14061, 15169, 16509]);
+    expect(parseAsnList(raw)).toEqual([14_061, 15_169, 16_509]);
   });
 
   it('de-duplicates and sorts ascending', () => {

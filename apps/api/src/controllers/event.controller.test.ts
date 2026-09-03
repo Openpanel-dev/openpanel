@@ -16,8 +16,8 @@
  * imports `@openpanel/queue`, which the produce assertions replace.
  */
 
+import { getAsnInfo, getGeoLocation } from '@openpanel/core';
 import { getSalts } from '@openpanel/db';
-import { getAsnInfo, getGeoLocation } from '@openpanel/geo';
 import { produceIncomingEvent } from '@openpanel/queue';
 import type { DeprecatedPostEventPayload } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -35,10 +35,11 @@ vi.mock('@openpanel/queue', async () => {
   return { ...actual, produceIncomingEvent: vi.fn() };
 });
 
-vi.mock('@openpanel/geo', () => ({
-  getGeoLocation: vi.fn(),
-  getAsnInfo: vi.fn(),
-}));
+vi.mock('@openpanel/core', async () => {
+  const actual =
+    await vi.importActual<typeof import('@openpanel/core')>('@openpanel/core');
+  return { ...actual, getGeoLocation: vi.fn(), getAsnInfo: vi.fn() };
+});
 
 vi.mock('@openpanel/db', async () => {
   const actual =

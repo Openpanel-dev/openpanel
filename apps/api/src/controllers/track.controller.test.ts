@@ -13,13 +13,13 @@
  * below spies on the real `replayBuffer`.
  */
 
+import { getAsnInfo, getGeoLocation } from '@openpanel/core';
 import {
   getSalts,
   replayBuffer,
   sessionBuffer,
   upsertProfile,
 } from '@openpanel/db';
-import { getAsnInfo, getGeoLocation } from '@openpanel/geo';
 import { produceIncomingEvent } from '@openpanel/queue';
 import type {
   IReplayPayload,
@@ -37,10 +37,11 @@ vi.mock('@openpanel/queue', async () => {
   return { ...actual, produceIncomingEvent: vi.fn() };
 });
 
-vi.mock('@openpanel/geo', () => ({
-  getGeoLocation: vi.fn(),
-  getAsnInfo: vi.fn(),
-}));
+vi.mock('@openpanel/core', async () => {
+  const actual =
+    await vi.importActual<typeof import('@openpanel/core')>('@openpanel/core');
+  return { ...actual, getGeoLocation: vi.fn(), getAsnInfo: vi.fn() };
+});
 
 vi.mock('@openpanel/db', async () => {
   const actual =

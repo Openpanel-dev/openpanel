@@ -1,6 +1,7 @@
+// Ported from @openpanel/geo (dissolved into core — M4-004).
+
 import { readFile } from 'node:fs/promises';
-import path from 'node:path';
-import { dirname } from 'node:path';
+import path, { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { ReaderModel } from '@maxmind/geoip2-node';
 import { Reader } from '@maxmind/geoip2-node';
@@ -10,13 +11,17 @@ import datacenterAsns from './datacenter-asns';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Resolve a bundled `.mmdb` file, trying the api/worker layout first and the
-// local package layout second (mirrors how the file ships via `pnpm codegen`).
+// Resolve a bundled `.mmdb` file, trying the api/worker bundled-dist layout
+// first and the local package layout second (mirrors how the file ships via
+// `pnpm codegen`). apps/api and apps/worker still bundle every `@openpanel/*`
+// package into one file (tsdown `noExternal`), so `import.meta.url` there
+// resolves to `apps/{api,worker}/dist/index.js` regardless of this file's
+// nesting under `src/clients/` — three levels up from dist is the repo root.
 async function loadDatabase(filename: string): Promise<ReaderModel | null> {
-  // From api or worker package
-  const dbPath = path.join(__dirname, `../../../packages/geo/${filename}`);
-  // From local package
-  const dbPathLocal = path.join(__dirname, `../${filename}`);
+  // From api or worker dist bundle
+  const dbPath = path.join(__dirname, `../../../packages/core/${filename}`);
+  // From local package (e.g. running core's own tests, unbundled)
+  const dbPathLocal = path.join(__dirname, `../../${filename}`);
   try {
     const dbBuffer = await readFile(dbPath);
     console.log(`${filename} loaded (dist)`, dbPath);

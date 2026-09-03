@@ -1,6 +1,5 @@
-import { parseUserAgent } from '@openpanel/core';
+import { getGeoLocation, parseUserAgent } from '@openpanel/core';
 import { getProfileById, upsertProfile } from '@openpanel/db';
-import { getGeoLocation } from '@openpanel/geo';
 import type {
   DeprecatedIncrementProfilePayload,
   DeprecatedUpdateProfilePayload,

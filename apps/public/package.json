@@ -19,7 +19,6 @@
     "@number-flow/react": "0.5.10",
     "@opennextjs/cloudflare": "^1.17.1",
     "@openpanel/common": "workspace:*",
-    "@openpanel/geo": "workspace:*",
     "@openpanel/nextjs": "^1.2.0",
     "@openpanel/payments": "workspace:^",
     "@openpanel/sdk-info": "workspace:^",

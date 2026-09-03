@@ -33,7 +33,6 @@
     "@openpanel/constants": "workspace:*",
     "@openpanel/core": "workspace:*",
     "@openpanel/db": "workspace:*",
-    "@openpanel/geo": "workspace:*",
     "@openpanel/integrations": "workspace:^",
     "@openpanel/json": "workspace:*",
     "@openpanel/mcp": "workspace:*",

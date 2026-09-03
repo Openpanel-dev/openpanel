@@ -1,5 +1,12 @@
 import { generateId } from '@openpanel/common';
-import { generateDeviceId, parseUserAgent } from '@openpanel/core';
+import {
+  type AsnInfo,
+  type GeoLocation,
+  generateDeviceId,
+  getAsnInfo,
+  getGeoLocation,
+  parseUserAgent,
+} from '@openpanel/core';
 import {
   convertClickhouseDateToJs,
   getProfileById,
@@ -10,12 +17,6 @@ import {
   sessionBuffer,
   upsertProfile,
 } from '@openpanel/db';
-import {
-  type AsnInfo,
-  type GeoLocation,
-  getAsnInfo,
-  getGeoLocation,
-} from '@openpanel/geo';
 import {
   type EventsQueuePayloadIncomingEvent,
   produceIncomingEvent,

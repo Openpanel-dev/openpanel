@@ -6,6 +6,10 @@
 // once and mount the three route surfaces plus the tRPC router over it; a
 // service, a client or a buffer is not reachable from here by design.
 
+// Dissolved from @openpanel/geo (M4-004) — apps/api's ingest and tools
+// controllers call these directly, the same way they reach the logger below.
+export type { AsnInfo, GeoLocation } from './clients/geo';
+export { getAsnInfo, getGeoLocation } from './clients/geo';
 // The concrete pino implementation (dissolved from @openpanel/logger,
 // M4-003). `./logger` above is the structural interface every module codes
 // against; this is what apps/api, and the still-live apps/worker, call to

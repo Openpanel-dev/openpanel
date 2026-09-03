@@ -1,8 +1,7 @@
 import * as dns from 'node:dns/promises';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
-import { getClientIpFromHeaders } from '@openpanel/core';
-import { getGeoLocation } from '@openpanel/geo';
+import { getClientIpFromHeaders, getGeoLocation } from '@openpanel/core';
 import * as cheerio from 'cheerio';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import {

@@ -1,4 +1,4 @@
-import type { AsnInfo } from '@openpanel/geo';
+import type { AsnInfo } from '@openpanel/core';
 import { describe, expect, it } from 'vitest';
 import {
   applyBotSuspicion,

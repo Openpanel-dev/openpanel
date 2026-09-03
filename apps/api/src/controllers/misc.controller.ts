@@ -1,10 +1,11 @@
 import crypto from 'node:crypto';
 import {
   DEFAULT_IP_HEADER_ORDER,
+  type GeoLocation,
   getClientIpFromHeaders,
+  getGeoLocation,
 } from '@openpanel/core';
 import { ch, chQuery, formatClickhouseDate, TABLE_NAMES } from '@openpanel/db';
-import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { getCache, getRedisCache } from '@openpanel/redis';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import {

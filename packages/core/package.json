@@ -11,12 +11,15 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "bun test --isolate",
+    "codegen": "bun scripts/download-geo.ts && bun scripts/get-datacenter-asns.ts",
+    "gen:asns": "bun scripts/get-datacenter-asns.ts",
     "gen:referrers": "bun scripts/get-referrers.ts && biome format --write ./src/shared/referrers/index.ts"
   },
   "dependencies": {
     "@elysiajs/cors": "1.4.2",
     "@elysiajs/openapi": "1.4.15",
     "@hyperdx/node-opentelemetry": "catalog:",
+    "@maxmind/geoip2-node": "^6.1.0",
     "@openpanel/auth": "workspace:^",
     "@openpanel/common": "workspace:*",
     "@trpc/server": "^11.17.0",
@@ -36,6 +39,7 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "bun-types": "1.4.0",
+    "tar": "^7.4.3",
     "typescript": "catalog:"
   }
 }

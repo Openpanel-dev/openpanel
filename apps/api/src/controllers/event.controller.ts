@@ -1,7 +1,6 @@
 import { generateId } from '@openpanel/common';
-import { parseUserAgent } from '@openpanel/core';
+import { getAsnInfo, getGeoLocation, parseUserAgent } from '@openpanel/core';
 import { getSalts } from '@openpanel/db';
-import { getAsnInfo, getGeoLocation } from '@openpanel/geo';
 import {
   type EventsQueuePayloadIncomingEvent,
   produceIncomingEvent,
