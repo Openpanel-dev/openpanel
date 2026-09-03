@@ -31,6 +31,7 @@ function stubJobCtx(gsc: Partial<GscService>, jobName = 'test'): JobCtx {
     cohort: {} as Services['cohort'],
     import: {} as Services['import'],
     gsc: gsc as GscService,
+    organization: {} as Services['organization'],
   };
   return {
     db: {},
@@ -128,6 +129,7 @@ test('gscSync fans out one gscProjectSync enqueue per connected project', async 
           { projectId: 'p2' },
         ],
       } as GscService,
+      organization: {} as Services['organization'],
     },
     requestId: 'req_1',
     job: { id: 'job_1', attempt: 0, queue: 'cron', name: 'gscSync' },

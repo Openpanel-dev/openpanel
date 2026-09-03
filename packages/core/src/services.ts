@@ -20,6 +20,10 @@ import {
   createInsightService,
   type InsightService,
 } from './modules/insight/insight.service';
+import {
+  createOrganizationService,
+  type OrganizationService,
+} from './modules/organization/organization.service';
 
 /** What every service factory receives — derived from Ctx, so it cannot drift. */
 export type ServiceDeps = Pick<
@@ -42,6 +46,7 @@ export interface Services {
   gsc: GscService;
   cohort: CohortService;
   import: ImportService;
+  organization: OrganizationService;
 }
 
 export function createServices(deps: ServiceDeps): Services {
@@ -54,5 +59,6 @@ export function createServices(deps: ServiceDeps): Services {
     gsc: createGscService(deps),
     cohort: createCohortService(deps),
     import: createImportService(deps),
+    organization: createOrganizationService(deps),
   };
 }

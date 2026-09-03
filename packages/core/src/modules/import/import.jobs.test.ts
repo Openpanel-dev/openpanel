@@ -31,6 +31,7 @@ function stubJobCtx(importService: Partial<ImportService>): JobCtx {
     cohort: {} as Services['cohort'],
     gsc: {} as Services['gsc'],
     import: importService as ImportService,
+    organization: {} as Services['organization'],
   };
   return {
     db: {},

@@ -1,369 +1,42 @@
-import { DateTime } from '@openpanel/common';
-import { cacheable } from '@openpanel/redis';
-import sqlstring from 'sqlstring';
-import { chQuery, formatClickhouseDate } from '../clickhouse/client';
-import type { Invite, Prisma, ProjectAccess, User } from '../prisma-client';
-import { db } from '../prisma-client';
-import { createSqlBuilder } from '../sql-builder';
-import { getOrganizationAccess, getProjectAccess } from './access.service';
-import type { IServiceProject } from './project.service';
-export type IServiceOrganization = Awaited<
-  ReturnType<typeof db.organization.findUniqueOrThrow>
->;
-export type IServiceInvite = Invite;
-export type IServiceMember = Prisma.MemberGetPayload<{
-  include: { user: true };
-}> & { access: ProjectAccess[] };
-export type IServiceProjectAccess = ProjectAccess;
-
-export async function getOrganizations(userId: string | null) {
-  if (!userId) {
-    return [];
-  }
-
-  const organizations = await db.organization.findMany({
-    where: {
-      members: {
-        some: {
-          userId,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-
-  return organizations;
-}
-
-export function getOrganizationById(slug: string) {
-  return db.organization.findUniqueOrThrow({
-    where: {
-      id: slug,
-    },
-  });
-}
-
-export async function getOrganizationByProjectId(projectId: string) {
-  const project = await db.project.findUniqueOrThrow({
-    where: {
-      id: projectId,
-    },
-    include: {
-      organization: true,
-    },
-  });
-
-  if (!project.organization) {
-    return null;
-  }
-
-  return project.organization;
-}
-
-export const getOrganizationByProjectIdCached = cacheable(
-  getOrganizationByProjectId,
-  60 * 5
-);
-
-export async function getInvites(organizationId: string) {
-  return db.invite.findMany({
-    where: {
-      organizationId,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-}
-
-export async function getInviteById(inviteId: string) {
-  const res = await db.invite.findUnique({
-    where: {
-      id: inviteId,
-    },
-    include: {
-      organization: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-  });
-
-  return {
-    ...res,
-    isExpired: res?.expiresAt && res.expiresAt < new Date(),
-  };
-}
-
-export async function getMembers(organizationId: string) {
-  const [members, access] = await Promise.all([
-    db.member.findMany({
-      where: {
-        organizationId,
-        userId: {
-          not: null,
-        },
-      },
-      include: {
-        user: true,
-      },
-    }),
-    db.projectAccess.findMany({
-      where: {
-        organizationId,
-      },
-    }),
-  ]);
-
-  return members.map((member) => ({
-    ...member,
-    access: access.filter((a) => a.userId === member.userId),
-  }));
-}
-
-export async function getMember(organizationId: string, userId: string) {
-  return db.member.findFirst({
-    where: {
-      organizationId,
-      userId,
-    },
-  });
-}
-
-export async function connectUserToOrganization({
-  user,
-  inviteId,
-}: {
-  user: User;
-  inviteId: string;
-}) {
-  // Use primary since before this we might have just created the invite
-  // If we use replica it might not find the invite
-  const invite = await db.invite.findUnique({
-    where: {
-      id: inviteId,
-    },
-  });
-
-  if (!invite) {
-    throw new Error('Invite not found');
-  }
-
-  if (process.env.ALLOW_INVITATION === 'false') {
-    throw new Error('Invitations are not allowed');
-  }
-
-  if (invite.expiresAt < new Date()) {
-    throw new Error('Invite expired');
-  }
-
-  // The invite might be consumed by a user who is already a member of the
-  // organization (e.g. accepting it a second time). Upsert atomically against
-  // the (organizationId, userId) unique constraint so concurrent consumption
-  // cannot create duplicate membership rows; an existing membership is reused
-  // unchanged and the invite is still consumed below.
-  const member = await db.member.upsert({
-    where: {
-      organizationId_userId: {
-        organizationId: invite.organizationId,
-        userId: user.id,
-      },
-    },
-    update: {},
-    create: {
-      organizationId: invite.organizationId,
-      userId: user.id,
-      role: invite.role,
-      email: user.email,
-      invitedById: invite.createdById,
-    },
-  });
-
-  await getOrganizationAccess.clear({
-    userId: user.id,
-    organizationId: invite.organizationId,
-  });
-
-  if (invite.projectAccess.length > 0) {
-    for (const grant of invite.projectAccess) {
-      await getProjectAccess.clear({
-        userId: user.id,
-        projectId: grant.projectId,
-      });
-      await db.projectAccess.create({
-        data: {
-          projectId: grant.projectId,
-          userId: user.id,
-          organizationId: invite.organizationId,
-          // The level the inviting admin chose, not a hardcoded default.
-          level: grant.level,
-        },
-      });
-    }
-  }
-
-  await db.invite.delete({
-    where: {
-      id: inviteId,
-    },
-  });
-
-  return member;
-}
-
-/**
- * Get the total number of events during the
- * current subscription period for an organization
- */
-export async function getOrganizationBillingEventsCount(
-  organization: IServiceOrganization & { projects: IServiceProject[] }
-) {
-  // Trials have no Polar billing period; fall back to the trial window
-  // (creation → trial end). Status stays 'trialing' even once expired.
-  const isTrialStatus = organization.subscriptionStatus === 'trialing';
-  const periodStart =
-    organization.subscriptionCurrentPeriodStart ??
-    (isTrialStatus ? organization.createdAt : null);
-  const periodEnd =
-    organization.subscriptionCurrentPeriodEnd ??
-    (isTrialStatus ? organization.subscriptionEndsAt : null);
-
-  if (!(periodStart && periodEnd) || organization.projects.length === 0) {
-    return 0;
-  }
-
-  const { sb, getSql } = createSqlBuilder();
-
-  sb.select.count = 'COUNT(*) AS count';
-  sb.where.projectIds = `project_id IN (${organization.projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
-  sb.where.createdAt = `created_at BETWEEN ${sqlstring.escape(formatClickhouseDate(periodStart))} AND ${sqlstring.escape(formatClickhouseDate(periodEnd))}`;
-  sb.where.names = `name NOT IN ('session_start', 'session_end')`;
-
-  const res = await chQuery<{ count: number }>(getSql());
-  return res[0]?.count;
-}
-
-// Lifetime event count for a set of projects (excluding session bookkeeping
-// events). The onboarding emails use this instead of subscriptionPeriodEventsCount,
-// which only refreshes when sessions end.
-export async function getOrganizationEventsCount(projectIds: string[]) {
-  if (projectIds.length === 0) {
-    return 0;
-  }
-
-  const { sb, getSql } = createSqlBuilder();
-
-  sb.select.count = 'COUNT(*) AS count';
-  sb.where.projectIds = `project_id IN (${projectIds.map((id) => sqlstring.escape(id)).join(',')})`;
-  sb.where.names = `name NOT IN ('session_start', 'session_end')`;
-
-  const res = await chQuery<{ count: number }>(getSql());
-  return res[0]?.count ?? 0;
-}
-
-// Events in a recent window, for organizations whose trial lapsed but whose
-// SDKs never stopped. The lifetime count above says "you once used this"; this
-// one says "you are using this right now", which is the only number that
-// actually argues for a subscription.
-export async function getOrganizationEventsCountSince(
-  projectIds: string[],
-  since: Date
-) {
-  if (projectIds.length === 0) {
-    return 0;
-  }
-
-  const { sb, getSql } = createSqlBuilder();
-
-  sb.select.count = 'COUNT(*) AS count';
-  sb.where.projectIds = `project_id IN (${projectIds.map((id) => sqlstring.escape(id)).join(',')})`;
-  sb.where.names = `name NOT IN ('session_start', 'session_end')`;
-  sb.where.createdAt = `created_at >= ${sqlstring.escape(formatClickhouseDate(since, true))}`;
-
-  const res = await chQuery<{ count: number }>(getSql());
-  return res[0]?.count ?? 0;
-}
-
-export async function getOrganizationBillingEventsCountSerie(
-  organization: IServiceOrganization & { projects: { id: string }[] },
-  {
-    startDate,
-    endDate,
-  }: {
-    startDate: Date;
-    endDate: Date;
-  }
-) {
-  const interval = 'day';
-  const { sb, getSql } = createSqlBuilder();
-
-  sb.select.count = 'COUNT(*) AS count';
-  sb.select.day = `toDate(toStartOf${interval.slice(0, 1).toUpperCase() + interval.slice(1)}(created_at)) AS ${interval}`;
-  sb.groupBy.day = interval;
-  sb.orderBy.day = `${interval} WITH FILL FROM toDate(${sqlstring.escape(formatClickhouseDate(startDate, true))}) TO toDate(${sqlstring.escape(formatClickhouseDate(endDate, true))}) STEP INTERVAL 1 ${interval.toUpperCase()}`;
-  sb.where.projectIds = `project_id IN (${organization.projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
-  sb.where.createdAt = `${interval} BETWEEN ${sqlstring.escape(formatClickhouseDate(startDate, true))} AND ${sqlstring.escape(formatClickhouseDate(endDate, true))}`;
-  sb.where.names = `name NOT IN ('session_start', 'session_end')`;
-
-  const res = await chQuery<{ count: number; day: string }>(getSql());
-  return res;
-}
-
-export const getOrganizationBillingEventsCountSerieCached = cacheable(
+// The organization service — plus packages/db/src/services/delete.service.ts,
+// folded in with it — lives in @openpanel/core now (M6-001). Re-exported here
+// for existing `@openpanel/db` importers (packages/db's own engine +
+// analytics services reading `getSettingsForProject`, packages/trpc's
+// organization router, apps/worker's delete cron job) — same shape as
+// packages/db/src/gsc.ts since M5-002.
+export type {
+  IServiceInvite,
+  IServiceMember,
+  IServiceOrganization,
+  IServiceProjectAccess,
+} from '@openpanel/core';
+export {
+  cancelOrganizationDeletion,
+  connectUserToOrganization,
+  deleteFromClickhouse,
+  deleteOrganization,
+  deleteProjects,
+  getInviteById,
+  getInvites,
+  getMember,
+  getMembers,
+  getOrganizationBillingEventsCount,
   getOrganizationBillingEventsCountSerie,
-  60 * 10
-);
-
-export async function getOrganizationSubscriptionChartEndDate(
-  projectId: string,
-  endDate: string
-) {
-  const organization = await getOrganizationByProjectIdCached(projectId);
-  if (!organization) {
-    return null;
-  }
-  // If the current period end date is after the subscription chart end date, we need to use the subscription chart end date
-  if (
-    organization.subscriptionChartEndDate &&
-    new Date(endDate) > organization.subscriptionChartEndDate
-  ) {
-    return DateTime.fromJSDate(organization.subscriptionChartEndDate)
-      .setZone(organization.timezone || DEFAULT_TIMEZONE)
-      .toFormat('yyyy-MM-dd HH:mm:ss');
-  }
-
-  return endDate;
-}
-
-const DEFAULT_TIMEZONE = 'UTC';
-
-export async function getSettingsForOrganization(organizationId: string) {
-  const organization = await db.organization.findUniqueOrThrow({
-    where: {
-      id: organizationId,
-    },
-  });
-
-  return {
-    timezone: organization.timezone || DEFAULT_TIMEZONE,
-  };
-}
-
-export async function getSettingsForProject(projectId: string) {
-  const project = await db.project.findUniqueOrThrow({
-    where: {
-      id: projectId,
-    },
-    include: {
-      organization: true,
-    },
-  });
-
-  return {
-    timezone: project.organization.timezone || DEFAULT_TIMEZONE,
-  };
-}
+  getOrganizationBillingEventsCountSerieCached,
+  getOrganizationById,
+  getOrganizationByProjectId,
+  getOrganizationByProjectIdCached,
+  getOrganizationEventsCount,
+  getOrganizationEventsCountSince,
+  getOrganizationSubscriptionChartEndDate,
+  getOrganizations,
+  getSettingsForOrganization,
+  getSettingsForProject,
+  inviteUserToOrganization,
+  removeOrganizationMember,
+  revokeInvite,
+  runDeleteCron,
+  scheduleOrganizationDeletion,
+  updateOrganization,
+  updateOrganizationMemberAccess,
+} from '@openpanel/core';

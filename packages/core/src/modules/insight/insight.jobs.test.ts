@@ -42,6 +42,7 @@ function stubJobCtx(
     gsc: {} as Services['gsc'],
     cohort: {} as Services['cohort'],
     import: {} as Services['import'],
+    organization: {} as Services['organization'],
   };
   return {
     db: {},
@@ -122,6 +123,7 @@ test('insightsDaily fans out one insightsProject enqueue per candidate, jobId de
       gsc: {} as Services['gsc'],
       cohort: {} as Services['cohort'],
       import: {} as Services['import'],
+      organization: {} as Services['organization'],
     },
     requestId: 'req_1',
     job: { id: 'job_1', attempt: 0, queue: 'cron', name: 'insightsDaily' },

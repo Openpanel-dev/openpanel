@@ -8,6 +8,7 @@ import type { Logger } from '../logger';
 import { cohortCronSchedules } from '../modules/cohort/cohort.jobs';
 import { gscCronSchedules } from '../modules/gsc/gsc.jobs';
 import { insightCronSchedules } from '../modules/insight/insight.jobs';
+import { organizationCronSchedules } from '../modules/organization/organization.jobs';
 import { wrap } from './envelope';
 
 export type RepeatSchedule = { pattern: string } | { every: number };
@@ -57,7 +58,9 @@ const MINUTE_MS = 60_000;
 // see `PING_SCHEDULE` and `startSchedulers`.
 export const CRON_SCHEDULES: readonly SchedulerDefinition[] = [
   { id: 'salt', schedule: { pattern: '0 0 * * *' } },
-  { id: 'delete', schedule: { pattern: '0 * * * *' } },
+  // delete — owned by the organization module, declared next to its jobs
+  // (modules/organization/organization.jobs.ts).
+  ...organizationCronSchedules,
   { id: 'flushEvents', schedule: { every: 10_000 } },
   { id: 'flushProfiles', schedule: { every: 10_000 } },
   { id: 'flushSessions', schedule: { every: 10_000 } },

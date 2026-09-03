@@ -84,6 +84,7 @@ test('the cron queue carries the insight module cron fragment', () => {
   expect(Object.keys(queues.cron.jobs).sort()).toEqual(
     [
       'cohortRefresh',
+      'delete',
       'gscSync',
       'insightCleanup',
       'insightsDaily',
@@ -133,6 +134,15 @@ test('the cron queue carries the cohort module cron fragment', () => {
   expect(queues.cron.jobs.cohortRefresh).toMatchObject({
     queue: 'cron',
     name: 'cohortRefresh',
+  });
+});
+
+// M6-001: the organization module's `delete` cron fragment (folded in from
+// packages/db/src/services/delete.service.ts).
+test('the cron queue carries the organization module cron fragment', () => {
+  expect(queues.cron.jobs.delete).toMatchObject({
+    queue: 'cron',
+    name: 'delete',
   });
 });
 

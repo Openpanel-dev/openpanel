@@ -21,6 +21,7 @@ import {
   insightCronJobs,
   insightQueueJobs,
 } from './modules/insight/insight.jobs';
+import { organizationCronJobs } from './modules/organization/organization.jobs';
 
 const HOUR_IN_SECONDS = 3600;
 const DAY_IN_SECONDS = 86_400;
@@ -58,6 +59,7 @@ const cron = defineQueue('cron', {
     ...insightCronJobs,
     ...gscCronJobs,
     ...cohortCronJobs,
+    ...organizationCronJobs,
   },
 });
 

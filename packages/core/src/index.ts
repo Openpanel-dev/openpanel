@@ -274,6 +274,67 @@ export {
   selectGscSite,
   syncGscData,
 } from './modules/gsc/gsc.service';
+// Dissolved from @openpanel/db's services/organization.service.ts +
+// services/delete.service.ts (M6-001, folded together per the module map) —
+// packages/trpc's organization router, apps/worker's delete cron job and
+// packages/db's own engine/analytics services (`getSettingsForProject`) call
+// these directly, the same way V1 reaches every other dissolved service here.
+// packages/db/src/services/organization.service.ts stays a re-export shim
+// (unlike delete.service.ts, which packages/db loses entirely — nothing but
+// the worker's cron job reached it through @openpanel/db's barrel).
+export type {
+  DeleteCronResult,
+  InviteUserResult,
+  IServiceInvite,
+  IServiceMember,
+  IServiceOrganization,
+  IServiceProjectAccess,
+  OrganizationService,
+} from './modules/organization/organization.service';
+export {
+  cancelOrganizationDeletion,
+  connectUserToOrganization,
+  createOrganizationService,
+  deleteFromClickhouse,
+  deleteOrganization,
+  deleteProjects,
+  getInviteById,
+  getInviteOrThrow,
+  getInvites,
+  getMember,
+  getMembers,
+  getOrganizationBillingEventsCount,
+  getOrganizationBillingEventsCountSerie,
+  getOrganizationBillingEventsCountSerieCached,
+  getOrganizationById,
+  getOrganizationByProjectId,
+  getOrganizationByProjectIdCached,
+  getOrganizationEventsCount,
+  getOrganizationEventsCountSince,
+  getOrganizationSubscriptionChartEndDate,
+  getOrganizations,
+  getSettingsForOrganization,
+  getSettingsForProject,
+  inviteUserToOrganization,
+  removeOrganizationMember,
+  revokeInvite,
+  runDeleteCron,
+  scheduleOrganizationDeletion,
+  updateOrganization,
+  updateOrganizationMemberAccess,
+} from './modules/organization/organization.service';
+// Dissolved from @openpanel/db's services/user.service.ts (M6-001) —
+// packages/trpc's auth/onboarding routers still call `getUserById`/
+// `getUserAccount` directly through @openpanel/db's re-export shim, the same
+// way they reach every other dissolved service here.
+export type { IServiceUser } from './modules/user/user.service';
+export {
+  deleteUserAccount,
+  getUserAccount,
+  getUserById,
+  listUserDeletionBlockers,
+  updateUserProfile,
+} from './modules/user/user.service';
 
 // packages/mcp absorbed whole (M5-007) — apps/api's mcp.router.ts is the one
 // external caller, delegating the streamable-HTTP POST protocol here

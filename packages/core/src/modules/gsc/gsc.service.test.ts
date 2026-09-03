@@ -157,7 +157,15 @@ const validateAuthorizationCode = mock(async () => ({
   refreshToken: () => 'google-refresh-token',
   accessTokenExpiresAt: () => new Date('2026-09-04T00:00:00.000Z'),
 }));
+// Spread the real module — see the clickhouse/client mock above for why a
+// partial factory here is a process-wide hazard, not a local one. Surfaced
+// by M6-001: @openpanel/db's organization.service.ts shim (imported below)
+// now re-exports from @openpanel/core's full barrel, which reaches this
+// same auth.service.ts for createAuthService — a partial replacement here
+// used to be invisible because nothing else in this file's chain needed it.
+const actualAuthService = await import('../auth/auth.service');
 mock.module('../auth/auth.service', () => ({
+  ...actualAuthService,
   googleGsc: { validateAuthorizationCode },
 }));
 

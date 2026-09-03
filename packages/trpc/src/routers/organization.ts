@@ -1,20 +1,30 @@
-import { generateSecureId } from '@openpanel/core';
+// Dissolved into @openpanel/core's organization module (M6-001): the CRUD
+// and mutation bodies moved to
+// packages/core/src/modules/organization/organization.service.ts (delete.service.ts
+// folded in with it). This router stays (DELEGATE PATTERN) — it keeps V1's
+// protectedProcedure stack (session/access/logger/rate-limit middleware) and
+// delegates every handler body to core's organization functions, same as
+// conversation's router does (M5-006).
 import {
-  connectUserToOrganization,
-  db,
+  cancelOrganizationDeletion,
   getInviteById,
-  getInvites,
+  getInviteOrThrow,
   getMembers,
   getOrganizationById,
   getOrganizations,
-} from '@openpanel/db';
-import { sendEmail } from '@openpanel/email';
+  inviteUserToOrganization,
+  getInvites as loadInvites,
+  removeOrganizationMember,
+  revokeInvite as revokeInviteById,
+  scheduleOrganizationDeletion,
+  updateOrganization,
+  updateOrganizationMemberAccess,
+} from '@openpanel/core';
 import {
   zEditOrganization,
   zInviteUser,
   zUpdateMemberAccess,
 } from '@openpanel/validation';
-import { addDays, addHours } from 'date-fns';
 import { z } from 'zod';
 import { getOrganizationAccess } from '../access';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../errors';
@@ -65,15 +75,7 @@ export const organizationRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this project');
       }
 
-      return db.organization.update({
-        where: {
-          id: input.id,
-        },
-        data: {
-          name: input.name,
-          timezone: input.timezone,
-        },
-      });
+      return updateOrganization(input);
     }),
 
   delete: protectedProcedure
@@ -90,40 +92,12 @@ export const organizationRouter = createTRPCRouter({
         );
       }
 
-      const organization = await getOrganizationById(input.organizationId);
-
-      // Require billing to be cancelled first. We don't want to delete an
-      // organization that still has a live paid subscription. Once the user has
-      // cancelled (the subscription is scheduled to end), deletion is allowed.
-      if (organization.hasSubscription && !organization.isWillBeCanceled) {
-        throw new TRPCBadRequestError(
-          'Please cancel your subscription before deleting this organization.'
-        );
-      }
-
-      // Schedule the organization and all of its projects for deletion in 24
-      // hours (cancelable until then). The hourly `delete` cron removes the
-      // projects (and their ClickHouse events) and the organization in a single
-      // pass once their `deleteAt` has passed.
-      const deleteAt = addHours(new Date(), 24);
-      await db.$transaction([
-        db.project.updateMany({
-          where: {
-            organizationId: input.organizationId,
-          },
-          data: {
-            deleteAt,
-          },
-        }),
-        db.organization.update({
-          where: {
-            id: input.organizationId,
-          },
-          data: {
-            deleteAt,
-          },
-        }),
-      ]);
+      // Schedules the organization and all of its projects for deletion in 24
+      // hours (cancelable until then); throws if a live paid subscription
+      // hasn't been cancelled yet. The hourly `delete` cron removes the
+      // projects (and their ClickHouse events) and the organization in a
+      // single pass once their `deleteAt` has passed.
+      await scheduleOrganizationDeletion(input.organizationId);
 
       return true;
     }),
@@ -142,24 +116,7 @@ export const organizationRouter = createTRPCRouter({
         );
       }
 
-      await db.$transaction([
-        db.project.updateMany({
-          where: {
-            organizationId: input.organizationId,
-          },
-          data: {
-            deleteAt: null,
-          },
-        }),
-        db.organization.update({
-          where: {
-            id: input.organizationId,
-          },
-          data: {
-            deleteAt: null,
-          },
-        }),
-      ]);
+      await cancelOrganizationDeletion(input.organizationId);
 
       return true;
     }),
@@ -176,85 +133,13 @@ export const organizationRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this project');
       }
 
-      const email = input.email.toLowerCase();
-      const userExists = await db.user.findFirst({
-        where: {
-          email: {
-            equals: email,
-            mode: 'insensitive',
-          },
-        },
+      return inviteUserToOrganization({
+        organizationId: input.organizationId,
+        email: input.email,
+        role: input.role,
+        access: input.access ?? [],
+        invitedById: ctx.session.userId,
       });
-
-      const alreadyMember = await db.member.findFirst({
-        where: {
-          userId: userExists?.id,
-          organizationId: input.organizationId,
-        },
-      });
-
-      if (alreadyMember && userExists) {
-        throw new TRPCBadRequestError(
-          'User is already a member of the organization'
-        );
-      }
-
-      const alreadyInvited = await db.invite.findFirst({
-        where: {
-          email,
-          organizationId: input.organizationId,
-        },
-      });
-
-      if (alreadyInvited) {
-        throw new TRPCBadRequestError(
-          'User is already invited to the organization'
-        );
-      }
-
-      const invite = await db.invite.create({
-        data: {
-          id: generateSecureId('invite'),
-          email,
-          organizationId: input.organizationId,
-          role: input.role,
-          createdById: ctx.session.userId,
-          projectAccess: input.access ?? [],
-          expiresAt: addDays(new Date(), 3),
-        },
-        include: {
-          organization: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      });
-
-      if (userExists) {
-        const member = await connectUserToOrganization({
-          user: userExists,
-          inviteId: invite.id,
-        });
-
-        return {
-          type: 'is_member',
-          member,
-        };
-      }
-
-      await sendEmail('invite', {
-        to: email,
-        data: {
-          url: `${process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL}/onboarding?inviteId=${invite.id}`,
-          organizationName: invite.organization.name,
-        },
-      });
-
-      return {
-        type: 'is_invited',
-        invite,
-      };
     }),
   revokeInvite: protectedProcedure
     .input(
@@ -263,11 +148,7 @@ export const organizationRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const invite = await db.invite.findUniqueOrThrow({
-        where: {
-          id: input.inviteId,
-        },
-      });
+      const invite = await getInviteOrThrow(input.inviteId);
 
       const access = await getOrganizationAccess({
         userId: ctx.session.userId,
@@ -278,11 +159,7 @@ export const organizationRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this project');
       }
 
-      return db.invite.delete({
-        where: {
-          id: input.inviteId,
-        },
-      });
+      return revokeInviteById(input.inviteId);
     }),
 
   removeMember: protectedProcedure
@@ -294,17 +171,6 @@ export const organizationRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const exists = await db.member.count({
-        where: {
-          userId: input.userId,
-          organizationId: input.organizationId,
-        },
-      });
-
-      if (ctx.session.userId === input.userId && exists === 1) {
-        throw new Error('You cannot remove yourself from the organization');
-      }
-
       const access = await getOrganizationAccess({
         userId: ctx.session.userId,
         organizationId: input.organizationId,
@@ -314,21 +180,12 @@ export const organizationRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this project');
       }
 
-      await db.$transaction([
-        db.member.delete({
-          where: {
-            id: input.id,
-            userId: input.userId,
-            organizationId: input.organizationId,
-          },
-        }),
-        db.projectAccess.deleteMany({
-          where: {
-            userId: input.userId,
-            organizationId: input.organizationId,
-          },
-        }),
-      ]);
+      await removeOrganizationMember({
+        organizationId: input.organizationId,
+        memberId: input.id,
+        targetUserId: input.userId,
+        requestedByUserId: ctx.session.userId,
+      });
     }),
 
   updateMemberAccess: protectedProcedure
@@ -347,25 +204,11 @@ export const organizationRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this project');
       }
 
-      return db.$transaction([
-        db.projectAccess.deleteMany({
-          where: {
-            userId: input.userId,
-            organizationId: input.organizationId,
-          },
-        }),
-        db.projectAccess.createMany({
-          // The level comes from the admin's choice. This used to be hardcoded
-          // to 'read', which was harmless only because nothing enforced the
-          // level (GHSA-f9rx-pxgw-c6rg).
-          data: input.access.map((grant) => ({
-            userId: input.userId,
-            organizationId: input.organizationId,
-            projectId: grant.projectId,
-            level: grant.level,
-          })),
-        }),
-      ]);
+      return updateOrganizationMemberAccess({
+        organizationId: input.organizationId,
+        targetUserId: input.userId,
+        access: input.access,
+      });
     }),
 
   members: protectedProcedure
@@ -391,7 +234,7 @@ export const organizationRouter = createTRPCRouter({
       if (access?.role !== 'org:admin') {
         throw new TRPCForbiddenError('You do not have access to this project');
       }
-      return getInvites(input.organizationId);
+      return loadInvites(input.organizationId);
     }),
 
   getInvite: publicProcedure

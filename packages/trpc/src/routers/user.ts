@@ -1,7 +1,16 @@
-import { deleteSessionTokenCookie } from '@openpanel/core';
-import { db } from '@openpanel/db';
+// Dissolved into @openpanel/core's user module (M6-001): the CRUD itself
+// moved to packages/core/src/modules/user/user.service.ts. This router
+// stays (DELEGATE PATTERN) — it keeps V1's protectedProcedure stack
+// (session/access/logger/rate-limit middleware) and delegates every handler
+// body to core's user functions, same as conversation's router does
+// (M5-006).
+import {
+  deleteSessionTokenCookie,
+  deleteUserAccount,
+  listUserDeletionBlockers,
+  updateUserProfile,
+} from '@openpanel/core';
 import { z } from 'zod';
-import { TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const userRouter = createTRPCRouter({
@@ -9,43 +18,11 @@ export const userRouter = createTRPCRouter({
   // (active and not scheduled to cancel). The account cannot be deleted while
   // any of these exist.
   deletionBlockers: protectedProcedure.query(async ({ ctx }) => {
-    const organizations = await db.organization.findMany({
-      where: { createdByUserId: ctx.session.userId },
-    });
-    return organizations
-      .filter(
-        (organization) =>
-          organization.hasSubscription && !organization.isWillBeCanceled
-      )
-      .map((organization) => ({
-        id: organization.id,
-        name: organization.name,
-      }));
+    return listUserDeletionBlockers(ctx.session.userId);
   }),
 
   delete: protectedProcedure.mutation(async ({ ctx }) => {
-    const organizations = await db.organization.findMany({
-      where: { createdByUserId: ctx.session.userId },
-    });
-    const blocking = organizations.filter(
-      (organization) =>
-        organization.hasSubscription && !organization.isWillBeCanceled
-    );
-
-    if (blocking.length > 0) {
-      throw new TRPCBadRequestError(
-        `Please cancel the subscription for ${blocking
-          .map((organization) => organization.name)
-          .join(', ')} before deleting your account.`
-      );
-    }
-
-    // Hard delete the user. Cascades clean up sessions, accounts, totp,
-    // twoFactorChallenges, members, projectAccess, invites and conversations.
-    // Organizations the user created have `createdByUserId`/`subscriptionCreatedByUserId`
-    // set to null (SetNull); any org left without an org:admin member is then
-    // removed by the `delete` cron.
-    await db.user.delete({ where: { id: ctx.session.userId } });
+    await deleteUserAccount(ctx.session.userId);
     deleteSessionTokenCookie(ctx.setCookie);
 
     return true;
@@ -59,15 +36,7 @@ export const userRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      return db.user.update({
-        where: {
-          id: ctx.session.userId,
-        },
-        data: {
-          firstName: input.firstName,
-          lastName: input.lastName,
-        },
-      });
+      return updateUserProfile({ userId: ctx.session.userId, ...input });
     }),
   debugPostCookie: protectedProcedure
     .input(
