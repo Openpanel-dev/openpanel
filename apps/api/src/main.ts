@@ -18,37 +18,32 @@ import {
   queues,
 } from '@openpanel/core';
 import pino from 'pino';
+import { type Config, loadConfig } from './config/env';
 
-const ROLE_VALUES = ['api', 'worker', 'all'] as const;
-type Role = (typeof ROLE_VALUES)[number];
-
-const DEFAULT_PORT = 3000;
 const SHUTDOWN_FORCE_EXIT_MS = 5000;
-
-const logger = pino({ name: 'api', level: process.env.LOG_LEVEL || 'info' });
+// Used only to report a config error itself — the real level isn't known
+// until `config/env.ts` has validated `LOG_LEVEL`.
+const BOOTSTRAP_LOG_LEVEL = 'info';
 
 /**
- * Same doctrine as `ENABLED_QUEUES` (apps/worker/src/boot-workers.ts's
- * `assertKnownQueue`): a stale or mistyped value fails boot loudly, naming
- * the offending value and the accepted set, instead of being silently
- * ignored or misinterpreted.
+ * `config/env.ts` is the sole `process.env` reader on this path; an invalid
+ * value fails boot loudly, naming every offending value at once (never just
+ * the first), instead of being silently ignored or misinterpreted.
  */
-function assertKnownRole(value: string): asserts value is Role {
-  if ((ROLE_VALUES as readonly string[]).includes(value)) {
-    return;
+function loadConfigOrExit(): Config {
+  try {
+    return loadConfig();
+  } catch (error) {
+    pino({ name: 'api', level: BOOTSTRAP_LOG_LEVEL }).fatal(
+      { err: error },
+      'Refusing to start'
+    );
+    process.exit(1);
   }
-  logger.fatal(
-    { value, accepted: ROLE_VALUES },
-    `ROLE: unknown value "${value}". Accepted values: ${ROLE_VALUES.join(', ')}.`
-  );
-  process.exit(1);
 }
 
-function resolveRole(): Role {
-  const value = process.env.ROLE?.trim() || 'api';
-  assertKnownRole(value);
-  return value;
-}
+const config = loadConfigOrExit();
+const logger = pino({ name: 'api', level: config.LOG_LEVEL });
 
 /**
  * `AppDeps.producers` needs a real `QueueProducerHandle`, but core's exports
@@ -89,16 +84,13 @@ function buildDeps(): AppDeps {
     buffers: undefined,
     producers: stubProducers(),
     logger,
-    config: { selfHosted: process.env.SELF_HOSTED === 'true' },
+    config: { selfHosted: config.SELF_HOSTED },
   };
 }
 
 async function main() {
-  const role = resolveRole();
-  const port = Number.parseInt(
-    process.env.API_PORT ?? String(DEFAULT_PORT),
-    10
-  );
+  const role = config.ROLE;
+  const port = config.API_PORT;
   const deps = buildDeps();
 
   const app = opsRoutes(deps);
