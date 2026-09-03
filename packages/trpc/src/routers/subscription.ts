@@ -105,7 +105,7 @@ export const subscriptionRouter = createTRPCRouter({
         productId: input.productId,
         organizationId: input.organizationId,
         user,
-        ipAddress: ctx.req.ip,
+        ipAddress: ctx.remoteAddress,
       });
 
       return {

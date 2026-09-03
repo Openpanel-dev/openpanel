@@ -21,6 +21,7 @@ import {
   verifyTotpCode,
 } from '@openpanel/auth';
 import { generateSecureId } from '@openpanel/common/server';
+import type { Logger } from '@openpanel/core';
 import {
   connectUserToOrganization,
   db,
@@ -63,7 +64,7 @@ const zProvider = z.enum(['email', 'google', 'github']);
 async function consumeInviteForUser(
   userId: string,
   inviteId: string,
-  log: { error: (obj: unknown, msg?: string) => void }
+  log: Pick<Logger, 'error'>
 ) {
   try {
     const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
@@ -265,7 +266,7 @@ export const authRouter = createTRPCRouter({
       setLastAuthProviderCookie(ctx.setCookie, 'email');
 
       if (input.inviteId) {
-        await consumeInviteForUser(user.id, input.inviteId, ctx.req.log);
+        await consumeInviteForUser(user.id, input.inviteId, ctx.logger);
       }
 
       return {
@@ -282,7 +283,7 @@ export const authRouter = createTRPCRouter({
     )
     .input(z.object({ code: zTotpOrRecoveryCode }))
     .mutation(async ({ input, ctx }) => {
-      const challengeId = ctx.cookies[TWO_FACTOR_COOKIE];
+      const challengeId = ctx.cookies.get(TWO_FACTOR_COOKIE);
       if (!challengeId) {
         throw new TRPCAccessError('No active two-factor challenge');
       }
@@ -340,9 +341,9 @@ export const authRouter = createTRPCRouter({
       setSessionTokenCookie(ctx.setCookie, token, session.expiresAt);
       setLastAuthProviderCookie(ctx.setCookie, 'email');
 
-      const inviteId = ctx.cookies[INVITE_COOKIE];
+      const inviteId = ctx.cookies.get(INVITE_COOKIE);
       if (inviteId) {
-        await consumeInviteForUser(challenge.userId, inviteId, ctx.req.log);
+        await consumeInviteForUser(challenge.userId, inviteId, ctx.logger);
         ctx.setCookie(INVITE_COOKIE, '', { maxAge: 0 });
       }
 
@@ -590,11 +591,11 @@ export const authRouter = createTRPCRouter({
   }),
 
   extendSession: publicProcedure.mutation(async ({ ctx }) => {
-    if (!(ctx.session.session && ctx.cookies.session)) {
+    const token = ctx.cookies.get('session');
+    if (!(ctx.session.session && token)) {
       return { extended: false };
     }
 
-    const token = ctx.cookies.session;
     const session = await validateSessionToken(token);
 
     if (session.session) {

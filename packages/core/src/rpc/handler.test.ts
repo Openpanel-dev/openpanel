@@ -1,7 +1,11 @@
 import { expect, test } from 'bun:test';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { capturingLogger, stubHttpCtx } from '../../test/rpc-fixtures';
+import {
+  capturingLogger,
+  stubHttpCtx,
+  TEST_SESSION,
+} from '../../test/rpc-fixtures';
 import type { CookieOptions } from '../shared/cookie';
 import { createTRPCRouter, makeTrpcContext, procedure } from './base';
 import { TRPCForbiddenError } from './errors';
@@ -105,7 +109,6 @@ test('the request logger is preferred and the resolved session is carried', asyn
   const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
     cookieOptions: COOKIE_OPTIONS,
   });
-  await trpcCtx.session();
 
   createTrpcOnError(bootLogger)(report({ ctx: trpcCtx }));
 
@@ -113,7 +116,7 @@ test('the request logger is preferred and the resolved session is carried', asyn
   expect(requestLogger.lines).toHaveLength(1);
   expect(
     (requestLogger.lines[0]?.payload as { session: unknown }).session
-  ).toEqual({ userId: 'user_1' });
+  ).toEqual(TEST_SESSION);
 });
 
 test('a ctx-less failure (createContext threw) logs through the boot logger', () => {

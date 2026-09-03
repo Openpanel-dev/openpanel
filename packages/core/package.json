@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "type": "module",
   "private": true,
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
     "./modules/*.constants": "./src/modules/*.constants.ts"
@@ -14,6 +15,7 @@
   "dependencies": {
     "@elysiajs/cors": "1.4.2",
     "@elysiajs/openapi": "1.4.15",
+    "@openpanel/auth": "workspace:^",
     "@openpanel/common": "workspace:*",
     "@trpc/server": "^11.17.0",
     "bullmq": "6.3.3",

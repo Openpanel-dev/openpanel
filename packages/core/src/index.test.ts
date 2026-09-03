@@ -18,6 +18,20 @@ test('the mount surface is curated', () => {
   expect(core.queues).toBeDefined();
 });
 
+// ONE tRPC instance (ADR-009): `initTRPC` is called in rpc/base.ts and
+// nowhere else, so `@openpanel/trpc` has to reach the builder, the router
+// factory and the two injected middleware factories through the barrel.
+// This block shrinks as the 28 routers move into core's modules (P5-P8).
+test('the rpc base is on the barrel, so there is one tRPC instance', () => {
+  expect(core.procedure).toBeDefined();
+  expect(core.middleware).toBeTypeOf('function');
+  expect(core.createTRPCRouter).toBeTypeOf('function');
+  expect(core.createCacheMiddleware).toBeTypeOf('function');
+  expect(core.createRateLimitMiddleware).toBeTypeOf('function');
+  expect(core.createAccessChecks).toBeTypeOf('function');
+  expect(core.TRPCForbiddenError).toBeTypeOf('function');
+});
+
 test('a service, a client or a buffer is not on the barrel', () => {
   expect(Object.keys(core)).not.toContain('createServices');
 });

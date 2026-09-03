@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { stubHttpCtx } from '../../test/rpc-fixtures';
+import { stubHttpCtx, TEST_SESSION } from '../../test/rpc-fixtures';
 import type { CookieOptions } from '../shared/cookie';
 import * as baseModule from './base';
 import {
@@ -115,13 +115,20 @@ test('a signed cookie with no signer throws instead of going out unsigned', asyn
   expect(resHeaders.getSetCookie()).toHaveLength(0);
 });
 
-test('resolvedSession is undefined until session() has resolved', async () => {
-  const { trpcCtx } = build();
-  const ctx = await trpcCtx;
+// V1 resolved the session in a Fastify onRequest hook, before any procedure
+// ran, and 134 call sites read `ctx.session` as a value. The context builder
+// resolves it once for the same reason - and it is what lets `onError` log the
+// session without awaiting.
+test('the session is resolved once, before any procedure runs', async () => {
+  const stub = stubHttpCtx();
+  expect(stub.sessionCalls).toBe(0);
 
-  expect(ctx.resolvedSession).toBeUndefined();
-  await ctx.session();
-  expect(ctx.resolvedSession).toEqual({ userId: 'user_1' });
+  const ctx = await makeTrpcContext(stub.ctx, new Headers(), {
+    cookieOptions: COOKIE_OPTIONS,
+  });
+
+  expect(stub.sessionCalls).toBe(1);
+  expect(ctx.session).toEqual(TEST_SESSION);
 });
 
 test('the HttpCtx is inherited, not copied — services stay lazy', async () => {

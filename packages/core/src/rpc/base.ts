@@ -27,13 +27,41 @@ export interface Meta {
   readOnlyMutation?: boolean;
 }
 
-/** What tRPC procedures see. Everything except `resolvedSession` is `HttpCtx`. */
-export interface TrpcContext extends HttpCtx {
+/**
+ * What tRPC procedures see: `HttpCtx` with `session` already resolved, plus
+ * two RPC-only fields.
+ *
+ * `session` is the one field this OVERRIDES. On an HTTP route it is the lazy,
+ * memoized resolver, so a public route pays nothing; on an RPC call it is the
+ * resolved value, because V1 resolved it in a Fastify `onRequest` hook for
+ * every /trpc request and 134 procedure call sites read it as one. Resolving
+ * in the context builder is also what lets `onError` log it without awaiting.
+ *
+ * It is not merely convenience: a middleware that *changed* `session`'s type
+ * would make every standalone middleware (`cacheMiddleware`,
+ * `rateLimitMiddleware`) unusable after it, because tRPC types `.use()`
+ * against the context as overwritten so far.
+ */
+export interface TrpcContext extends Omit<HttpCtx, 'session'> {
+  readonly session: Session;
   /**
-   * The session if `session()` has already resolved, `undefined` otherwise.
-   * `onError` logs it and cannot await, which is the only reason this exists.
+   * The connection's peer address — the one address a client cannot forge,
+   * and therefore the rate limiter's last-resort fallback when no trusted
+   * header is present. It is NOT `ctx.ip`: that is the *attribution* ip,
+   * which prefers client-forwarded headers and would give every request its
+   * own bucket (ADR-002 "behaviour that must be preserved explicitly" 2).
+   *
+   * `undefined` where the transport does not expose it. Elysia's
+   * `server.requestIP()` is not plumbed through `HttpCtx` yet, so the fetch
+   * mount leaves it unset and the limiter falls back to its shared
+   * `unknown` bucket — fail-closed, which is the documented intent.
    */
-  readonly resolvedSession: Session | null | undefined;
+  readonly remoteAddress: string | undefined;
+  /**
+   * `DEMO_USER_ID` is set. Core reads no environment, so the flag arrives on
+   * the context; the demo-mode mutation ban is `enforceAccess`'s to apply.
+   */
+  readonly demoMode: boolean;
 }
 
 const t = initTRPC
@@ -85,6 +113,8 @@ export interface TrpcContextOptions {
    * unsigned cookie the callback would reject.
    */
   signCookie?: (value: string) => string;
+  /** `DEMO_USER_ID` is set at the call site. Defaults to off. */
+  demoMode?: boolean;
 }
 
 /**
@@ -110,8 +140,6 @@ export async function makeTrpcContext(
       )
     );
   }
-
-  let resolvedSession: Session | null | undefined;
 
   const setCookie = (
     name: string,
@@ -144,21 +172,16 @@ export async function makeTrpcContext(
 
   // Prototype-chained onto the HttpCtx, never spread: `{ ...ctx }` reads
   // `services` and forces the build the lazy getter exists to avoid.
-  // defineProperties, not Object.assign, because `resolvedSession` is an
-  // accessor and Object.assign would copy its value once.
   const trpcCtx = Object.create(ctx) as TrpcContext;
   Object.defineProperties(trpcCtx, {
-    session: {
-      value: async (): Promise<Session | null> => {
-        resolvedSession = await ctx.session();
-        return resolvedSession;
-      },
-      enumerable: true,
-    },
-    resolvedSession: {
-      get: () => resolvedSession,
-      enumerable: true,
-    },
+    // Resolved once here, shadowing HttpCtx's resolver. One HTTP request is
+    // one `createContext` call, so a batched request still costs one lookup.
+    session: { value: await ctx.session(), enumerable: true },
+    // The fetch adapter is handed a `Request`, which carries no peer address.
+    // Elysia's `server.requestIP()` is the source when the dashboard scope
+    // mounts; until then the limiter falls back to its shared bucket.
+    remoteAddress: { value: undefined, enumerable: true },
+    demoMode: { value: options.demoMode ?? false, enumerable: true },
     setCookie: { value: setCookie, enumerable: true },
   });
   return trpcCtx;
@@ -179,9 +202,10 @@ export interface CacheMiddlewareDeps {
   /**
    * V1 wrote the cache everywhere but only *served* from it in production
    * (`NODE_ENV === 'production'`), so a developer never debugged a stale
-   * answer. Preserved as a flag.
+   * answer. Preserved as a flag — a thunk because V1 read the env on every
+   * request, not once when the router module loaded.
    */
-  serveFromCache: boolean;
+  serveFromCache: boolean | (() => boolean);
 }
 
 const middlewareMarker = 'middlewareMarker' as 'middlewareMarker' & {
@@ -214,7 +238,11 @@ export const createCacheMiddleware =
         key += JSON.stringify(rawInput).replace(/"/g, "'");
       }
       const cached = await cache.getJson(key);
-      if (cached && serveFromCache) {
+      const serve =
+        typeof serveFromCache === 'function'
+          ? serveFromCache()
+          : serveFromCache;
+      if (cached && serve) {
         return {
           ok: true,
           data: cached,
@@ -246,11 +274,17 @@ export interface RateLimitOptions {
  * The limiter itself, injected. It keys on the trusted IP and talks to Redis;
  * both are boot-scope concerns, and injecting it is what lets a procedure be
  * tested without one.
+ *
+ * The fingerprint is derived from `headers` and `remoteAddress`. `ip` is in
+ * the signature because ADR-009 names it, but a limiter must never key on it:
+ * it is the attribution address, which prefers client-forwarded headers and
+ * would give every request its own bucket (ADR-002 preserved-behaviour 2).
  */
 export type EnforceRateLimit = (
   args: RateLimitOptions & {
     headers: Headers;
     ip: string;
+    remoteAddress: string | undefined;
     logger: Logger;
     /** tRPC procedure path - blocks are scoped to it. */
     path: string;
@@ -268,6 +302,7 @@ export const createRateLimitMiddleware =
       await enforceRateLimit({
         headers: ctx.headers,
         ip: ctx.ip,
+        remoteAddress: ctx.remoteAddress,
         logger: ctx.logger,
         path,
         ...options,

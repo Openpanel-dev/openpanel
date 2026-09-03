@@ -61,7 +61,7 @@ export function createTrpcOnError(bootLogger: Logger) {
       path: report.path,
       input: report.input,
       type: report.type,
-      session: report.ctx?.resolvedSession,
+      session: report.ctx?.session,
       ip,
       ipHeader: header,
       userAgent: report.req.headers.get('user-agent'),

@@ -4,6 +4,7 @@
 // edge reaches the query, the enqueue and the job that enqueue causes
 // (ADR-007 decision 18, ADR-018 R1).
 
+import type { SessionValidationResult } from '@openpanel/auth';
 import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
 import { createServices, type Services } from './services';
@@ -20,9 +21,11 @@ export type RedisClient = unknown;
 export type ServiceClients = unknown;
 export type Buffers = unknown;
 
-// The resolved session (P6 auth). `CookieJar` is already real — it lives in
-// shared/cookie.ts, wrapped over Elysia's primitive by http/context.ts.
-export type Session = unknown;
+// The resolved session. Type-only, so nothing of `@openpanel/auth` (and
+// nothing of Prisma beneath it) is loaded at runtime — core stays importable
+// with no database, which is what lets `bun test` run offline. The declaration
+// moves here for real when auth dissolves into core (P4/P6).
+export type Session = SessionValidationResult;
 
 /** The env-derived flags core needs. apps/api's config/env.ts is the sole
  *  reader of process.env; core reads none. */

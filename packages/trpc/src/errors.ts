@@ -1,31 +1,10 @@
-import { TRPCError } from '@trpc/server';
+// One definition, in @openpanel/core (`rpc/errors`). Re-exported here so V1's
+// routers keep their specifier until they move into core's modules (P5-P8).
 
-export class TRPCAccessError extends TRPCError {
-  constructor(message: string) {
-    super({ code: 'UNAUTHORIZED', message });
-  }
-}
-
-export class TRPCNotFoundError extends TRPCError {
-  constructor(message: string) {
-    super({ code: 'NOT_FOUND', message });
-  }
-}
-
-export class TRPCForbiddenError extends TRPCError {
-  constructor(message: string) {
-    super({ code: 'FORBIDDEN', message });
-  }
-}
-
-export class TRPCInternalServerError extends TRPCError {
-  constructor(message: string) {
-    super({ code: 'INTERNAL_SERVER_ERROR', message });
-  }
-}
-
-export class TRPCBadRequestError extends TRPCError {
-  constructor(message: string) {
-    super({ code: 'BAD_REQUEST', message });
-  }
-}
+export {
+  TRPCAccessError,
+  TRPCBadRequestError,
+  TRPCForbiddenError,
+  TRPCInternalServerError,
+  TRPCNotFoundError,
+} from '@openpanel/core';

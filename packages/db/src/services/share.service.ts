@@ -122,7 +122,9 @@ export async function validateShareAccess(
   shareId: string,
   reportId: string,
   ctx: {
-    cookies: Record<string, string | undefined>;
+    // Read by name only, so a transport that has no cookie record (Elysia's
+    // proxy, core's CookieJar) can satisfy this without materialising one.
+    cookies: { get(name: string): string | undefined };
     session?: { userId?: string | null };
   },
 ): Promise<{ projectId: string; isValid: boolean }> {
@@ -159,7 +161,7 @@ export async function validateShareAccess(
     }
 
     // If password is set, require cookie OR member access
-    const hasCookie = !!ctx.cookies[`shared-dashboard-${shareId}`];
+    const hasCookie = !!ctx.cookies.get(`shared-dashboard-${shareId}`);
     const hasMemberAccess =
       ctx.session?.userId &&
       (await getProjectAccess({
@@ -197,7 +199,7 @@ export async function validateShareAccess(
     }
 
     // If password is set, require cookie OR member access
-    const hasCookie = !!ctx.cookies[`shared-report-${shareId}`];
+    const hasCookie = !!ctx.cookies.get(`shared-report-${shareId}`);
     const hasMemberAccess =
       ctx.session?.userId &&
       (await getProjectAccess({
@@ -219,7 +221,9 @@ export async function validateOverviewShareAccess(
   shareId: string | undefined,
   projectId: string,
   ctx: {
-    cookies: Record<string, string | undefined>;
+    // Read by name only, so a transport that has no cookie record (Elysia's
+    // proxy, core's CookieJar) can satisfy this without materialising one.
+    cookies: { get(name: string): string | undefined };
     session?: { userId?: string | null };
   },
 ): Promise<{ isValid: boolean }> {
@@ -246,7 +250,7 @@ export async function validateOverviewShareAccess(
     }
 
     // If password is set, require cookie OR member access
-    const hasCookie = !!ctx.cookies[`shared-overview-${shareId}`];
+    const hasCookie = !!ctx.cookies.get(`shared-overview-${shareId}`);
     const hasMemberAccess =
       ctx.session?.userId &&
       (await getProjectAccess({

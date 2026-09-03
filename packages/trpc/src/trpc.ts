@@ -1,22 +1,84 @@
-import { TRPCError, initTRPC } from '@trpc/server';
-import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
-import { has } from 'ramda';
-import superjson from 'superjson';
-import { ZodError, z } from 'zod';
+// V1's tRPC surface, rebased onto @openpanel/core's RPC base (ADR-009).
+//
+// There is exactly ONE tRPC instance in the repo now: `initTRPC` is called in
+// core/src/rpc/base.ts and nowhere else, so the transformer, the
+// errorFormatter, `Meta` and the context type are single-sourced. V1 keeps its
+// Fastify adapter and V2 gets `createTrpcFetchHandler`; both mount routers
+// built from the same `procedure`.
+//
+// What still lives here is what core cannot import without pulling a database
+// into a package that must stay bootable with none: the procedures below need
+// `runWithAlsSession` and the access ladder's real lookups. They move into
+// core with auth at P6, at which point this file is a re-export.
 
 import { COOKIE_OPTIONS, type SessionValidationResult } from '@openpanel/auth';
+import {
+  type Ctx,
+  createCacheMiddleware,
+  createRateLimitMiddleware,
+  middleware,
+  procedure,
+  type QueueProducers,
+  type RpcCache,
+  type TrpcContext,
+} from '@openpanel/core';
 import { runWithAlsSession } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
-import type { ISetCookie } from '@openpanel/validation';
-import { type RateLimitOptions, enforceRateLimit } from './rate-limit';
+import { TRPCError } from '@trpc/server';
+import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
+import { has } from 'ramda';
 import { getOrganizationAccess, requireProjectAccess } from './access';
 import { TRPCForbiddenError } from './errors';
+import { enforceRateLimit } from './rate-limit';
 
-export async function createContext({ req, res }: CreateFastifyContextOptions) {
-  const cookies = (req as any).cookies as Record<string, string | undefined>;
-  const setCookie: ISetCookie = (key, value, options) => {
-    // @ts-ignore
-    res.setCookie(key, value, {
+export type { Meta } from '@openpanel/core';
+export { createTRPCRouter } from '@openpanel/core';
+
+/** What a procedure receives. Core's type, not a second declaration. */
+export type Context = TrpcContext;
+
+/** What apps/api's hooks decorate the request with (apps/api/src/app.ts). */
+type FastifyRequestWithSession = CreateFastifyContextOptions['req'] & {
+  session: SessionValidationResult;
+  cookies?: Record<string, string | undefined>;
+  clientIp?: string;
+};
+
+const ARTIFICIAL_LATENCY_SPREAD_MS = 500;
+const ARTIFICIAL_LATENCY_MAX_MS = 200;
+
+/**
+ * The V1 Fastify adapter's context builder.
+ *
+ * It is deliberately not core's `makeTrpcContext`: that one writes cookies
+ * through the fetch adapter's `resHeaders`, while Fastify's reply is the
+ * guaranteed path out here, and V1's session is already resolved by the
+ * `onRequest` hook in apps/api/src/app.ts. Everything else — the option
+ * precedence, the artificial latency, the fields — is V1's, unchanged.
+ *
+ * V2's builder is `makeTrpcContext`; this one dies with `apps/worker` at P9.
+ */
+export async function createContext({
+  req,
+  res,
+}: CreateFastifyContextOptions): Promise<Context> {
+  const request = req as FastifyRequestWithSession;
+  // @fastify/cookie decorates the reply, and this package does not depend on
+  // fastify, so the decoration is named here rather than suppressed.
+  const reply = res as unknown as {
+    setCookie(
+      name: string,
+      value: string,
+      options: Record<string, unknown>
+    ): void;
+  };
+
+  const setCookie = (
+    key: string,
+    value: string,
+    options: { maxAge?: number; signed?: boolean } = {}
+  ) => {
+    reply.setCookie(key, value, {
       maxAge: options.maxAge,
       signed: options.signed,
       ...COOKIE_OPTIONS,
@@ -24,50 +86,83 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
   };
 
   if (process.env.NODE_ENV !== 'production') {
-    await new Promise((res) =>
-      setTimeout(() => res(1), Math.min(Math.random() * 500, 200)),
+    await new Promise((resolve) =>
+      setTimeout(
+        () => resolve(1),
+        Math.min(
+          Math.random() * ARTIFICIAL_LATENCY_SPREAD_MS,
+          ARTIFICIAL_LATENCY_MAX_MS
+        )
+      )
     );
   }
 
+  const cookies = request.cookies;
+
   return {
-    req,
-    res,
-    session: (req as any).session as SessionValidationResult,
-    // we do not get types for `setCookie` from fastify
-    // so define it here and be safe in routers
+    ...v1CtxScope(req),
+    headers: toHeaders(req.headers),
+    // The attribution ip, as core defines it (ipHook / getClientIpFromHeaders).
+    // The limiter must not key on it - that is what `remoteAddress` is for.
+    ip: request.clientIp ?? '',
+    remoteAddress: req.socket?.remoteAddress,
+    demoMode: !!process.env.DEMO_USER_ID,
+    cookies: { get: (name: string) => cookies?.[name] },
     setCookie,
-    cookies,
+    // Already resolved by app.ts's onRequest hook. Under V2 the fetch
+    // adapter's context builder resolves it instead; either way a procedure
+    // reads a value, exactly as V1's routers always have.
+    session: request.session,
   };
 }
-export type Context = Awaited<ReturnType<typeof createContext>>;
 
 /**
- * Per-procedure metadata consulted by `enforceAccess`.
+ * The `Ctx` half of the context under V1.
  *
- * A tRPC mutation is not always a mutation of project *state* - the AI helpers
- * are one-shot compute that happen to be modelled as mutations. Those may run
- * at read level. The default is write, so forgetting to set this fails closed.
+ * `db`/`ch`/`redis`/`clients`/`buffers` are core's `unknown` stubs until P3-P8
+ * wire the real clients, and V1's routers reach for their own singletons
+ * regardless. `queues` throws rather than returning an empty object: a V1
+ * router that tried to enqueue through core would otherwise silently do
+ * nothing.
  */
-export interface Meta {
-  /** This mutation does not change project state; read access is enough. */
-  readOnlyMutation?: boolean;
+function v1CtxScope(req: CreateFastifyContextOptions['req']): Ctx {
+  return {
+    db: undefined,
+    ch: undefined,
+    redis: undefined,
+    clients: undefined,
+    buffers: undefined,
+    logger: req.log,
+    queues: NOT_WIRED_QUEUES,
+    services: {},
+    requestId: String(req.id),
+  };
 }
 
-const t = initTRPC.context<Context>().meta<Meta>().create({
-  transformer: superjson,
-  errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        zodError:
-          error.cause instanceof ZodError ? z.flattenError(error.cause) : null,
-      },
-    };
+const NOT_WIRED_QUEUES = new Proxy({} as QueueProducers, {
+  get(_target, name) {
+    throw new Error(
+      `ctx.queues.${String(name)} is not wired on the V1 Fastify path — enqueue through @openpanel/queue, as the rest of V1 does`
+    );
   },
 });
 
-const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
+/** Node's header bag is a record of strings and string arrays; core wants a `Headers`. */
+function toHeaders(source: Record<string, string | string[] | undefined>) {
+  const headers = new Headers();
+  for (const [name, value] of Object.entries(source)) {
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        headers.append(name, entry);
+      }
+    } else if (value !== undefined) {
+      headers.set(name, value);
+    }
+  }
+  return headers;
+}
+
+const enforceUserIsAuthed = middleware(async ({ ctx, next }) => {
   if (!ctx.session?.userId) {
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Not authenticated' });
   }
@@ -88,62 +183,55 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
 });
 
 // Only used on protected routes
-const enforceAccess = t.middleware(async ({ ctx, next, type, meta, getRawInput }) => {
-  const sessionId = ctx.session?.session?.id ?? null;
-  return runWithAlsSession(sessionId, async () => {
-    const rawInput = await getRawInput();
-    if (type === 'mutation' && process.env.DEMO_USER_ID) {
-      throw new TRPCForbiddenError('You are not allowed to do this in demo mode');
-    }
-
-    if (has('projectId', rawInput)) {
-      // Fails closed: any procedure that takes a top-level projectId requires
-      // write access to mutate, including ones added later. Procedures that
-      // resolve the project from a reportId/dashboardId/etc. are invisible to
-      // this check and call requireProjectAccess in the handler instead.
-      const needsWrite = type === 'mutation' && !meta?.readOnlyMutation;
-
-      await requireProjectAccess({
-        userId: ctx.session.userId!,
-        projectId: rawInput.projectId as string,
-        level: needsWrite ? 'write' : 'read',
-      });
-    }
-
-    if (has('organizationId', rawInput)) {
-      const access = await getOrganizationAccess({
-        userId: ctx.session.userId!,
-        organizationId: rawInput.organizationId as string,
-      });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this organization');
+const enforceAccess = middleware(
+  async ({ ctx, next, type, meta, getRawInput }) => {
+    const sessionId = ctx.session?.session?.id ?? null;
+    return runWithAlsSession(sessionId, async () => {
+      const rawInput = await getRawInput();
+      if (type === 'mutation' && ctx.demoMode) {
+        throw new TRPCForbiddenError(
+          'You are not allowed to do this in demo mode'
+        );
       }
-    }
 
-    return next();
-  });
-});
+      if (has('projectId', rawInput)) {
+        // Fails closed: any procedure that takes a top-level projectId requires
+        // write access to mutate, including ones added later. Procedures that
+        // resolve the project from a reportId/dashboardId/etc. are invisible to
+        // this check and call requireProjectAccess in the handler instead.
+        const needsWrite = type === 'mutation' && !meta?.readOnlyMutation;
 
-export const createTRPCRouter = t.router;
+        await requireProjectAccess({
+          userId: ctx.session.userId!,
+          projectId: rawInput.projectId as string,
+          level: needsWrite ? 'write' : 'read',
+        });
+      }
 
-/**
- * Throttle a procedure by client IP, with an exponentially growing lockout for
- * repeat offenders. See `./rate-limit` for the escalation rules and for the log
- * line (`rate limit blocked`) that carries the offending IP.
- */
-export const rateLimitMiddleware = (options: RateLimitOptions) =>
-  t.middleware(async ({ ctx, next, path }) => {
-    await enforceRateLimit({ req: ctx.req, path, ...options });
-    return next();
-  });
+      if (has('organizationId', rawInput)) {
+        const access = await getOrganizationAccess({
+          userId: ctx.session.userId!,
+          organizationId: rawInput.organizationId as string,
+        });
 
-const loggerMiddleware = t.middleware(
+        if (!access) {
+          throw new TRPCForbiddenError(
+            'You do not have access to this organization'
+          );
+        }
+      }
+
+      return next();
+    });
+  }
+);
+
+const loggerMiddleware = middleware(
   async ({ ctx, next, getRawInput, path, input, type }) => {
     const rawInput = await getRawInput();
     // Only log mutations
     if (type === 'mutation') {
-      ctx.req.log.info(
+      ctx.logger.info(
         {
           path,
           rawInput,
@@ -156,24 +244,31 @@ const loggerMiddleware = t.middleware(
             ? rawInput.projectId
             : undefined,
         },
-        'TRPC mutation',
+        'TRPC mutation'
       );
     }
     return next();
-  },
+  }
 );
 
-const sessionScopeMiddleware = t.middleware(async ({ ctx, next }) => {
+const sessionScopeMiddleware = middleware(async ({ ctx, next }) => {
   const sessionId = ctx.session?.session?.id ?? null;
   return runWithAlsSession(sessionId, async () => {
     return next();
   });
 });
 
-export const publicProcedure = t.procedure
+/**
+ * Throttle a procedure by client IP, with an exponentially growing lockout for
+ * repeat offenders. See `./rate-limit` for the escalation rules and for the log
+ * line (`rate limit blocked`) that carries the offending IP.
+ */
+export const rateLimitMiddleware = createRateLimitMiddleware(enforceRateLimit);
+
+export const publicProcedure = procedure
   .use(loggerMiddleware)
   .use(sessionScopeMiddleware);
-export const protectedProcedure = t.procedure
+export const protectedProcedure = procedure
   .use(enforceUserIsAuthed)
   .use(enforceAccess)
   .use(loggerMiddleware)
@@ -181,51 +276,24 @@ export const protectedProcedure = t.procedure
 // Authenticated but WITHOUT the org/project membership check. Use for endpoints
 // that must answer for any logged-in user (e.g. checking your own access to an
 // org you may not belong to) and return null instead of throwing.
-export const protectedProcedureWithoutAccess = t.procedure
+export const protectedProcedureWithoutAccess = procedure
   .use(enforceUserIsAuthed)
   .use(loggerMiddleware)
   .use(sessionScopeMiddleware);
 
-const middlewareMarker = 'middlewareMarker' as 'middlewareMarker' & {
-  __brand: 'middlewareMarker';
+/**
+ * The Redis handle is resolved per call, not at import: `getRedisCache()` opens
+ * a connection, and V1 did not open one because a router module was loaded.
+ */
+const rpcCache: RpcCache = {
+  getJson: (key) => getRedisCache().getJson(key),
+  setJson: (key, expireInSec, value) =>
+    getRedisCache().setJson(key, expireInSec, value),
 };
 
-export const cacheMiddleware = (
-  cbOrTtl: number | ((input: any, opts: { path: string }) => number),
-) =>
-  t.middleware(async ({ ctx, next, path, type, getRawInput, input }) => {
-    const ttl =
-      typeof cbOrTtl === 'function' ? cbOrTtl(input, { path }) : cbOrTtl;
-    if (!ttl) {
-      return next();
-    }
-    const rawInput = await getRawInput();
-    if (type !== 'query') {
-      return next();
-    }
-    let key = `trpc:${path}:`;
-    if (rawInput) {
-      key += JSON.stringify(rawInput).replace(/\"/g, "'");
-    }
-    const cache = await getRedisCache().getJson(key);
-    if (cache && process.env.NODE_ENV === 'production') {
-      return {
-        ok: true,
-        data: cache,
-        ctx,
-        marker: middlewareMarker,
-      };
-    }
-    const result = await next();
-
-    // @ts-expect-error
-    if (result.data) {
-      getRedisCache().setJson(
-        key,
-        ttl,
-        // @ts-expect-error
-        result.data,
-      );
-    }
-    return result;
-  });
+export const cacheMiddleware = createCacheMiddleware({
+  cache: rpcCache,
+  // A thunk, because V1 read NODE_ENV on every request rather than once when
+  // the router module was first imported.
+  serveFromCache: () => process.env.NODE_ENV === 'production',
+});

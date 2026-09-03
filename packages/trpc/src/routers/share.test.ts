@@ -45,11 +45,10 @@ const REPORT = {
 /** An unauthenticated caller: no session, no unlock cookie. */
 const anonCaller = (cookies: Record<string, string> = {}) =>
   shareRouter.createCaller({
-    req: { log: { info: vi.fn(), error: vi.fn() } },
-    res: {},
+    logger: { info: vi.fn(), error: vi.fn() },
     session: null,
     setCookie: vi.fn(),
-    cookies,
+    cookies: { get: (name: string) => cookies[name] },
   } as never);
 
 const privatePasswordProtectedShare = {

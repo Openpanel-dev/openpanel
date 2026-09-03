@@ -1,10 +1,7 @@
 import { getTrustedIpFromHeaders } from '@openpanel/common/server/get-client-ip';
+import type { EnforceRateLimit } from '@openpanel/core';
 import { LRUCache, getRedisCache } from '@openpanel/redis';
 import { TRPCError } from '@trpc/server';
-import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
-
-/** `fastify` is not a direct dependency here, so borrow the type tRPC exposes. */
-type FastifyRequest = CreateFastifyContextOptions['req'];
 
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
@@ -34,12 +31,6 @@ const MAX_STRIKES = Math.ceil(Math.log2(BLOCK_MAX_MS / BLOCK_BASE_MS)) + 1;
  * one strike; a bot at 5 req/s reaches the 24h cap in under ten minutes.
  */
 const ESCALATION_COOLDOWN_MS = MINUTE;
-
-export interface RateLimitOptions {
-  /** Requests allowed per window before the first block. */
-  max: number;
-  windowMs: number;
-}
 
 /**
  * Per-process fallback used only while Redis is unreachable. Without it a Redis
@@ -72,13 +63,15 @@ function formatDuration(ms: number): string {
 /**
  * The identity we rate limit on. Deliberately ignores the client-forwarded IP
  * headers that `getClientIpFromHeaders` prefers - those are attacker-controlled
- * and would make every request its own bucket.
+ * and would make every request its own bucket. `ctx.ip` is exactly those
+ * headers, which is why this takes the raw `Headers` and the connection's peer
+ * address instead of anything the context already resolved.
  */
-export function getRateLimitIdentity(req: FastifyRequest) {
-  const { ip, header } = getTrustedIpFromHeaders(
-    req.headers,
-    req.socket?.remoteAddress,
-  );
+export function getRateLimitIdentity(
+  headers: Headers,
+  remoteAddress: string | undefined,
+) {
+  const { ip, header } = getTrustedIpFromHeaders(headers, remoteAddress);
 
   return {
     // Everything we cannot identify shares one bucket. Fail closed: an edge
@@ -134,17 +127,15 @@ async function escalate(strikeKey: string, blockKey: string, cooldownKey: string
  *   SELECT LogAttributes['ip'], count() FROM otel_logs
  *   WHERE Body = 'rate limit blocked' GROUP BY 1 ORDER BY 2 DESC
  */
-export async function enforceRateLimit({
-  req,
+export const enforceRateLimit: EnforceRateLimit = async ({
+  headers,
+  remoteAddress,
+  logger,
   path,
   max,
   windowMs,
-}: RateLimitOptions & {
-  req: FastifyRequest;
-  /** tRPC procedure path - blocks are scoped to it. */
-  path: string;
-}): Promise<void> {
-  const { fingerprint, ipHeader } = getRateLimitIdentity(req);
+}) => {
+  const { fingerprint, ipHeader } = getRateLimitIdentity(headers, remoteAddress);
 
   const counterKey = key('count', path, fingerprint);
   const strikeKey = key('strike', path, fingerprint);
@@ -155,12 +146,12 @@ export async function enforceRateLimit({
     message: string,
     payload: { strikes: number; blockMs: number; hits?: number },
   ) =>
-    req.log?.warn(
+    logger.warn(
       {
         ip: fingerprint,
         ipHeader,
         path,
-        userAgent: req.headers['user-agent'],
+        userAgent: headers.get('user-agent') ?? undefined,
         strikes: payload.strikes,
         blockedForSeconds: Math.ceil(payload.blockMs / SECOND),
         blockedUntil: new Date(Date.now() + payload.blockMs).toISOString(),
@@ -195,7 +186,7 @@ export async function enforceRateLimit({
       await redis.pexpire(counterKey, windowMs);
     }
   } catch (error) {
-    req.log?.error({ err: error, path }, 'rate limit store unavailable');
+    logger.error({ err: error, path }, 'rate limit store unavailable');
     const fallbackHits = (fallbackCounters.get(counterKey) ?? 0) + 1;
     fallbackCounters.set(counterKey, fallbackHits, { ttl: windowMs });
     if (fallbackHits > max) {
@@ -224,7 +215,7 @@ export async function enforceRateLimit({
         escalated = await escalate(strikeKey, blockKey, cooldownKey);
       }
     } catch (error) {
-      req.log?.error({ err: error, path }, 'rate limit store unavailable');
+      logger.error({ err: error, path }, 'rate limit store unavailable');
     }
 
     if (!escalated) {
@@ -243,14 +234,14 @@ export async function enforceRateLimit({
       // Start the next window clean so the block, not a stale counter, decides.
       await getRedisCache().del(counterKey);
     } catch (error) {
-      req.log?.error({ err: error, path }, 'rate limit store unavailable');
+      logger.error({ err: error, path }, 'rate limit store unavailable');
       throw tooManyRequests(windowMs);
     }
 
     log('rate limit blocked', { ...escalated, hits });
     throw tooManyRequests(escalated.blockMs);
   }
-}
+};
 
 export const __testing = {
   BLOCK_BASE_MS,

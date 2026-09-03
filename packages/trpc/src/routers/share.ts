@@ -75,7 +75,7 @@ export const shareRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Share not found');
       }
 
-      const hasAccess = !!ctx.cookies[`shared-overview-${share.id}`];
+      const hasAccess = !!ctx.cookies.get(`shared-overview-${share.id}`);
       if (share.password && !hasAccess) {
         return lockedShare(share.id, share.organization, share.project);
       }
@@ -160,7 +160,7 @@ export const shareRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Dashboard share not found');
       }
 
-      const hasAccess = !!ctx.cookies[`shared-dashboard-${share.id}`];
+      const hasAccess = !!ctx.cookies.get(`shared-dashboard-${share.id}`);
       if (share.password && !hasAccess) {
         return lockedShare(share.id, share.organization, share.project);
       }
@@ -254,7 +254,7 @@ export const shareRouter = createTRPCRouter({
       }
 
       // Check password access
-      const hasAccess = !!ctx.cookies[`shared-dashboard-${share.id}`];
+      const hasAccess = !!ctx.cookies.get(`shared-dashboard-${share.id}`);
       if (share.password && !hasAccess) {
         throw new TRPCAccessError('Password required');
       }
@@ -283,7 +283,7 @@ export const shareRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Report share not found');
       }
 
-      const hasAccess = !!ctx.cookies[`shared-report-${share.id}`];
+      const hasAccess = !!ctx.cookies.get(`shared-report-${share.id}`);
       if (share.password && !hasAccess) {
         return lockedShare(share.id, share.organization, share.project);
       }

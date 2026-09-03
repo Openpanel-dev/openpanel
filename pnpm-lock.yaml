@@ -1201,6 +1201,9 @@ importers:
       '@elysiajs/openapi':
         specifier: 1.4.15
         version: 1.4.15(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.4)(file-type@22.0.2(supports-color@10.2.0))(openapi-types@12.1.3)(typescript@5.9.3))
+      '@openpanel/auth':
+        specifier: workspace:^
+        version: link:../auth
       '@openpanel/common':
         specifier: workspace:*
         version: link:../common
@@ -1893,6 +1896,9 @@ importers:
       '@openpanel/constants':
         specifier: workspace:*
         version: link:../constants
+      '@openpanel/core':
+        specifier: workspace:*
+        version: link:../core
       '@openpanel/db':
         specifier: workspace:*
         version: link:../db

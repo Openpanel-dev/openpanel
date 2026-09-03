@@ -30,9 +30,44 @@ export {
   REQUEST_ID_LOG_FIELD,
 } from './logger';
 export { dashboardRoutes, opsRoutes, publicApiRoutes } from './rest.routes';
+// The RPC base is on the barrel because it is the seam `@openpanel/trpc`
+// builds its 28 routers on: ONE tRPC instance, mounted by V1's Fastify
+// adapter and by V2's `createTrpcFetchHandler` alike (ADR-009). Those routers
+// move into `modules/<name>/<name>.rpc.ts` with their waves (P5-P8), and this
+// block shrinks back to what apps/api needs when the last one has moved.
+export type {
+  CacheMiddlewareDeps,
+  EnforceRateLimit,
+  Meta,
+  RateLimitOptions,
+  RpcCache,
+  TrpcContext,
+  TrpcContextOptions,
+} from './rpc/base';
+export {
+  createCacheMiddleware,
+  createRateLimitMiddleware,
+  createTRPCRouter,
+  middleware,
+  procedure,
+} from './rpc/base';
+export {
+  TRPCAccessError,
+  TRPCBadRequestError,
+  TRPCForbiddenError,
+  TRPCInternalServerError,
+  TRPCNotFoundError,
+} from './rpc/errors';
 export {
   createTrpcFetchHandler,
   TRPC_ENDPOINT,
 } from './rpc/handler';
 export type { AppRouter } from './rpc.router';
 export { appRouter } from './rpc.router';
+export type {
+  AccessChecks,
+  AccessLookups,
+  OrganizationAccessLike,
+  ProjectAccessLike,
+} from './shared/access';
+export { createAccessChecks } from './shared/access';

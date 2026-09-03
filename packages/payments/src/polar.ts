@@ -57,7 +57,7 @@ export async function createCheckout({
     lastName: string | null;
     email: string;
   };
-  ipAddress: string;
+  ipAddress: string | undefined;
 }) {
   return polar.checkouts.create({
     // productPriceId: priceId,

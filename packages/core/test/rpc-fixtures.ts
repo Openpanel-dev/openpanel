@@ -6,6 +6,7 @@ import {
   createCtx,
   extendCtx,
   type HttpCtx,
+  type Session,
 } from '../src/context';
 import { createRecordingProducers } from '../src/jobs/testing';
 import { queues } from '../src/jobs.registry';
@@ -44,6 +45,29 @@ export function capturingLogger(lines: LoggedLine[] = []): CapturedLogger {
 
 export const TEST_REQUEST_ID = 'req_abcdefghijklmnopqrstu';
 
+const TEST_EPOCH = new Date('2026-09-03T00:00:00.000Z');
+
+/** A real `SessionValidationResult`, so an assertion on `ctx.session` types. */
+export const TEST_SESSION: Session = {
+  session: {
+    id: 'sess_1',
+    userId: 'user_1',
+    createdAt: TEST_EPOCH,
+    updatedAt: TEST_EPOCH,
+    expiresAt: TEST_EPOCH,
+  },
+  user: {
+    id: 'user_1',
+    email: 'carl@openpanel.dev',
+    firstName: null,
+    lastName: null,
+    createdAt: TEST_EPOCH,
+    updatedAt: TEST_EPOCH,
+    deletedAt: null,
+  },
+  userId: 'user_1',
+};
+
 export interface HttpCtxStub {
   ctx: HttpCtx;
   logger: CapturedLogger;
@@ -54,7 +78,7 @@ export interface HttpCtxStub {
 
 export function stubHttpCtx(
   overrides: Partial<HttpCtx> & { logger?: CapturedLogger } = {},
-  session: unknown = { userId: 'user_1' }
+  session: unknown = TEST_SESSION
 ): HttpCtxStub {
   const logger = overrides.logger ?? capturingLogger();
   const cookies: HttpCtxStub['cookies'] = [];
@@ -79,7 +103,7 @@ export function stubHttpCtx(
       cookies: { get: () => undefined },
       session: () => {
         stub.sessionCalls++;
-        return Promise.resolve(session);
+        return Promise.resolve(session as Session | null);
       },
       setCookie: (name: string, value: string, options?: unknown) => {
         cookies.push({ name, value, options });
