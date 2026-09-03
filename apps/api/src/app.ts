@@ -36,8 +36,8 @@ import {
   serializerCompiler,
   validatorCompiler,
 } from 'fastify-zod-openapi';
-import { chatApp } from './agents/app';
-import { chatRunContext } from './agents/run-context';
+import { getChatApp } from './agents/app';
+import { getChatRunContext } from './agents/run-context';
 import {
   healthcheck,
   liveness,
@@ -236,6 +236,8 @@ export async function buildApp(
     // Preflight OPTIONS is handled by @fastify/cors before this route
     // runs, so we only skip auth/ALS for that case.
     {
+      const chatApp = await getChatApp();
+      const chatRunContext = await getChatRunContext();
       const agentHandler = toFastifyHandler(chatApp);
 
       instance.all('/ai/agents/*', async (request, reply) => {

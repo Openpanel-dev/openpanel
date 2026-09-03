@@ -3,7 +3,7 @@ import {
   applyFiltersSchema,
   setEventNamesFilterSchema,
   setPropertyFiltersSchema,
-} from '@openpanel/validation';
+} from '../../assistant.constants';
 
 /**
  * Client-side UI-mutator tools.
@@ -11,7 +11,7 @@ import {
  * Better Agent emits each call as a `tool-call` part with no server
  * execution; the frontend (`useAgent({ toolHandlers })`) handles them
  * by updating the URL params the dashboard's hooks read. Zod schemas
- * are imported from `@openpanel/validation` so the frontend handler
+ * are imported from `assistant.constants.ts` so the frontend handler
  * types stay in sync with what the LLM calls.
  */
 

@@ -8,6 +8,7 @@ import { openapi } from '@elysiajs/openapi';
 import { Elysia } from 'elysia';
 import type { AppDeps } from './context';
 import { registry } from './metrics';
+import { assistantRoutes } from './modules/assistant/assistant.routes';
 import { gscRoutes } from './modules/gsc/gsc.routes';
 import { healthRoutes } from './modules/health/health.routes';
 import { importRoutes } from './modules/import/import.routes';
@@ -33,12 +34,14 @@ const OPENAPI_EXCLUDED_PATHS = ['/metrics'];
 export const publicApiRoutes = (deps: AppDeps) =>
   new Elysia({ name: 'core/public-api-routes' }).use(importRoutes(deps));
 
-// gsc's callback is the first module to land here (M5-002). It is not yet
-// reachable in production: main.ts only mounts `dashboardRoutes` once a real
-// `AppDeps` exists (P3/P4/P8) — see gsc.routes.ts's header for the named gap
-// that keeps it inert until then.
+// gsc's callback was the first module to land here (M5-002); assistant's
+// `/ai/agents/*` (M5-005) joined it. Neither is reachable in production yet:
+// main.ts only mounts `dashboardRoutes` once a real `AppDeps` exists
+// (P3/P4/P8) — see each module's own routes.ts header for its named gap.
 export const dashboardRoutes = (deps: AppDeps) =>
-  new Elysia({ name: 'core/dashboard-routes' }).use(gscRoutes(deps));
+  new Elysia({ name: 'core/dashboard-routes' })
+    .use(gscRoutes(deps))
+    .use(assistantRoutes(deps));
 
 // healthz/metrics/misc share V1's ops surface (http/context.ts's
 // UNLOGGED_PATH_PREFIXES) — unauthenticated, uncorsed, unlogged. /metrics and

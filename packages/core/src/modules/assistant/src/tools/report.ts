@@ -1,7 +1,7 @@
-import { z } from 'zod';
 import { listEventPropertiesCore } from '@openpanel/db';
-import { runReportFromConfig } from '@openpanel/mcp';
 import type { IReportInput } from '@openpanel/validation';
+import { z } from 'zod';
+import { runReportFromConfig } from '../report-runner';
 import { chatTool, previousPeriod, resolveDateRange } from './helpers';
 
 export const previewReportWithChanges = chatTool(
@@ -56,17 +56,18 @@ export const previewReportWithChanges = chatTool(
       series: draft.series.map((s) => ({ ...s })),
     };
 
-    if (input.addBreakdown) {
-      if (!next.breakdowns.some((b) => b.name === input.addBreakdown)) {
-        next.breakdowns.push({
-          id: String(next.breakdowns.length + 1),
-          name: input.addBreakdown,
-        });
-      }
+    if (
+      input.addBreakdown &&
+      !next.breakdowns.some((b) => b.name === input.addBreakdown)
+    ) {
+      next.breakdowns.push({
+        id: String(next.breakdowns.length + 1),
+        name: input.addBreakdown,
+      });
     }
     if (input.removeBreakdown) {
       next.breakdowns = next.breakdowns.filter(
-        (b) => b.name !== input.removeBreakdown,
+        (b) => b.name !== input.removeBreakdown
       );
     }
     if (input.addEventFilter) {
@@ -90,9 +91,11 @@ export const previewReportWithChanges = chatTool(
     return runReportFromConfig({
       organizationId: context.organizationId,
       projectId: context.projectId,
-      config: next as unknown as Parameters<typeof runReportFromConfig>[0]['config'],
+      config: next as unknown as Parameters<
+        typeof runReportFromConfig
+      >[0]['config'],
     });
-  },
+  }
 );
 
 export const suggestBreakdowns = chatTool(
@@ -121,8 +124,8 @@ export const suggestBreakdowns = chatTool(
         listEventPropertiesCore({
           projectId: context.projectId,
           eventName: name,
-        }),
-      ),
+        })
+      )
     );
 
     // Aggregate property keys across events
@@ -146,7 +149,7 @@ export const suggestBreakdowns = chatTool(
       existing_breakdowns: Array.from(used),
       suggestions,
     };
-  },
+  }
 );
 
 export const compareToPreviousPeriod = chatTool(
@@ -192,7 +195,7 @@ export const compareToPreviousPeriod = chatTool(
     ]);
 
     return { current, previous };
-  },
+  }
 );
 
 export const findAnomaliesInCurrentReport = chatTool(
@@ -240,15 +243,22 @@ export const findAnomaliesInCurrentReport = chatTool(
     }
 
     const values = points.map((p: { count?: number }) => Number(p.count ?? 0));
-    const mean = values.reduce((s: number, v: number) => s + v, 0) / values.length;
+    const mean =
+      values.reduce((s: number, v: number) => s + v, 0) / values.length;
     const variance =
-      values.reduce((s: number, v: number) => s + (v - mean) ** 2, 0) / values.length;
+      values.reduce((s: number, v: number) => s + (v - mean) ** 2, 0) /
+      values.length;
     const std = Math.sqrt(variance);
 
     const anomalies = points
       .map((p: { date?: string; count?: number }, i: number) => {
         const z = std === 0 ? 0 : (Number(p.count ?? 0) - mean) / std;
-        return { date: p.date, value: p.count, z_score: Number(z.toFixed(2)), index: i };
+        return {
+          date: p.date,
+          value: p.count,
+          z_score: Number(z.toFixed(2)),
+          index: i,
+        };
       })
       .filter((a: { z_score: number }) => Math.abs(a.z_score) > 2);
 
@@ -258,7 +268,7 @@ export const findAnomaliesInCurrentReport = chatTool(
       point_count: points.length,
       anomalies,
     };
-  },
+  }
 );
 
 export const explainFilterImpact = chatTool(
@@ -311,5 +321,5 @@ export const explainFilterImpact = chatTool(
       with_filters: filtered,
       without_filters: unfiltered,
     };
-  },
+  }
 );

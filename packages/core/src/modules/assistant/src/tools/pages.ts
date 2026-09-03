@@ -1,11 +1,16 @@
-import { z } from 'zod';
 import {
   getEntryExitPagesCore,
   getPageConversionsCore,
   getPagePerformanceCore,
   getTopPagesCore,
 } from '@openpanel/db';
-import { chatTool, previousPeriod, resolveDateRange, truncateRows } from './helpers';
+import { z } from 'zod';
+import {
+  chatTool,
+  previousPeriod,
+  resolveDateRange,
+  truncateRows,
+} from './helpers';
 
 export const getPagePerformance = chatTool(
   {
@@ -39,7 +44,7 @@ export const getPagePerformance = chatTool(
       sortOrder: input.sortOrder,
       limit: input.limit ?? 50,
     });
-  },
+  }
 );
 
 export const getPageConversions = chatTool(
@@ -72,7 +77,7 @@ export const getPageConversions = chatTool(
       limit: input.limit ?? 50,
     });
     return truncateRows(rows, 100);
-  },
+  }
 );
 
 export const getEntryExitPages = chatTool(
@@ -99,7 +104,7 @@ export const getEntryExitPages = chatTool(
       mode,
     });
     return truncateRows(rows, 50);
-  },
+  }
 );
 
 export const findDecliningPages = chatTool(
@@ -115,7 +120,9 @@ export const findDecliningPages = chatTool(
         .min(1)
         .default(50)
         .optional()
-        .describe('Filter out pages with fewer than N pageviews in the previous period'),
+        .describe(
+          'Filter out pages with fewer than N pageviews in the previous period'
+        ),
     }),
   },
   async (input, context) => {
@@ -146,10 +153,17 @@ export const findDecliningPages = chatTool(
       (current as Array<{ name?: string; path?: string }>).map((p) => [
         String(p.name ?? p.path),
         p,
-      ]),
+      ])
     );
     const min = input.minPageviews ?? 50;
-    const declines = (previous as Array<{ name?: string; path?: string; count?: number; sessions?: number }>)
+    const declines = (
+      previous as Array<{
+        name?: string;
+        path?: string;
+        count?: number;
+        sessions?: number;
+      }>
+    )
       .filter((p) => (p.count ?? p.sessions ?? 0) >= min)
       .map((p) => {
         const key = String(p.name ?? p.path);
@@ -158,11 +172,17 @@ export const findDecliningPages = chatTool(
         const currCount = Number(curr?.count ?? curr?.sessions ?? 0);
         const delta = currCount - prevCount;
         const pct = prevCount > 0 ? (delta / prevCount) * 100 : 0;
-        return { path: key, previous: prevCount, current: currCount, delta, percent_change: Number(pct.toFixed(1)) };
+        return {
+          path: key,
+          previous: prevCount,
+          current: currCount,
+          delta,
+          percent_change: Number(pct.toFixed(1)),
+        };
       })
       .filter((row) => row.delta < 0)
       .sort((a, b) => a.percent_change - b.percent_change);
 
     return truncateRows(declines, 50);
-  },
+  }
 );

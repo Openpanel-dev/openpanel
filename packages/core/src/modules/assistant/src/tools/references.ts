@@ -77,9 +77,9 @@ export const listReferences = chatTool(
         description: r.description ?? '',
         id: r.id,
       })),
-      100,
+      100
     );
-  },
+  }
 );
 
 export const getReferencesAround = chatTool(
@@ -88,9 +88,7 @@ export const getReferencesAround = chatTool(
     description:
       'Find references within ±N days of a target date. Perfect for "what was happening around 2026-03-15?" — returns references that might explain a spike or drop.',
     schema: z.object({
-      date: z
-        .string()
-        .describe('Target date (YYYY-MM-DD) to search around.'),
+      date: z.string().describe('Target date (YYYY-MM-DD) to search around.'),
       daysBefore: z.number().min(0).max(90).default(7).optional(),
       daysAfter: z.number().min(0).max(90).default(7).optional(),
     }),
@@ -126,5 +124,5 @@ export const getReferencesAround = chatTool(
         id: r.id,
       })),
     };
-  },
+  }
 );

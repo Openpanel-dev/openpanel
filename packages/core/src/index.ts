@@ -113,6 +113,55 @@ export {
   REQUEST_ID_LENGTH,
   REQUEST_ID_LOG_FIELD,
 } from './logger';
+// Moved from apps/api/src/agents/* + packages/trpc/src/agents/filter-command.ts
+// (M5-005) — apps/api's `/ai/agents/*` Fastify wrapper and packages/trpc's
+// overview router call these.
+//
+// Loaded via dynamic import, NOT a static re-export like every other service
+// on this barrel: packages/db/src/buffers/base-buffer.ts already imports
+// `@openpanel/core` eagerly, and this module's own chain reaches deep into
+// `@openpanel/db` (the Prisma-backed conversation store, ~30 analytics/report
+// tool functions). A static re-export here would make THIS barrel's own
+// evaluation re-enter `@openpanel/db` while it is still mid-evaluation of
+// `./buffers` — `bot-buffer.ts extends BaseBuffer` then sees `BaseBuffer` as
+// `undefined` (a live TDZ binding that never got the chance to fill in).
+// `event-buffer.test.ts` et al. hit exactly this before this indirection was
+// added. `chatApp` and `chatRunContext` are one-time-per-process values, so
+// callers resolve them once (apps/api's Fastify wrapper does so inside its
+// own already-async route registration) and keep the reference.
+export type {
+  ChatApp,
+  ChatRunContext,
+  FilterCommandResult,
+} from './modules/assistant/assistant.service';
+
+import type { PageContext } from './modules/assistant/assistant.constants';
+
+let _assistant:
+  | Promise<typeof import('./modules/assistant/assistant.service')>
+  | undefined;
+function loadAssistant() {
+  if (!_assistant) {
+    _assistant = import('./modules/assistant/assistant.service');
+  }
+  return _assistant;
+}
+
+export async function getChatApp() {
+  return (await loadAssistant()).chatApp;
+}
+export async function getChatRunContext() {
+  return (await loadAssistant()).chatRunContext;
+}
+export async function runFilterCommand(input: {
+  query: string;
+  projectId: string;
+  pageContext?: PageContext;
+  timezone: string;
+}) {
+  const { runFilterCommand: run } = await loadAssistant();
+  return run(input);
+}
 // Dissolved from @openpanel/auth (M4-007) — apps/api's OAuth callbacks and
 // @openpanel/trpc's auth/share/user/gsc routers call these directly, the same
 // way they reach the other dissolved leaf packages here. `hashPassword` is

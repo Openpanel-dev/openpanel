@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import {
   getTopPagesCore,
   gscGetCannibalizationCore,
@@ -9,6 +8,7 @@ import {
   gscGetTopPagesCore,
   gscGetTopQueriesCore,
 } from '@openpanel/db';
+import { z } from 'zod';
 import { chatTool, resolveDateRange, truncateRows } from './helpers';
 
 export const gscGetOverview = chatTool(
@@ -34,7 +34,7 @@ export const gscGetOverview = chatTool(
       endDate: range.endDate,
       interval,
     });
-  },
+  }
 );
 
 export const gscGetTopQueries = chatTool(
@@ -61,7 +61,7 @@ export const gscGetTopQueries = chatTool(
       limit: limit ?? 50,
     });
     return truncateRows(rows, 100);
-  },
+  }
 );
 
 export const gscGetTopPages = chatTool(
@@ -88,7 +88,7 @@ export const gscGetTopPages = chatTool(
       limit: limit ?? 50,
     });
     return truncateRows(rows, 100);
-  },
+  }
 );
 
 export const gscGetQueryDetails = chatTool(
@@ -114,7 +114,7 @@ export const gscGetQueryDetails = chatTool(
       endDate: range.endDate,
       query,
     });
-  },
+  }
 );
 
 export const gscGetPageDetails = chatTool(
@@ -140,7 +140,7 @@ export const gscGetPageDetails = chatTool(
       endDate: range.endDate,
       page,
     });
-  },
+  }
 );
 
 export const gscGetQueryOpportunities = chatTool(
@@ -166,7 +166,7 @@ export const gscGetQueryOpportunities = chatTool(
       endDate: range.endDate,
       minImpressions,
     });
-  },
+  }
 );
 
 export const gscGetCannibalization = chatTool(
@@ -190,7 +190,7 @@ export const gscGetCannibalization = chatTool(
       startDate: range.startDate,
       endDate: range.endDate,
     });
-  },
+  }
 );
 
 export const correlateSeoWithTraffic = chatTool(
@@ -272,5 +272,5 @@ export const correlateSeoWithTraffic = chatTool(
       .sort((a, b) => b.gsc_clicks - a.gsc_clicks);
 
     return truncateRows(correlated, limit ?? 30);
-  },
+  }
 );

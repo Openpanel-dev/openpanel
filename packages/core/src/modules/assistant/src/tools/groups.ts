@@ -1,10 +1,10 @@
-import { z } from 'zod';
 import {
   findGroupsCore,
   getGroupCore,
   getGroupMemberProfiles,
   queryEventsCore,
 } from '@openpanel/db';
+import { z } from 'zod';
 import { chatTool, dashboardUrl, truncateRows } from './helpers';
 
 export const getGroupFull = chatTool(
@@ -45,14 +45,13 @@ export const getGroupFull = chatTool(
       recent_events: recentEvents,
       dashboard_url: orgPath(`/groups/${id}`),
     };
-  },
+  }
 );
 
 export const getGroupMembers = chatTool(
   {
     name: 'get_group_members',
-    description:
-      'Paginated list of profiles in this group.',
+    description: 'Paginated list of profiles in this group.',
     schema: z.object({
       groupId: z.string().optional(),
       limit: z.number().min(1).max(100).default(20).optional(),
@@ -79,14 +78,13 @@ export const getGroupMembers = chatTool(
         dashboard_url: orgPath(`/profiles/${p.id}`),
       })),
     };
-  },
+  }
 );
 
 export const getGroupEvents = chatTool(
   {
     name: 'get_group_events',
-    description:
-      'Recent events from members of this group.',
+    description: 'Recent events from members of this group.',
     schema: z.object({
       groupId: z.string().optional(),
       eventNames: z.array(z.string()).optional(),
@@ -114,7 +112,7 @@ export const getGroupEvents = chatTool(
     });
 
     return truncateRows(events, 100);
-  },
+  }
 );
 
 export const getGroupMetrics = chatTool(
@@ -157,7 +155,9 @@ export const getGroupMetrics = chatTool(
     const activeIds30d = new Set<string>();
     const sevenDaysAgo = Date.now() - 7 * 86_400_000;
     for (const e of recentEvents) {
-      if (!e.profile_id) continue;
+      if (!e.profile_id) {
+        continue;
+      }
       activeIds30d.add(e.profile_id);
       if (new Date(e.created_at).getTime() >= sevenDaysAgo) {
         activeIds7d.add(e.profile_id);
@@ -170,7 +170,7 @@ export const getGroupMetrics = chatTool(
       active_last_7_days: activeIds7d.size,
       active_last_30_days: activeIds30d.size,
     };
-  },
+  }
 );
 
 export const compareGroups = chatTool(
@@ -219,5 +219,5 @@ export const compareGroups = chatTool(
         name: g.name,
       })),
     };
-  },
+  }
 );

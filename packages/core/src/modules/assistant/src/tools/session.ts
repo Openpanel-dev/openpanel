@@ -1,9 +1,9 @@
-import { z } from 'zod';
 import {
   queryEventsCore,
   querySessionsCore,
   sessionService,
 } from '@openpanel/db';
+import { z } from 'zod';
 import { chatTool, dashboardUrl, truncateRows } from './helpers';
 
 export const getSessionFull = chatTool(
@@ -36,16 +36,19 @@ export const getSessionFull = chatTool(
       path_length: screenViews.length,
       path: screenViews,
       events: events.slice(0, 50),
-      dashboard_url: dashboardUrl(context.organizationId, context.projectId, `/sessions/${id}`),
+      dashboard_url: dashboardUrl(
+        context.organizationId,
+        context.projectId,
+        `/sessions/${id}`
+      ),
     };
-  },
+  }
 );
 
 export const getSessionPath = chatTool(
   {
     name: 'get_session_path',
-    description:
-      'The chronological list of pages visited in this session.',
+    description: 'The chronological list of pages visited in this session.',
     schema: z.object({
       sessionId: z.string().optional(),
     }),
@@ -66,7 +69,7 @@ export const getSessionPath = chatTool(
         created_at: e.created_at,
       }));
     return { sessionId: id, page_count: path.length, path };
-  },
+  }
 );
 
 export const getSessionEvents = chatTool(
@@ -88,7 +91,7 @@ export const getSessionEvents = chatTool(
       limit: 100,
     });
     return truncateRows(events, 100);
-  },
+  }
 );
 
 export const getSimilarSessions = chatTool(
@@ -123,17 +126,21 @@ export const getSimilarSessions = chatTool(
       },
       similar_sessions: filtered.map((s) => ({
         ...s,
-        dashboard_url: dashboardUrl(context.organizationId, context.projectId, `/sessions/${s.id}`),
+        dashboard_url: dashboardUrl(
+          context.organizationId,
+          context.projectId,
+          `/sessions/${s.id}`
+        ),
       })),
     };
-  },
+  }
 );
 
 export const compareSessionToTypical = chatTool(
   {
     name: 'compare_session_to_typical',
     description:
-      'Compare this session\'s duration / event count / screen views against the project averages. Helps spot outliers.',
+      "Compare this session's duration / event count / screen views against the project averages. Helps spot outliers.",
     schema: z.object({
       sessionId: z.string().optional(),
     }),
@@ -151,7 +158,7 @@ export const compareSessionToTypical = chatTool(
       return { session, comparison: null };
     }
 
-    const avg = (sel: (s: typeof sample[number]) => number) =>
+    const avg = (sel: (s: (typeof sample)[number]) => number) =>
       sample.reduce((s, sess) => s + sel(sess), 0) / sample.length;
 
     const project_avg = {
@@ -161,11 +168,18 @@ export const compareSessionToTypical = chatTool(
     };
 
     const ratio = (a: number, b: number) => {
-      if (b === 0) return { ratio: 0, label: 'equal' as const };
+      if (b === 0) {
+        return { ratio: 0, label: 'equal' as const };
+      }
       const r = a / b;
       return {
         ratio: Number(r.toFixed(2)),
-        label: r > 1.05 ? ('above' as const) : r < 0.95 ? ('below' as const) : ('equal' as const),
+        label:
+          r > 1.05
+            ? ('above' as const)
+            : r < 0.95
+              ? ('below' as const)
+              : ('equal' as const),
       };
     };
 
@@ -183,12 +197,12 @@ export const compareSessionToTypical = chatTool(
         event_count: ratio(session.eventCount, project_avg.event_count),
         screen_view_count: ratio(
           session.screenViewCount,
-          project_avg.screen_view_count,
+          project_avg.screen_view_count
         ),
       },
       sample_size: sample.length,
     };
-  },
+  }
 );
 
 export const getSessionReferrerContext = chatTool(
@@ -204,7 +218,7 @@ export const getSessionReferrerContext = chatTool(
     const id = sessionId || context.pageContext?.ids?.sessionId || '';
     const session = await sessionService.byId(id, context.projectId);
 
-    if (!session.referrer && !session.referrerName) {
+    if (!(session.referrer || session.referrerName)) {
       return {
         session_id: id,
         referrer: null,
@@ -232,7 +246,7 @@ export const getSessionReferrerContext = chatTool(
         entry_path: s.entry_path,
       })),
     };
-  },
+  }
 );
 
 export const getSessionReplaySummary = chatTool(
@@ -251,8 +265,12 @@ export const getSessionReplaySummary = chatTool(
       session_id: id,
       available: session.hasReplay ?? false,
       replay_url: session.hasReplay
-        ? dashboardUrl(context.organizationId, context.projectId, `/sessions/${id}`)
+        ? dashboardUrl(
+            context.organizationId,
+            context.projectId,
+            `/sessions/${id}`
+          )
         : null,
     };
-  },
+  }
 );

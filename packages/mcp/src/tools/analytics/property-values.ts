@@ -25,8 +25,9 @@ const MAX_VALUE_LIMIT = 500;
  * rows into a few dozen useful ones.
  *
  * The in-app chat agent solves the same problem in
- * `apps/api/src/agents/tools/helpers.ts`; kept as a local copy rather than a
- * shared abstraction since the two consumers may want to diverge.
+ * `packages/core/src/modules/assistant/src/tools/helpers.ts`; kept as a local
+ * copy rather than a shared abstraction since the two consumers may want to
+ * diverge.
  */
 function compactPropertyKeys(
   rows: Array<{ property_key: string }>,

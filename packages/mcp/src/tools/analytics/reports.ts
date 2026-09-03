@@ -1,3 +1,4 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
   AggregateChartEngine,
   ChartEngine,
@@ -6,8 +7,8 @@ import {
   getChartStartEndDate,
   getReportById,
   getReportsByDashboardId,
-  getSettingsForProject} from '@openpanel/db';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+  getSettingsForProject,
+} from '@openpanel/db';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import { dashboardBaseUrl } from '../dashboard-links';
@@ -26,18 +27,32 @@ const DEFAULT_PLOTTED_SERIES = 5;
 const MAX_PLOTTED_SERIES = 25;
 const MAX_DATA_POINTS = 180;
 
-function reportUrl(organizationId: string, projectId: string, reportId: string) {
+function reportUrl(
+  organizationId: string,
+  projectId: string,
+  reportId: string
+) {
   return `${dashboardBaseUrl()}/${organizationId}/${projectId}/reports/${reportId}`;
 }
 
-function dashboardUrl(organizationId: string, projectId: string, dashboardId: string) {
+function dashboardUrl(
+  organizationId: string,
+  projectId: string,
+  dashboardId: string
+) {
   return `${dashboardBaseUrl()}/${organizationId}/${projectId}/dashboards/${dashboardId}`;
 }
 
 type ChartSeries = {
   id: string;
   names: string[];
-  metrics: { sum: number; average: number; min: number; max: number; count?: number };
+  metrics: {
+    sum: number;
+    average: number;
+    min: number;
+    max: number;
+    count?: number;
+  };
   data: Array<{ date: string; count: number }>;
 };
 
@@ -55,7 +70,7 @@ type ChartSeries = {
  */
 function shapeChart(
   chart: { series: ChartSeries[]; metrics: unknown },
-  options: { seriesLimit: number; plotSeries: number },
+  options: { seriesLimit: number; plotSeries: number }
 ) {
   const { seriesLimit, plotSeries } = options;
   const summaries = chart.series.map((serie) => ({
@@ -74,7 +89,9 @@ function shapeChart(
   const seenDates = new Set<string>();
   for (const serie of plotted) {
     for (const point of serie.data) {
-      if (seenDates.has(point.date)) continue;
+      if (seenDates.has(point.date)) {
+        continue;
+      }
       seenDates.add(point.date);
       dates.push(point.date);
     }
@@ -82,10 +99,14 @@ function shapeChart(
   dates.sort();
 
   const trimmedDates =
-    dates.length > MAX_DATA_POINTS ? dates.slice(dates.length - MAX_DATA_POINTS) : dates;
+    dates.length > MAX_DATA_POINTS
+      ? dates.slice(dates.length - MAX_DATA_POINTS)
+      : dates;
 
   const byDate = plotted.map((serie) => {
-    const lookup = new Map(serie.data.map((point) => [point.date, point.count]));
+    const lookup = new Map(
+      serie.data.map((point) => [point.date, point.count])
+    );
     return lookup;
   });
 
@@ -104,7 +125,8 @@ function shapeChart(
         date,
         ...byDate.map((lookup) => lookup.get(date) ?? 0),
       ]),
-      ...(chart.series.length > plotted.length || dates.length > trimmedDates.length
+      ...(chart.series.length > plotted.length ||
+      dates.length > trimmedDates.length
         ? {
             note: [
               chart.series.length > plotted.length
@@ -124,7 +146,7 @@ function shapeChart(
 
 export function registerReportTools(
   server: McpServer,
-  context: McpAuthContext,
+  context: McpAuthContext
 ) {
   server.tool(
     'list_dashboards',
@@ -144,7 +166,7 @@ export function registerReportTools(
           ...d,
           dashboard_url: dashboardUrl(context.organizationId, projectId, d.id),
         }));
-      }),
+      })
   );
 
   server.tool(
@@ -177,7 +199,7 @@ export function registerReportTools(
                   name: s.name,
                   displayName: s.displayName,
                   segment: s.segment,
-                },
+                }
           ),
           breakdowns: r.breakdowns,
         }));
@@ -185,11 +207,20 @@ export function registerReportTools(
           report_url_template: `${dashboardBaseUrl()}/${context.organizationId}/${projectId}/reports/{id}`,
           ...table(rows, {
             limit: MAX_SERIES_LIMIT,
-            columns: ['id', 'name', 'chartType', 'range', 'interval', 'metric', 'series', 'breakdowns'],
+            columns: [
+              'id',
+              'name',
+              'chartType',
+              'range',
+              'interval',
+              'metric',
+              'series',
+              'breakdowns',
+            ],
             unit: 'reports',
           }),
         };
-      }),
+      })
   );
 
   server.tool(
@@ -206,7 +237,7 @@ export function registerReportTools(
         .max(MAX_PLOTTED_SERIES)
         .optional()
         .describe(
-          `How many of the top series get per-date values in the \`data\` block (default ${DEFAULT_PLOTTED_SERIES}, max ${MAX_PLOTTED_SERIES}). Every series appears in the summary table regardless.`,
+          `How many of the top series get per-date values in the \`data\` block (default ${DEFAULT_PLOTTED_SERIES}, max ${MAX_PLOTTED_SERIES}). Every series appears in the summary table regardless.`
         ),
     },
     async ({ projectId: inputProjectId, reportId, seriesLimit, plotSeries }) =>
@@ -224,8 +255,15 @@ export function registerReportTools(
 
         // Funnel and metric results are already small and have their own shape;
         // only the multi-series charts need reshaping.
-        const chart = result.data as { series?: ChartSeries[]; metrics?: unknown };
-        if (result.chartType === 'funnel' || result.chartType === 'metric' || !Array.isArray(chart.series)) {
+        const chart = result.data as {
+          series?: ChartSeries[];
+          metrics?: unknown;
+        };
+        if (
+          result.chartType === 'funnel' ||
+          result.chartType === 'metric' ||
+          !Array.isArray(chart.series)
+        ) {
           return result;
         }
 
@@ -237,7 +275,7 @@ export function registerReportTools(
             plotSeries: plotSeries ?? DEFAULT_PLOTTED_SERIES,
           }),
         };
-      }),
+      })
   );
 }
 
@@ -247,10 +285,12 @@ export function registerReportTools(
  *  - metric  → AggregateChartEngine.execute
  *  - others  → ChartEngine.execute
  *
- * Exported so the in-app chat (apps/api/src/agents/tools/base.ts) can reuse the
- * dispatch without going through MCP. Deliberately returns the raw engine
- * output — the MCP tool reshapes it for LLM consumption, the chat renderer
- * needs the full chart.
+ * `@openpanel/core`'s assistant module (src/report-runner.ts, M5-005) carries
+ * its own copy of this dispatch for its in-app chat tools — core cannot
+ * depend on `@openpanel/mcp` (mcp already depends on core), so the reuse this
+ * comment used to describe is now two hand-synced copies. Deliberately
+ * returns the raw engine output here — the MCP tool reshapes it for LLM
+ * consumption, the chat renderer needs the full chart.
  */
 export async function runReport(input: {
   organizationId: string;
@@ -277,7 +317,10 @@ export async function runReport(input: {
   }
 
   if (report.projectId !== input.projectId) {
-    return { error: 'Report does not belong to this project', reportId: input.reportId };
+    return {
+      error: 'Report does not belong to this project',
+      reportId: input.reportId,
+    };
   }
 
   const { timezone } = await getSettingsForProject(input.projectId);
@@ -292,7 +335,11 @@ export async function runReport(input: {
     interval: report.interval,
     startDate,
     endDate,
-    dashboard_url: reportUrl(input.organizationId, input.projectId, input.reportId),
+    dashboard_url: reportUrl(
+      input.organizationId,
+      input.projectId,
+      input.reportId
+    ),
   };
 
   if (report.chartType === 'funnel') {
@@ -343,7 +390,12 @@ export async function runReportFromConfig(input: {
   };
 
   if (input.config.chartType === 'funnel') {
-    return { ...meta, data: await funnelService.getFunnel(chartInput as Parameters<typeof funnelService.getFunnel>[0]) };
+    return {
+      ...meta,
+      data: await funnelService.getFunnel(
+        chartInput as Parameters<typeof funnelService.getFunnel>[0]
+      ),
+    };
   }
   if (input.config.chartType === 'metric') {
     return { ...meta, data: await AggregateChartEngine.execute(chartInput) };

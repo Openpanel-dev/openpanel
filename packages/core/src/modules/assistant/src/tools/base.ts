@@ -1,10 +1,4 @@
-import {
-  chartTypes,
-  lineTypes,
-  operators,
-} from '@openpanel/constants';
-import { objectToZodEnums, zReportInput } from '@openpanel/validation';
-import { z } from 'zod';
+import { chartTypes, lineTypes, operators } from '@openpanel/constants';
 import {
   findProfilesCore,
   getAnalyticsOverviewCore,
@@ -22,7 +16,9 @@ import {
   queryEventsCore,
   querySessionsCore,
 } from '@openpanel/db';
-import { runReport, runReportFromConfig } from '@openpanel/mcp';
+import { objectToZodEnums, zReportInput } from '@openpanel/validation';
+import { z } from 'zod';
+import { runReport, runReportFromConfig } from '../report-runner';
 import {
   chatTool,
   compactEventProperties,
@@ -46,7 +42,7 @@ export const listEventNames = chatTool(
   async (_input, context) => {
     const names = await listEventNamesCore(context.projectId);
     return { event_names: names };
-  },
+  }
 );
 
 export const listEventProperties = chatTool(
@@ -58,7 +54,9 @@ export const listEventProperties = chatTool(
       eventName: z
         .string()
         .optional()
-        .describe('Optional — filter to one event. Omit to list properties across all events.'),
+        .describe(
+          'Optional — filter to one event. Omit to list properties across all events.'
+        ),
     }),
   },
   async ({ eventName }, context) => {
@@ -67,7 +65,7 @@ export const listEventProperties = chatTool(
       eventName,
     });
     return compactEventProperties(raw, { eventName });
-  },
+  }
 );
 
 export const getEventPropertyValues = chatTool(
@@ -85,7 +83,7 @@ export const getEventPropertyValues = chatTool(
       projectId: context.projectId,
       eventName,
       propertyKey,
-    }),
+    })
 );
 
 // ─────────────────────────────────────────────────────────────────
@@ -106,9 +104,13 @@ export const listDashboards = chatTool(
     });
     return dashboards.map((d) => ({
       ...d,
-      dashboard_url: dashboardUrl(context.organizationId, context.projectId, `/dashboards/${d.id}`),
+      dashboard_url: dashboardUrl(
+        context.organizationId,
+        context.projectId,
+        `/dashboards/${d.id}`
+      ),
     }));
-  },
+  }
 );
 
 export const listReports = chatTool(
@@ -117,7 +119,9 @@ export const listReports = chatTool(
     description:
       'List the reports inside a dashboard. Returns chart type, range, interval, and event series for each. Use this with get_report_data to fetch real numbers.',
     schema: z.object({
-      dashboardId: z.string().describe('The dashboard ID (from list_dashboards)'),
+      dashboardId: z
+        .string()
+        .describe('The dashboard ID (from list_dashboards)'),
     }),
   },
   async ({ dashboardId }, context) =>
@@ -125,7 +129,7 @@ export const listReports = chatTool(
       projectId: context.projectId,
       dashboardId,
       organizationId: context.organizationId,
-    }),
+    })
 );
 
 export const getReportData = chatTool(
@@ -142,14 +146,14 @@ export const getReportData = chatTool(
       organizationId: context.organizationId,
       projectId: context.projectId,
       reportId,
-    }),
+    })
 );
 
 export const generateReport = chatTool(
   {
     name: 'generate_report',
     description: [
-      "Generate an ad-hoc chart from a report config. Use only when no saved report fits. Always call list_event_names first to verify event names exist; call list_event_properties if you need a breakdown property. ALWAYS supply a concise `title` (3-8 words) describing what the chart shows.",
+      'Generate an ad-hoc chart from a report config. Use only when no saved report fits. Always call list_event_names first to verify event names exist; call list_event_properties if you need a breakdown property. ALWAYS supply a concise `title` (3-8 words) describing what the chart shows.',
       '',
       'Series are ordered A, B, C, … (based on array index). Use the letter id from a `formula` series like "A / B * 100" for ratios or conversions.',
       '',
@@ -163,7 +167,7 @@ export const generateReport = chatTool(
       chartType: z
         .enum(objectToZodEnums(chartTypes))
         .describe(
-          'Chart type. See the decision table in the system prompt — pick `linear`/`area` for trends, `bar`/`pie`/`map` for breakdowns, `metric` for a single number, `funnel`/`conversion`/`sankey` for flows, `retention` for cohorts, `histogram` for numeric distributions.',
+          'Chart type. See the decision table in the system prompt — pick `linear`/`area` for trends, `bar`/`pie`/`map` for breakdowns, `metric` for a single number, `funnel`/`conversion`/`sankey` for flows, `retention` for cohorts, `histogram` for numeric distributions.'
         ),
       interval: z
         .enum(['minute', 'hour', 'day', 'week', 'month'])
@@ -175,7 +179,9 @@ export const generateReport = chatTool(
           z.union([
             z.object({
               type: z.literal('event'),
-              name: z.string().describe('Event name — verify with list_event_names'),
+              name: z
+                .string()
+                .describe('Event name — verify with list_event_names'),
               displayName: z.string().optional(),
               segment: z
                 .enum([
@@ -202,13 +208,13 @@ export const generateReport = chatTool(
                     '- `user_average` — average events per user',
                     '- `one_event_per_user` — count users who did it at least once',
                     '- `property_sum` / `property_average` / `property_max` / `property_min` — aggregate a numeric property from the event (requires `property`)',
-                  ].join('\n'),
+                  ].join('\n')
                 ),
               property: z
                 .string()
                 .optional()
                 .describe(
-                  'Numeric property on the event to aggregate. Required when segment is `property_sum`/`average`/`max`/`min`. Example: `revenue`, `duration`, `score`.',
+                  'Numeric property on the event to aggregate. Required when segment is `property_sum`/`average`/`max`/`min`. Example: `revenue`, `duration`, `score`.'
                 ),
               filters: z
                 .array(
@@ -216,17 +222,21 @@ export const generateReport = chatTool(
                     name: z
                       .string()
                       .describe(
-                        'Field to filter on — verify with list_event_properties. Use the bare column name for top-level columns (e.g. `path`, `country`, `device`) or `properties.<key>` for custom JSON properties (e.g. `properties.plan`).',
+                        'Field to filter on — verify with list_event_properties. Use the bare column name for top-level columns (e.g. `path`, `country`, `device`) or `properties.<key>` for custom JSON properties (e.g. `properties.plan`).'
                       ),
                     operator: z
                       .enum(objectToZodEnums(operators))
                       .describe(
-                        'One of: is, isNot, contains, doesNotContain, startsWith, endsWith, regex, isNull, isNotNull, gt, lt, gte, lte. `is` is the default for equality (NOT `equals` / `eq` / `==`).',
+                        'One of: is, isNot, contains, doesNotContain, startsWith, endsWith, regex, isNull, isNotNull, gt, lt, gte, lte. `is` is the default for equality (NOT `equals` / `eq` / `==`).'
                       ),
                     value: z
-                      .array(z.union([z.string(), z.number(), z.boolean(), z.null()]))
-                      .describe('Values to match. Use [] with isNull/isNotNull.'),
-                  }),
+                      .array(
+                        z.union([z.string(), z.number(), z.boolean(), z.null()])
+                      )
+                      .describe(
+                        'Values to match. Use [] with isNull/isNotNull.'
+                      ),
+                  })
                 )
                 .default([])
                 .optional(),
@@ -236,25 +246,27 @@ export const generateReport = chatTool(
               formula: z
                 .string()
                 .describe(
-                  'Expression referencing other series by letter id. Examples: `A / B * 100` (conversion rate), `A + B` (union total), `A - B` (difference). Earlier series are A, B, C, …',
+                  'Expression referencing other series by letter id. Examples: `A / B * 100` (conversion rate), `A + B` (union total), `A - B` (difference). Earlier series are A, B, C, …'
                 ),
               displayName: z.string().optional(),
               hideSeries: z
                 .array(z.string())
                 .optional()
                 .describe(
-                  'Letter ids (e.g. ["A", "B"]) of series used by the formula that should be hidden from the chart — useful when you only want to display the computed ratio.',
+                  'Letter ids (e.g. ["A", "B"]) of series used by the formula that should be hidden from the chart — useful when you only want to display the computed ratio.'
                 ),
             }),
-          ]),
+          ])
         )
         .min(1)
-        .describe('At least one series. Mix event series and formula series to compute ratios.'),
+        .describe(
+          'At least one series. Mix event series and formula series to compute ratios.'
+        ),
       breakdowns: z
         .array(
           z.object({
             name: z.string().describe('Property key to group by'),
-          }),
+          })
         )
         .default([])
         .optional(),
@@ -265,26 +277,28 @@ export const generateReport = chatTool(
         .enum(['sum', 'count', 'average', 'min', 'max'])
         .optional()
         .describe(
-          'How a series is aggregated for display. Only the metric and map chart types read this; `count` is unique profiles. Omit it unless the user asked for a specific aggregation — metric cards then default to unique profiles.',
+          'How a series is aggregated for display. Only the metric and map chart types read this; `count` is unique profiles. Omit it unless the user asked for a specific aggregation — metric cards then default to unique profiles.'
         ),
       previous: z
         .boolean()
         .optional()
         .describe(
-          'Overlay the same-length previous period for comparison. Great for "vs last week" / "vs last month" questions.',
+          'Overlay the same-length previous period for comparison. Great for "vs last week" / "vs last month" questions.'
         ),
       lineType: z
         .enum(objectToZodEnums(lineTypes))
         .optional()
         .describe(
-          'Line style for linear/area charts. Default to `monotone` unless you have a reason not to.',
+          'Line style for linear/area charts. Default to `monotone` unless you have a reason not to.'
         ),
       limit: z
         .number()
         .min(1)
         .max(500)
         .optional()
-        .describe('Top-N limit for bar/pie/sankey. Example: "top 10 pages" → limit: 10.'),
+        .describe(
+          'Top-N limit for bar/pie/sankey. Example: "top 10 pages" → limit: 10.'
+        ),
       unit: z
         .string()
         .optional()
@@ -293,13 +307,13 @@ export const generateReport = chatTool(
         .enum(['session', 'profile'])
         .optional()
         .describe(
-          'Only for `chartType: "funnel"`. Whether each funnel step counts by unique session or unique profile. Default is profile.',
+          'Only for `chartType: "funnel"`. Whether each funnel step counts by unique session or unique profile. Default is profile.'
         ),
       title: z
         .string()
         .optional()
         .describe(
-          'Short, descriptive card title (3-8 words) — e.g. "Signups per day, last 7 days". Always provide one.',
+          'Short, descriptive card title (3-8 words) — e.g. "Signups per day, last 7 days". Always provide one.'
         ),
     }),
   },
@@ -343,14 +357,13 @@ export const generateReport = chatTool(
         (b: { name: string }, i: number) => ({
           id: String(i + 1),
           name: b.name,
-        }),
+        })
       ),
       range: 'custom' as const,
       // A metric card has always shown the total unique count, so an
       // unspecified metric must stay `count` there — `sum` would silently turn
       // "1.2k users" into "45k events".
-      metric:
-        input.metric ?? (input.chartType === 'metric' ? 'count' : 'sum'),
+      metric: input.metric ?? (input.chartType === 'metric' ? 'count' : 'sum'),
       previous: input.previous ?? false,
       ...(input.lineType ? { lineType: input.lineType } : {}),
       ...(input.limit ? { limit: input.limit } : {}),
@@ -365,7 +378,8 @@ export const generateReport = chatTool(
     const parsed = zReportInput.safeParse(config);
     if (!parsed.success) {
       return {
-        error: 'Invalid report config — fix the issues and call generate_report again.',
+        error:
+          'Invalid report config — fix the issues and call generate_report again.',
         issues: parsed.error.issues.map((i) => ({
           path: i.path.join('.'),
           message: i.message,
@@ -376,7 +390,9 @@ export const generateReport = chatTool(
     const chart = await runReportFromConfig({
       organizationId: context.organizationId,
       projectId: context.projectId,
-      config: parsed.data as Parameters<typeof runReportFromConfig>[0]['config'],
+      config: parsed.data as Parameters<
+        typeof runReportFromConfig
+      >[0]['config'],
     });
     return {
       // Use the model-supplied title when present; the frontend
@@ -384,15 +400,38 @@ export const generateReport = chatTool(
       ...(input.title?.trim() ? { name: input.title.trim() } : {}),
       ...chart,
     };
-  },
+  }
 );
 
 // Letter ids for series. Must match the chart engine's expectation
 // that series are referenced by A, B, C, … in formula expressions.
 const ALPHABET_IDS = [
-  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-  'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
-  'U', 'V', 'W', 'X', 'Y', 'Z',
+  'A',
+  'B',
+  'C',
+  'D',
+  'E',
+  'F',
+  'G',
+  'H',
+  'I',
+  'J',
+  'K',
+  'L',
+  'M',
+  'N',
+  'O',
+  'P',
+  'Q',
+  'R',
+  'S',
+  'T',
+  'U',
+  'V',
+  'W',
+  'X',
+  'Y',
+  'Z',
 ] as const;
 
 // ─────────────────────────────────────────────────────────────────
@@ -403,11 +442,14 @@ export const getAnalyticsOverview = chatTool(
   {
     name: 'get_analytics_overview',
     description:
-      'Top-level metrics: unique visitors, total pageviews, sessions, bounce rate, avg session duration, plus an optional time series. Defaults to the user\'s current date range.',
+      "Top-level metrics: unique visitors, total pageviews, sessions, bounce rate, avg session duration, plus an optional time series. Defaults to the user's current date range.",
     schema: z.object({
       startDate: z.string().optional(),
       endDate: z.string().optional(),
-      interval: z.enum(['hour', 'day', 'week', 'month']).default('day').optional(),
+      interval: z
+        .enum(['hour', 'day', 'week', 'month'])
+        .default('day')
+        .optional(),
     }),
   },
   async ({ startDate, endDate, interval }, context) => {
@@ -424,14 +466,14 @@ export const getAnalyticsOverview = chatTool(
       interval: interval ?? 'day',
       filters: pageContextFilters(pageContext),
     });
-  },
+  }
 );
 
 export const getTopPages = chatTool(
   {
     name: 'get_top_pages',
     description:
-      'Top pages ranked by visitors / pageviews. Returns path, sessions, pageviews, bounce rate, avg duration. Respects the page\'s active property filters.',
+      "Top pages ranked by visitors / pageviews. Returns path, sessions, pageviews, bounce rate, avg duration. Respects the page's active property filters.",
     schema: z.object({
       startDate: z.string().optional(),
       endDate: z.string().optional(),
@@ -453,14 +495,14 @@ export const getTopPages = chatTool(
       filters: pageContextFilters(pageContext),
     });
     return truncateRows(pages, 50);
-  },
+  }
 );
 
 export const getTopReferrers = chatTool(
   {
     name: 'get_top_referrers',
     description:
-      'Traffic source breakdown — by referrer name, type, or UTM source/medium/campaign. Respects the page\'s active property filters.',
+      "Traffic source breakdown — by referrer name, type, or UTM source/medium/campaign. Respects the page's active property filters.",
     schema: z.object({
       startDate: z.string().optional(),
       endDate: z.string().optional(),
@@ -481,18 +523,21 @@ export const getTopReferrers = chatTool(
       projectId: context.projectId,
       startDate: range.startDate,
       endDate: range.endDate,
-      column: (breakdown ?? 'referrer_name') as 'referrer_name' | 'referrer_type' | 'referrer',
+      column: (breakdown ?? 'referrer_name') as
+        | 'referrer_name'
+        | 'referrer_type'
+        | 'referrer',
       filters: pageContextFilters(pageContext),
     });
     return truncateRows(rows, 50);
-  },
+  }
 );
 
 export const getCountryBreakdown = chatTool(
   {
     name: 'get_country_breakdown',
     description:
-      'Visitor breakdown by country / region / city. Returns sessions and percentage of total. Respects the page\'s active property filters.',
+      "Visitor breakdown by country / region / city. Returns sessions and percentage of total. Respects the page's active property filters.",
     schema: z.object({
       startDate: z.string().optional(),
       endDate: z.string().optional(),
@@ -517,14 +562,14 @@ export const getCountryBreakdown = chatTool(
       filters: pageContextFilters(pageContext),
     });
     return truncateRows(rows, 100);
-  },
+  }
 );
 
 export const getDeviceBreakdown = chatTool(
   {
     name: 'get_device_breakdown',
     description:
-      'Visitor breakdown by device / browser / OS. Respects the page\'s active property filters.',
+      "Visitor breakdown by device / browser / OS. Respects the page's active property filters.",
     schema: z.object({
       startDate: z.string().optional(),
       endDate: z.string().optional(),
@@ -549,14 +594,14 @@ export const getDeviceBreakdown = chatTool(
       filters: pageContextFilters(pageContext),
     });
     return truncateRows(rows, 50);
-  },
+  }
 );
 
 export const getRollingActiveUsers = chatTool(
   {
     name: 'get_rolling_active_users',
     description:
-      "Rolling active-users trend (DAU/WAU/MAU). Returns BOTH the latest single value AND a renderable chart config (so the UI draws a line chart). Default is DAU over 30 days; pass `windowDays: 7` for WAU or `windowDays: 30` for MAU. ALWAYS supply a concise `title` (3-8 words) that describes what the chart shows.",
+      'Rolling active-users trend (DAU/WAU/MAU). Returns BOTH the latest single value AND a renderable chart config (so the UI draws a line chart). Default is DAU over 30 days; pass `windowDays: 7` for WAU or `windowDays: 30` for MAU. ALWAYS supply a concise `title` (3-8 words) that describes what the chart shows.',
     schema: z.object({
       /**
        * The rolling window. 1 = DAU (default), 7 = WAU, 30 = MAU.
@@ -568,7 +613,7 @@ export const getRollingActiveUsers = chatTool(
         .string()
         .optional()
         .describe(
-          'Short, descriptive card title (3-8 words) — e.g. "Monthly active users trend". Always provide one.',
+          'Short, descriptive card title (3-8 words) — e.g. "Monthly active users trend". Always provide one.'
         ),
     }),
   },
@@ -585,7 +630,13 @@ export const getRollingActiveUsers = chatTool(
       .toISOString()
       .slice(0, 10);
     const label =
-      window === 1 ? 'DAU' : window === 7 ? 'WAU' : window === 30 ? 'MAU' : `${window}-day active users`;
+      window === 1
+        ? 'DAU'
+        : window === 7
+          ? 'WAU'
+          : window === 30
+            ? 'MAU'
+            : `${window}-day active users`;
 
     const config = {
       chartType: 'linear' as const,
@@ -632,7 +683,7 @@ export const getRollingActiveUsers = chatTool(
       // Keys the frontend report renderer knows about.
       ...chart,
     };
-  },
+  }
 );
 
 export const getFunnel = chatTool(
@@ -657,11 +708,14 @@ export const getFunnel = chatTool(
         .string()
         .optional()
         .describe(
-          'Short, descriptive card title (3-8 words) — e.g. "Cart to checkout conversion" or "Signup to paid funnel". Always provide one.',
+          'Short, descriptive card title (3-8 words) — e.g. "Cart to checkout conversion" or "Signup to paid funnel". Always provide one.'
         ),
     }),
   },
-  async ({ steps, startDate, endDate, windowHours, groupBy, title }, context) => {
+  async (
+    { steps, startDate, endDate, windowHours, groupBy, title },
+    context
+  ) => {
     const pageContext = context.pageContext;
     const range = resolveDateRange({
       ...pageContext?.filters,
@@ -707,7 +761,9 @@ export const getFunnel = chatTool(
     const chart = await runReportFromConfig({
       organizationId: context.organizationId,
       projectId: context.projectId,
-      config: chartConfig as Parameters<typeof runReportFromConfig>[0]['config'],
+      config: chartConfig as Parameters<
+        typeof runReportFromConfig
+      >[0]['config'],
     });
 
     return {
@@ -716,7 +772,7 @@ export const getFunnel = chatTool(
       // Keys the frontend report renderer knows about.
       ...chart,
     };
-  },
+  }
 );
 
 export const getRetentionCohort = chatTool(
@@ -726,7 +782,7 @@ export const getRetentionCohort = chatTool(
       'Weekly active-user retention cohort for the last 12 weeks. Each row is a cohort (the week users were first seen) with cohort size (sum), retained user counts (values) and retained share (percentages) for subsequent weeks; a leading weighted-average row summarises all cohorts.',
     schema: z.object({}),
   },
-  async (_input, context) => getRetentionCohortCore(context.projectId),
+  async (_input, context) => getRetentionCohortCore(context.projectId)
 );
 
 export const getUserFlow = chatTool(
@@ -736,17 +792,17 @@ export const getUserFlow = chatTool(
       'Sankey-style user navigation flow from a starting event. Returns nodes + links suitable for visualizing common paths.',
     schema: z.object({
       startEvent: z.string().describe('Event name where the flow starts'),
-      endEvent: z
-        .string()
-        .optional()
-        .describe('Required when mode=between'),
+      endEvent: z.string().optional().describe('Required when mode=between'),
       mode: z.enum(['after', 'before', 'between']).default('after'),
       steps: z.number().min(2).max(10).default(5).optional(),
       startDate: z.string().optional(),
       endDate: z.string().optional(),
     }),
   },
-  async ({ startEvent, endEvent, mode, steps, startDate, endDate }, context) => {
+  async (
+    { startEvent, endEvent, mode, steps, startDate, endDate },
+    context
+  ) => {
     const pageContext = context.pageContext;
     const range = resolveDateRange({
       ...pageContext?.filters,
@@ -762,7 +818,7 @@ export const getUserFlow = chatTool(
       startDate: range.startDate,
       endDate: range.endDate,
     });
-  },
+  }
 );
 
 // ─────────────────────────────────────────────────────────────────
@@ -773,7 +829,7 @@ export const queryEvents = chatTool(
   {
     name: 'query_events',
     description:
-      'Free-form query over raw events with filters (path, country, device, browser, OS, referrer, custom properties, profileId, eventNames). Use this when aggregate tools don\'t cover the question.',
+      "Free-form query over raw events with filters (path, country, device, browser, OS, referrer, custom properties, profileId, eventNames). Use this when aggregate tools don't cover the question.",
     schema: z.object({
       startDate: z.string().optional(),
       endDate: z.string().optional(),
@@ -807,7 +863,7 @@ export const queryEvents = chatTool(
       limit: input.limit ?? 20,
     });
     return truncateRows(rows, 100);
-  },
+  }
 );
 
 export const querySessions = chatTool(
@@ -845,7 +901,7 @@ export const querySessions = chatTool(
       limit: input.limit ?? 20,
     });
     return truncateRows(rows, 100);
-  },
+  }
 );
 
 export const findProfiles = chatTool(
@@ -875,9 +931,13 @@ export const findProfiles = chatTool(
     return truncateRows(
       profiles.map((p) => ({
         ...p,
-        dashboard_url: dashboardUrl(context.organizationId, context.projectId, `/profiles/${p.id}`),
+        dashboard_url: dashboardUrl(
+          context.organizationId,
+          context.projectId,
+          `/profiles/${p.id}`
+        ),
       })),
-      100,
+      100
     );
-  },
+  }
 );

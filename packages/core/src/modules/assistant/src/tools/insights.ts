@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { db } from '@openpanel/db';
+import { z } from 'zod';
 import { chatTool, truncateRows } from './helpers';
 
 export const listInsights = chatTool(
@@ -12,10 +12,10 @@ export const listInsights = chatTool(
       moduleKey: z
         .string()
         .optional()
-        .describe('Filter by module: geo, devices, referrers, entry-pages, page-trends, exit-pages, traffic-anomalies'),
-      severity: z
-        .enum(['severe', 'moderate', 'low'])
-        .optional(),
+        .describe(
+          'Filter by module: geo, devices, referrers, entry-pages, page-trends, exit-pages, traffic-anomalies'
+        ),
+      severity: z.enum(['severe', 'moderate', 'low']).optional(),
       direction: z.enum(['up', 'down', 'flat']).optional(),
     }),
   },
@@ -48,9 +48,9 @@ export const listInsights = chatTool(
         // but the table won't pick it as the label column.
         id: i.id,
       })),
-      100,
+      100
     );
-  },
+  }
 );
 
 export const explainInsight = chatTool(
@@ -75,7 +75,7 @@ export const explainInsight = chatTool(
       take: 20,
     });
     return { insight, events };
-  },
+  }
 );
 
 export const findRelatedInsights = chatTool(
@@ -109,9 +109,13 @@ export const findRelatedInsights = chatTool(
       take: limit ?? 10,
     });
     return {
-      source_insight: { id: insight.id, moduleKey: insight.moduleKey, dimensionKey: insight.dimensionKey },
+      source_insight: {
+        id: insight.id,
+        moduleKey: insight.moduleKey,
+        dimensionKey: insight.dimensionKey,
+      },
       related_count: related.length,
       related,
     };
-  },
+  }
 );

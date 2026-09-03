@@ -49,12 +49,16 @@ export const summarizeDashboard = chatTool(
       dashboard_url: dashboardUrl(
         context.organizationId,
         context.projectId,
-        `/dashboards/${dashboard.id}`,
+        `/dashboards/${dashboard.id}`
       ),
     };
 
     if (allReports.length === 0) {
-      return { dashboard: meta, reports: [], note: 'Dashboard has no reports.' };
+      return {
+        dashboard: meta,
+        reports: [],
+        note: 'Dashboard has no reports.',
+      };
     }
 
     const reports = allReports.slice(0, MAX_REPORTS_PER_SUMMARY);
@@ -96,7 +100,7 @@ export const summarizeDashboard = chatTool(
           let data: unknown;
           if (report.chartType === 'funnel') {
             data = await funnelService.getFunnel(
-              chartInput as Parameters<typeof funnelService.getFunnel>[0],
+              chartInput as Parameters<typeof funnelService.getFunnel>[0]
             );
           } else if (report.chartType === 'metric') {
             data = await AggregateChartEngine.execute(chartInput);
@@ -121,7 +125,7 @@ export const summarizeDashboard = chatTool(
             error: err instanceof Error ? err.message : String(err),
           };
         }
-      }),
+      })
     );
 
     return {
@@ -134,5 +138,5 @@ export const summarizeDashboard = chatTool(
           }
         : {}),
     };
-  },
+  }
 );

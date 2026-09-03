@@ -1,3 +1,7 @@
+// Moved from packages/trpc/src/agents/filter-command.ts (M5-005). V1's
+// packages/trpc/src/routers/overview.ts stays the LIVE `runFilterCommand`
+// tRPC procedure (DELEGATE PATTERN) and now imports this module's
+// `runFilterCommand` from @openpanel/core instead of a relative path.
 import {
   type AgentToolDefinition,
   betterAgent,
@@ -6,7 +10,6 @@ import {
   type ToolRunContext,
 } from '@better-agent/core';
 import { intervals, operators, timeWindows } from '@openpanel/constants';
-import { resolveModel } from '@openpanel/core';
 import {
   getDatesFromRange,
   getTopPagesCore,
@@ -15,15 +18,18 @@ import {
   resolveDateRange as resolveDateRangeCore,
 } from '@openpanel/db';
 import {
-  CHAT_MODELS,
-  type ChatModelEntry,
   type IChartEventFilter,
   type IChartRange,
   objectToZodEnums,
-  type PageContext,
   zRange,
 } from '@openpanel/validation';
 import { z } from 'zod';
+import { resolveModel } from '../../../clients/ai/providers';
+import {
+  CHAT_MODELS,
+  type ChatModelEntry,
+  type PageContext,
+} from '../assistant.constants';
 
 const operatorEnum = z.enum(objectToZodEnums(operators));
 const rangeEnum = zRange;

@@ -4,6 +4,7 @@
 // (ADR-007 decision 19). Only `health` exists so far; the 28 real routers
 // land with their module waves (P5-P8).
 
+import { chatRouter } from './modules/assistant/assistant.rpc';
 import { cohortRouter } from './modules/cohort/cohort.rpc';
 import { gscRouter } from './modules/gsc/gsc.rpc';
 import { healthRouter } from './modules/health/health.rpc';
@@ -17,6 +18,7 @@ export const appRouter = createTRPCRouter({
   gsc: gscRouter,
   cohort: cohortRouter,
   import: importRouter,
+  chat: chatRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import {
   findProfilesCore,
   getProfileById,
@@ -7,6 +6,7 @@ import {
   getProfileWithEvents,
   queryEventsCore,
 } from '@openpanel/db';
+import { z } from 'zod';
 import { chatTool, dashboardUrl, truncateRows } from './helpers';
 
 export const getProfileFull = chatTool(
@@ -27,9 +27,10 @@ export const getProfileFull = chatTool(
       getProfileById(id, context.projectId),
       getProfileWithEvents(context.projectId, id, 10),
       getProfileSessionsCore(context.projectId, id, 5),
-      getProfileMetricsCore({ projectId: context.projectId, profileId: id }).catch(
-        () => null,
-      ),
+      getProfileMetricsCore({
+        projectId: context.projectId,
+        profileId: id,
+      }).catch(() => null),
     ]);
     if (!profile) {
       return { error: 'Profile not found', profileId: id };
@@ -39,16 +40,20 @@ export const getProfileFull = chatTool(
       metrics,
       recent_sessions: sessions,
       recent_events: withEvents.recent_events,
-      dashboard_url: dashboardUrl(context.organizationId, context.projectId, `/profiles/${id}`),
+      dashboard_url: dashboardUrl(
+        context.organizationId,
+        context.projectId,
+        `/profiles/${id}`
+      ),
     };
-  },
+  }
 );
 
 export const getProfileEvents = chatTool(
   {
     name: 'get_profile_events',
     description:
-      'Recent events for this profile, optionally filtered by event name or property. Use when get_profile_full doesn\'t cover the question.',
+      "Recent events for this profile, optionally filtered by event name or property. Use when get_profile_full doesn't cover the question.",
     schema: z.object({
       profileId: z.string().optional(),
       eventNames: z
@@ -68,14 +73,13 @@ export const getProfileEvents = chatTool(
       limit: limit ?? 50,
     });
     return truncateRows(events, 100);
-  },
+  }
 );
 
 export const getProfileSessions = chatTool(
   {
     name: 'get_profile_sessions',
-    description:
-      'All sessions for this profile, ordered most-recent-first.',
+    description: 'All sessions for this profile, ordered most-recent-first.',
     schema: z.object({
       profileId: z.string().optional(),
       limit: z.number().min(1).max(100).default(20).optional(),
@@ -85,16 +89,20 @@ export const getProfileSessions = chatTool(
     const sessions = await getProfileSessionsCore(
       context.projectId,
       profileId || context.pageContext?.ids?.profileId || '',
-      limit ?? 20,
+      limit ?? 20
     );
     return truncateRows(
       sessions.map((s) => ({
         ...s,
-        dashboard_url: dashboardUrl(context.organizationId, context.projectId, `/sessions/${s.id}`),
+        dashboard_url: dashboardUrl(
+          context.organizationId,
+          context.projectId,
+          `/sessions/${s.id}`
+        ),
       })),
-      100,
+      100
     );
-  },
+  }
 );
 
 export const getProfileMetrics = chatTool(
@@ -110,7 +118,7 @@ export const getProfileMetrics = chatTool(
     getProfileMetricsCore({
       projectId: context.projectId,
       profileId: profileId || context.pageContext?.ids?.profileId || '',
-    }),
+    })
 );
 
 export const getProfileJourney = chatTool(
@@ -134,9 +142,10 @@ export const getProfileJourney = chatTool(
         limit: maxEvents ?? 50,
       }),
       getProfileSessionsCore(context.projectId, id, 20),
-      getProfileMetricsCore({ projectId: context.projectId, profileId: id }).catch(
-        () => null,
-      ),
+      getProfileMetricsCore({
+        projectId: context.projectId,
+        profileId: id,
+      }).catch(() => null),
     ]);
 
     if (!profile) {
@@ -151,7 +160,8 @@ export const getProfileJourney = chatTool(
 
     return {
       profile_id: id,
-      first_seen: metrics?.firstSeen ?? sessions[sessions.length - 1]?.created_at ?? null,
+      first_seen:
+        metrics?.firstSeen ?? sessions[sessions.length - 1]?.created_at ?? null,
       last_seen: metrics?.lastSeen ?? sessions[0]?.created_at ?? null,
       total_sessions: metrics?.sessions ?? sessions.length,
       total_events: metrics?.totalEvents ?? events.length,
@@ -172,9 +182,13 @@ export const getProfileJourney = chatTool(
         path: e.path,
         created_at: e.created_at,
       })),
-      dashboard_url: dashboardUrl(context.organizationId, context.projectId, `/profiles/${id}`),
+      dashboard_url: dashboardUrl(
+        context.organizationId,
+        context.projectId,
+        `/profiles/${id}`
+      ),
     };
-  },
+  }
 );
 
 export const getProfileGroups = chatTool(
@@ -197,7 +211,7 @@ export const getProfileGroups = chatTool(
       group_count: (profile.groups ?? []).length,
       groups: profile.groups ?? [],
     };
-  },
+  }
 );
 
 export const compareProfileToAverage = chatTool(
@@ -214,9 +228,10 @@ export const compareProfileToAverage = chatTool(
 
     // Get this profile's metrics + a sample of other profiles' metrics
     const [thisMetrics, allProfiles] = await Promise.all([
-      getProfileMetricsCore({ projectId: context.projectId, profileId: id }).catch(
-        () => null,
-      ),
+      getProfileMetricsCore({
+        projectId: context.projectId,
+        profileId: id,
+      }).catch(() => null),
       findProfilesCore({ projectId: context.projectId, limit: 100 }),
     ]);
 
@@ -235,13 +250,14 @@ export const compareProfileToAverage = chatTool(
 
     const sampleMetrics = await Promise.all(
       sampleIds.map((sid) =>
-        getProfileMetricsCore({ projectId: context.projectId, profileId: sid }).catch(
-          () => null,
-        ),
-      ),
+        getProfileMetricsCore({
+          projectId: context.projectId,
+          profileId: sid,
+        }).catch(() => null)
+      )
     );
     const valid = sampleMetrics.filter(
-      (m): m is NonNullable<typeof m> => m != null,
+      (m): m is NonNullable<typeof m> => m != null
     );
 
     if (valid.length === 0) {
@@ -252,7 +268,7 @@ export const compareProfileToAverage = chatTool(
       };
     }
 
-    const avg = (sel: (m: typeof valid[number]) => number) =>
+    const avg = (sel: (m: (typeof valid)[number]) => number) =>
       valid.reduce((s, m) => s + sel(m), 0) / valid.length;
 
     const project_avg = {
@@ -264,8 +280,13 @@ export const compareProfileToAverage = chatTool(
       revenue: avg((m) => m.revenue),
     };
 
-    const ratio = (a: number, b: number): { ratio: number; label: 'above' | 'below' | 'equal' } => {
-      if (b === 0) return { ratio: 0, label: a > 0 ? 'above' : 'equal' };
+    const ratio = (
+      a: number,
+      b: number
+    ): { ratio: number; label: 'above' | 'below' | 'equal' } => {
+      if (b === 0) {
+        return { ratio: 0, label: a > 0 ? 'above' : 'equal' };
+      }
       const r = a / b;
       return {
         ratio: Number(r.toFixed(2)),
@@ -282,12 +303,12 @@ export const compareProfileToAverage = chatTool(
         screenViews: ratio(thisMetrics.screenViews, project_avg.screenViews),
         avgSessionDurationMin: ratio(
           thisMetrics.avgSessionDurationMin,
-          project_avg.avgSessionDurationMin,
+          project_avg.avgSessionDurationMin
         ),
         bounceRate: ratio(thisMetrics.bounceRate, project_avg.bounceRate),
         revenue: ratio(thisMetrics.revenue, project_avg.revenue),
       },
       sample_size: valid.length,
     };
-  },
+  }
 );

@@ -1,7 +1,18 @@
 import type { ConversationStore } from '@better-agent/core';
 import type { ConversationItem } from '@better-agent/core/providers';
-import { db } from '@openpanel/db';
 import { chatRunContext } from './run-context';
+
+// db access is LAZY, not a static top-level import — see
+// insight.service.ts's header for the full reasoning (jobs.registry.ts and
+// services.ts pull this module into the eager barrel chain nearly every core
+// test file reaches, and constructing @openpanel/db's clients at import time
+// would spawn a pino-pretty transport worker thread per test file — and, per
+// this module's own history, race @openpanel/db's other eager imports:
+// event-buffer.test.ts et al. saw `BotBuffer extends BaseBuffer` resolve to
+// `undefined` before this lazy load was added).
+function loadDb() {
+  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+}
 
 /**
  * Prisma-backed `ConversationStore` for Better Agent.
@@ -28,7 +39,9 @@ import { chatRunContext } from './run-context';
  * invariant and don't check it explicitly.
  */
 function roleOf(item: ConversationItem): string {
-  if (item.type === 'message') return item.role;
+  if (item.type === 'message') {
+    return item.role;
+  }
   return item.type;
 }
 
@@ -47,13 +60,16 @@ function itemToRow(conversationId: string, item: ConversationItem) {
 
 export const prismaConversationStore: ConversationStore = {
   async load({ conversationId }) {
+    const db = await loadDb();
     const conv = await db.conversation.findUnique({
       where: { id: conversationId },
       include: {
         messages: { orderBy: { createdAt: 'asc' } },
       },
     });
-    if (!conv) return null;
+    if (!conv) {
+      return null;
+    }
 
     return {
       items: conv.messages.map((m) => m.parts as unknown as ConversationItem),
@@ -65,10 +81,11 @@ export const prismaConversationStore: ConversationStore = {
     const owner = chatRunContext.getStore();
     if (!owner) {
       throw new Error(
-        'chatRunContext missing during save — the Fastify wrapper must run first',
+        'chatRunContext missing during save — the Fastify wrapper must run first'
       );
     }
 
+    const db = await loadDb();
     await db.$transaction(async (tx) => {
       await tx.conversation.upsert({
         where: { id: conversationId },

@@ -164,7 +164,9 @@ function buildPageContextSection(pc?: PageContext): string {
     `Today is **${dayName}, ${todayIso}** (UTC).`,
   ];
 
-  if (!pc) return lines.join('\n');
+  if (!pc) {
+    return lines.join('\n');
+  }
 
   lines.push(`The user is on the **${pc.page}** page.`);
 
@@ -181,29 +183,29 @@ function buildPageContextSection(pc?: PageContext): string {
 
   if (pc.filters?.eventNames && pc.filters.eventNames.length > 0) {
     lines.push(
-      `Active event-name filter: ${JSON.stringify(pc.filters.eventNames)}`,
+      `Active event-name filter: ${JSON.stringify(pc.filters.eventNames)}`
     );
   }
 
   if (pc.filters?.eventFilters && pc.filters.eventFilters.length > 0) {
     lines.push(
-      `Active property filters: ${JSON.stringify(pc.filters.eventFilters)}`,
+      `Active property filters: ${JSON.stringify(pc.filters.eventFilters)}`
     );
   }
 
   if (pc.ids?.profileId) {
     lines.push(
-      `They are viewing profile \`${pc.ids.profileId}\`. Profile-specific tools below are pre-bound to this profile by default.`,
+      `They are viewing profile \`${pc.ids.profileId}\`. Profile-specific tools below are pre-bound to this profile by default.`
     );
   }
   if (pc.ids?.sessionId) {
     lines.push(
-      `They are viewing session \`${pc.ids.sessionId}\`. Session-specific tools are pre-bound to this session.`,
+      `They are viewing session \`${pc.ids.sessionId}\`. Session-specific tools are pre-bound to this session.`
     );
   }
   if (pc.ids?.groupId) {
     lines.push(
-      `They are viewing group \`${pc.ids.groupId}\`. Group-specific tools are pre-bound to this group.`,
+      `They are viewing group \`${pc.ids.groupId}\`. Group-specific tools are pre-bound to this group.`
     );
   }
   if (pc.ids?.reportId) {
@@ -212,13 +214,13 @@ function buildPageContextSection(pc?: PageContext): string {
 
   if (pc.reportDraft) {
     lines.push(
-      `They are editing this report draft:\n\`\`\`json\n${JSON.stringify(pc.reportDraft, null, 2)}\n\`\`\`\nUse preview_report_with_changes to propose edits to it.`,
+      `They are editing this report draft:\n\`\`\`json\n${JSON.stringify(pc.reportDraft, null, 2)}\n\`\`\`\nUse preview_report_with_changes to propose edits to it.`
     );
   }
 
   if (pc.primer) {
     lines.push(
-      `Quick context (no tool call needed): ${JSON.stringify(pc.primer)}`,
+      `Quick context (no tool call needed): ${JSON.stringify(pc.primer)}`
     );
   }
 

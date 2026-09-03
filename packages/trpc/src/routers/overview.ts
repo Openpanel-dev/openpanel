@@ -1,5 +1,6 @@
-// Dissolved into @openpanel/core's insight module (M5-001).
-import { getReferrerSpikes } from '@openpanel/core';
+// Dissolved into @openpanel/core's insight module (M5-001) and, for
+// `runFilterCommand`, its assistant module (M5-005).
+import { getReferrerSpikes, runFilterCommand } from '@openpanel/core';
 import {
   ch,
   clix,
@@ -29,7 +30,6 @@ import {
 import { format } from 'date-fns';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
-import { runFilterCommand } from '../agents/filter-command';
 import { TRPCAccessError, TRPCForbiddenError } from '../errors';
 import {
   cacheMiddleware,

@@ -46,8 +46,8 @@ export function chatTool(
     // biome-ignore lint/suspicious/noExplicitAny: deliberate, see comment above
     input: any,
     ctx: ChatAgentContext,
-    runCtx: ToolRunContext,
-  ) => Promise<unknown>,
+    runCtx: ToolRunContext
+  ) => Promise<unknown>
 ): AgentToolDefinition {
   // biome-ignore lint/suspicious/noExplicitAny: see block comment above
   const contract: any = defineTool({
@@ -55,30 +55,26 @@ export function chatTool(
     description: config.description,
     schema: config.schema,
   });
-  return contract.server(
-    async (input: unknown, runCtx: ToolRunContext) => {
-      const work = handler(
-        input,
-        runCtx.context as ChatAgentContext,
-        runCtx,
-      );
-      let timer: NodeJS.Timeout | undefined;
-      const timeout = new Promise<never>((_, reject) => {
-        timer = setTimeout(() => {
-          reject(
-            new Error(
-              `Tool "${config.name}" timed out after ${TOOL_TIMEOUT_MS / 1000}s`,
-            ),
-          );
-        }, TOOL_TIMEOUT_MS);
-      });
-      try {
-        return await Promise.race([work, timeout]);
-      } finally {
-        if (timer) clearTimeout(timer);
+  return contract.server(async (input: unknown, runCtx: ToolRunContext) => {
+    const work = handler(input, runCtx.context as ChatAgentContext, runCtx);
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        reject(
+          new Error(
+            `Tool "${config.name}" timed out after ${TOOL_TIMEOUT_MS / 1000}s`
+          )
+        );
+      }, TOOL_TIMEOUT_MS);
+    });
+    try {
+      return await Promise.race([work, timeout]);
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
       }
-    },
-  ) as AgentToolDefinition;
+    }
+  }) as AgentToolDefinition;
 }
 
 /**
@@ -87,7 +83,7 @@ export function chatTool(
  */
 export function truncateRows<T>(
   rows: T[],
-  max = 500,
+  max = 500
 ): { rows: T[]; total: number; _truncated: boolean } {
   if (rows.length <= max) {
     return { rows, total: rows.length, _truncated: false };
@@ -127,7 +123,7 @@ export function compactEventProperties(
     columns: readonly string[];
     properties: Array<{ property_key: string; event_name: string }>;
   },
-  options: { eventName?: string; max?: number } = {},
+  options: { eventName?: string; max?: number } = {}
 ): {
   event_name?: string;
   columns: readonly string[];
@@ -220,13 +216,15 @@ export function resolveDateRange(filters?: PageContext['filters']): {
  * numbers that contradict the dashboard.
  */
 export function pageContextFilters(
-  pageContext: ChatAgentContext['pageContext'],
+  pageContext: ChatAgentContext['pageContext']
 ): IChartEventFilter[] {
   const raw = pageContext?.filters?.eventFilters;
-  if (!Array.isArray(raw)) return [];
+  if (!Array.isArray(raw)) {
+    return [];
+  }
   return raw.filter(
     (f): f is IChartEventFilter =>
-      typeof (f as { name?: unknown })?.name === 'string',
+      typeof (f as { name?: unknown })?.name === 'string'
   );
 }
 
@@ -249,7 +247,7 @@ export function previousPeriod(startDate: string, endDate: string) {
 export function dashboardUrl(
   organizationId: string,
   projectId: string,
-  path = '',
+  path = ''
 ): string {
   const base =
     process.env.DASHBOARD_URL ||

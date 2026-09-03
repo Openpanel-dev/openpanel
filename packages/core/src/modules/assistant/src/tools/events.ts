@@ -1,9 +1,9 @@
-import { z } from 'zod';
 import {
   getEventPropertyValuesCore,
   listEventPropertiesCore,
   queryEventsCore,
 } from '@openpanel/db';
+import { z } from 'zod';
 import {
   chatTool,
   compactEventProperties,
@@ -43,8 +43,12 @@ export const analyzeEventDistribution = chatTool(
     const byDevice = new Map<string, number>();
     for (const e of events) {
       frequency.set(e.name, (frequency.get(e.name) ?? 0) + 1);
-      if (e.country) byCountry.set(e.country, (byCountry.get(e.country) ?? 0) + 1);
-      if (e.device) byDevice.set(e.device, (byDevice.get(e.device) ?? 0) + 1);
+      if (e.country) {
+        byCountry.set(e.country, (byCountry.get(e.country) ?? 0) + 1);
+      }
+      if (e.device) {
+        byDevice.set(e.device, (byDevice.get(e.device) ?? 0) + 1);
+      }
     }
 
     const top = (m: Map<string, number>, n: number) =>
@@ -59,7 +63,7 @@ export const analyzeEventDistribution = chatTool(
       top_countries: top(byCountry, 10),
       top_devices: top(byDevice, 10),
     };
-  },
+  }
 );
 
 export const correlateEvents = chatTool(
@@ -89,8 +93,12 @@ export const correlateEvents = chatTool(
     // Group events by sessionId, then count co-occurring event-name pairs
     const bySession = new Map<string, Set<string>>();
     for (const e of events) {
-      if (!e.session_id) continue;
-      if (!bySession.has(e.session_id)) bySession.set(e.session_id, new Set());
+      if (!e.session_id) {
+        continue;
+      }
+      if (!bySession.has(e.session_id)) {
+        bySession.set(e.session_id, new Set());
+      }
       bySession.get(e.session_id)?.add(e.name);
     }
 
@@ -114,7 +122,7 @@ export const correlateEvents = chatTool(
       sample_sessions: bySession.size,
       top_pairs: pairs,
     };
-  },
+  }
 );
 
 export const getEventPropertyDistribution = chatTool(
@@ -134,7 +142,7 @@ export const getEventPropertyDistribution = chatTool(
       propertyKey,
     });
     return truncateRows(result.values, 100);
-  },
+  }
 );
 
 export const listPropertiesForEvent = chatTool(
@@ -152,5 +160,5 @@ export const listPropertiesForEvent = chatTool(
       eventName,
     });
     return compactEventProperties(raw, { eventName });
-  },
+  }
 );

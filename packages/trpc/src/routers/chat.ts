@@ -1,8 +1,13 @@
+// Dissolved into @openpanel/core's assistant module (M5-005): the model
+// whitelist and provider-availability helper moved to
+// packages/core/src/modules/assistant/assistant.constants.ts.
+// @openpanel/validation's chat.ts is now a re-export shim of that file (same
+// shape as @openpanel/validation's import.validation.ts since M5-004), so
+// this router keeps resolving the same symbols unchanged.
 import {
   getAvailableChatModels,
   PREFERRED_DEFAULT_MODEL_ID,
 } from '@openpanel/validation';
-
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 /**
