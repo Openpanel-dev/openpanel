@@ -532,7 +532,7 @@ export async function getEventList(options: GetEventListOptions) {
     sb.where.cursor = `created_at < ${sqlstring.escape(formatClickhouseDate(cursor))}`;
   }
 
-  if (!(cursor || startDate || endDate)) {
+  if (cursor === undefined && !startDate && !endDate) {
     sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(new Date()))}, 3) - INTERVAL ${safeDateIntervalInDays} DAY`;
   }
 
@@ -671,10 +671,10 @@ export async function getEventList(options: GetEventListOptions) {
   }
 
   if (startDate) {
-    sb.where.startDate = `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`;
+    sb.where.startDate = `created_at >= toDateTime64(${sqlstring.escape(startDate.toISOString().replace('T', ' ').replace('Z', ''))}, 3)`;
   }
   if (endDate) {
-    sb.where.endDate = `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
+    sb.where.endDate = `created_at <= toDateTime64(${sqlstring.escape(endDate.toISOString().replace('T', ' ').replace('Z', ''))}, 3)`;
   }
 
   if (events && events.length > 0) {
@@ -762,10 +762,10 @@ export async function getEventsCount({
   }
 
   if (startDate) {
-    sb.where.startDate = `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`;
+    sb.where.startDate = `created_at >= toDateTime64(${sqlstring.escape(startDate.toISOString().replace('T', ' ').replace('Z', ''))}, 3)`;
   }
   if (endDate) {
-    sb.where.endDate = `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
+    sb.where.endDate = `created_at <= toDateTime64(${sqlstring.escape(endDate.toISOString().replace('T', ' ').replace('Z', ''))}, 3)`;
   }
 
   if (events && events.length > 0) {
