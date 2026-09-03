@@ -123,14 +123,25 @@ export function ActionCTAButton() {
   ];
 
   const [currentActionIndex, setCurrentActionIndex] = useState(0);
+  const actionCount = ACTIONS.length;
 
   useEffect(() => {
+    if (actionCount === 0) {
+      return;
+    }
     const interval = setInterval(() => {
-      setCurrentActionIndex((prevIndex) => (prevIndex + 1) % ACTIONS.length);
+      setCurrentActionIndex((prevIndex) => (prevIndex + 1) % actionCount);
     }, 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [actionCount]);
+
+  // Members (non-admins) have no org-level actions; render nothing instead of
+  // indexing into an empty list.
+  const currentAction = ACTIONS[currentActionIndex];
+  if (!currentAction) {
+    return null;
+  }
 
   return (
     <div className="mb-4">
@@ -161,7 +172,7 @@ export function ActionCTAButton() {
                     duration: 0.3,
                   }}
                 >
-                  {ACTIONS[currentActionIndex].label}
+                  {currentAction.label}
                 </motion.span>
               </AnimatePresence>
             </div>
