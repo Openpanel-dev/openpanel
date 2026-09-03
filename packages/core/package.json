@@ -49,6 +49,7 @@
     "pino-pretty": "catalog:",
     "prom-client": "^15.1.3",
     "qrcode": "^1.5.4",
+    "sqlstring": "^2.3.3",
     "superjson": "^1.13.3",
     "ua-parser-js": "^2.0.6",
     "undici": "^8.10.0",
@@ -58,6 +59,7 @@
     "@clickhouse/client": "^1.18.5",
     "@openpanel/tsconfig": "workspace:*",
     "@types/qrcode": "^1.5.6",
+    "@types/sqlstring": "^2.3.2",
     "bun-types": "1.4.0",
     "tar": "^7.4.3",
     "typescript": "catalog:"

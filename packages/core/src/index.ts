@@ -145,6 +145,27 @@ export {
   verifyPasswordHash,
   verifyTotpCode,
 } from './modules/auth/auth.service';
+// Dissolved from @openpanel/db's services/cohort.service.ts (M5-003) —
+// packages/trpc's cohort router and apps/worker's cohort job files call
+// these directly, the same way V1 reaches every other dissolved service
+// here. Nothing else in the tree reached cohort.service.ts through
+// @openpanel/db's barrel, so packages/db loses the file entirely rather than
+// keeping a re-export shim (unlike gsc.ts/gsc.service.ts).
+export type { CohortService } from './modules/cohort/cohort.service';
+export {
+  computeCohort,
+  countCohort,
+  deleteCohortMembership,
+  getCohortCount,
+  getCohortEventsPerDay,
+  getCohortMemberEvents,
+  getCohortMemberRoutes,
+  getCohortMembers,
+  getProfilesInCohort,
+  listCohortMemberProfiles,
+  listRefreshableCohortIds,
+  updateCohortMembership,
+} from './modules/cohort/cohort.service';
 // Dissolved from @openpanel/db's src/gsc.ts + services/gsc.service.ts
 // (M5-002) — apps/worker's gsc job file, apps/api's gsc OAuth callback
 // controller and packages/trpc's gsc router call these directly, the same

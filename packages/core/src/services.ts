@@ -7,6 +7,10 @@ import {
   type AuthService,
   createAuthService,
 } from './modules/auth/auth.service';
+import {
+  type CohortService,
+  createCohortService,
+} from './modules/cohort/cohort.service';
 import { createGscService, type GscService } from './modules/gsc/gsc.service';
 import {
   createInsightService,
@@ -32,6 +36,7 @@ export interface Services {
   auth: AuthService;
   insight: InsightService;
   gsc: GscService;
+  cohort: CohortService;
 }
 
 export function createServices(deps: ServiceDeps): Services {
@@ -42,5 +47,6 @@ export function createServices(deps: ServiceDeps): Services {
     auth: createAuthService(deps),
     insight: createInsightService(deps),
     gsc: createGscService(deps),
+    cohort: createCohortService(deps),
   };
 }

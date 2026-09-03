@@ -1,16 +1,30 @@
+// Dissolved into @openpanel/core's cohort module (M5-003): the compute
+// functions, the ClickHouse read path and the producer wrapper
+// (`enqueueCohortCompute`) moved to packages/core/src/modules/cohort/cohort.service.ts
+// — db cannot hold producers (ADR-007). This router stays (DELEGATE
+// PATTERN): it keeps V1's protectedProcedure stack (session/access/logger/
+// rate-limit middleware) and its own Prisma cohort CRUD untouched, and
+// delegates every compute/ClickHouse call to the core service.
+//
+// The enqueue itself stays inline here, against @openpanel/queue's
+// cohortComputeQueue directly — same as gsc's router does for
+// `gscProjectBackfill` (M5-002). @openpanel/queue imports @openpanel/core for
+// its logger, so core cannot import @openpanel/queue back; the canonical,
+// ctx.queues-based wrapper is `CohortService.enqueueCompute`, used once this
+// router's core twin (cohort.rpc.ts) goes live.
 import {
   computeCohort,
   countCohort,
-  db,
   deleteCohortMembership,
-  enqueueCohortCompute,
   getCohortCount,
   getCohortEventsPerDay,
   getCohortMemberEvents,
   getCohortMemberRoutes,
   getCohortMembers,
   listCohortMemberProfiles,
-} from '@openpanel/db';
+} from '@openpanel/core';
+import { db } from '@openpanel/db';
+import { cohortComputeQueue } from '@openpanel/queue';
 import {
   type CohortDefinition,
   zChartEventFilter,
@@ -22,6 +36,17 @@ import { z } from 'zod';
 import { getProjectAccess, requireProjectAccess } from '../access';
 import { TRPCForbiddenError, TRPCNotFoundError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
+
+// Same dedup scheme as core's CohortService.enqueueCompute
+// (packages/core/src/modules/cohort/cohort.service.ts) — deduplication, not
+// jobId, to avoid the retention-vs-dedup deadlock that file documents.
+async function enqueueCohortCompute(cohortId: string): Promise<void> {
+  await cohortComputeQueue.add(
+    'cohortCompute',
+    { cohortId },
+    { deduplication: { id: `cohort-${cohortId}` } }
+  );
+}
 
 export const cohortRouter = createTRPCRouter({
   list: protectedProcedure

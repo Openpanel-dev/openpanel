@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@openpanel/constants": "workspace:*",
+    "@openpanel/core": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

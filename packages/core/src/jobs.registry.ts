@@ -14,6 +14,7 @@ import { legacyCompat } from './jobs/compat';
 import type { Producers } from './jobs/define';
 import { defineQueue } from './jobs/define';
 import type { ProducerHandle } from './jobs/producers';
+import { cohortCronJobs, cohortQueueJobs } from './modules/cohort/cohort.jobs';
 import { gscCronJobs, gscQueueJobs } from './modules/gsc/gsc.jobs';
 import {
   insightCronJobs,
@@ -55,6 +56,7 @@ const cron = defineQueue('cron', {
   jobs: {
     ...insightCronJobs,
     ...gscCronJobs,
+    ...cohortCronJobs,
   },
 });
 
@@ -101,7 +103,9 @@ const cohortCompute = defineQueue('cohortCompute', {
   },
   worker: { concurrency: CONCURRENCY.cohortCompute },
   compat: legacyCompat.cohortCompute,
-  jobs: {},
+  jobs: {
+    ...cohortQueueJobs,
+  },
 });
 
 export const queues = {

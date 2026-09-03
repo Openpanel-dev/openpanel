@@ -22,15 +22,23 @@ mock.module('@openpanel/db/src/prisma-client', () => ({
   db: { $executeRaw },
 }));
 
-// `originalCh`/`chQuery`/`TABLE_NAMES` are unused here but included because
-// `mock.module` replaces this specifier process-wide (bun runs every test
-// file in one shared module registry without `--isolate` — see AGENTS.md) —
-// gsc.service.test.ts mocks the same path, so both factories must be a
+// `originalCh`/`chQuery`/`TABLE_NAMES`/`getReplicatedTableName` are unused
+// here but included because `mock.module` replaces this specifier
+// process-wide (bun runs every test file in one shared module registry
+// without `--isolate` — see AGENTS.md) — gsc.service.test.ts and
+// cohort.service.test.ts mock the same path, so every factory must be a
 // superset of every consumer's needs, whichever one ends up registered last.
 mock.module('@openpanel/db/src/clickhouse/client', () => ({
-  ch: {},
-  originalCh: { query: mock(async () => ({ json: async () => [] })), insert: mock(async () => undefined) },
+  ch: {
+    insert: mock(async () => undefined),
+    command: mock(async () => undefined),
+  },
+  originalCh: {
+    query: mock(async () => ({ json: async () => [] })),
+    insert: mock(async () => undefined),
+  },
   chQuery: mock(async () => []),
+  getReplicatedTableName: mock((table: string) => table),
   TABLE_NAMES: { sessions: 'sessions' },
 }));
 

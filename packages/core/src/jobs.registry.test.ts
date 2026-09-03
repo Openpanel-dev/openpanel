@@ -82,7 +82,13 @@ test('the insights queue carries the insight module job', () => {
 // job's `type` straight onto its name, so these three ids double as job names.
 test('the cron queue carries the insight module cron fragment', () => {
   expect(Object.keys(queues.cron.jobs).sort()).toEqual(
-    ['gscSync', 'insightCleanup', 'insightsDaily', 'weeklyDigest'].sort()
+    [
+      'cohortRefresh',
+      'gscSync',
+      'insightCleanup',
+      'insightsDaily',
+      'weeklyDigest',
+    ].sort()
   );
   for (const name of ['insightsDaily', 'insightCleanup', 'weeklyDigest']) {
     expect(
@@ -109,5 +115,23 @@ test('the cron queue carries the gsc module cron fragment', () => {
   expect(queues.cron.jobs.gscSync).toMatchObject({
     queue: 'cron',
     name: 'gscSync',
+  });
+});
+
+// M5-003: the cohort module's own queue job, plus its cron fan-out fragment.
+// legacyCompat.cohortCompute already discriminates on a bare `{cohortId}`
+// (jobs/compat.ts), so this pins the two in agreement.
+test('the cohortCompute queue carries the cohort module job', () => {
+  expect(Object.keys(queues.cohortCompute.jobs)).toEqual(['cohortCompute']);
+  expect(queues.cohortCompute.jobs.cohortCompute).toMatchObject({
+    queue: 'cohortCompute',
+    name: 'cohortCompute',
+  });
+});
+
+test('the cron queue carries the cohort module cron fragment', () => {
+  expect(queues.cron.jobs.cohortRefresh).toMatchObject({
+    queue: 'cron',
+    name: 'cohortRefresh',
   });
 });

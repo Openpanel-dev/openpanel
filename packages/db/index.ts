@@ -11,7 +11,6 @@ export * from './src/services/access.service';
 export * from './src/services/auth-session.service';
 export * from './src/services/chart.service';
 export * from './src/services/clients.service';
-export * from './src/services/cohort.service';
 export * from './src/services/conversation.service';
 export * from './src/services/conversion.service';
 export * from './src/services/dashboard.service';

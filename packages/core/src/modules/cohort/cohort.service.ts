@@ -1,29 +1,61 @@
+// Moved from packages/db/src/services/cohort.service.ts (M5-003). The
+// producer wrapper (`enqueueCohortCompute`) moves here too — db cannot hold
+// producers (ADR-007's discovery: "packages/db/src/services/cohort.service.ts:12
+// imports cohortComputeQueue from @openpanel/queue" was flagged as reaching
+// back into infrastructure it should not know about). packages/db loses this
+// file entirely: nothing outside trpc/worker/this module's own tests reached
+// it through @openpanel/db's barrel.
+//
+// db/ch access is LAZY (`load*` below), not a static top-level import — see
+// insight.service.ts's header for the full reasoning (jobs.registry.ts and
+// services.ts pull this module into the eager barrel chain nearly every core
+// test file reaches, and constructing @openpanel/db's clients at import time
+// would spawn a pino-pretty transport worker thread per test file).
+//
+// ClickHouse queries here still go through raw sqlstring-escaped strings, not
+// the `sql` tag: ADR-013 converts the analytics read path one query per P7
+// task, and this module's queries haven't been converted yet. Table names are
+// a local literal map (`TABLE`, below), not @openpanel/db's `TABLE_NAMES`: the
+// latter lives in the same module as `ch`/`chQuery` (clickhouse/client.ts,
+// which constructs a real pino logger at import time — the exact cost the lazy
+// loads elsewhere in this file exist to defer), and this module's SQL builders
+// are pure sync functions the P2 SQL-shape tests call with no ClickHouse
+// connection at all.
+//
+// V1's trpc router (packages/trpc/src/routers/cohort.ts) and worker cron job
+// (apps/worker/src/jobs/cron.cohort-refresh.ts) stay live (DELEGATE PATTERN)
+// and enqueue by calling @openpanel/queue's cohortComputeQueue directly,
+// same as gsc's V1 router/worker do for gscQueue (M5-002) — @openpanel/queue
+// itself imports @openpanel/core for its logger (packages/queue/src/queues.ts),
+// so core cannot import @openpanel/queue back without a real package cycle.
+// `CohortService.enqueueCompute` (below) is the canonical, ctx.queues-based
+// wrapper for callers that already have a Ctx (this module's own rpc
+// mutations and its cron fragment).
+
+import type { ClickHouseSettings } from '@clickhouse/client';
+import type { IServiceProfile } from '@openpanel/db/src/services/profile.service';
+import type { IChartEventFilter } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
+import type { ServiceDeps } from '../../services';
 import type {
   CohortDefinition,
   EventBasedCohortDefinition,
   EventCriteria,
   Frequency,
-  IChartEventFilter,
   PropertyBasedCohortDefinition,
   Timeframe,
-} from '@openpanel/validation';
+} from './cohort.constants';
 
-import { cohortComputeQueue } from '@openpanel/queue';
-import type { ClickHouseSettings } from '@clickhouse/client';
-import {
-  TABLE_NAMES,
-  ch,
-  chQuery,
-  getReplicatedTableName,
-} from '../clickhouse/client';
-import { db } from '../prisma-client';
-import { buildFilterWhere } from './filter-where.service';
-import {
-  getProfiles,
-  profileSearchSql,
-  type IServiceProfile,
-} from './profile.service';
+// Physical ClickHouse table names this module reads/writes. Literal, not
+// imported from @openpanel/db's TABLE_NAMES — see the header comment.
+const TABLE = {
+  profiles: 'profiles',
+  events: 'events',
+  cohortMembers: 'cohort_members',
+  cohortMetadata: 'cohort_metadata',
+  eventProfileSummaryMv: 'event_profile_summary_mv',
+  eventPropertyProfileSummaryMv: 'event_property_profile_summary_mv',
+} as const;
 
 // Max members materialized into cohort_members per compute. Cohorts larger
 // than this are silently truncated to an arbitrary subset, so deployments
@@ -34,27 +66,19 @@ import {
 // default. Number.parseInt would accept '5000junk' or '-1' (LIMIT -1 is a
 // query error), and 0 is falsy at the `limit ? LIMIT ... : ''` call sites,
 // which would silently remove the cap entirely.
-const COHORT_MATERIALIZE_LIMIT_RAW = process.env.COHORT_MATERIALIZE_LIMIT;
-const COHORT_MATERIALIZE_LIMIT_PARSED =
-  COHORT_MATERIALIZE_LIMIT_RAW && /^\d+$/.test(COHORT_MATERIALIZE_LIMIT_RAW)
-    ? Number(COHORT_MATERIALIZE_LIMIT_RAW)
-    : Number.NaN;
-export const COHORT_MATERIALIZE_LIMIT =
-  Number.isSafeInteger(COHORT_MATERIALIZE_LIMIT_PARSED) &&
-  COHORT_MATERIALIZE_LIMIT_PARSED > 0
-    ? COHORT_MATERIALIZE_LIMIT_PARSED
-    : 10000;
-
-// Strictly a positive safe integer, or undefined — same validation rationale
-// as COHORT_MATERIALIZE_LIMIT above.
-function parsePositiveIntEnv(name: string): number | undefined {
-  const raw = process.env[name];
-  if (!raw || !/^\d+$/.test(raw)) {
+function parsePositiveInt(raw: string | undefined): number | undefined {
+  if (!(raw && /^\d+$/.test(raw))) {
     return undefined;
   }
   const parsed = Number(raw);
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
+
+const COHORT_MATERIALIZE_LIMIT_PARSED = parsePositiveInt(
+  process.env.COHORT_MATERIALIZE_LIMIT
+);
+export const COHORT_MATERIALIZE_LIMIT =
+  COHORT_MATERIALIZE_LIMIT_PARSED ?? 10_000;
 
 // Property cohorts aggregate every profile row for the project, so they are
 // the one cohort query that can outgrow the server's memory headroom. Two
@@ -74,30 +98,53 @@ function parsePositiveIntEnv(name: string): number | undefined {
 // spilled is set by the data, not the threshold (measured on 8.3M profiles,
 // ~281MB spilled whether the threshold was 300, 512 or 768MB, at
 // 6.9s/6.7s/6.0s, while peak memory climbed 410/695/893MiB).
-const COHORT_QUERY_MEMORY_LIMIT_BYTES = parsePositiveIntEnv(
-  'COHORT_QUERY_MEMORY_LIMIT_BYTES',
-);
-const COHORT_QUERY_SPILL_BYTES_RAW = parsePositiveIntEnv(
-  'COHORT_QUERY_SPILL_BYTES',
-);
-const COHORT_QUERY_SPILL_BYTES =
-  COHORT_QUERY_MEMORY_LIMIT_BYTES !== undefined &&
-  (COHORT_QUERY_SPILL_BYTES_RAW === undefined ||
-    COHORT_QUERY_SPILL_BYTES_RAW >= COHORT_QUERY_MEMORY_LIMIT_BYTES)
-    ? // Clamped to 1: a (nonsensical) limit below 3 would derive 0, and
-      // max_bytes_before_external_group_by = 0 means spilling DISABLED —
-      // the exact inversion this derivation exists to prevent.
-      Math.max(1, Math.floor(COHORT_QUERY_MEMORY_LIMIT_BYTES / 3))
-    : COHORT_QUERY_SPILL_BYTES_RAW;
+//
+// A standalone function of its raw env inputs (not a module-level read), so
+// a test can exercise every branch by calling it directly — bun:test shares
+// one module registry per file even under --isolate, so vitest's
+// vi.resetModules()-per-case porting has no equivalent (see AGENTS.md; this
+// was the one vi.resetModules site in the suite, ADR-010's tail table).
+export function deriveCohortQuerySettings({
+  memoryLimitBytesRaw,
+  spillBytesRaw,
+}: {
+  memoryLimitBytesRaw: string | undefined;
+  spillBytesRaw: string | undefined;
+}): ClickHouseSettings {
+  const memoryLimitBytes = parsePositiveInt(memoryLimitBytesRaw);
+  const spillBytesParsed = parsePositiveInt(spillBytesRaw);
+  const spillBytes =
+    memoryLimitBytes !== undefined &&
+    (spillBytesParsed === undefined || spillBytesParsed >= memoryLimitBytes)
+      ? // Clamped to 1: a (nonsensical) limit below 3 would derive 0, and
+        // max_bytes_before_external_group_by = 0 means spilling DISABLED —
+        // the exact inversion this derivation exists to prevent.
+        Math.max(1, Math.floor(memoryLimitBytes / 3))
+      : spillBytesParsed;
 
-export const PROFILE_COHORT_QUERY_SETTINGS: ClickHouseSettings = {
-  ...(COHORT_QUERY_SPILL_BYTES !== undefined
-    ? { max_bytes_before_external_group_by: String(COHORT_QUERY_SPILL_BYTES) }
-    : {}),
-  ...(COHORT_QUERY_MEMORY_LIMIT_BYTES !== undefined
-    ? { max_memory_usage: String(COHORT_QUERY_MEMORY_LIMIT_BYTES) }
-    : {}),
-};
+  return {
+    ...(spillBytes !== undefined
+      ? { max_bytes_before_external_group_by: String(spillBytes) }
+      : {}),
+    ...(memoryLimitBytes !== undefined
+      ? { max_memory_usage: String(memoryLimitBytes) }
+      : {}),
+  };
+}
+
+export const PROFILE_COHORT_QUERY_SETTINGS: ClickHouseSettings =
+  deriveCohortQuerySettings({
+    memoryLimitBytesRaw: process.env.COHORT_QUERY_MEMORY_LIMIT_BYTES,
+    spillBytesRaw: process.env.COHORT_QUERY_SPILL_BYTES,
+  });
+
+function loadDb() {
+  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+}
+
+function loadChClient() {
+  return import('@openpanel/db/src/clickhouse/client');
+}
 
 function buildTimeConstraint(timeframe: Timeframe): string {
   if (timeframe.type === 'relative') {
@@ -131,19 +178,19 @@ function getFrequencyOperator(frequency: Frequency): string {
 
 export function buildEventCriteriaQuery(
   projectId: string,
-  criteria: EventCriteria,
+  criteria: EventCriteria
 ): string {
   const { name, filters, timeframe, frequency } = criteria;
   const timeConstraint = buildTimeConstraint(timeframe);
   const hasEventPropertyFilters = filters.some(
     (f) =>
       f.name.startsWith('properties.') &&
-      !f.name.startsWith('profile.properties.'),
+      !f.name.startsWith('profile.properties.')
   );
 
   if (hasEventPropertyFilters) {
     const propertyFilters = filters.filter((f) =>
-      f.name.startsWith('properties.'),
+      f.name.startsWith('properties.')
     );
 
     const propertyConditions = propertyFilters
@@ -170,14 +217,14 @@ export function buildEventCriteriaQuery(
             return `(property_key = ${sqlstring.escape(propertyKey)} AND (${value
               .map(
                 (val) =>
-                  `property_value LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`,
+                  `property_value LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`
               )
               .join(' OR ')}))`;
           case 'doesNotContain':
             return `(property_key = ${sqlstring.escape(propertyKey)} AND (${value
               .map(
                 (val) =>
-                  `property_value NOT LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`,
+                  `property_value NOT LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`
               )
               .join(' AND ')}))`;
           default:
@@ -192,7 +239,7 @@ export function buildEventCriteriaQuery(
       const frequencyOp = getFrequencyOperator(frequency);
       return `
         SELECT profile_id
-        FROM ${TABLE_NAMES.event_property_profile_summary_mv}
+        FROM ${TABLE.eventPropertyProfileSummaryMv}
         WHERE project_id = ${sqlstring.escape(projectId)}
           AND name = ${sqlstring.escape(name)}
           AND ${timeConstraint.replace('created_at', 'event_date')}
@@ -204,7 +251,7 @@ export function buildEventCriteriaQuery(
 
     return `
       SELECT DISTINCT profile_id
-      FROM ${TABLE_NAMES.event_property_profile_summary_mv}
+      FROM ${TABLE.eventPropertyProfileSummaryMv}
       WHERE project_id = ${sqlstring.escape(projectId)}
         AND name = ${sqlstring.escape(name)}
         AND ${timeConstraint.replace('created_at', 'event_date')}
@@ -216,7 +263,7 @@ export function buildEventCriteriaQuery(
     const frequencyOp = getFrequencyOperator(frequency);
     return `
       SELECT profile_id
-      FROM ${TABLE_NAMES.event_profile_summary_mv}
+      FROM ${TABLE.eventProfileSummaryMv}
       WHERE project_id = ${sqlstring.escape(projectId)}
         AND name = ${sqlstring.escape(name)}
         AND ${timeConstraint.replace('created_at', 'event_date')}
@@ -227,7 +274,7 @@ export function buildEventCriteriaQuery(
 
   return `
     SELECT DISTINCT profile_id
-    FROM ${TABLE_NAMES.event_profile_summary_mv}
+    FROM ${TABLE.eventProfileSummaryMv}
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND name = ${sqlstring.escape(name)}
       AND ${timeConstraint.replace('created_at', 'event_date')}
@@ -248,7 +295,7 @@ function profileColumnAccess(name: string): string {
 }
 
 function buildProfileCohortHavingClause(
-  definition: PropertyBasedCohortDefinition,
+  definition: PropertyBasedCohortDefinition
 ): string | null {
   const { properties, operator } = definition.criteria;
 
@@ -264,7 +311,7 @@ function buildProfileCohortHavingClause(
   // need a version tie AND a 64-bit collision between different rows — and
   // even then every aggregate in the query still elects the same row.
   const referencedColumns = Array.from(
-    new Set(properties.map((f) => profileColumnAccess(f.name))),
+    new Set(properties.map((f) => profileColumnAccess(f.name)))
   );
   const latestRowKey = `tuple(last_seen_at, cityHash64(${referencedColumns.join(', ')}))`;
 
@@ -283,12 +330,12 @@ function buildProfileCohortHavingClause(
 export function buildPropertyBasedCohortQuery(
   projectId: string,
   definition: PropertyBasedCohortDefinition,
-  limit?: number,
+  limit?: number
 ): string {
   const havingClause = buildProfileCohortHavingClause(definition);
 
   if (!havingClause) {
-    return `SELECT id as profile_id FROM ${TABLE_NAMES.profiles} WHERE 1=0`;
+    return `SELECT id as profile_id FROM ${TABLE.profiles} WHERE 1=0`;
   }
 
   // Resolve each profile's newest row with GROUP BY + argMax instead of
@@ -297,7 +344,7 @@ export function buildPropertyBasedCohortQuery(
   // PROFILE_COHORT_QUERY_SETTINGS, and filters on aggregates move to HAVING.
   return `
     SELECT id as profile_id
-    FROM ${TABLE_NAMES.profiles}
+    FROM ${TABLE.profiles}
     WHERE project_id = ${sqlstring.escape(projectId)}
     GROUP BY id
     HAVING (${havingClause})
@@ -308,12 +355,13 @@ export function buildPropertyBasedCohortQuery(
 export async function computeEventBasedCohort(
   projectId: string,
   definition: EventBasedCohortDefinition,
-  limit?: number,
+  limit?: number
 ): Promise<string[]> {
   const { events, operator } = definition.criteria;
+  const { chQuery } = await loadChClient();
 
   const queries = events.map((eventCriteria) =>
-    buildEventCriteriaQuery(projectId, eventCriteria),
+    buildEventCriteriaQuery(projectId, eventCriteria)
   );
 
   const combinedQuery =
@@ -329,12 +377,13 @@ export async function computeEventBasedCohort(
 
 export async function countEventBasedCohort(
   projectId: string,
-  definition: EventBasedCohortDefinition,
+  definition: EventBasedCohortDefinition
 ): Promise<number> {
   const { events, operator } = definition.criteria;
+  const { chQuery } = await loadChClient();
 
   const queries = events.map((eventCriteria) =>
-    buildEventCriteriaQuery(projectId, eventCriteria),
+    buildEventCriteriaQuery(projectId, eventCriteria)
   );
 
   const combinedQuery =
@@ -349,7 +398,7 @@ export async function countEventBasedCohort(
 
 function getProfileFiltersWhereClause(
   filters: IChartEventFilter[],
-  { latestPerProfileKey }: { latestPerProfileKey?: string } = {},
+  { latestPerProfileKey }: { latestPerProfileKey?: string } = {}
 ): Record<string, string> {
   const where: Record<string, string> = {};
 
@@ -384,7 +433,8 @@ function getProfileFiltersWhereClause(
     switch (operator) {
       case 'is': {
         if (value.length === 1) {
-          where[id] = `${columnAccess} = ${sqlstring.escape(String(value[0]).trim())}`;
+          where[id] =
+            `${columnAccess} = ${sqlstring.escape(String(value[0]).trim())}`;
         } else {
           where[id] = `${columnAccess} IN (${value
             .map((val) => sqlstring.escape(String(val).trim()))
@@ -394,7 +444,8 @@ function getProfileFiltersWhereClause(
       }
       case 'isNot': {
         if (value.length === 1) {
-          where[id] = `${columnAccess} != ${sqlstring.escape(String(value[0]).trim())}`;
+          where[id] =
+            `${columnAccess} != ${sqlstring.escape(String(value[0]).trim())}`;
         } else {
           where[id] = `${columnAccess} NOT IN (${value
             .map((val) => sqlstring.escape(String(val).trim()))
@@ -406,7 +457,7 @@ function getProfileFiltersWhereClause(
         where[id] = `(${value
           .map(
             (val) =>
-              `${columnAccess} LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`,
+              `${columnAccess} LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`
           )
           .join(' OR ')})`;
         break;
@@ -415,7 +466,7 @@ function getProfileFiltersWhereClause(
         where[id] = `(${value
           .map(
             (val) =>
-              `${columnAccess} NOT LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`,
+              `${columnAccess} NOT LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`
           )
           .join(' OR ')})`;
         break;
@@ -424,7 +475,7 @@ function getProfileFiltersWhereClause(
         where[id] = `(${value
           .map(
             (val) =>
-              `${columnAccess} LIKE ${sqlstring.escape(`${String(val).trim()}%`)}`,
+              `${columnAccess} LIKE ${sqlstring.escape(`${String(val).trim()}%`)}`
           )
           .join(' OR ')})`;
         break;
@@ -433,7 +484,7 @@ function getProfileFiltersWhereClause(
         where[id] = `(${value
           .map(
             (val) =>
-              `${columnAccess} LIKE ${sqlstring.escape(`%${String(val).trim()}`)}`,
+              `${columnAccess} LIKE ${sqlstring.escape(`%${String(val).trim()}`)}`
           )
           .join(' OR ')})`;
         break;
@@ -479,30 +530,32 @@ function getProfileFiltersWhereClause(
 export async function computePropertyBasedCohort(
   projectId: string,
   definition: PropertyBasedCohortDefinition,
-  limit?: number,
+  limit?: number
 ): Promise<string[]> {
   if (!buildProfileCohortHavingClause(definition)) {
     return [];
   }
 
+  const { chQuery } = await loadChClient();
   const results = await chQuery<{ profile_id: string }>(
     buildPropertyBasedCohortQuery(projectId, definition, limit),
-    PROFILE_COHORT_QUERY_SETTINGS,
+    PROFILE_COHORT_QUERY_SETTINGS
   );
   return results.map((r) => r.profile_id);
 }
 
 export async function countPropertyBasedCohort(
   projectId: string,
-  definition: PropertyBasedCohortDefinition,
+  definition: PropertyBasedCohortDefinition
 ): Promise<number> {
   if (!buildProfileCohortHavingClause(definition)) {
     return 0;
   }
 
+  const { chQuery } = await loadChClient();
   const results = await chQuery<{ count: number }>(
     `SELECT count() as count FROM (${buildPropertyBasedCohortQuery(projectId, definition)})`,
-    PROFILE_COHORT_QUERY_SETTINGS,
+    PROFILE_COHORT_QUERY_SETTINGS
   );
   return results[0]?.count ?? 0;
 }
@@ -511,8 +564,9 @@ export async function storeCohortMembership(
   projectId: string,
   cohortId: string,
   profileIds: string[],
-  version: number,
+  version: number
 ): Promise<void> {
+  const { ch } = await loadChClient();
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
   if (profileIds.length > 0) {
@@ -526,7 +580,7 @@ export async function storeCohortMembership(
     }));
 
     await ch.insert({
-      table: TABLE_NAMES.cohort_members,
+      table: TABLE.cohortMembers,
       values: data,
       format: 'JSONEachRow',
     });
@@ -534,7 +588,7 @@ export async function storeCohortMembership(
 
   const sampleProfiles = profileIds.slice(0, 10);
   await ch.insert({
-    table: TABLE_NAMES.cohort_metadata,
+    table: TABLE.cohortMetadata,
     values: [
       {
         project_id: projectId,
@@ -552,8 +606,10 @@ export async function storeCohortMembership(
 export async function getCohortMembers(
   cohortId: string,
   projectId: string,
-  opts?: { limit?: number; offset?: number },
+  opts?: { limit?: number; offset?: number }
 ): Promise<{ profileIds: string[]; total: number }> {
+  const db = await loadDb();
+  const { chQuery } = await loadChClient();
   const cohort = await db.cohort.findUnique({ where: { id: cohortId } });
 
   if (!cohort) {
@@ -564,7 +620,7 @@ export async function getCohortMembers(
     SELECT
       profile_id,
       count() OVER() as total
-    FROM ${TABLE_NAMES.cohort_members} FINAL
+    FROM ${TABLE.cohortMembers} FINAL
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND cohort_id = ${sqlstring.escape(cohortId)}
     ORDER BY matched_at DESC
@@ -579,10 +635,13 @@ export async function getCohortMembers(
   };
 }
 
+const COHORT_COUNT_CACHE_MS = 15 * 60 * 1000;
+
 export async function getCohortCount(
   cohortId: string,
-  projectId: string,
+  projectId: string
 ): Promise<number> {
+  const db = await loadDb();
   const cohort = await db.cohort.findUnique({ where: { id: cohortId } });
 
   if (!cohort) {
@@ -591,14 +650,15 @@ export async function getCohortCount(
 
   if (cohort.lastComputedAt) {
     const age = Date.now() - cohort.lastComputedAt.getTime();
-    if (age < 15 * 60 * 1000) {
+    if (age < COHORT_COUNT_CACHE_MS) {
       return cohort.profileCount;
     }
   }
 
+  const { chQuery } = await loadChClient();
   const result = await chQuery<{ count: number }>(`
     SELECT count() as count
-    FROM ${TABLE_NAMES.cohort_members} FINAL
+    FROM ${TABLE.cohortMembers} FINAL
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND cohort_id = ${sqlstring.escape(cohortId)}
   `);
@@ -608,7 +668,7 @@ export async function getCohortCount(
 export async function computeCohort(
   projectId: string,
   definition: CohortDefinition,
-  limit?: number,
+  limit?: number
 ): Promise<string[]> {
   if (definition.type === 'event') {
     return computeEventBasedCohort(projectId, definition, limit);
@@ -621,7 +681,7 @@ export async function computeCohort(
 
 export async function countCohort(
   projectId: string,
-  definition: CohortDefinition,
+  definition: CohortDefinition
 ): Promise<number> {
   if (definition.type === 'event') {
     return countEventBasedCohort(projectId, definition);
@@ -632,9 +692,9 @@ export async function countCohort(
   return 0;
 }
 
-export async function updateCohortMembership(
-  cohortId: string,
-): Promise<void> {
+export async function updateCohortMembership(cohortId: string): Promise<void> {
+  const db = await loadDb();
+  const { ch, getReplicatedTableName } = await loadChClient();
   const cohort = await db.cohort.findUnique({ where: { id: cohortId } });
 
   if (!cohort) {
@@ -645,7 +705,7 @@ export async function updateCohortMembership(
   const profileIds = await computeCohort(
     cohort.projectId,
     definition,
-    COHORT_MATERIALIZE_LIMIT,
+    COHORT_MATERIALIZE_LIMIT
   );
 
   const version = Date.now();
@@ -654,18 +714,13 @@ export async function updateCohortMembership(
   // (project_id, cohort_id, profile_id), so profiles that fell out of the
   // cohort definition would otherwise linger forever. Clear them first.
   await ch.command({
-    query: `DELETE FROM ${getReplicatedTableName(TABLE_NAMES.cohort_members)} WHERE cohort_id = ${sqlstring.escape(cohort.id)} AND project_id = ${sqlstring.escape(cohort.projectId)}`,
+    query: `DELETE FROM ${getReplicatedTableName(TABLE.cohortMembers)} WHERE cohort_id = ${sqlstring.escape(cohort.id)} AND project_id = ${sqlstring.escape(cohort.projectId)}`,
     clickhouse_settings: {
       lightweight_deletes_sync: '1',
     },
   });
 
-  await storeCohortMembership(
-    cohort.projectId,
-    cohort.id,
-    profileIds,
-    version,
-  );
+  await storeCohortMembership(cohort.projectId, cohort.id, profileIds, version);
 
   await db.cohort.update({
     where: { id: cohortId },
@@ -678,10 +733,11 @@ export async function updateCohortMembership(
 
 export async function deleteCohortMembership(
   cohortId: string,
-  projectId: string,
+  projectId: string
 ): Promise<void> {
+  const { ch, getReplicatedTableName } = await loadChClient();
   const where = `cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)}`;
-  for (const table of [TABLE_NAMES.cohort_members, TABLE_NAMES.cohort_metadata]) {
+  for (const table of [TABLE.cohortMembers, TABLE.cohortMetadata]) {
     await ch.command({
       query: `DELETE FROM ${getReplicatedTableName(table)} WHERE ${where}`,
       clickhouse_settings: {
@@ -693,34 +749,22 @@ export async function deleteCohortMembership(
 
 export async function getProfilesInCohort(
   cohortId: string,
-  projectId: string,
+  projectId: string
 ): Promise<Set<string>> {
   const { profileIds } = await getCohortMembers(cohortId, projectId, {
-    limit: 100000,
+    limit: 100_000,
   });
   return new Set(profileIds);
 }
 
-/**
- * Enqueue a recompute for a cohort.
- *
- * Uses `deduplication` rather than a fixed `jobId`. A fixed jobId makes BullMQ
- * short-circuit `add` for as long as *any* record for that id exists in Redis —
- * and `removeOnComplete: { age }` is not a TTL, it only trims on some other
- * job in the queue finishing. That deadlocks: nothing can be added because the
- * completed record is still there, and the record is never collected because
- * nothing gets added. The deduplication key, in contrast, is released by
- * `moveToFinished` on both completion and terminal failure, so it only collapses
- * a compute that is genuinely still in flight.
- */
-export async function enqueueCohortCompute(cohortId: string): Promise<void> {
-  await cohortComputeQueue.add(
-    'cohortCompute',
-    { cohortId },
-    {
-      deduplication: { id: `cohort-${cohortId}` },
-    },
-  );
+/** Every non-static cohort id, for the cohortRefresh cron fragment's fan-out. */
+export async function listRefreshableCohortIds(): Promise<string[]> {
+  const db = await loadDb();
+  const cohorts = await db.cohort.findMany({
+    where: { isStatic: false },
+    select: { id: true },
+  });
+  return cohorts.map((c) => c.id);
 }
 
 export async function listCohortMemberProfiles({
@@ -738,6 +782,14 @@ export async function listCohortMemberProfiles({
   search?: string;
   filters?: IChartEventFilter[];
 }): Promise<{ data: IServiceProfile[]; count: number }> {
+  const { chQuery } = await loadChClient();
+  const { buildFilterWhere } = await import(
+    '@openpanel/db/src/services/filter-where.service'
+  );
+  const { getProfiles, profileSearchSql } = await import(
+    '@openpanel/db/src/services/profile.service'
+  );
+
   const offset = Math.max(0, (cursor ?? 0) * take);
   const searchClause = profileSearchSql(search);
   const searchCondition = searchClause ? `AND ${searchClause}` : '';
@@ -748,7 +800,7 @@ export async function listCohortMemberProfiles({
           selfTable: 'profiles',
           profileIdExpr: 'id',
           groupsExpr: 'groups',
-        }),
+        })
       )
     : [];
   const extraConditionSql = extraConditions.length
@@ -757,10 +809,10 @@ export async function listCohortMemberProfiles({
 
   const rows = await chQuery<{ id: string; total_count: number }>(`
     SELECT id, count() OVER () AS total_count
-    FROM ${TABLE_NAMES.profiles} FINAL
+    FROM ${TABLE.profiles} FINAL
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND id IN (
-        SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL
+        SELECT profile_id FROM ${TABLE.cohortMembers} FINAL
         WHERE cohort_id = ${sqlstring.escape(cohortId)}
           AND project_id = ${sqlstring.escape(projectId)}
       )
@@ -772,7 +824,9 @@ export async function listCohortMemberProfiles({
 
   const count = rows[0]?.total_count ?? 0;
   const ids = rows.map((r) => r.id);
-  if (ids.length === 0) return { data: [], count };
+  if (ids.length === 0) {
+    return { data: [], count };
+  }
 
   const profiles = await getProfiles(ids, projectId);
   const byId = new Map(profiles.map((p) => [p.id, p]));
@@ -785,14 +839,15 @@ export async function listCohortMemberProfiles({
 export async function getCohortMemberEvents(
   projectId: string,
   cohortId: string,
-  limit = 10,
+  limit = 10
 ): Promise<{ name: string; count: number }[]> {
+  const { chQuery } = await loadChClient();
   return chQuery<{ name: string; count: number }>(`
     SELECT name, count() AS count
-    FROM ${TABLE_NAMES.events}
+    FROM ${TABLE.events}
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND profile_id IN (
-        SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL
+        SELECT profile_id FROM ${TABLE.cohortMembers} FINAL
         WHERE cohort_id = ${sqlstring.escape(cohortId)}
           AND project_id = ${sqlstring.escape(projectId)}
       )
@@ -806,17 +861,18 @@ export async function getCohortMemberEvents(
 export async function getCohortEventsPerDay(
   projectId: string,
   cohortId: string,
-  days = 30,
+  days = 30
 ): Promise<{ date: string; count: number }[]> {
+  const { chQuery } = await loadChClient();
   const rows = await chQuery<{ date: string; count: number }>(`
     SELECT
       toDate(created_at) AS date,
       count() AS count
-    FROM ${TABLE_NAMES.events}
+    FROM ${TABLE.events}
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND created_at >= toDate(now() - INTERVAL ${days} DAY)
       AND profile_id IN (
-        SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL
+        SELECT profile_id FROM ${TABLE.cohortMembers} FINAL
         WHERE cohort_id = ${sqlstring.escape(cohortId)}
           AND project_id = ${sqlstring.escape(projectId)}
       )
@@ -833,14 +889,15 @@ export async function getCohortEventsPerDay(
 export async function getCohortMemberRoutes(
   projectId: string,
   cohortId: string,
-  limit = 10,
+  limit = 10
 ): Promise<{ path: string; count: number }[]> {
+  const { chQuery } = await loadChClient();
   return chQuery<{ path: string; count: number }>(`
     SELECT path, count() AS count
-    FROM ${TABLE_NAMES.events}
+    FROM ${TABLE.events}
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND profile_id IN (
-        SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL
+        SELECT profile_id FROM ${TABLE.cohortMembers} FINAL
         WHERE cohort_id = ${sqlstring.escape(cohortId)}
           AND project_id = ${sqlstring.escape(projectId)}
       )
@@ -850,4 +907,36 @@ export async function getCohortMemberRoutes(
     ORDER BY count DESC
     LIMIT ${limit}
   `);
+}
+
+export interface CohortService {
+  updateMembership(cohortId: string): Promise<void>;
+  listRefreshableCohortIds(): Promise<string[]>;
+  /**
+   * Enqueue a recompute for a cohort.
+   *
+   * Uses `deduplicationId` rather than `jobId`. A fixed jobId makes BullMQ
+   * short-circuit `add` for as long as *any* record for that id exists in
+   * Redis — and `removeOnComplete: { age }` is not a TTL, it only trims on
+   * some other job in the queue finishing. That deadlocks: nothing can be
+   * added because the completed record is still there, and the record is
+   * never collected because nothing gets added. `deduplicationId`, in
+   * contrast, is released by `moveToFinished` on both completion and
+   * terminal failure, so it only collapses a compute that is genuinely still
+   * in flight (ADR-005: "cohort must NOT be normalised onto jobId").
+   */
+  enqueueCompute(cohortId: string): Promise<void>;
+}
+
+export function createCohortService(deps: ServiceDeps): CohortService {
+  return {
+    updateMembership: updateCohortMembership,
+    listRefreshableCohortIds,
+    enqueueCompute: async (cohortId) => {
+      await deps.queues.cohortCompute.cohortCompute.add(
+        { cohortId },
+        { deduplicationId: `cohort-${cohortId}` }
+      );
+    },
+  };
 }
