@@ -1,4 +1,4 @@
-import { verifyPassword } from '@openpanel/common/server';
+import { verifyPassword } from '@openpanel/core';
 import type { IServiceClientWithProject } from '@openpanel/db';
 import { ClientType, getClientByIdCached } from '@openpanel/db';
 import { getCache } from '@openpanel/redis';

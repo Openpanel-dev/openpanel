@@ -14,9 +14,9 @@ const parsedServerUa = {
 
 // Pre-compile all regex patterns for better performance
 const IPHONE_MODEL_REGEX = /(iPhone|iPad)\s*([0-9,]+)/i;
-const IOS_MODEL_REGEX = /(iOS)\s*([0-9\.]+)/i;
+const IOS_MODEL_REGEX = /(iOS)\s*([0-9.]+)/i;
 const IPAD_OS_VERSION_REGEX = /iPadOS\s*([0-9_]+)/i;
-const SINGLE_NAME_VERSION_REGEX = /^[^\/]+\/[\d.]+$/;
+const SINGLE_NAME_VERSION_REGEX = /^[^/]+\/[\d.]+$/;
 
 // App-style UA patterns (e.g., "Model=Redmi Note 8 Pro; Manufacturer=Xiaomi")
 const APP_MODEL_REGEX = /Model=([^;)]+)/i;
@@ -150,7 +150,9 @@ function detectBrand(ua: string, model?: string): string | undefined {
 
 // Check if a model name indicates a phone (not tablet)
 function isKnownPhoneModel(model?: string): boolean {
-  if (!model) return false;
+  if (!model) {
+    return false;
+  }
   return KNOWN_PHONE_PATTERNS.some((pattern) => pattern.test(model));
 }
 
@@ -166,7 +168,7 @@ const parse = (ua: string): UAParser.IResult => {
 
   // Some user agents are not detected correctly by ua-parser-js
   // Doing some extra checks for ios
-  if (!res.device.model && !res.os.name) {
+  if (!(res.device.model || res.os.name)) {
     const iphone = isIphone(ua);
     if (iphone) {
       const result = {
@@ -213,8 +215,8 @@ const parse = (ua: string): UAParser.IResult => {
       ...res,
       device: {
         ...res.device,
-        model: model,
-        vendor: vendor,
+        model,
+        vendor,
       },
     };
   }
@@ -242,9 +244,11 @@ export type UserAgentInfo = ReturnType<typeof parseUserAgent>;
 export type UserAgentResult = ReturnType<typeof parseUserAgent>;
 export function parseUserAgent(
   ua?: string | null,
-  overrides?: Record<string, unknown>,
+  overrides?: Record<string, unknown>
 ) {
-  if (!ua) return parsedServerUa;
+  if (!ua) {
+    return parsedServerUa;
+  }
   const res = parse(ua);
 
   if (isServer(res)) {

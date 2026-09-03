@@ -12,9 +12,9 @@
 // reads the request logger off `ctx` and would otherwise import this file's
 // consumer.
 
-import { getClientIpFromHeaders } from '@openpanel/common/server/get-client-ip';
 import { Elysia } from 'elysia';
 import { REQUEST_ID_HEADER, REQUEST_ID_LENGTH } from '../logger';
+import { getClientIpFromHeaders } from '../shared/get-client-ip';
 import { generateId } from '../shared/id';
 
 // ADR-018 R2: an inbound request-id is honoured but never trusted verbatim —

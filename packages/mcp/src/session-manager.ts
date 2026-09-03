@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { createLogger } from '@openpanel/logger';
+import { createLogger } from '@openpanel/core';
 import { getRedisCache } from '@openpanel/redis';
 import type { McpAuthContext } from './auth';
 
@@ -31,7 +31,7 @@ export class SessionManager {
         organizationId: context.organizationId,
         projectId: context.projectId,
       },
-      'MCP session context stored',
+      'MCP session context stored'
     );
   }
 

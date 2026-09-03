@@ -36,7 +36,6 @@
     "@openpanel/geo": "workspace:*",
     "@openpanel/integrations": "workspace:^",
     "@openpanel/json": "workspace:*",
-    "@openpanel/logger": "workspace:*",
     "@openpanel/mcp": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/queue": "workspace:*",

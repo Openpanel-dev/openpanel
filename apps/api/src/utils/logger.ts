@@ -1,3 +1,3 @@
-import { createLogger } from '@openpanel/logger';
+import { createLogger } from '@openpanel/core';
 
 export const logger = createLogger({ name: 'api' });

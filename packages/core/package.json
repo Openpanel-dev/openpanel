@@ -10,19 +10,27 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "bun test --isolate"
+    "test": "bun test --isolate",
+    "gen:referrers": "bun scripts/get-referrers.ts && biome format --write ./src/shared/referrers/index.ts"
   },
   "dependencies": {
     "@elysiajs/cors": "1.4.2",
     "@elysiajs/openapi": "1.4.15",
+    "@hyperdx/node-opentelemetry": "catalog:",
     "@openpanel/auth": "workspace:^",
     "@openpanel/common": "workspace:*",
     "@trpc/server": "^11.17.0",
     "bullmq": "6.3.3",
     "elysia": "1.4.30",
+    "ipaddr.js": "^2.5.0",
+    "lru-cache": "^11.2.4",
     "nanoid": "^5.1.6",
+    "pino": "catalog:",
+    "pino-pretty": "catalog:",
     "prom-client": "^15.1.3",
     "superjson": "^1.13.3",
+    "ua-parser-js": "^2.0.6",
+    "undici": "^8.10.0",
     "zod": "catalog:"
   },
   "devDependencies": {

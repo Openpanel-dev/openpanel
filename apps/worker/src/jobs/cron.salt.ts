@@ -1,4 +1,4 @@
-import { generateSalt } from '@openpanel/common/server';
+import { generateSalt } from '@openpanel/core';
 import { db, getSalts } from '@openpanel/db';
 
 async function generateNewSalt() {
@@ -47,7 +47,7 @@ export async function salt() {
     } catch (error) {
       if (retryCount < ALLOWED_RETRIES) {
         await new Promise((resolve) =>
-          setTimeout(resolve, BASE_DELAY * 2 ** retryCount),
+          setTimeout(resolve, BASE_DELAY * 2 ** retryCount)
         );
         return generateNewSaltWithRetry(retryCount + 1);
       }

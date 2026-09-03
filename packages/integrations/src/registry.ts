@@ -1,4 +1,4 @@
-import { encryptCredential } from '@openpanel/common/server';
+import { encryptCredential } from '@openpanel/core';
 import {
   execute as executeJavaScriptTemplate,
   validate as validateJavaScriptTemplate,
@@ -65,7 +65,7 @@ export interface IServerIntegration<T extends IIntegrationConfig['type']> {
   validateConfig?(config: ConfigOf<T>): { valid: boolean; error?: string };
   // Optional pre-save connection test (used by the generic tRPC procedure).
   testConnection?(
-    config: ConfigOf<T>,
+    config: ConfigOf<T>
   ): Promise<{ success: boolean; error?: string }>;
   /**
    * Config values that must never travel back to a client. ONE declaration
@@ -116,16 +116,15 @@ const slackServer: IServerIntegration<'slack'> = {
   // the customer's Slack workspace. Redact-only: the worker reads them raw, and
   // nothing round-trips them (the OAuth callback rewrites the whole config), so
   // there is no carry-over to worry about.
-  secretFields: [
-    { path: 'access_token' },
-    { path: 'incoming_webhook.url' },
-  ],
+  secretFields: [{ path: 'access_token' }, { path: 'incoming_webhook.url' }],
   notification: {
     deliver: ({ config, notification }) =>
       sendSlackNotification({
         fetcher: safeWebhookFetcher,
         webhookUrl: config.incoming_webhook.url,
-        message: [`🔔 *${notification.title}*`, notification.message].join('\n'),
+        message: [`🔔 *${notification.title}*`, notification.message].join(
+          '\n'
+        ),
       }),
   },
 };
@@ -135,7 +134,7 @@ const discordServer: IServerIntegration<'discord'> = {
   testConnection: async (config) => {
     const res = await sendTestDiscordNotification(
       config.url,
-      safeWebhookFetcher,
+      safeWebhookFetcher
     );
     return res.ok
       ? { success: true }
@@ -196,7 +195,7 @@ const webhookServer: IServerIntegration<'webhook'> = {
         safeWebhookFetcher,
         config.url,
         body,
-        config.headers ?? {},
+        config.headers ?? {}
       );
     },
   },
@@ -241,7 +240,7 @@ export const SERVER_INTEGRATIONS = {
  * dispatch path lives here; call sites get a correctly-typed IServerIntegration<T>.
  */
 export function getServerIntegration<T extends IIntegrationConfig['type']>(
-  type: T,
+  type: T
 ): IServerIntegration<T> {
   return SERVER_INTEGRATIONS[type] as unknown as IServerIntegration<T>;
 }
@@ -262,7 +261,7 @@ type LooseConfig = Record<string, unknown>;
 /** Lenient like `isKind`: an empty/unknown config simply has no secrets. */
 function secretsFor(config: unknown): readonly IConfigSecret<never>[] {
   const type = (config as { type?: string } | null)?.type;
-  if (!type || !(type in SERVER_INTEGRATIONS)) {
+  if (!(type && type in SERVER_INTEGRATIONS)) {
     return [];
   }
   const plugin = SERVER_INTEGRATIONS[
@@ -312,8 +311,8 @@ function mapSecrets<C>(
   map: (
     value: string,
     secret: IConfigSecret<never>,
-    recordKey?: string,
-  ) => string | undefined,
+    recordKey?: string
+  ) => string | undefined
 ): C {
   let next = config;
 
@@ -358,7 +357,7 @@ function mapSecrets<C>(
 /** Encrypt every declared secret that is stored encrypted. */
 export function encryptConfigSecrets<C>(config: C): C {
   return mapSecrets(config, (value, secret) =>
-    secret.encrypted ? encryptCredential(value) : undefined,
+    secret.encrypted ? encryptCredential(value) : undefined
   );
 }
 
@@ -425,7 +424,7 @@ export function findMissingSecretFields(config: unknown): string[] {
       (secret) =>
         secret.encrypted &&
         readPath(config, secret.path) === '' &&
-        !secret.record,
+        !secret.record
     )
     .map((secret) => secret.path);
 }

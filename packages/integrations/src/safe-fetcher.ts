@@ -1,4 +1,4 @@
-import { safeFetch } from '@openpanel/common/server/safe-fetch';
+import { safeFetch } from '@openpanel/core';
 import type { WebhookFetcher } from './fetcher';
 
 /**

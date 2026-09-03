@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import * as faker from '@faker-js/faker';
 import { generateId } from '@openpanel/common';
-import { hashPassword } from '@openpanel/common/server';
+import { hashPassword } from '@openpanel/core';
 import { ClientType, db } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 import { v4 as uuidv4 } from 'uuid';
@@ -133,7 +133,7 @@ function generateEvents(): Event[] {
           clientId,
           profile: profiles[i % PROFILE_COUNT]!,
           eventsCount: Math.floor(Math.random() * 10),
-        }),
+        })
       );
     }
   });
@@ -150,7 +150,7 @@ let lastTriggeredIndex = 0;
 async function triggerEvents(generatedEvents: any[]) {
   const EVENTS_PER_SECOND = Number.parseInt(
     process.env.EVENTS_PER_SECOND || '100',
-    10,
+    10
   );
   const INTERVAL_MS = 1000 / EVENTS_PER_SECOND;
 
@@ -164,7 +164,7 @@ async function triggerEvents(generatedEvents: any[]) {
     await trackit(event);
     console.log(`Event ${lastTriggeredIndex + 1} sent successfully`);
     console.log(
-      `sending ${event.track.payload?.properties?.__path} from user ${event.headers['user-agent']}`,
+      `sending ${event.track.payload?.properties?.__path} from user ${event.headers['user-agent']}`
     );
   } catch (error) {
     console.error(`Failed to send event ${lastTriggeredIndex + 1}:`, error);
@@ -174,7 +174,7 @@ async function triggerEvents(generatedEvents: any[]) {
   const remainingEvents = generatedEvents.length - lastTriggeredIndex;
 
   console.log(
-    `Triggered ${lastTriggeredIndex} events. Remaining: ${remainingEvents}`,
+    `Triggered ${lastTriggeredIndex} events. Remaining: ${remainingEvents}`
   );
 
   if (remainingEvents > 0) {
@@ -215,7 +215,7 @@ async function createMock(file: string) {
   fs.writeFileSync(
     file,
     JSON.stringify(insertFakeEvents(scrambleEvents(generateEvents())), null, 2),
-    'utf-8',
+    'utf-8'
   );
 }
 
@@ -438,7 +438,7 @@ async function simultaneousRequests() {
       if (group.parallel && group.tracks.length > 1) {
         // Parallel execution for same-flagged tracks
         console.log(
-          `Firing ${group.tracks.length} parallel requests with flag '${group.parallel}'`,
+          `Firing ${group.tracks.length} parallel requests with flag '${group.parallel}'`
         );
         const promises = group.tracks.map(async (track) => {
           const { name, parallel, ...properties } = track;

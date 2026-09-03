@@ -22,9 +22,8 @@ vi.mock('@openpanel/db', async (importOriginal) => {
 });
 
 // Password verification is always truthy in tests.
-vi.mock('@openpanel/common/server', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('@openpanel/common/server')>();
+vi.mock('@openpanel/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@openpanel/core')>();
   return { ...actual, verifyPassword: vi.fn().mockResolvedValue(true) };
 });
 
@@ -52,8 +51,12 @@ vi.mock('@openpanel/redis', async (importOriginal) => {
 
 import { ClientType, getClientByIdCached } from '@openpanel/db';
 import type { FastifyInstance } from 'fastify';
+import {
+  FIXTURE,
+  TEST_ORG_ID,
+  TEST_PROJECT_ID,
+} from '../../../../test/global-setup';
 import { buildApp } from '../app';
-import { FIXTURE, TEST_ORG_ID, TEST_PROJECT_ID } from '../../../../test/global-setup';
 
 // ─── Test client constants ────────────────────────────────────────────────────
 

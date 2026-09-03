@@ -20,8 +20,8 @@ import {
   verifyPasswordHash,
   verifyTotpCode,
 } from '@openpanel/auth';
-import { generateSecureId } from '@openpanel/common/server';
 import type { Logger } from '@openpanel/core';
+import { generateSecureId } from '@openpanel/core';
 import {
   connectUserToOrganization,
   db,

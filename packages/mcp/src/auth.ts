@@ -1,8 +1,7 @@
 import { createHash } from 'node:crypto';
-import { verifyPassword } from '@openpanel/common/server';
+import { createLogger, verifyPassword } from '@openpanel/core';
 import { ClientType, getClientByIdCached } from '@openpanel/db';
 import { getCache } from '@openpanel/redis';
-import { createLogger } from '@openpanel/logger';
 
 const logger = createLogger({ name: 'mcp:auth' });
 
@@ -34,7 +33,7 @@ export class McpAuthError extends Error {
  * - root clients get null projectId + organizationId (multi-project access)
  */
 export async function authenticateToken(
-  token: string | undefined,
+  token: string | undefined
 ): Promise<McpAuthContext> {
   if (!token) {
     throw new McpAuthError('Missing authentication token');
@@ -51,10 +50,10 @@ export async function authenticateToken(
   if (colonIndex === -1) {
     logger.warn(
       { decodedLength: decoded.length },
-      'MCP auth: token has no colon separator',
+      'MCP auth: token has no colon separator'
     );
     throw new McpAuthError(
-      'Invalid token format — expected base64(clientId:clientSecret)',
+      'Invalid token format — expected base64(clientId:clientSecret)'
     );
   }
 
@@ -63,12 +62,12 @@ export async function authenticateToken(
 
   logger.info(
     { clientId, secretPrefix: clientSecret.slice(0, 6) },
-    'MCP auth: decoded token',
+    'MCP auth: decoded token'
   );
 
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
-      clientId,
+      clientId
     )
   ) {
     logger.warn({ clientId }, 'MCP auth: invalid client ID format');
@@ -87,34 +86,37 @@ export async function authenticateToken(
 
   logger.info(
     { clientId, type: client.type, hasSecret: !!client.secret },
-    'MCP auth: client found',
+    'MCP auth: client found'
   );
 
   if (!client.secret) {
     throw new McpAuthError(
-      'This client has no secret — only clients with a secret can use MCP',
+      'This client has no secret — only clients with a secret can use MCP'
     );
   }
 
   if (client.type === ClientType.write) {
     logger.warn({ clientId }, 'MCP auth: write-only client rejected');
     throw new McpAuthError(
-      'Write-only clients cannot use MCP — use a read or root client',
+      'Write-only clients cannot use MCP — use a read or root client'
     );
   }
 
-  const secretHash = createHash('sha256').update(clientSecret).digest('hex').slice(0, 16);
+  const secretHash = createHash('sha256')
+    .update(clientSecret)
+    .digest('hex')
+    .slice(0, 16);
   const cacheKey = `mcp:auth:${clientId}:${secretHash}`;
   const isVerified = await getCache(
     cacheKey,
     60 * 5,
     async () => await verifyPassword(clientSecret, client.secret!),
-    true,
+    true
   );
 
   logger.info(
     { clientId, isVerified },
-    'MCP auth: password verification result',
+    'MCP auth: password verification result'
   );
 
   if (!isVerified) {
@@ -136,7 +138,7 @@ export async function authenticateToken(
  */
 export function extractToken(
   query: Record<string, unknown>,
-  authHeader: string | undefined,
+  authHeader: string | undefined
 ): string | undefined {
   if (typeof query['token'] === 'string') {
     return query['token'];
@@ -146,4 +148,3 @@ export function extractToken(
   }
   return undefined;
 }
-

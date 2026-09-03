@@ -1,19 +1,19 @@
 import * as dns from 'node:dns/promises';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
-import { getClientIpFromHeaders } from '@openpanel/common/server/get-client-ip';
-import {
-  BlockedUrlError,
-  assertPublicHostname,
-  assertPublicUrl,
-  isBlockedIp,
-  safeFetch,
-} from '@/utils/safe-fetch';
+import { getClientIpFromHeaders } from '@openpanel/core';
 import { getGeoLocation } from '@openpanel/geo';
 import * as cheerio from 'cheerio';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import {
+  assertPublicHostname,
+  assertPublicUrl,
+  BlockedUrlError,
+  isBlockedIp,
+  safeFetch,
+} from '@/utils/safe-fetch';
 
-const TIMEOUT_MS = 10000;
+const TIMEOUT_MS = 10_000;
 const MAX_REDIRECTS = 10;
 const MAX_HTML_BYTES = 5_000_000;
 
@@ -103,11 +103,7 @@ const SITE_CHECK_MAX = 10;
 const IP_LOOKUP_WINDOW = 60 * 1000;
 const IP_LOOKUP_MAX = 20;
 
-function checkRateLimit(
-  key: string,
-  windowMs: number,
-  max: number,
-): boolean {
+function checkRateLimit(key: string, windowMs: number, max: number): boolean {
   const now = Date.now();
   const record = rateLimitMap.get(key);
 
@@ -131,19 +127,31 @@ function detectCDN(headers: Headers): string | null {
   const fastly = headers.get('fastly-request-id');
   const cloudfront = headers.get('x-amz-cf-id');
 
-  if (cfRay || server.includes('cloudflare')) return 'Cloudflare';
-  if (vercelId || server.includes('vercel')) return 'Vercel';
-  if (fastly || server.includes('fastly')) return 'Fastly';
-  if (cloudfront || server.includes('cloudfront')) return 'CloudFront';
-  if (server.includes('nginx')) return 'Nginx';
-  if (server.includes('apache')) return 'Apache';
+  if (cfRay || server.includes('cloudflare')) {
+    return 'Cloudflare';
+  }
+  if (vercelId || server.includes('vercel')) {
+    return 'Vercel';
+  }
+  if (fastly || server.includes('fastly')) {
+    return 'Fastly';
+  }
+  if (cloudfront || server.includes('cloudfront')) {
+    return 'CloudFront';
+  }
+  if (server.includes('nginx')) {
+    return 'Nginx';
+  }
+  if (server.includes('apache')) {
+    return 'Apache';
+  }
 
   return null;
 }
 
 async function checkRobotsTxt(
   baseUrl: string,
-  path: string,
+  path: string
 ): Promise<'allowed' | 'blocked' | 'error'> {
   try {
     const robotsUrl = new URL('/robots.txt', baseUrl);
@@ -200,7 +208,7 @@ async function checkSitemap(baseUrl: string): Promise<boolean> {
 }
 
 async function getSSLInfo(
-  hostname: string,
+  hostname: string
 ): Promise<SiteCheckResult['technical']['ssl'] | null> {
   // Raw TLS handshakes are as good a probe as an HTTP request, so the host has
   // to clear the same check, and we connect to the address we validated.
@@ -223,7 +231,7 @@ async function getSSLInfo(
         const cert = socket.getPeerCertificate(true);
         socket.destroy();
 
-        if (!cert || !cert.valid_to) {
+        if (!(cert && cert.valid_to)) {
           resolve(null);
           return;
         }
@@ -233,7 +241,7 @@ async function getSSLInfo(
           issuer: cert.issuer?.CN || 'Unknown',
           expires: cert.valid_to,
         });
-      },
+      }
     );
 
     socket.on('error', () => {
@@ -274,7 +282,7 @@ async function getIPInfo(ip: string): Promise<IPInfo> {
 
     const response = await fetch(
       `https://ip-api.com/json/${ip}?fields=isp,as,org,query,status`,
-      { signal: controller.signal },
+      { signal: controller.signal }
     );
 
     clearTimeout(timeout);
@@ -306,7 +314,7 @@ async function getIPInfo(ip: string): Promise<IPInfo> {
 
 async function measureConnectionTime(
   hostname: string,
-  port: number,
+  port: number
 ): Promise<{ connectTime: number; tlsTime: number }> {
   // Without this check the timing measurement doubles as an internal port
   // scanner, since open and closed ports are trivially distinguishable.
@@ -363,7 +371,7 @@ async function measureConnectionTime(
 
 async function fetchWithRedirects(
   url: string,
-  maxRedirects: number = MAX_REDIRECTS,
+  maxRedirects: number = MAX_REDIRECTS
 ): Promise<{
   finalUrl: string;
   redirectChain: RedirectHop[];
@@ -493,10 +501,18 @@ async function fetchWithRedirects(
 
 function calculateSecurityScore(security: SiteCheckResult['security']): number {
   let score = 0;
-  if (security.csp) score += 25;
-  if (security.xFrameOptions) score += 15;
-  if (security.xContentTypeOptions) score += 15;
-  if (security.hsts) score += 25;
+  if (security.csp) {
+    score += 25;
+  }
+  if (security.xFrameOptions) {
+    score += 15;
+  }
+  if (security.xContentTypeOptions) {
+    score += 15;
+  }
+  if (security.hsts) {
+    score += 25;
+  }
   if (
     security.xFrameOptions?.toLowerCase() === 'deny' ||
     security.xFrameOptions?.toLowerCase() === 'sameorigin'
@@ -511,7 +527,7 @@ function calculateSecurityScore(security: SiteCheckResult['security']): number {
 
 export async function siteChecker(
   request: FastifyRequest<{ Querystring: { url?: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const urlParam = request.query.url;
 
@@ -533,7 +549,7 @@ export async function siteChecker(
     return reply.status(400).send({ error: 'Invalid URL' });
   }
 
-  if (!url.protocol || !url.protocol.startsWith('http')) {
+  if (!(url.protocol && url.protocol.startsWith('http'))) {
     url = new URL(`https://${urlParam}`);
   }
 
@@ -609,7 +625,7 @@ export async function siteChecker(
 
     const robotsTxtStatus = await checkRobotsTxt(
       finalUrl.toString(),
-      finalUrlObj.pathname,
+      finalUrlObj.pathname
     );
 
     const hasSitemap = await checkSitemap(finalUrl.toString());
@@ -690,18 +706,27 @@ export async function siteChecker(
     }
 
     return reply.status(500).send({
-      error:
-        error instanceof Error ? error.message : 'Failed to analyze site',
+      error: error instanceof Error ? error.message : 'Failed to analyze site',
     });
   }
 }
 
 function isPrivateIP(ip: string): boolean {
-  if (ip === '::1') return true;
-  if (ip.startsWith('::ffff:127.')) return true;
-  if (ip.startsWith('127.')) return true;
-  if (ip.startsWith('10.')) return true;
-  if (ip.startsWith('192.168.')) return true;
+  if (ip === '::1') {
+    return true;
+  }
+  if (ip.startsWith('::ffff:127.')) {
+    return true;
+  }
+  if (ip.startsWith('127.')) {
+    return true;
+  }
+  if (ip.startsWith('10.')) {
+    return true;
+  }
+  if (ip.startsWith('192.168.')) {
+    return true;
+  }
   if (ip.startsWith('172.')) {
     const parts = ip.split('.');
     if (parts.length >= 2) {
@@ -723,7 +748,7 @@ function isPrivateIP(ip: string): boolean {
 
 export async function ipLookup(
   request: FastifyRequest<{ Querystring: { ip?: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const ipParam = request.query.ip;
 
@@ -747,7 +772,7 @@ export async function ipLookup(
 
   const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
   const ipv6Regex = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
-  if (!ipv4Regex.test(ipToLookup) && !ipv6Regex.test(ipToLookup)) {
+  if (!(ipv4Regex.test(ipToLookup) || ipv6Regex.test(ipToLookup))) {
     return reply.status(400).send({ error: 'Invalid IP address format' });
   }
 
@@ -772,9 +797,7 @@ export async function ipLookup(
     request.log.error({ err: error }, 'IP lookup error');
     return reply.status(500).send({
       error:
-        error instanceof Error
-          ? error.message
-          : 'Failed to lookup IP address',
+        error instanceof Error ? error.message : 'Failed to lookup IP address',
     });
   }
 }

@@ -1,8 +1,8 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
-import type { IncomingMessage, ServerResponse } from 'node:http';
-import { createLogger } from '@openpanel/logger';
-import { McpAuthError, authenticateToken, extractToken } from './auth';
+import { createLogger } from '@openpanel/core';
+import { authenticateToken, extractToken, McpAuthError } from './auth';
 import { createMcpServer } from './server';
 import type { SessionManager } from './session-manager';
 
@@ -26,7 +26,7 @@ export async function handleMcpPost(
   req: IncomingMessage,
   res: ServerResponse,
   body: unknown,
-  query: Record<string, unknown>,
+  query: Record<string, unknown>
 ): Promise<void> {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   const message = body as JSONRPCMessage;
@@ -37,7 +37,7 @@ export async function handleMcpPost(
       method: 'method' in message ? message.method : 'unknown',
       hasAuth: !!(query['token'] || req.headers.authorization),
     },
-    'MCP POST request',
+    'MCP POST request'
   );
 
   if (sessionId) {
@@ -45,7 +45,9 @@ export async function handleMcpPost(
     if (!context) {
       logger.warn({ sessionId }, 'MCP session not found in Redis');
       res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Session not found — please reconnect' }));
+      res.end(
+        JSON.stringify({ error: 'Session not found — please reconnect' })
+      );
       return;
     }
 
@@ -96,7 +98,7 @@ export async function handleMcpPost(
         organizationId: context.organizationId,
         projectId: context.projectId,
       },
-      'MCP session created',
+      'MCP session created'
     );
 
     res.writeHead(200, {
@@ -128,10 +130,17 @@ export async function handleMcpPost(
 async function processRequest(
   context: Parameters<typeof createMcpServer>[0],
   message: JSONRPCMessage,
-  isInitialize = false,
+  isInitialize = false
 ): Promise<JSONRPCMessage> {
-  if ('method' in message && message.method === 'tools/call' && 'params' in message) {
-    const { name, arguments: args } = (message.params ?? {}) as { name?: string; arguments?: unknown };
+  if (
+    'method' in message &&
+    message.method === 'tools/call' &&
+    'params' in message
+  ) {
+    const { name, arguments: args } = (message.params ?? {}) as {
+      name?: string;
+      arguments?: unknown;
+    };
     logger.info(
       {
         tool: name,
@@ -140,10 +149,11 @@ async function processRequest(
         projectId: context.projectId,
         clientType: context.clientType,
       },
-      'MCP tool call',
+      'MCP tool call'
     );
   }
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
   const server = createMcpServer(context);
   await server.connect(serverTransport);
 
@@ -178,15 +188,19 @@ async function processRequest(
   });
 
   if ('method' in message && message.method === 'tools/call') {
-    const { name } = (('params' in message && message.params) ?? {}) as { name?: string };
-    const isError = 'result' in response && (response.result as { isError?: boolean })?.isError;
+    const { name } = (('params' in message && message.params) ?? {}) as {
+      name?: string;
+    };
+    const isError =
+      'result' in response &&
+      (response.result as { isError?: boolean })?.isError;
     logger.info(
       {
         tool: name,
         durationMs: Date.now() - start,
         isError: isError ?? false,
       },
-      'MCP tool result',
+      'MCP tool result'
     );
   }
 
@@ -199,8 +213,13 @@ async function processRequest(
 export async function handleMcpGet(
   _sessionManager: SessionManager,
   _req: IncomingMessage,
-  res: ServerResponse,
+  res: ServerResponse
 ): Promise<void> {
-  res.writeHead(405, { 'Content-Type': 'application/json', Allow: 'POST, DELETE' });
-  res.end(JSON.stringify({ error: 'SSE not supported — use POST for all requests' }));
+  res.writeHead(405, {
+    'Content-Type': 'application/json',
+    Allow: 'POST, DELETE',
+  });
+  res.end(
+    JSON.stringify({ error: 'SSE not supported — use POST for all requests' })
+  );
 }

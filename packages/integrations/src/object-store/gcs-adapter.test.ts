@@ -1,5 +1,5 @@
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { encryptCredential } from '@openpanel/common/server';
+import { encryptCredential } from '@openpanel/core';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createGCSAdapter } from './gcs-adapter';
 
@@ -52,7 +52,7 @@ async function createBucket(name: string): Promise<void> {
 
 async function readObject(bucket: string, key: string): Promise<Buffer> {
   const res = await fetch(
-    `${EMULATOR}/storage/v1/b/${bucket}/o/${encodeURIComponent(key)}?alt=media`,
+    `${EMULATOR}/storage/v1/b/${bucket}/o/${encodeURIComponent(key)}?alt=media`
   );
   if (!res.ok) {
     throw new Error(`Object ${key} not readable: ${res.status}`);
@@ -60,7 +60,9 @@ async function readObject(bucket: string, key: string): Promise<Buffer> {
   return Buffer.from(await res.arrayBuffer());
 }
 
-function adapter(overrides: { bucket?: string; serviceAccountKey?: string } = {}) {
+function adapter(
+  overrides: { bucket?: string; serviceAccountKey?: string } = {}
+) {
   return createGCSAdapter({
     type: 'gcs_export',
     bucket: overrides.bucket ?? BUCKET,
@@ -94,7 +96,9 @@ describe('GCSAdapter credential validation', () => {
   });
 
   it('refuses a document that is not JSON', async () => {
-    const result = await adapter({ serviceAccountKey: 'nope' }).testConnection();
+    const result = await adapter({
+      serviceAccountKey: 'nope',
+    }).testConnection();
     expect(result.success).toBe(false);
     expect(result.error).toContain('not valid JSON');
   });
@@ -129,7 +133,7 @@ describe.skipIf(!available)('GCSAdapter (fake-gcs-server)', () => {
       await adapter().testConnection();
 
       await expect(
-        readObject(BUCKET, 'openpanel-exports/.openpanel-connection-test'),
+        readObject(BUCKET, 'openpanel-exports/.openpanel-connection-test')
       ).rejects.toThrow();
     });
 
@@ -138,7 +142,7 @@ describe.skipIf(!available)('GCSAdapter (fake-gcs-server)', () => {
 
       expect(res.success).toBe(false);
       expect(res.error).toBe(
-        "Bucket 'no-such-bucket' does not exist or is not accessible",
+        "Bucket 'no-such-bucket' does not exist or is not accessible"
       );
     });
 
@@ -168,7 +172,9 @@ describe.skipIf(!available)('GCSAdapter (fake-gcs-server)', () => {
         location: `gs://${BUCKET}/${key}`,
       });
       expect(result.etag).toBeTruthy();
-      expect((await readObject(BUCKET, key)).toString()).toBe('hello openpanel');
+      expect((await readObject(BUCKET, key)).toString()).toBe(
+        'hello openpanel'
+      );
     });
 
     it('accepts string content', async () => {
@@ -229,7 +235,7 @@ describe.skipIf(!available)('GCSAdapter (fake-gcs-server)', () => {
           key: `many/file-${i}.txt`,
           content: `content-${i}`,
           contentType: 'text/plain',
-        })),
+        }))
       );
 
       expect(results).toHaveLength(3);
@@ -238,7 +244,7 @@ describe.skipIf(!available)('GCSAdapter (fake-gcs-server)', () => {
         expect((result as { key: string }).key).toBe(`many/file-${i}.txt`);
       });
       expect((await readObject(BUCKET, 'many/file-1.txt')).toString()).toBe(
-        'content-1',
+        'content-1'
       );
     });
 

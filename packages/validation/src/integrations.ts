@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 /**
  * Prefix marking an at-rest ciphertext. Mirrors ENCRYPTION_PREFIX in
- * `@openpanel/common/server/encryption.ts`, duplicated because this package is
+ * `@openpanel/core/encryption.ts`, duplicated because this package is
  * bundled for the browser and must not pull in the node-only crypto module.
  *
  * Credentials are WRITE-ONLY: the API redacts them on read, so a client never
@@ -232,7 +232,7 @@ export const zGCSExportConfig = z.object({
           message: `Invalid service account key: ${result.error}`,
         });
       }
-    },
+    }
   ),
 });
 export type IGCSExportConfig = z.infer<typeof zGCSExportConfig>;
@@ -325,7 +325,11 @@ export const appDescriptor = {
   kinds: ['notification'],
   setup: 'form',
   configSchema: zAppConfig,
-  catalog: { name: 'Website', description: 'In-app notifications', hidden: true },
+  catalog: {
+    name: 'Website',
+    description: 'In-app notifications',
+    hidden: true,
+  },
 } as const satisfies IIntegrationDescriptor<'app', typeof zAppConfig>;
 
 export const emailDescriptor = {
@@ -346,7 +350,10 @@ export const s3ExportDescriptor = {
     description:
       'Export events to Amazon S3 for loading into Redshift, Snowflake, Athena, or other data warehouses.',
   },
-} as const satisfies IIntegrationDescriptor<'s3_export', typeof zS3ExportConfig>;
+} as const satisfies IIntegrationDescriptor<
+  's3_export',
+  typeof zS3ExportConfig
+>;
 
 export const gcsExportDescriptor = {
   type: 'gcs_export',
@@ -374,12 +381,12 @@ export const INTEGRATION_DESCRIPTORS = [
 ] as const;
 
 const descriptorByType = new Map(
-  INTEGRATION_DESCRIPTORS.map((d) => [d.type, d] as const),
+  INTEGRATION_DESCRIPTORS.map((d) => [d.type, d] as const)
 );
 
 export function isKind(
   config: Pick<IIntegrationConfig, 'type'> | { type?: string },
-  kind: IIntegrationKind,
+  kind: IIntegrationKind
 ): boolean {
   // Lenient lookup: used as a filter predicate over all integrations, including
   // rows whose config is still empty (e.g. a Slack integration before its OAuth
@@ -426,13 +433,13 @@ export const zCreateDiscordIntegration = zCreateIntegrationBase.extend({
 export const zCreateS3ExportIntegration = zCreateIntegrationBase.merge(
   z.object({
     config: zS3ExportConfig,
-  }),
+  })
 );
 
 export const zCreateGCSExportIntegration = zCreateIntegrationBase.merge(
   z.object({
     config: zGCSExportConfig,
-  }),
+  })
 );
 
 // ---------------------------------------------------------------------------
@@ -442,11 +449,7 @@ export const zCreateGCSExportIntegration = zCreateIntegrationBase.merge(
 // ---------------------------------------------------------------------------
 
 type Assert<T extends true> = T;
-type Equal<A, B> = [A] extends [B]
-  ? [B] extends [A]
-    ? true
-    : false
-  : false;
+type Equal<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 
 // Every member of the union must keep a *literal* `type` discriminant. If any
 // widens to { type: string }, this drops it and the equality fails.

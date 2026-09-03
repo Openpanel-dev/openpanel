@@ -1,5 +1,5 @@
 /**
- * The SSRF guard lives in `@openpanel/common/server/safe-fetch` so that every
+ * The SSRF guard lives in `@openpanel/core` so that every
  * outbound-fetch site in the monorepo can reach it - the api controllers, the
  * worker's webhook delivery and the importer's remote-file reader alike. It
  * used to live here, which is why the importer never called it
@@ -9,14 +9,14 @@
  * keep working.
  */
 export {
-  BlockedUrlError,
   assertPublicHostname,
   assertPublicUrl,
+  BlockedUrlError,
   createPinnedAgent,
   isBlockedIp,
-  safeFetch,
-  safeFetchStream,
   type SafeFetchOptions,
   type SafeFetchResult,
   type SafeFetchStreamResult,
-} from '@openpanel/common/server/safe-fetch';
+  safeFetch,
+  safeFetchStream,
+} from '@openpanel/core';

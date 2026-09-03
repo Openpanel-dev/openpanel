@@ -1,18 +1,16 @@
 import crypto from 'node:crypto';
-import type { z } from 'zod';
-
 import { stripTrailingSlash } from '@openpanel/common';
-import { db, getId, getOrganizationById, getUserById } from '@openpanel/db';
+import { hashPassword } from '@openpanel/core';
 import type { IServiceUser, ProjectType } from '@openpanel/db';
+import { db, getId, getOrganizationById, getUserById } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
-
-import { hashPassword } from '@openpanel/common/server';
 import { addDays } from 'date-fns';
+import type { z } from 'zod';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 async function createOrGetOrganization(
   input: z.infer<typeof zOnboardingProject>,
-  user: IServiceUser,
+  user: IServiceUser
 ) {
   if (input.organizationId) {
     return await getOrganizationById(input.organizationId);
@@ -94,9 +92,15 @@ export const onboardingRouter = createTRPCRouter({
     .input(zOnboardingProject)
     .mutation(async ({ input, ctx }) => {
       const types: ProjectType[] = [];
-      if (input.website) types.push('website');
-      if (input.app) types.push('app');
-      if (input.backend) types.push('backend');
+      if (input.website) {
+        types.push('website');
+      }
+      if (input.app) {
+        types.push('app');
+      }
+      if (input.backend) {
+        types.push('backend');
+      }
 
       const user = await getUserById(ctx.session.userId);
       const organization = await createOrGetOrganization(input, user);

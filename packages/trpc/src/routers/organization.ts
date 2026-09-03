@@ -1,5 +1,4 @@
-import { z } from 'zod';
-
+import { generateSecureId } from '@openpanel/core';
 import {
   connectUserToOrganization,
   db,
@@ -9,17 +8,16 @@ import {
   getOrganizationById,
   getOrganizations,
 } from '@openpanel/db';
+import { sendEmail } from '@openpanel/email';
 import {
   zEditOrganization,
   zInviteUser,
   zUpdateMemberAccess,
 } from '@openpanel/validation';
-
-import { generateSecureId } from '@openpanel/common/server';
-import { sendEmail } from '@openpanel/email';
 import { addDays, addHours } from 'date-fns';
+import { z } from 'zod';
 import { getOrganizationAccess } from '../access';
-import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
+import { TRPCBadRequestError, TRPCForbiddenError } from '../errors';
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -49,7 +47,9 @@ export const organizationRouter = createTRPCRouter({
         userId: ctx.session.userId,
         organizationId: input.organizationId,
       });
-      if (!access) return null;
+      if (!access) {
+        return null;
+      }
       return { role: access.role };
     }),
 
@@ -85,7 +85,9 @@ export const organizationRouter = createTRPCRouter({
       });
 
       if (access?.role !== 'org:admin') {
-        throw new TRPCForbiddenError('You do not have access to this organization');
+        throw new TRPCForbiddenError(
+          'You do not have access to this organization'
+        );
       }
 
       const organization = await getOrganizationById(input.organizationId);
@@ -95,7 +97,7 @@ export const organizationRouter = createTRPCRouter({
       // cancelled (the subscription is scheduled to end), deletion is allowed.
       if (organization.hasSubscription && !organization.isWillBeCanceled) {
         throw new TRPCBadRequestError(
-          'Please cancel your subscription before deleting this organization.',
+          'Please cancel your subscription before deleting this organization.'
         );
       }
 
@@ -135,7 +137,9 @@ export const organizationRouter = createTRPCRouter({
       });
 
       if (access?.role !== 'org:admin') {
-        throw new TRPCForbiddenError('You do not have access to this organization');
+        throw new TRPCForbiddenError(
+          'You do not have access to this organization'
+        );
       }
 
       await db.$transaction([
@@ -191,7 +195,7 @@ export const organizationRouter = createTRPCRouter({
 
       if (alreadyMember && userExists) {
         throw new TRPCBadRequestError(
-          'User is already a member of the organization',
+          'User is already a member of the organization'
         );
       }
 
@@ -204,7 +208,7 @@ export const organizationRouter = createTRPCRouter({
 
       if (alreadyInvited) {
         throw new TRPCBadRequestError(
-          'User is already invited to the organization',
+          'User is already invited to the organization'
         );
       }
 
@@ -256,7 +260,7 @@ export const organizationRouter = createTRPCRouter({
     .input(
       z.object({
         inviteId: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
       const invite = await db.invite.findUniqueOrThrow({
@@ -287,7 +291,7 @@ export const organizationRouter = createTRPCRouter({
         organizationId: z.string(),
         userId: z.string(),
         id: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
       const exists = await db.member.count({
@@ -395,7 +399,7 @@ export const organizationRouter = createTRPCRouter({
       rateLimitMiddleware({
         max: 5,
         windowMs: 30_000,
-      }),
+      })
     )
     .input(z.object({ inviteId: z.string().optional() }))
     .query(async ({ input }) => {

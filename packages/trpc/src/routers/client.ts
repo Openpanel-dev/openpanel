@@ -1,10 +1,8 @@
 import crypto from 'node:crypto';
-import { z } from 'zod';
-
+import { hashPassword } from '@openpanel/core';
 import type { Prisma } from '@openpanel/db';
 import { db } from '@openpanel/db';
-
-import { hashPassword } from '@openpanel/common/server';
+import { z } from 'zod';
 import { getClientAccess, requireOrganizationAdmin } from '../access';
 import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
@@ -14,7 +12,7 @@ export const clientRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string(),
-      }),
+      })
     )
     .query(async ({ input }) => {
       return db.client.findMany({
@@ -28,7 +26,7 @@ export const clientRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         name: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
       const access = await getClientAccess({
@@ -56,7 +54,7 @@ export const clientRouter = createTRPCRouter({
         projectId: z.string(),
         organizationId: z.string(),
         type: z.enum(['read', 'write', 'root']).optional(),
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
       // Minting an ingestion credential - a `root` one at the caller's choosing
@@ -87,7 +85,7 @@ export const clientRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
       const client = await db.client.findUnique({

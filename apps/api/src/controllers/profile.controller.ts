@@ -1,19 +1,18 @@
-import type { FastifyReply, FastifyRequest } from 'fastify';
-import { assocPath, pathOr } from 'ramda';
-
-import { parseUserAgent } from '@openpanel/common/server';
+import { parseUserAgent } from '@openpanel/core';
 import { getProfileById, upsertProfile } from '@openpanel/db';
 import { getGeoLocation } from '@openpanel/geo';
 import type {
   DeprecatedIncrementProfilePayload,
   DeprecatedUpdateProfilePayload,
 } from '@openpanel/validation';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { assocPath, pathOr } from 'ramda';
 
 export async function updateProfile(
   request: FastifyRequest<{
     Body: DeprecatedUpdateProfilePayload;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const payload = request.body;
   const projectId = request.client!.projectId;
@@ -54,7 +53,7 @@ export async function incrementProfileProperty(
   request: FastifyRequest<{
     Body: DeprecatedIncrementProfilePayload;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const { profileId, property, value } = request.body;
   const projectId = request.client!.projectId;
@@ -69,7 +68,7 @@ export async function incrementProfileProperty(
 
   const parsed = Number.parseInt(
     pathOr<string>('0', property.split('.'), profile.properties),
-    10,
+    10
   );
 
   if (Number.isNaN(parsed)) {
@@ -79,7 +78,7 @@ export async function incrementProfileProperty(
   profile.properties = assocPath(
     property.split('.'),
     parsed + value,
-    profile.properties,
+    profile.properties
   );
 
   await upsertProfile({
@@ -96,7 +95,7 @@ export async function decrementProfileProperty(
   request: FastifyRequest<{
     Body: DeprecatedIncrementProfilePayload;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const { profileId, property, value } = request.body;
   const projectId = request.client?.projectId;
@@ -111,7 +110,7 @@ export async function decrementProfileProperty(
 
   const parsed = Number.parseInt(
     pathOr<string>('0', property.split('.'), profile.properties),
-    10,
+    10
   );
 
   if (Number.isNaN(parsed)) {
@@ -121,7 +120,7 @@ export async function decrementProfileProperty(
   profile.properties = assocPath(
     property.split('.'),
     parsed - value,
-    profile.properties,
+    profile.properties
   );
 
   await upsertProfile({

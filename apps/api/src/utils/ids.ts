@@ -1,11 +1,11 @@
 import crypto from 'node:crypto';
-import { generateDeviceId } from '@openpanel/common/server';
+import { generateDeviceId } from '@openpanel/core';
+import type { IClickhouseSession } from '@openpanel/db';
 import {
   convertClickhouseDateToJs,
   SESSION_TIMEOUT_MS,
   sessionBuffer,
 } from '@openpanel/db';
-import type { IClickhouseSession } from '@openpanel/db';
 
 export async function getDeviceId({
   projectId,
@@ -129,7 +129,7 @@ async function getInfoFromSession({
       projectId,
       deviceId: primary,
       eventMs: eventTimeMs,
-      graceMs: Math.min(5_000, Math.floor(SESSION_TIMEOUT_MS / 6)),
+      graceMs: Math.min(5000, Math.floor(SESSION_TIMEOUT_MS / 6)),
       windowMs: SESSION_TIMEOUT_MS,
     }),
   };

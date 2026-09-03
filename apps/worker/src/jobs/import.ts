@@ -1,3 +1,4 @@
+import type { ILogger } from '@openpanel/core';
 import {
   backfillSessionsToProduction,
   cleanupSessionStartEndEvents,
@@ -19,7 +20,6 @@ import {
   MixpanelProvider,
   UmamiProvider,
 } from '@openpanel/importer';
-import type { ILogger } from '@openpanel/logger';
 import type { ImportQueuePayload } from '@openpanel/queue';
 import type { Job } from 'bullmq';
 import { logger } from '../utils/logger';
@@ -369,7 +369,7 @@ export async function importJob(job: Job<ImportQueuePayload>) {
     } catch (markError) {
       jobLogger.error(
         { err: error, markError },
-        'Failed to mark import as failed',
+        'Failed to mark import as failed'
       );
     }
 

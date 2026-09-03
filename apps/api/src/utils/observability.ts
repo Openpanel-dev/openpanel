@@ -1,5 +1,5 @@
 import { init } from '@hyperdx/node-opentelemetry';
-import { getServiceName, interceptProcessOutput } from '@openpanel/logger';
+import { getServiceName, interceptProcessOutput } from '@openpanel/core';
 import { logger } from './logger';
 
 // Side-effect module — must stay the first import in index.ts.

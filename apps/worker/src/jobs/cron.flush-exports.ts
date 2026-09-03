@@ -1,4 +1,5 @@
 import { DateTime } from '@openpanel/common';
+import { createLogger } from '@openpanel/core';
 import {
   ch,
   clickhouseEventToExportEvent,
@@ -15,7 +16,6 @@ import {
 } from '@openpanel/db';
 import type { IObjectStoreAdapter } from '@openpanel/integrations/src/object-store';
 import { getServerIntegration } from '@openpanel/integrations/src/registry';
-import { createLogger } from '@openpanel/logger';
 import type { CronQueuePayload } from '@openpanel/queue';
 import {
   type IGCSExportConfig,
@@ -33,7 +33,10 @@ const logger = createLogger({ name: 'flush-exports' });
 const LAG_SECONDS = Number.parseInt(process.env.EXPORT_LAG_SECONDS || '60', 10);
 // Max rows per object/batch and max batches drained per (project, integration)
 // per run. A backlog drains over subsequent ticks rather than in one giant pass.
-const BATCH_SIZE = Number.parseInt(process.env.EXPORT_BATCH_SIZE || '50000', 10);
+const BATCH_SIZE = Number.parseInt(
+  process.env.EXPORT_BATCH_SIZE || '50000',
+  10
+);
 const MAX_BATCHES_PER_RUN = Number.parseInt(
   process.env.EXPORT_MAX_BATCHES_PER_RUN || '20',
   10
@@ -263,7 +266,12 @@ async function loadCursor(
   // explicit operation (reset the watermark).
   const now = new Date();
   await db.exportWatermark.create({
-    data: { projectId, integrationId, lastInsertedAt: now, lastEventId: NIL_UUID },
+    data: {
+      projectId,
+      integrationId,
+      lastInsertedAt: now,
+      lastEventId: NIL_UUID,
+    },
   });
   return { insertedAt: formatCh(now), eventId: NIL_UUID };
 }

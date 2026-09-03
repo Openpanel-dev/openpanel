@@ -1,6 +1,6 @@
-import { getTrustedIpFromHeaders } from '@openpanel/common/server/get-client-ip';
 import type { EnforceRateLimit } from '@openpanel/core';
-import { LRUCache, getRedisCache } from '@openpanel/redis';
+import { getTrustedIpFromHeaders } from '@openpanel/core';
+import { getRedisCache, LRUCache } from '@openpanel/redis';
 import { TRPCError } from '@trpc/server';
 
 const SECOND = 1000;
@@ -69,7 +69,7 @@ function formatDuration(ms: number): string {
  */
 export function getRateLimitIdentity(
   headers: Headers,
-  remoteAddress: string | undefined,
+  remoteAddress: string | undefined
 ) {
   const { ip, header } = getTrustedIpFromHeaders(headers, remoteAddress);
 
@@ -92,7 +92,11 @@ function tooManyRequests(blockMs: number): TRPCError {
  * Record a strike and (re)arm the block. Returns the new strike count and how
  * long the client is locked out for.
  */
-async function escalate(strikeKey: string, blockKey: string, cooldownKey: string) {
+async function escalate(
+  strikeKey: string,
+  blockKey: string,
+  cooldownKey: string
+) {
   const redis = getRedisCache();
 
   // Counter and its expiry go out together: a strike key that lost its TTL
@@ -135,7 +139,10 @@ export const enforceRateLimit: EnforceRateLimit = async ({
   max,
   windowMs,
 }) => {
-  const { fingerprint, ipHeader } = getRateLimitIdentity(headers, remoteAddress);
+  const { fingerprint, ipHeader } = getRateLimitIdentity(
+    headers,
+    remoteAddress
+  );
 
   const counterKey = key('count', path, fingerprint);
   const strikeKey = key('strike', path, fingerprint);
@@ -144,7 +151,7 @@ export const enforceRateLimit: EnforceRateLimit = async ({
 
   const log = (
     message: string,
-    payload: { strikes: number; blockMs: number; hits?: number },
+    payload: { strikes: number; blockMs: number; hits?: number }
   ) =>
     logger.warn(
       {
@@ -159,7 +166,7 @@ export const enforceRateLimit: EnforceRateLimit = async ({
         max,
         windowMs,
       },
-      message,
+      message
     );
 
   let blockTtlMs: number;
@@ -208,7 +215,7 @@ export const enforceRateLimit: EnforceRateLimit = async ({
         '1',
         'PX',
         ESCALATION_COOLDOWN_MS,
-        'NX',
+        'NX'
       );
 
       if (acquired) {

@@ -1,7 +1,16 @@
-import * as HyperDX from '@hyperdx/node-opentelemetry';
-import pino, { type Logger } from 'pino';
+// Concrete pino implementation. `../logger.ts` is the structural interface
+// every module and service codes against; this file is what actually
+// instantiates pino, and it is deliberately the only place in core that
+// imports it (ADR-007 layout: "pino instantiated in apps/api" — apps/api,
+// and the still-live V1 apps/worker, both build their named logger by
+// calling `createLogger` from here rather than each owning a copy).
+//
+// Ported from @openpanel/logger, unchanged (dissolved into core — M4-003).
 
-export type ILogger = Logger;
+import * as HyperDX from '@hyperdx/node-opentelemetry';
+import pino, { type Logger as PinoLogger } from 'pino';
+
+export type ILogger = PinoLogger;
 
 const logLevel = process.env.LOG_LEVEL ?? 'info';
 const silent = process.env.LOG_SILENT === 'true';
@@ -10,8 +19,7 @@ const silent = process.env.LOG_SILENT === 'true';
 // - 'otlp': pino ships via the HyperDX transport (requires HYPERDX_API_KEY).
 // - 'stdout': pino writes JSON to stdout; an external collector ships it.
 const logExporter =
-  process.env.LOG_EXPORTER ??
-  (process.env.HYPERDX_API_KEY ? 'otlp' : 'stdout');
+  process.env.LOG_EXPORTER ?? (process.env.HYPERDX_API_KEY ? 'otlp' : 'stdout');
 
 // Originals captured before interceptProcessOutput wraps the streams. Code
 // that must bypass capture (e.g. crash handlers mirroring fatals to stderr)
@@ -219,7 +227,9 @@ export function interceptProcessOutput(logger: ILogger): void {
         return original(chunk as never, encodingOrCallback as never, callback);
       }
       const cb =
-        typeof encodingOrCallback === 'function' ? encodingOrCallback : callback;
+        typeof encodingOrCallback === 'function'
+          ? encodingOrCallback
+          : callback;
       if (typeof cb === 'function') {
         process.nextTick(cb);
       }

@@ -1,4 +1,4 @@
-import { createLogger } from '@openpanel/logger';
+import { createLogger } from '@openpanel/core';
 import {
   type Admin,
   type Consumer,

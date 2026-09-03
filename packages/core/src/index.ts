@@ -6,6 +6,18 @@
 // once and mount the three route surfaces plus the tRPC router over it; a
 // service, a client or a buffer is not reachable from here by design.
 
+// The concrete pino implementation (dissolved from @openpanel/logger,
+// M4-003). `./logger` above is the structural interface every module codes
+// against; this is what apps/api, and the still-live apps/worker, call to
+// build one.
+export type { ILogger } from './clients/logger';
+export {
+  createLogger,
+  getServiceName,
+  interceptProcessOutput,
+  rawStderrWrite,
+  rawStdoutWrite,
+} from './clients/logger';
 export type {
   AppDeps,
   Ctx,
@@ -71,3 +83,48 @@ export type {
   ProjectAccessLike,
 } from './shared/access';
 export { createAccessChecks } from './shared/access';
+// Dissolved from @openpanel/common/server (M4-003) — a still-live V1 package
+// (db, importer, integrations, mcp, queue, apps/worker) reaches these the
+// same way apps/api and core itself do, until its own module lands.
+export {
+  createHash,
+  generateSalt,
+  hashPassword,
+  verifyPassword,
+} from './shared/crypto';
+export {
+  decrypt,
+  decryptCredential,
+  encrypt,
+  encryptCredential,
+  isEncrypted,
+} from './shared/encryption';
+export {
+  DEFAULT_IP_HEADER_ORDER,
+  getClientIpFromHeaders,
+  getTrustedIpFromHeaders,
+  TRUSTED_IP_HEADER_ORDER,
+} from './shared/get-client-ip';
+export { generateId, generateSecureId, shortId } from './shared/id';
+export { getReferrerWithQuery, parseReferrer } from './shared/parse-referrer';
+export type {
+  UserAgentInfo,
+  UserAgentResult,
+} from './shared/parser-user-agent';
+export { getDevice, parseUserAgent } from './shared/parser-user-agent';
+export { generateDeviceId } from './shared/profileId';
+export type {
+  SafeFetchOptions,
+  SafeFetchResult,
+  SafeFetchStreamResult,
+} from './shared/safe-fetch';
+export {
+  assertPublicHostname,
+  assertPublicUrl,
+  BlockedUrlError,
+  createPinnedAgent,
+  isBlockedIp,
+  safeFetch,
+  safeFetchStream,
+} from './shared/safe-fetch';
+export { assertSafeUrl, createPinnedLookup } from './shared/ssrf';

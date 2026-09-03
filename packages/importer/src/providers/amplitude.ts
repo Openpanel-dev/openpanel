@@ -1,18 +1,18 @@
 import { randomUUID } from 'node:crypto';
-import { Readable } from 'node:stream';
 import { createInterface } from 'node:readline';
+import { Readable } from 'node:stream';
 import { createBrotliDecompress, createGunzip } from 'node:zlib';
 import { isSameDomain, parsePath, toDots } from '@openpanel/common';
 import {
   getReferrerWithQuery,
+  type ILogger,
   parseReferrer,
-} from '@openpanel/common/server';
+} from '@openpanel/core';
 import {
   formatClickhouseDate,
   type IClickhouseEvent,
   type IClickhouseProfile,
 } from '@openpanel/db';
-import type { ILogger } from '@openpanel/logger';
 import type { IAmplitudeImportConfig } from '@openpanel/validation';
 import unzipper from 'unzipper';
 import { z } from 'zod';
@@ -357,7 +357,9 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
     }
 
     const eventName = this.mapEventName(raw.event_type);
-    const timestamp = this.parseTimestamp(raw.event_time || raw.client_event_time);
+    const timestamp = this.parseTimestamp(
+      raw.event_time || raw.client_event_time
+    );
 
     return {
       id: randomUUID(),
@@ -526,7 +528,8 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
   private getDeviceType(raw: AmplitudeRawEvent): string {
     const os = (raw.os_name || '').toLowerCase();
     const platform = (raw.platform || '').toLowerCase();
-    const family = `${raw.device_family || ''} ${raw.device_type || ''}`.toLowerCase();
+    const family =
+      `${raw.device_family || ''} ${raw.device_type || ''}`.toLowerCase();
 
     const isMobileOs =
       os === 'ios' ||
@@ -558,7 +561,12 @@ export class AmplitudeProvider extends BaseImportProvider<AmplitudeRawEvent> {
     props: Record<string, unknown>,
     query: Record<string, string>
   ): Record<string, any> {
-    const strip = new Set([...URL_LIKE_KEYS, 'referrer', '$referrer', ...Object.keys(query)]);
+    const strip = new Set([
+      ...URL_LIKE_KEYS,
+      'referrer',
+      '$referrer',
+      ...Object.keys(query),
+    ]);
     const result: Record<string, any> = {};
 
     for (const [key, value] of Object.entries(props)) {

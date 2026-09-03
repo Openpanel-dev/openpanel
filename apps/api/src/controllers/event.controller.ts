@@ -1,5 +1,5 @@
 import { generateId } from '@openpanel/common';
-import { parseUserAgent } from '@openpanel/common/server';
+import { parseUserAgent } from '@openpanel/core';
 import { getSalts } from '@openpanel/db';
 import { getAsnInfo, getGeoLocation } from '@openpanel/geo';
 import {

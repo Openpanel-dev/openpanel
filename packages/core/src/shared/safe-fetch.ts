@@ -103,7 +103,7 @@ async function resolvePublicAddresses(hostname: string): Promise<string[]> {
   for (const { address } of addresses) {
     if (isBlockedIp(address)) {
       throw new BlockedUrlError(
-        `Refusing to connect to ${host} (resolves to a non-public address)`,
+        `Refusing to connect to ${host} (resolves to a non-public address)`
       );
     }
   }
@@ -125,7 +125,7 @@ export async function assertPublicUrl(url: URL): Promise<string[]> {
 
 /** Validate a bare hostname (no URL available), e.g. before a TLS probe. */
 export async function assertPublicHostname(
-  hostname: string,
+  hostname: string
 ): Promise<string[]> {
   return resolvePublicAddresses(hostname);
 }
@@ -148,8 +148,8 @@ export function createPinnedLookup(address: string) {
     callback: (
       err: null,
       addressOrList: string | { address: string; family: number }[],
-      family?: number,
-    ) => void,
+      family?: number
+    ) => void
   ) => {
     if (options.all) {
       callback(null, [{ address, family }]);
@@ -208,7 +208,7 @@ const REDIRECT_STATUS = new Set([301, 302, 303, 307, 308]);
 
 async function readBodyWithLimit(
   body: ReadableStream<Uint8Array> | null,
-  maxBytes: number,
+  maxBytes: number
 ): Promise<Buffer> {
   if (!body) {
     return Buffer.alloc(0);
@@ -256,7 +256,7 @@ export interface SafeFetchStreamResult {
 
 function combineSignals(
   timeoutSignal: AbortSignal,
-  callerSignal?: AbortSignal,
+  callerSignal?: AbortSignal
 ): AbortSignal {
   return callerSignal
     ? AbortSignal.any([timeoutSignal, callerSignal])
@@ -273,7 +273,7 @@ function combineSignals(
 async function walkToFinalResponse(
   input: string | URL,
   options: SafeFetchOptions,
-  signal: AbortSignal,
+  signal: AbortSignal
 ): Promise<{
   response: Awaited<ReturnType<typeof undiciFetch>>;
   agent: Agent;
@@ -345,26 +345,26 @@ async function walkToFinalResponse(
  */
 export async function safeFetch(
   input: string | URL,
-  options: SafeFetchOptions = {},
+  options: SafeFetchOptions = {}
 ): Promise<SafeFetchResult> {
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),
-    options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   );
 
   try {
     const { response, agent, finalUrl, chain } = await walkToFinalResponse(
       input,
       options,
-      combineSignals(controller.signal, options.signal),
+      combineSignals(controller.signal, options.signal)
     );
 
     try {
       const body = await readBodyWithLimit(
         response.body as ReadableStream<Uint8Array> | null,
-        maxBytes,
+        maxBytes
       );
       return {
         status: response.status,
@@ -394,19 +394,19 @@ export async function safeFetch(
  */
 export async function safeFetchStream(
   input: string | URL,
-  options: SafeFetchOptions = {},
+  options: SafeFetchOptions = {}
 ): Promise<SafeFetchStreamResult> {
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),
-    options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   );
 
   try {
     const { response, agent, finalUrl, chain } = await walkToFinalResponse(
       input,
       options,
-      combineSignals(controller.signal, options.signal),
+      combineSignals(controller.signal, options.signal)
     );
 
     let closed = false;

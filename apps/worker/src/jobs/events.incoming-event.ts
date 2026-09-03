@@ -1,5 +1,9 @@
 import { getTime, isSameDomain, parsePath } from '@openpanel/common';
-import { getReferrerWithQuery, parseReferrer } from '@openpanel/common/server';
+import {
+  getReferrerWithQuery,
+  type ILogger,
+  parseReferrer,
+} from '@openpanel/core';
 import type {
   IServiceCreateEventPayload,
   IServiceCreateEventPayloadWithId,
@@ -13,7 +17,6 @@ import {
   matchEvent,
   sessionBuffer,
 } from '@openpanel/db';
-import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
 import { anyPass, isEmpty, isNil, mergeDeepRight, omit, reject } from 'ramda';
 import { sessionEndsEnqueued, sessionsStarted } from '@/metrics';

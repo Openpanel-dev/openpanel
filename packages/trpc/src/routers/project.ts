@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { stripTrailingSlash } from '@openpanel/common';
-import { hashPassword } from '@openpanel/common/server';
+import { hashPassword } from '@openpanel/core';
 import {
   db,
   getClientByIdCached,
@@ -19,7 +19,7 @@ import {
   requireProjectAccess,
   requireProjectAdmin,
 } from '../access';
-import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
+import { TRPCBadRequestError, TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const projectRouter = createTRPCRouter({
@@ -161,7 +161,9 @@ export const projectRouter = createTRPCRouter({
       });
 
       if (access?.role !== 'org:admin') {
-        throw new TRPCForbiddenError('Only organization admins can create projects');
+        throw new TRPCForbiddenError(
+          'Only organization admins can create projects'
+        );
       }
 
       const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
@@ -260,7 +262,7 @@ export const projectRouter = createTRPCRouter({
       // level. Cancelling it here would leave the organization unable to delete.
       if (project?.organization?.deleteAt) {
         throw new TRPCBadRequestError(
-          'This organization is scheduled for deletion. Cancel the deletion from the organization settings.',
+          'This organization is scheduled for deletion. Cancel the deletion from the organization settings.'
         );
       }
 

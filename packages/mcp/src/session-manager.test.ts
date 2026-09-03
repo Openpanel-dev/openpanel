@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { McpAuthContext } from './auth';
 
 const mockSetJson = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
@@ -15,7 +15,7 @@ vi.mock('@openpanel/redis', () => ({
   }),
 }));
 
-vi.mock('@openpanel/logger', () => ({
+vi.mock('@openpanel/core', () => ({
   createLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -50,7 +50,11 @@ describe('SessionManager', () => {
     it('stores context in Redis with TTL', async () => {
       const sm = new SessionManager();
       await sm.setContext('sess-1', CTX);
-      expect(mockSetJson).toHaveBeenCalledWith('mcp:session:sess-1', 30 * 60, CTX);
+      expect(mockSetJson).toHaveBeenCalledWith(
+        'mcp:session:sess-1',
+        30 * 60,
+        CTX
+      );
     });
 
     it('retrieves context from Redis', async () => {

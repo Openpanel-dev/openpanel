@@ -1,6 +1,6 @@
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { rawStderrWrite } from '@openpanel/logger';
+import { rawStderrWrite } from '@openpanel/core';
 import {
   cohortComputeQueue,
   cronQueue,

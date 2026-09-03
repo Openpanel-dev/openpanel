@@ -95,7 +95,7 @@ function isValidIp(ip: string): boolean {
 
 export function getClientIpFromHeaders(
   headers: Record<string, string | string[] | undefined> | Headers,
-  overrideHeaderName?: string,
+  overrideHeaderName?: string
 ): {
   ip: string;
   header: string;
@@ -121,7 +121,9 @@ export function getClientIpFromHeaders(
       }
     }
 
-    if (!value) continue;
+    if (!value) {
+      continue;
+    }
 
     // Handle x-forwarded-for (comma separated)
     if (headerName === 'x-forwarded-for') {
@@ -178,7 +180,7 @@ export const TRUSTED_IP_HEADER_ORDER = [
  */
 export function getTrustedIpFromHeaders(
   headers: Record<string, string | string[] | undefined> | Headers,
-  socketIp?: string,
+  socketIp?: string
 ): { ip: string; header: string } {
   const headerOrder = process.env.TRUSTED_IP_HEADER_ORDER
     ? process.env.TRUSTED_IP_HEADER_ORDER.split(',').map((h) => h.trim())
@@ -191,10 +193,13 @@ export function getTrustedIpFromHeaders(
       value = headers.get(headerName);
     } else {
       const headerValue = headers[headerName];
-      value = (Array.isArray(headerValue) ? headerValue[0] : headerValue) || null;
+      value =
+        (Array.isArray(headerValue) ? headerValue[0] : headerValue) || null;
     }
 
-    if (!value) continue;
+    if (!value) {
+      continue;
+    }
 
     // A proxy chain appends as it goes, so the *last* entry is the one written
     // by the hop closest to us - the only entry a client cannot forge. This is

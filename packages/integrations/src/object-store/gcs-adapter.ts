@@ -1,8 +1,9 @@
 import { Storage } from '@google-cloud/storage';
-import { decryptCredential } from '@openpanel/common/server';
-import { createLogger } from '@openpanel/logger';
-import { type IGCSExportConfig, parseServiceAccountKey } from '@openpanel/validation';
-
+import { createLogger, decryptCredential } from '@openpanel/core';
+import {
+  type IGCSExportConfig,
+  parseServiceAccountKey,
+} from '@openpanel/validation';
 import type {
   IObjectStoreAdapter,
   IUploadOptions,
@@ -52,7 +53,10 @@ export class GCSAdapter implements IObjectStoreAdapter {
     // any future caller that skips it.
     const parsed = parseServiceAccountKey(this.config.serviceAccountKey);
     if (!parsed.ok) {
-      logger.error({ reason: parsed.error }, 'Rejected GCS credential document');
+      logger.error(
+        { reason: parsed.error },
+        'Rejected GCS credential document'
+      );
       throw new Error(`Invalid service account key: ${parsed.error}`);
     }
     const { credentials } = parsed;
@@ -90,7 +94,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
         {
           projectId: credentials.project_id,
         },
-        'GCS client created',
+        'GCS client created'
       );
 
       return this.storage;
@@ -132,7 +136,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
           key: options.key,
           generation: metadata?.generation,
         },
-        'File uploaded to GCS',
+        'File uploaded to GCS'
       );
 
       return {
@@ -148,7 +152,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
           bucket: options.bucket,
           key: options.key,
         },
-        'Failed to upload file to GCS',
+        'Failed to upload file to GCS'
       );
       throw error;
     }
@@ -158,10 +162,10 @@ export class GCSAdapter implements IObjectStoreAdapter {
    * Upload multiple files to GCS
    */
   async uploadMany(
-    options: Array<IUploadOptions>,
+    options: Array<IUploadOptions>
   ): Promise<Array<IUploadResult | Error>> {
     const results = await Promise.allSettled(
-      options.map((opt) => this.upload(opt)),
+      options.map((opt) => this.upload(opt))
     );
 
     return results.map((result) => {

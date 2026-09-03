@@ -1,22 +1,25 @@
 import crypto from 'node:crypto';
-import { logger } from '@/utils/logger';
-import { parseUrlMeta } from '@/utils/parseUrlMeta';
+import {
+  DEFAULT_IP_HEADER_ORDER,
+  getClientIpFromHeaders,
+} from '@openpanel/core';
+import { ch, chQuery, formatClickhouseDate, TABLE_NAMES } from '@openpanel/db';
+import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
+import { getCache, getRedisCache } from '@openpanel/redis';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
   ALLOWED_IMAGE_CONTENT_TYPES,
   normalizeContentType,
   processImage,
   processOgImage,
 } from '@/utils/image-proxy';
-import { BlockedUrlError, assertPublicUrl, safeFetch } from '@/utils/safe-fetch';
-import type { FastifyReply, FastifyRequest } from 'fastify';
-
+import { logger } from '@/utils/logger';
+import { parseUrlMeta } from '@/utils/parseUrlMeta';
 import {
-  DEFAULT_IP_HEADER_ORDER,
-  getClientIpFromHeaders,
-} from '@openpanel/common/server/get-client-ip';
-import { TABLE_NAMES, ch, chQuery, formatClickhouseDate } from '@openpanel/db';
-import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
-import { getCache, getRedisCache } from '@openpanel/redis';
+  assertPublicUrl,
+  BlockedUrlError,
+  safeFetch,
+} from '@/utils/safe-fetch';
 
 interface GetFaviconParams {
   url: string;
@@ -43,7 +46,9 @@ function createCacheKey(url: string, prefix = 'favicon'): string {
  */
 function validateUrl(raw?: string): URL | null {
   try {
-    if (!raw) throw new Error('Missing ?url');
+    if (!raw) {
+      throw new Error('Missing ?url');
+    }
     const url = new URL(raw);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
       throw new Error('Only http/https URLs are allowed');
@@ -56,7 +61,7 @@ function validateUrl(raw?: string): URL | null {
 
 // Binary cache functions (more efficient than base64)
 async function getFromCacheBinary(
-  key: string,
+  key: string
 ): Promise<{ buffer: Buffer; contentType: string } | null> {
   const redis = getRedisCache();
   const [bufferBase64, contentType] = await Promise.all([
@@ -64,14 +69,16 @@ async function getFromCacheBinary(
     redis.get(`${key}:ctype`),
   ]);
 
-  if (!bufferBase64 || !contentType) return null;
+  if (!(bufferBase64 && contentType)) {
+    return null;
+  }
   return { buffer: Buffer.from(bufferBase64, 'base64'), contentType };
 }
 
 async function setToCacheBinary(
   key: string,
   buffer: Buffer,
-  contentType: string,
+  contentType: string
 ): Promise<void> {
   const redis = getRedisCache();
   await Promise.all([
@@ -82,7 +89,7 @@ async function setToCacheBinary(
 
 // Fetch image with SSRF protection, timeout and size limits
 async function fetchImage(
-  url: URL,
+  url: URL
 ): Promise<{ buffer: Buffer; contentType: string; status: number }> {
   try {
     // `safeFetch` validates and pins every hop, so a redirect cannot be used
@@ -105,14 +112,18 @@ async function fetchImage(
     }
 
     const contentType = normalizeContentType(
-      result.headers.get('content-type'),
+      result.headers.get('content-type')
     );
     if (!ALLOWED_IMAGE_CONTENT_TYPES.has(contentType)) {
       logger.debug(
         { url: url.toString(), contentType },
-        'Refusing non-image response',
+        'Refusing non-image response'
       );
-      return { buffer: Buffer.alloc(0), contentType: 'text/plain', status: 415 };
+      return {
+        buffer: Buffer.alloc(0),
+        contentType: 'text/plain',
+        status: 415,
+      };
     }
 
     return { buffer: result.body, contentType, status: 200 };
@@ -120,7 +131,7 @@ async function fetchImage(
     if (error instanceof BlockedUrlError) {
       logger.warn(
         { url: url.toString(), reason: error.message },
-        'Blocked image fetch',
+        'Blocked image fetch'
       );
     }
     return { buffer: Buffer.alloc(0), contentType: 'text/plain', status: 500 };
@@ -152,7 +163,7 @@ export async function getFavicon(
   request: FastifyRequest<{
     Querystring: GetFaviconParams;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   try {
     logger.info({ url: request.query.url }, 'getFavicon');
@@ -188,7 +199,7 @@ export async function getFavicon(
       const meta = await parseUrlMeta(url.toString());
       logger.info(
         { url: url.toString(), favicon: meta?.favicon },
-        'parseUrlMeta result',
+        'parseUrlMeta result'
       );
       if (meta?.favicon) {
         imageUrl = new URL(meta.favicon);
@@ -204,7 +215,7 @@ export async function getFavicon(
         originalUrl: url.toString(),
         imageUrl: imageUrl.toString(),
       },
-      'Fetching favicon',
+      'Fetching favicon'
     );
 
     // Fetch the image
@@ -218,7 +229,7 @@ export async function getFavicon(
         bufferLength: buffer.length,
         contentType,
       },
-      'Favicon fetch result',
+      'Favicon fetch result'
     );
 
     // If the direct favicon fetch failed and it's not from DuckDuckGo's service,
@@ -226,7 +237,7 @@ export async function getFavicon(
     if (buffer.length === 0 && !imageUrl.hostname.includes('duckduckgo.com')) {
       const { hostname } = url;
       const duckduckgoUrl = new URL(
-        `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
+        `https://icons.duckduckgo.com/ip3/${hostname}.ico`
       );
 
       logger.info(
@@ -234,7 +245,7 @@ export async function getFavicon(
           originalUrl: url.toString(),
           duckduckgoUrl: duckduckgoUrl.toString(),
         },
-        'Trying DuckDuckGo favicon service',
+        'Trying DuckDuckGo favicon service'
       );
 
       const duckduckgoResult = await fetchImage(duckduckgoUrl);
@@ -249,7 +260,7 @@ export async function getFavicon(
           bufferLength: buffer.length,
           contentType,
         },
-        'DuckDuckGo favicon result',
+        'DuckDuckGo favicon result'
       );
     }
 
@@ -265,7 +276,7 @@ export async function getFavicon(
     const processedBuffer = await processImage(
       buffer,
       imageUrl.toString(),
-      contentType,
+      contentType
     );
 
     logger.info(
@@ -274,7 +285,7 @@ export async function getFavicon(
         originalBufferLength: buffer.length,
         processedBufferLength: processedBuffer.length,
       },
-      'Favicon processing result',
+      'Favicon processing result'
     );
 
     // `processImage` either passed an ICO through untouched or rasterized to
@@ -293,7 +304,7 @@ export async function getFavicon(
     if (error instanceof BlockedUrlError) {
       logger.warn(
         { url: request.query.url, reason: error.message },
-        'Blocked favicon fetch',
+        'Blocked favicon fetch'
       );
       reply.header('Cache-Control', 'no-store');
       return reply
@@ -302,10 +313,7 @@ export async function getFavicon(
         .send('Bad request');
     }
 
-    logger.error(
-      { err: error, url: request.query.url },
-      'Favicon fetch error',
-    );
+    logger.error({ err: error, url: request.query.url }, 'Favicon fetch error');
 
     const message =
       process.env.NODE_ENV === 'production'
@@ -318,7 +326,7 @@ export async function getFavicon(
 
 export async function clearFavicons(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const redis = getRedisCache();
   const keys = await redis.keys('favicon:*');
@@ -334,7 +342,7 @@ export async function clearFavicons(
 
 export async function clearOgImages(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const redis = getRedisCache();
   const keys = await redis.keys('og:*');
@@ -355,7 +363,7 @@ export async function ping(
       count: number;
     };
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   try {
     await ch.insert({
@@ -385,10 +393,10 @@ export async function ping(
 export async function stats(request: FastifyRequest, reply: FastifyReply) {
   const res = await getCache('api:stats', 60 * 60, async () => {
     const projects = await chQuery<{ project_id: string; count: number }>(
-      `SELECT project_id, count(*) as count from ${TABLE_NAMES.events} GROUP by project_id order by count()`,
+      `SELECT project_id, count(*) as count from ${TABLE_NAMES.events} GROUP by project_id order by count()`
     );
     const last24h = await chQuery<{ count: number }>(
-      `SELECT count(*) as count from ${TABLE_NAMES.events} WHERE created_at > now() - interval '24 hours'`,
+      `SELECT count(*) as count from ${TABLE_NAMES.events} WHERE created_at > now() - interval '24 hours'`
     );
     return { projects, last24hCount: last24h[0]?.count || 0 };
   });
@@ -410,7 +418,7 @@ export async function getGeo(request: FastifyRequest, reply: FastifyReply) {
         ip,
         geo: await getGeoLocation(ip),
       };
-    }),
+    })
   );
 
   if (!ip) {
@@ -428,7 +436,7 @@ export async function getGeo(request: FastifyRequest, reply: FastifyReply) {
         acc[other.header] = other;
         return acc;
       },
-      {} as Record<string, { ip: string; header: string; geo: GeoLocation }>,
+      {} as Record<string, { ip: string; header: string; geo: GeoLocation }>
     ),
   });
 }
@@ -439,7 +447,7 @@ export async function getOgImage(
       url: string;
     };
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   try {
     const url = validateUrl(request.query.url);
@@ -494,7 +502,7 @@ export async function getOgImage(
     if (error instanceof BlockedUrlError) {
       logger.warn(
         { url: request.query.url, reason: error.message },
-        'Blocked OG image fetch',
+        'Blocked OG image fetch'
       );
       reply.header('Cache-Control', 'no-store');
       return reply
@@ -505,7 +513,7 @@ export async function getOgImage(
 
     logger.error(
       { err: error, url: request.query.url },
-      'OG image fetch error',
+      'OG image fetch error'
     );
 
     const message =

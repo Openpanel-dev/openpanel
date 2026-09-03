@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { stripTrailingSlash } from '@openpanel/common';
-import { hashPassword } from '@openpanel/common/server';
+import { hashPassword } from '@openpanel/core';
 import {
   db,
   getClientByIdCached,
@@ -180,9 +180,7 @@ export async function updateProject(
     updateData.name = body.name;
   }
   if (body.domain !== undefined) {
-    updateData.domain = body.domain
-      ? stripTrailingSlash(body.domain)
-      : null;
+    updateData.domain = body.domain ? stripTrailingSlash(body.domain) : null;
   }
   if (body.cors !== undefined) {
     updateData.cors = body.cors.map((c) => stripTrailingSlash(c));

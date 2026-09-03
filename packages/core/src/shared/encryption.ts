@@ -20,7 +20,7 @@ function getEncryptionKey(): Buffer {
 
   if (keyHex.length !== 64) {
     throw new Error(
-      'ENCRYPTION_KEY must be 32 bytes (64 hex characters). Generate with: openssl rand -hex 32',
+      'ENCRYPTION_KEY must be 32 bytes (64 hex characters). Generate with: openssl rand -hex 32'
     );
   }
 
@@ -57,7 +57,7 @@ export function decrypt(ciphertext: string): string {
   // mid-way through a multi-byte UTF-8 sequence and a per-chunk toString would
   // turn the split character into replacement chars.
   return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString(
-    'utf8',
+    'utf8'
   );
 }
 
@@ -115,7 +115,7 @@ export function decryptCredential(ciphertext: string): string {
   // Remove prefix and decode base64
   const combined = Buffer.from(
     ciphertext.slice(ENCRYPTION_PREFIX.length),
-    'base64',
+    'base64'
   );
 
   if (combined.length < IV_LENGTH + AUTH_TAG_LENGTH) {
@@ -127,7 +127,7 @@ export function decryptCredential(ciphertext: string): string {
   const authTag = combined.subarray(combined.length - AUTH_TAG_LENGTH);
   const encryptedData = combined.subarray(
     IV_LENGTH,
-    combined.length - AUTH_TAG_LENGTH,
+    combined.length - AUTH_TAG_LENGTH
   );
 
   const decipher = createDecipheriv(ALGORITHM, key, iv, {

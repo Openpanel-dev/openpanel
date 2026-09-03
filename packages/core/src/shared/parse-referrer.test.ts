@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { getReferrerWithQuery, parseReferrer } from './parse-referrer';
 
 describe('parseReferrer', () => {
@@ -107,7 +107,7 @@ describe('getReferrerWithQuery', () => {
         utm_source: 'google',
         ref: 'facebook',
         utm_referrer: 'twitter',
-      }),
+      })
     ).toEqual({
       name: 'Google',
       type: 'search',

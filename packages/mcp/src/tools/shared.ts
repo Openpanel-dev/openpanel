@@ -1,5 +1,5 @@
+import { createLogger } from '@openpanel/core';
 import { resolveClientProjectId } from '@openpanel/db';
-import { createLogger } from '@openpanel/logger';
 import { z } from 'zod';
 import type { McpAuthContext } from '../auth';
 
@@ -11,7 +11,7 @@ const logger = createLogger({ name: 'mcp' });
  */
 export function resolveProjectId(
   context: McpAuthContext,
-  inputProjectId: string | undefined,
+  inputProjectId: string | undefined
 ): Promise<string> {
   return resolveClientProjectId({
     clientType: context.clientType,
@@ -36,7 +36,6 @@ export function projectIdSchema(context: McpAuthContext) {
         )
     : z.string().optional();
 }
-
 
 /**
  * Zod schema for common date range inputs. Both fields are optional and
@@ -118,7 +117,9 @@ export interface TableResult {
 }
 
 function isTableResult(value: unknown): value is TableResult {
-  if (value === null || typeof value !== 'object') return false;
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
   const candidate = value as Partial<TableResult>;
   return Array.isArray(candidate.columns) && Array.isArray(candidate.rows);
 }
@@ -207,7 +208,9 @@ export function table<T extends object>(
     let total = 0;
     for (const row of tail) {
       const value = row[column];
-      if (typeof value === 'number' && Number.isFinite(value)) total += value;
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        total += value;
+      }
     }
     totals.set(column, total);
   }
@@ -215,7 +218,9 @@ export function table<T extends object>(
   const [labelColumn] = columns;
   out.push(
     columns.map((column) => {
-      if (column === labelColumn) return `(other: ${tail.length} ${unit})`;
+      if (column === labelColumn) {
+        return `(other: ${tail.length} ${unit})`;
+      }
       return totals.has(column) ? totals.get(column) : null;
     })
   );
@@ -237,9 +242,13 @@ function shrinkLargestTable(payload: unknown): boolean {
   let largest: TableResult | undefined;
 
   const visit = (node: unknown) => {
-    if (node === null || typeof node !== 'object') return;
+    if (node === null || typeof node !== 'object') {
+      return;
+    }
     if (isTableResult(node)) {
-      if (!largest || node.rows.length > largest.rows.length) largest = node;
+      if (!largest || node.rows.length > largest.rows.length) {
+        largest = node;
+      }
       return;
     }
     for (const value of Object.values(node as Record<string, unknown>)) {
@@ -248,7 +257,9 @@ function shrinkLargestTable(payload: unknown): boolean {
   };
   visit(payload);
 
-  if (!largest || largest.rows.length <= 1) return false;
+  if (!largest || largest.rows.length <= 1) {
+    return false;
+  }
 
   const kept = Math.max(1, Math.floor(largest.rows.length / 2));
   largest.rows = largest.rows.slice(0, kept);

@@ -1,5 +1,4 @@
-import { stripTrailingSlash } from '../src/string';
-
+import { stripTrailingSlash } from '@openpanel/common';
 import referrers from './referrers';
 
 function getHostname(url: string | undefined) {
@@ -26,7 +25,7 @@ export function parseReferrer(url: string | undefined) {
 }
 
 export function getReferrerWithQuery(
-  query: Record<string, string> | undefined,
+  query: Record<string, string> | undefined
 ) {
   if (!query) {
     return null;
@@ -47,7 +46,7 @@ export function getReferrerWithQuery(
     referrers[source] ||
     referrers[`${source}.com`] ||
     Object.values(referrers).find(
-      (referrer) => referrer.name.toLowerCase() === source,
+      (referrer) => referrer.name.toLowerCase() === source
     );
 
   if (match) {

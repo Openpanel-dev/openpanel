@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { getDevice, parseUserAgent } from './parser-user-agent';
 
 describe('parseUserAgent', () => {
@@ -12,7 +12,7 @@ describe('parseUserAgent', () => {
       browserVersion: '',
       brand: '',
       model: '',
-    };
+    } as const;
 
     expect(parseUserAgent(null)).toEqual(serverUa);
     expect(parseUserAgent(undefined)).toEqual(serverUa);
@@ -97,7 +97,7 @@ describe('parseUserAgent', () => {
       browserVersion: '',
       brand: '',
       model: '',
-    };
+    } as const;
 
     serverUas.forEach((ua) => {
       expect(parseUserAgent(ua)).toEqual(expectedResult);
@@ -201,7 +201,7 @@ describe('getDevice', () => {
 describe('parseUserAgent - brand detection', () => {
   it('should detect Xiaomi brand from Manufacturer field', () => {
     const result = parseUserAgent(
-      'App/1.0 (Android 12; Model=POCO X5; Manufacturer=Xiaomi)',
+      'App/1.0 (Android 12; Model=POCO X5; Manufacturer=Xiaomi)'
     );
     expect(result.brand).toBe('Xiaomi');
     expect(result.model).toBe('POCO X5');
@@ -210,7 +210,7 @@ describe('parseUserAgent - brand detection', () => {
 
   it('should detect Samsung brand from model name', () => {
     const result = parseUserAgent(
-      'App/1.0 (Android 13; Model=Galaxy S23 Ultra)',
+      'App/1.0 (Android 13; Model=Galaxy S23 Ultra)'
     );
     expect(result.brand).toBe('Samsung');
     expect(result.model).toBe('Galaxy S23 Ultra');
@@ -228,7 +228,7 @@ describe('parseUserAgent - brand detection', () => {
 
   it('should detect OnePlus', () => {
     const result = parseUserAgent(
-      'App/1.0 (Android 13; Model=OnePlus 11; Manufacturer=OnePlus)',
+      'App/1.0 (Android 13; Model=OnePlus 11; Manufacturer=OnePlus)'
     );
     expect(result.brand).toBe('OnePlus');
     expect(result.model).toBe('OnePlus 11');
@@ -239,7 +239,7 @@ describe('parseUserAgent - brand detection', () => {
 
   it('should detect Huawei', () => {
     const result = parseUserAgent(
-      'App/1.0 (Android 12; Model=P60 Pro; Manufacturer=Huawei)',
+      'App/1.0 (Android 12; Model=P60 Pro; Manufacturer=Huawei)'
     );
     expect(result.brand).toBe('Huawei');
     expect(result.model).toBe('P60 Pro');

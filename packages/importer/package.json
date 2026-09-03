@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@openpanel/common": "workspace:*",
+    "@openpanel/core": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/queue": "workspace:*",
     "@openpanel/validation": "workspace:*",
@@ -25,7 +26,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@openpanel/logger": "workspace:*",
     "@types/node": "^20.0.0",
     "@types/ramda": "^0.31.1",
     "@types/unzipper": "^0.10.10",

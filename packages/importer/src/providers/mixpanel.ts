@@ -2,13 +2,13 @@ import { randomUUID } from 'node:crypto';
 import { isSameDomain, parsePath, toDots } from '@openpanel/common';
 import {
   getReferrerWithQuery,
+  type ILogger,
   parseReferrer,
   parseUserAgent,
   type UserAgentInfo,
-} from '@openpanel/common/server';
-import { formatClickhouseDate, type IClickhouseEvent } from '@openpanel/db';
+} from '@openpanel/core';
 import type { IClickhouseProfile } from '@openpanel/db';
-import type { ILogger } from '@openpanel/logger';
+import { formatClickhouseDate, type IClickhouseEvent } from '@openpanel/db';
 import type { IMixpanelImportConfig } from '@openpanel/validation';
 import { z } from 'zod';
 import { BaseImportProvider } from '../base-provider';
@@ -107,7 +107,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
             requestsInWindow: this.requestTimestamps.length,
             waitMs,
           },
-          `Rate limit: ${this.requestTimestamps.length} requests in the last hour, waiting ${Math.ceil(waitMs / 1000)}s`,
+          `Rate limit: ${this.requestTimestamps.length} requests in the last hour, waiting ${Math.ceil(waitMs / 1000)}s`
         );
         await new Promise((resolve) => setTimeout(resolve, waitMs));
         // Prune again after waiting
@@ -182,7 +182,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
               isRateLimit,
               willRetry: !isLastRetry,
             },
-            'Failed to fetch events for date range',
+            'Failed to fetch events for date range'
           );
 
           if (isLastRetry) {
@@ -208,7 +208,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
               chunkTo,
               isRateLimit,
             },
-            'Retrying after delay',
+            'Retrying after delay'
           );
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
@@ -239,7 +239,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         projectId,
         serviceAccount,
       },
-      'Fetching events from Mixpanel',
+      'Fetching events from Mixpanel'
     );
 
     const response = await fetch(`${url}?${params}`, {
@@ -296,7 +296,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
             } catch (error) {
               this.logger?.warn(
                 { err: error, line: line.substring(0, 100) },
-                'Failed to parse Mixpanel event',
+                'Failed to parse Mixpanel event'
               );
             }
           }
@@ -311,7 +311,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         } catch (error) {
           this.logger?.warn(
             { err: error, line: buffer.substring(0, 100) },
-            'Failed to parse Mixpanel event (remaining buffer)',
+            'Failed to parse Mixpanel event (remaining buffer)'
           );
         }
       }
@@ -340,7 +340,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
 
       this.logger?.info(
         { page, page_size: pageSize, projectId },
-        'Fetching profiles from Mixpanel Engage',
+        'Fetching profiles from Mixpanel Engage'
       );
 
       const response = await fetch(url, {
@@ -370,7 +370,10 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       }
 
       const data = (await response.json()) as {
-        results?: Array<{ $distinct_id: string | number; $properties?: Record<string, unknown> }>;
+        results?: Array<{
+          $distinct_id: string | number;
+          $properties?: Record<string, unknown>;
+        }>;
         page?: number;
         total?: number;
       };
@@ -383,7 +386,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         } else {
           this.logger?.warn(
             { row: JSON.stringify(row).slice(0, 200) },
-            'Skipping invalid Mixpanel profile',
+            'Skipping invalid Mixpanel profile'
           );
         }
       }
@@ -410,9 +413,14 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     const properties: Record<string, string> = {};
     const stripPrefix = /^\$/;
     for (const [key, value] of Object.entries(props)) {
-      if (stripPrefix.test(key)) continue;
-      if (value == null) continue;
-      properties[key] = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      if (stripPrefix.test(key)) {
+        continue;
+      }
+      if (value == null) {
+        continue;
+      }
+      properties[key] =
+        typeof value === 'object' ? JSON.stringify(value) : String(value);
     }
 
     return {
@@ -552,7 +560,8 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       os: uaInfo.os || props.$os,
       os_version: uaInfo.osVersion || props.$osVersion,
       browser: uaInfo.browser || props.$browser,
-      browser_version: uaInfo.browserVersion || String(props.$browser_version ?? ''),
+      browser_version:
+        uaInfo.browserVersion || String(props.$browser_version ?? ''),
       device: this.getDeviceType(props.mp_lib, uaInfo, props),
       brand: uaInfo.brand || '',
       model: uaInfo.model || '',

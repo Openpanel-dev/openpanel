@@ -1,6 +1,6 @@
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   BlockedUrlError,
   isBlockedIp,
@@ -59,7 +59,7 @@ describe('safeFetch', () => {
       res.end('INTERNAL-SECRET');
     });
     await new Promise<void>((resolve) =>
-      secretServer.listen(0, '127.0.0.1', resolve),
+      secretServer.listen(0, '127.0.0.1', resolve)
     );
     secretPort = (secretServer.address() as AddressInfo).port;
 
@@ -70,7 +70,7 @@ describe('safeFetch', () => {
       res.end();
     });
     await new Promise<void>((resolve) =>
-      redirectServer.listen(0, '127.0.0.1', resolve),
+      redirectServer.listen(0, '127.0.0.1', resolve)
     );
     redirectPort = (redirectServer.address() as AddressInfo).port;
   });
@@ -84,7 +84,7 @@ describe('safeFetch', () => {
     await expect(
       safeFetch(`http://127.0.0.1:${secretPort}/secret.png`, {
         timeoutMs: 3000,
-      }),
+      })
     ).rejects.toBeInstanceOf(BlockedUrlError);
   });
 
@@ -92,7 +92,7 @@ describe('safeFetch', () => {
     await expect(
       safeFetch(`http://localhost:${secretPort}/secret.png`, {
         timeoutMs: 3000,
-      }),
+      })
     ).rejects.toBeInstanceOf(BlockedUrlError);
   });
 
@@ -100,7 +100,7 @@ describe('safeFetch', () => {
     // The reachability gate on the caller side only inspects the first URL,
     // so the redirect hop has to be re-validated or the guard is bypassable.
     await expect(
-      safeFetch(`http://127.0.0.1:${redirectPort}/x.png`, { timeoutMs: 3000 }),
+      safeFetch(`http://127.0.0.1:${redirectPort}/x.png`, { timeoutMs: 3000 })
     ).rejects.toBeInstanceOf(BlockedUrlError);
   });
 
@@ -108,13 +108,13 @@ describe('safeFetch', () => {
     await expect(
       safeFetch('http://169.254.169.254/latest/meta-data/', {
         timeoutMs: 3000,
-      }),
+      })
     ).rejects.toBeInstanceOf(BlockedUrlError);
   });
 
   it('refuses non-http schemes', async () => {
     await expect(safeFetch('file:///etc/passwd')).rejects.toBeInstanceOf(
-      BlockedUrlError,
+      BlockedUrlError
     );
   });
 });
@@ -131,7 +131,7 @@ describe('safeFetchStream', () => {
       res.end('INTERNAL-SECRET');
     });
     await new Promise<void>((resolve) =>
-      secretServer.listen(0, '127.0.0.1', resolve),
+      secretServer.listen(0, '127.0.0.1', resolve)
     );
     secretPort = (secretServer.address() as AddressInfo).port;
 
@@ -142,7 +142,7 @@ describe('safeFetchStream', () => {
       res.end();
     });
     await new Promise<void>((resolve) =>
-      redirectServer.listen(0, '127.0.0.1', resolve),
+      redirectServer.listen(0, '127.0.0.1', resolve)
     );
     redirectPort = (redirectServer.address() as AddressInfo).port;
   });
@@ -159,7 +159,7 @@ describe('safeFetchStream', () => {
     await expect(
       safeFetchStream(`http://127.0.0.1:${secretPort}/export.csv`, {
         timeoutMs: 3000,
-      }),
+      })
     ).rejects.toBeInstanceOf(BlockedUrlError);
   });
 
@@ -167,7 +167,7 @@ describe('safeFetchStream', () => {
     await expect(
       safeFetchStream(`http://localhost:${secretPort}/export.csv`, {
         timeoutMs: 3000,
-      }),
+      })
     ).rejects.toBeInstanceOf(BlockedUrlError);
   });
 
@@ -175,7 +175,7 @@ describe('safeFetchStream', () => {
     await expect(
       safeFetchStream(`http://127.0.0.1:${redirectPort}/export.csv`, {
         timeoutMs: 3000,
-      }),
+      })
     ).rejects.toBeInstanceOf(BlockedUrlError);
   });
 
@@ -183,13 +183,13 @@ describe('safeFetchStream', () => {
     await expect(
       safeFetchStream('http://169.254.169.254/latest/meta-data/', {
         timeoutMs: 3000,
-      }),
+      })
     ).rejects.toBeInstanceOf(BlockedUrlError);
   });
 
   it('refuses non-http schemes', async () => {
     await expect(safeFetchStream('file:///etc/passwd')).rejects.toBeInstanceOf(
-      BlockedUrlError,
+      BlockedUrlError
     );
   });
 });

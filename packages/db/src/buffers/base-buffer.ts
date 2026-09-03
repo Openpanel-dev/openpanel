@@ -1,7 +1,6 @@
 import { Readable } from 'node:stream';
 import type { ClickHouseSettings } from '@clickhouse/client';
-import { generateSecureId } from '@openpanel/common/server';
-import { createLogger, type ILogger } from '@openpanel/logger';
+import { createLogger, generateSecureId, type ILogger } from '@openpanel/core';
 import { cronQueue } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 

@@ -1,5 +1,5 @@
 import { generateId } from '@openpanel/common';
-import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
+import { generateDeviceId, parseUserAgent } from '@openpanel/core';
 import {
   convertClickhouseDateToJs,
   getProfileById,

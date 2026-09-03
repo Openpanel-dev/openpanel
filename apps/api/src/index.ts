@@ -3,7 +3,7 @@ process.env.TZ = 'UTC';
 
 import './utils/observability';
 
-import { rawStderrWrite } from '@openpanel/logger';
+import { rawStderrWrite } from '@openpanel/core';
 import { assertKafkaConfigured } from '@openpanel/queue';
 import { getRedisPub } from '@openpanel/redis';
 import sourceMapSupport from 'source-map-support';
@@ -48,7 +48,7 @@ const startServer = async () => {
       process.on('uncaughtException', (error) => {
         logger.fatal({ err: error }, 'Uncaught exception — exiting');
         rawStderrWrite(
-          `Uncaught exception — exiting: ${error?.stack ?? error}\n`,
+          `Uncaught exception — exiting: ${error?.stack ?? error}\n`
         );
         // Flush pino, then hard-exit. unref() so the safety net doesn't
         // keep the loop alive on its own.
@@ -59,7 +59,7 @@ const startServer = async () => {
         rawStderrWrite(
           `Unhandled rejection — exiting: ${
             reason instanceof Error ? reason.stack : String(reason)
-          }\n`,
+          }\n`
         );
         setTimeout(() => process.exit(1), 1000).unref();
       });
@@ -72,7 +72,7 @@ const startServer = async () => {
     } catch (error) {
       logger.warn({ err: error }, 'Failed to set redis notify-keyspace-events');
       logger.warn(
-        'If you use a managed Redis service, you may need to set this manually.',
+        'If you use a managed Redis service, you may need to set this manually.'
       );
       logger.warn('Otherwise some functions may not work as expected.');
     }

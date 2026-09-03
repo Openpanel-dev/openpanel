@@ -6,11 +6,11 @@ import { isSameDomain, parsePath, toDots } from '@openpanel/common';
 import {
   generateDeviceId,
   getReferrerWithQuery,
+  type ILogger,
   parseReferrer,
-} from '@openpanel/common/server';
-import { safeFetchStream } from '@openpanel/common/server/safe-fetch';
+  safeFetchStream,
+} from '@openpanel/core';
 import { formatClickhouseDate, type IClickhouseEvent } from '@openpanel/db';
-import type { ILogger } from '@openpanel/logger';
 import type { IUmamiImportConfig } from '@openpanel/validation';
 import { parse } from 'csv-parse';
 import { assocPath } from 'ramda';
@@ -141,7 +141,9 @@ export class UmamiProvider extends BaseImportProvider<UmamiRawEvent> {
         contentType
       )
     ) {
-      this.logger?.warn(`Warning: Content-Type is ${contentType}, expected CSV-ish`);
+      this.logger?.warn(
+        `Warning: Content-Type is ${contentType}, expected CSV-ish`
+      );
     }
 
     if (maxBytes && contentLen && contentLen > maxBytes) {

@@ -1,7 +1,7 @@
+import { createLogger } from '@openpanel/core';
 import { cacheable } from '@openpanel/redis';
 import { originalCh } from './clickhouse/client';
 import { decrypt, encrypt } from './encryption';
-import { createLogger } from '@openpanel/logger';
 import { db } from './prisma-client';
 
 const logger = createLogger({ name: 'db:gsc' });
@@ -14,7 +14,7 @@ export interface GscSite {
 async function refreshGscToken(
   refreshToken: string
 ): Promise<{ accessToken: string; expiresAt: Date }> {
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  if (!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)) {
     throw new Error(
       'GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is not set in this environment'
     );
@@ -57,7 +57,7 @@ export async function getGscAccessToken(projectId: string): Promise<string> {
   ) {
     logger.info(
       { projectId, expiresAt: conn.accessTokenExpiresAt },
-      'GSC using cached access token',
+      'GSC using cached access token'
     );
     return decrypt(conn.accessToken);
   }
@@ -68,7 +68,7 @@ export async function getGscAccessToken(projectId: string): Promise<string> {
       expiresAt: conn.accessTokenExpiresAt,
       hasRefreshToken: !!conn.refreshToken,
     },
-    'GSC access token expired, attempting refresh',
+    'GSC access token expired, attempting refresh'
   );
 
   try {
@@ -77,19 +77,19 @@ export async function getGscAccessToken(projectId: string): Promise<string> {
     );
     await db.gscConnection.update({
       where: { projectId },
-      data: { accessToken: encrypt(accessToken), accessTokenExpiresAt: expiresAt },
+      data: {
+        accessToken: encrypt(accessToken),
+        accessTokenExpiresAt: expiresAt,
+      },
     });
-    logger.info(
-      { projectId, expiresAt },
-      'GSC token refreshed successfully',
-    );
+    logger.info({ projectId, expiresAt }, 'GSC token refreshed successfully');
     return accessToken;
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Failed to refresh token';
     logger.error(
       { err: error, projectId, errorMessage },
-      'GSC token refresh failed',
+      'GSC token refresh failed'
     );
     await db.gscConnection.update({
       where: { projectId },
@@ -152,7 +152,7 @@ async function queryGscSearchAnalytics(
 
   const allRows: GscApiRow[] = [];
   let startRow = 0;
-  const rowLimit = 25000;
+  const rowLimit = 25_000;
 
   while (true) {
     const res = await fetch(url, {
@@ -174,14 +174,18 @@ async function queryGscSearchAnalytics(
 
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`GSC query failed for dimensions [${dimensions.join(',')}]: ${text}`);
+      throw new Error(
+        `GSC query failed for dimensions [${dimensions.join(',')}]: ${text}`
+      );
     }
 
     const data = (await res.json()) as { rows?: GscApiRow[] };
     const rows = data.rows ?? [];
     allRows.push(...rows);
 
-    if (rows.length < rowLimit) break;
+    if (rows.length < rowLimit) {
+      break;
+    }
     startRow += rowLimit;
   }
 
@@ -439,7 +443,9 @@ export const getGscCannibalization = cacheable(
         const totalImpressions = existing.impressions + row.impressions;
         if (totalImpressions > 0) {
           existing.position =
-            (existing.position * existing.impressions + row.position * row.impressions) / totalImpressions;
+            (existing.position * existing.impressions +
+              row.position * row.impressions) /
+            totalImpressions;
         }
         existing.clicks += row.clicks;
         existing.impressions += row.impressions;
@@ -481,16 +487,46 @@ export async function getGscPageDetails(
   startDate: string,
   endDate: string
 ): Promise<{
-  timeseries: Array<{ date: string; clicks: number; impressions: number; ctr: number; position: number }>;
-  queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }>;
+  timeseries: Array<{
+    date: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }>;
+  queries: Array<{
+    query: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }>;
 }> {
-  const conn = await db.gscConnection.findUniqueOrThrow({ where: { projectId } });
+  const conn = await db.gscConnection.findUniqueOrThrow({
+    where: { projectId },
+  });
   const accessToken = await getGscAccessToken(projectId);
-  const filterGroups: GscFilterGroup[] = [{ filters: [{ dimension: 'page', operator: 'equals', expression: page }] }];
+  const filterGroups: GscFilterGroup[] = [
+    { filters: [{ dimension: 'page', operator: 'equals', expression: page }] },
+  ];
 
   const [timeseriesRows, queryRows] = await Promise.all([
-    queryGscSearchAnalytics(accessToken, conn.siteUrl, startDate, endDate, ['date'], filterGroups),
-    queryGscSearchAnalytics(accessToken, conn.siteUrl, startDate, endDate, ['query'], filterGroups),
+    queryGscSearchAnalytics(
+      accessToken,
+      conn.siteUrl,
+      startDate,
+      endDate,
+      ['date'],
+      filterGroups
+    ),
+    queryGscSearchAnalytics(
+      accessToken,
+      conn.siteUrl,
+      startDate,
+      endDate,
+      ['query'],
+      filterGroups
+    ),
   ]);
 
   return {
@@ -517,16 +553,48 @@ export async function getGscQueryDetails(
   startDate: string,
   endDate: string
 ): Promise<{
-  timeseries: Array<{ date: string; clicks: number; impressions: number; ctr: number; position: number }>;
-  pages: Array<{ page: string; clicks: number; impressions: number; ctr: number; position: number }>;
+  timeseries: Array<{
+    date: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }>;
+  pages: Array<{
+    page: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }>;
 }> {
-  const conn = await db.gscConnection.findUniqueOrThrow({ where: { projectId } });
+  const conn = await db.gscConnection.findUniqueOrThrow({
+    where: { projectId },
+  });
   const accessToken = await getGscAccessToken(projectId);
-  const filterGroups: GscFilterGroup[] = [{ filters: [{ dimension: 'query', operator: 'equals', expression: query }] }];
+  const filterGroups: GscFilterGroup[] = [
+    {
+      filters: [{ dimension: 'query', operator: 'equals', expression: query }],
+    },
+  ];
 
   const [timeseriesRows, pageRows] = await Promise.all([
-    queryGscSearchAnalytics(accessToken, conn.siteUrl, startDate, endDate, ['date'], filterGroups),
-    queryGscSearchAnalytics(accessToken, conn.siteUrl, startDate, endDate, ['page'], filterGroups),
+    queryGscSearchAnalytics(
+      accessToken,
+      conn.siteUrl,
+      startDate,
+      endDate,
+      ['date'],
+      filterGroups
+    ),
+    queryGscSearchAnalytics(
+      accessToken,
+      conn.siteUrl,
+      startDate,
+      endDate,
+      ['page'],
+      filterGroups
+    ),
   ]);
 
   return {

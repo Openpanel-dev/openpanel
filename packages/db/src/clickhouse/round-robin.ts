@@ -1,5 +1,5 @@
 import type { ClickHouseClient } from '@clickhouse/client';
-import type { ILogger } from '@openpanel/logger';
+import type { ILogger } from '@openpanel/core';
 
 /**
  * Round-robin selection across multiple ClickHouse clients with simple
@@ -151,8 +151,12 @@ export function classifyError(err: unknown): ErrorClass {
 
   // ── Explicit error.code wins ──────────────────────────────────────────
   if (typeof e.code === 'string') {
-    if (NODE_DOWN_CODES.has(e.code)) return 'node-down';
-    if (TRANSIENT_CODES.has(e.code)) return 'transient';
+    if (NODE_DOWN_CODES.has(e.code)) {
+      return 'node-down';
+    }
+    if (TRANSIENT_CODES.has(e.code)) {
+      return 'transient';
+    }
   }
 
   // ── Message keyword fallback ──────────────────────────────────────────
@@ -164,8 +168,12 @@ export function classifyError(err: unknown): ErrorClass {
   }
 
   // ── Bare-code substring fallback ──────────────────────────────────────
-  if (NODE_DOWN_BARE_CODE_REGEX.test(msg)) return 'node-down';
-  if (TRANSIENT_BARE_CODE_REGEX.test(msg)) return 'transient';
+  if (NODE_DOWN_BARE_CODE_REGEX.test(msg)) {
+    return 'node-down';
+  }
+  if (TRANSIENT_BARE_CODE_REGEX.test(msg)) {
+    return 'transient';
+  }
 
   // ── Wrapped causes (Node 18+ AggregateError, undici wrapping) ─────────
   if (e.cause) {

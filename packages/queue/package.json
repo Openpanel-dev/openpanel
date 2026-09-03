@@ -7,8 +7,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@openpanel/core": "workspace:*",
     "@openpanel/db": "workspace:*",
-    "@openpanel/logger": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "bullmq": "^5.63.0",
     "kafkajs": "^2.2.4"

@@ -7,11 +7,11 @@
 // logger. The messages, the levels, the payload keys and the `organization.list`
 // drop are unchanged.
 
-import { getTrustedIpFromHeaders } from '@openpanel/common/server/get-client-ip';
 import type { AnyRouter, TRPCError } from '@trpc/server';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import type { HttpCtx } from '../context';
 import type { Logger } from '../logger';
+import { getTrustedIpFromHeaders } from '../shared/get-client-ip';
 import {
   makeTrpcContext,
   type TrpcContext,

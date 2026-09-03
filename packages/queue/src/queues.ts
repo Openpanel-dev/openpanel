@@ -1,10 +1,10 @@
+import { createLogger } from '@openpanel/core';
 import type {
   IClickhouseSession,
   IServiceCreateEventPayload,
   IServiceEvent,
   Prisma,
 } from '@openpanel/db';
-import { createLogger } from '@openpanel/logger';
 import { getRedisQueue } from '@openpanel/redis';
 import { Queue } from 'bullmq';
 import type { ITrackPayload } from '../../validation';

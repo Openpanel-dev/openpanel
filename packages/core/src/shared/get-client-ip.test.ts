@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import {
   getClientIpFromHeaders,
   getTrustedIpFromHeaders,
@@ -30,13 +30,13 @@ describe('getTrustedIpFromHeaders', () => {
         'openpanel-client-ip': '9.9.9.9',
         'x-client-ip': '7.7.7.7',
         'true-client-ip': '6.6.6.6',
-      }).ip,
+      }).ip
     ).toBe('');
   });
 
   it('takes the last x-forwarded-for entry, the one the proxy appended', () => {
     expect(
-      getTrustedIpFromHeaders({ 'x-forwarded-for': '8.8.8.8, 1.2.3.4' }),
+      getTrustedIpFromHeaders({ 'x-forwarded-for': '8.8.8.8, 1.2.3.4' })
     ).toEqual({ ip: '1.2.3.4', header: 'x-forwarded-for' });
   });
 

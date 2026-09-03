@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { ILogger } from '@openpanel/logger';
+import type { ILogger } from '@openpanel/core';
 import {
   ch,
   convertClickhouseDateToJs,
