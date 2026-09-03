@@ -1,4 +1,4 @@
-import { Arctic, googleGsc } from '@openpanel/auth';
+import { Arctic, googleGsc } from '@openpanel/core';
 import {
   chQuery,
   db,
@@ -59,7 +59,13 @@ const NORMALIZED_REFERRER_NAME =
 const AI_REFERRERS = [
   {
     canonical: 'chatgpt.com',
-    aliases: ['chatgpt', 'chatgpt.com', 'chat.openai.com', 'openai', 'openai.com'],
+    aliases: [
+      'chatgpt',
+      'chatgpt.com',
+      'chat.openai.com',
+      'openai',
+      'openai.com',
+    ],
   },
   {
     canonical: 'claude.ai',
@@ -71,18 +77,31 @@ const AI_REFERRERS = [
   },
   {
     canonical: 'gemini.google.com',
-    aliases: ['gemini', 'google gemini', 'gemini.google.com', 'bard.google.com'],
+    aliases: [
+      'gemini',
+      'google gemini',
+      'gemini.google.com',
+      'bard.google.com',
+    ],
   },
   {
     canonical: 'copilot.com',
-    aliases: ['copilot', 'copilot.com', 'copilot.microsoft.com', 'microsoft copilot'],
+    aliases: [
+      'copilot',
+      'copilot.com',
+      'copilot.microsoft.com',
+      'microsoft copilot',
+    ],
   },
   { canonical: 'grok.com', aliases: ['grok', 'grok.com'] },
   {
     canonical: 'mistral.ai',
     aliases: ['mistral', 'mistral.ai', 'chat.mistral.ai', 'le chat'],
   },
-  { canonical: 'kagi.com', aliases: ['kagi', 'kagi.com', 'assistant.kagi.com'] },
+  {
+    canonical: 'kagi.com',
+    aliases: ['kagi', 'kagi.com', 'assistant.kagi.com'],
+  },
 ] as const satisfies ReadonlyArray<{
   canonical: string;
   aliases: readonly string[];

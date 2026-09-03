@@ -1,4 +1,4 @@
-import { googleGsc } from '@openpanel/auth';
+import { googleGsc } from '@openpanel/core';
 import { db, encrypt } from '@openpanel/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';

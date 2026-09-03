@@ -125,9 +125,6 @@ importers:
       '@node-rs/argon2':
         specifier: ^2.0.2
         version: 2.0.2
-      '@openpanel/auth':
-        specifier: workspace:^
-        version: link:../../packages/auth
       '@openpanel/common':
         specifier: workspace:*
         version: link:../../packages/common
@@ -1013,55 +1010,6 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
-  packages/auth:
-    dependencies:
-      '@node-rs/argon2':
-        specifier: ^2.0.2
-        version: 2.0.2
-      '@openpanel/db':
-        specifier: workspace:^
-        version: link:../db
-      '@openpanel/validation':
-        specifier: workspace:^
-        version: link:../validation
-      '@oslojs/crypto':
-        specifier: ^1.0.1
-        version: 1.0.1
-      '@oslojs/encoding':
-        specifier: ^1.1.0
-        version: 1.1.0
-      '@oslojs/otp':
-        specifier: ^1.1.0
-        version: 1.1.0
-      arctic:
-        specifier: ^2.3.0
-        version: 2.3.0
-      qrcode:
-        specifier: ^1.5.4
-        version: 1.5.4
-      react:
-        specifier: 'catalog:'
-        version: 19.2.3
-    devDependencies:
-      '@openpanel/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.10.1
-      '@types/qrcode':
-        specifier: ^1.5.6
-        version: 1.5.6
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.2.7
-      prisma:
-        specifier: ^5.1.1
-        version: 5.9.1
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-
   packages/common:
     dependencies:
       '@openpanel/constants':
@@ -1158,15 +1106,24 @@ importers:
       '@maxmind/geoip2-node':
         specifier: ^6.1.0
         version: 6.1.0
-      '@openpanel/auth':
-        specifier: workspace:^
-        version: link:../auth
+      '@node-rs/argon2':
+        specifier: ^2.0.2
+        version: 2.0.2
       '@openpanel/common':
         specifier: workspace:*
         version: link:../common
       '@openpanel/validation':
         specifier: workspace:*
         version: link:../validation
+      '@oslojs/crypto':
+        specifier: ^1.0.1
+        version: 1.0.1
+      '@oslojs/encoding':
+        specifier: ^1.1.0
+        version: 1.1.0
+      '@oslojs/otp':
+        specifier: ^1.1.0
+        version: 1.1.0
       '@slack/bolt':
         specifier: ^3.18.0
         version: 3.21.4(debug@4.4.3(supports-color@10.2.0))(supports-color@10.2.0)
@@ -1176,6 +1133,9 @@ importers:
       '@trpc/server':
         specifier: ^11.17.0
         version: 11.17.0(typescript@5.9.3)
+      arctic:
+        specifier: ^2.3.0
+        version: 2.3.0
       bullmq:
         specifier: 6.3.3
         version: 6.3.3(ioredis@5.8.2(supports-color@10.2.0))
@@ -1200,6 +1160,9 @@ importers:
       prom-client:
         specifier: ^15.1.3
         version: 15.1.3
+      qrcode:
+        specifier: ^1.5.4
+        version: 1.5.4
       superjson:
         specifier: ^1.13.3
         version: 1.13.3
@@ -1213,9 +1176,15 @@ importers:
         specifier: 'catalog:'
         version: 4.3.6
     devDependencies:
+      '@openpanel/db':
+        specifier: workspace:*
+        version: link:../db
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@types/qrcode':
+        specifier: ^1.5.6
+        version: 1.5.6
       bun-types:
         specifier: 1.4.0
         version: 1.4.0
@@ -1765,9 +1734,6 @@ importers:
       '@better-agent/core':
         specifier: ^0.1.0-beta.3
         version: 0.1.0-beta.3
-      '@openpanel/auth':
-        specifier: workspace:^
-        version: link:../auth
       '@openpanel/common':
         specifier: workspace:*
         version: link:../common

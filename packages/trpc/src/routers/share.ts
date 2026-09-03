@@ -1,5 +1,4 @@
-import ShortUniqueId from 'short-unique-id';
-
+import { hashUserPassword as hashPassword } from '@openpanel/core';
 import {
   db,
   getDashboardById,
@@ -13,15 +12,10 @@ import {
   zShareOverview,
   zShareReport,
 } from '@openpanel/validation';
-
-import { hashPassword } from '@openpanel/auth';
+import ShortUniqueId from 'short-unique-id';
 import { z } from 'zod';
 import { requireProjectAccess } from '../access';
-import {
-  TRPCAccessError,
-  TRPCForbiddenError,
-  TRPCNotFoundError,
-} from '../errors';
+import { TRPCAccessError, TRPCNotFoundError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 const uid = new ShortUniqueId({ length: 6 });
@@ -45,7 +39,7 @@ const uid = new ShortUniqueId({ length: 6 });
 function lockedShare(
   id: string,
   organization: { name: string },
-  project: { name: string },
+  project: { name: string }
 ) {
   return {
     id,
@@ -71,7 +65,7 @@ export const shareRouter = createTRPCRouter({
         },
       });
 
-      if (!share || !share.public) {
+      if (!(share && share.public)) {
         throw new TRPCNotFoundError('Share not found');
       }
 
@@ -156,7 +150,7 @@ export const shareRouter = createTRPCRouter({
         },
       });
 
-      if (!share || !share.public) {
+      if (!(share && share.public)) {
         throw new TRPCNotFoundError('Dashboard share not found');
       }
 
@@ -204,7 +198,7 @@ export const shareRouter = createTRPCRouter({
 
       const dashboard = await getDashboardById(
         input.dashboardId,
-        input.projectId,
+        input.projectId
       );
       if (!dashboard) {
         throw new TRPCNotFoundError('Dashboard not found');
@@ -244,12 +238,12 @@ export const shareRouter = createTRPCRouter({
     .input(
       z.object({
         shareId: z.string(),
-      }),
+      })
     )
     .query(async ({ input, ctx }) => {
       const share = await getShareDashboardById(input.shareId);
 
-      if (!share || !share.public) {
+      if (!(share && share.public)) {
         throw new TRPCNotFoundError('Dashboard share not found');
       }
 
@@ -279,7 +273,7 @@ export const shareRouter = createTRPCRouter({
         },
       });
 
-      if (!share || !share.public) {
+      if (!(share && share.public)) {
         throw new TRPCNotFoundError('Report share not found');
       }
 

@@ -3,33 +3,33 @@ import {
   buildOtpauthUrl,
   COOKIE_OPTIONS,
   consumeRecoveryCode,
-  createSession,
   deleteSessionTokenCookie,
   generateQrDataUrl,
   generateRecoveryCodes,
+  generateSecureId,
   generateSessionToken,
   generateTotpSecret,
   github,
   google,
-  hashPassword,
+  hashUserPassword as hashPassword,
   hashRecoveryCodes,
-  invalidateSession,
+  type Logger,
   setLastAuthProviderCookie,
   setSessionTokenCookie,
-  validateSessionToken,
   verifyPasswordHash,
   verifyTotpCode,
-} from '@openpanel/auth';
-import type { Logger } from '@openpanel/core';
-import { generateSecureId } from '@openpanel/core';
+} from '@openpanel/core';
 import {
   connectUserToOrganization,
+  createSession,
   db,
   decrypt,
   encrypt,
   getIsRegistrationAllowed,
   getShareOverviewById,
   getUserAccount,
+  invalidateSession,
+  validateSessionToken,
 } from '@openpanel/db';
 import { sendEmail } from '@openpanel/email';
 import {

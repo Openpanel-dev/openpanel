@@ -8,6 +8,7 @@ export * from './src/exports';
 export * from './src/gsc';
 export * from './src/prisma-client';
 export * from './src/services/access.service';
+export * from './src/services/auth-session.service';
 export * from './src/services/chart.service';
 export * from './src/services/clients.service';
 export * from './src/services/cohort.service';

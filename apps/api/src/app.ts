@@ -6,21 +6,18 @@ import cookie from '@fastify/cookie';
 import cors, { type FastifyCorsOptions } from '@fastify/cors';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUI from '@fastify/swagger-ui';
-import {
-  decodeSessionToken,
-  EMPTY_SESSION,
-  type SessionValidationResult,
-  validateSessionToken,
-} from '@openpanel/auth';
 import { generateId } from '@openpanel/common';
-import { getTrustedIpFromHeaders } from '@openpanel/core';
+import { decodeSessionToken, getTrustedIpFromHeaders } from '@openpanel/core';
 import {
+  EMPTY_SESSION,
   getConversationById,
   getOrganizationByProjectIdCached,
   getProjectAccess,
   getSettingsForProject,
   type IServiceClientWithProject,
   runWithAlsSession,
+  type SessionValidationResult,
+  validateSessionToken,
 } from '@openpanel/db';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';

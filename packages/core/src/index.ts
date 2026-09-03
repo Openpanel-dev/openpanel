@@ -111,6 +111,38 @@ export {
   REQUEST_ID_LENGTH,
   REQUEST_ID_LOG_FIELD,
 } from './logger';
+// Dissolved from @openpanel/auth (M4-007) — apps/api's OAuth callbacks and
+// @openpanel/trpc's auth/share/user/gsc routers call these directly, the same
+// way they reach the other dissolved leaf packages here. `hashPassword` is
+// renamed on the way out: `./shared/crypto` already owns that name for the
+// (unrelated) scrypt hash client secrets use.
+export type { AuthService, OAuth2Tokens } from './modules/auth/auth.service';
+export {
+  Arctic,
+  buildOtpauthUrl,
+  COOKIE_MAX_AGE,
+  COOKIE_OPTIONS,
+  consumeRecoveryCode,
+  createAuthService,
+  decodeSessionToken,
+  deleteSessionTokenCookie,
+  generateQrDataUrl,
+  generateRecoveryCodes,
+  generateSessionToken,
+  generateTotpSecret,
+  github,
+  google,
+  googleGsc,
+  hashPassword as hashUserPassword,
+  hashRecoveryCodes,
+  hashSessionToken,
+  normalizeRecoveryCode,
+  parseCookieDomain,
+  setLastAuthProviderCookie,
+  setSessionTokenCookie,
+  verifyPasswordHash,
+  verifyTotpCode,
+} from './modules/auth/auth.service';
 export { dashboardRoutes, opsRoutes, publicApiRoutes } from './rest.routes';
 // The RPC base is on the barrel because it is the seam `@openpanel/trpc`
 // builds its 28 routers on: ONE tRPC instance, mounted by V1's Fastify

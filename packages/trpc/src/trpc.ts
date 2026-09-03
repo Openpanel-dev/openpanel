@@ -11,8 +11,8 @@
 // `runWithAlsSession` and the access ladder's real lookups. They move into
 // core with auth at P6, at which point this file is a re-export.
 
-import { COOKIE_OPTIONS, type SessionValidationResult } from '@openpanel/auth';
 import {
+  COOKIE_OPTIONS,
   type Ctx,
   createCacheMiddleware,
   createRateLimitMiddleware,
@@ -22,7 +22,7 @@ import {
   type RpcCache,
   type TrpcContext,
 } from '@openpanel/core';
-import { runWithAlsSession } from '@openpanel/db';
+import { runWithAlsSession, type SessionValidationResult } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 import { TRPCError } from '@trpc/server';
 import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
@@ -121,9 +121,14 @@ export async function createContext({
  *
  * `db`/`ch`/`redis`/`clients`/`buffers` are core's `unknown` stubs until P3-P8
  * wire the real clients, and V1's routers reach for their own singletons
- * regardless. `queues` throws rather than returning an empty object: a V1
- * router that tried to enqueue through core would otherwise silently do
- * nothing.
+ * regardless. `queues` and `services` throw rather than returning an empty
+ * object: a V1 router that reached for either through core would otherwise
+ * silently do nothing (`queues`) or hit `undefined` (`services`) instead of
+ * the loud error that tells it to reach `@openpanel/db`/`@openpanel/core`
+ * directly, as the rest of V1 does. `services` is not built via core's
+ * `createServices` here on purpose — that factory is deliberately absent from
+ * the curated barrel (index.test.ts), so nothing outside `apps/api`'s
+ * `main.ts` constructs a `Services` container.
  */
 function v1CtxScope(req: CreateFastifyContextOptions['req']): Ctx {
   return {
@@ -134,7 +139,7 @@ function v1CtxScope(req: CreateFastifyContextOptions['req']): Ctx {
     buffers: undefined,
     logger: req.log,
     queues: NOT_WIRED_QUEUES,
-    services: {},
+    services: NOT_WIRED_SERVICES,
     requestId: String(req.id),
   };
 }
@@ -143,6 +148,14 @@ const NOT_WIRED_QUEUES = new Proxy({} as QueueProducers, {
   get(_target, name) {
     throw new Error(
       `ctx.queues.${String(name)} is not wired on the V1 Fastify path — enqueue through @openpanel/queue, as the rest of V1 does`
+    );
+  },
+});
+
+const NOT_WIRED_SERVICES = new Proxy({} as Ctx['services'], {
+  get(_target, name) {
+    throw new Error(
+      `ctx.services.${String(name)} is not wired on the V1 Fastify path — reach @openpanel/core's or @openpanel/db's module directly, as the rest of V1 does`
     );
   },
 });

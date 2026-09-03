@@ -1,27 +1,40 @@
-import crypto from 'node:crypto';
-import { db, type Session, type User } from '@openpanel/db';
-import { sha256 } from '@oslojs/crypto/sha2';
-import {
-  encodeBase32LowerCaseNoPadding,
-  encodeHexLowerCase,
-} from '@oslojs/encoding';
+// Postgres-backed login sessions (a `sessions` row keyed by the hash of a
+// browser's cookie). Not to be confused with session.service.ts's ClickHouse
+// visitor sessions.
+//
+// Moved from @openpanel/auth (M4-007), split at the Prisma boundary: token
+// issuance/hashing lives in @openpanel/core's auth module (no db needed), and
+// this half — the part that actually touches `sessions`/`users` — stays here,
+// because @openpanel/core cannot depend on @openpanel/db (db already depends
+// on core) without a cycle.
 
-export function generateSessionToken(): string {
-  const bytes = new Uint8Array(20);
-  crypto.getRandomValues(bytes);
-  const token = encodeBase32LowerCaseNoPadding(bytes);
-  return token;
-}
+import { decodeSessionToken, hashSessionToken } from '@openpanel/core';
+import type { Session, User } from '../prisma-client';
+import { db } from '../prisma-client';
+
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
+const SESSION_RENEWAL_THRESHOLD_MS = 1000 * 60 * 60 * 24 * 15;
+const DEMO_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30 * 365;
+const DEMO_SESSION_ID = '1';
+
+export type SessionValidationResult =
+  | { session: Session; user: User; userId: string }
+  | { session: null; user: null; userId: null };
+
+export const EMPTY_SESSION: SessionValidationResult = {
+  session: null,
+  user: null,
+  userId: null,
+};
 
 export async function createSession(
   token: string,
   userId: string
 ): Promise<Session> {
-  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
   const session: Session = {
-    id: sessionId,
+    id: hashSessionToken(token),
     userId,
-    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+    expiresAt: new Date(Date.now() + SESSION_TTL_MS),
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -30,12 +43,6 @@ export async function createSession(
   });
   return session;
 }
-
-export const EMPTY_SESSION: SessionValidationResult = {
-  session: null,
-  user: null,
-  userId: null,
-};
 
 export async function createDemoSession(
   userId: string
@@ -50,20 +57,14 @@ export async function createDemoSession(
     user,
     userId: user.id,
     session: {
-      id: '1',
+      id: DEMO_SESSION_ID,
       userId: user.id,
-      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30 * 365),
+      expiresAt: new Date(Date.now() + DEMO_SESSION_TTL_MS),
       createdAt: new Date(),
       updatedAt: new Date(),
     },
   };
 }
-
-export const decodeSessionToken = (token: string): string | null => {
-  return token
-    ? encodeHexLowerCase(sha256(new TextEncoder().encode(token)))
-    : null;
-};
 
 export async function validateSessionToken(
   token: string | null | undefined
@@ -95,8 +96,11 @@ export async function validateSessionToken(
     await db.session.delete({ where: { id: sessionId } });
     return EMPTY_SESSION;
   }
-  if (Date.now() >= session.expiresAt.getTime() - 1000 * 60 * 60 * 24 * 15) {
-    session.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+  if (
+    Date.now() >=
+    session.expiresAt.getTime() - SESSION_RENEWAL_THRESHOLD_MS
+  ) {
+    session.expiresAt = new Date(Date.now() + SESSION_TTL_MS);
     await db.session.update({
       where: {
         id: session.id,
@@ -112,7 +116,3 @@ export async function validateSessionToken(
 export async function invalidateSession(sessionId: string): Promise<void> {
   await db.session.delete({ where: { id: sessionId } });
 }
-
-export type SessionValidationResult =
-  | { session: Session; user: User; userId: string }
-  | { session: null; user: null; userId: null };

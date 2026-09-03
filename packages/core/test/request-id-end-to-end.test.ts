@@ -25,7 +25,7 @@ import {
   REQUEST_ID_HEADER,
   REQUEST_ID_LENGTH,
 } from '../src/logger';
-import type { ServiceDeps, Services } from '../src/services';
+import type { ServiceDeps } from '../src/services';
 
 const SUPPLIED_REQUEST_ID = 'adr007-benchmark-3';
 
@@ -34,13 +34,13 @@ interface ProofServices {
   ingest: { record(name: string): Promise<string> };
 }
 
-// `Services` is empty until the first module lands, so the container is mocked
-// — but the mock is a real service: built from the SCOPED ctx, logging to that
-// request's logger and enqueueing through that request's producers. A
-// hand-rolled function called from the route would skip exactly the seam under
-// test.
+// `Services` grows with every module that lands, so this proof mocks the
+// whole container with a shape of its own rather than the real one — but the
+// mock is a real service: built from the SCOPED ctx, logging to that request's
+// logger and enqueueing through that request's producers. A hand-rolled
+// function called from the route would skip exactly the seam under test.
 const createServices = mock(
-  (deps: ServiceDeps): Services =>
+  (deps: ServiceDeps) =>
     ({
       ingest: {
         record: async (name: string) => {
@@ -158,7 +158,9 @@ function stubDeps() {
 function buildApp(deps: AppDeps) {
   const proofRoutes = defineRoutes((app) =>
     app.post('/proof/track', async ({ ctx }) => ({
-      jobId: await (ctx.services as ProofServices).ingest.record('e2e'),
+      jobId: await (ctx.services as unknown as ProofServices).ingest.record(
+        'e2e'
+      ),
     }))
   );
 

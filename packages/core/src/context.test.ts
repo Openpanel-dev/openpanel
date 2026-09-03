@@ -9,11 +9,12 @@ import type { ServiceDeps, Services } from './services';
 
 // mock.module is not hoisted, so the subject is imported inside beforeAll —
 // see AGENTS.md. Mocking createServices is what makes "not built yet"
-// observable at all: the real container is `{}` either way.
+// observable at all — this suite cares about WHEN the factory runs, not what
+// it returns, so the stub container is cast rather than built for real.
 const serviceDeps: ServiceDeps[] = [];
 const createServices = mock((deps: ServiceDeps): Services => {
   serviceDeps.push(deps);
-  return {};
+  return {} as Services;
 });
 mock.module('./services', () => ({ createServices }));
 

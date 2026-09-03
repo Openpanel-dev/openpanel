@@ -1,16 +1,16 @@
 import {
   Arctic,
-  createSession,
   generateSessionToken,
   github,
   google,
   type OAuth2Tokens,
   setLastAuthProviderCookie,
   setSessionTokenCookie,
-} from '@openpanel/auth';
+} from '@openpanel/core';
 import {
   type Account,
   connectUserToOrganization,
+  createSession,
   db,
   getIsRegistrationAllowed,
 } from '@openpanel/db';
@@ -169,11 +169,14 @@ async function handleNewUser({
     try {
       await connectUserToOrganization({ user, inviteId });
     } catch (error) {
-      reply.log.error({
-        error,
-        inviteId,
-        user,
-      }, 'error connecting user to organization');
+      reply.log.error(
+        {
+          error,
+          inviteId,
+          user,
+        },
+        'error connecting user to organization'
+      );
     }
   }
 

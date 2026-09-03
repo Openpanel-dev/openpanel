@@ -27,7 +27,6 @@
     "@fastify/websocket": "^11.2.0",
     "@hyperdx/node-opentelemetry": "catalog:",
     "@node-rs/argon2": "^2.0.2",
-    "@openpanel/auth": "workspace:^",
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",
     "@openpanel/core": "workspace:*",

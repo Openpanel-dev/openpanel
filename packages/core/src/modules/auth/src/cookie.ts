@@ -1,5 +1,5 @@
-import type { ISetCookie } from '@openpanel/validation';
-import { COOKIE_OPTIONS } from '../constants';
+import type { ISetCookie } from '../../../shared/cookie';
+import { COOKIE_OPTIONS } from './constants';
 
 export function setSessionTokenCookie(
   setCookie: ISetCookie,

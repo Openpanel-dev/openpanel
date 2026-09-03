@@ -1,8 +1,12 @@
-// The composition root. Empty until the first module lands (ADR-007 build
-// step 4): the point of writing it now is that the Ctx <-> Services
-// circularity compiles.
+// The composition root (ADR-007 build step 4). `auth` is the first module to
+// land here (M4-007); the Ctx <-> Services circularity was proven compiling
+// before it with an empty interface.
 
 import type { Ctx } from './context';
+import {
+  type AuthService,
+  createAuthService,
+} from './modules/auth/auth.service';
 
 /** What every service factory receives — derived from Ctx, so it cannot drift. */
 export type ServiceDeps = Pick<
@@ -19,15 +23,15 @@ export type ServiceDeps = Pick<
 // 2. Every service method needs an explicit return type, or a factory's
 //    return type cannot be computed from signatures alone. Omit one and
 //    typecheck fails with ts7022/ts7023 naming the method.
-//
-// biome-ignore lint/suspicious/noEmptyInterface: empty by design until the first module lands, and it must stay an interface — see rule 1.
-export interface Services {}
+export interface Services {
+  auth: AuthService;
+}
 
-export function createServices(_deps: ServiceDeps): Services {
-  // When the first module lands, each factory is called with `deps` and a
-  // `() => container` thunk: captured, not copied, so two services may call
-  // each other without a cycle.
-  const container: Services = {};
-
-  return container;
+export function createServices(deps: ServiceDeps): Services {
+  // When a second module needs to call this one, each factory takes `deps`
+  // and a `() => container` thunk: captured, not copied, so two services may
+  // call each other without a cycle.
+  return {
+    auth: createAuthService(deps),
+  };
 }

@@ -1,10 +1,8 @@
-import { z } from 'zod';
-
-import { deleteSessionTokenCookie } from '@openpanel/auth';
+import { deleteSessionTokenCookie } from '@openpanel/core';
 import { db } from '@openpanel/db';
-
+import { z } from 'zod';
 import { TRPCBadRequestError } from '../errors';
-import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
+import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const userRouter = createTRPCRouter({
   // Organizations the user created that still have a blocking subscription
@@ -17,7 +15,7 @@ export const userRouter = createTRPCRouter({
     return organizations
       .filter(
         (organization) =>
-          organization.hasSubscription && !organization.isWillBeCanceled,
+          organization.hasSubscription && !organization.isWillBeCanceled
       )
       .map((organization) => ({
         id: organization.id,
@@ -31,14 +29,14 @@ export const userRouter = createTRPCRouter({
     });
     const blocking = organizations.filter(
       (organization) =>
-        organization.hasSubscription && !organization.isWillBeCanceled,
+        organization.hasSubscription && !organization.isWillBeCanceled
     );
 
     if (blocking.length > 0) {
       throw new TRPCBadRequestError(
         `Please cancel the subscription for ${blocking
           .map((organization) => organization.name)
-          .join(', ')} before deleting your account.`,
+          .join(', ')} before deleting your account.`
       );
     }
 
@@ -58,7 +56,7 @@ export const userRouter = createTRPCRouter({
       z.object({
         firstName: z.string(),
         lastName: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
       return db.user.update({
@@ -76,7 +74,7 @@ export const userRouter = createTRPCRouter({
       z.object({
         sameSite: z.enum(['lax', 'strict', 'none']),
         domain: z.string(),
-      }),
+      })
     )
     .mutation(async ({ ctx, input }) => {
       ctx.setCookie('debugCookie', new Date().toISOString(), {
@@ -92,7 +90,7 @@ export const userRouter = createTRPCRouter({
       z.object({
         sameSite: z.enum(['lax', 'strict', 'none']),
         domain: z.string(),
-      }),
+      })
     )
     .query(async ({ ctx, input }) => {
       ctx.setCookie('debugCookie', new Date().toISOString(), {

@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { parseCookieDomain } from './parse-cookie-domain';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { parseCookieDomain } from './cookie-domain';
 
 describe('parseCookieDomain', () => {
   it('should return undefined domain for empty string', () => {
@@ -223,7 +223,7 @@ describe('parseCookieDomain', () => {
 
     it('should handle domains with all URL components', () => {
       expect(
-        parseCookieDomain('https://example.com:8080/path?param=value#fragment'),
+        parseCookieDomain('https://example.com:8080/path?param=value#fragment')
       ).toEqual({
         domain: '.example.com',
         secure: true,
@@ -274,7 +274,7 @@ describe('parseCookieDomain', () => {
 
     it('should throw error for URLs with invalid characters', () => {
       expect(() =>
-        parseCookieDomain('http://example.com:invalid-port'),
+        parseCookieDomain('http://example.com:invalid-port')
       ).toThrow();
     });
   });
@@ -296,7 +296,7 @@ describe('parseCookieDomain', () => {
 
     it('should handle subdomains of openpanel.dev correctly', () => {
       expect(
-        parseCookieDomain('https://staging.dashboard.openpanel.dev'),
+        parseCookieDomain('https://staging.dashboard.openpanel.dev')
       ).toEqual({
         domain: '.openpanel.dev',
         secure: true,
@@ -383,7 +383,7 @@ describe('parseCookieDomain', () => {
       'gov.ve',
     ];
 
-    multiPartTLDs.forEach((tld) => {
+    for (const tld of multiPartTLDs) {
       it(`should handle ${tld} domains correctly`, () => {
         expect(parseCookieDomain(`https://example.${tld}`)).toEqual({
           domain: `.example.${tld}`,
@@ -397,7 +397,7 @@ describe('parseCookieDomain', () => {
           secure: true,
         });
       });
-    });
+    }
   });
 
   describe('custom multi-part TLDs via COOKIE_TLDS', () => {

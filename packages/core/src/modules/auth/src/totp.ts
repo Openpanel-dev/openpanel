@@ -1,9 +1,9 @@
 import crypto from 'node:crypto';
-import { createTOTPKeyURI, verifyTOTPWithGracePeriod } from '@oslojs/otp';
 import {
   decodeBase32IgnorePadding,
   encodeBase32UpperCaseNoPadding,
 } from '@oslojs/encoding';
+import { createTOTPKeyURI, verifyTOTPWithGracePeriod } from '@oslojs/otp';
 import qrcode from 'qrcode';
 import { hashPassword, verifyPasswordHash } from './password';
 
@@ -49,7 +49,7 @@ export function verifyTotpCode(secret: string, code: string): boolean {
     PERIOD_SECONDS,
     DIGITS,
     normalized,
-    GRACE_PERIOD_SECONDS,
+    GRACE_PERIOD_SECONDS
   );
 }
 
@@ -75,7 +75,9 @@ export function generateRecoveryCodes(count = 10): string[] {
 }
 
 export async function hashRecoveryCodes(codes: string[]): Promise<string[]> {
-  return Promise.all(codes.map((code) => hashPassword(normalizeRecoveryCode(code))));
+  return Promise.all(
+    codes.map((code) => hashPassword(normalizeRecoveryCode(code)))
+  );
 }
 
 export function normalizeRecoveryCode(input: string): string {
