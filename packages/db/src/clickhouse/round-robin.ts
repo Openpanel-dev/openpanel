@@ -1,5 +1,5 @@
 import type { ClickHouseClient } from '@clickhouse/client';
-import type { ILogger } from '@openpanel/core';
+import type { ILogger } from '../logger';
 
 /**
  * Round-robin selection across multiple ClickHouse clients with simple

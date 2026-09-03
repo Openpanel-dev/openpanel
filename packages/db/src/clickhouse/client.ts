@@ -5,9 +5,9 @@ import type {
 } from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
-import { createLogger } from '@openpanel/core';
 import type { IInterval } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
+import { createLogger } from '../logger';
 import { RoundRobinPicker, withRoundRobinRetry } from './round-robin';
 import { type SqlFragment, toStatement } from './sql';
 

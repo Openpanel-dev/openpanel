@@ -1,7 +1,7 @@
-import { createLogger } from '@openpanel/core';
 import { cacheable } from '@openpanel/redis';
 import { originalCh } from './clickhouse/client';
 import { decrypt, encrypt } from './encryption';
+import { createLogger } from './logger';
 import { db } from './prisma-client';
 
 const logger = createLogger({ name: 'db:gsc' });

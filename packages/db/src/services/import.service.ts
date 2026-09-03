@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import type { ILogger } from '@openpanel/core';
 import {
   ch,
   convertClickhouseDateToJs,
@@ -7,6 +6,7 @@ import {
   getReplicatedTableName,
   TABLE_NAMES,
 } from '../clickhouse/client';
+import type { ILogger } from '../logger';
 import { db, type Prisma } from '../prisma-client';
 import type { IClickhouseEvent } from './event.service';
 import type { IClickhouseProfile } from './profile.service';

@@ -28,6 +28,7 @@
     "@maxmind/geoip2-node": "^6.1.0",
     "@node-rs/argon2": "^2.0.2",
     "@openpanel/common": "workspace:*",
+    "@openpanel/email": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@oslojs/crypto": "^1.0.1",
     "@oslojs/encoding": "^1.1.0",

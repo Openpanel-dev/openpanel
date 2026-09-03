@@ -1,4 +1,4 @@
-import { getClientIpFromHeaders } from '@openpanel/core';
+import { getClientIpFromHeaders } from '@openpanel/common';
 import type { OpenPanelOptions } from '@openpanel/sdk';
 import { OpenPanel } from '@openpanel/sdk';
 import type { NextFunction, Request, Response } from 'express';

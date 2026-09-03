@@ -1,4 +1,5 @@
 export * from './src/date';
+export * from './src/get-client-ip';
 export * from './src/get-previous-metric';
 export * from './src/group-by-labels';
 export * from './src/id';

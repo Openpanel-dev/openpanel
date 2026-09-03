@@ -1,7 +1,8 @@
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createGzip } from 'node:zlib';
-import { createLogger, generateSecureId } from '@openpanel/core';
+import { generateSecureId } from '@openpanel/core';
+import { createLogger } from '../logger';
 import type { IExportEvent } from './export-event';
 
 const logger = createLogger({ name: 'batch-creator' });

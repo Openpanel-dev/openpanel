@@ -1,8 +1,9 @@
 import { Readable } from 'node:stream';
 import type { ClickHouseSettings } from '@clickhouse/client';
-import { createLogger, generateSecureId, type ILogger } from '@openpanel/core';
+import { generateSecureId } from '@openpanel/core';
 import { cronQueue } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
+import { createLogger, type ILogger } from '../logger';
 
 export type FlushPhaseTimings = {
   lrangeMs?: number;

@@ -45,6 +45,8 @@ overrides:
   '@nuxt/vite-builder>seroval': 1.4.0
   embla-carousel: 8.0.0-rc22
 
+packageExtensionsChecksum: sha256-8pKsevF6VIp4dvYbdnOYuuSpx5qM62WntMQClY5PwWE=
+
 patchedDependencies:
   nuqs: 4f93812bf7a04685f9477b2935e3acbf2aa24dfbb1b00b9ae0ed8f7a2877a98e
 
@@ -929,10 +931,10 @@ importers:
         version: 3.1117.0
       '@bull-board/api':
         specifier: 6.14.0
-        version: 6.14.0(@bull-board/ui@6.14.0)
+        version: 6.14.0(@bull-board/ui@6.14.0(bullmq@5.63.0(supports-color@10.2.0)))(bullmq@5.63.0(supports-color@10.2.0))
       '@bull-board/express':
         specifier: 6.14.0
-        version: 6.14.0(supports-color@10.2.0)
+        version: 6.14.0(bullmq@5.63.0(supports-color@10.2.0))(supports-color@10.2.0)
       '@google-cloud/storage':
         specifier: ^7.18.0
         version: 7.22.0(supports-color@10.2.0)
@@ -1112,6 +1114,9 @@ importers:
       '@openpanel/common':
         specifier: workspace:*
         version: link:../common
+      '@openpanel/email':
+        specifier: workspace:*
+        version: link:../email
       '@openpanel/validation':
         specifier: workspace:*
         version: link:../validation
@@ -1200,6 +1205,9 @@ importers:
       '@clickhouse/client':
         specifier: ^1.18.5
         version: 1.18.5
+      '@hyperdx/node-opentelemetry':
+        specifier: 'catalog:'
+        version: 0.10.3(supports-color@10.2.0)
       '@openpanel/common':
         specifier: workspace:*
         version: link:../common
@@ -1239,6 +1247,12 @@ importers:
       mathjs:
         specifier: ^12.3.2
         version: 12.3.2
+      pino:
+        specifier: 'catalog:'
+        version: 10.3.1
+      pino-pretty:
+        specifier: 'catalog:'
+        version: 13.1.3
       prisma-json-types-generator:
         specifier: ^3.1.1
         version: 3.1.1(prisma@6.14.0(magicast@0.3.5)(typescript@5.9.3))(typescript@5.9.3)
@@ -1567,9 +1581,6 @@ importers:
       '@openpanel/common':
         specifier: workspace:*
         version: link:../../common
-      '@openpanel/core':
-        specifier: workspace:*
-        version: link:../../core
       '@openpanel/sdk':
         specifier: workspace:1.3.1-local
         version: link:../sdk
@@ -3285,6 +3296,7 @@ packages:
     resolution: {integrity: sha512-oMDwXwoPn0RsdZ3Y68/bOErZ/qGZE5H97vgE/Pc8Uul/OHajlvajKW4NV+ZGTix82liUfH9CkjYx7PpwvBWhxg==}
     peerDependencies:
       '@bull-board/ui': 6.14.0
+      bullmq: '*'
 
   '@bull-board/express@6.14.0':
     resolution: {integrity: sha512-3H1ame2G1+eVnqqSsw6KfzTGYAWSpVsIx6EPwg9vPSP2eKfNAm12Cm4zvL6ZkwAvTCkAByt5PPDRWbbwWB6HHQ==}
@@ -22505,23 +22517,27 @@ snapshots:
 
   '@borewit/text-codec@0.2.2': {}
 
-  '@bull-board/api@6.14.0(@bull-board/ui@6.14.0)':
+  '@bull-board/api@6.14.0(@bull-board/ui@6.14.0(bullmq@5.63.0(supports-color@10.2.0)))(bullmq@5.63.0(supports-color@10.2.0))':
     dependencies:
-      '@bull-board/ui': 6.14.0
+      '@bull-board/ui': 6.14.0(bullmq@5.63.0(supports-color@10.2.0))
+      bullmq: 5.63.0(supports-color@10.2.0)
       redis-info: 3.1.0
 
-  '@bull-board/express@6.14.0(supports-color@10.2.0)':
+  '@bull-board/express@6.14.0(bullmq@5.63.0(supports-color@10.2.0))(supports-color@10.2.0)':
     dependencies:
-      '@bull-board/api': 6.14.0(@bull-board/ui@6.14.0)
-      '@bull-board/ui': 6.14.0
+      '@bull-board/api': 6.14.0(@bull-board/ui@6.14.0(bullmq@5.63.0(supports-color@10.2.0)))(bullmq@5.63.0(supports-color@10.2.0))
+      '@bull-board/ui': 6.14.0(bullmq@5.63.0(supports-color@10.2.0))
       ejs: 3.1.10
       express: 4.21.2(supports-color@10.2.0)
     transitivePeerDependencies:
+      - bullmq
       - supports-color
 
-  '@bull-board/ui@6.14.0':
+  '@bull-board/ui@6.14.0(bullmq@5.63.0(supports-color@10.2.0))':
     dependencies:
-      '@bull-board/api': 6.14.0(@bull-board/ui@6.14.0)
+      '@bull-board/api': 6.14.0(@bull-board/ui@6.14.0(bullmq@5.63.0(supports-color@10.2.0)))(bullmq@5.63.0(supports-color@10.2.0))
+    transitivePeerDependencies:
+      - bullmq
 
   '@capsizecss/unpack@4.0.0':
     dependencies:

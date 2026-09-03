@@ -33,6 +33,8 @@ export {
 } from './clients/ai/providers';
 export type { WinBackPitchInput } from './clients/ai/win-back';
 export { generateWinBackPitch } from './clients/ai/win-back';
+export type { EmailData, EmailTemplate } from './clients/email';
+export { sendEmail } from './clients/email';
 // Dissolved from @openpanel/geo (M4-004) — apps/api's ingest and tools
 // controllers call these directly, the same way they reach the logger below.
 export type { AsnInfo, GeoLocation } from './clients/geo';
