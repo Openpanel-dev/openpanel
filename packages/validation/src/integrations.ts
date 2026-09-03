@@ -260,8 +260,9 @@ export type IIntegrationType = IIntegrationConfig['type'];
 // ---------------------------------------------------------------------------
 // Plugin descriptor registry (core layer). Each integration declares its
 // capabilities, setup style, config schema and catalog metadata once. The
-// server (packages/integrations) and client (apps/start) registries are keyed
-// by the same `type` literal and are forced to cover this union.
+// server (@openpanel/core's clients/integrations/registry.ts) and client
+// (apps/start) registries are keyed by the same `type` literal and are
+// forced to cover this union.
 // ---------------------------------------------------------------------------
 
 export type IIntegrationKind = 'notification' | 'export';

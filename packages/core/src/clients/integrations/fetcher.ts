@@ -1,3 +1,4 @@
+// Ported from @openpanel/integrations (dissolved into core — M4-005).
 /**
  * Webhook delivery is reachable from two very different places:
  *
@@ -17,7 +18,7 @@ export type WebhookFetcher = (
     method: string;
     headers: Record<string, string>;
     body: string;
-  },
+  }
 ) => Promise<{ status: number }>;
 
 export interface WebhookResult {
@@ -34,7 +35,7 @@ export async function postWebhook(
   fetcher: WebhookFetcher,
   url: string,
   body: unknown,
-  extraHeaders: Record<string, string> = {},
+  extraHeaders: Record<string, string> = {}
 ): Promise<WebhookResult> {
   try {
     const { status } = await fetcher(url, {

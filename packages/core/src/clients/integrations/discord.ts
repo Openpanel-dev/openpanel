@@ -1,3 +1,4 @@
+// Ported from @openpanel/integrations (dissolved into core — M4-005).
 // Cred to (@OpenStatusHQ) https://github.com/openstatusHQ/openstatus/blob/main/packages/notifications/discord/src/index.ts
 
 import {
@@ -30,7 +31,7 @@ export function sendDiscordNotification({
 
 export function sendTestDiscordNotification(
   webhookUrl: string,
-  fetcher: WebhookFetcher = browserFetcher,
+  fetcher: WebhookFetcher = browserFetcher
 ) {
   return sendDiscordNotification({
     webhookUrl,

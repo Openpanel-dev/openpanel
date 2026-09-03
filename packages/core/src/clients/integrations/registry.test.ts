@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'bun:test';
 import {
   carryOverConfigSecrets,
   encryptConfigSecrets,
@@ -82,9 +82,9 @@ describe('config secret handling', () => {
   });
 
   it('reports a blank secret with nothing stored to fall back to', () => {
-    expect(findMissingSecretFields(carryOverConfigSecrets(gcs(''), null))).toEqual([
-      'serviceAccountKey',
-    ]);
+    expect(
+      findMissingSecretFields(carryOverConfigSecrets(gcs(''), null))
+    ).toEqual(['serviceAccountKey']);
     expect(findMissingSecretFields(gcs('key'))).toEqual([]);
     // iam_role has no secret field on the object at all.
     expect(findMissingSecretFields(s3IamRole)).toEqual([]);
@@ -109,12 +109,12 @@ describe('config secret handling', () => {
     // Everything the UI needs stays intact.
     expect(redacted.incoming_webhook.channel).toBe('#alerts');
     expect(redacted.incoming_webhook.configuration_url).toBe(
-      'https://acme.slack.com/services/B1',
+      'https://acme.slack.com/services/B1'
     );
     expect(redacted.team).toEqual({ id: 'T1', name: 'Acme' });
     // The original is untouched — the worker reads the stored row, not this.
     expect(slack.incoming_webhook.url).toBe(
-      'https://hooks.slack.com/services/T1/B1/secret',
+      'https://hooks.slack.com/services/T1/B1/secret'
     );
   });
 
@@ -147,7 +147,7 @@ describe('config secret handling', () => {
         // a third header added; nothing removed.
         headers: { Authorization: '', 'X-Env': 'staging', 'X-New': 'v' },
       },
-      stored,
+      stored
     );
 
     expect(submitted.headers).toEqual({
@@ -167,7 +167,7 @@ describe('config secret handling', () => {
     };
     const submitted = carryOverConfigSecrets(
       { ...stored, headers: {} },
-      stored,
+      stored
     );
     expect(submitted.headers).toEqual({});
   });
@@ -193,7 +193,7 @@ describe('config secret handling', () => {
         url: 'https://acme.test/hook',
         mode: 'message',
         headers: { Authorization: 'enc:not-really' },
-      }),
+      })
     ).toBeUndefined();
   });
 
@@ -202,7 +202,7 @@ describe('config secret handling', () => {
     // replay a secret lifted from another integration.
     expect(findEncryptedSecretField(gcs('enc:abc'))).toBe('serviceAccountKey');
     expect(findEncryptedSecretField(s3AccessKey('enc:abc'))).toBe(
-      'secretAccessKey',
+      'secretAccessKey'
     );
     expect(findEncryptedSecretField(gcs('plaintext'))).toBeUndefined();
   });

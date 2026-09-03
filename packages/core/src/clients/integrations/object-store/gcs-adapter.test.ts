@@ -1,6 +1,6 @@
+import { beforeAll, describe, expect, it } from 'bun:test';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { encryptCredential } from '@openpanel/core';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { encryptCredential } from '../../../shared/encryption';
 import { createGCSAdapter } from './gcs-adapter';
 
 /**

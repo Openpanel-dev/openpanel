@@ -1,5 +1,5 @@
-import { defineConfig } from 'tsdown';
 import type { Options } from 'tsdown';
+import { defineConfig } from 'tsdown';
 
 const options: Options = {
   clean: true,
@@ -10,7 +10,7 @@ const options: Options = {
     'pino',
     'pino-pretty',
     '@node-rs/argon2',
-    // integrations package
+    // object-store adapter SDKs, now in @openpanel/core
     '@aws-sdk/client-s3',
     '@aws-sdk/client-sts',
     '@google-cloud/storage',

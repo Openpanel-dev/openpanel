@@ -1,3 +1,5 @@
+// Ported from @openpanel/ai (dissolved into core — M4-005).
+//
 // Phase 5 — the "why". Given an insight plus a deterministic decomposition of
 // the change (current vs baseline breakdowns across referrer/country/device/
 // utm) and any nearby references, produce an honest explanation: which
@@ -67,7 +69,7 @@ const explanationSchema = z.object({
     z.object({
       label: z.string(),
       detail: z.string(),
-    }),
+    })
   ),
   // '' when nothing correlates — kept required for OpenAI strict mode.
   relatedReference: z.string(),
@@ -98,7 +100,9 @@ Be honest and precise. You can only see what's in the data: explain the shape an
 
 let _app: ReturnType<typeof betterAgent> | null = null;
 function getApp() {
-  if (_app) return _app;
+  if (_app) {
+    return _app;
+  }
   const agent = defineAgent({
     name: 'insight-explain',
     description: 'Explains why an insight changed (one-shot).',
@@ -119,7 +123,7 @@ function getApp() {
 }
 
 export async function generateInsightExplanation(
-  input: ExplainInsightInput,
+  input: ExplainInsightInput
 ): Promise<InsightExplanation | null> {
   const result = (await getApp().run('insight-explain', {
     input: JSON.stringify(input),

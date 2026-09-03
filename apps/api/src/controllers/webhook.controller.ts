@@ -6,12 +6,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 import { tryCatch } from '@openpanel/common';
-import { db, getOrganizationByProjectIdCached, Prisma } from '@openpanel/db';
-import { safeWebhookFetcher } from '@openpanel/integrations/src/safe-fetcher';
 import {
+  safeWebhookFetcher,
   sendSlackNotification,
   slackInstaller,
-} from '@openpanel/integrations/src/slack';
+} from '@openpanel/core';
+import { db, getOrganizationByProjectIdCached, Prisma } from '@openpanel/db';
 import { getProduct, validatePolarEvent } from '@openpanel/payments';
 import { publishEvent } from '@openpanel/redis';
 import { zSlackAuthResponse } from '@openpanel/validation';

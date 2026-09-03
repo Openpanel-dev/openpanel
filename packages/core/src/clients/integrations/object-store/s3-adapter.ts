@@ -1,3 +1,4 @@
+// Ported from @openpanel/integrations (dissolved into core — M4-005).
 import { Agent as HttpAgent } from 'node:http';
 import { Agent as HttpsAgent } from 'node:https';
 import type { LookupFunction } from 'node:net';
@@ -8,20 +9,24 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
-import {
-  assertSafeUrl,
-  createLogger,
-  createPinnedLookup,
-  decryptCredential,
-} from '@openpanel/core';
 import type { IS3ExportConfig } from '@openpanel/validation';
+import { decryptCredential } from '../../../shared/encryption';
+import { assertSafeUrl, createPinnedLookup } from '../../../shared/ssrf';
+import { createLogger, type ILogger } from '../../logger';
 import type {
   IObjectStoreAdapter,
   IUploadOptions,
   IUploadResult,
 } from './types';
 
-const logger = createLogger({ name: 's3-adapter' });
+// Lazy: constructing a pino logger spins up a worker thread for the
+// pino-pretty transport, so a module that is merely imported (every test file
+// that reaches the object-store barrel) must not pay for one unused.
+let _logger: ILogger | null = null;
+function logger(): ILogger {
+  _logger ??= createLogger({ name: 's3-adapter' });
+  return _logger;
+}
 
 /**
  * Transport that dials only `address`, whatever DNS says at connect time.
@@ -122,7 +127,7 @@ export class S3Adapter implements IObjectStoreAdapter {
         : {}),
     });
 
-    logger.debug(
+    logger().debug(
       {
         region: this.config.region,
         endpoint: this.config.endpoint || 'default',
@@ -201,7 +206,7 @@ export class S3Adapter implements IObjectStoreAdapter {
         },
       });
 
-      logger.debug(
+      logger().debug(
         {
           roleArn: this.config.roleArn,
           expiresAt: new Date(this.clientExpiresAt).toISOString(),
@@ -211,7 +216,7 @@ export class S3Adapter implements IObjectStoreAdapter {
 
       return s3Client;
     } catch (error) {
-      logger.error(
+      logger().error(
         {
           error,
           roleArn: this.config.roleArn,
@@ -265,7 +270,7 @@ export class S3Adapter implements IObjectStoreAdapter {
       const command = new PutObjectCommand(putParams);
       const response = await client.send(command);
 
-      logger.debug(
+      logger().debug(
         {
           bucket: options.bucket,
           key: options.key,
@@ -281,7 +286,7 @@ export class S3Adapter implements IObjectStoreAdapter {
         location: `s3://${options.bucket}/${options.key}`,
       };
     } catch (error) {
-      logger.error(
+      logger().error(
         {
           error,
           bucket: options.bucket,
@@ -344,7 +349,7 @@ export class S3Adapter implements IObjectStoreAdapter {
     const status = (error as { $metadata?: { httpStatusCode?: number } } | null)
       ?.$metadata?.httpStatusCode;
 
-    logger.warn({ err: error, bucket: this.config.bucket }, 'S3 test failed');
+    logger().warn({ err: error, bucket: this.config.bucket }, 'S3 test failed');
 
     if (status === 404 || name === 'NotFound' || name === 'NoSuchBucket') {
       return `Bucket '${this.config.bucket}' does not exist or is not accessible`;

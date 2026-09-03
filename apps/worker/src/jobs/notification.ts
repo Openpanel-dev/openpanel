@@ -1,13 +1,12 @@
-import type { Job } from 'bullmq';
-
-import { Prisma, db } from '@openpanel/db';
+import { getServerIntegration } from '@openpanel/core';
+import { db, Prisma } from '@openpanel/db';
 import { sendEmail } from '@openpanel/email';
-import { getServerIntegration } from '@openpanel/integrations/src/registry';
 import type { NotificationQueuePayload } from '@openpanel/queue';
 import { publishEvent } from '@openpanel/redis';
+import type { Job } from 'bullmq';
 
 function isValidJson<T>(
-  value: T | Prisma.NullableJsonNullValueInput | null | undefined,
+  value: T | Prisma.NullableJsonNullValueInput | null | undefined
 ): value is T {
   return (
     value !== null &&
@@ -42,8 +41,8 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
         });
         const emails = new Set(
           members.flatMap((member) =>
-            member.user?.email ? [member.user.email] : [],
-          ),
+            member.user?.email ? [member.user.email] : []
+          )
         );
         for (const to of emails) {
           // Per-recipient unsubscribe (product_alerts category) is handled
@@ -89,7 +88,7 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
       const plugin = getServerIntegration(integration.config.type);
       if (!plugin.notification) {
         throw new Error(
-          `Integration ${integration.config.type} is not a notification sink`,
+          `Integration ${integration.config.type} is not a notification sink`
         );
       }
 

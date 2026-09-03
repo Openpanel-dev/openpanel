@@ -1,4 +1,5 @@
 import { gunzipSync } from 'node:zlib';
+import { createGCSAdapter } from '@openpanel/core';
 import {
   clickhouseEventToExportEvent,
   createBatch,
@@ -9,7 +10,6 @@ import {
   parseManifest,
   serializeManifest,
 } from '@openpanel/db/src/exports';
-import { createGCSAdapter } from '@openpanel/integrations/src/object-store';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -95,7 +95,7 @@ describe.skipIf(!available)('flush-exports -> GCS end to end', () => {
       'proj_1',
       'int_1',
       batch.info.batchId,
-      new Date(batch.info.minEventTime),
+      new Date(batch.info.minEventTime)
     );
 
     for (const file of batch.files) {
@@ -108,7 +108,7 @@ describe.skipIf(!available)('flush-exports -> GCS end to end', () => {
     }
     const manifest = createManifest(
       batch.info,
-      batch.files.map((f) => f.filename),
+      batch.files.map((f) => f.filename)
     );
     await adapter.upload({
       bucket: config.bucket,
@@ -120,20 +120,22 @@ describe.skipIf(!available)('flush-exports -> GCS end to end', () => {
 
     const read = async (key: string) => {
       const res = await fetch(
-        `${EMULATOR}/storage/v1/b/${BUCKET}/o/${encodeURIComponent(key)}?alt=media`,
+        `${EMULATOR}/storage/v1/b/${BUCKET}/o/${encodeURIComponent(key)}?alt=media`
       );
       expect(res.ok).toBe(true);
       return Buffer.from(await res.arrayBuffer());
     };
 
     const storedManifest = parseManifest(
-      (await read(`${basePath}/${MANIFEST_FILENAME}`)).toString(),
+      (await read(`${basePath}/${MANIFEST_FILENAME}`)).toString()
     );
     expect(storedManifest.record_count).toBe(3);
     expect(storedManifest.files).toEqual(['part-0000.jsonl.gz']);
     expect(storedManifest.partition_date).toBe('2026-08-26');
 
-    const lines = gunzipSync(await read(`${basePath}/${storedManifest.files[0]}`))
+    const lines = gunzipSync(
+      await read(`${basePath}/${storedManifest.files[0]}`)
+    )
       .toString()
       .trim()
       .split('\n')

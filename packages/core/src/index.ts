@@ -6,10 +6,76 @@
 // once and mount the three route surfaces plus the tRPC router over it; a
 // service, a client or a buffer is not reachable from here by design.
 
+// Dissolved from @openpanel/ai (M4-005) — the chat agent app, the filter
+// command bar, insight explanation/enrichment and the worker's digest and
+// win-back emails all call these directly.
+export type {
+  InsightCategory,
+  InsightEnrichment,
+  InsightToEnrich,
+} from './clients/ai/enrich';
+export { ENRICH_VERSION, enrichInsights } from './clients/ai/enrich';
+export type {
+  BreakdownComparison,
+  DailyPoint,
+  ExplainInsightInput,
+  InsightExplanation,
+} from './clients/ai/explain';
+export { generateInsightExplanation } from './clients/ai/explain';
+export type { WeeklyNarrativeInput } from './clients/ai/narrative';
+export { generateWeeklyNarrative } from './clients/ai/narrative';
+export type { ChatModelEntry } from './clients/ai/providers';
+export {
+  ALLOWED_MODELS,
+  anthropicProvider,
+  openaiProvider,
+  resolveModel,
+} from './clients/ai/providers';
+export type { WinBackPitchInput } from './clients/ai/win-back';
+export { generateWinBackPitch } from './clients/ai/win-back';
 // Dissolved from @openpanel/geo (M4-004) — apps/api's ingest and tools
 // controllers call these directly, the same way they reach the logger below.
 export type { AsnInfo, GeoLocation } from './clients/geo';
 export { getAsnInfo, getGeoLocation } from './clients/geo';
+// Dissolved from @openpanel/integrations (M4-005) — the export cron job, the
+// notification worker job and the Slack/webhook OAuth callback all reach
+// these directly, the same way they reach the object-store adapters below.
+export {
+  sendDiscordNotification,
+  sendTestDiscordNotification,
+} from './clients/integrations/discord';
+export type {
+  IObjectStoreAdapter,
+  IUploadOptions,
+  IUploadResult,
+} from './clients/integrations/object-store';
+export {
+  createGCSAdapter,
+  createS3Adapter,
+  GCSAdapter,
+  S3Adapter,
+} from './clients/integrations/object-store';
+export type {
+  ConfigOf,
+  IConfigSecret,
+  INotificationDeliverArgs,
+  INotificationDeliverPayload,
+  IServerIntegration,
+} from './clients/integrations/registry';
+export {
+  carryOverConfigSecrets,
+  encryptConfigSecrets,
+  findEncryptedSecretField,
+  findMissingSecretFields,
+  getServerIntegration,
+  redactConfigSecrets,
+} from './clients/integrations/registry';
+export { safeWebhookFetcher } from './clients/integrations/safe-fetcher';
+export {
+  getSlackInstallUrl,
+  sendSlackNotification,
+  slackInstaller,
+} from './clients/integrations/slack';
 // The concrete pino implementation (dissolved from @openpanel/logger,
 // M4-003). `./logger` above is the structural interface every module codes
 // against; this is what apps/api, and the still-live apps/worker, call to
@@ -88,8 +154,8 @@ export type {
 } from './shared/access';
 export { createAccessChecks } from './shared/access';
 // Dissolved from @openpanel/common/server (M4-003) — a still-live V1 package
-// (db, importer, integrations, mcp, queue, apps/worker) reaches these the
-// same way apps/api and core itself do, until its own module lands.
+// (db, importer, mcp, queue, apps/worker) reaches these the same way apps/api
+// and core itself do, until its own module lands.
 export {
   createHash,
   generateSalt,

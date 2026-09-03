@@ -27,7 +27,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Apps
 COPY apps/worker/package.json ./apps/worker/
 # Packages
-COPY packages/ai/package.json ./packages/ai/
 COPY packages/db/package.json ./packages/db/
 COPY packages/json/package.json ./packages/json/
 COPY packages/email/package.json ./packages/email/
@@ -39,7 +38,6 @@ COPY packages/importer/package.json ./packages/importer/
 COPY packages/payments/package.json ./packages/payments/
 COPY packages/constants/package.json ./packages/constants/
 COPY packages/validation/package.json ./packages/validation/
-COPY packages/integrations/package.json ./packages/integrations/
 COPY packages/js-runtime/package.json ./packages/js-runtime/
 COPY patches ./patches
 
@@ -78,7 +76,6 @@ COPY --from=prod /app/node_modules ./node_modules
 COPY --from=build /app/apps/worker ./apps/worker
 
 # Packages
-COPY --from=build /app/packages/ai ./packages/ai
 COPY --from=build /app/packages/db ./packages/db
 COPY --from=build /app/packages/json ./packages/json
 COPY --from=build /app/packages/email ./packages/email
@@ -90,7 +87,6 @@ COPY --from=build /app/packages/importer ./packages/importer
 COPY --from=build /app/packages/payments ./packages/payments
 COPY --from=build /app/packages/constants ./packages/constants
 COPY --from=build /app/packages/validation ./packages/validation
-COPY --from=build /app/packages/integrations ./packages/integrations
 COPY --from=build /app/packages/js-runtime ./packages/js-runtime
 COPY --from=build /app/tooling/typescript ./tooling/typescript
 RUN pnpm db:codegen

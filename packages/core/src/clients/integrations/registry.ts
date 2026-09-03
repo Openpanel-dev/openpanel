@@ -1,9 +1,10 @@
-import { encryptCredential } from '@openpanel/core';
+// Ported from @openpanel/integrations (dissolved into core — M4-005).
 import {
   execute as executeJavaScriptTemplate,
   validate as validateJavaScriptTemplate,
 } from '@openpanel/js-runtime';
 import { type IIntegrationConfig, looksEncrypted } from '@openpanel/validation';
+import { encryptCredential } from '../../shared/encryption';
 import {
   sendDiscordNotification,
   sendTestDiscordNotification,

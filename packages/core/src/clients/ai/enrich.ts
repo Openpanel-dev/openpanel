@@ -1,3 +1,5 @@
+// Ported from @openpanel/ai (dissolved into core — M4-005).
+//
 // Tier-1 insight enrichment: a one-shot OpenAI call that scores and summarizes
 // auto-detected analytics insights so the product can filter noise, select
 // email-worthy items, and flag chart-reference candidates. No persistence, no
@@ -60,7 +62,7 @@ const enrichmentOutputSchema = z.object({
       category: z.enum(['spike', 'drop', 'shift', 'anomaly', 'trend']),
       emailWorthy: z.boolean(),
       referenceWorthy: z.boolean(),
-    }),
+    })
   ),
 });
 
@@ -83,7 +85,9 @@ Return exactly one result per input insight, preserving each "id" verbatim. Be c
 
 let _app: ReturnType<typeof betterAgent> | null = null;
 function getApp() {
-  if (_app) return _app;
+  if (_app) {
+    return _app;
+  }
   const agent = defineAgent({
     name: 'insight-enrich',
     description:
@@ -110,9 +114,11 @@ function getApp() {
  * Keep batches modest (~25) so the prompt stays small and the mapping reliable.
  */
 export async function enrichInsights(
-  insights: InsightToEnrich[],
+  insights: InsightToEnrich[]
 ): Promise<InsightEnrichment[]> {
-  if (insights.length === 0) return [];
+  if (insights.length === 0) {
+    return [];
+  }
 
   const input = JSON.stringify(insights);
   const result = (await getApp().run('insight-enrich', {

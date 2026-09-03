@@ -1,3 +1,5 @@
+// Ported from @openpanel/ai (dissolved into core — M4-005).
+//
 // SERVER-ONLY. This module instantiates `@better-agent/providers` clients and
 // reads provider API keys from `process.env`. Never value-import it from the
 // browser (apps/start) — import the model catalog/types from

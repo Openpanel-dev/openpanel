@@ -1,8 +1,8 @@
 import {
   ENRICH_VERSION,
-  type InsightToEnrich,
   enrichInsights,
-} from '@openpanel/ai';
+  type InsightToEnrich,
+} from '@openpanel/core';
 import { db } from '@openpanel/db';
 import { logger as baseLogger } from '@/utils/logger';
 
@@ -13,7 +13,9 @@ const logger = baseLogger.child({ job: 'insights-enrich' });
 const BATCH_SIZE = 25;
 
 function clamp01(n: number): number {
-  if (Number.isNaN(n)) return 0;
+  if (Number.isNaN(n)) {
+    return 0;
+  }
   return Math.max(0, Math.min(1, n));
 }
 
@@ -49,7 +51,9 @@ export async function enrichProjectInsights(projectId: string): Promise<void> {
     },
   });
 
-  if (stale.length === 0) return;
+  if (stale.length === 0) {
+    return;
+  }
 
   let enriched = 0;
   for (let i = 0; i < stale.length; i += BATCH_SIZE) {
@@ -74,7 +78,7 @@ export async function enrichProjectInsights(projectId: string): Promise<void> {
     } catch (err) {
       logger.error(
         { err, projectId, batchSize: batch.length },
-        'Enrichment call failed; skipping batch',
+        'Enrichment call failed; skipping batch'
       );
       continue;
     }
@@ -82,7 +86,9 @@ export async function enrichProjectInsights(projectId: string): Promise<void> {
     const byId = new Map(results.map((r) => [r.id, r]));
     for (const row of batch) {
       const e = byId.get(row.id);
-      if (!e) continue;
+      if (!e) {
+        continue;
+      }
       await db.projectInsight.update({
         where: { id: row.id },
         data: {
@@ -101,6 +107,6 @@ export async function enrichProjectInsights(projectId: string): Promise<void> {
 
   logger.info(
     { projectId, candidates: stale.length, enriched },
-    'Insight enrichment complete',
+    'Insight enrichment complete'
   );
 }

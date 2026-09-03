@@ -6,6 +6,7 @@ import {
   type ToolRunContext,
 } from '@better-agent/core';
 import { intervals, operators, timeWindows } from '@openpanel/constants';
+import { resolveModel } from '@openpanel/core';
 import {
   getDatesFromRange,
   getTopPagesCore,
@@ -23,7 +24,6 @@ import {
   zRange,
 } from '@openpanel/validation';
 import { z } from 'zod';
-import { resolveModel } from '@openpanel/ai';
 
 const operatorEnum = z.enum(objectToZodEnums(operators));
 const rangeEnum = zRange;
@@ -39,7 +39,7 @@ export const filterCommandOutputSchema = z.object({
     })
     .nullable()
     .describe(
-      'Date range / interval. Null = no change. Either set `range` to a preset (and null both dates) OR set `startDate`+`endDate` for a custom window (and null `range`) — never both.',
+      'Date range / interval. Null = no change. Either set `range` to a preset (and null both dates) OR set `startDate`+`endDate` for a custom window (and null `range`) — never both.'
     ),
   setPropertyFilters: z
     .object({
@@ -48,31 +48,29 @@ export const filterCommandOutputSchema = z.object({
           name: z
             .string()
             .describe(
-              'Property key. Common: country, region, city, device, browser, os, referrer_name, referrer_type, path, origin, utm_source, utm_medium, utm_campaign.',
+              'Property key. Common: country, region, city, device, browser, os, referrer_name, referrer_type, path, origin, utm_source, utm_medium, utm_campaign.'
             ),
           operator: operatorEnum,
           value: z
             .array(z.string())
-            .describe(
-              "Values to match (OR'd). Use [] for isNull / isNotNull.",
-            ),
-        }),
+            .describe("Values to match (OR'd). Use [] for isNull / isNotNull."),
+        })
       ),
     })
     .nullable()
     .describe(
-      'REPLACES the active property-filter set. Null = no change. To ADD to existing filters, include the current ones (see "Current view"). Empty filters array clears all property filters.',
+      'REPLACES the active property-filter set. Null = no change. To ADD to existing filters, include the current ones (see "Current view"). Empty filters array clears all property filters.'
     ),
   setEventNamesFilter: z
     .object({ eventNames: z.array(z.string()) })
     .nullable()
     .describe(
-      'REPLACES the event-name filter. Null = no change. Empty array shows all events. Verify names with list_event_names if unsure.',
+      'REPLACES the event-name filter. Null = no change. Empty array shows all events. Verify names with list_event_names if unsure.'
     ),
   summary: z
     .string()
     .describe(
-      'One-line confirmation in 8-15 words. No preamble, no markdown. If ambiguous and you applied no changes, explain what you need.',
+      'One-line confirmation in 8-15 words. No preamble, no markdown. If ambiguous and you applied no changes, explain what you need.'
     ),
 });
 
@@ -110,19 +108,21 @@ function pickModel(): ChatModelEntry {
 
   for (const id of PREFERRED_MODEL_IDS) {
     const entry = CHAT_MODELS.find((m) => m.id === id);
-    if (entry && available(entry)) return entry;
+    if (entry && available(entry)) {
+      return entry;
+    }
   }
   const fallback = CHAT_MODELS.find(available);
   if (!fallback) {
     throw new Error(
-      'filter-command: no model available — set OPENAI_API_KEY or ANTHROPIC_API_KEY.',
+      'filter-command: no model available — set OPENAI_API_KEY or ANTHROPIC_API_KEY.'
     );
   }
   return fallback;
 }
 
 const PRESET_RANGES: ReadonlySet<IChartRange> = new Set(
-  (Object.keys(timeWindows) as IChartRange[]).filter((k) => k !== 'custom'),
+  (Object.keys(timeWindows) as IChartRange[]).filter((k) => k !== 'custom')
 );
 
 function resolveRange(
@@ -131,7 +131,7 @@ function resolveRange(
       ? F
       : undefined
     : undefined,
-  timezone: string,
+  timezone: string
 ): { startDate: string; endDate: string } {
   if (filters?.startDate || filters?.endDate) {
     return resolveDateRangeCore(filters.startDate, filters.endDate);
@@ -145,10 +145,12 @@ function resolveRange(
 
 function activeFilters(ctx: FilterCommandContext): IChartEventFilter[] {
   const raw = ctx.pageContext?.filters?.eventFilters;
-  if (!Array.isArray(raw)) return [];
+  if (!Array.isArray(raw)) {
+    return [];
+  }
   return raw.filter(
     (f): f is IChartEventFilter =>
-      typeof (f as { name?: unknown })?.name === 'string',
+      typeof (f as { name?: unknown })?.name === 'string'
   );
 }
 
@@ -158,7 +160,7 @@ function defineServerTool<TSchema extends z.ZodTypeAny>(config: {
   schema: TSchema;
   handler: (
     input: z.infer<TSchema>,
-    ctx: FilterCommandContext,
+    ctx: FilterCommandContext
   ) => Promise<unknown>;
 }): AgentToolDefinition {
   // biome-ignore lint/suspicious/noExplicitAny: Zod schema instantiation depth — same dodge as apps/api/src/agents/tools/ui.ts
@@ -170,8 +172,8 @@ function defineServerTool<TSchema extends z.ZodTypeAny>(config: {
   return contract.server(async (input: unknown, runCtx: ToolRunContext) =>
     config.handler(
       input as z.infer<TSchema>,
-      runCtx.context as FilterCommandContext,
-    ),
+      runCtx.context as FilterCommandContext
+    )
   ) as AgentToolDefinition;
 }
 
@@ -313,7 +315,7 @@ function buildPageContextSection(ctx: FilterCommandContext): string {
     const resolved = resolveRange(pc.filters, ctx.timezone);
     const interval = pc.filters.interval ?? 'day';
     lines.push(
-      `Date range: ${pc.filters.range} (${resolved.startDate} to ${resolved.endDate}), interval: ${interval}.`,
+      `Date range: ${pc.filters.range} (${resolved.startDate} to ${resolved.endDate}), interval: ${interval}.`
     );
   } else {
     lines.push('Date range: default (no `range` set).');
@@ -321,7 +323,7 @@ function buildPageContextSection(ctx: FilterCommandContext): string {
 
   if (pc.filters.eventNames && pc.filters.eventNames.length > 0) {
     lines.push(
-      `Active event-name filter: ${JSON.stringify(pc.filters.eventNames)}`,
+      `Active event-name filter: ${JSON.stringify(pc.filters.eventNames)}`
     );
   } else {
     lines.push('No event-name filter active.');
@@ -329,7 +331,7 @@ function buildPageContextSection(ctx: FilterCommandContext): string {
 
   if (pc.filters.eventFilters && pc.filters.eventFilters.length > 0) {
     lines.push(
-      `Active property filters: ${JSON.stringify(pc.filters.eventFilters)}`,
+      `Active property filters: ${JSON.stringify(pc.filters.eventFilters)}`
     );
   } else {
     lines.push('No property filters active.');
@@ -340,12 +342,14 @@ function buildPageContextSection(ctx: FilterCommandContext): string {
 
 const filterCommandOutputJsonSchema = z.toJSONSchema(
   filterCommandOutputSchema,
-  { target: 'draft-07' },
+  { target: 'draft-07' }
 );
 
 let _app: ReturnType<typeof betterAgent> | null = null;
 function getApp() {
-  if (_app) return _app;
+  if (_app) {
+    return _app;
+  }
   const agent = defineAgent({
     name: 'filter-command',
     description: 'OpenPanel filter command bar (one-shot, no persistence).',

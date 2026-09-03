@@ -1,5 +1,9 @@
 import { DateTime } from '@openpanel/common';
-import { createLogger } from '@openpanel/core';
+import {
+  createLogger,
+  getServerIntegration,
+  type IObjectStoreAdapter,
+} from '@openpanel/core';
 import {
   ch,
   clickhouseEventToExportEvent,
@@ -14,8 +18,6 @@ import {
   serializeManifest,
   TABLE_NAMES,
 } from '@openpanel/db';
-import type { IObjectStoreAdapter } from '@openpanel/integrations/src/object-store';
-import { getServerIntegration } from '@openpanel/integrations/src/registry';
 import type { CronQueuePayload } from '@openpanel/queue';
 import {
   type IGCSExportConfig,

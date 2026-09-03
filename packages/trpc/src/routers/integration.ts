@@ -1,16 +1,13 @@
-import { z } from 'zod';
-
-import { BASE_INTEGRATIONS, db } from '@openpanel/db';
-
 import {
   carryOverConfigSecrets,
   encryptConfigSecrets,
   findEncryptedSecretField,
   findMissingSecretFields,
   getServerIntegration,
+  getSlackInstallUrl,
   redactConfigSecrets,
-} from '@openpanel/integrations/src/registry';
-import { getSlackInstallUrl } from '@openpanel/integrations/src/slack';
+} from '@openpanel/core';
+import { BASE_INTEGRATIONS, db } from '@openpanel/db';
 import {
   type IIntegrationConfig,
   type ISlackConfig,
@@ -19,12 +16,13 @@ import {
   zCreateSlackIntegration,
   zIntegrationConfig,
 } from '@openpanel/validation';
+import { z } from 'zod';
 import {
   getOrganizationAccess,
   requireOrganizationAdmin,
   requireProjectAccess,
 } from '../access';
-import { TRPCForbiddenError, TRPCBadRequestError } from '../errors';
+import { TRPCBadRequestError, TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 // Assert the user can act on the project at `level`, and return the project's
@@ -32,7 +30,7 @@ import { createTRPCRouter, protectedProcedure } from '../trpc';
 async function assertProjectAccessAndGetOrg(
   userId: string,
   projectId: string,
-  level: 'read' | 'write',
+  level: 'read' | 'write'
 ) {
   await requireProjectAccess({ userId, projectId, level });
 
@@ -50,7 +48,9 @@ async function assertProjectAccessAndGetOrg(
 // key, that ciphertext is a replayable bearer token, not an opaque handle.
 function redactIntegration<T extends { config: unknown }>(integration: T): T {
   const config = redactConfigSecrets(integration.config);
-  return config === integration.config ? integration : { ...integration, config };
+  return config === integration.config
+    ? integration
+    : { ...integration, config };
 }
 
 // A client never legitimately holds a ciphertext (see redactIntegration), so
@@ -60,7 +60,7 @@ function rejectEncryptedSecrets(config: unknown) {
   const field = findEncryptedSecretField(config);
   if (field) {
     throw new TRPCBadRequestError(
-      `\`${field}\` looks like a stored, already-encrypted value. Paste the real credential, or leave it blank to keep the current one.`,
+      `\`${field}\` looks like a stored, already-encrypted value. Paste the real credential, or leave it blank to keep the current one.`
     );
   }
 }
@@ -75,7 +75,7 @@ async function upsertIntegration(
     name: string;
     projectId: string;
     config: IIntegrationConfig;
-  },
+  }
 ) {
   // Authorize first. For an update, authorize against the EXISTING integration's
   // scope — not the attacker-controlled input.projectId — so a user with access
@@ -96,7 +96,7 @@ async function upsertIntegration(
     organizationId = await assertProjectAccessAndGetOrg(
       userId,
       input.projectId,
-      'write',
+      'write'
     );
   }
 
@@ -109,7 +109,7 @@ async function upsertIntegration(
   const missing = findMissingSecretFields(submitted);
   if (missing.length > 0) {
     throw new TRPCBadRequestError(
-      `Missing credential${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`,
+      `Missing credential${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}`
     );
   }
 
@@ -153,7 +153,7 @@ async function upsertIntegration(
 async function assertIntegrationAccess(
   userId: string,
   integration: { projectId: string | null; organizationId: string },
-  level: 'read' | 'write',
+  level: 'read' | 'write'
 ) {
   if (integration.projectId) {
     await requireProjectAccess({
@@ -202,7 +202,7 @@ export const integrationRouter = createTRPCRouter({
       const organizationId = await assertProjectAccessAndGetOrg(
         ctx.session.userId,
         input.projectId,
-        'read',
+        'read'
       );
 
       const integrations = await db.integration.findMany({
@@ -244,7 +244,7 @@ export const integrationRouter = createTRPCRouter({
         organizationId = await assertProjectAccessAndGetOrg(
           ctx.session.userId,
           input.projectId,
-          'write',
+          'write'
         );
         projectId = input.projectId;
       }
@@ -289,7 +289,7 @@ export const integrationRouter = createTRPCRouter({
         name: z.string().min(1),
         projectId: z.string().min(1),
         config: zIntegrationConfig,
-      }),
+      })
     )
     .mutation(({ input, ctx }) => upsertIntegration(ctx.session.userId, input)),
   // Back-compat alias for the export forms; delegates to the same generic path.
@@ -306,7 +306,7 @@ export const integrationRouter = createTRPCRouter({
       z.object({
         projectId: z.string().min(1),
         config: zIntegrationConfig,
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
       await requireProjectAccess({
@@ -318,7 +318,7 @@ export const integrationRouter = createTRPCRouter({
 
       return (
         (await getServerIntegration(input.config.type).testConnection?.(
-          input.config,
+          input.config
         )) ?? { success: true }
       );
     }),
@@ -336,7 +336,7 @@ export const integrationRouter = createTRPCRouter({
 
       return (
         (await getServerIntegration(input.config.type).testConnection?.(
-          input.config,
+          input.config
         )) ?? { success: false, error: 'Unknown export type' }
       );
     }),

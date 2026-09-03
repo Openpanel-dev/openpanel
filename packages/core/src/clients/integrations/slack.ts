@@ -1,3 +1,4 @@
+// Ported from @openpanel/integrations (dissolved into core — M4-005).
 // Cred to (@c_alares) https://github.com/christianalares/seventy-seven/blob/main/packages/integrations/src/slack/index.ts
 
 import * as Slack from '@slack/bolt';
@@ -7,7 +8,9 @@ import {
   type WebhookFetcher,
   type WebhookResult,
 } from './fetcher';
+
 const { LogLevel, App: SlackApp } = Slack;
+
 import { InstallProvider } from '@slack/oauth';
 
 const SLACK_CLIENT_ID = process.env.SLACK_CLIENT_ID;
@@ -32,7 +35,11 @@ export const getSlackInstallUrl = ({
   integrationId,
   organizationId,
   projectId,
-}: { integrationId: string; organizationId: string; projectId: string }) => {
+}: {
+  integrationId: string;
+  organizationId: string;
+  projectId: string;
+}) => {
   if (!SLACK_CLIENT_ID) {
     throw new Error('SLACK_CLIENT_ID is not set (slack.ts)');
   }

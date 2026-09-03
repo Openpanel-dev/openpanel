@@ -1,16 +1,25 @@
+// Ported from @openpanel/integrations (dissolved into core — M4-005).
 import { Storage } from '@google-cloud/storage';
-import { createLogger, decryptCredential } from '@openpanel/core';
 import {
   type IGCSExportConfig,
   parseServiceAccountKey,
 } from '@openpanel/validation';
+import { decryptCredential } from '../../../shared/encryption';
+import { createLogger, type ILogger } from '../../logger';
 import type {
   IObjectStoreAdapter,
   IUploadOptions,
   IUploadResult,
 } from './types';
 
-const logger = createLogger({ name: 'gcs-adapter' });
+// Lazy: constructing a pino logger spins up a worker thread for the
+// pino-pretty transport, so a module that is merely imported (every test file
+// that reaches the object-store barrel) must not pay for one unused.
+let _logger: ILogger | null = null;
+function logger(): ILogger {
+  _logger ??= createLogger({ name: 'gcs-adapter' });
+  return _logger;
+}
 
 /** Object written by `testConnection`; named so it is obvious in a bucket. */
 const CONNECTION_TEST_FILENAME = '.openpanel-connection-test';
@@ -53,7 +62,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
     // any future caller that skips it.
     const parsed = parseServiceAccountKey(this.config.serviceAccountKey);
     if (!parsed.ok) {
-      logger.error(
+      logger().error(
         { reason: parsed.error },
         'Rejected GCS credential document'
       );
@@ -90,7 +99,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
         ...(apiEndpoint ? { apiEndpoint } : {}),
       });
 
-      logger.debug(
+      logger().debug(
         {
           projectId: credentials.project_id,
         },
@@ -99,7 +108,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
 
       return this.storage;
     } catch (error) {
-      logger.error({ error }, 'Failed to create GCS client');
+      logger().error({ error }, 'Failed to create GCS client');
       throw new Error('Failed to create GCS client');
     }
   }
@@ -130,7 +139,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
       // it with getMetadata() would double the request count of every export.
       const metadata = file.metadata;
 
-      logger.debug(
+      logger().debug(
         {
           bucket: options.bucket,
           key: options.key,
@@ -146,7 +155,7 @@ export class GCSAdapter implements IObjectStoreAdapter {
         location: `gs://${options.bucket}/${options.key}`,
       };
     } catch (error) {
-      logger.error(
+      logger().error(
         {
           error,
           bucket: options.bucket,

@@ -1,4 +1,4 @@
-import { generateWinBackPitch } from '@openpanel/ai';
+import { generateWinBackPitch } from '@openpanel/core';
 import { getAnalyticsOverviewCore, getTopPagesCore } from '@openpanel/db';
 import { format, subDays } from 'date-fns';
 import { logger } from '../../utils/logger';
@@ -44,7 +44,7 @@ const formatCount = (n: number) => new Intl.NumberFormat('en-US').format(n);
 
 async function collectFacts(
   project: HighlightProject,
-  recentEventsCount: number,
+  recentEventsCount: number
 ): Promise<HighlightFacts | null> {
   const now = new Date();
   const startDate = subDays(now, HIGHLIGHT_WINDOW_DAYS).toISOString();
@@ -96,7 +96,7 @@ function deterministicPitch(facts: HighlightFacts): string {
   ];
   if (facts.busiestDay) {
     parts.push(
-      `with its busiest day on ${facts.busiestDay.date} (${formatCount(facts.busiestDay.visitors)} visitors)`,
+      `with its busiest day on ${facts.busiestDay.date} (${formatCount(facts.busiestDay.visitors)} visitors)`
     );
   }
   if (facts.topPage) {
@@ -122,7 +122,7 @@ export async function buildWinBackHighlight({
   } catch (error) {
     logger.warn(
       { err: error, projectId: project.id },
-      'Win-back highlight stats failed, sending without highlight',
+      'Win-back highlight stats failed, sending without highlight'
     );
     return undefined;
   }
@@ -146,7 +146,7 @@ export async function buildWinBackHighlight({
   } catch (error) {
     logger.warn(
       { err: error, projectId: project.id },
-      'Win-back pitch AI call failed, using deterministic fallback',
+      'Win-back pitch AI call failed, using deterministic fallback'
     );
   }
 

@@ -19,7 +19,10 @@ vi.mock('@openpanel/db', () => ({
   getAnalyticsOverviewCore: getAnalyticsOverviewCoreMock,
   getTopPagesCore: getTopPagesCoreMock,
 }));
-vi.mock('@openpanel/ai', () => ({
+// Partial mock: `../../utils/logger` also imports `createLogger` from this
+// same module, so a full replacement breaks it too.
+vi.mock('@openpanel/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@openpanel/core')>()),
   generateWinBackPitch: generateWinBackPitchMock,
 }));
 
@@ -41,7 +44,7 @@ beforeEach(() => {
     { path: '/pricing', sessions: 2100, pageviews: 3400 },
   ]);
   generateWinBackPitchMock.mockResolvedValue(
-    'acme-web had a strong month with 12,400 visitors.',
+    'acme-web had a strong month with 12,400 visitors.'
   );
 });
 
@@ -59,7 +62,7 @@ describe('buildWinBackHighlight', () => {
         uniqueVisitors: 12_400,
         busiestDay: { date: 'August 12', visitors: 840 },
         topPage: { path: '/pricing', sessions: 2100 },
-      }),
+      })
     );
   });
 

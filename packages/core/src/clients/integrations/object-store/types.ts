@@ -1,3 +1,4 @@
+// Ported from @openpanel/integrations (dissolved into core — M4-005).
 /**
  * Common types for object store adapters
  */
@@ -35,7 +36,7 @@ export interface IObjectStoreAdapter {
    * Upload multiple files to object storage
    */
   uploadMany(
-    options: Array<IUploadOptions>,
+    options: Array<IUploadOptions>
   ): Promise<Array<IUploadResult | Error>>;
 
   /**

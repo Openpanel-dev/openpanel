@@ -1,3 +1,5 @@
+// Ported from @openpanel/ai (dissolved into core — M4-005).
+//
 // Weekly-digest narrative: one short OpenAI call that turns a project's
 // week-over-week stats + notable insights into a friendly intro paragraph.
 // Structured output (a single `narrative` string) reuses the same reliable
@@ -48,7 +50,9 @@ Rules:
 
 let _app: ReturnType<typeof betterAgent> | null = null;
 function getApp() {
-  if (_app) return _app;
+  if (_app) {
+    return _app;
+  }
   const agent = defineAgent({
     name: 'weekly-narrative',
     description: 'Writes a weekly digest intro paragraph (one-shot).',
@@ -69,7 +73,7 @@ function getApp() {
 }
 
 export async function generateWeeklyNarrative(
-  input: WeeklyNarrativeInput,
+  input: WeeklyNarrativeInput
 ): Promise<string> {
   const result = (await getApp().run('weekly-narrative', {
     input: JSON.stringify(input),

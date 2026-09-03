@@ -1,4 +1,4 @@
-import { generateWeeklyNarrative } from '@openpanel/ai';
+import { generateWeeklyNarrative } from '@openpanel/core';
 import { db, getAnalyticsOverviewCore } from '@openpanel/db';
 import { type EmailData, sendEmail } from '@openpanel/email';
 import { logger as baseLogger } from '@/utils/logger';

@@ -1,4 +1,4 @@
-import { generateInsightExplanation } from '@openpanel/ai';
+import { generateInsightExplanation } from '@openpanel/core';
 import {
   db,
   getSegmentDailySeriesCore,
@@ -29,7 +29,7 @@ export const insightRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         limit: z.number().min(1).max(100).optional().default(50),
-      }),
+      })
     )
     .query(async ({ input: { projectId, limit }, ctx }) => {
       const access = await getProjectAccess({
@@ -85,7 +85,7 @@ export const insightRouter = createTRPCRouter({
         .sort(
           (a, b) =>
             (b.relevanceScore ?? -1) - (a.relevanceScore ?? -1) ||
-            (b.impactScore ?? 0) - (a.impactScore ?? 0),
+            (b.impactScore ?? 0) - (a.impactScore ?? 0)
         )
         .slice(0, limit)
         .map(({ impactScore, ...rest }) => rest); // Remove impactScore from response
@@ -98,7 +98,7 @@ export const insightRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         limit: z.number().min(1).max(500).optional().default(200),
-      }),
+      })
     )
     .query(async ({ input: { projectId, limit }, ctx }) => {
       const access = await getProjectAccess({
@@ -168,8 +168,7 @@ export const insightRouter = createTRPCRouter({
 
       // Current window from the insight; baseline = same span immediately before.
       const end = insight.windowEnd ?? new Date();
-      const start =
-        insight.windowStart ?? new Date(end.getTime() - 7 * DAY_MS);
+      const start = insight.windowStart ?? new Date(end.getTime() - 7 * DAY_MS);
       const spanMs = Math.max(end.getTime() - start.getTime(), DAY_MS);
       const baseEnd = new Date(start.getTime());
       const baseStart = new Date(start.getTime() - spanMs);
@@ -197,7 +196,7 @@ export const insightRouter = createTRPCRouter({
               sessions: Number(r.sessions ?? 0),
             }));
           return { column, current: compact(cur), baseline: compact(base) };
-        }),
+        })
       );
 
       // Daily series for the insight's own segment, so the model can read the
@@ -282,7 +281,7 @@ export const insightRouter = createTRPCRouter({
         await getRedisCache().setex(
           cacheKey,
           EXPLAIN_CACHE_TTL_SEC,
-          JSON.stringify(explanation),
+          JSON.stringify(explanation)
         );
       }
 
