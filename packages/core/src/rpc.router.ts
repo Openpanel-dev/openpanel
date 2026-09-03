@@ -14,6 +14,7 @@ import { gscRouter } from './modules/gsc/gsc.rpc';
 import { healthRouter } from './modules/health/health.rpc';
 import { importRouter } from './modules/import/import.rpc';
 import { insightRouter } from './modules/insight/insight.rpc';
+import { notificationRouter } from './modules/notification/notification.rpc';
 import { onboardingRouter } from './modules/onboarding/onboarding.rpc';
 import { organizationRouter } from './modules/organization/organization.rpc';
 import { projectRouter } from './modules/project/project.rpc';
@@ -39,6 +40,7 @@ export const appRouter = createTRPCRouter({
   reference: referenceRouter,
   share: shareRouter,
   email: emailRouter,
+  notification: notificationRouter,
 });
 
 export type AppRouter = typeof appRouter;

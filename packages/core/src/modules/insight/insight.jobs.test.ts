@@ -38,6 +38,7 @@ function stubJobCtx(
 ): JobCtx {
   const services: Services = {
     auth: {} as Services['auth'],
+    notification: {} as Services['notification'],
     insight: insight as InsightService,
     gsc: {} as Services['gsc'],
     cohort: {} as Services['cohort'],
@@ -115,6 +116,7 @@ test('insightsDaily fans out one insightsProject enqueue per candidate, jobId de
     queues: producers.queues,
     services: {
       auth: {} as Services['auth'],
+      notification: {} as Services['notification'],
       insight: {
         listDailyInsightCandidates: async (date) => [
           { projectId: 'p1', date },

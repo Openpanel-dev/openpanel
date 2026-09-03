@@ -30,6 +30,7 @@ function stubJobCtx(
 ): JobCtx {
   const services: Services = {
     auth: {} as Services['auth'],
+    notification: {} as Services['notification'],
     insight: {} as Services['insight'],
     gsc: {} as Services['gsc'],
     import: {} as Services['import'],

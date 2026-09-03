@@ -367,41 +367,15 @@ export const zCreateReference = z.object({
 export * from '@openpanel/core/modules/onboarding/onboarding.constants';
 export * from './integrations';
 
-export const zNotificationRuleEventConfig = z.object({
-  type: z.literal('events'),
-  events: z.array(zChartEvent),
-});
-
-export type INotificationRuleEventConfig = z.infer<
-  typeof zNotificationRuleEventConfig
->;
-
-export const zNotificationRuleFunnelConfig = z.object({
-  type: z.literal('funnel'),
-  events: z.array(zChartEvent).min(1),
-});
-
-export type INotificationRuleFunnelConfig = z.infer<
-  typeof zNotificationRuleFunnelConfig
->;
-
-export const zNotificationRuleConfig = z.discriminatedUnion('type', [
-  zNotificationRuleEventConfig,
-  zNotificationRuleFunnelConfig,
-]);
-
-export type INotificationRuleConfig = z.infer<typeof zNotificationRuleConfig>;
-
-export const zCreateNotificationRule = z.object({
-  id: z.string().optional(),
-  name: z.string().min(1),
-  template: z.string().optional(),
-  config: zNotificationRuleConfig,
-  integrations: z.array(z.string()),
-  sendToApp: z.boolean(),
-  sendToEmail: z.boolean(),
-  projectId: z.string(),
-});
+// Moved into @openpanel/core's notification module (M6-005, ADR-008's module
+// map: notification owns "C"). Re-exported here for existing
+// @openpanel/validation importers (packages/trpc's notification router,
+// apps/start's notification rule form) — same shape as
+// ./onboarding.constants.ts re-export since M6-003. `zChartEvent` (used
+// above, and by notification.constants.ts itself) is defined earlier in this
+// file, so the resulting module cycle resolves at the value level: see
+// notification.constants.ts's header.
+export * from '@openpanel/core/modules/notification/notification.constants';
 
 export const zProjectFilterIp = z.object({
   type: z.literal('ip'),

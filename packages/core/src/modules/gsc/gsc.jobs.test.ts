@@ -27,6 +27,7 @@ function stubLogger(): Logger {
 function stubJobCtx(gsc: Partial<GscService>, jobName = 'test'): JobCtx {
   const services: Services = {
     auth: {} as Services['auth'],
+    notification: {} as Services['notification'],
     insight: {} as Services['insight'],
     cohort: {} as Services['cohort'],
     import: {} as Services['import'],
@@ -121,6 +122,7 @@ test('gscSync fans out one gscProjectSync enqueue per connected project', async 
     queues: producers.queues,
     services: {
       auth: {} as Services['auth'],
+      notification: {} as Services['notification'],
       insight: {} as Services['insight'],
       cohort: {} as Services['cohort'],
       import: {} as Services['import'],

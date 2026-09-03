@@ -166,3 +166,15 @@ test('the import queue carries the import module job', () => {
     name: 'import',
   });
 });
+
+// M6-005: the notification module's own job. No cron fragment — notifications
+// are always triggered by a rule match, never scheduled. legacyCompat.notification
+// already discriminates on this exact name (jobs/compat.ts), so this pins the
+// two in agreement.
+test('the notification queue carries the notification module job', () => {
+  expect(Object.keys(queues.notification.jobs)).toEqual(['sendNotification']);
+  expect(queues.notification.jobs.sendNotification).toMatchObject({
+    queue: 'notification',
+    name: 'sendNotification',
+  });
+});

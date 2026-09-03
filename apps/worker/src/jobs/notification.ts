@@ -1,105 +1,15 @@
-import { getServerIntegration } from '@openpanel/core';
-import { db, Prisma } from '@openpanel/db';
-import { sendEmail } from '@openpanel/email';
+// Dissolved into @openpanel/core's notification module (M6-005): the
+// dispatch/delivery body moved to
+// packages/core/src/modules/notification/notification.service.ts. This file
+// stays (DELEGATE PATTERN) — it is the BullMQ job body V1's worker registers
+// (boot-workers.ts), a thin wrapper around the core function.
+import { deliverNotification } from '@openpanel/core';
 import type { NotificationQueuePayload } from '@openpanel/queue';
-import { publishEvent } from '@openpanel/redis';
 import type { Job } from 'bullmq';
 
-function isValidJson<T>(
-  value: T | Prisma.NullableJsonNullValueInput | null | undefined
-): value is T {
-  return (
-    value !== null &&
-    value !== undefined &&
-    value !== Prisma.JsonNull &&
-    value !== Prisma.DbNull
-  );
-}
-
-export async function notificationJob(job: Job<NotificationQueuePayload>) {
+export function notificationJob(job: Job<NotificationQueuePayload>) {
   switch (job.data.type) {
-    case 'sendNotification': {
-      const { notification } = job.data.payload;
-
-      // App + email are pseudo-integrations dispatched by flags, not real rows.
-      if (notification.sendToApp) {
-        publishEvent('notification', 'created', notification);
-        return;
-      }
-
-      if (notification.sendToEmail) {
-        const project = await db.project.findUniqueOrThrow({
-          where: { id: notification.projectId },
-          select: { name: true, organizationId: true },
-        });
-        const members = await db.member.findMany({
-          where: {
-            organizationId: project.organizationId,
-            user: { deletedAt: null },
-          },
-          include: { user: { select: { email: true } } },
-        });
-        const emails = new Set(
-          members.flatMap((member) =>
-            member.user?.email ? [member.user.email] : []
-          )
-        );
-        for (const to of emails) {
-          // Per-recipient unsubscribe (product_alerts category) is handled
-          // inside sendEmail.
-          await sendEmail('notification-rule', {
-            to,
-            data: {
-              title: notification.title,
-              message: notification.message,
-              projectName: project.name,
-              dashboardUrl: `${process.env.DASHBOARD_URL ?? 'https://dashboard.openpanel.dev'}/${project.organizationId}/${notification.projectId}`,
-            },
-          });
-        }
-        return;
-      }
-
-      if (!notification.integrationId) {
-        throw new Error('No integrationId provided');
-      }
-
-      const integration = await db.integration.findUniqueOrThrow({
-        where: {
-          id: notification.integrationId,
-        },
-      });
-
-      const payload = notification.payload;
-
-      if (!isValidJson(payload)) {
-        return new Error('Invalid payload');
-      }
-
-      // An integration whose config is still empty (e.g. a Slack integration
-      // before its OAuth callback fills the config) has no type yet — nothing
-      // to deliver to.
-      if (!integration.config?.type) {
-        return;
-      }
-
-      // Generic registry dispatch — no per-type switch. A new notification
-      // integration just registers a `notification.deliver` plugin.
-      const plugin = getServerIntegration(integration.config.type);
-      if (!plugin.notification) {
-        throw new Error(
-          `Integration ${integration.config.type} is not a notification sink`
-        );
-      }
-
-      return plugin.notification.deliver({
-        config: integration.config,
-        notification: {
-          title: notification.title,
-          message: notification.message,
-        },
-        payload,
-      });
-    }
+    case 'sendNotification':
+      return deliverNotification(job.data.payload.notification);
   }
 }

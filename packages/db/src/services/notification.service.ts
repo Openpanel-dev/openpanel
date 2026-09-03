@@ -1,20 +1,60 @@
-import { stripLeadingAndTrailingSlashes } from '@openpanel/common';
+// Rule matching, templates, the rule cache, the base-integration constants
+// and the delivery (dispatch) body all moved into @openpanel/core's
+// notification module (M6-005, ADR-008's module map: "rules + dispatch stay
+// together"). Re-exported here for existing @openpanel/db importers
+// (packages/trpc's notification/integration routers, this file's own
+// enqueue orchestration below, apps/start via @openpanel/db) — same shape as
+// ./organization.service.ts's re-export since M6-001.
+//
+// What stays here: `createNotification` / `triggerNotification` /
+// `checkNotificationRulesForEvent` / `checkNotificationRulesForSessionEnd` —
+// the BullMQ-producer orchestration around a rule match. `@openpanel/queue`
+// imports `@openpanel/core` for its logger (packages/queue/src/queues.ts), so
+// core cannot import `@openpanel/queue` back without a real package cycle —
+// same constraint packages/trpc/src/routers/cohort.ts documents for its own
+// enqueue call (M5-003). These four functions are the one place that cycle is
+// unavoidable, so they stay on this side of the boundary, built on core's
+// rule matching instead of holding a second copy of it.
+
 import { notificationQueue } from '@openpanel/queue';
-import { cacheable } from '@openpanel/redis';
-import type { IChartEvent, IChartEventFilter } from '@openpanel/validation';
-import { pathOr } from 'ramda';
 import {
-  db,
-  type Integration,
-  type Notification,
-  type Prisma,
-} from '../prisma-client';
+  APP_NOTIFICATION_INTEGRATION_ID,
+  BASE_INTEGRATIONS,
+  EMAIL_NOTIFICATION_INTEGRATION_ID,
+  getFunnelRules,
+  getHasFunnelRules,
+  getNotificationRulesByProjectId,
+  isBaseIntegration,
+  matchEvent,
+  notificationTemplateEvent,
+  notificationTemplateFunnel,
+} from '@openpanel/core';
+import type {
+  INotificationPayload,
+  INotificationRuleCached,
+} from '@openpanel/core';
+import { db, type Notification, type Prisma } from '../prisma-client';
 import type {
   IServiceCreateEventPayload,
   IServiceEvent,
 } from './event.service';
 import { getProfileById } from './profile.service';
 import { getProjectByIdCached } from './project.service';
+
+export {
+  APP_NOTIFICATION_INTEGRATION_ID,
+  BASE_INTEGRATIONS,
+  EMAIL_NOTIFICATION_INTEGRATION_ID,
+  getFunnelRules,
+  getHasFunnelRules,
+  getNotificationRulesByProjectId,
+  isBaseIntegration,
+  matchEvent,
+} from '@openpanel/core';
+export type {
+  INotificationPayload,
+  INotificationRuleCached,
+} from '@openpanel/core';
 
 type ICreateNotification = Pick<
   Notification,
@@ -25,100 +65,6 @@ type ICreateNotification = Pick<
   | 'payload'
   | 'notificationRuleId'
 >;
-
-export type INotificationPayload =
-  | {
-      type: 'event';
-      event: IServiceCreateEventPayload;
-    }
-  | {
-      type: 'funnel';
-      funnel: IServiceEvent[];
-    };
-
-export const APP_NOTIFICATION_INTEGRATION_ID = 'app';
-export const EMAIL_NOTIFICATION_INTEGRATION_ID = 'email';
-
-export const BASE_INTEGRATIONS: Integration[] = [
-  {
-    id: APP_NOTIFICATION_INTEGRATION_ID,
-    name: 'Website',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    config: {
-      type: APP_NOTIFICATION_INTEGRATION_ID,
-    },
-    organizationId: '',
-    projectId: null,
-  },
-  {
-    id: EMAIL_NOTIFICATION_INTEGRATION_ID,
-    name: 'Email',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    config: {
-      type: EMAIL_NOTIFICATION_INTEGRATION_ID,
-    },
-    organizationId: '',
-    projectId: null,
-  },
-];
-
-export const isBaseIntegration = (id: string) =>
-  BASE_INTEGRATIONS.find((i) => i.id === id);
-
-export type INotificationRuleCached = Awaited<
-  ReturnType<typeof getNotificationRulesByProjectId>
->[number];
-export const getNotificationRulesByProjectId = cacheable(
-  'getNotificationRulesByProjectId',
-  (projectId: string) => {
-    return db.notificationRule.findMany({
-      where: {
-        projectId,
-      },
-      select: {
-        id: true,
-        name: true,
-        sendToApp: true,
-        sendToEmail: true,
-        config: true,
-        template: true,
-        integrations: {
-          select: {
-            id: true,
-          },
-        },
-      },
-    });
-  },
-  60 * 24,
-  { cacheEmptyArray: true }
-);
-
-function getIntegration(integrationId: string | null) {
-  if (integrationId === APP_NOTIFICATION_INTEGRATION_ID) {
-    return {
-      integrationId: null,
-      sendToApp: true,
-      sendToEmail: false,
-    };
-  }
-
-  if (integrationId === EMAIL_NOTIFICATION_INTEGRATION_ID) {
-    return {
-      integrationId: null,
-      sendToApp: false,
-      sendToEmail: true,
-    };
-  }
-
-  return {
-    sendToApp: false,
-    sendToEmail: false,
-    integrationId,
-  };
-}
 
 function stripNullChars<T>(value: T): T {
   if (typeof value === 'string') {
@@ -138,6 +84,18 @@ function stripNullChars<T>(value: T): T {
   return value;
 }
 
+function getIntegration(integrationId: string | null) {
+  if (integrationId === APP_NOTIFICATION_INTEGRATION_ID) {
+    return { integrationId: null, sendToApp: true, sendToEmail: false };
+  }
+
+  if (integrationId === EMAIL_NOTIFICATION_INTEGRATION_ID) {
+    return { integrationId: null, sendToApp: false, sendToEmail: true };
+  }
+
+  return { sendToApp: false, sendToEmail: false, integrationId };
+}
+
 export async function createNotification(notification: ICreateNotification) {
   const data: Prisma.NotificationUncheckedCreateInput = {
     title: notification.title,
@@ -150,9 +108,7 @@ export async function createNotification(notification: ICreateNotification) {
 
   // Only create notifications for app
   if (data.sendToApp) {
-    await db.notification.create({
-      data,
-    });
+    await db.notification.create({ data });
   }
 
   return triggerNotification(data);
@@ -163,138 +119,8 @@ export function triggerNotification(
 ) {
   return notificationQueue.add('sendNotification', {
     type: 'sendNotification',
-    payload: {
-      notification,
-    },
+    payload: { notification },
   });
-}
-
-function matchEventFilters(
-  payload: IServiceCreateEventPayload,
-  filters: IChartEventFilter[]
-) {
-  return filters.every((filter) => {
-    const { name, value, operator } = filter;
-
-    if (value.length === 0) {
-      return true;
-    }
-
-    if (name === 'has_profile') {
-      if (value.includes('true')) {
-        return payload.profileId !== payload.deviceId;
-      }
-      return payload.profileId === payload.deviceId;
-    }
-
-    const propertyValue = (
-      name.startsWith('properties.')
-        ? pathOr('', name.split('.'), payload)
-        : pathOr('', [name], payload)
-    ).trim();
-
-    switch (operator) {
-      case 'is':
-        return value.includes(propertyValue);
-      case 'isNot':
-        return !value.includes(propertyValue);
-      case 'contains':
-        return value.some((val) => propertyValue.includes(String(val)));
-      case 'doesNotContain':
-        return !value.some((val) => propertyValue.includes(String(val)));
-      case 'startsWith':
-        return value.some((val) => propertyValue.startsWith(String(val)));
-      case 'endsWith':
-        return value.some((val) => propertyValue.endsWith(String(val)));
-      case 'regex': {
-        return value
-          .map((val) => stripLeadingAndTrailingSlashes(String(val)))
-          .some((val) => {
-            try {
-              return new RegExp(val).test(propertyValue);
-            } catch {
-              return false;
-            }
-          });
-      }
-      case 'isNull':
-        return propertyValue === '';
-      case 'isNotNull':
-        return propertyValue !== '';
-      case 'gt':
-        return value.some((val) => Number(propertyValue) > Number(val));
-      case 'lt':
-        return value.some((val) => Number(propertyValue) < Number(val));
-      case 'gte':
-        return value.some((val) => Number(propertyValue) >= Number(val));
-      case 'lte':
-        return value.some((val) => Number(propertyValue) <= Number(val));
-      default:
-        return false;
-    }
-  });
-}
-
-export function matchEvent(
-  payload: IServiceCreateEventPayload,
-  chartEvent: IChartEvent
-) {
-  if (payload.name !== chartEvent.name && chartEvent.name !== '*') {
-    return false;
-  }
-
-  if (chartEvent.filters.length > 0) {
-    return matchEventFilters(payload, chartEvent.filters);
-  }
-
-  return true;
-}
-
-function notificationTemplateEvent({
-  payload,
-  rule,
-}: {
-  payload: IServiceCreateEventPayload;
-  rule: INotificationRuleCached;
-}) {
-  if (!rule.template) {
-    return `You received a new "${payload.name}" event`;
-  }
-  let template = rule.template
-    .replaceAll('$EVENT_NAME', payload.name)
-    .replaceAll('$RULE_NAME', rule.name)
-    .replaceAll('{{rule_name}}', rule.name);
-
-  // Replace all {{xxx}} placeholders with their values
-  const placeholderMatches = template.match(/{{[^}]+}}/g) || [];
-  for (const match of placeholderMatches) {
-    const path = match.slice(2, -2); // Remove {{ and }}
-    const value = pathOr('', path.split('.'), payload);
-
-    if (value) {
-      template = template.replaceAll(
-        match,
-        typeof value === 'object' ? JSON.stringify(value) : value
-      );
-    }
-  }
-
-  return template;
-}
-
-function notificationTemplateFunnel({
-  events,
-  rule,
-}: {
-  events: IServiceEvent[];
-  rule: INotificationRuleCached;
-}) {
-  if (!rule.template) {
-    return `Funnel "${rule.name}" completed`;
-  }
-  return rule.template
-    .replaceAll('$EVENT_NAME', events.map((e) => e.name).join(' -> '))
-    .replaceAll('$RULE_NAME', rule.name);
 }
 
 const PROFILE_TEMPLATE_REGEX = /{{profile\.[^}]*}}/;
@@ -328,16 +154,10 @@ export async function checkNotificationRulesForEvent(
         }
 
         const notification = {
-          title: notificationTemplateEvent({
-            payload,
-            rule,
-          }),
+          title: notificationTemplateEvent({ payload, rule }),
           message: project?.name ? `Project: ${project?.name}` : '',
           projectId: payload.projectId,
-          payload: {
-            type: 'event',
-            event: payload,
-          },
+          payload: { type: 'event', event: payload },
         } as const;
 
         const promises = rule.integrations.map((integration) =>
@@ -374,17 +194,6 @@ export async function checkNotificationRulesForEvent(
       return [];
     })
   );
-}
-
-const isFunnelRule = (rule: INotificationRuleCached) =>
-  rule.config.type === 'funnel';
-
-export function getHasFunnelRules(rules: INotificationRuleCached[]) {
-  return rules.some(isFunnelRule);
-}
-
-export function getFunnelRules(rules: INotificationRuleCached[]) {
-  return rules.filter(isFunnelRule);
 }
 
 export async function checkNotificationRulesForSessionEnd(
@@ -425,10 +234,7 @@ export async function checkNotificationRulesForSessionEnd(
 
     // Create notification object
     const notification = {
-      title: notificationTemplateFunnel({
-        rule,
-        events: matchedEvents,
-      }),
+      title: notificationTemplateFunnel({ rule, events: matchedEvents }),
       message: project?.name ? `Project: ${project?.name}` : '',
       projectId,
       payload: { type: 'funnel', funnel: matchedEvents } as const,

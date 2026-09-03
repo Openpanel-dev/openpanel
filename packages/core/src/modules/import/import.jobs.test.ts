@@ -27,6 +27,7 @@ function stubLogger(): Logger {
 function stubJobCtx(importService: Partial<ImportService>): JobCtx {
   const services: Services = {
     auth: {} as Services['auth'],
+    notification: {} as Services['notification'],
     insight: {} as Services['insight'],
     cohort: {} as Services['cohort'],
     gsc: {} as Services['gsc'],

@@ -21,6 +21,7 @@ import {
   insightCronJobs,
   insightQueueJobs,
 } from './modules/insight/insight.jobs';
+import { notificationQueueJobs } from './modules/notification/notification.jobs';
 import { onboardingCronJobs } from './modules/onboarding/onboarding.jobs';
 import { organizationCronJobs } from './modules/organization/organization.jobs';
 
@@ -69,7 +70,9 @@ const notification = defineQueue('notification', {
   defaults: { removeOnComplete: 10 },
   worker: { concurrency: CONCURRENCY.notification },
   compat: legacyCompat.notification,
-  jobs: {},
+  jobs: {
+    ...notificationQueueJobs,
+  },
 });
 
 const importQueue = defineQueue('import', {

@@ -404,6 +404,38 @@ export {
   updateOrganization,
   updateOrganizationMemberAccess,
 } from './modules/organization/organization.service';
+// Dissolved from @openpanel/db's services/notification.service.ts (M6-005,
+// "rules + dispatch stay together") — packages/trpc's notification router,
+// packages/db's own enqueue orchestration (createNotification et al, which
+// stays there — see that file's header for why) and apps/worker's
+// notification job all call these directly, the same way V1 reaches every
+// other dissolved service here. packages/db/src/services/notification.service.ts
+// stays a re-export shim for the pieces that moved.
+export type {
+  INotificationPayload,
+  INotificationRuleCached,
+  NotificationService,
+} from './modules/notification/notification.service';
+export {
+  APP_NOTIFICATION_INTEGRATION_ID,
+  BASE_INTEGRATIONS,
+  createNotificationService,
+  createOrUpdateNotificationRule,
+  deleteNotificationRule,
+  deliverNotification,
+  EMAIL_NOTIFICATION_INTEGRATION_ID,
+  getFunnelRules,
+  getHasFunnelRules,
+  getNotificationRuleByIdOrThrow,
+  getNotificationRulesByProjectId,
+  isBaseIntegration,
+  listNotificationRules,
+  listNotifications,
+  matchEvent,
+  matchEventFilters,
+  notificationTemplateEvent,
+  notificationTemplateFunnel,
+} from './modules/notification/notification.service';
 // Dissolved from @openpanel/db's services/project.service.ts (M6-002) —
 // packages/trpc's project router, apps/api's manage controller and several
 // core modules' `src/access.ts` call these directly, the same way V1
