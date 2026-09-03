@@ -1,14 +1,18 @@
-import { TRPCError } from '@trpc/server';
-import { z } from 'zod';
-
+// Dissolved into @openpanel/core's conversation module (M5-006): the CRUD
+// itself moved to packages/core/src/modules/conversation/conversation.service.ts.
+// This router stays (DELEGATE PATTERN) — it keeps V1's protectedProcedure
+// stack (session/access/logger/rate-limit middleware) and delegates every
+// handler body to core's conversation functions, same as cohort's router
+// does for its compute functions (M5-003).
 import {
   deleteConversation,
   getConversationById,
-  getOrganizationByProjectIdCached,
   listConversations,
   upsertConversationTitle,
-} from '@openpanel/db';
-
+} from '@openpanel/core';
+import { getOrganizationByProjectIdCached } from '@openpanel/db';
+import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
 import { getProjectAccess, requireProjectAccess } from '../access';
 import { TRPCForbiddenError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
@@ -27,7 +31,7 @@ export const conversationRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         limit: z.number().min(1).max(200).default(50),
-      }),
+      })
     )
     .query(async ({ input, ctx }) => {
       const access = await getProjectAccess({
@@ -49,7 +53,10 @@ export const conversationRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       const conv = await getConversationById(input.id, { withMessages: true });
       if (!conv || conv.userId !== ctx.session.userId) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Conversation not found' });
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Conversation not found',
+        });
       }
       return conv;
     }),
@@ -70,7 +77,7 @@ export const conversationRouter = createTRPCRouter({
          * project, not trusted from the client.
          */
         projectId: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
       // If the conversation already exists, enforce ownership. If it
@@ -96,7 +103,7 @@ export const conversationRouter = createTRPCRouter({
       // the project (they'd still be able to tag the conversation with
       // an unrelated org id).
       const organization = await getOrganizationByProjectIdCached(
-        input.projectId,
+        input.projectId
       );
       if (!organization) {
         throw new TRPCError({
@@ -118,7 +125,10 @@ export const conversationRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const conv = await getConversationById(input.id);
       if (!conv || conv.userId !== ctx.session.userId) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Conversation not found' });
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Conversation not found',
+        });
       }
       await deleteConversation(input.id);
       return { success: true };

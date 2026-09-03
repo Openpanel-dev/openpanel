@@ -215,6 +215,22 @@ export {
   listRefreshableCohortIds,
   updateCohortMembership,
 } from './modules/cohort/cohort.service';
+// Moved from @openpanel/db's services/conversation.service.ts (M5-006) —
+// packages/trpc's conversation router, apps/api's live chat route and this
+// package's own assistant.routes.ts stub call these directly. packages/db
+// keeps a re-export shim (unlike cohort, M5-003): both non-trpc call sites
+// still reach it through `@openpanel/db`'s barrel.
+export type {
+  IServiceChatMessage,
+  IServiceConversation,
+  IServiceConversationWithMessages,
+} from './modules/conversation/conversation.service';
+export {
+  deleteConversation,
+  getConversationById,
+  listConversations,
+  upsertConversationTitle,
+} from './modules/conversation/conversation.service';
 // Dissolved from @openpanel/db's src/gsc.ts + services/gsc.service.ts
 // (M5-002) — apps/worker's gsc job file, apps/api's gsc OAuth callback
 // controller and packages/trpc's gsc router call these directly, the same

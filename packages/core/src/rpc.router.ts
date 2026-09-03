@@ -6,6 +6,7 @@
 
 import { chatRouter } from './modules/assistant/assistant.rpc';
 import { cohortRouter } from './modules/cohort/cohort.rpc';
+import { conversationRouter } from './modules/conversation/conversation.rpc';
 import { gscRouter } from './modules/gsc/gsc.rpc';
 import { healthRouter } from './modules/health/health.rpc';
 import { importRouter } from './modules/import/import.rpc';
@@ -19,6 +20,7 @@ export const appRouter = createTRPCRouter({
   cohort: cohortRouter,
   import: importRouter,
   chat: chatRouter,
+  conversation: conversationRouter,
 });
 
 export type AppRouter = typeof appRouter;
