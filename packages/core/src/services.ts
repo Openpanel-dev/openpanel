@@ -7,6 +7,7 @@ import {
   type AuthService,
   createAuthService,
 } from './modules/auth/auth.service';
+import { createGscService, type GscService } from './modules/gsc/gsc.service';
 import {
   createInsightService,
   type InsightService,
@@ -30,6 +31,7 @@ export type ServiceDeps = Pick<
 export interface Services {
   auth: AuthService;
   insight: InsightService;
+  gsc: GscService;
 }
 
 export function createServices(deps: ServiceDeps): Services {
@@ -39,5 +41,6 @@ export function createServices(deps: ServiceDeps): Services {
   return {
     auth: createAuthService(deps),
     insight: createInsightService(deps),
+    gsc: createGscService(deps),
   };
 }

@@ -4,6 +4,7 @@
 // (ADR-007 decision 19). Only `health` exists so far; the 28 real routers
 // land with their module waves (P5-P8).
 
+import { gscRouter } from './modules/gsc/gsc.rpc';
 import { healthRouter } from './modules/health/health.rpc';
 import { insightRouter } from './modules/insight/insight.rpc';
 import { createTRPCRouter } from './rpc/base';
@@ -11,6 +12,7 @@ import { createTRPCRouter } from './rpc/base';
 export const appRouter = createTRPCRouter({
   health: healthRouter,
   insight: insightRouter,
+  gsc: gscRouter,
 });
 
 export type AppRouter = typeof appRouter;

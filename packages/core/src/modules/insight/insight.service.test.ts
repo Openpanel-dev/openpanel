@@ -22,7 +22,17 @@ mock.module('@openpanel/db/src/prisma-client', () => ({
   db: { $executeRaw },
 }));
 
-mock.module('@openpanel/db/src/clickhouse/client', () => ({ ch: {} }));
+// `originalCh`/`chQuery`/`TABLE_NAMES` are unused here but included because
+// `mock.module` replaces this specifier process-wide (bun runs every test
+// file in one shared module registry without `--isolate` — see AGENTS.md) —
+// gsc.service.test.ts mocks the same path, so both factories must be a
+// superset of every consumer's needs, whichever one ends up registered last.
+mock.module('@openpanel/db/src/clickhouse/client', () => ({
+  ch: {},
+  originalCh: { query: mock(async () => ({ json: async () => [] })), insert: mock(async () => undefined) },
+  chQuery: mock(async () => []),
+  TABLE_NAMES: { sessions: 'sessions' },
+}));
 
 const spikesQuery = mock(async () => [
   { anchorDate: '2026-09-01', spikes: [] },
@@ -58,7 +68,12 @@ const getRedisCache = mock(() => ({
     return Promise.resolve();
   }),
 }));
-mock.module('@openpanel/redis', () => ({ getRedisCache }));
+// `cacheable` is unused here but included for the same cross-file
+// mock.module reason as the clickhouse/client mock above.
+mock.module('@openpanel/redis', () => ({
+  getRedisCache,
+  cacheable: <T>(fn: T) => fn,
+}));
 
 let subject: typeof import('./insight.service');
 beforeAll(async () => {

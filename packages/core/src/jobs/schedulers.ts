@@ -5,6 +5,7 @@
 // locking of our own needed.
 
 import type { Logger } from '../logger';
+import { gscCronSchedules } from '../modules/gsc/gsc.jobs';
 import { insightCronSchedules } from '../modules/insight/insight.jobs';
 import { wrap } from './envelope';
 
@@ -63,7 +64,9 @@ export const CRON_SCHEDULES: readonly SchedulerDefinition[] = [
   { id: 'flushReplay', schedule: { every: 10_000 } },
   { id: 'flushGroups', schedule: { every: 10_000 } },
   { id: 'onboarding', schedule: { pattern: '0 * * * *' } },
-  { id: 'gscSync', schedule: { pattern: '0 3 * * *' } },
+  // gscSync — owned by the gsc module, declared next to its jobs
+  // (modules/gsc/gsc.jobs.ts).
+  ...gscCronSchedules,
   { id: 'cohortRefresh', schedule: { pattern: '*/30 * * * *' } },
   { id: 'sessionReaper', schedule: { every: 5 * MINUTE_MS } },
   // Daily 04:00 UTC — backstop for cleanup leaks.

@@ -82,11 +82,32 @@ test('the insights queue carries the insight module job', () => {
 // job's `type` straight onto its name, so these three ids double as job names.
 test('the cron queue carries the insight module cron fragment', () => {
   expect(Object.keys(queues.cron.jobs).sort()).toEqual(
-    ['insightCleanup', 'insightsDaily', 'weeklyDigest'].sort()
+    ['gscSync', 'insightCleanup', 'insightsDaily', 'weeklyDigest'].sort()
   );
   for (const name of ['insightsDaily', 'insightCleanup', 'weeklyDigest']) {
     expect(
       queues.cron.jobs[name as keyof typeof queues.cron.jobs]
     ).toMatchObject({ queue: 'cron', name });
   }
+});
+
+// M5-002: the gsc module's own queue job, plus its cron fan-out fragment.
+// legacyCompat.gsc already discriminates on these exact names (jobs/compat.ts),
+// so this pins the two in agreement.
+test('the gsc queue carries the gsc module jobs', () => {
+  expect(Object.keys(queues.gsc.jobs).sort()).toEqual(
+    ['gscProjectBackfill', 'gscProjectSync'].sort()
+  );
+  for (const name of ['gscProjectSync', 'gscProjectBackfill']) {
+    expect(queues.gsc.jobs[name as keyof typeof queues.gsc.jobs]).toMatchObject(
+      { queue: 'gsc', name }
+    );
+  }
+});
+
+test('the cron queue carries the gsc module cron fragment', () => {
+  expect(queues.cron.jobs.gscSync).toMatchObject({
+    queue: 'cron',
+    name: 'gscSync',
+  });
 });

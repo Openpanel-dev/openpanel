@@ -145,6 +145,49 @@ export {
   verifyPasswordHash,
   verifyTotpCode,
 } from './modules/auth/auth.service';
+// Dissolved from @openpanel/db's src/gsc.ts + services/gsc.service.ts
+// (M5-002) — apps/worker's gsc job file, apps/api's gsc OAuth callback
+// controller and packages/trpc's gsc router call these directly, the same
+// way V1 reaches every other dissolved service here. packages/db/src/gsc.ts
+// and packages/db/src/services/gsc.service.ts re-export the subset MCP's gsc
+// tools and the assistant's SEO tools still reach via `@openpanel/db`.
+export type {
+  GscCannibalizedQuery,
+  GscConnectionSummary,
+  GscDateRangeInput,
+  GscOAuthCallbackInput,
+  GscOAuthCallbackResult,
+  GscQueryOpportunity,
+  GscSite,
+} from './modules/gsc/gsc.service';
+export {
+  completeGscOAuthCallback,
+  disconnectGscConnection,
+  getGscAiEngines,
+  getGscCannibalization,
+  getGscConnection,
+  getGscOverview,
+  getGscPageDetails,
+  getGscPages,
+  getGscPreviousOverview,
+  getGscQueries,
+  getGscQueryDetails,
+  getGscSearchEngines,
+  gscGetCannibalizationCore,
+  gscGetOverviewCore,
+  gscGetPageDetailsCore,
+  gscGetQueryDetailsCore,
+  gscGetQueryOpportunitiesCore,
+  gscGetTopPagesCore,
+  gscGetTopQueriesCore,
+  listGscConnectionsForSync,
+  listGscSites,
+  resolveGscDateRange,
+  runGscProjectBackfill,
+  runGscProjectSync,
+  selectGscSite,
+  syncGscData,
+} from './modules/gsc/gsc.service';
 // Dissolved from @openpanel/db's services/insights* + referrer-spikes.service
 // (M5-001) — apps/worker's insight job files and packages/trpc's insight
 // router call these directly, the same way V1 reaches every other dissolved

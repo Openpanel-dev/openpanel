@@ -21,7 +21,7 @@ test('opsRoutes answers a liveness probe through requestContext', async () => {
   expect(await response.json()).toEqual({ live: true });
 });
 
-test('publicApiRoutes and dashboardRoutes compose with no modules yet', async () => {
+test('publicApiRoutes and dashboardRoutes compose, dashboardRoutes carrying gsc', async () => {
   const { deps } = stubAppDeps();
 
   const app = new Elysia()

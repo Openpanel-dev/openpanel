@@ -14,6 +14,7 @@ import { legacyCompat } from './jobs/compat';
 import type { Producers } from './jobs/define';
 import { defineQueue } from './jobs/define';
 import type { ProducerHandle } from './jobs/producers';
+import { gscCronJobs, gscQueueJobs } from './modules/gsc/gsc.jobs';
 import {
   insightCronJobs,
   insightQueueJobs,
@@ -53,6 +54,7 @@ const cron = defineQueue('cron', {
   // Every module's cron fragment spreads in here (ADR-005: "no cron module").
   jobs: {
     ...insightCronJobs,
+    ...gscCronJobs,
   },
 });
 
@@ -83,7 +85,9 @@ const gsc = defineQueue('gsc', {
   defaults: { removeOnComplete: 50, removeOnFail: 100 },
   worker: { concurrency: CONCURRENCY.gsc },
   compat: legacyCompat.gsc,
-  jobs: {},
+  jobs: {
+    ...gscQueueJobs,
+  },
 });
 
 const cohortCompute = defineQueue('cohortCompute', {

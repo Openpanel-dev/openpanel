@@ -1,5 +1,9 @@
-import { googleGsc } from '@openpanel/core';
-import { db, encrypt } from '@openpanel/db';
+// Dissolved into @openpanel/core's gsc module (M5-002): state verification,
+// the Google token exchange and the gscConnection upsert moved to
+// packages/core/src/modules/gsc/gsc.service.ts#completeGscOAuthCallback.
+// This controller stays (DELEGATE PATTERN) — it keeps Fastify's signed-cookie
+// verification and the redirect shape, and delegates everything else.
+import { completeGscOAuthCallback } from '@openpanel/core';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { LogError } from '@/utils/errors';
@@ -83,57 +87,22 @@ export async function gscGoogleCallback(
     const codeVerifierStr = codeVerifierResult?.value;
     const projectIdStr = projectIdResult?.value;
 
-    if (state !== stateStr) {
-      throw new LogError('GSC OAuth state mismatch', {
-        hasState: true,
-        hasStoredState: true,
-        stateMismatch: true,
-      });
-    }
-
-    const tokens = await googleGsc.validateAuthorizationCode(
-      code,
-      codeVerifierStr
-    );
-
-    const accessToken = tokens.accessToken();
-    const refreshToken = tokens.hasRefreshToken()
-      ? tokens.refreshToken()
-      : null;
-    const accessTokenExpiresAt = tokens.accessTokenExpiresAt();
-
-    if (!refreshToken) {
-      throw new LogError('No refresh token returned from Google GSC OAuth');
-    }
-
-    const project = await db.project.findUnique({
-      where: { id: projectIdStr },
-      select: { id: true, organizationId: true },
-    });
-
-    if (!project) {
-      throw new LogError('Project not found for GSC connection', {
+    let organizationId: string;
+    try {
+      ({ organizationId } = await completeGscOAuthCallback({
+        code,
+        state,
+        storedState: stateStr,
+        codeVerifier: codeVerifierStr,
         projectId: projectIdStr,
-      });
+      }));
+    } catch (error) {
+      // Re-wrapped as LogError so redirectWithError shows the same
+      // per-failure message it always has, sourced now from
+      // gsc.service.ts#completeGscOAuthCallback instead of inline.
+      const message = error instanceof Error ? error.message : String(error);
+      throw new LogError(message, { projectId: projectIdStr });
     }
-
-    await db.gscConnection.upsert({
-      where: { projectId: projectIdStr },
-      create: {
-        projectId: projectIdStr,
-        accessToken: encrypt(accessToken),
-        refreshToken: encrypt(refreshToken),
-        accessTokenExpiresAt,
-        siteUrl: '',
-      },
-      update: {
-        accessToken: encrypt(accessToken),
-        refreshToken: encrypt(refreshToken),
-        accessTokenExpiresAt,
-        lastSyncStatus: null,
-        lastSyncError: null,
-      },
-    });
 
     reply.clearCookie('gsc_oauth_state');
     reply.clearCookie('gsc_code_verifier');
@@ -141,7 +110,7 @@ export async function gscGoogleCallback(
 
     const dashboardUrl =
       process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!;
-    const redirectUrl = `${dashboardUrl}/${project.organizationId}/${projectIdStr}/settings/gsc`;
+    const redirectUrl = `${dashboardUrl}/${organizationId}/${projectIdStr}/settings/gsc`;
     return reply.redirect(redirectUrl);
   } catch (error) {
     req.log.error({ err: error }, 'GSC OAuth callback error');

@@ -39,6 +39,7 @@ function stubJobCtx(
   const services: Services = {
     auth: {} as Services['auth'],
     insight: insight as InsightService,
+    gsc: {} as Services['gsc'],
   };
   return {
     db: {},
@@ -62,8 +63,11 @@ test('the insight jobs registry declares insightsProject on the insights queue',
 });
 
 test('the insight cron fragment is spread into the cron queue', () => {
-  expect(Object.keys(queues.cron.jobs).sort()).toEqual(
-    ['insightCleanup', 'insightsDaily', 'weeklyDigest'].sort()
+  // Subset, not exact equality: other modules (e.g. gsc, M5-002) spread
+  // their own fragments into the same cron queue. jobs.registry.test.ts owns
+  // the exhaustive membership check.
+  expect(Object.keys(queues.cron.jobs)).toEqual(
+    expect.arrayContaining(['insightCleanup', 'insightsDaily', 'weeklyDigest'])
   );
 });
 
@@ -113,6 +117,7 @@ test('insightsDaily fans out one insightsProject enqueue per candidate, jobId de
           { projectId: 'p2', date },
         ],
       } as InsightService,
+      gsc: {} as Services['gsc'],
     },
     requestId: 'req_1',
     job: { id: 'job_1', attempt: 0, queue: 'cron', name: 'insightsDaily' },

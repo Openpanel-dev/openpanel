@@ -8,6 +8,7 @@ import { openapi } from '@elysiajs/openapi';
 import { Elysia } from 'elysia';
 import type { AppDeps } from './context';
 import { registry } from './metrics';
+import { gscRoutes } from './modules/gsc/gsc.routes';
 import { healthRoutes } from './modules/health/health.routes';
 
 // ADR-002/ADR-003 pin: @elysiajs/openapi at the 1.4.15 fallback (2.0 is
@@ -19,16 +20,19 @@ const OPENAPI_SPEC_PATH = '/openapi.json';
 // endpoint (ADR-003: "the transform that hides /metrics from the spec").
 const OPENAPI_EXCLUDED_PATHS = ['/metrics'];
 
-// No module lands on either surface yet — the 35 modules' HTTP halves land
-// with their waves (P5-P8). Both still take `deps` now so a module addition
+// Both surfaces still take `deps` even where unused so a module addition
 // never changes the factory's signature, only its body. Return types are
 // left inferred, as `defineRoutes`'s `RouteApp` is: `.use()`'d plugins widen
 // Elysia's type parameters in a way the bare `Elysia` type cannot express.
 export const publicApiRoutes = (_deps: AppDeps) =>
   new Elysia({ name: 'core/public-api-routes' });
 
-export const dashboardRoutes = (_deps: AppDeps) =>
-  new Elysia({ name: 'core/dashboard-routes' });
+// gsc's callback is the first module to land here (M5-002). It is not yet
+// reachable in production: main.ts only mounts `dashboardRoutes` once a real
+// `AppDeps` exists (P3/P4/P8) — see gsc.routes.ts's header for the named gap
+// that keeps it inert until then.
+export const dashboardRoutes = (deps: AppDeps) =>
+  new Elysia({ name: 'core/dashboard-routes' }).use(gscRoutes(deps));
 
 // healthz/metrics/misc share V1's ops surface (http/context.ts's
 // UNLOGGED_PATH_PREFIXES) — unauthenticated, uncorsed, unlogged. /metrics and
