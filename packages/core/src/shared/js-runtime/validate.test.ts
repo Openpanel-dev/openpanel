@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { execute, validate } from './index';
 
 describe('validate', () => {
@@ -11,7 +11,7 @@ describe('validate', () => {
     it('should reject function expression', () => {
       // Function expressions are not allowed - only arrow functions
       const result = validate(
-        '(function(payload) { return { event: payload.name }; })',
+        '(function(payload) { return { event: payload.name }; })'
       );
       expect(result.valid).toBe(false);
       expect(result.error).toContain('arrow functions');
@@ -83,7 +83,7 @@ describe('validate', () => {
 
     it('should block while loops', () => {
       const result = validate(
-        '(payload) => { while(true) {} return payload; }',
+        '(payload) => { while(true) {} return payload; }'
       );
       expect(result.valid).toBe(false);
       expect(result.error).toContain('Loops are not allowed');
@@ -91,7 +91,7 @@ describe('validate', () => {
 
     it('should block for loops', () => {
       const result = validate(
-        '(payload) => { for(let i = 0; i < 10; i++) {} return payload; }',
+        '(payload) => { for(let i = 0; i < 10; i++) {} return payload; }'
       );
       expect(result.valid).toBe(false);
       expect(result.error).toContain('Loops are not allowed');
@@ -99,7 +99,7 @@ describe('validate', () => {
 
     it('should block try/catch', () => {
       const result = validate(
-        '(payload) => { try { return payload; } catch(e) {} }',
+        '(payload) => { try { return payload; } catch(e) {} }'
       );
       expect(result.valid).toBe(false);
       expect(result.error).toContain('try/catch');
@@ -107,7 +107,7 @@ describe('validate', () => {
 
     it('should block async/await', () => {
       const result = validate(
-        'async (payload) => { await something(); return payload; }',
+        'async (payload) => { await something(); return payload; }'
       );
       expect(result.valid).toBe(false);
       expect(result.error).toContain('async/await');
@@ -133,7 +133,7 @@ describe('validate', () => {
 
     it('should allow new Date()', () => {
       const result = validate(
-        '(payload) => ({ timestamp: new Date().toISOString() })',
+        '(payload) => ({ timestamp: new Date().toISOString() })'
       );
       expect(result.valid).toBe(true);
     });
@@ -163,8 +163,8 @@ describe('execute', () => {
     device: 'desktop',
     os: 'Windows',
     browser: 'Chrome',
-    longitude: -73.935242,
-    latitude: 40.73061,
+    longitude: -73.935_242,
+    latitude: 40.730_61,
     createdAt: '2024-01-15T10:30:00Z',
     properties: {
       plan: 'premium',
@@ -218,7 +218,7 @@ describe('execute', () => {
       const result = execute(code, basePayload);
       expect(result).toHaveProperty('timestamp');
       expect((result as { timestamp: string }).timestamp).toBe(
-        '2024-01-15T10:30:00.000Z',
+        '2024-01-15T10:30:00.000Z'
       );
     });
   });

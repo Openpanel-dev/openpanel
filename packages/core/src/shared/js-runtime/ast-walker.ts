@@ -1,5 +1,3 @@
-import { ALLOWED_GLOBALS, ALLOWED_INSTANCE_METHODS, ALLOWED_METHODS } from './constants';
-
 /**
  * Simple recursive AST walker that doesn't require @babel/traverse
  */
@@ -7,9 +5,9 @@ export function walkNode(
   node: unknown,
   visitor: (
     node: Record<string, unknown>,
-    parent?: Record<string, unknown>,
+    parent?: Record<string, unknown>
   ) => void,
-  parent?: Record<string, unknown>,
+  parent?: Record<string, unknown>
 ): void {
   if (!node || typeof node !== 'object') {
     return;
@@ -67,7 +65,7 @@ export function collectDeclaredIdentifiers(ast: unknown): Set<string> {
       node.type === 'FunctionExpression' ||
       node.type === 'FunctionDeclaration'
     ) {
-      const params = node.params as Array<Record<string, unknown>>;
+      const params = node.params as Record<string, unknown>[];
       for (const param of params) {
         collectPatternIdentifiers(param, declared);
       }
@@ -82,22 +80,22 @@ export function collectDeclaredIdentifiers(ast: unknown): Set<string> {
  */
 function collectPatternIdentifiers(
   pattern: Record<string, unknown>,
-  declared: Set<string>,
+  declared: Set<string>
 ): void {
   if (pattern.type === 'Identifier') {
     declared.add(pattern.name as string);
   } else if (pattern.type === 'ObjectPattern') {
-    const properties = pattern.properties as Array<Record<string, unknown>>;
+    const properties = pattern.properties as Record<string, unknown>[];
     for (const prop of properties) {
       if (prop.type === 'ObjectProperty') {
         collectPatternIdentifiers(
           prop.value as Record<string, unknown>,
-          declared,
+          declared
         );
       } else if (prop.type === 'RestElement') {
         collectPatternIdentifiers(
           prop.argument as Record<string, unknown>,
-          declared,
+          declared
         );
       }
     }
@@ -111,13 +109,13 @@ function collectPatternIdentifiers(
   } else if (pattern.type === 'RestElement') {
     collectPatternIdentifiers(
       pattern.argument as Record<string, unknown>,
-      declared,
+      declared
     );
   } else if (pattern.type === 'AssignmentPattern') {
     // Default parameter values: (x = 5) => ...
     collectPatternIdentifiers(
       pattern.left as Record<string, unknown>,
-      declared,
+      declared
     );
   }
 }
@@ -127,9 +125,11 @@ function collectPatternIdentifiers(
  */
 export function isPropertyKey(
   node: Record<string, unknown>,
-  parent?: Record<string, unknown>,
+  parent?: Record<string, unknown>
 ): boolean {
-  if (!parent) return false;
+  if (!parent) {
+    return false;
+  }
 
   // Property in object literal: { foo: value } - foo is a key
   if (

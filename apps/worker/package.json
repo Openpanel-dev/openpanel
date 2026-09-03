@@ -19,7 +19,6 @@
     "@openpanel/db": "workspace:*",
     "@openpanel/email": "workspace:*",
     "@openpanel/importer": "workspace:*",
-    "@openpanel/js-runtime": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",

@@ -6,7 +6,7 @@
  */
 export function execute(
   code: string,
-  payload: Record<string, unknown>,
+  payload: Record<string, unknown>
 ): unknown {
   try {
     // Create the function code that will be executed
@@ -25,7 +25,7 @@ export function execute(
     throw new Error(
       `Error executing JavaScript template: ${
         error instanceof Error ? error.message : String(error)
-      }`,
+      }`
     );
   }
 }

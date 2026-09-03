@@ -1,15 +1,14 @@
 import { parse } from '@babel/parser';
-
-import {
-  ALLOWED_GLOBALS,
-  ALLOWED_INSTANCE_METHODS,
-  ALLOWED_METHODS,
-} from './constants';
 import {
   collectDeclaredIdentifiers,
   isPropertyKey,
   walkNode,
 } from './ast-walker';
+import {
+  ALLOWED_GLOBALS,
+  ALLOWED_INSTANCE_METHODS,
+  ALLOWED_METHODS,
+} from './constants';
 
 /**
  * Validates that a JavaScript function is safe to execute
@@ -222,11 +221,13 @@ export function validate(code: string): {
             const methodName = prop.name as string;
 
             // Check if it's a call on an allowed global object
-            if (ALLOWED_GLOBALS.has(objName) && ALLOWED_METHODS[objName]) {
-              if (!ALLOWED_METHODS[objName].has(methodName)) {
-                validationError = `Method '${objName}.${methodName}' is not allowed. Only safe methods are permitted.`;
-                return;
-              }
+            if (
+              ALLOWED_GLOBALS.has(objName) &&
+              ALLOWED_METHODS[objName] &&
+              !ALLOWED_METHODS[objName].has(methodName)
+            ) {
+              validationError = `Method '${objName}.${methodName}' is not allowed. Only safe methods are permitted.`;
+              return;
             }
           }
 
@@ -238,13 +239,12 @@ export function validate(code: string): {
             // If calling on something other than an allowed global,
             // check if the method is in the allowed instance methods
             if (
-              obj.type !== 'Identifier' ||
-              !ALLOWED_GLOBALS.has(obj.name as string)
+              (obj.type !== 'Identifier' ||
+                !ALLOWED_GLOBALS.has(obj.name as string)) &&
+              !ALLOWED_INSTANCE_METHODS.has(methodName)
             ) {
-              if (!ALLOWED_INSTANCE_METHODS.has(methodName)) {
-                validationError = `Method '.${methodName}()' is not allowed. Only safe methods are permitted.`;
-                return;
-              }
+              validationError = `Method '.${methodName}()' is not allowed. Only safe methods are permitted.`;
+              return;
             }
           }
         }
