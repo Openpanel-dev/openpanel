@@ -1059,6 +1059,10 @@ importers:
         version: 5.9.3
 
   packages/constants:
+    dependencies:
+      '@openpanel/core':
+        specifier: workspace:*
+        version: link:../core
     devDependencies:
       '@openpanel/tsconfig':
         specifier: workspace:*

@@ -194,6 +194,27 @@ export {
   verifyPasswordHash,
   verifyTotpCode,
 } from './modules/auth/auth.service';
+// Dissolved from @openpanel/db's services/clients.service.ts (M6-002) —
+// packages/trpc's client router, apps/api's manage controller and mcp/utils
+// auth call these directly, the same way V1 reaches every other dissolved
+// service here. packages/db/src/services/clients.service.ts stays a
+// re-export shim.
+export type {
+  CreatedClient,
+  IServiceClient,
+  IServiceClientWithProject,
+} from './modules/client/client.service';
+export {
+  createClientForOrganization,
+  deleteClientForOrganization,
+  getClientById,
+  getClientByIdCached,
+  getClientForOrganization,
+  getClientsByOrganizationId,
+  getClientsByProjectId,
+  listClientsForOrganization,
+  updateClientForOrganization,
+} from './modules/client/client.service';
 // Dissolved from @openpanel/db's services/cohort.service.ts (M5-003) —
 // packages/trpc's cohort router and apps/worker's cohort job files call
 // these directly, the same way V1 reaches every other dissolved service
@@ -323,6 +344,36 @@ export {
   updateOrganization,
   updateOrganizationMemberAccess,
 } from './modules/organization/organization.service';
+// Dissolved from @openpanel/db's services/project.service.ts (M6-002) —
+// packages/trpc's project router, apps/api's manage controller and several
+// core modules' `src/access.ts` call these directly, the same way V1
+// reaches every other dissolved service here. packages/db/src/services/
+// project.service.ts stays a re-export shim.
+export { ProjectTypeNames } from './modules/project/project.constants';
+export type {
+  CreatedProjectClient,
+  IServiceProject,
+  IServiceProjectWithClients,
+  ProjectActivationStatus,
+} from './modules/project/project.service';
+export {
+  cancelProjectDeletion,
+  createProjectForOrganization,
+  deleteProjectForOrganization,
+  getLastEventPerProject,
+  getProjectActivationStatus,
+  getProjectById,
+  getProjectByIdCached,
+  getProjectEventsCount,
+  getProjectForOrganization,
+  getProjects,
+  getProjectWithClients,
+  listProjectsCore,
+  listProjectsForOrganization,
+  resolveClientProjectId,
+  scheduleProjectDeletion,
+  updateProjectForOrganization,
+} from './modules/project/project.service';
 // Dissolved from @openpanel/db's services/user.service.ts (M6-001) —
 // packages/trpc's auth/onboarding routers still call `getUserById`/
 // `getUserAccount` directly through @openpanel/db's re-export shim, the same

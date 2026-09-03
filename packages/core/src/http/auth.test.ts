@@ -9,6 +9,7 @@ import type { AuthenticatedClient, ClientAuthOptions } from './client-auth';
 const CLIENT: AuthenticatedClient = {
   id: 'client-1',
   projectId: 'proj-1',
+  organizationId: 'org-1',
   type: 'root',
   secretPresented: true,
 };

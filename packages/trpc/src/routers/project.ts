@@ -1,20 +1,23 @@
-import crypto from 'node:crypto';
-import { stripTrailingSlash } from '@openpanel/common';
-import { hashPassword } from '@openpanel/core';
+// Dissolved into @openpanel/core's project module (M6-002): the CRUD and
+// mutation bodies moved to
+// packages/core/src/modules/project/project.service.ts. This router stays
+// (DELEGATE PATTERN) — it keeps V1's protectedProcedure stack (session/
+// access/logger/rate-limit middleware) and delegates every handler body to
+// core's project functions, same as organization's router does (M6-001).
 import {
-  db,
-  getClientByIdCached,
-  getId,
-  getOrganizationAccess,
-  getProjectByIdCached,
+  cancelProjectDeletion,
+  createProjectForOrganization,
+  getProjectActivationStatus,
+  getProjectById,
   getProjects,
   getProjectWithClients,
-  type Prisma,
-} from '@openpanel/db';
+  scheduleProjectDeletion,
+  updateProjectForOrganization,
+} from '@openpanel/core';
 import { zOnboardingProject, zProjectUpdate } from '@openpanel/validation';
-import { addHours } from 'date-fns';
 import { z } from 'zod';
 import {
+  getOrganizationAccess,
   getProjectAccess,
   requireProjectAccess,
   requireProjectAdmin,
@@ -60,32 +63,7 @@ export const projectRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this project');
       }
 
-      const project = await db.project.findUniqueOrThrow({
-        where: { id: projectId },
-        select: {
-          firstEventAt: true,
-          eventsCount: true,
-          organizationId: true,
-          createdAt: true,
-        },
-      });
-
-      const [reportCount, memberCount] = await Promise.all([
-        db.report.count({ where: { projectId } }),
-        db.member.count({
-          where: { organizationId: project.organizationId },
-        }),
-      ]);
-
-      return {
-        // firstEventAt only exists for projects created after the column was
-        // added; the lifetime counter covers everything older.
-        hasFirstEvent: !!project.firstEventAt || project.eventsCount > 0,
-        firstEventAt: project.firstEventAt,
-        projectCreatedAt: project.createdAt,
-        hasReport: reportCount > 0,
-        hasTeammate: memberCount > 1,
-      };
+      return getProjectActivationStatus(projectId);
     }),
 
   list: protectedProcedure
@@ -113,40 +91,18 @@ export const projectRouter = createTRPCRouter({
         level: 'write',
       });
 
-      const res = await db.project.update({
-        where: {
-          id: input.id,
-        },
-        data: {
-          name: input.name,
-          crossDomain: input.crossDomain,
-          allowUnsafeRevenueTracking: input.allowUnsafeRevenueTracking,
-          filters:
-            input.filters === undefined ? undefined : input.filters || [],
-          domain:
-            input.domain === undefined
-              ? undefined
-              : input.domain
-                ? stripTrailingSlash(input.domain)
-                : null,
-          cors:
-            input.cors === undefined
-              ? undefined
-              : input.cors.map((c) => stripTrailingSlash(c)) || [],
-        },
-        include: {
-          clients: {
-            select: {
-              id: true,
-            },
-          },
-        },
+      const project = await getProjectById(input.id);
+      if (!project) {
+        throw new TRPCForbiddenError('Project not found');
+      }
+
+      return updateProjectForOrganization(input.id, project.organizationId, {
+        name: input.name,
+        domain: input.domain,
+        cors: input.cors,
+        crossDomain: input.crossDomain,
+        allowUnsafeRevenueTracking: input.allowUnsafeRevenueTracking,
       });
-      await Promise.all([
-        getProjectByIdCached.clear(input.id),
-        ...res.clients.map((client) => getClientByIdCached.clear(client.id)),
-      ]);
-      return res;
     }),
   create: protectedProcedure
     .input(zOnboardingProject)
@@ -166,45 +122,18 @@ export const projectRouter = createTRPCRouter({
         );
       }
 
-      const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
-      const data: Prisma.ClientCreateArgs['data'] = {
-        organizationId: input.organizationId,
-        name: 'First client',
-        type: 'write',
-        secret: await hashPassword(secret),
-      };
-      const project = await db.project.create({
-        data: {
-          id: await getId('project', input.project),
-          organizationId: input.organizationId,
+      const { project, client } = await createProjectForOrganization(
+        input.organizationId,
+        {
           name: input.project,
           domain: input.domain,
           cors: input.cors,
           crossDomain: false,
-          allowUnsafeRevenueTracking: false,
-          filters: [],
-          clients: {
-            create: data,
-          },
-        },
-        include: {
-          clients: {
-            select: {
-              id: true,
-            },
-          },
-        },
-      });
+          types: [],
+        }
+      );
 
-      return {
-        ...project,
-        client: project.clients[0]
-          ? {
-              id: project.clients[0].id,
-              secret,
-            }
-          : null,
-      };
+      return { ...project, client };
     }),
   delete: protectedProcedure
     .input(
@@ -220,14 +149,7 @@ export const projectRouter = createTRPCRouter({
         message: 'Only organization admins can delete projects',
       });
 
-      await db.project.update({
-        where: {
-          id: input.projectId,
-        },
-        data: {
-          deleteAt: addHours(new Date(), 24),
-        },
-      });
+      await scheduleProjectDeletion(input.projectId);
 
       return true;
     }),
@@ -244,36 +166,7 @@ export const projectRouter = createTRPCRouter({
         message: 'Only organization admins can cancel a project deletion',
       });
 
-      const project = await db.project.findUnique({
-        where: {
-          id: input.projectId,
-        },
-        select: {
-          organization: {
-            select: {
-              deleteAt: true,
-            },
-          },
-        },
-      });
-
-      // If the whole organization is scheduled for deletion, this project's
-      // deletion is part of it and can only be cancelled at the organization
-      // level. Cancelling it here would leave the organization unable to delete.
-      if (project?.organization?.deleteAt) {
-        throw new TRPCBadRequestError(
-          'This organization is scheduled for deletion. Cancel the deletion from the organization settings.'
-        );
-      }
-
-      await db.project.update({
-        where: {
-          id: input.projectId,
-        },
-        data: {
-          deleteAt: null,
-        },
-      });
+      await cancelProjectDeletion(input.projectId);
 
       return true;
     }),

@@ -19,7 +19,10 @@ export type ClientType = 'read' | 'write' | 'root';
 
 export interface AuthenticatedClient {
   id: string;
-  projectId: string;
+  /** `null` for a root client, which is scoped to `organizationId` instead. */
+  projectId: string | null;
+  /** Every client — read/write/root alike — belongs to exactly one org. */
+  organizationId: string;
   type: ClientType;
   /**
    * Whether a client secret was PRESENTED, set before it is verified — V1 sets

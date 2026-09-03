@@ -14,6 +14,11 @@
 // V1 has no request-body schema for this route (ADR-003: "/profile,
 // /import, /event and /tools have no request schemas today, and adding them
 // would be a behaviour change"), so the body is typed but not shape-validated.
+//
+// `client.projectId` is `null` for a root client (M6-002 widened
+// AuthenticatedClient to match IServiceClientWithProject); V1's controller
+// guards on exactly this (apps/api/src/controllers/import.controller.ts:17-18),
+// ported verbatim.
 
 import type { IClickhouseEvent } from '@openpanel/db';
 import { z } from 'zod';
@@ -24,6 +29,10 @@ export const importRoutes = defineRoutes((app) =>
   app.post(
     '/import/events',
     async ({ body, client, ctx, status }) => {
+      if (!client.projectId) {
+        return status(400, 'Missing project id');
+      }
+
       try {
         const { writtenRows } = await insertRawEventsBatch(
           client.projectId,

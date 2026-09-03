@@ -6,6 +6,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@openpanel/core": "workspace:*"
+  },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "date-fns": "^3.3.1",

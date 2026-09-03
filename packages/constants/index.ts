@@ -83,11 +83,11 @@ export const timeWindows = {
   },
 } as const;
 
-export const ProjectTypeNames = {
-  website: 'Website',
-  app: 'App',
-  backend: 'Backend',
-} as const;
+// Moved into @openpanel/core's project module (M6-002, ADR-008's module
+// map: project owns "C"). Re-exported here for existing
+// @openpanel/constants importers — same shape as
+// packages/validation/src/import.validation.ts since M5-004.
+export { ProjectTypeNames } from '@openpanel/core/modules/project/project.constants';
 
 export const operators = {
   is: 'Is',
@@ -174,7 +174,7 @@ const ORDERED_OPERATORS = [
 const BOOLEAN_OPERATORS = ['is', 'isNot', 'isNull', 'isNotNull'] as const;
 
 export function getOperatorsForType(
-  type?: IFilterValueType,
+  type?: IFilterValueType
 ): readonly (keyof typeof operators)[] {
   switch (type) {
     case 'number':

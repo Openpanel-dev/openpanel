@@ -1,7 +1,16 @@
-import crypto from 'node:crypto';
-import { hashPassword } from '@openpanel/core';
-import type { Prisma } from '@openpanel/db';
-import { db } from '@openpanel/db';
+// Dissolved into @openpanel/core's client module (M6-002): the CRUD and
+// mutation bodies moved to
+// packages/core/src/modules/client/client.service.ts. This router stays
+// (DELEGATE PATTERN) — it keeps V1's protectedProcedure stack (session/
+// access/logger/rate-limit middleware) and delegates every handler body to
+// core's client functions, same as organization's router does (M6-001).
+import {
+  createClientForOrganization,
+  deleteClientForOrganization,
+  getClientById,
+  getClientsByProjectId,
+  updateClientForOrganization,
+} from '@openpanel/core';
 import { z } from 'zod';
 import { getClientAccess, requireOrganizationAdmin } from '../access';
 import { TRPCForbiddenError } from '../errors';
@@ -15,11 +24,7 @@ export const clientRouter = createTRPCRouter({
       })
     )
     .query(async ({ input }) => {
-      return db.client.findMany({
-        where: {
-          projectId: input.projectId,
-        },
-      });
+      return getClientsByProjectId(input.projectId);
     }),
   update: protectedProcedure
     .input(
@@ -38,13 +43,13 @@ export const clientRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this client');
       }
 
-      return db.client.update({
-        where: {
-          id: input.id,
-        },
-        data: {
-          name: input.name,
-        },
+      const client = await getClientById(input.id);
+      if (!client) {
+        throw new TRPCForbiddenError('Client not found');
+      }
+
+      return updateClientForOrganization(input.id, client.organizationId, {
+        name: input.name,
       });
     }),
   create: protectedProcedure
@@ -65,21 +70,19 @@ export const clientRouter = createTRPCRouter({
         message: 'Only organization admins can create API clients',
       });
 
-      const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
-      const data: Prisma.ClientCreateArgs['data'] = {
-        organizationId: input.organizationId,
-        projectId: input.projectId,
+      const created = await createClientForOrganization(input.organizationId, {
         name: input.name,
-        type: input.type ?? 'write',
-        secret: await hashPassword(secret),
-      };
+        projectId: input.projectId,
+        type: input.type,
+      });
 
-      const client = await db.client.create({ data });
+      if (!created) {
+        throw new TRPCForbiddenError(
+          'Project not found or does not belong to your organization'
+        );
+      }
 
-      return {
-        ...client,
-        secret,
-      };
+      return { ...created.client, secret: created.secret };
     }),
   remove: protectedProcedure
     .input(
@@ -88,10 +91,7 @@ export const clientRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const client = await db.client.findUnique({
-        where: { id: input.id },
-        select: { organizationId: true },
-      });
+      const client = await getClientById(input.id);
 
       if (!client?.organizationId) {
         throw new TRPCForbiddenError('You do not have access to this client');
@@ -104,11 +104,7 @@ export const clientRouter = createTRPCRouter({
         message: 'Only organization admins can delete API clients',
       });
 
-      await db.client.delete({
-        where: {
-          id: input.id,
-        },
-      });
+      await deleteClientForOrganization(input.id, client.organizationId);
       return true;
     }),
 });

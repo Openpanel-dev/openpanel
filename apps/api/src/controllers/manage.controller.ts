@@ -1,35 +1,31 @@
-import crypto from 'node:crypto';
-import { stripTrailingSlash } from '@openpanel/common';
-import { hashPassword } from '@openpanel/core';
 import {
-  db,
-  getClientByIdCached,
-  getId,
-  getProjectByIdCached,
-} from '@openpanel/db';
+  createClientForOrganization,
+  createProjectForOrganization,
+  deleteClientForOrganization,
+  deleteProjectForOrganization,
+  getClientForOrganization,
+  getProjectForOrganization,
+  listClientsForOrganization,
+  listProjectsForOrganization,
+  updateClientForOrganization,
+  updateProjectForOrganization,
+} from '@openpanel/core';
+import type {
+  zCreateProject,
+  zUpdateProject,
+} from '@openpanel/core/modules/project/project.constants';
+import { db } from '@openpanel/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { HttpError } from '@/utils/errors';
 
-// Validation schemas (exported for use in router)
-export const zCreateProject = z.object({
-  name: z.string().min(1),
-  domain: z.string().url().or(z.literal('')).or(z.null()).optional(),
-  cors: z.array(z.string()).default([]),
-  crossDomain: z.boolean().optional().default(false),
-  types: z
-    .array(z.enum(['website', 'app', 'backend']))
-    .optional()
-    .default([]),
-});
-
-export const zUpdateProject = z.object({
-  name: z.string().min(1).optional(),
-  domain: z.string().url().or(z.literal('')).or(z.null()).optional(),
-  cors: z.array(z.string()).optional(),
-  crossDomain: z.boolean().optional(),
-  allowUnsafeRevenueTracking: z.boolean().optional(),
-});
+// project.service.ts + client.service.ts's /manage CRUD bodies (M6-002,
+// DELEGATE PATTERN) — zCreateProject/zUpdateProject moved with them
+// (project owns "C"); re-exported here for manage.router.ts's schemas.
+export {
+  zCreateProject,
+  zUpdateProject,
+} from '@openpanel/core/modules/project/project.constants';
 
 export const zCreateClient = z.object({
   name: z.string().min(1),
@@ -54,21 +50,15 @@ export const zUpdateReference = z.object({
   datetime: z.string().optional(),
 });
 
-// Projects CRUD
+// Projects CRUD — delegates to @openpanel/core's project.service.ts
+// (M6-002, DELEGATE PATTERN).
 export async function listProjects(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const projects = await db.project.findMany({
-    where: {
-      organizationId: request.client!.organizationId,
-      deleteAt: null,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-
+  const projects = await listProjectsForOrganization(
+    request.client!.organizationId
+  );
   reply.send({ data: projects });
 }
 
@@ -76,12 +66,10 @@ export async function getProject(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
 ) {
-  const project = await db.project.findFirst({
-    where: {
-      id: request.params.id,
-      organizationId: request.client!.organizationId,
-    },
-  });
+  const project = await getProjectForOrganization(
+    request.params.id,
+    request.client!.organizationId
+  );
 
   if (!project) {
     throw new HttpError('Project not found', { status: 404 });
@@ -94,57 +82,12 @@ export async function createProject(
   request: FastifyRequest<{ Body: z.infer<typeof zCreateProject> }>,
   reply: FastifyReply
 ) {
-  const { name, domain, cors, crossDomain, types } = request.body;
+  const { project, client } = await createProjectForOrganization(
+    request.client!.organizationId,
+    request.body
+  );
 
-  // Generate a default client secret
-  const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
-  const clientData = {
-    organizationId: request.client!.organizationId,
-    name: 'First client',
-    type: 'write' as const,
-    secret: await hashPassword(secret),
-  };
-
-  const project = await db.project.create({
-    data: {
-      id: await getId('project', name),
-      organizationId: request.client!.organizationId,
-      name,
-      domain: domain ? stripTrailingSlash(domain) : null,
-      cors: cors.map((c) => stripTrailingSlash(c)),
-      crossDomain: crossDomain ?? false,
-      allowUnsafeRevenueTracking: false,
-      filters: [],
-      types,
-      clients: {
-        create: clientData,
-      },
-    },
-    include: {
-      clients: {
-        select: {
-          id: true,
-        },
-      },
-    },
-  });
-
-  await Promise.all([
-    getProjectByIdCached.clear(project.id),
-    ...project.clients.map((client) => getClientByIdCached.clear(client.id)),
-  ]);
-
-  reply.send({
-    data: {
-      ...project,
-      client: project.clients[0]
-        ? {
-            id: project.clients[0].id,
-            secret,
-          }
-        : null,
-    },
-  });
+  reply.send({ data: { ...project, client } });
 }
 
 export async function updateProject(
@@ -154,55 +97,15 @@ export async function updateProject(
   }>,
   reply: FastifyReply
 ) {
-  const body = request.body;
+  const project = await updateProjectForOrganization(
+    request.params.id,
+    request.client!.organizationId,
+    request.body
+  );
 
-  // Verify project exists and belongs to organization
-  const existing = await db.project.findFirst({
-    where: {
-      id: request.params.id,
-      organizationId: request.client!.organizationId,
-    },
-    include: {
-      clients: {
-        select: {
-          id: true,
-        },
-      },
-    },
-  });
-
-  if (!existing) {
+  if (!project) {
     throw new HttpError('Project not found', { status: 404 });
   }
-
-  const updateData: any = {};
-  if (body.name !== undefined) {
-    updateData.name = body.name;
-  }
-  if (body.domain !== undefined) {
-    updateData.domain = body.domain ? stripTrailingSlash(body.domain) : null;
-  }
-  if (body.cors !== undefined) {
-    updateData.cors = body.cors.map((c) => stripTrailingSlash(c));
-  }
-  if (body.crossDomain !== undefined) {
-    updateData.crossDomain = body.crossDomain;
-  }
-  if (body.allowUnsafeRevenueTracking !== undefined) {
-    updateData.allowUnsafeRevenueTracking = body.allowUnsafeRevenueTracking;
-  }
-
-  const project = await db.project.update({
-    where: {
-      id: request.params.id,
-    },
-    data: updateData,
-  });
-
-  await Promise.all([
-    getProjectByIdCached.clear(project.id),
-    ...existing.clients.map((client) => getClientByIdCached.clear(client.id)),
-  ]);
 
   reply.send({ data: project });
 }
@@ -211,62 +114,32 @@ export async function deleteProject(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
 ) {
-  const project = await db.project.findFirst({
-    where: {
-      id: request.params.id,
-      organizationId: request.client!.organizationId,
-    },
-  });
+  const deleted = await deleteProjectForOrganization(
+    request.params.id,
+    request.client!.organizationId
+  );
 
-  if (!project) {
+  if (!deleted) {
     throw new HttpError('Project not found', { status: 404 });
   }
-
-  await db.project.update({
-    where: {
-      id: request.params.id,
-    },
-    data: {
-      deleteAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    },
-  });
-
-  await getProjectByIdCached.clear(request.params.id);
 
   reply.send({ success: true });
 }
 
-// Clients CRUD
+// Clients CRUD — delegates to @openpanel/core's client.service.ts
+// (M6-002, DELEGATE PATTERN).
 export async function listClients(
   request: FastifyRequest<{ Querystring: { projectId?: string } }>,
   reply: FastifyReply
 ) {
-  const where: any = {
-    organizationId: request.client!.organizationId,
-  };
+  const clients = await listClientsForOrganization(
+    request.client!.organizationId,
+    request.query.projectId
+  );
 
-  if (request.query.projectId) {
-    // Verify project belongs to organization
-    const project = await db.project.findFirst({
-      where: {
-        id: request.query.projectId,
-        organizationId: request.client!.organizationId,
-      },
-    });
-
-    if (!project) {
-      throw new HttpError('Project not found', { status: 404 });
-    }
-
-    where.projectId = request.query.projectId;
+  if (clients === null) {
+    throw new HttpError('Project not found', { status: 404 });
   }
-
-  const clients = await db.client.findMany({
-    where,
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
 
   reply.send({ data: clients });
 }
@@ -275,12 +148,10 @@ export async function getClient(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
 ) {
-  const client = await db.client.findFirst({
-    where: {
-      id: request.params.id,
-      organizationId: request.client!.organizationId,
-    },
-  });
+  const client = await getClientForOrganization(
+    request.params.id,
+    request.client!.organizationId
+  );
 
   if (!client) {
     throw new HttpError('Client not found', { status: 404 });
@@ -293,41 +164,19 @@ export async function createClient(
   request: FastifyRequest<{ Body: z.infer<typeof zCreateClient> }>,
   reply: FastifyReply
 ) {
-  const { name, projectId, type } = request.body;
+  const created = await createClientForOrganization(
+    request.client!.organizationId,
+    request.body
+  );
 
-  // If projectId is provided, verify it belongs to organization
-  if (projectId) {
-    const project = await db.project.findFirst({
-      where: {
-        id: projectId,
-        organizationId: request.client!.organizationId,
-      },
-    });
-
-    if (!project) {
-      throw new HttpError('Project not found', { status: 404 });
-    }
+  if (!created) {
+    throw new HttpError('Project not found', { status: 404 });
   }
-
-  // Generate secret
-  const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
-
-  const client = await db.client.create({
-    data: {
-      organizationId: request.client!.organizationId,
-      projectId: projectId || null,
-      name,
-      type: type || 'write',
-      secret: await hashPassword(secret),
-    },
-  });
-
-  await getClientByIdCached.clear(client.id);
 
   reply.send({
     data: {
-      ...client,
-      secret, // Return plain secret only once
+      ...created.client,
+      secret: created.secret, // Return plain secret only once
     },
   });
 }
@@ -339,31 +188,15 @@ export async function updateClient(
   }>,
   reply: FastifyReply
 ) {
-  // Verify client exists and belongs to organization
-  const existing = await db.client.findFirst({
-    where: {
-      id: request.params.id,
-      organizationId: request.client!.organizationId,
-    },
-  });
+  const client = await updateClientForOrganization(
+    request.params.id,
+    request.client!.organizationId,
+    request.body
+  );
 
-  if (!existing) {
+  if (!client) {
     throw new HttpError('Client not found', { status: 404 });
   }
-
-  const updateData: any = {};
-  if (request.body.name !== undefined) {
-    updateData.name = request.body.name;
-  }
-
-  const client = await db.client.update({
-    where: {
-      id: request.params.id,
-    },
-    data: updateData,
-  });
-
-  await getClientByIdCached.clear(client.id);
 
   reply.send({ data: client });
 }
@@ -372,24 +205,14 @@ export async function deleteClient(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
 ) {
-  const client = await db.client.findFirst({
-    where: {
-      id: request.params.id,
-      organizationId: request.client!.organizationId,
-    },
-  });
+  const deleted = await deleteClientForOrganization(
+    request.params.id,
+    request.client!.organizationId
+  );
 
-  if (!client) {
+  if (!deleted) {
     throw new HttpError('Client not found', { status: 404 });
   }
-
-  await db.client.delete({
-    where: {
-      id: request.params.id,
-    },
-  });
-
-  await getClientByIdCached.clear(request.params.id);
 
   reply.send({ success: true });
 }
