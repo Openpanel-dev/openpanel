@@ -17,6 +17,7 @@ import { importRoutes } from './modules/import/import.routes';
 import { integrationRoutes } from './modules/integration/integration.routes';
 import { mcpRoutes } from './modules/mcp/mcp.routes';
 import { projectRoutes } from './modules/project/project.routes';
+import { realtimeRoutes } from './modules/realtime/realtime.routes';
 import { subscriptionRoutes } from './modules/subscription/subscription.routes';
 
 // ADR-002/ADR-003 pin: @elysiajs/openapi at the 1.4.15 fallback (2.0 is
@@ -59,6 +60,8 @@ export const publicApiRoutes = (deps: AppDeps) =>
 // `corsPaths` allowlist (ADR-002 rule 4), unlike `/gsc`/`/mcp`, and both are
 // the same shape of unauthenticated third-party-redirected callback as
 // `/oauth`'s.
+// realtime's `/live/*` websockets (M6-007) joined it too — `/live` IS in
+// `corsPaths`, same as `/trpc`/`/webhook`/`/oauth`/`/misc`/`/ai`.
 export const dashboardRoutes = (deps: AppDeps) =>
   new Elysia({ name: 'core/dashboard-routes' })
     .use(gscRoutes(deps))
@@ -66,7 +69,8 @@ export const dashboardRoutes = (deps: AppDeps) =>
     .use(mcpRoutes(deps))
     .use(authRoutes(deps))
     .use(integrationRoutes(deps))
-    .use(subscriptionRoutes(deps));
+    .use(subscriptionRoutes(deps))
+    .use(realtimeRoutes(deps));
 
 // healthz/metrics/misc share V1's ops surface (http/context.ts's
 // UNLOGGED_PATH_PREFIXES) — unauthenticated, uncorsed, unlogged. /metrics and

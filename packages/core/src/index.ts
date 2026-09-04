@@ -490,6 +490,24 @@ export {
   scheduleProjectDeletion,
   updateProjectForOrganization,
 } from './modules/project/project.service';
+// The six ClickHouse queries moved from packages/trpc/src/routers/realtime.ts
+// (M6-007) — packages/trpc's realtime router calls these directly, the same
+// way V1 reaches every other dissolved service here. The `/live` websocket
+// glue in the same file stays internal to core/realtime.routes.ts; V1's own
+// Fastify `/live` controller is untouched (see realtime.service.ts's header)
+// so nothing else needs it from this barrel.
+export type {
+  RealtimeBadgeDetailScope,
+  RealtimeLocation,
+} from './modules/realtime/realtime.service';
+export {
+  getRealtimeActiveSessions,
+  getRealtimeCoordinates,
+  getRealtimeGeo,
+  getRealtimeMapBadgeDetails,
+  getRealtimePaths,
+  getRealtimeReferrals,
+} from './modules/realtime/realtime.service';
 // Moved from packages/db/src/services/reference.service.ts, plus the
 // query/mutation bodies packages/trpc/src/routers/reference.ts held inline
 // (M6-004) — packages/trpc's reference router calls these directly, the same
