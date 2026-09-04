@@ -15,6 +15,8 @@ import type { Producers } from './jobs/define';
 import { defineQueue } from './jobs/define';
 import type { ProducerHandle } from './jobs/producers';
 import { cohortCronJobs, cohortQueueJobs } from './modules/cohort/cohort.jobs';
+import { eventCronJobs } from './modules/event/event.jobs';
+import { groupCronJobs } from './modules/group/group.jobs';
 import { gscCronJobs, gscQueueJobs } from './modules/gsc/gsc.jobs';
 import { importQueueJobs } from './modules/import/import.jobs';
 import {
@@ -25,6 +27,8 @@ import { miscCronJobs } from './modules/misc/misc.jobs';
 import { notificationQueueJobs } from './modules/notification/notification.jobs';
 import { onboardingCronJobs } from './modules/onboarding/onboarding.jobs';
 import { organizationCronJobs } from './modules/organization/organization.jobs';
+import { profileCronJobs } from './modules/profile/profile.jobs';
+import { saltCronJobs } from './modules/salt/salt.jobs';
 import {
   sessionCronJobs,
   sessionQueueJobs,
@@ -65,6 +69,10 @@ const cron = defineQueue('cron', {
   compat: legacyCompat.cron,
   // Every module's cron fragment spreads in here (ADR-005: "no cron module").
   jobs: {
+    ...saltCronJobs,
+    ...eventCronJobs,
+    ...profileCronJobs,
+    ...groupCronJobs,
     ...insightCronJobs,
     ...gscCronJobs,
     ...cohortCronJobs,

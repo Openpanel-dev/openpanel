@@ -1,65 +1,7 @@
-import { generateSalt } from '@openpanel/core';
-import { cacheable } from '@openpanel/redis';
-import { db } from '../prisma-client';
-
-export const getSalts = cacheable(
-  'op:salt',
-  async () => {
-    const [curr, prev] = await db.salt.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 2,
-    });
-
-    if (!curr) {
-      throw new Error('No salt found');
-    }
-
-    const salts = {
-      current: curr.salt,
-      previous: prev?.salt ?? curr.salt,
-    };
-
-    return salts;
-  },
-  60 * 5
-);
-
-export async function createInitialSalts() {
-  const MAX_RETRIES = 5;
-  const BASE_DELAY = 1000; // 1 second
-  const createSaltsWithRetry = async (retryCount = 0): Promise<void> => {
-    try {
-      await getSalts();
-    } catch (error) {
-      if (error instanceof Error && error.message === 'No salt found') {
-        console.log('Creating salts for the first time');
-        await db.salt.create({
-          data: {
-            salt: generateSalt(),
-            createdAt: new Date(new Date().getTime() - 1000 * 60 * 60 * 24),
-          },
-        });
-        await db.salt.create({
-          data: {
-            salt: generateSalt(),
-          },
-        });
-      } else {
-        console.log('Error getting salts', error);
-        if (retryCount < MAX_RETRIES) {
-          const delay = BASE_DELAY * 2 ** retryCount;
-          console.log(
-            `Retrying in ${delay}ms... (Attempt ${retryCount + 1}/${MAX_RETRIES})`
-          );
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          return createSaltsWithRetry(retryCount + 1);
-        }
-        throw new Error(`Failed to create salts after ${MAX_RETRIES} attempts`);
-      }
-    }
-  };
-
-  await createSaltsWithRetry();
-}
+// Moved to @openpanel/core (M8-004): packages/core/src/modules/salt/salt.service.ts.
+// Re-exported here so V1's apps/worker (createInitialSalts at boot) and
+// apps/api's event.controller.ts (getSalts) keep working unchanged
+// (DELEGATE PATTERN) — V1 is not deleted before P9. `rotateSalt` is V1's
+// `cron.salt.ts`'s `salt()`, re-exported under its core name for the one
+// caller that still imports this file directly rather than the barrel.
+export { createInitialSalts, getSalts, rotateSalt } from '@openpanel/core';

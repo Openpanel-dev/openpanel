@@ -15,7 +15,15 @@
  * `mock.module` (unhoisted, hence the `await import` in `beforeAll`).
  */
 
-import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  mock,
+} from 'bun:test';
 import type { Buffers } from '../../buffers/create-buffers';
 import type { GeoLocation } from '../../clients/geo';
 import type { IReplayPayload, ITrackHandlerPayload } from './ingest.constants';
@@ -43,18 +51,20 @@ const upsertProfile = mock(async () => undefined);
 const getProfileById = mock(async () => null);
 
 mock.module('../../clients/geo', () => ({ getGeoLocation, getAsnInfo }));
-mock.module('@openpanel/db/src/services/salt.service', () => ({ getSalts }));
 
 let getOverrideDeviceId: typeof import('./ingest.service').getOverrideDeviceId;
 let handleReplay: typeof import('./ingest.service').handleReplay;
 let ingestTrack: typeof import('./ingest.service').ingestTrack;
 
-// The profile module is spread and then overridden by name: event.service
-// imports more of it than ingest.service does, so a factory returning only
-// the three overrides makes the rest vanish under `--isolate`. Overriding
-// `identifyProfile` (not just `upsertProfile`) is what keeps the identify
-// path off Postgres and the profile buffer — profile.service calls its own
-// local `upsertProfile`, not the exported binding.
+// The profile and salt modules are spread and then overridden by name:
+// event.service imports more of profile.service than ingest.service does
+// (and salt.service exports fetchSalts/createInitialSalts/rotateSalt besides
+// getSalts), so a factory returning only the overrides makes the rest vanish
+// under `--isolate`. Overriding `identifyProfile` (not just `upsertProfile`)
+// is what keeps the identify path off Postgres and the profile buffer —
+// profile.service calls its own local `upsertProfile`, not the exported
+// binding.
+let realSaltService: typeof import('../salt/salt.service');
 beforeAll(async () => {
   const profile = await import('../profile/profile.service');
   mock.module('../profile/profile.service', () => ({
@@ -63,9 +73,21 @@ beforeAll(async () => {
     upsertProfile,
     getProfileById,
   }));
+  realSaltService = { ...(await import('../salt/salt.service')) };
+  mock.module('../salt/salt.service', () => ({ ...realSaltService, getSalts }));
   ({ getOverrideDeviceId, handleReplay, ingestTrack } = await import(
     './ingest.service'
   ));
+});
+
+// salt.service.ts's own rotateSalt calls the exported `getSalts` internally
+// (to invalidate its cache), so leaving this file's fake `getSalts` — which
+// has no `.clear()` — in the module registry after these tests finish breaks
+// salt.service.test.ts's own `rotateSalt` assertions under a bare (non
+// `--isolate`) `bun test` run, which shares one module registry across every
+// file in the run.
+afterAll(() => {
+  mock.module('../salt/salt.service', () => realSaltService);
 });
 
 const track = (properties?: Record<string, unknown>): ITrackHandlerPayload =>

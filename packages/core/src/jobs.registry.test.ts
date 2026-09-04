@@ -84,16 +84,25 @@ test('the insights queue carries the insight module job', () => {
 // its scheduler is added by `startSchedulers` only when SELF_HOSTED &&
 // production (jobs/schedulers.ts's `PING_SCHEDULE`), but the job HANDLER is
 // always registered here so a scheduled run always has somewhere to land.
+// `salt` (salt.jobs.ts) and the six `flush*` jobs (event/profile/session/
+// group.jobs.ts) join the list at M8-004.
 test('the cron queue carries the insight module cron fragment', () => {
   expect(Object.keys(queues.cron.jobs).sort()).toEqual(
     [
       'cohortRefresh',
       'delete',
+      'flushEvents',
+      'flushGroups',
+      'flushProfileBackfill',
+      'flushProfiles',
+      'flushReplay',
+      'flushSessions',
       'gscSync',
       'insightCleanup',
       'insightsDaily',
       'onboarding',
       'ping',
+      'salt',
       'sessionReaper',
       'sessionVacuum',
       'weeklyDigest',

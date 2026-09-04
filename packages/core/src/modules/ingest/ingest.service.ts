@@ -35,6 +35,7 @@ import {
   identifyProfile,
   upsertProfile,
 } from '../profile/profile.service';
+import { getSalts } from '../salt/salt.service';
 import { convertClickhouseDateToJs } from '../session/src/dates';
 import type {
   IAssignGroupPayload,
@@ -98,10 +99,6 @@ const MAX_OVERRIDE_DEVICE_ID_LENGTH = 64;
 const ONE_MINUTE_MS = 60 * 1000;
 const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
 const FALLBACK_USER_AGENT = 'unknown/1.0';
-
-function loadSalts() {
-  return import('@openpanel/db/src/services/salt.service');
-}
 
 /** The whitelisted subset that ships with the queue payload. */
 export function getStringHeaders(
@@ -250,7 +247,6 @@ async function buildContext(
   // Get geo location (needed for track and identify) + ASN (bot detection).
   // Both hit the same MaxMind readers keyed on the same IP and are cached, so
   // resolving them together adds no meaningful latency.
-  const { getSalts } = await loadSalts();
   const [geo, asnInfo, salts] = await Promise.all([
     getGeoLocation(ip),
     getAsnInfo(ip),
@@ -540,7 +536,6 @@ export async function fetchDeviceIdentity(
   buffers: Pick<IngestBuffers, 'session'>,
   logger: Logger
 ): Promise<DeviceIdentity> {
-  const { getSalts } = await loadSalts();
   const salts = await getSalts();
   const projectId = request.projectId;
   if (!projectId) {

@@ -1221,6 +1221,16 @@ export {
   insertPingRecord,
   runPingCron,
 } from './modules/misc/misc.service';
+// Moved from packages/db/src/services/salt.service.ts +
+// apps/worker/src/jobs/cron.salt.ts (M8-004) — apps/worker's boot
+// (createInitialSalts) and cron dispatch (rotateSalt) call these directly,
+// the same way V1 reaches every other dissolved service here.
+export type { Salts } from './modules/salt/salt.service';
+export {
+  createInitialSalts,
+  getSalts,
+  rotateSalt,
+} from './modules/salt/salt.service';
 // New module (M7-008) — apps/api's tools controller calls these directly,
 // the same way V1 reaches every other dissolved service here.
 export type {

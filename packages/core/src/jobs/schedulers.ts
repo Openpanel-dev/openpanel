@@ -6,10 +6,14 @@
 
 import type { Logger } from '../logger';
 import { cohortCronSchedules } from '../modules/cohort/cohort.jobs';
+import { eventCronSchedules } from '../modules/event/event.jobs';
+import { groupCronSchedules } from '../modules/group/group.jobs';
 import { gscCronSchedules } from '../modules/gsc/gsc.jobs';
 import { insightCronSchedules } from '../modules/insight/insight.jobs';
 import { onboardingCronSchedules } from '../modules/onboarding/onboarding.jobs';
 import { organizationCronSchedules } from '../modules/organization/organization.jobs';
+import { profileCronSchedules } from '../modules/profile/profile.jobs';
+import { saltCronSchedules } from '../modules/salt/salt.jobs';
 import { sessionCronSchedules } from '../modules/session/session.jobs';
 import { wrap } from './envelope';
 
@@ -59,16 +63,23 @@ const MINUTE_MS = 60_000;
 // (apps/worker/src/boot-cron.ts). `ping` is the 20th and is conditional —
 // see `PING_SCHEDULE` and `startSchedulers`.
 export const CRON_SCHEDULES: readonly SchedulerDefinition[] = [
-  { id: 'salt', schedule: { pattern: '0 0 * * *' } },
+  // salt — owned by the salt module, declared next to its jobs
+  // (modules/salt/salt.jobs.ts).
+  ...saltCronSchedules,
   // delete — owned by the organization module, declared next to its jobs
   // (modules/organization/organization.jobs.ts).
   ...organizationCronSchedules,
-  { id: 'flushEvents', schedule: { every: 10_000 } },
-  { id: 'flushProfiles', schedule: { every: 10_000 } },
-  { id: 'flushSessions', schedule: { every: 10_000 } },
-  { id: 'flushProfileBackfill', schedule: { every: 30_000 } },
-  { id: 'flushReplay', schedule: { every: 10_000 } },
-  { id: 'flushGroups', schedule: { every: 10_000 } },
+  // flushEvents — owned by the event module, declared next to its jobs
+  // (modules/event/event.jobs.ts).
+  ...eventCronSchedules,
+  // flushProfiles / flushProfileBackfill — owned by the profile module,
+  // declared next to its jobs (modules/profile/profile.jobs.ts).
+  ...profileCronSchedules,
+  // flushSessions / flushReplay — owned by the session module, spread in
+  // below alongside sessionReaper / sessionVacuum.
+  // flushGroups — owned by the group module, declared next to its jobs
+  // (modules/group/group.jobs.ts).
+  ...groupCronSchedules,
   // onboarding — owned by the onboarding module, declared next to its jobs
   // (modules/onboarding/onboarding.jobs.ts).
   ...onboardingCronSchedules,
@@ -78,8 +89,9 @@ export const CRON_SCHEDULES: readonly SchedulerDefinition[] = [
   // cohortRefresh — owned by the cohort module, declared next to its jobs
   // (modules/cohort/cohort.jobs.ts).
   ...cohortCronSchedules,
-  // sessionReaper / sessionVacuum — owned by the session module, declared
-  // next to its jobs (modules/session/session.jobs.ts).
+  // flushSessions / flushReplay / sessionReaper / sessionVacuum — owned by
+  // the session module, declared next to its jobs
+  // (modules/session/session.jobs.ts).
   ...sessionCronSchedules,
   // insightsDaily / insightCleanup / weeklyDigest — owned by the insight
   // module, declared next to its jobs (modules/insight/insight.jobs.ts).
