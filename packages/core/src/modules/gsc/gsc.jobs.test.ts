@@ -38,6 +38,7 @@ function stubJobCtx(gsc: Partial<GscService>, jobName = 'test'): JobCtx {
     event: {} as Services['event'],
     profile: {} as Services['profile'],
     group: {} as Services['group'],
+    chart: {} as Services['chart'],
   };
   return {
     db: {},
@@ -142,6 +143,7 @@ test('gscSync fans out one gscProjectSync enqueue per connected project', async 
       event: {} as Services['event'],
       profile: {} as Services['profile'],
       group: {} as Services['group'],
+      chart: {} as Services['chart'],
     },
     requestId: 'req_1',
     job: { id: 'job_1', attempt: 0, queue: 'cron', name: 'gscSync' },

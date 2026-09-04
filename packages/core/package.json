@@ -48,6 +48,7 @@
     "elysia": "1.4.30",
     "ipaddr.js": "^2.5.0",
     "lru-cache": "^11.2.4",
+    "mathjs": "^12.3.2",
     "nanoid": "^5.1.6",
     "pino": "catalog:",
     "pino-pretty": "catalog:",

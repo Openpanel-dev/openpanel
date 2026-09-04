@@ -28,6 +28,7 @@ import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 import { clone, mergeDeepRight, uniq } from 'ramda';
 import type { ServiceDeps } from '../../services';
+import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import {
   getProfileById,
   getProfilesCached,
@@ -106,10 +107,6 @@ function loadBuffers() {
 // @openpanel/db's re-export shims and the core barrel.
 function loadCache() {
   return import('@openpanel/redis').then((m) => m.getCache);
-}
-
-function loadEventFilterCompiler() {
-  return import('@openpanel/db/src/services/chart.service');
 }
 
 function loadFilterCompiler() {
@@ -702,7 +699,6 @@ async function compileEventFilters(
   if (!filters) {
     return { filterClauses: {}, joins: NO_FILTER_JOINS };
   }
-  const { getEventFiltersWhereClause } = await loadEventFilterCompiler();
   return {
     filterClauses: getEventFiltersWhereClause(filters, projectId, EVENTS_ALIAS),
     joins: eventFilterJoins(filters),

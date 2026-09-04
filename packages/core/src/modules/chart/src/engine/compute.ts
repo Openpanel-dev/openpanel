@@ -14,7 +14,7 @@ export function compute(
     type: 'event' | 'formula';
     id?: string;
     formula?: string;
-  }>,
+  }>
 ): ConcreteSeries[] {
   const results: ConcreteSeries[] = [...fetchedSeries];
 
@@ -69,13 +69,13 @@ export function compute(
       });
 
       const sortedDates = Array.from(allDates).sort(
-        (a, b) => new Date(a).getTime() - new Date(b).getTime(),
+        (a, b) => new Date(a).getTime() - new Date(b).getTime()
       );
 
       // Calculate total_count for the formula using the same formula applied to input series' total_count values
       // total_count is constant across all dates for a breakdown group, so compute it once
       const totalCountScope: Record<string, number> = {};
-      definitions.slice(0, formulaIndex).forEach((depDef, depIndex) => {
+      definitions.slice(0, formulaIndex).forEach((_depDef, depIndex) => {
         const readableId = alphabetIds[depIndex];
         if (!readableId) {
           return;
@@ -86,7 +86,7 @@ export function compute(
         if (depSeries) {
           // Get total_count from any data point (it's the same for all dates)
           const totalCount = depSeries.data.find(
-            (d) => d.total_count != null,
+            (d) => d.total_count != null
           )?.total_count;
           totalCountScope[readableId] = totalCount ?? 0;
         } else {
@@ -96,11 +96,11 @@ export function compute(
               s.definitionIndex === depIndex &&
               'type' in s.definition &&
               s.definition.type === 'formula' &&
-              s.name.slice(1).join(':::') === breakdownSignature,
+              s.name.slice(1).join(':::') === breakdownSignature
           );
           if (formulaSerie) {
             const totalCount = formulaSerie.data.find(
-              (d) => d.total_count != null,
+              (d) => d.total_count != null
             )?.total_count;
             totalCountScope[readableId] = totalCount ?? 0;
           } else {
@@ -112,7 +112,7 @@ export function compute(
       // Evaluate formula for total_count
       const totalCountResult = evaluateFormula(
         formula.formula,
-        totalCountScope,
+        totalCountScope
       );
       const formulaTotalCount =
         totalCountResult === undefined ? undefined : round(totalCountResult, 2);
@@ -122,7 +122,7 @@ export function compute(
         const scope: Record<string, number> = {};
 
         // Build scope using alphabet IDs (A, B, C, etc.)
-        definitions.slice(0, formulaIndex).forEach((depDef, depIndex) => {
+        definitions.slice(0, formulaIndex).forEach((_depDef, depIndex) => {
           const readableId = alphabetIds[depIndex];
           if (!readableId) {
             return;
@@ -141,7 +141,7 @@ export function compute(
                 s.definitionIndex === depIndex &&
                 'type' in s.definition &&
                 s.definition.type === 'formula' &&
-                s.name.slice(1).join(':::') === breakdownSignature,
+                s.name.slice(1).join(':::') === breakdownSignature
             );
             if (formulaSerie) {
               const dataPoint = formulaSerie.data.find((d) => d.date === date);

@@ -6,6 +6,7 @@
 
 import { chatRouter } from './modules/assistant/assistant.rpc';
 import { authRouter } from './modules/auth/auth.rpc';
+import { chartRouter } from './modules/chart/chart.rpc';
 import { clientRouter } from './modules/client/client.rpc';
 import { cohortRouter } from './modules/cohort/cohort.rpc';
 import { conversationRouter } from './modules/conversation/conversation.rpc';
@@ -55,6 +56,7 @@ export const appRouter = createTRPCRouter({
   event: eventRouter,
   profile: profileRouter,
   group: groupRouter,
+  chart: chartRouter,
 });
 
 export type AppRouter = typeof appRouter;

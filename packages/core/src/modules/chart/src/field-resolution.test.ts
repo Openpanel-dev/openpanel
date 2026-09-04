@@ -14,12 +14,11 @@
  *    were a top-level column.
  *
  * All five errors logged in HyperDX 2026-05-14 → 2026-05-17 are covered here.
+ *
+ * Ported from packages/db/src/services/chart-field-resolution.test.ts (M7-003).
  */
-import { describe, expect, it } from 'vitest';
-import {
-  isKnownEventField,
-  normalizeEventField,
-} from './chart.service';
+import { describe, expect, it } from 'bun:test';
+import { isKnownEventField, normalizeEventField } from './field-resolution';
 
 describe('normalizeEventField', () => {
   it('rewrites camelCase aliases to their snake_case columns', () => {
@@ -33,13 +32,13 @@ describe('normalizeEventField', () => {
 
   it('routes bare utm_* names into the properties.__query.* form', () => {
     expect(normalizeEventField('utm_source')).toBe(
-      'properties.__query.utm_source',
+      'properties.__query.utm_source'
     );
     expect(normalizeEventField('utm_medium')).toBe(
-      'properties.__query.utm_medium',
+      'properties.__query.utm_medium'
     );
     expect(normalizeEventField('utm_campaign')).toBe(
-      'properties.__query.utm_campaign',
+      'properties.__query.utm_campaign'
     );
   });
 

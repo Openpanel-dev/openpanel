@@ -1172,6 +1172,9 @@ importers:
       lru-cache:
         specifier: ^11.2.4
         version: 11.5.1
+      mathjs:
+        specifier: ^12.3.2
+        version: 12.3.2
       nanoid:
         specifier: ^5.1.6
         version: 5.1.6

@@ -38,7 +38,9 @@ export function format(
       continue;
     }
     for (const alphaId of definition.hideSeries) {
-      const index = alphabetIds.indexOf(alphaId as (typeof alphabetIds)[number]);
+      const index = alphabetIds.indexOf(
+        alphaId as (typeof alphabetIds)[number]
+      );
       if (index >= 0) {
         hiddenDefinitionIndices.add(index);
       }

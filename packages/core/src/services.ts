@@ -8,6 +8,10 @@ import {
   createAuthService,
 } from './modules/auth/auth.service';
 import {
+  type ChartService,
+  createChartService,
+} from './modules/chart/chart.service';
+import {
   type CohortService,
   createCohortService,
 } from './modules/cohort/cohort.service';
@@ -77,6 +81,7 @@ export interface Services {
   event: EventService;
   profile: ProfileService;
   group: GroupService;
+  chart: ChartService;
 }
 
 export function createServices(deps: ServiceDeps): Services {
@@ -96,5 +101,6 @@ export function createServices(deps: ServiceDeps): Services {
     event: createEventService(deps),
     profile: createProfileService(deps),
     group: createGroupService(deps),
+    chart: createChartService(deps),
   };
 }

@@ -1,37 +1,27 @@
+// Dissolved into @openpanel/core's chart module (M7-003): the ClickHouse
+// queries moved to packages/core/src/modules/chart/src/chart.sql.ts, the
+// engine to src/engine/ and the handler bodies to chart.service.ts. This
+// router stays (DELEGATE PATTERN) — it keeps V1's protectedProcedure /
+// chartProcedure (share) / cacheMiddleware stacks and delegates every handler
+// body to core's chart functions, same as event.ts.
+
 import {
-  AggregateChartEngine,
-  ChartEngine,
-  ch,
-  chQuery,
-  clix,
-  conversionService,
-  createSqlBuilder,
-  EMPTY_BREAKDOWN_LABEL,
-  formatClickhouseDate,
-  funnelService,
-  getChartPrevStartEndDate,
-  getChartStartEndDate,
-  getEventFiltersWhereClause,
-  getEventMetasCached,
-  getGroupPropertySelect,
-  getProfilePropertyKeysCached,
-  getProfilePropertySelect,
-  getProfilesCached,
-  getReportById,
-  getRetentionCohort,
-  getSelectPropertyKey,
-  getSettingsForProject,
-  type IServiceProfile,
-  isKnownEventField,
-  mergeGlobalFilters,
-  normalizeEventField,
-  onlyReportEvents,
-  sankeyService,
-  TABLE_NAMES,
-  validateShareAccess,
-} from '@openpanel/db';
+  executeAggregateChart,
+  executeChart,
+  getChartBucketProfiles,
+  getChartPropertyValues,
+  getConversionChart,
+  getFunnelChart,
+  getFunnelStepProfiles,
+  getProjectCard,
+  getRetentionChart,
+  getSankeyChart,
+  listChartEvents,
+  listChartProperties,
+  resolveReportInput,
+} from '@openpanel/core';
+import { getReportById, validateShareAccess } from '@openpanel/db';
 import {
-  type IChartEvent,
   zChartEventFilter,
   zChartSeries,
   zCriteria,
@@ -39,8 +29,6 @@ import {
   zReportInput,
   zTimeInterval,
 } from '@openpanel/validation';
-import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
-import sqlstring from 'sqlstring';
 import { z } from 'zod';
 import { getProjectAccess } from '../access';
 import { TRPCAccessError, TRPCForbiddenError } from '../errors';
@@ -53,32 +41,12 @@ import {
 
 const cacher = cacheMiddleware(60);
 
-/**
- * Cap on distinct event property keys returned to the picker. Projects in the
- * 8k range exist, so the previous 10k was reachable in normal use.
- */
-const EVENT_PROPERTY_KEY_LIMIT = 50_000;
+const zShareable = z.object({
+  shareId: z.string().optional(),
+  id: z.string().optional(),
+});
 
-/**
- * Cap on distinct values returned per event property to the filter
- * autocomplete. High-cardinality keys (ids, urls, session tokens) can hold
- * millions of distinct values — returning them all is useless for a picker
- * and heavy for ClickHouse and the browser alike. Most recent values win.
- * Env-tunable via EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT (positive
- * integer; invalid values keep the default).
- */
-const EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_RAW =
-  process.env.EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT;
-const EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_PARSED =
-  EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_RAW &&
-  /^\d+$/.test(EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_RAW)
-    ? Number(EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_RAW)
-    : Number.NaN;
-const EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT =
-  Number.isSafeInteger(EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_PARSED) &&
-  EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_PARSED > 0
-    ? EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT_PARSED
-    : 500;
+const zShareableReportInput = zReportInput.and(zShareable);
 
 const chartProcedure = publicProcedure.use(
   async ({ ctx, next, getRawInput }) => {
@@ -150,80 +118,7 @@ export const chartRouter = createTRPCRouter({
         projectId: z.string(),
       })
     )
-    .query(async ({ input: { projectId } }) => {
-      const { timezone } = await getSettingsForProject(projectId);
-      const chartPromise = chQuery<{
-        value: number;
-        date: Date;
-        revenue: number;
-      }>(
-        `SELECT
-            uniqHLL12(profile_id) as value,
-            toStartOfDay(created_at) as date,
-            sum(revenue * sign) as revenue
-        FROM ${TABLE_NAMES.sessions}
-        WHERE 
-            project_id = ${sqlstring.escape(projectId)} AND 
-            created_at >= now() - interval '3 month'
-        GROUP BY date
-        ORDER BY date ASC
-        WITH FILL FROM toStartOfDay(now() - interval '3 month') 
-        TO toStartOfDay(now()) 
-        STEP INTERVAL 1 day
-        SETTINGS session_timezone = '${timezone}'
-      `
-      );
-
-      const metricsPromise = clix(ch, timezone)
-        .select<{
-          months_3: number;
-          months_3_prev: number;
-          month: number;
-          day: number;
-          day_prev: number;
-          revenue: number;
-        }>([
-          'uniqHLL12(if(created_at >= (now() - toIntervalMonth(3)), profile_id, null)) AS months_3',
-          'uniqHLL12(if(created_at >= (now() - toIntervalMonth(6)) AND created_at < (now() - toIntervalMonth(3)), profile_id, null)) AS months_3_prev',
-          'uniqHLL12(if(created_at >= (now() - toIntervalMonth(1)), profile_id, null)) AS month',
-          'uniqHLL12(if(created_at >= (now() - toIntervalDay(1)), profile_id, null)) AS day',
-          'uniqHLL12(if(created_at >= (now() - toIntervalDay(2)) AND created_at < (now() - toIntervalDay(1)), profile_id, null)) AS day_prev',
-          'sum(revenue * sign) as revenue',
-        ])
-        .from(TABLE_NAMES.sessions)
-        .where('project_id', '=', projectId)
-        .where('created_at', '>=', clix.exp('now() - toIntervalMonth(6)'))
-        .execute();
-
-      const [chart, [metrics]] = await Promise.all([
-        chartPromise,
-        metricsPromise,
-      ]);
-
-      const change =
-        metrics && metrics.months_3_prev > 0 && metrics.months_3 > 0
-          ? Math.round(
-              ((metrics.months_3 - metrics.months_3_prev) /
-                metrics.months_3_prev) *
-                100
-            )
-          : null;
-
-      const trend =
-        change === null
-          ? { direction: 'neutral' as const, percentage: null as number | null }
-          : change > 0
-            ? { direction: 'up' as const, percentage: change }
-            : change < 0
-              ? { direction: 'down' as const, percentage: Math.abs(change) }
-              : { direction: 'neutral' as const, percentage: 0 };
-
-      return {
-        chart: chart.map((d) => ({ ...d, date: new Date(d.date) })),
-        metrics,
-        trend,
-      };
-    }),
+    .query(({ input: { projectId } }) => getProjectCard(projectId)),
 
   events: protectedProcedure
     .input(
@@ -231,112 +126,16 @@ export const chartRouter = createTRPCRouter({
         projectId: z.string(),
       })
     )
-    .query(async ({ input: { projectId } }) => {
-      const [events, meta] = await Promise.all([
-        chQuery<{ name: string; count: number }>(
-          `SELECT name, count(name) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${sqlstring.escape(projectId)} GROUP BY name ORDER BY count DESC, name ASC`
-        ),
-        getEventMetasCached(projectId),
-      ]);
-
-      return [
-        {
-          name: '*',
-          count: events.reduce((acc, event) => acc + event.count, 0),
-          meta: undefined,
-        },
-        ...events.map((event) => ({
-          name: event.name,
-          count: event.count,
-          meta: meta.find((m) => m.name === event.name),
-        })),
-      ];
-    }),
+    .query(({ input: { projectId } }) => listChartEvents(projectId)),
 
   properties: protectedProcedure
-    // Aggregating every profile's property keys costs more than the old
-    // 10k-row sample. It's still sub-second on millions of profiles, and this
-    // list barely moves, so a short cache absorbs it.
-    .use(cacheMiddleware(60))
     .input(
       z.object({
         event: z.string().optional(),
         projectId: z.string(),
       })
     )
-    .query(async ({ input: { projectId, event } }) => {
-      const profileProperties = (
-        await getProfilePropertyKeysCached(projectId)
-      ).map((key) => `profile.properties.${key}`);
-
-      const query = clix(ch)
-        .select<{ property_key: string; created_at: string }>([
-          'distinct property_key',
-          'max(created_at) as created_at',
-        ])
-        .from(TABLE_NAMES.event_property_values_mv)
-        .where('project_id', '=', projectId)
-        .groupBy(['property_key'])
-        // Order by recency, not by key length. The cap has to drop *something*
-        // on projects with very many distinct keys, and dropping the longest
-        // keys first meant losing the most descriptive ones. `property_key`
-        // breaks ties so the cap can't cut an arbitrary side of a tied group —
-        // an unstable list is the bug this whole change is about.
-        .orderBy('created_at', 'DESC')
-        .orderBy('property_key', 'ASC')
-        .limit(EVENT_PROPERTY_KEY_LIMIT);
-
-      if (event && event !== '*') {
-        query.where('name', '=', event);
-      }
-
-      const res = await query.execute();
-
-      const eventProperties = res.map((item) => {
-        const key = item.property_key
-          .replace(/\.([0-9]+)\./g, '.*.')
-          .replace(/\.([0-9]+)/g, '[*]');
-        return `properties.${key}`;
-      });
-
-      const fixedProperties = [
-        'revenue',
-        'has_profile',
-        'path',
-        'origin',
-        'referrer',
-        'referrer_name',
-        'created_at',
-        'country',
-        'city',
-        'region',
-        'os',
-        'os_version',
-        'browser',
-        'browser_version',
-        'device',
-        'brand',
-        'model',
-        'profile.id',
-        'profile.first_name',
-        'profile.last_name',
-        'profile.email',
-        'profile.created_at',
-        'profile.last_seen_at',
-      ];
-
-      const properties = [
-        ...eventProperties,
-        ...(event === '*' || !event ? ['name'] : []),
-        ...fixedProperties,
-        ...profileProperties,
-      ];
-
-      return pipe(
-        sort<string>((a, b) => a.length - b.length),
-        uniq
-      )(properties);
-    }),
+    .query(({ input }) => listChartProperties(input)),
 
   values: protectedProcedure
     .input(
@@ -346,292 +145,39 @@ export const chartRouter = createTRPCRouter({
         projectId: z.string(),
       })
     )
-    .query(async ({ input: { event, property, projectId } }) => {
-      if (property === 'has_profile') {
-        return {
-          values: ['true', 'false'],
-        };
-      }
-
-      const values: string[] = [];
-
-      if (property.startsWith('properties.')) {
-        const query = clix(ch)
-          .select<{
-            property_value: string;
-            created_at: string;
-          }>(['distinct property_value', 'max(created_at) as created_at'])
-          .from(TABLE_NAMES.event_property_values_mv)
-          .where('project_id', '=', projectId)
-          .where('property_key', '=', property.replace(/^properties\./, ''))
-          .groupBy(['property_value'])
-          // Recency + key tie-break for a stable list under the cap — same
-          // rationale as the key picker above.
-          .orderBy('created_at', 'DESC')
-          .orderBy('property_value', 'ASC')
-          .limit(EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT);
-
-        if (event && event !== '*') {
-          query.where('name', '=', event);
-        }
-
-        const res = await query.execute();
-
-        values.push(...res.map((e) => e.property_value));
-      } else if (property.startsWith('profile.')) {
-        const selectExpr = getProfilePropertySelect(property);
-        const query = clix(ch)
-          .select<{ values: string }>([`distinct ${selectExpr} as values`])
-          .from(TABLE_NAMES.profiles, true)
-          .where('project_id', '=', projectId)
-          .where(selectExpr, '!=', '')
-          .where(selectExpr, 'IS NOT NULL', null)
-          .orderBy('created_at', 'DESC')
-          .limit(100_000);
-
-        const res = await query.execute();
-        values.push(...res.map((r) => String(r.values)).filter(Boolean));
-      } else if (property.startsWith('group.')) {
-        const selectExpr = getGroupPropertySelect(property);
-        const query = clix(ch)
-          .select<{ values: string }>([`distinct ${selectExpr} as values`])
-          .from(TABLE_NAMES.groups, true)
-          .where('project_id', '=', projectId)
-          .where('deleted', '=', 0)
-          .where(selectExpr, '!=', '')
-          .where(selectExpr, 'IS NOT NULL', null)
-          .orderBy('created_at', 'DESC')
-          .limit(100_000);
-
-        const res = await query.execute();
-        values.push(...res.map((r) => String(r.values)).filter(Boolean));
-      } else if (property === 'cohort' || property.startsWith('cohort:')) {
-        // Cohort filters use a dedicated cohort multi-select on the client
-        // (ComboboxAdvanced over all cohorts) — values aren't sourced from
-        // an event-column distinct query. Without this guard, the events
-        // SELECT would emit a literal `cohort:<uuid>` identifier and crash
-        // with a ClickHouse syntax error.
-        return { values: [] };
-      } else {
-        // Normalize bare utm_* names to `properties.__query.utm_*` and rewrite
-        // camelCase aliases (`referrerName`) to their snake_case columns.
-        // Unknown identifiers (saved-report typos like `temple_name`, or
-        // misnamed columns from older clients) get an empty value list rather
-        // than crashing the autocomplete query with UNKNOWN_IDENTIFIER.
-        const resolvedProperty = normalizeEventField(property);
-        if (!isKnownEventField(resolvedProperty)) {
-          return { values: [] };
-        }
-        const query = clix(ch)
-          .select<{ values: string[] }>([
-            `distinct ${getSelectPropertyKey(resolvedProperty)} as values`,
-          ])
-          .from(TABLE_NAMES.events)
-          .where('project_id', '=', projectId)
-          .where('created_at', '>', clix.exp('now() - INTERVAL 6 MONTH'))
-          .orderBy('created_at', 'DESC')
-          .limit(100_000);
-
-        if (event !== '*') {
-          query.where('name', '=', event);
-        }
-
-        const events = await query.execute();
-
-        values.push(
-          ...pipe(
-            (data: typeof events) => map(prop('values'), data),
-            flatten,
-            uniq,
-            sort((a, b) => a.length - b.length)
-          )(events)
-        );
-      }
-
-      return {
-        values,
-      };
-    }),
+    .query(({ input }) => getChartPropertyValues(input)),
 
   funnel: chartProcedure
     .use(cacher)
-    .input(
-      zReportInput.and(
-        z.object({
-          shareId: z.string().optional(),
-          id: z.string().optional(),
-        })
-      )
-    )
-    .query(async ({ input, ctx }) => {
-      const chartInput = ctx.report
-        ? {
-            ...ctx.report,
-            range: input.range ?? ctx.report.range,
-            startDate: input.startDate ?? ctx.report.startDate,
-            endDate: input.endDate ?? ctx.report.endDate,
-            interval: input.interval ?? ctx.report.interval,
-          }
-        : input;
-
-      const { timezone } = await getSettingsForProject(chartInput.projectId);
-      const currentPeriod = getChartStartEndDate(chartInput, timezone);
-      const previousPeriod = getChartPrevStartEndDate(currentPeriod);
-
-      const [current, previous] = await Promise.all([
-        funnelService.getFunnel({ ...chartInput, ...currentPeriod, timezone }),
-        chartInput.previous
-          ? funnelService.getFunnel({
-              ...chartInput,
-              ...previousPeriod,
-              timezone,
-            })
-          : Promise.resolve(null),
-      ]);
-
-      return {
-        current,
-        previous,
-      };
-    }),
+    .input(zShareableReportInput)
+    .query(({ input, ctx }) =>
+      getFunnelChart(resolveReportInput(ctx.report, input))
+    ),
 
   conversion: chartProcedure
     .use(cacher)
-    .input(
-      zReportInput.and(
-        z.object({
-          shareId: z.string().optional(),
-          id: z.string().optional(),
-        })
-      )
-    )
-    .query(async ({ input, ctx }) => {
-      const chartInput = ctx.report
-        ? {
-            ...ctx.report,
-            range: input.range ?? ctx.report.range,
-            startDate: input.startDate ?? ctx.report.startDate,
-            endDate: input.endDate ?? ctx.report.endDate,
-            interval: input.interval ?? ctx.report.interval,
-          }
-        : input;
+    .input(zShareableReportInput)
+    .query(({ input, ctx }) =>
+      getConversionChart(resolveReportInput(ctx.report, input))
+    ),
 
-      const { timezone } = await getSettingsForProject(chartInput.projectId);
-      const currentPeriod = getChartStartEndDate(chartInput, timezone);
-      const previousPeriod = getChartPrevStartEndDate(currentPeriod);
-
-      const interval = chartInput.interval;
-
-      const [current, previous] = await Promise.all([
-        conversionService.getConversion({
-          ...chartInput,
-          ...currentPeriod,
-          interval,
-          timezone,
-        }),
-        chartInput.previous
-          ? conversionService.getConversion({
-              ...chartInput,
-              ...previousPeriod,
-              interval,
-              timezone,
-            })
-          : Promise.resolve(null),
-      ]);
-
-      return {
-        current: current.map((serie, sIndex) => ({
-          ...serie,
-          data: serie.data.map((d, dIndex) => ({
-            ...d,
-            previousRate: previous?.[sIndex]?.data?.[dIndex]?.rate,
-          })),
-        })),
-        previous,
-      };
-    }),
-
-  sankey: protectedProcedure.input(zReportInput).query(async ({ input }) => {
-    const { timezone } = await getSettingsForProject(input.projectId);
-    const currentPeriod = getChartStartEndDate(input, timezone);
-
-    // Extract sankey options
-    const options = input.options;
-
-    if (!options || options.type !== 'sankey') {
-      throw new Error('Sankey options are required');
-    }
-
-    // Extract start/end events from series based on mode
-    const eventSeries = onlyReportEvents(
-      mergeGlobalFilters(input.series, input.globalFilters),
-    );
-
-    if (!eventSeries[0]) {
-      throw new Error('Start and end events are required');
-    }
-
-    return sankeyService.getSankey({
-      projectId: input.projectId,
-      startDate: currentPeriod.startDate,
-      endDate: currentPeriod.endDate,
-      steps: options.steps,
-      mode: options.mode,
-      startEvent: eventSeries[0],
-      endEvent: eventSeries[1],
-      exclude: options.exclude || [],
-      include: options.include,
-      timezone,
-    });
-  }),
+  sankey: protectedProcedure
+    .input(zReportInput)
+    .query(({ input }) => getSankeyChart(input)),
 
   chart: chartProcedure
     .use(cacher)
-    .input(
-      zReportInput.and(
-        z.object({
-          shareId: z.string().optional(),
-          id: z.string().optional(),
-        })
-      )
-    )
-    .query(({ input, ctx }) => {
-      const chartInput = ctx.report
-        ? {
-            ...ctx.report,
-            range: input.range ?? ctx.report.range,
-            startDate: input.startDate ?? ctx.report.startDate,
-            endDate: input.endDate ?? ctx.report.endDate,
-            interval: input.interval ?? ctx.report.interval,
-          }
-        : input;
-
-      return ChartEngine.execute(chartInput);
-    }),
+    .input(zShareableReportInput)
+    .query(({ input, ctx }) =>
+      executeChart(resolveReportInput(ctx.report, input))
+    ),
 
   aggregate: chartProcedure
     .use(cacher)
-    .input(
-      zReportInput.and(
-        z.object({
-          shareId: z.string().optional(),
-          id: z.string().optional(),
-        })
-      )
-    )
-    .query(({ input, ctx }) => {
-      const chartInput = ctx.report
-        ? {
-            ...ctx.report,
-            range: input.range ?? ctx.report.range,
-            startDate: input.startDate ?? ctx.report.startDate,
-            endDate: input.endDate ?? ctx.report.endDate,
-            interval: input.interval ?? ctx.report.interval,
-          }
-        : input;
-
-      return AggregateChartEngine.execute(chartInput);
-    }),
+    .input(zShareableReportInput)
+    .query(({ input, ctx }) =>
+      executeAggregateChart(resolveReportInput(ctx.report, input))
+    ),
 
   cohort: chartProcedure
     .use(cacher)
@@ -650,82 +196,7 @@ export const chartRouter = createTRPCRouter({
         id: z.string().optional(),
       })
     )
-    .query(async ({ input, ctx }) => {
-      const projectId = ctx.report?.projectId ?? input.projectId;
-      let firstEvent = input.firstEvent;
-      let secondEvent = input.secondEvent;
-      let criteria = input.criteria;
-      // Property/cohort filters scoping the retention audience. These live
-      // alongside the event-name selector (filters[0]) on each retention
-      // series; everything except that name selector is an audience filter.
-      let filters = input.filters ?? [];
-      const dateRange = ctx.report
-        ? (input.range ?? ctx.report.range)
-        : input.range;
-      const startDate = ctx.report
-        ? (input.startDate ?? ctx.report.startDate)
-        : input.startDate;
-      const endDate = ctx.report
-        ? (input.endDate ?? ctx.report.endDate)
-        : input.endDate;
-      const interval = ctx.report
-        ? (input.interval ?? ctx.report.interval)
-        : input.interval;
-
-      // Extract events from report series if shared
-      if (ctx.report) {
-        const retentionOptions =
-          ctx.report.options?.type === 'retention'
-            ? ctx.report.options
-            : undefined;
-        criteria = retentionOptions?.criteria ?? criteria;
-
-        const eventSeries = onlyReportEvents(ctx.report.series);
-        const extractedFirstEvent = (
-          eventSeries[0]?.filters?.[0]?.value ?? []
-        ).map(String);
-        const extractedSecondEvent = (
-          eventSeries[1]?.filters?.[0]?.value ?? []
-        ).map(String);
-
-        if (
-          extractedFirstEvent.length === 0 ||
-          extractedSecondEvent.length === 0
-        ) {
-          throw new Error('Report must have at least 2 event series');
-        }
-
-        firstEvent = extractedFirstEvent;
-        secondEvent = extractedSecondEvent;
-        filters = [
-          ...(ctx.report.globalFilters ?? []),
-          ...eventSeries.flatMap((serie) =>
-            (serie.filters ?? []).filter((filter) => filter.name !== 'name')
-          ),
-        ];
-      }
-
-      const { timezone } = await getSettingsForProject(projectId);
-      const dates = getChartStartEndDate(
-        {
-          range: dateRange,
-          startDate,
-          endDate,
-        },
-        timezone
-      );
-
-      return getRetentionCohort({
-        projectId,
-        firstEvent,
-        secondEvent,
-        criteria,
-        interval,
-        startDate: dates.startDate,
-        endDate: dates.endDate,
-        filters,
-      });
-    }),
+    .query(({ input, ctx }) => getRetentionChart(ctx.report, input)),
 
   getProfiles: protectedProcedure
     .input(
@@ -737,90 +208,7 @@ export const chartRouter = createTRPCRouter({
         breakdowns: z.record(z.string(), z.string()).optional(),
       })
     )
-    .query(async ({ input }) => {
-      const { projectId, date, series } = input;
-      const serie = series[0];
-
-      if (!serie) {
-        throw new Error('Series not found');
-      }
-
-      if (serie.type !== 'event') {
-        throw new Error('Series must be an event');
-      }
-
-      // Build the date range for the specific interval bucket
-      const dateObj = new Date(date);
-      // Build query to get unique profile_ids for this time bucket
-      const { sb, getSql } = createSqlBuilder();
-
-      sb.select.profile_id = 'DISTINCT profile_id';
-      sb.where = getEventFiltersWhereClause(serie.filters, projectId);
-      sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
-      sb.where.dateRange = `${clix.toStartOf('created_at', input.interval)} = ${clix.toDate(sqlstring.escape(formatClickhouseDate(dateObj)), input.interval)}`;
-      if (serie.name !== '*') {
-        sb.where.eventName = `name = ${sqlstring.escape(serie.name)}`;
-      }
-
-      // Collect profile fields from filters and breakdowns
-      const profileFields = [
-        ...serie.filters
-          .filter((f) => f.name.startsWith('profile.'))
-          .map((f) => f.name.replace('profile.', '')),
-        ...(input.breakdowns
-          ? Object.keys(input.breakdowns)
-              .filter((key) => key.startsWith('profile.'))
-              .map((key) => key.replace('profile.', ''))
-          : []),
-      ];
-
-      if (profileFields.length > 0) {
-        // Extract top-level field names and select only what's needed
-        const fieldsToSelect = uniq(
-          profileFields.map((f) => f.split('.')[0])
-        ).join(', ');
-        sb.joins.profiles = `LEFT ANY JOIN (SELECT id, ${fieldsToSelect} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
-      }
-
-      // Check for group filters/breakdowns and add ARRAY JOIN if needed
-      const anyFilterOnGroup = serie.filters.some((f) =>
-        f.name.startsWith('group.')
-      );
-      const anyBreakdownOnGroup = input.breakdowns
-        ? Object.keys(input.breakdowns).some((key) => key.startsWith('group.'))
-        : false;
-      if (anyFilterOnGroup || anyBreakdownOnGroup) {
-        sb.joins.groups = 'ARRAY JOIN groups AS _group_id';
-        sb.joins.groups_cte = `LEFT ANY JOIN (SELECT id, name, type, properties FROM ${TABLE_NAMES.groups} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) AS _g ON _g.id = _group_id`;
-      }
-
-      if (input.breakdowns) {
-        Object.entries(input.breakdowns).forEach(([key, value]) => {
-          // Transform property keys (e.g., properties.method -> properties['method'])
-          const propertyKey = getSelectPropertyKey(key, projectId);
-          sb.where[`breakdown_${key}`] =
-            `${propertyKey} = ${sqlstring.escape(value)}`;
-        });
-      }
-
-      // Get unique profile IDs
-      const profileIds = await chQuery<{ profile_id: string }>(getSql());
-      if (profileIds.length === 0) {
-        return [];
-      }
-
-      // Fetch profile details in batches to avoid exceeding ClickHouse max_query_size
-      const ids = profileIds.map((p) => p.profile_id).filter(Boolean);
-      const BATCH_SIZE = 200;
-      const profiles: IServiceProfile[] = [];
-      for (let i = 0; i < ids.length; i += BATCH_SIZE) {
-        const batch = ids.slice(i, i + BATCH_SIZE);
-        const batchProfiles = await getProfilesCached(batch, projectId);
-        profiles.push(...batchProfiles);
-      }
-
-      return profiles;
-    }),
+    .query(({ input }) => getChartBucketProfiles(input)),
 
   getFunnelProfiles: protectedProcedure
     .input(
@@ -844,99 +232,5 @@ export const chartRouter = createTRPCRouter({
         range: zRange,
       })
     )
-    .query(async ({ input }) => {
-      const { timezone } = await getSettingsForProject(input.projectId);
-      const {
-        projectId,
-        series,
-        stepIndex,
-        showDropoffs = false,
-        funnelWindow,
-        funnelGroup,
-        breakdowns: inputBreakdowns = [],
-        breakdownValues = [],
-      } = input;
-
-      const { startDate, endDate } = getChartStartEndDate(input, timezone);
-
-      // stepIndex is 0-based, but level is 1-based, so we need level >= stepIndex + 1
-      const targetLevel = stepIndex + 1;
-
-      // Reuse the chart's own funnel builder rather than re-deriving the CTE
-      // here. The two copies used to drift — breakdown expressions referencing
-      // a `profile` or `cohort_<id>` alias whose join this side never added,
-      // which failed with UNKNOWN_IDENTIFIER and surfaced as "No users found".
-      const { query, breakdowns } = await funnelService.buildFunnelBase({
-        projectId,
-        startDate,
-        endDate,
-        series,
-        breakdowns: inputBreakdowns,
-        funnelWindow,
-        funnelGroup,
-        timezone,
-      });
-
-      // Same shape as the chart's `funnel` CTE: windowFunnel is already
-      // computed per primary key (with breakdowns attributed at the entry
-      // step, so each group carries one deterministic b_N value), so drop
-      // level=0 and select distinct profiles.
-      query.with('funnel', 'SELECT * FROM session_funnel WHERE level != 0');
-
-      query.select(['DISTINCT profile_id']).from('funnel');
-
-      if (showDropoffs) {
-        query.where('level', '=', targetLevel);
-      } else {
-        query.where('level', '>=', targetLevel);
-      }
-
-      // Filter by specific breakdown values when a breakdown row was clicked.
-      // The clicked row carries DISPLAY labels — trimmed, with empty/null
-      // shown as EMPTY_BREAKDOWN_LABEL (see toSeries/normalizeBreakdownValue)
-      // — so match against the same normalization, not the raw column, or
-      // "Not set" rows and values with stray whitespace return no users.
-      // toString/ifNull make the comparison safe for numeric breakdown
-      // columns (trim on a number is a type error) and for Nullable ones
-      // (trim(NULL) = '' is NULL, never true).
-      breakdowns.forEach((_, index) => {
-        const value = breakdownValues[index];
-        if (value === undefined) {
-          return;
-        }
-        const normalized = `trim(ifNull(toString(b_${index}), ''))`;
-        if (value === EMPTY_BREAKDOWN_LABEL) {
-          query.rawWhere(
-            `(${normalized} = '' OR ${normalized} = ${sqlstring.escape(EMPTY_BREAKDOWN_LABEL)})`
-          );
-        } else {
-          query.rawWhere(`${normalized} = ${sqlstring.escape(value)}`);
-        }
-      });
-
-      // Cap the number of profiles to avoid exceeding ClickHouse max_query_size
-      // when passing IDs to the next query
-      query.limit(1000);
-
-      const profileIdsResult = (await query.execute()) as {
-        profile_id: string;
-      }[];
-
-      if (profileIdsResult.length === 0) {
-        return [];
-      }
-
-      // Fetch profile details in batches to avoid exceeding ClickHouse max_query_size
-      // when there are many profile IDs to pass in the IN(...) clause
-      const ids = profileIdsResult.map((p) => p.profile_id).filter(Boolean);
-      const BATCH_SIZE = 500;
-      const profiles: IServiceProfile[] = [];
-      for (let i = 0; i < ids.length; i += BATCH_SIZE) {
-        const batch = ids.slice(i, i + BATCH_SIZE);
-        const batchProfiles = await getProfilesCached(batch, projectId);
-        profiles.push(...batchProfiles);
-      }
-
-      return profiles;
-    }),
+    .query(({ input }) => getFunnelStepProfiles(input)),
 });

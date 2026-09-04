@@ -59,7 +59,9 @@ function assertAllowedNode(node: mathjs.MathNode): void {
     case 'ConstantNode': {
       const { value } = node as mathjs.ConstantNode;
       if (typeof value !== 'number' || !Number.isFinite(value)) {
-        throw new InvalidFormulaError('only finite numeric constants are allowed');
+        throw new InvalidFormulaError(
+          'only finite numeric constants are allowed'
+        );
       }
       break;
     }
@@ -98,7 +100,6 @@ function assertAllowedNode(node: mathjs.MathNode): void {
     default:
       throw new InvalidFormulaError(`${node.type} is not allowed`);
   }
-
 }
 
 /**
@@ -173,7 +174,7 @@ export function isValidFormula(formula: string): boolean {
  */
 export function evaluateFormula(
   formula: string,
-  scope: Record<string, number>,
+  scope: Record<string, number>
 ): number | undefined {
   let result: unknown;
   try {

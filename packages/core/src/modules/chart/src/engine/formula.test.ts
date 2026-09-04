@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { evaluateFormula, isValidFormula } from './formula';
 
 const scope = { A: 10, B: 4, C: 0 };

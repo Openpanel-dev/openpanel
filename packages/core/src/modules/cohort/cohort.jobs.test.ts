@@ -42,6 +42,7 @@ function stubJobCtx(cohort: Partial<CohortService>, jobName = 'test'): JobCtx {
     event: {} as Services['event'],
     profile: {} as Services['profile'],
     group: {} as Services['group'],
+    chart: {} as Services['chart'],
   };
   return {
     db: {},
