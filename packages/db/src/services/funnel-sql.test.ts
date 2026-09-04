@@ -229,8 +229,10 @@ describe('funnel.service / buildFunnelCte — step pre-filter', () => {
 
   it('filters the scan to rows matching at least one step condition', async () => {
     const sql = await buildChartSql([]);
+    // Each step condition is parenthesised by the WHERE builder and again by
+    // the OR join, hence the doubled parens.
     expect(sql).toContain(
-      "((events.name = 'screen_view') OR (events.name = 'sign_up'))",
+      "(((events.name = 'screen_view')) OR ((events.name = 'sign_up')))",
     );
     for (const condition of funnelService.getFunnelConditions(
       // The same checked narrowing buildFunnelBase applies internally.

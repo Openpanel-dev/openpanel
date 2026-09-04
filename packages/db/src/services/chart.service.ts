@@ -379,7 +379,9 @@ export function getSelectPropertyKey(
     )})))`;
   }
 
-  return `${aliasPrefix}${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
+  return `${aliasPrefix}${match}[${sqlstring.escape(
+    property.slice(match.length + 1)
+  )}]`;
 }
 
 
@@ -442,11 +444,19 @@ export function profilePropertiesCteSelect(
 // for the narrowed keys. Matches the raw render from getSelectPropertyKey /
 // the filter builders; never matches the CTE's own `properties['<key>']`,
 // which has no `profile.` prefix. No-op when keys is empty.
+// The Map-access text a `profile.properties.<key>` ref renders as. Must stay
+// identical to what `getSelectPropertyKey` emits for that key: a key whose
+// quotes are escaped there but not here would be searched for in a form the
+// query never contains, leaving the ref pointing at a Map the CTE dropped.
+function profilePropertyRef(key: string): string {
+  return `profile.properties[${sqlstring.escape(key)}]`;
+}
+
 export function rewriteProfilePropertyRefs(sql: string, keys: string[]): string {
   let out = sql;
   for (const k of keys) {
     out = out
-      .split(`profile.properties['${k}']`)
+      .split(profilePropertyRef(k))
       .join(`\`profile.properties.${k}\``);
   }
   return out;
