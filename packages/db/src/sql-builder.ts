@@ -32,8 +32,17 @@ export function createSqlBuilder() {
     fill: undefined,
   };
 
+  // Each clause is parenthesised before the ` AND ` join: a clause with a
+  // top-level OR in it would otherwise re-group its neighbours, so a single
+  // filter could widen what the whole WHERE matches.
+  const joinWhere = (obj: Record<string, string>) =>
+    Object.values(obj)
+      .filter(Boolean)
+      .map((clause) => `(${clause})`)
+      .join(' AND ');
+
   const getWhere = () =>
-    Object.keys(sb.where).length ? `WHERE ${join(sb.where, ' AND ')}` : '';
+    Object.keys(sb.where).length ? `WHERE ${joinWhere(sb.where)}` : '';
   const getHaving = () =>
     Object.keys(sb.having).length ? `HAVING ${join(sb.having, ' AND ')}` : '';
   const getFrom = () => `FROM ${sb.from}`;
