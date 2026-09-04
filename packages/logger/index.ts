@@ -22,7 +22,7 @@ export const rawStderrWrite = process.stderr.write.bind(process.stderr);
 // Substring match (lowercased). Catches camelCase, snake_case, prefixed and
 // suffixed variants in one entry — e.g. 'token' covers accessToken,
 // refresh_token, jwtToken, etc.
-const SENSITIVE_KEY_PATTERNS = [
+export const SENSITIVE_KEY_PATTERNS = [
   'password',
   'passwd',
   'pwd',
@@ -46,7 +46,53 @@ const SENSITIVE_KEY_PATTERNS = [
 
 const MAX_REDACT_DEPTH = 5;
 
-function redactSensitive(value: unknown, depth = 0): unknown {
+const REDACTED = '[REDACTED]';
+
+function isSensitiveKey(key: string): boolean {
+  const lowered = key.toLowerCase();
+  return SENSITIVE_KEY_PATTERNS.some((k) => lowered.includes(k));
+}
+
+/**
+ * Replace the values of sensitive query parameters in a request URL, keeping
+ * the path and every other parameter intact. A URL string carries its
+ * credentials inside one value, so key-based redaction never sees them —
+ * this splits the query apart so the same key patterns apply.
+ *
+ * Parameters are matched by name the same way object keys are: lowercased
+ * substring. The query is rebuilt from the raw text rather than through
+ * URLSearchParams so untouched values keep their original encoding.
+ */
+export function sanitizeUrlQuery(url: string): string {
+  const queryIndex = url.indexOf('?');
+  if (queryIndex === -1) {
+    return url;
+  }
+
+  const query = url.slice(queryIndex + 1);
+  if (query === '') {
+    return url;
+  }
+
+  const sanitized = query
+    .split('&')
+    .map((param) => {
+      const equalsIndex = param.indexOf('=');
+      const rawName = equalsIndex === -1 ? param : param.slice(0, equalsIndex);
+      let name = rawName;
+      try {
+        name = decodeURIComponent(rawName.replace(/\+/g, ' '));
+      } catch {
+        // Malformed percent-encoding — match on the raw name instead.
+      }
+      return isSensitiveKey(name) ? `${rawName}=${REDACTED}` : param;
+    })
+    .join('&');
+
+  return `${url.slice(0, queryIndex)}?${sanitized}`;
+}
+
+export function redactSensitive(value: unknown, depth = 0): unknown {
   if (value instanceof Error) {
     return {
       ...value,
@@ -72,8 +118,12 @@ function redactSensitive(value: unknown, depth = 0): unknown {
   const result: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
     const lowered = key.toLowerCase();
-    if (SENSITIVE_KEY_PATTERNS.some((k) => lowered.includes(k))) {
-      result[key] = '[REDACTED]';
+    if (isSensitiveKey(key)) {
+      result[key] = REDACTED;
+    } else if (lowered.includes('url') && typeof val === 'string') {
+      // Backstop for anything that logs a URL without going through the
+      // caller-side helper: the credentials sit in the query, not the key.
+      result[key] = sanitizeUrlQuery(val);
     } else {
       result[key] = redactSensitive(val, depth + 1);
     }

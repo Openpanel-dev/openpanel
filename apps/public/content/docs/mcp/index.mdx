@@ -13,15 +13,19 @@ https://api.openpanel.dev/mcp
 
 ## Authentication
 
-The token can be passed as a query parameter or an `Authorization` header — both are equivalent:
+Pass the token as an `Authorization` header:
+
+```
+Authorization: Bearer YOUR_TOKEN
+```
+
+If your client can't set headers, pass it as a query parameter instead:
 
 ```
 https://api.openpanel.dev/mcp?token=YOUR_TOKEN
 ```
 
-```
-Authorization: Bearer YOUR_TOKEN
-```
+Both work. Prefer the header: query strings travel through browser history, shell history and proxy logs, so a token in the URL is easier to leak by accident.
 
 ### Token format
 
@@ -44,7 +48,13 @@ The easiest way to get your MCP token is directly from the dashboard — no term
 echo -n "YOUR_CLIENT_ID:YOUR_CLIENT_SECRET" | base64
 ```
 
-Then append it to the MCP URL:
+Then send it with every request:
+
+```
+Authorization: Bearer <base64-encoded-token>
+```
+
+Or, for clients that can't set headers, append it to the MCP URL:
 
 ```
 https://api.openpanel.dev/mcp?token=<base64-encoded-token>
@@ -72,22 +82,27 @@ Add the following to your `claude_desktop_config.json`:
   "mcpServers": {
     "openpanel": {
       "type": "streamable-http",
-      "url": "https://api.openpanel.dev/mcp?token=YOUR_TOKEN"
+      "url": "https://api.openpanel.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
     }
   }
 }
 ```
 
+If your client doesn't read `headers`, drop that block and put the token in the URL instead: `"url": "https://api.openpanel.dev/mcp?token=YOUR_TOKEN"`.
+
 ## Connecting with Claude Code CLI
 
-With the Claude CLI you can use the `--header` flag to pass the token via `Authorization: Bearer` rather than embedding it in the URL:
+Use the `--header` flag to pass the token via `Authorization: Bearer`:
 
 ```bash
 claude mcp add --transport http openpanel https://api.openpanel.dev/mcp \
   --header "Authorization: Bearer YOUR_TOKEN"
 ```
 
-Or with the token in the URL (equivalent):
+Or with the token in the URL:
 
 ```bash
 claude mcp add --transport http openpanel "https://api.openpanel.dev/mcp?token=YOUR_TOKEN"

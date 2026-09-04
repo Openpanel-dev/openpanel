@@ -59,7 +59,11 @@ import profileRouter from './routes/profile.router';
 import toolsRouter from './routes/tools.router';
 import trackRouter from './routes/track.router';
 import webhookRouter from './routes/webhook.router';
-import { HttpError, normalizeError } from './utils/errors';
+import {
+  buildErrorRequestContext,
+  HttpError,
+  normalizeError,
+} from './utils/errors';
 import { logger } from './utils/logger';
 
 declare module 'fastify' {
@@ -412,16 +416,7 @@ export async function buildApp(
       // log as warn so they don't drown out real server errors.
       const label =
         error instanceof HttpError ? 'internal server error' : 'request error';
-      const reqCtx = {
-        id: request.id,
-        url: request.url,
-        method: request.method,
-        query: request.query,
-        headers: request.headers,
-        body:
-          (request as FastifyRequest & { rawBody?: string }).rawBody ??
-          request.body,
-      };
+      const reqCtx = buildErrorRequestContext(request);
       if (status >= 500) {
         request.log.error({ err: error, req: reqCtx }, label);
       } else {

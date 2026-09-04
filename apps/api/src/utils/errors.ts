@@ -1,3 +1,6 @@
+import type { FastifyRequest } from 'fastify';
+import { sanitizeUrl } from './sanitize-url';
+
 export class LogError extends Error {
   public readonly payload?: Record<string, unknown>;
 
@@ -88,5 +91,23 @@ export function normalizeError(error: unknown): NormalizedError {
     code: undefined,
     message: 'Internal server error',
     errorName: 'Error',
+  };
+}
+
+/**
+ * The request context attached to error logs. `query` and `headers` are
+ * objects, so the logger redacts sensitive entries by key; the URL is a
+ * string and has to be filtered here.
+ */
+export function buildErrorRequestContext(request: FastifyRequest) {
+  return {
+    id: request.id,
+    url: sanitizeUrl(request.url),
+    method: request.method,
+    query: request.query,
+    headers: request.headers,
+    body:
+      (request as FastifyRequest & { rawBody?: string }).rawBody ??
+      request.body,
   };
 }

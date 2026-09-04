@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, pick } from 'ramda';
+import { sanitizeUrl } from '../utils/sanitize-url';
 
 const ignoreLog = ['/healthcheck', '/healthz', '/metrics', '/misc'];
 const ignoreMethods = ['OPTIONS'];
@@ -46,7 +47,7 @@ export async function requestLoggingHook(
       clientIpHeader: string;
       userAgent: string;
     } = {
-      url: request.url,
+      url: sanitizeUrl(request.url),
       method: request.method,
       elapsed: reply.elapsedTime,
       headers: pick(
