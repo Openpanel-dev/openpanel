@@ -218,6 +218,14 @@ describe('validate', () => {
       expect(result.error).toContain('not allowed');
     });
 
+    it('should block writing through a no-substitution template literal key', () => {
+      const result = validate(
+        '(payload) => { payload[`__proto__`].x = 1; return payload; }',
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('__proto__');
+    });
+
     it('should still allow writing an ordinary property', () => {
       const result = validate(
         '(payload) => { const out = {}; out.event = payload.name; return out; }',

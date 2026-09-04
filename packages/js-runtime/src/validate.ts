@@ -33,9 +33,23 @@ function staticPropertyName(
     return undefined;
   }
   if (member.computed) {
-    // Only a literal key can be resolved. Babel has already decoded any
-    // \u / \x escapes into StringLiteral.value by this point.
-    return prop.type === 'StringLiteral' ? (prop.value as string) : undefined;
+    // A literal key can be resolved. Babel has already decoded any \u / \x
+    // escapes into StringLiteral.value by this point. A template literal
+    // with no substitutions (`__proto__`) is just as static as a string
+    // literal and must resolve the same way, or it walks past this check
+    // unseen.
+    if (prop.type === 'StringLiteral') {
+      return prop.value as string;
+    }
+    if (prop.type === 'TemplateLiteral') {
+      const expressions = prop.expressions as unknown[];
+      const quasis = prop.quasis as Record<string, unknown>[];
+      if (expressions.length === 0 && quasis.length === 1) {
+        const value = quasis[0]!.value as Record<string, unknown>;
+        return value.cooked as string;
+      }
+    }
+    return undefined;
   }
   return prop.type === 'Identifier' ? (prop.name as string) : undefined;
 }
