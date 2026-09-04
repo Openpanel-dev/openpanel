@@ -1,0 +1,25 @@
+// Stubs shared by the buffer tests. Not a test file (no `*.test.ts` suffix),
+// so the runner does not pick it up.
+
+import type { BufferDeps } from '../src/buffers/base-buffer';
+import type { Logger } from '../src/logger';
+
+const silentLogger: Logger = {
+  fatal: () => undefined,
+  error: () => undefined,
+  warn: () => undefined,
+  info: () => undefined,
+  debug: () => undefined,
+  trace: () => undefined,
+  child: () => silentLogger,
+};
+
+/**
+ * A buffer's boot scope, silent and never paused. Silent matters: the real
+ * `createLogger` spawns a pino transport worker thread per buffer, and these
+ * suites build one buffer per test.
+ */
+export const stubBufferDeps: BufferDeps = {
+  createLogger: () => silentLogger,
+  isCronPaused: () => Promise.resolve(false),
+};

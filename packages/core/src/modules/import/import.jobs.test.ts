@@ -2,7 +2,7 @@
 // themselves are exercised in import.service.test.ts.
 
 import { expect, test } from 'bun:test';
-import type { JobCtx } from '../../context';
+import type { Buffers, JobCtx } from '../../context';
 import { createRecordingProducers } from '../../jobs/testing';
 import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
@@ -46,7 +46,7 @@ function stubJobCtx(importService: Partial<ImportService>): JobCtx {
     ch: {},
     redis: {},
     clients: {},
-    buffers: {},
+    buffers: {} as Buffers,
     logger: stubLogger(),
     queues: createRecordingProducers(queues).queues,
     services,

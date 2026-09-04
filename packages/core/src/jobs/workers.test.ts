@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import { z } from 'zod';
-import type { AppDeps, JobCtx } from '../context';
+import type { AppDeps, Buffers, JobCtx } from '../context';
 import { queues } from '../jobs.registry';
 import type { Logger } from '../logger';
 import { defineJob, defineQueue } from './define';
@@ -28,7 +28,7 @@ function stubDeps(): AppDeps {
     ch: {},
     redis: {},
     clients: {},
-    buffers: {},
+    buffers: {} as Buffers,
     producers: createRecordingProducers(queues),
     logger: stubLogger(),
     config: { selfHosted: true },

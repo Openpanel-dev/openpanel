@@ -1,15 +1,10 @@
 import { toDots } from '@openpanel/common';
-import { getSafeJson } from '@openpanel/json';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import shallowEqual from 'fast-deep-equal';
 import sqlstring from 'sqlstring';
-import {
-  ch,
-  chQuery,
-  formatClickhouseDate,
-  TABLE_NAMES,
-} from '../clickhouse/client';
-import { BaseBuffer } from './base-buffer';
+import { getSafeJson } from '../shared/json';
+import { BaseBuffer, type BufferDeps } from './base-buffer';
+import { loadClickHouse } from './clickhouse';
 
 type IGroupBufferEntry = {
   project_id: string;
@@ -55,8 +50,8 @@ export class GroupBuffer extends BaseBuffer {
 
   private redis: Redis;
 
-  constructor() {
-    super({
+  constructor(deps: BufferDeps) {
+    super(deps, {
       name: 'group',
       onFlush: async () => {
         await this.processBuffer();
@@ -84,6 +79,7 @@ export class GroupBuffer extends BaseBuffer {
     projectId: string,
     id: string
   ): Promise<IGroupCacheEntry | null> {
+    const { chQuery, TABLE_NAMES } = await loadClickHouse();
     const rows = await chQuery<IGroupCacheEntry>(`
       SELECT project_id, id, type, name, properties, created_at
       FROM ${TABLE_NAMES.groups} FINAL
@@ -97,6 +93,7 @@ export class GroupBuffer extends BaseBuffer {
   async add(input: IGroupBufferInput): Promise<void> {
     return this.timeAdd(async () => {
       try {
+        const { formatClickhouseDate } = await loadClickHouse();
         const cacheKey = this.getCacheKey(input.projectId, input.id);
 
         const existing =
@@ -179,6 +176,7 @@ export class GroupBuffer extends BaseBuffer {
     // Raw passthrough: each Redis entry is already a valid JSONEachRow
     // line. Streaming raw strings to CH skips JSON.parse + the client's
     // re-stringify on the hot path.
+    const { ch, TABLE_NAMES } = await loadClickHouse();
     const chStart = performance.now();
     await this.parallelLimit(this.chunks(items, this.chunkSize), (chunk) =>
       ch.insert({
@@ -186,7 +184,7 @@ export class GroupBuffer extends BaseBuffer {
         values: this.jsonEachRowStream(chunk),
         format: 'JSONEachRow',
         clickhouse_settings: this.getClickhouseSettings(),
-      }),
+      })
     );
     const chInsertMs = performance.now() - chStart;
 

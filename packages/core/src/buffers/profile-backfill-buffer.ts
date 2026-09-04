@@ -1,8 +1,8 @@
-import { getSafeJson } from '@openpanel/json';
-import { type Redis, getRedisCache } from '@openpanel/redis';
+import { getRedisCache, type Redis } from '@openpanel/redis';
 import sqlstring from 'sqlstring';
-import { TABLE_NAMES, ch, getReplicatedTableName } from '../clickhouse/client';
-import { BaseBuffer } from './base-buffer';
+import { getSafeJson } from '../shared/json';
+import { BaseBuffer, type BufferDeps } from './base-buffer';
+import { loadClickHouse } from './clickhouse';
 
 export interface ProfileBackfillEntry {
   projectId: string;
@@ -21,8 +21,8 @@ export class ProfileBackfillBuffer extends BaseBuffer {
   private readonly redisKey = 'profile-backfill-buffer';
   private redis: Redis;
 
-  constructor() {
-    super({
+  constructor(deps: BufferDeps) {
+    super(deps, {
       name: 'profile-backfill',
       onFlush: async () => {
         await this.processBuffer();
@@ -39,12 +39,11 @@ export class ProfileBackfillBuffer extends BaseBuffer {
       } catch (error) {
         this.logger.error(
           { err: error },
-          'Failed to add profile backfill entry',
+          'Failed to add profile backfill entry'
         );
       }
     });
   }
-
 
   protected getRedisListKey(): string {
     return this.redisKey;
@@ -70,6 +69,7 @@ export class ProfileBackfillBuffer extends BaseBuffer {
     }
     const entries = Array.from(seen.values());
 
+    const { ch, TABLE_NAMES, getReplicatedTableName } = await loadClickHouse();
     const table = getReplicatedTableName(TABLE_NAMES.events);
 
     const chunks = this.chunks(entries, CHUNK_SIZE);
@@ -78,10 +78,16 @@ export class ProfileBackfillBuffer extends BaseBuffer {
     const chStart = performance.now();
     for (const chunk of chunks) {
       const caseClause = chunk
-        .map(({ sessionId, profileId }) => `WHEN ${sqlstring.escape(sessionId)} THEN ${sqlstring.escape(profileId)}`)
+        .map(
+          ({ sessionId, profileId }) =>
+            `WHEN ${sqlstring.escape(sessionId)} THEN ${sqlstring.escape(profileId)}`
+        )
         .join('\n');
       const tupleList = chunk
-        .map(({ projectId, sessionId }) => `(${sqlstring.escape(projectId)}, ${sqlstring.escape(sessionId)})`)
+        .map(
+          ({ projectId, sessionId }) =>
+            `(${sqlstring.escape(projectId)}, ${sqlstring.escape(sessionId)})`
+        )
         .join(',');
 
       const query = `
@@ -96,7 +102,7 @@ export class ProfileBackfillBuffer extends BaseBuffer {
         query,
         clickhouse_settings: {
           mutations_sync: '0',
-          allow_experimental_lightweight_update: '1'
+          allow_experimental_lightweight_update: '1',
         },
       });
 

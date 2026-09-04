@@ -11,7 +11,7 @@
 import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { Elysia } from 'elysia';
 import { z } from 'zod';
-import type { AppDeps } from '../src/context';
+import type { AppDeps, Buffers } from '../src/context';
 import { defineJob, defineQueue, type Producers } from '../src/jobs/define';
 import { wrap } from '../src/jobs/envelope';
 import {
@@ -144,7 +144,7 @@ function stubDeps() {
     ch: {},
     redis: {},
     clients: {},
-    buffers: {},
+    buffers: {} as Buffers,
     producers: producers as unknown as QueueProducerHandle,
     logger: bindingLogger(lines),
     config: { selfHosted: false },

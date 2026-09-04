@@ -1,5 +1,5 @@
 import { beforeAll, expect, mock, test } from 'bun:test';
-import type { AppDeps, Ctx } from './context';
+import type { AppDeps, Buffers, Ctx } from './context';
 import type { JobMeta } from './jobs/envelope';
 import { createRecordingProducers } from './jobs/testing';
 import type { QueueProducers } from './jobs.registry';
@@ -58,7 +58,7 @@ function stubDeps(): {
       ch: {},
       redis: {},
       clients: {},
-      buffers: {},
+      buffers: {} as Buffers,
       producers: {
         ...producers,
         scope(meta) {

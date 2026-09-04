@@ -22,10 +22,7 @@ export function isPartialMatch(source: any, partial: any): boolean {
 
   // Check each property in partial
   for (const key in partial) {
-    if (
-      Object.prototype.hasOwnProperty.call(partial, key) &&
-      partial[key] !== undefined
-    ) {
+    if (Object.hasOwn(partial, key) && partial[key] !== undefined) {
       // If property doesn't exist in source, no match
       if (!(key in source)) {
         return false;

@@ -1,4 +1,3 @@
-import { getRedisCache } from '@openpanel/redis';
 import {
   afterAll,
   afterEach,
@@ -6,21 +5,36 @@ import {
   describe,
   expect,
   it,
-  vi,
-} from 'vitest';
-import { ch } from '../clickhouse/client';
+  mock,
+} from 'bun:test';
+import { getRedisCache } from '@openpanel/redis';
+import { stubBufferDeps } from '../../test/buffer-fixtures';
+import type { IServiceCreateEventPayload } from '../modules/event/event.service';
+import type { IClickhouseSession } from '../modules/session/session.service';
 
-vi.mock('../clickhouse/client', () => ({
-  ch: {
-    insert: vi.fn().mockResolvedValue(undefined),
-  },
-  TABLE_NAMES: {
-    sessions: 'sessions',
-  },
+// `./clickhouse` is the one seam the buffers reach ClickHouse through — see
+// event-buffer.test.ts's header for why that, and not
+// `@openpanel/db/src/clickhouse/client`, is what gets replaced.
+const realClickhouse = { ...(await import('./clickhouse')) };
+
+const chInsert = mock(
+  async (_options: {
+    table: string;
+    format: string;
+    values: IClickhouseSession[];
+  }): Promise<unknown> => undefined
+);
+
+mock.module('./clickhouse', () => ({
+  loadClickHouse: () =>
+    Promise.resolve({
+      ch: { insert: chInsert },
+      TABLE_NAMES: { sessions: 'sessions' },
+    }),
 }));
 
-import type { IServiceCreateEventPayload } from '../services/event.service';
-import { SessionBuffer } from './session-buffer';
+const { SessionBuffer } = await import('./session-buffer');
+type SessionBuffer = InstanceType<typeof SessionBuffer>;
 
 const redis = getRedisCache();
 
@@ -74,20 +88,22 @@ beforeEach(async () => {
   for (let i = 0; i < keys.length; i += BATCH) {
     await redis.del(...keys.slice(i, i + BATCH));
   }
-  vi.mocked(ch.insert).mockResolvedValue(undefined as any);
+  chInsert.mockReset();
+  chInsert.mockResolvedValue(undefined);
 });
 
-afterAll(async () => {
-  try {
-    await redis.quit();
-  } catch {}
+// The shared `getRedisCache()` client is deliberately NOT quit here: bun runs
+// every file in one process, and closing the singleton takes it away from the
+// files that run next (V1's vitest isolated per file, so it could).
+afterAll(() => {
+  mock.module('./clickhouse', () => realClickhouse);
 });
 
 describe('SessionBuffer', () => {
   let sessionBuffer: SessionBuffer;
 
   beforeEach(() => {
-    sessionBuffer = new SessionBuffer();
+    sessionBuffer = new SessionBuffer(stubBufferDeps);
   });
 
   it('opens a new session and stores it at session:{pid}:{did}', async () => {
@@ -302,18 +318,12 @@ describe('SessionBuffer', () => {
   it('processes buffer and inserts sessions into ClickHouse', async () => {
     await sessionBuffer.ingest(makePayload());
 
-    const insertSpy = vi
-      .spyOn(ch, 'insert')
-      .mockResolvedValueOnce(undefined as any);
-
     await sessionBuffer.processBuffer();
 
-    expect(insertSpy).toHaveBeenCalledWith(
+    expect(chInsert).toHaveBeenCalledWith(
       expect.objectContaining({ table: 'sessions', format: 'JSONEachRow' })
     );
     expect(await sessionBuffer.getBufferSize()).toBe(0);
-
-    insertSpy.mockRestore();
   });
 
   it('squash does not orphan the creation row when create + updates share a batch', async () => {
@@ -331,14 +341,12 @@ describe('SessionBuffer', () => {
     }
 
     const inserted: Array<{ sign: number; version: number }> = [];
-    const insertSpy = vi
-      .spyOn(ch, 'insert')
-      .mockImplementation(async ({ values }: any) => {
-        for (const v of values) {
-          inserted.push({ sign: v.sign, version: v.version });
-        }
-        return undefined as any;
-      });
+    chInsert.mockImplementation(async ({ values }) => {
+      for (const v of values) {
+        inserted.push({ sign: v.sign, version: v.version });
+      }
+      return await Promise.resolve(undefined);
+    });
 
     await sessionBuffer.processBuffer();
 
@@ -356,21 +364,19 @@ describe('SessionBuffer', () => {
     for (const { sign, version } of inserted) {
       netByVersion.set(version, (netByVersion.get(version) ?? 0) + sign);
     }
-    const survivors = [...netByVersion.entries()].filter(([, net]) => net !== 0);
+    const survivors = [...netByVersion.entries()].filter(
+      ([, net]) => net !== 0
+    );
 
     // A fresh session must collapse to exactly one final +1 row, with no
     // orphaned negatives (the bug left a permanent (-1, v1)).
     expect(survivors).toEqual([[EVENTS, 1]]);
-
-    insertSpy.mockRestore();
   });
 
   it('retains sessions in queue when ClickHouse insert fails', async () => {
     await sessionBuffer.ingest(makePayload());
 
-    const insertSpy = vi
-      .spyOn(ch, 'insert')
-      .mockRejectedValueOnce(new Error('ClickHouse unavailable'));
+    chInsert.mockRejectedValueOnce(new Error('ClickHouse unavailable'));
 
     // Errors now propagate to tryFlush (which handles them by resyncing the
     // counter). processBuffer no longer swallows — we still verify the
@@ -379,8 +385,6 @@ describe('SessionBuffer', () => {
       'ClickHouse unavailable'
     );
     expect(await sessionBuffer.getBufferSize()).toBe(1);
-
-    insertSpy.mockRestore();
   });
 
   // persist() is one Lua script, so a failure part-way through must leave the

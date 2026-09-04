@@ -1,11 +1,11 @@
 import { deepMergeObjects } from '@openpanel/common';
-import { getSafeJson } from '@openpanel/json';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import { omit, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
-import { ch, chQuery, TABLE_NAMES } from '../clickhouse/client';
-import type { IClickhouseProfile } from '../services/profile.service';
-import { BaseBuffer } from './base-buffer';
+import type { IClickhouseProfile } from '../modules/profile/profile.service';
+import { getSafeJson } from '../shared/json';
+import { BaseBuffer, type BufferDeps } from './base-buffer';
+import { loadClickHouse } from './clickhouse';
 
 // Inlined to avoid a circular value-import with `profile.service.ts`
 // (which imports `profileBuffer` from `../buffers`). Keep this in sync
@@ -62,8 +62,8 @@ export class ProfileBuffer extends BaseBuffer {
 
   private readonly redis: Redis;
 
-  constructor() {
-    super({
+  constructor(deps: BufferDeps) {
+    super(deps, {
       name: 'profile',
       onFlush: async () => {
         await this.processBuffer();
@@ -190,6 +190,7 @@ export class ProfileBuffer extends BaseBuffer {
   private async batchFetchFromClickhouse(
     profiles: IClickhouseProfile[]
   ): Promise<Map<string, IClickhouseProfile>> {
+    const { chQuery, TABLE_NAMES } = await loadClickHouse();
     const result = new Map<string, IClickhouseProfile>();
 
     // Non-external (anonymous/device) profiles get a 2-day recency filter to
@@ -276,11 +277,13 @@ export class ProfileBuffer extends BaseBuffer {
     const mergedInBatch = new Map<string, IClickhouseProfile>();
     for (let i = 0; i < rawProfiles.length; i++) {
       const profile = getSafeJson<IClickhouseProfile>(rawProfiles[i]!);
-      if (!profile) continue;
+      if (!profile) {
+        continue;
+      }
       const key = `${profile.project_id}:${profile.id}`;
       mergedInBatch.set(
         key,
-        this.mergeProfiles(mergedInBatch.get(key) ?? null, profile),
+        this.mergeProfiles(mergedInBatch.get(key) ?? null, profile)
       );
       if ((i + 1) % mergeYieldEvery === 0) {
         await this.yieldToEventLoop();
@@ -342,7 +345,7 @@ export class ProfileBuffer extends BaseBuffer {
       const key = `${profile.project_id}:${profile.id}`;
       const merged = this.mergeProfiles(
         existingByKey.get(key) ?? null,
-        profile,
+        profile
       );
       toInsert.push(merged);
       multi.set(
@@ -352,13 +355,14 @@ export class ProfileBuffer extends BaseBuffer {
         }),
         JSON.stringify(merged),
         'EX',
-        this.ttlInSeconds,
+        this.ttlInSeconds
       );
       if ((i + 1) % finalYieldEvery === 0) {
         await this.yieldToEventLoop();
       }
     }
 
+    const { ch, TABLE_NAMES } = await loadClickHouse();
     const chStart = performance.now();
     await this.parallelLimit(this.chunks(toInsert, this.chunkSize), (chunk) =>
       ch.insert({

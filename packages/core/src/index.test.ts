@@ -35,3 +35,22 @@ test('the rpc base is on the barrel, so there is one tRPC instance', () => {
 test('a service, a client or a buffer is not on the barrel', () => {
   expect(Object.keys(core)).not.toContain('createServices');
 });
+
+// The buffers are boot singletons on AppDeps (ADR-007), so main.ts needs the
+// FACTORY and nothing else. A named instance here would be the module
+// singleton the design refuses.
+test('buffers reach the barrel as a factory, never as instances', () => {
+  expect(core.createBuffers).toBeTypeOf('function');
+  expect(core.registerBufferMetrics).toBeTypeOf('function');
+  for (const instance of [
+    'eventBuffer',
+    'profileBuffer',
+    'profileBackfillBuffer',
+    'botBuffer',
+    'sessionBuffer',
+    'replayBuffer',
+    'groupBuffer',
+  ]) {
+    expect(Object.keys(core)).not.toContain(instance);
+  }
+});

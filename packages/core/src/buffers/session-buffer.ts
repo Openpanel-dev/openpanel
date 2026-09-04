@@ -1,10 +1,10 @@
 import { DateTime } from '@openpanel/common';
-import { getSafeJson } from '@openpanel/json';
 import { getRedisCache, type Redis } from '@openpanel/redis';
-import { ch, TABLE_NAMES } from '../clickhouse/client';
-import type { IServiceCreateEventPayload } from '../services/event.service';
-import type { IClickhouseSession } from '../services/session.service';
-import { BaseBuffer } from './base-buffer';
+import type { IServiceCreateEventPayload } from '../modules/event/event.service';
+import type { IClickhouseSession } from '../modules/session/session.service';
+import { getSafeJson } from '../shared/json';
+import { BaseBuffer, type BufferDeps } from './base-buffer';
+import { loadClickHouse } from './clickhouse';
 
 // 30min of idle in event-time → session ends. Matches industry default.
 // Idle window for a session (boundary detection + the reaper's default deadman).
@@ -18,8 +18,7 @@ const sessionKey = (projectId: string, deviceId: string) =>
   `session:${projectId}:${deviceId}`;
 const profileIndexKey = (projectId: string, profileId: string) =>
   `session:profile:${projectId}:${profileId}`;
-const wallclockSetKey = (projectId: string) =>
-  `session:wallclock:${projectId}`;
+const wallclockSetKey = (projectId: string) => `session:wallclock:${projectId}`;
 const PROJECTS_SET_KEY = 'session:projects';
 
 // Atomic id-gated cleanup. Only deletes the blob + sorted-set entry +
@@ -91,7 +90,11 @@ return bufferLength
 export type SessionIngestResult =
   | { kind: 'new'; current: IClickhouseSession }
   | { kind: 'extend'; current: IClickhouseSession }
-  | { kind: 'boundary'; current: IClickhouseSession; closed: IClickhouseSession };
+  | {
+      kind: 'boundary';
+      current: IClickhouseSession;
+      closed: IClickhouseSession;
+    };
 
 function toClickhouseDate(date: Date): string {
   return DateTime.fromJSDate(date)
@@ -109,8 +112,9 @@ function pickUtm(
   payload: IServiceCreateEventPayload,
   key: 'utm_medium' | 'utm_source' | 'utm_campaign' | 'utm_content' | 'utm_term'
 ): string {
-  const query = (payload.properties as { __query?: Record<string, unknown> } | undefined)
-    ?.__query;
+  const query = (
+    payload.properties as { __query?: Record<string, unknown> } | undefined
+  )?.__query;
   const v = query?.[key];
   return v ? String(v) : '';
 }
@@ -129,8 +133,8 @@ export class SessionBuffer extends BaseBuffer {
 
   private readonly redisKey = 'session-buffer';
   private redis: Redis;
-  constructor() {
-    super({
+  constructor(deps: BufferDeps) {
+    super(deps, {
       name: 'session',
       onFlush: async () => {
         await this.processBuffer();
@@ -157,7 +161,9 @@ export class SessionBuffer extends BaseBuffer {
     const deviceId = await this.redis.get(
       profileIndexKey(options.projectId, options.profileId)
     );
-    if (!deviceId) return null;
+    if (!deviceId) {
+      return null;
+    }
     const hit = await this.redis.get(sessionKey(options.projectId, deviceId));
     return hit ? getSafeJson<IClickhouseSession>(hit) : null;
   }
@@ -178,7 +184,9 @@ export class SessionBuffer extends BaseBuffer {
   async ingest(
     payload: IServiceCreateEventPayload
   ): Promise<SessionIngestResult | null> {
-    if (!payload.projectId || !payload.deviceId) return null;
+    if (!(payload.projectId && payload.deviceId)) {
+      return null;
+    }
     if (payload.name === 'session_start' || payload.name === 'session_end') {
       return null;
     }
@@ -281,18 +289,29 @@ export class SessionBuffer extends BaseBuffer {
 
     if (eventTimeMs >= endMs) {
       current.ended_at = eventCh;
-      if (payload.path) current.exit_path = payload.path;
-      if (payload.origin) current.exit_origin = payload.origin;
+      if (payload.path) {
+        current.exit_path = payload.path;
+      }
+      if (payload.origin) {
+        current.exit_origin = payload.origin;
+      }
     }
 
     if (eventTimeMs < startMs) {
       current.created_at = eventCh;
-      if (payload.path) current.entry_path = payload.path;
-      if (payload.origin) current.entry_origin = payload.origin;
-    } else {
-      if (!current.entry_path && payload.path) current.entry_path = payload.path;
-      if (!current.entry_origin && payload.origin)
+      if (payload.path) {
+        current.entry_path = payload.path;
+      }
+      if (payload.origin) {
         current.entry_origin = payload.origin;
+      }
+    } else {
+      if (!current.entry_path && payload.path) {
+        current.entry_path = payload.path;
+      }
+      if (!current.entry_origin && payload.origin) {
+        current.entry_origin = payload.origin;
+      }
     }
 
     current.duration =
@@ -520,12 +539,16 @@ export class SessionBuffer extends BaseBuffer {
       0,
       this.batchSize - 1
     );
-    if (events.length === 0) return;
+    if (events.length === 0) {
+      return;
+    }
 
     const parsed: IClickhouseSession[] = [];
     for (const e of events) {
       const s = getSafeJson<IClickhouseSession>(e);
-      if (!s) continue;
+      if (!s) {
+        continue;
+      }
       // Freshly parsed object — safe to clamp in place, no clone needed.
       s.duration = Math.max(0, s.duration || 0);
       parsed.push(s);
@@ -543,6 +566,7 @@ export class SessionBuffer extends BaseBuffer {
       ? this.squashSessionsByVersion(parsed)
       : parsed;
 
+    const { ch, TABLE_NAMES } = await loadClickHouse();
     for (const chunk of this.chunks(sessions, this.chunkSize)) {
       await ch.insert({
         table: TABLE_NAMES.sessions,

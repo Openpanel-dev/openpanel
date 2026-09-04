@@ -5,6 +5,7 @@
 // (side-effect-free) import.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
+import type { Buffers } from '../../context';
 
 const listProjectIdsForCadence = mock(async () => ['p1', 'p2']);
 const getProjectCreatedAt = mock(async () => null);
@@ -169,7 +170,7 @@ test('createInsightService binds every InsightService method', () => {
     ch: undefined,
     redis: undefined,
     clients: undefined,
-    buffers: undefined,
+    buffers: undefined as unknown as Buffers,
     logger,
     queues:
       undefined as unknown as import('../../jobs.registry').QueueProducers,

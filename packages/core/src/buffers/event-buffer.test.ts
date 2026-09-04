@@ -1,13 +1,26 @@
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { Readable } from 'node:stream';
 import { getRedisCache } from '@openpanel/redis';
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import * as chClient from '../clickhouse/client';
-const { ch } = chClient;
+import { stubBufferDeps } from '../../test/buffer-fixtures';
 
-// Break circular dep: event-buffer -> event.service -> buffers/index -> EventBuffer
-vi.mock('../services/event.service', () => ({}));
+// `./clickhouse` is the one seam the buffers reach ClickHouse through, and it
+// is the right thing to replace: mocking `@openpanel/db/src/clickhouse/client`
+// instead would need the real module imported first (to spread and restore it,
+// since `mock.module` replaces a specifier process-wide without `--isolate`),
+// and importing it builds a client and a pino transport worker thread per test
+// file. This module has one export, so the replacement is complete rather than
+// partial — and it is restored in afterAll regardless.
+const realClickhouse = { ...(await import('./clickhouse')) };
 
-import { EventBuffer, extractProjectId } from './event-buffer';
+const chInsert = mock(async (_options: unknown): Promise<unknown> => undefined);
+const chQuery = mock(async (_sql: string): Promise<unknown[]> => []);
+
+mock.module('./clickhouse', () => ({
+  loadClickHouse: () => Promise.resolve({ ch: { insert: chInsert }, chQuery }),
+}));
+
+const { EventBuffer, extractProjectId } = await import('./event-buffer');
+type EventBuffer = InstanceType<typeof EventBuffer>;
 
 /** Drain an object-mode Readable into an array of line strings. event-buffer
  *  yields each JSONEachRow row as its own string chunk; the @clickhouse/client
@@ -25,20 +38,25 @@ const redis = getRedisCache();
 
 beforeEach(async () => {
   const keys = await redis.keys('event*');
-  if (keys.length > 0) await redis.del(...keys);
+  if (keys.length > 0) {
+    await redis.del(...keys);
+  }
+  chInsert.mockClear();
+  chQuery.mockClear();
 });
 
-afterAll(async () => {
-  try {
-    await redis.quit();
-  } catch {}
+// The shared `getRedisCache()` client is deliberately NOT quit here: bun runs
+// every file in one process, and closing the singleton takes it away from the
+// files that run next (V1's vitest isolated per file, so it could).
+afterAll(() => {
+  mock.module('./clickhouse', () => realClickhouse);
 });
 
 describe('EventBuffer', () => {
   let eventBuffer: EventBuffer;
 
   beforeEach(() => {
-    eventBuffer = new EventBuffer();
+    eventBuffer = new EventBuffer(stubBufferDeps);
   });
 
   it('adds regular event directly to buffer queue', async () => {
@@ -174,14 +192,14 @@ describe('EventBuffer', () => {
 
     expect(await eventBuffer.getBufferSize()).toBe(2);
 
-    const insertSpy = vi
-      .spyOn(ch, 'insert')
-      .mockResolvedValueOnce(undefined as any);
-
     await eventBuffer.processBuffer();
 
-    expect(insertSpy).toHaveBeenCalled();
-    const callArgs = insertSpy.mock.calls[0]![0];
+    expect(chInsert).toHaveBeenCalled();
+    const callArgs = chInsert.mock.calls[0]![0] as {
+      format: string;
+      table: string;
+      values: unknown;
+    };
     expect(callArgs.format).toBe('JSONEachRow');
     expect(callArgs.table).toBe('events');
     // After the raw-passthrough optimisation, `values` is an
@@ -201,14 +219,12 @@ describe('EventBuffer', () => {
     expect(JSON.parse(lines[1]!).name).toBe('event2');
 
     expect(await eventBuffer.getBufferSize()).toBe(0);
-
-    insertSpy.mockRestore();
   });
 
   it('processes buffer with chunking', async () => {
     const prev = process.env.EVENT_BUFFER_CHUNK_SIZE;
     process.env.EVENT_BUFFER_CHUNK_SIZE = '2';
-    const eb = new EventBuffer();
+    const eb = new EventBuffer(stubBufferDeps);
 
     for (let i = 0; i < 4; i++) {
       eb.add({
@@ -219,39 +235,32 @@ describe('EventBuffer', () => {
     }
     await eb.flush();
 
-    const insertSpy = vi
-      .spyOn(ch, 'insert')
-      .mockResolvedValue(undefined as any);
-
     await eb.processBuffer();
 
-    expect(insertSpy).toHaveBeenCalledTimes(2);
+    expect(chInsert).toHaveBeenCalledTimes(2);
     const call1 = await streamToLines(
-      insertSpy.mock.calls[0]![0].values as Readable,
+      (chInsert.mock.calls[0]![0] as { values: Readable }).values
     );
     const call2 = await streamToLines(
-      insertSpy.mock.calls[1]![0].values as Readable,
+      (chInsert.mock.calls[1]![0] as { values: Readable }).values
     );
     expect(call1.length).toBe(2);
     expect(call2.length).toBe(2);
 
-    if (prev === undefined) delete process.env.EVENT_BUFFER_CHUNK_SIZE;
-    else process.env.EVENT_BUFFER_CHUNK_SIZE = prev;
-
-    insertSpy.mockRestore();
+    if (prev === undefined) {
+      delete process.env.EVENT_BUFFER_CHUNK_SIZE;
+    } else {
+      process.env.EVENT_BUFFER_CHUNK_SIZE = prev;
+    }
   });
 
   it('tracks active visitors', async () => {
-    const querySpy = vi
-      .spyOn(chClient, 'chQuery')
-      .mockResolvedValueOnce([{ count: 2 }] as any);
+    chQuery.mockResolvedValueOnce([{ count: 2 }]);
 
     const count = await eventBuffer.getActiveVisitorCount('p9');
     expect(count).toBe(2);
-    expect(querySpy).toHaveBeenCalledOnce();
-    expect(querySpy.mock.calls[0]![0]).toContain("project_id = 'p9'");
-
-    querySpy.mockRestore();
+    expect(chQuery).toHaveBeenCalledTimes(1);
+    expect(chQuery.mock.calls[0]![0]).toContain("project_id = 'p9'");
   });
 
   it('handles multiple sessions independently — all events go to buffer', async () => {
@@ -313,18 +322,14 @@ describe('EventBuffer', () => {
     } as any);
     await eventBuffer.flush();
 
-    const insertSpy = vi
-      .spyOn(ch, 'insert')
-      .mockRejectedValueOnce(new Error('ClickHouse unavailable'));
+    chInsert.mockRejectedValueOnce(new Error('ClickHouse unavailable'));
 
     // Errors propagate to tryFlush (which resyncs the counter). The safety
     // property — queue preserved on CH failure — still holds.
     await expect(eventBuffer.processBuffer()).rejects.toThrow(
-      'ClickHouse unavailable',
+      'ClickHouse unavailable'
     );
     expect(await eventBuffer.getBufferSize()).toBe(1);
-
-    insertSpy.mockRestore();
   });
 });
 

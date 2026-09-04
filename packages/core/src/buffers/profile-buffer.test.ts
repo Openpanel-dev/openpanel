@@ -1,24 +1,33 @@
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { getRedisCache } from '@openpanel/redis';
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { IClickhouseProfile } from '../services/profile.service';
+import { stubBufferDeps } from '../../test/buffer-fixtures';
+import type { IClickhouseProfile } from '../modules/profile/profile.service';
 
-// Mock chQuery to avoid hitting real ClickHouse
-vi.mock('../clickhouse/client', () => ({
-  ch: {
-    insert: vi.fn().mockResolvedValue(undefined),
-  },
-  chQuery: vi.fn().mockResolvedValue([]),
-  TABLE_NAMES: {
-    profiles: 'profiles',
-  },
+// `./clickhouse` is the one seam the buffers reach ClickHouse through — see
+// event-buffer.test.ts's header for why that, and not
+// `@openpanel/db/src/clickhouse/client`, is what gets replaced.
+const realClickhouse = { ...(await import('./clickhouse')) };
+
+const chInsert = mock(async (_options: unknown): Promise<unknown> => undefined);
+const chQuery = mock(async (_sql: string): Promise<IClickhouseProfile[]> => []);
+
+mock.module('./clickhouse', () => ({
+  loadClickHouse: () =>
+    Promise.resolve({
+      ch: { insert: chInsert },
+      chQuery,
+      TABLE_NAMES: { profiles: 'profiles' },
+    }),
 }));
 
-import { ProfileBuffer } from './profile-buffer';
-import { chQuery } from '../clickhouse/client';
+const { ProfileBuffer } = await import('./profile-buffer');
+type ProfileBuffer = InstanceType<typeof ProfileBuffer>;
 
 const redis = getRedisCache();
 
-function makeProfile(overrides: Partial<IClickhouseProfile>): IClickhouseProfile {
+function makeProfile(
+  overrides: Partial<IClickhouseProfile>
+): IClickhouseProfile {
   const now = new Date().toISOString();
   return {
     id: 'profile-1',
@@ -38,28 +47,36 @@ function makeProfile(overrides: Partial<IClickhouseProfile>): IClickhouseProfile
 
 beforeEach(async () => {
   const keys = [
-    ...await redis.keys('profile*'),
-    ...await redis.keys('lock:profile'),
+    ...(await redis.keys('profile*')),
+    ...(await redis.keys('lock:profile')),
   ];
-  if (keys.length > 0) await redis.del(...keys);
-  vi.mocked(chQuery).mockResolvedValue([]);
+  if (keys.length > 0) {
+    await redis.del(...keys);
+  }
+  chInsert.mockClear();
+  chQuery.mockReset();
+  chQuery.mockResolvedValue([]);
 });
 
-afterAll(async () => {
-  try {
-    await redis.quit();
-  } catch {}
+// The shared `getRedisCache()` client is deliberately NOT quit here: bun runs
+// every file in one process, and closing the singleton takes it away from the
+// files that run next (V1's vitest isolated per file, so it could).
+afterAll(() => {
+  mock.module('./clickhouse', () => realClickhouse);
 });
 
 describe('ProfileBuffer', () => {
   let profileBuffer: ProfileBuffer;
 
   beforeEach(() => {
-    profileBuffer = new ProfileBuffer();
+    profileBuffer = new ProfileBuffer(stubBufferDeps);
   });
 
   it('adds a profile to the buffer', async () => {
-    const profile = makeProfile({ first_name: 'John', email: 'john@example.com' });
+    const profile = makeProfile({
+      first_name: 'John',
+      email: 'john@example.com',
+    });
 
     const sizeBefore = await profileBuffer.getBufferSize();
     await profileBuffer.add(profile);
@@ -143,7 +160,7 @@ describe('ProfileBuffer', () => {
       email: 'jane@example.com',
       groups: ['existing-group'],
     });
-    vi.mocked(chQuery).mockResolvedValue([existingInClickhouse]);
+    chQuery.mockResolvedValue([existingInClickhouse]);
 
     const incomingProfile = makeProfile({
       first_name: '',
@@ -173,36 +190,24 @@ describe('ProfileBuffer', () => {
   it('retains profiles in queue when ClickHouse insert fails', async () => {
     await profileBuffer.add(makeProfile({ first_name: 'John' }));
 
-    const { ch } = await import('../clickhouse/client');
-    const insertSpy = vi
-      .spyOn(ch, 'insert')
-      .mockRejectedValueOnce(new Error('ClickHouse unavailable'));
+    chInsert.mockRejectedValueOnce(new Error('ClickHouse unavailable'));
 
     // Errors propagate to tryFlush (which resyncs the counter). The safety
     // property — queue preserved on CH failure — still holds.
     await expect(profileBuffer.processBuffer()).rejects.toThrow(
-      'ClickHouse unavailable',
+      'ClickHouse unavailable'
     );
     expect(await profileBuffer.getBufferSize()).toBe(1);
-
-    insertSpy.mockRestore();
   });
 
   it('proceeds with insert when ClickHouse fetch fails (treats profiles as new)', async () => {
-    vi.mocked(chQuery).mockRejectedValueOnce(new Error('ClickHouse unavailable'));
-
-    const { ch } = await import('../clickhouse/client');
-    const insertSpy = vi
-      .spyOn(ch, 'insert')
-      .mockResolvedValueOnce(undefined as any);
+    chQuery.mockRejectedValueOnce(new Error('ClickHouse unavailable'));
 
     await profileBuffer.add(makeProfile({ first_name: 'John' }));
     await profileBuffer.processBuffer();
 
     // Insert must still have been called — no data loss even when fetch fails
-    expect(insertSpy).toHaveBeenCalled();
+    expect(chInsert).toHaveBeenCalled();
     expect(await profileBuffer.getBufferSize()).toBe(0);
-
-    insertSpy.mockRestore();
   });
 });

@@ -5,6 +5,7 @@
 // (side-effect-free) import.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
+import type { Buffers } from '../../context';
 import { createRecordingProducers } from '../../jobs/testing';
 import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
@@ -163,7 +164,7 @@ test('ImportService.enqueue adds the import job onto the import queue', async ()
     ch: {},
     redis: {},
     clients: {},
-    buffers: {},
+    buffers: {} as Buffers,
     logger: stubLogger(),
     queues: producers.queues,
   });

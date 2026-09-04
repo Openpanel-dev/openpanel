@@ -3,6 +3,7 @@
 
 import {
   type AppDeps,
+  type Buffers,
   createCtx,
   extendCtx,
   type HttpCtx,
@@ -89,7 +90,7 @@ export function stubHttpCtx(
     ch: {},
     redis: {},
     clients: {},
-    buffers: {},
+    buffers: {} as Buffers,
     producers: createRecordingProducers(queues),
     logger,
     config: { selfHosted: false },

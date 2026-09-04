@@ -422,13 +422,6 @@ mock.module('@openpanel/db/src/clickhouse/client', () => ({
   ch: { command: chCommand },
 }));
 
-afterAll(() => {
-  mock.module(
-    '@openpanel/db/src/clickhouse/client',
-    () => realClickhouseClient
-  );
-});
-
 // Bypasses the Redis cache-aside entirely — this module's own logic is
 // exercised directly, caching is @openpanel/redis's concern. `access.service.ts`
 // (reached via connectUserToOrganization's dynamic import) calls `.clear()` on
@@ -451,7 +444,14 @@ function cacheableStub(
     set: () => async () => 'OK' as const,
   });
 }
+// Spread the real module for the same reason the clickhouse/client mock above
+// does: `mock.module` replaces this specifier process-wide. Surfaced by
+// M8-001, which put `createBuffers` on core's barrel — event-buffer.ts
+// value-imports `publishEvent` from here, so a partial factory turns this
+// file's own barrel import into a SyntaxError.
+const realRedis = { ...(await import('@openpanel/redis')) };
 mock.module('@openpanel/redis', () => ({
+  ...realRedis,
   cacheable: cacheableStub,
   getRedisCache: () => ({
     get: async () => null,
@@ -459,6 +459,14 @@ mock.module('@openpanel/redis', () => ({
     del: async () => undefined,
   }),
 }));
+
+afterAll(() => {
+  mock.module(
+    '@openpanel/db/src/clickhouse/client',
+    () => realClickhouseClient
+  );
+  mock.module('@openpanel/redis', () => realRedis);
+});
 
 // Mocks core's own clients/email.ts wrapper, not @openpanel/email itself:
 // that package statically imports @openpanel/db's full barrel (Resend/SMTP

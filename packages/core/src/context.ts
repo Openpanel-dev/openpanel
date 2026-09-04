@@ -5,21 +5,25 @@
 // (ADR-007 decision 18, ADR-018 R1).
 
 import type { SessionValidationResult } from '@openpanel/db';
+import type { Buffers } from './buffers/create-buffers';
 import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
 import { createServices, type Services } from './services';
 import type { CookieJar, CookieOptions } from './shared/cookie';
 
 // Handles core does not own yet. Each real type arrives with the phase that
-// builds it (db/ch/redis P3, clients P4, buffers P8); they are named now so
-// AppDeps and Ctx are written once in their final shape and replacing an alias
-// moves no field. `unknown` is deliberate — reading one before its type lands
-// is a compile error rather than a silent `any`.
+// builds it (db/ch/redis P3, clients P4); they are named now so AppDeps and
+// Ctx are written once in their final shape and replacing an alias moves no
+// field. `unknown` is deliberate — reading one before its type lands is a
+// compile error rather than a silent `any`.
 export type Db = unknown;
 export type ClickHouseClient = unknown;
 export type RedisClient = unknown;
 export type ServiceClients = unknown;
-export type Buffers = unknown;
+
+// Landed at M8-001: built once by `createBuffers(deps)` in main.ts, never a
+// module singleton.
+export type { Buffers } from './buffers/create-buffers';
 
 // The resolved session. Type-only, so nothing of `@openpanel/db` is loaded at
 // runtime — core stays importable with no database, which is what lets

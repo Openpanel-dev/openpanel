@@ -6,6 +6,32 @@
 // once and mount the three route surfaces plus the tRPC router over it; a
 // service, a client or a buffer is not reachable from here by design.
 
+// The concrete pino implementation (dissolved from @openpanel/logger,
+// M4-003). `./logger` above is the structural interface every module codes
+// against; this is what apps/api, and the still-live apps/worker, call to
+// build one.
+// The seven buffers (moved from packages/db/src/buffers, M8-001). Only the
+// FACTORY is on the barrel: they are boot singletons on `AppDeps`, built once
+// by `main.ts`, never module singletons (ADR-007). V1's
+// packages/db/src/buffers/index.ts calls this once and re-exports the
+// instances, so both boots share one set.
+export type {
+  AddObservation,
+  AddObserver,
+  BufferDeps,
+  FlushObservation,
+  FlushObserver,
+  FlushPhaseTimings,
+  FlushTrigger,
+} from './buffers/base-buffer';
+export { registerBufferMetrics } from './buffers/buffer.metrics';
+export type { Buffers } from './buffers/create-buffers';
+export { createBuffers } from './buffers/create-buffers';
+export type { IGroupBufferInput } from './buffers/group-buffer';
+export type { ProfileBackfillEntry } from './buffers/profile-backfill-buffer';
+export type { IClickhouseSessionReplayChunk } from './buffers/replay-buffer';
+export type { SessionIngestResult } from './buffers/session-buffer';
+export { SESSION_TIMEOUT_MS } from './buffers/session-buffer';
 // Dissolved from @openpanel/ai (M4-005) — the chat agent app, the filter
 // command bar, insight explanation/enrichment and the worker's digest and
 // win-back emails all call these directly.
@@ -78,10 +104,6 @@ export {
   sendSlackNotification,
   slackInstaller,
 } from './clients/integrations/slack';
-// The concrete pino implementation (dissolved from @openpanel/logger,
-// M4-003). `./logger` above is the structural interface every module codes
-// against; this is what apps/api, and the still-live apps/worker, call to
-// build one.
 export type { ILogger } from './clients/logger';
 export {
   createLogger,
@@ -118,15 +140,14 @@ export {
 // overview router call these.
 //
 // Loaded via dynamic import, NOT a static re-export like every other service
-// on this barrel: packages/db/src/buffers/base-buffer.ts already imports
-// `@openpanel/core` eagerly, and this module's own chain reaches deep into
-// `@openpanel/db` (the Prisma-backed conversation store, ~30 analytics/report
-// tool functions). A static re-export here would make THIS barrel's own
-// evaluation re-enter `@openpanel/db` while it is still mid-evaluation of
-// `./buffers` — `bot-buffer.ts extends BaseBuffer` then sees `BaseBuffer` as
-// `undefined` (a live TDZ binding that never got the chance to fill in).
-// `event-buffer.test.ts` et al. hit exactly this before this indirection was
-// added. `chatApp` and `chatRunContext` are one-time-per-process values, so
+// on this barrel: packages/db/src/buffers/index.ts imports `@openpanel/core`
+// eagerly (it is the V1 delegate over `createBuffers`), and this module's own
+// chain reaches deep into `@openpanel/db` (the Prisma-backed conversation
+// store, ~30 analytics/report tool functions). A static re-export here would
+// make THIS barrel's own evaluation re-enter `@openpanel/db` while that
+// package is still mid-evaluation, and a class the re-entering module extends
+// is then an `undefined` TDZ binding that never got the chance to fill in.
+// `chatApp` and `chatRunContext` are one-time-per-process values, so
 // callers resolve them once (apps/api's Fastify wrapper does so inside its
 // own already-async route registration) and keep the reference.
 export type {
@@ -1044,7 +1065,7 @@ export {
 // Loaded via dynamic import, NOT a static re-export, for the same reason
 // `getChatApp`/`runFilterCommand` above are: `mcp.service` reaches
 // `@openpanel/db` (auth's client lookup, every analytics tool), and
-// `@openpanel/db/src/buffers/base-buffer.ts` already imports `@openpanel/core`
+// `@openpanel/db/src/buffers/index.ts` already imports `@openpanel/core`
 // eagerly. A static export here would make this barrel's own evaluation
 // re-enter `@openpanel/db` mid-evaluation — observed as a `PagesService` TDZ
 // ReferenceError two modules away, in a tool file that never otherwise runs

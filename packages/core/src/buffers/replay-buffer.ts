@@ -1,6 +1,6 @@
 import { getRedisCache } from '@openpanel/redis';
-import { ch, TABLE_NAMES } from '../clickhouse/client';
-import { BaseBuffer } from './base-buffer';
+import { BaseBuffer, type BufferDeps } from './base-buffer';
+import { loadClickHouse } from './clickhouse';
 
 export interface IClickhouseSessionReplayChunk {
   project_id: string;
@@ -23,8 +23,8 @@ export class ReplayBuffer extends BaseBuffer {
 
   private readonly redisKey = 'replay-buffer';
 
-  constructor() {
-    super({
+  constructor(deps: BufferDeps) {
+    super(deps, {
       name: 'replay',
       onFlush: async () => {
         await this.processBuffer();
@@ -76,6 +76,7 @@ export class ReplayBuffer extends BaseBuffer {
     // raw strings to CH skips JSON.parse × N on the worker AND the
     // client's internal JSON.stringify × N — significant because each
     // rrweb chunk's `payload` is 10–100KB.
+    const { ch, TABLE_NAMES } = await loadClickHouse();
     const chStart = performance.now();
     await this.parallelLimit(this.chunks(items, this.chunkSize), (chunk) =>
       ch.insert({
@@ -83,7 +84,7 @@ export class ReplayBuffer extends BaseBuffer {
         values: this.jsonEachRowStream(chunk),
         format: 'JSONEachRow',
         clickhouse_settings: this.getClickhouseSettings(),
-      }),
+      })
     );
     const chInsertMs = performance.now() - chStart;
 

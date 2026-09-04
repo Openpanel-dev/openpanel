@@ -119,9 +119,10 @@ export async function createContext({
 /**
  * The `Ctx` half of the context under V1.
  *
- * `db`/`ch`/`redis`/`clients`/`buffers` are core's `unknown` stubs until P3-P8
- * wire the real clients, and V1's routers reach for their own singletons
- * regardless. `queues` and `services` throw rather than returning an empty
+ * `db`/`ch`/`redis`/`clients` are core's `unknown` stubs until P3-P4 wire the
+ * real clients, and V1's routers reach for their own singletons regardless —
+ * including the buffers, which V1 reaches through `@openpanel/db`'s delegate
+ * (M8-001) rather than through this context. `queues` and `services` throw rather than returning an empty
  * object: a V1 router that reached for either through core would otherwise
  * silently do nothing (`queues`) or hit `undefined` (`services`) instead of
  * the loud error that tells it to reach `@openpanel/db`/`@openpanel/core`
@@ -136,7 +137,7 @@ function v1CtxScope(req: CreateFastifyContextOptions['req']): Ctx {
     ch: undefined,
     redis: undefined,
     clients: undefined,
-    buffers: undefined,
+    buffers: undefined as unknown as Ctx['buffers'],
     logger: req.log,
     queues: NOT_WIRED_QUEUES,
     services: NOT_WIRED_SERVICES,

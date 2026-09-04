@@ -1,9 +1,29 @@
 import { Readable } from 'node:stream';
 import type { ClickHouseSettings } from '@clickhouse/client';
-import { generateSecureId } from '@openpanel/core';
-import { cronQueue } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
-import { createLogger, type ILogger } from '../logger';
+import type { Logger } from '../logger';
+import { generateSecureId } from '../shared/id';
+
+/**
+ * What a buffer needs from the boot scope. Buffers are built once by
+ * `createBuffers(deps)` and hung on `AppDeps` — never module singletons, so a
+ * test constructs its own and closes nothing shared (ADR-007).
+ */
+export interface BufferDeps {
+  /**
+   * Each buffer logs under its own name. Injected rather than built here so
+   * core instantiates no pino (ADR-007 layout) and a test hands in a silent
+   * stub instead of spawning one transport worker thread per buffer.
+   */
+  createLogger(name: string): Logger;
+  /**
+   * Asked before every flush. ADR-005's `ProducerHandle.bullQueues` escape
+   * hatch, narrowed to the one thing the buffers ask BullMQ directly: pausing
+   * `cron` from bull-board halts ALL buffer flushing, preserved deliberately
+   * (docs/ANSWERS.md §3: "known!").
+   */
+  isCronPaused(): Promise<boolean>;
+}
 
 export type FlushPhaseTimings = {
   lrangeMs?: number;
@@ -57,7 +77,7 @@ export type AddObserver = (obs: AddObservation) => void;
 
 export class BaseBuffer {
   name: string;
-  logger: ILogger;
+  logger: Logger;
   lockKey: string;
   lockTimeout = 60;
   onFlush: () => Promise<void> | void;
@@ -98,12 +118,15 @@ export class BaseBuffer {
   /** Optional hook for instrumenting add() latency. */
   public addObserver: AddObserver | null = null;
 
-  constructor(options: {
-    name: string;
-    onFlush: () => Promise<void>;
-    enableParallelProcessing?: boolean;
-  }) {
-    this.logger = createLogger({ name: options.name });
+  constructor(
+    private readonly deps: BufferDeps,
+    options: {
+      name: string;
+      onFlush: () => Promise<void>;
+      enableParallelProcessing?: boolean;
+    }
+  ) {
+    this.logger = deps.createLogger(options.name);
     this.name = options.name;
     this.lockKey = `lock:${this.name}`;
     this.onFlush = options.onFlush;
@@ -387,7 +410,7 @@ export class BaseBuffer {
       // best-effort
     }
 
-    const isCronQueuePaused = await cronQueue.isPaused();
+    const isCronQueuePaused = await this.deps.isCronPaused();
     if (isCronQueuePaused) {
       this.emitFlushObservation({
         buffer: this.name,

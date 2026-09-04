@@ -1,7 +1,7 @@
 import { getRedisCache, publishEvent } from '@openpanel/redis';
-import { ch, chQuery } from '../clickhouse/client';
-import type { IClickhouseEvent } from '../services/event.service';
-import { BaseBuffer } from './base-buffer';
+import type { IClickhouseEvent } from '../modules/event/event.service';
+import { BaseBuffer, type BufferDeps } from './base-buffer';
+import { loadClickHouse } from './clickhouse';
 
 const PROJECT_ID_NEEDLE = '"project_id":"';
 
@@ -26,9 +26,14 @@ const PROJECT_ID_NEEDLE = '"project_id":"';
  */
 export function extractProjectId(line: string): string | null {
   const first = line.indexOf(PROJECT_ID_NEEDLE);
-  if (first < 0) return null;
+  if (first < 0) {
+    return null;
+  }
 
-  const second = line.indexOf(PROJECT_ID_NEEDLE, first + PROJECT_ID_NEEDLE.length);
+  const second = line.indexOf(
+    PROJECT_ID_NEEDLE,
+    first + PROJECT_ID_NEEDLE.length
+  );
   if (second >= 0) {
     try {
       const obj = JSON.parse(line) as { project_id?: unknown };
@@ -43,7 +48,9 @@ export function extractProjectId(line: string): string | null {
   // valueEnd === valueStart means the value is empty (`"project_id":""`)
   // — treat as missing so we don't pollute pub/sub counts with an empty
   // key. Matches the old regex's `[^"]+` (one-or-more) behavior.
-  if (valueEnd <= valueStart) return null;
+  if (valueEnd <= valueStart) {
+    return null;
+  }
   return line.slice(valueStart, valueEnd);
 }
 
@@ -70,8 +77,8 @@ export class EventBuffer extends BaseBuffer {
 
   private queueKey = 'event_buffer:queue';
 
-  constructor() {
-    super({
+  constructor(deps: BufferDeps) {
+    super(deps, {
       name: 'event',
       onFlush: async () => {
         await this.processBuffer();
@@ -212,16 +219,14 @@ export class EventBuffer extends BaseBuffer {
     for (let i = 0; i < queueEvents.length; i++) {
       const projectId = extractProjectId(queueEvents[i]!);
       if (projectId) {
-        countByProject.set(
-          projectId,
-          (countByProject.get(projectId) ?? 0) + 1,
-        );
+        countByProject.set(projectId, (countByProject.get(projectId) ?? 0) + 1);
       }
       if ((i + 1) % yieldEvery === 0) {
         await this.yieldToEventLoop();
       }
     }
 
+    const { ch } = await loadClickHouse();
     const chStart = performance.now();
     await this.parallelLimit(
       this.chunks(queueEvents, this.chunkSize),
@@ -233,7 +238,7 @@ export class EventBuffer extends BaseBuffer {
           values: this.jsonEachRowStream(chunk),
           format: 'JSONEachRow',
           clickhouse_settings: this.getClickhouseSettings(),
-        }),
+        })
     );
     const chInsertMs = performance.now() - chStart;
 
@@ -252,6 +257,7 @@ export class EventBuffer extends BaseBuffer {
   }
 
   public async getActiveVisitorCount(projectId: string): Promise<number> {
+    const { chQuery } = await loadClickHouse();
     const rows = await chQuery<{ count: number }>(
       `SELECT uniq(profile_id) AS count
        FROM events

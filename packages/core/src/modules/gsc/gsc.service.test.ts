@@ -126,6 +126,20 @@ mock.module('@openpanel/db/src/clickhouse/client', () => ({
   chQuery,
 }));
 
+// Bypasses the Redis cache-aside entirely — `getGscCannibalization`'s own
+// logic is exercised directly, its caching is @openpanel/redis's concern.
+// `getRedisCache` is unused here but included for the same cross-file
+// mock.module reason as above.
+const realRedis = { ...(await import('@openpanel/redis')) };
+mock.module('@openpanel/redis', () => ({
+  ...realRedis,
+  cacheable: <T>(fn: T) => fn,
+  getRedisCache: () => ({
+    get: async () => null,
+    setex: async () => undefined,
+  }),
+}));
+
 // `chQuery` above is a fake stuck in place for the rest of the process once
 // this file's tests finish (`mock.module` has no per-file scope without
 // `--isolate` — see AGENTS.md): the mcp module's integration suite calls the
@@ -137,19 +151,8 @@ afterAll(() => {
     '@openpanel/db/src/clickhouse/client',
     () => realClickhouseClient
   );
+  mock.module('@openpanel/redis', () => realRedis);
 });
-
-// Bypasses the Redis cache-aside entirely — `getGscCannibalization`'s own
-// logic is exercised directly, its caching is @openpanel/redis's concern.
-// `getRedisCache` is unused here but included for the same cross-file
-// mock.module reason as above.
-mock.module('@openpanel/redis', () => ({
-  cacheable: <T>(fn: T) => fn,
-  getRedisCache: () => ({
-    get: async () => null,
-    setex: async () => undefined,
-  }),
-}));
 
 const validateAuthorizationCode = mock(async () => ({
   accessToken: () => 'google-access-token',

@@ -1,7 +1,7 @@
 // Stubs shared by the http tests. Not a test file (no `*.test.ts` suffix), so
 // the runner does not pick it up.
 
-import type { AppDeps } from '../src/context';
+import type { AppDeps, Buffers } from '../src/context';
 import { createRecordingProducers } from '../src/jobs/testing';
 import { queues } from '../src/jobs.registry';
 import { type CapturedLogger, capturingLogger } from './rpc-fixtures';
@@ -42,7 +42,7 @@ export function stubAppDeps(): AppDepsStub {
       ch: {},
       redis: {},
       clients: {},
-      buffers: {},
+      buffers: {} as Buffers,
       producers,
       logger,
       config: { selfHosted: false },

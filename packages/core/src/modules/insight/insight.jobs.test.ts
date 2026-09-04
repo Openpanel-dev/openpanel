@@ -2,7 +2,7 @@
 // methods themselves are exercised in insight.service.test.ts.
 
 import { expect, test } from 'bun:test';
-import type { JobCtx } from '../../context';
+import type { Buffers, JobCtx } from '../../context';
 import { createRecordingProducers } from '../../jobs/testing';
 import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
@@ -57,7 +57,7 @@ function stubJobCtx(
     ch: {},
     redis: {},
     clients: {},
-    buffers: {},
+    buffers: {} as Buffers,
     logger: stubLogger(),
     queues: createRecordingProducers(queues).queues,
     services,
@@ -117,7 +117,7 @@ test('insightsDaily fans out one insightsProject enqueue per candidate, jobId de
     ch: {},
     redis: {},
     clients: {},
-    buffers: {},
+    buffers: {} as Buffers,
     logger: stubLogger(),
     queues: producers.queues,
     services: {
