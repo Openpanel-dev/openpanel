@@ -89,7 +89,7 @@ Coolify deploys OpenPanel with the following services:
 
 - **opapi**: OpenPanel API server (handles `/api` routes)
 - **opdashboard**: OpenPanel dashboard (frontend)
-- **opworker**: Background worker for processing events
+- **opworker**: Background worker for processing events (no public domain, see below)
 - **opdb**: PostgreSQL database
 - **opkv**: Redis cache
 - **opch**: ClickHouse analytics database
@@ -113,6 +113,12 @@ Coolify automatically handles these variables:
 - `COOKIE_SECRET`: Automatically generated secret
 
 You can configure optional variables like `ALLOW_REGISTRATION`, `RESEND_API_KEY`, `OPENAI_API_KEY`, etc. through Coolify's environment variable interface.
+
+#### The worker service
+
+`opworker` has no public domain and ships with `DISABLE_BULLBOARD=1`. Nothing on it is meant to be reached from the internet; the API and dashboard talk to it over the internal network, and Coolify's healthcheck uses localhost.
+
+If you want the queue dashboard, set `BULLBOARD_USERNAME` and `BULLBOARD_PASSWORD`, remove `DISABLE_BULLBOARD`, and reach it through your own proxy or an SSH tunnel. Basic auth is a thin lock, so do not put it on a public hostname on its own. The dashboard is read-only unless you also set `BULLBOARD_READONLY=0`.
 
 ### Updating OpenPanel
 

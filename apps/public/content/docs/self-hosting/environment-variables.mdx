@@ -603,6 +603,45 @@ Disable BullMQ board UI. Set to `true` or `1` to disable the queue monitoring da
 DISABLE_BULLBOARD=true
 ```
 
+### BULLBOARD_USERNAME
+
+**Type**: `string`
+**Required**: No
+**Default**: none
+
+Username for the queue dashboard. The dashboard is not mounted unless both `BULLBOARD_USERNAME` and `BULLBOARD_PASSWORD` are set; without them the worker returns 404 for `/` and `/api/queues`. Requests must then carry HTTP basic credentials. `/metrics`, `/healthcheck`, `/healthz/live` and `/healthz/ready` stay open either way.
+
+**Example**:
+```bash
+BULLBOARD_USERNAME=admin
+```
+
+### BULLBOARD_PASSWORD
+
+**Type**: `string`
+**Required**: No
+**Default**: none
+
+Password for the queue dashboard. See `BULLBOARD_USERNAME`.
+
+**Example**:
+```bash
+BULLBOARD_PASSWORD=a-long-random-string
+```
+
+### BULLBOARD_READONLY
+
+**Type**: `boolean`
+**Required**: No
+**Default**: `true`
+
+The dashboard is read-only by default: it shows queues and jobs but will not pause, retry, empty or add anything. Set to `0` or `false` to allow those actions.
+
+**Example**:
+```bash
+BULLBOARD_READONLY=0
+```
+
 ### DISABLE_WORKERS
 
 **Type**: `boolean`

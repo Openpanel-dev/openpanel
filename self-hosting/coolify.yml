@@ -193,11 +193,13 @@ services:
       opapi:
         condition: service_healthy
     environment:
-      # FQDN
-      - SERVICE_FQDN_OPBULLBOARD
       # Common
       - NODE_ENV=production
       - SELF_HOSTED=true
+      # The queue dashboard is off by default. To use it, drop this line, set
+      # BULLBOARD_USERNAME and BULLBOARD_PASSWORD, and put it behind your own
+      # proxy rather than giving this service a public domain.
+      - DISABLE_BULLBOARD=1
       # URLs
       - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
       - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
