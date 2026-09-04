@@ -1,4 +1,4 @@
-import { verifyPassword } from '@openpanel/common/server';
+import { createHash, verifyPassword } from '@openpanel/common/server';
 import type { IServiceClientWithProject } from '@openpanel/db';
 import { ClientType, getClientByIdCached } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
@@ -58,7 +58,9 @@ async function verifyClientSecret(
     return false;
   }
 
-  const cacheKey = `client:auth:${clientId}:${Buffer.from(clientSecret).toString('base64')}`;
+  // A digest, not the reversible base64 of the secret itself, since this key
+  // ends up in Redis.
+  const cacheKey = `client:auth:${clientId}:${createHash(clientSecret, 32)}`;
 
   // Strict compare: entries written before only positives were cached may still
   // hold "false".

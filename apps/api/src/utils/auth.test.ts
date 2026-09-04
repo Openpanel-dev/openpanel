@@ -7,6 +7,7 @@
  * whether a secret string was present on the request.
  */
 
+import { createHash as createNodeHash } from 'node:crypto';
 import type { FastifyRequest } from 'fastify';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -17,6 +18,8 @@ const redisSetex = vi.fn();
 
 vi.mock('@openpanel/common/server', () => ({
   verifyPassword: (...args: unknown[]) => verifyPassword(...args),
+  createHash: (data: string) =>
+    createNodeHash('shake256', { outputLength: 32 }).update(data).digest('hex'),
 }));
 vi.mock('@openpanel/db', () => ({
   ClientType: { read: 'read', write: 'write', root: 'root' },
