@@ -33,7 +33,7 @@
 // and this module's queries haven't been converted yet.
 
 import { clix } from '@openpanel/db/src/clickhouse/query-builder';
-import type { IClickhouseEvent } from '@openpanel/db/src/services/event.service';
+import type { IClickhouseEvent } from '../event/event.service';
 import type { IPublishChannels } from '@openpanel/redis';
 import { subMinutes } from 'date-fns';
 import sqlstring from 'sqlstring';
@@ -54,11 +54,11 @@ function loadChClient() {
 }
 
 function loadEventService() {
-  return import('@openpanel/db/src/services/event.service');
+  return import('../event/event.service');
 }
 
 function loadProfileService() {
-  return import('@openpanel/db/src/services/profile.service');
+  return import('../profile/profile.service');
 }
 
 function loadEventBuffer() {

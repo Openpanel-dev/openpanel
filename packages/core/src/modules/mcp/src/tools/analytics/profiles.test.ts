@@ -7,6 +7,7 @@ import {
   it,
   mock,
 } from 'bun:test';
+import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 
 const mockChQuery = mock((..._args: unknown[]) =>
   Promise.resolve([] as unknown[])
@@ -47,8 +48,16 @@ beforeAll(async () => {
   ));
 });
 
-function capturedSql(): string {
-  return mockChQuery.mock.calls[0]?.[0] as string;
+// Since M7-002 the service hands `chQuery` a `sql` fragment (ADR-013): the
+// text carries `{pN:Type}` placeholders and every value travels in params.
+function captured(): { query: string; params: Record<string, unknown> } {
+  const fragment = mockChQuery.mock.calls[0]?.[0] as SqlFragment;
+  const { query, query_params } = fragment.toStatement();
+  return { query: query.replace(/\s+/g, ' '), params: query_params };
+}
+
+function boundValues(): unknown[] {
+  return Object.values(captured().params);
 }
 
 beforeEach(() => {
@@ -59,101 +68,109 @@ beforeEach(() => {
 describe('findProfilesCore — SQL conditions', () => {
   it('always includes project_id condition', async () => {
     await findProfilesCore({ projectId: 'proj-1' });
-    expect(capturedSql()).toContain("project_id = 'proj-1'");
+    expect(captured().query).toContain('project_id = {p1:String}');
+    expect(captured().params.p1).toBe('proj-1');
   });
 
   it('adds email ILIKE condition when email is provided', async () => {
     await findProfilesCore({ projectId: 'proj-1', email: 'carl@' });
-    expect(capturedSql()).toContain("email ILIKE '%carl@%'");
+    expect(captured().query).toContain('email ILIKE {p2:String}');
+    expect(captured().params.p2).toBe('%carl@%');
   });
 
   it('searches across first/last/full name for name filter', async () => {
     await findProfilesCore({ projectId: 'proj-1', name: 'Carl' });
-    const sql = capturedSql();
-    expect(sql).toContain('first_name ILIKE');
-    expect(sql).toContain('last_name ILIKE');
-    expect(sql).toContain("concat(first_name, ' ', last_name) ILIKE");
-    expect(sql).toContain('%Carl%');
+    const { query } = captured();
+    expect(query).toContain('first_name ILIKE');
+    expect(query).toContain('last_name ILIKE');
+    expect(query).toContain("concat(first_name, ' ', last_name) ILIKE");
+    expect(boundValues()).toContain('%Carl%');
   });
 
   it('matches multi-token name queries by ANDing each token', async () => {
     await findProfilesCore({ projectId: 'proj-1', name: 'John Smith' });
-    const sql = capturedSql();
-    expect(sql).toContain('%John%');
-    expect(sql).toContain('%Smith%');
+    const { query } = captured();
+    expect(boundValues()).toContain('%John%');
+    expect(boundValues()).toContain('%Smith%');
     // Each token wrapped in its own OR-of-fields group, joined by AND.
-    expect(sql).toContain(') AND (');
+    expect(query).toContain(') AND (');
   });
 
   it('adds country property condition', async () => {
     await findProfilesCore({ projectId: 'proj-1', country: 'SE' });
-    expect(capturedSql()).toContain("properties['country'] = 'SE'");
+    expect(captured().query).toContain('properties[{p2:String}] = {p3:String}');
+    expect(captured().params).toMatchObject({ p2: 'country', p3: 'SE' });
   });
 
   it('adds inactiveDays NOT IN subquery', async () => {
     await findProfilesCore({ projectId: 'proj-1', inactiveDays: 14 });
-    const sql = capturedSql();
-    expect(sql).toContain('NOT IN');
-    expect(sql).toContain('INTERVAL 14 DAY');
+    const { query, params } = captured();
+    expect(query).toContain('NOT IN');
+    expect(query).toContain('INTERVAL {p3:UInt64} DAY');
+    expect(params.p3).toBe(14);
   });
 
   it('floors inactiveDays to integer (prevents SQL injection via floats)', async () => {
     await findProfilesCore({ projectId: 'proj-1', inactiveDays: 14.9 });
-    expect(capturedSql()).toContain('INTERVAL 14 DAY');
-    expect(capturedSql()).not.toContain('14.9');
+    expect(captured().params.p3).toBe(14);
+    expect(boundValues()).not.toContain(14.9);
   });
 
   it('adds minSessions HAVING subquery', async () => {
     await findProfilesCore({ projectId: 'proj-1', minSessions: 5 });
-    const sql = capturedSql();
-    expect(sql).toContain('HAVING count() >= 5');
+    const { query, params } = captured();
+    expect(query).toContain('HAVING count() >= {p3:UInt64}');
+    expect(params.p3).toBe(5);
   });
 
   it('adds performedEvent IN subquery', async () => {
     await findProfilesCore({ projectId: 'proj-1', performedEvent: 'purchase' });
-    expect(capturedSql()).toContain("name = 'purchase'");
+    expect(captured().query).toContain('AND name = {p3:String}');
+    expect(captured().params.p3).toBe('purchase');
   });
 
   it('defaults to ORDER BY created_at DESC', async () => {
     await findProfilesCore({ projectId: 'proj-1' });
-    expect(capturedSql()).toContain('ORDER BY created_at DESC');
+    expect(captured().query).toContain('ORDER BY created_at DESC');
   });
 
   it('respects sortOrder: asc', async () => {
     await findProfilesCore({ projectId: 'proj-1', sortOrder: 'asc' });
-    expect(capturedSql()).toContain('ORDER BY created_at ASC');
+    expect(captured().query).toContain('ORDER BY created_at ASC');
   });
 
   it('defaults limit to 20', async () => {
     await findProfilesCore({ projectId: 'proj-1' });
-    expect(capturedSql()).toContain('LIMIT 20');
+    expect(captured().query).toContain('LIMIT {p2:UInt64}');
+    expect(captured().params.p2).toBe(20);
   });
 
   it('caps limit at 100 regardless of input', async () => {
     await findProfilesCore({ projectId: 'proj-1', limit: 9999 });
-    expect(capturedSql()).toContain('LIMIT 100');
-    expect(capturedSql()).not.toContain('LIMIT 9999');
+    expect(captured().params.p2).toBe(100);
+    expect(boundValues()).not.toContain(9999);
   });
 });
 
 describe('findProfilesCore — SQL injection protection', () => {
-  it('escapes single quotes in string values', async () => {
-    await findProfilesCore({ projectId: "proj'; DROP TABLE profiles;--" });
-    // The projectId must be escaped — raw SQL injection string must not appear
-    expect(capturedSql()).not.toContain("proj'; DROP TABLE profiles;--");
+  it('binds the projectId instead of interpolating it', async () => {
+    const hostile = "proj'; DROP TABLE profiles;--";
+    await findProfilesCore({ projectId: hostile });
+    expect(captured().query).not.toContain(hostile);
+    expect(captured().params.p1).toBe(hostile);
   });
 
-  it('escapes single quotes in name search', async () => {
+  it('binds an apostrophe in the name search', async () => {
     await findProfilesCore({ projectId: 'proj-1', name: "O'Brien" });
-    // Unescaped apostrophe in the SQL would break the query
-    const sql = capturedSql();
-    expect(sql).not.toMatch(/LIKE '%O'Brien%'/);
+    const { query } = captured();
+    expect(query).not.toContain("O'Brien");
+    expect(boundValues()).toContain("%O'Brien%");
   });
 
-  it('escapes backslashes in email', async () => {
+  it('binds a backslash in the email', async () => {
     await findProfilesCore({ projectId: 'proj-1', email: 'test\\@x.com' });
-    // Raw backslash in ClickHouse SQL needs escaping
-    expect(capturedSql()).not.toContain("'%test\\@x.com%'");
+    expect(captured().query).not.toContain('test\\@x.com');
+    expect(captured().params.p2).toBe('%test\\@x.com%');
   });
 });
 

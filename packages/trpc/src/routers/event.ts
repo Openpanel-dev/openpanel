@@ -1,33 +1,47 @@
-import { TRPCError } from '@trpc/server';
-import sqlstring from 'sqlstring';
-import { z } from 'zod';
+// Dissolved into @openpanel/core's event module (M7-002): the ClickHouse
+// queries moved to packages/core/src/modules/event/event.service.ts and
+// src/event.sql.ts. This router stays (DELEGATE PATTERN) — it keeps V1's
+// protectedProcedure stack and delegates every handler body to core's event
+// functions, same as session.ts.
+//
+// `bots` was a `publicProcedure` that let anonymous callers in on the mere
+// existence of a ShareOverview row; ADR-011 (§9, P6 row) makes it
+// `protectedProcedure`. The pages* procedures still read `pagesService`,
+// which the overview module owns (its own task).
 
 import {
-  type IServiceProfile,
-  type IServiceSession,
-  TABLE_NAMES,
-  chQuery,
-  convertClickhouseDateToJs,
-  db,
-  eventService,
-  getChartStartEndDate,
+  getBotEventsPage,
   getConversionEventNames,
-  getEventList,
-  getEventMetasCached,
+  getConversionListPage,
+  getEventById,
+  getEventDetails,
+  getEventListPage,
+  getTopOrigins,
+  updateEventMeta,
+} from '@openpanel/core';
+import {
+  getChartStartEndDate,
   getSettingsForProject,
   pagesService,
-  sessionService,
 } from '@openpanel/db';
 import {
   zChartEventFilter,
   zRange,
   zTimeInterval,
 } from '@openpanel/validation';
+import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
+import { createTRPCRouter, protectedProcedure } from '../trpc';
 
-import { clone } from 'ramda';
-import { getProjectAccess } from '../access';
-import { TRPCForbiddenError } from '../errors';
-import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
+const zEventRef = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  createdAt: z.date().optional(),
+});
+
+function eventNotFound() {
+  return new TRPCError({ code: 'NOT_FOUND', message: 'Event not found' });
+}
 
 export const eventRouter = createTRPCRouter({
   updateEventMeta: protectedProcedure
@@ -38,83 +52,25 @@ export const eventRouter = createTRPCRouter({
         icon: z.string().optional(),
         color: z.string().optional(),
         conversion: z.boolean().optional(),
-      }),
+      })
     )
-    .mutation(
-      async ({ input: { projectId, name, icon, color, conversion } }) => {
-        await getEventMetasCached.clear(projectId);
-        return db.eventMeta.upsert({
-          where: {
-            name_projectId: {
-              name,
-              projectId,
-            },
-          },
-          create: { projectId, name, icon, color, conversion },
-          update: { icon, color, conversion },
-        });
-      },
-    ),
+    .mutation(({ input }) => updateEventMeta(input)),
 
-  byId: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        projectId: z.string(),
-        createdAt: z.date().optional(),
-      }),
-    )
-    .query(async ({ input: { id, projectId, createdAt } }) => {
-      const res = await eventService.getById({
-        projectId,
-        id,
-        createdAt,
-      });
+  byId: protectedProcedure.input(zEventRef).query(async ({ input }) => {
+    const res = await getEventById(input);
+    if (!res) {
+      throw eventNotFound();
+    }
+    return res;
+  }),
 
-      if (!res) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Event not found',
-        });
-      }
-
-      return res;
-    }),
-
-  details: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        projectId: z.string(),
-        createdAt: z.date().optional(),
-      }),
-    )
-    .query(async ({ input: { id, projectId, createdAt } }) => {
-      const res = await eventService.getById({
-        projectId,
-        id,
-        createdAt,
-      });
-
-      if (!res) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Event not found',
-        });
-      }
-
-      let session: IServiceSession | undefined;
-      if (res?.sessionId) {
-        session = await sessionService
-          .byId(res?.sessionId, projectId)
-          .catch(() => undefined);
-      }
-
-      return {
-        event: res,
-        session,
-      };
-    }),
+  details: protectedProcedure.input(zEventRef).query(async ({ input }) => {
+    const res = await getEventDetails(input);
+    if (!res) {
+      throw eventNotFound();
+    }
+    return res;
+  }),
 
   events: protectedProcedure
     .input(
@@ -130,67 +86,14 @@ export const eventRouter = createTRPCRouter({
         endDate: z.date().nullish(),
         events: z.array(z.string()).nullish(),
         columnVisibility: z.record(z.string(), z.boolean()).nullish(),
-      }),
+      })
     )
-    .query(async ({ input: { columnVisibility, ...input } }) => {
-      const items = await getEventList({
-        projectId: input.projectId,
-        filters: input.filters,
-        profileId: input.profileId ?? undefined,
-        sessionId: input.sessionId ?? undefined,
-        groupId: input.groupId ?? undefined,
-        cohortId: input.cohortId ?? undefined,
-        startDate: input.startDate ?? undefined,
-        endDate: input.endDate ?? undefined,
-        events: input.events ?? undefined,
-        take: 50,
-        cursor: input.cursor ? new Date(input.cursor) : undefined,
-        select: {
-          ...columnVisibility,
-          city: columnVisibility?.country ?? true,
-          path: columnVisibility?.name ?? true,
-          duration: columnVisibility?.name ?? true,
-          projectId: false,
-          revenue: true,
-        },
-      });
+    .query(({ input }) => getEventListPage(input)),
 
-      // Hacky join to get profile for entire session
-      // TODO: Replace this with a join on the session table
-      const map = new Map<string, IServiceProfile>(); // sessionId -> profileId
-      for (const item of items) {
-        if (item.sessionId && item.profile?.isExternal === true) {
-          map.set(item.sessionId, item.profile);
-        }
-      }
-
-      for (const item of items) {
-        const profile = map.get(item.sessionId);
-        if (profile && (item.profile?.isExternal === false || !item.profile)) {
-          item.profile = clone(profile);
-          if (item?.profile?.firstName) {
-            item.profile.firstName = `* ${item.profile.firstName}`;
-          }
-        }
-      }
-
-      const lastItem = items[items.length - 1];
-
-      return {
-        data: items,
-        meta: {
-          next:
-            items.length > 0 && lastItem
-              ? lastItem.createdAt.toISOString()
-              : null,
-        },
-      };
-    }),
   conversionNames: protectedProcedure
     .input(z.object({ projectId: z.string() }))
-    .query(async ({ input: { projectId } }) => {
-      return getConversionEventNames(projectId);
-    }),
+    .query(({ input: { projectId } }) => getConversionEventNames(projectId)),
+
   conversions: protectedProcedure
     .input(
       z.object({
@@ -200,133 +103,19 @@ export const eventRouter = createTRPCRouter({
         endDate: z.date().nullish(),
         events: z.array(z.string()).nullish(),
         columnVisibility: z.record(z.string(), z.boolean()).nullish(),
-      }),
+      })
     )
-    .query(async ({ input: { columnVisibility, ...input } }) => {
-      const conversions = await getConversionEventNames(input.projectId);
-      const filteredConversions = conversions.filter((event) => {
-        if (input.events && input.events.length > 0) {
-          return input.events.includes(event.name);
-        }
-        return true;
-      });
+    .query(({ input }) => getConversionListPage(input)),
 
-      if (filteredConversions.length === 0) {
-        return {
-          data: [],
-          meta: {
-            next: null,
-          },
-        };
-      }
-
-      const items = await getEventList({
-        projectId: input.projectId,
-        startDate: input.startDate ?? undefined,
-        endDate: input.endDate ?? undefined,
-        events: input.events ?? undefined,
-        take: 50,
-        cursor: input.cursor ? new Date(input.cursor) : undefined,
-        select: {
-          ...columnVisibility,
-          city: columnVisibility?.country ?? true,
-          path: columnVisibility?.name ?? true,
-          duration: columnVisibility?.name ?? true,
-          projectId: false,
-          revenue: true,
-        },
-        custom: (sb) => {
-          sb.where.name = `name IN (${filteredConversions.map((event) => sqlstring.escape(event.name)).join(',')})`;
-        },
-      });
-
-      // Hacky join to get profile for entire session
-      // TODO: Replace this with a join on the session table
-      const map = new Map<string, IServiceProfile>(); // sessionId -> profileId
-      for (const item of items) {
-        if (item.sessionId && item.profile?.isExternal === true) {
-          map.set(item.sessionId, item.profile);
-        }
-      }
-
-      for (const item of items) {
-        const profile = map.get(item.sessionId);
-        if (profile && (item.profile?.isExternal === false || !item.profile)) {
-          item.profile = clone(profile);
-          if (item?.profile?.firstName) {
-            item.profile.firstName = `* ${item.profile.firstName}`;
-          }
-        }
-      }
-
-      const lastItem = items[items.length - 1];
-
-      return {
-        data: items,
-        meta: {
-          next:
-            items.length > 0 && lastItem
-              ? lastItem.createdAt.toISOString()
-              : null,
-        },
-      };
-    }),
-
-  bots: publicProcedure
+  bots: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
         cursor: z.number().optional(),
         limit: z.number().default(8),
-      }),
+      })
     )
-    .query(async ({ input: { projectId, cursor, limit }, ctx }) => {
-      if (ctx.session.userId) {
-        const access = await getProjectAccess({
-          projectId,
-          userId: ctx.session.userId,
-        });
-        if (!access) {
-          throw new TRPCForbiddenError('You do not have access to this project');
-        }
-      } else {
-        const share = await db.shareOverview.findFirst({
-          where: {
-            projectId,
-          },
-        });
-
-        if (!share) {
-          throw new TRPCForbiddenError('You do not have access to this project');
-        }
-      }
-
-      const [events, counts] = await Promise.all([
-        chQuery<{
-          id: string;
-          project_id: string;
-          name: string;
-          type: string;
-          path: string;
-          created_at: string;
-        }>(
-          `SELECT * FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${sqlstring.escape(projectId)} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${(cursor ?? 0) * limit}`,
-        ),
-        chQuery<{
-          count: number;
-        }>(
-          `SELECT count(*) as count FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${sqlstring.escape(projectId)}`,
-        ),
-      ]);
-
-      return {
-        data: events.map((item) => ({
-          ...item,
-          createdAt: convertClickhouseDateToJs(item.created_at),
-        })),
-        count: counts[0]?.count ?? 0,
-      };
-    }),
+    .query(({ input }) => getBotEventsPage(input)),
 
   pages: protectedProcedure
     .input(
@@ -337,7 +126,7 @@ export const eventRouter = createTRPCRouter({
         search: z.string().optional(),
         range: zRange,
         interval: zTimeInterval,
-      }),
+      })
     )
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
@@ -358,7 +147,7 @@ export const eventRouter = createTRPCRouter({
         projectId: z.string(),
         range: zRange,
         interval: zTimeInterval,
-      }),
+      })
     )
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
@@ -378,7 +167,7 @@ export const eventRouter = createTRPCRouter({
         projectId: z.string(),
         range: zRange,
         interval: zTimeInterval,
-      }),
+      })
     )
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
@@ -390,8 +179,7 @@ export const eventRouter = createTRPCRouter({
 
       const prevEnd = new Date(startMs - 1);
       const prevStart = new Date(prevEnd.getTime() - duration);
-      const fmt = (d: Date) =>
-        d.toISOString().slice(0, 19).replace('T', ' ');
+      const fmt = (d: Date) => d.toISOString().slice(0, 19).replace('T', ' ');
 
       return pagesService.getTopPages({
         projectId: input.projectId,
@@ -409,7 +197,7 @@ export const eventRouter = createTRPCRouter({
         interval: zTimeInterval,
         origin: z.string(),
         path: z.string(),
-      }),
+      })
     )
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
@@ -426,18 +214,6 @@ export const eventRouter = createTRPCRouter({
     }),
 
   origin: protectedProcedure
-    .input(
-      z.object({
-        projectId: z.string(),
-      }),
-    )
-    .query(async ({ input }) => {
-      const res = await chQuery<{ origin: string }>(
-        `SELECT DISTINCT origin, count(id) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(
-          input.projectId,
-        )} AND origin IS NOT NULL AND origin != '' AND toDate(created_at) > now() - INTERVAL 30 DAY GROUP BY origin ORDER BY count DESC LIMIT 3`,
-      );
-
-      return res.filter((item) => item.origin && !item.origin.includes('localhost:'));
-    }),
+    .input(z.object({ projectId: z.string() }))
+    .query(({ input: { projectId } }) => getTopOrigins(projectId)),
 });

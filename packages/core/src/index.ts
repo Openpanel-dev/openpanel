@@ -302,6 +302,91 @@ export {
 // module map: email owns "C"); @openpanel/constants keeps a re-export shim.
 export type { EmailCategory } from './modules/email/email.constants';
 export { emailCategories } from './modules/email/email.constants';
+// Dissolved from @openpanel/db's services/event.service.ts, profile.service.ts
+// and group.service.ts, plus the query/mutation bodies packages/trpc's
+// event/profile/group routers held inline and apps/api's profile controller
+// (M7-002, ADR-008's module map: event "R,S", profile "R,H,S", group
+// "R,S,C") — packages/trpc's routers, apps/api's export controller, is-bot
+// hook and profile controller, apps/worker's incoming-event job and the
+// assistant/mcp tools call these directly, the same way V1 reaches every
+// other dissolved service here. packages/db keeps re-export shims for all
+// three files (the buffers' row types and cohort.service's profileSearchSql
+// still resolve through them).
+export type {
+  EventListSelect,
+  GetEventListOptions,
+  IClickhouseBotEvent,
+  IClickhouseEvent,
+  IEventColumn,
+  IImportedEvent,
+  IServiceBotEvent,
+  IServiceCreateBotEventPayload,
+  IServiceCreateEventPayload,
+  IServiceCreateEventPayloadWithId,
+  IServiceEvent,
+  IServiceEventMinimal,
+  IServiceImportedEventPayload,
+  IServicePage,
+  QueryEventsInput,
+} from './modules/event/event.service';
+export {
+  createBotEvent,
+  createEvent,
+  EVENT_COLUMNS,
+  getBotEventsPage,
+  getConversionEventNames,
+  getConversionListPage,
+  getEventById,
+  getEventDetails,
+  getEventList,
+  getEventListPage,
+  getEventMetas,
+  getEventMetasCached,
+  getEventPropertyValuesCore,
+  getEvents,
+  getEventsCount,
+  getTopEventNames,
+  getTopOrigins,
+  getTopPages,
+  listEventNamesCore,
+  listEventPropertiesCore,
+  queryEventsCore,
+  transformEvent,
+  transformMinimalEvent,
+  transformSessionToEvent,
+  updateEventMeta,
+} from './modules/event/event.service';
+export type {
+  GetGroupListOptions,
+  GetGroupMemberProfilesOptions,
+  IServiceGroup,
+  IServiceGroupStats,
+  IServiceUpsertGroup,
+} from './modules/group/group.service';
+export {
+  createGroup,
+  deleteGroup,
+  findGroupsCore,
+  getGroupActivity,
+  getGroupById,
+  getGroupCore,
+  getGroupList,
+  getGroupListCount,
+  getGroupListPage,
+  getGroupMemberGrowth,
+  getGroupMemberProfiles,
+  getGroupMemberProfilesPage,
+  getGroupMetrics,
+  getGroupMostEvents,
+  getGroupPopularRoutes,
+  getGroupPropertyKeys,
+  getGroupStats,
+  getGroupsByIds,
+  getGroupTypes,
+  listGroupTypesCore,
+  updateGroup,
+  upsertGroup,
+} from './modules/group/group.service';
 // Dissolved from @openpanel/db's src/gsc.ts + services/gsc.service.ts
 // (M5-002) — apps/worker's gsc job file, apps/api's gsc OAuth callback
 // controller and packages/trpc's gsc router call these directly, the same
@@ -460,6 +545,42 @@ export {
   updateOrganization,
   updateOrganizationMemberAccess,
 } from './modules/organization/organization.service';
+export type {
+  AdjustProfilePropertyResult,
+  FindProfilesInput,
+  GetProfileListOptions,
+  IClickhouseProfile,
+  IdentifyProfileInput,
+  IProfileMetrics,
+  IServiceProfile,
+  IServiceUpsertProfile,
+  ProfileRequestContext,
+} from './modules/profile/profile.service';
+export {
+  adjustProfileProperty,
+  findProfilesCore,
+  getPowerUsers,
+  getProfileActivity,
+  getProfileById,
+  getProfileList,
+  getProfileListCount,
+  getProfileListPage,
+  getProfileMetrics,
+  getProfileMetricsCore,
+  getProfileMostEvents,
+  getProfilePopularRoutes,
+  getProfilePropertyKeys,
+  getProfilePropertyKeysCached,
+  getProfilePropertyNames,
+  getProfileSessionsCore,
+  getProfiles,
+  getProfilesCached,
+  getProfileValues,
+  getProfileWithEvents,
+  identifyProfile,
+  transformProfile,
+  upsertProfile,
+} from './modules/profile/profile.service';
 // Dissolved from @openpanel/db's services/project.service.ts (M6-002) —
 // packages/trpc's project router, apps/api's manage controller and several
 // core modules' `src/access.ts` call these directly, the same way V1

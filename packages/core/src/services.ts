@@ -11,6 +11,14 @@ import {
   type CohortService,
   createCohortService,
 } from './modules/cohort/cohort.service';
+import {
+  createEventService,
+  type EventService,
+} from './modules/event/event.service';
+import {
+  createGroupService,
+  type GroupService,
+} from './modules/group/group.service';
 import { createGscService, type GscService } from './modules/gsc/gsc.service';
 import {
   createImportService,
@@ -32,6 +40,10 @@ import {
   createOrganizationService,
   type OrganizationService,
 } from './modules/organization/organization.service';
+import {
+  createProfileService,
+  type ProfileService,
+} from './modules/profile/profile.service';
 import {
   createSessionService,
   type SessionService,
@@ -62,6 +74,9 @@ export interface Services {
   onboarding: OnboardingService;
   notification: NotificationService;
   session: SessionService;
+  event: EventService;
+  profile: ProfileService;
+  group: GroupService;
 }
 
 export function createServices(deps: ServiceDeps): Services {
@@ -78,5 +93,8 @@ export function createServices(deps: ServiceDeps): Services {
     onboarding: createOnboardingService(deps),
     notification: createNotificationService(deps),
     session: createSessionService(deps),
+    event: createEventService(deps),
+    profile: createProfileService(deps),
+    group: createGroupService(deps),
   };
 }

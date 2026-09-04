@@ -4,7 +4,7 @@
 // id-gated to the closed session.
 
 import { describe, expect, mock, test } from 'bun:test';
-import type { IServiceCreateEventPayload } from '@openpanel/db/src/services/event.service';
+import type { IServiceCreateEventPayload } from '../../event/event.service';
 import {
   createSessionEnd,
   getSessionEndJobId,

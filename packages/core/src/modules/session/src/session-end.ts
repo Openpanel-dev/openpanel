@@ -2,13 +2,20 @@
 // utils/session-handler.ts (M7-001). The worker's copies are thin delegates
 // onto this file until apps/worker dies (P9).
 
-import type {
-  IClickhouseEvent,
-  IServiceCreateEventPayload,
-  IServiceEvent,
-} from '@openpanel/db/src/services/event.service';
 import type { EnqueueOptions } from '../../../jobs/define';
 import type { Logger } from '../../../logger';
+// Static, not lazy like the db imports below: core's event.service touches no
+// client at import time, and a dynamic edge here closes a dynamic-import cycle
+// (event.service ⇢ session.service → this file) that panics rolldown when
+// apps/worker bundles the workspace.
+import {
+  createEvent,
+  type IClickhouseEvent,
+  type IServiceCreateEventPayload,
+  type IServiceEvent,
+  transformEvent,
+  transformSessionToEvent,
+} from '../../event/event.service';
 import type { INotificationRuleCached } from '../../notification/notification.service';
 import type { IClickhouseSession } from '../session.service';
 import { convertClickhouseDateToJs } from './dates';
@@ -113,13 +120,11 @@ export async function loadSessionEndDeps(
 ): Promise<SessionEndDeps> {
   const [
     { chQuery },
-    eventService,
     { profileBackfillBuffer },
     notificationService,
     { checkNotificationRulesForSessionEnd },
   ] = await Promise.all([
     import('@openpanel/db/src/clickhouse/client'),
-    import('@openpanel/db/src/services/event.service'),
     import('@openpanel/db/src/buffers'),
     import('../../notification/notification.service'),
     import('@openpanel/db/src/services/notification.service'),
@@ -127,11 +132,11 @@ export async function loadSessionEndDeps(
   return {
     ...runtime,
     logger,
-    createEvent: eventService.createEvent,
-    transformEvent: eventService.transformEvent,
-    transformSessionToEvent: eventService.transformSessionToEvent,
+    createEvent,
+    transformEvent,
+    transformSessionToEvent,
     getEvents: async (query) =>
-      (await chQuery<IClickhouseEvent>(query)).map(eventService.transformEvent),
+      (await chQuery<IClickhouseEvent>(query)).map(transformEvent),
     profileBackfill: profileBackfillBuffer,
     notifications: {
       getRules: notificationService.getNotificationRulesByProjectId,

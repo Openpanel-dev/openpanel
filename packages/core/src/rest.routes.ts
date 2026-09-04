@@ -16,6 +16,7 @@ import { healthRoutes } from './modules/health/health.routes';
 import { importRoutes } from './modules/import/import.routes';
 import { integrationRoutes } from './modules/integration/integration.routes';
 import { mcpRoutes } from './modules/mcp/mcp.routes';
+import { profileRoutes } from './modules/profile/profile.routes';
 import { projectRoutes } from './modules/project/project.routes';
 import { realtimeRoutes } from './modules/realtime/realtime.routes';
 import { subscriptionRoutes } from './modules/subscription/subscription.routes';
@@ -35,8 +36,9 @@ const OPENAPI_EXCLUDED_PATHS = ['/metrics'];
 // parameters in a way the bare `Elysia` type cannot express.
 //
 // import's /import/events is the first module to land here (M5-004);
-// project's and client's /manage/* (M6-002) joined it — root-client-authed
-// API surface, same as /import, not session-authed like dashboardRoutes.
+// project's and client's /manage/* (M6-002) and profile's /profile* (M7-002)
+// joined it — client-authed API surface, same as /import, not session-authed
+// like dashboardRoutes.
 // None of it is yet reachable: the clientAuth macro's authenticator is a P8
 // stub that always returns null (import.routes.ts's header), and main.ts
 // does not mount `publicApiRoutes` until a real `AppDeps` exists (P3/P4/P8).
@@ -44,7 +46,8 @@ export const publicApiRoutes = (deps: AppDeps) =>
   new Elysia({ name: 'core/public-api-routes' })
     .use(importRoutes(deps))
     .use(projectRoutes(deps))
-    .use(clientRoutes(deps));
+    .use(clientRoutes(deps))
+    .use(profileRoutes(deps));
 
 // gsc's callback was the first module to land here (M5-002); assistant's
 // `/ai/agents/*` (M5-005), mcp's `/mcp` (M5-007) and auth's `/oauth/*`

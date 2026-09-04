@@ -38,6 +38,9 @@ function stubJobCtx(
     organization: {} as Services['organization'],
     onboarding: onboarding as OnboardingService,
     session: {} as Services['session'],
+    event: {} as Services['event'],
+    profile: {} as Services['profile'],
+    group: {} as Services['group'],
   };
   return {
     db: {},

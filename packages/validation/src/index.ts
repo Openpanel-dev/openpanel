@@ -436,38 +436,17 @@ export type IProjectUpdate = z.infer<typeof zProjectUpdate>;
 // importers (packages/trpc's auth router, apps/start's sign-in/sign-up
 // forms) — same shape as ./cohort.validation.ts since M5-003.
 export * from '@openpanel/core/modules/auth/auth.constants';
+// Moved into @openpanel/core's group module (M7-002, ADR-008's module map:
+// group owns "C"). Re-exported here for existing @openpanel/validation
+// importers (packages/trpc's group router, apps/start's add-group /
+// edit-group modals) — same shape as the subscription re-export above.
+export * from '@openpanel/core/modules/group/group.constants';
 // Moved into @openpanel/core's subscription module (M6-006, ADR-008's module
 // map: subscription owns "C"). Re-exported here for existing
 // @openpanel/validation importers (packages/trpc's subscription router,
 // apps/start's billing forms) — same shape as ./onboarding.constants.ts
 // re-export since M6-003.
 export * from '@openpanel/core/modules/subscription/subscription.constants';
-
-export const zGroupId = z
-  .string()
-  .min(1)
-  .regex(
-    /^[a-z0-9_-]+$/,
-    'ID must only contain lowercase letters, digits, hyphens, or underscores'
-  );
-
-export const zCreateGroup = z.object({
-  id: zGroupId,
-  projectId: z.string(),
-  type: z.string().min(1),
-  name: z.string().min(1),
-  properties: z.record(z.string(), z.string()).default({}),
-});
-export type ICreateGroup = z.infer<typeof zCreateGroup>;
-
-export const zUpdateGroup = z.object({
-  id: z.string().min(1),
-  projectId: z.string(),
-  type: z.string().min(1).optional(),
-  name: z.string().min(1).optional(),
-  properties: z.record(z.string(), z.string()).optional(),
-});
-export type IUpdateGroup = z.infer<typeof zUpdateGroup>;
 
 export const zEditOrganization = z.object({
   id: z.string().min(2),

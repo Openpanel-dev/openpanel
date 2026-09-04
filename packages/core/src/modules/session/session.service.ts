@@ -13,11 +13,11 @@
 // pino-pretty worker per `bun test --isolate` file. `@openpanel/redis`'s
 // `cacheable` and the `sql` tag have no such side effect.
 
-import type { IServiceProfile } from '@openpanel/db/src/services/profile.service';
 import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 import type { ServiceDeps } from '../../services';
 import { getSafeJson } from '../../shared/json';
+import type { IServiceProfile } from '../profile/profile.service';
 import { convertClickhouseDateToJs } from './src/dates';
 import {
   hasSessionListLookback,
@@ -45,8 +45,12 @@ function loadChClient() {
   return import('@openpanel/db/src/clickhouse/client');
 }
 
+// Core's own profile service, not @openpanel/db's shim: the shim re-exports
+// the core barrel, which would route this lazy edge back through
+// session-end → event.service → here — a dynamic-import cycle rolldown
+// cannot finalize when apps/worker bundles the workspace.
 function loadProfileService() {
-  return import('@openpanel/db/src/services/profile.service');
+  return import('../profile/profile.service');
 }
 
 function loadFilterCompiler() {
