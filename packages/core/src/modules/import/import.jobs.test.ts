@@ -39,6 +39,7 @@ function stubJobCtx(importService: Partial<ImportService>): JobCtx {
     profile: {} as Services['profile'],
     group: {} as Services['group'],
     chart: {} as Services['chart'],
+    misc: {} as Services['misc'],
   };
   return {
     db: {},

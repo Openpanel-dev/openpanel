@@ -1,31 +1,10 @@
-import { TABLE_NAMES, chQuery } from '@openpanel/db';
+// Dissolved into @openpanel/core's misc module (M7-008): the outbound
+// telemetry sweep moved to
+// packages/core/src/modules/misc/misc.service.ts#runPingCron. This file
+// stays (DELEGATE PATTERN) — it is `cron.ts`'s dispatcher `ping` case, a thin
+// wrapper around the core function, same shape as `cron.delete.ts` (M6-001).
+import { runPingCron } from '@openpanel/core';
 
 export async function ping() {
-  if (process.env.DISABLE_PING) {
-    return;
-  }
-
-  const [res] = await chQuery<{ count: number }>(
-    `SELECT COUNT(*) as count FROM ${TABLE_NAMES.events}`,
-  );
-
-  if (typeof res?.count === 'number') {
-    const response = await fetch('https://api.openpanel.dev/misc/ping', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        domain:
-          process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL,
-        count: res?.count,
-      }),
-    });
-
-    if (response.ok) {
-      return await response.json();
-    }
-
-    throw new Error('Failed to ping the server');
-  }
+  return await runPingCron();
 }

@@ -38,7 +38,6 @@
     "@openpanel/trpc": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@trpc/server": "^11.17.0",
-    "cheerio": "^1.0.0",
     "fast-json-stable-hash": "^1.0.3",
     "fastify": "^5.8.5",
     "fastify-metrics": "^12.1.0",
@@ -50,7 +49,6 @@
     "ramda": "^0.29.1",
     "sharp": "^0.33.5",
     "source-map-support": "^0.5.21",
-    "url-metadata": "^5.4.1",
     "uuid": "^9.0.1",
     "zod": "catalog:"
   },

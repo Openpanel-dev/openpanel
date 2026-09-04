@@ -1,6 +1,9 @@
-import * as controller from '@/controllers/misc.controller';
 import type { FastifyPluginCallback } from 'fastify';
+import * as controller from '@/controllers/misc.controller';
 
+// `/og/clear` and `/favicon/clear` are removed, not ported (M7-008,
+// ADR-015 entry #6: RULED + DEAD — `docs/ANSWERS.md` §1.4 confirms nothing
+// depends on them).
 const miscRouter: FastifyPluginCallback = async (fastify) => {
   fastify.route({
     method: 'POST',
@@ -24,18 +27,6 @@ const miscRouter: FastifyPluginCallback = async (fastify) => {
     method: 'GET',
     url: '/og',
     handler: controller.getOgImage,
-  });
-
-  fastify.route({
-    method: 'GET',
-    url: '/og/clear',
-    handler: controller.clearOgImages,
-  });
-
-  fastify.route({
-    method: 'GET',
-    url: '/favicon/clear',
-    handler: controller.clearFavicons,
   });
 
   fastify.route({

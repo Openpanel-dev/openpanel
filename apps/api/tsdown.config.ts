@@ -14,6 +14,10 @@ const options: Options = {
     '@aws-sdk/client-s3',
     '@aws-sdk/client-sts',
     '@google-cloud/storage',
+    // native module: loads its platform binding (@img/sharp-*) via a
+    // runtime require resolved from its own file location, which breaks if
+    // rolldown inlines sharp's source into this bundle (M7-008)
+    'sharp',
   ],
   sourcemap: true,
   platform: 'node',

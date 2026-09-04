@@ -80,6 +80,10 @@ test('the insights queue carries the insight module job', () => {
 // The insight module's cron fragment (insight.jobs.ts), spread into the ONE
 // cron queue (ADR-005: "no cron module"). legacyCompat.cron maps a legacy
 // job's `type` straight onto its name, so these three ids double as job names.
+// `ping` (M7-008, misc.jobs.ts) is the twentieth and only conditional one —
+// its scheduler is added by `startSchedulers` only when SELF_HOSTED &&
+// production (jobs/schedulers.ts's `PING_SCHEDULE`), but the job HANDLER is
+// always registered here so a scheduled run always has somewhere to land.
 test('the cron queue carries the insight module cron fragment', () => {
   expect(Object.keys(queues.cron.jobs).sort()).toEqual(
     [
@@ -89,6 +93,7 @@ test('the cron queue carries the insight module cron fragment', () => {
       'insightCleanup',
       'insightsDaily',
       'onboarding',
+      'ping',
       'sessionReaper',
       'sessionVacuum',
       'weeklyDigest',

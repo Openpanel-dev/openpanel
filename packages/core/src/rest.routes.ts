@@ -17,10 +17,12 @@ import { healthRoutes } from './modules/health/health.routes';
 import { importRoutes } from './modules/import/import.routes';
 import { integrationRoutes } from './modules/integration/integration.routes';
 import { mcpRoutes } from './modules/mcp/mcp.routes';
+import { miscRoutes } from './modules/misc/misc.routes';
 import { profileRoutes } from './modules/profile/profile.routes';
 import { projectRoutes } from './modules/project/project.routes';
 import { realtimeRoutes } from './modules/realtime/realtime.routes';
 import { subscriptionRoutes } from './modules/subscription/subscription.routes';
+import { toolsRoutes } from './modules/tools/tools.routes';
 
 // ADR-002/ADR-003 pin: @elysiajs/openapi at the 1.4.15 fallback (2.0 is
 // NO-GO per spike 6). `specPath` is set explicitly rather than taking the
@@ -44,6 +46,8 @@ const OPENAPI_EXCLUDED_PATHS = ['/metrics'];
 // None of it is yet reachable: the clientAuth macro's authenticator is a P8
 // stub that always returns null (import.routes.ts's header), and main.ts
 // does not mount `publicApiRoutes` until a real `AppDeps` exists (P3/P4/P8).
+// tools' `/site-checker` + `/ip-lookup` (M7-008) joined it too — unauthenticated
+// like V1's, per the module map.
 export const publicApiRoutes = (deps: AppDeps) =>
   new Elysia({ name: 'core/public-api-routes' })
     .use(importRoutes(deps))
@@ -51,7 +55,8 @@ export const publicApiRoutes = (deps: AppDeps) =>
     .use(clientRoutes(deps))
     .use(profileRoutes(deps))
     .use(exportRoutes(deps))
-    .use(insightsRoutes(deps));
+    .use(insightsRoutes(deps))
+    .use(toolsRoutes(deps));
 
 // gsc's callback was the first module to land here (M5-002); assistant's
 // `/ai/agents/*` (M5-005), mcp's `/mcp` (M5-007) and auth's `/oauth/*`
@@ -69,6 +74,7 @@ export const publicApiRoutes = (deps: AppDeps) =>
 // `/oauth`'s.
 // realtime's `/live/*` websockets (M6-007) joined it too — `/live` IS in
 // `corsPaths`, same as `/trpc`/`/webhook`/`/oauth`/`/misc`/`/ai`.
+// misc's `/misc/*` (M7-008) joined it too — `/misc` IS in `corsPaths`.
 export const dashboardRoutes = (deps: AppDeps) =>
   new Elysia({ name: 'core/dashboard-routes' })
     .use(gscRoutes(deps))
@@ -77,7 +83,8 @@ export const dashboardRoutes = (deps: AppDeps) =>
     .use(authRoutes(deps))
     .use(integrationRoutes(deps))
     .use(subscriptionRoutes(deps))
-    .use(realtimeRoutes(deps));
+    .use(realtimeRoutes(deps))
+    .use(miscRoutes(deps));
 
 // healthz/metrics/misc share V1's ops surface (http/context.ts's
 // UNLOGGED_PATH_PREFIXES) — unauthenticated, uncorsed, unlogged. /metrics and

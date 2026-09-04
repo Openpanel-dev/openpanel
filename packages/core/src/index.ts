@@ -1117,6 +1117,37 @@ export {
   scanLegacyInsights,
   sendWeeklyDigests,
 } from './modules/insight/insight.service';
+// Ported from apps/api's misc controller + apps/worker's cron.ping.ts (M7-008)
+// — apps/api's misc controller and the worker's ping cron job call these
+// directly, the same way V1 reaches every other dissolved service here.
+// `GET /misc/og/clear` and `/misc/favicon/clear` are NOT ported (ADR-015
+// entry #6: RULED + DEAD).
+export type {
+  GeoReport,
+  ImageAssetResult,
+  PingRecord,
+  StatsResult,
+} from './modules/misc/misc.service';
+export {
+  getFavicon,
+  getGeoReport,
+  getOgImage,
+  getStats,
+  insertPingRecord,
+  runPingCron,
+} from './modules/misc/misc.service';
+// New module (M7-008) — apps/api's tools controller calls these directly,
+// the same way V1 reaches every other dissolved service here.
+export type {
+  IpLookupOutcome,
+  IpLookupResult,
+} from './modules/tools/src/ip-lookup';
+export { runIpLookup } from './modules/tools/src/ip-lookup';
+export type {
+  SiteCheckOutcome,
+  SiteCheckResult,
+} from './modules/tools/src/site-checker';
+export { runSiteCheck } from './modules/tools/src/site-checker';
 export { dashboardRoutes, opsRoutes, publicApiRoutes } from './rest.routes';
 // The RPC base is on the barrel because it is the seam `@openpanel/trpc`
 // builds its 28 routers on: ONE tRPC instance, mounted by V1's Fastify

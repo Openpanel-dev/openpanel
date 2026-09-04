@@ -1,21 +1,20 @@
-import { logger } from '@/utils/logger';
+// Ported verbatim from apps/api/src/utils/image-proxy.ts (M7-008).
+//
+// These bytes come from a third-party server and are then served from the API
+// origin, which also serves the credentialed `/trpc` and `/oauth` endpoints.
+// Anything returned verbatim is therefore attacker-controlled content on a
+// trusted origin — an SVG passed through untouched executes its `<script>` as
+// the victim. Everything Sharp can decode is rasterized to PNG, which drops
+// active content along with every other non-pixel payload (GHSA-r7hx-q6f4-vj6h).
+
 import sharp from 'sharp';
+import type { Logger } from '../../../logger';
 
-/**
- * Image normalization for the favicon/OG proxy.
- *
- * These bytes come from a third-party server and are then served from the API
- * origin, which also serves the credentialed `/trpc` and `/oauth` endpoints.
- * Anything returned verbatim is therefore attacker-controlled content on a
- * trusted origin — an SVG passed through untouched executes its `<script>` as
- * the victim. Everything Sharp can decode is rasterized to PNG, which drops
- * active content along with every other non-pixel payload.
- */
+const FAVICON_SIZE = 30;
+const OG_IMAGE_WIDTH = 300;
 
-/**
- * Content types we are willing to hand back to a browser. Anything else is
- * dropped rather than proxied.
- */
+/** Content types we are willing to hand back to a browser. Anything else is
+ * dropped rather than proxied. */
 export const ALLOWED_IMAGE_CONTENT_TYPES = new Set([
   'image/png',
   'image/jpeg',
@@ -63,6 +62,7 @@ export async function processImage(
   buffer: Buffer,
   originalUrl?: string,
   contentType?: string,
+  logger?: Pick<Logger, 'debug' | 'warn'>
 ): Promise<Buffer> {
   // ICO is the only format Sharp cannot decode, so it is the only passthrough.
   // Everything else — SVG very much included — is rasterized.
@@ -71,30 +71,23 @@ export async function processImage(
     isIcoFile(originalUrl, contentType) &&
     hasIcoMagicBytes(buffer)
   ) {
-    logger.debug(
+    logger?.debug(
       { originalUrl, bufferSize: buffer.length },
-      'Serving ICO file directly',
+      'Serving ICO file directly'
     );
     return buffer;
   }
 
   try {
     return await sharp(buffer)
-      .resize(30, 30, {
-        fit: 'cover',
-      })
+      .resize(FAVICON_SIZE, FAVICON_SIZE, { fit: 'cover' })
       .png()
       .toBuffer();
   } catch (error) {
-    logger.warn(
-      {
-        err: error,
-        originalUrl,
-        bufferSize: buffer.length,
-      },
-      'Sharp failed to process image',
+    logger?.warn(
+      { err: error, originalUrl, bufferSize: buffer.length },
+      'Sharp failed to process image'
     );
-
     throw error;
   }
 }
@@ -103,27 +96,20 @@ export async function processImage(
 export async function processOgImage(
   buffer: Buffer,
   originalUrl?: string,
+  logger?: Pick<Logger, 'warn'>
 ): Promise<Buffer> {
   // Always rasterize. Returning the upstream bytes verbatim would let an
   // attacker serve arbitrary content from the API origin.
   try {
     return await sharp(buffer)
-      .resize(300, null, {
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
+      .resize(OG_IMAGE_WIDTH, null, { fit: 'inside', withoutEnlargement: true })
       .png()
       .toBuffer();
   } catch (error) {
-    logger.warn(
-      {
-        err: error,
-        originalUrl,
-        bufferSize: buffer.length,
-      },
-      'Sharp failed to process OG image',
+    logger?.warn(
+      { err: error, originalUrl, bufferSize: buffer.length },
+      'Sharp failed to process OG image'
     );
-
     throw error;
   }
 }

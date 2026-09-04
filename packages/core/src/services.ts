@@ -33,6 +33,10 @@ import {
   type InsightService,
 } from './modules/insight/insight.service';
 import {
+  createMiscService,
+  type MiscService,
+} from './modules/misc/misc.service';
+import {
   createNotificationService,
   type NotificationService,
 } from './modules/notification/notification.service';
@@ -82,6 +86,7 @@ export interface Services {
   profile: ProfileService;
   group: GroupService;
   chart: ChartService;
+  misc: MiscService;
 }
 
 export function createServices(deps: ServiceDeps): Services {
@@ -102,5 +107,6 @@ export function createServices(deps: ServiceDeps): Services {
     profile: createProfileService(deps),
     group: createGroupService(deps),
     chart: createChartService(deps),
+    misc: createMiscService(deps),
   };
 }

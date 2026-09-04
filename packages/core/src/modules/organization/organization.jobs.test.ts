@@ -45,6 +45,7 @@ function stubJobCtx(
     profile: {} as Services['profile'],
     group: {} as Services['group'],
     chart: {} as Services['chart'],
+    misc: {} as Services['misc'],
   };
   return {
     db: {},

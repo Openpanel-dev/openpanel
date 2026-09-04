@@ -1,4 +1,21 @@
+// Ported verbatim from apps/api/src/utils/parseUrlMeta.ts (M7-008).
+
 import urlMetadata from 'url-metadata';
+
+const URL_METADATA_TIMEOUT_MS = 500;
+
+interface UrlMetaData {
+  favicons: {
+    rel: string;
+    href: string;
+    sizes: string;
+  }[];
+  'og:image'?: string;
+  'og:image:url'?: string;
+  'og:image:secure_url'?: string;
+  'twitter:image'?: string;
+  'twitter:image:src'?: string;
+}
 
 function fallbackFavicon(url: string) {
   try {
@@ -12,20 +29,15 @@ function fallbackFavicon(url: string) {
 
 function findBestFavicon(favicons: UrlMetaData['favicons']) {
   const match = favicons
-    .sort((a, b) => {
-      return a.rel.length - b.rel.length;
-    })
+    .sort((a, b) => a.rel.length - b.rel.length)
     .find(
       (favicon) =>
         favicon.rel === 'shortcut icon' ||
         favicon.rel === 'icon' ||
-        favicon.rel === 'apple-touch-icon',
+        favicon.rel === 'apple-touch-icon'
     );
 
-  if (match) {
-    return match.href;
-  }
-  return null;
+  return match ? match.href : null;
 }
 
 function findBestOgImage(data: UrlMetaData): string | null {
@@ -57,27 +69,13 @@ function transform(data: UrlMetaData, url: string) {
   };
 }
 
-interface UrlMetaData {
-  favicons: {
-    rel: string;
-    href: string;
-    sizes: string;
-  }[];
-  'og:image'?: string;
-  'og:image:url'?: string;
-  'og:image:secure_url'?: string;
-  'twitter:image'?: string;
-  'twitter:image:src'?: string;
-}
-
 export async function parseUrlMeta(url: string) {
   try {
     const metadata = (await urlMetadata(url, {
-      timeout: 500,
+      timeout: URL_METADATA_TIMEOUT_MS,
     })) as UrlMetaData;
-    const data = transform(metadata, url);
-    return data;
-  } catch (err) {
+    return transform(metadata, url);
+  } catch {
     return {
       favicon: fallbackFavicon(url),
       ogImage: null,

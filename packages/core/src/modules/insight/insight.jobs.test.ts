@@ -50,6 +50,7 @@ function stubJobCtx(
     profile: {} as Services['profile'],
     group: {} as Services['group'],
     chart: {} as Services['chart'],
+    misc: {} as Services['misc'],
   };
   return {
     db: {},
@@ -138,6 +139,7 @@ test('insightsDaily fans out one insightsProject enqueue per candidate, jobId de
       profile: {} as Services['profile'],
       group: {} as Services['group'],
       chart: {} as Services['chart'],
+      misc: {} as Services['misc'],
     },
     requestId: 'req_1',
     job: { id: 'job_1', attempt: 0, queue: 'cron', name: 'insightsDaily' },

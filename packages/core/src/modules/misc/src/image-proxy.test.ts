@@ -1,5 +1,7 @@
+// Ported from apps/api/src/utils/image-proxy.test.ts (M7-008).
+
+import { describe, expect, it } from 'bun:test';
 import sharp from 'sharp';
-import { describe, expect, it } from 'vitest';
 import {
   ALLOWED_IMAGE_CONTENT_TYPES,
   hasIcoMagicBytes,
@@ -14,7 +16,7 @@ const maliciousSvg = Buffer.from(
   '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
     '<rect width="64" height="64" fill="red"/>' +
     '<script>alert(document.domain)</script>' +
-    '</svg>',
+    '</svg>'
 );
 
 async function makePng() {
@@ -35,7 +37,7 @@ describe('processImage', () => {
     const result = await processImage(
       maliciousSvg,
       'https://evil.example/x.svg',
-      'image/svg+xml',
+      'image/svg+xml'
     );
 
     expect(result.subarray(0, 4)).toEqual(PNG_MAGIC);
@@ -48,7 +50,7 @@ describe('processImage', () => {
     const result = await processImage(
       maliciousSvg,
       'https://evil.example/favicon',
-      'image/svg+xml',
+      'image/svg+xml'
     );
 
     expect(result.subarray(0, 4)).toEqual(PNG_MAGIC);
@@ -64,7 +66,7 @@ describe('processImage', () => {
     const result = await processImage(
       png,
       'https://evil.example/small.png',
-      'image/png',
+      'image/png'
     );
 
     expect(result.subarray(0, 4)).toEqual(PNG_MAGIC);
@@ -77,7 +79,7 @@ describe('processImage', () => {
     // not reach the passthrough.
     expect(hasIcoMagicBytes(html)).toBe(false);
     await expect(
-      processImage(html, 'https://evil.example/x.ico', 'image/x-icon'),
+      processImage(html, 'https://evil.example/x.ico', 'image/x-icon')
     ).rejects.toThrow();
   });
 
@@ -91,7 +93,7 @@ describe('processImage', () => {
     const result = await processImage(
       ico,
       'https://example.com/favicon.ico',
-      'image/x-icon',
+      'image/x-icon'
     );
 
     expect(result).toBe(ico);
@@ -102,7 +104,7 @@ describe('processOgImage', () => {
   it('rasterizes SVG instead of serving it verbatim', async () => {
     const result = await processOgImage(
       maliciousSvg,
-      'https://evil.example/x.svg',
+      'https://evil.example/x.svg'
     );
 
     expect(result.subarray(0, 4)).toEqual(PNG_MAGIC);
@@ -111,7 +113,7 @@ describe('processOgImage', () => {
 
   it('rasterizes small images rather than passing the bytes through', async () => {
     const png = await makePng();
-    expect(png.length).toBeLessThan(10000);
+    expect(png.length).toBeLessThan(10_000);
 
     const result = await processOgImage(png, 'https://example.com/og.png');
     expect(result.subarray(0, 4)).toEqual(PNG_MAGIC);
@@ -121,7 +123,7 @@ describe('processOgImage', () => {
 describe('content type handling', () => {
   it('strips parameters and lowercases', () => {
     expect(normalizeContentType('Image/SVG+XML; charset=utf-8')).toBe(
-      'image/svg+xml',
+      'image/svg+xml'
     );
     expect(normalizeContentType(null)).toBe('');
   });
