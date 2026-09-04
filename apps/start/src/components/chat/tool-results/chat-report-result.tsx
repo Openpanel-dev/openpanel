@@ -104,7 +104,7 @@ function ChatReportInner({
                 pushModal('SaveReport', {
                   report: {
                     ...report,
-                    name: value.name ?? report.name,
+                    name: title,
                   } as unknown as IReport,
                   disableRedirect: true,
                 })
