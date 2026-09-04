@@ -18,6 +18,7 @@ import { strip, toObject } from '@openpanel/common';
 import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 import { assocPath, flatten, map, pathOr, pipe, prop, sort, uniq } from 'ramda';
+import { loadDbBuffers } from '../../buffers/lazy-db-buffers';
 import type { ServiceDeps } from '../../services';
 import type { IClickhouseEvent } from '../event/event.service';
 import type { IClickhouseSession } from '../session/session.service';
@@ -69,11 +70,11 @@ function loadChClient() {
 }
 
 function loadProfileBuffer() {
-  return import('@openpanel/db/src/buffers').then((m) => m.profileBuffer);
+  return loadDbBuffers().then((m) => m.profileBuffer);
 }
 
 function loadFilterCompiler() {
-  return import('@openpanel/db/src/services/filter-where.service');
+  return import('../chart/src/table-filter-where');
 }
 
 export interface IProfileMetrics {

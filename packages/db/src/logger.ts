@@ -91,11 +91,17 @@ function getServiceName(name: string): string {
     .join('-');
 }
 
+// Same Bun/pino-pretty incompatibility as @openpanel/core/clients/logger.ts's
+// `isBun` guard — see its comment. Kept in sync by hand, like the rest of
+// this file.
+const isBun = !!process.versions.bun;
+
 export function createLogger({ name }: { name: string }): ILogger {
   const service = getServiceName(name);
 
   const useHyperDX = logExporter === 'otlp' && !!process.env.HYPERDX_API_KEY;
-  const usePretty = !useHyperDX && process.env.NODE_ENV !== 'production';
+  const usePretty =
+    !(useHyperDX || isBun) && process.env.NODE_ENV !== 'production';
 
   return pino({
     name: service,

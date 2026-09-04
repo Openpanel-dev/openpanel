@@ -6,7 +6,7 @@
   "scripts": {
     "codegen": "pnpm with-env prisma generate && jiti prisma/prisma-json-types.ts",
     "migrate": "pnpm with-env prisma migrate dev",
-    "migrate:deploy:code": "pnpm with-env jiti ./code-migrations/migrate.ts",
+    "migrate:deploy:code": "pnpm --filter @openpanel/core run migrate:deploy:code",
     "migrate:deploy:db": "pnpm with-env prisma migrate deploy",
     "migrate:deploy": "pnpm migrate:deploy:db && pnpm migrate:deploy:code",
     "duplicate-events": "pnpm with-env jiti ./scripts/find-duplicate-events.ts",

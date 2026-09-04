@@ -16,6 +16,7 @@
 import { getTime, isSameDomain, parsePath } from '@openpanel/common';
 import type { IProjectFilters } from '@openpanel/validation';
 import { anyPass, isEmpty, isNil, mergeDeepRight, omit, reject } from 'ramda';
+import { loadDbBuffers } from '../../../buffers/lazy-db-buffers';
 import type { SessionIngestResult } from '../../../buffers/session-buffer';
 import type { Logger } from '../../../logger';
 import {
@@ -110,7 +111,7 @@ export async function loadIncomingEventDeps(
   overrides: Partial<IncomingEventDeps> = {}
 ): Promise<IncomingEventDeps> {
   const [{ sessionBuffer }, { db }, notifications] = await Promise.all([
-    import('@openpanel/db/src/buffers'),
+    loadDbBuffers(),
     import('@openpanel/db/src/prisma-client'),
     import('@openpanel/db/src/services/notification.service'),
   ]);

@@ -97,11 +97,22 @@ export function getServiceName(name: string): string {
     .join('-');
 }
 
+// pino-pretty's transport runs in a worker thread that pino locates via
+// require.resolve at the CALLING module's location. Under Bun that
+// resolution is broken for a transitive dependency (a caller outside
+// @openpanel/core, e.g. @openpanel/queue's module-scope `createLogger` call)
+// and crashes the process instead of the log line — deterministic on this
+// box, not a flake. Node has no such issue, so this only turns pretty
+// printing off for the Bun-booted V2 API; every Node-booted process
+// (V1 api/worker) is unaffected.
+const isBun = !!process.versions.bun;
+
 export function createLogger({ name }: { name: string }): ILogger {
   const service = getServiceName(name);
 
   const useHyperDX = logExporter === 'otlp' && !!process.env.HYPERDX_API_KEY;
-  const usePretty = !useHyperDX && process.env.NODE_ENV !== 'production';
+  const usePretty =
+    !(useHyperDX || isBun) && process.env.NODE_ENV !== 'production';
 
   return pino({
     name: service,

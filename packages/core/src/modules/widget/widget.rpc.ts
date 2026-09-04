@@ -21,6 +21,7 @@
 import { clix } from '@openpanel/db/src/clickhouse/query-builder';
 import ShortUniqueId from 'short-unique-id';
 import { z } from 'zod';
+import { loadDbBuffers } from '../../buffers/lazy-db-buffers';
 import { createTRPCRouter, procedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
 import { getSettingsForProject } from '../organization/organization.service';
@@ -38,7 +39,7 @@ function loadChClient() {
 }
 
 function loadEventBuffer() {
-  return import('@openpanel/db/src/buffers').then((m) => m.eventBuffer);
+  return loadDbBuffers().then((m) => m.eventBuffer);
 }
 
 function loadCache() {

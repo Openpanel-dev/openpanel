@@ -1,6 +1,6 @@
 // The ONE place this module splices pre-compiled filter SQL.
 //
-// `buildFilterWhere` (packages/db/src/services/filter-where.service.ts) is
+// `buildFilterWhere` (../../chart/src/table-filter-where.ts) is
 // V1's filter compiler and still emits sqlstring-escaped SQL text: ADR-013
 // leaves the filter compilers as they are ("two behaviours, not two builders")
 // until the shared filter compiler converts to fragments. Until then a

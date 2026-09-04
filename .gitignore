@@ -1,6 +1,6 @@
 .secrets
 packages/db/src/generated/prisma
-packages/db/code-migrations/*.sql
+packages/core/src/code-migrations/*.sql
 **/.open-next
 
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore

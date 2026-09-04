@@ -4,10 +4,10 @@
 // edge reaches the query, the enqueue and the job that enqueue causes
 // (ADR-007 decision 18, ADR-018 R1).
 
-import type { SessionValidationResult } from '@openpanel/db';
 import type { Buffers } from './buffers/create-buffers';
 import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
+import type { SessionValidationResult } from './modules/auth/src/login-session';
 import type { IncomingEventProducer } from './modules/ingest/src/incoming-event';
 import { createServices, type Services } from './services';
 import type { CookieJar, CookieOptions } from './shared/cookie';
@@ -26,13 +26,13 @@ export type ServiceClients = unknown;
 // module singleton.
 export type { Buffers } from './buffers/create-buffers';
 
-// The resolved session. Type-only, so nothing of `@openpanel/db` is loaded at
-// runtime — core stays importable with no database, which is what lets
-// `bun test` run offline. `SessionValidationResult` is Prisma-shaped
-// (Session + User), so it stays defined next to the Prisma-touching session
-// CRUD in @openpanel/db's auth-session.service.ts rather than here — moving
-// it to core would need a core -> db runtime dependency, and db already
-// depends on core (M4-007).
+// The resolved session. `SessionValidationResult` is Prisma-shaped
+// (Session + User) but the import above is type-only, so nothing of
+// `@openpanel/db` is loaded at runtime — core stays importable with no
+// database, which is what lets `bun test` run offline. It stays defined next
+// to the Prisma-touching session CRUD in `./modules/auth/src/login-session.ts`
+// (M8-005) rather than here, which is the same file that CRUD lazily reaches
+// `@openpanel/db`'s Prisma client from.
 export type Session = SessionValidationResult;
 
 /** The env-derived flags core needs. apps/api's config/env.ts is the sole

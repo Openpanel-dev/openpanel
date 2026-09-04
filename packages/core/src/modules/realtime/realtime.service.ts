@@ -33,10 +33,11 @@
 // and this module's queries haven't been converted yet.
 
 import { clix } from '@openpanel/db/src/clickhouse/query-builder';
-import type { IClickhouseEvent } from '../event/event.service';
 import type { IPublishChannels } from '@openpanel/redis';
 import { subMinutes } from 'date-fns';
 import sqlstring from 'sqlstring';
+import { loadDbBuffers } from '../../buffers/lazy-db-buffers';
+import type { IClickhouseEvent } from '../event/event.service';
 
 const REALTIME_WINDOW_MINUTES = 30;
 const ACTIVE_SESSIONS_LIMIT = 50;
@@ -62,7 +63,7 @@ function loadProfileService() {
 }
 
 function loadEventBuffer() {
-  return import('@openpanel/db/src/buffers').then((m) => m.eventBuffer);
+  return loadDbBuffers().then((m) => m.eventBuffer);
 }
 
 function since(): Date {

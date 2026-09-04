@@ -5,6 +5,7 @@
 // hand in stubs, so no `mock.module` is needed and every assertion is on a
 // call the code under test made.
 
+import { loadDbBuffers } from '../../../buffers/lazy-db-buffers';
 import type { IClickhouseSession } from '../session.service';
 
 export interface SessionStore {
@@ -53,7 +54,7 @@ export interface SessionRuntime {
 export async function loadSessionRuntime(): Promise<SessionRuntime> {
   const [{ getRedisCache }, { sessionBuffer }] = await Promise.all([
     import('@openpanel/redis'),
-    import('@openpanel/db/src/buffers'),
+    loadDbBuffers(),
   ]);
   return { redis: getRedisCache(), sessions: sessionBuffer };
 }

@@ -27,6 +27,7 @@ import type { EventMeta, Prisma } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 import { clone, mergeDeepRight, uniq } from 'ramda';
+import { loadDbBuffers } from '../../buffers/lazy-db-buffers';
 import type { ServiceDeps } from '../../services';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import {
@@ -98,10 +99,6 @@ function loadDb() {
   return import('@openpanel/db/src/prisma-client').then((m) => m.db);
 }
 
-function loadBuffers() {
-  return import('@openpanel/db/src/buffers');
-}
-
 // Lazy for the same reason subscription.service.ts's is: core tests that
 // partially mock `@openpanel/redis` (no `getCache`) reach this module through
 // @openpanel/db's re-export shims and the core barrel.
@@ -110,7 +107,7 @@ function loadCache() {
 }
 
 function loadFilterCompiler() {
-  return import('@openpanel/db/src/services/filter-where.service');
+  return import('../chart/src/table-filter-where');
 }
 
 function loadLookback() {
@@ -545,7 +542,7 @@ export async function createEvent(payload: IServiceCreateEventPayloadWithId) {
     groups: payload.groups ?? [],
   };
 
-  const { eventBuffer } = await loadBuffers();
+  const { eventBuffer } = await loadDbBuffers();
   eventBuffer.add(event);
 
   const promises: Promise<unknown>[] = [];
@@ -826,7 +823,7 @@ export async function createBotEvent({
   createdAt,
   path,
 }: IServiceCreateBotEventPayload) {
-  const { botBuffer } = await loadBuffers();
+  const { botBuffer } = await loadDbBuffers();
   return botBuffer.add({
     id: crypto.randomUUID(),
     name,

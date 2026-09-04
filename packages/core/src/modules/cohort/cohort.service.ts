@@ -783,9 +783,7 @@ export async function listCohortMemberProfiles({
   filters?: IChartEventFilter[];
 }): Promise<{ data: IServiceProfile[]; count: number }> {
   const { chQuery } = await loadChClient();
-  const { buildFilterWhere } = await import(
-    '@openpanel/db/src/services/filter-where.service'
-  );
+  const { buildFilterWhere } = await import('../chart/src/table-filter-where');
   const { getProfiles, profileSearchSql } = await import(
     '@openpanel/db/src/services/profile.service'
   );

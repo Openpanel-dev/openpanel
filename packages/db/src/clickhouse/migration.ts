@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
-import { createClient } from './client';
-import { formatClickhouseDate } from './client';
+import type { EventEmitter } from 'node:events';
+import { createClient, formatClickhouseDate } from './client';
 
 interface CreateTableOptions {
   name: string;
@@ -36,7 +36,7 @@ const replicated = (tableName: string) => `${tableName}_replicated`;
 
 export const chMigrationClient = createClient({
   url: process.env.CLICKHOUSE_URL,
-  request_timeout: 3600000, // 1 hour in milliseconds
+  request_timeout: 3_600_000, // 1 hour in milliseconds
   keep_alive: {
     enabled: true,
   },
@@ -137,7 +137,7 @@ export const modifyTTL = ({
 export function addColumns(
   tableName: string,
   columns: string[],
-  isClustered: boolean,
+  isClustered: boolean
 ): string[] {
   if (isClustered) {
     return columns.flatMap((col) => [
@@ -147,7 +147,7 @@ export function addColumns(
   }
 
   return columns.map(
-    (col) => `ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${col}`,
+    (col) => `ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${col}`
   );
 }
 
@@ -157,7 +157,7 @@ export function addColumns(
 export function dropColumns(
   tableName: string,
   columnNames: string[],
-  isClustered: boolean,
+  isClustered: boolean
 ): string[] {
   if (isClustered) {
     return columnNames.flatMap((colName) => [
@@ -167,7 +167,7 @@ export function dropColumns(
   }
 
   return columnNames.map(
-    (colName) => `ALTER TABLE ${tableName} DROP COLUMN IF EXISTS ${colName}`,
+    (colName) => `ALTER TABLE ${tableName} DROP COLUMN IF EXISTS ${colName}`
   );
 }
 
@@ -266,7 +266,7 @@ export function moveDataBetweenTables({
   const shouldContinue = (
     current: Date,
     start: Date,
-    intervalType: string,
+    intervalType: string
   ): boolean => {
     if (intervalType === 'month') {
       // For months, compare by year and month
@@ -383,7 +383,7 @@ export function createMaterializedView({
 
   // Transform query to use replicated table names in clustered mode
   const transformedQuery = query.replace(/\{(\w+)\}/g, (_, tableName) =>
-    isClustered ? replicated(tableName) : tableName,
+    isClustered ? replicated(tableName) : tableName
   );
 
   if (!isClustered) {
@@ -423,7 +423,7 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
 
   const handleTermination = async (signal: string) => {
     console.warn(
-      `Received ${signal}. Cleaning up active queries before exit...`,
+      `Received ${signal}. Cleaning up active queries before exit...`
     );
 
     if (abort) {
@@ -464,7 +464,9 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
             let checking = false; // Add flag to prevent multiple concurrent checks
 
             async function check() {
-              if (checking) return; // Skip if already checking
+              if (checking) {
+                return; // Skip if already checking
+              }
               checking = true;
 
               try {
@@ -501,7 +503,7 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
                   const { elapsed, read_rows, written_rows, memory_usage } =
                     res[0] as any;
                   console.log(
-                    `Progress: ${elapsed.toFixed(2)}s | Memory: ${formatMemory(memory_usage)} | Read: ${formatNumber(read_rows)} rows | Written: ${formatNumber(written_rows)} rows`,
+                    `Progress: ${elapsed.toFixed(2)}s | Memory: ${formatMemory(memory_usage)} | Read: ${formatNumber(read_rows)} rows | Written: ${formatNumber(written_rows)} rows`
                   );
                 }
               } finally {
@@ -545,8 +547,14 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
 
     throw e;
   } finally {
-    // Clean up event listeners
-    process.off('SIGTERM', handleSigterm);
-    process.off('SIGINT', handleSigint);
+    // Clean up event listeners. Cast needed under core's bun-types-only
+    // `types` array (M8-005 first pulled this file into that compilation via
+    // code-migrations/): bun-types 1.4.0's `Process.off` override only
+    // declares its own "memoryPressure" overload, so the plain
+    // @types/node Signals overload TS picks under packages/db's own tsconfig
+    // isn't visible there.
+    const emitter = process as unknown as EventEmitter;
+    emitter.off('SIGTERM', handleSigterm);
+    emitter.off('SIGINT', handleSigint);
   }
 }

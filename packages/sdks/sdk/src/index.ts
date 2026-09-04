@@ -1,30 +1,86 @@
-// Deep-imported on purpose: rollup-plugin-dts (used by tsup) only inlines
-// types when the import resolves to a single source file. Importing from
-// the package root ('@openpanel/validation') leaves an external reference
-// in dist/index.d.ts, and `@openpanel/validation` is not published so
-// consumers would see a broken import. We tested tsdown too; it hits the
-// same limitation via rolldown-plugin-dts (Oxc/tsc both fail to follow
-// `export *` chains across source-only workspace packages).
-import type {
-  IAliasPayload,
-  IAssignGroupPayload,
-  IDecrementPayload,
-  IGroupPayload,
-  IIdentifyPayload,
-  IIncrementPayload,
-  ITrackHandlerPayload,
-  ITrackPayload,
-} from '@openpanel/validation/src/track.validation';
+// Hand-duplicated on purpose, not imported: the wire contract's source of
+// truth is @openpanel/core/modules/ingest/ingest.constants.ts (ADR-008,
+// "ingest owns C"), but core's package.json exports map is deliberately
+// narrow (no `./*` wildcard — see packages/core/AGENTS.md) and
+// rollup-plugin-dts (tsup's dts bundler) cannot inline a type that resolves
+// through that map's `*` pattern: it leaves an unresolvable
+// `@openpanel/core/...` reference in dist/index.d.ts, which breaks for every
+// consumer since core isn't published. A plain deep import into
+// `@openpanel/validation` hits the same wall one hop later, since that
+// package now just re-exports core's. Keeping a literal copy here is what
+// keeps this package's shipped .d.ts self-contained. The SDK wire contract
+// tests (verification/contracts/sdk) exercise both sides at runtime, so a
+// drift shows up as a behavioral failure even without a type-level check.
 import { Api } from './api';
 
-export type AliasPayload = IAliasPayload;
-export type AssignGroupPayload = IAssignGroupPayload;
-export type DecrementPayload = IDecrementPayload;
-export type GroupPayload = IGroupPayload;
-export type IdentifyPayload = IIdentifyPayload;
-export type IncrementPayload = IIncrementPayload;
-export type TrackHandlerPayload = ITrackHandlerPayload;
-export type TrackPayload = ITrackPayload;
+export type ProfileId = string | number;
+
+export interface AliasPayload {
+  profileId: ProfileId;
+  alias: string;
+}
+
+export interface AssignGroupPayload {
+  groupIds: string[];
+  profileId?: ProfileId;
+}
+
+export interface DecrementPayload {
+  profileId: ProfileId;
+  property: string;
+  value?: number;
+}
+
+export interface GroupPayload {
+  id: string;
+  type: string;
+  name: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface IdentifyPayload {
+  profileId: ProfileId;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  avatar?: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface IncrementPayload {
+  profileId: ProfileId;
+  property: string;
+  value?: number;
+}
+
+export interface TrackPayload {
+  name: string;
+  properties?: Record<string, unknown>;
+  profileId?: ProfileId;
+  groups?: string[] | null;
+}
+
+export interface ReplayPayload {
+  chunk_index: number;
+  events_count: number;
+  is_full_snapshot: boolean;
+  started_at: string;
+  ended_at: string;
+  payload: string;
+  // Server-issued session id (from a prior /track response) the SDK echoes back,
+  // so the chunk is filed under the right session without device resolution.
+  sessionId?: string;
+}
+
+export type TrackHandlerPayload =
+  | { type: 'track'; payload: TrackPayload }
+  | { type: 'identify'; payload: IdentifyPayload }
+  | { type: 'increment'; payload: IncrementPayload }
+  | { type: 'decrement'; payload: DecrementPayload }
+  | { type: 'alias'; payload: AliasPayload }
+  | { type: 'replay'; payload: ReplayPayload }
+  | { type: 'group'; payload: GroupPayload }
+  | { type: 'assign_group'; payload: AssignGroupPayload };
 
 export interface TrackProperties {
   [key: string]: unknown;
@@ -174,7 +230,7 @@ export class OpenPanel {
   identify(payload: IdentifyPayload) {
     this.log('identify user', payload);
     if (payload.profileId) {
-      this.profileId = payload.profileId
+      this.profileId = payload.profileId;
       this.flush();
     }
 

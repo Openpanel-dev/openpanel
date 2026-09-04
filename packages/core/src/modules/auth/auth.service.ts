@@ -1,10 +1,9 @@
-// Moved from @openpanel/auth (M4-007). Only the DB-independent half lives
-// here: token issuance/hashing, argon2 password hashing, TOTP, the OAuth
-// clients and cookie helpers. The Prisma-touching half — creating,
-// validating and invalidating a `sessions` row — stays in @openpanel/db's
-// auth-session.service.ts, because @openpanel/db already depends on
-// @openpanel/core (for exactly this module's token hash) and the reverse
-// edge would be a cycle. That file calls back into `hashSessionToken` below.
+// Moved from @openpanel/auth (M4-007): token issuance/hashing, argon2
+// password hashing, TOTP, the OAuth clients and cookie helpers. The
+// Prisma-touching half — creating, validating and invalidating a `sessions`
+// row — moved here too (M8-005, `./src/login-session.ts`), lazily loading
+// @openpanel/db's Prisma client the same way `loadRegistration` below does,
+// so there is no static core -> db edge.
 
 import { z } from 'zod';
 import type { ServiceDeps } from '../../services';
@@ -132,13 +131,12 @@ export function createAuthService(_deps: ServiceDeps): AuthService {
 // these same functions).
 //
 // db/session/registration/share access is LAZY, not a static top-level
-// import — see user.service.ts's header for the full reasoning, and because
-// a static import of @openpanel/db here specifically WOULD be a cycle
-// (this file's own header, above: db already depends on core for
-// `hashSessionToken`). `loadShare` points at `../share/share.service`
-// directly since M6-004 — share.service.ts statically imports this file's
-// own `hashPassword`, so the two are mutually lazy/eager by design, not a
-// live cycle.
+// import — see user.service.ts's header for the full reasoning (constructing
+// @openpanel/db's clients at import time spawns a pino-pretty transport
+// worker thread per `bun test --isolate` file). `loadShare` points at
+// `../share/share.service` directly since M6-004 — share.service.ts
+// statically imports this file's own `hashPassword`, so the two are mutually
+// lazy/eager by design, not a live cycle.
 //
 // None of these functions take a `TrpcContext`/`Ctx`: they take exactly the
 // primitives they touch (`setCookie`, `cookies.get`, `logger`), so this file
@@ -171,7 +169,7 @@ function loadDb() {
 }
 
 function loadAuthSession() {
-  return import('@openpanel/db/src/services/auth-session.service');
+  return import('./src/login-session');
 }
 
 function loadRegistration() {

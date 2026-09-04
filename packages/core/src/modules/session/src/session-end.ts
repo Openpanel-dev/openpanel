@@ -2,6 +2,7 @@
 // utils/session-handler.ts (M7-001). The worker's copies are thin delegates
 // onto this file until apps/worker dies (P9).
 
+import { loadDbBuffers } from '../../../buffers/lazy-db-buffers';
 import type { EnqueueOptions } from '../../../jobs/define';
 import type { Logger } from '../../../logger';
 // Static, not lazy like the db imports below: core's event.service touches no
@@ -125,7 +126,7 @@ export async function loadSessionEndDeps(
     { checkNotificationRulesForSessionEnd },
   ] = await Promise.all([
     import('@openpanel/db/src/clickhouse/client'),
-    import('@openpanel/db/src/buffers'),
+    loadDbBuffers(),
     import('../../notification/notification.service'),
     import('@openpanel/db/src/services/notification.service'),
   ]);

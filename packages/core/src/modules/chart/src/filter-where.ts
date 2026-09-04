@@ -7,14 +7,14 @@
 // compiled.ts, the one text bridge.
 
 import { stripLeadingAndTrailingSlashes } from '@openpanel/common';
+import type { IChartEventFilter } from '@openpanel/validation';
+import { getCohortIds } from '@openpanel/validation';
+import sqlstring from 'sqlstring';
 import {
   buildTypedClause,
   hasTypedCast,
   isTypedOperator,
-} from '@openpanel/db/src/services/filter-cast';
-import type { IChartEventFilter } from '@openpanel/validation';
-import { getCohortIds } from '@openpanel/validation';
-import sqlstring from 'sqlstring';
+} from './filter-cast';
 import {
   CHART_TABLE,
   EVENT_FIELD_ALIASES,

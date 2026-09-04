@@ -54,7 +54,7 @@ function loadProfileService() {
 }
 
 function loadFilterCompiler() {
-  return import('@openpanel/db/src/services/filter-where.service');
+  return import('../chart/src/table-filter-where');
 }
 
 function loadLookback() {

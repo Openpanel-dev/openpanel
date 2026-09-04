@@ -72,6 +72,25 @@ export {
   sendDiscordNotification,
   sendTestDiscordNotification,
 } from './clients/integrations/discord';
+export {
+  clickhouseEventToExportEvent,
+  createBatch,
+  createManifest,
+  EXPORT_SCHEMA_VERSION,
+  type ExportFormat,
+  generateBatchPath,
+  getContentType,
+  getFileExtension,
+  type IBatchFile,
+  type IBatchInfo,
+  type IBatchResult,
+  type IExportEvent,
+  type IManifest,
+  MANIFEST_CONTENT_TYPE,
+  MANIFEST_FILENAME,
+  parseManifest,
+  serializeManifest,
+} from './clients/integrations/export';
 export type {
   IObjectStoreAdapter,
   IUploadOptions,
@@ -258,6 +277,18 @@ export {
   verifyPasswordHash,
   verifyTotpCode,
 } from './modules/auth/auth.service';
+export { getIsRegistrationAllowed } from './modules/auth/src/registration';
+// Moved from packages/db/src/services/auth-session.service.ts (M8-005) —
+// the Postgres-backed login session CRUD. packages/db keeps a re-export
+// shim (existing `@openpanel/db` importers, apps/api's app.ts).
+export type { SessionValidationResult } from './modules/auth/src/login-session';
+export {
+  createDemoSession,
+  createSession,
+  EMPTY_SESSION,
+  invalidateSession,
+  validateSessionToken,
+} from './modules/auth/src/login-session';
 // Dissolved from @openpanel/db's services/chart.service.ts and engine/
 // (M7-003) — packages/trpc's chart router, apps/api's export controller,
 // V1's funnel/conversion/sankey/retention/overview services and the
@@ -333,6 +364,12 @@ export {
   rewriteProfilePropertyRefs,
   transformPropertyKey,
 } from './modules/chart/chart.service';
+// Moved from packages/db/src/services/filter-where.service.ts (M8-005) — the
+// sessions/profiles/events-table filter compiler, distinct from
+// `getEventFiltersWhereClause` above. packages/db/src/services/
+// filter-where.service.ts stays a re-export shim.
+export type { FilterTableContext } from './modules/chart/src/table-filter-where';
+export { buildFilterWhere } from './modules/chart/src/table-filter-where';
 // Dissolved from @openpanel/db's services/conversion.service.ts (M7-004) —
 // reached through the chart module's own dispatch and the db shim.
 export { getConversion } from './modules/chart/conversion.service';
@@ -1285,6 +1322,13 @@ export type {
   ProjectAccessLike,
 } from './shared/access';
 export { createAccessChecks } from './shared/access';
+export type { IProjectAccess } from './shared/access-lookups';
+export {
+  canWriteProject,
+  getClientAccess,
+  getOrganizationAccess,
+  getProjectAccess,
+} from './shared/access-lookups';
 // Dissolved from @openpanel/common/server (M4-003) — a still-live V1 package
 // (db, queue, apps/worker) reaches these the same way apps/api and core
 // itself do, until its own module lands. mcp reaches it as an internal
@@ -1295,6 +1339,12 @@ export {
   hashPassword,
   verifyPassword,
 } from './shared/crypto';
+export {
+  getChartPrevStartEndDate,
+  getChartStartEndDate,
+  getDatesFromRange,
+  resolveDateRange,
+} from './shared/date';
 // Moved from apps/worker/src/jobs/lib/email-sequence.ts (M6-003) — shared by
 // the onboarding module and, until it moves too, apps/worker's own
 // cron.wind-down.ts, which reaches it through this barrel (same shape as
@@ -1321,6 +1371,7 @@ export {
   TRUSTED_IP_HEADER_ORDER,
 } from './shared/get-client-ip';
 export { generateId, generateSecureId, shortId } from './shared/id';
+export { resolveMaxLookbackDays } from './shared/lookback';
 export { getReferrerWithQuery, parseReferrer } from './shared/parse-referrer';
 export type {
   UserAgentInfo,
@@ -1342,4 +1393,5 @@ export {
   safeFetch,
   safeFetchStream,
 } from './shared/safe-fetch';
+export { getId } from './shared/slug-id';
 export { assertSafeUrl, createPinnedLookup } from './shared/ssrf';

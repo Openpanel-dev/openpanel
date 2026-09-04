@@ -1166,6 +1166,9 @@ importers:
       ipaddr.js:
         specifier: ^2.5.0
         version: 2.5.0
+      jiti:
+        specifier: ^2.4.1
+        version: 2.6.1
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.1

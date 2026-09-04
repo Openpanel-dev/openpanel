@@ -1,38 +1,6 @@
-import { slug } from '@openpanel/common';
-
-import { db } from '../prisma-client';
-
-export async function getId(
-  tableName: 'project' | 'dashboard' | 'organization',
-  name: string,
-) {
-  const newId = slug(name);
-  if (!db[tableName]) {
-    throw new Error('Table does not exists');
-  }
-
-  if (!('findUnique' in db[tableName])) {
-    throw new Error('findUnique does not exists');
-  }
-
-  // @ts-expect-error
-  const existingProject = await db[tableName].findUnique({
-    where: {
-      id: newId,
-    },
-  });
-
-  function random(str: string) {
-    const numbers = Math.floor(1000 + Math.random() * 9000);
-    if (str.match(/-\d{4}$/g)) {
-      return str.replace(/-\d{4}$/g, `-${numbers}`);
-    }
-    return `${str}-${numbers}`;
-  }
-
-  if (existingProject) {
-    return getId(tableName, random(name));
-  }
-
-  return newId;
-}
+// Slug-based id generation lives in @openpanel/core now (M8-005):
+// packages/core/src/shared/slug-id.ts. Re-exported here for existing
+// `@openpanel/db` importers (core's dashboard/project/onboarding services,
+// which deep-import this exact specifier via dynamic import) — same shape as
+// event.service.ts since M7-002.
+export { getId } from '@openpanel/core';
