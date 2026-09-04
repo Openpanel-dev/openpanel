@@ -1,5 +1,8 @@
 // Ported from @openpanel/integrations (dissolved into core — M4-005).
-import { type IIntegrationConfig, looksEncrypted } from '@openpanel/validation';
+import {
+  type IIntegrationConfig,
+  looksEncrypted,
+} from '../../modules/integration/integration.constants';
 import { encryptCredential } from '../../shared/encryption';
 import {
   execute as executeJavaScriptTemplate,

@@ -1,6 +1,7 @@
 // Ported from @openpanel/integrations (dissolved into core — M4-005).
 // Cred to (@OpenStatusHQ) https://github.com/openstatusHQ/openstatus/blob/main/packages/notifications/discord/src/index.ts
 
+import { DISCORD_TEST_NOTIFICATION_MESSAGE } from '../../modules/integration/integration.constants';
 import {
   browserFetcher,
   postWebhook,
@@ -36,7 +37,6 @@ export function sendTestDiscordNotification(
   return sendDiscordNotification({
     webhookUrl,
     fetcher,
-    message:
-      '**🧪 Test [OpenPanel.dev](<https://openpanel.dev/>)**\nIf you can read this, your Slack webhook is functioning correctly!\n',
+    message: DISCORD_TEST_NOTIFICATION_MESSAGE,
   });
 }

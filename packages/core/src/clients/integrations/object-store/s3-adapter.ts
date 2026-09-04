@@ -9,7 +9,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
-import type { IS3ExportConfig } from '@openpanel/validation';
+import type { IS3ExportConfig } from '../../../modules/integration/integration.constants';
 import { decryptCredential } from '../../../shared/encryption';
 import { assertSafeUrl, createPinnedLookup } from '../../../shared/ssrf';
 import { createLogger, type ILogger } from '../../logger';

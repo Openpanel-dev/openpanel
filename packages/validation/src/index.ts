@@ -359,14 +359,16 @@ export const zCreateReference = z.object({
   datetime: z.string(),
 });
 
-// Moved into @openpanel/core's onboarding module (M6-003, ADR-008's module
-// map: onboarding owns "C"). Re-exported here for existing
-// @openpanel/validation importers (packages/trpc's onboarding/project
-// routers, apps/start's onboarding flow) — same shape as
-// ./cohort.validation.ts since M5-003.
-export * from '@openpanel/core/modules/onboarding/onboarding.constants';
-export * from './integrations';
-
+// Moved into @openpanel/core's integration module (M6-006, ADR-008's module
+// map: integration owns "C"). Re-exported here for existing
+// @openpanel/validation importers (packages/trpc's integration router,
+// apps/start's integration forms) — same shape as ./onboarding.constants.ts
+// re-export since M6-003. `zSlackAuthResponse` does NOT come along: it moved
+// to the module's `src/` (Slack's own OAuth wire contract, not integration
+// config) and is now reached through @openpanel/core's curated barrel
+// instead — apps/api/src/controllers/webhook.controller.ts (the one former
+// importer) updated to match.
+export * from '@openpanel/core/modules/integration/integration.constants';
 // Moved into @openpanel/core's notification module (M6-005, ADR-008's module
 // map: notification owns "C"). Re-exported here for existing
 // @openpanel/validation importers (packages/trpc's notification router,
@@ -376,6 +378,12 @@ export * from './integrations';
 // file, so the resulting module cycle resolves at the value level: see
 // notification.constants.ts's header.
 export * from '@openpanel/core/modules/notification/notification.constants';
+// Moved into @openpanel/core's onboarding module (M6-003, ADR-008's module
+// map: onboarding owns "C"). Re-exported here for existing
+// @openpanel/validation importers (packages/trpc's onboarding/project
+// routers, apps/start's onboarding flow) — same shape as
+// ./cohort.validation.ts since M5-003.
+export * from '@openpanel/core/modules/onboarding/onboarding.constants';
 
 export const zProjectFilterIp = z.object({
   type: z.literal('ip'),
@@ -428,41 +436,12 @@ export type IProjectUpdate = z.infer<typeof zProjectUpdate>;
 // importers (packages/trpc's auth router, apps/start's sign-in/sign-up
 // forms) — same shape as ./cohort.validation.ts since M5-003.
 export * from '@openpanel/core/modules/auth/auth.constants';
-
-export const zCheckout = z.object({
-  productPriceId: z.string(),
-  organizationId: z.string(),
-  projectId: z.string().nullish(),
-  productId: z.string(),
-});
-export type ICheckout = z.infer<typeof zCheckout>;
-
-// Mirrors Polar's CustomerCancellationReason enum.
-export const zCancellationReason = z.enum([
-  'too_expensive',
-  'missing_features',
-  'switched_service',
-  'unused',
-  'customer_service',
-  'low_quality',
-  'too_complex',
-  'other',
-]);
-export type ICancellationReason = z.infer<typeof zCancellationReason>;
-
-export const zCancelSubscription = z.object({
-  organizationId: z.string(),
-  reason: zCancellationReason,
-  comment: z.string().trim().max(1000).optional(),
-});
-export type ICancelSubscription = z.infer<typeof zCancelSubscription>;
-
-export const zPauseSubscription = z.object({
-  organizationId: z.string(),
-  // Months after the current period end before billing automatically resumes.
-  months: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-});
-export type IPauseSubscription = z.infer<typeof zPauseSubscription>;
+// Moved into @openpanel/core's subscription module (M6-006, ADR-008's module
+// map: subscription owns "C"). Re-exported here for existing
+// @openpanel/validation importers (packages/trpc's subscription router,
+// apps/start's billing forms) — same shape as ./onboarding.constants.ts
+// re-export since M6-003.
+export * from '@openpanel/core/modules/subscription/subscription.constants';
 
 export const zGroupId = z
   .string()

@@ -3,7 +3,7 @@ import { Storage } from '@google-cloud/storage';
 import {
   type IGCSExportConfig,
   parseServiceAccountKey,
-} from '@openpanel/validation';
+} from '../../../modules/integration/integration.constants';
 import { decryptCredential } from '../../../shared/encryption';
 import { createLogger, type ILogger } from '../../logger';
 import type {

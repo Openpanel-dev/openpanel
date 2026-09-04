@@ -21,23 +21,19 @@
 // would spawn a pino-pretty transport worker thread per test file).
 
 import { stripLeadingAndTrailingSlashes } from '@openpanel/common';
-import type {
-  IServiceCreateEventPayload,
-  IServiceEvent,
-} from '@openpanel/db';
+import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
-import {
-  type IChartEvent,
-  type IChartEventFilter,
-  type IIntegrationConfig,
-  isKind,
-} from '@openpanel/validation';
+import type { IChartEvent, IChartEventFilter } from '@openpanel/validation';
 import { pathOr } from 'ramda';
 import { sendEmail } from '../../clients/email';
 import { getServerIntegration } from '../../clients/integrations/registry';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
+import {
+  type IIntegrationConfig,
+  isKind,
+} from '../integration/integration.constants';
 import type { ICreateNotificationRule } from './notification.constants';
 
 export const APP_NOTIFICATION_INTEGRATION_ID = 'app';
@@ -263,7 +259,10 @@ function isValidPayload<T>(
   dbNull: unknown
 ): value is T {
   return (
-    value !== null && value !== undefined && value !== jsonNull && value !== dbNull
+    value !== null &&
+    value !== undefined &&
+    value !== jsonNull &&
+    value !== dbNull
   );
 }
 
@@ -443,7 +442,7 @@ export async function createOrUpdateNotificationRule(
       const orgWideSameOrg =
         integration.projectId === null &&
         integration.organizationId === project.organizationId;
-      if (!sameProject && !orgWideSameOrg) {
+      if (!(sameProject || orgWideSameOrg)) {
         throw new TRPCForbiddenError(
           'Integration does not belong to this project'
         );

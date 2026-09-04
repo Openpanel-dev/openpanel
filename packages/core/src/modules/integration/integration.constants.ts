@@ -1,3 +1,16 @@
+// Moved from packages/validation/src/integrations.ts (M6-006, ADR-008's
+// module map: integration owns "C"). packages/validation/src/index.ts becomes
+// a re-export shim of this file (same shape as ./notification.constants.ts
+// since M6-005), so packages/trpc's integration router and apps/start's
+// integration forms keep resolving these symbols through
+// @openpanel/validation's existing barrel unchanged.
+//
+// `zSlackAuthResponse` does NOT move here even though it is zod-only and
+// would pass `constants-stay-isomorphic`: it is Slack's OAuth token-exchange
+// wire contract, not integration config a form validates against — nothing
+// in apps/start ever sees it. It stays in `./src/slack-contract.ts`, defined
+// as `zSlackConfig` minus the persisted `type` discriminant (see that file).
+
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -108,7 +121,13 @@ export function parseServiceAccountKey(raw: string): IServiceAccountKeyResult {
 // Per-type config schemas
 // ---------------------------------------------------------------------------
 
-export const zSlackAuthResponse = z.object({
+// The Slack integration's persisted config is exactly Slack's OAuth
+// token-exchange response (`oauth.v2.access`) plus our own `type` tag —
+// `./src/slack-contract.ts`'s `zSlackAuthResponse` is this schema minus
+// `type`, kept the other direction (constants owns the shape, src derives
+// from it) so the two can never drift.
+export const zSlackConfig = z.object({
+  type: z.literal('slack'),
   ok: z.literal(true),
   app_id: z.string(),
   authed_user: z.object({
@@ -129,12 +148,6 @@ export const zSlackAuthResponse = z.object({
     url: z.string().url(),
   }),
 });
-
-export const zSlackConfig = z
-  .object({
-    type: z.literal('slack'),
-  })
-  .extend(zSlackAuthResponse.shape);
 export type ISlackConfig = z.infer<typeof zSlackConfig>;
 
 export const zWebhookConfig = z.object({
@@ -469,3 +482,13 @@ type _DescriptorTypes = (typeof INTEGRATION_DESCRIPTORS)[number]['type'];
 type _AssertDescriptorCoverage = Assert<
   Equal<IIntegrationType, _DescriptorTypes>
 >;
+
+// ---------------------------------------------------------------------------
+// Discord test-notification wording (previously hardcoded in
+// clients/integrations/discord.ts's `sendTestDiscordNotification` as a
+// copy-pasted Slack message — "your Slack webhook is functioning correctly!"
+// on a Discord test send). Named and fixed here per the module map.
+// ---------------------------------------------------------------------------
+
+export const DISCORD_TEST_NOTIFICATION_MESSAGE =
+  '**🧪 Test [OpenPanel.dev](<https://openpanel.dev/>)**\nIf you can read this, your Discord webhook is functioning correctly!\n';

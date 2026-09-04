@@ -134,6 +134,12 @@ export type {
   ChatRunContext,
   FilterCommandResult,
 } from './modules/assistant/assistant.service';
+// Slack's OAuth token-exchange wire contract (M6-006) — not integration
+// config (stays out of the `*.constants` subpath, see
+// modules/integration/src/slack-contract.ts's header), but apps/api's
+// webhook controller still needs it to validate Slack's `oauth.v2.access`
+// response, the same way it reaches slackInstaller above.
+export { zSlackAuthResponse } from './modules/integration/src/slack-contract';
 
 import type { PageContext } from './modules/assistant/assistant.constants';
 
@@ -339,6 +345,56 @@ export {
   selectGscSite,
   syncGscData,
 } from './modules/gsc/gsc.service';
+// Moved from packages/trpc/src/routers/integration.ts, plus the Slack OAuth
+// callback business logic out of
+// apps/api/src/controllers/webhook.controller.ts (M6-006, ADR-008's module
+// map: integration owns "S"+"C") — packages/trpc's integration router and
+// apps/api's webhook controller call these directly, the same way V1 reaches
+// every other dissolved service here.
+export type { CompleteSlackOAuthCallbackResult } from './modules/integration/integration.service';
+export {
+  completeSlackOAuthCallback,
+  createOrUpdateSlackIntegration,
+  deleteIntegration,
+  getIntegrationById,
+  listIntegrationsForProject,
+  SlackOAuthCallbackError,
+  testExportIntegrationConnection,
+  testIntegrationConnection,
+  upsertIntegration,
+} from './modules/integration/integration.service';
+// Dissolved from @openpanel/db's services/notification.service.ts (M6-005,
+// "rules + dispatch stay together") — packages/trpc's notification router,
+// packages/db's own enqueue orchestration (createNotification et al, which
+// stays there — see that file's header for why) and apps/worker's
+// notification job all call these directly, the same way V1 reaches every
+// other dissolved service here. packages/db/src/services/notification.service.ts
+// stays a re-export shim for the pieces that moved.
+export type {
+  INotificationPayload,
+  INotificationRuleCached,
+  NotificationService,
+} from './modules/notification/notification.service';
+export {
+  APP_NOTIFICATION_INTEGRATION_ID,
+  BASE_INTEGRATIONS,
+  createNotificationService,
+  createOrUpdateNotificationRule,
+  deleteNotificationRule,
+  deliverNotification,
+  EMAIL_NOTIFICATION_INTEGRATION_ID,
+  getFunnelRules,
+  getHasFunnelRules,
+  getNotificationRuleByIdOrThrow,
+  getNotificationRulesByProjectId,
+  isBaseIntegration,
+  listNotificationRules,
+  listNotifications,
+  matchEvent,
+  matchEventFilters,
+  notificationTemplateEvent,
+  notificationTemplateFunnel,
+} from './modules/notification/notification.service';
 // New module (M6-003) — the onboarding-project mutation and the onboarding
 // email drip, neither of which had a packages/db/src/services/* home to move
 // from. packages/trpc's onboarding router and apps/worker's onboarding cron
@@ -404,38 +460,6 @@ export {
   updateOrganization,
   updateOrganizationMemberAccess,
 } from './modules/organization/organization.service';
-// Dissolved from @openpanel/db's services/notification.service.ts (M6-005,
-// "rules + dispatch stay together") — packages/trpc's notification router,
-// packages/db's own enqueue orchestration (createNotification et al, which
-// stays there — see that file's header for why) and apps/worker's
-// notification job all call these directly, the same way V1 reaches every
-// other dissolved service here. packages/db/src/services/notification.service.ts
-// stays a re-export shim for the pieces that moved.
-export type {
-  INotificationPayload,
-  INotificationRuleCached,
-  NotificationService,
-} from './modules/notification/notification.service';
-export {
-  APP_NOTIFICATION_INTEGRATION_ID,
-  BASE_INTEGRATIONS,
-  createNotificationService,
-  createOrUpdateNotificationRule,
-  deleteNotificationRule,
-  deliverNotification,
-  EMAIL_NOTIFICATION_INTEGRATION_ID,
-  getFunnelRules,
-  getHasFunnelRules,
-  getNotificationRuleByIdOrThrow,
-  getNotificationRulesByProjectId,
-  isBaseIntegration,
-  listNotificationRules,
-  listNotifications,
-  matchEvent,
-  matchEventFilters,
-  notificationTemplateEvent,
-  notificationTemplateFunnel,
-} from './modules/notification/notification.service';
 // Dissolved from @openpanel/db's services/project.service.ts (M6-002) —
 // packages/trpc's project router, apps/api's manage controller and several
 // core modules' `src/access.ts` call these directly, the same way V1
@@ -499,8 +523,8 @@ export {
   createShareReport,
   getShareByProjectId,
   getShareDashboard,
-  getShareDashboardById,
   getShareDashboardByDashboardId,
+  getShareDashboardById,
   getShareDashboardReports,
   getShareDashboardSettings,
   getShareOverview,
@@ -514,6 +538,25 @@ export {
   validateReportAccess,
   validateShareAccess,
 } from './modules/share/share.service';
+// Moved from packages/trpc/src/routers/subscription.ts, plus the Polar
+// webhook business logic out of
+// apps/api/src/controllers/webhook.controller.ts (M6-006, ADR-008's module
+// map: subscription owns "S"+"C") — packages/trpc's subscription router and
+// apps/api's webhook controller call these directly, the same way V1 reaches
+// every other dissolved service here.
+export {
+  applySaveDiscount,
+  cancelSubscription,
+  checkout,
+  getCurrentSubscriptionProduct,
+  getUsage,
+  handlePolarWebhookEvent,
+  listProducts,
+  pauseSubscription,
+  portal,
+  resumeSubscription,
+  toSubscriptionDiscount,
+} from './modules/subscription/subscription.service';
 // Dissolved from @openpanel/db's services/user.service.ts (M6-001) —
 // packages/trpc's auth/onboarding routers call `getUserById`/
 // `getUserAccount` directly through @openpanel/db's re-export shim, the same

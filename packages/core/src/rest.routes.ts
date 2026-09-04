@@ -14,8 +14,10 @@ import { clientRoutes } from './modules/client/client.routes';
 import { gscRoutes } from './modules/gsc/gsc.routes';
 import { healthRoutes } from './modules/health/health.routes';
 import { importRoutes } from './modules/import/import.routes';
+import { integrationRoutes } from './modules/integration/integration.routes';
 import { mcpRoutes } from './modules/mcp/mcp.routes';
 import { projectRoutes } from './modules/project/project.routes';
+import { subscriptionRoutes } from './modules/subscription/subscription.routes';
 
 // ADR-002/ADR-003 pin: @elysiajs/openapi at the 1.4.15 fallback (2.0 is
 // NO-GO per spike 6). `specPath` is set explicitly rather than taking the
@@ -52,12 +54,19 @@ export const publicApiRoutes = (deps: AppDeps) =>
 // allowlist (ADR-002 rule 4) and get `origin: '*'`; `/oauth` IS in
 // `corsPaths` — a quirk to port verbatim when app.ts wires CORS, not
 // something to fix here.
+// integration's `/webhook/slack` and subscription's `/webhook/polar` (M6-006)
+// joined it too — like `/oauth`, `/webhook` IS in the CORS delegator's
+// `corsPaths` allowlist (ADR-002 rule 4), unlike `/gsc`/`/mcp`, and both are
+// the same shape of unauthenticated third-party-redirected callback as
+// `/oauth`'s.
 export const dashboardRoutes = (deps: AppDeps) =>
   new Elysia({ name: 'core/dashboard-routes' })
     .use(gscRoutes(deps))
     .use(assistantRoutes(deps))
     .use(mcpRoutes(deps))
-    .use(authRoutes(deps));
+    .use(authRoutes(deps))
+    .use(integrationRoutes(deps))
+    .use(subscriptionRoutes(deps));
 
 // healthz/metrics/misc share V1's ops surface (http/context.ts's
 // UNLOGGED_PATH_PREFIXES) — unauthenticated, uncorsed, unlogged. /metrics and
