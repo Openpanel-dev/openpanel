@@ -3,32 +3,19 @@
  * An offset is resolved once its message has been handled, dead-lettered, or
  * deliberately skipped — never merely because it failed.
  *
- * The batch handler is exercised directly with injected dependencies; the
- * broker, the metrics registry and `incomingEvent` are all out of the picture.
+ * Ported from apps/worker/src/jobs/events.kafka-consumer.test.ts (M8-003)
+ * with the assertions unchanged. The batch handler is exercised directly with
+ * injected dependencies; the broker, the metrics registry and `incomingEvent`
+ * are all out of the picture — which is why no `mock.module` appears here.
  */
 
-import type {
-  DeadLetterMessage,
-  EachBatchPayload,
-  KafkaMessage,
-} from '@openpanel/queue';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-vi.mock('../metrics', () => ({
-  kafkaReprocessedTotal: { inc: vi.fn() },
-  kafkaHandlerFailuresTotal: { inc: vi.fn() },
-  kafkaDeadLetteredTotal: { inc: vi.fn() },
-  kafkaDeadLetterFailedTotal: { inc: vi.fn() },
-}));
-vi.mock('./events.incoming-event', () => ({ incomingEvent: vi.fn() }));
-vi.mock('../utils/logger', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}));
-
+import { describe, expect, mock, test } from 'bun:test';
+import type { EachBatchPayload, KafkaMessage } from 'kafkajs';
 import {
   createEventsBatchHandler,
+  type DeadLetterMessage,
   type EventsBatchHandlerDeps,
-} from './events.kafka-consumer';
+} from './consumer';
 
 const PARTITION = 7;
 const TOPIC = 'events';
@@ -57,8 +44,8 @@ function makeBatch(
   messages: KafkaMessage[],
   options: { isRunning?: () => boolean; isStale?: () => boolean } = {}
 ) {
-  const resolveOffset = vi.fn();
-  const heartbeat = vi.fn().mockResolvedValue(undefined);
+  const resolveOffset = mock((_offset: string) => undefined);
+  const heartbeat = mock(async () => undefined);
   const payload = {
     batch: { topic: TOPIC, partition: PARTITION, messages },
     resolveOffset,
@@ -69,44 +56,56 @@ function makeBatch(
   return { payload, resolveOffset, heartbeat };
 }
 
-const resolvedOffsets = (resolveOffset: ReturnType<typeof vi.fn>): string[] =>
+interface MockCalls {
+  mock: { calls: unknown[][] };
+}
+
+const resolvedOffsets = (resolveOffset: MockCalls): string[] =>
   resolveOffset.mock.calls.map(([offset]) => offset as string);
 
 function makeDeps(overrides: Partial<EventsBatchHandlerDeps> = {}) {
-  const metrics = {
-    reprocessed: vi.fn(),
-    handlerFailed: vi.fn(),
-    deadLettered: vi.fn(),
-    deadLetterFailed: vi.fn(),
+  const metrics: EventsBatchHandlerDeps['metrics'] = {
+    reprocessed: mock(() => undefined),
+    handlerFailed: mock(() => undefined),
+    deadLettered: mock(() => undefined),
+    deadLetterFailed: mock(() => undefined),
   };
-  const deps: Partial<EventsBatchHandlerDeps> = {
-    handleEvent: vi.fn().mockResolvedValue(undefined),
-    sendToDeadLetter: vi.fn().mockResolvedValue(undefined),
-    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-    onActivity: vi.fn(),
+  const handleEvent = mock<EventsBatchHandlerDeps['handleEvent']>(
+    async () => undefined
+  );
+  const sendToDeadLetter = mock<EventsBatchHandlerDeps['sendToDeadLetter']>(
+    async () => undefined
+  );
+  const sleep = mock(async (_ms: number) => undefined);
+  const deps: EventsBatchHandlerDeps = {
+    handleEvent,
+    sendToDeadLetter,
+    logger: {
+      info: mock(() => undefined),
+      warn: mock(() => undefined),
+      error: mock(() => undefined),
+    },
+    onActivity: mock(() => undefined),
     topic: TOPIC,
     maxAttempts: 3,
     initialRetryMs: 10,
     maxRetryMs: 25,
-    sleep: vi.fn().mockResolvedValue(undefined),
+    sleep,
     ...overrides,
     metrics: { ...metrics, ...overrides.metrics },
   };
   return {
     deps,
     metrics: deps.metrics as typeof metrics,
-    handleEvent: deps.handleEvent as ReturnType<typeof vi.fn>,
-    sendToDeadLetter: deps.sendToDeadLetter as ReturnType<typeof vi.fn>,
-    sleep: deps.sleep as ReturnType<typeof vi.fn>,
+    handleEvent,
+    sendToDeadLetter: (overrides.sendToDeadLetter ??
+      sendToDeadLetter) as typeof sendToDeadLetter,
+    sleep,
   };
 }
 
-beforeEach(() => {
-  vi.clearAllMocks();
-});
-
 describe('offset walk', () => {
-  it('resolves the whole contiguous prefix in ascending order', async () => {
+  test('resolves the whole contiguous prefix in ascending order', async () => {
     const { deps } = makeDeps();
     const handler = createEventsBatchHandler(deps);
     // Two interleaved key-groups: they run concurrently, so completion order
@@ -123,7 +122,7 @@ describe('offset walk', () => {
     expect(resolvedOffsets(resolveOffset)).toEqual(['0', '1', '2', '3']);
   });
 
-  it('stops at the first gap, even when later offsets did finish', async () => {
+  test('stops at the first gap, even when later offsets did finish', async () => {
     // Keys 'a' (0, 2, 4) and 'b' (1, 3, 5) run concurrently. 'a' is held on
     // its first message until 'b' has finished all of its own, then the
     // consumer stops — so 3 and 5 are processed while 2 never runs. Resolving
@@ -158,15 +157,13 @@ describe('offset walk', () => {
 
     await handler.eachBatch(payload);
 
-    const handled = handleEvent.mock.calls.map(
-      ([p]) => (p as { projectId: string }).projectId
-    );
+    const handled = handleEvent.mock.calls.map(([p]) => p.projectId);
     expect(handled).toContain('project-5');
     expect(handled).not.toContain('project-2');
     expect(resolvedOffsets(resolveOffset)).toEqual(['0', '1']);
   });
 
-  it('resolves nothing when the batch is stale before the first message', async () => {
+  test('resolves nothing when the batch is stale before the first message', async () => {
     const { deps, handleEvent } = makeDeps();
     const handler = createEventsBatchHandler(deps);
     const { payload, resolveOffset } = makeBatch(
@@ -182,7 +179,7 @@ describe('offset walk', () => {
 });
 
 describe('kill consumer mid-batch', () => {
-  it('loses no event: every unresolved offset is left for redelivery', async () => {
+  test('loses no event: every unresolved offset is left for redelivery', async () => {
     const KILL_AFTER = 3;
     const TOTAL = 8;
     let handled = 0;
@@ -215,11 +212,11 @@ describe('kill consumer mid-batch', () => {
 });
 
 describe('handler failure', () => {
-  it('retries with bounded backoff before giving up', async () => {
+  test('retries with bounded backoff before giving up', async () => {
     const { deps, handleEvent, sleep, sendToDeadLetter } = makeDeps({
       maxAttempts: 4,
     });
-    handleEvent.mockRejectedValue(new Error('boom'));
+    handleEvent.mockImplementation(() => Promise.reject(new Error('boom')));
     const handler = createEventsBatchHandler(deps);
     const { payload } = makeBatch([message(0, 'a')]);
 
@@ -231,11 +228,15 @@ describe('handler failure', () => {
     expect(sendToDeadLetter).toHaveBeenCalledTimes(1);
   });
 
-  it('stops retrying as soon as the handler succeeds', async () => {
+  test('stops retrying as soon as the handler succeeds', async () => {
     const { deps, handleEvent, sendToDeadLetter, metrics } = makeDeps();
-    handleEvent
-      .mockRejectedValueOnce(new Error('transient'))
-      .mockResolvedValue(undefined);
+    let attempts = 0;
+    handleEvent.mockImplementation(() => {
+      attempts += 1;
+      return attempts === 1
+        ? Promise.reject(new Error('transient'))
+        : Promise.resolve(undefined);
+    });
     const handler = createEventsBatchHandler(deps);
     const { payload, resolveOffset } = makeBatch([message(0, 'a')]);
 
@@ -247,7 +248,7 @@ describe('handler failure', () => {
     expect(resolvedOffsets(resolveOffset)).toEqual(['0']);
   });
 
-  it('dead-letters the raw message, counts it, and keeps the partition moving', async () => {
+  test('dead-letters the raw message, counts it, and keeps the partition moving', async () => {
     const poison = 'poison-payload';
     const { deps, handleEvent, sendToDeadLetter, metrics } = makeDeps();
     handleEvent.mockImplementation(async (p: { projectId: string }) => {
@@ -282,9 +283,9 @@ describe('handler failure', () => {
     expect(resolvedOffsets(resolveOffset)).toEqual(['0', '1', '2']);
   });
 
-  it('leaves the offset unresolved when the dead-letter produce fails', async () => {
+  test('leaves the offset unresolved when the dead-letter produce fails', async () => {
     const { deps, handleEvent, metrics } = makeDeps({
-      sendToDeadLetter: vi.fn().mockRejectedValue(new Error('broker down')),
+      sendToDeadLetter: mock(() => Promise.reject(new Error('broker down'))),
     });
     handleEvent.mockImplementation(async (p: { projectId: string }) => {
       if (p.projectId === 'project-1') {
@@ -307,7 +308,7 @@ describe('handler failure', () => {
 });
 
 describe('unparseable messages', () => {
-  it('dead-letters instead of dropping, without retrying', async () => {
+  test('dead-letters instead of dropping, without retrying', async () => {
     const { deps, handleEvent, sendToDeadLetter, metrics, sleep } = makeDeps();
     const handler = createEventsBatchHandler(deps);
     const { payload, resolveOffset } = makeBatch([
@@ -330,7 +331,7 @@ describe('unparseable messages', () => {
     expect(resolvedOffsets(resolveOffset)).toEqual(['0']);
   });
 
-  it('dead-letters a message with no value at all', async () => {
+  test('dead-letters a message with no value at all', async () => {
     const { deps, sendToDeadLetter, metrics } = makeDeps();
     const handler = createEventsBatchHandler(deps);
     const { payload, resolveOffset } = makeBatch([message(0, 'a', '')]);
@@ -347,7 +348,7 @@ describe('unparseable messages', () => {
 });
 
 describe('reprocess counter', () => {
-  it('does not fire for intra-batch out-of-order processing', async () => {
+  test('does not fire for intra-batch out-of-order processing', async () => {
     const { deps, metrics } = makeDeps();
     const handler = createEventsBatchHandler(deps);
     const { payload } = makeBatch([
@@ -361,7 +362,7 @@ describe('reprocess counter', () => {
     expect(metrics.reprocessed).not.toHaveBeenCalled();
   });
 
-  it('fires once per redelivered offset in a later batch', async () => {
+  test('fires once per redelivered offset in a later batch', async () => {
     const { deps, metrics } = makeDeps();
     const handler = createEventsBatchHandler(deps);
     const messages = [message(0, 'a'), message(1, 'a')];
@@ -374,7 +375,7 @@ describe('reprocess counter', () => {
     expect(metrics.reprocessed).toHaveBeenCalledWith(String(PARTITION));
   });
 
-  it('does not fire after a rebalance clears the watermarks', async () => {
+  test('does not fire after a rebalance clears the watermarks', async () => {
     const { deps, metrics } = makeDeps();
     const handler = createEventsBatchHandler(deps);
     const messages = [message(0, 'a'), message(1, 'a')];
@@ -386,12 +387,12 @@ describe('reprocess counter', () => {
     expect(metrics.reprocessed).not.toHaveBeenCalled();
   });
 
-  it('does not fire for a dead-lettered offset re-seen only within the batch', async () => {
+  test('does not fire for a dead-lettered offset re-seen only within the batch', async () => {
     // A dead-lettered offset is resolved, so it must move the watermark just
     // like a handled one — otherwise the next batch would flag it as a
     // reprocess.
     const { deps, handleEvent, metrics } = makeDeps();
-    handleEvent.mockRejectedValue(new Error('boom'));
+    handleEvent.mockImplementation(() => Promise.reject(new Error('boom')));
     const handler = createEventsBatchHandler(deps);
 
     await handler.eachBatch(makeBatch([message(0, 'a')]).payload);

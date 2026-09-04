@@ -52,8 +52,9 @@ export interface AppDeps {
   /**
    * The events transport. `produceIncomingEvent` still lives in
    * @openpanel/queue, which imports core for its logger, so core cannot
-   * import it back (M8-002); main.ts supplies it and M8-003 replaces it with
-   * core's own Kafka producer.
+   * import it back (M8-002); main.ts supplies it. It stays injected until
+   * @openpanel/queue dies at P9 — M8-003 moved the consumer, not the
+   * producer, and the consumer takes its kafkajs client the same way.
    */
   produceIncomingEvent: IncomingEventProducer;
   logger: Logger;

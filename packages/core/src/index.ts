@@ -1151,6 +1151,34 @@ export {
   summarizeBotSignals,
   validateIngestRequest,
 } from './modules/ingest/ingest.service';
+// The Kafka consumer and its per-message handler (M8-003). apps/worker's
+// events.kafka-consumer.ts / events.incoming-event.ts are thin delegates that
+// hand in the kafkajs client, the topic/group names and their own registry's
+// counters — none of which this package spells, so they stay byte-identical.
+export type {
+  ConsumerLogger,
+  ConsumerMetrics,
+  DeadLetterMessage,
+  DeadLetterReason,
+  EventsBatchHandler,
+  EventsBatchHandlerDeps,
+  EventsConsumerDeps,
+  KafkaConsumerHandle,
+} from './modules/ingest/src/consumer';
+export {
+  createEventsBatchHandler,
+  startKafkaEventsConsumer,
+} from './modules/ingest/src/consumer';
+export type {
+  IncomingEventDelivery,
+  IncomingEventDeps,
+  IncomingEventMetrics,
+  IncomingEventSessions,
+} from './modules/ingest/src/incoming-event-handler';
+export {
+  incomingEvent,
+  loadIncomingEventDeps,
+} from './modules/ingest/src/incoming-event-handler';
 // Dissolved from @openpanel/db's services/insights* + referrer-spikes.service
 // (M5-001) — apps/worker's insight job files and packages/trpc's insight
 // router call these directly, the same way V1 reaches every other dissolved

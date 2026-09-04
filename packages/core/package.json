@@ -52,6 +52,7 @@
     "fast-json-stable-hash": "^1.0.3",
     "ipaddr.js": "^2.5.0",
     "js-yaml": "^4.1.0",
+    "kafkajs": "^2.2.4",
     "lru-cache": "^11.2.4",
     "mathjs": "^12.3.2",
     "nanoid": "^5.1.6",
