@@ -73,6 +73,18 @@ describe('isBotHook', () => {
     expect(status).toHaveBeenCalledWith(202);
   });
 
+  it('still handles bots when a client secret was sent but did not verify', async () => {
+    isBot.mockResolvedValue({ name: 'Googlebot', type: 'Search bot' });
+    const req = makeReq({ clientSecretAuth: false });
+    const { reply, status } = makeReply();
+
+    await isBotHook(req as never, reply);
+
+    expect(isBot).toHaveBeenCalledWith('Googlebot/2.1');
+    expect(createBotEvent).toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(202);
+  });
+
   it('passes legitimate public traffic through untouched', async () => {
     isBot.mockResolvedValue(null);
     const req = makeReq({ headers: { 'user-agent': 'node' } as never });

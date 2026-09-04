@@ -1,7 +1,7 @@
 import { verifyPassword } from '@openpanel/common/server';
 import type { IServiceClientWithProject } from '@openpanel/db';
 import { ClientType, getClientByIdCached } from '@openpanel/db';
-import { getCache } from '@openpanel/redis';
+import { getRedisCache } from '@openpanel/redis';
 import type {
   DeprecatedPostEventPayload,
   IProjectFilterIp,
@@ -39,6 +39,46 @@ export class SdkAuthError extends Error {
   }
 }
 
+const CLIENT_SECRET_CACHE_SEC = 60 * 5;
+
+/**
+ * Checks a supplied client secret against the stored hash.
+ *
+ * Only successful verifications are cached. The cache key contains the
+ * caller-supplied secret, so caching a negative result would let anyone create
+ * entries with keys of their choosing. A client with no stored secret skips the
+ * cache entirely.
+ */
+async function verifyClientSecret(
+  clientId: string,
+  clientSecret: string | undefined,
+  storedSecret: string | null | undefined
+): Promise<boolean> {
+  if (!(storedSecret && clientSecret)) {
+    return false;
+  }
+
+  const cacheKey = `client:auth:${clientId}:${Buffer.from(clientSecret).toString('base64')}`;
+
+  // Strict compare: entries written before only positives were cached may still
+  // hold "false".
+  if ((await getRedisCache().get(cacheKey)) === 'true') {
+    return true;
+  }
+
+  const isVerified = await verifyPassword(clientSecret, storedSecret);
+
+  if (isVerified) {
+    getRedisCache()
+      .setex(cacheKey, CLIENT_SECRET_CACHE_SEC, 'true')
+      .catch(() => {
+        // ignore error
+      });
+  }
+
+  return isVerified;
+}
+
 export async function validateSdkRequest(
   req: FastifyRequest<{
     Body: ITrackHandlerPayload | DeprecatedPostEventPayload;
@@ -58,10 +98,6 @@ export async function validateSdkRequest(
   const clientSecret =
     clientSecretNew || clientSecretOld || clientSecretFromBody;
   const origin = headers.origin;
-
-  if (clientSecret) {
-    req.clientSecretAuth = true;
-  }
 
   const createError = (message: string) =>
     new SdkAuthError(message, {
@@ -95,6 +131,16 @@ export async function validateSdkRequest(
     throw createError('Ingestion: Client has no project');
   }
 
+  // Whether the supplied secret actually matches the stored hash. Everything
+  // downstream keys off this, not off the mere presence of a secret.
+  const secretVerified = await verifyClientSecret(
+    clientId,
+    clientSecret,
+    client.secret
+  );
+
+  req.clientSecretAuth = secretVerified;
+
   // Filter out blocked IPs
   const ipFilter = client.project.filters.filter(
     (filter): filter is IProjectFilterIp => filter.type === 'ip'
@@ -119,10 +165,10 @@ export async function validateSdkRequest(
     path(['payload', 'properties', '__revenue'], req.body) ??
     path(['properties', '__revenue'], req.body);
 
-  // Only allow revenue tracking if it was sent with a client secret
+  // Only allow revenue tracking if it was sent with a verified client secret
   // or if the project has allowUnsafeRevenueTracking enabled
   if (
-    !(client.project.allowUnsafeRevenueTracking || clientSecret) &&
+    !(client.project.allowUnsafeRevenueTracking || secretVerified) &&
     typeof revenue !== 'undefined'
   ) {
     throw createError(
@@ -160,16 +206,8 @@ export async function validateSdkRequest(
     }
   }
 
-  if (client.secret && clientSecret) {
-    const isVerified = await getCache(
-      `client:auth:${clientId}:${Buffer.from(clientSecret).toString('base64')}`,
-      60 * 5,
-      async () => await verifyPassword(clientSecret, client.secret!),
-      true
-    );
-    if (isVerified) {
-      return client;
-    }
+  if (secretVerified) {
+    return client;
   }
 
   throw createError('Ingestion: Invalid cors or secret');
