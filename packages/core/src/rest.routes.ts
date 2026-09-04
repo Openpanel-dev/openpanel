@@ -11,6 +11,7 @@ import { registry } from './metrics';
 import { assistantRoutes } from './modules/assistant/assistant.routes';
 import { authRoutes } from './modules/auth/auth.routes';
 import { clientRoutes } from './modules/client/client.routes';
+import { exportRoutes, insightsRoutes } from './modules/export/export.routes';
 import { gscRoutes } from './modules/gsc/gsc.routes';
 import { healthRoutes } from './modules/health/health.routes';
 import { importRoutes } from './modules/import/import.routes';
@@ -38,7 +39,8 @@ const OPENAPI_EXCLUDED_PATHS = ['/metrics'];
 // import's /import/events is the first module to land here (M5-004);
 // project's and client's /manage/* (M6-002) and profile's /profile* (M7-002)
 // joined it — client-authed API surface, same as /import, not session-authed
-// like dashboardRoutes.
+// like dashboardRoutes. export's `/export` + `/insights` (M7-007) joined it
+// too — `allow: ['read', 'root']` matches V1's shared `validateExportRequest`.
 // None of it is yet reachable: the clientAuth macro's authenticator is a P8
 // stub that always returns null (import.routes.ts's header), and main.ts
 // does not mount `publicApiRoutes` until a real `AppDeps` exists (P3/P4/P8).
@@ -47,7 +49,9 @@ export const publicApiRoutes = (deps: AppDeps) =>
     .use(importRoutes(deps))
     .use(projectRoutes(deps))
     .use(clientRoutes(deps))
-    .use(profileRoutes(deps));
+    .use(profileRoutes(deps))
+    .use(exportRoutes(deps))
+    .use(insightsRoutes(deps));
 
 // gsc's callback was the first module to land here (M5-002); assistant's
 // `/ai/agents/*` (M5-005), mcp's `/mcp` (M5-007) and auth's `/oauth/*`
