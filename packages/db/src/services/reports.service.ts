@@ -148,7 +148,7 @@ export async function getReportById(id: string) {
 import { AggregateChartEngine, ChartEngine } from '../engine';
 import { getDashboardById } from './dashboard.service';
 import { getChartStartEndDate } from './date.service';
-import { funnelService } from './funnel.service';
+import { getFunnel } from './funnel.service';
 import { getSettingsForProject } from './organization.service';
 
 export async function listReportsCore(input: {
@@ -207,7 +207,7 @@ export async function getReportDataCore(input: {
   };
 
   if (report.chartType === 'funnel') {
-    const result = await funnelService.getFunnel(chartInput);
+    const result = await getFunnel(chartInput);
     return { ...meta, data: result };
   }
 

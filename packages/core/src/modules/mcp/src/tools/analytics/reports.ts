@@ -3,8 +3,8 @@ import {
   AggregateChartEngine,
   ChartEngine,
   db,
-  funnelService,
   getChartStartEndDate,
+  getFunnel,
   getReportById,
   getReportsByDashboardId,
   getSettingsForProject,
@@ -281,7 +281,7 @@ export function registerReportTools(
 
 /**
  * Execute a saved report by ID. Dispatches on chart type:
- *  - funnel  → funnelService.getFunnel
+ *  - funnel  → getFunnel
  *  - metric  → AggregateChartEngine.execute
  *  - others  → ChartEngine.execute
  *
@@ -343,7 +343,7 @@ export async function runReport(input: {
   };
 
   if (report.chartType === 'funnel') {
-    return { ...meta, data: await funnelService.getFunnel(chartInput) };
+    return { ...meta, data: await getFunnel(chartInput) };
   }
   if (report.chartType === 'metric') {
     return { ...meta, data: await AggregateChartEngine.execute(chartInput) };
@@ -392,9 +392,7 @@ export async function runReportFromConfig(input: {
   if (input.config.chartType === 'funnel') {
     return {
       ...meta,
-      data: await funnelService.getFunnel(
-        chartInput as Parameters<typeof funnelService.getFunnel>[0]
-      ),
+      data: await getFunnel(chartInput as Parameters<typeof getFunnel>[0]),
     };
   }
   if (input.config.chartType === 'metric') {

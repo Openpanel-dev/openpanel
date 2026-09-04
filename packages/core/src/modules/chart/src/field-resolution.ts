@@ -24,6 +24,8 @@ export const CHART_TABLE = {
   cohortMembers: 'cohort_members',
   eventNamesMv: 'distinct_event_names_mv',
   eventPropertyValuesMv: 'event_property_values_mv',
+  dauMv: 'dau_mv',
+  cohortEventsMv: 'cohort_events_mv',
 } as const;
 
 // Top-level columns on the events table. Derived from the migration in

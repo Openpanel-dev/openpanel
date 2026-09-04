@@ -1,9 +1,9 @@
 import {
   AggregateChartEngine,
   ChartEngine,
-  funnelService,
   getChartStartEndDate,
   getDashboardById,
+  getFunnel,
   getReportsByDashboardId,
   getSettingsForProject,
 } from '@openpanel/db';
@@ -99,8 +99,8 @@ export const summarizeDashboard = chatTool(
 
           let data: unknown;
           if (report.chartType === 'funnel') {
-            data = await funnelService.getFunnel(
-              chartInput as Parameters<typeof funnelService.getFunnel>[0]
+            data = await getFunnel(
+              chartInput as Parameters<typeof getFunnel>[0]
             );
           } else if (report.chartType === 'metric') {
             data = await AggregateChartEngine.execute(chartInput);

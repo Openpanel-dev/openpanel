@@ -312,6 +312,63 @@ export {
   rewriteProfilePropertyRefs,
   transformPropertyKey,
 } from './modules/chart/chart.service';
+// Dissolved from @openpanel/db's services/conversion.service.ts (M7-004) —
+// reached through the chart module's own dispatch and the db shim.
+export { getConversion } from './modules/chart/conversion.service';
+// Dissolved from @openpanel/db's services/funnel.service.ts (M7-004) —
+// packages/db's reports.service, apps/api's insights controller and the
+// mcp/assistant tools call these. packages/db/src/services/funnel.service.ts
+// stays a re-export shim.
+export type {
+  BuildFunnelBaseInput,
+  FunnelStep,
+} from './modules/chart/funnel.service';
+export {
+  buildFunnelBase,
+  buildSessionsCte,
+  EMPTY_BREAKDOWN_LABEL,
+  getFunnel,
+  getFunnelCore,
+  getFunnelGroup,
+  getFunnelProfileIds,
+  toSeries,
+} from './modules/chart/funnel.service';
+// Dissolved from @openpanel/db's services/retention.service.ts (M7-004) —
+// apps/api's insights controller and the mcp/assistant tools call these.
+// packages/db/src/services/retention.service.ts stays a re-export shim.
+export type {
+  IGetRetentionCohortInput,
+  IRetentionCohortRow,
+  IRetentionCriteria,
+  IRetentionInterval,
+  IServiceRetentionRollingActiveUsers,
+} from './modules/chart/retention.service';
+export {
+  getEngagementCore,
+  getRetentionCohort,
+  getRetentionCohortCore,
+  getRetentionLastSeenSeries,
+  getRetentionSeries,
+  getRollingActiveUsers,
+  getRollingActiveUsersCore,
+  getWeeklyRetentionSeriesCore,
+  processCohortData,
+} from './modules/chart/retention.service';
+// Dissolved from @openpanel/db's services/sankey.service.ts (M7-004) —
+// apps/api's insights controller and the mcp/assistant tools call these.
+// packages/db/src/services/sankey.service.ts stays a re-export shim.
+export type {
+  IGetSankeyInput,
+  SankeyLink,
+  SankeyNode,
+  SankeyResult,
+} from './modules/chart/sankey.service';
+export {
+  getRawWhereClause,
+  getSankey,
+  getUserFlowCore,
+  zGetSankeyInput,
+} from './modules/chart/sankey.service';
 // Dissolved from @openpanel/db's services/clients.service.ts (M6-002) —
 // packages/trpc's client router, apps/api's manage controller and mcp/utils
 // auth call these directly, the same way V1 reaches every other dissolved

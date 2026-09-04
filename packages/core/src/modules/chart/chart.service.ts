@@ -5,15 +5,14 @@
 // src/chart.sql.proof.md; V1's chart.service and engine are re-export shims
 // onto this module and its router delegates here (DELEGATE PATTERN).
 //
-// `funnel`, `conversion`, `sankey`, `cohort` and `getFunnelProfiles` still
-// run V1's funnel/conversion/sankey/retention services — those queries are
-// M7-004/M7-005's, and are reached lazily through @openpanel/db until then.
+// The funnel, conversion, sankey and retention statements this module
+// dispatches to live in the sibling `*.service.ts` files of this module
+// (M7-004).
 //
 // db/ch access is lazy (`load*`), as in the sibling modules: the barrel pulls
 // this module into nearly every core test file, and constructing
 // @openpanel/db's clients at import time costs a pino-pretty worker per file.
 
-import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import {
   getChartPrevStartEndDate,
   getChartStartEndDate,
@@ -29,7 +28,6 @@ import type {
   IReportInput,
 } from '@openpanel/validation';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
-import sqlstring from 'sqlstring';
 import type { ServiceDeps } from '../../services';
 import { getEventMetasCached } from '../event/event.service';
 import { getSettingsForProject } from '../organization/organization.service';
@@ -38,6 +36,10 @@ import {
   getProfilesCached,
   type IServiceProfile,
 } from '../profile/profile.service';
+import { getConversion } from './conversion.service';
+import { getFunnel, getFunnelProfileIds } from './funnel.service';
+import { getRetentionCohort } from './retention.service';
+import { getSankey } from './sankey.service';
 import {
   chartBucketProfilesQuery,
   eventFieldValuesQuery,
@@ -58,6 +60,7 @@ import {
   isKnownEventField,
   normalizeEventField,
 } from './src/field-resolution';
+import { runQuery } from './src/run-query';
 
 export {
   type ChartBucketProfilesInput,
@@ -171,39 +174,8 @@ const FIXED_FILTER_PROPERTIES = [
   'profile.last_seen_at',
 ];
 
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
-}
-
-function loadFunnelService() {
-  return import('@openpanel/db/src/services/funnel.service');
-}
-
-function loadConversionService() {
-  return import('@openpanel/db/src/services/conversion.service');
-}
-
-function loadSankeyService() {
-  return import('@openpanel/db/src/services/sankey.service');
-}
-
-function loadRetentionService() {
-  return import('@openpanel/db/src/services/retention.service');
-}
-
 function loadReportsService() {
   return import('@openpanel/db/src/services/reports.service');
-}
-
-async function runQuery<T extends object>(
-  statement: SqlFragment,
-  timezone?: string
-): Promise<T[]> {
-  const { chQuery } = await loadChClient();
-  return chQuery<T>(
-    statement,
-    timezone ? { session_timezone: timezone } : undefined
-  );
 }
 
 async function getProfilesInBatches(
@@ -443,7 +415,7 @@ export async function getChartPropertyValues(input: {
   };
 }
 
-// --- funnel / conversion / sankey / cohort (V1 services, M7-004/M7-005) -----
+// --- funnel / conversion / sankey / retention --------------------------------
 
 async function currentAndPreviousPeriod(chartInput: IReportInput) {
   const { timezone } = await getSettingsForProject(chartInput.projectId);
@@ -453,14 +425,13 @@ async function currentAndPreviousPeriod(chartInput: IReportInput) {
 }
 
 export async function getFunnelChart(chartInput: IReportInput) {
-  const { funnelService } = await loadFunnelService();
   const { timezone, currentPeriod, previousPeriod } =
     await currentAndPreviousPeriod(chartInput);
 
   const [current, previous] = await Promise.all([
-    funnelService.getFunnel({ ...chartInput, ...currentPeriod, timezone }),
+    getFunnel({ ...chartInput, ...currentPeriod, timezone }),
     chartInput.previous
-      ? funnelService.getFunnel({ ...chartInput, ...previousPeriod, timezone })
+      ? getFunnel({ ...chartInput, ...previousPeriod, timezone })
       : Promise.resolve(null),
   ]);
 
@@ -468,20 +439,19 @@ export async function getFunnelChart(chartInput: IReportInput) {
 }
 
 export async function getConversionChart(chartInput: IReportInput) {
-  const { conversionService } = await loadConversionService();
   const { timezone, currentPeriod, previousPeriod } =
     await currentAndPreviousPeriod(chartInput);
   const interval = chartInput.interval;
 
   const [current, previous] = await Promise.all([
-    conversionService.getConversion({
+    getConversion({
       ...chartInput,
       ...currentPeriod,
       interval,
       timezone,
     }),
     chartInput.previous
-      ? conversionService.getConversion({
+      ? getConversion({
           ...chartInput,
           ...previousPeriod,
           interval,
@@ -503,8 +473,7 @@ export async function getConversionChart(chartInput: IReportInput) {
 }
 
 export async function getSankeyChart(input: IReportInput) {
-  const [{ sankeyService }, { mergeGlobalFilters, onlyReportEvents }] =
-    await Promise.all([loadSankeyService(), loadReportsService()]);
+  const { mergeGlobalFilters, onlyReportEvents } = await loadReportsService();
   const { timezone } = await getSettingsForProject(input.projectId);
   const currentPeriod = getChartStartEndDate(input, timezone);
 
@@ -520,7 +489,7 @@ export async function getSankeyChart(input: IReportInput) {
     throw new Error('Start and end events are required');
   }
 
-  return sankeyService.getSankey({
+  return getSankey({
     projectId: input.projectId,
     startDate: currentPeriod.startDate,
     endDate: currentPeriod.endDate,
@@ -590,7 +559,6 @@ export async function getRetentionChart(
   report: NonNullable<IServiceReport> | null,
   input: RetentionChartInput
 ) {
-  const { getRetentionCohort } = await loadRetentionService();
   const resolved = report ? retentionInputFromReport(report, input) : input;
 
   const { timezone } = await getSettingsForProject(resolved.projectId);
@@ -671,15 +639,14 @@ export interface FunnelStepProfilesRequest {
 }
 
 /**
- * Profiles at (or dropping off at) one funnel step. Runs on V1's clix funnel
- * builder until the funnel module (M7-004) converts it: the CTE has to be the
- * chart's own, or breakdown expressions referencing a `profile` / `cohort_<id>`
- * alias this side never joined fail with UNKNOWN_IDENTIFIER.
+ * Profiles at (or dropping off at) one funnel step. Built on the funnel
+ * module's own base: the CTE has to be the chart's own, or breakdown
+ * expressions referencing a `profile` / `cohort_<id>` alias this side never
+ * joined fail with UNKNOWN_IDENTIFIER.
  */
 export async function getFunnelStepProfiles(
   input: FunnelStepProfilesRequest
 ): Promise<IServiceProfile[]> {
-  const { funnelService, EMPTY_BREAKDOWN_LABEL } = await loadFunnelService();
   const { timezone } = await getSettingsForProject(input.projectId);
   const {
     projectId,
@@ -692,10 +659,8 @@ export async function getFunnelStepProfiles(
     breakdownValues = [],
   } = input;
   const { startDate, endDate } = getChartStartEndDate(input, timezone);
-  // stepIndex is 0-based, level is 1-based.
-  const targetLevel = stepIndex + 1;
 
-  const { query, breakdowns } = await funnelService.buildFunnelBase({
+  const ids = await getFunnelProfileIds({
     projectId,
     startDate,
     endDate,
@@ -704,41 +669,12 @@ export async function getFunnelStepProfiles(
     funnelWindow,
     funnelGroup,
     timezone,
+    // stepIndex is 0-based, level is 1-based.
+    targetLevel: stepIndex + 1,
+    showDropoffs,
+    breakdownValues,
+    limit: FUNNEL_PROFILES_LIMIT,
   });
-
-  // Same shape as the chart's `funnel` CTE: windowFunnel is already computed
-  // per primary key, so drop level=0 and select distinct profiles.
-  query.with('funnel', 'SELECT * FROM session_funnel WHERE level != 0');
-  query.select(['DISTINCT profile_id']).from('funnel');
-  if (showDropoffs) {
-    query.where('level', '=', targetLevel);
-  } else {
-    query.where('level', '>=', targetLevel);
-  }
-
-  // The clicked row carries DISPLAY labels (trimmed, empty/null shown as
-  // EMPTY_BREAKDOWN_LABEL), so match against the same normalization.
-  // toString/ifNull keep the comparison valid for numeric and Nullable
-  // breakdown columns.
-  breakdowns.forEach((_, index) => {
-    const value = breakdownValues[index];
-    if (value === undefined) {
-      return;
-    }
-    const normalized = `trim(ifNull(toString(b_${index}), ''))`;
-    if (value === EMPTY_BREAKDOWN_LABEL) {
-      query.rawWhere(
-        `(${normalized} = '' OR ${normalized} = ${sqlstring.escape(EMPTY_BREAKDOWN_LABEL)})`
-      );
-    } else {
-      query.rawWhere(`${normalized} = ${sqlstring.escape(value)}`);
-    }
-  });
-
-  query.limit(FUNNEL_PROFILES_LIMIT);
-
-  const rows = (await query.execute()) as { profile_id: string }[];
-  const ids = rows.map((row) => row.profile_id).filter(Boolean);
   if (ids.length === 0) {
     return [];
   }
