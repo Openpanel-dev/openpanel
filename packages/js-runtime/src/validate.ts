@@ -12,6 +12,60 @@ import {
 } from './ast-walker';
 
 /**
+ * Property names that must never be written through. Assigning to any of
+ * these reaches objects shared with the rest of the worker process.
+ */
+const FORBIDDEN_WRITE_PROPERTIES = new Set([
+  '__proto__',
+  'constructor',
+  'prototype',
+]);
+
+/**
+ * The static name of a member expression's property, or undefined when the key
+ * is only known at run time (obj[someVariable]).
+ */
+function staticPropertyName(
+  member: Record<string, unknown>
+): string | undefined {
+  const prop = member.property as Record<string, unknown> | undefined;
+  if (!prop) {
+    return undefined;
+  }
+  if (member.computed) {
+    // Only a literal key can be resolved. Babel has already decoded any
+    // \u / \x escapes into StringLiteral.value by this point.
+    return prop.type === 'StringLiteral' ? (prop.value as string) : undefined;
+  }
+  return prop.type === 'Identifier' ? (prop.name as string) : undefined;
+}
+
+/**
+ * Walk an assignment target back down its member chain and return the first
+ * forbidden property name it passes through, if any. payload.__proto__.x is a
+ * write to 'x' but goes through '__proto__', so the whole chain matters.
+ */
+function forbiddenPropertyInChain(
+  target: Record<string, unknown>
+): string | undefined {
+  let current: Record<string, unknown> | undefined = target;
+
+  while (
+    current &&
+    (current.type === 'MemberExpression' ||
+      current.type === 'OptionalMemberExpression')
+  ) {
+    const name = staticPropertyName(current);
+    if (name && FORBIDDEN_WRITE_PROPERTIES.has(name)) {
+      return name;
+    }
+    current = current.object as Record<string, unknown> | undefined;
+  }
+
+  return undefined;
+}
+
+/**
  * Validates that a JavaScript function is safe to execute
  * by checking the AST for allowed operations only (allowlist approach)
  */
@@ -104,6 +158,13 @@ export function validate(code: string): {
         node.type === 'ExportDeclaration'
       ) {
         validationError = 'import/export statements are not allowed';
+        return;
+      }
+
+      // Block dynamic import(). @babel/parser emits 'Import' as the callee of
+      // the surrounding CallExpression; 'ImportExpression' is the ESTree shape.
+      if (node.type === 'Import' || node.type === 'ImportExpression') {
+        validationError = 'Dynamic import() is not allowed';
         return;
       }
 
@@ -212,12 +273,17 @@ export function validate(code: string): {
           const prop = callee.property as Record<string, unknown>;
           const computed = callee.computed as boolean;
 
+          // A computed key (obj[expr]()) cannot be matched against the
+          // allowlist, because the property name is only known at run time.
+          // Refuse it rather than letting it past the checks below unseen.
+          if (computed) {
+            validationError =
+              'Computed property access on a call target is not allowed. Use a literal method name, e.g. value.toUpperCase().';
+            return;
+          }
+
           // Static method call on global object: Math.random(), JSON.parse()
-          if (
-            obj.type === 'Identifier' &&
-            prop.type === 'Identifier' &&
-            !computed
-          ) {
+          if (obj.type === 'Identifier' && prop.type === 'Identifier') {
             const objName = obj.name as string;
             const methodName = prop.name as string;
 
@@ -232,7 +298,7 @@ export function validate(code: string): {
 
           // Instance method call: arr.map(), str.toLowerCase(), arr?.map()
           // We allow these if the method name is in ALLOWED_INSTANCE_METHODS
-          if (prop.type === 'Identifier' && !computed) {
+          if (prop.type === 'Identifier') {
             const methodName = prop.name as string;
 
             // If calling on something other than an allowed global,
@@ -253,12 +319,35 @@ export function validate(code: string): {
       // Check 'new' expressions - only allow new Date()
       if (node.type === 'NewExpression') {
         const callee = node.callee as Record<string, unknown>;
-        if (callee.type === 'Identifier') {
-          const name = callee.name as string;
-          if (name !== 'Date') {
-            validationError = `'new ${name}()' is not allowed. Only 'new Date()' is permitted.`;
-            return;
-          }
+
+        // Anything other than a bare identifier (a member expression, a
+        // parenthesised expression, another call) names a constructor we
+        // cannot resolve, so it can never be the Date we allow.
+        if (callee.type !== 'Identifier') {
+          validationError =
+            "The target of 'new' must be a plain identifier. Only 'new Date()' is permitted.";
+          return;
+        }
+
+        const name = callee.name as string;
+        if (name !== 'Date') {
+          validationError = `'new ${name}()' is not allowed. Only 'new Date()' is permitted.`;
+          return;
+        }
+      }
+
+      // Block writes that reach the prototype chain: payload.__proto__.x = 1,
+      // payload['constructor'].prototype.y = 2. Reading these is already
+      // handled by the call and 'new' checks above.
+      if (
+        node.type === 'AssignmentExpression' ||
+        node.type === 'UpdateExpression'
+      ) {
+        const target = (node.left ?? node.argument) as Record<string, unknown>;
+        const reached = forbiddenPropertyInChain(target);
+        if (reached) {
+          validationError = `Assigning through '${reached}' is not allowed.`;
+          return;
         }
       }
     });

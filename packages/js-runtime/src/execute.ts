@@ -1,3 +1,5 @@
+import { validate } from './validate';
+
 /**
  * Executes a JavaScript function template
  * @param code - JavaScript function code (arrow function or function expression)
@@ -8,6 +10,14 @@ export function execute(
   code: string,
   payload: Record<string, unknown>,
 ): unknown {
+  // Templates are checked when they are saved, but the stored string is what
+  // ends up in new Function() here. Check it again at run time rather than
+  // trusting whatever passed validation at save time.
+  const validation = validate(code);
+  if (!validation.valid) {
+    throw new Error(`Invalid JavaScript template: ${validation.error}`);
+  }
+
   try {
     // Create the function code that will be executed
     // 'use strict' ensures 'this' is undefined (not global object)

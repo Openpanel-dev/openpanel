@@ -139,6 +139,93 @@ describe('validate', () => {
     });
   });
 
+  describe('Computed and indirect access', () => {
+    it('should block a computed call target', () => {
+      const result = validate(
+        `(payload) => payload['constructor']['constructor']('return 1')()`,
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Computed property access');
+    });
+
+    it('should block a computed call target reached by optional chaining', () => {
+      const result = validate(
+        `(payload) => payload?.['constructor']['constructor']('return 1')()`,
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Computed property access');
+    });
+
+    it('should block a computed key written with escape sequences', () => {
+      const result = validate(
+        `(payload) => payload['\\u0063onstructor']['constructor']('return 1')()`,
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Computed property access');
+    });
+
+    it('should block a computed call target on a nested value', () => {
+      const result = validate(
+        `(payload) => payload.properties['toString']()`,
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Computed property access');
+    });
+
+    it("should block 'new' on a non-identifier callee", () => {
+      const result = validate(
+        `(payload) => new (payload['constructor']['constructor'])('return 1')`,
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("target of 'new'");
+    });
+
+    it("should block 'new' on a member expression", () => {
+      const result = validate('(payload) => new payload.Thing()');
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("target of 'new'");
+    });
+
+    it('should block dynamic import()', () => {
+      const result = validate(`(payload) => import('node:fs')`);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Dynamic import()');
+    });
+  });
+
+  describe('Prototype writes', () => {
+    it('should block writing through __proto__', () => {
+      const result = validate(
+        '(payload) => { payload.__proto__.x = 1; return payload; }',
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('__proto__');
+    });
+
+    it('should block writing through a computed __proto__ key', () => {
+      const result = validate(
+        `(payload) => { payload['__proto__'].x = 1; return payload; }`,
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('__proto__');
+    });
+
+    it('should block writing to a prototype', () => {
+      const result = validate(
+        '(payload) => { payload.constructor.prototype.x = 1; return payload; }',
+      );
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('not allowed');
+    });
+
+    it('should still allow writing an ordinary property', () => {
+      const result = validate(
+        '(payload) => { const out = {}; out.event = payload.name; return out; }',
+      );
+      expect(result.valid).toBe(true);
+    });
+  });
+
   describe('Invalid syntax', () => {
     it('should reject non-function code', () => {
       const result = validate('const x = 1;');
@@ -327,6 +414,15 @@ describe('execute', () => {
       expect(() => {
         execute(code, basePayload);
       }).toThrow('Error executing JavaScript template');
+    });
+
+    it('should refuse to run a stored template that fails validation', () => {
+      // A template that was persisted at some point but does not pass
+      // validation must not reach new Function().
+      const code = `(payload) => payload['constructor']['constructor']('return 1')()`;
+      expect(() => {
+        execute(code, basePayload);
+      }).toThrow('Invalid JavaScript template');
     });
   });
 });
