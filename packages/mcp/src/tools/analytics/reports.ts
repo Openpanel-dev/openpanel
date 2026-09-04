@@ -7,6 +7,7 @@ import {
   getReportById,
   getReportsByDashboardId,
   getSettingsForProject} from '@openpanel/db';
+import type { IServiceReport } from '@openpanel/db';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
@@ -222,14 +223,19 @@ export function registerReportTools(
           return result;
         }
 
+        // `runReport` carries the saved report config for callers that render a
+        // chart. An MCP client reads numbers, so drop it rather than spend the
+        // tokens.
+        const { report: _config, ...rest } = result;
+
         // Funnel and metric results are already small and have their own shape;
         // only the multi-series charts need reshaping.
-        const chart = result.data as { series?: ChartSeries[]; metrics?: unknown };
-        if (result.chartType === 'funnel' || result.chartType === 'metric' || !Array.isArray(chart.series)) {
-          return result;
+        const chart = rest.data as { series?: ChartSeries[]; metrics?: unknown };
+        if (rest.chartType === 'funnel' || rest.chartType === 'metric' || !Array.isArray(chart.series)) {
+          return rest;
         }
 
-        const { data: _raw, ...meta } = result;
+        const { data: _raw, ...meta } = rest;
         return {
           ...meta,
           ...shapeChart(chart as { series: ChartSeries[]; metrics: unknown }, {
@@ -267,6 +273,12 @@ export async function runReport(input: {
       startDate: string;
       endDate: string;
       dashboard_url: string;
+      /**
+       * The saved config in the same `zReportInput` shape `runReportFromConfig`
+       * returns, so a caller holding this result can draw the chart instead of
+       * only reading the numbers off `data`.
+       */
+      report: Omit<NonNullable<IServiceReport>, 'layout'>;
       data: unknown;
     }
 > {
@@ -284,6 +296,12 @@ export async function runReport(input: {
   const { startDate, endDate } = getChartStartEndDate(report, timezone);
   const chartInput = { ...report, startDate, endDate, timezone };
 
+  // `layout` is the dashboard grid position, not part of the chart config —
+  // everything else `transformReport` returns already matches `zReportInput`
+  // (the DB `events` column arrives here as `series`). `id` stays on, so a
+  // caller can tell an already-saved report from an ad-hoc one.
+  const { layout: _layout, ...config } = report;
+
   const meta = {
     id: report.id,
     name: report.name,
@@ -293,6 +311,7 @@ export async function runReport(input: {
     startDate,
     endDate,
     dashboard_url: reportUrl(input.organizationId, input.projectId, input.reportId),
+    report: config,
   };
 
   if (report.chartType === 'funnel') {
