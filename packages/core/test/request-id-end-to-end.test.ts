@@ -146,6 +146,7 @@ function stubDeps() {
     clients: {},
     buffers: {} as Buffers,
     producers: producers as unknown as QueueProducerHandle,
+    produceIncomingEvent: () => Promise.resolve(),
     logger: bindingLogger(lines),
     config: { selfHosted: false },
   };

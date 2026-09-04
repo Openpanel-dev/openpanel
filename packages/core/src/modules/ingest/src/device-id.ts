@@ -1,11 +1,32 @@
+// Ported from apps/api/src/utils/ids.ts (M8-002). Device and session identity
+// for an incoming event: the salted device id, and the session id the API
+// answers with synchronously while the worker persists the blob async.
+
 import crypto from 'node:crypto';
-import { generateDeviceId } from '@openpanel/core';
-import type { IClickhouseSession } from '@openpanel/db';
-import {
-  convertClickhouseDateToJs,
-  SESSION_TIMEOUT_MS,
-  sessionBuffer,
-} from '@openpanel/db';
+import type { SessionBuffer } from '../../../buffers/session-buffer';
+import { SESSION_TIMEOUT_MS } from '../../../buffers/session-buffer';
+import { generateDeviceId } from '../../../shared/profileId';
+import type { IClickhouseSession } from '../../session/session.service';
+import { convertClickhouseDateToJs } from '../../session/src/dates';
+
+/** Only the read this module needs, so a caller may pass a narrower stub. */
+export type SessionBufferReader = Pick<SessionBuffer, 'getExistingSession'>;
+
+export interface DeviceIdResult {
+  deviceId: string;
+  sessionId: string;
+}
+
+const SESSION_ID_BYTES = 16;
+const SESSION_ID_MIN_BYTES = 8;
+const SESSION_ID_MAX_BYTES = 32;
+const DEFAULT_SESSION_WINDOW_MS = 5 * 60 * 1000;
+const DEFAULT_SESSION_GRACE_MS = 60 * 1000;
+const SESSION_GRACE_CEILING_MS = 5000;
+const SESSION_GRACE_WINDOW_DIVISOR = 6;
+const BASE64_PLUS = /\+/g;
+const BASE64_SLASH = /\//g;
+const BASE64_PADDING = /=+$/g;
 
 export async function getDeviceId({
   projectId,
@@ -14,6 +35,7 @@ export async function getDeviceId({
   salts,
   overrideDeviceId,
   eventTimeMs,
+  sessionBuffer,
 }: {
   projectId: string;
   ip: string;
@@ -23,7 +45,8 @@ export async function getDeviceId({
   /** Event timestamp (ms). Used to decide whether an existing session is
    *  still within its idle window. Defaults to `Date.now()`. */
   eventTimeMs?: number;
-}) {
+  sessionBuffer: SessionBufferReader;
+}): Promise<DeviceIdResult> {
   if (overrideDeviceId) {
     // A caller-supplied device id is stable (no salt rotation), so it's the only
     // candidate — resolve it through the same path as internal ids.
@@ -31,6 +54,7 @@ export async function getDeviceId({
       projectId,
       deviceIds: [overrideDeviceId],
       eventTimeMs: eventTimeMs ?? Date.now(),
+      sessionBuffer,
     });
   }
 
@@ -55,12 +79,8 @@ export async function getDeviceId({
     projectId,
     deviceIds: [currentDeviceId, previousDeviceId],
     eventTimeMs: eventTimeMs ?? Date.now(),
+    sessionBuffer,
   });
-}
-
-interface DeviceIdResult {
-  deviceId: string;
-  sessionId: string;
 }
 
 /**
@@ -85,12 +105,14 @@ async function getInfoFromSession({
   projectId,
   deviceIds,
   eventTimeMs,
+  sessionBuffer,
 }: {
   projectId: string;
   /** Candidate device ids in priority order (e.g. [current, previous] salt
    *  windows, or just [override]). Deduped; the first is canonical. */
   deviceIds: string[];
   eventTimeMs: number;
+  sessionBuffer: SessionBufferReader;
 }): Promise<DeviceIdResult> {
   const candidates = [...new Set(deviceIds.filter(Boolean))];
   const primary = candidates[0] ?? '';
@@ -105,9 +127,9 @@ async function getInfoFromSession({
       )
     );
 
-    for (const [i, session] of sessions.entries()) {
+    for (const [index, session] of sessions.entries()) {
       if (session && withinIdleWindow(session, eventTimeMs)) {
-        return { deviceId: candidates[i]!, sessionId: session.id };
+        return { deviceId: candidates[index]!, sessionId: session.id };
       }
     }
   } catch (error) {
@@ -129,7 +151,10 @@ async function getInfoFromSession({
       projectId,
       deviceId: primary,
       eventMs: eventTimeMs,
-      graceMs: Math.min(5000, Math.floor(SESSION_TIMEOUT_MS / 6)),
+      graceMs: Math.min(
+        SESSION_GRACE_CEILING_MS,
+        Math.floor(SESSION_TIMEOUT_MS / SESSION_GRACE_WINDOW_DIVISOR)
+      ),
       windowMs: SESSION_TIMEOUT_MS,
     }),
   };
@@ -143,7 +168,7 @@ async function getInfoFromSession({
  * - graceMs: 1 minute by default (events in first minute of a bucket map to previous bucket)
  * - Output: base64url, 128-bit (16 bytes) truncated from SHA-256
  */
-function getSessionId(params: {
+export function getSessionId(params: {
   projectId: string;
   deviceId: string;
   eventMs?: number; // use event timestamp; defaults to Date.now()
@@ -155,9 +180,9 @@ function getSessionId(params: {
     projectId,
     deviceId,
     eventMs = Date.now(),
-    windowMs = 5 * 60 * 1000,
-    graceMs = 60 * 1000,
-    bytes = 16,
+    windowMs = DEFAULT_SESSION_WINDOW_MS,
+    graceMs = DEFAULT_SESSION_GRACE_MS,
+    bytes = SESSION_ID_BYTES,
   } = params;
 
   if (!projectId) {
@@ -172,7 +197,7 @@ function getSessionId(params: {
   if (graceMs < 0 || graceMs >= windowMs) {
     throw new Error('graceMs must be >= 0 and < windowMs');
   }
-  if (bytes < 8 || bytes > 32) {
+  if (bytes < SESSION_ID_MIN_BYTES || bytes > SESSION_ID_MAX_BYTES) {
     throw new Error('bytes must be between 8 and 32');
   }
 
@@ -190,7 +215,7 @@ function getSessionId(params: {
   // base64url
   return truncated
     .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
+    .replace(BASE64_PLUS, '-')
+    .replace(BASE64_SLASH, '_')
+    .replace(BASE64_PADDING, '');
 }

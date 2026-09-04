@@ -29,6 +29,10 @@ import {
   type ImportService,
 } from './modules/import/import.service';
 import {
+  createIngestService,
+  type IngestService,
+} from './modules/ingest/ingest.service';
+import {
   createInsightService,
   type InsightService,
 } from './modules/insight/insight.service';
@@ -78,6 +82,7 @@ export interface Services {
   gsc: GscService;
   cohort: CohortService;
   import: ImportService;
+  ingest: IngestService;
   organization: OrganizationService;
   onboarding: OnboardingService;
   notification: NotificationService;
@@ -99,6 +104,7 @@ export function createServices(deps: ServiceDeps): Services {
     gsc: createGscService(deps),
     cohort: createCohortService(deps),
     import: createImportService(deps),
+    ingest: createIngestService(deps),
     organization: createOrganizationService(deps),
     onboarding: createOnboardingService(deps),
     notification: createNotificationService(deps),

@@ -1115,6 +1115,42 @@ export {
   runImportJob,
   updateImportStatus,
 } from './modules/import/import.service';
+// The ingestion pipeline (M8-002). apps/api's /track controller, its three
+// route hooks and the legacy /event controller are thin delegates over these
+// — the same functions core's own `ingestRoutes` calls.
+export type {
+  BotMatch,
+  BotSuspicion,
+  DeviceIdentity,
+  IncomingEventPayload,
+  IncomingEventProducer,
+  IngestAuthErrorPayload,
+  IngestAuthOutcome,
+  IngestBuffers,
+  IngestHeaders,
+  IngestService,
+  IngestTransport,
+  TrackOutcome,
+  TrackRequest,
+} from './modules/ingest/ingest.service';
+export {
+  applyBotSuspicion,
+  checkIngestBot,
+  detectBot,
+  fetchDeviceIdentity,
+  getDeviceId,
+  getOverrideDeviceId,
+  getStringHeaders,
+  getTimestamp,
+  handleReplay,
+  ingestTrack,
+  isBot,
+  isDuplicatedEvent,
+  isDuplicateIngestRequest,
+  stripBotProperties,
+  summarizeBotSignals,
+  validateIngestRequest,
+} from './modules/ingest/ingest.service';
 // Dissolved from @openpanel/db's services/insights* + referrer-spikes.service
 // (M5-001) — apps/worker's insight job files and packages/trpc's insight
 // router call these directly, the same way V1 reaches every other dissolved

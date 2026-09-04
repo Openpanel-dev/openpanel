@@ -68,6 +68,7 @@ function stubDeps(): {
           return surface;
         },
       },
+      produceIncomingEvent: () => Promise.resolve(),
       logger: stubLogger(),
       config: { selfHosted: true },
     },

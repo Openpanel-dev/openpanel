@@ -15,6 +15,7 @@ import { exportRoutes, insightsRoutes } from './modules/export/export.routes';
 import { gscRoutes } from './modules/gsc/gsc.routes';
 import { healthRoutes } from './modules/health/health.routes';
 import { importRoutes } from './modules/import/import.routes';
+import { ingestRoutes } from './modules/ingest/ingest.routes';
 import { integrationRoutes } from './modules/integration/integration.routes';
 import { mcpRoutes } from './modules/mcp/mcp.routes';
 import { miscRoutes } from './modules/misc/misc.routes';
@@ -47,9 +48,12 @@ const OPENAPI_EXCLUDED_PATHS = ['/metrics'];
 // stub that always returns null (import.routes.ts's header), and main.ts
 // does not mount `publicApiRoutes` until a real `AppDeps` exists (P3/P4/P8).
 // tools' `/site-checker` + `/ip-lookup` (M7-008) joined it too — unauthenticated
-// like V1's, per the module map.
+// like V1's, per the module map. ingest's `/track` + `/track/device-id`
+// (M8-002) lead the list: the hot path, `clientAuth: { ingest: true }`, and
+// the one route surface whose hook ORDER is part of the contract.
 export const publicApiRoutes = (deps: AppDeps) =>
   new Elysia({ name: 'core/public-api-routes' })
+    .use(ingestRoutes(deps))
     .use(importRoutes(deps))
     .use(projectRoutes(deps))
     .use(clientRoutes(deps))

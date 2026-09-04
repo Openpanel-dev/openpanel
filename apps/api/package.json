@@ -7,7 +7,6 @@
     "testing": "API_PORT=3333 pnpm dev",
     "start": "dotenv -e ../../.env node dist/index.js",
     "build": "rm -rf dist && tsdown",
-    "gen:bots": "jiti scripts/get-bots.ts && biome format --write src/bots/bots.ts",
     "test:manage": "jiti scripts/test-manage-api.ts",
     "e2e:sessions": "LOG_LEVEL=warn dotenv -e ../../.env -- jiti e2e/session-e2e.ts",
     "e2e:sessions:stress": "LOG_LEVEL=warn dotenv -e ../../.env -- jiti e2e/session-stress.ts",
@@ -55,12 +54,10 @@
   "devDependencies": {
     "@faker-js/faker": "^9.0.1",
     "@openpanel/tsconfig": "workspace:*",
-    "@types/js-yaml": "^4.0.9",
     "@types/ramda": "^0.30.2",
     "@types/source-map-support": "^0.5.10",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.14",
-    "js-yaml": "^4.1.0",
     "tsdown": "0.14.2",
     "typescript": "catalog:",
     "vitest": "^1.0.0"

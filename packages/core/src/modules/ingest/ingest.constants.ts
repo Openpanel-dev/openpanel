@@ -1,0 +1,398 @@
+// The ingestion wire contract (M8-002, ADR-008's module map: ingest owns "C").
+// Moved from packages/validation/src/track.validation.ts,
+// packages/validation/src/event-blocklist.ts and @openpanel/constants'
+// RESERVED_EVENT_NAMES — all three enforce the same thing (what a caller may
+// name an event and what a track body may contain), so they are one file here.
+// packages/validation and packages/constants re-export this; the SDK deep-import
+// retarget is P11.
+//
+// Isomorphic by rule: zod, another *.constants.ts, or nothing.
+
+import { z } from 'zod';
+
+/** Event names the ingestion pipeline mints itself; a caller may not send them. */
+export const RESERVED_EVENT_NAMES = ['session_start', 'session_end'] as const;
+
+const MAX_EVENT_LENGTH = 80;
+
+// Substrings that indicate attack/spam payloads
+const BLOCKED_SUBSTRINGS = [
+  // === Security Scanner Domains ===
+  'oastify.com',
+  'burpcollaborator',
+  'interact.sh',
+  'oast.me',
+
+  // === SQL Injection ===
+  'pg_sleep',
+  'waitfor delay',
+  'xp_dirtree',
+  'load_file(',
+  'extractvalue(',
+  'dbms_pipe.receive_message',
+  'union select',
+
+  // === Command Injection ===
+  'nslookup ',
+  '/bin/sleep',
+  '/bin/bash',
+  'cmd.exe',
+  'wget+http',
+  'wget http',
+  'chmod+777',
+  'chmod 777',
+
+  // === Java/Code Execution ===
+  'processbuilder',
+  'runtime.getruntime',
+  'java.lang.processbuilder',
+  'eval-stdin.php',
+
+  // === Path Traversal ===
+  '../',
+  '..\\',
+  '%2e%2e',
+  '%u002e%u002e',
+  '/etc/passwd',
+  '/etc/shadow',
+  'win.ini',
+  'system.ini',
+
+  // === Template/SSTI Injection ===
+  '${',
+  '%{',
+
+  // === XXE / XML Attacks ===
+  '<!doctype',
+  '<!entity',
+  '<xi:include',
+  'xsi:schemalocation',
+
+  // === SMTP Header Injection ===
+  '\r\n',
+  'bcc:',
+
+  // === Common File Scanning (paths as events) ===
+  'phpinfo.php',
+  'wp-config.php',
+  '.git/config',
+  '.env.backup',
+  '.env.bak',
+  '/vendor/phpunit/',
+
+  // === Malware/Botnet Indicators ===
+  'mozi.m',
+  '/setup.cgi?',
+  '/cgi-bin/',
+
+  // === Ruby Object Inspection Leaks ===
+  '#<article:0x',
+  '#<video:0x',
+  '#<brand:0x',
+
+  // === SQL Injection Patterns ===
+  'exec master.dbo',
+  'declare @',
+  "' and '",
+  "' or '",
+  "') or ",
+  "')and ",
+];
+
+// Patterns that indicate the "event" is actually a URL path being scanned
+const PATH_SCAN_PATTERNS = [
+  /^\/[a-z_-]+\.(php|env|yml|yaml|json|xml|config|ini|bak|sql|log)/i,
+  /^\/\.[a-z]/i, // Hidden files like /.env, /.git
+  /^\/(wp-|wordpress)/i, // WordPress scanning
+  /^\/phpmyadmin/i,
+  /^\/.+\.php$/i, // Any .php path
+];
+
+/**
+ * Check if an event name should be blocked
+ * @param name - The event name to check
+ * @returns true if the event name should be blocked, false otherwise
+ */
+export function isBlockedEventName(name: string): boolean {
+  // Length check - attack payloads are often very long
+  if (name.length > MAX_EVENT_LENGTH) {
+    return true;
+  }
+
+  // Contains newlines (always suspicious for event names)
+  if (name.includes('\n') || name.includes('\r')) {
+    return true;
+  }
+
+  // Substring blocklist (case-insensitive)
+  const lower = name.toLowerCase();
+  if (BLOCKED_SUBSTRINGS.some((blocked) => lower.includes(blocked))) {
+    return true;
+  }
+
+  // Path scanning patterns
+  if (PATH_SCAN_PATTERNS.some((pattern) => pattern.test(name))) {
+    return true;
+  }
+
+  return false;
+}
+
+// ----- Hand-written types (source of truth) -----
+//
+// These interfaces are duplicated in code that ships in our SDK type
+// declarations. We hand-write them (instead of using `z.infer<…>`) so:
+//   1. Generated `.d.ts` files for the SDKs are readable plain TypeScript
+//      with no `import type { ITrackPayload } from '@openpanel/validation'`
+//      lines (the package isn't published).
+//   2. The interfaces stay clean — no zod internals leaking through.
+// Each schema below has `satisfies z.ZodType<…>` attached so a drift
+// between the interface and the schema fails to compile.
+
+export type IProfileId = string | number;
+
+export interface IGroupPayload {
+  id: string;
+  type: string;
+  name: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface IAssignGroupPayload {
+  groupIds: string[];
+  profileId?: IProfileId;
+}
+
+export interface ITrackPayload {
+  name: string;
+  properties?: Record<string, unknown>;
+  profileId?: IProfileId;
+  groups?: string[] | null;
+}
+
+export interface IIdentifyPayload {
+  profileId: IProfileId;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  avatar?: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface IIncrementPayload {
+  profileId: IProfileId;
+  property: string;
+  value?: number;
+}
+
+export interface IDecrementPayload {
+  profileId: IProfileId;
+  property: string;
+  value?: number;
+}
+
+export interface IAliasPayload {
+  profileId: IProfileId;
+  alias: string;
+}
+
+export interface IReplayPayload {
+  chunk_index: number;
+  events_count: number;
+  is_full_snapshot: boolean;
+  started_at: string;
+  ended_at: string;
+  payload: string;
+  // Server-issued session id (from a prior /track response) the SDK echoes back,
+  // so the chunk is filed under the right session without device resolution.
+  sessionId?: string;
+}
+
+export type ITrackHandlerPayload =
+  | { type: 'track'; payload: ITrackPayload }
+  | { type: 'identify'; payload: IIdentifyPayload }
+  | { type: 'increment'; payload: IIncrementPayload }
+  | { type: 'decrement'; payload: IDecrementPayload }
+  | { type: 'alias'; payload: IAliasPayload }
+  | { type: 'replay'; payload: IReplayPayload }
+  | { type: 'group'; payload: IGroupPayload }
+  | { type: 'assign_group'; payload: IAssignGroupPayload };
+
+// ----- Schemas (each `satisfies` its hand-written interface) -----
+
+export const zProfileId = z.union([
+  z.string().min(1),
+  z.number(),
+]) satisfies z.ZodType<IProfileId>;
+
+export const zGroupPayload = z.object({
+  id: z.string().min(1),
+  type: z.string().min(1),
+  name: z.string().min(1),
+  properties: z.record(z.string(), z.unknown()).optional(),
+}) satisfies z.ZodType<IGroupPayload>;
+
+export const zAssignGroupPayload = z.object({
+  groupIds: z.array(z.string().min(1)),
+  profileId: zProfileId.optional(),
+}) satisfies z.ZodType<IAssignGroupPayload>;
+
+export const zTrackPayload = z
+  .object({
+    name: z.string().min(1),
+    properties: z.record(z.string(), z.unknown()).optional(),
+    profileId: zProfileId.optional(),
+    groups: z.array(z.string().min(1)).nullish(),
+  })
+  .refine(
+    (data) => !(RESERVED_EVENT_NAMES as readonly string[]).includes(data.name),
+    {
+      message: `Event name cannot be one of the reserved names: ${RESERVED_EVENT_NAMES.join(', ')}`,
+      path: ['name'],
+    }
+  )
+  .refine((data) => !isBlockedEventName(data.name), {
+    message: 'Event name contains blocked content',
+    path: ['name'],
+  })
+  .refine(
+    (data) => {
+      if (data.name !== 'revenue') {
+        return true;
+      }
+      const revenue = data.properties?.__revenue;
+      if (revenue === undefined || revenue === null) {
+        return true;
+      }
+      const isInt = Number.isInteger(revenue);
+      if (isInt && Number(revenue) < 0) {
+        return false;
+      }
+      return isInt;
+    },
+    {
+      message: '__revenue must be an integer (no floats or strings)',
+      path: ['properties', '__revenue'],
+    }
+  ) satisfies z.ZodType<ITrackPayload>;
+
+export const zIdentifyPayload = z.object({
+  profileId: zProfileId,
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  email: z.string().email().optional(),
+  avatar: z.string().url().optional(),
+  properties: z.record(z.string(), z.unknown()).optional(),
+}) satisfies z.ZodType<IIdentifyPayload>;
+
+export const zIncrementPayload = z.object({
+  profileId: zProfileId,
+  property: z.string().min(1),
+  value: z.number().positive().optional(),
+}) satisfies z.ZodType<IIncrementPayload>;
+
+export const zDecrementPayload = z.object({
+  profileId: zProfileId,
+  property: z.string().min(1),
+  value: z.number().positive().optional(),
+}) satisfies z.ZodType<IDecrementPayload>;
+
+export const zAliasPayload = z.object({
+  profileId: zProfileId,
+  alias: z.string().min(1),
+}) satisfies z.ZodType<IAliasPayload>;
+
+export const zReplayPayload = z.object({
+  chunk_index: z.number().int().min(0).max(65_535),
+  events_count: z.number().int().min(1),
+  is_full_snapshot: z.boolean(),
+  started_at: z.string().datetime(),
+  ended_at: z.string().datetime(),
+  payload: z.string().max(1_048_576 * 2), // 2MB max
+  sessionId: z.string().max(64).optional(),
+}) satisfies z.ZodType<IReplayPayload>;
+
+export const zTrackHandlerPayload = z.discriminatedUnion('type', [
+  z
+    .object({
+      type: z.enum(['track']),
+      payload: zTrackPayload,
+    })
+    .meta({ title: 'Track' }),
+  z
+    .object({
+      type: z.enum(['identify']),
+      payload: zIdentifyPayload,
+    })
+    .meta({ title: 'Identify' }),
+  z
+    .object({
+      type: z.enum(['increment']),
+      payload: zIncrementPayload,
+    })
+    .meta({ title: 'Increment' }),
+  z
+    .object({
+      type: z.enum(['decrement']),
+      payload: zDecrementPayload,
+    })
+    .meta({ title: 'Decrement' }),
+  z
+    .object({
+      type: z.enum(['alias']),
+      payload: zAliasPayload,
+    })
+    .meta({ title: 'Alias' }),
+  z
+    .object({
+      type: z.enum(['replay']),
+      payload: zReplayPayload,
+    })
+    .meta({ title: 'Replay' }),
+  z
+    .object({
+      type: z.enum(['group']),
+      payload: zGroupPayload,
+    })
+    .meta({ title: 'Group' }),
+  z
+    .object({
+      type: z.enum(['assign_group']),
+      payload: zAssignGroupPayload,
+    })
+    .meta({ title: 'Assign Group' }),
+]) satisfies z.ZodType<ITrackHandlerPayload>;
+
+// Deprecated types for beta version of the SDKs
+
+export interface DeprecatedOpenpanelEventOptions {
+  profileId?: string;
+}
+
+export interface DeprecatedPostEventPayload {
+  name: string;
+  timestamp: string;
+  profileId?: string;
+  properties?: Record<string, unknown> & DeprecatedOpenpanelEventOptions;
+}
+
+export interface DeprecatedUpdateProfilePayload {
+  profileId: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  avatar?: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface DeprecatedIncrementProfilePayload {
+  profileId: string;
+  property: string;
+  value: number;
+}
+
+export interface DeprecatedDecrementProfilePayload {
+  profileId?: string;
+  property: string;
+  value: number;
+}

@@ -146,7 +146,6 @@ export const zEditOrganization = z.object({
 
 export * from './chat';
 export * from './cohort.validation';
-export * from './event-blocklist';
 export * from './import.validation';
 export * from './track.validation';
 export * from './types.insights';

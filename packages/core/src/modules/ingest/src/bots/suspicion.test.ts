@@ -1,5 +1,5 @@
-import type { AsnInfo } from '@openpanel/core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
+import type { AsnInfo } from '../../../../clients/geo';
 import {
   applyBotSuspicion,
   stripBotProperties,

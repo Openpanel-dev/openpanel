@@ -9,7 +9,7 @@
 // Multiple reasons within the same category (two header anomalies) count once,
 // so a single spoofed request can't inflate itself over the threshold.
 
-import type { AsnInfo } from '@openpanel/core';
+import type { AsnInfo } from '../../../../clients/geo';
 import { detectHeaderAnomalies } from './header-signals';
 
 export const BOT_CATEGORY_THRESHOLD = 2;

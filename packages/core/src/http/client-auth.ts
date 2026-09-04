@@ -5,14 +5,19 @@
 // and the MCP copy — that differ only by the accepted `ClientType` set and by
 // the ingest extension. They collapse into this one function (ADR-011 A-i).
 //
-// P8 fills the body in, moving it onto `services.client.authenticate` and
-// porting the ingest branch verbatim: the `ignoreCorsAndSecret` short-circuit,
-// the unanchored wildcard origin regex, CORS-OR-secret ordering, the
-// ip/profile_id project filters, the `__revenue` gate, the body-field
-// credential fallback and the 5-minute verify cache. The signature and the
-// macro over it are what P2 fixes.
+// M8-002 filled in the INGEST branch — `modules/ingest/src/client-auth.ts`
+// holds V1's `validateSdkRequest` verbatim, and this file adapts it onto the
+// principal. The `allow`-list tiers (`validateExportRequest`,
+// `validateImportRequest`, `validateManageRequest`, MCP's `token: 'basic'`)
+// are NOT filled in yet: they belong to the client module, not to ingest, and
+// stay the stub that answers 401 — the same NAMED GAP every non-ingest
+// `publicApiRoutes` module's header already records.
 
 import type { AppDeps } from '../context';
+import {
+  type IngestHeaders,
+  validateIngestRequest,
+} from '../modules/ingest/src/client-auth';
 
 /** Prisma's `ClientType` enum, by value. Moves to client.constants.ts in P7. */
 export type ClientType = 'read' | 'write' | 'root';
@@ -42,10 +47,39 @@ export interface ClientAuthOptions {
   token?: 'basic';
 }
 
-export function authenticateClient(
+/** What the ingest tier needs beyond the headers: V1 reads the attribution ip
+ *  and the body (credential fallback, profile filter, `__revenue` gate). */
+export interface ClientAuthRequest {
+  ip: string;
+  body: unknown;
+}
+
+export async function authenticateClient(
   _deps: AppDeps,
-  _headers: Headers,
-  _options: ClientAuthOptions
+  headers: IngestHeaders,
+  options: ClientAuthOptions,
+  request?: ClientAuthRequest
 ): Promise<AuthenticatedClient | null> {
-  return Promise.resolve(null);
+  if (!options.ingest) {
+    return null;
+  }
+
+  const outcome = await validateIngestRequest({
+    headers,
+    clientIp: request?.ip,
+    body: request?.body,
+  });
+
+  if (!outcome.ok) {
+    return null;
+  }
+
+  const { client } = outcome;
+  return {
+    id: client.id,
+    projectId: client.projectId,
+    organizationId: client.organizationId,
+    type: client.type,
+    secretPresented: outcome.secretPresented,
+  };
 }

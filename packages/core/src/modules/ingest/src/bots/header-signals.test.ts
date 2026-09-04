@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { detectHeaderAnomalies } from './header-signals';
 
 // Representative UA strings.
@@ -34,7 +34,7 @@ describe('detectHeaderAnomalies', () => {
         detectHeaderAnomalies({
           'user-agent': UA.chromeDesktop,
           ...realBrowserHeaders,
-        }),
+        })
       ).toEqual([]);
     });
 
@@ -45,7 +45,7 @@ describe('detectHeaderAnomalies', () => {
           'sec-fetch-mode': 'cors',
           'sec-fetch-site': 'cross-site',
           'accept-language': 'en-US,en;q=0.5',
-        }),
+        })
       ).toEqual([]);
     });
 
@@ -56,7 +56,7 @@ describe('detectHeaderAnomalies', () => {
           'sec-fetch-mode': 'cors',
           'sec-fetch-site': 'cross-site',
           'accept-language': 'en-US,en;q=0.9',
-        }),
+        })
       ).toEqual([]);
     });
 
@@ -73,7 +73,10 @@ describe('detectHeaderAnomalies', () => {
   });
 
   describe('does not apply to non-browser clients', () => {
-    for (const [name, ua] of Object.entries({ curl: UA.curl, go: UA.goClient })) {
+    for (const [name, ua] of Object.entries({
+      curl: UA.curl,
+      go: UA.goClient,
+    })) {
       it(`${name} → no reasons (handled by isServer/auth, not headers)`, () => {
         expect(detectHeaderAnomalies({ 'user-agent': ua })).toEqual([]);
       });

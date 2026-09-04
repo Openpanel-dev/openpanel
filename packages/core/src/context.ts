@@ -8,6 +8,7 @@ import type { SessionValidationResult } from '@openpanel/db';
 import type { Buffers } from './buffers/create-buffers';
 import type { QueueProducerHandle, QueueProducers } from './jobs.registry';
 import type { Logger } from './logger';
+import type { IncomingEventProducer } from './modules/ingest/src/incoming-event';
 import { createServices, type Services } from './services';
 import type { CookieJar, CookieOptions } from './shared/cookie';
 
@@ -48,6 +49,13 @@ export interface AppDeps {
   clients: ServiceClients;
   buffers: Buffers;
   producers: QueueProducerHandle;
+  /**
+   * The events transport. `produceIncomingEvent` still lives in
+   * @openpanel/queue, which imports core for its logger, so core cannot
+   * import it back (M8-002); main.ts supplies it and M8-003 replaces it with
+   * core's own Kafka producer.
+   */
+  produceIncomingEvent: IncomingEventProducer;
   logger: Logger;
   config: RuntimeFlags;
 }

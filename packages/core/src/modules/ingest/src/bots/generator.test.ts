@@ -7,8 +7,11 @@
  * traffic. These run without a network call (main() is guarded on direct run).
  */
 
-import { describe, expect, it } from 'vitest';
-import { ALLOWLISTED_BOT_UA_TOKENS, stripAllowlistedTokens } from './get-bots';
+import { describe, expect, it } from 'bun:test';
+import {
+  ALLOWLISTED_BOT_UA_TOKENS,
+  stripAllowlistedTokens,
+} from '../../../../../scripts/get-bots';
 
 describe('stripAllowlistedTokens', () => {
   it('removes allowlisted identifiers from an anchored exact-match group', () => {
@@ -18,7 +21,7 @@ describe('stripAllowlistedTokens', () => {
 
   it('preserves the genuinely-suspicious branches', () => {
     const result = stripAllowlistedTokens(
-      '^(?:chrome|node|Node\\.js|Zeus|ZmEu)$',
+      '^(?:chrome|node|Node\\.js|Zeus|ZmEu)$'
     );
     expect(result).toContain('Zeus');
     expect(result).toContain('ZmEu');

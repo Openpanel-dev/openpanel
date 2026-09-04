@@ -1,6 +1,14 @@
 import { generateId } from '@openpanel/common';
-import { getAsnInfo, getGeoLocation, parseUserAgent } from '@openpanel/core';
-import { getSalts } from '@openpanel/db';
+import {
+  applyBotSuspicion,
+  getAsnInfo,
+  getDeviceId,
+  getGeoLocation,
+  getStringHeaders,
+  getTimestamp,
+  parseUserAgent,
+} from '@openpanel/core';
+import { getSalts, sessionBuffer } from '@openpanel/db';
 import {
   type EventsQueuePayloadIncomingEvent,
   produceIncomingEvent,
@@ -8,9 +16,6 @@ import {
 import type { DeprecatedPostEventPayload } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { v4 as uuid } from 'uuid';
-import { getStringHeaders, getTimestamp } from './track.controller';
-import { applyBotSuspicion } from '@/bots/suspicion';
-import { getDeviceId } from '@/utils/ids';
 
 export async function postEvent(
   request: FastifyRequest<{
@@ -42,6 +47,7 @@ export async function postEvent(
     ip,
     ua,
     salts,
+    sessionBuffer,
   });
 
   const uaInfo = parseUserAgent(ua, request.body?.properties);

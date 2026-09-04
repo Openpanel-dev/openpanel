@@ -37,6 +37,7 @@ function stubJobCtx(
     insight: {} as Services['insight'],
     gsc: {} as Services['gsc'],
     import: {} as Services['import'],
+    ingest: {} as Services['ingest'],
     cohort: {} as Services['cohort'],
     organization: organization as OrganizationService,
     onboarding: {} as Services['onboarding'],

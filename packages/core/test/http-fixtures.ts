@@ -44,6 +44,7 @@ export function stubAppDeps(): AppDepsStub {
       clients: {},
       buffers: {} as Buffers,
       producers,
+      produceIncomingEvent: () => Promise.resolve(),
       logger,
       config: { selfHosted: false },
     },

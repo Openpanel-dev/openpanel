@@ -40,6 +40,7 @@
 
 import { Elysia } from 'elysia';
 import type { AppDeps } from '../context';
+import { toIngestHeaders } from '../modules/ingest/src/headers';
 import { authenticateClient, type ClientAuthOptions } from './client-auth';
 import { requestContext } from './context';
 
@@ -64,8 +65,13 @@ export function authMacros(deps: AppDeps) {
         },
       },
       clientAuth: (options: ClientAuthOptions) => ({
-        async resolve({ ctx, status }) {
-          const client = await authenticateClient(deps, ctx.headers, options);
+        async resolve({ body, ctx, status }) {
+          const client = await authenticateClient(
+            deps,
+            toIngestHeaders(ctx.headers),
+            options,
+            { ip: ctx.ip, body }
+          );
           if (!client) {
             return status(401, INVALID_CLIENT_MESSAGE);
           }

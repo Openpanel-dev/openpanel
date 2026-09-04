@@ -1,37 +1,30 @@
-import { verifyPassword } from '@openpanel/core';
+import {
+  type IngestAuthErrorPayload,
+  validateIngestRequest,
+  verifyPassword,
+} from '@openpanel/core';
 import type { IServiceClientWithProject } from '@openpanel/db';
 import { ClientType, getClientByIdCached } from '@openpanel/db';
-import { getCache } from '@openpanel/redis';
 import type {
   DeprecatedPostEventPayload,
-  IProjectFilterIp,
-  IProjectFilterProfileId,
   ITrackHandlerPayload,
 } from '@openpanel/validation';
 import type { FastifyRequest, RawRequestDefaultExpression } from 'fastify';
-import { path } from 'ramda';
 
-const cleanDomain = (domain: string) =>
-  domain
-    .replace('www.', '')
-    .replace(/https?:\/\//, '')
-    .replace(/\/$/, '');
-
+// `validateSdkRequest` dissolved into @openpanel/core's ingest module
+// (M8-002): the rules live in modules/ingest/src/client-auth.ts and this is
+// the DELEGATE, kept so the Fastify hook keeps its signature and its
+// `req.clientSecretAuth` side channel. The other three validators stay here —
+// they belong to the client module, not to ingest, and no task has moved them.
+//
+// The error class stays HERE on purpose. core returns a refusal rather than
+// throwing, so the stack trace is captured in this bundle chunk instead of in
+// the ~11 MB core chunk whose ~20 MB source map `source-map-support` would
+// then parse — ~1.2s, once, on the first failed ingest auth.
 export class SdkAuthError extends Error {
-  payload: {
-    clientId?: string;
-    clientSecret?: string;
-    origin?: string;
-  };
+  payload: IngestAuthErrorPayload;
 
-  constructor(
-    message: string,
-    payload: {
-      clientId?: string;
-      clientSecret?: string;
-      origin?: string;
-    }
-  ) {
+  constructor(message: string, payload: IngestAuthErrorPayload) {
     super(message);
     this.name = 'SdkAuthError';
     this.message = message;
@@ -44,135 +37,23 @@ export async function validateSdkRequest(
     Body: ITrackHandlerPayload | DeprecatedPostEventPayload;
   }>
 ): Promise<IServiceClientWithProject> {
-  const { headers, clientIp } = req;
-  const clientIdNew = headers['openpanel-client-id'] as string;
-  const clientIdOld = headers['mixan-client-id'] as string;
-  const clientSecretNew = headers['openpanel-client-secret'] as string;
-  const clientSecretOld = headers['mixan-client-secret'] as string;
-  const clientIdFromBody = path<string | undefined>(['clientId'], req.body);
-  const clientSecretFromBody = path<string | undefined>(
-    ['clientSecret'],
-    req.body
-  );
-  const clientId = clientIdNew || clientIdOld || clientIdFromBody;
-  const clientSecret =
-    clientSecretNew || clientSecretOld || clientSecretFromBody;
-  const origin = headers.origin;
+  const outcome = await validateIngestRequest({
+    headers: req.headers,
+    clientIp: req.clientIp,
+    body: req.body,
+  });
 
-  if (clientSecret) {
+  // V1 set this at parse time, before validation could refuse — so it is set
+  // on both branches.
+  if (outcome.secretPresented) {
     req.clientSecretAuth = true;
   }
 
-  const createError = (message: string) =>
-    new SdkAuthError(message, {
-      clientId,
-      clientSecret:
-        typeof clientSecret === 'string'
-          ? `${clientSecret.slice(0, 5)}...${clientSecret.slice(-5)}`
-          : 'none',
-      origin,
-    });
-
-  if (!clientId) {
-    throw createError('Ingestion: Missing client id');
+  if (!outcome.ok) {
+    throw new SdkAuthError(outcome.message, outcome.payload);
   }
 
-  if (
-    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
-      clientId
-    )
-  ) {
-    throw createError('Ingestion: Client ID must be a valid UUIDv4');
-  }
-
-  const client = await getClientByIdCached(clientId);
-
-  if (!client) {
-    throw createError('Ingestion: Invalid client id');
-  }
-
-  if (!client.project) {
-    throw createError('Ingestion: Client has no project');
-  }
-
-  // Filter out blocked IPs
-  const ipFilter = client.project.filters.filter(
-    (filter): filter is IProjectFilterIp => filter.type === 'ip'
-  );
-  if (ipFilter.some((filter) => filter.ip === clientIp)) {
-    throw createError('Ingestion: IP address is blocked by project filter');
-  }
-
-  // Filter out blocked profile ids
-  const profileFilter = client.project.filters.filter(
-    (filter): filter is IProjectFilterProfileId => filter.type === 'profile_id'
-  );
-  const profileId =
-    path<string | undefined>(['payload', 'profileId'], req.body) || // Track handler
-    path<string | undefined>(['profileId'], req.body); // Event handler
-
-  if (profileFilter.some((filter) => filter.profileId === profileId)) {
-    throw createError('Ingestion: Profile id is blocked by project filter');
-  }
-
-  const revenue =
-    path(['payload', 'properties', '__revenue'], req.body) ??
-    path(['properties', '__revenue'], req.body);
-
-  // Only allow revenue tracking if it was sent with a client secret
-  // or if the project has allowUnsafeRevenueTracking enabled
-  if (
-    !(client.project.allowUnsafeRevenueTracking || clientSecret) &&
-    typeof revenue !== 'undefined'
-  ) {
-    throw createError(
-      'Ingestion: Revenue tracking is not allowed without a client secret'
-    );
-  }
-
-  if (client.ignoreCorsAndSecret) {
-    return client;
-  }
-
-  if (client.project.cors) {
-    const domainAllowed = client.project.cors.find((domain) => {
-      const cleanedDomain = cleanDomain(domain);
-      // support wildcard domains `*.foo.com`
-      if (cleanedDomain.includes('*')) {
-        const regex = new RegExp(
-          `${cleanedDomain.replaceAll('.', '\\.').replaceAll('*', '.+?')}`
-        );
-
-        return regex.test(origin || '');
-      }
-
-      if (cleanedDomain === cleanDomain(origin || '')) {
-        return true;
-      }
-    });
-
-    if (domainAllowed) {
-      return client;
-    }
-
-    if (client.project.cors.includes('*') && origin) {
-      return client;
-    }
-  }
-
-  if (client.secret && clientSecret) {
-    const isVerified = await getCache(
-      `client:auth:${clientId}:${Buffer.from(clientSecret).toString('base64')}`,
-      60 * 5,
-      async () => await verifyPassword(clientSecret, client.secret!),
-      true
-    );
-    if (isVerified) {
-      return client;
-    }
-  }
-
-  throw createError('Ingestion: Invalid cors or secret');
+  return outcome.client;
 }
 
 export async function validateExportRequest(

@@ -569,7 +569,9 @@ export async function getProfileValues(input: {
 // ---- apps/api's /profile controller bodies
 
 export interface IdentifyProfileInput {
-  profileId: string;
+  /** `string | number` because /track's identify payload allows both
+   *  (ingest.constants' `IProfileId`) and `upsertProfile` stores either. */
+  profileId: string | number;
   firstName?: string;
   lastName?: string;
   email?: string;

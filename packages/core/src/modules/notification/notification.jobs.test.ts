@@ -32,6 +32,7 @@ function stubJobCtx(notification: Partial<NotificationService>): JobCtx {
     cohort: {} as Services['cohort'],
     gsc: {} as Services['gsc'],
     import: {} as Services['import'],
+    ingest: {} as Services['ingest'],
     organization: {} as Services['organization'],
     onboarding: {} as Services['onboarding'],
     session: {} as Services['session'],

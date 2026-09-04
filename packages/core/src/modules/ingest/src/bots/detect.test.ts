@@ -10,8 +10,8 @@
  *      identifiers, not the rest of the bot patterns.
  */
 
-import { describe, expect, it } from 'vitest';
-import { detectBot } from './index';
+import { describe, expect, it } from 'bun:test';
+import { detectBot } from './detect';
 
 describe('detectBot', () => {
   describe('does not flag legitimate runtime/client user agents', () => {

@@ -9,8 +9,9 @@
  * - legacyEventUsageHook increments openpanel_legacy_event_requests_total,
  *   labelled by client id, and never mints a label for an unauthenticated
  *   request.
- * - validateSdkRequest still accepts the `mixan-*` headers (ADR-015 entry 5 is
- *   pending the same usage metric, so the fallback stays for now).
+ * The `mixan-*` header fallback moved with the validator itself into
+ * @openpanel/core's ingest module (M8-002) — see
+ * packages/core/src/modules/ingest/src/client-auth.test.ts.
  *
  * `@openpanel/db` is partially mocked (importActual + overrides) because it
  * imports `@openpanel/queue`, which the produce assertions replace.
@@ -25,7 +26,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { postEvent } from './event.controller';
 import { legacyEventUsageHook } from '@/hooks/legacy-event.hook';
 import { legacyEventRequestsTotal } from '@/metrics';
-import { validateSdkRequest } from '@/utils/auth';
 
 vi.mock('@openpanel/queue', async () => {
   const actual =
@@ -44,7 +44,7 @@ vi.mock('@openpanel/core', async () => {
 vi.mock('@openpanel/db', async () => {
   const actual =
     await vi.importActual<typeof import('@openpanel/db')>('@openpanel/db');
-  return { ...actual, getSalts: vi.fn(), getClientByIdCached: vi.fn() };
+  return { ...actual, getSalts: vi.fn() };
 });
 
 const PROJECT_ID = 'legacy-event-project';
@@ -212,34 +212,5 @@ describe('legacyEventUsageHook', () => {
       name: 'openpanel_legacy_event_requests_total',
       type: 'counter',
     });
-  });
-});
-
-describe('mixan-* header fallback', () => {
-  it('authenticates a client sent as mixan-client-id (ADR-015 entry 5 deferred)', async () => {
-    const { getClientByIdCached } = await import('@openpanel/db');
-    vi.mocked(getClientByIdCached).mockResolvedValue({
-      id: CLIENT_ID,
-      projectId: PROJECT_ID,
-      // Keeps this test about the header fallback rather than re-proving
-      // secret verification, which the auth contracts already cover.
-      ignoreCorsAndSecret: true,
-      project: {
-        id: PROJECT_ID,
-        filters: [],
-        allowUnsafeRevenueTracking: false,
-      },
-    } as unknown as Awaited<ReturnType<typeof getClientByIdCached>>);
-
-    const request = makeRequest(legacyBody(), {
-      'mixan-client-id': CLIENT_ID,
-      'mixan-client-secret': 'legacy-secret',
-    });
-    delete (request as { client?: unknown }).client;
-
-    const client = await validateSdkRequest(request);
-
-    expect(client.id).toBe(CLIENT_ID);
-    expect(request.clientSecretAuth).toBe(true);
   });
 });

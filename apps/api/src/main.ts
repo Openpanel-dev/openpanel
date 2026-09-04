@@ -21,6 +21,7 @@ import {
   queues,
   registerBufferMetrics,
 } from '@openpanel/core';
+import { produceIncomingEvent } from '@openpanel/queue';
 import pino from 'pino';
 import { type Config, loadConfig } from './config/env';
 
@@ -111,6 +112,9 @@ function buildDeps(): AppDeps {
     clients: undefined,
     buffers: createBuffers(bufferDeps(producers)),
     producers,
+    // @openpanel/queue's Kafka producer, injected because core cannot import
+    // it back (M8-002). M8-003 replaces it with core's own.
+    produceIncomingEvent,
     logger,
     config: { selfHosted: config.SELF_HOSTED },
   };
