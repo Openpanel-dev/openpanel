@@ -32,6 +32,10 @@ import {
   createOrganizationService,
   type OrganizationService,
 } from './modules/organization/organization.service';
+import {
+  createSessionService,
+  type SessionService,
+} from './modules/session/session.service';
 
 /** What every service factory receives — derived from Ctx, so it cannot drift. */
 export type ServiceDeps = Pick<
@@ -57,6 +61,7 @@ export interface Services {
   organization: OrganizationService;
   onboarding: OnboardingService;
   notification: NotificationService;
+  session: SessionService;
 }
 
 export function createServices(deps: ServiceDeps): Services {
@@ -72,5 +77,6 @@ export function createServices(deps: ServiceDeps): Services {
     organization: createOrganizationService(deps),
     onboarding: createOnboardingService(deps),
     notification: createNotificationService(deps),
+    session: createSessionService(deps),
   };
 }

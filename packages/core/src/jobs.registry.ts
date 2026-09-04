@@ -24,6 +24,10 @@ import {
 import { notificationQueueJobs } from './modules/notification/notification.jobs';
 import { onboardingCronJobs } from './modules/onboarding/onboarding.jobs';
 import { organizationCronJobs } from './modules/organization/organization.jobs';
+import {
+  sessionCronJobs,
+  sessionQueueJobs,
+} from './modules/session/session.jobs';
 
 const HOUR_IN_SECONDS = 3600;
 const DAY_IN_SECONDS = 86_400;
@@ -46,7 +50,9 @@ const sessions = defineQueue('sessions', {
   defaults: { removeOnComplete: true },
   worker: { concurrency: CONCURRENCY.sessions },
   compat: legacyCompat.sessions,
-  jobs: {},
+  jobs: {
+    ...sessionQueueJobs,
+  },
 });
 
 // One queue, one worker at concurrency 1, every scheduled job in the system.
@@ -63,6 +69,7 @@ const cron = defineQueue('cron', {
     ...cohortCronJobs,
     ...organizationCronJobs,
     ...onboardingCronJobs,
+    ...sessionCronJobs,
   },
 });
 

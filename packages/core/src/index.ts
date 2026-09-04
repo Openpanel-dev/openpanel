@@ -523,6 +523,53 @@ export {
   listReferences,
   updateReference,
 } from './modules/reference/reference.service';
+// Dissolved from @openpanel/db's services/session.service.ts and
+// session-context.ts, plus apps/worker's session-end job, reaper and vacuum
+// (M7-001, ADR-008's module map: session owns "R,S,J") — packages/trpc's
+// session router, the assistant/mcp tools and apps/worker's thin delegates
+// call these directly, the same way V1 reaches every other dissolved service
+// here. packages/db keeps re-export shims for both files. The `sessions`
+// queue's own job and the reaper/vacuum cron fragments are registered in
+// jobs.registry.ts, not exported.
+export type {
+  GetSessionListOptions,
+  IClickhouseSession,
+  IServiceSession,
+  ISessionReplayChunkMeta,
+  QuerySessionsInput,
+  SessionDistinctField,
+} from './modules/session/session.service';
+export {
+  getSessionById,
+  getSessionDistinctValues,
+  getSessionList,
+  getSessionReplayChunksFrom,
+  getSessionsCount,
+  getSessionsCountCached,
+  querySessionsCore,
+  SESSION_DISTINCT_FIELDS,
+  transformSession,
+} from './modules/session/session.service';
+export { loadSessionRuntime } from './modules/session/src/runtime';
+export {
+  als,
+  getAlsSessionId,
+  runWithAlsSession,
+} from './modules/session/src/session-context';
+export type {
+  EnqueueSessionEndInput,
+  SessionEndJobData,
+} from './modules/session/src/session-end';
+export {
+  createSessionEnd,
+  getSessionEndJobId,
+  loadSessionEndDeps,
+  sessionEndEnqueueOptions,
+  sessionEndJobPayload,
+} from './modules/session/src/session-end';
+export { reapIdleSessions } from './modules/session/src/session-reaper';
+export { vacuumStaleSessions } from './modules/session/src/session-vacuum';
+export { updateEventsCount } from './modules/session/src/usage';
 // Moved from packages/db/src/services/share.service.ts, plus the
 // query/mutation bodies packages/trpc/src/routers/share.ts held inline
 // (M6-004, ADR-008's module map: share owns "C") — packages/trpc's share

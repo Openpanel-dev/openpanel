@@ -38,6 +38,7 @@ function stubJobCtx(cohort: Partial<CohortService>, jobName = 'test'): JobCtx {
     cohort: cohort as CohortService,
     organization: {} as Services['organization'],
     onboarding: {} as Services['onboarding'],
+    session: {} as Services['session'],
   };
   return {
     db: {},

@@ -1,36 +1,20 @@
+// Dissolved into @openpanel/core's session module (M7-001): the ClickHouse
+// queries moved to packages/core/src/modules/session/session.service.ts.
+// This router stays (DELEGATE PATTERN) — it keeps V1's protectedProcedure
+// stack and delegates every handler body to core's session functions, same
+// as realtime.ts/notification.ts. V1's unused `encodeCursor`/`decodeCursor`
+// went with it (packages/core/src/shared/pagination.ts owns the generic pair).
+
 import {
+  getSessionById,
   getSessionDistinctValues,
   getSessionList,
   getSessionReplayChunksFrom,
   SESSION_DISTINCT_FIELDS,
-  sessionService,
-} from '@openpanel/db';
+} from '@openpanel/core';
 import { zChartEventFilter } from '@openpanel/validation';
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
-
-export function encodeCursor(cursor: {
-  createdAt: string;
-  id: string;
-}): string {
-  const json = JSON.stringify(cursor);
-  return Buffer.from(json, 'utf8').toString('base64url'); // URL-safe
-}
-
-export function decodeCursor(
-  encoded: string
-): { createdAt: string; id: string } | null {
-  try {
-    const json = Buffer.from(encoded, 'base64url').toString('utf8');
-    const obj = JSON.parse(json);
-    if (typeof obj.createdAt === 'string' && typeof obj.id === 'string') {
-      return obj;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 export const sessionRouter = createTRPCRouter({
   list: protectedProcedure
@@ -67,7 +51,7 @@ export const sessionRouter = createTRPCRouter({
   byId: protectedProcedure
     .input(z.object({ sessionId: z.string(), projectId: z.string() }))
     .query(({ input: { sessionId, projectId } }) => {
-      return sessionService.byId(sessionId, projectId);
+      return getSessionById(sessionId, projectId);
     }),
 
   replayChunksFrom: protectedProcedure

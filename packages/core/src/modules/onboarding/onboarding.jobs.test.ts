@@ -37,6 +37,7 @@ function stubJobCtx(
     cohort: {} as Services['cohort'],
     organization: {} as Services['organization'],
     onboarding: onboarding as OnboardingService,
+    session: {} as Services['session'],
   };
   return {
     db: {},

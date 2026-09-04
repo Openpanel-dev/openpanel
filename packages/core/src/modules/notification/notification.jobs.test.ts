@@ -34,6 +34,7 @@ function stubJobCtx(notification: Partial<NotificationService>): JobCtx {
     import: {} as Services['import'],
     organization: {} as Services['organization'],
     onboarding: {} as Services['onboarding'],
+    session: {} as Services['session'],
   };
   return {
     db: {},
@@ -45,7 +46,12 @@ function stubJobCtx(notification: Partial<NotificationService>): JobCtx {
     queues: createRecordingProducers(queues).queues,
     services,
     requestId: 'req_1',
-    job: { id: 'job_1', attempt: 0, queue: 'notification', name: 'sendNotification' },
+    job: {
+      id: 'job_1',
+      attempt: 0,
+      queue: 'notification',
+      name: 'sendNotification',
+    },
   };
 }
 

@@ -89,6 +89,8 @@ test('the cron queue carries the insight module cron fragment', () => {
       'insightCleanup',
       'insightsDaily',
       'onboarding',
+      'sessionReaper',
+      'sessionVacuum',
       'weeklyDigest',
     ].sort()
   );
@@ -153,6 +155,25 @@ test('the cron queue carries the onboarding module cron fragment', () => {
     queue: 'cron',
     name: 'onboarding',
   });
+});
+
+// M7-001: the session module's own job (legacyCompat.sessions maps V1's
+// `createSessionEnd` onto this exact name) and its reaper/vacuum cron
+// fragment — the scheduler ids double as the job names.
+test('the sessions queue carries the session module job', () => {
+  expect(Object.keys(queues.sessions.jobs)).toEqual(['session']);
+  expect(queues.sessions.jobs.session).toMatchObject({
+    queue: 'sessions',
+    name: 'session',
+  });
+});
+
+test('the cron queue carries the session module cron fragment', () => {
+  for (const name of ['sessionReaper', 'sessionVacuum']) {
+    expect(
+      queues.cron.jobs[name as keyof typeof queues.cron.jobs]
+    ).toMatchObject({ queue: 'cron', name });
+  }
 });
 
 // M5-004: the import module's own job. No cron fragment — imports are always

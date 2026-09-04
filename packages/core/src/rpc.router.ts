@@ -21,6 +21,7 @@ import { organizationRouter } from './modules/organization/organization.rpc';
 import { projectRouter } from './modules/project/project.rpc';
 import { realtimeRouter } from './modules/realtime/realtime.rpc';
 import { referenceRouter } from './modules/reference/reference.rpc';
+import { sessionRouter } from './modules/session/session.rpc';
 import { shareRouter } from './modules/share/share.rpc';
 import { subscriptionRouter } from './modules/subscription/subscription.rpc';
 import { userRouter } from './modules/user/user.rpc';
@@ -47,6 +48,7 @@ export const appRouter = createTRPCRouter({
   notification: notificationRouter,
   integration: integrationRouter,
   subscription: subscriptionRouter,
+  session: sessionRouter,
 });
 
 export type AppRouter = typeof appRouter;

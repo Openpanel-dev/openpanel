@@ -10,6 +10,7 @@ import { gscCronSchedules } from '../modules/gsc/gsc.jobs';
 import { insightCronSchedules } from '../modules/insight/insight.jobs';
 import { onboardingCronSchedules } from '../modules/onboarding/onboarding.jobs';
 import { organizationCronSchedules } from '../modules/organization/organization.jobs';
+import { sessionCronSchedules } from '../modules/session/session.jobs';
 import { wrap } from './envelope';
 
 export type RepeatSchedule = { pattern: string } | { every: number };
@@ -77,9 +78,9 @@ export const CRON_SCHEDULES: readonly SchedulerDefinition[] = [
   // cohortRefresh — owned by the cohort module, declared next to its jobs
   // (modules/cohort/cohort.jobs.ts).
   ...cohortCronSchedules,
-  { id: 'sessionReaper', schedule: { every: 5 * MINUTE_MS } },
-  // Daily 04:00 UTC — backstop for cleanup leaks.
-  { id: 'sessionVacuum', schedule: { pattern: '0 4 * * *' } },
+  // sessionReaper / sessionVacuum — owned by the session module, declared
+  // next to its jobs (modules/session/session.jobs.ts).
+  ...sessionCronSchedules,
   // insightsDaily / insightCleanup / weeklyDigest — owned by the insight
   // module, declared next to its jobs (modules/insight/insight.jobs.ts).
   ...insightCronSchedules,
