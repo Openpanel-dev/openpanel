@@ -32,7 +32,10 @@ type AiClient = {
 };
 
 const buildClients = (mcpEndpoint: string): AiClient[] => {
-  const url = `${mcpEndpoint}?token=${TOKEN_PLACEHOLDER}`;
+  const url = mcpEndpoint;
+  const headers = { Authorization: `Bearer ${TOKEN_PLACEHOLDER}` };
+  // Fallback for clients that can't send headers.
+  const urlWithToken = `${mcpEndpoint}?token=${TOKEN_PLACEHOLDER}`;
 
   return [
     {
@@ -54,6 +57,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
               openpanel: {
                 type: 'streamable-http',
                 url,
+                headers,
               },
             },
           },
@@ -66,12 +70,14 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'Claude Code (CLI)',
       description: (
         <>
-          Run this once in your terminal. The token can also be passed as a
-          header via <code>--header "Authorization: Bearer BASE64_TOKEN"</code>.
+          Run this once in your terminal. If your setup can't pass headers, use{' '}
+          <code>"{urlWithToken}"</code> as the URL instead and drop the{' '}
+          <code>--header</code> flag.
         </>
       ),
       language: 'bash',
-      snippet: () => `claude mcp add --transport http openpanel "${url}"`,
+      snippet: () =>
+        `claude mcp add --transport http openpanel ${url} \\\n  --header "Authorization: Bearer ${TOKEN_PLACEHOLDER}"`,
     },
     {
       id: 'cursor',
@@ -91,6 +97,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
               openpanel: {
                 url,
                 transport: 'streamable-http',
+                headers,
               },
             },
           },
@@ -115,6 +122,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
             mcpServers: {
               openpanel: {
                 serverUrl: url,
+                headers,
               },
             },
           },
@@ -140,6 +148,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
               openpanel: {
                 type: 'http',
                 url,
+                headers,
               },
             },
           },
@@ -153,7 +162,8 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       description: (
         <>
           Copy the JSON below, then run the <strong>Install Server</strong>{' '}
-          command in Raycast — it auto-fills the form from your clipboard.
+          command in Raycast — it auto-fills the form from your clipboard. The
+          install form takes a URL only, so the token goes in the query string.
         </>
       ),
       language: 'json',
@@ -162,7 +172,7 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
           {
             name: 'openpanel',
             transport: 'streamable-http',
-            url,
+            url: urlWithToken,
           },
           null,
           2,
@@ -174,7 +184,6 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
 function Component() {
   const { apiUrl } = useAppContext();
   const mcpEndpoint = `${apiUrl}/mcp`;
-  const fullUrl = `${mcpEndpoint}?token=${TOKEN_PLACEHOLDER}`;
   const clients = buildClients(mcpEndpoint);
 
   return (
@@ -189,11 +198,12 @@ function Component() {
       </div>
 
       <div className="col gap-2">
-        <CopyInput label="Endpoint" value={fullUrl} />
+        <CopyInput label="Endpoint" value={mcpEndpoint} />
         <p className="text-muted-foreground text-xs">
-          Replace <code>{TOKEN_PLACEHOLDER}</code> with{' '}
-          <code>base64(clientId:clientSecret)</code>. You can also pass it as an{' '}
-          <code>Authorization: Bearer</code> header instead of a query param.
+          Send your token as an <code>Authorization: Bearer</code> header, with{' '}
+          <code>base64(clientId:clientSecret)</code> in place of{' '}
+          <code>{TOKEN_PLACEHOLDER}</code>. Clients that can't set headers take
+          it as a <code>?token=</code> query param instead.
         </p>
       </div>
 

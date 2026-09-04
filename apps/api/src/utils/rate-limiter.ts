@@ -1,6 +1,7 @@
 import { getTrustedIpFromHeaders } from '@openpanel/common/server/get-client-ip';
 import { getRedisCache } from '@openpanel/redis';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { sanitizeUrl } from './sanitize-url';
 
 export async function activateRateLimiter<T extends FastifyRequest>({
   fastify,
@@ -49,7 +50,7 @@ export async function activateRateLimiter<T extends FastifyRequest>({
           clientId: req.headers['openpanel-client-id'],
           ip,
           ipHeader: header,
-          url: req.url,
+          url: sanitizeUrl(req.url),
           userAgent: req.headers['user-agent'],
         },
         'rate limit exceeded',
