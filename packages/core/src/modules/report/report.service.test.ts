@@ -1,11 +1,12 @@
 /**
  * Unit tests for mergeGlobalFilters — the helper that combines report-level
  * global filters with each event series' own filters (AND semantics). Pure
- * function, no ClickHouse/Postgres needed.
+ * function, no ClickHouse/Postgres needed. Ported from
+ * packages/db/src/services/reports.service.test.ts (M7-006), vitest -> bun:test.
  */
+import { describe, expect, it } from 'bun:test';
 import type { IChartEventFilter, IChartEventItem } from '@openpanel/validation';
-import { describe, expect, it } from 'vitest';
-import { mergeGlobalFilters } from './reports.service';
+import { mergeGlobalFilters } from './report.service';
 
 const globalFilter: IChartEventFilter = {
   id: 'g1',
@@ -48,7 +49,7 @@ describe('mergeGlobalFilters', () => {
   it('leaves formula series untouched', () => {
     const [, formula] = mergeGlobalFilters(
       [eventSeries, formulaSeries],
-      [globalFilter],
+      [globalFilter]
     );
     expect(formula).toBe(formulaSeries);
   });

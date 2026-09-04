@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
+import { mapKeys } from '@/utils/object-to-zod-enums';
 import { filterValueTypes } from '@openpanel/constants';
 import type { IChartFilterValueType } from '@openpanel/validation';
-import { mapKeys } from '@openpanel/validation';
 
 interface FilterTypeSelectProps {
   value: IChartFilterValueType | undefined;

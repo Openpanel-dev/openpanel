@@ -1,6 +1,6 @@
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 
-import { mapKeys } from '@openpanel/validation';
+import { mapKeys } from '@/utils/object-to-zod-enums';
 
 import type { ReportChartProps } from '../report-chart/context';
 

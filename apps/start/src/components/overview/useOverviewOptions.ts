@@ -7,6 +7,7 @@ import {
 } from 'nuqs';
 
 import { useCookieStore } from '@/hooks/use-cookie-store';
+import { mapKeys } from '@/utils/object-to-zod-enums';
 import {
   getDefaultIntervalByDates,
   getDefaultIntervalByRange,
@@ -14,7 +15,6 @@ import {
   timeWindows,
 } from '@openpanel/constants';
 import type { IChartRange } from '@openpanel/validation';
-import { mapKeys } from '@openpanel/validation';
 
 const nuqsOptions = { history: 'push' } as const;
 

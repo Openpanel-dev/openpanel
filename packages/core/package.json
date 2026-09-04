@@ -52,6 +52,7 @@
     "nanoid": "^5.1.6",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
+    "prisma-error-enum": "^0.1.3",
     "prom-client": "^15.1.3",
     "qrcode": "^1.5.4",
     "ramda": "^0.29.1",

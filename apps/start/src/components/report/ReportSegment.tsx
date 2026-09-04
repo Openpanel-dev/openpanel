@@ -1,5 +1,5 @@
 import { chartSegments } from '@openpanel/constants';
-import { type IChartEventSegment, mapKeys } from '@openpanel/validation';
+import type { IChartEventSegment } from '@openpanel/validation';
 import {
   ActivityIcon,
   Building2Icon,
@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/cn';
+import { mapKeys } from '@/utils/object-to-zod-enums';
 
 interface ReportChartTypeProps {
   className?: string;

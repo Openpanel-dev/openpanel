@@ -5,40 +5,16 @@
 // apps/start and packages/db/src/types.ts keep resolving these symbols
 // through @openpanel/validation's existing barrel unchanged.
 //
-// Isomorphic by the AGENTS.md rule: zod and nothing else.
+// Isomorphic by the AGENTS.md rule: zod, another `*.constants.ts`, or
+// nothing. `zChartEventFilter` used to be a diverged local copy here
+// (TODO(P7) in M5-003) to dodge a TDZ from importing it through
+// @openpanel/validation's barrel before that barrel finished initializing;
+// now that it lives in report.constants.ts — an isomorphic, cycle-free
+// sibling — importing it directly is safe, and the duplicate is gone
+// (M7-006).
 
-import { operators } from '@openpanel/constants';
 import { z } from 'zod';
-
-// TODO(P7): the canonical zChartEventFilter lives in
-// packages/validation/src/index.ts:31 and is due to move to
-// core/src/modules/report/report.constants.ts. That module does not exist
-// yet (creating it early is out of this task's scope), so this stays a
-// diverged local copy — defined here, rather than imported, to avoid a
-// runtime TDZ from this file being evaluated before validation's index.ts
-// finishes initializing zChartEventFilter. Once report.constants.ts exists,
-// delete this duplicate and import zChartEventFilter from there instead.
-function objectToZodEnums<K extends string>(
-  obj: Record<K, unknown>
-): [K, ...K[]] {
-  const [firstKey, ...otherKeys] = Object.keys(obj) as K[];
-  return [firstKey!, ...otherKeys];
-}
-
-const zChartEventFilter = z.object({
-  id: z.string().optional().describe('Unique identifier for the filter'),
-  name: z.string().describe('The property name to filter on'),
-  operator: z
-    .enum(objectToZodEnums(operators))
-    .describe('The operator to use for the filter'),
-  value: z
-    .array(z.string().or(z.number()).or(z.boolean()).or(z.null()))
-    .describe('The values to filter on'),
-  cohortId: z
-    .string()
-    .optional()
-    .describe('Cohort ID when using inCohort/notInCohort operators'),
-});
+import { zChartEventFilter } from '../report/report.constants';
 
 export const zRelativeTimeframe = z.object({
   type: z.literal('relative'),

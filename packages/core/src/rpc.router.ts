@@ -10,6 +10,7 @@ import { chartRouter } from './modules/chart/chart.rpc';
 import { clientRouter } from './modules/client/client.rpc';
 import { cohortRouter } from './modules/cohort/cohort.rpc';
 import { conversationRouter } from './modules/conversation/conversation.rpc';
+import { dashboardRouter } from './modules/dashboard/dashboard.rpc';
 import { emailRouter } from './modules/email/email.rpc';
 import { eventRouter } from './modules/event/event.rpc';
 import { groupRouter } from './modules/group/group.rpc';
@@ -26,10 +27,12 @@ import { profileRouter } from './modules/profile/profile.rpc';
 import { projectRouter } from './modules/project/project.rpc';
 import { realtimeRouter } from './modules/realtime/realtime.rpc';
 import { referenceRouter } from './modules/reference/reference.rpc';
+import { reportRouter } from './modules/report/report.rpc';
 import { sessionRouter } from './modules/session/session.rpc';
 import { shareRouter } from './modules/share/share.rpc';
 import { subscriptionRouter } from './modules/subscription/subscription.rpc';
 import { userRouter } from './modules/user/user.rpc';
+import { widgetRouter } from './modules/widget/widget.rpc';
 import { createTRPCRouter } from './rpc/base';
 
 export const appRouter = createTRPCRouter({
@@ -59,6 +62,9 @@ export const appRouter = createTRPCRouter({
   group: groupRouter,
   chart: chartRouter,
   overview: overviewRouter,
+  report: reportRouter,
+  dashboard: dashboardRouter,
+  widget: widgetRouter,
 });
 
 export type AppRouter = typeof appRouter;

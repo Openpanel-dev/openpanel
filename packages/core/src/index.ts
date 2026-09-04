@@ -369,56 +369,6 @@ export {
   getUserFlowCore,
   zGetSankeyInput,
 } from './modules/chart/sankey.service';
-// Dissolved from @openpanel/db's services/overview.service.ts +
-// pages.service.ts (M7-005) — packages/trpc's overview/event routers,
-// apps/api's insights controller, apps/worker's win-back job and the
-// mcp/assistant tools call these directly. packages/db/src/services/
-// overview.service.ts and pages.service.ts stay re-export shims.
-export type {
-  IGetMapDataInput,
-  IGetMetricsInput,
-  IGetTopEntryExitInput,
-  IGetTopEventsInput,
-  IGetTopGenericInput,
-  IGetTopGenericSeriesInput,
-  IGetTopLinkOutInput,
-  IGetTopPagesInput,
-  IGetUserJourneyInput,
-  ILiveData,
-  ILiveMinuteCount,
-  SegmentDailyPoint,
-  TrafficColumn,
-} from './modules/overview/overview.service';
-export {
-  getAnalyticsOverviewCore,
-  getSegmentDailySeriesCore,
-  getTrafficBreakdownCore,
-  OverviewService,
-  overviewService,
-  zGetMapDataInput,
-  zGetMetricsInput,
-  zGetTopEntryExitInput,
-  zGetTopEventsInput,
-  zGetTopGenericInput,
-  zGetTopGenericSeriesInput,
-  zGetTopLinkOutInput,
-  zGetTopPagesInput,
-  zGetUserJourneyInput,
-} from './modules/overview/overview.service';
-export type {
-  IGetPagesInput,
-  IPageConversionRow,
-  IPageTimeseriesRow,
-  ITopPage,
-} from './modules/overview/pages.service';
-export {
-  getEntryExitPagesCore,
-  getPageConversionsCore,
-  getPagePerformanceCore,
-  getTopPagesCore,
-  PagesService,
-  pagesService,
-} from './modules/overview/pages.service';
 // Dissolved from @openpanel/db's services/clients.service.ts (M6-002) —
 // packages/trpc's client router, apps/api's manage controller and mcp/utils
 // auth call these directly, the same way V1 reaches every other dissolved
@@ -477,6 +427,24 @@ export {
   listConversations,
   upsertConversationTitle,
 } from './modules/conversation/conversation.service';
+// Dissolved from @openpanel/db's services/dashboard.service.ts, plus V1's
+// dashboard router mutation bodies (M7-006) — packages/trpc's dashboard
+// router, apps/api's insights controller and the mcp/assistant tools call
+// these. packages/db/src/services/dashboard.service.ts stays a re-export
+// shim.
+export type {
+  IServiceDashboard,
+  IServiceDashboards,
+} from './modules/dashboard/dashboard.service';
+export {
+  createDashboard,
+  deleteDashboard,
+  getDashboardById,
+  getDashboardByIdOrThrow,
+  getDashboardsByProjectId,
+  listDashboardsCore,
+  updateDashboard,
+} from './modules/dashboard/dashboard.service';
 // R + C only (M6-004): the router's three bodies are three small
 // `db.emailUnsubscribe` calls, small enough to live inline in
 // `email.rpc.ts` rather than a dedicated `email.service.ts` — see that
@@ -727,6 +695,56 @@ export {
   updateOrganization,
   updateOrganizationMemberAccess,
 } from './modules/organization/organization.service';
+// Dissolved from @openpanel/db's services/overview.service.ts +
+// pages.service.ts (M7-005) — packages/trpc's overview/event routers,
+// apps/api's insights controller, apps/worker's win-back job and the
+// mcp/assistant tools call these directly. packages/db/src/services/
+// overview.service.ts and pages.service.ts stay re-export shims.
+export type {
+  IGetMapDataInput,
+  IGetMetricsInput,
+  IGetTopEntryExitInput,
+  IGetTopEventsInput,
+  IGetTopGenericInput,
+  IGetTopGenericSeriesInput,
+  IGetTopLinkOutInput,
+  IGetTopPagesInput,
+  IGetUserJourneyInput,
+  ILiveData,
+  ILiveMinuteCount,
+  SegmentDailyPoint,
+  TrafficColumn,
+} from './modules/overview/overview.service';
+export {
+  getAnalyticsOverviewCore,
+  getSegmentDailySeriesCore,
+  getTrafficBreakdownCore,
+  OverviewService,
+  overviewService,
+  zGetMapDataInput,
+  zGetMetricsInput,
+  zGetTopEntryExitInput,
+  zGetTopEventsInput,
+  zGetTopGenericInput,
+  zGetTopGenericSeriesInput,
+  zGetTopLinkOutInput,
+  zGetTopPagesInput,
+  zGetUserJourneyInput,
+} from './modules/overview/overview.service';
+export type {
+  IGetPagesInput,
+  IPageConversionRow,
+  IPageTimeseriesRow,
+  ITopPage,
+} from './modules/overview/pages.service';
+export {
+  getEntryExitPagesCore,
+  getPageConversionsCore,
+  getPagePerformanceCore,
+  getTopPagesCore,
+  PagesService,
+  pagesService,
+} from './modules/overview/pages.service';
 export type {
   AdjustProfilePropertyResult,
   FindProfilesInput,
@@ -826,6 +844,86 @@ export {
   listReferences,
   updateReference,
 } from './modules/reference/reference.service';
+// Moved from packages/constants/index.ts and packages/validation/src/index.ts
+// (M7-006, ADR-008's module map: report owns "C" for the chart/report/widget
+// vocabulary) — apps/start's report builder and the assistant/mcp tools
+// reach the vocabulary directly through @openpanel/core here, same shape as
+// `emailCategories`/`ProjectTypeNames` below. Both origin packages stay
+// re-export shims.
+export type { IFilterValueType } from './modules/report/report.constants';
+export {
+  alphabetIds,
+  chartColors,
+  chartSegments,
+  chartTypes,
+  countries,
+  DEFAULT_ASPECT_RATIO,
+  filterValueTypes,
+  getCohortIds,
+  getCountry,
+  getDefaultIntervalByDates,
+  getDefaultIntervalByRange,
+  getOperatorsForType,
+  intervals,
+  isHourIntervalEnabledByRange,
+  isMinuteIntervalEnabledByRange,
+  lineTypes,
+  metrics,
+  NOT_SET_VALUE,
+  operators,
+  operatorsShort,
+  timeWindows,
+  zChartBreakdown,
+  zChartBreakdowns,
+  zChartEvent,
+  zChartEventFilter,
+  zChartEventItem,
+  zChartEventSegment,
+  zChartEventWithType,
+  zChartFormula,
+  zChartInput,
+  zChartSeries,
+  zChartType,
+  zCriteria,
+  zFunnelOptions,
+  zHistogramOptions,
+  zLineType,
+  zMetric,
+  zRange,
+  zReport,
+  zReportInput,
+  zReportOptions,
+  zRetentionOptions,
+  zSankeyOptions,
+  zTimeInterval,
+  zWidgetOptions,
+  zWidgetType,
+} from './modules/report/report.constants';
+// Dissolved from @openpanel/db's services/reports.service.ts, plus V1's
+// report router mutation bodies (M7-006) — packages/trpc's report router,
+// apps/api's insights controller and the mcp/assistant tools call these.
+// packages/db/src/services/reports.service.ts stays a re-export shim.
+export type { IServiceReport } from './modules/report/report.service';
+export {
+  createReport,
+  deleteReport,
+  duplicateReport,
+  getReportById,
+  getReportByIdOrThrow,
+  getReportDataCore,
+  getReportLayouts,
+  getReportsByDashboardId,
+  listReportsCore,
+  mergeGlobalFilters,
+  moveReport,
+  onlyReportEvents,
+  resetReportLayouts,
+  transformFilter,
+  transformReport,
+  transformReportEventItem,
+  updateReport,
+  updateReportLayout,
+} from './modules/report/report.service';
 // Dissolved from @openpanel/db's services/session.service.ts and
 // session-context.ts, plus apps/worker's session-end job, reaper and vacuum
 // (M7-001, ADR-008's module map: session owns "R,S,J") — packages/trpc's

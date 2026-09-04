@@ -1,19 +1,25 @@
-// Dissolved into @openpanel/core's report module (M7-006): the transforms,
-// listReportsCore/getReportDataCore and the create/update/move/delete/
-// duplicate/layout mutation bodies moved to
-// packages/core/src/modules/report/report.service.ts, and the chart/report/
-// widget zod schemas (zReport included) moved to
-// packages/core/src/modules/report/report.constants.ts. This router stays
-// (DELEGATE PATTERN) — it keeps V1's `protectedProcedure` stack and
-// delegates every handler body to core's report functions, same as
-// overview.ts/chart.ts.
+// Ported from packages/trpc/src/routers/report.ts (M7-006).
+//
+// Same arrangement as chart.rpc.ts/project.rpc.ts: V1's `protectedProcedure`
+// lands in core with auth (rpc/base.ts), so each procedure does its own "is
+// anyone logged in" + `requireProjectAccess` check. The mutation bodies
+// (create/update/move/delete/duplicate/layout) moved to ./report.service
+// alongside the reads that already lived there; packages/trpc's report
+// router delegates every handler body onto ./report.service while keeping
+// V1's own procedure stack (DELEGATE PATTERN).
 
+import { z } from 'zod';
+import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+import {
+  getDashboardById,
+  getDashboardByIdOrThrow,
+} from '../dashboard/dashboard.service';
+import { zReport } from './report.constants';
 import {
   createReport,
   deleteReport,
   duplicateReport,
-  getDashboardById,
-  getDashboardByIdOrThrow,
   getReportById,
   getReportByIdOrThrow,
   getReportLayouts,
@@ -22,29 +28,65 @@ import {
   resetReportLayouts,
   updateReport,
   updateReportLayout,
-  zReport,
-} from '@openpanel/core';
-import { z } from 'zod';
-import { getProjectAccess, requireProjectAccess } from '../access';
-import { TRPCForbiddenError, TRPCNotFoundError } from '../errors';
-import { createTRPCRouter, protectedProcedure } from '../trpc';
+} from './report.service';
+
+const zReportLayout = z.object({
+  x: z.number(),
+  y: z.number(),
+  w: z.number(),
+  h: z.number(),
+  minW: z.number().optional(),
+  minH: z.number().optional(),
+  maxW: z.number().optional(),
+  maxH: z.number().optional(),
+});
+
+function loadAccessChecks() {
+  return import('./src/access');
+}
+
+function requireLogin(userId: string | null | undefined): string {
+  if (!userId) {
+    throw new TRPCAccessError('Not authenticated');
+  }
+  return userId;
+}
+
+async function requireAccess(
+  userId: string,
+  projectId: string,
+  level: 'read' | 'write'
+) {
+  const { requireProjectAccess } = await loadAccessChecks();
+  await requireProjectAccess({ userId, projectId, level });
+}
+
+async function requireReadAccess(ctx: TrpcContext, projectId: string) {
+  await requireAccess(requireLogin(ctx.session.userId), projectId, 'read');
+}
+
+async function requireWriteAccess(ctx: TrpcContext, projectId: string) {
+  await requireAccess(requireLogin(ctx.session.userId), projectId, 'write');
+}
 
 export const reportRouter = createTRPCRouter({
-  list: protectedProcedure
+  list: procedure
     .input(
       z.object({
         dashboardId: z.string(),
         projectId: z.string(),
       })
     )
-    .query(async ({ input: { dashboardId, projectId } }) => {
+    .query(async ({ input: { dashboardId, projectId }, ctx }) => {
+      requireLogin(ctx.session.userId);
       const dashboard = await getDashboardById(dashboardId, projectId);
       if (!dashboard) {
         throw new TRPCNotFoundError('Dashboard not found');
       }
       return getReportsByDashboardId(dashboardId);
     }),
-  create: protectedProcedure
+
+  create: procedure
     .input(
       z.object({
         report: zReport.omit({ projectId: true }),
@@ -52,21 +94,16 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input: { report, dashboardId }, ctx }) => {
-      const dashboard = await getDashboardByIdOrThrow(dashboardId);
-
-      await requireProjectAccess({
-        userId: ctx.session.userId,
-        projectId: dashboard.projectId,
-        level: 'write',
-      });
-
+      const dbDashboard = await getDashboardByIdOrThrow(dashboardId);
+      await requireWriteAccess(ctx, dbDashboard.projectId);
       return createReport({
         dashboardId,
-        projectId: dashboard.projectId,
+        projectId: dbDashboard.projectId,
         report,
       });
     }),
-  update: protectedProcedure
+
+  update: procedure
     .input(
       z.object({
         reportId: z.string(),
@@ -75,16 +112,11 @@ export const reportRouter = createTRPCRouter({
     )
     .mutation(async ({ input: { report, reportId }, ctx }) => {
       const dbReport = await getReportByIdOrThrow(reportId);
-
-      await requireProjectAccess({
-        userId: ctx.session.userId,
-        projectId: dbReport.projectId,
-        level: 'write',
-      });
-
+      await requireWriteAccess(ctx, dbReport.projectId);
       return updateReport({ reportId, report });
     }),
-  move: protectedProcedure
+
+  move: procedure
     .input(
       z.object({
         reportId: z.string(),
@@ -93,16 +125,11 @@ export const reportRouter = createTRPCRouter({
     )
     .mutation(async ({ input: { reportId, dashboardId }, ctx }) => {
       const dbReport = await getReportByIdOrThrow(reportId);
-
-      await requireProjectAccess({
-        userId: ctx.session.userId,
-        projectId: dbReport.projectId,
-        level: 'write',
-      });
-
+      await requireWriteAccess(ctx, dbReport.projectId);
       return moveReport({ report: dbReport, dashboardId });
     }),
-  delete: protectedProcedure
+
+  delete: procedure
     .input(
       z.object({
         reportId: z.string(),
@@ -110,16 +137,11 @@ export const reportRouter = createTRPCRouter({
     )
     .mutation(async ({ input: { reportId }, ctx }) => {
       const dbReport = await getReportByIdOrThrow(reportId);
-
-      await requireProjectAccess({
-        userId: ctx.session.userId,
-        projectId: dbReport.projectId,
-        level: 'write',
-      });
-
+      await requireWriteAccess(ctx, dbReport.projectId);
       return deleteReport(reportId);
     }),
-  duplicate: protectedProcedure
+
+  duplicate: procedure
     .input(
       z.object({
         reportId: z.string(),
@@ -127,16 +149,11 @@ export const reportRouter = createTRPCRouter({
     )
     .mutation(async ({ input: { reportId }, ctx }) => {
       const dbReport = await getReportByIdOrThrow(reportId);
-
-      await requireProjectAccess({
-        userId: ctx.session.userId,
-        projectId: dbReport.projectId,
-        level: 'write',
-      });
-
+      await requireWriteAccess(ctx, dbReport.projectId);
       return duplicateReport(dbReport);
     }),
-  get: protectedProcedure
+
+  get: procedure
     .input(
       z.object({
         reportId: z.string(),
@@ -147,43 +164,24 @@ export const reportRouter = createTRPCRouter({
       if (!report) {
         throw new TRPCNotFoundError('Report not found');
       }
-      const access = await getProjectAccess({
-        userId: ctx.session.userId,
-        projectId: report.projectId,
-      });
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
+      await requireReadAccess(ctx, report.projectId);
       return report;
     }),
-  updateLayout: protectedProcedure
+
+  updateLayout: procedure
     .input(
       z.object({
         reportId: z.string(),
-        layout: z.object({
-          x: z.number(),
-          y: z.number(),
-          w: z.number(),
-          h: z.number(),
-          minW: z.number().optional(),
-          minH: z.number().optional(),
-          maxW: z.number().optional(),
-          maxH: z.number().optional(),
-        }),
+        layout: zReportLayout,
       })
     )
     .mutation(async ({ input: { reportId, layout }, ctx }) => {
       const dbReport = await getReportByIdOrThrow(reportId);
-
-      await requireProjectAccess({
-        userId: ctx.session.userId,
-        projectId: dbReport.projectId,
-        level: 'write',
-      });
-
+      await requireWriteAccess(ctx, dbReport.projectId);
       return updateReportLayout({ reportId, layout });
     }),
-  getLayouts: protectedProcedure
+
+  getLayouts: procedure
     .input(
       z.object({
         dashboardId: z.string(),
@@ -191,14 +189,7 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { dashboardId, projectId }, ctx }) => {
-      const access = await getProjectAccess({
-        userId: ctx.session.userId,
-        projectId,
-      });
-
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
+      await requireReadAccess(ctx, projectId);
 
       // The access check above only proves the caller owns `projectId`. Bind
       // the caller-supplied `dashboardId` to that project as well, otherwise a
@@ -210,7 +201,8 @@ export const reportRouter = createTRPCRouter({
 
       return getReportLayouts({ dashboardId, projectId });
     }),
-  resetLayout: protectedProcedure
+
+  resetLayout: procedure
     .input(
       z.object({
         dashboardId: z.string(),
@@ -218,11 +210,7 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input: { dashboardId, projectId }, ctx }) => {
-      await requireProjectAccess({
-        userId: ctx.session.userId,
-        projectId,
-        level: 'write',
-      });
+      await requireWriteAccess(ctx, projectId);
 
       // Same as `getLayouts`: bind the dashboard to the access-checked project
       // before deleting anything, so a foreign dashboard cannot be wiped.

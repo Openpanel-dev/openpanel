@@ -1,51 +1,18 @@
-import type { Dashboard, Prisma } from '../prisma-client';
-import { db } from '../prisma-client';
-
-export type IServiceDashboard = Dashboard;
-export type IServiceDashboards = Prisma.DashboardGetPayload<{
-  include: {
-    project: true;
-    reports: true;
-  };
-}>[];
-
-export async function getDashboardById(id: string, projectId: string) {
-  const dashboard = await db.dashboard.findUnique({
-    where: {
-      id,
-      projectId,
-    },
-    include: {
-      project: true,
-    },
-  });
-
-  if (!dashboard) {
-    return null;
-  }
-
-  return dashboard;
-}
-
-export function getDashboardsByProjectId(projectId: string) {
-  return db.dashboard.findMany({
-    where: {
-      projectId,
-    },
-    include: {
-      project: true,
-      reports: true,
-    },
-  });
-}
-
-export async function listDashboardsCore(input: {
-  projectId: string;
-  organizationId: string;
-}) {
-  return db.dashboard.findMany({
-    where: { projectId: input.projectId },
-    orderBy: { createdAt: 'desc' },
-    select: { id: true, name: true, projectId: true },
-  });
-}
+// The dashboard service lives in @openpanel/core now (M7-006). Re-exported
+// here for existing `@openpanel/db` importers (packages/trpc's dashboard/
+// report routers, apps/api's insights controller, the mcp/assistant tools,
+// packages/core's report.service and share.service) — same shape as
+// packages/db/src/services/chart.service.ts since M7-003.
+export type {
+  IServiceDashboard,
+  IServiceDashboards,
+} from '@openpanel/core';
+export {
+  createDashboard,
+  deleteDashboard,
+  getDashboardById,
+  getDashboardByIdOrThrow,
+  getDashboardsByProjectId,
+  listDashboardsCore,
+  updateDashboard,
+} from '@openpanel/core';

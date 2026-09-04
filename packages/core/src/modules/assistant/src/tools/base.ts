@@ -16,7 +16,7 @@ import {
   queryEventsCore,
   querySessionsCore,
 } from '@openpanel/db';
-import { objectToZodEnums, zReportInput } from '@openpanel/validation';
+import { zReportInput } from '@openpanel/validation';
 import { z } from 'zod';
 import { runReport, runReportFromConfig } from '../report-runner';
 import {
@@ -27,6 +27,15 @@ import {
   resolveDateRange,
   truncateRows,
 } from './helpers';
+
+// Helper, not vocabulary — ADR-008's ruling on objectToZodEnums: copy locally
+// rather than import from a module.
+function objectToZodEnums<K extends string>(
+  obj: Record<K, unknown>
+): [K, ...K[]] {
+  const [firstKey, ...otherKeys] = Object.keys(obj) as K[];
+  return [firstKey!, ...otherKeys];
+}
 
 // ─────────────────────────────────────────────────────────────────
 // DISCOVERY

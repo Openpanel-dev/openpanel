@@ -1,15 +1,19 @@
-import { PrismaError } from 'prisma-error-enum';
-import { z } from 'zod';
+// Dissolved into @openpanel/core's dashboard module (M7-006): the reads plus
+// the create/update/delete mutation bodies moved to
+// packages/core/src/modules/dashboard/dashboard.service.ts. This router
+// stays (DELEGATE PATTERN) — it keeps V1's `protectedProcedure` stack and
+// delegates every handler body to core's dashboard functions, same as
+// overview.ts/chart.ts.
 
 import {
-  db,
+  createDashboard,
+  deleteDashboard,
   getDashboardById,
+  getDashboardByIdOrThrow,
   getDashboardsByProjectId,
-  getId,
-  getProjectById,
-} from '@openpanel/db';
-import type { Prisma } from '@openpanel/db';
-
+  updateDashboard,
+} from '@openpanel/core';
+import { z } from 'zod';
 import { getProjectAccess, requireProjectAccess } from '../access';
 import { TRPCForbiddenError, TRPCNotFoundError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
@@ -19,7 +23,7 @@ export const dashboardRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string(),
-      }),
+      })
     )
     .query(({ input }) => {
       return getDashboardsByProjectId(input.projectId);
@@ -29,7 +33,7 @@ export const dashboardRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         projectId: z.string(),
-      }),
+      })
     )
     .query(async ({ input, ctx }) => {
       const access = await getProjectAccess({
@@ -54,7 +58,7 @@ export const dashboardRouter = createTRPCRouter({
       z.object({
         name: z.string(),
         projectId: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
       await requireProjectAccess({
@@ -63,34 +67,17 @@ export const dashboardRouter = createTRPCRouter({
         level: 'write',
       });
 
-      const project = await getProjectById(input.projectId);
-
-      if (!project) {
-        throw new TRPCNotFoundError('Project not found');
-      }
-
-      return db.dashboard.create({
-        data: {
-          id: await getId('dashboard', input.name),
-          projectId: input.projectId,
-          organizationId: project.organizationId,
-          name: input.name,
-        },
-      });
+      return createDashboard(input);
     }),
   update: protectedProcedure
     .input(
       z.object({
         id: z.string(),
         name: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
-      const dashboard = await db.dashboard.findUniqueOrThrow({
-        where: {
-          id: input.id,
-        },
-      });
+      const dashboard = await getDashboardByIdOrThrow(input.id);
 
       await requireProjectAccess({
         userId: ctx.session.userId,
@@ -98,28 +85,17 @@ export const dashboardRouter = createTRPCRouter({
         level: 'write',
       });
 
-      return db.dashboard.update({
-        where: {
-          id: input.id,
-        },
-        data: {
-          name: input.name,
-        },
-      });
+      return updateDashboard(input);
     }),
   delete: protectedProcedure
     .input(
       z.object({
         id: z.string(),
         forceDelete: z.boolean().optional(),
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
-      const dashboard = await db.dashboard.findUniqueOrThrow({
-        where: {
-          id: input.id,
-        },
-      });
+      const dashboard = await getDashboardByIdOrThrow(input.id);
 
       await requireProjectAccess({
         userId: ctx.session.userId,
@@ -127,33 +103,6 @@ export const dashboardRouter = createTRPCRouter({
         level: 'write',
       });
 
-      try {
-        if (input.forceDelete) {
-          await db.report.deleteMany({
-            where: {
-              dashboardId: input.id,
-            },
-          });
-        }
-        await db.dashboard.delete({
-          where: {
-            id: input.id,
-          },
-        });
-      } catch (e) {
-        // Below does not work...
-        // error instanceof Prisma.PrismaClientKnownRequestError
-        if (typeof e === 'object' && e && 'code' in e) {
-          const error = e as Prisma.PrismaClientKnownRequestError;
-          switch (error.code) {
-            case PrismaError.ForeignConstraintViolation:
-              throw new Error(
-                'Cannot delete dashboard with associated reports',
-              );
-            default:
-              throw new Error('Unknown error deleting dashboard');
-          }
-        }
-      }
+      return deleteDashboard(input);
     }),
 });

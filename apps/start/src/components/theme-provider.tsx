@@ -1,5 +1,5 @@
 import { useCookieStore } from '@/hooks/use-cookie-store';
-import { mapKeys } from '@openpanel/validation';
+import { mapKeys } from '@/utils/object-to-zod-enums';
 import { ScriptOnce, useRouteContext } from '@tanstack/react-router';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { type ReactNode, createContext, use, useEffect, useState } from 'react';

@@ -20,7 +20,6 @@ import {
 import {
   type IChartEventFilter,
   type IChartRange,
-  objectToZodEnums,
   zRange,
 } from '@openpanel/validation';
 import { z } from 'zod';
@@ -30,6 +29,15 @@ import {
   type ChatModelEntry,
   type PageContext,
 } from '../assistant.constants';
+
+// Helper, not vocabulary — ADR-008's ruling on objectToZodEnums: copy locally
+// rather than import from a module.
+function objectToZodEnums<K extends string>(
+  obj: Record<K, unknown>
+): [K, ...K[]] {
+  const [firstKey, ...otherKeys] = Object.keys(obj) as K[];
+  return [firstKey!, ...otherKeys];
+}
 
 const operatorEnum = z.enum(objectToZodEnums(operators));
 const rangeEnum = zRange;

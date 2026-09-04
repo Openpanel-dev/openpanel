@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 import { chartTypes } from '@openpanel/constants';
-import { type IChartType, objectToZodEnums } from '@openpanel/validation';
+import type { IChartType } from '@openpanel/validation';
 
 import {
   DropdownMenu,
@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/cn';
+import { objectToZodEnums } from '@/utils/object-to-zod-enums';
 import { Button } from '../ui/button';
 import { changeChartType } from './reportSlice';
 
