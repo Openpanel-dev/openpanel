@@ -1,21 +1,37 @@
-// Dissolved into @openpanel/core's overview module (M7-005): the ClickHouse
-// queries moved to packages/core/src/modules/overview/src/{overview,pages}.sql.ts
-// and the handler bodies to overview.service.ts/pages.service.ts. This router
-// stays (DELEGATE PATTERN) — it keeps V1's `publicProcedure` /
-// `overviewProcedure` (share-or-session) / `cacheMiddleware` stacks and
-// delegates every handler body to core's overview functions, same as chart.ts.
+// Ported from packages/trpc/src/routers/overview.ts.
 //
-// `liveData`'s queries used to live inline here; they moved to
-// `overviewService.getLiveData` with everything else this module runs.
+// Same arrangement as chart.rpc.ts: V1's `publicProcedure` + share-or-session
+// `overviewProcedure` middleware and `cacheMiddleware` stacks land with auth
+// (P6), so each procedure does its own share-or-session check off the
+// `projectId`/`shareId` input. packages/trpc's overview router delegates its
+// handler bodies onto this module while keeping V1's own procedure stack and
+// response cache.
+//
+// `liveData`'s ClickHouse queries used to live inline in packages/trpc's
+// router; they moved to `overviewService.getLiveData` (src/overview.sql.ts)
+// so every query this module runs goes through the same `sql` tag (M7-005).
 
+import { format } from 'date-fns';
+import { getConversionEventNames } from '../event/event.service';
+import { getActiveVisitorCount } from '../realtime/realtime.service';
+import { getReferrerSpikes } from '../insight/insight.service';
+import { getOrganizationSubscriptionChartEndDate } from '../organization/organization.service';
+import { getSettingsForProject } from '../organization/organization.service';
+import { validateOverviewShareAccess } from '../share/share.service';
 import {
-  getConversionEventNames,
-  getOrganizationSubscriptionChartEndDate,
-  getReferrerSpikes,
-  getSettingsForProject,
+  getChartPrevStartEndDate,
+  getChartStartEndDate,
+} from '@openpanel/db/src/services/date.service';
+import {
+  type IChartRange,
+  pageContextSchema,
+  zRange,
+} from '@openpanel/validation';
+import { z } from 'zod';
+import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
+import {
   overviewService,
-  runFilterCommand,
-  validateOverviewShareAccess,
   zGetMapDataInput,
   zGetMetricsInput,
   zGetTopEventsInput,
@@ -24,86 +40,77 @@ import {
   zGetTopLinkOutInput,
   zGetTopPagesInput,
   zGetUserJourneyInput,
-} from '@openpanel/core';
-import {
-  eventBuffer,
-  getChartPrevStartEndDate,
-  getChartStartEndDate,
-} from '@openpanel/db';
-import {
-  type IChartRange,
-  pageContextSchema,
-  zRange,
-} from '@openpanel/validation';
-import { format } from 'date-fns';
-import { z } from 'zod';
-import { getProjectAccess } from '../access';
-import { TRPCAccessError, TRPCForbiddenError } from '../errors';
-import {
-  cacheMiddleware,
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from '../trpc';
+} from './overview.service';
 
-const cacher = cacheMiddleware((input, opts) => {
-  const range = input.range as IChartRange;
-  if (opts.path === 'overview.liveData') {
-    return 0;
+function loadAccessChecks() {
+  return import('./src/access');
+}
+
+// Lazy, not a static import: the assistant module's chatApp chain reaches
+// deep into @openpanel/db and @openpanel/queue (see index.ts's own
+// `loadAssistant()` for the full story) — a static import here would pull
+// that chain into this module's evaluation, and this module is itself a
+// static import of rpc.router.ts/index.ts's own barrel.
+function loadFilterCommand() {
+  return import('../assistant/src/filter-command');
+}
+
+function requireLogin(userId: string | null | undefined): string {
+  if (!userId) {
+    throw new TRPCAccessError('Not authenticated');
   }
+  return userId;
+}
 
-  switch (range) {
-    case '30min':
-    case 'today':
-    case 'lastHour':
-    case 'last24h':
-      return 1;
-    default:
-      return 1;
-  }
-});
+async function requireAccess(
+  userId: string,
+  projectId: string,
+  level: 'read' | 'write'
+) {
+  const { requireProjectAccess } = await loadAccessChecks();
+  await requireProjectAccess({ userId, projectId, level });
+}
 
-const overviewProcedure = publicProcedure.use(
-  async ({ ctx, next, getRawInput }) => {
-    const rawInput = (await getRawInput()) as {
-      projectId: string;
-      shareId?: string;
-    };
+async function requireReadAccess(ctx: TrpcContext, projectId: string) {
+  await requireAccess(requireLogin(ctx.session.userId), projectId, 'read');
+}
 
-    if (rawInput.shareId) {
-      // validateOverviewShareAccess only throws for missing/non-public shares.
-      // A password-protected share without the unlock cookie comes back as
-      // `{ isValid: false }`, so ignoring the result leaves the data open to
-      // anyone holding the link. The chart path does the same check.
-      const shareValidation = await validateOverviewShareAccess(
-        rawInput.shareId,
-        rawInput.projectId,
-        {
-          cookies: ctx.cookies,
-          session: ctx.session?.userId
-            ? { userId: ctx.session.userId }
-            : undefined,
-        }
-      );
-      if (!shareValidation.isValid) {
-        throw new TRPCForbiddenError('You do not have access to this share');
+/**
+ * Share-aware access: with `shareId`, a public (optionally password-unlocked)
+ * overview share is enough; without it, the caller must be a project member.
+ * A password-protected share without the unlock cookie comes back as
+ * `{ isValid: false }` rather than throwing, so the result must be checked —
+ * ignoring it leaves the data open to anyone holding the link.
+ */
+async function resolveOverviewAccess(
+  ctx: TrpcContext,
+  input: { projectId: string; shareId?: string }
+): Promise<void> {
+  if (input.shareId) {
+    const shareValidation = await validateOverviewShareAccess(
+      input.shareId,
+      input.projectId,
+      {
+        cookies: ctx.cookies,
+        session: ctx.session.userId ? { userId: ctx.session.userId } : undefined,
       }
-    } else {
-      if (!ctx.session?.userId) {
-        throw new TRPCAccessError('Authentication required');
-      }
-      const access = await getProjectAccess({
-        projectId: rawInput.projectId,
-        userId: ctx.session.userId,
-      });
-      if (!access) {
-        throw new TRPCForbiddenError('You do not have access to this project');
-      }
+    );
+    if (!shareValidation.isValid) {
+      throw new TRPCForbiddenError('You do not have access to this share');
     }
-
-    return next();
+    return;
   }
-);
+  await requireReadAccess(ctx, input.projectId);
+}
+
+const overviewProcedure = procedure.use(async ({ ctx, next, getRawInput }) => {
+  const rawInput = (await getRawInput()) as {
+    projectId: string;
+    shareId?: string;
+  };
+  await resolveOverviewAccess(ctx, rawInput);
+  return next();
+});
 
 function getCurrentAndPrevious<
   T extends {
@@ -159,15 +166,15 @@ export const overviewRouter = createTRPCRouter({
   liveVisitors: overviewProcedure
     .input(z.object({ projectId: z.string(), shareId: z.string().optional() }))
     .query(async ({ input }) => {
-      return eventBuffer.getActiveVisitorCount(input.projectId);
+      return getActiveVisitorCount(input.projectId);
     }),
 
   liveData: overviewProcedure
     .input(z.object({ projectId: z.string(), shareId: z.string().optional() }))
-    .use(cacher)
     .query(async ({ input }) => {
       return overviewService.getLiveData(input.projectId);
     }),
+
   stats: overviewProcedure
     .input(
       zGetMetricsInput.omit({ startDate: true, endDate: true }).extend({
@@ -177,7 +184,6 @@ export const overviewRouter = createTRPCRouter({
         shareId: z.string().optional(),
       })
     )
-    .use(cacher)
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current, previous } = await getCurrentAndPrevious(
@@ -223,7 +229,6 @@ export const overviewRouter = createTRPCRouter({
         shareId: z.string().optional(),
       })
     )
-    .use(cacher)
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
@@ -258,7 +263,6 @@ export const overviewRouter = createTRPCRouter({
         shareId: z.string().optional(),
       })
     )
-    .use(cacher)
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
@@ -293,7 +297,6 @@ export const overviewRouter = createTRPCRouter({
         shareId: z.string().optional(),
       })
     )
-    .use(cacher)
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
@@ -316,7 +319,6 @@ export const overviewRouter = createTRPCRouter({
           shareId: z.string().optional(),
         })
     )
-    .use(cacher)
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
@@ -338,7 +340,6 @@ export const overviewRouter = createTRPCRouter({
         shareId: z.string().optional(),
       })
     )
-    .use(cacher)
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
@@ -365,7 +366,6 @@ export const overviewRouter = createTRPCRouter({
         shareId: z.string().optional(),
       })
     )
-    .use(cacher)
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
@@ -397,7 +397,6 @@ export const overviewRouter = createTRPCRouter({
         shareId: z.string().optional(),
       })
     )
-    .use(cacher)
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
@@ -413,7 +412,7 @@ export const overviewRouter = createTRPCRouter({
   // ("show 7 aug to 11 aug", "from google", "mobile only for august
   // last year") into structured filter changes the dashboard can apply
   // through the same handlers the chat panel uses.
-  runFilterCommand: protectedProcedure
+  runFilterCommand: procedure
     // Computes filter changes for the caller's own UI; changes no project state.
     .meta({ readOnlyMutation: true })
     .input(
@@ -423,8 +422,10 @@ export const overviewRouter = createTRPCRouter({
         pageContext: pageContextSchema.optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await requireReadAccess(ctx, input.projectId);
       const { timezone } = await getSettingsForProject(input.projectId);
+      const { runFilterCommand } = await loadFilterCommand();
       return runFilterCommand({
         query: input.query,
         projectId: input.projectId,
@@ -442,7 +443,6 @@ export const overviewRouter = createTRPCRouter({
         shareId: z.string().optional(),
       })
     )
-    .use(cacher)
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(

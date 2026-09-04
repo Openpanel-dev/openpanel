@@ -369,6 +369,56 @@ export {
   getUserFlowCore,
   zGetSankeyInput,
 } from './modules/chart/sankey.service';
+// Dissolved from @openpanel/db's services/overview.service.ts +
+// pages.service.ts (M7-005) — packages/trpc's overview/event routers,
+// apps/api's insights controller, apps/worker's win-back job and the
+// mcp/assistant tools call these directly. packages/db/src/services/
+// overview.service.ts and pages.service.ts stay re-export shims.
+export type {
+  IGetMapDataInput,
+  IGetMetricsInput,
+  IGetTopEntryExitInput,
+  IGetTopEventsInput,
+  IGetTopGenericInput,
+  IGetTopGenericSeriesInput,
+  IGetTopLinkOutInput,
+  IGetTopPagesInput,
+  IGetUserJourneyInput,
+  ILiveData,
+  ILiveMinuteCount,
+  SegmentDailyPoint,
+  TrafficColumn,
+} from './modules/overview/overview.service';
+export {
+  getAnalyticsOverviewCore,
+  getSegmentDailySeriesCore,
+  getTrafficBreakdownCore,
+  OverviewService,
+  overviewService,
+  zGetMapDataInput,
+  zGetMetricsInput,
+  zGetTopEntryExitInput,
+  zGetTopEventsInput,
+  zGetTopGenericInput,
+  zGetTopGenericSeriesInput,
+  zGetTopLinkOutInput,
+  zGetTopPagesInput,
+  zGetUserJourneyInput,
+} from './modules/overview/overview.service';
+export type {
+  IGetPagesInput,
+  IPageConversionRow,
+  IPageTimeseriesRow,
+  ITopPage,
+} from './modules/overview/pages.service';
+export {
+  getEntryExitPagesCore,
+  getPageConversionsCore,
+  getPagePerformanceCore,
+  getTopPagesCore,
+  PagesService,
+  pagesService,
+} from './modules/overview/pages.service';
 // Dissolved from @openpanel/db's services/clients.service.ts (M6-002) —
 // packages/trpc's client router, apps/api's manage controller and mcp/utils
 // auth call these directly, the same way V1 reaches every other dissolved

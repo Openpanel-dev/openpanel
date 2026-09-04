@@ -21,6 +21,7 @@ import { integrationRouter } from './modules/integration/integration.rpc';
 import { notificationRouter } from './modules/notification/notification.rpc';
 import { onboardingRouter } from './modules/onboarding/onboarding.rpc';
 import { organizationRouter } from './modules/organization/organization.rpc';
+import { overviewRouter } from './modules/overview/overview.rpc';
 import { profileRouter } from './modules/profile/profile.rpc';
 import { projectRouter } from './modules/project/project.rpc';
 import { realtimeRouter } from './modules/realtime/realtime.rpc';
@@ -57,6 +58,7 @@ export const appRouter = createTRPCRouter({
   profile: profileRouter,
   group: groupRouter,
   chart: chartRouter,
+  overview: overviewRouter,
 });
 
 export type AppRouter = typeof appRouter;
