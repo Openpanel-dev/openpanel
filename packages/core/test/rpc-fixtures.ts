@@ -86,10 +86,10 @@ export function stubHttpCtx(
   const stub = { sessionCalls: 0 };
 
   const deps: AppDeps = {
-    db: {},
-    ch: {},
-    redis: {},
-    clients: {},
+    db: {} as AppDeps['db'],
+    ch: {} as AppDeps['ch'],
+    redis: {} as AppDeps['redis'],
+    clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     producers: createRecordingProducers(queues),
     produceIncomingEvent: () => Promise.resolve(),

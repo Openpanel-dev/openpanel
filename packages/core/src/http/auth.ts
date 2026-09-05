@@ -44,7 +44,10 @@ import { toIngestHeaders } from '../modules/ingest/src/headers';
 import { authenticateClient, type ClientAuthOptions } from './client-auth';
 import { requestContext } from './context';
 
-const INVALID_CLIENT_MESSAGE = 'Invalid client credentials';
+const UNAUTHORIZED = 401;
+/** V1's allow-list routers answered a 401 with this JSON envelope; its ingest
+ *  routers answered with the refusal message as plain text. Both port. */
+const UNAUTHORIZED_ERROR = 'Unauthorized';
 
 /**
  * The named plugin every module reaches through `defineRoutes`. It brings
@@ -66,16 +69,26 @@ export function authMacros(deps: AppDeps) {
       },
       clientAuth: (options: ClientAuthOptions) => ({
         async resolve({ body, ctx, status }) {
-          const client = await authenticateClient(
+          const result = await authenticateClient(
             deps,
             toIngestHeaders(ctx.headers),
             options,
             { ip: ctx.ip, body }
           );
-          if (!client) {
-            return status(401, INVALID_CLIENT_MESSAGE);
+          if (!result.ok) {
+            if (result.ingest) {
+              ctx.logger.warn(
+                { message: result.message },
+                'Invalid SDK request'
+              );
+              return status(UNAUTHORIZED, result.message);
+            }
+            return status(UNAUTHORIZED, {
+              error: UNAUTHORIZED_ERROR,
+              message: result.message,
+            });
           }
-          return { client };
+          return { client: result.client };
         },
       }),
     });

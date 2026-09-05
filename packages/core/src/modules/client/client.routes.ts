@@ -57,7 +57,7 @@ export const clientRoutes = defineRoutes((app) =>
         return { data: clients };
       },
       {
-        clientAuth: { allow: ['root'] },
+        clientAuth: { allow: ['root'], label: 'Manage' },
         query: listQuery,
         detail: { tags: ['Manage'] },
       }
@@ -78,7 +78,7 @@ export const clientRoutes = defineRoutes((app) =>
         return { data: found };
       },
       {
-        clientAuth: { allow: ['root'] },
+        clientAuth: { allow: ['root'], label: 'Manage' },
         params: idParams,
         detail: { tags: ['Manage'] },
       }
@@ -101,7 +101,7 @@ export const clientRoutes = defineRoutes((app) =>
         };
       },
       {
-        clientAuth: { allow: ['root'] },
+        clientAuth: { allow: ['root'], label: 'Manage' },
         body: zCreateClient,
         detail: { tags: ['Manage'] },
       }
@@ -123,7 +123,7 @@ export const clientRoutes = defineRoutes((app) =>
         return { data: updated };
       },
       {
-        clientAuth: { allow: ['root'] },
+        clientAuth: { allow: ['root'], label: 'Manage' },
         params: idParams,
         body: zUpdateClient,
         detail: { tags: ['Manage'] },
@@ -145,7 +145,7 @@ export const clientRoutes = defineRoutes((app) =>
         return { success: true };
       },
       {
-        clientAuth: { allow: ['root'] },
+        clientAuth: { allow: ['root'], label: 'Manage' },
         params: idParams,
         detail: { tags: ['Manage'] },
       }

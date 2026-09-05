@@ -2,7 +2,7 @@
 // methods themselves are exercised in gsc.service.test.ts.
 
 import { expect, test } from 'bun:test';
-import type { Buffers, JobCtx } from '../../context';
+import type { AppDeps, Buffers, JobCtx } from '../../context';
 import { createRecordingProducers } from '../../jobs/testing';
 import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
@@ -43,10 +43,10 @@ function stubJobCtx(gsc: Partial<GscService>, jobName = 'test'): JobCtx {
     misc: {} as Services['misc'],
   };
   return {
-    db: {},
-    ch: {},
-    redis: {},
-    clients: {},
+    db: {} as AppDeps['db'],
+    ch: {} as AppDeps['ch'],
+    redis: {} as AppDeps['redis'],
+    clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     logger: stubLogger(),
     queues: createRecordingProducers(queues).queues,
@@ -120,10 +120,10 @@ test('gscProjectBackfill delegates to runProjectBackfill', async () => {
 test('gscSync fans out one gscProjectSync enqueue per connected project', async () => {
   const producers = createRecordingProducers(queues);
   const ctx: JobCtx = {
-    db: {},
-    ch: {},
-    redis: {},
-    clients: {},
+    db: {} as AppDeps['db'],
+    ch: {} as AppDeps['ch'],
+    redis: {} as AppDeps['redis'],
+    clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     logger: stubLogger(),
     queues: producers.queues,

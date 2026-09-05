@@ -121,7 +121,10 @@ const enabledQueuesSchema = z.preprocess(
     )
 );
 
-function splitTokens(value: string): string[] {
+function splitTokens(value: string | undefined): string[] {
+  if (value === undefined) {
+    return [];
+  }
   return value
     .split(',')
     .map((token) => token.trim())
@@ -209,6 +212,30 @@ const envSchema = z.object({
    * was.
    */
   API_HOST: z.preprocess(blankToUndefined, z.string().optional()),
+  /**
+   * The CORS delegator's allowlist (apps/api/src/app.ts:107-110): the
+   * dashboard's own origin plus any extra comma-separated ones. Read once at
+   * boot, exactly as V1 did — changing an origin has always needed a restart.
+   */
+  DASHBOARD_URL: z.preprocess(blankToUndefined, z.string().optional()),
+  NEXT_PUBLIC_DASHBOARD_URL: z.preprocess(
+    blankToUndefined,
+    z.string().optional()
+  ),
+  API_CORS_ORIGINS: z.preprocess(blankToUndefined, z.string().optional()),
+  /**
+   * Signs the three GSC OAuth cookies. Always set in a real deployment
+   * (docs/ANSWERS.md §1.5); an unset value degrades to V1's `?? ''`.
+   */
+  COOKIE_SECRET: z.preprocess(
+    blankToUndefined,
+    z.string().optional().default('')
+  ),
+  /** Set on the demo deployment only. `validateSessionToken` short-circuits on
+   *  it, and `enforceAccess` bans mutations for it. */
+  DEMO_USER_ID: z.preprocess(blankToUndefined, z.string().optional()),
+  /** V1's `requestLoggingHook`: the client ids whose requests log ip/UA. */
+  ENABLE_VERBOSE_LOGGING: z.preprocess(blankToUndefined, z.string().optional()),
   SHUTDOWN_FORCE_EXIT_MS: z.coerce
     .number()
     .int()
@@ -219,6 +246,19 @@ const envSchema = z.object({
 export type Config = z.infer<typeof envSchema> & {
   [key: `${string}_CONCURRENCY`]: number | undefined;
 };
+
+/** The CORS delegator's origin allowlist, in V1's own order. */
+export function dashboardOrigins(config: Config): string[] {
+  return [
+    config.DASHBOARD_URL ?? config.NEXT_PUBLIC_DASHBOARD_URL,
+    ...splitTokens(config.API_CORS_ORIGINS),
+  ].filter((origin): origin is string => Boolean(origin));
+}
+
+/** V1's `ENABLE_VERBOSE_LOGGING`, a comma-separated client-id list. */
+export function verboseClientIds(config: Config): string[] {
+  return splitTokens(config.ENABLE_VERBOSE_LOGGING);
+}
 
 /** V1's default host rule (apps/api/src/index.ts). */
 export function apiHost(config: Config): string {

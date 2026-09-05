@@ -5,7 +5,7 @@
 // (side-effect-free) import.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
-import type { Buffers } from '../../context';
+import type { AppDeps, Buffers } from '../../context';
 
 const listProjectIdsForCadence = mock(async () => ['p1', 'p2']);
 const getProjectCreatedAt = mock(async () => null);
@@ -166,10 +166,10 @@ test('createInsightService binds every InsightService method', () => {
     child: () => logger,
   };
   const service = subject.createInsightService({
-    db: undefined,
-    ch: undefined,
-    redis: undefined,
-    clients: undefined,
+    db: undefined as unknown as AppDeps['db'],
+    ch: undefined as unknown as AppDeps['ch'],
+    redis: undefined as unknown as AppDeps['redis'],
+    clients: undefined as unknown as AppDeps['clients'],
     buffers: undefined as unknown as Buffers,
     logger,
     queues:

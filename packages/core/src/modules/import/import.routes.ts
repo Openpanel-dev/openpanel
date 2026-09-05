@@ -46,7 +46,7 @@ export const importRoutes = defineRoutes((app) =>
       }
     },
     {
-      clientAuth: { allow: ['read', 'root'] },
+      clientAuth: { allow: ['read', 'root'], label: 'Import' },
       body: z.array(z.unknown()),
       detail: {
         tags: ['Import'],

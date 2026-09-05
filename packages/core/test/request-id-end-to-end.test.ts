@@ -140,10 +140,10 @@ function stubDeps() {
   const lines: CapturedLine[] = [];
 
   const deps: AppDeps = {
-    db: {},
-    ch: {},
-    redis: {},
-    clients: {},
+    db: {} as AppDeps['db'],
+    ch: {} as AppDeps['ch'],
+    redis: {} as AppDeps['redis'],
+    clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     producers: producers as unknown as QueueProducerHandle,
     produceIncomingEvent: () => Promise.resolve(),

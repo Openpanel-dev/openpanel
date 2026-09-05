@@ -2,7 +2,7 @@
 // method itself is exercised in organization.service.test.ts.
 
 import { expect, test } from 'bun:test';
-import type { Buffers, JobCtx } from '../../context';
+import type { AppDeps, Buffers, JobCtx } from '../../context';
 import { createRecordingProducers } from '../../jobs/testing';
 import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
@@ -49,10 +49,10 @@ function stubJobCtx(
     misc: {} as Services['misc'],
   };
   return {
-    db: {},
-    ch: {},
-    redis: {},
-    clients: {},
+    db: {} as AppDeps['db'],
+    ch: {} as AppDeps['ch'],
+    redis: {} as AppDeps['redis'],
+    clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     logger: stubLogger(),
     queues: createRecordingProducers(queues).queues,

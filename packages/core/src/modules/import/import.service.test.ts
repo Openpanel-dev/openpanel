@@ -5,7 +5,7 @@
 // (side-effect-free) import.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
-import type { Buffers } from '../../context';
+import type { AppDeps, Buffers } from '../../context';
 import { createRecordingProducers } from '../../jobs/testing';
 import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
@@ -160,10 +160,10 @@ test('updateImportStatus marks a failed step with its error message', async () =
 test('ImportService.enqueue adds the import job onto the import queue', async () => {
   const producers = createRecordingProducers(queues);
   const service = createImportService({
-    db: {},
-    ch: {},
-    redis: {},
-    clients: {},
+    db: {} as AppDeps['db'],
+    ch: {} as AppDeps['ch'],
+    redis: {} as AppDeps['redis'],
+    clients: {} as AppDeps['clients'],
     buffers: {} as Buffers,
     logger: stubLogger(),
     queues: producers.queues,

@@ -16,26 +16,41 @@
 // Both routes carry the whole chain because V1's `fastify.addHook` calls are
 // plugin-scoped, so `GET /track/device-id` goes through it too.
 //
-// NAMED GAPS, same as profile.routes.ts: not yet reachable — main.ts does not
-// mount `publicApiRoutes` until a real `AppDeps` exists. V1's
-// `subscriptionHook` (the wind-down gate) is NOT ported here: it belongs to
-// the subscription/organization modules and reads `process.env.SELF_HOSTED`,
-// which core does not do. It stays live on V1's router.
+// M9-004 mounted this surface and closed the two gaps its header used to
+// record. V1's `subscriptionHook` (the wind-down gate) is now the last link in
+// the chain — `duplicate -> clientAuth -> isBot -> subscription`, V1's
+// registration order exactly — with `selfHosted` read off `AppDeps.config`
+// instead of `process.env`. And `POST /event`, the legacy compat route ADR-015
+// entry 1 was reversed to KEEP, is here beside `/track`: same hook chain plus
+// the per-client usage counter the deferred removal decision needs, recorded
+// after authentication (so a label can only ever be a client id that exists)
+// and before the hooks that can short-circuit (so a client whose events are
+// dropped as bot/wind-down traffic still counts as a client that would break
+// if `/event` disappeared).
 
 import type { AppDeps, HttpCtx } from '../../context';
 import { defineRoutes } from '../../http/define';
+import type { DeprecatedPostEventPayload } from './ingest.constants';
 import { zTrackHandlerPayload } from './ingest.constants';
 import {
   checkIngestBot,
   fetchDeviceIdentity,
+  ingestLegacyEvent,
   ingestTrack,
   isDuplicateIngestRequest,
+  isIngestionWoundDown,
   type TrackOutcome,
 } from './ingest.service';
 import { toIngestHeaders } from './src/headers';
+import { recordLegacyEventRequest } from './src/ingest.metrics';
 
 const TAGS = ['Track'];
+const LEGACY_EVENT_TAGS = ['Event'];
 const DUPLICATE_BODY = 'Duplicate event';
+/** V1 answers 202 with `{blocked:true}` rather than 402/403 — see
+ *  `isIngestionWoundDown`. */
+const WIND_DOWN_STATUS = 202;
+const ACCEPTED_STATUS = 202;
 
 type StatusFn = (code: number, body?: unknown) => unknown;
 
@@ -100,6 +115,28 @@ async function botGuard({
   }
 }
 
+/** V1's `subscriptionHook`, the last `preHandler` on both ingest routers. */
+function windDownGuard(deps: AppDeps) {
+  return async ({
+    client,
+    ctx,
+    status,
+  }: {
+    client: { projectId: string | null };
+    ctx: HttpCtx;
+    status: StatusFn;
+  }) => {
+    const blocked = await isIngestionWoundDown({
+      projectId: client.projectId,
+      selfHosted: deps.config.selfHosted,
+      logger: ctx.logger,
+    });
+    if (blocked) {
+      return status(WIND_DOWN_STATUS, { blocked: true });
+    }
+  };
+}
+
 export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
   app.guard(
     {
@@ -146,7 +183,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
           {
             clientAuth: { ingest: true },
             body: zTrackHandlerPayload,
-            beforeHandle: botGuard,
+            beforeHandle: [botGuard, windDownGuard(deps)],
             detail: {
               tags: TAGS,
               description:
@@ -184,11 +221,53 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
           },
           {
             clientAuth: { ingest: true },
-            beforeHandle: botGuard,
+            beforeHandle: [botGuard, windDownGuard(deps)],
             detail: {
               tags: TAGS,
               description:
                 'Get or generate a stable device ID and session ID for the current visitor.',
+            },
+          }
+        )
+        .post(
+          '/event',
+          async ({ body, client, ctx, status, timestamp }) => {
+            const outcome = await ingestLegacyEvent(
+              {
+                projectId: client.projectId,
+                clientIp: ctx.ip,
+                headers: toIngestHeaders(ctx.headers),
+                clientSecretAuth: client.secretPresented,
+                timestamp,
+                body: body as DeprecatedPostEventPayload | null,
+              },
+              {
+                buffers: ctx.buffers,
+                produceIncomingEvent: deps.produceIncomingEvent,
+              }
+            );
+
+            if (outcome.status === 'missing-project-id') {
+              return status(400, 'missing origin');
+            }
+
+            return status(ACCEPTED_STATUS, 'ok');
+          },
+          {
+            clientAuth: { ingest: true },
+            // V1's own order: the usage metric is a `preHandler` registered
+            // after `clientHook` and before `isBotHook`/`subscriptionHook`.
+            beforeHandle: [
+              ({ client }: { client: { id: string } }) => {
+                recordLegacyEventRequest(client.id);
+              },
+              botGuard,
+              windDownGuard(deps),
+            ],
+            detail: {
+              tags: LEGACY_EVENT_TAGS,
+              description:
+                'Deprecated direct event ingestion endpoint. Use /track instead.',
             },
           }
         )

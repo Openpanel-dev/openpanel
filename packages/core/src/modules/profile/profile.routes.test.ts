@@ -10,6 +10,7 @@ import { stubAppDeps } from '../../../test/http-fixtures';
 import type {
   AuthenticatedClient,
   ClientAuthOptions,
+  ClientAuthResult,
 } from '../../http/client-auth';
 import type {
   AdjustProfilePropertyResult,
@@ -26,7 +27,7 @@ const CLIENT: AuthenticatedClient = {
 };
 const GEO = { country: 'SE', city: 'Stockholm' };
 
-let client: AuthenticatedClient | null = CLIENT;
+let clientResult: ClientAuthResult = { ok: true, client: CLIENT };
 let adjustResult: AdjustProfilePropertyResult = {
   status: 'ok',
   profileId: 'prof-1',
@@ -34,7 +35,7 @@ let adjustResult: AdjustProfilePropertyResult = {
 
 const authenticateClient = mock(
   (_deps: unknown, _headers: Headers, _options: ClientAuthOptions) =>
-    Promise.resolve(client)
+    Promise.resolve(clientResult)
 );
 const identifyProfile = mock(
   (
@@ -68,8 +69,8 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  client = CLIENT;
   adjustResult = { status: 'ok', profileId: 'prof-1' };
+  clientResult = { ok: true, client: CLIENT };
   authenticateClient.mockClear();
   identifyProfile.mockClear();
   adjustProfileProperty.mockClear();
@@ -140,7 +141,7 @@ test('adjust results map to V1 status codes and bodies', async () => {
 });
 
 test('a client without a project answers 400 before touching the service', async () => {
-  client = { ...CLIENT, projectId: null };
+  clientResult = { ok: true, client: { ...CLIENT, projectId: null } };
 
   const response = await post('/profile', { profileId: 'prof-1' });
 
@@ -150,7 +151,7 @@ test('a client without a project answers 400 before touching the service', async
 });
 
 test('every /profile route requires client credentials', async () => {
-  client = null;
+  clientResult = { ok: false, ingest: true, message: 'Missing client id' };
 
   for (const path of ['/profile', '/profile/increment', '/profile/decrement']) {
     const response = await post(path, { profileId: 'prof-1' });

@@ -280,10 +280,10 @@ async function main() {
   });
 
   const deps: AppDeps = {
-    db: undefined,
-    ch: undefined,
-    redis: undefined,
-    clients: undefined,
+    db: undefined as unknown as AppDeps['db'],
+    ch: undefined as unknown as AppDeps['ch'],
+    redis: undefined as unknown as AppDeps['redis'],
+    clients: undefined as unknown as AppDeps['clients'],
     buffers,
     producers,
     produceIncomingEvent,

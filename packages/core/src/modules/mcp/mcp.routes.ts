@@ -11,6 +11,10 @@
 // Rate limiting (V1: 60/min via Fastify's activateRateLimiter) is not wired
 // here yet — nothing reaches this route until dashboardRoutes mounts, so it
 // is a port task for whenever that happens, not a gap specific to MCP.
+//
+// The JSON-RPC body comes off the CONTEXT, not from `request.json()`: Elysia
+// has already consumed the stream by the time the handler runs, and reading it
+// twice throws "Body already used" (M9-004, caught by the auth contracts).
 
 import { defineRoutes } from '../../http/define';
 
@@ -19,15 +23,13 @@ function loadMcpService() {
 }
 
 export const mcpRoutes = defineRoutes((app) =>
-  app.post('/mcp', async ({ request, set }) => {
+  app.post('/mcp', async ({ body, query, request, set }) => {
     const { extractToken, handleStatelessMcpRequest } = await loadMcpService();
 
-    const url = new URL(request.url);
     const token = extractToken(
-      Object.fromEntries(url.searchParams),
+      query as Record<string, string>,
       request.headers.get('authorization') ?? undefined
     );
-    const body = await request.json();
 
     const { status, body: responseBody } = await handleStatelessMcpRequest(
       token,

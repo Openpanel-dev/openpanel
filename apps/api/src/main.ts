@@ -1,6 +1,7 @@
-// V2 boot entrypoint (ADR-007 §7 "apps/api — three files"; TARGET_ARCHITECTURE
-// §7 main.ts boot order). Runs on Bun; the V1 Fastify boot at `./index.ts`
-// keeps serving the golden harness untouched until it is deleted at M9-004.
+// THE boot entrypoint (ADR-007 §7 "apps/api — three files"; TARGET_ARCHITECTURE
+// §7 main.ts boot order). Runs on Bun. M9-004 deleted the V1 Fastify boot
+// (`./index.ts` + `./app.ts`), so this file is the only way the API starts and
+// `app.ts`'s mounting half lives in `buildHttpApp` below.
 //
 // THE ROLE TABLE (TARGET_ARCHITECTURE §7). One process, three shapes:
 //
@@ -20,30 +21,40 @@
 // consumers start (cloud runs 4 replicas on `events` and 6 on the rest,
 // docs/ANSWERS.md §1.3), and an unknown token there fails boot the same way.
 //
-// db/ch/clients are not on `AppDeps` yet — their types stay the `unknown`
-// stubs `context.ts` declares until P3/P4 land the real clients — so the
-// mounted HTTP surface is still ops-only; `dashboardRoutes`/`publicApiRoutes`
-// land at M9-004. The buffers are real from M8-001, the producers from
-// M9-001, and the workers/schedulers/consumer from here.
+// THE MOUNTED SURFACE (M9-004). `AppDeps` now carries the real db, ClickHouse,
+// Redis and outbound clients, and `buildHttpApp` hangs all four V1 scopes on
+// one Bun.serve: the root chain (CORS -> requestId -> timestamp -> ip -> the
+// error handler, in V1's order), the ops surface, the public API, the
+// dashboard surface and `/trpc`. A role that only consumes serves none of the
+// last three — V1's worker never did either.
 
 process.env.TZ = 'UTC';
 
+import { createHmac } from 'node:crypto';
 import {
   type AppDeps,
   BULL_BOARD_BASE_PATH,
   type BufferDeps,
   bullBoardRoutes,
+  COOKIE_OPTIONS,
+  corsDelegator,
   createBuffers,
+  createClients,
   createInitialSalts,
   createProducers,
+  createTrpcFetchHandler,
+  dashboardRoutes,
   debugRoutes,
   enableEventsHeartbeat,
+  errorHandler,
+  type HttpCtx,
   incomingEvent,
   ingestConsumerMetrics,
   type KafkaConsumerHandle,
   loadIncomingEventDeps,
   markEventsActivity,
   opsRoutes,
+  publicApiRoutes,
   type QueueDefinition,
   type QueueProducerHandle,
   queueKey,
@@ -53,6 +64,7 @@ import {
   registerDefaultMetrics,
   registerQueueMetrics,
   registerSessionScrapeMetrics,
+  requestLogging,
   type SessionMetricsRedis,
   sessionEndEnqueueOptions,
   sessionEndJobPayload,
@@ -60,8 +72,11 @@ import {
   startKafkaEventsConsumer,
   startSchedulers,
   startWorkers,
+  TRPC_ENDPOINT,
   type WorkerHandle,
 } from '@openpanel/core';
+import { ch } from '@openpanel/db/src/clickhouse/client';
+import { db } from '@openpanel/db/src/prisma-client';
 import {
   assertKafkaConfigured,
   createKafkaEventsConsumer,
@@ -75,13 +90,17 @@ import {
   produceIncomingEvent,
 } from '@openpanel/queue';
 import { getRedisCache, getRedisPub, getRedisQueue } from '@openpanel/redis';
+import { appRouter } from '@openpanel/trpc';
+import { Elysia } from 'elysia';
 import pino from 'pino';
 import {
   type Config,
   concurrencyOverride,
+  dashboardOrigins,
   isProduction,
   KAFKA_QUEUE_TOKEN,
   loadConfig,
+  verboseClientIds,
 } from './config/env';
 
 // The registry key and the Redis name are the same string for all seven queues
@@ -117,6 +136,9 @@ const logger = pino({ name: 'api', level: config.LOG_LEVEL });
 
 /** ROLE=api produces and serves; it never consumes. */
 const roleConsumes = config.ROLE !== 'api';
+/** ROLE=worker consumes and never serves a URL surface, exactly as V1's
+ *  worker did (it ran bull-board, /debug/cron and /metrics, nothing else). */
+const roleServesHttp = config.ROLE !== 'worker';
 const workersEnabled = roleConsumes && !config.DISABLE_WORKERS;
 
 /**
@@ -166,13 +188,16 @@ function findBullQueue(producers: QueueProducerHandle, name: string) {
 function buildDeps(): AppDeps {
   const producers = buildProducerHandle();
   return {
-    // db/ch/redis/clients are `unknown` stubs in context.ts until P3/P4 land
-    // the real clients — reading one before its type lands is meant to be a
-    // compile error, not a runtime `undefined`.
-    db: undefined,
-    ch: undefined,
-    redis: undefined,
-    clients: undefined,
+    // The four boot handles. `packages/db` and `packages/redis` still own
+    // their own singletons and read their own env (ADR-007 §7's accepted
+    // pragmatic deviation), so these are references to those, not new
+    // connections: one Prisma client, one round-robin ClickHouse client and
+    // the cache Redis, handed down so a service reaches them through its
+    // request-scoped `Ctx` instead of importing them (TECH_DEBT §4).
+    db,
+    ch,
+    redis: getRedisCache(),
+    clients: createClients(),
     buffers: createBuffers(bufferDeps(producers)),
     producers,
     // @openpanel/queue's Kafka producer, injected because core cannot import
@@ -303,8 +328,90 @@ function registerConsumerMetrics(deps: AppDeps): void {
   );
 }
 
+/**
+ * The three cookies the GSC OAuth flow signs (gsc.rpc.ts's `signed: true`).
+ * V1 signed them through `@fastify/cookie`'s `secret`; Elysia takes the same
+ * list, and `signCookie` below produces the identical `value.<b64 hmac>` form
+ * on the tRPC side, which writes cookies through the fetch adapter's
+ * `resHeaders` rather than through Elysia (ADR-009 constraint 1).
+ */
+const SIGNED_COOKIE_NAMES = [
+  'gsc_oauth_state',
+  'gsc_code_verifier',
+  'gsc_project_id',
+];
+
+const BASE64_TRAILING_PADDING = /=+$/;
+
+/** Elysia's `signCookie` (dist/utils: HMAC-SHA256, base64, padding stripped),
+ *  synchronously — `TrpcContextOptions.signCookie` is a sync signature. */
+function signCookie(value: string): string {
+  const signature = createHmac('sha256', config.COOKIE_SECRET)
+    .update(value)
+    .digest('base64')
+    .replace(BASE64_TRAILING_PADDING, '');
+  return `${value}.${signature}`;
+}
+
+/**
+ * V1's `app.ts`, merged into the one entrypoint: the four Fastify scopes
+ * become one Elysia tree.
+ *
+ * THE ROOT CHAIN ORDER IS THE CONTRACT (ADR-002 "behaviour that must be
+ * preserved explicitly" 2): cors -> requestId -> timestamp -> ip, before every
+ * route-level hook. `requestLogging` brings `requestContext` — and therefore
+ * those three hooks — with it, and the error handler is registered on the same
+ * root so it covers every scope below.
+ *
+ * `ROLE=worker` mounts NONE of the three URL surfaces: V1's worker served only
+ * bull-board, the debug routes and `/metrics`, and a worker replica answering
+ * `/track` would take traffic no load balancer routes to it.
+ */
 async function buildHttpApp(deps: AppDeps) {
-  const app = opsRoutes(deps);
+  const app = new Elysia({
+    // Elysia throws on an empty `secrets`, where V1 passed `secret: ''` to
+    // @fastify/cookie and simply produced signatures nobody could rely on. A
+    // deployment without COOKIE_SECRET therefore gets unsigned cookies rather
+    // than a dead process — the same outcome V1 had, arrived at explicitly.
+    cookie: config.COOKIE_SECRET
+      ? { secrets: config.COOKIE_SECRET, sign: SIGNED_COOKIE_NAMES }
+      : {},
+  })
+    .use(corsDelegator({ dashboardOrigins: dashboardOrigins(config) }))
+    .use(errorHandler(deps, { production: isProduction(config) }))
+    .use(requestLogging(deps, { verboseClientIds: verboseClientIds(config) }))
+    .use(opsRoutes(deps));
+
+  if (roleServesHttp) {
+    const trpc = createTrpcFetchHandler({
+      router: appRouter,
+      logger,
+      cookieOptions: COOKIE_OPTIONS,
+      simulateLatency: !isProduction(config),
+      signCookie,
+      demoMode: Boolean(config.DEMO_USER_ID),
+    });
+
+    app
+      .use(publicApiRoutes(deps))
+      .use(dashboardRoutes(deps))
+      // `.all('/trpc/*')`, never `/trpc/:path`: the fetch adapter derives the
+      // procedure by `pathname.slice(endpoint.length)` and a batched request
+      // puts commas in that segment (ADR-009).
+      //
+      // `parse: 'none'` is load-bearing: the adapter reads the body off the
+      // `Request` itself, and Elysia's own body parsing would have consumed
+      // the stream first — every tRPC mutation then fails with
+      // "Body already used".
+      .all(
+        `${TRPC_ENDPOINT}/*`,
+        ({ request, ctx }: { request: Request; ctx: HttpCtx }) =>
+          trpc(request, ctx),
+        { parse: 'none' }
+      );
+
+    logger.info('Public API, dashboard and /trpc surfaces mounted');
+  }
 
   // Local-only: trigger a cron job on demand instead of waiting for its
   // schedule. Two conditions, both V1's: `NODE_ENV != production`, because it

@@ -12,15 +12,19 @@ import type { IncomingEventProducer } from './modules/ingest/src/incoming-event'
 import { createServices, type Services } from './services';
 import type { CookieJar, CookieOptions } from './shared/cookie';
 
-// Handles core does not own yet. Each real type arrives with the phase that
-// builds it (db/ch/redis P3, clients P4); they are named now so AppDeps and
-// Ctx are written once in their final shape and replacing an alias moves no
-// field. `unknown` is deliberate — reading one before its type lands is a
-// compile error rather than a silent `any`.
-export type Db = unknown;
-export type ClickHouseClient = unknown;
-export type RedisClient = unknown;
-export type ServiceClients = unknown;
+// The four boot handles, landed at M9-004 when main.ts became the only
+// entrypoint and had to build a real `AppDeps` for the mounted route
+// surfaces. Each is a TYPE QUERY over the module that constructs the client,
+// so the alias cannot drift from what `main.ts` actually passes; all four are
+// type-only, so core still imports no database at runtime and `bun test`
+// still runs offline.
+export type Db = typeof import('@openpanel/db/src/prisma-client').db;
+export type ClickHouseClient =
+  typeof import('@openpanel/db/src/clickhouse/client').ch;
+export type RedisClient = ReturnType<
+  typeof import('@openpanel/redis').getRedisCache
+>;
+export type ServiceClients = import('./clients/create-clients').ServiceClients;
 
 // Landed at M8-001: built once by `createBuffers(deps)` in main.ts, never a
 // module singleton.

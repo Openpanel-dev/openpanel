@@ -58,6 +58,10 @@ export {
 } from './clients/ai/providers';
 export type { WinBackPitchInput } from './clients/ai/win-back';
 export { generateWinBackPitch } from './clients/ai/win-back';
+// The `clients` handle on AppDeps (M9-004). main.ts builds it once and hands
+// it to `AppDeps`, the same way it builds the buffers and the producers.
+export type { ServiceClients } from './clients/create-clients';
+export { createClients } from './clients/create-clients';
 export type { EmailData, EmailTemplate } from './clients/email';
 export { sendEmail } from './clients/email';
 // Dissolved from @openpanel/geo (M4-004) — apps/api's ingest and tools
@@ -145,7 +149,14 @@ export { createCtx, extendCtx } from './context';
 // reads its own UI assets off disk before it can register.
 export { BULL_BOARD_BASE_PATH, bullBoardRoutes } from './http/bull-board';
 export { requestContext, requestLogging } from './http/context';
+// The root chain `main.ts` hangs every surface on (M9-004): V1's CORS
+// delegator and V1's error handler, both ported and both taking their
+// deployment-derived values as arguments — core reads no environment.
+export type { CorsOptions } from './http/cors';
+export { CORS_PRIVATE_PATHS, corsDelegator } from './http/cors';
 export { debugRoutes } from './http/debug.routes';
+export type { ErrorHandlerOptions } from './http/errors';
+export { errorHandler } from './http/errors';
 // The two runtime seams over the registry (ADR-005). `main.ts` builds
 // producers in every role and workers only where the role consumes; both take
 // the registry as data, so neither opens a connection until it is called.

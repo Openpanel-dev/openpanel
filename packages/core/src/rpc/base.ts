@@ -13,6 +13,7 @@ import superjson from 'superjson';
 import { ZodError, z } from 'zod';
 import type { HttpCtx, Session } from '../context';
 import type { Logger } from '../logger';
+import { EMPTY_SESSION } from '../modules/auth/src/login-session';
 import { type CookieOptions, serializeCookie } from '../shared/cookie';
 
 /**
@@ -170,13 +171,24 @@ export async function makeTrpcContext(
     );
   };
 
-  // Prototype-chained onto the HttpCtx, never spread: `{ ...ctx }` reads
-  // `services` and forces the build the lazy getter exists to avoid.
-  const trpcCtx = Object.create(ctx) as TrpcContext;
+  // FLAT, not prototype-chained onto the HttpCtx. tRPC merges middleware
+  // context with `{...ctx, ...next.ctx}`, which copies own enumerable
+  // properties only — so an inherited `logger`/`db`/`queues` disappears the
+  // first time a middleware calls `next({ ctx })`, and the next read of it is
+  // a TypeError in the middle of a mutation. Descriptors are COPIED rather
+  // than values read, so `services` stays a getter here; tRPC's own spread is
+  // what eventually forces it, and only on the RPC path.
+  const trpcCtx = flattenCtx(ctx) as unknown as TrpcContext;
   Object.defineProperties(trpcCtx, {
     // Resolved once here, shadowing HttpCtx's resolver. One HTTP request is
     // one `createContext` call, so a batched request still costs one lookup.
-    session: { value: await ctx.session(), enumerable: true },
+    // `HttpCtx.session()` answers `null` for "nobody is signed in" (see
+    // http/session.ts); V1's routers read `ctx.session.userId`, so the empty
+    // shape — not `null` — is what a procedure must see.
+    session: {
+      value: (await ctx.session()) ?? EMPTY_SESSION,
+      enumerable: true,
+    },
     // The fetch adapter is handed a `Request`, which carries no peer address.
     // Elysia's `server.requestIP()` is the source when the dashboard scope
     // mounts; until then the limiter falls back to its shared bucket.
@@ -185,6 +197,23 @@ export async function makeTrpcContext(
     setCookie: { value: setCookie, enumerable: true },
   });
   return trpcCtx;
+}
+
+/** Own + inherited property descriptors, own-first, on one flat object. */
+function flattenCtx(ctx: HttpCtx): Record<string, unknown> {
+  const flat: Record<string, unknown> = {};
+  let source: object | null = ctx;
+  while (source && source !== Object.prototype) {
+    for (const [key, descriptor] of Object.entries(
+      Object.getOwnPropertyDescriptors(source)
+    )) {
+      if (!Object.hasOwn(flat, key)) {
+        Object.defineProperty(flat, key, descriptor);
+      }
+    }
+    source = Object.getPrototypeOf(source);
+  }
+  return flat;
 }
 
 /** The subset of the Redis cache the RPC layer uses. */

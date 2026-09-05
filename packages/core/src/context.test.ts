@@ -54,10 +54,10 @@ function stubDeps(): {
     scopes,
     scoped,
     deps: {
-      db: {},
-      ch: {},
-      redis: {},
-      clients: {},
+      db: {} as AppDeps['db'],
+      ch: {} as AppDeps['ch'],
+      redis: {} as AppDeps['redis'],
+      clients: {} as AppDeps['clients'],
       buffers: {} as Buffers,
       producers: {
         ...producers,

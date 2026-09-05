@@ -7,20 +7,15 @@
 // land at P8 without redesigning the API it replaces — no new query logic,
 // every call below is the same function V1's controller calls.
 //
-// NAMED GAP, same as the rest of `publicApiRoutes`: not yet reachable.
-// `authenticateClient` (http/client-auth.ts) is a P8 stub that always
-// returns null, so `clientAuth` 401s every request until it is filled in,
-// and main.ts does not mount `publicApiRoutes` until a real `AppDeps`
-// exists. `allow: ['read', 'root']` mirrors V1's rule (utils/auth.ts's
+// `allow: ['read', 'root']` mirrors V1's rule (utils/auth.ts's
 // `validateExportRequest`, shared by both `/export` and `/insights`: a
 // `write`-type client may not read analytics back out).
 //
-// Also not ported here (ADR-003, "behaviour that must be re-implemented
-// deliberately"): the `parseQueryString` pre-pass V1 runs as a Fastify
-// `preValidation` hook, coercing JSON-encoded array/object querystring values
-// before zod sees them. It is an Elysia lifecycle-hook task of its own, not
-// specific to this module, and every zod schema below is written to be the
-// one V1 validates AFTER that hook runs.
+// M9-004 mounted this surface and landed the missing half: V1's
+// `parseQueryString` pre-pass is now `http/query.ts`'s `transform` hook,
+// registered LOCAL on both surfaces below. Every zod schema here is the one V1
+// validates AFTER that hook runs, so without it a plain `?limit=5` fails
+// validation.
 //
 // `listDashboards`/`listReports` (insights.controller.ts) are mounted under
 // `/manage/projects/:projectId/dashboards[...]` in V1 (manage.router.ts) —
@@ -47,6 +42,8 @@ import {
 import { z } from 'zod';
 import type { ClientType } from '../../http/client-auth';
 import { defineRoutes } from '../../http/define';
+import { parseQueryStringTransform } from '../../http/query';
+import { HttpError } from '../../shared/errors';
 import {
   loadDb,
   resolveExportProjectId,
@@ -56,7 +53,10 @@ import {
 
 const EXPORT_TAGS = ['Export'];
 const INSIGHTS_TAGS = ['Insights'];
-const CLIENT_ALLOW: { allow: ClientType[] } = { allow: ['read', 'root'] };
+const CLIENT_ALLOW: { allow: ClientType[]; label: 'Export' } = {
+  allow: ['read', 'root'],
+  label: 'Export',
+};
 
 // REST querystrings can't carry arrays of objects natively. Callers pass
 // `filters` as a URL-encoded JSON string; decoded here (ported verbatim from
@@ -161,15 +161,18 @@ const zExportCharts = zReport
 
 export const exportRoutes = defineRoutes((app) =>
   app
+    // V1's `preValidation` coercion hook, LOCAL to this surface (see
+    // http/query.ts).
+    .onTransform(parseQueryStringTransform)
     .get(
       '/export/events',
-      async ({ query, client, status }) => {
+      async ({ query, client }) => {
         const resolved = await resolveExportProjectId(client, query);
         if (!resolved.ok) {
-          return status(resolved.status, {
-            error: 'Error',
-            message: resolved.message,
-          });
+          // V1's controller threw an `HttpError` and let the error handler
+          // shape it; the body is `{status, message}` because `HttpError.error`
+          // is undefined and JSON drops it.
+          throw new HttpError(resolved.message, { status: resolved.status });
         }
         const { getEventList, getEventsCount } = await loadDb();
         const {
@@ -229,13 +232,13 @@ export const exportRoutes = defineRoutes((app) =>
     )
     .get(
       '/export/charts',
-      async ({ query, client, status }) => {
+      async ({ query, client }) => {
         const resolved = await resolveExportProjectId(client, query);
         if (!resolved.ok) {
-          return status(resolved.status, {
-            error: 'Error',
-            message: resolved.message,
-          });
+          // V1's controller threw an `HttpError` and let the error handler
+          // shape it; the body is `{status, message}` because `HttpError.error`
+          // is undefined and JSON drops it.
+          throw new HttpError(resolved.message, { status: resolved.status });
         }
         const { ChartEngine, getSettingsForProject } = await loadDb();
         const { timezone } = await getSettingsForProject(resolved.projectId);
@@ -496,6 +499,7 @@ const zGscOpportunitiesQuery = zDateRange.extend({
 
 export const insightsRoutes = defineRoutes((app) =>
   app
+    .onTransform(parseQueryStringTransform)
     .get(
       '/insights/:projectId/overview',
       async ({ params, query, client }) => {

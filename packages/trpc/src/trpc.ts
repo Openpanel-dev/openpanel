@@ -1,31 +1,27 @@
-// V1's tRPC surface, rebased onto @openpanel/core's RPC base (ADR-009).
+// The tRPC procedure stack, on @openpanel/core's RPC base (ADR-009).
 //
-// There is exactly ONE tRPC instance in the repo now: `initTRPC` is called in
+// There is exactly ONE tRPC instance in the repo: `initTRPC` is called in
 // core/src/rpc/base.ts and nowhere else, so the transformer, the
-// errorFormatter, `Meta` and the context type are single-sourced. V1 keeps its
-// Fastify adapter and V2 gets `createTrpcFetchHandler`; both mount routers
-// built from the same `procedure`.
+// errorFormatter, `Meta` and the context type are single-sourced. M9-004
+// deleted the Fastify adapter and its `createContext` with the V1 boot; the
+// one mount left is `createTrpcFetchHandler`, called from `main.ts`.
 //
 // What still lives here is what core cannot import without pulling a database
 // into a package that must stay bootable with none: the procedures below need
 // `runWithAlsSession` and the access ladder's real lookups. They move into
-// core with auth at P6, at which point this file is a re-export.
+// core with auth at P10, at which point this file is a re-export.
 
 import {
-  COOKIE_OPTIONS,
-  type Ctx,
   createCacheMiddleware,
   createRateLimitMiddleware,
   middleware,
   procedure,
-  type QueueProducers,
   type RpcCache,
   type TrpcContext,
 } from '@openpanel/core';
-import { runWithAlsSession, type SessionValidationResult } from '@openpanel/db';
+import { runWithAlsSession } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 import { TRPCError } from '@trpc/server';
-import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { has } from 'ramda';
 import { getOrganizationAccess, requireProjectAccess } from './access';
 import { TRPCForbiddenError } from './errors';
@@ -36,145 +32,6 @@ export { createTRPCRouter } from '@openpanel/core';
 
 /** What a procedure receives. Core's type, not a second declaration. */
 export type Context = TrpcContext;
-
-/** What apps/api's hooks decorate the request with (apps/api/src/app.ts). */
-type FastifyRequestWithSession = CreateFastifyContextOptions['req'] & {
-  session: SessionValidationResult;
-  cookies?: Record<string, string | undefined>;
-  clientIp?: string;
-};
-
-const ARTIFICIAL_LATENCY_SPREAD_MS = 500;
-const ARTIFICIAL_LATENCY_MAX_MS = 200;
-
-/**
- * The V1 Fastify adapter's context builder.
- *
- * It is deliberately not core's `makeTrpcContext`: that one writes cookies
- * through the fetch adapter's `resHeaders`, while Fastify's reply is the
- * guaranteed path out here, and V1's session is already resolved by the
- * `onRequest` hook in apps/api/src/app.ts. Everything else — the option
- * precedence, the artificial latency, the fields — is V1's, unchanged.
- *
- * V2's builder is `makeTrpcContext`; this one dies with `apps/worker` at P9.
- */
-export async function createContext({
-  req,
-  res,
-}: CreateFastifyContextOptions): Promise<Context> {
-  const request = req as FastifyRequestWithSession;
-  // @fastify/cookie decorates the reply, and this package does not depend on
-  // fastify, so the decoration is named here rather than suppressed.
-  const reply = res as unknown as {
-    setCookie(
-      name: string,
-      value: string,
-      options: Record<string, unknown>
-    ): void;
-  };
-
-  const setCookie = (
-    key: string,
-    value: string,
-    options: { maxAge?: number; signed?: boolean } = {}
-  ) => {
-    reply.setCookie(key, value, {
-      maxAge: options.maxAge,
-      signed: options.signed,
-      ...COOKIE_OPTIONS,
-    });
-  };
-
-  if (process.env.NODE_ENV !== 'production') {
-    await new Promise((resolve) =>
-      setTimeout(
-        () => resolve(1),
-        Math.min(
-          Math.random() * ARTIFICIAL_LATENCY_SPREAD_MS,
-          ARTIFICIAL_LATENCY_MAX_MS
-        )
-      )
-    );
-  }
-
-  const cookies = request.cookies;
-
-  return {
-    ...v1CtxScope(req),
-    headers: toHeaders(req.headers),
-    // The attribution ip, as core defines it (ipHook / getClientIpFromHeaders).
-    // The limiter must not key on it - that is what `remoteAddress` is for.
-    ip: request.clientIp ?? '',
-    remoteAddress: req.socket?.remoteAddress,
-    demoMode: !!process.env.DEMO_USER_ID,
-    cookies: { get: (name: string) => cookies?.[name] },
-    setCookie,
-    // Already resolved by app.ts's onRequest hook. Under V2 the fetch
-    // adapter's context builder resolves it instead; either way a procedure
-    // reads a value, exactly as V1's routers always have.
-    session: request.session,
-  };
-}
-
-/**
- * The `Ctx` half of the context under V1.
- *
- * `db`/`ch`/`redis`/`clients` are core's `unknown` stubs until P3-P4 wire the
- * real clients, and V1's routers reach for their own singletons regardless —
- * including the buffers, which V1 reaches through `@openpanel/db`'s delegate
- * (M8-001) rather than through this context. `queues` and `services` throw rather than returning an empty
- * object: a V1 router that reached for either through core would otherwise
- * silently do nothing (`queues`) or hit `undefined` (`services`) instead of
- * the loud error that tells it to reach `@openpanel/db`/`@openpanel/core`
- * directly, as the rest of V1 does. `services` is not built via core's
- * `createServices` here on purpose — that factory is deliberately absent from
- * the curated barrel (index.test.ts), so nothing outside `apps/api`'s
- * `main.ts` constructs a `Services` container.
- */
-function v1CtxScope(req: CreateFastifyContextOptions['req']): Ctx {
-  return {
-    db: undefined,
-    ch: undefined,
-    redis: undefined,
-    clients: undefined,
-    buffers: undefined as unknown as Ctx['buffers'],
-    logger: req.log,
-    queues: NOT_WIRED_QUEUES,
-    services: NOT_WIRED_SERVICES,
-    requestId: String(req.id),
-  };
-}
-
-const NOT_WIRED_QUEUES = new Proxy({} as QueueProducers, {
-  get(_target, name) {
-    throw new Error(
-      `ctx.queues.${String(name)} is not wired on the V1 Fastify path — enqueue through @openpanel/queue, as the rest of V1 does`
-    );
-  },
-});
-
-const NOT_WIRED_SERVICES = new Proxy({} as Ctx['services'], {
-  get(_target, name) {
-    throw new Error(
-      `ctx.services.${String(name)} is not wired on the V1 Fastify path — reach @openpanel/core's or @openpanel/db's module directly, as the rest of V1 does`
-    );
-  },
-});
-
-/** Node's header bag is a record of strings and string arrays; core wants a `Headers`. */
-function toHeaders(source: Record<string, string | string[] | undefined>) {
-  const headers = new Headers();
-  for (const [name, value] of Object.entries(source)) {
-    if (Array.isArray(value)) {
-      for (const entry of value) {
-        headers.append(name, entry);
-      }
-    } else if (value !== undefined) {
-      headers.set(name, value);
-    }
-  }
-  return headers;
-}
 
 const enforceUserIsAuthed = middleware(async ({ ctx, next }) => {
   if (!ctx.session?.userId) {

@@ -30,6 +30,7 @@ import type { ServiceDeps } from '../../services';
 import { parseUserAgent } from '../../shared/parser-user-agent';
 import { generateDeviceId } from '../../shared/profileId';
 import { createBotEvent } from '../event/event.service';
+import { getOrganizationByProjectIdCached } from '../organization/organization.service';
 import {
   getProfileById,
   identifyProfile,
@@ -38,6 +39,7 @@ import {
 import { getSalts } from '../salt/salt.service';
 import { convertClickhouseDateToJs } from '../session/src/dates';
 import type {
+  DeprecatedPostEventPayload,
   IAssignGroupPayload,
   IDecrementPayload,
   IGroupPayload,
@@ -518,6 +520,163 @@ export async function ingestTrack(
     deviceId: context.deviceId,
     sessionId: context.sessionId,
   };
+}
+
+/**
+ * V1's `subscriptionHook` (apps/api/src/hooks/subscription.hook.ts), ported
+ * for both ingestion routes.
+ *
+ * Two things worth knowing about the shape of this, both V1's:
+ *
+ * It gates on `windDownStep`, not on `subscriptionState`. Every expired trial
+ * is already in `trial_expired`, so gating on the state would block thousands
+ * of orgs the moment this ships, skipping the four warning emails entirely.
+ *
+ * It answers 202, not 402 or 403 (the caller does; this returns the verdict).
+ * The SDKs treat only 401 and 2xx as terminal, so a "correct" status code
+ * would multiply traffic from exactly the clients we are trying to quiet down.
+ *
+ * `selfHosted` arrives from `AppDeps.config` — V1 read `process.env` here and
+ * core reads none.
+ */
+const WIND_DOWN_BLOCKED_STEPS = new Set(['blocked', 'final_warning']);
+
+export async function isIngestionWoundDown(request: {
+  projectId: string | null | undefined;
+  selfHosted: boolean;
+  logger: Logger;
+}): Promise<boolean> {
+  if (request.selfHosted || !request.projectId) {
+    return false;
+  }
+
+  const { projectId, logger } = request;
+
+  try {
+    // Cached for 5 minutes and invalidated by the Polar webhook, so paying
+    // again lifts the block on the next checkout rather than on a TTL.
+    const organization = await getOrganizationByProjectIdCached(projectId);
+
+    if (
+      !(
+        organization?.windDownStep &&
+        WIND_DOWN_BLOCKED_STEPS.has(organization.windDownStep)
+      )
+    ) {
+      return false;
+    }
+
+    logger.info(
+      {
+        organizationId: organization.id,
+        projectId,
+        windDownStep: organization.windDownStep,
+      },
+      'Ingestion blocked by wind-down'
+    );
+    return true;
+  } catch (error) {
+    // Fail open. Dropping a paying customer's events because Redis or Postgres
+    // hiccuped is far worse than letting a blocked org through for a tick.
+    logger.error(
+      { err: error, projectId },
+      'Wind-down check failed, allowing ingestion'
+    );
+    return false;
+  }
+}
+
+/**
+ * `POST /event` — the legacy compat route (ADR-004/ADR-015 entry 1, REVERSED:
+ * kept, not deleted, because production still has projects posting to it).
+ * Ported from apps/api/src/controllers/event.controller.ts.
+ *
+ * It is NOT `ingestTrack` with a different body: the legacy payload carries a
+ * client-supplied ISO `timestamp`, has no `type` discriminator, no schema, and
+ * no identify/increment/replay branches — so it builds its own queue payload
+ * exactly as V1's controller did, minting the event id at the producer like
+ * `/track` does.
+ */
+export type LegacyEventOutcome =
+  | { status: 'ok' }
+  | { status: 'missing-project-id' };
+
+export async function ingestLegacyEvent(
+  request: {
+    projectId: string | null | undefined;
+    clientIp: string;
+    headers: IngestHeaders;
+    clientSecretAuth: boolean;
+    /** The request-arrival timestamp (V1's `timestampHook`). */
+    timestamp: number | undefined;
+    body: DeprecatedPostEventPayload | null | undefined;
+  },
+  transport: IngestTransport
+): Promise<LegacyEventOutcome> {
+  const { projectId } = request;
+  if (!projectId) {
+    return { status: 'missing-project-id' };
+  }
+
+  // The cast is V1's own call (event.controller.ts:26): `/event` has no body
+  // schema, so `getTimestamp` reads `properties` off whatever arrived.
+  const { timestamp, isTimestampFromThePast } = getTimestamp(
+    request.timestamp,
+    request.body as ITrackHandlerPayload['payload']
+  );
+  const ip = request.clientIp;
+  const ua = headerValue(request.headers, 'user-agent') ?? FALLBACK_USER_AGENT;
+  const headers = getStringHeaders(request.headers);
+
+  const [salts, geo, asnInfo] = await Promise.all([
+    getSalts(),
+    getGeoLocation(ip),
+    getAsnInfo(ip),
+  ]);
+  const { deviceId, sessionId } = await getDeviceId({
+    projectId,
+    ip,
+    ua,
+    salts,
+    sessionBuffer: transport.buffers.session,
+  });
+
+  const uaInfo = parseUserAgent(ua, request.body?.properties);
+  // Mark (never block) likely bot traffic with __bot / __bot_reasons props.
+  // This deprecated route has no body schema, so body can be null/undefined.
+  if (request.body) {
+    request.body.properties = applyBotSuspicion(request.body.properties, {
+      asnInfo,
+      headers: request.headers,
+      clientSecretAuth: request.clientSecretAuth,
+      isServer: uaInfo.isServer,
+    });
+  }
+
+  const groupId = uaInfo.isServer
+    ? `${projectId}:${request.body?.profileId ?? generateId()}`
+    : deviceId;
+
+  await transport.produceIncomingEvent(
+    {
+      // See handleTrack: the producer mints the event id.
+      id: uuid(),
+      projectId,
+      headers,
+      event: {
+        ...request.body,
+        timestamp,
+        isTimestampFromThePast,
+      },
+      uaInfo,
+      geo,
+      deviceId,
+      sessionId: sessionId ?? '',
+    } as IncomingEventPayload,
+    groupId
+  );
+
+  return { status: 'ok' };
 }
 
 export type DeviceIdentity =

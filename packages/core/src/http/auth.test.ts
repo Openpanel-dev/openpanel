@@ -1,7 +1,11 @@
 import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { Elysia } from 'elysia';
 import { stubAppDeps } from '../../test/http-fixtures';
-import type { AuthenticatedClient, ClientAuthOptions } from './client-auth';
+import type {
+  AuthenticatedClient,
+  ClientAuthOptions,
+  ClientAuthResult,
+} from './client-auth';
 
 // mock.module is not hoisted, so the subject is imported inside beforeAll —
 // see AGENTS.md. Both principals are stubs until P6/P8; mocking them is what
@@ -14,12 +18,18 @@ const CLIENT: AuthenticatedClient = {
   secretPresented: true,
 };
 
-let client: AuthenticatedClient | null = CLIENT;
+const REFUSAL: ClientAuthResult = {
+  ok: false,
+  ingest: false,
+  message: 'Manage: Invalid client secret',
+};
+
+let result: ClientAuthResult = { ok: true, client: CLIENT };
 let session: unknown = { userId: 'user_1' };
 
 const authenticateClient = mock(
   (_deps: unknown, _headers: Headers, _options: ClientAuthOptions) =>
-    Promise.resolve(client)
+    Promise.resolve(result)
 );
 const resolveSession = mock(() => Promise.resolve(session));
 
@@ -36,7 +46,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  client = CLIENT;
+  result = { ok: true, client: CLIENT };
   session = { userId: 'user_1' };
   authenticateClient.mockClear();
   resolveSession.mockClear();
@@ -56,7 +66,7 @@ function buildApp() {
           const typed: AuthenticatedClient = principal;
           return { id: typed.id, secretPresented: typed.secretPresented };
         },
-        { clientAuth: { allow: ['root'] } }
+        { clientAuth: { allow: ['root'], label: 'Manage' } }
       )
       .get(
         '/dashboard',
@@ -87,18 +97,39 @@ test('clientAuth passes the allow list through to the authenticator', async () =
     new Request('http://localhost/manage/projects', { method: 'POST' })
   );
 
-  expect(authenticateClient.mock.calls[0]?.[2]).toEqual({ allow: ['root'] });
+  expect(authenticateClient.mock.calls[0]?.[2]).toEqual({
+    allow: ['root'],
+    label: 'Manage',
+  });
 });
 
-test('clientAuth answers 401 with V1s message when nothing authenticates', async () => {
-  client = null;
+// V1 has TWO 401 bodies and both are a wire contract: the allow-list routers
+// (/export, /insights, /import, /manage) answered with a JSON envelope
+// carrying the validator's own message, and the ingest routers (/track,
+// /event, /profile) answered with that message as plain text.
+test('clientAuth answers 401 with V1s allow-list body when nothing authenticates', async () => {
+  result = REFUSAL;
 
   const response = await buildApp().handle(
     new Request('http://localhost/manage/projects', { method: 'POST' })
   );
 
   expect(response.status).toBe(401);
-  expect(await response.text()).toBe('Invalid client credentials');
+  expect(await response.json()).toEqual({
+    error: 'Unauthorized',
+    message: 'Manage: Invalid client secret',
+  });
+});
+
+test('clientAuth answers 401 with V1s ingest body, which is plain text', async () => {
+  result = { ok: false, ingest: true, message: 'Missing client id' };
+
+  const response = await buildApp().handle(
+    new Request('http://localhost/manage/projects', { method: 'POST' })
+  );
+
+  expect(response.status).toBe(401);
+  expect(await response.text()).toBe('Missing client id');
 });
 
 test('session resolves through the memoized HttpCtx lookup', async () => {

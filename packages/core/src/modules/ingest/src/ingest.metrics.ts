@@ -68,3 +68,27 @@ export const ingestConsumerMetrics = {
   deadLetterFailed: (partition: string) =>
     kafkaDeadLetterFailedTotal.inc({ partition }),
 } satisfies ConsumerMetrics;
+
+const LEGACY_EVENT_CLIENT_ID_LABEL = 'client_id';
+
+/**
+ * ADR-015 entry 1 was reversed: `POST /event` is kept as a legacy compat route
+ * rather than deleted, because production still has projects posting to it.
+ * This counter is the evidence the deferred removal decision needs — when it
+ * reads zero for every client, `/event` and the `mixan-*` header fallback can
+ * both go (ADR-015 entry 5 is pending the same measurement).
+ *
+ * Moved from apps/api/src/metrics.ts, which registered on prom-client's global
+ * registry because `fastify-metrics` served that one. V2 has exactly one
+ * registry and it is this package's.
+ */
+export const legacyEventRequestsTotal = new client.Counter({
+  name: 'openpanel_legacy_event_requests_total',
+  help: 'Requests to the legacy POST /event ingestion route, by client id',
+  labelNames: [LEGACY_EVENT_CLIENT_ID_LABEL],
+  registers: [registry],
+});
+
+export function recordLegacyEventRequest(clientId: string): void {
+  legacyEventRequestsTotal.inc({ [LEGACY_EVENT_CLIENT_ID_LABEL]: clientId });
+}

@@ -21,10 +21,12 @@ RUN corepack enable && apt-get update && \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# M9-003 deleted apps/worker: this image is now BOTH halves of the stack. The
-# V1 Fastify api still runs on node from `dist/`; `ROLE=worker` runs V2's
-# `src/main.ts` from source on Bun (ADR-001: "ROLE=worker moves when
-# apps/worker is deleted at P9"). Collapsing the two boots into one is P9.5.
+# M9-003 deleted apps/worker and M9-004 deleted the V1 Fastify boot: this image
+# is now ONE process in three shapes, `bun run src/main.ts` under
+# ROLE=api|worker|all, running from source with no bundle (ADR-010). The node
+# base layer stays only because `pnpm`, `pnpm codegen` and `pnpm rebuild` run in
+# it; making the image bun-only is P9.5's "one image" step, with the measured
+# before/after it owes.
 COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 
 ARG DATABASE_URL
@@ -68,8 +70,9 @@ COPY apps/api ./apps/api
 COPY packages ./packages
 COPY tooling ./tooling
 
-RUN pnpm codegen && \
-    pnpm --filter api run build
+# No build step: ADR-010 deleted the backend bundler with the V1 boot, so the
+# only thing this stage produces is the generated Prisma client.
+RUN pnpm codegen
 
 # PROD
 FROM base AS prod
@@ -99,7 +102,7 @@ WORKDIR /app
 COPY --from=build /app/package.json ./
 COPY --from=prod /app/node_modules ./node_modules
 
-# Apps — src/ travels too, not just dist/: ROLE=worker runs src/main.ts.
+# Apps — src/ is the artifact now; there is no dist/.
 COPY --from=build /app/apps/api ./apps/api
 
 # Packages
@@ -119,20 +122,10 @@ RUN pnpm db:codegen
 
 WORKDIR /app/apps/api
 
-# Drop a diagnostic report on fatal errors / SIGUSR2 so the next native
-# segfault (exit 139) leaves a stack we can read. Override per-environment
-# by setting NODE_OPTIONS in the swarm stack file. Bun ignores these flags.
-ENV NODE_OPTIONS="--report-on-fatalerror --report-on-signal --report-directory=/tmp"
-
 EXPOSE 3000
 
-# ROLE picks the half. `api` (or unset) keeps V1's Fastify boot byte-for-byte;
-# `worker` and `all` run V2's merged process, which validates the rest of its
-# configuration itself (apps/api/src/config/env.ts). An unknown ROLE fails
-# here rather than silently starting an api: under V1's entrypoint ROLE is not
-# read at all, so a typo would otherwise look like a healthy container that
-# consumes nothing.
-#
-# `all` serves the ops surface only until M9-004 mounts publicApiRoutes /
-# dashboardRoutes on V2 — do not point production traffic at it before then.
-CMD ["sh", "-c", "case \"${ROLE:-api}\" in api) exec node dist/index.js ;; worker|all) exec bun run src/main.ts ;; *) echo \"ROLE=$ROLE is not one of: api, worker, all\" >&2; exit 1 ;; esac"]
+# ROLE picks the shape: `api` (or unset) serves HTTP only, `worker` consumes
+# only, `all` does both. `config/env.ts` validates it and fails boot loudly on
+# an unknown value, which is why this line no longer has a case statement of
+# its own.
+CMD ["bun", "run", "src/main.ts"]

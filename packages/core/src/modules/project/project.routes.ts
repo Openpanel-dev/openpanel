@@ -32,7 +32,10 @@ export const projectRoutes = defineRoutes((app) =>
       async ({ client }) => ({
         data: await listProjectsForOrganization(client.organizationId),
       }),
-      { clientAuth: { allow: ['root'] }, detail: { tags: ['Manage'] } }
+      {
+        clientAuth: { allow: ['root'], label: 'Manage' },
+        detail: { tags: ['Manage'] },
+      }
     )
     .get(
       '/manage/projects/:id',
@@ -50,7 +53,7 @@ export const projectRoutes = defineRoutes((app) =>
         return { data: project };
       },
       {
-        clientAuth: { allow: ['root'] },
+        clientAuth: { allow: ['root'], label: 'Manage' },
         params: idParams,
         detail: { tags: ['Manage'] },
       }
@@ -69,7 +72,7 @@ export const projectRoutes = defineRoutes((app) =>
         return { data: { ...project, client: firstClient } };
       },
       {
-        clientAuth: { allow: ['root'] },
+        clientAuth: { allow: ['root'], label: 'Manage' },
         body: zCreateProject,
         detail: { tags: ['Manage'] },
       }
@@ -91,7 +94,7 @@ export const projectRoutes = defineRoutes((app) =>
         return { data: project };
       },
       {
-        clientAuth: { allow: ['root'] },
+        clientAuth: { allow: ['root'], label: 'Manage' },
         params: idParams,
         body: zUpdateProject,
         detail: { tags: ['Manage'] },
@@ -113,7 +116,7 @@ export const projectRoutes = defineRoutes((app) =>
         return { success: true };
       },
       {
-        clientAuth: { allow: ['root'] },
+        clientAuth: { allow: ['root'], label: 'Manage' },
         params: idParams,
         detail: { tags: ['Manage'] },
       }

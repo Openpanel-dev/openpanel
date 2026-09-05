@@ -12,24 +12,28 @@
 // equivalent named in ADR-002's plugin substitutions ("raw body → `await
 // request.text()` in the one polar webhook handler").
 //
-// NAMED GAP, same as gsc.routes.ts / import.routes.ts: this route is not yet
-// reachable — main.ts does not mount `publicApiRoutes` until a real
-// `AppDeps` exists (P3/P4/P8).
+// `parse: 'none'` is what makes that possible: Elysia parses the body before
+// the handler runs by default, and reading the consumed stream throws "Body
+// already used" (M9-004, which mounted this surface).
 
 import { defineRoutes } from '../../http/define';
 import { handlePolarWebhookEvent } from './subscription.service';
 
 export const subscriptionRoutes = defineRoutes((app) =>
-  app.post('/webhook/polar', async ({ request, ctx, status }) => {
-    const rawBody = await request.text();
-    const headers = Object.fromEntries(request.headers);
+  app.post(
+    '/webhook/polar',
+    async ({ request, ctx, status }) => {
+      const rawBody = await request.text();
+      const headers = Object.fromEntries(request.headers);
 
-    try {
-      await handlePolarWebhookEvent(rawBody, headers, ctx.logger);
-    } catch {
-      return status(500, 'Error');
-    }
+      try {
+        await handlePolarWebhookEvent(rawBody, headers, ctx.logger);
+      } catch {
+        return status(500, 'Error');
+      }
 
-    return status(202, 'OK');
-  })
+      return status(202, 'OK');
+    },
+    { parse: 'none' }
+  )
 );
