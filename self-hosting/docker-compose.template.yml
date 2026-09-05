@@ -129,12 +129,18 @@ services:
   op-api:
     image: lindesvard/openpanel-api:2
     restart: always
+    # P9.5 collapsed the two-Dockerfile setup onto oven/bun: pnpm no longer
+    # exists in this image (ADR-014 Problems §4), so migrations and boot run
+    # as their bun equivalents — the prisma/jiti binaries directly (their
+    # `#!/bin/sh` shims resolve `node` to Bun's node-fallback shim) and
+    # `bun run start` for apps/api's own script.
     command: >
       sh -c "
         echo 'Running migrations...'
-        CI=true pnpm -r run migrate:deploy
+        cd /app/packages/db && ./node_modules/.bin/prisma migrate deploy
+        cd /app/packages/core && ./node_modules/.bin/jiti src/code-migrations/migrate.ts
 
-        pnpm start
+        cd /app/apps/api && bun run start
       "
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]

@@ -2,10 +2,16 @@
 # `.bun-version` + this ARG; the file does not exist in the tree yet, so this
 # ARG is the single home until it does. Keep the two in sync when it lands.
 ARG BUN_VERSION=1.4.0
-# ADR-014: pnpm stays through P12 — this only pins the pnpm *version* installed
-# into the Bun image, it does not touch which tool runs installs.
+# ADR-014: pnpm stays through P12 — this only pins the pnpm *version* used to
+# install the workspace, it does not touch which tool runs installs. P9.5
+# stops that installer reaching the runtime stage at all (ADR-014 Problems
+# §4, option 2): pnpm and the build toolchain live only in `build`/`prod-deps`
+# below, neither of which ships.
 ARG PNPM_VERSION=11.23.0
 
+# BASE — OS packages every stage needs. curl and netcat-openbsd are here for
+# the docker-compose HEALTHCHECKs, which exec *inside* the running container,
+# so they must reach the runtime stage too, not just the pnpm stages.
 FROM oven/bun:${BUN_VERSION}-slim AS base
 
 RUN apt-get update && \
@@ -18,23 +24,27 @@ RUN apt-get update && \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# M9-003 deleted apps/worker and M9-004 deleted the V1 Fastify boot: this image
-# is now ONE process in three shapes, `bun run src/main.ts` under
-# ROLE=api|worker|all, running from source with no bundle (ADR-010). P9.5
-# collapses the base layer itself onto oven/bun — no Node anywhere in the
-# image. pnpm still runs (ADR-014: pnpm stays through P12); it runs *on* Bun
-# instead of needing a separate Node install.
+# TOOLCHAIN — pnpm + the native-addon build toolchain, shared by the two
+# stages below. Neither of them ships, so neither does this.
+FROM base AS toolchain
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 ARG PNPM_VERSION
 RUN bun install -g pnpm@${PNPM_VERSION}
 
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+ENV npm_config_build_from_source=true
 
 WORKDIR /app
 
-# Workspace
+# Workspace manifest
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Apps
 COPY apps/api/package.json ./apps/api/
@@ -52,15 +62,12 @@ COPY packages/constants/package.json packages/constants/
 COPY packages/validation/package.json packages/validation/
 COPY patches ./patches
 
-# BUILD
-FROM base AS build
+# BUILD — full install (codegen needs devDependencies: core's `tar` for
+# scripts/download-geo.ts, db's `prisma` CLI for schema generation) then the
+# Prisma client + geo/ASN codegen. Never ships: only its generated *source*
+# output (baked into packages/db and packages/core below) reaches runtime.
+FROM toolchain AS build
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++
-
-WORKDIR /app
 RUN pnpm install --frozen-lockfile && \
     pnpm store prune
 
@@ -68,55 +75,43 @@ COPY apps/api ./apps/api
 COPY packages ./packages
 COPY tooling ./tooling
 
-# No build step: ADR-010 deleted the backend bundler with the V1 boot, so the
-# only thing this stage produces is the generated Prisma client.
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
+# No JS build step: ADR-010 deleted the backend bundler with the V1 boot, so
+# the only thing this stage produces is the generated Prisma client and
+# core's downloaded geo/ASN data, both written to disk under packages/.
 RUN pnpm codegen
 
-# PROD
-FROM base AS prod
+# PROD-DEPS — a from-scratch production-only install. Deliberately NOT
+# derived from `build`'s node_modules: pnpm's --prod install does not reliably
+# purge an existing devDependency-laden modules dir (verified empirically —
+# it left every devDependency in place), so shipping node_modules must come
+# from an install that was production-only from the start.
+FROM toolchain AS prod-deps
 
-ENV npm_config_build_from_source=true
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++
-
-WORKDIR /app
-COPY --from=build /app/package.json ./
-COPY --from=build /app/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod && \
     pnpm rebuild && \
     pnpm store prune
 
-# FINAL
-FROM base AS runner
+# RUNTIME — oven/bun:${BUN_VERSION}-slim, nothing but the app: node_modules
+# from `prod-deps`, source (with `build`'s generated output baked in) from
+# `build`. No pnpm, no python3/make/g++, no per-package COPY manifest.
+FROM base AS runtime
 
 ENV NODE_ENV=production
-ENV npm_config_build_from_source=true
 
 WORKDIR /app
 
-COPY --from=build /app/package.json ./
-COPY --from=prod /app/node_modules ./node_modules
+COPY --from=prod-deps /app/package.json ./
+COPY --from=prod-deps /app/node_modules ./node_modules
 
 # Apps — src/ is the artifact now; there is no dist/.
 COPY --from=build /app/apps/api ./apps/api
 
-# Packages
-COPY --from=build /app/packages/core ./packages/core
-COPY --from=build /app/packages/db ./packages/db
-COPY --from=build /app/packages/trpc ./packages/trpc
-COPY --from=build /app/packages/json ./packages/json
-COPY --from=build /app/packages/email ./packages/email
-COPY --from=build /app/packages/queue ./packages/queue
-COPY --from=build /app/packages/redis ./packages/redis
-COPY --from=build /app/packages/common ./packages/common
-COPY --from=build /app/packages/payments ./packages/payments
-COPY --from=build /app/packages/constants ./packages/constants
-COPY --from=build /app/packages/validation ./packages/validation
+# Packages — one COPY, not the per-package manifest the pnpm stages needed.
+COPY --from=build /app/packages ./packages
 COPY --from=build /app/tooling/typescript ./tooling/typescript
-RUN pnpm db:codegen
 
 WORKDIR /app/apps/api
 

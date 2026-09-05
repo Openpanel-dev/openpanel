@@ -125,9 +125,10 @@ services:
         echo 'ClickHouse is ready'
 
         echo 'Running migrations...'
-        CI=true pnpm -r run migrate:deploy
+        cd /app/packages/db && ./node_modules/.bin/prisma migrate deploy
+        cd /app/packages/core && ./node_modules/.bin/jiti src/code-migrations/migrate.ts
 
-        pnpm start
+        cd /app/apps/api && bun run start
       "
     depends_on:
       opdb:
