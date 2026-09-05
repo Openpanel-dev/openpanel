@@ -9,6 +9,8 @@
 // `overviewService.getLiveData` with everything else this module runs.
 
 import {
+  getChartPrevStartEndDate,
+  getChartStartEndDate,
   getConversionEventNames,
   getOrganizationSubscriptionChartEndDate,
   getReferrerSpikes,
@@ -25,11 +27,7 @@ import {
   zGetTopPagesInput,
   zGetUserJourneyInput,
 } from '@openpanel/core';
-import {
-  eventBuffer,
-  getChartPrevStartEndDate,
-  getChartStartEndDate,
-} from '@openpanel/db';
+import { eventBuffer } from '@openpanel/queue/src/buffers';
 import {
   type IChartRange,
   pageContextSchema,

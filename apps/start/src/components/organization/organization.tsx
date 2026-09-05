@@ -1,4 +1,4 @@
-import type { IServiceOrganization } from '@openpanel/db';
+import type { IServiceOrganization } from '@openpanel/core';
 import EditOrganization from './edit-organization';
 
 interface OrganizationProps {

@@ -144,7 +144,7 @@ export const insightRouter = createTRPCRouter({
       const iso = (d: Date) => d.toISOString();
 
       const { getSegmentDailySeriesCore, getTrafficBreakdownCore } =
-        await import('@openpanel/db');
+        await import('@openpanel/core');
 
       const breakdowns = await Promise.all(
         EXPLAIN_COLUMNS.map(async (column) => {

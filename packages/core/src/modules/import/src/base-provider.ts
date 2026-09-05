@@ -1,4 +1,4 @@
-import type { IClickhouseEvent } from '@openpanel/db';
+import type { IClickhouseEvent } from '@openpanel/core';
 import type { BaseRawEvent, ErrorContext, ImportJobMetadata } from './types';
 
 export abstract class BaseImportProvider<

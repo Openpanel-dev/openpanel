@@ -8,7 +8,12 @@ const { getProjectAccess, getOrganizationAccess, getProjectById } = vi.hoisted(
   }),
 );
 
-vi.mock('@openpanel/db', () => ({
+vi.mock('@openpanel/core', async () => ({
+  // `createAccessChecks` (the permission ladder itself, GHSA-f9rx-pxgw-c6rg's
+  // fix) stays real — only the lookups it's built from are stubbed.
+  ...(await vi.importActual<typeof import('@openpanel/core')>(
+    '@openpanel/core',
+  )),
   getProjectAccess,
   getOrganizationAccess,
   getProjectById,

@@ -24,13 +24,13 @@
 // `events.incoming-event` after deploy; keep `sessions` paused until step 7
 // (drain-old-session-jobs.ts) finishes.
 
+import type { IClickhouseSession } from '@openpanel/core';
 import { getSafeJson } from '@openpanel/json';
 import {
   type EventsQueuePayloadCreateSessionEnd,
   sessionsQueue,
 } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
-import type { IClickhouseSession } from '../src/services/session.service';
 
 const sessionKey = (projectId: string, deviceId: string) =>
   `session:${projectId}:${deviceId}`;

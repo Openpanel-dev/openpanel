@@ -14,6 +14,7 @@
 // binds as `Array(String)`, a literal list to the planner.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import sqlstring from 'sqlstring';
 import {
   type CompiledFilterClauses,
   compiledFilterFragments,
@@ -76,6 +77,29 @@ export function profileSearchCondition(
     return sql`(id ILIKE ${like} OR email ILIKE ${like} OR first_name ILIKE ${like} OR last_name ILIKE ${like} OR concat(first_name, ' ', last_name) ILIKE ${like})`;
   });
   return sql`(${sql.join(perToken, ' AND ')})`;
+}
+
+/**
+ * String-SQL twin of `profileSearchCondition`, for the one caller
+ * (cohort.service.ts's `getCohortProfiles`) that still composes a V1 text
+ * query rather than a `sql` fragment. Ported from
+ * packages/db/src/services/profile.service.ts (M9-CLEANUP-001) — goes with
+ * that query when it moves onto the `sql` tag.
+ */
+export function profileSearchSql(search: string | null | undefined): string | null {
+  const tokens = (search ?? '')
+    .trim()
+    .split(SEARCH_TOKEN_SEPARATOR)
+    .filter(Boolean)
+    .slice(0, SEARCH_MAX_TOKENS);
+  if (tokens.length === 0) {
+    return null;
+  }
+  const perToken = tokens.map((token) => {
+    const like = sqlstring.escape(`%${token}%`);
+    return `(id ILIKE ${like} OR email ILIKE ${like} OR first_name ILIKE ${like} OR last_name ILIKE ${like} OR concat(first_name, ' ', last_name) ILIKE ${like})`;
+  });
+  return `(${perToken.join(' AND ')})`;
 }
 
 export function profileMetricsQuery(query: {

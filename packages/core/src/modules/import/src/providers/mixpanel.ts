@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { isSameDomain, parsePath, toDots } from '@openpanel/common';
 // Deep imports, not @openpanel/db's full barrel — see umami.ts's header.
 import { formatClickhouseDate } from '@openpanel/db/src/clickhouse/client';
-import type { IClickhouseEvent } from '@openpanel/db/src/services/event.service';
-import type { IClickhouseProfile } from '@openpanel/db/src/services/profile.service';
+import type { IClickhouseEvent } from '@openpanel/core';
+import type { IClickhouseProfile } from '@openpanel/core';
 import { z } from 'zod';
 import type { Logger } from '../../../../logger';
 import {

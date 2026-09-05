@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { IServiceGroup } from '@openpanel/db';
+import type { IServiceGroup } from '@openpanel/core';
 import { zUpdateGroup } from '@openpanel/validation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, Trash2Icon } from 'lucide-react';

@@ -3,7 +3,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 
-import type { IServiceProject } from '@openpanel/db';
+import type { IServiceProject } from '@openpanel/core';
 
 import { cn } from '@/utils/cn';
 import { SettingsIcon, TrendingDownIcon, TrendingUpIcon } from 'lucide-react';

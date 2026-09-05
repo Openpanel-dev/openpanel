@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ch, clix, EVENT_COLUMNS, TABLE_NAMES } from '@openpanel/db';
+import { EVENT_COLUMNS } from '@openpanel/core';
+import { ch, clix, TABLE_NAMES } from '@openpanel/db';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {

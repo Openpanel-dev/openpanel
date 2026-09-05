@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/core';
 
 export function getEventOffsetMs(
   event: IServiceEvent,

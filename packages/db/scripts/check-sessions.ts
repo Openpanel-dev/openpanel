@@ -11,10 +11,10 @@
 //   pnpm with-env tsx scripts/check-sessions.ts --hours 48
 
 import { getSafeJson } from '@openpanel/json';
+import type { IClickhouseSession } from '@openpanel/core';
 import { sessionsQueue } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import { ch } from '../src/clickhouse/client';
-import type { IClickhouseSession } from '../src/services/session.service';
 
 const DEADMAN_MS = Number.parseInt(
   process.env.SESSION_REAPER_WALLCLOCK_DEADMAN_MS || String(30 * 60 * 1000),

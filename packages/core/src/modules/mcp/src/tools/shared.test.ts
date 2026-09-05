@@ -6,7 +6,7 @@ import {
   it,
   setSystemTime,
 } from 'bun:test';
-import { resolveClientProjectId } from '@openpanel/db';
+import { resolveClientProjectId } from '@openpanel/core';
 import type { McpAuthContext } from '../auth';
 import { MAX_RESPONSE_CHARS, resolveDateRange, table, toText } from './shared';
 

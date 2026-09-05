@@ -3,7 +3,7 @@ import {
   getPageConversionsCore,
   getPagePerformanceCore,
   getTopPagesCore,
-} from '@openpanel/db';
+} from '@openpanel/core';
 import { z } from 'zod';
 import {
   chatTool,

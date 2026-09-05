@@ -15,7 +15,7 @@ import {
   listReportsCore,
   queryEventsCore,
   querySessionsCore,
-} from '@openpanel/db';
+} from '@openpanel/core';
 import { zReportInput } from '@openpanel/validation';
 import { z } from 'zod';
 import { runReport, runReportFromConfig } from '../report-runner';

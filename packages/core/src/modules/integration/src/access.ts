@@ -8,8 +8,8 @@ import {
   canWriteProject,
   getOrganizationAccess,
   getProjectAccess,
-} from '@openpanel/db/src/services/access.service';
-import { getProjectById } from '@openpanel/db/src/services/project.service';
+} from '@openpanel/core';
+import { getProjectById } from '@openpanel/core';
 import { createAccessChecks } from '../../../shared/access';
 
 const checks = createAccessChecks({
@@ -24,4 +24,4 @@ export const requireOrganizationAdmin = checks.requireOrganizationAdmin;
 // `assertIntegrationAccess`'s read-branch on a legacy org-wide row needs bare
 // membership, not the admin gate — re-exported raw, same as
 // packages/trpc/src/access.ts does for V1's integration router.
-export { getOrganizationAccess } from '@openpanel/db/src/services/access.service';
+export { getOrganizationAccess } from '@openpanel/core';

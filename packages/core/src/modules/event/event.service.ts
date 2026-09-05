@@ -111,7 +111,7 @@ function loadFilterCompiler() {
 }
 
 function loadLookback() {
-  return import('@openpanel/db/src/services/lookback');
+  return import('@openpanel/core');
 }
 
 // Lazy: session.service → session-end → this module is a static chain, and a
@@ -124,7 +124,7 @@ function loadSessionService() {
 }
 
 function loadDateService() {
-  return import('@openpanel/db/src/services/date.service');
+  return import('@openpanel/core');
 }
 
 export type IImportedEvent = Omit<

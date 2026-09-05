@@ -39,7 +39,7 @@ function loadDb() {
 }
 
 function loadIdService() {
-  return import('@openpanel/db/src/services/id.service');
+  return import('@openpanel/core');
 }
 
 export async function canSkipOnboarding(

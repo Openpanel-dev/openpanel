@@ -8,12 +8,23 @@ import type {
   IWidgetOptions,
   InsightPayload,
 } from '@openpanel/validation';
+// `IClickhouseEvent`/`IClickhouseBotEvent`/`IClickhouseProfile`/
+// `INotificationPayload` all moved to @openpanel/core (M9-CLEANUP-001,
+// packages/db's final-surface shrink) — the three local re-export shims that
+// used to bridge them are gone. This is the type-only `db -> core` back-edge
+// ADR-007 named and explicitly declined to resolve ("belongs to P8's db
+// slim-down"; three options, none picked). Taken here: option 3, "accept a
+// declared type-only devDependency edge" — `@openpanel/db` already depends on
+// `@openpanel/core` (these shims were the reason), the edge is `import type`
+// only so it creates no runtime cycle, and it is the same shape as this
+// repo's existing type-only `db -> queue` cycle. Revisit if a future task
+// picks a different one of the three named resolutions.
 import type {
   IClickhouseBotEvent,
   IClickhouseEvent,
-} from './services/event.service';
-import type { INotificationPayload } from './services/notification.service';
-import type { IClickhouseProfile } from './services/profile.service';
+  IClickhouseProfile,
+  INotificationPayload,
+} from '@openpanel/core';
 
 declare global {
   namespace PrismaJson {

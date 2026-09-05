@@ -11,19 +11,17 @@
 
 import {
   getBotEventsPage,
+  getChartStartEndDate,
   getConversionEventNames,
   getConversionListPage,
   getEventById,
   getEventDetails,
   getEventListPage,
+  getSettingsForProject,
   getTopOrigins,
+  pagesService,
   updateEventMeta,
 } from '@openpanel/core';
-import {
-  getChartStartEndDate,
-  getSettingsForProject,
-  pagesService,
-} from '@openpanel/db';
 import {
   zChartEventFilter,
   zRange,

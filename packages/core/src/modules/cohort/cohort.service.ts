@@ -33,7 +33,7 @@
 // mutations and its cron fragment).
 
 import type { ClickHouseSettings } from '@clickhouse/client';
-import type { IServiceProfile } from '@openpanel/db/src/services/profile.service';
+import type { IServiceProfile } from '@openpanel/core';
 import type { IChartEventFilter } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
 import type { ServiceDeps } from '../../services';
@@ -785,7 +785,7 @@ export async function listCohortMemberProfiles({
   const { chQuery } = await loadChClient();
   const { buildFilterWhere } = await import('../chart/src/table-filter-where');
   const { getProfiles, profileSearchSql } = await import(
-    '@openpanel/db/src/services/profile.service'
+    '../profile/profile.service'
   );
 
   const offset = Math.max(0, (cursor ?? 0) * take);

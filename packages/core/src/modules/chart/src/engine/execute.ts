@@ -1,4 +1,4 @@
-import { getChartPrevStartEndDate } from '@openpanel/db/src/services/date.service';
+import { getChartPrevStartEndDate } from '@openpanel/core';
 import type { FinalChart, IReportInput } from '@openpanel/validation';
 import {
   getOrganizationSubscriptionChartEndDate,

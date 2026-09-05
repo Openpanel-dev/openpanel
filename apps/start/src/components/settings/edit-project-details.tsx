@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { IServiceProjectWithClients } from '@openpanel/db';
+import type { IServiceProjectWithClients } from '@openpanel/core';
 import { zProject } from '@openpanel/validation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SaveIcon } from 'lucide-react';

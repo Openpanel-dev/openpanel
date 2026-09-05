@@ -1,4 +1,4 @@
-import { listEventPropertiesCore } from '@openpanel/db';
+import { listEventPropertiesCore } from '@openpanel/core';
 import type { IReportInput } from '@openpanel/validation';
 import { z } from 'zod';
 import { runReportFromConfig } from '../report-runner';

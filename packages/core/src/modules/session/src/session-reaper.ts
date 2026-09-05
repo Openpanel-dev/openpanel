@@ -1,6 +1,6 @@
 // Ported from apps/worker/src/jobs/cron.session-reaper.ts (M7-001).
 
-import type { IServiceCreateEventPayload } from '@openpanel/db/src/services/event.service';
+import type { IServiceCreateEventPayload } from '@openpanel/core';
 import type { Logger } from '../../../logger';
 import type { IClickhouseSession } from '../session.service';
 import type { SessionRuntime } from './runtime';

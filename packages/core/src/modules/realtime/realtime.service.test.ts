@@ -27,15 +27,15 @@ const eventBuffer = {
 // mock below. Snapshotted into a plain object BEFORE mocking: the live
 // import binding would reflect the mock too once `mock.module` below swaps
 // the specifier, making a same-binding "restore" a no-op.
-const actualBuffers = await import('@openpanel/db/src/buffers');
+const actualBuffers = await import('@openpanel/queue/src/buffers');
 const realBuffers = { ...actualBuffers };
-mock.module('@openpanel/db/src/buffers', () => ({
+mock.module('@openpanel/queue/src/buffers', () => ({
   ...realBuffers,
   eventBuffer,
 }));
 
 afterAll(() => {
-  mock.module('@openpanel/db/src/buffers', () => realBuffers);
+  mock.module('@openpanel/queue/src/buffers', () => realBuffers);
 });
 
 const subscribeToPublishedEvent = mock(

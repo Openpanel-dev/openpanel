@@ -9,7 +9,7 @@ import { isSameDomain, parsePath, toDots } from '@openpanel/common';
 // pino-pretty transport at import time — fatal under bun:test's
 // `--isolate` worker threads (AGENTS.md's eager-barrel-chain hazard).
 import { formatClickhouseDate } from '@openpanel/db/src/clickhouse/client';
-import type { IClickhouseEvent } from '@openpanel/db/src/services/event.service';
+import type { IClickhouseEvent } from '@openpanel/core';
 import { parse } from 'csv-parse';
 import { assocPath } from 'ramda';
 import { z } from 'zod';

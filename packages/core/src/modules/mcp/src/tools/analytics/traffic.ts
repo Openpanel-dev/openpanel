@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getTrafficBreakdownCore, type TrafficColumn } from '@openpanel/db';
+import { getTrafficBreakdownCore, type TrafficColumn } from '@openpanel/core';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {

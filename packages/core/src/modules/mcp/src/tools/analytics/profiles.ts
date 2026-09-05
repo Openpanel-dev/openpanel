@@ -3,7 +3,7 @@ import {
   findProfilesCore,
   getProfileSessionsCore,
   getProfileWithEvents,
-} from '@openpanel/db';
+} from '@openpanel/core';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import { dashboardBaseUrl, profileUrl } from '../dashboard-links';

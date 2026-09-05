@@ -102,15 +102,15 @@ mock.module('@openpanel/db/src/prisma-client', () => ({
 }));
 
 const getSettingsForProject = mock(async () => ({ timezone: 'UTC' }));
-mock.module('@openpanel/db/src/services/organization.service', () => ({
-  getSettingsForProject,
-}));
-
 const getChartStartEndDate = mock(() => ({
   startDate: '2026-08-25 00:00:00',
   endDate: '2026-09-01 23:59:59',
 }));
-mock.module('@openpanel/db/src/services/date.service', () => ({
+// Both loaders (date.service + organization.service) resolve through the
+// same @openpanel/core specifier now (M9-CLEANUP-001) — one mock.module call,
+// not two, or the second silently drops the first's override.
+mock.module('@openpanel/core', () => ({
+  getSettingsForProject,
   getChartStartEndDate,
 }));
 

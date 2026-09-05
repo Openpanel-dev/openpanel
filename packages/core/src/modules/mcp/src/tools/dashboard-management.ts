@@ -1,11 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import {
-  db,
-  getDashboardById,
-  getId,
-  getProjectById,
-  Prisma,
-} from '@openpanel/db';
+import { getDashboardById, getId, getProjectById } from '@openpanel/core';
+import { db, Prisma } from '@openpanel/db';
 import { zReport } from '@openpanel/validation';
 import { z } from 'zod';
 import type { McpAuthContext } from '../auth';

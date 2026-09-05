@@ -113,7 +113,7 @@ export async function loadIncomingEventDeps(
   const [{ sessionBuffer }, { db }, notifications] = await Promise.all([
     loadDbBuffers(),
     import('@openpanel/db/src/prisma-client'),
-    import('@openpanel/db/src/services/notification.service'),
+    import('@openpanel/queue/src/notification-dispatch'),
   ]);
   return {
     logger,

@@ -17,14 +17,13 @@
 // unconsumed `request` so it can re-read the body itself.
 //
 // Everything below is dynamically imported, not statically — index.ts's
-// header explains why a static import of `@openpanel/db` or
-// `./assistant.service` here would race `@openpanel/db`'s own circular
-// `buffers/base-buffer.ts` -> `@openpanel/core` import.
+// header explains why a static import of this barrel or `./assistant.service`
+// here would race this module's own evaluation.
 
 import { defineRoutes } from '../../http/define';
 
-function loadDb() {
-  return import('@openpanel/db');
+function loadCore() {
+  return import('@openpanel/core');
 }
 function loadAssistant() {
   return import('./assistant.service');
@@ -65,7 +64,7 @@ export const assistantRoutes = defineRoutes((app) =>
       // A brand-new chat (no row yet) falls through to the agent handler,
       // whose `ConversationStore.load()` returns null.
       if (route === 'conversations' && routeId) {
-        const { getConversationById } = await loadDb();
+        const { getConversationById } = await loadCore();
         const conv = await getConversationById(routeId);
         if (conv && conv.userId !== userId) {
           return status(404, { message: 'Conversation not found' });
@@ -92,7 +91,7 @@ export const assistantRoutes = defineRoutes((app) =>
         getOrganizationByProjectIdCached,
         getProjectAccess,
         getSettingsForProject,
-      } = await loadDb();
+      } = await loadCore();
       const [access, organization, settings] = await Promise.all([
         getProjectAccess({ projectId, userId }),
         getOrganizationByProjectIdCached(projectId),

@@ -11,7 +11,7 @@
 // saved report, and the request renders that report (the caller may only move
 // the date window). `resolveShare` is that middleware, inlined.
 
-import type { IServiceReport } from '@openpanel/db/src/services/reports.service';
+import type { IServiceReport } from '@openpanel/core';
 import {
   type IReportInput,
   zChartEventFilter,
@@ -53,7 +53,7 @@ function loadAccessChecks() {
 }
 
 function loadReportsService() {
-  return import('@openpanel/db/src/services/reports.service');
+  return import('@openpanel/core');
 }
 
 function requireLogin(userId: string | null | undefined): string {

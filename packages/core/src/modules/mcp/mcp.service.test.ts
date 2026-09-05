@@ -67,10 +67,10 @@ mock.module('../../clients/logger', () => ({
 
 const mockGetClientByIdCached = mock();
 const actualClientsService = await import(
-  '@openpanel/db/src/services/clients.service'
+  '@openpanel/core'
 );
 const realClientsService = { ...actualClientsService };
-mock.module('@openpanel/db/src/services/clients.service', () => ({
+mock.module('@openpanel/core', () => ({
   ...realClientsService,
   getClientByIdCached: mockGetClientByIdCached,
 }));
@@ -104,7 +104,7 @@ mock.module('@openpanel/db/src/prisma-client', () => ({
 afterAll(() => {
   mock.module('../../clients/logger', () => realLogger);
   mock.module(
-    '@openpanel/db/src/services/clients.service',
+    '@openpanel/core',
     () => realClientsService
   );
   mock.module('@openpanel/redis', () => realRedis);

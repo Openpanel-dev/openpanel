@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getTopEventNames } from '@openpanel/db';
+import { getTopEventNames } from '@openpanel/core';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,

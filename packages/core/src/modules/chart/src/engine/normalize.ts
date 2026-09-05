@@ -1,5 +1,5 @@
 import { alphabetIds } from '@openpanel/constants';
-import { getChartStartEndDate } from '@openpanel/db/src/services/date.service';
+import { getChartStartEndDate } from '@openpanel/core';
 import type {
   IChartEvent,
   IReportInput,
@@ -15,7 +15,7 @@ export type NormalizedInput = IReportInputWithDates & {
 // `mergeGlobalFilters` belongs to the report module (its own task); until it
 // moves, reach V1's copy lazily — reports.service imports prisma at load.
 function loadGlobalFilterMerge() {
-  return import('@openpanel/db/src/services/reports.service').then(
+  return import('@openpanel/core').then(
     (m) => m.mergeGlobalFilters
   );
 }

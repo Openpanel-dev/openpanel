@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { IServiceProject } from '@openpanel/db';
+import type { IServiceProject } from '@openpanel/core';
 import { PlusIcon, XIcon } from 'lucide-react';
 import type {
   Control,

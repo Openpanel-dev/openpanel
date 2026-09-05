@@ -1,4 +1,4 @@
-import type { IServiceProfile } from '@openpanel/db';
+import type { IServiceProfile } from '@openpanel/core';
 
 export type GetProfileNameProps = Partial<
   Pick<

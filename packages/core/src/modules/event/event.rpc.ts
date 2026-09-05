@@ -53,9 +53,9 @@ function loadAccessChecks() {
 
 function loadPagesRuntime() {
   return Promise.all([
-    import('@openpanel/db/src/services/organization.service'),
-    import('@openpanel/db/src/services/date.service'),
-    import('@openpanel/db/src/services/pages.service'),
+    import('@openpanel/core'),
+    import('@openpanel/core'),
+    import('@openpanel/core'),
   ]).then(
     ([
       { getSettingsForProject },

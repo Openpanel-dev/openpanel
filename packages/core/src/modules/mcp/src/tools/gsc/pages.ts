@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getGscPageDetails, getGscPages } from '@openpanel/db';
+import { getGscPageDetails, getGscPages } from '@openpanel/core';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {

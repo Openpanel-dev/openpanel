@@ -1,5 +1,5 @@
 import { round } from '@openpanel/common';
-import type { IServiceSession } from '@openpanel/db';
+import type { IServiceSession } from '@openpanel/core';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Video } from 'lucide-react';
 import { ColumnCreatedAt } from '@/components/column-created-at';

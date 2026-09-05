@@ -1,6 +1,6 @@
 import { EventIcon } from '@/components/events/event-icon';
 import { cn } from '@/lib/utils';
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/core';
 
 function formatTime(date: Date | string): string {
   const d = date instanceof Date ? date : new Date(date);

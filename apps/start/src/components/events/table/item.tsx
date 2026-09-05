@@ -5,7 +5,7 @@ import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { formatTimeAgoOrDateTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/core';
 import { memo } from 'react';
 import { Skeleton } from '../../skeleton';
 import { EventIcon } from '../event-icon';

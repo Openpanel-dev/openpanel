@@ -110,7 +110,7 @@ export interface SessionEndDeps extends SessionRuntime {
   notifications: {
     getRules(projectId: string): Promise<INotificationRuleCached[]>;
     hasFunnelRules(rules: INotificationRuleCached[]): boolean;
-    /** Stays in @openpanel/db — it enqueues through @openpanel/queue. */
+    /** Lives in @openpanel/queue — it enqueues through the notification queue. */
     checkFunnelRules(events: IServiceEvent[]): Promise<unknown>;
   };
 }
@@ -128,7 +128,7 @@ export async function loadSessionEndDeps(
     import('@openpanel/db/src/clickhouse/client'),
     loadDbBuffers(),
     import('../../notification/notification.service'),
-    import('@openpanel/db/src/services/notification.service'),
+    import('@openpanel/queue/src/notification-dispatch'),
   ]);
   return {
     ...runtime,

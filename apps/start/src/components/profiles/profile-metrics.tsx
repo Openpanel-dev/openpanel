@@ -1,4 +1,4 @@
-import type { IProfileMetrics } from '@openpanel/db';
+import type { IProfileMetrics } from '@openpanel/core';
 import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
 
 type Props = {

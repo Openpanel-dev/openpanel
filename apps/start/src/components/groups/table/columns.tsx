@@ -3,7 +3,7 @@ import { ColumnCreatedAt } from '@/components/column-created-at';
 import { Badge } from '@/components/ui/badge';
 import { Link } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { IServiceGroup } from '@openpanel/db';
+import type { IServiceGroup } from '@openpanel/core';
 
 export type IServiceGroupWithStats = IServiceGroup & {
   memberCount: number;

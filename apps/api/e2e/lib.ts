@@ -4,7 +4,8 @@
  * fixtures, polling, and a tiny check/report framework.
  */
 
-import { ClientType, chQuery, db, getClientByIdCached } from '@openpanel/db';
+import { getClientByIdCached } from '@openpanel/core';
+import { ClientType, chQuery, db } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 
 // ── Config ──────────────────────────────────────────────────────────────────

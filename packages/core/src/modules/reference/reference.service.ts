@@ -25,11 +25,11 @@ function loadDb() {
 }
 
 function loadDateService() {
-  return import('@openpanel/db/src/services/date.service');
+  return import('@openpanel/core');
 }
 
 function loadOrganizationService() {
-  return import('@openpanel/db/src/services/organization.service');
+  return import('@openpanel/core');
 }
 
 export async function getReferenceById(id: string): Promise<Reference | null> {

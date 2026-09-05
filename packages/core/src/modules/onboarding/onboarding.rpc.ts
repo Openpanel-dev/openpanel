@@ -26,7 +26,7 @@ import {
 } from './onboarding.service';
 
 function loadOrganizationAccess() {
-  return import('@openpanel/db/src/services/access.service');
+  return import('@openpanel/core');
 }
 
 function requireLogin(userId: string | null | undefined): string {

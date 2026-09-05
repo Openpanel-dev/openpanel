@@ -9,7 +9,7 @@ import type {
   Report as DbReport,
   ReportLayout,
 } from '@openpanel/db/src/prisma-client';
-import { getChartStartEndDate } from '@openpanel/db/src/services/date.service';
+import { getChartStartEndDate } from '@openpanel/core';
 import type {
   IChartBreakdown,
   IChartEventFilter,

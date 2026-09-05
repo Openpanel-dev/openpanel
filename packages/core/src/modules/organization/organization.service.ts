@@ -200,7 +200,7 @@ export async function connectUserToOrganization({
 }) {
   const db = await loadDb();
   const { getOrganizationAccess, getProjectAccess } = await import(
-    '@openpanel/db/src/services/access.service'
+    '@openpanel/core'
   );
 
   // Use primary since before this we might have just created the invite

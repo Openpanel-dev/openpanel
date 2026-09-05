@@ -7,7 +7,7 @@ import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { createHeaderColumn } from '@/components/ui/data-table/data-table-helpers';
 import type { RouterOutputs } from '@/trpc/client';
-import type { INotificationPayload } from '@openpanel/db';
+import type { INotificationPayload } from '@openpanel/core';
 
 function getEventFromPayload(payload: INotificationPayload | null) {
   if (payload?.type === 'event') {

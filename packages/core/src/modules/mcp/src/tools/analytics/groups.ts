@@ -4,7 +4,7 @@ import {
   getGroupList,
   getGroupMemberProfiles,
   getGroupTypes,
-} from '@openpanel/db';
+} from '@openpanel/core';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {

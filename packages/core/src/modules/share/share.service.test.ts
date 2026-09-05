@@ -173,9 +173,6 @@ mock.module('@openpanel/db/src/prisma-client', () => ({
 const getDashboardById = mock(async (id: string, projectId: string) =>
   id === 'dash_missing' ? null : { id, projectId, name: 'Main' }
 );
-mock.module('@openpanel/db/src/services/dashboard.service', () => ({
-  getDashboardById,
-}));
 
 const getReportById = mock(async (id: string) =>
   id === 'report_missing'
@@ -187,17 +184,20 @@ const transformReport = mock((report: unknown) => ({
   transformed: true,
 }));
 const getReportsByDashboardId = mock(async () => [{ id: 'report_1' }]);
-mock.module('@openpanel/db/src/services/reports.service', () => ({
-  getReportById,
-  transformReport,
-  getReportsByDashboardId,
-}));
 
 const getProjectAccess = mock(
   async ({ userId }: { userId: string; projectId: string }) =>
     userId === 'member' ? { level: 'read' } : null
 );
-mock.module('@openpanel/db/src/services/access.service', () => ({
+
+// The access/dashboard/reports loaders all resolve through the same
+// @openpanel/core specifier now (M9-CLEANUP-001) — one mock.module call, not
+// three, or each later call silently drops the earlier ones' overrides.
+mock.module('@openpanel/core', () => ({
+  getDashboardById,
+  getReportById,
+  transformReport,
+  getReportsByDashboardId,
   getProjectAccess,
 }));
 

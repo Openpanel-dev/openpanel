@@ -1,4 +1,4 @@
-import type { IServiceOrganization } from '@openpanel/db';
+import type { IServiceOrganization } from '@openpanel/core';
 import { Link, useRouter } from '@tanstack/react-router';
 import {
   Building2Icon,

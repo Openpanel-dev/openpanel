@@ -1,4 +1,4 @@
-import type { IClickhouseEvent, IServiceEvent } from '@openpanel/db';
+import type { IClickhouseEvent, IServiceEvent } from '@openpanel/core';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { FilterIcon, XIcon } from 'lucide-react';
 import { omit } from 'ramda';

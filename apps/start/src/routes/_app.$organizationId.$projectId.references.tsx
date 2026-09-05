@@ -20,7 +20,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { formatDate, formatDateTime } from '@/utils/date';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
-import type { IServiceReference } from '@openpanel/db';
+import type { IServiceReference } from '@openpanel/core';
 import {
   keepPreviousData,
   useMutation,

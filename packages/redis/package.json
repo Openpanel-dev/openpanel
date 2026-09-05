@@ -12,6 +12,7 @@
     "lru-cache": "^11.2.2"
   },
   "devDependencies": {
+    "@openpanel/core": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",

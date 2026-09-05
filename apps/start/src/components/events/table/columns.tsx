@@ -1,4 +1,4 @@
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/core';
 import type { ColumnDef } from '@tanstack/react-table';
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { EventIcon } from '@/components/events/event-icon';

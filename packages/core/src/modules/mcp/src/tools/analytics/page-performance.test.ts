@@ -9,14 +9,20 @@ const mockGetSettingsForProject = mock(() =>
 // '@openpanel/db' barrel — a whole-barrel replacement would drop every other
 // export the barrel carries for any other file sharing this process
 // (bun:test only isolates modules per file under `--isolate`; see AGENTS.md).
-const actualPagesService = await import(
-  '@openpanel/db/src/services/pages.service'
-);
-mock.module('@openpanel/db/src/services/pages.service', () => ({
-  ...actualPagesService,
+// The pages/organization/project loaders all resolve through this same
+// specifier now (M9-CLEANUP-001) — one mock.module call, not three, or each
+// later call replaces the whole module and drops the earlier overrides.
+const actualCore = await import('@openpanel/core');
+mock.module('@openpanel/core', () => ({
+  ...actualCore,
   PagesService: mock().mockImplementation(() => ({
     getTopPages: mockGetTopPages,
   })),
+  getSettingsForProject: mockGetSettingsForProject,
+  resolveClientProjectId: mock(
+    ({ clientProjectId }: { clientProjectId: string }) =>
+      Promise.resolve(clientProjectId)
+  ),
 }));
 
 const actualClickhouseClient = await import(
@@ -25,25 +31,6 @@ const actualClickhouseClient = await import(
 mock.module('@openpanel/db/src/clickhouse/client', () => ({
   ...actualClickhouseClient,
   ch: {},
-}));
-
-const actualOrganizationService = await import(
-  '@openpanel/db/src/services/organization.service'
-);
-mock.module('@openpanel/db/src/services/organization.service', () => ({
-  ...actualOrganizationService,
-  getSettingsForProject: mockGetSettingsForProject,
-}));
-
-const actualProjectService = await import(
-  '@openpanel/db/src/services/project.service'
-);
-mock.module('@openpanel/db/src/services/project.service', () => ({
-  ...actualProjectService,
-  resolveClientProjectId: mock(
-    ({ clientProjectId }: { clientProjectId: string }) =>
-      Promise.resolve(clientProjectId)
-  ),
 }));
 
 let registerPagePerformanceTools: typeof import('./page-performance').registerPagePerformanceTools;

@@ -37,7 +37,7 @@ import {
 } from './realtime.service';
 
 // Dynamic, not a static top-level import: `./src/access` reaches
-// `@openpanel/db/src/services/project.service`, which re-exports from
+// `@openpanel/core`, which re-exports from
 // `@openpanel/core`'s own barrel (`index.ts`) — and this file IS part of that
 // barrel's eager chain (`rest.routes.ts` -> `dashboardRoutes`). A static
 // import here closes the cycle mid-evaluation (a `getProjectAccess` TDZ

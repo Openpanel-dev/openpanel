@@ -51,7 +51,7 @@ function loadChClient() {
 }
 
 function loadIdService() {
-  return import('@openpanel/db/src/services/id.service').then((m) => m.getId);
+  return import('@openpanel/core').then((m) => m.getId);
 }
 
 export async function getProjectById(id: string) {

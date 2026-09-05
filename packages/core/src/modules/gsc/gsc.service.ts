@@ -774,10 +774,10 @@ export async function resolveGscDateRange(
   input: GscDateRangeInput
 ): Promise<{ startDate: string; endDate: string }> {
   const { getSettingsForProject } = await import(
-    '@openpanel/db/src/services/organization.service'
+    '@openpanel/core'
   );
   const { getChartStartEndDate } = await import(
-    '@openpanel/db/src/services/date.service'
+    '@openpanel/core'
   );
   const { timezone } = await getSettingsForProject(projectId);
   const { startDate, endDate } = getChartStartEndDate(

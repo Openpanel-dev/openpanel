@@ -4,7 +4,7 @@ import { cn } from '@/utils/cn';
 import { formatDateTime } from '@/utils/date';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 
-import type { IServiceEvent, IServiceProfile } from '@openpanel/db';
+import type { IServiceEvent, IServiceProfile } from '@openpanel/core';
 import { FullPageEmptyState } from '../full-page-empty-state';
 import { WidgetButtons, WidgetHead } from '../overview/overview-widget';
 

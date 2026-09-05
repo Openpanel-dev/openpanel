@@ -1,4 +1,4 @@
-import type { IServiceProfile } from '@openpanel/db';
+import type { IServiceProfile } from '@openpanel/core';
 import type { ColumnDef } from '@tanstack/react-table';
 import { ProfileAvatar } from '../profile-avatar';
 import { ColumnCreatedAt } from '@/components/column-created-at';

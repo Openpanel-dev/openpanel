@@ -1,4 +1,4 @@
-import type { IServiceDashboards } from '@openpanel/db';
+import type { IServiceDashboards } from '@openpanel/core';
 import { useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import {

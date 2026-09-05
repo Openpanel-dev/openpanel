@@ -1,4 +1,4 @@
-import type { IServiceClient } from '@openpanel/db';
+import type { IServiceClient } from '@openpanel/core';
 import { frameworks } from '@openpanel/sdk-info';
 import { CopyIcon, PlugIcon } from 'lucide-react';
 import { Button } from '../ui/button';

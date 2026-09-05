@@ -38,19 +38,14 @@ mock.module('@openpanel/db/src/prisma-client', () => ({
   db: mockDb,
 }));
 
-const actualDashboardService = await import(
-  '@openpanel/db/src/services/dashboard.service'
-);
-mock.module('@openpanel/db/src/services/dashboard.service', () => ({
-  ...actualDashboardService,
+// The dashboard/project/id loaders all resolve through this same
+// @openpanel/core specifier now (M9-CLEANUP-001) — one mock.module call, not
+// three, or each later call replaces the whole module and drops the earlier
+// overrides.
+const actualCore = await import('@openpanel/core');
+mock.module('@openpanel/core', () => ({
+  ...actualCore,
   getDashboardById: mockGetDashboardById,
-}));
-
-const actualProjectService = await import(
-  '@openpanel/db/src/services/project.service'
-);
-mock.module('@openpanel/db/src/services/project.service', () => ({
-  ...actualProjectService,
   getProjectById: mockGetProjectById,
   resolveClientProjectId: mock(
     ({
@@ -61,11 +56,6 @@ mock.module('@openpanel/db/src/services/project.service', () => ({
       inputProjectId?: string;
     }) => Promise.resolve(clientProjectId ?? inputProjectId)
   ),
-}));
-
-const actualIdService = await import('@openpanel/db/src/services/id.service');
-mock.module('@openpanel/db/src/services/id.service', () => ({
-  ...actualIdService,
   getId: mockGetId,
 }));
 

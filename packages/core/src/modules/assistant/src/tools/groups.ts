@@ -3,7 +3,7 @@ import {
   getGroupCore,
   getGroupMemberProfiles,
   queryEventsCore,
-} from '@openpanel/db';
+} from '@openpanel/core';
 import { z } from 'zod';
 import { chatTool, dashboardUrl, truncateRows } from './helpers';
 

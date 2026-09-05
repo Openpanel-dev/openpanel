@@ -123,7 +123,7 @@ export const insightRouter = createTRPCRouter({
       // @openpanel/db's internals until it does.
       const { db } = await import('@openpanel/db/src/prisma-client');
       const { getSegmentDailySeriesCore, getTrafficBreakdownCore } =
-        await import('@openpanel/db/src/services/overview.service');
+        await import('@openpanel/core');
 
       const insight = await db.projectInsight.findUniqueOrThrow({
         where: { id: insightId },

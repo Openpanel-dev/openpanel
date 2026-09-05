@@ -16,7 +16,7 @@ import {
   getTrafficBreakdownCore,
   listEventNamesCore,
   resolveDateRange as resolveDateRangeCore,
-} from '@openpanel/db';
+} from '@openpanel/core';
 import {
   type IChartEventFilter,
   type IChartRange,

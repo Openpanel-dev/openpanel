@@ -21,7 +21,7 @@ import { runQuery } from './src/run-query';
 // Lazy: packages/db's reports.service imports the funnel shim, which points
 // back here — a static import would close the cycle at module load.
 function loadReportsService() {
-  return import('@openpanel/db/src/services/reports.service');
+  return import('@openpanel/core');
 }
 
 /** Default funnel window, in hours, when the report does not set one. */

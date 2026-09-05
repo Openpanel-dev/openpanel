@@ -7,16 +7,16 @@ import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
 
 const add = mock((_event: { id: string }) => undefined);
 
-const actualBuffers = await import('@openpanel/db/src/buffers');
+const actualBuffers = await import('@openpanel/queue/src/buffers');
 const realBuffers = { ...actualBuffers };
-mock.module('@openpanel/db/src/buffers', () => ({
+mock.module('@openpanel/queue/src/buffers', () => ({
   ...realBuffers,
   eventBuffer: { add },
   botBuffer: { add: mock(() => undefined) },
 }));
 
 afterAll(() => {
-  mock.module('@openpanel/db/src/buffers', () => realBuffers);
+  mock.module('@openpanel/queue/src/buffers', () => realBuffers);
 });
 
 let createEvent: typeof import('../event.service').createEvent;

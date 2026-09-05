@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getRetentionCohortCore } from '@openpanel/db';
+import { getRetentionCohortCore } from '@openpanel/core';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,

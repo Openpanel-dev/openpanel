@@ -35,7 +35,7 @@ function loadAccessChecks() {
 }
 
 function loadOrganizationService() {
-  return import('@openpanel/db/src/services/organization.service');
+  return import('@openpanel/core');
 }
 
 function requireLogin(userId: string | null | undefined): string {

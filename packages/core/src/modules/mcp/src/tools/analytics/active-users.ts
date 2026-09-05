@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getRetentionSeries, getRollingActiveUsers } from '@openpanel/db';
+import { getRetentionSeries, getRollingActiveUsers } from '@openpanel/core';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {

@@ -4,7 +4,7 @@ import { camelCaseToWords } from '@/utils/casing';
 import { clipboard } from '@/utils/clipboard';
 import { cn } from '@/utils/cn';
 import { formatDateTime, formatTime } from '@/utils/date';
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/core';
 import { isToday } from 'date-fns';
 import { CopyIcon } from 'lucide-react';
 import { SerieIcon } from '../report-chart/common/serie-icon';

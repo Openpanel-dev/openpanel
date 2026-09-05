@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { GscQueryOpportunity } from '@openpanel/db';
-import { getGscQueries, getGscQueryDetails } from '@openpanel/db';
+import type { GscQueryOpportunity } from '@openpanel/core';
+import { getGscQueries, getGscQueryDetails } from '@openpanel/core';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {

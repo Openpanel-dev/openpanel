@@ -1,4 +1,4 @@
-import type { IServiceOrganization } from '@openpanel/db';
+import type { IServiceOrganization } from '@openpanel/core';
 import type { ICancellationReason } from '@openpanel/validation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckIcon } from 'lucide-react';

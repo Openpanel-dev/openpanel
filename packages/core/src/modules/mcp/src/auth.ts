@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { ClientType, getClientByIdCached } from '@openpanel/db';
+import { getClientByIdCached } from '@openpanel/core';
+import { ClientType } from '@openpanel/db';
 import { getCache } from '@openpanel/redis';
 import { createLogger } from '../../../clients/logger';
 import { verifyPassword } from '../../../shared/crypto';

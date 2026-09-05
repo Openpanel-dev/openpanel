@@ -173,27 +173,19 @@ mock.module('../auth/auth.service', () => ({
 }));
 
 const getSettingsForProject = mock(async () => ({ timezone: 'UTC' }));
-// Spread the real module — see the clickhouse/client mock above for why a
-// partial factory here is a process-wide hazard, not a local one.
-const actualOrganizationService = await import(
-  '@openpanel/db/src/services/organization.service'
-);
-mock.module('@openpanel/db/src/services/organization.service', () => ({
-  ...actualOrganizationService,
-  getSettingsForProject,
-}));
-
 const getChartStartEndDate = mock(() => ({
   startDate: '2026-09-01T00:00:00.000Z',
   endDate: '2026-09-03T00:00:00.000Z',
 }));
 // Spread the real module — see the clickhouse/client mock above for why a
-// partial factory here is a process-wide hazard, not a local one.
-const actualDateService = await import(
-  '@openpanel/db/src/services/date.service'
-);
-mock.module('@openpanel/db/src/services/date.service', () => ({
-  ...actualDateService,
+// partial factory here is a process-wide hazard, not a local one. The
+// organization/date loaders both resolve through this same specifier now
+// (M9-CLEANUP-001) — one mock.module call, not two, or the second replaces
+// the whole module and drops the first override.
+const actualCore = await import('@openpanel/core');
+mock.module('@openpanel/core', () => ({
+  ...actualCore,
+  getSettingsForProject,
   getChartStartEndDate,
 }));
 

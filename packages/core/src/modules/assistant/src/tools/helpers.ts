@@ -6,7 +6,7 @@ import {
 import {
   getDatesFromRange,
   resolveDateRange as resolveDateRangeCore,
-} from '@openpanel/db';
+} from '@openpanel/core';
 import type { IChartEventFilter, IChartRange } from '@openpanel/validation';
 import type { z } from 'zod';
 import type { ChatAgentContext, PageContext } from '../context';

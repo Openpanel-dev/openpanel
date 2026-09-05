@@ -6,15 +6,13 @@
 // delegate to, so V1 keeps its own ClickHouse/Postgres calls here, reading
 // the schemas core now owns instead of @openpanel/validation's copy.
 
-import { zWidgetOptions, zWidgetType } from '@openpanel/core';
 import {
-  ch,
-  clix,
-  db,
-  eventBuffer,
   getSettingsForProject,
-  TABLE_NAMES,
-} from '@openpanel/db';
+  zWidgetOptions,
+  zWidgetType,
+} from '@openpanel/core';
+import { ch, clix, db, TABLE_NAMES } from '@openpanel/db';
+import { eventBuffer } from '@openpanel/queue/src/buffers';
 import { getCache } from '@openpanel/redis';
 import ShortUniqueId from 'short-unique-id';
 import { z } from 'zod';

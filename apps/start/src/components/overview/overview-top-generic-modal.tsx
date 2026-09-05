@@ -1,7 +1,7 @@
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 
 import { useTRPC } from '@/integrations/trpc/react';
-import type { IGetTopGenericInput } from '@openpanel/db';
+import type { IGetTopGenericInput } from '@openpanel/core';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRightIcon } from 'lucide-react';
 import { SerieIcon } from '../report-chart/common/serie-icon';

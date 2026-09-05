@@ -20,7 +20,7 @@
 // guards on exactly this (apps/api/src/controllers/import.controller.ts:17-18),
 // ported verbatim.
 
-import type { IClickhouseEvent } from '@openpanel/db';
+import type { IClickhouseEvent } from '@openpanel/core';
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
 import { insertRawEventsBatch } from './import.service';

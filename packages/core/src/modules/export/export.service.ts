@@ -7,22 +7,27 @@
 // apps/api/src/controllers/{export,insights}.controller.ts. No new query
 // logic: every resolution here already existed in V1's controllers.
 //
-// `@openpanel/db` is reached through `loadDb()`, not a static import:
-// `export.routes.ts` mounts into `rest.routes.ts`, which `index.ts` — this
-// package's curated barrel — imports. A static import here would make
-// importing `@openpanel/core` from ANYWHERE eagerly evaluate the whole of
-// `@openpanel/db` (every service, `packages/queue`'s still-V1 `getRedisQueue`
-// included), which is exactly the "core ↔ db is an import cycle" hazard
-// session.service.ts and event.service.ts already document — just reached via
-// a different, much more central, file this time. A route body only pays for
-// `@openpanel/db` when it actually runs, same reason `event.rpc.ts`'s
-// `loadPagesRuntime()` exists.
+// This barrel (`@openpanel/core`) is reached through `loadCore()`, not a
+// static import: `export.routes.ts` mounts into `rest.routes.ts`, which
+// `index.ts` — this package's curated barrel — imports. A static import here
+// would make importing `@openpanel/core` from ANYWHERE eagerly re-enter this
+// same barrel mid-evaluation — the "core imports itself" hazard
+// session.service.ts and event.service.ts already document for their own
+// lazy loaders — just reached via a different, much more central, file this
+// time. A route body only pays for it when it actually runs, same reason
+// `event.rpc.ts`'s `loadPagesRuntime()` exists. `@openpanel/db` (just the
+// Prisma client) is cheap enough to load the same way, kept separate so a
+// caller that only needs `db` doesn't pull in the rest.
 
 import type { IChartRange } from '@openpanel/validation';
 import type { AuthenticatedClient } from '../../http/client-auth';
 
 export function loadDb() {
   return import('@openpanel/db');
+}
+
+export function loadCore() {
+  return import('@openpanel/core');
 }
 
 export type ProjectIdResolution =
@@ -84,7 +89,7 @@ export async function resolveInsightsProjectId(
   client: AuthenticatedClient,
   params: { projectId?: string }
 ): Promise<string> {
-  const { resolveClientProjectId } = await loadDb();
+  const { resolveClientProjectId } = await loadCore();
   return resolveClientProjectId({
     clientType: client.type === 'root' ? 'root' : 'read',
     clientProjectId: client.projectId,
@@ -102,7 +107,7 @@ export async function resolveInsightsDateRange(
   data: { startDate?: string; endDate?: string; range?: IChartRange }
 ): Promise<{ startDate: string; endDate: string }> {
   const { getChartStartEndDate, getSettingsForProject, resolveDateRange } =
-    await loadDb();
+    await loadCore();
   if (!data.range || data.startDate) {
     return resolveDateRange(data.startDate, data.endDate);
   }

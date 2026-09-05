@@ -10,7 +10,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import type { IServiceReference } from '@openpanel/db';
+import type { IServiceReference } from '@openpanel/core';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';

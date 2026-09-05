@@ -21,7 +21,7 @@ import { validateOverviewShareAccess } from '../share/share.service';
 import {
   getChartPrevStartEndDate,
   getChartStartEndDate,
-} from '@openpanel/db/src/services/date.service';
+} from '@openpanel/core';
 import {
   type IChartRange,
   pageContextSchema,

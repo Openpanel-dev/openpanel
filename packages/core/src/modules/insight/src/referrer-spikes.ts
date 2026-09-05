@@ -6,7 +6,7 @@ import {
 import { clix } from '@openpanel/db/src/clickhouse/query-builder';
 // `overview` hasn't moved to core yet (a later wave) — deep-imported like the
 // rest of @openpanel/db's internals until it does.
-import { overviewService } from '@openpanel/db/src/services/overview.service';
+import { overviewService } from '@openpanel/core';
 import type { IChartEventFilter, IInterval } from '@openpanel/validation';
 
 // Spike detection thresholds. Conservative defaults — markers should be rare

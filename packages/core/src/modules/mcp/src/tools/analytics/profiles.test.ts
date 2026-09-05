@@ -40,11 +40,11 @@ afterAll(() => {
   }));
 });
 
-let findProfilesCore: typeof import('@openpanel/db/src/services/profile.service').findProfilesCore;
+let findProfilesCore: typeof import('@openpanel/core').findProfilesCore;
 
 beforeAll(async () => {
   ({ findProfilesCore } = await import(
-    '@openpanel/db/src/services/profile.service'
+    '@openpanel/core'
   ));
 });
 

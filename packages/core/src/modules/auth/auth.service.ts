@@ -173,7 +173,7 @@ function loadAuthSession() {
 }
 
 function loadRegistration() {
-  return import('@openpanel/db/src/services/registration.service');
+  return import('@openpanel/core');
 }
 
 function loadShare() {

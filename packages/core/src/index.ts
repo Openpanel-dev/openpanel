@@ -565,9 +565,11 @@ export { emailCategories } from './modules/email/email.constants';
 // "R,S,C") — packages/trpc's routers, apps/api's export controller, is-bot
 // hook and profile controller, apps/worker's incoming-event job and the
 // assistant/mcp tools call these directly, the same way V1 reaches every
-// other dissolved service here. packages/db keeps re-export shims for all
-// three files (the buffers' row types and cohort.service's profileSearchSql
-// still resolve through them).
+// other dissolved service here. `packages/db`'s re-export shims for these
+// three files are gone (M9-CLEANUP-001) — every caller now imports this
+// barrel directly, and `profileSearchSql` (cohort.service's one addition atop
+// the shim) moved to profile/src/profile.sql.ts alongside its sibling
+// `profileSearchCondition`.
 export type {
   EventListSelect,
   GetEventListOptions,
@@ -705,12 +707,14 @@ export {
   upsertIntegration,
 } from './modules/integration/integration.service';
 // Dissolved from @openpanel/db's services/notification.service.ts (M6-005,
-// "rules + dispatch stay together") — packages/trpc's notification router,
-// packages/db's own enqueue orchestration (createNotification et al, which
-// stays there — see that file's header for why) and apps/worker's
-// notification job all call these directly, the same way V1 reaches every
-// other dissolved service here. packages/db/src/services/notification.service.ts
-// stays a re-export shim for the pieces that moved.
+// "rules + dispatch stay together") — packages/trpc's notification router
+// and apps/worker's notification job call these directly, the same way V1
+// reaches every other dissolved service here. `createNotification` /
+// `triggerNotification` / `checkNotificationRulesForEvent` /
+// `checkNotificationRulesForSessionEnd` — the BullMQ-producer orchestration
+// around a rule match — moved to `@openpanel/queue/src/notification-dispatch.ts`
+// (M9-CLEANUP-001, packages/db's final-surface shrink), not here: core still
+// cannot import `@openpanel/queue` back without a real package cycle.
 export type {
   INotificationPayload,
   INotificationRuleCached,
@@ -1035,9 +1039,9 @@ export {
 // (M7-001, ADR-008's module map: session owns "R,S,J") — packages/trpc's
 // session router, the assistant/mcp tools and apps/worker's thin delegates
 // call these directly, the same way V1 reaches every other dissolved service
-// here. packages/db keeps re-export shims for both files. The `sessions`
-// queue's own job and the reaper/vacuum cron fragments are registered in
-// jobs.registry.ts, not exported.
+// here. `packages/db`'s re-export shims for both files are gone
+// (M9-CLEANUP-001). The `sessions` queue's own job and the reaper/vacuum cron
+// fragments are registered in jobs.registry.ts, not exported.
 export type {
   GetSessionListOptions,
   IClickhouseSession,
@@ -1148,13 +1152,12 @@ export {
 // SessionManager to manage.
 //
 // Loaded via dynamic import, NOT a static re-export, for the same reason
-// `getChatApp`/`runFilterCommand` above are: `mcp.service` reaches
-// `@openpanel/db` (auth's client lookup, every analytics tool), and
-// `@openpanel/db/src/buffers/index.ts` already imports `@openpanel/core`
-// eagerly. A static export here would make this barrel's own evaluation
-// re-enter `@openpanel/db` mid-evaluation — observed as a `PagesService` TDZ
-// ReferenceError two modules away, in a tool file that never otherwise runs
-// at import time.
+// `getChatApp`/`runFilterCommand` above are: `mcp.service` reaches this same
+// barrel (auth's client lookup, every analytics tool, all moved onto
+// `@openpanel/core` directly since M9-CLEANUP-001). A static export here
+// would make this barrel's own evaluation re-enter itself mid-evaluation —
+// observed as a `PagesService` TDZ ReferenceError two modules away, in a tool
+// file that never otherwise runs at import time.
 let _mcp: Promise<typeof import('./modules/mcp/mcp.service')> | undefined;
 function loadMcp() {
   if (!_mcp) {

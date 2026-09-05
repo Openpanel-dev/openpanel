@@ -43,7 +43,7 @@ import {
   profileValuesQuery,
 } from './src/profile.sql';
 
-export { profileSearchCondition } from './src/profile.sql';
+export { profileSearchCondition, profileSearchSql } from './src/profile.sql';
 
 const PROFILES_CACHE_SECONDS = 60 * 5;
 const PROPERTY_KEYS_CACHE_SECONDS = 60;

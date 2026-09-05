@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 
 import { Combobox } from '@/components/ui/combobox';
-import type { IServiceOrganization } from '@openpanel/db';
+import type { IServiceOrganization } from '@openpanel/core';
 import { zEditOrganization } from '@openpanel/validation';
 
 const validator = zEditOrganization;

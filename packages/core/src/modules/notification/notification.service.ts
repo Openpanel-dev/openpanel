@@ -21,7 +21,7 @@
 // would spawn a pino-pretty transport worker thread per test file).
 
 import { stripLeadingAndTrailingSlashes } from '@openpanel/common';
-import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
+import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/core';
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
 import type { IChartEvent, IChartEventFilter } from '@openpanel/validation';

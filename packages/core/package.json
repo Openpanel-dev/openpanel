@@ -38,6 +38,7 @@
     "@openpanel/db": "workspace:*",
     "@openpanel/email": "workspace:*",
     "@openpanel/payments": "workspace:*",
+    "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@oslojs/crypto": "^1.0.1",

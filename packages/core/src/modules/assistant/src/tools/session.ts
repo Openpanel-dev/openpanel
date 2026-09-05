@@ -1,8 +1,8 @@
 import {
+  getSessionById,
   queryEventsCore,
   querySessionsCore,
-  sessionService,
-} from '@openpanel/db';
+} from '@openpanel/core';
 import { z } from 'zod';
 import { chatTool, dashboardUrl, truncateRows } from './helpers';
 
@@ -18,7 +18,7 @@ export const getSessionFull = chatTool(
   async ({ sessionId }, context) => {
     const id = sessionId || context.pageContext?.ids?.sessionId || '';
     const [session, events] = await Promise.all([
-      sessionService.byId(id, context.projectId),
+      getSessionById(id, context.projectId),
       queryEventsCore({
         projectId: context.projectId,
         sessionId: id,
@@ -106,7 +106,7 @@ export const getSimilarSessions = chatTool(
   },
   async ({ sessionId, limit }, context) => {
     const id = sessionId || context.pageContext?.ids?.sessionId || '';
-    const session = await sessionService.byId(id, context.projectId);
+    const session = await getSessionById(id, context.projectId);
 
     const similar = await querySessionsCore({
       projectId: context.projectId,
@@ -147,7 +147,7 @@ export const compareSessionToTypical = chatTool(
   },
   async ({ sessionId }, context) => {
     const id = sessionId || context.pageContext?.ids?.sessionId || '';
-    const session = await sessionService.byId(id, context.projectId);
+    const session = await getSessionById(id, context.projectId);
 
     // Sample recent sessions to compute project averages.
     const sample = await querySessionsCore({
@@ -216,7 +216,7 @@ export const getSessionReferrerContext = chatTool(
   },
   async ({ sessionId }, context) => {
     const id = sessionId || context.pageContext?.ids?.sessionId || '';
-    const session = await sessionService.byId(id, context.projectId);
+    const session = await getSessionById(id, context.projectId);
 
     if (!(session.referrer || session.referrerName)) {
       return {
@@ -260,7 +260,7 @@ export const getSessionReplaySummary = chatTool(
   },
   async ({ sessionId }, context) => {
     const id = sessionId || context.pageContext?.ids?.sessionId || '';
-    const session = await sessionService.byId(id, context.projectId);
+    const session = await getSessionById(id, context.projectId);
     return {
       session_id: id,
       available: session.hasReplay ?? false,

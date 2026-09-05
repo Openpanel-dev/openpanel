@@ -1,4 +1,4 @@
-import type { IServiceEvent, IServiceSession } from '@openpanel/db';
+import type { IServiceEvent, IServiceSession } from '@openpanel/core';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { EventIcon } from '@/components/events/event-icon';

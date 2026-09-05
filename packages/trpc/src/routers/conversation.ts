@@ -10,7 +10,7 @@ import {
   listConversations,
   upsertConversationTitle,
 } from '@openpanel/core';
-import { getOrganizationByProjectIdCached } from '@openpanel/db';
+import { getOrganizationByProjectIdCached } from '@openpanel/core';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { getProjectAccess, requireProjectAccess } from '../access';

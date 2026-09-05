@@ -20,7 +20,7 @@
 
 import { createHash } from 'node:crypto';
 import { toDots } from '@openpanel/common';
-import type { IClickhouseEvent, IClickhouseProfile } from '@openpanel/db';
+import type { IClickhouseEvent, IClickhouseProfile } from '@openpanel/core';
 import type { Prisma } from '@openpanel/db/src/prisma-client';
 import { createLogger, type ILogger } from '../../clients/logger';
 import type { Logger } from '../../logger';

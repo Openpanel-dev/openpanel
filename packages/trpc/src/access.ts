@@ -1,23 +1,23 @@
 // The permission ladder now lives in @openpanel/core (`shared/access`); this
-// file binds it to the real `@openpanel/db` lookups and keeps the specifier
-// V1's routers and `apps/api` already import.
+// file binds it to the real lookups (also core, since M9-CLEANUP-001) and
+// keeps the specifier V1's routers and `apps/api` already import.
 //
 // The ladder itself — the rules, the messages, GHSA-f9rx-pxgw-c6rg's fix — is
 // core's and single-sourced there.
 
-import { createAccessChecks } from '@openpanel/core';
 import {
   canWriteProject,
+  createAccessChecks,
   getOrganizationAccess,
   getProjectAccess,
   getProjectById,
-} from '@openpanel/db';
+} from '@openpanel/core';
 
 export {
   getClientAccess,
   getOrganizationAccess,
   getProjectAccess,
-} from '@openpanel/db';
+} from '@openpanel/core';
 
 const checks = createAccessChecks({
   getProjectAccess,

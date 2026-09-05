@@ -1,4 +1,4 @@
-import type { IServiceReport } from '@openpanel/db';
+import type { IServiceReport } from '@openpanel/core';
 import { useMemo } from 'react';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 

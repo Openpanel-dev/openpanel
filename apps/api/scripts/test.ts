@@ -1,5 +1,5 @@
-import { type IClickhouseEvent, ch, createEvent } from '@openpanel/db';
-import { formatClickhouseDate } from '@openpanel/db';
+import { type IClickhouseEvent, createEvent } from '@openpanel/core';
+import { ch, formatClickhouseDate } from '@openpanel/db';
 import { v4 as uuid } from 'uuid';
 
 async function main() {

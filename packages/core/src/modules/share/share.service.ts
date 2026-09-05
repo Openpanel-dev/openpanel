@@ -30,15 +30,15 @@ function loadDb() {
 }
 
 function loadAccessService() {
-  return import('@openpanel/db/src/services/access.service');
+  return import('@openpanel/core');
 }
 
 function loadDashboardService() {
-  return import('@openpanel/db/src/services/dashboard.service');
+  return import('@openpanel/core');
 }
 
 function loadReportsService() {
-  return import('@openpanel/db/src/services/reports.service');
+  return import('@openpanel/core');
 }
 
 // -----------------------------------------------------------------------

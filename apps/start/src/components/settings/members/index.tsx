@@ -1,4 +1,4 @@
-import type { IServiceMember } from '@openpanel/db';
+import type { IServiceMember } from '@openpanel/core';
 
 import { DataTable } from '@/components/ui/data-table/data-table';
 import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar';

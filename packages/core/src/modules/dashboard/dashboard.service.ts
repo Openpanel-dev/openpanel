@@ -28,7 +28,7 @@ function loadDb() {
 }
 
 function loadIdService() {
-  return import('@openpanel/db/src/services/id.service').then((m) => m.getId);
+  return import('@openpanel/core').then((m) => m.getId);
 }
 
 export async function getDashboardById(id: string, projectId: string) {

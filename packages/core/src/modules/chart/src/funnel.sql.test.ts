@@ -46,7 +46,7 @@ let buildFunnelBase: typeof import('../funnel.service').buildFunnelBase;
 let funnelChartQuery: typeof import('./funnel.sql').funnelChartQuery;
 let funnelProfilesQuery: typeof import('./funnel.sql').funnelProfilesQuery;
 let funnelStepConditions: typeof import('./funnel.sql').funnelStepConditions;
-let onlyReportEvents: typeof import('@openpanel/db/src/services/reports.service').onlyReportEvents;
+let onlyReportEvents: typeof import('@openpanel/core').onlyReportEvents;
 
 const PROJECT_ID = 'test-sql-validation';
 const START = '2026-04-14 00:00:00';
@@ -147,7 +147,7 @@ beforeAll(async () => {
   ({ funnelChartQuery, funnelProfilesQuery, funnelStepConditions } =
     await import('./funnel.sql'));
   ({ onlyReportEvents } = await import(
-    '@openpanel/db/src/services/reports.service'
+    '@openpanel/core'
   ));
 });
 

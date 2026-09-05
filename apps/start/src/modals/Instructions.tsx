@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/sheet';
 import { ExternalLinkIcon, XIcon } from 'lucide-react';
 
-import type { IServiceClient } from '@openpanel/db';
+import type { IServiceClient } from '@openpanel/core';
 import type { frameworks } from '@openpanel/sdk-info';
 
 import { popModal } from '.';

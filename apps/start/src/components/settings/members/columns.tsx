@@ -9,7 +9,7 @@ import { ColumnCreatedAt } from '@/components/column-created-at';
 import { Badge } from '@/components/ui/badge';
 import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
 import { pushModal } from '@/modals';
-import type { IServiceMember } from '@openpanel/db';
+import type { IServiceMember } from '@openpanel/core';
 
 export function useColumns() {
   const columns: ColumnDef<IServiceMember>[] = [

@@ -6,7 +6,7 @@ import {
   getFunnel,
   getReportsByDashboardId,
   getSettingsForProject,
-} from '@openpanel/db';
+} from '@openpanel/core';
 import type { IChartRange, IInterval } from '@openpanel/validation';
 import { z } from 'zod';
 import { chatTool, dashboardUrl } from './helpers';

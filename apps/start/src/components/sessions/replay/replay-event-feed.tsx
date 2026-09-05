@@ -1,7 +1,7 @@
 import { useCurrentTime, useReplayContext } from '@/components/sessions/replay/replay-context';
 import { ReplayEventItem } from '@/components/sessions/replay/replay-event-item';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/core';
 import { useEffect, useMemo, useRef } from 'react';
 import { BrowserChrome } from './browser-chrome';
 import { getEventOffsetMs } from './replay-utils';

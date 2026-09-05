@@ -32,7 +32,7 @@ import type {
   GetEventListOptions,
   IGetTopGenericInput,
   TrafficColumn,
-} from '@openpanel/db';
+} from '@openpanel/core';
 import {
   zChartEvent,
   zChartEventFilter,
@@ -43,9 +43,10 @@ import { z } from 'zod';
 import type { ClientType } from '../../http/client-auth';
 import { defineRoutes } from '../../http/define';
 import { parseQueryStringTransform } from '../../http/query';
+import { loadDbBuffers } from '../../buffers/lazy-db-buffers';
 import { HttpError } from '../../shared/errors';
 import {
-  loadDb,
+  loadCore,
   resolveExportProjectId,
   resolveInsightsDateRange,
   resolveInsightsProjectId,
@@ -174,7 +175,7 @@ export const exportRoutes = defineRoutes((app) =>
           // is undefined and JSON drops it.
           throw new HttpError(resolved.message, { status: resolved.status });
         }
-        const { getEventList, getEventsCount } = await loadDb();
+        const { getEventList, getEventsCount } = await loadCore();
         const {
           limit,
           page: rawPage,
@@ -240,7 +241,7 @@ export const exportRoutes = defineRoutes((app) =>
           // is undefined and JSON drops it.
           throw new HttpError(resolved.message, { status: resolved.status });
         }
-        const { ChartEngine, getSettingsForProject } = await loadDb();
+        const { ChartEngine, getSettingsForProject } = await loadCore();
         const { timezone } = await getSettingsForProject(resolved.projectId);
         const { events, series, ...rest } = query;
 
@@ -324,7 +325,7 @@ async function getOverviewGeneric(
 ) {
   const projectId = await resolveInsightsProjectId(client, params);
   const { getChartStartEndDate, getSettingsForProject, overviewService } =
-    await loadDb();
+    await loadCore();
   const { timezone } = await getSettingsForProject(projectId);
   const { startDate, endDate } = getChartStartEndDate(query, timezone);
   return overviewService.getTopGeneric({
@@ -508,7 +509,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { getAnalyticsOverviewCore } = await loadDb();
+        const { getAnalyticsOverviewCore } = await loadCore();
         return getAnalyticsOverviewCore({
           projectId,
           startDate,
@@ -531,7 +532,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/active_users',
       async ({ params, query, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { getRollingActiveUsersCore } = await loadDb();
+        const { getRollingActiveUsersCore } = await loadCore();
         return getRollingActiveUsersCore({ projectId, days: query.days });
       },
       {
@@ -548,7 +549,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/retention',
       async ({ params, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { getWeeklyRetentionSeriesCore } = await loadDb();
+        const { getWeeklyRetentionSeriesCore } = await loadCore();
         return getWeeklyRetentionSeriesCore(projectId);
       },
       {
@@ -564,7 +565,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/retention/cohort',
       async ({ params, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { getRetentionCohortCore } = await loadDb();
+        const { getRetentionCohortCore } = await loadCore();
         return getRetentionCohortCore(projectId);
       },
       {
@@ -584,7 +585,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { getTopPagesCore } = await loadDb();
+        const { getTopPagesCore } = await loadCore();
         return getTopPagesCore({ projectId, startDate, endDate });
       },
       {
@@ -606,7 +607,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { getEntryExitPagesCore } = await loadDb();
+        const { getEntryExitPagesCore } = await loadCore();
         return getEntryExitPagesCore({
           projectId,
           startDate,
@@ -632,7 +633,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { getPagePerformanceCore } = await loadDb();
+        const { getPagePerformanceCore } = await loadCore();
         return getPagePerformanceCore({
           projectId,
           startDate,
@@ -656,7 +657,7 @@ export const insightsRoutes = defineRoutes((app) =>
       async ({ params, query, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { getChartStartEndDate, getSettingsForProject, overviewService } =
-          await loadDb();
+          await loadCore();
         const { timezone } = await getSettingsForProject(projectId);
         const { startDate, endDate } = getChartStartEndDate(query, timezone);
         return overviewService.getMetrics({
@@ -683,7 +684,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/live',
       async ({ params, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { eventBuffer } = await loadDb();
+        const { eventBuffer } = await loadDbBuffers();
         return { visitors: await eventBuffer.getActiveVisitorCount(projectId) };
       },
       {
@@ -700,7 +701,7 @@ export const insightsRoutes = defineRoutes((app) =>
       async ({ params, query, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { getChartStartEndDate, getSettingsForProject, overviewService } =
-          await loadDb();
+          await loadCore();
         const { timezone } = await getSettingsForProject(projectId);
         const { startDate, endDate } = getChartStartEndDate(query, timezone);
         return overviewService.getTopPages({
@@ -982,7 +983,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { getFunnelCore } = await loadDb();
+        const { getFunnelCore } = await loadCore();
         return getFunnelCore({
           projectId,
           startDate,
@@ -1010,7 +1011,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { getTrafficBreakdownCore } = await loadDb();
+        const { getTrafficBreakdownCore } = await loadCore();
         return getTrafficBreakdownCore({
           projectId,
           startDate,
@@ -1036,7 +1037,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { getTrafficBreakdownCore } = await loadDb();
+        const { getTrafficBreakdownCore } = await loadCore();
         return getTrafficBreakdownCore({
           projectId,
           startDate,
@@ -1063,7 +1064,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { getTrafficBreakdownCore } = await loadDb();
+        const { getTrafficBreakdownCore } = await loadCore();
         return getTrafficBreakdownCore({
           projectId,
           startDate,
@@ -1089,7 +1090,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { getUserFlowCore } = await loadDb();
+        const { getUserFlowCore } = await loadCore();
         return getUserFlowCore({ projectId, startDate, endDate, ...query });
       },
       {
@@ -1107,7 +1108,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/engagement',
       async ({ params, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { getEngagementCore } = await loadDb();
+        const { getEngagementCore } = await loadCore();
         return getEngagementCore(projectId);
       },
       {
@@ -1123,7 +1124,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/events',
       async ({ params, query, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { queryEventsCore } = await loadDb();
+        const { queryEventsCore } = await loadCore();
         return queryEventsCore({ projectId, ...query });
       },
       {
@@ -1141,7 +1142,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/events/names',
       async ({ params, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { listEventNamesCore } = await loadDb();
+        const { listEventNamesCore } = await loadCore();
         return listEventNamesCore(projectId);
       },
       {
@@ -1157,7 +1158,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/events/properties',
       async ({ params, query, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { listEventPropertiesCore } = await loadDb();
+        const { listEventPropertiesCore } = await loadCore();
         return listEventPropertiesCore({
           projectId,
           eventName: query.eventName,
@@ -1177,7 +1178,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/events/property_values',
       async ({ params, query, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { getEventPropertyValuesCore } = await loadDb();
+        const { getEventPropertyValuesCore } = await loadCore();
         return getEventPropertyValuesCore({ projectId, ...query });
       },
       {
@@ -1194,7 +1195,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/profiles',
       async ({ params, query, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { findProfilesCore } = await loadDb();
+        const { findProfilesCore } = await loadCore();
         return findProfilesCore({ projectId, ...query });
       },
       {
@@ -1211,7 +1212,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/profiles/:profileId',
       async ({ params, query, client, status }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { getProfileWithEvents } = await loadDb();
+        const { getProfileWithEvents } = await loadCore();
         const result = await getProfileWithEvents(
           projectId,
           params.profileId,
@@ -1239,7 +1240,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/profiles/:profileId/sessions',
       async ({ params, query, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { getProfileSessionsCore } = await loadDb();
+        const { getProfileSessionsCore } = await loadCore();
         return getProfileSessionsCore(projectId, params.profileId, query.limit);
       },
       {
@@ -1256,7 +1257,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/profiles/:profileId/metrics',
       async ({ params, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { getProfileMetricsCore } = await loadDb();
+        const { getProfileMetricsCore } = await loadCore();
         return getProfileMetricsCore({
           projectId,
           profileId: params.profileId,
@@ -1275,7 +1276,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/sessions',
       async ({ params, query, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { querySessionsCore } = await loadDb();
+        const { querySessionsCore } = await loadCore();
         return querySessionsCore({ projectId, ...query });
       },
       {
@@ -1292,7 +1293,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/groups/types',
       async ({ params, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { listGroupTypesCore } = await loadDb();
+        const { listGroupTypesCore } = await loadCore();
         return listGroupTypesCore(projectId);
       },
       {
@@ -1308,7 +1309,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/groups',
       async ({ params, query, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { findGroupsCore } = await loadDb();
+        const { findGroupsCore } = await loadCore();
         return findGroupsCore({ projectId, ...query });
       },
       {
@@ -1325,7 +1326,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/groups/:groupId',
       async ({ params, query, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { getGroupCore } = await loadDb();
+        const { getGroupCore } = await loadCore();
         return getGroupCore({
           projectId,
           groupId: params.groupId,
@@ -1346,7 +1347,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/reports/:reportId/data',
       async ({ params, client }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { getReportDataCore } = await loadDb();
+        const { getReportDataCore } = await loadCore();
         return getReportDataCore({
           projectId,
           reportId: params.reportId,
@@ -1370,7 +1371,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { gscGetOverviewCore } = await loadDb();
+        const { gscGetOverviewCore } = await loadCore();
         return gscGetOverviewCore({
           projectId,
           startDate,
@@ -1397,7 +1398,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { gscGetTopPagesCore } = await loadDb();
+        const { gscGetTopPagesCore } = await loadCore();
         return gscGetTopPagesCore({
           projectId,
           startDate,
@@ -1423,7 +1424,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { gscGetPageDetailsCore } = await loadDb();
+        const { gscGetPageDetailsCore } = await loadCore();
         return gscGetPageDetailsCore({
           projectId,
           startDate,
@@ -1449,7 +1450,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { gscGetTopQueriesCore } = await loadDb();
+        const { gscGetTopQueriesCore } = await loadCore();
         return gscGetTopQueriesCore({
           projectId,
           startDate,
@@ -1475,7 +1476,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { gscGetQueryDetailsCore } = await loadDb();
+        const { gscGetQueryDetailsCore } = await loadCore();
         return gscGetQueryDetailsCore({
           projectId,
           startDate,
@@ -1501,7 +1502,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { gscGetQueryOpportunitiesCore } = await loadDb();
+        const { gscGetQueryOpportunitiesCore } = await loadCore();
         return gscGetQueryOpportunitiesCore({
           projectId,
           startDate,
@@ -1528,7 +1529,7 @@ export const insightsRoutes = defineRoutes((app) =>
           projectId,
           query
         );
-        const { gscGetCannibalizationCore } = await loadDb();
+        const { gscGetCannibalizationCore } = await loadCore();
         return gscGetCannibalizationCore({ projectId, startDate, endDate });
       },
       {

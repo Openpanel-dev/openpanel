@@ -7,7 +7,7 @@ import {
   gscGetQueryOpportunitiesCore,
   gscGetTopPagesCore,
   gscGetTopQueriesCore,
-} from '@openpanel/db';
+} from '@openpanel/core';
 import { z } from 'zod';
 import { chatTool, resolveDateRange, truncateRows } from './helpers';
 

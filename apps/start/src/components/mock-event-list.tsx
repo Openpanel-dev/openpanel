@@ -2,7 +2,7 @@ import { EventListItem } from '@/components/events/event-list-item';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
-import type { IServiceEventMinimal } from '@openpanel/db';
+import type { IServiceEventMinimal } from '@openpanel/core';
 
 const useWebEventGenerator = () => {
   const [events, setEvents] = useState<IServiceEventMinimal[]>([]);

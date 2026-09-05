@@ -400,7 +400,7 @@ async function buildDigestData(
   // `overview` hasn't moved to core yet — deep-imported like the rest of
   // @openpanel/db's internals until it does.
   const { getAnalyticsOverviewCore } = await import(
-    '@openpanel/db/src/services/overview.service'
+    '@openpanel/core'
   );
 
   const [cur, prev] = await Promise.all([

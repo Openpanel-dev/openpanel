@@ -16,8 +16,8 @@
 import {
   getChartPrevStartEndDate,
   getChartStartEndDate,
-} from '@openpanel/db/src/services/date.service';
-import type { IServiceReport } from '@openpanel/db/src/services/reports.service';
+} from '@openpanel/core';
+import type { IServiceReport } from '@openpanel/core';
 import type {
   FinalChart,
   IChartEventFilter,
@@ -175,7 +175,7 @@ const FIXED_FILTER_PROPERTIES = [
 ];
 
 function loadReportsService() {
-  return import('@openpanel/db/src/services/reports.service');
+  return import('@openpanel/core');
 }
 
 async function getProfilesInBatches(

@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import type { IServiceMember } from '@openpanel/db';
+import type { IServiceMember } from '@openpanel/core';
 import type { IProjectAccessGrant } from '@openpanel/validation';
 
 import { popModal } from '.';

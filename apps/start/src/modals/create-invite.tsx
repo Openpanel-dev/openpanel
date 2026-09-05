@@ -19,7 +19,7 @@ import type { z } from 'zod';
 
 import { ProjectAccessGrants } from '@/components/settings/project-access-grants';
 import { useTRPC } from '@/integrations/trpc/react';
-import type { IServiceProject } from '@openpanel/db';
+import type { IServiceProject } from '@openpanel/core';
 import { zInviteUser } from '@openpanel/validation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 

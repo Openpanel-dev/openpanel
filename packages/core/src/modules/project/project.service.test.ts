@@ -173,7 +173,7 @@ mock.module('@openpanel/db/src/prisma-client', () => ({
   db: { project, report, member },
 }));
 
-mock.module('@openpanel/db/src/services/id.service', () => ({
+mock.module('@openpanel/core', () => ({
   getId: async (_table: string, name: string) => `${name}-slug`,
 }));
 

@@ -23,7 +23,7 @@ import {
   getFunnel,
   getReportById,
   getSettingsForProject,
-} from '@openpanel/db';
+} from '@openpanel/core';
 
 function reportUrl(
   organizationId: string,

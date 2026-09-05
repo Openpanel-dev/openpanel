@@ -1,4 +1,4 @@
-import type { IServiceGroup } from '@openpanel/db';
+import type { IServiceGroup } from '@openpanel/core';
 import type { UseQueryResult } from '@tanstack/react-query';
 import type { PaginationState, Table, Updater } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';

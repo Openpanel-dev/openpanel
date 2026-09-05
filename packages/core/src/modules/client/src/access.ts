@@ -9,11 +9,11 @@ import {
   canWriteProject,
   getOrganizationAccess,
   getProjectAccess,
-} from '@openpanel/db/src/services/access.service';
+} from '@openpanel/core';
 import { createAccessChecks } from '../../../shared/access';
 import { getProjectById } from '../../project/project.service';
 
-export { getClientAccess } from '@openpanel/db/src/services/access.service';
+export { getClientAccess } from '@openpanel/core';
 
 const checks = createAccessChecks({
   getProjectAccess,

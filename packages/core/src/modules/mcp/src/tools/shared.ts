@@ -1,4 +1,4 @@
-import { resolveClientProjectId } from '@openpanel/db';
+import { resolveClientProjectId } from '@openpanel/core';
 import { z } from 'zod';
 import { createLogger } from '../../../../clients/logger';
 import type { McpAuthContext } from '../auth';

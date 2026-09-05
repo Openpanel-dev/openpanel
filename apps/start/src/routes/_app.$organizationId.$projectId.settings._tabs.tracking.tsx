@@ -1,4 +1,4 @@
-import type { IServiceClient } from '@openpanel/db';
+import type { IServiceClient } from '@openpanel/core';
 import { frameworks } from '@openpanel/sdk-info';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';

@@ -35,7 +35,7 @@ const usePersistentColumnVisibility = (columns: any[]) => {
   };
 };
 
-import type { IServiceSession } from '@openpanel/db';
+import type { IServiceSession } from '@openpanel/core';
 import { useNavigate } from '@tanstack/react-router';
 import type { Table } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';

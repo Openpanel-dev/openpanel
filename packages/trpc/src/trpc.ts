@@ -19,7 +19,7 @@ import {
   type RpcCache,
   type TrpcContext,
 } from '@openpanel/core';
-import { runWithAlsSession } from '@openpanel/db';
+import { runWithAlsSession } from '@openpanel/core';
 import { getRedisCache } from '@openpanel/redis';
 import { TRPCError } from '@trpc/server';
 import { has } from 'ramda';

@@ -31,9 +31,9 @@ const noopLogger = {
 // sharing this process (bun:test only isolates modules per file under
 // `--isolate`; see AGENTS.md).
 const actualClientsService = await import(
-  '@openpanel/db/src/services/clients.service'
+  '@openpanel/core'
 );
-mock.module('@openpanel/db/src/services/clients.service', () => ({
+mock.module('@openpanel/core', () => ({
   ...actualClientsService,
   getClientByIdCached: mockGetClientByIdCached,
 }));

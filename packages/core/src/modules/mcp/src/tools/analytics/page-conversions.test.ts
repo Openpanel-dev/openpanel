@@ -6,19 +6,13 @@ const mockGetPageConversionsCore = mock();
 // '@openpanel/db' barrel — a whole-barrel replacement would drop every other
 // export the barrel carries for any other file sharing this process
 // (bun:test only isolates modules per file under `--isolate`; see AGENTS.md).
-const actualPagesService = await import(
-  '@openpanel/db/src/services/pages.service'
-);
-mock.module('@openpanel/db/src/services/pages.service', () => ({
-  ...actualPagesService,
+// The pages/project loaders both resolve through this same specifier now
+// (M9-CLEANUP-001) — one mock.module call, not two, or the second replaces
+// the whole module and drops the first override.
+const actualCore = await import('@openpanel/core');
+mock.module('@openpanel/core', () => ({
+  ...actualCore,
   getPageConversionsCore: mockGetPageConversionsCore,
-}));
-
-const actualProjectService = await import(
-  '@openpanel/db/src/services/project.service'
-);
-mock.module('@openpanel/db/src/services/project.service', () => ({
-  ...actualProjectService,
   resolveClientProjectId: mock(
     ({ clientProjectId }: { clientProjectId: string }) =>
       Promise.resolve(clientProjectId)

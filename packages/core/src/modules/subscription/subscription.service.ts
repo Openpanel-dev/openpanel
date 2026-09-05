@@ -18,7 +18,7 @@
 // worker thread per test file); `./src/access.ts` needs the same treatment
 // because it calls `createAccessChecks({ canWriteProject, ... })` at ITS OWN
 // top level; a static import here would reach into
-// @openpanel/db/src/services/access.service as soon as anything imports
+// @openpanel/core as soon as anything imports
 // @openpanel/core's barrel (this module is a static re-export there, not a
 // lazy one), which broke a vitest suite that partially mocks that module
 // (packages/trpc/src/routers/share.test.ts) with no `canWriteProject` export
