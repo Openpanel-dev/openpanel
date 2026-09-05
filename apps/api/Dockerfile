@@ -1,17 +1,14 @@
-ARG NODE_VERSION=24.19.0
 # ADR-016 pins Bun exactly at 1.4.0 (floor >=1.2.23). Its declared home is
 # `.bun-version` + this ARG; the file does not exist in the tree yet, so this
 # ARG is the single home until it does. Keep the two in sync when it lands.
 ARG BUN_VERSION=1.4.0
+# ADR-014: pnpm stays through P12 — this only pins the pnpm *version* installed
+# into the Bun image, it does not touch which tool runs installs.
+ARG PNPM_VERSION=11.23.0
 
-FROM oven/bun:${BUN_VERSION}-slim AS bun
+FROM oven/bun:${BUN_VERSION}-slim AS base
 
-FROM node:${NODE_VERSION}-slim AS base
-
-# FIX: Bad workaround (https://github.com/nodejs/corepack/issues/612)
-ENV COREPACK_INTEGRITY_KEYS=0
-
-RUN corepack enable && apt-get update && \
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
     openssl \
@@ -23,11 +20,12 @@ RUN corepack enable && apt-get update && \
 
 # M9-003 deleted apps/worker and M9-004 deleted the V1 Fastify boot: this image
 # is now ONE process in three shapes, `bun run src/main.ts` under
-# ROLE=api|worker|all, running from source with no bundle (ADR-010). The node
-# base layer stays only because `pnpm`, `pnpm codegen` and `pnpm rebuild` run in
-# it; making the image bun-only is P9.5's "one image" step, with the measured
-# before/after it owes.
-COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
+# ROLE=api|worker|all, running from source with no bundle (ADR-010). P9.5
+# collapses the base layer itself onto oven/bun — no Node anywhere in the
+# image. pnpm still runs (ADR-014: pnpm stays through P12); it runs *on* Bun
+# instead of needing a separate Node install.
+ARG PNPM_VERSION
+RUN bun install -g pnpm@${PNPM_VERSION}
 
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
