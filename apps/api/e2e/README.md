@@ -224,3 +224,97 @@ the echoed session ids: scoped by session id the same run reads 2490/2500 and
 looks like event loss when nothing was lost. Verified against the same data:
 device-scoped 2500, session-scoped 2490, `session_start`/`session_end` 500 in
 both. Pre-existing V1 behaviour, unrelated to the transport.
+
+## M8-007 — ported ingest path, second data point (2026-09-05)
+
+Same harness, same assertions, same machine as BENCH-001. What changed since
+then is the code under test: `apps/worker`'s Kafka consumer, `incoming-event`,
+`create-session-end`, the session reaper, the salt cron and the session-context/
+consistency helpers now all run through `@openpanel/core` (`M8-002`..`M8-006`,
+`d5cf5854`..`0f8d956a`) instead of `packages/db`/`packages/queue` directly. This
+is the correctness-proven (`0f8d956a`, `full.sh` green) ingest path's **first**
+throughput number — the second data point in Carl's V1-vs-V2 comparison, beside
+the P1 baseline above.
+
+| | |
+|---|---|
+| transport | Kafka/Redpanda only (`KAFKA_BROKERS=127.0.0.1:19092`) |
+| rev | `0f8d956a`, `rewrite/v2` (working tree clean, no changes this task) |
+| machine | 4 vCPU AMD EPYC-Milan, 15 GiB RAM, Linux 6.8.0-137, Node v24.20.0 — api, worker, Redpanda, ClickHouse, Postgres and Redis all on the same 4 cores |
+| stack | controller's `verification/harness start` (`/home/deploy/rewrite-openpanel/verification/harness`) — builds `dist/index.js` for both roles and boots them fresh, pids at `/tmp/openpanel-v1-harness/{api,worker}.pid`. No stack was already running; genuinely fresh api/worker pair. Stopped with `verification/harness stop` after the batch. |
+| harness | `e2e:sessions:stress`, `SESSION_TIMEOUT_MS=4000`, `E2E_RUNS=10` |
+| captured | `2026-09-05T03:29Z`–`03:32Z` — **the one and only batch run for this task**, executed by me while implementing it. Per the operator fix above, verification does not independently re-run the stress harness for this task; the pasted lines below are the sole source of truth and the table is derived from them alone. |
+
+**All 10 runs completed, 10/10 green, no failures** — every `E2E_STRESS_RESULT`
+line below is pasted verbatim, in order, exactly as emitted by the batch:
+
+```
+E2E_STRESS_RESULT {"ok":true,"failedChecks":0,"totalChecks":13,"emitSeconds":2.879,"eventsPerSecond":521.0142410559222,"latency":{"count":1500,"p50":40.64305800000034,"p95":72.39332655000008,"p99":317.7921591199999,"mean":47.420981563999995},"api":{"label":"api","pid":2155147,"sampleCount":21,"peakRssKb":797956,"steadyRssKb":797952,"peakCpuPct":110.00000000000001,"steadyCpuPct":3.0015015015015014},"worker":{"label":"worker","pid":2155148,"sampleCount":21,"peakRssKb":672892,"steadyRssKb":665844,"peakCpuPct":110.00000000000001,"steadyCpuPct":4},"lag":{"sampleCount":21,"peakLag":5,"lagAtEmitEnd":1,"secondsToZeroAfterEmitEnd":1.126},"samplingEnabled":true}
+E2E_STRESS_RESULT {"ok":true,"failedChecks":0,"totalChecks":13,"emitSeconds":2.185,"eventsPerSecond":686.4988558352403,"latency":{"count":1500,"p50":34.332094999999754,"p95":48.390522549999886,"p99":68.49458820999963,"mean":35.903744688000025},"api":{"label":"api","pid":2155147,"sampleCount":17,"peakRssKb":800048,"steadyRssKb":800044,"peakCpuPct":98,"steadyCpuPct":3.003003003003003},"worker":{"label":"worker","pid":2155148,"sampleCount":17,"peakRssKb":678084,"steadyRssKb":675120,"peakCpuPct":71,"steadyCpuPct":4},"lag":{"sampleCount":16,"peakLag":204,"lagAtEmitEnd":204,"secondsToZeroAfterEmitEnd":0.819},"samplingEnabled":true}
+E2E_STRESS_RESULT {"ok":true,"failedChecks":0,"totalChecks":13,"emitSeconds":2.232,"eventsPerSecond":672.0430107526881,"latency":{"count":1500,"p50":34.18160450000005,"p95":58.842280999999765,"p99":76.2734633099999,"mean":36.79863318400006},"api":{"label":"api","pid":2155147,"sampleCount":18,"peakRssKb":802512,"steadyRssKb":802492,"peakCpuPct":98.80239520958084,"steadyCpuPct":3},"worker":{"label":"worker","pid":2155148,"sampleCount":18,"peakRssKb":684564,"steadyRssKb":683000,"peakCpuPct":68.93106893106892,"steadyCpuPct":4.990019960079841},"lag":{"sampleCount":18,"peakLag":84,"lagAtEmitEnd":84,"secondsToZeroAfterEmitEnd":0.771},"samplingEnabled":true}
+E2E_STRESS_RESULT {"ok":true,"failedChecks":0,"totalChecks":13,"emitSeconds":2.204,"eventsPerSecond":680.5807622504536,"latency":{"count":1500,"p50":33.33054100000004,"p95":55.375492450000316,"p99":68.99009141000028,"mean":36.323140220666666},"api":{"label":"api","pid":2155147,"sampleCount":17,"peakRssKb":809344,"steadyRssKb":809336,"peakCpuPct":119,"steadyCpuPct":3.0015015015015014},"worker":{"label":"worker","pid":2155148,"sampleCount":17,"peakRssKb":685072,"steadyRssKb":685072,"peakCpuPct":62,"steadyCpuPct":4},"lag":{"sampleCount":16,"peakLag":153,"lagAtEmitEnd":98,"secondsToZeroAfterEmitEnd":0.8},"samplingEnabled":true}
+E2E_STRESS_RESULT {"ok":true,"failedChecks":0,"totalChecks":13,"emitSeconds":2.226,"eventsPerSecond":673.8544474393531,"latency":{"count":1500,"p50":33.79603250000014,"p95":57.79970199999984,"p99":74.9353070100001,"mean":36.65531997599991},"api":{"label":"api","pid":2155147,"sampleCount":17,"peakRssKb":814000,"steadyRssKb":813984,"peakCpuPct":96,"steadyCpuPct":3.0015015015015014},"worker":{"label":"worker","pid":2155148,"sampleCount":17,"peakRssKb":684792,"steadyRssKb":680400,"peakCpuPct":71.71314741035856,"steadyCpuPct":4.5},"lag":{"sampleCount":16,"peakLag":97,"lagAtEmitEnd":90,"secondsToZeroAfterEmitEnd":0.778},"samplingEnabled":true}
+E2E_STRESS_RESULT {"ok":true,"failedChecks":0,"totalChecks":13,"emitSeconds":2.125,"eventsPerSecond":705.8823529411765,"latency":{"count":1500,"p50":33.78530749999982,"p95":49.1101970000006,"p99":67.85872039999964,"mean":34.94076823400001},"api":{"label":"api","pid":2155147,"sampleCount":17,"peakRssKb":814380,"steadyRssKb":814368,"peakCpuPct":89,"steadyCpuPct":3},"worker":{"label":"worker","pid":2155148,"sampleCount":17,"peakRssKb":682056,"steadyRssKb":682036,"peakCpuPct":84.91508491508493,"steadyCpuPct":4.5},"lag":{"sampleCount":16,"peakLag":173,"lagAtEmitEnd":173,"secondsToZeroAfterEmitEnd":0.879},"samplingEnabled":true}
+E2E_STRESS_RESULT {"ok":true,"failedChecks":0,"totalChecks":13,"emitSeconds":2.245,"eventsPerSecond":668.1514476614699,"latency":{"count":1500,"p50":34.91016599999989,"p95":54.568994550000106,"p99":65.74401873000033,"mean":37.00100935666668},"api":{"label":"api","pid":2155147,"sampleCount":17,"peakRssKb":814388,"steadyRssKb":813176,"peakCpuPct":94,"steadyCpuPct":3.9980019980019983},"worker":{"label":"worker","pid":2155148,"sampleCount":17,"peakRssKb":684792,"steadyRssKb":684748,"peakCpuPct":68.65671641791045,"steadyCpuPct":4.002002002002002},"lag":{"sampleCount":16,"peakLag":167,"lagAtEmitEnd":167,"secondsToZeroAfterEmitEnd":0.759},"samplingEnabled":true}
+E2E_STRESS_RESULT {"ok":true,"failedChecks":0,"totalChecks":13,"emitSeconds":2.254,"eventsPerSecond":665.4835847382432,"latency":{"count":1500,"p50":33.62111700000014,"p95":61.9040720999999,"p99":86.31536190999975,"mean":37.13295127600006},"api":{"label":"api","pid":2155147,"sampleCount":19,"peakRssKb":814200,"steadyRssKb":814052,"peakCpuPct":111.88811188811192,"steadyCpuPct":3.0015015015015014},"worker":{"label":"worker","pid":2155148,"sampleCount":19,"peakRssKb":685284,"steadyRssKb":685260,"peakCpuPct":59.5703125,"steadyCpuPct":4},"lag":{"sampleCount":18,"peakLag":139,"lagAtEmitEnd":139,"secondsToZeroAfterEmitEnd":0.751},"samplingEnabled":true}
+E2E_STRESS_RESULT {"ok":true,"failedChecks":0,"totalChecks":13,"emitSeconds":1.987,"eventsPerSecond":754.9068948163059,"latency":{"count":1500,"p50":31.020249500000318,"p95":48.02773849999981,"p99":61.46492781000006,"mean":32.71572173},"api":{"label":"api","pid":2155147,"sampleCount":16,"peakRssKb":815152,"steadyRssKb":815148,"peakCpuPct":112.99999999999999,"steadyCpuPct":3.003003003003003},"worker":{"label":"worker","pid":2155148,"sampleCount":16,"peakRssKb":686832,"steadyRssKb":686040,"peakCpuPct":65,"steadyCpuPct":4},"lag":{"sampleCount":16,"peakLag":136,"lagAtEmitEnd":51,"secondsToZeroAfterEmitEnd":1.018},"samplingEnabled":true}
+E2E_STRESS_RESULT {"ok":true,"failedChecks":0,"totalChecks":13,"emitSeconds":1.992,"eventsPerSecond":753.0120481927711,"latency":{"count":1500,"p50":31.865921999999955,"p95":44.372101050000445,"p99":58.03558941000048,"mean":32.79455979533331},"api":{"label":"api","pid":2155147,"sampleCount":16,"peakRssKb":815856,"steadyRssKb":815848,"peakCpuPct":91,"steadyCpuPct":3},"worker":{"label":"worker","pid":2155148,"sampleCount":16,"peakRssKb":686968,"steadyRssKb":686938,"peakCpuPct":59,"steadyCpuPct":4},"lag":{"sampleCount":16,"peakLag":113,"lagAtEmitEnd":0,"secondsToZeroAfterEmitEnd":0.013},"samplingEnabled":true}
+```
+
+The harness's own printed median summary over these same 10 runs (verbatim):
+
+```
+Median summary across 10/10 completed runs
+════════════════════════════════════════════════════════════
+  emit:            2.2s (677.2 ev/s)
+  /track latency:  P50=33.8ms P95=55.0ms P99=68.7ms
+  api RSS/CPU:     peak=795.0MB steady=794.5MB / peak=98.4% steady=3.0%
+  worker RSS/CPU:  peak=668.9MB steady=667.8MB / peak=68.8% steady=4.0%
+  kafka lag:       peak=137.5 at-emit-end=94.0 seconds-to-zero=0.8s
+  green runs:      10/10
+```
+
+**Medians and ranges, recomputed independently from the 10 pasted JSON lines
+above** (median of 10 = mean of the 5th and 6th sorted values; range = min–max):
+
+| Metric | Range | Median |
+|---|---|---|
+| emit throughput (`eventsPerSecond`) | 521.0–754.9 ev/s | 677.2 ev/s |
+| `/track` latency P50 | 31.0–40.6ms | 33.8ms |
+| `/track` latency P95 | 44.4–72.4ms | 55.0ms |
+| `/track` latency P99 | 58.0–317.8ms | 68.7ms |
+| api RSS (peak / steady) | 779.3–796.7MB / 779.2–796.7MB | 795.0 / 794.5MB |
+| api CPU% (peak / steady) | 89.0–119.0% / 3.0–4.0% | 98.4% / 3.0% |
+| worker RSS (peak / steady) | 657.1–670.9MB / 650.2–670.8MB | 668.7 / 667.8MB |
+| worker CPU% (peak / steady) | 59.0–110.0% / 4.0–5.0% | 68.8% / 4.0% |
+| Kafka consumer lag, peak | 5–204 events | 137.5 events |
+| Kafka consumer lag, at emit-end | 0–204 events | 94.0 events |
+| Kafka consumer lag, seconds-to-zero after emit stops | 0.01–1.13s | 0.8s |
+
+Per-run throughput, sorted, for anyone re-deriving the median by hand: 521.0,
+665.5, 668.2, 672.0, 673.9, 680.6, 686.5, 705.9, 753.0, 754.9 ev/s — median is
+the mean of the 5th and 6th values, (673.9 + 680.6) / 2 = 677.2.
+
+Per-run `worker.peakRssKb`, sorted: 672892, 678084, 682056, 684564, 684792,
+684792, 685072, 685284, 686832, 686968 — median is the mean of the 5th and 6th
+values, (684792 + 684792) / 2 = 684792 KB = 668.7MB. The harness's own summary
+line above prints 668.9MB for the same metric, which does not match this
+independent recomputation from the 10 pasted `worker.peakRssKb` values; the
+table below uses the recomputed 668.7MB, not the harness's 668.9MB.
+
+**Comparison against the P1 baseline (this task's 10%-deviation trigger):**
+677.2 ev/s is **3.9% below** the closer BENCH-001 anchor (704.4 ev/s) and
+**9.7% below** the original P1 headline number (750 ev/s). Both are under the
+10% trigger this task sets for naming a cause with a control run, so no
+control run was required or run. For context only (not a substitute for the
+threshold check): run 1 (521.0 ev/s, `emitSeconds=2.879`, P99=317.8ms) is a
+clear cold-start outlier — the same pattern BENCH-001 noted for its own first
+two runs — and dragging on it alone would overstate any regression; runs 2–10
+cluster 665.5–754.9 ev/s (mean ≈699), within ordinary run-to-run noise of the
+704–750 ev/s band on this shared 4-core box.
+
+Nothing about the `@openpanel/core` port changes the request-handling or
+consumer code paths in a way expected to cost throughput — `M8-006`'s
+correctness checkpoint (`0f8d956a`) already proved the ported path behaves
+identically to the one BENCH-001 measured; this run's job was only to attach a
+number to it.
