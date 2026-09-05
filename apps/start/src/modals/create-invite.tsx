@@ -103,7 +103,7 @@ export default function CreateInvite() {
               <SheetTitle>Invite a user</SheetTitle>
               <SheetDescription>
                 Invite users to your organization. They will receive an email
-                will instructions.
+                with instructions.
               </SheetDescription>
             </div>
           </SheetHeader>
