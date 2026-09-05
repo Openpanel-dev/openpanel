@@ -10,6 +10,7 @@
 import { DateTime, round } from '@openpanel/common';
 import type { IChartEventFilter } from '@openpanel/validation';
 import { range } from 'ramda';
+import type { ServiceDeps } from '../../services';
 import {
   type IRetentionCriteria,
   type IRetentionInterval,
@@ -85,40 +86,48 @@ export interface IGetRetentionCohortInput {
 // Instead of self-joining the raw events table (O(events²) per profile), the
 // statement first collapses events to one row per (profile, week), then
 // self-joins that much smaller set to its next week.
-export function getRetentionSeries({ projectId }: IGetWeekRetentionInput) {
+export function getRetentionSeries(
+  deps: ServiceDeps,
+  { projectId }: IGetWeekRetentionInput
+) {
   return runQuery<{
     date: string;
     active_users: number;
     retained_users: number;
     retention: number;
-  }>(retentionSeriesQuery(projectId));
+  }>(deps, retentionSeriesQuery(projectId));
 }
 
 // https://medium.com/@andre_bodro/how-to-fast-calculating-mau-in-clickhouse-fd793559b229
 // Rolling active users
-export function getRollingActiveUsers({
-  projectId,
-  days,
-}: IGetWeekRetentionInput & { days: number }) {
+export function getRollingActiveUsers(
+  deps: ServiceDeps,
+  { projectId, days }: IGetWeekRetentionInput & { days: number }
+) {
   return runQuery<IServiceRetentionRollingActiveUsers>(
+    deps,
     rollingActiveUsersQuery(projectId, days)
   );
 }
 
-export function getRetentionLastSeenSeries({
-  projectId,
-}: IGetWeekRetentionInput) {
+export function getRetentionLastSeenSeries(
+  deps: ServiceDeps,
+  { projectId }: IGetWeekRetentionInput
+) {
   return runQuery<{
     days: number;
     users: number;
-  }>(retentionLastSeenSeriesQuery(projectId));
+  }>(deps, retentionLastSeenSeriesQuery(projectId));
 }
 
-export async function getRollingActiveUsersCore(input: {
-  projectId: string;
-  days: number;
-}) {
-  const data = await getRollingActiveUsers(input);
+export async function getRollingActiveUsersCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    days: number;
+  }
+) {
+  const data = await getRollingActiveUsers(deps, input);
   return {
     window_days: input.days,
     label: ROLLING_ACTIVE_USER_LABELS[input.days] ?? `${input.days}d active`,
@@ -126,17 +135,23 @@ export async function getRollingActiveUsersCore(input: {
   };
 }
 
-export async function getWeeklyRetentionSeriesCore(projectId: string) {
-  return getRetentionSeries({ projectId });
+export async function getWeeklyRetentionSeriesCore(
+  deps: ServiceDeps,
+  projectId: string
+) {
+  return getRetentionSeries(deps, { projectId });
 }
 
 // Weekly active-user retention cohort over the last 12 weeks, computed by the
 // unified getRetentionCohort engine. firstEvent/secondEvent are omitted so any
 // identified activity counts toward the cohort.
-export async function getRetentionCohortCore(projectId: string) {
+export async function getRetentionCohortCore(
+  deps: ServiceDeps,
+  projectId: string
+) {
   const end = DateTime.now();
   const start = end.minus({ weeks: RETENTION_COHORT_WEEKS });
-  return getRetentionCohort({
+  return getRetentionCohort(deps, {
     projectId,
     interval: 'week',
     startDate: start.toFormat('yyyy-MM-dd HH:mm:ss'),
@@ -144,8 +159,8 @@ export async function getRetentionCohortCore(projectId: string) {
   });
 }
 
-export async function getEngagementCore(projectId: string) {
-  const raw = await getRetentionLastSeenSeries({ projectId });
+export async function getEngagementCore(deps: ServiceDeps, projectId: string) {
+  const raw = await getRetentionLastSeenSeries(deps, { projectId });
 
   let active_0_7 = 0;
   let active_8_14 = 0;
@@ -228,7 +243,10 @@ function diffIntervalCount(
   return Math.max(0, Math.floor(end.diff(start, unit).as(unit)));
 }
 
-export async function getRetentionCohort(input: IGetRetentionCohortInput) {
+export async function getRetentionCohort(
+  deps: ServiceDeps,
+  input: IGetRetentionCohortInput
+) {
   const {
     projectId,
     firstEvent,
@@ -247,6 +265,7 @@ export async function getRetentionCohort(input: IGetRetentionCohortInput) {
     total_first_event_count: number;
     [key: string]: number | string;
   }>(
+    deps,
     retentionCohortQuery({
       projectId,
       firstEvent,

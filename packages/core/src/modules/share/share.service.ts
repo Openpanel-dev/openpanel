@@ -6,15 +6,23 @@
 // (M6-003) and packages/trpc's chart/overview routers still reach
 // validateShareAccess/validateOverviewShareAccess through it.
 //
-// db access is LAZY, not a static top-level import — see insight.service.ts's
-// header for the full reasoning (jobs.registry.ts and services.ts pull this
-// module into the eager barrel chain nearly every core test file reaches, and
-// constructing @openpanel/db's clients at import time would spawn a
-// pino-pretty transport worker thread per test file).
+// M10-003: every function takes `ServiceDeps` and reaches Postgres as
+// `deps.db`; the `loadDb()` / `loadAccessService()` / `loadDashboardService()`
+// / `loadReportsService()` lazy loaders are gone, so this module
+// value-imports neither `@openpanel/db` nor its own package barrel
+// (docs/TECH_DEBT.md §4).
 
 import ShortUniqueId from 'short-unique-id';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+import type { ServiceDeps } from '../../services';
+import { getProjectAccess } from '../../shared/access-lookups';
 import { hashPassword } from '../auth/auth.service';
+import { getDashboardById } from '../dashboard/dashboard.service';
+import {
+  getReportById,
+  getReportsByDashboardId,
+  transformReport,
+} from '../report/report.service';
 
 const SHARE_ID_LENGTH = 6;
 const uid = new ShortUniqueId({ length: SHARE_ID_LENGTH });
@@ -25,61 +33,54 @@ interface CookieReader {
   get(name: string): string | undefined;
 }
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
-function loadAccessService() {
-  return import('@openpanel/core');
-}
-
-function loadDashboardService() {
-  return import('@openpanel/core');
-}
-
-function loadReportsService() {
-  return import('@openpanel/core');
-}
-
 // -----------------------------------------------------------------------
 // Raw lookups (ported verbatim from packages/db/src/services/share.service.ts).
 
-export async function getShareOverviewById(id: string) {
-  const db = await loadDb();
+export async function getShareOverviewById(deps: ServiceDeps, id: string) {
+  const db = deps.db;
   return db.shareOverview.findFirst({
     where: { id },
     include: { project: true },
   });
 }
 
-export async function getShareByProjectId(projectId: string) {
-  const db = await loadDb();
+export async function getShareByProjectId(
+  deps: ServiceDeps,
+  projectId: string
+) {
+  const db = deps.db;
   return db.shareOverview.findUnique({ where: { projectId } });
 }
 
-export async function getShareDashboardById(id: string) {
-  const db = await loadDb();
+export async function getShareDashboardById(deps: ServiceDeps, id: string) {
+  const db = deps.db;
   return db.shareDashboard.findFirst({
     where: { id },
     include: { dashboard: { include: { project: true } } },
   });
 }
 
-export async function getShareDashboardByDashboardId(dashboardId: string) {
-  const db = await loadDb();
+export async function getShareDashboardByDashboardId(
+  deps: ServiceDeps,
+  dashboardId: string
+) {
+  const db = deps.db;
   return db.shareDashboard.findUnique({ where: { dashboardId } });
 }
 
-export async function getShareReportById(id: string) {
-  const db = await loadDb();
+export async function getShareReportById(deps: ServiceDeps, id: string) {
+  const db = deps.db;
   return db.shareReport.findFirst({
     where: { id },
     include: { report: { include: { project: true } } },
   });
 }
 
-export async function getShareReportByReportId(reportId: string) {
-  const db = await loadDb();
+export async function getShareReportByReportId(
+  deps: ServiceDeps,
+  reportId: string
+) {
+  const db = deps.db;
   return db.shareReport.findUnique({ where: { reportId } });
 }
 
@@ -88,11 +89,12 @@ export async function getShareReportByReportId(reportId: string) {
  * Ported as-is — removal is a separate P6/P7 task, not this one's.
  */
 export async function validateReportAccess(
+  deps: ServiceDeps,
   reportId: string,
   shareId: string,
   shareType: 'dashboard' | 'report'
 ) {
-  const db = await loadDb();
+  const db = deps.db;
 
   if (shareType === 'dashboard') {
     const share = await db.shareDashboard.findUnique({
@@ -106,7 +108,7 @@ export async function validateReportAccess(
       },
     });
 
-    if (!share || !share.public) {
+    if (!(share && share.public)) {
       throw new Error('Share not found or not public');
     }
 
@@ -122,7 +124,7 @@ export async function validateReportAccess(
     include: { report: true },
   });
 
-  if (!share || !share.public) {
+  if (!(share && share.public)) {
     throw new Error('Share not found or not public');
   }
 
@@ -134,6 +136,7 @@ export async function validateReportAccess(
 }
 
 export async function validateShareAccess(
+  deps: ServiceDeps,
   shareId: string,
   reportId: string,
   ctx: {
@@ -141,8 +144,7 @@ export async function validateShareAccess(
     session?: { userId?: string | null };
   }
 ): Promise<{ projectId: string; isValid: boolean }> {
-  const db = await loadDb();
-  const { getProjectAccess } = await loadAccessService();
+  const db = deps.db;
 
   const dashboardShare = await db.shareDashboard.findUnique({
     where: { id: shareId },
@@ -205,6 +207,7 @@ export async function validateShareAccess(
 }
 
 export async function validateOverviewShareAccess(
+  deps: ServiceDeps,
   shareId: string | undefined,
   projectId: string,
   ctx: {
@@ -212,15 +215,14 @@ export async function validateOverviewShareAccess(
     session?: { userId?: string | null };
   }
 ): Promise<{ isValid: boolean }> {
-  const db = await loadDb();
-  const { getProjectAccess } = await loadAccessService();
+  const db = deps.db;
 
   if (shareId) {
     const share = await db.shareOverview.findUnique({
       where: { id: shareId },
     });
 
-    if (!share || !share.public) {
+    if (!(share && share.public)) {
       throw new Error('Share not found or not public');
     }
 
@@ -283,8 +285,12 @@ function lockedShare(
   };
 }
 
-export async function getShareOverview(shareId: string, cookies: CookieReader) {
-  const db = await loadDb();
+export async function getShareOverview(
+  deps: ServiceDeps,
+  shareId: string,
+  cookies: CookieReader
+) {
+  const db = deps.db;
   const share = await db.shareOverview.findUnique({
     where: { id: shareId },
     select: {
@@ -315,8 +321,11 @@ export async function getShareOverview(shareId: string, cookies: CookieReader) {
   };
 }
 
-export async function getShareOverviewSettings(projectId: string) {
-  const db = await loadDb();
+export async function getShareOverviewSettings(
+  deps: ServiceDeps,
+  projectId: string
+) {
+  const db = deps.db;
   const share = await db.shareOverview.findUnique({
     where: { projectId },
     select: { id: true, public: true, password: true },
@@ -329,14 +338,21 @@ export async function getShareOverviewSettings(projectId: string) {
   return { id: share.id, public: share.public, hasPassword: !!share.password };
 }
 
-export async function createShareOverview(input: {
+export interface CreateShareOverviewInput {
   organizationId: string;
   projectId: string;
   public: boolean;
   password: string | null;
-}) {
-  const db = await loadDb();
-  const passwordHash = input.password ? await hashPassword(input.password) : null;
+}
+
+export async function createShareOverview(
+  deps: ServiceDeps,
+  input: CreateShareOverviewInput
+) {
+  const db = deps.db;
+  const passwordHash = input.password
+    ? await hashPassword(input.password)
+    : null;
 
   const share = await db.shareOverview.upsert({
     where: { projectId: input.projectId },
@@ -354,8 +370,12 @@ export async function createShareOverview(input: {
   return { id: share.id, public: share.public, hasPassword: !!share.password };
 }
 
-export async function getShareDashboard(shareId: string, cookies: CookieReader) {
-  const db = await loadDb();
+export async function getShareDashboard(
+  deps: ServiceDeps,
+  shareId: string,
+  cookies: CookieReader
+) {
+  const db = deps.db;
   const share = await db.shareDashboard.findUnique({
     where: { id: shareId },
     select: {
@@ -387,10 +407,11 @@ export async function getShareDashboard(shareId: string, cookies: CookieReader) 
 }
 
 export async function getShareDashboardSettings(
+  deps: ServiceDeps,
   projectId: string,
   dashboardId: string
 ) {
-  const db = await loadDb();
+  const db = deps.db;
   const share = await db.shareDashboard.findUnique({
     where: { dashboardId },
     select: { id: true, public: true, password: true, projectId: true },
@@ -405,22 +426,32 @@ export async function getShareDashboardSettings(
 
 /** The caller must already have write access to `input.projectId` — the RPC
  *  layer's job (each transport still owns its own access-check plumbing). */
-export async function createShareDashboard(input: {
+export interface CreateShareDashboardInput {
   organizationId: string;
   projectId: string;
   dashboardId: string;
   public: boolean;
   password: string | null;
-}) {
-  const { getDashboardById } = await loadDashboardService();
-  const dashboard = await getDashboardById(input.dashboardId, input.projectId);
+}
+
+export async function createShareDashboard(
+  deps: ServiceDeps,
+  input: CreateShareDashboardInput
+) {
+  const dashboard = await getDashboardById(
+    deps,
+    input.dashboardId,
+    input.projectId
+  );
   if (!dashboard) {
     throw new TRPCNotFoundError('Dashboard not found');
   }
 
-  const passwordHash = input.password ? await hashPassword(input.password) : null;
+  const passwordHash = input.password
+    ? await hashPassword(input.password)
+    : null;
 
-  const db = await loadDb();
+  const db = deps.db;
   const share = await db.shareDashboard.upsert({
     where: { dashboardId: input.dashboardId },
     create: {
@@ -439,10 +470,11 @@ export async function createShareDashboard(input: {
 }
 
 export async function getShareDashboardReports(
+  deps: ServiceDeps,
   shareId: string,
   cookies: CookieReader
 ) {
-  const share = await getShareDashboardById(shareId);
+  const share = await getShareDashboardById(deps, shareId);
 
   if (!(share && share.public)) {
     throw new TRPCNotFoundError('Dashboard share not found');
@@ -453,12 +485,15 @@ export async function getShareDashboardReports(
     throw new TRPCAccessError('Password required');
   }
 
-  const { getReportsByDashboardId } = await loadReportsService();
-  return getReportsByDashboardId(share.dashboardId);
+  return getReportsByDashboardId(deps, share.dashboardId);
 }
 
-export async function getShareReport(shareId: string, cookies: CookieReader) {
-  const db = await loadDb();
+export async function getShareReport(
+  deps: ServiceDeps,
+  shareId: string,
+  cookies: CookieReader
+) {
+  const db = deps.db;
   const share = await db.shareReport.findUnique({
     where: { id: shareId },
     select: {
@@ -481,7 +516,6 @@ export async function getShareReport(shareId: string, cookies: CookieReader) {
     return lockedShare(share.id, share.organization, share.project);
   }
 
-  const { transformReport } = await loadReportsService();
   return {
     id: share.id,
     requiresPassword: false as const,
@@ -493,10 +527,11 @@ export async function getShareReport(shareId: string, cookies: CookieReader) {
 }
 
 export async function getShareReportSettings(
+  deps: ServiceDeps,
   projectId: string,
   reportId: string
 ) {
-  const db = await loadDb();
+  const db = deps.db;
   const share = await db.shareReport.findUnique({
     where: { reportId },
     select: { id: true, public: true, password: true, projectId: true },
@@ -511,22 +546,28 @@ export async function getShareReportSettings(
 
 /** The caller must already have write access to `input.projectId` — the RPC
  *  layer's job (each transport still owns its own access-check plumbing). */
-export async function createShareReport(input: {
+export interface CreateShareReportInput {
   organizationId: string;
   projectId: string;
   reportId: string;
   public: boolean;
   password: string | null;
-}) {
-  const { getReportById } = await loadReportsService();
-  const report = await getReportById(input.reportId);
+}
+
+export async function createShareReport(
+  deps: ServiceDeps,
+  input: CreateShareReportInput
+) {
+  const report = await getReportById(deps, input.reportId);
   if (!report || report.projectId !== input.projectId) {
     throw new TRPCNotFoundError('Report not found');
   }
 
-  const passwordHash = input.password ? await hashPassword(input.password) : null;
+  const passwordHash = input.password
+    ? await hashPassword(input.password)
+    : null;
 
-  const db = await loadDb();
+  const db = deps.db;
   const share = await db.shareReport.upsert({
     where: { reportId: input.reportId },
     create: {
@@ -542,4 +583,114 @@ export async function createShareReport(input: {
   });
 
   return { id: share.id, public: share.public, hasPassword: !!share.password };
+}
+
+// --- service ------------------------------------------------------------
+
+/** What the RPC layer passes to the two share validators. */
+export interface ShareAccessContext {
+  cookies: CookieReader;
+  session?: { userId?: string | null };
+}
+
+export interface ShareService {
+  getShareOverviewById(id: string): ReturnType<typeof getShareOverviewById>;
+  getShareByProjectId(
+    projectId: string
+  ): ReturnType<typeof getShareByProjectId>;
+  getShareDashboardById(id: string): ReturnType<typeof getShareDashboardById>;
+  getShareDashboardByDashboardId(
+    dashboardId: string
+  ): ReturnType<typeof getShareDashboardByDashboardId>;
+  getShareReportById(id: string): ReturnType<typeof getShareReportById>;
+  getShareReportByReportId(
+    reportId: string
+  ): ReturnType<typeof getShareReportByReportId>;
+  validateReportAccess(
+    reportId: string,
+    shareId: string,
+    shareType: 'dashboard' | 'report'
+  ): ReturnType<typeof validateReportAccess>;
+  validateShareAccess(
+    shareId: string,
+    reportId: string,
+    accessContext: ShareAccessContext
+  ): Promise<{ projectId: string; isValid: boolean }>;
+  validateOverviewShareAccess(
+    shareId: string | undefined,
+    projectId: string,
+    accessContext: ShareAccessContext
+  ): Promise<{ isValid: boolean }>;
+  getShareOverview(
+    shareId: string,
+    cookies: CookieReader
+  ): ReturnType<typeof getShareOverview>;
+  getShareOverviewSettings(
+    projectId: string
+  ): ReturnType<typeof getShareOverviewSettings>;
+  createShareOverview(
+    input: CreateShareOverviewInput
+  ): ReturnType<typeof createShareOverview>;
+  getShareDashboard(
+    shareId: string,
+    cookies: CookieReader
+  ): ReturnType<typeof getShareDashboard>;
+  getShareDashboardSettings(
+    projectId: string,
+    dashboardId: string
+  ): ReturnType<typeof getShareDashboardSettings>;
+  createShareDashboard(
+    input: CreateShareDashboardInput
+  ): ReturnType<typeof createShareDashboard>;
+  getShareDashboardReports(
+    shareId: string,
+    cookies: CookieReader
+  ): ReturnType<typeof getShareDashboardReports>;
+  getShareReport(
+    shareId: string,
+    cookies: CookieReader
+  ): ReturnType<typeof getShareReport>;
+  getShareReportSettings(
+    projectId: string,
+    reportId: string
+  ): ReturnType<typeof getShareReportSettings>;
+  createShareReport(
+    input: CreateShareReportInput
+  ): ReturnType<typeof createShareReport>;
+}
+
+export function createShareService(deps: ServiceDeps): ShareService {
+  return {
+    getShareOverviewById: (id) => getShareOverviewById(deps, id),
+    getShareByProjectId: (projectId) => getShareByProjectId(deps, projectId),
+    getShareDashboardById: (id) => getShareDashboardById(deps, id),
+    getShareDashboardByDashboardId: (dashboardId) =>
+      getShareDashboardByDashboardId(deps, dashboardId),
+    getShareReportById: (id) => getShareReportById(deps, id),
+    getShareReportByReportId: (reportId) =>
+      getShareReportByReportId(deps, reportId),
+    validateReportAccess: (reportId, shareId, shareType) =>
+      validateReportAccess(deps, reportId, shareId, shareType),
+    validateShareAccess: (shareId, reportId, accessContext) =>
+      validateShareAccess(deps, shareId, reportId, accessContext),
+    validateOverviewShareAccess: (shareId, projectId, accessContext) =>
+      validateOverviewShareAccess(deps, shareId, projectId, accessContext),
+    getShareOverview: (shareId, cookies) =>
+      getShareOverview(deps, shareId, cookies),
+    getShareOverviewSettings: (projectId) =>
+      getShareOverviewSettings(deps, projectId),
+    createShareOverview: (input) => createShareOverview(deps, input),
+    getShareDashboard: (shareId, cookies) =>
+      getShareDashboard(deps, shareId, cookies),
+    getShareDashboardSettings: (projectId, dashboardId) =>
+      getShareDashboardSettings(deps, projectId, dashboardId),
+    createShareDashboard: (input) => createShareDashboard(deps, input),
+    getShareDashboardReports: (shareId, cookies) =>
+      getShareDashboardReports(deps, shareId, cookies),
+    getShareReport: (shareId, cookies) =>
+      getShareReport(deps, shareId, cookies),
+    getShareReportSettings: (projectId, reportId) =>
+      getShareReportSettings(deps, projectId, reportId),
+    createShareReport: (input) => createShareReport(deps, input),
+  };
 }

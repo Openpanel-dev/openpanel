@@ -1,5 +1,6 @@
-import { getChartPrevStartEndDate } from '@openpanel/core';
 import type { FinalChart, IReportInput } from '@openpanel/validation';
+import type { ServiceDeps } from '../../../../services';
+import { getChartPrevStartEndDate } from '../../../../shared/date';
 import {
   getOrganizationSubscriptionChartEndDate,
   getSettingsForProject,
@@ -27,11 +28,14 @@ async function normalizeWithinSubscription(
 }
 
 /** Time-series chart: normalize -> plan -> fetch -> compute -> format. */
-export async function executeChart(input: IReportInput): Promise<FinalChart> {
+export async function executeChart(
+  deps: ServiceDeps,
+  input: IReportInput
+): Promise<FinalChart> {
   const normalized = await normalizeWithinSubscription(input);
   const executionPlan = await plan(normalized);
   const computedSeries = compute(
-    await fetch(executionPlan),
+    await fetch(deps, executionPlan),
     executionPlan.definitions
   );
 
@@ -45,7 +49,7 @@ export async function executeChart(input: IReportInput): Promise<FinalChart> {
       }),
     });
     previousSeries = compute(
-      await fetch(previousPlan),
+      await fetch(deps, previousPlan),
       previousPlan.definitions
     );
   }
@@ -61,6 +65,7 @@ export async function executeChart(input: IReportInput): Promise<FinalChart> {
 
 /** Bar/pie chart without a time axis: normalize -> fetch aggregate -> format. */
 export async function executeAggregateChart(
+  deps: ServiceDeps,
   input: IReportInput
 ): Promise<FinalChart> {
   const normalized = await normalizeWithinSubscription(input);
@@ -70,7 +75,7 @@ export async function executeAggregateChart(
     endDate: normalized.endDate,
   };
   const computedSeries = compute(
-    await fetchAggregate(normalized, currentPeriod, timezone),
+    await fetchAggregate(deps, normalized, currentPeriod, timezone),
     normalized.series
   );
 
@@ -78,6 +83,7 @@ export async function executeAggregateChart(
   if (input.previous) {
     previousSeries = compute(
       await fetchAggregate(
+        deps,
         normalized,
         getChartPrevStartEndDate(currentPeriod),
         timezone
@@ -94,11 +100,3 @@ export async function executeAggregateChart(
     normalized.limit
   );
 }
-
-export const ChartEngine = {
-  execute: executeChart,
-};
-
-export const AggregateChartEngine = {
-  execute: executeAggregateChart,
-};

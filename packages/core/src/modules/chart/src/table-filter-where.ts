@@ -5,28 +5,22 @@
 // filters). Still sqlstring-escaped text, not the `sql` tag: ADR-013 keeps
 // the two filter compilers as they are ("two behaviours, not two builders")
 // until every caller that splices their output stops using text builders.
-// packages/db/src/services/filter-where.service.ts stays a re-export shim;
-// event/profile/session/cohort services reach this module through the
-// existing lazy `loadFilterCompiler()` dynamic import, now pointed here
-// instead of at packages/db — the dynamic import is what keeps
-// clickhouse/client.ts's module-scope logger construction out of those
-// services' eager import chain.
+// M10-003: the two symbols this file used to take from
+// `@openpanel/db/src/clickhouse/client` (a module that constructs a
+// ClickHouse client and a pino logger at import time) are now local — the
+// module's own `./dates.formatClickhouseDate`, byte-identical to
+// packages/db's non-`skipTime` branch, and `./field-resolution.CHART_TABLE`,
+// which already carried all four physical table names used below.
 
 import {
   getCohortIds,
   type IChartEventFilter,
   type IChartFilterValueType,
 } from '@openpanel/validation';
-import {
-  formatClickhouseDate,
-  TABLE_NAMES,
-} from '@openpanel/db/src/clickhouse/client';
 import sqlstring from 'sqlstring';
-import {
-  buildTypedClause,
-  hasTypedCast,
-  isTypedOperator,
-} from './filter-cast';
+import { formatClickhouseDate } from './dates';
+import { CHART_TABLE } from './field-resolution';
+import { buildTypedClause, hasTypedCast, isTypedOperator } from './filter-cast';
 
 export interface FilterTableContext {
   /** Outer query's primary table. */
@@ -78,11 +72,7 @@ function compileScalarClause(
   value: IChartEventFilter['value'],
   options: { numeric?: boolean; type?: IChartFilterValueType } = {}
 ): string | null {
-  if (
-    value.length === 0 &&
-    operator !== 'isNull' &&
-    operator !== 'isNotNull'
-  ) {
+  if (value.length === 0 && operator !== 'isNull' && operator !== 'isNotNull') {
     return null;
   }
 
@@ -242,8 +232,12 @@ function groupColumnSql(name: string): string {
 /** Translate `session.<field>` to the underlying sessions column. */
 function sessionColumnSql(name: string): string | null {
   const withoutPrefix = name.replace(/^session\./, '');
-  if (withoutPrefix === 'is_bounce') return 'is_bounce';
-  if (SESSION_NUMERIC_COLUMNS.has(withoutPrefix)) return withoutPrefix;
+  if (withoutPrefix === 'is_bounce') {
+    return 'is_bounce';
+  }
+  if (SESSION_NUMERIC_COLUMNS.has(withoutPrefix)) {
+    return withoutPrefix;
+  }
   // performed_event is handled as a subselect, not a column
   return null;
 }
@@ -261,11 +255,13 @@ function buildCohortClause(
   if (cohortIds.length === 0 && filter.name.startsWith('cohort:')) {
     cohortIds = [filter.name.slice('cohort:'.length)];
   }
-  if (cohortIds.length === 0) return null;
+  if (cohortIds.length === 0) {
+    return null;
+  }
   const negate = filter.operator === 'notInCohort';
   const op = negate ? 'NOT IN' : 'IN';
   const escapedIds = cohortIds.map((id) => sqlstring.escape(id)).join(', ');
-  return `${ctx.profileIdExpr} ${op} (SELECT profile_id FROM ${TABLE_NAMES.cohort_members} FINAL WHERE cohort_id IN (${escapedIds}) AND project_id = ${sqlstring.escape(projectId)})`;
+  return `${ctx.profileIdExpr} ${op} (SELECT profile_id FROM ${CHART_TABLE.cohortMembers} FINAL WHERE cohort_id IN (${escapedIds}) AND project_id = ${sqlstring.escape(projectId)})`;
 }
 
 function buildGroupClause(
@@ -273,14 +269,18 @@ function buildGroupClause(
   projectId: string,
   ctx: FilterTableContext
 ): string | null {
-  if (!ctx.groupsExpr) return null;
+  if (!ctx.groupsExpr) {
+    return null;
+  }
   const column = groupColumnSql(filter.name);
   const inner = compileScalarClause(column, filter.operator, filter.value, {
     type: filter.type,
   });
-  if (!inner) return null;
+  if (!inner) {
+    return null;
+  }
   const projectClause = `project_id = ${sqlstring.escape(projectId)}`;
-  return `arrayExists(g -> g IN (SELECT id FROM ${TABLE_NAMES.groups} FINAL WHERE ${projectClause} AND ${inner}), ${ctx.groupsExpr})`;
+  return `arrayExists(g -> g IN (SELECT id FROM ${CHART_TABLE.groups} FINAL WHERE ${projectClause} AND ${inner}), ${ctx.groupsExpr})`;
 }
 
 function buildProfileClause(
@@ -289,17 +289,21 @@ function buildProfileClause(
   ctx: FilterTableContext
 ): string | null {
   const column = profileColumnSql(filter.name);
-  if (!column) return null;
+  if (!column) {
+    return null;
+  }
   const numeric = column === 'created_at' || column === 'last_seen_at';
   const inner = compileScalarClause(column, filter.operator, filter.value, {
     numeric,
     type: filter.type,
   });
-  if (!inner) return null;
+  if (!inner) {
+    return null;
+  }
   if (ctx.selfTable === 'profiles') {
     return inner;
   }
-  return `${ctx.profileIdExpr} IN (SELECT id FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)} AND ${inner})`;
+  return `${ctx.profileIdExpr} IN (SELECT id FROM ${CHART_TABLE.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)} AND ${inner})`;
 }
 
 function buildSessionClause(
@@ -307,11 +311,15 @@ function buildSessionClause(
   projectId: string,
   ctx: FilterTableContext
 ): string | null {
-  if (ctx.selfTable !== 'sessions') return null;
+  if (ctx.selfTable !== 'sessions') {
+    return null;
+  }
   const fieldName = filter.name.replace(/^session\./, '');
 
   if (fieldName === 'performed_event') {
-    if (filter.value.length === 0) return null;
+    if (filter.value.length === 0) {
+      return null;
+    }
     const inClause =
       filter.value.length === 1
         ? `= ${escape(filter.value[0]!)}`
@@ -324,11 +332,13 @@ function buildSessionClause(
       );
     }
     const scopeSql = dateScope.length ? `AND ${dateScope.join(' AND ')} ` : '';
-    return `id ${op} (SELECT DISTINCT session_id FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} ${scopeSql}AND name ${inClause})`;
+    return `id ${op} (SELECT DISTINCT session_id FROM ${CHART_TABLE.events} WHERE project_id = ${sqlstring.escape(projectId)} ${scopeSql}AND name ${inClause})`;
   }
 
   if (fieldName === 'is_bounce') {
-    if (filter.value.length === 0) return null;
+    if (filter.value.length === 0) {
+      return null;
+    }
     const wants = filter.value.some((v) =>
       typeof v === 'boolean' ? v : String(v).toLowerCase() === 'true'
     );
@@ -337,7 +347,9 @@ function buildSessionClause(
   }
 
   const column = sessionColumnSql(filter.name);
-  if (!column) return null;
+  if (!column) {
+    return null;
+  }
   return compileScalarClause(column, filter.operator, filter.value, {
     numeric: SESSION_NUMERIC_COLUMNS.has(column),
     type: filter.type,
@@ -363,7 +375,9 @@ export function buildFilterWhere(
     // fragment is parenthesized here to keep a top-level OR inside it from
     // rebinding the surrounding conditions.
     const set = (clause: string | null) => {
-      if (clause) where[id] = `(${clause})`;
+      if (clause) {
+        where[id] = `(${clause})`;
+      }
     };
 
     if (filter.operator === 'inCohort' || filter.operator === 'notInCohort') {

@@ -7,6 +7,8 @@ import {
   setupRetentionFixtures,
   teardownRetentionFixtures,
 } from '../../../../../test/retention-fixtures';
+import { testServiceDeps } from '../../../test/service-deps';
+import type { ServiceDeps } from '../../services';
 import {
   getRetentionCohort,
   getRetentionSeries,
@@ -15,6 +17,10 @@ import {
 } from './retention.service';
 
 const PROJECT_ID = 'test-retention-cohort';
+
+// M10-003: retention reaches ClickHouse as `deps.ch`, so the suite builds the
+// same `ServiceDeps` main.ts does (pointed at `openpanel_test` by preload.ts).
+let deps: ServiceDeps;
 const { day, week } = RETENTION_FIXTURE;
 
 // bun:test's `toEqual` overloads (unlike vitest's) reject a `readonly` actual
@@ -43,6 +49,7 @@ function cohortsOnly(rows: IRetentionCohortRow[]) {
 
 describe('getRetentionCohort', () => {
   beforeAll(async () => {
+    deps = await testServiceDeps();
     await setupRetentionFixtures(PROJECT_ID);
   });
 
@@ -51,7 +58,7 @@ describe('getRetentionCohort', () => {
   });
 
   it('matches the blueprint for day interval, criteria "on"', async () => {
-    const rows = await getRetentionCohort({
+    const rows = await getRetentionCohort(deps, {
       projectId: PROJECT_ID,
       firstEvent: ['app_open'],
       secondEvent: ['app_open'],
@@ -65,7 +72,7 @@ describe('getRetentionCohort', () => {
   });
 
   it('matches the blueprint for day interval, criteria "on_or_after"', async () => {
-    const rows = await getRetentionCohort({
+    const rows = await getRetentionCohort(deps, {
       projectId: PROJECT_ID,
       firstEvent: ['app_open'],
       secondEvent: ['app_open'],
@@ -84,7 +91,7 @@ describe('getRetentionCohort', () => {
     // The old toWeek() implementation returned week-of-year (resets each Jan),
     // so a 2024-W52 -> 2025-W01 return produced a negative diff and was dropped.
     // This locks the year-aware behavior.
-    const rows = await getRetentionCohort({
+    const rows = await getRetentionCohort(deps, {
       projectId: PROJECT_ID,
       firstEvent: ['app_open'],
       secondEvent: ['app_open'],
@@ -98,7 +105,7 @@ describe('getRetentionCohort', () => {
   });
 
   it('prepends a weighted-average row that is 100% retained at interval 0', async () => {
-    const rows = await getRetentionCohort({
+    const rows = await getRetentionCohort(deps, {
       projectId: PROJECT_ID,
       firstEvent: ['app_open'],
       secondEvent: ['app_open'],
@@ -114,7 +121,7 @@ describe('getRetentionCohort', () => {
 
   it('assigns each user to a single first-touch cohort (no double-counting)', async () => {
     const rows = cohortsOnly(
-      await getRetentionCohort({
+      await getRetentionCohort(deps, {
         projectId: PROJECT_ID,
         firstEvent: ['app_open'],
         secondEvent: ['app_open'],
@@ -150,7 +157,7 @@ describe('getRetentionCohort', () => {
   });
 
   it('supports any-event (active-user) retention when no event names given', async () => {
-    const named = await getRetentionCohort({
+    const named = await getRetentionCohort(deps, {
       projectId: PROJECT_ID,
       firstEvent: ['app_open'],
       secondEvent: ['app_open'],
@@ -159,7 +166,7 @@ describe('getRetentionCohort', () => {
       startDate: day.start,
       endDate: day.end,
     });
-    const anyEvent = await getRetentionCohort({
+    const anyEvent = await getRetentionCohort(deps, {
       projectId: PROJECT_ID,
       criteria: 'on',
       interval: 'day',
@@ -179,7 +186,7 @@ describe('getRetentionCohort', () => {
     // country = US drops RU3 (SE) from the D0 cohort. This filter references an
     // event column not present in cohort_events_mv, so the engine must fall
     // back to the raw events table.
-    const rows = await getRetentionCohort({
+    const rows = await getRetentionCohort(deps, {
       projectId: PROJECT_ID,
       firstEvent: ['app_open'],
       secondEvent: ['app_open'],
@@ -196,7 +203,7 @@ describe('getRetentionCohort', () => {
   it('scopes to a saved cohort via the fast MV path (inCohort)', async () => {
     // inCohort only needs profile_id, so this stays on cohort_events_mv. The
     // cohort contains RU1 and RU4, leaving one user in each of D0 and D1.
-    const rows = await getRetentionCohort({
+    const rows = await getRetentionCohort(deps, {
       projectId: PROJECT_ID,
       firstEvent: ['app_open'],
       secondEvent: ['app_open'],
@@ -220,6 +227,7 @@ describe('getRetentionCohort', () => {
 
 describe('getRetentionSeries', () => {
   beforeAll(async () => {
+    deps = await testServiceDeps();
     await setupRetentionFixtures(PROJECT_ID);
   });
 
@@ -228,7 +236,7 @@ describe('getRetentionSeries', () => {
   });
 
   it('computes week-over-week active-user retention', async () => {
-    const rows = await getRetentionSeries({ projectId: PROJECT_ID });
+    const rows = await getRetentionSeries(deps, { projectId: PROJECT_ID });
     expect(rows).toEqual(mutable(RETENTION_BLUEPRINT.weeklySeries));
   });
 });

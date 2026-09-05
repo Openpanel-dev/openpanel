@@ -90,10 +90,21 @@ beforeAll(async () => {
   await bootstrapTestDatabases();
   await fixtures.setupPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
   await fixtures.setupFixtures(TEST_PROJECT_ID);
+
+  // The mcp tools call core's chart/report functions as bare barrel exports
+  // (they have no `Ctx`), so they go through the V1 compat seam, which
+  // `main.ts` registers at boot and a test must register itself (M10-003).
+  const { setV1CompatServices } = await import('../../../../v1-compat');
+  const { testServiceDeps } = await import('../../../../../test/service-deps');
+  setV1CompatServices(await testServiceDeps());
 }, 30_000);
 
 afterAll(async () => {
   const fixtures = await import('../../../../../../../test/fixtures');
+  const { resetV1CompatServicesForTests } = await import(
+    '../../../../v1-compat'
+  );
+  resetV1CompatServicesForTests();
   await fixtures.teardownFixtures(TEST_PROJECT_ID);
   await fixtures.teardownPostgresFixtures(TEST_PROJECT_ID, TEST_ORG_ID);
 });

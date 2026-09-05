@@ -52,6 +52,11 @@ function stubJobCtx(
     group: {} as Services['group'],
     chart: {} as Services['chart'],
     misc: {} as Services['misc'],
+    report: {} as Services['report'],
+    dashboard: {} as Services['dashboard'],
+    export: {} as Services['export'],
+    share: {} as Services['share'],
+    reference: {} as Services['reference'],
   };
   return {
     db: {} as AppDeps['db'],
@@ -142,6 +147,11 @@ test('insightsDaily fans out one insightsProject enqueue per candidate, jobId de
       group: {} as Services['group'],
       chart: {} as Services['chart'],
       misc: {} as Services['misc'],
+      report: {} as Services['report'],
+      dashboard: {} as Services['dashboard'],
+      export: {} as Services['export'],
+      share: {} as Services['share'],
+      reference: {} as Services['reference'],
     },
     requestId: 'req_1',
     job: { id: 'job_1', attempt: 0, queue: 'cron', name: 'insightsDaily' },

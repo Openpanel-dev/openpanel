@@ -7,22 +7,20 @@ import type {
   IChartEventItem,
   IGetChartDataInput,
 } from '@openpanel/validation';
+import type { ServiceDeps } from '../../../../services';
 import { getAggregateChartSql, getChartSql } from '../chart-statement';
+import { runQuery } from '../run-query';
 import type { NormalizedInput } from './normalize';
 import type { ConcreteSeries, Plan, SeriesDefinition } from './types';
 
 type EventDefinition = IChartEventItem & { type: 'event' };
 
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
-}
-
-async function runChartQuery(
+function runChartQuery(
+  deps: ServiceDeps,
   statement: Awaited<ReturnType<typeof getChartSql>>,
   timezone: string
 ): Promise<ISerieDataItem[]> {
-  const { chQuery } = await loadChClient();
-  return chQuery<ISerieDataItem>(statement, { session_timezone: timezone });
+  return runQuery<ISerieDataItem>(deps, statement, timezone);
 }
 
 function breakdownFilters(
@@ -122,7 +120,10 @@ function queryEvent(event: EventDefinition): IGetChartDataInput['event'] {
 }
 
 /** Fetch every event series of the plan; breakdown expansion included. */
-export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
+export async function fetch(
+  deps: ServiceDeps,
+  plan: Plan
+): Promise<ConcreteSeries[]> {
   const results: ConcreteSeries[] = [];
 
   for (const [index, definition] of plan.definitions.entries()) {
@@ -152,13 +153,15 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
     };
 
     let rows = await runChartQuery(
-      await getChartSql({ ...queryInput, timezone: plan.timezone }),
+      deps,
+      await getChartSql(deps, { ...queryInput, timezone: plan.timezone }),
       plan.timezone
     );
     // Nothing matched the breakdown: fall back to the plain series.
     if (rows.length === 0 && plan.input.breakdowns.length > 0) {
       rows = await runChartQuery(
-        await getChartSql({
+        deps,
+        await getChartSql(deps, {
           ...queryInput,
           breakdowns: [],
           timezone: plan.timezone,
@@ -187,6 +190,7 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
  * constant date, for the given period.
  */
 export async function fetchAggregate(
+  deps: ServiceDeps,
   normalized: NormalizedInput,
   period: { startDate: string; endDate: string },
   timezone: string
@@ -212,12 +216,14 @@ export async function fetchAggregate(
     };
 
     let rows = await runChartQuery(
-      await getAggregateChartSql(queryInput),
+      deps,
+      await getAggregateChartSql(deps, queryInput),
       timezone
     );
     if (rows.length === 0 && normalized.breakdowns.length > 0) {
       rows = await runChartQuery(
-        await getAggregateChartSql({ ...queryInput, breakdowns: [] }),
+        deps,
+        await getAggregateChartSql(deps, { ...queryInput, breakdowns: [] }),
         timezone
       );
     }

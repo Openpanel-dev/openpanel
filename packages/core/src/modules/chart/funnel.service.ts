@@ -10,7 +10,9 @@ import type {
   IReportInput,
 } from '@openpanel/validation';
 import { last, reverse } from 'ramda';
+import type { ServiceDeps } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';
+import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
 import { fetchCohortsMetadata } from './src/chart-statement';
 import { collectBreakdownCohortIds } from './src/field-resolution';
 import {
@@ -25,12 +27,6 @@ import {
   knownFunnelBreakdowns,
 } from './src/funnel.sql';
 import { runQuery } from './src/run-query';
-
-// Lazy: packages/db's reports.service imports the funnel shim, which points
-// back here — a static import would close the cycle at module load.
-function loadReportsService() {
-  return import('@openpanel/core');
-}
 
 export {
   EMPTY_BREAKDOWN_LABEL,
@@ -104,23 +100,26 @@ export interface BuildFunnelBaseInput {
  * normalized event series and breakdowns, and the `session_funnel` / `funnel`
  * CTEs with all of their joins wired up. Callers add their own projection.
  */
-export async function buildFunnelBase({
-  projectId,
-  startDate,
-  endDate,
-  series,
-  globalFilters,
-  breakdowns: initialBreakdowns = [],
-  funnelWindow = DEFAULT_FUNNEL_WINDOW_HOURS,
-  funnelGroup,
-  timezone,
-}: BuildFunnelBaseInput): Promise<FunnelBase> {
-  const { mergeGlobalFilters, onlyReportEvents } = await loadReportsService();
+export async function buildFunnelBase(
+  deps: ServiceDeps,
+  {
+    projectId,
+    startDate,
+    endDate,
+    series,
+    globalFilters,
+    breakdowns: initialBreakdowns = [],
+    funnelWindow = DEFAULT_FUNNEL_WINDOW_HOURS,
+    funnelGroup,
+    timezone,
+  }: BuildFunnelBaseInput
+): Promise<FunnelBase> {
   const breakdowns = knownFunnelBreakdowns(initialBreakdowns);
   const eventSeries = onlyReportEvents(
     mergeGlobalFilters(series, globalFilters)
   );
   const cohortMetadata = await fetchCohortsMetadata(
+    deps,
     collectBreakdownCohortIds(breakdowns)
   );
 
@@ -273,23 +272,26 @@ function toFunnelSteps(
   return { steps, totalSessions };
 }
 
-export async function getFunnel({
-  projectId,
-  startDate,
-  endDate,
-  series,
-  globalFilters,
-  options,
-  breakdowns: initialBreakdowns = [],
-  limit,
-  timezone = 'UTC',
-}: IReportInput & { timezone: string; events?: IChartEvent[] }) {
+export async function getFunnel(
+  deps: ServiceDeps,
+  {
+    projectId,
+    startDate,
+    endDate,
+    series,
+    globalFilters,
+    options,
+    breakdowns: initialBreakdowns = [],
+    limit,
+    timezone = 'UTC',
+  }: IReportInput & { timezone: string; events?: IChartEvent[] }
+) {
   if (!(startDate && endDate)) {
     throw new Error('startDate and endDate are required');
   }
 
   const funnelOptions = options?.type === 'funnel' ? options : undefined;
-  const base = await buildFunnelBase({
+  const base = await buildFunnelBase(deps, {
     projectId,
     startDate,
     endDate,
@@ -302,6 +304,7 @@ export async function getFunnel({
   });
 
   const funnelData = await runQuery<FunnelRow>(
+    deps,
     funnelChartQuery(base),
     base.timezone
   );
@@ -327,14 +330,17 @@ export async function getFunnel({
     });
 }
 
-export async function getFunnelCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  steps: string[];
-  windowHours?: number;
-  groupBy?: FunnelGroup;
-}) {
+export async function getFunnelCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    steps: string[];
+    windowHours?: number;
+    groupBy?: FunnelGroup;
+  }
+) {
   const { timezone } = await getSettingsForProject(input.projectId);
   const eventSeries = input.steps.map((name, index) => ({
     id: String(index + 1),
@@ -345,7 +351,7 @@ export async function getFunnelCore(input: {
     filters: [],
   }));
 
-  const result = await getFunnel({
+  const result = await getFunnel(deps, {
     projectId: input.projectId,
     startDate: input.startDate,
     endDate: input.endDate,
@@ -405,13 +411,15 @@ export async function getFunnelCore(input: {
 }
 
 export async function getFunnelProfileIds(
+  deps: ServiceDeps,
   input: BuildFunnelBaseInput &
     Omit<FunnelProfilesInput, 'breakdownValues'> & {
       breakdownValues: (string | undefined)[];
     }
 ): Promise<string[]> {
-  const base = await buildFunnelBase(input);
+  const base = await buildFunnelBase(deps, input);
   const rows = await runQuery<{ profile_id: string }>(
+    deps,
     funnelProfilesQuery(base, {
       targetLevel: input.targetLevel,
       showDropoffs: input.showDropoffs,

@@ -292,3 +292,165 @@ process exited on its own. `pnpm run check:deps`:
 `core-uses-ctx-not-db-internals` 167, `core-no-self-barrel` 74 — unchanged
 from the M10-002 entry above; this rule only cruises `packages/core/**`, and
 the revert touched nothing there.
+
+### 2026-09-05 — M10-003, the read path (chart+4, report, dashboard, export, share, reference) onto `createXService(deps)`
+
+Ran by: ralph (M10-003 implement task, docs/TECH_DEBT.md §4 steps 1/2/5 and
+§5a).
+
+**Shape.** Ten modules now expose exactly one
+`createXService(deps: ServiceDeps): XService`, registered in `services.ts`'s
+`Services` interface and `createServices`. Their implementation functions take
+`deps` as the first parameter and the factory binds it; every service method
+carries an explicit return type (`ReturnType<typeof fn>` /
+`Parameters<typeof fn>[1]` where the shape is a Prisma payload), for the
+ts7022/ts7023 reason `services.ts` documents.
+
+**The four chart sub-services FOLD INTO `ChartService`** rather than becoming
+four more `Services` members. They are sibling files of `modules/chart/`, not
+modules — ADR-007's map is one service per module, `chart.service.ts` is
+already the dispatcher every caller goes through (`getFunnelChart` /
+`getConversionChart` / `getSankeyChart` / `getRetentionChart`), and four keys
+named after files would claim four modules that do not exist.
+
+**Loaders deleted.** In those ten modules there is now no
+`import('@openpanel/db...')` at all, and `loadChClient()` / `loadDb()` /
+`loadCore()` / `loadReportsService()` / `loadIdService()` /
+`loadDateService()` / `loadOrganizationService()` / `loadAccessService()` /
+`loadDashboardService()` are gone. ClickHouse is `deps.ch` and Postgres is
+`deps.db`.
+
+- `chart/src/run-query.ts` runs `deps.ch.query(...)` — `chQuery`'s own
+  transport (`withRetry(client => client.query(...))`) — and reproduces
+  `chQuery`'s Int-meta coercion, the same shape `modules/overview/src/run-query.ts`
+  has shipped since M7-005. It logs `'query info'` on `deps.logger`, which is
+  the request-scoped child, so the ClickHouse call now carries the requestId.
+- `chart/src/table-filter-where.ts` stopped statically importing
+  `@openpanel/db/src/clickhouse/client` (a module that builds a ClickHouse
+  client and a pino logger at import time) for `formatClickhouseDate` and
+  `TABLE_NAMES`; both are local — the module's own `./dates.formatClickhouseDate`
+  (byte-identical to packages/db's non-`skipTime` branch) and
+  `./field-resolution.CHART_TABLE`, which already carried all four physical
+  table names (`events`, `profiles`, `groups`, `cohort_members`).
+- `export/export.routes.ts`'s `/insights/:projectId/live` reads
+  `ctx.buffers.event` instead of `loadDbBuffers()`.
+
+**Section 2's duplicate is unwired.** `chart.service.ts` (and
+`conversion.service.ts`, `funnel.service.ts`, `engine/normalize.ts`) reached
+`mergeGlobalFilters` / `onlyReportEvents` through `import('@openpanel/core')`.
+They now import them from `modules/report/src/series.ts`. The two helpers moved
+there, out of `report.service.ts`, because `report.service.ts` imports the
+chart engine and `chart/funnel.service.ts` imports them — a static import back
+would have closed a real `report.service -> chart/funnel.service ->
+report.service` cycle. `src/series.ts` imports nothing but a zod-derived type,
+so both sides stay eager and neither needs a loader.
+
+**One genuine cycle kept lazy, both ends named.**
+`modules/auth/auth.service.ts`'s `loadShare()`:
+`../share/share.service` statically imports this file's `hashPassword`, and
+`signInToShare` needs share's three lookups — `auth.service.ts <->
+share.service.ts`. It is not a `@openpanel/db` loader; the share lookups take
+`deps` like everything else.
+
+**What is still a value import of `@openpanel/db` in these modules, and why.**
+Seven files in `modules/chart/src/` value-import `sql` / `SqlFragment` /
+`toStatement` from `@openpanel/db/src/clickhouse/sql` (`chart.sql.ts`,
+`funnel.sql.ts`, `conversion.sql.ts`, `sankey.sql.ts`, `retention.sql.ts`,
+`compiled.ts`, `run-query.ts`). That is ADR-013's SQL tag, which ADR-007's
+"`packages/db` — the final surface" keeps in `packages/db` by name ("**new**
+`clickhouse/sql.ts`"), and `packages/db/**` is outside this task's scope globs,
+so it cannot be moved here. It carries no client, no connection and no request
+scope — it is a compile-time template tag — so it is not a place the requestId
+chain can end. Nine more core files outside this task's modules
+(`overview`, `profile`, `group`, `session`, `event`, `mcp`) import it the same
+way; a decision on whether `core-uses-ctx-not-db-internals` should exempt
+`clickhouse/sql.ts` (or whether the tag moves) belongs to M10-009's flip to
+`error`, not here. Prisma ROW TYPES stay as `import type` (erased at runtime),
+which is what keeps `bun test` offline.
+
+**`v1-compat.ts` — the seam this wave needed and could not avoid.**
+`apps/api/src/main.ts` still mounts `@openpanel/trpc`'s `appRouter`, not core's
+`rpc.router.ts`, so V1's 28 routers are the LIVE `/trpc` surface; they call
+core's modules as bare barrel exports and have no `Ctx` to hand a
+`ServiceDeps`. `packages/trpc/**` is outside this task's scope globs (the
+reviewer rejected M10-002 attempt 2 for editing it), and the mcp/assistant tool
+runtimes are in the same position. So `packages/core/src/v1-compat.ts` holds
+one registration point — `setV1CompatServices(deps)`, called once from
+`main.ts` right after `AppDeps` is built — and the ~60 bare wrappers the barrel
+exports for those callers. Everything that HAS a `Ctx` (core's own rpc files,
+`export.routes.ts`, `overview.rpc.ts`) uses `ctx.services.*` and keeps the
+request-scoped logger. One file, one grep, deleted whole when `packages/trpc`
+dies at P10. Its `signInToShare` wrapper preserves V1's 2-argument spelling;
+core's own `auth.rpc.ts` passes `ctx`.
+
+A process that never builds `AppDeps` falls back to the same singletons the
+deleted `loadDb()` / `loadChClient()` loaders reached, built lazily on first
+use (so importing `@openpanel/core` still constructs no database and
+`bun test` still runs offline), with packages/db's own `createLogger` — the
+pino logger that already writes `chQuery`'s `query info` line — so those
+callers behave exactly as they did before this wave. That fallback is not
+theoretical: the root `pnpm test` run caught
+`packages/trpc/src/routers/share.test.ts` calling `shareRouter` procedures
+directly with no boot, and `packages/trpc/**` is outside this task's scope.
+Its three lazy `import('@openpanel/db/...')` edges are the +3 in the table
+below; `main.ts` always registers before `buildHttpApp`, so a running server
+never reaches it.
+
+**requestId proven through this path.** New sibling test
+`packages/core/test/request-id-chart-query.test.ts` — the existing
+`request-id-end-to-end.test.ts` mocks the whole `Services` container, so it
+cannot show this hop. The new file uses a REAL `createServices`: an Elysia
+route under `requestLogging(deps)` calls
+`ctx.services.chart.getRetentionSeries({ projectId })` with a recording
+`deps.ch`, and asserts
+
+```ts
+  // The query really ran through `deps.ch` — a silent miss would leave the
+  // logger assertion below trivially true (AGENTS.md).
+  expect(queries).toHaveLength(1);
+  expect(queries[0]?.query).toContain('FROM events');
+
+  const bindingOf = (message: string) =>
+    lines.find((line) => line.message === message)?.bindings.requestId;
+
+  // The ClickHouse call's own log line, and the route's, carry ONE requestId.
+  expect(bindingOf('query info')).toBe(SUPPLIED_REQUEST_ID);
+  expect(bindingOf('request done')).toBe(SUPPLIED_REQUEST_ID);
+```
+
+plus a second case proving two concurrent requests do not share one
+(`expect(queryLineIds.sort()).toEqual(['req-a', 'req-b'])`).
+
+**`pnpm run check:deps`** (`.dependency-cruiser.cjs`, both rules unchanged at
+their landed `warn` severity):
+
+| Rule | Before (M10-002) | After (M10-003) | Delta |
+|---|---:|---:|---:|
+| `core-uses-ctx-not-db-internals` | 167 | **160** | **−7** |
+| `core-no-self-barrel` | 74 | **62** | **−12** |
+
+The ten modules themselves shed 10 edges; `v1-compat.ts`'s lazy fallback adds
+3 back, in one file with a stated death date, for a net −7. Exit `0`,
+`x 222 dependency violations (0 errors, 222 warnings). 1991 modules, 8035
+dependencies cruised.` (was 241.)
+
+**Verification, all run by ralph on 2026-09-05:**
+
+- `pnpm run typecheck` — all 25 workspaces, `Done` (`packages/trpc` included:
+  the barrel's V1 spellings are unchanged).
+- `cd packages/core && bun test` (bare, no `--isolate`): **1457 pass, 12 skip,
+  0 fail**, `Ran 1469 tests across 149 files. [31.02s]`.
+- `pnpm test` (root vitest, what `full.sh` runs): **13 files, 205/205 passed**.
+- `pnpm run check:deps` — the table above.
+- `controller:verification/harness start` — api :3333, worker :9999 ready in 3s.
+- `cd apps/api && timeout 900 pnpm run e2e:sessions` — **29/29 checks passed**.
+- `controller:verification/golden/compare.sh`:
+  `passed:  137/137` / `OK: zero diffs` (`golden: http://127.0.0.1:3333 @
+  2026-09-05T07:59:27Z`; no `stale:` skips — same UTC day as the capture).
+- `controller:verification/harness stop`.
+- `controller:verification/full.sh` — `FULL: green (1 documented pre-existing
+  exception(s) - see BLOCKED-KNOWN above)`, exit `0`. The one exception is
+  `contracts/sdk/run.sh`'s `dist-gate.sh` on the documented pre-P11 state
+  (web/nextjs/react-native/express leak `@openpanel/*`, sdk is clean); every
+  other stage is `OK`, including `pnpm test`, `golden/compare.sh`
+  (`passed: 137/137`, zero diffs) and `contracts/auth/run.sh`.

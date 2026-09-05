@@ -6,6 +6,8 @@
 import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IReportInput } from '@openpanel/validation';
 import { omit } from 'ramda';
+import type { ServiceDeps } from '../../services';
+import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
 import { fetchCohortsMetadata } from './src/chart-statement';
 import { type ConversionGroup, conversionQuery } from './src/conversion.sql';
 import {
@@ -17,12 +19,6 @@ import {
 } from './src/field-resolution';
 import { getEventFiltersWhereClause } from './src/filter-where';
 import { runQuery } from './src/run-query';
-
-// Lazy: packages/db's reports.service imports the funnel shim, which points
-// back here — a static import would close the cycle at module load.
-function loadReportsService() {
-  return import('@openpanel/core');
-}
 
 /** Default funnel window, in hours, when the report does not set one. */
 const DEFAULT_FUNNEL_WINDOW_HOURS = 24;
@@ -85,19 +81,21 @@ function profileJoinFields(profileBreakdowns: { name: string }[]): string[] {
   return Array.from(fields);
 }
 
-export async function getConversion({
-  projectId,
-  startDate,
-  endDate,
-  options,
-  series,
-  globalFilters,
-  breakdowns = [],
-  limit,
-  interval,
-  timezone,
-}: ConversionChartInput) {
-  const { mergeGlobalFilters, onlyReportEvents } = await loadReportsService();
+export async function getConversion(
+  deps: ServiceDeps,
+  {
+    projectId,
+    startDate,
+    endDate,
+    options,
+    series,
+    globalFilters,
+    breakdowns = [],
+    limit,
+    interval,
+    timezone,
+  }: ConversionChartInput
+) {
   const mergedSeries = mergeGlobalFilters(series, globalFilters);
   const funnelOptions = options?.type === 'funnel' ? options : undefined;
   const funnelGroup = funnelOptions?.funnelGroup;
@@ -113,7 +111,7 @@ export async function getConversion({
   );
 
   const cohortIds = collectBreakdownCohortIds(knownBreakdowns);
-  const cohortMetadata = await fetchCohortsMetadata(cohortIds);
+  const cohortMetadata = await fetchCohortsMetadata(deps, cohortIds);
   const cohortJoins = cohortIds.map((id) =>
     buildInlineCohortJoin(id, projectId, 'events')
   );
@@ -167,6 +165,7 @@ export async function getConversion({
   ).join(' AND ');
 
   const results = await runQuery<ConversionRow>(
+    deps,
     conversionQuery({
       projectId,
       startDate,

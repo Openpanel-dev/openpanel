@@ -1,10 +1,9 @@
-// reference.service.ts's db access is lazy (`await import(...)` inside each
-// function — see the file's header), which is exactly what makes
-// `mock.module` work here with no import-time side effects to race: every
-// mock below is registered before the subject's first call, not before its
-// (side-effect-free) import.
+// The subject is built by its factory over a fake `ServiceDeps` (M10-003), so
+// Postgres needs no module mock at all — `deps.db` IS the fake below. Only the
+// two sibling modules the service still calls as plain functions are mocked,
+// at the specifier the source resolves through.
 
-import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 
 interface FakeReference {
   id: string;
@@ -67,7 +66,10 @@ const reference = {
     }
   ),
   create: mock(async ({ data }: { data: Omit<FakeReference, 'id'> }) => {
-    const row = makeReference({ id: `ref_${referenceStore.size + 1}`, ...data });
+    const row = makeReference({
+      id: `ref_${referenceStore.size + 1}`,
+      ...data,
+    });
     referenceStore.set(row.id, row);
     return row;
   }),
@@ -95,28 +97,40 @@ const reference = {
   }),
 };
 
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-mock.module('@openpanel/db/src/prisma-client', () => ({
-  ...actualPrismaClient,
-  db: { reference },
-}));
-
 const getSettingsForProject = mock(async () => ({ timezone: 'UTC' }));
 const getChartStartEndDate = mock(() => ({
   startDate: '2026-08-25 00:00:00',
   endDate: '2026-09-01 23:59:59',
 }));
-// Both loaders (date.service + organization.service) resolve through the
-// same @openpanel/core specifier now (M9-CLEANUP-001) — one mock.module call,
-// not two, or the second silently drops the first's override.
-mock.module('@openpanel/core', () => ({
+// M10-003: the module no longer reaches either through a lazy
+// `@openpanel/core` hop — Postgres arrives as `deps.db` and these two are
+// plain relative imports, so each is mocked at the specifier the source
+// actually resolves through. Snapshot-before-mock so `afterAll` restores the
+// real module rather than re-applying the mock.
+const actualOrganization = await import('../organization/organization.service');
+const realOrganization = { ...actualOrganization };
+mock.module('../organization/organization.service', () => ({
+  ...realOrganization,
   getSettingsForProject,
+}));
+const actualDate = await import('../../shared/date');
+const realDate = { ...actualDate };
+mock.module('../../shared/date', () => ({
+  ...realDate,
   getChartStartEndDate,
 }));
 
-let subject: typeof import('./reference.service');
+afterAll(() => {
+  mock.module('../organization/organization.service', () => realOrganization);
+  mock.module('../../shared/date', () => realDate);
+});
+
+let subject: import('./reference.service').ReferenceService;
 beforeAll(async () => {
-  subject = await import('./reference.service');
+  const { createReferenceService } = await import('./reference.service');
+  subject = createReferenceService({
+    db: { reference },
+  } as unknown as import('../../services').ServiceDeps);
 });
 
 beforeEach(() => {
@@ -160,7 +174,10 @@ test('createReference stores the date as a Date, not a string', async () => {
 });
 
 test('updateReference normalizes a nullish description to null', async () => {
-  referenceStore.set('ref_1', makeReference({ id: 'ref_1', description: 'old' }));
+  referenceStore.set(
+    'ref_1',
+    makeReference({ id: 'ref_1', description: 'old' })
+  );
   const result = await subject.updateReference({
     id: 'ref_1',
     title: 'Renamed',

@@ -271,6 +271,12 @@ function loadRegistration() {
   return import('@openpanel/core');
 }
 
+// GENUINE CYCLE, kept lazy: `../share/share.service` statically imports this
+// file's `hashPassword`, and `signInToShare` below needs share's three
+// lookups. auth.service.ts <-> share.service.ts is the cycle; the dynamic
+// import is what keeps it a cycle ESM can evaluate. It is NOT a
+// `@openpanel/db` loader — the share lookups take `deps` like everything
+// else since M10-003.
 function loadShare() {
   return import('../share/share.service');
 }
@@ -775,6 +781,7 @@ export interface SignInShareInput {
 }
 
 export async function signInToShare(
+  deps: ServiceDeps,
   input: SignInShareInput,
   setCookie: ISetCookie
 ): Promise<true> {
@@ -786,13 +793,13 @@ export async function signInToShare(
   let cookieName = '';
 
   if (shareType === 'overview') {
-    share = await getShareOverviewById(shareId);
+    share = await getShareOverviewById(deps, shareId);
     cookieName = `shared-overview-${shareId}`;
   } else if (shareType === 'dashboard') {
-    share = await getShareDashboardById(shareId);
+    share = await getShareDashboardById(deps, shareId);
     cookieName = `shared-dashboard-${shareId}`;
   } else if (shareType === 'report') {
-    share = await getShareReportById(shareId);
+    share = await getShareReportById(deps, shareId);
     cookieName = `shared-report-${shareId}`;
   }
 

@@ -42,6 +42,7 @@ afterAll(() => {
 });
 
 let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
+let deps: import('../../../services').ServiceDeps;
 let buildChartSql: typeof import('./chart-statement').getChartSql;
 let buildAggregateChartSql: typeof import('./chart-statement').getAggregateChartSql;
 
@@ -53,11 +54,13 @@ type LooseAggregateInput = Partial<AggregateChartSqlInput> &
   Pick<AggregateChartSqlInput, 'event' | 'projectId' | 'timezone'>;
 
 async function getChartSql(input: LooseChartInput) {
-  return render(await buildChartSql(input as ChartSqlInput));
+  return render(await buildChartSql(deps, input as ChartSqlInput));
 }
 
 async function getAggregateChartSql(input: LooseAggregateInput) {
-  return render(await buildAggregateChartSql(input as AggregateChartSqlInput));
+  return render(
+    await buildAggregateChartSql(deps, input as AggregateChartSqlInput)
+  );
 }
 
 interface Rendered {
@@ -98,6 +101,8 @@ const base = {
 
 beforeAll(async () => {
   ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
+  const { testServiceDeps } = await import('../../../../test/service-deps');
+  deps = await testServiceDeps();
   ({
     getChartSql: buildChartSql,
     getAggregateChartSql: buildAggregateChartSql,

@@ -5,6 +5,7 @@
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import type { IGetChartDataInput } from '@openpanel/validation';
+import type { ServiceDeps } from '../../../services';
 import {
   aggregateChartQuery,
   chartSeriesQuery,
@@ -22,51 +23,53 @@ export type AggregateChartSqlInput = Omit<
   'interval' | 'chartType'
 > & { timezone: string };
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
 export async function fetchCohortsMetadata(
+  deps: ServiceDeps,
   cohortIds: string[]
 ): Promise<Map<string, CohortMetadata>> {
   if (cohortIds.length === 0) {
     return new Map();
   }
-  const db = await loadDb();
-  const cohorts = await db.cohort.findMany({
+  const cohorts = await deps.db.cohort.findMany({
     where: { id: { in: cohortIds } },
     select: { id: true, name: true },
   });
   return new Map(cohorts.map((c) => [c.id, { id: c.id, name: c.name }]));
 }
 
-export async function fetchProjectCohorts(
+export function fetchProjectCohorts(
+  deps: ServiceDeps,
   projectId: string
 ): Promise<CohortMetadata[]> {
-  const db = await loadDb();
-  return db.cohort.findMany({
+  return deps.db.cohort.findMany({
     where: { projectId },
     select: { id: true, name: true },
   });
 }
 
 export async function resolveChartBreakdowns(
+  deps: ServiceDeps,
   projectId: string,
   requested: IGetChartDataInput['breakdowns']
 ): Promise<ResolvedChartBreakdowns> {
   const known = knownBreakdowns(requested);
   const allCohorts = requestsAllCohortsBreakdown(known)
-    ? await fetchProjectCohorts(projectId)
+    ? await fetchProjectCohorts(deps, projectId)
     : [];
   const breakdowns = withoutEmptyAllCohortsBreakdown(known, allCohorts);
   const cohortMetadata = await fetchCohortsMetadata(
+    deps,
     collectBreakdownCohortIds(breakdowns)
   );
   return { breakdowns, allCohorts, cohortMetadata };
 }
 
-export async function getChartSql(input: ChartSqlInput): Promise<SqlFragment> {
+export async function getChartSql(
+  deps: ServiceDeps,
+  input: ChartSqlInput
+): Promise<SqlFragment> {
   const resolved = await resolveChartBreakdowns(
+    deps,
     input.projectId,
     input.breakdowns
   );
@@ -82,9 +85,11 @@ export async function getChartSql(input: ChartSqlInput): Promise<SqlFragment> {
 }
 
 export async function getAggregateChartSql(
+  deps: ServiceDeps,
   input: AggregateChartSqlInput
 ): Promise<SqlFragment> {
   const resolved = await resolveChartBreakdowns(
+    deps,
     input.projectId,
     input.breakdowns
   );

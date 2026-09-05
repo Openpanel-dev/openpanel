@@ -7,8 +7,10 @@
 // exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
 // through packages/trpc's own `protectedProcedure` (full stack included) and
 // delegates its handler bodies to core's share functions (DELEGATE
-// PATTERN) — this module has no queue/cron of its own, so there is no
-// `ctx.services.share`, same as `user`/`project`.
+// PATTERN).
+//
+// M10-003: the handler bodies reach the module through `ctx.services.share`,
+// so the requestId minted at the edge reaches the Postgres call (ADR-018).
 //
 // The permission ladder itself is bound once, in auth.service.ts
 // (M10-002); every procedure here reaches it through `ctx.services.auth`. `createOverview` has no access
@@ -22,18 +24,6 @@ import {
   zShareOverview,
   zShareReport,
 } from './share.constants';
-import {
-  createShareDashboard,
-  createShareOverview,
-  createShareReport,
-  getShareDashboard,
-  getShareDashboardReports,
-  getShareDashboardSettings,
-  getShareOverview,
-  getShareOverviewSettings,
-  getShareReport,
-  getShareReportSettings,
-} from './share.service';
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -45,29 +35,36 @@ function requireLogin(userId: string | null | undefined): string {
 export const shareRouter = createTRPCRouter({
   overview: procedure
     .input(z.object({ shareId: z.string() }))
-    .query(({ input, ctx }) => getShareOverview(input.shareId, ctx.cookies)),
+    .query(({ input, ctx }) =>
+      ctx.services.share.getShareOverview(input.shareId, ctx.cookies)
+    ),
 
   overviewSettings: procedure
     .input(z.object({ projectId: z.string() }))
     .query(({ input, ctx }) => {
       requireLogin(ctx.session.userId);
-      return getShareOverviewSettings(input.projectId);
+      return ctx.services.share.getShareOverviewSettings(input.projectId);
     }),
 
   createOverview: procedure.input(zShareOverview).mutation(({ input, ctx }) => {
     requireLogin(ctx.session.userId);
-    return createShareOverview(input);
+    return ctx.services.share.createShareOverview(input);
   }),
 
   dashboard: procedure
     .input(z.object({ shareId: z.string() }))
-    .query(({ input, ctx }) => getShareDashboard(input.shareId, ctx.cookies)),
+    .query(({ input, ctx }) =>
+      ctx.services.share.getShareDashboard(input.shareId, ctx.cookies)
+    ),
 
   dashboardSettings: procedure
     .input(z.object({ projectId: z.string(), dashboardId: z.string() }))
     .query(({ input, ctx }) => {
       requireLogin(ctx.session.userId);
-      return getShareDashboardSettings(input.projectId, input.dashboardId);
+      return ctx.services.share.getShareDashboardSettings(
+        input.projectId,
+        input.dashboardId
+      );
     }),
 
   createDashboard: procedure
@@ -79,24 +76,29 @@ export const shareRouter = createTRPCRouter({
         projectId: input.projectId,
         level: 'write',
       });
-      return createShareDashboard(input);
+      return ctx.services.share.createShareDashboard(input);
     }),
 
   dashboardReports: procedure
     .input(z.object({ shareId: z.string() }))
     .query(({ input, ctx }) =>
-      getShareDashboardReports(input.shareId, ctx.cookies)
+      ctx.services.share.getShareDashboardReports(input.shareId, ctx.cookies)
     ),
 
   report: procedure
     .input(z.object({ shareId: z.string() }))
-    .query(({ input, ctx }) => getShareReport(input.shareId, ctx.cookies)),
+    .query(({ input, ctx }) =>
+      ctx.services.share.getShareReport(input.shareId, ctx.cookies)
+    ),
 
   reportSettings: procedure
     .input(z.object({ projectId: z.string(), reportId: z.string() }))
     .query(({ input, ctx }) => {
       requireLogin(ctx.session.userId);
-      return getShareReportSettings(input.projectId, input.reportId);
+      return ctx.services.share.getShareReportSettings(
+        input.projectId,
+        input.reportId
+      );
     }),
 
   createReport: procedure
@@ -108,6 +110,6 @@ export const shareRouter = createTRPCRouter({
         projectId: input.projectId,
         level: 'write',
       });
-      return createShareReport(input);
+      return ctx.services.share.createShareReport(input);
     }),
 });

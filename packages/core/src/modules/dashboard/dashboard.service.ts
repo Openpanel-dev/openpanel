@@ -1,18 +1,18 @@
 // Moved from packages/db/src/services/dashboard.service.ts, plus the
 // create/update/delete mutation bodies packages/trpc/src/routers/dashboard.ts
 // held inline (M7-006, ADR-008's module map: dashboard owns "R,S").
-// packages/db/src/services/dashboard.service.ts stays a re-export shim
-// (DELEGATE PATTERN), same shape as project.service.ts since M6-002.
 //
-// db access is LAZY, not a static top-level import — dashboard.rpc.ts lands
-// in the eager rpc.router.ts barrel chain nearly every core test file
-// reaches, and constructing @openpanel/db's clients at import time would
-// spawn a pino-pretty transport worker thread per test file (see
-// insight.service.ts's header / project.service.ts's header).
+// M10-003: every function takes `ServiceDeps` and reaches Postgres as
+// `deps.db`; the `loadDb()` / `loadIdService()` lazy loaders are gone, so
+// this module value-imports neither `@openpanel/db` nor its own package
+// barrel — the Prisma row types below are `import type`, erased at runtime
+// (docs/TECH_DEBT.md §4).
 
 import type { Dashboard, Prisma } from '@openpanel/db/src/prisma-client';
 import { PrismaError } from 'prisma-error-enum';
 import { TRPCNotFoundError } from '../../rpc/errors';
+import type { ServiceDeps } from '../../services';
+import { getId } from '../../shared/slug-id';
 import { getProjectById } from '../project/project.service';
 
 export type IServiceDashboard = Dashboard;
@@ -23,17 +23,22 @@ export type IServiceDashboards = Prisma.DashboardGetPayload<{
   };
 }>[];
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+export type DashboardWithProject = Prisma.DashboardGetPayload<{
+  include: { project: true };
+}>;
+
+export interface DashboardListItem {
+  id: string;
+  name: string;
+  projectId: string;
 }
 
-function loadIdService() {
-  return import('@openpanel/core').then((m) => m.getId);
-}
-
-export async function getDashboardById(id: string, projectId: string) {
-  const db = await loadDb();
-  const dashboard = await db.dashboard.findUnique({
+export function getDashboardById(
+  deps: ServiceDeps,
+  id: string,
+  projectId: string
+): Promise<DashboardWithProject | null> {
+  return deps.db.dashboard.findUnique({
     where: {
       id,
       projectId,
@@ -42,62 +47,61 @@ export async function getDashboardById(id: string, projectId: string) {
       project: true,
     },
   });
-
-  if (!dashboard) {
-    return null;
-  }
-
-  return dashboard;
 }
 
 /** Unscoped lookup for mutation handlers that only receive a dashboard id and
  *  need its `projectId` to run the access check — same shape as V1's inline
  *  `db.dashboard.findUniqueOrThrow`. */
-export async function getDashboardByIdOrThrow(id: string) {
-  const db = await loadDb();
-  return db.dashboard.findUniqueOrThrow({ where: { id } });
+export function getDashboardByIdOrThrow(
+  deps: ServiceDeps,
+  id: string
+): Promise<Dashboard> {
+  return deps.db.dashboard.findUniqueOrThrow({ where: { id } });
 }
 
-export function getDashboardsByProjectId(projectId: string) {
-  return loadDb().then((db) =>
-    db.dashboard.findMany({
-      where: {
-        projectId,
-      },
-      include: {
-        project: true,
-        reports: true,
-      },
-    })
-  );
+export function getDashboardsByProjectId(
+  deps: ServiceDeps,
+  projectId: string
+): Promise<IServiceDashboards> {
+  return deps.db.dashboard.findMany({
+    where: {
+      projectId,
+    },
+    include: {
+      project: true,
+      reports: true,
+    },
+  });
 }
 
-export async function listDashboardsCore(input: {
-  projectId: string;
-  organizationId: string;
-}) {
-  const db = await loadDb();
-  return db.dashboard.findMany({
+export function listDashboardsCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    organizationId: string;
+  }
+): Promise<DashboardListItem[]> {
+  return deps.db.dashboard.findMany({
     where: { projectId: input.projectId },
     orderBy: { createdAt: 'desc' },
     select: { id: true, name: true, projectId: true },
   });
 }
 
-export async function createDashboard(input: {
-  name: string;
-  projectId: string;
-}) {
-  const db = await loadDb();
+export async function createDashboard(
+  deps: ServiceDeps,
+  input: {
+    name: string;
+    projectId: string;
+  }
+): Promise<Dashboard> {
   const project = await getProjectById(input.projectId);
 
   if (!project) {
     throw new TRPCNotFoundError('Project not found');
   }
 
-  const getId = await loadIdService();
-
-  return db.dashboard.create({
+  return deps.db.dashboard.create({
     data: {
       id: await getId('dashboard', input.name),
       projectId: input.projectId,
@@ -107,9 +111,11 @@ export async function createDashboard(input: {
   });
 }
 
-export async function updateDashboard(input: { id: string; name: string }) {
-  const db = await loadDb();
-  return db.dashboard.update({
+export function updateDashboard(
+  deps: ServiceDeps,
+  input: { id: string; name: string }
+): Promise<Dashboard> {
+  return deps.db.dashboard.update({
     where: {
       id: input.id,
     },
@@ -119,20 +125,22 @@ export async function updateDashboard(input: { id: string; name: string }) {
   });
 }
 
-export async function deleteDashboard(input: {
-  id: string;
-  forceDelete?: boolean;
-}) {
-  const db = await loadDb();
+export async function deleteDashboard(
+  deps: ServiceDeps,
+  input: {
+    id: string;
+    forceDelete?: boolean;
+  }
+): Promise<void> {
   try {
     if (input.forceDelete) {
-      await db.report.deleteMany({
+      await deps.db.report.deleteMany({
         where: {
           dashboardId: input.id,
         },
       });
     }
-    await db.dashboard.delete({
+    await deps.db.dashboard.delete({
       where: {
         id: input.id,
       },
@@ -150,4 +158,36 @@ export async function deleteDashboard(input: {
       }
     }
   }
+}
+
+export interface DashboardService {
+  getDashboardById(
+    id: string,
+    projectId: string
+  ): Promise<DashboardWithProject | null>;
+  getDashboardByIdOrThrow(id: string): Promise<Dashboard>;
+  getDashboardsByProjectId(projectId: string): Promise<IServiceDashboards>;
+  listDashboardsCore(input: {
+    projectId: string;
+    organizationId: string;
+  }): Promise<DashboardListItem[]>;
+  createDashboard(input: {
+    name: string;
+    projectId: string;
+  }): Promise<Dashboard>;
+  updateDashboard(input: { id: string; name: string }): Promise<Dashboard>;
+  deleteDashboard(input: { id: string; forceDelete?: boolean }): Promise<void>;
+}
+
+export function createDashboardService(deps: ServiceDeps): DashboardService {
+  return {
+    getDashboardById: (id, projectId) => getDashboardById(deps, id, projectId),
+    getDashboardByIdOrThrow: (id) => getDashboardByIdOrThrow(deps, id),
+    getDashboardsByProjectId: (projectId) =>
+      getDashboardsByProjectId(deps, projectId),
+    listDashboardsCore: (input) => listDashboardsCore(deps, input),
+    createDashboard: (input) => createDashboard(deps, input),
+    updateDashboard: (input) => updateDashboard(deps, input),
+    deleteDashboard: (input) => deleteDashboard(deps, input),
+  };
 }

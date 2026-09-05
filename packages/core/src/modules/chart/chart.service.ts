@@ -9,15 +9,15 @@
 // dispatches to live in the sibling `*.service.ts` files of this module
 // (M7-004).
 //
-// db/ch access is lazy (`load*`), as in the sibling modules: the barrel pulls
-// this module into nearly every core test file, and constructing
-// @openpanel/db's clients at import time costs a pino-pretty worker per file.
+// M10-003: every function takes `ServiceDeps` and reaches ClickHouse and
+// Postgres as `deps.ch` / `deps.db`. The `load*` lazy loaders are gone, and
+// so is the `@openpanel/core` self-barrel hop this file used to make for the
+// report module's `mergeGlobalFilters` / `onlyReportEvents` — those are
+// imported straight from `../report/src/series` (docs/TECH_DEBT.md §2, §4).
+// The one thing still value-imported from `@openpanel/db` under `./src/` is
+// ADR-013's `sql` tag, which ADR-007 keeps in `packages/db` by name: a
+// compile-time template tag, no client and no request scope.
 
-import {
-  getChartPrevStartEndDate,
-  getChartStartEndDate,
-} from '@openpanel/core';
-import type { IServiceReport } from '@openpanel/core';
 import type {
   FinalChart,
   IChartEventFilter,
@@ -29,6 +29,10 @@ import type {
 } from '@openpanel/validation';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import type { ServiceDeps } from '../../services';
+import {
+  getChartPrevStartEndDate,
+  getChartStartEndDate,
+} from '../../shared/date';
 import { getEventMetasCached } from '../event/event.service';
 import { getSettingsForProject } from '../organization/organization.service';
 import {
@@ -36,10 +40,34 @@ import {
   getProfilesCached,
   type IServiceProfile,
 } from '../profile/profile.service';
+import type { IServiceReport } from '../report/report.service';
+import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
 import { getConversion } from './conversion.service';
-import { getFunnel, getFunnelProfileIds } from './funnel.service';
-import { getRetentionCohort } from './retention.service';
-import { getSankey } from './sankey.service';
+import {
+  buildFunnelBase,
+  buildSessionsCte,
+  getFunnel,
+  getFunnelCore,
+  getFunnelGroup,
+  getFunnelProfileIds,
+  toSeries as toFunnelSeries,
+} from './funnel.service';
+import {
+  getEngagementCore,
+  getRetentionCohort,
+  getRetentionCohortCore,
+  getRetentionLastSeenSeries,
+  getRetentionSeries,
+  getRollingActiveUsers,
+  getRollingActiveUsersCore,
+  getWeeklyRetentionSeriesCore,
+  processCohortData,
+} from './retention.service';
+import {
+  getRawWhereClause,
+  getSankey,
+  getUserFlowCore,
+} from './sankey.service';
 import {
   chartBucketProfilesQuery,
   eventFieldValuesQuery,
@@ -74,12 +102,7 @@ export {
   getAggregateChartSql,
   getChartSql,
 } from './src/chart-statement';
-export {
-  AggregateChartEngine,
-  ChartEngine,
-  executeAggregateChart,
-  executeChart,
-} from './src/engine/execute';
+export { executeAggregateChart, executeChart } from './src/engine/execute';
 export {
   evaluateFormula,
   InvalidFormulaError,
@@ -174,10 +197,6 @@ const FIXED_FILTER_PROPERTIES = [
   'profile.last_seen_at',
 ];
 
-function loadReportsService() {
-  return import('@openpanel/core');
-}
-
 async function getProfilesInBatches(
   ids: string[],
   projectId: string,
@@ -263,15 +282,26 @@ function projectCardTrend(
   return { direction: 'neutral', percentage: 0 };
 }
 
-export async function getProjectCard(projectId: string): Promise<{
+export async function getProjectCard(
+  deps: ServiceDeps,
+  projectId: string
+): Promise<{
   chart: ProjectCardChartRow[];
   metrics: ProjectCardMetrics | undefined;
   trend: ProjectCardTrend;
 }> {
   const { timezone } = await getSettingsForProject(projectId);
   const [chart, [metrics]] = await Promise.all([
-    runQuery<ProjectCardChartRow>(projectCardChartQuery(projectId), timezone),
-    runQuery<ProjectCardMetrics>(projectCardMetricsQuery(projectId), timezone),
+    runQuery<ProjectCardChartRow>(
+      deps,
+      projectCardChartQuery(projectId),
+      timezone
+    ),
+    runQuery<ProjectCardMetrics>(
+      deps,
+      projectCardMetricsQuery(projectId),
+      timezone
+    ),
   ]);
 
   return {
@@ -290,10 +320,12 @@ export interface ChartEventOption {
 }
 
 export async function listChartEvents(
+  deps: ServiceDeps,
   projectId: string
 ): Promise<ChartEventOption[]> {
   const [events, meta] = await Promise.all([
     runQuery<{ name: string; count: number }>(
+      deps,
       eventNamesWithCountQuery(projectId)
     ),
     getEventMetasCached(projectId),
@@ -318,14 +350,18 @@ function toWildcardPropertyKey(key: string): string {
   return key.replace(/\.([0-9]+)\./g, '.*.').replace(/\.([0-9]+)/g, '[*]');
 }
 
-export async function listChartProperties(input: {
-  projectId: string;
-  event?: string;
-}): Promise<string[]> {
+export async function listChartProperties(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    event?: string;
+  }
+): Promise<string[]> {
   const { projectId, event } = input;
   const [profileKeys, eventKeys] = await Promise.all([
     getProfilePropertyKeysCached(projectId),
     runQuery<{ property_key: string; created_at: string }>(
+      deps,
       eventPropertyKeysQuery(projectId, event, EVENT_PROPERTY_KEY_LIMIT)
     ),
   ]);
@@ -349,11 +385,14 @@ function nonEmptyValues(rows: { values: string }[]): string[] {
   return rows.map((row) => String(row.values)).filter(Boolean);
 }
 
-export async function getChartPropertyValues(input: {
-  projectId: string;
-  event: string;
-  property: string;
-}): Promise<{ values: string[] }> {
+export async function getChartPropertyValues(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    event: string;
+    property: string;
+  }
+): Promise<{ values: string[] }> {
   const { projectId, event, property } = input;
 
   if (property === 'has_profile') {
@@ -362,6 +401,7 @@ export async function getChartPropertyValues(input: {
 
   if (property.startsWith('properties.')) {
     const rows = await runQuery<{ property_value: string; created_at: string }>(
+      deps,
       eventPropertyValuesQuery(
         projectId,
         property.replace(/^properties\./, ''),
@@ -374,6 +414,7 @@ export async function getChartPropertyValues(input: {
 
   if (property.startsWith('profile.')) {
     const rows = await runQuery<{ values: string }>(
+      deps,
       profilePropertyValuesQuery(projectId, getProfilePropertySelect(property))
     );
     return { values: nonEmptyValues(rows) };
@@ -381,6 +422,7 @@ export async function getChartPropertyValues(input: {
 
   if (property.startsWith('group.')) {
     const rows = await runQuery<{ values: string }>(
+      deps,
       groupPropertyValuesQuery(projectId, getGroupPropertySelect(property))
     );
     return { values: nonEmptyValues(rows) };
@@ -399,6 +441,7 @@ export async function getChartPropertyValues(input: {
     return { values: [] };
   }
   const rows = await runQuery<{ values: string[] }>(
+    deps,
     eventFieldValuesQuery(
       projectId,
       getSelectPropertyKey(resolvedProperty),
@@ -424,34 +467,40 @@ async function currentAndPreviousPeriod(chartInput: IReportInput) {
   return { timezone, currentPeriod, previousPeriod };
 }
 
-export async function getFunnelChart(chartInput: IReportInput) {
+export async function getFunnelChart(
+  deps: ServiceDeps,
+  chartInput: IReportInput
+) {
   const { timezone, currentPeriod, previousPeriod } =
     await currentAndPreviousPeriod(chartInput);
 
   const [current, previous] = await Promise.all([
-    getFunnel({ ...chartInput, ...currentPeriod, timezone }),
+    getFunnel(deps, { ...chartInput, ...currentPeriod, timezone }),
     chartInput.previous
-      ? getFunnel({ ...chartInput, ...previousPeriod, timezone })
+      ? getFunnel(deps, { ...chartInput, ...previousPeriod, timezone })
       : Promise.resolve(null),
   ]);
 
   return { current, previous };
 }
 
-export async function getConversionChart(chartInput: IReportInput) {
+export async function getConversionChart(
+  deps: ServiceDeps,
+  chartInput: IReportInput
+) {
   const { timezone, currentPeriod, previousPeriod } =
     await currentAndPreviousPeriod(chartInput);
   const interval = chartInput.interval;
 
   const [current, previous] = await Promise.all([
-    getConversion({
+    getConversion(deps, {
       ...chartInput,
       ...currentPeriod,
       interval,
       timezone,
     }),
     chartInput.previous
-      ? getConversion({
+      ? getConversion(deps, {
           ...chartInput,
           ...previousPeriod,
           interval,
@@ -472,8 +521,7 @@ export async function getConversionChart(chartInput: IReportInput) {
   };
 }
 
-export async function getSankeyChart(input: IReportInput) {
-  const { mergeGlobalFilters, onlyReportEvents } = await loadReportsService();
+export async function getSankeyChart(deps: ServiceDeps, input: IReportInput) {
   const { timezone } = await getSettingsForProject(input.projectId);
   const currentPeriod = getChartStartEndDate(input, timezone);
 
@@ -489,7 +537,7 @@ export async function getSankeyChart(input: IReportInput) {
     throw new Error('Start and end events are required');
   }
 
-  return getSankey({
+  return getSankey(deps, {
     projectId: input.projectId,
     startDate: currentPeriod.startDate,
     endDate: currentPeriod.endDate,
@@ -556,6 +604,7 @@ function onlyEventSeries(series: NonNullable<IServiceReport>['series']) {
 }
 
 export async function getRetentionChart(
+  deps: ServiceDeps,
   report: NonNullable<IServiceReport> | null,
   input: RetentionChartInput
 ) {
@@ -571,7 +620,7 @@ export async function getRetentionChart(
     timezone
   );
 
-  return getRetentionCohort({
+  return getRetentionCohort(deps, {
     projectId: resolved.projectId,
     firstEvent: resolved.firstEvent,
     secondEvent: resolved.secondEvent,
@@ -596,6 +645,7 @@ export interface ChartBucketProfilesRequest {
 
 /** Profiles behind one data point of a time-series chart (V1 `getProfiles`). */
 export async function getChartBucketProfiles(
+  deps: ServiceDeps,
   input: ChartBucketProfilesRequest
 ): Promise<IServiceProfile[]> {
   const serie = input.series[0];
@@ -607,6 +657,7 @@ export async function getChartBucketProfiles(
   }
 
   const rows = await runQuery<{ profile_id: string }>(
+    deps,
     chartBucketProfilesQuery({
       projectId: input.projectId,
       bucketDate: formatClickhouseDate(new Date(input.date)),
@@ -645,6 +696,7 @@ export interface FunnelStepProfilesRequest {
  * joined fail with UNKNOWN_IDENTIFIER.
  */
 export async function getFunnelStepProfiles(
+  deps: ServiceDeps,
   input: FunnelStepProfilesRequest
 ): Promise<IServiceProfile[]> {
   const { timezone } = await getSettingsForProject(input.projectId);
@@ -660,7 +712,7 @@ export async function getFunnelStepProfiles(
   } = input;
   const { startDate, endDate } = getChartStartEndDate(input, timezone);
 
-  const ids = await getFunnelProfileIds({
+  const ids = await getFunnelProfileIds(deps, {
     projectId,
     startDate,
     endDate,
@@ -683,16 +735,146 @@ export async function getFunnelStepProfiles(
 
 // --- service -----------------------------------------------------------------
 
+// The funnel, conversion, sankey and retention services live in this module's
+// own sibling files, not in modules of their own (ADR-007 gives one service
+// per module), so they FOLD INTO `ChartService` rather than becoming four
+// more `Services` members: chart.service.ts is already the dispatcher every
+// caller goes through (`getFunnelChart` / `getConversionChart` /
+// `getSankeyChart` / `getRetentionChart`), and a `Services` key per file
+// would name four things that are not modules.
+
 export interface ChartService {
+  // chart
   execute(input: IReportInput): Promise<FinalChart>;
   executeAggregate(input: IReportInput): Promise<FinalChart>;
+  resolveReportInput(
+    report: NonNullable<IServiceReport> | null,
+    input: ShareableReportInput
+  ): IReportInput;
+  getProjectCard(projectId: string): ReturnType<typeof getProjectCard>;
+  listChartEvents(projectId: string): Promise<ChartEventOption[]>;
+  listChartProperties(
+    input: Parameters<typeof listChartProperties>[1]
+  ): Promise<string[]>;
+  getChartPropertyValues(
+    input: Parameters<typeof getChartPropertyValues>[1]
+  ): Promise<{ values: string[] }>;
   bucketProfiles(input: ChartBucketProfilesRequest): Promise<IServiceProfile[]>;
+  funnelStepProfiles(
+    input: FunnelStepProfilesRequest
+  ): Promise<IServiceProfile[]>;
+  // funnel
+  getFunnelGroup(group?: string): ReturnType<typeof getFunnelGroup>;
+  /** The funnel row -> serie grouping (funnel.service.ts's `toSeries`). */
+  toFunnelSeries(
+    ...args: Parameters<typeof toFunnelSeries>
+  ): ReturnType<typeof toFunnelSeries>;
+  buildSessionsCte(
+    input: Parameters<typeof buildSessionsCte>[0]
+  ): ReturnType<typeof buildSessionsCte>;
+  getFunnelChart(chartInput: IReportInput): ReturnType<typeof getFunnelChart>;
+  getFunnel(
+    input: Parameters<typeof getFunnel>[1]
+  ): ReturnType<typeof getFunnel>;
+  getFunnelCore(
+    input: Parameters<typeof getFunnelCore>[1]
+  ): ReturnType<typeof getFunnelCore>;
+  buildFunnelBase(
+    input: Parameters<typeof buildFunnelBase>[1]
+  ): ReturnType<typeof buildFunnelBase>;
+  getFunnelProfileIds(
+    input: Parameters<typeof getFunnelProfileIds>[1]
+  ): Promise<string[]>;
+  // conversion
+  getConversionChart(
+    chartInput: IReportInput
+  ): ReturnType<typeof getConversionChart>;
+  getConversion(
+    input: Parameters<typeof getConversion>[1]
+  ): ReturnType<typeof getConversion>;
+  // sankey
+  getRawWhereClause(
+    type: 'events' | 'sessions',
+    filters: IChartEventFilter[]
+  ): string;
+  getSankeyChart(input: IReportInput): ReturnType<typeof getSankeyChart>;
+  getSankey(
+    input: Parameters<typeof getSankey>[1]
+  ): ReturnType<typeof getSankey>;
+  getUserFlowCore(
+    input: Parameters<typeof getUserFlowCore>[1]
+  ): ReturnType<typeof getUserFlowCore>;
+  // retention
+  processCohortData(
+    ...args: Parameters<typeof processCohortData>
+  ): ReturnType<typeof processCohortData>;
+  getRetentionChart(
+    report: NonNullable<IServiceReport> | null,
+    input: RetentionChartInput
+  ): ReturnType<typeof getRetentionChart>;
+  getRetentionCohort(
+    input: Parameters<typeof getRetentionCohort>[1]
+  ): ReturnType<typeof getRetentionCohort>;
+  getRetentionCohortCore(
+    projectId: string
+  ): ReturnType<typeof getRetentionCohortCore>;
+  getRetentionSeries(
+    input: Parameters<typeof getRetentionSeries>[1]
+  ): ReturnType<typeof getRetentionSeries>;
+  getRetentionLastSeenSeries(
+    input: Parameters<typeof getRetentionLastSeenSeries>[1]
+  ): ReturnType<typeof getRetentionLastSeenSeries>;
+  getRollingActiveUsers(
+    input: Parameters<typeof getRollingActiveUsers>[1]
+  ): ReturnType<typeof getRollingActiveUsers>;
+  getRollingActiveUsersCore(
+    input: Parameters<typeof getRollingActiveUsersCore>[1]
+  ): ReturnType<typeof getRollingActiveUsersCore>;
+  getWeeklyRetentionSeriesCore(
+    projectId: string
+  ): ReturnType<typeof getWeeklyRetentionSeriesCore>;
+  getEngagementCore(projectId: string): ReturnType<typeof getEngagementCore>;
 }
 
-export function createChartService(_deps: ServiceDeps): ChartService {
+export function createChartService(deps: ServiceDeps): ChartService {
   return {
-    execute: executeChart,
-    executeAggregate: executeAggregateChart,
-    bucketProfiles: getChartBucketProfiles,
+    execute: (input) => executeChart(deps, input),
+    executeAggregate: (input) => executeAggregateChart(deps, input),
+    resolveReportInput,
+    getProjectCard: (projectId) => getProjectCard(deps, projectId),
+    listChartEvents: (projectId) => listChartEvents(deps, projectId),
+    listChartProperties: (input) => listChartProperties(deps, input),
+    getChartPropertyValues: (input) => getChartPropertyValues(deps, input),
+    bucketProfiles: (input) => getChartBucketProfiles(deps, input),
+    funnelStepProfiles: (input) => getFunnelStepProfiles(deps, input),
+    getFunnelGroup,
+    toFunnelSeries,
+    buildSessionsCte,
+    getFunnelChart: (chartInput) => getFunnelChart(deps, chartInput),
+    getFunnel: (input) => getFunnel(deps, input),
+    getFunnelCore: (input) => getFunnelCore(deps, input),
+    buildFunnelBase: (input) => buildFunnelBase(deps, input),
+    getFunnelProfileIds: (input) => getFunnelProfileIds(deps, input),
+    getConversionChart: (chartInput) => getConversionChart(deps, chartInput),
+    getConversion: (input) => getConversion(deps, input),
+    getRawWhereClause,
+    getSankeyChart: (input) => getSankeyChart(deps, input),
+    getSankey: (input) => getSankey(deps, input),
+    getUserFlowCore: (input) => getUserFlowCore(deps, input),
+    processCohortData,
+    getRetentionChart: (report, input) =>
+      getRetentionChart(deps, report, input),
+    getRetentionCohort: (input) => getRetentionCohort(deps, input),
+    getRetentionCohortCore: (projectId) =>
+      getRetentionCohortCore(deps, projectId),
+    getRetentionSeries: (input) => getRetentionSeries(deps, input),
+    getRetentionLastSeenSeries: (input) =>
+      getRetentionLastSeenSeries(deps, input),
+    getRollingActiveUsers: (input) => getRollingActiveUsers(deps, input),
+    getRollingActiveUsersCore: (input) =>
+      getRollingActiveUsersCore(deps, input),
+    getWeeklyRetentionSeriesCore: (projectId) =>
+      getWeeklyRetentionSeriesCore(deps, projectId),
+    getEngagementCore: (projectId) => getEngagementCore(deps, projectId),
   };
 }

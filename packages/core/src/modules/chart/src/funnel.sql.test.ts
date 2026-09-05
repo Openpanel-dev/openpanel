@@ -46,7 +46,8 @@ let buildFunnelBase: typeof import('../funnel.service').buildFunnelBase;
 let funnelChartQuery: typeof import('./funnel.sql').funnelChartQuery;
 let funnelProfilesQuery: typeof import('./funnel.sql').funnelProfilesQuery;
 let funnelStepConditions: typeof import('./funnel.sql').funnelStepConditions;
-let onlyReportEvents: typeof import('@openpanel/core').onlyReportEvents;
+let onlyReportEvents: typeof import('../../report/src/series').onlyReportEvents;
+let deps: import('../../../services').ServiceDeps;
 
 const PROJECT_ID = 'test-sql-validation';
 const START = '2026-04-14 00:00:00';
@@ -113,7 +114,7 @@ function baseInput(overrides: BaseOverrides = {}) {
 
 /** Mirrors what getFunnelStepProfiles builds on top of the shared base. */
 async function profilesStatement(overrides: BaseOverrides = {}) {
-  const base = await buildFunnelBase(baseInput(overrides));
+  const base = await buildFunnelBase(deps, baseInput(overrides));
   return funnelProfilesQuery(base, {
     targetLevel: TARGET_LEVEL,
     showDropoffs: false,
@@ -124,7 +125,7 @@ async function profilesStatement(overrides: BaseOverrides = {}) {
 
 /** Mirrors what the funnel chart builds on top of the shared base. */
 async function chartStatement(overrides: BaseOverrides = {}) {
-  const base = await buildFunnelBase(baseInput(overrides));
+  const base = await buildFunnelBase(deps, baseInput(overrides));
   return funnelChartQuery(base);
 }
 
@@ -146,9 +147,9 @@ beforeAll(async () => {
   ({ buildFunnelBase } = await import('../funnel.service'));
   ({ funnelChartQuery, funnelProfilesQuery, funnelStepConditions } =
     await import('./funnel.sql'));
-  ({ onlyReportEvents } = await import(
-    '@openpanel/core'
-  ));
+  ({ onlyReportEvents } = await import('../../report/src/series'));
+  const { testServiceDeps } = await import('../../../../test/service-deps');
+  deps = await testServiceDeps();
 });
 
 describe('funnel.sql / buildFunnelBase — profile breakdowns', () => {

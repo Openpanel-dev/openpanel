@@ -1,15 +1,18 @@
 // Moved from packages/db/src/services/reports.service.ts, plus the
 // create/update/move/delete/duplicate/layout mutation bodies
 // packages/trpc/src/routers/report.ts held inline (M7-006, ADR-008's module
-// map: report owns "R,S,C"). packages/db/src/services/reports.service.ts
-// stays a re-export shim (DELEGATE PATTERN), same shape as
-// project.service.ts since M6-002.
+// map: report owns "R,S,C").
+//
+// M10-003: every function takes `ServiceDeps` and reaches Postgres as
+// `deps.db`; `loadDb()` and the `@openpanel/core` self-barrel import are
+// gone — the Prisma row types below are `import type`, erased at runtime
+// (docs/TECH_DEBT.md §4). `onlyReportEvents`/`mergeGlobalFilters` moved to
+// ./src/series.ts — see that file for why.
 
 import type {
   Report as DbReport,
   ReportLayout,
 } from '@openpanel/db/src/prisma-client';
-import { getChartStartEndDate } from '@openpanel/core';
 import type {
   IChartBreakdown,
   IChartEventFilter,
@@ -20,50 +23,19 @@ import type {
   IReportOptions,
 } from '@openpanel/validation';
 import { TRPCBadRequestError } from '../../rpc/errors';
+import type { ServiceDeps } from '../../services';
+import { getChartStartEndDate } from '../../shared/date';
 import { getFunnel } from '../chart/funnel.service';
-import { AggregateChartEngine, ChartEngine } from '../chart/src/engine/execute';
+import {
+  executeAggregateChart,
+  executeChart,
+} from '../chart/src/engine/execute';
 import { getDashboardById } from '../dashboard/dashboard.service';
 import { getSettingsForProject } from '../organization/organization.service';
 import { alphabetIds, lineTypes } from './report.constants';
+import { mergeGlobalFilters, onlyReportEvents } from './src/series';
 
 export type IServiceReport = Awaited<ReturnType<typeof getReportById>>;
-
-// Only the Postgres client stays lazy: report.rpc.ts lands in the eager
-// rpc.router.ts barrel chain nearly every core test file reaches, and
-// constructing @openpanel/db's prisma-client at import time would spawn a
-// pino-pretty transport worker thread per test file (see
-// insight.service.ts's header / project.service.ts's header). date.service
-// and the chart engine carry no db construction of their own, and the chart
-// engine is already eager via chart.rpc.ts, so both stay static imports.
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
-export const onlyReportEvents = (
-  series: NonNullable<IServiceReport>['series']
-) => {
-  return series.filter((item) => item.type === 'event');
-};
-
-/**
- * Prepend report-level global filters to every event series' own filters.
- * Combining is AND (filters already combine with AND in getEventFiltersWhereClause).
- * Formulas reference other series, so they inherit the global filters transitively
- * and are left untouched here.
- */
-export function mergeGlobalFilters(
-  series: IChartEventItem[],
-  globalFilters: IChartEventFilter[] = []
-): IChartEventItem[] {
-  if (!globalFilters.length) {
-    return series;
-  }
-  return series.map((item) =>
-    item.type === 'event'
-      ? { ...item, filters: [...globalFilters, ...item.filters] }
-      : item
-  );
-}
 
 export function transformFilter(
   filter: Partial<IChartEventFilter>,
@@ -140,8 +112,11 @@ export function transformReport(
   };
 }
 
-export async function getReportsByDashboardId(dashboardId: string) {
-  const db = await loadDb();
+export async function getReportsByDashboardId(
+  deps: ServiceDeps,
+  dashboardId: string
+) {
+  const db = deps.db;
   const reports = await db.report.findMany({
     where: {
       dashboardId,
@@ -153,8 +128,8 @@ export async function getReportsByDashboardId(dashboardId: string) {
   return reports.map(transformReport);
 }
 
-export async function getReportById(id: string) {
-  const db = await loadDb();
+export async function getReportById(deps: ServiceDeps, id: string) {
+  const db = deps.db;
   const report = await db.report.findUnique({
     where: {
       id,
@@ -174,21 +149,27 @@ export async function getReportById(id: string) {
 /** Unscoped lookup for mutation handlers that only receive a report id and
  *  need its `projectId`/`dashboardId` to run the access check — same shape as
  *  V1's inline `db.report.findUniqueOrThrow`. */
-export async function getReportByIdOrThrow(id: string) {
-  const db = await loadDb();
-  return db.report.findUniqueOrThrow({ where: { id } });
+export async function getReportByIdOrThrow(deps: ServiceDeps, id: string) {
+  return deps.db.report.findUniqueOrThrow({ where: { id } });
 }
 
-export async function listReportsCore(input: {
-  projectId: string;
-  dashboardId: string;
-  organizationId: string;
-}) {
-  const dashboard = await getDashboardById(input.dashboardId, input.projectId);
+export async function listReportsCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    dashboardId: string;
+    organizationId: string;
+  }
+) {
+  const dashboard = await getDashboardById(
+    deps,
+    input.dashboardId,
+    input.projectId
+  );
   if (!dashboard) {
     return [];
   }
-  const reports = await getReportsByDashboardId(input.dashboardId);
+  const reports = await getReportsByDashboardId(deps, input.dashboardId);
   return reports.map((r) => ({
     id: r.id,
     name: r.name,
@@ -211,13 +192,15 @@ export async function listReportsCore(input: {
   }));
 }
 
-export async function getReportDataCore(input: {
-  projectId: string;
-  reportId: string;
-  organizationId: string;
-}) {
-  const db = await loadDb();
-  const rawReport = await db.report.findUnique({
+export async function getReportDataCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    reportId: string;
+    organizationId: string;
+  }
+) {
+  const rawReport = await deps.db.report.findUnique({
     where: { id: input.reportId, projectId: input.projectId },
     include: { layout: true },
   });
@@ -242,16 +225,16 @@ export async function getReportDataCore(input: {
   };
 
   if (report.chartType === 'funnel') {
-    const result = await getFunnel(chartInput);
+    const result = await getFunnel(deps, chartInput);
     return { ...meta, data: result };
   }
 
   if (report.chartType === 'metric') {
-    const result = await AggregateChartEngine.execute(chartInput);
+    const result = await executeAggregateChart(deps, chartInput);
     return { ...meta, data: result };
   }
 
-  const result = await ChartEngine.execute(chartInput);
+  const result = await executeChart(deps, chartInput);
   return { ...meta, data: result };
 }
 
@@ -284,12 +267,15 @@ function reportWriteData(report: IReportInputForWrite) {
   };
 }
 
-export async function createReport(input: {
-  dashboardId: string;
-  projectId: string;
-  report: IReportInputForWrite;
-}) {
-  const db = await loadDb();
+export async function createReport(
+  deps: ServiceDeps,
+  input: {
+    dashboardId: string;
+    projectId: string;
+    report: IReportInputForWrite;
+  }
+) {
+  const db = deps.db;
   return db.report.create({
     data: {
       projectId: input.projectId,
@@ -299,11 +285,14 @@ export async function createReport(input: {
   });
 }
 
-export async function updateReport(input: {
-  reportId: string;
-  report: IReportInputForWrite;
-}) {
-  const db = await loadDb();
+export async function updateReport(
+  deps: ServiceDeps,
+  input: {
+    reportId: string;
+    report: IReportInputForWrite;
+  }
+) {
+  const db = deps.db;
   return db.report.update({
     where: {
       id: input.reportId,
@@ -312,11 +301,14 @@ export async function updateReport(input: {
   });
 }
 
-export async function moveReport(input: {
-  report: DbReport;
-  dashboardId: string;
-}) {
-  const db = await loadDb();
+export async function moveReport(
+  deps: ServiceDeps,
+  input: {
+    report: DbReport;
+    dashboardId: string;
+  }
+) {
+  const db = deps.db;
   const { report, dashboardId } = input;
 
   if (report.dashboardId === dashboardId) {
@@ -360,8 +352,8 @@ export async function moveReport(input: {
   return moved;
 }
 
-export async function deleteReport(reportId: string) {
-  const db = await loadDb();
+export async function deleteReport(deps: ServiceDeps, reportId: string) {
+  const db = deps.db;
   return db.report.delete({
     where: {
       id: reportId,
@@ -369,8 +361,8 @@ export async function deleteReport(reportId: string) {
   });
 }
 
-export async function duplicateReport(report: DbReport) {
-  const db = await loadDb();
+export async function duplicateReport(deps: ServiceDeps, report: DbReport) {
+  const db = deps.db;
   return db.report.create({
     data: {
       projectId: report.projectId,
@@ -406,11 +398,14 @@ interface ReportLayoutInput {
   maxH?: number;
 }
 
-export async function updateReportLayout(input: {
-  reportId: string;
-  layout: ReportLayoutInput;
-}) {
-  const db = await loadDb();
+export async function updateReportLayout(
+  deps: ServiceDeps,
+  input: {
+    reportId: string;
+    layout: ReportLayoutInput;
+  }
+) {
+  const db = deps.db;
   const { reportId, layout } = input;
 
   // Upsert the layout (create if doesn't exist, update if it does)
@@ -426,11 +421,14 @@ export async function updateReportLayout(input: {
   });
 }
 
-export async function getReportLayouts(input: {
-  dashboardId: string;
-  projectId: string;
-}) {
-  const db = await loadDb();
+export async function getReportLayouts(
+  deps: ServiceDeps,
+  input: {
+    dashboardId: string;
+    projectId: string;
+  }
+) {
+  const db = deps.db;
   return db.reportLayout.findMany({
     where: {
       report: {
@@ -444,11 +442,14 @@ export async function getReportLayouts(input: {
   });
 }
 
-export async function resetReportLayouts(input: {
-  dashboardId: string;
-  projectId: string;
-}) {
-  const db = await loadDb();
+export async function resetReportLayouts(
+  deps: ServiceDeps,
+  input: {
+    dashboardId: string;
+    projectId: string;
+  }
+) {
+  const db = deps.db;
   return db.reportLayout.deleteMany({
     where: {
       report: {
@@ -457,4 +458,80 @@ export async function resetReportLayouts(input: {
       },
     },
   });
+}
+
+// --- service ------------------------------------------------------------
+
+export interface ReportService {
+  transformFilter(
+    filter: Partial<IChartEventFilter>,
+    index: number
+  ): IChartEventFilter;
+  transformReportEventItem(
+    item: IChartEventItem,
+    index: number
+  ): IChartEventItem;
+  transformReport(
+    report: DbReport & { layout?: ReportLayout | null }
+  ): ReturnType<typeof transformReport>;
+  mergeGlobalFilters(
+    series: IChartEventItem[],
+    globalFilters?: IChartEventFilter[]
+  ): IChartEventItem[];
+  onlyReportEvents(series: IChartEventItem[]): IChartEventItem[];
+  getReportsByDashboardId(
+    dashboardId: string
+  ): ReturnType<typeof getReportsByDashboardId>;
+  getReportById(id: string): ReturnType<typeof getReportById>;
+  getReportByIdOrThrow(id: string): ReturnType<typeof getReportByIdOrThrow>;
+  listReportsCore(
+    input: Parameters<typeof listReportsCore>[1]
+  ): ReturnType<typeof listReportsCore>;
+  getReportDataCore(
+    input: Parameters<typeof getReportDataCore>[1]
+  ): ReturnType<typeof getReportDataCore>;
+  createReport(
+    input: Parameters<typeof createReport>[1]
+  ): ReturnType<typeof createReport>;
+  updateReport(
+    input: Parameters<typeof updateReport>[1]
+  ): ReturnType<typeof updateReport>;
+  moveReport(
+    input: Parameters<typeof moveReport>[1]
+  ): ReturnType<typeof moveReport>;
+  deleteReport(reportId: string): ReturnType<typeof deleteReport>;
+  duplicateReport(report: DbReport): ReturnType<typeof duplicateReport>;
+  updateReportLayout(
+    input: Parameters<typeof updateReportLayout>[1]
+  ): ReturnType<typeof updateReportLayout>;
+  getReportLayouts(
+    input: Parameters<typeof getReportLayouts>[1]
+  ): ReturnType<typeof getReportLayouts>;
+  resetReportLayouts(
+    input: Parameters<typeof resetReportLayouts>[1]
+  ): ReturnType<typeof resetReportLayouts>;
+}
+
+export function createReportService(deps: ServiceDeps): ReportService {
+  return {
+    transformFilter,
+    transformReportEventItem,
+    transformReport,
+    mergeGlobalFilters,
+    onlyReportEvents,
+    getReportsByDashboardId: (dashboardId) =>
+      getReportsByDashboardId(deps, dashboardId),
+    getReportById: (id) => getReportById(deps, id),
+    getReportByIdOrThrow: (id) => getReportByIdOrThrow(deps, id),
+    listReportsCore: (input) => listReportsCore(deps, input),
+    getReportDataCore: (input) => getReportDataCore(deps, input),
+    createReport: (input) => createReport(deps, input),
+    updateReport: (input) => updateReport(deps, input),
+    moveReport: (input) => moveReport(deps, input),
+    deleteReport: (reportId) => deleteReport(deps, reportId),
+    duplicateReport: (report) => duplicateReport(deps, report),
+    updateReportLayout: (input) => updateReportLayout(deps, input),
+    getReportLayouts: (input) => getReportLayouts(deps, input),
+    resetReportLayouts: (input) => resetReportLayouts(deps, input),
+  };
 }

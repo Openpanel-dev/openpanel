@@ -6,6 +6,7 @@
 import { chartColors } from '@openpanel/constants';
 import { type IChartEventFilter, zChartEvent } from '@openpanel/validation';
 import { z } from 'zod';
+import type { ServiceDeps } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';
 import { getEventFiltersWhereClause } from './src/filter-where';
 import { runQuery } from './src/run-query';
@@ -133,18 +134,21 @@ function toSankeyEvent(
     : undefined;
 }
 
-export async function getSankey({
-  projectId,
-  startDate,
-  endDate,
-  steps = DEFAULT_SANKEY_STEPS,
-  mode,
-  startEvent,
-  endEvent,
-  exclude = [],
-  include,
-  timezone,
-}: IGetSankeyInput): Promise<SankeyResult> {
+export async function getSankey(
+  deps: ServiceDeps,
+  {
+    projectId,
+    startDate,
+    endDate,
+    steps = DEFAULT_SANKEY_STEPS,
+    mode,
+    startEvent,
+    endEvent,
+    exclude = [],
+    include,
+    timezone,
+  }: IGetSankeyInput
+): Promise<SankeyResult> {
   const colors = chartColors.map((color) => color.main);
   const pathsInput: SankeyPathsInput = {
     projectId,
@@ -162,6 +166,7 @@ export async function getSankey({
   const end = pathsInput.endEvent as SankeyEvent;
 
   const topEntries = await runQuery<TopEntry>(
+    deps,
     isBetween
       ? sankeyBetweenTopEntriesQuery(pathsInput, start, end)
       : sankeyTopEntriesQuery(pathsInput),
@@ -176,6 +181,7 @@ export async function getSankey({
   const totalSessions = topEntries.reduce((sum, entry) => sum + entry.count, 0);
 
   const transitions = await runQuery<Transition>(
+    deps,
     isBetween
       ? sankeyBetweenTransitionsQuery(pathsInput, start, end, topEntryEvents)
       : sankeyTransitionsQuery(pathsInput, topEntryEvents),
@@ -463,23 +469,26 @@ function toChartEvent(name: string) {
   };
 }
 
-export async function getUserFlowCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  startEvent: string;
-  endEvent?: string;
-  mode: 'after' | 'before' | 'between';
-  steps?: number;
-  exclude?: string[];
-  include?: string[];
-}) {
+export async function getUserFlowCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    startEvent: string;
+    endEvent?: string;
+    mode: 'after' | 'before' | 'between';
+    steps?: number;
+    exclude?: string[];
+    include?: string[];
+  }
+) {
   if (input.mode === 'between' && !input.endEvent) {
     throw new Error('endEvent is required when mode is "between"');
   }
 
   const { timezone } = await getSettingsForProject(input.projectId);
-  const result = await getSankey({
+  const result = await getSankey(deps, {
     projectId: input.projectId,
     startDate: input.startDate,
     endDate: input.endDate,

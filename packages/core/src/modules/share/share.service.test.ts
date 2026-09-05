@@ -1,10 +1,10 @@
-// share.service.ts's db access is lazy (`await import(...)` inside each
-// function — see the file's header), which is exactly what makes
-// `mock.module` work here with no import-time side effects to race: every
-// mock below is registered before the subject's first call, not before its
-// (side-effect-free) import.
+// The subject is built by its factory over a fake `ServiceDeps` (M10-003), so
+// Postgres needs no module mock at all — `deps.db` IS the fake below. Only the
+// three sibling modules the service calls as plain functions are mocked, each
+// at the specifier the source resolves through, snapshot-before-mock so
+// `afterAll` restores the real module instead of re-applying the mock.
 
-import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 
 interface FakeShare {
   id: string;
@@ -72,9 +72,7 @@ const shareOverview = {
       update: { public: boolean; password: string | null };
     }) => {
       const existing = findOverviewByProjectId(projectId);
-      const next = existing
-        ? { ...existing, ...update }
-        : { ...create };
+      const next = existing ? { ...existing, ...update } : { ...create };
       overviewStore.set(next.id, next);
       return next;
     }
@@ -92,7 +90,12 @@ const shareDashboard = {
       if (!share) {
         return null;
       }
-      return { ...share, organization: ORG, project: PROJECT, dashboard: { name: 'Main' } };
+      return {
+        ...share,
+        organization: ORG,
+        project: PROJECT,
+        dashboard: { name: 'Main' },
+      };
     }
   ),
   findFirst: mock(async ({ where: { id } }: { where: { id: string } }) => {
@@ -164,17 +167,12 @@ const shareReport = {
   ),
 };
 
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-mock.module('@openpanel/db/src/prisma-client', () => ({
-  ...actualPrismaClient,
-  db: { shareOverview, shareDashboard, shareReport },
-}));
-
-const getDashboardById = mock(async (id: string, projectId: string) =>
-  id === 'dash_missing' ? null : { id, projectId, name: 'Main' }
+const getDashboardById = mock(
+  async (_deps: unknown, id: string, projectId: string) =>
+    id === 'dash_missing' ? null : { id, projectId, name: 'Main' }
 );
 
-const getReportById = mock(async (id: string) =>
+const getReportById = mock(async (_deps: unknown, id: string) =>
   id === 'report_missing'
     ? null
     : { id, projectId: 'proj_1', name: 'Weekly report' }
@@ -183,27 +181,48 @@ const transformReport = mock((report: unknown) => ({
   ...(report as Record<string, unknown>),
   transformed: true,
 }));
-const getReportsByDashboardId = mock(async () => [{ id: 'report_1' }]);
+const getReportsByDashboardId = mock(async (_deps: unknown) => [
+  { id: 'report_1' },
+]);
 
 const getProjectAccess = mock(
   async ({ userId }: { userId: string; projectId: string }) =>
     userId === 'member' ? { level: 'read' } : null
 );
 
-// The access/dashboard/reports loaders all resolve through the same
-// @openpanel/core specifier now (M9-CLEANUP-001) — one mock.module call, not
-// three, or each later call silently drops the earlier ones' overrides.
-mock.module('@openpanel/core', () => ({
+const actualDashboard = await import('../dashboard/dashboard.service');
+const realDashboard = { ...actualDashboard };
+mock.module('../dashboard/dashboard.service', () => ({
+  ...realDashboard,
   getDashboardById,
+}));
+const actualReport = await import('../report/report.service');
+const realReport = { ...actualReport };
+mock.module('../report/report.service', () => ({
+  ...realReport,
   getReportById,
   transformReport,
   getReportsByDashboardId,
+}));
+const actualAccessLookups = await import('../../shared/access-lookups');
+const realAccessLookups = { ...actualAccessLookups };
+mock.module('../../shared/access-lookups', () => ({
+  ...realAccessLookups,
   getProjectAccess,
 }));
 
-let subject: typeof import('./share.service');
+afterAll(() => {
+  mock.module('../dashboard/dashboard.service', () => realDashboard);
+  mock.module('../report/report.service', () => realReport);
+  mock.module('../../shared/access-lookups', () => realAccessLookups);
+});
+
+let subject: import('./share.service').ShareService;
 beforeAll(async () => {
-  subject = await import('./share.service');
+  const { createShareService } = await import('./share.service');
+  subject = createShareService({
+    db: { shareOverview, shareDashboard, shareReport },
+  } as unknown as import('../../services').ServiceDeps);
 });
 
 beforeEach(() => {
@@ -222,9 +241,9 @@ function cookies(values: Record<string, string> = {}) {
 }
 
 test('getShareOverview throws NOT_FOUND when the share is missing or not public', async () => {
-  await expect(subject.getShareOverview('missing', cookies())).rejects.toMatchObject(
-    { code: 'NOT_FOUND' }
-  );
+  await expect(
+    subject.getShareOverview('missing', cookies())
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' });
 
   overviewStore.set('share_1', {
     id: 'share_1',
@@ -233,9 +252,9 @@ test('getShareOverview throws NOT_FOUND when the share is missing or not public'
     public: false,
     password: null,
   });
-  await expect(subject.getShareOverview('share_1', cookies())).rejects.toMatchObject(
-    { code: 'NOT_FOUND' }
-  );
+  await expect(
+    subject.getShareOverview('share_1', cookies())
+  ).rejects.toMatchObject({ code: 'NOT_FOUND' });
 });
 
 test('getShareOverview returns a locked shape when password-protected without the unlock cookie', async () => {
@@ -346,7 +365,10 @@ test('getShareDashboardReports returns the dashboard reports once unlocked', asy
 
   const result = await subject.getShareDashboardReports('share_1', cookies());
   expect(result).toMatchObject([{ id: 'report_1' }]);
-  expect(getReportsByDashboardId).toHaveBeenCalledWith('dash_1');
+  expect(getReportsByDashboardId).toHaveBeenCalledWith(
+    expect.anything(),
+    'dash_1'
+  );
 });
 
 test('createShareReport throws NOT_FOUND when the report belongs to a different project', async () => {
@@ -391,9 +413,13 @@ test('validateOverviewShareAccess requires membership when no shareId is given',
     })
   ).rejects.toThrow('You do not have access to this project');
 
-  const result = await subject.validateOverviewShareAccess(undefined, 'proj_1', {
-    cookies: cookies(),
-    session: { userId: 'member' },
-  });
+  const result = await subject.validateOverviewShareAccess(
+    undefined,
+    'proj_1',
+    {
+      cookies: cookies(),
+      session: { userId: 'member' },
+    }
+  );
   expect(result).toEqual({ isValid: true });
 });

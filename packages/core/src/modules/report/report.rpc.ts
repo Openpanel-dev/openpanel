@@ -12,24 +12,7 @@
 import { z } from 'zod';
 import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
-import {
-  getDashboardById,
-  getDashboardByIdOrThrow,
-} from '../dashboard/dashboard.service';
 import { zReport } from './report.constants';
-import {
-  createReport,
-  deleteReport,
-  duplicateReport,
-  getReportById,
-  getReportByIdOrThrow,
-  getReportLayouts,
-  getReportsByDashboardId,
-  moveReport,
-  resetReportLayouts,
-  updateReport,
-  updateReportLayout,
-} from './report.service';
 
 const zReportLayout = z.object({
   x: z.number(),
@@ -75,11 +58,14 @@ export const reportRouter = createTRPCRouter({
     )
     .query(async ({ input: { dashboardId, projectId }, ctx }) => {
       requireLogin(ctx.session.userId);
-      const dashboard = await getDashboardById(dashboardId, projectId);
+      const dashboard = await ctx.services.dashboard.getDashboardById(
+        dashboardId,
+        projectId
+      );
       if (!dashboard) {
         throw new TRPCNotFoundError('Dashboard not found');
       }
-      return getReportsByDashboardId(dashboardId);
+      return ctx.services.report.getReportsByDashboardId(dashboardId);
     }),
 
   create: procedure
@@ -90,9 +76,10 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input: { report, dashboardId }, ctx }) => {
-      const dbDashboard = await getDashboardByIdOrThrow(dashboardId);
+      const dbDashboard =
+        await ctx.services.dashboard.getDashboardByIdOrThrow(dashboardId);
       await requireWriteAccess(ctx, dbDashboard.projectId);
-      return createReport({
+      return ctx.services.report.createReport({
         dashboardId,
         projectId: dbDashboard.projectId,
         report,
@@ -107,9 +94,9 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input: { report, reportId }, ctx }) => {
-      const dbReport = await getReportByIdOrThrow(reportId);
+      const dbReport = await ctx.services.report.getReportByIdOrThrow(reportId);
       await requireWriteAccess(ctx, dbReport.projectId);
-      return updateReport({ reportId, report });
+      return ctx.services.report.updateReport({ reportId, report });
     }),
 
   move: procedure
@@ -120,9 +107,9 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input: { reportId, dashboardId }, ctx }) => {
-      const dbReport = await getReportByIdOrThrow(reportId);
+      const dbReport = await ctx.services.report.getReportByIdOrThrow(reportId);
       await requireWriteAccess(ctx, dbReport.projectId);
-      return moveReport({ report: dbReport, dashboardId });
+      return ctx.services.report.moveReport({ report: dbReport, dashboardId });
     }),
 
   delete: procedure
@@ -132,9 +119,9 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input: { reportId }, ctx }) => {
-      const dbReport = await getReportByIdOrThrow(reportId);
+      const dbReport = await ctx.services.report.getReportByIdOrThrow(reportId);
       await requireWriteAccess(ctx, dbReport.projectId);
-      return deleteReport(reportId);
+      return ctx.services.report.deleteReport(reportId);
     }),
 
   duplicate: procedure
@@ -144,9 +131,9 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input: { reportId }, ctx }) => {
-      const dbReport = await getReportByIdOrThrow(reportId);
+      const dbReport = await ctx.services.report.getReportByIdOrThrow(reportId);
       await requireWriteAccess(ctx, dbReport.projectId);
-      return duplicateReport(dbReport);
+      return ctx.services.report.duplicateReport(dbReport);
     }),
 
   get: procedure
@@ -156,7 +143,7 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { reportId }, ctx }) => {
-      const report = await getReportById(reportId);
+      const report = await ctx.services.report.getReportById(reportId);
       if (!report) {
         throw new TRPCNotFoundError('Report not found');
       }
@@ -172,9 +159,9 @@ export const reportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input: { reportId, layout }, ctx }) => {
-      const dbReport = await getReportByIdOrThrow(reportId);
+      const dbReport = await ctx.services.report.getReportByIdOrThrow(reportId);
       await requireWriteAccess(ctx, dbReport.projectId);
-      return updateReportLayout({ reportId, layout });
+      return ctx.services.report.updateReportLayout({ reportId, layout });
     }),
 
   getLayouts: procedure
@@ -190,12 +177,15 @@ export const reportRouter = createTRPCRouter({
       // The access check above only proves the caller owns `projectId`. Bind
       // the caller-supplied `dashboardId` to that project as well, otherwise a
       // dashboard from another organization can be read through this handler.
-      const dashboard = await getDashboardById(dashboardId, projectId);
+      const dashboard = await ctx.services.dashboard.getDashboardById(
+        dashboardId,
+        projectId
+      );
       if (!dashboard) {
         throw new TRPCNotFoundError('Dashboard not found');
       }
 
-      return getReportLayouts({ dashboardId, projectId });
+      return ctx.services.report.getReportLayouts({ dashboardId, projectId });
     }),
 
   resetLayout: procedure
@@ -210,11 +200,17 @@ export const reportRouter = createTRPCRouter({
 
       // Same as `getLayouts`: bind the dashboard to the access-checked project
       // before deleting anything, so a foreign dashboard cannot be wiped.
-      const dashboard = await getDashboardById(dashboardId, projectId);
+      const dashboard = await ctx.services.dashboard.getDashboardById(
+        dashboardId,
+        projectId
+      );
       if (!dashboard) {
         throw new TRPCNotFoundError('Dashboard not found');
       }
 
-      return resetReportLayouts({ dashboardId, projectId });
+      return ctx.services.report.resetReportLayouts({
+        dashboardId,
+        projectId,
+      });
     }),
 });

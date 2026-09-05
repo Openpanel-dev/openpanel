@@ -16,9 +16,17 @@ import {
   createCohortService,
 } from './modules/cohort/cohort.service';
 import {
+  createDashboardService,
+  type DashboardService,
+} from './modules/dashboard/dashboard.service';
+import {
   createEventService,
   type EventService,
 } from './modules/event/event.service';
+import {
+  createExportService,
+  type ExportService,
+} from './modules/export/export.service';
 import {
   createGroupService,
   type GroupService,
@@ -57,9 +65,21 @@ import {
   type ProfileService,
 } from './modules/profile/profile.service';
 import {
+  createReferenceService,
+  type ReferenceService,
+} from './modules/reference/reference.service';
+import {
+  createReportService,
+  type ReportService,
+} from './modules/report/report.service';
+import {
   createSessionService,
   type SessionService,
 } from './modules/session/session.service';
+import {
+  createShareService,
+  type ShareService,
+} from './modules/share/share.service';
 
 /** What every service factory receives — derived from Ctx, so it cannot drift. */
 export type ServiceDeps = Pick<
@@ -92,6 +112,11 @@ export interface Services {
   group: GroupService;
   chart: ChartService;
   misc: MiscService;
+  report: ReportService;
+  dashboard: DashboardService;
+  export: ExportService;
+  share: ShareService;
+  reference: ReferenceService;
 }
 
 export function createServices(deps: ServiceDeps): Services {
@@ -114,5 +139,10 @@ export function createServices(deps: ServiceDeps): Services {
     group: createGroupService(deps),
     chart: createChartService(deps),
     misc: createMiscService(deps),
+    report: createReportService(deps),
+    dashboard: createDashboardService(deps),
+    export: createExportService(deps),
+    share: createShareService(deps),
+    reference: createReferenceService(deps),
   };
 }

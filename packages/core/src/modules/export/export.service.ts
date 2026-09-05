@@ -7,28 +7,18 @@
 // apps/api/src/controllers/{export,insights}.controller.ts. No new query
 // logic: every resolution here already existed in V1's controllers.
 //
-// This barrel (`@openpanel/core`) is reached through `loadCore()`, not a
-// static import: `export.routes.ts` mounts into `rest.routes.ts`, which
-// `index.ts` — this package's curated barrel — imports. A static import here
-// would make importing `@openpanel/core` from ANYWHERE eagerly re-enter this
-// same barrel mid-evaluation — the "core imports itself" hazard
-// session.service.ts and event.service.ts already document for their own
-// lazy loaders — just reached via a different, much more central, file this
-// time. A route body only pays for it when it actually runs, same reason
-// `event.rpc.ts`'s `loadPagesRuntime()` exists. `@openpanel/db` (just the
-// Prisma client) is cheap enough to load the same way, kept separate so a
-// caller that only needs `db` doesn't pull in the rest.
+// M10-003: `loadDb()` and `loadCore()` are gone. Postgres is `deps.db`, and
+// the sibling services these routes delegate to are imported by RELATIVE
+// path — the hazard the old `loadCore()` guarded against was re-entering
+// this package's own barrel (`@openpanel/core`) mid-evaluation, which a
+// relative import cannot do (docs/TECH_DEBT.md §4).
 
 import type { IChartRange } from '@openpanel/validation';
 import type { AuthenticatedClient } from '../../http/client-auth';
-
-export function loadDb() {
-  return import('@openpanel/db');
-}
-
-export function loadCore() {
-  return import('@openpanel/core');
-}
+import type { ServiceDeps } from '../../services';
+import { getChartStartEndDate, resolveDateRange } from '../../shared/date';
+import { getSettingsForProject } from '../organization/organization.service';
+import { resolveClientProjectId } from '../project/project.service';
 
 export type ProjectIdResolution =
   | { ok: true; projectId: string }
@@ -43,6 +33,7 @@ export type ProjectIdResolution =
  * being folded into `resolveClientProjectId`.
  */
 export async function resolveExportProjectId(
+  deps: ServiceDeps,
   client: AuthenticatedClient,
   query: { project_id?: string; projectId?: string }
 ): Promise<ProjectIdResolution> {
@@ -57,8 +48,7 @@ export async function resolveExportProjectId(
       };
     }
 
-    const { db } = await loadDb();
-    const project = await db.project.findUnique({
+    const project = await deps.db.project.findUnique({
       where: { organizationId: client.organizationId, id: projectId },
     });
 
@@ -85,11 +75,10 @@ export async function resolveExportProjectId(
  * is the single client->project resolution point (ADR-011 A-iii invariant
  * 12), already what apps/api's insights.controller.ts `getProjectId` calls.
  */
-export async function resolveInsightsProjectId(
+export function resolveInsightsProjectId(
   client: AuthenticatedClient,
   params: { projectId?: string }
 ): Promise<string> {
-  const { resolveClientProjectId } = await loadCore();
   return resolveClientProjectId({
     clientType: client.type === 'root' ? 'root' : 'read',
     clientProjectId: client.projectId,
@@ -106,8 +95,6 @@ export async function resolveInsightsDateRange(
   projectId: string,
   data: { startDate?: string; endDate?: string; range?: IChartRange }
 ): Promise<{ startDate: string; endDate: string }> {
-  const { getChartStartEndDate, getSettingsForProject, resolveDateRange } =
-    await loadCore();
   if (!data.range || data.startDate) {
     return resolveDateRange(data.startDate, data.endDate);
   }
@@ -116,4 +103,30 @@ export async function resolveInsightsDateRange(
     { startDate: data.startDate, endDate: data.endDate, range: data.range },
     timezone
   );
+}
+
+// --- service ------------------------------------------------------------
+
+export interface ExportService {
+  resolveExportProjectId(
+    client: AuthenticatedClient,
+    query: { project_id?: string; projectId?: string }
+  ): Promise<ProjectIdResolution>;
+  resolveInsightsProjectId(
+    client: AuthenticatedClient,
+    params: { projectId?: string }
+  ): Promise<string>;
+  resolveInsightsDateRange(
+    projectId: string,
+    data: { startDate?: string; endDate?: string; range?: IChartRange }
+  ): Promise<{ startDate: string; endDate: string }>;
+}
+
+export function createExportService(deps: ServiceDeps): ExportService {
+  return {
+    resolveExportProjectId: (client, query) =>
+      resolveExportProjectId(deps, client, query),
+    resolveInsightsProjectId,
+    resolveInsightsDateRange,
+  };
 }

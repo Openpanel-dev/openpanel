@@ -30,7 +30,7 @@ mock.module('@openpanel/redis', () => ({
 }));
 
 let FIXTURE: typeof import('../../../../../test/fixtures').FIXTURE;
-let service: typeof import('./chart.service');
+let service: import('./chart.service').ChartService;
 let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;
 
 type EventSeriesItem = Extract<IChartEventItem, { type: 'event' }>;
@@ -62,7 +62,9 @@ beforeAll(async () => {
   const fixtures = await import('../../../../../test/fixtures');
   FIXTURE = fixtures.FIXTURE;
   ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
-  service = await import('./chart.service');
+  const { testServiceDeps } = await import('../../../test/service-deps');
+  const { createChartService } = await import('./chart.service');
+  service = createChartService(await testServiceDeps());
 
   const { bootstrapTestDatabases } = await import(
     '../../../../../test/bootstrap-databases'
@@ -120,7 +122,7 @@ function seriesNamed<TSerie extends { names: string[] }>(
 
 describe('executeChart', () => {
   it('counts both page views over the last 30 days', async () => {
-    const chart = await service.executeChart(report());
+    const chart = await service.execute(report());
 
     expect(chart.series).toHaveLength(1);
     expect(chart.series[0]?.names).toEqual(['page_view']);
@@ -131,7 +133,7 @@ describe('executeChart', () => {
   });
 
   it('breaks down by browser', async () => {
-    const chart = await service.executeChart(
+    const chart = await service.execute(
       report({ breakdowns: [{ id: 'b', name: 'browser' }] })
     );
 
@@ -143,7 +145,7 @@ describe('executeChart', () => {
   });
 
   it('filters on cohort membership (inCohort / notInCohort)', async () => {
-    const inCohort = await service.executeChart(
+    const inCohort = await service.execute(
       report({
         series: [
           pageView({
@@ -160,7 +162,7 @@ describe('executeChart', () => {
         ],
       })
     );
-    const notInCohort = await service.executeChart(
+    const notInCohort = await service.execute(
       report({
         series: [
           pageView({
@@ -183,10 +185,10 @@ describe('executeChart', () => {
   });
 
   it('breaks down by a single cohort and by all cohorts', async () => {
-    const single = await service.executeChart(
+    const single = await service.execute(
       report({ breakdowns: [{ id: 'b', name: `cohort:${COHORT_ID}` }] })
     );
-    const all = await service.executeChart(
+    const all = await service.execute(
       report({ breakdowns: [{ id: 'b', name: 'cohort' }] })
     );
 
@@ -200,7 +202,7 @@ describe('executeChart', () => {
   });
 
   it('narrows profile properties into the profile CTE and still matches', async () => {
-    const chart = await service.executeChart(
+    const chart = await service.execute(
       report({
         series: [
           pageView({
@@ -225,7 +227,7 @@ describe('executeChart', () => {
 
 describe('executeAggregateChart', () => {
   it('sums revenue per browser without a time axis', async () => {
-    const chart = await service.executeAggregateChart(
+    const chart = await service.executeAggregate(
       report({
         chartType: 'bar',
         series: [
@@ -332,14 +334,14 @@ describe('getProjectCard', () => {
 describe('getChartBucketProfiles', () => {
   it('returns the profiles behind one data point, honoring breakdowns', async () => {
     const twoDaysAgo = new Date(Date.now() - 2 * DAY_MS).toISOString();
-    const profiles = await service.getChartBucketProfiles({
+    const profiles = await service.bucketProfiles({
       projectId: TEST_PROJECT_ID,
       date: twoDaysAgo,
       interval: 'day',
       series: [pageView()],
       breakdowns: { browser: 'Chrome' },
     });
-    const none = await service.getChartBucketProfiles({
+    const none = await service.bucketProfiles({
       projectId: TEST_PROJECT_ID,
       date: twoDaysAgo,
       interval: 'day',
@@ -355,7 +357,7 @@ describe('getChartBucketProfiles', () => {
 
   it('selects only whitelisted profile columns for profile.* references', async () => {
     const twoDaysAgo = new Date(Date.now() - 2 * DAY_MS).toISOString();
-    const profiles = await service.getChartBucketProfiles({
+    const profiles = await service.bucketProfiles({
       projectId: TEST_PROJECT_ID,
       date: twoDaysAgo,
       interval: 'day',
@@ -377,7 +379,7 @@ describe('getChartBucketProfiles', () => {
       FIXTURE.profiles.alice,
     ]);
     await expect(
-      service.getChartBucketProfiles({
+      service.bucketProfiles({
         projectId: TEST_PROJECT_ID,
         date: twoDaysAgo,
         interval: 'day',

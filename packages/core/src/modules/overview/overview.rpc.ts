@@ -31,7 +31,6 @@ import {
   getSettingsForProject,
 } from '../organization/organization.service';
 import { getActiveVisitorCount } from '../realtime/realtime.service';
-import { validateOverviewShareAccess } from '../share/share.service';
 import {
   overviewService,
   zGetMapDataInput,
@@ -80,16 +79,17 @@ async function resolveOverviewAccess(
   input: { projectId: string; shareId?: string }
 ): Promise<void> {
   if (input.shareId) {
-    const shareValidation = await validateOverviewShareAccess(
-      input.shareId,
-      input.projectId,
-      {
-        cookies: ctx.cookies,
-        session: ctx.session.userId
-          ? { userId: ctx.session.userId }
-          : undefined,
-      }
-    );
+    const shareValidation =
+      await ctx.services.share.validateOverviewShareAccess(
+        input.shareId,
+        input.projectId,
+        {
+          cookies: ctx.cookies,
+          session: ctx.session.userId
+            ? { userId: ctx.session.userId }
+            : undefined,
+        }
+      );
     if (!shareValidation.isValid) {
       throw new TRPCForbiddenError('You do not have access to this share');
     }

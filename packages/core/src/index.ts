@@ -316,7 +316,6 @@ export {
   setLastAuthProviderCookie,
   setSessionTokenCookie,
   setupTotp,
-  signInToShare,
   signInWithEmail,
   signInWithTotp,
   signOutUser,
@@ -363,58 +362,37 @@ export type {
   ShareableReportInput,
 } from './modules/chart/chart.service';
 export {
-  AggregateChartEngine,
   buildAllCohortsLabelExpr,
   buildAllCohortsMembershipQuery,
   buildCohortMembershipQuery,
   buildInlineCohortJoin,
   CHART_TABLE,
   ChartCohortIdError,
-  ChartEngine,
   collectBreakdownCohortIds,
   collectProfilePropertyKeys,
   createChartService,
   EVENT_FIELD_ALIASES,
   EVENT_TOP_LEVEL_COLUMNS,
   evaluateFormula,
-  executeAggregateChart,
-  executeChart,
   extractCohortId,
-  fetchCohortsMetadata,
-  fetchProjectCohorts,
-  getAggregateChartSql,
-  getChartBucketProfiles,
-  getChartPropertyValues,
-  getChartSql,
   getCohortAlias,
   getCohortCteName,
-  getConversionChart,
   getEventFiltersWhereClause,
-  getFunnelChart,
-  getFunnelStepProfiles,
   getGroupPropertySelect,
   getGroupPropertySql,
   getProfilePropertySelect,
-  getProjectCard,
-  getRetentionChart,
-  getSankeyChart,
   getSelectPropertyKey,
   InvalidFormulaError,
   isAllCohortsBreakdown,
   isKnownEventField,
   isNumericColumn,
   isValidFormula,
-  listChartEvents,
-  listChartProperties,
   normalizeEventField,
   profilePropertiesCteSelect,
   resolveReportInput,
   rewriteProfilePropertyRefs,
   transformPropertyKey,
 } from './modules/chart/chart.service';
-// Dissolved from @openpanel/db's services/conversion.service.ts (M7-004) —
-// reached through the chart module's own dispatch and the db shim.
-export { getConversion } from './modules/chart/conversion.service';
 // Dissolved from @openpanel/db's services/funnel.service.ts (M7-004) —
 // packages/db's reports.service, apps/api's insights controller and the
 // mcp/assistant tools call these. packages/db/src/services/funnel.service.ts
@@ -424,13 +402,9 @@ export type {
   FunnelStep,
 } from './modules/chart/funnel.service';
 export {
-  buildFunnelBase,
   buildSessionsCte,
   EMPTY_BREAKDOWN_LABEL,
-  getFunnel,
-  getFunnelCore,
   getFunnelGroup,
-  getFunnelProfileIds,
   toSeries,
 } from './modules/chart/funnel.service';
 // Dissolved from @openpanel/db's services/retention.service.ts (M7-004) —
@@ -443,17 +417,7 @@ export type {
   IRetentionInterval,
   IServiceRetentionRollingActiveUsers,
 } from './modules/chart/retention.service';
-export {
-  getEngagementCore,
-  getRetentionCohort,
-  getRetentionCohortCore,
-  getRetentionLastSeenSeries,
-  getRetentionSeries,
-  getRollingActiveUsers,
-  getRollingActiveUsersCore,
-  getWeeklyRetentionSeriesCore,
-  processCohortData,
-} from './modules/chart/retention.service';
+export { processCohortData } from './modules/chart/retention.service';
 // Dissolved from @openpanel/db's services/sankey.service.ts (M7-004) —
 // apps/api's insights controller and the mcp/assistant tools call these.
 // packages/db/src/services/sankey.service.ts stays a re-export shim.
@@ -465,8 +429,6 @@ export type {
 } from './modules/chart/sankey.service';
 export {
   getRawWhereClause,
-  getSankey,
-  getUserFlowCore,
   zGetSankeyInput,
 } from './modules/chart/sankey.service';
 // Moved from packages/db/src/services/filter-where.service.ts (M8-005) — the
@@ -542,15 +504,7 @@ export type {
   IServiceDashboard,
   IServiceDashboards,
 } from './modules/dashboard/dashboard.service';
-export {
-  createDashboard,
-  deleteDashboard,
-  getDashboardById,
-  getDashboardByIdOrThrow,
-  getDashboardsByProjectId,
-  listDashboardsCore,
-  updateDashboard,
-} from './modules/dashboard/dashboard.service';
+export { createDashboardService } from './modules/dashboard/dashboard.service';
 // R + C only (M6-004): the router's three bodies are three small
 // `db.emailUnsubscribe` calls, small enough to live inline in
 // `email.rpc.ts` rather than a dedicated `email.service.ts` — see that
@@ -614,6 +568,8 @@ export {
   transformSessionToEvent,
   updateEventMeta,
 } from './modules/event/event.service';
+export type { ExportService } from './modules/export/export.service';
+export { createExportService } from './modules/export/export.service';
 export type {
   GetGroupListOptions,
   GetGroupMemberProfilesOptions,
@@ -945,15 +901,7 @@ export {
 // way V1 reaches every other dissolved service here. packages/db keeps a
 // re-export shim.
 export type { IServiceReference } from './modules/reference/reference.service';
-export {
-  createReference,
-  deleteReference,
-  getChartReferences,
-  getReferenceById,
-  getReferenceByIdOrThrow,
-  listReferences,
-  updateReference,
-} from './modules/reference/reference.service';
+export { createReferenceService } from './modules/reference/reference.service';
 // Moved from packages/constants/index.ts and packages/validation/src/index.ts
 // (M7-006, ADR-008's module map: report owns "C" for the chart/report/widget
 // vocabulary) — apps/start's report builder and the assistant/mcp tools
@@ -1015,25 +963,16 @@ export {
 // packages/db/src/services/reports.service.ts stays a re-export shim.
 export type { IServiceReport } from './modules/report/report.service';
 export {
-  createReport,
-  deleteReport,
-  duplicateReport,
-  getReportById,
-  getReportByIdOrThrow,
-  getReportDataCore,
-  getReportLayouts,
-  getReportsByDashboardId,
-  listReportsCore,
-  mergeGlobalFilters,
-  moveReport,
-  onlyReportEvents,
-  resetReportLayouts,
+  createReportService,
   transformFilter,
   transformReport,
   transformReportEventItem,
-  updateReport,
-  updateReportLayout,
 } from './modules/report/report.service';
+export type { ReportEventItem } from './modules/report/src/series';
+export {
+  mergeGlobalFilters,
+  onlyReportEvents,
+} from './modules/report/src/series';
 // Dissolved from @openpanel/db's services/session.service.ts and
 // session-context.ts, plus apps/worker's session-end job, reaper and vacuum
 // (M7-001, ADR-008's module map: session owns "R,S,J") — packages/trpc's
@@ -1093,27 +1032,7 @@ export {
   zShareOverview,
   zShareReport,
 } from './modules/share/share.constants';
-export {
-  createShareDashboard,
-  createShareOverview,
-  createShareReport,
-  getShareByProjectId,
-  getShareDashboard,
-  getShareDashboardByDashboardId,
-  getShareDashboardById,
-  getShareDashboardReports,
-  getShareDashboardSettings,
-  getShareOverview,
-  getShareOverviewById,
-  getShareOverviewSettings,
-  getShareReport,
-  getShareReportById,
-  getShareReportByReportId,
-  getShareReportSettings,
-  validateOverviewShareAccess,
-  validateReportAccess,
-  validateShareAccess,
-} from './modules/share/share.service';
+export { createShareService } from './modules/share/share.service';
 // Moved from packages/trpc/src/routers/subscription.ts, plus the Polar
 // webhook business logic out of
 // apps/api/src/controllers/webhook.controller.ts (M6-006, ADR-008's module
@@ -1456,3 +1375,89 @@ export {
 } from './shared/safe-fetch';
 export { getId } from './shared/slug-id';
 export { assertSafeUrl, createPinnedLookup } from './shared/ssrf';
+// The V1 compat seam (v1-compat.ts): the bare, deps-free spellings of the
+// chart / report / dashboard / share / reference functions, kept for
+// `packages/trpc`'s still-live routers and the mcp/assistant tool runtimes,
+// which have no `Ctx` to carry `ServiceDeps`. Everything with a `Ctx` uses
+// `ctx.services.*` instead. Deleted whole with `packages/trpc` at P10.
+export {
+  AggregateChartEngine,
+  buildFunnelBase,
+  ChartEngine,
+  createDashboard,
+  createReference,
+  createReport,
+  createShareDashboard,
+  createShareOverview,
+  createShareReport,
+  deleteDashboard,
+  deleteReference,
+  deleteReport,
+  duplicateReport,
+  executeAggregateChart,
+  executeChart,
+  getChartBucketProfiles,
+  getChartPropertyValues,
+  getChartReferences,
+  getConversion,
+  getConversionChart,
+  getDashboardById,
+  getDashboardByIdOrThrow,
+  getDashboardsByProjectId,
+  getEngagementCore,
+  getFunnel,
+  getFunnelChart,
+  getFunnelCore,
+  getFunnelProfileIds,
+  getFunnelStepProfiles,
+  getProjectCard,
+  getReferenceById,
+  getReferenceByIdOrThrow,
+  getReportById,
+  getReportByIdOrThrow,
+  getReportDataCore,
+  getReportLayouts,
+  getReportsByDashboardId,
+  getRetentionChart,
+  getRetentionCohort,
+  getRetentionCohortCore,
+  getRetentionLastSeenSeries,
+  getRetentionSeries,
+  getRollingActiveUsers,
+  getRollingActiveUsersCore,
+  getSankey,
+  getSankeyChart,
+  getShareByProjectId,
+  getShareDashboard,
+  getShareDashboardByDashboardId,
+  getShareDashboardById,
+  getShareDashboardReports,
+  getShareDashboardSettings,
+  getShareOverview,
+  getShareOverviewById,
+  getShareOverviewSettings,
+  getShareReport,
+  getShareReportById,
+  getShareReportByReportId,
+  getShareReportSettings,
+  getUserFlowCore,
+  getWeeklyRetentionSeriesCore,
+  listChartEvents,
+  listChartProperties,
+  listDashboardsCore,
+  listReferences,
+  listReportsCore,
+  moveReport,
+  resetReportLayouts,
+  resetV1CompatServicesForTests,
+  setV1CompatServices,
+  signInToShare,
+  updateDashboard,
+  updateReference,
+  updateReport,
+  updateReportLayout,
+  V1_COMPAT_REQUEST_ID,
+  validateOverviewShareAccess,
+  validateReportAccess,
+  validateShareAccess,
+} from './v1-compat';

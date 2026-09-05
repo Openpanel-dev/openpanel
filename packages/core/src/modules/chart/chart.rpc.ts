@@ -12,7 +12,6 @@
 // saved report, and the request renders that report (the caller may only move
 // the date window). `resolveShare` is that middleware, inlined.
 
-import type { IServiceReport } from '@openpanel/core';
 import {
   type IReportInput,
   zChartEventFilter,
@@ -25,22 +24,7 @@ import {
 import { z } from 'zod';
 import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
-import { validateShareAccess } from '../share/share.service';
-import {
-  executeAggregateChart,
-  executeChart,
-  getChartBucketProfiles,
-  getChartPropertyValues,
-  getConversionChart,
-  getFunnelChart,
-  getFunnelStepProfiles,
-  getProjectCard,
-  getRetentionChart,
-  getSankeyChart,
-  listChartEvents,
-  listChartProperties,
-  resolveReportInput,
-} from './chart.service';
+import type { IServiceReport } from '../report/report.service';
 
 const zShareable = z.object({
   shareId: z.string().optional(),
@@ -48,10 +32,6 @@ const zShareable = z.object({
 });
 
 const zShareableReportInput = zReportInput.and(zShareable);
-
-function loadReportsService() {
-  return import('@openpanel/core');
-}
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -84,16 +64,19 @@ async function resolveShare(
     throw new Error('reportId required with shareId');
   }
 
-  const shareValidation = await validateShareAccess(input.shareId, input.id, {
-    cookies: ctx.cookies,
-    session: ctx.session.userId ? { userId: ctx.session.userId } : undefined,
-  });
+  const shareValidation = await ctx.services.share.validateShareAccess(
+    input.shareId,
+    input.id,
+    {
+      cookies: ctx.cookies,
+      session: ctx.session.userId ? { userId: ctx.session.userId } : undefined,
+    }
+  );
   if (!shareValidation.isValid) {
     throw new TRPCForbiddenError('You do not have access to this share');
   }
 
-  const { getReportById } = await loadReportsService();
-  const report = await getReportById(input.id);
+  const report = await ctx.services.report.getReportById(input.id);
   if (!report) {
     throw new TRPCAccessError('Report not found');
   }
@@ -104,7 +87,10 @@ async function resolveShareableReport(
   ctx: TrpcContext,
   input: IReportInput & { shareId?: string; id?: string }
 ): Promise<IReportInput> {
-  return resolveReportInput(await resolveShare(ctx, input), input);
+  return ctx.services.chart.resolveReportInput(
+    await resolveShare(ctx, input),
+    input
+  );
 }
 
 export const chartRouter = createTRPCRouter({
@@ -112,21 +98,21 @@ export const chartRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
-      return getProjectCard(input.projectId);
+      return ctx.services.chart.getProjectCard(input.projectId);
     }),
 
   events: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
-      return listChartEvents(input.projectId);
+      return ctx.services.chart.listChartEvents(input.projectId);
     }),
 
   properties: procedure
     .input(z.object({ event: z.string().optional(), projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
-      return listChartProperties(input);
+      return ctx.services.chart.listChartProperties(input);
     }),
 
   values: procedure
@@ -139,36 +125,42 @@ export const chartRouter = createTRPCRouter({
     )
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
-      return getChartPropertyValues(input);
+      return ctx.services.chart.getChartPropertyValues(input);
     }),
 
   funnel: procedure
     .input(zShareableReportInput)
     .query(async ({ input, ctx }) =>
-      getFunnelChart(await resolveShareableReport(ctx, input))
+      ctx.services.chart.getFunnelChart(
+        await resolveShareableReport(ctx, input)
+      )
     ),
 
   conversion: procedure
     .input(zShareableReportInput)
     .query(async ({ input, ctx }) =>
-      getConversionChart(await resolveShareableReport(ctx, input))
+      ctx.services.chart.getConversionChart(
+        await resolveShareableReport(ctx, input)
+      )
     ),
 
   sankey: procedure.input(zReportInput).query(async ({ input, ctx }) => {
     await requireReadAccess(ctx, input.projectId);
-    return getSankeyChart(input);
+    return ctx.services.chart.getSankeyChart(input);
   }),
 
   chart: procedure
     .input(zShareableReportInput)
     .query(async ({ input, ctx }) =>
-      executeChart(await resolveShareableReport(ctx, input))
+      ctx.services.chart.execute(await resolveShareableReport(ctx, input))
     ),
 
   aggregate: procedure
     .input(zShareableReportInput)
     .query(async ({ input, ctx }) =>
-      executeAggregateChart(await resolveShareableReport(ctx, input))
+      ctx.services.chart.executeAggregate(
+        await resolveShareableReport(ctx, input)
+      )
     ),
 
   cohort: procedure
@@ -188,7 +180,10 @@ export const chartRouter = createTRPCRouter({
         .and(zShareable)
     )
     .query(async ({ input, ctx }) =>
-      getRetentionChart(await resolveShare(ctx, input), input)
+      ctx.services.chart.getRetentionChart(
+        await resolveShare(ctx, input),
+        input
+      )
     ),
 
   getProfiles: procedure
@@ -203,7 +198,7 @@ export const chartRouter = createTRPCRouter({
     )
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
-      return getChartBucketProfiles(input);
+      return ctx.services.chart.bucketProfiles(input);
     }),
 
   getFunnelProfiles: procedure
@@ -230,6 +225,6 @@ export const chartRouter = createTRPCRouter({
     )
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
-      return getFunnelStepProfiles(input);
+      return ctx.services.chart.funnelStepProfiles(input);
     }),
 });

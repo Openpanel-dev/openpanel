@@ -69,10 +69,12 @@ import {
   sessionEndEnqueueOptions,
   sessionEndJobPayload,
   setShuttingDown,
+  setV1CompatServices,
   startKafkaEventsConsumer,
   startSchedulers,
   startWorkers,
   TRPC_ENDPOINT,
+  V1_COMPAT_REQUEST_ID,
   type WorkerHandle,
 } from '@openpanel/core';
 import { ch } from '@openpanel/db/src/clickhouse/client';
@@ -463,6 +465,21 @@ function installFatalHandlers(): void {
 async function main() {
   const role = config.ROLE;
   const deps = buildDeps();
+
+  // The V1 compat seam (core/src/v1-compat.ts): `packages/trpc`'s routers and
+  // the mcp/assistant tool runtimes reach core's modules as bare barrel
+  // exports with no `Ctx`, so the deps built above are registered once here
+  // for them. Everything with a `Ctx` uses `ctx.services.*`. Deleted with
+  // `packages/trpc` at P10.
+  setV1CompatServices({
+    db: deps.db,
+    ch: deps.ch,
+    redis: deps.redis,
+    clients: deps.clients,
+    buffers: deps.buffers,
+    logger: deps.logger,
+    queues: deps.producers.scope({ requestId: V1_COMPAT_REQUEST_ID }),
+  });
 
   // HTTP and default metrics register everywhere (TARGET_ARCHITECTURE §18).
   registerDefaultMetrics();

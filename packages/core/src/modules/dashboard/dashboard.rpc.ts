@@ -12,14 +12,6 @@
 import { z } from 'zod';
 import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
-import {
-  createDashboard,
-  deleteDashboard,
-  getDashboardById,
-  getDashboardByIdOrThrow,
-  getDashboardsByProjectId,
-  updateDashboard,
-} from './dashboard.service';
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -53,7 +45,7 @@ export const dashboardRouter = createTRPCRouter({
     )
     .query(({ input, ctx }) => {
       requireLogin(ctx.session.userId);
-      return getDashboardsByProjectId(input.projectId);
+      return ctx.services.dashboard.getDashboardsByProjectId(input.projectId);
     }),
 
   byId: procedure
@@ -66,7 +58,10 @@ export const dashboardRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      const dashboard = await getDashboardById(input.id, input.projectId);
+      const dashboard = await ctx.services.dashboard.getDashboardById(
+        input.id,
+        input.projectId
+      );
 
       if (!dashboard) {
         throw new TRPCNotFoundError('Dashboard not found');
@@ -84,7 +79,7 @@ export const dashboardRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       await requireWriteAccess(ctx, input.projectId);
-      return createDashboard(input);
+      return ctx.services.dashboard.createDashboard(input);
     }),
 
   update: procedure
@@ -95,9 +90,11 @@ export const dashboardRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const dashboard = await getDashboardByIdOrThrow(input.id);
+      const dashboard = await ctx.services.dashboard.getDashboardByIdOrThrow(
+        input.id
+      );
       await requireWriteAccess(ctx, dashboard.projectId);
-      return updateDashboard(input);
+      return ctx.services.dashboard.updateDashboard(input);
     }),
 
   delete: procedure
@@ -108,8 +105,10 @@ export const dashboardRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const dashboard = await getDashboardByIdOrThrow(input.id);
+      const dashboard = await ctx.services.dashboard.getDashboardByIdOrThrow(
+        input.id
+      );
       await requireWriteAccess(ctx, dashboard.projectId);
-      return deleteDashboard(input);
+      return ctx.services.dashboard.deleteDashboard(input);
     }),
 });

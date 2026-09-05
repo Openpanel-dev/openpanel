@@ -1,24 +1,17 @@
 import { alphabetIds } from '@openpanel/constants';
-import { getChartStartEndDate } from '@openpanel/core';
 import type {
   IChartEvent,
   IReportInput,
   IReportInputWithDates,
 } from '@openpanel/validation';
+import { getChartStartEndDate } from '../../../../shared/date';
 import { getSettingsForProject } from '../../../organization/organization.service';
+import { mergeGlobalFilters } from '../../../report/src/series';
 import type { SeriesDefinition } from './types';
 
 export type NormalizedInput = IReportInputWithDates & {
   series: SeriesDefinition[];
 };
-
-// `mergeGlobalFilters` belongs to the report module (its own task); until it
-// moves, reach V1's copy lazily — reports.service imports prisma at load.
-function loadGlobalFilterMerge() {
-  return import('@openpanel/core').then(
-    (m) => m.mergeGlobalFilters
-  );
-}
 
 type LegacySeriesItem = Partial<IChartEvent> & { type?: string };
 
@@ -59,8 +52,6 @@ export async function normalize(input: IReportInput): Promise<NormalizedInput> {
     (input as { series?: LegacySeriesItem[] }).series ??
     (input as { events?: LegacySeriesItem[] }).events ??
     [];
-  const mergeGlobalFilters = await loadGlobalFilterMerge();
-
   return {
     ...input,
     series: mergeGlobalFilters(

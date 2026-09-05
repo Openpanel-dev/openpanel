@@ -7,8 +7,11 @@
 // exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
 // through packages/trpc's own `protectedProcedure` (full stack included) and
 // delegates its handler bodies to core's reference functions (DELEGATE
-// PATTERN) — this module has no queue/cron of its own, so there is no
-// `ctx.services.reference`, same as `user`/`conversation`.
+// PATTERN).
+//
+// M10-003: the handler bodies reach the module through
+// `ctx.services.reference`, so the requestId minted at the edge reaches the
+// Postgres call (ADR-018).
 //
 // The permission ladder itself is bound once, in auth.service.ts (M10-002);
 // every procedure here reaches it through `ctx.services.auth`. `create` has
@@ -19,14 +22,6 @@ import { zCreateReference, zRange } from '@openpanel/validation';
 import { z } from 'zod';
 import { createTRPCRouter, procedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
-import {
-  createReference,
-  deleteReference,
-  getChartReferences,
-  getReferenceByIdOrThrow,
-  listReferences,
-  updateReference,
-} from './reference.service';
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -47,12 +42,12 @@ export const referenceRouter = createTRPCRouter({
       if (!access) {
         throw new TRPCForbiddenError('You do not have access to this project');
       }
-      return listReferences(input);
+      return ctx.services.reference.listReferences(input);
     }),
 
   create: procedure.input(zCreateReference).mutation(({ input, ctx }) => {
     requireLogin(ctx.session.userId);
-    return createReference(input);
+    return ctx.services.reference.createReference(input);
   }),
 
   update: procedure
@@ -66,26 +61,30 @@ export const referenceRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const existing = await getReferenceByIdOrThrow(input.id);
+      const existing = await ctx.services.reference.getReferenceByIdOrThrow(
+        input.id
+      );
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: existing.projectId,
         level: 'write',
       });
-      return updateReference(input);
+      return ctx.services.reference.updateReference(input);
     }),
 
   delete: procedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const existing = await getReferenceByIdOrThrow(input.id);
+      const existing = await ctx.services.reference.getReferenceByIdOrThrow(
+        input.id
+      );
       await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: existing.projectId,
         level: 'write',
       });
-      return deleteReference(input.id);
+      return ctx.services.reference.deleteReference(input.id);
     }),
 
   getChartReferences: procedure
@@ -97,5 +96,7 @@ export const referenceRouter = createTRPCRouter({
         range: zRange,
       })
     )
-    .query(({ input }) => getChartReferences(input)),
+    .query(({ input, ctx }) =>
+      ctx.services.reference.getChartReferences(input)
+    ),
 });
