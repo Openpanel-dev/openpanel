@@ -2,7 +2,8 @@
 //
 // Same arrangement as chart.rpc.ts/project.rpc.ts: V1's `protectedProcedure`
 // lands in core with auth (rpc/base.ts), so each procedure does its own "is
-// anyone logged in" + `requireProjectAccess` check. The mutation bodies
+// anyone logged in" + `requireProjectAccess` check, reached through
+// `ctx.services.auth` (M10-002). The mutation bodies
 // (create/update/move/delete/duplicate/layout) moved to ./report.service
 // alongside the reads that already lived there; packages/trpc's report
 // router delegates every handler body onto ./report.service while keeping
@@ -41,10 +42,6 @@ const zReportLayout = z.object({
   maxH: z.number().optional(),
 });
 
-function loadAccessChecks() {
-  return import('./src/access');
-}
-
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
     throw new TRPCAccessError('Not authenticated');
@@ -52,21 +49,20 @@ function requireLogin(userId: string | null | undefined): string {
   return userId;
 }
 
-async function requireAccess(
-  userId: string,
-  projectId: string,
-  level: 'read' | 'write'
-) {
-  const { requireProjectAccess } = await loadAccessChecks();
-  await requireProjectAccess({ userId, projectId, level });
-}
-
 async function requireReadAccess(ctx: TrpcContext, projectId: string) {
-  await requireAccess(requireLogin(ctx.session.userId), projectId, 'read');
+  await ctx.services.auth.requireProjectAccess({
+    userId: requireLogin(ctx.session.userId),
+    projectId,
+    level: 'read',
+  });
 }
 
 async function requireWriteAccess(ctx: TrpcContext, projectId: string) {
-  await requireAccess(requireLogin(ctx.session.userId), projectId, 'write');
+  await ctx.services.auth.requireProjectAccess({
+    userId: requireLogin(ctx.session.userId),
+    projectId,
+    level: 'write',
+  });
 }
 
 export const reportRouter = createTRPCRouter({

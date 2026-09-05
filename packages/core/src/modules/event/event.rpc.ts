@@ -20,7 +20,7 @@ import {
   zTimeInterval,
 } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
 import {
   getBotEventsPage,
@@ -46,10 +46,6 @@ const zChartWindow = z.object({
   range: zRange,
   interval: zTimeInterval,
 });
-
-function loadAccessChecks() {
-  return import('./src/access');
-}
 
 function loadPagesRuntime() {
   return Promise.all([
@@ -77,12 +73,15 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 async function requireAccess(
-  userId: string,
+  ctx: TrpcContext,
   projectId: string,
   level: 'read' | 'write'
 ) {
-  const { requireProjectAccess } = await loadAccessChecks();
-  await requireProjectAccess({ userId, projectId, level });
+  await ctx.services.auth.requireProjectAccess({
+    userId: requireLogin(ctx.session.userId),
+    projectId,
+    level,
+  });
 }
 
 function formatClickhouseDateTime(date: Date): string {
@@ -101,15 +100,13 @@ export const eventRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireAccess(userId, input.projectId, 'write');
+      await requireAccess(ctx, input.projectId, 'write');
 
       return updateEventMeta(input);
     }),
 
   byId: procedure.input(zEventRef).query(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await requireAccess(userId, input.projectId, 'read');
+    await requireAccess(ctx, input.projectId, 'read');
 
     const event = await getEventById(input);
     if (!event) {
@@ -119,8 +116,7 @@ export const eventRouter = createTRPCRouter({
   }),
 
   details: procedure.input(zEventRef).query(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await requireAccess(userId, input.projectId, 'read');
+    await requireAccess(ctx, input.projectId, 'read');
 
     const details = await getEventDetails(input);
     if (!details) {
@@ -146,8 +142,7 @@ export const eventRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireAccess(userId, input.projectId, 'read');
+      await requireAccess(ctx, input.projectId, 'read');
 
       return getEventListPage(input);
     }),
@@ -155,8 +150,7 @@ export const eventRouter = createTRPCRouter({
   conversionNames: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireAccess(userId, input.projectId, 'read');
+      await requireAccess(ctx, input.projectId, 'read');
 
       return getConversionEventNames(input.projectId);
     }),
@@ -173,8 +167,7 @@ export const eventRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireAccess(userId, input.projectId, 'read');
+      await requireAccess(ctx, input.projectId, 'read');
 
       return getConversionListPage(input);
     }),
@@ -188,8 +181,7 @@ export const eventRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireAccess(userId, input.projectId, 'read');
+      await requireAccess(ctx, input.projectId, 'read');
 
       return getBotEventsPage(input);
     }),
@@ -203,8 +195,7 @@ export const eventRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireAccess(userId, input.projectId, 'read');
+      await requireAccess(ctx, input.projectId, 'read');
 
       const { getSettingsForProject, getChartStartEndDate, pagesService } =
         await loadPagesRuntime();
@@ -223,8 +214,7 @@ export const eventRouter = createTRPCRouter({
   pagesTimeseries: procedure
     .input(zChartWindow)
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireAccess(userId, input.projectId, 'read');
+      await requireAccess(ctx, input.projectId, 'read');
 
       const { getSettingsForProject, getChartStartEndDate, pagesService } =
         await loadPagesRuntime();
@@ -240,8 +230,7 @@ export const eventRouter = createTRPCRouter({
     }),
 
   previousPages: procedure.input(zChartWindow).query(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await requireAccess(userId, input.projectId, 'read');
+    await requireAccess(ctx, input.projectId, 'read');
 
     const { getSettingsForProject, getChartStartEndDate, pagesService } =
       await loadPagesRuntime();
@@ -265,8 +254,7 @@ export const eventRouter = createTRPCRouter({
   pageTimeseries: procedure
     .input(zChartWindow.extend({ origin: z.string(), path: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireAccess(userId, input.projectId, 'read');
+      await requireAccess(ctx, input.projectId, 'read');
 
       const { getSettingsForProject, getChartStartEndDate, pagesService } =
         await loadPagesRuntime();
@@ -286,8 +274,7 @@ export const eventRouter = createTRPCRouter({
   origin: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireAccess(userId, input.projectId, 'read');
+      await requireAccess(ctx, input.projectId, 'read');
 
       return getTopOrigins(input.projectId);
     }),

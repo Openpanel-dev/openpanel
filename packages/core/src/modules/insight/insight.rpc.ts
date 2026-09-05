@@ -9,22 +9,13 @@
 // delegates its handler bodies to `ctx.services.insight` (DELEGATE PATTERN),
 // so nothing here is a live regression.
 //
-// The per-project access ladder itself IS shared: `./src/access.ts` binds
-// core's shared/access.ts ladder to @openpanel/db's real lookups, the same
-// way packages/trpc/src/access.ts does for V1.
+// The permission ladder itself is bound once, in auth.service.ts
+// (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import type { InsightPayload } from '@openpanel/validation';
 import { z } from 'zod';
 import { createTRPCRouter, procedure } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
-
-// Lazy, deliberately: ./src/access reaches @openpanel/db's real lookups,
-// which (like insight.service.ts's db/ch access) construct a real pino
-// logger — with a transport worker thread — at import time. See
-// insight.service.ts's header for the full reasoning.
-function loadAccessChecks() {
-  return import('./src/access');
-}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPLAIN_COLUMNS = [
@@ -51,8 +42,11 @@ export const insightRouter = createTRPCRouter({
     )
     .query(async ({ input: { projectId, limit }, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({ userId, projectId, level: 'read' });
+      await ctx.services.auth.requireProjectAccess({
+        userId,
+        projectId,
+        level: 'read',
+      });
 
       // Fetch more than needed to account for deduplication. AI
       // relevanceScore leads (un-enriched insights sort last via
@@ -104,8 +98,11 @@ export const insightRouter = createTRPCRouter({
     )
     .query(async ({ input: { projectId, limit }, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({ userId, projectId, level: 'read' });
+      await ctx.services.auth.requireProjectAccess({
+        userId,
+        projectId,
+        level: 'read',
+      });
 
       return ctx.services.insight.listAllInsights({ projectId, limit });
     }),
@@ -143,8 +140,7 @@ export const insightRouter = createTRPCRouter({
 
       // Reads an existing insight and explains it. Nothing about the project
       // changes, so a read-level member may do it.
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: insight.projectId,
         level: 'read',

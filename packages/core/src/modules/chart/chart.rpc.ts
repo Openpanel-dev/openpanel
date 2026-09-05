@@ -2,9 +2,10 @@
 //
 // Same arrangement as event.rpc.ts: V1's `protectedProcedure` / `cacheMiddleware`
 // stacks land with auth (P6), so each procedure does its own "is anyone logged
-// in" + `requireProjectAccess` off the `projectId` input. packages/trpc's
-// chart router delegates its handler bodies onto `./chart.service` while
-// keeping V1's own procedure stack and 60s response cache.
+// in" + `requireProjectAccess` off the `projectId` input, reached through
+// `ctx.services.auth` (M10-002). packages/trpc's chart router delegates its
+// handler bodies onto `./chart.service` while keeping V1's own procedure
+// stack and 60s response cache.
 //
 // V1's `chartProcedure` (funnel, conversion, chart, aggregate, cohort) also
 // admits anonymous callers holding a valid share: `shareId` + `id` resolve the
@@ -48,10 +49,6 @@ const zShareable = z.object({
 
 const zShareableReportInput = zReportInput.and(zShareable);
 
-function loadAccessChecks() {
-  return import('./src/access');
-}
-
 function loadReportsService() {
   return import('@openpanel/core');
 }
@@ -63,17 +60,12 @@ function requireLogin(userId: string | null | undefined): string {
   return userId;
 }
 
-async function requireAccess(
-  userId: string,
-  projectId: string,
-  level: 'read' | 'write'
-) {
-  const { requireProjectAccess } = await loadAccessChecks();
-  await requireProjectAccess({ userId, projectId, level });
-}
-
 async function requireReadAccess(ctx: TrpcContext, projectId: string) {
-  await requireAccess(requireLogin(ctx.session.userId), projectId, 'read');
+  await ctx.services.auth.requireProjectAccess({
+    userId: requireLogin(ctx.session.userId),
+    projectId,
+    level: 'read',
+  });
 }
 
 /**

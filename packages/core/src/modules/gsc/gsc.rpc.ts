@@ -9,22 +9,14 @@
 // delegates its handler bodies to `ctx.services.gsc` (DELEGATE PATTERN),
 // so nothing here is a live regression.
 //
-// The per-project access ladder itself IS shared: `./src/access.ts` binds
-// core's shared/access.ts ladder to @openpanel/db's real lookups, the same
-// way packages/trpc/src/access.ts does for V1.
+// The per-project access ladder itself is bound once, in auth.service.ts
+// (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import { zRange, zTimeInterval } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import { Arctic, googleGsc } from '../auth/auth.service';
-
-// Lazy, deliberately: ./src/access reaches @openpanel/db's real lookups,
-// which construct a real pino logger — with a transport worker thread — at
-// import time. See gsc.service.ts's header for the full reasoning.
-function loadAccessChecks() {
-  return import('./src/access');
-}
 
 const OAUTH_COOKIE_MAX_AGE_SECONDS = 60 * 10;
 
@@ -53,30 +45,34 @@ function requireLogin(userId: string | null | undefined): string {
   return userId;
 }
 
-async function requireRead(userId: string, projectId: string) {
-  const { requireProjectAccess } = await loadAccessChecks();
-  await requireProjectAccess({ userId, projectId, level: 'read' });
+async function requireRead(ctx: TrpcContext, projectId: string) {
+  await ctx.services.auth.requireProjectAccess({
+    userId: requireLogin(ctx.session.userId),
+    projectId,
+    level: 'read',
+  });
 }
 
-async function requireWrite(userId: string, projectId: string) {
-  const { requireProjectAccess } = await loadAccessChecks();
-  await requireProjectAccess({ userId, projectId, level: 'write' });
+async function requireWrite(ctx: TrpcContext, projectId: string) {
+  await ctx.services.auth.requireProjectAccess({
+    userId: requireLogin(ctx.session.userId),
+    projectId,
+    level: 'write',
+  });
 }
 
 export const gscRouter = createTRPCRouter({
   getConnection: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId }, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireRead(userId, projectId);
+      await requireRead(ctx, projectId);
       return ctx.services.gsc.getConnection(projectId);
     }),
 
   initiateOAuth: procedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input: { projectId }, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireWrite(userId, projectId);
+      await requireWrite(ctx, projectId);
 
       const state = Arctic.generateState();
       const codeVerifier = Arctic.generateCodeVerifier();
@@ -97,16 +93,14 @@ export const gscRouter = createTRPCRouter({
   getSites: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId }, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireRead(userId, projectId);
+      await requireRead(ctx, projectId);
       return ctx.services.gsc.listSites(projectId);
     }),
 
   selectSite: procedure
     .input(z.object({ projectId: z.string(), siteUrl: z.string() }))
     .mutation(async ({ input: { projectId, siteUrl }, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireWrite(userId, projectId);
+      await requireWrite(ctx, projectId);
 
       await ctx.services.gsc.selectSite(projectId, siteUrl);
       return { ok: true };
@@ -115,16 +109,14 @@ export const gscRouter = createTRPCRouter({
   disconnect: procedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input: { projectId }, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireWrite(userId, projectId);
+      await requireWrite(ctx, projectId);
 
       await ctx.services.gsc.disconnect(projectId);
       return { ok: true };
     }),
 
   getOverview: procedure.input(zGscDateInput).query(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await requireRead(userId, input.projectId);
+    await requireRead(ctx, input.projectId);
     const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
       input.projectId,
       input
@@ -144,8 +136,7 @@ export const gscRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireRead(userId, input.projectId);
+      await requireRead(ctx, input.projectId);
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -161,8 +152,7 @@ export const gscRouter = createTRPCRouter({
   getPageDetails: procedure
     .input(zGscDateInput.extend({ page: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireRead(userId, input.projectId);
+      await requireRead(ctx, input.projectId);
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -178,8 +168,7 @@ export const gscRouter = createTRPCRouter({
   getQueryDetails: procedure
     .input(zGscDateInput.extend({ query: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireRead(userId, input.projectId);
+      await requireRead(ctx, input.projectId);
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -199,8 +188,7 @@ export const gscRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireRead(userId, input.projectId);
+      await requireRead(ctx, input.projectId);
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -216,8 +204,7 @@ export const gscRouter = createTRPCRouter({
   getSearchEngines: procedure
     .input(zGscDateInput)
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireRead(userId, input.projectId);
+      await requireRead(ctx, input.projectId);
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -230,8 +217,7 @@ export const gscRouter = createTRPCRouter({
     }),
 
   getAiEngines: procedure.input(zGscDateInput).query(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await requireRead(userId, input.projectId);
+    await requireRead(ctx, input.projectId);
     const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
       input.projectId,
       input
@@ -242,8 +228,7 @@ export const gscRouter = createTRPCRouter({
   getPreviousOverview: procedure
     .input(zGscDateInput)
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireRead(userId, input.projectId);
+      await requireRead(ctx, input.projectId);
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input
@@ -259,8 +244,7 @@ export const gscRouter = createTRPCRouter({
   getCannibalization: procedure
     .input(zGscDateInput)
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireRead(userId, input.projectId);
+      await requireRead(ctx, input.projectId);
       const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
         input.projectId,
         input

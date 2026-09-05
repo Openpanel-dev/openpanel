@@ -45,10 +45,6 @@ import {
 const EXPORT_PROFILES_MAX_LIMIT = 10_000;
 const EXPORT_PROFILES_DEFAULT_LIMIT = 10_000;
 
-function loadAccessChecks() {
-  return import('./src/access');
-}
-
 function loadDb() {
   return import('@openpanel/db/src/prisma-client').then((m) => m.db);
 }
@@ -70,8 +66,7 @@ export const cohortRouter = createTRPCRouter({
     )
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
         level: 'read',
@@ -106,8 +101,7 @@ export const cohortRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Cohort not found');
       }
 
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: cohort.projectId,
         level: 'read',
@@ -150,8 +144,7 @@ export const cohortRouter = createTRPCRouter({
       throw new TRPCNotFoundError('Cohort not found');
     }
 
-    const { requireProjectAccess } = await loadAccessChecks();
-    await requireProjectAccess({
+    await ctx.services.auth.requireProjectAccess({
       userId,
       projectId: existingCohort.projectId,
       level: 'write',
@@ -189,8 +182,7 @@ export const cohortRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Cohort not found');
       }
 
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: cohort.projectId,
         level: 'write',
@@ -218,8 +210,7 @@ export const cohortRouter = createTRPCRouter({
     )
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
         level: 'read',
@@ -236,8 +227,7 @@ export const cohortRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string(), cohortId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
         level: 'read',
@@ -250,8 +240,7 @@ export const cohortRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string(), cohortId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
         level: 'read',
@@ -264,8 +253,7 @@ export const cohortRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string(), cohortId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
         level: 'read',
@@ -287,8 +275,7 @@ export const cohortRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Cohort not found');
       }
 
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: cohort.projectId,
         level: 'read',
@@ -307,8 +294,7 @@ export const cohortRouter = createTRPCRouter({
     )
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
         level: 'read',
@@ -347,8 +333,7 @@ export const cohortRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Cohort not found');
       }
 
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: cohort.projectId,
         level: 'read',
@@ -379,8 +364,7 @@ export const cohortRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Cohort not found');
       }
 
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: cohort.projectId,
         level: 'write',

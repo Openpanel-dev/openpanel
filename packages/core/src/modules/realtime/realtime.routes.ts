@@ -36,17 +36,6 @@ import {
   subscribeToVisitorActivity,
 } from './realtime.service';
 
-// Dynamic, not a static top-level import: `./src/access` reaches
-// `@openpanel/core`, which re-exports from
-// `@openpanel/core`'s own barrel (`index.ts`) — and this file IS part of that
-// barrel's eager chain (`rest.routes.ts` -> `dashboardRoutes`). A static
-// import here closes the cycle mid-evaluation (a `getProjectAccess` TDZ
-// ReferenceError); every other H module's `src/access.ts` reach is already
-// dynamic for the same reason (mcp.routes.ts, assistant.routes.ts).
-function loadAccessChecks() {
-  return import('./src/access');
-}
-
 const NO_ACTIVE_SESSION_MESSAGE = 'No active session';
 const NO_ACCESS_MESSAGE = 'No access';
 
@@ -116,8 +105,10 @@ export const realtimeRoutes = defineRoutes((app) =>
           return;
         }
 
-        const { getProjectAccess } = await loadAccessChecks();
-        const access = await getProjectAccess({ userId, projectId });
+        const access = await ws.data.ctx.services.auth.getProjectAccess({
+          userId,
+          projectId,
+        });
         if (!access) {
           rejectNoAccess(ws);
           return;
@@ -145,8 +136,10 @@ export const realtimeRoutes = defineRoutes((app) =>
           return;
         }
 
-        const { getProjectAccess } = await loadAccessChecks();
-        const access = await getProjectAccess({ userId, projectId });
+        const access = await ws.data.ctx.services.auth.getProjectAccess({
+          userId,
+          projectId,
+        });
         if (!access) {
           rejectNoAccess(ws);
           return;
@@ -174,8 +167,10 @@ export const realtimeRoutes = defineRoutes((app) =>
           return;
         }
 
-        const { getOrganizationAccess } = await loadAccessChecks();
-        const access = await getOrganizationAccess({ userId, organizationId });
+        const access = await ws.data.ctx.services.auth.getOrganizationAccess({
+          userId,
+          organizationId,
+        });
         if (!access) {
           rejectNoAccess(ws);
           return;

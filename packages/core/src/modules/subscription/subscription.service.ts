@@ -8,27 +8,23 @@
 // `requireOrganizationAdmin` travels with the business logic here rather than
 // living in subscription.rpc.ts the way project.rpc.ts's simple ladder checks
 // do: every mutating procedure in this module gates on it first, before
-// touching Polar — same call as `./src/access.ts`'s `requireOrganizationAdmin`,
-// kept close to the Polar call it guards.
+// touching Polar. Every exported function here is still called directly by
+// `packages/trpc`'s LIVE V1 router with nothing but a `userId` (DELEGATE
+// PATTERN), so these can't take a `ctx`/`deps`; `requireOrganizationAdmin`
+// comes from auth.service.ts's single, lazily-memoized `getAccessChecks()`
+// (M10-002) instead.
 //
-// db access, `./src/access.ts` AND `getCache` are all LAZY
-// (`loadDb`/`loadAccess`/`loadCache` below), not a static top-level import —
-// see organization.service.ts's header for the db half (constructing
-// @openpanel/db's clients at import time would spawn a pino-pretty transport
-// worker thread per test file); `./src/access.ts` needs the same treatment
-// because it calls `createAccessChecks({ canWriteProject, ... })` at ITS OWN
-// top level; a static import here would reach into
-// @openpanel/core as soon as anything imports
-// @openpanel/core's barrel (this module is a static re-export there, not a
-// lazy one), which broke a vitest suite that partially mocks that module
-// (packages/trpc/src/routers/share.test.ts) with no `canWriteProject` export
-// at all. `getCache` hit the same barrel chain from the other direction: a
-// static `import { getCache } from '@openpanel/redis'` here broke every core
-// test that partially mocks `@openpanel/redis` (no `getCache` export) and
-// reaches this module through @openpanel/db's re-export shims
-// (project.service.ts / notification.service.ts -> @openpanel/core's barrel
-// -> here), e.g. organization.service.test.ts's `connectUserToOrganization`
-// path via access.service.ts.
+// db access and `getCache` are LAZY (`loadDb`/`loadCache` below), not a
+// static top-level import — see organization.service.ts's header for the db
+// half (constructing @openpanel/db's clients at import time would spawn a
+// pino-pretty transport worker thread per test file). `getCache` hit the same
+// barrel chain from the other direction: a static
+// `import { getCache } from '@openpanel/redis'` here broke every core test
+// that partially mocks `@openpanel/redis` (no `getCache` export) and reaches
+// this module through @openpanel/db's re-export shims (project.service.ts /
+// notification.service.ts -> @openpanel/core's barrel -> here), e.g.
+// organization.service.test.ts's `connectUserToOrganization` path via
+// access.service.ts.
 
 import {
   applySubscriptionDiscount,
@@ -48,6 +44,7 @@ import { addMonths, subDays } from 'date-fns';
 import { z } from 'zod';
 import type { Logger } from '../../logger';
 import { TRPCBadRequestError } from '../../rpc/errors';
+import { getAccessChecks } from '../auth/auth.service';
 import {
   getOrganizationBillingEventsCountSerieCached,
   getOrganizationById,
@@ -73,10 +70,6 @@ function loadPrisma() {
   return import('@openpanel/db/src/prisma-client').then((m) => m.Prisma);
 }
 
-function loadAccess() {
-  return import('./src/access');
-}
-
 function loadCache() {
   return import('@openpanel/redis').then((m) => m.getCache);
 }
@@ -96,7 +89,7 @@ export async function checkout(
   input: ICheckout,
   ipAddress: string | undefined
 ) {
-  const { requireOrganizationAdmin } = await loadAccess();
+  const { requireOrganizationAdmin } = await getAccessChecks();
   await requireOrganizationAdmin({
     userId,
     organizationId: input.organizationId,
@@ -210,7 +203,7 @@ export async function cancelSubscription(
   userId: string,
   input: ICancelSubscription
 ) {
-  const { requireOrganizationAdmin } = await loadAccess();
+  const { requireOrganizationAdmin } = await getAccessChecks();
   await requireOrganizationAdmin({
     userId,
     organizationId: input.organizationId,
@@ -250,7 +243,7 @@ export async function pauseSubscription(
   userId: string,
   input: IPauseSubscription
 ) {
-  const { requireOrganizationAdmin } = await loadAccess();
+  const { requireOrganizationAdmin } = await getAccessChecks();
   await requireOrganizationAdmin({
     userId,
     organizationId: input.organizationId,
@@ -292,7 +285,7 @@ export async function resumeSubscription(
   userId: string,
   organizationId: string
 ) {
-  const { requireOrganizationAdmin } = await loadAccess();
+  const { requireOrganizationAdmin } = await getAccessChecks();
   await requireOrganizationAdmin({ userId, organizationId });
 
   const organization = await getOrganizationById(organizationId);
@@ -326,7 +319,7 @@ export async function applySaveDiscount(
   userId: string,
   organizationId: string
 ) {
-  const { requireOrganizationAdmin } = await loadAccess();
+  const { requireOrganizationAdmin } = await getAccessChecks();
   await requireOrganizationAdmin({ userId, organizationId });
 
   const discountId = process.env.POLAR_SAVE_DISCOUNT_ID;
@@ -366,7 +359,7 @@ export async function applySaveDiscount(
 }
 
 export async function portal(userId: string, organizationId: string) {
-  const { requireOrganizationAdmin } = await loadAccess();
+  const { requireOrganizationAdmin } = await getAccessChecks();
   await requireOrganizationAdmin({ userId, organizationId });
 
   const organization = await getOrganizationById(organizationId);

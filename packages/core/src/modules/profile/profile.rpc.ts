@@ -10,7 +10,7 @@
 
 import { zChartEventFilter } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import {
   getPowerUsers,
@@ -28,10 +28,6 @@ const DEFAULT_LIST_TAKE = 50;
 
 const zProfileRef = z.object({ profileId: z.string(), projectId: z.string() });
 
-function loadAccessChecks() {
-  return import('./src/access');
-}
-
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
     throw new TRPCAccessError('Not authenticated');
@@ -39,43 +35,41 @@ function requireLogin(userId: string | null | undefined): string {
   return userId;
 }
 
-async function requireReadAccess(userId: string, projectId: string) {
-  const { requireProjectAccess } = await loadAccessChecks();
-  await requireProjectAccess({ userId, projectId, level: 'read' });
+async function requireReadAccess(ctx: TrpcContext, projectId: string) {
+  await ctx.services.auth.requireProjectAccess({
+    userId: requireLogin(ctx.session.userId),
+    projectId,
+    level: 'read',
+  });
 }
 
 export const profileRouter = createTRPCRouter({
   byId: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await requireReadAccess(userId, input.projectId);
+    await requireReadAccess(ctx, input.projectId);
 
     return getProfileById(input.profileId, input.projectId);
   }),
 
   metrics: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await requireReadAccess(userId, input.projectId);
+    await requireReadAccess(ctx, input.projectId);
 
     return getProfileMetrics(input.profileId, input.projectId);
   }),
 
   activity: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await requireReadAccess(userId, input.projectId);
+    await requireReadAccess(ctx, input.projectId);
 
     return getProfileActivity(input.profileId, input.projectId);
   }),
 
   mostEvents: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await requireReadAccess(userId, input.projectId);
+    await requireReadAccess(ctx, input.projectId);
 
     return getProfileMostEvents(input.profileId, input.projectId);
   }),
 
   popularRoutes: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await requireReadAccess(userId, input.projectId);
+    await requireReadAccess(ctx, input.projectId);
 
     return getProfilePopularRoutes(input.profileId, input.projectId);
   }),
@@ -83,8 +77,7 @@ export const profileRouter = createTRPCRouter({
   properties: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireReadAccess(userId, input.projectId);
+      await requireReadAccess(ctx, input.projectId);
 
       return getProfilePropertyNames(input.projectId);
     }),
@@ -101,8 +94,7 @@ export const profileRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireReadAccess(userId, input.projectId);
+      await requireReadAccess(ctx, input.projectId);
 
       return getProfileListPage(input);
     }),
@@ -116,8 +108,7 @@ export const profileRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireReadAccess(userId, input.projectId);
+      await requireReadAccess(ctx, input.projectId);
 
       return getPowerUsers(input);
     }),
@@ -125,8 +116,7 @@ export const profileRouter = createTRPCRouter({
   values: procedure
     .input(z.object({ property: z.string(), projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireReadAccess(userId, input.projectId);
+      await requireReadAccess(ctx, input.projectId);
 
       return getProfileValues(input);
     }),

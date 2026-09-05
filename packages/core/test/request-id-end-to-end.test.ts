@@ -8,7 +8,7 @@
 // property core's shape was chosen for: if this goes red the design is wrong,
 // not this file.
 
-import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { Elysia } from 'elysia';
 import { z } from 'zod';
 import type { AppDeps, Buffers } from '../src/context';
@@ -34,6 +34,13 @@ interface ProofServices {
   ingest: { record(name: string): Promise<string> };
 }
 
+// Snapshotted BEFORE `mock.module` below, not after — restoring by
+// re-`import`ing later would resolve the already-mocked registry entry, not
+// the real module (bare `bun test` shares one module registry across every
+// file, and this specifier and `src/context.test.ts`'s `'./services'`
+// resolve to the same file).
+const realServicesModule = { ...(await import('../src/services')) };
+
 // `Services` grows with every module that lands, so this proof mocks the
 // whole container with a shape of its own rather than the real one — but the
 // mock is a real service: built from the SCOPED ctx, logging to that request's
@@ -51,6 +58,10 @@ const createServices = mock(
     }) satisfies ProofServices
 );
 mock.module('../src/services', () => ({ createServices }));
+
+afterAll(() => {
+  mock.module('../src/services', () => realServicesModule);
+});
 
 // mock.module is not hoisted (AGENTS.md), so everything that reaches
 // `services` through `context.ts` is imported here rather than at the top.

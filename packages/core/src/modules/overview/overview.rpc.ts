@@ -11,13 +11,6 @@
 // router; they moved to `overviewService.getLiveData` (src/overview.sql.ts)
 // so every query this module runs goes through the same `sql` tag (M7-005).
 
-import { format } from 'date-fns';
-import { getConversionEventNames } from '../event/event.service';
-import { getActiveVisitorCount } from '../realtime/realtime.service';
-import { getReferrerSpikes } from '../insight/insight.service';
-import { getOrganizationSubscriptionChartEndDate } from '../organization/organization.service';
-import { getSettingsForProject } from '../organization/organization.service';
-import { validateOverviewShareAccess } from '../share/share.service';
 import {
   getChartPrevStartEndDate,
   getChartStartEndDate,
@@ -27,9 +20,18 @@ import {
   pageContextSchema,
   zRange,
 } from '@openpanel/validation';
+import { format } from 'date-fns';
 import { z } from 'zod';
 import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
+import { getConversionEventNames } from '../event/event.service';
+import { getReferrerSpikes } from '../insight/insight.service';
+import {
+  getOrganizationSubscriptionChartEndDate,
+  getSettingsForProject,
+} from '../organization/organization.service';
+import { getActiveVisitorCount } from '../realtime/realtime.service';
+import { validateOverviewShareAccess } from '../share/share.service';
 import {
   overviewService,
   zGetMapDataInput,
@@ -41,10 +43,6 @@ import {
   zGetTopPagesInput,
   zGetUserJourneyInput,
 } from './overview.service';
-
-function loadAccessChecks() {
-  return import('./src/access');
-}
 
 // Lazy, not a static import: the assistant module's chatApp chain reaches
 // deep into @openpanel/db and @openpanel/queue (see index.ts's own
@@ -62,17 +60,12 @@ function requireLogin(userId: string | null | undefined): string {
   return userId;
 }
 
-async function requireAccess(
-  userId: string,
-  projectId: string,
-  level: 'read' | 'write'
-) {
-  const { requireProjectAccess } = await loadAccessChecks();
-  await requireProjectAccess({ userId, projectId, level });
-}
-
 async function requireReadAccess(ctx: TrpcContext, projectId: string) {
-  await requireAccess(requireLogin(ctx.session.userId), projectId, 'read');
+  await ctx.services.auth.requireProjectAccess({
+    userId: requireLogin(ctx.session.userId),
+    projectId,
+    level: 'read',
+  });
 }
 
 /**
@@ -92,7 +85,9 @@ async function resolveOverviewAccess(
       input.projectId,
       {
         cookies: ctx.cookies,
-        session: ctx.session.userId ? { userId: ctx.session.userId } : undefined,
+        session: ctx.session.userId
+          ? { userId: ctx.session.userId }
+          : undefined,
       }
     );
     if (!shareValidation.isValid) {

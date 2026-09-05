@@ -1,8 +1,25 @@
-import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  test,
+} from 'bun:test';
 import { Elysia } from 'elysia';
 import { stubAppDeps } from '../../test/http-fixtures';
 import type { HttpCtx } from '../context';
 import type { Services } from '../services';
+
+// Snapshotted BEFORE `mock.module` below, not after — restoring by
+// re-`import`ing later would resolve the already-mocked registry entry, not
+// the real module (bare `bun test` shares one module registry across every
+// file). Without the `afterAll` restore, the stub `createServices` (`{}`,
+// no `.auth`) leaks into every OTHER file that later imports '../context' or
+// './session'.
+const realServicesModule = { ...(await import('../services')) };
+const realSessionModule = { ...(await import('./session')) };
 
 // mock.module is not hoisted, so the subjects are imported inside beforeAll —
 // see AGENTS.md. Mocking createServices is what makes "not built yet"
@@ -22,6 +39,11 @@ let requestLogging: typeof import('./context').requestLogging;
 
 beforeAll(async () => {
   ({ requestContext, requestLogging } = await import('./context'));
+});
+
+afterAll(() => {
+  mock.module('../services', () => realServicesModule);
+  mock.module('./session', () => realSessionModule);
 });
 
 beforeEach(() => {

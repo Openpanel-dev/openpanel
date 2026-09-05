@@ -30,10 +30,6 @@ const LIST_LIMIT_DEFAULT = 50;
 const TITLE_MIN_LENGTH = 1;
 const TITLE_MAX_LENGTH = 80;
 
-function loadAccessChecks() {
-  return import('./src/access');
-}
-
 function loadOrganizationService() {
   return import('@openpanel/core');
 }
@@ -67,8 +63,7 @@ export const conversationRouter = createTRPCRouter({
     )
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
         level: 'read',
@@ -122,8 +117,7 @@ export const conversationRouter = createTRPCRouter({
           throw new TRPCNotFoundError('Conversation not found');
         }
       } else {
-        const { requireProjectAccess } = await loadAccessChecks();
-        await requireProjectAccess({
+        await ctx.services.auth.requireProjectAccess({
           userId,
           projectId: input.projectId,
           level: 'read',

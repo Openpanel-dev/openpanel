@@ -11,11 +11,13 @@
 // listener, and a listener attached after the fact misses an event that
 // already fired.
 //
-// `./realtime.service` and `./src/access` are mocked (not a real Postgres/
-// ClickHouse/Redis), and `../../http/session` for the same reason
-// http/auth.test.ts mocks it: `resolveSession` is still a P6 stub. Every
-// mock is registered before the subject's first (dynamic, per-connection)
-// call — see AGENTS.md's `mock.module` idiom.
+// `./realtime.service` and `../../shared/access-lookups` (the real lookups
+// auth.service.ts's `createAuthService` binds `ctx.services.auth` to,
+// M10-002) are mocked (not a real Postgres/ClickHouse/Redis), and
+// `../../http/session` for the same reason http/auth.test.ts mocks it:
+// `resolveSession` is still a P6 stub. Every mock is registered before the
+// subject's first (dynamic, per-connection) call — see AGENTS.md's
+// `mock.module` idiom.
 
 import {
   afterAll,
@@ -78,11 +80,17 @@ afterAll(() => {
   mock.module('./realtime.service', () => realService);
 });
 
+// The real module, not `./src/access` (deleted, M10-002) — `ctx.services.auth`
+// binds these same lookups in auth.service.ts, so mocking them here is what
+// makes `ws.data.ctx.services.auth.getProjectAccess`/`getOrganizationAccess`
+// observable from the test.
+const actualAccessLookups = await import('../../shared/access-lookups');
 let projectAccess: { level: string } | null = null;
 let organizationAccess: { role: string } | null = null;
 const getProjectAccess = mock(async () => projectAccess);
 const getOrganizationAccess = mock(async () => organizationAccess);
-mock.module('./src/access', () => ({
+mock.module('../../shared/access-lookups', () => ({
+  ...actualAccessLookups,
   getProjectAccess,
   getOrganizationAccess,
 }));

@@ -14,9 +14,8 @@
 // `deleteRule` and `createOrUpdateRule` re-check access against the
 // *existing* rule's project, not just the input's).
 //
-// The per-project access ladder itself IS shared: `./src/access.ts` binds
-// core's shared/access.ts ladder to @openpanel/db's real lookups, the same
-// way packages/trpc/src/access.ts does for V1.
+// The permission ladder itself is bound once, in auth.service.ts
+// (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
 import { createTRPCRouter, procedure } from '../../rpc/base';
@@ -30,10 +29,6 @@ import {
   listNotificationRules,
   listNotifications,
 } from './notification.service';
-
-function loadAccessChecks() {
-  return import('./src/access');
-}
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -65,8 +60,7 @@ export const notificationRouter = createTRPCRouter({
       // Clear the cache for the project
       await getNotificationRulesByProjectId.clear(input.projectId);
 
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
         level: 'write',
@@ -74,7 +68,7 @@ export const notificationRouter = createTRPCRouter({
 
       if (input.id) {
         const existing = await getNotificationRuleByIdOrThrow(input.id);
-        await requireProjectAccess({
+        await ctx.services.auth.requireProjectAccess({
           userId,
           projectId: existing.projectId,
           level: 'write',
@@ -90,8 +84,7 @@ export const notificationRouter = createTRPCRouter({
       const userId = requireLogin(ctx.session.userId);
       const rule = await getNotificationRuleByIdOrThrow(input.id);
 
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: rule.projectId,
         level: 'write',

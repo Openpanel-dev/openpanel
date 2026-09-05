@@ -10,10 +10,10 @@
 // PATTERN) — this module has no queue/cron of its own, so there is no
 // `ctx.services.reference`, same as `user`/`conversation`.
 //
-// The per-project access ladder itself IS shared: `./src/access.ts` binds
-// core's shared/access.ts ladder to @openpanel/db's real lookups, the same
-// way packages/trpc/src/access.ts does for V1. `create` has no access check
-// here either — same gap V1's router has (ported verbatim, not fixed).
+// The permission ladder itself is bound once, in auth.service.ts (M10-002);
+// every procedure here reaches it through `ctx.services.auth`. `create` has
+// no access check here either — same gap V1's router has (ported verbatim,
+// not fixed).
 
 import { zCreateReference, zRange } from '@openpanel/validation';
 import { z } from 'zod';
@@ -28,10 +28,6 @@ import {
   updateReference,
 } from './reference.service';
 
-function loadAccessChecks() {
-  return import('./src/access');
-}
-
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
     throw new TRPCAccessError('Not authenticated');
@@ -44,8 +40,7 @@ export const referenceRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string(), cursor: z.number().optional() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { getProjectAccess } = await loadAccessChecks();
-      const access = await getProjectAccess({
+      const access = await ctx.services.auth.getProjectAccess({
         userId,
         projectId: input.projectId,
       });
@@ -72,8 +67,7 @@ export const referenceRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
       const existing = await getReferenceByIdOrThrow(input.id);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: existing.projectId,
         level: 'write',
@@ -86,8 +80,7 @@ export const referenceRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
       const existing = await getReferenceByIdOrThrow(input.id);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: existing.projectId,
         level: 'write',

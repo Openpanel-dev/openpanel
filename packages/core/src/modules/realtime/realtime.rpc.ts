@@ -13,12 +13,11 @@
 // through two access-check paths until the ONE shared tRPC instance lands
 // with auth (P6).
 //
-// The per-project access ladder itself IS shared: `./src/access.ts` binds
-// core's shared/access.ts ladder to @openpanel/db's real lookups, the same
-// way packages/trpc/src/access.ts does for V1.
+// The permission ladder itself is bound once, in auth.service.ts
+// (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import {
   getRealtimeActiveSessions,
@@ -46,10 +45,6 @@ const realtimeBadgeDetailScopeSchema = z.enum([
   'merged',
 ]);
 
-function loadAccessChecks() {
-  return import('./src/access');
-}
-
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
     throw new TRPCAccessError('Not authenticated');
@@ -57,17 +52,19 @@ function requireLogin(userId: string | null | undefined): string {
   return userId;
 }
 
-async function requireReadAccess(userId: string, projectId: string) {
-  const { requireProjectAccess } = await loadAccessChecks();
-  await requireProjectAccess({ userId, projectId, level: 'read' });
+async function requireReadAccess(ctx: TrpcContext, projectId: string) {
+  await ctx.services.auth.requireProjectAccess({
+    userId: requireLogin(ctx.session.userId),
+    projectId,
+    level: 'read',
+  });
 }
 
 export const realtimeRouter = createTRPCRouter({
   coordinates: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireReadAccess(userId, input.projectId);
+      await requireReadAccess(ctx, input.projectId);
 
       return getRealtimeCoordinates(input.projectId);
     }),
@@ -83,40 +80,35 @@ export const realtimeRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireReadAccess(userId, input.projectId);
+      await requireReadAccess(ctx, input.projectId);
 
       return getRealtimeMapBadgeDetails(input);
     }),
   activeSessions: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireReadAccess(userId, input.projectId);
+      await requireReadAccess(ctx, input.projectId);
 
       return getRealtimeActiveSessions(input.projectId);
     }),
   paths: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireReadAccess(userId, input.projectId);
+      await requireReadAccess(ctx, input.projectId);
 
       return getRealtimePaths(input.projectId);
     }),
   referrals: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireReadAccess(userId, input.projectId);
+      await requireReadAccess(ctx, input.projectId);
 
       return getRealtimeReferrals(input.projectId);
     }),
   geo: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const userId = requireLogin(ctx.session.userId);
-      await requireReadAccess(userId, input.projectId);
+      await requireReadAccess(ctx, input.projectId);
 
       return getRealtimeGeo(input.projectId);
     }),

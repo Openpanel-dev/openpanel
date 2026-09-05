@@ -4,9 +4,20 @@
 // row — moved here too (M8-005, `./src/login-session.ts`), lazily loading
 // @openpanel/db's Prisma client the same way `loadRegistration` below does,
 // so there is no static core -> db edge.
+//
+// M10-002 (docs/TECH_DEBT.md §5b): the permission ladder (`shared/access.ts`)
+// is bound to its real lookups exactly here, once, instead of once per module
+// in a `modules/*/src/access.ts` copy — see `getAccessChecks` below for the
+// binding itself.
 
 import { z } from 'zod';
 import type { ServiceDeps } from '../../services';
+import { type AccessChecks, createAccessChecks } from '../../shared/access';
+import type {
+  getClientAccess as GetClientAccessFn,
+  getOrganizationAccess as GetOrganizationAccessFn,
+  IProjectAccess,
+} from '../../shared/access-lookups';
 import type { ISetCookie } from '../../shared/cookie';
 import {
   deleteSessionTokenCookie,
@@ -62,7 +73,17 @@ export {
   verifyTotpCode,
 } from './src/totp';
 
-export interface AuthService {
+export interface AuthService extends AccessChecks<IProjectAccess> {
+  getProjectAccess(args: {
+    userId: string;
+    projectId: string;
+  }): Promise<IProjectAccess | null>;
+  getOrganizationAccess(
+    ...args: Parameters<typeof GetOrganizationAccessFn>
+  ): ReturnType<typeof GetOrganizationAccessFn>;
+  getClientAccess(
+    ...args: Parameters<typeof GetClientAccessFn>
+  ): ReturnType<typeof GetClientAccessFn>;
   hashPassword(password: string): Promise<string>;
   verifyPasswordHash(hash: string, password: string): Promise<boolean>;
   generateSessionToken(): string;
@@ -92,14 +113,88 @@ export interface AuthService {
   };
 }
 
+function loadAccessLookups() {
+  return import('../../shared/access-lookups');
+}
+
+let accessChecksPromise: Promise<AccessChecks<IProjectAccess>> | undefined;
+
 /**
- * Registered in `services.ts`. `deps` is unused today (every function here is
- * pure or reads its own env) — kept on the signature because every other
- * module's factory takes it, and a method that later needs `logger` should
- * not change the call site.
+ * The single binding of `shared/access.ts`'s ladder to real lookups
+ * (M10-002, docs/TECH_DEBT.md §5b) — lazy AND memoized: `createAccessChecks`
+ * itself runs exactly once per process, on however many requests, no matter
+ * how many of this function's callers invoke it. Nothing here runs at
+ * module-import time or at `createAuthService` construction time — both
+ * `access-lookups.ts` and `project.service.ts` are reached only through the
+ * dynamic imports below, the first time an actual check is made. An earlier
+ * attempt bound this at module scope and hung `bun test` for 30 minutes.
+ *
+ * `integration.service.ts` and `subscription.service.ts` import this
+ * directly instead of going through `ctx.services.auth`: both are invoked by
+ * `packages/trpc`'s still-live V1 delegate routers with a bare `userId`, no
+ * `ctx`, so they cannot reach a service. Operator-authorized (docs/TECH_DEBT.md
+ * §5b); the exemption expires when `packages/trpc` dies at P10.
+ */
+export function getAccessChecks(): Promise<AccessChecks<IProjectAccess>> {
+  if (!accessChecksPromise) {
+    accessChecksPromise = Promise.all([
+      loadAccessLookups(),
+      import('../project/project.service'),
+    ]).then(
+      ([
+        { getProjectAccess, canWriteProject, getOrganizationAccess },
+        { getProjectById },
+      ]) =>
+        createAccessChecks({
+          getProjectAccess,
+          canWriteProject,
+          getOrganizationAccess,
+          getProjectById,
+        })
+    );
+  }
+  return accessChecksPromise;
+}
+
+/**
+ * Test-only escape hatch. `accessChecksPromise` is a true process-lifetime
+ * singleton by design (see `getAccessChecks` above), so a test that mocks
+ * `access-lookups`/`project.service` to prove the injection seam works must
+ * clear it afterward — otherwise, under a bare (non-`--isolate`) `bun test`,
+ * the fake closures it built would answer every later file's real access
+ * checks too.
+ */
+export function resetAccessChecksForTests(): void {
+  accessChecksPromise = undefined;
+}
+
+/**
+ * Registered in `services.ts`. `deps` is unused (every member here is either
+ * pure, reads its own env, or — for the access checks — reaches the shared,
+ * memoized `getAccessChecks()` above) — kept on the signature because every
+ * other module's factory takes it, and a method that later needs `logger`
+ * should not change the call site.
  */
 export function createAuthService(_deps: ServiceDeps): AuthService {
   return {
+    async requireProjectAccess(args) {
+      return (await getAccessChecks()).requireProjectAccess(args);
+    },
+    async requireOrganizationAdmin(args) {
+      return (await getAccessChecks()).requireOrganizationAdmin(args);
+    },
+    async requireProjectAdmin(args) {
+      return (await getAccessChecks()).requireProjectAdmin(args);
+    },
+    async getProjectAccess(args) {
+      return (await loadAccessLookups()).getProjectAccess(args);
+    },
+    async getOrganizationAccess(args) {
+      return (await loadAccessLookups()).getOrganizationAccess(args);
+    },
+    async getClientAccess(args) {
+      return (await loadAccessLookups()).getClientAccess(args);
+    },
     hashPassword,
     verifyPasswordHash,
     generateSessionToken,

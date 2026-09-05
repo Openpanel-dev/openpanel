@@ -8,8 +8,14 @@
 // simple input-shape ladder checks project.rpc.ts/notification.rpc.ts do
 // themselves, the access assertions travel WITH the business logic, ported
 // verbatim from the router's own `assertProjectAccessAndGetOrg`/
-// `assertIntegrationAccess` helpers. `./src/access.ts` binds the shared
-// ladder to @openpanel/db, the same way every other module's does.
+// `assertIntegrationAccess` helpers. Every exported function here is still
+// called directly by `packages/trpc`'s LIVE V1 router with nothing but a
+// `userId` (DELEGATE PATTERN), so these can't take a `ctx`/`deps` the way a
+// core-only module's checks would; `requireProjectAccess` /
+// `requireOrganizationAdmin` come from auth.service.ts's single,
+// lazily-memoized `getAccessChecks()` (M10-002); `getOrganizationAccess` is a
+// raw lookup (no ladder involved), reached directly from the sibling
+// `shared/access-lookups.ts`.
 //
 // db access is LAZY (`loadDb` below), not a static top-level import — see
 // organization.service.ts's header for the full reasoning (constructing
@@ -32,16 +38,14 @@ import {
   slackInstaller,
 } from '../../clients/integrations/slack';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
+import { getOrganizationAccess } from '../../shared/access-lookups';
+import { getAccessChecks } from '../auth/auth.service';
 import { BASE_INTEGRATIONS } from '../notification/notification.service';
 import type { IIntegrationConfig, ISlackConfig } from './integration.constants';
 import { zSlackAuthResponse } from './src/slack-contract';
 
 function loadDb() {
   return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
-function loadAccess() {
-  return import('./src/access');
 }
 
 // Credentials are write-only: they are encrypted at rest and never travel back
@@ -75,7 +79,7 @@ async function assertProjectAccessAndGetOrg(
   projectId: string,
   level: 'read' | 'write'
 ) {
-  const { requireProjectAccess } = await loadAccess();
+  const { requireProjectAccess } = await getAccessChecks();
   await requireProjectAccess({ userId, projectId, level });
 
   const db = await loadDb();
@@ -95,11 +99,8 @@ async function assertIntegrationAccess(
   integration: { projectId: string | null; organizationId: string },
   level: 'read' | 'write'
 ) {
-  const {
-    getOrganizationAccess,
-    requireOrganizationAdmin,
-    requireProjectAccess,
-  } = await loadAccess();
+  const { requireProjectAccess, requireOrganizationAdmin } =
+    await getAccessChecks();
 
   if (integration.projectId) {
     await requireProjectAccess({
@@ -325,7 +326,7 @@ export async function testIntegrationConnection(
   userId: string,
   input: { projectId: string; config: IIntegrationConfig }
 ) {
-  const { requireProjectAccess } = await loadAccess();
+  const { requireProjectAccess } = await getAccessChecks();
   await requireProjectAccess({
     userId,
     projectId: input.projectId,
@@ -345,7 +346,7 @@ export async function testExportIntegrationConnection(
   userId: string,
   input: { projectId: string; config: IIntegrationConfig }
 ) {
-  const { requireProjectAccess } = await loadAccess();
+  const { requireProjectAccess } = await getAccessChecks();
   await requireProjectAccess({
     userId,
     projectId: input.projectId,

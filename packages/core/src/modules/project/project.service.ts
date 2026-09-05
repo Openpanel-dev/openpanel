@@ -2,9 +2,11 @@
 // map: project owns "R,H,S,C"). packages/db keeps a re-export shim: its own
 // access.service.ts and notification.service.ts still reach `getProjectById`
 // / `getProjectByIdCached` through the same relative path, and
-// apps/api/src/utils/auth.ts + several other core modules' `src/access.ts`
-// reach them through @openpanel/db's barrel — same shape as
-// packages/db/src/services/organization.service.ts since M6-001.
+// apps/api/src/utils/auth.ts reaches them through @openpanel/db's barrel;
+// auth.service.ts's permission ladder (M10-002) reaches `getProjectById`
+// through a lazy dynamic import, same reasoning as this file's own `load*`
+// below — same shape as packages/db/src/services/organization.service.ts
+// since M6-001.
 //
 // The /manage REST CRUD bodies (apps/api/src/controllers/manage.controller.ts's
 // listProjects/getProject/createProject/updateProject/deleteProject) move

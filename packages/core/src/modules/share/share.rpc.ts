@@ -10,15 +10,18 @@
 // PATTERN) — this module has no queue/cron of its own, so there is no
 // `ctx.services.share`, same as `user`/`project`.
 //
-// The per-project access ladder itself IS shared: `./src/access.ts` binds
-// core's shared/access.ts ladder to @openpanel/db's real lookups, the same
-// way packages/trpc/src/access.ts does for V1. `createOverview` has no access
+// The permission ladder itself is bound once, in auth.service.ts
+// (M10-002); every procedure here reaches it through `ctx.services.auth`. `createOverview` has no access
 // check here either — same gap V1's router has (ported verbatim, not fixed).
 
 import { z } from 'zod';
 import { createTRPCRouter, procedure } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
-import { zShareDashboard, zShareOverview, zShareReport } from './share.constants';
+import {
+  zShareDashboard,
+  zShareOverview,
+  zShareReport,
+} from './share.constants';
 import {
   createShareDashboard,
   createShareOverview,
@@ -31,10 +34,6 @@ import {
   getShareReport,
   getShareReportSettings,
 } from './share.service';
-
-function loadAccessChecks() {
-  return import('./src/access');
-}
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -55,12 +54,10 @@ export const shareRouter = createTRPCRouter({
       return getShareOverviewSettings(input.projectId);
     }),
 
-  createOverview: procedure
-    .input(zShareOverview)
-    .mutation(({ input, ctx }) => {
-      requireLogin(ctx.session.userId);
-      return createShareOverview(input);
-    }),
+  createOverview: procedure.input(zShareOverview).mutation(({ input, ctx }) => {
+    requireLogin(ctx.session.userId);
+    return createShareOverview(input);
+  }),
 
   dashboard: procedure
     .input(z.object({ shareId: z.string() }))
@@ -77,8 +74,7 @@ export const shareRouter = createTRPCRouter({
     .input(zShareDashboard)
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
         level: 'write',
@@ -107,8 +103,7 @@ export const shareRouter = createTRPCRouter({
     .input(zShareReport)
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
         level: 'write',

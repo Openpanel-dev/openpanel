@@ -10,10 +10,8 @@
 // PATTERN) — this module has no queue/cron of its own, so there is no
 // `ctx.services.client`, same as `user`/`conversation`.
 //
-// `./src/access.ts` binds core's shared/access.ts ladder to @openpanel/db's
-// real lookups, dynamically imported (`loadAccessChecks`) same as
-// organization.rpc.ts, so a static import here does not pull
-// @openpanel/db's prisma client into every core test file.
+// The permission ladder itself is bound once, in auth.service.ts (M10-002);
+// every procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
 import { createTRPCRouter, procedure } from '../../rpc/base';
@@ -25,10 +23,6 @@ import {
   getClientsByProjectId,
   updateClientForOrganization,
 } from './client.service';
-
-function loadAccessChecks() {
-  return import('./src/access');
-}
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -50,8 +44,10 @@ export const clientRouter = createTRPCRouter({
     .input(z.object({ id: z.string(), name: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { getClientAccess } = await loadAccessChecks();
-      const access = await getClientAccess({ userId, clientId: input.id });
+      const access = await ctx.services.auth.getClientAccess({
+        userId,
+        clientId: input.id,
+      });
       if (!access) {
         throw new TRPCForbiddenError('You do not have access to this client');
       }
@@ -77,11 +73,10 @@ export const clientRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireOrganizationAdmin } = await loadAccessChecks();
       // Minting an ingestion credential - a `root` one at the caller's
       // choosing - is admin-tier, not something any org member should be
       // able to do.
-      await requireOrganizationAdmin({
+      await ctx.services.auth.requireOrganizationAdmin({
         userId,
         organizationId: input.organizationId,
         message: 'Only organization admins can create API clients',
@@ -112,9 +107,8 @@ export const clientRouter = createTRPCRouter({
         throw new TRPCForbiddenError('You do not have access to this client');
       }
 
-      const { requireOrganizationAdmin } = await loadAccessChecks();
       // Revoking a credential breaks ingestion for whoever is using it.
-      await requireOrganizationAdmin({
+      await ctx.services.auth.requireOrganizationAdmin({
         userId,
         organizationId: client.organizationId,
         message: 'Only organization admins can delete API clients',

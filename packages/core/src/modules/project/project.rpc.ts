@@ -10,11 +10,8 @@
 // PATTERN) — this module has no queue/cron of its own, so there is no
 // `ctx.services.project`, same as `user`/`conversation`.
 //
-// The project-access ladder itself IS shared: `./src/access.ts` binds core's
-// shared/access.ts ladder to @openpanel/db's real lookups, the same way
-// packages/trpc/src/access.ts does for V1. It is dynamically imported
-// (`loadAccessChecks`), same as organization.rpc.ts, so a static import here
-// does not pull @openpanel/db's prisma client into every core test file.
+// The project-access ladder itself is bound once, in auth.service.ts
+// (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import { zOnboardingProject, zProjectUpdate } from '@openpanel/validation';
 import { z } from 'zod';
@@ -31,10 +28,6 @@ import {
   updateProjectForOrganization,
 } from './project.service';
 
-function loadAccessChecks() {
-  return import('./src/access');
-}
-
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
     throw new TRPCAccessError('Not authenticated');
@@ -47,8 +40,10 @@ export const projectRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId }, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { getProjectAccess } = await loadAccessChecks();
-      const access = await getProjectAccess({ userId, projectId });
+      const access = await ctx.services.auth.getProjectAccess({
+        userId,
+        projectId,
+      });
       if (!access) {
         throw new TRPCForbiddenError('You do not have access to this project');
       }
@@ -61,8 +56,10 @@ export const projectRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId }, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { getProjectAccess } = await loadAccessChecks();
-      const access = await getProjectAccess({ userId, projectId });
+      const access = await ctx.services.auth.getProjectAccess({
+        userId,
+        projectId,
+      });
       if (!access) {
         throw new TRPCForbiddenError('You do not have access to this project');
       }
@@ -82,8 +79,11 @@ export const projectRouter = createTRPCRouter({
 
   update: procedure.input(zProjectUpdate).mutation(async ({ input, ctx }) => {
     const userId = requireLogin(ctx.session.userId);
-    const { requireProjectAccess } = await loadAccessChecks();
-    await requireProjectAccess({ userId, projectId: input.id, level: 'write' });
+    await ctx.services.auth.requireProjectAccess({
+      userId,
+      projectId: input.id,
+      level: 'write',
+    });
 
     const project = await getProjectById(input.id);
     if (!project) {
@@ -107,8 +107,7 @@ export const projectRouter = createTRPCRouter({
         throw new TRPCForbiddenError('Organization is required');
       }
 
-      const { getOrganizationAccess } = await loadAccessChecks();
-      const access = await getOrganizationAccess({
+      const access = await ctx.services.auth.getOrganizationAccess({
         userId,
         organizationId: input.organizationId,
       });
@@ -137,9 +136,8 @@ export const projectRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAdmin } = await loadAccessChecks();
       // Destroying a project is admin-tier, matching project.create.
-      await requireProjectAdmin({
+      await ctx.services.auth.requireProjectAdmin({
         userId,
         projectId: input.projectId,
         message: 'Only organization admins can delete projects',
@@ -153,8 +151,7 @@ export const projectRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAdmin } = await loadAccessChecks();
-      await requireProjectAdmin({
+      await ctx.services.auth.requireProjectAdmin({
         userId,
         projectId: input.projectId,
         message: 'Only organization admins can cancel a project deletion',

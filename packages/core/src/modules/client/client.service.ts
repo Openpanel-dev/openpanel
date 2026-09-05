@@ -1,9 +1,9 @@
 // Moved from packages/db/src/services/clients.service.ts (M6-002, module
 // map: client owns "R,H,S" — no constants file, per the module map). packages/db
-// keeps a re-export shim: apps/api/src/utils/auth.ts, core's mcp module and
-// several other core modules' `src/access.ts` still reach `getClientByIdCached`
-// / `ClientType` through @openpanel/db's barrel — same shape as
-// packages/db/src/services/organization.service.ts since M6-001.
+// keeps a re-export shim: apps/api/src/utils/auth.ts and core's mcp module
+// still reach `getClientByIdCached` / `ClientType` through @openpanel/db's
+// barrel — same shape as packages/db/src/services/organization.service.ts
+// since M6-001.
 //
 // The /manage REST CRUD bodies (apps/api/src/controllers/manage.controller.ts's
 // listClients/getClient/createClient/updateClient/deleteClient) move here

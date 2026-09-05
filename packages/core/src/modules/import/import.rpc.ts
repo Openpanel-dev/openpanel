@@ -12,9 +12,8 @@
 // nothing here for it to delegate to. This router exists to satisfy the
 // module map ("R") and to serve core's own (not yet live) appRouter.
 //
-// The per-project access ladder itself IS shared: `./src/access.ts` binds
-// core's shared/access.ts ladder to @openpanel/db's real lookups, the same
-// way packages/trpc/src/access.ts does for V1.
+// The per-project access ladder itself is bound once, in auth.service.ts
+// (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
 import { createTRPCRouter, procedure } from '../../rpc/base';
@@ -24,10 +23,6 @@ import {
   TRPCNotFoundError,
 } from '../../rpc/errors';
 import { zCreateImport } from './import.constants';
-
-function loadAccessChecks() {
-  return import('./src/access');
-}
 
 function loadDb() {
   return import('@openpanel/db/src/prisma-client').then((m) => m.db);
@@ -45,8 +40,7 @@ export const importRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: input.projectId,
         level: 'read',
@@ -69,8 +63,7 @@ export const importRouter = createTRPCRouter({
         include: { project: true },
       });
 
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: importRecord.projectId,
         level: 'read',
@@ -81,8 +74,7 @@ export const importRouter = createTRPCRouter({
 
   create: procedure.input(zCreateImport).mutation(async ({ input, ctx }) => {
     const userId = requireLogin(ctx.session.userId);
-    const { requireProjectAccess } = await loadAccessChecks();
-    await requireProjectAccess({
+    await ctx.services.auth.requireProjectAccess({
       userId,
       projectId: input.projectId,
       level: 'write',
@@ -132,8 +124,7 @@ export const importRouter = createTRPCRouter({
         where: { id: input.id },
       });
 
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: importRecord.projectId,
         level: 'write',
@@ -155,8 +146,7 @@ export const importRouter = createTRPCRouter({
         where: { id: input.id },
       });
 
-      const { requireProjectAccess } = await loadAccessChecks();
-      await requireProjectAccess({
+      await ctx.services.auth.requireProjectAccess({
         userId,
         projectId: importRecord.projectId,
         level: 'write',
