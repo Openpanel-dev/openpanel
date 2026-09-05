@@ -92,6 +92,60 @@
 module.exports = {
   forbidden: [
     {
+      name: 'core-uses-ctx-not-db-internals',
+      severity: 'warn',
+      comment:
+        'M10-001 (docs/TECH_DEBT.md §4 step 4): packages/core reaches Postgres/ClickHouse ' +
+        'through ctx.db / ctx.ch / ServiceDeps, never by importing @openpanel/db itself, so a ' +
+        'requestId minted at the edge keeps reaching the query (ADR-018). import type stays ' +
+        "allowed (dependencyTypesNot: ['type-only']) — that is what keeps `bun test` offline. " +
+        'packages/core/src/context.ts is the one named exception, excluded by path rather than ' +
+        "by widening dependencyTypesNot: its Db / ClickHouseClient fields are `typeof " +
+        "import('@openpanel/db/...')` type queries, which dependency-cruiser tags " +
+        "['undetermined', 'type-import'] rather than 'type-only' (verified via --output-type " +
+        'json) — a genuinely type-level reference. Widening the exemption to ' +
+        "'type-import' instead of naming the file is exactly what the previous attempt at this " +
+        'task did, and it silently swallowed a real value-import: ' +
+        'packages/core/src/buffers/clickhouse.ts has a `typeof import(...)` type query (line 8) ' +
+        'AND a genuine runtime `import(...)` dynamic import (line 13) of the same resolved ' +
+        "module; dependency-cruiser folds both references between the same two files into ONE " +
+        "edge and — reproduced via --output-type json with an isolated probe file mirroring " +
+        "that structure — the merge drops the 'dynamic-import' tag entirely, leaving only " +
+        "['undetermined', 'type-import']. Exempting 'type-import' wholesale therefore hides " +
+        'that seam from the baseline instead of counting it; buffers/clickhouse.ts is left in ' +
+        'scope for M10-002..008 to fix. context.ts has no such merge (no runtime import of ' +
+        '@openpanel/db anywhere in the file), so excluding it by path is safe. Landed at warn ' +
+        'with the baseline violation count recorded in docs/TECH_DEBT.md; M10-009 flips it to ' +
+        'error once the count is 0.',
+      from: {
+        path: '^packages/core/src/',
+        pathNot: '^packages/core/src/context\\.ts$',
+      },
+      to: {
+        path: '^packages/db/',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
+      name: 'core-no-self-barrel',
+      severity: 'warn',
+      comment:
+        'M10-001 (docs/TECH_DEBT.md §4): a file under packages/core/src/** imports its siblings ' +
+        'by relative path, never through its own package barrel (@openpanel/core) — a self-import ' +
+        'is always resolvable as a relative import and importing the barrel instead just risks ' +
+        'reintroducing the exact resolution cycles the barrel is meant to avoid for external ' +
+        'consumers. `to.path` matches the RESOLVED path (see header comment), so this targets ' +
+        'packages/core/package.json\'s "." export target (./src/index.ts) directly rather than ' +
+        'the bare specifier string, which would never match a resolved path. import type stays ' +
+        'allowed. Landed at warn with the baseline violation count recorded in docs/TECH_DEBT.md; ' +
+        'M10-009 flips it to error once the count is 0.',
+      from: { path: '^packages/core/src/' },
+      to: {
+        path: '^packages/core/src/index\\.ts$',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
+    {
       name: 'constants-stay-isomorphic',
       severity: 'error',
       comment:
