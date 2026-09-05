@@ -141,7 +141,12 @@ export type {
   Session,
 } from './context';
 export { createCtx, extendCtx } from './context';
+// The role-conditional HTTP surfaces main.ts mounts over the three in
+// rest.routes.ts (M9-002). `bullBoardRoutes` is async because the adapter
+// reads its own UI assets off disk before it can register.
+export { BULL_BOARD_BASE_PATH, bullBoardRoutes } from './http/bull-board';
 export { requestContext, requestLogging } from './http/context';
+export { debugRoutes } from './http/debug.routes';
 // The two runtime seams over the registry (ADR-005). `main.ts` builds
 // producers in every role and workers only where the role consumes; both take
 // the registry as data, so neither opens a connection until it is called.
@@ -151,6 +156,8 @@ export type {
   QueueDefinition,
 } from './jobs/define';
 export type { JobEnvelope, JobMeta } from './jobs/envelope';
+export type { CountableQueue } from './jobs/jobs.metrics';
+export { registerQueueMetrics } from './jobs/jobs.metrics';
 export { queueKey } from './jobs/naming';
 export type { CreateProducersOptions } from './jobs/producers';
 export { createProducers } from './jobs/producers';
@@ -168,7 +175,7 @@ export type {
   TerminalFailure,
   WorkerHandle,
 } from './jobs/workers';
-export { startWorkers } from './jobs/workers';
+export { runJob, startWorkers } from './jobs/workers';
 export type {
   QueueProducerHandle,
   QueueProducers,
@@ -181,6 +188,10 @@ export {
   REQUEST_ID_LENGTH,
   REQUEST_ID_LOG_FIELD,
 } from './logger';
+// The one registry's own boot-time registrars. `registry` itself is NOT
+// exported: a caller that can reach it can start a second collector graph
+// somewhere other than a module, which is the thing §18 forbids.
+export { registerDefaultMetrics } from './metrics';
 // Moved from apps/api/src/agents/* + packages/trpc/src/agents/filter-command.ts
 // (M5-005) — apps/api's `/ai/agents/*` Fastify wrapper and packages/trpc's
 // overview router call these.
@@ -1151,6 +1162,7 @@ export async function handleMcpRequest(
   const token = extractToken(query, authHeader);
   return handleStatelessMcpRequest(token, body);
 }
+export { isShuttingDown, setShuttingDown } from './modules/health/src/shutdown';
 // Dissolved from @openpanel/db's services/import.service.ts +
 // apps/worker's job file + apps/api's /import controller (M5-004) —
 // apps/worker's import job file and apps/api's import controller call these
@@ -1233,6 +1245,13 @@ export {
   createEventsBatchHandler,
   startKafkaEventsConsumer,
 } from './modules/ingest/src/consumer';
+// The readiness probe's two inputs (M9-002). `markEventsActivity` is the
+// consumer's `onActivity`; `setShuttingDown` is main.ts's signal handler.
+export {
+  enableEventsHeartbeat,
+  getEventsHeartbeat,
+  markEventsActivity,
+} from './modules/ingest/src/heartbeat';
 export type {
   IncomingEventDelivery,
   IncomingEventDeps,
@@ -1243,10 +1262,7 @@ export {
   incomingEvent,
   loadIncomingEventDeps,
 } from './modules/ingest/src/incoming-event-handler';
-// Dissolved from @openpanel/db's services/insights* + referrer-spikes.service
-// (M5-001) — apps/worker's insight job files and packages/trpc's insight
-// router call these directly, the same way V1 reaches every other dissolved
-// service here.
+export { ingestConsumerMetrics } from './modules/ingest/src/ingest.metrics';
 export type {
   DailyInsightCandidate,
   GetReferrerSpikesInput,
@@ -1295,6 +1311,12 @@ export {
   getSalts,
   rotateSalt,
 } from './modules/salt/salt.service';
+// Dissolved from @openpanel/db's services/insights* + referrer-spikes.service
+// (M5-001) — apps/worker's insight job files and packages/trpc's insight
+// router call these directly, the same way V1 reaches every other dissolved
+// service here.
+export type { SessionMetricsRedis } from './modules/session/src/session.metrics';
+export { registerSessionScrapeMetrics } from './modules/session/src/session.metrics';
 // New module (M7-008) — apps/api's tools controller calls these directly,
 // the same way V1 reaches every other dissolved service here.
 export type {

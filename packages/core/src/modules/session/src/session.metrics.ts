@@ -1,11 +1,30 @@
 // The session lifecycle collectors, moved from apps/worker/src/metrics.ts
 // (M7-001) onto core's one registry. Names, labels and buckets are V1's; the
-// worker-side copies die with apps/worker (P9). The at-scrape gauges
-// (`sessions_active_total`, `sessions_projects_active`, `sessions_hwm_lag_ms`)
-// and the ingest-side `sessions_started_total` stay with the ingest path.
+// worker-side copies die with apps/worker (P9). The ingest-side
+// `sessions_started_total` lives with the ingest path
+// (modules/ingest/src/ingest.metrics.ts); the three at-scrape gauges joined
+// this file at M9-002 — see `registerSessionScrapeMetrics` at the bottom.
 
 import client from 'prom-client';
 import { registry } from '../../../metrics';
+
+// V1's key names, unchanged (apps/worker/src/metrics.ts).
+const SESSION_PROJECTS_KEY = 'session:projects';
+
+/**
+ * The slice of the cache client the gauges use. `multi()` is V1's, and it is
+ * batching rather than a transaction — the ADR-006 swap replaces it with
+ * `Promise.all` over Bun's auto-pipelining when packages/redis moves.
+ */
+export interface SessionMetricsRedis {
+  smembers(key: string): Promise<string[]>;
+  scard(key: string): Promise<number>;
+  multi(): {
+    zcard(key: string): unknown;
+    get(key: string): unknown;
+    exec(): Promise<[Error | null, unknown][] | null>;
+  };
+}
 
 const SECOND_MS = 1000;
 const MINUTE_MS = 60 * SECOND_MS;
@@ -75,3 +94,88 @@ export const sessionsVacuumed = new client.Counter({
   labelNames: ['reason'], // 'stale_blob' | 'missing_blob'
   registers: [registry],
 });
+
+/**
+ * The three scrape-time session gauges, moved from apps/worker/src/metrics.ts.
+ *
+ * Registered by main.ts and ONLY where the role consumes queues: each scrape
+ * costs one `ZCARD` and one `GET` per project, and ten api replicas exposing
+ * them would multiply that Redis load for no new information
+ * (TARGET_ARCHITECTURE §18).
+ *
+ * The client is injected rather than imported so core does not open a Redis
+ * connection at import time — `main.ts` hands in `getRedisCache`.
+ */
+export function registerSessionScrapeMetrics(
+  getRedis: () => SessionMetricsRedis,
+  register: client.Registry = registry
+): void {
+  // `registers` explicitly, never prom-client's global default — see
+  // jobs/jobs.metrics.ts.
+  const registerOn = [register];
+
+  new client.Gauge({
+    name: 'sessions_active_total',
+    help: 'Active sessions in Redis across all projects',
+    registers: registerOn,
+    async collect() {
+      const redis = getRedis();
+      const projectIds = await redis.smembers(SESSION_PROJECTS_KEY);
+      if (projectIds.length === 0) {
+        this.set(0);
+        return;
+      }
+      const multi = redis.multi();
+      for (const projectId of projectIds) {
+        multi.zcard(`session:wallclock:${projectId}`);
+      }
+      const results = await multi.exec();
+      let total = 0;
+      for (const entry of results ?? []) {
+        const count = Number(entry?.[1] ?? 0);
+        if (Number.isFinite(count)) {
+          total += count;
+        }
+      }
+      this.set(total);
+    },
+  });
+
+  new client.Gauge({
+    name: 'sessions_projects_active',
+    help: 'Projects with at least one active session',
+    registers: registerOn,
+    async collect() {
+      this.set(await getRedis().scard(SESSION_PROJECTS_KEY));
+    },
+  });
+
+  new client.Gauge({
+    name: 'sessions_hwm_lag_ms',
+    help: 'Max lag (ms) between wall-clock now and project event-time HWM, across all projects. Big number → queue lag or imports.',
+    registers: registerOn,
+    async collect() {
+      const redis = getRedis();
+      const projectIds = await redis.smembers(SESSION_PROJECTS_KEY);
+      if (projectIds.length === 0) {
+        this.set(0);
+        return;
+      }
+      const multi = redis.multi();
+      for (const projectId of projectIds) {
+        multi.get(`session:hwm:${projectId}`);
+      }
+      const results = await multi.exec();
+      const now = Date.now();
+      let maxLag = 0;
+      for (const entry of results ?? []) {
+        const hwm = Number(entry?.[1] ?? 0);
+        if (!Number.isFinite(hwm) || hwm <= 0) {
+          continue;
+        }
+        maxLag = Math.max(maxLag, now - hwm);
+      }
+      this.set(maxLag);
+    },
+  });
+}

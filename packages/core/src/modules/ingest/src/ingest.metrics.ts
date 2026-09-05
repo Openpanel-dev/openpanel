@@ -7,6 +7,7 @@
 
 import client from 'prom-client';
 import { registry } from '../../../metrics';
+import type { ConsumerMetrics, DeadLetterReason } from './consumer';
 
 // Kafka event messages reprocessed (same offset redelivered outside a
 // rebalance). Should stay ~0. A sustained non-zero rate means the consumer is
@@ -52,3 +53,18 @@ export const sessionsStarted = new client.Counter({
   labelNames: ['kind'], // 'new' | 'boundary'
   registers: [registry],
 });
+
+/**
+ * The consumer's `ConsumerMetrics`, bound to the counters above. Exists so
+ * `main.ts` wires the consumer without reaching for four individual counters
+ * — a metric is a module's business, not the entrypoint's.
+ */
+export const ingestConsumerMetrics = {
+  reprocessed: (partition: string) => kafkaReprocessedTotal.inc({ partition }),
+  handlerFailed: (partition: string) =>
+    kafkaHandlerFailuresTotal.inc({ partition }),
+  deadLettered: (partition: string, reason: DeadLetterReason) =>
+    kafkaDeadLetteredTotal.inc({ partition, reason }),
+  deadLetterFailed: (partition: string) =>
+    kafkaDeadLetterFailedTotal.inc({ partition }),
+} satisfies ConsumerMetrics;

@@ -10,3 +10,24 @@
 import client from 'prom-client';
 
 export const registry = new client.Registry();
+
+// `collectDefaultMetrics` registers a fixed set of series names; prom-client
+// throws on a duplicate, so a second call would take the process down at boot.
+let defaultMetricsRegistered = false;
+
+/**
+ * prom-client's Node-derived process/GC collectors, on the one registry.
+ *
+ * V1 registered these twice — `fastify-metrics` did it for the api
+ * (`defaultMetrics.enabled` defaults true) and `apps/worker/src/index.ts`
+ * called `collectDefaultMetrics` itself. V2 has one registry per process and
+ * calls this once, in every role (TARGET_ARCHITECTURE §18: "HTTP and default
+ * metrics register everywhere").
+ */
+export function registerDefaultMetrics(): void {
+  if (defaultMetricsRegistered) {
+    return;
+  }
+  defaultMetricsRegistered = true;
+  client.collectDefaultMetrics({ register: registry });
+}

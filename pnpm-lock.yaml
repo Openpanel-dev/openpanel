@@ -1079,6 +1079,12 @@ importers:
       '@better-agent/providers':
         specifier: ^0.1.0-beta.3
         version: 0.1.0-beta.3(@better-agent/core@0.1.0-beta.3)
+      '@bull-board/api':
+        specifier: 9.6.0
+        version: 9.6.0(@bull-board/ui@9.6.0(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0))))(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0)))
+      '@bull-board/elysia':
+        specifier: 9.6.0
+        version: 9.6.0(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0)))(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.4)(file-type@22.0.2(supports-color@10.2.0))(openapi-types@12.1.3)(typescript@5.9.3))
       '@elysiajs/cors':
         specifier: 1.4.2
         version: 1.4.2(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.4)(file-type@22.0.2(supports-color@10.2.0))(openapi-types@12.1.3)(typescript@5.9.3))
@@ -3273,11 +3279,31 @@ packages:
       '@bull-board/ui': 6.14.0
       bullmq: '*'
 
+  '@bull-board/api@9.6.0':
+    resolution: {integrity: sha512-RJcXIaFDO2l76t1MNxhIiKNaDIKIm4F8vsQq32grV9Rw4DiclKFlXSht2SN/+VIVyHJ7NzlCskMd8HgMpb/aEg==}
+    peerDependencies:
+      '@bull-board/ui': 9.6.0
+      bull: ^4.16.5
+      bullmq: ^5.56.0 || ^6.0.0
+    peerDependenciesMeta:
+      bull:
+        optional: true
+      bullmq:
+        optional: true
+
+  '@bull-board/elysia@9.6.0':
+    resolution: {integrity: sha512-rWfOfleHGwIgXfkznO2MMwSGEMOP78cw0jmQINL946w66J9z532JZoRvgmV8FPZM+NZghvtzVT7AsB6/M881Uw==}
+    peerDependencies:
+      elysia: ^1.1.0
+
   '@bull-board/express@6.14.0':
     resolution: {integrity: sha512-3H1ame2G1+eVnqqSsw6KfzTGYAWSpVsIx6EPwg9vPSP2eKfNAm12Cm4zvL6ZkwAvTCkAByt5PPDRWbbwWB6HHQ==}
 
   '@bull-board/ui@6.14.0':
     resolution: {integrity: sha512-5yqfS9CwWR8DBxpReIbqv/VSPFM/zT4KZ75keyApMiejasRC2joaHqEzYWlMCjkMycbNNCvlQNlTbl+C3dE/dg==}
+
+  '@bull-board/ui@9.6.0':
+    resolution: {integrity: sha512-rJDD+CvxI43Avq2gZpHunPT67HToYXyHSRoXsiVXDh/6MB93YtU+ofkgrrYBY25FswDSvtfnQN/ID3Ypf9OyOg==}
 
   '@capsizecss/unpack@4.0.0':
     resolution: {integrity: sha512-VERIM64vtTP1C4mxQ5thVT9fK0apjPFobqybMtA1UdUujWka24ERHbRHFGmpbbhp73MhV+KSsHQH9C6uOTdEQA==}
@@ -11906,6 +11932,11 @@ packages:
   ejs@3.1.10:
     resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
     engines: {node: '>=0.10.0'}
+    hasBin: true
+
+  ejs@6.0.1:
+    resolution: {integrity: sha512-UaaM14yby8U3k02ihS1Bmj5Kz2d7CCQM1scxpgs4Mhkq8F1wR2gl3+Ts4h5Ne4Mnt7M9m4Dw7jsuMr3+xO4vZA==}
+    engines: {node: '>=0.12.18'}
     hasBin: true
 
   electron-to-chromium@1.5.262:
@@ -22476,6 +22507,24 @@ snapshots:
       bullmq: 5.63.0(supports-color@10.2.0)
       redis-info: 3.1.0
 
+  '@bull-board/api@9.6.0(@bull-board/ui@9.6.0(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0))))(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0)))':
+    dependencies:
+      '@bull-board/ui': 9.6.0(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0)))
+      redis-info: 3.1.0
+    optionalDependencies:
+      bullmq: 6.3.3(ioredis@5.8.2(supports-color@10.2.0))
+
+  '@bull-board/elysia@9.6.0(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0)))(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.4)(file-type@22.0.2(supports-color@10.2.0))(openapi-types@12.1.3)(typescript@5.9.3))':
+    dependencies:
+      '@bull-board/api': 9.6.0(@bull-board/ui@9.6.0(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0))))(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0)))
+      '@bull-board/ui': 9.6.0(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0)))
+      ejs: 6.0.1
+      elysia: 1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.4)(file-type@22.0.2(supports-color@10.2.0))(openapi-types@12.1.3)(typescript@5.9.3)
+      mime: 4.1.0
+    transitivePeerDependencies:
+      - bull
+      - bullmq
+
   '@bull-board/express@6.14.0(bullmq@5.63.0(supports-color@10.2.0))(supports-color@10.2.0)':
     dependencies:
       '@bull-board/api': 6.14.0(@bull-board/ui@6.14.0(bullmq@5.63.0(supports-color@10.2.0)))(bullmq@5.63.0(supports-color@10.2.0))
@@ -22490,6 +22539,13 @@ snapshots:
     dependencies:
       '@bull-board/api': 6.14.0(@bull-board/ui@6.14.0(bullmq@5.63.0(supports-color@10.2.0)))(bullmq@5.63.0(supports-color@10.2.0))
     transitivePeerDependencies:
+      - bullmq
+
+  '@bull-board/ui@9.6.0(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0)))':
+    dependencies:
+      '@bull-board/api': 9.6.0(@bull-board/ui@9.6.0(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0))))(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0)))
+    transitivePeerDependencies:
+      - bull
       - bullmq
 
   '@capsizecss/unpack@4.0.0':
@@ -32268,6 +32324,8 @@ snapshots:
   ejs@3.1.10:
     dependencies:
       jake: 10.8.7
+
+  ejs@6.0.1: {}
 
   electron-to-chromium@1.5.262: {}
 

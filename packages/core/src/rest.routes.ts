@@ -7,6 +7,7 @@
 import { openapi } from '@elysiajs/openapi';
 import { Elysia } from 'elysia';
 import type { AppDeps } from './context';
+import { httpMetrics } from './http/http.metrics';
 import { registry } from './metrics';
 import { assistantRoutes } from './modules/assistant/assistant.routes';
 import { authRoutes } from './modules/auth/auth.routes';
@@ -90,6 +91,11 @@ export const dashboardRoutes = (deps: AppDeps) =>
     .use(realtimeRoutes(deps))
     .use(miscRoutes(deps));
 
+// `httpMetrics` is on the ops surface because that is where `/metrics` is
+// served and every role mounts it (TARGET_ARCHITECTURE §18: "HTTP and default
+// metrics register everywhere"). Its hook is `{ as: 'global' }`, so it covers
+// the dashboard and public-API surfaces too once they mount.
+//
 // healthz/metrics/misc share V1's ops surface (http/context.ts's
 // UNLOGGED_PATH_PREFIXES) — unauthenticated, uncorsed, unlogged. /metrics and
 // /openapi.json are the M3 gate's ops surface: the one core registry's
@@ -97,6 +103,7 @@ export const dashboardRoutes = (deps: AppDeps) =>
 // schemas the routes validate against.
 export const opsRoutes = (deps: AppDeps) =>
   new Elysia({ name: 'core/ops-routes' })
+    .use(httpMetrics())
     .use(healthRoutes(deps))
     .use(
       openapi({

@@ -9,6 +9,7 @@ import { generateId } from '../shared/id';
 import { resolveJob } from './compat';
 import type { QueueDefinition, QueueMap } from './define';
 import { isEnvelope } from './envelope';
+import { jobDurationMs } from './jobs.metrics';
 import { queueKey } from './naming';
 
 export interface TerminalFailure {
@@ -89,6 +90,16 @@ export function startWorkers<TQueues extends QueueMap>({
       // `failed` fires on every attempt; only a finished one is out of retries.
       if (!job?.finishedOn) {
         return;
+      }
+
+      // FAILURE-ONLY, and the label is the Redis key, both V1's
+      // (apps/worker/src/boot-workers.ts's `failed` listener). See
+      // jobs.metrics.ts for why a success timing may not join this series.
+      if (job.processedOn) {
+        jobDurationMs.observe(
+          { name: key, status: 'failed' },
+          job.finishedOn - job.processedOn
+        );
       }
 
       logger.error(

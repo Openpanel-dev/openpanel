@@ -43,9 +43,11 @@ export interface SchedulerQueue {
     jobTemplate?: { data?: unknown }
   ): Promise<unknown>;
   removeJobScheduler(id: string): Promise<boolean>;
+  // Mutable, not `readonly`: BullMQ's own `getJobs` declares `JobType[]`, and
+  // a readonly parameter here would make the real `Queue` unassignable.
   getJobs(
-    types: readonly ('delayed' | 'waiting' | 'completed' | 'failed')[]
-  ): Promise<{ id?: string | null; remove(): Promise<void> }[]>;
+    types: ('delayed' | 'waiting' | 'completed' | 'failed')[]
+  ): Promise<{ id?: string | null; remove(): Promise<unknown> }[]>;
 }
 
 const CONFLICT_JOB_STATES = [
