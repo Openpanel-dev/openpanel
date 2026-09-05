@@ -318,3 +318,24 @@ consumer code paths in a way expected to cost throughput — `M8-006`'s
 correctness checkpoint (`0f8d956a`) already proved the ported path behaves
 identically to the one BENCH-001 measured; this run's job was only to attach a
 number to it.
+
+## `legacy-job-proof.sh` — the P9 jobs cutover proof (M9-001)
+
+Independent of the session harnesses and of `pnpm dev`: it needs only Redis.
+
+```bash
+bash apps/api/e2e/legacy-job-proof.sh
+```
+
+Writes one **V1-shaped** job per queue straight into Redis (V1's exact
+`Queue.add(name, data)`, dumping the stored bytes to show there is no
+`{payload, meta}` envelope on them), then starts the V2 workers over the real
+`jobs.registry` and asserts every one is resolved through its `compat` hook to
+the right V2 job name and payload — plus the other direction, a producer-
+enqueued envelope whose `requestId` reaches the handler's logger.
+
+It runs on a `-m9001proof` queue-key namespace so it cannot touch the shared
+dev Redis's live queues, and it refuses to start if the event/group buffers are
+non-empty (the real `flushEvents` handler it runs would drain them). The
+un-namespaced keys' byte-identity is pinned separately by
+`packages/core/src/jobs/naming.test.ts`.

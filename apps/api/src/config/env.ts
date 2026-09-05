@@ -2,8 +2,8 @@
 // per TARGET_ARCHITECTURE §7 "apps/api — three files". `packages/db` and
 // `packages/redis` keep reading their own env until they grow factories —
 // an accepted pragmatic deviation (ADR-007 §7) — so this catalogue covers
-// only what `main.ts` itself reads today: TZ, ROLE, LOG_LEVEL, API_PORT and
-// SELF_HOSTED.
+// only what `main.ts` itself reads today: TZ, ROLE, LOG_LEVEL, API_PORT,
+// SELF_HOSTED and QUEUE_CLUSTER.
 //
 // Invalid config fails boot loudly, with every issue reported at once —
 // never a fail-fast on the first bad var.
@@ -64,6 +64,21 @@ const envSchema = z.object({
     .optional()
     .default('false')
     .transform((value) => value === TRUE_STRING),
+  /**
+   * Redis Cluster hash-tags every queue key (`cron` -> `{cron}`). Read here
+   * because `main.ts` hands it to `createProducers`, and it decides a Redis
+   * key name: set it on a deployment whose queues already exist unbraced and
+   * every one of them is orphaned. V1 read it as a bare truthy check
+   * (`packages/queue/src/queues.ts` `getQueueName`); a blank value is unset,
+   * exactly as before.
+   */
+  QUEUE_CLUSTER: z.preprocess(
+    blankToUndefined,
+    z
+      .string()
+      .optional()
+      .transform((value) => value !== undefined)
+  ),
 });
 
 export type Config = z.infer<typeof envSchema>;

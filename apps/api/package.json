@@ -10,6 +10,7 @@
     "test:manage": "jiti scripts/test-manage-api.ts",
     "e2e:sessions": "LOG_LEVEL=warn dotenv -e ../../.env -- jiti e2e/session-e2e.ts",
     "e2e:sessions:stress": "LOG_LEVEL=warn dotenv -e ../../.env -- jiti e2e/session-stress.ts",
+    "e2e:legacy-jobs": "bash e2e/legacy-job-proof.sh",
     "test": "vitest",
     "test:run": "vitest run",
     "typecheck": "tsc --noEmit"

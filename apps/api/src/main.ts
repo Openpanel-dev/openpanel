@@ -3,12 +3,14 @@
 // keeps serving the golden harness untouched until `apps/worker` is deleted
 // at P9.
 //
-// This is the M3 gate boot only: db/ch/redis/clients are not wired into
-// `AppDeps` yet — their types stay the `unknown` stubs `context.ts` declares
-// until P3/P4 land the real clients — so only the ops surface (healthz +
-// metrics) is mounted here. `dashboardRoutes`/`publicApiRoutes` land with
-// their first module (see `rest.routes.ts`). The buffers ARE real from M8-001:
-// `createBuffers` builds them once, here, and nowhere else.
+// This is the M3 gate boot only: db/ch/clients are not wired into `AppDeps`
+// yet — their types stay the `unknown` stubs `context.ts` declares until
+// P3/P4 land the real clients — so only the ops surface (healthz + metrics)
+// is mounted here. `dashboardRoutes`/`publicApiRoutes` land with their first
+// module (see `rest.routes.ts`). The buffers ARE real from M8-001:
+// `createBuffers` builds them once, here, and nowhere else. The producers are
+// real from M9-001: all seven queues, envelope on, byte-identical Redis keys.
+// Workers, schedulers and the ingest consumer are M9-002.
 
 process.env.TZ = 'UTC';
 
@@ -16,12 +18,15 @@ import {
   type AppDeps,
   type BufferDeps,
   createBuffers,
+  createProducers,
   opsRoutes,
   type QueueProducerHandle,
+  queueKey,
   queues,
   registerBufferMetrics,
 } from '@openpanel/core';
 import { produceIncomingEvent } from '@openpanel/queue';
+import { getRedisQueue } from '@openpanel/redis';
 import pino from 'pino';
 import { type Config, loadConfig } from './config/env';
 
@@ -55,53 +60,45 @@ const config = loadConfigOrExit();
 const logger = pino({ name: 'api', level: config.LOG_LEVEL });
 
 /**
- * `AppDeps.producers` needs a real `QueueProducerHandle`, but core's exports
- * map (ADR-008) only publishes the type — `createProducers` is internal.
- * Every registry queue's `jobs` map is still empty (no module has landed
- * one, see jobs.registry.ts), so there is nothing to enqueue yet; this stub
- * satisfies the type with no Redis connection. It is replaced by a real
- * `createProducers` call site inside core once a module needs to enqueue.
+ * All seven queues, envelope on, on the Redis keys V1 already uses — so a job
+ * V1 enqueued before the cutover is read back by V2's `resolveJob` through
+ * that queue's compat hook, with no drain and no rename (ADR-005).
+ *
+ * The connection is `packages/redis`'s dedicated queue client: a separate
+ * client from cache/pub/sub with `maxRetriesPerRequest: null`, which is what
+ * BullMQ requires and exactly what V1's `packages/queue` producers connect
+ * through. It stays that package's singleton to close (ADR-007 §7's accepted
+ * pragmatic deviation); `producers.close()` closes the queues over it.
  */
-function stubProducers(): QueueProducerHandle {
-  const emptyQueues = Object.fromEntries(
-    Object.keys(queues).map((name) => [name, {}])
-  ) as QueueProducerHandle['queues'];
-
-  const notWired = (): never => {
-    throw new Error('Job producers are not wired up yet (M3 boot stub)');
-  };
-
-  return {
-    queues: emptyQueues,
-    scope: () => emptyQueues,
-    enqueue: notWired,
-    remove: notWired,
-    bullQueues: [],
-    close: () => Promise.resolve(),
-  };
+function buildProducerHandle(): QueueProducerHandle {
+  return createProducers(queues, {
+    connection: getRedisQueue(),
+    cluster: config.QUEUE_CLUSTER,
+    logger,
+  });
 }
 
 /**
  * A named child of the boot logger per buffer, plus the buffers' one direct
  * BullMQ read — ADR-005's `bullQueues` escape hatch.
  * Pausing `cron` from bull-board halts ALL buffer flushing, preserved
- * deliberately (docs/ANSWERS.md §3: "known!"). The M3 producer stub owns no
- * queues yet, and a queue that does not exist has not been paused.
+ * deliberately (docs/ANSWERS.md §3: "known!").
  */
 function bufferDeps(producers: QueueProducerHandle): BufferDeps {
+  // `bullQueues` are keyed by the Redis name, which `QUEUE_CLUSTER` braces.
+  const cronKey = queueKey(CRON_QUEUE_NAME, { cluster: config.QUEUE_CLUSTER });
+
   return {
     createLogger: (name) => logger.child({ name }),
     isCronPaused: async () => {
-      const cron = producers.bullQueues.find(
-        (queue) => queue.name === CRON_QUEUE_NAME
-      );
+      const cron = producers.bullQueues.find((queue) => queue.name === cronKey);
       return cron ? await cron.isPaused() : false;
     },
   };
 }
 
 function buildDeps(): AppDeps {
-  const producers = stubProducers();
+  const producers = buildProducerHandle();
   return {
     // db/ch/redis/clients are `unknown` stubs in context.ts until P3/P4 land
     // the real clients — reading one before its type lands is meant to be a

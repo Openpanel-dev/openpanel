@@ -8,6 +8,7 @@ import { REQUEST_ID_LENGTH, REQUEST_ID_LOG_FIELD } from '../logger';
 import { generateId } from '../shared/id';
 import { resolveJob } from './compat';
 import type { QueueDefinition, QueueMap } from './define';
+import { isEnvelope } from './envelope';
 import { queueKey } from './naming';
 
 export interface TerminalFailure {
@@ -181,5 +182,18 @@ export async function runJob(
     ctx: JobCtx;
   }) => Promise<void>;
 
+  // `debug`, not `info`: `sessions` runs one of these per session close.
+  // `legacy` is the cutover's own signal — while it is still ever true, a
+  // V1-shaped job is still being replayed and the compat hooks cannot go
+  // (ADR-005 risk 1).
+  const legacy = !isEnvelope(job.data);
+  logger.debug({ legacy }, 'job started');
+  const startedAt = performance.now();
+
   await handler({ payload, ctx });
+
+  logger.debug(
+    { legacy, durationMs: Math.round(performance.now() - startedAt) },
+    'job completed'
+  );
 }

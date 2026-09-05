@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test';
+import { CRON_SCHEDULES, PING_SCHEDULE } from './jobs/schedulers';
 import { queues } from './jobs.registry';
 
 // V1's `defaultJobOptions`, verbatim from packages/queue/src/queues.ts.
@@ -212,4 +213,32 @@ test('the notification queue carries the notification module job', () => {
     queue: 'notification',
     name: 'sendNotification',
   });
+});
+
+// M9-001: every scheduler id must land on a cron job that exists, or the
+// scheduled run resolves (legacyCompat.cron maps `type` straight onto a job
+// name) and then throws `has no job named ...`.
+//
+// Three ids do not yet: `dataHealth`, `windDown` and `flushExports` are still
+// only implemented in apps/worker/src/jobs (cron.data-health.ts,
+// cron.wind-down.ts, cron.flush-exports.ts) and are ported with the rest of
+// the worker at M9-003 ("every job the old worker ran is served by the merged
+// app under ROLE=worker"). Pinned as a precise, exhaustive exception set so
+// the gap is loud here rather than silent in production — and so M9-003 has
+// to delete this list to go green.
+const CRON_JOBS_NOT_YET_PORTED = ['dataHealth', 'flushExports', 'windDown'];
+
+test('every cron scheduler id has a handler, bar the three M9-003 ports', () => {
+  const declared = new Set(Object.keys(queues.cron.jobs));
+  const scheduled = [...CRON_SCHEDULES, PING_SCHEDULE].map(
+    (scheduler) => scheduler.id
+  );
+
+  expect(scheduled.filter((id) => !declared.has(id)).sort()).toEqual(
+    CRON_JOBS_NOT_YET_PORTED
+  );
+  // The reverse direction: nothing is registered that nothing ever schedules.
+  expect(
+    [...declared].filter((name) => !scheduled.includes(name)).sort()
+  ).toEqual([]);
 });

@@ -142,6 +142,33 @@ export type {
 } from './context';
 export { createCtx, extendCtx } from './context';
 export { requestContext, requestLogging } from './http/context';
+// The two runtime seams over the registry (ADR-005). `main.ts` builds
+// producers in every role and workers only where the role consumes; both take
+// the registry as data, so neither opens a connection until it is called.
+export type {
+  AnyJob,
+  EnqueueOptions,
+  QueueDefinition,
+} from './jobs/define';
+export type { JobEnvelope, JobMeta } from './jobs/envelope';
+export { queueKey } from './jobs/naming';
+export type { CreateProducersOptions } from './jobs/producers';
+export { createProducers } from './jobs/producers';
+export type {
+  SchedulerDefinition,
+  SchedulerFlags,
+} from './jobs/schedulers';
+export {
+  CRON_SCHEDULES,
+  PING_SCHEDULE,
+  startSchedulers,
+} from './jobs/schedulers';
+export type {
+  StartWorkersOptions,
+  TerminalFailure,
+  WorkerHandle,
+} from './jobs/workers';
+export { startWorkers } from './jobs/workers';
 export type {
   QueueProducerHandle,
   QueueProducers,
@@ -277,7 +304,6 @@ export {
   verifyPasswordHash,
   verifyTotpCode,
 } from './modules/auth/auth.service';
-export { getIsRegistrationAllowed } from './modules/auth/src/registration';
 // Moved from packages/db/src/services/auth-session.service.ts (M8-005) —
 // the Postgres-backed login session CRUD. packages/db keeps a re-export
 // shim (existing `@openpanel/db` importers, apps/api's app.ts).
@@ -289,6 +315,7 @@ export {
   invalidateSession,
   validateSessionToken,
 } from './modules/auth/src/login-session';
+export { getIsRegistrationAllowed } from './modules/auth/src/registration';
 // Dissolved from @openpanel/db's services/chart.service.ts and engine/
 // (M7-003) — packages/trpc's chart router, apps/api's export controller,
 // V1's funnel/conversion/sankey/retention/overview services and the
@@ -364,12 +391,6 @@ export {
   rewriteProfilePropertyRefs,
   transformPropertyKey,
 } from './modules/chart/chart.service';
-// Moved from packages/db/src/services/filter-where.service.ts (M8-005) — the
-// sessions/profiles/events-table filter compiler, distinct from
-// `getEventFiltersWhereClause` above. packages/db/src/services/
-// filter-where.service.ts stays a re-export shim.
-export type { FilterTableContext } from './modules/chart/src/table-filter-where';
-export { buildFilterWhere } from './modules/chart/src/table-filter-where';
 // Dissolved from @openpanel/db's services/conversion.service.ts (M7-004) —
 // reached through the chart module's own dispatch and the db shim.
 export { getConversion } from './modules/chart/conversion.service';
@@ -427,6 +448,12 @@ export {
   getUserFlowCore,
   zGetSankeyInput,
 } from './modules/chart/sankey.service';
+// Moved from packages/db/src/services/filter-where.service.ts (M8-005) — the
+// sessions/profiles/events-table filter compiler, distinct from
+// `getEventFiltersWhereClause` above. packages/db/src/services/
+// filter-where.service.ts stays a re-export shim.
+export type { FilterTableContext } from './modules/chart/src/table-filter-where';
+export { buildFilterWhere } from './modules/chart/src/table-filter-where';
 // Dissolved from @openpanel/db's services/clients.service.ts (M6-002) —
 // packages/trpc's client router, apps/api's manage controller and mcp/utils
 // auth call these directly, the same way V1 reaches every other dissolved

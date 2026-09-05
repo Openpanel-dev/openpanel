@@ -3,6 +3,7 @@ import {
   type ConnectionOptions,
   type JobsOptions,
 } from 'bullmq';
+import type { Logger } from '../logger';
 import type {
   AnyBoundJob,
   EnqueueOptions,
@@ -48,6 +49,14 @@ export interface CreateProducersOptions {
   /** `QUEUE_CLUSTER`. Off in every deployment that exists today — see `queueKey`. */
   cluster?: boolean;
   namespace?: string;
+  /**
+   * Where a queue's connection errors go. BullMQ re-emits ioredis errors on
+   * every `Queue`, and an `'error'` event with no listener is an uncaught
+   * exception that kills the process — V1 lost the api roughly daily to idle
+   * ECONNRESETs before `guardQueue` was added (packages/queue/src/queues.ts).
+   * A listener is attached either way; this decides whether it says anything.
+   */
+  logger?: Logger;
 }
 
 /**
@@ -59,18 +68,29 @@ export interface CreateProducersOptions {
  */
 export function createProducers<TQueues extends QueueMap>(
   definitions: TQueues,
-  { connection, cluster, namespace }: CreateProducersOptions
+  { connection, cluster, namespace, logger }: CreateProducersOptions
 ): ProducerHandle<TQueues> {
   const bullQueues = new Map<string, BullQueue>();
 
   for (const definition of Object.values(definitions)) {
-    bullQueues.set(
-      definition.name,
-      new BullQueue(queueKey(definition.name, { cluster, namespace }), {
+    const queue = new BullQueue(
+      queueKey(definition.name, { cluster, namespace }),
+      {
         connection,
         defaultJobOptions: toJobsOptions(definition.defaults),
-      })
+      }
     );
+
+    // Never omitted: the listener is what stops a reconnectable socket error
+    // from taking the process down. ioredis reconnects on its own.
+    queue.on('error', (error) =>
+      logger?.error(
+        { err: error, queue: definition.name },
+        'queue connection error'
+      )
+    );
+
+    bullQueues.set(definition.name, queue);
   }
 
   const queueFor = (name: string): BullQueue => {
