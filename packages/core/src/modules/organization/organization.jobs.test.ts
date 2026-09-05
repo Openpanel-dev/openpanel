@@ -71,6 +71,7 @@ test('the cron queue declares delete on the cron queue', () => {
 
 test('the organization cron fragment is spread into the cron queue', () => {
   expect(queues.cron.jobs.delete).toBeDefined();
+  expect(queues.cron.jobs.windDown).toBeDefined();
 });
 
 test('delete delegates to runDeleteCron', async () => {
@@ -92,5 +93,6 @@ test('delete delegates to runDeleteCron', async () => {
 test('the organization cron fragment carries V1 id and cadence unchanged', () => {
   expect(organizationCronSchedules).toEqual([
     { id: 'delete', schedule: { pattern: '0 * * * *' } },
+    { id: 'windDown', schedule: { pattern: '0 * * * *' } },
   ]);
 });

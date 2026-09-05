@@ -1,6 +1,6 @@
 // The queue-side collectors, moved from apps/worker/src/metrics.ts onto the
 // one core registry (TARGET_ARCHITECTURE §18). Names, labels and buckets are
-// V1's; the worker-side copies die with apps/worker (P9).
+// V1's; the worker-side copies died with apps/worker (M9-003).
 //
 // Three deliberate differences from V1, all listed in
 // `packages/core/docs/OPS_GRAFANA_MIGRATION.md`:

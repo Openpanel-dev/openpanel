@@ -45,8 +45,6 @@ overrides:
   '@nuxt/vite-builder>seroval': 1.4.0
   embla-carousel: 8.0.0-rc22
 
-packageExtensionsChecksum: sha256-8pKsevF6VIp4dvYbdnOYuuSpx5qM62WntMQClY5PwWE=
-
 patchedDependencies:
   nuqs: 4f93812bf7a04685f9477b2935e3acbf2aa24dfbb1b00b9ae0ed8f7a2877a98e
 
@@ -905,94 +903,6 @@ importers:
       vite:
         specifier: ^6.0.0
         version: 6.3.5(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2)
-
-  apps/worker:
-    dependencies:
-      '@aws-sdk/client-s3':
-        specifier: ^3.974.0
-        version: 3.984.0
-      '@aws-sdk/client-sts':
-        specifier: ^3.974.0
-        version: 3.1117.0
-      '@bull-board/api':
-        specifier: 6.14.0
-        version: 6.14.0(@bull-board/ui@6.14.0(bullmq@5.63.0(supports-color@10.2.0)))(bullmq@5.63.0(supports-color@10.2.0))
-      '@bull-board/express':
-        specifier: 6.14.0
-        version: 6.14.0(bullmq@5.63.0(supports-color@10.2.0))(supports-color@10.2.0)
-      '@google-cloud/storage':
-        specifier: ^7.18.0
-        version: 7.22.0(supports-color@10.2.0)
-      '@hyperdx/node-opentelemetry':
-        specifier: 'catalog:'
-        version: 0.10.3(supports-color@10.2.0)
-      '@openpanel/common':
-        specifier: workspace:*
-        version: link:../../packages/common
-      '@openpanel/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@openpanel/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@openpanel/email':
-        specifier: workspace:*
-        version: link:../../packages/email
-      '@openpanel/payments':
-        specifier: workspace:*
-        version: link:../../packages/payments
-      '@openpanel/queue':
-        specifier: workspace:*
-        version: link:../../packages/queue
-      '@openpanel/redis':
-        specifier: workspace:*
-        version: link:../../packages/redis
-      '@openpanel/validation':
-        specifier: workspace:*
-        version: link:../../packages/validation
-      bullmq:
-        specifier: ^5.63.0
-        version: 5.63.0(supports-color@10.2.0)
-      date-fns:
-        specifier: ^3.3.1
-        version: 3.3.1
-      express:
-        specifier: ^4.18.2
-        version: 4.18.2(supports-color@10.2.0)
-      pino:
-        specifier: 'catalog:'
-        version: 10.3.1
-      pino-pretty:
-        specifier: 'catalog:'
-        version: 13.1.3
-      prom-client:
-        specifier: ^15.1.3
-        version: 15.1.3
-      ramda:
-        specifier: ^0.29.1
-        version: 0.29.1
-      source-map-support:
-        specifier: ^0.5.21
-        version: 0.5.21
-    devDependencies:
-      '@openpanel/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.21
-      '@types/ramda':
-        specifier: ^0.29.6
-        version: 0.29.10
-      '@types/source-map-support':
-        specifier: ^0.5.10
-        version: 0.5.10
-      tsdown:
-        specifier: 0.14.2
-        version: 0.14.2(@emnapi/core@1.7.1)(@emnapi/runtime@1.7.1)(oxc-resolver@11.19.1(@emnapi/core@1.7.1)(@emnapi/runtime@1.7.1))(supports-color@10.2.0)(typescript@5.9.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
 
   packages/common:
     dependencies:
@@ -3273,12 +3183,6 @@ packages:
   '@borewit/text-codec@0.2.2':
     resolution: {integrity: sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ==}
 
-  '@bull-board/api@6.14.0':
-    resolution: {integrity: sha512-oMDwXwoPn0RsdZ3Y68/bOErZ/qGZE5H97vgE/Pc8Uul/OHajlvajKW4NV+ZGTix82liUfH9CkjYx7PpwvBWhxg==}
-    peerDependencies:
-      '@bull-board/ui': 6.14.0
-      bullmq: '*'
-
   '@bull-board/api@9.6.0':
     resolution: {integrity: sha512-RJcXIaFDO2l76t1MNxhIiKNaDIKIm4F8vsQq32grV9Rw4DiclKFlXSht2SN/+VIVyHJ7NzlCskMd8HgMpb/aEg==}
     peerDependencies:
@@ -3295,12 +3199,6 @@ packages:
     resolution: {integrity: sha512-rWfOfleHGwIgXfkznO2MMwSGEMOP78cw0jmQINL946w66J9z532JZoRvgmV8FPZM+NZghvtzVT7AsB6/M881Uw==}
     peerDependencies:
       elysia: ^1.1.0
-
-  '@bull-board/express@6.14.0':
-    resolution: {integrity: sha512-3H1ame2G1+eVnqqSsw6KfzTGYAWSpVsIx6EPwg9vPSP2eKfNAm12Cm4zvL6ZkwAvTCkAByt5PPDRWbbwWB6HHQ==}
-
-  '@bull-board/ui@6.14.0':
-    resolution: {integrity: sha512-5yqfS9CwWR8DBxpReIbqv/VSPFM/zT4KZ75keyApMiejasRC2joaHqEzYWlMCjkMycbNNCvlQNlTbl+C3dE/dg==}
 
   '@bull-board/ui@9.6.0':
     resolution: {integrity: sha512-rJDD+CvxI43Avq2gZpHunPT67HToYXyHSRoXsiVXDh/6MB93YtU+ofkgrrYBY25FswDSvtfnQN/ID3Ypf9OyOg==}
@@ -10606,10 +10504,6 @@ packages:
   blueimp-md5@2.19.0:
     resolution: {integrity: sha512-DRQrD6gJyy8FbiE4s+bDoXS9hiW3Vbx5uCdwvcCf3zLHL+Iv7LtGHLpr+GZV8rHG8tK766FGYBwRbu8pELTt+w==}
 
-  body-parser@1.20.1:
-    resolution: {integrity: sha512-jWi7abTbYwajOytWCQc37VulmWiRae5RyTpaCyDcS5/lMdtwSz5lOpDE67srw/HYe35f1z3fDQw+3txg7gNtWw==}
-    engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
-
   body-parser@1.20.2:
     resolution: {integrity: sha512-ml9pReCu3M61kGlqoTm2umSXTlRTuGTx0bfYj+uIUKKYycG5NtSbeetV3faSU6R7ajOPw0g/J1PvK4qNy7s5bA==}
     engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
@@ -11193,10 +11087,6 @@ packages:
   cookie-signature@1.2.2:
     resolution: {integrity: sha512-D76uU73ulSXrD1UXF4KE2TMxVVwhsnCgfAyTg9k8P6KGZjlXKrOLe4dJQKI3Bxi5wjesZoFXJWElNWBjPZMbhg==}
     engines: {node: '>=6.6.0'}
-
-  cookie@0.5.0:
-    resolution: {integrity: sha512-YZ3GUyn/o8gfKJlnlX7g7xq4gyO6OSuhGPKaaGssGB2qgDUS0gPgtTvoyZLTt9Ab6dC4hfc9dV5arkvc/OCmrw==}
-    engines: {node: '>= 0.6'}
 
   cookie@0.6.0:
     resolution: {integrity: sha512-U71cyTamuh1CRNCfpGY6to28lxvNwPG4Guz/EVjgf3Jmzv0vlDp1atT9eS5dDjMYHucpHbWns6Lwf3BKz6svdw==}
@@ -11929,11 +11819,6 @@ packages:
   effect@3.16.12:
     resolution: {integrity: sha512-N39iBk0K71F9nb442TLbTkjl24FLUzuvx2i1I2RsEAQsdAdUTuUoW0vlfUXgkMTUOnYqKnWcFfqw4hK4Pw27hg==}
 
-  ejs@3.1.10:
-    resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
-    engines: {node: '>=0.10.0'}
-    hasBin: true
-
   ejs@6.0.1:
     resolution: {integrity: sha512-UaaM14yby8U3k02ihS1Bmj5Kz2d7CCQM1scxpgs4Mhkq8F1wR2gl3+Ts4h5Ne4Mnt7M9m4Dw7jsuMr3+xO4vZA==}
     engines: {node: '>=0.12.18'}
@@ -12308,10 +12193,6 @@ packages:
     peerDependencies:
       express: '>= 4.11'
 
-  express@4.18.2:
-    resolution: {integrity: sha512-5/PsL6iGPdfQ/lKM1UuielYgv3BUoJfz1aUwU9vHZ+J7gyvwdQXFEBIEIaxeGf0GIcreATNyBExtalisDbuMqQ==}
-    engines: {node: '>= 0.10.0'}
-
   express@4.19.2:
     resolution: {integrity: sha512-5T6nhjsT+EOMzuck8JjBHARTHfMht0POzlA60WV2pMD3gyXw2LZnZ+ueGdNxG+0calOJcWKbpFcuzLZ91YWq9Q==}
     engines: {node: '>= 0.10.0'}
@@ -12500,9 +12381,6 @@ packages:
 
   file-uri-to-path@1.0.0:
     resolution: {integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==}
-
-  filelist@1.0.4:
-    resolution: {integrity: sha512-w1cEuf3S+DrLCQL7ET6kz+gmlJdbq9J7yXCSjK/OZCPA+qEN1WyF4ZAf0YYJa4/shHJra2t/d/r8SV4Ji+x+8Q==}
 
   fill-range@7.0.1:
     resolution: {integrity: sha512-qOo9F+dMUmC2Lcb4BbVvnKJxTPjCm+RRpe4gDuGrzkL7mEVl/djYSu2OdQ2Pa302N4oqkSg9ir6jaLWJ2USVpQ==}
@@ -13776,11 +13654,6 @@ packages:
   jackspeak@4.2.3:
     resolution: {integrity: sha512-ykkVRwrYvFm1nb2AJfKKYPr0emF6IiXDYUaFx4Zn9ZuIH7MrzEZ3sD5RlqGXNRpHtvUHJyOnCEFxOlNDtGo7wg==}
     engines: {node: 20 || >=22}
-
-  jake@10.8.7:
-    resolution: {integrity: sha512-ZDi3aP+fG/LchyBzUM804VjddnwfSfsdeYkwt8NcbKRvo4rFkjhs456iLFn3k2ZUWvNe4i48WACDbza8fhq2+w==}
-    engines: {node: '>=10'}
-    hasBin: true
 
   javascript-natural-sort@0.7.1:
     resolution: {integrity: sha512-nO6jcEfZWQXDhOiBtG2KvKyEptz7RVbpGP4vTD2hLBdmNQSsCiicO2Ioinv6UI4y9ukqnBpy+XZ9H6uLNgJTlw==}
@@ -16228,10 +16101,6 @@ packages:
   range-parser@1.2.1:
     resolution: {integrity: sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==}
     engines: {node: '>= 0.6'}
-
-  raw-body@2.5.1:
-    resolution: {integrity: sha512-qqJBtEyVgS0ZmPGdCFPWJ3FreoqvG4MVQln/kCgF7Olq95IbOp0/BWyMwbdtn4VTvkM8Y7khCQ2Xgk/tcrCXig==}
-    engines: {node: '>= 0.8'}
 
   raw-body@2.5.2:
     resolution: {integrity: sha512-8zGqypfENjCIqGhgXToC8aB2r7YrBX+AQAfIPs/Mlk+BtPTztOvTS01NRW/3Eh60J+a48lt8qsCzirQ6loCVfA==}
@@ -22501,12 +22370,6 @@ snapshots:
 
   '@borewit/text-codec@0.2.2': {}
 
-  '@bull-board/api@6.14.0(@bull-board/ui@6.14.0(bullmq@5.63.0(supports-color@10.2.0)))(bullmq@5.63.0(supports-color@10.2.0))':
-    dependencies:
-      '@bull-board/ui': 6.14.0(bullmq@5.63.0(supports-color@10.2.0))
-      bullmq: 5.63.0(supports-color@10.2.0)
-      redis-info: 3.1.0
-
   '@bull-board/api@9.6.0(@bull-board/ui@9.6.0(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0))))(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0)))':
     dependencies:
       '@bull-board/ui': 9.6.0(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0)))
@@ -22523,22 +22386,6 @@ snapshots:
       mime: 4.1.0
     transitivePeerDependencies:
       - bull
-      - bullmq
-
-  '@bull-board/express@6.14.0(bullmq@5.63.0(supports-color@10.2.0))(supports-color@10.2.0)':
-    dependencies:
-      '@bull-board/api': 6.14.0(@bull-board/ui@6.14.0(bullmq@5.63.0(supports-color@10.2.0)))(bullmq@5.63.0(supports-color@10.2.0))
-      '@bull-board/ui': 6.14.0(bullmq@5.63.0(supports-color@10.2.0))
-      ejs: 3.1.10
-      express: 4.21.2(supports-color@10.2.0)
-    transitivePeerDependencies:
-      - bullmq
-      - supports-color
-
-  '@bull-board/ui@6.14.0(bullmq@5.63.0(supports-color@10.2.0))':
-    dependencies:
-      '@bull-board/api': 6.14.0(@bull-board/ui@6.14.0(bullmq@5.63.0(supports-color@10.2.0)))(bullmq@5.63.0(supports-color@10.2.0))
-    transitivePeerDependencies:
       - bullmq
 
   '@bull-board/ui@9.6.0(bullmq@6.3.3(ioredis@5.8.2(supports-color@10.2.0)))':
@@ -30858,23 +30705,6 @@ snapshots:
 
   blueimp-md5@2.19.0: {}
 
-  body-parser@1.20.1(supports-color@10.2.0):
-    dependencies:
-      bytes: 3.1.2
-      content-type: 1.0.5
-      debug: 2.6.9(supports-color@10.2.0)
-      depd: 2.0.0
-      destroy: 1.2.0
-      http-errors: 2.0.0
-      iconv-lite: 0.4.24
-      on-finished: 2.4.1
-      qs: 6.11.0
-      raw-body: 2.5.1
-      type-is: 1.6.18
-      unpipe: 1.0.0
-    transitivePeerDependencies:
-      - supports-color
-
   body-parser@1.20.2(supports-color@10.2.0):
     dependencies:
       bytes: 3.1.2
@@ -31565,8 +31395,6 @@ snapshots:
   cookie-signature@1.0.6: {}
 
   cookie-signature@1.2.2: {}
-
-  cookie@0.5.0: {}
 
   cookie@0.6.0: {}
 
@@ -32321,10 +32149,6 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       fast-check: 3.23.2
 
-  ejs@3.1.10:
-    dependencies:
-      jake: 10.8.7
-
   ejs@6.0.1: {}
 
   electron-to-chromium@1.5.262: {}
@@ -32933,42 +32757,6 @@ snapshots:
       express: 5.2.1(supports-color@10.2.0)
       ip-address: 10.1.0
 
-  express@4.18.2(supports-color@10.2.0):
-    dependencies:
-      accepts: 1.3.8
-      array-flatten: 1.1.1
-      body-parser: 1.20.1(supports-color@10.2.0)
-      content-disposition: 0.5.4
-      content-type: 1.0.5
-      cookie: 0.5.0
-      cookie-signature: 1.0.6
-      debug: 2.6.9(supports-color@10.2.0)
-      depd: 2.0.0
-      encodeurl: 1.0.2
-      escape-html: 1.0.3
-      etag: 1.8.1
-      finalhandler: 1.2.0(supports-color@10.2.0)
-      fresh: 0.5.2
-      http-errors: 2.0.0
-      merge-descriptors: 1.0.1
-      methods: 1.1.2
-      on-finished: 2.4.1
-      parseurl: 1.3.3
-      path-to-regexp: 0.1.7
-      proxy-addr: 2.0.7
-      qs: 6.11.0
-      range-parser: 1.2.1
-      safe-buffer: 5.2.1
-      send: 0.18.0(supports-color@10.2.0)
-      serve-static: 1.15.0(supports-color@10.2.0)
-      setprototypeof: 1.2.0
-      statuses: 2.0.1
-      type-is: 1.6.18
-      utils-merge: 1.0.1
-      vary: 1.1.2
-    transitivePeerDependencies:
-      - supports-color
-
   express@4.19.2(supports-color@10.2.0):
     dependencies:
       accepts: 1.3.8
@@ -33282,10 +33070,6 @@ snapshots:
       - supports-color
 
   file-uri-to-path@1.0.0: {}
-
-  filelist@1.0.4:
-    dependencies:
-      minimatch: 5.1.6
 
   fill-range@7.0.1:
     dependencies:
@@ -34758,13 +34542,6 @@ snapshots:
   jackspeak@4.2.3:
     dependencies:
       '@isaacs/cliui': 9.0.0
-
-  jake@10.8.7:
-    dependencies:
-      async: 3.2.5
-      chalk: 4.1.2
-      filelist: 1.0.4
-      minimatch: 3.1.2
 
   javascript-natural-sort@0.7.1: {}
 
@@ -37996,13 +37773,6 @@ snapshots:
       safe-buffer: 5.2.1
 
   range-parser@1.2.1: {}
-
-  raw-body@2.5.1:
-    dependencies:
-      bytes: 3.1.2
-      http-errors: 2.0.0
-      iconv-lite: 0.4.24
-      unpipe: 1.0.0
 
   raw-body@2.5.2:
     dependencies:

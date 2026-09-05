@@ -1,9 +1,9 @@
 // Concrete pino implementation. `../logger.ts` is the structural interface
 // every module and service codes against; this file is what actually
 // instantiates pino, and it is deliberately the only place in core that
-// imports it (ADR-007 layout: "pino instantiated in apps/api" — apps/api,
-// and the still-live V1 apps/worker, both build their named logger by
-// calling `createLogger` from here rather than each owning a copy).
+// imports it (ADR-007 layout: "pino instantiated in apps/api" — apps/api
+// builds its named logger by calling `createLogger` from here rather than
+// owning a copy).
 //
 // Ported from @openpanel/logger, unchanged (dissolved into core — M4-003).
 

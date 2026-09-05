@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# Boots the three app images against real Postgres/Redis/ClickHouse and asserts
-# they actually serve traffic.
+# Boots the app images against real Postgres/Redis/ClickHouse and asserts they
+# actually serve traffic. Two images, three services: since M9-003 the worker
+# is the api image run as ROLE=worker.
 #
 # Why this exists: main-8e60 built green, pushed green, and every dashboard
 # route returned 500 (`r.createEffectfulFunction is not a function`) because a
@@ -13,7 +14,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-for var in OP_API_IMAGE OP_DASHBOARD_IMAGE OP_WORKER_IMAGE; do
+for var in OP_API_IMAGE OP_DASHBOARD_IMAGE; do
   if [ -z "${!var:-}" ]; then
     echo "::error::$var is not set"
     exit 1
@@ -99,7 +100,7 @@ docker compose up -d --wait --wait-timeout 420 || fail "stack never became healt
 
 echo "==> service reachability"
 wait_for "api" "$API/healthcheck"
-wait_for "worker" "$WORKER/healthcheck"
+wait_for "worker" "$WORKER/healthz/ready"
 wait_for "dashboard" "$DASHBOARD/api/healthcheck"
 
 echo "==> SSR rendering (the check that would have caught main-8e60)"

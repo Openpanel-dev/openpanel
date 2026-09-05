@@ -7,7 +7,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 /**
  * Rejects ingestion for organizations that have been blocked by the wind-down
- * sequence (see apps/worker/src/jobs/cron.wind-down.ts).
+ * sequence (see packages/core/src/modules/organization/src/wind-down.ts).
  *
  * Two things worth knowing about the shape of this:
  *

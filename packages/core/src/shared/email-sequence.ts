@@ -1,9 +1,8 @@
 // Moved from apps/worker/src/jobs/lib/email-sequence.ts (M6-003). Shared by
-// the onboarding drip (modules/onboarding) and, once it moves, the wind-down
-// track (apps/worker/src/jobs/cron.wind-down.ts still reaches this through
-// the re-export shim apps/worker keeps). `shared/`, not a module, because two
-// modules need it (ADR-007 layout: "shared/ when several backend modules
-// need it").
+// the onboarding drip (modules/onboarding) and the wind-down track
+// (modules/organization/src/wind-down.ts, which joined it at M9-003 when
+// apps/worker was deleted). `shared/`, not a module, because two modules need
+// it (ADR-007 layout: "shared/ when several backend modules need it").
 //
 // A day-gated email sequence runner. Each subject carries a pointer (the
 // last step whose email was sent) and an anchor date. On every tick the
@@ -90,6 +89,16 @@ export interface SequenceResult {
   failed: number;
 }
 
+/**
+ * The `sendEmail` seam. Injectable so a sequence's own tests can assert which
+ * template went to whom, and drive the `requireDelivery` branch, without
+ * `mock.module`-ing `clients/email` for the whole test process.
+ */
+export type SendSequenceEmail = (
+  template: EmailTemplate,
+  options: { to: string; data: never }
+) => Promise<unknown>;
+
 export interface RunSequenceOptions<TCtx> {
   /** Sequence name, for log lines. */
   name: string;
@@ -105,6 +114,8 @@ export interface RunSequenceOptions<TCtx> {
    */
   onComplete?: (subject: SequenceSubject<TCtx>) => Promise<void>;
   logger: Pick<Logger, 'info' | 'warn' | 'error'>;
+  /** Defaults to the real transport; see `SendSequenceEmail`. */
+  send?: SendSequenceEmail;
 }
 
 export async function runSequence<TCtx>({
@@ -114,6 +125,7 @@ export async function runSequence<TCtx>({
   onAdvance,
   onComplete,
   logger,
+  send = sendEmail as SendSequenceEmail,
 }: RunSequenceOptions<TCtx>): Promise<SequenceResult> {
   const result: SequenceResult = {
     emailsSent: 0,
@@ -181,6 +193,7 @@ export async function runSequence<TCtx>({
         subject,
         step: current,
         logger,
+        send,
       });
 
       if (!sent) {
@@ -221,16 +234,18 @@ async function sendStep<TCtx>({
   subject,
   step: current,
   logger,
+  send,
 }: {
   sequence: string;
   subject: SequenceSubject<TCtx>;
   step: SequenceStep<TCtx, EmailTemplate>;
   logger: Pick<Logger, 'info' | 'warn' | 'error'>;
+  send: SendSequenceEmail;
 }): Promise<boolean> {
   try {
     const data = await current.data(subject.ctx);
 
-    const delivery = await sendEmail(current.template, {
+    const delivery = await send(current.template, {
       to: subject.email,
       data: data as never,
     });

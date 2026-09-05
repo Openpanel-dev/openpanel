@@ -3,8 +3,10 @@
 # GitHub repository (update if needed)
 REPO="${GITHUB_REPO:-Openpanel-dev/openpanel}"
 
-# Components to find tags for
-COMPONENTS=("worker" "api" "dashboard")
+# Components to find tags for. No "worker": v3.0.0 deleted the separate worker
+# image - op-worker runs the api image with ROLE=worker, so the "api" pass
+# below rewrites both service lines.
+COMPONENTS=("api" "dashboard")
 
 # Docker compose file path
 DOCKER_COMPOSE_FILE="${DOCKER_COMPOSE_FILE:-./docker-compose.yml}"
@@ -22,7 +24,7 @@ NC='\033[0m' # No Color
 show_usage() {
     echo "Usage: $0 [COMMAND] [OPTIONS]"
     echo ""
-    echo "Fetches the latest Git tags for worker, api, and dashboard components"
+    echo "Fetches the latest Git tags for the api and dashboard components"
     echo ""
     echo "Commands:"
     echo "  apply            Apply the latest tags to docker-compose.yml"
@@ -185,7 +187,6 @@ if [ "$TAGS_CLEAN" == "[]" ]; then
     echo -e "${YELLOW}Create tags using: git tag <tag-name> && git push origin <tag-name>${NC}"
     echo ""
     echo -e "${GRAY}Example tag naming patterns:${NC}"
-    echo -e "  ${GRAY}- worker-v1.0.0${NC}"
     echo -e "  ${GRAY}- api-v1.0.0${NC}"
     echo -e "  ${GRAY}- dashboard-v1.0.0${NC}"
     exit 1

@@ -141,13 +141,20 @@ services:
       op-api:
         condition: service_healthy
 
+  # M9-003 deleted apps/worker: the worker role is the SAME image as the api,
+  # run as ROLE=worker (apps/api/Dockerfile's CMD picks the half). There is no
+  # separate worker image to resolve any more.
   op-worker:
-    image: ${OP_WORKER_IMAGE:-openpanel-smoke-image-unset}
+    image: ${OP_API_IMAGE:-openpanel-smoke-image-unset}
     ports:
       - "9999:3000"
-    environment: *app_env
+    environment:
+      <<: *app_env
+      ROLE: worker
+    # V2 serves /healthz/ready, not V1's deep /healthcheck (that one lands with
+    # the real clients at M9-004). Same probe the controller's boot harness uses.
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthz/ready || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 36

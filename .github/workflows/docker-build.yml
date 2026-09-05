@@ -193,7 +193,7 @@ jobs:
     permissions:
       packages: read
       contents: read
-    needs: [build-api, build-worker, build-dashboard]
+    needs: [build-api, build-dashboard]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -217,7 +217,7 @@ jobs:
       - name: Resolve images
         run: |
           set -euo pipefail
-          for app in api worker dashboard; do
+          for app in api dashboard; do
             dir="/tmp/smoke-digests/digests-${app}-linux-amd64"
             digest="$(ls "$dir" | head -1)"
             if [ -z "$digest" ]; then
@@ -294,125 +294,6 @@ jobs:
           # Push tag to remote
           git push origin "api" --force
           echo "Pushed tag: api"
-
-  build-worker:
-    permissions:
-      packages: write
-      contents: read
-    needs: lint-and-test
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: linux/amd64
-            runner: ubuntu-latest
-          - platform: linux/arm64
-            runner: ubuntu-24.04-arm
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - name: Prepare platform pair
-        run: |
-          platform=${{ matrix.platform }}
-          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push by digest
-        id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/worker/Dockerfile
-          platforms: ${{ matrix.platform }}
-          cache-from: type=gha,scope=worker-${{ env.PLATFORM_PAIR }}
-          cache-to: type=gha,mode=max,scope=worker-${{ env.PLATFORM_PAIR }}
-          outputs: type=image,name=ghcr.io/${{ env.repo_owner }}/worker,push-by-digest=true,name-canonical=true,push=true
-          build-args: |
-            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
-
-      - name: Export digest
-        run: |
-          mkdir -p /tmp/digests
-          digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
-
-      - name: Upload digest
-        uses: actions/upload-artifact@v4
-        with:
-          name: digests-worker-${{ env.PLATFORM_PAIR }}
-          path: /tmp/digests/*
-          if-no-files-found: error
-          retention-days: 1
-
-  merge-worker:
-    permissions:
-      packages: write
-      contents: write
-    needs: [build-worker, smoke]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download digests
-        uses: actions/download-artifact@v4
-        with:
-          path: /tmp/digests
-          pattern: digests-worker-*
-          merge-multiple: true
-
-      - name: Generate tags
-        id: tags
-        run: |
-          BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-4)
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create manifest list and push
-        working-directory: /tmp/digests
-        run: |
-          docker buildx imagetools create \
-            -t ghcr.io/${{ env.repo_owner }}/worker:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }} \
-            $(printf 'ghcr.io/${{ env.repo_owner }}/worker@sha256:%s ' *)
-
-      - name: Create/Update Worker tag
-        if: github.ref == 'refs/heads/main'
-        run: |
-          # Delete existing tag if it exists
-          if git tag -l "worker" | grep -q "worker"; then
-            git tag -d "worker"
-            echo "Deleted local tag: worker"
-          fi
-
-          # Create new tag
-          git tag "worker" "${{ github.sha }}"
-          echo "Created tag: worker"
-
-          # Push tag to remote
-          git push origin "worker" --force
-          echo "Pushed tag: worker"
 
   build-dashboard:
     permissions:

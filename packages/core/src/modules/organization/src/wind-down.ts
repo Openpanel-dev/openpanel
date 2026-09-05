@@ -1,31 +1,32 @@
-import {
-  db,
-  getLastEventPerProject,
-  getOrganizationEventsCount,
-  getOrganizationEventsCountSince,
-} from '@openpanel/db';
+// Ported from apps/worker/src/jobs/cron.wind-down.ts (M9-003, the wave that
+// deletes apps/worker). ADR-005's acceptance note gives `windDown` to the
+// organization module. Behaviour is V1's, verbatim; only the wiring changed —
+// Prisma, the two ClickHouse counts, the last-event lookup, the plan pricer,
+// the highlight builder and `sendEmail` all arrive as injected deps
+// (`WindDownDeps`), the same idiom the session lifecycle uses
+// (modules/session/src/runtime.ts). The job handler binds them to the real
+// implementations through `loadWindDownDeps`; tests hand in stubs, so no
+// `mock.module` is needed.
+
 import { getRecommendedPlan } from '@openpanel/payments';
-import { addDays, differenceInDays, format, subDays } from 'date-fns';
+import { addDays, format, subDays } from 'date-fns';
+import type { Logger } from '../../../logger';
 import {
+  runSequence,
+  type SendSequenceEmail,
   type SequenceStep,
   type SequenceSubject,
-  runSequence,
   step,
-} from './lib/email-sequence';
-import {
-  type HighlightProject,
-  buildWinBackHighlight,
-} from './lib/win-back-highlight';
-import { logger } from '../utils/logger';
+} from '../../../shared/email-sequence';
+import type { HighlightProject } from './win-back-highlight';
 
 /**
  * Wind-down: what happens to a trial that expired without a purchase.
  *
  * Four emails over 44 days, then deletion. Ingestion keeps flowing until day
  * 21 so the first two emails have something to be about; from day 21 the
- * ingestion hook rejects events (see apps/api/src/hooks/subscription.hook.ts,
- * which reads `windDownStep`). Day 44 arms `deleteAt`, and the existing delete
- * cron sweeps it seven days later.
+ * ingestion hook rejects events (it reads `windDownStep`). Day 44 arms
+ * `deleteAt`, and the existing delete cron sweeps it seven days later.
  *
  * The schedule is measured from `windDownStartedAt`, stamped when an org
  * enters. That is the whole reason the column exists: `subscriptionEndsAt` for
@@ -56,18 +57,30 @@ function getMaxPerRun(): number {
   return Number.isNaN(parsed) || parsed <= 0 ? DEFAULT_MAX_PER_RUN : parsed;
 }
 
-const orgQuery = {
-  include: {
-    createdBy: {
-      select: { id: true, email: true, firstName: true, deletedAt: true },
-    },
-    projects: { select: { id: true, name: true } },
-  },
-} as const;
+/** The organization row shape this job reads — V1's `orgQuery` include. */
+export interface WindDownOrganization {
+  id: string;
+  subscriptionState: string;
+  subscriptionEndsAt: Date | null;
+  windDownStartedAt: Date | null;
+  windDownStep: string | null;
+  createdBy: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    deletedAt: Date | null;
+  } | null;
+  projects: { id: string; name: string }[];
+}
 
-type OrgWithCreator = Awaited<
-  ReturnType<typeof db.organization.findMany<typeof orgQuery>>
->[number];
+/** The Prisma surface this job touches — nothing wider. */
+export interface WindDownDb {
+  organization: {
+    findMany(args: unknown): Promise<WindDownOrganization[]>;
+    update(args: unknown): Promise<unknown>;
+    updateMany(args: unknown): Promise<unknown>;
+  };
+}
 
 interface WindDownUsage {
   /** Everything ever collected — what deletion would destroy. */
@@ -77,9 +90,25 @@ interface WindDownUsage {
   hasData: boolean;
 }
 
+export interface WindDownDeps {
+  db: WindDownDb;
+  logger: Logger;
+  sendEmail: SendSequenceEmail;
+  getLastEventPerProject(): Promise<Map<string, Date>>;
+  getOrganizationEventsCount(projectIds: string[]): Promise<number>;
+  getOrganizationEventsCountSince(
+    projectIds: string[],
+    since: Date
+  ): Promise<number>;
+  buildHighlight(input: {
+    project: HighlightProject | null;
+    recentEventsCount: number;
+  }): Promise<string | undefined>;
+}
+
 interface WindDownContext {
-  org: OrgWithCreator;
-  user: NonNullable<OrgWithCreator['createdBy']>;
+  org: WindDownOrganization;
+  user: NonNullable<WindDownOrganization['createdBy']>;
   /** Day 0 of this org's schedule. */
   startedAt: Date;
   lastEventAt: Date | null;
@@ -91,40 +120,71 @@ interface WindDownContext {
   getHighlight: () => Promise<string | undefined>;
 }
 
+export async function loadWindDownDeps(logger: Logger): Promise<WindDownDeps> {
+  const [
+    { db },
+    { getOrganizationEventsCount, getOrganizationEventsCountSince },
+    { getLastEventPerProject },
+    { sendEmail },
+    { loadWinBackHighlightDeps, buildWinBackHighlight },
+  ] = await Promise.all([
+    import('@openpanel/db/src/prisma-client'),
+    import('../organization.service'),
+    import('../../project/project.service'),
+    import('../../../clients/email'),
+    import('./win-back-highlight'),
+  ]);
+
+  const highlightDeps = await loadWinBackHighlightDeps(logger);
+
+  return {
+    db: db as unknown as WindDownDb,
+    logger,
+    sendEmail,
+    getLastEventPerProject,
+    getOrganizationEventsCount,
+    getOrganizationEventsCountSince,
+    buildHighlight: (input) => buildWinBackHighlight(input, highlightDeps),
+  };
+}
+
 // Lazy + memoized like getUsage: only still-tracking orgs that clear a day
 // gate pay for the stats queries and the AI call, and each org pays once per
 // tick even though two steps include the highlight.
-function createHighlightGetter(ctx: {
-  stillTracking: boolean;
-  highlightProject: HighlightProject | null;
-  getUsage: () => Promise<WindDownUsage>;
-}) {
+function createHighlightGetter(
+  ctx: {
+    stillTracking: boolean;
+    highlightProject: HighlightProject | null;
+    getUsage: () => Promise<WindDownUsage>;
+  },
+  deps: WindDownDeps
+) {
   let promise: Promise<string | undefined> | null = null;
   return () => {
     if (!ctx.stillTracking) {
       return Promise.resolve(undefined);
     }
     promise ??= ctx.getUsage().then(({ recentEventsCount }) =>
-      buildWinBackHighlight({
+      deps.buildHighlight({
         project: ctx.highlightProject,
         recentEventsCount,
-      }),
+      })
     );
     return promise;
   };
 }
 
-function createUsageGetter(org: OrgWithCreator) {
+function createUsageGetter(org: WindDownOrganization, deps: WindDownDeps) {
   let promise: Promise<WindDownUsage> | null = null;
   return () => {
     const projectIds = org.projects.map((project) => project.id);
     // Only orgs that clear a day gate pay for these two ClickHouse counts, and
     // each org pays at most once per tick.
     promise ??= Promise.all([
-      getOrganizationEventsCount(projectIds),
-      getOrganizationEventsCountSince(
+      deps.getOrganizationEventsCount(projectIds),
+      deps.getOrganizationEventsCountSince(
         projectIds,
-        subDays(new Date(), RECENT_VOLUME_DAYS),
+        subDays(new Date(), RECENT_VOLUME_DAYS)
       ),
     ]).then(([eventsCount, recentEventsCount]) => ({
       eventsCount,
@@ -144,7 +204,7 @@ const getters = {
   deleteDate: (ctx: WindDownContext) =>
     format(
       addDays(ctx.startedAt, FINAL_WARNING_DAY + DELETE_GRACE_DAYS),
-      'MMMM d',
+      'MMMM d'
     ),
   trialEndedDate: (ctx: WindDownContext) =>
     ctx.org.subscriptionEndsAt
@@ -157,7 +217,7 @@ const getters = {
     return getRecommendedPlan(
       recentEventsCount || eventsCount,
       (plan) =>
-        `${plan.formattedEvents} events per month for ${plan.formattedPrice}`,
+        `${plan.formattedEvents} events per month for ${plan.formattedPrice}`
     );
   },
 } as const;
@@ -175,64 +235,66 @@ async function baseData(ctx: WindDownContext) {
   };
 }
 
-export const WIND_DOWN_STEPS: SequenceStep<WindDownContext>[] = [
-  step<WindDownContext, 'wind-down-expired'>({
-    day: 0,
-    step: 'expired_notice',
-    template: 'wind-down-expired',
-    data: async (ctx) => ({
-      ...(await baseData(ctx)),
-      blockDate: getters.blockDate(ctx),
-      trialEndedDate: getters.trialEndedDate(ctx),
-      recommendedPlan: await getters.recommendedPlan(ctx),
-      highlight: await ctx.getHighlight(),
+function windDownSteps(deps: WindDownDeps): SequenceStep<WindDownContext>[] {
+  return [
+    step<WindDownContext, 'wind-down-expired'>({
+      day: 0,
+      step: 'expired_notice',
+      template: 'wind-down-expired',
+      data: async (ctx) => ({
+        ...(await baseData(ctx)),
+        blockDate: getters.blockDate(ctx),
+        trialEndedDate: getters.trialEndedDate(ctx),
+        recommendedPlan: await getters.recommendedPlan(ctx),
+        highlight: await ctx.getHighlight(),
+      }),
     }),
-  }),
-  step<WindDownContext, 'wind-down-stopping-soon'>({
-    day: 14,
-    step: 'stopping_soon',
-    template: 'wind-down-stopping-soon',
-    data: async (ctx) => ({
-      ...(await baseData(ctx)),
-      blockDate: getters.blockDate(ctx),
-      recommendedPlan: await getters.recommendedPlan(ctx),
-      highlight: await ctx.getHighlight(),
+    step<WindDownContext, 'wind-down-stopping-soon'>({
+      day: 14,
+      step: 'stopping_soon',
+      template: 'wind-down-stopping-soon',
+      data: async (ctx) => ({
+        ...(await baseData(ctx)),
+        blockDate: getters.blockDate(ctx),
+        recommendedPlan: await getters.recommendedPlan(ctx),
+        highlight: await ctx.getHighlight(),
+      }),
     }),
-  }),
-  step<WindDownContext, 'wind-down-blocked'>({
-    day: BLOCK_DAY,
-    step: 'blocked',
-    template: 'wind-down-blocked',
-    // No onSent: advancing the pointer to 'blocked' *is* the block, because
-    // the ingestion hook reads the pointer.
-    data: async (ctx) => ({
-      ...(await baseData(ctx)),
-      deleteDate: getters.deleteDate(ctx),
+    step<WindDownContext, 'wind-down-blocked'>({
+      day: BLOCK_DAY,
+      step: 'blocked',
+      template: 'wind-down-blocked',
+      // No onSent: advancing the pointer to 'blocked' *is* the block, because
+      // the ingestion hook reads the pointer.
+      data: async (ctx) => ({
+        ...(await baseData(ctx)),
+        deleteDate: getters.deleteDate(ctx),
+      }),
     }),
-  }),
-  step<WindDownContext, 'wind-down-final-warning'>({
-    day: FINAL_WARNING_DAY,
-    step: 'final_warning',
-    template: 'wind-down-final-warning',
-    // Never arm deletion off an email that didn't go out.
-    requireDelivery: true,
-    onSent: async (ctx) => {
-      await db.organization.update({
-        where: { id: ctx.org.id },
-        data: { deleteAt: addDays(new Date(), DELETE_GRACE_DAYS) },
-      });
-    },
-    data: async (ctx) => ({
-      ...(await baseData(ctx)),
-      deleteDate: format(addDays(new Date(), DELETE_GRACE_DAYS), 'MMMM d'),
+    step<WindDownContext, 'wind-down-final-warning'>({
+      day: FINAL_WARNING_DAY,
+      step: 'final_warning',
+      template: 'wind-down-final-warning',
+      // Never arm deletion off an email that didn't go out.
+      requireDelivery: true,
+      onSent: async (ctx) => {
+        await deps.db.organization.update({
+          where: { id: ctx.org.id },
+          data: { deleteAt: addDays(new Date(), DELETE_GRACE_DAYS) },
+        });
+      },
+      data: async (ctx) => ({
+        ...(await baseData(ctx)),
+        deleteDate: format(addDays(new Date(), DELETE_GRACE_DAYS), 'MMMM d'),
+      }),
     }),
-  }),
-];
+  ];
+}
 
 /** Newest event across all of an organization's projects. */
 function lastEventFor(
-  org: OrgWithCreator,
-  lastEventPerProject: Map<string, Date>,
+  org: WindDownOrganization,
+  lastEventPerProject: Map<string, Date>
 ): Date | null {
   let latest: Date | null = null;
   for (const project of org.projects) {
@@ -244,7 +306,21 @@ function lastEventFor(
   return latest;
 }
 
-export async function windDownCronJob() {
+export interface WindDownResult {
+  expired: number;
+  recovered: number;
+  entering: number;
+  stillTracking: number;
+  emailsSent: number;
+  completed: number;
+  deferred: number;
+  stepsSkipped: number;
+  failed: number;
+}
+
+export async function runWindDownCron(
+  deps: WindDownDeps
+): Promise<WindDownResult | null> {
   if (process.env.SELF_HOSTED === 'true') {
     return null;
   }
@@ -257,7 +333,7 @@ export async function windDownCronJob() {
   // clearing. Note there is deliberately no filter on event volume: an org that
   // never sent anything and one still sending millions are both in scope, they
   // just get different copy and different priority.
-  const candidates = await db.organization.findMany({
+  const candidates = await deps.db.organization.findMany({
     where: {
       OR: [
         { windDownStartedAt: { not: null } },
@@ -275,11 +351,16 @@ export async function windDownCronJob() {
         },
       ],
     },
-    ...orgQuery,
+    include: {
+      createdBy: {
+        select: { id: true, email: true, firstName: true, deletedAt: true },
+      },
+      projects: { select: { id: true, name: true } },
+    },
   });
 
   const expired = candidates.filter(
-    (org) => org.subscriptionState === 'trial_expired',
+    (org) => org.subscriptionState === 'trial_expired'
   );
 
   // Recovered: subscribed (or otherwise left trial_expired) while in the
@@ -288,11 +369,11 @@ export async function windDownCronJob() {
   const recovered = candidates.filter(
     (org) =>
       org.windDownStartedAt !== null &&
-      org.subscriptionState !== 'trial_expired',
+      org.subscriptionState !== 'trial_expired'
   );
 
   if (recovered.length > 0) {
-    await db.organization.updateMany({
+    await deps.db.organization.updateMany({
       where: { id: { in: recovered.map((org) => org.id) } },
       data: { windDownStartedAt: null, windDownStep: null, deleteAt: null },
     });
@@ -301,16 +382,19 @@ export async function windDownCronJob() {
   // Without a creator we have nobody to warn, so the sequence can't run. Such
   // orgs are left alone; the delete cron already sweeps ones with no admin.
   const contactable = expired.filter(
-    (org) => org.createdBy && !org.createdBy.deletedAt,
+    (org) => org.createdBy && !org.createdBy.deletedAt
   );
 
   // One cheap aggregate for the whole instance, same source the data-health
   // job uses. It answers "are the SDKs still live", which decides both the
   // copy and who gets in first.
-  const lastEventPerProject = await getLastEventPerProject();
+  const lastEventPerProject = await deps.getLastEventPerProject();
   const stillTrackingCutoff = subDays(now, STILL_TRACKING_WITHIN_DAYS);
 
-  const activity = new Map<string, { lastEventAt: Date | null; still: boolean }>(
+  const activity = new Map<
+    string,
+    { lastEventAt: Date | null; still: boolean }
+  >(
     contactable.map((org) => {
       const lastEventAt = lastEventFor(org, lastEventPerProject);
       return [
@@ -320,7 +404,7 @@ export async function windDownCronJob() {
           still: lastEventAt !== null && lastEventAt > stillTrackingCutoff,
         },
       ];
-    }),
+    })
   );
 
   // Orgs still sending go first: they are the ones there is anything to
@@ -342,7 +426,7 @@ export async function windDownCronJob() {
     .slice(0, getMaxPerRun());
 
   if (entering.length > 0) {
-    await db.organization.updateMany({
+    await deps.db.organization.updateMany({
       where: { id: { in: entering.map((org) => org.id) } },
       data: { windDownStartedAt: now },
     });
@@ -350,11 +434,13 @@ export async function windDownCronJob() {
 
   const enteringIds = new Set(entering.map((org) => org.id));
   const active = contactable.filter(
-    (org) => org.windDownStartedAt !== null || enteringIds.has(org.id),
+    (org) => org.windDownStartedAt !== null || enteringIds.has(org.id)
   );
 
   const subjects: SequenceSubject<WindDownContext>[] = active.map((org) => {
-    const user = org.createdBy as NonNullable<OrgWithCreator['createdBy']>;
+    const user = org.createdBy as NonNullable<
+      WindDownOrganization['createdBy']
+    >;
     const startedAt = org.windDownStartedAt ?? now;
     const seen = activity.get(org.id);
 
@@ -369,7 +455,7 @@ export async function windDownCronJob() {
       }
     }
 
-    const getUsage = createUsageGetter(org);
+    const getUsage = createUsageGetter(org, deps);
     const stillTracking = seen?.still ?? false;
     return {
       id: org.id,
@@ -384,22 +470,22 @@ export async function windDownCronJob() {
         stillTracking,
         highlightProject,
         getUsage,
-        getHighlight: createHighlightGetter({
-          stillTracking,
-          highlightProject,
-          getUsage,
-        }),
+        getHighlight: createHighlightGetter(
+          { stillTracking, highlightProject, getUsage },
+          deps
+        ),
       },
     };
   });
 
   const result = await runSequence({
     name: 'wind-down',
-    steps: WIND_DOWN_STEPS,
+    steps: windDownSteps(deps),
     subjects,
-    logger,
+    logger: deps.logger,
+    send: deps.sendEmail,
     onAdvance: async (subject, stepName) => {
-      await db.organization.update({
+      await deps.db.organization.update({
         where: { id: subject.id },
         data: { windDownStep: stepName },
       });
@@ -410,35 +496,21 @@ export async function windDownCronJob() {
   });
 
   const stillTrackingCount = [...activity.values()].filter(
-    (entry) => entry.still,
+    (entry) => entry.still
   ).length;
 
-  logger.info(
-    {
-      candidates: candidates.length,
-      expired: expired.length,
-      recovered: recovered.length,
-      entering: entering.length,
-      stillTracking: stillTrackingCount,
-      ...result,
-    },
-    'Wind-down cron complete',
-  );
-
-  return {
+  const summary: WindDownResult = {
     expired: expired.length,
     recovered: recovered.length,
     entering: entering.length,
     stillTracking: stillTrackingCount,
     ...result,
   };
-}
 
-/** Days into the sequence, for logging and the debug route. */
-export function windDownDay(org: {
-  windDownStartedAt: Date | null;
-}): number | null {
-  return org.windDownStartedAt
-    ? differenceInDays(new Date(), org.windDownStartedAt)
-    : null;
+  deps.logger.info(
+    { candidates: candidates.length, ...summary },
+    'Wind-down cron complete'
+  );
+
+  return summary;
 }

@@ -10,6 +10,8 @@ import { eventCronSchedules } from '../modules/event/event.jobs';
 import { groupCronSchedules } from '../modules/group/group.jobs';
 import { gscCronSchedules } from '../modules/gsc/gsc.jobs';
 import { insightCronSchedules } from '../modules/insight/insight.jobs';
+import { integrationCronSchedules } from '../modules/integration/integration.jobs';
+import { miscCronSchedules } from '../modules/misc/misc.jobs';
 import { onboardingCronSchedules } from '../modules/onboarding/onboarding.jobs';
 import { organizationCronSchedules } from '../modules/organization/organization.jobs';
 import { profileCronSchedules } from '../modules/profile/profile.jobs';
@@ -59,8 +61,6 @@ const CONFLICT_JOB_STATES = [
 
 const CONFLICT_ERROR_SUBSTRING = 'job ID already exists';
 
-const MINUTE_MS = 60_000;
-
 // V1's exact 19 always-on scheduler ids and cadences
 // (apps/worker/src/boot-cron.ts). `ping` is the 20th and is conditional —
 // see `PING_SCHEDULE` and `startSchedulers`.
@@ -68,8 +68,8 @@ export const CRON_SCHEDULES: readonly SchedulerDefinition[] = [
   // salt — owned by the salt module, declared next to its jobs
   // (modules/salt/salt.jobs.ts).
   ...saltCronSchedules,
-  // delete — owned by the organization module, declared next to its jobs
-  // (modules/organization/organization.jobs.ts).
+  // delete / windDown — owned by the organization module, declared next to its
+  // jobs (modules/organization/organization.jobs.ts).
   ...organizationCronSchedules,
   // flushEvents — owned by the event module, declared next to its jobs
   // (modules/event/event.jobs.ts).
@@ -98,13 +98,14 @@ export const CRON_SCHEDULES: readonly SchedulerDefinition[] = [
   // insightsDaily / insightCleanup / weeklyDigest — owned by the insight
   // module, declared next to its jobs (modules/insight/insight.jobs.ts).
   ...insightCronSchedules,
-  // Daily 07:30 UTC — no-data / data-stopped rescue emails. Owner: misc
-  // (ADR-005 acceptance note completes the ownership map).
-  { id: 'dataHealth', schedule: { pattern: '30 7 * * *' } },
-  // Hourly — expired-trial wind-down emails, block, delete. Owner: organization.
-  { id: 'windDown', schedule: { pattern: '0 * * * *' } },
-  // Every 1 minute — drains export buffers to S3/GCS. Owner: integration.
-  { id: 'flushExports', schedule: { every: MINUTE_MS } },
+  // dataHealth — owned by the misc module, declared next to its jobs
+  // (modules/misc/misc.jobs.ts). ADR-005's acceptance note completed the
+  // ownership map for this and the two below; M9-003 moved the handlers off
+  // apps/worker, so each now sits with its owner rather than inline here.
+  ...miscCronSchedules,
+  // flushExports — owned by the integration module, declared next to its jobs
+  // (modules/integration/integration.jobs.ts).
+  ...integrationCronSchedules,
 ];
 
 // V1 gated this on `SELF_HOSTED && NODE_ENV === 'production'`

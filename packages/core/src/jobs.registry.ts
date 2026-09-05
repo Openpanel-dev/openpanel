@@ -23,6 +23,7 @@ import {
   insightCronJobs,
   insightQueueJobs,
 } from './modules/insight/insight.jobs';
+import { integrationCronJobs } from './modules/integration/integration.jobs';
 import { miscCronJobs } from './modules/misc/misc.jobs';
 import { notificationQueueJobs } from './modules/notification/notification.jobs';
 import { onboardingCronJobs } from './modules/onboarding/onboarding.jobs';
@@ -80,6 +81,7 @@ const cron = defineQueue('cron', {
     ...onboardingCronJobs,
     ...sessionCronJobs,
     ...miscCronJobs,
+    ...integrationCronJobs,
   },
 });
 

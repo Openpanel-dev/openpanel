@@ -178,9 +178,16 @@ services:
         max-size: "20m"
         max-file: "3"
 
+  # ONE image, two roles. v3.0.0 deleted the separate worker image: the api
+  # image serves the queues, the schedulers and the Kafka consumer when it is
+  # started with ROLE=worker. Upgrading from v2 means changing this image line
+  # and adding ROLE — nothing else; queue names, scheduler ids and the Kafka
+  # topic are unchanged.
   op-worker:
-    image: lindesvard/openpanel-worker:2
+    image: lindesvard/openpanel-api:2
     restart: always
+    environment:
+      - ROLE=worker
     depends_on:
       op-api:
         condition: service_healthy
@@ -189,7 +196,7 @@ services:
     env_file:
       - .env
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthz/ready || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

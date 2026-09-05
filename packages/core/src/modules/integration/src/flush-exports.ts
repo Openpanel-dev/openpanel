@@ -1,33 +1,33 @@
+// Ported from apps/worker/src/jobs/cron.flush-exports.ts (M9-003, the wave that
+// deletes apps/worker). ADR-005's acceptance note gives `flushExports` to the
+// integration module. Behaviour is V1's, verbatim; Prisma, the ClickHouse
+// client and the object-store adapter factory arrive as injected deps so the
+// orchestration is testable without `mock.module` (same idiom as
+// modules/session/src/runtime.ts).
+//
+// The window query is a MOVE, not an ADR-013 conversion: it already binds every
+// value through ClickHouse's own `{name:Type}` params, and converting it to the
+// `sql` tag would change the emitted statement. Kept byte-identical.
+
 import { DateTime } from '@openpanel/common';
 import {
-  createLogger,
-  getServerIntegration,
-  type IObjectStoreAdapter,
-} from '@openpanel/core';
-import {
-  ch,
   clickhouseEventToExportEvent,
-  convertClickhouseDateToJs,
   createBatch,
   createManifest,
-  db,
   generateBatchPath,
-  type IClickhouseEvent,
   MANIFEST_CONTENT_TYPE,
   MANIFEST_FILENAME,
   serializeManifest,
-  TABLE_NAMES,
-} from '@openpanel/db';
-import type { CronQueuePayload } from '@openpanel/queue';
+} from '../../../clients/integrations/export';
+import type { IObjectStoreAdapter } from '../../../clients/integrations/object-store';
+import type { Logger } from '../../../logger';
+import type { IClickhouseEvent } from '../../event/event.service';
 import {
   type IGCSExportConfig,
   type IIntegrationConfig,
   type IS3ExportConfig,
   isKind,
-} from '@openpanel/validation';
-import type { Job } from 'bullmq';
-
-const logger = createLogger({ name: 'flush-exports' });
+} from '../integration.constants';
 
 // Safety lag: never export events whose inserted_at is within this window of
 // now(), so an in-flight CH insert batch (or replica lag) can't be half-read at
@@ -52,6 +52,11 @@ const CONCURRENCY = Number.parseInt(process.env.EXPORT_CONCURRENCY || '4', 10);
 // would skip all but one row.
 const NIL_UUID = '00000000-0000-0000-0000-000000000000';
 
+// Local literal, not @openpanel/db's TABLE_NAMES — same choice cohort.service.ts
+// made, and for the same reason: importing that module constructs a ClickHouse
+// client at import time.
+const EVENTS_TABLE = 'events';
+
 const EXPORT_COLUMNS = `
   id, name, sdk_name, sdk_version, device_id, profile_id, project_id,
   session_id, path, origin, referrer, referrer_name, referrer_type,
@@ -69,6 +74,64 @@ interface Cursor {
   eventId: string;
 }
 
+/** The ClickHouse surface this job touches — nothing wider. */
+export interface ExportClickhouse {
+  query(params: {
+    query: string;
+    query_params: Record<string, unknown>;
+    format: 'JSONEachRow';
+  }): Promise<{ json(): Promise<unknown> }>;
+}
+
+export interface ExportIntegrationRow {
+  id: string;
+  organizationId: string;
+  projectId: string | null;
+  config: IIntegrationConfig;
+}
+
+export interface ExportWatermarkRow {
+  lastInsertedAt: Date;
+  lastEventId: string;
+}
+
+/** The Prisma surface this job touches — nothing wider. */
+export interface ExportDb {
+  integration: { findMany(args?: unknown): Promise<ExportIntegrationRow[]> };
+  project: { findMany(args: unknown): Promise<{ id: string }[]> };
+  exportWatermark: {
+    findUnique(args: unknown): Promise<ExportWatermarkRow | null>;
+    create(args: unknown): Promise<unknown>;
+    update(args: unknown): Promise<unknown>;
+  };
+}
+
+export interface FlushExportsDeps {
+  db: ExportDb;
+  ch: ExportClickhouse;
+  logger: Logger;
+  /** Resolves the object-store adapter for an export config, or undefined. */
+  createAdapter(config: ExportConfig): IObjectStoreAdapter | undefined;
+}
+
+export async function loadFlushExportsDeps(
+  logger: Logger
+): Promise<FlushExportsDeps> {
+  const [{ db }, { ch }, { getServerIntegration }] = await Promise.all([
+    import('@openpanel/db/src/prisma-client'),
+    import('@openpanel/db/src/clickhouse/client'),
+    import('../../../clients/integrations/registry'),
+  ]);
+
+  return {
+    db: db as unknown as ExportDb,
+    ch: ch as unknown as ExportClickhouse,
+    logger,
+    createAdapter: (config) =>
+      getServerIntegration(config.type).export?.createAdapter(config),
+  };
+}
+
 function isExportConfig(config: IIntegrationConfig): config is ExportConfig {
   // Capability comes from the integration registry, not a hardcoded type list.
   return isKind(config, 'export');
@@ -84,8 +147,10 @@ const formatCh = (date: Date): string =>
  * truth, so this job windows the events table by `inserted_at` and uploads
  * batched files. Export never touches the ingestion path.
  */
-export async function flushExportsJob(_job: Job<CronQueuePayload>) {
-  const integrations = await db.integration.findMany();
+export async function runFlushExportsCron(
+  deps: FlushExportsDeps
+): Promise<void> {
+  const integrations = await deps.db.integration.findMany();
   const exportIntegrations = integrations.filter((i) =>
     isExportConfig(i.config)
   );
@@ -115,7 +180,7 @@ export async function flushExportsJob(_job: Job<CronQueuePayload>) {
       continue;
     }
 
-    const projects = await db.project.findMany({
+    const projects = await deps.db.project.findMany({
       where: { organizationId: integration.organizationId, deleteAt: null },
       select: { id: true },
     });
@@ -129,9 +194,9 @@ export async function flushExportsJob(_job: Job<CronQueuePayload>) {
   }
 
   await runWithConcurrency(items, CONCURRENCY, (item) =>
-    processExport(item.projectId, item.integrationId, item.config).catch(
+    processExport(item.projectId, item.integrationId, item.config, deps).catch(
       (error) => {
-        logger.error(
+        deps.logger.error(
           {
             err: error,
             projectId: item.projectId,
@@ -147,12 +212,11 @@ export async function flushExportsJob(_job: Job<CronQueuePayload>) {
 async function processExport(
   projectId: string,
   integrationId: string,
-  config: ExportConfig
+  config: ExportConfig,
+  deps: FlushExportsDeps
 ): Promise<void> {
-  let cursor = await loadCursor(projectId, integrationId);
-  const adapter: IObjectStoreAdapter | undefined = getServerIntegration(
-    config.type
-  ).export?.createAdapter(config);
+  let cursor = await loadCursor(projectId, integrationId, deps);
+  const adapter = deps.createAdapter(config);
   if (!adapter) {
     throw new Error(`Integration ${config.type} has no export adapter`);
   }
@@ -160,7 +224,7 @@ async function processExport(
   const format = config.format || 'jsonl_gzip';
 
   for (let i = 0; i < MAX_BATCHES_PER_RUN; i++) {
-    const rows = await queryWindow(projectId, cursor);
+    const rows = await queryWindow(projectId, cursor, deps);
     if (rows.length === 0) {
       break;
     }
@@ -198,11 +262,11 @@ async function processExport(
     // Advance the watermark only after a successful upload. A crash mid-run
     // re-exports the un-acked batch next tick (at-least-once); the manifest is
     // the consumer's signal that a batch is complete.
-    const last = rows[rows.length - 1]!;
+    const last = rows.at(-1)!;
     cursor = { insertedAt: last.inserted_at!, eventId: last.id };
-    await saveCursor(projectId, integrationId, cursor);
+    await saveCursor(projectId, integrationId, cursor, deps);
 
-    logger.info(
+    deps.logger.info(
       {
         projectId,
         integrationId,
@@ -221,12 +285,13 @@ async function processExport(
 
 async function queryWindow(
   projectId: string,
-  cursor: Cursor
+  cursor: Cursor,
+  deps: FlushExportsDeps
 ): Promise<IClickhouseEvent[]> {
-  const result = await ch.query({
+  const result = await deps.ch.query({
     query: `
       SELECT ${EXPORT_COLUMNS}
-      FROM ${TABLE_NAMES.events}
+      FROM ${EVENTS_TABLE}
       WHERE project_id = {projectId:String}
         AND inserted_at <= now64(3) - INTERVAL {lag:UInt32} SECOND
         AND (
@@ -251,9 +316,10 @@ async function queryWindow(
 
 async function loadCursor(
   projectId: string,
-  integrationId: string
+  integrationId: string,
+  deps: FlushExportsDeps
 ): Promise<Cursor> {
-  const existing = await db.exportWatermark.findUnique({
+  const existing = await deps.db.exportWatermark.findUnique({
     where: { projectId_integrationId: { projectId, integrationId } },
   });
   if (existing) {
@@ -267,7 +333,7 @@ async function loadCursor(
   // dump the project's entire history. Historical backfill is a separate,
   // explicit operation (reset the watermark).
   const now = new Date();
-  await db.exportWatermark.create({
+  await deps.db.exportWatermark.create({
     data: {
       projectId,
       integrationId,
@@ -281,15 +347,22 @@ async function loadCursor(
 async function saveCursor(
   projectId: string,
   integrationId: string,
-  cursor: Cursor
+  cursor: Cursor,
+  deps: FlushExportsDeps
 ): Promise<void> {
-  await db.exportWatermark.update({
+  await deps.db.exportWatermark.update({
     where: { projectId_integrationId: { projectId, integrationId } },
     data: {
       lastInsertedAt: convertClickhouseDateToJs(cursor.insertedAt),
       lastEventId: cursor.eventId,
     },
   });
+}
+
+// Local copy for the reason every modules/*/src/dates.ts gives: importing
+// @openpanel/db's clickhouse/client constructs a client at import time.
+function convertClickhouseDateToJs(date: string): Date {
+  return new Date(`${date.replace(' ', 'T')}Z`);
 }
 
 async function runWithConcurrency<T>(

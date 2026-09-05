@@ -186,13 +186,17 @@ services:
       timeout: 5s
       retries: 5
 
+  # ONE image, two roles — see the note on op-worker in
+  # docker-compose.template.yml. ROLE=worker turns the api image into the
+  # queue/scheduler/Kafka half.
   opworker:
-    image: lindesvard/openpanel-worker:latest
+    image: lindesvard/openpanel-api:latest
     restart: always
     depends_on:
       opapi:
         condition: service_healthy
     environment:
+      - ROLE=worker
       # FQDN
       - SERVICE_FQDN_OPBULLBOARD
       # Common
@@ -206,7 +210,7 @@ services:
       # Set coolify FQDN domain
       - API_URL=$SERVICE_FQDN_OPAPI
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthz/ready || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -15,5 +15,11 @@ worker.$DOMAIN_NAME {$SSL_CONFIG
         admin $BASIC_AUTH_PASSWORD
     }
 
+    # Bull-board moved from `/` (v2's separate worker server) to `/bullboard`
+    # on the merged process's single port, so keep worker.<domain> landing on
+    # it. It is additionally behind the dashboard session guard now - this
+    # basic_auth is no longer the only thing in front of it.
+    redir / /bullboard/
+
     reverse_proxy op-worker:3000
 }

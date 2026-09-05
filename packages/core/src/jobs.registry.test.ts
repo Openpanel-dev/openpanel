@@ -86,12 +86,17 @@ test('the insights queue carries the insight module job', () => {
 // production (jobs/schedulers.ts's `PING_SCHEDULE`), but the job HANDLER is
 // always registered here so a scheduled run always has somewhere to land.
 // `salt` (salt.jobs.ts) and the six `flush*` jobs (event/profile/session/
-// group.jobs.ts) join the list at M8-004.
+// group.jobs.ts) join the list at M8-004; `dataHealth` (misc.jobs.ts),
+// `windDown` (organization.jobs.ts) and `flushExports` (integration.jobs.ts)
+// at M9-003, which completes the set — all 20 V1 scheduler ids now have a
+// handler here.
 test('the cron queue carries the insight module cron fragment', () => {
   expect(Object.keys(queues.cron.jobs).sort()).toEqual(
     [
       'cohortRefresh',
+      'dataHealth',
       'delete',
+      'flushExports',
       'flushEvents',
       'flushGroups',
       'flushProfileBackfill',
@@ -107,6 +112,7 @@ test('the cron queue carries the insight module cron fragment', () => {
       'sessionReaper',
       'sessionVacuum',
       'weeklyDigest',
+      'windDown',
     ].sort()
   );
   for (const name of ['insightsDaily', 'insightCleanup', 'weeklyDigest']) {
@@ -219,24 +225,18 @@ test('the notification queue carries the notification module job', () => {
 // scheduled run resolves (legacyCompat.cron maps `type` straight onto a job
 // name) and then throws `has no job named ...`.
 //
-// Three ids do not yet: `dataHealth`, `windDown` and `flushExports` are still
-// only implemented in apps/worker/src/jobs (cron.data-health.ts,
-// cron.wind-down.ts, cron.flush-exports.ts) and are ported with the rest of
-// the worker at M9-003 ("every job the old worker ran is served by the merged
-// app under ROLE=worker"). Pinned as a precise, exhaustive exception set so
-// the gap is loud here rather than silent in production — and so M9-003 has
-// to delete this list to go green.
-const CRON_JOBS_NOT_YET_PORTED = ['dataHealth', 'flushExports', 'windDown'];
-
-test('every cron scheduler id has a handler, bar the three M9-003 ports', () => {
+// M9-003 closed the last gap: `dataHealth`, `windDown` and `flushExports`
+// moved off apps/worker into misc/organization/integration, so this is now an
+// exact both-ways match and the exception list is gone. That is the
+// machine-checkable half of "every job the old worker ran is served by the
+// merged app under ROLE=worker".
+test('every cron scheduler id has a handler, and vice versa', () => {
   const declared = new Set(Object.keys(queues.cron.jobs));
   const scheduled = [...CRON_SCHEDULES, PING_SCHEDULE].map(
     (scheduler) => scheduler.id
   );
 
-  expect(scheduled.filter((id) => !declared.has(id)).sort()).toEqual(
-    CRON_JOBS_NOT_YET_PORTED
-  );
+  expect(scheduled.filter((id) => !declared.has(id)).sort()).toEqual([]);
   // The reverse direction: nothing is registered that nothing ever schedules.
   expect(
     [...declared].filter((name) => !scheduled.includes(name)).sort()

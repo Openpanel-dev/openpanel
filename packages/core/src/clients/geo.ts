@@ -11,12 +11,12 @@ import datacenterAsns from './datacenter-asns';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Resolve a bundled `.mmdb` file, trying the api/worker bundled-dist layout
-// first and the local package layout second (mirrors how the file ships via
-// `pnpm codegen`). apps/api and apps/worker still bundle every `@openpanel/*`
-// package into one file (tsdown `noExternal`), so `import.meta.url` there
-// resolves to `apps/{api,worker}/dist/index.js` regardless of this file's
-// nesting under `src/clients/` — three levels up from dist is the repo root.
+// Resolve a bundled `.mmdb` file, trying the bundled-dist layout first and the
+// local package layout second (mirrors how the file ships via `pnpm codegen`).
+// apps/api's V1 build still bundles every `@openpanel/*` package into one file
+// (tsdown `noExternal`), so `import.meta.url` there resolves to
+// `apps/api/dist/index.js` regardless of this file's nesting under
+// `src/clients/` — three levels up from dist is the repo root.
 async function loadDatabase(filename: string): Promise<ReaderModel | null> {
   // From api or worker dist bundle
   const dbPath = path.join(__dirname, `../../../packages/core/${filename}`);

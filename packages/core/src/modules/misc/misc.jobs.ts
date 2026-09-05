@@ -1,5 +1,6 @@
 // Ported from apps/worker/src/jobs/cron.ping.ts + boot-cron.ts's `ping`
-// schedule (M7-008).
+// schedule (M7-008); `dataHealth` joined it at M9-003, the wave that deletes
+// apps/worker (ADR-005's acceptance note gives it to this module).
 //
 // `ping` is this module's fragment of the ONE `cron` queue's jobs: declared
 // here and spread into jobs.registry.ts, same shape as
@@ -10,6 +11,11 @@
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
+import type { SchedulerDefinition } from '../../jobs/schedulers';
+import { loadDataHealthDeps, runDataHealthCron } from './src/data-health';
+
+/** Daily 07:30 UTC — V1's cadence (apps/worker/src/boot-cron.ts). */
+const DATA_HEALTH_CRON = '30 7 * * *';
 
 /** This module's fragment of the `cron` queue's jobs. */
 export const miscCronJobs = {
@@ -19,4 +25,16 @@ export const miscCronJobs = {
       await ctx.services.misc.runPingCron();
     },
   }),
+  dataHealth: defineJob({
+    payload: z.null(),
+    handler: async ({ ctx }) => {
+      const logger = ctx.logger.child({ job: 'data-health' });
+      await runDataHealthCron(await loadDataHealthDeps(logger));
+    },
+  }),
 };
+
+/** This module's fragment of `CRON_SCHEDULES` — id and cadence unchanged. */
+export const miscCronSchedules: readonly SchedulerDefinition[] = [
+  { id: 'dataHealth', schedule: { pattern: DATA_HEALTH_CRON } },
+];

@@ -1,14 +1,17 @@
-import { db, getLastEventPerProject } from '@openpanel/db';
-import { sendEmail } from '@openpanel/email';
-import { logger as baseLogger } from '@/utils/logger';
+// Ported from apps/worker/src/jobs/cron.data-health.ts (M9-003, the wave that
+// deletes apps/worker). ADR-005's acceptance note gives `dataHealth` to the
+// misc module. Behaviour is V1's, verbatim; Prisma, the last-event lookup and
+// `sendEmail` arrive as injected deps so the job is testable without
+// `mock.module` (same idiom as modules/session/src/runtime.ts).
 
-const logger = baseLogger.child({ job: 'data-health' });
+import type { Logger } from '../../../logger';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 // A brand-new project gets 48h to send its first event before we reach out.
 const NO_DATA_AFTER_MS = 2 * DAY_MS;
 // An active project whose newest event is older than this counts as stalled.
 const STALLED_AFTER_MS = 7 * DAY_MS;
+const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
 
 interface OrgAlert {
   organizationId: string;
@@ -16,8 +19,68 @@ interface OrgAlert {
   stalled: { id: string; name: string; lastEventAt: Date }[];
 }
 
-async function recipientsForOrg(organizationId: string) {
-  const members = await db.member.findMany({
+/** The project row shape this job reads. */
+export interface DataHealthProject {
+  id: string;
+  name: string;
+  createdAt: Date;
+  organizationId: string;
+  noDataNotifiedAt: Date | null;
+  dataStoppedNotifiedAt: Date | null;
+  organization: {
+    id: string;
+    subscriptionState: string;
+    onboarding: string | null;
+  };
+}
+
+export interface DataHealthMember {
+  user: { email: string | null; firstName: string | null } | null;
+}
+
+/** The Prisma surface this job touches — nothing wider. */
+export interface DataHealthDb {
+  member: { findMany(args: unknown): Promise<DataHealthMember[]> };
+  project: {
+    findMany(args: unknown): Promise<DataHealthProject[]>;
+    updateMany(args: unknown): Promise<unknown>;
+  };
+}
+
+export type DataHealthTemplate = 'tracking-no-data' | 'tracking-data-stopped';
+
+export interface DataHealthDeps {
+  db: DataHealthDb;
+  logger: Logger;
+  getLastEventPerProject(): Promise<Map<string, Date>>;
+  sendEmail(
+    template: DataHealthTemplate,
+    options: { to: string; data: Record<string, unknown> }
+  ): Promise<unknown>;
+}
+
+export async function loadDataHealthDeps(
+  logger: Logger
+): Promise<DataHealthDeps> {
+  const [{ db }, { getLastEventPerProject }, { sendEmail }] = await Promise.all(
+    [
+      import('@openpanel/db/src/prisma-client'),
+      import('../../project/project.service'),
+      import('../../../clients/email'),
+    ]
+  );
+
+  return {
+    db: db as unknown as DataHealthDb,
+    logger,
+    getLastEventPerProject,
+    sendEmail: (template, options) =>
+      sendEmail(template, options as { to: string; data: never }),
+  };
+}
+
+async function recipientsForOrg(organizationId: string, deps: DataHealthDeps) {
+  const members = await deps.db.member.findMany({
     where: {
       organizationId,
       user: { deletedAt: null },
@@ -33,6 +96,12 @@ async function recipientsForOrg(organizationId: string) {
   return seen;
 }
 
+export interface DataHealthResult extends Record<string, number> {
+  projects: number;
+  organizations: number;
+  emailsSent: number;
+}
+
 /**
  * Daily rescue emails for paying/trialing orgs whose tracking is broken:
  * projects that never received an event (48h grace) and projects whose event
@@ -43,17 +112,19 @@ async function recipientsForOrg(organizationId: string) {
  * is compared against the newest event, so data resuming and stalling again
  * notifies again without any clearing step.
  */
-export async function dataHealthCronJob() {
+export async function runDataHealthCron(
+  deps: DataHealthDeps
+): Promise<DataHealthResult | null> {
   if (process.env.SELF_HOSTED === 'true') {
-    return;
+    return null;
   }
 
   const now = Date.now();
-  const lastEventByProject = await getLastEventPerProject();
+  const lastEventByProject = await deps.getLastEventPerProject();
 
   // Prefilter on the raw status column (computed fields can't be used in
   // `where`), then refine with the canonical subscription state below.
-  const projects = await db.project.findMany({
+  const projects = await deps.db.project.findMany({
     where: {
       deleteAt: null,
       organization: { subscriptionStatus: { in: ['active', 'trialing'] } },
@@ -123,19 +194,19 @@ export async function dataHealthCronJob() {
 
   for (const alert of byOrg.values()) {
     try {
-      const recipients = await recipientsForOrg(alert.organizationId);
+      const recipients = await recipientsForOrg(alert.organizationId, deps);
       if (recipients.size === 0) {
         continue;
       }
 
-      const dashboardUrl = `${process.env.DASHBOARD_URL ?? 'https://dashboard.openpanel.dev'}/${alert.organizationId}`;
+      const dashboardUrl = `${process.env.DASHBOARD_URL ?? DEFAULT_DASHBOARD_URL}/${alert.organizationId}`;
 
       if (alert.noData.length > 0) {
         for (const [to, firstName] of recipients) {
           // Per-recipient guard: one bad address must not block the marker
           // update below — that would re-email everyone tomorrow.
           try {
-            await sendEmail('tracking-no-data', {
+            await deps.sendEmail('tracking-no-data', {
               to,
               data: {
                 firstName,
@@ -145,13 +216,13 @@ export async function dataHealthCronJob() {
             });
             emailsSent++;
           } catch (err) {
-            logger.error(
+            deps.logger.error(
               { err, organizationId: alert.organizationId, recipient: to },
               'Failed to send no-data alert to recipient'
             );
           }
         }
-        await db.project.updateMany({
+        await deps.db.project.updateMany({
           where: { id: { in: alert.noData.map((p) => p.id) } },
           data: { noDataNotifiedAt: new Date() },
         });
@@ -163,7 +234,7 @@ export async function dataHealthCronJob() {
           .sort((a, b) => b.getTime() - a.getTime())[0];
         for (const [to, firstName] of recipients) {
           try {
-            await sendEmail('tracking-data-stopped', {
+            await deps.sendEmail('tracking-data-stopped', {
               to,
               data: {
                 firstName,
@@ -177,31 +248,32 @@ export async function dataHealthCronJob() {
             });
             emailsSent++;
           } catch (err) {
-            logger.error(
+            deps.logger.error(
               { err, organizationId: alert.organizationId, recipient: to },
               'Failed to send data-stopped alert to recipient'
             );
           }
         }
-        await db.project.updateMany({
+        await deps.db.project.updateMany({
           where: { id: { in: alert.stalled.map((p) => p.id) } },
           data: { dataStoppedNotifiedAt: new Date() },
         });
       }
     } catch (err) {
-      logger.error(
+      deps.logger.error(
         { err, organizationId: alert.organizationId },
         'Data-health alert failed'
       );
     }
   }
 
-  logger.info(
-    {
-      projects: projects.length,
-      organizations: byOrg.size,
-      emailsSent,
-    },
-    'Data-health check complete'
-  );
+  const result: DataHealthResult = {
+    projects: projects.length,
+    organizations: byOrg.size,
+    emailsSent,
+  };
+
+  deps.logger.info(result, 'Data-health check complete');
+
+  return result;
 }

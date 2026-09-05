@@ -8,8 +8,7 @@
 
 // The concrete pino implementation (dissolved from @openpanel/logger,
 // M4-003). `./logger` above is the structural interface every module codes
-// against; this is what apps/api, and the still-live apps/worker, call to
-// build one.
+// against; this is what apps/api calls to build one.
 // The seven buffers (moved from packages/db/src/buffers, M8-001). Only the
 // FACTORY is on the barrel: they are boot singletons on `AppDeps`, built once
 // by `main.ts`, never module singletons (ADR-007). V1's
@@ -1395,9 +1394,8 @@ export {
   resolveDateRange,
 } from './shared/date';
 // Moved from apps/worker/src/jobs/lib/email-sequence.ts (M6-003) — shared by
-// the onboarding module and, until it moves too, apps/worker's own
-// cron.wind-down.ts, which reaches it through this barrel (same shape as
-// every other still-live V1 consumer here).
+// the onboarding module and, since M9-003, the organization module's
+// wind-down track.
 export type {
   RunSequenceOptions,
   SequenceResult,

@@ -2,7 +2,9 @@
 # Proves `bun run apps/api/src/main.ts` actually boots — every ROLE the ROLE
 # table declares — rather than merely typechecking (playbook rule 1).
 #
-# M3-CLOSE-002 wrote parts 1-3; M9-002 added parts 4-5.
+# M3-CLOSE-002 wrote parts 1-3; M9-002 added parts 4-6; M9-003 (which deleted
+# apps/worker) flipped the unhandled-scheduler check in part 4 from "names the
+# three missing handlers" to "there are none".
 #
 #   1. An unknown ROLE fails boot loudly (non-zero exit, named value in the
 #      message) — and so does an unknown ENABLED_QUEUES token.
@@ -356,12 +358,15 @@ assert_consuming_role() {
     fail "ROLE=$role did not start the Kafka ingest consumer"
   fi
 
-  # M9-003 lands dataHealth/windDown/flushExports. Until then main.ts must SAY
-  # they are missing at boot rather than let each tick fail silently.
+  # M9-003 landed dataHealth/windDown/flushExports, so every one of the 20
+  # scheduler ids now has a handler on the `cron` queue and this line must NOT
+  # appear. It is the runtime half of "every job the old worker ran is served
+  # by the merged app under ROLE=worker" — the static half is
+  # jobs.registry.test.ts's both-ways scheduler/handler match.
   if grep -q 'cron schedulers have no handler' "$log"; then
-    pass "ROLE=$role names the three scheduler ids with no handler yet (M9-003)"
+    fail "ROLE=$role reported cron schedulers with no handler: $(grep -o '"schedulers":\[[^]]*\]' "$log" | head -1)"
   else
-    fail "ROLE=$role did not report the unhandled schedulers"
+    pass "ROLE=$role: every declared cron scheduler has a handler"
   fi
 
   local ready_code

@@ -7,13 +7,13 @@ packages:
 patchedDependencies:
   nuqs: patches/nuqs.patch
 
-# nuqs is an apps/start dependency, but the api and worker images install a
-# subset of the workspace (their Dockerfiles copy only their own and their
-# backend packages' package.json). The patch then matches nothing, and pnpm 11
-# turned that from a warning into ERR_PNPM_UNUSED_PATCH, breaking both builds.
-# This only tolerates a patch matching nothing — patch application FAILURES
-# still always error in v11 (ignorePatchFailures was removed), so the start
-# build still fails loudly if nuqs.patch stops applying cleanly.
+# nuqs is an apps/start dependency, but the api image installs a subset of the
+# workspace (its Dockerfile copies only its own and its backend packages'
+# package.json). The patch then matches nothing, and pnpm 11 turned that from a
+# warning into ERR_PNPM_UNUSED_PATCH, breaking the build. This only tolerates a
+# patch matching nothing — patch application FAILURES still always error in v11
+# (ignorePatchFailures was removed), so the start build still fails loudly if
+# nuqs.patch stops applying cleanly.
 allowUnusedPatches: true
 
 # pnpm 11 verifies that node_modules matches the workspace before running a
@@ -32,7 +32,7 @@ allowUnusedPatches: true
 # createEffectfulFunction from the serializer context class that
 # seroval-plugins <=1.3.3 calls, so every SSR render died with
 # "r.createEffectfulFunction is not a function" - the whole dashboard 500'd on
-# every route, /login included, while api and worker were fine.
+# every route, /login included, while the api image was fine.
 #
 # false = the pnpm 10 behavior these images have always been built with.
 verifyDepsBeforeRun: false
@@ -70,25 +70,6 @@ overrides:
   # CreatePluginType (8.0.0-rc22) and apps/start fails to typecheck. Pin the
   # peer to the copy embla-carousel-react actually uses.
   embla-carousel: 8.0.0-rc22
-
-# @bull-board/api's BullMQAdapter takes a real bullmq Queue (instanceof check
-# at runtime, per node_modules/@bull-board/api/dist/queueAdapters/bullMQ.js)
-# but the package never declares bullmq as a (peer) dependency - just a
-# devDependency used to build itself. Since M4-003 gave apps/worker a
-# @openpanel/core dependency, and core pins bullmq exact 6.3.3 (ADR-016) while
-# apps/worker/packages/queue stay on the V1 pin ^5.63.0 (ADR-016, same table),
-# node's own "walk up and find bullmq" resolution started finding whichever
-# copy pnpm happened to hoist nearest - 6.3.3, not the 5.63.0 the queues are
-# actually built from. TS caught it as `Queue<...>` missing 6.x-only members
-# (queueMetaInitialized, backend, ...); unpatched, the same mismatch trips
-# BullMQAdapter's `instanceof Queue` guard at runtime. Declaring the peer
-# forces pnpm to resolve it per-consumer like any other correctly-described
-# package, matching apps/worker's own ^5.63.0 - no version decision here, just
-# making the two pins ADR-016 already accepted resolve correctly.
-packageExtensions:
-  "@bull-board/api@6.14.0":
-    peerDependencies:
-      bullmq: "*"
 
 # Define a catalog of version ranges.
 catalog:
