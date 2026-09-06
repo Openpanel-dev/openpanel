@@ -7,11 +7,7 @@ import { createRecordingProducers } from '../../jobs/testing';
 import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
 import type { Services } from '../../services';
-import {
-  insightCronJobs,
-  insightCronSchedules,
-  insightQueueJobs,
-} from './insight.jobs';
+import { insightCronJobs, insightQueueJobs } from './insight.jobs';
 import type { InsightService } from './insight.service';
 
 function stubLogger(): Logger {
@@ -226,11 +222,16 @@ test('weeklyDigest delegates to sendWeeklyDigests', async () => {
 });
 
 // Byte-identity with the ids/cadences schedulers.test.ts's golden snapshot
-// pins (apps/worker/src/boot-cron.ts).
+// pins (apps/worker/src/boot-cron.ts). The cadences now live on the jobs
+// themselves (ADR-021), so this reads them straight off the registry.
 test('the insight cron fragment carries V1 ids and cadences unchanged', () => {
-  expect(insightCronSchedules).toEqual([
-    { id: 'insightsDaily', schedule: { pattern: '0 2 * * *' } },
-    { id: 'insightCleanup', schedule: { pattern: '30 4 * * *' } },
-    { id: 'weeklyDigest', schedule: { pattern: '0 8 * * 1' } },
-  ]);
+  expect(queues.cron.jobs.insightsDaily.cron).toEqual({
+    pattern: '0 2 * * *',
+  });
+  expect(queues.cron.jobs.insightCleanup.cron).toEqual({
+    pattern: '30 4 * * *',
+  });
+  expect(queues.cron.jobs.weeklyDigest.cron).toEqual({
+    pattern: '0 8 * * 1',
+  });
 });

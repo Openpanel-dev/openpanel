@@ -164,6 +164,7 @@ export type {
   AnyJob,
   EnqueueOptions,
   QueueDefinition,
+  RepeatSchedule,
 } from './jobs/define';
 export type { JobEnvelope, JobMeta } from './jobs/envelope';
 export type { CountableQueue } from './jobs/jobs.metrics';
@@ -178,6 +179,7 @@ export type {
 export {
   CRON_SCHEDULES,
   PING_SCHEDULE,
+  schedulersFromRegistry,
   startSchedulers,
 } from './jobs/schedulers';
 export type {

@@ -1,16 +1,14 @@
 // Ported from apps/worker/src/jobs/cohort.compute.ts + cron.cohort-refresh.ts
-// (M5-003).
+// (M5-003); the schedule moved onto the job at ADR-021 (M10-007).
 //
 // `cohortCompute` is this module's own queue — registry key `cohortCompute`
 // EXACTLY (ADR-005's acceptance note: no env rename, so
 // COHORTCOMPUTE_CONCURRENCY keeps working). `cohortRefresh` is a cron
-// fragment: declared here, spread into the ONE `cron` queue by
-// jobs.registry.ts and into `CRON_SCHEDULES` by jobs/schedulers.ts. Scheduler
+// fragment, spread into the ONE `cron` queue by jobs.registry.ts. Scheduler
 // id and cadence are V1's, unchanged (apps/worker/src/boot-cron.ts).
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
-import type { SchedulerDefinition } from '../../jobs/schedulers';
 
 const cohortComputePayload = z.object({ cohortId: z.string() });
 
@@ -30,6 +28,7 @@ export const cohortCronJobs = {
   // (apps/worker/src/jobs/cron.cohort-refresh.ts).
   cohortRefresh: defineJob({
     payload: z.null(),
+    cron: { pattern: '*/30 * * * *' },
     handler: async ({ ctx }) => {
       const cohortIds = await ctx.services.cohort.listRefreshableCohortIds();
 
@@ -39,8 +38,3 @@ export const cohortCronJobs = {
     },
   }),
 };
-
-/** This module's fragment of `CRON_SCHEDULES` — id and cadence unchanged. */
-export const cohortCronSchedules: readonly SchedulerDefinition[] = [
-  { id: 'cohortRefresh', schedule: { pattern: '*/30 * * * *' } },
-];

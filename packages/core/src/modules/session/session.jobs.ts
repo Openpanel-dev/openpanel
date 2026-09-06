@@ -1,15 +1,15 @@
 // Ported from apps/worker/src/jobs/sessions.ts (+ events.create-session-end.ts),
 // cron.session-reaper.ts and cron.session-vacuum.ts (M7-001); `flushSessions`
 // and `flushReplay` (apps/worker/src/jobs/cron.ts) join them here at M8-004.
+// Schedules moved onto the jobs at ADR-021 (M10-007).
 //
 // `sessions` is this module's own queue — registry key and Redis name
 // `sessions`, job name `session`, `removeOnComplete: true`, concurrency 1, all
 // V1's (jobs.registry.ts). Its wire payload is `{ event, snapshot }`, which is
 // what `legacyCompat.sessions` maps V1's `{type:'createSessionEnd', payload,
 // snapshot}` onto. `flushSessions` / `flushReplay` / `sessionReaper` /
-// `sessionVacuum` are cron fragments: declared here, spread into the ONE
-// `cron` queue by jobs.registry.ts and into `CRON_SCHEDULES` by
-// jobs/schedulers.ts, ids and cadences unchanged (apps/worker/src/boot-cron.ts).
+// `sessionVacuum` are cron fragments, spread into the ONE `cron` queue by
+// jobs.registry.ts, ids and cadences unchanged (apps/worker/src/boot-cron.ts).
 //
 // Every handler reads its clients off `ctx` — the buffers and the Redis
 // connection main.ts built once, and the ClickHouse client the job's own
@@ -18,7 +18,6 @@
 import { z } from 'zod';
 import type { Ctx } from '../../context';
 import { defineJob } from '../../jobs/define';
-import type { SchedulerDefinition } from '../../jobs/schedulers';
 import type { Logger } from '../../logger';
 import { chQuery } from '../../shared/ch-query';
 import {
@@ -121,6 +120,7 @@ export const sessionQueueJobs = {
 export const sessionCronJobs = {
   flushSessions: defineJob({
     payload: z.null(),
+    cron: { every: FLUSH_SESSIONS_INTERVAL_MS },
     handler: async ({ ctx }) => {
       await ctx.buffers.session.tryFlush({ trigger: 'cron' });
     },
@@ -130,12 +130,14 @@ export const sessionCronJobs = {
   // too, next to the sessions it belongs to.
   flushReplay: defineJob({
     payload: z.null(),
+    cron: { every: FLUSH_REPLAY_INTERVAL_MS },
     handler: async ({ ctx }) => {
       await ctx.buffers.replay.tryFlush({ trigger: 'cron' });
     },
   }),
   sessionReaper: defineJob({
     payload: z.null(),
+    cron: { every: SESSION_REAPER_INTERVAL_MS },
     handler: async ({ ctx }) => {
       await reapIdleSessions({
         ...sessionRuntimeFrom(ctx),
@@ -147,6 +149,7 @@ export const sessionCronJobs = {
   }),
   sessionVacuum: defineJob({
     payload: z.null(),
+    cron: { pattern: SESSION_VACUUM_CRON },
     handler: async ({ ctx }) => {
       await vacuumStaleSessions({
         ...sessionRuntimeFrom(ctx),
@@ -155,11 +158,3 @@ export const sessionCronJobs = {
     },
   }),
 };
-
-/** This module's fragment of `CRON_SCHEDULES` — ids and cadences unchanged. */
-export const sessionCronSchedules: readonly SchedulerDefinition[] = [
-  { id: 'flushSessions', schedule: { every: FLUSH_SESSIONS_INTERVAL_MS } },
-  { id: 'flushReplay', schedule: { every: FLUSH_REPLAY_INTERVAL_MS } },
-  { id: 'sessionReaper', schedule: { every: SESSION_REAPER_INTERVAL_MS } },
-  { id: 'sessionVacuum', schedule: { pattern: SESSION_VACUUM_CRON } },
-];

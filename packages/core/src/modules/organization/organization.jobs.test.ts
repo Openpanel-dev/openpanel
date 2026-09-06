@@ -7,10 +7,7 @@ import { createRecordingProducers } from '../../jobs/testing';
 import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
 import type { Services } from '../../services';
-import {
-  organizationCronJobs,
-  organizationCronSchedules,
-} from './organization.jobs';
+import { organizationCronJobs } from './organization.jobs';
 import type { OrganizationService } from './organization.service';
 
 function stubLogger(): Logger {
@@ -105,10 +102,9 @@ test('delete delegates to runDeleteCron', async () => {
 });
 
 // Byte-identity with the id/cadence schedulers.test.ts's golden snapshot pins
-// (apps/worker/src/boot-cron.ts).
+// (apps/worker/src/boot-cron.ts). The cadences now live on the jobs
+// themselves (ADR-021), so this reads them straight off the registry.
 test('the organization cron fragment carries V1 id and cadence unchanged', () => {
-  expect(organizationCronSchedules).toEqual([
-    { id: 'delete', schedule: { pattern: '0 * * * *' } },
-    { id: 'windDown', schedule: { pattern: '0 * * * *' } },
-  ]);
+  expect(queues.cron.jobs.delete.cron).toEqual({ pattern: '0 * * * *' });
+  expect(queues.cron.jobs.windDown.cron).toEqual({ pattern: '0 * * * *' });
 });

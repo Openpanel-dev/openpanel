@@ -1,15 +1,14 @@
 // Ported from apps/worker/src/jobs/insights.ts, insights-enrich.ts,
-// cron.insight-cleanup.ts and cron.weekly-digest.ts (M5-001).
+// cron.insight-cleanup.ts and cron.weekly-digest.ts (M5-001); the schedules
+// moved onto the jobs at ADR-021 (M10-007).
 //
 // `insightsProject` is this module's own queue (`insights` in the registry —
 // ADR-005's registry key). `insightsDaily` / `insightCleanup` / `weeklyDigest`
-// are cron fragments: declared here, spread into the ONE `cron` queue by
-// jobs.registry.ts and into `CRON_SCHEDULES` by jobs/schedulers.ts. Scheduler
-// ids and cadences are V1's, unchanged (apps/worker/src/boot-cron.ts).
+// are cron fragments, spread into the ONE `cron` queue by jobs.registry.ts.
+// Scheduler ids and cadences are V1's, unchanged (apps/worker/src/boot-cron.ts).
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
-import type { SchedulerDefinition } from '../../jobs/schedulers';
 
 const insightsProjectPayload = z.object({
   projectId: z.string(),
@@ -33,6 +32,7 @@ export const insightCronJobs = {
   // (apps/worker/src/jobs/insights.ts).
   insightsDaily: defineJob({
     payload: z.null(),
+    cron: { pattern: '0 2 * * *' },
     handler: async ({ ctx }) => {
       const date = new Date().toISOString().slice(0, 10);
       const candidates =
@@ -46,26 +46,21 @@ export const insightCronJobs = {
     },
   }),
 
+  // Daily 04:30 UTC — prunes stale insights/events.
   insightCleanup: defineJob({
     payload: z.null(),
+    cron: { pattern: '30 4 * * *' },
     handler: async ({ ctx }) => {
       await ctx.services.insight.cleanupStaleInsights();
     },
   }),
 
+  // Mondays 08:00 UTC — weekly analytics digest email.
   weeklyDigest: defineJob({
     payload: z.null(),
+    cron: { pattern: '0 8 * * 1' },
     handler: async ({ ctx }) => {
       await ctx.services.insight.sendWeeklyDigests();
     },
   }),
 };
-
-/** This module's fragment of `CRON_SCHEDULES` — ids and cadences unchanged. */
-export const insightCronSchedules: readonly SchedulerDefinition[] = [
-  { id: 'insightsDaily', schedule: { pattern: '0 2 * * *' } },
-  // Daily 04:30 UTC — prunes stale insights/events.
-  { id: 'insightCleanup', schedule: { pattern: '30 4 * * *' } },
-  // Mondays 08:00 UTC — weekly analytics digest email.
-  { id: 'weeklyDigest', schedule: { pattern: '0 8 * * 1' } },
-];

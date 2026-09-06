@@ -61,6 +61,13 @@ export interface WorkerSettings {
   limiter?: { max: number; duration: number };
 }
 
+/**
+ * `{ pattern }` is a cron expression, `{ every }` a fixed interval in ms —
+ * BullMQ's own job-scheduler repeat options, narrowed to the two forms this
+ * codebase uses.
+ */
+export type RepeatSchedule = { pattern: string } | { every: number };
+
 export interface JobDefinition<TPayload extends z.ZodType> {
   /**
    * Must survive a JSON round-trip: BullMQ stores job data as JSON, so a
@@ -74,6 +81,14 @@ export interface JobDefinition<TPayload extends z.ZodType> {
   }) => Promise<void>;
   /** Defaults for this job alone, over the queue's. */
   options?: EnqueueOptions;
+  /**
+   * ADR-021: a property of the job, not a parallel registry. Only meaningful
+   * on the `cron` queue, where `defineQueue`'s overload for that name makes
+   * this field required — `null` for a job the scheduler never enqueues
+   * (e.g. `ping`, gated elsewhere), a schedule otherwise. Leaving it absent
+   * is a type error there, on purpose (the three-state rule).
+   */
+  cron?: RepeatSchedule | null;
 }
 
 /**
@@ -85,6 +100,7 @@ export interface AnyJob {
   payload: z.ZodType;
   handler: (args: never) => Promise<void>;
   options?: EnqueueOptions;
+  cron?: RepeatSchedule | null;
 }
 
 /** Stamped on by `defineQueue`, so a job value alone is enough to enqueue it. */
@@ -141,10 +157,25 @@ export type Producers<TQueues extends QueueMap> = {
   };
 };
 
-export function defineJob<TPayload extends z.ZodType>(
-  definition: JobDefinition<TPayload>
-): JobDefinition<TPayload> {
-  return definition;
+/**
+ * `TCron` is inferred from the literal `cron` value passed in, not fixed to
+ * `JobDefinition`'s optional field — that is what lets a caller's omission of
+ * `cron` stay a genuinely absent property (rather than an optional one that
+ * happens to be `undefined`), which `defineQueue`'s `cron`-queue overload
+ * relies on to reject it at the type level (ADR-021).
+ */
+export function defineJob<
+  TPayload extends z.ZodType,
+  TCron extends RepeatSchedule | null | undefined = undefined,
+>(definition: {
+  payload: TPayload;
+  handler: JobDefinition<TPayload>['handler'];
+  options?: EnqueueOptions;
+  cron?: TCron;
+}): JobDefinition<TPayload> &
+  (undefined extends TCron ? unknown : { cron: TCron }) {
+  return definition as JobDefinition<TPayload> &
+    (undefined extends TCron ? unknown : { cron: TCron });
 }
 
 /**
@@ -152,9 +183,18 @@ export function defineJob<TPayload extends z.ZodType>(
  * exists until `createProducers` or `startWorkers` is handed the registry,
  * which is what keeps importing a module free of side effects and lets one
  * declaration serve a producer-only process and a worker one.
+ *
+ * `TJobs`'s bound depends on `TName`: on the `cron` queue every job must carry
+ * a `cron` field (a schedule, or `null` for on-demand) — the three-state rule
+ * ADR-021 requires enforced at the type level, not by a registry test.
  */
-export function defineQueue<TJobs extends Record<string, AnyJob>>(
-  name: string,
+export function defineQueue<
+  TName extends string,
+  TJobs extends TName extends 'cron'
+    ? Record<string, AnyJob & { cron: RepeatSchedule | null }>
+    : Record<string, AnyJob>,
+>(
+  name: TName,
   config: {
     defaults?: QueueDefaults;
     worker?: WorkerSettings;
@@ -167,7 +207,7 @@ export function defineQueue<TJobs extends Record<string, AnyJob>>(
       jobName,
       { ...job, queue: name, name: jobName },
     ])
-  ) as QueueDefinition<TJobs>['jobs'];
+  ) as unknown as QueueDefinition<TJobs>['jobs'];
 
   return {
     name,

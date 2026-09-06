@@ -1,6 +1,32 @@
 import { expect, test } from 'bun:test';
-import { CRON_SCHEDULES, PING_SCHEDULE } from './jobs/schedulers';
+import { PING_SCHEDULE, schedulersFromRegistry } from './jobs/schedulers';
 import { queues } from './jobs.registry';
+
+// Byte-identity snapshot, mirroring
+// `verification/golden/queue-keys/scheduler-ids.json` — see
+// `jobs/schedulers.test.ts` for the matching id-level check.
+const GOLDEN_SCHEDULER_IDS = [
+  'cohortRefresh',
+  'dataHealth',
+  'delete',
+  'flushEvents',
+  'flushExports',
+  'flushGroups',
+  'flushProfileBackfill',
+  'flushProfiles',
+  'flushReplay',
+  'flushSessions',
+  'gscSync',
+  'insightCleanup',
+  'insightsDaily',
+  'onboarding',
+  'ping',
+  'salt',
+  'sessionReaper',
+  'sessionVacuum',
+  'weeklyDigest',
+  'windDown',
+].sort();
 
 // V1's `defaultJobOptions`, verbatim from packages/queue/src/queues.ts.
 // ADR-005's acceptance note: retry and retention values port as-is, defects
@@ -221,24 +247,18 @@ test('the notification queue carries the notification module job', () => {
   });
 });
 
-// M9-001: every scheduler id must land on a cron job that exists, or the
-// scheduled run resolves (legacyCompat.cron maps `type` straight onto a job
-// name) and then throws `has no job named ...`.
-//
-// M9-003 closed the last gap: `dataHealth`, `windDown` and `flushExports`
-// moved off apps/worker into misc/organization/integration, so this is now an
-// exact both-ways match and the exception list is gone. That is the
-// machine-checkable half of "every job the old worker ran is served by the
-// merged app under ROLE=worker".
-test('every cron scheduler id has a handler, and vice versa', () => {
-  const declared = new Set(Object.keys(queues.cron.jobs));
-  const scheduled = [...CRON_SCHEDULES, PING_SCHEDULE].map(
-    (scheduler) => scheduler.id
-  );
+// ADR-021 shrinks M9-001's bidirectional "every scheduler id has a handler,
+// and vice versa" test to this single derivation-vs-golden comparison: the
+// join between a cron job and its schedule is now enforced by the type
+// system (`defineQueue`'s overload for the `cron` queue requires every job on
+// it to declare `cron`, a schedule or explicit `null`), so the property that
+// test policed can no longer drift — it is true by construction, not by a
+// test walking both registries.
+test('the cron queue derives the golden 20 scheduler ids', () => {
+  const derivedIds = [
+    ...schedulersFromRegistry(queues.cron).map((s) => s.id),
+    PING_SCHEDULE.id,
+  ].sort();
 
-  expect(scheduled.filter((id) => !declared.has(id)).sort()).toEqual([]);
-  // The reverse direction: nothing is registered that nothing ever schedules.
-  expect(
-    [...declared].filter((name) => !scheduled.includes(name)).sort()
-  ).toEqual([]);
+  expect(derivedIds).toEqual(GOLDEN_SCHEDULER_IDS);
 });

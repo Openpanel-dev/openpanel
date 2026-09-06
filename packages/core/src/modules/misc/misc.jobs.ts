@@ -4,14 +4,14 @@
 //
 // `ping` is this module's fragment of the ONE `cron` queue's jobs: declared
 // here and spread into jobs.registry.ts, same shape as
-// organization.jobs.ts's `delete` (M6-001). Its schedule is NOT spread into
-// `CRON_SCHEDULES` here — `PING_SCHEDULE` in jobs/schedulers.ts already
-// declares it, conditionally on `SELF_HOSTED && production`, because it is
-// the one scheduler that isn't always-on.
+// organization.jobs.ts's `delete` (M6-001). Its `cron` is explicitly `null`
+// (ADR-021's on-demand state, not "always scheduled") — `PING_SCHEDULE` in
+// jobs/schedulers.ts adds it separately, conditionally on
+// `SELF_HOSTED && production`, because it is the one scheduler that isn't
+// always-on.
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
-import type { SchedulerDefinition } from '../../jobs/schedulers';
 import { type DataHealthDb, runDataHealthCron } from './src/data-health';
 
 /** Daily 07:30 UTC — V1's cadence (apps/worker/src/boot-cron.ts). */
@@ -21,12 +21,14 @@ const DATA_HEALTH_CRON = '30 7 * * *';
 export const miscCronJobs = {
   ping: defineJob({
     payload: z.null(),
+    cron: null,
     handler: async ({ ctx }) => {
       await ctx.services.misc.runPingCron();
     },
   }),
   dataHealth: defineJob({
     payload: z.null(),
+    cron: { pattern: DATA_HEALTH_CRON },
     handler: async ({ ctx }) => {
       await runDataHealthCron({
         db: ctx.db as unknown as DataHealthDb,
@@ -42,8 +44,3 @@ export const miscCronJobs = {
     },
   }),
 };
-
-/** This module's fragment of `CRON_SCHEDULES` — id and cadence unchanged. */
-export const miscCronSchedules: readonly SchedulerDefinition[] = [
-  { id: 'dataHealth', schedule: { pattern: DATA_HEALTH_CRON } },
-];

@@ -7,7 +7,7 @@ import { createRecordingProducers } from '../../jobs/testing';
 import { queues } from '../../jobs.registry';
 import type { Logger } from '../../logger';
 import type { Services } from '../../services';
-import { onboardingCronJobs, onboardingCronSchedules } from './onboarding.jobs';
+import { onboardingCronJobs } from './onboarding.jobs';
 import type { OnboardingService } from './onboarding.service';
 
 function stubLogger(): Logger {
@@ -116,9 +116,10 @@ test('onboarding does not log when the cron is a self-hosted no-op', async () =>
 });
 
 // Byte-identity with the id/cadence schedulers.test.ts's golden snapshot pins
-// (apps/worker/src/boot-cron.ts).
+// (apps/worker/src/boot-cron.ts). The cadence now lives on the job itself
+// (ADR-021), so this reads it straight off the registry.
 test('the onboarding cron fragment carries V1 id and cadence unchanged', () => {
-  expect(onboardingCronSchedules).toEqual([
-    { id: 'onboarding', schedule: { pattern: '0 * * * *' } },
-  ]);
+  expect(queues.cron.jobs.onboarding.cron).toEqual({
+    pattern: '0 * * * *',
+  });
 });

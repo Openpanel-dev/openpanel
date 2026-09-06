@@ -1,15 +1,13 @@
 // Ported from apps/worker/src/jobs/gsc.ts + boot-cron.ts's gscSync schedule
-// (M5-002).
+// (M5-002); the schedule moved onto the job at ADR-021 (M10-007).
 //
 // `gscProjectSync` / `gscProjectBackfill` are this module's own queue (`gsc`
-// in the registry — ADR-005's registry key). `gscSync` is a cron fragment:
-// declared here, spread into the ONE `cron` queue by jobs.registry.ts and
-// into `CRON_SCHEDULES` by jobs/schedulers.ts. Scheduler id and cadence are
-// V1's, unchanged (apps/worker/src/boot-cron.ts).
+// in the registry — ADR-005's registry key). `gscSync` is a cron fragment,
+// spread into the ONE `cron` queue by jobs.registry.ts. Scheduler id and
+// cadence are V1's, unchanged (apps/worker/src/boot-cron.ts).
 
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
-import type { SchedulerDefinition } from '../../jobs/schedulers';
 
 const gscProjectPayload = z.object({ projectId: z.string() });
 
@@ -36,6 +34,7 @@ export const gscCronJobs = {
   // Matches V1 (apps/worker/src/jobs/gsc.ts's gscSyncAllJob).
   gscSync: defineJob({
     payload: z.null(),
+    cron: { pattern: '0 3 * * *' },
     handler: async ({ ctx }) => {
       const connections = await ctx.services.gsc.listConnectionsForSync();
 
@@ -45,8 +44,3 @@ export const gscCronJobs = {
     },
   }),
 };
-
-/** This module's fragment of `CRON_SCHEDULES` — id and cadence unchanged. */
-export const gscCronSchedules: readonly SchedulerDefinition[] = [
-  { id: 'gscSync', schedule: { pattern: '0 3 * * *' } },
-];

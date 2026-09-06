@@ -1,16 +1,15 @@
 // Ported from apps/worker/src/jobs/cron.delete.ts + boot-cron.ts's `delete`
 // schedule (M6-001); `windDown` joined it at M9-003, the wave that deletes
-// apps/worker (ADR-005's acceptance note gives it to this module).
+// apps/worker (ADR-005's acceptance note gives it to this module). The
+// schedules moved onto the jobs at ADR-021 (M10-007).
 //
-// `delete` is this module's fragment of the ONE `cron` queue's jobs:
-// declared here, spread into jobs.registry.ts and into `CRON_SCHEDULES` by
-// jobs/schedulers.ts. Scheduler id and cadence are V1's, unchanged
+// `delete` is this module's fragment of the ONE `cron` queue's jobs, spread
+// into jobs.registry.ts. Scheduler id and cadence are V1's, unchanged
 // (apps/worker/src/boot-cron.ts).
 
 import { z } from 'zod';
 import type { Ctx } from '../../context';
 import { defineJob } from '../../jobs/define';
-import type { SchedulerDefinition } from '../../jobs/schedulers';
 import type { Logger } from '../../logger';
 import {
   buildWinBackHighlight,
@@ -29,6 +28,7 @@ const WIND_DOWN_CRON = '0 * * * *';
 export const organizationCronJobs = {
   delete: defineJob({
     payload: z.null(),
+    cron: { pattern: '0 * * * *' },
     handler: async ({ ctx }) => {
       const result = await ctx.services.organization.runDeleteCron();
       ctx.logger.info({ ...result }, 'Delete cron complete');
@@ -36,6 +36,7 @@ export const organizationCronJobs = {
   }),
   windDown: defineJob({
     payload: z.null(),
+    cron: { pattern: WIND_DOWN_CRON },
     handler: async ({ ctx }) => {
       await runWindDownCron(
         await windDownDeps(ctx, ctx.logger.child({ job: 'wind-down' }))
@@ -79,9 +80,3 @@ async function windDownDeps(ctx: Ctx, logger: Logger): Promise<WindDownDeps> {
     buildHighlight: (input) => buildWinBackHighlight(input, highlight),
   };
 }
-
-/** This module's fragment of `CRON_SCHEDULES` — id and cadence unchanged. */
-export const organizationCronSchedules: readonly SchedulerDefinition[] = [
-  { id: 'delete', schedule: { pattern: '0 * * * *' } },
-  { id: 'windDown', schedule: { pattern: WIND_DOWN_CRON } },
-];

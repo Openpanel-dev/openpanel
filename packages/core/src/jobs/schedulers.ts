@@ -3,23 +3,18 @@
 // what makes it idempotent across replicas: two processes upserting the same
 // id with the same repeat options at boot converge on one scheduler, with no
 // locking of our own needed.
+//
+// ADR-021: the scheduler list is no longer a second, hand-maintained registry
+// — it is derived from the `cron` queue's own jobs, so a job and its schedule
+// cannot drift apart. This file imports no module; `schedulersFromRegistry`
+// takes the registry's `cron` queue as data.
 
+import { queues } from '../jobs.registry';
 import type { Logger } from '../logger';
-import { cohortCronSchedules } from '../modules/cohort/cohort.jobs';
-import { eventCronSchedules } from '../modules/event/event.jobs';
-import { groupCronSchedules } from '../modules/group/group.jobs';
-import { gscCronSchedules } from '../modules/gsc/gsc.jobs';
-import { insightCronSchedules } from '../modules/insight/insight.jobs';
-import { integrationCronSchedules } from '../modules/integration/integration.jobs';
-import { miscCronSchedules } from '../modules/misc/misc.jobs';
-import { onboardingCronSchedules } from '../modules/onboarding/onboarding.jobs';
-import { organizationCronSchedules } from '../modules/organization/organization.jobs';
-import { profileCronSchedules } from '../modules/profile/profile.jobs';
-import { saltCronSchedules } from '../modules/salt/salt.jobs';
-import { sessionCronSchedules } from '../modules/session/session.jobs';
+import type { AnyJob, QueueDefinition, RepeatSchedule } from './define';
 import { wrap } from './envelope';
 
-export type RepeatSchedule = { pattern: string } | { every: number };
+export type { RepeatSchedule } from './define';
 
 export interface SchedulerDefinition {
   /** V1 scheduler id: the job-scheduler key, and — via BullMQ's own default
@@ -61,55 +56,43 @@ const CONFLICT_JOB_STATES = [
 
 const CONFLICT_ERROR_SUBSTRING = 'job ID already exists';
 
+/**
+ * Derives the scheduler list from the `cron` queue's own jobs (ADR-021) — the
+ * join is by construction now, not by a second registry kept in sync by a
+ * test. A job's `cron` is `RepeatSchedule` (always-on), `null` (on-demand —
+ * e.g. `ping`, scheduled conditionally elsewhere), or, on the `cron` queue,
+ * never simply absent: `defineQueue`'s overload for that queue name makes
+ * omitting it a type error. This throw is the defensive fallback for the one
+ * hole the type system can't close — a value forced through with `as any`.
+ */
+export function schedulersFromRegistry(
+  cronQueue: QueueDefinition<Record<string, AnyJob>>
+): SchedulerDefinition[] {
+  const schedulers: SchedulerDefinition[] = [];
+
+  for (const [jobName, job] of Object.entries(cronQueue.jobs)) {
+    if (!('cron' in job)) {
+      throw new Error(
+        `cron queue job "${jobName}" has no "cron" field — declare a schedule or "cron: null" for on-demand (ADR-021)`
+      );
+    }
+    if (job.cron) {
+      schedulers.push({ id: jobName, schedule: job.cron });
+    }
+  }
+
+  return schedulers.sort((a, b) => a.id.localeCompare(b.id));
+}
+
 // V1's exact 19 always-on scheduler ids and cadences
 // (apps/worker/src/boot-cron.ts). `ping` is the 20th and is conditional —
 // see `PING_SCHEDULE` and `startSchedulers`.
-export const CRON_SCHEDULES: readonly SchedulerDefinition[] = [
-  // salt — owned by the salt module, declared next to its jobs
-  // (modules/salt/salt.jobs.ts).
-  ...saltCronSchedules,
-  // delete / windDown — owned by the organization module, declared next to its
-  // jobs (modules/organization/organization.jobs.ts).
-  ...organizationCronSchedules,
-  // flushEvents — owned by the event module, declared next to its jobs
-  // (modules/event/event.jobs.ts).
-  ...eventCronSchedules,
-  // flushProfiles / flushProfileBackfill — owned by the profile module,
-  // declared next to its jobs (modules/profile/profile.jobs.ts).
-  ...profileCronSchedules,
-  // flushSessions / flushReplay — owned by the session module, spread in
-  // below alongside sessionReaper / sessionVacuum.
-  // flushGroups — owned by the group module, declared next to its jobs
-  // (modules/group/group.jobs.ts).
-  ...groupCronSchedules,
-  // onboarding — owned by the onboarding module, declared next to its jobs
-  // (modules/onboarding/onboarding.jobs.ts).
-  ...onboardingCronSchedules,
-  // gscSync — owned by the gsc module, declared next to its jobs
-  // (modules/gsc/gsc.jobs.ts).
-  ...gscCronSchedules,
-  // cohortRefresh — owned by the cohort module, declared next to its jobs
-  // (modules/cohort/cohort.jobs.ts).
-  ...cohortCronSchedules,
-  // flushSessions / flushReplay / sessionReaper / sessionVacuum — owned by
-  // the session module, declared next to its jobs
-  // (modules/session/session.jobs.ts).
-  ...sessionCronSchedules,
-  // insightsDaily / insightCleanup / weeklyDigest — owned by the insight
-  // module, declared next to its jobs (modules/insight/insight.jobs.ts).
-  ...insightCronSchedules,
-  // dataHealth — owned by the misc module, declared next to its jobs
-  // (modules/misc/misc.jobs.ts). ADR-005's acceptance note completed the
-  // ownership map for this and the two below; M9-003 moved the handlers off
-  // apps/worker, so each now sits with its owner rather than inline here.
-  ...miscCronSchedules,
-  // flushExports — owned by the integration module, declared next to its jobs
-  // (modules/integration/integration.jobs.ts).
-  ...integrationCronSchedules,
-];
+export const CRON_SCHEDULES: readonly SchedulerDefinition[] =
+  schedulersFromRegistry(queues.cron);
 
 // V1 gated this on `SELF_HOSTED && NODE_ENV === 'production'`
-// (apps/worker/src/boot-cron.ts:133).
+// (apps/worker/src/boot-cron.ts:133). `misc.jobs.ts`'s `ping` job declares
+// `cron: null` for exactly this reason — it is never in `CRON_SCHEDULES`.
 export const PING_SCHEDULE: SchedulerDefinition = {
   id: 'ping',
   schedule: { pattern: '0 0 * * *' },
