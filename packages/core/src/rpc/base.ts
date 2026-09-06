@@ -8,13 +8,16 @@
 // `transformer`, `errorFormatter` and `Meta` are verbatim from
 // packages/trpc/src/trpc.ts:44-67; error semantics are unchanged by decision.
 
-import { initTRPC } from '@trpc/server';
+import { initTRPC, TRPCError } from '@trpc/server';
+import { has } from 'ramda';
 import superjson from 'superjson';
 import { ZodError, z } from 'zod';
 import type { HttpCtx, Session } from '../context';
 import type { Logger } from '../logger';
 import { EMPTY_SESSION } from '../modules/auth/src/login-session';
+import { runWithAlsSession } from '../modules/session/src/session-context';
 import { type CookieOptions, serializeCookie } from '../shared/cookie';
+import { TRPCForbiddenError } from './errors';
 
 /**
  * Per-procedure metadata consulted by `enforceAccess`.
@@ -87,12 +90,156 @@ const t = initTRPC
 export const createTRPCRouter = t.router;
 export const middleware = t.middleware;
 /**
- * The bare procedure. V1's `publicProcedure` / `protectedProcedure` /
- * `protectedProcedureWithoutAccess` compose this with the logger, sessionScope,
- * `enforceUserIsAuthed` and `enforceAccess` middlewares; those need the
- * resolved `Session` shape and the access rules, so they land with auth (P6).
+ * The bare procedure. It authenticates NOTHING. Use one of the three builders
+ * below unless a procedure's V1 twin was written on `procedure` itself — the
+ * only ones are the share-aware `chartProcedure`/`overviewProcedure` bases,
+ * and those are `publicProcedure` plus their own middleware.
  */
 export const procedure = t.procedure;
+
+// ---------------------------------------------------------------------------
+// The procedure stack (M11-001), ported from packages/trpc/src/trpc.ts:35-155.
+//
+// ADR-011 is this code's law; invariants 1-13 are binding. Three properties of
+// the port are load-bearing and are the reason it is a middleware stack rather
+// than per-handler code:
+//
+//  1. AUTHENTICATION RUNS BEFORE INPUT PARSING. tRPC runs `.use()` middleware
+//     ahead of the `.input()` parser, so an anonymous caller gets UNAUTHORIZED
+//     whatever it sends. Doing the same check inside a handler inverts that:
+//     the caller learns the input shape first, and 176 procedures changed
+//     answer from 401 to 400 when core mounted the bare `procedure`
+//     (docs/RPC_PROCEDURE_SET_EQUIVALENCE.md).
+//  2. THE CHECK CANNOT BE FORGOTTEN. It is a property of the builder, not of a
+//     line a port might drop. Three procedures (`client.list`,
+//     `subscription.getCurrent`, `subscription.usage`) had no check at all
+//     while this stack was missing.
+//  3. `enforceAccess` READS THE RAW, PRE-ZOD INPUT (ADR-011 invariant 2) and
+//     only its TOP-LEVEL `projectId` / `organizationId`. A procedure that
+//     resolves the project from a reportId/dashboardId is invisible to it and
+//     keeps its in-handler check — ADR-011 counts 58 of those, and a redundant
+//     check is harmless where a missing one is not.
+//
+// The lookups arrive through `ctx.services.auth` (M10-002 bound the ladder
+// there, once, in auth.service.ts); core reaches no database directly.
+// ---------------------------------------------------------------------------
+
+const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.session?.userId) {
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Not authenticated' });
+  }
+
+  try {
+    return next({
+      ctx: {
+        session: { ...ctx.session },
+      },
+    });
+  } catch (error) {
+    // V1 wrote this to `console.error`; core has a request-scoped logger on
+    // the context and CLAUDE.md bans `console` in shipped code. Same branch,
+    // same outcome, same (misspelled, kept) message.
+    ctx.logger.error({ err: error }, 'Failes to get user');
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'Failed to get user',
+    });
+  }
+});
+
+// Only used on protected routes
+const enforceAccess = t.middleware(
+  async ({ ctx, next, type, meta, getRawInput }) => {
+    const sessionId = ctx.session?.session?.id ?? null;
+    return runWithAlsSession(sessionId, async () => {
+      const rawInput = await getRawInput();
+      if (type === 'mutation' && ctx.demoMode) {
+        throw new TRPCForbiddenError(
+          'You are not allowed to do this in demo mode'
+        );
+      }
+
+      if (has('projectId', rawInput)) {
+        // Fails closed: any procedure that takes a top-level projectId requires
+        // write access to mutate, including ones added later. Procedures that
+        // resolve the project from a reportId/dashboardId/etc. are invisible to
+        // this check and call requireProjectAccess in the handler instead.
+        const needsWrite = type === 'mutation' && !meta?.readOnlyMutation;
+
+        await ctx.services.auth.requireProjectAccess({
+          userId: ctx.session.userId as string,
+          projectId: rawInput.projectId as string,
+          level: needsWrite ? 'write' : 'read',
+        });
+      }
+
+      if (has('organizationId', rawInput)) {
+        const access = await ctx.services.auth.getOrganizationAccess({
+          userId: ctx.session.userId as string,
+          organizationId: rawInput.organizationId as string,
+        });
+
+        if (!access) {
+          throw new TRPCForbiddenError(
+            'You do not have access to this organization'
+          );
+        }
+      }
+
+      return next();
+    });
+  }
+);
+
+const loggerMiddleware = t.middleware(
+  async ({ ctx, next, getRawInput, path, input, type }) => {
+    const rawInput = await getRawInput();
+    // Only log mutations
+    if (type === 'mutation') {
+      ctx.logger.info(
+        {
+          path,
+          rawInput,
+          input,
+          userId: ctx.session?.userId,
+          organizationId: has('organizationId', rawInput)
+            ? rawInput.organizationId
+            : undefined,
+          projectId: has('projectId', rawInput)
+            ? rawInput.projectId
+            : undefined,
+        },
+        'TRPC mutation'
+      );
+    }
+    return next();
+  }
+);
+
+const sessionScopeMiddleware = t.middleware(async ({ ctx, next }) => {
+  const sessionId = ctx.session?.session?.id ?? null;
+  return runWithAlsSession(sessionId, async () => {
+    return next();
+  });
+});
+
+/** Anyone, signed in or not. Still session-scoped and mutation-logged. */
+export const publicProcedure = procedure
+  .use(loggerMiddleware)
+  .use(sessionScopeMiddleware);
+/** Signed in, plus the project/organization check on the raw input. */
+export const protectedProcedure = procedure
+  .use(enforceUserIsAuthed)
+  .use(enforceAccess)
+  .use(loggerMiddleware)
+  .use(sessionScopeMiddleware);
+// Authenticated but WITHOUT the org/project membership check. Use for endpoints
+// that must answer for any logged-in user (e.g. checking your own access to an
+// org you may not belong to) and return null instead of throwing.
+export const protectedProcedureWithoutAccess = procedure
+  .use(enforceUserIsAuthed)
+  .use(loggerMiddleware)
+  .use(sessionScopeMiddleware);
 
 // V1 delayed every non-production request by up to 200ms so a developer felt
 // the latency a user does. Preserved, with the flag injected: core reads no

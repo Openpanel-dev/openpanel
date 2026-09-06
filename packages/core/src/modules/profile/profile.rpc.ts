@@ -1,16 +1,19 @@
 // Ported from packages/trpc/src/routers/profile.ts (M7-002).
 //
-// Same arrangement as session.rpc.ts: V1's `protectedProcedure` stack lands
-// with auth (P6), so until then each procedure does its own "is anyone logged
-// in" + `requireProjectAccess({ level: 'read' })` off the `projectId` input,
-// which is what V1's `enforceUserIsAuthed` + `enforceAccess` middleware pair
-// does implicitly. packages/trpc's profile router delegates its handler
-// bodies onto `./profile.service` while keeping V1's own `protectedProcedure`
-// stack.
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 
 import { zChartEventFilter } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  type TrpcContext,
+} from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import {
   getPowerUsers,
@@ -44,37 +47,45 @@ async function requireReadAccess(ctx: TrpcContext, projectId: string) {
 }
 
 export const profileRouter = createTRPCRouter({
-  byId: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
+  byId: protectedProcedure.input(zProfileRef).query(async ({ input, ctx }) => {
     await requireReadAccess(ctx, input.projectId);
 
     return getProfileById(ctx, input.profileId, input.projectId);
   }),
 
-  metrics: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
-    await requireReadAccess(ctx, input.projectId);
+  metrics: protectedProcedure
+    .input(zProfileRef)
+    .query(async ({ input, ctx }) => {
+      await requireReadAccess(ctx, input.projectId);
 
-    return getProfileMetrics(ctx, input.profileId, input.projectId);
-  }),
+      return getProfileMetrics(ctx, input.profileId, input.projectId);
+    }),
 
-  activity: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
-    await requireReadAccess(ctx, input.projectId);
+  activity: protectedProcedure
+    .input(zProfileRef)
+    .query(async ({ input, ctx }) => {
+      await requireReadAccess(ctx, input.projectId);
 
-    return getProfileActivity(ctx, input.profileId, input.projectId);
-  }),
+      return getProfileActivity(ctx, input.profileId, input.projectId);
+    }),
 
-  mostEvents: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
-    await requireReadAccess(ctx, input.projectId);
+  mostEvents: protectedProcedure
+    .input(zProfileRef)
+    .query(async ({ input, ctx }) => {
+      await requireReadAccess(ctx, input.projectId);
 
-    return getProfileMostEvents(ctx, input.profileId, input.projectId);
-  }),
+      return getProfileMostEvents(ctx, input.profileId, input.projectId);
+    }),
 
-  popularRoutes: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
-    await requireReadAccess(ctx, input.projectId);
+  popularRoutes: protectedProcedure
+    .input(zProfileRef)
+    .query(async ({ input, ctx }) => {
+      await requireReadAccess(ctx, input.projectId);
 
-    return getProfilePopularRoutes(ctx, input.profileId, input.projectId);
-  }),
+      return getProfilePopularRoutes(ctx, input.profileId, input.projectId);
+    }),
 
-  properties: procedure
+  properties: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
@@ -82,7 +93,7 @@ export const profileRouter = createTRPCRouter({
       return getProfilePropertyNames(ctx, input.projectId);
     }),
 
-  list: procedure
+  list: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -99,7 +110,7 @@ export const profileRouter = createTRPCRouter({
       return getProfileListPage(ctx, input);
     }),
 
-  powerUsers: procedure
+  powerUsers: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -113,7 +124,7 @@ export const profileRouter = createTRPCRouter({
       return getPowerUsers(ctx, input);
     }),
 
-  values: procedure
+  values: protectedProcedure
     .input(z.object({ property: z.string(), projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);

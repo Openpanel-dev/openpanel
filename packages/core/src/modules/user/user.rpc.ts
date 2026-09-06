@@ -1,18 +1,17 @@
 // Ported from packages/trpc/src/routers/user.ts (M6-001).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
-// through packages/trpc's own `protectedProcedure` (full stack included) and
-// delegates its handler bodies to core's user functions (DELEGATE PATTERN) —
-// `ctx.services.user` carries this module's factory the same as every other
-// module now (M10-004); it has no queue/cron of its own, same as
-// `conversation`.
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
+//
+// `ctx.services.user` carries this module's factory (M10-004); it has no
+// queue/cron of its own, same as `conversation`.
 
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import { deleteSessionTokenCookie } from '../auth/auth.service';
 
@@ -24,19 +23,19 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 export const userRouter = createTRPCRouter({
-  deletionBlockers: procedure.query(async ({ ctx }) => {
+  deletionBlockers: protectedProcedure.query(async ({ ctx }) => {
     const userId = requireLogin(ctx.session.userId);
     return ctx.services.user.listUserDeletionBlockers(userId);
   }),
 
-  delete: procedure.mutation(async ({ ctx }) => {
+  delete: protectedProcedure.mutation(async ({ ctx }) => {
     const userId = requireLogin(ctx.session.userId);
     await ctx.services.user.deleteUserAccount(userId);
     deleteSessionTokenCookie(ctx.setCookie);
     return true;
   }),
 
-  update: procedure
+  update: protectedProcedure
     .input(
       z.object({
         firstName: z.string(),
@@ -48,7 +47,7 @@ export const userRouter = createTRPCRouter({
       return ctx.services.user.updateUserProfile({ userId, ...input });
     }),
 
-  debugPostCookie: procedure
+  debugPostCookie: protectedProcedure
     .input(
       z.object({
         sameSite: z.enum(['lax', 'strict', 'none']),
@@ -66,7 +65,7 @@ export const userRouter = createTRPCRouter({
       });
     }),
 
-  debugGetCookie: procedure
+  debugGetCookie: protectedProcedure
     .input(
       z.object({
         sameSite: z.enum(['lax', 'strict', 'none']),

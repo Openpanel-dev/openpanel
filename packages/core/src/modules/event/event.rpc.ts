@@ -1,11 +1,11 @@
 // Ported from packages/trpc/src/routers/event.ts (M7-002).
 //
-// Same arrangement as session.rpc.ts: V1's `protectedProcedure` stack lands
-// with auth (P6), so until then each procedure does its own "is anyone logged
-// in" + `requireProjectAccess` off the `projectId` input (`read` for queries,
-// `write` for `updateEventMeta`). packages/trpc's event router delegates its
-// handler bodies onto `./event.service` while keeping V1's own
-// `protectedProcedure` stack.
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 //
 // `bots` was V1's only `publicProcedure` here (anonymous callers were let in
 // when a share-overview row existed); ADR-011 makes it protected.
@@ -21,7 +21,11 @@ import {
   zTimeInterval,
 } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  type TrpcContext,
+} from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
 import { getChartStartEndDate } from '../../shared/date';
 import { getSettingsForProject } from '../organization/organization.service';
@@ -74,7 +78,7 @@ function formatClickhouseDateTime(date: Date): string {
 }
 
 export const eventRouter = createTRPCRouter({
-  updateEventMeta: procedure
+  updateEventMeta: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -90,7 +94,7 @@ export const eventRouter = createTRPCRouter({
       return updateEventMeta(ctx, input);
     }),
 
-  byId: procedure.input(zEventRef).query(async ({ input, ctx }) => {
+  byId: protectedProcedure.input(zEventRef).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
     const event = await getEventById(ctx, input);
@@ -100,7 +104,7 @@ export const eventRouter = createTRPCRouter({
     return event;
   }),
 
-  details: procedure.input(zEventRef).query(async ({ input, ctx }) => {
+  details: protectedProcedure.input(zEventRef).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
     const details = await getEventDetails(ctx, input);
@@ -110,7 +114,7 @@ export const eventRouter = createTRPCRouter({
     return details;
   }),
 
-  events: procedure
+  events: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -132,7 +136,7 @@ export const eventRouter = createTRPCRouter({
       return getEventListPage(ctx, input);
     }),
 
-  conversionNames: procedure
+  conversionNames: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
@@ -140,7 +144,7 @@ export const eventRouter = createTRPCRouter({
       return getConversionEventNames(ctx, input.projectId);
     }),
 
-  conversions: procedure
+  conversions: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -157,7 +161,7 @@ export const eventRouter = createTRPCRouter({
       return getConversionListPage(ctx, input);
     }),
 
-  bots: procedure
+  bots: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -171,7 +175,7 @@ export const eventRouter = createTRPCRouter({
       return getBotEventsPage(ctx, input);
     }),
 
-  pages: procedure
+  pages: protectedProcedure
     .input(
       zChartWindow.extend({
         cursor: z.number().optional(),
@@ -194,7 +198,7 @@ export const eventRouter = createTRPCRouter({
       });
     }),
 
-  pagesTimeseries: procedure
+  pagesTimeseries: protectedProcedure
     .input(zChartWindow)
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
@@ -210,27 +214,29 @@ export const eventRouter = createTRPCRouter({
       });
     }),
 
-  previousPages: procedure.input(zChartWindow).query(async ({ input, ctx }) => {
-    await requireAccess(ctx, input.projectId, 'read');
+  previousPages: protectedProcedure
+    .input(zChartWindow)
+    .query(async ({ input, ctx }) => {
+      await requireAccess(ctx, input.projectId, 'read');
 
-    const { timezone } = await getSettingsForProject(ctx, input.projectId);
-    const { startDate, endDate } = getChartStartEndDate(input, timezone);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
 
-    const startMs = new Date(startDate).getTime();
-    const endMs = new Date(endDate).getTime();
-    const duration = endMs - startMs;
-    const previousEnd = new Date(startMs - 1);
-    const previousStart = new Date(previousEnd.getTime() - duration);
+      const startMs = new Date(startDate).getTime();
+      const endMs = new Date(endDate).getTime();
+      const duration = endMs - startMs;
+      const previousEnd = new Date(startMs - 1);
+      const previousStart = new Date(previousEnd.getTime() - duration);
 
-    return ctx.services.pages.getTopPages({
-      projectId: input.projectId,
-      startDate: formatClickhouseDateTime(previousStart),
-      endDate: formatClickhouseDateTime(previousEnd),
-      timezone,
-    });
-  }),
+      return ctx.services.pages.getTopPages({
+        projectId: input.projectId,
+        startDate: formatClickhouseDateTime(previousStart),
+        endDate: formatClickhouseDateTime(previousEnd),
+        timezone,
+      });
+    }),
 
-  pageTimeseries: procedure
+  pageTimeseries: protectedProcedure
     .input(zChartWindow.extend({ origin: z.string(), path: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
@@ -248,7 +254,7 @@ export const eventRouter = createTRPCRouter({
       });
     }),
 
-  origin: procedure
+  origin: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');

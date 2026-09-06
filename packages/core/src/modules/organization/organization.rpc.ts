@@ -1,20 +1,18 @@
 // Ported from packages/trpc/src/routers/organization.ts (M6-001).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
-// through packages/trpc's own `protectedProcedure` (full stack included) and
-// delegates its handler bodies to `ctx.services.organization` (DELEGATE
-// PATTERN), so nothing here is a live regression.
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 //
 // The organization-admin ladder itself is bound once, in auth.service.ts
 // (M10-002); every procedure here reaches it through `ctx.services.auth`.
 //
-// `getInvite` drops V1's rate limiting (packages/trpc's `rateLimitMiddleware`
-// lands with auth, same as `protectedProcedure` above) — V1 keeps enforcing
-// it on the live route through its own copy of this router.
+// `getInvite` still drops V1's rate limiting: `rateLimitMiddleware` did NOT
+// move with M11-001. `createRateLimitMiddleware` in rpc/base.ts is the seam
+// that will carry it.
 
 import {
   zEditOrganization,
@@ -22,7 +20,13 @@ import {
   zUpdateMemberAccess,
 } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  protectedProcedureWithoutAccess,
+  publicProcedure,
+  type TrpcContext,
+} from '../../rpc/base';
 import {
   TRPCAccessError,
   TRPCBadRequestError,
@@ -44,14 +48,14 @@ async function requireOrgAdmin(ctx: TrpcContext, organizationId: string) {
 }
 
 export const organizationRouter = createTRPCRouter({
-  get: procedure
+  get: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .query(async ({ input, ctx }) => {
       requireLogin(ctx.session.userId);
       return ctx.services.organization.get(input.organizationId);
     }),
 
-  list: procedure.query(async ({ ctx }) => {
+  list: protectedProcedure.query(async ({ ctx }) => {
     const userId = requireLogin(ctx.session.userId);
     return ctx.services.organization.list(userId);
   }),
@@ -59,7 +63,7 @@ export const organizationRouter = createTRPCRouter({
   // Membership-exempt on purpose: any logged-in user may ask whether they have
   // access to a given org. Returns null when they're not a member (instead of
   // throwing), which the org-layout guard uses to render a not-found page.
-  myAccess: procedure
+  myAccess: protectedProcedureWithoutAccess
     .input(z.object({ organizationId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -73,14 +77,14 @@ export const organizationRouter = createTRPCRouter({
       return { role: access.role };
     }),
 
-  update: procedure
+  update: protectedProcedure
     .input(zEditOrganization)
     .mutation(async ({ input, ctx }) => {
       await requireOrgAdmin(ctx, input.id);
       return ctx.services.organization.update(input);
     }),
 
-  delete: procedure
+  delete: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       await requireOrgAdmin(ctx, input.organizationId);
@@ -88,7 +92,7 @@ export const organizationRouter = createTRPCRouter({
       return true;
     }),
 
-  cancelDeletion: procedure
+  cancelDeletion: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       await requireOrgAdmin(ctx, input.organizationId);
@@ -96,19 +100,21 @@ export const organizationRouter = createTRPCRouter({
       return true;
     }),
 
-  inviteUser: procedure.input(zInviteUser).mutation(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await requireOrgAdmin(ctx, input.organizationId);
-    return ctx.services.organization.inviteUser({
-      organizationId: input.organizationId,
-      email: input.email,
-      role: input.role,
-      access: input.access,
-      invitedById: userId,
-    });
-  }),
+  inviteUser: protectedProcedure
+    .input(zInviteUser)
+    .mutation(async ({ input, ctx }) => {
+      const userId = requireLogin(ctx.session.userId);
+      await requireOrgAdmin(ctx, input.organizationId);
+      return ctx.services.organization.inviteUser({
+        organizationId: input.organizationId,
+        email: input.email,
+        role: input.role,
+        access: input.access,
+        invitedById: userId,
+      });
+    }),
 
-  revokeInvite: procedure
+  revokeInvite: protectedProcedure
     .input(z.object({ inviteId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       requireLogin(ctx.session.userId);
@@ -119,7 +125,7 @@ export const organizationRouter = createTRPCRouter({
       return ctx.services.organization.revokeInvite(input.inviteId);
     }),
 
-  removeMember: procedure
+  removeMember: protectedProcedure
     .input(
       z.object({
         organizationId: z.string(),
@@ -138,7 +144,7 @@ export const organizationRouter = createTRPCRouter({
       });
     }),
 
-  updateMemberAccess: procedure
+  updateMemberAccess: protectedProcedure
     .input(zUpdateMemberAccess)
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -153,21 +159,21 @@ export const organizationRouter = createTRPCRouter({
       });
     }),
 
-  members: procedure
+  members: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireOrgAdmin(ctx, input.organizationId);
       return ctx.services.organization.members(input.organizationId);
     }),
 
-  invitations: procedure
+  invitations: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireOrgAdmin(ctx, input.organizationId);
       return ctx.services.organization.invitations(input.organizationId);
     }),
 
-  getInvite: procedure
+  getInvite: publicProcedure
     .input(z.object({ inviteId: z.string().optional() }))
     .query(async ({ input, ctx }) => {
       if (!input.inviteId) {

@@ -1,20 +1,19 @@
 // Ported from packages/trpc/src/routers/client.ts (M6-002).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
-// through packages/trpc's own `protectedProcedure` (full stack included) and
-// delegates its handler bodies to core's client functions (DELEGATE
-// PATTERN). `ctx.services.client` carries this module's factory the same as
-// every other module now (M10-004).
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
+//
+// `ctx.services.client` carries this module's factory (M10-004).
 //
 // The permission ladder itself is bound once, in auth.service.ts (M10-002);
 // every procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
 
 function requireLogin(userId: string | null | undefined): string {
@@ -25,7 +24,7 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 export const clientRouter = createTRPCRouter({
-  list: procedure
+  list: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       // Ported verbatim: V1's `client.list` reads by projectId with no
@@ -33,7 +32,7 @@ export const clientRouter = createTRPCRouter({
       return ctx.services.client.getClientsByProjectId(input.projectId);
     }),
 
-  update: procedure
+  update: protectedProcedure
     .input(z.object({ id: z.string(), name: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -57,7 +56,7 @@ export const clientRouter = createTRPCRouter({
       );
     }),
 
-  create: procedure
+  create: protectedProcedure
     .input(
       z.object({
         name: z.string(),
@@ -95,7 +94,7 @@ export const clientRouter = createTRPCRouter({
       return { ...created.client, secret: created.secret };
     }),
 
-  remove: procedure
+  remove: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);

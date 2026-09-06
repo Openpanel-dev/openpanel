@@ -1,16 +1,23 @@
 // Ported from packages/trpc/src/routers/report.ts (M7-006).
 //
-// Same arrangement as chart.rpc.ts/project.rpc.ts: V1's `protectedProcedure`
-// lands in core with auth (rpc/base.ts), so each procedure does its own "is
-// anyone logged in" + `requireProjectAccess` check, reached through
-// `ctx.services.auth` (M10-002). The mutation bodies
-// (create/update/move/delete/duplicate/layout) moved to ./report.service
-// alongside the reads that already lived there; packages/trpc's report
-// router delegates every handler body onto ./report.service while keeping
-// V1's own procedure stack (DELEGATE PATTERN).
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
+//
+// Most of this router's inputs carry a reportId or a dashboardId rather than
+// a projectId, so `enforceAccess` is blind to them and the in-handler
+// `requireProjectAccess` through `ctx.services.auth` (M10-002) is the only
+// check that fires.
 
 import { z } from 'zod';
-import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  type TrpcContext,
+} from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
 import { zReport } from './report.constants';
 
@@ -49,7 +56,7 @@ async function requireWriteAccess(ctx: TrpcContext, projectId: string) {
 }
 
 export const reportRouter = createTRPCRouter({
-  list: procedure
+  list: protectedProcedure
     .input(
       z.object({
         dashboardId: z.string(),
@@ -68,7 +75,7 @@ export const reportRouter = createTRPCRouter({
       return ctx.services.report.getReportsByDashboardId(dashboardId);
     }),
 
-  create: procedure
+  create: protectedProcedure
     .input(
       z.object({
         report: zReport.omit({ projectId: true }),
@@ -86,7 +93,7 @@ export const reportRouter = createTRPCRouter({
       });
     }),
 
-  update: procedure
+  update: protectedProcedure
     .input(
       z.object({
         reportId: z.string(),
@@ -99,7 +106,7 @@ export const reportRouter = createTRPCRouter({
       return ctx.services.report.updateReport({ reportId, report });
     }),
 
-  move: procedure
+  move: protectedProcedure
     .input(
       z.object({
         reportId: z.string(),
@@ -112,7 +119,7 @@ export const reportRouter = createTRPCRouter({
       return ctx.services.report.moveReport({ report: dbReport, dashboardId });
     }),
 
-  delete: procedure
+  delete: protectedProcedure
     .input(
       z.object({
         reportId: z.string(),
@@ -124,7 +131,7 @@ export const reportRouter = createTRPCRouter({
       return ctx.services.report.deleteReport(reportId);
     }),
 
-  duplicate: procedure
+  duplicate: protectedProcedure
     .input(
       z.object({
         reportId: z.string(),
@@ -136,7 +143,7 @@ export const reportRouter = createTRPCRouter({
       return ctx.services.report.duplicateReport(dbReport);
     }),
 
-  get: procedure
+  get: protectedProcedure
     .input(
       z.object({
         reportId: z.string(),
@@ -151,7 +158,7 @@ export const reportRouter = createTRPCRouter({
       return report;
     }),
 
-  updateLayout: procedure
+  updateLayout: protectedProcedure
     .input(
       z.object({
         reportId: z.string(),
@@ -164,7 +171,7 @@ export const reportRouter = createTRPCRouter({
       return ctx.services.report.updateReportLayout({ reportId, layout });
     }),
 
-  getLayouts: procedure
+  getLayouts: protectedProcedure
     .input(
       z.object({
         dashboardId: z.string(),
@@ -188,7 +195,7 @@ export const reportRouter = createTRPCRouter({
       return ctx.services.report.getReportLayouts({ dashboardId, projectId });
     }),
 
-  resetLayout: procedure
+  resetLayout: protectedProcedure
     .input(
       z.object({
         dashboardId: z.string(),

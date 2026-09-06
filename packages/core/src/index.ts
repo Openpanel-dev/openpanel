@@ -996,6 +996,9 @@ export {
   createTRPCRouter,
   middleware,
   procedure,
+  protectedProcedure,
+  protectedProcedureWithoutAccess,
+  publicProcedure,
 } from './rpc/base';
 export {
   TRPCAccessError,

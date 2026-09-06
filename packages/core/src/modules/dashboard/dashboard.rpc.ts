@@ -1,16 +1,22 @@
 // Ported from packages/trpc/src/routers/dashboard.ts (M7-006).
 //
-// Same arrangement as project.rpc.ts: V1's `protectedProcedure` lands in
-// core with auth (rpc/base.ts), so each procedure does its own "is anyone
-// logged in" + `requireProjectAccess` check, reached through
-// `ctx.services.auth` (M10-002). The create/update/delete mutation bodies
-// moved to ./dashboard.service alongside the reads that already lived there;
-// packages/trpc's dashboard router delegates every handler body onto
-// ./dashboard.service while keeping V1's own procedure stack (DELEGATE
-// PATTERN).
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
+//
+// The dashboardId-keyed procedures are invisible to `enforceAccess`; their
+// in-handler `requireProjectAccess` through `ctx.services.auth` (M10-002) is
+// the only check that fires.
 
 import { z } from 'zod';
-import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  type TrpcContext,
+} from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
 
 function requireLogin(userId: string | null | undefined): string {
@@ -37,7 +43,7 @@ async function requireWriteAccess(ctx: TrpcContext, projectId: string) {
 }
 
 export const dashboardRouter = createTRPCRouter({
-  list: procedure
+  list: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -48,7 +54,7 @@ export const dashboardRouter = createTRPCRouter({
       return ctx.services.dashboard.getDashboardsByProjectId(input.projectId);
     }),
 
-  byId: procedure
+  byId: protectedProcedure
     .input(
       z.object({
         id: z.string(),
@@ -70,7 +76,7 @@ export const dashboardRouter = createTRPCRouter({
       return dashboard;
     }),
 
-  create: procedure
+  create: protectedProcedure
     .input(
       z.object({
         name: z.string(),
@@ -82,7 +88,7 @@ export const dashboardRouter = createTRPCRouter({
       return ctx.services.dashboard.createDashboard(input);
     }),
 
-  update: procedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.string(),
@@ -97,7 +103,7 @@ export const dashboardRouter = createTRPCRouter({
       return ctx.services.dashboard.updateDashboard(input);
     }),
 
-  delete: procedure
+  delete: protectedProcedure
     .input(
       z.object({
         id: z.string(),

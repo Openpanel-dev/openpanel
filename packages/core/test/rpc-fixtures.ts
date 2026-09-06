@@ -12,6 +12,7 @@ import {
 import { createRecordingProducers } from '../src/jobs/testing';
 import { queues } from '../src/jobs.registry';
 import type { LogFn, Logger } from '../src/logger';
+import type { Services } from '../src/services';
 
 export interface LoggedLine {
   level: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
@@ -97,6 +98,7 @@ export function stubHttpCtx(
     config: { selfHosted: false },
   };
 
+  const { services, ...rest } = overrides;
   const ctx = extendCtx(
     createCtx(deps, { requestId: TEST_REQUEST_ID, logger }),
     {
@@ -110,9 +112,17 @@ export function stubHttpCtx(
       setCookie: (name: string, value: string, options?: unknown) => {
         cookies.push({ name, value, options });
       },
-      ...overrides,
+      ...rest,
     }
   );
+  // `services` is a getter with no setter on the prototype, so assigning it
+  // through extendCtx's Object.assign throws. Shadow it instead.
+  if (services) {
+    Object.defineProperty(ctx, 'services', {
+      value: services,
+      enumerable: true,
+    });
+  }
 
   return {
     ctx,
@@ -122,4 +132,22 @@ export function stubHttpCtx(
       return stub.sessionCalls;
     },
   };
+}
+
+/**
+ * `services` with the permission ladder already granted.
+ *
+ * `protectedProcedure` runs `enforceAccess` BEFORE the input parser
+ * (M11-001), so a test that wants to assert on a zod rejection has to get
+ * past the ladder first — and the real one reaches Postgres. Everything a
+ * procedure does after the parser is out of these tests' scope, so only the
+ * two lookups `enforceAccess` makes are stubbed.
+ */
+export function servicesWithProjectAccess(): Services {
+  return {
+    auth: {
+      requireProjectAccess: () => Promise.resolve({ level: 'write' }),
+      getOrganizationAccess: () => Promise.resolve({ role: 'org:admin' }),
+    },
+  } as unknown as Services;
 }

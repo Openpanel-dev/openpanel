@@ -5,7 +5,10 @@
 // Same shape as realtime.rpc.test.ts.
 
 import { expect, test } from 'bun:test';
-import { stubHttpCtx } from '../../../test/rpc-fixtures';
+import {
+  servicesWithProjectAccess,
+  stubHttpCtx,
+} from '../../../test/rpc-fixtures';
 import { makeTrpcContext } from '../../rpc/base';
 import type { CookieOptions } from '../../shared/cookie';
 import { sessionRouter } from './session.rpc';
@@ -30,6 +33,18 @@ async function anonCaller() {
   return sessionRouter.createCaller(trpcCtx);
 }
 
+/**
+ * A signed-in member. `protectedProcedure` authenticates and authorizes
+ * before the input parser runs, so reaching a zod rejection needs both.
+ */
+async function memberCaller() {
+  const { ctx } = stubHttpCtx({ services: servicesWithProjectAccess() });
+  const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
+    cookieOptions: COOKIE_OPTIONS,
+  });
+  return sessionRouter.createCaller(trpcCtx);
+}
+
 test('list rejects an unauthenticated caller before querying ClickHouse', async () => {
   const caller = await anonCaller();
   await expect(caller.list({ projectId: 'proj_1' })).rejects.toMatchObject({
@@ -45,7 +60,7 @@ test('distinctValues rejects an unauthenticated caller before querying ClickHous
 });
 
 test('distinctValues rejects a field outside SESSION_DISTINCT_FIELDS at the input boundary', async () => {
-  const caller = await anonCaller();
+  const caller = await memberCaller();
   await expect(
     caller.distinctValues({
       projectId: 'proj_1',

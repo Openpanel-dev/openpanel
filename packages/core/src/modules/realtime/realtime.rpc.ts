@@ -1,23 +1,25 @@
 // Ported from packages/trpc/src/routers/realtime.ts (M6-007).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" + explicit
-// `requireProjectAccess({ level: 'read' })` check per procedure, exactly like
-// V1's `enforceUserIsAuthed` + `enforceAccess` middleware pair does implicitly
-// off the `projectId` input. packages/trpc's realtime router now DELEGATES
-// its handler bodies onto `./realtime.service`'s query functions (same as
-// notification.ts/reference.ts) while keeping V1's own full
-// `protectedProcedure` stack — so the queries have one implementation, called
-// through two access-check paths until the ONE shared tRPC instance lands
-// with auth (P6).
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
+//
+// Each procedure also calls `requireProjectAccess({ level: 'read' })`
+// explicitly; `enforceAccess` already does the same off the `projectId`
+// input, and the redundant call is kept deliberately (ADR-011).
 //
 // The permission ladder itself is bound once, in auth.service.ts
 // (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
-import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  type TrpcContext,
+} from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import {
   getRealtimeActiveSessions,
@@ -61,14 +63,14 @@ async function requireReadAccess(ctx: TrpcContext, projectId: string) {
 }
 
 export const realtimeRouter = createTRPCRouter({
-  coordinates: procedure
+  coordinates: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
       return getRealtimeCoordinates(ctx, input.projectId);
     }),
-  mapBadgeDetails: procedure
+  mapBadgeDetails: protectedProcedure
     .input(
       z.object({
         detailScope: realtimeBadgeDetailScopeSchema,
@@ -84,28 +86,28 @@ export const realtimeRouter = createTRPCRouter({
 
       return getRealtimeMapBadgeDetails(ctx, input);
     }),
-  activeSessions: procedure
+  activeSessions: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
       return getRealtimeActiveSessions(ctx, input.projectId);
     }),
-  paths: procedure
+  paths: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
       return getRealtimePaths(ctx, input.projectId);
     }),
-  referrals: procedure
+  referrals: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
       return getRealtimeReferrals(ctx, input.projectId);
     }),
-  geo: procedure
+  geo: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);

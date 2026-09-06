@@ -7,15 +7,15 @@
 // `clients/email.ts` already wraps that package for the one thing this
 // module doesn't need — sending.
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
-// through packages/trpc's own `protectedProcedure` (full stack included) and
-// delegates its handler bodies to core's `verifyUnsubscribeToken` +
-// `emailCategories` (DELEGATE PATTERN) — this module has no queue/cron of
-// its own, so there is no `ctx.services.email`, same as `user`/`reference`.
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
+//
+// This module has no queue/cron of its own, so there is no
+// `ctx.services.email`, same as `user`/`reference`.
 //
 // `verifyUnsubscribeToken` is imported from @openpanel/email's own
 // `unsubscribe.ts` file, not its barrel: the barrel (`@openpanel/email` ->
@@ -26,7 +26,11 @@
 
 import { verifyUnsubscribeToken } from '@openpanel/email/src/unsubscribe';
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from '../../rpc/base';
 import { TRPCAccessError, TRPCBadRequestError } from '../../rpc/errors';
 import { emailCategories } from './email.constants';
 
@@ -38,7 +42,7 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 export const emailRouter = createTRPCRouter({
-  unsubscribe: procedure
+  unsubscribe: publicProcedure
     .input(
       z.object({
         email: z.string().email(),
@@ -63,7 +67,7 @@ export const emailRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  getPreferences: procedure.query(async ({ ctx }) => {
+  getPreferences: protectedProcedure.query(async ({ ctx }) => {
     requireLogin(ctx.session.userId);
     if (!ctx.session.user?.email) {
       throw new Error('User not authenticated');
@@ -84,7 +88,7 @@ export const emailRouter = createTRPCRouter({
     return preferences;
   }),
 
-  updatePreferences: procedure
+  updatePreferences: protectedProcedure
     .input(z.object({ categories: z.record(z.string(), z.boolean()) }))
     .mutation(async ({ input, ctx }) => {
       requireLogin(ctx.session.userId);

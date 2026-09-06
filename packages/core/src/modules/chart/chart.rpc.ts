@@ -1,19 +1,17 @@
 // Ported from packages/trpc/src/routers/chart.ts (M7-003).
 //
-// Same arrangement as event.rpc.ts: V1's `protectedProcedure` / `cacheMiddleware`
-// stacks land with auth (P6), so each procedure does its own "is anyone logged
-// in" + `requireProjectAccess` off the `projectId` input, reached through
-// `ctx.services.auth` (M10-002). packages/trpc's chart router delegates its
-// handler bodies onto `./chart.service` while keeping V1's own procedure
-// stack and 60s response cache.
+// M11-001: the seven member-only procedures are back on `protectedProcedure`,
+// so `enforceAccess` reads the top-level `projectId` before the input is
+// parsed, exactly as V1 does.
 //
-// V1's `chartProcedure` (funnel, conversion, chart, aggregate, cohort) also
-// admits anonymous callers holding a valid share: `shareId` + `id` resolve the
-// saved report, and the request renders that report (the caller may only move
-// the date window). `resolveShare` is that middleware, inlined.
+// `chartProcedure` (funnel, conversion, chart, aggregate, cohort) is V1's
+// share-aware builder: `publicProcedure` plus one middleware that admits an
+// anonymous caller holding a valid share — `shareId` + `id` resolve the saved
+// report, and the request renders that report (the caller may only move the
+// date window). The resolved report rides on `ctx.report`, as in V1, so a
+// handler cannot forget to resolve it.
 
 import {
-  type IReportInput,
   zChartEventFilter,
   zChartSeries,
   zCriteria,
@@ -22,7 +20,12 @@ import {
   zTimeInterval,
 } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+  type TrpcContext,
+} from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
 import type { IServiceReport } from '../report/report.service';
 
@@ -83,39 +86,45 @@ async function resolveShare(
   return report;
 }
 
-async function resolveShareableReport(
-  ctx: TrpcContext,
-  input: IReportInput & { shareId?: string; id?: string }
-): Promise<IReportInput> {
-  return ctx.services.chart.resolveReportInput(
-    await resolveShare(ctx, input),
-    input
-  );
-}
+/**
+ * V1's `chartProcedure`. The share/membership decision runs BEFORE the input
+ * is parsed and puts the resolved report on the context, so a handler reads
+ * `ctx.report` instead of re-deciding who may see it.
+ */
+const chartProcedure = publicProcedure.use(
+  async ({ ctx, next, getRawInput }) => {
+    const rawInput = (await getRawInput()) as {
+      projectId: string;
+      shareId?: string;
+      id?: string;
+    };
+    return next({ ctx: { report: await resolveShare(ctx, rawInput) } });
+  }
+);
 
 export const chartRouter = createTRPCRouter({
-  projectCard: procedure
+  projectCard: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
       return ctx.services.chart.getProjectCard(input.projectId);
     }),
 
-  events: procedure
+  events: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
       return ctx.services.chart.listChartEvents(input.projectId);
     }),
 
-  properties: procedure
+  properties: protectedProcedure
     .input(z.object({ event: z.string().optional(), projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
       return ctx.services.chart.listChartProperties(input);
     }),
 
-  values: procedure
+  values: protectedProcedure
     .input(
       z.object({
         event: z.string(),
@@ -128,42 +137,46 @@ export const chartRouter = createTRPCRouter({
       return ctx.services.chart.getChartPropertyValues(input);
     }),
 
-  funnel: procedure
+  funnel: chartProcedure
     .input(zShareableReportInput)
-    .query(async ({ input, ctx }) =>
+    .query(({ input, ctx }) =>
       ctx.services.chart.getFunnelChart(
-        await resolveShareableReport(ctx, input)
+        ctx.services.chart.resolveReportInput(ctx.report, input)
       )
     ),
 
-  conversion: procedure
+  conversion: chartProcedure
     .input(zShareableReportInput)
-    .query(async ({ input, ctx }) =>
+    .query(({ input, ctx }) =>
       ctx.services.chart.getConversionChart(
-        await resolveShareableReport(ctx, input)
+        ctx.services.chart.resolveReportInput(ctx.report, input)
       )
     ),
 
-  sankey: procedure.input(zReportInput).query(async ({ input, ctx }) => {
-    await requireReadAccess(ctx, input.projectId);
-    return ctx.services.chart.getSankeyChart(input);
-  }),
+  sankey: protectedProcedure
+    .input(zReportInput)
+    .query(async ({ input, ctx }) => {
+      await requireReadAccess(ctx, input.projectId);
+      return ctx.services.chart.getSankeyChart(input);
+    }),
 
-  chart: procedure
+  chart: chartProcedure
     .input(zShareableReportInput)
-    .query(async ({ input, ctx }) =>
-      ctx.services.chart.execute(await resolveShareableReport(ctx, input))
+    .query(({ input, ctx }) =>
+      ctx.services.chart.execute(
+        ctx.services.chart.resolveReportInput(ctx.report, input)
+      )
     ),
 
-  aggregate: procedure
+  aggregate: chartProcedure
     .input(zShareableReportInput)
-    .query(async ({ input, ctx }) =>
+    .query(({ input, ctx }) =>
       ctx.services.chart.executeAggregate(
-        await resolveShareableReport(ctx, input)
+        ctx.services.chart.resolveReportInput(ctx.report, input)
       )
     ),
 
-  cohort: procedure
+  cohort: chartProcedure
     .input(
       z
         .object({
@@ -179,14 +192,11 @@ export const chartRouter = createTRPCRouter({
         })
         .and(zShareable)
     )
-    .query(async ({ input, ctx }) =>
-      ctx.services.chart.getRetentionChart(
-        await resolveShare(ctx, input),
-        input
-      )
+    .query(({ input, ctx }) =>
+      ctx.services.chart.getRetentionChart(ctx.report, input)
     ),
 
-  getProfiles: procedure
+  getProfiles: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -201,7 +211,7 @@ export const chartRouter = createTRPCRouter({
       return ctx.services.chart.bucketProfiles(input);
     }),
 
-  getFunnelProfiles: procedure
+  getFunnelProfiles: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),

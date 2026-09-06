@@ -1,11 +1,12 @@
 // Ported from packages/trpc/src/routers/overview.ts.
 //
-// Same arrangement as chart.rpc.ts: V1's `publicProcedure` + share-or-session
-// `overviewProcedure` middleware and `cacheMiddleware` stacks land with auth
-// (P6), so each procedure does its own share-or-session check off the
-// `projectId`/`shareId` input. packages/trpc's overview router delegates its
-// handler bodies onto this module while keeping V1's own procedure stack and
-// response cache.
+// M11-001: `overviewProcedure` is V1's own builder — `publicProcedure` plus
+// one middleware that resolves share-or-membership off the raw
+// `projectId`/`shareId`, BEFORE the input parser. `runFilterCommand` is a
+// `protectedProcedure`, as in V1.
+//
+// V1's per-range `cacheMiddleware` did NOT move with M11-001;
+// `createCacheMiddleware` in rpc/base.ts is the seam that will carry it.
 //
 // `liveData`'s ClickHouse queries used to live inline in packages/trpc's
 // router; they moved to `services.overview.getLiveData` (src/overview.sql.ts)
@@ -18,7 +19,12 @@ import {
 } from '@openpanel/validation';
 import { format } from 'date-fns';
 import { z } from 'zod';
-import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+  type TrpcContext,
+} from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
 import {
@@ -97,14 +103,16 @@ async function resolveOverviewAccess(
   await requireReadAccess(ctx, input.projectId);
 }
 
-const overviewProcedure = procedure.use(async ({ ctx, next, getRawInput }) => {
-  const rawInput = (await getRawInput()) as {
-    projectId: string;
-    shareId?: string;
-  };
-  await resolveOverviewAccess(ctx, rawInput);
-  return next();
-});
+const overviewProcedure = publicProcedure.use(
+  async ({ ctx, next, getRawInput }) => {
+    const rawInput = (await getRawInput()) as {
+      projectId: string;
+      shareId?: string;
+    };
+    await resolveOverviewAccess(ctx, rawInput);
+    return next();
+  }
+);
 
 function getCurrentAndPrevious<
   T extends {
@@ -414,7 +422,7 @@ export const overviewRouter = createTRPCRouter({
   // ("show 7 aug to 11 aug", "from google", "mobile only for august
   // last year") into structured filter changes the dashboard can apply
   // through the same handlers the chat panel uses.
-  runFilterCommand: procedure
+  runFilterCommand: protectedProcedure
     // Computes filter changes for the caller's own UI; changes no project state.
     .meta({ readOnlyMutation: true })
     .input(

@@ -1,21 +1,20 @@
 // Ported from packages/trpc/src/routers/project.ts (M6-002).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
-// through packages/trpc's own `protectedProcedure` (full stack included) and
-// delegates its handler bodies to core's project functions (DELEGATE
-// PATTERN). `ctx.services.project` carries this module's factory the same
-// as every other module now (M10-004).
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
+//
+// `ctx.services.project` carries this module's factory (M10-004).
 //
 // The project-access ladder itself is bound once, in auth.service.ts
 // (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import { zOnboardingProject, zProjectUpdate } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
 
 function requireLogin(userId: string | null | undefined): string {
@@ -26,7 +25,7 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 export const projectRouter = createTRPCRouter({
-  getProjectWithClients: procedure
+  getProjectWithClients: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId }, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -42,7 +41,7 @@ export const projectRouter = createTRPCRouter({
 
   // Powers the activation checklist on the project overview: has the project
   // received data, built a report, and invited a teammate yet?
-  activationStatus: procedure
+  activationStatus: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId }, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -57,7 +56,7 @@ export const projectRouter = createTRPCRouter({
       return ctx.services.project.getProjectActivationStatus(projectId);
     }),
 
-  list: procedure
+  list: protectedProcedure
     .input(z.object({ organizationId: z.string().nullable() }))
     .query(async ({ input: { organizationId }, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -67,33 +66,35 @@ export const projectRouter = createTRPCRouter({
       return ctx.services.project.getProjects({ organizationId, userId });
     }),
 
-  update: procedure.input(zProjectUpdate).mutation(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await ctx.services.auth.requireProjectAccess({
-      userId,
-      projectId: input.id,
-      level: 'write',
-    });
+  update: protectedProcedure
+    .input(zProjectUpdate)
+    .mutation(async ({ input, ctx }) => {
+      const userId = requireLogin(ctx.session.userId);
+      await ctx.services.auth.requireProjectAccess({
+        userId,
+        projectId: input.id,
+        level: 'write',
+      });
 
-    const project = await ctx.services.project.getProjectById(input.id);
-    if (!project) {
-      throw new TRPCForbiddenError('Project not found');
-    }
-
-    return ctx.services.project.updateProjectForOrganization(
-      input.id,
-      project.organizationId,
-      {
-        name: input.name,
-        domain: input.domain,
-        cors: input.cors,
-        crossDomain: input.crossDomain,
-        allowUnsafeRevenueTracking: input.allowUnsafeRevenueTracking,
+      const project = await ctx.services.project.getProjectById(input.id);
+      if (!project) {
+        throw new TRPCForbiddenError('Project not found');
       }
-    );
-  }),
 
-  create: procedure
+      return ctx.services.project.updateProjectForOrganization(
+        input.id,
+        project.organizationId,
+        {
+          name: input.name,
+          domain: input.domain,
+          cors: input.cors,
+          crossDomain: input.crossDomain,
+          allowUnsafeRevenueTracking: input.allowUnsafeRevenueTracking,
+        }
+      );
+    }),
+
+  create: protectedProcedure
     .input(zOnboardingProject)
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -127,7 +128,7 @@ export const projectRouter = createTRPCRouter({
       return { ...project, client };
     }),
 
-  delete: procedure
+  delete: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -142,7 +143,7 @@ export const projectRouter = createTRPCRouter({
       return true;
     }),
 
-  cancelDeletion: procedure
+  cancelDeletion: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);

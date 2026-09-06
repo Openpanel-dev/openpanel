@@ -1,15 +1,18 @@
 // Ported from packages/trpc/src/routers/group.ts (M7-002).
 //
-// Same arrangement as session.rpc.ts: V1's `protectedProcedure` stack lands
-// with auth (P6), so until then each procedure does its own "is anyone logged
-// in" + `requireProjectAccess` off the `projectId` input (`read` for queries,
-// `write` for the three mutations), which is what V1's `enforceUserIsAuthed`
-// + `enforceAccess` middleware pair does implicitly. packages/trpc's group
-// router delegates its handler bodies onto `./group.service` while keeping
-// V1's own `protectedProcedure` stack.
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 
 import { z } from 'zod';
-import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  type TrpcContext,
+} from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import { zCreateGroup, zUpdateGroup } from './group.constants';
 import {
@@ -53,7 +56,7 @@ async function requireAccess(
 }
 
 export const groupRouter = createTRPCRouter({
-  list: procedure
+  list: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -69,32 +72,38 @@ export const groupRouter = createTRPCRouter({
       return getGroupListPage(ctx, input);
     }),
 
-  byId: procedure.input(zGroupRef).query(async ({ input, ctx }) => {
+  byId: protectedProcedure.input(zGroupRef).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
     return getGroupById(ctx, input.id, input.projectId);
   }),
 
-  create: procedure.input(zCreateGroup).mutation(async ({ input, ctx }) => {
-    await requireAccess(ctx, input.projectId, 'write');
+  create: protectedProcedure
+    .input(zCreateGroup)
+    .mutation(async ({ input, ctx }) => {
+      await requireAccess(ctx, input.projectId, 'write');
 
-    return createGroup(ctx, input);
-  }),
+      return createGroup(ctx, input);
+    }),
 
-  update: procedure.input(zUpdateGroup).mutation(async ({ input, ctx }) => {
-    await requireAccess(ctx, input.projectId, 'write');
+  update: protectedProcedure
+    .input(zUpdateGroup)
+    .mutation(async ({ input, ctx }) => {
+      await requireAccess(ctx, input.projectId, 'write');
 
-    const { id, projectId, ...data } = input;
-    return updateGroup(ctx, id, projectId, data);
-  }),
+      const { id, projectId, ...data } = input;
+      return updateGroup(ctx, id, projectId, data);
+    }),
 
-  delete: procedure.input(zGroupRef).mutation(async ({ input, ctx }) => {
-    await requireAccess(ctx, input.projectId, 'write');
+  delete: protectedProcedure
+    .input(zGroupRef)
+    .mutation(async ({ input, ctx }) => {
+      await requireAccess(ctx, input.projectId, 'write');
 
-    return deleteGroup(ctx, input.id, input.projectId);
-  }),
+      return deleteGroup(ctx, input.id, input.projectId);
+    }),
 
-  types: procedure
+  types: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
@@ -102,25 +111,29 @@ export const groupRouter = createTRPCRouter({
       return getGroupTypes(ctx, input.projectId);
     }),
 
-  metrics: procedure.input(zGroupRef).query(async ({ input, ctx }) => {
+  metrics: protectedProcedure.input(zGroupRef).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
     return getGroupMetrics(ctx, input.id, input.projectId);
   }),
 
-  activity: procedure.input(zGroupRef).query(async ({ input, ctx }) => {
-    await requireAccess(ctx, input.projectId, 'read');
+  activity: protectedProcedure
+    .input(zGroupRef)
+    .query(async ({ input, ctx }) => {
+      await requireAccess(ctx, input.projectId, 'read');
 
-    return getGroupActivity(ctx, input.id, input.projectId);
-  }),
+      return getGroupActivity(ctx, input.id, input.projectId);
+    }),
 
-  memberGrowth: procedure.input(zGroupRef).query(async ({ input, ctx }) => {
-    await requireAccess(ctx, input.projectId, 'read');
+  memberGrowth: protectedProcedure
+    .input(zGroupRef)
+    .query(async ({ input, ctx }) => {
+      await requireAccess(ctx, input.projectId, 'read');
 
-    return getGroupMemberGrowth(ctx, input.id, input.projectId);
-  }),
+      return getGroupMemberGrowth(ctx, input.id, input.projectId);
+    }),
 
-  listProfiles: procedure
+  listProfiles: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -136,19 +149,23 @@ export const groupRouter = createTRPCRouter({
       return getGroupMemberProfilesPage(ctx, input);
     }),
 
-  mostEvents: procedure.input(zGroupRef).query(async ({ input, ctx }) => {
-    await requireAccess(ctx, input.projectId, 'read');
+  mostEvents: protectedProcedure
+    .input(zGroupRef)
+    .query(async ({ input, ctx }) => {
+      await requireAccess(ctx, input.projectId, 'read');
 
-    return getGroupMostEvents(ctx, input.id, input.projectId);
-  }),
+      return getGroupMostEvents(ctx, input.id, input.projectId);
+    }),
 
-  popularRoutes: procedure.input(zGroupRef).query(async ({ input, ctx }) => {
-    await requireAccess(ctx, input.projectId, 'read');
+  popularRoutes: protectedProcedure
+    .input(zGroupRef)
+    .query(async ({ input, ctx }) => {
+      await requireAccess(ctx, input.projectId, 'read');
 
-    return getGroupPopularRoutes(ctx, input.id, input.projectId);
-  }),
+      return getGroupPopularRoutes(ctx, input.id, input.projectId);
+    }),
 
-  properties: procedure
+  properties: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
@@ -156,7 +173,7 @@ export const groupRouter = createTRPCRouter({
       return getGroupPropertyKeys(ctx, input.projectId);
     }),
 
-  listByIds: procedure
+  listByIds: protectedProcedure
     .input(z.object({ projectId: z.string(), ids: z.array(z.string()) }))
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');

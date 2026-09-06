@@ -1,20 +1,18 @@
 // Ported from packages/trpc/src/routers/subscription.ts (M6-006).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
-// through packages/trpc's own `protectedProcedure` (full stack included) and
-// delegates its handler bodies to core's subscription functions (DELEGATE
-// PATTERN), so nothing here is a live regression.
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 //
 // `requireOrganizationAdmin` lives in subscription.service.ts, not here —
 // see that file's header. `ctx.services.subscription` carries this module's
 // factory the same as every other module now (M10-004).
 
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import {
   zCancelSubscription,
@@ -30,7 +28,7 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 export const subscriptionRouter = createTRPCRouter({
-  getCurrent: procedure
+  getCurrent: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .query(({ input, ctx }) =>
       ctx.services.subscription.getCurrentSubscriptionProduct(
@@ -38,7 +36,7 @@ export const subscriptionRouter = createTRPCRouter({
       )
     ),
 
-  checkout: procedure
+  checkout: protectedProcedure
     .input(zCheckout)
     .mutation(({ input, ctx }) =>
       ctx.services.subscription.checkout(
@@ -48,19 +46,19 @@ export const subscriptionRouter = createTRPCRouter({
       )
     ),
 
-  products: procedure
+  products: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .query(({ input, ctx }) =>
       ctx.services.subscription.listProducts(input.organizationId)
     ),
 
-  usage: procedure
+  usage: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .query(({ input, ctx }) =>
       ctx.services.subscription.getUsage(input.organizationId)
     ),
 
-  cancelSubscription: procedure
+  cancelSubscription: protectedProcedure
     .input(zCancelSubscription)
     .mutation(({ input, ctx }) =>
       ctx.services.subscription.cancelSubscription(
@@ -69,7 +67,7 @@ export const subscriptionRouter = createTRPCRouter({
       )
     ),
 
-  pauseSubscription: procedure
+  pauseSubscription: protectedProcedure
     .input(zPauseSubscription)
     .mutation(({ input, ctx }) =>
       ctx.services.subscription.pauseSubscription(
@@ -78,7 +76,7 @@ export const subscriptionRouter = createTRPCRouter({
       )
     ),
 
-  resumeSubscription: procedure
+  resumeSubscription: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(({ input, ctx }) =>
       ctx.services.subscription.resumeSubscription(
@@ -87,7 +85,7 @@ export const subscriptionRouter = createTRPCRouter({
       )
     ),
 
-  applySaveDiscount: procedure
+  applySaveDiscount: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(({ input, ctx }) =>
       ctx.services.subscription.applySaveDiscount(
@@ -96,7 +94,7 @@ export const subscriptionRouter = createTRPCRouter({
       )
     ),
 
-  portal: procedure
+  portal: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(({ input, ctx }) =>
       ctx.services.subscription.portal(

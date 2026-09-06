@@ -1,22 +1,22 @@
 // Ported from packages/trpc/src/routers/import.ts (M5-004).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed` (same as cohort.rpc.ts / gsc.rpc.ts).
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 //
 // V1's router has no compute-heavy or ClickHouse-touching logic to delegate
 // (it is Prisma CRUD + a BullMQ enqueue, unlike gsc/cohort), so
 // packages/trpc/src/routers/import.ts stays completely unmodified — there is
-// nothing here for it to delegate to. This router exists to satisfy the
-// module map ("R") and to serve core's own (not yet live) appRouter.
+// nothing here for it to delegate to.
 //
 // The per-project access ladder itself is bound once, in auth.service.ts
 // (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import {
   TRPCAccessError,
   TRPCBadRequestError,
@@ -32,7 +32,7 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 export const importRouter = createTRPCRouter({
-  list: procedure
+  list: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -49,7 +49,7 @@ export const importRouter = createTRPCRouter({
       });
     }),
 
-  get: procedure
+  get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -68,50 +68,52 @@ export const importRouter = createTRPCRouter({
       return importRecord;
     }),
 
-  create: procedure.input(zCreateImport).mutation(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    await ctx.services.auth.requireProjectAccess({
-      userId,
-      projectId: input.projectId,
-      level: 'write',
-    });
-
-    const db = ctx.db;
-    const organization = await db.organization.findFirst({
-      where: { projects: { some: { id: input.projectId } } },
-    });
-
-    if (!organization) {
-      throw new TRPCNotFoundError(
-        'Could not start import, organization not found'
-      );
-    }
-
-    if (!organization.isActive) {
-      throw new TRPCBadRequestError(
-        'You cannot start an import without an active subscription!'
-      );
-    }
-
-    const importRecord = await db.import.create({
-      data: {
+  create: protectedProcedure
+    .input(zCreateImport)
+    .mutation(async ({ input, ctx }) => {
+      const userId = requireLogin(ctx.session.userId);
+      await ctx.services.auth.requireProjectAccess({
+        userId,
         projectId: input.projectId,
-        config: input.config,
-        status: 'pending',
-      },
-    });
+        level: 'write',
+      });
 
-    const jobId = await ctx.services.import.enqueue(importRecord.id);
+      const db = ctx.db;
+      const organization = await db.organization.findFirst({
+        where: { projects: { some: { id: input.projectId } } },
+      });
 
-    await db.import.update({
-      where: { id: importRecord.id },
-      data: { jobId },
-    });
+      if (!organization) {
+        throw new TRPCNotFoundError(
+          'Could not start import, organization not found'
+        );
+      }
 
-    return { ...importRecord, jobId };
-  }),
+      if (!organization.isActive) {
+        throw new TRPCBadRequestError(
+          'You cannot start an import without an active subscription!'
+        );
+      }
 
-  delete: procedure
+      const importRecord = await db.import.create({
+        data: {
+          projectId: input.projectId,
+          config: input.config,
+          status: 'pending',
+        },
+      });
+
+      const jobId = await ctx.services.import.enqueue(importRecord.id);
+
+      await db.import.update({
+        where: { id: importRecord.id },
+        data: { jobId },
+      });
+
+      return { ...importRecord, jobId };
+    }),
+
+  delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -133,7 +135,7 @@ export const importRouter = createTRPCRouter({
       return db.import.delete({ where: { id: input.id } });
     }),
 
-  retry: procedure
+  retry: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);

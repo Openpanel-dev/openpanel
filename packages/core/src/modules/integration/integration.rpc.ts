@@ -1,20 +1,18 @@
 // Ported from packages/trpc/src/routers/integration.ts (M6-006).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
-// through packages/trpc's own `protectedProcedure` (full stack included) and
-// delegates its handler bodies to core's integration functions (DELEGATE
-// PATTERN), so nothing here is a live regression.
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 //
 // Every access assertion (including the data-dependent "authorize against the
 // EXISTING row" rule) lives in integration.service.ts, not here — see that
 // file's header for why.
 
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import {
   zCreateGCSExportIntegration,
@@ -40,13 +38,13 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 export const integrationRouter = createTRPCRouter({
-  get: procedure
+  get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(({ input, ctx }) =>
       getIntegrationById(ctx, requireLogin(ctx.session.userId), input.id)
     ),
 
-  list: procedure
+  list: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(({ input, ctx }) =>
       listIntegrationsForProject(
@@ -56,7 +54,7 @@ export const integrationRouter = createTRPCRouter({
       )
     ),
 
-  createOrUpdateSlack: procedure
+  createOrUpdateSlack: protectedProcedure
     .input(zCreateSlackIntegration)
     .mutation(({ input, ctx }) =>
       createOrUpdateSlackIntegration(
@@ -68,7 +66,7 @@ export const integrationRouter = createTRPCRouter({
 
   // Generic create/update for any form-configured integration. Per-type
   // behavior lives in the server plugin; no switch here.
-  createOrUpdate: procedure
+  createOrUpdate: protectedProcedure
     .input(
       z.object({
         id: z.string().optional(),
@@ -83,13 +81,13 @@ export const integrationRouter = createTRPCRouter({
 
   // Back-compat alias for the export forms; delegates to the same generic path.
   // TODO: remove once the dashboard calls `createOrUpdate` directly.
-  createOrUpdateExport: procedure
+  createOrUpdateExport: protectedProcedure
     .input(z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]))
     .mutation(({ input, ctx }) =>
       upsertIntegration(ctx, requireLogin(ctx.session.userId), input)
     ),
 
-  testConnection: procedure
+  testConnection: protectedProcedure
     .input(
       z.object({
         projectId: z.string().min(1),
@@ -102,7 +100,7 @@ export const integrationRouter = createTRPCRouter({
 
   // Back-compat alias for the export forms; same gate as `testConnection`.
   // TODO: remove once the dashboard calls `testConnection` directly.
-  testExportConnection: procedure
+  testExportConnection: protectedProcedure
     .input(z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]))
     .mutation(({ input, ctx }) =>
       testExportIntegrationConnection(
@@ -112,7 +110,7 @@ export const integrationRouter = createTRPCRouter({
       )
     ),
 
-  delete: procedure
+  delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(({ input: { id }, ctx }) =>
       deleteIntegration(ctx, requireLogin(ctx.session.userId), id)

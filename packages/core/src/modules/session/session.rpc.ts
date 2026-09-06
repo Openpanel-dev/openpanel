@@ -1,11 +1,11 @@
 // Ported from packages/trpc/src/routers/session.ts (M7-001).
 //
-// Same arrangement as realtime.rpc.ts: V1's `protectedProcedure` stack lands
-// with auth (P6), so until then each procedure does its own "is anyone logged
-// in" + `requireProjectAccess({ level: 'read' })` off the `projectId` input,
-// which is what V1's `enforceUserIsAuthed` + `enforceAccess` middleware pair
-// does implicitly. packages/trpc's session router delegates its handler bodies
-// onto `./session.service` while keeping V1's own `protectedProcedure` stack.
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 //
 // V1's file also exported `encodeCursor` / `decodeCursor`; nothing imports
 // them and `shared/pagination.ts` already has the generic pair, so they were
@@ -13,7 +13,11 @@
 
 import { zChartEventFilter } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  type TrpcContext,
+} from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import {
   getSessionById,
@@ -41,7 +45,7 @@ async function requireReadAccess(ctx: TrpcContext, projectId: string) {
 }
 
 export const sessionRouter = createTRPCRouter({
-  list: procedure
+  list: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -63,7 +67,7 @@ export const sessionRouter = createTRPCRouter({
       });
     }),
 
-  distinctValues: procedure
+  distinctValues: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -76,7 +80,7 @@ export const sessionRouter = createTRPCRouter({
       return getSessionDistinctValues(ctx, input.projectId, input.field);
     }),
 
-  byId: procedure
+  byId: protectedProcedure
     .input(z.object({ sessionId: z.string(), projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
@@ -84,7 +88,7 @@ export const sessionRouter = createTRPCRouter({
       return getSessionById(ctx, input.sessionId, input.projectId);
     }),
 
-  replayChunksFrom: procedure
+  replayChunksFrom: protectedProcedure
     .input(
       z.object({
         sessionId: z.string(),

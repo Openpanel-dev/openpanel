@@ -1,24 +1,23 @@
 // Ported from packages/trpc/src/routers/onboarding.ts (M6-003).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed` — same shape as
-// organization.rpc.ts/project.rpc.ts. `project`'s input can carry an
-// existing `organizationId`, which V1's generic `enforceAccess` middleware
-// gates on membership (not admin — joining an org you already belong to
-// needs no more than that); this router does the same check explicitly,
-// through the organization module's own db-bound lookup (dynamically
-// imported, same as organization.rpc.ts's `./src/access`).
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 //
-// V1 keeps serving the live route through packages/trpc's own
-// `protectedProcedure`/`publicProcedure` and delegates every handler body to
-// `./onboarding.service` (DELEGATE PATTERN) — the same functions this router
-// calls.
+// `project`'s input can carry an existing `organizationId`, which
+// `enforceAccess` gates on membership (not admin — joining an org you
+// already belong to needs no more than that); this router repeats the check
+// explicitly through the organization module's own lookup.
 
 import { zOnboardingProject } from '@openpanel/validation';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
 import {
   canSkipOnboarding,
@@ -37,11 +36,11 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 export const onboardingRouter = createTRPCRouter({
-  skipOnboardingCheck: procedure.query(({ ctx }) =>
+  skipOnboardingCheck: publicProcedure.query(({ ctx }) =>
     canSkipOnboarding(ctx, ctx.session.userId)
   ),
 
-  project: procedure
+  project: protectedProcedure
     .input(zOnboardingProject)
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);

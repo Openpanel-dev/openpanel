@@ -1,20 +1,22 @@
 // Ported from packages/trpc/src/routers/gsc.ts (M5-002).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
-// through packages/trpc's own `protectedProcedure` (full stack included) and
-// delegates its handler bodies to `ctx.services.gsc` (DELEGATE PATTERN),
-// so nothing here is a live regression.
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 //
 // The per-project access ladder itself is bound once, in auth.service.ts
 // (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import { zRange, zTimeInterval } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  type TrpcContext,
+} from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import { Arctic, googleGsc } from '../auth/auth.service';
 
@@ -62,14 +64,14 @@ async function requireWrite(ctx: TrpcContext, projectId: string) {
 }
 
 export const gscRouter = createTRPCRouter({
-  getConnection: procedure
+  getConnection: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId }, ctx }) => {
       await requireRead(ctx, projectId);
       return ctx.services.gsc.getConnection(projectId);
     }),
 
-  initiateOAuth: procedure
+  initiateOAuth: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input: { projectId }, ctx }) => {
       await requireWrite(ctx, projectId);
@@ -90,14 +92,14 @@ export const gscRouter = createTRPCRouter({
       return { url: url.toString() };
     }),
 
-  getSites: procedure
+  getSites: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId }, ctx }) => {
       await requireRead(ctx, projectId);
       return ctx.services.gsc.listSites(projectId);
     }),
 
-  selectSite: procedure
+  selectSite: protectedProcedure
     .input(z.object({ projectId: z.string(), siteUrl: z.string() }))
     .mutation(async ({ input: { projectId, siteUrl }, ctx }) => {
       await requireWrite(ctx, projectId);
@@ -106,7 +108,7 @@ export const gscRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  disconnect: procedure
+  disconnect: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ input: { projectId }, ctx }) => {
       await requireWrite(ctx, projectId);
@@ -115,21 +117,23 @@ export const gscRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  getOverview: procedure.input(zGscDateInput).query(async ({ input, ctx }) => {
-    await requireRead(ctx, input.projectId);
-    const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
-      input.projectId,
-      input
-    );
-    return ctx.services.gsc.getOverview(
-      input.projectId,
-      startDate,
-      endDate,
-      toOverviewInterval(input.interval)
-    );
-  }),
+  getOverview: protectedProcedure
+    .input(zGscDateInput)
+    .query(async ({ input, ctx }) => {
+      await requireRead(ctx, input.projectId);
+      const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
+        input.projectId,
+        input
+      );
+      return ctx.services.gsc.getOverview(
+        input.projectId,
+        startDate,
+        endDate,
+        toOverviewInterval(input.interval)
+      );
+    }),
 
-  getPages: procedure
+  getPages: protectedProcedure
     .input(
       zGscDateInput.extend({
         limit: z.number().min(1).max(10_000).optional().default(100),
@@ -149,7 +153,7 @@ export const gscRouter = createTRPCRouter({
       );
     }),
 
-  getPageDetails: procedure
+  getPageDetails: protectedProcedure
     .input(zGscDateInput.extend({ page: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireRead(ctx, input.projectId);
@@ -165,7 +169,7 @@ export const gscRouter = createTRPCRouter({
       );
     }),
 
-  getQueryDetails: procedure
+  getQueryDetails: protectedProcedure
     .input(zGscDateInput.extend({ query: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireRead(ctx, input.projectId);
@@ -181,7 +185,7 @@ export const gscRouter = createTRPCRouter({
       );
     }),
 
-  getQueries: procedure
+  getQueries: protectedProcedure
     .input(
       zGscDateInput.extend({
         limit: z.number().min(1).max(1000).optional().default(100),
@@ -201,7 +205,7 @@ export const gscRouter = createTRPCRouter({
       );
     }),
 
-  getSearchEngines: procedure
+  getSearchEngines: protectedProcedure
     .input(zGscDateInput)
     .query(async ({ input, ctx }) => {
       await requireRead(ctx, input.projectId);
@@ -216,16 +220,18 @@ export const gscRouter = createTRPCRouter({
       );
     }),
 
-  getAiEngines: procedure.input(zGscDateInput).query(async ({ input, ctx }) => {
-    await requireRead(ctx, input.projectId);
-    const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
-      input.projectId,
-      input
-    );
-    return ctx.services.gsc.getAiEngines(input.projectId, startDate, endDate);
-  }),
+  getAiEngines: protectedProcedure
+    .input(zGscDateInput)
+    .query(async ({ input, ctx }) => {
+      await requireRead(ctx, input.projectId);
+      const { startDate, endDate } = await ctx.services.gsc.resolveDateRange(
+        input.projectId,
+        input
+      );
+      return ctx.services.gsc.getAiEngines(input.projectId, startDate, endDate);
+    }),
 
-  getPreviousOverview: procedure
+  getPreviousOverview: protectedProcedure
     .input(zGscDateInput)
     .query(async ({ input, ctx }) => {
       await requireRead(ctx, input.projectId);
@@ -241,7 +247,7 @@ export const gscRouter = createTRPCRouter({
       );
     }),
 
-  getCannibalization: procedure
+  getCannibalization: protectedProcedure
     .input(zGscDateInput)
     .query(async ({ input, ctx }) => {
       await requireRead(ctx, input.projectId);

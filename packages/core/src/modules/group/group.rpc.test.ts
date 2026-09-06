@@ -5,7 +5,10 @@
 // Same shape as session.rpc.test.ts.
 
 import { expect, test } from 'bun:test';
-import { stubHttpCtx } from '../../../test/rpc-fixtures';
+import {
+  servicesWithProjectAccess,
+  stubHttpCtx,
+} from '../../../test/rpc-fixtures';
 import { makeTrpcContext } from '../../rpc/base';
 import type { CookieOptions } from '../../shared/cookie';
 import { groupRouter } from './group.rpc';
@@ -23,6 +26,18 @@ const REF = { id: 'grp_1', projectId: 'proj_1' };
 
 async function anonCaller() {
   const { ctx } = stubHttpCtx({}, EMPTY_SESSION);
+  const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
+    cookieOptions: COOKIE_OPTIONS,
+  });
+  return groupRouter.createCaller(trpcCtx);
+}
+
+/**
+ * A signed-in member. `protectedProcedure` authenticates and authorizes
+ * before the input parser runs, so reaching a zod rejection needs both.
+ */
+async function memberCaller() {
+  const { ctx } = stubHttpCtx({ services: servicesWithProjectAccess() });
   const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
     cookieOptions: COOKIE_OPTIONS,
   });
@@ -68,7 +83,7 @@ test('every mutation rejects an unauthenticated caller before touching a databas
 });
 
 test('create rejects an id outside zGroupId at the input boundary', async () => {
-  const caller = await anonCaller();
+  const caller = await memberCaller();
   await expect(
     caller.create({
       id: 'Not Valid',

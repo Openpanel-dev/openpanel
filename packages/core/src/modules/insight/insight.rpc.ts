@@ -1,20 +1,18 @@
 // Ported from packages/trpc/src/routers/insight.ts (M5-001).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
-// through packages/trpc's own `protectedProcedure` (full stack included) and
-// delegates its handler bodies to `ctx.services.insight` (DELEGATE PATTERN),
-// so nothing here is a live regression.
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 //
 // The permission ladder itself is bound once, in auth.service.ts
 // (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import type { InsightPayload } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -33,7 +31,7 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 export const insightRouter = createTRPCRouter({
-  list: procedure
+  list: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -89,7 +87,7 @@ export const insightRouter = createTRPCRouter({
         .map(({ impactScore, ...rest }) => rest); // strip impactScore from the response
     }),
 
-  listAll: procedure
+  listAll: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -111,7 +109,7 @@ export const insightRouter = createTRPCRouter({
   // country/device/utm (current vs baseline window), pull nearby references,
   // and have the AI explain which sub-segment drove it. Cached per insight
   // version so repeat clicks don't re-bill the LLM.
-  explain: procedure
+  explain: protectedProcedure
     .input(z.object({ insightId: z.string() }))
     .mutation(async ({ input: { insightId }, ctx }) => {
       const userId = requireLogin(ctx.session.userId);

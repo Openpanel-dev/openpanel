@@ -1,21 +1,19 @@
 // Ported from packages/trpc/src/routers/conversation.ts (M5-006).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
-// through packages/trpc's own `protectedProcedure` (full stack included) and
-// delegates its handler bodies to core's conversation functions
-// (DELEGATE PATTERN). `ctx.services.conversation` carries this module's
-// factory the same as every other module now (M10-004).
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 //
-// The per-project access ladder itself IS shared: `./src/access.ts` binds
-// core's shared/access.ts ladder to @openpanel/db's real lookups, the same
-// way packages/trpc/src/access.ts does for V1.
+// `ctx.services.conversation` carries this module's factory (M10-004).
+//
+// The per-project access ladder itself is bound once, in auth.service.ts
+// (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
 import { getOrganizationByProjectIdCached } from '../organization/organization.service';
 
@@ -41,7 +39,7 @@ function requireLogin(userId: string | null | undefined): string {
  * user can never read or mutate another user's conversations.
  */
 export const conversationRouter = createTRPCRouter({
-  list: procedure
+  list: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -67,7 +65,7 @@ export const conversationRouter = createTRPCRouter({
       });
     }),
 
-  get: procedure
+  get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -81,7 +79,7 @@ export const conversationRouter = createTRPCRouter({
       return conv;
     }),
 
-  rename: procedure
+  rename: protectedProcedure
     // A conversation belongs to the caller, not to the project - titling your
     // own chat is not a project mutation. Ownership is enforced below.
     .meta({ readOnlyMutation: true })
@@ -140,7 +138,7 @@ export const conversationRouter = createTRPCRouter({
       });
     }),
 
-  delete: procedure
+  delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);

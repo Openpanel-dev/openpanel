@@ -33,6 +33,7 @@ process.env.TZ = 'UTC';
 import { createHmac } from 'node:crypto';
 import {
   type AppDeps,
+  appRouter,
   BULL_BOARD_BASE_PATH,
   type BufferDeps,
   bullBoardRoutes,
@@ -92,7 +93,6 @@ import {
 } from '@openpanel/queue';
 import { checkNotificationRulesForEvent } from '@openpanel/queue/src/notification-dispatch';
 import { getRedisCache, getRedisPub, getRedisQueue } from '@openpanel/redis';
-import { appRouter } from '@openpanel/trpc';
 import { Elysia } from 'elysia';
 import pino from 'pino';
 import {

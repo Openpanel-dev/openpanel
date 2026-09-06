@@ -27,7 +27,11 @@ import ShortUniqueId from 'short-unique-id';
 import { z } from 'zod';
 import { loadDbBuffers } from '../../buffers/lazy-db-buffers';
 import type { Ctx } from '../../context';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getSettingsForProject } from '../organization/organization.service';
@@ -67,7 +71,7 @@ async function findWidgetByType(
 
 export const widgetRouter = createTRPCRouter({
   // Get widget by projectId and type (returns null if not found or not public)
-  get: procedure
+  get: protectedProcedure
     .input(z.object({ projectId: z.string(), type: zWidgetType }))
     .query(async ({ input, ctx }) => {
       requireLogin(ctx.session.userId);
@@ -85,7 +89,7 @@ export const widgetRouter = createTRPCRouter({
     }),
 
   // Toggle widget public status (creates if doesn't exist)
-  toggle: procedure
+  toggle: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -133,7 +137,7 @@ export const widgetRouter = createTRPCRouter({
     }),
 
   // Update widget options (for realtime widget)
-  updateOptions: procedure
+  updateOptions: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -169,7 +173,7 @@ export const widgetRouter = createTRPCRouter({
       });
     }),
 
-  counter: procedure
+  counter: publicProcedure
     .input(z.object({ shareId: z.string() }))
     .query(async ({ input, ctx }) => {
       const db = ctx.db;
@@ -195,7 +199,7 @@ export const widgetRouter = createTRPCRouter({
       };
     }),
 
-  badge: procedure
+  badge: publicProcedure
     .input(z.object({ shareId: z.string() }))
     .query(async ({ input, ctx }) => {
       const db = ctx.db;
@@ -241,7 +245,7 @@ export const widgetRouter = createTRPCRouter({
       };
     }),
 
-  realtimeData: procedure
+  realtimeData: publicProcedure
     .input(z.object({ shareId: z.string() }))
     .query(async ({ input, ctx }) => {
       const db = ctx.db;

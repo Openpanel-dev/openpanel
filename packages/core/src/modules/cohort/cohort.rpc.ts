@@ -1,18 +1,14 @@
 // Ported from packages/trpc/src/routers/cohort.ts (M5-003).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
-// through packages/trpc's own `protectedProcedure` (full stack included) and
-// delegates its handler bodies to core's cohort functions and
-// `ctx.services.cohort` (DELEGATE PATTERN), so nothing here is a live
-// regression.
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 //
-// The per-project access ladder itself IS shared: `./src/access.ts` binds
-// core's shared/access.ts ladder to @openpanel/db's real lookups, the same
-// way packages/trpc/src/access.ts does for V1.
+// The per-project access ladder itself is bound once, in auth.service.ts
+// (M10-002); every procedure here reaches it through `ctx.services.auth`.
 //
 // CRUD (list/get/create/update/delete) reads/writes Prisma's `cohort` table
 // directly, matching V1's router — cohort.service.ts owns only the
@@ -23,7 +19,7 @@
 // @openpanel/validation's barrel rather than from cohort.validation.ts.
 import { zChartEventFilter } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
 import {
   zCohortDefinition,
@@ -53,7 +49,7 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 export const cohortRouter = createTRPCRouter({
-  list: procedure
+  list: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -84,7 +80,7 @@ export const cohortRouter = createTRPCRouter({
       return cohorts;
     }),
 
-  get: procedure
+  get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -110,62 +106,66 @@ export const cohortRouter = createTRPCRouter({
   // cohort.ts) exactly — protectedProcedure's session check is the only
   // gate today. Preserved as found: ADR-011 invariant 1 forbids deleting an
   // in-handler check, and this router does not serve live traffic yet.
-  create: procedure.input(zCohortInput).mutation(async ({ input, ctx }) => {
-    requireLogin(ctx.session.userId);
+  create: protectedProcedure
+    .input(zCohortInput)
+    .mutation(async ({ input, ctx }) => {
+      requireLogin(ctx.session.userId);
 
-    const db = ctx.db;
-    const cohort = await db.cohort.create({
-      data: {
-        name: input.name,
-        description: input.description,
-        projectId: input.projectId,
-        definition: input.definition,
-        isStatic: input.isStatic,
-      },
-    });
+      const db = ctx.db;
+      const cohort = await db.cohort.create({
+        data: {
+          name: input.name,
+          description: input.description,
+          projectId: input.projectId,
+          definition: input.definition,
+          isStatic: input.isStatic,
+        },
+      });
 
-    await ctx.services.cohort.enqueueCompute(cohort.id);
-
-    return cohort;
-  }),
-
-  update: procedure.input(zCohortUpdate).mutation(async ({ input, ctx }) => {
-    const userId = requireLogin(ctx.session.userId);
-    const { id, ...data } = input;
-
-    const db = ctx.db;
-    const existingCohort = await db.cohort.findUnique({ where: { id } });
-
-    if (!existingCohort) {
-      throw new TRPCNotFoundError('Cohort not found');
-    }
-
-    await ctx.services.auth.requireProjectAccess({
-      userId,
-      projectId: existingCohort.projectId,
-      level: 'write',
-    });
-
-    const cohort = await db.cohort.update({
-      where: { id },
-      data: {
-        ...(data.name && { name: data.name }),
-        ...(data.description !== undefined && {
-          description: data.description,
-        }),
-        ...(data.definition && { definition: data.definition }),
-        ...(data.isStatic !== undefined && { isStatic: data.isStatic }),
-      },
-    });
-
-    if (data.definition) {
       await ctx.services.cohort.enqueueCompute(cohort.id);
-    }
 
-    return cohort;
-  }),
+      return cohort;
+    }),
 
-  delete: procedure
+  update: protectedProcedure
+    .input(zCohortUpdate)
+    .mutation(async ({ input, ctx }) => {
+      const userId = requireLogin(ctx.session.userId);
+      const { id, ...data } = input;
+
+      const db = ctx.db;
+      const existingCohort = await db.cohort.findUnique({ where: { id } });
+
+      if (!existingCohort) {
+        throw new TRPCNotFoundError('Cohort not found');
+      }
+
+      await ctx.services.auth.requireProjectAccess({
+        userId,
+        projectId: existingCohort.projectId,
+        level: 'write',
+      });
+
+      const cohort = await db.cohort.update({
+        where: { id },
+        data: {
+          ...(data.name && { name: data.name }),
+          ...(data.description !== undefined && {
+            description: data.description,
+          }),
+          ...(data.definition && { definition: data.definition }),
+          ...(data.isStatic !== undefined && { isStatic: data.isStatic }),
+        },
+      });
+
+      if (data.definition) {
+        await ctx.services.cohort.enqueueCompute(cohort.id);
+      }
+
+      return cohort;
+    }),
+
+  delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -193,7 +193,7 @@ export const cohortRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  listProfiles: procedure
+  listProfiles: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -219,7 +219,7 @@ export const cohortRouter = createTRPCRouter({
       };
     }),
 
-  mostEvents: procedure
+  mostEvents: protectedProcedure
     .input(z.object({ projectId: z.string(), cohortId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -232,7 +232,7 @@ export const cohortRouter = createTRPCRouter({
       return getCohortMemberEvents(ctx, input.projectId, input.cohortId);
     }),
 
-  eventsPerDay: procedure
+  eventsPerDay: protectedProcedure
     .input(z.object({ projectId: z.string(), cohortId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -245,7 +245,7 @@ export const cohortRouter = createTRPCRouter({
       return getCohortEventsPerDay(ctx, input.projectId, input.cohortId);
     }),
 
-  popularRoutes: procedure
+  popularRoutes: protectedProcedure
     .input(z.object({ projectId: z.string(), cohortId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -258,7 +258,7 @@ export const cohortRouter = createTRPCRouter({
       return getCohortMemberRoutes(ctx, input.projectId, input.cohortId);
     }),
 
-  getCount: procedure
+  getCount: protectedProcedure
     .input(z.object({ cohortId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -281,7 +281,7 @@ export const cohortRouter = createTRPCRouter({
       return { count };
     }),
 
-  preview: procedure
+  preview: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -306,7 +306,7 @@ export const cohortRouter = createTRPCRouter({
       return { count, sampleProfiles };
     }),
 
-  exportProfiles: procedure
+  exportProfiles: protectedProcedure
     .input(
       z.object({
         cohortId: z.string(),
@@ -353,7 +353,7 @@ export const cohortRouter = createTRPCRouter({
       };
     }),
 
-  refresh: procedure
+  refresh: protectedProcedure
     .input(z.object({ cohortId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);

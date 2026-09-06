@@ -1,13 +1,11 @@
 // Ported from packages/trpc/src/routers/reference.ts (M6-004).
 //
-// V1's `protectedProcedure` — the logger/session-scope/rate-limit middleware
-// stack — lands in core with auth (rpc/base.ts: "those need the resolved
-// Session shape and the access rules, so they land with auth (P6)"). Until
-// then this router does its own minimal "is anyone logged in" check inline,
-// exactly like V1's `enforceUserIsAuthed`. V1 keeps serving the live route
-// through packages/trpc's own `protectedProcedure` (full stack included) and
-// delegates its handler bodies to core's reference functions (DELEGATE
-// PATTERN).
+// M11-001: every procedure is on its V1 twin's builder.
+// `protectedProcedure` runs `enforceUserIsAuthed` + `enforceAccess` BEFORE
+// the input parser, exactly as V1 does. The explicit checks in the handlers
+// below stay: `enforceAccess` only sees a TOP-LEVEL `projectId` /
+// `organizationId`, so anything resolved from another id needs its own
+// (ADR-011).
 //
 // M10-003: the handler bodies reach the module through
 // `ctx.services.reference`, so the requestId minted at the edge reaches the
@@ -20,7 +18,11 @@
 
 import { zCreateReference, zRange } from '@openpanel/validation';
 import { z } from 'zod';
-import { createTRPCRouter, procedure } from '../../rpc/base';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
 
 function requireLogin(userId: string | null | undefined): string {
@@ -31,7 +33,7 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 export const referenceRouter = createTRPCRouter({
-  getReferences: procedure
+  getReferences: protectedProcedure
     .input(z.object({ projectId: z.string(), cursor: z.number().optional() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -45,12 +47,14 @@ export const referenceRouter = createTRPCRouter({
       return ctx.services.reference.listReferences(input);
     }),
 
-  create: procedure.input(zCreateReference).mutation(({ input, ctx }) => {
-    requireLogin(ctx.session.userId);
-    return ctx.services.reference.createReference(input);
-  }),
+  create: protectedProcedure
+    .input(zCreateReference)
+    .mutation(({ input, ctx }) => {
+      requireLogin(ctx.session.userId);
+      return ctx.services.reference.createReference(input);
+    }),
 
-  update: procedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.string(),
@@ -72,7 +76,7 @@ export const referenceRouter = createTRPCRouter({
       return ctx.services.reference.updateReference(input);
     }),
 
-  delete: procedure
+  delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
@@ -87,7 +91,7 @@ export const referenceRouter = createTRPCRouter({
       return ctx.services.reference.deleteReference(input.id);
     }),
 
-  getChartReferences: procedure
+  getChartReferences: publicProcedure
     .input(
       z.object({
         projectId: z.string(),
