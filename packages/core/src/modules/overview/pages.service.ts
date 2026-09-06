@@ -12,9 +12,9 @@
 // dodge a module-singleton mocking hazard, and there is no singleton left to
 // dodge.
 
-import type { IChartEventFilter, IInterval } from '@openpanel/validation';
 import type { ServiceDeps } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';
+import type { IChartEventFilter, IInterval } from '../report/report.constants';
 import {
   getTopPages as getOverviewTopPages,
   getTopEntryExit,

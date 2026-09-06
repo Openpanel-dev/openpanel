@@ -24,7 +24,10 @@
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
-import type { IChartBreakdown, IChartEvent } from '@openpanel/validation';
+import type {
+  IChartBreakdown,
+  IChartEvent,
+} from '../../report/report.constants';
 import type { AggregateChartSqlInput, ChartSqlInput } from './chart-statement';
 
 const cohortFindMany = mock(async () => []);

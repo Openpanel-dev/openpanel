@@ -12,12 +12,12 @@
 // packages/db's non-`skipTime` branch, and `./field-resolution.CHART_TABLE`,
 // which already carried all four physical table names used below.
 
+import sqlstring from 'sqlstring';
 import {
   getCohortIds,
   type IChartEventFilter,
   type IChartFilterValueType,
-} from '@openpanel/validation';
-import sqlstring from 'sqlstring';
+} from '../../report/report.constants';
 import { formatClickhouseDate } from './dates';
 import { CHART_TABLE } from './field-resolution';
 import { buildTypedClause, hasTypedCast, isTypedOperator } from './filter-cast';

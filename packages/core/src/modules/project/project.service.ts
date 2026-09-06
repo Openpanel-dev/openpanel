@@ -21,7 +21,6 @@
 // M10-009 dropped the `compatChHelpers()` hop these two used to make.
 
 import crypto from 'node:crypto';
-import { stripTrailingSlash } from '@openpanel/common';
 import { clix } from '@openpanel/db/src/clickhouse/query-builder';
 import type {
   Prisma,
@@ -36,6 +35,7 @@ import { convertClickhouseDateToJs } from '../../shared/ch-dates';
 import { chQuery } from '../../shared/ch-query';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getId } from '../../shared/slug-id';
+import { stripTrailingSlash } from '../../shared/string';
 import { hashPassword } from '../auth/auth.service';
 
 // `clix` is a value import of `@openpanel/db` and stays one: it is a pure

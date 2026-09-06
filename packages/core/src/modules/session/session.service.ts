@@ -18,11 +18,11 @@
 // imports, kept lazy for a cycle, not for a client.
 
 import { cacheable } from '@openpanel/redis';
-import type { IChartEventFilter } from '@openpanel/validation';
 import type { ServiceDeps } from '../../services';
 import { chQuery } from '../../shared/ch-query';
 import { getSafeJson } from '../../shared/json';
 import type { IServiceProfile } from '../profile/profile.service';
+import type { IChartEventFilter } from '../report/report.constants';
 import { convertClickhouseDateToJs } from './src/dates';
 import {
   hasSessionListLookback,

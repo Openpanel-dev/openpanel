@@ -4,11 +4,11 @@ import {
   max,
   min,
   round,
-  slug,
   sum,
-} from '@openpanel/common';
-import { alphabetIds } from '@openpanel/constants';
-import type { FinalChart } from '@openpanel/validation';
+} from '../../../../shared/math';
+import { slug } from '../../../../shared/slug';
+import type { FinalChart } from '../../../report/report.constants';
+import { alphabetIds } from '../../../report/report.constants';
 import type { ConcreteSeries } from './types';
 
 /**

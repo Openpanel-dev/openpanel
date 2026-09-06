@@ -1,7 +1,7 @@
-// Ported from @openpanel/common's id.ts, unchanged. nanoid/non-secure is
+// Ported from packages/common's id.ts, unchanged. nanoid/non-secure is
 // deliberate: these are correlation/display ids, not secrets.
 
-// Ported from @openpanel/common/server's id.ts (M4-003). Regular `nanoid`,
+// Ported from packages/common/server's id.ts (M4-003). Regular `nanoid`,
 // not the non-secure variant above: these ids back password-reset tokens and
 // invite links, so they must stay cryptographically random.
 import { nanoid as secureNanoid } from 'nanoid';

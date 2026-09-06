@@ -5,7 +5,7 @@
 // report.service). Nothing here touches a database, so both sides stay
 // eager and neither needs a lazy loader (docs/TECH_DEBT.md §4 step 2).
 
-import type { IChartEventFilter, IChartEventItem } from '@openpanel/validation';
+import type { IChartEventFilter, IChartEventItem } from '../report.constants';
 
 /** The event half of the discriminated series union — what every caller then
  *  reads `.name` / `.filters` off. */

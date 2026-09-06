@@ -1,15 +1,21 @@
 // Moved from packages/constants/index.ts (M6-002, ADR-008's module map:
 // project owns "C"). packages/constants/index.ts becomes a re-export shim of
 // `ProjectTypeNames` (same shape as packages/validation/src/import.validation.ts
-// since M5-004), so existing @openpanel/constants importers keep resolving it
+// since M5-004), so existing packages/constants importers keep resolving it
 // unchanged. `zCreateProject`/`zUpdateProject` are the /manage REST body
 // schemas (apps/api/src/controllers/manage.controller.ts), moved here with
 // the CRUD bodies they validate (project.service.ts's
 // createProjectForOrganization/updateProjectForOrganization).
 //
-// Isomorphic by the AGENTS.md rule: zod and nothing else.
+// The project filter/edit schemas below moved from
+// packages/validation/src/index.ts (M11-006, same module map row). `zChartEvent`
+// is imported by name, not re-exported: `zProjectFilterEvent` extends it as a
+// bound identifier.
+//
+// Isomorphic by the AGENTS.md rule: zod, another *.constants.ts, and nothing else.
 
 import { z } from 'zod';
+import { zChartEvent } from '../report/report.constants';
 
 export const ProjectTypeNames = {
   website: 'Website',
@@ -34,3 +40,49 @@ export const zUpdateProject = z.object({
   crossDomain: z.boolean().optional(),
   allowUnsafeRevenueTracking: z.boolean().optional(),
 });
+
+export const zProjectFilterIp = z.object({
+  type: z.literal('ip'),
+  ip: z.string(),
+});
+export type IProjectFilterIp = z.infer<typeof zProjectFilterIp>;
+
+export const zProjectFilterProfileId = z.object({
+  type: z.literal('profile_id'),
+  profileId: z.string(),
+});
+export type IProjectFilterProfileId = z.infer<typeof zProjectFilterProfileId>;
+
+export const zProjectFilterEvent = zChartEvent.extend({
+  type: z.literal('event'),
+});
+export type IProjectFilterEvent = z.infer<typeof zProjectFilterEvent>;
+
+export const zProjectFilters = z.discriminatedUnion('type', [
+  zProjectFilterIp,
+  zProjectFilterProfileId,
+  zProjectFilterEvent,
+]);
+export type IProjectFilters = z.infer<typeof zProjectFilters>;
+
+export const zProject = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  filters: z.array(zProjectFilters).default([]),
+  domain: z.string().url().or(z.literal('').or(z.null())),
+  cors: z.array(z.string()).default([]),
+  crossDomain: z.boolean().default(false),
+  allowUnsafeRevenueTracking: z.boolean().default(false),
+});
+export type IProjectEdit = z.infer<typeof zProject>;
+
+export const zProjectUpdate = z.object({
+  id: z.string(),
+  name: z.string().min(1).optional(),
+  filters: z.array(zProjectFilters).optional(),
+  domain: z.string().url().or(z.literal('').or(z.null())).optional(),
+  cors: z.array(z.string()).optional(),
+  crossDomain: z.boolean().optional(),
+  allowUnsafeRevenueTracking: z.boolean().optional(),
+});
+export type IProjectUpdate = z.infer<typeof zProjectUpdate>;

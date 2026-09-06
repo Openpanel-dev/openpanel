@@ -16,7 +16,6 @@
 // no access check here either — same gap V1's router has (ported verbatim,
 // not fixed).
 
-import { zCreateReference, zRange } from '@openpanel/validation';
 import { z } from 'zod';
 import {
   createTRPCRouter,
@@ -24,6 +23,8 @@ import {
   publicProcedure,
 } from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
+import { zRange } from '../report/report.constants';
+import { zCreateReference } from './reference.constants';
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {

@@ -4,8 +4,8 @@
 // the service — which imports the engine — into a cycle.
 
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
-import type { IGetChartDataInput } from '@openpanel/validation';
 import type { ServiceDeps } from '../../../services';
+import type { IGetChartDataInput } from '../../report/report.constants';
 import {
   aggregateChartQuery,
   chartSeriesQuery,

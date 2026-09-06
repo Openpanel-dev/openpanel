@@ -19,7 +19,6 @@
 // and this module's queries haven't been converted yet.
 
 import { createHash } from 'node:crypto';
-import { toDots } from '@openpanel/common';
 import type { Prisma } from '@openpanel/db/src/prisma-client';
 import { createLogger, type ILogger } from '../../clients/logger';
 import type { Logger } from '../../logger';
@@ -29,6 +28,7 @@ import {
   formatClickhouseDate,
 } from '../../shared/ch-dates';
 import { getReplicatedTableName, TABLE_NAMES } from '../../shared/ch-tables';
+import { toDots } from '../../shared/object';
 import type { IClickhouseEvent } from '../event/event.service';
 import type { IClickhouseProfile } from '../profile/profile.service';
 import type { IImportConfig } from './import.constants';

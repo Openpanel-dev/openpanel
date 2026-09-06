@@ -1,5 +1,5 @@
-import { stripTrailingSlash } from '@openpanel/common';
 import referrers from './referrers';
+import { stripTrailingSlash } from './string';
 
 function getHostname(url: string | undefined) {
   if (!url) {

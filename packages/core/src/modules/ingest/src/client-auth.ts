@@ -13,13 +13,13 @@
 // ADR-011 leaves to Carl, not to a port.
 
 import { getCache } from '@openpanel/redis';
-import type {
-  IProjectFilterIp,
-  IProjectFilterProfileId,
-} from '@openpanel/validation';
 import { path } from 'ramda';
 import { verifyPassword } from '../../../shared/crypto';
 import type { IServiceClientWithProject } from '../../client/client.service';
+import type {
+  IProjectFilterIp,
+  IProjectFilterProfileId,
+} from '../../project/project.constants';
 import { headerValue, type IngestHeaders } from './headers';
 
 export type { IngestHeaders } from './headers';

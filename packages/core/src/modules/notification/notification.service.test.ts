@@ -5,7 +5,7 @@
 // (side-effect-free) import.
 
 import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
-import type { IChartEvent } from '@openpanel/validation';
+import type { IChartEvent } from '../report/report.constants';
 
 interface FakeRule {
   id: string;

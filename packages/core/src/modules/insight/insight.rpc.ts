@@ -10,10 +10,10 @@
 // The permission ladder itself is bound once, in auth.service.ts
 // (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
-import type { InsightPayload } from '@openpanel/validation';
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
+import type { InsightPayload } from './insight.constants';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPLAIN_COLUMNS = [

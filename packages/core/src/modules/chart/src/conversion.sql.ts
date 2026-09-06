@@ -15,7 +15,7 @@
 // introduced or removed.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
-import type { IInterval } from '@openpanel/validation';
+import type { IInterval } from '../../report/report.constants';
 import { compiledText } from './compiled';
 import { CHART_TABLE } from './field-resolution';
 

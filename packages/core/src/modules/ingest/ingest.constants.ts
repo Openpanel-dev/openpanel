@@ -1,6 +1,6 @@
 // The ingestion wire contract (M8-002, ADR-008's module map: ingest owns "C").
 // Moved from packages/validation/src/track.validation.ts,
-// packages/validation/src/event-blocklist.ts and @openpanel/constants'
+// packages/validation/src/event-blocklist.ts and packages/constants'
 // RESERVED_EVENT_NAMES — all three enforce the same thing (what a caller may
 // name an event and what a track body may contain), so they are one file here.
 // packages/validation and packages/constants re-export this; the SDK deep-import
@@ -143,8 +143,8 @@ export function isBlockedEventName(name: string): boolean {
 // These interfaces are duplicated in code that ships in our SDK type
 // declarations. We hand-write them (instead of using `z.infer<…>`) so:
 //   1. Generated `.d.ts` files for the SDKs are readable plain TypeScript
-//      with no `import type { ITrackPayload } from '@openpanel/validation'`
-//      lines (the package isn't published).
+//      with no `import type { ITrackPayload }` line pointing at a workspace
+//      package (none of them are published).
 //   2. The interfaces stay clean — no zod internals leaking through.
 // Each schema below has `satisfies z.ZodType<…>` attached so a drift
 // between the interface and the schema fails to compile.

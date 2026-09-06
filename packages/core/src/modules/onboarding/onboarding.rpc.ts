@@ -12,13 +12,13 @@
 // already belong to needs no more than that); this router repeats the check
 // explicitly through the organization module's own lookup.
 
-import { zOnboardingProject } from '@openpanel/validation';
 import {
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
 } from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
+import { zOnboardingProject } from './onboarding.constants';
 import {
   canSkipOnboarding,
   createOnboardingProject,

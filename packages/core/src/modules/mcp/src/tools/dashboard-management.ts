@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { zReport } from '@openpanel/validation';
 import { z } from 'zod';
 import { getId } from '../../../../shared/slug-id';
 import { getDashboardById, getProjectById } from '../../../../v1-compat';
+import { zReport } from '../../../report/report.constants';
 import type { McpAuthContext } from '../auth';
 import { dashboardBaseUrl } from './dashboard-links';
 import {

@@ -3,16 +3,16 @@
 // re-export shim of this file (same shape as ./onboarding.constants.ts since
 // M6-003), so packages/trpc's notification router and apps/start's
 // notification rule form keep resolving these symbols through
-// @openpanel/validation's existing barrel unchanged.
+// packages/validation's existing barrel unchanged.
 //
 // `zChartEvent`/`zChartEventFilter` are chart/report vocabulary that has not
 // moved to core yet (ADR-008's "report" module is a later wave), so per
 // `constants-stay-isomorphic` (zod, another `*.constants.ts`, or type-only —
-// nothing else) they cannot be value-imported from @openpanel/validation
+// nothing else) they cannot be value-imported from packages/validation
 // here. Diverged local copy instead, same treatment as
 // ./modules/cohort/cohort.constants.ts's zChartEventFilter since M5-003 —
 // including inlining `operators`/`chartSegments`/`filterValueTypes` as
-// literal key tuples rather than importing them from @openpanel/constants.
+// literal key tuples rather than importing them from packages/constants.
 // TODO(report module): once report.constants.ts exists, delete this
 // duplicate and import zChartEvent from there instead.
 //

@@ -3,10 +3,10 @@
 // byte-equivalent to V1 in src/conversion.sql.proof.md; V1's
 // conversion.service is a re-export shim onto this module (DELEGATE PATTERN).
 
-import { NOT_SET_VALUE } from '@openpanel/constants';
-import type { IReportInput } from '@openpanel/validation';
 import { omit } from 'ramda';
 import type { ServiceDeps } from '../../services';
+import type { IReportInput } from '../report/report.constants';
+import { NOT_SET_VALUE } from '../report/report.constants';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
 import { fetchCohortsMetadata } from './src/chart-statement';
 import { type ConversionGroup, conversionQuery } from './src/conversion.sql';

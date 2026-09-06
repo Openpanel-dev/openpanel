@@ -1,4 +1,3 @@
-import type { IChartRange, IInterval } from '@openpanel/validation';
 import { z } from 'zod';
 import { getChartStartEndDate } from '../../../../shared/date';
 import {
@@ -9,6 +8,7 @@ import {
   getReportsByDashboardId,
   getSettingsForProject,
 } from '../../../../v1-compat';
+import type { IChartRange, IInterval } from '../../../report/report.constants';
 import { chatTool, dashboardUrl } from './helpers';
 
 // Cap on parallel report execution. Real dashboards rarely exceed this,

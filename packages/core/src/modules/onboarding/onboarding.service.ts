@@ -13,7 +13,6 @@
 // re-exports.
 
 import crypto from 'node:crypto';
-import { stripTrailingSlash } from '@openpanel/common';
 import { getRecommendedPlan } from '@openpanel/payments';
 import { format } from 'date-fns';
 import type { Logger } from '../../logger';
@@ -24,6 +23,7 @@ import {
   type SequenceSubject,
   step,
 } from '../../shared/email-sequence';
+import { stripTrailingSlash } from '../../shared/string';
 import { hashPassword } from '../auth/auth.service';
 import {
   getOrganizationById,

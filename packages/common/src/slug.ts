@@ -1,19 +1,5 @@
-import _slugify from 'slugify';
-
-const slugify = (str: string) => {
-  return _slugify(
-    str
-      .replaceAll('å', 'a')
-      .replaceAll('ä', 'a')
-      .replaceAll('ö', 'o')
-      .replaceAll('Å', 'A')
-      .replaceAll('Ä', 'A')
-      .replaceAll('Ö', 'O')
-      .replace(/\|+/g, '-'),
-    { lower: true, strict: true, trim: true },
-  );
-};
-
-export function slug(str: string): string {
-  return slugify(str);
-}
+// P11 shim (ADR-008/ADR-007): definitions moved to packages/core/src/shared.
+// Reached by relative path, not through @openpanel/core, so that bundling
+// this package (packages/sdks/express sets noExternal) pulls the one leaf file
+// and not core barrel. Deleted by M11-009.
+export { slug } from '../../core/src/shared/slug';

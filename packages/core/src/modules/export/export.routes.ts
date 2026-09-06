@@ -26,20 +26,12 @@
 // what `defineRoutes`'s `const T` inference can carry, same reason every
 // other module here writes its routes as one static `.get()`/`.post()` chain.
 
-import { DateTime } from '@openpanel/common';
-import { getDefaultIntervalByDates } from '@openpanel/constants';
-import {
-  zChartEvent,
-  zChartEventFilter,
-  zRange,
-  zReport,
-} from '@openpanel/validation';
 import { z } from 'zod';
 import type { Ctx } from '../../context';
 import type { ClientType } from '../../http/client-auth';
 import { defineRoutes } from '../../http/define';
 import { parseQueryStringTransform } from '../../http/query';
-import { getChartStartEndDate } from '../../shared/date';
+import { DateTime, getChartStartEndDate } from '../../shared/date';
 import { HttpError } from '../../shared/errors';
 import type { GetEventListOptions } from '../event/event.service';
 import {
@@ -84,6 +76,13 @@ import {
   getProfileSessionsCore,
   getProfileWithEvents,
 } from '../profile/profile.service';
+import {
+  getDefaultIntervalByDates,
+  zChartEvent,
+  zChartEventFilter,
+  zRange,
+  zReport,
+} from '../report/report.constants';
 import { querySessionsCore } from '../session/session.service';
 import {
   resolveExportProjectId,

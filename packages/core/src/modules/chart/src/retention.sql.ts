@@ -14,7 +14,7 @@
 // so no `IN` / `GLOBAL IN` decision is made or unmade here.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
-import type { IChartEventFilter } from '@openpanel/validation';
+import type { IChartEventFilter } from '../../report/report.constants';
 import { compiledText } from './compiled';
 import { CHART_TABLE } from './field-resolution';
 import { getEventFiltersWhereClause } from './filter-where';

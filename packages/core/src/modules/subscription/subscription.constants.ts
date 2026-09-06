@@ -2,7 +2,7 @@
 // subscription owns "C"). packages/validation/src/index.ts becomes a
 // re-export shim of this file (same shape as ./notification.constants.ts
 // since M6-005), so packages/trpc's subscription router and apps/start's
-// billing forms keep resolving these symbols through @openpanel/validation's
+// billing forms keep resolving these symbols through packages/validation's
 // existing barrel unchanged.
 //
 // Isomorphic by the AGENTS.md rule: zod and nothing else.

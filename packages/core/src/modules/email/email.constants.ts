@@ -1,6 +1,6 @@
 // Moved from packages/constants/index.ts (M6-004, ADR-008's module map:
 // email owns "C"). packages/constants re-exports these for existing
-// @openpanel/constants importers — same shape as packages/constants/index.ts's
+// packages/constants importers — same shape as packages/constants/index.ts's
 // `ProjectTypeNames` re-export since M6-002.
 //
 // Keys must match the template `category` in @openpanel/email. Each entry's

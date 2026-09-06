@@ -2,7 +2,7 @@ import type {
   IChartEventFilter,
   IChartEventItem,
   IReportInputWithDates,
-} from '@openpanel/validation';
+} from '../../../report/report.constants';
 
 /** What the user asked for: one event or formula series from the report. */
 export type SeriesDefinition = IChartEventItem;

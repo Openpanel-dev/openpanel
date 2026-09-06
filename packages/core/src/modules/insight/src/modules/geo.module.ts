@@ -1,6 +1,6 @@
-import { getCountry } from '@openpanel/constants';
 import { formatClickhouseDate } from '../../../../shared/ch-dates';
 import { TABLE_NAMES } from '../../../../shared/ch-tables';
+import { getCountry } from '../../../report/report.constants';
 import type {
   ComputeContext,
   ComputeResult,

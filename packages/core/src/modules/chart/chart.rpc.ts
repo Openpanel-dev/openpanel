@@ -11,14 +11,6 @@
 // date window). The resolved report rides on `ctx.report`, as in V1, so a
 // handler cannot forget to resolve it.
 
-import {
-  zChartEventFilter,
-  zChartSeries,
-  zCriteria,
-  zRange,
-  zReportInput,
-  zTimeInterval,
-} from '@openpanel/validation';
 import { z } from 'zod';
 import {
   createTRPCRouter,
@@ -27,6 +19,14 @@ import {
   type TrpcContext,
 } from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
+import {
+  zChartEventFilter,
+  zChartSeries,
+  zCriteria,
+  zRange,
+  zReportInput,
+  zTimeInterval,
+} from '../report/report.constants';
 import type { IServiceReport } from '../report/report.service';
 
 const zShareable = z.object({

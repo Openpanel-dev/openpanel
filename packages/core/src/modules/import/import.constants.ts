@@ -3,7 +3,7 @@
 // packages/validation/src/import.validation.ts becomes a re-export shim of
 // this file (same shape as packages/validation/src/cohort.validation.ts since
 // M5-003), so apps/start and packages/db/src/types.ts keep resolving these
-// symbols through @openpanel/validation's existing barrel unchanged.
+// symbols through packages/validation's existing barrel unchanged.
 //
 // Isomorphic by the AGENTS.md rule: zod and nothing else.
 

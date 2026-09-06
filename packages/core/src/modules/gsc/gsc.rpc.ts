@@ -10,7 +10,6 @@
 // The per-project access ladder itself is bound once, in auth.service.ts
 // (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
-import { zRange, zTimeInterval } from '@openpanel/validation';
 import { z } from 'zod';
 import {
   createTRPCRouter,
@@ -19,6 +18,7 @@ import {
 } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
 import { Arctic, googleGsc } from '../auth/auth.service';
+import { zRange, zTimeInterval } from '../report/report.constants';
 
 const OAUTH_COOKIE_MAX_AGE_SECONDS = 60 * 10;
 

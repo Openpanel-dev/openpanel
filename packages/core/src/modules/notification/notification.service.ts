@@ -16,15 +16,14 @@
 // test file reaches, and constructing @openpanel/db's clients at import time
 // would spawn a pino-pretty transport worker thread per test file).
 
-import { stripLeadingAndTrailingSlashes } from '@openpanel/common';
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
-import type { IChartEvent, IChartEventFilter } from '@openpanel/validation';
 import { pathOr } from 'ramda';
 import { sendEmail } from '../../clients/email';
 import { getServerIntegration } from '../../clients/integrations/registry';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
+import { stripLeadingAndTrailingSlashes } from '../../shared/string';
 import type {
   IServiceCreateEventPayload,
   IServiceEvent,
@@ -33,6 +32,10 @@ import {
   type IIntegrationConfig,
   isKind,
 } from '../integration/integration.constants';
+import type {
+  IChartEvent,
+  IChartEventFilter,
+} from '../report/report.constants';
 import type { ICreateNotificationRule } from './notification.constants';
 
 export const APP_NOTIFICATION_INTEGRATION_ID = 'app';

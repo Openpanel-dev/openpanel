@@ -10,8 +10,8 @@
 // `@modelcontextprotocol/sdk` signature and only ever hold the db they got
 // from the v1-compat seam.
 
-import { slug } from '@openpanel/common';
 import type { ServiceDeps } from '../services';
+import { slug } from './slug';
 
 export async function getId(
   deps: Pick<ServiceDeps, 'db'>,

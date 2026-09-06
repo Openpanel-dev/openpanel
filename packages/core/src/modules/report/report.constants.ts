@@ -2,7 +2,7 @@
 // (M7-006, ADR-008's module map: report owns "C" for the chart/report/widget
 // vocabulary). Both origin files become re-export shims onto this one (same
 // shape as packages/validation/src/cohort.validation.ts since M5-003), so
-// existing @openpanel/constants / @openpanel/validation importers (the chart
+// existing packages/constants / packages/validation importers (the chart
 // engine, apps/start's report builder, packages/trpc's report/dashboard/
 // widget routers) keep resolving these symbols unchanged.
 //
@@ -953,3 +953,104 @@ export const zReport = zReportInput.extend({
 
 // Alias for backward compatibility
 export const zChartInput = zReportInput;
+
+// ---------------------------------------------------------------------------
+// Inferred report/chart types, moved from packages/validation/src/types.validation.ts
+// (M11-006, ADR-008's module map: report owns "C" for the chart/report/widget
+// vocabulary). They land beside the schemas they infer from, which is what
+// removes that file's `import type { … } from './index'` back-edge.
+// `IChartEvents` and `ISetCookie` do NOT come along: the first is a dead alias
+// with no importers, the second is already ../../shared/cookie.ts.
+// `UnionOmit` has no owning module — it is kept here, with the report types it
+// is only ever applied to (apps/start's reportSlice), until M11-007 gives
+// apps/start its own copy.
+// ---------------------------------------------------------------------------
+
+export type UnionOmit<T, K extends keyof any> = T extends any
+  ? Omit<T, K>
+  : never;
+
+// For saved reports - complete report with required display fields
+export type IReport = z.infer<typeof zReport>;
+
+// For API/engine use - flexible input
+export type IReportInput = z.infer<typeof zReportInput>;
+
+// With resolved dates (engine internal)
+export interface IReportInputWithDates extends IReportInput {
+  startDate: string;
+  endDate: string;
+}
+export type IChartEvent = z.infer<typeof zChartEvent>;
+export type IChartFormula = z.infer<typeof zChartFormula>;
+export type IChartEventItem = z.infer<typeof zChartEventItem>;
+export type IChartSeries = z.infer<typeof zChartSeries>;
+export type IChartEventSegment = z.infer<typeof zChartEventSegment>;
+export type IChartEventFilter = IChartEvent['filters'][number];
+export type IChartEventFilterValue =
+  IChartEvent['filters'][number]['value'][number];
+export type IChartEventFilterOperator =
+  IChartEvent['filters'][number]['operator'];
+export type IChartFilterValueType = NonNullable<
+  IChartEvent['filters'][number]['type']
+>;
+export type IChartBreakdown = z.infer<typeof zChartBreakdown>;
+export type IInterval = z.infer<typeof zTimeInterval>;
+export type IChartType = z.infer<typeof zChartType>;
+export type IChartMetric = z.infer<typeof zMetric>;
+export type IChartLineType = z.infer<typeof zLineType>;
+export type IChartRange = z.infer<typeof zRange>;
+export type IGetChartDataInput = {
+  event: IChartEvent;
+  projectId: string;
+  startDate: string;
+  endDate: string;
+} & Omit<
+  IReportInput,
+  'series' | 'globalFilters' | 'startDate' | 'endDate' | 'range'
+>;
+export type ICriteria = z.infer<typeof zCriteria>;
+
+export type PreviousValue =
+  | {
+      value: number;
+      diff: number | null;
+      state: 'positive' | 'negative' | 'neutral';
+    }
+  | undefined;
+
+export type Metrics = {
+  sum: number;
+  average: number;
+  min: number;
+  max: number;
+  count: number | undefined;
+  previous?: {
+    sum: PreviousValue;
+    average: PreviousValue;
+    min: PreviousValue;
+    max: PreviousValue;
+    count: PreviousValue;
+  };
+};
+
+export type IChartSerie = {
+  id: string;
+  names: string[];
+  event: {
+    id?: string;
+    name: string;
+    breakdowns?: Record<string, string>;
+  };
+  metrics: Metrics;
+  data: {
+    date: string;
+    count: number;
+    previous: PreviousValue;
+  }[];
+};
+
+export type FinalChart = {
+  series: IChartSerie[];
+  metrics: Metrics;
+};

@@ -1,4 +1,4 @@
-import type { InsightPayload } from '@openpanel/validation';
+import type { InsightPayload } from '../insight.constants';
 
 export type Cadence = 'daily';
 
@@ -37,7 +37,7 @@ export interface ComputeResult {
   extra?: Record<string, unknown>; // share delta pp, rank, sparkline, etc.
 }
 
-// Types imported from @openpanel/validation:
+// Types imported from ../insight.constants:
 // - InsightMetricKey
 // - InsightMetricEntry
 // - InsightDimension

@@ -1,10 +1,10 @@
-import { deepMergeObjects } from '@openpanel/common';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import { omit, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import type { IClickhouseProfile } from '../modules/profile/profile.service';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { getSafeJson } from '../shared/json';
+import { deepMergeObjects } from '../shared/object';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 
 // Inlined to avoid a circular value-import with `profile.service.ts`

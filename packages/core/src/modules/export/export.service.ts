@@ -13,11 +13,11 @@
 // this package's own barrel (`@openpanel/core`) mid-evaluation, which a
 // relative import cannot do (docs/TECH_DEBT.md §4).
 
-import type { IChartRange } from '@openpanel/validation';
 import type { AuthenticatedClient } from '../../http/client-auth';
 import type { ServiceDeps } from '../../services';
 import { getChartStartEndDate, resolveDateRange } from '../../shared/date';
 import { getSettingsForProject } from '../organization/organization.service';
+import type { IChartRange } from '../report/report.constants';
 
 // project.service.ts's `resolveClientProjectId` takes `ServiceDeps` now
 // (M10-004); `resolveInsightsProjectId` below is called from ~35 route

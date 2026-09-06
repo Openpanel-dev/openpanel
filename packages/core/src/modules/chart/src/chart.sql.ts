@@ -28,7 +28,7 @@ import type {
   IChartBreakdown,
   IChartEvent,
   IInterval,
-} from '@openpanel/validation';
+} from '../../report/report.constants';
 import { compiledText, compiledTextWithProfileRefs } from './compiled';
 import { formatClickhouseDate } from './dates';
 import {

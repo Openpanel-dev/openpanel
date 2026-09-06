@@ -5,7 +5,7 @@ import { z } from 'zod';
  * assistant owns "C"). packages/validation/src/chat.ts becomes a re-export
  * shim of this file (same shape as packages/validation/src/import.validation.ts
  * since M5-004), so apps/start's model picker and the SDK-facing types keep
- * resolving these symbols through @openpanel/validation's existing barrel
+ * resolving these symbols through packages/validation's existing barrel
  * unchanged.
  *
  * Isomorphic by the AGENTS.md rule: zod and nothing else.

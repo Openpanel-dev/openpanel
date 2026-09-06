@@ -11,7 +11,6 @@
 // them and `shared/pagination.ts` already has the generic pair, so they were
 // not ported.
 
-import { zChartEventFilter } from '@openpanel/validation';
 import { z } from 'zod';
 import {
   createTRPCRouter,
@@ -19,6 +18,7 @@ import {
   type TrpcContext,
 } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
+import { zChartEventFilter } from '../report/report.constants';
 import {
   getSessionById,
   getSessionDistinctValues,

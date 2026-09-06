@@ -3,7 +3,7 @@
 // SERVER-ONLY. This module instantiates `@better-agent/providers` clients and
 // reads provider API keys from `process.env`. Never value-import it from the
 // browser (apps/start) — import the model catalog/types from
-// `@openpanel/validation` instead.
+// `@openpanel/core/modules/assistant/assistant.constants` instead.
 import { createAnthropic } from '@better-agent/providers/anthropic';
 import { createOpenAI } from '@better-agent/providers/openai';
 import { z } from 'zod';

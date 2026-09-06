@@ -10,16 +10,15 @@
 // `constructor(client)` slot is gone with it: the client is `deps.ch`, which
 // is what puts the request's id on the query's log line (ADR-018 R1).
 
-import { average, sum } from '@openpanel/common';
-import { chartColors } from '@openpanel/constants';
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
-import type { IChartEventFilter, IInterval } from '@openpanel/validation';
-import { zTimeInterval } from '@openpanel/validation';
 import { z } from 'zod';
 import type { ServiceDeps } from '../../services';
+import { average, sum } from '../../shared/math';
 import { convertClickhouseDateToJs } from '../chart/src/dates';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import { getSettingsForProject } from '../organization/organization.service';
+import type { IChartEventFilter, IInterval } from '../report/report.constants';
+import { chartColors, zTimeInterval } from '../report/report.constants';
 import {
   distinctSessionsQuery,
   liveMinuteCountsQuery,

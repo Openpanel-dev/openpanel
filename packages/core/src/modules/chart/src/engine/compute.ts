@@ -1,6 +1,6 @@
-import { round } from '@openpanel/common';
-import { alphabetIds } from '@openpanel/constants';
-import type { IChartFormula } from '@openpanel/validation';
+import { round } from '../../../../shared/math';
+import type { IChartFormula } from '../../../report/report.constants';
+import { alphabetIds } from '../../../report/report.constants';
 import { evaluateFormula } from './formula';
 import type { ConcreteSeries } from './types';
 

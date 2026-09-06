@@ -23,7 +23,10 @@
 // no `IN (subquery)` is introduced or removed.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
-import type { IChartBreakdown, IChartEvent } from '@openpanel/validation';
+import type {
+  IChartBreakdown,
+  IChartEvent,
+} from '../../report/report.constants';
 import { compiledText, compiledTextWithProfileRefs } from './compiled';
 import {
   buildInlineCohortJoin,

@@ -18,15 +18,6 @@
 // ADR-013's `sql` tag, which ADR-007 keeps in `packages/db` by name: a
 // compile-time template tag, no client and no request scope.
 
-import type {
-  FinalChart,
-  IChartEventFilter,
-  IChartRange,
-  IChartSeries,
-  ICriteria,
-  IInterval,
-  IReportInput,
-} from '@openpanel/validation';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import type { ServiceDeps } from '../../services';
 import {
@@ -40,35 +31,44 @@ import {
   getProfilesCached,
   type IServiceProfile,
 } from '../profile/profile.service';
+import type {
+  FinalChart,
+  IChartEventFilter,
+  IChartRange,
+  IChartSeries,
+  ICriteria,
+  IInterval,
+  IReportInput,
+} from '../report/report.constants';
 import type { IServiceReport } from '../report/report.service';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
 import { createConversionService, getConversion } from './conversion.service';
 import {
-  buildFunnelBase,
-  buildSessionsCte,
+  type buildFunnelBase,
+  type buildSessionsCte,
   createFunnelService,
   getFunnel,
-  getFunnelCore,
-  getFunnelGroup,
+  type getFunnelCore,
+  type getFunnelGroup,
   getFunnelProfileIds,
-  toSeries as toFunnelSeries,
+  type toSeries as toFunnelSeries,
 } from './funnel.service';
 import {
   createRetentionService,
-  getEngagementCore,
+  type getEngagementCore,
   getRetentionCohort,
-  getRetentionCohortCore,
-  getRetentionLastSeenSeries,
-  getRetentionSeries,
-  getRollingActiveUsers,
-  getRollingActiveUsersCore,
-  getWeeklyRetentionSeriesCore,
-  processCohortData,
+  type getRetentionCohortCore,
+  type getRetentionLastSeenSeries,
+  type getRetentionSeries,
+  type getRollingActiveUsers,
+  type getRollingActiveUsersCore,
+  type getWeeklyRetentionSeriesCore,
+  type processCohortData,
 } from './retention.service';
 import {
   createSankeyService,
   getSankey,
-  getUserFlowCore,
+  type getUserFlowCore,
 } from './sankey.service';
 import {
   chartBucketProfilesQuery,

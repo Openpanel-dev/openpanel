@@ -9,12 +9,6 @@ import {
   defineTool,
   type ToolRunContext,
 } from '@better-agent/core';
-import { intervals, operators, timeWindows } from '@openpanel/constants';
-import {
-  type IChartEventFilter,
-  type IChartRange,
-  zRange,
-} from '@openpanel/validation';
 import { z } from 'zod';
 import { resolveModel } from '../../../clients/ai/providers';
 import {
@@ -26,6 +20,14 @@ import {
   getTrafficBreakdownCore,
   listEventNamesCore,
 } from '../../../v1-compat';
+import {
+  type IChartEventFilter,
+  type IChartRange,
+  intervals,
+  operators,
+  timeWindows,
+  zRange,
+} from '../../report/report.constants';
 import {
   CHAT_MODELS,
   type ChatModelEntry,

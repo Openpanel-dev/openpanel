@@ -13,15 +13,6 @@ import type {
   Report as DbReport,
   ReportLayout,
 } from '@openpanel/db/src/prisma-client';
-import type {
-  IChartBreakdown,
-  IChartEventFilter,
-  IChartEventItem,
-  IChartLineType,
-  IChartRange,
-  IReport,
-  IReportOptions,
-} from '@openpanel/validation';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
 import { getChartStartEndDate } from '../../shared/date';
@@ -32,6 +23,15 @@ import {
 } from '../chart/src/engine/execute';
 import { getDashboardById } from '../dashboard/dashboard.service';
 import { getSettingsForProject } from '../organization/organization.service';
+import type {
+  IChartBreakdown,
+  IChartEventFilter,
+  IChartEventItem,
+  IChartLineType,
+  IChartRange,
+  IReport,
+  IReportOptions,
+} from './report.constants';
 import { alphabetIds, lineTypes } from './report.constants';
 import { mergeGlobalFilters, onlyReportEvents } from './src/series';
 

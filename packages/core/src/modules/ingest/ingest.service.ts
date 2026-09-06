@@ -13,7 +13,6 @@
 // workaround and no longer travels through `AppDeps` — it stays an argument
 // only so a test can assert on what was produced without a broker.
 
-import { generateId } from '@openpanel/common';
 import { assocPath, pathOr, pick } from 'ramda';
 import { v4 as uuid } from 'uuid';
 import type { Buffers } from '../../buffers/create-buffers';
@@ -26,6 +25,7 @@ import {
 } from '../../clients/geo';
 import type { Logger } from '../../logger';
 import type { ServiceDeps } from '../../services';
+import { generateId } from '../../shared/id';
 import { parseUserAgent } from '../../shared/parser-user-agent';
 import { generateDeviceId } from '../../shared/profileId';
 import { createBotEvent } from '../event/event.service';

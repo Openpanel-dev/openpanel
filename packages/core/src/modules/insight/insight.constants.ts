@@ -1,3 +1,8 @@
+// Moved from packages/validation/src/types.insights.ts (M11-006, ADR-008's
+// module map: insight owns "C"). Plain TypeScript, no zod — isomorphic by the
+// AGENTS.md rule, which constrains a constants file's imports, and this file
+// has none.
+
 export type InsightMetricKey = 'sessions' | 'pageviews' | 'share';
 
 export type InsightMetricUnit = 'count' | 'ratio';

@@ -914,12 +914,6 @@ importers:
       '@node-rs/argon2':
         specifier: ^2.0.2
         version: 2.0.2
-      '@openpanel/common':
-        specifier: workspace:*
-        version: link:../common
-      '@openpanel/constants':
-        specifier: workspace:*
-        version: link:../constants
       '@openpanel/db':
         specifier: workspace:*
         version: link:../db
@@ -932,9 +926,6 @@ importers:
       '@openpanel/redis':
         specifier: workspace:*
         version: link:../redis
-      '@openpanel/validation':
-        specifier: workspace:*
-        version: link:../validation
       '@oslojs/crypto':
         specifier: ^1.0.1
         version: 1.0.1
@@ -992,6 +983,9 @@ importers:
       lru-cache:
         specifier: ^11.2.4
         version: 11.5.1
+      luxon:
+        specifier: ^3.7.2
+        version: 3.7.2
       mathjs:
         specifier: ^12.3.2
         version: 12.3.2
@@ -1022,6 +1016,9 @@ importers:
       short-unique-id:
         specifier: ^5.0.3
         version: 5.0.3
+      slugify:
+        specifier: ^1.6.6
+        version: 1.6.9
       sqlstring:
         specifier: ^2.3.3
         version: 2.3.3
@@ -1056,6 +1053,9 @@ importers:
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
+      '@types/luxon':
+        specifier: ^3.7.1
+        version: 3.7.1
       '@types/qrcode':
         specifier: ^1.5.6
         version: 1.5.6
@@ -22722,7 +22722,7 @@ snapshots:
       require-from-string: 2.0.2
       resolve-from: 5.0.0
       semver: 7.5.3
-      slugify: 1.6.6
+      slugify: 1.6.9
       sucrase: 3.34.0
     transitivePeerDependencies:
       - supports-color

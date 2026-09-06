@@ -13,8 +13,8 @@
 // through compiled.ts — the one bridge — and binds every chart-level value
 // (project id, event name, dates, timezone, cohort ids/names, limits) itself.
 
-import type { IChartBreakdown } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
+import type { IChartBreakdown } from '../../report/report.constants';
 
 export const CHART_TABLE = {
   events: 'events',

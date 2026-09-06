@@ -12,10 +12,10 @@
 // worker per test file — left to defer (docs/TECH_DEBT.md §4).
 
 import type { Reference } from '@openpanel/db/src/prisma-client';
-import type { IChartRange } from '@openpanel/validation';
 import type { ServiceDeps } from '../../services';
 import { getChartStartEndDate } from '../../shared/date';
 import { getSettingsForProject } from '../organization/organization.service';
+import type { IChartRange } from '../report/report.constants';
 
 export type IServiceReference = Reference;
 

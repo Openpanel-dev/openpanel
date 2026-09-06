@@ -15,11 +15,6 @@
 // so the three-way lazy `import('@openpanel/core')` hop this file used to make
 // for it is gone.
 
-import {
-  zChartEventFilter,
-  zRange,
-  zTimeInterval,
-} from '@openpanel/validation';
 import { z } from 'zod';
 import {
   createTRPCRouter,
@@ -29,6 +24,11 @@ import {
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
 import { getChartStartEndDate } from '../../shared/date';
 import { getSettingsForProject } from '../organization/organization.service';
+import {
+  zChartEventFilter,
+  zRange,
+  zTimeInterval,
+} from '../report/report.constants';
 import {
   getBotEventsPage,
   getConversionEventNames,

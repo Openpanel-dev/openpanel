@@ -1,4 +1,4 @@
-// Ported from @openpanel/common's try-catch.ts, unchanged.
+// Ported from packages/common's try-catch.ts, unchanged.
 
 export type TryCatchResult<T, E = Error> =
   | { ok: true; data: T; error: null }

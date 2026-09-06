@@ -12,11 +12,6 @@
 // router; they moved to `services.overview.getLiveData` (src/overview.sql.ts)
 // so every query this module runs goes through the same `sql` tag (M7-005).
 
-import {
-  type IChartRange,
-  pageContextSchema,
-  zRange,
-} from '@openpanel/validation';
 import { format } from 'date-fns';
 import { z } from 'zod';
 import {
@@ -31,12 +26,14 @@ import {
   getChartPrevStartEndDate,
   getChartStartEndDate,
 } from '../../shared/date';
+import { pageContextSchema } from '../assistant/assistant.constants';
 import { getConversionEventNames } from '../event/event.service';
 import { getReferrerSpikes } from '../insight/insight.service';
 import {
   getOrganizationSubscriptionChartEndDate,
   getSettingsForProject,
 } from '../organization/organization.service';
+import { type IChartRange, zRange } from '../report/report.constants';
 import {
   zGetMapDataInput,
   zGetMetricsInput,

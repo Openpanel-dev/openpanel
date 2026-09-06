@@ -1,5 +1,5 @@
 import { db } from '@openpanel/db';
-import type { IReportOptions } from '@openpanel/validation';
+import type { IReportOptions } from '../modules/report/report.constants';
 import { printBoxMessage } from './helpers';
 
 export async function up() {

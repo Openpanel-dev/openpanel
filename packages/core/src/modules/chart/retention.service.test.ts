@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { round } from '@openpanel/common';
 import { chQuery, TABLE_NAMES } from '@openpanel/db/src/clickhouse/client';
 import {
   RETENTION_BLUEPRINT,
@@ -9,6 +8,7 @@ import {
 } from '../../../../../test/retention-fixtures';
 import { testServiceDeps } from '../../../test/service-deps';
 import type { ServiceDeps } from '../../services';
+import { round } from '../../shared/math';
 import {
   getRetentionCohort,
   getRetentionSeries,

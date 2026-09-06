@@ -2,12 +2,13 @@
 // Moved from packages/db/src/services/filter-cast.ts (M8-005) — the typed-cast
 // half of `buildFilterWhere` (./table-filter-where.ts), which is the only
 // caller. `./filter-where.ts` (the event-property compiler) imports it too.
+
+import sqlstring from 'sqlstring';
 import type {
   IChartEventFilterOperator,
   IChartEventFilterValue,
   IChartFilterValueType,
-} from '@openpanel/validation';
-import sqlstring from 'sqlstring';
+} from '../../report/report.constants';
 
 /**
  * Wrap a SQL expression (a column accessor or an already-escaped value literal)
@@ -53,19 +54,16 @@ export function hasTypedCast(
 // Equality + comparison operators where a declared cast type changes the SQL.
 // String-only operators (contains/startsWith/regex/…) and null checks are
 // unaffected and keep their existing handling.
-const TYPED_SQL_OPERATOR: Partial<Record<IChartEventFilterOperator, string>> =
-  {
-    is: '=',
-    isNot: '!=',
-    gt: '>',
-    gte: '>=',
-    lt: '<',
-    lte: '<=',
-  };
+const TYPED_SQL_OPERATOR: Partial<Record<IChartEventFilterOperator, string>> = {
+  is: '=',
+  isNot: '!=',
+  gt: '>',
+  gte: '>=',
+  lt: '<',
+  lte: '<=',
+};
 
-export function isTypedOperator(
-  operator: IChartEventFilterOperator
-): boolean {
+export function isTypedOperator(operator: IChartEventFilterOperator): boolean {
   return operator in TYPED_SQL_OPERATOR;
 }
 

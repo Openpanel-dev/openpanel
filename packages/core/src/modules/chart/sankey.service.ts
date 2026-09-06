@@ -3,11 +3,14 @@
 // byte-equivalent to V1 in src/sankey.sql.proof.md; V1's sankey.service is a
 // re-export shim onto this module (DELEGATE PATTERN).
 
-import { chartColors } from '@openpanel/constants';
-import { type IChartEventFilter, zChartEvent } from '@openpanel/validation';
 import { z } from 'zod';
 import type { ServiceDeps } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';
+import {
+  chartColors,
+  type IChartEventFilter,
+  zChartEvent,
+} from '../report/report.constants';
 import { getEventFiltersWhereClause } from './src/filter-where';
 import { runQuery } from './src/run-query';
 import {

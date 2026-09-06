@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createBrotliDecompress, createGunzip } from 'node:zlib';
-import { isSameDomain, parsePath, toDots } from '@openpanel/common';
 import { parse } from 'csv-parse';
 import { assocPath } from 'ramda';
 import { z } from 'zod';
@@ -13,12 +12,14 @@ import type { Logger } from '../../../../logger';
 // worker threads, AGENTS.md's eager-barrel-chain hazard) and is a value
 // import of `@openpanel/db` from core. See shared/ch-dates.ts's header.
 import { formatClickhouseDate } from '../../../../shared/ch-dates';
+import { toDots } from '../../../../shared/object';
 import {
   getReferrerWithQuery,
   parseReferrer,
 } from '../../../../shared/parse-referrer';
 import { generateDeviceId } from '../../../../shared/profileId';
 import { safeFetchStream } from '../../../../shared/safe-fetch';
+import { isSameDomain, parsePath } from '../../../../shared/url';
 import type { IClickhouseEvent } from '../../../event/event.service';
 import type { IUmamiImportConfig } from '../../import.constants';
 import { BaseImportProvider } from '../base-provider';

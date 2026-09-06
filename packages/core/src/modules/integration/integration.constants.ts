@@ -3,7 +3,7 @@
 // a re-export shim of this file (same shape as ./notification.constants.ts
 // since M6-005), so packages/trpc's integration router and apps/start's
 // integration forms keep resolving these symbols through
-// @openpanel/validation's existing barrel unchanged.
+// packages/validation's existing barrel unchanged.
 //
 // `zSlackAuthResponse` does NOT move here even though it is zod-only and
 // would pass `constants-stay-isomorphic`: it is Slack's OAuth token-exchange

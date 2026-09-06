@@ -7,7 +7,6 @@
 // `organizationId`, so anything resolved from another id needs its own
 // (ADR-011).
 
-import { zChartEventFilter } from '@openpanel/validation';
 import { z } from 'zod';
 import {
   createTRPCRouter,
@@ -15,6 +14,7 @@ import {
   type TrpcContext,
 } from '../../rpc/base';
 import { TRPCAccessError } from '../../rpc/errors';
+import { zChartEventFilter } from '../report/report.constants';
 import {
   getPowerUsers,
   getProfileActivity,

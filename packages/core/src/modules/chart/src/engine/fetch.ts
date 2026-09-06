@@ -1,13 +1,13 @@
-import type { ISerieDataItem } from '@openpanel/common';
-import { groupByLabels } from '@openpanel/common';
-import { alphabetIds } from '@openpanel/constants';
+import type { ServiceDeps } from '../../../../services';
+import type { ISerieDataItem } from '../../../../shared/group-by-labels';
+import { groupByLabels } from '../../../../shared/group-by-labels';
 import type {
   IChartBreakdown,
   IChartEventFilter,
   IChartEventItem,
   IGetChartDataInput,
-} from '@openpanel/validation';
-import type { ServiceDeps } from '../../../../services';
+} from '../../../report/report.constants';
+import { alphabetIds } from '../../../report/report.constants';
 import { getAggregateChartSql, getChartSql } from '../chart-statement';
 import { runQuery } from '../run-query';
 import type { NormalizedInput } from './normalize';

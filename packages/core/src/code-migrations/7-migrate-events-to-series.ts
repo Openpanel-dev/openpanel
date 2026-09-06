@@ -1,10 +1,10 @@
-import { shortId } from '@openpanel/common';
 import { db } from '@openpanel/db';
 import type {
   IChartEvent,
   IChartEventItem,
   IChartFormula,
-} from '@openpanel/validation';
+} from '../modules/report/report.constants';
+import { shortId } from '../shared/id';
 import { printBoxMessage } from './helpers';
 
 export async function up() {

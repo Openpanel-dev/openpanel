@@ -1,6 +1,6 @@
-import type { IReportInput } from '@openpanel/validation';
 import { z } from 'zod';
 import { listEventPropertiesCore } from '../../../../v1-compat';
+import type { IReportInput } from '../../../report/report.constants';
 import { runReportFromConfig } from '../report-runner';
 import { chatTool, previousPeriod, resolveDateRange } from './helpers';
 

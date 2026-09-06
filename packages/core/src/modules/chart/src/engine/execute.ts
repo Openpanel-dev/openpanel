@@ -1,10 +1,13 @@
-import type { FinalChart, IReportInput } from '@openpanel/validation';
 import type { ServiceDeps } from '../../../../services';
 import { getChartPrevStartEndDate } from '../../../../shared/date';
 import {
   getOrganizationSubscriptionChartEndDate,
   getSettingsForProject,
 } from '../../../organization/organization.service';
+import type {
+  FinalChart,
+  IReportInput,
+} from '../../../report/report.constants';
 import { compute } from './compute';
 import { fetch, fetchAggregate } from './fetch';
 import { format } from './format';

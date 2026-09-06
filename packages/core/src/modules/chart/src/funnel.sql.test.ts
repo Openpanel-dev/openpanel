@@ -22,7 +22,10 @@
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
-import type { IChartBreakdown, IReportInput } from '@openpanel/validation';
+import type {
+  IChartBreakdown,
+  IReportInput,
+} from '../../report/report.constants';
 
 const COHORT_ID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 const cohortFindMany = mock(async () => [

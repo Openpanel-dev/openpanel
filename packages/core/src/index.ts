@@ -440,8 +440,8 @@ export { createDashboardService } from './modules/dashboard/dashboard.service';
 // R + C only (M6-004): the router's three bodies are three small
 // `db.emailUnsubscribe` calls, small enough to live inline in
 // `email.rpc.ts` rather than a dedicated `email.service.ts` — see that
-// file's header. `emailCategories` moved from @openpanel/constants (ADR-008's
-// module map: email owns "C"); @openpanel/constants keeps a re-export shim.
+// file's header. `emailCategories` moved from packages/constants (ADR-008's
+// module map: email owns "C"); packages/constants keeps a re-export shim.
 export type { EmailCategory } from './modules/email/email.constants';
 export { emailCategories } from './modules/email/email.constants';
 // Dissolved from @openpanel/db's services/event.service.ts, profile.service.ts
@@ -1066,7 +1066,7 @@ export {
   getOrganizationAccess,
   getProjectAccess,
 } from './shared/access-lookups';
-// Dissolved from @openpanel/common/server (M4-003) — a still-live V1 package
+// Dissolved from packages/common/server (M4-003) — a still-live V1 package
 // (db, queue, apps/worker) reaches these the same way apps/api and core
 // itself do, until its own module lands. mcp reaches it as an internal
 // relative import now that it lives inside core (M5-007).
@@ -1107,6 +1107,10 @@ export {
   TRUSTED_IP_HEADER_ORDER,
 } from './shared/get-client-ip';
 export { generateId, generateSecureId, shortId } from './shared/id';
+// packages/db reads ClickHouse row JSON through this (P11: packages/json's
+// only definition already lived here; the barrel is how a package outside
+// core reaches it, since the exports map has no ./shared/* entry).
+export { getSafeJson } from './shared/json';
 export { resolveMaxLookbackDays } from './shared/lookback';
 export { getReferrerWithQuery, parseReferrer } from './shared/parse-referrer';
 export type {

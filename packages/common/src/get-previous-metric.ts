@@ -1,39 +1,5 @@
-import { isNil } from 'ramda';
-
-import type { PreviousValue } from '@openpanel/validation';
-
-import { round } from './math';
-
-export function getPreviousMetric(
-  current: number,
-  previous: number | null | undefined,
-): PreviousValue {
-  if (isNil(previous)) {
-    return undefined;
-  }
-
-  const diff = round(
-    ((current > previous
-      ? current / previous
-      : current < previous
-        ? previous / current
-        : 0) -
-      1) *
-      100,
-    1,
-  );
-
-  return {
-    diff:
-      Number.isNaN(diff) || !Number.isFinite(diff) || current === previous
-        ? null
-        : diff,
-    state:
-      current > previous
-        ? 'positive'
-        : current < previous
-          ? 'negative'
-          : 'neutral',
-    value: previous,
-  };
-}
+// P11 shim (ADR-008/ADR-007): definitions moved to packages/core/src/shared.
+// Reached by relative path, not through @openpanel/core, so that bundling
+// this package (packages/sdks/express sets noExternal) pulls the one leaf file
+// and not core barrel. Deleted by M11-009.
+export { getPreviousMetric } from '../../core/src/shared/math';

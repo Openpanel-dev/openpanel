@@ -6,14 +6,18 @@
 // sets diffed against V1's on the local prod-copy — see pages.sql.proof.md.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
-import type { IInterval } from '@openpanel/validation';
+import type { IInterval } from '../../report/report.constants';
 import { fillClause, toStartOf } from './overview.sql';
 
 function toDateTimeLiteral(value: string): string {
   return new Date(value).toISOString().slice(0, 19).replace('T', ' ');
 }
 
-function dateRangeWhere(column: string, startDate: string, endDate: string): SqlFragment {
+function dateRangeWhere(
+  column: string,
+  startDate: string,
+  endDate: string
+): SqlFragment {
   return sql`${sql.id(column)} BETWEEN toDateTime(${sql.string(toDateTimeLiteral(startDate))}) AND toDateTime(${sql.string(toDateTimeLiteral(endDate))})`;
 }
 
@@ -66,7 +70,9 @@ export function topPagesQuery(input: TopPagesQueryInput): SqlFragment {
   `;
 
   const limitClause =
-    input.limit === undefined ? sql.empty : sql`LIMIT ${sql.uint64(input.limit)}`;
+    input.limit === undefined
+      ? sql.empty
+      : sql`LIMIT ${sql.uint64(input.limit)}`;
 
   return sql`
     WITH
@@ -104,7 +110,9 @@ export interface PageTimeseriesQueryInput {
   filterPath?: string;
 }
 
-export function pageTimeseriesQuery(input: PageTimeseriesQueryInput): SqlFragment {
+export function pageTimeseriesQuery(
+  input: PageTimeseriesQueryInput
+): SqlFragment {
   const originFilter = input.filterOrigin
     ? sql`AND e.origin = ${sql.string(input.filterOrigin)}`
     : sql.empty;
@@ -141,7 +149,9 @@ export interface PageConversionsQueryInput {
   limit: number;
 }
 
-export function pageConversionsQuery(input: PageConversionsQueryInput): SqlFragment {
+export function pageConversionsQuery(
+  input: PageConversionsQueryInput
+): SqlFragment {
   const conversionEvents = sql`
     SELECT profile_id, created_at AS conv_time
     FROM events

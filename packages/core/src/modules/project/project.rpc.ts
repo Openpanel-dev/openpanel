@@ -12,10 +12,11 @@
 // The project-access ladder itself is bound once, in auth.service.ts
 // (M10-002); every procedure here reaches it through `ctx.services.auth`.
 
-import { zOnboardingProject, zProjectUpdate } from '@openpanel/validation';
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
+import { zOnboardingProject } from '../onboarding/onboarding.constants';
+import { zProjectUpdate } from './project.constants';
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {

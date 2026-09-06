@@ -2,16 +2,17 @@ import { randomUUID } from 'node:crypto';
 import { createInterface } from 'node:readline';
 import { Readable } from 'node:stream';
 import { createBrotliDecompress, createGunzip } from 'node:zlib';
-import { isSameDomain, parsePath, toDots } from '@openpanel/common';
 import unzipper from 'unzipper';
 import { z } from 'zod';
 import type { Logger } from '../../../../logger';
 // core's own date helper, not @openpanel/db's — see umami.ts's header.
 import { formatClickhouseDate } from '../../../../shared/ch-dates';
+import { toDots } from '../../../../shared/object';
 import {
   getReferrerWithQuery,
   parseReferrer,
 } from '../../../../shared/parse-referrer';
+import { isSameDomain, parsePath } from '../../../../shared/url';
 import type { IClickhouseEvent } from '../../../event/event.service';
 import type { IClickhouseProfile } from '../../../profile/profile.service';
 import type { IAmplitudeImportConfig } from '../../import.constants';

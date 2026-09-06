@@ -1,8 +1,21 @@
 // Chart date-range resolution (ADR-007 shared/ layout: "date"). Moved from
 // packages/db/src/services/date.service.ts (M8-005) — pure Date/Luxon math,
 // no ClickHouse or Postgres access.
-import { DateTime } from '@openpanel/common';
-import type { IChartRange, IReportInput } from '@openpanel/validation';
+//
+// M11-006: `DateTime` and `getTime` moved here from packages/common/src/date.ts,
+// which was the workspace's only luxon declaration. This file is now the one
+// place core re-exports luxon's DateTime from.
+import { DateTime } from 'luxon';
+import type {
+  IChartRange,
+  IReportInput,
+} from '../modules/report/report.constants';
+
+export { DateTime } from 'luxon';
+
+export function getTime(date: string | number | Date) {
+  return new Date(date).getTime();
+}
 
 export function resolveDateRange(
   startDate?: string,

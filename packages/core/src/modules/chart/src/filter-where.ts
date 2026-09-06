@@ -6,15 +6,10 @@
 // splicing their output into text builders. Core splices it through
 // compiled.ts, the one text bridge.
 
-import { stripLeadingAndTrailingSlashes } from '@openpanel/common';
-import type { IChartEventFilter } from '@openpanel/validation';
-import { getCohortIds } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
-import {
-  buildTypedClause,
-  hasTypedCast,
-  isTypedOperator,
-} from './filter-cast';
+import { stripLeadingAndTrailingSlashes } from '../../../shared/string';
+import type { IChartEventFilter } from '../../report/report.constants';
+import { getCohortIds } from '../../report/report.constants';
 import {
   CHART_TABLE,
   EVENT_FIELD_ALIASES,
@@ -24,6 +19,7 @@ import {
   isNumericColumn,
   normalizeEventField,
 } from './field-resolution';
+import { buildTypedClause, hasTypedCast, isTypedOperator } from './filter-cast';
 
 export type FilterTableScope = 'events' | 'sessions';
 

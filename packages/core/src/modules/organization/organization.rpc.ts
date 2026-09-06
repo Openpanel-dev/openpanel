@@ -14,11 +14,6 @@
 // move with M11-001. `createRateLimitMiddleware` in rpc/base.ts is the seam
 // that will carry it.
 
-import {
-  zEditOrganization,
-  zInviteUser,
-  zUpdateMemberAccess,
-} from '@openpanel/validation';
 import { z } from 'zod';
 import {
   createTRPCRouter,
@@ -32,6 +27,11 @@ import {
   TRPCBadRequestError,
   TRPCForbiddenError,
 } from '../../rpc/errors';
+import {
+  zEditOrganization,
+  zInviteUser,
+  zUpdateMemberAccess,
+} from './organization.constants';
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {

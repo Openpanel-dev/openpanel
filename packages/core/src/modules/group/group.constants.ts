@@ -2,7 +2,7 @@
 // group owns "C"). validation's index re-exports this file's
 // `./modules/group/group.constants` subpath, so packages/trpc's group router
 // and apps/start's add-group / edit-group modals keep resolving these symbols
-// through @openpanel/validation unchanged.
+// through packages/validation unchanged.
 //
 // Isomorphic by the AGENTS.md rule: zod and nothing else.
 

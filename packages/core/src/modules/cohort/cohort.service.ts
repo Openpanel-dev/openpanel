@@ -35,12 +35,12 @@
 // module's own rpc mutations and its cron fragment).
 
 import type { ClickHouseSettings } from '@clickhouse/client';
-import type { IChartEventFilter } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
 import type { ServiceDeps } from '../../services';
 import { chQuery } from '../../shared/ch-query';
 import { getReplicatedTableName } from '../../shared/ch-tables';
 import type { IServiceProfile } from '../profile/profile.service';
+import type { IChartEventFilter } from '../report/report.constants';
 import type {
   CohortDefinition,
   EventBasedCohortDefinition,
@@ -367,9 +367,7 @@ export async function computeEventBasedCohort(
 
   const finalQuery = limit ? `${combinedQuery} LIMIT ${limit}` : combinedQuery;
 
-  const results = await chQuery<{ profile_id: string }>(
-    deps,
-    finalQuery);
+  const results = await chQuery<{ profile_id: string }>(deps, finalQuery);
   return results.map((r) => r.profile_id);
 }
 
@@ -390,9 +388,7 @@ export async function countEventBasedCohort(
       : queries.join(' UNION DISTINCT ');
 
   const countQuery = `SELECT count() as count FROM (${combinedQuery})`;
-  const results = await chQuery<{ count: number }>(
-    deps,
-    countQuery);
+  const results = await chQuery<{ count: number }>(deps, countQuery);
   return results[0]?.count ?? 0;
 }
 
@@ -539,7 +535,7 @@ export async function computePropertyBasedCohort(
 
   const results = await chQuery<{ profile_id: string }>(
     deps,
-    
+
     buildPropertyBasedCohortQuery(projectId, definition, limit),
     PROFILE_COHORT_QUERY_SETTINGS
   );
@@ -557,7 +553,7 @@ export async function countPropertyBasedCohort(
 
   const results = await chQuery<{ count: number }>(
     deps,
-    
+
     `SELECT count() as count FROM (${buildPropertyBasedCohortQuery(projectId, definition)})`,
     PROFILE_COHORT_QUERY_SETTINGS
   );
@@ -635,7 +631,8 @@ export async function getCohortMembers(
 
   const results = await chQuery<{ profile_id: string; total: number }>(
     deps,
-    query);
+    query
+  );
   return {
     profileIds: results.map((r) => r.profile_id),
     total: results[0]?.total || 0,
@@ -670,7 +667,8 @@ export async function getCohortCount(
     FROM ${TABLE.cohortMembers} FINAL
     WHERE project_id = ${sqlstring.escape(projectId)}
       AND cohort_id = ${sqlstring.escape(cohortId)}
-  `);
+  `
+  );
   return result[0]?.count || 0;
 }
 
@@ -795,20 +793,21 @@ export async function listRefreshableCohortIds(
 export async function listCohortMemberProfiles(
   deps: ServiceDeps,
   {
-  projectId,
-  cohortId,
-  cursor,
-  take,
-  search,
-  filters,
-}: {
-  projectId: string;
-  cohortId: string;
-  cursor?: number;
-  take: number;
-  search?: string;
-  filters?: IChartEventFilter[];
-}): Promise<{ data: IServiceProfile[]; count: number }> {
+    projectId,
+    cohortId,
+    cursor,
+    take,
+    search,
+    filters,
+  }: {
+    projectId: string;
+    cohortId: string;
+    cursor?: number;
+    take: number;
+    search?: string;
+    filters?: IChartEventFilter[];
+  }
+): Promise<{ data: IServiceProfile[]; count: number }> {
   const { buildFilterWhere } = await import('../chart/src/table-filter-where');
   const { profileSearchSql } = await import('../profile/profile.service');
   // M10-005: `getProfiles` takes `ServiceDeps` now and this function has none
@@ -848,7 +847,8 @@ export async function listCohortMemberProfiles(
       ${extraConditionSql}
     ORDER BY created_at DESC
     LIMIT ${take} OFFSET ${offset}
-  `);
+  `
+  );
 
   const count = rows[0]?.total_count ?? 0;
   const ids = rows.map((r) => r.id);
@@ -885,7 +885,8 @@ export async function getCohortMemberEvents(
     GROUP BY name
     ORDER BY count DESC
     LIMIT ${limit}
-  `);
+  `
+  );
 }
 
 export async function getCohortEventsPerDay(
@@ -914,7 +915,8 @@ export async function getCohortEventsPerDay(
       FROM toDate(now() - INTERVAL ${days} DAY)
       TO toDate(now() + INTERVAL 1 DAY)
       STEP INTERVAL 1 DAY
-  `);
+  `
+  );
   return rows.map((r) => ({ date: String(r.date), count: Number(r.count) }));
 }
 
@@ -940,7 +942,8 @@ export async function getCohortMemberRoutes(
     GROUP BY path
     ORDER BY count DESC
     LIMIT ${limit}
-  `);
+  `
+  );
 }
 
 export interface CohortService {

@@ -9,10 +9,14 @@
  * dropped when it does not, which is what the `group.*` and `session.*`
  * branches already did.
  */
-import { TABLE_NAMES } from '@openpanel/db/src/clickhouse/client';
-import type { IChartEventFilter } from '@openpanel/validation';
+
 import { describe, expect, it } from 'bun:test';
-import { buildFilterWhere, type FilterTableContext } from './table-filter-where';
+import { TABLE_NAMES } from '@openpanel/db/src/clickhouse/client';
+import type { IChartEventFilter } from '../../report/report.constants';
+import {
+  buildFilterWhere,
+  type FilterTableContext,
+} from './table-filter-where';
 
 const PROJECT_ID = 'p';
 

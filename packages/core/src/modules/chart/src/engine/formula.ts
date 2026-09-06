@@ -1,5 +1,5 @@
-import { alphabetIds } from '@openpanel/constants';
 import * as mathjs from 'mathjs';
+import { alphabetIds } from '../../../report/report.constants';
 
 /**
  * Chart formulas are a tiny arithmetic language, not a general mathjs program.

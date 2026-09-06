@@ -1,12 +1,12 @@
-import { alphabetIds } from '@openpanel/constants';
+import type { ServiceDeps } from '../../../../services';
+import { getChartStartEndDate } from '../../../../shared/date';
+import { getSettingsForProject } from '../../../organization/organization.service';
 import type {
   IChartEvent,
   IReportInput,
   IReportInputWithDates,
-} from '@openpanel/validation';
-import type { ServiceDeps } from '../../../../services';
-import { getChartStartEndDate } from '../../../../shared/date';
-import { getSettingsForProject } from '../../../organization/organization.service';
+} from '../../../report/report.constants';
+import { alphabetIds } from '../../../report/report.constants';
 import { mergeGlobalFilters } from '../../../report/src/series';
 import type { SeriesDefinition } from './types';
 

@@ -1,4 +1,4 @@
-// Ported from @openpanel/json, same semantics: getSafeJson never throws, and
+// Ported from packages/json, same semantics: getSafeJson never throws, and
 // getSuperJson only hands off to superjson's parser when the payload looks
 // like superjson's own `{ json, meta }` envelope — a plain JSON payload
 // round-trips through JSON.parse instead.

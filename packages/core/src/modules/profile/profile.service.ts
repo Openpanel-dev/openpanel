@@ -16,13 +16,13 @@
 // loaders are gone (docs/TECH_DEBT.md §2, §4); `loadFilterCompiler` stays and
 // reaches a core sibling, not @openpanel/db.
 
-import { strip, toObject } from '@openpanel/common';
-import type { IChartEventFilter } from '@openpanel/validation';
 import { assocPath, flatten, map, pathOr, pipe, prop, sort, uniq } from 'ramda';
 import type { ServiceDeps } from '../../services';
 import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { chQuery } from '../../shared/ch-query';
+import { strip, toObject } from '../../shared/object';
 import type { IClickhouseEvent } from '../event/event.service';
+import type { IChartEventFilter } from '../report/report.constants';
 import type { IClickhouseSession } from '../session/session.service';
 import {
   convertClickhouseDateToJs,

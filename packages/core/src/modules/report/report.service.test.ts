@@ -6,7 +6,7 @@
  * M10-003 moved the helper to ./src/series.ts — see that file for why.
  */
 import { describe, expect, it } from 'bun:test';
-import type { IChartEventFilter, IChartEventItem } from '@openpanel/validation';
+import type { IChartEventFilter, IChartEventItem } from './report.constants';
 import { mergeGlobalFilters } from './src/series';
 
 const globalFilter: IChartEventFilter = {

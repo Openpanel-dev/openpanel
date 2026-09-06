@@ -1,8 +1,8 @@
-import { slug } from '@openpanel/common';
-import { alphabetIds } from '@openpanel/constants';
-import type { IChartEventItem } from '@openpanel/validation';
 import type { ServiceDeps } from '../../../../services';
+import { slug } from '../../../../shared/slug';
 import { getSettingsForProject } from '../../../organization/organization.service';
+import type { IChartEventItem } from '../../../report/report.constants';
+import { alphabetIds } from '../../../report/report.constants';
 import type { NormalizedInput } from './normalize';
 import type { ConcreteSeries, Plan } from './types';
 

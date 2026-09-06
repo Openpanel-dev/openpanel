@@ -14,13 +14,13 @@
 // directly, matching V1's router — cohort.service.ts owns only the
 // compute-heavy and ClickHouse-touching operations, same split as V1.
 
-// The canonical zChartEventFilter, not cohort.constants.ts's private
-// TDZ-workaround copy — matches V1's router, which imports it from
-// @openpanel/validation's barrel rather than from cohort.validation.ts.
-import { zChartEventFilter } from '@openpanel/validation';
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+// The canonical zChartEventFilter, not cohort.constants.ts's private
+// TDZ-workaround copy — matches V1's router, which imports it from
+// packages/validation's barrel rather than from cohort.validation.ts.
+import { zChartEventFilter } from '../report/report.constants';
 import {
   zCohortDefinition,
   zCohortInput,

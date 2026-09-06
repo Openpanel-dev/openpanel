@@ -14,6 +14,13 @@
 // This module has no queue/cron of its own, so there is no
 // `ctx.services.auth` entry here — same shape as `user`/`project`.
 
+import { z } from 'zod';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from '../../rpc/base';
+import { TRPCAccessError } from '../../rpc/errors';
 import {
   zProvider,
   zRequestResetPassword,
@@ -23,14 +30,7 @@ import {
   zSignUpEmail,
   zTotpCode,
   zTotpOrRecoveryCode,
-} from '@openpanel/validation';
-import { z } from 'zod';
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from '../../rpc/base';
-import { TRPCAccessError } from '../../rpc/errors';
+} from './auth.constants';
 import {
   disableTotp,
   enableTotp,

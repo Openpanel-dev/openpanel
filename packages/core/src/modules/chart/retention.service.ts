@@ -7,10 +7,11 @@
 // it powers the dashboard retention chart (via the tRPC `cohort` procedure) as
 // well as the MCP / agent / REST retention endpoints.
 
-import { DateTime, round } from '@openpanel/common';
-import type { IChartEventFilter } from '@openpanel/validation';
 import { range } from 'ramda';
 import type { ServiceDeps } from '../../services';
+import { DateTime } from '../../shared/date';
+import { round } from '../../shared/math';
+import type { IChartEventFilter } from '../report/report.constants';
 import {
   type IRetentionCriteria,
   type IRetentionInterval,

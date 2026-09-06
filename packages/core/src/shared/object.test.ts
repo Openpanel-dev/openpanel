@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { toDots } from './object';
 
 describe('toDots', () => {
@@ -10,7 +10,7 @@ describe('toDots', () => {
       arrayWithObjects: [{ a: 1 }, { b: 2 }, { c: 3 }],
       objectWithArrays: { a: [1, 2, 3] },
       null: null,
-      undefined: undefined,
+      undefined,
       empty: '',
       jsonString: '{"a": 1, "b": 2}',
     };

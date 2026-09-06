@@ -5,11 +5,14 @@
 // `sql` tag (see shared/ch-query.ts). Table names and the date helper are
 // core's own copies (shared/ch-tables.ts, shared/ch-dates.ts).
 import { clix } from '@openpanel/db/src/clickhouse/query-builder';
-import type { IChartEventFilter, IInterval } from '@openpanel/validation';
 import type { ServiceDeps } from '../../../services';
 import { convertClickhouseDateToJs } from '../../../shared/ch-dates';
 import { TABLE_NAMES } from '../../../shared/ch-tables';
 import { overviewService } from '../../../v1-compat';
+import type {
+  IChartEventFilter,
+  IInterval,
+} from '../../report/report.constants';
 
 // Spike detection thresholds. Conservative defaults — markers should be rare
 // and obviously meaningful when they appear. Tune here if real usage shows

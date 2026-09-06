@@ -1,10 +1,10 @@
-import { toDots } from '@openpanel/common';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import shallowEqual from 'fast-deep-equal';
 import sqlstring from 'sqlstring';
 import { formatClickhouseDate } from '../shared/ch-dates';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { getSafeJson } from '../shared/json';
+import { toDots } from '../shared/object';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 
 type IGroupBufferEntry = {

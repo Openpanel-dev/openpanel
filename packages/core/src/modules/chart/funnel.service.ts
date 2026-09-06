@@ -3,15 +3,15 @@
 // byte-equivalent to V1 in src/funnel.sql.proof.md; V1's funnel.service is a
 // re-export shim onto this module (DELEGATE PATTERN).
 
-import { ifNaN } from '@openpanel/common';
+import { last, reverse } from 'ramda';
+import type { ServiceDeps } from '../../services';
+import { ifNaN } from '../../shared/math';
+import { getSettingsForProject } from '../organization/organization.service';
 import type {
   IChartBreakdown,
   IChartEvent,
   IReportInput,
-} from '@openpanel/validation';
-import { last, reverse } from 'ramda';
-import type { ServiceDeps } from '../../services';
-import { getSettingsForProject } from '../organization/organization.service';
+} from '../report/report.constants';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
 import { fetchCohortsMetadata } from './src/chart-statement';
 import { collectBreakdownCohortIds } from './src/field-resolution';

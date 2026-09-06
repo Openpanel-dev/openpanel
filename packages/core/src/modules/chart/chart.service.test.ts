@@ -12,7 +12,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
-import type { IChartEventItem, IReportInput } from '@openpanel/validation';
+import type { IChartEventItem, IReportInput } from '../report/report.constants';
 
 const TEST_PROJECT_ID = 'chart-integration-test';
 const TEST_ORG_ID = 'chart-integration-org';

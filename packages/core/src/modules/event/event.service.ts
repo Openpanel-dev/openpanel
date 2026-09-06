@@ -26,16 +26,15 @@
 // from `shared/` (docs/TECH_DEBT.md §2, §4). What stays lazy is named and
 // argued at each remaining `load*` below; none of them reach @openpanel/db.
 
-import { DateTime, toDots } from '@openpanel/common';
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import type { EventMeta, Prisma } from '@openpanel/db/src/prisma-client';
-import type { IChartEventFilter } from '@openpanel/validation';
 import { clone, mergeDeepRight, uniq } from 'ramda';
 import type { ServiceDeps } from '../../services';
 import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
 import { chQuery } from '../../shared/ch-query';
-import { resolveDateRange } from '../../shared/date';
+import { DateTime, resolveDateRange } from '../../shared/date';
 import { resolveMaxLookbackDays } from '../../shared/lookback';
+import { toDots } from '../../shared/object';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import {
   getProfileById,
@@ -44,6 +43,7 @@ import {
   type IServiceUpsertProfile,
   upsertProfile,
 } from '../profile/profile.service';
+import type { IChartEventFilter } from '../report/report.constants';
 import type { IClickhouseSession } from '../session/session.service';
 import { convertClickhouseDateToJs, formatClickhouseDate } from './src/dates';
 import {

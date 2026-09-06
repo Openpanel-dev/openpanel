@@ -1,5 +1,5 @@
 import { db } from '@openpanel/db';
-import { zProjectAccessGrant } from '@openpanel/validation';
+import { zProjectAccessGrant } from '../modules/organization/organization.constants';
 import { getIsDry, printBoxMessage } from './helpers';
 
 /**

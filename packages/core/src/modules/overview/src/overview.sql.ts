@@ -20,10 +20,10 @@
 // `session_timezone` setting instead, which every statement here still sets
 // (see src/run-query.ts).
 
+import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { compiledText } from '../../chart/src/compiled';
 import { getSelectPropertyKey } from '../../chart/src/field-resolution';
-import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
-import type { IInterval } from '@openpanel/validation';
+import type { IInterval } from '../../report/report.constants';
 
 const ROLLUP_DATE_PREFIX = '1970-01-01';
 
@@ -117,7 +117,11 @@ export function fillClause(
   return sql`WITH FILL FROM ${fillFrom(interval, startDate)} TO ${fillBoundaryParam(interval, endDate)} STEP ${compiledText(toIntervalStep(interval))}`;
 }
 
-function dateRangeWhere(column: string, startDate: string, endDate: string): SqlFragment {
+function dateRangeWhere(
+  column: string,
+  startDate: string,
+  endDate: string
+): SqlFragment {
   return sql`${sql.id(column)} BETWEEN toDateTime(${sql.string(toDateTimeLiteral(startDate))}) AND toDateTime(${sql.string(toDateTimeLiteral(endDate))})`;
 }
 
@@ -162,7 +166,9 @@ export interface SessionMetricsQueryInput {
   rawFilterWhere: string;
 }
 
-export function sessionMetricsQuery(input: SessionMetricsQueryInput): SqlFragment {
+export function sessionMetricsQuery(
+  input: SessionMetricsQueryInput
+): SqlFragment {
   return sql`
     SELECT
       ${toStartOf('created_at', input.interval)} AS date,
@@ -319,7 +325,9 @@ export interface DistinctSessionsQueryInput {
   rawFilterWhere: string;
 }
 
-export function distinctSessionsQuery(input: DistinctSessionsQueryInput): SqlFragment {
+export function distinctSessionsQuery(
+  input: DistinctSessionsQueryInput
+): SqlFragment {
   return sql`
     SELECT DISTINCT session_id
     FROM events
@@ -343,7 +351,9 @@ function distinctSessionsCteHeader(cte: SqlFragment | null): SqlFragment {
 }
 
 function distinctSessionsConstraint(cte: SqlFragment | null): SqlFragment {
-  return cte ? sql`AND id IN (SELECT session_id FROM distinct_sessions)` : sql.empty;
+  return cte
+    ? sql`AND id IN (SELECT session_id FROM distinct_sessions)`
+    : sql.empty;
 }
 
 export interface TopEntryExitQueryInput {
@@ -423,10 +433,15 @@ export interface TopGenericQueryInput {
   distinctSessionsCte: SqlFragment | null;
 }
 
-function topGenericSelect(column: string, prefixColumn: string | null): SqlFragment {
+function topGenericSelect(
+  column: string,
+  prefixColumn: string | null
+): SqlFragment {
   const parts: SqlFragment[] = [];
   if (prefixColumn) {
-    parts.push(sql`${sql.id(prefixColumn, TOP_GENERIC_PREFIX_COLUMNS)} as prefix`);
+    parts.push(
+      sql`${sql.id(prefixColumn, TOP_GENERIC_PREFIX_COLUMNS)} as prefix`
+    );
   }
   parts.push(
     sql`nullIf(${sql.id(column, TOP_GENERIC_COLUMNS)}, '') as name`,
@@ -437,7 +452,10 @@ function topGenericSelect(column: string, prefixColumn: string | null): SqlFragm
   return sql.join(parts);
 }
 
-function topGenericGroupBy(column: string, prefixColumn: string | null): SqlFragment {
+function topGenericGroupBy(
+  column: string,
+  prefixColumn: string | null
+): SqlFragment {
   return prefixColumn
     ? sql`${sql.id(prefixColumn, TOP_GENERIC_PREFIX_COLUMNS)}, ${sql.id(column, TOP_GENERIC_COLUMNS)}`
     : sql.id(column, TOP_GENERIC_COLUMNS);
@@ -527,7 +545,10 @@ function orderedEventsQuery(input: OrderedEventsQueryInput): SqlFragment {
   `;
 }
 
-function pathsDedupedCte(input: OrderedEventsQueryInput, steps: number): SqlFragment {
+function pathsDedupedCte(
+  input: OrderedEventsQueryInput,
+  steps: number
+): SqlFragment {
   return sql`
     WITH ordered_events AS (${orderedEventsQuery(input)})
     SELECT
@@ -696,7 +717,9 @@ export interface LiveTotalSessionsQueryInput {
   projectId: string;
 }
 
-export function liveTotalSessionsQuery(input: LiveTotalSessionsQueryInput): SqlFragment {
+export function liveTotalSessionsQuery(
+  input: LiveTotalSessionsQueryInput
+): SqlFragment {
   return sql`
     SELECT uniq(session_id) as total_sessions
     FROM events
@@ -705,7 +728,9 @@ export function liveTotalSessionsQuery(input: LiveTotalSessionsQueryInput): SqlF
   `;
 }
 
-export function liveMinuteCountsQuery(input: LiveTotalSessionsQueryInput): SqlFragment {
+export function liveMinuteCountsQuery(
+  input: LiveTotalSessionsQueryInput
+): SqlFragment {
   return sql`
     SELECT
       toStartOfMinute(created_at) as minute,
@@ -720,7 +745,9 @@ export function liveMinuteCountsQuery(input: LiveTotalSessionsQueryInput): SqlFr
   `;
 }
 
-export function liveMinuteReferrersQuery(input: LiveTotalSessionsQueryInput): SqlFragment {
+export function liveMinuteReferrersQuery(
+  input: LiveTotalSessionsQueryInput
+): SqlFragment {
   return sql`
     SELECT
       toStartOfMinute(created_at) as minute,
@@ -736,7 +763,9 @@ export function liveMinuteReferrersQuery(input: LiveTotalSessionsQueryInput): Sq
   `;
 }
 
-export function liveReferrersQuery(input: LiveTotalSessionsQueryInput): SqlFragment {
+export function liveReferrersQuery(
+  input: LiveTotalSessionsQueryInput
+): SqlFragment {
   return sql`
     SELECT referrer_name as referrer, uniq(session_id) as count
     FROM events
