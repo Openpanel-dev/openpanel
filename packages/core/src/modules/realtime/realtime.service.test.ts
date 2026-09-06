@@ -1,12 +1,16 @@
-// realtime.service.ts's db/ch/redis access is lazy (`await import(...)`
-// inside each function — see the file's header), which is exactly what makes
-// `mock.module` work here with no import-time side effects to race: every
-// mock below is registered before the subject's first call, not before its
-// (side-effect-free) import.
+// M10-005: realtime.service.ts takes `ServiceDeps` now, so the event buffer
+// and the ClickHouse client are HANDED IN (`deps.buffers.event`, `deps.ch`)
+// rather than mocked onto a module specifier. `@openpanel/redis` is still
+// reached lazily (see the subject's `loadRedis` header), so that one stays a
+// `mock.module` registered before the subject's first call.
+//
+// Every assertion below is the one it was before the deps switch: the same
+// project scoping, the same 30-minute window, the same filter/limit wiring,
+// the same subscribe/unsubscribe behaviour.
 //
 // Scope: the "/live websocket glue" (new logic this wave adds) plus one
 // representative ClickHouse query (`getRealtimeActiveSessions`) proving the
-// lazy-load + filter/limit wiring. The other five queries are a verbatim
+// deps + filter/limit wiring. The other five queries are a verbatim
 // port of packages/trpc/src/routers/realtime.ts's SQL — mechanical, not new
 // behaviour — and are exercised end-to-end by realtime.rpc.test.ts's
 // unauthenticated-boundary tests plus this repo's local ClickHouse run (see
@@ -20,23 +24,6 @@ const eventBuffer = {
     async (projectId: string) => activeVisitorCountByProject.get(projectId) ?? 0
   ),
 };
-// Spread the real module — `event.service.ts` (reached via
-// `getRealtimeActiveSessions`'s `transformEvent` load) imports `botBuffer`
-// alongside `eventBuffer` from this same specifier; a partial factory here
-// would break that unrelated import, same hazard as the clickhouse/client
-// mock below. Snapshotted into a plain object BEFORE mocking: the live
-// import binding would reflect the mock too once `mock.module` below swaps
-// the specifier, making a same-binding "restore" a no-op.
-const actualBuffers = await import('@openpanel/queue/src/buffers');
-const realBuffers = { ...actualBuffers };
-mock.module('@openpanel/queue/src/buffers', () => ({
-  ...realBuffers,
-  eventBuffer,
-}));
-
-afterAll(() => {
-  mock.module('@openpanel/queue/src/buffers', () => realBuffers);
-});
 
 const subscribeToPublishedEvent = mock(
   (_channel: string, _type: string, _cb: (event: unknown) => void) => {
@@ -61,22 +48,27 @@ afterAll(() => {
   mock.module('@openpanel/redis', () => realRedis);
 });
 
-const chQuery = mock(async (_query: string) => [] as unknown[]);
-const actualClickhouseClient = await import(
-  '@openpanel/db/src/clickhouse/client'
-);
-const realClickhouseClient = { ...actualClickhouseClient };
-mock.module('@openpanel/db/src/clickhouse/client', () => ({
-  ...realClickhouseClient,
-  chQuery,
+// `deps.ch.query` is what shared/ch-query.ts calls; it returns the raw
+// ClickHouse response envelope, so the stub speaks that shape.
+let nextRows: unknown[] = [];
+const chQuery = mock(async ({ query: _query }: { query: string }) => ({
+  json: async () => ({ data: nextRows, meta: [], rows: nextRows.length }),
 }));
 
-afterAll(() => {
-  mock.module(
-    '@openpanel/db/src/clickhouse/client',
-    () => realClickhouseClient
-  );
-});
+const noop = () => undefined;
+const deps = {
+  ch: { query: chQuery },
+  buffers: { event: eventBuffer },
+  logger: {
+    fatal: noop,
+    error: noop,
+    warn: noop,
+    info: noop,
+    debug: noop,
+    trace: noop,
+    child: () => deps.logger,
+  },
+} as unknown as import('../../services').ServiceDeps;
 
 let subject: typeof import('./realtime.service');
 
@@ -88,13 +80,14 @@ beforeEach(() => {
   activeVisitorCountByProject.clear();
   subscribeToPublishedEvent.mockClear();
   chQuery.mockClear();
+  nextRows = [];
   unsubscribeCalls = 0;
 });
 
 test('getActiveVisitorCount reads through the event buffer, keyed by project', async () => {
   activeVisitorCountByProject.set('proj_1', 7);
 
-  await expect(subject.getActiveVisitorCount('proj_1')).resolves.toBe(7);
+  await expect(subject.getActiveVisitorCount(deps, 'proj_1')).resolves.toBe(7);
   expect(eventBuffer.getActiveVisitorCount).toHaveBeenCalledWith('proj_1');
 });
 
@@ -163,7 +156,7 @@ test('subscribeToOrganizationSubscriptionUpdates subscribes on organization:subs
 });
 
 test('getRealtimeActiveSessions scopes the query to the project and the 30-minute window', async () => {
-  chQuery.mockImplementationOnce(async () => [
+  nextRows = [
     {
       name: 'screen_view',
       session_id: 'sess_1',
@@ -181,12 +174,12 @@ test('getRealtimeActiveSessions scopes the query to the project and the 30-minut
       browser_version: '',
       device: 'desktop',
     },
-  ]);
+  ];
 
-  const result = await subject.getRealtimeActiveSessions('proj_1');
+  const result = await subject.getRealtimeActiveSessions(deps, 'proj_1');
 
   expect(chQuery).toHaveBeenCalledTimes(1);
-  const [query] = chQuery.mock.calls[0]!;
+  const { query } = chQuery.mock.calls[0]![0];
   expect(query).toContain("project_id = 'proj_1'");
   expect(query).toContain('created_at >=');
   expect(query).toContain('LIMIT 50');

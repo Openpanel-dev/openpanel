@@ -93,13 +93,15 @@ export interface WinBackHighlightDeps {
 export async function loadWinBackHighlightDeps(
   logger: Logger
 ): Promise<WinBackHighlightDeps> {
+  // M10-005: both overview entry points take `ServiceDeps` now; the wind-down
+  // cron that reaches this has none of its own, so — same as
+  // `loadWindDownDeps`'s `getLastEventPerProject` — it uses the bare,
+  // v1-compat-wrapped spellings.
   const [
-    { getAnalyticsOverviewCore },
-    { getTopPagesCore },
+    { getAnalyticsOverviewCore, getTopPagesCore },
     { generateWinBackPitch },
   ] = await Promise.all([
-    import('../../overview/overview.service'),
-    import('../../overview/pages.service'),
+    import('../../../v1-compat'),
     import('../../../clients/ai/win-back'),
   ]);
 

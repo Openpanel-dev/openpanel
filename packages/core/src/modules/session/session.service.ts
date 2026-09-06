@@ -45,14 +45,6 @@ function loadChClient() {
   return import('@openpanel/db/src/clickhouse/client');
 }
 
-// Core's own profile service, not @openpanel/db's shim: the shim re-exports
-// the core barrel, which would route this lazy edge back through
-// session-end → event.service → here — a dynamic-import cycle rolldown
-// cannot finalize when apps/worker bundles the workspace.
-function loadProfileService() {
-  return import('../profile/profile.service');
-}
-
 function loadFilterCompiler() {
   return import('../chart/src/table-filter-where');
 }
@@ -307,7 +299,10 @@ export async function getSessionList(options: GetSessionListOptions) {
     });
   }
 
-  const { getProfilesCached } = await loadProfileService();
+  // M10-005: `getProfilesCached` takes `ServiceDeps` now and `getSessionList`
+  // has none — packages/trpc's session router still calls it bare — so it
+  // reaches the v1-compat spelling. Converting this module is its own task.
+  const { getProfilesCached } = await import('../../v1-compat');
   const profileIds = data
     .filter((e) => e.device_id !== e.profile_id)
     .map((e) => e.profile_id);

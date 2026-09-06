@@ -16,3 +16,17 @@ export function formatClickhouseDate(date: Date | string): string {
 export function convertClickhouseDateToJs(date: string): Date {
   return new Date(`${date.replace(' ', 'T')}Z`);
 }
+
+const ROLLUP_DATE_PREFIX = '1970-01-01';
+const ROLLUP_DATE_PREFIX_ALT = '1969-12-31';
+
+/** ClickHouse's zero date for a metric no row ever populated. */
+export function toNullIfDefaultMinDate(date?: string | null): Date | null {
+  if (!date) {
+    return null;
+  }
+  return date.startsWith(ROLLUP_DATE_PREFIX) ||
+    date.startsWith(ROLLUP_DATE_PREFIX_ALT)
+    ? null
+    : convertClickhouseDateToJs(date);
+}

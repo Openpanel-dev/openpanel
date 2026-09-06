@@ -59,7 +59,11 @@ export const sessionQueueJobs = {
     payload: sessionEndPayload,
     handler: async ({ payload: data, ctx }) => {
       const logger = ctx.logger.child({ payload: data.event });
-      const deps = await loadSessionEndDeps(await loadSessionRuntime(), logger);
+      const deps = await loadSessionEndDeps(
+        ctx,
+        await loadSessionRuntime(),
+        logger
+      );
 
       await createSessionEnd(data, deps);
 

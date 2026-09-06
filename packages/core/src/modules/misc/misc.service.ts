@@ -7,15 +7,13 @@
 // entry #6 grades them RULED + DEAD (`docs/ANSWERS.md` §1.4 confirms no proxy
 // depends on them), so this wave is where V1 drops them too.
 //
-// ClickHouse access is lazy (`loadCh()` below) and targets the narrow
-// `@openpanel/db/src/clickhouse/client` submodule, not the package's full
-// barrel — same reason organization.service.ts's/onboarding.service.ts's
-// headers give: this module is pulled into the eager `@openpanel/core`
-// barrel via `services.ts`, and a dynamic edge into the FULL `@openpanel/db`
-// barrel from a second core module (alongside export.service.ts's own) is
-// exactly the "two dynamic-import edges close one cycle" shape that panics
-// apps/worker's rolldown build (`module_finalizers "no entry found for
-// key"`) — see the controller's rolldown-dynamic-import-cycle-panic note.
+// M10-005: the ClickHouse CLIENT is `deps.ch` — reads through
+// shared/ch-query.ts, the one write through `deps.ch.insert` — so the
+// `loadCh()` lazy import of `@openpanel/db` is gone. What is left is
+// `loadChHelpers()`, the same v1-compat hop project.service.ts uses: these
+// three statements are raw strings, not `sql` fragments, so they still need
+// `TABLE_NAMES` / `formatClickhouseDate`, which are pure helpers living beside
+// the client. Converting the statements is ADR-013's P7 work, not this wave's.
 //
 // `getCache` (not `getRedisCache`) is lazy for the same reason
 // subscription.service.ts's header gives: a static `import { getCache } from
@@ -28,6 +26,7 @@ import { getRedisCache } from '@openpanel/redis';
 import { type GeoLocation, getGeoLocation } from '../../clients/geo';
 import type { Logger } from '../../logger';
 import type { ServiceDeps } from '../../services';
+import { chQuery } from '../../shared/ch-query';
 import {
   DEFAULT_IP_HEADER_ORDER,
   getClientIpFromHeaders,
@@ -45,8 +44,8 @@ import {
 } from './src/image-proxy';
 import { parseUrlMeta } from './src/parse-url-meta';
 
-function loadCh() {
-  return import('@openpanel/db/src/clickhouse/client');
+function loadChHelpers() {
+  return import('../../v1-compat').then((m) => m.compatChHelpers());
 }
 
 function loadCache() {
@@ -364,17 +363,19 @@ export interface StatsResult {
   eventsLast24hCount: number;
 }
 
-export async function getStats(): Promise<StatsResult> {
-  const { chQuery, TABLE_NAMES } = await loadCh();
+export async function getStats(deps: ServiceDeps): Promise<StatsResult> {
+  const { TABLE_NAMES } = await loadChHelpers();
   const getCache = await loadCache();
   const res = await getCache(
     STATS_CACHE_KEY,
     STATS_CACHE_TTL_SECONDS,
     async () => {
       const projects = await chQuery<{ project_id: string; count: number }>(
+        deps,
         `SELECT project_id, count(*) as count from ${TABLE_NAMES.events} GROUP by project_id order by count()`
       );
       const last24h = await chQuery<{ count: number }>(
+        deps,
         `SELECT count(*) as count from ${TABLE_NAMES.events} WHERE created_at > now() - interval '24 hours'`
       );
       return { projects, last24hCount: last24h[0]?.count || 0 };
@@ -394,9 +395,12 @@ export interface PingRecord {
 }
 
 /** `POST /misc/ping` — records a self-hosted instance's telemetry ping. */
-export async function insertPingRecord(record: PingRecord): Promise<void> {
-  const { ch, TABLE_NAMES, formatClickhouseDate } = await loadCh();
-  await ch.insert({
+export async function insertPingRecord(
+  deps: ServiceDeps,
+  record: PingRecord
+): Promise<void> {
+  const { TABLE_NAMES, formatClickhouseDate } = await loadChHelpers();
+  await deps.ch.insert({
     table: TABLE_NAMES.self_hosting,
     values: [
       {
@@ -457,13 +461,14 @@ export async function getGeoReport(
  * route above, on OUR side). Ported verbatim from
  * apps/worker/src/jobs/cron.ping.ts.
  */
-export async function runPingCron(): Promise<unknown> {
+export async function runPingCron(deps: ServiceDeps): Promise<unknown> {
   if (process.env.DISABLE_PING) {
     return;
   }
 
-  const { chQuery, TABLE_NAMES } = await loadCh();
+  const { TABLE_NAMES } = await loadChHelpers();
   const [res] = await chQuery<{ count: number }>(
+    deps,
     `SELECT COUNT(*) as count FROM ${TABLE_NAMES.events}`
   );
 
@@ -492,6 +497,6 @@ export interface MiscService {
   runPingCron(): Promise<unknown>;
 }
 
-export function createMiscService(_deps: ServiceDeps): MiscService {
-  return { runPingCron };
+export function createMiscService(deps: ServiceDeps): MiscService {
+  return { runPingCron: () => runPingCron(deps) };
 }

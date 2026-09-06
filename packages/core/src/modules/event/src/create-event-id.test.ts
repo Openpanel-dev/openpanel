@@ -1,23 +1,13 @@
 // Ported from packages/db/src/services/create-event-id.test.ts (M7-002).
-// `createEvent` reaches the buffers lazily (`loadBuffers`), so the buffer
-// mock is installed before the subject is imported; spread-actual + snapshot
-// restore, same as realtime.service.test.ts.
+// M10-005: `createEvent` takes `ServiceDeps` and writes through
+// `deps.buffers.event`, so the buffer is handed in rather than mocked onto a
+// module specifier — no `mock.module` and no restore to get wrong.
 
-import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
+import { beforeAll, describe, expect, mock, test } from 'bun:test';
+import type { ServiceDeps } from '../../../services';
 
 const add = mock((_event: { id: string }) => undefined);
-
-const actualBuffers = await import('@openpanel/queue/src/buffers');
-const realBuffers = { ...actualBuffers };
-mock.module('@openpanel/queue/src/buffers', () => ({
-  ...realBuffers,
-  eventBuffer: { add },
-  botBuffer: { add: mock(() => undefined) },
-}));
-
-afterAll(() => {
-  mock.module('@openpanel/queue/src/buffers', () => realBuffers);
-});
+const deps = { buffers: { event: { add } } } as unknown as ServiceDeps;
 
 let createEvent: typeof import('../event.service').createEvent;
 beforeAll(async () => {
@@ -63,9 +53,15 @@ describe('createEvent id', () => {
   test('uses the producer-minted id for the ClickHouse row', async () => {
     add.mockClear();
 
-    const first = await createEvent({ ...payload, id: PRODUCED_EVENT_ID });
+    const first = await createEvent(deps, {
+      ...payload,
+      id: PRODUCED_EVENT_ID,
+    });
     // The same message redelivered by Kafka.
-    const second = await createEvent({ ...payload, id: PRODUCED_EVENT_ID });
+    const second = await createEvent(deps, {
+      ...payload,
+      id: PRODUCED_EVENT_ID,
+    });
 
     expect(add).toHaveBeenCalledTimes(2);
     expect(add.mock.calls[0]?.[0].id).toBe(PRODUCED_EVENT_ID);
@@ -76,8 +72,8 @@ describe('createEvent id', () => {
   test('falls back to a generated uuid when the payload carries no id', async () => {
     add.mockClear();
 
-    await createEvent({ ...payload });
-    await createEvent({ ...payload });
+    await createEvent(deps, { ...payload });
+    await createEvent(deps, { ...payload });
 
     expect(add).toHaveBeenCalledTimes(2);
     const [firstId, secondId] = add.mock.calls.map(([event]) => event.id);

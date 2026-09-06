@@ -74,6 +74,14 @@ import {
   type OrganizationService,
 } from './modules/organization/organization.service';
 import {
+  createOverviewService,
+  type OverviewService,
+} from './modules/overview/overview.service';
+import {
+  createPagesService,
+  type PagesService,
+} from './modules/overview/pages.service';
+import {
   createProfileService,
   type ProfileService,
 } from './modules/profile/profile.service';
@@ -81,6 +89,10 @@ import {
   createProjectService,
   type ProjectService,
 } from './modules/project/project.service';
+import {
+  createRealtimeService,
+  type RealtimeService,
+} from './modules/realtime/realtime.service';
 import {
   createReferenceService,
   type ReferenceService,
@@ -140,6 +152,9 @@ export interface Services {
   profile: ProfileService;
   group: GroupService;
   chart: ChartService;
+  overview: OverviewService;
+  pages: PagesService;
+  realtime: RealtimeService;
   misc: MiscService;
   report: ReportService;
   dashboard: DashboardService;
@@ -175,6 +190,9 @@ export function createServices(deps: ServiceDeps): Services {
     profile: createProfileService(deps),
     group: createGroupService(deps),
     chart: createChartService(deps),
+    overview: createOverviewService(deps),
+    pages: createPagesService(deps),
+    realtime: createRealtimeService(deps),
     misc: createMiscService(deps),
     report: createReportService(deps),
     dashboard: createDashboardService(deps),

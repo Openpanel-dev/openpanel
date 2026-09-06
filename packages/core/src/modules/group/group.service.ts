@@ -7,14 +7,16 @@
 // Every query is a `sql` fragment (src/group.sql.ts), converted one at a time
 // with a result-set proof each, per ADR-013.
 //
-// db/ch access is LAZY (`loadChClient`) for the reason insight.service.ts's
-// header gives: constructing @openpanel/db's clients at import time spawns a
-// pino-pretty worker per `bun test --isolate` file.
+// M10-005: every function takes `ServiceDeps` and reaches ClickHouse as
+// `deps.ch` — reads through shared/ch-query.ts, the one write (`writeGroupToCh`)
+// through `deps.ch.insert`. The `loadChClient` lazy loader is gone
+// (docs/TECH_DEBT.md §2, §4).
 
 import { toDots } from '@openpanel/common';
 import type { ServiceDeps } from '../../services';
+import { chQuery } from '../../shared/ch-query';
 import { getProfiles, type IServiceProfile } from '../profile/profile.service';
-import { formatClickhouseDate } from './src/dates';
+import { formatClickhouseDate, toNullIfDefaultMinDate } from './src/dates';
 import {
   groupActivityQuery,
   groupByIdQuery,
@@ -35,10 +37,6 @@ import {
 const GROUPS_TABLE = 'groups';
 const FIND_GROUPS_DEFAULT_LIMIT = 20;
 const GROUP_MEMBERS_DEFAULT_LIMIT = 10;
-
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
-}
 
 export interface IServiceGroup {
   id: string;
@@ -85,6 +83,7 @@ function pageOffset(cursor: number | undefined, take: number): number {
 }
 
 async function writeGroupToCh(
+  deps: ServiceDeps,
   group: {
     id: string;
     projectId: string;
@@ -95,8 +94,7 @@ async function writeGroupToCh(
   },
   deleted = 0
 ) {
-  const { ch } = await loadChClient();
-  await ch.insert({
+  await deps.ch.insert({
     format: 'JSONEachRow',
     table: GROUPS_TABLE,
     values: [
@@ -114,9 +112,12 @@ async function writeGroupToCh(
   });
 }
 
-export async function upsertGroup(input: IServiceUpsertGroup) {
-  const existing = await getGroupById(input.id, input.projectId);
-  await writeGroupToCh({
+export async function upsertGroup(
+  deps: ServiceDeps,
+  input: IServiceUpsertGroup
+) {
+  const existing = await getGroupById(deps, input.id, input.projectId);
+  await writeGroupToCh(deps, {
     id: input.id,
     projectId: input.projectId,
     type: input.type,
@@ -130,11 +131,12 @@ export async function upsertGroup(input: IServiceUpsertGroup) {
 }
 
 export async function getGroupById(
+  deps: ServiceDeps,
   id: string,
   projectId: string
 ): Promise<IServiceGroup | null> {
-  const { chQuery } = await loadChClient();
   const rows = await chQuery<IClickhouseGroup>(
+    deps,
     groupByIdQuery({ id, projectId })
   );
   return rows[0] ? transformGroup(rows[0]) : null;
@@ -148,15 +150,12 @@ export interface GetGroupListOptions {
   type?: string;
 }
 
-export async function getGroupList({
-  projectId,
-  cursor,
-  take,
-  search,
-  type,
-}: GetGroupListOptions): Promise<IServiceGroup[]> {
-  const { chQuery } = await loadChClient();
+export async function getGroupList(
+  deps: ServiceDeps,
+  { projectId, cursor, take, search, type }: GetGroupListOptions
+): Promise<IServiceGroup[]> {
   const rows = await chQuery<IClickhouseGroup>(
+    deps,
     groupListQuery({
       projectId,
       take,
@@ -168,39 +167,51 @@ export async function getGroupList({
   return rows.map(transformGroup);
 }
 
-export async function getGroupListCount({
-  projectId,
-  type,
-  search,
-}: {
-  projectId: string;
-  type?: string;
-  search?: string;
-}): Promise<number> {
-  const { chQuery } = await loadChClient();
+export async function getGroupListCount(
+  deps: ServiceDeps,
+  {
+    projectId,
+    type,
+    search,
+  }: {
+    projectId: string;
+    type?: string;
+    search?: string;
+  }
+): Promise<number> {
   const rows = await chQuery<{ count: number }>(
+    deps,
     groupListCountQuery({ projectId, type, search })
   );
   return rows[0]?.count ?? 0;
 }
 
-export async function getGroupTypes(projectId: string): Promise<string[]> {
-  const { chQuery } = await loadChClient();
-  const rows = await chQuery<{ type: string }>(groupTypesQuery(projectId));
+export async function getGroupTypes(
+  deps: ServiceDeps,
+  projectId: string
+): Promise<string[]> {
+  const rows = await chQuery<{ type: string }>(
+    deps,
+    groupTypesQuery(projectId)
+  );
   return rows.map((r) => r.type);
 }
 
-export async function createGroup(input: IServiceUpsertGroup) {
-  await upsertGroup(input);
-  return getGroupById(input.id, input.projectId);
+export async function createGroup(
+  deps: ServiceDeps,
+  input: IServiceUpsertGroup
+) {
+  await upsertGroup(deps, input);
+  return getGroupById(deps, input.id, input.projectId);
 }
 
 export async function updateGroup(
+  deps: ServiceDeps,
   id: string,
   projectId: string,
   data: { type?: string; name?: string; properties?: Record<string, unknown> }
 ) {
-  const existing = await getGroupById(id, projectId);
+  const existing = await getGroupById(deps, id, projectId);
   if (!existing) {
     throw new Error(`Group ${id} not found`);
   }
@@ -219,16 +230,21 @@ export async function updateGroup(
     properties: normalizedProperties,
     createdAt: existing.createdAt,
   };
-  await writeGroupToCh(updated);
+  await writeGroupToCh(deps, updated);
   return { ...existing, ...updated };
 }
 
-export async function deleteGroup(id: string, projectId: string) {
-  const existing = await getGroupById(id, projectId);
+export async function deleteGroup(
+  deps: ServiceDeps,
+  id: string,
+  projectId: string
+) {
+  const existing = await getGroupById(deps, id, projectId);
   if (!existing) {
     throw new Error(`Group ${id} not found`);
   }
   await writeGroupToCh(
+    deps,
     {
       id,
       projectId,
@@ -243,10 +259,11 @@ export async function deleteGroup(id: string, projectId: string) {
 }
 
 export async function getGroupPropertyKeys(
+  deps: ServiceDeps,
   projectId: string
 ): Promise<string[]> {
-  const { chQuery } = await loadChClient();
   const rows = await chQuery<{ key: string }>(
+    deps,
     groupPropertyKeysQuery(projectId)
   );
   return rows.map((r) => r.key).sort();
@@ -259,6 +276,7 @@ export interface IServiceGroupStats {
 }
 
 export async function getGroupStats(
+  deps: ServiceDeps,
   projectId: string,
   groupIds: string[]
 ): Promise<Map<string, IServiceGroupStats>> {
@@ -266,12 +284,11 @@ export async function getGroupStats(
     return new Map();
   }
 
-  const { chQuery } = await loadChClient();
   const rows = await chQuery<{
     group_id: string;
     member_count: number;
     last_active_at: string;
-  }>(groupStatsQuery({ projectId, groupIds }));
+  }>(deps, groupStatsQuery({ projectId, groupIds }));
 
   return new Map(
     rows.map((r) => [
@@ -286,6 +303,7 @@ export async function getGroupStats(
 }
 
 export async function getGroupsByIds(
+  deps: ServiceDeps,
   projectId: string,
   ids: string[]
 ): Promise<IServiceGroup[]> {
@@ -293,8 +311,8 @@ export async function getGroupsByIds(
     return [];
   }
 
-  const { chQuery } = await loadChClient();
   const rows = await chQuery<IClickhouseGroup>(
+    deps,
     groupsByIdsQuery({ projectId, ids })
   );
   return rows.map(transformGroup);
@@ -308,18 +326,15 @@ export interface GetGroupMemberProfilesOptions {
   search?: string;
 }
 
-export async function getGroupMemberProfiles({
-  projectId,
-  groupId,
-  cursor,
-  take,
-  search,
-}: GetGroupMemberProfilesOptions): Promise<{
+export async function getGroupMemberProfiles(
+  deps: ServiceDeps,
+  { projectId, groupId, cursor, take, search }: GetGroupMemberProfilesOptions
+): Promise<{
   data: IServiceProfile[];
   count: number;
 }> {
-  const { chQuery } = await loadChClient();
   const rows = await chQuery<{ id: string; total_count: number }>(
+    deps,
     groupMemberProfilesQuery({
       projectId,
       groupId,
@@ -336,7 +351,7 @@ export async function getGroupMemberProfiles({
     return { data: [], count };
   }
 
-  const profiles = await getProfiles(profileIds, projectId);
+  const profiles = await getProfiles(deps, profileIds, projectId);
   const byId = new Map(profiles.map((p) => [p.id, p]));
   const data = profileIds
     .map((id) => byId.get(id))
@@ -347,12 +362,16 @@ export async function getGroupMemberProfiles({
 // ---- the trpc group router's bodies
 
 /** `list`: the page plus each group's member count / last activity. */
-export async function getGroupListPage(input: GetGroupListOptions) {
+export async function getGroupListPage(
+  deps: ServiceDeps,
+  input: GetGroupListOptions
+) {
   const [data, count] = await Promise.all([
-    getGroupList(input),
-    getGroupListCount(input),
+    getGroupList(deps, input),
+    getGroupListCount(deps, input),
   ]);
   const stats = await getGroupStats(
+    deps,
     input.projectId,
     data.map((g) => g.id)
   );
@@ -366,13 +385,18 @@ export async function getGroupListPage(input: GetGroupListOptions) {
   };
 }
 
-export async function getGroupMetrics(id: string, projectId: string) {
-  const { chQuery, toNullIfDefaultMinDate } = await loadChClient();
+export async function getGroupMetrics(
+  deps: ServiceDeps,
+  id: string,
+  projectId: string
+) {
   const [eventData, profileData] = await Promise.all([
     chQuery<{ totalEvents: number; firstSeen: string; lastSeen: string }>(
+      deps,
       groupEventMetricsQuery({ projectId, groupId: id })
     ),
     chQuery<{ uniqueProfiles: number }>(
+      deps,
       groupUniqueProfilesQuery({ projectId, groupId: id })
     ),
   ]);
@@ -385,38 +409,55 @@ export async function getGroupMetrics(id: string, projectId: string) {
   };
 }
 
-export async function getGroupActivity(id: string, projectId: string) {
-  const { chQuery } = await loadChClient();
+export async function getGroupActivity(
+  deps: ServiceDeps,
+  id: string,
+  projectId: string
+) {
   return chQuery<{ count: number; date: string }>(
+    deps,
     groupActivityQuery({ projectId, groupId: id })
   );
 }
 
-export async function getGroupMemberGrowth(id: string, projectId: string) {
-  const { chQuery } = await loadChClient();
+export async function getGroupMemberGrowth(
+  deps: ServiceDeps,
+  id: string,
+  projectId: string
+) {
   return chQuery<{ date: string; count: number }>(
+    deps,
     groupMemberGrowthQuery({ projectId, groupId: id })
   );
 }
 
-export async function getGroupMostEvents(id: string, projectId: string) {
-  const { chQuery } = await loadChClient();
+export async function getGroupMostEvents(
+  deps: ServiceDeps,
+  id: string,
+  projectId: string
+) {
   return chQuery<{ count: number; name: string }>(
+    deps,
     groupMostEventsQuery({ projectId, groupId: id })
   );
 }
 
-export async function getGroupPopularRoutes(id: string, projectId: string) {
-  const { chQuery } = await loadChClient();
+export async function getGroupPopularRoutes(
+  deps: ServiceDeps,
+  id: string,
+  projectId: string
+) {
   return chQuery<{ count: number; path: string }>(
+    deps,
     groupPopularRoutesQuery({ projectId, groupId: id })
   );
 }
 
 export async function getGroupMemberProfilesPage(
+  deps: ServiceDeps,
   input: GetGroupMemberProfilesOptions
 ) {
-  const { data, count } = await getGroupMemberProfiles(input);
+  const { data, count } = await getGroupMemberProfiles(deps, input);
   return {
     data,
     meta: { count, pageCount: input.take },
@@ -425,18 +466,21 @@ export async function getGroupMemberProfilesPage(
 
 // ---- the assistant/mcp tool entry points
 
-export async function listGroupTypesCore(projectId: string) {
-  const types = await getGroupTypes(projectId);
+export async function listGroupTypesCore(deps: ServiceDeps, projectId: string) {
+  const types = await getGroupTypes(deps, projectId);
   return { types };
 }
 
-export async function findGroupsCore(input: {
-  projectId: string;
-  type?: string;
-  search?: string;
-  limit?: number;
-}) {
-  return getGroupList({
+export async function findGroupsCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    type?: string;
+    search?: string;
+    limit?: number;
+  }
+) {
+  return getGroupList(deps, {
     projectId: input.projectId,
     type: input.type,
     search: input.search,
@@ -444,14 +488,17 @@ export async function findGroupsCore(input: {
   });
 }
 
-export async function getGroupCore(input: {
-  projectId: string;
-  groupId: string;
-  memberLimit?: number;
-}) {
+export async function getGroupCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    groupId: string;
+    memberLimit?: number;
+  }
+) {
   const [group, members] = await Promise.all([
-    getGroupById(input.groupId, input.projectId),
-    getGroupMemberProfiles({
+    getGroupById(deps, input.groupId, input.projectId),
+    getGroupMemberProfiles(deps, {
       projectId: input.projectId,
       groupId: input.groupId,
       take: input.memberLimit ?? GROUP_MEMBERS_DEFAULT_LIMIT,
@@ -474,9 +521,9 @@ export interface GroupService {
   upsert(input: IServiceUpsertGroup): Promise<void>;
 }
 
-export function createGroupService(_deps: ServiceDeps): GroupService {
+export function createGroupService(deps: ServiceDeps): GroupService {
   return {
-    byId: getGroupById,
-    upsert: upsertGroup,
+    byId: (id, projectId) => getGroupById(deps, id, projectId),
+    upsert: (input) => upsertGroup(deps, input),
   };
 }

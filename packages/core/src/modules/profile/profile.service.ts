@@ -10,19 +10,25 @@
 // converted here: it is the shared filter compiler, out of this task's scope;
 // src/filter-clauses.ts is the one bridge.
 //
-// db/ch/buffer access is LAZY (`load*` below) for the reason
-// insight.service.ts's header gives: constructing @openpanel/db's clients at
-// import time spawns a pino-pretty worker per `bun test --isolate` file.
+// M10-005: every function that touches ClickHouse or the profile buffer takes
+// `ServiceDeps` and reaches them as `deps.ch` (through shared/ch-query.ts) and
+// `deps.buffers.profile`. The `loadChClient` / `loadProfileBuffer` lazy
+// loaders are gone (docs/TECH_DEBT.md §2, §4); `loadFilterCompiler` stays and
+// reaches a core sibling, not @openpanel/db.
 
 import { strip, toObject } from '@openpanel/common';
-import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 import { assocPath, flatten, map, pathOr, pipe, prop, sort, uniq } from 'ramda';
-import { loadDbBuffers } from '../../buffers/lazy-db-buffers';
 import type { ServiceDeps } from '../../services';
+import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
+import { chQuery } from '../../shared/ch-query';
 import type { IClickhouseEvent } from '../event/event.service';
 import type { IClickhouseSession } from '../session/session.service';
-import { convertClickhouseDateToJs, formatClickhouseDate } from './src/dates';
+import {
+  convertClickhouseDateToJs,
+  formatClickhouseDate,
+  toNullIfDefaultMinDate,
+} from './src/dates';
 import type { CompiledFilterClauses } from './src/filter-clauses';
 import {
   findProfilesQuery,
@@ -47,6 +53,11 @@ export { profileSearchCondition, profileSearchSql } from './src/profile.sql';
 
 const PROFILES_CACHE_SECONDS = 60 * 5;
 const PROPERTY_KEYS_CACHE_SECONDS = 60;
+// V1's `cacheable(fn, ...)` derived these from the functions' own names;
+// naming them keeps the Redis keys `cachable:getProfiles:<args>` and
+// `cachable:getProfilePropertyKeys:<projectId>`.
+const PROFILES_CACHE_NAME = 'getProfiles';
+const PROPERTY_KEYS_CACHE_NAME = 'getProfilePropertyKeys';
 const RECENT_EVENTS_DEFAULT_LIMIT = 10;
 const SESSIONS_DEFAULT_LIMIT = 20;
 const FIND_PROFILES_DEFAULT_LIMIT = 20;
@@ -64,14 +75,6 @@ const PROFILE_FILTER_TARGET = {
 
 const ARRAY_INDEX_PATH_SEGMENT = /\.([0-9]+)\./g;
 const ARRAY_INDEX_PATH_TAIL = /\.([0-9]+)/g;
-
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
-}
-
-function loadProfileBuffer() {
-  return loadDbBuffers().then((m) => m.profileBuffer);
-}
 
 function loadFilterCompiler() {
   return import('../chart/src/table-filter-where');
@@ -188,16 +191,16 @@ async function compileProfileFilters(
 }
 
 export async function getProfileMetrics(
+  deps: ServiceDeps,
   profileId: string,
   projectId: string
 ): Promise<IProfileMetrics> {
-  const { chQuery, toNullIfDefaultMinDate } = await loadChClient();
   const [data] = await chQuery<
     Omit<IProfileMetrics, 'lastSeen' | 'firstSeen'> & {
       lastSeen: string;
       firstSeen: string;
     }
-  >(profileMetricsQuery({ profileId, projectId }));
+  >(deps, profileMetricsQuery({ profileId, projectId }));
   const metrics = data!;
   return {
     ...metrics,
@@ -207,6 +210,7 @@ export async function getProfileMetrics(
 }
 
 export async function getProfileById(
+  deps: ServiceDeps,
   id: string,
   projectId: string
 ): Promise<IServiceProfile | null> {
@@ -214,14 +218,16 @@ export async function getProfileById(
     return null;
   }
 
-  const profileBuffer = await loadProfileBuffer();
-  const cachedProfile = await profileBuffer.fetchFromCache(id, projectId);
+  const cachedProfile = await deps.buffers.profile.fetchFromCache(
+    id,
+    projectId
+  );
   if (cachedProfile) {
     return transformProfile(cachedProfile);
   }
 
-  const { chQuery } = await loadChClient();
   const [profile] = await chQuery<IClickhouseProfile>(
+    deps,
     profileByIdQuery({ id: String(id), projectId })
   );
 
@@ -229,6 +235,7 @@ export async function getProfileById(
 }
 
 export async function getProfiles(
+  deps: ServiceDeps,
   ids: string[],
   projectId: string
 ): Promise<IServiceProfile[]> {
@@ -237,14 +244,18 @@ export async function getProfiles(
     return [];
   }
 
-  const { chQuery } = await loadChClient();
   const data = await chQuery<IClickhouseProfile>(
+    deps,
     profilesByIdsQuery({ projectId, ids: filteredIds })
   );
   return data.map(transformProfile);
 }
 
-export const getProfilesCached = cacheable(getProfiles, PROFILES_CACHE_SECONDS);
+export const getProfilesCached = cacheablePerDeps(
+  PROFILES_CACHE_NAME,
+  getProfiles,
+  PROFILES_CACHE_SECONDS
+);
 
 export interface GetProfileListOptions {
   projectId: string;
@@ -255,16 +266,19 @@ export interface GetProfileListOptions {
   isExternal?: boolean;
 }
 
-export async function getProfileList({
-  take,
-  cursor,
-  projectId,
-  filters,
-  search,
-  isExternal,
-}: GetProfileListOptions): Promise<IServiceProfile[]> {
-  const { chQuery } = await loadChClient();
+export async function getProfileList(
+  deps: ServiceDeps,
+  {
+    take,
+    cursor,
+    projectId,
+    filters,
+    search,
+    isExternal,
+  }: GetProfileListOptions
+): Promise<IServiceProfile[]> {
   const data = await chQuery<IClickhouseProfile>(
+    deps,
     profileListQuery({
       projectId,
       take,
@@ -277,14 +291,17 @@ export async function getProfileList({
   return data.map(transformProfile);
 }
 
-export async function getProfileListCount({
-  projectId,
-  filters,
-  isExternal,
-  search,
-}: Omit<GetProfileListOptions, 'cursor' | 'take'>): Promise<number> {
-  const { chQuery } = await loadChClient();
+export async function getProfileListCount(
+  deps: ServiceDeps,
+  {
+    projectId,
+    filters,
+    isExternal,
+    search,
+  }: Omit<GetProfileListOptions, 'cursor' | 'take'>
+): Promise<number> {
   const data = await chQuery<{ count: number }>(
+    deps,
     profileListCountQuery({
       projectId,
       search,
@@ -296,6 +313,7 @@ export async function getProfileListCount({
 }
 
 export async function upsertProfile(
+  deps: ServiceDeps,
   {
     id,
     firstName,
@@ -327,8 +345,7 @@ export async function upsertProfile(
     groups: groups ?? [],
   };
 
-  const profileBuffer = await loadProfileBuffer();
-  await profileBuffer.add(profile, isFromEvent);
+  await deps.buffers.profile.add(profile, isFromEvent);
 }
 
 export interface FindProfilesInput {
@@ -349,10 +366,11 @@ export interface FindProfilesInput {
 }
 
 export async function findProfilesCore(
+  deps: ServiceDeps,
   input: FindProfilesInput
 ): Promise<IClickhouseProfile[]> {
-  const { chQuery } = await loadChClient();
   return chQuery<IClickhouseProfile>(
+    deps,
     findProfilesQuery({
       ...input,
       inactiveDays:
@@ -377,6 +395,7 @@ export async function findProfilesCore(
 }
 
 export async function getProfileWithEvents(
+  deps: ServiceDeps,
   projectId: string,
   profileId: string,
   eventLimit = RECENT_EVENTS_DEFAULT_LIMIT
@@ -384,10 +403,13 @@ export async function getProfileWithEvents(
   profile: IClickhouseProfile | null;
   recent_events: IClickhouseEvent[];
 }> {
-  const { chQuery } = await loadChClient();
   const [profiles, recent_events] = await Promise.all([
-    chQuery<IClickhouseProfile>(profileRowQuery({ projectId, profileId })),
+    chQuery<IClickhouseProfile>(
+      deps,
+      profileRowQuery({ projectId, profileId })
+    ),
     chQuery<IClickhouseEvent>(
+      deps,
       profileRecentEventsQuery({ projectId, profileId, limit: eventLimit }),
       CLIX_SESSION_TIMEZONE
     ),
@@ -397,22 +419,26 @@ export async function getProfileWithEvents(
 }
 
 export async function getProfileSessionsCore(
+  deps: ServiceDeps,
   projectId: string,
   profileId: string,
   limit = SESSIONS_DEFAULT_LIMIT
 ): Promise<IClickhouseSession[]> {
-  const { chQuery } = await loadChClient();
   return chQuery<IClickhouseSession>(
+    deps,
     profileSessionsQuery({ projectId, profileId, limit }),
     CLIX_SESSION_TIMEZONE
   );
 }
 
-export async function getProfileMetricsCore(input: {
-  projectId: string;
-  profileId: string;
-}) {
-  const raw = await getProfileMetrics(input.profileId, input.projectId);
+export async function getProfileMetricsCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    profileId: string;
+  }
+) {
+  const raw = await getProfileMetrics(deps, input.profileId, input.projectId);
   if (!raw) {
     throw new Error(`Profile not found or has no events: ${input.profileId}`);
   }
@@ -436,10 +462,11 @@ export async function getProfileMetricsCore(input: {
 
 /** Every distinct key in any external profile's `properties` map. */
 export async function getProfilePropertyKeys(
+  deps: ServiceDeps,
   projectId: string
 ): Promise<string[]> {
-  const { chQuery } = await loadChClient();
   const rows = await chQuery<{ key: string }>(
+    deps,
     profilePropertyKeysQuery(projectId),
     CLIX_SESSION_TIMEZONE
   );
@@ -449,46 +476,54 @@ export async function getProfilePropertyKeys(
 // Cached by projectId only: the picker's tRPC-level cache keys on the whole
 // input, which includes `event`, so without this the full profile scan would
 // repeat once per event within the same window.
-export const getProfilePropertyKeysCached = cacheable(
+export const getProfilePropertyKeysCached = cacheablePerDeps(
+  PROPERTY_KEYS_CACHE_NAME,
   getProfilePropertyKeys,
   PROPERTY_KEYS_CACHE_SECONDS
 );
 
 // ---- the trpc profile router's bodies
 
-export async function getProfileActivity(profileId: string, projectId: string) {
-  const { chQuery } = await loadChClient();
+export async function getProfileActivity(
+  deps: ServiceDeps,
+  profileId: string,
+  projectId: string
+) {
   return chQuery<{ count: number; date: string }>(
+    deps,
     profileActivityQuery({ projectId, profileId })
   );
 }
 
 export async function getProfileMostEvents(
+  deps: ServiceDeps,
   profileId: string,
   projectId: string
 ) {
-  const { chQuery } = await loadChClient();
   return chQuery<{ count: number; name: string }>(
+    deps,
     profileMostEventsQuery({ projectId, profileId })
   );
 }
 
 export async function getProfilePopularRoutes(
+  deps: ServiceDeps,
   profileId: string,
   projectId: string
 ) {
-  const { chQuery } = await loadChClient();
   return chQuery<{ count: number; path: string }>(
+    deps,
     profilePopularRoutesQuery({ projectId, profileId })
   );
 }
 
 /** Property paths for the profile filter picker, array indexes wildcarded. */
 export async function getProfilePropertyNames(
+  deps: ServiceDeps,
   projectId: string
 ): Promise<string[]> {
-  const { chQuery } = await loadChClient();
   const rows = await chQuery<{ keys: string[] }>(
+    deps,
     profilePropertyNamesQuery(projectId)
   );
 
@@ -506,10 +541,13 @@ export async function getProfilePropertyNames(
   )(properties);
 }
 
-export async function getProfileListPage(input: GetProfileListOptions) {
+export async function getProfileListPage(
+  deps: ServiceDeps,
+  input: GetProfileListOptions
+) {
   const [data, count] = await Promise.all([
-    getProfileList(input),
-    getProfileListCount(input),
+    getProfileList(deps, input),
+    getProfileListCount(deps, input),
   ]);
   return {
     data,
@@ -517,13 +555,16 @@ export async function getProfileListPage(input: GetProfileListOptions) {
   };
 }
 
-export async function getPowerUsers(input: {
-  projectId: string;
-  cursor?: number;
-  take: number;
-}) {
-  const { chQuery } = await loadChClient();
+export async function getPowerUsers(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    cursor?: number;
+    take: number;
+  }
+) {
   const rows = await chQuery<{ profile_id: string; count: number }>(
+    deps,
     powerUsersQuery({
       projectId: input.projectId,
       take: input.take,
@@ -531,6 +572,7 @@ export async function getPowerUsers(input: {
     })
   );
   const profiles = await getProfiles(
+    deps,
     rows.map((r) => r.profile_id),
     input.projectId
   );
@@ -550,12 +592,17 @@ export async function getPowerUsers(input: {
   };
 }
 
-export async function getProfileValues(input: {
-  projectId: string;
-  property: string;
-}): Promise<{ values: string[] }> {
-  const { chQuery } = await loadChClient();
-  const rows = await chQuery<{ values: string[] }>(profileValuesQuery(input));
+export async function getProfileValues(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    property: string;
+  }
+): Promise<{ values: string[] }> {
+  const rows = await chQuery<{ values: string[] }>(
+    deps,
+    profileValuesQuery(input)
+  );
 
   const values = pipe(
     (data: typeof rows) => map(prop('values'), data),
@@ -601,11 +648,12 @@ export interface ProfileRequestContext {
 
 /** `POST /profile`: geo + UA fields override whatever the payload carried. */
 export async function identifyProfile(
+  deps: ServiceDeps,
   projectId: string,
   payload: IdentifyProfileInput,
   request: ProfileRequestContext
 ): Promise<void> {
-  await upsertProfile({
+  await upsertProfile(deps, {
     ...payload,
     id: payload.profileId,
     isExternal: true,
@@ -635,10 +683,11 @@ export type AdjustProfilePropertyResult =
 
 /** `POST /profile/increment|decrement`: `delta` is signed by the caller. */
 export async function adjustProfileProperty(
+  deps: ServiceDeps,
   projectId: string,
   input: { profileId: string; property: string; delta: number }
 ): Promise<AdjustProfilePropertyResult> {
-  const profile = await getProfileById(input.profileId, projectId);
+  const profile = await getProfileById(deps, input.profileId, projectId);
   if (!profile) {
     return { status: 'not-found' };
   }
@@ -652,7 +701,7 @@ export async function adjustProfileProperty(
     return { status: 'not-a-number' };
   }
 
-  await upsertProfile({
+  await upsertProfile(deps, {
     id: profile.id,
     projectId,
     properties: assocPath(path, current + input.delta, profile.properties),
@@ -667,9 +716,9 @@ export interface ProfileService {
   upsert(input: IServiceUpsertProfile, isFromEvent?: boolean): Promise<void>;
 }
 
-export function createProfileService(_deps: ServiceDeps): ProfileService {
+export function createProfileService(deps: ServiceDeps): ProfileService {
   return {
-    byId: getProfileById,
-    upsert: upsertProfile,
+    byId: (id, projectId) => getProfileById(deps, id, projectId),
+    upsert: (input, isFromEvent) => upsertProfile(deps, input, isFromEvent),
   };
 }

@@ -67,7 +67,10 @@ export const profileRoutes = defineRoutes((app) =>
           payload.properties
         );
         const geo = await getGeoLocation(ctx.ip);
-        await identifyProfile(client.projectId, payload, { geo, userAgent });
+        await identifyProfile(ctx, client.projectId, payload, {
+          geo,
+          userAgent,
+        });
         set.status = 202;
         return payload.profileId;
       },
@@ -81,12 +84,12 @@ export const profileRoutes = defineRoutes((app) =>
     )
     .post(
       '/profile/increment',
-      async ({ body, client, status, set }) => {
+      async ({ body, client, ctx, status, set }) => {
         if (!client.projectId) {
           return status(400, 'No projectId');
         }
         const { profileId, property, value } = body as AdjustPropertyBody;
-        const result = await adjustProfileProperty(client.projectId, {
+        const result = await adjustProfileProperty(ctx, client.projectId, {
           profileId,
           property,
           delta: value,
@@ -103,12 +106,12 @@ export const profileRoutes = defineRoutes((app) =>
     )
     .post(
       '/profile/decrement',
-      async ({ body, client, status, set }) => {
+      async ({ body, client, ctx, status, set }) => {
         if (!client.projectId) {
           return status(400, 'No projectId');
         }
         const { profileId, property, value } = body as AdjustPropertyBody;
-        const result = await adjustProfileProperty(client.projectId, {
+        const result = await adjustProfileProperty(ctx, client.projectId, {
           profileId,
           property,
           delta: -value,

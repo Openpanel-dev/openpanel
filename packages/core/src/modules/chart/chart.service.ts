@@ -198,6 +198,7 @@ const FIXED_FILTER_PROPERTIES = [
 ];
 
 async function getProfilesInBatches(
+  deps: ServiceDeps,
   ids: string[],
   projectId: string,
   batchSize: number
@@ -206,6 +207,7 @@ async function getProfilesInBatches(
   for (let index = 0; index < ids.length; index += batchSize) {
     profiles.push(
       ...(await getProfilesCached(
+        deps,
         ids.slice(index, index + batchSize),
         projectId
       ))
@@ -328,7 +330,7 @@ export async function listChartEvents(
       deps,
       eventNamesWithCountQuery(projectId)
     ),
-    getEventMetasCached(projectId),
+    getEventMetasCached(deps, projectId),
   ]);
 
   return [
@@ -359,7 +361,7 @@ export async function listChartProperties(
 ): Promise<string[]> {
   const { projectId, event } = input;
   const [profileKeys, eventKeys] = await Promise.all([
-    getProfilePropertyKeysCached(projectId),
+    getProfilePropertyKeysCached(deps, projectId),
     runQuery<{ property_key: string; created_at: string }>(
       deps,
       eventPropertyKeysQuery(projectId, event, EVENT_PROPERTY_KEY_LIMIT)
@@ -670,7 +672,12 @@ export async function getChartBucketProfiles(
   if (ids.length === 0) {
     return [];
   }
-  return getProfilesInBatches(ids, input.projectId, BUCKET_PROFILES_BATCH_SIZE);
+  return getProfilesInBatches(
+    deps,
+    ids,
+    input.projectId,
+    BUCKET_PROFILES_BATCH_SIZE
+  );
 }
 
 export interface FunnelStepProfilesRequest {
@@ -730,7 +737,7 @@ export async function getFunnelStepProfiles(
   if (ids.length === 0) {
     return [];
   }
-  return getProfilesInBatches(ids, projectId, FUNNEL_PROFILES_BATCH_SIZE);
+  return getProfilesInBatches(deps, ids, projectId, FUNNEL_PROFILES_BATCH_SIZE);
 }
 
 // --- service -----------------------------------------------------------------

@@ -1,9 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getSettingsForProject, PagesService } from '@openpanel/core';
+import { getSettingsForProject } from '@openpanel/core';
 import { z } from 'zod';
 import type { McpAuthContext } from '../../auth';
 import {
-  loadCompatCh,
+  loadCompatPagesService,
   projectIdSchema,
   resolveDateRange,
   resolveProjectId,
@@ -67,14 +67,12 @@ export function registerPagePerformanceTools(
         const projectId = await resolveProjectId(context, inputProjectId);
         const { startDate, endDate } = resolveDateRange(sd, ed);
         const { timezone } = await getSettingsForProject(projectId);
-        // Constructed per call, not once at module scope: a module-scope
-        // singleton binds `ch`/`PagesService` to whatever was live the first
-        // time this file was imported by *any* test in the process (bun:test
-        // shares one module registry without `--isolate` — see AGENTS.md),
-        // permanently defeating this file's own mocks whenever the
-        // integration suite imports it first.
-        const ch = await loadCompatCh();
-        const pagesService = new PagesService(ch);
+        // Resolved per call, not once at module scope: a module-scope binding
+        // would freeze whatever was live the first time this file was imported
+        // by *any* test in the process (bun:test shares one module registry
+        // without `--isolate` — see AGENTS.md), permanently defeating this
+        // file's own mocks whenever the integration suite imports it first.
+        const pagesService = await loadCompatPagesService();
 
         const pages = await pagesService.getTopPages({
           projectId,

@@ -104,7 +104,7 @@ async function botGuard({
   ctx: HttpCtx;
   status: StatusFn;
 }) {
-  const bot = await checkIngestBot({
+  const bot = await checkIngestBot(ctx, {
     headers: toIngestHeaders(ctx.headers),
     clientSecretAuth: client.secretPresented,
     projectId: client.projectId,
@@ -175,6 +175,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
               {
                 buffers: ctx.buffers,
                 produceIncomingEvent: deps.produceIncomingEvent,
+                deps: ctx,
               }
             );
 
@@ -244,6 +245,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) =>
               {
                 buffers: ctx.buffers,
                 produceIncomingEvent: deps.produceIncomingEvent,
+                deps: ctx,
               }
             );
 

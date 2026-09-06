@@ -66,7 +66,7 @@ export const realtimeRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getRealtimeCoordinates(input.projectId);
+      return getRealtimeCoordinates(ctx, input.projectId);
     }),
   mapBadgeDetails: procedure
     .input(
@@ -82,34 +82,34 @@ export const realtimeRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getRealtimeMapBadgeDetails(input);
+      return getRealtimeMapBadgeDetails(ctx, input);
     }),
   activeSessions: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getRealtimeActiveSessions(input.projectId);
+      return getRealtimeActiveSessions(ctx, input.projectId);
     }),
   paths: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getRealtimePaths(input.projectId);
+      return getRealtimePaths(ctx, input.projectId);
     }),
   referrals: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getRealtimeReferrals(input.projectId);
+      return getRealtimeReferrals(ctx, input.projectId);
     }),
   geo: procedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getRealtimeGeo(input.projectId);
+      return getRealtimeGeo(ctx, input.projectId);
     }),
 });

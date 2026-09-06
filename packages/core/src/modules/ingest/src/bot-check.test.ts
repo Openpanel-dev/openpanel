@@ -11,9 +11,15 @@ import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { BotMatch } from './bots/detect';
 
 const isBot = mock(async (_ua: string): Promise<BotMatch | null> => null);
-const createBotEvent = mock(async (_payload: unknown) => undefined);
+const createBotEvent = mock(
+  async (_deps: unknown, _payload: unknown) => undefined
+);
 
 let checkIngestBot: typeof import('../ingest.service').checkIngestBot;
+
+// M10-005: `checkIngestBot` takes `ServiceDeps` first and hands it to
+// `createBotEvent`, which is mocked below — nothing here reads a client.
+const deps = {} as unknown as import('../../../services').ServiceDeps;
 
 // Spread the real modules and override by name: ingest.service re-exports
 // `detectBot` and reaches more of event.service than `createBotEvent`, and a
@@ -44,7 +50,7 @@ beforeEach(() => {
 
 describe('checkIngestBot', () => {
   it('skips bot detection entirely for client-secret (server-side) traffic', async () => {
-    const bot = await checkIngestBot({
+    const bot = await checkIngestBot(deps, {
       ...baseRequest,
       clientSecretAuth: true,
     });
@@ -57,11 +63,11 @@ describe('checkIngestBot', () => {
   it('records a bot event and reports the bot for public bot traffic', async () => {
     isBot.mockResolvedValue({ name: 'Googlebot', type: 'Search bot' });
 
-    const bot = await checkIngestBot(baseRequest);
+    const bot = await checkIngestBot(deps, baseRequest);
 
     expect(isBot).toHaveBeenCalledWith('Googlebot/2.1');
     expect(createBotEvent).toHaveBeenCalledTimes(1);
-    expect(createBotEvent.mock.calls[0]?.[0]).toMatchObject({
+    expect(createBotEvent.mock.calls[0]?.[1]).toMatchObject({
       name: 'Googlebot',
       type: 'Search bot',
       projectId: 'proj-1',
@@ -73,7 +79,7 @@ describe('checkIngestBot', () => {
   it('passes legitimate public traffic through untouched', async () => {
     isBot.mockResolvedValue(null);
 
-    const bot = await checkIngestBot({
+    const bot = await checkIngestBot(deps, {
       ...baseRequest,
       headers: { 'user-agent': 'node' },
     });

@@ -66,32 +66,32 @@ export const groupRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      return getGroupListPage(input);
+      return getGroupListPage(ctx, input);
     }),
 
   byId: procedure.input(zGroupRef).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
-    return getGroupById(input.id, input.projectId);
+    return getGroupById(ctx, input.id, input.projectId);
   }),
 
   create: procedure.input(zCreateGroup).mutation(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'write');
 
-    return createGroup(input);
+    return createGroup(ctx, input);
   }),
 
   update: procedure.input(zUpdateGroup).mutation(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'write');
 
     const { id, projectId, ...data } = input;
-    return updateGroup(id, projectId, data);
+    return updateGroup(ctx, id, projectId, data);
   }),
 
   delete: procedure.input(zGroupRef).mutation(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'write');
 
-    return deleteGroup(input.id, input.projectId);
+    return deleteGroup(ctx, input.id, input.projectId);
   }),
 
   types: procedure
@@ -99,25 +99,25 @@ export const groupRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      return getGroupTypes(input.projectId);
+      return getGroupTypes(ctx, input.projectId);
     }),
 
   metrics: procedure.input(zGroupRef).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
-    return getGroupMetrics(input.id, input.projectId);
+    return getGroupMetrics(ctx, input.id, input.projectId);
   }),
 
   activity: procedure.input(zGroupRef).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
-    return getGroupActivity(input.id, input.projectId);
+    return getGroupActivity(ctx, input.id, input.projectId);
   }),
 
   memberGrowth: procedure.input(zGroupRef).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
-    return getGroupMemberGrowth(input.id, input.projectId);
+    return getGroupMemberGrowth(ctx, input.id, input.projectId);
   }),
 
   listProfiles: procedure
@@ -133,19 +133,19 @@ export const groupRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      return getGroupMemberProfilesPage(input);
+      return getGroupMemberProfilesPage(ctx, input);
     }),
 
   mostEvents: procedure.input(zGroupRef).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
-    return getGroupMostEvents(input.id, input.projectId);
+    return getGroupMostEvents(ctx, input.id, input.projectId);
   }),
 
   popularRoutes: procedure.input(zGroupRef).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
-    return getGroupPopularRoutes(input.id, input.projectId);
+    return getGroupPopularRoutes(ctx, input.id, input.projectId);
   }),
 
   properties: procedure
@@ -153,7 +153,7 @@ export const groupRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      return getGroupPropertyKeys(input.projectId);
+      return getGroupPropertyKeys(ctx, input.projectId);
     }),
 
   listByIds: procedure
@@ -161,6 +161,6 @@ export const groupRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      return getGroupsByIds(input.projectId, input.ids);
+      return getGroupsByIds(ctx, input.projectId, input.ids);
     }),
 });

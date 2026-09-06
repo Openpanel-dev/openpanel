@@ -101,6 +101,9 @@ export type IngestBuffers = Pick<Buffers, 'session' | 'replay' | 'group'>;
 export interface IngestTransport {
   buffers: IngestBuffers;
   produceIncomingEvent: IncomingEventProducer;
+  /** M10-005: the profile writes below reach ClickHouse and the profile
+   *  buffer through the scope, not a module singleton. */
+  deps: ServiceDeps;
 }
 
 const QUEUE_PAYLOAD_HEADERS = [
@@ -323,7 +326,7 @@ async function handleTrack(
   // If we have more than one property in the identity object, we should identify the user
   // Otherwise its only a profileId and we should not identify the user
   if (context.identity && Object.keys(context.identity).length > 1) {
-    promises.push(handleIdentify(context.identity, context));
+    promises.push(handleIdentify(transport.deps, context.identity, context));
   }
 
   const queueData: IncomingEventPayload = {
@@ -352,25 +355,27 @@ async function handleTrack(
 }
 
 async function handleIdentify(
+  deps: ServiceDeps,
   payload: IIdentifyPayload,
   context: TrackContext
 ): Promise<void> {
   // Profiles must not carry forged bot verdicts either.
   stripBotProperties(payload.properties);
   const userAgent = parseUserAgent(context.ua, payload.properties);
-  await identifyProfile(context.projectId, payload, {
+  await identifyProfile(deps, context.projectId, payload, {
     geo: context.geo,
     userAgent,
   });
 }
 
 async function adjustProfileProperty(
+  deps: ServiceDeps,
   payload: IIncrementPayload | IDecrementPayload,
   projectId: string,
   direction: 1 | -1
 ): Promise<TrackOutcome | null> {
   const { profileId, property, value } = payload;
-  const profile = await getProfileById(String(profileId), projectId);
+  const profile = await getProfileById(deps, String(profileId), projectId);
   if (!profile) {
     return { status: 'profile-not-found' };
   }
@@ -384,7 +389,7 @@ async function adjustProfileProperty(
     return { status: 'profile-property-not-a-number' };
   }
 
-  await upsertProfile({
+  await upsertProfile(deps, {
     id: profile.id,
     projectId,
     properties: assocPath(
@@ -442,6 +447,7 @@ async function handleGroup(
 }
 
 async function handleAssignGroup(
+  deps: ServiceDeps,
   payload: IAssignGroupPayload,
   context: TrackContext
 ): Promise<void> {
@@ -449,7 +455,7 @@ async function handleAssignGroup(
   if (!profileId) {
     return;
   }
-  await upsertProfile({
+  await upsertProfile(deps, {
     id: String(profileId),
     projectId: context.projectId,
     isExternal: !!payload.profileId,
@@ -480,10 +486,11 @@ export async function ingestTrack(
       await handleTrack(body.payload, context, transport);
       break;
     case 'identify':
-      await handleIdentify(body.payload, context);
+      await handleIdentify(transport.deps, body.payload, context);
       break;
     case 'increment': {
       const failure = await adjustProfileProperty(
+        transport.deps,
         body.payload,
         context.projectId,
         1
@@ -495,6 +502,7 @@ export async function ingestTrack(
     }
     case 'decrement': {
       const failure = await adjustProfileProperty(
+        transport.deps,
         body.payload,
         context.projectId,
         -1
@@ -523,7 +531,7 @@ export async function ingestTrack(
       await handleGroup(body.payload, context, transport.buffers.group);
       break;
     case 'assign_group':
-      await handleAssignGroup(body.payload, context);
+      await handleAssignGroup(transport.deps, body.payload, context);
       break;
     default:
       return { status: 'invalid-type' };
@@ -837,12 +845,15 @@ export type BotVerdict = { name: string; type: string } | null;
  * never treat them as bots — bot detection is for public/frontend
  * (origin-authenticated) traffic.
  */
-export async function checkIngestBot(request: {
-  headers: IngestHeaders;
-  clientSecretAuth: boolean;
-  projectId: string | null | undefined;
-  body: unknown;
-}): Promise<BotVerdict> {
+export async function checkIngestBot(
+  deps: ServiceDeps,
+  request: {
+    headers: IngestHeaders;
+    clientSecretAuth: boolean;
+    projectId: string | null | undefined;
+    body: unknown;
+  }
+): Promise<BotVerdict> {
   if (request.clientSecretAuth) {
     return null;
   }
@@ -856,7 +867,7 @@ export async function checkIngestBot(request: {
 
   const path = getBotEventPath(request.body);
   if (path) {
-    await createBotEvent({
+    await createBotEvent(deps, {
       ...bot,
       projectId: request.projectId,
       path,
@@ -898,15 +909,19 @@ export interface IngestService {
     request: TrackRequest,
     produceIncomingEvent: IncomingEventProducer
   ): Promise<TrackOutcome>;
-  checkBot: typeof checkIngestBot;
+  checkBot(request: Parameters<typeof checkIngestBot>[1]): Promise<BotVerdict>;
   isDuplicate: typeof isDuplicateIngestRequest;
 }
 
 export function createIngestService(deps: ServiceDeps): IngestService {
   return {
     track: (request, produceIncomingEvent) =>
-      ingestTrack(request, { buffers: deps.buffers, produceIncomingEvent }),
-    checkBot: checkIngestBot,
+      ingestTrack(request, {
+        buffers: deps.buffers,
+        produceIncomingEvent,
+        deps,
+      }),
+    checkBot: (request) => checkIngestBot(deps, request),
     isDuplicate: isDuplicateIngestRequest,
   };
 }

@@ -29,7 +29,7 @@ export const miscCronJobs = {
     payload: z.null(),
     handler: async ({ ctx }) => {
       const logger = ctx.logger.child({ job: 'data-health' });
-      await runDataHealthCron(await loadDataHealthDeps(logger));
+      await runDataHealthCron(await loadDataHealthDeps(ctx, logger));
     },
   }),
 };

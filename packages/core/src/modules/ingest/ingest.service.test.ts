@@ -191,6 +191,7 @@ const transport = (
       group: { add: mock(async () => undefined) },
     },
     produceIncomingEvent,
+    deps: { buffers: {} },
   }) as unknown as Parameters<typeof ingestTrack>[1];
 
 const request = (body: ITrackHandlerPayload) => ({

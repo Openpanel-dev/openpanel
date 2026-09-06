@@ -621,3 +621,192 @@ service factory).
 - `cd packages/core && bun test` (bare, no `--isolate`): **1457 pass, 12 skip,
   0 fail**, `Ran 1469 tests across 149 files. [34.00s]`.
 - `pnpm run check:deps` — the table above.
+
+### 2026-09-06 — M10-005, the runtime path (event, profile, group, misc, overview+pages, realtime) onto `createXService(deps)`
+
+Ran by: ralph (M10-005 implement task, docs/TECH_DEBT.md §4 steps 1/2/5 and
+§5a, continuing M10-003/M10-004).
+
+**Shape.** `createEventService`, `createProfileService`, `createGroupService`
+and `createMiscService` take `deps` (no longer `_deps`) and bind functions that
+use it. `OverviewService` and `PagesService` are no longer classes: their
+methods are module-scope functions taking `ServiceDeps` first and otherwise the
+same arguments, bound by `createOverviewService(deps)` /
+`createPagesService(deps)` under their old method names.
+`createRealtimeService(deps)` is new. All three are registered in `services.ts`
+as `services.overview`, `services.pages` and `services.realtime`.
+
+**Pages is REGISTERED, not folded in.** Both `OverviewService` and
+`PagesService` expose a `getTopPages`, and they are different queries with
+different inputs — one over `events` scoped by a search string, one over
+`sessions` scoped by chart filters. Folding them into one service would have
+had to rename one of them, which is a call-site contract this wave does not
+change. `services.pages` is its own entry; `pages.service.ts` keeps its own
+file.
+
+**Every lazy `@openpanel/db` import inside those modules is gone.** So is the
+`loadDbBuffers()` hop in all three of this wave's modules that used it: the
+buffers are `deps.buffers.event` / `.bot` / `.profile` (M8-001), which is the
+exact drift this wave was chartered to remove. `misc/src/data-health.ts` no
+longer imports `@openpanel/db/src/prisma-client` either — it takes `deps` and
+calls `project.service.ts`'s `getLastEventPerProject(deps)` directly.
+
+**Two new files in `shared/`, both because six modules needed the same thing.**
+
+- `shared/ch-query.ts` — `chQuery` / `chQueryWithMeta` over `deps.ch` and
+  `deps.logger`. `deps.ch.query` IS `withRetry(client => client.query(...))`,
+  the same transport `@openpanel/db`'s `chQuery` uses, and the Int-meta
+  coercion is copied verbatim, so result sets are identical (proof below). The
+  one field that cannot survive the move is `host`: the retry proxy does not
+  report which replica served the query — `chart/src/run-query.ts` (M10-003)
+  made the same trade. The gain is the `query info` line now carrying the
+  request's id (ADR-018 R1). `overview/src/run-query.ts` is now a three-line
+  wrapper over it (`timezone` is mandatory there, optional here).
+- `shared/cacheable-per-deps.ts` — `cacheable` for a function that needs
+  `ServiceDeps`. `cacheable` keys on EVERY argument through a recursive
+  `stringify`, so passing `deps` would serialize the whole Prisma client into
+  the Redis key. `deps` is not cache identity anyway, so the cacheable is built
+  once per `deps` in a `WeakMap` and the key stays byte-identical —
+  `cachable:getEventMetas:<projectId>`, `cachable:getProfiles:<args>`,
+  `cachable:getProfilePropertyKeys:<projectId>`. **The explicit `name` is the
+  load-bearing part**: `cacheable(fn, ttl)` derives the prefix from `fn.name`,
+  and an inline arrow silently drops it.
+  **Stated cost:** `createCtx` builds a fresh deps object per request, so the
+  L1 LRU inside `cacheable` is now per scope rather than per process. The
+  shared L2 Redis cache — the one that actually saves the query — is
+  unchanged, so a repeat call costs one Redis GET where it used to cost none.
+  Boot-scoped callers (the v1-compat seam, job handlers) keep a process-lived
+  L1.
+
+**What is deliberately still lazy in these modules, and why.**
+`event.service.ts` keeps `loadCache()` (`@openpanel/redis`'s `getCache` — core
+tests that partially mock that package with no `getCache` reach this module
+through the barrel), `loadFilterCompiler()` and `loadSessionService()` (a real
+core-internal cycle, documented in place; a second dynamic edge on that loop
+panics rolldown). None of them reach `@openpanel/db`. `realtime` and `misc`
+keep ONE hop each into `v1-compat.ts`'s `compatChHelpers()` for `TABLE_NAMES`
+/ `clix` / `formatClickhouseDate` — the pure helpers that live beside the
+client, not the client, which is `deps.ch` in both. That is the same seam
+`project.service.ts` uses since M10-004 and it exists because ADR-013 converts
+the analytics read path one query per P7 task: those statements are still raw
+strings and clix builders, not `sql` fragments. `compatChHelpers()` gained
+`formatClickhouseDate` and `toNullIfDefaultMinDate` for this.
+`profile/src/dates.ts` and `group/src/dates.ts` gained their own
+`toNullIfDefaultMinDate` instead — module-local, matching the five existing
+`src/dates.ts` copies, because two modules is not "several".
+
+**Blast radius outside the six modules, all forced by a signature change.**
+`ingest.service.ts` (`IngestTransport` gains `deps`; `checkIngestBot` gains a
+`ServiceDeps` first parameter, because `createBotEvent` needs the bot buffer),
+`ingest/src/incoming-event-handler.ts` and `session/src/session-end.ts` (their
+`load*Deps` builders take `deps` and bind `createEvent` to it),
+`session.jobs.ts`, `apps/api/src/main.ts` (one `bootServiceDeps(deps)` helper,
+extracted from the literal `setV1CompatServices` already built),
+`chart.service.ts`, `export.routes.ts`, `overview.rpc.ts`, `event.rpc.ts`,
+`group.rpc.ts`, `profile.rpc.ts`, `profile.routes.ts`, `realtime.rpc.ts`,
+`realtime.routes.ts`, `misc.routes.ts`, `mcp`'s `page-performance.ts`. Three
+callers that genuinely have no scope of their own reach the bare v1-compat
+spellings, exactly as `loadWindDownDeps` already did for
+`getLastEventPerProject`: `cohort.service.ts`'s `listCohortMemberProfiles`,
+`session.service.ts`'s `getSessionList`, and
+`organization/src/win-back-highlight.ts`. Converting those three modules is
+their own task.
+
+`v1-compat.ts` gained 88 bare wrappers plus `overviewService` / `pagesService`
+as plain objects of wrappers (`packages/trpc`'s overview router calls
+`overviewService.getMetrics.bind(overviewService)`; `bind` on a plain function
+is a no-op, so the call site reads identically). `index.ts` now exports those
+spellings instead of the raw deps-taking functions, same as M10-003/M10-004
+did for their waves.
+
+**`pnpm run check:deps`** (`.dependency-cruiser.cjs`, both rules unchanged at
+their landed `warn` severity):
+
+| Rule | Before (M10-004) | After (M10-005) | Delta |
+|---|---:|---:|---:|
+| `core-uses-ctx-not-db-internals` | 135 | **123** | **−12** |
+| `core-no-self-barrel` | 59 | **56** | **−3** |
+
+Exit `0` either way (`warn`, not `error`):
+`x 179 dependency violations (0 errors, 179 warnings). 1993 modules, 8050
+dependencies cruised.` (was 194.) Thirteen edges removed, one added:
+
+```
+REMOVED  modules/event/event.service.ts          -> db/src/clickhouse/client.ts
+REMOVED  modules/event/event.service.ts          -> db/src/prisma-client.ts
+REMOVED  modules/group/group.service.ts          -> db/src/clickhouse/client.ts
+REMOVED  modules/misc/misc.service.ts            -> db/src/clickhouse/client.ts
+REMOVED  modules/misc/src/data-health.ts         -> db/src/prisma-client.ts
+REMOVED  modules/overview/src/run-query.ts       -> db/src/clickhouse/client.ts
+REMOVED  modules/overview/src/run-query.ts       -> db/src/clickhouse/sql.ts
+REMOVED  modules/profile/profile.service.ts      -> db/src/clickhouse/client.ts
+REMOVED  modules/realtime/realtime.service.ts    -> db/src/clickhouse/client.ts
+REMOVED  modules/realtime/realtime.service.ts    -> db/src/clickhouse/query-builder.ts
+REMOVED  modules/mcp/.../page-performance.test.ts -> db/src/clickhouse/client.ts
+REMOVED  modules/mcp/.../profiles.test.ts        -> db/src/clickhouse/client.ts
+REMOVED  modules/realtime/realtime.service.test.ts -> db/src/clickhouse/client.ts
+ADDED    shared/ch-query.ts                      -> db/src/clickhouse/sql.ts
+```
+
+The one added edge is ADR-013's `sql` tag, which ADR-007 keeps in
+`packages/db` by name: a compile-time template tag, no client, no request
+scope — the same residual `chart.service.ts`'s header already records. The
+`*.sql.ts` files in these modules keep theirs for the same reason.
+
+**ClickHouse — old vs new transport, same data, same day.** No SQL TEXT
+changed in this wave; what moved is which client executes it. Run by ralph on
+2026-09-06 against the local single node (`http://localhost:8123/openpanel`,
+the prod copy, read-only), calling `@openpanel/db`'s `chQuery` and core's new
+`chQuery(deps, …)` back to back on each statement and comparing the serialized
+result sets:
+
+```
+getStats/projects        rows old=1864 new=1864 identical=true old=1332.6ms new=1309.1ms
+getStats/last24h         rows old=1    new=1    identical=true old=6.9ms    new=5.6ms
+runPingCron              rows old=1    new=1    identical=true old=3.3ms    new=3.1ms
+event.topOrigins         rows old=2    new=2    identical=true old=59.7ms   new=41.9ms
+profile.propertyKeys     rows old=6    new=6    identical=true old=10.1ms   new=6.3ms
+group.types              rows old=0    new=0    identical=true old=3.8ms    new=3.6ms
+```
+
+`single-node` numbers, valid for the self-host topology (docs/ENVIRONMENT.md).
+No `Distributed`-table construct was added, removed or reordered — no `IN`
+became a `GLOBAL IN` or vice versa — so the cluster topology is unaffected by
+this wave.
+
+**Verification, all run by ralph on 2026-09-06:**
+
+- `pnpm run typecheck` — all 25 workspaces, `Done`.
+- `cd packages/core && bun test` (bare): **1457 pass, 12 skip, 0 fail**,
+  `Ran 1469 tests across 149 files. [31.14s]`.
+- `cd packages/core && bun test --isolate`: **1457 pass, 12 skip, 0 fail**,
+  `Ran 1469 tests across 149 files. [102.80s]`.
+- `pnpm run check:deps` — the table above.
+- `verification/harness start` → `cd apps/api && pnpm run e2e:sessions`:
+  **29/29 checks passed** (profile, group and event flushes are all on that
+  path).
+- `verification/golden/compare.sh`: **`passed: 131/137`, 0 diffs in the 131
+  validated**; the other 6 are the calendar-stale clock-anchored cases the
+  harness itself skips (`captured on 2026-09-05, replayed on 2026-09-06` —
+  `export-events-no-dates`, `insights-overview-range-30d`,
+  `insights-retention-cohort`, and the three
+  `insights-pages-performance-*`). Re-capturing is an operator/verify task,
+  not an implement one. **137/137 was not reachable on 2026-09-06** — see the
+  task report.
+- `verification/harness stop`, then `verification/full.sh`.
+
+**Left for later, named not fixed.**
+
+- `getEventMetasCached`, `getProfilesCached` and `getProfilePropertyKeysCached`
+  keep V1's Redis key because `cacheablePerDeps` takes an explicit `name`.
+  **M10-004's `getClientByIdCached` (client.service.ts) and
+  `getProjectByIdCached` (project.service.ts) do NOT**: both were converted to
+  `cacheable((id) => …, ttl)` with an inline arrow, whose `fn.name` is `''`, so
+  their prefix is `cachable:` for both. That is a cache-key change (a cold
+  window) AND a potential cross-function collision — `cachable::<id>` is the
+  same key for a client id and a project id. Out of this task's scope; needs
+  its own fix, which is one `cacheable(NAME, …)` argument each.
+- `session/src/session-end.ts` still lazy-loads `chQuery` from
+  `@openpanel/db/src/clickhouse/client`, and `ingest/src/incoming-event-handler.ts`
+  still reaches `sessionBuffer` through `loadDbBuffers()`. Both are the
+  `session`/`ingest` modules' own conversion, not this wave's.

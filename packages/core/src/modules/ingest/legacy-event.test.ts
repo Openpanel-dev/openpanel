@@ -24,6 +24,7 @@ import {
 } from 'bun:test';
 import type { Buffers } from '../../buffers/create-buffers';
 import type { GeoLocation } from '../../clients/geo';
+import type { ServiceDeps } from '../../services';
 import type { DeprecatedPostEventPayload } from './ingest.constants';
 import type { IncomingEventPayload } from './src/incoming-event';
 import {
@@ -92,6 +93,10 @@ const buffers = {
   group: {},
 } as unknown as Buffers;
 
+// The legacy route produces to Kafka and never touches Postgres/ClickHouse;
+// `deps` is on `IngestTransport` for the profile writes /track makes (M10-005).
+const transportDeps = { buffers } as unknown as ServiceDeps;
+
 const legacyBody = (
   overrides: Partial<DeprecatedPostEventPayload> = {}
 ): DeprecatedPostEventPayload => ({
@@ -128,6 +133,7 @@ describe('ingestLegacyEvent', () => {
     const outcome = await ingestLegacyEvent(makeRequest(), {
       buffers,
       produceIncomingEvent,
+      deps: transportDeps,
     });
 
     expect(outcome.status).toBe('ok');
@@ -142,13 +148,21 @@ describe('ingestLegacyEvent', () => {
   });
 
   it('mints the event id at the producer, like /track', async () => {
-    await ingestLegacyEvent(makeRequest(), { buffers, produceIncomingEvent });
+    await ingestLegacyEvent(makeRequest(), {
+      buffers,
+      produceIncomingEvent,
+      deps: transportDeps,
+    });
 
     expect(produced[0]?.payload.id).toMatch(UUID_PATTERN);
   });
 
   it('replaces the client-supplied timestamp with the server timestamp', async () => {
-    await ingestLegacyEvent(makeRequest(), { buffers, produceIncomingEvent });
+    await ingestLegacyEvent(makeRequest(), {
+      buffers,
+      produceIncomingEvent,
+      deps: transportDeps,
+    });
 
     const { payload } = produced[0]!;
     expect(payload.event.timestamp).toBe(requestTimestamp);
@@ -159,6 +173,7 @@ describe('ingestLegacyEvent', () => {
     const outcome = await ingestLegacyEvent(makeRequest(null), {
       buffers,
       produceIncomingEvent,
+      deps: transportDeps,
     });
 
     expect(outcome.status).toBe('missing-project-id');

@@ -5,6 +5,7 @@
 import { loadDbBuffers } from '../../../buffers/lazy-db-buffers';
 import type { EnqueueOptions } from '../../../jobs/define';
 import type { Logger } from '../../../logger';
+import type { ServiceDeps } from '../../../services';
 // Static, not lazy like the db imports below: core's event.service touches no
 // client at import time, and a dynamic edge here closes a dynamic-import cycle
 // (event.service ⇢ session.service → this file) that panics rolldown when
@@ -116,6 +117,7 @@ export interface SessionEndDeps extends SessionRuntime {
 }
 
 export async function loadSessionEndDeps(
+  deps: ServiceDeps,
   runtime: SessionRuntime,
   logger: Logger
 ): Promise<SessionEndDeps> {
@@ -133,7 +135,7 @@ export async function loadSessionEndDeps(
   return {
     ...runtime,
     logger,
-    createEvent,
+    createEvent: (payload) => createEvent(deps, payload),
     transformEvent,
     transformSessionToEvent,
     getEvents: async (query) =>

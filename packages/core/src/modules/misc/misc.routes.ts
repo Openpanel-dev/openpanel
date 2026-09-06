@@ -35,7 +35,7 @@ export const miscRoutes = defineRoutes((app) =>
       '/misc/ping',
       async ({ body, ctx, status }) => {
         try {
-          await insertPingRecord(body);
+          await insertPingRecord(ctx, body);
           return { message: 'Success', count: body.count, domain: body.domain };
         } catch (error) {
           ctx.logger.error({ err: error }, 'Failed to insert ping');
@@ -44,7 +44,7 @@ export const miscRoutes = defineRoutes((app) =>
       },
       { body: zPingBody, detail: { tags: TAGS } }
     )
-    .get('/misc/stats', () => getStats(), { detail: { tags: TAGS } })
+    .get('/misc/stats', ({ ctx }) => getStats(ctx), { detail: { tags: TAGS } })
     .get(
       '/misc/favicon',
       async ({ query, ctx, set }) => {

@@ -37,8 +37,10 @@ const authenticateClient = mock(
   (_deps: unknown, _headers: Headers, _options: ClientAuthOptions) =>
     Promise.resolve(clientResult)
 );
+// M10-005: both take `ServiceDeps` first; the route hands them `ctx`.
 const identifyProfile = mock(
   (
+    _deps: unknown,
     _projectId: string,
     _payload: IdentifyProfileInput,
     _request: ProfileRequestContext
@@ -46,6 +48,7 @@ const identifyProfile = mock(
 );
 const adjustProfileProperty = mock(
   (
+    _deps: unknown,
     _projectId: string,
     _input: { profileId: string; property: string; delta: number }
   ) => Promise.resolve(adjustResult)
@@ -103,7 +106,7 @@ test('POST /profile identifies with geo + user agent and answers 202 + profileId
   expect(response.status).toBe(202);
   expect(await response.text()).toBe('prof-1');
   expect(identifyProfile).toHaveBeenCalledTimes(1);
-  const [projectId, received, context] = identifyProfile.mock.calls[0]!;
+  const [, projectId, received, context] = identifyProfile.mock.calls[0]!;
   expect(projectId).toBe('proj-1');
   expect(received).toEqual(payload);
   expect(context.geo).toEqual(GEO);
@@ -120,7 +123,7 @@ test('POST /profile/increment passes value through; /decrement negates it', asyn
   expect(incremented.status).toBe(202);
   expect(await incremented.text()).toBe('prof-1');
   expect(decremented.status).toBe(202);
-  expect(adjustProfileProperty.mock.calls).toEqual([
+  expect(adjustProfileProperty.mock.calls.map(([, ...rest]) => rest)).toEqual([
     ['proj-1', { profileId: 'prof-1', property: 'visits', delta: 3 }],
     ['proj-1', { profileId: 'prof-1', property: 'visits', delta: -3 }],
   ]);

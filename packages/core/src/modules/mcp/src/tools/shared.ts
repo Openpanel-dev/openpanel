@@ -38,6 +38,14 @@ export async function loadCompatChHelpers() {
   return (await import('../../../../v1-compat')).compatChHelpers();
 }
 
+/** `analytics/page-performance.ts` used to construct its own `PagesService`
+ *  per call to dodge a module-singleton mocking hazard; since M10-005 there is
+ *  no singleton and no class, so it reaches the bare, v1-compat-wrapped pages
+ *  service instead. */
+export async function loadCompatPagesService() {
+  return (await import('../../../../v1-compat')).pagesService;
+}
+
 /**
  * Resolve the effective projectId from context + optional tool input.
  * Thin adapter so tool files don't repeat the full argument object every call.

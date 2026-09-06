@@ -1,11 +1,13 @@
 /**
- * SQL-syntax tests for `OverviewService.getRawWhereClause` (the UTM
+ * SQL-syntax tests for the overview module's `getRawWhereClause` (the UTM
  * remapping). Moved from packages/db/src/services/overview-sql.test.ts
  * (M8-005) alongside its subject, which moved to core in M7-005 — same
  * pattern as the chart cases moving to chart.sql.test.ts with theirs
  * (M7-003). `getRawWhereClause` itself is still clix/sqlstring-based
- * (pre-ADR-013); the rest of OverviewService's queries already run through
- * overview.sql.ts, covered by overview.sql.test.ts.
+ * (pre-ADR-013); the rest of the overview module's queries already run
+ * through overview.sql.ts, covered by overview.sql.test.ts. M10-005 turned it
+ * from a class method into a module function — it never needed a client,
+ * being pure string building.
  *
  * Strategy: build the SQL string, then run `EXPLAIN <sql>` against the local
  * ClickHouse instance. EXPLAIN parses the query, resolves columns, and builds
@@ -20,7 +22,7 @@
 
 import { afterAll, beforeAll, describe, expect, it, spyOn } from 'bun:test';
 import { ch } from '@openpanel/db/src/clickhouse/client';
-import { OverviewService } from '../overview.service';
+import { getRawWhereClause } from '../overview.service';
 
 const PROJECT_ID = 'test-sql-validation';
 
@@ -61,10 +63,8 @@ const itCH = (name: string, fn: () => Promise<void>) =>
   });
 
 describe('overview.service / getRawWhereClause (UTM remapping)', () => {
-  const svc = new OverviewService(ch);
-
   it('rewrites utm_* to properties[__query.utm_*] for the events table', () => {
-    const where = svc.getRawWhereClause('events', [
+    const where = getRawWhereClause('events', [
       { name: 'utm_source', operator: 'is', value: ['awn'] },
     ]);
     expect(where).toContain("properties['__query.utm_source']");
@@ -72,7 +72,7 @@ describe('overview.service / getRawWhereClause (UTM remapping)', () => {
   });
 
   it('keeps utm_* as a top-level column for the sessions table', () => {
-    const where = svc.getRawWhereClause('sessions', [
+    const where = getRawWhereClause('sessions', [
       { name: 'utm_source', operator: 'is', value: ['awn'] },
     ]);
     expect(where).toMatch(/(?<![._\w])utm_source\s*=/);
@@ -80,7 +80,7 @@ describe('overview.service / getRawWhereClause (UTM remapping)', () => {
   });
 
   it('drops non-whitelisted filters', () => {
-    const where = svc.getRawWhereClause('events', [
+    const where = getRawWhereClause('events', [
       { name: 'malicious_column', operator: 'is', value: ['x'] },
     ]);
     expect(where).toBe('');
@@ -89,7 +89,7 @@ describe('overview.service / getRawWhereClause (UTM remapping)', () => {
   itCH(
     'events utm_source filter parses against real events table',
     async () => {
-      const where = svc.getRawWhereClause('events', [
+      const where = getRawWhereClause('events', [
         { name: 'utm_source', operator: 'is', value: ['awn'] },
       ]);
       expect(where).toBeTruthy();
@@ -102,7 +102,7 @@ describe('overview.service / getRawWhereClause (UTM remapping)', () => {
   itCH(
     'sessions utm_source filter parses against real sessions table',
     async () => {
-      const where = svc.getRawWhereClause('sessions', [
+      const where = getRawWhereClause('sessions', [
         { name: 'utm_source', operator: 'is', value: ['awn'] },
       ]);
       expect(where).toBeTruthy();

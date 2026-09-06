@@ -35,6 +35,7 @@ import {
   zReport,
 } from '@openpanel/validation';
 import { z } from 'zod';
+import type { Ctx } from '../../context';
 import type { ClientType } from '../../http/client-auth';
 import { defineRoutes } from '../../http/define';
 import { parseQueryStringTransform } from '../../http/query';
@@ -71,7 +72,6 @@ import type {
 import {
   getAnalyticsOverviewCore,
   getTrafficBreakdownCore,
-  overviewService,
 } from '../overview/overview.service';
 import {
   getEntryExitPagesCore,
@@ -245,8 +245,8 @@ export const exportRoutes = defineRoutes((app) =>
         };
 
         const [data, totalCount] = await Promise.all([
-          getEventList(options),
-          getEventsCount(options),
+          getEventList(ctx, options),
+          getEventsCount(ctx, options),
         ]);
 
         return {
@@ -355,6 +355,7 @@ type InsightsClient = Parameters<typeof resolveInsightsProjectId>[0];
 
 /** Shared body of the 18 `overviewColumns` routes below (V1's `getOverviewGeneric(column)`). */
 async function getOverviewGeneric(
+  ctx: Ctx,
   column: IGetTopGenericInput['column'],
   params: InsightsProjectParam,
   query: OverviewGenericQuery,
@@ -363,7 +364,7 @@ async function getOverviewGeneric(
   const projectId = await resolveInsightsProjectId(client, params);
   const { timezone } = await getSettingsForProject(projectId);
   const { startDate, endDate } = getChartStartEndDate(query, timezone);
-  return overviewService.getTopGeneric({
+  return ctx.services.overview.getTopGeneric({
     column,
     projectId,
     filters: query.filters,
@@ -538,13 +539,13 @@ export const insightsRoutes = defineRoutes((app) =>
     .onTransform(parseQueryStringTransform)
     .get(
       '/insights/:projectId/overview',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           projectId,
           query
         );
-        return getAnalyticsOverviewCore({
+        return getAnalyticsOverviewCore(ctx, {
           projectId,
           startDate,
           endDate,
@@ -613,13 +614,13 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/pages/top',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           projectId,
           query
         );
-        return getTopPagesCore({ projectId, startDate, endDate });
+        return getTopPagesCore(ctx, { projectId, startDate, endDate });
       },
       {
         clientAuth: CLIENT_ALLOW,
@@ -634,13 +635,13 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/pages/entry_exit',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           projectId,
           query
         );
-        return getEntryExitPagesCore({
+        return getEntryExitPagesCore(ctx, {
           projectId,
           startDate,
           endDate,
@@ -659,13 +660,13 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/pages/performance',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           projectId,
           query
         );
-        return getPagePerformanceCore({
+        return getPagePerformanceCore(ctx, {
           projectId,
           startDate,
           endDate,
@@ -685,11 +686,11 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/metrics',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { timezone } = await getSettingsForProject(projectId);
         const { startDate, endDate } = getChartStartEndDate(query, timezone);
-        return overviewService.getMetrics({
+        return ctx.services.overview.getMetrics({
           projectId,
           filters: query.filters,
           startDate,
@@ -728,11 +729,11 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/pages',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { timezone } = await getSettingsForProject(projectId);
         const { startDate, endDate } = getChartStartEndDate(query, timezone);
-        return overviewService.getTopPages({
+        return ctx.services.overview.getTopPages({
           projectId,
           filters: query.filters,
           startDate,
@@ -753,8 +754,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/referrer',
-      ({ params, query, client }) =>
-        getOverviewGeneric('referrer', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'referrer', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -767,8 +768,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/referrer_name',
-      ({ params, query, client }) =>
-        getOverviewGeneric('referrer_name', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'referrer_name', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -781,8 +782,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/referrer_type',
-      ({ params, query, client }) =>
-        getOverviewGeneric('referrer_type', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'referrer_type', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -795,8 +796,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/utm_source',
-      ({ params, query, client }) =>
-        getOverviewGeneric('utm_source', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'utm_source', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -809,8 +810,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/utm_medium',
-      ({ params, query, client }) =>
-        getOverviewGeneric('utm_medium', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'utm_medium', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -823,8 +824,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/utm_campaign',
-      ({ params, query, client }) =>
-        getOverviewGeneric('utm_campaign', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'utm_campaign', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -837,8 +838,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/utm_term',
-      ({ params, query, client }) =>
-        getOverviewGeneric('utm_term', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'utm_term', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -851,8 +852,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/utm_content',
-      ({ params, query, client }) =>
-        getOverviewGeneric('utm_content', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'utm_content', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -865,8 +866,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/region',
-      ({ params, query, client }) =>
-        getOverviewGeneric('region', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'region', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -879,8 +880,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/country',
-      ({ params, query, client }) =>
-        getOverviewGeneric('country', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'country', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -893,8 +894,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/city',
-      ({ params, query, client }) =>
-        getOverviewGeneric('city', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'city', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -907,8 +908,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/device',
-      ({ params, query, client }) =>
-        getOverviewGeneric('device', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'device', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -921,8 +922,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/brand',
-      ({ params, query, client }) =>
-        getOverviewGeneric('brand', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'brand', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -935,8 +936,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/model',
-      ({ params, query, client }) =>
-        getOverviewGeneric('model', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'model', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -949,8 +950,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/browser',
-      ({ params, query, client }) =>
-        getOverviewGeneric('browser', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'browser', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -963,8 +964,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/browser_version',
-      ({ params, query, client }) =>
-        getOverviewGeneric('browser_version', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'browser_version', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -977,8 +978,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/os',
-      ({ params, query, client }) =>
-        getOverviewGeneric('os', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'os', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -991,8 +992,8 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/os_version',
-      ({ params, query, client }) =>
-        getOverviewGeneric('os_version', params, query, client),
+      ({ params, query, client, ctx }) =>
+        getOverviewGeneric(ctx, 'os_version', params, query, client),
       {
         clientAuth: CLIENT_ALLOW,
         params: projectIdParam,
@@ -1032,13 +1033,13 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/traffic/referrers',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           projectId,
           query
         );
-        return getTrafficBreakdownCore({
+        return getTrafficBreakdownCore(ctx, {
           projectId,
           startDate,
           endDate,
@@ -1057,13 +1058,13 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/traffic/geo',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           projectId,
           query
         );
-        return getTrafficBreakdownCore({
+        return getTrafficBreakdownCore(ctx, {
           projectId,
           startDate,
           endDate,
@@ -1083,13 +1084,13 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/traffic/devices',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
           projectId,
           query
         );
-        return getTrafficBreakdownCore({
+        return getTrafficBreakdownCore(ctx, {
           projectId,
           startDate,
           endDate,
@@ -1149,9 +1150,9 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/events',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        return queryEventsCore({ projectId, ...query });
+        return queryEventsCore(ctx, { projectId, ...query });
       },
       {
         clientAuth: CLIENT_ALLOW,
@@ -1166,9 +1167,9 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/events/names',
-      async ({ params, client }) => {
+      async ({ params, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        return listEventNamesCore(projectId);
+        return listEventNamesCore(ctx, projectId);
       },
       {
         clientAuth: CLIENT_ALLOW,
@@ -1181,9 +1182,9 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/events/properties',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        return listEventPropertiesCore({
+        return listEventPropertiesCore(ctx, {
           projectId,
           eventName: query.eventName,
         });
@@ -1200,9 +1201,9 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/events/property_values',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        return getEventPropertyValuesCore({ projectId, ...query });
+        return getEventPropertyValuesCore(ctx, { projectId, ...query });
       },
       {
         clientAuth: CLIENT_ALLOW,
@@ -1216,9 +1217,9 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/profiles',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        return findProfilesCore({ projectId, ...query });
+        return findProfilesCore(ctx, { projectId, ...query });
       },
       {
         clientAuth: CLIENT_ALLOW,
@@ -1232,9 +1233,10 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/profiles/:profileId',
-      async ({ params, query, client, status }) => {
+      async ({ params, query, client, status, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const result = await getProfileWithEvents(
+          ctx,
           projectId,
           params.profileId,
           query.eventLimit
@@ -1259,9 +1261,14 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/profiles/:profileId/sessions',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        return getProfileSessionsCore(projectId, params.profileId, query.limit);
+        return getProfileSessionsCore(
+          ctx,
+          projectId,
+          params.profileId,
+          query.limit
+        );
       },
       {
         clientAuth: CLIENT_ALLOW,
@@ -1275,9 +1282,9 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/profiles/:profileId/metrics',
-      async ({ params, client }) => {
+      async ({ params, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        return getProfileMetricsCore({
+        return getProfileMetricsCore(ctx, {
           projectId,
           profileId: params.profileId,
         });
@@ -1309,9 +1316,9 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/groups/types',
-      async ({ params, client }) => {
+      async ({ params, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        return listGroupTypesCore(projectId);
+        return listGroupTypesCore(ctx, projectId);
       },
       {
         clientAuth: CLIENT_ALLOW,
@@ -1324,9 +1331,9 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/groups',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        return findGroupsCore({ projectId, ...query });
+        return findGroupsCore(ctx, { projectId, ...query });
       },
       {
         clientAuth: CLIENT_ALLOW,
@@ -1340,9 +1347,9 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/groups/:groupId',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        return getGroupCore({
+        return getGroupCore(ctx, {
           projectId,
           groupId: params.groupId,
           memberLimit: query.memberLimit,

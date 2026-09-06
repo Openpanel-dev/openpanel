@@ -19,6 +19,7 @@ import { anyPass, isEmpty, isNil, mergeDeepRight, omit, reject } from 'ramda';
 import { loadDbBuffers } from '../../../buffers/lazy-db-buffers';
 import type { SessionIngestResult } from '../../../buffers/session-buffer';
 import type { Logger } from '../../../logger';
+import type { ServiceDeps } from '../../../services';
 import {
   getReferrerWithQuery,
   parseReferrer,
@@ -115,6 +116,7 @@ export interface IncomingEventDeps {
  * lazy — see event.service.ts's header.
  */
 export async function loadIncomingEventDeps(
+  deps: ServiceDeps,
   logger: Logger,
   enqueueSessionEnd: (input: EnqueueSessionEndInput) => Promise<unknown>,
   overrides: Partial<IncomingEventDeps> = {}
@@ -129,7 +131,7 @@ export async function loadIncomingEventDeps(
   return {
     logger,
     sessions: sessionBuffer,
-    createEvent,
+    createEvent: (payload) => createEvent(deps, payload),
     checkNotificationRulesForEvent:
       notifications.checkNotificationRulesForEvent,
     projects: {

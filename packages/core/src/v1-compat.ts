@@ -42,6 +42,101 @@ import {
   type SignInShareInput,
   signInToShare as signInToShareWithDeps,
 } from './modules/auth/auth.service';
+import {
+  createBotEvent as event_createBotEvent,
+  createEvent as event_createEvent,
+  getBotEventsPage as event_getBotEventsPage,
+  getConversionEventNames as event_getConversionEventNames,
+  getConversionListPage as event_getConversionListPage,
+  getEventById as event_getEventById,
+  getEventDetails as event_getEventDetails,
+  getEventList as event_getEventList,
+  getEventListPage as event_getEventListPage,
+  getEventMetas as event_getEventMetas,
+  getEventPropertyValuesCore as event_getEventPropertyValuesCore,
+  getEvents as event_getEvents,
+  getEventsCount as event_getEventsCount,
+  getTopEventNames as event_getTopEventNames,
+  getTopOrigins as event_getTopOrigins,
+  getTopPages as event_getTopPages,
+  listEventNamesCore as event_listEventNamesCore,
+  listEventPropertiesCore as event_listEventPropertiesCore,
+  queryEventsCore as event_queryEventsCore,
+  updateEventMeta as event_updateEventMeta,
+} from './modules/event/event.service';
+import {
+  createGroup as group_createGroup,
+  deleteGroup as group_deleteGroup,
+  findGroupsCore as group_findGroupsCore,
+  getGroupActivity as group_getGroupActivity,
+  getGroupById as group_getGroupById,
+  getGroupCore as group_getGroupCore,
+  getGroupList as group_getGroupList,
+  getGroupListCount as group_getGroupListCount,
+  getGroupListPage as group_getGroupListPage,
+  getGroupMemberGrowth as group_getGroupMemberGrowth,
+  getGroupMemberProfiles as group_getGroupMemberProfiles,
+  getGroupMemberProfilesPage as group_getGroupMemberProfilesPage,
+  getGroupMetrics as group_getGroupMetrics,
+  getGroupMostEvents as group_getGroupMostEvents,
+  getGroupPopularRoutes as group_getGroupPopularRoutes,
+  getGroupPropertyKeys as group_getGroupPropertyKeys,
+  getGroupStats as group_getGroupStats,
+  getGroupsByIds as group_getGroupsByIds,
+  getGroupTypes as group_getGroupTypes,
+  listGroupTypesCore as group_listGroupTypesCore,
+  updateGroup as group_updateGroup,
+  upsertGroup as group_upsertGroup,
+} from './modules/group/group.service';
+import {
+  getStats as misc_getStats,
+  insertPingRecord as misc_insertPingRecord,
+  runPingCron as misc_runPingCron,
+} from './modules/misc/misc.service';
+import {
+  getRawWhereClause,
+  isPageFilter,
+  getAnalyticsOverviewCore as overview_getAnalyticsOverviewCore,
+  getSegmentDailySeriesCore as overview_getSegmentDailySeriesCore,
+  getTrafficBreakdownCore as overview_getTrafficBreakdownCore,
+} from './modules/overview/overview.service';
+import {
+  getEntryExitPagesCore as pages_getEntryExitPagesCore,
+  getPageConversionsCore as pages_getPageConversionsCore,
+  getPagePerformanceCore as pages_getPagePerformanceCore,
+  getTopPagesCore as pages_getTopPagesCore,
+} from './modules/overview/pages.service';
+import {
+  adjustProfileProperty as profile_adjustProfileProperty,
+  findProfilesCore as profile_findProfilesCore,
+  getPowerUsers as profile_getPowerUsers,
+  getProfileActivity as profile_getProfileActivity,
+  getProfileById as profile_getProfileById,
+  getProfileList as profile_getProfileList,
+  getProfileListCount as profile_getProfileListCount,
+  getProfileListPage as profile_getProfileListPage,
+  getProfileMetrics as profile_getProfileMetrics,
+  getProfileMetricsCore as profile_getProfileMetricsCore,
+  getProfileMostEvents as profile_getProfileMostEvents,
+  getProfilePopularRoutes as profile_getProfilePopularRoutes,
+  getProfilePropertyKeys as profile_getProfilePropertyKeys,
+  getProfilePropertyNames as profile_getProfilePropertyNames,
+  getProfileSessionsCore as profile_getProfileSessionsCore,
+  getProfiles as profile_getProfiles,
+  getProfilesCached as profile_getProfilesCached,
+  getProfileValues as profile_getProfileValues,
+  getProfileWithEvents as profile_getProfileWithEvents,
+  identifyProfile as profile_identifyProfile,
+  upsertProfile as profile_upsertProfile,
+} from './modules/profile/profile.service';
+import {
+  getRealtimeActiveSessions as realtime_getRealtimeActiveSessions,
+  getRealtimeCoordinates as realtime_getRealtimeCoordinates,
+  getRealtimeGeo as realtime_getRealtimeGeo,
+  getRealtimeMapBadgeDetails as realtime_getRealtimeMapBadgeDetails,
+  getRealtimePaths as realtime_getRealtimePaths,
+  getRealtimeReferrals as realtime_getRealtimeReferrals,
+} from './modules/realtime/realtime.service';
 import { createServices, type ServiceDeps, type Services } from './services';
 import type { ISetCookie } from './shared/cookie';
 
@@ -170,6 +265,8 @@ export async function compatChHelpers(): Promise<{
   TABLE_NAMES: typeof import('@openpanel/db/src/clickhouse/client').TABLE_NAMES;
   chQuery: typeof import('@openpanel/db/src/clickhouse/client').chQuery;
   convertClickhouseDateToJs: typeof import('@openpanel/db/src/clickhouse/client').convertClickhouseDateToJs;
+  formatClickhouseDate: typeof import('@openpanel/db/src/clickhouse/client').formatClickhouseDate;
+  toNullIfDefaultMinDate: typeof import('@openpanel/db/src/clickhouse/client').toNullIfDefaultMinDate;
   clix: typeof import('@openpanel/db/src/clickhouse/query-builder').clix;
 }> {
   const [client, queryBuilder] = await Promise.all([
@@ -180,6 +277,8 @@ export async function compatChHelpers(): Promise<{
     TABLE_NAMES: client.TABLE_NAMES,
     chQuery: client.chQuery,
     convertClickhouseDateToJs: client.convertClickhouseDateToJs,
+    formatClickhouseDate: client.formatClickhouseDate,
+    toNullIfDefaultMinDate: client.toNullIfDefaultMinDate,
     clix: queryBuilder.clix,
   };
 }
@@ -772,3 +871,535 @@ export const deleteConversation: Services['conversation']['deleteConversation'] 
     services().then((container) =>
       container.conversation.deleteConversation(...args)
     );
+
+// M10-005: the runtime path's bare spellings. `event`, `profile`, `group`,
+// `misc`, `overview`/`pages` and `realtime` all gained a `ServiceDeps` first
+// parameter; `packages/trpc`'s routers and `@openpanel/queue`'s notification
+// dispatch still call them bare, and reach them through here.
+
+// --- event -------------------------------------------------------------------
+
+export const createBotEvent: (
+  ...args: Tail<Parameters<typeof event_createBotEvent>>
+) => ReturnType<typeof event_createBotEvent> = (...args) =>
+  compatServiceDeps().then((deps) => event_createBotEvent(deps, ...args));
+
+export const createEvent: (
+  ...args: Tail<Parameters<typeof event_createEvent>>
+) => ReturnType<typeof event_createEvent> = (...args) =>
+  compatServiceDeps().then((deps) => event_createEvent(deps, ...args));
+
+export const getBotEventsPage: (
+  ...args: Tail<Parameters<typeof event_getBotEventsPage>>
+) => ReturnType<typeof event_getBotEventsPage> = (...args) =>
+  compatServiceDeps().then((deps) => event_getBotEventsPage(deps, ...args));
+
+export const getConversionEventNames: (
+  ...args: Tail<Parameters<typeof event_getConversionEventNames>>
+) => ReturnType<typeof event_getConversionEventNames> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    event_getConversionEventNames(deps, ...args)
+  );
+
+export const getConversionListPage: (
+  ...args: Tail<Parameters<typeof event_getConversionListPage>>
+) => ReturnType<typeof event_getConversionListPage> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    event_getConversionListPage(deps, ...args)
+  );
+
+export const getEventById: (
+  ...args: Tail<Parameters<typeof event_getEventById>>
+) => ReturnType<typeof event_getEventById> = (...args) =>
+  compatServiceDeps().then((deps) => event_getEventById(deps, ...args));
+
+export const getEventDetails: (
+  ...args: Tail<Parameters<typeof event_getEventDetails>>
+) => ReturnType<typeof event_getEventDetails> = (...args) =>
+  compatServiceDeps().then((deps) => event_getEventDetails(deps, ...args));
+
+export const getEventList: (
+  ...args: Tail<Parameters<typeof event_getEventList>>
+) => ReturnType<typeof event_getEventList> = (...args) =>
+  compatServiceDeps().then((deps) => event_getEventList(deps, ...args));
+
+export const getEventListPage: (
+  ...args: Tail<Parameters<typeof event_getEventListPage>>
+) => ReturnType<typeof event_getEventListPage> = (...args) =>
+  compatServiceDeps().then((deps) => event_getEventListPage(deps, ...args));
+
+export const getEventMetas: (
+  ...args: Tail<Parameters<typeof event_getEventMetas>>
+) => ReturnType<typeof event_getEventMetas> = (...args) =>
+  compatServiceDeps().then((deps) => event_getEventMetas(deps, ...args));
+
+export const getEventPropertyValuesCore: (
+  ...args: Tail<Parameters<typeof event_getEventPropertyValuesCore>>
+) => ReturnType<typeof event_getEventPropertyValuesCore> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    event_getEventPropertyValuesCore(deps, ...args)
+  );
+
+export const getEvents: (
+  ...args: Tail<Parameters<typeof event_getEvents>>
+) => ReturnType<typeof event_getEvents> = (...args) =>
+  compatServiceDeps().then((deps) => event_getEvents(deps, ...args));
+
+export const getEventsCount: (
+  ...args: Tail<Parameters<typeof event_getEventsCount>>
+) => ReturnType<typeof event_getEventsCount> = (...args) =>
+  compatServiceDeps().then((deps) => event_getEventsCount(deps, ...args));
+
+export const getTopEventNames: (
+  ...args: Tail<Parameters<typeof event_getTopEventNames>>
+) => ReturnType<typeof event_getTopEventNames> = (...args) =>
+  compatServiceDeps().then((deps) => event_getTopEventNames(deps, ...args));
+
+export const getTopOrigins: (
+  ...args: Tail<Parameters<typeof event_getTopOrigins>>
+) => ReturnType<typeof event_getTopOrigins> = (...args) =>
+  compatServiceDeps().then((deps) => event_getTopOrigins(deps, ...args));
+
+export const getTopPages: (
+  ...args: Tail<Parameters<typeof event_getTopPages>>
+) => ReturnType<typeof event_getTopPages> = (...args) =>
+  compatServiceDeps().then((deps) => event_getTopPages(deps, ...args));
+
+export const listEventNamesCore: (
+  ...args: Tail<Parameters<typeof event_listEventNamesCore>>
+) => ReturnType<typeof event_listEventNamesCore> = (...args) =>
+  compatServiceDeps().then((deps) => event_listEventNamesCore(deps, ...args));
+
+export const listEventPropertiesCore: (
+  ...args: Tail<Parameters<typeof event_listEventPropertiesCore>>
+) => ReturnType<typeof event_listEventPropertiesCore> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    event_listEventPropertiesCore(deps, ...args)
+  );
+
+export const queryEventsCore: (
+  ...args: Tail<Parameters<typeof event_queryEventsCore>>
+) => ReturnType<typeof event_queryEventsCore> = (...args) =>
+  compatServiceDeps().then((deps) => event_queryEventsCore(deps, ...args));
+
+export const updateEventMeta: (
+  ...args: Tail<Parameters<typeof event_updateEventMeta>>
+) => ReturnType<typeof event_updateEventMeta> = (...args) =>
+  compatServiceDeps().then((deps) => event_updateEventMeta(deps, ...args));
+
+// --- profile -----------------------------------------------------------------
+
+export const adjustProfileProperty: (
+  ...args: Tail<Parameters<typeof profile_adjustProfileProperty>>
+) => ReturnType<typeof profile_adjustProfileProperty> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    profile_adjustProfileProperty(deps, ...args)
+  );
+
+export const findProfilesCore: (
+  ...args: Tail<Parameters<typeof profile_findProfilesCore>>
+) => ReturnType<typeof profile_findProfilesCore> = (...args) =>
+  compatServiceDeps().then((deps) => profile_findProfilesCore(deps, ...args));
+
+export const getPowerUsers: (
+  ...args: Tail<Parameters<typeof profile_getPowerUsers>>
+) => ReturnType<typeof profile_getPowerUsers> = (...args) =>
+  compatServiceDeps().then((deps) => profile_getPowerUsers(deps, ...args));
+
+export const getProfileActivity: (
+  ...args: Tail<Parameters<typeof profile_getProfileActivity>>
+) => ReturnType<typeof profile_getProfileActivity> = (...args) =>
+  compatServiceDeps().then((deps) => profile_getProfileActivity(deps, ...args));
+
+export const getProfileById: (
+  ...args: Tail<Parameters<typeof profile_getProfileById>>
+) => ReturnType<typeof profile_getProfileById> = (...args) =>
+  compatServiceDeps().then((deps) => profile_getProfileById(deps, ...args));
+
+export const getProfileList: (
+  ...args: Tail<Parameters<typeof profile_getProfileList>>
+) => ReturnType<typeof profile_getProfileList> = (...args) =>
+  compatServiceDeps().then((deps) => profile_getProfileList(deps, ...args));
+
+export const getProfileListCount: (
+  ...args: Tail<Parameters<typeof profile_getProfileListCount>>
+) => ReturnType<typeof profile_getProfileListCount> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    profile_getProfileListCount(deps, ...args)
+  );
+
+export const getProfileListPage: (
+  ...args: Tail<Parameters<typeof profile_getProfileListPage>>
+) => ReturnType<typeof profile_getProfileListPage> = (...args) =>
+  compatServiceDeps().then((deps) => profile_getProfileListPage(deps, ...args));
+
+export const getProfileMetrics: (
+  ...args: Tail<Parameters<typeof profile_getProfileMetrics>>
+) => ReturnType<typeof profile_getProfileMetrics> = (...args) =>
+  compatServiceDeps().then((deps) => profile_getProfileMetrics(deps, ...args));
+
+export const getProfileMetricsCore: (
+  ...args: Tail<Parameters<typeof profile_getProfileMetricsCore>>
+) => ReturnType<typeof profile_getProfileMetricsCore> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    profile_getProfileMetricsCore(deps, ...args)
+  );
+
+export const getProfileMostEvents: (
+  ...args: Tail<Parameters<typeof profile_getProfileMostEvents>>
+) => ReturnType<typeof profile_getProfileMostEvents> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    profile_getProfileMostEvents(deps, ...args)
+  );
+
+export const getProfilePopularRoutes: (
+  ...args: Tail<Parameters<typeof profile_getProfilePopularRoutes>>
+) => ReturnType<typeof profile_getProfilePopularRoutes> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    profile_getProfilePopularRoutes(deps, ...args)
+  );
+
+export const getProfilePropertyKeys: (
+  ...args: Tail<Parameters<typeof profile_getProfilePropertyKeys>>
+) => ReturnType<typeof profile_getProfilePropertyKeys> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    profile_getProfilePropertyKeys(deps, ...args)
+  );
+
+export const getProfilePropertyNames: (
+  ...args: Tail<Parameters<typeof profile_getProfilePropertyNames>>
+) => ReturnType<typeof profile_getProfilePropertyNames> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    profile_getProfilePropertyNames(deps, ...args)
+  );
+
+export const getProfileSessionsCore: (
+  ...args: Tail<Parameters<typeof profile_getProfileSessionsCore>>
+) => ReturnType<typeof profile_getProfileSessionsCore> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    profile_getProfileSessionsCore(deps, ...args)
+  );
+
+export const getProfileValues: (
+  ...args: Tail<Parameters<typeof profile_getProfileValues>>
+) => ReturnType<typeof profile_getProfileValues> = (...args) =>
+  compatServiceDeps().then((deps) => profile_getProfileValues(deps, ...args));
+
+export const getProfileWithEvents: (
+  ...args: Tail<Parameters<typeof profile_getProfileWithEvents>>
+) => ReturnType<typeof profile_getProfileWithEvents> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    profile_getProfileWithEvents(deps, ...args)
+  );
+
+export const getProfiles: (
+  ...args: Tail<Parameters<typeof profile_getProfiles>>
+) => ReturnType<typeof profile_getProfiles> = (...args) =>
+  compatServiceDeps().then((deps) => profile_getProfiles(deps, ...args));
+
+/** `session.service.ts`'s `getSessionList` is still deps-free (its own task),
+ *  and this is the one cached read it makes. */
+export const getProfilesCached: (
+  ...args: Tail<Parameters<typeof profile_getProfilesCached>>
+) => ReturnType<typeof profile_getProfilesCached> = (...args) =>
+  compatServiceDeps().then((deps) => profile_getProfilesCached(deps, ...args));
+
+export const identifyProfile: (
+  ...args: Tail<Parameters<typeof profile_identifyProfile>>
+) => ReturnType<typeof profile_identifyProfile> = (...args) =>
+  compatServiceDeps().then((deps) => profile_identifyProfile(deps, ...args));
+
+export const upsertProfile: (
+  ...args: Tail<Parameters<typeof profile_upsertProfile>>
+) => ReturnType<typeof profile_upsertProfile> = (...args) =>
+  compatServiceDeps().then((deps) => profile_upsertProfile(deps, ...args));
+
+// --- group -------------------------------------------------------------------
+
+export const createGroup: (
+  ...args: Tail<Parameters<typeof group_createGroup>>
+) => ReturnType<typeof group_createGroup> = (...args) =>
+  compatServiceDeps().then((deps) => group_createGroup(deps, ...args));
+
+export const deleteGroup: (
+  ...args: Tail<Parameters<typeof group_deleteGroup>>
+) => ReturnType<typeof group_deleteGroup> = (...args) =>
+  compatServiceDeps().then((deps) => group_deleteGroup(deps, ...args));
+
+export const findGroupsCore: (
+  ...args: Tail<Parameters<typeof group_findGroupsCore>>
+) => ReturnType<typeof group_findGroupsCore> = (...args) =>
+  compatServiceDeps().then((deps) => group_findGroupsCore(deps, ...args));
+
+export const getGroupActivity: (
+  ...args: Tail<Parameters<typeof group_getGroupActivity>>
+) => ReturnType<typeof group_getGroupActivity> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupActivity(deps, ...args));
+
+export const getGroupById: (
+  ...args: Tail<Parameters<typeof group_getGroupById>>
+) => ReturnType<typeof group_getGroupById> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupById(deps, ...args));
+
+export const getGroupCore: (
+  ...args: Tail<Parameters<typeof group_getGroupCore>>
+) => ReturnType<typeof group_getGroupCore> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupCore(deps, ...args));
+
+export const getGroupList: (
+  ...args: Tail<Parameters<typeof group_getGroupList>>
+) => ReturnType<typeof group_getGroupList> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupList(deps, ...args));
+
+export const getGroupListCount: (
+  ...args: Tail<Parameters<typeof group_getGroupListCount>>
+) => ReturnType<typeof group_getGroupListCount> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupListCount(deps, ...args));
+
+export const getGroupListPage: (
+  ...args: Tail<Parameters<typeof group_getGroupListPage>>
+) => ReturnType<typeof group_getGroupListPage> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupListPage(deps, ...args));
+
+export const getGroupMemberGrowth: (
+  ...args: Tail<Parameters<typeof group_getGroupMemberGrowth>>
+) => ReturnType<typeof group_getGroupMemberGrowth> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupMemberGrowth(deps, ...args));
+
+export const getGroupMemberProfiles: (
+  ...args: Tail<Parameters<typeof group_getGroupMemberProfiles>>
+) => ReturnType<typeof group_getGroupMemberProfiles> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    group_getGroupMemberProfiles(deps, ...args)
+  );
+
+export const getGroupMemberProfilesPage: (
+  ...args: Tail<Parameters<typeof group_getGroupMemberProfilesPage>>
+) => ReturnType<typeof group_getGroupMemberProfilesPage> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    group_getGroupMemberProfilesPage(deps, ...args)
+  );
+
+export const getGroupMetrics: (
+  ...args: Tail<Parameters<typeof group_getGroupMetrics>>
+) => ReturnType<typeof group_getGroupMetrics> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupMetrics(deps, ...args));
+
+export const getGroupMostEvents: (
+  ...args: Tail<Parameters<typeof group_getGroupMostEvents>>
+) => ReturnType<typeof group_getGroupMostEvents> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupMostEvents(deps, ...args));
+
+export const getGroupPopularRoutes: (
+  ...args: Tail<Parameters<typeof group_getGroupPopularRoutes>>
+) => ReturnType<typeof group_getGroupPopularRoutes> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    group_getGroupPopularRoutes(deps, ...args)
+  );
+
+export const getGroupPropertyKeys: (
+  ...args: Tail<Parameters<typeof group_getGroupPropertyKeys>>
+) => ReturnType<typeof group_getGroupPropertyKeys> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupPropertyKeys(deps, ...args));
+
+export const getGroupStats: (
+  ...args: Tail<Parameters<typeof group_getGroupStats>>
+) => ReturnType<typeof group_getGroupStats> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupStats(deps, ...args));
+
+export const getGroupTypes: (
+  ...args: Tail<Parameters<typeof group_getGroupTypes>>
+) => ReturnType<typeof group_getGroupTypes> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupTypes(deps, ...args));
+
+export const getGroupsByIds: (
+  ...args: Tail<Parameters<typeof group_getGroupsByIds>>
+) => ReturnType<typeof group_getGroupsByIds> = (...args) =>
+  compatServiceDeps().then((deps) => group_getGroupsByIds(deps, ...args));
+
+export const listGroupTypesCore: (
+  ...args: Tail<Parameters<typeof group_listGroupTypesCore>>
+) => ReturnType<typeof group_listGroupTypesCore> = (...args) =>
+  compatServiceDeps().then((deps) => group_listGroupTypesCore(deps, ...args));
+
+export const updateGroup: (
+  ...args: Tail<Parameters<typeof group_updateGroup>>
+) => ReturnType<typeof group_updateGroup> = (...args) =>
+  compatServiceDeps().then((deps) => group_updateGroup(deps, ...args));
+
+export const upsertGroup: (
+  ...args: Tail<Parameters<typeof group_upsertGroup>>
+) => ReturnType<typeof group_upsertGroup> = (...args) =>
+  compatServiceDeps().then((deps) => group_upsertGroup(deps, ...args));
+
+// --- overview ----------------------------------------------------------------
+
+export const getAnalyticsOverviewCore: (
+  ...args: Tail<Parameters<typeof overview_getAnalyticsOverviewCore>>
+) => ReturnType<typeof overview_getAnalyticsOverviewCore> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    overview_getAnalyticsOverviewCore(deps, ...args)
+  );
+
+export const getSegmentDailySeriesCore: (
+  ...args: Tail<Parameters<typeof overview_getSegmentDailySeriesCore>>
+) => ReturnType<typeof overview_getSegmentDailySeriesCore> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    overview_getSegmentDailySeriesCore(deps, ...args)
+  );
+
+export const getTrafficBreakdownCore: (
+  ...args: Tail<Parameters<typeof overview_getTrafficBreakdownCore>>
+) => ReturnType<typeof overview_getTrafficBreakdownCore> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    overview_getTrafficBreakdownCore(deps, ...args)
+  );
+
+// --- pages -------------------------------------------------------------------
+
+export const getEntryExitPagesCore: (
+  ...args: Tail<Parameters<typeof pages_getEntryExitPagesCore>>
+) => ReturnType<typeof pages_getEntryExitPagesCore> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    pages_getEntryExitPagesCore(deps, ...args)
+  );
+
+export const getPageConversionsCore: (
+  ...args: Tail<Parameters<typeof pages_getPageConversionsCore>>
+) => ReturnType<typeof pages_getPageConversionsCore> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    pages_getPageConversionsCore(deps, ...args)
+  );
+
+export const getPagePerformanceCore: (
+  ...args: Tail<Parameters<typeof pages_getPagePerformanceCore>>
+) => ReturnType<typeof pages_getPagePerformanceCore> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    pages_getPagePerformanceCore(deps, ...args)
+  );
+
+export const getTopPagesCore: (
+  ...args: Tail<Parameters<typeof pages_getTopPagesCore>>
+) => ReturnType<typeof pages_getTopPagesCore> = (...args) =>
+  compatServiceDeps().then((deps) => pages_getTopPagesCore(deps, ...args));
+
+// --- realtime ----------------------------------------------------------------
+
+export const getRealtimeActiveSessions: (
+  ...args: Tail<Parameters<typeof realtime_getRealtimeActiveSessions>>
+) => ReturnType<typeof realtime_getRealtimeActiveSessions> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    realtime_getRealtimeActiveSessions(deps, ...args)
+  );
+
+export const getRealtimeCoordinates: (
+  ...args: Tail<Parameters<typeof realtime_getRealtimeCoordinates>>
+) => ReturnType<typeof realtime_getRealtimeCoordinates> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    realtime_getRealtimeCoordinates(deps, ...args)
+  );
+
+export const getRealtimeGeo: (
+  ...args: Tail<Parameters<typeof realtime_getRealtimeGeo>>
+) => ReturnType<typeof realtime_getRealtimeGeo> = (...args) =>
+  compatServiceDeps().then((deps) => realtime_getRealtimeGeo(deps, ...args));
+
+export const getRealtimeMapBadgeDetails: (
+  ...args: Tail<Parameters<typeof realtime_getRealtimeMapBadgeDetails>>
+) => ReturnType<typeof realtime_getRealtimeMapBadgeDetails> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    realtime_getRealtimeMapBadgeDetails(deps, ...args)
+  );
+
+export const getRealtimePaths: (
+  ...args: Tail<Parameters<typeof realtime_getRealtimePaths>>
+) => ReturnType<typeof realtime_getRealtimePaths> = (...args) =>
+  compatServiceDeps().then((deps) => realtime_getRealtimePaths(deps, ...args));
+
+export const getRealtimeReferrals: (
+  ...args: Tail<Parameters<typeof realtime_getRealtimeReferrals>>
+) => ReturnType<typeof realtime_getRealtimeReferrals> = (...args) =>
+  compatServiceDeps().then((deps) =>
+    realtime_getRealtimeReferrals(deps, ...args)
+  );
+
+// --- misc --------------------------------------------------------------------
+
+export const getStats: (
+  ...args: Tail<Parameters<typeof misc_getStats>>
+) => ReturnType<typeof misc_getStats> = (...args) =>
+  compatServiceDeps().then((deps) => misc_getStats(deps, ...args));
+
+export const insertPingRecord: (
+  ...args: Tail<Parameters<typeof misc_insertPingRecord>>
+) => ReturnType<typeof misc_insertPingRecord> = (...args) =>
+  compatServiceDeps().then((deps) => misc_insertPingRecord(deps, ...args));
+
+export const runPingCron: (
+  ...args: Tail<Parameters<typeof misc_runPingCron>>
+) => ReturnType<typeof misc_runPingCron> = (...args) =>
+  compatServiceDeps().then((deps) => misc_runPingCron(deps, ...args));
+
+// `packages/trpc`'s overview and event routers call these as OBJECTS
+// (`overviewService.getMetrics(...)`, `pagesService.getTopPages(...)`), and
+// one of them still does `.bind(overviewService)`. Both were module-singleton
+// class instances before M10-005; here they are plain objects of bare
+// wrappers, so the call sites read identically and `bind` stays a no-op.
+export const overviewService = {
+  isPageFilter: (...args: Parameters<Services['overview']['isPageFilter']>) =>
+    isPageFilter(...args),
+  getRawWhereClause: (
+    ...args: Parameters<Services['overview']['getRawWhereClause']>
+  ) => getRawWhereClause(...args),
+  getMetrics: ((...args) =>
+    services().then((container) =>
+      container.overview.getMetrics(...args)
+    )) as Services['overview']['getMetrics'],
+  getTopPages: ((...args) =>
+    services().then((container) =>
+      container.overview.getTopPages(...args)
+    )) as Services['overview']['getTopPages'],
+  getTopEntryExit: ((...args) =>
+    services().then((container) =>
+      container.overview.getTopEntryExit(...args)
+    )) as Services['overview']['getTopEntryExit'],
+  getTopGeneric: ((...args) =>
+    services().then((container) =>
+      container.overview.getTopGeneric(...args)
+    )) as Services['overview']['getTopGeneric'],
+  getTopGenericSeries: ((...args) =>
+    services().then((container) =>
+      container.overview.getTopGenericSeries(...args)
+    )) as Services['overview']['getTopGenericSeries'],
+  getUserJourney: ((...args) =>
+    services().then((container) =>
+      container.overview.getUserJourney(...args)
+    )) as Services['overview']['getUserJourney'],
+  getTopEvents: ((...args) =>
+    services().then((container) =>
+      container.overview.getTopEvents(...args)
+    )) as Services['overview']['getTopEvents'],
+  getTopLinkOut: ((...args) =>
+    services().then((container) =>
+      container.overview.getTopLinkOut(...args)
+    )) as Services['overview']['getTopLinkOut'],
+  getMapData: ((...args) =>
+    services().then((container) =>
+      container.overview.getMapData(...args)
+    )) as Services['overview']['getMapData'],
+  getLiveData: ((...args) =>
+    services().then((container) =>
+      container.overview.getLiveData(...args)
+    )) as Services['overview']['getLiveData'],
+};
+
+export const pagesService = {
+  getTopPages: ((...args) =>
+    services().then((container) =>
+      container.pages.getTopPages(...args)
+    )) as Services['pages']['getTopPages'],
+  getPageTimeseries: ((...args) =>
+    services().then((container) =>
+      container.pages.getPageTimeseries(...args)
+    )) as Services['pages']['getPageTimeseries'],
+};

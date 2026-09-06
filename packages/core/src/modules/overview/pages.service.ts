@@ -1,14 +1,24 @@
 // Ported from packages/db/src/services/pages.service.ts. The ClickHouse
-// queries moved to src/pages.sql.ts (ADR-013, M7-005); `PagesService` keeps
-// V1's `constructor(client: typeof ch)` shape — the mcp
-// `get_page_performance` tool constructs a fresh instance per call to dodge a
-// module-singleton mocking hazard (see page-performance.ts), so the
-// constructor's client really is caller-supplied.
+// queries moved to src/pages.sql.ts (ADR-013, M7-005).
+//
+// M10-005: `PagesService` is no longer a class and there is no `pagesService`
+// module singleton. It is registered as its OWN service (`services.pages`)
+// rather than folded into `overview`, because both expose a `getTopPages` and
+// they are different queries with different inputs — one over `events` scoped
+// by search, one over `sessions` scoped by filters. Folding them would have
+// had to rename one, which is a call-site contract this wave does not change.
+// The caller-supplied `constructor(client)` slot is gone: the mcp
+// `get_page_performance` tool constructed a fresh instance per call only to
+// dodge a module-singleton mocking hazard, and there is no singleton left to
+// dodge.
 
-import type { ClickHouseClient } from '@clickhouse/client';
 import type { IChartEventFilter, IInterval } from '@openpanel/validation';
+import type { ServiceDeps } from '../../services';
 import { getSettingsForProject } from '../organization/organization.service';
-import { OverviewService } from './overview.service';
+import {
+  getTopPages as getOverviewTopPages,
+  getTopEntryExit,
+} from './overview.service';
 import {
   pageConversionsQuery,
   pageTimeseriesQuery,
@@ -43,26 +53,20 @@ export interface ITopPage {
   bounce_rate: number;
 }
 
-export class PagesService {
-  /** No client means the singleton path — `run-query.ts` resolves `ch` lazily. */
-  constructor(private client?: ClickHouseClient) {}
+export function getTopPages(
+  deps: ServiceDeps,
+  { projectId, startDate, endDate, timezone, search, limit }: IGetPagesInput
+): Promise<ITopPage[]> {
+  return runQuery<ITopPage>(
+    deps,
+    topPagesQuery({ projectId, startDate, endDate, search, limit }),
+    timezone
+  );
+}
 
-  async getTopPages({
-    projectId,
-    startDate,
-    endDate,
-    timezone,
-    search,
-    limit,
-  }: IGetPagesInput): Promise<ITopPage[]> {
-    return runQuery<ITopPage>(
-      this.client,
-      topPagesQuery({ projectId, startDate, endDate, search, limit }),
-      timezone
-    );
-  }
-
-  async getPageTimeseries({
+export function getPageTimeseries(
+  deps: ServiceDeps,
+  {
     projectId,
     startDate,
     endDate,
@@ -74,34 +78,34 @@ export class PagesService {
     interval: IInterval;
     filterOrigin?: string;
     filterPath?: string;
-  }): Promise<IPageTimeseriesRow[]> {
-    return runQuery<IPageTimeseriesRow>(
-      this.client,
-      pageTimeseriesQuery({
-        projectId,
-        startDate,
-        endDate,
-        interval,
-        filterOrigin,
-        filterPath,
-      }),
-      timezone
-    );
   }
+): Promise<IPageTimeseriesRow[]> {
+  return runQuery<IPageTimeseriesRow>(
+    deps,
+    pageTimeseriesQuery({
+      projectId,
+      startDate,
+      endDate,
+      interval,
+      filterOrigin,
+      filterPath,
+    }),
+    timezone
+  );
 }
 
-export const pagesService = new PagesService();
-const overviewServiceForPages = new OverviewService();
-
-export async function getTopPagesCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  limit?: number;
-  filters?: IChartEventFilter[];
-}) {
+export async function getTopPagesCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    limit?: number;
+    filters?: IChartEventFilter[];
+  }
+) {
   const { timezone } = await getSettingsForProject(input.projectId);
-  return overviewServiceForPages.getTopPages({
+  return getOverviewTopPages(deps, {
     projectId: input.projectId,
     filters: input.filters ?? [],
     startDate: input.startDate,
@@ -111,16 +115,19 @@ export async function getTopPagesCore(input: {
   });
 }
 
-export async function getEntryExitPagesCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  mode: 'entry' | 'exit';
-  limit?: number;
-  filters?: IChartEventFilter[];
-}) {
+export async function getEntryExitPagesCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    mode: 'entry' | 'exit';
+    limit?: number;
+    filters?: IChartEventFilter[];
+  }
+) {
   const { timezone } = await getSettingsForProject(input.projectId);
-  return overviewServiceForPages.getTopEntryExit({
+  return getTopEntryExit(deps, {
     projectId: input.projectId,
     filters: input.filters ?? [],
     startDate: input.startDate,
@@ -131,17 +138,20 @@ export async function getEntryExitPagesCore(input: {
   });
 }
 
-export async function getPagePerformanceCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  search?: string;
-  sortBy?: 'sessions' | 'pageviews' | 'bounce_rate' | 'avg_duration';
-  sortOrder?: 'asc' | 'desc';
-  limit?: number;
-}) {
+export async function getPagePerformanceCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    search?: string;
+    sortBy?: 'sessions' | 'pageviews' | 'bounce_rate' | 'avg_duration';
+    sortOrder?: 'asc' | 'desc';
+    limit?: number;
+  }
+) {
   const { timezone } = await getSettingsForProject(input.projectId);
-  const results = await pagesService.getTopPages({
+  const results = await getTopPages(deps, {
     projectId: input.projectId,
     startDate: input.startDate,
     endDate: input.endDate,
@@ -184,16 +194,19 @@ export interface IPageConversionRow {
 const DEFAULT_CONVERSION_WINDOW_HOURS = 24;
 const DEFAULT_CONVERSION_LIMIT = 100;
 
-export async function getPageConversionsCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  conversionEvent: string;
-  windowHours?: number;
-  limit?: number;
-}): Promise<IPageConversionRow[]> {
+export async function getPageConversionsCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    conversionEvent: string;
+    windowHours?: number;
+    limit?: number;
+  }
+): Promise<IPageConversionRow[]> {
   return runQuery<IPageConversionRow>(
-    undefined,
+    deps,
     pageConversionsQuery({
       projectId: input.projectId,
       startDate: input.startDate,
@@ -204,4 +217,38 @@ export async function getPageConversionsCore(input: {
     }),
     'UTC'
   );
+}
+
+export interface PagesService {
+  getTopPages(input: IGetPagesInput): Promise<ITopPage[]>;
+  getPageTimeseries(
+    input: IGetPagesInput & {
+      interval: IInterval;
+      filterOrigin?: string;
+      filterPath?: string;
+    }
+  ): Promise<IPageTimeseriesRow[]>;
+  getTopPagesCore(
+    input: Parameters<typeof getTopPagesCore>[1]
+  ): ReturnType<typeof getTopPagesCore>;
+  getEntryExitPagesCore(
+    input: Parameters<typeof getEntryExitPagesCore>[1]
+  ): ReturnType<typeof getEntryExitPagesCore>;
+  getPagePerformanceCore(
+    input: Parameters<typeof getPagePerformanceCore>[1]
+  ): ReturnType<typeof getPagePerformanceCore>;
+  getPageConversionsCore(
+    input: Parameters<typeof getPageConversionsCore>[1]
+  ): Promise<IPageConversionRow[]>;
+}
+
+export function createPagesService(deps: ServiceDeps): PagesService {
+  return {
+    getTopPages: (input) => getTopPages(deps, input),
+    getPageTimeseries: (input) => getPageTimeseries(deps, input),
+    getTopPagesCore: (input) => getTopPagesCore(deps, input),
+    getEntryExitPagesCore: (input) => getEntryExitPagesCore(deps, input),
+    getPagePerformanceCore: (input) => getPagePerformanceCore(deps, input),
+    getPageConversionsCore: (input) => getPageConversionsCore(deps, input),
+  };
 }

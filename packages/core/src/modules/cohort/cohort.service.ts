@@ -784,9 +784,11 @@ export async function listCohortMemberProfiles({
 }): Promise<{ data: IServiceProfile[]; count: number }> {
   const { chQuery } = await loadChClient();
   const { buildFilterWhere } = await import('../chart/src/table-filter-where');
-  const { getProfiles, profileSearchSql } = await import(
-    '../profile/profile.service'
-  );
+  const { profileSearchSql } = await import('../profile/profile.service');
+  // M10-005: `getProfiles` takes `ServiceDeps` now and this function has none
+  // — packages/trpc's cohort router still calls it bare — so it reaches the
+  // v1-compat spelling. Converting this module is its own task.
+  const { getProfiles } = await import('../../v1-compat');
 
   const offset = Math.max(0, (cursor ?? 0) * take);
   const searchClause = profileSearchSql(search);

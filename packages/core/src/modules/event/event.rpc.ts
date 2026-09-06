@@ -10,9 +10,10 @@
 // `bots` was V1's only `publicProcedure` here (anonymous callers were let in
 // when a share-overview row existed); ADR-011 makes it protected.
 //
-// `pages` / `pagesTimeseries` / `previousPages` / `pageTimeseries` read from
-// `pagesService`, which the overview module owns (its own task) — the bodies
-// are ported verbatim and reach it lazily through `@openpanel/db`.
+// `pages` / `pagesTimeseries` / `previousPages` / `pageTimeseries` read the
+// overview module's pages service; since M10-005 that is `ctx.services.pages`,
+// so the three-way lazy `import('@openpanel/core')` hop this file used to make
+// for it is gone.
 
 import {
   zChartEventFilter,
@@ -22,6 +23,8 @@ import {
 import { z } from 'zod';
 import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+import { getChartStartEndDate } from '../../shared/date';
+import { getSettingsForProject } from '../organization/organization.service';
 import {
   getBotEventsPage,
   getConversionEventNames,
@@ -46,24 +49,6 @@ const zChartWindow = z.object({
   range: zRange,
   interval: zTimeInterval,
 });
-
-function loadPagesRuntime() {
-  return Promise.all([
-    import('@openpanel/core'),
-    import('@openpanel/core'),
-    import('@openpanel/core'),
-  ]).then(
-    ([
-      { getSettingsForProject },
-      { getChartStartEndDate },
-      { pagesService },
-    ]) => ({
-      getSettingsForProject,
-      getChartStartEndDate,
-      pagesService,
-    })
-  );
-}
 
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
@@ -102,13 +87,13 @@ export const eventRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'write');
 
-      return updateEventMeta(input);
+      return updateEventMeta(ctx, input);
     }),
 
   byId: procedure.input(zEventRef).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
-    const event = await getEventById(input);
+    const event = await getEventById(ctx, input);
     if (!event) {
       throw new TRPCNotFoundError('Event not found');
     }
@@ -118,7 +103,7 @@ export const eventRouter = createTRPCRouter({
   details: procedure.input(zEventRef).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
-    const details = await getEventDetails(input);
+    const details = await getEventDetails(ctx, input);
     if (!details) {
       throw new TRPCNotFoundError('Event not found');
     }
@@ -144,7 +129,7 @@ export const eventRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      return getEventListPage(input);
+      return getEventListPage(ctx, input);
     }),
 
   conversionNames: procedure
@@ -152,7 +137,7 @@ export const eventRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      return getConversionEventNames(input.projectId);
+      return getConversionEventNames(ctx, input.projectId);
     }),
 
   conversions: procedure
@@ -169,7 +154,7 @@ export const eventRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      return getConversionListPage(input);
+      return getConversionListPage(ctx, input);
     }),
 
   bots: procedure
@@ -183,7 +168,7 @@ export const eventRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      return getBotEventsPage(input);
+      return getBotEventsPage(ctx, input);
     }),
 
   pages: procedure
@@ -197,11 +182,9 @@ export const eventRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      const { getSettingsForProject, getChartStartEndDate, pagesService } =
-        await loadPagesRuntime();
       const { timezone } = await getSettingsForProject(input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
-      return pagesService.getTopPages({
+      return ctx.services.pages.getTopPages({
         projectId: input.projectId,
         startDate,
         endDate,
@@ -216,11 +199,9 @@ export const eventRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      const { getSettingsForProject, getChartStartEndDate, pagesService } =
-        await loadPagesRuntime();
       const { timezone } = await getSettingsForProject(input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
-      return pagesService.getPageTimeseries({
+      return ctx.services.pages.getPageTimeseries({
         projectId: input.projectId,
         startDate,
         endDate,
@@ -232,8 +213,6 @@ export const eventRouter = createTRPCRouter({
   previousPages: procedure.input(zChartWindow).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
-    const { getSettingsForProject, getChartStartEndDate, pagesService } =
-      await loadPagesRuntime();
     const { timezone } = await getSettingsForProject(input.projectId);
     const { startDate, endDate } = getChartStartEndDate(input, timezone);
 
@@ -243,7 +222,7 @@ export const eventRouter = createTRPCRouter({
     const previousEnd = new Date(startMs - 1);
     const previousStart = new Date(previousEnd.getTime() - duration);
 
-    return pagesService.getTopPages({
+    return ctx.services.pages.getTopPages({
       projectId: input.projectId,
       startDate: formatClickhouseDateTime(previousStart),
       endDate: formatClickhouseDateTime(previousEnd),
@@ -256,11 +235,9 @@ export const eventRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      const { getSettingsForProject, getChartStartEndDate, pagesService } =
-        await loadPagesRuntime();
       const { timezone } = await getSettingsForProject(input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
-      return pagesService.getPageTimeseries({
+      return ctx.services.pages.getPageTimeseries({
         projectId: input.projectId,
         startDate,
         endDate,
@@ -276,6 +253,6 @@ export const eventRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      return getTopOrigins(input.projectId);
+      return getTopOrigins(ctx, input.projectId);
     }),
 });

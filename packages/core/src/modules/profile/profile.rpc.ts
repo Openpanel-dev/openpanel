@@ -47,31 +47,31 @@ export const profileRouter = createTRPCRouter({
   byId: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
     await requireReadAccess(ctx, input.projectId);
 
-    return getProfileById(input.profileId, input.projectId);
+    return getProfileById(ctx, input.profileId, input.projectId);
   }),
 
   metrics: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
     await requireReadAccess(ctx, input.projectId);
 
-    return getProfileMetrics(input.profileId, input.projectId);
+    return getProfileMetrics(ctx, input.profileId, input.projectId);
   }),
 
   activity: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
     await requireReadAccess(ctx, input.projectId);
 
-    return getProfileActivity(input.profileId, input.projectId);
+    return getProfileActivity(ctx, input.profileId, input.projectId);
   }),
 
   mostEvents: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
     await requireReadAccess(ctx, input.projectId);
 
-    return getProfileMostEvents(input.profileId, input.projectId);
+    return getProfileMostEvents(ctx, input.profileId, input.projectId);
   }),
 
   popularRoutes: procedure.input(zProfileRef).query(async ({ input, ctx }) => {
     await requireReadAccess(ctx, input.projectId);
 
-    return getProfilePopularRoutes(input.profileId, input.projectId);
+    return getProfilePopularRoutes(ctx, input.profileId, input.projectId);
   }),
 
   properties: procedure
@@ -79,7 +79,7 @@ export const profileRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getProfilePropertyNames(input.projectId);
+      return getProfilePropertyNames(ctx, input.projectId);
     }),
 
   list: procedure
@@ -96,7 +96,7 @@ export const profileRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getProfileListPage(input);
+      return getProfileListPage(ctx, input);
     }),
 
   powerUsers: procedure
@@ -110,7 +110,7 @@ export const profileRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getPowerUsers(input);
+      return getPowerUsers(ctx, input);
     }),
 
   values: procedure
@@ -118,6 +118,6 @@ export const profileRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getProfileValues(input);
+      return getProfileValues(ctx, input);
     }),
 });

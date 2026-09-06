@@ -17,15 +17,12 @@ const mockGetSettingsForProject = mock(() =>
 // '@openpanel/db' barrel — a whole-barrel replacement would drop every other
 // export the barrel carries for any other file sharing this process
 // (bun:test only isolates modules per file under `--isolate`; see AGENTS.md).
-// The pages/organization/project loaders all resolve through this same
-// specifier now (M9-CLEANUP-001) — one mock.module call, not three, or each
-// later call replaces the whole module and drops the earlier overrides.
+// The organization/project loaders resolve through this same specifier
+// (M9-CLEANUP-001) — one mock.module call, not two, or each later call
+// replaces the whole module and drops the earlier overrides.
 const actualCore = await import('@openpanel/core');
 mock.module('@openpanel/core', () => ({
   ...actualCore,
-  PagesService: mock().mockImplementation(() => ({
-    getTopPages: mockGetTopPages,
-  })),
   getSettingsForProject: mockGetSettingsForProject,
   resolveClientProjectId: mock(
     ({ clientProjectId }: { clientProjectId: string }) =>
@@ -33,35 +30,25 @@ mock.module('@openpanel/core', () => ({
   ),
 }));
 
-const actualClickhouseClient = await import(
-  '@openpanel/db/src/clickhouse/client'
-);
-mock.module('@openpanel/db/src/clickhouse/client', () => ({
-  ...actualClickhouseClient,
-  ch: {},
+// M10-005: `PagesService` is no longer a class the tool constructs — the tool
+// resolves the pages service through `../shared`'s one compat hop, so that is
+// what this file stubs. Spread-actual: every other helper in `../shared` is
+// live for whatever else shares this process.
+const actualShared = await import('../shared');
+mock.module('../shared', () => ({
+  ...actualShared,
+  loadCompatPagesService: async () => ({ getTopPages: mockGetTopPages }),
 }));
+
+afterAll(() => {
+  mock.module('../shared', () => actualShared);
+  mock.module('@openpanel/core', () => actualCore);
+});
 
 let registerPagePerformanceTools: typeof import('./page-performance').registerPagePerformanceTools;
 
 beforeAll(async () => {
-  // `loadCompatCh` (../shared) reaches ClickHouse through v1-compat.ts's
-  // memoized fallback singleton — a process-lifetime cache once resolved,
-  // so an earlier test file's `bun test` (no `--isolate`) run can have
-  // already resolved it against a DIFFERENT `@openpanel/db/src/clickhouse/client`
-  // mock (or none at all). Reset it so this file's own mock above is what
-  // gets picked up.
-  const { resetV1CompatServicesForTests } = await import(
-    '../../../../../v1-compat'
-  );
-  resetV1CompatServicesForTests();
   ({ registerPagePerformanceTools } = await import('./page-performance'));
-});
-
-afterAll(async () => {
-  const { resetV1CompatServicesForTests } = await import(
-    '../../../../../v1-compat'
-  );
-  resetV1CompatServicesForTests();
 });
 
 function makeServer() {

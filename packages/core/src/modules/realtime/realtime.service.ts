@@ -20,24 +20,26 @@
 //     (`@openpanel/redis`, plain callback), so both stacks call the exact
 //     same Redis subscription underneath.
 //
-// db/ch access is LAZY (`load*` below), not a static top-level import — see
-// insight.service.ts's header for the full reasoning (jobs.registry.ts and
-// rpc.router.ts pull this module into the eager barrel chain nearly every
-// core test file reaches, and constructing @openpanel/db's clients at import
-// time would spawn a pino-pretty transport worker thread per test file).
-// `clix` (query-builder.ts) has no such side effect and stays a static
-// import, same as cohort.service.ts / project.service.ts.
+// M10-005: every query function takes `ServiceDeps`. The ClickHouse CLIENT is
+// `deps.ch` — reads through shared/ch-query.ts, `clix(deps.ch)` for the four
+// builder queries — and the event buffer is `deps.buffers.event`, so the
+// `loadChClient` / `loadEventBuffer` lazy imports of @openpanel/db are gone
+// and the requestId reaches the query (ADR-018 R1, docs/TECH_DEBT.md §2, §4).
 //
-// ClickHouse queries here still go through clix/chQuery/sqlstring, not the
-// `sql` tag: ADR-013 converts the analytics read path one query per P7 task,
-// and this module's queries haven't been converted yet.
+// ClickHouse queries here still go through clix/sqlstring, not the `sql` tag:
+// ADR-013 converts the analytics read path one query per P7 task, and this
+// module's queries haven't been converted yet. `clix` and `TABLE_NAMES` are
+// therefore still needed and come from the v1-compat seam's pure-helper hop
+// (project.service.ts's `loadChHelpers` does the same) rather than a direct
+// @openpanel/db import.
 
-import { clix } from '@openpanel/db/src/clickhouse/query-builder';
 import type { IPublishChannels } from '@openpanel/redis';
 import { subMinutes } from 'date-fns';
 import sqlstring from 'sqlstring';
-import { loadDbBuffers } from '../../buffers/lazy-db-buffers';
-import type { IClickhouseEvent } from '../event/event.service';
+import type { ServiceDeps } from '../../services';
+import { chQuery } from '../../shared/ch-query';
+import { type IClickhouseEvent, transformEvent } from '../event/event.service';
+import { getProfiles } from '../profile/profile.service';
 
 const REALTIME_WINDOW_MINUTES = 30;
 const ACTIVE_SESSIONS_LIMIT = 50;
@@ -50,20 +52,8 @@ const MAP_BADGE_TOP_LIMIT = 3;
 const MAP_BADGE_RECENT_SESSIONS_LIMIT = 8;
 const CLUSTER_RADII_DEGREES = [0.5, 1, 3, 10];
 
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
-}
-
-function loadEventService() {
-  return import('../event/event.service');
-}
-
-function loadProfileService() {
-  return import('../profile/profile.service');
-}
-
-function loadEventBuffer() {
-  return loadDbBuffers().then((m) => m.eventBuffer);
+function loadChHelpers() {
+  return import('../../v1-compat').then((m) => m.compatChHelpers());
 }
 
 function since(): Date {
@@ -219,10 +209,14 @@ function buildRealtimeBadgeDetailsFilter(input: {
   return buildRealtimeLocationFilter(input.locations);
 }
 
-export async function getRealtimeCoordinates(projectId: string) {
-  const { chQuery, TABLE_NAMES } = await loadChClient();
+export async function getRealtimeCoordinates(
+  deps: ServiceDeps,
+  projectId: string
+) {
+  const { TABLE_NAMES } = await loadChHelpers();
 
   const res = await chQuery<CoordinatePoint>(
+    deps,
     `SELECT
       country,
       city,
@@ -242,24 +236,21 @@ export async function getRealtimeCoordinates(projectId: string) {
   return adaptiveCluster(res, COORDINATES_CLUSTER_TARGET);
 }
 
-export async function getRealtimeMapBadgeDetails(input: {
-  projectId: string;
-  detailScope: RealtimeBadgeDetailScope;
-  locations: RealtimeLocation[];
-}) {
-  const {
-    ch,
-    chQuery,
-    TABLE_NAMES,
-    formatClickhouseDate,
-    convertClickhouseDateToJs,
-  } = await loadChClient();
-  const { getProfiles } = await loadProfileService();
+export async function getRealtimeMapBadgeDetails(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    detailScope: RealtimeBadgeDetailScope;
+    locations: RealtimeLocation[];
+  }
+) {
+  const { clix, TABLE_NAMES, formatClickhouseDate, convertClickhouseDateToJs } =
+    await loadChHelpers();
 
   const sinceDate = formatClickhouseDate(since());
   const locationFilter = buildRealtimeBadgeDetailsFilter(input);
 
-  const summaryQuery = clix(ch)
+  const summaryQuery = clix(deps.ch)
     .select<{
       total_sessions: number;
       total_profiles: number;
@@ -272,7 +263,7 @@ export async function getRealtimeMapBadgeDetails(input: {
     .where('created_at', '>=', sinceDate)
     .rawWhere(locationFilter);
 
-  const topReferrersQuery = clix(ch)
+  const topReferrersQuery = clix(deps.ch)
     .select<{
       referrer_name: string;
       count: number;
@@ -286,7 +277,7 @@ export async function getRealtimeMapBadgeDetails(input: {
     .orderBy('count', 'DESC')
     .limit(MAP_BADGE_TOP_LIMIT);
 
-  const topPathsQuery = clix(ch)
+  const topPathsQuery = clix(deps.ch)
     .select<{
       origin: string;
       path: string;
@@ -301,7 +292,7 @@ export async function getRealtimeMapBadgeDetails(input: {
     .orderBy('count', 'DESC')
     .limit(MAP_BADGE_TOP_LIMIT);
 
-  const topEventsQuery = clix(ch)
+  const topEventsQuery = clix(deps.ch)
     .select<{
       name: string;
       count: number;
@@ -330,6 +321,7 @@ export async function getRealtimeMapBadgeDetails(input: {
         country: string;
         city: string;
       }>(
+        deps,
         `SELECT
           session_id,
           profile_id,
@@ -362,6 +354,7 @@ export async function getRealtimeMapBadgeDetails(input: {
     ]);
 
   const profiles = await getProfiles(
+    deps,
     recentSessions.map((item) => item.profile_id).filter(Boolean),
     input.projectId
   );
@@ -407,11 +400,14 @@ export async function getRealtimeMapBadgeDetails(input: {
   };
 }
 
-export async function getRealtimeActiveSessions(projectId: string) {
-  const { chQuery, TABLE_NAMES, formatClickhouseDate } = await loadChClient();
-  const { transformEvent } = await loadEventService();
+export async function getRealtimeActiveSessions(
+  deps: ServiceDeps,
+  projectId: string
+) {
+  const { TABLE_NAMES, formatClickhouseDate } = await loadChHelpers();
 
   const rows = await chQuery<IClickhouseEvent>(
+    deps,
     `SELECT
       name, session_id, created_at, path, origin, referrer, referrer_name,
       country, city, region, os, os_version, browser, browser_version,
@@ -425,10 +421,10 @@ export async function getRealtimeActiveSessions(projectId: string) {
   return rows.map(transformEvent);
 }
 
-export async function getRealtimePaths(projectId: string) {
-  const { ch, TABLE_NAMES, formatClickhouseDate } = await loadChClient();
+export async function getRealtimePaths(deps: ServiceDeps, projectId: string) {
+  const { clix, TABLE_NAMES, formatClickhouseDate } = await loadChHelpers();
 
-  return await clix(ch)
+  return await clix(deps.ch)
     .select<{
       origin: string;
       path: string;
@@ -452,10 +448,13 @@ export async function getRealtimePaths(projectId: string) {
     .execute();
 }
 
-export async function getRealtimeReferrals(projectId: string) {
-  const { ch, TABLE_NAMES, formatClickhouseDate } = await loadChClient();
+export async function getRealtimeReferrals(
+  deps: ServiceDeps,
+  projectId: string
+) {
+  const { clix, TABLE_NAMES, formatClickhouseDate } = await loadChHelpers();
 
-  return await clix(ch)
+  return await clix(deps.ch)
     .select<{
       referrer_name: string;
       count: number;
@@ -477,10 +476,10 @@ export async function getRealtimeReferrals(projectId: string) {
     .execute();
 }
 
-export async function getRealtimeGeo(projectId: string) {
-  const { ch, TABLE_NAMES, formatClickhouseDate } = await loadChClient();
+export async function getRealtimeGeo(deps: ServiceDeps, projectId: string) {
+  const { clix, TABLE_NAMES, formatClickhouseDate } = await loadChHelpers();
 
-  return await clix(ch)
+  return await clix(deps.ch)
     .select<{
       country: string;
       city: string;
@@ -509,8 +508,8 @@ export async function getRealtimeGeo(projectId: string) {
 // `subscribeToPublishedEvent`'s own shape. realtime.routes.ts (Elysia/Bun)
 // awaits these directly; nothing here is HTTP- or ws-library-specific.
 //
-// `@openpanel/redis` is LAZY here too, same reasoning as `loadChClient` above
-// but for a different failure mode: it has no import-time side effect (its
+// `@openpanel/redis` is LAZY here for its own reason: it has no
+// import-time side effect (its
 // clients connect lazily on first use — insight.service.ts already imports
 // `getRedisCache` from it statically), but several modules' tests replace the
 // whole package with `mock.module('@openpanel/redis', () => ({ subset }))`.
@@ -521,11 +520,11 @@ function loadRedis() {
   return import('@openpanel/redis');
 }
 
-export async function getActiveVisitorCount(
+export function getActiveVisitorCount(
+  deps: ServiceDeps,
   projectId: string
 ): Promise<number> {
-  const eventBuffer = await loadEventBuffer();
-  return await eventBuffer.getActiveVisitorCount(projectId);
+  return deps.buffers.event.getActiveVisitorCount(projectId);
 }
 
 /** V1: `wsVisitors` — re-count on every batch touching this project. */
@@ -585,4 +584,32 @@ export async function subscribeToOrganizationSubscriptionUpdates(
     'subscription_updated',
     onUpdate
   );
+}
+
+export interface RealtimeService {
+  getCoordinates(projectId: string): ReturnType<typeof getRealtimeCoordinates>;
+  getMapBadgeDetails(
+    input: Parameters<typeof getRealtimeMapBadgeDetails>[1]
+  ): ReturnType<typeof getRealtimeMapBadgeDetails>;
+  getActiveSessions(
+    projectId: string
+  ): ReturnType<typeof getRealtimeActiveSessions>;
+  getPaths(projectId: string): ReturnType<typeof getRealtimePaths>;
+  getReferrals(projectId: string): ReturnType<typeof getRealtimeReferrals>;
+  getGeo(projectId: string): ReturnType<typeof getRealtimeGeo>;
+  getActiveVisitorCount(projectId: string): Promise<number>;
+}
+
+export function createRealtimeService(deps: ServiceDeps): RealtimeService {
+  return {
+    getCoordinates: (projectId) => getRealtimeCoordinates(deps, projectId),
+    getMapBadgeDetails: (input) => getRealtimeMapBadgeDetails(deps, input),
+    getActiveSessions: (projectId) =>
+      getRealtimeActiveSessions(deps, projectId),
+    getPaths: (projectId) => getRealtimePaths(deps, projectId),
+    getReferrals: (projectId) => getRealtimeReferrals(deps, projectId),
+    getGeo: (projectId) => getRealtimeGeo(deps, projectId),
+    getActiveVisitorCount: (projectId) =>
+      getActiveVisitorCount(deps, projectId),
+  };
 }

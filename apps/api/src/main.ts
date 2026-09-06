@@ -252,6 +252,27 @@ function warnOnUnhandledSchedulers(schedulerIds: string[]): void {
 }
 
 /**
+ * The boot scope as `ServiceDeps`. `AppDeps` carries a `QueueProducerHandle`;
+ * a service wants an already-scoped `QueueProducers`, and outside a request
+ * there is nothing to correlate with, so the boot scope stamps
+ * `V1_COMPAT_REQUEST_ID` (M10-005 — the ingest consumer's event deps need the
+ * same shape the v1-compat seam does).
+ */
+function bootServiceDeps(
+  deps: AppDeps
+): Parameters<typeof setV1CompatServices>[0] {
+  return {
+    db: deps.db,
+    ch: deps.ch,
+    redis: deps.redis,
+    clients: deps.clients,
+    buffers: deps.buffers,
+    logger: deps.logger,
+    queues: deps.producers.scope({ requestId: V1_COMPAT_REQUEST_ID }),
+  };
+}
+
+/**
  * The Kafka events consumer. The kafkajs client, the topic, the consumer
  * group, the DLQ producer and the retry bounds all come from
  * `@openpanel/queue`, which is what keeps those names byte-identical across
@@ -263,12 +284,16 @@ async function startIngestConsumer(
   assertKafkaConfigured();
   enableEventsHeartbeat();
 
-  const eventDeps = await loadIncomingEventDeps(logger, async (input) => {
-    await deps.producers.queues.sessions.session.add(
-      sessionEndJobPayload(input),
-      sessionEndEnqueueOptions(input.closedSession.id)
-    );
-  });
+  const eventDeps = await loadIncomingEventDeps(
+    bootServiceDeps(deps),
+    logger,
+    async (input) => {
+      await deps.producers.queues.sessions.session.add(
+        sessionEndJobPayload(input),
+        sessionEndEnqueueOptions(input.closedSession.id)
+      );
+    }
+  );
 
   return await startKafkaEventsConsumer({
     createConsumer: createKafkaEventsConsumer,
@@ -471,15 +496,7 @@ async function main() {
   // exports with no `Ctx`, so the deps built above are registered once here
   // for them. Everything with a `Ctx` uses `ctx.services.*`. Deleted with
   // `packages/trpc` at P10.
-  setV1CompatServices({
-    db: deps.db,
-    ch: deps.ch,
-    redis: deps.redis,
-    clients: deps.clients,
-    buffers: deps.buffers,
-    logger: deps.logger,
-    queues: deps.producers.scope({ requestId: V1_COMPAT_REQUEST_ID }),
-  });
+  setV1CompatServices(bootServiceDeps(deps));
 
   // HTTP and default metrics register everywhere (TARGET_ARCHITECTURE §18).
   registerDefaultMetrics();

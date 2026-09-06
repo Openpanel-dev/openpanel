@@ -80,10 +80,11 @@ export const realtimeRoutes = defineRoutes((app) =>
       params: projectParams,
       async open(ws) {
         const { projectId } = ws.data.params;
+        const { ctx } = ws.data;
         rememberUnsubscribe(
           ws,
           await subscribeToVisitorActivity(projectId, () => {
-            getActiveVisitorCount(projectId).then(
+            getActiveVisitorCount(ctx, projectId).then(
               (count) => ws.send(String(count)),
               () => ws.send('0')
             );

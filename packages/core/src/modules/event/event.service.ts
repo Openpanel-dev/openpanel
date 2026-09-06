@@ -17,18 +17,25 @@
 // custom(sb)` — its only caller (event.conversions) is the typed
 // `conversionNames` option instead, since there is no builder to hand out.
 //
-// db/ch/buffer access is LAZY (`load*` below) for the reason
-// insight.service.ts's header gives: constructing @openpanel/db's clients at
-// import time spawns a pino-pretty worker per `bun test --isolate` file.
+// M10-005: every function that touches a database takes `ServiceDeps` and
+// reaches Postgres as `deps.db`, ClickHouse as `deps.ch` (through
+// shared/ch-query.ts) and the event/bot buffers as `deps.buffers.*`. The
+// `loadDb` / `loadChClient` / `loadDbBuffers` lazy loaders are gone, and so
+// are the two `import('@openpanel/core')` self-barrel hops this file made for
+// `resolveMaxLookbackDays` / `resolveDateRange` — both are imported straight
+// from `shared/` (docs/TECH_DEBT.md §2, §4). What stays lazy is named and
+// argued at each remaining `load*` below; none of them reach @openpanel/db.
 
 import { DateTime, toDots } from '@openpanel/common';
 import type { SqlFragment } from '@openpanel/db/src/clickhouse/sql';
 import type { EventMeta, Prisma } from '@openpanel/db/src/prisma-client';
-import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 import { clone, mergeDeepRight, uniq } from 'ramda';
-import { loadDbBuffers } from '../../buffers/lazy-db-buffers';
 import type { ServiceDeps } from '../../services';
+import { cacheablePerDeps } from '../../shared/cacheable-per-deps';
+import { chQuery } from '../../shared/ch-query';
+import { resolveDateRange } from '../../shared/date';
+import { resolveMaxLookbackDays } from '../../shared/lookback';
 import { getEventFiltersWhereClause } from '../chart/src/filter-where';
 import {
   getProfileById,
@@ -66,6 +73,9 @@ export {
 } from './src/event.sql';
 
 const EVENT_METAS_CACHE_SECONDS = 60 * 5;
+// V1's `cacheable(getEventMetas, ...)` derived this from the function's own
+// name; naming it keeps the Redis key `cachable:getEventMetas:<projectId>`.
+const EVENT_METAS_CACHE_NAME = 'getEventMetas';
 const TOP_EVENT_NAMES_CACHE_SECONDS = 60 * 10;
 const EVENT_LIST_DEFAULT_LOOKBACK_DAYS = 0.5;
 const EVENT_LIST_MAX_LOOKBACK_DAYS_DEFAULT = 365 * 5;
@@ -91,27 +101,15 @@ const QUERY_EVENTS_FILTER_TARGET = {
   groupsExpr: 'groups',
 } as const;
 
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
-}
-
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
 // Lazy for the same reason subscription.service.ts's is: core tests that
 // partially mock `@openpanel/redis` (no `getCache`) reach this module through
-// @openpanel/db's re-export shims and the core barrel.
+// the core barrel.
 function loadCache() {
   return import('@openpanel/redis').then((m) => m.getCache);
 }
 
 function loadFilterCompiler() {
   return import('../chart/src/table-filter-where');
-}
-
-function loadLookback() {
-  return import('@openpanel/core');
 }
 
 // Lazy: session.service → session-end → this module is a static chain, and a
@@ -121,10 +119,6 @@ function loadLookback() {
 // workspace (module_finalizers "no entry found for key").
 function loadSessionService() {
   return import('../session/session.service');
-}
-
-function loadDateService() {
-  return import('@openpanel/core');
 }
 
 export type IImportedEvent = Omit<
@@ -413,16 +407,16 @@ export function transformMinimalEvent(
   };
 }
 
-export async function getEventMetas(projectId: string) {
-  const db = await loadDb();
-  return db.eventMeta.findMany({
+export async function getEventMetas(deps: ServiceDeps, projectId: string) {
+  return deps.db.eventMeta.findMany({
     where: {
       projectId,
     },
   });
 }
 
-export const getEventMetasCached = cacheable(
+export const getEventMetasCached = cacheablePerDeps(
+  EVENT_METAS_CACHE_NAME,
   getEventMetas,
   EVENT_METAS_CACHE_SECONDS
 );
@@ -443,11 +437,15 @@ function emptyProfile(profileId: string, projectId: string): IServiceProfile {
   };
 }
 
-async function attachProfiles(events: IClickhouseEvent[], projectId: string) {
+async function attachProfiles(
+  deps: ServiceDeps,
+  events: IClickhouseEvent[],
+  projectId: string
+) {
   const ids = events
     .filter((e) => e.device_id !== e.profile_id)
     .map((e) => e.profile_id);
-  const profiles = await getProfilesCached(ids, projectId);
+  const profiles = await getProfilesCached(deps, ids, projectId);
 
   const map = new Map<string, IServiceProfile>();
   for (const profile of profiles) {
@@ -460,8 +458,12 @@ async function attachProfiles(events: IClickhouseEvent[], projectId: string) {
   }
 }
 
-async function attachMetas(events: IClickhouseEvent[], projectId: string) {
-  const metas = await getEventMetasCached(projectId);
+async function attachMetas(
+  deps: ServiceDeps,
+  events: IClickhouseEvent[],
+  projectId: string
+) {
+  const metas = await getEventMetasCached(deps, projectId);
   const map = new Map<string, EventMeta>();
   for (const meta of metas) {
     map.set(meta.name, meta);
@@ -472,17 +474,17 @@ async function attachMetas(events: IClickhouseEvent[], projectId: string) {
 }
 
 export async function getEvents(
+  deps: ServiceDeps,
   query: SqlFragment,
   options: GetEventsOptions = {}
 ): Promise<IServiceEvent[]> {
-  const { chQuery } = await loadChClient();
-  const events = await chQuery<IClickhouseEvent>(query);
+  const events = await chQuery<IClickhouseEvent>(deps, query);
   const projectId = events[0]?.project_id;
   if (options.profile && projectId) {
-    await attachProfiles(events, projectId);
+    await attachProfiles(deps, events, projectId);
   }
   if (options.meta && projectId) {
-    await attachMetas(events, projectId);
+    await attachMetas(deps, events, projectId);
   }
   return events.map(transformEvent);
 }
@@ -497,7 +499,10 @@ export async function getEvents(
  * else (session_start, session_end) the session-row update is correctly a
  * no-op anyway.
  */
-export async function createEvent(payload: IServiceCreateEventPayloadWithId) {
+export async function createEvent(
+  deps: ServiceDeps,
+  payload: IServiceCreateEventPayloadWithId
+) {
   if (!payload.profileId && payload.deviceId) {
     payload.profileId = payload.deviceId;
   }
@@ -542,8 +547,7 @@ export async function createEvent(payload: IServiceCreateEventPayloadWithId) {
     groups: payload.groups ?? [],
   };
 
-  const { eventBuffer } = await loadDbBuffers();
-  eventBuffer.add(event);
+  deps.buffers.event.add(event);
 
   const promises: Promise<unknown>[] = [];
 
@@ -589,7 +593,7 @@ export async function createEvent(payload: IServiceCreateEventPayloadWithId) {
     // (c) recency queries should derive from event timestamps, not from
     //     profile.last_seen_at.
     if (payload.name === 'session_start' || payload.name === 'session_end') {
-      promises.push(upsertProfile(profile, true));
+      promises.push(upsertProfile(deps, profile, true));
     }
   }
 
@@ -713,6 +717,7 @@ function hasEventListLookback(options: GetEventListOptions): boolean {
 }
 
 export async function getEventList(
+  deps: ServiceDeps,
   options: GetEventListOptions
 ): Promise<IServiceEvent[]> {
   const {
@@ -732,7 +737,6 @@ export async function getEventList(
     dateIntervalInDays = EVENT_LIST_DEFAULT_LOOKBACK_DAYS,
   } = options;
 
-  const { resolveMaxLookbackDays } = await loadLookback();
   // Deployment-tunable ceiling for the empty-result lookback (see lookback.ts).
   const maxLookbackDays = resolveMaxLookbackDays(
     EVENT_LIST_MAX_LOOKBACK_DAYS_ENV,
@@ -770,14 +774,14 @@ export async function getEventList(
     conversionNames,
   };
 
-  const data = await getEvents(eventListQuery(query), {
+  const data = await getEvents(deps, eventListQuery(query), {
     profile: select.profile ?? true,
     meta: select.meta ?? true,
   });
 
   // If we dont get any events, try without the cursor window
   if (data.length === 0 && hasLookback && lookbackDays < maxLookbackDays) {
-    return getEventList({
+    return getEventList(deps, {
       ...options,
       dateIntervalInDays: dateIntervalInDays * 2,
     });
@@ -786,16 +790,19 @@ export async function getEventList(
   return data;
 }
 
-export async function getEventsCount({
-  projectId,
-  profileId,
-  groupId,
-  cohortId,
-  events,
-  filters,
-  startDate,
-  endDate,
-}: Omit<GetEventListOptions, 'cursor' | 'take'>): Promise<number> {
+export async function getEventsCount(
+  deps: ServiceDeps,
+  {
+    projectId,
+    profileId,
+    groupId,
+    cohortId,
+    events,
+    filters,
+    startDate,
+    endDate,
+  }: Omit<GetEventListOptions, 'cursor' | 'take'>
+): Promise<number> {
   const { filterClauses, joins } = await compileEventFilters(
     filters,
     projectId
@@ -811,20 +818,15 @@ export async function getEventsCount({
     filterClauses,
     joins,
   };
-  const { chQuery } = await loadChClient();
-  const res = await chQuery<{ count: number }>(eventsCountQuery(query));
+  const res = await chQuery<{ count: number }>(deps, eventsCountQuery(query));
   return res[0]?.count ?? 0;
 }
 
-export async function createBotEvent({
-  name,
-  type,
-  projectId,
-  createdAt,
-  path,
-}: IServiceCreateBotEventPayload) {
-  const { botBuffer } = await loadDbBuffers();
-  return botBuffer.add({
+export async function createBotEvent(
+  deps: ServiceDeps,
+  { name, type, projectId, createdAt, path }: IServiceCreateBotEventPayload
+) {
+  return deps.buffers.bot.add({
     id: crypto.randomUUID(),
     name,
     type,
@@ -834,9 +836,11 @@ export async function createBotEvent({
   });
 }
 
-export async function getConversionEventNames(projectId: string) {
-  const db = await loadDb();
-  return db.eventMeta.findMany({
+export async function getConversionEventNames(
+  deps: ServiceDeps,
+  projectId: string
+) {
+  return deps.db.eventMeta.findMany({
     where: {
       projectId,
       conversion: true,
@@ -844,19 +848,22 @@ export async function getConversionEventNames(projectId: string) {
   });
 }
 
-export async function getTopPages({
-  projectId,
-  cursor,
-  take,
-  search,
-}: {
-  projectId: string;
-  cursor?: number;
-  take: number;
-  search?: string;
-}): Promise<IServicePage[]> {
-  const { chQuery } = await loadChClient();
+export async function getTopPages(
+  deps: ServiceDeps,
+  {
+    projectId,
+    cursor,
+    take,
+    search,
+  }: {
+    projectId: string;
+    cursor?: number;
+    take: number;
+    search?: string;
+  }
+): Promise<IServicePage[]> {
   return chQuery<IServicePage>(
+    deps,
     topPagesQuery({
       projectId,
       take,
@@ -867,22 +874,25 @@ export async function getTopPages({
 }
 
 /** V1's `eventService.getById`. */
-export async function getEventById({
-  projectId,
-  id,
-  createdAt,
-}: {
-  projectId: string;
-  id: string;
-  createdAt?: Date;
-}): Promise<IServiceEvent | null> {
-  const { chQuery } = await loadChClient();
+export async function getEventById(
+  deps: ServiceDeps,
+  {
+    projectId,
+    id,
+    createdAt,
+  }: {
+    projectId: string;
+    id: string;
+    createdAt?: Date;
+  }
+): Promise<IServiceEvent | null> {
   const [rows, metas] = await Promise.all([
     chQuery<IClickhouseEvent>(
+      deps,
       eventByIdQuery({ projectId, id, createdAt }),
       CLIX_SESSION_TIMEZONE
     ),
-    getEventMetasCached(projectId),
+    getEventMetasCached(deps, projectId),
   ]);
   const row = rows[0];
   if (!row) {
@@ -891,7 +901,7 @@ export async function getEventById({
   const event = transformEvent(row);
 
   if (event.profileId) {
-    const profile = await getProfileById(event.profileId, projectId);
+    const profile = await getProfileById(deps, event.profileId, projectId);
     if (profile) {
       event.profile = profile;
     }
@@ -902,14 +912,17 @@ export async function getEventById({
   return event;
 }
 
-export async function getTopEventNames(projectId: string): Promise<string[]> {
+export async function getTopEventNames(
+  deps: ServiceDeps,
+  projectId: string
+): Promise<string[]> {
   const getCache = await loadCache();
   return getCache(
     `mcp:event-names:${projectId}`,
     TOP_EVENT_NAMES_CACHE_SECONDS,
     async () => {
-      const { chQuery } = await loadChClient();
       const rows = await chQuery<{ name: string; count: number }>(
+        deps,
         topEventNamesQuery(projectId),
         CLIX_SESSION_TIMEZONE
       );
@@ -918,8 +931,10 @@ export async function getTopEventNames(projectId: string): Promise<string[]> {
   );
 }
 
-export const listEventNamesCore = (projectId: string): Promise<string[]> =>
-  getTopEventNames(projectId);
+export const listEventNamesCore = (
+  deps: ServiceDeps,
+  projectId: string
+): Promise<string[]> => getTopEventNames(deps, projectId);
 
 /**
  * Top-level filterable columns on the `events` table. These apply to
@@ -957,28 +972,34 @@ export const EVENT_COLUMNS = [
 
 export type IEventColumn = (typeof EVENT_COLUMNS)[number];
 
-export async function listEventPropertiesCore(input: {
-  projectId: string;
-  eventName?: string;
-}): Promise<{
+export async function listEventPropertiesCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    eventName?: string;
+  }
+): Promise<{
   columns: readonly string[];
   properties: Array<{ property_key: string; event_name: string }>;
 }> {
-  const { chQuery } = await loadChClient();
   const rows = await chQuery<{ property_key: string; event_name: string }>(
+    deps,
     eventPropertiesQuery(input),
     CLIX_SESSION_TIMEZONE
   );
   return { columns: EVENT_COLUMNS, properties: rows };
 }
 
-export async function getEventPropertyValuesCore(input: {
-  projectId: string;
-  eventName: string;
-  propertyKey: string;
-}): Promise<{ event: string; property: string; values: string[] }> {
-  const { chQuery } = await loadChClient();
+export async function getEventPropertyValuesCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    eventName: string;
+    propertyKey: string;
+  }
+): Promise<{ event: string; property: string; values: string[] }> {
   const rows = await chQuery<{ value: string }>(
+    deps,
     eventPropertyValuesQuery(input),
     CLIX_SESSION_TIMEZONE
   );
@@ -1044,14 +1065,13 @@ function queryEventsEquals(
 // is unique and narrow enough to query directly. Without this, an older
 // session's events would be silently excluded. A caller that still passes
 // dates alongside a sessionId is honoured.
-async function queryEventsDateRange(
+function queryEventsDateRange(
   input: QueryEventsInput
-): Promise<{ start: string; end: string } | undefined> {
+): { start: string; end: string } | undefined {
   const wantsRange = !input.sessionId || input.startDate || input.endDate;
   if (!wantsRange) {
     return undefined;
   }
-  const { resolveDateRange } = await loadDateService();
   const { startDate, endDate } = resolveDateRange(
     input.startDate,
     input.endDate
@@ -1063,6 +1083,7 @@ async function queryEventsDateRange(
 }
 
 export async function queryEventsCore(
+  deps: ServiceDeps,
   input: QueryEventsInput
 ): Promise<IClickhouseEvent[]> {
   let filterClauses: CompiledFilterClauses = {};
@@ -1074,8 +1095,8 @@ export async function queryEventsCore(
       QUERY_EVENTS_FILTER_TARGET
     );
   }
-  const { chQuery } = await loadChClient();
   return chQuery<IClickhouseEvent>(
+    deps,
     queryEventsQuery({
       projectId: input.projectId,
       sessionId: input.sessionId,
@@ -1084,7 +1105,7 @@ export async function queryEventsCore(
       eventNames: input.eventNames,
       equals: queryEventsEquals(input),
       properties: input.properties,
-      dateRange: await queryEventsDateRange(input),
+      dateRange: queryEventsDateRange(input),
       filterClauses,
       limit: input.limit ?? QUERY_EVENTS_DEFAULT_LIMIT,
     }),
@@ -1102,16 +1123,12 @@ export interface UpdateEventMetaInput {
   conversion?: boolean;
 }
 
-export async function updateEventMeta({
-  projectId,
-  name,
-  icon,
-  color,
-  conversion,
-}: UpdateEventMetaInput) {
-  await getEventMetasCached.clear(projectId);
-  const db = await loadDb();
-  return db.eventMeta.upsert({
+export async function updateEventMeta(
+  deps: ServiceDeps,
+  { projectId, name, icon, color, conversion }: UpdateEventMetaInput
+) {
+  await getEventMetasCached.clear(deps, projectId);
+  return deps.db.eventMeta.upsert({
     where: {
       name_projectId: {
         name,
@@ -1123,12 +1140,15 @@ export async function updateEventMeta({
   });
 }
 
-export async function getEventDetails(input: {
-  projectId: string;
-  id: string;
-  createdAt?: Date;
-}) {
-  const event = await getEventById(input);
+export async function getEventDetails(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    id: string;
+    createdAt?: Date;
+  }
+) {
+  const event = await getEventById(deps, input);
   if (!event) {
     return null;
   }
@@ -1203,11 +1223,11 @@ function toEventListPage(items: IServiceEvent[]) {
   };
 }
 
-export async function getEventListPage({
-  columnVisibility,
-  ...input
-}: EventListPageInput) {
-  const items = await getEventList({
+export async function getEventListPage(
+  deps: ServiceDeps,
+  { columnVisibility, ...input }: EventListPageInput
+) {
+  const items = await getEventList(deps, {
     projectId: input.projectId,
     filters: input.filters,
     profileId: input.profileId ?? undefined,
@@ -1234,11 +1254,11 @@ export type ConversionListPageInput = Pick<
   | 'columnVisibility'
 >;
 
-export async function getConversionListPage({
-  columnVisibility,
-  ...input
-}: ConversionListPageInput) {
-  const conversions = await getConversionEventNames(input.projectId);
+export async function getConversionListPage(
+  deps: ServiceDeps,
+  { columnVisibility, ...input }: ConversionListPageInput
+) {
+  const conversions = await getConversionEventNames(deps, input.projectId);
   const filteredConversions = conversions.filter((event) => {
     if (input.events && input.events.length > 0) {
       return input.events.includes(event.name);
@@ -1250,7 +1270,7 @@ export async function getConversionListPage({
     return { data: [], meta: { next: null } };
   }
 
-  const items = await getEventList({
+  const items = await getEventList(deps, {
     projectId: input.projectId,
     startDate: input.startDate ?? undefined,
     endDate: input.endDate ?? undefined,
@@ -1263,21 +1283,24 @@ export async function getConversionListPage({
   return toEventListPage(items);
 }
 
-export async function getBotEventsPage({
-  projectId,
-  cursor,
-  limit,
-}: {
-  projectId: string;
-  cursor?: number;
-  limit: number;
-}) {
-  const { chQuery } = await loadChClient();
+export async function getBotEventsPage(
+  deps: ServiceDeps,
+  {
+    projectId,
+    cursor,
+    limit,
+  }: {
+    projectId: string;
+    cursor?: number;
+    limit: number;
+  }
+) {
   const [events, counts] = await Promise.all([
     chQuery<IClickhouseBotEvent>(
+      deps,
       botEventsQuery({ projectId, limit, offset: (cursor ?? 0) * limit })
     ),
-    chQuery<{ count: number }>(botEventsCountQuery(projectId)),
+    chQuery<{ count: number }>(deps, botEventsCountQuery(projectId)),
   ]);
 
   return {
@@ -1289,9 +1312,9 @@ export async function getBotEventsPage({
   };
 }
 
-export async function getTopOrigins(projectId: string) {
-  const { chQuery } = await loadChClient();
+export async function getTopOrigins(deps: ServiceDeps, projectId: string) {
   const res = await chQuery<{ origin: string; count: number }>(
+    deps,
     topOriginsQuery(projectId)
   );
   return res.filter(
@@ -1310,6 +1333,9 @@ export interface EventService {
   ): Promise<{ document: IClickhouseEvent }>;
 }
 
-export function createEventService(_deps: ServiceDeps): EventService {
-  return { getById: getEventById, create: createEvent };
+export function createEventService(deps: ServiceDeps): EventService {
+  return {
+    getById: (input) => getEventById(deps, input),
+    create: (payload) => createEvent(deps, payload),
+  };
 }
