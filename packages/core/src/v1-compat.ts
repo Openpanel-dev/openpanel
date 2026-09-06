@@ -1,16 +1,16 @@
-// V1 COMPAT SEAM — one file, deleted whole when `packages/trpc` dies at P10.
-//
-// `apps/api/src/main.ts` still mounts `@openpanel/trpc`'s `appRouter`, not
-// this package's `rpc.router.ts`, so V1's 28 routers are the live `/trpc`
-// surface; the mcp and assistant tool runtimes call this package the same
-// way. All of them reach a module through a BARE barrel export and have no
-// `ServiceDeps` to hand it — `packages/trpc` is outside this wave's scope,
-// so its call sites cannot change here.
+// V1 COMPAT SEAM — stays after `packages/trpc` and `packages/queue` are
+// deleted (M11-004); it is not part of that deletion. `apps/api/src/main.ts`
+// has mounted this package's own `rpc.router.ts` `appRouter` since M11-001,
+// but the mcp and assistant tool runtimes still reach a module through a
+// BARE barrel export and have no `ServiceDeps` to hand it — MCP tool
+// handlers have a fixed `@modelcontextprotocol/sdk` signature
+// (modules/mcp/src/auth.ts lazy-imports this file; the gsc tools call
+// getGsc* through it) and the assistant tool runtime is the same shape.
 //
 // The alternative was to leave every module its own
 // `import('@openpanel/db/...')` loader, which is exactly the drift
 // docs/TECH_DEBT.md §4 exists to remove. Instead the boot scope registers
-// the deps it has ALREADY built, once, here, and the barrel's V1 wrappers
+// the deps it has ALREADY built, once, here, and the barrel's bare wrappers
 // read them from this one place.
 //
 // Nothing that has a `Ctx` comes through here. HTTP routes, core's own
@@ -19,9 +19,9 @@
 // query (ADR-018). What comes through this file gets the boot logger —
 // exactly what those callers got before this wave, no worse.
 //
-// A process that never builds `AppDeps` — `packages/trpc`'s own vitest
-// suites, which exercise a router directly — falls back to the singletons
-// the deleted module-level `loadDb()` / `loadChClient()` loaders reached, so
+// A process that never builds `AppDeps` — this package's own unit suites,
+// which exercise a service directly — falls back to the singletons the
+// deleted module-level `loadDb()` / `loadChClient()` loaders reached, so
 // those callers behave exactly as they did before this wave. The fallback is
 // LAZY: importing `@openpanel/core` still constructs no database, which is
 // what keeps `bun test` runnable offline.
@@ -1001,8 +1001,10 @@ export const deleteConversation: Services['conversation']['deleteConversation'] 
 
 // M10-005: the runtime path's bare spellings. `event`, `profile`, `group`,
 // `misc`, `overview`/`pages` and `realtime` all gained a `ServiceDeps` first
-// parameter; `packages/trpc`'s routers and `@openpanel/queue`'s notification
-// dispatch still call them bare, and reach them through here.
+// parameter; V1's `@openpanel/trpc` routers and `@openpanel/queue`'s
+// notification dispatch called them bare through here before both were
+// deleted (M11-003 moved notification dispatch into this module's own
+// src/notification-dispatch.ts; M11-004 deleted packages/trpc).
 
 // --- event -------------------------------------------------------------------
 
@@ -1467,11 +1469,12 @@ export const runPingCron: (
 ) => ReturnType<typeof misc_runPingCron> = (...args) =>
   compatServiceDeps().then((deps) => misc_runPingCron(deps, ...args));
 
-// `packages/trpc`'s overview and event routers call these as OBJECTS
-// (`overviewService.getMetrics(...)`, `pagesService.getTopPages(...)`), and
-// one of them still does `.bind(overviewService)`. Both were module-singleton
-// class instances before M10-005; here they are plain objects of bare
-// wrappers, so the call sites read identically and `bind` stays a no-op.
+// V1's (now-deleted) `@openpanel/trpc` overview and event routers called
+// these as OBJECTS (`overviewService.getMetrics(...)`,
+// `pagesService.getTopPages(...)`), and one of them still did
+// `.bind(overviewService)`. Both were module-singleton class instances
+// before M10-005; here they are plain objects of bare wrappers, so those
+// call sites read identically and `bind` stayed a no-op.
 export const overviewService = {
   isPageFilter: (...args: Parameters<Services['overview']['isPageFilter']>) =>
     isPageFilter(...args),

@@ -49,10 +49,10 @@ import {
 } from './overview.service';
 
 // Lazy, not a static import: the assistant module's chatApp chain reaches
-// deep into @openpanel/db and @openpanel/queue (see index.ts's own
-// `loadAssistant()` for the full story) — a static import here would pull
-// that chain into this module's evaluation, and this module is itself a
-// static import of rpc.router.ts/index.ts's own barrel.
+// deep into @openpanel/db (see index.ts's own `loadAssistant()` for the full
+// story) — a static import here would pull that chain into this module's
+// evaluation, and this module is itself a static import of
+// rpc.router.ts/index.ts's own barrel.
 function loadFilterCommand() {
   return import('../assistant/src/filter-command');
 }

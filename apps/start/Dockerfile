@@ -26,7 +26,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Apps
 COPY apps/start/package.json ./apps/start/
 # Packages - Only copy what start app needs
-COPY packages/trpc/package.json packages/trpc/
 COPY packages/json/package.json packages/json/
 COPY packages/common/package.json packages/common/
 COPY packages/payments/package.json packages/payments/
@@ -81,7 +80,6 @@ COPY --from=build /app/pnpm-workspace.yaml ./
 # Copy package.json files for production install
 COPY --from=build /app/apps/start/package.json ./apps/start/
 COPY --from=build /app/packages/db/package.json ./packages/db/
-COPY --from=build /app/packages/trpc/package.json ./packages/trpc/
 COPY --from=build /app/packages/auth/package.json ./packages/auth/
 COPY --from=build /app/packages/json/package.json ./packages/json/
 COPY --from=build /app/packages/common/package.json ./packages/common/
@@ -139,7 +137,6 @@ RUN set -eux; \
 
 # Copy necessary packages
 COPY --from=build /app/packages/db ./packages/db
-COPY --from=build /app/packages/trpc ./packages/trpc
 COPY --from=build /app/packages/auth ./packages/auth
 COPY --from=build /app/packages/json ./packages/json
 COPY --from=build /app/packages/common ./packages/common

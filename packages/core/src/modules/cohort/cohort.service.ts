@@ -2,9 +2,10 @@
 // producer wrapper (`enqueueCohortCompute`) moves here too — db cannot hold
 // producers (ADR-007's discovery: "packages/db/src/services/cohort.service.ts:12
 // imports cohortComputeQueue from @openpanel/queue" was flagged as reaching
-// back into infrastructure it should not know about). packages/db loses this
-// file entirely: nothing outside trpc/worker/this module's own tests reached
-// it through @openpanel/db's barrel.
+// back into infrastructure it should not know about; @openpanel/queue itself
+// was deleted at M11-004). packages/db lost this file entirely: nothing
+// outside the now-deleted trpc/worker and this module's own tests reached it
+// through @openpanel/db's barrel.
 //
 // db/ch access is LAZY (`load*` below), not a static top-level import — see
 // insight.service.ts's header for the full reasoning (jobs.registry.ts and
@@ -23,14 +24,15 @@
 // connection at all.
 //
 // V1's trpc router (packages/trpc/src/routers/cohort.ts) and worker cron job
-// (apps/worker/src/jobs/cron.cohort-refresh.ts) stay live (DELEGATE PATTERN)
-// and enqueue by calling @openpanel/queue's cohortComputeQueue directly,
-// same as gsc's V1 router/worker do for gscQueue (M5-002) — @openpanel/queue
-// itself imports @openpanel/core for its logger (packages/queue/src/queues.ts),
-// so core cannot import @openpanel/queue back without a real package cycle.
-// `CohortService.enqueueCompute` (below) is the canonical, ctx.queues-based
-// wrapper for callers that already have a Ctx (this module's own rpc
-// mutations and its cron fragment).
+// (apps/worker/src/jobs/cron.cohort-refresh.ts) used to stay live (DELEGATE
+// PATTERN) and enqueue by calling @openpanel/queue's cohortComputeQueue
+// directly, same as gsc's V1 router/worker did for gscQueue (M5-002) —
+// @openpanel/queue itself imported @openpanel/core for its logger, so core
+// could not import @openpanel/queue back without a real package cycle. Both
+// delegates are gone now (apps/worker at P9, packages/trpc/packages/queue at
+// M11-004). `CohortService.enqueueCompute` (below) is the canonical,
+// ctx.queues-based wrapper for callers that already have a Ctx (this
+// module's own rpc mutations and its cron fragment).
 
 import type { ClickHouseSettings } from '@clickhouse/client';
 import type { IChartEventFilter } from '@openpanel/validation';

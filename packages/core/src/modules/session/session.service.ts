@@ -503,9 +503,9 @@ export interface SessionService {
   ): Promise<IServiceSession & { hasReplay: boolean }>;
   /**
    * Enqueue one `session_end` job, idempotent on the closed session's id.
-   * The ctx.queues-based producer; V1's apps/worker keeps its own
-   * @openpanel/queue producer (utils/session-handler.ts) because core cannot
-   * import @openpanel/queue back (see cohort.service.ts's header).
+   * The ctx.queues-based producer; V1's now-deleted apps/worker kept its own
+   * @openpanel/queue producer (utils/session-handler.ts) because core could
+   * not import @openpanel/queue back (see cohort.service.ts's header).
    */
   enqueueSessionEnd(input: EnqueueSessionEndInput): Promise<void>;
 }

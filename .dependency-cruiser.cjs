@@ -111,8 +111,11 @@ module.exports = {
         'real value imports. (2) packages/core/src/v1-compat.ts — THE declared composition ' +
         "seam (ADR-007; that file's own header). It is where the boot scope registers the " +
         'deps it already built, and the only thing behind it is the lazy fallback for a ' +
-        "process that never built AppDeps (packages/trpc's own suites). Nothing holding a " +
-        'Ctx comes through it. It is deleted whole with packages/trpc at P10. ' +
+        "caller with no Ctx to thread through — MCP's tool handlers have a fixed " +
+        "@modelcontextprotocol/sdk signature (modules/mcp/src/auth.ts lazy-imports it; the gsc " +
+        'tools reach getGsc* through it), and the assistant tool runtime is the same shape. ' +
+        'Nothing holding a Ctx comes through it. M11-004 corrects an earlier claim here: this ' +
+        'file is NOT deleted with packages/trpc — it stays as that seam. ' +
         '(3) packages/core/src/code-migrations/** — one-shot CLI scripts run by ' +
         '`migrate.ts` (`pnpm migrate:deploy:code`), outside the app, with no request and no ' +
         'Ctx to lose; ADR-007 puts code-migrations/ in core and keeps clickhouse/migration.ts ' +

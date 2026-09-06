@@ -19,9 +19,10 @@ test('the mount surface is curated', () => {
 });
 
 // ONE tRPC instance (ADR-009): `initTRPC` is called in rpc/base.ts and
-// nowhere else, so `@openpanel/trpc` has to reach the builder, the router
-// factory and the two injected middleware factories through the barrel.
-// This block shrinks as the 28 routers move into core's modules (P5-P8).
+// nowhere else. All 28 routers now build on this barrel's builder, router
+// factory and the two injected middleware factories (M11-001); V1's
+// `@openpanel/trpc` used to reach them the same way before it was deleted
+// (M11-004).
 test('the rpc base is on the barrel, so there is one tRPC instance', () => {
   expect(core.procedure).toBeDefined();
   expect(core.middleware).toBeTypeOf('function');

@@ -228,16 +228,16 @@ export {
   getChatRunContext,
   runFilterCommand,
 } from './modules/assistant/assistant.service';
-// Dissolved from @openpanel/auth (M4-007) — apps/api's OAuth callbacks and
-// @openpanel/trpc's auth/share/user/gsc routers call these directly, the same
-// way they reach the other dissolved leaf packages here. `hashPassword` is
-// renamed on the way out: `./shared/crypto` already owns that name for the
-// (unrelated) scrypt hash client secrets use.
+// Dissolved from @openpanel/auth (M4-007) — apps/api's OAuth callbacks call
+// these directly; V1's now-deleted @openpanel/trpc auth/share/user/gsc
+// routers did too, the same way they reached the other dissolved leaf
+// packages here. `hashPassword` is renamed on the way out: `./shared/crypto`
+// already owns that name for the (unrelated) scrypt hash client secrets use.
 //
 // The sign-up/sign-in/TOTP/reset-password/share/OAuth-callback half (M6-003)
-// joined it here — packages/trpc's auth router and
-// apps/api/src/controllers/oauth-callback.controller.tsx call these
-// directly, the same way V1 reaches every other dissolved service here.
+// joined it here — V1's now-deleted packages/trpc auth router and
+// apps/api/src/controllers/oauth-callback.controller.tsx called these
+// directly, the same way V1 reached every other dissolved service here.
 export type {
   AuthProvider,
   AuthService,
@@ -562,9 +562,9 @@ export {
 export { checkNotificationRulesForEvent } from './modules/notification/src/notification-dispatch';
 // New module (M6-003) — the onboarding-project mutation and the onboarding
 // email drip, neither of which had a packages/db/src/services/* home to move
-// from. packages/trpc's onboarding router and apps/worker's onboarding cron
-// job call these directly, the same way V1 reaches every other dissolved
-// service here.
+// from. V1's now-deleted packages/trpc onboarding router and apps/worker's
+// onboarding cron job called these directly, the same way V1 reached every
+// other dissolved service here.
 export type {
   CreateOnboardingProjectResult,
   OnboardingCronSummary,
@@ -1014,11 +1014,12 @@ export type {
 } from './modules/tools/src/site-checker';
 export { runSiteCheck } from './modules/tools/src/site-checker';
 export { dashboardRoutes, opsRoutes, publicApiRoutes } from './rest.routes';
-// The RPC base is on the barrel because it is the seam `@openpanel/trpc`
-// builds its 28 routers on: ONE tRPC instance, mounted by V1's Fastify
-// adapter and by V2's `createTrpcFetchHandler` alike (ADR-009). Those routers
-// move into `modules/<name>/<name>.rpc.ts` with their waves (P5-P8), and this
-// block shrinks back to what apps/api needs when the last one has moved.
+// The RPC base is on the barrel because it is the seam every module's own
+// `<name>.rpc.ts` builds its router on: ONE tRPC instance (ADR-009), mounted
+// by V2's `createTrpcFetchHandler`. V1's now-deleted `@openpanel/trpc`
+// reached the same builder the same way, before all 28 routers moved into
+// `modules/<name>/<name>.rpc.ts` (M11-001) and the package itself was
+// deleted (M11-004).
 export type {
   CacheMiddlewareDeps,
   EnforceRateLimit,

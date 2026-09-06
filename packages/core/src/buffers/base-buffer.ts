@@ -32,12 +32,13 @@ export interface BufferDeps {
    * a second client (and a second pino transport) outside any scope.
    *
    * OPTIONAL, deliberately: `@openpanel/queue`'s process-wide buffer
-   * singleton (packages/queue/src/buffers.ts) is a pre-`AppDeps` caller that
-   * has no client to hand in and lives outside this wave's scope. When it is
-   * absent, `resolveCh()` reaches the boot scope through the declared
-   * v1-compat seam — which, once `main.ts` has registered, is the very same
-   * client, not a second one. Both the field and the fallback die with
-   * `packages/queue` at P10.
+   * singleton used to be the pre-`AppDeps` caller with no client to hand
+   * in; that caller was deleted with the package (M11-004), but
+   * `apps/api/e2e/legacy-job-proof.ts` — a BullMQ-keys-only proof that never
+   * flushes to ClickHouse — builds `BufferDeps` the same way, so the field
+   * and the fallback stay. When it is absent, `resolveCh()` reaches the boot
+   * scope through the declared v1-compat seam — which, once `main.ts` has
+   * registered, is the very same client, not a second one.
    */
   ch?: ServiceDeps['ch'];
   /**

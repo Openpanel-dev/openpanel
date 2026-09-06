@@ -8,8 +8,10 @@
 // That injection is not decoration. Core must stay importable without a
 // database — `bun test` loads this package with no DATABASE_URL and no Prisma
 // client — and it is the same seam `createCacheMiddleware` and
-// `createRateLimitMiddleware` already use in rpc/base.ts. `@openpanel/trpc`
-// binds it to the real services; a test binds it to two functions.
+// `createRateLimitMiddleware` already use in rpc/base.ts. `auth.service.ts`'s
+// `createAccessChecks` call binds it to the real services (M10-002); V1's
+// now-deleted `@openpanel/trpc` used to bind it the same way; a test binds
+// it to two functions.
 
 import { TRPCForbiddenError } from '../rpc/errors';
 

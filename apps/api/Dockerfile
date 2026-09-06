@@ -50,7 +50,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 # Packages — @openpanel/api's workspace closure, exactly as pnpm computes it
 # (verified against `pnpm --filter "@openpanel/api..." list --depth -1`: these
-# 11, plus the private tooling/typescript devDependency, which --prod below
+# 9, plus the private tooling/typescript devDependency, which --prod below
 # never installs, so its manifest is deliberately not copied here). This list
 # is still hand-maintained: Docker's COPY only accepts a glob for the *last*
 # path segment, so `packages/*/package.json` flattens every match into one
@@ -64,10 +64,8 @@ COPY apps/api/package.json ./apps/api/
 # graph changes.
 COPY packages/core/package.json packages/core/
 COPY packages/db/package.json packages/db/
-COPY packages/trpc/package.json packages/trpc/
 COPY packages/json/package.json packages/json/
 COPY packages/email/package.json packages/email/
-COPY packages/queue/package.json packages/queue/
 COPY packages/redis/package.json packages/redis/
 COPY packages/common/package.json packages/common/
 COPY packages/payments/package.json packages/payments/

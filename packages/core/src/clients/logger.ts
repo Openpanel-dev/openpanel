@@ -100,7 +100,7 @@ export function getServiceName(name: string): string {
 // pino-pretty's transport runs in a worker thread that pino locates via
 // require.resolve at the CALLING module's location. Under Bun that
 // resolution is broken for a transitive dependency (a caller outside
-// @openpanel/core, e.g. @openpanel/queue's module-scope `createLogger` call)
+// @openpanel/core, e.g. apps/api/src/main.ts's own `createLogger` call)
 // and crashes the process instead of the log line — deterministic on this
 // box, not a flake. Node has no such issue, so this only turns pretty
 // printing off for the Bun-booted V2 API; every Node-booted process

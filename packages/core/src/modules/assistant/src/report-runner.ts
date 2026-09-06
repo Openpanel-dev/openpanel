@@ -6,9 +6,9 @@
 // core cannot inherit: `@openpanel/mcp` already depends on `@openpanel/core`
 // (its auth + session-manager modules), so core importing `@openpanel/mcp`
 // back would be a real package cycle (the same shape cohort.service.ts's
-// header documents for `@openpanel/queue`). ADR-007 also explicitly defers
-// unifying MCP's tool definitions with assistant's, so reaching into mcp is
-// not the fix either.
+// header documents for the now-deleted `@openpanel/queue`). ADR-007 also
+// explicitly defers unifying MCP's tool definitions with assistant's, so
+// reaching into mcp is not the fix either.
 //
 // The result is a second copy of this dispatch logic, which is exactly the
 // "four independent wrapper layers over the same 34 *Core functions"
