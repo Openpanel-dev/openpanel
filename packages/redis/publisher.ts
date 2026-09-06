@@ -2,7 +2,7 @@ import { type Redis, getRedisPub, getRedisSub } from './redis';
 
 import type { IServiceEvent } from '@openpanel/core';
 import type { Notification, Prisma } from '@openpanel/db';
-import { getSuperJson, setSuperJson } from '@openpanel/json';
+import { getSuperJson, setSuperJson } from './json';
 
 export type IPublishChannels = {
   organization: {

@@ -64,13 +64,9 @@ COPY apps/api/package.json ./apps/api/
 # graph changes.
 COPY packages/core/package.json packages/core/
 COPY packages/db/package.json packages/db/
-COPY packages/json/package.json packages/json/
 COPY packages/email/package.json packages/email/
 COPY packages/redis/package.json packages/redis/
-COPY packages/common/package.json packages/common/
 COPY packages/payments/package.json packages/payments/
-COPY packages/constants/package.json packages/constants/
-COPY packages/validation/package.json packages/validation/
 COPY patches ./patches
 
 # BUILD — full install (codegen needs devDependencies: core's `tar` for

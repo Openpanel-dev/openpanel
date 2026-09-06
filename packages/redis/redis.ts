@@ -1,4 +1,4 @@
-import { getSuperJson, setSuperJson } from '@openpanel/json';
+import { getSuperJson, setSuperJson } from './json';
 import type { RedisOptions } from 'ioredis';
 import { Redis } from 'ioredis';
 

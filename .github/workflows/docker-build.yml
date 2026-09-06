@@ -121,6 +121,15 @@ jobs:
           CLICKHOUSE_URL: http://localhost:8123/openpanel
           REDIS_URL: redis://localhost:6379
 
+      # ADR-008: dependency-cruiser is the second layer keeping the dissolved
+      # validation/constants/common/json packages from growing back (M11-009).
+      # Run standalone, not via `pnpm run check`, because `check` also runs
+      # `ultracite check` over a repo that has never been bulk-formatted (see
+      # .claude/CLAUDE.md) and is not green today for reasons unrelated to
+      # dependency boundaries.
+      - name: Check dependency boundaries
+        run: pnpm run check:deps
+
       # - name: Run Biome
       #   run: pnpm lint
 

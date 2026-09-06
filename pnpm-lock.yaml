@@ -83,9 +83,6 @@ importers:
 
   apps/api:
     dependencies:
-      '@openpanel/common':
-        specifier: workspace:*
-        version: link:../../packages/common
       '@openpanel/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -138,9 +135,6 @@ importers:
       '@opennextjs/cloudflare':
         specifier: ^1.17.1
         version: 1.17.1(next@16.0.7(@babel/core@7.29.0(supports-color@10.2.0))(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(supports-color@10.2.0)(wrangler@4.65.0)
-      '@openpanel/common':
-        specifier: workspace:*
-        version: link:../../packages/common
       '@openpanel/nextjs':
         specifier: ^1.2.0
         version: 1.2.0(next@16.0.7(@babel/core@7.29.0(supports-color@10.2.0))(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -796,74 +790,6 @@ importers:
         specifier: ^6.0.0
         version: 6.3.5(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.27.1)(tsx@4.21.0)(yaml@2.8.2)
 
-  packages/common:
-    dependencies:
-      '@openpanel/constants':
-        specifier: workspace:*
-        version: link:../constants
-      date-fns:
-        specifier: ^3.3.1
-        version: 3.3.1
-      luxon:
-        specifier: ^3.7.2
-        version: 3.7.2
-      mathjs:
-        specifier: ^12.3.2
-        version: 12.3.2
-      nanoid:
-        specifier: ^5.1.6
-        version: 5.1.6
-      ramda:
-        specifier: ^0.29.1
-        version: 0.29.1
-      slugify:
-        specifier: ^1.6.6
-        version: 1.6.6
-      superjson:
-        specifier: ^1.13.3
-        version: 1.13.3
-      unique-names-generator:
-        specifier: ^4.7.1
-        version: 4.7.1
-    devDependencies:
-      '@openpanel/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@openpanel/validation':
-        specifier: workspace:*
-        version: link:../validation
-      '@types/luxon':
-        specifier: ^3.7.1
-        version: 3.7.1
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.10.1
-      '@types/ramda':
-        specifier: ^0.29.6
-        version: 0.29.10
-      prisma:
-        specifier: ^5.1.1
-        version: 5.9.1
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-
-  packages/constants:
-    dependencies:
-      '@openpanel/core':
-        specifier: workspace:*
-        version: link:../core
-    devDependencies:
-      '@openpanel/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      date-fns:
-        specifier: ^3.3.1
-        version: 3.3.1
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-
   packages/core:
     dependencies:
       '@aws-sdk/client-s3':
@@ -1179,25 +1105,6 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
-  packages/json:
-    dependencies:
-      superjson:
-        specifier: ^1.13.3
-        version: 1.13.3
-    devDependencies:
-      '@openpanel/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@openpanel/validation':
-        specifier: workspace:*
-        version: link:../validation
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.10.1
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-
   packages/payments:
     dependencies:
       '@polar-sh/sdk':
@@ -1237,15 +1144,15 @@ importers:
 
   packages/redis:
     dependencies:
-      '@openpanel/json':
-        specifier: workspace:*
-        version: link:../json
       ioredis:
         specifier: 5.8.2
         version: 5.8.2(supports-color@10.2.0)
       lru-cache:
         specifier: ^11.2.2
         version: 11.2.2
+      superjson:
+        specifier: ^1.13.3
+        version: 1.13.3
     devDependencies:
       '@openpanel/core':
         specifier: workspace:*
@@ -1418,9 +1325,6 @@ importers:
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../../tooling/typescript
-      '@openpanel/validation':
-        specifier: workspace:*
-        version: link:../../validation
       '@types/node':
         specifier: 'catalog:'
         version: 24.10.1
@@ -1452,31 +1356,6 @@ importers:
       tsup:
         specifier: ^7.2.0
         version: 7.3.0(postcss@8.5.6)(supports-color@10.2.0)(typescript@5.9.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-
-  packages/validation:
-    dependencies:
-      '@openpanel/constants':
-        specifier: workspace:*
-        version: link:../constants
-      '@openpanel/core':
-        specifier: workspace:*
-        version: link:../core
-      zod:
-        specifier: 'catalog:'
-        version: 4.3.6
-    devDependencies:
-      '@openpanel/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.10.1
-      prisma:
-        specifier: ^5.1.1
-        version: 5.9.1
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -9340,9 +9219,6 @@ packages:
 
   '@types/qs@6.9.11':
     resolution: {integrity: sha512-oGk0gmhnEJK4Yyk+oI7EfXsLayXatCWPHary1MtcmbAifkobT9cM9yutG/hZKIseOU0MqbIwQ/u2nn/Gb+ltuQ==}
-
-  '@types/ramda@0.29.10':
-    resolution: {integrity: sha512-0BzWVKtSEtignlk+XBuK88Il5wzQwbRVfEkzE8iKm02NYHMGQ/9ffB05M+zXhTCqo50DOIAT9pNSJsjFMMG4rQ==}
 
   '@types/ramda@0.31.0':
     resolution: {integrity: sha512-1lWWZ/2YiNttGcIUxQwnvMuh55GIEbn/zlpzzEojAsbxquI/TXQZCRaXsfxG1CHjlqGoqxWePkvaM/5qYHNuvQ==}
@@ -17364,9 +17240,6 @@ packages:
     resolution: {integrity: sha512-q7QNVDGTdl702bVFiI5eY4l/HkgCM6at9KhcFbgUAzezHFbOVy4+0O/lCjsABEQwbZPravVfBIiBVGo89yzHFg==}
     engines: {node: '>= 0.4'}
 
-  types-ramda@0.29.7:
-    resolution: {integrity: sha512-8KBxZGJwUF3MpRkkJauSpvfHXk8Ssq15QXGuCBTDGeKd9PfheokkC3wAKRV3djej9O31Qa5M7Owsg8hF0GjtAw==}
-
   types-ramda@0.31.0:
     resolution: {integrity: sha512-vaoC35CRC3xvL8Z6HkshDbi6KWM1ezK0LHN0YyxXWUn9HKzBNg/T3xSGlJZjCYspnOD3jE7bcizsp0bUXZDxnQ==}
 
@@ -17486,10 +17359,6 @@ packages:
 
   unique-filename@1.1.1:
     resolution: {integrity: sha512-Vmp0jIp2ln35UTXuryvjzkjGdRyf9b2lTXuSYUiPmzRcl3FDtYqAwOnTJkAngD9SWhnoJzDbTKwaOrZ+STtxNQ==}
-
-  unique-names-generator@4.7.1:
-    resolution: {integrity: sha512-lMx9dX+KRmG8sq6gulYYpKWZc9RlGsgBR6aoO8Qsm3qvkSJ+3rAymr+TnV8EDMrIrwuFJ4kruzMWM/OpYzPoow==}
-    engines: {node: '>=8'}
 
   unique-slug@2.0.2:
     resolution: {integrity: sha512-zoWr9ObaxALD3DOPfjPSqxt4fnZiWblxHIgeWqW8x7UqDzEtHEQLzji2cuJYQFCU6KmoJikOYAZlrTHHebjx2w==}
@@ -28887,10 +28756,6 @@ snapshots:
 
   '@types/qs@6.9.11': {}
 
-  '@types/ramda@0.29.10':
-    dependencies:
-      types-ramda: 0.29.7
-
   '@types/ramda@0.31.0':
     dependencies:
       types-ramda: 0.31.0
@@ -39111,10 +38976,6 @@ snapshots:
       typed-array-buffer: 1.0.3
       typed-array-byte-offset: 1.0.4
 
-  types-ramda@0.29.7:
-    dependencies:
-      ts-toolbelt: 9.6.0
-
   types-ramda@0.31.0:
     dependencies:
       ts-toolbelt: 9.6.0
@@ -39267,8 +39128,6 @@ snapshots:
   unique-filename@1.1.1:
     dependencies:
       unique-slug: 2.0.2
-
-  unique-names-generator@4.7.1: {}
 
   unique-slug@2.0.2:
     dependencies:

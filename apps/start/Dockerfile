@@ -26,11 +26,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Apps
 COPY apps/start/package.json ./apps/start/
 # Packages - Only copy what start app needs
-COPY packages/json/package.json packages/json/
-COPY packages/common/package.json packages/common/
 COPY packages/payments/package.json packages/payments/
-COPY packages/constants/package.json packages/constants/
-COPY packages/validation/package.json packages/validation/
 COPY packages/sdks/_info/package.json packages/sdks/_info/
 COPY patches ./patches
 # Copy tracking script to self-hosting dashboard
@@ -81,11 +77,7 @@ COPY --from=build /app/pnpm-workspace.yaml ./
 COPY --from=build /app/apps/start/package.json ./apps/start/
 COPY --from=build /app/packages/db/package.json ./packages/db/
 COPY --from=build /app/packages/auth/package.json ./packages/auth/
-COPY --from=build /app/packages/json/package.json ./packages/json/
-COPY --from=build /app/packages/common/package.json ./packages/common/
 COPY --from=build /app/packages/payments/package.json ./packages/payments/
-COPY --from=build /app/packages/constants/package.json ./packages/constants/
-COPY --from=build /app/packages/validation/package.json ./packages/validation/
 COPY --from=build /app/packages/sdks/_info/package.json ./packages/sdks/_info/
 COPY --from=build /app/patches ./patches
 
@@ -138,11 +130,7 @@ RUN set -eux; \
 # Copy necessary packages
 COPY --from=build /app/packages/db ./packages/db
 COPY --from=build /app/packages/auth ./packages/auth
-COPY --from=build /app/packages/json ./packages/json
-COPY --from=build /app/packages/common ./packages/common
 COPY --from=build /app/packages/payments ./packages/payments
-COPY --from=build /app/packages/constants ./packages/constants
-COPY --from=build /app/packages/validation ./packages/validation
 COPY --from=build /app/packages/sdks/_info ./packages/sdks/_info
 COPY --from=build /app/tooling/typescript ./tooling/typescript
 

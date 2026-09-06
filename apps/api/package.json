@@ -16,7 +16,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/common": "workspace:*",
     "@openpanel/core": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/redis": "workspace:*",

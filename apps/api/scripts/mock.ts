@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import * as faker from '@faker-js/faker';
-import { generateId } from '@openpanel/common';
-import { hashPassword } from '@openpanel/core';
+import { generateId, hashPassword } from '@openpanel/core';
 import { ClientType, db } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 import { v4 as uuidv4 } from 'uuid';
