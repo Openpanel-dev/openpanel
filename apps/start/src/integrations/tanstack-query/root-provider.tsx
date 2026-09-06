@@ -1,4 +1,4 @@
-import type { AppRouter } from '@openpanel/trpc';
+import type { AppRouter } from '@openpanel/core';
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';

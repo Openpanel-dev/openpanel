@@ -167,7 +167,6 @@
     "@biomejs/biome": "1.9.4",
     "@cloudflare/vite-plugin": "1.33.2",
     "@openpanel/db": "workspace:*",
-    "@openpanel/trpc": "workspace:*",
     "@tanstack/devtools-event-client": "^0.3.3",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",

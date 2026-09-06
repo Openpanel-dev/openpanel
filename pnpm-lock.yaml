@@ -716,9 +716,6 @@ importers:
       '@openpanel/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@openpanel/trpc':
-        specifier: workspace:*
-        version: link:../../packages/trpc
       '@tanstack/devtools-event-client':
         specifier: ^0.3.3
         version: 0.3.3
