@@ -279,7 +279,10 @@ export const exportRoutes = defineRoutes((app) =>
           // is undefined and JSON drops it.
           throw new HttpError(resolved.message, { status: resolved.status });
         }
-        const { timezone } = await getSettingsForProject(resolved.projectId);
+        const { timezone } = await getSettingsForProject(
+          ctx,
+          resolved.projectId
+        );
         const { events, series, ...rest } = query;
 
         const eventSeries = (series ?? events ?? []).map((event) => ({
@@ -362,7 +365,7 @@ async function getOverviewGeneric(
   client: InsightsClient
 ) {
   const projectId = await resolveInsightsProjectId(client, params);
-  const { timezone } = await getSettingsForProject(projectId);
+  const { timezone } = await getSettingsForProject(ctx, projectId);
   const { startDate, endDate } = getChartStartEndDate(query, timezone);
   return ctx.services.overview.getTopGeneric({
     column,
@@ -542,6 +545,7 @@ export const insightsRoutes = defineRoutes((app) =>
       async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
@@ -617,6 +621,7 @@ export const insightsRoutes = defineRoutes((app) =>
       async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
@@ -638,6 +643,7 @@ export const insightsRoutes = defineRoutes((app) =>
       async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
@@ -663,6 +669,7 @@ export const insightsRoutes = defineRoutes((app) =>
       async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
@@ -688,7 +695,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/metrics',
       async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { timezone } = await getSettingsForProject(projectId);
+        const { timezone } = await getSettingsForProject(ctx, projectId);
         const { startDate, endDate } = getChartStartEndDate(query, timezone);
         return ctx.services.overview.getMetrics({
           projectId,
@@ -731,7 +738,7 @@ export const insightsRoutes = defineRoutes((app) =>
       '/insights/:projectId/pages',
       async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        const { timezone } = await getSettingsForProject(projectId);
+        const { timezone } = await getSettingsForProject(ctx, projectId);
         const { startDate, endDate } = getChartStartEndDate(query, timezone);
         return ctx.services.overview.getTopPages({
           projectId,
@@ -1009,6 +1016,7 @@ export const insightsRoutes = defineRoutes((app) =>
       async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
@@ -1036,6 +1044,7 @@ export const insightsRoutes = defineRoutes((app) =>
       async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
@@ -1061,6 +1070,7 @@ export const insightsRoutes = defineRoutes((app) =>
       async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
@@ -1087,6 +1097,7 @@ export const insightsRoutes = defineRoutes((app) =>
       async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
@@ -1112,6 +1123,7 @@ export const insightsRoutes = defineRoutes((app) =>
       async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
@@ -1300,9 +1312,9 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/sessions',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
-        return querySessionsCore({ projectId, ...query });
+        return querySessionsCore(ctx, { projectId, ...query });
       },
       {
         clientAuth: CLIENT_ALLOW,
@@ -1386,13 +1398,14 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/gsc/overview',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
-        return gscGetOverviewCore({
+        return gscGetOverviewCore(ctx, {
           projectId,
           startDate,
           endDate,
@@ -1412,13 +1425,14 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/gsc/pages',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
-        return gscGetTopPagesCore({
+        return gscGetTopPagesCore(ctx, {
           projectId,
           startDate,
           endDate,
@@ -1437,13 +1451,14 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/gsc/pages/details',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
-        return gscGetPageDetailsCore({
+        return gscGetPageDetailsCore(ctx, {
           projectId,
           startDate,
           endDate,
@@ -1462,13 +1477,14 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/gsc/queries',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
-        return gscGetTopQueriesCore({
+        return gscGetTopQueriesCore(ctx, {
           projectId,
           startDate,
           endDate,
@@ -1487,13 +1503,14 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/gsc/queries/details',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
-        return gscGetQueryDetailsCore({
+        return gscGetQueryDetailsCore(ctx, {
           projectId,
           startDate,
           endDate,
@@ -1512,13 +1529,14 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/gsc/queries/opportunities',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
-        return gscGetQueryOpportunitiesCore({
+        return gscGetQueryOpportunitiesCore(ctx, {
           projectId,
           startDate,
           endDate,
@@ -1538,13 +1556,18 @@ export const insightsRoutes = defineRoutes((app) =>
     )
     .get(
       '/insights/:projectId/gsc/cannibalization',
-      async ({ params, query, client }) => {
+      async ({ params, query, client, ctx }) => {
         const projectId = await resolveInsightsProjectId(client, params);
         const { startDate, endDate } = await resolveInsightsDateRange(
+          ctx,
           projectId,
           query
         );
-        return gscGetCannibalizationCore({ projectId, startDate, endDate });
+        return gscGetCannibalizationCore(ctx, {
+          projectId,
+          startDate,
+          endDate,
+        });
       },
       {
         clientAuth: CLIENT_ALLOW,

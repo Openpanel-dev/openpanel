@@ -37,8 +37,15 @@ mock.module('@openpanel/db/src/prisma-client', () => ({
   db: { cohort: { findMany: cohortFindMany } },
 }));
 
-afterAll(() => {
+afterAll(async () => {
   mock.module('@openpanel/db/src/prisma-client', () => realPrismaClient);
+  // Restoring the module registry is not enough: `v1-compat.ts` MEMOIZES the
+  // fallback `ServiceDeps` the first time anything resolves it, so if that
+  // happened while the mock above was installed, every later FILE in this
+  // process keeps the mocked client (bare `bun test` shares one registry).
+  // Drop the memo too — same reason mcp's dashboard-management.test.ts does.
+  const { resetV1CompatServicesForTests } = await import('../../../v1-compat');
+  resetV1CompatServicesForTests();
 });
 
 let ch: typeof import('@openpanel/db/src/clickhouse/client').ch;

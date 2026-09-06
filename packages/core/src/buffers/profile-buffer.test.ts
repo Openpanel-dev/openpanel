@@ -1,23 +1,18 @@
 import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { getRedisCache } from '@openpanel/redis';
-import { stubBufferDeps } from '../../test/buffer-fixtures';
+import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 import type { IClickhouseProfile } from '../modules/profile/profile.service';
 
-// `./clickhouse` is the one seam the buffers reach ClickHouse through — see
-// event-buffer.test.ts's header for why that, and not
-// `@openpanel/db/src/clickhouse/client`, is what gets replaced.
-const realClickhouse = { ...(await import('./clickhouse')) };
+// M10-009: the client comes in as `BufferDeps.ch` and reads go through core's
+// own `chQuery` — see event-buffer.test.ts's header.
+const realChQuery = { ...(await import('../shared/ch-query')) };
 
 const chInsert = mock(async (_options: unknown): Promise<unknown> => undefined);
 const chQuery = mock(async (_sql: string): Promise<IClickhouseProfile[]> => []);
 
-mock.module('./clickhouse', () => ({
-  loadClickHouse: () =>
-    Promise.resolve({
-      ch: { insert: chInsert },
-      chQuery,
-      TABLE_NAMES: { profiles: 'profiles' },
-    }),
+mock.module('../shared/ch-query', () => ({
+  ...realChQuery,
+  chQuery: (_scope: unknown, sql: string) => chQuery(sql),
 }));
 
 const { ProfileBuffer } = await import('./profile-buffer');
@@ -62,14 +57,14 @@ beforeEach(async () => {
 // every file in one process, and closing the singleton takes it away from the
 // files that run next (V1's vitest isolated per file, so it could).
 afterAll(() => {
-  mock.module('./clickhouse', () => realClickhouse);
+  mock.module('../shared/ch-query', () => realChQuery);
 });
 
 describe('ProfileBuffer', () => {
   let profileBuffer: ProfileBuffer;
 
   beforeEach(() => {
-    profileBuffer = new ProfileBuffer(stubBufferDeps);
+    profileBuffer = new ProfileBuffer(bufferDepsWithCh({ insert: chInsert }));
   });
 
   it('adds a profile to the buffer', async () => {

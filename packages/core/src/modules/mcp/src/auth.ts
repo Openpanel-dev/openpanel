@@ -7,12 +7,13 @@ const logger = createLogger({ name: 'mcp:auth' });
 
 // GENUINE CYCLE, kept lazy: `mcp.service.ts` statically imports this file
 // (`extractToken` must stay synchronous — its own caller doesn't await it),
-// and this package's barrel (`@openpanel/core`) transitively reaches
-// services.ts, which registers `createMcpService`. services.ts -> mcp.service.ts
-// -> this file -> @openpanel/core (index.ts) -> v1-compat.ts -> services.ts;
-// the dynamic import is what keeps it a cycle ESM can evaluate.
+// and v1-compat.ts imports services.ts, which registers `createMcpService`.
+// services.ts -> mcp.service.ts -> this file -> v1-compat.ts -> services.ts;
+// the dynamic import is what keeps it a cycle ESM can evaluate. M10-009: the
+// hop goes to the seam directly rather than through this package's own barrel
+// (`core-no-self-barrel`) — same cycle, one module shorter.
 function loadClientService() {
-  return import('@openpanel/core');
+  return import('../../../v1-compat');
 }
 
 export interface McpAuthContext {

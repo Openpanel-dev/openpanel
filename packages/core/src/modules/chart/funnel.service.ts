@@ -341,7 +341,7 @@ export async function getFunnelCore(
     groupBy?: FunnelGroup;
   }
 ) {
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const eventSeries = input.steps.map((name, index) => ({
     id: String(index + 1),
     type: 'event' as const,
@@ -429,4 +429,41 @@ export async function getFunnelProfileIds(
     base.timezone
   );
   return rows.map((row) => row.profile_id).filter(Boolean);
+}
+
+/**
+ * `ctx.services.chart`'s funnel half, as its own module factory (ADR-007:
+ * "each service is `createXService(deps): XService`"). `createChartService`
+ * composes this rather than re-binding these functions itself, so the chart
+ * module keeps one registry key while every `*.service.ts` file exposes its
+ * own factory (M10-009).
+ */
+export interface FunnelService {
+  getFunnelGroup: typeof getFunnelGroup;
+  toSeries: typeof toSeries;
+  buildSessionsCte: typeof buildSessionsCte;
+  getFunnel(
+    input: Parameters<typeof getFunnel>[1]
+  ): ReturnType<typeof getFunnel>;
+  getFunnelCore(
+    input: Parameters<typeof getFunnelCore>[1]
+  ): ReturnType<typeof getFunnelCore>;
+  buildFunnelBase(
+    input: Parameters<typeof buildFunnelBase>[1]
+  ): ReturnType<typeof buildFunnelBase>;
+  getFunnelProfileIds(
+    input: Parameters<typeof getFunnelProfileIds>[1]
+  ): ReturnType<typeof getFunnelProfileIds>;
+}
+
+export function createFunnelService(deps: ServiceDeps): FunnelService {
+  return {
+    getFunnelGroup,
+    toSeries,
+    buildSessionsCte,
+    getFunnel: (input) => getFunnel(deps, input),
+    getFunnelCore: (input) => getFunnelCore(deps, input),
+    buildFunnelBase: (input) => buildFunnelBase(deps, input),
+    getFunnelProfileIds: (input) => getFunnelProfileIds(deps, input),
+  };
 }

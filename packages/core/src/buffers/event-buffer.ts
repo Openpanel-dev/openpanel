@@ -1,7 +1,6 @@
 import { getRedisCache, publishEvent } from '@openpanel/redis';
 import type { IClickhouseEvent } from '../modules/event/event.service';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
-import { loadClickHouse } from './clickhouse';
 
 const PROJECT_ID_NEEDLE = '"project_id":"';
 
@@ -226,7 +225,7 @@ export class EventBuffer extends BaseBuffer {
       }
     }
 
-    const { ch } = await loadClickHouse();
+    const ch = await this.resolveCh();
     const chStart = performance.now();
     await this.parallelLimit(
       this.chunks(queueEvents, this.chunkSize),
@@ -257,8 +256,7 @@ export class EventBuffer extends BaseBuffer {
   }
 
   public async getActiveVisitorCount(projectId: string): Promise<number> {
-    const { chQuery } = await loadClickHouse();
-    const rows = await chQuery<{ count: number }>(
+    const rows = await this.chQuery<{ count: number }>(
       `SELECT uniq(profile_id) AS count
        FROM events
        WHERE project_id = '${projectId}'

@@ -42,10 +42,14 @@ import { z } from 'zod';
 import type { Logger } from '../../logger';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
+// `getOrganizationById` takes `ServiceDeps` since M10-009 and these four
+// functions carry none (V1's still-live subscription router calls them with a
+// bare userId) — reached through the v1-compat seam, same as the rest of this
+// file's cross-module calls. GENUINE CYCLE, kept lazy on the other side.
+import { getOrganizationById } from '../../v1-compat';
 import { getAccessChecks } from '../auth/auth.service';
 import {
   getOrganizationBillingEventsCountSerieCached,
-  getOrganizationById,
   getOrganizationByProjectIdCached,
 } from '../organization/organization.service';
 import {

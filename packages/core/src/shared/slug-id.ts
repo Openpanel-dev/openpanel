@@ -3,24 +3,23 @@
 // shared/access-lookups.ts: needs @openpanel/db, so it stays out of
 // shared/id.ts (the database-free id helpers).
 //
-// db access is LAZY (`loadDb` below), not a static top-level import — see
-// insight.service.ts's header for the full reasoning (jobs.registry.ts and
-// services.ts pull this module into the eager barrel chain nearly every core
-// test file reaches, and constructing @openpanel/db's clients at import time
-// would spawn a pino-pretty transport worker thread per test file).
+// M10-009: Postgres comes from the caller's scope (`deps.db`), not a lazy
+// `import('@openpanel/db/...')` — so the requestId minted at the edge reaches
+// the uniqueness probe (ADR-018, docs/TECH_DEBT.md §4). `deps` is narrowed to
+// `Pick<ServiceDeps, 'db'>` because mcp's tool handlers have a fixed
+// `@modelcontextprotocol/sdk` signature and only ever hold the db they got
+// from the v1-compat seam.
 
 import { slug } from '@openpanel/common';
-
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
+import type { ServiceDeps } from '../services';
 
 export async function getId(
+  deps: Pick<ServiceDeps, 'db'>,
   tableName: 'project' | 'dashboard' | 'organization',
   name: string
 ): Promise<string> {
   const newId = slug(name);
-  const db = await loadDb();
+  const db = deps.db;
   if (!db[tableName]) {
     throw new Error('Table does not exists');
   }
@@ -45,7 +44,7 @@ export async function getId(
   }
 
   if (existingProject) {
-    return getId(tableName, random(name));
+    return getId(deps, tableName, random(name));
   }
 
   return newId;

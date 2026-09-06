@@ -6,8 +6,11 @@
 // PATTERN: V1's trpc router and cron job, and this package's own
 // onboarding.rpc.ts/onboarding.jobs.ts, all call these same functions.
 //
-// db access is LAZY (`loadDb` below), not a static top-level import — see
-// user.service.ts's header for the full reasoning.
+// M10-009: every exported function takes `ServiceDeps` and reaches Postgres
+// as `deps.db`; the `loadDb()` lazy loader is gone, so the requestId minted at
+// the edge reaches the query (ADR-018, docs/TECH_DEBT.md §4). V1's still-live
+// trpc router and cron job keep calling the deps-free spellings v1-compat.ts
+// re-exports.
 
 import crypto from 'node:crypto';
 import { stripTrailingSlash } from '@openpanel/common';
@@ -42,22 +45,19 @@ const TRIAL_DURATION_IN_DAYS = 30;
 // "limit exceeded" (the limit defaults to 0, which trips on the first event).
 const TRIAL_EVENTS_LIMIT = 10_000_000;
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
 function loadIdService() {
-  return import('@openpanel/core');
+  return import('../../shared/slug-id');
 }
 
 export async function canSkipOnboarding(
+  deps: ServiceDeps,
   userId: string | null | undefined
 ): Promise<{ canSkip: boolean }> {
   if (!userId) {
     return { canSkip: false };
   }
 
-  const db = await loadDb();
+  const db = deps.db;
   const members = await db.member.findMany({ where: { userId } });
   if (members.length > 0) {
     return { canSkip: true };
@@ -70,11 +70,12 @@ export async function canSkipOnboarding(
 }
 
 async function createOrGetOnboardingOrganization(
+  deps: ServiceDeps,
   input: IOnboardingProject,
   userId: string
 ) {
   if (input.organizationId) {
-    return await getOrganizationById(input.organizationId);
+    return await getOrganizationById(deps, input.organizationId);
   }
 
   if (!input.organization) {
@@ -82,8 +83,8 @@ async function createOrGetOnboardingOrganization(
   }
 
   const { getId } = await loadIdService();
-  const db = await loadDb();
-  const organizationId = await getId('organization', input.organization);
+  const db = deps.db;
+  const organizationId = await getId(deps, 'organization', input.organization);
 
   // Create the organization and its owner (org:admin member) atomically. The
   // `delete` cron treats an organization with no org:admin member as ownerless
@@ -126,6 +127,7 @@ export interface CreateOnboardingProjectResult {
 }
 
 export async function createOnboardingProject(
+  deps: ServiceDeps,
   input: IOnboardingProject,
   userId: string
 ): Promise<CreateOnboardingProjectResult> {
@@ -140,7 +142,11 @@ export async function createOnboardingProject(
     types.push('backend');
   }
 
-  const organization = await createOrGetOnboardingOrganization(input, userId);
+  const organization = await createOrGetOnboardingOrganization(
+    deps,
+    input,
+    userId
+  );
   if (!organization?.id) {
     throw new Error('Organization slug is missing');
   }
@@ -151,11 +157,11 @@ export async function createOnboardingProject(
   }
 
   const { getId } = await loadIdService();
-  const db = await loadDb();
+  const db = deps.db;
 
   const project = await db.project.create({
     data: {
-      id: await getId('project', input.project),
+      id: await getId(deps, 'project', input.project),
       name: input.project,
       organizationId: organization.id,
       types,
@@ -216,10 +222,11 @@ interface OnboardingContext {
   getUsage: () => Promise<OnboardingUsage>;
 }
 
-function createUsageGetter(org: OnboardingCronOrg) {
+function createUsageGetter(deps: ServiceDeps, org: OnboardingCronOrg) {
   let promise: Promise<OnboardingUsage> | null = null;
   return () => {
     promise ??= getOrganizationEventsCount(
+      deps,
       org.projects.map((project) => project.id)
     ).then((eventsCount) => ({
       eventsCount,
@@ -333,6 +340,7 @@ export interface OnboardingCronSummary {
 }
 
 export async function runOnboardingCron(
+  deps: ServiceDeps,
   logger: OnboardingCronLogger
 ): Promise<OnboardingCronSummary | null> {
   if (process.env.SELF_HOSTED === 'true') {
@@ -341,7 +349,7 @@ export async function runOnboardingCron(
 
   logger.info('Starting onboarding email job');
 
-  const db = await loadDb();
+  const db = deps.db;
   const orgs: OnboardingCronOrg[] = await db.organization.findMany({
     where: {
       OR: [{ onboarding: null }, { onboarding: { notIn: ['completed'] } }],
@@ -371,7 +379,7 @@ export async function runOnboardingCron(
         email: user.email,
         anchor: org.createdAt,
         pointer: org.onboarding,
-        ctx: { org, user, getUsage: createUsageGetter(org) },
+        ctx: { org, user, getUsage: createUsageGetter(deps, org) },
       };
     }
   );
@@ -417,6 +425,6 @@ export interface OnboardingService {
  *  logger of its own at all. */
 export function createOnboardingService(deps: ServiceDeps): OnboardingService {
   return {
-    runOnboardingCron: () => runOnboardingCron(deps.logger),
+    runOnboardingCron: () => runOnboardingCron(deps, deps.logger),
   };
 }

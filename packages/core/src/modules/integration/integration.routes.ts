@@ -39,8 +39,10 @@ export const integrationRoutes = defineRoutes((app) =>
     '/webhook/slack',
     async ({ query, ctx }) => {
       try {
-        const { organizationId, projectId } =
-          await completeSlackOAuthCallback(query);
+        const { organizationId, projectId } = await completeSlackOAuthCallback(
+          ctx,
+          query
+        );
 
         // Integrations are project-scoped; the org-level integrations route no
         // longer exists. Newer installs carry projectId in their metadata.

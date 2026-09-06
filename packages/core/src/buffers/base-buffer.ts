@@ -2,7 +2,16 @@ import { Readable } from 'node:stream';
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { getRedisCache } from '@openpanel/redis';
 import type { Logger } from '../logger';
+import type { ServiceDeps } from '../services';
+import { type ChScope, chQuery } from '../shared/ch-query';
 import { generateSecureId } from '../shared/id';
+
+// GENUINE CYCLE, kept lazy: v1-compat.ts -> services.ts -> (every service) ->
+// this module. The fallback only fires for `BufferDeps` built without a `ch`
+// — see that field's comment.
+function loadCompatCh(): Promise<ServiceDeps['ch']> {
+  return import('../v1-compat').then((m) => m.compatCh());
+}
 
 /**
  * What a buffer needs from the boot scope. Buffers are built once by
@@ -16,6 +25,21 @@ export interface BufferDeps {
    * stub instead of spawning one transport worker thread per buffer.
    */
   createLogger(name: string): Logger;
+  /**
+   * The boot scope's ClickHouse client — the same round-robin/retry proxy
+   * every service reaches as `deps.ch`. M10-009: the buffers used to lazily
+   * `import('@openpanel/db/src/clickhouse/client')` for it, which constructed
+   * a second client (and a second pino transport) outside any scope.
+   *
+   * OPTIONAL, deliberately: `@openpanel/queue`'s process-wide buffer
+   * singleton (packages/queue/src/buffers.ts) is a pre-`AppDeps` caller that
+   * has no client to hand in and lives outside this wave's scope. When it is
+   * absent, `resolveCh()` reaches the boot scope through the declared
+   * v1-compat seam — which, once `main.ts` has registered, is the very same
+   * client, not a second one. Both the field and the fallback die with
+   * `packages/queue` at P10.
+   */
+  ch?: ServiceDeps['ch'];
   /**
    * Asked before every flush. ADR-005's `ProducerHandle.bullQueues` escape
    * hatch, narrowed to the one thing the buffers ask BullMQ directly: pausing
@@ -100,6 +124,17 @@ export class BaseBuffer {
     skipReason?: string;
   } = {};
 
+  /** The scope's ClickHouse client, for a subclass's insert path. */
+  protected async resolveCh(): Promise<ServiceDeps['ch']> {
+    return this.deps.ch ?? (await loadCompatCh());
+  }
+
+  /** `chQuery` bound to this buffer's client and its own logger. */
+  protected async chQuery<T extends object>(query: string): Promise<T[]> {
+    const scope: ChScope = { ch: await this.resolveCh(), logger: this.logger };
+    return chQuery<T>(scope, query);
+  }
+
   protected getClickhouseSettings(): ClickHouseSettings {
     if (process.env.BUFFER_ASYNC_INSERTS) {
       return {
@@ -119,7 +154,7 @@ export class BaseBuffer {
   public addObserver: AddObserver | null = null;
 
   constructor(
-    private readonly deps: BufferDeps,
+    protected readonly deps: BufferDeps,
     options: {
       name: string;
       onFlush: () => Promise<void>;

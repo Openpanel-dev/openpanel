@@ -30,10 +30,6 @@ import { createTRPCRouter, procedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCBadRequestError } from '../../rpc/errors';
 import { emailCategories } from './email.constants';
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
     throw new TRPCAccessError('Not authenticated');
@@ -50,14 +46,14 @@ export const emailRouter = createTRPCRouter({
         token: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { email, category, token } = input;
 
       if (!verifyUnsubscribeToken(email, category, token)) {
         throw new TRPCBadRequestError('Invalid unsubscribe link');
       }
 
-      const db = await loadDb();
+      const db = ctx.db;
       await db.emailUnsubscribe.upsert({
         where: { email_category: { email, category } },
         create: { email, category },
@@ -74,14 +70,12 @@ export const emailRouter = createTRPCRouter({
     }
     const email = ctx.session.user.email;
 
-    const db = await loadDb();
+    const db = ctx.db;
     const unsubscribes = await db.emailUnsubscribe.findMany({
       where: { email },
       select: { category: true },
     });
-    const unsubscribedCategories = new Set(
-      unsubscribes.map((u) => u.category)
-    );
+    const unsubscribedCategories = new Set(unsubscribes.map((u) => u.category));
 
     const preferences: Record<string, boolean> = {};
     for (const category of Object.keys(emailCategories)) {
@@ -99,7 +93,7 @@ export const emailRouter = createTRPCRouter({
         throw new Error('User not authenticated');
       }
 
-      const db = await loadDb();
+      const db = ctx.db;
       for (const [category, subscribed] of Object.entries(input.categories)) {
         if (subscribed) {
           await db.emailUnsubscribe.deleteMany({ where: { email, category } });

@@ -16,14 +16,15 @@
 // becomes a third layer, not a new problem. Both copies call the same
 // @openpanel/db primitives and must be kept in sync by hand until that debt
 // is paid down.
+
+import { getChartStartEndDate } from '../../../shared/date';
 import {
   AggregateChartEngine,
   ChartEngine,
-  getChartStartEndDate,
   getFunnel,
   getReportById,
   getSettingsForProject,
-} from '@openpanel/core';
+} from '../../../v1-compat';
 
 function reportUrl(
   organizationId: string,

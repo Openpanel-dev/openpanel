@@ -487,7 +487,7 @@ export async function getUserFlowCore(
     throw new Error('endEvent is required when mode is "between"');
   }
 
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const result = await getSankey(deps, {
     projectId: input.projectId,
     startDate: input.startDate,
@@ -509,5 +509,25 @@ export async function getUserFlowCore(
     link_count: result.links.length,
     nodes: result.nodes,
     links: result.links,
+  };
+}
+
+/** See funnel.service.ts's `createFunnelService` for why each chart
+ *  sub-module carries its own factory (M10-009, ADR-007). */
+export interface SankeyService {
+  getRawWhereClause: typeof getRawWhereClause;
+  getSankey(
+    input: Parameters<typeof getSankey>[1]
+  ): ReturnType<typeof getSankey>;
+  getUserFlowCore(
+    input: Parameters<typeof getUserFlowCore>[1]
+  ): ReturnType<typeof getUserFlowCore>;
+}
+
+export function createSankeyService(deps: ServiceDeps): SankeyService {
+  return {
+    getRawWhereClause,
+    getSankey: (input) => getSankey(deps, input),
+    getUserFlowCore: (input) => getUserFlowCore(deps, input),
   };
 }

@@ -6,7 +6,7 @@
 // personalization. `mock.module` is not hoisted, so the subject is imported
 // inside `beforeAll` — see AGENTS.md.
 
-import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { subDays } from 'date-fns';
 
 const organizationFindMany = mock(async () => [] as unknown[]);
@@ -14,17 +14,35 @@ const organizationUpdate = mock(async () => ({}));
 const dbMock = {
   organization: { findMany: organizationFindMany, update: organizationUpdate },
 };
-mock.module('@openpanel/db/src/prisma-client', () => ({ db: dbMock }));
+// M10-009: `runOnboardingCron` takes `ServiceDeps` now, so `deps.db` IS the
+// fake below — no Prisma module mock needed.
+const deps = { db: dbMock } as unknown as import('../../services').ServiceDeps;
 
-const getOrganizationEventsCount = mock(async (_projectIds: string[]) => 0);
+const getOrganizationEventsCount = mock(
+  async (_deps: unknown, _projectIds: string[]) => 0
+);
+// Spread a plain-object SNAPSHOT of the real module, not a partial factory:
+// `mock.module` replaces this specifier process-wide under bare `bun test`
+// (AGENTS.md), and since M10-009 every cross-module caller reaches
+// `getSettingsForProject` / `getOrganizationByProjectIdCached` through this
+// deep path rather than the package barrel — a partial factory here silently
+// deleted them for every file that ran afterwards.
+const realOrganizationService = {
+  ...(await import('../organization/organization.service')),
+};
 mock.module('../organization/organization.service', () => ({
+  ...realOrganizationService,
   getOrganizationById: mock(async () => null),
   getOrganizationEventsCount,
-  // Unused by `runOnboardingCron`, but `../auth/auth.service` (transitively
-  // imported for `hashPassword`) statically imports it — a mock module must
-  // supply every named export the real module's importers destructure.
   connectUserToOrganization: mock(async () => undefined),
 }));
+
+afterAll(() => {
+  mock.module(
+    '../organization/organization.service',
+    () => realOrganizationService
+  );
+});
 
 const sendEmail = mock(
   async (
@@ -77,7 +95,7 @@ beforeEach(() => {
 
 test('returns null and does nothing when self-hosted', async () => {
   process.env.SELF_HOSTED = 'true';
-  const result = await runOnboardingCron(logger);
+  const result = await runOnboardingCron(deps, logger);
   expect(result).toBeNull();
   expect(organizationFindMany).not.toHaveBeenCalled();
 });
@@ -86,14 +104,14 @@ test('sends the welcome email on day 0 with hasData from clickhouse', async () =
   getOrganizationEventsCount.mockResolvedValue(123);
   organizationFindMany.mockResolvedValue([org()]);
 
-  const result = await runOnboardingCron(logger);
+  const result = await runOnboardingCron(deps, logger);
 
   expect(result).toMatchObject({ emailsSent: 1 });
   expect(sendEmail).toHaveBeenCalledWith('onboarding-welcome', {
     to: 'user@example.com',
     data: expect.objectContaining({ firstName: 'Alex', hasData: true }),
   });
-  expect(getOrganizationEventsCount).toHaveBeenCalledWith(['proj-1']);
+  expect(getOrganizationEventsCount).toHaveBeenCalledWith(deps, ['proj-1']);
   expect(organizationUpdate).toHaveBeenCalledWith({
     where: { id: 'org-1' },
     data: { onboarding: 'onboarding-welcome' },
@@ -108,7 +126,7 @@ test('does not fetch usage for orgs that are gated on days', async () => {
     }),
   ]);
 
-  const result = await runOnboardingCron(logger);
+  const result = await runOnboardingCron(deps, logger);
 
   expect(result).toMatchObject({ emailsSent: 0, orgsSkipped: 1 });
   expect(sendEmail).not.toHaveBeenCalled();
@@ -124,7 +142,7 @@ test('sends the no-data branch of what-to-track on day 2', async () => {
     }),
   ]);
 
-  await runOnboardingCron(logger);
+  await runOnboardingCron(deps, logger);
 
   expect(sendEmail).toHaveBeenCalledWith('onboarding-what-to-track', {
     to: 'user@example.com',
@@ -141,7 +159,7 @@ test('completes onboarding when the org subscribed before the trial emails', asy
     }),
   ]);
 
-  const result = await runOnboardingCron(logger);
+  const result = await runOnboardingCron(deps, logger);
 
   expect(result).toMatchObject({ emailsSent: 0, orgsCompleted: 1 });
   expect(sendEmail).not.toHaveBeenCalled();
@@ -162,7 +180,7 @@ test('populates recommendedPlan and trial stats in the trial-ending email', asyn
     }),
   ]);
 
-  await runOnboardingCron(logger);
+  await runOnboardingCron(deps, logger);
 
   expect(sendEmail).toHaveBeenCalledWith('onboarding-trial-ending', {
     to: 'user@example.com',
@@ -189,7 +207,7 @@ test('marks onboarding completed once every email has been sent', async () => {
     }),
   ]);
 
-  const result = await runOnboardingCron(logger);
+  const result = await runOnboardingCron(deps, logger);
 
   expect(result).toMatchObject({ emailsSent: 0, orgsCompleted: 1 });
   expect(organizationUpdate).toHaveBeenCalledWith({
@@ -210,7 +228,7 @@ test('completes orgs left on the retired trial-ended pointer', async () => {
     }),
   ]);
 
-  const result = await runOnboardingCron(logger);
+  const result = await runOnboardingCron(deps, logger);
 
   expect(result).toMatchObject({ emailsSent: 0, orgsCompleted: 1 });
   expect(sendEmail).not.toHaveBeenCalled();

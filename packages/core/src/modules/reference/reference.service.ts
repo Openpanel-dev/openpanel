@@ -114,7 +114,7 @@ export async function getChartReferences(
   deps: ServiceDeps,
   input: ChartReferencesInput
 ): Promise<Reference[]> {
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const { startDate, endDate } = getChartStartEndDate(
     {
       startDate: input.startDate,

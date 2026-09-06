@@ -1,9 +1,9 @@
+import { z } from 'zod';
 import {
   getEventPropertyValuesCore,
   listEventPropertiesCore,
   queryEventsCore,
-} from '@openpanel/core';
-import { z } from 'zod';
+} from '../../../../v1-compat';
 import {
   chatTool,
   compactEventProperties,

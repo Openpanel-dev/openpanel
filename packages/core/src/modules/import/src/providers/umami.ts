@@ -3,23 +3,23 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createBrotliDecompress, createGunzip } from 'node:zlib';
 import { isSameDomain, parsePath, toDots } from '@openpanel/common';
-// Deep imports, not @openpanel/db's full barrel: the barrel's
-// `export * from './src/services/notification.service'` /
-// `'./src/buffers'` eagerly reach @openpanel/queue, which constructs a
-// pino-pretty transport at import time — fatal under bun:test's
-// `--isolate` worker threads (AGENTS.md's eager-barrel-chain hazard).
-import { formatClickhouseDate } from '@openpanel/db/src/clickhouse/client';
-import type { IClickhouseEvent } from '@openpanel/core';
 import { parse } from 'csv-parse';
 import { assocPath } from 'ramda';
 import { z } from 'zod';
 import type { Logger } from '../../../../logger';
+// M10-009: core's own date helper, not @openpanel/db's — importing
+// `@openpanel/db/src/clickhouse/client` constructs a ClickHouse client and a
+// pino-pretty transport at import time (fatal under bun:test's `--isolate`
+// worker threads, AGENTS.md's eager-barrel-chain hazard) and is a value
+// import of `@openpanel/db` from core. See shared/ch-dates.ts's header.
+import { formatClickhouseDate } from '../../../../shared/ch-dates';
 import {
   getReferrerWithQuery,
   parseReferrer,
 } from '../../../../shared/parse-referrer';
 import { generateDeviceId } from '../../../../shared/profileId';
 import { safeFetchStream } from '../../../../shared/safe-fetch';
+import type { IClickhouseEvent } from '../../../event/event.service';
 import type { IUmamiImportConfig } from '../../import.constants';
 import { BaseImportProvider } from '../base-provider';
 

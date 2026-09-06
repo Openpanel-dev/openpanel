@@ -2,9 +2,9 @@ import { DateTime } from '@openpanel/common';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import type { IServiceCreateEventPayload } from '../modules/event/event.service';
 import type { IClickhouseSession } from '../modules/session/session.service';
+import { TABLE_NAMES } from '../shared/ch-tables';
 import { getSafeJson } from '../shared/json';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
-import { loadClickHouse } from './clickhouse';
 
 // 30min of idle in event-time → session ends. Matches industry default.
 // Idle window for a session (boundary detection + the reaper's default deadman).
@@ -566,7 +566,7 @@ export class SessionBuffer extends BaseBuffer {
       ? this.squashSessionsByVersion(parsed)
       : parsed;
 
-    const { ch, TABLE_NAMES } = await loadClickHouse();
+    const ch = await this.resolveCh();
     for (const chunk of this.chunks(sessions, this.chunkSize)) {
       await ch.insert({
         table: TABLE_NAMES.sessions,

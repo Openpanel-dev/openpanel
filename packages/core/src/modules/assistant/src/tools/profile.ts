@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import {
   findProfilesCore,
   getProfileById,
@@ -5,8 +6,7 @@ import {
   getProfileSessionsCore,
   getProfileWithEvents,
   queryEventsCore,
-} from '@openpanel/core';
-import { z } from 'zod';
+} from '../../../../v1-compat';
 import { chatTool, dashboardUrl, truncateRows } from './helpers';
 
 export const getProfileFull = chatTool(

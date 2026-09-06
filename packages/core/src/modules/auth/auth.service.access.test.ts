@@ -8,7 +8,6 @@
 // gate are unchanged.
 
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
-import type { ServiceDeps } from '../../services';
 
 interface FakeProjectAccess {
   level: 'read' | 'write' | 'admin';
@@ -63,7 +62,7 @@ afterAll(() => {
 });
 
 function authService() {
-  return createAuthService({} as unknown as ServiceDeps);
+  return createAuthService();
 }
 
 test('requireProjectAccess is fail-closed: no access throws before the write-level check', async () => {

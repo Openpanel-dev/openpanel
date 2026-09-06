@@ -42,10 +42,11 @@ import {
 } from '../profile/profile.service';
 import type { IServiceReport } from '../report/report.service';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
-import { getConversion } from './conversion.service';
+import { createConversionService, getConversion } from './conversion.service';
 import {
   buildFunnelBase,
   buildSessionsCte,
+  createFunnelService,
   getFunnel,
   getFunnelCore,
   getFunnelGroup,
@@ -53,6 +54,7 @@ import {
   toSeries as toFunnelSeries,
 } from './funnel.service';
 import {
+  createRetentionService,
   getEngagementCore,
   getRetentionCohort,
   getRetentionCohortCore,
@@ -64,7 +66,7 @@ import {
   processCohortData,
 } from './retention.service';
 import {
-  getRawWhereClause,
+  createSankeyService,
   getSankey,
   getUserFlowCore,
 } from './sankey.service';
@@ -292,7 +294,7 @@ export async function getProjectCard(
   metrics: ProjectCardMetrics | undefined;
   trend: ProjectCardTrend;
 }> {
-  const { timezone } = await getSettingsForProject(projectId);
+  const { timezone } = await getSettingsForProject(deps, projectId);
   const [chart, [metrics]] = await Promise.all([
     runQuery<ProjectCardChartRow>(
       deps,
@@ -462,8 +464,11 @@ export async function getChartPropertyValues(
 
 // --- funnel / conversion / sankey / retention --------------------------------
 
-async function currentAndPreviousPeriod(chartInput: IReportInput) {
-  const { timezone } = await getSettingsForProject(chartInput.projectId);
+async function currentAndPreviousPeriod(
+  deps: ServiceDeps,
+  chartInput: IReportInput
+) {
+  const { timezone } = await getSettingsForProject(deps, chartInput.projectId);
   const currentPeriod = getChartStartEndDate(chartInput, timezone);
   const previousPeriod = getChartPrevStartEndDate(currentPeriod);
   return { timezone, currentPeriod, previousPeriod };
@@ -474,7 +479,7 @@ export async function getFunnelChart(
   chartInput: IReportInput
 ) {
   const { timezone, currentPeriod, previousPeriod } =
-    await currentAndPreviousPeriod(chartInput);
+    await currentAndPreviousPeriod(deps, chartInput);
 
   const [current, previous] = await Promise.all([
     getFunnel(deps, { ...chartInput, ...currentPeriod, timezone }),
@@ -491,7 +496,7 @@ export async function getConversionChart(
   chartInput: IReportInput
 ) {
   const { timezone, currentPeriod, previousPeriod } =
-    await currentAndPreviousPeriod(chartInput);
+    await currentAndPreviousPeriod(deps, chartInput);
   const interval = chartInput.interval;
 
   const [current, previous] = await Promise.all([
@@ -524,7 +529,7 @@ export async function getConversionChart(
 }
 
 export async function getSankeyChart(deps: ServiceDeps, input: IReportInput) {
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const currentPeriod = getChartStartEndDate(input, timezone);
 
   const options = input.options;
@@ -612,7 +617,7 @@ export async function getRetentionChart(
 ) {
   const resolved = report ? retentionInputFromReport(report, input) : input;
 
-  const { timezone } = await getSettingsForProject(resolved.projectId);
+  const { timezone } = await getSettingsForProject(deps, resolved.projectId);
   const dates = getChartStartEndDate(
     {
       range: resolved.range,
@@ -706,7 +711,7 @@ export async function getFunnelStepProfiles(
   deps: ServiceDeps,
   input: FunnelStepProfilesRequest
 ): Promise<IServiceProfile[]> {
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const {
     projectId,
     series,
@@ -844,6 +849,15 @@ export interface ChartService {
 }
 
 export function createChartService(deps: ServiceDeps): ChartService {
+  // The four chart sub-modules each expose their own `create*Service(deps)`
+  // (ADR-007). `services.ts` binds each under its own key; `chart` composes
+  // them as well, so the callers that reach a funnel/retention method through
+  // the chart facade keep working. Both bind the same stateless closures.
+  const funnel = createFunnelService(deps);
+  const conversion = createConversionService(deps);
+  const sankey = createSankeyService(deps);
+  const retention = createRetentionService(deps);
+
   return {
     execute: (input) => executeChart(deps, input),
     executeAggregate: (input) => executeAggregateChart(deps, input),
@@ -854,34 +868,30 @@ export function createChartService(deps: ServiceDeps): ChartService {
     getChartPropertyValues: (input) => getChartPropertyValues(deps, input),
     bucketProfiles: (input) => getChartBucketProfiles(deps, input),
     funnelStepProfiles: (input) => getFunnelStepProfiles(deps, input),
-    getFunnelGroup,
-    toFunnelSeries,
-    buildSessionsCte,
+    getFunnelGroup: funnel.getFunnelGroup,
+    toFunnelSeries: funnel.toSeries,
+    buildSessionsCte: funnel.buildSessionsCte,
     getFunnelChart: (chartInput) => getFunnelChart(deps, chartInput),
-    getFunnel: (input) => getFunnel(deps, input),
-    getFunnelCore: (input) => getFunnelCore(deps, input),
-    buildFunnelBase: (input) => buildFunnelBase(deps, input),
-    getFunnelProfileIds: (input) => getFunnelProfileIds(deps, input),
+    getFunnel: funnel.getFunnel,
+    getFunnelCore: funnel.getFunnelCore,
+    buildFunnelBase: funnel.buildFunnelBase,
+    getFunnelProfileIds: funnel.getFunnelProfileIds,
     getConversionChart: (chartInput) => getConversionChart(deps, chartInput),
-    getConversion: (input) => getConversion(deps, input),
-    getRawWhereClause,
+    getConversion: conversion.getConversion,
+    getRawWhereClause: sankey.getRawWhereClause,
     getSankeyChart: (input) => getSankeyChart(deps, input),
-    getSankey: (input) => getSankey(deps, input),
-    getUserFlowCore: (input) => getUserFlowCore(deps, input),
-    processCohortData,
+    getSankey: sankey.getSankey,
+    getUserFlowCore: sankey.getUserFlowCore,
+    processCohortData: retention.processCohortData,
     getRetentionChart: (report, input) =>
       getRetentionChart(deps, report, input),
-    getRetentionCohort: (input) => getRetentionCohort(deps, input),
-    getRetentionCohortCore: (projectId) =>
-      getRetentionCohortCore(deps, projectId),
-    getRetentionSeries: (input) => getRetentionSeries(deps, input),
-    getRetentionLastSeenSeries: (input) =>
-      getRetentionLastSeenSeries(deps, input),
-    getRollingActiveUsers: (input) => getRollingActiveUsers(deps, input),
-    getRollingActiveUsersCore: (input) =>
-      getRollingActiveUsersCore(deps, input),
-    getWeeklyRetentionSeriesCore: (projectId) =>
-      getWeeklyRetentionSeriesCore(deps, projectId),
-    getEngagementCore: (projectId) => getEngagementCore(deps, projectId),
+    getRetentionCohort: retention.getRetentionCohort,
+    getRetentionCohortCore: retention.getRetentionCohortCore,
+    getRetentionSeries: retention.getRetentionSeries,
+    getRetentionLastSeenSeries: retention.getRetentionLastSeenSeries,
+    getRollingActiveUsers: retention.getRollingActiveUsers,
+    getRollingActiveUsersCore: retention.getRollingActiveUsersCore,
+    getWeeklyRetentionSeriesCore: retention.getWeeklyRetentionSeriesCore,
+    getEngagementCore: retention.getEngagementCore,
   };
 }

@@ -1,7 +1,7 @@
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import type { IClickhouseBotEvent } from '../modules/event/event.service';
+import { TABLE_NAMES } from '../shared/ch-tables';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
-import { loadClickHouse } from './clickhouse';
 
 export class BotBuffer extends BaseBuffer {
   private batchSize = process.env.BOT_BUFFER_BATCH_SIZE
@@ -60,7 +60,7 @@ export class BotBuffer extends BaseBuffer {
     // Raw passthrough: each Redis entry is already a valid JSONEachRow
     // line. Streaming raw strings skips JSON.parse + the client's
     // re-stringify on the hot path.
-    const { ch, TABLE_NAMES } = await loadClickHouse();
+    const ch = await this.resolveCh();
     const chStart = performance.now();
     await ch.insert({
       table: TABLE_NAMES.events_bots,

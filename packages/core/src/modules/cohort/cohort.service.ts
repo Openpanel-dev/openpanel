@@ -33,10 +33,12 @@
 // mutations and its cron fragment).
 
 import type { ClickHouseSettings } from '@clickhouse/client';
-import type { IServiceProfile } from '@openpanel/core';
 import type { IChartEventFilter } from '@openpanel/validation';
 import sqlstring from 'sqlstring';
 import type { ServiceDeps } from '../../services';
+import { chQuery } from '../../shared/ch-query';
+import { getReplicatedTableName } from '../../shared/ch-tables';
+import type { IServiceProfile } from '../profile/profile.service';
 import type {
   CohortDefinition,
   EventBasedCohortDefinition,
@@ -137,14 +139,6 @@ export const PROFILE_COHORT_QUERY_SETTINGS: ClickHouseSettings =
     memoryLimitBytesRaw: process.env.COHORT_QUERY_MEMORY_LIMIT_BYTES,
     spillBytesRaw: process.env.COHORT_QUERY_SPILL_BYTES,
   });
-
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
-}
 
 function buildTimeConstraint(timeframe: Timeframe): string {
   if (timeframe.type === 'relative') {
@@ -353,12 +347,12 @@ export function buildPropertyBasedCohortQuery(
 }
 
 export async function computeEventBasedCohort(
+  deps: ServiceDeps,
   projectId: string,
   definition: EventBasedCohortDefinition,
   limit?: number
 ): Promise<string[]> {
   const { events, operator } = definition.criteria;
-  const { chQuery } = await loadChClient();
 
   const queries = events.map((eventCriteria) =>
     buildEventCriteriaQuery(projectId, eventCriteria)
@@ -371,16 +365,18 @@ export async function computeEventBasedCohort(
 
   const finalQuery = limit ? `${combinedQuery} LIMIT ${limit}` : combinedQuery;
 
-  const results = await chQuery<{ profile_id: string }>(finalQuery);
+  const results = await chQuery<{ profile_id: string }>(
+    deps,
+    finalQuery);
   return results.map((r) => r.profile_id);
 }
 
 export async function countEventBasedCohort(
+  deps: ServiceDeps,
   projectId: string,
   definition: EventBasedCohortDefinition
 ): Promise<number> {
   const { events, operator } = definition.criteria;
-  const { chQuery } = await loadChClient();
 
   const queries = events.map((eventCriteria) =>
     buildEventCriteriaQuery(projectId, eventCriteria)
@@ -392,7 +388,9 @@ export async function countEventBasedCohort(
       : queries.join(' UNION DISTINCT ');
 
   const countQuery = `SELECT count() as count FROM (${combinedQuery})`;
-  const results = await chQuery<{ count: number }>(countQuery);
+  const results = await chQuery<{ count: number }>(
+    deps,
+    countQuery);
   return results[0]?.count ?? 0;
 }
 
@@ -528,6 +526,7 @@ function getProfileFiltersWhereClause(
 }
 
 export async function computePropertyBasedCohort(
+  deps: ServiceDeps,
   projectId: string,
   definition: PropertyBasedCohortDefinition,
   limit?: number
@@ -536,8 +535,9 @@ export async function computePropertyBasedCohort(
     return [];
   }
 
-  const { chQuery } = await loadChClient();
   const results = await chQuery<{ profile_id: string }>(
+    deps,
+    
     buildPropertyBasedCohortQuery(projectId, definition, limit),
     PROFILE_COHORT_QUERY_SETTINGS
   );
@@ -545,6 +545,7 @@ export async function computePropertyBasedCohort(
 }
 
 export async function countPropertyBasedCohort(
+  deps: ServiceDeps,
   projectId: string,
   definition: PropertyBasedCohortDefinition
 ): Promise<number> {
@@ -552,8 +553,9 @@ export async function countPropertyBasedCohort(
     return 0;
   }
 
-  const { chQuery } = await loadChClient();
   const results = await chQuery<{ count: number }>(
+    deps,
+    
     `SELECT count() as count FROM (${buildPropertyBasedCohortQuery(projectId, definition)})`,
     PROFILE_COHORT_QUERY_SETTINGS
   );
@@ -561,12 +563,13 @@ export async function countPropertyBasedCohort(
 }
 
 export async function storeCohortMembership(
+  deps: ServiceDeps,
   projectId: string,
   cohortId: string,
   profileIds: string[],
   version: number
 ): Promise<void> {
-  const { ch } = await loadChClient();
+  const ch = deps.ch;
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
   if (profileIds.length > 0) {
@@ -604,12 +607,12 @@ export async function storeCohortMembership(
 }
 
 export async function getCohortMembers(
+  deps: ServiceDeps,
   cohortId: string,
   projectId: string,
   opts?: { limit?: number; offset?: number }
 ): Promise<{ profileIds: string[]; total: number }> {
-  const db = await loadDb();
-  const { chQuery } = await loadChClient();
+  const db = deps.db;
   const cohort = await db.cohort.findUnique({ where: { id: cohortId } });
 
   if (!cohort) {
@@ -628,7 +631,9 @@ export async function getCohortMembers(
     ${opts?.offset ? `OFFSET ${opts.offset}` : ''}
   `;
 
-  const results = await chQuery<{ profile_id: string; total: number }>(query);
+  const results = await chQuery<{ profile_id: string; total: number }>(
+    deps,
+    query);
   return {
     profileIds: results.map((r) => r.profile_id),
     total: results[0]?.total || 0,
@@ -638,10 +643,11 @@ export async function getCohortMembers(
 const COHORT_COUNT_CACHE_MS = 15 * 60 * 1000;
 
 export async function getCohortCount(
+  deps: ServiceDeps,
   cohortId: string,
   projectId: string
 ): Promise<number> {
-  const db = await loadDb();
+  const db = deps.db;
   const cohort = await db.cohort.findUnique({ where: { id: cohortId } });
 
   if (!cohort) {
@@ -655,8 +661,9 @@ export async function getCohortCount(
     }
   }
 
-  const { chQuery } = await loadChClient();
-  const result = await chQuery<{ count: number }>(`
+  const result = await chQuery<{ count: number }>(
+    deps,
+    `
     SELECT count() as count
     FROM ${TABLE.cohortMembers} FINAL
     WHERE project_id = ${sqlstring.escape(projectId)}
@@ -666,35 +673,40 @@ export async function getCohortCount(
 }
 
 export async function computeCohort(
+  deps: ServiceDeps,
   projectId: string,
   definition: CohortDefinition,
   limit?: number
 ): Promise<string[]> {
   if (definition.type === 'event') {
-    return computeEventBasedCohort(projectId, definition, limit);
+    return computeEventBasedCohort(deps, projectId, definition, limit);
   }
   if (definition.type === 'property') {
-    return computePropertyBasedCohort(projectId, definition, limit);
+    return computePropertyBasedCohort(deps, projectId, definition, limit);
   }
   return [];
 }
 
 export async function countCohort(
+  deps: ServiceDeps,
   projectId: string,
   definition: CohortDefinition
 ): Promise<number> {
   if (definition.type === 'event') {
-    return countEventBasedCohort(projectId, definition);
+    return countEventBasedCohort(deps, projectId, definition);
   }
   if (definition.type === 'property') {
-    return countPropertyBasedCohort(projectId, definition);
+    return countPropertyBasedCohort(deps, projectId, definition);
   }
   return 0;
 }
 
-export async function updateCohortMembership(cohortId: string): Promise<void> {
-  const db = await loadDb();
-  const { ch, getReplicatedTableName } = await loadChClient();
+export async function updateCohortMembership(
+  deps: ServiceDeps,
+  cohortId: string
+): Promise<void> {
+  const db = deps.db;
+  const ch = deps.ch;
   const cohort = await db.cohort.findUnique({ where: { id: cohortId } });
 
   if (!cohort) {
@@ -703,6 +715,7 @@ export async function updateCohortMembership(cohortId: string): Promise<void> {
 
   const definition = cohort.definition as CohortDefinition;
   const profileIds = await computeCohort(
+    deps,
     cohort.projectId,
     definition,
     COHORT_MATERIALIZE_LIMIT
@@ -720,7 +733,13 @@ export async function updateCohortMembership(cohortId: string): Promise<void> {
     },
   });
 
-  await storeCohortMembership(cohort.projectId, cohort.id, profileIds, version);
+  await storeCohortMembership(
+    deps,
+    cohort.projectId,
+    cohort.id,
+    profileIds,
+    version
+  );
 
   await db.cohort.update({
     where: { id: cohortId },
@@ -732,10 +751,11 @@ export async function updateCohortMembership(cohortId: string): Promise<void> {
 }
 
 export async function deleteCohortMembership(
+  deps: ServiceDeps,
   cohortId: string,
   projectId: string
 ): Promise<void> {
-  const { ch, getReplicatedTableName } = await loadChClient();
+  const ch = deps.ch;
   const where = `cohort_id = ${sqlstring.escape(cohortId)} AND project_id = ${sqlstring.escape(projectId)}`;
   for (const table of [TABLE.cohortMembers, TABLE.cohortMetadata]) {
     await ch.command({
@@ -748,18 +768,21 @@ export async function deleteCohortMembership(
 }
 
 export async function getProfilesInCohort(
+  deps: ServiceDeps,
   cohortId: string,
   projectId: string
 ): Promise<Set<string>> {
-  const { profileIds } = await getCohortMembers(cohortId, projectId, {
+  const { profileIds } = await getCohortMembers(deps, cohortId, projectId, {
     limit: 100_000,
   });
   return new Set(profileIds);
 }
 
 /** Every non-static cohort id, for the cohortRefresh cron fragment's fan-out. */
-export async function listRefreshableCohortIds(): Promise<string[]> {
-  const db = await loadDb();
+export async function listRefreshableCohortIds(
+  deps: ServiceDeps
+): Promise<string[]> {
+  const db = deps.db;
   const cohorts = await db.cohort.findMany({
     where: { isStatic: false },
     select: { id: true },
@@ -767,7 +790,9 @@ export async function listRefreshableCohortIds(): Promise<string[]> {
   return cohorts.map((c) => c.id);
 }
 
-export async function listCohortMemberProfiles({
+export async function listCohortMemberProfiles(
+  deps: ServiceDeps,
+  {
   projectId,
   cohortId,
   cursor,
@@ -782,7 +807,6 @@ export async function listCohortMemberProfiles({
   search?: string;
   filters?: IChartEventFilter[];
 }): Promise<{ data: IServiceProfile[]; count: number }> {
-  const { chQuery } = await loadChClient();
   const { buildFilterWhere } = await import('../chart/src/table-filter-where');
   const { profileSearchSql } = await import('../profile/profile.service');
   // M10-005: `getProfiles` takes `ServiceDeps` now and this function has none
@@ -807,7 +831,9 @@ export async function listCohortMemberProfiles({
     ? `AND ${extraConditions.join(' AND ')}`
     : '';
 
-  const rows = await chQuery<{ id: string; total_count: number }>(`
+  const rows = await chQuery<{ id: string; total_count: number }>(
+    deps,
+    `
     SELECT id, count() OVER () AS total_count
     FROM ${TABLE.profiles} FINAL
     WHERE project_id = ${sqlstring.escape(projectId)}
@@ -837,12 +863,14 @@ export async function listCohortMemberProfiles({
 }
 
 export async function getCohortMemberEvents(
+  deps: ServiceDeps,
   projectId: string,
   cohortId: string,
   limit = 10
 ): Promise<{ name: string; count: number }[]> {
-  const { chQuery } = await loadChClient();
-  return chQuery<{ name: string; count: number }>(`
+  return chQuery<{ name: string; count: number }>(
+    deps,
+    `
     SELECT name, count() AS count
     FROM ${TABLE.events}
     WHERE project_id = ${sqlstring.escape(projectId)}
@@ -859,12 +887,14 @@ export async function getCohortMemberEvents(
 }
 
 export async function getCohortEventsPerDay(
+  deps: ServiceDeps,
   projectId: string,
   cohortId: string,
   days = 30
 ): Promise<{ date: string; count: number }[]> {
-  const { chQuery } = await loadChClient();
-  const rows = await chQuery<{ date: string; count: number }>(`
+  const rows = await chQuery<{ date: string; count: number }>(
+    deps,
+    `
     SELECT
       toDate(created_at) AS date,
       count() AS count
@@ -887,12 +917,14 @@ export async function getCohortEventsPerDay(
 }
 
 export async function getCohortMemberRoutes(
+  deps: ServiceDeps,
   projectId: string,
   cohortId: string,
   limit = 10
 ): Promise<{ path: string; count: number }[]> {
-  const { chQuery } = await loadChClient();
-  return chQuery<{ path: string; count: number }>(`
+  return chQuery<{ path: string; count: number }>(
+    deps,
+    `
     SELECT path, count() AS count
     FROM ${TABLE.events}
     WHERE project_id = ${sqlstring.escape(projectId)}
@@ -930,8 +962,8 @@ export interface CohortService {
 
 export function createCohortService(deps: ServiceDeps): CohortService {
   return {
-    updateMembership: updateCohortMembership,
-    listRefreshableCohortIds,
+    updateMembership: (cohortId) => updateCohortMembership(deps, cohortId),
+    listRefreshableCohortIds: () => listRefreshableCohortIds(deps),
     enqueueCompute: async (cohortId) => {
       await deps.queues.cohortCompute.cohortCompute.add(
         { cohortId },

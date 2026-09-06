@@ -1,10 +1,19 @@
 import { afterAll, describe, expect, it } from 'bun:test';
-import { loadClickHouse } from './clickhouse';
+
+// M10-009: the buffers take the boot scope's client as `BufferDeps.ch` now, so
+// the `loadClickHouse()` seam this file used to call through is gone. What it
+// proves is unchanged — the round-robin/retry client the buffers are handed
+// (`ch` / `chQuery`, `@openpanel/db`'s exports) must survive a dead node — so
+// the subject is imported directly here. This is a test file, which
+// `core-uses-ctx-not-db-internals` exempts.
+function loadClickHouse() {
+  return import('@openpanel/db/src/clickhouse/client');
+}
 
 /**
  * ADR-013 R1 / M8-006: the deliberate ECONNREFUSED to a dead ClickHouse node
- * must be caught and retried (sin-binning) at the seam buffers actually call
- * through — `loadClickHouse()` — exactly as packages/db's
+ * must be caught and retried (sin-binning) on the client the buffers are
+ * handed as `BufferDeps.ch`, exactly as packages/db's
  * `sql.round-robin.clickhouse.test.ts` proves for `chQuery`/`chQueryWithMeta`
  * directly. That file is NOT touched here; this extends the same proof onto
  * the path M8-001 moved: `ch.insert` reached via the core buffer seam.
@@ -82,7 +91,7 @@ function restoreClickhouseEnv(): void {
   }
 }
 
-// `./clickhouse` lazily dynamic-imports `@openpanel/db/src/clickhouse/client`
+// `loadClickHouse()` above lazily imports `@openpanel/db/src/clickhouse/client`
 // on first call, which reads CLICKHOUSE_URL once at module evaluation — so
 // these must be set before this file's first `loadClickHouse()` call.
 process.env.CLICKHOUSE_URL = `${DEAD_NODE_URL}/${CLICKHOUSE_TEST_DATABASE},${LIVE_NODE_URL}`;

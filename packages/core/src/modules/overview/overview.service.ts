@@ -1251,7 +1251,7 @@ export async function getTrafficBreakdownCore(
     filters?: IChartEventFilter[];
   }
 ) {
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   return getTopGeneric(deps, {
     projectId: input.projectId,
     filters: input.filters ?? [],
@@ -1305,7 +1305,7 @@ export async function getSegmentDailySeriesCore(
     return [];
   }
 
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const { items } = await getTopGenericSeries(deps, {
     projectId: input.projectId,
     filters: [],
@@ -1343,7 +1343,7 @@ export async function getAnalyticsOverviewCore(
   deps: ServiceDeps,
   input: GetAnalyticsOverviewInput
 ) {
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const interval = input.interval ?? 'day';
 
   const result = await getMetrics(deps, {

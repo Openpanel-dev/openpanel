@@ -16,6 +16,22 @@ import {
   createChartService,
 } from './modules/chart/chart.service';
 import {
+  type ConversionService,
+  createConversionService,
+} from './modules/chart/conversion.service';
+import {
+  createFunnelService,
+  type FunnelService,
+} from './modules/chart/funnel.service';
+import {
+  createRetentionService,
+  type RetentionService,
+} from './modules/chart/retention.service';
+import {
+  createSankeyService,
+  type SankeyService,
+} from './modules/chart/sankey.service';
+import {
   type ClientService,
   createClientService,
 } from './modules/client/client.service';
@@ -56,6 +72,10 @@ import {
   createInsightService,
   type InsightService,
 } from './modules/insight/insight.service';
+import {
+  createIntegrationService,
+  type IntegrationService,
+} from './modules/integration/integration.service';
 import { createMcpService, type McpService } from './modules/mcp/mcp.service';
 import {
   createMiscService,
@@ -145,6 +165,7 @@ export interface Services {
   import: ImportService;
   ingest: IngestService;
   organization: OrganizationService;
+  integration: IntegrationService;
   onboarding: OnboardingService;
   notification: NotificationService;
   session: SessionService;
@@ -152,6 +173,15 @@ export interface Services {
   profile: ProfileService;
   group: GroupService;
   chart: ChartService;
+  // One key per `*.service.ts` (M10-009): the chart module is four files
+  // besides `chart.service.ts`, so each is bound here too. `chart` keeps the
+  // composed facade its own callers already use — the factories build stateless
+  // closures over `deps`, so binding a sub-module twice binds the same
+  // functions, not a second piece of state.
+  funnel: FunnelService;
+  conversion: ConversionService;
+  sankey: SankeyService;
+  retention: RetentionService;
   overview: OverviewService;
   pages: PagesService;
   realtime: RealtimeService;
@@ -176,13 +206,14 @@ export function createServices(deps: ServiceDeps): Services {
   // and a `() => container` thunk: captured, not copied, so two services may
   // call each other without a cycle.
   return {
-    auth: createAuthService(deps),
+    auth: createAuthService(),
     insight: createInsightService(deps),
     gsc: createGscService(deps),
     cohort: createCohortService(deps),
     import: createImportService(deps),
     ingest: createIngestService(deps),
     organization: createOrganizationService(deps),
+    integration: createIntegrationService(deps),
     onboarding: createOnboardingService(deps),
     notification: createNotificationService(deps),
     session: createSessionService(deps),
@@ -190,6 +221,10 @@ export function createServices(deps: ServiceDeps): Services {
     profile: createProfileService(deps),
     group: createGroupService(deps),
     chart: createChartService(deps),
+    funnel: createFunnelService(deps),
+    conversion: createConversionService(deps),
+    sankey: createSankeyService(deps),
+    retention: createRetentionService(deps),
     overview: createOverviewService(deps),
     pages: createPagesService(deps),
     realtime: createRealtimeService(deps),
@@ -205,7 +240,7 @@ export function createServices(deps: ServiceDeps): Services {
     subscription: createSubscriptionService(deps),
     salt: createSaltService(deps),
     conversation: createConversationService(deps),
-    assistant: createAssistantService(deps),
-    mcp: createMcpService(deps),
+    assistant: createAssistantService(),
+    mcp: createMcpService(),
   };
 }

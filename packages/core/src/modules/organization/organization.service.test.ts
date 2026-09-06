@@ -394,9 +394,14 @@ const projectAccess = {
 
 const $transaction = mock(async (ops: Promise<unknown>[]) => Promise.all(ops));
 
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-mock.module('@openpanel/db/src/prisma-client', () => ({
-  ...actualPrismaClient,
+// M10-009: every function under test takes `ServiceDeps`, so `deps.db` and
+// `deps.ch` ARE the fakes below — the two `@openpanel/db` module mocks this
+// file used to install are gone, and with them the process-wide leak they had
+// to be restored from. `connectUserToOrganization` reaches
+// `shared/access-lookups.ts` (cacheable, via the v1-compat seam), which is why
+// the `@openpanel/redis` stand-in below stays.
+const chCommand = mock(async () => undefined);
+const deps = {
   db: {
     organization,
     project,
@@ -406,21 +411,8 @@ mock.module('@openpanel/db/src/prisma-client', () => ({
     projectAccess,
     $transaction,
   },
-}));
-
-// Spread the real module rather than hand-listing every export — see
-// gsc.service.test.ts's header for why a partial factory here is a
-// process-wide hazard, not a local one (bun shares one module registry
-// across files without `--isolate`).
-const actualClickhouseClient = await import(
-  '@openpanel/db/src/clickhouse/client'
-);
-const realClickhouseClient = { ...actualClickhouseClient };
-const chCommand = mock(async () => undefined);
-mock.module('@openpanel/db/src/clickhouse/client', () => ({
-  ...realClickhouseClient,
   ch: { command: chCommand },
-}));
+} as unknown as import('../../services').ServiceDeps;
 
 // Bypasses the Redis cache-aside entirely — this module's own logic is
 // exercised directly, caching is @openpanel/redis's concern. `access.service.ts`
@@ -461,10 +453,6 @@ mock.module('@openpanel/redis', () => ({
 }));
 
 afterAll(() => {
-  mock.module(
-    '@openpanel/db/src/clickhouse/client',
-    () => realClickhouseClient
-  );
   mock.module('@openpanel/redis', () => realRedis);
 });
 
@@ -502,7 +490,7 @@ test('scheduleOrganizationDeletion sets deleteAt on the org and its projects', a
     deleteAt: null,
   });
 
-  await subject.scheduleOrganizationDeletion('org_1');
+  await subject.scheduleOrganizationDeletion(deps, 'org_1');
 
   expect(organizationStore.get('org_1')?.deleteAt).toBeInstanceOf(Date);
   expect(projectStore.get('proj_1')?.deleteAt).toBeInstanceOf(Date);
@@ -518,9 +506,9 @@ test('scheduleOrganizationDeletion refuses a live, uncancelled subscription', as
     })
   );
 
-  await expect(subject.scheduleOrganizationDeletion('org_1')).rejects.toThrow(
-    /cancel your subscription/
-  );
+  await expect(
+    subject.scheduleOrganizationDeletion(deps, 'org_1')
+  ).rejects.toThrow(/cancel your subscription/);
 });
 
 test('scheduleOrganizationDeletion allows a subscription already scheduled to cancel', async () => {
@@ -533,7 +521,7 @@ test('scheduleOrganizationDeletion allows a subscription already scheduled to ca
     })
   );
 
-  await subject.scheduleOrganizationDeletion('org_1');
+  await subject.scheduleOrganizationDeletion(deps, 'org_1');
   expect(organizationStore.get('org_1')?.deleteAt).toBeInstanceOf(Date);
 });
 
@@ -548,7 +536,7 @@ test('cancelOrganizationDeletion clears deleteAt on the org and its projects', a
     deleteAt: new Date(),
   });
 
-  await subject.cancelOrganizationDeletion('org_1');
+  await subject.cancelOrganizationDeletion(deps, 'org_1');
 
   expect(organizationStore.get('org_1')?.deleteAt).toBeNull();
   expect(projectStore.get('proj_1')?.deleteAt).toBeNull();
@@ -556,7 +544,7 @@ test('cancelOrganizationDeletion clears deleteAt on the org and its projects', a
 
 test('updateOrganization updates name and timezone', async () => {
   organizationStore.set('org_1', makeOrganization({ id: 'org_1' }));
-  const result = await subject.updateOrganization({
+  const result = await subject.updateOrganization(deps, {
     id: 'org_1',
     name: 'New name',
     timezone: 'Europe/Stockholm',
@@ -577,7 +565,7 @@ test('removeOrganizationMember refuses a user removing themself as the last memb
   });
 
   await expect(
-    subject.removeOrganizationMember({
+    subject.removeOrganizationMember(deps, {
       organizationId: 'org_1',
       memberId: 'member_1',
       targetUserId: 'user_1',
@@ -603,7 +591,7 @@ test('removeOrganizationMember deletes the member and their project access', asy
     level: 'write',
   });
 
-  await subject.removeOrganizationMember({
+  await subject.removeOrganizationMember(deps, {
     organizationId: 'org_1',
     memberId: 'member_1',
     targetUserId: 'user_1',
@@ -623,7 +611,7 @@ test('updateOrganizationMemberAccess replaces project access with the given gran
     level: 'read',
   });
 
-  await subject.updateOrganizationMemberAccess({
+  await subject.updateOrganizationMemberAccess(deps, {
     organizationId: 'org_1',
     targetUserId: 'user_1',
     access: [{ projectId: 'proj_new', level: 'write' }],
@@ -645,7 +633,7 @@ test('inviteUserToOrganization refuses when the email is already a member', asyn
   });
 
   await expect(
-    subject.inviteUserToOrganization({
+    subject.inviteUserToOrganization(deps, {
       organizationId: 'org_1',
       email: 'a@example.com',
       role: 'org:member',
@@ -668,7 +656,7 @@ test('inviteUserToOrganization refuses a duplicate pending invite', async () => 
   });
 
   await expect(
-    subject.inviteUserToOrganization({
+    subject.inviteUserToOrganization(deps, {
       organizationId: 'org_1',
       email: 'b@example.com',
       role: 'org:member',
@@ -681,7 +669,7 @@ test('inviteUserToOrganization refuses a duplicate pending invite', async () => 
 test('inviteUserToOrganization connects an existing user immediately, with no email sent', async () => {
   userStore.set('user_2', { id: 'user_2', email: 'c@example.com' });
 
-  const result = await subject.inviteUserToOrganization({
+  const result = await subject.inviteUserToOrganization(deps, {
     organizationId: 'org_1',
     email: 'c@example.com',
     role: 'org:member',
@@ -694,7 +682,7 @@ test('inviteUserToOrganization connects an existing user immediately, with no em
 });
 
 test('inviteUserToOrganization emails a new user and leaves the invite pending', async () => {
-  const result = await subject.inviteUserToOrganization({
+  const result = await subject.inviteUserToOrganization(deps, {
     organizationId: 'org_1',
     email: 'new@example.com',
     role: 'org:member',
@@ -722,7 +710,7 @@ test('revokeInvite deletes the invite row', async () => {
     createdAt: EPOCH,
   });
 
-  await subject.revokeInvite('invite_1');
+  await subject.revokeInvite(deps, 'invite_1');
   expect(inviteStore.has('invite_1')).toBe(false);
 });
 
@@ -757,7 +745,7 @@ test('runDeleteCron sweeps orphaned and scheduled-for-deletion organizations and
     deleteAt: new Date(Date.now() - 1000),
   });
 
-  const result = await subject.runDeleteCron();
+  const result = await subject.runDeleteCron(deps);
 
   expect(result).toEqual({ organizations: 1, projects: 2 });
   expect(organizationStore.has('org_orphaned')).toBe(false);
@@ -777,7 +765,7 @@ test('runDeleteCron is a no-op when nothing is due', async () => {
     email: 'a@example.com',
   });
 
-  const result = await subject.runDeleteCron();
+  const result = await subject.runDeleteCron(deps);
   expect(result).toEqual({ organizations: 0, projects: 0 });
   expect(organizationStore.has('org_healthy')).toBe(true);
 });
@@ -787,6 +775,6 @@ test('getSettingsForOrganization falls back to UTC when the organization has no 
     'org_1',
     makeOrganization({ id: 'org_1', timezone: null })
   );
-  const result = await subject.getSettingsForOrganization('org_1');
+  const result = await subject.getSettingsForOrganization(deps, 'org_1');
   expect(result).toEqual({ timezone: 'UTC' });
 });

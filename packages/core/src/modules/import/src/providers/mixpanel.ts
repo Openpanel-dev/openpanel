@@ -1,11 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { isSameDomain, parsePath, toDots } from '@openpanel/common';
-// Deep imports, not @openpanel/db's full barrel — see umami.ts's header.
-import { formatClickhouseDate } from '@openpanel/db/src/clickhouse/client';
-import type { IClickhouseEvent } from '@openpanel/core';
-import type { IClickhouseProfile } from '@openpanel/core';
 import { z } from 'zod';
 import type { Logger } from '../../../../logger';
+// core's own date helper, not @openpanel/db's — see umami.ts's header.
+import { formatClickhouseDate } from '../../../../shared/ch-dates';
 import {
   getReferrerWithQuery,
   parseReferrer,
@@ -14,6 +12,8 @@ import {
   parseUserAgent,
   type UserAgentInfo,
 } from '../../../../shared/parser-user-agent';
+import type { IClickhouseEvent } from '../../../event/event.service';
+import type { IClickhouseProfile } from '../../../profile/profile.service';
 import type { IMixpanelImportConfig } from '../../import.constants';
 import { BaseImportProvider } from '../base-provider';
 

@@ -20,9 +20,9 @@
 // guards on exactly this (apps/api/src/controllers/import.controller.ts:17-18),
 // ported verbatim.
 
-import type { IClickhouseEvent } from '@openpanel/core';
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
+import type { IClickhouseEvent } from '../event/event.service';
 import { insertRawEventsBatch } from './import.service';
 
 export const importRoutes = defineRoutes((app) =>
@@ -35,6 +35,7 @@ export const importRoutes = defineRoutes((app) =>
 
       try {
         const { writtenRows } = await insertRawEventsBatch(
+          ctx,
           client.projectId,
           body as IClickhouseEvent[]
         );

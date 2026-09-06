@@ -93,53 +93,80 @@ module.exports = {
   forbidden: [
     {
       name: 'core-uses-ctx-not-db-internals',
-      severity: 'warn',
+      severity: 'error',
       comment:
-        'M10-001 (docs/TECH_DEBT.md §4 step 4): packages/core reaches Postgres/ClickHouse ' +
-        'through ctx.db / ctx.ch / ServiceDeps, never by importing @openpanel/db itself, so a ' +
-        'requestId minted at the edge keeps reaching the query (ADR-018). import type stays ' +
-        "allowed (dependencyTypesNot: ['type-only']) — that is what keeps `bun test` offline. " +
-        'packages/core/src/context.ts is the one named exception, excluded by path rather than ' +
-        "by widening dependencyTypesNot: its Db / ClickHouseClient fields are `typeof " +
-        "import('@openpanel/db/...')` type queries, which dependency-cruiser tags " +
+        'M10-001/M10-009 (docs/TECH_DEBT.md §4 steps 2 and 4): packages/core reaches ' +
+        'Postgres/ClickHouse through ctx.db / ctx.ch / ServiceDeps, never by acquiring a ' +
+        'client from @openpanel/db itself, so a requestId minted at the edge keeps reaching ' +
+        "the query (ADR-018). import type stays allowed (dependencyTypesNot: ['type-only']) " +
+        '— that is what keeps `bun test` offline. M10-009 flipped this from warn to error at ' +
+        '0 violations; the four exemptions below are each a named seam, not a blanket. ' +
+        'FROM: (1) packages/core/src/context.ts — its Db / ClickHouseClient fields are ' +
+        "`typeof import('@openpanel/db/...')` type queries, which dependency-cruiser tags " +
         "['undetermined', 'type-import'] rather than 'type-only' (verified via --output-type " +
-        'json) — a genuinely type-level reference. Widening the exemption to ' +
-        "'type-import' instead of naming the file is exactly what the previous attempt at this " +
-        'task did, and it silently swallowed a real value-import: ' +
-        'packages/core/src/buffers/clickhouse.ts has a `typeof import(...)` type query (line 8) ' +
-        'AND a genuine runtime `import(...)` dynamic import (line 13) of the same resolved ' +
-        "module; dependency-cruiser folds both references between the same two files into ONE " +
-        "edge and — reproduced via --output-type json with an isolated probe file mirroring " +
-        "that structure — the merge drops the 'dynamic-import' tag entirely, leaving only " +
-        "['undetermined', 'type-import']. Exempting 'type-import' wholesale therefore hides " +
-        'that seam from the baseline instead of counting it; buffers/clickhouse.ts is left in ' +
-        'scope for M10-002..008 to fix. context.ts has no such merge (no runtime import of ' +
-        '@openpanel/db anywhere in the file), so excluding it by path is safe. Landed at warn ' +
-        'with the baseline violation count recorded in docs/TECH_DEBT.md; M10-009 flips it to ' +
-        'error once the count is 0.',
+        'json), i.e. a genuinely type-level reference; excluded by path rather than by ' +
+        'widening dependencyTypesNot, because dependency-cruiser folds a `typeof import()` ' +
+        'and a runtime `import()` of the same module into ONE edge and drops the ' +
+        "'dynamic-import' tag when it does, so exempting 'type-import' wholesale would hide " +
+        'real value imports. (2) packages/core/src/v1-compat.ts — THE declared composition ' +
+        "seam (ADR-007; that file's own header). It is where the boot scope registers the " +
+        'deps it already built, and the only thing behind it is the lazy fallback for a ' +
+        "process that never built AppDeps (packages/trpc's own suites). Nothing holding a " +
+        'Ctx comes through it. It is deleted whole with packages/trpc at P10. ' +
+        '(3) packages/core/src/code-migrations/** — one-shot CLI scripts run by ' +
+        '`migrate.ts` (`pnpm migrate:deploy:code`), outside the app, with no request and no ' +
+        'Ctx to lose; ADR-007 puts code-migrations/ in core and keeps clickhouse/migration.ts ' +
+        'in packages/db, so the edge is what the ADR describes. (4) *.test.ts — a test has no ' +
+        "request, and M10-009's own measurement of this drift is defined as " +
+        '`grep ... | grep -v .test.ts`. Tests that need a real client against openpanel_test ' +
+        'take it directly; two of them (shared/ch-tables.parity.test.ts, ' +
+        "shared/ch-dates.parity.test.ts) exist precisely to police core's copies of " +
+        "@openpanel/db's table map and date helpers against the originals. " +
+        'TO: the three modules under packages/db that build QUERY TEXT and hold no client — ' +
+        'clickhouse/sql.ts (ADR-013 fixes the `sql` tag AT that path by name), ' +
+        'clickhouse/query-builder.ts (`clix(client, tz)` takes the client as an argument) and ' +
+        'sql-builder.ts (`createSqlBuilder()` returns strings). Importing one of those cannot ' +
+        'lose a request scope, because the client is still whatever the caller passes — and ' +
+        'in core that is always deps.ch. prisma-client.ts, clickhouse/client.ts, logger.ts ' +
+        'and the barrel are NOT exempt: those are where a second client comes from.',
       from: {
         path: '^packages/core/src/',
-        pathNot: '^packages/core/src/context\\.ts$',
+        pathNot: [
+          '^packages/core/src/context\\.ts$',
+          '^packages/core/src/v1-compat\\.ts$',
+          '^packages/core/src/code-migrations/',
+          '\\.test\\.ts$',
+        ],
       },
       to: {
         path: '^packages/db/',
+        pathNot: [
+          '^packages/db/src/clickhouse/sql\\.ts$',
+          '^packages/db/src/clickhouse/query-builder\\.ts$',
+          '^packages/db/src/sql-builder\\.ts$',
+        ],
         dependencyTypesNot: ['type-only'],
       },
     },
     {
       name: 'core-no-self-barrel',
-      severity: 'warn',
+      severity: 'error',
       comment:
-        'M10-001 (docs/TECH_DEBT.md §4): a file under packages/core/src/** imports its siblings ' +
-        'by relative path, never through its own package barrel (@openpanel/core) — a self-import ' +
-        'is always resolvable as a relative import and importing the barrel instead just risks ' +
-        'reintroducing the exact resolution cycles the barrel is meant to avoid for external ' +
-        'consumers. `to.path` matches the RESOLVED path (see header comment), so this targets ' +
-        'packages/core/package.json\'s "." export target (./src/index.ts) directly rather than ' +
-        'the bare specifier string, which would never match a resolved path. import type stays ' +
-        'allowed. Landed at warn with the baseline violation count recorded in docs/TECH_DEBT.md; ' +
-        'M10-009 flips it to error once the count is 0.',
-      from: { path: '^packages/core/src/' },
+        'M10-001/M10-009 (docs/TECH_DEBT.md §4): a file under packages/core/src/** imports its ' +
+        'siblings by relative path, never through its own package barrel (@openpanel/core) — a ' +
+        'self-import is always resolvable as a relative import and importing the barrel instead ' +
+        'just risks reintroducing the exact resolution cycles the barrel is meant to avoid for ' +
+        'external consumers. `to.path` matches the RESOLVED path (see header comment), so this ' +
+        'targets packages/core/package.json\'s "." export target (./src/index.ts) directly rather ' +
+        'than the bare specifier string, which would never match a resolved path. import type ' +
+        'stays allowed. M10-009 flipped this from warn to error at 0 violations. *.test.ts is ' +
+        'exempt: a barrel test (src/index.test.ts) has to import the barrel to test it, and the ' +
+        "mcp/gsc suites `mock.module('@openpanel/core', ...)` deliberately — that is a mocking " +
+        'idiom, not a production import cycle.',
+      from: {
+        path: '^packages/core/src/',
+        pathNot: '\\.test\\.ts$',
+      },
       to: {
         path: '^packages/core/src/index\\.ts$',
         dependencyTypesNot: ['type-only'],

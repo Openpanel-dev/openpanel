@@ -3,12 +3,12 @@ import {
   defineTool,
   type ToolRunContext,
 } from '@better-agent/core';
+import type { IChartEventFilter, IChartRange } from '@openpanel/validation';
+import type { z } from 'zod';
 import {
   getDatesFromRange,
   resolveDateRange as resolveDateRangeCore,
-} from '@openpanel/core';
-import type { IChartEventFilter, IChartRange } from '@openpanel/validation';
-import type { z } from 'zod';
+} from '../../../../shared/date';
 import type { ChatAgentContext, PageContext } from '../context';
 import { chatRunContext } from '../run-context';
 

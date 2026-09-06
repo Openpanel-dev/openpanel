@@ -4,6 +4,7 @@ import type {
   IReportInput,
   IReportInputWithDates,
 } from '@openpanel/validation';
+import type { ServiceDeps } from '../../../../services';
 import { getChartStartEndDate } from '../../../../shared/date';
 import { getSettingsForProject } from '../../../organization/organization.service';
 import { mergeGlobalFilters } from '../../../report/src/series';
@@ -36,8 +37,11 @@ function toSeriesDefinition(
 }
 
 /** Resolve the date range in the project's timezone and normalize every series item. */
-export async function normalize(input: IReportInput): Promise<NormalizedInput> {
-  const { timezone } = await getSettingsForProject(input.projectId);
+export async function normalize(
+  deps: ServiceDeps,
+  input: IReportInput
+): Promise<NormalizedInput> {
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const { startDate, endDate } = getChartStartEndDate(
     {
       range: input.range,

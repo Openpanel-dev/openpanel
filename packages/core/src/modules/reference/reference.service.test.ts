@@ -97,7 +97,9 @@ const reference = {
   }),
 };
 
-const getSettingsForProject = mock(async () => ({ timezone: 'UTC' }));
+const getSettingsForProject = mock(
+  async (_deps: unknown, _projectId: string) => ({ timezone: 'UTC' })
+);
 const getChartStartEndDate = mock(() => ({
   startDate: '2026-08-25 00:00:00',
   endDate: '2026-09-01 23:59:59',
@@ -214,5 +216,8 @@ test('getChartReferences filters by the resolved date window', async () => {
     range: 'last30Days' as never,
   });
   expect(result.map((r) => r.id)).toEqual(['ref_in_range']);
-  expect(getSettingsForProject).toHaveBeenCalledWith('proj_1');
+  expect(getSettingsForProject).toHaveBeenCalledWith(
+    expect.anything(),
+    'proj_1'
+  );
 });

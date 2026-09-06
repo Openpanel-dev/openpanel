@@ -29,7 +29,6 @@
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { createLogger } from '../../clients/logger';
-import type { ServiceDeps } from '../../services';
 import {
   authenticateToken,
   extractToken,
@@ -207,7 +206,14 @@ export interface McpService {
   ): Promise<McpHttpResult>;
 }
 
-export function createMcpService(_deps: ServiceDeps): McpService {
+/**
+ * Takes NO `ServiceDeps`: `extractToken` is pure and
+ * `handleStatelessMcpRequest` hands the request to the
+ * `@modelcontextprotocol/sdk` server, whose tool handlers have a fixed
+ * signature with no room for a `deps` argument (docs/TECH_DEBT.md's
+ * "loaders still standing" table).
+ */
+export function createMcpService(): McpService {
   return {
     extractToken,
     handleStatelessMcpRequest,

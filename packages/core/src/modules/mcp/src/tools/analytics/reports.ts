@@ -1,14 +1,14 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import { getChartStartEndDate } from '../../../../../shared/date';
 import {
   AggregateChartEngine,
   ChartEngine,
-  getChartStartEndDate,
   getFunnel,
   getReportById,
   getReportsByDashboardId,
   getSettingsForProject,
-} from '@openpanel/core';
-import { z } from 'zod';
+} from '../../../../../v1-compat';
 import type { McpAuthContext } from '../../auth';
 import { dashboardBaseUrl } from '../dashboard-links';
 import {

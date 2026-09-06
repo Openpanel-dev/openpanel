@@ -26,7 +26,7 @@ import {
 } from './onboarding.service';
 
 function loadOrganizationAccess() {
-  return import('@openpanel/core');
+  return import('../../shared/access-lookups');
 }
 
 function requireLogin(userId: string | null | undefined): string {
@@ -38,7 +38,7 @@ function requireLogin(userId: string | null | undefined): string {
 
 export const onboardingRouter = createTRPCRouter({
   skipOnboardingCheck: procedure.query(({ ctx }) =>
-    canSkipOnboarding(ctx.session.userId)
+    canSkipOnboarding(ctx, ctx.session.userId)
   ),
 
   project: procedure
@@ -59,6 +59,6 @@ export const onboardingRouter = createTRPCRouter({
         }
       }
 
-      return createOnboardingProject(input, userId);
+      return createOnboardingProject(ctx, input, userId);
     }),
 });

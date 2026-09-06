@@ -17,10 +17,10 @@
 // raw lookup (no ladder involved), reached directly from the sibling
 // `shared/access-lookups.ts`.
 //
-// db access is LAZY (`loadDb` below), not a static top-level import — see
-// organization.service.ts's header for the full reasoning (constructing
-// @openpanel/db's clients at import time would spawn a pino-pretty transport
-// worker thread per test file).
+// M10-009: every exported function takes `ServiceDeps` and reaches Postgres
+// as `deps.db`; the `loadDb()` lazy loader is gone, so a requestId minted at
+// the edge reaches the query (ADR-018, docs/TECH_DEBT.md §4). V1's still-live
+// trpc router keeps calling the deps-free spellings v1-compat.ts re-exports.
 
 import { z } from 'zod';
 import {
@@ -38,15 +38,12 @@ import {
   slackInstaller,
 } from '../../clients/integrations/slack';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
+import type { ServiceDeps } from '../../services';
 import { getOrganizationAccess } from '../../shared/access-lookups';
 import { getAccessChecks } from '../auth/auth.service';
 import { BASE_INTEGRATIONS } from '../notification/notification.service';
 import type { IIntegrationConfig, ISlackConfig } from './integration.constants';
 import { zSlackAuthResponse } from './src/slack-contract';
-
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
 
 // Credentials are write-only: they are encrypted at rest and never travel back
 // to a client. `read` on a project is bare membership, so returning the stored
@@ -75,6 +72,7 @@ function rejectEncryptedSecrets(config: unknown) {
 // Assert the user can act on the project at `level`, and return the project's
 // organizationId (still stored on the integration for org-level queries/cascades).
 async function assertProjectAccessAndGetOrg(
+  deps: ServiceDeps,
   userId: string,
   projectId: string,
   level: 'read' | 'write'
@@ -82,7 +80,7 @@ async function assertProjectAccessAndGetOrg(
   const { requireProjectAccess } = await getAccessChecks();
   await requireProjectAccess({ userId, projectId, level });
 
-  const db = await loadDb();
+  const db = deps.db;
   const project = await db.project.findUniqueOrThrow({
     where: { id: projectId },
     select: { organizationId: true },
@@ -129,8 +127,12 @@ async function assertIntegrationAccess(
   }
 }
 
-export async function getIntegrationById(userId: string, id: string) {
-  const db = await loadDb();
+export async function getIntegrationById(
+  deps: ServiceDeps,
+  userId: string,
+  id: string
+) {
+  const db = deps.db;
   const integration = await db.integration.findUniqueOrThrow({
     where: { id },
   });
@@ -141,16 +143,18 @@ export async function getIntegrationById(userId: string, id: string) {
 }
 
 export async function listIntegrationsForProject(
+  deps: ServiceDeps,
   userId: string,
   projectId: string
 ) {
   const organizationId = await assertProjectAccessAndGetOrg(
+    deps,
     userId,
     projectId,
     'read'
   );
 
-  const db = await loadDb();
+  const db = deps.db;
   const integrations = await db.integration.findMany({
     where: {
       // The project's own integrations, plus legacy org-wide integrations
@@ -176,6 +180,7 @@ export async function listIntegrationsForProject(
 // behavior (validation, connection test, credential encryption) is delegated to
 // the integration's server plugin — adding a new integration needs no change here.
 export async function upsertIntegration(
+  deps: ServiceDeps,
   userId: string,
   input: {
     id?: string;
@@ -189,7 +194,7 @@ export async function upsertIntegration(
   // to one project can't update another project's integration in the same org.
   rejectEncryptedSecrets(input.config);
 
-  const db = await loadDb();
+  const db = deps.db;
 
   let organizationId: string;
   let storedConfig: unknown;
@@ -203,6 +208,7 @@ export async function upsertIntegration(
     storedConfig = existing.config;
   } else {
     organizationId = await assertProjectAccessAndGetOrg(
+      deps,
       userId,
       input.projectId,
       'write'
@@ -256,6 +262,7 @@ export async function upsertIntegration(
 }
 
 export async function createOrUpdateSlackIntegration(
+  deps: ServiceDeps,
   userId: string,
   input: { id?: string; name: string; projectId: string }
 ) {
@@ -267,7 +274,7 @@ export async function createOrUpdateSlackIntegration(
   // on an update is unauthorized and may point at a different project.
   let projectId: string;
 
-  const db = await loadDb();
+  const db = deps.db;
 
   if (input.id) {
     const existing = await db.integration.findUniqueOrThrow({
@@ -279,6 +286,7 @@ export async function createOrUpdateSlackIntegration(
     projectId = existing.projectId ?? input.projectId;
   } else {
     organizationId = await assertProjectAccessAndGetOrg(
+      deps,
       userId,
       input.projectId,
       'write'
@@ -323,6 +331,7 @@ export async function createOrUpdateSlackIntegration(
 // caller-supplied credentials, so it must not be reachable by anyone who
 // merely holds a session.
 export async function testIntegrationConnection(
+  deps: ServiceDeps,
   userId: string,
   input: { projectId: string; config: IIntegrationConfig }
 ) {
@@ -343,6 +352,7 @@ export async function testIntegrationConnection(
 
 // Back-compat alias for the export forms; same gate as `testIntegrationConnection`.
 export async function testExportIntegrationConnection(
+  deps: ServiceDeps,
   userId: string,
   input: { projectId: string; config: IIntegrationConfig }
 ) {
@@ -361,8 +371,12 @@ export async function testExportIntegrationConnection(
   );
 }
 
-export async function deleteIntegration(userId: string, id: string) {
-  const db = await loadDb();
+export async function deleteIntegration(
+  deps: ServiceDeps,
+  userId: string,
+  id: string
+) {
+  const db = deps.db;
   const integration = await db.integration.findUniqueOrThrow({
     where: { id },
   });
@@ -396,10 +410,13 @@ export interface CompleteSlackOAuthCallbackResult {
   projectId?: string;
 }
 
-export async function completeSlackOAuthCallback(params: {
-  code: string;
-  state: string;
-}): Promise<CompleteSlackOAuthCallbackResult> {
+export async function completeSlackOAuthCallback(
+  deps: ServiceDeps,
+  params: {
+    code: string;
+    state: string;
+  }
+): Promise<CompleteSlackOAuthCallbackResult> {
   const verifiedState = await slackInstaller.stateStore?.verifyStateParam(
     new Date(),
     params.state
@@ -438,7 +455,7 @@ export async function completeSlackOAuthCallback(params: {
 
   const { organizationId, integrationId, projectId } = parsedMetadata.data;
 
-  const db = await loadDb();
+  const db = deps.db;
   await db.integration.update({
     where: {
       id: integrationId,
@@ -453,4 +470,45 @@ export async function completeSlackOAuthCallback(params: {
   });
 
   return { organizationId, projectId };
+}
+
+// ---------------------------------------------------------------------------
+// `ctx.services.integration` binding.
+// ---------------------------------------------------------------------------
+
+/** A module function's signature with its leading `ServiceDeps` dropped. */
+type WithoutDeps<T extends (deps: ServiceDeps, ...args: never[]) => unknown> =
+  T extends (deps: ServiceDeps, ...args: infer A) => infer R
+    ? (...args: A) => R
+    : never;
+
+export interface IntegrationService {
+  getById: WithoutDeps<typeof getIntegrationById>;
+  listForProject: WithoutDeps<typeof listIntegrationsForProject>;
+  upsert: WithoutDeps<typeof upsertIntegration>;
+  createOrUpdateSlack: WithoutDeps<typeof createOrUpdateSlackIntegration>;
+  testConnection: WithoutDeps<typeof testIntegrationConnection>;
+  testExportConnection: WithoutDeps<typeof testExportIntegrationConnection>;
+  delete: WithoutDeps<typeof deleteIntegration>;
+  completeSlackOAuthCallback: WithoutDeps<typeof completeSlackOAuthCallback>;
+}
+
+/** M10-009: this module had no factory at all — the one `*.service.ts` file
+ *  `services.ts` did not register (docs/TECH_DEBT.md §5a). */
+export function createIntegrationService(
+  deps: ServiceDeps
+): IntegrationService {
+  return {
+    getById: (...args) => getIntegrationById(deps, ...args),
+    listForProject: (...args) => listIntegrationsForProject(deps, ...args),
+    upsert: (...args) => upsertIntegration(deps, ...args),
+    createOrUpdateSlack: (...args) =>
+      createOrUpdateSlackIntegration(deps, ...args),
+    testConnection: (...args) => testIntegrationConnection(deps, ...args),
+    testExportConnection: (...args) =>
+      testExportIntegrationConnection(deps, ...args),
+    delete: (...args) => deleteIntegration(deps, ...args),
+    completeSlackOAuthCallback: (...args) =>
+      completeSlackOAuthCallback(deps, ...args),
+  };
 }

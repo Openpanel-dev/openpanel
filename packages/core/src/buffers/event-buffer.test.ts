@@ -1,22 +1,21 @@
 import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { Readable } from 'node:stream';
 import { getRedisCache } from '@openpanel/redis';
-import { stubBufferDeps } from '../../test/buffer-fixtures';
+import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 
-// `./clickhouse` is the one seam the buffers reach ClickHouse through, and it
-// is the right thing to replace: mocking `@openpanel/db/src/clickhouse/client`
-// instead would need the real module imported first (to spread and restore it,
-// since `mock.module` replaces a specifier process-wide without `--isolate`),
-// and importing it builds a client and a pino transport worker thread per test
-// file. This module has one export, so the replacement is complete rather than
-// partial — and it is restored in afterAll regardless.
-const realClickhouse = { ...(await import('./clickhouse')) };
+const realChQuery = { ...(await import('../shared/ch-query')) };
 
 const chInsert = mock(async (_options: unknown): Promise<unknown> => undefined);
 const chQuery = mock(async (_sql: string): Promise<unknown[]> => []);
 
-mock.module('./clickhouse', () => ({
-  loadClickHouse: () => Promise.resolve({ ch: { insert: chInsert }, chQuery }),
+// M10-009: the client comes in as `BufferDeps.ch` and reads go through core's
+// own `chQuery` (shared/ch-query.ts) — so the insert path needs no module mock
+// at all, and the read path mocks one core module instead of
+// `@openpanel/db/src/clickhouse/client` (whose import builds a real client and
+// a pino transport worker thread per test file).
+mock.module('../shared/ch-query', () => ({
+  ...realChQuery,
+  chQuery: (_scope: unknown, sql: string) => chQuery(sql),
 }));
 
 const { EventBuffer, extractProjectId } = await import('./event-buffer');
@@ -49,14 +48,14 @@ beforeEach(async () => {
 // every file in one process, and closing the singleton takes it away from the
 // files that run next (V1's vitest isolated per file, so it could).
 afterAll(() => {
-  mock.module('./clickhouse', () => realClickhouse);
+  mock.module('../shared/ch-query', () => realChQuery);
 });
 
 describe('EventBuffer', () => {
   let eventBuffer: EventBuffer;
 
   beforeEach(() => {
-    eventBuffer = new EventBuffer(stubBufferDeps);
+    eventBuffer = new EventBuffer(bufferDepsWithCh({ insert: chInsert }));
   });
 
   it('adds regular event directly to buffer queue', async () => {
@@ -224,7 +223,7 @@ describe('EventBuffer', () => {
   it('processes buffer with chunking', async () => {
     const prev = process.env.EVENT_BUFFER_CHUNK_SIZE;
     process.env.EVENT_BUFFER_CHUNK_SIZE = '2';
-    const eb = new EventBuffer(stubBufferDeps);
+    const eb = new EventBuffer(bufferDepsWithCh({ insert: chInsert }));
 
     for (let i = 0; i < 4; i++) {
       eb.add({

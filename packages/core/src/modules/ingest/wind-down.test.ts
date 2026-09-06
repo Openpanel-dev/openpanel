@@ -11,22 +11,40 @@
  * core reads no environment — so V1's `vi.stubEnv` becomes a parameter.
  */
 
-import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  mock,
+} from 'bun:test';
 import type { Logger } from '../../logger';
 
 const getOrganizationByProjectIdCached = mock(
   async (_projectId: string): Promise<unknown> => null
 );
 
-// Spread the real module: a partial factory replaces the whole barrel, and
-// every other importer of it then fails on a missing export.
-const organizationService = await import(
-  '../organization/organization.service'
-);
+// Spread a plain-object SNAPSHOT of the real module: a partial factory
+// replaces the whole module process-wide, and every other importer of it then
+// fails on a missing export. The snapshot (not the live import binding) is
+// what makes the afterAll restore real rather than a re-application of this
+// mock — see AGENTS.md.
+const realOrganizationService = {
+  ...(await import('../organization/organization.service')),
+};
 mock.module('../organization/organization.service', () => ({
-  ...organizationService,
+  ...realOrganizationService,
   getOrganizationByProjectIdCached,
 }));
+
+afterAll(() => {
+  mock.module(
+    '../organization/organization.service',
+    () => realOrganizationService
+  );
+});
 
 let isIngestionWoundDown: typeof import('./ingest.service').isIngestionWoundDown;
 

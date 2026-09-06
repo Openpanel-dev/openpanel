@@ -57,7 +57,7 @@ export const sessionRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getSessionList({
+      return getSessionList(ctx, {
         ...input,
         cursor: input.cursor ? new Date(input.cursor) : undefined,
       });
@@ -73,7 +73,7 @@ export const sessionRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getSessionDistinctValues(input.projectId, input.field);
+      return getSessionDistinctValues(ctx, input.projectId, input.field);
     }),
 
   byId: procedure
@@ -81,7 +81,7 @@ export const sessionRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireReadAccess(ctx, input.projectId);
 
-      return getSessionById(input.sessionId, input.projectId);
+      return getSessionById(ctx, input.sessionId, input.projectId);
     }),
 
   replayChunksFrom: procedure
@@ -96,6 +96,7 @@ export const sessionRouter = createTRPCRouter({
       await requireReadAccess(ctx, input.projectId);
 
       return getSessionReplayChunksFrom(
+        ctx,
         input.sessionId,
         input.projectId,
         input.fromIndex

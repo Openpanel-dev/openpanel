@@ -46,7 +46,7 @@ export const gscRoutes = defineRoutes((app) =>
       }
 
       try {
-        const { organizationId } = await completeGscOAuthCallback({
+        const { organizationId } = await completeGscOAuthCallback(ctx, {
           code: query.code,
           state: query.state,
           storedState,

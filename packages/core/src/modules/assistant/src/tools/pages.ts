@@ -1,10 +1,10 @@
+import { z } from 'zod';
 import {
   getEntryExitPagesCore,
   getPageConversionsCore,
   getPagePerformanceCore,
   getTopPagesCore,
-} from '@openpanel/core';
-import { z } from 'zod';
+} from '../../../../v1-compat';
 import {
   chatTool,
   previousPeriod,

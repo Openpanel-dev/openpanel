@@ -12,10 +12,6 @@
 // so every query this module runs goes through the same `sql` tag (M7-005).
 
 import {
-  getChartPrevStartEndDate,
-  getChartStartEndDate,
-} from '@openpanel/core';
-import {
   type IChartRange,
   pageContextSchema,
   zRange,
@@ -24,6 +20,11 @@ import { format } from 'date-fns';
 import { z } from 'zod';
 import { createTRPCRouter, procedure, type TrpcContext } from '../../rpc/base';
 import { TRPCAccessError, TRPCForbiddenError } from '../../rpc/errors';
+import type { ServiceDeps } from '../../services';
+import {
+  getChartPrevStartEndDate,
+  getChartStartEndDate,
+} from '../../shared/date';
 import { getConversionEventNames } from '../event/event.service';
 import { getReferrerSpikes } from '../insight/insight.service';
 import {
@@ -112,7 +113,7 @@ function getCurrentAndPrevious<
     range: IChartRange;
     projectId: string;
   },
->(input: T, fetchPrevious: boolean, timezone: string) {
+>(input: T, fetchPrevious: boolean, timezone: string, ctx: ServiceDeps) {
   const current = getChartStartEndDate(input, timezone);
   const previous = getChartPrevStartEndDate(current);
 
@@ -123,6 +124,7 @@ function getCurrentAndPrevious<
     previous: R | null;
   }> => {
     const endDate = await getOrganizationSubscriptionChartEndDate(
+      ctx,
       input.projectId,
       current.endDate
     );
@@ -178,11 +180,12 @@ export const overviewRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const { timezone } = await getSettingsForProject(input.projectId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { current, previous } = await getCurrentAndPrevious(
         { ...input, timezone },
         true,
-        timezone
+        timezone,
+        ctx
       )(ctx.services.overview.getMetrics);
       return {
         metrics: {
@@ -222,10 +225,10 @@ export const overviewRouter = createTRPCRouter({
         shareId: z.string().optional(),
       })
     )
-    .query(async ({ input }) => {
-      const { timezone } = await getSettingsForProject(input.projectId);
+    .query(async ({ input, ctx }) => {
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
-      const clusters = await getReferrerSpikes({
+      const clusters = await getReferrerSpikes(ctx, {
         projectId: input.projectId,
         filters: input.filters,
         interval: input.interval,
@@ -257,11 +260,12 @@ export const overviewRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const { timezone } = await getSettingsForProject(input.projectId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input },
         false,
-        timezone
+        timezone,
+        ctx
       )(async (input) => {
         if (input.mode === 'page') {
           return ctx.services.overview.getTopPages({ ...input, timezone });
@@ -291,11 +295,12 @@ export const overviewRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const { timezone } = await getSettingsForProject(input.projectId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
         false,
-        timezone
+        timezone,
+        ctx
       )(ctx.services.overview.getTopGeneric);
 
       return current;
@@ -313,11 +318,12 @@ export const overviewRouter = createTRPCRouter({
         })
     )
     .query(async ({ input, ctx }) => {
-      const { timezone } = await getSettingsForProject(input.projectId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
         false,
-        timezone
+        timezone,
+        ctx
       )(ctx.services.overview.getTopGenericSeries);
 
       return current;
@@ -334,11 +340,12 @@ export const overviewRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const { timezone } = await getSettingsForProject(input.projectId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
         false,
-        timezone
+        timezone,
+        ctx
       )(async (input) => {
         return ctx.services.overview.getUserJourney({
           ...input,
@@ -360,11 +367,12 @@ export const overviewRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const { timezone } = await getSettingsForProject(input.projectId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
         false,
-        timezone
+        timezone,
+        ctx
       )(ctx.services.overview.getTopEvents);
 
       return current;
@@ -391,11 +399,12 @@ export const overviewRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const { timezone } = await getSettingsForProject(input.projectId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
         false,
-        timezone
+        timezone,
+        ctx
       )(ctx.services.overview.getTopLinkOut);
 
       return current;
@@ -417,7 +426,7 @@ export const overviewRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       await requireReadAccess(ctx, input.projectId);
-      const { timezone } = await getSettingsForProject(input.projectId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { runFilterCommand } = await loadFilterCommand();
       return runFilterCommand({
         query: input.query,
@@ -437,11 +446,12 @@ export const overviewRouter = createTRPCRouter({
       })
     )
     .query(async ({ input, ctx }) => {
-      const { timezone } = await getSettingsForProject(input.projectId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { current } = await getCurrentAndPrevious(
         { ...input, timezone },
         false,
-        timezone
+        timezone,
+        ctx
       )(ctx.services.overview.getMapData);
 
       return current;

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import {
   getTopPagesCore,
   gscGetCannibalizationCore,
@@ -7,8 +8,7 @@ import {
   gscGetQueryOpportunitiesCore,
   gscGetTopPagesCore,
   gscGetTopQueriesCore,
-} from '@openpanel/core';
-import { z } from 'zod';
+} from '../../../../v1-compat';
 import { chatTool, resolveDateRange, truncateRows } from './helpers';
 
 export const gscGetOverview = chatTool(

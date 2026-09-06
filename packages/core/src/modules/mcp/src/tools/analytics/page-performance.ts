@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getSettingsForProject } from '@openpanel/core';
 import { z } from 'zod';
+import { getSettingsForProject } from '../../../../../v1-compat';
 import type { McpAuthContext } from '../../auth';
 import {
   loadCompatPagesService,

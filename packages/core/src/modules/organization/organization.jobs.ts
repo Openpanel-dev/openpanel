@@ -75,8 +75,10 @@ async function windDownDeps(ctx: Ctx, logger: Logger): Promise<WindDownDeps> {
     logger,
     sendEmail: ctx.clients.email.sendEmail,
     getLastEventPerProject: () => ctx.services.project.getLastEventPerProject(),
-    getOrganizationEventsCount,
-    getOrganizationEventsCountSince,
+    getOrganizationEventsCount: (projectIds) =>
+      getOrganizationEventsCount(ctx, projectIds),
+    getOrganizationEventsCountSince: (projectIds, since) =>
+      getOrganizationEventsCountSince(ctx, projectIds, since),
     buildHighlight: (input) => buildWinBackHighlight(input, highlight),
   };
 }

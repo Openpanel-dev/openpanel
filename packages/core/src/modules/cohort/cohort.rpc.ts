@@ -45,10 +45,6 @@ import {
 const EXPORT_PROFILES_MAX_LIMIT = 10_000;
 const EXPORT_PROFILES_DEFAULT_LIMIT = 10_000;
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
     throw new TRPCAccessError('Not authenticated');
@@ -72,7 +68,7 @@ export const cohortRouter = createTRPCRouter({
         level: 'read',
       });
 
-      const db = await loadDb();
+      const db = ctx.db;
       const cohorts = await db.cohort.findMany({
         where: { projectId: input.projectId },
         orderBy: { createdAt: 'desc' },
@@ -92,7 +88,7 @@ export const cohortRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const db = await loadDb();
+      const db = ctx.db;
       const cohort = await db.cohort.findUnique({
         where: { id: input.id },
       });
@@ -117,7 +113,7 @@ export const cohortRouter = createTRPCRouter({
   create: procedure.input(zCohortInput).mutation(async ({ input, ctx }) => {
     requireLogin(ctx.session.userId);
 
-    const db = await loadDb();
+    const db = ctx.db;
     const cohort = await db.cohort.create({
       data: {
         name: input.name,
@@ -137,7 +133,7 @@ export const cohortRouter = createTRPCRouter({
     const userId = requireLogin(ctx.session.userId);
     const { id, ...data } = input;
 
-    const db = await loadDb();
+    const db = ctx.db;
     const existingCohort = await db.cohort.findUnique({ where: { id } });
 
     if (!existingCohort) {
@@ -173,7 +169,7 @@ export const cohortRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const db = await loadDb();
+      const db = ctx.db;
       const cohort = await db.cohort.findUnique({
         where: { id: input.id },
       });
@@ -190,7 +186,7 @@ export const cohortRouter = createTRPCRouter({
 
       await db.cohort.delete({ where: { id: input.id } });
 
-      deleteCohortMembership(input.id, cohort.projectId).catch((err) => {
+      deleteCohortMembership(ctx, input.id, cohort.projectId).catch((err) => {
         ctx.logger.error({ err }, 'Failed to cleanup cohort CH data');
       });
 
@@ -216,7 +212,7 @@ export const cohortRouter = createTRPCRouter({
         level: 'read',
       });
 
-      const { data, count } = await listCohortMemberProfiles(input);
+      const { data, count } = await listCohortMemberProfiles(ctx, input);
       return {
         data,
         meta: { count, pageCount: input.take },
@@ -233,7 +229,7 @@ export const cohortRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getCohortMemberEvents(input.projectId, input.cohortId);
+      return getCohortMemberEvents(ctx, input.projectId, input.cohortId);
     }),
 
   eventsPerDay: procedure
@@ -246,7 +242,7 @@ export const cohortRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getCohortEventsPerDay(input.projectId, input.cohortId);
+      return getCohortEventsPerDay(ctx, input.projectId, input.cohortId);
     }),
 
   popularRoutes: procedure
@@ -259,14 +255,14 @@ export const cohortRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getCohortMemberRoutes(input.projectId, input.cohortId);
+      return getCohortMemberRoutes(ctx, input.projectId, input.cohortId);
     }),
 
   getCount: procedure
     .input(z.object({ cohortId: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const db = await loadDb();
+      const db = ctx.db;
       const cohort = await db.cohort.findUnique({
         where: { id: input.cohortId },
       });
@@ -281,7 +277,7 @@ export const cohortRouter = createTRPCRouter({
         level: 'read',
       });
 
-      const count = await getCohortCount(input.cohortId, cohort.projectId);
+      const count = await getCohortCount(ctx, input.cohortId, cohort.projectId);
       return { count };
     }),
 
@@ -300,8 +296,9 @@ export const cohortRouter = createTRPCRouter({
         level: 'read',
       });
 
-      const count = await countCohort(input.projectId, input.definition);
+      const count = await countCohort(ctx, input.projectId, input.definition);
       const sampleProfiles = await computeCohort(
+        ctx,
         input.projectId,
         input.definition,
         10
@@ -324,7 +321,7 @@ export const cohortRouter = createTRPCRouter({
     )
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const db = await loadDb();
+      const db = ctx.db;
       const cohort = await db.cohort.findUnique({
         where: { id: input.cohortId },
       });
@@ -339,10 +336,15 @@ export const cohortRouter = createTRPCRouter({
         level: 'read',
       });
 
-      const result = await getCohortMembers(input.cohortId, cohort.projectId, {
-        limit: input.limit,
-        offset: input.offset,
-      });
+      const result = await getCohortMembers(
+        ctx,
+        input.cohortId,
+        cohort.projectId,
+        {
+          limit: input.limit,
+          offset: input.offset,
+        }
+      );
 
       return {
         profileIds: result.profileIds,
@@ -355,7 +357,7 @@ export const cohortRouter = createTRPCRouter({
     .input(z.object({ cohortId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const db = await loadDb();
+      const db = ctx.db;
       const cohort = await db.cohort.findUnique({
         where: { id: input.cohortId },
       });

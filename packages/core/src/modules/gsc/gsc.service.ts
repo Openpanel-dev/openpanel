@@ -5,21 +5,32 @@
 // packages/db/src/services/gsc.service.ts become re-export shims of this
 // file (same shape as packages/db/src/encryption.ts since M4-006).
 //
-// db/ch access is LAZY (`load*` below), not a static top-level import — see
-// insight.service.ts's header for the full reasoning (jobs.registry.ts and
-// services.ts pull this module into the eager barrel chain nearly every core
-// test file reaches, and constructing @openpanel/db's clients at import time
-// would spawn a pino-pretty transport worker thread per test file).
+// M10-009: every exported function takes `ServiceDeps` and reaches Postgres
+// as `deps.db` and ClickHouse as `deps.ch`; the `loadDb()`/`loadChClient()`
+// lazy loaders are gone, so the requestId minted at the edge reaches the query
+// (ADR-018, docs/TECH_DEBT.md §4). `getGscCannibalization` is the exception:
+// `cacheable` keys on the call's ARGUMENTS (packages/redis/cachable.ts) so it
+// cannot take `deps` as a leading parameter, and reaches the boot scope
+// through the declared v1-compat seam instead.
 //
-// ClickHouse queries here still go through raw `originalCh`/`chQuery` calls,
-// not the `sql` tag: ADR-013 converts the analytics read path one query per
-// P7 task, and this module's queries haven't been converted yet.
+// DELIBERATE BEHAVIOUR CHANGE, recorded: the reads and the four sync inserts
+// used @openpanel/db's `originalCh` (the first configured node, no retry).
+// `deps.ch` is the round-robin/retry proxy every other core module already
+// uses, which also applies the shared INSERT_DEFAULT_SETTINGS
+// (`wait_end_of_query`, insert block size) to those inserts. Same rows, same
+// tables; strictly more failover.
+//
+// ClickHouse queries here still go through raw SQL strings, not the `sql`
+// tag: ADR-013 converts the analytics read path one query per P7 task, and
+// this module's queries haven't been converted yet.
 
 import { cacheable } from '@openpanel/redis';
 import { createLogger, type ILogger } from '../../clients/logger';
 import type { Logger } from '../../logger';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
+import { chQuery } from '../../shared/ch-query';
+import { TABLE_NAMES } from '../../shared/ch-tables';
 import { decrypt, encrypt } from '../../shared/encryption';
 import { googleGsc } from '../auth/auth.service';
 
@@ -34,14 +45,10 @@ function getLogger(): ILogger {
   return _logger;
 }
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+/** `getGscCannibalization` is `cacheable` — see the header. */
+function loadCompatServiceDeps() {
+  return import('../../v1-compat').then((m) => m.compatServiceDeps());
 }
-
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
-}
-
 export interface GscSite {
   siteUrl: string;
   permissionLevel: string;
@@ -82,8 +89,11 @@ async function refreshGscToken(
   return { accessToken: data.access_token, expiresAt };
 }
 
-export async function getGscAccessToken(projectId: string): Promise<string> {
-  const db = await loadDb();
+export async function getGscAccessToken(
+  deps: ServiceDeps,
+  projectId: string
+): Promise<string> {
+  const db = deps.db;
   const conn = await db.gscConnection.findUniqueOrThrow({
     where: { projectId },
   });
@@ -144,8 +154,11 @@ export async function getGscAccessToken(projectId: string): Promise<string> {
   }
 }
 
-export async function listGscSites(projectId: string): Promise<GscSite[]> {
-  const accessToken = await getGscAccessToken(projectId);
+export async function listGscSites(
+  deps: ServiceDeps,
+  projectId: string
+): Promise<GscSite[]> {
+  const accessToken = await getGscAccessToken(deps, projectId);
   const res = await fetch('https://www.googleapis.com/webmasters/v3/sites', {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
@@ -240,11 +253,12 @@ function nowString(): string {
 }
 
 export async function syncGscData(
+  deps: ServiceDeps,
   projectId: string,
   startDate: Date,
   endDate: Date
 ): Promise<void> {
-  const db = await loadDb();
+  const db = deps.db;
   const conn = await db.gscConnection.findUniqueOrThrow({
     where: { projectId },
   });
@@ -253,11 +267,11 @@ export async function syncGscData(
     throw new Error('No GSC site URL configured for this project');
   }
 
-  const accessToken = await getGscAccessToken(projectId);
+  const accessToken = await getGscAccessToken(deps, projectId);
   const start = formatDate(startDate);
   const end = formatDate(endDate);
   const syncedAt = nowString();
-  const { originalCh } = await loadChClient();
+  const ch = deps.ch;
 
   // 1. Daily totals — authoritative numbers for overview chart
   const dailyRows = await queryGscSearchAnalytics(
@@ -269,7 +283,7 @@ export async function syncGscData(
   );
 
   if (dailyRows.length > 0) {
-    await originalCh.insert({
+    await ch.insert({
       table: 'gsc_daily',
       values: dailyRows.map((row) => ({
         project_id: projectId,
@@ -294,7 +308,7 @@ export async function syncGscData(
   );
 
   if (pageRows.length > 0) {
-    await originalCh.insert({
+    await ch.insert({
       table: 'gsc_pages_daily',
       values: pageRows.map((row) => ({
         project_id: projectId,
@@ -320,7 +334,7 @@ export async function syncGscData(
   );
 
   if (queryRows.length > 0) {
-    await originalCh.insert({
+    await ch.insert({
       table: 'gsc_queries_daily',
       values: queryRows.map((row) => ({
         project_id: projectId,
@@ -338,6 +352,7 @@ export async function syncGscData(
 }
 
 export async function getGscOverview(
+  deps: ServiceDeps,
   projectId: string,
   startDate: string,
   endDate: string,
@@ -358,8 +373,8 @@ export async function getGscOverview(
         ? 'toStartOfWeek(date)'
         : 'date';
 
-  const { originalCh } = await loadChClient();
-  const result = await originalCh.query({
+  const ch = deps.ch;
+  const result = await ch.query({
     query: `
       SELECT
         ${dateExpr} as date,
@@ -382,6 +397,7 @@ export async function getGscOverview(
 }
 
 export async function getGscPages(
+  deps: ServiceDeps,
   projectId: string,
   startDate: string,
   endDate: string,
@@ -395,8 +411,8 @@ export async function getGscPages(
     position: number;
   }>
 > {
-  const { originalCh } = await loadChClient();
-  const result = await originalCh.query({
+  const ch = deps.ch;
+  const result = await ch.query({
     query: `
       SELECT
         page,
@@ -433,16 +449,18 @@ export interface GscCannibalizedQuery {
 }
 
 export const getGscCannibalization = cacheable(
+  'getGscCannibalization',
   async (
     projectId: string,
     startDate: string,
     endDate: string
   ): Promise<GscCannibalizedQuery[]> => {
-    const db = await loadDb();
+    const deps = await loadCompatServiceDeps();
+    const db = deps.db;
     const conn = await db.gscConnection.findUniqueOrThrow({
       where: { projectId },
     });
-    const accessToken = await getGscAccessToken(projectId);
+    const accessToken = await getGscAccessToken(deps, projectId);
 
     const rows = await queryGscSearchAnalytics(
       accessToken,
@@ -526,6 +544,7 @@ export const getGscCannibalization = cacheable(
 );
 
 export async function getGscPageDetails(
+  deps: ServiceDeps,
   projectId: string,
   page: string,
   startDate: string,
@@ -546,11 +565,11 @@ export async function getGscPageDetails(
     position: number;
   }>;
 }> {
-  const db = await loadDb();
+  const db = deps.db;
   const conn = await db.gscConnection.findUniqueOrThrow({
     where: { projectId },
   });
-  const accessToken = await getGscAccessToken(projectId);
+  const accessToken = await getGscAccessToken(deps, projectId);
   const filterGroups: GscFilterGroup[] = [
     { filters: [{ dimension: 'page', operator: 'equals', expression: page }] },
   ];
@@ -593,6 +612,7 @@ export async function getGscPageDetails(
 }
 
 export async function getGscQueryDetails(
+  deps: ServiceDeps,
   projectId: string,
   query: string,
   startDate: string,
@@ -613,11 +633,11 @@ export async function getGscQueryDetails(
     position: number;
   }>;
 }> {
-  const db = await loadDb();
+  const db = deps.db;
   const conn = await db.gscConnection.findUniqueOrThrow({
     where: { projectId },
   });
-  const accessToken = await getGscAccessToken(projectId);
+  const accessToken = await getGscAccessToken(deps, projectId);
   const filterGroups: GscFilterGroup[] = [
     {
       filters: [{ dimension: 'query', operator: 'equals', expression: query }],
@@ -662,6 +682,7 @@ export async function getGscQueryDetails(
 }
 
 export async function getGscQueries(
+  deps: ServiceDeps,
   projectId: string,
   startDate: string,
   endDate: string,
@@ -675,8 +696,8 @@ export async function getGscQueries(
     position: number;
   }>
 > {
-  const { originalCh } = await loadChClient();
-  const result = await originalCh.query({
+  const ch = deps.ch;
+  const result = await ch.query({
     query: `
       SELECT
         query,
@@ -716,9 +737,10 @@ export interface GscConnectionSummary {
 }
 
 export async function getGscConnection(
+  deps: ServiceDeps,
   projectId: string
 ): Promise<GscConnectionSummary | null> {
-  const db = await loadDb();
+  const db = deps.db;
   return db.gscConnection.findUnique({
     where: { projectId },
     select: {
@@ -735,10 +757,11 @@ export async function getGscConnection(
 }
 
 export async function selectGscSite(
+  deps: ServiceDeps,
   projectId: string,
   siteUrl: string
 ): Promise<void> {
-  const db = await loadDb();
+  const db = deps.db;
   const conn = await db.gscConnection.findUnique({ where: { projectId } });
   if (!conn) {
     throw new TRPCNotFoundError('GSC connection not found');
@@ -751,9 +774,10 @@ export async function selectGscSite(
 }
 
 export async function disconnectGscConnection(
+  deps: ServiceDeps,
   projectId: string
 ): Promise<void> {
-  const db = await loadDb();
+  const db = deps.db;
   await db.gscConnection.deleteMany({ where: { projectId } });
 }
 
@@ -770,16 +794,15 @@ export interface GscDateRangeInput {
 }
 
 export async function resolveGscDateRange(
+  deps: ServiceDeps,
   projectId: string,
   input: GscDateRangeInput
 ): Promise<{ startDate: string; endDate: string }> {
   const { getSettingsForProject } = await import(
-    '@openpanel/core'
+    '../organization/organization.service'
   );
-  const { getChartStartEndDate } = await import(
-    '@openpanel/core'
-  );
-  const { timezone } = await getSettingsForProject(projectId);
+  const { getChartStartEndDate } = await import('../../shared/date');
+  const { timezone } = await getSettingsForProject(deps, projectId);
   const { startDate, endDate } = getChartStartEndDate(
     {
       range: input.range as never,
@@ -888,12 +911,12 @@ function getComparisonWindows(startDate: string, endDate: string) {
 }
 
 export async function getGscSearchEngines(
+  deps: ServiceDeps,
   projectId: string,
   startDate: string,
   endDate: string
 ) {
   const windows = getComparisonWindows(startDate, endDate);
-  const { chQuery, TABLE_NAMES } = await loadChClient();
 
   const where = (window: { start: string; end: string }) =>
     `project_id = '${projectId}'
@@ -903,6 +926,7 @@ export async function getGscSearchEngines(
 
   const [engines, [currentResult], [prevResult]] = await Promise.all([
     chQuery<{ name: string; sessions: number }>(
+      deps,
       `SELECT
         referrer_name as name,
         count(*) as sessions
@@ -913,11 +937,13 @@ export async function getGscSearchEngines(
       LIMIT 10`
     ),
     chQuery<{ sessions: number }>(
+      deps,
       `SELECT count(*) as sessions
       FROM ${TABLE_NAMES.sessions}
       WHERE ${where(windows.current)}`
     ),
     chQuery<{ sessions: number }>(
+      deps,
       `SELECT count(*) as sessions
       FROM ${TABLE_NAMES.sessions}
       WHERE ${where(windows.previous)}`
@@ -934,12 +960,12 @@ export async function getGscSearchEngines(
 }
 
 export async function getGscAiEngines(
+  deps: ServiceDeps,
   projectId: string,
   startDate: string,
   endDate: string
 ) {
   const windows = getComparisonWindows(startDate, endDate);
-  const { chQuery, TABLE_NAMES } = await loadChClient();
 
   // Matched by name — will switch to referrer_type = 'ai' once available.
   const where = (window: { start: string; end: string }) =>
@@ -950,6 +976,7 @@ export async function getGscAiEngines(
 
   const [engines, [prevResult]] = await Promise.all([
     chQuery<{ name: string; sessions: number }>(
+      deps,
       `${AI_REFERRER_CTE}
       SELECT ${AI_REFERRER_CANONICAL_NAME} as name, count(*) as sessions
       FROM ${TABLE_NAMES.sessions}
@@ -958,6 +985,7 @@ export async function getGscAiEngines(
       ORDER BY sessions DESC`
     ),
     chQuery<{ sessions: number }>(
+      deps,
       `${AI_REFERRER_CTE}
       SELECT count(*) as sessions
       FROM ${TABLE_NAMES.sessions}
@@ -975,6 +1003,7 @@ export async function getGscAiEngines(
 }
 
 export async function getGscPreviousOverview(
+  deps: ServiceDeps,
   projectId: string,
   startDate: string,
   endDate: string,
@@ -986,7 +1015,13 @@ export async function getGscPreviousOverview(
   const prevStart = new Date(prevEnd.getTime() - duration);
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
 
-  return getGscOverview(projectId, fmt(prevStart), fmt(prevEnd), interval);
+  return getGscOverview(
+    deps,
+    projectId,
+    fmt(prevStart),
+    fmt(prevEnd),
+    interval
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1073,13 +1108,17 @@ function computeOpportunities(
     .slice(0, 50);
 }
 
-export async function gscGetOverviewCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  interval?: 'day' | 'week' | 'month';
-}) {
+export async function gscGetOverviewCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    interval?: 'day' | 'week' | 'month';
+  }
+) {
   const data = await getGscOverview(
+    deps,
     input.projectId,
     input.startDate,
     input.endDate,
@@ -1106,13 +1145,17 @@ export async function gscGetOverviewCore(input: {
   };
 }
 
-export async function gscGetTopPagesCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  limit?: number;
-}) {
+export async function gscGetTopPagesCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    limit?: number;
+  }
+) {
   return getGscPages(
+    deps,
     input.projectId,
     input.startDate,
     input.endDate,
@@ -1120,13 +1163,17 @@ export async function gscGetTopPagesCore(input: {
   );
 }
 
-export async function gscGetPageDetailsCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  page: string;
-}) {
+export async function gscGetPageDetailsCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    page: string;
+  }
+) {
   return getGscPageDetails(
+    deps,
     input.projectId,
     input.page,
     input.startDate,
@@ -1134,13 +1181,17 @@ export async function gscGetPageDetailsCore(input: {
   );
 }
 
-export async function gscGetTopQueriesCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  limit?: number;
-}) {
+export async function gscGetTopQueriesCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    limit?: number;
+  }
+) {
   return getGscQueries(
+    deps,
     input.projectId,
     input.startDate,
     input.endDate,
@@ -1148,13 +1199,17 @@ export async function gscGetTopQueriesCore(input: {
   );
 }
 
-export async function gscGetQueryOpportunitiesCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  minImpressions?: number;
-}) {
+export async function gscGetQueryOpportunitiesCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    minImpressions?: number;
+  }
+) {
   const queries = await getGscQueries(
+    deps,
     input.projectId,
     input.startDate,
     input.endDate,
@@ -1171,13 +1226,17 @@ export async function gscGetQueryOpportunitiesCore(input: {
   };
 }
 
-export async function gscGetQueryDetailsCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-  query: string;
-}) {
+export async function gscGetQueryDetailsCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+    query: string;
+  }
+) {
   return getGscQueryDetails(
+    deps,
     input.projectId,
     input.query,
     input.startDate,
@@ -1185,11 +1244,14 @@ export async function gscGetQueryDetailsCore(input: {
   );
 }
 
-export async function gscGetCannibalizationCore(input: {
-  projectId: string;
-  startDate: string;
-  endDate: string;
-}) {
+export async function gscGetCannibalizationCore(
+  deps: ServiceDeps,
+  input: {
+    projectId: string;
+    startDate: string;
+    endDate: string;
+  }
+) {
   return getGscCannibalization(input.projectId, input.startDate, input.endDate);
 }
 
@@ -1199,10 +1261,10 @@ export async function gscGetCannibalizationCore(input: {
 // ---------------------------------------------------------------------------
 
 /** The `gscSync` cron fan-out: every project with a connected GSC site. */
-export async function listGscConnectionsForSync(): Promise<
-  { projectId: string }[]
-> {
-  const db = await loadDb();
+export async function listGscConnectionsForSync(
+  deps: ServiceDeps
+): Promise<{ projectId: string }[]> {
+  const db = deps.db;
   return db.gscConnection.findMany({
     where: { siteUrl: { not: '' } },
     select: { projectId: true },
@@ -1211,10 +1273,11 @@ export async function listGscConnectionsForSync(): Promise<
 
 /** The `gscProjectSync` job body: rolling 3-day window (GSC data arrives late). */
 export async function runGscProjectSync(
+  deps: ServiceDeps,
   projectId: string,
   logger: Logger = getLogger()
 ): Promise<void> {
-  const db = await loadDb();
+  const db = deps.db;
   const conn = await db.gscConnection.findUnique({ where: { projectId } });
   if (!conn?.siteUrl) {
     logger.warn({ projectId }, 'GSC sync skipped: no connection or siteUrl');
@@ -1227,7 +1290,7 @@ export async function runGscProjectSync(
     const startDate = new Date(endDate);
     startDate.setDate(startDate.getDate() - 2); // 3 days total
 
-    await syncGscData(projectId, startDate, endDate);
+    await syncGscData(deps, projectId, startDate, endDate);
 
     await db.gscConnection.update({
       where: { projectId },
@@ -1255,10 +1318,11 @@ export async function runGscProjectSync(
 
 /** The `gscProjectBackfill` job body: chunked to avoid timeouts and API limits. */
 export async function runGscProjectBackfill(
+  deps: ServiceDeps,
   projectId: string,
   logger: Logger = getLogger()
 ): Promise<void> {
-  const db = await loadDb();
+  const db = deps.db;
   const conn = await db.gscConnection.findUnique({ where: { projectId } });
   if (!conn?.siteUrl) {
     logger.warn(
@@ -1298,7 +1362,7 @@ export async function runGscProjectBackfill(
         'GSC backfill chunk'
       );
 
-      await syncGscData(projectId, chunkStart, chunkEnd);
+      await syncGscData(deps, projectId, chunkStart, chunkEnd);
 
       chunkEnd = new Date(chunkStart);
       chunkEnd.setDate(chunkEnd.getDate() - 1);
@@ -1349,6 +1413,7 @@ export interface GscOAuthCallbackResult {
 }
 
 export async function completeGscOAuthCallback(
+  deps: ServiceDeps,
   input: GscOAuthCallbackInput
 ): Promise<GscOAuthCallbackResult> {
   if (input.state !== input.storedState) {
@@ -1368,7 +1433,7 @@ export async function completeGscOAuthCallback(
     throw new Error('No refresh token returned from Google GSC OAuth');
   }
 
-  const db = await loadDb();
+  const db = deps.db;
   const project = await db.project.findUnique({
     where: { id: input.projectId },
     select: { id: true, organizationId: true },
@@ -1403,6 +1468,13 @@ export async function completeGscOAuthCallback(
 // `ctx.services.gsc` binding.
 // ---------------------------------------------------------------------------
 
+/** A module function's signature with its leading `ServiceDeps` dropped —
+ *  what `createGscService` exposes once it has closed over its own. */
+type WithoutDeps<T extends (deps: ServiceDeps, ...args: never[]) => unknown> =
+  T extends (deps: ServiceDeps, ...args: infer A) => infer R
+    ? (...args: A) => R
+    : never;
+
 export interface GscService {
   getConnection(projectId: string): Promise<GscConnectionSummary | null>;
   listSites(projectId: string): Promise<GscSite[]>;
@@ -1413,14 +1485,14 @@ export interface GscService {
     projectId: string,
     input: GscDateRangeInput
   ): ReturnType<typeof resolveGscDateRange>;
-  getOverview: typeof getGscOverview;
-  getPreviousOverview: typeof getGscPreviousOverview;
-  getPages: typeof getGscPages;
-  getPageDetails: typeof getGscPageDetails;
-  getQueryDetails: typeof getGscQueryDetails;
-  getQueries: typeof getGscQueries;
-  getSearchEngines: typeof getGscSearchEngines;
-  getAiEngines: typeof getGscAiEngines;
+  getOverview: WithoutDeps<typeof getGscOverview>;
+  getPreviousOverview: WithoutDeps<typeof getGscPreviousOverview>;
+  getPages: WithoutDeps<typeof getGscPages>;
+  getPageDetails: WithoutDeps<typeof getGscPageDetails>;
+  getQueryDetails: WithoutDeps<typeof getGscQueryDetails>;
+  getQueries: WithoutDeps<typeof getGscQueries>;
+  getSearchEngines: WithoutDeps<typeof getGscSearchEngines>;
+  getAiEngines: WithoutDeps<typeof getGscAiEngines>;
   getCannibalization: typeof getGscCannibalization;
   listConnectionsForSync(): Promise<{ projectId: string }[]>;
   runProjectSync(projectId: string): Promise<void>;
@@ -1432,25 +1504,27 @@ export function createGscService(deps: ServiceDeps): GscService {
   const logger = deps.logger.child({ module: 'gsc' });
 
   return {
-    getConnection: getGscConnection,
-    listSites: listGscSites,
+    getConnection: (projectId) => getGscConnection(deps, projectId),
+    listSites: (projectId) => listGscSites(deps, projectId),
     selectSite: async (projectId, siteUrl) => {
-      await selectGscSite(projectId, siteUrl);
+      await selectGscSite(deps, projectId, siteUrl);
       await deps.queues.gsc.gscProjectBackfill.add({ projectId });
     },
-    disconnect: disconnectGscConnection,
-    resolveDateRange: resolveGscDateRange,
-    getOverview: getGscOverview,
-    getPreviousOverview: getGscPreviousOverview,
-    getPages: getGscPages,
-    getPageDetails: getGscPageDetails,
-    getQueryDetails: getGscQueryDetails,
-    getQueries: getGscQueries,
-    getSearchEngines: getGscSearchEngines,
-    getAiEngines: getGscAiEngines,
+    disconnect: (projectId) => disconnectGscConnection(deps, projectId),
+    resolveDateRange: (projectId, input) =>
+      resolveGscDateRange(deps, projectId, input),
+    getOverview: (...args) => getGscOverview(deps, ...args),
+    getPreviousOverview: (...args) => getGscPreviousOverview(deps, ...args),
+    getPages: (...args) => getGscPages(deps, ...args),
+    getPageDetails: (...args) => getGscPageDetails(deps, ...args),
+    getQueryDetails: (...args) => getGscQueryDetails(deps, ...args),
+    getQueries: (...args) => getGscQueries(deps, ...args),
+    getSearchEngines: (...args) => getGscSearchEngines(deps, ...args),
+    getAiEngines: (...args) => getGscAiEngines(deps, ...args),
     getCannibalization: getGscCannibalization,
-    listConnectionsForSync: listGscConnectionsForSync,
-    runProjectSync: (projectId) => runGscProjectSync(projectId, logger),
-    runProjectBackfill: (projectId) => runGscProjectBackfill(projectId, logger),
+    listConnectionsForSync: () => listGscConnectionsForSync(deps),
+    runProjectSync: (projectId) => runGscProjectSync(deps, projectId, logger),
+    runProjectBackfill: (projectId) =>
+      runGscProjectBackfill(deps, projectId, logger),
   };
 }

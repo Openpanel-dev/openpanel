@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getGscCannibalization } from '@openpanel/core';
+import { getGscCannibalization } from '../../../../gsc/gsc.service';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,

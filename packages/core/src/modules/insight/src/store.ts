@@ -1,4 +1,12 @@
-import { db, Prisma } from '@openpanel/db/src/prisma-client';
+// M10-009: the store is a FACTORY over `ServiceDeps` — `deps.db` is the boot
+// scope's client, so the requestId minted at the edge reaches every insight
+// write (ADR-018, docs/TECH_DEBT.md §4). `Prisma` here is the namespace's two
+// JSON sentinels (`DbNull`), which live in the same module as the constructed
+// client and are reached through the declared v1-compat seam
+// (`compatPrisma()`) rather than by importing `@openpanel/db` from core.
+
+import type { Prisma } from '@openpanel/db/src/prisma-client';
+import type { ServiceDeps } from '../../../services';
 import type {
   Cadence,
   InsightStore,
@@ -6,7 +14,16 @@ import type {
   WindowKind,
 } from './types';
 
-export const insightStore: InsightStore = {
+/** `Prisma.DbNull` is a plain sentinel value that lives in the same module as
+ *  the constructed client — reached through the v1-compat seam so this file
+ *  value-imports nothing from `@openpanel/db`. */
+function loadCompatPrisma() {
+  return import('../../../v1-compat').then((m) => m.compatPrisma());
+}
+
+export function createInsightStore(deps: ServiceDeps): InsightStore {
+  const db = deps.db;
+  return {
   // `cadence` isn't read — there is only one today ('daily') — but it stays
   // on the signature because InsightStore's contract names it (V1 parity).
   async listProjectIdsForCadence(_cadence: Cadence): Promise<string[]> {
@@ -189,16 +206,17 @@ export const insightStore: InsightStore = {
     changeTo,
     now,
   }): Promise<void> {
+    const { DbNull } = await loadCompatPrisma();
     await db.insightEvent.create({
       data: {
         insightId,
         eventKind,
         changeFrom: changeFrom
           ? (changeFrom as Prisma.InputJsonValue)
-          : Prisma.DbNull,
+          : DbNull,
         changeTo: changeTo
           ? (changeTo as Prisma.InputJsonValue)
-          : Prisma.DbNull,
+          : DbNull,
         createdAt: now,
       },
     });
@@ -301,4 +319,5 @@ export const insightStore: InsightStore = {
     });
     return { deleted: result.count };
   },
-};
+  };
+}

@@ -16,18 +16,24 @@
 // project-access check below — `chatApp.handler` gets the original,
 // unconsumed `request` so it can re-read the body itself.
 //
-// `@openpanel/core` (the self barrel) stays dynamically imported, not
-// statically — `loadCore()` below reaches deep into the barrel for
-// cross-module functions, and a static import here would race this
-// package's own evaluation the way index.ts's header documents for
-// `mcp.service.ts`. `./assistant.service` itself is cheap either way now
-// (M10-004, see that file's header) — kept dynamic anyway for symmetry with
-// `loadCore()`.
+// The cross-module functions stay dynamically imported, not statically: a
+// static import here would race this package's own evaluation the way
+// index.ts's header documents for `mcp.service.ts`. M10-009 replaced the one
+// `import('@openpanel/core')` hop with direct relative imports of the three
+// modules it actually reached (`core-no-self-barrel`). `./assistant.service`
+// itself is cheap either way now (M10-004, see that file's header) — kept
+// dynamic anyway for symmetry.
 
 import { defineRoutes } from '../../http/define';
 
-function loadCore() {
-  return import('@openpanel/core');
+function loadCompat() {
+  return import('../../v1-compat');
+}
+function loadAccessLookups() {
+  return import('../../shared/access-lookups');
+}
+function loadOrganizationService() {
+  return import('../organization/organization.service');
 }
 function loadAssistant() {
   return import('./assistant.service');
@@ -40,7 +46,7 @@ interface RunBody {
 export const assistantRoutes = defineRoutes((app) =>
   app.all(
     '/ai/agents/*',
-    async ({ params, session, status, request }) => {
+    async ({ params, session, status, request, ctx }) => {
       const userId = session.userId;
       if (!userId) {
         return status(401, { message: 'Sign in required' });
@@ -72,7 +78,7 @@ export const assistantRoutes = defineRoutes((app) =>
       // A brand-new chat (no row yet) falls through to the agent handler,
       // whose `ConversationStore.load()` returns null.
       if (route === 'conversations' && routeId) {
-        const { getConversationById } = await loadCore();
+        const { getConversationById } = await loadCompat();
         const conv = await getConversationById(routeId);
         if (conv && conv.userId !== userId) {
           return status(404, { message: 'Conversation not found' });
@@ -95,15 +101,16 @@ export const assistantRoutes = defineRoutes((app) =>
         });
       }
 
-      const {
-        getOrganizationByProjectIdCached,
-        getProjectAccess,
-        getSettingsForProject,
-      } = await loadCore();
+      const [
+        { getOrganizationByProjectIdCached, getSettingsForProject },
+        { getProjectAccess },
+      ] = await Promise.all([loadOrganizationService(), loadAccessLookups()]);
       const [access, organization, settings] = await Promise.all([
         getProjectAccess({ projectId, userId }),
         getOrganizationByProjectIdCached(projectId),
-        getSettingsForProject(projectId).catch(() => ({ timezone: 'UTC' })),
+        getSettingsForProject(ctx, projectId).catch(() => ({
+          timezone: 'UTC',
+        })),
       ]);
       if (
         !(access && organization) ||

@@ -116,11 +116,9 @@ export const insightRouter = createTRPCRouter({
     .mutation(async ({ input: { insightId }, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
 
-      // `overview` hasn't moved to core yet — deep-imported like the rest of
-      // @openpanel/db's internals until it does.
-      const { db } = await import('@openpanel/db/src/prisma-client');
+      const db = ctx.db;
       const { getSegmentDailySeriesCore, getTrafficBreakdownCore } =
-        await import('@openpanel/core');
+        await import('../../v1-compat');
 
       const insight = await db.projectInsight.findUniqueOrThrow({
         where: { id: insightId },

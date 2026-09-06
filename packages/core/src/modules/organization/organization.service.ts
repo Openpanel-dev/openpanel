@@ -10,16 +10,20 @@
 // delete.service.ts entirely — nothing outside apps/worker's cron job
 // (now delegating here) reached it through @openpanel/db's barrel.
 //
-// db/ch access is LAZY (`load*` below), not a static top-level import — see
-// insight.service.ts's header for the full reasoning (jobs.registry.ts and
-// services.ts pull this module into the eager barrel chain nearly every core
-// test file reaches, and constructing @openpanel/db's clients at import time
-// would spawn a pino-pretty transport worker thread per test file).
+// M10-009: every exported function takes `ServiceDeps` and reaches Postgres
+// as `deps.db` and ClickHouse as `deps.ch` (through core's own `chQuery`), so
+// the requestId minted at the edge reaches the query (ADR-018,
+// docs/TECH_DEBT.md §4). The three `cacheable` wrappers are the exception:
+// `cacheable` keys on the call's ARGUMENTS (packages/redis/cachable.ts), so
+// `deps` cannot be a leading parameter and they reach the boot scope through
+// the declared v1-compat seam instead.
 //
 // ClickHouse queries here still go through raw sqlstring-escaped strings and
 // the (still-live, pre-ADR-013) `createSqlBuilder`, not the `sql` tag:
 // ADR-013 converts the analytics read path one query per P7 task, and this
-// module's queries haven't been converted yet.
+// module's queries haven't been converted yet. `createSqlBuilder` stays a
+// value import of `@openpanel/db`: like ADR-013's `sql` tag and `clix`, it is
+// a pure string BUILDER that holds no client (see shared/ch-query.ts).
 
 import { DateTime } from '@openpanel/common';
 import type {
@@ -28,11 +32,18 @@ import type {
   ProjectAccess,
   User,
 } from '@openpanel/db/src/prisma-client';
+import { createSqlBuilder } from '@openpanel/db/src/sql-builder';
 import { cacheable } from '@openpanel/redis';
 import sqlstring from 'sqlstring';
 import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
+import { formatClickhouseDate } from '../../shared/ch-dates';
+import { chQuery } from '../../shared/ch-query';
+import {
+  getReplicatedTableName,
+  TABLE_NAMES,
+} from '../../shared/ch-tables';
 import { generateSecureId } from '../../shared/id';
 
 export type IServiceOrganization = Awaited<
@@ -47,30 +58,31 @@ export type IServiceProjectAccess = ProjectAccess;
 const DEFAULT_TIMEZONE = 'UTC';
 // Grace period between a scheduled deletion and the `delete` cron sweeping it
 // up — matches V1's `addHours(new Date(), 24)`.
+/** A module function's parameters with its leading `ServiceDeps` dropped. */
+type Tail<T extends unknown[]> = T extends [unknown, ...infer Rest]
+  ? Rest
+  : never;
+
 const DELETE_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
 // Invite link lifetime — matches V1's `addDays(new Date(), 3)`.
 const INVITE_EXPIRY_MS = 3 * 24 * 60 * 60 * 1000;
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+/** The three `cacheable` wrappers below cannot carry `ServiceDeps` — see the
+ *  header. GENUINE CYCLE, kept lazy: services.ts -> organization.service.ts
+ *  (this file) -> v1-compat.ts -> services.ts. */
+function loadCompatServiceDeps() {
+  return import('../../v1-compat').then((m) => m.compatServiceDeps());
 }
 
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
-}
-
-function loadSqlBuilder() {
-  return import('@openpanel/db/src/sql-builder').then(
-    (m) => m.createSqlBuilder
-  );
-}
-
-export async function getOrganizations(userId: string | null) {
+export async function getOrganizations(
+  deps: ServiceDeps,
+  userId: string | null
+) {
   if (!userId) {
     return [];
   }
 
-  const db = await loadDb();
+  const db = deps.db;
   return db.organization.findMany({
     where: {
       members: {
@@ -85,8 +97,11 @@ export async function getOrganizations(userId: string | null) {
   });
 }
 
-export async function getOrganizationById(organizationId: string) {
-  const db = await loadDb();
+export async function getOrganizationById(
+  deps: ServiceDeps,
+  organizationId: string
+) {
+  const db = deps.db;
   return db.organization.findUniqueOrThrow({
     where: {
       id: organizationId,
@@ -94,8 +109,11 @@ export async function getOrganizationById(organizationId: string) {
   });
 }
 
-export async function getOrganizationByProjectId(projectId: string) {
-  const db = await loadDb();
+export async function getOrganizationByProjectId(
+  deps: ServiceDeps,
+  projectId: string
+) {
+  const db = deps.db;
   const project = await db.project.findUniqueOrThrow({
     where: {
       id: projectId,
@@ -114,12 +132,17 @@ export async function getOrganizationByProjectId(projectId: string) {
 
 const ORGANIZATION_BY_PROJECT_CACHE_TTL_SEC = 60 * 5;
 export const getOrganizationByProjectIdCached = cacheable(
-  getOrganizationByProjectId,
+  'getOrganizationByProjectId',
+  async (projectId: string) =>
+    getOrganizationByProjectId(await loadCompatServiceDeps(), projectId),
   ORGANIZATION_BY_PROJECT_CACHE_TTL_SEC
 );
 
-export async function getInvites(organizationId: string): Promise<Invite[]> {
-  const db = await loadDb();
+export async function getInvites(
+  deps: ServiceDeps,
+  organizationId: string
+): Promise<Invite[]> {
+  const db = deps.db;
   return db.invite.findMany({
     where: {
       organizationId,
@@ -130,8 +153,8 @@ export async function getInvites(organizationId: string): Promise<Invite[]> {
   });
 }
 
-export async function getInviteById(inviteId: string) {
-  const db = await loadDb();
+export async function getInviteById(deps: ServiceDeps, inviteId: string) {
+  const db = deps.db;
   const res = await db.invite.findUnique({
     where: {
       id: inviteId,
@@ -153,9 +176,10 @@ export async function getInviteById(inviteId: string) {
 }
 
 export async function getMembers(
+  deps: ServiceDeps,
   organizationId: string
 ): Promise<IServiceMember[]> {
-  const db = await loadDb();
+  const db = deps.db;
   const [members, access] = await Promise.all([
     db.member.findMany({
       where: {
@@ -181,8 +205,12 @@ export async function getMembers(
   })) as IServiceMember[];
 }
 
-export async function getMember(organizationId: string, userId: string) {
-  const db = await loadDb();
+export async function getMember(
+  deps: ServiceDeps,
+  organizationId: string,
+  userId: string
+) {
+  const db = deps.db;
   return db.member.findFirst({
     where: {
       organizationId,
@@ -191,16 +219,18 @@ export async function getMember(organizationId: string, userId: string) {
   });
 }
 
-export async function connectUserToOrganization({
+export async function connectUserToOrganization(
+  deps: ServiceDeps,
+  {
   user,
   inviteId,
 }: {
   user: User;
   inviteId: string;
 }) {
-  const db = await loadDb();
+  const db = deps.db;
   const { getOrganizationAccess, getProjectAccess } = await import(
-    '@openpanel/core'
+    '../../shared/access-lookups'
   );
 
   // Use primary since before this we might have just created the invite
@@ -282,6 +312,7 @@ export async function connectUserToOrganization({
  * current subscription period for an organization
  */
 export async function getOrganizationBillingEventsCount(
+  deps: ServiceDeps,
   organization: IServiceOrganization & { projects: { id: string }[] }
 ): Promise<number | undefined> {
   // Trials have no Polar billing period; fall back to the trial window
@@ -298,8 +329,6 @@ export async function getOrganizationBillingEventsCount(
     return 0;
   }
 
-  const { chQuery, formatClickhouseDate } = await loadChClient();
-  const createSqlBuilder = await loadSqlBuilder();
   const { sb, getSql } = createSqlBuilder();
 
   sb.select.count = 'COUNT(*) AS count';
@@ -307,7 +336,7 @@ export async function getOrganizationBillingEventsCount(
   sb.where.createdAt = `created_at BETWEEN ${sqlstring.escape(formatClickhouseDate(periodStart))} AND ${sqlstring.escape(formatClickhouseDate(periodEnd))}`;
   sb.where.names = `name NOT IN ('session_start', 'session_end')`;
 
-  const res = await chQuery<{ count: number }>(getSql());
+  const res = await chQuery<{ count: number }>(deps, getSql());
   return res[0]?.count;
 }
 
@@ -315,21 +344,20 @@ export async function getOrganizationBillingEventsCount(
 // events). The onboarding emails use this instead of subscriptionPeriodEventsCount,
 // which only refreshes when sessions end.
 export async function getOrganizationEventsCount(
+  deps: ServiceDeps,
   projectIds: string[]
 ): Promise<number> {
   if (projectIds.length === 0) {
     return 0;
   }
 
-  const { chQuery } = await loadChClient();
-  const createSqlBuilder = await loadSqlBuilder();
   const { sb, getSql } = createSqlBuilder();
 
   sb.select.count = 'COUNT(*) AS count';
   sb.where.projectIds = `project_id IN (${projectIds.map((id) => sqlstring.escape(id)).join(',')})`;
   sb.where.names = `name NOT IN ('session_start', 'session_end')`;
 
-  const res = await chQuery<{ count: number }>(getSql());
+  const res = await chQuery<{ count: number }>(deps, getSql());
   return res[0]?.count ?? 0;
 }
 
@@ -338,6 +366,7 @@ export async function getOrganizationEventsCount(
 // one says "you are using this right now", which is the only number that
 // actually argues for a subscription.
 export async function getOrganizationEventsCountSince(
+  deps: ServiceDeps,
   projectIds: string[],
   since: Date
 ): Promise<number> {
@@ -345,8 +374,6 @@ export async function getOrganizationEventsCountSince(
     return 0;
   }
 
-  const { chQuery, formatClickhouseDate } = await loadChClient();
-  const createSqlBuilder = await loadSqlBuilder();
   const { sb, getSql } = createSqlBuilder();
 
   sb.select.count = 'COUNT(*) AS count';
@@ -354,11 +381,12 @@ export async function getOrganizationEventsCountSince(
   sb.where.names = `name NOT IN ('session_start', 'session_end')`;
   sb.where.createdAt = `created_at >= ${sqlstring.escape(formatClickhouseDate(since, true))}`;
 
-  const res = await chQuery<{ count: number }>(getSql());
+  const res = await chQuery<{ count: number }>(deps, getSql());
   return res[0]?.count ?? 0;
 }
 
 export async function getOrganizationBillingEventsCountSerie(
+  deps: ServiceDeps,
   organization: IServiceOrganization & { projects: { id: string }[] },
   {
     startDate,
@@ -369,8 +397,6 @@ export async function getOrganizationBillingEventsCountSerie(
   }
 ): Promise<{ count: number; day: string }[]> {
   const interval = 'day';
-  const { chQuery, formatClickhouseDate } = await loadChClient();
-  const createSqlBuilder = await loadSqlBuilder();
   const { sb, getSql } = createSqlBuilder();
 
   sb.select.count = 'COUNT(*) AS count';
@@ -381,16 +407,24 @@ export async function getOrganizationBillingEventsCountSerie(
   sb.where.createdAt = `${interval} BETWEEN ${sqlstring.escape(formatClickhouseDate(startDate, true))} AND ${sqlstring.escape(formatClickhouseDate(endDate, true))}`;
   sb.where.names = `name NOT IN ('session_start', 'session_end')`;
 
-  return chQuery<{ count: number; day: string }>(getSql());
+  return chQuery<{ count: number; day: string }>(deps, getSql());
 }
 
 const BILLING_EVENTS_SERIE_CACHE_TTL_SEC = 60 * 10;
 export const getOrganizationBillingEventsCountSerieCached = cacheable(
-  getOrganizationBillingEventsCountSerie,
+  'getOrganizationBillingEventsCountSerie',
+  async (
+    ...args: Tail<Parameters<typeof getOrganizationBillingEventsCountSerie>>
+  ) =>
+    getOrganizationBillingEventsCountSerie(
+      await loadCompatServiceDeps(),
+      ...args
+    ),
   BILLING_EVENTS_SERIE_CACHE_TTL_SEC
 );
 
 export async function getOrganizationSubscriptionChartEndDate(
+  deps: ServiceDeps,
   projectId: string,
   endDate: string
 ): Promise<string | null> {
@@ -412,9 +446,10 @@ export async function getOrganizationSubscriptionChartEndDate(
 }
 
 export async function getSettingsForOrganization(
+  deps: ServiceDeps,
   organizationId: string
 ): Promise<{ timezone: string }> {
-  const db = await loadDb();
+  const db = deps.db;
   const organization = await db.organization.findUniqueOrThrow({
     where: {
       id: organizationId,
@@ -427,9 +462,10 @@ export async function getSettingsForOrganization(
 }
 
 export async function getSettingsForProject(
+  deps: ServiceDeps,
   projectId: string
 ): Promise<{ timezone: string }> {
-  const db = await loadDb();
+  const db = deps.db;
   const project = await db.project.findUniqueOrThrow({
     where: {
       id: projectId,
@@ -446,8 +482,11 @@ export async function getSettingsForProject(
 
 // --- Moved from packages/db/src/services/delete.service.ts ---
 
-export async function deleteOrganization(organizationId: string) {
-  const db = await loadDb();
+export async function deleteOrganization(
+  deps: ServiceDeps,
+  organizationId: string
+) {
+  const db = deps.db;
   return db.organization.delete({
     where: {
       id: organizationId,
@@ -455,8 +494,8 @@ export async function deleteOrganization(organizationId: string) {
   });
 }
 
-export async function deleteProjects(projectIds: string[]) {
-  const db = await loadDb();
+export async function deleteProjects(deps: ServiceDeps, projectIds: string[]) {
+  const db = deps.db;
   const projects = await db.project.findMany({
     where: {
       id: {
@@ -480,8 +519,11 @@ export async function deleteProjects(projectIds: string[]) {
   return projects;
 }
 
-export async function deleteFromClickhouse(projectIds: string[]) {
-  const { TABLE_NAMES, ch, getReplicatedTableName } = await loadChClient();
+export async function deleteFromClickhouse(
+  deps: ServiceDeps,
+  projectIds: string[]
+) {
+  const ch = deps.ch;
   const where = `project_id IN (${projectIds.map((projectId) => sqlstring.escape(projectId)).join(',')})`;
   const tables = [
     TABLE_NAMES.events,
@@ -527,8 +569,10 @@ export interface DeleteCronResult {
  * projects individually scheduled for deletion, then sweeps both out of
  * ClickHouse and Postgres in one pass.
  */
-export async function runDeleteCron(): Promise<DeleteCronResult> {
-  const db = await loadDb();
+export async function runDeleteCron(
+  deps: ServiceDeps
+): Promise<DeleteCronResult> {
+  const db = deps.db;
   const now = new Date();
 
   // Find orphaned organizations (no admin member)
@@ -565,12 +609,12 @@ export async function runDeleteCron(): Promise<DeleteCronResult> {
   ];
 
   if (projectIds.length > 0) {
-    await deleteFromClickhouse(projectIds);
-    await deleteProjects(projectIds);
+    await deleteFromClickhouse(deps, projectIds);
+    await deleteProjects(deps, projectIds);
   }
 
   for (const organization of deletableOrganizations) {
-    await deleteOrganization(organization.id);
+    await deleteOrganization(deps, organization.id);
   }
 
   return {
@@ -581,12 +625,14 @@ export async function runDeleteCron(): Promise<DeleteCronResult> {
 
 // --- Moved from packages/trpc/src/routers/organization.ts's inline bodies ---
 
-export async function updateOrganization(input: {
+export async function updateOrganization(
+  deps: ServiceDeps,
+  input: {
   id: string;
   name: string;
   timezone: string;
 }) {
-  const db = await loadDb();
+  const db = deps.db;
   return db.organization.update({
     where: {
       id: input.id,
@@ -605,10 +651,11 @@ export async function updateOrganization(input: {
  * pass once their `deleteAt` has passed.
  */
 export async function scheduleOrganizationDeletion(
+  deps: ServiceDeps,
   organizationId: string
 ): Promise<void> {
-  const db = await loadDb();
-  const organization = await getOrganizationById(organizationId);
+  const db = deps.db;
+  const organization = await getOrganizationById(deps, organizationId);
 
   // Require billing to be cancelled first. We don't want to delete an
   // organization that still has a live paid subscription. Once the user has
@@ -641,9 +688,10 @@ export async function scheduleOrganizationDeletion(
 }
 
 export async function cancelOrganizationDeletion(
+  deps: ServiceDeps,
   organizationId: string
 ): Promise<void> {
-  const db = await loadDb();
+  const db = deps.db;
   await db.$transaction([
     db.project.updateMany({
       where: {
@@ -674,14 +722,16 @@ export type InviteUserResult =
       invite: Invite & { organization: { name: string } };
     };
 
-export async function inviteUserToOrganization(input: {
+export async function inviteUserToOrganization(
+  deps: ServiceDeps,
+  input: {
   organizationId: string;
   email: string;
   role: 'org:admin' | 'org:member';
   access: { projectId: string; level: 'read' | 'write' }[];
   invitedById: string;
 }): Promise<InviteUserResult> {
-  const db = await loadDb();
+  const db = deps.db;
   const email = input.email.toLowerCase();
   const userExists = await db.user.findFirst({
     where: {
@@ -738,7 +788,7 @@ export async function inviteUserToOrganization(input: {
   });
 
   if (userExists) {
-    const member = await connectUserToOrganization({
+    const member = await connectUserToOrganization(deps, {
       user: userExists,
       inviteId: invite.id,
     });
@@ -763,8 +813,11 @@ export async function inviteUserToOrganization(input: {
   };
 }
 
-export async function getInviteOrThrow(inviteId: string): Promise<Invite> {
-  const db = await loadDb();
+export async function getInviteOrThrow(
+  deps: ServiceDeps,
+  inviteId: string
+): Promise<Invite> {
+  const db = deps.db;
   return db.invite.findUniqueOrThrow({
     where: {
       id: inviteId,
@@ -772,8 +825,11 @@ export async function getInviteOrThrow(inviteId: string): Promise<Invite> {
   });
 }
 
-export async function revokeInvite(inviteId: string): Promise<Invite> {
-  const db = await loadDb();
+export async function revokeInvite(
+  deps: ServiceDeps,
+  inviteId: string
+): Promise<Invite> {
+  const db = deps.db;
   return db.invite.delete({
     where: {
       id: inviteId,
@@ -781,13 +837,15 @@ export async function revokeInvite(inviteId: string): Promise<Invite> {
   });
 }
 
-export async function removeOrganizationMember(input: {
+export async function removeOrganizationMember(
+  deps: ServiceDeps,
+  input: {
   organizationId: string;
   memberId: string;
   targetUserId: string;
   requestedByUserId: string;
 }): Promise<void> {
-  const db = await loadDb();
+  const db = deps.db;
   const exists = await db.member.count({
     where: {
       userId: input.targetUserId,
@@ -816,12 +874,14 @@ export async function removeOrganizationMember(input: {
   ]);
 }
 
-export async function updateOrganizationMemberAccess(input: {
+export async function updateOrganizationMemberAccess(
+  deps: ServiceDeps,
+  input: {
   organizationId: string;
   targetUserId: string;
   access: { projectId: string; level: 'read' | 'write' }[];
 }) {
-  const db = await loadDb();
+  const db = deps.db;
   return db.$transaction([
     db.projectAccess.deleteMany({
       where: {
@@ -854,15 +914,15 @@ export interface OrganizationService {
   scheduleDeletion(organizationId: string): Promise<void>;
   cancelDeletion(organizationId: string): Promise<void>;
   inviteUser(
-    input: Parameters<typeof inviteUserToOrganization>[0]
+    input: Parameters<typeof inviteUserToOrganization>[1]
   ): Promise<InviteUserResult>;
   getInviteOrThrow(inviteId: string): Promise<Invite>;
   revokeInvite(inviteId: string): Promise<Invite>;
   removeMember(
-    input: Parameters<typeof removeOrganizationMember>[0]
+    input: Parameters<typeof removeOrganizationMember>[1]
   ): Promise<void>;
   updateMemberAccess(
-    input: Parameters<typeof updateOrganizationMemberAccess>[0]
+    input: Parameters<typeof updateOrganizationMemberAccess>[1]
   ): ReturnType<typeof updateOrganizationMemberAccess>;
   members(organizationId: string): Promise<IServiceMember[]>;
   invitations(organizationId: string): Promise<Invite[]>;
@@ -871,22 +931,24 @@ export interface OrganizationService {
 }
 
 export function createOrganizationService(
-  _deps: ServiceDeps
+  deps: ServiceDeps
 ): OrganizationService {
   return {
-    get: getOrganizationById,
-    list: getOrganizations,
-    update: updateOrganization,
-    scheduleDeletion: scheduleOrganizationDeletion,
-    cancelDeletion: cancelOrganizationDeletion,
-    inviteUser: inviteUserToOrganization,
-    getInviteOrThrow,
-    revokeInvite,
-    removeMember: removeOrganizationMember,
-    updateMemberAccess: updateOrganizationMemberAccess,
-    members: getMembers,
-    invitations: getInvites,
-    getInvite: getInviteById,
-    runDeleteCron,
+    get: (organizationId) => getOrganizationById(deps, organizationId),
+    list: (userId) => getOrganizations(deps, userId),
+    update: (input) => updateOrganization(deps, input),
+    scheduleDeletion: (organizationId) =>
+      scheduleOrganizationDeletion(deps, organizationId),
+    cancelDeletion: (organizationId) =>
+      cancelOrganizationDeletion(deps, organizationId),
+    inviteUser: (input) => inviteUserToOrganization(deps, input),
+    getInviteOrThrow: (inviteId) => getInviteOrThrow(deps, inviteId),
+    revokeInvite: (inviteId) => revokeInvite(deps, inviteId),
+    removeMember: (input) => removeOrganizationMember(deps, input),
+    updateMemberAccess: (input) => updateOrganizationMemberAccess(deps, input),
+    members: (organizationId) => getMembers(deps, organizationId),
+    invitations: (organizationId) => getInvites(deps, organizationId),
+    getInvite: (inviteId) => getInviteById(deps, inviteId),
+    runDeleteCron: () => runDeleteCron(deps),
   };
 }

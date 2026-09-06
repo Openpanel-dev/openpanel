@@ -4,7 +4,7 @@
 // mock below is registered before the subject's first call, not before its
 // (side-effect-free) import.
 
-import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import type { IChartEvent } from '@openpanel/validation';
 
 interface FakeRule {
@@ -21,7 +21,12 @@ interface FakeRule {
 const ruleStore = new Map<string, FakeRule>();
 const integrationStore = new Map<
   string,
-  { id: string; projectId: string | null; organizationId: string; config: unknown }
+  {
+    id: string;
+    projectId: string | null;
+    organizationId: string;
+    config: unknown;
+  }
 >();
 
 function makeRule(overrides: Partial<FakeRule> & { id: string }): FakeRule {
@@ -38,7 +43,13 @@ function makeRule(overrides: Partial<FakeRule> & { id: string }): FakeRule {
 }
 
 const publishedEvents: unknown[] = [];
+// M10-009: spread a plain-object SNAPSHOT of the real module and restore it in
+// afterAll — `mock.module` has no per-file scope under bare `bun test`
+// (AGENTS.md), and a partial factory deletes `getRedisCache` and friends for
+// every file that runs next.
+const realRedis = { ...(await import('@openpanel/redis')) };
 mock.module('@openpanel/redis', () => ({
+  ...realRedis,
   cacheable: (
     _name: string,
     fn: (...args: unknown[]) => unknown,
@@ -48,6 +59,22 @@ mock.module('@openpanel/redis', () => ({
     publishedEvents.push({ channel, type, event });
   },
 }));
+
+const realPrismaClient = {
+  ...(await import('@openpanel/db/src/prisma-client')),
+};
+
+afterAll(async () => {
+  mock.module('@openpanel/redis', () => realRedis);
+  mock.module('@openpanel/db/src/prisma-client', () => realPrismaClient);
+  // Restoring the module registry is not enough: `v1-compat.ts` MEMOIZES the
+  // fallback `ServiceDeps` the first time anything resolves it, so if that
+  // happened while the mock above was installed, every later FILE in this
+  // process keeps the mocked client (bare `bun test` shares one registry).
+  // Drop the memo too — same reason mcp's dashboard-management.test.ts does.
+  const { resetV1CompatServicesForTests } = await import('../../v1-compat');
+  resetV1CompatServicesForTests();
+});
 
 const notificationRule = {
   findMany: mock(async ({ where }: { where: { projectId: string } }) =>
@@ -63,7 +90,10 @@ const notificationRule = {
     }
   ),
   create: mock(async ({ data }: { data: Partial<FakeRule> }) => {
-    const row = makeRule({ id: `rule_${ruleStore.size + 1}`, ...data } as never);
+    const row = makeRule({
+      id: `rule_${ruleStore.size + 1}`,
+      ...data,
+    } as never);
     ruleStore.set(row.id, row);
     return row;
   }),
@@ -101,11 +131,20 @@ const project = {
   findUniqueOrThrow: mock(async () => ({ organizationId: 'org_1' })),
 };
 
+// M10-009: every function under test takes `ServiceDeps`, so `deps.db` IS the
+// fake below. The `@openpanel/db/src/prisma-client` mock stays only for the
+// cacheable `getNotificationRulesByProjectId`, which reaches Postgres through
+// the v1-compat seam (see the service's header) — and for `Prisma.JsonNull` /
+// `Prisma.DbNull`, which `compatPrisma()` reads from the same module.
 const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
 mock.module('@openpanel/db/src/prisma-client', () => ({
   ...actualPrismaClient,
   db: { notificationRule, integration, project },
 }));
+
+const deps = {
+  db: { notificationRule, integration, project },
+} as unknown as import('../../services').ServiceDeps;
 
 let subject: typeof import('./notification.service');
 beforeAll(async () => {
@@ -131,9 +170,9 @@ test('isBaseIntegration finds app and email, nothing else', () => {
 test('matchEvent matches by exact name', () => {
   const payload = { name: 'click' } as never;
   expect(subject.matchEvent(payload, CLICK_EVENT)).toBe(true);
-  expect(
-    subject.matchEvent({ name: 'purchase' } as never, CLICK_EVENT)
-  ).toBe(false);
+  expect(subject.matchEvent({ name: 'purchase' } as never, CLICK_EVENT)).toBe(
+    false
+  );
 });
 
 test('matchEvent matches any event name on a wildcard', () => {
@@ -231,13 +270,10 @@ test('listNotificationRules merges the app/email pseudo-integrations onto real o
     })
   );
 
-  const result = await subject.listNotificationRules('proj_1');
+  const result = await subject.listNotificationRules(deps, 'proj_1');
 
   expect(result).toHaveLength(1);
-  expect(result[0]?.integrations.map((i) => i.id)).toEqual([
-    'app',
-    'slack_1',
-  ]);
+  expect(result[0]?.integrations.map((i) => i.id)).toEqual(['app', 'slack_1']);
 });
 
 test('createOrUpdateNotificationRule rejects an integration from another project', async () => {
@@ -249,7 +285,7 @@ test('createOrUpdateNotificationRule rejects an integration from another project
   });
 
   await expect(
-    subject.createOrUpdateNotificationRule({
+    subject.createOrUpdateNotificationRule(deps, {
       name: 'Rule',
       config: { type: 'events', events: [] },
       integrations: ['slack_1'],
@@ -269,7 +305,7 @@ test('createOrUpdateNotificationRule rejects an export-only integration', async 
   });
 
   await expect(
-    subject.createOrUpdateNotificationRule({
+    subject.createOrUpdateNotificationRule(deps, {
       name: 'Rule',
       config: { type: 'events', events: [] },
       integrations: ['s3_1'],
@@ -281,7 +317,7 @@ test('createOrUpdateNotificationRule rejects an export-only integration', async 
 });
 
 test('createOrUpdateNotificationRule creates a new rule when id is absent', async () => {
-  const created = await subject.createOrUpdateNotificationRule({
+  const created = await subject.createOrUpdateNotificationRule(deps, {
     name: 'Rule',
     config: { type: 'events', events: [] },
     integrations: ['app'],
@@ -296,12 +332,12 @@ test('createOrUpdateNotificationRule creates a new rule when id is absent', asyn
 
 test('deleteNotificationRule removes the row', async () => {
   ruleStore.set('rule_1', makeRule({ id: 'rule_1' }));
-  await subject.deleteNotificationRule('rule_1');
+  await subject.deleteNotificationRule(deps, 'rule_1');
   expect(ruleStore.has('rule_1')).toBe(false);
 });
 
 test('deliverNotification publishes the app pseudo-integration instead of enqueuing an email or plugin', async () => {
-  await subject.deliverNotification({
+  await subject.deliverNotification(deps, {
     projectId: 'proj_1',
     title: 'Hello',
     message: 'World',

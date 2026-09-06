@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { EVENT_COLUMNS } from '@openpanel/core';
 import { z } from 'zod';
+import { EVENT_COLUMNS } from '../../../../event/event.service';
 import type { McpAuthContext } from '../../auth';
 import {
   loadCompatCh,

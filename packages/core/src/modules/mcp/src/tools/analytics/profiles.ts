@@ -1,10 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
 import {
   findProfilesCore,
   getProfileSessionsCore,
   getProfileWithEvents,
-} from '@openpanel/core';
-import { z } from 'zod';
+} from '../../../../../v1-compat';
 import type { McpAuthContext } from '../../auth';
 import { dashboardBaseUrl, profileUrl } from '../dashboard-links';
 import {

@@ -1,6 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getEntryExitPagesCore, getTopPagesCore } from '@openpanel/core';
 import { z } from 'zod';
+import {
+  getEntryExitPagesCore,
+  getTopPagesCore,
+} from '../../../../../v1-compat';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,

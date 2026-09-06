@@ -104,7 +104,7 @@ export async function getTopPagesCore(
     filters?: IChartEventFilter[];
   }
 ) {
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   return getOverviewTopPages(deps, {
     projectId: input.projectId,
     filters: input.filters ?? [],
@@ -126,7 +126,7 @@ export async function getEntryExitPagesCore(
     filters?: IChartEventFilter[];
   }
 ) {
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   return getTopEntryExit(deps, {
     projectId: input.projectId,
     filters: input.filters ?? [],
@@ -150,7 +150,7 @@ export async function getPagePerformanceCore(
     limit?: number;
   }
 ) {
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const results = await getTopPages(deps, {
     projectId: input.projectId,
     startDate: input.startDate,

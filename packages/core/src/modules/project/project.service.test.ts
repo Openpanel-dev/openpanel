@@ -10,7 +10,7 @@
 // v1-compat singleton (see project.service.ts's header), which this test
 // has no real `AppDeps` to build.
 
-import { beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 
 interface FakeProject {
   id: string;
@@ -162,7 +162,15 @@ function cacheableStub(
     set: () => async () => 'OK' as const,
   });
 }
+// M10-009: each factory spreads a plain-object SNAPSHOT of the real module and
+// is restored in afterAll. `mock.module` has no per-file scope under bare
+// `bun test` (AGENTS.md), and a partial factory for `@openpanel/redis` or
+// `../../v1-compat` deletes every export it does not name for whichever file
+// runs next — which, now that cross-module callers reach the v1-compat seam
+// directly rather than through the package barrel, is a live hazard.
+const realRedis = { ...(await import('@openpanel/redis')) };
 mock.module('@openpanel/redis', () => ({
+  ...realRedis,
   cacheable: cacheableStub,
   getRedisCache: () => ({
     get: async () => null,
@@ -171,12 +179,24 @@ mock.module('@openpanel/redis', () => ({
   }),
 }));
 
+const realSlugId = { ...(await import('../../shared/slug-id')) };
 mock.module('../../shared/slug-id', () => ({
-  getId: async (_table: string, name: string) => `${name}-slug`,
+  ...realSlugId,
+  getId: async (_deps: unknown, _table: string, name: string) => `${name}-slug`,
 }));
 
 const clearClientByIdCache = mock(async () => 0);
-mock.module('../../v1-compat', () => ({ clearClientByIdCache }));
+const realV1Compat = { ...(await import('../../v1-compat')) };
+mock.module('../../v1-compat', () => ({
+  ...realV1Compat,
+  clearClientByIdCache,
+}));
+
+afterAll(() => {
+  mock.module('@openpanel/redis', () => realRedis);
+  mock.module('../../shared/slug-id', () => realSlugId);
+  mock.module('../../v1-compat', () => realV1Compat);
+});
 
 let subject: import('./project.service').ProjectService;
 beforeAll(async () => {

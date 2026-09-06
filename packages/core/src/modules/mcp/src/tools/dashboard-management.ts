@@ -1,7 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getDashboardById, getId, getProjectById } from '@openpanel/core';
 import { zReport } from '@openpanel/validation';
 import { z } from 'zod';
+import { getId } from '../../../../shared/slug-id';
+import { getDashboardById, getProjectById } from '../../../../v1-compat';
 import type { McpAuthContext } from '../auth';
 import { dashboardBaseUrl } from './dashboard-links';
 import {
@@ -328,7 +329,7 @@ export function registerDashboardManagementTools(
 
         const dashboard = await db.dashboard.create({
           data: {
-            id: await getId('dashboard', name),
+            id: await getId({ db }, 'dashboard', name),
             projectId,
             organizationId: project.organizationId,
             name,

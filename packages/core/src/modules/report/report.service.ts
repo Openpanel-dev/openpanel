@@ -210,7 +210,7 @@ export async function getReportDataCore(
   }
 
   const report = transformReport(rawReport);
-  const { timezone } = await getSettingsForProject(input.projectId);
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const { startDate, endDate } = getChartStartEndDate(report, timezone);
   const chartInput = { ...report, startDate, endDate, timezone };
 

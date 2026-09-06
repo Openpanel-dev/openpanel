@@ -24,10 +24,6 @@ import {
 } from '../../rpc/errors';
 import { zCreateImport } from './import.constants';
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
 function requireLogin(userId: string | null | undefined): string {
   if (!userId) {
     throw new TRPCAccessError('Not authenticated');
@@ -46,7 +42,7 @@ export const importRouter = createTRPCRouter({
         level: 'read',
       });
 
-      const db = await loadDb();
+      const db = ctx.db;
       return db.import.findMany({
         where: { projectId: input.projectId },
         orderBy: { createdAt: 'desc' },
@@ -57,7 +53,7 @@ export const importRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const db = await loadDb();
+      const db = ctx.db;
       const importRecord = await db.import.findUniqueOrThrow({
         where: { id: input.id },
         include: { project: true },
@@ -80,7 +76,7 @@ export const importRouter = createTRPCRouter({
       level: 'write',
     });
 
-    const db = await loadDb();
+    const db = ctx.db;
     const organization = await db.organization.findFirst({
       where: { projects: { some: { id: input.projectId } } },
     });
@@ -119,7 +115,7 @@ export const importRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const db = await loadDb();
+      const db = ctx.db;
       const importRecord = await db.import.findUniqueOrThrow({
         where: { id: input.id },
       });
@@ -141,7 +137,7 @@ export const importRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const db = await loadDb();
+      const db = ctx.db;
       const importRecord = await db.import.findUniqueOrThrow({
         where: { id: input.id },
       });

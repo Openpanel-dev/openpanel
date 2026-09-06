@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { GscQueryOpportunity } from '@openpanel/core';
-import { getGscQueries, getGscQueryDetails } from '@openpanel/core';
 import { z } from 'zod';
+import { getGscQueries, getGscQueryDetails } from '../../../../../v1-compat';
+import type { GscQueryOpportunity } from '../../../../gsc/gsc.service';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,

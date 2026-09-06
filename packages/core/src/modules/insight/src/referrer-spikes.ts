@@ -1,13 +1,15 @@
-import {
-  ch,
-  convertClickhouseDateToJs,
-  TABLE_NAMES,
-} from '@openpanel/db/src/clickhouse/client';
+// M10-009: the ClickHouse CLIENT is `deps.ch` (the boot scope's round-robin
+// proxy), so the requestId minted at the edge reaches these queries (ADR-018).
+// `clix` stays a value import: it is a pure query BUILDER that takes the
+// client as its first argument, not a connection — same standing as ADR-013's
+// `sql` tag (see shared/ch-query.ts). Table names and the date helper are
+// core's own copies (shared/ch-tables.ts, shared/ch-dates.ts).
 import { clix } from '@openpanel/db/src/clickhouse/query-builder';
-// `overview` hasn't moved to core yet (a later wave) — deep-imported like the
-// rest of @openpanel/db's internals until it does.
-import { overviewService } from '@openpanel/core';
 import type { IChartEventFilter, IInterval } from '@openpanel/validation';
+import type { ServiceDeps } from '../../../services';
+import { convertClickhouseDateToJs } from '../../../shared/ch-dates';
+import { TABLE_NAMES } from '../../../shared/ch-tables';
+import { overviewService } from '../../../v1-compat';
 
 // Spike detection thresholds. Conservative defaults — markers should be rare
 // and obviously meaningful when they appear. Tune here if real usage shows
@@ -73,8 +75,10 @@ export interface GetReferrerSpikesInput {
 }
 
 export async function getReferrerSpikes(
+  deps: ServiceDeps,
   input: GetReferrerSpikesInput
 ): Promise<ReferrerSpikeCluster[]> {
+  const ch = deps.ch;
   const { projectId, filters, startDate, endDate, interval, timezone } = input;
   const filtersWhere = overviewService.getRawWhereClause('sessions', filters);
 

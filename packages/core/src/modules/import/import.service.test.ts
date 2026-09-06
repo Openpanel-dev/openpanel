@@ -1,8 +1,9 @@
-// import.service.ts's db/ch access is lazy (`await import(...)` inside each
-// function — see the file's header), which is exactly what makes
-// `mock.module` work here with no import-time side effects to race: every
-// mock below is registered before the subject's first call, not before its
-// (side-effect-free) import.
+// M10-009: import.service.ts takes its clients from `ServiceDeps`, so this
+// file hands in fakes as `deps.db` / `deps.ch` and mocks NO module at all.
+// That is the point of the conversion: a module mock of
+// `@openpanel/db/src/clickhouse/client` replaced that specifier for every
+// other FILE in the process (bare `bun test` shares one module registry), and
+// the v1-compat seam memoizes whatever it resolved while one was installed.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
 import type { AppDeps, Buffers } from '../../context';
@@ -27,46 +28,27 @@ function stubLogger(): Logger {
 const chInsert = mock(async (_opts: { values: unknown[] }) => ({
   summary: { written_rows: '2' },
 }));
-// Spread the real module rather than hand-listing every export: `mock.module`
-// replaces this specifier process-wide (bun runs every test file in one
-// shared module registry without `--isolate` — see AGENTS.md), so a partial
-// factory here silently breaks unrelated consumers (gsc/cohort/insight tests
-// and now the mcp module's) that import an export this file never overrides.
-// `ch` itself is one such export: only `insert` is what import.service.ts
-// exercises, so `command` is stubbed and every other method (`query`, ...) is
-// spread from the real client — a bare `{ insert, command }` replacement
-// previously stripped `query` from every *other* consumer of this same
-// live-bound singleton (e.g. `@openpanel/db`'s `OverviewService`/
-// `PagesService`, constructed once at that module's own load time) for the
-// rest of the process.
+// The real client, spread into the fake below so a method the subject does
+// not exercise is still the real one rather than `undefined`. Imported, not
+// mocked: nothing here replaces the specifier for the rest of the process.
 const actualClickhouseClient = await import(
   '@openpanel/db/src/clickhouse/client'
 );
-mock.module('@openpanel/db/src/clickhouse/client', () => ({
-  ...actualClickhouseClient,
+
+const importUpdate = mock(
+  async (_opts: { where: { id: string }; data: unknown }) => undefined
+);
+
+// The subject's functions take `ServiceDeps`, so `deps.db` / `deps.ch` ARE
+// the fakes below.
+const deps = {
+  db: { import: { update: importUpdate } },
   ch: {
     ...actualClickhouseClient.ch,
     insert: chInsert,
     command: mock(async () => undefined),
   },
-  getReplicatedTableName: mock((table: string) => table),
-  formatClickhouseDate: (date: Date | string) =>
-    new Date(date)
-      .toISOString()
-      .replace('T', ' ')
-      .replace(/(\.\d{3})?Z+$/, ''),
-  convertClickhouseDateToJs: (date: string) =>
-    new Date(`${date.replace(' ', 'T')}Z`),
-}));
-
-const importUpdate = mock(
-  async (_opts: { where: { id: string }; data: unknown }) => undefined
-);
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-mock.module('@openpanel/db/src/prisma-client', () => ({
-  ...actualPrismaClient,
-  db: { import: { update: importUpdate } },
-}));
+} as unknown as import('../../services').ServiceDeps;
 
 let insertRawEventsBatch: typeof import('./import.service').insertRawEventsBatch;
 let updateImportStatus: typeof import('./import.service').updateImportStatus;
@@ -81,6 +63,7 @@ test('insertRawEventsBatch stamps project_id/imported_at and flattens properties
   chInsert.mockClear();
 
   const result = await insertRawEventsBatch(
+    deps,
     'proj_1',
     [
       {
@@ -112,6 +95,7 @@ test('updateImportStatus writes the loading step through both the progress repor
   const progressed: unknown[] = [];
 
   await updateImportStatus(
+    deps,
     stubLogger(),
     { updateProgress: (p) => progressed.push(p) },
     'imp_1',
@@ -146,6 +130,7 @@ test('updateImportStatus marks a failed step with its error message', async () =
   const progressed: unknown[] = [];
 
   await updateImportStatus(
+    deps,
     stubLogger(),
     { updateProgress: (p) => progressed.push(p) },
     'imp_1',

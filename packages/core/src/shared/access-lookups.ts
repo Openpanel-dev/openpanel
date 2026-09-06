@@ -5,12 +5,6 @@
 // the real `@openpanel/db` binding ~28 modules' `src/access.ts` files supply
 // to it. Same shape as packages/trpc/src/access.ts's binding.
 //
-// db access is LAZY (`loadDb` below), not a static top-level import — see
-// insight.service.ts's header for the full reasoning (jobs.registry.ts and
-// services.ts pull this module into the eager barrel chain nearly every core
-// test file reaches, and constructing @openpanel/db's clients at import time
-// would spawn a pino-pretty transport worker thread per test file).
-//
 // M10-004: `project.service.ts`'s `getProjectById` now takes `ServiceDeps`,
 // which this file has none of — reached through the v1-compat singleton
 // instead (see v1-compat.ts's header). GENUINE CYCLE, kept lazy: auth.service.ts
@@ -19,12 +13,20 @@
 // file, but `getAccessChecks()` in auth.service.ts reaches both this file and
 // project.service.ts, so a static import here risks the same evaluation-order
 // hazard `getAccessChecks()`'s own header warns about.
+//
+// M10-009: Postgres comes through that same seam (`compatDb()`), not a direct
+// `import('@openpanel/db/...')`. Two of the three lookups here are `cacheable`,
+// whose key is derived from the call's ARGUMENTS (packages/redis/cachable.ts),
+// so they cannot take a `ServiceDeps` leading parameter at all; the third
+// (`getClientAccess`) delegates to them and stays symmetric. What they get is
+// the boot scope's `AppDeps.db` — the same client `ctx.db` is — rather than a
+// second module-level singleton.
 
 import type { AccessLevel } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
 
 function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+  return import('../v1-compat').then((m) => m.compatDb());
 }
 
 function loadProjectService() {

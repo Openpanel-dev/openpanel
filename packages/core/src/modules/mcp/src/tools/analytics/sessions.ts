@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { querySessionsCore } from '@openpanel/core';
 import { z } from 'zod';
+import { querySessionsCore } from '../../../../../v1-compat';
 import type { McpAuthContext } from '../../auth';
 import { dashboardBaseUrl } from '../dashboard-links';
 import {

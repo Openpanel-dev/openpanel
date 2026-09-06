@@ -42,14 +42,14 @@ export const notificationRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string() }))
     .query(({ input, ctx }) => {
       requireLogin(ctx.session.userId);
-      return listNotifications(input.projectId);
+      return listNotifications(ctx, input.projectId);
     }),
 
   rules: procedure
     .input(z.object({ projectId: z.string() }))
     .query(({ input, ctx }) => {
       requireLogin(ctx.session.userId);
-      return listNotificationRules(input.projectId);
+      return listNotificationRules(ctx, input.projectId);
     }),
 
   createOrUpdateRule: procedure
@@ -67,7 +67,7 @@ export const notificationRouter = createTRPCRouter({
       });
 
       if (input.id) {
-        const existing = await getNotificationRuleByIdOrThrow(input.id);
+        const existing = await getNotificationRuleByIdOrThrow(ctx, input.id);
         await ctx.services.auth.requireProjectAccess({
           userId,
           projectId: existing.projectId,
@@ -75,14 +75,14 @@ export const notificationRouter = createTRPCRouter({
         });
       }
 
-      return createOrUpdateNotificationRule(input);
+      return createOrUpdateNotificationRule(ctx, input);
     }),
 
   deleteRule: procedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = requireLogin(ctx.session.userId);
-      const rule = await getNotificationRuleByIdOrThrow(input.id);
+      const rule = await getNotificationRuleByIdOrThrow(ctx, input.id);
 
       await ctx.services.auth.requireProjectAccess({
         userId,
@@ -90,6 +90,6 @@ export const notificationRouter = createTRPCRouter({
         level: 'write',
       });
 
-      return deleteNotificationRule(input.id);
+      return deleteNotificationRule(ctx, input.id);
     }),
 });

@@ -14,10 +14,12 @@ import type { ConcreteSeries } from './types';
 
 /** Normalize, then clamp the end date to the organization's subscription window. */
 async function normalizeWithinSubscription(
+  deps: ServiceDeps,
   input: IReportInput
 ): Promise<NormalizedInput> {
-  const normalized = await normalize(input);
+  const normalized = await normalize(deps, input);
   const endDate = await getOrganizationSubscriptionChartEndDate(
+    deps,
     input.projectId,
     normalized.endDate
   );
@@ -32,8 +34,8 @@ export async function executeChart(
   deps: ServiceDeps,
   input: IReportInput
 ): Promise<FinalChart> {
-  const normalized = await normalizeWithinSubscription(input);
-  const executionPlan = await plan(normalized);
+  const normalized = await normalizeWithinSubscription(deps, input);
+  const executionPlan = await plan(deps, normalized);
   const computedSeries = compute(
     await fetch(deps, executionPlan),
     executionPlan.definitions
@@ -41,7 +43,7 @@ export async function executeChart(
 
   let previousSeries: ConcreteSeries[] | null = null;
   if (input.previous) {
-    const previousPlan = await plan({
+    const previousPlan = await plan(deps, {
       ...normalized,
       ...getChartPrevStartEndDate({
         startDate: normalized.startDate,
@@ -68,8 +70,8 @@ export async function executeAggregateChart(
   deps: ServiceDeps,
   input: IReportInput
 ): Promise<FinalChart> {
-  const normalized = await normalizeWithinSubscription(input);
-  const { timezone } = await getSettingsForProject(normalized.projectId);
+  const normalized = await normalizeWithinSubscription(deps, input);
+  const { timezone } = await getSettingsForProject(deps, normalized.projectId);
   const currentPeriod = {
     startDate: normalized.startDate,
     endDate: normalized.endDate,

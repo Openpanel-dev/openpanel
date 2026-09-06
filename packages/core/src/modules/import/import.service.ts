@@ -20,11 +20,17 @@
 
 import { createHash } from 'node:crypto';
 import { toDots } from '@openpanel/common';
-import type { IClickhouseEvent, IClickhouseProfile } from '@openpanel/core';
 import type { Prisma } from '@openpanel/db/src/prisma-client';
 import { createLogger, type ILogger } from '../../clients/logger';
 import type { Logger } from '../../logger';
 import type { ServiceDeps } from '../../services';
+import {
+  convertClickhouseDateToJs,
+  formatClickhouseDate,
+} from '../../shared/ch-dates';
+import { getReplicatedTableName, TABLE_NAMES } from '../../shared/ch-tables';
+import type { IClickhouseEvent } from '../event/event.service';
+import type { IClickhouseProfile } from '../profile/profile.service';
 import type { IImportConfig } from './import.constants';
 
 const BATCH_SIZE = Number.parseInt(process.env.IMPORT_BATCH_SIZE || '5000', 10);
@@ -41,14 +47,6 @@ let _logger: ILogger | undefined;
 function getLogger(): ILogger {
   _logger ??= createLogger({ name: 'core:import' });
   return _logger;
-}
-
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
 }
 
 function yieldToEventLoop(): Promise<void> {
@@ -72,6 +70,7 @@ export interface ImportStageResult {
  * Insert a batch of events into the imports staging table
  */
 export async function insertImportBatch(
+  deps: ServiceDeps,
   events: IClickhouseEvent[],
   importId: string
 ): Promise<ImportStageResult> {
@@ -79,7 +78,7 @@ export async function insertImportBatch(
     return { importId, totalEvents: 0, insertedEvents: 0 };
   }
 
-  const { ch, TABLE_NAMES, formatClickhouseDate } = await loadChClient();
+  const ch = deps.ch;
   const now = formatClickhouseDate(new Date());
   const rows = events.map((event) => ({
     ...event,
@@ -107,6 +106,7 @@ export async function insertImportBatch(
  * Used by Mixpanel (and other providers) to import user profiles during an import job.
  */
 export async function insertProfilesBatch(
+  deps: ServiceDeps,
   profiles: IClickhouseProfile[],
   projectId: string
 ): Promise<{ inserted: number }> {
@@ -114,7 +114,7 @@ export async function insertProfilesBatch(
     return { inserted: 0 };
   }
 
-  const { ch, TABLE_NAMES } = await loadChClient();
+  const ch = deps.ch;
   const normalized = profiles.map((p) => ({
     id: p.id,
     project_id: projectId,
@@ -149,9 +149,10 @@ export async function insertProfilesBatch(
 const SESSION_GAP_MS = 30 * 60 * 1000; // 30 minutes
 
 export async function generateGapBasedSessionIds(
+  deps: ServiceDeps,
   importId: string
 ): Promise<void> {
-  const { ch, TABLE_NAMES, getReplicatedTableName } = await loadChClient();
+  const ch = deps.ch;
   let currentDeviceId = '';
   let currentSessionId = '';
   let currentLastTime = 0;
@@ -200,14 +201,14 @@ export async function generateGapBasedSessionIds(
 
       batch.push(event);
       if (batch.length >= SESSION_BATCH_SIZE) {
-        await insertImportBatch(batch, importId);
+        await insertImportBatch(deps, batch, importId);
         batch.length = 0;
       }
     }
   }
 
   if (batch.length > 0) {
-    await insertImportBatch(batch, importId);
+    await insertImportBatch(deps, batch, importId);
   }
 
   const mutationTable = getReplicatedTableName(TABLE_NAMES.events_imports);
@@ -230,8 +231,11 @@ export async function generateGapBasedSessionIds(
  * Delete all staging data for an import. Used to get a clean slate on retry
  * when the failure happened before moving data to production.
  */
-export async function cleanupStagingData(importId: string): Promise<void> {
-  const { ch, TABLE_NAMES, getReplicatedTableName } = await loadChClient();
+export async function cleanupStagingData(
+  deps: ServiceDeps,
+  importId: string
+): Promise<void> {
+  const ch = deps.ch;
   const mutationTableName = getReplicatedTableName(TABLE_NAMES.events_imports);
   await ch.command({
     query: `ALTER TABLE ${mutationTableName} DELETE WHERE import_id = {importId:String}`,
@@ -246,9 +250,10 @@ export async function cleanupStagingData(importId: string): Promise<void> {
 }
 
 export async function cleanupSessionStartEndEvents(
+  deps: ServiceDeps,
   importId: string
 ): Promise<void> {
-  const { ch, TABLE_NAMES, getReplicatedTableName } = await loadChClient();
+  const ch = deps.ch;
   const mutationTableName = getReplicatedTableName(TABLE_NAMES.events_imports);
   await ch.command({
     query: `ALTER TABLE ${mutationTableName} DELETE WHERE import_id = {importId:String} AND name IN ('session_start', 'session_end')`,
@@ -271,10 +276,10 @@ export async function cleanupSessionStartEndEvents(
  * heavy aggregation only for that batch of IDs.
  */
 export async function createSessionsStartEndEvents(
+  deps: ServiceDeps,
   importId: string
 ): Promise<void> {
-  const { ch, TABLE_NAMES, convertClickhouseDateToJs, formatClickhouseDate } =
-    await loadChClient();
+  const ch = deps.ch;
   let lastSessionId = '';
 
   const baseWhere = [
@@ -479,7 +484,7 @@ export async function createSessionsStartEndEvents(
     }
 
     if (sessionEvents.length > 0) {
-      await insertImportBatch(sessionEvents, importId);
+      await insertImportBatch(deps, sessionEvents, importId);
     }
 
     lastSessionId = maxSessionId;
@@ -494,10 +499,11 @@ export async function createSessionsStartEndEvents(
  * Batched per-day using a simple date filter.
  */
 export async function moveImportsToProduction(
+  deps: ServiceDeps,
   importId: string,
   from: string
 ): Promise<void> {
-  const { ch, TABLE_NAMES } = await loadChClient();
+  const ch = deps.ch;
   let whereClause = 'import_id = {importId:String}';
 
   if (from) {
@@ -540,9 +546,10 @@ export async function moveImportsToProduction(
  * Batches by session_ids to bound ClickHouse memory.
  */
 export async function backfillSessionsToProduction(
+  deps: ServiceDeps,
   importId: string
 ): Promise<void> {
-  const { ch, TABLE_NAMES } = await loadChClient();
+  const ch = deps.ch;
   let lastSessionId = '';
 
   while (true) {
@@ -648,10 +655,11 @@ export async function backfillSessionsToProduction(
  * Get min/max created_at for an import's staging data.
  */
 export async function getImportDateBounds(
+  deps: ServiceDeps,
   importId: string,
   fromCreatedAt?: string
 ): Promise<{ min: string | null; max: string | null }> {
-  const { ch, TABLE_NAMES } = await loadChClient();
+  const ch = deps.ch;
   const res = await ch.query({
     query: `
       SELECT min(created_at) AS min, max(created_at) AS max
@@ -727,12 +735,13 @@ export type UpdateImportStatusOptions =
 export type ImportSteps = UpdateImportStatusOptions['step'];
 
 export async function updateImportStatus(
+  deps: ServiceDeps,
   jobLogger: Logger,
   progress: ImportJobProgress,
   importId: string,
   options: UpdateImportStatusOptions
 ): Promise<void> {
-  const db = await loadDb();
+  const db = deps.db;
   const data: Prisma.ImportUpdateInput = {};
   switch (options.step) {
     case 'loading':
@@ -883,11 +892,12 @@ async function createImportProvider(
  * worker delegate and core's own (not yet live) `import` queue worker.
  */
 export async function runImportJob(
+  deps: ServiceDeps,
   importId: string,
   progress: ImportJobProgress = NOOP_PROGRESS,
   logger: Logger = getLogger()
 ): Promise<{ success: true }> {
-  const db = await loadDb();
+  const db = deps.db;
   const record = await db.import.findUniqueOrThrow({
     where: { id: importId },
     include: { project: true },
@@ -916,11 +926,11 @@ export async function runImportJob(
         jobLogger.info(
           'Retry detected before resumable phase — cleaning staging data'
         );
-        await cleanupStagingData(importId);
+        await cleanupStagingData(deps, importId);
       }
 
       // Phase 1: Load events into staging
-      await updateImportStatus(jobLogger, progress, importId, {
+      await updateImportStatus(deps, jobLogger, progress, importId, {
         step: 'loading',
       });
 
@@ -940,10 +950,10 @@ export async function runImportJob(
           return;
         }
         const values = Array.from(profileMap.values());
-        await insertProfilesBatch(values, record.projectId);
+        await insertProfilesBatch(deps, values, record.projectId);
         processedProfiles += values.length;
         profileMap.clear();
-        await updateImportStatus(jobLogger, progress, importId, {
+        await updateImportStatus(deps, jobLogger, progress, importId, {
           step: 'loading_profiles',
           processedProfiles,
         });
@@ -973,14 +983,14 @@ export async function runImportJob(
         }
 
         if (eventBatch.length >= BATCH_SIZE) {
-          await insertImportBatch(eventBatch, importId);
+          await insertImportBatch(deps, eventBatch, importId);
           processedEvents += eventBatch.length;
 
           const batchDate = new Date(eventBatch[0]?.created_at || '')
             .toISOString()
             .split('T')[0];
 
-          await updateImportStatus(jobLogger, progress, importId, {
+          await updateImportStatus(deps, jobLogger, progress, importId, {
             step: 'loading',
             batch: batchDate,
             totalEvents,
@@ -993,14 +1003,14 @@ export async function runImportJob(
       }
 
       if (eventBatch.length > 0) {
-        await insertImportBatch(eventBatch, importId);
+        await insertImportBatch(deps, eventBatch, importId);
         processedEvents += eventBatch.length;
 
         const batchDate = new Date(eventBatch[0]?.created_at || '')
           .toISOString()
           .split('T')[0];
 
-        await updateImportStatus(jobLogger, progress, importId, {
+        await updateImportStatus(deps, jobLogger, progress, importId, {
           step: 'loading',
           batch: batchDate,
           totalEvents,
@@ -1022,7 +1032,7 @@ export async function runImportJob(
 
       // Phase 1b: Load user profiles (Mixpanel only)
       if (typeof providerInstance.streamProfiles === 'function') {
-        await updateImportStatus(jobLogger, progress, importId, {
+        await updateImportStatus(deps, jobLogger, progress, importId, {
           step: 'loading_profiles',
         });
 
@@ -1037,9 +1047,9 @@ export async function runImportJob(
           profileBatch.push(profile);
 
           if (profileBatch.length >= PROFILE_BATCH_SIZE) {
-            await insertProfilesBatch(profileBatch, record.projectId);
+            await insertProfilesBatch(deps, profileBatch, record.projectId);
             profilesLoaded += profileBatch.length;
-            await updateImportStatus(jobLogger, progress, importId, {
+            await updateImportStatus(deps, jobLogger, progress, importId, {
               step: 'loading_profiles',
               processedProfiles: profilesLoaded,
             });
@@ -1049,9 +1059,9 @@ export async function runImportJob(
         }
 
         if (profileBatch.length > 0) {
-          await insertProfilesBatch(profileBatch, record.projectId);
+          await insertProfilesBatch(deps, profileBatch, record.projectId);
           profilesLoaded += profileBatch.length;
-          await updateImportStatus(jobLogger, progress, importId, {
+          await updateImportStatus(deps, jobLogger, progress, importId, {
             step: 'loading_profiles',
             processedProfiles: profilesLoaded,
             totalProfiles: profilesLoaded,
@@ -1066,10 +1076,10 @@ export async function runImportJob(
 
       // Phase 2: Generate gap-based session IDs (Mixpanel etc.)
       if (shouldGenerateSessionIds) {
-        await updateImportStatus(jobLogger, progress, importId, {
+        await updateImportStatus(deps, jobLogger, progress, importId, {
           step: 'generating_sessions',
         });
-        await generateGapBasedSessionIds(importId);
+        await generateGapBasedSessionIds(deps, importId);
         await yieldToEventLoop();
         jobLogger.info('Session ID generation complete');
       }
@@ -1086,14 +1096,14 @@ export async function runImportJob(
         jobLogger.info(
           'Retry at creating_sessions — cleaning existing session_start/end events'
         );
-        await cleanupSessionStartEndEvents(importId);
+        await cleanupSessionStartEndEvents(deps, importId);
       }
 
-      await updateImportStatus(jobLogger, progress, importId, {
+      await updateImportStatus(deps, jobLogger, progress, importId, {
         step: 'creating_sessions',
         batch: 'all sessions',
       });
-      await createSessionsStartEndEvents(importId);
+      await createSessionsStartEndEvents(deps, importId);
       await yieldToEventLoop();
 
       jobLogger.info('Session event creation complete');
@@ -1119,7 +1129,7 @@ export async function runImportJob(
       return next.toISOString().split('T')[0]!;
     })();
 
-    const bounds = await getImportDateBounds(importId, moveFromDate);
+    const bounds = await getImportDateBounds(deps, importId, moveFromDate);
     if (bounds.min && bounds.max) {
       const startDate = bounds.min.split(' ')[0]!;
       const endDate = bounds.max.split(' ')[0]!;
@@ -1129,8 +1139,8 @@ export async function runImportJob(
       while (cursor <= end) {
         const dateStr = cursor.toISOString().split('T')[0]!;
 
-        await moveImportsToProduction(importId, dateStr);
-        await updateImportStatus(jobLogger, progress, importId, {
+        await moveImportsToProduction(deps, importId, dateStr);
+        await updateImportStatus(deps, jobLogger, progress, importId, {
           step: 'moving',
           batch: dateStr,
         });
@@ -1143,17 +1153,17 @@ export async function runImportJob(
     jobLogger.info('Move to production complete');
 
     // Phase 4: Backfill sessions table
-    await updateImportStatus(jobLogger, progress, importId, {
+    await updateImportStatus(deps, jobLogger, progress, importId, {
       step: 'backfilling_sessions',
       batch: 'all sessions',
     });
-    await backfillSessionsToProduction(importId);
+    await backfillSessionsToProduction(deps, importId);
     await yieldToEventLoop();
 
     jobLogger.info('Session backfill complete');
 
     // Done
-    await updateImportStatus(jobLogger, progress, importId, {
+    await updateImportStatus(deps, jobLogger, progress, importId, {
       step: 'completed',
     });
     jobLogger.info('Import completed');
@@ -1164,7 +1174,7 @@ export async function runImportJob(
 
     try {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      await updateImportStatus(jobLogger, progress, importId, {
+      await updateImportStatus(deps, jobLogger, progress, importId, {
         step: 'failed',
         errorMessage: errorMsg,
       });
@@ -1191,11 +1201,12 @@ export interface InsertRawEventsResult {
 }
 
 export async function insertRawEventsBatch(
+  deps: ServiceDeps,
   projectId: string,
   events: IClickhouseEvent[],
   logger: Logger = getLogger()
 ): Promise<InsertRawEventsResult> {
-  const { ch, TABLE_NAMES, formatClickhouseDate } = await loadChClient();
+  const ch = deps.ch;
   const importedAt = formatClickhouseDate(new Date());
   const values: IClickhouseEvent[] = events.map((event) => ({
     ...event,
@@ -1235,7 +1246,7 @@ export function createImportService(deps: ServiceDeps): ImportService {
   const logger = deps.logger.child({ module: 'import' });
 
   return {
-    run: (importId, progress) => runImportJob(importId, progress, logger),
+    run: (importId, progress) => runImportJob(deps, importId, progress, logger),
     enqueue: (importId) => deps.queues.import.import.add({ importId }),
   };
 }

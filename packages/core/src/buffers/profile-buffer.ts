@@ -3,9 +3,9 @@ import { getRedisCache, type Redis } from '@openpanel/redis';
 import { omit, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import type { IClickhouseProfile } from '../modules/profile/profile.service';
+import { TABLE_NAMES } from '../shared/ch-tables';
 import { getSafeJson } from '../shared/json';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
-import { loadClickHouse } from './clickhouse';
 
 // Inlined to avoid a circular value-import with `profile.service.ts`
 // (which imports `profileBuffer` from `../buffers`). Keep this in sync
@@ -190,7 +190,6 @@ export class ProfileBuffer extends BaseBuffer {
   private async batchFetchFromClickhouse(
     profiles: IClickhouseProfile[]
   ): Promise<Map<string, IClickhouseProfile>> {
-    const { chQuery, TABLE_NAMES } = await loadClickHouse();
     const result = new Map<string, IClickhouseProfile>();
 
     // Non-external (anonymous/device) profiles get a 2-day recency filter to
@@ -215,7 +214,7 @@ export class ProfileBuffer extends BaseBuffer {
           // last_seen_at`, which is an aggregate function and illegal in WHERE
           // (CH ILLEGAL_AGGREGATION). Qualifying with `p.` bypasses the alias
           // lookup and binds to the raw column.
-          const rows = await chQuery<IClickhouseProfile>(
+          const rows = await this.chQuery<IClickhouseProfile>(
             `SELECT ${PROFILE_LATEST_AGGREGATE_COLUMNS}
             FROM ${TABLE_NAMES.profiles} AS p
             WHERE (p.id, p.project_id) IN (${tuples})
@@ -362,7 +361,7 @@ export class ProfileBuffer extends BaseBuffer {
       }
     }
 
-    const { ch, TABLE_NAMES } = await loadClickHouse();
+    const ch = await this.resolveCh();
     const chStart = performance.now();
     await this.parallelLimit(this.chunks(toInsert, this.chunkSize), (chunk) =>
       ch.insert({

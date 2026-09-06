@@ -43,6 +43,20 @@ import {
   signInToShare as signInToShareWithDeps,
 } from './modules/auth/auth.service';
 import {
+  computeCohort as cohort_computeCohort,
+  countCohort as cohort_countCohort,
+  deleteCohortMembership as cohort_deleteCohortMembership,
+  getCohortCount as cohort_getCohortCount,
+  getCohortEventsPerDay as cohort_getCohortEventsPerDay,
+  getCohortMemberEvents as cohort_getCohortMemberEvents,
+  getCohortMemberRoutes as cohort_getCohortMemberRoutes,
+  getCohortMembers as cohort_getCohortMembers,
+  getProfilesInCohort as cohort_getProfilesInCohort,
+  listCohortMemberProfiles as cohort_listCohortMemberProfiles,
+  listRefreshableCohortIds as cohort_listRefreshableCohortIds,
+  updateCohortMembership as cohort_updateCohortMembership,
+} from './modules/cohort/cohort.service';
+import {
   createBotEvent as event_createBotEvent,
   createEvent as event_createEvent,
   getBotEventsPage as event_getBotEventsPage,
@@ -89,10 +103,114 @@ import {
   upsertGroup as group_upsertGroup,
 } from './modules/group/group.service';
 import {
+  completeGscOAuthCallback as gsc_completeGscOAuthCallback,
+  disconnectGscConnection as gsc_disconnectGscConnection,
+  getGscAiEngines as gsc_getGscAiEngines,
+  getGscConnection as gsc_getGscConnection,
+  getGscOverview as gsc_getGscOverview,
+  getGscPageDetails as gsc_getGscPageDetails,
+  getGscPages as gsc_getGscPages,
+  getGscPreviousOverview as gsc_getGscPreviousOverview,
+  getGscQueries as gsc_getGscQueries,
+  getGscQueryDetails as gsc_getGscQueryDetails,
+  getGscSearchEngines as gsc_getGscSearchEngines,
+  gscGetCannibalizationCore as gsc_gscGetCannibalizationCore,
+  gscGetOverviewCore as gsc_gscGetOverviewCore,
+  gscGetPageDetailsCore as gsc_gscGetPageDetailsCore,
+  gscGetQueryDetailsCore as gsc_gscGetQueryDetailsCore,
+  gscGetQueryOpportunitiesCore as gsc_gscGetQueryOpportunitiesCore,
+  gscGetTopPagesCore as gsc_gscGetTopPagesCore,
+  gscGetTopQueriesCore as gsc_gscGetTopQueriesCore,
+  listGscConnectionsForSync as gsc_listGscConnectionsForSync,
+  listGscSites as gsc_listGscSites,
+  resolveGscDateRange as gsc_resolveGscDateRange,
+  runGscProjectBackfill as gsc_runGscProjectBackfill,
+  runGscProjectSync as gsc_runGscProjectSync,
+  selectGscSite as gsc_selectGscSite,
+  syncGscData as gsc_syncGscData,
+} from './modules/gsc/gsc.service';
+import {
+  backfillSessionsToProduction as import__backfillSessionsToProduction,
+  cleanupSessionStartEndEvents as import__cleanupSessionStartEndEvents,
+  cleanupStagingData as import__cleanupStagingData,
+  createSessionsStartEndEvents as import__createSessionsStartEndEvents,
+  generateGapBasedSessionIds as import__generateGapBasedSessionIds,
+  getImportDateBounds as import__getImportDateBounds,
+  insertImportBatch as import__insertImportBatch,
+  insertProfilesBatch as import__insertProfilesBatch,
+  insertRawEventsBatch as import__insertRawEventsBatch,
+  moveImportsToProduction as import__moveImportsToProduction,
+  runImportJob as import__runImportJob,
+  updateImportStatus as import__updateImportStatus,
+} from './modules/import/import.service';
+import {
+  cleanupStaleInsights as insight_cleanupStaleInsights,
+  getReferrerSpikes as insight_getReferrerSpikes,
+  listAllInsights as insight_listAllInsights,
+  listDailyInsightCandidates as insight_listDailyInsightCandidates,
+  listInsights as insight_listInsights,
+  previewWeeklyDigest as insight_previewWeeklyDigest,
+  runProjectInsights as insight_runProjectInsights,
+  scanLegacyInsights as insight_scanLegacyInsights,
+  sendWeeklyDigests as insight_sendWeeklyDigests,
+} from './modules/insight/insight.service';
+import {
+  completeSlackOAuthCallback as integration_completeSlackOAuthCallback,
+  createOrUpdateSlackIntegration as integration_createOrUpdateSlackIntegration,
+  deleteIntegration as integration_deleteIntegration,
+  getIntegrationById as integration_getIntegrationById,
+  listIntegrationsForProject as integration_listIntegrationsForProject,
+  testExportIntegrationConnection as integration_testExportIntegrationConnection,
+  testIntegrationConnection as integration_testIntegrationConnection,
+  upsertIntegration as integration_upsertIntegration,
+} from './modules/integration/integration.service';
+import {
   getStats as misc_getStats,
   insertPingRecord as misc_insertPingRecord,
   runPingCron as misc_runPingCron,
 } from './modules/misc/misc.service';
+import {
+  createOrUpdateNotificationRule as notification_createOrUpdateNotificationRule,
+  deleteNotificationRule as notification_deleteNotificationRule,
+  deliverNotification as notification_deliverNotification,
+  getNotificationRuleByIdOrThrow as notification_getNotificationRuleByIdOrThrow,
+  listNotificationRules as notification_listNotificationRules,
+  listNotifications as notification_listNotifications,
+} from './modules/notification/notification.service';
+import {
+  canSkipOnboarding as onboarding_canSkipOnboarding,
+  createOnboardingProject as onboarding_createOnboardingProject,
+  runOnboardingCron as onboarding_runOnboardingCron,
+} from './modules/onboarding/onboarding.service';
+import {
+  cancelOrganizationDeletion as organization_cancelOrganizationDeletion,
+  connectUserToOrganization as organization_connectUserToOrganization,
+  deleteFromClickhouse as organization_deleteFromClickhouse,
+  deleteOrganization as organization_deleteOrganization,
+  deleteProjects as organization_deleteProjects,
+  getInviteById as organization_getInviteById,
+  getInviteOrThrow as organization_getInviteOrThrow,
+  getInvites as organization_getInvites,
+  getMember as organization_getMember,
+  getMembers as organization_getMembers,
+  getOrganizationBillingEventsCount as organization_getOrganizationBillingEventsCount,
+  getOrganizationBillingEventsCountSerie as organization_getOrganizationBillingEventsCountSerie,
+  getOrganizationById as organization_getOrganizationById,
+  getOrganizationByProjectId as organization_getOrganizationByProjectId,
+  getOrganizationEventsCount as organization_getOrganizationEventsCount,
+  getOrganizationEventsCountSince as organization_getOrganizationEventsCountSince,
+  getOrganizationSubscriptionChartEndDate as organization_getOrganizationSubscriptionChartEndDate,
+  getOrganizations as organization_getOrganizations,
+  getSettingsForOrganization as organization_getSettingsForOrganization,
+  getSettingsForProject as organization_getSettingsForProject,
+  inviteUserToOrganization as organization_inviteUserToOrganization,
+  removeOrganizationMember as organization_removeOrganizationMember,
+  revokeInvite as organization_revokeInvite,
+  runDeleteCron as organization_runDeleteCron,
+  scheduleOrganizationDeletion as organization_scheduleOrganizationDeletion,
+  updateOrganization as organization_updateOrganization,
+  updateOrganizationMemberAccess as organization_updateOrganizationMemberAccess,
+} from './modules/organization/organization.service';
 import {
   getRawWhereClause,
   isPageFilter,
@@ -137,8 +255,17 @@ import {
   getRealtimePaths as realtime_getRealtimePaths,
   getRealtimeReferrals as realtime_getRealtimeReferrals,
 } from './modules/realtime/realtime.service';
+import {
+  getSessionById as session_getSessionById,
+  getSessionDistinctValues as session_getSessionDistinctValues,
+  getSessionList as session_getSessionList,
+  getSessionReplayChunksFrom as session_getSessionReplayChunksFrom,
+  getSessionsCount as session_getSessionsCount,
+  querySessionsCore as session_querySessionsCore,
+} from './modules/session/session.service';
 import { createServices, type ServiceDeps, type Services } from './services';
 import type { ISetCookie } from './shared/cookie';
+import { getId as slugId_getId } from './shared/slug-id';
 
 /** Drops a function type's first (`deps`) parameter — every bare V1-compat
  *  wrapper below has the same shape: the underlying function's parameters
@@ -209,7 +336,7 @@ function fallbackServiceDeps(): Promise<ServiceDeps> {
   return fallback;
 }
 
-function compatServiceDeps(): Promise<ServiceDeps> {
+export function compatServiceDeps(): Promise<ServiceDeps> {
   return registeredDeps
     ? Promise.resolve(registeredDeps)
     : fallbackServiceDeps();
@@ -1403,3 +1530,572 @@ export const pagesService = {
       container.pages.getPageTimeseries(...args)
     )) as Services['pages']['getPageTimeseries'],
 };
+
+// --- onboarding ------------------------------------------------------------------
+
+export const canSkipOnboarding: (
+  ...args: Tail<Parameters<typeof onboarding_canSkipOnboarding>>
+) => ReturnType<typeof onboarding_canSkipOnboarding> = (...args) =>
+  compatServiceDeps().then((deps) => onboarding_canSkipOnboarding(deps, ...args));
+
+export const createOnboardingProject: (
+  ...args: Tail<Parameters<typeof onboarding_createOnboardingProject>>
+) => ReturnType<typeof onboarding_createOnboardingProject> = (...args) =>
+  compatServiceDeps().then((deps) => onboarding_createOnboardingProject(deps, ...args));
+
+export const runOnboardingCron: (
+  ...args: Tail<Parameters<typeof onboarding_runOnboardingCron>>
+) => ReturnType<typeof onboarding_runOnboardingCron> = (...args) =>
+  compatServiceDeps().then((deps) => onboarding_runOnboardingCron(deps, ...args));
+
+// --- integration -----------------------------------------------------------------
+
+export const completeSlackOAuthCallback: (
+  ...args: Tail<Parameters<typeof integration_completeSlackOAuthCallback>>
+) => ReturnType<typeof integration_completeSlackOAuthCallback> = (...args) =>
+  compatServiceDeps().then((deps) => integration_completeSlackOAuthCallback(deps, ...args));
+
+export const createOrUpdateSlackIntegration: (
+  ...args: Tail<Parameters<typeof integration_createOrUpdateSlackIntegration>>
+) => ReturnType<typeof integration_createOrUpdateSlackIntegration> = (...args) =>
+  compatServiceDeps().then((deps) => integration_createOrUpdateSlackIntegration(deps, ...args));
+
+export const deleteIntegration: (
+  ...args: Tail<Parameters<typeof integration_deleteIntegration>>
+) => ReturnType<typeof integration_deleteIntegration> = (...args) =>
+  compatServiceDeps().then((deps) => integration_deleteIntegration(deps, ...args));
+
+export const getIntegrationById: (
+  ...args: Tail<Parameters<typeof integration_getIntegrationById>>
+) => ReturnType<typeof integration_getIntegrationById> = (...args) =>
+  compatServiceDeps().then((deps) => integration_getIntegrationById(deps, ...args));
+
+export const listIntegrationsForProject: (
+  ...args: Tail<Parameters<typeof integration_listIntegrationsForProject>>
+) => ReturnType<typeof integration_listIntegrationsForProject> = (...args) =>
+  compatServiceDeps().then((deps) => integration_listIntegrationsForProject(deps, ...args));
+
+export const testExportIntegrationConnection: (
+  ...args: Tail<Parameters<typeof integration_testExportIntegrationConnection>>
+) => ReturnType<typeof integration_testExportIntegrationConnection> = (...args) =>
+  compatServiceDeps().then((deps) => integration_testExportIntegrationConnection(deps, ...args));
+
+export const testIntegrationConnection: (
+  ...args: Tail<Parameters<typeof integration_testIntegrationConnection>>
+) => ReturnType<typeof integration_testIntegrationConnection> = (...args) =>
+  compatServiceDeps().then((deps) => integration_testIntegrationConnection(deps, ...args));
+
+export const upsertIntegration: (
+  ...args: Tail<Parameters<typeof integration_upsertIntegration>>
+) => ReturnType<typeof integration_upsertIntegration> = (...args) =>
+  compatServiceDeps().then((deps) => integration_upsertIntegration(deps, ...args));
+
+// --- notification ----------------------------------------------------------------
+
+export const createOrUpdateNotificationRule: (
+  ...args: Tail<Parameters<typeof notification_createOrUpdateNotificationRule>>
+) => ReturnType<typeof notification_createOrUpdateNotificationRule> = (...args) =>
+  compatServiceDeps().then((deps) => notification_createOrUpdateNotificationRule(deps, ...args));
+
+export const deleteNotificationRule: (
+  ...args: Tail<Parameters<typeof notification_deleteNotificationRule>>
+) => ReturnType<typeof notification_deleteNotificationRule> = (...args) =>
+  compatServiceDeps().then((deps) => notification_deleteNotificationRule(deps, ...args));
+
+export const deliverNotification: (
+  ...args: Tail<Parameters<typeof notification_deliverNotification>>
+) => ReturnType<typeof notification_deliverNotification> = (...args) =>
+  compatServiceDeps().then((deps) => notification_deliverNotification(deps, ...args));
+
+export const getNotificationRuleByIdOrThrow: (
+  ...args: Tail<Parameters<typeof notification_getNotificationRuleByIdOrThrow>>
+) => ReturnType<typeof notification_getNotificationRuleByIdOrThrow> = (...args) =>
+  compatServiceDeps().then((deps) => notification_getNotificationRuleByIdOrThrow(deps, ...args));
+
+export const listNotificationRules: (
+  ...args: Tail<Parameters<typeof notification_listNotificationRules>>
+) => ReturnType<typeof notification_listNotificationRules> = (...args) =>
+  compatServiceDeps().then((deps) => notification_listNotificationRules(deps, ...args));
+
+export const listNotifications: (
+  ...args: Tail<Parameters<typeof notification_listNotifications>>
+) => ReturnType<typeof notification_listNotifications> = (...args) =>
+  compatServiceDeps().then((deps) => notification_listNotifications(deps, ...args));
+
+// --- slug-id ---------------------------------------------------------------------
+
+export const getId: (
+  ...args: Tail<Parameters<typeof slugId_getId>>
+) => ReturnType<typeof slugId_getId> = (...args) =>
+  compatServiceDeps().then((deps) => slugId_getId(deps, ...args));
+
+// --- insight ---------------------------------------------------------------------
+
+export const cleanupStaleInsights: (
+  ...args: Tail<Parameters<typeof insight_cleanupStaleInsights>>
+) => ReturnType<typeof insight_cleanupStaleInsights> = (...args) =>
+  compatServiceDeps().then((deps) => insight_cleanupStaleInsights(deps, ...args));
+
+export const listAllInsights: (
+  ...args: Tail<Parameters<typeof insight_listAllInsights>>
+) => ReturnType<typeof insight_listAllInsights> = (...args) =>
+  compatServiceDeps().then((deps) => insight_listAllInsights(deps, ...args));
+
+export const listDailyInsightCandidates: (
+  ...args: Tail<Parameters<typeof insight_listDailyInsightCandidates>>
+) => ReturnType<typeof insight_listDailyInsightCandidates> = (...args) =>
+  compatServiceDeps().then((deps) => insight_listDailyInsightCandidates(deps, ...args));
+
+export const listInsights: (
+  ...args: Tail<Parameters<typeof insight_listInsights>>
+) => ReturnType<typeof insight_listInsights> = (...args) =>
+  compatServiceDeps().then((deps) => insight_listInsights(deps, ...args));
+
+export const previewWeeklyDigest: (
+  ...args: Tail<Parameters<typeof insight_previewWeeklyDigest>>
+) => ReturnType<typeof insight_previewWeeklyDigest> = (...args) =>
+  compatServiceDeps().then((deps) => insight_previewWeeklyDigest(deps, ...args));
+
+export const runProjectInsights: (
+  ...args: Tail<Parameters<typeof insight_runProjectInsights>>
+) => ReturnType<typeof insight_runProjectInsights> = (...args) =>
+  compatServiceDeps().then((deps) => insight_runProjectInsights(deps, ...args));
+
+export const scanLegacyInsights: (
+  ...args: Tail<Parameters<typeof insight_scanLegacyInsights>>
+) => ReturnType<typeof insight_scanLegacyInsights> = (...args) =>
+  compatServiceDeps().then((deps) => insight_scanLegacyInsights(deps, ...args));
+
+export const sendWeeklyDigests: (
+  ...args: Tail<Parameters<typeof insight_sendWeeklyDigests>>
+) => ReturnType<typeof insight_sendWeeklyDigests> = (...args) =>
+  compatServiceDeps().then((deps) => insight_sendWeeklyDigests(deps, ...args));
+
+// --- insight (referrer spikes) ---------------------------------------------------
+
+export const getReferrerSpikes: (
+  ...args: Tail<Parameters<typeof insight_getReferrerSpikes>>
+) => ReturnType<typeof insight_getReferrerSpikes> = (...args) =>
+  compatServiceDeps().then((deps) => insight_getReferrerSpikes(deps, ...args));
+
+// --- session ---------------------------------------------------------------------
+
+export const getSessionById: (
+  ...args: Tail<Parameters<typeof session_getSessionById>>
+) => ReturnType<typeof session_getSessionById> = (...args) =>
+  compatServiceDeps().then((deps) => session_getSessionById(deps, ...args));
+
+export const getSessionDistinctValues: (
+  ...args: Tail<Parameters<typeof session_getSessionDistinctValues>>
+) => ReturnType<typeof session_getSessionDistinctValues> = (...args) =>
+  compatServiceDeps().then((deps) => session_getSessionDistinctValues(deps, ...args));
+
+export const getSessionList: (
+  ...args: Tail<Parameters<typeof session_getSessionList>>
+) => ReturnType<typeof session_getSessionList> = (...args) =>
+  compatServiceDeps().then((deps) => session_getSessionList(deps, ...args));
+
+export const getSessionReplayChunksFrom: (
+  ...args: Tail<Parameters<typeof session_getSessionReplayChunksFrom>>
+) => ReturnType<typeof session_getSessionReplayChunksFrom> = (...args) =>
+  compatServiceDeps().then((deps) => session_getSessionReplayChunksFrom(deps, ...args));
+
+export const getSessionsCount: (
+  ...args: Tail<Parameters<typeof session_getSessionsCount>>
+) => ReturnType<typeof session_getSessionsCount> = (...args) =>
+  compatServiceDeps().then((deps) => session_getSessionsCount(deps, ...args));
+
+export const querySessionsCore: (
+  ...args: Tail<Parameters<typeof session_querySessionsCore>>
+) => ReturnType<typeof session_querySessionsCore> = (...args) =>
+  compatServiceDeps().then((deps) => session_querySessionsCore(deps, ...args));
+
+// --- import ----------------------------------------------------------------------
+
+export const backfillSessionsToProduction: (
+  ...args: Tail<Parameters<typeof import__backfillSessionsToProduction>>
+) => ReturnType<typeof import__backfillSessionsToProduction> = (...args) =>
+  compatServiceDeps().then((deps) => import__backfillSessionsToProduction(deps, ...args));
+
+export const cleanupSessionStartEndEvents: (
+  ...args: Tail<Parameters<typeof import__cleanupSessionStartEndEvents>>
+) => ReturnType<typeof import__cleanupSessionStartEndEvents> = (...args) =>
+  compatServiceDeps().then((deps) => import__cleanupSessionStartEndEvents(deps, ...args));
+
+export const cleanupStagingData: (
+  ...args: Tail<Parameters<typeof import__cleanupStagingData>>
+) => ReturnType<typeof import__cleanupStagingData> = (...args) =>
+  compatServiceDeps().then((deps) => import__cleanupStagingData(deps, ...args));
+
+export const createSessionsStartEndEvents: (
+  ...args: Tail<Parameters<typeof import__createSessionsStartEndEvents>>
+) => ReturnType<typeof import__createSessionsStartEndEvents> = (...args) =>
+  compatServiceDeps().then((deps) => import__createSessionsStartEndEvents(deps, ...args));
+
+export const generateGapBasedSessionIds: (
+  ...args: Tail<Parameters<typeof import__generateGapBasedSessionIds>>
+) => ReturnType<typeof import__generateGapBasedSessionIds> = (...args) =>
+  compatServiceDeps().then((deps) => import__generateGapBasedSessionIds(deps, ...args));
+
+export const getImportDateBounds: (
+  ...args: Tail<Parameters<typeof import__getImportDateBounds>>
+) => ReturnType<typeof import__getImportDateBounds> = (...args) =>
+  compatServiceDeps().then((deps) => import__getImportDateBounds(deps, ...args));
+
+export const insertImportBatch: (
+  ...args: Tail<Parameters<typeof import__insertImportBatch>>
+) => ReturnType<typeof import__insertImportBatch> = (...args) =>
+  compatServiceDeps().then((deps) => import__insertImportBatch(deps, ...args));
+
+export const insertProfilesBatch: (
+  ...args: Tail<Parameters<typeof import__insertProfilesBatch>>
+) => ReturnType<typeof import__insertProfilesBatch> = (...args) =>
+  compatServiceDeps().then((deps) => import__insertProfilesBatch(deps, ...args));
+
+export const insertRawEventsBatch: (
+  ...args: Tail<Parameters<typeof import__insertRawEventsBatch>>
+) => ReturnType<typeof import__insertRawEventsBatch> = (...args) =>
+  compatServiceDeps().then((deps) => import__insertRawEventsBatch(deps, ...args));
+
+export const moveImportsToProduction: (
+  ...args: Tail<Parameters<typeof import__moveImportsToProduction>>
+) => ReturnType<typeof import__moveImportsToProduction> = (...args) =>
+  compatServiceDeps().then((deps) => import__moveImportsToProduction(deps, ...args));
+
+export const runImportJob: (
+  ...args: Tail<Parameters<typeof import__runImportJob>>
+) => ReturnType<typeof import__runImportJob> = (...args) =>
+  compatServiceDeps().then((deps) => import__runImportJob(deps, ...args));
+
+export const updateImportStatus: (
+  ...args: Tail<Parameters<typeof import__updateImportStatus>>
+) => ReturnType<typeof import__updateImportStatus> = (...args) =>
+  compatServiceDeps().then((deps) => import__updateImportStatus(deps, ...args));
+
+// --- cohort ----------------------------------------------------------------------
+
+export const computeCohort: (
+  ...args: Tail<Parameters<typeof cohort_computeCohort>>
+) => ReturnType<typeof cohort_computeCohort> = (...args) =>
+  compatServiceDeps().then((deps) => cohort_computeCohort(deps, ...args));
+
+export const countCohort: (
+  ...args: Tail<Parameters<typeof cohort_countCohort>>
+) => ReturnType<typeof cohort_countCohort> = (...args) =>
+  compatServiceDeps().then((deps) => cohort_countCohort(deps, ...args));
+
+export const deleteCohortMembership: (
+  ...args: Tail<Parameters<typeof cohort_deleteCohortMembership>>
+) => ReturnType<typeof cohort_deleteCohortMembership> = (...args) =>
+  compatServiceDeps().then((deps) => cohort_deleteCohortMembership(deps, ...args));
+
+export const getCohortCount: (
+  ...args: Tail<Parameters<typeof cohort_getCohortCount>>
+) => ReturnType<typeof cohort_getCohortCount> = (...args) =>
+  compatServiceDeps().then((deps) => cohort_getCohortCount(deps, ...args));
+
+export const getCohortEventsPerDay: (
+  ...args: Tail<Parameters<typeof cohort_getCohortEventsPerDay>>
+) => ReturnType<typeof cohort_getCohortEventsPerDay> = (...args) =>
+  compatServiceDeps().then((deps) => cohort_getCohortEventsPerDay(deps, ...args));
+
+export const getCohortMemberEvents: (
+  ...args: Tail<Parameters<typeof cohort_getCohortMemberEvents>>
+) => ReturnType<typeof cohort_getCohortMemberEvents> = (...args) =>
+  compatServiceDeps().then((deps) => cohort_getCohortMemberEvents(deps, ...args));
+
+export const getCohortMemberRoutes: (
+  ...args: Tail<Parameters<typeof cohort_getCohortMemberRoutes>>
+) => ReturnType<typeof cohort_getCohortMemberRoutes> = (...args) =>
+  compatServiceDeps().then((deps) => cohort_getCohortMemberRoutes(deps, ...args));
+
+export const getCohortMembers: (
+  ...args: Tail<Parameters<typeof cohort_getCohortMembers>>
+) => ReturnType<typeof cohort_getCohortMembers> = (...args) =>
+  compatServiceDeps().then((deps) => cohort_getCohortMembers(deps, ...args));
+
+export const getProfilesInCohort: (
+  ...args: Tail<Parameters<typeof cohort_getProfilesInCohort>>
+) => ReturnType<typeof cohort_getProfilesInCohort> = (...args) =>
+  compatServiceDeps().then((deps) => cohort_getProfilesInCohort(deps, ...args));
+
+export const listCohortMemberProfiles: (
+  ...args: Tail<Parameters<typeof cohort_listCohortMemberProfiles>>
+) => ReturnType<typeof cohort_listCohortMemberProfiles> = (...args) =>
+  compatServiceDeps().then((deps) => cohort_listCohortMemberProfiles(deps, ...args));
+
+export const listRefreshableCohortIds: (
+  ...args: Tail<Parameters<typeof cohort_listRefreshableCohortIds>>
+) => ReturnType<typeof cohort_listRefreshableCohortIds> = (...args) =>
+  compatServiceDeps().then((deps) => cohort_listRefreshableCohortIds(deps, ...args));
+
+export const updateCohortMembership: (
+  ...args: Tail<Parameters<typeof cohort_updateCohortMembership>>
+) => ReturnType<typeof cohort_updateCohortMembership> = (...args) =>
+  compatServiceDeps().then((deps) => cohort_updateCohortMembership(deps, ...args));
+
+// --- gsc -------------------------------------------------------------------------
+
+export const completeGscOAuthCallback: (
+  ...args: Tail<Parameters<typeof gsc_completeGscOAuthCallback>>
+) => ReturnType<typeof gsc_completeGscOAuthCallback> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_completeGscOAuthCallback(deps, ...args));
+
+export const disconnectGscConnection: (
+  ...args: Tail<Parameters<typeof gsc_disconnectGscConnection>>
+) => ReturnType<typeof gsc_disconnectGscConnection> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_disconnectGscConnection(deps, ...args));
+
+export const getGscAiEngines: (
+  ...args: Tail<Parameters<typeof gsc_getGscAiEngines>>
+) => ReturnType<typeof gsc_getGscAiEngines> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_getGscAiEngines(deps, ...args));
+
+export const getGscConnection: (
+  ...args: Tail<Parameters<typeof gsc_getGscConnection>>
+) => ReturnType<typeof gsc_getGscConnection> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_getGscConnection(deps, ...args));
+
+export const getGscOverview: (
+  ...args: Tail<Parameters<typeof gsc_getGscOverview>>
+) => ReturnType<typeof gsc_getGscOverview> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_getGscOverview(deps, ...args));
+
+export const getGscPageDetails: (
+  ...args: Tail<Parameters<typeof gsc_getGscPageDetails>>
+) => ReturnType<typeof gsc_getGscPageDetails> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_getGscPageDetails(deps, ...args));
+
+export const getGscPages: (
+  ...args: Tail<Parameters<typeof gsc_getGscPages>>
+) => ReturnType<typeof gsc_getGscPages> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_getGscPages(deps, ...args));
+
+export const getGscPreviousOverview: (
+  ...args: Tail<Parameters<typeof gsc_getGscPreviousOverview>>
+) => ReturnType<typeof gsc_getGscPreviousOverview> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_getGscPreviousOverview(deps, ...args));
+
+export const getGscQueries: (
+  ...args: Tail<Parameters<typeof gsc_getGscQueries>>
+) => ReturnType<typeof gsc_getGscQueries> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_getGscQueries(deps, ...args));
+
+export const getGscQueryDetails: (
+  ...args: Tail<Parameters<typeof gsc_getGscQueryDetails>>
+) => ReturnType<typeof gsc_getGscQueryDetails> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_getGscQueryDetails(deps, ...args));
+
+export const getGscSearchEngines: (
+  ...args: Tail<Parameters<typeof gsc_getGscSearchEngines>>
+) => ReturnType<typeof gsc_getGscSearchEngines> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_getGscSearchEngines(deps, ...args));
+
+export const gscGetCannibalizationCore: (
+  ...args: Tail<Parameters<typeof gsc_gscGetCannibalizationCore>>
+) => ReturnType<typeof gsc_gscGetCannibalizationCore> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_gscGetCannibalizationCore(deps, ...args));
+
+export const gscGetOverviewCore: (
+  ...args: Tail<Parameters<typeof gsc_gscGetOverviewCore>>
+) => ReturnType<typeof gsc_gscGetOverviewCore> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_gscGetOverviewCore(deps, ...args));
+
+export const gscGetPageDetailsCore: (
+  ...args: Tail<Parameters<typeof gsc_gscGetPageDetailsCore>>
+) => ReturnType<typeof gsc_gscGetPageDetailsCore> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_gscGetPageDetailsCore(deps, ...args));
+
+export const gscGetQueryDetailsCore: (
+  ...args: Tail<Parameters<typeof gsc_gscGetQueryDetailsCore>>
+) => ReturnType<typeof gsc_gscGetQueryDetailsCore> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_gscGetQueryDetailsCore(deps, ...args));
+
+export const gscGetQueryOpportunitiesCore: (
+  ...args: Tail<Parameters<typeof gsc_gscGetQueryOpportunitiesCore>>
+) => ReturnType<typeof gsc_gscGetQueryOpportunitiesCore> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_gscGetQueryOpportunitiesCore(deps, ...args));
+
+export const gscGetTopPagesCore: (
+  ...args: Tail<Parameters<typeof gsc_gscGetTopPagesCore>>
+) => ReturnType<typeof gsc_gscGetTopPagesCore> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_gscGetTopPagesCore(deps, ...args));
+
+export const gscGetTopQueriesCore: (
+  ...args: Tail<Parameters<typeof gsc_gscGetTopQueriesCore>>
+) => ReturnType<typeof gsc_gscGetTopQueriesCore> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_gscGetTopQueriesCore(deps, ...args));
+
+export const listGscConnectionsForSync: (
+  ...args: Tail<Parameters<typeof gsc_listGscConnectionsForSync>>
+) => ReturnType<typeof gsc_listGscConnectionsForSync> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_listGscConnectionsForSync(deps, ...args));
+
+export const listGscSites: (
+  ...args: Tail<Parameters<typeof gsc_listGscSites>>
+) => ReturnType<typeof gsc_listGscSites> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_listGscSites(deps, ...args));
+
+export const resolveGscDateRange: (
+  ...args: Tail<Parameters<typeof gsc_resolveGscDateRange>>
+) => ReturnType<typeof gsc_resolveGscDateRange> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_resolveGscDateRange(deps, ...args));
+
+export const runGscProjectBackfill: (
+  ...args: Tail<Parameters<typeof gsc_runGscProjectBackfill>>
+) => ReturnType<typeof gsc_runGscProjectBackfill> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_runGscProjectBackfill(deps, ...args));
+
+export const runGscProjectSync: (
+  ...args: Tail<Parameters<typeof gsc_runGscProjectSync>>
+) => ReturnType<typeof gsc_runGscProjectSync> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_runGscProjectSync(deps, ...args));
+
+export const selectGscSite: (
+  ...args: Tail<Parameters<typeof gsc_selectGscSite>>
+) => ReturnType<typeof gsc_selectGscSite> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_selectGscSite(deps, ...args));
+
+export const syncGscData: (
+  ...args: Tail<Parameters<typeof gsc_syncGscData>>
+) => ReturnType<typeof gsc_syncGscData> = (...args) =>
+  compatServiceDeps().then((deps) => gsc_syncGscData(deps, ...args));
+
+// --- organization ----------------------------------------------------------------
+
+export const cancelOrganizationDeletion: (
+  ...args: Tail<Parameters<typeof organization_cancelOrganizationDeletion>>
+) => ReturnType<typeof organization_cancelOrganizationDeletion> = (...args) =>
+  compatServiceDeps().then((deps) => organization_cancelOrganizationDeletion(deps, ...args));
+
+export const connectUserToOrganization: (
+  ...args: Tail<Parameters<typeof organization_connectUserToOrganization>>
+) => ReturnType<typeof organization_connectUserToOrganization> = (...args) =>
+  compatServiceDeps().then((deps) => organization_connectUserToOrganization(deps, ...args));
+
+export const deleteFromClickhouse: (
+  ...args: Tail<Parameters<typeof organization_deleteFromClickhouse>>
+) => ReturnType<typeof organization_deleteFromClickhouse> = (...args) =>
+  compatServiceDeps().then((deps) => organization_deleteFromClickhouse(deps, ...args));
+
+export const deleteOrganization: (
+  ...args: Tail<Parameters<typeof organization_deleteOrganization>>
+) => ReturnType<typeof organization_deleteOrganization> = (...args) =>
+  compatServiceDeps().then((deps) => organization_deleteOrganization(deps, ...args));
+
+export const deleteProjects: (
+  ...args: Tail<Parameters<typeof organization_deleteProjects>>
+) => ReturnType<typeof organization_deleteProjects> = (...args) =>
+  compatServiceDeps().then((deps) => organization_deleteProjects(deps, ...args));
+
+export const getInviteById: (
+  ...args: Tail<Parameters<typeof organization_getInviteById>>
+) => ReturnType<typeof organization_getInviteById> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getInviteById(deps, ...args));
+
+export const getInviteOrThrow: (
+  ...args: Tail<Parameters<typeof organization_getInviteOrThrow>>
+) => ReturnType<typeof organization_getInviteOrThrow> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getInviteOrThrow(deps, ...args));
+
+export const getInvites: (
+  ...args: Tail<Parameters<typeof organization_getInvites>>
+) => ReturnType<typeof organization_getInvites> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getInvites(deps, ...args));
+
+export const getMember: (
+  ...args: Tail<Parameters<typeof organization_getMember>>
+) => ReturnType<typeof organization_getMember> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getMember(deps, ...args));
+
+export const getMembers: (
+  ...args: Tail<Parameters<typeof organization_getMembers>>
+) => ReturnType<typeof organization_getMembers> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getMembers(deps, ...args));
+
+export const getOrganizationBillingEventsCount: (
+  ...args: Tail<Parameters<typeof organization_getOrganizationBillingEventsCount>>
+) => ReturnType<typeof organization_getOrganizationBillingEventsCount> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getOrganizationBillingEventsCount(deps, ...args));
+
+export const getOrganizationById: (
+  ...args: Tail<Parameters<typeof organization_getOrganizationById>>
+) => ReturnType<typeof organization_getOrganizationById> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getOrganizationById(deps, ...args));
+
+export const getOrganizationByProjectId: (
+  ...args: Tail<Parameters<typeof organization_getOrganizationByProjectId>>
+) => ReturnType<typeof organization_getOrganizationByProjectId> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getOrganizationByProjectId(deps, ...args));
+
+export const getOrganizationEventsCount: (
+  ...args: Tail<Parameters<typeof organization_getOrganizationEventsCount>>
+) => ReturnType<typeof organization_getOrganizationEventsCount> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getOrganizationEventsCount(deps, ...args));
+
+export const getOrganizationEventsCountSince: (
+  ...args: Tail<Parameters<typeof organization_getOrganizationEventsCountSince>>
+) => ReturnType<typeof organization_getOrganizationEventsCountSince> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getOrganizationEventsCountSince(deps, ...args));
+
+export const getOrganizationSubscriptionChartEndDate: (
+  ...args: Tail<Parameters<typeof organization_getOrganizationSubscriptionChartEndDate>>
+) => ReturnType<typeof organization_getOrganizationSubscriptionChartEndDate> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getOrganizationSubscriptionChartEndDate(deps, ...args));
+
+export const getOrganizations: (
+  ...args: Tail<Parameters<typeof organization_getOrganizations>>
+) => ReturnType<typeof organization_getOrganizations> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getOrganizations(deps, ...args));
+
+export const getSettingsForOrganization: (
+  ...args: Tail<Parameters<typeof organization_getSettingsForOrganization>>
+) => ReturnType<typeof organization_getSettingsForOrganization> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getSettingsForOrganization(deps, ...args));
+
+export const getSettingsForProject: (
+  ...args: Tail<Parameters<typeof organization_getSettingsForProject>>
+) => ReturnType<typeof organization_getSettingsForProject> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getSettingsForProject(deps, ...args));
+
+export const inviteUserToOrganization: (
+  ...args: Tail<Parameters<typeof organization_inviteUserToOrganization>>
+) => ReturnType<typeof organization_inviteUserToOrganization> = (...args) =>
+  compatServiceDeps().then((deps) => organization_inviteUserToOrganization(deps, ...args));
+
+export const removeOrganizationMember: (
+  ...args: Tail<Parameters<typeof organization_removeOrganizationMember>>
+) => ReturnType<typeof organization_removeOrganizationMember> = (...args) =>
+  compatServiceDeps().then((deps) => organization_removeOrganizationMember(deps, ...args));
+
+export const revokeInvite: (
+  ...args: Tail<Parameters<typeof organization_revokeInvite>>
+) => ReturnType<typeof organization_revokeInvite> = (...args) =>
+  compatServiceDeps().then((deps) => organization_revokeInvite(deps, ...args));
+
+export const runDeleteCron: (
+  ...args: Tail<Parameters<typeof organization_runDeleteCron>>
+) => ReturnType<typeof organization_runDeleteCron> = (...args) =>
+  compatServiceDeps().then((deps) => organization_runDeleteCron(deps, ...args));
+
+export const scheduleOrganizationDeletion: (
+  ...args: Tail<Parameters<typeof organization_scheduleOrganizationDeletion>>
+) => ReturnType<typeof organization_scheduleOrganizationDeletion> = (...args) =>
+  compatServiceDeps().then((deps) => organization_scheduleOrganizationDeletion(deps, ...args));
+
+export const updateOrganization: (
+  ...args: Tail<Parameters<typeof organization_updateOrganization>>
+) => ReturnType<typeof organization_updateOrganization> = (...args) =>
+  compatServiceDeps().then((deps) => organization_updateOrganization(deps, ...args));
+
+export const updateOrganizationMemberAccess: (
+  ...args: Tail<Parameters<typeof organization_updateOrganizationMemberAccess>>
+) => ReturnType<typeof organization_updateOrganizationMemberAccess> = (...args) =>
+  compatServiceDeps().then((deps) => organization_updateOrganizationMemberAccess(deps, ...args));
+
+// --- organization (billing serie) ------------------------------------------------
+
+export const getOrganizationBillingEventsCountSerie: (
+  ...args: Tail<Parameters<typeof organization_getOrganizationBillingEventsCountSerie>>
+) => ReturnType<typeof organization_getOrganizationBillingEventsCountSerie> = (...args) =>
+  compatServiceDeps().then((deps) => organization_getOrganizationBillingEventsCountSerie(deps, ...args));

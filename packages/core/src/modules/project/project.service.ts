@@ -13,14 +13,16 @@
 // INSIDE `createProjectService(deps)` for the same reason
 // `getClientByIdCached` does in client.service.ts — see that file's header.
 //
-// ClickHouse queries here still build with clix/sqlstring/chQuery, not raw
+// ClickHouse queries here still build with clix/sqlstring/`chQuery`, not raw
 // `sql` fragments: ADR-013 converts the analytics read path one query per P7
 // task, and this module's two queries (`getProjectEventsCount`/
-// `getLastEventPerProject`) haven't been converted yet — see `loadChHelpers`'s
-// own comment below. The CLIENT is `deps.ch` either way.
+// `getLastEventPerProject`) haven't been converted yet. The CLIENT is
+// `deps.ch` either way, through core's own `chQuery` (shared/ch-query.ts) —
+// M10-009 dropped the `compatChHelpers()` hop these two used to make.
 
 import crypto from 'node:crypto';
 import { stripTrailingSlash } from '@openpanel/common';
+import { clix } from '@openpanel/db/src/clickhouse/query-builder';
 import type {
   Prisma,
   Project,
@@ -30,25 +32,17 @@ import { cacheable } from '@openpanel/redis';
 import sqlstring from 'sqlstring';
 import { TRPCBadRequestError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
+import { convertClickhouseDateToJs } from '../../shared/ch-dates';
+import { chQuery } from '../../shared/ch-query';
+import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getId } from '../../shared/slug-id';
 import { hashPassword } from '../auth/auth.service';
 
-// `getProjectEventsCount` and `getLastEventPerProject` still build their
-// query with clix/sqlstring/`chQuery`, not raw `sql` fragments — converting
-// the query BODIES is ADR-013's P7 task (one query per task, with an
-// old-vs-new result-set diff), not this wave's; `chQuery` also does its own
-// retry/round-robin and Int-meta coercion (ClickHouse's JSON format returns
-// every Int*/UInt* column as a string) that would otherwise have to be
-// reimplemented by hand. The CLIENT is `deps.ch`, same as everywhere else in
-// this file; only the pure helper functions (`clix`, `TABLE_NAMES`,
-// `chQuery`, `convertClickhouseDateToJs`) come from `@openpanel/db`, and —
-// same as `loadClientService` below — that reach is through the v1-compat
-// singleton, not a direct import: services.ts -> project.service.ts (this
-// file) -> v1-compat.ts -> services.ts is a genuine cycle, kept lazy.
-function loadChHelpers() {
-  return import('../../v1-compat').then((m) => m.compatChHelpers());
-}
-
+// `clix` is a value import of `@openpanel/db` and stays one: it is a pure
+// query BUILDER that takes the client as its first argument
+// (`clix(deps.ch)`), not a connection — the same standing ADR-013's `sql` tag
+// has (see shared/ch-query.ts). `TABLE_NAMES` and the date helper are core's
+// own copies (shared/ch-tables.ts, shared/ch-dates.ts).
 // GENUINE CYCLE, kept lazy: `createClientForOrganization`/
 // `updateClientForOrganization` invalidate a project's clients' cache
 // entries, and that cache now lives inside `createClientService(deps)` (see
@@ -172,11 +166,11 @@ export async function getProjects(
  * counter.
  */
 export const getProjectEventsCount = async (
-  _deps: ServiceDeps,
+  deps: ServiceDeps,
   projectId: string
 ) => {
-  const { chQuery, TABLE_NAMES } = await loadChHelpers();
   const res = await chQuery<{ count: number }>(
+    deps,
     `SELECT sum(event_count) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`
   );
   return res[0]?.count;
@@ -192,8 +186,6 @@ export const getProjectEventsCount = async (
 export const getLastEventPerProject = async (
   deps: ServiceDeps
 ): Promise<Map<string, Date>> => {
-  const { clix, TABLE_NAMES, convertClickhouseDateToJs } =
-    await loadChHelpers();
   const res = await clix(deps.ch)
     .select<{ project_id: string; last_event_at: string }>([
       'project_id',
@@ -469,7 +461,7 @@ export function createProjectService(deps: ServiceDeps): ProjectService {
     const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
     const project = await deps.db.project.create({
       data: {
-        id: await getId('project', input.name),
+        id: await getId(deps, 'project', input.name),
         organizationId,
         name: input.name,
         domain: input.domain ? stripTrailingSlash(input.domain) : null,

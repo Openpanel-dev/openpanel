@@ -1,8 +1,8 @@
-// insight.service.ts's db/ch access is lazy (`await import(...)` inside each
-// function — see the file's header), which is exactly what makes
-// `mock.module` work here with no import-time side effects to race: every
-// mock below is registered before the subject's first call, not before its
-// (side-effect-free) import.
+// M10-009: the subject's functions take `ServiceDeps`, so `deps.db` IS the
+// fake below and no Prisma module mock is needed. The intra-package modules
+// (store, referrer-spikes, legacy-scan) are still `mock.module`'d — that works
+// here with no import-time side effects to race because every mock is
+// registered before the subject's first call, not before its import.
 
 import { beforeAll, expect, mock, test } from 'bun:test';
 import type { AppDeps, Buffers } from '../../context';
@@ -10,7 +10,10 @@ import type { AppDeps, Buffers } from '../../context';
 const listProjectIdsForCadence = mock(async () => ['p1', 'p2']);
 const getProjectCreatedAt = mock(async () => null);
 mock.module('./src/store', () => ({
-  insightStore: { listProjectIdsForCadence, getProjectCreatedAt },
+  createInsightStore: () => ({
+    listProjectIdsForCadence,
+    getProjectCreatedAt,
+  }),
 }));
 
 const executeRawCalls: unknown[] = [];
@@ -19,18 +22,11 @@ const $executeRaw = mock((..._args: unknown[]) => {
   executeRawCalls.push(_args);
   return Promise.resolve(executeRawReturns.shift() ?? 0);
 });
-const actualPrismaClient = await import('@openpanel/db/src/prisma-client');
-mock.module('@openpanel/db/src/prisma-client', () => ({
-  ...actualPrismaClient,
-  db: { $executeRaw },
-}));
-
 // insight.service.ts never touches ClickHouse directly (it's PG-only, via
-// $executeRaw above), so unlike gsc/cohort/import there is nothing here to
-// mock — and no reason to register a factory for this specifier at all: a
-// hand-rolled one, even a well-intentioned superset, is a standing risk of
-// becoming the partial factory those files warn about the moment someone
-// edits it without re-checking every other consumer.
+// $executeRaw above), so `deps.ch` stays unbuilt.
+const deps = {
+  db: { $executeRaw },
+} as unknown as import('../../services').ServiceDeps;
 
 const spikesQuery = mock(async () => [
   { anchorDate: '2026-09-01', spikes: [] },
@@ -43,9 +39,9 @@ const legacyGenerateInsights = mock(async () => [
   { type: 'traffic_spike', message: 'test', data: {} },
 ]);
 mock.module('./src/legacy-scan', () => ({
-  InsightsService: class {
-    generateInsights = legacyGenerateInsights;
-  },
+  createLegacyInsightsScanner: () => ({
+    generateInsights: legacyGenerateInsights,
+  }),
 }));
 
 const generateInsightExplanation = mock(async () => ({
@@ -84,7 +80,10 @@ beforeAll(async () => {
 });
 
 test('listDailyInsightCandidates pairs every eligible project with the given date', async () => {
-  const candidates = await subject.listDailyInsightCandidates('2026-09-03');
+  const candidates = await subject.listDailyInsightCandidates(
+    deps,
+    '2026-09-03'
+  );
 
   expect(listProjectIdsForCadence).toHaveBeenCalledWith('daily');
   expect(candidates).toEqual([
@@ -105,7 +104,7 @@ test('cleanupStaleInsights stops each batch loop once a batch returns fewer than
     trace: noop,
     child: () => logger,
   };
-  const result = await subject.cleanupStaleInsights(logger);
+  const result = await subject.cleanupStaleInsights(deps, logger);
 
   // suppressed: 5000+5000+1200 (stops <5000); closed: 5000+0 (stops <5000)
   expect(result.insights).toBe(5000 + 5000 + 1200 + 5000 + 0);
@@ -122,14 +121,14 @@ test('getReferrerSpikes delegates to the ClickHouse query', async () => {
     interval: 'day' as const,
     timezone: 'UTC',
   };
-  const result = await subject.getReferrerSpikes(input);
+  const result = await subject.getReferrerSpikes(deps, input);
 
-  expect(spikesQuery).toHaveBeenCalledWith(input);
+  expect(spikesQuery).toHaveBeenCalledWith(deps, input);
   expect(result).toEqual([{ anchorDate: '2026-09-01', spikes: [] }]);
 });
 
 test('scanLegacyInsights delegates to the pre-engine detector, kept for parity', async () => {
-  const result = await subject.scanLegacyInsights('p1');
+  const result = await subject.scanLegacyInsights(deps, 'p1');
 
   expect(legacyGenerateInsights).toHaveBeenCalledWith('p1');
   expect(result).toEqual([

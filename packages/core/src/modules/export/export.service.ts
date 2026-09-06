@@ -102,13 +102,14 @@ export async function resolveInsightsProjectId(
  * needs the project's timezone to resolve; an explicit `startDate` does not.
  */
 export async function resolveInsightsDateRange(
+  deps: ServiceDeps,
   projectId: string,
   data: { startDate?: string; endDate?: string; range?: IChartRange }
 ): Promise<{ startDate: string; endDate: string }> {
   if (!data.range || data.startDate) {
     return resolveDateRange(data.startDate, data.endDate);
   }
-  const { timezone } = await getSettingsForProject(projectId);
+  const { timezone } = await getSettingsForProject(deps, projectId);
   return getChartStartEndDate(
     { startDate: data.startDate, endDate: data.endDate, range: data.range },
     timezone
@@ -137,6 +138,7 @@ export function createExportService(deps: ServiceDeps): ExportService {
     resolveExportProjectId: (client, query) =>
       resolveExportProjectId(deps, client, query),
     resolveInsightsProjectId,
-    resolveInsightsDateRange,
+    resolveInsightsDateRange: (projectId, data) =>
+      resolveInsightsDateRange(deps, projectId, data),
   };
 }

@@ -1,9 +1,9 @@
+import { z } from 'zod';
 import {
   getSessionById,
   queryEventsCore,
   querySessionsCore,
-} from '@openpanel/core';
-import { z } from 'zod';
+} from '../../../../v1-compat';
 import { chatTool, dashboardUrl, truncateRows } from './helpers';
 
 export const getSessionFull = chatTool(

@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getRetentionLastSeenSeries } from '@openpanel/core';
 import { z } from 'zod';
+import { getRetentionLastSeenSeries } from '../../../../../v1-compat';
 import type { McpAuthContext } from '../../auth';
 import {
   projectIdSchema,

@@ -27,6 +27,10 @@ import {
 } from '@openpanel/db/src/clickhouse/sql';
 import type { ServiceDeps } from '../services';
 
+/** All these two need is the scope's client and its logger — narrowed so the
+ *  buffers, whose `BufferDeps` is not a `ServiceDeps`, can call them too. */
+export type ChScope = Pick<ServiceDeps, 'ch' | 'logger'>;
+
 /** A raw statement or an ADR-013 fragment carrying its own bound params. */
 export type ChQueryInput = string | SqlFragment;
 
@@ -38,7 +42,7 @@ function cleanQuery(query: string): string {
 }
 
 export async function chQueryWithMeta<T extends object>(
-  deps: ServiceDeps,
+  deps: ChScope,
   query: ChQueryInput,
   clickhouseSettings?: ClickHouseSettings
 ): Promise<ResponseJSON<T>> {
@@ -87,7 +91,7 @@ export async function chQueryWithMeta<T extends object>(
 }
 
 export async function chQuery<T extends object>(
-  deps: ServiceDeps,
+  deps: ChScope,
   query: ChQueryInput,
   clickhouseSettings?: ClickHouseSettings
 ): Promise<T[]> {

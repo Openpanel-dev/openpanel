@@ -8,14 +8,19 @@
 // ADR-013. `buildFilterWhere` is NOT converted here: it is the shared filter
 // compiler, out of this task's scope; src/filter-clauses.ts is the one bridge.
 //
-// db/ch access is LAZY (`load*` below) for the reason insight.service.ts's
-// header gives: constructing @openpanel/db's clients at import time spawns a
-// pino-pretty worker per `bun test --isolate` file. `@openpanel/redis`'s
-// `cacheable` and the `sql` tag have no such side effect.
+// M10-009: the ClickHouse client is `deps.ch`, reached through core's own
+// `chQuery` (shared/ch-query.ts), so the requestId minted at the edge reaches
+// every query here (ADR-018, docs/TECH_DEBT.md §4). The one exception is
+// `getSessionsCountCached`: `cacheable` keys on the call's ARGUMENTS
+// (packages/redis/cachable.ts), so `ServiceDeps` cannot be a leading
+// parameter — it reaches the boot scope's deps through the declared v1-compat
+// seam instead. The remaining `load*` functions are intra-package lazy
+// imports, kept lazy for a cycle, not for a client.
 
 import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 import type { ServiceDeps } from '../../services';
+import { chQuery } from '../../shared/ch-query';
 import { getSafeJson } from '../../shared/json';
 import type { IServiceProfile } from '../profile/profile.service';
 import { convertClickhouseDateToJs } from './src/dates';
@@ -41,20 +46,21 @@ export {
   type SessionDistinctField,
 } from './src/session.sql';
 
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
-}
-
 function loadFilterCompiler() {
   return import('../chart/src/table-filter-where');
 }
 
+/** `getSessionsCountCached` cannot carry `ServiceDeps` — see the header. */
+function loadCompatServiceDeps() {
+  return import('../../v1-compat').then((m) => m.compatServiceDeps());
+}
+
 function loadLookback() {
-  return import('@openpanel/core');
+  return import('../../shared/lookback');
 }
 
 function loadDateService() {
-  return import('@openpanel/core');
+  return import('../../shared/date');
 }
 
 export interface IClickhouseSession {
@@ -247,7 +253,10 @@ function emptyProfile(profileId: string, projectId: string): IServiceProfile {
   };
 }
 
-export async function getSessionList(options: GetSessionListOptions) {
+export async function getSessionList(
+  deps: ServiceDeps,
+  options: GetSessionListOptions
+) {
   const {
     cursor,
     take,
@@ -260,7 +269,6 @@ export async function getSessionList(options: GetSessionListOptions) {
     dateIntervalInDays = DEFAULT_LOOKBACK_DAYS,
   } = options;
 
-  const { chQuery } = await loadChClient();
   const { resolveMaxLookbackDays } = await loadLookback();
 
   // Deployment-tunable ceiling for the empty-result lookback (see lookback.ts).
@@ -271,6 +279,7 @@ export async function getSessionList(options: GetSessionListOptions) {
   const lookbackDays = Math.min(dateIntervalInDays, maxLookbackDays);
 
   const data = await chQuery<IClickhouseSession & { hasReplay: boolean }>(
+    deps,
     sessionListQuery({
       projectId,
       take,
@@ -293,7 +302,7 @@ export async function getSessionList(options: GetSessionListOptions) {
     hasSessionListLookback({ cursor, startDate, endDate }) &&
     lookbackDays < maxLookbackDays
   ) {
-    return getSessionList({
+    return getSessionList(deps, {
       ...options,
       dateIntervalInDays: dateIntervalInDays * 2,
     });
@@ -322,16 +331,19 @@ export async function getSessionList(options: GetSessionListOptions) {
   };
 }
 
-export async function getSessionsCount({
-  projectId,
-  profileId,
-  filters,
-  startDate,
-  endDate,
-  search,
-}: Omit<GetSessionListOptions, 'take' | 'cursor'>) {
-  const { chQuery } = await loadChClient();
+export async function getSessionsCount(
+  deps: ServiceDeps,
+  {
+    projectId,
+    profileId,
+    filters,
+    startDate,
+    endDate,
+    search,
+  }: Omit<GetSessionListOptions, 'take' | 'cursor'>
+) {
   const result = await chQuery<{ count: number }>(
+    deps,
     sessionsCountQuery({
       projectId,
       profileId,
@@ -348,7 +360,9 @@ export async function getSessionsCount({
 }
 
 export const getSessionsCountCached = cacheable(
-  getSessionsCount,
+  'getSessionsCount',
+  async (options: Omit<GetSessionListOptions, 'take' | 'cursor'>) =>
+    getSessionsCount(await loadCompatServiceDeps(), options),
   SESSIONS_COUNT_CACHE_SECONDS
 );
 
@@ -361,12 +375,13 @@ export interface ISessionReplayChunkMeta {
 }
 
 export async function getSessionReplayChunksFrom(
+  deps: ServiceDeps,
   sessionId: string,
   projectId: string,
   fromIndex: number
 ) {
-  const { chQuery } = await loadChClient();
   const rows = await chQuery<{ chunk_index: number; payload: string }>(
+    deps,
     sessionReplayChunksQuery({
       sessionId,
       projectId,
@@ -393,25 +408,33 @@ export async function getSessionReplayChunksFrom(
 }
 
 export async function getSessionDistinctValues(
+  deps: ServiceDeps,
   projectId: string,
   field: SessionDistinctField,
   limit = DISTINCT_VALUES_DEFAULT_LIMIT
 ): Promise<string[]> {
-  const { chQuery } = await loadChClient();
   const results = await chQuery<{ value: string }>(
+    deps,
     sessionDistinctValuesQuery({ projectId, field, limit })
   );
   return results.map((r) => r.value).filter(Boolean);
 }
 
-export async function getSessionById(sessionId: string, projectId: string) {
-  const { chQuery } = await loadChClient();
+export async function getSessionById(
+  deps: ServiceDeps,
+  sessionId: string,
+  projectId: string
+) {
   const [sessionRows, hasReplayRows] = await Promise.all([
     chQuery<IClickhouseSession>(
+      deps,
       sessionByIdQuery({ sessionId, projectId }),
       CLIX_SESSION_TIMEZONE
     ),
-    chQuery<{ n: number }>(sessionHasReplayQuery({ sessionId, projectId })),
+    chQuery<{ n: number }>(
+      deps,
+      sessionHasReplayQuery({ sessionId, projectId })
+    ),
   ]);
 
   if (!sessionRows[0]) {
@@ -447,9 +470,9 @@ function toClixDatetime(date: string): string {
 }
 
 export async function querySessionsCore(
+  deps: ServiceDeps,
   input: QuerySessionsInput
 ): Promise<IClickhouseSession[]> {
-  const { chQuery } = await loadChClient();
   const { resolveDateRange } = await loadDateService();
   const { startDate, endDate } = resolveDateRange(
     input.startDate,
@@ -457,6 +480,7 @@ export async function querySessionsCore(
   );
 
   return chQuery<IClickhouseSession>(
+    deps,
     querySessionsQuery({
       ...input,
       startDate: toClixDatetime(startDate),
@@ -488,7 +512,7 @@ export interface SessionService {
 
 export function createSessionService(deps: ServiceDeps): SessionService {
   return {
-    byId: getSessionById,
+    byId: (sessionId, projectId) => getSessionById(deps, sessionId, projectId),
     enqueueSessionEnd: async (input) => {
       await deps.queues.sessions.session.add(
         sessionEndJobPayload(input),

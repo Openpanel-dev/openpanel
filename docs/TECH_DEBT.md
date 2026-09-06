@@ -810,3 +810,185 @@ this wave.
   `@openpanel/db/src/clickhouse/client`, and `ingest/src/incoming-event-handler.ts`
   still reaches `sessionBuffer` through `loadDbBuffers()`. Both are the
   `session`/`ingest` modules' own conversion, not this wave's.
+
+### 2026-09-06 — M10-009, both rules flipped to `error` at 0 violations
+
+Ran by: ralph (M10-009). This closes §4 steps 3, 4 and 5 of the controller's
+`docs/TECH_DEBT.md`.
+
+#### The rules now fire
+
+| Rule | Severity | Violations |
+|---|---|---:|
+| `core-uses-ctx-not-db-internals` | `error` | **0** |
+| `core-no-self-barrel` | `error` | **0** |
+
+```
+$ pnpm run check:deps
+✔ no dependency violations found (1998 modules, 8070 dependencies cruised)
+```
+
+Four exemptions carry the rule, each named in `.dependency-cruiser.cjs` with
+its reason — not a widened `dependencyTypesNot`, which would swallow real
+value imports (see the M10-001 entry above for the merge that proved it):
+
+- **from `packages/core/src/context.ts`** — `typeof import('@openpanel/db/…')`
+  type queries, tagged `['undetermined','type-import']` rather than
+  `'type-only'`.
+- **from `packages/core/src/v1-compat.ts`** — THE declared composition seam
+  (§4 step 4's own wording). Deleted whole with `packages/trpc` at P10.
+- **from `packages/core/src/code-migrations/**`** — one-shot CLI scripts run by
+  `migrate.ts` outside the app; no request, no `Ctx` to lose.
+- **from `*.test.ts`** — a test has no request, and the `grep` measurement
+  below is itself defined as `| grep -v .test.ts`.
+- **to** `clickhouse/sql.ts`, `clickhouse/query-builder.ts` and
+  `sql-builder.ts` — the three `packages/db` modules that build query TEXT and
+  hold no client (`clix(client, tz)` takes the client as an argument).
+  `prisma-client.ts`, `clickhouse/client.ts`, `logger.ts` and the barrel are
+  NOT exempt: those are where a second client comes from.
+
+#### Re-measured — `@openpanel/db` reached from `packages/core/src`
+
+Non-test files, 2026-09-06:
+
+| Measurement | Count | Where the remainder is |
+|---|---:|---|
+| `grep -rn "import('@openpanel/db" packages/core/src --include=*.ts \| grep -v .test.ts \| wc -l` | **22** | 7 prose comments, 9 `typeof import()` type queries (2 in `context.ts`, 7 in `v1-compat.ts`), **6 runtime imports, all in `v1-compat.ts`** |
+| …of those, outside `v1-compat.ts` / `context.ts` | **0** | — |
+| `grep -rn "from '@openpanel/db" packages/core/src --include=*.ts \| grep -v .test.ts \| wc -l` | **77** | 20 `import type`, 34 in `code-migrations/**`, 23 value imports of the query-text builders |
+| …value imports of a **client-bearing** module (`prisma-client`, `clickhouse/client`, the barrel) outside `code-migrations/**` | **0** | — |
+
+The controller's 2026-09-05 baseline was 63 dynamic + 80 static value imports;
+both drift numbers are now 0 outside the two seams the rule names. The 23 that
+remain are `sql`/`clix`/`createSqlBuilder` — pure text, no client, so a
+requestId cannot be lost through them (ADR-013 fixes the `sql` tag at that
+path by name).
+
+What made the last of them go: the buffers took the boot scope's client as
+`BufferDeps.ch` (`apps/api/src/main.ts` hands in the same `ch` every service
+gets as `deps.ch`), `buffers/clickhouse.ts`'s `loadClickHouse()` seam was
+deleted, and `shared/ch-tables.ts` / `shared/ch-dates.ts` hold core's own copy
+of the table map and the date helpers — policed against `@openpanel/db`'s
+originals by `ch-tables.parity.test.ts` and `ch-dates.parity.test.ts`, so the
+copies cannot drift silently.
+
+The violations that were still standing after M10-006 (118 + 56 = 174 edges)
+were closed here, in two groups:
+
+- `core-uses-ctx-not-db-internals` — 41 files (production plus the tests that
+  mocked what they imported). The buffers (8) via
+  `BufferDeps.ch` + `shared/ch-tables.ts` / `shared/ch-dates.ts`; the
+  still-unconverted service functions in `cohort`, `gsc`, `import`, `insight`,
+  `integration`, `notification`, `onboarding`, `organization`, `project`,
+  `session` and `widget` onto `deps.db` / `deps.ch`; `shared/slug-id.ts` and
+  `shared/access-lookups.ts` onto the v1-compat seam (their `cacheable`
+  signatures cannot take a leading `deps`).
+- `core-no-self-barrel` — 60 files stopped importing `@openpanel/core` from
+  inside `packages/core`: 26 under `modules/mcp/**`, 13 under
+  `modules/assistant/**`, 7 under `modules/import/**`, and one or two each in
+  `cohort`, `gsc`, `insight`, `notification`, `onboarding`, `organization`,
+  `overview` and `session`. Each now imports the sibling module by relative
+  path, or `../../v1-compat` where the caller has no `Ctx` (mcp's and the chat
+  agent's tool handlers have a third-party-fixed signature).
+
+No genuine cycle needed a per-file exception: the two lazy edges that remain
+(`base-buffer.ts` → `v1-compat`, `shared/access-lookups.ts` → `v1-compat`)
+both point AT the declared seam, and each names the cycle in a comment above
+the loader.
+
+#### `services.ts` registers every `*.service.ts`
+
+```
+$ ls packages/core/src/modules/*/*.service.ts | wc -l
+36
+$ grep -rh "^export function create[A-Za-z]*Service" packages/core/src/modules/*/*.service.ts | wc -l
+36
+$ grep -cE "^    [a-z]+: create[A-Za-z]*Service\(" packages/core/src/services.ts
+36
+$ grep -rn "export class .*Service" packages/core/src --include=*.ts | wc -l
+0
+$ grep -rn "_deps" packages/core/src --include=*.ts | grep -v ".test.ts" | wc -l
+1
+```
+
+The four chart sub-modules (`conversion`, `funnel`, `retention`, `sankey`) got
+their own keys in this task — `chart` still composes them for the facade its
+own callers use, and both bind the same stateless closures. Three factories
+that genuinely need nothing (`createAuthService`, `createAssistantService`,
+`createMcpService`) now say so on the signature instead of ignoring a `_deps`
+argument; their reasons are on each factory.
+
+The one `_deps` left is `http/client-auth.ts`'s `authenticateClient(_deps:
+AppDeps, …)`: its single lookup is `getClientByIdCached`, a `cacheable` whose
+key is derived from the call's arguments, so it cannot take a leading `deps`
+(same constraint as `shared/access-lookups.ts`). Named, not fixed.
+
+#### §4 step 3 — `bun test` wall time, before and after the wave
+
+`cd packages/core && time bun test`, same box, 2 runs each. Baseline is the
+parent of M10-001 (`49a6388e`) measured in a `git worktree`, never a checkout
+of the working tree.
+
+| Tree | Run 1 | Run 2 | Tests |
+|---|---:|---:|---|
+| `49a6388e` (parent of M10-001) | **11.739s** | **14.521s** | 1447 pass, 12 skip, 0 fail — 1459 across 147 files |
+| HEAD (M10-009) | **14.330s** | **13.202s** | 1466 pass, 12 skip, 0 fail — 1478 across 151 files |
+
+No target was set and none is claimed: 13.1s mean before, 13.8s mean after,
+with a 2.8s spread inside the baseline pair alone — the difference is inside
+the noise of this box, while the suite grew by 19 tests and 4 files. The lazy
+`import('@openpanel/db/…')` pattern was justified by test cost; removing it
+cost nothing measurable.
+
+#### §4 step 5 — the requestId proof, on all three paths
+
+`packages/core/test/request-id-end-to-end.test.ts` (M10-009 merged
+`request-id-chart-query.test.ts` and `request-id-ingest.test.ts` into it, so
+the three paths cannot drift into three files that disagree):
+
+```
+✓ one requestId spans the route log, the enqueue, the job and its follow-up enqueue
+✓ a minted requestId travels the same four hops, and does not leak into the next request
+✓ a chart query made through a request-scoped ctx logs the request's own requestId
+✓ two concurrent requests do not share a requestId on their ClickHouse calls
+✓ the envelope's requestId reaches the handler's logger, its buffer write and the session_end it enqueues
+✓ a second message is scoped to its own id, and an envelope without one still gets scoped
+```
+
+HTTP → job (P2-010's original), chart query (M10-003) and Kafka/ingest handler
+(M10-006), in one file.
+
+#### A test-isolation bug this task had to fix to go green
+
+`cd packages/core && bun test` (bare, one shared module registry) failed 6
+chart-integration assertions with `deps.db.project.findUniqueOrThrow is not a
+function`, intermittently — only when the 5-minute Redis cache behind
+`getOrganizationByProjectIdCached` was cold. Cause: `v1-compat.ts` MEMOIZES
+its fallback `ServiceDeps`, so a file that resolves it while a
+`mock.module('@openpanel/db/src/prisma-client', …)` is installed pins the
+mocked client for every later FILE in the process — restoring the module
+registry in `afterAll` does not undo it. Reproduced deterministically with
+`bun test src/modules/mcp/mcp.service.test.ts src/modules/chart/chart.service.test.ts`
+(6 fail before, 0 after). Fixed at the leak: the four files that mock
+`prisma-client` now also call `resetV1CompatServicesForTests()` in `afterAll`
+(the idiom `mcp/src/tools/dashboard-management.test.ts` already used), and
+`import/import.service.test.ts` dropped its `@openpanel/db/src/clickhouse/client`
+module mock entirely — the subject takes `deps.ch` now, so the mock only
+existed to leak.
+
+**Verification, all run by ralph on 2026-09-06:**
+
+- `pnpm run check:deps` — 0 violations, both rules at `error`.
+- `pnpm run typecheck` — all 25 workspaces, `Done`.
+- `cd packages/core && bun test` (bare): **1466 pass, 12 skip, 0 fail**,
+  `Ran 1478 tests across 151 files.`, twice.
+- `verification/harness start` → `cd apps/api && pnpm run e2e:sessions`:
+  **29/29 checks passed**.
+- `verification/golden/compare.sh`: **`passed: 131/137`, 0 diffs in the 131
+  validated**; the other 6 are the calendar-stale clock-anchored cases the
+  harness skips itself (`captured on 2026-09-05, replayed on 2026-09-06`) —
+  the same six M10-003 and M10-005 recorded. **137/137 is not reachable on a
+  day that is not the capture day**; re-capturing is a verify task, not an
+  implement one.
+- `verification/harness stop`, then `verification/full.sh` — green, with the
+  documented pre-P11 `contracts/sdk/dist-gate.sh` exception.

@@ -8,16 +8,12 @@
 // direct call, not one that requires building a Ctx first. `createInsightService`
 // is the `ctx.services.insight` binding for code that already has a Ctx.
 //
-// db/ch access is LAZY (`load*` below), not a static top-level import: both
-// @openpanel/db/src/prisma-client and .../clickhouse/client construct a real
-// pino logger — WITH a pino-pretty transport worker thread — the moment they
-// are imported (M4-008's self-contained db logger). A static import here
-// would spawn one of those per core test FILE, since jobs.registry.ts and
-// services.ts pull this module into the eager barrel chain nearly every test
-// reaches. Same shape as @openpanel/core/clients/email.ts's lazy import, one
-// more reason for it. None of these deep paths import @openpanel/core, so
-// there is no db <-> core runtime *cycle* — this is a side-effect problem,
-// not a cycle.
+// M10-009: every exported function takes `ServiceDeps` and reaches Postgres
+// as `deps.db` and ClickHouse as `deps.ch`; the `loadDb()`/`loadCh()` lazy
+// loaders are gone, so the requestId minted at the edge reaches the query
+// (ADR-018, docs/TECH_DEBT.md §4). The remaining `load*` functions are
+// intra-package lazy imports (engine, store, detection modules) kept lazy for
+// their own import cost, not for a client's.
 //
 // ClickHouse queries here still go through clix, not the `sql` tag: ADR-013
 // converts the analytics read path one query per P7 task, and this module's
@@ -73,20 +69,12 @@ const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   },
 };
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client');
-}
-
-function loadCh() {
-  return import('@openpanel/db/src/clickhouse/client').then((m) => m.ch);
-}
-
 function loadEngine() {
   return import('./src/engine');
 }
 
-function loadStore() {
-  return import('./src/store').then((m) => m.insightStore);
+function loadStore(deps: ServiceDeps) {
+  return import('./src/store').then((m) => m.createInsightStore(deps));
 }
 
 function loadDetectionModules() {
@@ -98,7 +86,7 @@ function loadReferrerSpikesQuery() {
 }
 
 function loadLegacyDetector() {
-  return import('./src/legacy-scan').then((m) => m.InsightsService);
+  return import('./src/legacy-scan').then((m) => m.createLegacyInsightsScanner);
 }
 
 export interface DailyInsightCandidate {
@@ -127,9 +115,10 @@ function clamp01(n: number): number {
 
 /** The `insightsDaily` cron fan-out: eligible project ids, paired with `date`. */
 export async function listDailyInsightCandidates(
+  deps: ServiceDeps,
   date: string
 ): Promise<DailyInsightCandidate[]> {
-  const insightStore = await loadStore();
+  const insightStore = await loadStore(deps);
   const projectIds = await insightStore.listProjectIdsForCadence('daily');
   return projectIds.map((projectId) => ({ projectId, date }));
 }
@@ -141,10 +130,11 @@ export async function listDailyInsightCandidates(
  * job itself.
  */
 async function enrichProjectInsights(
+  deps: ServiceDeps,
   projectId: string,
   logger: Logger
 ): Promise<void> {
-  const { db } = await loadDb();
+  const db = deps.db;
 
   const stale = await db.projectInsight.findMany({
     where: {
@@ -232,19 +222,21 @@ async function enrichProjectInsights(
 }
 
 /** The `insightsProject` job body: engine run + tier-1 AI enrichment. */
-export async function runProjectInsights(args: {
-  projectId: string;
-  date: string;
-  logger: Logger;
-}): Promise<void> {
+export async function runProjectInsights(
+  deps: ServiceDeps,
+  args: {
+    projectId: string;
+    date: string;
+    logger: Logger;
+  }
+): Promise<void> {
   const { projectId, date, logger } = args;
-  const [{ createEngine }, insightStore, detectionModules, ch] =
-    await Promise.all([
-      loadEngine(),
-      loadStore(),
-      loadDetectionModules(),
-      loadCh(),
-    ]);
+  const ch = deps.ch;
+  const [{ createEngine }, insightStore, detectionModules] = await Promise.all([
+    loadEngine(),
+    loadStore(deps),
+    loadDetectionModules(),
+  ]);
 
   const engine = createEngine({
     store: insightStore,
@@ -271,7 +263,7 @@ export async function runProjectInsights(args: {
   // Isolated so a provider outage or rate-limit never fails the insights
   // computation itself.
   try {
-    await enrichProjectInsights(projectId, logger);
+    await enrichProjectInsights(deps, projectId, logger);
   } catch (err) {
     logger.error({ err, projectId }, 'insight enrichment failed');
   }
@@ -297,9 +289,10 @@ async function deleteInBatches(
  * retention rules). The `insightCleanup` cron job body.
  */
 export async function cleanupStaleInsights(
+  deps: ServiceDeps,
   logger: Logger
 ): Promise<{ insights: number; events: number }> {
-  const { db } = await loadDb();
+  const db = deps.db;
   const retentionDays = Number.parseInt(
     process.env.INSIGHTS_RETENTION_DAYS ||
       String(DEFAULT_INSIGHTS_RETENTION_DAYS),
@@ -388,6 +381,7 @@ interface DigestProjectRow {
 
 /** Assembles one project's digest payload (no sending). */
 async function buildDigestData(
+  deps: ServiceDeps,
   project: DigestProjectRow,
   opts: { force?: boolean } = {}
 ): Promise<{ skipped?: string; data?: Record<string, unknown> }> {
@@ -396,12 +390,8 @@ async function buildDigestData(
   const prevStart = now - 14 * DAY_MS;
   const iso = (ms: number) => new Date(ms).toISOString();
 
-  const { db } = await loadDb();
-  // `overview` hasn't moved to core yet — deep-imported like the rest of
-  // @openpanel/db's internals until it does.
-  const { getAnalyticsOverviewCore } = await import(
-    '@openpanel/core'
-  );
+  const db = deps.db;
+  const { getAnalyticsOverviewCore } = await import('../../v1-compat');
 
   const [cur, prev] = await Promise.all([
     getAnalyticsOverviewCore({
@@ -518,8 +508,11 @@ async function buildDigestData(
   };
 }
 
-async function recipientsForOrg(organizationId: string): Promise<string[]> {
-  const { db } = await loadDb();
+async function recipientsForOrg(
+  deps: ServiceDeps,
+  organizationId: string
+): Promise<string[]> {
+  const db = deps.db;
   const members = await db.member.findMany({
     where: { organizationId },
     select: { email: true },
@@ -533,9 +526,10 @@ async function recipientsForOrg(organizationId: string): Promise<string[]> {
  * body.
  */
 export async function sendWeeklyDigests(
+  deps: ServiceDeps,
   logger: Logger
 ): Promise<WeeklyDigestResult> {
-  const { db } = await loadDb();
+  const db = deps.db;
 
   // Prefilter on the raw status column (computed fields can't be used in
   // `where`), then refine with the canonical subscription state below.
@@ -561,11 +555,11 @@ export async function sendWeeklyDigests(
         continue;
       }
 
-      const { skipped, data } = await buildDigestData(project);
+      const { skipped, data } = await buildDigestData(deps, project);
       if (skipped || !data) {
         continue;
       }
-      const emails = await recipientsForOrg(project.organizationId);
+      const emails = await recipientsForOrg(deps, project.organizationId);
       if (emails.length === 0) {
         continue;
       }
@@ -589,10 +583,11 @@ export async function sendWeeklyDigests(
  *   - opts.force → build even if the project had 0 visitors this week
  */
 export async function previewWeeklyDigest(
+  deps: ServiceDeps,
   projectId: string,
   opts: { to?: string; force?: boolean } = {}
 ): Promise<WeeklyDigestPreview> {
-  const { db } = await loadDb();
+  const db = deps.db;
   const project = await db.project.findUnique({
     where: { id: projectId },
     select: { id: true, name: true, organizationId: true },
@@ -601,7 +596,7 @@ export async function previewWeeklyDigest(
     return { sent: false, skipped: 'project not found' };
   }
 
-  const { skipped, data } = await buildDigestData(project, {
+  const { skipped, data } = await buildDigestData(deps, project, {
     force: opts.force,
   });
   if (skipped || !data) {
@@ -616,8 +611,11 @@ export async function previewWeeklyDigest(
   return { sent: false, data };
 }
 
-export async function listInsights(args: { projectId: string; limit: number }) {
-  const { db } = await loadDb();
+export async function listInsights(
+  deps: ServiceDeps,
+  args: { projectId: string; limit: number }
+) {
+  const db = deps.db;
   return db.projectInsight.findMany({
     where: { projectId: args.projectId, state: 'active' },
     orderBy: [
@@ -628,11 +626,14 @@ export async function listInsights(args: { projectId: string; limit: number }) {
   });
 }
 
-export async function listAllInsights(args: {
-  projectId: string;
-  limit: number;
-}) {
-  const { db } = await loadDb();
+export async function listAllInsights(
+  deps: ServiceDeps,
+  args: {
+    projectId: string;
+    limit: number;
+  }
+) {
+  const db = deps.db;
   return db.projectInsight.findMany({
     where: { projectId: args.projectId, state: 'active' },
     orderBy: [
@@ -673,21 +674,20 @@ export async function explainInsight(
 }
 
 export async function getReferrerSpikes(
+  deps: ServiceDeps,
   input: GetReferrerSpikesInput
 ): Promise<ReferrerSpikeCluster[]> {
   const query = await loadReferrerSpikesQuery();
-  return query(input);
+  return query(deps, input);
 }
 
 /** Pre-engine detector, kept for parity with V1 — no live callers today. */
 export async function scanLegacyInsights(
+  deps: ServiceDeps,
   projectId: string
 ): Promise<LegacyInsight[]> {
-  const [LegacyInsightsDetector, ch] = await Promise.all([
-    loadLegacyDetector(),
-    loadCh(),
-  ]);
-  return new LegacyInsightsDetector(ch).generateInsights(projectId);
+  const createLegacyInsightsScanner = await loadLegacyDetector();
+  return createLegacyInsightsScanner(deps).generateInsights(projectId);
 }
 
 // Re-exported at each type's own import site (noExportedImports): a type
@@ -734,15 +734,17 @@ export function createInsightService(deps: ServiceDeps): InsightService {
   const logger = deps.logger.child({ module: 'insight' });
 
   return {
-    listDailyInsightCandidates,
-    runProjectInsights: (args) => runProjectInsights({ ...args, logger }),
-    cleanupStaleInsights: () => cleanupStaleInsights(logger),
-    sendWeeklyDigests: () => sendWeeklyDigests(logger),
-    previewWeeklyDigest,
-    listInsights,
-    listAllInsights,
+    listDailyInsightCandidates: (date) =>
+      listDailyInsightCandidates(deps, date),
+    runProjectInsights: (args) => runProjectInsights(deps, { ...args, logger }),
+    cleanupStaleInsights: () => cleanupStaleInsights(deps, logger),
+    sendWeeklyDigests: () => sendWeeklyDigests(deps, logger),
+    previewWeeklyDigest: (projectId, opts) =>
+      previewWeeklyDigest(deps, projectId, opts),
+    listInsights: (args) => listInsights(deps, args),
+    listAllInsights: (args) => listAllInsights(deps, args),
     explainInsight,
-    getReferrerSpikes,
-    scanLegacyInsights,
+    getReferrerSpikes: (input) => getReferrerSpikes(deps, input),
+    scanLegacyInsights: (projectId) => scanLegacyInsights(deps, projectId),
   };
 }

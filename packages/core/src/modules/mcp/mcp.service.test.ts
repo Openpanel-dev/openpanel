@@ -66,9 +66,7 @@ mock.module('../../clients/logger', () => ({
 }));
 
 const mockGetClientByIdCached = mock();
-const actualClientsService = await import(
-  '@openpanel/core'
-);
+const actualClientsService = await import('@openpanel/core');
 const realClientsService = { ...actualClientsService };
 mock.module('@openpanel/core', () => ({
   ...realClientsService,
@@ -101,15 +99,19 @@ mock.module('@openpanel/db/src/prisma-client', () => ({
   db: { project: { findUnique: mockFindUnique } },
 }));
 
-afterAll(() => {
+afterAll(async () => {
   mock.module('../../clients/logger', () => realLogger);
-  mock.module(
-    '@openpanel/core',
-    () => realClientsService
-  );
+  mock.module('@openpanel/core', () => realClientsService);
   mock.module('@openpanel/redis', () => realRedis);
   mock.module('../../shared/crypto', () => realCrypto);
   mock.module('@openpanel/db/src/prisma-client', () => realPrismaClient);
+  // Restoring the module registry is not enough: `v1-compat.ts` MEMOIZES the
+  // fallback `ServiceDeps` the first time anything resolves it, so if that
+  // happened while the mock above was installed, every later FILE in this
+  // process keeps the mocked client (bare `bun test` shares one registry).
+  // Drop the memo too — same reason mcp's dashboard-management.test.ts does.
+  const { resetV1CompatServicesForTests } = await import('../../v1-compat');
+  resetV1CompatServicesForTests();
 });
 
 let handleStatelessMcpRequest: typeof import('./mcp.service').handleStatelessMcpRequest;

@@ -11,32 +11,30 @@
 // ClickHouse/Postgres calls rather than delegating to a shared service —
 // the one genuinely shared piece is the report module's widget zod schemas.
 //
-// db/ch/redis access is LAZY (`load*` below): this router lands in the eager
-// rpc.router.ts barrel chain nearly every core test file reaches, and
-// constructing @openpanel/db's clients (or reaching @openpanel/redis's
-// `getCache`) at import time would spawn a pino-pretty transport worker
-// thread per test file / break a test that partially mocks that package —
-// see subscription.service.ts's header for the `getCache` half specifically.
+// M10-009: Postgres and ClickHouse come from `ctx` (`ctx.db` / `ctx.ch`), so
+// the requestId minted at the edge reaches the query (ADR-018); the `loadDb`/
+// `loadChClient` lazy loaders are gone. Redis's `getCache` stays lazy: this
+// router lands in the eager rpc.router.ts barrel chain nearly every core test
+// file reaches and reaching @openpanel/redis at import time breaks a test that
+// partially mocks that package — see subscription.service.ts's header.
+//
+// `clix` is a value import and stays one: it is a pure query BUILDER that
+// takes the client as its first argument (`clix(ctx.ch, timezone)`), not a
+// connection — same standing as ADR-013's `sql` tag (see shared/ch-query.ts).
 
 import { clix } from '@openpanel/db/src/clickhouse/query-builder';
 import ShortUniqueId from 'short-unique-id';
 import { z } from 'zod';
 import { loadDbBuffers } from '../../buffers/lazy-db-buffers';
+import type { Ctx } from '../../context';
 import { createTRPCRouter, procedure } from '../../rpc/base';
 import { TRPCAccessError, TRPCNotFoundError } from '../../rpc/errors';
+import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getSettingsForProject } from '../organization/organization.service';
 import { zWidgetOptions, zWidgetType } from '../report/report.constants';
 
 const uid = new ShortUniqueId({ length: 6 });
 const BADGE_CACHE_TTL_SECONDS = 5 * 60; // queries 30 days of data
-
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
-}
-
-function loadChClient() {
-  return import('@openpanel/db/src/clickhouse/client');
-}
 
 function loadEventBuffer() {
   return loadDbBuffers().then((m) => m.eventBuffer);
@@ -54,8 +52,11 @@ function requireLogin(userId: string | null | undefined): string {
 }
 
 // Helper to find widget by projectId and type
-async function findWidgetByType(projectId: string, type: string) {
-  const db = await loadDb();
+async function findWidgetByType(
+  db: Ctx['db'],
+  projectId: string,
+  type: string
+) {
   const widgets = await db.shareWidget.findMany({
     where: { projectId },
   });
@@ -70,7 +71,11 @@ export const widgetRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string(), type: zWidgetType }))
     .query(async ({ input, ctx }) => {
       requireLogin(ctx.session.userId);
-      const widget = await findWidgetByType(input.projectId, input.type);
+      const widget = await findWidgetByType(
+        ctx.db,
+        input.projectId,
+        input.type
+      );
 
       if (!widget) {
         return null;
@@ -91,8 +96,12 @@ export const widgetRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       requireLogin(ctx.session.userId);
-      const db = await loadDb();
-      const existing = await findWidgetByType(input.projectId, input.type);
+      const db = ctx.db;
+      const existing = await findWidgetByType(
+        ctx.db,
+        input.projectId,
+        input.type
+      );
 
       if (existing) {
         return db.shareWidget.update({
@@ -134,8 +143,9 @@ export const widgetRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       requireLogin(ctx.session.userId);
-      const db = await loadDb();
+      const db = ctx.db;
       const existing = await findWidgetByType(
+        ctx.db,
         input.projectId,
         input.options.type
       );
@@ -161,8 +171,8 @@ export const widgetRouter = createTRPCRouter({
 
   counter: procedure
     .input(z.object({ shareId: z.string() }))
-    .query(async ({ input }) => {
-      const db = await loadDb();
+    .query(async ({ input, ctx }) => {
+      const db = ctx.db;
       const widget = await db.shareWidget.findUnique({
         where: {
           id: input.shareId,
@@ -187,8 +197,8 @@ export const widgetRouter = createTRPCRouter({
 
   badge: procedure
     .input(z.object({ shareId: z.string() }))
-    .query(async ({ input }) => {
-      const db = await loadDb();
+    .query(async ({ input, ctx }) => {
+      const db = ctx.db;
       const widget = await db.shareWidget.findUnique({
         where: {
           id: input.shareId,
@@ -204,8 +214,8 @@ export const widgetRouter = createTRPCRouter({
       }
 
       const { projectId } = widget;
-      const { timezone } = await getSettingsForProject(projectId);
-      const { ch, TABLE_NAMES } = await loadChClient();
+      const { timezone } = await getSettingsForProject(ctx, projectId);
+      const ch = ctx.ch;
       const getCache = await loadCache();
 
       // Cache for 5 minutes since this queries 30 days of data
@@ -233,8 +243,8 @@ export const widgetRouter = createTRPCRouter({
 
   realtimeData: procedure
     .input(z.object({ shareId: z.string() }))
-    .query(async ({ input }) => {
-      const db = await loadDb();
+    .query(async ({ input, ctx }) => {
+      const db = ctx.db;
       // Validate ShareWidget exists and is public
       const widget = await db.shareWidget.findUnique({
         where: {
@@ -260,8 +270,8 @@ export const widgetRouter = createTRPCRouter({
         throw new TRPCNotFoundError('Invalid widget type');
       }
 
-      const { timezone } = await getSettingsForProject(projectId);
-      const { ch, TABLE_NAMES } = await loadChClient();
+      const { timezone } = await getSettingsForProject(ctx, projectId);
+      const ch = ctx.ch;
 
       // Always fetch live count and histogram
       const totalSessionsQuery = clix(ch, timezone)

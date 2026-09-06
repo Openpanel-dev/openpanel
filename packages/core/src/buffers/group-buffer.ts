@@ -2,9 +2,10 @@ import { toDots } from '@openpanel/common';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import shallowEqual from 'fast-deep-equal';
 import sqlstring from 'sqlstring';
+import { formatClickhouseDate } from '../shared/ch-dates';
+import { TABLE_NAMES } from '../shared/ch-tables';
 import { getSafeJson } from '../shared/json';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
-import { loadClickHouse } from './clickhouse';
 
 type IGroupBufferEntry = {
   project_id: string;
@@ -79,8 +80,7 @@ export class GroupBuffer extends BaseBuffer {
     projectId: string,
     id: string
   ): Promise<IGroupCacheEntry | null> {
-    const { chQuery, TABLE_NAMES } = await loadClickHouse();
-    const rows = await chQuery<IGroupCacheEntry>(`
+    const rows = await this.chQuery<IGroupCacheEntry>(`
       SELECT project_id, id, type, name, properties, created_at
       FROM ${TABLE_NAMES.groups} FINAL
       WHERE project_id = ${sqlstring.escape(projectId)}
@@ -93,7 +93,6 @@ export class GroupBuffer extends BaseBuffer {
   async add(input: IGroupBufferInput): Promise<void> {
     return this.timeAdd(async () => {
       try {
-        const { formatClickhouseDate } = await loadClickHouse();
         const cacheKey = this.getCacheKey(input.projectId, input.id);
 
         const existing =
@@ -176,7 +175,7 @@ export class GroupBuffer extends BaseBuffer {
     // Raw passthrough: each Redis entry is already a valid JSONEachRow
     // line. Streaming raw strings to CH skips JSON.parse + the client's
     // re-stringify on the hot path.
-    const { ch, TABLE_NAMES } = await loadClickHouse();
+    const ch = await this.resolveCh();
     const chStart = performance.now();
     await this.parallelLimit(this.chunks(items, this.chunkSize), (chunk) =>
       ch.insert({

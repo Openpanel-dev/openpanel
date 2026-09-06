@@ -21,7 +21,6 @@
 // would spawn a pino-pretty transport worker thread per test file).
 
 import { stripLeadingAndTrailingSlashes } from '@openpanel/common';
-import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/core';
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
 import { cacheable } from '@openpanel/redis';
 import type { IChartEvent, IChartEventFilter } from '@openpanel/validation';
@@ -30,6 +29,10 @@ import { sendEmail } from '../../clients/email';
 import { getServerIntegration } from '../../clients/integrations/registry';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
+import type {
+  IServiceCreateEventPayload,
+  IServiceEvent,
+} from '../event/event.service';
 import {
   type IIntegrationConfig,
   isKind,
@@ -67,12 +70,19 @@ export type INotificationPayload =
   | { type: 'event'; event: IServiceCreateEventPayload }
   | { type: 'funnel'; funnel: IServiceEvent[] };
 
-function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+// M10-009: `getNotificationRulesByProjectId` is `cacheable`, whose key is
+// derived from the call's ARGUMENTS (packages/redis/cachable.ts), so it cannot
+// take `ServiceDeps` as a leading parameter — it reaches Postgres through the
+// declared v1-compat seam instead, same as shared/access-lookups.ts's
+// `getProjectAccess`. Every other function in this file takes `deps` and uses
+// `deps.db`. GENUINE CYCLE, kept lazy: services.ts -> notification.service.ts
+// (this file) -> v1-compat.ts -> services.ts.
+function loadCompatDb() {
+  return import('../../v1-compat').then((m) => m.compatDb());
 }
 
 function loadPrisma() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.Prisma);
+  return import('../../v1-compat').then((m) => m.compatPrisma());
 }
 
 // -- Rule cache --------------------------------------------------------
@@ -84,7 +94,7 @@ export type INotificationRuleCached = Awaited<
 export const getNotificationRulesByProjectId = cacheable(
   'getNotificationRulesByProjectId',
   async (projectId: string) => {
-    const db = await loadDb();
+    const db = await loadCompatDb();
     return db.notificationRule.findMany({
       where: { projectId },
       select: {
@@ -268,9 +278,10 @@ function isValidPayload<T>(
 
 /** apps/worker/src/jobs/notification.ts's `sendNotification` job body. */
 export async function deliverNotification(
+  deps: ServiceDeps,
   notification: Prisma.NotificationUncheckedCreateInput
 ): Promise<unknown> {
-  const db = await loadDb();
+  const db = deps.db;
 
   // App + email are pseudo-integrations dispatched by flags, not real rows.
   // Lazy: @openpanel/redis is otherwise pulled in eagerly through this
@@ -363,8 +374,8 @@ export async function deliverNotification(
 
 // -- RPC-facing CRUD --------------------------------------------------------
 
-export function listNotifications(projectId: string) {
-  return loadDb().then((db) =>
+export function listNotifications(deps: ServiceDeps, projectId: string) {
+  return Promise.resolve(deps.db).then((db) =>
     db.notification.findMany({
       where: { projectId },
       orderBy: { createdAt: 'desc' },
@@ -377,8 +388,11 @@ export function listNotifications(projectId: string) {
   );
 }
 
-export async function listNotificationRules(projectId: string) {
-  const db = await loadDb();
+export async function listNotificationRules(
+  deps: ServiceDeps,
+  projectId: string
+) {
+  const db = deps.db;
   const rules = await db.notificationRule.findMany({
     where: { projectId },
     include: { integrations: true },
@@ -400,10 +414,11 @@ export async function listNotificationRules(projectId: string) {
   }));
 }
 
-export function getNotificationRuleByIdOrThrow(id: string) {
-  return loadDb().then((db) =>
-    db.notificationRule.findUniqueOrThrow({ where: { id } })
-  );
+export async function getNotificationRuleByIdOrThrow(
+  deps: ServiceDeps,
+  id: string
+) {
+  return await deps.db.notificationRule.findUniqueOrThrow({ where: { id } });
 }
 
 /**
@@ -413,9 +428,10 @@ export function getNotificationRuleByIdOrThrow(id: string) {
  * then writes the rule.
  */
 export async function createOrUpdateNotificationRule(
+  deps: ServiceDeps,
   input: ICreateNotificationRule
 ) {
-  const db = await loadDb();
+  const db = deps.db;
   const project = await db.project.findUniqueOrThrow({
     where: { id: input.projectId },
     select: { organizationId: true },
@@ -497,8 +513,8 @@ export async function createOrUpdateNotificationRule(
   });
 }
 
-export function deleteNotificationRule(id: string) {
-  return loadDb().then((db) => db.notificationRule.delete({ where: { id } }));
+export async function deleteNotificationRule(deps: ServiceDeps, id: string) {
+  return await deps.db.notificationRule.delete({ where: { id } });
 }
 
 // -- Services surface --------------------------------------------------
@@ -510,9 +526,9 @@ export interface NotificationService {
 }
 
 export function createNotificationService(
-  _deps: ServiceDeps
+  deps: ServiceDeps
 ): NotificationService {
   return {
-    dispatch: deliverNotification,
+    dispatch: (notification) => deliverNotification(deps, notification),
   };
 }

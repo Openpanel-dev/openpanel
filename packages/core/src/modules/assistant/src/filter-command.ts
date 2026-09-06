@@ -11,19 +11,21 @@ import {
 } from '@better-agent/core';
 import { intervals, operators, timeWindows } from '@openpanel/constants';
 import {
-  getDatesFromRange,
-  getTopPagesCore,
-  getTrafficBreakdownCore,
-  listEventNamesCore,
-  resolveDateRange as resolveDateRangeCore,
-} from '@openpanel/core';
-import {
   type IChartEventFilter,
   type IChartRange,
   zRange,
 } from '@openpanel/validation';
 import { z } from 'zod';
 import { resolveModel } from '../../../clients/ai/providers';
+import {
+  getDatesFromRange,
+  resolveDateRange as resolveDateRangeCore,
+} from '../../../shared/date';
+import {
+  getTopPagesCore,
+  getTrafficBreakdownCore,
+  listEventNamesCore,
+} from '../../../v1-compat';
 import {
   CHAT_MODELS,
   type ChatModelEntry,

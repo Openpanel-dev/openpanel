@@ -8,7 +8,7 @@ import { cacheable } from '@openpanel/redis';
 import { sendEmail } from '../../../clients/email';
 import { createLogger, type ILogger } from '../../../clients/logger';
 import type { Logger } from '../../../logger';
-import { getOrganizationBillingEventsCount } from '../../organization/organization.service';
+import { getOrganizationBillingEventsCount } from '../../../v1-compat';
 
 // project.service.ts's `getProjectEventsCount` takes `ServiceDeps` now
 // (M10-004); this file has none (its own db access is the lazy `loadDb()`
@@ -24,8 +24,13 @@ const USAGE_WARNING_THRESHOLD = 0.8;
 const UPDATE_EVENTS_COUNT_CACHE_SECONDS = 60 * 60;
 const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
 
+// M10-009: `updateEventsCount` is `cacheable`, whose key is derived from the
+// call's ARGUMENTS (packages/redis/cachable.ts), so it cannot take a
+// `ServiceDeps` leading parameter — Postgres comes through the same declared
+// v1-compat seam this file already reaches for `getProjectEventsCount`, which
+// hands back the boot scope's `AppDeps.db` rather than a second singleton.
 function loadDb() {
-  return import('@openpanel/db/src/prisma-client').then((m) => m.db);
+  return import('../../../v1-compat').then((m) => m.compatDb());
 }
 
 // `cacheable` keys on the function's arguments, so the per-run ctx.logger

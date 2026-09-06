@@ -1,14 +1,14 @@
+import type { IChartRange, IInterval } from '@openpanel/validation';
+import { z } from 'zod';
+import { getChartStartEndDate } from '../../../../shared/date';
 import {
   AggregateChartEngine,
   ChartEngine,
-  getChartStartEndDate,
   getDashboardById,
   getFunnel,
   getReportsByDashboardId,
   getSettingsForProject,
-} from '@openpanel/core';
-import type { IChartRange, IInterval } from '@openpanel/validation';
-import { z } from 'zod';
+} from '../../../../v1-compat';
 import { chatTool, dashboardUrl } from './helpers';
 
 // Cap on parallel report execution. Real dashboards rarely exceed this,

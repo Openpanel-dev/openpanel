@@ -1,5 +1,6 @@
 import type { ClickHouseClient } from '@clickhouse/client';
 import { clix } from '@openpanel/db/src/clickhouse/query-builder';
+import type { ServiceDeps } from '../../../services';
 
 export interface Insight {
   type: string;
@@ -69,7 +70,14 @@ interface EventCompletionResult {
   prev_month_count: number;
 }
 
-export class InsightsService {
+/**
+ * The pre-engine detector, kept for V1 parity — no live callers today.
+ *
+ * M10-009: the class is no longer exported; `createLegacyInsightsScanner(deps)`
+ * below is the module's factory, so every service module in core is reached the
+ * same way (ADR-007) and nothing in the tree still exports a `*Service` class.
+ */
+class LegacyInsightsScanner {
   constructor(private readonly client: ClickHouseClient) {}
 
   private async getTrafficSpikes(projectId: string): Promise<Insight[]> {
@@ -392,4 +400,17 @@ export class InsightsService {
       return dateB.getTime() - dateA.getTime();
     });
   }
+}
+
+export interface LegacyInsightsScannerService {
+  generateInsights(projectId: string): Promise<Insight[]>;
+}
+
+export function createLegacyInsightsScanner(
+  deps: Pick<ServiceDeps, 'ch'>
+): LegacyInsightsScannerService {
+  const scanner = new LegacyInsightsScanner(deps.ch);
+  return {
+    generateInsights: (projectId) => scanner.generateInsights(projectId),
+  };
 }

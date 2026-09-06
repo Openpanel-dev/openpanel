@@ -1,5 +1,4 @@
 import {
-  afterAll,
   afterEach,
   beforeEach,
   describe,
@@ -8,15 +7,12 @@ import {
   mock,
 } from 'bun:test';
 import { getRedisCache } from '@openpanel/redis';
-import { stubBufferDeps } from '../../test/buffer-fixtures';
+import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 import type { IServiceCreateEventPayload } from '../modules/event/event.service';
 import type { IClickhouseSession } from '../modules/session/session.service';
 
-// `./clickhouse` is the one seam the buffers reach ClickHouse through — see
-// event-buffer.test.ts's header for why that, and not
-// `@openpanel/db/src/clickhouse/client`, is what gets replaced.
-const realClickhouse = { ...(await import('./clickhouse')) };
-
+// M10-009: the client comes in as `BufferDeps.ch` — no module mock needed for
+// the flush path at all. See event-buffer.test.ts's header.
 const chInsert = mock(
   async (_options: {
     table: string;
@@ -24,14 +20,6 @@ const chInsert = mock(
     values: IClickhouseSession[];
   }): Promise<unknown> => undefined
 );
-
-mock.module('./clickhouse', () => ({
-  loadClickHouse: () =>
-    Promise.resolve({
-      ch: { insert: chInsert },
-      TABLE_NAMES: { sessions: 'sessions' },
-    }),
-}));
 
 const { SessionBuffer } = await import('./session-buffer');
 type SessionBuffer = InstanceType<typeof SessionBuffer>;
@@ -92,18 +80,16 @@ beforeEach(async () => {
   chInsert.mockResolvedValue(undefined);
 });
 
-// The shared `getRedisCache()` client is deliberately NOT quit here: bun runs
-// every file in one process, and closing the singleton takes it away from the
-// files that run next (V1's vitest isolated per file, so it could).
-afterAll(() => {
-  mock.module('./clickhouse', () => realClickhouse);
-});
+// No `afterAll` on purpose: the shared `getRedisCache()` client must NOT be
+// quit, because bun runs every file in one process and closing the singleton
+// takes it away from the files that run next (V1's vitest isolated per file,
+// so it could).
 
 describe('SessionBuffer', () => {
   let sessionBuffer: SessionBuffer;
 
   beforeEach(() => {
-    sessionBuffer = new SessionBuffer(stubBufferDeps);
+    sessionBuffer = new SessionBuffer(bufferDepsWithCh({ insert: chInsert }));
   });
 
   it('opens a new session and stores it at session:{pid}:{did}', async () => {

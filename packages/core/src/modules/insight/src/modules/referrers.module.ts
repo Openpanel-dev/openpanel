@@ -1,7 +1,5 @@
-import {
-  formatClickhouseDate,
-  TABLE_NAMES,
-} from '@openpanel/db/src/clickhouse/client';
+import { formatClickhouseDate } from '../../../../shared/ch-dates';
+import { TABLE_NAMES } from '../../../../shared/ch-tables';
 import type {
   ComputeContext,
   ComputeResult,

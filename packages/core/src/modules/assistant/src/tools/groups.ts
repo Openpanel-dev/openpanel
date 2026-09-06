@@ -1,10 +1,10 @@
+import { z } from 'zod';
 import {
   findGroupsCore,
   getGroupCore,
   getGroupMemberProfiles,
   queryEventsCore,
-} from '@openpanel/core';
-import { z } from 'zod';
+} from '../../../../v1-compat';
 import { chatTool, dashboardUrl, truncateRows } from './helpers';
 
 export const getGroupFull = chatTool(

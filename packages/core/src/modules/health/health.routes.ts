@@ -15,6 +15,7 @@
 
 import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
+import { chQuery } from '../../shared/ch-query';
 import { tryCatch } from '../../shared/try-catch';
 import { currentReadiness } from './src/readiness';
 
@@ -71,15 +72,13 @@ export const healthRoutes = defineRoutes((app) =>
     .get(
       '/healthcheck',
       async ({ ctx, set }) => {
-        // `chQuery` (not `ctx.ch`) so the probe goes through the same
-        // round-robin + retry path every real read takes. Lazily, because a
-        // static import would construct a ClickHouse client in every test
-        // process that touches `rest.routes.ts`.
-        const { chQuery } = await import('@openpanel/db/src/clickhouse/client');
+        // core's own `chQuery` over `ctx.ch` — the same round-robin + retry
+        // proxy every real read takes (M10-009; `ctx.ch.query` IS
+        // `withRetry(client => client.query(...))`, see shared/ch-query.ts).
         const [redisResult, dbResult, chResult] = await Promise.all([
           tryCatch(async () => (await ctx.redis.ping()) === 'PONG'),
           tryCatch(async () => Boolean(await ctx.db.$executeRaw`SELECT 1`)),
-          tryCatch(async () => (await chQuery('SELECT 1')).length > 0),
+          tryCatch(async () => (await chQuery(ctx, 'SELECT 1')).length > 0),
         ]);
 
         const dependencies = {

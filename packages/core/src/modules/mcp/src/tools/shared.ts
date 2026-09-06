@@ -1,6 +1,6 @@
-import { resolveClientProjectId } from '@openpanel/core';
 import { z } from 'zod';
 import { createLogger } from '../../../../clients/logger';
+import { resolveClientProjectId } from '../../../../v1-compat';
 import type { McpAuthContext } from '../auth';
 
 const logger = createLogger({ name: 'mcp' });

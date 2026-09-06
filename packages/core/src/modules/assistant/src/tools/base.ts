@@ -1,4 +1,6 @@
 import { chartTypes, lineTypes, operators } from '@openpanel/constants';
+import { zReportInput } from '@openpanel/validation';
+import { z } from 'zod';
 import {
   findProfilesCore,
   getAnalyticsOverviewCore,
@@ -15,9 +17,7 @@ import {
   listReportsCore,
   queryEventsCore,
   querySessionsCore,
-} from '@openpanel/core';
-import { zReportInput } from '@openpanel/validation';
-import { z } from 'zod';
+} from '../../../../v1-compat';
 import { runReport, runReportFromConfig } from '../report-runner';
 import {
   chatTool,

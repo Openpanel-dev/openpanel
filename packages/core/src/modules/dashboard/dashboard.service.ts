@@ -103,7 +103,7 @@ export async function createDashboard(
 
   return deps.db.dashboard.create({
     data: {
-      id: await getId('dashboard', input.name),
+      id: await getId(deps, 'dashboard', input.name),
       projectId: input.projectId,
       organizationId: project.organizationId,
       name: input.name,

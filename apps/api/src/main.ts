@@ -175,6 +175,10 @@ function bufferDeps(producers: QueueProducerHandle): BufferDeps {
   return {
     createLogger: (name) => logger.child({ name }),
     isCronPaused: async () => (cron ? await cron.isPaused() : false),
+    // M10-009: the boot scope's ClickHouse client, so a buffer flush logs
+    // under the same client every service reaches as `deps.ch` instead of
+    // constructing its own (docs/TECH_DEBT.md §4).
+    ch,
   };
 }
 

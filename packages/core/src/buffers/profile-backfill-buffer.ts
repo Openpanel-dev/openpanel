@@ -1,8 +1,8 @@
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import sqlstring from 'sqlstring';
+import { getReplicatedTableName, TABLE_NAMES } from '../shared/ch-tables';
 import { getSafeJson } from '../shared/json';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
-import { loadClickHouse } from './clickhouse';
 
 export interface ProfileBackfillEntry {
   projectId: string;
@@ -69,7 +69,7 @@ export class ProfileBackfillBuffer extends BaseBuffer {
     }
     const entries = Array.from(seen.values());
 
-    const { ch, TABLE_NAMES, getReplicatedTableName } = await loadClickHouse();
+    const ch = await this.resolveCh();
     const table = getReplicatedTableName(TABLE_NAMES.events);
 
     const chunks = this.chunks(entries, CHUNK_SIZE);

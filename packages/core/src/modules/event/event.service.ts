@@ -1154,7 +1154,7 @@ export async function getEventDetails(
   }
   const { getSessionById } = await loadSessionService();
   const session = event.sessionId
-    ? await getSessionById(event.sessionId, input.projectId).catch(
+    ? await getSessionById(deps, event.sessionId, input.projectId).catch(
         () => undefined
       )
     : undefined;

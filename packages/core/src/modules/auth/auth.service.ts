@@ -180,13 +180,15 @@ export function resetAccessChecksForTests(): void {
 }
 
 /**
- * Registered in `services.ts`. `deps` is unused (every member here is either
+ * Registered in `services.ts`. Takes NO `ServiceDeps`, and says so on the
+ * signature rather than ignoring an argument: every member here is either
  * pure, reads its own env, or — for the access checks — reaches the shared,
- * memoized `getAccessChecks()` above) — kept on the signature because every
- * other module's factory takes it, and a method that later needs `logger`
- * should not change the call site.
+ * memoized `getAccessChecks()` above, whose lookups are `cacheable` (their
+ * key is derived from the call's arguments, so they cannot take a leading
+ * `deps`; see shared/access-lookups.ts). A member that later needs `db` /
+ * `logger` adds the parameter back, and the one call site follows.
  */
-export function createAuthService(_deps: ServiceDeps): AuthService {
+export function createAuthService(): AuthService {
   return {
     async requireProjectAccess(args) {
       return (await getAccessChecks()).requireProjectAccess(args);
@@ -307,7 +309,7 @@ async function consumeInviteForUser(
     const user = await deps.db.user.findUniqueOrThrow({
       where: { id: userId },
     });
-    await connectUserToOrganization({ user, inviteId });
+    await connectUserToOrganization(deps, { user, inviteId });
   } catch (error) {
     logger.error(
       { userId, inviteId, error },
@@ -416,7 +418,7 @@ export async function signUpWithEmail(
   });
 
   if (input.inviteId) {
-    await connectUserToOrganization({
+    await connectUserToOrganization(deps, {
       user: createdUser,
       inviteId: input.inviteId,
     });
@@ -1120,7 +1122,7 @@ async function completeNewOAuthUser(
 
   if (inviteId) {
     try {
-      await connectUserToOrganization({ user, inviteId });
+      await connectUserToOrganization(deps, { user, inviteId });
     } catch (error) {
       logger.error(
         { error, inviteId, user },

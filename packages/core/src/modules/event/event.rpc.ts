@@ -182,7 +182,7 @@ export const eventRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      const { timezone } = await getSettingsForProject(input.projectId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
       return ctx.services.pages.getTopPages({
         projectId: input.projectId,
@@ -199,7 +199,7 @@ export const eventRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      const { timezone } = await getSettingsForProject(input.projectId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
       return ctx.services.pages.getPageTimeseries({
         projectId: input.projectId,
@@ -213,7 +213,7 @@ export const eventRouter = createTRPCRouter({
   previousPages: procedure.input(zChartWindow).query(async ({ input, ctx }) => {
     await requireAccess(ctx, input.projectId, 'read');
 
-    const { timezone } = await getSettingsForProject(input.projectId);
+    const { timezone } = await getSettingsForProject(ctx, input.projectId);
     const { startDate, endDate } = getChartStartEndDate(input, timezone);
 
     const startMs = new Date(startDate).getTime();
@@ -235,7 +235,7 @@ export const eventRouter = createTRPCRouter({
     .query(async ({ input, ctx }) => {
       await requireAccess(ctx, input.projectId, 'read');
 
-      const { timezone } = await getSettingsForProject(input.projectId);
+      const { timezone } = await getSettingsForProject(ctx, input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
       return ctx.services.pages.getPageTimeseries({
         projectId: input.projectId,
