@@ -1108,3 +1108,49 @@ static edge pulls `services.ts` and all 36 services into the registry's import
 graph, which builds a ClickHouse client at import time — `queue-keys/check.sh`
 fails outright without the change (confirmed by reverting the file alone and
 re-running it).
+
+### 2026-09-06 — M11-008, `dist-gate.sh`'s internal-vs-published fix confirmed green — no source change needed
+
+Ran by: ralph (M11-008 implement task).
+
+The operator's fix to `contracts/sdk/dist-gate.sh` (deriving its
+workspace-internal package list from `packages/*/package.json` names instead
+of grepping any `@openpanel/`) needed no corresponding code change here: the
+three preconditions it depends on were already satisfied by M11-007's
+codemod. Re-verified from scratch rather than trusted:
+
+- `grep -rn @openpanel/common packages/sdks` — empty. `express/get-client-ip.ts`
+  carries its own inlined `getClientIpFromHeaders` (header comment explains
+  why), `express/package.json` has no `@openpanel/common` dependency, and
+  `express/tsup.config.ts` has no `noExternal` entry.
+- `packages/sdks/sdk/src/index.ts` still hand-duplicates the wire constants
+  rather than importing `@openpanel/core/modules/ingest/ingest.constants` —
+  its header comment's reasoning (core's package.json exports map has no
+  `./*` wildcard; `rollup-plugin-dts` can't inline a type through it) still
+  holds, so this task kept that approach rather than retargeting.
+- `dist-gate.sh` standalone: `DIST GATE: all 5 checked package(s) clean`
+  (express/nextjs/react-native/sdk/web PASS; astro/`_info` SKIP no build
+  script; nuxt SKIPs no `dist/index.d.ts`).
+
+**Verification, all re-run by ralph on 2026-09-06:**
+
+- `pnpm run typecheck` — 23 workspace projects, all `Done`.
+- `contracts/sdk/dist-gate.sh` — `DIST GATE: all 5 checked package(s) clean`.
+- `contracts/sdk/run.sh` — `SDK WIRE CONTRACTS: all green` (67 assertions:
+  node 37, web 10, legacy-event 20, plus the dist gate), 37.0s.
+- `verification/full.sh` — `FULL: green`, exit `0`, no `BLOCKED-KNOWN` line:
+  the fingerprint this task exists to retire didn't fire because
+  `contracts/sdk/run.sh` now fully succeeds. This supersedes the
+  `dist-gate.sh` pre-P11 exception recorded in the M10-003 and M10-009
+  entries above (both `full.sh` runs there carried it; this one doesn't).
+
+Working tree change is this entry alone — every acceptance criterion for
+M11-008 was already met by the source tree M11-007 left behind.
+
+**Debt noticed, not fixed (outside this task's scope — the gate only
+inspects built `.d.ts`, not manifests):** `packages/sdks/sdk/package.json`
+still declares `@openpanel/validation` as a `devDependency`; nothing in the
+package imports it — the wire-constant types were inlined into `src/index.ts`
+in a pre-rewrite commit (`fix(sdk): inline validation types in dts...`) and
+the manifest entry never followed. Safe to delete whenever that
+`package.json` is next touched.
