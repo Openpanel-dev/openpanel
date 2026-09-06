@@ -92,6 +92,21 @@ function getProjectId(req: RequestWithProjectParam): Promise<string> {
   });
 }
 
+/**
+ * Search Console stores one row per day: the ClickHouse `date` column is a
+ * `Date`, and Google's searchAnalytics API takes `YYYY-MM-DD`. `resolveDates`
+ * returns a full datetime, which is right for the event and session tables but
+ * breaks both GSC paths — ClickHouse rejects the comparison outright with
+ * `Cannot convert string '2026-08-07 00:00:00' to type Date`.
+ */
+async function resolveGscDates(
+  projectId: string,
+  data: DateRangeInput
+): Promise<{ startDate: string; endDate: string }> {
+  const { startDate, endDate } = await resolveDates(projectId, data);
+  return { startDate: startDate.slice(0, 10), endDate: endDate.slice(0, 10) };
+}
+
 function getOrgId(req: RequestWithProjectParam): string {
   return req.client!.organizationId;
 }
@@ -664,7 +679,7 @@ export async function gscOverview(
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetOverviewCore({ projectId, startDate, endDate, interval: req.query.interval }));
 }
 
@@ -675,7 +690,7 @@ export async function gscPages(
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetTopPagesCore({ projectId, startDate, endDate, limit: req.query.limit }));
 }
 
@@ -686,7 +701,7 @@ export async function gscPageDetails(
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetPageDetailsCore({ projectId, startDate, endDate, page: req.query.page }));
 }
 
@@ -695,7 +710,7 @@ export async function gscQueries(
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetTopQueriesCore({ projectId, startDate, endDate, limit: req.query.limit }));
 }
 
@@ -706,7 +721,7 @@ export async function gscQueryDetails(
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetQueryDetailsCore({ projectId, startDate, endDate, query: req.query.query }));
 }
 
@@ -717,7 +732,7 @@ export async function gscQueryOpportunities(
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetQueryOpportunitiesCore({ projectId, startDate, endDate, minImpressions: req.query.minImpressions }));
 }
 
@@ -726,6 +741,6 @@ export async function gscCannibalization(
   reply: FastifyReply
 ) {
   const projectId = await getProjectId(req as RequestWithProjectParam);
-  const { startDate, endDate } = await resolveDates(projectId, req.query);
+  const { startDate, endDate } = await resolveGscDates(projectId, req.query);
   return reply.send(await gscGetCannibalizationCore({ projectId, startDate, endDate }));
 }
