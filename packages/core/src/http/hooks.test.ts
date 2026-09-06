@@ -2,34 +2,9 @@ import { describe, expect, test } from 'bun:test';
 import { cors } from '@elysiajs/cors';
 import { Elysia } from 'elysia';
 import { REQUEST_ID_LENGTH } from '../logger';
-import {
-  clientIpHook,
-  requestIdHook,
-  sanitizeRequestId,
-  timestampHook,
-} from './hooks';
+import { clientIpHook, requestIdHook, timestampHook } from './hooks';
 
 const ALLOWED_ORIGIN = 'https://dashboard.test';
-
-describe('sanitizeRequestId', () => {
-  test('keeps an id a caller can correlate on', () => {
-    expect(sanitizeRequestId('adr018-1a2b_3c')).toBe('adr018-1a2b_3c');
-  });
-
-  test('strips everything outside [A-Za-z0-9_-]', () => {
-    expect(sanitizeRequestId('a b/c\n<script>')).toBe('abcscript');
-  });
-
-  test('truncates to 64 characters', () => {
-    expect(sanitizeRequestId('x'.repeat(200))).toHaveLength(64);
-  });
-
-  test('reports nothing survivable rather than an empty id', () => {
-    expect(sanitizeRequestId('!!!')).toBeNull();
-    expect(sanitizeRequestId('')).toBeNull();
-    expect(sanitizeRequestId(null)).toBeNull();
-  });
-});
 
 describe('requestIdHook', () => {
   const app = new Elysia()

@@ -1,11 +1,10 @@
 // What the session lifecycle (session_end emission, reaper, vacuum) needs from
 // the outside world, as narrow structural interfaces. The job handlers bind
-// them to the real @openpanel/db buffers and @openpanel/redis client through
-// `loadSessionRuntime` (lazily — see session.service.ts's header); the tests
+// them to the scope's own clients with `sessionRuntimeFrom(ctx)`; the tests
 // hand in stubs, so no `mock.module` is needed and every assertion is on a
 // call the code under test made.
 
-import { loadDbBuffers } from '../../../buffers/lazy-db-buffers';
+import type { Ctx } from '../../../context';
 import type { IClickhouseSession } from '../session.service';
 
 export interface SessionStore {
@@ -51,10 +50,14 @@ export interface SessionRuntime {
   sessions: SessionStore;
 }
 
-export async function loadSessionRuntime(): Promise<SessionRuntime> {
-  const [{ getRedisCache }, { sessionBuffer }] = await Promise.all([
-    import('@openpanel/redis'),
-    loadDbBuffers(),
-  ]);
-  return { redis: getRedisCache(), sessions: sessionBuffer };
+/**
+ * The two boot singletons the lifecycle needs, read off the work scope rather
+ * than constructed here: `ctx.redis` and `ctx.buffers` are the same objects
+ * main.ts built once, so a job handler no longer opens a connection of its
+ * own and its writes stay inside the request's scope (ADR-007, ADR-018 R1).
+ */
+export function sessionRuntimeFrom(
+  ctx: Pick<Ctx, 'redis' | 'buffers'>
+): SessionRuntime {
+  return { redis: ctx.redis, sessions: ctx.buffers.session };
 }

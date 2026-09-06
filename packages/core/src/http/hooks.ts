@@ -16,21 +16,7 @@ import { Elysia } from 'elysia';
 import { REQUEST_ID_HEADER, REQUEST_ID_LENGTH } from '../logger';
 import { getClientIpFromHeaders } from '../shared/get-client-ip';
 import { generateId } from '../shared/id';
-
-// ADR-018 R2: an inbound request-id is honoured but never trusted verbatim —
-// it reaches log storage and a log search.
-const DISALLOWED_REQUEST_ID_CHARS = /[^A-Za-z0-9_-]/g;
-const REQUEST_ID_MAX_LENGTH = 64;
-
-export function sanitizeRequestId(candidate: string | null): string | null {
-  if (!candidate) {
-    return null;
-  }
-  const cleaned = candidate
-    .replace(DISALLOWED_REQUEST_ID_CHARS, '')
-    .slice(0, REQUEST_ID_MAX_LENGTH);
-  return cleaned.length > 0 ? cleaned : null;
-}
+import { sanitizeRequestId } from '../shared/request-id';
 
 /**
  * First of the three. `requestIdFromCaller` is not decoration: ADR-018 R6

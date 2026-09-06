@@ -1,25 +1,22 @@
 // Ported from apps/worker/src/jobs/events.incoming-event.ts (M8-003): the
 // Kafka consumer's per-message handler — the step that turns one topic
-// payload into session lifecycle decisions and ClickHouse rows. V1's job file
-// stays (DELEGATE PATTERN) and calls this until apps/worker dies (P9).
+// payload into session lifecycle decisions and ClickHouse rows.
 //
 // Everything that touches Redis, Postgres, ClickHouse or a queue is INJECTED
-// (`IncomingEventDeps`), the way session-end.ts does it: the tests then drive
-// the real code with recording doubles instead of `mock.module`, and V1 keeps
-// handing in its own buffers, counters and `sessionsQueue` producer so its
-// behaviour and its `/metrics` body are unchanged.
-//
-// createEvent is a static import for the reason session.service.ts's header
-// gives: a dynamic edge here closes a dynamic-import cycle that panics
-// rolldown when apps/worker bundles the workspace.
+// (`IncomingEventDeps`), the way session-end.ts does it, so the tests drive
+// the real code with recording doubles instead of `mock.module`.
+// `createIncomingEventDeps` binds it to ONE MESSAGE'S ctx (M10-006): the
+// buffers, the Postgres client and the session-end enqueue all ride the scope
+// carrying that envelope's requestId, so the id the producer stamped reaches
+// the row the consumer writes (ADR-018 R1). The two lookups a work scope
+// cannot supply arrive as `IncomingEventBindings` from the composition root.
 
 import { getTime, isSameDomain, parsePath } from '@openpanel/common';
 import type { IProjectFilters } from '@openpanel/validation';
 import { anyPass, isEmpty, isNil, mergeDeepRight, omit, reject } from 'ramda';
-import { loadDbBuffers } from '../../../buffers/lazy-db-buffers';
 import type { SessionIngestResult } from '../../../buffers/session-buffer';
+import type { Ctx } from '../../../context';
 import type { Logger } from '../../../logger';
-import type { ServiceDeps } from '../../../services';
 import {
   getReferrerWithQuery,
   parseReferrer,
@@ -31,20 +28,6 @@ import {
   type IServiceEvent,
 } from '../../event/event.service';
 import { matchEvent } from '../../notification/notification.service';
-
-// project.service.ts's `getProjectByIdCached` takes `ServiceDeps` now
-// (M10-004), and its `.clear()` LRU-invalidation must hit the SAME cache
-// instance ingest/http/mcp all read — see that file's header — so this
-// reaches the v1-compat singleton instead. Previously a STATIC import for a
-// rolldown-chunking reason tied to apps/worker's bundle: apps/worker is
-// gone (M9) and apps/api ships with no bundler at all (ADR-010), so that
-// constraint no longer applies — GENUINE CYCLE, kept lazy, same as every
-// other one in this wave: services.ts -> ingest.service.ts -> this file ->
-// v1-compat.ts -> services.ts.
-function loadProjectService() {
-  return import('../../../v1-compat');
-}
-
 import type { IClickhouseSession } from '../../session/session.service';
 import { sessionEndsEnqueued } from '../../session/src/session.metrics';
 import type { EnqueueSessionEndInput } from '../../session/src/session-end';
@@ -67,7 +50,7 @@ export interface IncomingEventDelivery {
 }
 
 /** The project fields the filter and first-event checks read. */
-interface IncomingEventProject {
+export interface IncomingEventProject {
   firstEventAt?: Date | null;
   filters?: IProjectFilters[] | null;
 }
@@ -93,7 +76,8 @@ export interface IncomingEventMetrics {
 }
 
 export interface IncomingEventDeps {
-  /** Base logger; the handler child()s it per message. */
+  /** Already scoped to the message's requestId; the handler only adds the
+   *  Kafka delivery coordinates to it. */
   logger: Logger;
   sessions: IncomingEventSessions;
   createEvent(
@@ -112,44 +96,55 @@ export interface IncomingEventDeps {
 }
 
 /**
- * Binds `IncomingEventDeps` to the real implementations. db/ch access stays
- * lazy — see event.service.ts's header.
+ * The two lookups a work scope cannot supply. Both are resolved once at the
+ * composition root (`apps/api`'s main.ts) rather than per message.
  */
-export async function loadIncomingEventDeps(
-  deps: ServiceDeps,
-  logger: Logger,
-  enqueueSessionEnd: (input: EnqueueSessionEndInput) => Promise<unknown>,
-  overrides: Partial<IncomingEventDeps> = {}
-): Promise<IncomingEventDeps> {
-  const [{ sessionBuffer }, { db }, notifications, projectService] =
-    await Promise.all([
-      loadDbBuffers(),
-      import('@openpanel/db/src/prisma-client'),
-      import('@openpanel/queue/src/notification-dispatch'),
-      loadProjectService(),
-    ]);
+export interface IncomingEventBindings {
+  /**
+   * BullMQ-producer orchestration, which lives in `@openpanel/queue` —
+   * a package that imports `@openpanel/core` back, so core cannot reach it
+   * (notification.service.ts's header).
+   */
+  checkNotificationRulesForEvent(
+    payload: IServiceCreateEventPayload
+  ): Promise<unknown>;
+  /**
+   * `getProjectByIdCached`'s L1 LRU lives inside `createProjectService(deps)`,
+   * so `ctx.services.project` would hand every message a fresh, empty cache;
+   * ingest, http and mcp read the one instance registered at boot.
+   */
+  getCachedProject(projectId: string): Promise<IncomingEventProject | null>;
+  clearProjectCache(projectId: string): Promise<unknown>;
+}
+
+/**
+ * Binds `IncomingEventDeps` to one message's scope. Synchronous by design —
+ * the hot path gets no per-message `await` it did not already have.
+ */
+export function createIncomingEventDeps(
+  ctx: Ctx,
+  bindings: IncomingEventBindings
+): IncomingEventDeps {
   return {
-    logger,
-    sessions: sessionBuffer,
-    createEvent: (payload) => createEvent(deps, payload),
-    checkNotificationRulesForEvent:
-      notifications.checkNotificationRulesForEvent,
+    logger: ctx.logger,
+    sessions: ctx.buffers.session,
+    createEvent: (payload) => createEvent(ctx, payload),
+    checkNotificationRulesForEvent: bindings.checkNotificationRulesForEvent,
     projects: {
-      getCached: projectService.getProjectByIdCached,
+      getCached: bindings.getCachedProject,
       markFirstEvent: async (projectId) => {
-        await db.project.updateMany({
+        await ctx.db.project.updateMany({
           where: { id: projectId, firstEventAt: null },
           data: { firstEventAt: new Date() },
         });
-        await projectService.clearProjectByIdCache(projectId);
+        await bindings.clearProjectCache(projectId);
       },
     },
-    enqueueSessionEnd,
+    enqueueSessionEnd: (input) => ctx.services.session.enqueueSessionEnd(input),
     metrics: {
       sessionStarted: (kind) => sessionsStarted.inc({ kind }),
       sessionEndEnqueued: (source) => sessionEndsEnqueued.inc({ source }),
     },
-    ...overrides,
   };
 }
 
@@ -252,13 +247,15 @@ export async function incomingEvent(
     id: eventId,
   } = jobPayload;
   const properties: Record<string, unknown> = body.properties ?? {};
-  const reqId = headers['request-id'] ?? 'unknown';
-  const logger = deps.logger.child({
-    reqId,
-    ...(meta
-      ? { kafkaPartition: meta.partition, kafkaOffset: meta.offset }
-      : {}),
-  });
+  // `requestId` rides in on `deps.logger`, which the consumer scopes to this
+  // envelope's id (ADR-018 R1 renames V1's `reqId`); only the delivery
+  // coordinates are per-message news.
+  const logger = meta
+    ? deps.logger.child({
+        kafkaPartition: meta.partition,
+        kafkaOffset: meta.offset,
+      })
+    : deps.logger;
   const getProperty = (name: string): string | undefined => {
     // replace thing is just for older sdks when we didn't have `__`
     // remove when kiddokitchen app (24.09.02) is not used anymore

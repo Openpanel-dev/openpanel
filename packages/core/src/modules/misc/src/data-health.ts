@@ -2,10 +2,9 @@
 // deletes apps/worker). ADR-005's acceptance note gives `dataHealth` to the
 // misc module. Behaviour is V1's, verbatim; Prisma, the last-event lookup and
 // `sendEmail` arrive as injected deps so the job is testable without
-// `mock.module` (same idiom as modules/session/src/runtime.ts).
+// `mock.module`. `misc.jobs.ts` binds them off the job's ctx (M10-006).
 
 import type { Logger } from '../../../logger';
-import type { ServiceDeps } from '../../../services';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 // A brand-new project gets 48h to send its first event before we reach out.
@@ -58,29 +57,6 @@ export interface DataHealthDeps {
     template: DataHealthTemplate,
     options: { to: string; data: Record<string, unknown> }
   ): Promise<unknown>;
-}
-
-export async function loadDataHealthDeps(
-  deps: ServiceDeps,
-  logger: Logger
-): Promise<DataHealthDeps> {
-  // M10-005: Prisma is `deps.db` and `getLastEventPerProject` is the sibling
-  // module's `ServiceDeps` spelling, so this job no longer reaches
-  // @openpanel/db or the v1-compat seam. Both imports stay lazy: this file is
-  // reached from jobs.registry.ts, and project.service.ts -> v1-compat.ts ->
-  // services.ts is a cycle a static edge here would join.
-  const [{ getLastEventPerProject }, { sendEmail }] = await Promise.all([
-    import('../../project/project.service'),
-    import('../../../clients/email'),
-  ]);
-
-  return {
-    db: deps.db as unknown as DataHealthDb,
-    logger,
-    getLastEventPerProject: () => getLastEventPerProject(deps),
-    sendEmail: (template, options) =>
-      sendEmail(template, options as { to: string; data: never }),
-  };
 }
 
 async function recipientsForOrg(organizationId: string, deps: DataHealthDeps) {

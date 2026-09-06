@@ -1,22 +1,17 @@
 // Ported from apps/worker/src/jobs/events.create-session-end.ts and
-// utils/session-handler.ts (M7-001). The worker's copies are thin delegates
-// onto this file until apps/worker dies (P9).
+// utils/session-handler.ts (M7-001).
+//
+// Everything that touches Redis, ClickHouse, a buffer or a queue is INJECTED
+// (`SessionEndDeps`): M10-006 moved the binding into `session.jobs.ts`, where
+// the job's `ctx` supplies every client, so the requestId that opened the
+// session still labels the rows this close writes (ADR-018 R1).
 
-import { loadDbBuffers } from '../../../buffers/lazy-db-buffers';
 import type { EnqueueOptions } from '../../../jobs/define';
 import type { Logger } from '../../../logger';
-import type { ServiceDeps } from '../../../services';
-// Static, not lazy like the db imports below: core's event.service touches no
-// client at import time, and a dynamic edge here closes a dynamic-import cycle
-// (event.service ⇢ session.service → this file) that panics rolldown when
-// apps/worker bundles the workspace.
-import {
-  createEvent,
-  type IClickhouseEvent,
-  type IServiceCreateEventPayload,
-  type IServiceEvent,
-  transformEvent,
-  transformSessionToEvent,
+import type {
+  IClickhouseEvent,
+  IServiceCreateEventPayload,
+  IServiceEvent,
 } from '../../event/event.service';
 import type { INotificationRuleCached } from '../../notification/notification.service';
 import type { IClickhouseSession } from '../session.service';
@@ -90,7 +85,10 @@ export function sessionEndJobPayload({
   };
 }
 
-/** The bits of @openpanel/db the emission needs beyond the shared runtime. */
+/**
+ * What the emission needs beyond the shared runtime. `session.jobs.ts` binds
+ * it from the job's own ctx; the tests hand in stubs.
+ */
 export interface SessionEndDeps extends SessionRuntime {
   logger: Logger;
   createEvent(
@@ -113,39 +111,6 @@ export interface SessionEndDeps extends SessionRuntime {
     hasFunnelRules(rules: INotificationRuleCached[]): boolean;
     /** Lives in @openpanel/queue — it enqueues through the notification queue. */
     checkFunnelRules(events: IServiceEvent[]): Promise<unknown>;
-  };
-}
-
-export async function loadSessionEndDeps(
-  deps: ServiceDeps,
-  runtime: SessionRuntime,
-  logger: Logger
-): Promise<SessionEndDeps> {
-  const [
-    { chQuery },
-    { profileBackfillBuffer },
-    notificationService,
-    { checkNotificationRulesForSessionEnd },
-  ] = await Promise.all([
-    import('@openpanel/db/src/clickhouse/client'),
-    loadDbBuffers(),
-    import('../../notification/notification.service'),
-    import('@openpanel/queue/src/notification-dispatch'),
-  ]);
-  return {
-    ...runtime,
-    logger,
-    createEvent: (payload) => createEvent(deps, payload),
-    transformEvent,
-    transformSessionToEvent,
-    getEvents: async (query) =>
-      (await chQuery<IClickhouseEvent>(query)).map(transformEvent),
-    profileBackfill: profileBackfillBuffer,
-    notifications: {
-      getRules: notificationService.getNotificationRulesByProjectId,
-      hasFunnelRules: notificationService.getHasFunnelRules,
-      checkFunnelRules: checkNotificationRulesForSessionEnd,
-    },
   };
 }
 

@@ -10,17 +10,27 @@
 // `sessionVacuum` are cron fragments: declared here, spread into the ONE
 // `cron` queue by jobs.registry.ts and into `CRON_SCHEDULES` by
 // jobs/schedulers.ts, ids and cadences unchanged (apps/worker/src/boot-cron.ts).
-// `flushSessions`/`flushReplay` read the buffers off `ctx.buffers` — the
-// AppDeps boot singleton (ADR-007) — never a module-level import of
-// @openpanel/db's buffer shim.
+//
+// Every handler reads its clients off `ctx` — the buffers and the Redis
+// connection main.ts built once, and the ClickHouse client the job's own
+// requestId is bound to (M10-006, docs/TECH_DEBT.md §2).
 
 import { z } from 'zod';
+import type { Ctx } from '../../context';
 import { defineJob } from '../../jobs/define';
 import type { SchedulerDefinition } from '../../jobs/schedulers';
-import { loadSessionRuntime } from './src/runtime';
+import type { Logger } from '../../logger';
+import { chQuery } from '../../shared/ch-query';
+import {
+  createEvent,
+  type IClickhouseEvent,
+  transformEvent,
+  transformSessionToEvent,
+} from '../event/event.service';
+import { sessionRuntimeFrom } from './src/runtime';
 import {
   createSessionEnd,
-  loadSessionEndDeps,
+  type SessionEndDeps,
   type SessionEndJobData,
 } from './src/session-end';
 import { reapIdleSessions } from './src/session-reaper';
@@ -53,19 +63,50 @@ const sessionEndPayload = z.custom<SessionEndJobData>(
   (value) => sessionEndWireShape.safeParse(value).success
 );
 
+/**
+ * The session-end job's dependencies, bound to the run's own ctx.
+ *
+ * Two lookups stay dynamic. `checkNotificationRulesForSessionEnd` lives in
+ * `@openpanel/queue`, which imports `@openpanel/core` back — a real package
+ * cycle (notification.service.ts's header). The rule cache is reached the same
+ * way only to keep notification.service.ts out of jobs.registry.ts's eager
+ * import graph, which every core test file walks.
+ */
+async function sessionEndDeps(
+  ctx: Ctx,
+  logger: Logger
+): Promise<SessionEndDeps> {
+  const [notifications, { checkNotificationRulesForSessionEnd }] =
+    await Promise.all([
+      import('../notification/notification.service'),
+      import('@openpanel/queue/src/notification-dispatch'),
+    ]);
+
+  return {
+    ...sessionRuntimeFrom(ctx),
+    logger,
+    createEvent: (payload) => createEvent(ctx, payload),
+    transformEvent,
+    transformSessionToEvent,
+    getEvents: async (query) =>
+      (await chQuery<IClickhouseEvent>(ctx, query)).map(transformEvent),
+    profileBackfill: ctx.buffers.profileBackfill,
+    notifications: {
+      getRules: notifications.getNotificationRulesByProjectId,
+      hasFunnelRules: notifications.getHasFunnelRules,
+      checkFunnelRules: checkNotificationRulesForSessionEnd,
+    },
+  };
+}
+
 /** The `sessions` queue's own job. */
 export const sessionQueueJobs = {
   session: defineJob({
     payload: sessionEndPayload,
     handler: async ({ payload: data, ctx }) => {
       const logger = ctx.logger.child({ payload: data.event });
-      const deps = await loadSessionEndDeps(
-        ctx,
-        await loadSessionRuntime(),
-        logger
-      );
 
-      await createSessionEnd(data, deps);
+      await createSessionEnd(data, await sessionEndDeps(ctx, logger));
 
       try {
         await updateEventsCount(data.event.projectId);
@@ -97,7 +138,7 @@ export const sessionCronJobs = {
     payload: z.null(),
     handler: async ({ ctx }) => {
       await reapIdleSessions({
-        ...(await loadSessionRuntime()),
+        ...sessionRuntimeFrom(ctx),
         logger: ctx.logger.child({ job: 'session-reaper' }),
         enqueueSessionEnd: (input) =>
           ctx.services.session.enqueueSessionEnd(input),
@@ -108,7 +149,7 @@ export const sessionCronJobs = {
     payload: z.null(),
     handler: async ({ ctx }) => {
       await vacuumStaleSessions({
-        ...(await loadSessionRuntime()),
+        ...sessionRuntimeFrom(ctx),
         logger: ctx.logger.child({ job: 'session-vacuum' }),
       });
     },

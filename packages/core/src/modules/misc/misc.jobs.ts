@@ -12,7 +12,7 @@
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
 import type { SchedulerDefinition } from '../../jobs/schedulers';
-import { loadDataHealthDeps, runDataHealthCron } from './src/data-health';
+import { type DataHealthDb, runDataHealthCron } from './src/data-health';
 
 /** Daily 07:30 UTC — V1's cadence (apps/worker/src/boot-cron.ts). */
 const DATA_HEALTH_CRON = '30 7 * * *';
@@ -28,8 +28,17 @@ export const miscCronJobs = {
   dataHealth: defineJob({
     payload: z.null(),
     handler: async ({ ctx }) => {
-      const logger = ctx.logger.child({ job: 'data-health' });
-      await runDataHealthCron(await loadDataHealthDeps(ctx, logger));
+      await runDataHealthCron({
+        db: ctx.db as unknown as DataHealthDb,
+        logger: ctx.logger.child({ job: 'data-health' }),
+        getLastEventPerProject: () =>
+          ctx.services.project.getLastEventPerProject(),
+        sendEmail: (template, options) =>
+          ctx.clients.email.sendEmail(
+            template,
+            options as { to: string; data: never }
+          ),
+      });
     },
   }),
 };

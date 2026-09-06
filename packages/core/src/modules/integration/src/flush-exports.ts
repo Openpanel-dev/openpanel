@@ -114,24 +114,6 @@ export interface FlushExportsDeps {
   createAdapter(config: ExportConfig): IObjectStoreAdapter | undefined;
 }
 
-export async function loadFlushExportsDeps(
-  logger: Logger
-): Promise<FlushExportsDeps> {
-  const [{ db }, { ch }, { getServerIntegration }] = await Promise.all([
-    import('@openpanel/db/src/prisma-client'),
-    import('@openpanel/db/src/clickhouse/client'),
-    import('../../../clients/integrations/registry'),
-  ]);
-
-  return {
-    db: db as unknown as ExportDb,
-    ch: ch as unknown as ExportClickhouse,
-    logger,
-    createAdapter: (config) =>
-      getServerIntegration(config.type).export?.createAdapter(config),
-  };
-}
-
 function isExportConfig(config: IIntegrationConfig): config is ExportConfig {
   // Capability comes from the integration registry, not a hardcoded type list.
   return isKind(config, 'export');

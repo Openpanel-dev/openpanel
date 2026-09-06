@@ -861,7 +861,6 @@ export {
   SESSION_DISTINCT_FIELDS,
   transformSession,
 } from './modules/session/session.service';
-export { loadSessionRuntime } from './modules/session/src/runtime';
 export {
   als,
   getAlsSessionId,
@@ -874,7 +873,6 @@ export type {
 export {
   createSessionEnd,
   getSessionEndJobId,
-  loadSessionEndDeps,
   sessionEndEnqueueOptions,
   sessionEndJobPayload,
 } from './modules/session/src/session-end';
@@ -1009,6 +1007,7 @@ export {
   createEventsBatchHandler,
   startKafkaEventsConsumer,
 } from './modules/ingest/src/consumer';
+export { createIncomingEventHandler } from './modules/ingest/src/consumer-handler';
 // The readiness probe's two inputs (M9-002). `markEventsActivity` is the
 // consumer's `onActivity`; `setShuttingDown` is main.ts's signal handler.
 export {
@@ -1017,14 +1016,16 @@ export {
   markEventsActivity,
 } from './modules/ingest/src/heartbeat';
 export type {
+  IncomingEventBindings,
   IncomingEventDelivery,
   IncomingEventDeps,
   IncomingEventMetrics,
+  IncomingEventProject,
   IncomingEventSessions,
 } from './modules/ingest/src/incoming-event-handler';
 export {
+  createIncomingEventDeps,
   incomingEvent,
-  loadIncomingEventDeps,
 } from './modules/ingest/src/incoming-event-handler';
 export { ingestConsumerMetrics } from './modules/ingest/src/ingest.metrics';
 export type {
@@ -1221,6 +1222,7 @@ export {
   cancelSubscription,
   checkout,
   clearClientByIdCache,
+  clearProjectByIdCache,
   compatCh,
   compatDb,
   createBotEvent,

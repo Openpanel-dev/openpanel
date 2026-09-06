@@ -4,9 +4,8 @@
 // Prisma, the two ClickHouse counts, the last-event lookup, the plan pricer,
 // the highlight builder and `sendEmail` all arrive as injected deps
 // (`WindDownDeps`), the same idiom the session lifecycle uses
-// (modules/session/src/runtime.ts). The job handler binds them to the real
-// implementations through `loadWindDownDeps`; tests hand in stubs, so no
-// `mock.module` is needed.
+// (modules/session/src/runtime.ts). `organization.jobs.ts` binds them off the
+// job's ctx (M10-006); tests hand in stubs, so no `mock.module` is needed.
 
 import { getRecommendedPlan } from '@openpanel/payments';
 import { addDays, format, subDays } from 'date-fns';
@@ -118,37 +117,6 @@ interface WindDownContext {
   highlightProject: HighlightProject | null;
   getUsage: () => Promise<WindDownUsage>;
   getHighlight: () => Promise<string | undefined>;
-}
-
-export async function loadWindDownDeps(logger: Logger): Promise<WindDownDeps> {
-  const [
-    { db },
-    { getOrganizationEventsCount, getOrganizationEventsCountSince },
-    { getLastEventPerProject },
-    { sendEmail },
-    { loadWinBackHighlightDeps, buildWinBackHighlight },
-  ] = await Promise.all([
-    import('@openpanel/db/src/prisma-client'),
-    import('../organization.service'),
-    // project.service.ts's `getLastEventPerProject` takes `ServiceDeps` now
-    // (M10-004); this file has none, so it reaches the bare,
-    // v1-compat-wrapped, zero-arg spelling instead.
-    import('../../../v1-compat'),
-    import('../../../clients/email'),
-    import('./win-back-highlight'),
-  ]);
-
-  const highlightDeps = await loadWinBackHighlightDeps(logger);
-
-  return {
-    db: db as unknown as WindDownDb,
-    logger,
-    sendEmail,
-    getLastEventPerProject,
-    getOrganizationEventsCount,
-    getOrganizationEventsCountSince,
-    buildHighlight: (input) => buildWinBackHighlight(input, highlightDeps),
-  };
 }
 
 // Lazy + memoized like getUsage: only still-tracking orgs that clear a day

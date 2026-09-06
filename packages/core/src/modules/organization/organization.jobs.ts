@@ -8,9 +8,19 @@
 // (apps/worker/src/boot-cron.ts).
 
 import { z } from 'zod';
+import type { Ctx } from '../../context';
 import { defineJob } from '../../jobs/define';
 import type { SchedulerDefinition } from '../../jobs/schedulers';
-import { loadWindDownDeps, runWindDownCron } from './src/wind-down';
+import type { Logger } from '../../logger';
+import {
+  buildWinBackHighlight,
+  type WinBackHighlightDeps,
+} from './src/win-back-highlight';
+import {
+  runWindDownCron,
+  type WindDownDb,
+  type WindDownDeps,
+} from './src/wind-down';
 
 /** Hourly — V1's cadence (apps/worker/src/boot-cron.ts). */
 const WIND_DOWN_CRON = '0 * * * *';
@@ -27,11 +37,48 @@ export const organizationCronJobs = {
   windDown: defineJob({
     payload: z.null(),
     handler: async ({ ctx }) => {
-      const logger = ctx.logger.child({ job: 'wind-down' });
-      await runWindDownCron(await loadWindDownDeps(logger));
+      await runWindDownCron(
+        await windDownDeps(ctx, ctx.logger.child({ job: 'wind-down' }))
+      );
     },
   }),
 };
+
+/**
+ * The wind-down cron's dependencies, bound to the job's own ctx.
+ *
+ * Two reaches stay dynamic. The sibling service's two ClickHouse counts are
+ * not on `OrganizationService`, and `clients/ai/win-back.ts` pulls the agent
+ * runtime — a static edge from here would drag either into jobs.registry.ts's
+ * eager import graph, which every core test file walks.
+ */
+async function windDownDeps(ctx: Ctx, logger: Logger): Promise<WindDownDeps> {
+  const [
+    { getOrganizationEventsCount, getOrganizationEventsCountSince },
+    { generateWinBackPitch },
+  ] = await Promise.all([
+    import('./organization.service'),
+    import('../../clients/ai/win-back'),
+  ]);
+
+  const highlight: WinBackHighlightDeps = {
+    logger,
+    getAnalyticsOverview: (input) =>
+      ctx.services.overview.getAnalyticsOverviewCore(input),
+    getTopPages: (input) => ctx.services.pages.getTopPagesCore(input),
+    generatePitch: (facts) => generateWinBackPitch(facts),
+  };
+
+  return {
+    db: ctx.db as unknown as WindDownDb,
+    logger,
+    sendEmail: ctx.clients.email.sendEmail,
+    getLastEventPerProject: () => ctx.services.project.getLastEventPerProject(),
+    getOrganizationEventsCount,
+    getOrganizationEventsCountSince,
+    buildHighlight: (input) => buildWinBackHighlight(input, highlight),
+  };
+}
 
 /** This module's fragment of `CRON_SCHEDULES` — id and cadence unchanged. */
 export const organizationCronSchedules: readonly SchedulerDefinition[] = [

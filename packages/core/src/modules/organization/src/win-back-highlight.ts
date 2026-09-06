@@ -2,15 +2,9 @@
 // wave that deletes apps/worker). Behaviour is V1's, verbatim; only the
 // wiring changed — the two stats lookups and the AI call arrive as injected
 // deps (`WinBackHighlightDeps`) instead of static imports, the same idiom the
-// session lifecycle uses (modules/session/src/runtime.ts): the job handler
-// binds them to the real core services through `loadWinBackHighlightDeps`,
-// and tests hand in stubs, so no `mock.module` is needed anywhere.
-//
-// Loading is lazy for the reason organization.service.ts's header gives:
-// organization.jobs.ts is pulled into the eager `jobs.registry.ts` barrel, and
-// a static import of overview.service.ts from here would drag the whole
-// analytics read path — and @openpanel/db's clients — into every core test
-// file's import graph.
+// session lifecycle uses (modules/session/src/runtime.ts): `organization.jobs.ts`
+// binds them off the job's ctx (M10-006), and tests hand in stubs, so no
+// `mock.module` is needed anywhere.
 
 import { format, subDays } from 'date-fns';
 import type { Logger } from '../../../logger';
@@ -88,29 +82,6 @@ export interface WinBackHighlightDeps {
     limit: number;
   }): Promise<HighlightTopPage[]>;
   generatePitch(facts: WinBackPitchFacts): Promise<string>;
-}
-
-export async function loadWinBackHighlightDeps(
-  logger: Logger
-): Promise<WinBackHighlightDeps> {
-  // M10-005: both overview entry points take `ServiceDeps` now; the wind-down
-  // cron that reaches this has none of its own, so — same as
-  // `loadWindDownDeps`'s `getLastEventPerProject` — it uses the bare,
-  // v1-compat-wrapped spellings.
-  const [
-    { getAnalyticsOverviewCore, getTopPagesCore },
-    { generateWinBackPitch },
-  ] = await Promise.all([
-    import('../../../v1-compat'),
-    import('../../../clients/ai/win-back'),
-  ]);
-
-  return {
-    logger,
-    getAnalyticsOverview: (input) => getAnalyticsOverviewCore(input),
-    getTopPages: (input) => getTopPagesCore(input),
-    generatePitch: (facts) => generateWinBackPitch(facts),
-  };
 }
 
 const formatCount = (n: number) => new Intl.NumberFormat('en-US').format(n);

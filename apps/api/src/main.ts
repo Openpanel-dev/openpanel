@@ -37,9 +37,11 @@ import {
   type BufferDeps,
   bullBoardRoutes,
   COOKIE_OPTIONS,
+  clearProjectByIdCache,
   corsDelegator,
   createBuffers,
   createClients,
+  createIncomingEventHandler,
   createInitialSalts,
   createProducers,
   createTrpcFetchHandler,
@@ -47,11 +49,10 @@ import {
   debugRoutes,
   enableEventsHeartbeat,
   errorHandler,
+  getProjectByIdCached,
   type HttpCtx,
-  incomingEvent,
   ingestConsumerMetrics,
   type KafkaConsumerHandle,
-  loadIncomingEventDeps,
   markEventsActivity,
   opsRoutes,
   publicApiRoutes,
@@ -66,8 +67,6 @@ import {
   registerSessionScrapeMetrics,
   requestLogging,
   type SessionMetricsRedis,
-  sessionEndEnqueueOptions,
-  sessionEndJobPayload,
   setShuttingDown,
   setV1CompatServices,
   startKafkaEventsConsumer,
@@ -91,6 +90,7 @@ import {
   produceDeadLetterEvent,
   produceIncomingEvent,
 } from '@openpanel/queue';
+import { checkNotificationRulesForEvent } from '@openpanel/queue/src/notification-dispatch';
 import { getRedisCache, getRedisPub, getRedisQueue } from '@openpanel/redis';
 import { appRouter } from '@openpanel/trpc';
 import { Elysia } from 'elysia';
@@ -255,8 +255,7 @@ function warnOnUnhandledSchedulers(schedulerIds: string[]): void {
  * The boot scope as `ServiceDeps`. `AppDeps` carries a `QueueProducerHandle`;
  * a service wants an already-scoped `QueueProducers`, and outside a request
  * there is nothing to correlate with, so the boot scope stamps
- * `V1_COMPAT_REQUEST_ID` (M10-005 — the ingest consumer's event deps need the
- * same shape the v1-compat seam does).
+ * `V1_COMPAT_REQUEST_ID` (M10-005).
  */
 function bootServiceDeps(
   deps: AppDeps
@@ -284,17 +283,6 @@ async function startIngestConsumer(
   assertKafkaConfigured();
   enableEventsHeartbeat();
 
-  const eventDeps = await loadIncomingEventDeps(
-    bootServiceDeps(deps),
-    logger,
-    async (input) => {
-      await deps.producers.queues.sessions.session.add(
-        sessionEndJobPayload(input),
-        sessionEndEnqueueOptions(input.closedSession.id)
-      );
-    }
-  );
-
   return await startKafkaEventsConsumer({
     createConsumer: createKafkaEventsConsumer,
     logger,
@@ -302,7 +290,16 @@ async function startIngestConsumer(
     topic: KAFKA_EVENTS_TOPIC,
     partitionsConsumedConcurrently: KAFKA_PARTITIONS_CONCURRENT,
     batch: {
-      handleEvent: (payload, meta) => incomingEvent(payload, eventDeps, meta),
+      // One Ctx per message, scoped to the requestId the producer stamped
+      // into the envelope (M10-006). The two bindings a work scope cannot
+      // supply are resolved here, once: the notification dispatch lives in
+      // @openpanel/queue (core cannot import it back) and the project cache
+      // is the boot-registered singleton ingest/http/mcp share.
+      handleEvent: createIncomingEventHandler(deps, {
+        checkNotificationRulesForEvent,
+        getCachedProject: getProjectByIdCached,
+        clearProjectCache: clearProjectByIdCache,
+      }),
       sendToDeadLetter: produceDeadLetterEvent,
       logger,
       metrics: ingestConsumerMetrics,

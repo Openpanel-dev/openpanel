@@ -9,7 +9,11 @@
 import { z } from 'zod';
 import { defineJob } from '../../jobs/define';
 import type { SchedulerDefinition } from '../../jobs/schedulers';
-import { loadFlushExportsDeps, runFlushExportsCron } from './src/flush-exports';
+import {
+  type ExportClickhouse,
+  type ExportDb,
+  runFlushExportsCron,
+} from './src/flush-exports';
 
 /** Every 1 minute — drains export buffers to S3/GCS. */
 const FLUSH_EXPORTS_INTERVAL_MS = 60_000;
@@ -19,8 +23,20 @@ export const integrationCronJobs = {
   flushExports: defineJob({
     payload: z.null(),
     handler: async ({ ctx }) => {
-      const logger = ctx.logger.child({ job: 'flush-exports' });
-      await runFlushExportsCron(await loadFlushExportsDeps(logger));
+      // Lazy: the registry pulls the S3 and GCS SDKs, ~270ms of module
+      // evaluation (measured, Bun 1.4.0) that a static edge here would add to
+      // jobs.registry.ts's eager graph and so to every core test file.
+      const { getServerIntegration } = await import(
+        '../../clients/integrations/registry'
+      );
+
+      await runFlushExportsCron({
+        db: ctx.db as unknown as ExportDb,
+        ch: ctx.ch as unknown as ExportClickhouse,
+        logger: ctx.logger.child({ job: 'flush-exports' }),
+        createAdapter: (config) =>
+          getServerIntegration(config.type).export?.createAdapter(config),
+      });
     },
   }),
 };
